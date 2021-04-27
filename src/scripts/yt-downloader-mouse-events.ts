@@ -1,6 +1,6 @@
 import { getVideoId } from "./yt-downloader-utils";
 import { gSelButtonDownload } from "./yt-downloader-content-script-ui";
-import type { AdaptiveFormatItem } from "./types";
+import type { PlayerResponse } from "./types";
 
 const isEventRegistered: { [event: string]: boolean } = {};
 
@@ -19,12 +19,13 @@ export function registerMouseEventListeners() {
         case "download-video-simple":
           downloadSendToBackground({
             id: getVideoId(location.href),
-            quality: Number(elButtonDownload.getAttribute(
-              "data-yt-downloader-current-quality"
-            )),
-            titleCurrent: document.documentElement.dataset.videoTitle,
-            adaptiveFormats: JSON.parse(
-              document.documentElement.dataset.adaptiveFormats
+            quality: Number(
+              elButtonDownload.getAttribute(
+                "data-yt-downloader-current-quality"
+              )
+            ),
+            playerResponse: JSON.parse(
+              document.documentElement.dataset.playerResponse
             ),
             ytcfg: JSON.parse(document.documentElement.dataset.ytcfg)
           });
@@ -37,8 +38,7 @@ export function registerMouseEventListeners() {
 function downloadSendToBackground(params: {
   id: string;
   quality: number;
-  adaptiveFormats?: AdaptiveFormatItem[];
-  titleCurrent?: string;
+  playerResponse: PlayerResponse;
   ytcfg?: { STS: number; PLAYER_JS_URL: string };
 }) {
   const portDownload = chrome.runtime.connect({
