@@ -26,10 +26,6 @@
     "scripts": ["build/scripts/background.js"],
     "persistent": false
   },
-  "options_ui": {
-    "page": "options.html",
-    "open_in_tab": false
-  },
   "browser_action": {
     "default_popup": "popup.html",
     "default_title": "YouTube Downloader Settings",
