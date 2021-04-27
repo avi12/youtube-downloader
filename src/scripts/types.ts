@@ -287,7 +287,9 @@ export type PlayerResponse = {
     isOwnerViewing: boolean;
     shortDescription: string;
     isCrawlable: boolean;
-    thumbnail: Thumbnail[];
+    thumbnail: {
+      thumbnails: Thumbnail[]
+    };
     averageRating: number;
     allowRatings: boolean;
     viewCount: string;
