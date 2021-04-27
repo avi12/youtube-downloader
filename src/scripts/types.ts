@@ -321,9 +321,9 @@ export type PlayerResponse = {
       isUnlisted: boolean;
       hasYpcMetadata: boolean;
       viewCount: string;
-      category: string;
+      category: "Film & Animation" | "Autos & Vehicles" | "Music" | "Pets & Animals" | "Sports" | "Travel & Events" | "Gaming" | "People & Blogs" | "Comedy" | "Entertainment" | "News & Politics" | "Howto & Style" | "Education" | "Science & Technology" | "Nonprofits & Activism";
       publishDate: string;
-      ownerCHannelName: string;
+      ownerChannelName: string;
       uploadData: string;
     };
   };
