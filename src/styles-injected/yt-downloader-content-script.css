@@ -1,0 +1,7 @@
+/*noinspection CssInvalidHtmlTagReference*/
+ytd-button-renderer[data-yt-downloader-action="download-video-simple"] {
+  cursor: pointer;
+  margin-left: 8px;
+  display: flex;
+  align-items: center;
+}

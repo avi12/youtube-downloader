@@ -1,0 +1,55 @@
+{
+  "name": "YouTube Downloader",
+  "description": "Download almost any video from YouTube.",
+  "homepage_url": "https://avi12.com/youtube-downloader",
+  "version": "1.0.0",
+  "manifest_version": 2,
+  "icons": {
+    "16": "images/icon-16.png",
+    "19": "images/icon-19.png",
+    "24": "images/icon-24.png",
+    "32": "images/icon-32.png",
+    "38": "images/icon-38.png",
+    "48": "images/icon-48.png",
+    "64": "images/icon-64.png",
+    "96": "images/icon-96.png",
+    "128": "images/icon-128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://www.youtube.com/*"],
+      "js": ["build/scripts/yt-downloader-content-script-initialize.js"],
+      "css": ["build/styles-injected/yt-downloader-content-script.css"]
+    }
+  ],
+  "background": {
+    "scripts": ["build/scripts/background.js"],
+    "persistent": false
+  },
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": false
+  },
+  "browser_action": {
+    "default_popup": "popup.html",
+    "default_title": "YouTube Downloader Settings",
+    "default_icon": {
+      "16": "images/icon-16.png",
+      "19": "images/icon-19.png",
+      "24": "images/icon-24.png",
+      "32": "images/icon-32.png",
+      "38": "images/icon-38.png",
+      "48": "images/icon-48.png",
+      "64": "images/icon-64.png",
+      "96": "images/icon-96.png",
+      "128": "images/icon-128.png"
+    }
+  },
+  "permissions": [
+    "storage",
+    "downloads",
+    "https://www.youtube.com/*",
+    "https://*.googlevideo.com/*"
+  ],
+  "content_security_policy": "script-src 'self' 'unsafe-eval' blob:; object-src 'self'"
+}
