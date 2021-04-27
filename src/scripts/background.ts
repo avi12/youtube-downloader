@@ -9,7 +9,7 @@ chrome.runtime.onConnect.addListener(port => {
   switch (port.name) {
     case "download-video-simple":
       port.onMessage.addListener(params => {
-        download(params, port);
+        downloadVideo(params, port);
         // TODO: Handle canceling
       });
       break;
@@ -24,7 +24,7 @@ chrome.runtime.onConnect.addListener(port => {
   }
 });
 
-async function download(
+async function downloadVideo(
   {
     adaptiveFormats,
     id,
