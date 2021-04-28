@@ -45,7 +45,6 @@
     "storage",
     "https://www.youtube.com/*",
     "https://*.googlevideo.com/*",
-    "https://www.google.com/*",
     "https://i.ytimg.com/vi_webp/*"
   ],
   "content_security_policy": "script-src 'self' 'unsafe-eval' blob:; object-src 'self'"
