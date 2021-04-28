@@ -141,7 +141,6 @@ type MediaItem = {
   lastModified: number
   contentLength: string
   averageBitrate: number
-  approximateDurationMs: string
   approxDurationMs: string
 }
 

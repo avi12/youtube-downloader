@@ -1,6 +1,6 @@
 import { getVideoId } from "./yt-downloader-utils";
 import { gSelButtonDownload } from "./yt-downloader-content-script-ui";
-import type { PlayerResponse } from "./types";
+import type { VideoData } from "./types";
 
 const isEventRegistered: { [event: string]: boolean } = {};
 
@@ -19,15 +19,12 @@ export function registerMouseEventListeners() {
         case "download-video-simple":
           downloadSendToBackground({
             id: getVideoId(location.href),
-            quality: Number(
+            qualityChosen: Number(
               elButtonDownload.getAttribute(
                 "data-yt-downloader-current-quality"
               )
             ),
-            playerResponse: JSON.parse(
-              document.documentElement.dataset.playerResponse
-            ),
-            ytcfg: JSON.parse(document.documentElement.dataset.ytcfg)
+            videoDataRaw: window.videoDataRaw as VideoData
           });
           break;
       }
@@ -37,9 +34,8 @@ export function registerMouseEventListeners() {
 
 function downloadSendToBackground(params: {
   id: string;
-  quality: number;
-  playerResponse: PlayerResponse;
-  ytcfg?: { STS: number; PLAYER_JS_URL: string };
+  qualityChosen: number;
+  videoDataRaw: VideoData;
 }) {
   const portDownload = chrome.runtime.connect({
     name: "download-video-simple"

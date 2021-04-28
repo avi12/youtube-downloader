@@ -1,27 +1,18 @@
 import { getElementByObserver } from "./yt-downloader-utils";
 import { getQuality } from "./yt-downloader-retrieve-player-metadata";
 import { getIsVideoDownloadable } from "./yt-downloader-verify-downloadablility";
-import {gSelButtonDownload, makeUI} from "./yt-downloader-content-script-ui";
+import { gSelButtonDownload, makeUI } from "./yt-downloader-content-script-ui";
+import type { PlayerResponse, VideoData } from "./types";
 
 export const gObserverOptions = { childList: true, subtree: true };
 const gIdScript = "yt-downloader-script-to-inject";
 
-export async function getScript(scriptName: string): Promise<string> {
-  const port = chrome.runtime.connect({ name: "retrieve-script" });
-  port.postMessage(scriptName);
-  return new Promise(resolve => port.onMessage.addListener(resolve));
-}
-
-function injectScript(content: string) {
-  const elScript = document.createElement("script");
-  elScript.textContent = content;
-  elScript.id = gIdScript;
-  document.head.append(elScript);
-}
-
 function storeCurrentQuality() {
   const elDownloader = document.querySelector(`[${gSelButtonDownload}]`);
-  elDownloader.setAttribute("data-yt-downloader-current-quality", getQuality());
+  elDownloader.setAttribute(
+    "data-yt-downloader-current-qualityChosen",
+    getQuality()
+  );
 }
 
 getElementByObserver("title").then(elTitle => {
@@ -29,25 +20,30 @@ getElementByObserver("title").then(elTitle => {
     const elVideo = document.querySelector("video");
     elVideo.removeEventListener("canplay", storeCurrentQuality);
     elVideo.addEventListener("canplay", storeCurrentQuality);
+    window.videoDataRaw = null;
   }).observe(elTitle, gObserverOptions);
 });
 
-let gScriptToInject;
-new MutationObserver(async (_, observer) => {
-  if (!gScriptToInject) {
-    gScriptToInject = await getScript("yt-downloader-script-to-inject");
+declare global {
+  interface Window {
+    videoDataRaw: VideoData | boolean | null;
   }
-  injectScript(gScriptToInject);
+}
 
-  if (!getIsVideoDownloadable(location.href)) {
+window.videoDataRaw = null;
+new MutationObserver(async (_, observer) => {
+  if (window.videoDataRaw === null) {
+    window.videoDataRaw = await getIsVideoDownloadable(location.href);
+  }
+  if (!window.videoDataRaw) {
     return;
   }
 
   const elButtonBeforeRating = document.querySelector(
     "#top-level-buttons > ytd-button-renderer"
   );
-  const elScriptInjected = document.getElementById(gIdScript);
-  if (!elButtonBeforeRating || !elScriptInjected) {
+
+  if (!elButtonBeforeRating) {
     return;
   }
 

@@ -1,33 +1,39 @@
 import { getPageState } from "./yt-downloader-content-script-ui";
-import { getElementByObserver, getVideoId } from "./yt-downloader-utils";
+import {
+  getElementByObserver,
+  getVideoInfo,
+  getVideoId
+} from "./yt-downloader-utils";
 import { gObserverOptions } from "./yt-downloader-content-script-initialize";
+import type { VideoData } from "./types";
 
 const isDownloadable: {
   [id: string]: boolean;
 } = {};
 
-export function getIsVideoDownloadable(url: string): boolean {
+export async function getIsVideoDownloadable(
+  url: string
+): Promise<VideoData | boolean> {
   if (getPageState(url) === "regular-video") {
     const id = getVideoId(location.href);
     if (!isDownloadable[id]) {
       isDownloadable[id] = false;
     }
 
-    const adaptiveFormats = JSON.parse(
-      document.documentElement.dataset.adaptiveFormats
-    );
-    const { url: urlAdaptiveFormat, signatureCipher } = adaptiveFormats[0];
-
+    const videoDataRaw = await getVideoInfo(id);
+    // const {
+    //   url: urlAdaptiveFormat,
+    //   signatureCipher
+    // } = videoDataRaw.player_response.streamingData?.adaptiveFormats?.[0];
+    //
     // TODO: "signatureCipher" might not be decipherable to produce video URLs
-    if (urlAdaptiveFormat || signatureCipher) {
-      isDownloadable[id] = true;
-      console.log(
-        `Video ${id} is %cdownloadable`,
-        "color: green; font-weight: bold;"
-      );
-      return true;
-    }
-    return false;
+    // TODO: Handle videos that are only downloadable after deciphering
+    isDownloadable[id] = true;
+    console.log(
+      `Video ${id} is %cdownloadable`,
+      "color: green; font-weight: bold;"
+    );
+    return videoDataRaw;
   }
 }
 

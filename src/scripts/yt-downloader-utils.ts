@@ -1,4 +1,8 @@
-export async function getElementByObserver(selector: string): Promise<HTMLElement> {
+import type { VideoData } from "./types";
+
+export async function getElementByObserver(
+  selector: string
+): Promise<HTMLElement> {
   return new Promise(resolve => {
     const observerHtml = new MutationObserver((_, observer) => {
       const element = document.querySelector(selector);
@@ -55,4 +59,10 @@ export function parseText(query) {
     }
     return parseText(object);
   }
+}
+
+export async function getVideoInfo(id: string): Promise<VideoData> {
+  const port = chrome.runtime.connect({ name: "get-video-info" });
+  port.postMessage(id);
+  return new Promise(resolve => port.onMessage.addListener(resolve));
 }

@@ -19,7 +19,7 @@
     {
       "matches": ["https://www.youtube.com/*"],
       "js": ["build/scripts/yt-downloader-content-script-initialize.js"],
-      "css": ["build/styles-injected/yt-downloader-content-script.css"]
+      "css": ["build/styles-injected/yt-downloader-content-script-styles.css"]
     }
   ],
   "background": {
@@ -43,9 +43,10 @@
   },
   "permissions": [
     "storage",
-    "downloads",
     "https://www.youtube.com/*",
-    "https://*.googlevideo.com/*"
+    "https://*.googlevideo.com/*",
+    "https://www.google.com/*",
+    "https://i.ytimg.com/vi_webp/*"
   ],
   "content_security_policy": "script-src 'self' 'unsafe-eval' blob:; object-src 'self'"
 }

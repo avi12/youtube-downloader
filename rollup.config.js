@@ -54,7 +54,6 @@ function createConfigCss(filename) {
 
 export default [
   createConfig("scripts/yt-downloader-content-script-initialize"),
-  createConfig("scripts/yt-downloader-script-to-inject"),
   createConfig("scripts/background"),
-  createConfigCss("yt-downloader-content-script")
+  createConfigCss("yt-downloader-content-script-styles")
 ];

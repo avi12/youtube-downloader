@@ -2,64 +2,35 @@ import type { AdaptiveFormatItem, PlayerResponse, VideoData } from "./types";
 import { getRemote } from "./background";
 
 export async function getVideoMetadata({
-  id,
-  titleCurrent,
-  adaptiveFormats,
-  ytcfg
+  id
 }: {
   id: string;
-  titleCurrent?: string;
-  adaptiveFormats?: AdaptiveFormatItem[];
-  ytcfg?: {
-    STS: number;
-    PLAYER_JS_URL: string;
-  };
-}): Promise<{ formats: AdaptiveFormatItem[]; title: string }> {
-  const isVideoPage = Boolean(ytcfg);
-  const isDownloadable = Boolean(adaptiveFormats[0]?.url);
-
-  // These if statements are to save on resources,
-  // make faster download(s), as less network requests are made
-  if (isVideoPage) {
-    if (isDownloadable) {
-      return {
-        title: titleCurrent,
-        formats: adaptiveFormats
-      };
-    }
-
-    return {
-      title: titleCurrent,
-      formats: await getAdaptiveFormats({ ytcfg, adaptiveFormats, id })
-    };
-  }
-
-  const player = await getPlayerData({ id, ytcfg });
+}): Promise<PlayerResponse> {
+  const player = await getPlayerData({ id });
   const data = await getVideoData({ id, sts: player.STS });
-  const formats = adaptiveFormats[0].signatureCipher
-    ? decipherFormats(data.streamingData.adaptiveFormats, player.funcDecipher)
-    : adaptiveFormats;
+  const adaptiveFormats = await getAdaptiveFormats({
+    adaptiveFormats: data.streamingData.adaptiveFormats,
+    id
+  });
 
-  const title =
-    titleCurrent || getText(data.microformat.playerMicroformatRenderer.title);
+  data.microformat.playerMicroformatRenderer.title.simpleText = getText(
+    data.microformat.playerMicroformatRenderer.title
+  );
 
-  return {
-    title: title.replace(/\+/g, " "),
-    formats
-  };
+  data.streamingData.adaptiveFormats = adaptiveFormats;
+
+  return data;
 }
 
 // Credit for decipher functions: https://github.com/bakapear/ytdlr/blob/master/ytdlr.js
 async function getAdaptiveFormats({
   adaptiveFormats,
-  ytcfg,
   id
 }: {
-  ytcfg?: { STS: number; PLAYER_JS_URL: string };
   adaptiveFormats: AdaptiveFormatItem[];
   id: string;
 }) {
-  const player = await getPlayerData({ id, ytcfg });
+  const player = await getPlayerData({ id });
 
   if (adaptiveFormats[0].signatureCipher) {
     const data = await getVideoData({ id, sts: player.STS });
@@ -87,23 +58,19 @@ function getStringBetween(
 }
 
 async function getPlayerData({
-  id,
-  ytcfg
+  id
 }: {
   id: string;
-  ytcfg?: { STS: number; PLAYER_JS_URL: string };
-}) {
-  if (!ytcfg) {
-    const html = await getRemote(`https://www.youtube.com/watch?v=${id}`, true);
-    ytcfg = JSON.parse(
-      getStringBetween(
-        html,
-        /window\.ytplayer.*?=.*?{};.*?ytcfg\.set\(/s,
-        "})",
-        1
-      )
-    );
-  }
+}): Promise<{ STS: number; funcDecipher: Function }> {
+  const html = await getRemote(`https://www.youtube.com/watch?v=${id}`, true);
+  const ytcfg = JSON.parse(
+    getStringBetween(
+      html,
+      /window\.ytplayer.*?=.*?{};.*?ytcfg\.set\(/s,
+      "})",
+      1
+    )
+  );
   const player = await getRemote(
     `https://www.youtube.com${ytcfg.PLAYER_JS_URL}`,
     true
@@ -114,7 +81,7 @@ async function getPlayerData({
   };
 }
 
-function getCipherFunction(string: string) {
+function getCipherFunction(string: string): Function {
   const keys = ['a=a.split("")', "};", "var ", "(", "="];
   const js = getStringBetween(string, `${keys[0]};${keys[2]}`);
   const top = getStringBetween(js, keys[0], keys[1], 1, -28);
