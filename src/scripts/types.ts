@@ -1,7 +1,9 @@
 type Thumbnail = {
-  url: string;
-  width: number;
-  height: number;
+  thumbnails: {
+    url: string;
+    width: number;
+    height: number;
+  }[];
 };
 
 type Card = {
@@ -19,9 +21,7 @@ type Card = {
   };
   content: {
     videoInfoCardContentRenderer: {
-      videoThumbnail: {
-        thumbnails: Thumbnail[];
-      };
+      videoThumbnail: Thumbnail;
     };
     lengthString: {
       accessibility: {
@@ -75,9 +75,7 @@ type Card = {
 type EndScreenElement = {
   endscreenElementRenderer: {
     style: string;
-    image: {
-      thumbnails: Thumbnail[];
-    };
+    image: Thumbnail;
     videoDuration: {
       accessibility: {
         accessibilityData: {
@@ -126,57 +124,73 @@ type EndScreenElement = {
 };
 
 type MediaItem = {
-  itag: number
-  url: string
-  mimeType: string
-  bitrate: number
+  itag: number;
+  url: string;
+  mimeType: string;
+  bitrate: number;
   initRange: {
-    start: "0"
-    end: string
-  }
+    start: "0";
+    end: string;
+  };
   indexRange: {
-    start: string
-    end: string
-  }
-  lastModified: number
-  contentLength: string
-  averageBitrate: number
-  approxDurationMs: string
-}
+    start: string;
+    end: string;
+  };
+  lastModified: number;
+  contentLength: string;
+  averageBitrate: number;
+  approxDurationMs: string;
+};
 
 type FormatItem = MediaItem & {
-  width: number
-  height: number
-  quality: "tiny" | "medium" | "hd720"
-  fps: 30
-  qualityLabel: "144p" | "360p" | "480p" | "720p"
-  audioQuality: "AUDIO_QUALITY_LOW" | "AUDIO_QUALITY_MEDIUM"
-  approximateDurationMs: string
-  projectionType: string
-  audioSampleRate: string
-  audioChannels: number
-}
+  width: number;
+  height: number;
+  quality: "tiny" | "medium" | "hd720";
+  fps: 30;
+  qualityLabel: "144p" | "360p" | "480p" | "720p";
+  audioQuality: "AUDIO_QUALITY_LOW" | "AUDIO_QUALITY_MEDIUM";
+  approximateDurationMs: string;
+  projectionType: string;
+  audioSampleRate: string;
+  audioChannels: number;
+};
 
 export type AdaptiveFormatItem = MediaItem & {
-  width?: number
-  height?: number
-  quality: "tiny" | "medium" | "large" | "hd720" | "hd1080" | "hd1440" | "hd2160" | "hd4320"
-  fps?: 30 | 48 | 50 | 60
-  qualityLabel?: "144p" | "360p" | "480p" | "720p" | "1080p" | "1440p" | "2160p" | "4320p"
-  averageBitrate: number
-  audioQuality?: "AUDIO_QUALITY_LOW" | "AUDIO_QUALITY_MEDIUM"
+  width?: number;
+  height?: number;
+  quality:
+    | "tiny"
+    | "medium"
+    | "large"
+    | "hd720"
+    | "hd1080"
+    | "hd1440"
+    | "hd2160"
+    | "hd4320";
+  fps?: 30 | 48 | 50 | 60;
+  qualityLabel?:
+    | "144p"
+    | "360p"
+    | "480p"
+    | "720p"
+    | "1080p"
+    | "1440p"
+    | "2160p"
+    | "4320p";
+  averageBitrate: number;
+  audioQuality?: "AUDIO_QUALITY_LOW" | "AUDIO_QUALITY_MEDIUM";
   colorInfo?: {
-    primaries: string
-    transferCharacteristics: string
-    matrixCoefficients: string
-  }
-  signatureCipher?: string
-  projectionType?: string
-  highReplication?: boolean
-  audioSampleRate?: string
-  loudnessDb?: number
-  audioChannels?: number
-}
+    primaries: string;
+    transferCharacteristics: string;
+    matrixCoefficients: string;
+  };
+  signatureCipher?: string;
+  projectionType?: string;
+  highReplication?: boolean;
+  audioSampleRate?: string;
+  loudnessDb?: number;
+  audioChannels?: number;
+};
 
 export type PlayerResponse = {
   responseContext: {
@@ -233,6 +247,14 @@ export type PlayerResponse = {
       hasDecorated: boolean;
     };
   };
+  storyboards: {
+    playerStoryboardSpecRenderer?: {
+      spec: string;
+    };
+    playerLiveStoryboardRenderer?: {
+      spec: string;
+    };
+  };
   playabilityStatus: {
     status: "OK" | "UNPLAYABLE";
     reason?: "Video unavailable";
@@ -264,18 +286,21 @@ export type PlayerResponse = {
           };
           trackingParams: string;
         };
-        thumbnail: {
-          thumbnails: Thumbnail[];
-        }
+        thumbnail: Thumbnail;
       };
-      thumbnail: {
-        thumbnails: Thumbnail[];
-      };
+      thumbnail: Thumbnail;
       icon: {
         iconType: "ERROR_OUTLINE";
       };
     };
     contextParams: string;
+    liveStremability?: {
+      liveStreamabilityRenderer: {
+        broadcastId: string;
+        pollDelayMs: string;
+        videoId: string;
+      };
+    };
   };
   videoDetails: {
     videoId: string;
@@ -286,22 +311,20 @@ export type PlayerResponse = {
     isOwnerViewing: boolean;
     shortDescription: string;
     isCrawlable: boolean;
-    thumbnail: {
-      thumbnails: Thumbnail[]
-    };
+    thumbnail: Thumbnail;
     averageRating: number;
     allowRatings: boolean;
     viewCount: string;
     author: string;
     isPrivate: boolean;
     isUnpluggedCorpus: boolean;
-    isLiveContent: boolean;
+    isLiveContent?: boolean;
+    isLive?: boolean;
+    isLiveDvrEnabled?: boolean;
   };
   microformat: {
     playerMicroformatRenderer: {
-      thumbnail: {
-        thumbnails: Thumbnail[];
-      };
+      thumbnail: Thumbnail;
       embed: {
         iframeUrl: string;
         flashUrl: string;
@@ -322,7 +345,22 @@ export type PlayerResponse = {
       isUnlisted: boolean;
       hasYpcMetadata: boolean;
       viewCount: string;
-      category: "Film & Animation" | "Autos & Vehicles" | "Music" | "Pets & Animals" | "Sports" | "Travel & Events" | "Gaming" | "People & Blogs" | "Comedy" | "Entertainment" | "News & Politics" | "Howto & Style" | "Education" | "Science & Technology" | "Nonprofits & Activism";
+      category:
+        | "Film & Animation"
+        | "Autos & Vehicles"
+        | "Music"
+        | "Pets & Animals"
+        | "Sports"
+        | "Travel & Events"
+        | "Gaming"
+        | "People & Blogs"
+        | "Comedy"
+        | "Entertainment"
+        | "News & Politics"
+        | "Howto & Style"
+        | "Education"
+        | "Science & Technology"
+        | "Nonprofits & Activism";
       publishDate: string;
       ownerChannelName: string;
       uploadData: string;
@@ -365,11 +403,11 @@ export type PlayerResponse = {
       trackingParams: string;
     };
   };
-  streamingData?: {
-    expiresInSeconds: string,
-    formats: FormatItem[],
-    adaptiveFormats: AdaptiveFormatItem[]
-  }
+  streamingData: {
+    expiresInSeconds: string;
+    formats: FormatItem[];
+    adaptiveFormats: AdaptiveFormatItem[];
+  };
 };
 
 export interface VideoData {
@@ -772,5 +810,7 @@ export interface VideoData {
     kevlar_queue_use_update_api: boolean;
     web_player_variant_noop: boolean;
   };
-  status: string;
+  errorcode?: number;
+  reason?: string;
+  status: "ok" | "fail";
 }
