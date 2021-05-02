@@ -44,11 +44,16 @@
 }
 
 /* Styling simple download button (appears right before the rating buttons) */
+[data-yt-downloader-action] {
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+}
+
 [data-yt-downloader-action="download-video-simple"] {
   margin: 0 8px 0 15px;
   display: flex;
   align-items: center;
-  position: relative;
 
   & > .ytd-button-renderer {
     transform: translateY(-2px);
@@ -112,9 +117,8 @@
 
 /* Handling undownloadable videos */
 [data-yt-downloader-undownloadable][data-yt-downloader-tooltip] {
-  --yt-downloader-icon-color: hsl(0, 50%, 50%);
+  --yt-downloader-icon-color: hsl(0, 0%, 69%);
   --yt-spec-text-secondary: var(--yt-downloader-icon-color);
-
   cursor: not-allowed;
 
   &::before {
