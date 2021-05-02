@@ -48,7 +48,7 @@ async function downloadItem(
 ) {
   if (!(await getStorage("local", "isFFmpegReady"))) {
     chrome.storage.onChanged.addListener(changes => {
-      if (changes?.isFFmpegReady.newValue) {
+      if (changes?.isFFmpegReady?.newValue) {
         // @ts-ignore
         downloadItem(...arguments);
       }
