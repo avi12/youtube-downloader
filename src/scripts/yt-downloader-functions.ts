@@ -1,23 +1,23 @@
-import type { AdaptiveFormatItem, PlayerResponse, VideoData } from "./types";
+import type { AdaptiveFormatItem, VideoData } from "./types";
 import { getRemote } from "./background";
 
 export async function getVideoMetadata({
   id
 }: {
   id: string;
-}): Promise<PlayerResponse> {
+}): Promise<VideoData> {
   const player = await getPlayerData({ id });
   const data = await getVideoData({ id, sts: player.STS });
   const adaptiveFormats = await getAdaptiveFormats({
-    adaptiveFormats: data.streamingData.adaptiveFormats,
+    adaptiveFormats: data.player_response.streamingData.adaptiveFormats,
     id
   });
 
-  data.microformat.playerMicroformatRenderer.title.simpleText = getText(
-    data.microformat.playerMicroformatRenderer.title
-  );
+  const { title } = data.player_response.microformat.playerMicroformatRenderer;
 
-  data.streamingData.adaptiveFormats = adaptiveFormats;
+  title.simpleText = getText(title);
+
+  data.player_response.streamingData.adaptiveFormats = adaptiveFormats;
 
   return data;
 }
@@ -34,7 +34,7 @@ async function getAdaptiveFormats({
 
   if (adaptiveFormats[0].signatureCipher) {
     const data = await getVideoData({ id, sts: player.STS });
-    adaptiveFormats = data.streamingData.adaptiveFormats;
+    adaptiveFormats = data.player_response.streamingData.adaptiveFormats;
   }
   return decipherFormats(adaptiveFormats, player.funcDecipher);
 }
@@ -82,14 +82,13 @@ async function getPlayerData({
 }
 
 function getCipherFunction(string: string): Function {
-  const keys = ['a=a.split("")', "};", "var ", "(", "="];
-  const js = getStringBetween(string, `${keys[0]};${keys[2]}`);
-  const top = getStringBetween(js, keys[0], keys[1], 1, -28);
+  const js = getStringBetween(string, `a=a.split("");var `);
+  const top = getStringBetween(js, 'a=a.split("")', "};", 1, -28);
   const fn =
-    keys[2] +
-    getStringBetween(top, keys[0], keys[3], 10, 1).split(".")[0] +
-    keys[4];
-  const side = getStringBetween(js, fn, keys[1], 2, -fn.length);
+    "var " +
+    getStringBetween(top, 'a=a.split("")', "(", 10, 1).split(".")[0] +
+    "=";
+  const side = getStringBetween(js, fn, "};", 2, -fn.length);
   return eval(side + top);
 }
 
@@ -99,7 +98,7 @@ async function getVideoData({
 }: {
   id: string;
   sts: number;
-}): Promise<PlayerResponse> {
+}): Promise<VideoData> {
   const url = new URL("https://www.youtube.com/get_video_info");
   const params = {
     video_id: id,
@@ -113,10 +112,7 @@ async function getVideoData({
 
   // @ts-ignore
   const searchParams = new URLSearchParams(Object.entries(params));
-  const { player_response } = (await getRemote(
-    `${url}?${searchParams}`
-  )) as VideoData;
-  return player_response;
+  return getRemote(`${url}?${searchParams}`);
 }
 
 function decipherFormats(

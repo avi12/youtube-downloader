@@ -1,7 +1,118 @@
-/*noinspection CssInvalidHtmlTagReference*/
-ytd-button-renderer[data-yt-downloader-action="download-video-simple"] {
-  cursor: pointer;
-  margin-left: 8px;
+/* YouTube-like tooltip */
+
+:root {
+  --yt-downloader-icon-color: rgb(144, 144, 144);
+}
+
+[data-yt-downloader-tooltip] {
+  position: relative;
+}
+
+[data-yt-downloader-tooltip]::before {
+  pointer-events: none;
+  position: absolute;
+  content: attr(data-yt-downloader-tooltip);
+  opacity: 0;
+  transition: opacity 0.15s;
+  /*noinspection CssUnresolvedCustomProperty*/
+  background-color: var(--paper-tooltip-background, rgb(97, 97, 97));
+  /*noinspection CssUnresolvedCustomProperty*/
+  color: var(--paper-tooltip-text-color, white);
+  /*noinspection CssUnresolvedCustomProperty*/
+  margin: var(--paper-tooltip_-_margin);
+  /*noinspection CssUnresolvedCustomProperty*/
+  font-size: var(--paper-tooltip_-_font-size, 10px);
+  /*noinspection CssUnresolvedCustomProperty*/
+  font-weight: var(--paper-tooltip_-_font-weight);
+  /*noinspection CssUnresolvedCustomProperty*/
+  -webkit-font-smoothing: var(
+    --paper-font-common-base_-_-webkit-font-smoothing
+  );
+  /*noinspection CssUnresolvedCustomProperty*/
+  font-family: var(--paper-font-common-base_-_font-family);
+  padding: 8px;
+  border-radius: 2px;
+  width: max-content;
+  left: 50%;
+  transform: translate(-50%, 160%);
+}
+
+[data-yt-downloader-tooltip]:not([data-yt-downloader-tooltip=""]):hover::before {
+  opacity: 0.9;
+}
+
+/* Styling simple download button (appears right before the rating buttons) */
+[data-yt-downloader-action="download-video-simple"] {
+  margin: 0 8px 0 15px;
   display: flex;
   align-items: center;
+  position: relative;
+}
+
+[data-yt-downloader-action="download-video-simple"] > .ytd-button-renderer {
+  transform: translateY(-2px);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+[data-yt-downloader-action="download-video-simple"]:not([data-yt-downloader-category="Music"])::before {
+  content: "Download in " attr(data-yt-downloader-current-quality)
+    attr(data-yt-downloader-projection-mode);
+}
+[data-yt-downloader-action="download-video-simple"][data-yt-downloader-category="Music"]::before {
+  content: "Download as " attr(data-yt-downloader-music-ext);
+}
+
+/* Handling progress bar below the Download button */
+.yt-downloader-progress {
+  position: absolute;
+  bottom: -6px;
+  height: 8px;
+  opacity: 0;
+  transition: opacity 0.5s;
+}
+
+[data-yt-downloader-tooltip="{data-value}"]::before {
+  transform: translate(-50%, 50%);
+  content: attr(value) "%";
+}
+
+/* It will only appear when an FFmpeg job has been initiated */
+.yt-downloader-progress:not([value="0"]) {
+  opacity: 1;
+}
+
+/* Download icon handling */
+.yt-downloader-icon svg {
+  fill: var(--yt-downloader-icon-color);
+}
+
+/* Download label handling */
+.yt-downloader-text {
+  text-transform: uppercase;
+  /*noinspection CssUnresolvedCustomProperty*/
+  font-size: var(--ytd-tab-system_-_font-size);
+  /*noinspection CssUnresolvedCustomProperty*/
+  font-weight: var(--ytd-tab-system_-_font-weight);
+  /*noinspection CssUnresolvedCustomProperty*/
+  letter-spacing: var(--ytd-tab-system_-_letter-spacing);
+}
+
+.yt-downloader-color {
+  /*noinspection CssUnresolvedCustomProperty*/
+  color: var(--yt-spec-text-secondary);
+}
+
+/* Handling undownloadable videos */
+[data-yt-downloader-undownloadable][data-yt-downloader-tooltip] {
+  --yt-downloader-icon-color: hsl(0, 50%, 50%);
+  --yt-spec-text-secondary: var(--yt-downloader-icon-color);
+  cursor: not-allowed;
+}
+[data-yt-downloader-undownloadable][data-yt-downloader-tooltip]::before{
+  content: attr(data-yt-downloader-tooltip);
+}
+[data-yt-downloader-undownloadable][data-yt-downloader-tooltip] a {
+  cursor: not-allowed;
 }

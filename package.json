@@ -15,7 +15,7 @@
   "scripts": {
     "dev": "rollup -c -w",
     "build": "rollup -c",
-    "run-browser": "web-ext run --no-config-discovery --start-url https://www.youtube.com/watch?v=dQw4w9WgXcQ --source-dir dist --verbose --target",
+    "run-browser": "web-ext run --no-config-discovery --start-url https://www.youtube.com/watch?v=aiSla-5xq3w --source-dir dist --verbose --target",
     "run-chromium": "pnpm run-browser chromium"
   },
   "devDependencies": {
@@ -26,6 +26,7 @@
     "@tsconfig/svelte": "^1.0.10",
     "@types/chrome": "0.0.135",
     "@types/file-saver": "^2.0.2",
+    "node-sass": "^5.0.0",
     "nodemon": "^2.0.7",
     "prettier": "^2.2.1",
     "prettier-plugin-svelte": "^2.2.0",
@@ -33,6 +34,8 @@
     "rollup-plugin-postcss": "^4.0.0",
     "rollup-plugin-svelte": "^7.1.0",
     "rollup-plugin-terser": "^7.0.2",
+    "sass": "^1.32.12",
+    "sass-lint": "^1.13.1",
     "svelte": "^3.37.0",
     "svelte-check": "^1.5.1",
     "svelte-materialify": "^0.3.10",

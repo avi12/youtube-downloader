@@ -1,12 +1,23 @@
 import { createFFmpeg } from "@ffmpeg/ffmpeg";
-import type { AdaptiveFormatItem, VideoData } from "./types";
-import { parseText } from "./yt-downloader-utils";
+import type { AdaptiveFormatItem } from "./types";
+import { getStorage, parseText, setStorage } from "./yt-downloader-utils";
 import { getVideoMetadata } from "./yt-downloader-functions";
 import { downloadTrack } from "./download-options/audio-simple";
 import { saveAs } from "file-saver";
 import { getVideoAudio } from "./download-options/video-simple";
 
 export const ffmpeg = createFFmpeg({ log: true });
+
+async function init() {
+  await setStorage("local", "isFFmpegReady", false);
+  if (!ffmpeg.isLoaded()) {
+    await ffmpeg.load();
+    chrome.storage.local.set({ isFFmpegReady: true });
+    console.log("FFmpeg is ready");
+  }
+}
+
+init();
 
 chrome.runtime.onConnect.addListener(port => {
   switch (port.name) {
@@ -19,9 +30,7 @@ chrome.runtime.onConnect.addListener(port => {
 
     case "get-video-info":
       port.onMessage.addListener(async id => {
-        const url = `https://www.youtube.com/get_video_info?video_id=${id}`;
-        const response = await fetch(url);
-        port.postMessage(parseText(await response.text()));
+        port.postMessage(await getVideoMetadata({ id }));
       });
       break;
   }
@@ -35,14 +44,20 @@ async function downloadItem(
   }: {
     id: string;
     qualityChosen: number;
-    videoData: VideoData;
   }
 ) {
-  if (!ffmpeg.isLoaded()) {
-    await ffmpeg.load();
+  if (!(await getStorage("local", "isFFmpegReady"))) {
+    chrome.storage.onChanged.addListener(changes => {
+      if (changes?.isFFmpegReady.newValue) {
+        // @ts-ignore
+        downloadItem(...arguments);
+      }
+    });
+    return;
   }
-  ffmpeg.setProgress(({ ratio }) => port.postMessage(ratio * 100));
-  const playerResponse = await getVideoMetadata({ id });
+
+  ffmpeg.setProgress(({ ratio }) => port.postMessage(Math.round(ratio * 100)));
+  const { player_response: playerResponse } = await getVideoMetadata({ id });
 
   const {
     streamingData: { adaptiveFormats },
@@ -54,20 +69,30 @@ async function downloadItem(
 
   const audio = getMediaUrl({
     mediaType: "audio",
-    adaptiveFormats,
-    quality: qualityChosen
+    adaptiveFormats
   }) as AdaptiveFormatItem;
   if (category === "Music") {
     await downloadTrack({ id, playerResponse, audio, title });
     return;
   }
 
-  const { blobDownload, filenameOutput } = await getVideoAudio({
-    playerResponse,
-    audio,
-    id,
-    qualityChosen
+  const promise = new CancellablePromise();
+
+  const promiseAudioVideo = promise.wrap(
+    getVideoAudio({
+      playerResponse,
+      audio,
+      id,
+      qualityChosen
+    })
+  );
+
+  port.onDisconnect.addListener(() => {
+    promise.abort();
   });
+
+  const { blobDownload, filenameOutput } = await promiseAudioVideo;
+  console.log("%cAfter await promiseAudioVideo", "color: red");
   saveAs(blobDownload, filenameOutput);
 }
 
@@ -112,4 +137,27 @@ export function getMediaUrl({
   );
   const audiosSorted = audios.sort((a, b) => b.bitrate - a.bitrate);
   return audiosSorted[0];
+}
+
+class CancellablePromise {
+  private readonly symbolAbort = Symbol("cancelled");
+  private readonly promiseAbort: Promise<any>;
+  private resolve!: Function; // Works due to promise init
+
+  constructor() {
+    this.promiseAbort = new Promise(resolve => (this.resolve = resolve));
+  }
+
+  public async wrap<T>(promise: PromiseLike<T>): Promise<T> {
+    const result = await Promise.race([promise, this.promiseAbort]);
+    if (result === this.symbolAbort) {
+      throw new Error("Aborting FFmpeg");
+    }
+
+    return result;
+  }
+
+  public abort() {
+    this.resolve(this.symbolAbort);
+  }
 }

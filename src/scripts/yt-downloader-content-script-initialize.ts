@@ -1,53 +1,93 @@
-import { getElementByObserver } from "./yt-downloader-utils";
+import {
+  getElementByObserver,
+  getStorage,
+  getVideoId,
+  getVideoInfo
+} from "./yt-downloader-utils";
 import { getQuality } from "./yt-downloader-retrieve-player-metadata";
-import { getIsVideoDownloadable } from "./yt-downloader-verify-downloadablility";
-import { gSelButtonDownload, makeUI } from "./yt-downloader-content-script-ui";
-import type { PlayerResponse, VideoData } from "./types";
+import {
+  getPageState,
+  gSelButtonDownload,
+  makeUI
+} from "./yt-downloader-content-script-ui";
+import type { VideoData } from "./types";
 
 export const gObserverOptions = { childList: true, subtree: true };
-const gIdScript = "yt-downloader-script-to-inject";
 
-function storeCurrentQuality() {
-  const elDownloader = document.querySelector(`[${gSelButtonDownload}]`);
-  elDownloader.setAttribute(
-    "data-yt-downloader-current-qualityChosen",
-    getQuality()
-  );
+export async function storeCurrentQuality() {
+  const elDownloader = document.querySelector(
+    `[${gSelButtonDownload}]`
+  ) as HTMLElement;
+  elDownloader.dataset.ytDownloaderCurrentQuality = getQuality();
+
+  if (!window.videoDataRaw) {
+    window.videoDataRaw = await getVideoMetadata(location.href);
+  }
+
+  const { microformat, streamingData } = window.videoDataRaw.player_response;
+
+  elDownloader.dataset.ytDownloaderProjectionMode = streamingData.adaptiveFormats[0].qualityLabel.match(
+    /\D/
+  )[0];
+  elDownloader.dataset.ytDownloaderCategory =
+    microformat.playerMicroformatRenderer.category;
+  elDownloader.dataset.ytDownloaderTooltip = elDownloader.dataset.ytDownloaderTooltip || "true";
+
+  const extMusic = "mp3";
+  elDownloader.dataset.ytDownloaderMusicExt = extMusic.toUpperCase() || "MP3";
+}
+
+async function getVideoMetadata(url: string): Promise<VideoData> {
+  if (getPageState(url) === "regular-video") {
+    const id = getVideoId(location.href);
+    return getVideoInfo(id);
+  }
+  // @ts-ignore
+  return { status: "fail" };
 }
 
 getElementByObserver("title").then(elTitle => {
   new MutationObserver(() => {
-    const elVideo = document.querySelector("video");
-    elVideo.removeEventListener("canplay", storeCurrentQuality);
-    elVideo.addEventListener("canplay", storeCurrentQuality);
     window.videoDataRaw = null;
+    init();
   }).observe(elTitle, gObserverOptions);
 });
 
 declare global {
   interface Window {
-    videoDataRaw: VideoData | boolean | null;
+    videoDataRaw: VideoData;
   }
 }
 
 window.videoDataRaw = null;
-new MutationObserver(async (_, observer) => {
-  if (window.videoDataRaw === null) {
-    window.videoDataRaw = await getIsVideoDownloadable(location.href);
-  }
+
+async function init() {
   if (!window.videoDataRaw) {
+    window.videoDataRaw = await getVideoMetadata(location.href);
+  }
+
+  if (window.videoDataRaw.status === "fail") {
+    await makeUI("Cannot download video");
     return;
   }
 
-  const elButtonBeforeRating = document.querySelector(
-    "#top-level-buttons > ytd-button-renderer"
-  );
-
-  if (!elButtonBeforeRating) {
+  const { isLive } = window.videoDataRaw.player_response.videoDetails;
+  if (isLive) {
+    await makeUI("Cannot download a live stream");
     return;
   }
 
-  makeUI();
-  storeCurrentQuality();
-  observer.disconnect();
-}).observe(document.body, gObserverOptions);
+  const isFFmpegReady = await getStorage("local", "isFFmpegReady");
+  if (!isFFmpegReady) {
+    chrome.storage.onChanged.addListener(changes => {
+      if (changes?.isFFmpegReady.newValue) {
+        init();
+      }
+    });
+    return;
+  }
+
+  await makeUI();
+  await storeCurrentQuality();
+}
+init();

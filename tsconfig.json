@@ -6,6 +6,7 @@
     "isolatedModules": false,
     "target": "ESNext",
     "typeRoots": ["node_modules/@types"],
-    "types": ["svelte", "chrome"]
+    "types": ["svelte", "chrome"],
+    "sourceMap": true
   }
 }

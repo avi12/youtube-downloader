@@ -1,5 +1,26 @@
 import type { VideoData } from "./types";
 
+export async function setStorage(
+  storageArea: string,
+  key: string,
+  value: any
+): Promise<void> {
+  return new Promise(resolve =>
+    chrome.storage[storageArea].set({ [key]: value }, resolve)
+  );
+}
+
+export async function getStorage(
+  storageArea: string,
+  key?: string
+): Promise<any> {
+  return new Promise(resolve =>
+    chrome.storage[storageArea].get(key, result =>
+      resolve(key ? result[key] : result)
+    )
+  );
+}
+
 export async function getElementByObserver(
   selector: string
 ): Promise<HTMLElement> {
@@ -16,6 +37,12 @@ export async function getElementByObserver(
       subtree: true
     });
   });
+}
+
+export async function getElementEventually(selector): Promise<HTMLElement> {
+  return (
+    document.querySelector(selector) ?? (await getElementByObserver(selector))
+  );
 }
 
 export function getVideoId(url: string): string {
