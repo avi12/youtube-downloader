@@ -19,7 +19,7 @@
     {
       "matches": ["https://www.youtube.com/*"],
       "js": ["build/scripts/yt-downloader-content-script-initialize.js"],
-      "css": ["build/styles-injected/yt-downloader-content-script-styles.css"]
+      "css": ["build/styles-injected/yt-downloader-content-script-styles.min.css"]
     }
   ],
   "background": {
