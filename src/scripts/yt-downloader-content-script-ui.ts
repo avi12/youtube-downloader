@@ -26,15 +26,20 @@ export function getPageState(
 }
 
 const gIconSvgDownload = `
-<svg width="14" height="18" viewBox="0 0 14 18" xmlns="http://www.w3.org/2000/svg">
-<path d="M14 6.04166H10V0.0416641H4V6.04166H0L7 13.0417L14 6.04166ZM0 15.0417V17.0417H14V15.0417H0Z" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <path d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z"/>
+</svg>
+`;
+const gIconSvgNoDownload = `
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <path d="M9 6.17V3h6v6h4l-3.59 3.59L9 6.17zm12.19 15.02L2.81 2.81 1.39 4.22 6.17 9H5l7 7 .59-.59L15.17 18H5v2h12.17l2.61 2.61 1.41-1.42z"/>
 </svg>
 `;
 
-const gHtmlButtonContent = `
+const gHtmlButtonContent = isDownloadable => `
   <a class="yt-simple-endpoint ytd-button-renderer" tabindex="-1">
       <button id="button" class="style-scope yt-icon-button yt-downloader-icon">
-        ${gIconSvgDownload}
+        ${isDownloadable ? gIconSvgDownload : gIconSvgNoDownload}
       </button>
     <div class="yt-downloader-color yt-downloader-text">Download</div>
   </a>
@@ -42,11 +47,12 @@ const gHtmlButtonContent = `
 `;
 
 function getButtonDownload(reasonUndownloadable?: string): HTMLElement {
-  const elButton = document.createElement("div");
+  const elButton = document.createElement("button");
   elButton.setAttribute(gSelButtonDownload, "download-video-simple");
   elButton.dataset.ytDownloaderTooltip = "true";
-  elButton.innerHTML = gHtmlButtonContent;
+  elButton.innerHTML = gHtmlButtonContent(!reasonUndownloadable);
   if (reasonUndownloadable) {
+    elButton.style.transform = "translateY(2px)";
     elButton.dataset.ytDownloaderTooltip = reasonUndownloadable;
     elButton.dataset.ytDownloaderUndownloadable = "true";
   }
@@ -61,7 +67,10 @@ export async function makeUI(reasonUndownloadable?: string) {
       "#top-level-buttons > ytd-button-renderer"
     );
 
-    if (!elButtonBeforeRating || document.querySelector(`[${gSelButtonDownload}]`)) {
+    if (
+      !elButtonBeforeRating ||
+      document.querySelector(`[${gSelButtonDownload}]`)
+    ) {
       return;
     }
 
@@ -70,7 +79,7 @@ export async function makeUI(reasonUndownloadable?: string) {
       elButtonBeforeRating
     );
 
-    const elVideo = await getElementEventually("video") as HTMLVideoElement;
+    const elVideo = (await getElementEventually("video")) as HTMLVideoElement;
     elVideo.addEventListener("canplay", storeCurrentQuality);
     return;
   }
