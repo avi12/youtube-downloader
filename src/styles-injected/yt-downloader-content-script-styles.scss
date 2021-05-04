@@ -2,6 +2,7 @@
 
 :root {
   --yt-downloader-icon-color: rgb(144, 144, 144);
+  --yt-tooltip-visible: var(--yt-tooltip-visible);
 }
 
 [data-yt-downloader-tooltip] {
@@ -38,8 +39,8 @@
     transform: translate(-50%, 160%);
   }
 
-  &:not([data-yt-downloader-tooltip=""]):hover::before {
-    opacity: 0.9;
+  &:hover::before {
+    opacity: var(--yt-tooltip-visible);
   }
 }
 
@@ -54,20 +55,21 @@
   margin: 0 8px 0 15px;
   display: flex;
   align-items: center;
+  position: relative;
 
-  & > .ytd-button-renderer {
+  .ytd-button-renderer {
     transform: translateY(-2px);
     display: flex;
     align-items: center;
     gap: 10px;
   }
 
-  &:not([data-yt-downloader-category="Music"])::before {
+  :not([data-yt-downloader-category="Music"])[data-yt-downloader-tooltip]::before {
     content: "Download in " attr(data-yt-downloader-current-quality)
       attr(data-yt-downloader-projection-mode);
   }
 
-  &[data-yt-downloader-category="Music"]::before {
+  [data-yt-downloader-category="Music"][data-yt-downloader-tooltip]::before {
     content: "Download as " attr(data-yt-downloader-music-ext);
   }
 }
@@ -79,16 +81,23 @@
   height: 8px;
   opacity: 0;
   transition: opacity 0.5s;
+  //noinspection CssInvalidPropertyValue
+  max-width: -webkit-fill-available;
 
-  /* It will only appear when an FFmpeg job has been initiated */
-  &:not([value="0"]) {
-    opacity: 1;
+  /* It will appear once the downloaded button was clicked */
+  &[data-yt-downloader-in-progress] {
+    opacity: var(--yt-tooltip-visible);
+
+    &:not([value])::before {
+      opacity: 0;
+    }
+
+    /* and the progress will change according to the FFmpeg job */
+    &[data-yt-downloader-tooltip="{data-value}"]::before {
+      transform: translate(-50%, 50%);
+      content: attr(value) "%";
+    }
   }
-}
-
-[data-yt-downloader-tooltip="{data-value}"]::before {
-  transform: translate(-50%, 50%);
-  content: attr(value) "%";
 }
 
 /* Download icon handling */
@@ -116,16 +125,20 @@
 }
 
 /* Handling undownloadable videos */
-[data-yt-downloader-undownloadable][data-yt-downloader-tooltip] {
+[data-yt-downloader-undownloadable] {
   --yt-downloader-icon-color: hsl(0, 0%, 69%);
   --yt-spec-text-secondary: var(--yt-downloader-icon-color);
   cursor: not-allowed;
 
-  &::before {
+  [data-yt-downloader-tooltip]::before {
     content: attr(data-yt-downloader-tooltip);
   }
 
-  & a {
+  a {
     cursor: not-allowed;
+
+    &:hover::before {
+      opacity: 0;
+    }
   }
 }

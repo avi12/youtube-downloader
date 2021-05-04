@@ -39,15 +39,18 @@ async function handleClick({ target }: { target: EventTarget }) {
       }
       isClicked = true;
 
+      const elProgress = await getProgressElement();
+      delete elProgress.value;
+      elProgress.dataset.ytDownloaderInProgress = "true";
+
       downloadSendToBackground({
         id: getVideoId(location.href),
         qualityChosen: Number(
           elButtonDownload.getAttribute("data-yt-downloader-current-quality")
         ),
-        videoDataRaw: window.videoDataRaw as VideoData
+        videoDataRaw: window.videoDataRaw
       });
       gPortDownload.onMessage.addListener(async (progress: number) => {
-        const elProgress = await getProgressElement();
         elProgress.value = progress;
       });
       break;

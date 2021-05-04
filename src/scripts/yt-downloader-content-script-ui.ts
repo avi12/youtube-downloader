@@ -37,19 +37,18 @@ const gIconSvgNoDownload = `
 `;
 
 const gHtmlButtonContent = isDownloadable => `
-  <a class="yt-simple-endpoint ytd-button-renderer" tabindex="-1">
+  <a class="yt-simple-endpoint ytd-button-renderer" tabindex="-1" data-yt-downloader-tooltip="true">
       <button id="button" class="style-scope yt-icon-button yt-downloader-icon">
         ${isDownloadable ? gIconSvgDownload : gIconSvgNoDownload}
       </button>
     <div class="yt-downloader-color yt-downloader-text">Download</div>
   </a>
-  <progress value="0" max="100" class="yt-downloader-progress" data-yt-downloader-tooltip="{data-value}"></progress>
+  <progress max="100" class="yt-downloader-progress" data-yt-downloader-tooltip="{data-value}"></progress>
 `;
 
 function getButtonDownload(reasonUndownloadable?: string): HTMLElement {
   const elButton = document.createElement("button");
   elButton.setAttribute(gSelButtonDownload, "download-video-simple");
-  elButton.dataset.ytDownloaderTooltip = "true";
   elButton.innerHTML = gHtmlButtonContent(!reasonUndownloadable);
   if (reasonUndownloadable) {
     elButton.style.transform = "translateY(2px)";

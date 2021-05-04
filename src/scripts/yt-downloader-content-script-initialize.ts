@@ -31,10 +31,21 @@ export async function storeCurrentQuality() {
   )[0];
   elDownloader.dataset.ytDownloaderCategory =
     microformat.playerMicroformatRenderer.category;
-  elDownloader.dataset.ytDownloaderTooltip = elDownloader.dataset.ytDownloaderTooltip || "true";
+
+  const elTooltip = elDownloader.querySelector(
+    "[data-yt-downloader-tooltip]"
+  ) as HTMLElement;
+  elTooltip.dataset.ytDownloaderTooltip =
+    elTooltip.dataset.ytDownloaderTooltip || "true";
 
   const extMusic = "mp3";
-  elDownloader.dataset.ytDownloaderMusicExt = extMusic.toUpperCase() || "MP3";
+  elTooltip.dataset.ytDownloaderMusicExt = extMusic.toUpperCase() || "MP3";
+
+  elTooltip.dataset.ytDownloaderCurrentQuality =
+    elDownloader.dataset.ytDownloaderCurrentQuality;
+
+  elTooltip.dataset.ytDownloaderProjectionMode =
+    elDownloader.dataset.ytDownloaderProjectionMode;
 }
 
 async function getVideoMetadata(url: string): Promise<VideoData> {
