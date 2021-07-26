@@ -1,9 +1,7 @@
-import type { VideoData } from "./types";
-
 export async function setStorage(
-  storageArea: string,
+  storageArea: "local" | "sync",
   key: string,
-  value: any
+  value: unknown
 ): Promise<void> {
   return new Promise(resolve =>
     chrome.storage[storageArea].set({ [key]: value }, resolve)
@@ -11,9 +9,9 @@ export async function setStorage(
 }
 
 export async function getStorage(
-  storageArea: string,
+  storageArea: "local" | "sync",
   key?: string
-): Promise<any> {
+): Promise<unknown> {
   return new Promise(resolve =>
     chrome.storage[storageArea].get(key, result =>
       resolve(key ? result[key] : result)
@@ -39,9 +37,17 @@ export async function getElementByObserver(
   });
 }
 
-export async function getElementEventually(selector): Promise<HTMLElement> {
+function getVisibleElement(elements: NodeListOf<Element>) {
+  return [...(elements as NodeListOf<HTMLElement>)].find(
+    element => element.offsetWidth > 0 && element.offsetHeight > 0
+  );
+}
+
+export async function getElementEventually(selector: string): Promise<Element> {
+  const elements = document.querySelectorAll(selector);
   return (
-    document.querySelector(selector) ?? (await getElementByObserver(selector))
+    (elements.length > 0 && getVisibleElement(elements)) ||
+    (await getElementByObserver(selector))
   );
 }
 
@@ -53,18 +59,18 @@ export function getVideoId(url: string): string {
   return urlParams.get("v");
 }
 
-export function parseText(query) {
+export function parseText(query: string | number | Record<string, unknown>) {
   try {
-    return JSON.parse(query);
+    return JSON.parse(query as string);
   } catch {
-    if (!isNaN(query)) {
+    if (!isNaN(query as number)) {
       return Number(query);
     }
 
     if (typeof query !== "string") {
       const obj = {};
-      for (const queryKey in query) {
-        if (query.hasOwnProperty(queryKey)) {
+      for (const queryKey in query as Record<string, unknown>) {
+        if (Object.prototype.hasOwnProperty.call(query, queryKey)) {
           obj[queryKey] = parseText(query[queryKey]);
         }
       }
@@ -86,10 +92,4 @@ export function parseText(query) {
     }
     return parseText(object);
   }
-}
-
-export async function getVideoInfo(id: string): Promise<VideoData> {
-  const port = chrome.runtime.connect({ name: "get-video-info" });
-  port.postMessage(id);
-  return new Promise(resolve => port.onMessage.addListener(resolve));
 }

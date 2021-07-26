@@ -2,7 +2,10 @@
 
 :root {
   --yt-downloader-icon-color: rgb(144, 144, 144);
-  --yt-tooltip-visible: var(--yt-tooltip-visible);
+  --yt-tooltip-visible: var(--yt-tooltip-visible, 0.8);
+  --tooltip-pos-y: 160%;
+  --tooltip-pos-x: -50%;
+  --move-tooltip-y: 50px;
 }
 
 [data-yt-downloader-tooltip] {
@@ -15,28 +18,16 @@
     opacity: 0;
     transition: opacity 0.15s;
 
-    /* noinspection CssUnresolvedCustomProperty */
-    background-color: var(--paper-tooltip-background, rgb(97, 97, 97));
-
-    /* noinspection CssUnresolvedCustomProperty */
-    color: var(--paper-tooltip-text-color, white);
-
-    /* noinspection CssUnresolvedCustomProperty */
+    background-color: var(--paper-tooltip-background, rgb(89, 89, 89));
+    color: rgba(white, 0.8);
     margin: var(--paper-tooltip_-_margin);
-
-    /* noinspection CssUnresolvedCustomProperty */
     font-size: var(--paper-tooltip_-_font-size, 10px);
-
-    /* noinspection CssUnresolvedCustomProperty */
     font-weight: var(--paper-tooltip_-_font-weight);
-
-    /* noinspection CssUnresolvedCustomProperty */
     font-family: var(--paper-font-common-base_-_font-family);
-    padding: 8px;
+    padding: 11px 9px;
     border-radius: 2px;
     width: max-content;
-    left: 50%;
-    transform: translate(-50%, 160%);
+    transform: translate(-25%, var(--move-tooltip-y));
   }
 
   &:hover::before {
@@ -68,10 +59,6 @@
     content: "Download in " attr(data-yt-downloader-current-quality)
       attr(data-yt-downloader-projection-mode);
   }
-
-  [data-yt-downloader-category="Music"][data-yt-downloader-tooltip]::before {
-    content: "Download as " attr(data-yt-downloader-music-ext);
-  }
 }
 
 /* Handling progress bar below the Download button */
@@ -85,7 +72,7 @@
   max-width: -webkit-fill-available;
 
   /* It will appear once the downloaded button was clicked */
-  &[data-yt-downloader-in-progress] {
+  &[data-yt-downloader-in-progress="true"] {
     opacity: var(--yt-tooltip-visible);
 
     &:not([value])::before {
@@ -94,7 +81,7 @@
 
     /* and the progress will change according to the FFmpeg job */
     &[data-yt-downloader-tooltip="{data-value}"]::before {
-      transform: translate(-50%, 50%);
+      transform: translate(-50%, var(--move-tooltip-y));
       content: attr(value) "%";
     }
   }
@@ -124,8 +111,9 @@
   color: var(--yt-spec-text-secondary);
 }
 
-/* Handling undownloadable videos */
-[data-yt-downloader-undownloadable] {
+/* Handling undownloadable videos and videos that temporarily cannot be downloaded */
+[data-yt-downloader-undownloadable],
+[data-yt-downloader-action][disabled] {
   --yt-downloader-icon-color: hsl(0, 0%, 69%);
   --yt-spec-text-secondary: var(--yt-downloader-icon-color);
   cursor: not-allowed;

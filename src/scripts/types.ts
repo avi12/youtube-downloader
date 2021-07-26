@@ -322,50 +322,6 @@ export type PlayerResponse = {
     isLive?: boolean;
     isLiveDvrEnabled?: boolean;
   };
-  microformat: {
-    playerMicroformatRenderer: {
-      thumbnail: Thumbnail;
-      embed: {
-        iframeUrl: string;
-        flashUrl: string;
-        width: number;
-        height: number;
-        flashSecureUrl: string;
-      };
-      title: {
-        simpleText: string;
-      };
-      description: {
-        simpleText: string;
-      };
-      lengthSeconds: string;
-      ownerProfileUrl: string;
-      externalChannelId: string;
-      availableCountries: string[];
-      isUnlisted: boolean;
-      hasYpcMetadata: boolean;
-      viewCount: string;
-      category:
-        | "Film & Animation"
-        | "Autos & Vehicles"
-        | "Music"
-        | "Pets & Animals"
-        | "Sports"
-        | "Travel & Events"
-        | "Gaming"
-        | "People & Blogs"
-        | "Comedy"
-        | "Entertainment"
-        | "News & Politics"
-        | "Howto & Style"
-        | "Education"
-        | "Science & Technology"
-        | "Nonprofits & Activism";
-      publishDate: string;
-      ownerChannelName: string;
-      uploadData: string;
-    };
-  };
   trackingParams: string;
   cards: {
     cardCollectionRenderer: {
