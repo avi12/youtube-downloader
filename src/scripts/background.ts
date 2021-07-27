@@ -1,7 +1,9 @@
 import { getVideoId, setStorage } from "./utils";
 import { createFFmpeg, FFmpeg } from "@ffmpeg/ffmpeg";
+import { getVideoMetadata } from "./yt-downloader-functions";
 
 type MediaType = "video" | "playlist" | "other";
+type VideoAction = "get-metadata";
 
 let gFfmpeg: FFmpeg;
 const gTracker = {
@@ -25,7 +27,7 @@ async function initializeFFmpeg() {
   await setStorage("local", "isFFmpegReady", true);
 }
 
-function getMediaType(url: string): MediaType {
+export function getMediaType(url: string): MediaType {
   const urlObj = new URL(url);
   if (urlObj.pathname === "/watch") {
     return "video";
@@ -38,9 +40,16 @@ function getMediaType(url: string): MediaType {
 }
 
 function handleTab(port: chrome.runtime.Port) {
-  gTracker.tabs.set(port.sender.tab.id, {
-    type: getMediaType(port.sender.url),
-    id: getVideoId(port.sender.tab.url)
+  const { url, id } = port.sender.tab;
+  gTracker.tabs.set(id, {
+    type: getMediaType(url),
+    id: getVideoId(url)
+  });
+
+  port.onMessage.addListener(async (action: VideoAction) => {
+    if (action === "get-metadata") {
+      port.postMessage(await getVideoMetadata(getVideoId(url)));
+    }
   });
 
   port.onDisconnect.addListener(async () => {
