@@ -1,9 +1,9 @@
 import { getVideoId, setStorage } from "./utils";
-import { createFFmpeg } from "@ffmpeg/ffmpeg";
+import { createFFmpeg, FFmpeg } from "@ffmpeg/ffmpeg";
 
 type MediaType = "video" | "playlist" | "other";
 
-let gFfmpeg;
+let gFfmpeg: FFmpeg;
 const gTracker = {
   videoQueue: [] as string[],
   tabs: new Map() as Map<
@@ -37,26 +37,37 @@ function getMediaType(url: string): MediaType {
   return "other";
 }
 
+function handleTab(port: chrome.runtime.Port) {
+  gTracker.tabs.set(port.sender.tab.id, {
+    type: getMediaType(port.sender.url),
+    id: getVideoId(port.sender.tab.url)
+  });
+
+  port.onDisconnect.addListener(async () => {
+    const { id: idTab } = port.sender.tab;
+    const { id: idVideo } = gTracker.tabs.get(idTab);
+    gTracker.tabs.delete(idTab);
+
+    const i = gTracker.videoQueue.indexOf(idVideo);
+    if (i === -1) {
+      return;
+    }
+    const isLastVideo = i === gTracker.videoQueue.length - 1;
+    gTracker.videoQueue.splice(i, 1);
+
+    if (!isLastVideo) {
+      return;
+    }
+    gFfmpeg.exit();
+    await initializeFFmpeg();
+  });
+}
+
 function listenToTabs() {
   chrome.runtime.onConnect.addListener(port => {
     if (port.name === "youtube-page") {
-      gTracker.tabs.set(port.sender.tab.id, {
-        type: getMediaType(port.sender.url),
-        id: getVideoId(port.sender.tab.url)
-      });
+      handleTab(port);
     }
-    port.onDisconnect.addListener(() => {
-      const { id: idTab } = port.sender.tab;
-      const { id: idVideo } = gTracker.tabs.get(idTab);
-      gTracker.tabs.delete(idTab);
-
-      const i = gTracker.videoQueue.indexOf(idVideo);
-      if (i > -1) {
-        gTracker.videoQueue.splice(i, 1);
-      }
-
-      // TODO: Cancel on-going download, if applicable
-    });
   });
 }
 
