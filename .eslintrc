@@ -9,7 +9,8 @@
     "prettier/prettier": "warn",
     "@typescript-eslint/no-empty-function": "off",
     "no-async-promise-executor": "off",
-    "prefer-const": "warn"
+    "prefer-const": "warn",
+    "no-debugger": "off"
   },
   "overrides": [
     {
