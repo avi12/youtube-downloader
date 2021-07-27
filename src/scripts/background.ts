@@ -45,7 +45,18 @@ function listenToTabs() {
         id: getVideoId(port.sender.tab.url)
       });
     }
-    port.onDisconnect.addListener(() => {});
+    port.onDisconnect.addListener(() => {
+      const { id: idTab } = port.sender.tab;
+      const { id: idVideo } = gTracker.tabs.get(idTab);
+      gTracker.tabs.delete(idTab);
+
+      const i = gTracker.videoQueue.indexOf(idVideo);
+      if (i > -1) {
+        gTracker.videoQueue.splice(i, 1);
+      }
+
+      // TODO: Cancel on-going download, if applicable
+    });
   });
 }
 
