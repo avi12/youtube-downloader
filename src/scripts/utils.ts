@@ -52,13 +52,11 @@ export async function getElementEventually(selector: string): Promise<Element> {
 }
 
 export function getVideoId(url: string): string {
-  if (url.includes("/embed/")) {
-    return url.split("/").pop();
-  }
   const urlParams = new URLSearchParams(new URL(url).search);
   return urlParams.get("v");
 }
 
+// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
 export function parseText(query: string | number | Record<string, unknown>) {
   try {
     return JSON.parse(query as string);
