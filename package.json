@@ -15,7 +15,7 @@
   "scripts": {
     "dev": "rollup -c -w",
     "build": "rollup -c",
-    "run-browser": "web-ext run --no-config-discovery --start-url https://www.youtube.com/watch?v=aiSla-5xq3w --source-dir dist --verbose --target",
+    "run-browser": "web-ext run --no-config-discovery --start-url https://www.youtube.com/watch?v=aiSla-5xq3w --source-dir dist --verbose --arg=\"--remote-debugging-port=9229\" --target",
     "run-chromium": "pnpm run-browser chromium"
   },
   "devDependencies": {
