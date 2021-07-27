@@ -1,3 +1,4 @@
+import $ from "jquery";
 import { getStorage } from "./utils";
 import Port = chrome.runtime.Port;
 
@@ -21,12 +22,25 @@ async function waitForFFmpeg() {
 
 function attachToBackground() {
   gPort = chrome.runtime.connect({ name: "youtube-page" });
-  gPort.postMessage("");
+}
+
+async function handleFFmpegReadiness() {
+  const $body = $("body");
+  $body.data("ffmpeg-ready", true);
+
+  chrome.storage.onChanged.addListener(changes => {
+    if (!changes.isFFmpegReady) {
+      return;
+    }
+
+    $body.data("ffmpeg-ready", changes.isFFmpegReady.newValue);
+  });
 }
 
 async function init() {
   await waitForFFmpeg();
   attachToBackground();
+  await handleFFmpegReadiness();
 }
 
 init();
