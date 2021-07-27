@@ -15,7 +15,7 @@
   "scripts": {
     "dev": "rollup -c -w",
     "build": "rollup -c",
-    "run-browser": "web-ext run --no-config-discovery --start-url https://www.youtube.com/watch?v=aiSla-5xq3w --source-dir dist --verbose --arg=\"--remote-debugging-port=9229\" --target",
+    "run-browser": "web-ext run --no-config-discovery --start-url https://www.youtube.com/watch?v=aiSla-5xq3w --source-dir dist --verbose --target",
     "run-chromium": "pnpm run-browser chromium"
   },
   "devDependencies": {
@@ -25,7 +25,7 @@
     "@rollup/plugin-node-resolve": "^13.0.3",
     "@rollup/plugin-typescript": "^8.2.3",
     "@tsconfig/svelte": "^2.0.1",
-    "@types/chrome": "0.0.148",
+    "@types/chrome": "^0.0.148",
     "@types/file-saver": "^2.0.3",
     "@types/jquery": "^3.5.6",
     "@typescript-eslint/eslint-plugin": "^4.28.4",
