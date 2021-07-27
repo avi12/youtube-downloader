@@ -14,7 +14,7 @@ function createConfig(filename, useSvelte = false) {
   return {
     input: `src/${filename}.ts`,
     output: {
-      format: "esm",
+      format: "iife",
       file: `dist/build/${filename}.js`,
       strict: false,
       sourcemap: true
