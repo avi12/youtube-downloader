@@ -16,7 +16,8 @@ function createConfig(filename, useSvelte = false) {
     output: {
       format: "esm",
       file: `dist/build/${filename}.js`,
-      strict: false
+      strict: false,
+      sourcemap: true
     },
     plugins: [
       useSvelte &&
@@ -33,7 +34,7 @@ function createConfig(filename, useSvelte = false) {
         dedupe: ["svelte"]
       }),
       commonjs(),
-      typescript(),
+      typescript({ sourceMap: false }),
       isProduction && terser()
     ]
   };
