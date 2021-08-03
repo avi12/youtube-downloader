@@ -1,4 +1,4 @@
-import type { PlayerResponse } from "./types";
+import type { PlayerResponse, PlaylistData } from "./types";
 
 export async function getRemote(url: string): Promise<string> {
   const response = await fetch(url);
@@ -8,6 +8,7 @@ export async function getRemote(url: string): Promise<string> {
 const gRegex = {
   videoData:
     /ytInitialPlayerResponse\s*=\s*({.+?})\s*;\s*(?:var\s+meta|<\/script|\n)/,
+  playlistData: /ytInitialData\s*=\s*({.+?})\s*;/,
   playerData: /set\(({.+?})\);/
 };
 
@@ -76,16 +77,34 @@ async function getAdaptiveFormats({
   return adaptiveFormats;
 }
 
-export async function getVideoMetadata(id: string): Promise<PlayerResponse> {
+async function playlistToVideoIds(playlistId: string): Promise<string[]> {
   const htmlYouTubePage = await getRemote(
-    `https://www.youtube.com/watch?v=${id}`
+    `https://www.youtube.com/playlist?list=${playlistId}`
+  );
+  const playlistData = JSON.parse(
+    htmlYouTubePage.match(gRegex.playlistData)[1]
+  ) as PlaylistData;
+
+  const videosContainer =
+    playlistData.contents.twoColumnBrowseResultsRenderer.tabs[0].tabRenderer
+      .content.sectionListRenderer.contents[0].itemSectionRenderer.contents[0]
+      .playlistVideoListRenderer.contents;
+
+  return videosContainer
+    .filter(videoContainer => videoContainer.playlistVideoRenderer.isPlayable)
+    .map(videoContainer => videoContainer.playlistVideoRenderer.videoId);
+}
+
+async function handleVideo(videoId: string): Promise<PlayerResponse> {
+  const htmlYouTubePage = await getRemote(
+    `https://www.youtube.com/watch?v=${videoId}`
   );
   const videoData = JSON.parse(
     htmlYouTubePage.match(gRegex.videoData)[1]
   ) as PlayerResponse;
 
   const isHasStreamingUrls = Boolean(
-    videoData.streamingData.adaptiveFormats[0].url
+    videoData.streamingData?.adaptiveFormats[0].url
   );
   if (isHasStreamingUrls) {
     return videoData;
@@ -96,4 +115,18 @@ export async function getVideoMetadata(id: string): Promise<PlayerResponse> {
     playerData: JSON.parse(htmlYouTubePage.match(gRegex.playerData)[1])
   });
   return videoData;
+}
+
+export async function getMediaMetadata({
+  id,
+  mediaType
+}: {
+  id: string;
+  mediaType: "video" | "playlist";
+}): Promise<PlayerResponse | string[]> {
+  if (mediaType === "playlist") {
+    return playlistToVideoIds(id);
+  }
+
+  return handleVideo(id);
 }
