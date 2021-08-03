@@ -1,18 +1,27 @@
 import $ from "jquery";
-import Port = chrome.runtime.Port;
 import { getStorage } from "./utils";
-import type { VideoData } from "./types";
+import type { PlayerResponse } from "./types";
+import Port = chrome.runtime.Port;
+
+let gScriptToInject: string;
 
 declare global {
   interface Window {
-    videoDataRaw: VideoData;
+    videoDataRaw: PlayerResponse;
   }
 }
 
-let gPort: Port;
+const gPorts: {
+  [portName: string]: Port;
+} = {};
 
 function attachToBackground() {
-  gPort = chrome.runtime.connect({ name: "youtube-page" });
+  gPorts.main = chrome.runtime.connect({ name: "main-connection" });
+  gPorts.fetchScriptToInject = chrome.runtime.connect({
+    name: "script-to-inject"
+  });
+  gPorts.metadata = chrome.runtime.connect({ name: "get-metadata" });
+  gPorts.downloadMedia = chrome.runtime.connect({ name: "download-media" });
 }
 
 async function waitForFFmpeg() {
@@ -49,18 +58,56 @@ async function handleFFmpegReadiness() {
   });
 }
 
-async function getVideoMetadata(): Promise<VideoData> {
+async function getVideoMetadata(): Promise<PlayerResponse> {
   return new Promise(resolve => {
-    gPort.postMessage("get-metadata");
-    gPort.onMessage.addListener(resolve);
+    gPorts.metadata.postMessage(true);
+    gPorts.metadata.onMessage.addListener(resolve);
   });
 }
 
+function getCurrentQuality() {
+  return document.body.dataset.ytDownloaderCurrentQuality;
+}
+
+function injectScript(code = gScriptToInject) {
+  if (!gScriptToInject) {
+    gScriptToInject = code;
+  }
+  $("head").append(`<script>${code}</script>`);
+}
+
+async function addQualityListener() {
+  gPorts.fetchScriptToInject.postMessage(true);
+  gPorts.fetchScriptToInject.onMessage.addListener(injectScript);
+}
+
 async function init() {
+  const isVideoOrPlaylist = Boolean(location.pathname.match(/watch|playlist/));
+  if (!isVideoOrPlaylist) {
+    return;
+  }
+
   attachToBackground();
   await waitForFFmpeg();
   await handleFFmpegReadiness();
+  await addQualityListener();
 
   window.videoDataRaw = await getVideoMetadata();
+
+  const getIsLive = (videoDataRaw: PlayerResponse) =>
+    videoDataRaw.microformat.playerMicroformatRenderer.liveBroadcastDetails
+      ?.isLiveNow;
+
+  if (getIsLive(window.videoDataRaw)) {
+    // TODO: Add "Undownloadable"
+    return;
+  }
+
+  // TODO: Remove line; instead, add to the queue by clicking on the download button
+  gPorts.downloadMedia.postMessage({
+    type: "video+audio",
+    quality: getCurrentQuality()
+  });
 }
+
 init();
