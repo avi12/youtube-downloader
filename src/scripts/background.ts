@@ -1,6 +1,6 @@
-import { getVideoId, setStorage } from "./utils";
+import { getMediaId, setStorage } from "./utils";
 import { createFFmpeg, FFmpeg } from "@ffmpeg/ffmpeg";
-import { getRemote, getVideoMetadata } from "./yt-downloader-functions";
+import { getRemote, getMediaMetadata } from "./yt-downloader-functions";
 import Port = chrome.runtime.Port;
 
 type MediaType = "video" | "playlist" | "other";
@@ -11,8 +11,11 @@ const gTracker = {
   tabs: new Map() as Map<
     number,
     {
+      // The type of the media.
       type: MediaType;
-      id: string;
+      // The ID of the video/playlist.
+      idMedia: string;
+      // If the media is a playlist, this is the list of videos to be downloaded.
       idVideos?: string[];
     }
   >
@@ -49,36 +52,83 @@ export function getMediaType(url: string): MediaType {
 }
 
 function handleMainConnection(port: Port) {
-  const { url, id } = port.sender.tab;
-  gTracker.tabs.set(id, {
+  const { url, id: idTab } = port.sender.tab;
+  gTracker.tabs.set(idTab, {
     type: getMediaType(url),
-    id: getVideoId(url)
+    idMedia: getMediaId(url)
+  });
+
+  const removeVideosFromQueue = async (idsToRemove: string[]) => {
+    const iLastDownloadInProgress = idsToRemove.indexOf(
+      gTracker.videoQueue[gTracker.videoQueue.length - 1]
+    );
+
+    if (iLastDownloadInProgress > -1) {
+      gTracker.videoQueue.pop();
+      idsToRemove.splice(iLastDownloadInProgress, 1);
+
+      // TODO: Cancel media download, if applicable
+      exitFFmpeg();
+      initializeFFmpeg();
+    }
+
+    for (const idToRemove of idsToRemove) {
+      const iVideo = gTracker.videoQueue.indexOf(idToRemove);
+      if (iVideo > -1) {
+        gTracker.videoQueue.splice(iVideo, 1);
+      }
+    }
+
+    // TODO: Resume downloading the latest video on queue
+    // TODO: Update the storage of the video queue (affects the popup page)
+  };
+
+  port.onMessage.addListener(async message => {
+    if (message.action === "navigated") {
+      const { id: idTab, url } = port.sender.tab;
+      const tabTracked = gTracker.tabs.get(idTab);
+
+      gTracker.tabs.set(idTab, {
+        type: getMediaType(url),
+        idMedia: getMediaId(url)
+      });
+
+      if (tabTracked.type === "playlist") {
+        await removeVideosFromQueue(tabTracked.idVideos);
+        return;
+      }
+
+      await removeVideosFromQueue([tabTracked.idMedia]);
+    }
   });
 
   port.onDisconnect.addListener(async () => {
     const { id: idTab } = port.sender.tab;
-    const { id: idVideo } = gTracker.tabs.get(idTab);
+    const tabTracked = gTracker.tabs.get(idTab);
     gTracker.tabs.delete(idTab);
 
-    const i = gTracker.videoQueue.indexOf(idVideo);
-    if (i === -1) {
+    if (tabTracked.type === "other") {
       return;
     }
-    const isLastVideo = i === gTracker.videoQueue.length - 1;
-    gTracker.videoQueue.splice(i, 1);
 
-    if (!isLastVideo) {
+    if (tabTracked.type === "playlist") {
+      await removeVideosFromQueue(tabTracked.idVideos);
       return;
     }
-    exitFFmpeg();
-    await initializeFFmpeg();
+
+    await removeVideosFromQueue([tabTracked.idMedia]);
   });
 }
 
 function handleMetadata(port: Port) {
   port.onMessage.addListener(async () => {
     const { url } = port.sender.tab;
-    port.postMessage(await getVideoMetadata(getVideoId(url)));
+    port.postMessage(
+      await getMediaMetadata({
+        id: getMediaId(url),
+        mediaType: getMediaType(url) as "video" | "playlist"
+      })
+    );
   });
 }
 
@@ -93,7 +143,7 @@ function fetchScriptToInject(port: Port) {
 function handleDMediaDownloads(port: Port) {
   port.onMessage.addListener(async downloadInfo => {
     if (downloadInfo.type === "video+audio") {
-      gTracker.videoQueue.push(getVideoId(port.sender.tab.url));
+      gTracker.videoQueue.push(getMediaId(port.sender.tab.url));
     }
   });
 }
