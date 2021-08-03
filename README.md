@@ -3,6 +3,10 @@ A browser extension for downloading videos from YouTube.
 
 Made by [avi12](https://avi12.com)
 
+## This is a WIP
+Still  in development, for as long as I'm not 100% happy with the result.  
+When it will be released to the public, it will be in Releases.
+
 ## Core packages/repositories used
 1. [ytdlr](https://github.com/bakapear/ytdlr) - for converting signature ciphers into downloadable URLs
 1. [FFmpeg](https://github.com/ffmpegwasm/ffmpeg.wasm) - for combining video & audio into a single video file, and then providing it as a download
