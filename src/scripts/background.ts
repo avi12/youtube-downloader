@@ -1,9 +1,9 @@
 import { getVideoId, setStorage } from "./utils";
 import { createFFmpeg, FFmpeg } from "@ffmpeg/ffmpeg";
-import { getVideoMetadata } from "./yt-downloader-functions";
+import { getRemote, getVideoMetadata } from "./yt-downloader-functions";
+import Port = chrome.runtime.Port;
 
 type MediaType = "video" | "playlist" | "other";
-type VideoAction = "get-metadata";
 
 let gFfmpeg: FFmpeg;
 const gTracker = {
@@ -18,9 +18,18 @@ const gTracker = {
   >
 };
 
+function exitFFmpeg() {
+  // Wrapping in a try-catch block
+  // because ".exit()" will throw an error as well
+  try {
+    gFfmpeg.exit();
+    // eslint-disable-next-line no-empty
+  } catch {}
+}
 async function initializeFFmpeg() {
   await setStorage("local", "isFFmpegReady", false);
 
+  console.clear();
   gFfmpeg = createFFmpeg({ log: true });
   await gFfmpeg.load();
 
@@ -39,17 +48,11 @@ export function getMediaType(url: string): MediaType {
   return "other";
 }
 
-function handleTab(port: chrome.runtime.Port) {
+function handleMainConnection(port: Port) {
   const { url, id } = port.sender.tab;
   gTracker.tabs.set(id, {
     type: getMediaType(url),
     id: getVideoId(url)
-  });
-
-  port.onMessage.addListener(async (action: VideoAction) => {
-    if (action === "get-metadata") {
-      port.postMessage(await getVideoMetadata(getVideoId(url)));
-    }
   });
 
   port.onDisconnect.addListener(async () => {
@@ -67,15 +70,44 @@ function handleTab(port: chrome.runtime.Port) {
     if (!isLastVideo) {
       return;
     }
-    gFfmpeg.exit();
+    exitFFmpeg();
     await initializeFFmpeg();
+  });
+}
+
+function handleMetadata(port: Port) {
+  port.onMessage.addListener(async () => {
+    const { url } = port.sender.tab;
+    port.postMessage(await getVideoMetadata(getVideoId(url)));
+  });
+}
+
+function fetchScriptToInject(port: Port) {
+  port.onMessage.addListener(async () => {
+    port.postMessage(
+      await getRemote(chrome.runtime.getURL("content-script-to-inject.js"))
+    );
+  });
+}
+
+function handleDMediaDownloads(port: Port) {
+  port.onMessage.addListener(async downloadInfo => {
+    if (downloadInfo.type === "video+audio") {
+      gTracker.videoQueue.push(getVideoId(port.sender.tab.url));
+    }
   });
 }
 
 function listenToTabs() {
   chrome.runtime.onConnect.addListener(port => {
-    if (port.name === "youtube-page") {
-      handleTab(port);
+    if (port.name === "main-connection") {
+      handleMainConnection(port);
+    } else if (port.name === "get-metadata") {
+      handleMetadata(port);
+    } else if (port.name === "script-to-inject") {
+      fetchScriptToInject(port);
+    } else if (port.name === "download-media") {
+      handleDMediaDownloads(port);
     }
   });
 }
