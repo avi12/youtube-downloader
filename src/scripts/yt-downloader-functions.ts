@@ -1,150 +1,99 @@
-import type { AdaptiveFormatItem, VideoData } from "./types";
-import { parseText } from "./utils";
+import type { PlayerResponse } from "./types";
 
-async function getRemote(url: string, isGetText?: boolean): Promise<unknown> {
+export async function getRemote(url: string): Promise<string> {
   const response = await fetch(url);
-  const text = await response.text();
-  console.log(text);
-  if (isGetText) {
-    return text;
-  }
-  return parseText(text);
+  return response.text();
 }
 
-export async function getVideoMetadata(id: string): Promise<VideoData> {
-  const player = await getPlayerData(id);
-  const data = await getVideoData({ id, sts: player.STS });
-  console.log("data:", data);
-
-  const { streamingData } = data.player_response;
-  streamingData.adaptiveFormats = await getAdaptiveFormats({
-    adaptiveFormats: streamingData.adaptiveFormats,
-    id
-  });
-
-  return data;
-}
-
-// Credit for decipher functions: [ytdlr](https://github.com/bakapear/ytdlr/blob/master/ytdlr.js)
-async function getAdaptiveFormats({
-  adaptiveFormats,
-  id
-}: {
-  adaptiveFormats: AdaptiveFormatItem[];
-  id: string;
-}) {
-  const player = await getPlayerData(id);
-
-  if (adaptiveFormats[0].signatureCipher) {
-    const data = await getVideoData({ id, sts: player.STS });
-    adaptiveFormats = data.player_response.streamingData.adaptiveFormats;
-  }
-  return decipherFormats(adaptiveFormats, player.funcDecipher);
-}
+const gRegex = {
+  videoData:
+    /ytInitialPlayerResponse\s*=\s*({.+?})\s*;\s*(?:var\s+meta|<\/script|\n)/,
+  playerData: /set\(({.+?})\);/
+};
 
 function getStringBetween(
   string: string,
-  needleStart,
-  needleEnd?,
+  needleStart: string,
+  needleEnd?: string,
   offsetStart = 0,
   offsetEnd = 0
 ): string {
-  if (needleStart instanceof RegExp) {
-    needleStart = string.match(needleStart)[0];
-  }
   const x = string.indexOf(needleStart);
-  let y = string.indexOf(needleEnd, x);
-  if (!needleEnd) {
-    y = string.length;
-  }
+  const y = needleEnd ? string.indexOf(needleEnd, x) : string.length;
   return string.substring(x + needleStart.length + offsetEnd, y + offsetStart);
 }
 
-async function getPlayerData(
-  id: string
-  // eslint-disable-next-line @typescript-eslint/ban-types
-): Promise<{ STS: number; funcDecipher: Function }> {
-  const html = (await getRemote(
-    `https://www.youtube.com/watch?v=${id}`,
-    true
-  )) as string;
-  const ytcfg = JSON.parse(
-    getStringBetween(
-      html,
-      /window\.ytplayer.*?=.*?{};.*?ytcfg\.set\(/s,
-      "})",
-      1
-    )
-  );
-  const player = (await getRemote(
-    `https://www.youtube.com${ytcfg.PLAYER_JS_URL}`,
-    true
-  )) as string;
-  return {
-    STS: ytcfg.STS,
-    funcDecipher: getCipherFunction(player)
-  };
-}
-
-// eslint-disable-next-line @typescript-eslint/ban-types
-function getCipherFunction(string: string): Function {
-  const js = getStringBetween(string, `a=a.split("");var `);
-  const top = getStringBetween(js, 'a=a.split("")', "};", 1, -28);
-  const fn =
-    "var " +
-    getStringBetween(top, 'a=a.split("")', "(", 10, 1).split(".")[0] +
-    "=";
-  const side = getStringBetween(js, fn, "};", 2, -fn.length);
-  return eval(side + top);
-}
-
-async function getVideoData({
-  id,
-  sts
+async function getAdaptiveFormats({
+  videoData,
+  playerData
 }: {
-  id: string;
-  sts: number;
-}): Promise<VideoData> {
-  const url = "https://www.youtube.com/get_video_info";
-  const params = {
-    video_id: id,
-    eurl: `https://youtube.googleapis.com/v/${id}`,
-    ps: "default",
-    gl: "US",
-    hl: "en",
-    el: "embedded",
-    sts,
-    c: "TVHTML5",
-    html5: 1,
-    cver: "6.20180913"
+  videoData: PlayerResponse;
+  playerData: { PLAYER_JS_URL: string };
+}) {
+  const getUrlFromSignature = (signatureCipher: string): string => {
+    const searchParams = new URLSearchParams(signatureCipher);
+    const [url, signature, sp] = [
+      searchParams.get("url"),
+      searchParams.get("s"),
+      searchParams.get("sp")
+    ];
+
+    return `${url}&${sp}=${decipher(signature)}`;
   };
 
-  // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-  // @ts-ignore
-  const searchParams = new URLSearchParams(Object.entries(params));
-  return (await getRemote(`${url}?${searchParams}`)) as VideoData;
+  // eslint-disable-next-line @typescript-eslint/ban-types
+  const getDecipherFunction = (string: string): Function => {
+    const js = string.replace("var _yt_player={}", "");
+    const top = getStringBetween(js, `a=a.split("")`, "};", 1, -28);
+    const beginningOfFunction =
+      "var " +
+      getStringBetween(top, `a=a.split("")`, "(", 10, 1).split(".")[0] +
+      "=";
+    const side = getStringBetween(
+      js,
+      beginningOfFunction,
+      "};",
+      2,
+      -beginningOfFunction.length
+    );
+    return eval(side + top);
+  };
+
+  const baseContent = await getRemote(
+    `https://www.youtube.com${playerData.PLAYER_JS_URL}`
+  );
+  const decipher = getDecipherFunction(baseContent);
+
+  const {
+    streamingData: { adaptiveFormats }
+  } = videoData;
+
+  adaptiveFormats.forEach(format => {
+    format.url = getUrlFromSignature(format.signatureCipher);
+    delete format.signatureCipher;
+  });
+
+  return adaptiveFormats;
 }
 
-function decipherFormats(
-  adaptiveFormats: AdaptiveFormatItem[],
-  // eslint-disable-next-line @typescript-eslint/ban-types
-  funcDecipher: Function
-): AdaptiveFormatItem[] {
-  return adaptiveFormats.map(item => {
-    if (item.mimeType) {
-      item.mimeType = item.mimeType.replace(/\+/g, " ");
-    }
+export async function getVideoMetadata(id: string): Promise<PlayerResponse> {
+  const htmlYouTubePage = await getRemote(
+    `https://www.youtube.com/watch?v=${id}`
+  );
+  const videoData = JSON.parse(
+    htmlYouTubePage.match(gRegex.videoData)[1]
+  ) as PlayerResponse;
 
-    if (item.signatureCipher) {
-      const { url, sp, s } = Object.fromEntries(
-        new URLSearchParams(item.signatureCipher)
-      );
-      delete item.signatureCipher;
-      const url1 = decodeURIComponent(url);
-      const cipher = funcDecipher(decodeURIComponent(s));
-      item.url = `${url1}&${sp}=${cipher}`;
-    }
+  const isHasStreamingUrls = Boolean(
+    videoData.streamingData.adaptiveFormats[0].url
+  );
+  if (isHasStreamingUrls) {
+    return videoData;
+  }
 
-    return item;
+  videoData.streamingData.adaptiveFormats = await getAdaptiveFormats({
+    videoData,
+    playerData: JSON.parse(htmlYouTubePage.match(gRegex.playerData)[1])
   });
+  return videoData;
 }
