@@ -81,7 +81,17 @@ async function addQualityListener() {
   gPorts.fetchScriptToInject.onMessage.addListener(injectScript);
 }
 
-async function init() {
+function addNavigationListener() {
+  new MutationObserver(() => {
+    gPorts.main.postMessage({
+      action: "navigated"
+    });
+  }).observe($("title")[0], { childList: true, subtree: true });
+}
+
+$(async () => {
+  addNavigationListener();
+
   const isVideoOrPlaylist = Boolean(location.pathname.match(/watch|playlist/));
   if (!isVideoOrPlaylist) {
     return;
@@ -90,12 +100,15 @@ async function init() {
   attachToBackground();
   await waitForFFmpeg();
   await handleFFmpegReadiness();
-  await addQualityListener();
+  if (location.pathname === "/watch") {
+    await addQualityListener();
+  }
 
   window.videoDataRaw = await getVideoMetadata();
+  console.log(window.videoDataRaw);
 
   const getIsLive = (videoDataRaw: PlayerResponse) =>
-    videoDataRaw.microformat.playerMicroformatRenderer.liveBroadcastDetails
+    videoDataRaw.microformat?.playerMicroformatRenderer.liveBroadcastDetails
       ?.isLiveNow;
 
   if (getIsLive(window.videoDataRaw)) {
@@ -108,6 +121,4 @@ async function init() {
     type: "video+audio",
     quality: getCurrentQuality()
   });
-}
-
-init();
+});
