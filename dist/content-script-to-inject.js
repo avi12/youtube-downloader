@@ -16,7 +16,7 @@ function onYouTubePlayerReady(player) {
 
 function storePlaybackQuality(quality) {
   quality = gMapQualities[quality] || quality;
-  document.body.dataset.ytDownloaderCurrentQuality = quality
+  document.querySelector("video").dataset.ytDownloaderCurrentQuality = quality
     .toString()
     .match(/\d+/)[0];
 }
