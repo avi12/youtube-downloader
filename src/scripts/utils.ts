@@ -55,39 +55,3 @@ export function getVideoId(url: string): string {
   const urlParams = new URLSearchParams(new URL(url).search);
   return urlParams.get("v");
 }
-
-// eslint-disable-next-line @typescript-eslint/explicit-module-boundary-types
-export function parseText(query: string | number | Record<string, unknown>) {
-  try {
-    return JSON.parse(query as string);
-  } catch {
-    if (!isNaN(query as number)) {
-      return Number(query);
-    }
-
-    if (typeof query !== "string") {
-      const obj = {};
-      for (const queryKey in query as Record<string, unknown>) {
-        if (Object.prototype.hasOwnProperty.call(query, queryKey)) {
-          obj[queryKey] = parseText(query[queryKey]);
-        }
-      }
-
-      return obj;
-    }
-    if (!query) {
-      return "";
-    }
-
-    if (query.toLowerCase().match(/^(true|false)$/)) {
-      return query.toLowerCase() === "true";
-    }
-
-    const object = Object.fromEntries(new URLSearchParams(query));
-    const values = Object.values(object);
-    if (values.length === 1 && values[0] === "") {
-      return query;
-    }
-    return parseText(object);
-  }
-}
