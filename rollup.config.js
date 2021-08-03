@@ -17,7 +17,8 @@ function createConfig(filename, useSvelte = false) {
       format: "iife",
       file: `dist/build/${filename}.js`,
       strict: false,
-      sourcemap: true
+      sourcemap: true,
+      globals: ["$"]
     },
     plugins: [
       useSvelte &&
@@ -36,7 +37,10 @@ function createConfig(filename, useSvelte = false) {
       commonjs(),
       typescript({ sourceMap: false }),
       isProduction && terser()
-    ]
+    ],
+    watch: {
+      clearScreen: true
+    }
   };
 }
 
@@ -54,7 +58,10 @@ function createConfigCss(filename) {
       postcss({
         extract: true
       })
-    ]
+    ],
+    watch: {
+      clearScreen: true
+    }
   };
 }
 
