@@ -10,6 +10,7 @@ specifiers:
   '@types/chrome': ^0.0.148
   '@types/file-saver': ^2.0.3
   '@types/jquery': ^3.5.6
+  '@types/youtube': ^0.0.44
   '@typescript-eslint/eslint-plugin': ^4.28.4
   '@typescript-eslint/parser': ^4.28.4
   blob-util: ^2.0.2
@@ -59,6 +60,7 @@ devDependencies:
   '@types/chrome': 0.0.148
   '@types/file-saver': 2.0.3
   '@types/jquery': 3.5.6
+  '@types/youtube': 0.0.44
   '@typescript-eslint/eslint-plugin': 4.28.4_b1648df9f9ba40bdeef3710a5a5af353
   '@typescript-eslint/parser': 4.28.4_eslint@7.31.0+typescript@4.3.5
   eslint: 7.31.0
@@ -617,6 +619,10 @@ packages:
     resolution: {integrity: sha512-A1b8SU4D10uoPjwb0lnHmmu8wZhR9d+9o2PKBQT2jU5YPTKsxac6M2qGAdY7VcL+dHHhARVUDmeg0rOrcd9EjA==}
     dependencies:
       '@types/node': 16.4.2
+    dev: true
+
+  /@types/youtube/0.0.44:
+    resolution: {integrity: sha512-bvBETO6kkqq32Yuk5CI3k0V/UCOTzhsqImJsboABsnCUA8BzawvnrgaRe51wqXQPqZkTwLFkRvhS7iSvsgp4pg==}
     dev: true
 
   /@typescript-eslint/eslint-plugin/4.28.4_b1648df9f9ba40bdeef3710a5a5af353:
