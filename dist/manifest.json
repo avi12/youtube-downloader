@@ -42,10 +42,7 @@
     }
   },
   "permissions": [
-    "storage",
-    "https://www.youtube.com/*",
-    "https://*.googlevideo.com/*",
-    "https://i.ytimg.com/vi_webp/*"
+    "storage"
   ],
   "content_security_policy": "script-src 'self' 'unsafe-eval' blob:; object-src 'self'"
 }
