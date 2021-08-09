@@ -1,4 +1,4 @@
-import type { PlayerResponse, PlaylistData } from "./types";
+import type { PlayerResponse } from "./types";
 
 export async function getRemote(url: string): Promise<string> {
   const response = await fetch(url);
@@ -77,31 +77,12 @@ async function getAdaptiveFormats({
   return adaptiveFormats;
 }
 
-async function playlistToVideoIds(playlistId: string): Promise<string[]> {
-  const htmlYouTubePage = await getRemote(
-    `https://www.youtube.com/playlist?list=${playlistId}`
-  );
-  const playlistData = JSON.parse(
-    htmlYouTubePage.match(gRegex.playlistData)[1]
-  ) as PlaylistData;
-
-  const videosContainer =
-    playlistData.contents.twoColumnBrowseResultsRenderer.tabs[0].tabRenderer
-      .content.sectionListRenderer.contents[0].itemSectionRenderer.contents[0]
-      .playlistVideoListRenderer.contents;
-
-  return videosContainer
-    .filter(videoContainer => videoContainer.playlistVideoRenderer.isPlayable)
-    .map(videoContainer => videoContainer.playlistVideoRenderer.videoId);
-}
-
-async function handleVideo(videoId: string): Promise<PlayerResponse> {
-  const htmlYouTubePage = await getRemote(
-    `https://www.youtube.com/watch?v=${videoId}`
-  );
-  const videoData = JSON.parse(
+export async function getVideoData(
+  htmlYouTubePage: string
+): Promise<PlayerResponse> {
+  const videoData: PlayerResponse = JSON.parse(
     htmlYouTubePage.match(gRegex.videoData)[1]
-  ) as PlayerResponse;
+  );
 
   const isHasStreamingUrls = Boolean(
     videoData.streamingData?.adaptiveFormats[0].url
@@ -115,18 +96,4 @@ async function handleVideo(videoId: string): Promise<PlayerResponse> {
     playerData: JSON.parse(htmlYouTubePage.match(gRegex.playerData)[1])
   });
   return videoData;
-}
-
-export async function getMediaMetadata({
-  id,
-  mediaType
-}: {
-  id: string;
-  mediaType: "video" | "playlist";
-}): Promise<PlayerResponse | string[]> {
-  if (mediaType === "playlist") {
-    return playlistToVideoIds(id);
-  }
-
-  return handleVideo(id);
 }
