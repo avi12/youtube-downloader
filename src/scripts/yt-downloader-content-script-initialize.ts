@@ -1,9 +1,13 @@
-import $ from "jquery";
 import { getStorage } from "./utils";
 import type { PlayerResponse } from "./types";
+import { handleVideo } from "./yt-downloader-content-script-video";
+import { handlePlaylist } from "./yt-downloader-content-script-playlist";
 import Port = chrome.runtime.Port;
 
-let gScriptToInject: string;
+let gPorts: {
+  main?: Port;
+  processMedia?: Port;
+};
 
 declare global {
   interface Window {
@@ -11,17 +15,19 @@ declare global {
   }
 }
 
-const gPorts: {
-  [portName: string]: Port;
-} = {};
+let gObserverPlaylist: MutationObserver;
+const gObserverOptions: MutationObserverInit = {
+  subtree: true,
+  childList: true
+};
+
+export let gCancelControllers: AbortController[] = [];
 
 function attachToBackground() {
-  gPorts.main = chrome.runtime.connect({ name: "main-connection" });
-  gPorts.fetchScriptToInject = chrome.runtime.connect({
-    name: "script-to-inject"
-  });
-  gPorts.metadata = chrome.runtime.connect({ name: "get-metadata" });
-  gPorts.downloadMedia = chrome.runtime.connect({ name: "download-media" });
+  gPorts = {
+    main: chrome.runtime.connect({ name: "main-connection" }),
+    processMedia: chrome.runtime.connect({ name: "process-media" })
+  };
 }
 
 async function waitForFFmpeg() {
@@ -45,80 +51,87 @@ async function waitForFFmpeg() {
 }
 
 async function handleFFmpegReadiness() {
-  const $body = $("body");
+  const $body = document.body;
   const isFFmpegReady = (await getStorage("local", "isFFmpegReady")) ?? false;
-  $body.data("ffmpeg-ready", isFFmpegReady as boolean);
+  $body.setAttribute("data-ffmpeg-ready", isFFmpegReady.toString());
 
   chrome.storage.onChanged.addListener(changes => {
     if (!changes.isFFmpegReady) {
       return;
     }
 
-    $body.data("ffmpeg-ready", changes.isFFmpegReady.newValue);
+    $body.setAttribute(
+      "data-ffmpeg-ready",
+      changes.isFFmpegReady.newValue.toString()
+    );
   });
 }
 
-async function getVideoMetadata(): Promise<PlayerResponse> {
-  return new Promise(resolve => {
-    gPorts.metadata.postMessage(true);
-    gPorts.metadata.onMessage.addListener(resolve);
-  });
-}
-
-function getCurrentQuality() {
-  return document.body.dataset.ytDownloaderCurrentQuality;
-}
-
-function injectScript(code = gScriptToInject) {
-  if (!gScriptToInject) {
-    gScriptToInject = code;
+function cancelDownloads() {
+  if (gCancelControllers.length === 0) {
+    return;
   }
-  $("head").append(`<script>${code}</script>`);
+  gCancelControllers.forEach(controller => {
+    try {
+      controller.abort();
+      // eslint-disable-next-line no-empty
+    } catch {}
+  });
+
+  gCancelControllers = [];
 }
 
-async function addQualityListener() {
-  gPorts.fetchScriptToInject.postMessage(true);
-  gPorts.fetchScriptToInject.onMessage.addListener(injectScript);
+function resetObservers() {
+  gObserverPlaylist = null;
 }
 
 function addNavigationListener() {
-  new MutationObserver(() => {
+  new MutationObserver(async () => {
     gPorts.main.postMessage({
-      action: "navigated"
+      action: "navigated",
+      newUrl: location.href
     });
-  }).observe($("title")[0], { childList: true, subtree: true });
+
+    cancelDownloads();
+    resetObservers();
+    await init();
+  }).observe(document.querySelector("title"), { childList: true });
 }
 
-$(async () => {
-  addNavigationListener();
-
-  const isVideoOrPlaylist = Boolean(location.pathname.match(/watch|playlist/));
-  if (!isVideoOrPlaylist) {
+async function init() {
+  const isValidPage = Boolean(location.pathname.match(/watch|playlist/));
+  if (!isValidPage) {
     return;
   }
+
+  const isVideo = Boolean(location.pathname === "/watch");
+  if (isVideo) {
+    await handleVideo();
+    return;
+  }
+
+  await handlePlaylist();
+  if (!gObserverPlaylist) {
+    gObserverPlaylist = new MutationObserver(handlePlaylist);
+  }
+  gObserverPlaylist.observe(
+    document.querySelector("#contents"),
+    gObserverOptions
+  );
+}
+
+new MutationObserver(async (_, observer) => {
+  const isReadyForProcessing = Boolean(document.querySelector("title"));
+  if (!isReadyForProcessing) {
+    return;
+  }
+
+  observer.disconnect();
 
   attachToBackground();
+  addNavigationListener();
   await waitForFFmpeg();
   await handleFFmpegReadiness();
-  if (location.pathname === "/watch") {
-    await addQualityListener();
-  }
 
-  window.videoDataRaw = await getVideoMetadata();
-  console.log(window.videoDataRaw);
-
-  const getIsLive = (videoDataRaw: PlayerResponse) =>
-    videoDataRaw.microformat?.playerMicroformatRenderer.liveBroadcastDetails
-      ?.isLiveNow;
-
-  if (getIsLive(window.videoDataRaw)) {
-    // TODO: Add "Undownloadable"
-    return;
-  }
-
-  // TODO: Remove line; instead, add to the queue by clicking on the download button
-  gPorts.downloadMedia.postMessage({
-    type: "video+audio",
-    quality: getCurrentQuality()
-  });
-});
+  await init();
+}).observe(document.documentElement, gObserverOptions);
