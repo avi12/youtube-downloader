@@ -56,7 +56,7 @@ export async function handleVideo(): Promise<void> {
         if (!this.isStartedDownload) {
           return "DOWNLOAD";
         }
-        if (this.isInQueue) {
+        if (this.isQueued) {
           return "QUEUED";
         }
         return "CANCEL";
