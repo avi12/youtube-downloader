@@ -2,37 +2,13 @@ import { createFFmpeg, fetchFile, FFmpeg } from "@ffmpeg/ffmpeg";
 import { saveAs } from "file-saver";
 import { getMediaId, getStorage, setStorage } from "./utils";
 import Port = chrome.runtime.Port;
+import type { MediaType, Tracker } from "./types";
 
 let gCancelControllers: AbortController[] = [];
-type MediaType = "video" | "playlist";
 let gFfmpeg: FFmpeg;
-type Tracker = {
-  videoQueue: string[];
-  videoDetails: {
-    [videoId: string]: {
-      // The filename of the video.
-      filenameOutput: string;
-      // The download URLs.
-      urls: {
-        video: string;
-        audio: string;
-      };
-    };
-  };
-  tabs: {
-    [tabId: number]: {
-      // The type of the media.
-      type: MediaType;
-      // The ID of the video/playlist.
-      idMedia: string;
-      // If the media is a playlist, this is the list of videos to be processed.
-      idVideos?: string[];
-    };
-  };
-};
 
 function exitFFmpeg() {
-  if (!gFfmpeg) {
+  if (!gFfmpeg?.isLoaded()) {
     return;
   }
   // Wrapping in a try-catch block
@@ -80,6 +56,8 @@ async function handleMainConnection(port: Port) {
     idMedia: getMediaId(url)
   };
 
+  await setStorage("local", "tracker", tracker);
+
   const removeVideosFromQueue = async (idsToRemove: string[]) => {
     const iLastProcessingInProgress = idsToRemove.indexOf(
       tracker.videoQueue[0]
@@ -98,7 +76,9 @@ async function handleMainConnection(port: Port) {
     });
 
     await setStorage("local", "tracker", tracker);
-    await abortAndProcessVideoQueue(port);
+
+    cancelOngoingDownloads();
+    await exitFFmpeg();
   };
 
   port.onMessage.addListener(async message => {
@@ -276,6 +256,12 @@ function handleMediaProcessing(port: Port) {
 
     if (processInfo.type === "video+audio") {
       await abortAndProcessVideoQueue(port);
+    } else if (processInfo.type === "video") {
+      const videoDetail = tracker.videoDetails[processInfo.videoId];
+      const response = await fetch(videoDetail.urls.video);
+      saveAs(new Blob([await response.blob()]), videoDetail.filenameOutput);
+    } else if (processInfo.type === "audio") {
+      // TODO: Download only audio as MP3 after being processed by Browser ID3 Writer
     }
   });
 }
