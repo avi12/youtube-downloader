@@ -82,6 +82,9 @@ export async function handleVideo(): Promise<void> {
         if (this.isQueued) {
           return "QUEUED";
         }
+        if (this.progress === 1) {
+          return "DONE";
+        }
         return "DOWNLOAD";
       },
       isDownloadable() {
