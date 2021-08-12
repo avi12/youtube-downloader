@@ -7,6 +7,7 @@ import sveltePreprocess from "svelte-preprocess";
 import postcss from "rollup-plugin-postcss";
 import json from "@rollup/plugin-json";
 import scss from "rollup-plugin-scss";
+import replace from "rollup-plugin-replace";
 
 const isProduction = !process.env.ROLLUP_WATCH;
 
@@ -18,7 +19,7 @@ function createConfig(filename, useSvelte = false) {
       file: `dist/build/${filename}.js`,
       strict: false,
       sourcemap: true,
-      globals: ["$"]
+      globals: ["$", "@ffmpeg/ffmpeg"]
     },
     plugins: [
       useSvelte &&
@@ -35,6 +36,7 @@ function createConfig(filename, useSvelte = false) {
         dedupe: ["svelte"]
       }),
       commonjs(),
+      !useSvelte && replace({ "process.env.NODE_ENV": `"development"` }),
       typescript({ sourceMap: false }),
       isProduction && terser()
     ],
