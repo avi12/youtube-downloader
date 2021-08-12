@@ -191,7 +191,7 @@ async function processMedia({
 
   gFfmpeg.setProgress(({ ratio }) =>
     port.postMessage({
-      progress: Math.floor(ratio * 100)
+      progress: ratio * 100
     })
   );
 
