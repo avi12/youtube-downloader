@@ -712,3 +712,30 @@ export type PlayerResponse = {
     adaptiveFormats: AdaptiveFormatItem[];
   };
 };
+
+export type MediaType = "video" | "playlist";
+
+export type Tracker = {
+  videoQueue: string[];
+  videoDetails: {
+    [videoId: string]: {
+      // The filename of the video.
+      filenameOutput: string;
+      // The download URLs.
+      urls: {
+        video: string;
+        audio: string;
+      };
+    };
+  };
+  tabs: {
+    [tabId: number]: {
+      // The type of the media.
+      type: MediaType;
+      // The ID of the video/playlist.
+      idMedia: string;
+      // If the media is a playlist, this is the list of videos to be processed.
+      idVideos?: string[];
+    };
+  };
+};
