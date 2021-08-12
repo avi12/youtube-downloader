@@ -7,6 +7,11 @@ Made by [avi12](https://avi12.com)
 Still  in development, for as long as I'm not 100% happy with the result.  
 When it will be released to the public, it will be in Releases.
 
+## Installation
+1. Use [this]() AdFly link to download the latest version.
+2. Go to `about:extensions`
+3. Drag & drop the ZIP onto the extensions page
+
 ## Core packages/repositories used
 1. [ytdlr](https://github.com/bakapear/ytdlr) - for converting signature ciphers into downloadable URLs
 1. [FFmpeg](https://github.com/ffmpegwasm/ffmpeg.wasm) - for combining video & audio into a single video file, and then providing it as a download
