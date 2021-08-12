@@ -2,7 +2,7 @@
   "name": "YouTube Downloader",
   "description": "Download almost any video from YouTube.",
   "homepage_url": "https://avi12.com/youtube-downloader",
-  "version": "1.0.0",
+  "version": "0.0.2",
   "manifest_version": 2,
   "icons": {
     "16": "images/icon-16.png",
@@ -43,6 +43,10 @@
       "128": "images/icon-128.png"
     }
   },
-  "permissions": ["storage", "https://*.googlevideo.com/*", "https://*.youtube.com/*"],
+  "permissions": [
+    "storage",
+    "https://*.googlevideo.com/*",
+    "https://*.youtube.com/*"
+  ],
   "content_security_policy": "script-src 'self' 'unsafe-eval' blob:; object-src 'self'"
 }
