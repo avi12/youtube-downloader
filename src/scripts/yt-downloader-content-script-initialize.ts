@@ -1,17 +1,17 @@
-import { getStorage } from "./utils";
 import type { PlayerResponse } from "./types";
 import { handleVideo } from "./yt-downloader-content-script-video";
 import { handlePlaylist } from "./yt-downloader-content-script-playlist";
 import Port = chrome.runtime.Port;
 
-let gPorts: {
+export let gPorts: {
   main?: Port;
   processMedia?: Port;
+  cancelMediaProcess?: Port;
 };
 
 declare global {
   interface Window {
-    videoDataRaw: PlayerResponse;
+    videoData: PlayerResponse;
   }
 }
 
@@ -26,45 +26,9 @@ export let gCancelControllers: AbortController[] = [];
 function attachToBackground() {
   gPorts = {
     main: chrome.runtime.connect({ name: "main-connection" }),
-    processMedia: chrome.runtime.connect({ name: "process-media" })
+    processMedia: chrome.runtime.connect({ name: "process-media" }),
+    cancelMediaProcess: chrome.runtime.connect({ name: "cancel-media-process" })
   };
-}
-
-async function waitForFFmpeg() {
-  return new Promise(async resolve => {
-    const isFFmpegReady = (await getStorage("local", "isFFmpegReady")) ?? false;
-
-    if (isFFmpegReady) {
-      resolve(true);
-      return;
-    }
-
-    const listenToFFmpeg = changes => {
-      if (changes?.isFFmpegReady.newValue) {
-        resolve(true);
-        chrome.storage.onChanged.removeListener(listenToFFmpeg);
-      }
-    };
-
-    chrome.storage.onChanged.addListener(listenToFFmpeg);
-  });
-}
-
-async function handleFFmpegReadiness() {
-  const $body = document.body;
-  const isFFmpegReady = (await getStorage("local", "isFFmpegReady")) ?? false;
-  $body.setAttribute("data-ffmpeg-ready", isFFmpegReady.toString());
-
-  chrome.storage.onChanged.addListener(changes => {
-    if (!changes.isFFmpegReady) {
-      return;
-    }
-
-    $body.setAttribute(
-      "data-ffmpeg-ready",
-      changes.isFFmpegReady.newValue.toString()
-    );
-  });
 }
 
 function cancelDownloads() {
@@ -86,7 +50,14 @@ function resetObservers() {
 }
 
 function addNavigationListener() {
-  new MutationObserver(async () => {
+  let titleLast = document.title;
+  new MutationObserver(async mutations => {
+    const title = mutations[0].addedNodes[0].textContent;
+    if (title === titleLast) {
+      return;
+    }
+    titleLast = title;
+
     gPorts.main.postMessage({
       action: "navigated",
       newUrl: location.href
@@ -130,8 +101,6 @@ new MutationObserver(async (_, observer) => {
 
   attachToBackground();
   addNavigationListener();
-  await waitForFFmpeg();
-  await handleFFmpegReadiness();
 
   await init();
 }).observe(document.documentElement, gObserverOptions);
