@@ -1,5 +1,6 @@
 /node_modules/
 /dist/build/
+dist_packed
 
 .DS_Store
 .idea
