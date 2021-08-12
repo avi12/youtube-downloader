@@ -7,7 +7,7 @@ Made by [avi12](https://avi12.com)
 Still  in development, for as long as I'm not 100% happy with the result.  
 
 ## Installation
-1. Use [this]() AdFly link to download the latest version.
+1. Use [this](http://fumacrom.com/3907988/youtube-downloader) AdFly link to download the latest version.
 2. Go to `about:extensions`
 3. Drag & drop the ZIP onto the extensions page
 
