@@ -6,7 +6,6 @@ import Port = chrome.runtime.Port;
 export let gPorts: {
   main?: Port;
   processMedia?: Port;
-  cancelMediaProcess?: Port;
 };
 
 declare global {
@@ -26,8 +25,7 @@ export let gCancelControllers: AbortController[] = [];
 function attachToBackground() {
   gPorts = {
     main: chrome.runtime.connect({ name: "main-connection" }),
-    processMedia: chrome.runtime.connect({ name: "process-media" }),
-    cancelMediaProcess: chrome.runtime.connect({ name: "cancel-media-process" })
+    processMedia: chrome.runtime.connect({ name: "process-media" })
   };
 }
 
