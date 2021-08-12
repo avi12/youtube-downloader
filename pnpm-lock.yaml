@@ -32,6 +32,7 @@ specifiers:
   rollup-plugin-terser: ^7.0.2
   sass: ^1.36.0
   sass-lint: ^1.13.1
+  set-json-version: ^1.0.6
   stylelint: ^13.13.1
   stylelint-config-standard: ^22.0.0
   svelte: ^3.40.2
@@ -77,6 +78,7 @@ devDependencies:
   rollup-plugin-terser: 7.0.2_rollup@2.56.1
   sass: 1.37.5
   sass-lint: 1.13.1
+  set-json-version: 1.0.6
   stylelint: 13.13.1
   stylelint-config-standard: 22.0.0_stylelint@13.13.1
   svelte: 3.42.1
@@ -5960,6 +5962,11 @@ packages:
   /set-immediate-shim/1.0.1:
     resolution: {integrity: sha1-SysbJ+uAip+NzEgaWOXlb1mfP2E=}
     engines: {node: '>=0.10.0'}
+    dev: true
+
+  /set-json-version/1.0.6:
+    resolution: {integrity: sha512-ej+pliQubLP7PAmVJshb26pNaSsdyiaYAh2ZozdRhAuem3qL4O5ty3bJYFbKmMcDq7b6i50qDOZ9vy2zy7Vl0A==}
+    hasBin: true
     dev: true
 
   /sha.js/2.4.11:
