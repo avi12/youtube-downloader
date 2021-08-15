@@ -1,28 +1,12 @@
 import { getVideoData } from "./yt-downloader-functions";
 import {
   gCancelControllers,
+  getIsDownloadable,
   gPorts
 } from "./yt-downloader-content-script-initialize";
-import type { PlayerResponse, Tracker } from "./types";
 import Vue from "vue/dist/vue.js";
-import { getElementEventually, getStorage } from "./utils";
-import StorageChange = chrome.storage.StorageChange;
-
-let downloadContainer;
-
-function updateDownloadStatus(changes: { [key: string]: StorageChange }) {
-  const tracker = changes.tracker?.newValue as Tracker;
-  if (!tracker) {
-    return;
-  }
-
-  const { videoId } = window.videoData.videoDetails;
-  const isQueued = tracker.videoQueue.includes(videoId);
-  const isCurrentlyInDownload = tracker.videoQueue[0] === videoId;
-
-  downloadContainer.isQueued = isQueued && !isCurrentlyInDownload;
-  downloadContainer.isStartedDownload = isCurrentlyInDownload;
-}
+import { getElementEventually } from "./utils";
+import type { VideoQueue } from "./types";
 
 export async function handleVideo(): Promise<void> {
   const getHtml = async () => {
@@ -34,11 +18,7 @@ export async function handleVideo(): Promise<void> {
     return response.text();
   };
 
-  window.videoData = await getVideoData(await getHtml());
-
-  const getIsLive = (videoDataRaw: PlayerResponse) =>
-    videoDataRaw.microformat?.playerMicroformatRenderer.liveBroadcastDetails
-      ?.isLiveNow;
+  const videoData = await getVideoData(await getHtml());
 
   const elDownloaderContainer = document.createElement("div");
   elDownloaderContainer.id = "ytdl-download-container";
@@ -54,19 +34,20 @@ export async function handleVideo(): Promise<void> {
   const {
     videoDetails,
     streamingData: { adaptiveFormats }
-  } = window.videoData;
+  } = videoData;
 
   const formatsSorted = adaptiveFormats.sort((a, b) => b.bitrate - a.bitrate);
 
-  downloadContainer = new Vue({
-    el: "#ytdl-download-container",
+  new Vue({
+    el: `#${elDownloaderContainer.id}`,
     data: {
       isStartedDownload: false,
+      isDownloadable: getIsDownloadable(videoData),
       progress: 0,
       isQueued: false
     },
     template: `
-      <section style="display: flex; flex-direction: column; justify-content: center;">
+      <section class="ytdl-container">
       <button @click="toggleDownload" :disabled="!isDownloadable">{{ textButton }}</button>
       <progress :value="progress"></progress>
       </section>
@@ -76,19 +57,16 @@ export async function handleVideo(): Promise<void> {
         if (!this.isDownloadable) {
           return "NOT DOWNLOADABLE";
         }
-        if (this.isStartedDownload) {
-          return "CANCEL";
+        if (this.progress === 1) {
+          return "DONE";
         }
         if (this.isQueued) {
           return "QUEUED";
         }
-        if (this.progress === 1) {
-          return "DONE";
+        if (this.isStartedDownload) {
+          return "CANCEL";
         }
         return "DOWNLOAD";
-      },
-      isDownloadable() {
-        return !getIsLive(window.videoData);
       },
       videoQuality() {
         const { videoHeight, videoWidth } = document.querySelector("video");
@@ -108,19 +86,15 @@ export async function handleVideo(): Promise<void> {
       }
     },
     methods: {
-      async toggleDownload({ ctrlKey }: MouseEvent) {
+      async toggleDownload() {
         this.isStartedDownload = !this.isStartedDownload;
 
         if (!this.isStartedDownload) {
-          gPorts.main.postMessage({ action: "cancel-download" });
-          return;
-        }
-
-        const tracker = (await getStorage("local", "tracker")) as Tracker;
-        const isADownloadInProgress = tracker.videoQueue.length > 0;
-        if (isADownloadInProgress && ctrlKey) {
-          gPorts.main.postMessage({ action: "cancel-download" });
-          await this.download();
+          chrome.runtime.sendMessage({
+            action: "cancel-download",
+            videoIdsToCancel: [videoData.videoDetails.videoId]
+          });
+          this.progress = 0;
           return;
         }
 
@@ -137,16 +111,34 @@ export async function handleVideo(): Promise<void> {
           videoId: videoDetails.videoId
         });
       }
+    },
+    created() {
+      chrome.runtime.onMessage.addListener(({ updateProgress }) => {
+        if (!updateProgress) {
+          return;
+        }
+        const { videoId, progress } = updateProgress;
+        if (videoId !== videoData.videoDetails.videoId) {
+          return;
+        }
+        this.progress = progress;
+        if (progress === 1) {
+          this.isStartedDownload = false;
+        }
+      });
+
+      chrome.storage.onChanged.addListener(changes => {
+        const videoQueue = changes.videoQueue?.newValue as VideoQueue;
+        if (!videoQueue) {
+          return;
+        }
+
+        const { videoId } = videoData.videoDetails;
+        const isQueued = videoQueue.includes(videoId);
+        const isCurrentlyInDownload = videoQueue[0] === videoId;
+
+        this.isQueued = isQueued && !isCurrentlyInDownload;
+      });
     }
   });
-
-  gPorts.processMedia.onMessage.addListener(({ progress }) => {
-    downloadContainer.progress = progress;
-    if (progress === 100) {
-      downloadContainer.isStartedDownload = false;
-    }
-  });
-
-  chrome.storage.onChanged.removeListener(updateDownloadStatus);
-  chrome.storage.onChanged.addListener(updateDownloadStatus);
 }
