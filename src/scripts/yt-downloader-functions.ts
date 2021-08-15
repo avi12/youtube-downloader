@@ -84,6 +84,11 @@ export async function getVideoData(
     htmlYouTubePage.match(gRegex.videoData)[1]
   );
 
+  const isUnplayable = videoData.playabilityStatus.status !== "OK";
+  if (isUnplayable) {
+    return videoData;
+  }
+
   const isHasStreamingUrls = Boolean(
     videoData.streamingData?.adaptiveFormats[0].url
   );
