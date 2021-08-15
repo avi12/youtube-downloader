@@ -37,16 +37,18 @@ export async function getElementByObserver(
   });
 }
 
-function getVisibleElement(elements: NodeListOf<Element>) {
-  return [...(elements as NodeListOf<HTMLElement>)].find(
-    element => element.offsetWidth > 0 && element.offsetHeight > 0
-  );
+export function isElementVisible(element: HTMLElement): boolean {
+  return element.offsetWidth > 0 && element.offsetHeight > 0;
+}
+
+function getVisibleElementInArray(elements: NodeListOf<Element>): HTMLElement {
+  return [...(elements as NodeListOf<HTMLElement>)].find(isElementVisible);
 }
 
 export async function getElementEventually(selector: string): Promise<Element> {
   const elements = document.querySelectorAll(selector);
   return (
-    (elements.length > 0 && getVisibleElement(elements)) ||
+    (elements.length > 0 && getVisibleElementInArray(elements)) ||
     (await getElementByObserver(selector))
   );
 }
