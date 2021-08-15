@@ -1,0 +1,10 @@
+.ytdl-container {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.ytdl-playlist-checkbox-container {
+  transition: width 0.5s;
+  overflow: hidden;
+}
