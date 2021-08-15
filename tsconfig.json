@@ -3,7 +3,6 @@
   "include": ["src/**/*"],
   "exclude": ["node_modules/*", "dist/*"],
   "compilerOptions": {
-    "isolatedModules": false,
     "target": "ESNext",
     "typeRoots": ["node_modules/@types"],
     "types": ["svelte", "chrome"],
