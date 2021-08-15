@@ -8,17 +8,20 @@ export let gPorts: {
   processMedia?: Port;
 };
 
-declare global {
-  interface Window {
-    videoData: PlayerResponse;
-  }
-}
-
 let gObserverPlaylist: MutationObserver;
 const gObserverOptions: MutationObserverInit = {
   subtree: true,
   childList: true
 };
+
+export function getIsLive(videoData: PlayerResponse): true | undefined {
+  return videoData.microformat?.playerMicroformatRenderer?.liveBroadcastDetails
+    ?.isLiveNow;
+}
+
+export function getIsDownloadable(videoData: PlayerResponse): boolean {
+  return !getIsLive(videoData) || videoData.playabilityStatus.status === "OK";
+}
 
 export let gCancelControllers: AbortController[] = [];
 
