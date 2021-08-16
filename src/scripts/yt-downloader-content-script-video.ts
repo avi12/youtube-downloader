@@ -89,12 +89,12 @@ export async function handleVideo(): Promise<void> {
       async toggleDownload() {
         this.isStartedDownload = !this.isStartedDownload;
 
+        this.progress = 0;
         if (!this.isStartedDownload) {
           chrome.runtime.sendMessage({
             action: "cancel-download",
             videoIdsToCancel: [videoData.videoDetails.videoId]
           });
-          this.progress = 0;
           return;
         }
 
@@ -124,6 +124,7 @@ export async function handleVideo(): Promise<void> {
         this.progress = progress;
         if (progress === 1) {
           this.isStartedDownload = false;
+          this.isQueued = false;
         }
       });
 
