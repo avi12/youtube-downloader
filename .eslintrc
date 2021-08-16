@@ -10,7 +10,8 @@
     "@typescript-eslint/no-empty-function": "off",
     "no-async-promise-executor": "off",
     "prefer-const": "warn",
-    "no-debugger": "off"
+    "no-debugger": "off",
+    "no-constant-condition": "off"
   },
   "overrides": [
     {
