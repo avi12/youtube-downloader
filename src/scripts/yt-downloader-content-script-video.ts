@@ -31,13 +31,6 @@ export async function handleVideo(): Promise<void> {
     elButtonAfterRating
   );
 
-  const {
-    videoDetails,
-    streamingData: { adaptiveFormats }
-  } = videoData;
-
-  const formatsSorted = adaptiveFormats.sort((a, b) => b.bitrate - a.bitrate);
-
   new Vue({
     el: `#${elDownloaderContainer.id}`,
     data: {
@@ -68,19 +61,24 @@ export async function handleVideo(): Promise<void> {
         }
         return "DOWNLOAD";
       },
+      formatsSorted() {
+        return videoData.streamingData.adaptiveFormats.sort(
+          (a, b) => b.bitrate - a.bitrate
+        );
+      },
       videoQuality() {
         const { videoHeight, videoWidth } = document.querySelector("video");
         return Math.min(videoHeight, videoWidth);
       },
       video() {
-        return formatsSorted.find(
+        return this.formatsSorted.find(
           format =>
             format.mimeType.startsWith("video") &&
             format.height === this.videoQuality
         );
       },
       audioBest() {
-        return formatsSorted.find(format =>
+        return this.formatsSorted.find(format =>
           format.mimeType.startsWith("audio")
         );
       }
@@ -107,8 +105,8 @@ export async function handleVideo(): Promise<void> {
             video: this.video.url,
             audio: this.audioBest.url
           },
-          filenameOutput: `${videoDetails.title}.mp4`,
-          videoId: videoDetails.videoId
+          filenameOutput: `${videoData.videoDetails.title}.mp4`,
+          videoId: videoData.videoDetails.videoId
         });
       }
     },
