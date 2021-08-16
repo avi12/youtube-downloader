@@ -276,23 +276,25 @@ function getTabId({ tabs, videoId }: { tabs: Tabs; videoId: string }): number {
   }
 }
 
-async function processCurrentVideoWhenAvailable(lastVideoId?: string) {
-  const videoId = gVideoQueue.value[0];
-  if (!videoId || videoId === lastVideoId) {
-    setTimeout(() => processCurrentVideoWhenAvailable(videoId), 500);
-    return;
-  }
+async function processCurrentVideoWhenAvailable() {
+  const delay = () => new Promise(resolve => setTimeout(resolve, 500));
+  while (1) {
+    const videoId = gVideoQueue.value[0];
+    if (!videoId) {
+      await delay();
+      continue;
+    }
 
-  const tabId = getTabId({
-    tabs: gTracker.tabs,
-    videoId
-  });
-  await processMedia({
-    tabId: tabId,
-    videoId,
-    ...gTracker.videoDetails[videoId]
-  });
-  setTimeout(() => processCurrentVideoWhenAvailable(videoId), 500);
+    const tabId = getTabId({
+      tabs: gTracker.tabs,
+      videoId
+    });
+    await processMedia({
+      tabId: tabId,
+      videoId,
+      ...gTracker.videoDetails[videoId]
+    });
+  }
 }
 
 function addWatchers() {
