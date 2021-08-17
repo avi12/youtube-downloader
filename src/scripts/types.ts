@@ -713,21 +713,21 @@ export type PlayerResponse = {
   };
 };
 
-export type MediaType = "video" | "playlist";
-
 export type VideoQueue = string[];
 
-export type Tabs = {
-  [tabId: number]: {
-    // The type of the media.
-    type: MediaType;
-    // The ID of the video/playlist.
-    idMedia: string;
-    // If the media is a playlist, this is the list of videos to be processed.
-    idVideos?: string[];
-  };
+export type Tab = {
+  // Contains a list of all the videos, either from a /watch page or from a /playlist page.
+  idVideosAvailable?: string[];
+  // If the media is a playlist, this is the list of videos to be processed.
+  idVideosToDownload?: string[];
 };
+
+export type TabHolder = {
+  [tabId: number]: Tab;
+};
+
 export type Tracker = {
+  // Key-value pairs where each video ID points at data that is associated with its download.
   videoDetails: {
     [videoId: string]: {
       // The filename of the video.
@@ -739,5 +739,10 @@ export type Tracker = {
       };
     };
   };
-  tabs: Tabs;
+  // Key-value pairs where each tab ID points at both videos that can be downloaded (when it comes to individual videos) *and* videos that are planned to be downloaded (when it comes to playlists).
+  tabs: TabHolder;
+  // Key-value pairs where each video points at all of the tab IDs that are associated with it.
+  videoIds: {
+    [videoId: string]: number[];
+  };
 };
