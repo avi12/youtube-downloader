@@ -88,7 +88,7 @@ export async function handleVideo(): Promise<void> {
         this.isStartedDownload = !this.isStartedDownload;
 
         this.progress = 0;
-        if (!this.isStartedDownload) {
+        if (!this.isStartedDownload || this.isQueued) {
           chrome.runtime.sendMessage({
             action: "cancel-download",
             videoIdsToCancel: [videoData.videoDetails.videoId]
@@ -120,9 +120,10 @@ export async function handleVideo(): Promise<void> {
           return;
         }
         this.progress = progress;
+
         if (progress === 1) {
-          this.isStartedDownload = false;
           this.isQueued = false;
+          this.isStartedDownload = false;
         }
       });
 
@@ -133,10 +134,15 @@ export async function handleVideo(): Promise<void> {
         }
 
         const { videoId } = videoData.videoDetails;
-        const isQueued = videoQueue.includes(videoId);
-        const isCurrentlyInDownload = videoQueue[0] === videoId;
+        const isInQueue = videoQueue.includes(videoId);
 
-        this.isQueued = isQueued && !isCurrentlyInDownload;
+        const isDownloading = videoQueue[0] === videoId;
+
+        this.isQueued = isInQueue && !isDownloading;
+        if (isDownloading) {
+          this.progress = 0;
+        }
+        this.isStartedDownload = isDownloading;
       });
     }
   });
