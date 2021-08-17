@@ -9,7 +9,8 @@ Still  in development, for as long as I'm not 100% happy with the result
 ## Installation
 1. Use [this](http://fumacrom.com/3907988/youtube-downloader) AdFly link to download the latest version
 2. Go to `about:extensions`
-3. Drag & drop the ZIP onto the extensions page
+3. Enable "Developer mode" (top-right corner usually)
+4. Drag & drop the ZIP onto the extensions page
 
 ## Core packages/repositories used
 1. [ytdlr](https://github.com/bakapear/ytdlr) - for converting signature ciphers into downloadable URLs
