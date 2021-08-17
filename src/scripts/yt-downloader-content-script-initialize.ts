@@ -61,7 +61,7 @@ function addNavigationListener() {
 
     gPorts.main.postMessage({
       action: "navigated",
-      newUrl: location.href
+      urlNew: location.href
     });
 
     cancelDownloads();
