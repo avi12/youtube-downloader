@@ -12,7 +12,7 @@
   "scripts": {
     "dev": "rollup -c -w",
     "build": "rollup -c",
-    "pack": "web-ext build --overwrite-dest --artifacts-dir dist_packed --source-dir dist --filename=YouTube-Downloader.zip",
+    "pack": "web-ext build --overwrite-dest --artifacts-dir dist_packed --source-dir dist --filename=youtube-downloader.zip",
     "build-pack": "pnpm build && pnpm run pack",
     "set-version": "set-json-version -f package.json dist/manifest.json -v",
     "run-browser": "web-ext run --no-config-discovery --start-url https://www.youtube.com/playlist?list=PLwCbIpH3KfpCYpPglyn4T8ecOcSNuAkBr --source-dir dist --verbose --target",
