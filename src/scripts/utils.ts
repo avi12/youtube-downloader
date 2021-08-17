@@ -53,7 +53,7 @@ export async function getElementEventually(selector: string): Promise<Element> {
   );
 }
 
-export function getMediaId(url: string): string {
+export function getVideoId(url: string): string | null {
   const urlParams = new URLSearchParams(new URL(url).search);
-  return urlParams.get("v") || urlParams.get("list");
+  return urlParams.get("v");
 }
