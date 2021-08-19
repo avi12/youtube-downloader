@@ -19,12 +19,10 @@ export async function getStorage(
   );
 }
 
-export async function getElementByObserver(
-  selector: string
-): Promise<HTMLElement> {
+async function getElementByObserver(selector: string): Promise<HTMLElement> {
   return new Promise(resolve => {
     const observerHtml = new MutationObserver((_, observer) => {
-      const element = document.querySelector(selector);
+      const element = getVisibleElementInArray(selector);
       if (element) {
         observer.disconnect();
         resolve(element as HTMLElement);
@@ -37,11 +35,19 @@ export async function getElementByObserver(
   });
 }
 
-export function isElementVisible(element: HTMLElement): boolean {
-  return element.offsetWidth > 0 && element.offsetHeight > 0;
+export function isElementVisible(element: HTMLElement | Element): boolean {
+  return (
+    (<HTMLElement>element).offsetWidth > 0 &&
+    (<HTMLElement>element).offsetHeight > 0
+  );
 }
 
-function getVisibleElementInArray(elements: NodeListOf<Element>): HTMLElement {
+function getVisibleElementInArray(
+  elements: NodeListOf<Element> | string
+): HTMLElement {
+  if (typeof elements === "string") {
+    elements = document.querySelectorAll(elements);
+  }
   return [...(elements as NodeListOf<HTMLElement>)].find(isElementVisible);
 }
 
