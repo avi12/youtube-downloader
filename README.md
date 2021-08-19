@@ -11,6 +11,7 @@ Still  in development, for as long as I'm not 100% happy with the result
 2. Go to `about:extensions`
 3. Enable "Developer mode" (top-right corner usually)
 4. Drag & drop the ZIP onto the extensions page
+5. Reload any YouTube tab you wish the extension to run on
 
 ## Core packages/repositories used
 1. [ytdlr](https://github.com/bakapear/ytdlr) - for converting signature ciphers into downloadable URLs
