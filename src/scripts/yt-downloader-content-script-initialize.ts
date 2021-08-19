@@ -1,26 +1,36 @@
 import type { PlayerResponse } from "./types";
 import { handleVideo } from "./yt-downloader-content-script-video";
-import { handlePlaylist } from "./yt-downloader-content-script-playlist";
+import {
+  appendPlaylistDownloadButton,
+  handlePlaylistVideos
+} from "./yt-downloader-content-script-playlist";
 import Port = chrome.runtime.Port;
 
 export let gPorts: {
   main?: Port;
-  processMedia?: Port;
+  processSingle?: Port;
+  processPlaylist?: Port;
 };
 
-let gObserverPlaylist: MutationObserver;
+let isPortDisconnected = false;
+
+let gObserverPlaylistVideos: MutationObserver;
+let gObserverPlaylistDownloadButton: MutationObserver;
 const gObserverOptions: MutationObserverInit = {
   subtree: true,
   childList: true
 };
 
-export function getIsLive(videoData: PlayerResponse): true | undefined {
-  return videoData.microformat?.playerMicroformatRenderer?.liveBroadcastDetails
-    ?.isLiveNow;
+export function getIsLive(videoData: PlayerResponse): boolean {
+  return videoData.videoDetails.isLive;
 }
 
 export function getIsDownloadable(videoData: PlayerResponse): boolean {
-  return !getIsLive(videoData) || videoData.playabilityStatus.status === "OK";
+  return (
+    !isPortDisconnected &&
+    !getIsLive(videoData) &&
+    videoData.playabilityStatus.status === "OK"
+  );
 }
 
 export let gCancelControllers: AbortController[] = [];
@@ -28,8 +38,11 @@ export let gCancelControllers: AbortController[] = [];
 function attachToBackground() {
   gPorts = {
     main: chrome.runtime.connect({ name: "main-connection" }),
-    processMedia: chrome.runtime.connect({ name: "process-media" })
+    processSingle: chrome.runtime.connect({ name: "process-single" }),
+    processPlaylist: chrome.runtime.connect({ name: "process-playlist" })
   };
+
+  gPorts.main.onDisconnect.addListener(() => (isPortDisconnected = true));
 }
 
 function cancelDownloads() {
@@ -47,7 +60,8 @@ function cancelDownloads() {
 }
 
 function resetObservers() {
-  gObserverPlaylist = null;
+  gObserverPlaylistVideos = null;
+  gObserverPlaylistDownloadButton = null;
 }
 
 function addNavigationListener() {
@@ -82,14 +96,39 @@ async function init() {
     return;
   }
 
-  await handlePlaylist();
-  if (!gObserverPlaylist) {
-    gObserverPlaylist = new MutationObserver(handlePlaylist);
+  if (!gObserverPlaylistVideos) {
+    gObserverPlaylistVideos = new MutationObserver(async mutations => {
+      if (
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore
+        !mutations?.[1]?.addedNodes?.[0]?.matches?.(
+          "ytd-playlist-video-renderer"
+        )
+      ) {
+        return;
+      }
+      await handlePlaylistVideos();
+    });
   }
-  gObserverPlaylist.observe(
+
+  if (!gObserverPlaylistDownloadButton) {
+    gObserverPlaylistDownloadButton = new MutationObserver(
+      appendPlaylistDownloadButton
+    );
+  }
+
+  gObserverPlaylistVideos.observe(
     document.querySelector("#contents"),
     gObserverOptions
   );
+
+  gObserverPlaylistDownloadButton.observe(
+    document.querySelector("ytd-menu-renderer"),
+    gObserverOptions
+  );
+
+  appendPlaylistDownloadButton();
+  await handlePlaylistVideos();
 }
 
 new MutationObserver(async (_, observer) => {

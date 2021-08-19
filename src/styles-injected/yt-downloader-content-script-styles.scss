@@ -4,7 +4,35 @@
   justify-content: center;
 }
 
+#ytdl-playlist-button-container {
+  transition: max-height 0.5s;
+  overflow: hidden;
+}
+
 .ytdl-playlist-checkbox-container {
   transition: width 0.5s;
   overflow: hidden;
+}
+
+.ytdl--error {
+  color: var(--yt-spec-brand-link-text, red);
+}
+
+.ytdl--text {
+  color: var(--yt-spec-text-primary);
+}
+
+.ytdl--size-medium {
+  font-size: var(--ytd-subheadline-link_-_font-size);
+}
+
+// Transitions for the playlist page - error & X out of Y videos
+.slide-enter,.slide-leave-to {
+  max-height: 0;
+}
+.slide-enter-active,.slide-leave-active {
+  transition: max-height 0.5s;
+}
+.slide-enter-to,.slide-leave {
+  max-height: 50px;
 }

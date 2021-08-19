@@ -5,7 +5,7 @@ import type { Tab, TabHolder, Tracker, VideoQueue } from "./types";
 import { ref, watch } from "@vue/runtime-core";
 import Port = chrome.runtime.Port;
 
-let gCancelControllers: AbortController[] = [];
+const gCancelControllers: { [videoId: string]: AbortController[] } = {};
 let gFfmpeg: FFmpeg;
 const gVideoQueue = ref<VideoQueue>([]);
 const gTracker: Tracker = {
@@ -37,25 +37,25 @@ async function restartFFmpeg() {
   await processCurrentVideoWhenAvailable();
 }
 
-function cancelOngoingDownloads() {
-  gCancelControllers.forEach(controller => {
-    try {
-      controller.abort();
-      // eslint-disable-next-line no-empty
-    } catch {}
-  });
+function cancelOngoingDownloads(videoIds?: string[]) {
+  if (!videoIds) {
+    videoIds = Object.keys(gCancelControllers);
+  }
 
-  gCancelControllers = [];
+  videoIds.forEach(videoId => {
+    gCancelControllers[videoId].forEach(controller => {
+      try {
+        controller.abort();
+        // eslint-disable-next-line no-empty
+      } catch {}
+    });
+
+    delete gCancelControllers[videoId];
+  });
 }
 
 async function removeVideosFromQueue(idsToRemove: string[]) {
-  const iLastProcessingInProgress = idsToRemove.indexOf(gVideoQueue.value[0]);
-
-  if (iLastProcessingInProgress > -1) {
-    gVideoQueue.value.shift();
-    idsToRemove.splice(iLastProcessingInProgress, 1);
-    await restartFFmpeg();
-  }
+  const iFirstProcessingInProgress = idsToRemove.indexOf(gVideoQueue.value[0]);
 
   idsToRemove.forEach(idToRemove => {
     const iVideo = gVideoQueue.value.indexOf(idToRemove);
@@ -64,7 +64,11 @@ async function removeVideosFromQueue(idsToRemove: string[]) {
     }
   });
 
-  cancelOngoingDownloads();
+  cancelOngoingDownloads(idsToRemove);
+
+  if (iFirstProcessingInProgress > -1) {
+    await restartFFmpeg();
+  }
 }
 
 function getIsFoundVideoIdInAnotherTab({
@@ -129,8 +133,10 @@ async function handleMainConnection(port: Port) {
       const isVideoPage = Boolean(videoIdNew);
       const isRemoveTab = !isVideoPage || videoIdOld !== videoIdNew;
       if (isRemoveTab) {
-        const iIdTab = gTracker.videoIds[videoIdNew].indexOf(idTab);
-        gTracker.videoIds[videoIdNew].splice(iIdTab, 1);
+        const iIdTab = gTracker.videoIds[videoIdNew]?.indexOf(idTab);
+        if (iIdTab !== undefined) {
+          gTracker.videoIds[videoIdNew].splice(iIdTab, 1);
+        }
       }
 
       if (
@@ -142,7 +148,6 @@ async function handleMainConnection(port: Port) {
         return;
       }
 
-      cancelOngoingDownloads();
       await removeVideosFromQueue(
         tabTracked.idVideosToDownload || tabTracked.idVideosAvailable
       );
@@ -195,6 +200,48 @@ async function processMedia({
   filenameOutput: string;
   videoId: string;
 }) {
+  const responseToUintArray: (
+    response: Response,
+    videoId
+  ) => Promise<Uint8Array> = async (response: Response, videoId: string) => {
+    // https://javascript.info/fetch-progress
+    const reader = response.body.getReader();
+    const totalLength = +response.headers.get("Content-Length");
+    const progressType = response.headers.get("Content-Type").split("/")[0];
+
+    let receivedLength = 0;
+    const chunks: Uint8Array[] = [];
+
+    while (1) {
+      const { done, value } = await reader.read();
+      if (done) {
+        break;
+      }
+
+      chunks.push(value);
+      receivedLength += value.length;
+
+      gTracker.videoIds[videoId].forEach(tabId => {
+        chrome.tabs.sendMessage(tabId, {
+          updateProgress: {
+            videoId,
+            progress: receivedLength / totalLength,
+            progressType
+          }
+        });
+      });
+    }
+
+    const chuncksAll = new Uint8Array(receivedLength);
+    let position = 0;
+    for (const chunk of chunks) {
+      chuncksAll.set(chunk, position);
+      position += chunk.length;
+    }
+
+    return chuncksAll;
+  };
+
   gTracker.videoDetails[videoId] = {
     urls: {
       video: urls.video,
@@ -206,7 +253,7 @@ async function processMedia({
   const videoAbortController = new AbortController();
   const audioAbortController = new AbortController();
 
-  gCancelControllers.push(videoAbortController, audioAbortController);
+  gCancelControllers[videoId] = [videoAbortController, audioAbortController];
 
   const [responseVideo, responseAudio] = await Promise.all([
     fetch(urls.video, { signal: videoAbortController.signal }),
@@ -219,12 +266,18 @@ async function processMedia({
     `${videoId}-output.mp4`
   ];
 
+  try {
+    deleteFiles([filenameVideo, filenameAudio, filenameOutputTemp]);
+    // eslint-disable-next-line no-empty
+  } catch {}
+
   gFfmpeg.setProgress(({ ratio }) => {
     gTracker.videoIds[videoId].forEach(tabId => {
       chrome.tabs.sendMessage(tabId, {
         updateProgress: {
           videoId,
-          progress: ratio
+          progress: ratio,
+          progressType: "ffmpeg"
         }
       });
     });
@@ -233,13 +286,13 @@ async function processMedia({
   gFfmpeg.FS(
     "writeFile",
     filenameVideo,
-    await fetchFile(await responseVideo.blob())
+    await fetchFile(await responseToUintArray(responseVideo, videoId))
   );
 
   gFfmpeg.FS(
     "writeFile",
     filenameAudio,
-    await fetchFile(await responseAudio.blob())
+    await fetchFile(await responseToUintArray(responseAudio, videoId))
   );
 
   await gFfmpeg.run(
@@ -261,7 +314,7 @@ async function processMedia({
   gVideoQueue.value.splice(iVideo, 1);
 }
 
-function handleMediaProcessing(port: Port) {
+function handleSingleMediaProcessing(port: Port) {
   port.onMessage.addListener(
     async (processInfo: {
       type: "video+audio" | "video" | "audio";
@@ -304,7 +357,7 @@ function removeVideoIdsFromTabs(videoIdsToCancel: string[]) {
   for (const videoId of videoIdsToCancel) {
     for (const tabId in gTracker.tabs) {
       const { idVideosToDownload } = gTracker.tabs[tabId];
-      if (idVideosToDownload?.includes?.(videoId)) {
+      if (idVideosToDownload?.includes(videoId)) {
         const iVideo = idVideosToDownload.indexOf(videoId);
         idVideosToDownload.splice(iVideo, 1);
       }
@@ -312,19 +365,60 @@ function removeVideoIdsFromTabs(videoIdsToCancel: string[]) {
   }
 }
 
+function handlePlaylistProcessing(port: Port) {
+  port.onMessage.addListener(
+    async (
+      processInfos: {
+        type: "video+audio" | "video" | "audio";
+        urls: {
+          video: string;
+          audio: string;
+        };
+        filenameOutput: string;
+        videoId: string;
+      }[]
+    ) => {
+      processInfos.forEach(processInfo => {
+        gTracker.videoDetails[processInfo.videoId] = {
+          urls: { ...processInfo.urls },
+          filenameOutput: processInfo.filenameOutput
+        };
+      });
+
+      const videoIds = processInfos.reduce(
+        (videoIds: string[], processInfo) => {
+          if (processInfo.type === "video+audio") {
+            videoIds.push(processInfo.videoId);
+          }
+          return videoIds;
+        },
+        []
+      );
+
+      gTracker.tabs[port.sender.tab.id].idVideosToDownload = videoIds;
+      const wasPlaylistEmpty = gVideoQueue.value.length === 0;
+      gVideoQueue.value.unshift(...videoIds);
+      if (!wasPlaylistEmpty) {
+        await restartFFmpeg();
+      }
+    }
+  );
+}
+
 function listenToTabs() {
   chrome.runtime.onConnect.addListener(async port => {
     if (port.name === "main-connection") {
       await handleMainConnection(port);
-    } else if (port.name === "process-media") {
-      handleMediaProcessing(port);
+    } else if (port.name === "process-single") {
+      handleSingleMediaProcessing(port);
+    } else if (port.name === "process-playlist") {
+      handlePlaylistProcessing(port);
     }
   });
 
   chrome.runtime.onMessage.addListener(async message => {
     if (message.action === "cancel-download") {
       removeVideoIdsFromTabs(message.videoIdsToCancel);
-      cancelOngoingDownloads();
       await removeVideosFromQueue(message.videoIdsToCancel);
     }
   });
@@ -334,7 +428,7 @@ async function processCurrentVideoWhenAvailable() {
   const delay = () => new Promise(resolve => setTimeout(resolve, 500));
   while (1) {
     const videoId = gVideoQueue.value[0];
-    if (!videoId) {
+    if (!videoId || !gFfmpeg.isLoaded()) {
       await delay();
       continue;
     }
