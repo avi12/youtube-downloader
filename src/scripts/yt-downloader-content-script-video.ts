@@ -26,6 +26,11 @@ export async function handleVideo(): Promise<void> {
   const elButtonAfterRating = await getElementEventually(
     "#top-level-buttons-computed ytd-button-renderer"
   );
+
+  if (document.getElementById(elDownloaderContainer.id)) {
+    return;
+  }
+
   elButtonAfterRating.parentElement.insertBefore(
     elDownloaderContainer,
     elButtonAfterRating
@@ -37,20 +42,26 @@ export async function handleVideo(): Promise<void> {
       isStartedDownload: false,
       isDownloadable: getIsDownloadable(videoData),
       progress: 0,
-      isQueued: false
+      progressType: "",
+      isQueued: false,
+      isPortDisconnected: false
     },
     template: `
-      <section class="ytdl-container">
+      <section class="ytdl-container" id="${elDownloaderContainer.id}">
       <button @click="toggleDownload" :disabled="!isDownloadable">{{ textButton }}</button>
-      <progress :value="progress"></progress>
+      <!--suppress HtmlUnknownAttribute -->
+      <progress :value="progress" :data-progress-type="progressType"></progress>
       </section>
     `,
     computed: {
       textButton() {
+        if (this.isPortDisconnected) {
+          return "RELOAD TO DOWNLOAD";
+        }
         if (!this.isDownloadable) {
           return "NOT DOWNLOADABLE";
         }
-        if (this.progress === 1) {
+        if (this.progress === 1 && this.progressType === "ffmpeg") {
           return "DONE";
         }
         if (this.isQueued) {
@@ -99,7 +110,7 @@ export async function handleVideo(): Promise<void> {
         await this.download();
       },
       async download() {
-        gPorts.processMedia.postMessage({
+        gPorts.processSingle.postMessage({
           type: "video+audio",
           urls: {
             video: this.video.url,
@@ -115,15 +126,16 @@ export async function handleVideo(): Promise<void> {
         if (!updateProgress) {
           return;
         }
-        const { videoId, progress } = updateProgress;
+        const { videoId, progress, progressType } = updateProgress;
         if (videoId !== videoData.videoDetails.videoId) {
           return;
         }
         this.progress = progress;
+        this.progressType = progressType;
+        this.isStartedDownload = progress < 1;
 
         if (progress === 1) {
           this.isQueued = false;
-          this.isStartedDownload = false;
         }
       });
 
@@ -143,6 +155,11 @@ export async function handleVideo(): Promise<void> {
           this.progress = 0;
         }
         this.isStartedDownload = isDownloading;
+      });
+
+      gPorts.main.onDisconnect.addListener(() => {
+        this.isPortDisconnected = true;
+        this.isDownloadable = false;
       });
     }
   });
