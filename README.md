@@ -6,6 +6,30 @@ Made by [avi12](https://avi12.com)
 ## This is a WIP
 Still  in development, for as long as I'm not 100% happy with the result  
 
+## Features
+* Download videos from `/watch`
+* In videos on `/watch`, clicking Download will download the video in the currently-selected quality
+* Download videos from `/playlist`, both individually (i.e. clicking Download on videos) and as a batch (which will download all of them consecutively)
+* Clicking Download on multiple videos will queue them up
+* Viewing the download progress
+* All downloads are cancelable
+* Any video downloads as MP4
+
+## To-dos
+* Pop-up:
+  * Allow easy re-ordering of downloads
+  * Options:
+    * Filename template (allows specifying the file extension as well)
+    * When initiating a download in a `/playlist` - by default download the videos as a ZIP or as individual files
+    * By default, whether to download a video in X quality/highest available, or download according to the selected quality
+* Rich options for each video:
+  * Specify a filename before downloading
+  * Specify what to download - video-only, audio-only or video + audio
+  * Specify the quality of the video/audio
+* If the video has Clip, opening the Clip modal will allow to specify which portion of the video to download (including the rich options, as mentioned above)
+* Clicking Download on a music video will download it as MP3, unless specified another format manually or through the settings in the pop-up page
+* Improve the styling of buttons, add tooltips
+
 ## Installation
 1. Use [this](http://fumacrom.com/3907988/youtube-downloader) AdFly link to download the latest version
 2. Go to `about:extensions`
