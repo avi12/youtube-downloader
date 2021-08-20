@@ -8,6 +8,7 @@ import postcss from "rollup-plugin-postcss";
 import json from "@rollup/plugin-json";
 import scss from "rollup-plugin-scss";
 import replace from "rollup-plugin-replace";
+import css from "rollup-plugin-css-only";
 
 const isProduction = !process.env.ROLLUP_WATCH;
 
@@ -22,6 +23,7 @@ function createConfig(filename, useSvelte = false) {
       globals: ["$", "@ffmpeg/ffmpeg"]
     },
     plugins: [
+      useSvelte && css({ output: "popup/popup.css" }),
       useSvelte &&
         svelte({
           compilerOptions: {
@@ -36,7 +38,12 @@ function createConfig(filename, useSvelte = false) {
         dedupe: ["svelte"]
       }),
       commonjs(),
-      !useSvelte && replace({ "process.env.NODE_ENV": `"development"` }),
+      !useSvelte &&
+        replace({
+          "process.env.NODE_ENV": `"${
+            !isProduction ? "development" : "production"
+          }"`
+        }),
       typescript({ sourceMap: false }),
       isProduction && terser()
     ],
@@ -70,5 +77,6 @@ function createConfigCss(filename) {
 export default [
   createConfig("scripts/yt-downloader-content-script-initialize"),
   createConfig("scripts/background"),
-  createConfigCss("yt-downloader-content-script-styles")
+  createConfigCss("yt-downloader-content-script-styles"),
+  createConfig("scripts/popup", true)
 ];
