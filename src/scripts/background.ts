@@ -500,19 +500,19 @@ function addListeners() {
 }
 
 function addWatchers() {
-  watch(gVideoQueue.value, videoQueue =>
-    setStorage("local", "videoQueue", [...videoQueue])
-  );
+  watch(gVideoQueue, videoQueue => {
+    setStorage("local", "videoQueue", videoQueue);
+  });
 
-  watch(gTabTracker.value, tabTracker => {
+  watch(gTabTracker, tabTracker => {
     setStorage("local", "tabTracker", tabTracker);
   });
 
-  watch(gVideoDetails.value, videoDetails =>
+  watch(gVideoDetails, videoDetails =>
     setStorage("local", "videoDetails", videoDetails)
   );
 
-  watch(gVideoIds.value, videoIds => setStorage("local", "videoIds", videoIds));
+  watch(gVideoIds, videoIds => setStorage("local", "videoIds", videoIds));
 }
 
 chrome.runtime.onInstalled.addListener(emptyTempStorage);
