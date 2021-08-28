@@ -26,7 +26,7 @@
   font-size: var(--ytd-subheadline-link_-_font-size);
 }
 
-// Transitions for the playlist page - error & X out of Y videos
+/*Transitions for the playlist page - error & X out of Y videos*/
 .slide-enter,.slide-leave-to {
   max-height: 0;
 }

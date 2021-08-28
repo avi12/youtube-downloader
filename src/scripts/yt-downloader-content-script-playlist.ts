@@ -358,18 +358,19 @@ export async function handlePlaylistVideos(): Promise<void> {
 
     const { videoId, progress, progressType } = updateProgress;
 
-    if (!downloadContainers[videoId]) {
+    const downloadContainer = downloadContainers[videoId];
+    const isVideoIdToDownload = Boolean(downloadContainer);
+    if (!isVideoIdToDownload) {
       return;
     }
 
-    downloadContainers[videoId].progress = progress;
-    downloadContainers[videoId].progressType = progressType;
-
-    downloadContainers[videoId].isStartedDownload =
-      (progress > 0 && progress < 1) || progressType !== "ffmpeg";
+    downloadContainer.progress = progress;
+    downloadContainer.progressType = progressType;
+    downloadContainer.isStartedDownload =
+      (progress < 1 && progress > 0) || progressType !== "ffmpeg";
 
     if (progress === 1) {
-      downloadContainers[videoId].isQueued = false;
+      downloadContainer.isQueued = false;
     }
   });
 
@@ -377,15 +378,15 @@ export async function handlePlaylistVideos(): Promise<void> {
     downloadPlaylist.videoIdsToDownload.includes(videoId);
 
   chrome.storage.onChanged.addListener(changes => {
-    const videoQueueCurrent = <VideoQueue>changes.videoQueue?.newValue;
+    const videoQueueCurrent = changes.videoQueue?.newValue as VideoQueue;
     if (!videoQueueCurrent) {
       return;
     }
+
     const videoQueuePlaylistCurrent = videoQueueCurrent.filter(isIdExists);
 
-    const videoQueuePlaylistPrevious = <VideoQueue>(
-      changes.videoQueue.oldValue.filter(isIdExists)
-    );
+    const videoQueuePlaylistPrevious =
+      changes.videoQueue.oldValue.filter(isIdExists);
 
     const videoQueueDiff = <VideoQueue>(
       videoQueuePlaylistPrevious.filter(
@@ -397,7 +398,7 @@ export async function handlePlaylistVideos(): Promise<void> {
       videoQueuePlaylistCurrent.length >
       downloadPlaylist.videoIdsToDownload.length;
 
-    if (!isGainedVideoIds) {
+    if (!isGainedVideoIds && videoQueueDiff.length > 0) {
       downloadPlaylist.videoIdsToDownload =
         downloadPlaylist.videoIdsToDownload.filter(
           videoId => !videoQueueDiff.includes(videoId)
@@ -405,17 +406,18 @@ export async function handlePlaylistVideos(): Promise<void> {
     }
 
     videoQueueDiff.forEach(videoId => {
-      downloadContainers[videoId].isStartedDownload = false;
-      downloadContainers[videoId].isQueued = false;
+      const downloadContainer = downloadContainers[videoId];
+      downloadContainer.isStartedDownload = false;
+      downloadContainer.isQueued = false;
 
-      const elProgress: HTMLProgressElement = document.querySelector(
+      const elProgress: HTMLElement = document.querySelector(
         `[data-ytdl-download-container="${videoId}"] progress[data-progress-type]`
       );
       if (
-        !elProgress.matches(`[data-progress-type="ffmpeg"]`) ||
-        downloadContainers[videoId].progress !== 1
+        elProgress.dataset.progressType !== "ffmpeg" ||
+        downloadContainer.progress !== 1
       ) {
-        downloadContainers[videoId].progress = 0;
+        downloadContainer.progress = 0;
       }
     });
 
@@ -449,8 +451,9 @@ export async function handlePlaylistVideos(): Promise<void> {
       (elCheckbox: HTMLInputElement) => elCheckbox.dataset.ytdlPlaylistCheckbox
     );
     videoIds.forEach(videoId => {
-      downloadContainers[videoId].isPortDisconnected = true;
-      downloadContainers[videoId].isDownloadable = false;
+      const downloadContainer = downloadContainers[videoId];
+      downloadContainer.isPortDisconnected = true;
+      downloadContainer.isDownloadable = false;
 
       (<HTMLInputElement>(
         document.querySelector(`[data-ytdl-playlist-checkbox="${videoId}"]`)

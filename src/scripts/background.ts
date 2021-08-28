@@ -1,18 +1,34 @@
-import { createFFmpeg, fetchFile, FFmpeg } from "@ffmpeg/ffmpeg";
+import {
+  createFFmpeg,
+  fetchFile,
+  FFmpeg
+} from "@ffmpeg/ffmpeg/dist/ffmpeg.min.js";
 import { saveAs } from "file-saver";
-import { getVideoId, setStorage } from "./utils";
-import type { Tab, TabHolder, Tracker, VideoQueue } from "./types";
-import { ref, watch } from "@vue/runtime-core";
+import { getVideoId, hasOwnProperty, setStorage } from "./utils";
+import type {
+  Tab,
+  TabTracker,
+  VideoDetails,
+  VideoIds,
+  VideoQueue
+} from "./types";
+import { Ref, watch } from "@vue/runtime-core";
+import { ref } from "@vue/reactivity";
 import Port = chrome.runtime.Port;
 
 const gCancelControllers: { [videoId: string]: AbortController[] } = {};
 let gFfmpeg: FFmpeg;
+const gTabTracker = ref<TabTracker>({});
+const gVideoIds = ref<VideoIds>({});
+const gVideoDetails = ref<VideoDetails>({});
 const gVideoQueue = ref<VideoQueue>([]);
-const gTracker: Tracker = {
-  tabs: {},
-  videoDetails: {},
-  videoIds: {}
-};
+
+function getLogColor(): string {
+  const color = matchMedia("(prefers-color-scheme: dark)").matches
+    ? "cyan"
+    : "red";
+  return `color: ${color}`;
+}
 
 function exitFFmpeg() {
   if (!gFfmpeg?.isLoaded()) {
@@ -27,8 +43,12 @@ function exitFFmpeg() {
 }
 
 async function initializeFFmpeg() {
+  await setStorage("local", "isFFmpegReady", false);
+
   gFfmpeg = createFFmpeg({ log: true });
   await gFfmpeg.load();
+
+  await setStorage("local", "isFFmpegReady", true);
 }
 
 async function restartFFmpeg() {
@@ -37,36 +57,35 @@ async function restartFFmpeg() {
   await processCurrentVideoWhenAvailable();
 }
 
-function cancelOngoingDownloads(videoIds?: string[]) {
-  if (!videoIds) {
-    videoIds = Object.keys(gCancelControllers);
-  }
-
+function cancelOngoingDownloads(videoIds = Object.keys(gCancelControllers)) {
   videoIds.forEach(videoId => {
-    gCancelControllers[videoId].forEach(controller => {
+    // for (const mediaType in gCancelDownloads[videoId]) {
+    //   gCancelDownloads[videoId][mediaType] = true;
+    // }
+    gCancelControllers[videoId]?.forEach(controller => {
       try {
         controller.abort();
         // eslint-disable-next-line no-empty
       } catch {}
     });
-
-    delete gCancelControllers[videoId];
   });
 }
 
 async function removeVideosFromQueue(idsToRemove: string[]) {
-  const iFirstProcessingInProgress = idsToRemove.indexOf(gVideoQueue.value[0]);
+  const isFirstProcessingInProgress = idsToRemove.includes(
+    gVideoQueue.value[0]
+  );
 
-  idsToRemove.forEach(idToRemove => {
-    const iVideo = gVideoQueue.value.indexOf(idToRemove);
-    if (iVideo > -1) {
-      gVideoQueue.value.splice(iVideo, 1);
+  idsToRemove.forEach(videoId => {
+    const iVideoId = gVideoQueue.value.indexOf(videoId);
+    if (iVideoId > -1) {
+      gVideoQueue.value.splice(iVideoId, 1);
     }
   });
 
   cancelOngoingDownloads(idsToRemove);
 
-  if (iFirstProcessingInProgress > -1) {
+  if (isFirstProcessingInProgress) {
     await restartFFmpeg();
   }
 }
@@ -75,10 +94,13 @@ function getIsFoundVideoIdInAnotherTab({
   tabs,
   tabTracked
 }: {
-  tabs: TabHolder;
+  tabs: TabTracker | Ref<TabTracker>;
   tabTracked: Tab;
 }): boolean {
   for (const tabId in tabs) {
+    if (!hasOwnProperty(tabs, tabId)) {
+      continue;
+    }
     const isFound = tabs[tabId].idVideosAvailable.some(idVideo =>
       tabTracked.idVideosAvailable.includes(idVideo)
     );
@@ -93,55 +115,55 @@ async function handleMainConnection(port: Port) {
   const { url, id: idTab } = port.sender.tab;
 
   const videoId = getVideoId(url);
-  gTracker.tabs[idTab] = {
+  gTabTracker.value[idTab] = {
     idVideosAvailable: [videoId]
   };
 
   const isVideoPage = Boolean(videoId);
   if (isVideoPage) {
-    if (!gTracker.videoIds[videoId]) {
-      gTracker.videoIds[videoId] = [idTab];
+    if (!gVideoIds.value[videoId]) {
+      gVideoIds.value[videoId] = [idTab];
     } else {
-      gTracker.videoIds[videoId].push(idTab);
+      gVideoIds.value[videoId].push(idTab);
     }
   }
 
   port.onMessage.addListener(async message => {
     if (message.action === "insert-playlist-videos") {
-      gTracker.tabs[idTab].idVideosAvailable = message.videoIds;
+      gTabTracker.value[idTab].idVideosAvailable = message.videoIds;
       message.videoIds.forEach(videoId => {
-        if (!gTracker.videoIds[videoId]) {
-          gTracker.videoIds[videoId] = [];
+        if (!gVideoIds.value[videoId]) {
+          gVideoIds.value[videoId] = [];
         }
-        gTracker.videoIds[videoId].push(idTab);
+        gVideoIds.value[videoId].push(idTab);
       });
       return;
     }
 
     if (message.action === "navigated") {
       const { id: idTab, url: urlOld } = port.sender.tab;
-      const tabTracked = gTracker.tabs[idTab];
+      const tabTracked = gTabTracker.value[idTab];
 
       const [videoIdOld, videoIdNew] = [
         getVideoId(urlOld),
         getVideoId(message.urlNew)
       ];
-      gTracker.tabs[idTab] = {
+      gTabTracker.value[idTab] = {
         idVideosAvailable: [videoIdNew]
       };
 
       const isVideoPage = Boolean(videoIdNew);
       const isRemoveTab = !isVideoPage || videoIdOld !== videoIdNew;
       if (isRemoveTab) {
-        const iIdTab = gTracker.videoIds[videoIdNew]?.indexOf(idTab);
+        const iIdTab = gVideoIds.value[videoIdNew]?.indexOf(idTab);
         if (iIdTab !== undefined) {
-          gTracker.videoIds[videoIdNew].splice(iIdTab, 1);
+          gVideoIds.value[videoIdNew].splice(iIdTab, 1);
         }
       }
 
       if (
         getIsFoundVideoIdInAnotherTab({
-          tabs: gTracker.tabs,
+          tabs: gTabTracker,
           tabTracked
         })
       ) {
@@ -156,17 +178,24 @@ async function handleMainConnection(port: Port) {
 
   port.onDisconnect.addListener(async () => {
     const { id: idTab } = port.sender.tab;
-    const tabTracked = gTracker.tabs[idTab];
-    delete gTracker.tabs[idTab];
+    const tabTracked = gTabTracker.value[idTab];
+    delete gTabTracker.value[idTab];
 
-    tabTracked.idVideosAvailable.forEach(videoId => {
-      const iIdTab = gTracker.videoIds[videoId].indexOf(idTab);
-      gTracker.videoIds[videoId].splice(iIdTab, 1);
+    const idVideosToDownload =
+      tabTracked.idVideosToDownload || tabTracked.idVideosAvailable;
+
+    idVideosToDownload.forEach(videoId => {
+      const tab = gVideoIds.value[videoId];
+      if (!tab) {
+        return;
+      }
+      const iIdTab = tab.indexOf(idTab);
+      tab.splice(iIdTab, 1);
     });
 
     if (
       getIsFoundVideoIdInAnotherTab({
-        tabs: gTracker.tabs,
+        tabs: gTabTracker,
         tabTracked
       })
     ) {
@@ -221,28 +250,35 @@ async function processMedia({
       chunks.push(value);
       receivedLength += value.length;
 
-      gTracker.videoIds[videoId].forEach(tabId => {
+      const progress = receivedLength / totalLength;
+
+      gVideoIds.value[videoId].forEach(tabId => {
         chrome.tabs.sendMessage(tabId, {
           updateProgress: {
             videoId,
-            progress: receivedLength / totalLength,
+            progress,
             progressType
           }
         });
       });
+
+      await setStorage("local", "statusProgress", {
+        type: progressType,
+        progress
+      });
     }
 
-    const chuncksAll = new Uint8Array(receivedLength);
+    const chunksAll = new Uint8Array(receivedLength);
     let position = 0;
     for (const chunk of chunks) {
-      chuncksAll.set(chunk, position);
+      chunksAll.set(chunk, position);
       position += chunk.length;
     }
 
-    return chuncksAll;
+    return chunksAll;
   };
 
-  gTracker.videoDetails[videoId] = {
+  gVideoDetails.value[videoId] = {
     urls: {
       video: urls.video,
       audio: urls.audio
@@ -250,29 +286,27 @@ async function processMedia({
     filenameOutput
   };
 
-  const videoAbortController = new AbortController();
-  const audioAbortController = new AbortController();
+  // gCancelDownloads[videoId] = {
+  //   video: false,
+  //   audio: false
+  // };
 
-  gCancelControllers[videoId] = [videoAbortController, audioAbortController];
+  const abortVideo = new AbortController();
+  const abortAudio = new AbortController();
+  gCancelControllers[videoId] = [abortVideo, abortAudio];
 
   const [responseVideo, responseAudio] = await Promise.all([
-    fetch(urls.video, { signal: videoAbortController.signal }),
-    fetch(urls.audio, { signal: audioAbortController.signal })
+    fetch(urls.video, { signal: abortVideo.signal }),
+    fetch(urls.audio, { signal: abortAudio.signal })
   ]);
-
   const [filenameVideo, filenameAudio, filenameOutputTemp] = [
     `${videoId}-video.${mimeToExt(responseVideo)}`,
     `${videoId}-audio.${mimeToExt(responseAudio)}`,
     `${videoId}-output.mp4`
   ];
 
-  try {
-    deleteFiles([filenameVideo, filenameAudio, filenameOutputTemp]);
-    // eslint-disable-next-line no-empty
-  } catch {}
-
   gFfmpeg.setProgress(({ ratio }) => {
-    gTracker.videoIds[videoId].forEach(tabId => {
+    gVideoIds.value[videoId].forEach(tabId => {
       chrome.tabs.sendMessage(tabId, {
         updateProgress: {
           videoId,
@@ -281,19 +315,22 @@ async function processMedia({
         }
       });
     });
+
+    chrome.storage.local.set({
+      statusProgress: {
+        type: "ffmpeg",
+        progress: ratio
+      }
+    });
   });
 
-  gFfmpeg.FS(
-    "writeFile",
-    filenameVideo,
-    await fetchFile(await responseToUintArray(responseVideo, videoId))
-  );
+  const [blobVideo, blobAudio] = await Promise.all([
+    fetchFile(await responseToUintArray(responseVideo, videoId)),
+    fetchFile(await responseToUintArray(responseAudio, videoId))
+  ]);
 
-  gFfmpeg.FS(
-    "writeFile",
-    filenameAudio,
-    await fetchFile(await responseToUintArray(responseAudio, videoId))
-  );
+  gFfmpeg.FS("writeFile", filenameVideo, blobVideo);
+  gFfmpeg.FS("writeFile", filenameAudio, blobAudio);
 
   await gFfmpeg.run(
     "-i",
@@ -326,7 +363,7 @@ function handleSingleMediaProcessing(port: Port) {
       videoId: string;
       isOverride?: true;
     }) => {
-      gTracker.videoDetails[processInfo.videoId] = {
+      gVideoDetails.value[processInfo.videoId] = {
         urls: { ...processInfo.urls },
         filenameOutput: processInfo.filenameOutput
       };
@@ -341,9 +378,10 @@ function handleSingleMediaProcessing(port: Port) {
           gVideoQueue.value.push(processInfo.videoId);
         }
       }
+
       // if (processInfo.type === "video+audio") {
       // } else if (processInfo.type === "video") {
-      //   const videoDetail = gTracker.videoDetails[processInfo.videoId];
+      //   const videoDetail = gVideoDetails.value[processInfo.videoId];
       //   saveAs(videoDetail.urls.video, videoDetail.filenameOutput);
       //   gVideoQueue.value.splice(0, 1);
       // } else if (processInfo.type === "audio") {
@@ -355,8 +393,8 @@ function handleSingleMediaProcessing(port: Port) {
 
 function removeVideoIdsFromTabs(videoIdsToCancel: string[]) {
   for (const videoId of videoIdsToCancel) {
-    for (const tabId in gTracker.tabs) {
-      const { idVideosToDownload } = gTracker.tabs[tabId];
+    for (const tabId in gTabTracker.value) {
+      const { idVideosToDownload } = gTabTracker.value[tabId];
       if (idVideosToDownload?.includes(videoId)) {
         const iVideo = idVideosToDownload.indexOf(videoId);
         idVideosToDownload.splice(iVideo, 1);
@@ -379,7 +417,7 @@ function handlePlaylistProcessing(port: Port) {
       }[]
     ) => {
       processInfos.forEach(processInfo => {
-        gTracker.videoDetails[processInfo.videoId] = {
+        gVideoDetails.value[processInfo.videoId] = {
           urls: { ...processInfo.urls },
           filenameOutput: processInfo.filenameOutput
         };
@@ -395,9 +433,10 @@ function handlePlaylistProcessing(port: Port) {
         []
       );
 
-      gTracker.tabs[port.sender.tab.id].idVideosToDownload = videoIds;
       const wasPlaylistEmpty = gVideoQueue.value.length === 0;
+      gTabTracker.value[port.sender.tab.id].idVideosToDownload = videoIds;
       gVideoQueue.value.unshift(...videoIds);
+
       if (!wasPlaylistEmpty) {
         await restartFFmpeg();
       }
@@ -435,24 +474,62 @@ async function processCurrentVideoWhenAvailable() {
 
     await processMedia({
       videoId,
-      ...gTracker.videoDetails[videoId]
+      ...gVideoDetails.value[videoId]
     });
   }
 }
 
-function addWatchers() {
-  watch(gVideoQueue.value, async videoQueue => {
-    await setStorage("local", "videoQueue", [...videoQueue]);
+function addListeners() {
+  chrome.storage.onChanged.addListener(async changes => {
+    const videoQueueCurrent = changes.videoQueue?.newValue as VideoQueue;
+    if (!videoQueueCurrent) {
+      return;
+    }
+    const videoQueuePrev = changes.videoQueue.oldValue;
+
+    if (
+      videoQueueCurrent.length > 0 &&
+      videoQueuePrev.length > 0 &&
+      videoQueueCurrent[0] !== videoQueuePrev[0]
+    ) {
+      cancelOngoingDownloads(videoQueueCurrent);
+      gVideoQueue.value = videoQueueCurrent;
+      await restartFFmpeg();
+    }
   });
 }
 
-chrome.runtime.onInstalled.addListener(() =>
-  setStorage("local", "videoQueue", [])
-);
+function addWatchers() {
+  watch(gVideoQueue.value, videoQueue =>
+    setStorage("local", "videoQueue", [...videoQueue])
+  );
+
+  watch(gTabTracker.value, tabTracker => {
+    setStorage("local", "tabTracker", tabTracker);
+  });
+
+  watch(gVideoDetails.value, videoDetails =>
+    setStorage("local", "videoDetails", videoDetails)
+  );
+
+  watch(gVideoIds.value, videoIds => setStorage("local", "videoIds", videoIds));
+}
+
+chrome.runtime.onInstalled.addListener(emptyTempStorage);
+
+function emptyTempStorage() {
+  chrome.storage.local.set({
+    videoQueue: [],
+    tabTracker: {},
+    videoDetails: {},
+    videoIds: {}
+  });
+}
 
 async function init() {
   addWatchers();
   listenToTabs();
+  addListeners();
   await initializeFFmpeg();
   await processCurrentVideoWhenAvailable();
 }

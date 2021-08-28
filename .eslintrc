@@ -3,10 +3,9 @@
     "sourceType": "module",
     "ecmaVersion": 2021
   },
-  "plugins": ["prettier", "svelte3", "@typescript-eslint"],
+  "plugins": ["svelte3", "@typescript-eslint"],
   "rules": {
     "arrow-parens": ["warn", "as-needed"],
-    "prettier/prettier": "warn",
     "@typescript-eslint/no-empty-function": "off",
     "no-async-promise-executor": "off",
     "prefer-const": "warn",
@@ -22,10 +21,10 @@
   "env": {
     "es6": true,
     "browser": true,
-    "node": true
+    "node": true,
+    "webextensions": true
   },
   "extends": [
-    "plugin:prettier/recommended",
     "eslint:recommended",
     "plugin:@typescript-eslint/eslint-recommended",
     "plugin:@typescript-eslint/recommended"

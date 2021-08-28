@@ -1,6 +1,12 @@
 export async function setStorage(
   storageArea: "local" | "sync",
-  key: string,
+  key:
+    | "videoQueue"
+    | "tabTracker"
+    | "videoDetails"
+    | "videoIds"
+    | "isFFmpegReady"
+    | "statusProgress",
   value: unknown
 ): Promise<void> {
   return new Promise(resolve =>
@@ -10,7 +16,13 @@ export async function setStorage(
 
 export async function getStorage(
   storageArea: "local" | "sync",
-  key?: string
+  key:
+    | "videoQueue"
+    | "tabTracker"
+    | "videoDetails"
+    | "videoIds"
+    | "isFFmpegReady"
+    | "statusProgress"
 ): Promise<unknown> {
   return new Promise(resolve =>
     chrome.storage[storageArea].get(key, result =>
@@ -62,4 +74,9 @@ export async function getElementEventually(selector: string): Promise<Element> {
 export function getVideoId(url: string): string | null {
   const urlParams = new URLSearchParams(new URL(url).search);
   return urlParams.get("v");
+}
+
+// eslint-disable-next-line @typescript-eslint/ban-types
+export function hasOwnProperty(object: object, key: string): boolean {
+  return Object.prototype.hasOwnProperty.call(object, key);
 }

@@ -715,6 +715,11 @@ export type PlayerResponse = {
 
 export type VideoQueue = string[];
 
+export type StatusProgress = {
+  type: "video" | "audio" | "ffmpeg";
+  progress: number;
+};
+
 export type Tab = {
   // Contains a list of all the videos, either from a /watch page or from a /playlist page.
   idVideosAvailable?: string[];
@@ -722,27 +727,27 @@ export type Tab = {
   idVideosToDownload?: string[];
 };
 
-export type TabHolder = {
+// Key-value pairs where each tab ID points at both videos that can be downloaded (when it comes to individual videos) *and* videos that are planned to be downloaded (when it comes to playlists).
+export interface TabTracker {
   [tabId: number]: Tab;
-};
+}
 
-export type Tracker = {
-  // Key-value pairs where each video ID points at data that is associated with its download.
-  videoDetails: {
-    [videoId: string]: {
-      // The filename of the video.
-      filenameOutput: string;
-      // The download URLs.
-      urls: {
-        video: string;
-        audio: string;
-      };
+// Key-value pairs where each video ID points at data that is associated with its download.
+export interface VideoDetails {
+  [videoId: string]: {
+    // The filename of the video.
+    filenameOutput: string;
+    // The download URLs.
+    urls: {
+      video: string;
+      audio: string;
     };
   };
-  // Key-value pairs where each tab ID points at both videos that can be downloaded (when it comes to individual videos) *and* videos that are planned to be downloaded (when it comes to playlists).
-  tabs: TabHolder;
-  // Key-value pairs where each video points at all of the tab IDs that are associated with it.
-  videoIds: {
-    [videoId: string]: number[];
-  };
-};
+}
+
+// Key-value pairs where each video points at all of the tab IDs that are associated with it.
+export interface VideoIds {
+  [videoId: string]: number[];
+}
+
+export type MovableList = { id: string; title: string }[];

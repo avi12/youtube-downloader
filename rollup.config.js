@@ -20,7 +20,7 @@ function createConfig(filename, useSvelte = false) {
       file: `dist/build/${filename}.js`,
       strict: false,
       sourcemap: true,
-      globals: ["$", "@ffmpeg/ffmpeg"]
+      globals: ["@ffmpeg/ffmpeg"]
     },
     plugins: [
       useSvelte && css({ output: "popup/popup.css" }),
@@ -34,7 +34,6 @@ function createConfig(filename, useSvelte = false) {
 
       json(),
       resolve({
-        browser: true,
         dedupe: ["svelte"]
       }),
       commonjs(),
