@@ -1,3 +1,9 @@
+import type { VideoQueue } from "./types";
+
+export async function updateVideoQueue(videoQueue: VideoQueue): Promise<void> {
+  await setStorage("local", "videoQueue", [...videoQueue]);
+}
+
 export async function setStorage(
   storageArea: "local" | "sync",
   key:
