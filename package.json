@@ -58,7 +58,7 @@
     "web-ext": "^6.3.0"
   },
   "dependencies": {
-    "@vue/runtime-core": "^3.2.4",
+    "@vue/runtime-core": "^3.2.6",
     "blob-util": "^2.0.2",
     "browser-id3-writer": "^4.4.0",
     "file-saver": "^2.0.5",
