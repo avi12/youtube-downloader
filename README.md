@@ -14,10 +14,12 @@ Still  in development, for as long as I'm not 100% happy with the result
 * Viewing the download progress
 * All downloads are cancelable
 * Any video downloads as MP4
+* Pop-up page:
+  * Videos can be reordered
+  * Videos' downloads can be canceled (individually and as a batch)
 
 ## To-dos
 * Pop-up:
-  * Allow easy re-ordering of downloads
   * Options:
     * Filename template (allows specifying the file extension as well)
     * When initiating a download in a `/playlist` - by default download the videos as a ZIP or as individual files
