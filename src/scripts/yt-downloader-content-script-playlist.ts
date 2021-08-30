@@ -359,8 +359,7 @@ export async function handlePlaylistVideos(): Promise<void> {
     const { videoId, progress, progressType } = updateProgress;
 
     const downloadContainer = downloadContainers[videoId];
-    const isVideoIdToDownload = Boolean(downloadContainer);
-    if (!isVideoIdToDownload) {
+    if (!downloadContainer) {
       return;
     }
 
@@ -383,15 +382,14 @@ export async function handlePlaylistVideos(): Promise<void> {
       return;
     }
 
-    const videoQueuePlaylistCurrent = videoQueueCurrent.filter(isIdExists);
+    const videoQueuePlaylistCurrent: VideoQueue =
+      videoQueueCurrent.filter(isIdExists);
 
-    const videoQueuePlaylistPrevious =
+    const videoQueuePlaylistPrevious: VideoQueue =
       changes.videoQueue.oldValue.filter(isIdExists);
 
-    const videoQueueDiff = <VideoQueue>(
-      videoQueuePlaylistPrevious.filter(
-        videoId => !videoQueuePlaylistCurrent.includes(videoId)
-      )
+    const videoQueueDiff: VideoQueue = videoQueuePlaylistPrevious.filter(
+      videoId => !videoQueuePlaylistCurrent.includes(videoId)
     );
 
     const isGainedVideoIds =
