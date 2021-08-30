@@ -3,7 +3,7 @@
     VideoQueue,
     MovableList,
     StatusProgress,
-VideoDetails
+    VideoDetails
   } from "../types";
 
   export let isFFmpegReady;
@@ -13,7 +13,7 @@ VideoDetails
 
   import { dndzone } from "svelte-dnd-action";
   import { flip } from "svelte/animate";
-  import { getStorage, setStorage } from "../utils";
+  import { getStorage, updateVideoQueue } from "../utils";
 
   let videosMovable: MovableList = gVideoQueue.map(videoId => ({
     id: videoId,
@@ -26,7 +26,7 @@ VideoDetails
     videosMovable = e.detail.items;
 
     if (e.type === "finalize") {
-      await setStorage("local", "videoQueue", getVideoQueue(videosMovable));
+      await updateVideoQueue(getVideoQueue(videosMovable));
     }
   }
 
@@ -35,7 +35,10 @@ VideoDetails
   }
 
   async function getMovableList(videoQueue: VideoQueue): Promise<MovableList> {
-    const videoDetails = (await getStorage("local", "videoDetails")) as VideoDetails;
+    const videoDetails = (await getStorage(
+      "local",
+      "videoDetails"
+    )) as VideoDetails;
 
     return videoQueue.map(videoId => ({
       id: videoId,
@@ -66,13 +69,25 @@ VideoDetails
     });
   }
 
-  async function switchSides() {
-    await setStorage("local", "videoQueue", getVideoQueue(videosMovable.reverse()));
+  function stopAllDownloads() {
+    chrome.runtime.sendMessage({
+      action: "cancel-download",
+      videoIdsToCancel: gVideoQueue
+    });
   }
 </script>
 
 <h1 style="text-align: center;">YouTube Downloader</h1>
-<button on:click={switchSides}>{@html "&#8645;"}</button>
+Video queue
+{#if videosMovable.length > 0}
+  (drag to rearrange)
+  <section>
+    <button on:click={stopAllDownloads}>Stop all {@html "&#x274C;"}</button>
+  </section>
+{:else}
+  <section>(Currently empty)</section>
+{/if}
+
 <section
   on:consider={onSort}
   on:finalize={onSort}
