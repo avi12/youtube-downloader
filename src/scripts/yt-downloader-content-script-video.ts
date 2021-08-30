@@ -132,7 +132,8 @@ export async function handleVideo(): Promise<void> {
         }
         this.progress = progress;
         this.progressType = progressType;
-        this.isStartedDownload = progress < 1;
+        this.isStartedDownload =
+          (progress > 0 && progress < 1) || progressType !== "ffmpeg";
 
         if (progress === 1) {
           this.isQueued = false;
