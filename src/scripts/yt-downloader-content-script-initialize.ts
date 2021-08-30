@@ -50,12 +50,8 @@ function cancelDownloads() {
     return;
   }
   gCancelControllers.forEach(controller => {
-    try {
-      controller.abort();
-      // eslint-disable-next-line no-empty
-    } catch {}
+    controller.abort();
   });
-
   gCancelControllers = [];
 }
 
