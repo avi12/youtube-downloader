@@ -60,6 +60,14 @@ function resetObservers() {
   gObserverPlaylistDownloadButton = null;
 }
 
+function removeDownloadButtonsOnPlaylists() {
+  for (const elDownloadContainerOrCheckbox of document.querySelectorAll(
+    ".ytdl-container, .ytdl-playlist-checkbox-container"
+  )) {
+    elDownloadContainerOrCheckbox.remove();
+  }
+}
+
 function addNavigationListener() {
   let titleLast = document.title;
   new MutationObserver(async mutations => {
@@ -76,6 +84,7 @@ function addNavigationListener() {
 
     cancelDownloads();
     resetObservers();
+    removeDownloadButtonsOnPlaylists();
     await init();
   }).observe(document.querySelector("title"), { childList: true });
 }
