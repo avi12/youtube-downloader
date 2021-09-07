@@ -12,7 +12,6 @@ import {
 } from "./utils";
 import type {
   MusicQueue,
-  PlayerResponse,
   StatusProgress,
   Tab,
   TabTracker,
@@ -228,13 +227,10 @@ async function responseToUintArray(response: Response, videoId: string) {
   return chunksAll;
 }
 
-async function deleteProgress(videoId: string): Promise<void> {
-  delete gStatusProgress.value[videoId];
-}
-
-async function cleanupDownloads(url) {
+async function cleanupDownload(url) {
   URL.revokeObjectURL(url);
   delete gCancelControllers[gUrlToVideoData[url].videoId];
+  delete gStatusProgress.value[gUrlToVideoData[url].videoId];
 
   await updateMusicQueue(gMusicQueue);
   await updateVideoQueue(gVideoQueue);
@@ -303,7 +299,6 @@ async function processVideo({
 
   const dataFile: Uint8Array = gFfmpeg.FS("readFile", filenameOutputTemp);
   deleteFiles([filenameVideo, filenameAudio, filenameOutputTemp]);
-  await deleteProgress(videoId);
 
   const url = URL.createObjectURL(
     new Blob([dataFile], { type: getMimeType(filenameOutput) })
@@ -313,24 +308,54 @@ async function processVideo({
     filenameOutput
   };
 
-  chrome.downloads.download({ url }, () => cleanupDownloads(url));
+  chrome.downloads.download({ url }, () => cleanupDownload(url));
 
   const iVideo = gVideoQueue.indexOf(videoId);
   gVideoQueue.splice(iVideo, 1);
   await updateVideoQueue(gVideoQueue);
 }
 
+async function processSingleMedia({
+  type,
+  urls,
+  filenameOutput,
+  videoId
+}: {
+  type: "video+audio" | "video" | "audio";
+  urls: { video: string; audio: string };
+  filenameOutput: string;
+  videoId: string;
+}) {
+  const abortAudio = new AbortController();
+  gCancelControllers[videoId] = [abortAudio];
+  const dataFile = await responseToUintArray(
+    await fetch(urls[type], {
+      signal: abortAudio.signal
+    }),
+    videoId
+  );
+  const url = URL.createObjectURL(
+    new Blob([dataFile.buffer], {
+      type: getMimeType(filenameOutput)
+    })
+  );
+  gUrlToVideoData[url] = {
+    videoId,
+    filenameOutput
+  };
+  chrome.downloads.download({ url }, () => cleanupDownload(url));
+}
+
 function handleSingleMediaProcessing(port: Port) {
   port.onMessage.addListener(
     async (processInfo: {
       type: "video+audio" | "video" | "audio";
-      urls?: {
+      urls: {
         video: string;
         audio: string;
       };
       filenameOutput: string;
       videoId: string;
-      videoData: PlayerResponse;
       isOverride?: true;
     }) => {
       const { videoId } = processInfo;
@@ -354,27 +379,11 @@ function handleSingleMediaProcessing(port: Port) {
         return;
       }
 
-      const abortAudio = new AbortController();
-      gCancelControllers[videoId] = [abortAudio];
-      const dataFile = await responseToUintArray(
-        await fetch(processInfo.urls[processInfo.type], {
-          signal: abortAudio.signal
-        }),
-        videoId
-      );
-      const url = URL.createObjectURL(
-        new Blob([dataFile.buffer], {
-          type: getMimeType(processInfo.filenameOutput)
-        })
-      );
-      gUrlToVideoData[url] = {
-        videoId,
-        filenameOutput: processInfo.filenameOutput
-      };
-      chrome.downloads.download({ url }, () => cleanupDownloads(url));
+      await processSingleMedia(processInfo);
     }
   );
 }
+
 function removeVideoIdsFromTabs(videoIdsToCancel: string[]) {
   for (const videoId of videoIdsToCancel) {
     for (const tabId in gTabTracker) {
@@ -390,32 +399,13 @@ function removeVideoIdsFromTabs(videoIdsToCancel: string[]) {
 async function processMusicPlaylist() {
   while (gMusicQueue.length > 0) {
     const videoId = gMusicQueue.shift();
-
-    const abortAudio = new AbortController();
-    gCancelControllers[videoId] = [abortAudio];
-
-    responseToUintArray(
-      await fetch(gVideoDetails.value[videoId].urls.audio, {
-        signal: abortAudio.signal
-      }),
-      videoId
-    ).then(async dataFile => {
-      delete gCancelControllers[videoId];
-      delete gStatusProgress[videoId];
-
-      const { filenameOutput } = gVideoDetails.value[videoId];
-
-      const url = URL.createObjectURL(
-        new Blob([dataFile.buffer], {
-          type: getMimeType(filenameOutput)
-        })
-      );
-      gUrlToVideoData[url] = {
-        videoId,
-        filenameOutput
-      };
-
-      chrome.downloads.download({ url }, () => cleanupDownloads(url));
+    processSingleMedia({
+      videoId,
+      type: "audio",
+      urls: {
+        ...gVideoDetails.value[videoId].urls
+      },
+      filenameOutput: gVideoDetails.value[videoId].filenameOutput
     });
   }
 }
