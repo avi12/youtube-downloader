@@ -48,9 +48,10 @@ Still in development, for as long as I'm not 100% happy with the result
 
 ## Installation
 
-1. To get the latest version, use **one** of the links: [AdFly](http://fumacrom.com/3907988/youtube-downloader)
-   , [Linkshrink](https://linkshrink.ca/youtube-downloader),
-   or [direct](https://github.com/avi12/youtube-downloader/releases/latest/download/youtube-downloader.zip)
+1. To get the latest version, use **one** of the links: [AdFly](http://fumacrom.com/3907988/youtube-downloader),
+   [Linkshrink](https://linkshrink.ca/youtube-downloader),
+   [AdPayLink](https://go.rancah.com/7hRX),
+   or [direct](https://bit.ly/3tqf9y6)
 2. Go to the extensions page
 3. Enable "Developer mode" (top-right corner usually)
 4. Drag & drop the ZIP onto the extensions page
