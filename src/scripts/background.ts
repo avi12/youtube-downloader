@@ -354,29 +354,27 @@ function handleSingleMediaProcessing(port: Port) {
         return;
       }
 
-      if (processInfo.type === "audio") {
-        const abortAudio = new AbortController();
-        gCancelControllers[videoId] = [abortAudio];
-        const dataFile = await responseToUintArray(
-          await fetch(processInfo.urls.audio, { signal: abortAudio.signal }),
-          videoId
-        );
-
-        const url = URL.createObjectURL(
-          new Blob([dataFile.buffer], {
-            type: getMimeType(processInfo.filenameOutput)
-          })
-        );
-        gUrlToVideoData[url] = {
-          videoId,
-          filenameOutput: processInfo.filenameOutput
-        };
-        chrome.downloads.download({ url }, () => cleanupDownloads(url));
-      }
+      const abortAudio = new AbortController();
+      gCancelControllers[videoId] = [abortAudio];
+      const dataFile = await responseToUintArray(
+        await fetch(processInfo.urls[processInfo.type], {
+          signal: abortAudio.signal
+        }),
+        videoId
+      );
+      const url = URL.createObjectURL(
+        new Blob([dataFile.buffer], {
+          type: getMimeType(processInfo.filenameOutput)
+        })
+      );
+      gUrlToVideoData[url] = {
+        videoId,
+        filenameOutput: processInfo.filenameOutput
+      };
+      chrome.downloads.download({ url }, () => cleanupDownloads(url));
     }
   );
 }
-
 function removeVideoIdsFromTabs(videoIdsToCancel: string[]) {
   for (const videoId of videoIdsToCancel) {
     for (const tabId in gTabTracker) {
