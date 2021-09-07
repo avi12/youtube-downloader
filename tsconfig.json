@@ -5,7 +5,6 @@
     "target": "ESNext",
     "typeRoots": ["node_modules/@types"],
     "types": ["svelte", "chrome"],
-    "sourceMap": true,
     "moduleResolution": "Node"
   },
   "extends": "@tsconfig/svelte/tsconfig.json"

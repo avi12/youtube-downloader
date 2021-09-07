@@ -19,7 +19,6 @@ function createConfig(filename, useSvelte = false) {
       format: "iife",
       file: `dist/build/${filename}.js`,
       strict: false,
-      sourcemap: true,
       globals: ["@ffmpeg/ffmpeg"]
     },
     plugins: [
