@@ -1,32 +1,18 @@
 import Options from "./components/Options.svelte";
-import type {
-  StatusProgress,
-  TabTracker,
-  VideoDetails,
-  VideoIds,
-  VideoQueue
-} from "./types";
 
 async function init() {
   const {
     videoQueue: gVideoQueue,
-    tabTracker: gTabTracker,
+    musicQueue: gMusicQueue,
     videoDetails: gVideoDetails,
     videoIds: gVideoIds,
     isFFmpegReady,
-    statusProgress
-  }: {
-    videoQueue: VideoQueue;
-    tabTracker: TabTracker;
-    videoDetails: VideoDetails;
-    videoIds: VideoIds;
-    isFFmpegReady: boolean;
-    statusProgress: StatusProgress;
+    statusProgress: gStatusProgress
   } = await new Promise(resolve =>
     chrome.storage.local.get(
       [
         "videoQueue",
-        "tabTracker",
+        "musicQueue",
         "videoDetails",
         "videoIds",
         "isFFmpegReady",
@@ -40,11 +26,11 @@ async function init() {
     target: document.body,
     props: {
       gVideoQueue,
-      gTabTracker,
+      gMusicQueue,
       gVideoDetails,
       gVideoIds,
       isFFmpegReady,
-      statusProgress
+      gStatusProgress
     }
   });
 }
