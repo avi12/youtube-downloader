@@ -28,7 +28,6 @@
     "@sveltejs/eslint-config": "github:sveltejs/eslint-config",
     "@tsconfig/svelte": "^2.0.1",
     "@types/chrome": "^0.0.157",
-    "@types/mime-types": "^2.1.1",
     "@typescript-eslint/eslint-plugin": "^4.29.2",
     "@typescript-eslint/parser": "^4.29.2",
     "eslint": "^7.32.0",

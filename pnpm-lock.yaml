@@ -9,7 +9,6 @@ specifiers:
   '@sveltejs/eslint-config': github:sveltejs/eslint-config
   '@tsconfig/svelte': ^2.0.1
   '@types/chrome': ^0.0.157
-  '@types/mime-types': ^2.1.1
   '@typescript-eslint/eslint-plugin': ^4.29.2
   '@typescript-eslint/parser': ^4.29.2
   '@vue/runtime-core': ^3.2.6
@@ -59,7 +58,6 @@ devDependencies:
   '@sveltejs/eslint-config': github.com/sveltejs/eslint-config/31fd4faeea88990069502460b023698b1c9c2d13_407169c3b4f54b7d23b91773034cb802
   '@tsconfig/svelte': 2.0.1
   '@types/chrome': 0.0.157
-  '@types/mime-types': 2.1.1
   '@typescript-eslint/eslint-plugin': 4.29.3_fd14c0002fbbfb85b8a0070d0dffb93d
   '@typescript-eslint/parser': 4.29.3_eslint@7.32.0+typescript@4.3.5
   eslint: 7.32.0
@@ -563,10 +561,6 @@ packages:
     resolution: {integrity: sha512-YwR7OK8aPmaBvMMUi+pZXBNoW2unbVbfok4YRqGMJBe1dpDlzpRkJrYEYmvjxgs5JhuQmKfDexrN98u941Zasg==}
     dependencies:
       '@types/unist': 2.0.6
-    dev: true
-
-  /@types/mime-types/2.1.1:
-    resolution: {integrity: sha512-vXOTGVSLR2jMw440moWTC7H19iUyLtP3Z1YTj7cSsubOICinjMxFeb/V57v9QdyyPGbbWolUFSSmSiRSn94tFw==}
     dev: true
 
   /@types/minimatch/3.0.5:
