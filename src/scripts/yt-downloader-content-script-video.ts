@@ -6,7 +6,7 @@ import {
 } from "./yt-downloader-content-script-initialize";
 import Vue from "vue/dist/vue.js";
 import { getElementEventually } from "./utils";
-import type { VideoQueue } from "./types";
+import type { AdaptiveFormatItem, StatusProgress, VideoQueue } from "./types";
 
 export async function handleVideo(): Promise<void> {
   const getHtml = async () => {
@@ -36,6 +36,12 @@ export async function handleVideo(): Promise<void> {
     elButtonAfterRating
   );
 
+  const { videoId, title } = videoData.videoDetails;
+
+  const isMusic =
+    videoData.microformat.playerMicroformatRenderer.category === "Music";
+  const ext = isMusic ? "mp3" : "mp4";
+
   new Vue({
     el: `#${elDownloaderContainer.id}`,
     data: {
@@ -44,7 +50,9 @@ export async function handleVideo(): Promise<void> {
       progress: 0,
       progressType: "",
       isQueued: false,
-      isPortDisconnected: false
+      isPortDisconnected: false,
+      downloadType: isMusic ? "audio" : "video+audio",
+      filenameOutput: `${title}.${ext}`
     },
     template: `
       <section class="ytdl-container" id="${elDownloaderContainer.id}">
@@ -61,7 +69,11 @@ export async function handleVideo(): Promise<void> {
         if (!this.isDownloadable) {
           return "NOT DOWNLOADABLE";
         }
-        if (this.progress === 1 && this.progressType === "ffmpeg") {
+        if (
+          this.progress === 1 &&
+          (this.progressType === "ffmpeg" ||
+            this.downloadType !== "video+audio")
+        ) {
           return "DONE";
         }
         if (this.isQueued) {
@@ -88,7 +100,7 @@ export async function handleVideo(): Promise<void> {
             format.height === this.videoQuality
         );
       },
-      audioBest() {
+      audioBest(): AdaptiveFormatItem {
         return this.formatsSorted.find(format =>
           format.mimeType.startsWith("audio")
         );
@@ -102,7 +114,7 @@ export async function handleVideo(): Promise<void> {
         if (!this.isStartedDownload || this.isQueued) {
           chrome.runtime.sendMessage({
             action: "cancel-download",
-            videoIdsToCancel: [videoData.videoDetails.videoId]
+            videoIdsToCancel: [videoId]
           });
           return;
         }
@@ -111,51 +123,53 @@ export async function handleVideo(): Promise<void> {
       },
       async download() {
         gPorts.processSingle.postMessage({
-          type: "video+audio",
+          type: this.downloadType,
           urls: {
             video: this.video.url,
             audio: this.audioBest.url
           },
-          filenameOutput: `${videoData.videoDetails.title}.mp4`,
-          videoId: videoData.videoDetails.videoId
+          filenameOutput: this.filenameOutput,
+          videoId,
+          videoData
         });
       }
     },
     created() {
-      chrome.runtime.onMessage.addListener(({ updateProgress }) => {
-        if (!updateProgress) {
-          return;
-        }
-        const { videoId, progress, progressType } = updateProgress;
-        if (videoId !== videoData.videoDetails.videoId) {
-          return;
-        }
-        this.progress = progress;
-        this.progressType = progressType;
-        this.isStartedDownload =
-          (progress > 0 && progress < 1) || progressType !== "ffmpeg";
-
-        if (progress === 1) {
-          this.isQueued = false;
-        }
-      });
-
       chrome.storage.onChanged.addListener(changes => {
-        const videoQueue = changes.videoQueue?.newValue as VideoQueue;
-        if (!videoQueue) {
+        const statusProgress = changes.statusProgress
+          ?.newValue as StatusProgress;
+
+        if (statusProgress) {
+          const status = statusProgress[videoId];
+          if (!status) {
+            return;
+          }
+
+          const { progress, type } = status;
+
+          this.progress = progress;
+          this.progressType = type;
+          this.isStartedDownload =
+            (progress > 0 && progress < 1) || type !== "ffmpeg";
+
+          if (progress === 1) {
+            this.isQueued = false;
+          }
           return;
         }
 
-        const { videoId } = videoData.videoDetails;
-        const isInQueue = videoQueue.includes(videoId);
-
-        const isDownloading = videoQueue[0] === videoId;
-
-        this.isQueued = isInQueue && !isDownloading;
-        if (isDownloading) {
-          this.progress = 0;
+        const videoQueue = changes.videoQueue?.newValue as VideoQueue;
+        if (videoQueue) {
+          const { videoId } = videoData.videoDetails;
+          const isInQueue = videoQueue.includes(videoId);
+          const isDownloading = videoQueue[0] === videoId;
+          this.isQueued = isInQueue && !isDownloading;
+          if (isDownloading) {
+            this.progress = 0;
+          }
+          this.isStartedDownload = isDownloading;
+          return;
         }
-        this.isStartedDownload = isDownloading;
       });
 
       gPorts.main.onDisconnect.addListener(() => {
