@@ -118,11 +118,11 @@ Video queue
       {#if i === 0}
         <span class="status-progress">
           {#if isFFmpegReady}
-            {#if gStatusProgress[video.id].type === "video"}
+            {#if gStatusProgress[video.id].progressType === "video"}
               downloading video...
-            {:else if gStatusProgress[video.id].type === "audio"}
+            {:else if gStatusProgress[video.id].progressType === "audio"}
               downloading audio...
-            {:else if gStatusProgress[video.id].type === "ffmpeg"}
+            {:else if gStatusProgress[video.id].progressType === "ffmpeg"}
               stitching video & audio...
             {/if}
             {getProgress(gStatusProgress[video.id].progress)}
