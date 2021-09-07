@@ -1,13 +1,17 @@
-import type { VideoQueue } from "./types";
+import type { MusicQueue, VideoQueue } from "./types";
 
 export async function updateVideoQueue(videoQueue: VideoQueue): Promise<void> {
-  await setStorage("local", "videoQueue", [...videoQueue]);
+  await setLocalStorage("videoQueue", videoQueue);
 }
 
-export async function setStorage(
-  storageArea: "local" | "sync",
+export async function updateMusicQueue(musicQueue: MusicQueue): Promise<void> {
+  await setLocalStorage("musicQueue", musicQueue);
+}
+
+export async function setLocalStorage(
   key:
     | "videoQueue"
+    | "musicQueue"
     | "tabTracker"
     | "videoDetails"
     | "videoIds"
@@ -16,14 +20,14 @@ export async function setStorage(
   value: unknown
 ): Promise<void> {
   return new Promise(resolve =>
-    chrome.storage[storageArea].set({ [key]: value }, resolve)
+    chrome.storage.local.set({ [key]: value }, resolve)
   );
 }
 
-export async function getStorage(
-  storageArea: "local" | "sync",
+export async function getLocalStorage(
   key:
     | "videoQueue"
+    | "musicQueue"
     | "tabTracker"
     | "videoDetails"
     | "videoIds"
@@ -31,9 +35,7 @@ export async function getStorage(
     | "statusProgress"
 ): Promise<unknown> {
   return new Promise(resolve =>
-    chrome.storage[storageArea].get(key, result =>
-      resolve(key ? result[key] : result)
-    )
+    chrome.storage.local.get(key, result => resolve(key ? result[key] : result))
   );
 }
 
@@ -85,4 +87,26 @@ export function getVideoId(url: string): string | null {
 // eslint-disable-next-line @typescript-eslint/ban-types
 export function hasOwnProperty(object: object, key: string): boolean {
   return Object.prototype.hasOwnProperty.call(object, key);
+}
+
+export const gExtToMime = {
+  aac: "audio/aac",
+  avi: "video/x-msvideo",
+  mp3: "audio/mpeg",
+  mp4: "video/mp4",
+  mpeg: "video/mpeg",
+  oga: "audio/ogg",
+  ogv: "video/ogg",
+  opus: "audio/opus",
+  ts: "video/mp2t",
+  wav: "audio/wav",
+  weba: "audio/webm",
+  webm: "video/webm",
+  "3gp": "video/3gpp",
+  "3g2": "video/3gpp2"
+};
+
+export function getMimeType(filename: string): string | undefined {
+  const ext = filename.split(".").pop();
+  return gExtToMime[ext];
 }
