@@ -392,44 +392,45 @@ export async function handlePlaylistVideos(): Promise<void> {
   });
 
   for (let i = 0; i < elVideoItems.length; i++) {
-    const videoData = await getVideoData(await promiseHtmls[i]);
+    promiseHtmls[i].then(async html => {
+      const videoData = await getVideoData(html);
 
-    const isDownloadable = getIsDownloadable(videoData);
-    if (!isDownloadable) {
-      continue;
-    }
+      const isDownloadable = getIsDownloadable(videoData);
+      if (!isDownloadable) {
+        return;
+      }
 
-    const { videoId } = videoData.videoDetails;
+      const { videoId } = videoData.videoDetails;
 
-    appendCheckbox({
-      videoId,
-      elVideoNumberContainer: elVideoNumbersContainers[i]
-    });
+      appendCheckbox({
+        videoId,
+        elVideoNumberContainer: elVideoNumbersContainers[i]
+      });
 
-    appendDownloadContainer({
-      videoId,
-      elVideoItem: elVideoItems[i]
-    });
+      appendDownloadContainer({
+        videoId,
+        elVideoItem: elVideoItems[i]
+      });
 
-    const isMusic =
-      videoData.microformat.playerMicroformatRenderer.category === "Music";
+      const isMusic =
+        videoData.microformat.playerMicroformatRenderer.category === "Music";
 
-    const ext = isMusic ? "mp3" : "mp4";
+      const ext = isMusic ? "mp3" : "mp4";
 
-    downloadContainers[videoId] = new Vue({
-      el: `[data-ytdl-download-container="${videoId}"]`,
-      data: {
-        isStartedDownload: false,
-        isDownloadable,
-        progress: 0,
-        progressType: "",
-        isQueued: false,
-        videoData,
-        isPortDisconnected: false,
-        downloadType: isMusic ? "audio" : "video+audio",
-        filenameOutput: `${videoData.videoDetails.title}.${ext}`
-      },
-      template: `
+      downloadContainers[videoId] = new Vue({
+        el: `[data-ytdl-download-container="${videoId}"]`,
+        data: {
+          isStartedDownload: false,
+          isDownloadable,
+          progress: 0,
+          progressType: "",
+          isQueued: false,
+          videoData,
+          isPortDisconnected: false,
+          downloadType: isMusic ? "audio" : "video+audio",
+          filenameOutput: `${videoData.videoDetails.title}.${ext}`
+        },
+        template: `
         <section class="ytdl-container" data-ytdl-download-container="${videoId}">
         <div>
           <button @click="toggleDownload" :disabled="!isDownloadable">{{ textButton }}</button>
@@ -437,81 +438,82 @@ export async function handlePlaylistVideos(): Promise<void> {
         <progress :value="progress" :data-progress-type="progressType" :data-download-type="downloadType"></progress>
         </section>
       `,
-      computed: {
-        textButton() {
-          if (this.isPortDisconnected) {
-            return "RELOAD TO DOWNLOAD";
+        computed: {
+          textButton() {
+            if (this.isPortDisconnected) {
+              return "RELOAD TO DOWNLOAD";
+            }
+            if (!this.isDownloadable) {
+              return "NOT DOWNLOADABLE";
+            }
+            if (
+              this.progress === 1 &&
+              (this.progressType === "ffmpeg" ||
+                this.downloadType !== "video+audio")
+            ) {
+              return "DONE";
+            }
+            if (this.isQueued) {
+              return "QUEUED";
+            }
+            if (this.isStartedDownload) {
+              return "CANCEL";
+            }
+            return "DOWNLOAD";
+          },
+          formatsSorted() {
+            return videoData.streamingData.adaptiveFormats.sort(
+              (a, b) => b.bitrate - a.bitrate
+            );
+          },
+          videoBest() {
+            return this.formatsSorted.find(format =>
+              format.mimeType.startsWith("video")
+            );
+          },
+          audioBest() {
+            return this.formatsSorted.find(format =>
+              format.mimeType.startsWith("audio")
+            );
           }
-          if (!this.isDownloadable) {
-            return "NOT DOWNLOADABLE";
-          }
-          if (
-            this.progress === 1 &&
-            (this.progressType === "ffmpeg" ||
-              this.downloadType !== "video+audio")
-          ) {
-            return "DONE";
-          }
-          if (this.isQueued) {
-            return "QUEUED";
-          }
-          if (this.isStartedDownload) {
-            return "CANCEL";
-          }
-          return "DOWNLOAD";
         },
-        formatsSorted() {
-          return videoData.streamingData.adaptiveFormats.sort(
-            (a, b) => b.bitrate - a.bitrate
-          );
-        },
-        videoBest() {
-          return this.formatsSorted.find(format =>
-            format.mimeType.startsWith("video")
-          );
-        },
-        audioBest() {
-          return this.formatsSorted.find(format =>
-            format.mimeType.startsWith("audio")
-          );
-        }
-      },
-      methods: {
-        async toggleDownload() {
-          this.isStartedDownload = !this.isStartedDownload;
+        methods: {
+          async toggleDownload() {
+            this.isStartedDownload = !this.isStartedDownload;
 
-          this.progress = 0;
-          const isQueued =
-            downloadPlaylist.videoIdsToDownload.includes(videoId);
-          if (!this.isStartedDownload || isQueued) {
-            chrome.runtime.sendMessage({
-              action: "cancel-download",
-              videoIdsToCancel: [videoId]
+            this.progress = 0;
+            const isQueued =
+              downloadPlaylist.videoIdsToDownload.includes(videoId);
+            if (!this.isStartedDownload || isQueued) {
+              chrome.runtime.sendMessage({
+                action: "cancel-download",
+                videoIdsToCancel: [videoId]
+              });
+              return;
+            }
+
+            await this.download();
+          },
+          async download() {
+            gPorts.processSingle.postMessage({
+              type: this.downloadType,
+              urls: {
+                video: this.videoBest.url,
+                audio: this.audioBest.url
+              },
+              filenameOutput: this.filenameOutput,
+              videoId,
+              videoData,
+              isOverride: true
             });
-            return;
           }
-
-          await this.download();
-        },
-        async download() {
-          gPorts.processSingle.postMessage({
-            type: this.downloadType,
-            urls: {
-              video: this.videoBest.url,
-              audio: this.audioBest.url
-            },
-            filenameOutput: this.filenameOutput,
-            videoId,
-            videoData,
-            isOverride: true
-          });
         }
-      }
-    });
+      });
 
-    gPorts.main.postMessage({
-      action: "insert-playlist-videos",
-      videoIds: [videoId]
+      gPorts.main.postMessage({
+        action: "insert-playlist-videos",
+        videoIds: [videoId]
+      });
     });
   }
 }
