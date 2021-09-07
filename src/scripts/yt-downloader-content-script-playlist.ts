@@ -6,7 +6,12 @@ import {
 } from "./yt-downloader-content-script-initialize";
 import { isElementVisible } from "./utils";
 import Vue from "vue/dist/vue.js";
-import type { VideoQueue } from "./types";
+import type {
+  MusicQueue,
+  PlayerResponse,
+  StatusProgress,
+  VideoQueue
+} from "./types";
 
 let downloadContainers: { [videoId: string]: Vue };
 let downloadPlaylist: Vue;
@@ -18,8 +23,7 @@ function appendDownloadContainer({
   videoId: string;
   elVideoItem: Element;
 }) {
-  const selector = `data-ytdl-download-container="${videoId}"`;
-  if (document.querySelector(`[${selector}]`)) {
+  if (document.querySelector(`[data-ytdl-download-container="${videoId}"]`)) {
     return;
   }
 
@@ -141,17 +145,19 @@ export function appendPlaylistDownloadButton(): void {
         urls: { video: string; audio: string };
         filenameOutput: string;
         videoId: string;
+        videoData: PlayerResponse;
       }[] {
         return this.getVideoIdsToDownload().map(videoId => {
           const downloadContainer = downloadContainers[videoId];
           return {
-            type: "video+audio",
+            type: downloadContainer.downloadType,
             urls: {
               video: downloadContainer.videoBest.url,
               audio: downloadContainer.audioBest.url
             },
-            filenameOutput: `${downloadContainer.videoData.videoDetails.title}.mp4`,
-            videoId
+            filenameOutput: downloadContainer.filenameOutput,
+            videoId,
+            videoData: downloadContainer.videoData
           };
         });
       },
@@ -191,7 +197,10 @@ export function appendPlaylistDownloadButton(): void {
 
       new MutationObserver(() => {
         this.countVideosDownloaded = document.querySelectorAll(
-          `#contents progress[value="1"][data-progress-type="ffmpeg"]`
+          `
+          #contents progress[value="1"][data-download-type="video+audio"][data-progress-type="ffmpeg"],
+          #contents progress[value="1"][data-download-type="audio"]
+          `
         ).length;
       }).observe(elVideosContainer, {
         attributes: true,
@@ -235,10 +244,152 @@ export async function handlePlaylistVideos(): Promise<void> {
   const elVideoItems = [...document.querySelectorAll("#meta")].filter(
     isElementVisible
   );
+  const isIdExists = videoId =>
+    downloadPlaylist.videoIdsToDownload.includes(videoId);
 
   downloadContainers = {};
 
-  const videoIds: string[] = [];
+  gPorts.main.onDisconnect.addListener(() => {
+    downloadPlaylist.isPortDisconnected = true;
+    downloadPlaylist.isDownloadable = false;
+    (<HTMLButtonElement>(
+      document.querySelector("#ytdl-toggle-checkbox")
+    )).disabled = true;
+
+    const elCheckboxes = [
+      ...document.querySelectorAll(`[data-ytdl-playlist-checkbox]`)
+    ];
+    const videoIds = elCheckboxes.map(
+      (elCheckbox: HTMLInputElement) => elCheckbox.dataset.ytdlPlaylistCheckbox
+    );
+    videoIds.forEach(videoId => {
+      const downloadContainer = downloadContainers[videoId];
+      downloadContainer.isPortDisconnected = true;
+      downloadContainer.isDownloadable = false;
+
+      (<HTMLInputElement>(
+        document.querySelector(`[data-ytdl-playlist-checkbox="${videoId}"]`)
+      )).disabled = true;
+    });
+  });
+
+  chrome.storage.onChanged.addListener(changes => {
+    const statusProgress = changes.statusProgress?.newValue as StatusProgress;
+    if (statusProgress) {
+      for (const videoId in statusProgress) {
+        const downloadContainer = downloadContainers[videoId];
+        if (!downloadContainer) {
+          continue;
+        }
+
+        const { progress, type } = statusProgress[videoId];
+
+        const isInProgress = progress > 0 && progress < 1;
+        const isDownloadingVideo =
+          type !== "ffmpeg" && downloadContainer.downloadType === "video+audio";
+
+        const isDownloadingSingleMedia =
+          downloadContainer.downloadType !== "video+audio";
+
+        downloadContainer.isStartedDownload =
+          isInProgress || isDownloadingVideo || isDownloadingSingleMedia;
+
+        downloadContainer.progress = progress;
+
+        downloadContainer.progressType = type;
+        if (progress === 1) {
+          downloadContainer.isQueued = false;
+        }
+      }
+      return;
+    }
+
+    const videoQueueCurrent = changes.videoQueue?.newValue as VideoQueue;
+    if (videoQueueCurrent) {
+      const videoQueuePlaylistCurrent: VideoQueue =
+        videoQueueCurrent.filter(isIdExists);
+      const videoQueuePlaylistPrevious: VideoQueue =
+        changes.videoQueue.oldValue.filter(isIdExists);
+      const videoQueueDiff: VideoQueue = videoQueuePlaylistPrevious.filter(
+        videoId => !videoQueuePlaylistCurrent.includes(videoId)
+      );
+      const isGainedVideoIds =
+        videoQueuePlaylistCurrent.length >
+        downloadPlaylist.videoIdsToDownload.length;
+      if (!isGainedVideoIds && videoQueueDiff.length > 0) {
+        downloadPlaylist.videoIdsToDownload =
+          downloadPlaylist.videoIdsToDownload.filter(
+            videoId => !videoQueueDiff.includes(videoId)
+          );
+      }
+      videoQueueDiff.forEach(videoId => {
+        const downloadContainer = downloadContainers[videoId];
+        downloadContainer.isStartedDownload = false;
+        downloadContainer.isQueued = false;
+
+        const elProgress: HTMLElement = document.querySelector(
+          `[data-ytdl-download-container="${videoId}"] progress[data-progress-type]`
+        );
+        if (
+          elProgress.dataset.progressType !== "ffmpeg" ||
+          downloadContainer.progress < 1
+        ) {
+          downloadContainer.progress = 0;
+        }
+      });
+      videoQueueCurrent.forEach((videoId, i) => {
+        const downloadContainer = downloadContainers[videoId];
+        if (!downloadContainer) {
+          return;
+        }
+        downloadContainer.isQueued = i > 0;
+        downloadContainer.isStartedDownload = !downloadContainer.isQueued;
+        downloadContainer.progress = 0;
+      });
+      return;
+    }
+
+    const musicQueueCurrent = changes.musicQueue?.newValue as MusicQueue;
+    if (musicQueueCurrent) {
+      const musicQueuePlaylistCurrent: MusicQueue =
+        musicQueueCurrent.filter(isIdExists);
+
+      const musicQueuePlaylistPrevious: MusicQueue =
+        changes.musicQueue.oldValue.filter(isIdExists);
+
+      const musicQueueDiff: MusicQueue = musicQueuePlaylistPrevious.filter(
+        videoId => !musicQueuePlaylistCurrent.includes(videoId)
+      );
+      const isGainedVideoIds =
+        musicQueuePlaylistCurrent.length >
+        downloadPlaylist.videoIdsToDownload.length;
+
+      if (!isGainedVideoIds && musicQueueDiff.length > 0) {
+        downloadPlaylist.videoIdsToDownload =
+          downloadPlaylist.videoIdsToDownload.filter(
+            videoId => !musicQueueDiff.includes(videoId)
+          );
+      }
+
+      musicQueueDiff.forEach(videoId => {
+        const downloadContainer = downloadContainers[videoId];
+        downloadContainer.isStartedDownload = false;
+
+        if (downloadContainer.progress < 1) {
+          downloadContainer.progress = 0;
+        }
+      });
+
+      musicQueueCurrent.forEach(videoId => {
+        const downloadContainer = downloadContainers[videoId];
+        if (!downloadContainer) {
+          return;
+        }
+        downloadContainer.isStartedDownload = true;
+        downloadContainer.progress = 0;
+      });
+    }
+  });
 
   for (let i = 0; i < elVideoItems.length; i++) {
     const videoData = await getVideoData(await promiseHtmls[i]);
@@ -249,9 +400,6 @@ export async function handlePlaylistVideos(): Promise<void> {
     }
 
     const { videoId } = videoData.videoDetails;
-    if (!videoIds.includes(videoId)) {
-      videoIds.push(videoId);
-    }
 
     appendCheckbox({
       videoId,
@@ -263,6 +411,11 @@ export async function handlePlaylistVideos(): Promise<void> {
       elVideoItem: elVideoItems[i]
     });
 
+    const isMusic =
+      videoData.microformat.playerMicroformatRenderer.category === "Music";
+
+    const ext = isMusic ? "mp3" : "mp4";
+
     downloadContainers[videoId] = new Vue({
       el: `[data-ytdl-download-container="${videoId}"]`,
       data: {
@@ -272,15 +425,16 @@ export async function handlePlaylistVideos(): Promise<void> {
         progressType: "",
         isQueued: false,
         videoData,
-        isPortDisconnected: false
+        isPortDisconnected: false,
+        downloadType: isMusic ? "audio" : "video+audio",
+        filenameOutput: `${videoData.videoDetails.title}.${ext}`
       },
       template: `
         <section class="ytdl-container" data-ytdl-download-container="${videoId}">
         <div>
           <button @click="toggleDownload" :disabled="!isDownloadable">{{ textButton }}</button>
         </div>
-        <!--suppress HtmlUnknownAttribute -->
-        <progress :value="progress" :data-progress-type="progressType"></progress>
+        <progress :value="progress" :data-progress-type="progressType" :data-download-type="downloadType"></progress>
         </section>
       `,
       computed: {
@@ -291,7 +445,11 @@ export async function handlePlaylistVideos(): Promise<void> {
           if (!this.isDownloadable) {
             return "NOT DOWNLOADABLE";
           }
-          if (this.progress === 1 && this.progressType === "ffmpeg") {
+          if (
+            this.progress === 1 &&
+            (this.progressType === "ffmpeg" ||
+              this.downloadType !== "video+audio")
+          ) {
             return "DONE";
           }
           if (this.isQueued) {
@@ -337,125 +495,23 @@ export async function handlePlaylistVideos(): Promise<void> {
         },
         async download() {
           gPorts.processSingle.postMessage({
-            type: "video+audio",
+            type: this.downloadType,
             urls: {
               video: this.videoBest.url,
               audio: this.audioBest.url
             },
-            filenameOutput: `${this.videoData.videoDetails.title}.mp4`,
+            filenameOutput: this.filenameOutput,
             videoId,
+            videoData,
             isOverride: true
           });
         }
       }
     });
+
+    gPorts.main.postMessage({
+      action: "insert-playlist-videos",
+      videoIds: [videoId]
+    });
   }
-
-  chrome.runtime.onMessage.addListener(({ updateProgress }) => {
-    if (!updateProgress) {
-      return;
-    }
-
-    const { videoId, progress, progressType } = updateProgress;
-
-    const downloadContainer = downloadContainers[videoId];
-    if (!downloadContainer) {
-      return;
-    }
-
-    downloadContainer.progress = progress;
-    downloadContainer.progressType = progressType;
-    downloadContainer.isStartedDownload =
-      (progress < 1 && progress > 0) || progressType !== "ffmpeg";
-
-    if (progress === 1) {
-      downloadContainer.isQueued = false;
-    }
-  });
-
-  const isIdExists = videoId =>
-    downloadPlaylist.videoIdsToDownload.includes(videoId);
-
-  chrome.storage.onChanged.addListener(changes => {
-    const videoQueueCurrent = changes.videoQueue?.newValue as VideoQueue;
-    if (!videoQueueCurrent) {
-      return;
-    }
-
-    const videoQueuePlaylistCurrent: VideoQueue =
-      videoQueueCurrent.filter(isIdExists);
-
-    const videoQueuePlaylistPrevious: VideoQueue =
-      changes.videoQueue.oldValue.filter(isIdExists);
-
-    const videoQueueDiff: VideoQueue = videoQueuePlaylistPrevious.filter(
-      videoId => !videoQueuePlaylistCurrent.includes(videoId)
-    );
-
-    const isGainedVideoIds =
-      videoQueuePlaylistCurrent.length >
-      downloadPlaylist.videoIdsToDownload.length;
-
-    if (!isGainedVideoIds && videoQueueDiff.length > 0) {
-      downloadPlaylist.videoIdsToDownload =
-        downloadPlaylist.videoIdsToDownload.filter(
-          videoId => !videoQueueDiff.includes(videoId)
-        );
-    }
-
-    videoQueueDiff.forEach(videoId => {
-      const downloadContainer = downloadContainers[videoId];
-      downloadContainer.isStartedDownload = false;
-      downloadContainer.isQueued = false;
-
-      const elProgress: HTMLElement = document.querySelector(
-        `[data-ytdl-download-container="${videoId}"] progress[data-progress-type]`
-      );
-      if (
-        elProgress.dataset.progressType !== "ffmpeg" ||
-        downloadContainer.progress !== 1
-      ) {
-        downloadContainer.progress = 0;
-      }
-    });
-
-    videoQueueCurrent.forEach((videoId, i) => {
-      const downloadContainer = downloadContainers[videoId];
-      if (!downloadContainer) {
-        return;
-      }
-      downloadContainer.isQueued = i > 0;
-      downloadContainer.isStartedDownload = !downloadContainer.isQueued;
-      downloadContainer.progress = 0;
-    });
-  });
-
-  gPorts.main.postMessage({
-    action: "insert-playlist-videos",
-    videoIds
-  });
-
-  gPorts.main.onDisconnect.addListener(() => {
-    downloadPlaylist.isPortDisconnected = true;
-    downloadPlaylist.isDownloadable = false;
-    (<HTMLButtonElement>(
-      document.querySelector("#ytdl-toggle-checkbox")
-    )).disabled = true;
-
-    const elCheckboxes = [
-      ...document.querySelectorAll(`[data-ytdl-playlist-checkbox]`)
-    ];
-    const videoIds = elCheckboxes.map(
-      (elCheckbox: HTMLInputElement) => elCheckbox.dataset.ytdlPlaylistCheckbox
-    );
-    videoIds.forEach(videoId => {
-      const downloadContainer = downloadContainers[videoId];
-      downloadContainer.isPortDisconnected = true;
-      downloadContainer.isDownloadable = false;
-
-      (<HTMLInputElement>(
-        document.querySelector(`[data-ytdl-playlist-checkbox="${videoId}"]`)
-      )).disabled = true;
-    });
-  });
 }
