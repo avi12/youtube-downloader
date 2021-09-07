@@ -718,7 +718,7 @@ export type MusicQueue = string[];
 
 export interface StatusProgress {
   [videoId: string]: {
-    type: "video" | "audio" | "ffmpeg";
+    progressType: "video" | "audio" | "ffmpeg";
     progress: number;
   };
 }
@@ -748,12 +748,14 @@ export interface VideoDetails {
   };
 }
 
+// Key-value pairs where each video points at all of the tab IDs that are associated with it.
+export interface VideoIds {
+  [videoId: string]: number[];
+}
+
 // Used in the pop-up page to reorder videos in the queue
 export type MovableList = { id: string; title: string }[];
 
-export interface UrlToData {
-  [url: string]: {
-    videoId: string;
-    filenameOutput: string;
-  };
+export interface UrlToFilename {
+  [url: string]: string;
 }
