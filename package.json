@@ -1,6 +1,6 @@
 {
   "name": "youtube-downloader",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "A browser extension for downloading almost any video from YouTube, right from its page.",
   "repository": "https://github.com/avi12/youtube-downloader",
   "author": "avi12 <avi6106@gmail.com>",
@@ -15,7 +15,7 @@
     "pack": "web-ext build --overwrite-dest --artifacts-dir dist_packed --source-dir dist --filename=youtube-downloader.zip",
     "build-pack": "pnpm build && pnpm run pack",
     "set-version": "set-json-version -f package.json dist/manifest.json -v",
-    "run-browser": "web-ext run --no-config-discovery --start-url https://www.youtube.com/playlist?list=PLwCbIpH3KfpCYpPglyn4T8ecOcSNuAkBr --source-dir dist --verbose --target",
+    "run-browser": "web-ext run --no-config-discovery --start-url https://www.youtube.com/watch?v=PK9VPv6hY3k --source-dir dist --verbose --target",
     "run-chromium": "pnpm run-browser chromium",
     "run-firefox": "pnpm run-browser firefox-desktop"
   },
@@ -27,8 +27,8 @@
     "@rollup/plugin-typescript": "^8.2.3",
     "@sveltejs/eslint-config": "github:sveltejs/eslint-config",
     "@tsconfig/svelte": "^2.0.1",
-    "@types/chrome": "^0.0.154",
-    "@types/file-saver": "^2.0.3",
+    "@types/chrome": "^0.0.157",
+    "@types/mime-types": "^2.1.1",
     "@typescript-eslint/eslint-plugin": "^4.29.2",
     "@typescript-eslint/parser": "^4.29.2",
     "eslint": "^7.32.0",
@@ -61,7 +61,6 @@
     "@vue/runtime-core": "^3.2.6",
     "blob-util": "^2.0.2",
     "browser-id3-writer": "^4.4.0",
-    "file-saver": "^2.0.5",
     "get-artist-title": "^1.3.1",
     "vue": "^2.6.14"
   }
