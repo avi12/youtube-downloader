@@ -317,7 +317,7 @@ async function processVideo({
   const [filenameVideo, filenameAudio, filenameOutputTemp] = [
     `${videoId}-video.${mimeToExt(responseVideo)}`,
     `${videoId}-audio.${mimeToExt(responseAudio)}`,
-    `${videoId}-output.mp4`
+    `${videoId}-${filenameOutput}`
   ];
 
   gFfmpeg.setProgress(async ({ ratio }) => {
