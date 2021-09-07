@@ -10,7 +10,9 @@
     "no-async-promise-executor": "off",
     "prefer-const": "warn",
     "no-debugger": "off",
-    "no-constant-condition": "off"
+    "no-constant-condition": "off",
+    "semi": "warn",
+    "quotes": ["warn", "double", { "allowTemplateLiterals": true }]
   },
   "overrides": [
     {
