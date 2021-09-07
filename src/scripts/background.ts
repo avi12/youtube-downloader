@@ -232,6 +232,14 @@ async function deleteProgress(videoId: string): Promise<void> {
   delete gStatusProgress.value[videoId];
 }
 
+async function cleanupDownloads(url) {
+  URL.revokeObjectURL(url);
+  delete gCancelControllers[gUrlToVideoData[url].videoId];
+
+  await updateMusicQueue(gMusicQueue);
+  await updateVideoQueue(gVideoQueue);
+}
+
 async function processVideo({
   urls,
   filenameOutput,
@@ -304,7 +312,8 @@ async function processVideo({
     videoId,
     filenameOutput
   };
-  chrome.downloads.download({ url });
+
+  chrome.downloads.download({ url }, () => cleanupDownloads(url));
 
   const iVideo = gVideoQueue.indexOf(videoId);
   gVideoQueue.splice(iVideo, 1);
@@ -362,7 +371,7 @@ function handleSingleMediaProcessing(port: Port) {
           videoId,
           filenameOutput: processInfo.filenameOutput
         };
-        chrome.downloads.download({ url });
+        chrome.downloads.download({ url }, () => cleanupDownloads(url));
       }
     }
   );
@@ -408,7 +417,7 @@ async function processMusicPlaylist() {
         filenameOutput
       };
 
-      chrome.downloads.download({ url });
+      chrome.downloads.download({ url }, () => cleanupDownloads(url));
     });
   }
 }
@@ -529,21 +538,6 @@ function addListeners() {
       suggest({ filename: filenameOutput.replaceAll("/", "-") });
     }
   );
-
-  chrome.downloads.onChanged.addListener(async downloadDelta => {
-    if (downloadDelta.state.current.match(/complete|interrupted/)) {
-      const url = downloadDelta.url.current;
-      URL.revokeObjectURL(url);
-      delete gCancelControllers[gUrlToVideoData[url].videoId];
-      return;
-    }
-
-    // Else, in_progress
-    // Updating the lists because
-    // the downloads have finished internally
-    await updateMusicQueue(gMusicQueue);
-    await updateVideoQueue(gVideoQueue);
-  });
 }
 
 function addWatchers() {
