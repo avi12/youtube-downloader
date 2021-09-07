@@ -4,9 +4,9 @@ import {
   getIsDownloadable,
   gPorts
 } from "./yt-downloader-content-script-initialize";
-import Vue from "vue/dist/vue.js";
+import Vue from "vue/dist/vue.min.js";
 import { getElementEventually } from "./utils";
-import type { AdaptiveFormatItem, StatusProgress, VideoQueue } from "./types";
+import type { AdaptiveFormatItem, VideoQueue } from "./types";
 
 export async function handleVideo(): Promise<void> {
   const getHtml = async () => {
@@ -129,35 +129,31 @@ export async function handleVideo(): Promise<void> {
             audio: this.audioBest.url
           },
           filenameOutput: this.filenameOutput,
-          videoId,
-          videoData
+          videoId
         });
       }
     },
     created() {
-      chrome.storage.onChanged.addListener(changes => {
-        const statusProgress = changes.statusProgress
-          ?.newValue as StatusProgress;
-
-        if (statusProgress) {
-          const status = statusProgress[videoId];
-          if (!status) {
+      chrome.runtime.onMessage.addListener(
+        ({ updateProgress: { progress, progressType, isRemoved } }) => {
+          if (isRemoved) {
+            this.progress = 0;
+            this.progressType =
+              this.downloadType === "video+audio"
+                ? "ffmpeg"
+                : this.downloadType;
+            this.isStartedDownload = false;
+            this.isQueued = false;
             return;
           }
 
-          const { progress, type } = status;
-
           this.progress = progress;
-          this.progressType = type;
-          this.isStartedDownload =
-            (progress > 0 && progress < 1) || type !== "ffmpeg";
-
-          if (progress === 1) {
-            this.isQueued = false;
-          }
-          return;
+          this.progressType = progressType;
+          this.isStartedDownload = progress > 0 && progress < 1;
         }
+      );
 
+      chrome.storage.onChanged.addListener(changes => {
         const videoQueue = changes.videoQueue?.newValue as VideoQueue;
         if (videoQueue) {
           const { videoId } = videoData.videoDetails;

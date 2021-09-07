@@ -5,13 +5,8 @@ import {
   gPorts
 } from "./yt-downloader-content-script-initialize";
 import { isElementVisible } from "./utils";
-import Vue from "vue/dist/vue.js";
-import type {
-  MusicQueue,
-  PlayerResponse,
-  StatusProgress,
-  VideoQueue
-} from "./types";
+import Vue from "vue/dist/vue.min.js";
+import type { MusicQueue, PlayerResponse, VideoQueue } from "./types";
 
 let downloadContainers: { [videoId: string]: Vue };
 let downloadPlaylist: Vue;
@@ -273,37 +268,45 @@ export async function handlePlaylistVideos(): Promise<void> {
     });
   });
 
-  chrome.storage.onChanged.addListener(changes => {
-    const statusProgress = changes.statusProgress?.newValue as StatusProgress;
-    if (statusProgress) {
-      for (const videoId in statusProgress) {
-        const downloadContainer = downloadContainers[videoId];
-        if (!downloadContainer) {
-          continue;
-        }
+  chrome.runtime.onMessage.addListener(({ updateProgress }) => {
+    const { videoId, progress, progressType, isRemoved } = updateProgress;
 
-        const { progress, type } = statusProgress[videoId];
-
-        const isInProgress = progress > 0 && progress < 1;
-        const isDownloadingVideo =
-          type !== "ffmpeg" && downloadContainer.downloadType === "video+audio";
-
-        const isDownloadingSingleMedia =
-          downloadContainer.downloadType !== "video+audio";
-
-        downloadContainer.isStartedDownload =
-          isInProgress || isDownloadingVideo || isDownloadingSingleMedia;
-
-        downloadContainer.progress = progress;
-
-        downloadContainer.progressType = type;
-        if (progress === 1) {
-          downloadContainer.isQueued = false;
-        }
-      }
+    const downloadContainer = downloadContainers[videoId];
+    if (!downloadContainer) {
       return;
     }
 
+    if (isRemoved) {
+      downloadContainer.progress = 0;
+      downloadContainer.progressType =
+        downloadContainer.downloadType === "video+audio"
+          ? "ffmpeg"
+          : downloadContainer.downloadType;
+
+      downloadContainer.isStartedDownload = false;
+      return;
+    }
+
+    downloadContainer.progress = progress;
+    downloadContainer.progressType = progressType;
+
+    const isInProgress = progress > 0 && progress < 1;
+    const isDownloadingVideo =
+      progressType !== "ffmpeg" &&
+      downloadContainer.downloadType === "video+audio";
+
+    const isDownloadingSingleMedia =
+      downloadContainer.downloadType !== "video+audio";
+
+    downloadContainer.isStartedDownload =
+      isInProgress && (isDownloadingVideo || isDownloadingSingleMedia);
+
+    if (progress === 1) {
+      downloadContainer.isQueued = false;
+    }
+  });
+
+  chrome.storage.onChanged.addListener(changes => {
     const videoQueueCurrent = changes.videoQueue?.newValue as VideoQueue;
     if (videoQueueCurrent) {
       const videoQueuePlaylistCurrent: VideoQueue =
@@ -327,7 +330,7 @@ export async function handlePlaylistVideos(): Promise<void> {
         downloadContainer.isStartedDownload = false;
         downloadContainer.isQueued = false;
 
-        const elProgress: HTMLElement = document.querySelector(
+        const elProgress: HTMLProgressElement = document.querySelector(
           `[data-ytdl-download-container="${videoId}"] progress[data-progress-type]`
         );
         if (
@@ -431,13 +434,13 @@ export async function handlePlaylistVideos(): Promise<void> {
           filenameOutput: `${videoData.videoDetails.title}.${ext}`
         },
         template: `
-        <section class="ytdl-container" data-ytdl-download-container="${videoId}">
-        <div>
-          <button @click="toggleDownload" :disabled="!isDownloadable">{{ textButton }}</button>
-        </div>
-        <progress :value="progress" :data-progress-type="progressType" :data-download-type="downloadType"></progress>
-        </section>
-      `,
+          <section class="ytdl-container" data-ytdl-download-container="${videoId}">
+          <div>
+            <button @click="toggleDownload" :disabled="!isDownloadable">{{ textButton }}</button>
+          </div>
+          <progress :value="progress" :data-progress-type="progressType" :data-download-type="downloadType"></progress>
+          </section>
+        `,
         computed: {
           textButton() {
             if (this.isPortDisconnected) {
@@ -511,8 +514,8 @@ export async function handlePlaylistVideos(): Promise<void> {
       });
 
       gPorts.main.postMessage({
-        action: "insert-playlist-videos",
-        videoIds: [videoId]
+        action: "insert-video-to-playlist",
+        videoId
       });
     });
   }
