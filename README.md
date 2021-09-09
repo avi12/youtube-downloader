@@ -52,9 +52,15 @@ Still in development, for as long as I'm not 100% happy with the result
    [Linkshrink](https://linkshrink.ca/youtube-downloader),
    [AdPayLink](https://go.rancah.com/7hRX),
    or [direct](https://bit.ly/3tqf9y6)
-2. Go to the extensions page
-3. Enable "Developer mode" (top-right corner usually)
-4. Drag & drop the ZIP onto the extensions page
+2. If on Chrome or Edge:
+   1. Go to the extensions page
+   2. Enable "Developer mode" (top-right corner usually)
+   3. Drag & drop the ZIP onto the extensions page
+3. If on Opera:
+   2. Go to the extensions page
+   3. Extract the ZIP into a folder
+   4. "Load unpacked" → select that folder
+4. If on Firefox: [follow this guide](https://extensionworkshop.com/documentation/develop/temporary-installation-in-firefox/)
 5. Reload any YouTube tab you wish the extension to run on
 
 ## Core packages/repositories used
