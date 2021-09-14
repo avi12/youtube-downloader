@@ -98,7 +98,7 @@ export function appendPlaylistDownloadButton(): void {
       countVideosToDownload: -1,
       countVideosDownloaded: 0,
       isPortDisconnected: false,
-      videoIdsToDownload: [] as string[],
+      videoIdsToDownload: [] as VideoQueue | VideoOnlyQueue | MusicQueue,
       icons
     },
     template: `
@@ -512,7 +512,7 @@ export async function handlePlaylistVideos(): Promise<void> {
           isDoneDownloading: false,
           isDownloadable,
           progress: 0,
-          progressType: "" as "video" | "audio" | "video+audio",
+          progressType: "" as "" | "video" | "audio" | "video+audio",
           isQueued: false,
           isPortDisconnected: false,
           errorFilename: "",
@@ -525,8 +525,8 @@ export async function handlePlaylistVideos(): Promise<void> {
           ext,
           videos: [] as AdaptiveFormatItem[],
           audios: [] as AdaptiveFormatItem[],
-          videoUrl: null as AdaptiveFormatItem,
-          audioUrl: null as AdaptiveFormatItem,
+          videoUrl: "",
+          audioUrl: "",
           icons
         },
         template: `
