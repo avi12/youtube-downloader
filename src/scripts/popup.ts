@@ -3,6 +3,7 @@ import Options from "./components/Options.svelte";
 async function init() {
   const {
     videoQueue: gVideoQueue,
+    videoOnlyQueue: gVideoOnlyQueue,
     musicQueue: gMusicQueue,
     videoDetails: gVideoDetails,
     videoIds: gVideoIds,
@@ -12,6 +13,7 @@ async function init() {
     chrome.storage.local.get(
       [
         "videoQueue",
+        "videoOnlyQueue",
         "musicQueue",
         "videoDetails",
         "videoIds",
@@ -27,6 +29,7 @@ async function init() {
     props: {
       gVideoQueue,
       gMusicQueue,
+      gVideoOnlyQueue,
       gVideoDetails,
       gVideoIds,
       isFFmpegReady,
