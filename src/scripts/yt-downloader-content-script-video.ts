@@ -219,6 +219,7 @@ export async function handleVideo(): Promise<void> {
       },
       downloadType(type) {
         this.progress = 0;
+        this.errorFilename = "";
         if (type === "audio") {
           this.ext = "mp3";
           return;
