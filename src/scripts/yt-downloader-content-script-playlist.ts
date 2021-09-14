@@ -535,7 +535,9 @@ export async function handlePlaylistVideos(): Promise<void> {
                    data-ytdl-download-container="${videoId}"
                    ref="container">
           <div class="ytdl-container-playlist-single-video__buttons">
-            <button @click="toggleDownload" :disabled="!isDownloadable" class="ytdl-download-button ytdl-download-button--download">
+            <button @click="toggleDownload"
+                    :disabled="!isDownloadable"
+                    class="ytdl-download-button ytdl-download-button--download">
               <span class="ytdl-download-icon"
                     :class="{'ytdl-download-icon-undownloadable': !isDownloadable}"
                     v-html="currentDownloadIcon"></span> {{ textButton }}
@@ -589,8 +591,8 @@ export async function handlePlaylistVideos(): Promise<void> {
                                class="ytdl-filename">
                         <transition name="slide">
                           <div class="ytdl--error" v-if="errorFilename">
-                            {{ errorFilename }}
-                            <div>Supported file extensions: <span class="ytdl-file-extensions">
+                            Unsupported audio extension: <b>{{ errorFilename }}</b>
+                            <div>Supported ones: <span class="ytdl-file-extensions">
                                 ${gSupportedExts.audio.join(", ")}
                               </span>
                             </div>
@@ -627,8 +629,8 @@ export async function handlePlaylistVideos(): Promise<void> {
                                class="ytdl-filename">
                         <transition name="slide">
                           <div class="ytdl--error" v-if="errorFilename">
-                            <span v-html="errorFilename"></span>
-                            <div>Supported file extensions: <span class="ytdl-file-extensions">
+                            Unsupported video extension: <b>{{ errorFilename }}</b>
+                            <div>Supported ones: <span class="ytdl-file-extensions">
                                 ${gSupportedExts.video.join(", ")}
                               </span>
                             </div>
@@ -658,7 +660,7 @@ export async function handlePlaylistVideos(): Promise<void> {
                 return;
               }
 
-              this.errorFilename = `Unsupported audio extension: <b>${ext}</b>`;
+              this.errorFilename = ext;
               return;
             }
 
@@ -667,7 +669,7 @@ export async function handlePlaylistVideos(): Promise<void> {
               return;
             }
 
-            this.errorFilename = `Unsupported video extension: <b>${ext}</b>`;
+            this.errorFilename = ext;
           },
           downloadType(type) {
             this.progress = 0;

@@ -136,8 +136,8 @@ export async function handleVideo(): Promise<void> {
                          class="ytdl-filename">
                   <transition name="slide">
                     <div class="ytdl--error" v-if="errorFilename">
-                      {{ errorFilename }}
-                      <div>Supported file extensions: <span class="ytdl-file-extensions">${gSupportedExts.audio.join(
+                      Unsupported audio extension: <b>{{ errorFilename }}</b>
+                      <div>Supported ones: <span class="ytdl-file-extensions">${gSupportedExts.audio.join(
                         ", "
                       )}</span></div>
                     </div>
@@ -173,8 +173,8 @@ export async function handleVideo(): Promise<void> {
                          class="ytdl-filename">
                   <transition name="slide">
                     <div class="ytdl--error" v-if="errorFilename">
-                      {{ errorFilename }}
-                      <div>Supported file extensions:
+                      Unsupported video extension: {{ errorFilename }}
+                      <div>Supported ones:
                         <span class="ytdl-file-extensions">{{ gSupportedExts.video.join(", ") }}</span></div>
                     </div>
                   </transition>
@@ -206,7 +206,7 @@ export async function handleVideo(): Promise<void> {
             return;
           }
 
-          this.errorFilename = `Unsupported audio extension: ${ext}`;
+          this.errorFilename = ext;
           return;
         }
 
@@ -215,7 +215,7 @@ export async function handleVideo(): Promise<void> {
           return;
         }
 
-        this.errorFilename = `Unsupported video extension: ${ext}`;
+        this.errorFilename = ext;
       },
       downloadType(type) {
         this.progress = 0;
