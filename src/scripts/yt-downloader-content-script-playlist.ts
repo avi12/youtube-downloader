@@ -538,7 +538,7 @@ export async function handlePlaylistVideos(): Promise<void> {
             <button @click="toggleDownload" :disabled="!isDownloadable" class="ytdl-download-button ytdl-download-button--download">
               <span class="ytdl-download-icon"
                     :class="{'ytdl-download-icon-undownloadable': !isDownloadable}"
-                    v-html="currentDownloadIcon"></span>{{ textButton }}
+                    v-html="currentDownloadIcon"></span> {{ textButton }}
             </button>
             <button class="ytdl-download-button ytdl-download-button--expand"
                     v-if="isDownloadable"
@@ -658,7 +658,7 @@ export async function handlePlaylistVideos(): Promise<void> {
                 return;
               }
 
-              this.errorFilename = `Not supporting audio extension: <b>${ext}</b>`;
+              this.errorFilename = `Unsupported audio extension: <b>${ext}</b>`;
               return;
             }
 
@@ -667,7 +667,7 @@ export async function handlePlaylistVideos(): Promise<void> {
               return;
             }
 
-            this.errorFilename = `Not supporting video extension: <b>${ext}</b>`;
+            this.errorFilename = `Unsupported video extension: <b>${ext}</b>`;
           },
           downloadType(type) {
             this.progress = 0;

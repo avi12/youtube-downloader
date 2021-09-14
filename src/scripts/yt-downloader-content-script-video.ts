@@ -206,7 +206,7 @@ export async function handleVideo(): Promise<void> {
             return;
           }
 
-          this.errorFilename = `Not supporting audio extension: ${ext}`;
+          this.errorFilename = `Unsupported audio extension: ${ext}`;
           return;
         }
 
@@ -215,7 +215,7 @@ export async function handleVideo(): Promise<void> {
           return;
         }
 
-        this.errorFilename = `Not supporting video extension: ${ext}`;
+        this.errorFilename = `Unsupported video extension: ${ext}`;
       },
       downloadType(type) {
         this.progress = 0;
