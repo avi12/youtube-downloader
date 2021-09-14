@@ -714,6 +714,7 @@ export type PlayerResponse = {
 };
 
 export type VideoQueue = string[];
+export type VideoOnlyQueue = string[];
 export type MusicQueue = string[];
 
 export interface StatusProgress {
