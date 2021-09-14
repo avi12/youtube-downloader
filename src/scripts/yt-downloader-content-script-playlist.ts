@@ -20,9 +20,7 @@ import type {
 } from "./types";
 import { icons } from "./icons";
 
-export const gObserverRichOptionsSingleMediaPlaylist: {
-  [videoId: string]: MutationObserver;
-} = {};
+export let gObserverPlaylist: MutationObserver;
 let downloadContainers: { [videoId: string]: Vue };
 let downloadPlaylist: Vue;
 
@@ -237,7 +235,7 @@ export function appendPlaylistDownloadButton(): void {
 
       const elVideosContainer = document.querySelector("#contents");
 
-      new MutationObserver(() => {
+      gObserverPlaylist = new MutationObserver(() => {
         this.countVideosDownloaded = document.querySelectorAll(
           `
           #contents progress[value="1"][data-download-type="video+audio"][data-progress-type="ffmpeg"],
@@ -245,7 +243,8 @@ export function appendPlaylistDownloadButton(): void {
           #contents progress[value="1"][data-download-type="video"]
           `
         ).length;
-      }).observe(elVideosContainer, {
+      });
+      gObserverPlaylist.observe(elVideosContainer, {
         attributes: true,
         subtree: true,
         attributeFilter: ["value"]
