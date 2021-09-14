@@ -1,12 +1,225 @@
+@import "download-progress.scss";
+
+:root {
+  --ytdl-rich-options-y-axis: 36px;
+}
+
+@mixin _progress($isAbsolute: false) {
+  progress {
+    @if $isAbsolute {
+      position: absolute;
+      transform: translate(10px, 22px);
+    }
+
+    width: 100px;
+    transition: opacity 0.3s ease;
+    opacity: 0;
+
+    &[data-download-type="video+audio"]:not([value="0"]):not([value="1"]),
+    &[data-download-type="video+audio"][value="0"]:not([data-progress-type=""]),
+    &[data-download-type="video+audio"][value="1"][data-progress-type="video"],
+    &[data-download-type="video+audio"][value="1"][data-progress-type="audio"],
+    &[data-download-type="video"]:not([value="0"]):not([value="1"]),
+    &[data-download-type="audio"]:not([value="0"]):not([value="1"]) {
+      opacity: 1;
+      cursor: default;
+    }
+  }
+}
+
+@mixin _download-button-padding {
+  &.ytdl-download-button--download {
+    padding: 0 5px;
+  }
+
+  &.ytdl-download-button--expand {
+    padding: 0 2px;
+  }
+}
+
 .ytdl-container {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  margin: 0 10px;
+  position: relative;
+
+  @include _progress($isAbsolute: true);
+
+  &-playlist-single-video {
+    transition: max-width 0.3s, transform 0.3s;
+    overflow: hidden;
+    transform: translateX(-200px);
+    max-width: 0;
+    display: flex;
+    flex-direction: column;
+
+    &__buttons {
+      display: flex;
+      align-items: center;
+    }
+
+    @include _progress;
+
+    .ytdl-download-button {
+      transition: background-color 0.3s;
+
+     @include _download-button-padding;
+
+      &:not([disabled]):hover {
+        background-color: rgba(gray, 0.2);
+      }
+    }
+  }
+
+  .ytdl-download-button {
+    @include _download-button-padding;
+  }
+}
+
+.ytdl-download-button {
+  background-color: transparent;
+  display: flex;
+  align-items: center;
+  border: none;
+  font-weight: 500;
+  font-size: var(--ytd-tab-system_-_font-size, 1.4rem);
+  cursor: pointer;
+  color: var(
+    --yt-button-icon-button-text-color,
+    var(--yt-spec-text-secondary, #030303)
+  );
+
+  > span {
+    display: flex;
+    align-items: center;
+  }
+
+  .ytdl-download-icon {
+    margin-right: 5px;
+
+    &-undownloadable {
+      filter: opacity(0.3);
+      font-weight: 600;
+    }
+  }
+}
+
+.ytdl-rich-options {
+  font-size: 1.5rem;
+  color: var(--yt-spec-text-primary);
+  background-color: var(--yt-spec-general-background-a);
+  box-shadow: var(--shadow-elevation-16dp_-_box-shadow);
+  width: 300px;
+  z-index: 1;
+  overflow: hidden;
+  cursor: default;
+  display: flex;
   justify-content: center;
+
+  &__content {
+    width: 80%;
+  }
+
+  &--pushed-up {
+    --ytdl-rich-options-y-axis: -279px;
+  }
+
+  &:not([data-video-id]) {
+    position: absolute;
+    top: var(--ytdl-rich-options-y-axis);
+    min-height: 239px;
+  }
+
+  &[data-video-id] {
+    box-shadow: none;
+    border: 1px solid var(--yt-spec-text-primary);
+  }
+
+  input,
+  select {
+    color: var(--yt-spec-text-primary);
+    border: 0;
+    border-bottom: 2px solid var(--yt-spec-10-percent-layer);
+    background-color: transparent;
+    padding: 2px;
+  }
+
+  option {
+    background-color: var(--yt-spec-general-background-a);
+  }
+
+  input:focus,
+  select:focus {
+    //border: 2px solid var(--yt-spec-text-primary, darkgray);
+    border-bottom: 2px solid white;
+    outline: none;
+  }
+
+  input[type="checkbox"] {
+    margin: 0 5px 0 0;
+  }
+
+  input[type="text"][disabled] {
+    background-color: rgba(white, 0.2);
+    color: white;
+  }
+}
+
+.ytdl-tabs-buttons {
+  display: flex;
+  justify-content: center;
+  margin: 20px 0;
+  gap: 10px;
+}
+
+.ytdl-tab {
+  &__button {
+    color: var(--yt-spec-text-primary);
+    background-color: var(--yt-spec-general-background-a);
+    border: 1px solid;
+    padding: 7px 9px;
+  }
+
+  &__button--selected {
+    background-color: #e1e1e1;
+  }
+}
+
+html[dark="true"] .ytdl-tab__button--selected {
+  background-color: gray;
+}
+
+.ytdl-file-extensions {
+  color: blue;
+}
+
+html[dark="true"] {
+  .ytdl-file-extensions {
+    color: cyan;
+  }
+
+  .ytdl-download-button svg {
+    fill: white;
+  }
+}
+
+.ytdl-filename {
+  width: 100%;
+  background-color: transparent;
+  transition: background-color 0.25s ease-in-out;
+
+  &--error {
+    background-color: #fcdada;
+  }
 }
 
 #ytdl-playlist-button-container {
   transition: max-height 0.5s;
   overflow: hidden;
+  max-height: 0;
+
+  display: flex;
+  flex-direction: column;
 }
 
 .ytdl-playlist-checkbox-container {
@@ -16,23 +229,61 @@
 
 .ytdl--error {
   color: var(--yt-spec-brand-link-text, red);
+  overflow: hidden;
 }
 
-.ytdl--text {
+.ytdl--text-color-default {
   color: var(--yt-spec-text-primary);
 }
 
 .ytdl--size-medium {
-  font-size: var(--ytd-subheadline-link_-_font-size);
+  font-size: var(--ytd-subheadline-link_-_font-size, 1.6rem);
 }
 
-/*Transitions for the playlist page - error & X out of Y videos*/
-.slide-enter,.slide-leave-to {
+// Transitions for the playlist page - error & X out of Y videos
+.slide-short-enter,
+.slide-short-leave-to {
   max-height: 0;
 }
-.slide-enter-active,.slide-leave-active {
+
+.slide-short-enter-active,
+.slide-short-leave-active {
+  transition: max-height 0.3s;
+}
+
+.slide-short-enter-to,
+.slide-short-leave {
+  max-height: 20px;
+}
+
+// Transitions for the playlist page - file extension error
+.slide-enter,
+.slide-leave-to {
+  max-height: 0;
+}
+
+.slide-enter-active,
+.slide-leave-active {
+  transition: max-height 0.3s;
+}
+
+.slide-enter-to,
+.slide-leave {
+  max-height: 100px;
+}
+
+// Transitions for the playlist page - rich options opening
+.slide-rich-options-enter,
+.slide-rich-options-leave-to {
+  max-height: 0;
+}
+
+.slide-rich-options-enter-active,
+.slide-rich-options-leave-active {
   transition: max-height 0.5s;
 }
-.slide-enter-to,.slide-leave {
-  max-height: 50px;
+
+.slide-rich-options-enter-to,
+.slide-rich-options-leave {
+  max-height: 302px;
 }
