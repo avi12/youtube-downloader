@@ -2,6 +2,7 @@
   import type {
     VideoQueue,
     MusicQueue,
+    VideoOnlyQueue,
     MovableList,
     StatusProgress,
     VideoDetails
@@ -10,12 +11,13 @@
   export let isFFmpegReady;
   export let gVideoQueue: VideoQueue;
   export let gMusicQueue: MusicQueue;
+  export let gVideoOnlyQueue: VideoOnlyQueue;
   export let gVideoDetails: VideoDetails;
-  export let gStatusProgress: StatusProgress;
+  export let gStatusProgress: StatusProgress;  
 
   import { dndzone } from "svelte-dnd-action";
   import { flip } from "svelte/animate";
-  import { getLocalStorage, updateVideoQueue } from "../utils";
+  import { getLocalStorage, updateQueue } from "../utils";
 
   let videosMovable: MovableList = gVideoQueue.map(videoId => ({
     id: videoId,
@@ -28,7 +30,7 @@
     videosMovable = e.detail.items;
 
     if (e.type === "finalize") {
-      await updateVideoQueue(getVideoQueue(videosMovable));
+      await updateQueue("video", getVideoQueue(videosMovable));
     }
   }
 
@@ -80,7 +82,7 @@
     });
   }
 
-  function stopAllDownloads(queue: VideoQueue | MusicQueue) {
+  function stopAllDownloads(queue: VideoQueue | MusicQueue | VideoOnlyQueue) {
     chrome.runtime.sendMessage({
       action: "cancel-download",
       videoIdsToCancel: queue
@@ -150,6 +152,31 @@ Music list:
   <section>(Currently empty)</section>
 {/if}
 {#each gMusicQueue as videoId}
+  <section class="download-container">
+    <span class="video__title">{gVideoDetails[videoId].filenameOutput}</span>
+    <div class="status-progress">
+      {#if gStatusProgress[videoId]}
+        downloading... {getProgress(gStatusProgress[videoId].progress)}
+      {/if}
+    </div>
+    <button class="cancel-download" on:click={() => removeFromQueue(videoId)}
+      >{@html symbolX}</button
+    >
+  </section>
+{/each}
+
+<br />
+Video-only list:
+{#if gVideoOnlyQueue.length > 0}
+  <section>
+    <button on:click={() => stopAllDownloads(gVideoOnlyQueue)}
+      >Stop all {@html symbolX}</button
+    >
+  </section>
+{:else}
+  <section>(Currently empty)</section>
+{/if}
+{#each gVideoOnlyQueue as videoId}
   <section class="download-container">
     <span class="video__title">{gVideoDetails[videoId].filenameOutput}</span>
     <div class="status-progress">
