@@ -1,7 +1,12 @@
 import type { PlayerResponse } from "./types";
-import { handleVideo } from "./yt-downloader-content-script-video";
+import {
+  gObserverRichOptionsSingleMedia,
+  handleVideo,
+  moveModalSingleMediaWhenNeeded
+} from "./yt-downloader-content-script-video";
 import {
   appendPlaylistDownloadButton,
+  gObserverPlaylist,
   handlePlaylistVideos
 } from "./yt-downloader-content-script-playlist";
 import Port = chrome.runtime.Port;
@@ -58,6 +63,9 @@ function cancelDownloads() {
 function resetObservers() {
   gObserverPlaylistVideos = null;
   gObserverPlaylistDownloadButton = null;
+
+  gObserverRichOptionsSingleMedia?.disconnect();
+  gObserverPlaylist?.disconnect();
 }
 
 function removeDownloadButtonsOnPlaylists() {
@@ -66,6 +74,10 @@ function removeDownloadButtonsOnPlaylists() {
   )) {
     elDownloadContainerOrCheckbox.remove();
   }
+}
+
+function removeScrollListeners() {
+  document.removeEventListener("scroll", moveModalSingleMediaWhenNeeded);
 }
 
 function addNavigationListener() {
@@ -85,6 +97,7 @@ function addNavigationListener() {
     cancelDownloads();
     resetObservers();
     removeDownloadButtonsOnPlaylists();
+    removeScrollListeners();
     await init();
   }).observe(document.querySelector("title"), { childList: true });
 }
