@@ -1,0 +1,45 @@
+.ytdl-rich-options__download-button {
+  user-select: none;
+  $width: 150px;
+  $height: 38px;
+  width: $width;
+  height: $height;
+  position: relative;
+  font-weight: bold;
+  color: var(--yt-cendpoint-color);
+  border: 1px solid;
+  margin: 20px auto;
+  display: block;
+  cursor: pointer;
+
+  &-progress {
+    background-color: black;
+    //transition: width 0.3s ease;
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    max-width: 99.9%;
+  }
+
+  &-new-text {
+    color: white;
+    font-weight: bold;
+    transform: translateY(70%);
+    width: $width;
+  }
+}
+
+html[dark=true] {
+  .ytdl-rich-options__download-button {
+    color: var(--yt-spec-general-background-a);
+    border-color: var(--yt-button-icon-button-text-color);
+
+    &-progress {
+      background-color: var(--yt-spec-general-background-a);
+    }
+
+    &-new-text {
+      color: var(--yt-button-icon-button-text-color);
+    }
+  }
+}
