@@ -85,7 +85,7 @@ export async function handleVideo(): Promise<void> {
       widthProgressDownloadButton: 0
     },
     template: `
-      <section class="ytdl-container" id="EXTERNA${elDownloaderContainer.id}">
+      <section class="ytdl-container" id="${elDownloaderContainer.id}">
       <button @click="toggleDownload" :disabled="isRichOptions || !isDownloadable" class="ytdl-download-button ytdl-download-button--download">
           <span v-if="!isRichOptions"
                 :class="{'ytdl-download-icon-undownloadable': !isDownloadable}"><span v-html="currentDownloadIcon"
