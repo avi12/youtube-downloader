@@ -574,9 +574,8 @@ export async function handlePlaylistVideos(): Promise<void> {
                     <label for="ytdl-audio-quality">Audio quality</label>
                     <div>
                       <select id="ytdl-audio-quality" v-model="audioUrl">
-                        <option :value="audio.url"
-                                v-for="(audio, i) of audios"
-                                :key="audio.url">{{ Math.floor(audio.bitrate / 1000) }} kbps {{ i === 0 ? "(best)" : "" }}
+                        <option :value="audio.url" v-for="(audio, i) of audios" :key="audio.url">
+                          {{ Math.floor(audio.bitrate / 1000) }} kbps {{ i === 0 ? "(best)" : "" }}
                         </option>
                       </select>
                     </div>
