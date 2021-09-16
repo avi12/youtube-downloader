@@ -86,18 +86,25 @@ export async function handleVideo(): Promise<void> {
     },
     template: `
       <section class="ytdl-container" id="${elDownloaderContainer.id}">
-      <button @click="toggleDownload" :disabled="isRichOptions || !isDownloadable" class="ytdl-download-button ytdl-download-button--download">
-          <span v-if="!isRichOptions"
-                :class="{'ytdl-download-icon-undownloadable': !isDownloadable}"><span v-html="currentDownloadIcon"
-                                                                                      class="ytdl-download-icon"></span>{{ textButton }}</span>
-        <span v-else>
-          <div class="ytdl-download-icon ytdl-download-icon-undownloadable">${
-            icons.download
-          }</div> DOWNLOAD</span>
+      <button @click="toggleDownload"
+              :disabled="isRichOptions || !isDownloadable"
+              class="ytdl-download-button ytdl-download-button--download">
+          <span v-if="!isRichOptions" :class="{'ytdl-download-icon-undownloadable': !isDownloadable}">
+            <span v-html="currentDownloadIcon" class="ytdl-download-icon"></span>{{ textButton }}
+          </span> <span v-else>
+            <div class="ytdl-download-icon ytdl-download-icon-undownloadable">
+              ${icons.download}
+            </div>
+          DOWNLOAD
+          </span>
       </button>
-      <button v-if="isDownloadable" @click="isRichOptions = !isRichOptions" class="ytdl-download-button ytdl-download-button--expand" :class="{
+      <button v-if="isDownloadable"
+              @click="isRichOptions = !isRichOptions"
+              class="ytdl-download-button ytdl-download-button--expand"
+              :class="{
               'ytdl-download-icon-undownloadable': !isDownloadable || isStartedDownload
-        }" :disabled="!isDownloadable || isStartedDownload">${icons.expand}
+        }"
+              :disabled="!isDownloadable || isStartedDownload">${icons.expand}
       </button>
       <div class="ytdl-rich-options" v-show="isRichOptions" :class="{'ytdl-rich-options--pushed-up': isMoveModalUp}">
         <div class="ytdl-rich-options__content">
