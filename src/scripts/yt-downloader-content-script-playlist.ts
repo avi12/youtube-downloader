@@ -73,7 +73,7 @@ export function appendPlaylistDownloadButton(): void {
   );
 
   const elDownloadPlaylist = document.createElement("div");
-  elDownloadPlaylist.id = "ytdl-playlist-button-container";
+  elDownloadPlaylist.id = "ytdl-container__playlist";
 
   const isNoVideosAvailable = !document.querySelector("#meta");
   const isButtonAlreadyPlaced = Boolean(
@@ -102,18 +102,15 @@ export function appendPlaylistDownloadButton(): void {
       icons
     },
     template: `
-      <section id="ytdl-playlist-button-container" ref="container">
+      <section id="${elDownloadPlaylist.id}" class="ytdl-action-buttons ytdl-container__playlist" ref="container">
       <button @click="toggleCheckbox"
               :disabled="isPortDisconnected || isStartedDownload"
-              :class="{'ytdl-download-icon-undownloadable': isPortDisconnected}"
-              class="ytdl-download-button"
+              class="ytdl-action-buttons__button"
               id="ytdl-toggle-checkbox">
-        <span v-html="iconToggle" class="ytdl-download-icon"></span> TOGGLE ALL
+        <span v-html="iconToggle"></span> TOGGLE ALL
       </button>
-      <button @click="toggleDownload" :disabled="isPortDisconnected" class="ytdl-download-button">
-        <span :class="{'ytdl-download-icon-undownloadable': isPortDisconnected}"
-              v-html="currentDownloadIcon"
-              class="ytdl-download-icon"></span>{{ textButton }}
+      <button @click="toggleDownload" :disabled="isPortDisconnected" class="ytdl-action-buttons__button">
+        <span v-html="currentDownloadIcon" class="ytdl-download-icon"></span>{{ textButton }}
       </button>
       <transition-group name="slide-short" tag="div">
         <div key="count"
@@ -121,7 +118,7 @@ export function appendPlaylistDownloadButton(): void {
              class="ytdl--size-medium ytdl--text-color-default">
           Downloaded {{ countVideosDownloaded }} out of {{ countVideosToDownload }} video{{ countVideosToDownload === 1 ? "" : "s" }}
         </div>
-        <div key="error" v-if="error" class="ytdl--error ytdl--size-medium">{{ error }}</div>
+        <div key="error" v-if="error" class="ytdl-container__playlist--error ytdl--size-medium">{{ error }}</div>
       </transition-group>
       </section>
     `,
@@ -530,23 +527,21 @@ export async function handlePlaylistVideos(): Promise<void> {
           icons
         },
         template: `
-          <section class="ytdl-container-playlist-single-video"
+          <section class="ytdl-container ytdl-container--playlist-single-video"
                    @click.stop=""
                    data-ytdl-download-container="${videoId}"
                    ref="container">
-          <div class="ytdl-container-playlist-single-video__buttons">
-            <button @click="toggleDownload"
-                    :disabled="!isDownloadable"
-                    class="ytdl-download-button ytdl-download-button--download">
-              <span class="ytdl-download-icon"
-                    :class="{'ytdl-download-icon-undownloadable': !isDownloadable}"
-                    v-html="currentDownloadIcon"></span> {{ textButton }}
+          <div class="ytdl-action-buttons">
+            <button @click="toggleDownload" :disabled="!isDownloadable" class="ytdl-action-buttons__button">
+              <span class="ytdl-action-buttons__action-icon" v-html="currentDownloadIcon"></span> {{ textButton }}
             </button>
-            <button class="ytdl-download-button ytdl-download-button--expand"
-                    v-if="isDownloadable"
+
+            <button class="ytdl-action-buttons__button"
+                    v-if="${getIsDownloadable(videoData)}"
                     @click="isRichOptions = !isRichOptions"
-                    :class="{'ytdl-download-icon-undownloadable': !isDownloadable || isStartedDownload}"
-                    :disabled="!isDownloadable || isStartedDownload">
+                    :disabled="!isDownloadable || isStartedDownload"
+                    :class="{'ytdl-action-buttons__button--hover': isRichOptions}"
+                    aria-label="More options">
               ${icons.expand}
             </button>
           </div>
@@ -554,101 +549,85 @@ export async function handlePlaylistVideos(): Promise<void> {
           <progress :value="progress" :data-progress-type="progressType" :data-download-type="downloadType"></progress>
 
           <transition name="slide-rich-options">
-            <div class="ytdl-rich-options" data-video-id="${videoId}" v-if="isRichOptions">
-              <div class="ytdl-rich-options__content">
-                <div class="ytdl-tabs-buttons">
+            <div class="ytdl-container__rich-options-wrapper ytdl-container__rich-options-wrapper--in-place"
+                 v-if="isRichOptions">
+              <div class="ytdl-container__rich-options">
+                <div class="ytdl-container__tabs-buttons">
                   <button @click="downloadType = 'video+audio'"
-                          class="ytdl-tab__button"
-                          :class="{'ytdl-tab__button--selected': downloadType === 'video+audio' || downloadType === 'video'}">
+                          class="ytdl-container__tab-button"
+                          :class="{'ytdl-container__tab-button--selected': downloadType === 'video+audio' || downloadType === 'video'}">
                     Video
                   </button>
                   <button @click="downloadType = 'audio'"
-                          class="ytdl-tab__button"
-                          :class="{'ytdl-tab__button--selected': downloadType === 'audio'}">
+                          class="ytdl-container__tab-button"
+                          :class="{'ytdl-container__tab-button--selected': downloadType === 'audio'}">
                     Audio
                   </button>
                 </div>
 
-                <div class="ytdl-tab-content">
+                <div class="ytdl-container__tab-content">
                   <div v-if="downloadType === 'audio'">
-                    <label for="ytdl-audio-quality">Audio quality</label>
-                    <div>
-                      <select id="ytdl-audio-quality" v-model="audioUrl">
+                    <label> Audio quality
+                      <br>
+                      <select class="ytdl-container__quality-option-input" v-model="audioUrl">
                         <option :value="audio.url" v-for="(audio, i) of audios" :key="audio.url">
                           {{ Math.floor(audio.bitrate / 1000) }} kbps {{ i === 0 ? "(best)" : "" }}
                         </option>
-                      </select>
-                    </div>
-                    <div style="margin-top: 10px;">
-                      <label for="ytdl-filename">Filename</label>
-                      <div>
-                        <input autocomplete="off"
-                               type="text"
-                               id="ytdl-filename"
-                               :class="{'ytdl-filename--error': errorFilename}"
-                               v-model="filenameOutput"
-                               class="ytdl-filename">
-                        <transition name="slide">
-                          <div class="ytdl--error" v-if="errorFilename">
-                            Unsupported audio extension: <b>{{ errorFilename }}</b>
-                            <div>Supported ones: <span class="ytdl-file-extensions">
-                                ${gSupportedExts.audio.join(", ")}
-                              </span>
-                            </div>
-                          </div>
-                        </transition>
-                      </div>
-                    </div>
+                      </select> </label>
+
+                    <div class="ytdl-container__spacer--margin-top"></div>
+                    <label> Filename
+                      <br>
+                      <input autocomplete="off"
+                             type="text"
+                             :class="{'ytdl-container__filename-option-input--error': errorFilename}"
+                             v-model="filenameOutput"
+                             class="ytdl-container__filename-option-input"> </label>
                   </div>
                   <div v-else>
-                    <div style="margin-bottom: 10px; ">
-                      <input type="checkbox"
-                             id="ytdl-video-include-audio"
-                             checked
-                             @input="e => downloadType = e.target.checked ? 'video+audio' : 'video'" />
-                      <label for="ytdl-video-include-audio">Include audio (best quality)</label>
-                    </div>
-                    <label for="ytdl-video-quality">Video quality</label>
-                    <div>
-                      <select id="ytdl-video-quality" v-model="videoUrl">
+                    <label> <input type="checkbox"
+                                   checked
+                                   @input="e => downloadType = e.target.checked ? 'video+audio' : 'video'" /> Include audio (best quality)
+                    </label>
+
+                    <div class="ytdl-container__spacer--margin-top"></div>
+                    <label> Video quality
+                      <br>
+                      <select v-model="videoUrl">
                         <option :value="video.url"
                                 v-for="(video, i) of videos"
                                 :key="video.url">{{ video.height }}p {{ video.fps }} FPS {{ i === 0 ? "(best)" : "" }}
                         </option>
-                      </select>
-                    </div>
-                    <div style="margin-top: 10px;">
-                      <label for="ytdl-filename">Filename</label>
-                      <div>
-                        <input type="text"
-                               autocomplete="off"
-                               id="ytdl-filename"
-                               :class="{'ytdl-filename--error': errorFilename}"
-                               v-model="filenameOutput"
-                               class="ytdl-filename">
-                        <transition name="slide">
-                          <div class="ytdl--error" v-if="errorFilename">
-                            Unsupported video extension: <b>{{ errorFilename }}</b>
-                            <div>Supported ones: <span class="ytdl-file-extensions">
+                      </select> </label>
+
+                    <div class="ytdl-container__spacer--margin-top"></div>
+                    <label> Filename
+                      <br>
+                      <input type="text"
+                             autocomplete="off"
+                             v-model="filenameOutput"
+                             class="ytdl-container__filename-option-input">
+                      <transition name="slide">
+                        <div class="ytdl-container__filename-error" v-if="errorFilename">
+                          Unsupported video extension: <b>{{ errorFilename }}</b>
+                          <br>
+                          Supported ones: <span class="ytdl-container__filename-error--supported-extensions">
                                 ${gSupportedExts.video.join(", ")}
                               </span>
-                            </div>
-                          </div>
-                        </transition>
-                      </div>
-                    </div>
+                        </div>
+                      </transition>
+                    </label>
                   </div>
 
                   <button @click="isRichOptions = false"
                           :disabled="!isDownloadable"
-                          class="ytdl-rich-options__download-button">
+                          class="ytdl-container__rich-options__action-button">
                     CLOSE
                   </button>
                 </div>
               </div>
             </div>
           </transition>
-
           </section>
         `,
         watch: {
@@ -759,6 +738,9 @@ export async function handlePlaylistVideos(): Promise<void> {
               default:
                 return this.icons.download;
             }
+          },
+          extsSupportedForType() {
+            return this.downloadType === "audio" ? "audio" : "video";
           }
         },
         methods: {

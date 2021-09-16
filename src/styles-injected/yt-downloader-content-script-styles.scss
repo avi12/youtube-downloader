@@ -4,135 +4,148 @@
   --ytdl-rich-options-y-axis: 36px;
 }
 
-@mixin _progress($isAbsolute: false) {
-  progress {
-    @if $isAbsolute {
-      position: absolute;
-      transform: translate(10px, 22px);
-    }
+.ytdl-action-buttons {
+  display: flex;
 
-    width: 100px;
-    transition: opacity 0.3s ease;
-    opacity: 0;
+  &__button {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background-color: transparent;
+    border: none;
+    font-size: var(--ytd-tab-system_-_font-size, 1.4rem);
+    cursor: pointer;
+    color: var(
+      --yt-button-icon-button-text-color,
+      var(--yt-spec-text-secondary, #030303)
+    );
 
-    &[data-download-type="video+audio"]:not([value="0"]):not([value="1"]),
-    &[data-download-type="video+audio"][value="0"]:not([data-progress-type=""]),
-    &[data-download-type="video+audio"][value="1"][data-progress-type="video"],
-    &[data-download-type="video+audio"][value="1"][data-progress-type="audio"],
-    &[data-download-type="video"]:not([value="0"]):not([value="1"]),
-    &[data-download-type="audio"]:not([value="0"]):not([value="1"]) {
-      opacity: 1;
-      cursor: default;
+    &:disabled {
+      filter: opacity(0.3);
     }
   }
-}
 
-@mixin _download-button-padding {
-  &.ytdl-download-button--download {
-    padding: 0 5px;
-  }
-
-  &.ytdl-download-button--expand {
-    padding: 0 2px;
+  svg {
+    fill: var(--yt-button-icon-button-text-color);
   }
 }
 
 .ytdl-container {
   display: flex;
-  align-items: center;
-  margin: 0 10px;
   position: relative;
 
-  @include _progress($isAbsolute: true);
+  &__rich-options-wrapper {
+    font-size: 1.5rem;
+    color: var(--yt-spec-text-primary);
+    background-color: var(--yt-spec-general-background-a);
+    width: 300px;
+    cursor: default;
+    display: flex;
+    justify-content: center;
 
-  &-playlist-single-video {
+    &--floating {
+      box-shadow: var(--shadow-elevation-16dp_-_box-shadow);
+      z-index: 1;
+      overflow: hidden;
+      position: absolute;
+      top: var(--ytdl-rich-options-y-axis);
+
+      &-up {
+        --ytdl-rich-options-y-axis: -279px;
+      }
+    }
+
+    &--in-place {
+      border: 1px solid var(--yt-spec-text-secondary);
+    }
+  }
+
+  &__rich-options {
+    width: 80%;
+  }
+
+  &__tabs-buttons {
+    display: flex;
+    justify-content: center;
+    margin: 20px 0;
+    gap: 10px;
+  }
+
+  &__tab-button {
+    color: var(--yt-spec-text-primary);
+    background-color: var(--yt-spec-general-background-a);
+    border: 1px solid;
+    padding: 7px 9px;
+
+    &--selected {
+      color: var(--yt-spec-general-background-a);
+      background-color: #e1e1e1;
+    }
+  }
+
+  &--single-video {
+    margin: 0 10px;
+    align-items: center;
+
+    progress {
+      position: absolute;
+      transform: translate(10px, 22px);
+    }
+  }
+
+  &__playlist {
+    display: block;
+    overflow: hidden;
+
+    .ytdl-action-buttons__button {
+      padding: 0;
+    }
+
+    &--error {
+      color: var(--yt-spec-brand-link-text, red);
+      overflow: hidden;
+    }
+  }
+
+  &--playlist-single-video {
+    flex-direction: column;
     transition: max-width 0.3s, transform 0.3s;
     overflow: hidden;
     transform: translateX(-200px);
     max-width: 0;
     display: flex;
-    flex-direction: column;
 
-    &__buttons {
-      display: flex;
-      align-items: center;
+    &__rich-options-wrapper {
+      min-height: 239px;
     }
 
-    @include _progress;
-
-    .ytdl-download-button {
+    .ytdl-action-buttons__button {
       transition: background-color 0.3s;
 
-     @include _download-button-padding;
-
-      &:not([disabled]):hover {
-        background-color: rgba(gray, 0.2);
+      &:hover, &.ytdl-action-buttons__button--hover {
+        background-color: rgba(gray, 0.5);
       }
     }
   }
 
-  .ytdl-download-button {
-    @include _download-button-padding;
-  }
-}
+  &__filename-error {
+    color: var(--yt-spec-brand-link-text, red);
+    overflow: hidden;
 
-.ytdl-download-button {
-  background-color: transparent;
-  display: flex;
-  align-items: center;
-  border: none;
-  font-weight: 500;
-  font-size: var(--ytd-tab-system_-_font-size, 1.4rem);
-  cursor: pointer;
-  color: var(
-    --yt-button-icon-button-text-color,
-    var(--yt-spec-text-secondary, #030303)
-  );
-
-  > span {
-    display: flex;
-    align-items: center;
-  }
-
-  .ytdl-download-icon {
-    margin-right: 5px;
-
-    &-undownloadable {
-      filter: opacity(0.3);
-      font-weight: 600;
+    &--supported-extensions {
+      color: blue;
     }
   }
-}
 
-.ytdl-rich-options {
-  font-size: 1.5rem;
-  color: var(--yt-spec-text-primary);
-  background-color: var(--yt-spec-general-background-a);
-  box-shadow: var(--shadow-elevation-16dp_-_box-shadow);
-  width: 300px;
-  z-index: 1;
-  overflow: hidden;
-  cursor: default;
-  display: flex;
-  justify-content: center;
-
-  &__content {
-    width: 80%;
+  &__filename-option-input {
+    width: 100%;
   }
 
-  &--pushed-up {
-    --ytdl-rich-options-y-axis: -279px;
-  }
-
-  &:not([data-video-id]) {
-    position: absolute;
-    top: var(--ytdl-rich-options-y-axis);
-    min-height: 239px;
-  }
-
-  &[data-video-id] {
-    box-shadow: none;
-    border: 1px solid var(--yt-spec-text-primary);
+  &__spacer {
+    &--margin-top {
+      width: 1px;
+      height: 10px;
+    }
   }
 
   input,
@@ -150,7 +163,7 @@
 
   input:focus,
   select:focus {
-    border-bottom: 2px solid var(--yt-spec-text-primary);;
+    border-bottom: 2px solid var(--yt-spec-text-primary);
     outline: none;
   }
 
@@ -158,77 +171,27 @@
     margin: 0 5px 0 0;
   }
 
-  input[type="text"][disabled] {
-    background-color: rgba(white, 0.2);
-    color: white;
+  progress {
+    width: 100px;
+    transition: opacity 0.3s ease;
+    opacity: 0;
+
+    &[data-download-type="video+audio"]:not([value="0"]):not([value="1"]),
+    &[data-download-type="video+audio"][value="0"]:not([data-progress-type=""]),
+    &[data-download-type="video+audio"][value="1"][data-progress-type="video"],
+    &[data-download-type="video+audio"][value="1"][data-progress-type="audio"],
+    &[data-download-type="video"]:not([value="0"]):not([value="1"]),
+    &[data-download-type="audio"]:not([value="0"]):not([value="1"]) {
+      opacity: 1;
+      cursor: default;
+    }
   }
-}
-
-.ytdl-tabs-buttons {
-  display: flex;
-  justify-content: center;
-  margin: 20px 0;
-  gap: 10px;
-}
-
-.ytdl-tab {
-  &__button {
-    color: var(--yt-spec-text-primary);
-    background-color: var(--yt-spec-general-background-a);
-    border: 1px solid;
-    padding: 7px 9px;
-  }
-
-  &__button--selected {
-    background-color: #e1e1e1;
-  }
-}
-
-html[dark="true"] .ytdl-tab__button--selected {
-  background-color: gray;
-}
-
-.ytdl-file-extensions {
-  color: blue;
 }
 
 html[dark="true"] {
-  .ytdl-file-extensions {
+  .ytdl-container__filename-error--supported-extensions {
     color: cyan;
   }
-
-  .ytdl-download-button svg {
-    fill: white;
-  }
-}
-
-.ytdl-filename {
-  width: 100%;
-  background-color: transparent;
-  transition: background-color 0.25s ease-in-out;
-
-  &--error {
-    background-color: #fcdada;
-  }
-}
-
-#ytdl-playlist-button-container {
-  transition: max-height 0.5s;
-  overflow: hidden;
-  max-height: 0;
-
-  display: flex;
-  flex-direction: column;
-}
-
-.ytdl-playlist-checkbox-container {
-  transition: width 0.5s;
-  overflow: hidden;
-}
-
-.ytdl--error {
-  color: var(--yt-spec-brand-link-text, red);
-  overflow: hidden;
 }
 
 .ytdl--text-color-default {

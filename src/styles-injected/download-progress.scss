@@ -1,45 +1,45 @@
-.ytdl-rich-options__download-button {
-  user-select: none;
-  $width: 150px;
-  $height: 38px;
-  width: $width;
-  height: $height;
-  position: relative;
-  font-weight: bold;
-  color: var(--yt-cendpoint-color);
-  border: 1px solid;
-  margin: 20px auto;
-  display: block;
-  cursor: pointer;
+:root {
+  --ytdl-action-button-color: var(--yt-endpoint-color);
+  --ytdl-progress-bg-color: black;
+  --ytdl-new-text-color: white;
+}
 
-  &-progress {
-    background-color: black;
-    //transition: width 0.3s ease;
+html[dark="true"] {
+  --ytdl-action-button-color: var(--yt-spec-general-background-a);
+  --ytdl-action-button-border-color: var(--yt-button-icon-button-text-color);
+  --ytdl-progress-bg-color: var(--yt-spec-general-background-a);
+  --ytdl-new-text-color: var(--yt-button-icon-button-text-color);
+}
+
+.ytdl-container__rich-options {
+  &__action-button {
+    user-select: none;
+    $width: 150px;
+    $height: 38px;
+    width: $width;
+    height: $height;
+    position: relative;
+    font-weight: bold;
+    color: var(--ytdl-action-button-color);
+    border: 1px solid;
+    margin: 20px auto;
+    display: block;
+    cursor: pointer;
+    border-color: var(--ytdl-action-button-border-color);
+
+    &__new-text {
+      color: var(--ytdl-new-text-color);
+      font-weight: bold;
+      transform: translateY(70%);
+      width: $width;
+    }
+  }
+
+  &__progress {
+    background-color: var(--ytdl-progress-bg-color);
     position: absolute;
     inset: 0;
     overflow: hidden;
     max-width: 99.9%;
-  }
-
-  &-new-text {
-    color: white;
-    font-weight: bold;
-    transform: translateY(70%);
-    width: $width;
-  }
-}
-
-html[dark=true] {
-  .ytdl-rich-options__download-button {
-    color: var(--yt-spec-general-background-a);
-    border-color: var(--yt-button-icon-button-text-color);
-
-    &-progress {
-      background-color: var(--yt-spec-general-background-a);
-    }
-
-    &-new-text {
-      color: var(--yt-button-icon-button-text-color);
-    }
   }
 }
