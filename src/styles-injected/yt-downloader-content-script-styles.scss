@@ -87,6 +87,10 @@
     margin: 0 10px;
     align-items: center;
 
+    .ytdl-action-buttons {
+      margin: 0 2px;
+    }
+
     progress {
       position: absolute;
       transform: translate(10px, 22px);
