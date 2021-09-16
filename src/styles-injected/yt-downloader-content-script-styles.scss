@@ -150,8 +150,7 @@
 
   input:focus,
   select:focus {
-    //border: 2px solid var(--yt-spec-text-primary, darkgray);
-    border-bottom: 2px solid white;
+    border-bottom: 2px solid var(--yt-spec-text-primary);;
     outline: none;
   }
 
