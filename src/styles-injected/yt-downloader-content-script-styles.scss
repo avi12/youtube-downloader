@@ -1,4 +1,5 @@
 @import "download-progress.scss";
+@import "css-tooltip.scss"; // https://npm.im/css-tooltip
 
 :root {
   --ytdl-rich-options-y-axis: 36px;
@@ -46,7 +47,6 @@
     &--floating {
       box-shadow: var(--shadow-elevation-16dp_-_box-shadow);
       z-index: 1;
-      overflow: hidden;
       position: absolute;
       top: var(--ytdl-rich-options-y-axis);
 
@@ -79,7 +79,7 @@
 
     &--selected {
       color: var(--yt-spec-general-background-a);
-      background-color: #e1e1e1;
+      background-color: gray;
     }
   }
 
@@ -99,7 +99,6 @@
 
   &__playlist {
     display: block;
-    overflow: hidden;
 
     .ytdl-action-buttons__button {
       padding: 0;
@@ -107,7 +106,6 @@
 
     &--error {
       color: var(--yt-spec-brand-link-text, red);
-      overflow: hidden;
     }
   }
 
@@ -126,7 +124,8 @@
     .ytdl-action-buttons__button {
       transition: background-color 0.3s;
 
-      &:hover, &.ytdl-action-buttons__button--hover {
+      &:not(:disabled):hover,
+      &.ytdl-action-buttons__button--hover {
         background-color: rgba(gray, 0.5);
       }
     }
@@ -134,7 +133,6 @@
 
   &__filename-error {
     color: var(--yt-spec-brand-link-text, red);
-    overflow: hidden;
 
     &--supported-extensions {
       color: blue;
@@ -193,8 +191,14 @@
 }
 
 html[dark="true"] {
-  .ytdl-container__filename-error--supported-extensions {
-    color: cyan;
+  .ytdl-container {
+    &__tab-button {
+      color: var(--yt-spec-text-primary);
+    }
+
+    &__filename-error--supported-extensions {
+      color: cyan;
+    }
   }
 }
 
@@ -215,6 +219,7 @@ html[dark="true"] {
 .slide-short-enter-active,
 .slide-short-leave-active {
   transition: max-height 0.3s;
+  overflow: hidden;
 }
 
 .slide-short-enter-to,
@@ -231,6 +236,7 @@ html[dark="true"] {
 .slide-enter-active,
 .slide-leave-active {
   transition: max-height 0.3s;
+  overflow: hidden;
 }
 
 .slide-enter-to,
@@ -247,9 +253,21 @@ html[dark="true"] {
 .slide-rich-options-enter-active,
 .slide-rich-options-leave-active {
   transition: max-height 0.5s;
+  overflow: hidden;
 }
 
 .slide-rich-options-enter-to,
 .slide-rich-options-leave {
   max-height: 302px;
+}
+
+// Overrides for /playlist
+//noinspection CssInvalidHtmlTagReference
+ytd-playlist-video-renderer + ytd-playlist-video-renderer ytd-thumbnail {
+  transition: opacity 0.3s;
+}
+
+//noinspection CssInvalidHtmlTagReference
+ytd-playlist-video-renderer:hover + ytd-playlist-video-renderer ytd-thumbnail {
+  opacity: 0.2;
 }
