@@ -3,7 +3,13 @@ import {
   fetchFile,
   FFmpeg
 } from "@ffmpeg/ffmpeg/dist/ffmpeg.min.js";
-import { getMimeType, getVideoId, setLocalStorage, updateQueue } from "./utils";
+import {
+  getCompatibleFilename,
+  getMimeType,
+  getVideoId,
+  setLocalStorage,
+  updateQueue
+} from "./utils";
 import type {
   MusicQueue,
   StatusProgress,
@@ -508,7 +514,7 @@ function handlePlaylistProcessing(port: Port) {
         }
       });
 
-      const wasPlaylistEmpty = gVideoQueue.length === 0;
+      const wasVideoPlaylistEmpty = gVideoQueue.length === 0;
       const isFirstVideoInProgress = gVideoQueue[0] === videoIds[0];
 
       gTabTracker[port.sender.tab.id].idVideosToDownload = videoIds;
@@ -530,7 +536,7 @@ function handlePlaylistProcessing(port: Port) {
       processMusicPlaylist();
       processVideoOnlyPlaylist();
 
-      if (!wasPlaylistEmpty && !isFirstVideoInProgress) {
+      if (!wasVideoPlaylistEmpty && !isFirstVideoInProgress) {
         await restartFFmpeg();
       }
     }
@@ -573,11 +579,6 @@ async function processCurrentVideoWhenAvailable() {
       ...gVideoDetails.value[videoId]
     });
   }
-}
-
-function getCompatibleFilename(filename: string): string {
-  const forbiddenCharsWindows = /[<>:"\\/|*]/g;
-  return filename.replace(forbiddenCharsWindows, "-").replaceAll("?", "");
 }
 
 function addListeners() {

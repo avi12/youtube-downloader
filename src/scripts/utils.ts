@@ -40,7 +40,9 @@ export async function getLocalStorage(
   );
 }
 
-async function getElementByObserver(selector: string): Promise<HTMLElement> {
+async function getElementByMutationObserver(
+  selector: string
+): Promise<HTMLElement> {
   return new Promise(resolve => {
     const observerHtml = new MutationObserver((_, observer) => {
       const element = getVisibleElementInArray(selector);
@@ -56,7 +58,9 @@ async function getElementByObserver(selector: string): Promise<HTMLElement> {
   });
 }
 
-async function getElementsByObserver(selector: string): Promise<HTMLElement[]> {
+async function getElementsByMutationObserver(
+  selector: string
+): Promise<HTMLElement[]> {
   return new Promise(resolve => {
     const observerHtml = new MutationObserver((_, observer) => {
       const elements = getVisibleElementsInArray(selector);
@@ -101,7 +105,7 @@ export async function getElementEventually(selector: string): Promise<Element> {
   const elements = document.querySelectorAll(selector);
   return (
     (elements.length > 0 && getVisibleElementInArray(elements)) ||
-    (await getElementByObserver(selector))
+    (await getElementByMutationObserver(selector))
   );
 }
 
@@ -111,7 +115,7 @@ export async function getElementsEventually(
   const elements = document.querySelectorAll(selector);
   return (
     (elements.length > 0 && getVisibleElementsInArray(elements)) ||
-    (await getElementsByObserver(selector))
+    (await getElementsByMutationObserver(selector))
   );
 }
 
@@ -125,6 +129,21 @@ export function isElementInViewport(el: Element): boolean {
   return (
     rect.top >= 0 && rect.bottom + 50 <= document.documentElement.clientHeight
   );
+}
+
+export function getCompatibleFilename(filename: string): string {
+  if (navigator.appVersion.includes("Win")) {
+    const forbiddenCharsWindows = /[<>:"\\/|*]/g;
+    return filename.replace(forbiddenCharsWindows, "-").replaceAll("?", "");
+  }
+
+  if (navigator.appVersion.includes("Mac")) {
+    const forbiddenCharsMac = /[/:]/g;
+    return filename.replace(forbiddenCharsMac, "");
+  }
+
+  const forbiddenCharsLinux = /\//g;
+  return filename.replace(forbiddenCharsLinux, "");
 }
 
 export const gExtToMimeAll = {
