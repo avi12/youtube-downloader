@@ -6,25 +6,16 @@ import {
 } from "./yt-downloader-content-script-initialize";
 import Vue from "vue/dist/vue.min.js";
 import {
+  getCompatibleFilename,
   getElementEventually,
   gExtToMime,
-  gSupportedExts,
-  isElementInViewport
+  gSupportedExts
 } from "./utils";
 import type { AdaptiveFormatItem, VideoQueue } from "./types";
 import { icons } from "./icons";
 
 let gDownloadContainer: Vue;
-export let gObserverRichOptionsSingleMedia: MutationObserver;
-
-export function moveModalSingleMediaWhenNeeded(): void {
-  const elRichOptions = document.querySelector(
-    ".ytdl-container__rich-options-wrapper"
-  );
-  if (elRichOptions) {
-    gDownloadContainer.isMoveModalUp = !isElementInViewport(elRichOptions);
-  }
-}
+export let gIntersectionObserverModal: IntersectionObserver;
 
 export async function handleVideo(): Promise<void> {
   const getHtml = async () => {
@@ -81,6 +72,8 @@ export async function handleVideo(): Promise<void> {
       isRichOptions: false,
       videos: [] as AdaptiveFormatItem[],
       audios: [] as AdaptiveFormatItem[],
+      audio: null as AdaptiveFormatItem,
+      video: null as AdaptiveFormatItem,
       videoUrl: "",
       audioUrl: "",
       isMoveModalUp: false,
@@ -94,7 +87,8 @@ export async function handleVideo(): Promise<void> {
       <div class="ytdl-action-buttons">
         <button @click="toggleDownload"
                 :disabled="isRichOptions || !isDownloadable"
-                class="ytdl-action-buttons__button"
+                class="ytdl-action-buttons__button tooltip-bottom"
+                :data-tooltip="isDownloadable ? tooltipDownloadDetails : false"
                 v-if="!isRichOptions">
           <span v-html="currentDownloadIcon" class="ytdl-action-buttons__icon"></span> {{ textButton }}
         </button>
@@ -104,9 +98,10 @@ export async function handleVideo(): Promise<void> {
 
         <button v-if="${getIsDownloadable(videoData)}"
                 @click="isRichOptions = !isRichOptions"
-                class="ytdl-action-buttons__button"
+                class="ytdl-action-buttons__button tooltip-bottom"
                 :disabled="!isDownloadable || isStartedDownload"
-                aria-label="More options">
+                :data-tooltip="isDownloadable ? labelExpandButton : false"
+                :aria-label="labelExpandButton">
           ${icons.expand}
         </button>
       </div>
@@ -135,7 +130,7 @@ export async function handleVideo(): Promise<void> {
                 <select class="ytdl-container__quality-option-input" v-model="audioUrl">
                   <option :value="audio.url"
                           v-for="(audio, i) of audios"
-                          :key="audio.url">{{ Math.floor(audio.bitrate / 1000) }} kbps {{ i === 0 ? "(best)" : "" }}
+                          :key="audio.url">{{ audioBitrate }} kbps {{ i === 0 ? "(best)" : "" }}
                   </option>
                 </select> </label>
 
@@ -188,7 +183,8 @@ export async function handleVideo(): Promise<void> {
 
             <button @click="toggleDownload"
                     :disabled="!isDownloadable"
-                    class="ytdl-container__rich-options__action-button">
+                    class="ytdl-container__rich-options__action-button tooltip-bottom"
+                    :data-tooltip="isDownloadable ? tooltipDownloadDetails : false">
               <div class="ytdl-container__rich-options__progress" :style="{width: widthProgressDownloadButton + 'px'}">
                 <div class="ytdl-container__rich-options__action-button__new-text">
                   {{ textButton }}
@@ -202,7 +198,9 @@ export async function handleVideo(): Promise<void> {
       <progress :value="progress"
                 v-show="!isRichOptions"
                 :data-progress-type="progressType"
-                :data-download-type="downloadType"></progress>
+                :data-download-type="downloadType"
+                class="tooltip-bottom"
+                :data-tooltip="tooltipProgress"></progress>
       </section>
     `,
     watch: {
@@ -248,6 +246,12 @@ export async function handleVideo(): Promise<void> {
         const { width: widthRaw } = getComputedStyle(elRichDownload);
         const width = Number(widthRaw.replace("px", ""));
         this.widthProgressDownloadButton = (progress * 100 * width) / 100;
+      },
+      videoUrl(urlNew) {
+        this.video = this.videos.find(({ url }) => url === urlNew);
+      },
+      audioUrl(urlNew) {
+        this.audio = this.audios.find(({ url }) => url === urlNew);
       }
     },
     computed: {
@@ -278,10 +282,6 @@ export async function handleVideo(): Promise<void> {
           (a, b) => b.bitrate - a.bitrate
         );
       },
-      videoQuality() {
-        const { videoHeight, videoWidth } = document.querySelector("video");
-        return Math.min(videoHeight, videoWidth);
-      },
       filenameOutput: {
         set(filenameFull: string) {
           const split = filenameFull.split(".");
@@ -311,8 +311,48 @@ export async function handleVideo(): Promise<void> {
             return icons.download;
         }
       },
+      compatibleFilename() {
+        return getCompatibleFilename(this.filenameOutput);
+      },
       extsSupportedForType() {
         return this.downloadType === "audio" ? "audio" : "video";
+      },
+      labelExpandButton() {
+        return !this.isRichOptions ? "More options" : "Less options";
+      },
+      audioBitrate() {
+        return Math.floor(this.audio.bitrate / 1000);
+      },
+      tooltipDownloadDetails() {
+        const strings = [`Download in`];
+        if (this.downloadType === "audio") {
+          strings.push(this.audioBitrate, "kbps");
+        } else {
+          strings.push(
+            this.videoQuality(this.video) + "p",
+            this.video.fps,
+            "FPS"
+          );
+        }
+        strings.push("as", `"${this.compatibleFilename}"`);
+        return strings.join(" ");
+      },
+      tooltipProgress() {
+        const progress = (this.progress * 100).toFixed(2);
+        const strProgress = `${progress}%`;
+        if (this.downloadType !== "video+audio") {
+          return `${strProgress} (downloading ${this.downloadType}-only)`;
+        }
+
+        const strings = [strProgress];
+
+        if (this.progressType !== "ffmpeg") {
+          strings.push(`(downloading ${this.progressType})`);
+        } else {
+          strings.push("(stitching video & audio)");
+        }
+
+        return strings.join(" ");
       }
     },
     methods: {
@@ -335,6 +375,20 @@ export async function handleVideo(): Promise<void> {
 
         this.download();
       },
+      videoQuality(video?: AdaptiveFormatItem) {
+        let videoHeight, videoWidth;
+        if (!video) {
+          ({ videoHeight, videoWidth } = document.querySelector("video"));
+        } else {
+          ({ height: videoHeight, width: videoWidth } = video);
+        }
+        return Math.min(videoHeight, videoWidth);
+      },
+      getVideoByCurrentQuality() {
+        return this.videos.find(
+          video => this.videoQuality(video) === this.videoQuality()
+        );
+      },
       download() {
         gPorts.processSingle.postMessage({
           type: this.downloadType,
@@ -350,7 +404,6 @@ export async function handleVideo(): Promise<void> {
     created() {
       chrome.runtime.onMessage.addListener(progressListener);
       chrome.storage.onChanged.addListener(storageListener);
-      document.addEventListener("scroll", moveModalSingleMediaWhenNeeded);
 
       gPorts.main.onDisconnect.addListener(() => {
         this.isPortDisconnected = true;
@@ -373,20 +426,24 @@ export async function handleVideo(): Promise<void> {
         this.audios.push(format);
       });
 
-      this.videoUrl = this.videos[0].url;
-      this.audioUrl = this.audios[0].url;
+      this.video = this.getVideoByCurrentQuality();
+      this.audio = this.audios[0];
+
+      this.videoUrl = this.video.url;
+      this.audioUrl = this.audio.url;
+
+      const elVideo = document.querySelector("video");
+      elVideo.removeEventListener("canplay", onQualityChange);
+      elVideo.addEventListener("canplay", onQualityChange);
     },
     mounted() {
-      gObserverRichOptionsSingleMedia = new MutationObserver(
-        moveModalSingleMediaWhenNeeded
-      );
-      gObserverRichOptionsSingleMedia.observe(
-        document.querySelector(".ytdl-container__rich-options-wrapper"),
+      gIntersectionObserverModal = new IntersectionObserver(
+        entries => (this.isMoveModalUp = entries[0].isIntersecting),
         {
-          attributes: true,
-          attributeFilter: ["style"]
+          rootMargin: "280px"
         }
       );
+      gIntersectionObserverModal.observe(document.documentElement);
     }
   });
 
@@ -424,4 +481,10 @@ export async function handleVideo(): Promise<void> {
       return;
     }
   }
+}
+
+function onQualityChange() {
+  // Set the video URL on quality change
+  gDownloadContainer.video = gDownloadContainer.getVideoByCurrentQuality();
+  gDownloadContainer.videoUrl = gDownloadContainer.video.url;
 }
