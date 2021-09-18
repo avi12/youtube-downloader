@@ -58,6 +58,7 @@
   },
   "dependencies": {
     "@vue/runtime-core": "^3.2.6",
+    "css-tooltip": "^0.3.4",
     "vue": "^2.6.14"
   }
 }

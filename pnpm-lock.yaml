@@ -12,6 +12,7 @@ specifiers:
   '@typescript-eslint/eslint-plugin': ^4.29.2
   '@typescript-eslint/parser': ^4.29.2
   '@vue/runtime-core': ^3.2.6
+  css-tooltip: ^0.3.4
   eslint: ^7.32.0
   eslint-config-prettier: ^8.3.0
   eslint-plugin-svelte3: ^3.2.0
@@ -41,6 +42,7 @@ specifiers:
 
 dependencies:
   '@vue/runtime-core': 3.2.6
+  css-tooltip: 0.3.4
   vue: 2.6.14
 
 devDependencies:
@@ -1674,6 +1676,10 @@ packages:
       domutils: 2.7.0
       nth-check: 2.0.0
     dev: true
+
+  /css-tooltip/0.3.4:
+    resolution: {integrity: sha512-/CeS8jfkEkJvAPbV1SEkkuYoFdIxTJ4I/iQTEcdYGew7X76f+Wl0PXsyZ9tw2FGEZ21r2RJf3RX9Dv+11IdW8g==}
+    dev: false
 
   /css-tree/1.0.0-alpha.37:
     resolution: {integrity: sha512-DMxWJg0rnz7UgxKT0Q1HU/L9BeJI0M6ksor0OgqOnF+aRCDWg/N2641HmVyU9KVIu0OVVWOb2IpC9A+BJRnejg==}
