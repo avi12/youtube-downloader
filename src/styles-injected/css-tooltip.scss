@@ -1,0 +1,113 @@
+$background-color: #616161;
+$foreground-color: white;
+$arrow-size: 0;
+$vertical-shift: 50%;
+$multiline-width: 240px;
+$tooltip-padding: 10px 9px;
+$roundness: 2px; // 0 || border-radius
+$shadow: 0;
+$load-styles: true !default; // Extra styles needed?
+
+[data-tooltip] {
+  position: relative;
+  display: inline-block;
+
+  &:before,
+  &:after {
+    position: absolute;
+    left: 50%;
+    transform: translate(-50%, -$vertical-shift);
+    z-index: 1000;
+    pointer-events: none;
+    user-select: none;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  // Tooltip Body
+  &:before {
+    content: attr(data-tooltip);
+    background: $background-color;
+    color: $foreground-color;
+    padding: $tooltip-padding;
+    white-space: nowrap;
+    bottom: 100%;
+    font-size: var(--paper-tooltip_-_font-size, 10px);
+    font-weight: normal; // Without it, some tooltips are bold due to their element container
+    @if ($roundness != 0) {
+      border-radius: $roundness;
+    }
+    @if ($shadow != 0) {
+      box-shadow: $shadow;
+    }
+  }
+
+  // Tooltip Arrow
+  &:after {
+    content: "";
+    background: transparent;
+    border: $arrow-size solid transparent;
+    border-top-color: $background-color;
+  }
+
+  // Active state
+  &:hover {
+    &:before,
+    &:after {
+      opacity: 1;
+    }
+  }
+
+  @if $load-styles == true {
+    // ----------------------------------------------------
+    // Extra Styles :
+    // Multi-line tooltip (.tooltip-multiline)
+    &.tooltip-multiline {
+      &:before {
+        width: 100vw;
+        max-width: max-content;
+        white-space: normal;
+      }
+    }
+
+    // ----------
+    // Bottom tooltip (.tooltip-bottom, *-left, *-right )
+    &[class*="tooltip-bottom"] {
+      &:before,
+      &:after {
+        transform: translate(-50%, $vertical-shift);
+      }
+      &:before {
+        bottom: auto;
+        top: 100%;
+      }
+      &:after {
+        bottom: 0;
+        border: $arrow-size solid transparent;
+        border-bottom-color: $background-color;
+      }
+    }
+    &.tooltip-bottom-left:before {
+      transform: translate(-($arrow-size * 3), $vertical-shift);
+    }
+    &.tooltip-bottom-right:before {
+      left: auto;
+      right: 50%;
+      transform: translate($arrow-size * 3, $vertical-shift);
+    }
+
+    // ----------
+    // Top tooltip (.tooltip-top, *-left, *-right )
+    // .tooltip-top not needed (default style)
+    &.tooltip-top-left:before {
+      transform: translate(-($arrow-size * 3), -$vertical-shift);
+    }
+    &.tooltip-top-right:before {
+      left: auto;
+      right: 50%;
+      transform: translate($arrow-size * 3, -$vertical-shift);
+    }
+    // End extra styles
+    // ----------------------------------------------------
+  }
+}
