@@ -2,6 +2,7 @@
   --ytdl-action-button-color: var(--yt-endpoint-color);
   --ytdl-progress-bg-color: black;
   --ytdl-new-text-color: white;
+  --ytdl-bg-disabled: gray;
 }
 
 html[dark="true"] {
@@ -9,6 +10,7 @@ html[dark="true"] {
   --ytdl-action-button-border-color: var(--yt-button-icon-button-text-color);
   --ytdl-progress-bg-color: var(--yt-spec-general-background-a);
   --ytdl-new-text-color: var(--yt-button-icon-button-text-color);
+  --ytdl-bg-disabled: darkgray;
 }
 
 .ytdl-container__rich-options {
@@ -23,7 +25,7 @@ html[dark="true"] {
     color: var(--ytdl-action-button-color);
     border: 1px solid;
     margin: 20px auto;
-    display: block;
+    display: block !important;
     cursor: pointer;
     border-color: var(--ytdl-action-button-border-color);
 
@@ -32,6 +34,10 @@ html[dark="true"] {
       font-weight: bold;
       transform: translateY(70%);
       width: $width;
+    }
+
+    &:disabled {
+      background-color: var(--ytdl-bg-disabled);
     }
   }
 
