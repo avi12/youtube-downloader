@@ -13,7 +13,7 @@
   export let gMusicQueue: MusicQueue;
   export let gVideoOnlyQueue: VideoOnlyQueue;
   export let gVideoDetails: VideoDetails;
-  export let gStatusProgress: StatusProgress;  
+  export let gStatusProgress: StatusProgress;
 
   import { dndzone } from "svelte-dnd-action";
   import { flip } from "svelte/animate";
