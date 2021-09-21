@@ -5,7 +5,8 @@ import {
 } from "./yt-downloader-content-script-video";
 import {
   appendPlaylistDownloadButton,
-  gMutationObserverPlaylist,
+  gMutationObserverPlaylistProgress,
+  gMutationObserverPlaylistVideoReadiness,
   handlePlaylistVideos
 } from "./yt-downloader-content-script-playlist";
 import Port = chrome.runtime.Port;
@@ -64,7 +65,8 @@ function resetObservers() {
   gObserverPlaylistDownloadButton = null;
 
   gIntersectionObserverModal?.disconnect();
-  gMutationObserverPlaylist?.disconnect();
+  gMutationObserverPlaylistProgress?.disconnect();
+  gMutationObserverPlaylistVideoReadiness?.disconnect();
 }
 
 function removeDownloadButtonsOnPlaylists() {
