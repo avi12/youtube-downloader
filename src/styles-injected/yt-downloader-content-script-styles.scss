@@ -58,10 +58,34 @@
     &--in-place {
       border: 1px solid var(--yt-spec-text-secondary);
     }
+
+    &--playlist {
+      border: 1px solid darkgray;
+    }
   }
 
   &__rich-options {
     width: 80%;
+
+    &__form {
+      display: grid;
+      grid-template-columns: max-content 1fr;
+
+      .ytdl-container__filename-error {
+        grid-column: 1 / -1;
+        margin-bottom: 10px;
+      }
+
+      input[type=text] {
+        // Setting the min-width to 0 as
+        // the grid's 1fr will adjust the width instead
+        min-width: 0;
+      }
+
+      input[type=radio] {
+        margin: 0 8px 0 0;
+      }
+    }
   }
 
   &__tabs-buttons {
@@ -95,6 +119,10 @@
       position: absolute;
       transform: translate(10px, 22px);
     }
+  }
+
+  &__progress-bar--pushed-right {
+    margin-left: 10px;
   }
 
   &__playlist {
@@ -150,7 +178,7 @@
     }
   }
 
-  input,
+  input[type=text],
   select {
     color: var(--yt-spec-text-primary);
     border: 0;
@@ -259,6 +287,23 @@ html[dark="true"] {
 .slide-rich-options-enter-to,
 .slide-rich-options-leave {
   max-height: 302px;
+}
+
+// Transitions for the playlist page - rich options opening for playlists
+.slide-rich-options-playlist-enter,
+.slide-rich-options-playlist-leave-to {
+  max-height: 0;
+}
+
+.slide-rich-options-playlist-enter-active,
+.slide-rich-options-playlist-leave-active {
+  transition: max-height 0.4s;
+  overflow: hidden;
+}
+
+.slide-rich-options-playlist-enter-to,
+.slide-rich-options-playlist-leave {
+  max-height: 250px;
 }
 
 // Overrides for /playlist

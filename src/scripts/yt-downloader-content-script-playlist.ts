@@ -11,7 +11,7 @@ import {
   gSupportedExts,
   isElementVisible
 } from "./utils";
-import Vue from "vue/dist/vue.min.js";
+import Vue from "vue/dist/vue.js";
 import type {
   AdaptiveFormatItem,
   MusicQueue,
@@ -21,7 +21,8 @@ import type {
 } from "./types";
 import { icons } from "./icons";
 
-export let gMutationObserverPlaylist: MutationObserver;
+export let gMutationObserverPlaylistProgress: MutationObserver;
+export let gMutationObserverPlaylistVideoReadiness: MutationObserver;
 let downloadContainers: { [videoId: string]: Vue };
 let downloadPlaylist: Vue;
 
@@ -94,15 +95,34 @@ export function appendPlaylistDownloadButton(): void {
     return;
   }
 
+  const countVideosTotal = Number(
+    document
+      .querySelector("#stats")
+      .textContent.match(/[\d,]+/)[0]
+      .replaceAll(",", "")
+  );
+  const isVideosMatch = () =>
+    document.querySelectorAll("ytd-playlist-video-renderer").length ===
+    document.querySelectorAll(".ytdl-container--playlist-single-video").length;
+
+  const getVideosContainer = (): HTMLDivElement =>
+    document.querySelector("#contents");
+
+  const scrollToBottom = () =>
+    scrollBy({ top: getVideosContainer().clientHeight });
+
   elDownloadPlaylistContainer.insertBefore(
     elDownloadPlaylist,
     elDownloadPlaylistContainer.querySelector("#play-buttons")
   );
 
+  let unwatchInspection;
+
   downloadPlaylist = new Vue({
     el: `#${elDownloadPlaylist.id}`,
     data: {
       isStartedDownload: false,
+      isStartedDownloadAll: false,
       progress: 0,
       error: "",
       isAllChecked: false,
@@ -111,28 +131,158 @@ export function appendPlaylistDownloadButton(): void {
       isPortDisconnected: false,
       videoIdsToDownload: [] as VideoQueue | VideoOnlyQueue | MusicQueue,
       icons,
-      tooltipDownloadDetails: ""
+      tooltipDownloadDetails: "",
+      isInspectingPlaylistVideos: false,
+      isCancelDownloadALl: false,
+      isCanDownloadAll: false,
+      isLoadedPlaylistContainer: false,
+      isRichOptions: false,
+      extVideo: "mp4",
+      extAudiolessVideo: "mp4",
+      extAudio: "mp3",
+      downloadTypeTotal: "default" as
+        | "default"
+        | "video+audio"
+        | "video"
+        | "audio",
+      gExtToMime
     },
     template: `
-      <section id="${elDownloadPlaylist.id}" class="ytdl-action-buttons ytdl-container__playlist" ref="container">
-      <button @click="toggleCheckbox"
-              :disabled="isPortDisconnected || isStartedDownload"
-              class="ytdl-action-buttons__button"
-              id="ytdl-toggle-checkbox">
-        <span v-html="iconToggle"></span> TOGGLE ALL
-      </button>
-      <button @click="toggleDownload" :disabled="isPortDisconnected" class="ytdl-action-buttons__button tooltip-bottom-left tooltip-multiline" :data-tooltip="!isStartedDownload ? tooltipDownloadDetails : false">
-        <span v-html="currentDownloadIcon" class="ytdl-download-icon"></span>{{ textButton }}
-      </button>
-      <transition-group name="slide-short" tag="div">
-        <div key="count"
-             v-if="isStartedDownload && countVideosToDownload > 0"
-             class="ytdl--size-medium ytdl--text-color-default">
-          Downloaded {{ countVideosDownloaded }} out of {{ countVideosToDownload }} video{{ countVideosToDownload === 1 ? "" : "s" }}
-        </div>
-        <div key="error" v-if="error" class="ytdl-container__playlist--error ytdl--size-medium">{{ error }}</div>
-      </transition-group>
+      <transition name="slide">
+      <section v-show="isLoadedPlaylistContainer"
+               id="${elDownloadPlaylist.id}"
+               class="ytdl-action-buttons ytdl-container ytdl-container__playlist">
+
+        <!-- More options button -->
+        <button :aria-label="labelExpandButton"
+                :data-tooltip="!isStartedDownloadAll && isSupportedExts ? labelExpandButton : false"
+                :disabled="isPortDisconnected || !isSupportedExts || isStartedDownload || isStartedDownloadAll"
+                class="ytdl-action-buttons__button tooltip-bottom"
+                @click="isRichOptions = !isRichOptions">
+          <span class="ytdl-action-buttons__action--icon" v-html="icons.options"></span> PLAYLIST DOWNLOAD OPTIONS
+        </button>
+
+        <transition name="slide-rich-options-playlist">
+          <div v-if="isRichOptions"
+               class="ytdl-container__rich-options-wrapper ytdl-container__rich-options-wrapper--playlist ytdl-container__rich-options-wrapper--in-place">
+            <div class="ytdl-container__rich-options">
+              <div class="ytdl-container__spacer--margin-top"></div>
+              Download all videos as
+              <form class="ytdl-container__rich-options__form">
+                <label for="rich-options--download-type-video+audio">
+                  <!-- -->
+                  <input v-model="downloadTypeTotal" name="download-type" type="radio" value="video+audio">Video</label>
+                <!-- -->
+                <input autocomplete="off"
+                       id="rich-options--download-type-video+audio"
+                       type="text"
+                       v-model="extVideo"
+                       @focus="downloadTypeTotal = 'video+audio'" />
+                <!-- -->
+                <!-- -->
+
+                <transition name="slide">
+                  <div class="ytdl-container__filename-error" v-if="!gExtToMime.video[extVideo]">
+                    Unsupported for video: <b>{{ extVideo }}</b>
+                    <div class="ytdl-container__spacer--margin-top"></div>
+                    <div class="ytdl-container__filename-error--supported-extensions">
+                      Supported: <b>${gSupportedExts.video.join(", ")}</b>
+                    </div>
+                  </div>
+                </transition>
+
+                <label for="rich-options--download-type-audio">
+                  <!-- -->
+                  <input v-model="downloadTypeTotal" name="download-type" type="radio" value="audio">Audio</label>
+                <!-- -->
+                <input autocomplete="off"
+                       id="rich-options--download-type-audio"
+                       type="text"
+                       v-model="extAudio"
+                       @focus="downloadTypeTotal = 'audio'" />
+
+                <transition name="slide">
+                  <div class="ytdl-container__filename-error" v-if="!gExtToMime.audio[extAudio]">
+                    Unsupported for audio: <b>{{ extAudio }}</b>
+                    <div class="ytdl-container__spacer--margin-top"></div>
+                    <div class="ytdl-container__filename-error--supported-extensions">
+                      Supported: <b>${gSupportedExts.audio.join(", ")}</b>
+                    </div>
+                  </div>
+                </transition>
+                <!-- -->
+                <!-- -->
+
+                <!-- -->
+                <label for="rich-options--download-type-video">
+                  <!-- -->
+                  <input v-model="downloadTypeTotal"
+                         name="download-type"
+                         type="radio"
+                         value="video">Audio-less video</label>
+                <!-- -->
+                <input autocomplete="off"
+                       id="rich-options--download-type-video"
+                       type="text"
+                       v-model="extAudiolessVideo"
+                       @focus="downloadTypeTotal = 'video'" />
+
+                <transition name="slide">
+                  <div class="ytdl-container__filename-error" v-if="!gExtToMime.video[extAudiolessVideo]">
+                    Unsupported for video: <b>{{ extAudiolessVideo }}</b>
+                    <div class="ytdl-container__spacer--margin-top"></div>
+                    <div class="ytdl-container__filename-error--supported-extensions">
+                      Supported: <b>${gSupportedExts.video.join(", ")}</b>
+                    </div>
+                  </div>
+                </transition>
+                <!-- -->
+                <!-- -->
+
+                <!-- -->
+                <label><input v-model="downloadTypeTotal"
+                              name="download-type"
+                              type="radio"
+                              value="default">Use the initial values</label>
+              </form>
+              <div class="ytdl-container__spacer--margin-top"></div>
+            </div>
+          </div>
+        </transition>
+
+        <!-- Download all when ready -->
+        <button :disabled="isPortDisconnected || !isSupportedExts || isStartedDownload"
+                class="ytdl-action-buttons__button"
+                @click="downloadAllWhenPossible">
+          <span v-html="icons.downloadAll"></span> {{ isStartedDownloadAll ? "DON'T" : "" }} DOWNLOAD ALL WHEN READY
+        </button>
+
+        <!-- Toggle all -->
+        <button id="ytdl-toggle-checkbox"
+                :disabled="isPortDisconnected || !isSupportedExts || isStartedDownload || isStartedDownloadAll"
+                class="ytdl-action-buttons__button"
+                @click="toggleCheckboxes">
+          <span v-html="iconToggle"></span> TOGGLE ALL
+        </button>
+
+        <!-- Download button -->
+        <button :data-tooltip="!isStartedDownload && !isInspectingPlaylistVideos ? tooltipDownloadDetails : false"
+                :disabled="isPortDisconnected || !isSupportedExts || isInspectingPlaylistVideos"
+                class="ytdl-action-buttons__button tooltip-bottom-left tooltip-multiline"
+                @click="toggleDownload">
+          <span class="ytdl-download-icon" v-html="currentDownloadIcon"></span>{{ textButton }}
+        </button>
+
+        <transition-group name="slide-short" tag="div">
+          <div v-if="isStartedDownload && countVideosToDownload > 0"
+               key="count"
+               class="ytdl--size-medium ytdl--text-color-default">
+            Downloaded {{ countVideosDownloaded }} out of {{ countVideosToDownload }} video{{ countVideosToDownload === 1 ? "" : "s" }}
+          </div>
+          <div v-if="error" key="error" class="ytdl-container__playlist--error ytdl--size-medium">{{ error }}</div>
+        </transition-group>
       </section>
+      </transition>
     `,
     watch: {
       isAllChecked() {
@@ -140,7 +290,7 @@ export function appendPlaylistDownloadButton(): void {
         this.setTooltipDownloadDetails();
       },
       isStartedDownload(isStarted: boolean) {
-        this.elCheckboxes.forEach(
+        this.getCheckboxes().forEach(
           (elCheckbox: HTMLInputElement) => (elCheckbox.disabled = isStarted)
         );
       },
@@ -150,6 +300,42 @@ export function appendPlaylistDownloadButton(): void {
       },
       countVideosToDownload(numVideosToDownload: number) {
         this.isStartedDownload = numVideosToDownload > 0;
+      },
+      isPortDisconnected() {
+        this.isRichOptions = false;
+      },
+      downloadTypeTotal(downloadType) {
+        const isDefault = downloadType === "default";
+        for (const videoId in downloadContainers) {
+          const downloadContainer = downloadContainers[videoId];
+          downloadContainer.downloadType = isDefault
+            ? downloadContainer.downloadTypeInitial
+            : downloadType;
+        }
+      },
+      isStartedDownloadAll(isStarted) {
+        this.setAllIndividualDownloadability(!isStarted);
+      },
+      isInspectingPlaylistVideos() {
+        this.isRichOptions = false;
+      },
+      extVideo(extVideo) {
+        const isExists = gExtToMime.video[extVideo];
+        for (const videoId in downloadContainers) {
+          downloadContainers[videoId].ext = isExists ? extVideo : "mp4";
+        }
+      },
+      extAudiolessVideo(extVideo) {
+        const isExists = gExtToMime.video[extVideo];
+        for (const videoId in downloadContainers) {
+          downloadContainers[videoId].ext = isExists ? extVideo : "mp4";
+        }
+      },
+      extAudio(extAudio) {
+        const isExists = gExtToMime.audio[extAudio];
+        for (const videoId in downloadContainers) {
+          downloadContainers[videoId].ext = isExists ? extAudio : "mp3";
+        }
       }
     },
     computed: {
@@ -157,31 +343,50 @@ export function appendPlaylistDownloadButton(): void {
         if (this.isPortDisconnected) {
           return "RELOAD TO DOWNLOAD";
         }
+
+        if (!this.isSupportedExts) {
+          return "EXTENSION UNSUPPORTED";
+        }
+
         if (this.isStartedDownload) {
           return "CANCEL";
         }
-        return "DOWNLOAD";
-      },
-      elCheckboxes() {
-        return [...document.querySelectorAll("[data-ytdl-playlist-checkbox]")];
+
+        return "DOWNLOAD SELECTED";
       },
       currentDownloadIcon() {
-        switch (this.textButton) {
-          case "RELOAD TO DOWNLOAD":
-            return this.icons.notDownloadable;
-
-          case "CANCEL":
-            return this.icons.cancelDownload;
-
-          default:
-            return this.icons.download;
+        if (this.textButton === "RELOAD TO DOWNLOAD") {
+          return this.icons.notDownloadable;
         }
+
+        if (this.textButton === "CANCEL") {
+          return this.icons.cancelDownload;
+        }
+
+        return this.icons.download;
       },
       iconToggle() {
         return this.isAllChecked ? icons.toggleOn : icons.toggleOff;
+      },
+      labelExpandButton() {
+        return !this.isRichOptions ? "More options" : "Less options";
+      },
+      isSupportedExts() {
+        if (this.downloadTypeTotal === "audio") {
+          return this.gExtToMime.audio[this.extAudio];
+        }
+
+        if (this.downloadTypeTotal === "video+audio") {
+          return this.gExtToMime.video[this.extVideo];
+        }
+
+        return this.gExtToMime.video[this.extAudiolessVideo];
       }
     },
     methods: {
+      getCheckboxes() {
+        return [...document.querySelectorAll("[data-ytdl-playlist-checkbox]")];
+      },
       getTooltipDownloadDetails() {
         const strings = ["Selected"];
 
@@ -242,7 +447,7 @@ export function appendPlaylistDownloadButton(): void {
           };
         });
       },
-      async toggleDownload() {
+      toggleDownload() {
         this.videoIdsToDownload = this.getVideoIdsToDownload();
         const isNoVideosSelected = this.videoIdsToDownload.length === 0;
         if (isNoVideosSelected) {
@@ -251,9 +456,10 @@ export function appendPlaylistDownloadButton(): void {
         }
         this.error = "";
 
-        this.isDoneDownloading = false;
         this.isStartedDownload = !this.isStartedDownload;
+        this.isRichOptions = false;
         if (!this.isStartedDownload) {
+          this.isStartedDownloadAll = false;
           chrome.runtime.sendMessage({
             action: "cancel-download",
             videoIdsToCancel: this.videoIdsToDownload
@@ -264,20 +470,70 @@ export function appendPlaylistDownloadButton(): void {
         this.countVideosToDownload = this.videoIdsToDownload.length;
         gPorts.processPlaylist.postMessage(this.getVideoInfosToDownload());
       },
-      toggleCheckbox() {
-        this.isAllChecked = !this.isAllChecked;
-        this.elCheckboxes.forEach(
+      async downloadAllWhenPossible() {
+        if (this.isInspectingPlaylistVideos) {
+          gMutationObserverPlaylistVideoReadiness.disconnect();
+          scrollTo({ top: 0 });
+          this.isStartedDownloadAll = false;
+          this.isInspectingPlaylistVideos = false;
+          this.isCancelDownloadALl = true;
+          unwatchInspection?.();
+          return;
+        }
+        const startInspecting = async () => {
+          this.setAllIndividualDownloadability(false);
+          const elVideoContainer = getVideosContainer();
+          gMutationObserverPlaylistVideoReadiness.observe(elVideoContainer, {
+            childList: true,
+            subtree: true
+          });
+
+          this.isCancelDownloadALl = false;
+          this.isStartedDownloadAll = true;
+          this.isInspectingPlaylistVideos = true;
+          scrollToBottom();
+          await new Promise(resolve => {
+            unwatchInspection = this.$watch(
+              () => this.isInspectingPlaylistVideos,
+              isInspecting => {
+                if (!isInspecting) {
+                  unwatchInspection();
+                  resolve(true);
+                }
+              }
+            );
+          });
+        };
+
+        if (countVideosTotal <= 100) {
+          if (!isVideosMatch()) {
+            await startInspecting();
+          }
+        } else {
+          await startInspecting();
+        }
+
+        this.toggleCheckboxes(true);
+        this.toggleDownload();
+      },
+      toggleCheckboxes(isAllChecked?: boolean) {
+        this.isAllChecked =
+          isAllChecked !== undefined ? isAllChecked : !this.isAllChecked;
+        this.getCheckboxes().forEach(
           (elCheckbox: HTMLInputElement) =>
             (elCheckbox.checked = this.isAllChecked)
         );
+      },
+      setAllIndividualDownloadability(isDownloadable) {
+        for (const videoId in downloadContainers) {
+          downloadContainers[videoId].isDownloadable = isDownloadable;
+        }
       }
     },
     created() {
-      setTimeout(() => (this.$refs.container.style.maxHeight = "100px"));
+      const elVideosContainer = getVideosContainer();
 
-      const elVideosContainer = document.querySelector("#contents");
-
-      gMutationObserverPlaylist = new MutationObserver(() => {
+      gMutationObserverPlaylistProgress = new MutationObserver(() => {
         this.countVideosDownloaded = document.querySelectorAll(
           `
           #contents progress[value="1"][data-download-type="video+audio"][data-progress-type="ffmpeg"],
@@ -286,16 +542,55 @@ export function appendPlaylistDownloadButton(): void {
           `
         ).length;
       });
-      gMutationObserverPlaylist.observe(elVideosContainer, {
+      gMutationObserverPlaylistProgress.observe(elVideosContainer, {
         attributes: true,
         subtree: true,
         attributeFilter: ["value"]
       });
 
+      gMutationObserverPlaylistVideoReadiness = new MutationObserver(
+        (_, observer) => {
+          const stopInspecting = () => {
+            observer.disconnect();
+            scrollTo({ top: 0 });
+            this.isInspectingPlaylistVideos = false;
+            this.isStartedDownloadAll = true;
+          };
+
+          if (this.isCancelDownloadALl) {
+            this.isInspectingPlaylistVideos = false;
+            this.isStartedDownloadAll = false;
+            observer.disconnect();
+            return;
+          }
+
+          const isStillLoading = isElementVisible(
+            document.querySelector("ytd-continuation-item-renderer")
+          );
+
+          if (countVideosTotal <= 100) {
+            if (isVideosMatch()) {
+              stopInspecting();
+            }
+            return;
+          }
+
+          scrollToBottom();
+          if (isStillLoading || !isVideosMatch()) {
+            return;
+          }
+
+          stopInspecting();
+        }
+      );
+
       this.tooltipDownloadDetails = this.getTooltipDownloadDetails();
 
       elVideosContainer.removeEventListener("change", onCheckboxUpdate);
       elVideosContainer.addEventListener("change", onCheckboxUpdate);
+    },
+    mounted() {
+      this.isLoadedPlaylistContainer = true;
     }
   });
 }
@@ -521,12 +816,11 @@ export async function handlePlaylistVideos(): Promise<void> {
     promiseHtmls[i].then(async html => {
       const videoData = await getVideoData(html);
 
+      const { videoId } = videoData.videoDetails;
       const isDownloadable = getIsDownloadable(videoData);
       if (!isDownloadable) {
         return;
       }
-
-      const { videoId } = videoData.videoDetails;
 
       appendCheckbox({
         videoId,
@@ -541,24 +835,45 @@ export async function handlePlaylistVideos(): Promise<void> {
       const isMusic =
         videoData.microformat.playerMicroformatRenderer.category === "Music";
 
-      const ext = isMusic ? "mp3" : "mp4";
+      const isDefault = downloadPlaylist.downloadTypeTotal === "default";
+      const ext = (() => {
+        if (!isDefault) {
+          if (downloadPlaylist.downloadTypeALl === "video+audio") {
+            return downloadPlaylist.extVideo;
+          }
+          if (downloadPlaylist.downloadTypeALl === "video") {
+            return downloadPlaylist.extAudiolessVIdeo;
+          }
+          return downloadPlaylist.extAudio;
+        }
+        if (isMusic) {
+          return "mp3";
+        }
+        return "mp4";
+      })();
+
+      const downloadTypeDetected = (isMusic ? "audio" : "video+audio") as
+        | "video"
+        | "audio"
+        | "video+audio";
 
       downloadContainers[videoId] = new Vue({
         el: `[data-ytdl-download-container="${videoId}"]`,
         data: {
           isStartedDownload: false,
           isDoneDownloading: false,
-          isDownloadable,
+          isDownloadable:
+            isDownloadable && !downloadPlaylist.isInspectingPlaylistVideos,
           progress: 0,
           progressType: "" as "" | "video" | "audio" | "video+audio",
           isQueued: false,
           isPortDisconnected: false,
           errorFilename: "",
           isRichOptions: false,
-          downloadType: (isMusic ? "audio" : "video+audio") as
-            | "video"
-            | "audio"
-            | "video+audio",
+          downloadType: isDefault
+            ? downloadTypeDetected
+            : downloadPlaylist.downloadTypeTotal,
+          downloadTypeInitial: downloadTypeDetected,
           filename: videoData.videoDetails.title,
           ext,
           videos: [] as AdaptiveFormatItem[],
@@ -593,7 +908,7 @@ export async function handlePlaylistVideos(): Promise<void> {
             </button>
           </div>
 
-          <progress class="tooltip-bottom"
+          <progress class="tooltip-bottom ytdl-container__progress-bar--pushed-right"
                     :data-tooltip="tooltipProgress"
                     :value="progress"
                     :data-progress-type="progressType"
@@ -736,6 +1051,11 @@ export async function handlePlaylistVideos(): Promise<void> {
             if (this.isPortDisconnected) {
               return "RELOAD TO DOWNLOAD";
             }
+
+            if (downloadPlaylist.isStartedDownloadAll) {
+              return "DOWNLOADING AS PLAYLIST";
+            }
+
             if (!this.isDownloadable) {
               return "NOT DOWNLOADABLE";
             }
@@ -782,6 +1102,7 @@ export async function handlePlaylistVideos(): Promise<void> {
           currentDownloadIcon() {
             switch (this.textButton) {
               case "RELOAD TO DOWNLOAD":
+              case "DOWNLOADING AS PLAYLIST":
               case "NOT DOWNLOADABLE":
                 return this.icons.notDownloadable;
 
@@ -888,7 +1209,7 @@ export async function handlePlaylistVideos(): Promise<void> {
           },
           setCheckboxParams() {
             const elCheckbox = document.querySelector(
-              `[data-ytdl-playlist-checkbox=${videoId}]`
+              `[data-ytdl-playlist-checkbox="${videoId}"]`
             ) as HTMLInputElement;
             elCheckbox.dataset.ytdlPlaylistCheckboxDownloadType =
               this.downloadType;
