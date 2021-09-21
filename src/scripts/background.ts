@@ -89,7 +89,9 @@ async function removeMediaFromLists(idsToRemove: string[]) {
   const isFirstProcessingInProgress = idsToRemove.includes(gVideoQueue[0]);
 
   gMusicQueue = gMusicQueue.filter(videoId => !idsToRemove.includes(videoId));
-  gVideoQueue = gVideoQueue.filter(videoId => !idsToRemove.includes(videoId));
+  gVideoOnlyQueue = gVideoOnlyQueue.filter(
+    videoId => !idsToRemove.includes(videoId)
+  );
   gVideoQueue = gVideoQueue.filter(videoId => !idsToRemove.includes(videoId));
 
   await updateQueue("music", gMusicQueue);
@@ -187,15 +189,6 @@ function handleMainConnection(port: Port) {
     delete gTabTracker[idTab];
 
     removeVideoTabTracker(getVideoId(url), idTab);
-
-    if (
-      getIsFoundVideoIdInAnotherTab({
-        tabs: gTabTracker,
-        tabTracked
-      })
-    ) {
-      return;
-    }
 
     await removeMediaFromLists(
       tabTracked.idVideosToDownload || tabTracked.idVideosAvailable
