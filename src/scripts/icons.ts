@@ -8,6 +8,14 @@ export const icons = {
     <path d="M18,15v3H6v-3H4v3c0,1.1,0.9,2,2,2h12c1.1,0,2-0.9,2-2v-3H18z M17,11l-1.41-1.41L13,12.17V4h-2v8.17L8.41,9.59L7,11l5,5 L17,11z" />
   </g>
 </svg>`,
+  downloadAll: `
+<svg width="24" height="20" viewBox="0 0 16 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <path d="M5.154 3.72667L6 4.66667L3 8L0 4.66667L0.846 3.72667L2.4 5.44667V0H3.6V5.44667L5.154 3.72667Z" />
+  <path d="M15.154 3.72667L16 4.66667L13 8L10 4.66667L10.846 3.72667L12.4 5.44667V0H13.6V5.44667L15.154 3.72667Z" />
+  <path d="M10.154 6.72667L11 7.66667L8 11L5 7.66667L5.846 6.72667L7.4 8.44667V0H8.6V8.44667L10.154 6.72667Z" />
+  <path d="M14 12V9H16V12C16 13.1 15.1 14 14 14H2C0.9 14 0 13.1 0 12V9H2V12H14Z" />
+</svg>
+  `,
   cancelDownload: `
 <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="#000000">
   <path d="M0 0h24v24H0V0z" fill="none" />
@@ -50,5 +58,11 @@ export const icons = {
 <svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="#000000">
   <path d="M0 0h24v24H0z" fill="none" />
   <path d="M17 7H7c-2.76 0-5 2.24-5 5s2.24 5 5 5h10c2.76 0 5-2.24 5-5s-2.24-5-5-5zM7 15c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3z" />
-</svg>`
+</svg>`,
+  options: `
+<svg xmlns="http://www.w3.org/2000/svg" height="24px" viewBox="0 0 24 24" width="24px" fill="#000000"> 
+  <path d="M0 0h24v24H0z" fill="none" />
+  <path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z" />
+</svg>
+`
 };
