@@ -644,6 +644,7 @@ function addListeners() {
 
       downloadContainer.isDoneDownloading = false;
       downloadContainer.isDownloadable = true;
+      downloadContainer.isStartedDownload = false;
       return;
     }
 
