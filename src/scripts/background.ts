@@ -26,7 +26,10 @@ import { ref } from "@vue/reactivity";
 import Port = chrome.runtime.Port;
 
 const gCancelControllers: {
-  [videoId: string]: AbortController[];
+  [videoId: string]: {
+    isAborted: boolean;
+    controllers: AbortController[];
+  };
 } = {};
 let gFfmpeg: FFmpeg;
 const gTabTracker: TabTracker = {};
@@ -67,21 +70,11 @@ async function restartFFmpeg() {
 
 function cancelOngoingDownloads(videoIds = Object.keys(gCancelControllers)) {
   videoIds.forEach(videoId => {
-    gCancelControllers[videoId]?.forEach(controller => {
+    gCancelControllers[videoId]?.controllers.forEach(controller => {
       controller.abort();
 
-      gVideoIds[videoId].forEach(tabId =>
-        chrome.tabs.sendMessage(tabId, {
-          updateProgress: {
-            videoId,
-            isRemoved: true
-          }
-        })
-      );
       delete gStatusProgress.value[videoId];
     });
-
-    delete gCancelControllers[videoId];
   });
 }
 
@@ -101,7 +94,7 @@ async function removeMediaFromLists(idsToRemove: string[]) {
   cancelOngoingDownloads(idsToRemove);
 
   if (isFirstProcessingInProgress) {
-    await restartFFmpeg();
+    restartFFmpeg();
   }
 }
 
@@ -230,7 +223,6 @@ async function responseToUintArray(response: Response, videoId: string) {
       progress: receivedLength / totalLength
     });
   }
-
   const chunksAll = new Uint8Array(receivedLength);
   let position = 0;
   for (const chunk of chunks) {
@@ -250,6 +242,9 @@ function updateProgress({
   progress: number;
   progressType: "ffmpeg" | "video" | "audio";
 }) {
+  if (gCancelControllers[videoId]?.isAborted ?? true) {
+    return;
+  }
   gVideoIds[videoId].forEach(tabId => {
     chrome.tabs.sendMessage(tabId, {
       updateProgress: {
@@ -302,11 +297,34 @@ async function processVideo({
     filenameOutput
   };
 
-  const [abortVideo, abortAudio] = [
-    new AbortController(),
-    new AbortController()
-  ];
-  gCancelControllers[videoId] = [abortVideo, abortAudio];
+  const abortControllers = [new AbortController(), new AbortController()];
+
+  let abortCount = 0;
+  const onAbort = () => {
+    gCancelControllers[videoId].isAborted = true;
+    abortCount++;
+    if (abortCount < abortControllers.length) {
+      return;
+    }
+    delete gCancelControllers[videoId];
+    gVideoIds[videoId].forEach(tabId =>
+      chrome.tabs.sendMessage(tabId, {
+        updateProgress: {
+          videoId,
+          isRemoved: true
+        }
+      })
+    );
+  };
+  const [abortVideo, abortAudio] = abortControllers;
+
+  abortVideo.signal.addEventListener("abort", onAbort, { once: true });
+  abortAudio.signal.addEventListener("abort", onAbort, { once: true });
+
+  gCancelControllers[videoId] = {
+    isAborted: false,
+    controllers: [abortVideo, abortAudio]
+  };
 
   const [responseVideo, responseAudio] = await Promise.all([
     fetch(urls.video, { signal: abortVideo.signal }),
@@ -376,7 +394,10 @@ async function processSingleMedia({
   videoId: string;
 }) {
   const abortAudio = new AbortController();
-  gCancelControllers[videoId] = [abortAudio];
+  gCancelControllers[videoId] = {
+    isAborted: false,
+    controllers: [abortAudio]
+  };
 
   if (type !== "video+audio") {
     const dataFile = await responseToUintArray(
@@ -532,7 +553,7 @@ function handlePlaylistProcessing(port: Port) {
       processVideoOnlyPlaylist();
 
       if (!wasVideoPlaylistEmpty && !isFirstVideoInProgress) {
-        await restartFFmpeg();
+        restartFFmpeg();
       }
     }
   );
@@ -592,7 +613,7 @@ function addListeners() {
       cancelOngoingDownloads(videoQueueCurrent);
       gVideoQueue = videoQueueCurrent;
       await updateQueue("video", gVideoQueue);
-      await restartFFmpeg();
+      restartFFmpeg();
     }
   });
 
