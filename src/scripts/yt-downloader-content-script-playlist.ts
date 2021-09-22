@@ -838,10 +838,10 @@ export async function handlePlaylistVideos(): Promise<void> {
       const isDefault = downloadPlaylist.downloadTypeTotal === "default";
       const ext = (() => {
         if (!isDefault) {
-          if (downloadPlaylist.downloadTypeALl === "video+audio") {
+          if (downloadPlaylist.downloadTypeTotal === "video+audio") {
             return downloadPlaylist.extVideo;
           }
-          if (downloadPlaylist.downloadTypeALl === "video") {
+          if (downloadPlaylist.downloadTypeTotal === "video") {
             return downloadPlaylist.extAudiolessVIdeo;
           }
           return downloadPlaylist.extAudio;
