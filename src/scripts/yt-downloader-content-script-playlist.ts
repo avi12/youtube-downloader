@@ -154,13 +154,16 @@ export function appendPlaylistDownloadButton(): void {
                class="ytdl-action-buttons ytdl-container ytdl-container__playlist">
 
         <!-- More options button -->
-        <button :aria-label="labelExpandButton"
-                :data-tooltip="!isStartedDownloadAll && isSupportedExts ? labelExpandButton : false"
-                :disabled="isPortDisconnected || !isSupportedExts || isStartedDownload || isStartedDownloadAll"
-                class="ytdl-action-buttons__button tooltip-bottom"
-                @click="isRichOptions = !isRichOptions">
-          <span class="ytdl-action-buttons__action--icon" v-html="icons.options"></span> PLAYLIST DOWNLOAD OPTIONS
-        </button>
+        <div class="ytdl-tooltip">
+          <button :aria-label="labelExpandButton"
+                  :disabled="isPortDisconnected || !isSupportedExts || isStartedDownload || isStartedDownloadAll"
+                  class="ytdl-action-buttons__button tooltip-bottom"
+                  @click="isRichOptions = !isRichOptions">
+            <span class="ytdl-action-buttons__action--icon" v-html="icons.options"></span> PLAYLIST DOWNLOAD OPTIONS
+          </button>
+          <span class="ytdl-tooltip__text"
+                v-if="!isStartedDownloadAll && isSupportedExts">{{ labelExpandButton }}</span>
+        </div>
 
         <transition name="slide-rich-options-playlist">
           <div v-if="isRichOptions"
@@ -266,12 +269,15 @@ export function appendPlaylistDownloadButton(): void {
         </button>
 
         <!-- Download button -->
-        <button :data-tooltip="!isStartedDownload && !isInspectingPlaylistVideos ? tooltipDownloadDetails : false"
-                :disabled="isPortDisconnected || !isSupportedExts || isInspectingPlaylistVideos"
-                class="ytdl-action-buttons__button tooltip-bottom-left tooltip-multiline"
-                @click="toggleDownload">
-          <span class="ytdl-download-icon" v-html="currentDownloadIcon"></span>{{ textButton }}
-        </button>
+        <div class="ytdl-tooltip ytdl-tooltip--bottom-left">
+          <button :disabled="isPortDisconnected || !isSupportedExts || isInspectingPlaylistVideos"
+                  class="ytdl-action-buttons__button"
+                  @click="toggleDownload">
+            <span class="ytdl-download-icon" v-html="currentDownloadIcon"></span>{{ textButton }}
+          </button>
+          <span class="ytdl-tooltip__text"
+                v-if="!isStartedDownload && !isInspectingPlaylistVideos">{{ tooltipDownloadDetails }}</span>
+        </div>
 
         <transition-group name="slide-short" tag="div">
           <div v-if="isStartedDownload && countVideosToDownload > 0"
@@ -637,6 +643,7 @@ function addListeners() {
           : downloadContainer.downloadType;
 
       downloadContainer.isDoneDownloading = false;
+      downloadContainer.isDownloadable = true;
       return;
     }
 
@@ -890,29 +897,27 @@ export async function handlePlaylistVideos(): Promise<void> {
                    data-ytdl-download-container="${videoId}"
                    ref="container">
           <div class="ytdl-action-buttons">
-            <button @click="toggleDownload"
-                    :disabled="!isDownloadable"
-                    class="ytdl-action-buttons__button tooltip-bottom"
-                    :data-tooltip="isDownloadable ? tooltipDownloadDetails : false">
-              <span class="ytdl-action-buttons__action-icon" v-html="currentDownloadIcon"></span> {{ textButton }}
-            </button>
+            <div class="ytdl-tooltip">
+              <button @click="toggleDownload" :disabled="!isDownloadable" class="ytdl-action-buttons__button">
+                <span class="ytdl-action-buttons__action-icon" v-html="currentDownloadIcon"></span> {{ textButton }}
+              </button>
+              <span class="ytdl-tooltip__text" v-if="isDownloadable">{{ tooltipDownloadDetails }}</span>
+            </div>
 
-            <button class="ytdl-action-buttons__button tooltip-bottom"
-                    v-if="${getIsDownloadable(videoData)}"
-                    @click="isRichOptions = !isRichOptions"
-                    :disabled="!isDownloadable || isStartedDownload"
-                    :class="{'ytdl-action-buttons__button--hover': isRichOptions}"
-                    :data-tooltip="isDownloadable ? labelExpandButton : false"
-                    :aria-label="labelExpandButton">
-              ${icons.expand}
-            </button>
+            <div class="ytdl-tooltip">
+              <button class="ytdl-action-buttons__button"
+                      v-if="${getIsDownloadable(videoData)}"
+                      @click="isRichOptions = !isRichOptions"
+                      :disabled="!isDownloadable || isStartedDownload"
+                      :class="{'ytdl-action-buttons__button--hover': isRichOptions}"
+                      :aria-label="labelExpandButton">
+                <span v-html="icons.expand"></span>
+              </button>
+              <span class="ytdl-tooltip__text" v-if="isDownloadable && !isStartedDownload">
+                {{ labelExpandButton }}
+              </span>
+            </div>
           </div>
-
-          <progress class="tooltip-bottom ytdl-container__progress-bar--pushed-right"
-                    :data-tooltip="tooltipProgress"
-                    :value="progress"
-                    :data-progress-type="progressType"
-                    :data-download-type="downloadType"></progress>
 
           <transition name="slide-rich-options">
             <div class="ytdl-container__rich-options-wrapper ytdl-container__rich-options-wrapper--in-place"
@@ -994,6 +999,13 @@ export async function handlePlaylistVideos(): Promise<void> {
               </div>
             </div>
           </transition>
+
+          <div class="ytdl-tooltip ytdl-tooltip--top-left">
+            <progress :value="progress"
+                      :data-progress-type="progressType"
+                      :data-download-type="downloadType"></progress>
+            <span v-show="isShowProgress" class="ytdl-tooltip__text">{{ tooltipProgress }}</span>
+          </div>
           </section>
         `,
         watch: {
@@ -1132,7 +1144,13 @@ export async function handlePlaylistVideos(): Promise<void> {
             return Math.floor(this.audio.bitrate / 1000);
           },
           tooltipDownloadDetails() {
-            const strings = [`Download in`];
+            const strings = [];
+            if (!this.isStartedDownload) {
+              strings.push(`Download in`);
+            } else {
+              strings.push(`Downloading`);
+            }
+
             if (this.downloadType === "audio") {
               strings.push(this.audioBitrate, "kbps");
             } else {
@@ -1161,6 +1179,23 @@ export async function handlePlaylistVideos(): Promise<void> {
             }
 
             return strings.join(" ");
+          },
+          isShowProgress() {
+            const isProgressBetween = this.progress > 0 && this.progress < 1;
+            return (
+              (this.downloadType === "video+audio" && isProgressBetween) ||
+              (this.downloadType === "video+audio" &&
+                this.progress === 0 &&
+                this.progressType !== "") ||
+              (this.downloadType === "video+audio" &&
+                this.progress === 1 &&
+                this.progressType === "video") ||
+              (this.downloadType === "video+audio" &&
+                this.progress === 1 &&
+                this.progressType === "audio") ||
+              (this.downloadType === "video" && isProgressBetween) ||
+              (this.downloadType === "audio" && isProgressBetween)
+            );
           }
         },
         methods: {
@@ -1176,6 +1211,7 @@ export async function handlePlaylistVideos(): Promise<void> {
             const isQueued =
               downloadPlaylist.videoIdsToDownload.includes(videoId);
             if (!this.isStartedDownload || isQueued) {
+              this.isDownloadable = false;
               chrome.runtime.sendMessage({
                 action: "cancel-download",
                 videoIdsToCancel: [videoId]

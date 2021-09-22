@@ -109,6 +109,18 @@ export async function getElementEventually(selector: string): Promise<Element> {
   );
 }
 
+export async function getVideoEventually(): Promise<HTMLVideoElement> {
+  return new Promise(async resolve => {
+    new MutationObserver((_, observer) => {
+      const elVideo = document.querySelector("video");
+      if (elVideo.videoHeight > 0) {
+        observer.disconnect();
+        resolve(elVideo);
+      }
+    }).observe(document.body, { childList: true });
+  });
+}
+
 export async function getElementsEventually(
   selector: string
 ): Promise<Element[]> {

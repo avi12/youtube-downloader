@@ -8,12 +8,11 @@ $roundness: 2px; // 0 || border-radius
 $shadow: 0;
 $load-styles: true !default; // Extra styles needed?
 
-[data-tooltip] {
+.ytdl-tooltip {
   position: relative;
   display: inline-block;
 
-  &:before,
-  &:after {
+  &__text {
     position: absolute;
     left: 50%;
     transform: translate(-50%, -$vertical-shift);
@@ -22,18 +21,12 @@ $load-styles: true !default; // Extra styles needed?
     user-select: none;
     opacity: 0;
     transition: opacity 0.3s ease;
-  }
-
-  // Tooltip Body
-  &:before {
-    content: attr(data-tooltip);
     background: $background-color;
     color: $foreground-color;
     padding: $tooltip-padding;
     white-space: nowrap;
-    bottom: 100%;
+    bottom: 89%;
     font-size: var(--paper-tooltip_-_font-size, 10px);
-    font-weight: normal; // Without it, some tooltips are bold due to their element container
     @if ($roundness != 0) {
       border-radius: $roundness;
     }
@@ -42,70 +35,48 @@ $load-styles: true !default; // Extra styles needed?
     }
   }
 
-  // Tooltip Arrow
-  &:after {
-    content: "";
-    background: transparent;
-    border: $arrow-size solid transparent;
-    border-top-color: $background-color;
-  }
-
   // Active state
-  &:hover {
-    &:before,
-    &:after {
-      opacity: 1;
-    }
+  &:hover > &__text {
+    opacity: 1;
   }
 
   @if $load-styles == true {
-    // ----------------------------------------------------
-    // Extra Styles :
-    // Multi-line tooltip (.tooltip-multiline)
-    &.tooltip-multiline {
-      &:before {
-        width: 100vw;
-        max-width: max-content;
-        white-space: normal;
-      }
-    }
-
     // ----------
     // Bottom tooltip (.tooltip-bottom, *-left, *-right )
-    &[class*="tooltip-bottom"] {
-      &:before,
-      &:after {
+    &--bottom {
+      > .ytdl-tooltip__text {
         transform: translate(-50%, $vertical-shift);
-      }
-      &:before {
         bottom: auto;
         top: 100%;
       }
-      &:after {
-        bottom: 0;
-        border: $arrow-size solid transparent;
-        border-bottom-color: $background-color;
+    }
+    &--bottom-left {
+      > .ytdl-tooltip__text {
+        transform: translate(-30%, $vertical-shift * 4);
       }
     }
-    &.tooltip-bottom-left:before {
-      transform: translate(-($arrow-size * 3), $vertical-shift);
-    }
-    &.tooltip-bottom-right:before {
-      left: auto;
-      right: 50%;
-      transform: translate($arrow-size * 3, $vertical-shift);
+    &--bottom-right {
+      > .ytdl-tooltip__text {
+        left: auto;
+        right: 50%;
+        transform: translate($arrow-size * 3, $vertical-shift);
+      }
     }
 
     // ----------
     // Top tooltip (.tooltip-top, *-left, *-right )
     // .tooltip-top not needed (default style)
-    &.tooltip-top-left:before {
-      transform: translate(-($arrow-size * 3), -$vertical-shift);
+    &--top-left {
+      > .ytdl-tooltip__text {
+        transform: translate(-140%, -20%);
+      }
     }
-    &.tooltip-top-right:before {
-      left: auto;
-      right: 50%;
-      transform: translate($arrow-size * 3, -$vertical-shift);
+    &--top-right {
+      > .ytdl-tooltip__text {
+        left: auto;
+        right: 50%;
+        transform: translate($arrow-size * 3, -$vertical-shift);
+      }
     }
     // End extra styles
     // ----------------------------------------------------

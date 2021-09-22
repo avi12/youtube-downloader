@@ -8,6 +8,7 @@ import Vue from "vue/dist/vue.min.js";
 import {
   getCompatibleFilename,
   getElementEventually,
+  getVideoEventually,
   gExtToMime,
   gSupportedExts
 } from "./utils";
@@ -16,6 +17,7 @@ import { icons } from "./icons";
 
 let gDownloadContainer: Vue;
 export let gIntersectionObserverModal: IntersectionObserver;
+export let gIntersectionObserverTooltipSingleVideo: IntersectionObserver;
 
 export async function handleVideo(): Promise<void> {
   const getHtml = async () => {
@@ -77,33 +79,36 @@ export async function handleVideo(): Promise<void> {
       videoUrl: "",
       audioUrl: "",
       isMoveModalUp: false,
+      isMovePrimaryTooltipsUp: false,
       widthProgressDownloadButton: 0,
-      icons
+      icons,
+      videoId
     },
     template: `
-      <section class="ytdl-container ytdl-container--single-video" id="${
-        elDownloaderContainer.id
-      }">
+      <section class="ytdl-container ytdl-container--single-video" :id="videoId" v-if="video">
       <div class="ytdl-action-buttons">
-        <button @click="toggleDownload"
-                :disabled="isRichOptions || !isDownloadable"
-                class="ytdl-action-buttons__button tooltip-bottom"
-                :data-tooltip="isDownloadable ? tooltipDownloadDetails : false"
-                v-if="!isRichOptions">
-          <span v-html="currentDownloadIcon" class="ytdl-action-buttons__icon"></span> {{ textButton }}
-        </button>
+        <div class="ytdl-tooltip" :class="{'ytdl-tooltip--bottom': isMovePrimaryTooltipsUp}">
+          <button @click="toggleDownload"
+                  :disabled="isRichOptions || !isDownloadable"
+                  class="ytdl-action-buttons__button">
+            <span v-html="currentDownloadIcon" class="ytdl-action-buttons__icon"></span> {{ textButton }}
+          </button>
+          <span class="ytdl-tooltip__text" v-if="isDownloadable">{{ tooltipDownloadDetails }}</span>
+        </div>
         <button v-else disabled class="ytdl-action-buttons__button">
           <span class="ytdl-action-buttons__icon" v-html="icons.download"></span> DOWNLOAD
         </button>
 
-        <button v-if="${getIsDownloadable(videoData)}"
-                @click="isRichOptions = !isRichOptions"
-                class="ytdl-action-buttons__button tooltip-bottom"
-                :disabled="!isDownloadable || isStartedDownload"
-                :data-tooltip="isDownloadable ? labelExpandButton : false"
-                :aria-label="labelExpandButton">
-          ${icons.expand}
-        </button>
+        <div class="ytdl-tooltip" :class="{'ytdl-tooltip--bottom': isMovePrimaryTooltipsUp}">
+          <button v-if="${getIsDownloadable(videoData)}"
+                  @click="isRichOptions = !isRichOptions"
+                  class="ytdl-action-buttons__button tooltip-bottom"
+                  :disabled="!isDownloadable || isStartedDownload"
+                  :aria-label="labelExpandButton">
+            ${icons.expand}
+          </button>
+          <span class="ytdl-tooltip__text" v-if="isDownloadable">{{ labelExpandButton }}</span>
+        </div>
       </div>
 
       <div class="ytdl-container__rich-options-wrapper ytdl-container__rich-options-wrapper--floating"
@@ -181,26 +186,33 @@ export async function handleVideo(): Promise<void> {
               </div>
             </transition>
 
-            <button @click="toggleDownload"
-                    :disabled="!isDownloadable"
-                    class="ytdl-container__rich-options__action-button tooltip-bottom"
-                    :data-tooltip="isDownloadable ? tooltipDownloadDetails : false">
-              <div class="ytdl-container__rich-options__progress" :style="{width: widthProgressDownloadButton + 'px'}">
-                <div class="ytdl-container__rich-options__action-button__new-text">
-                  {{ textButton }}
+            <div class="ytdl-tooltip">
+              <button @click="toggleDownload"
+                      :disabled="!isDownloadable"
+                      class="ytdl-container__rich-options__action-button tooltip-bottom">
+                <div class="ytdl-container__rich-options__progress"
+                     :style="{width: widthProgressDownloadButton + 'px'}">
+                  <div class="ytdl-container__rich-options__action-button__new-text">
+                    {{ textButton }}
+                  </div>
                 </div>
-              </div>
-              {{ textButton }}
-            </button>
+                {{ textButton }}
+              </button>
+              <span class="ytdl-tooltip__text" v-if="isDownloadable">{{ tooltipDownloadDetails }}</span>
+            </div>
           </div>
         </div>
       </div>
-      <progress :value="progress"
-                v-show="!isRichOptions"
-                :data-progress-type="progressType"
-                :data-download-type="downloadType"
-                class="tooltip-bottom"
-                :data-tooltip="tooltipProgress"></progress>
+
+      <div class="ytdl-tooltip">
+        <progress :value="progress"
+                  v-show="!isRichOptions"
+                  ref="progress"
+                  :data-progress-type="progressType"
+                  :data-download-type="downloadType"></progress>
+        <span class="ytdl-tooltip__text"
+              :class="{'ytdl-tooltip__text--bottom': isMovePrimaryTooltipsUp}"
+              v-show="isShowProgress">{{ tooltipProgress }}</span></div>
       </section>
     `,
     watch: {
@@ -329,7 +341,7 @@ export async function handleVideo(): Promise<void> {
           strings.push(this.audioBitrate, "kbps");
         } else {
           strings.push(
-            this.videoQuality(this.video) + "p",
+            this.getVideoQuality(this.video) + "p",
             this.video.fps,
             "FPS"
           );
@@ -353,6 +365,23 @@ export async function handleVideo(): Promise<void> {
         }
 
         return strings.join(" ");
+      },
+      isShowProgress() {
+        const isProgressBetween = this.progress > 0 && this.progress < 1;
+        return (
+          (this.downloadType === "video+audio" && isProgressBetween) ||
+          (this.downloadType === "video+audio" &&
+            this.progress === 0 &&
+            this.progressType !== "") ||
+          (this.downloadType === "video+audio" &&
+            this.progress === 1 &&
+            this.progressType === "video") ||
+          (this.downloadType === "video+audio" &&
+            this.progress === 1 &&
+            this.progressType === "audio") ||
+          (this.downloadType === "video" && isProgressBetween) ||
+          (this.downloadType === "audio" && isProgressBetween)
+        );
       }
     },
     methods: {
@@ -375,19 +404,21 @@ export async function handleVideo(): Promise<void> {
 
         this.download();
       },
-      videoQuality(video?: AdaptiveFormatItem) {
-        let videoHeight, videoWidth;
-        if (!video) {
-          ({ videoHeight, videoWidth } = document.querySelector("video"));
-        } else {
-          ({ height: videoHeight, width: videoWidth } = video);
-        }
+      async getElVideoQuality() {
+        const { videoHeight, videoWidth } = await getVideoEventually();
         return Math.min(videoHeight, videoWidth);
       },
-      getVideoByCurrentQuality() {
-        return this.videos.find(
-          video => this.videoQuality(video) === this.videoQuality()
-        );
+      getVideoQuality(video: AdaptiveFormatItem) {
+        return Math.min(video.height, video.width);
+      },
+      async getVideoByCurrentQuality() {
+        return this.videos.find(async video => {
+          const [currentVideoItemQuality, elVideoQuality] = await Promise.all([
+            this.getVideoQuality(video),
+            this.getElVideoQuality()
+          ]);
+          return currentVideoItemQuality === elVideoQuality;
+        });
       },
       download() {
         gPorts.processSingle.postMessage({
@@ -401,7 +432,7 @@ export async function handleVideo(): Promise<void> {
         });
       }
     },
-    created() {
+    async created() {
       chrome.runtime.onMessage.addListener(progressListener);
       chrome.storage.onChanged.addListener(storageListener);
 
@@ -426,7 +457,7 @@ export async function handleVideo(): Promise<void> {
         this.audios.push(format);
       });
 
-      this.video = this.getVideoByCurrentQuality();
+      this.video = await this.getVideoByCurrentQuality();
       this.audio = this.audios[0];
 
       this.videoUrl = this.video.url;
@@ -438,12 +469,26 @@ export async function handleVideo(): Promise<void> {
     },
     mounted() {
       gIntersectionObserverModal = new IntersectionObserver(
-        entries => (this.isMoveModalUp = entries[0].isIntersecting),
+        entries => {
+          const { isIntersecting } = entries[0];
+          this.isMoveModalUp = isIntersecting;
+        },
         {
           rootMargin: "280px"
         }
       );
       gIntersectionObserverModal.observe(document.documentElement);
+
+      gIntersectionObserverTooltipSingleVideo = new IntersectionObserver(
+        entries => {
+          const { isIntersecting } = entries[0];
+          this.isMovePrimaryTooltipsUp = !isIntersecting;
+        },
+        {
+          rootMargin: "30px"
+        }
+      );
+      gIntersectionObserverTooltipSingleVideo.observe(document.documentElement);
     }
   });
 
@@ -483,8 +528,9 @@ export async function handleVideo(): Promise<void> {
   }
 }
 
-function onQualityChange() {
+async function onQualityChange() {
   // Set the video URL on quality change
-  gDownloadContainer.video = gDownloadContainer.getVideoByCurrentQuality();
+  gDownloadContainer.video =
+    await gDownloadContainer.getVideoByCurrentQuality();
   gDownloadContainer.videoUrl = gDownloadContainer.video.url;
 }

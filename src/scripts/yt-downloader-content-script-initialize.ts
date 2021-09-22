@@ -1,6 +1,7 @@
 import type { PlayerResponse } from "./types";
 import {
   gIntersectionObserverModal,
+  gIntersectionObserverTooltipSingleVideo,
   handleVideo
 } from "./yt-downloader-content-script-video";
 import {
@@ -65,6 +66,7 @@ function resetObservers() {
   gObserverPlaylistDownloadButton = null;
 
   gIntersectionObserverModal?.disconnect();
+  gIntersectionObserverTooltipSingleVideo?.disconnect();
   gMutationObserverPlaylistProgress?.disconnect();
   gMutationObserverPlaylistVideoReadiness?.disconnect();
 }

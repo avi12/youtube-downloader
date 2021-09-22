@@ -76,13 +76,13 @@
         margin-bottom: 10px;
       }
 
-      input[type=text] {
+      input[type="text"] {
         // Setting the min-width to 0 as
         // the grid's 1fr will adjust the width instead
         min-width: 0;
       }
 
-      input[type=radio] {
+      input[type="radio"] {
         margin: 0 8px 0 0;
       }
     }
@@ -117,12 +117,17 @@
 
     progress {
       position: absolute;
-      transform: translate(10px, 22px);
-    }
-  }
+      transform: translate(-135%, 17px);
+      left: 50%;
 
-  &__progress-bar--pushed-right {
-    margin-left: 10px;
+      ~ .ytdl-tooltip__text {
+        left: -80px;
+
+        &--bottom {
+          transform: translate(-50%, 194%);
+        }
+      }
+    }
   }
 
   &__playlist {
@@ -178,7 +183,7 @@
     }
   }
 
-  input[type=text],
+  input[type="text"],
   select {
     color: var(--yt-spec-text-primary);
     border: 0;
@@ -304,15 +309,4 @@ html[dark="true"] {
 .slide-rich-options-playlist-enter-to,
 .slide-rich-options-playlist-leave {
   max-height: 250px;
-}
-
-// Overrides for /playlist
-//noinspection CssInvalidHtmlTagReference
-ytd-playlist-video-renderer + ytd-playlist-video-renderer ytd-thumbnail {
-  transition: opacity 0.3s;
-}
-
-//noinspection CssInvalidHtmlTagReference
-ytd-playlist-video-renderer:hover + ytd-playlist-video-renderer ytd-thumbnail {
-  opacity: 0.2;
 }
