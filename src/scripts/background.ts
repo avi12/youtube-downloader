@@ -421,8 +421,10 @@ function handleSingleMediaProcessing(port: Port) {
         }
         if (processInfo.isOverride) {
           gVideoQueue.unshift(videoId);
-          if (gVideoQueue.length > 1) {
-            await restartFFmpeg();
+          if (gVideoQueue.length > 0) {
+            // Keep not "await"-ed, or else
+            // the list won't be updated globally in the storage
+            restartFFmpeg();
           }
         } else {
           gVideoQueue.push(videoId);
