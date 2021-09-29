@@ -32,8 +32,11 @@ Still in development, for as long as I'm not 100% happy with the result
       rich options (see below)
   - When selecting multiple videos and clicking the Download button that's tied to the playlist: see above in "Always
     keep in mind"
+  - Download a whole playlist with a single click, using "Download all when ready"
+  - Set playlist-wide options (download all videos as videos / video-only / audio tracks; use the same file extension
+    for all items)
 - Pop-up page:
-  - Videos that download with audio can be reordered
+  - Videos that download with audio can be reorderede
   - Videos' downloads can be canceled, including music ones and audio-less video ones (individually and multiple)
 - Rich options:
   - In `/watch`:
