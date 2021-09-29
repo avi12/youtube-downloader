@@ -1,42 +1,30 @@
 <script lang="ts">
   import type {
     VideoQueue,
-    MusicQueue,
-    VideoOnlyQueue,
+    MusicList,
+    VideoOnlyList,
     MovableList,
     StatusProgress,
     VideoDetails
   } from "../types";
 
-  export let isFFmpegReady;
-  export let gVideoQueue: VideoQueue;
-  export let gMusicQueue: MusicQueue;
-  export let gVideoOnlyQueue: VideoOnlyQueue;
-  export let gVideoDetails: VideoDetails;
-  export let gStatusProgress: StatusProgress;
-
-  import { dndzone } from "svelte-dnd-action";
-  import { flip } from "svelte/animate";
   import { getLocalStorage, updateQueue } from "../utils";
 
-  let videosMovable: MovableList = gVideoQueue.map(videoId => ({
+  import { MaterialAppMin } from "svelte-materialify";
+  import MediaList from "./MediaList.svelte";
+  import MediaQueue from "./MediaQueue.svelte";
+
+  export let isFFmpegReady: boolean;
+  export let videoQueue: VideoQueue;
+  export let musicList: MusicList;
+  export let videoOnlyList: VideoOnlyList;
+  export let videoDetails: VideoDetails;
+  export let statusProgress: StatusProgress;
+
+  let videosMovable: MovableList = videoQueue.map(videoId => ({
     id: videoId,
-    title: gVideoDetails[videoId].filenameOutput
+    title: videoDetails[videoId].filenameOutput
   }));
-
-  const flipDurationMs = 200;
-
-  async function onSort(e) {
-    videosMovable = e.detail.items;
-
-    if (e.type === "finalize") {
-      await updateQueue("video", getVideoQueue(videosMovable));
-    }
-  }
-
-  function getVideoQueue(videosMoveable: MovableList): VideoQueue {
-    return videosMoveable.map(({ id }) => id);
-  }
 
   async function getMovableList(videoQueue: VideoQueue): Promise<MovableList> {
     const videoDetails = (await getLocalStorage(
@@ -60,161 +48,74 @@
       return;
     }
 
-    if (changes.musicQueue) {
-      gMusicQueue = changes.musicQueue.newValue;
+    if (changes.musicList) {
+      musicList = changes.musicList.newValue;
+      return;
+    }
+
+    if (changes.videoOnlyList) {
+      videoOnlyList = changes.videoOnlyList.newValue;
       return;
     }
 
     if (changes.videoDetails) {
-      gVideoDetails = changes.videoDetails.newValue;
+      videoDetails = changes.videoDetails.newValue;
       return;
     }
 
     if (changes.statusProgress) {
-      gStatusProgress = changes.statusProgress.newValue;
+      statusProgress = changes.statusProgress.newValue;
     }
   });
 
-  function removeFromQueue(videoId: string) {
-    chrome.runtime.sendMessage({
-      action: "cancel-download",
-      videoIdsToCancel: [videoId]
-    });
+  async function reorderVideos({ detail: videos }: { detail: VideoQueue }) {
+    await updateQueue("video", videos);
   }
 
-  function stopAllDownloads(queue: VideoQueue | MusicQueue | VideoOnlyQueue) {
+  function stopAllDownloads({
+    detail: queue
+  }: {
+    detail: VideoQueue | MusicList | VideoOnlyList;
+  }) {
     chrome.runtime.sendMessage({
       action: "cancel-download",
       videoIdsToCancel: queue
     });
   }
-
-  function getProgress(progress: number): string {
-    return (progress * 100).toFixed(2) + "%";
-  }
-
-  const symbolX = "&#x274C;";
 </script>
 
-<h1 style="text-align: center;">YouTube Downloader</h1>
-Video queue
-{#if videosMovable.length > 0}
-  (drag to rearrange)
-  <section>
-    <button on:click={() => stopAllDownloads(gVideoQueue)}
-      >Stop all {@html symbolX}</button
-    >
-  </section>
-{:else}
-  <section>(Currently empty)</section>
-{/if}
+<MaterialAppMin>
+  <h1 class="text-center text-h5">YouTube Downloader</h1>
 
-<section
-  on:consider={onSort}
-  on:finalize={onSort}
-  use:dndzone={{ items: videosMovable, flipDurationMs }}
->
-  {#each videosMovable as video, i (video.id)}
-    <div class="download-container" animate:flip={{ duration: flipDurationMs }}>
-      <span class="video__title">{video.title}</span>
-      {#if i === 0}
-        <span class="status-progress">
-          {#if isFFmpegReady}
-            {#if gStatusProgress[video.id].progressType === "video"}
-              downloading video...
-            {:else if gStatusProgress[video.id].progressType === "audio"}
-              downloading audio...
-            {:else if gStatusProgress[video.id].progressType === "ffmpeg"}
-              stitching video & audio...
-            {/if}
-            {getProgress(gStatusProgress[video.id].progress)}
-          {:else}
-            initializing FFmpeg...
-          {/if}
-        </span>
-      {/if}
-      <button class="cancel-download" on:click={() => removeFromQueue(video.id)}
-        >{@html symbolX}</button
-      >
-    </div>
-  {/each}
-</section>
+  <MediaQueue
+    {videosMovable}
+    {statusProgress}
+    {isFFmpegReady}
+    on:remove-from-queue={stopAllDownloads}
+    on:reorder-videos={reorderVideos}
+  />
 
-<br />
-Music list:
-{#if gMusicQueue.length > 0}
-  <section>
-    <button on:click={() => stopAllDownloads(gMusicQueue)}
-      >Stop all {@html symbolX}</button
-    >
-  </section>
-{:else}
-  <section>(Currently empty)</section>
-{/if}
-{#each gMusicQueue as videoId}
-  <section class="download-container">
-    <span class="video__title">{gVideoDetails[videoId].filenameOutput}</span>
-    <div class="status-progress">
-      {#if gStatusProgress[videoId]}
-        downloading... {getProgress(gStatusProgress[videoId].progress)}
-      {/if}
-    </div>
-    <button class="cancel-download" on:click={() => removeFromQueue(videoId)}
-      >{@html symbolX}</button
-    >
-  </section>
-{/each}
+  <MediaList
+    label="Music"
+    list={musicList}
+    {videoDetails}
+    {statusProgress}
+    on:remove-from-list={stopAllDownloads}
+  />
 
-<br />
-Video-only list:
-{#if gVideoOnlyQueue.length > 0}
-  <section>
-    <button on:click={() => stopAllDownloads(gVideoOnlyQueue)}
-      >Stop all {@html symbolX}</button
-    >
-  </section>
-{:else}
-  <section>(Currently empty)</section>
-{/if}
-{#each gVideoOnlyQueue as videoId}
-  <section class="download-container">
-    <span class="video__title">{gVideoDetails[videoId].filenameOutput}</span>
-    <div class="status-progress">
-      {#if gStatusProgress[videoId]}
-        downloading... {getProgress(gStatusProgress[videoId].progress)}
-      {/if}
-    </div>
-    <button class="cancel-download" on:click={() => removeFromQueue(videoId)}
-      >{@html symbolX}</button
-    >
-  </section>
-{/each}
+  <MediaList
+    label="Video-only"
+    list={videoOnlyList}
+    {videoDetails}
+    {statusProgress}
+    on:remove-from-list={stopAllDownloads}
+  />
+</MaterialAppMin>
 
 <style>
   :global(body) {
     width: 500px;
     background-color: white;
-  }
-
-  .status-progress {
-    color: gray;
-  }
-
-  .video__title {
-    display: inline-block;
-    max-width: 300px;
-    text-overflow: ellipsis;
-    overflow: hidden;
-    white-space: nowrap;
-    margin-right: 10px;
-  }
-
-  .cancel-download {
-    margin-left: auto;
-  }
-
-  .download-container {
-    display: flex;
-    align-items: center;
+    padding: 10px;
   }
 </style>
