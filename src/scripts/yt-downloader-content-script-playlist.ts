@@ -11,7 +11,7 @@ import {
   gSupportedExts,
   isElementVisible
 } from "./utils";
-import Vue from "vue/dist/vue.min.js";
+import Vue from "vue/dist/vue.js";
 import type {
   AdaptiveFormatItem,
   MusicList,
@@ -20,7 +20,11 @@ import type {
   VideoQueue
 } from "./types";
 import { icons } from "./icons";
-import { Icon, IconLoader } from "./content-script-components";
+import {
+  ErrorFileExtension,
+  Icon,
+  IconLoader
+} from "./content-script-components";
 
 export let gMutationObserverPlaylistProgress: MutationObserver;
 export let gMutationObserverPlaylistVideoReadiness: MutationObserver;
@@ -134,7 +138,8 @@ export function appendPlaylistDownloadButton(): void {
     el: `#${elDownloadPlaylist.id}`,
     components: {
       Icon,
-      IconLoader
+      IconLoader,
+      ErrorFileExtension
     },
     data: {
       isStartedDownload: false,
@@ -190,30 +195,8 @@ export function appendPlaylistDownloadButton(): void {
               <div class="ytdl-container__spacer--margin-top"></div>
               Download all videos as
               <form class="ytdl-container__rich-options__form">
-                <label for="rich-options--download-type-video+audio">
-                  <!-- -->
-                  <input v-model="downloadTypeTotal" name="download-type" type="radio" value="video+audio">Video</label>
-                <!-- -->
-                <input autocomplete="off"
-                       id="rich-options--download-type-video+audio"
-                       type="text"
-                       v-model="extVideo"
-                       @focus="downloadTypeTotal = 'video+audio'" />
-                <!-- -->
-                <!-- -->
-
-                <transition name="slide">
-                  <div class="ytdl-container__filename-error" v-if="!gExtToMime.video[extVideo]">
-                    Unsupported for video: <b>{{ extVideo }}</b>
-                    <div class="ytdl-container__spacer--margin-top"></div>
-                    <div class="ytdl-container__filename-error--supported-extensions">
-                      Supported: <b>{{ gSupportedExts.video.join(", ") }}</b>
-                    </div>
-                  </div>
-                </transition>
-
                 <label for="rich-options--download-type-audio">
-                  <!-- -->
+                  <!-- Audio-only -->
                   <input v-model="downloadTypeTotal" name="download-type" type="radio" value="audio">Audio</label>
                 <!-- -->
                 <input autocomplete="off"
@@ -222,21 +205,24 @@ export function appendPlaylistDownloadButton(): void {
                        v-model="extAudio"
                        @focus="downloadTypeTotal = 'audio'" />
 
-                <transition name="slide">
-                  <div class="ytdl-container__filename-error" v-if="!gExtToMime.audio[extAudio]">
-                    Unsupported for audio: <b>{{ extAudio }}</b>
-                    <div class="ytdl-container__spacer--margin-top"></div>
-                    <div class="ytdl-container__filename-error--supported-extensions">
-                      Supported: <b>{{ gSupportedExts.audio.join(", ") }}</b>
-                    </div>
-                  </div>
-                </transition>
-                <!-- -->
-                <!-- -->
+                <ErrorFileExtension :ext="extAudio" exts-supported-for-type="audio" />
 
+
+                <label for="rich-options--download-type-video+audio">
+                  <!-- Video + audio -->
+                  <input v-model="downloadTypeTotal" name="download-type" type="radio" value="video+audio">Video</label>
                 <!-- -->
+                <input autocomplete="off"
+                       id="rich-options--download-type-video+audio"
+                       type="text"
+                       v-model="extVideo"
+                       @focus="downloadTypeTotal = 'video+audio'" />
+
+                <ErrorFileExtension :ext="extVideo" exts-supported-for-type="video" />
+
+
                 <label for="rich-options--download-type-video">
-                  <!-- -->
+                  <!-- Video-only -->
                   <input v-model="downloadTypeTotal"
                          name="download-type"
                          type="radio"
@@ -248,19 +234,8 @@ export function appendPlaylistDownloadButton(): void {
                        v-model="extAudiolessVideo"
                        @focus="downloadTypeTotal = 'video'" />
 
-                <transition name="slide">
-                  <div class="ytdl-container__filename-error" v-if="!gExtToMime.video[extAudiolessVideo]">
-                    Unsupported for video: <b>{{ extAudiolessVideo }}</b>
-                    <div class="ytdl-container__spacer--margin-top"></div>
-                    <div class="ytdl-container__filename-error--supported-extensions">
-                      Supported: <b>{{ gSupportedExts.video.join(", ") }}</b>
-                    </div>
-                  </div>
-                </transition>
-                <!-- -->
-                <!-- -->
+                <ErrorFileExtension :ext="extAudiolessVideo" exts-supported-for-type="video" />
 
-                <!-- -->
                 <label><input v-model="downloadTypeTotal"
                               name="download-type"
                               type="radio"
@@ -404,7 +379,11 @@ export function appendPlaylistDownloadButton(): void {
           return this.gExtToMime.video[this.extVideo];
         }
 
-        return this.gExtToMime.video[this.extAudiolessVideo];
+        if (this.downloadTypeTotal === "video") {
+          return this.gExtToMime.video[this.extAudiolessVideo];
+        }
+
+        return true;
       }
     },
     methods: {
@@ -921,7 +900,7 @@ export async function handlePlaylistVideos(): Promise<void> {
 
       gDownloadContainers[videoId] = new Vue({
         el: `[data-ytdl-download-container="${videoId}"]`,
-        components: { Icon },
+        components: { Icon, ErrorFileExtension },
         data: {
           isStartedDownload: false,
           isDoneDownloading: false,
@@ -931,7 +910,6 @@ export async function handlePlaylistVideos(): Promise<void> {
           progressType: "" as "" | "video" | "audio" | "video+audio",
           isQueued: false,
           isPortDisconnected: false,
-          errorFilename: "",
           isRichOptions: false,
           downloadType: isDefault
             ? downloadTypeDetected
@@ -1008,7 +986,6 @@ export async function handlePlaylistVideos(): Promise<void> {
                       <br>
                       <input autocomplete="off"
                              type="text"
-                             :class="{'ytdl-container__filename-option-input--error': errorFilename}"
                              v-model="filenameOutput"
                              class="ytdl-container__filename-option-input"> </label>
                   </div>
@@ -1026,7 +1003,9 @@ export async function handlePlaylistVideos(): Promise<void> {
                                 v-for="(video, i) of videos"
                                 :key="video.url">{{ video.height }}p {{ video.fps }} FPS {{ i === 0 ? "(best)" : "" }}
                         </option>
-                      </select> </label>
+                      </select>
+                      <!-- -->
+                    </label>
 
                     <div class="ytdl-container__spacer--margin-top"></div>
                     <label> Filename
@@ -1035,17 +1014,10 @@ export async function handlePlaylistVideos(): Promise<void> {
                              autocomplete="off"
                              v-model="filenameOutput"
                              class="ytdl-container__filename-option-input">
-                      <transition name="slide">
-                        <div class="ytdl-container__filename-error" v-if="errorFilename">
-                          Unsupported video extension: <b>{{ errorFilename }}</b>
-                          <br>
-                          Supported ones: <span class="ytdl-container__filename-error--supported-extensions">
-                                ${gSupportedExts.video.join(", ")}
-                              </span>
-                        </div>
-                      </transition>
                     </label>
                   </div>
+                  
+                  <ErrorFileExtension :ext="ext" :exts-supported-for-type="extsSupportedForType" />
 
                   <button @click="isRichOptions = false"
                           :disabled="!isDownloadable"
@@ -1066,27 +1038,8 @@ export async function handlePlaylistVideos(): Promise<void> {
           </section>
         `,
         watch: {
-          ext(ext) {
-            if (this.downloadType === "audio") {
-              if (gExtToMime.audio[ext]) {
-                this.errorFilename = "";
-                return;
-              }
-
-              this.errorFilename = ext;
-              return;
-            }
-
-            if (gExtToMime.video[ext]) {
-              this.errorFilename = "";
-              return;
-            }
-
-            this.errorFilename = ext;
-          },
           downloadType(type) {
             this.progress = 0;
-            this.errorFilename = "";
             this.setCheckboxParams();
 
             if (type === "audio") {
@@ -1100,9 +1053,6 @@ export async function handlePlaylistVideos(): Promise<void> {
           isPortDisconnected() {
             this.isRichOptions = false;
           },
-          errorFilename(error) {
-            this.isDownloadable = !error;
-          },
           isStartedDownload(isStarted) {
             if (isStarted) {
               this.isRichOptions = false;
@@ -1113,6 +1063,11 @@ export async function handlePlaylistVideos(): Promise<void> {
           },
           audioUrl(urlNew) {
             this.audio = this.audios.find(({ url }) => url === urlNew);
+          },
+          ext(ext) {
+            this.isDownloadable = Boolean(
+              gExtToMime[this.extsSupportedForType][ext]
+            );
           }
         },
         computed: {

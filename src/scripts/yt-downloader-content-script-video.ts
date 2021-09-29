@@ -4,17 +4,20 @@ import {
   getIsDownloadable,
   gPorts
 } from "./yt-downloader-content-script-initialize";
-import Vue from "vue/dist/vue.min.js";
+import Vue from "vue/dist/vue.js";
 import {
   getCompatibleFilename,
   getElementEventually,
   getVideoEventually,
-  gExtToMime,
-  gSupportedExts
+  gExtToMime
 } from "./utils";
 import type { AdaptiveFormatItem, VideoQueue } from "./types";
 import { icons } from "./icons";
-import { Icon, IconLoader } from "./content-script-components";
+import {
+  ErrorFileExtension,
+  Icon,
+  IconLoader
+} from "./content-script-components";
 
 let gDownloadContainer: Vue;
 export let gIntersectionObserverModal: IntersectionObserver;
@@ -58,7 +61,8 @@ export async function handleVideo(): Promise<void> {
     el: `#${elDownloaderContainer.id}`,
     components: {
       Icon,
-      IconLoader
+      IconLoader,
+      ErrorFileExtension
     },
     data: {
       isStartedDownload: false,
@@ -74,8 +78,6 @@ export async function handleVideo(): Promise<void> {
         | "video+audio",
       filename: title,
       ext,
-      gSupportedExts,
-      errorFilename: "",
       isRichOptions: false,
       videos: [] as AdaptiveFormatItem[],
       audios: [] as AdaptiveFormatItem[],
@@ -157,7 +159,6 @@ export async function handleVideo(): Promise<void> {
                        type="text"
                        :disabled="isStartedDownload"
                        class="ytdl-container__filename-option-input"
-                       :class="{'ytdl-container__filename-option-input--error': errorFilename}"
                        v-model="filenameOutput"> </label>
             </div>
             <div v-else>
@@ -183,19 +184,10 @@ export async function handleVideo(): Promise<void> {
                        :disabled="isStartedDownload"
                        autocomplete="off"
                        class="ytdl-container__filename-option-input"
-                       :class="{'ytdl-container__filename-option-input--error': errorFilename}"
                        v-model="filenameOutput"> </label>
             </div>
 
-            <transition name="slide">
-              <div class="ytdl-container__filename-error" v-if="errorFilename">
-                Unsupported {{ extsSupportedForType }} extension: <b>{{ errorFilename }}</b>
-                <br>
-                Supported ones: <span class="ytdl-container__filename-error--supported-extensions">
-                        {{ gSupportedExts[extsSupportedForType].join(", ") }}
-                      </span>
-              </div>
-            </transition>
+            <ErrorFileExtension :ext="ext" :exts-supported-for-type="extsSupportedForType" />
 
             <div class="ytdl-tooltip">
               <button @click="toggleDownload"
@@ -227,28 +219,9 @@ export async function handleVideo(): Promise<void> {
       </section>
     `,
     watch: {
-      ext(ext) {
-        if (this.downloadType === "audio") {
-          if (gExtToMime.audio[ext]) {
-            this.errorFilename = "";
-            return;
-          }
-
-          this.errorFilename = ext;
-          return;
-        }
-
-        if (gExtToMime.video[ext]) {
-          this.errorFilename = "";
-          return;
-        }
-
-        this.errorFilename = ext;
-      },
       downloadType(type) {
         this.isStartedDownload = false;
         this.progress = 0;
-        this.errorFilename = "";
         if (type === "audio") {
           this.ext = "mp3";
           return;
@@ -260,9 +233,6 @@ export async function handleVideo(): Promise<void> {
       isPortDisconnected() {
         this.isRichOptions = false;
         this.isDownloadable = false;
-      },
-      errorFilename(error) {
-        this.isDownloadable = !error;
       },
       progress(progress) {
         const elRichDownload = document.querySelector(
@@ -277,6 +247,11 @@ export async function handleVideo(): Promise<void> {
       },
       audioUrl(urlNew) {
         this.audio = this.audios.find(({ url }) => url === urlNew);
+      },
+      ext(ext) {
+        this.isDownloadable = Boolean(
+          gExtToMime[this.extsSupportedForType][ext]
+        );
       }
     },
     computed: {

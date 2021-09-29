@@ -1,5 +1,6 @@
-import Vue from "vue/dist/vue.min.js";
+import Vue from "vue/dist/vue.js";
 import { icons } from "./icons";
+import { gExtToMime, gSupportedExts } from "./utils";
 
 export const Icon = Vue.component("Icon", {
   props: {
@@ -7,7 +8,7 @@ export const Icon = Vue.component("Icon", {
   },
   template: `
     <svg width="24" height="24">
-      <use :href="'#ytdl-svg__' + type" />
+    <use :href="'#ytdl-svg__' + type" />
     </svg>
   `
 });
@@ -18,7 +19,12 @@ export const IconLoader = Vue.component("IconLoader", {
   },
   template: `
     <svg v-show="false">
-    <symbol v-for="svg in icons" :key="svg + getPageId()" v-html="getSvgContent(svg)" :id="getSvgId(svg)" width="24" height="24"></symbol>
+    <symbol v-for="svg in icons"
+            :key="svg + getPageId()"
+            v-html="getSvgContent(svg)"
+            :id="getSvgId(svg)"
+            width="24"
+            height="24"></symbol>
     </svg>
   `,
   methods: {
@@ -34,4 +40,26 @@ export const IconLoader = Vue.component("IconLoader", {
       return searchParams.get("v") || searchParams.get("list");
     }
   }
+});
+
+export const ErrorFileExtension = Vue.component("ErrorFileExtension", {
+  props: {
+    extsSupportedForType: String,
+    ext: String
+  },
+  data() {
+    return { gSupportedExts, gExtToMime };
+  },
+  template: `
+    <transition name="slide">
+    <div class="ytdl-container__filename-error" v-if="!gExtToMime[extsSupportedForType][ext]">
+      Unsupported for {{ extsSupportedForType }}: <b>{{ ext }}</b>
+      <div class="ytdl-container__spacer--margin-top"></div>
+      <div class="ytdl-container__filename-error--supported-extensions">
+        Supported ones: <b>{{ gSupportedExts[extsSupportedForType].join(", ") }}</b>
+      </div>
+      <div class="ytdl-container__spacer--margin-top"></div>
+    </div>
+    </transition>
+  `
 });

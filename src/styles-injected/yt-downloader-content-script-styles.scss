@@ -73,7 +73,6 @@
 
       .ytdl-container__filename-error {
         grid-column: 1 / -1;
-        margin-bottom: 10px;
       }
 
       input[type="text"] {
@@ -135,10 +134,6 @@
 
     .ytdl-action-buttons__button {
       padding: 0;
-    }
-
-    &--error {
-      color: var(--yt-spec-brand-link-text, red);
     }
   }
 
@@ -278,7 +273,7 @@ html[dark="true"] {
 
 .slide-enter-to,
 .slide-leave {
-  max-height: 100px;
+  max-height: 110px;
 }
 
 // Transitions for the playlist page - rich options opening
