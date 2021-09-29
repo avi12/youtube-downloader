@@ -10,7 +10,6 @@ $load-styles: true !default; // Extra styles needed?
 
 .ytdl-tooltip {
   position: relative;
-  display: inline-block;
 
   &__text {
     position: absolute;
@@ -36,7 +35,7 @@ $load-styles: true !default; // Extra styles needed?
   }
 
   // Active state
-  &:hover > &__text {
+  :first-child:not(:disabled):hover ~ &__text {
     opacity: 1;
   }
 
