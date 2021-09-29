@@ -2,6 +2,7 @@ lockfileVersion: 5.3
 
 specifiers:
   '@ffmpeg/ffmpeg': 0.10.0
+  '@mdi/js': ^6.1.95
   '@rollup/plugin-commonjs': ^20.0.0
   '@rollup/plugin-json': ^4.1.0
   '@rollup/plugin-node-resolve': ^13.0.3
@@ -11,6 +12,7 @@ specifiers:
   '@types/chrome': ^0.0.157
   '@typescript-eslint/eslint-plugin': ^4.29.2
   '@typescript-eslint/parser': ^4.29.2
+  '@vue/reactivity': ^3.2.19
   '@vue/runtime-core': ^3.2.6
   css-tooltip: ^0.3.4
   eslint: ^7.32.0
@@ -41,12 +43,14 @@ specifiers:
   web-ext: ^6.3.0
 
 dependencies:
+  '@vue/reactivity': 3.2.19
   '@vue/runtime-core': 3.2.6
   css-tooltip: 0.3.4
   vue: 2.6.14
 
 devDependencies:
   '@ffmpeg/ffmpeg': 0.10.0
+  '@mdi/js': 6.1.95
   '@rollup/plugin-commonjs': 20.0.0_rollup@2.56.1
   '@rollup/plugin-json': 4.1.0_rollup@2.56.1
   '@rollup/plugin-node-resolve': 13.0.4_rollup@2.56.1
@@ -375,6 +379,10 @@ packages:
 
   /@humanwhocodes/object-schema/1.2.0:
     resolution: {integrity: sha512-wdppn25U8z/2yiaT6YGquE6X8sSv7hNMWSXYSSU1jGv/yd6XqjXgTDJ8KP4NgjTXfJ3GbRjeeb8RTV7a/VpM+w==}
+    dev: true
+
+  /@mdi/js/6.1.95:
+    resolution: {integrity: sha512-e6ZXoNB9uciA4smHHVkZWyYX/RRZsza8XfLvnOuvdLQttpzRKTqR26jG/COL0o4ES9vbAk9PX5mXTEstg0TCsg==}
     dev: true
 
   /@mdn/browser-compat-data/3.3.14:
@@ -714,6 +722,12 @@ packages:
       eslint-visitor-keys: 2.1.0
     dev: true
 
+  /@vue/reactivity/3.2.19:
+    resolution: {integrity: sha512-FtachoYs2SnyrWup5UikP54xDX6ZJ1s5VgHcJp4rkGoutU3Ry61jhs+nCX7J64zjX992Mh9gGUC0LqTs8q9vCA==}
+    dependencies:
+      '@vue/shared': 3.2.19
+    dev: false
+
   /@vue/reactivity/3.2.6:
     resolution: {integrity: sha512-8vIDD2wpCnYisNNZjmcIj+Rixn0uhZNY3G1vzlgdVdLygeRSuFjkmnZk6WwvGzUWpKfnG0e/NUySM3mVi59hAA==}
     dependencies:
@@ -725,6 +739,10 @@ packages:
     dependencies:
       '@vue/reactivity': 3.2.6
       '@vue/shared': 3.2.6
+    dev: false
+
+  /@vue/shared/3.2.19:
+    resolution: {integrity: sha512-Knqhx7WieLdVgwCAZgTVrDCXZ50uItuecLh9JdLC8O+a5ayaSyIQYveUK3hCRNC7ws5zalHmZwfdLMGaS8r4Ew==}
     dev: false
 
   /@vue/shared/3.2.6:
