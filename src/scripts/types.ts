@@ -713,9 +713,9 @@ export type PlayerResponse = {
   };
 };
 
+export type MusicList = string[];
 export type VideoQueue = string[];
-export type VideoOnlyQueue = string[];
-export type MusicQueue = string[];
+export type VideoOnlyList = string[];
 
 export interface StatusProgress {
   [videoId: string]: {
@@ -726,9 +726,9 @@ export interface StatusProgress {
 
 export type Tab = {
   // Contains a list of all the videos, either from a /watch page or from a /playlist page.
-  idVideosAvailable?: string[];
+  videoIdsAvailable?: string[];
   // If the media is a playlist, this is the list of videos to be processed.
-  idVideosToDownload?: string[];
+  videoIdsToDownload?: string[];
 };
 
 // Key-value pairs where each tab ID points at both videos that can be downloaded (when it comes to individual videos) *and* videos that are planned to be downloaded (when it comes to playlists).
