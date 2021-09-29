@@ -227,6 +227,10 @@ html[dark="true"] {
   .ytdl-container {
     &__tab-button {
       color: var(--yt-spec-text-primary);
+
+      &:disabled {
+        opacity: 0.5;
+      }
     }
 
     &__filename-error--supported-extensions {
