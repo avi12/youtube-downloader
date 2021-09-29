@@ -90,6 +90,8 @@ Still in development, for as long as I'm not 100% happy with the result
    providing it as a download
 3. [Vue.js](https://vuejs.org) - for the in-page UI interactivity
 4. [Svelte](https://svelte.dev) - for the pop-up page
+5. [Svelte Materialify](https://svelte-materialify.vercel.app/) - for using Material Design components in the pop-up
+   page. It will be replaced by a different library when it becomes deprecated
 
 ## Setting for development
 
