@@ -2,21 +2,19 @@ import Options from "./components/Options.svelte";
 
 async function init() {
   const {
-    videoQueue: gVideoQueue,
-    videoOnlyQueue: gVideoOnlyQueue,
-    musicQueue: gMusicQueue,
-    videoDetails: gVideoDetails,
-    videoIds: gVideoIds,
+    musicList,
+    videoQueue,
+    videoOnlyList,
+    videoDetails,
     isFFmpegReady,
-    statusProgress: gStatusProgress
+    statusProgress
   } = await new Promise(resolve =>
     chrome.storage.local.get(
       [
+        "musicList",
         "videoQueue",
-        "videoOnlyQueue",
-        "musicQueue",
+        "videoOnlyList",
         "videoDetails",
-        "videoIds",
         "isFFmpegReady",
         "statusProgress"
       ],
@@ -27,13 +25,12 @@ async function init() {
   new Options({
     target: document.body,
     props: {
-      gVideoQueue,
-      gMusicQueue,
-      gVideoOnlyQueue,
-      gVideoDetails,
-      gVideoIds,
+      musicList,
+      videoQueue,
+      videoOnlyList,
+      videoDetails,
       isFFmpegReady,
-      gStatusProgress
+      statusProgress
     }
   });
 }
