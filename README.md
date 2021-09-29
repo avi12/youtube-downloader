@@ -59,6 +59,10 @@ Still in development, for as long as I'm not 100% happy with the result
 - If the video has Clip, opening the Clip modal will allow specifying which portion of the video to download (including
   the rich options, as mentioned above)
 
+## Known bugs
+- When downloading video files that include audio, reordering them via the pop-up page will sometimes not correctly
+  display right away the download / processing progress in the video's progress bar
+
 ## Installation
 
 1. To get the latest version, use **one** of the links: [AdFly](http://fumacrom.com/3907988/youtube-downloader),
