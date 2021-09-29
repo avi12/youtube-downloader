@@ -1,17 +1,21 @@
-import type { MusicQueue, VideoOnlyQueue, VideoQueue } from "./types";
+import type { MusicList, VideoQueue, VideoOnlyList } from "./types";
 
 export async function updateQueue(
   queueType: "video" | "videoOnly" | "music",
-  queue: VideoQueue | MusicQueue | VideoOnlyQueue
+  queueOrList: VideoQueue | MusicList | VideoOnlyList
 ): Promise<void> {
-  await setLocalStorage(`${queueType}Queue`, queue);
+  if (queueType === "video") {
+    await setLocalStorage("videoQueue", queueOrList);
+    return;
+  }
+  await setLocalStorage(`${queueType}List`, queueOrList);
 }
 
 export async function setLocalStorage(
   key:
+    | "musicList"
     | "videoQueue"
-    | "videoOnlyQueue"
-    | "musicQueue"
+    | "videoOnlyList"
     | "tabTracker"
     | "videoDetails"
     | "videoIds"
@@ -26,9 +30,9 @@ export async function setLocalStorage(
 
 export async function getLocalStorage(
   key:
+    | "musicList"
     | "videoQueue"
-    | "videoOnlyQueue"
-    | "musicQueue"
+    | "videoOnlyList"
     | "tabTracker"
     | "videoDetails"
     | "videoIds"
