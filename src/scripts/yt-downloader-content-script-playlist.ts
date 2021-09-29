@@ -11,7 +11,7 @@ import {
   gSupportedExts,
   isElementVisible
 } from "./utils";
-import Vue from "vue/dist/vue.js";
+import Vue from "vue/dist/vue.min.js";
 import type {
   AdaptiveFormatItem,
   MusicList,
