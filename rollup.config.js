@@ -23,6 +23,7 @@ function createConfig(filename, useSvelte = false) {
     },
     plugins: [
       useSvelte && css({ output: "popup/popup.css" }),
+      typescript({ sourceMap: false }),
       useSvelte &&
         svelte({
           compilerOptions: {
@@ -42,7 +43,6 @@ function createConfig(filename, useSvelte = false) {
             !isProduction ? "development" : "production"
           }"`
         }),
-      typescript({ sourceMap: false }),
       isProduction && terser()
     ],
     watch: {
