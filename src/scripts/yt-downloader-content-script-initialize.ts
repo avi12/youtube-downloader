@@ -2,14 +2,17 @@ import type { PlayerResponse } from "./types";
 import {
   gIntersectionObserverModal,
   gIntersectionObserverTooltipSingleVideo,
-  handleVideo
+  handleVideo,
+  onQualityChange
 } from "./yt-downloader-content-script-video";
 import {
   appendPlaylistDownloadButton,
+  getVideosContainer,
   gMutationObserverPlaylistProgress,
   gMutationObserverPlaylistVideoReadiness,
   handlePlaylistVideos
 } from "./yt-downloader-content-script-playlist";
+import { getElementEventually } from "./utils";
 import Port = chrome.runtime.Port;
 
 export let gPorts: {
@@ -79,11 +82,19 @@ function removeDownloadButtonsOnPlaylists() {
   }
 }
 
+async function removeEventListeners() {
+  const elVideo = (await getElementEventually("video")) as HTMLVideoElement;
+  elVideo.removeEventListener("canplay", onQualityChange);
+
+  const elVideoContainer = getVideosContainer();
+  elVideoContainer.removeEventListener("change", onQualityChange);
+}
+
 function addNavigationListener() {
   let titleLast = document.title;
   new MutationObserver(async mutations => {
     const title = mutations[0].addedNodes[0].textContent;
-    if (title === titleLast) {
+    if (titleLast === title) {
       return;
     }
     titleLast = title;
@@ -96,6 +107,7 @@ function addNavigationListener() {
     cancelDownloads();
     resetObservers();
     removeDownloadButtonsOnPlaylists();
+    await removeEventListeners();
     await init();
   }).observe(document.querySelector("title"), { childList: true });
 }
@@ -115,9 +127,7 @@ async function init() {
   if (!gObserverPlaylistVideos) {
     gObserverPlaylistVideos = new MutationObserver(async mutations => {
       if (
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
-        !mutations?.[1]?.addedNodes?.[0]?.matches?.(
+        !(<HTMLElement>mutations[1]?.addedNodes?.[0])?.matches?.(
           "ytd-playlist-video-renderer"
         )
       ) {
