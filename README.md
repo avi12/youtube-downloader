@@ -6,10 +6,12 @@ Made by [avi12](https://avi12.com)
 
 ## Supported browsers
 
-<img src="https://user-images.githubusercontent.com/6422804/135838451-1c3ac8f1-409f-4aec-972f-1d077c05f1ea.png" width="30" alt="Google Chrome" style="margin-right: 5px;">
-<img src="https://user-images.githubusercontent.com/6422804/135838702-e852bb47-8c0d-4275-baf1-8adc1c50a3c1.png" width="30" alt="Microsoft Edge" style="margin-right: 5px;">
-<img src="https://user-images.githubusercontent.com/6422804/135838972-113f73a3-6a04-48a9-ae04-754f25bc6eb0.png" width="30" alt="Opera" style="margin-right: 5px;">
-<img src="https://user-images.githubusercontent.com/6422804/135839033-c6caa7a4-72c9-4fc6-9b70-1a9561c1173a.png" width="30" alt="Opera GX">
+<p>
+  <img src="https://user-images.githubusercontent.com/6422804/135838451-1c3ac8f1-409f-4aec-972f-1d077c05f1ea.png" width="30" alt="Google Chrome">
+  <img src="https://user-images.githubusercontent.com/6422804/135838702-e852bb47-8c0d-4275-baf1-8adc1c50a3c1.png" width="30" alt="Microsoft Edge">
+  <img src="https://user-images.githubusercontent.com/6422804/135838972-113f73a3-6a04-48a9-ae04-754f25bc6eb0.png" width="30" alt="Opera">
+  <img src="https://user-images.githubusercontent.com/6422804/135839033-c6caa7a4-72c9-4fc6-9b70-1a9561c1173a.png" width="30" alt="Opera GX">
+</p>
 
 <details style="margin-top: 20px;">
 <summary>Screenshots</summary>
