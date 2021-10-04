@@ -35,6 +35,11 @@
   display: flex;
   position: relative;
 
+  &__checkbox {
+    width: 0;
+    transition: width 0.25s;
+  }
+
   &__rich-options-wrapper {
     font-size: 1.5rem;
     color: var(--yt-spec-text-primary);
