@@ -1,6 +1,6 @@
 {
   "name": "youtube-downloader",
-  "version": "0.9.0",
+  "version": "1.0.0",
   "description": "A browser extension for downloading almost any video from YouTube, right from its page.",
   "repository": "https://github.com/avi12/youtube-downloader",
   "author": "avi12 <avi6106@gmail.com>",
@@ -51,7 +51,7 @@
     "stylelint-config-standard": "^22.0.0",
     "svelte": "^3.40.2",
     "svelte-dnd-action": "^0.9.9",
-    "svelte-materialify": "^0.3.11",
+    "svelte-materialify": "0.3.7",
     "svelte-preprocess": "^4.7.4",
     "tslib": "^2.3.0",
     "typescript": "^4.3.5",
