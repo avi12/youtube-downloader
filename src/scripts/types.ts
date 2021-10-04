@@ -757,6 +757,14 @@ export interface VideoIds {
 // Used in the pop-up page to reorder videos in the queue
 export type MovableList = { id: string; title: string }[];
 
-export interface UrlToFilename {
-  [url: string]: string;
+export interface OptionFileExtension {
+  audio: string;
+  video: string;
+}
+
+export interface Options {
+  ext: OptionFileExtension;
+  videoQualityMode: "best" | "current-quality" | "custom";
+  videoQuality: number;
+  isRemoveNativeDownload: boolean;
 }
