@@ -1,4 +1,4 @@
-import Vue from "vue/dist/vue.js";
+import Vue from "vue/dist/vue.min.js";
 import { icons } from "./icons";
 import { gExtToMime, gSupportedExts } from "./utils";
 import type { AdaptiveFormatItem } from "./types";
