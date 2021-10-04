@@ -35,7 +35,7 @@ specifiers:
   stylelint-config-standard: ^22.0.0
   svelte: ^3.40.2
   svelte-dnd-action: ^0.9.9
-  svelte-materialify: ^0.3.11
+  svelte-materialify: 0.3.7
   svelte-preprocess: ^4.7.4
   tslib: ^2.3.0
   typescript: ^4.3.5
@@ -80,7 +80,7 @@ devDependencies:
   stylelint-config-standard: 22.0.0_stylelint@13.13.1
   svelte: 3.42.1
   svelte-dnd-action: 0.9.9
-  svelte-materialify: 0.3.11_svelte@3.42.1
+  svelte-materialify: 0.3.7_svelte@3.42.1
   svelte-preprocess: 4.7.4_e666082c3ec20cdfac7c0144d07708f6
   tslib: 2.3.0
   typescript: 4.3.5
@@ -2737,6 +2737,7 @@ packages:
     resolution: {integrity: sha512-xiqMQR4xAeHTuB9uWm+fFRcIOgKBMiOBP+eXiyT7jsgVCq1bkVygt00oASowB7EdtpOHaaPgKt812P9ab+DDKA==}
     engines: {node: ^8.16.0 || ^10.6.0 || >=11.0.0}
     os: [darwin]
+    requiresBuild: true
     dev: true
     optional: true
 
@@ -4223,6 +4224,7 @@ packages:
 
   /moment/2.29.1:
     resolution: {integrity: sha512-kHmoybcPV8Sqy59DwNDY3Jefr64lK/by/da0ViFcuA4DH0vQg5Q6Ze5VimxkfQNSC+Mls/Kx53s7TjP1RhFEDQ==}
+    requiresBuild: true
     dev: true
     optional: true
 
@@ -4256,6 +4258,7 @@ packages:
   /mv/2.1.1:
     resolution: {integrity: sha1-rmzg1vbV4KT32JN5jQPB6pVZtqI=}
     engines: {node: '>=0.8.0'}
+    requiresBuild: true
     dependencies:
       mkdirp: 0.5.5
       ncp: 2.0.0
@@ -5816,6 +5819,7 @@ packages:
 
   /safe-json-stringify/1.2.0:
     resolution: {integrity: sha512-gH8eh2nZudPQO6TytOvbxnuhYBOvDBBLW52tz5q6X58lJcd/tkmqFR+5Z9adS8aJtURSXWThWy/xJtJwixErvg==}
+    requiresBuild: true
     dev: true
     optional: true
 
@@ -6435,8 +6439,8 @@ packages:
     resolution: {integrity: sha512-DuSfie7xukV3AXlA9vFnIkit97LYNSDpKFmUBgL0RansnBrFvJoFpnsnuUW2ULfsYR1NpqZGmHAsgKQUeBf6Lg==}
     dev: true
 
-  /svelte-materialify/0.3.11_svelte@3.42.1:
-    resolution: {integrity: sha512-MLtZtdSOHditOdJOYqlB8s7NxIFRbYKXJzij5s9gz5WVbJFVEqdX2TqOleg4wYeMOujtOCm+/x3RP5YGyzRxIQ==}
+  /svelte-materialify/0.3.7_svelte@3.42.1:
+    resolution: {integrity: sha512-k0a9poupKrXp7LrHrs4YRvoHJEzwU9J3Ea016wd041RpYwNVB88JbryZsyHz/g/6Vzv4RQBs59X61Oyq3guZSQ==}
     peerDependencies:
       svelte: '>=3.29.4'
     dependencies:
