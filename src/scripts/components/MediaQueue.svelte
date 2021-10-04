@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { List, ListItem, Button, Icon } from "svelte-materialify";
+  import { List, ListItem, Button, Icon, Subheader } from "svelte-materialify";
   import { mdiClose, mdiCancel } from "@mdi/js";
   import { createEventDispatcher } from "svelte";
   import { dndzone } from "svelte-dnd-action";
@@ -20,7 +20,6 @@
   const flipDurationMs = 200;
   function onSort(e) {
     videosMovable = e.detail.items;
-    
 
     if (e.type === "finalize") {
       dispatch("reorder-videos", getVideoQueue(videosMovable));
@@ -36,7 +35,7 @@
   }
 </script>
 
-<section class="text-body-1">
+<Subheader>
   Video queue
   {#if videosMovable.length > 0}
     (drag to reorder)
@@ -45,10 +44,12 @@
         <Icon path={mdiCancel} class="mr-3" /> Stop all
       </Button>
     </section>
-  {:else}
-    <section>(Currently empty)</section>
   {/if}
-</section>
+</Subheader>
+
+{#if videosMovable.length === 0}
+  <section>(Currently empty)</section>
+{/if}
 
 <List>
   <section

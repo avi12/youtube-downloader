@@ -5,14 +5,23 @@
     VideoOnlyList,
     MovableList,
     StatusProgress,
-    VideoDetails
+    VideoDetails,
+    Options
   } from "../types";
 
-  import { getLocalStorage, updateQueue } from "../utils";
+  import { getLocalStorage, initialOptions, updateQueue } from "../utils";
 
-  import { MaterialAppMin } from "svelte-materialify";
-  import MediaList from "./MediaList.svelte";
-  import MediaQueue from "./MediaQueue.svelte";
+  import {
+    MaterialAppMin,
+    Tabs,
+    Tab,
+    TabContent
+  } from "svelte-materialify";
+  import MediaList from "../components/MediaList.svelte";
+  import MediaQueue from "../components/MediaQueue.svelte";
+  import OptionFilename from "./OptionFilename.svelte";
+  import OptionRemoveDownload from "./OptionRemoveDownload.svelte";
+  import OptionVideoQuality from "./OptionVideoQuality.svelte";
 
   export let isFFmpegReady: boolean;
   export let videoQueue: VideoQueue;
@@ -20,6 +29,7 @@
   export let videoOnlyList: VideoOnlyList;
   export let videoDetails: VideoDetails;
   export let statusProgress: StatusProgress;
+  export let options: Options = initialOptions;
 
   let videosMovable: MovableList = videoQueue.map(videoId => ({
     id: videoId,
@@ -87,29 +97,51 @@
 <MaterialAppMin>
   <h1 class="text-center text-h5">YouTube Downloader</h1>
 
-  <MediaQueue
-    {videosMovable}
-    {statusProgress}
-    {isFFmpegReady}
-    on:remove-from-queue={stopAllDownloads}
-    on:reorder-videos={reorderVideos}
-  />
+  <Tabs>
+    <div slot="tabs">
+      <Tab>Download manager</Tab>
+      <Tab>Options</Tab>
+    </div>
 
-  <MediaList
-    label="Music"
-    list={musicList}
-    {videoDetails}
-    {statusProgress}
-    on:remove-from-list={stopAllDownloads}
-  />
+    <TabContent>
+      <MediaQueue
+        {videosMovable}
+        {statusProgress}
+        {isFFmpegReady}
+        on:remove-from-queue={stopAllDownloads}
+        on:reorder-videos={reorderVideos}
+      />
 
-  <MediaList
-    label="Video-only"
-    list={videoOnlyList}
-    {videoDetails}
-    {statusProgress}
-    on:remove-from-list={stopAllDownloads}
-  />
+      <MediaList
+        label="Music"
+        list={musicList}
+        {videoDetails}
+        {statusProgress}
+        on:remove-from-list={stopAllDownloads}
+      />
+
+      <MediaList
+        label="Video-only"
+        list={videoOnlyList}
+        {videoDetails}
+        {statusProgress}
+        on:remove-from-list={stopAllDownloads}
+      />
+    </TabContent>
+
+    <TabContent>
+      <div class="ml-1">Made by <a href="https://avi12.com">avi12</a></div>
+      <OptionFilename {options} />
+
+      <div class="mt-4 mb-4">
+        <OptionRemoveDownload {options} />
+      </div>
+
+      <div class="mt-4 mb-4">
+        <OptionVideoQuality {options} />
+      </div>
+    </TabContent>
+  </Tabs>
 </MaterialAppMin>
 
 <style>
@@ -117,5 +149,6 @@
     width: 500px;
     background-color: white;
     padding: 10px;
+    user-select: none;
   }
 </style>
