@@ -14,7 +14,6 @@ import type {
   MusicList,
   StatusProgress,
   TabTracker,
-  UrlToFilename,
   VideoDetails,
   VideoIds,
   VideoOnlyList,
@@ -35,7 +34,6 @@ const gTabTracker: TabTracker = {};
 const gVideoDetails = ref<VideoDetails>({});
 const gStatusProgress = ref<StatusProgress>({});
 const gVideoIds: VideoIds = {};
-const gUrlToFilename: UrlToFilename = {};
 
 let gMusicList: MusicList = [];
 let gVideoQueue: VideoQueue = [];
@@ -403,8 +401,14 @@ async function processSingleMedia({
     );
   }
 
-  gUrlToFilename[url] = filenameOutput;
-  chrome.downloads.download({ url }, () => cleanupDownload({ url, videoId }));
+  chrome.downloads.download(
+    { url, filename: getCompatibleFilename(filenameOutput) },
+    () =>
+      cleanupDownload({
+        url,
+        videoId
+      })
+  );
 }
 
 function handleSingleMediaProcessing(port: Port) {
@@ -609,14 +613,6 @@ function addListeners() {
       restartFFmpeg();
     }
   });
-
-  chrome.downloads.onDeterminingFilename.addListener(
-    (downloadItem, suggest) => {
-      suggest({
-        filename: getCompatibleFilename(gUrlToFilename[downloadItem.finalUrl])
-      });
-    }
-  );
 }
 
 function addWatchers() {
