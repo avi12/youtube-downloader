@@ -4,9 +4,64 @@ A browser extension for downloading videos from YouTube
 
 Made by [avi12](https://avi12.com)
 
-## This is a WIP
+## Supported browsers
 
-Still in development, for as long as I'm not 100% happy with the result
+<img src="https://user-images.githubusercontent.com/6422804/135838451-1c3ac8f1-409f-4aec-972f-1d077c05f1ea.png" width="30" alt="Google Chrome" style="margin-right: 5px;">
+<img src="https://user-images.githubusercontent.com/6422804/135838702-e852bb47-8c0d-4275-baf1-8adc1c50a3c1.png" width="30" alt="Microsoft Edge" style="margin-right: 5px;">
+<img src="https://user-images.githubusercontent.com/6422804/135838972-113f73a3-6a04-48a9-ae04-754f25bc6eb0.png" width="30" alt="Opera" style="margin-right: 5px;">
+<img src="https://user-images.githubusercontent.com/6422804/135839033-c6caa7a4-72c9-4fc6-9b70-1a9561c1173a.png" width="30" alt="Opera GX">
+
+<details style="margin-top: 20px;">
+<summary>Screenshots</summary>
+
+### For videos that aren't in the Music category:
+
+<img src="https://user-images.githubusercontent.com/6422804/135842811-8acd27e4-d8f2-4297-9e30-277c554255c9.png" alt="Download videos in /watch" />
+
+### For videos in the Music category:
+
+<img src="https://user-images.githubusercontent.com/6422804/135843310-b85b3d2d-b8c1-4704-83d5-51a0a9540811.png" alt="Download music videos in /watch" />
+<img src="https://user-images.githubusercontent.com/6422804/135843761-d3c0548c-8028-40b7-9dab-05af8f490bbb.png"  alt="Rich options" />
+
+### In `/playlist`:
+
+<img src="https://user-images.githubusercontent.com/6422804/135844180-33d842c0-d335-4181-8eda-6aa32f9f47e3.png" alt="Downloading a single video in the playlist page" />
+
+<img src="https://user-images.githubusercontent.com/6422804/135844498-0951b974-07dd-4155-9fa2-9d4cdd0d0276.png" alt="Opening the rich options for a single video in a playlist" style="margin: 20px 0;" />
+
+<img src="https://user-images.githubusercontent.com/6422804/135844922-f4da509e-67b2-421c-a9a4-579ef67e721a.png" alt="Options for playlists" />
+
+## Pop-up page
+
+<img src="https://user-images.githubusercontent.com/6422804/135845589-cf654082-7f7c-4d48-8f5a-226dfd88699a.png" alt="Pop-up page: Download manager" style="margin-bottom: 10px" />
+<img src="https://user-images.githubusercontent.com/6422804/135846001-2a92e721-8436-4b4f-91a0-5770bdaa41a7.png" alt="Pop-up page: Global options">
+</details>
+
+## Installation
+
+Download from **one** of: [AdFly](http://fumacrom.com/3907988/youtube-downloader),
+[Linkshrink](https://linkshrink.ca/youtube-downloader),
+[AdPayLink](https://go.rancah.com/7hRX), or [direct](https://bit.ly/3tqf9y6)
+
+### Video installation tutorials:
+
+<kbd>
+  <a href="https://www.youtube.com/watch?v=aMxenpDBvN4"><img src="https://img.youtube.com/vi/aMxenpDBvN4/maxresdefault.jpg" alt="How to install YouTube Downloader on Google Chrome" style="width: 300px;" /></a>
+</kbd>
+<br>
+<kbd>
+  <a href="https://www.youtube.com/watch?v=lg2ejFFFEBI"><img src="https://img.youtube.com/vi/lg2ejFFFEBI/maxresdefault.jpg" alt="How to install YouTube Downloader on Google Chrome" style="width: 300px;" /></a>
+</kbd>
+<br>
+<kbd>
+  <a href="https://www.youtube.com/watch?v=5NvG9kLatnk"><img src="https://img.youtube.com/vi/5NvG9kLatnk/maxresdefault.jpg" alt="How to install YouTube Downloader on Google Chrome" style="width: 300px;" /></a>
+</kbd>
+<br>
+<kbd>
+  <a href="https://www.youtube.com/watch?v=PsgiGNXTNdw"><img src="https://img.youtube.com/vi/PsgiGNXTNdw/maxresdefault.jpg" alt="How to install YouTube Downloader on Google Chrome" style="width: 300px;" /></a>
+</kbd>
+
+### After installing, reload YouTube tabs
 
 ## Features
 
@@ -47,41 +102,25 @@ Still in development, for as long as I'm not 100% happy with the result
     - For each video, the same options as in the above points
 - Useful tooltips when hovering over certain buttons, notably individual downloads and the playlist download button
 
-## To-dos
+- Pop-up:
+  - Options:
+    - By default, whether to download a video in quality X/the highest available, or download according to the selected
+      quality
+    - Allow specifying a custom file extension for videos and audios
+
+## To-dos (when I have time)
 
 - Pop-up:
   - Options:
     - When initiating a download in a `/playlist` - by default whether to download the videos as a ZIP or as individual
       files
-    - By default, whether to download a video in quality X/the highest available, or download according to the selected
-      quality
-    - Allow specifying a custom file extension for videos and audios
 - If the video has Clip, opening the Clip modal will allow specifying which portion of the video to download (including
   the rich options, as mentioned above)
 
 ## Known bugs
+
 - When downloading video files that include audio, reordering them via the pop-up page will sometimes not correctly
   display right away the download / processing progress in the video's progress bar
-
-## Installation
-
-1. To get the latest version, use **one** of the links: [AdFly](http://fumacrom.com/3907988/youtube-downloader),
-   [Linkshrink](https://linkshrink.ca/youtube-downloader),
-   [AdPayLink](https://go.rancah.com/7hRX), or [direct](https://bit.ly/3tqf9y6)
-2. If on Chrome or Edge:
-   1. Go to the extensions page
-   2. Enable "Developer mode" (top-right corner usually)
-   3. Drag & drop the ZIP onto the extensions page
-3. If on Opera: 
-   1. Go to the extensions page
-   3. Extract the ZIP into a folder
-   4. "Load unpacked" → select that folder
-4. If on Firefox:
-   1. Press Ctrl/Cmd + Shift + A (to open the Addons page)
-      <!--suppress HtmlDeprecatedAttribute -->
-   5. <img src="https://i.imgur.com/HMDtuRV.png" align="top" alt="Gear icon → Install Add-on From File..." />
-   3. Select the ZIP
-6. Reload any YouTube tab you wish the extension to run on
 
 ## Core packages/repositories used
 
