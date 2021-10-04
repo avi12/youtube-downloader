@@ -2,7 +2,7 @@
   "name": "YouTube Downloader",
   "description": "Download almost any video from YouTube.",
   "homepage_url": "https://github.com/avi12/youtube-downloader",
-  "version": "0.9.0",
+  "version": "1.0.0",
   "manifest_version": 2,
   "icons": {
     "16": "images/icon-16.png",
