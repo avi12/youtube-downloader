@@ -1,5 +1,6 @@
-import type { MusicList, VideoQueue, VideoOnlyList } from "./types";
+import type { MusicList, Options, VideoOnlyList, VideoQueue } from "./types";
 
+// Storage utils
 export async function updateQueue(
   queueType: "video" | "videoOnly" | "music",
   queueOrList: VideoQueue | MusicList | VideoOnlyList
@@ -9,6 +10,22 @@ export async function updateQueue(
     return;
   }
   await setLocalStorage(`${queueType}List`, queueOrList);
+}
+
+export async function getLocalStorage(
+  key:
+    | "musicList"
+    | "videoQueue"
+    | "videoOnlyList"
+    | "tabTracker"
+    | "videoDetails"
+    | "videoIds"
+    | "isFFmpegReady"
+    | "statusProgress"
+): Promise<unknown> {
+  return new Promise(resolve =>
+    chrome.storage.local.get(key, result => resolve(key ? result[key] : result))
+  );
 }
 
 export async function setLocalStorage(
@@ -28,22 +45,7 @@ export async function setLocalStorage(
   );
 }
 
-export async function getLocalStorage(
-  key:
-    | "musicList"
-    | "videoQueue"
-    | "videoOnlyList"
-    | "tabTracker"
-    | "videoDetails"
-    | "videoIds"
-    | "isFFmpegReady"
-    | "statusProgress"
-): Promise<unknown> {
-  return new Promise(resolve =>
-    chrome.storage.local.get(key, result => resolve(key ? result[key] : result))
-  );
-}
-
+// Element grabbing
 async function getElementByMutationObserver(
   selector: string
 ): Promise<HTMLElement> {
@@ -121,7 +123,7 @@ export async function getVideoEventually(): Promise<HTMLVideoElement> {
         observer.disconnect();
         resolve(elVideo);
       }
-    }).observe(document.body, { childList: true });
+    }).observe(document.body, { subtree: true, childList: true });
   });
 }
 
@@ -140,13 +142,7 @@ export function getVideoId(url: string): string | null {
   return urlParams.get("v");
 }
 
-export function isElementInViewport(el: Element): boolean {
-  const rect = el.getBoundingClientRect();
-  return (
-    rect.top >= 0 && rect.bottom + 50 <= document.documentElement.clientHeight
-  );
-}
-
+// MIME types and filenames/file extensions
 export function getCompatibleFilename(filename: string): string {
   if (navigator.appVersion.includes("Win")) {
     const forbiddenCharsWindows = /[<>:"\\/|*]/g;
@@ -189,7 +185,8 @@ export const gExtToMimeAll = {
   weba: "audio/webm",
   webm: "video/webm",
   "3gp": "video/3gpp",
-  "3g2": "video/3gpp2"
+  "3g2": "video/3gpp2",
+  mkv: "video/x-matroska"
 };
 
 export const gExtToMime = {
@@ -212,10 +209,61 @@ export const gSupportedExts = {
   audio: Object.entries(gExtToMime.audio).map(([ext]) => ext)
 };
 
+export function getMimeType(filename: string): string | undefined {
+  return gExtToMimeAll[getFileExt(filename)];
+}
+
 export function getFileExt(filename: string): string {
   return filename.split(".").pop();
 }
 
-export function getMimeType(filename: string): string | undefined {
-  return gExtToMimeAll[getFileExt(filename)];
+// Options
+export const qualities = [4320, 2160, 1440, 1080, 720, 480, 360, 240, 144];
+const qualityClosest = qualities.find(quality => quality <= screen.height);
+export const initialOptions: Options = {
+  ext: {
+    audio: "mp3",
+    video: "mp4"
+  },
+  videoQualityMode: "current-quality",
+  videoQuality: qualityClosest,
+  isRemoveNativeDownload: false
+};
+
+export function getDiffOption(
+  options1: Options,
+  options2: Options
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+): { [p: string]: any } {
+  return Object.fromEntries([
+    Object.entries(options1).find(
+      ([key, value]) =>
+        JSON.stringify({ [key]: value }) !==
+        JSON.stringify({ [key]: options2[key] })
+    )
+  ]);
+}
+
+export async function getStoredOptions(): Promise<Options> {
+  return new Promise(resolve =>
+    chrome.storage.sync.get("options", result =>
+      resolve(result.options || initialOptions)
+    )
+  );
+}
+
+export async function getStoredOption(
+  key: "ext" | "videoQualityMode" | "videoQuality" | "isRemoveNativeDownload"
+): Promise<unknown> {
+  return new Promise(resolve =>
+    chrome.storage.sync.get("options", result =>
+      resolve(result.options?.[key] ?? initialOptions[key])
+    )
+  );
+}
+
+export async function setOption(key: string, value: unknown): Promise<void> {
+  const options = (await getStoredOptions()) ?? initialOptions;
+  options[key] = value;
+  return new Promise(resolve => chrome.storage.sync.set({ options }, resolve));
 }
