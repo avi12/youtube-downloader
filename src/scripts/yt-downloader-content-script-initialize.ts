@@ -12,7 +12,7 @@ import {
   gMutationObserverPlaylistVideoReadiness,
   handlePlaylistVideos
 } from "./yt-downloader-content-script-playlist";
-import { getElementEventually } from "./utils";
+import { getVideoEventually } from "./utils";
 import Port = chrome.runtime.Port;
 
 export let gPorts: {
@@ -83,8 +83,7 @@ function removeDownloadButtonsOnPlaylists() {
 }
 
 async function removeEventListeners() {
-  const elVideo = (await getElementEventually("video")) as HTMLVideoElement;
-  elVideo.removeEventListener("canplay", onQualityChange);
+  (await getVideoEventually()).removeEventListener("canplay", onQualityChange);
 
   const elVideoContainer = getVideosContainer();
   elVideoContainer.removeEventListener("change", onQualityChange);
