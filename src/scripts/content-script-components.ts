@@ -1,6 +1,8 @@
-import Vue from "vue/dist/vue.min.js";
+import Vue from "vue/dist/vue.js";
 import { icons } from "./icons";
 import { gExtToMime, gSupportedExts } from "./utils";
+import type { AdaptiveFormatItem } from "./types";
+import type { PropType } from "vue";
 
 export const Icon = Vue.component("Icon", {
   props: {
@@ -44,7 +46,7 @@ export const IconLoader = Vue.component("IconLoader", {
 
 export const ErrorFileExtension = Vue.component("ErrorFileExtension", {
   props: {
-    extsSupportedForType: String,
+    extsSupportedForType: String as PropType<"audio" | "video">,
     ext: String
   },
   data() {
@@ -61,5 +63,81 @@ export const ErrorFileExtension = Vue.component("ErrorFileExtension", {
       <div class="ytdl-container__spacer--margin-top"></div>
     </div>
     </transition>
+  `
+});
+
+export const TabsDownloadTypes = Vue.component("TabsDownloadTypes", {
+  props: {
+    downloadType: String as PropType<"audio" | "video" | "video+audio">,
+    audioUrl: String,
+    videoUrl: String,
+    audios: Array as PropType<AdaptiveFormatItem[]>,
+    videos: Array as PropType<AdaptiveFormatItem[]>,
+    isStartedDownload: Boolean,
+    ext: String,
+    filenameOutput: String,
+    audioBitrate: Number,
+    extsSupportedForType: String as PropType<"audio" | "video">
+  },
+  template: `
+    <div class="ytdl-container__tab-content">
+    <div class="ytdl-container__tabs-buttons">
+      <button :class="{'ytdl-container__tab-button--selected': downloadType === 'video+audio' || downloadType === 'video'}"
+              :disabled="isStartedDownload"
+              class="ytdl-container__tab-button"
+              @click="$emit('change-download-type', 'video+audio')">
+        Video
+      </button>
+      <button :class="{'ytdl-container__tab-button--selected': downloadType === 'audio'}"
+              :disabled="isStartedDownload"
+              class="ytdl-container__tab-button"
+              @click="$emit('change-download-type', 'audio')">
+        Audio
+      </button>
+    </div>
+
+    <div v-if="downloadType === 'audio'">
+      <label> Audio quality
+        <br />
+        <select class="ytdl-container__quality-option-input" @input="$emit('change-audio-url', $event.target.value)">
+          <option v-for="(audio, i) of audios" :key="audio.url" :value="audio.url">
+            {{ audioBitrate }} kbps {{ i === 0 ? "(best)" : "" }}
+          </option>
+        </select> </label>
+    </div>
+    <div v-else>
+      <label>
+        <!-- -->
+        <input :checked="downloadType === 'video+audio'"
+               class="ytdl-container__video-option-audio-input"
+               type="checkbox"
+               @input="e => $emit('change-download-type', e.target.checked ? 'video+audio' : 'video')" /> Include audio (best quality)
+      </label>
+
+      <div class="ytdl-container__spacer--margin-top"></div>
+      <label> Video quality
+        <br />
+        <select class="ytdl-container__video-option-quality-input"
+                :value="videoUrl"
+                @input="$emit('change-video-url', $event.target.value)">
+          <option v-for="(video, i) of videos" :key="video.url" :value="video.url">
+            {{ video.height }}p {{ video.fps }} FPS {{ i === 0 ? "(best)" : "" }}
+          </option>
+        </select> </label>
+    </div>
+
+    <div class="ytdl-container__spacer--margin-top"></div>
+
+    <label>Filename
+      <br />
+      <input :disabled="isStartedDownload"
+             :value="filenameOutput"
+             autocomplete="off"
+             class="ytdl-container__filename-option-input"
+             type="text"
+             @input="$emit('change-filename-output', $event.target.value)" /> </label>
+
+    <ErrorFileExtension :ext="ext" :exts-supported-for-type="extsSupportedForType" />
+    </div>
   `
 });
