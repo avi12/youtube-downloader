@@ -172,7 +172,8 @@ export async function handleVideo(): Promise<void> {
               </div>
               {{ textButton }}
             </button>
-            <span class="ytdl-tooltip__text" v-if="isDownloadable">{{ isStartedDownload ? tooltipProgress : tooltipDownloadDetails }}</span>
+            <span class="ytdl-tooltip__text"
+                  v-if="isDownloadable">{{ isStartedDownload ? tooltipProgress : tooltipDownloadDetails }}</span>
           </div>
         </div>
       </div>
@@ -318,8 +319,10 @@ export async function handleVideo(): Promise<void> {
           strings.push(this.audioBitrate, "kbps");
         } else {
           strings.push(
-            this.getVideoQuality(this.video) + "p",
-            this.video.fps,
+            this.video
+              ? this.getVideoQuality(this.video) + "p"
+              : "high quality",
+            this.video?.fps,
             "FPS"
           );
         }
