@@ -23,12 +23,12 @@
   import OptionRemoveDownload from "./OptionRemoveDownload.svelte";
   import OptionVideoQuality from "./OptionVideoQuality.svelte";
 
-  export let isFFmpegReady: boolean;
-  export let videoQueue: VideoQueue;
-  export let musicList: MusicList;
-  export let videoOnlyList: VideoOnlyList;
-  export let videoDetails: VideoDetails;
-  export let statusProgress: StatusProgress;
+  export let isFFmpegReady = false;
+  export let videoQueue: VideoQueue = [];
+  export let musicList: MusicList = [];
+  export let videoOnlyList: VideoOnlyList = [];
+  export let videoDetails: VideoDetails = {};
+  export let statusProgress: StatusProgress = {};
   export let options: Options = initialOptions;
 
   let videosMovable: MovableList = videoQueue.map(videoId => ({
