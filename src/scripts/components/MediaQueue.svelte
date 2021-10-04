@@ -4,11 +4,7 @@
   import { createEventDispatcher } from "svelte";
   import { dndzone } from "svelte-dnd-action";
 
-  import type {
-    VideoQueue,
-    MovableList,
-    StatusProgress
-  } from "../types";
+  import type { VideoQueue, MovableList, StatusProgress } from "../types";
   import { getProgress } from "./component-utils";
 
   export let videosMovable: MovableList;
@@ -39,13 +35,14 @@
   Video queue
   {#if videosMovable.length > 0}
     (drag to reorder)
-    <section>
-      <Button on:click={() => stopDownloads(getVideoQueue(videosMovable))}>
-        <Icon path={mdiCancel} class="mr-3" /> Stop all
-      </Button>
-    </section>
   {/if}
 </Subheader>
+
+{#if videosMovable.length > 0}
+  <Button on:click={() => stopDownloads(getVideoQueue(videosMovable))}>
+    <Icon path={mdiCancel} class="mr-3" /> Stop all
+  </Button>
+{/if}
 
 {#if videosMovable.length === 0}
   <section>(Currently empty)</section>

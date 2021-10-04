@@ -19,12 +19,13 @@
 
 <Subheader>
   {label} list
-  {#if list.length > 0}
-    <Button on:click={() => stopDownloads(list)}>
-      <Icon path={mdiCancel} /> Stop all
-    </Button>
-  {/if}
 </Subheader>
+
+{#if list.length > 0}
+  <Button on:click={() => stopDownloads(list)}>
+    <Icon path={mdiCancel} /> Stop all
+  </Button>
+{/if}
 
 {#if list.length === 0}
   <section>(Currently empty)</section>
