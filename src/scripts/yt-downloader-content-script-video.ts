@@ -111,7 +111,7 @@ export async function handleVideo(): Promise<void> {
       containerId: elDownloaderContainer.id
     },
     template: `
-      <section class="ytdl-container ytdl-container--single-video" :id="containerId" v-if="videoUrl">
+      <section class="ytdl-container ytdl-container--single-video" :id="containerId">
       <div class="ytdl-action-buttons">
         <IconLoader />
 
@@ -300,7 +300,7 @@ export async function handleVideo(): Promise<void> {
           : "Less options";
       },
       audioBitrate() {
-        return Math.floor(this.audio.bitrate / 1000);
+        return Math.floor(this.audio?.bitrate / 1000);
       },
       tooltipDownloadDetails() {
         if (this.isDoneDownloading) {
