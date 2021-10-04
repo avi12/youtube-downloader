@@ -7,21 +7,35 @@ import {
 import Vue from "vue/dist/vue.min.js";
 import {
   getCompatibleFilename,
+  getDiffOption,
   getElementEventually,
+  getStoredOptions,
   getVideoEventually,
-  gExtToMime
+  gExtToMime,
+  initialOptions
 } from "./utils";
-import type { AdaptiveFormatItem, VideoQueue } from "./types";
+import type { AdaptiveFormatItem, Options, VideoQueue } from "./types";
 import { icons } from "./icons";
 import {
   ErrorFileExtension,
   Icon,
-  IconLoader
+  IconLoader,
+  TabsDownloadTypes
 } from "./content-script-components";
 
 let gDownloadContainer: Vue;
 export let gIntersectionObserverModal: IntersectionObserver;
 export let gIntersectionObserverTooltipSingleVideo: IntersectionObserver;
+
+function toggleNativeDownload(isVisible: boolean) {
+  const selector = "ytd-download-button-renderer";
+  const elementNodeListOf = document.querySelectorAll(selector);
+  for (const elDownload of elementNodeListOf) {
+    (<HTMLElement>elDownload).style.display = isVisible
+      ? "inline-block"
+      : "none";
+  }
+}
 
 export async function handleVideo(): Promise<void> {
   const getHtml = async () => {
@@ -46,6 +60,12 @@ export async function handleVideo(): Promise<void> {
     return;
   }
 
+  const { isRemoveNativeDownload, ext, videoQualityMode, videoQuality } =
+    await getStoredOptions();
+  if (isRemoveNativeDownload) {
+    toggleNativeDownload(false);
+  }
+
   elButtonAfterRating.parentElement.insertBefore(
     elDownloaderContainer,
     elButtonAfterRating
@@ -55,14 +75,13 @@ export async function handleVideo(): Promise<void> {
 
   const isMusic =
     videoData.microformat.playerMicroformatRenderer.category === "Music";
-  const ext = isMusic ? "mp3" : "mp4";
-
   gDownloadContainer = new Vue({
     el: `#${elDownloaderContainer.id}`,
     components: {
       Icon,
       IconLoader,
-      ErrorFileExtension
+      ErrorFileExtension,
+      TabsDownloadTypes
     },
     data: {
       isStartedDownload: false,
@@ -77,7 +96,7 @@ export async function handleVideo(): Promise<void> {
         | "audio"
         | "video+audio",
       filename: title,
-      ext,
+      ext: isMusic ? ext.audio : ext.video,
       isRichOptions: false,
       videos: [] as AdaptiveFormatItem[],
       audios: [] as AdaptiveFormatItem[],
@@ -126,83 +145,34 @@ export async function handleVideo(): Promise<void> {
            v-show="isRichOptions"
            :class="{'ytdl-container__rich-options-wrapper--floating-up': isMoveModalUp}">
         <div class="ytdl-container__rich-options">
-          <div class="ytdl-container__tabs-buttons">
-            <button @click="downloadType = 'video+audio'"
-                    :disabled="isStartedDownload"
-                    class="ytdl-container__tab-button"
-                    :class="{'ytdl-container__tab-button--selected': downloadType === 'video+audio' || downloadType === 'video'}">
-              Video
-            </button>
-            <button @click="downloadType = 'audio'"
-                    :disabled="isStartedDownload"
-                    class="ytdl-container__tab-button"
-                    :class="{'ytdl-container__tab-button--selected': downloadType === 'audio'}">
-              Audio
-            </button>
-          </div>
 
-          <div class="ytdl-container__tab-content">
-            <div v-if="downloadType === 'audio'">
-              <label> Audio quality
-                <br>
-                <select class="ytdl-container__quality-option-input" v-model="audioUrl">
-                  <option :value="audio.url"
-                          v-for="(audio, i) of audios"
-                          :key="audio.url">{{ audioBitrate }} kbps {{ i === 0 ? "(best)" : "" }}
-                  </option>
-                </select> </label>
+          <TabsDownloadTypes :download-type="downloadType"
+                             :audio-url="audioUrl"
+                             :video-url="videoUrl"
+                             :audios="audios"
+                             :videos="videos"
+                             :is-starteed-download="isStartedDownload"
+                             :filename-output="filenameOutput"
+                             :exts-supported-for-type="extsSupportedForType"
+                             :audio-bitrate="audioBitrate"
+                             :ext="ext"
+                             @change-filename-output="pFilename => filenameOutput = pFilename"
+                             @change-video-url="url => updateMediaItem('video', url)"
+                             @change-audio-url="url => updateMediaItem('audio', url)"
+                             @change-download-type="pDownloadType => downloadType = pDownloadType" />
 
-              <div class="ytdl-container__spacer--margin-top"></div>
-              <label>Filename
-                <br>
-                <input autocomplete="off"
-                       type="text"
-                       :disabled="isStartedDownload"
-                       class="ytdl-container__filename-option-input"
-                       v-model="filenameOutput"> </label>
-            </div>
-            <div v-else>
-              <label> <input type="checkbox"
-                             class="ytdl-container__video-option-audio-input"
-                             checked
-                             @input="e => downloadType = e.target.checked ? 'video+audio' : 'video'" /> Include audio (best quality)</label>
-
-              <div class="ytdl-container__spacer--margin-top"></div>
-              <label> Video quality
-                <br>
-                <select class="ytdl-container__video-option-quality-input" v-model="videoUrl">
-                  <option :value="video.url"
-                          v-for="(video, i) of videos"
-                          :key="video.url">{{ video.height }}p {{ video.fps }} FPS {{ i === 0 ? "(best)" : "" }}
-                  </option>
-                </select> </label>
-
-              <div class="ytdl-container__spacer--margin-top"></div>
-              <label> Filename
-                <br>
-                <input type="text"
-                       :disabled="isStartedDownload"
-                       autocomplete="off"
-                       class="ytdl-container__filename-option-input"
-                       v-model="filenameOutput"> </label>
-            </div>
-
-            <ErrorFileExtension :ext="ext" :exts-supported-for-type="extsSupportedForType" />
-
-            <div class="ytdl-tooltip">
-              <button @click="toggleDownload"
-                      :disabled="!isDownloadable"
-                      class="ytdl-container__rich-options__action-button">
-                <div class="ytdl-container__rich-options__progress"
-                     :style="{width: widthProgressDownloadButton + 'px'}">
-                  <div class="ytdl-container__rich-options__action-button__new-text">
-                    {{ textButton }}
-                  </div>
+          <div class="ytdl-tooltip">
+            <button @click="toggleDownload"
+                    :disabled="!isDownloadable"
+                    class="ytdl-container__rich-options__action-button">
+              <div class="ytdl-container__rich-options__progress" :style="{width: widthProgressDownloadButton + 'px'}">
+                <div class="ytdl-container__rich-options__action-button__new-text">
+                  {{ textButton }}
                 </div>
-                {{ textButton }}
-              </button>
-              <span class="ytdl-tooltip__text" v-if="isDownloadable">{{ tooltipDownloadDetails }}</span>
-            </div>
+              </div>
+              {{ textButton }}
+            </button>
+            <span class="ytdl-tooltip__text" v-if="isDownloadable">{{ isStartedDownload ? tooltipProgress : tooltipDownloadDetails }}</span>
           </div>
         </div>
       </div>
@@ -219,7 +189,7 @@ export async function handleVideo(): Promise<void> {
       </section>
     `,
     watch: {
-      downloadType(type) {
+      downloadType(type: "audio" | "video++audio" | "video") {
         this.isStartedDownload = false;
         this.progress = 0;
         if (type === "audio") {
@@ -227,14 +197,15 @@ export async function handleVideo(): Promise<void> {
           return;
         }
 
-        this.audioUrl = this.audios[0].url;
+        this.audio = this.audios[0];
         this.ext = "mp4";
       },
       isPortDisconnected() {
         this.isRichOptions = false;
         this.isDownloadable = false;
+        toggleNativeDownload(true);
       },
-      progress(progress) {
+      progress(progress: number) {
         const elRichDownload = document.querySelector(
           ".ytdl-container__rich-options__action-button"
         );
@@ -242,13 +213,13 @@ export async function handleVideo(): Promise<void> {
         const width = Number(widthRaw.replace("px", ""));
         this.widthProgressDownloadButton = (progress * 100 * width) / 100;
       },
-      videoUrl(urlNew) {
-        this.video = this.videos.find(({ url }) => url === urlNew);
+      video(video: AdaptiveFormatItem) {
+        this.videoUrl = video.url;
       },
-      audioUrl(urlNew) {
-        this.audio = this.audios.find(({ url }) => url === urlNew);
+      audio(audio: AdaptiveFormatItem) {
+        this.audioUrl = audio.url;
       },
-      ext(ext) {
+      ext(ext: string) {
         this.isDownloadable = Boolean(
           gExtToMime[this.extsSupportedForType][ext]
         );
@@ -284,7 +255,7 @@ export async function handleVideo(): Promise<void> {
       },
       filenameOutput: {
         set(filenameFull: string) {
-          const split = filenameFull.split(".");
+          const split = filenameFull.trim().split(".");
           this.ext = split.pop();
           this.filename = split.join(".");
         },
@@ -318,7 +289,12 @@ export async function handleVideo(): Promise<void> {
         return this.downloadType === "audio" ? "audio" : "video";
       },
       labelExpandButton() {
-        return !this.isRichOptions ? "More options" : "Less options";
+        if (!this.isRichOptions) {
+          return "More options";
+        }
+        return !this.isStartedDownload && !this.isDoneDownloading
+          ? "Click DONE"
+          : "Less options";
       },
       audioBitrate() {
         return Math.floor(this.audio.bitrate / 1000);
@@ -328,11 +304,13 @@ export async function handleVideo(): Promise<void> {
           return "Done";
         }
 
-        if (this.isStartedDownload) {
-          return this.tooltipProgress;
+        const strings = [];
+        if (!this.isStartedDownload) {
+          strings.push("Download in");
+        } else {
+          strings.push("Downloading in");
         }
 
-        const strings = [`Download in`];
         if (this.downloadType === "audio") {
           strings.push(this.audioBitrate, "kbps");
         } else {
@@ -400,22 +378,6 @@ export async function handleVideo(): Promise<void> {
 
         this.download();
       },
-      async getElVideoQuality() {
-        const { videoHeight, videoWidth } = await getVideoEventually();
-        return Math.min(videoHeight, videoWidth);
-      },
-      getVideoQuality(video: AdaptiveFormatItem) {
-        return Math.min(video.height, video.width);
-      },
-      async getVideoByCurrentQuality() {
-        return this.videos.find(async video => {
-          const [currentVideoItemQuality, elVideoQuality] = await Promise.all([
-            this.getVideoQuality(video),
-            this.getElVideoQuality()
-          ]);
-          return currentVideoItemQuality === elVideoQuality;
-        });
-      },
       download() {
         gPorts.processSingle.postMessage({
           type: this.downloadType,
@@ -426,6 +388,31 @@ export async function handleVideo(): Promise<void> {
           filenameOutput: this.filenameOutput,
           videoId
         });
+      },
+      async getElVideoQuality() {
+        const { videoHeight, videoWidth } = document.querySelector("video");
+        return Math.min(videoHeight, videoWidth);
+      },
+      getVideoQuality(video: AdaptiveFormatItem): number {
+        return Math.min(video.height, video.width);
+      },
+      async getVideoByCurrentQuality() {
+        for (const video of this.videos) {
+          const currentVideoItemQuality = this.getVideoQuality(video);
+          const elVideoQuality = await this.getElVideoQuality();
+          if (currentVideoItemQuality === elVideoQuality) {
+            return video;
+          }
+        }
+        return this.videos[0];
+      },
+      getIVideoByQuality(quality: number) {
+        return this.videos.findIndex(
+          (video: AdaptiveFormatItem) => this.getVideoQuality(video) === quality
+        );
+      },
+      updateMediaItem(type: "audio" | "video", urlToFind: string) {
+        this[type] = this[`${type}s`].find(({ url }) => url === urlToFind);
       }
     },
     async created() {
@@ -452,14 +439,21 @@ export async function handleVideo(): Promise<void> {
         this.audios.push(format);
       });
 
-      this.video = await this.getVideoByCurrentQuality();
       this.audio = this.audios[0];
 
-      this.videoUrl = this.video.url;
-      this.audioUrl = this.audio.url;
-
-      const elVideo = document.querySelector("video");
-      elVideo.addEventListener("canplay", onQualityChange);
+      if (videoQualityMode === "current-quality") {
+        this.video = await this.getVideoByCurrentQuality();
+        (await getVideoEventually()).addEventListener(
+          "canplay",
+          onQualityChange
+        );
+      } else if (videoQualityMode === "best") {
+        this.video = this.videos[0];
+      } else if (videoQualityMode === "custom") {
+        this.video =
+          this.videos?.[this.getIVideoByQuality(videoQuality)] ??
+          this.videos[0];
+      }
     },
     mounted() {
       gIntersectionObserverModal = new IntersectionObserver(
@@ -506,7 +500,7 @@ export async function handleVideo(): Promise<void> {
     gDownloadContainer.isDoneDownloading = progress === 1;
   }
 
-  function storageListener(changes) {
+  async function storageListener(changes) {
     const videoQueue = changes.videoQueue?.newValue as VideoQueue;
     if (videoQueue) {
       const { videoId } = videoData.videoDetails;
@@ -520,12 +514,72 @@ export async function handleVideo(): Promise<void> {
       gDownloadContainer.isDoneDownloading = !isDownloading;
       return;
     }
+
+    const options = changes.options?.newValue as Options;
+    if (options) {
+      const optionsPrev =
+        (changes.options?.oldValue as Options) ?? initialOptions;
+      const diffOption = getDiffOption(options, optionsPrev);
+      const optionChanged = Object.keys(diffOption)[0] as
+        | "ext"
+        | "isRemoveNativeDownload"
+        | "videoQualityMode"
+        | "videoQuality";
+
+      if (optionChanged === "ext") {
+        gDownloadContainer.ext =
+          gDownloadContainer.downloadType === "audio"
+            ? options.ext.audio
+            : options.ext.video;
+        return;
+      }
+
+      if (optionChanged === "isRemoveNativeDownload") {
+        toggleNativeDownload(!options.isRemoveNativeDownload);
+        return;
+      }
+
+      if (optionChanged === "videoQualityMode") {
+        const elVideo = document.querySelector("video");
+        const { videoQualityMode } = options;
+
+        if (videoQualityMode === "current-quality") {
+          elVideo.removeEventListener("canplay", onQualityChange);
+          elVideo.addEventListener("canplay", onQualityChange);
+          gDownloadContainer.video =
+            await gDownloadContainer.getVideoByCurrentQuality();
+          return;
+        }
+
+        if (videoQualityMode === "best") {
+          elVideo.removeEventListener("canplay", onQualityChange);
+          gDownloadContainer.video = gDownloadContainer.videos[0];
+          return;
+        }
+
+        // videoQualityMode === "custom"
+        elVideo.removeEventListener("canplay", onQualityChange);
+        const iQuality = gDownloadContainer.getIVideoByQuality(
+          options.videoQuality
+        );
+        gDownloadContainer.video =
+          gDownloadContainer.videos?.[iQuality] ?? gDownloadContainer.videos[0];
+        return;
+      }
+
+      if (optionChanged === "videoQuality") {
+        const iQuality = gDownloadContainer.getIVideoByQuality(
+          options.videoQuality
+        );
+        gDownloadContainer.video =
+          gDownloadContainer.videos?.[iQuality] ?? gDownloadContainer.videos[0];
+      }
+    }
   }
 }
 
 export async function onQualityChange(): Promise<void> {
-  // Set the video URL on quality change
+  // Set the video URL on quality change, if option videoQualityMode === "current-selected"
   gDownloadContainer.video =
     await gDownloadContainer.getVideoByCurrentQuality();
-  gDownloadContainer.videoUrl = gDownloadContainer.video.url;
 }
