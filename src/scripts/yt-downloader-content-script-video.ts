@@ -111,7 +111,7 @@ export async function handleVideo(): Promise<void> {
       containerId: elDownloaderContainer.id
     },
     template: `
-      <section class="ytdl-container ytdl-container--single-video" :id="containerId" v-if="video">
+      <section class="ytdl-container ytdl-container--single-video" :id="containerId" v-if="videoUrl">
       <div class="ytdl-action-buttons">
         <IconLoader />
 
@@ -214,10 +214,10 @@ export async function handleVideo(): Promise<void> {
         this.widthProgressDownloadButton = (progress * 100 * width) / 100;
       },
       video(video: AdaptiveFormatItem) {
-        this.videoUrl = video.url;
+        this.videoUrl = video?.url;
       },
       audio(audio: AdaptiveFormatItem) {
-        this.audioUrl = audio.url;
+        this.audioUrl = audio?.url;
       },
       ext(ext: string) {
         this.isDownloadable = Boolean(
@@ -249,6 +249,9 @@ export async function handleVideo(): Promise<void> {
         return "DOWNLOAD";
       },
       formatsSorted() {
+        if (!videoData.streamingData) {
+          return [];
+        }
         return videoData.streamingData.adaptiveFormats.sort(
           (a, b) => b.bitrate - a.bitrate
         );
