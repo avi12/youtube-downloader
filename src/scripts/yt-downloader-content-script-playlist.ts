@@ -1206,8 +1206,10 @@ export async function handlePlaylistVideos(): Promise<void> {
               strings.push(this.audioBitrate, "kbps");
             } else {
               strings.push(
-                this.videoQuality(this.video) + "p",
-                this.video.fps,
+                this.video
+                  ? this.videoQuality(this.video) + "p"
+                  : "high quality",
+                this.video?.fps,
                 "FPS"
               );
             }
