@@ -1,4 +1,5 @@
-import Options from "./components/Options.svelte";
+import Popup from "./views/Popup.svelte";
+import { getStoredOptions } from "./utils";
 
 async function init() {
   const {
@@ -22,7 +23,7 @@ async function init() {
     )
   );
 
-  new Options({
+  new Popup({
     target: document.body,
     props: {
       musicList,
@@ -30,7 +31,8 @@ async function init() {
       videoOnlyList,
       videoDetails,
       isFFmpegReady,
-      statusProgress
+      statusProgress,
+      options: await getStoredOptions()
     }
   });
 }
