@@ -51,16 +51,19 @@ Download from **one** of: [AdFly](http://fumacrom.com/3907988/youtube-downloader
   <a href="https://www.youtube.com/watch?v=aMxenpDBvN4"><img src="https://img.youtube.com/vi/aMxenpDBvN4/maxresdefault.jpg" alt="How to install YouTube Downloader on Google Chrome" style="width: 300px;" /></a>
 </kbd>
 <br>
-<kbd>
-  <a href="https://www.youtube.com/watch?v=lg2ejFFFEBI"><img src="https://img.youtube.com/vi/lg2ejFFFEBI/maxresdefault.jpg" alt="How to install YouTube Downloader on Google Chrome" style="width: 300px;" /></a>
-</kbd>
 <br>
 <kbd>
-  <a href="https://www.youtube.com/watch?v=5NvG9kLatnk"><img src="https://img.youtube.com/vi/5NvG9kLatnk/maxresdefault.jpg" alt="How to install YouTube Downloader on Google Chrome" style="width: 300px;" /></a>
+  <a href="https://www.youtube.com/watch?v=lg2ejFFFEBI"><img src="https://img.youtube.com/vi/lg2ejFFFEBI/maxresdefault.jpg" alt="How to install YouTube Downloader on Microsoft Edge" style="width: 300px;" /></a>
 </kbd>
 <br>
+<br>
 <kbd>
-  <a href="https://www.youtube.com/watch?v=PsgiGNXTNdw"><img src="https://img.youtube.com/vi/PsgiGNXTNdw/maxresdefault.jpg" alt="How to install YouTube Downloader on Google Chrome" style="width: 300px;" /></a>
+  <a href="https://www.youtube.com/watch?v=5NvG9kLatnk"><img src="https://img.youtube.com/vi/5NvG9kLatnk/maxresdefault.jpg" alt="How to install YouTube Downloader on Opera" style="width: 300px;" /></a>
+</kbd>
+<br>
+<br>
+<kbd>
+  <a href="https://www.youtube.com/watch?v=PsgiGNXTNdw"><img src="https://img.youtube.com/vi/PsgiGNXTNdw/maxresdefault.jpg" alt="How to install YouTube Downloader on Opera GX" style="width: 300px;" /></a>
 </kbd>
 
 ### After installing, reload YouTube tabs
