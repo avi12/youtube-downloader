@@ -67,55 +67,43 @@ Download from **one** of: [AdFly](http://fumacrom.com/3907988/youtube-downloader
 
 ## Features
 
-- Download videos from `/watch` & `/playlist`
+- Download videos from `/watch` & `/playlist`, either as videos, audio tracks or audio-less videos
 - Viewing the download progress
 - All downloads are cancelable
 - Always keep in mind:
-  - When downloading videos with audio tracks, they will _always_ be downloaded one-by-one
-  - When downloading audio tracks or audio-less videos, they will _always_ be downloaded _in parallel_
+  - Videos with audio tracks will _always_ be downloaded _one-by-one_
+  - Audio tracks or audio-less videos will _always_ be downloaded _in parallel_
+- Via the pop-up page, you can manage downloads, customize the file extensions and change the default video quality
+- Useful tooltips when hovering over certain buttons, notably individual downloads and the playlist download button
 - For videos on `/watch`:
-  - If the video isn't in the "Music" category, clicking Download will by default:
-    - if the video queue is empty, the video will begin downloading
-    - otherwise, it will be _pushed_ into the queue, and will begin downloading after all the videos before it have
-      finished (though, it can be reordered via the pop-up page)
-  - When initializing a download for videos not in "Music", the video will download in the currently-selected quality as
-    MP4, unless specified otherwise in the rich options modal (see below)
-  - Otherwise, by default, it will be downloaded as an MP3
+  - Clicking to download a video whose category isn't "Music" will:
+    - begin downloading in the currently-selected quality (unless customized) if the queue is empty
+    - if the queue isn't empty, it will be pushed to the queue
+  - Otherwise, it will be downloaded as an audio track immediately
 - In playlists on `/playlist`:
   - When downloading an individual video:
-    - If the video isn't in the "Music" category, and you already started downloading a videos that you selected - it
-      will first begin downloading the video you just clicked Download on
-    - Otherwise, by default, it will start downloading immediately as an audio file, unless specified otherwise in the
-      rich options (see below)
-  - When selecting multiple videos and clicking the Download button that's tied to the playlist: see above in "Always
-    keep in mind"
+    - If you're downloading it as a video, yet you already started downloading a videos that you selected - it will
+      abort their downloads and instead begin downloading the video you just clicked Download on
+    - Otherwise, it will start downloading immediately as an audio track
+  - When selecting multiple videos and clicking the Download button that's tied to the playlist, they'll download
+    one-by-one
   - Download a whole playlist with a single click, using "Download all when ready"
-  - Set playlist-wide options (download all videos as videos / video-only / audio tracks; use the same file extension
-    for all items)
-- Pop-up page:
-  - Videos that download with audio can be reorderede
-  - Videos' downloads can be canceled, including music ones and audio-less video ones (individually and multiple)
-- Rich options:
-  - In `/watch`:
-    - Allows specifying whether to download as a video or as an audio file; allows specifying the filename with a
-      supported extension (providing an unsupported one will list the supported ones)
-    - If downloading a video, the audio quality will always be the best ("best" as measured by the bitrate amount)
-  - In `/playlist`:
-    - For each video, the same options as in the above points
-- Useful tooltips when hovering over certain buttons, notably individual downloads and the playlist download button
+  - Set playlist-wide options (download all videos as videos / audio-less videos / audio tracks; use the same file
+    extension for all items)
 
 - Pop-up:
   - Options:
-    - By default, whether to download a video in quality X/the highest available, or download according to the selected
+    - Control whether to download a video in quality X/the highest available, or download according to the selected
       quality
     - Allow specifying a custom file extension for videos and audios
+    - If you have YouTube Premium ,remove the native Download button
 
 ## To-dos (when I have time)
 
 - Pop-up:
   - Options:
-    - When initiating a download in a `/playlist` - by default whether to download the videos as a ZIP or as individual
-      files
+    - Allow downloading playlists as ZIP
+    - Allow downloading playlists to a subdirectory whose name is the playlist's name
 - If the video has Clip, opening the Clip modal will allow specifying which portion of the video to download (including
   the rich options, as mentioned above)
 
