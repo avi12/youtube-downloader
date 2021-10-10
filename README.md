@@ -13,6 +13,8 @@ Made by [avi12](https://avi12.com)
   <img src="https://user-images.githubusercontent.com/6422804/135839033-c6caa7a4-72c9-4fc6-9b70-1a9561c1173a.png" width="30" alt="Opera GX">
 </p>
 
+CAUTIOUS: Chrome users can install it until [January 2023](https://developer.chrome.com/docs/extensions/mv3/mv2-sunset), so hurry up!
+
 <details style="margin-top: 20px;">
 <summary>Screenshots</summary>
 
