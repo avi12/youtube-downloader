@@ -72,6 +72,8 @@ export async function handleVideo(): Promise<void> {
   );
 
   const { videoId, title } = videoData.videoDetails;
+  const formats =
+    videoData.streamingData.adaptiveFormats || videoData.streamingData.formats;
 
   const isMusic =
     videoData.microformat.playerMicroformatRenderer.category === "Music";
@@ -253,9 +255,7 @@ export async function handleVideo(): Promise<void> {
         if (!videoData.streamingData) {
           return [];
         }
-        return videoData.streamingData.adaptiveFormats.sort(
-          (a, b) => b.bitrate - a.bitrate
-        );
+        return formats.sort((a, b) => b.bitrate - a.bitrate);
       },
       filenameOutput: {
         set(filenameFull: string) {

@@ -89,9 +89,9 @@ export async function getVideoData(
     return videoData;
   }
 
-  const isHasStreamingUrls = Boolean(
-    videoData.streamingData?.adaptiveFormats[0].url
-  );
+  const formats =
+    videoData.streamingData.adaptiveFormats || videoData.streamingData.formats;
+  const isHasStreamingUrls = Boolean(formats[0].url);
   if (isHasStreamingUrls) {
     return videoData;
   }
