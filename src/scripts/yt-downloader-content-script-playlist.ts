@@ -936,11 +936,15 @@ export async function handlePlaylistVideos(): Promise<void> {
     promiseHtmls[i].then(async html => {
       const videoData = await getVideoData(html);
 
-      const { videoId } = videoData.videoDetails;
       const isDownloadable = getIsDownloadable(videoData);
       if (!isDownloadable) {
         return;
       }
+
+      const { videoId } = videoData.videoDetails;
+      const formats =
+        videoData.streamingData.adaptiveFormats ||
+        videoData.streamingData.formats;
 
       gDownloadPlaylist.isPlaylistDownloadable = true;
 
@@ -1139,9 +1143,7 @@ export async function handlePlaylistVideos(): Promise<void> {
             return "DOWNLOAD";
           },
           formatsSorted() {
-            return videoData.streamingData.adaptiveFormats.sort(
-              (a, b) => b.bitrate - a.bitrate
-            );
+            return formats.sort((a, b) => b.bitrate - a.bitrate);
           },
           videoBest() {
             return this.formatsSorted.find(format =>
