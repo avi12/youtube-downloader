@@ -101,7 +101,7 @@ export const TabsDownloadTypes = Vue.component("TabsDownloadTypes", {
         <br />
         <select class="ytdl-container__quality-option-input" @input="$emit('change-audio-url', $event.target.value)">
           <option v-for="(audio, i) of audios" :key="audio.url" :value="audio.url">
-            {{ audioBitrate }} kbps {{ i === 0 ? "(best)" : "" }}
+            {{ displayBitrate(audio.bitrate) }} kbps {{ i === 0 ? "(best)" : "" }}
           </option>
         </select> </label>
     </div>
@@ -139,5 +139,10 @@ export const TabsDownloadTypes = Vue.component("TabsDownloadTypes", {
 
     <ErrorFileExtension :ext="ext" :exts-supported-for-type="extsSupportedForType" />
     </div>
-  `
+  `,
+  methods: {
+    displayBitrate(bitrate) {
+      return Math.floor(bitrate / 1000);
+    }
+  }
 });
