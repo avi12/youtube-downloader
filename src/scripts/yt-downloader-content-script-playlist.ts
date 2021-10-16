@@ -942,9 +942,6 @@ export async function handlePlaylistVideos(): Promise<void> {
       }
 
       const { videoId } = videoData.videoDetails;
-      const formats =
-        videoData.streamingData.adaptiveFormats ||
-        videoData.streamingData.formats;
 
       gDownloadPlaylist.isPlaylistDownloadable = true;
 
@@ -1143,6 +1140,10 @@ export async function handlePlaylistVideos(): Promise<void> {
             return "DOWNLOAD";
           },
           formatsSorted() {
+            const formats =
+              videoData.streamingData.adaptiveFormats ||
+              videoData.streamingData.formats;
+
             return formats.sort((a, b) => b.bitrate - a.bitrate);
           },
           videoBest() {
