@@ -2,5 +2,6 @@
   "arrowParens": "avoid",
   "trailingComma": "none",
   "svelteSortOrder": "scripts-markup-styles",
-  "plugins": ["prettier-plugin-svelte"]
+  "plugins": ["prettier-plugin-svelte"],
+  "printWidth": 110
 }
