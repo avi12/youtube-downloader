@@ -77,12 +77,23 @@ async function getAdaptiveFormats({
   return adaptiveFormats;
 }
 
-export async function getVideoData(
-  htmlYouTubePage: string
-): Promise<PlayerResponse> {
-  const videoData: PlayerResponse = JSON.parse(
-    htmlYouTubePage.match(gRegex.videoData)[1]
-  );
+async function getDownloadableLinks(formats: AdaptiveFormatItem[] | FormatItem[]) {
+  const downloadableLinks = [];
+
+  for (const format of formats) {
+    try {
+      const res = await fetch(format.url);
+      if (res.ok) {
+        downloadableLinks.push(format);
+      }
+      // eslint-disable-next-line no-empty
+    } catch {}
+  }
+  return downloadableLinks;
+}
+
+export async function getVideoData(htmlYouTubePage: string): Promise<PlayerResponse> {
+  const videoData: PlayerResponse = JSON.parse(htmlYouTubePage.match(gRegex.videoData)[1]);
 
   const isUnplayable = videoData.playabilityStatus.status !== "OK";
   if (isUnplayable) {
@@ -93,6 +104,7 @@ export async function getVideoData(
     videoData.streamingData.adaptiveFormats || videoData.streamingData.formats;
   const isHasStreamingUrls = Boolean(formats[0].url);
   if (isHasStreamingUrls) {
+    videoData.streamingData.adaptiveFormats = await getDownloadableLinks(formats);
     return videoData;
   }
 

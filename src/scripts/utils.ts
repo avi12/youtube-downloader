@@ -142,6 +142,10 @@ export function getVideoId(url: string): string | null {
   return urlParams.get("v");
 }
 
+export function getIsDownloadLinksAvailable(videoData: PlayerResponse): boolean {
+  return videoData.streamingData.adaptiveFormats.length > 0;
+}
+
 // MIME types and filenames/file extensions
 export function getCompatibleFilename(filename: string): string {
   if (navigator.appVersion.includes("Win")) {

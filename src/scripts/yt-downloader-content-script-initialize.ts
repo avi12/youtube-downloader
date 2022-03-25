@@ -12,13 +12,12 @@ import {
   gMutationObserverPlaylistVideoReadiness,
   handlePlaylistVideos
 } from "./yt-downloader-content-script-playlist";
-import { getVideoEventually } from "./utils";
-import Port = chrome.runtime.Port;
+import { getElementEventually, getIsDownloadLinksAvailable, getVideoEventually } from "./utils";
 
 export let gPorts: {
-  main?: Port;
-  processSingle?: Port;
-  processPlaylist?: Port;
+  main?: chrome.runtime.Port;
+  processSingle?: chrome.runtime.Port;
+  processPlaylist?: chrome.runtime.Port;
 };
 
 let isPortDisconnected = false;
@@ -38,7 +37,8 @@ export function getIsDownloadable(videoData: PlayerResponse): boolean {
   return (
     !isPortDisconnected &&
     !getIsLive(videoData) &&
-    videoData.playabilityStatus.status === "OK"
+    videoData.playabilityStatus.status === "OK" &&
+    getIsDownloadLinksAvailable(videoData)
   );
 }
 
