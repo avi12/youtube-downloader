@@ -125,11 +125,7 @@ async function init() {
 
   if (!gObserverPlaylistVideos) {
     gObserverPlaylistVideos = new MutationObserver(async mutations => {
-      if (
-        !(<HTMLElement>mutations[1]?.addedNodes?.[0])?.matches?.(
-          "ytd-playlist-video-renderer"
-        )
-      ) {
+      if (!(<HTMLElement>mutations[1]?.addedNodes?.[0])?.matches?.("ytd-playlist-video-renderer")) {
         return;
       }
       await handlePlaylistVideos();
@@ -137,9 +133,7 @@ async function init() {
   }
 
   if (!gObserverPlaylistDownloadButton) {
-    gObserverPlaylistDownloadButton = new MutationObserver(
-      appendPlaylistDownloadButton
-    );
+    gObserverPlaylistDownloadButton = new MutationObserver(appendPlaylistDownloadButton);
   }
 
   const elVideosContainer = await getElementEventually("#contents");

@@ -17,21 +17,13 @@
   },
   "content_scripts": [
     {
-      "matches": [
-        "https://www.youtube.com/*"
-      ],
-      "js": [
-        "build/scripts/yt-downloader-content-script-initialize.js"
-      ],
-      "css": [
-        "build/styles-injected/yt-downloader-content-script-styles.min.css"
-      ]
+      "matches": ["https://www.youtube.com/*"],
+      "js": ["build/scripts/yt-downloader-content-script-initialize.js"],
+      "css": ["build/styles-injected/yt-downloader-content-script-styles.min.css"]
     }
   ],
   "background": {
-    "scripts": [
-      "build/scripts/background.js"
-    ],
+    "scripts": ["build/scripts/background.js"],
     "persistent": false
   },
   "browser_action": {

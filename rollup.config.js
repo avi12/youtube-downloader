@@ -40,9 +40,7 @@ function createConfig(filename, useSvelte = false) {
       commonjs(),
       !useSvelte &&
         replace({
-          "process.env.NODE_ENV": `"${
-            !isProduction ? "development" : "production"
-          }"`
+          "process.env.NODE_ENV": `"${!isProduction ? "development" : "production"}"`
         }),
       isProduction && terser()
     ],

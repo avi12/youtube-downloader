@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { OptionFileExtension, Options } from "./../types";
+  import type { OptionFileExtension, Options } from "../types";
   import { Subheader, TextField } from "svelte-materialify";
   import { getStoredOption, setOption, gExtToMime } from "../utils";
   import ErrorFileExtension from "../components/ErrorFileExtension.svelte";
@@ -19,7 +19,7 @@
       return;
     }
 
-    const ext = await getStoredOption("ext") as OptionFileExtension;
+    const ext = (await getStoredOption("ext")) as OptionFileExtension;
     ext[extType] = extNew;
     await setOption("ext", ext);
   }

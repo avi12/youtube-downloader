@@ -49,11 +49,7 @@
 {/if}
 
 <List>
-  <section
-    on:consider={onSort}
-    on:finalize={onSort}
-    use:dndzone={{ items: videosMovable, flipDurationMs }}
-  >
+  <section on:consider={onSort} on:finalize={onSort} use:dndzone={{ items: videosMovable, flipDurationMs }}>
     {#each videosMovable as video, i (video.id)}
       <div>
         <ListItem>

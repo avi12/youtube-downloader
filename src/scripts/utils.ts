@@ -1,4 +1,4 @@
-import type { MusicList, Options, VideoOnlyList, VideoQueue } from "./types";
+import type { MusicList, Options, PlayerResponse, VideoOnlyList, VideoQueue } from "./types";
 
 // Storage utils
 export async function updateQueue(
@@ -23,9 +23,7 @@ export async function getLocalStorage(
     | "isFFmpegReady"
     | "statusProgress"
 ): Promise<unknown> {
-  return new Promise(resolve =>
-    chrome.storage.local.get(key, result => resolve(key ? result[key] : result))
-  );
+  return new Promise(resolve => chrome.storage.local.get(key, result => resolve(key ? result[key] : result)));
 }
 
 export async function setLocalStorage(
@@ -40,15 +38,11 @@ export async function setLocalStorage(
     | "statusProgress",
   value: unknown
 ): Promise<void> {
-  return new Promise(resolve =>
-    chrome.storage.local.set({ [key]: value }, resolve)
-  );
+  return new Promise(resolve => chrome.storage.local.set({ [key]: value }, resolve));
 }
 
 // Element grabbing
-async function getElementByMutationObserver(
-  selector: string
-): Promise<HTMLElement> {
+async function getElementByMutationObserver(selector: string): Promise<HTMLElement> {
   return new Promise(resolve => {
     const observerHtml = new MutationObserver((_, observer) => {
       const element = getVisibleElementInArray(selector);
@@ -64,9 +58,7 @@ async function getElementByMutationObserver(
   });
 }
 
-async function getElementsByMutationObserver(
-  selector: string
-): Promise<HTMLElement[]> {
+async function getElementsByMutationObserver(selector: string): Promise<HTMLElement[]> {
   return new Promise(resolve => {
     const observerHtml = new MutationObserver((_, observer) => {
       const elements = getVisibleElementsInArray(selector);
@@ -83,24 +75,17 @@ async function getElementsByMutationObserver(
 }
 
 export function isElementVisible(element: HTMLElement | Element): boolean {
-  return (
-    (<HTMLElement>element)?.offsetWidth > 0 &&
-    (<HTMLElement>element)?.offsetHeight > 0
-  );
+  return (<HTMLElement>element)?.offsetWidth > 0 && (<HTMLElement>element)?.offsetHeight > 0;
 }
 
-function getVisibleElementInArray(
-  elements: NodeListOf<Element> | string
-): HTMLElement {
+function getVisibleElementInArray(elements: NodeListOf<Element> | string): HTMLElement {
   if (typeof elements === "string") {
     elements = document.querySelectorAll(elements);
   }
   return [...(elements as NodeListOf<HTMLElement>)].find(isElementVisible);
 }
 
-function getVisibleElementsInArray(
-  elements: NodeListOf<Element> | string
-): HTMLElement[] {
+function getVisibleElementsInArray(elements: NodeListOf<Element> | string): HTMLElement[] {
   if (typeof elements === "string") {
     elements = document.querySelectorAll(elements);
   }
@@ -127,9 +112,7 @@ export async function getVideoEventually(): Promise<HTMLVideoElement> {
   });
 }
 
-export async function getElementsEventually(
-  selector: string
-): Promise<Element[]> {
+export async function getElementsEventually(selector: string): Promise<Element[]> {
   const elements = document.querySelectorAll(selector);
   return (
     (elements.length > 0 && getVisibleElementsInArray(elements)) ||
@@ -196,15 +179,11 @@ export const gExtToMimeAll = {
 export const gExtToMime = {
   video: Object.fromEntries(
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    Object.entries(gExtToMimeAll).filter(([_, mimeType]) =>
-      mimeType.startsWith("video")
-    )
+    Object.entries(gExtToMimeAll).filter(([_, mimeType]) => mimeType.startsWith("video"))
   ),
   audio: Object.fromEntries(
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    Object.entries(gExtToMimeAll).filter(([_, mimeType]) =>
-      mimeType.startsWith("audio")
-    )
+    Object.entries(gExtToMimeAll).filter(([_, mimeType]) => mimeType.startsWith("audio"))
   )
 };
 
@@ -241,18 +220,14 @@ export function getDiffOption(
 ): { [p: string]: any } {
   return Object.fromEntries([
     Object.entries(options1).find(
-      ([key, value]) =>
-        JSON.stringify({ [key]: value }) !==
-        JSON.stringify({ [key]: options2[key] })
+      ([key, value]) => JSON.stringify({ [key]: value }) !== JSON.stringify({ [key]: options2[key] })
     )
   ]);
 }
 
 export async function getStoredOptions(): Promise<Options> {
   return new Promise(resolve =>
-    chrome.storage.sync.get("options", result =>
-      resolve(result.options || initialOptions)
-    )
+    chrome.storage.sync.get("options", result => resolve(result.options || initialOptions))
   );
 }
 
@@ -260,9 +235,7 @@ export async function getStoredOption(
   key: "ext" | "videoQualityMode" | "videoQuality" | "isRemoveNativeDownload"
 ): Promise<unknown> {
   return new Promise(resolve =>
-    chrome.storage.sync.get("options", result =>
-      resolve(result.options?.[key] ?? initialOptions[key])
-    )
+    chrome.storage.sync.get("options", result => resolve(result.options?.[key] ?? initialOptions[key]))
   );
 }
 

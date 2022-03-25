@@ -1,9 +1,5 @@
 import { getVideoData } from "./yt-downloader-functions";
-import {
-  gCancelControllers,
-  getIsDownloadable,
-  gPorts
-} from "./yt-downloader-content-script-initialize";
+import { gCancelControllers, getIsDownloadable, gPorts } from "./yt-downloader-content-script-initialize";
 import Vue from "vue/dist/vue.min.js";
 import {
   getCompatibleFilename,
@@ -16,12 +12,7 @@ import {
 } from "./utils";
 import type { AdaptiveFormatItem, Options, VideoQueue } from "./types";
 import { icons } from "./icons";
-import {
-  ErrorFileExtension,
-  Icon,
-  IconLoader,
-  TabsDownloadTypes
-} from "./content-script-components";
+import { ErrorFileExtension, Icon, IconLoader, TabsDownloadTypes } from "./content-script-components";
 
 let gDownloadContainer: Vue;
 export let gIntersectionObserverModal: IntersectionObserver;
@@ -31,9 +22,7 @@ function toggleNativeDownload(isVisible: boolean) {
   const selector = "ytd-download-button-renderer";
   const elementNodeListOf = document.querySelectorAll(selector);
   for (const elDownload of elementNodeListOf) {
-    (<HTMLElement>elDownload).style.display = isVisible
-      ? "inline-block"
-      : "none";
+    (<HTMLElement>elDownload).style.display = isVisible ? "inline-block" : "none";
   }
 }
 
@@ -52,29 +41,22 @@ export async function handleVideo(): Promise<void> {
   const elDownloaderContainer = document.createElement("div");
   elDownloaderContainer.id = "ytdl-download-container";
 
-  const elButtonAfterRating = await getElementEventually(
-    "#top-level-buttons-computed ytd-button-renderer"
-  );
+  const elButtonAfterRating = await getElementEventually("#top-level-buttons-computed ytd-button-renderer");
 
   if (document.getElementById(elDownloaderContainer.id)) {
     return;
   }
 
-  const { isRemoveNativeDownload, ext, videoQualityMode, videoQuality } =
-    await getStoredOptions();
+  const { isRemoveNativeDownload, ext, videoQualityMode, videoQuality } = await getStoredOptions();
   if (isRemoveNativeDownload) {
     toggleNativeDownload(false);
   }
 
-  elButtonAfterRating.parentElement.insertBefore(
-    elDownloaderContainer,
-    elButtonAfterRating
-  );
+  elButtonAfterRating.parentElement.insertBefore(elDownloaderContainer, elButtonAfterRating);
 
   const { videoId, title } = videoData.videoDetails;
 
-  const isMusic =
-    videoData.microformat.playerMicroformatRenderer.category === "Music";
+  const isMusic = videoData.microformat.playerMicroformatRenderer.category === "Music";
   gDownloadContainer = new Vue({
     el: `#${elDownloaderContainer.id}`,
     components: {
@@ -91,10 +73,7 @@ export async function handleVideo(): Promise<void> {
       progressType: "" as "" | "video" | "audio" | "ffmpeg",
       isQueued: false,
       isPortDisconnected: false,
-      downloadType: (isMusic ? "audio" : "video+audio") as
-        | "video"
-        | "audio"
-        | "video+audio",
+      downloadType: (isMusic ? "audio" : "video+audio") as "video" | "audio" | "video+audio",
       filename: title,
       ext: isMusic ? ext.audio : ext.video,
       isRichOptions: false,
@@ -207,9 +186,7 @@ export async function handleVideo(): Promise<void> {
         toggleNativeDownload(true);
       },
       progress(progress: number) {
-        const elRichDownload = document.querySelector(
-          ".ytdl-container__rich-options__action-button"
-        );
+        const elRichDownload = document.querySelector(".ytdl-container__rich-options__action-button");
         const { width: widthRaw } = getComputedStyle(elRichDownload);
         const width = Number(widthRaw.replace("px", ""));
         this.widthProgressDownloadButton = (progress * 100 * width) / 100;
@@ -221,9 +198,7 @@ export async function handleVideo(): Promise<void> {
         this.audioUrl = audio?.url;
       },
       ext(ext: string) {
-        this.isDownloadable = Boolean(
-          gExtToMime[this.extsSupportedForType][ext]
-        );
+        this.isDownloadable = Boolean(gExtToMime[this.extsSupportedForType][ext]);
       }
     },
     computed: {
@@ -236,8 +211,7 @@ export async function handleVideo(): Promise<void> {
         }
         if (
           this.isDoneDownloading &&
-          (this.progressType === "ffmpeg" ||
-            this.downloadType !== "video+audio")
+          (this.progressType === "ffmpeg" || this.downloadType !== "video+audio")
         ) {
           return "DONE";
         }
@@ -253,9 +227,7 @@ export async function handleVideo(): Promise<void> {
         if (!videoData.streamingData) {
           return [];
         }
-        const formats =
-          videoData.streamingData.adaptiveFormats ||
-          videoData.streamingData.formats;
+        const formats = videoData.streamingData.adaptiveFormats || videoData.streamingData.formats;
 
         return formats.sort((a, b) => b.bitrate - a.bitrate);
       },
@@ -298,9 +270,7 @@ export async function handleVideo(): Promise<void> {
         if (!this.isRichOptions) {
           return "More options";
         }
-        return !this.isStartedDownload && !this.isDoneDownloading
-          ? "Click DONE"
-          : "Less options";
+        return !this.isStartedDownload && !this.isDoneDownloading ? "Click DONE" : "Less options";
       },
       audioBitrate() {
         return Math.floor(this.audio?.bitrate / 1000);
@@ -321,9 +291,7 @@ export async function handleVideo(): Promise<void> {
           strings.push(this.audioBitrate, "kbps");
         } else {
           strings.push(
-            this.video
-              ? this.getVideoQuality(this.video) + "p"
-              : "high quality",
+            this.video ? this.getVideoQuality(this.video) + "p" : "high quality",
             this.video?.fps,
             "FPS"
           );
@@ -352,15 +320,9 @@ export async function handleVideo(): Promise<void> {
         const isProgressBetween = this.progress > 0 && this.progress < 1;
         return (
           (this.downloadType === "video+audio" && isProgressBetween) ||
-          (this.downloadType === "video+audio" &&
-            this.progress === 0 &&
-            this.progressType !== "") ||
-          (this.downloadType === "video+audio" &&
-            this.progress === 1 &&
-            this.progressType === "video") ||
-          (this.downloadType === "video+audio" &&
-            this.progress === 1 &&
-            this.progressType === "audio") ||
+          (this.downloadType === "video+audio" && this.progress === 0 && this.progressType !== "") ||
+          (this.downloadType === "video+audio" && this.progress === 1 && this.progressType === "video") ||
+          (this.downloadType === "video+audio" && this.progress === 1 && this.progressType === "audio") ||
           (this.downloadType === "video" && isProgressBetween) ||
           (this.downloadType === "audio" && isProgressBetween)
         );
@@ -415,9 +377,7 @@ export async function handleVideo(): Promise<void> {
         return this.videos[0];
       },
       getIVideoByQuality(quality: number) {
-        return this.videos.findIndex(
-          (video: AdaptiveFormatItem) => this.getVideoQuality(video) === quality
-        );
+        return this.videos.findIndex((video: AdaptiveFormatItem) => this.getVideoQuality(video) === quality);
       },
       updateMediaItem(type: "audio" | "video", urlToFind: string) {
         this[type] = this[`${type}s`].find(({ url }) => url === urlToFind);
@@ -451,16 +411,11 @@ export async function handleVideo(): Promise<void> {
 
       if (videoQualityMode === "current-quality") {
         this.video = await this.getVideoByCurrentQuality();
-        (await getVideoEventually()).addEventListener(
-          "canplay",
-          onQualityChange
-        );
+        (await getVideoEventually()).addEventListener("canplay", onQualityChange);
       } else if (videoQualityMode === "best") {
         this.video = this.videos[0];
       } else if (videoQualityMode === "custom") {
-        this.video =
-          this.videos?.[this.getIVideoByQuality(videoQuality)] ??
-          this.videos[0];
+        this.video = this.videos?.[this.getIVideoByQuality(videoQuality)] ?? this.videos[0];
       }
     },
     mounted() {
@@ -488,15 +443,11 @@ export async function handleVideo(): Promise<void> {
     }
   });
 
-  function progressListener({
-    updateProgress: { progress, progressType, isRemoved }
-  }) {
+  function progressListener({ updateProgress: { progress, progressType, isRemoved } }) {
     if (isRemoved) {
       gDownloadContainer.progress = 0;
       gDownloadContainer.progressType =
-        gDownloadContainer.downloadType === "video+audio"
-          ? ""
-          : gDownloadContainer.downloadType;
+        gDownloadContainer.downloadType === "video+audio" ? "" : gDownloadContainer.downloadType;
       gDownloadContainer.isStartedDownload = false;
       gDownloadContainer.isDoneDownloading = false;
       gDownloadContainer.isQueued = false;
@@ -525,8 +476,7 @@ export async function handleVideo(): Promise<void> {
 
     const options = changes.options?.newValue as Options;
     if (options) {
-      const optionsPrev =
-        (changes.options?.oldValue as Options) ?? initialOptions;
+      const optionsPrev = (changes.options?.oldValue as Options) ?? initialOptions;
       const diffOption = getDiffOption(options, optionsPrev);
       const optionChanged = Object.keys(diffOption)[0] as
         | "ext"
@@ -536,9 +486,7 @@ export async function handleVideo(): Promise<void> {
 
       if (optionChanged === "ext") {
         gDownloadContainer.ext =
-          gDownloadContainer.downloadType === "audio"
-            ? options.ext.audio
-            : options.ext.video;
+          gDownloadContainer.downloadType === "audio" ? options.ext.audio : options.ext.video;
         return;
       }
 
@@ -554,8 +502,7 @@ export async function handleVideo(): Promise<void> {
         if (videoQualityMode === "current-quality") {
           elVideo.removeEventListener("canplay", onQualityChange);
           elVideo.addEventListener("canplay", onQualityChange);
-          gDownloadContainer.video =
-            await gDownloadContainer.getVideoByCurrentQuality();
+          gDownloadContainer.video = await gDownloadContainer.getVideoByCurrentQuality();
           return;
         }
 
@@ -567,20 +514,14 @@ export async function handleVideo(): Promise<void> {
 
         // videoQualityMode === "custom"
         elVideo.removeEventListener("canplay", onQualityChange);
-        const iQuality = gDownloadContainer.getIVideoByQuality(
-          options.videoQuality
-        );
-        gDownloadContainer.video =
-          gDownloadContainer.videos?.[iQuality] ?? gDownloadContainer.videos[0];
+        const iQuality = gDownloadContainer.getIVideoByQuality(options.videoQuality);
+        gDownloadContainer.video = gDownloadContainer.videos?.[iQuality] ?? gDownloadContainer.videos[0];
         return;
       }
 
       if (optionChanged === "videoQuality") {
-        const iQuality = gDownloadContainer.getIVideoByQuality(
-          options.videoQuality
-        );
-        gDownloadContainer.video =
-          gDownloadContainer.videos?.[iQuality] ?? gDownloadContainer.videos[0];
+        const iQuality = gDownloadContainer.getIVideoByQuality(options.videoQuality);
+        gDownloadContainer.video = gDownloadContainer.videos?.[iQuality] ?? gDownloadContainer.videos[0];
       }
     }
   }
@@ -588,6 +529,5 @@ export async function handleVideo(): Promise<void> {
 
 export async function onQualityChange(): Promise<void> {
   // Set the video URL on quality change, if option videoQualityMode === "current-selected"
-  gDownloadContainer.video =
-    await gDownloadContainer.getVideoByCurrentQuality();
+  gDownloadContainer.video = await gDownloadContainer.getVideoByCurrentQuality();
 }
