@@ -1,15 +1,5 @@
-import {
-  createFFmpeg,
-  fetchFile,
-  FFmpeg
-} from "@ffmpeg/ffmpeg/dist/ffmpeg.min.js";
-import {
-  getCompatibleFilename,
-  getMimeType,
-  getVideoId,
-  setLocalStorage,
-  updateQueue
-} from "./utils";
+import { createFFmpeg, fetchFile, FFmpeg } from "@ffmpeg/ffmpeg/dist/ffmpeg.min.js";
+import { getCompatibleFilename, getMimeType, getVideoId, setLocalStorage, updateQueue } from "./utils";
 import type {
   MusicList,
   StatusProgress,
@@ -21,7 +11,6 @@ import type {
 } from "./types";
 import { watch } from "@vue/runtime-core";
 import { ref } from "@vue/reactivity";
-import Port = chrome.runtime.Port;
 
 const gCancelControllers: {
   [videoId: string]: {
@@ -81,9 +70,7 @@ async function removeMediaFromLists(idsToRemove: string[]) {
 
   gMusicList = gMusicList.filter(videoId => !idsToRemove.includes(videoId));
   gVideoQueue = gVideoQueue.filter(videoId => !idsToRemove.includes(videoId));
-  gVideoOnlyList = gVideoOnlyList.filter(
-    videoId => !idsToRemove.includes(videoId)
-  );
+  gVideoOnlyList = gVideoOnlyList.filter(videoId => !idsToRemove.includes(videoId));
 
   await updateQueue("music", gMusicList);
   await updateQueue("video", gVideoQueue);
@@ -112,7 +99,7 @@ function removeVideoTabTracker(videoIdToRemove: string, tabId: number) {
   gVideoIds[videoIdToRemove].splice(iTabId, 1);
 }
 
-function handleMainConnection(port: Port) {
+function handleMainConnection(port: chrome.runtime.Port) {
   const { url, id: idTab } = port.sender.tab;
 
   const videoId = getVideoId(url);
@@ -143,9 +130,7 @@ function handleMainConnection(port: Port) {
       removeVideoTabTracker(idVideoOld, idTab);
       addVideoTabTracker(idVideoNew, idTab);
 
-      await removeMediaFromLists(
-        tabTracked.videoIdsToDownload || tabTracked.videoIdsAvailable
-      );
+      await removeMediaFromLists(tabTracked.videoIdsToDownload || tabTracked.videoIdsAvailable);
     }
   });
 
@@ -161,9 +146,7 @@ function handleMainConnection(port: Port) {
       removeVideoTabTracker(videoId, idTab);
     }
 
-    await removeMediaFromLists(
-      tabTracked.videoIdsToDownload || tabTracked.videoIdsAvailable
-    );
+    await removeMediaFromLists(tabTracked.videoIdsToDownload || tabTracked.videoIdsAvailable);
   });
 }
 
@@ -179,9 +162,7 @@ async function responseToUintArray(response: Response, videoId: string) {
   // https://javascript.info/fetch-progress
   const reader = response.body.getReader();
   const totalLength = +response.headers.get("Content-Length");
-  const progressType = response.headers.get("Content-Type").split("/")[0] as
-    | "audio"
-    | "video";
+  const progressType = response.headers.get("Content-Type").split("/")[0] as "audio" | "video";
 
   let receivedLength = 0;
   const chunks: Uint8Array[] = [];
@@ -239,13 +220,7 @@ function updateProgress({
   };
 }
 
-async function cleanupDownload({
-  url,
-  videoId
-}: {
-  url: string;
-  videoId: string;
-}) {
+async function cleanupDownload({ url, videoId }: { url: string; videoId: string }) {
   URL.revokeObjectURL(url);
   delete gCancelControllers[videoId];
   delete gStatusProgress.value[videoId];
@@ -335,22 +310,12 @@ async function processVideo({
   gFfmpeg.FS("writeFile", filenameVideo, blobVideo);
   gFfmpeg.FS("writeFile", filenameAudio, blobAudio);
 
-  await gFfmpeg.run(
-    "-i",
-    filenameVideo,
-    "-i",
-    filenameAudio,
-    "-c:v",
-    "copy",
-    filenameOutputTemp
-  );
+  await gFfmpeg.run("-i", filenameVideo, "-i", filenameAudio, "-c:v", "copy", filenameOutputTemp);
 
   const dataFile: Uint8Array = gFfmpeg.FS("readFile", filenameOutputTemp);
   deleteFiles([filenameVideo, filenameAudio, filenameOutputTemp]);
 
-  const url = URL.createObjectURL(
-    new Blob([dataFile], { type: getMimeType(filenameOutput) })
-  );
+  const url = URL.createObjectURL(new Blob([dataFile], { type: getMimeType(filenameOutput) }));
   await processSingleMedia({
     videoId,
     type: "video+audio",
@@ -383,11 +348,7 @@ async function processSingleMedia({
       abortControllers: [abortMedia]
     };
 
-    abortMedia.signal.addEventListener(
-      "abort",
-      () => sendRemovalSignal(videoId),
-      { once: true }
-    );
+    abortMedia.signal.addEventListener("abort", () => sendRemovalSignal(videoId), { once: true });
     const dataFile = await responseToUintArray(
       await fetch(urls[type], {
         signal: abortMedia.signal
@@ -401,17 +362,15 @@ async function processSingleMedia({
     );
   }
 
-  chrome.downloads.download(
-    { url, filename: getCompatibleFilename(filenameOutput) },
-    () =>
-      cleanupDownload({
-        url,
-        videoId
-      })
+  chrome.downloads.download({ url, filename: getCompatibleFilename(filenameOutput) }, () =>
+    cleanupDownload({
+      url,
+      videoId
+    })
   );
 }
 
-function handleSingleMediaProcessing(port: Port) {
+function handleSingleMediaProcessing(port: chrome.runtime.Port) {
   port.onMessage.addListener(
     async (processInfo: {
       type: "video+audio" | "video" | "audio";
@@ -491,7 +450,7 @@ async function processVideoOnlyPlaylist() {
   }
 }
 
-function handlePlaylistProcessing(port: Port) {
+function handlePlaylistProcessing(port: chrome.runtime.Port) {
   port.onMessage.addListener(
     async (
       processInfos: {
@@ -526,17 +485,11 @@ function handlePlaylistProcessing(port: Port) {
       const wasVideoQueueEmpty = gVideoQueue.length === 0;
       const isFirstVideoInProgress = gVideoQueue[0] === videoIds[0];
 
-      gTabTracker[port.sender.tab.id].videoIdsToDownload = [
-        ...audioIds,
-        ...videoIds,
-        ...videoOnlyIds
-      ];
+      gTabTracker[port.sender.tab.id].videoIdsToDownload = [...audioIds, ...videoIds, ...videoOnlyIds];
 
       gMusicList = gMusicList.filter(audioId => !audioIds.includes(audioId));
       gVideoQueue = gVideoQueue.filter(videoId => !videoIds.includes(videoId));
-      gVideoOnlyList = gVideoOnlyList.filter(
-        videoId => !videoOnlyIds.includes(videoId)
-      );
+      gVideoOnlyList = gVideoOnlyList.filter(videoId => !videoOnlyIds.includes(videoId));
 
       gVideoQueue.unshift(...videoIds);
       gMusicList.unshift(...audioIds);
@@ -616,13 +569,9 @@ function addListeners() {
 }
 
 function addWatchers() {
-  watch(gVideoDetails.value, videoDetails =>
-    chrome.storage.local.set({ videoDetails })
-  );
+  watch(gVideoDetails.value, videoDetails => chrome.storage.local.set({ videoDetails }));
 
-  watch(gStatusProgress.value, statusProgress =>
-    chrome.storage.local.set({ statusProgress })
-  );
+  watch(gStatusProgress.value, statusProgress => chrome.storage.local.set({ statusProgress }));
 }
 
 chrome.runtime.onInstalled.addListener(emptyTempStorage);

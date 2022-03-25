@@ -21,9 +21,7 @@
 </script>
 
 <Subheader>Video quality to download</Subheader>
-<Radio bind:group={videoQualityMode} value="current-quality">
-  Currently-selected in the video
-</Radio>
+<Radio bind:group={videoQualityMode} value="current-quality">Currently-selected in the video</Radio>
 <Radio bind:group={videoQualityMode} value="best">Best</Radio>
 <Radio bind:group={videoQualityMode} value="custom">Custom</Radio>
 

@@ -1,20 +1,17 @@
 <script lang="ts">
-import { Subheader, Switch } from "svelte-materialify";
-import type { Options } from "../types";
-import { setOption } from "../utils";
+  import { Subheader, Switch } from "svelte-materialify";
+  import type { Options } from "../types";
+  import { setOption } from "../utils";
 
-export let options: Options;
+  export let options: Options;
 
-let { isRemoveNativeDownload } = options;
+  let { isRemoveNativeDownload } = options;
 
-$: {
-  setOption("isRemoveNativeDownload", isRemoveNativeDownload);
-}
-
+  $: {
+    setOption("isRemoveNativeDownload", isRemoveNativeDownload);
+  }
 </script>
 
 <Subheader>Native Download Removal</Subheader>
 
-<Switch bind:checked={isRemoveNativeDownload}
-  >Remove the native Download button</Switch
->
+<Switch bind:checked={isRemoveNativeDownload}>Remove the native Download button</Switch>

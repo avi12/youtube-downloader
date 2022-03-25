@@ -17,6 +17,7 @@ function createConfig(filename, useSvelte = false) {
     input: `src/${filename}.ts`,
     output: {
       format: "iife",
+      inlineDynamicImports: true,
       file: `dist/build/${filename}.js`,
       strict: false,
       globals: ["@ffmpeg/ffmpeg"]
@@ -39,9 +40,7 @@ function createConfig(filename, useSvelte = false) {
       commonjs(),
       !useSvelte &&
         replace({
-          "process.env.NODE_ENV": `"${
-            !isProduction ? "development" : "production"
-          }"`
+          "process.env.NODE_ENV": `"${!isProduction ? "development" : "production"}"`
         }),
       isProduction && terser()
     ],

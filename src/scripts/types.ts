@@ -144,7 +144,7 @@ type MediaItem = {
   approxDurationMs: string;
 };
 
-type FormatItem = MediaItem & {
+export type FormatItem = MediaItem & {
   width: number;
   height: number;
   quality: "tiny" | "medium" | "hd720";
@@ -160,25 +160,9 @@ type FormatItem = MediaItem & {
 export type AdaptiveFormatItem = MediaItem & {
   width?: number;
   height?: number;
-  quality:
-    | "tiny"
-    | "medium"
-    | "large"
-    | "hd720"
-    | "hd1080"
-    | "hd1440"
-    | "hd2160"
-    | "hd4320";
+  quality: "tiny" | "medium" | "large" | "hd720" | "hd1080" | "hd1440" | "hd2160" | "hd4320";
   fps?: 30 | 48 | 50 | 60;
-  qualityLabel?:
-    | "144p"
-    | "360p"
-    | "480p"
-    | "720p"
-    | "1080p"
-    | "1440p"
-    | "2160p"
-    | "4320p";
+  qualityLabel?: "144p" | "360p" | "480p" | "720p" | "1080p" | "1440p" | "2160p" | "4320p";
   averageBitrate: number;
   audioQuality?: "AUDIO_QUALITY_LOW" | "AUDIO_QUALITY_MEDIUM";
   colorInfo?: {
@@ -206,10 +190,7 @@ type Ad = {
           offsetEndMilliseconds: string;
         };
         hideCueRangeMarker: boolean;
-        kind:
-          | "AD_PLACEMENT_KIND_START"
-          | "AD_PLACEMENT_KIND_END"
-          | "AD_PLACEMENT_KIND_MILLISECONDS";
+        kind: "AD_PLACEMENT_KIND_START" | "AD_PLACEMENT_KIND_END" | "AD_PLACEMENT_KIND_MILLISECONDS";
       };
     };
     renderer: {

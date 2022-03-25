@@ -12,13 +12,12 @@ import {
   gMutationObserverPlaylistVideoReadiness,
   handlePlaylistVideos
 } from "./yt-downloader-content-script-playlist";
-import { getVideoEventually } from "./utils";
-import Port = chrome.runtime.Port;
+import { getElementEventually, getIsDownloadLinksAvailable, getVideoEventually } from "./utils";
 
 export let gPorts: {
-  main?: Port;
-  processSingle?: Port;
-  processPlaylist?: Port;
+  main?: chrome.runtime.Port;
+  processSingle?: chrome.runtime.Port;
+  processPlaylist?: chrome.runtime.Port;
 };
 
 let isPortDisconnected = false;
@@ -38,7 +37,8 @@ export function getIsDownloadable(videoData: PlayerResponse): boolean {
   return (
     !isPortDisconnected &&
     !getIsLive(videoData) &&
-    videoData.playabilityStatus.status === "OK"
+    videoData.playabilityStatus.status === "OK" &&
+    getIsDownloadLinksAvailable(videoData)
   );
 }
 
@@ -125,11 +125,7 @@ async function init() {
 
   if (!gObserverPlaylistVideos) {
     gObserverPlaylistVideos = new MutationObserver(async mutations => {
-      if (
-        !(<HTMLElement>mutations[1]?.addedNodes?.[0])?.matches?.(
-          "ytd-playlist-video-renderer"
-        )
-      ) {
+      if (!(<HTMLElement>mutations[1]?.addedNodes?.[0])?.matches?.("ytd-playlist-video-renderer")) {
         return;
       }
       await handlePlaylistVideos();
@@ -137,20 +133,12 @@ async function init() {
   }
 
   if (!gObserverPlaylistDownloadButton) {
-    gObserverPlaylistDownloadButton = new MutationObserver(
-      appendPlaylistDownloadButton
-    );
+    gObserverPlaylistDownloadButton = new MutationObserver(appendPlaylistDownloadButton);
   }
 
-  gObserverPlaylistVideos.observe(
-    document.querySelector("#contents"),
-    gObserverOptions
-  );
-
-  gObserverPlaylistDownloadButton.observe(
-    document.querySelector("ytd-menu-renderer"),
-    gObserverOptions
-  );
+  const elVideosContainer = await getElementEventually("#contents");
+  gObserverPlaylistVideos.observe(elVideosContainer, gObserverOptions);
+  gObserverPlaylistDownloadButton.observe(document.querySelector("ytd-menu-renderer"), gObserverOptions);
 
   appendPlaylistDownloadButton();
   await handlePlaylistVideos();

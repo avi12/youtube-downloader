@@ -11,12 +11,7 @@
 
   import { getLocalStorage, initialOptions, updateQueue } from "../utils";
 
-  import {
-    MaterialAppMin,
-    Tabs,
-    Tab,
-    TabContent
-  } from "svelte-materialify";
+  import { MaterialAppMin, Tabs, Tab, TabContent } from "svelte-materialify";
   import MediaList from "../components/MediaList.svelte";
   import MediaQueue from "../components/MediaQueue.svelte";
   import OptionFilename from "./OptionFilename.svelte";
@@ -37,9 +32,7 @@
   }));
 
   async function getMovableList(videoQueue: VideoQueue): Promise<MovableList> {
-    const videoDetails = (await getLocalStorage(
-      "videoDetails"
-    )) as VideoDetails;
+    const videoDetails = (await getLocalStorage("videoDetails")) as VideoDetails;
 
     return videoQueue.map(videoId => ({
       id: videoId,
@@ -82,11 +75,7 @@
     await updateQueue("video", videos);
   }
 
-  function stopAllDownloads({
-    detail: queue
-  }: {
-    detail: VideoQueue | MusicList | VideoOnlyList;
-  }) {
+  function stopAllDownloads({ detail: queue }: { detail: VideoQueue | MusicList | VideoOnlyList }) {
     chrome.runtime.sendMessage({
       action: "cancel-download",
       videoIdsToCancel: queue
