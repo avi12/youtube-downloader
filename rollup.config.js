@@ -17,6 +17,7 @@ function createConfig(filename, useSvelte = false) {
     input: `src/${filename}.ts`,
     output: {
       format: "iife",
+      inlineDynamicImports: true,
       file: `dist/build/${filename}.js`,
       strict: false,
       globals: ["@ffmpeg/ffmpeg"]
