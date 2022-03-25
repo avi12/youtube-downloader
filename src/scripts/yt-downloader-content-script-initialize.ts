@@ -142,15 +142,9 @@ async function init() {
     );
   }
 
-  gObserverPlaylistVideos.observe(
-    document.querySelector("#contents"),
-    gObserverOptions
-  );
-
-  gObserverPlaylistDownloadButton.observe(
-    document.querySelector("ytd-menu-renderer"),
-    gObserverOptions
-  );
+  const elVideosContainer = await getElementEventually("#contents");
+  gObserverPlaylistVideos.observe(elVideosContainer, gObserverOptions);
+  gObserverPlaylistDownloadButton.observe(document.querySelector("ytd-menu-renderer"), gObserverOptions);
 
   appendPlaylistDownloadButton();
   await handlePlaylistVideos();
