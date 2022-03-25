@@ -1,6 +1,6 @@
 {
   "name": "youtube-downloader",
-  "version": "1.0.3",
+  "version": "1.0.5",
   "description": "A browser extension for downloading almost any video from YouTube, right from its page.",
   "repository": "https://github.com/avi12/youtube-downloader",
   "author": "avi12 <avi6106@gmail.com>",
