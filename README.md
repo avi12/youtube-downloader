@@ -13,8 +13,9 @@ Made by [avi12](https://avi12.com)
   <img src="https://user-images.githubusercontent.com/6422804/135839033-c6caa7a4-72c9-4fc6-9b70-1a9561c1173a.png" width="30" alt="Opera GX">
 </p>
 
-CAUTIOUS: This extension will only work until [January 2024](https://developer.chrome.com/docs/extensions/mv3/mv2-sunset), so hurry up!  
-If you can, I'd love if you can port this exxtension to [Manifest V3](https://developer.chrome.com/docs/extensions/mv3/intro/mv3-overview)!
+NOTICE: This extension will only work until [June 2024](https://developer.chrome.com/docs/extensions/mv3/mv2-sunset), so hurry up!  
+If you still want to use it afterwards, you can use [Brave](https://brave.com) which has a longer Manifest V2 support  
+If you can, I'd love if you can port it to [Manifest V3](https://developer.chrome.com/docs/extensions/mv3/intro/mv3-overview)!
 
 <details style="margin-top: 20px;">
 <summary>Screenshots</summary>
