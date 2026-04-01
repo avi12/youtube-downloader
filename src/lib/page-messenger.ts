@@ -9,9 +9,6 @@ interface PageMessengerSchema {
   navigation(data: { url: string }): void;
   panelContentReady(data: { contentId: string }): void;
 
-  // Isolated world → MAIN world: SABR credentials from background webRequest
-  sabrCredentials(data: { url: string; poToken: string }): void;
-
   // Isolated world / Svelte → MAIN world
   downloadRequest(data: DownloadRequest): void;
   cancelDownload(data: { videoIds: string[] }): void;

@@ -266,6 +266,8 @@ export default defineContentScript({
     const unsubscribeNavigation = pageMessenger.onMessage("navigation", async ({ data }) => {
       currentVideoData = null;
       await handlePageChange(data.url);
+      // Re-forward SABR credentials for the new page (PO token persists per session)
+      forwardSabrCredentialsWithRetry();
     });
     context.onInvalidated(unsubscribeNavigation);
 
@@ -276,16 +278,44 @@ export default defineContentScript({
     context.onInvalidated(unsubscribePanelContentReady);
 
     // When background captures a SABR request body, forward credentials to MAIN world
+    let isCredentialsForwarded = false;
+
     async function forwardSabrCredentials() {
       const captured = await sendMessage("getCapturedSabrBody", {});
       if (!captured?.poToken) {
         return;
       }
 
-      await pageMessenger.sendMessage("sabrCredentials", {
-        url: captured.url,
-        poToken: captured.poToken
-      });
+      isCredentialsForwarded = true;
+      // Store credentials in a hidden DOM element so the MAIN world can read them.
+      // CustomEvent.detail and pageMessenger don't reliably cross the
+      // isolated/MAIN world boundary in Chrome.
+      let elCredentials = document.getElementById("ytdl-sabr-credentials");
+      if (!elCredentials) {
+        elCredentials = document.createElement("div");
+        elCredentials.id = "ytdl-sabr-credentials";
+        elCredentials.hidden = true;
+        document.documentElement.append(elCredentials);
+      }
+
+      elCredentials.dataset.url = captured.url;
+      elCredentials.dataset.poToken = captured.poToken;
+    }
+
+    // Retry forwarding until credentials are available (SABR requests
+    // may arrive after our first attempt, especially on SPA navigation)
+    async function forwardSabrCredentialsWithRetry() {
+      isCredentialsForwarded = false;
+
+      for (let iAttempt = 0; iAttempt < 30; iAttempt++) {
+        await forwardSabrCredentials();
+
+        if (isCredentialsForwarded) {
+          return;
+        }
+
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
     }
 
     // Background notifies when SABR body is first captured for this tab
@@ -293,8 +323,8 @@ export default defineContentScript({
       forwardSabrCredentials();
     });
 
-    // Also try immediately in case SABR data was captured before this script loaded
-    forwardSabrCredentials();
+    // Try immediately and retry - SABR data may not be captured yet on initial load
+    forwardSabrCredentialsWithRetry();
 
     // Forward cancel requests from MAIN world button or Svelte components to background
     const unsubscribeCancelDownload = pageMessenger.onMessage("cancelDownload", async ({ data }) => {

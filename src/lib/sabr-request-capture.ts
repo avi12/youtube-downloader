@@ -24,10 +24,7 @@ const capturedByTab = new Map<number, CapturedSabrData>();
 export function startSabrRequestCapture() {
   browser.webRequest.onBeforeRequest.addListener(
     handleSabrRequest,
-    {
-      urls: ["https://*.googlevideo.com/videoplayback*"],
-      types: ["xmlhttprequest", "other"]
-    },
+    { urls: ["https://*.googlevideo.com/videoplayback*"] },
     ["requestBody"]
   );
 }

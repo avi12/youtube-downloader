@@ -69,9 +69,6 @@ export default defineContentScript({
     let capturedSabrUrl = "";
     let capturedPoToken = "";
 
-    // Debug: expose capture state
-    Object.defineProperty(document, "__ytdl_debug", { get: () => ({ capturedSabrUrl, hasPoToken: !!capturedPoToken }) });
-
     function extractPoTokenFromBytes(bytes: Uint8Array) {
       let offset = 0;
 
@@ -526,6 +523,7 @@ export default defineContentScript({
       );
       // Strategy 1: SabrStream - independently fetch the full video without
       // relying on playback state. Works even if the video is paused.
+      readSabrCredentialsFromDom();
       console.log("[ytdl] Download state:", { hasSabrUrl: !!capturedSabrUrl, hasPoToken: !!capturedPoToken, hasSabrConfig: !!cachedVideoData.sabrConfig });
       const hasSabrCredentials = capturedPoToken && capturedSabrUrl;
       if (hasSabrCredentials && cachedVideoData.sabrConfig && videoFormat && audioFormat) {
@@ -1110,11 +1108,31 @@ export default defineContentScript({
 
     document.addEventListener("yt-page-data-updated", handlePageDataUpdated);
 
-    // Receive SABR credentials pushed from isolated world (captured by background webRequest)
-    pageMessenger.onMessage("sabrCredentials", ({ data }) => {
-      capturedSabrUrl = data.url;
-      capturedPoToken = data.poToken;
-      console.log("[ytdl] SABR credentials received from background");
+    // Read SABR credentials from DOM element set by the isolated world.
+    // The isolated world stores credentials in #ytdl-sabr-credentials dataset
+    // because CustomEvents don't reliably cross the isolated/MAIN world boundary.
+    function readSabrCredentialsFromDom() {
+      const elCredentials = document.getElementById("ytdl-sabr-credentials");
+      if (!elCredentials?.dataset.url || !elCredentials.dataset.poToken) {
+        return;
+      }
+
+      capturedSabrUrl = elCredentials.dataset.url;
+      capturedPoToken = elCredentials.dataset.poToken;
+    }
+
+    // Poll for credentials (isolated world sets them asynchronously)
+    const credentialObserver = new MutationObserver(() => {
+      readSabrCredentialsFromDom();
+
+      if (capturedPoToken) {
+        credentialObserver.disconnect();
+        console.log("[ytdl] SABR credentials received from background");
+      }
+    });
+
+    credentialObserver.observe(document.documentElement, {
+      childList: true, subtree: true, attributes: true, attributeFilter: ["data-url", "data-po-token"]
     });
 
     // Handle download requests from Svelte panel components (via isolated world)
