@@ -55,8 +55,8 @@ export default defineContentScript({
         cleanupPanelUi();
         cleanupGridUi();
         setNativeDownloadVisibility(true);
-        await injectPlaylistDownloaderUi(context, currentOptions);
-        await handlePlaylistVideoAdditions(context, currentOptions);
+        injectPlaylistDownloaderUi(context, currentOptions);
+        handlePlaylistVideoAdditions(context, currentOptions);
         return;
       }
 
@@ -83,6 +83,9 @@ export default defineContentScript({
           currentVideoData = data;
         }
       }
+
+      // Dispatch to all PlaylistVideoItem instances via DOM event
+      document.dispatchEvent(new CustomEvent("ytdl:video-data-received", { detail: data }));
 
       await checkInterruptedDownload(data.videoId);
     });
@@ -117,6 +120,8 @@ export default defineContentScript({
 
     onMessage("updateDownloadProgress", ({ data }) => {
       crossWorldMessenger.sendMessage("progress", data);
+      // Dispatch to all PlaylistVideoItem instances via DOM event
+      document.dispatchEvent(new CustomEvent("ytdl:progress-update", { detail: data }));
     });
 
     // ─── Event listeners ────────────────────────────────────────────────

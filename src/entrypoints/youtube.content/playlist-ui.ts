@@ -23,7 +23,7 @@ export function cleanupPlaylistUi() {
   }
 }
 
-export async function injectPlaylistDownloaderUi(
+export function injectPlaylistDownloaderUi(
   context: InstanceType<typeof ContentScriptContext>,
   options: Options
 ) {
@@ -40,8 +40,7 @@ export async function injectPlaylistDownloaderUi(
   elMountContainer.setAttribute("data-ytdl-playlist-downloader", "true");
   elHeader.append(elMountContainer);
 
-  const ui = await createShadowRootUi(context, {
-    name: "ytdl-playlist-downloader",
+  const ui = createIntegratedUi(context, {
     position: "inline",
     anchor: elMountContainer,
     onMount(elUiContainer) {
@@ -55,7 +54,7 @@ export async function injectPlaylistDownloaderUi(
   ui.mount();
 }
 
-async function injectPlaylistVideoItemUi(
+function injectPlaylistVideoItemUi(
   context: InstanceType<typeof ContentScriptContext>,
   options: Options,
   elVideoItem: Element
@@ -79,8 +78,7 @@ async function injectPlaylistVideoItemUi(
   elItemContainer.setAttribute("data-ytdl-item", videoId);
   elMenu.append(elItemContainer);
 
-  const ui = await createShadowRootUi(context, {
-    name: `ytdl-playlist-item-${videoId}`,
+  const ui = createIntegratedUi(context, {
     position: "inline",
     anchor: elItemContainer,
     onMount(elUiContainer) {
@@ -94,7 +92,7 @@ async function injectPlaylistVideoItemUi(
   ui.mount();
 }
 
-export async function handlePlaylistVideoAdditions(
+export function handlePlaylistVideoAdditions(
   context: InstanceType<typeof ContentScriptContext>,
   options: Options
 ) {
@@ -104,7 +102,7 @@ export async function handlePlaylistVideoAdditions(
   }
 
   for (const elVideoItem of elContents.querySelectorAll("ytd-playlist-video-renderer")) {
-    await injectPlaylistVideoItemUi(context, options, elVideoItem);
+    injectPlaylistVideoItemUi(context, options, elVideoItem);
   }
 
   const mutationObserver = new MutationObserver(mutations => {

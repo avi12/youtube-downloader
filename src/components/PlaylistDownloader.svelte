@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { crossWorldMessenger } from "../lib/cross-world-messenger";
   /**
    * Playlist-level download button.
    * Appears in the playlist header and allows downloading all checked videos.
@@ -25,9 +24,19 @@
   let error = $state("");
 
   // Collect video data as each playlist item reports in
-  $effect(() => crossWorldMessenger.onMessage("videoData", ({ data }) => {
-    videoDataMap.set(data.videoId, data);
-  }));
+  $effect(() => {
+    function handleVideoData(e: Event) {
+      if (!(e instanceof CustomEvent)) {
+        return;
+      }
+
+      videoDataMap.set(e.detail.videoId, e.detail);
+    }
+
+    document.addEventListener("ytdl:video-data-received", handleVideoData);
+
+    return () => document.removeEventListener("ytdl:video-data-received", handleVideoData);
+  });
 
   // Track checkboxes for per-video selection
   function handleCheckboxChange(e: Event) {

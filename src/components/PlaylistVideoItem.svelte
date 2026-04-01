@@ -20,32 +20,47 @@
   let isDownloading = $state(false);
   let isDone = $state(false);
   let isQueued = $state(false);
-  // Request video data from MAIN world and track when it arrives
+  // Listen for video data dispatched by the orchestrator via DOM events.
+  // Each component filters by videoId. DOM events support multiple listeners
+  // unlike crossWorldMessenger which only allows one per message type.
   $effect(() => {
-    const unsubscribe = crossWorldMessenger.onMessage("videoData", ({ data }) => {
-      if (data.videoId === videoId) {
-        videoData = data;
+    function handleVideoData(e: Event) {
+      if (!(e instanceof CustomEvent)) {
+        return;
       }
-    });
+
+      if (e.detail.videoId === videoId) {
+        videoData = e.detail;
+      }
+    }
+
+    document.addEventListener("ytdl:video-data-received", handleVideoData);
     crossWorldMessenger.sendMessage("requestVideoData", { videoId });
-    return unsubscribe;
+
+    return () => document.removeEventListener("ytdl:video-data-received", handleVideoData);
   });
 
-  // Track progress updates
-  $effect(() => crossWorldMessenger.onMessage("progress", ({ data }) => {
-    if (data.videoId !== videoId) {
-      return;
+  // Track progress updates via DOM events (same reason as above)
+  $effect(() => {
+    function handleProgress(e: Event) {
+      if (!(e instanceof CustomEvent) || e.detail.videoId !== videoId) {
+        return;
+      }
+
+      if (e.detail.isRemoved) {
+        isDownloading = false;
+        isDone = false;
+        isQueued = false;
+        return;
+      }
+
+      isDone = e.detail.progress >= 1;
     }
 
-    if (data.isRemoved) {
-      isDownloading = false;
-      isDone = false;
-      isQueued = false;
-      return;
-    }
+    document.addEventListener("ytdl:progress-update", handleProgress);
 
-    isDone = data.progress >= 1;
-  }));
+    return () => document.removeEventListener("ytdl:progress-update", handleProgress);
+  });
 
   // Track queue position
   function handleQueueChange(queue: { videoId: string }[] | null) {

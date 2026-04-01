@@ -24,10 +24,11 @@ export function cleanupGridUi() {
 }
 
 function extractVideoIdFromLockup(elLockup: Element) {
-  return elLockup.className.match(/content-id-(\S+)/)?.[1] ?? null;
+  const elContentId = elLockup.querySelector("[class*='content-id-']");
+  return elContentId?.getAttribute("class")?.match(/content-id-(\S+)/)?.[1] ?? null;
 }
 
-async function injectGridVideoButton(
+function injectGridVideoButton(
   context: InstanceType<typeof ContentScriptContext>,
   options: Options,
   elLockup: Element
@@ -46,8 +47,7 @@ async function injectGridVideoButton(
   elItemContainer.setAttribute("data-ytdl-grid-item", videoId);
   elMenuContainer.insertAdjacentElement("beforebegin", elItemContainer);
 
-  const ui = await createShadowRootUi(context, {
-    name: `ytdl-grid-item-${videoId}`,
+  const ui = createIntegratedUi(context, {
     position: "inline",
     anchor: elItemContainer,
     onMount(elUiContainer) {
@@ -66,7 +66,7 @@ export function injectGridVideoButtons(
   options: Options
 ) {
   function inject(elLockup: Element) {
-    injectGridVideoButton(context, options, elLockup).catch(() => {});
+    injectGridVideoButton(context, options, elLockup);
   }
 
   for (const elLockup of document.querySelectorAll(LOCKUP_SELECTOR)) {
