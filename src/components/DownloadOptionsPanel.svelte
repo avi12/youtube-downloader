@@ -505,7 +505,7 @@
 {/snippet}
 
 <div
-  style="overflow: hidden; width: 380px"
+  style="overflow: hidden; width: 380px; color: var(--yt-spec-text-primary, inherit)"
   {@attach attachPanel}
   aria-labelledby="ytdl-panel-title"
   aria-modal="true"
