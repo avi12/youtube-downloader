@@ -923,9 +923,9 @@ export default defineContentScript({
         elChevronButton.data = buildChevronData();
         requestAnimationFrame(applySegmentedClasses);
 
-        const isProgressVisible = isDownloading && downloadProgress > 0;
+        elProgressBar.indeterminate = isDownloading && downloadProgress === 0;
         elProgressBar.value = Math.round(downloadProgress * 100);
-        elProgressBar.style.opacity = isProgressVisible ? "1" : "0";
+        elProgressBar.style.opacity = isDownloading ? "1" : "0";
       }
 
       // - Click handler -
