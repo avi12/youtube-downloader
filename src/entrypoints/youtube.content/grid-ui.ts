@@ -62,11 +62,11 @@ function findAnchorElement(elCard: Element) {
     return elMenuButton;
   }
 
-  // ytd-rich-item-renderer: inject in the metadata line area (below title,
-  // next to view count). Avoids the absolute-positioned menu that covers the title.
-  const elMetadataLine = elCard.querySelector("#metadata-line");
-  if (elMetadataLine) {
-    return elMetadataLine;
+  // ytd-rich-item-renderer: inject in #buttons (YouTube's designated
+  // action button slot inside the card metadata area)
+  const elButtons = elCard.querySelector("#meta #buttons");
+  if (elButtons) {
+    return elButtons;
   }
 
   return null;

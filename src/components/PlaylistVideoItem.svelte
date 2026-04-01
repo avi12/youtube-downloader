@@ -1,9 +1,5 @@
 <script lang="ts">
   import { crossWorldMessenger } from "../lib/cross-world-messenger";
-  /**
-   * Download controls for a single video within a playlist.
-   * Injected into ytd-playlist-video-renderer elements.
-   */
   import { sendMessage } from "../lib/messaging";
   import { videoQueueItem } from "../lib/storage";
   import { getCompatibleFilename } from "../lib/utils";
