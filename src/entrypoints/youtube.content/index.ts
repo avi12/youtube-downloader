@@ -7,21 +7,20 @@
  * - interrupted-downloads: resume state persistence
  */
 
+import { checkInterruptedDownload, listenForInterruptedDownloadEvents } from "./interrupted-downloads";
+import { handleStreamData, handleStreamError, setPlaylistContext } from "./stream-transfer";
 import DownloadOptionsPanel from "@/components/DownloadOptionsPanel.svelte";
 import PlaylistDownloader from "@/components/PlaylistDownloader.svelte";
 import PlaylistVideoItem from "@/components/PlaylistVideoItem.svelte";
-import { checkInterruptedDownload, listenForInterruptedDownloadEvents } from "@/lib/interrupted-downloads";
+import { crossWorldMessenger } from "@/lib/cross-world-messenger";
 import { sendMessage, onMessage } from "@/lib/messaging";
-import { pageMessenger } from "@/lib/page-messenger";
 import { forwardSabrCredentialsWithRetry, listenForSabrBodyReady } from "@/lib/sabr-credentials";
 import { optionsItem } from "@/lib/storage";
-import { handleStreamData, handleStreamError, setPlaylistContext } from "@/lib/stream-transfer";
 import type { Options, VideoData } from "@/types";
 import { mount, unmount } from "svelte";
 
 export default defineContentScript({
   matches: ["https://www.youtube.com/*"],
-  cssInjectionMode: "manifest",
   async main(context) {
     // ─── State ───────────────────────────────────────────────────────────
 
@@ -311,7 +310,7 @@ export default defineContentScript({
 
     // ─── Message bridging ───────────────────────────────────────────────
 
-    pageMessenger.onMessage("videoData", async ({ data }) => {
+    crossWorldMessenger.onMessage("videoData", async ({ data }) => {
       if (location.pathname === "/watch") {
         const urlVideoId = new URLSearchParams(location.search).get("v");
         if (data.videoId === urlVideoId) {
@@ -322,17 +321,17 @@ export default defineContentScript({
       await checkInterruptedDownload(data.videoId);
     });
 
-    pageMessenger.onMessage("navigation", async ({ data }) => {
+    crossWorldMessenger.onMessage("navigation", async ({ data }) => {
       currentVideoData = null;
       await handlePageChange(data.url);
       forwardSabrCredentialsWithRetry();
     });
 
-    pageMessenger.onMessage("panelContentReady", async ({ data }) => {
+    crossWorldMessenger.onMessage("panelContentReady", async ({ data }) => {
       await mountPanelUi(data.contentId);
     });
 
-    pageMessenger.onMessage("cancelDownload", async ({ data }) => {
+    crossWorldMessenger.onMessage("cancelDownload", async ({ data }) => {
       await sendMessage("cancelDownload", { videoIds: data.videoIds });
     });
 
@@ -345,11 +344,11 @@ export default defineContentScript({
         });
       }
 
-      pageMessenger.sendMessage("downloadRequest", data);
+      crossWorldMessenger.sendMessage("downloadRequest", data);
     });
 
     onMessage("updateDownloadProgress", ({ data }) => {
-      pageMessenger.sendMessage("progress", data);
+      crossWorldMessenger.sendMessage("progress", data);
     });
 
     // ─── Event listeners ────────────────────────────────────────────────

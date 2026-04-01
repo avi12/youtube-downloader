@@ -3,7 +3,7 @@
  * and background storage, using DOM elements for cross-world communication.
  */
 
-import { sendMessage } from "./messaging";
+import { sendMessage } from "@/lib/messaging";
 
 export async function checkInterruptedDownload(videoId: string) {
   const interrupted = await sendMessage("getInterruptedDownload", { videoId });

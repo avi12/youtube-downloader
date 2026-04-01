@@ -6,12 +6,12 @@
  * 2. Inject a segmented download button group into the action bar using
  *    YouTube's native yt-button-view-model elements so they look identical
  *    to YouTube's own buttons (including tooltips, icons, hover states)
- * 3. Relay data and events to/from the isolated world via pageMessenger
+ * 3. Relay data and events to/from the isolated world via crossWorldMessenger
  */
 
-import { pageMessenger } from "../lib/page-messenger";
-import { getCompatibleFilename, waitForVisibleElement } from "../lib/utils";
-import { buildVideoData, extractPlayerResponseFromHtml } from "../lib/youtube-api";
+import { buildVideoData, extractPlayerResponseFromHtml } from "./youtube-api";
+import { crossWorldMessenger } from "@/lib/cross-world-messenger";
+import { getCompatibleFilename, waitForVisibleElement } from "@/lib/utils";
 import {
   ButtonSize,
   ButtonState,
@@ -396,7 +396,7 @@ export default defineContentScript({
       const { clientVersion, clientName } = readYtcfg();
       const videoData: VideoData = buildVideoData(playerResponse, clientVersion, clientName);
       videoDataCache.set(videoData.videoId, videoData);
-      pageMessenger.sendMessage("videoData", videoData);
+      crossWorldMessenger.sendMessage("videoData", videoData);
 
       // Start capturing SourceBuffer data for this video
       activeVideoId = videoData.videoId;
@@ -881,7 +881,7 @@ export default defineContentScript({
       elDropdown.restoreFocusOnClose = false;
 
       // Notify the isolated world where to mount the Svelte panel
-      pageMessenger.sendMessage("panelContentReady", { contentId: panelContentId });
+      crossWorldMessenger.sendMessage("panelContentReady", { contentId: panelContentId });
 
       // Set Polymer scoping class and data AFTER insertion so connectedCallback
       // does not wipe the class attribute
@@ -944,7 +944,7 @@ export default defineContentScript({
           if (isDownloading) {
             isDownloading = false;
             refreshButtons();
-            pageMessenger.sendMessage("cancelDownload", { videoIds: [videoId] });
+            crossWorldMessenger.sendMessage("cancelDownload", { videoIds: [videoId] });
           } else {
             isDone = false;
             isInterrupted = false;
@@ -1038,9 +1038,9 @@ export default defineContentScript({
       });
       resizeObserver.observe(elDropdownContentSlot);
 
-      const unsubscribeProgress = pageMessenger.onMessage("progress", handleProgress);
-      const unsubscribePanelClosed = pageMessenger.onMessage("panelClosed", () => handlePanelClosed());
-      const unsubscribeFilenameChanged = pageMessenger.onMessage("filenameChanged", ({ data }) => {
+      const unsubscribeProgress = crossWorldMessenger.onMessage("progress", handleProgress);
+      const unsubscribePanelClosed = crossWorldMessenger.onMessage("panelClosed", () => handlePanelClosed());
+      const unsubscribeFilenameChanged = crossWorldMessenger.onMessage("filenameChanged", ({ data }) => {
         defaultFilename = data.filename;
         defaultQuality = data.quality ?? "";
 
@@ -1078,7 +1078,7 @@ export default defineContentScript({
 
     function handleNavigation() {
       cleanupSegmentedButton();
-      pageMessenger.sendMessage("navigation", { url: location.href });
+      crossWorldMessenger.sendMessage("navigation", { url: location.href });
     }
 
     // - Panel button initialisation bridge -
@@ -1189,15 +1189,15 @@ export default defineContentScript({
     });
 
     // Handle download requests from Svelte panel components (via isolated world)
-    pageMessenger.onMessage("downloadRequest", async ({ data }) => {
+    crossWorldMessenger.onMessage("downloadRequest", async ({ data }) => {
       await performDownload(data);
     });
 
     // Handle video data requests from playlist items (via isolated world)
-    pageMessenger.onMessage("requestVideoData", async ({ data }) => {
+    crossWorldMessenger.onMessage("requestVideoData", async ({ data }) => {
       const { videoId } = data;
       if (videoDataCache.has(videoId)) {
-        pageMessenger.sendMessage("videoData", videoDataCache.get(videoId)!);
+        crossWorldMessenger.sendMessage("videoData", videoDataCache.get(videoId)!);
         return;
       }
 

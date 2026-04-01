@@ -1,10 +1,10 @@
 <script lang="ts">
+  import { crossWorldMessenger } from "../lib/cross-world-messenger";
   /**
    * Download controls for a single video within a playlist.
    * Injected into ytd-playlist-video-renderer elements.
    */
   import { sendMessage } from "../lib/messaging";
-  import { pageMessenger } from "../lib/page-messenger";
   import { videoQueueItem } from "../lib/storage";
   import { getCompatibleFilename } from "../lib/utils";
   import type { Options, VideoData } from "../types";
@@ -22,17 +22,17 @@
   let isQueued = $state(false);
   // Request video data from MAIN world and track when it arrives
   $effect(() => {
-    const unsubscribe = pageMessenger.onMessage("videoData", ({ data }) => {
+    const unsubscribe = crossWorldMessenger.onMessage("videoData", ({ data }) => {
       if (data.videoId === videoId) {
         videoData = data;
       }
     });
-    pageMessenger.sendMessage("requestVideoData", { videoId });
+    crossWorldMessenger.sendMessage("requestVideoData", { videoId });
     return unsubscribe;
   });
 
   // Track progress updates
-  $effect(() => pageMessenger.onMessage("progress", ({ data }) => {
+  $effect(() => crossWorldMessenger.onMessage("progress", ({ data }) => {
     if (data.videoId !== videoId) {
       return;
     }
@@ -101,7 +101,7 @@
       `${videoData.title}.${videoData.isMusic ? options.ext.audio : options.ext.video}`
     );
 
-    pageMessenger.sendMessage("downloadRequest", {
+    crossWorldMessenger.sendMessage("downloadRequest", {
       type: videoData.isMusic ? "audio" : "video+audio",
       videoId,
       videoItag: selectedVideoFormat?.itag ?? 0,

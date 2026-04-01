@@ -1,10 +1,10 @@
 <script lang="ts">
+  import { crossWorldMessenger } from "../lib/cross-world-messenger";
   /**
    * Playlist-level download button.
    * Appears in the playlist header and allows downloading all checked videos.
    */
   import { sendMessage } from "../lib/messaging";
-  import { pageMessenger } from "../lib/page-messenger";
   import { musicListItem, videoOnlyListItem, videoQueueItem } from "../lib/storage";
   import { getCompatibleFilename } from "../lib/utils";
   import type { DownloadType, Options, VideoData } from "../types";
@@ -25,7 +25,7 @@
   let error = $state("");
 
   // Collect video data as each playlist item reports in
-  $effect(() => pageMessenger.onMessage("videoData", ({ data }) => {
+  $effect(() => crossWorldMessenger.onMessage("videoData", ({ data }) => {
     videoDataMap.set(data.videoId, data);
   }));
 

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { pageMessenger } from "../lib/page-messenger";
+  import { crossWorldMessenger } from "../lib/cross-world-messenger";
   import { statusProgressItem, videoQueueItem } from "../lib/storage";
   import { getCompatibleFilename, waitForVideoElement } from "../lib/utils";
   import {
@@ -85,7 +85,7 @@
 
   // Notify the MAIN world download button tooltip when filename or quality changes
   $effect(() => {
-    pageMessenger.sendMessage("filenameChanged", {
+    crossWorldMessenger.sendMessage("filenameChanged", {
       filename: fullFilename,
       quality: qualityLabel(),
       videoItag: selectedVideoFormat?.itag,
@@ -164,7 +164,7 @@
 
   // -- Progress updates -------------------------------------------------------
 
-  $effect(() => pageMessenger.onMessage("progress", ({ data }) => {
+  $effect(() => crossWorldMessenger.onMessage("progress", ({ data }) => {
     if (data.videoId !== videoData.videoId) {
       return;
     }
@@ -207,7 +207,7 @@
   // -- Actions ----------------------------------------------------------------
 
   function closePanel() {
-    pageMessenger.sendMessage("panelClosed", {});
+    crossWorldMessenger.sendMessage("panelClosed", {});
   }
 
   function handleDownloadTypeChange(newType: DownloadType) {
@@ -234,7 +234,7 @@
       progressType = "";
     }
 
-    pageMessenger.sendMessage("downloadRequest", {
+    crossWorldMessenger.sendMessage("downloadRequest", {
       type: downloadType,
       videoId: videoData.videoId,
       videoItag: selectedVideoFormat?.itag ?? 0,
@@ -247,7 +247,7 @@
   async function cancelDownload() {
     isDownloading = false;
     progress = 0;
-    pageMessenger.sendMessage("cancelDownload", { videoIds: [videoData.videoId] });
+    crossWorldMessenger.sendMessage("cancelDownload", { videoIds: [videoData.videoId] });
   }
 
   function handleKeydown(e: KeyboardEvent) {

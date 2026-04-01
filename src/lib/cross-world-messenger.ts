@@ -20,4 +20,4 @@ interface PageMessengerSchema {
   progress(data: ProgressUpdate): void;
 }
 
-export const pageMessenger = defineCustomEventMessaging<PageMessengerSchema>({ namespace: "ytdl" });
+export const crossWorldMessenger = defineCustomEventMessaging<PageMessengerSchema>({ namespace: "ytdl" });

@@ -1,5 +1,5 @@
-import type { AdaptiveFormatItem, PlayerResponse, SabrConfig } from "../types";
-import { isVideoDownloadable, isVideoLive, isVideoMusic } from "./utils";
+import { isVideoDownloadable, isVideoLive, isVideoMusic } from "@/lib/utils";
+import type { AdaptiveFormatItem, PlayerResponse, SabrConfig } from "@/types";
 
 // ─── Format parsing utilities ─────────────────────────────────────────────────
 

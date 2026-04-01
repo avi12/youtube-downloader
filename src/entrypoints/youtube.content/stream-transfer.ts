@@ -4,7 +4,7 @@
  * Chrome's runtime.sendMessage size limit.
  */
 
-import { sendMessage } from "./messaging";
+import { sendMessage } from "@/lib/messaging";
 
 const TRANSFER_CHUNK_SIZE = 1024 * 1024;
 
