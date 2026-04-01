@@ -8,10 +8,10 @@
  * - Mounts Svelte UI for playlist pages
  */
 
-import { sendMessage, onMessage } from "../../lib/messaging";
-import { pageMessenger } from "../../lib/page-messenger";
-import { optionsItem } from "../../lib/storage";
-import type { Options, VideoData } from "../../types";
+import { sendMessage, onMessage } from "../lib/messaging";
+import { pageMessenger } from "../lib/page-messenger";
+import { optionsItem } from "../lib/storage";
+import type { Options, VideoData } from "../types";
 import { mount, unmount } from "svelte";
 
 export default defineContentScript({
@@ -33,9 +33,9 @@ export default defineContentScript({
       { default: PlaylistDownloader },
       { default: PlaylistVideoItem }
     ] = await Promise.all([
-      import("../../components/DownloadOptionsPanel.svelte"),
-      import("../../components/PlaylistDownloader.svelte"),
-      import("../../components/PlaylistVideoItem.svelte")
+      import("../components/DownloadOptionsPanel.svelte"),
+      import("../components/PlaylistDownloader.svelte"),
+      import("../components/PlaylistVideoItem.svelte")
     ]);
 
     // - State -
