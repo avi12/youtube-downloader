@@ -78,10 +78,7 @@ export default defineContentScript({
 
     crossWorldMessenger.onMessage("videoData", async ({ data }) => {
       if (location.pathname === "/watch") {
-        const urlVideoId = new URLSearchParams(location.search).get("v");
-        if (data.videoId === urlVideoId) {
-          currentVideoData = data;
-        }
+        currentVideoData = data;
       }
 
       // Dispatch to all PlaylistVideoItem instances via DOM event

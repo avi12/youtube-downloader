@@ -62,11 +62,11 @@ function findAnchorElement(elCard: Element) {
     return elMenuButton;
   }
 
-  // ytd-rich-item-renderer: inject inside the menu's top-level buttons area
-  // so it sits next to the 3-dot icon within the same absolute-positioned container
-  const elTopLevelButtons = elCard.querySelector("ytd-menu-renderer #top-level-buttons-computed");
-  if (elTopLevelButtons) {
-    return elTopLevelButtons;
+  // ytd-rich-item-renderer: inject in the metadata line area (below title,
+  // next to view count). Avoids the absolute-positioned menu that covers the title.
+  const elMetadataLine = elCard.querySelector("#metadata-line");
+  if (elMetadataLine) {
+    return elMetadataLine;
   }
 
   return null;
@@ -85,12 +85,6 @@ function injectGridVideoButton(
   const elAnchor = findAnchorElement(elCard);
   if (!elAnchor) {
     return;
-  }
-
-  // Ensure the menu renders above the title text (they overlap due to position:absolute)
-  const elMenu = elCard.querySelector("ytd-menu-renderer");
-  if (elMenu instanceof HTMLElement) {
-    elMenu.style.zIndex = "1";
   }
 
   const elItemContainer = document.createElement("div");
