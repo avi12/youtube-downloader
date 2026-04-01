@@ -1,4 +1,4 @@
-import type { Options, ProgressType, VideoQueueItem } from "../types";
+import type { InterruptedDownload, Options, ProgressType, VideoQueueItem } from "../types";
 import { initialOptions } from "./utils";
 
 type VideoDetailsMap = Record<string, { filenameOutput: string }>;
@@ -15,6 +15,10 @@ export const videoDetailsItem = storage.defineItem<VideoDetailsMap>("local:video
 export const statusProgressItem = storage.defineItem<StatusProgressMap>("local:statusProgress", { fallback: {} });
 
 export const isFFmpegReadyItem = storage.defineItem<boolean>("local:isFFmpegReady", { fallback: false });
+
+export const interruptedDownloadsItem = storage.defineItem<Record<string, InterruptedDownload>>(
+  "local:interruptedDownloads", { fallback: {} }
+);
 
 export const optionsItem = storage.defineItem<Options>("sync:options", { fallback: initialOptions });
 

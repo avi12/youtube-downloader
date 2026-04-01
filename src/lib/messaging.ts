@@ -1,4 +1,10 @@
-import type { DownloadRequest, DownloadType, ProgressUpdate, StreamError } from "../types";
+import type {
+  DownloadRequest,
+  DownloadType,
+  InterruptedDownload,
+  ProgressUpdate,
+  StreamError
+} from "../types";
 import { defineExtensionMessaging } from "@webext-core/messaging";
 
 // ─── Protocol definition ──────────────────────────────────────────────────────
@@ -31,6 +37,10 @@ interface ProtocolMap {
 
   // Content script → Background: get captured SABR request body for this tab
   getCapturedSabrBody(data: Record<string, never>): { body: string; url: string; poToken: string } | null;
+
+  // Content script → Background: persist/clear interrupted download state
+  persistInterruptedDownload(data: InterruptedDownload): void;
+  clearInterruptedDownload(data: { videoId: string }): void;
 
   // Content script → Background: download all items in a playlist
   requestPlaylistDownload(data: { items: DownloadRequest[] }): void;

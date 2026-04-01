@@ -50,6 +50,15 @@ export type DownloadRequest = {
   sabrConfig?: SabrConfig | null;
 };
 
+export type InterruptedDownload = {
+  videoId: string;
+  type: DownloadType;
+  filenameOutput: string;
+  videoItag: number;
+  audioItag: number;
+  timestamp: number;
+};
+
 export type VideoQueueItem = {
   videoId: string;
   filenameOutput: string;

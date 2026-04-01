@@ -6,7 +6,7 @@ import {
   onSabrBodyCaptured,
   startSabrRequestCapture
 } from "../lib/sabr-request-capture";
-import { clearLocalStorage, isFFmpegReadyItem, statusProgressItem } from "../lib/storage";
+import { clearLocalStorage, interruptedDownloadsItem, isFFmpegReadyItem, statusProgressItem } from "../lib/storage";
 
 export default defineBackground(() => {
   startSabrRequestCapture();
@@ -277,6 +277,18 @@ export default defineBackground(() => {
       url: captured.url,
       poToken
     };
+  });
+
+  onMessage("persistInterruptedDownload", async ({ data }) => {
+    const current = await interruptedDownloadsItem.getValue();
+    current[data.videoId] = data;
+    await interruptedDownloadsItem.setValue(current);
+  });
+
+  onMessage("clearInterruptedDownload", async ({ data }) => {
+    const current = await interruptedDownloadsItem.getValue();
+    delete current[data.videoId];
+    await interruptedDownloadsItem.setValue(current);
   });
 
   onMessage("processStreamError", async ({ data, sender }) => {

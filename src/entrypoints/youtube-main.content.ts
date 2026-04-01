@@ -47,9 +47,16 @@ interface TpYtIronDropdown extends HTMLElement {
   refit(): void;
 }
 
+interface TpYtPaperProgress extends HTMLElement {
+  value: number;
+  max: number;
+  indeterminate: boolean;
+}
+
 declare global {
   interface HTMLElementTagNameMap {
     "tp-yt-iron-dropdown": TpYtIronDropdown;
+    "tp-yt-paper-progress": TpYtPaperProgress;
     "ytd-watch-flexy": HTMLElement & { playerData: PlayerResponse | null };
   }
 }
@@ -732,18 +739,22 @@ export default defineContentScript({
         }
 
         let title = "Download";
+        let accessibilityText = "Download";
         if (!videoData.isDownloadable) {
           title = "Not downloadable";
+          accessibilityText = "Not downloadable";
         } else if (isDone) {
-          title = "Done";
+          title = "Download";
+          accessibilityText = "Download again";
         } else if (isDownloading) {
           title = "Cancel";
+          accessibilityText = "Cancel download";
         }
 
-        const isDisabled = !videoData.isDownloadable || isDone;
+        const isDisabled = !videoData.isDownloadable;
 
         let tooltip = "";
-        if (videoData.isDownloadable && !isDone) {
+        if (videoData.isDownloadable) {
           if (isDownloading && downloadProgress > 0) {
             tooltip = `${Math.round(downloadProgress * 100)}%`;
           } else {
@@ -754,7 +765,7 @@ export default defineContentScript({
         return {
           iconName,
           title,
-          accessibilityText: title,
+          accessibilityText,
           style: ButtonStyle.Mono,
           type: ButtonType.Tonal,
           buttonSize: ButtonSize.Default,
@@ -791,12 +802,23 @@ export default defineContentScript({
       // is not a yt-button-view-model so it doesn't receive that rule automatically.
       const elGroup = document.createElement("div");
       elGroup.setAttribute("data-ytdl-download-group", "true");
-      elGroup.setAttribute("style", "display: flex; align-items: center; margin-left: 8px;");
+      elGroup.setAttribute("style", "display: flex; align-items: center; margin-left: 8px; position: relative; overflow: hidden;");
 
       const elDownloadButton = document.createElement("yt-button-view-model");
       const elChevronButton = document.createElement("yt-button-view-model");
 
-      elGroup.append(elDownloadButton, elChevronButton);
+      const elProgressBar = document.createElement("tp-yt-paper-progress");
+      elProgressBar.setAttribute("style", "position: absolute; bottom: 0; left: 0; right: 0; height: 2px; pointer-events: none; z-index: 1; opacity: 0");
+
+      elGroup.append(elDownloadButton, elChevronButton, elProgressBar);
+
+      // Polymer's Shady DOM requires updateStyles for CSS custom properties
+      if ("updateStyles" in elProgressBar && typeof elProgressBar.updateStyles === "function") {
+        elProgressBar.updateStyles({
+          "--paper-progress-active-color": "var(--yt-spec-call-to-action, rgb(62 166 255))",
+          "--paper-progress-container-color": "transparent"
+        });
+      }
 
       // Insert group in the slot the native download button occupied.
       if (elNativeDownload) {
@@ -875,6 +897,10 @@ export default defineContentScript({
         elDownloadButton.data = buildDownloadData();
         elChevronButton.data = buildChevronData();
         requestAnimationFrame(applySegmentedClasses);
+
+        const isProgressVisible = isDownloading && downloadProgress > 0;
+        elProgressBar.value = Math.round(downloadProgress * 100);
+        elProgressBar.style.opacity = isProgressVisible ? "1" : "0";
       }
 
       // - Click handler -
@@ -886,7 +912,7 @@ export default defineContentScript({
         }
 
         if (elDownloadButton.contains(target)) {
-          if (!videoData.isDownloadable || isDone) {
+          if (!videoData.isDownloadable) {
             return;
           }
 
@@ -895,7 +921,9 @@ export default defineContentScript({
             refreshButtons();
             void pageMessenger.sendMessage("cancelDownload", { videoIds: [videoId] });
           } else {
+            isDone = false;
             isDownloading = true;
+            downloadProgress = 0;
             refreshButtons();
             void performDownload({
               type: defaultDownloadType,
@@ -935,16 +963,15 @@ export default defineContentScript({
 
         if (data.isRemoved) {
           isDownloading = false;
-          isDone = false;
           downloadProgress = 0;
           refreshButtons();
           return;
         }
 
         downloadProgress = data.progress;
-        isDone = data.progress >= 1;
 
-        if (isDone) {
+        if (data.progress >= 1) {
+          isDone = true;
           isDownloading = false;
           downloadProgress = 0;
         }
