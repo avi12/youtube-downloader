@@ -1103,7 +1103,7 @@ export default defineContentScript({
     // Create/close Polymer dropdown for grid/playlist item panels.
     // The isolated world can't use Polymer elements (open/close, positioning)
     // so it delegates creation to the MAIN world.
-    const gridDropdowns = new Map<string, HTMLElement>();
+    const gridDropdowns = new Map<string, TpYtIronDropdown>();
 
     document.addEventListener("ytdl:create-dropdown", (e: Event) => {
       if (!(e instanceof CustomEvent)) {
@@ -1132,12 +1132,18 @@ export default defineContentScript({
       elDropdown.noOverlap = true;
       elDropdown.dynamicAlign = true;
 
-      // Override ytd-menu-popup-renderer's auto-sizing which constrains to 0
-      elDropdownContentSlot.style.maxWidth = "none";
-      elDropdownContentSlot.style.maxHeight = "none";
-
-      elDropdown.open();
       gridDropdowns.set(contentId, elDropdown);
+    });
+
+    document.addEventListener("ytdl:open-dropdown", (e: Event) => {
+      if (!(e instanceof CustomEvent)) {
+        return;
+      }
+
+      const elDropdown = gridDropdowns.get(e.detail.contentId);
+      if (elDropdown) {
+        elDropdown.open();
+      }
     });
 
     document.addEventListener("ytdl:close-dropdown", (e: Event) => {
@@ -1149,6 +1155,7 @@ export default defineContentScript({
       const contentId = `ytdl-grid-panel-${dropdownVideoId}`;
       const elDropdown = gridDropdowns.get(contentId);
       if (elDropdown) {
+        elDropdown.close();
         elDropdown.remove();
         gridDropdowns.delete(contentId);
       }

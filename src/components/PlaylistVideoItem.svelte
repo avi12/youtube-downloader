@@ -168,7 +168,7 @@
       }
     }));
 
-    // Wait for the MAIN world to create the dropdown, then mount Svelte inside it
+    // Wait for the MAIN world to create the dropdown, mount Svelte, then open
     const checkInterval = setInterval(() => {
       const elContent = document.getElementById(panelContentId);
       if (!elContent) {
@@ -181,6 +181,11 @@
       panelInstance = mount(DownloadOptionsPanel, {
         target: elContent,
         props: { videoData, options }
+      });
+
+      // Open after content is mounted so ytd-menu-popup-renderer sizes correctly
+      requestAnimationFrame(() => {
+        document.dispatchEvent(new CustomEvent("ytdl:open-dropdown", { detail: { contentId: panelContentId } }));
       });
 
       elDropdown?.addEventListener("iron-overlay-closed", () => {
