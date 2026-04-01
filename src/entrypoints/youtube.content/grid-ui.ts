@@ -74,11 +74,12 @@ export function injectGridVideoButtons(
           continue;
         }
 
-        const lockups = node.matches("yt-lockup-view-model")
-          ? [node]
-          : [...node.querySelectorAll("yt-lockup-view-model")];
+        if (node.matches("yt-lockup-view-model")) {
+          injectGridVideoButton(context, options, node);
+          continue;
+        }
 
-        for (const elLockup of lockups) {
+        for (const elLockup of node.querySelectorAll("yt-lockup-view-model")) {
           injectGridVideoButton(context, options, elLockup);
         }
       }
