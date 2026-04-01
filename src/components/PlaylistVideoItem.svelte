@@ -143,7 +143,11 @@
       return;
     }
 
-    element.addEventListener("click", toggleDownload);
+    element.addEventListener("click", (e: Event) => {
+      e.stopPropagation();
+      e.preventDefault();
+      toggleDownload();
+    });
     element.dispatchEvent(new CustomEvent("ytdl:set-yt-button-data", {
       detail: {
         iconName: getItemIconName(),
