@@ -9,20 +9,27 @@
  * Uses MutationObserver to handle infinite scroll.
  */
 
+import PlaylistDownloader from "@/components/PlaylistDownloader.svelte";
 import PlaylistVideoItem from "@/components/PlaylistVideoItem.svelte";
 import type { Options } from "@/types";
-import { mount } from "svelte";
+import { mount, unmount } from "svelte";
 
 const VIDEO_CARD_SELECTOR = "yt-lockup-view-model, ytd-rich-item-renderer";
 const PAGE_MANAGER_SELECTOR = "ytd-page-manager";
 
 let gridObserver: MutationObserver | null = null;
+let gridDownloaderInstance: ReturnType<typeof mount> | null = null;
 
 export function cleanupGridUi() {
   gridObserver?.disconnect();
   gridObserver = null;
 
-  for (const elItem of document.querySelectorAll("[data-ytdl-grid-item]")) {
+  if (gridDownloaderInstance) {
+    unmount(gridDownloaderInstance);
+    gridDownloaderInstance = null;
+  }
+
+  for (const elItem of document.querySelectorAll("[data-ytdl-grid-item], [data-ytdl-grid-downloader]")) {
     elItem.remove();
   }
 }
@@ -104,6 +111,41 @@ function injectGridVideoButton(
   ui.mount();
 }
 
+function injectGridDownloadAllButton(
+  context: InstanceType<typeof ContentScriptContext>,
+  options: Options
+) {
+  if (document.querySelector("[data-ytdl-grid-downloader]")) {
+    return;
+  }
+
+  // Place next to the filter chips (Latest, Popular, Oldest) on channel pages
+  const elChipBar = document.querySelector("chip-bar-view-model");
+  if (!elChipBar) {
+    return;
+  }
+
+  const elContainer = document.createElement("div");
+  elContainer.setAttribute("data-ytdl-grid-downloader", "true");
+  elContainer.style.display = "inline-flex";
+  elContainer.style.alignItems = "center";
+  elContainer.style.marginInlineStart = "8px";
+  elChipBar.insertAdjacentElement("afterend", elContainer);
+
+  const ui = createIntegratedUi(context, {
+    position: "inline",
+    anchor: elContainer,
+    onMount(elUiContainer) {
+      gridDownloaderInstance = mount(PlaylistDownloader, {
+        target: elUiContainer,
+        props: { options }
+      });
+    }
+  });
+
+  ui.mount();
+}
+
 export function injectGridVideoButtons(
   context: InstanceType<typeof ContentScriptContext>,
   options: Options
@@ -119,6 +161,7 @@ export function injectGridVideoButtons(
   }
 
   scanAllCards();
+  injectGridDownloadAllButton(context, options);
 
   gridObserver?.disconnect();
   gridObserver = new MutationObserver(scanAllCards);
