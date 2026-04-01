@@ -122,12 +122,8 @@ export function injectGridVideoButtons(
   context.onInvalidated(() => gridObserver?.disconnect());
 }
 
-export function isVideoGridPage(pathname: string) {
-  if (pathname === "/" || pathname.startsWith("/feed/")) {
-    return true;
-  }
+const NON_GRID_ROUTES = ["/watch", "/playlist", "/shorts", "/results", "/premium", "/account"];
 
-  // Channel URLs: /@handle, /c/name, /channel/id, /user/name
-  const channelPrefixes = ["/@", "/c/", "/channel/", "/user/"];
-  return channelPrefixes.some(prefix => pathname.startsWith(prefix));
+export function isVideoGridPage(pathname: string) {
+  return !NON_GRID_ROUTES.some(route => pathname.startsWith(route));
 }
