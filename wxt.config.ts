@@ -5,6 +5,7 @@ export default defineConfig({
   srcDir: "src",
   publicDir: "src/public",
   modules: ["@wxt-dev/module-svelte"],
+  manifestVersion: 3,
   manifest: ({ browser }) => ({
     name: "YouTube Downloader",
     description: "Download YouTube videos and audio directly from the page",
@@ -44,8 +45,7 @@ export default defineConfig({
         "node_modules/@ffmpeg/core/dist/esm/ffmpeg-core.wasm",
         "node_modules/@ffmpeg/ffmpeg/dist/esm/worker.js",
         "node_modules/@ffmpeg/ffmpeg/dist/esm/const.js",
-        "node_modules/@ffmpeg/ffmpeg/dist/esm/errors.js",
-        "content-scripts/youtube.css"
+        "node_modules/@ffmpeg/ffmpeg/dist/esm/errors.js"
       ];
 
       paths.push(...ffmpegPaths);

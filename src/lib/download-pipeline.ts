@@ -81,12 +81,26 @@ function toUint8Array(data: Uint8Array | null) {
 async function triggerDownload(data: Uint8Array, filenameOutput: string) {
   const mimeType = getMimeType(filenameOutput);
   const filename = getCompatibleFilename(filenameOutput);
-  const blob = new Blob([new Uint8Array(data)], { type: mimeType });
-  const blobUrl = URL.createObjectURL(blob);
+  // Chrome offscreen document has Blob + URL.createObjectURL.
+  // Firefox service worker does not, so fall back to base64 data URL.
+  if (typeof Blob !== "undefined" && typeof URL.createObjectURL === "function") {
+    const blob = new Blob([new Uint8Array(data)], { type: mimeType });
+    const blobUrl = URL.createObjectURL(blob);
+    await sendMessage("pipelineDownload", { blobUrl, mimeType, filename });
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+    return;
+  }
 
+  // Firefox fallback: base64 data URL
+  let binary = "";
+  for (let offset = 0; offset < data.byteLength; offset += 8192) {
+    binary += String.fromCharCode(
+      ...data.subarray(offset, Math.min(offset + 8192, data.byteLength))
+    );
+  }
+
+  const blobUrl = `data:${mimeType};base64,${btoa(binary)}`;
   await sendMessage("pipelineDownload", { blobUrl, mimeType, filename });
-
-  setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
 }
 
 // ─── Playlist zip bundling ───────────────────────────────────────────────────
