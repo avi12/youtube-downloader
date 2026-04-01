@@ -1,0 +1,122 @@
+/**
+ * Injects playlist download UI: a header-level "Download All" button
+ * and per-video download buttons in playlist video renderers.
+ */
+
+import PlaylistDownloader from "@/components/PlaylistDownloader.svelte";
+import PlaylistVideoItem from "@/components/PlaylistVideoItem.svelte";
+import type { Options } from "@/types";
+import { mount, unmount } from "svelte";
+
+let currentPlaylistUi: ReturnType<typeof mount> | null = null;
+
+export function cleanupPlaylistUi() {
+  if (!currentPlaylistUi) {
+    return;
+  }
+
+  unmount(currentPlaylistUi);
+  currentPlaylistUi = null;
+
+  for (const elItem of document.querySelectorAll("[data-ytdl-playlist-downloader]")) {
+    elItem.remove();
+  }
+}
+
+export async function injectPlaylistDownloaderUi(
+  context: InstanceType<typeof ContentScriptContext>,
+  options: Options
+) {
+  cleanupPlaylistUi();
+
+  const elHeader = document.querySelector(
+    "ytd-playlist-header-renderer, ytd-playlist-sidebar-primary-info-renderer"
+  );
+  if (!elHeader) {
+    return;
+  }
+
+  const elMountContainer = document.createElement("div");
+  elMountContainer.setAttribute("data-ytdl-playlist-downloader", "true");
+  elHeader.append(elMountContainer);
+
+  const ui = await createShadowRootUi(context, {
+    name: "ytdl-playlist-downloader",
+    position: "inline",
+    anchor: elMountContainer,
+    onMount(elUiContainer) {
+      currentPlaylistUi = mount(PlaylistDownloader, {
+        target: elUiContainer,
+        props: { options }
+      });
+    }
+  });
+
+  ui.mount();
+}
+
+async function injectPlaylistVideoItemUi(
+  context: InstanceType<typeof ContentScriptContext>,
+  options: Options,
+  elVideoItem: Element
+) {
+  const elVideoIdLink = elVideoItem.querySelector<HTMLAnchorElement>("a#video-title");
+  if (!elVideoIdLink) {
+    return;
+  }
+
+  const videoId = new URLSearchParams(new URL(elVideoIdLink.href).search).get("v");
+  if (!videoId || elVideoItem.querySelector(`[data-ytdl-item="${videoId}"]`)) {
+    return;
+  }
+
+  const elMenu = elVideoItem.querySelector("ytd-menu-renderer");
+  if (!elMenu) {
+    return;
+  }
+
+  const elItemContainer = document.createElement("div");
+  elItemContainer.setAttribute("data-ytdl-item", videoId);
+  elMenu.append(elItemContainer);
+
+  const ui = await createShadowRootUi(context, {
+    name: `ytdl-playlist-item-${videoId}`,
+    position: "inline",
+    anchor: elItemContainer,
+    onMount(elUiContainer) {
+      mount(PlaylistVideoItem, {
+        target: elUiContainer,
+        props: { videoId, options }
+      });
+    }
+  });
+
+  ui.mount();
+}
+
+export async function handlePlaylistVideoAdditions(
+  context: InstanceType<typeof ContentScriptContext>,
+  options: Options
+) {
+  const elContents = document.querySelector("ytd-playlist-video-list-renderer #contents");
+  if (!elContents) {
+    return;
+  }
+
+  for (const elVideoItem of elContents.querySelectorAll("ytd-playlist-video-renderer")) {
+    await injectPlaylistVideoItemUi(context, options, elVideoItem);
+  }
+
+  const mutationObserver = new MutationObserver(mutations => {
+    for (const mutation of mutations) {
+      for (const node of mutation.addedNodes) {
+        if (node instanceof HTMLElement && node.tagName.toLowerCase() === "ytd-playlist-video-renderer") {
+          injectPlaylistVideoItemUi(context, options, node);
+        }
+      }
+    }
+  });
+
+  mutationObserver.observe(elContents, { childList: true });
+  context.onInvalidated(() => mutationObserver.disconnect());
+}
