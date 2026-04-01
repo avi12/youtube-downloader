@@ -138,7 +138,16 @@
     return "DOWNLOAD";
   }
 
-  function attachItemButton(element: Element) {
+  let isPanelOpen = $state(false);
+
+  function setButtonData(element: Element, data: Record<string, unknown>) {
+    element.dispatchEvent(new CustomEvent("ytdl:set-yt-button-data", {
+      detail: data,
+      bubbles: true
+    }));
+  }
+
+  function attachDownloadButton(element: Element) {
     if (!(element instanceof HTMLElement)) {
       return;
     }
@@ -148,27 +157,54 @@
       e.preventDefault();
       toggleDownload();
     });
-    element.dispatchEvent(new CustomEvent("ytdl:set-yt-button-data", {
-      detail: {
-        iconName: getItemIconName(),
-        title: "",
-        accessibilityText: videoData ? `${buttonLabel()} ${videoData.title}` : buttonLabel(),
-        style: "MONO",
-        type: "TONAL",
-        buttonSize: "DEFAULT",
-        state: !videoData?.isDownloadable ? "DISABLED" : "ACTIVE",
-        isFullWidth: false,
-        isDisabled: !videoData?.isDownloadable,
-        tooltip: buttonLabel()
-      },
-      bubbles: true
-    }));
+
+    setButtonData(element, {
+      iconName: getItemIconName(),
+      title: "",
+      accessibilityText: videoData ? `${buttonLabel()} ${videoData.title}` : buttonLabel(),
+      style: "MONO",
+      type: "TONAL",
+      buttonSize: "DEFAULT",
+      state: !videoData?.isDownloadable ? "DISABLED" : "ACTIVE",
+      isFullWidth: false,
+      isDisabled: !videoData?.isDownloadable,
+      tooltip: buttonLabel()
+    });
+  }
+
+  function attachChevronButton(element: Element) {
+    if (!(element instanceof HTMLElement)) {
+      return;
+    }
+
+    element.addEventListener("click", (e: Event) => {
+      e.stopPropagation();
+      e.preventDefault();
+      isPanelOpen = !isPanelOpen;
+    });
+
+    setButtonData(element, {
+      iconName: isPanelOpen ? "EXPAND_LESS" : "EXPAND_MORE",
+      title: "",
+      accessibilityText: isPanelOpen ? "Close download options" : "Download options",
+      style: "MONO",
+      type: "TONAL",
+      buttonSize: "DEFAULT",
+      state: !videoData?.isDownloadable ? "DISABLED" : "ACTIVE",
+      isFullWidth: false,
+      isDisabled: !videoData?.isDownloadable,
+      tooltip: isPanelOpen ? "Close options" : "Options"
+    });
+
+    element.setAttribute("style", "margin-left: 0 !important");
   }
 </script>
 
 <div style="display: flex; align-items: center">
   {#if videoData}
-    <yt-button-view-model {@attach attachItemButton}
+    <yt-button-view-model {@attach attachDownloadButton}
+    ></yt-button-view-model>
+    <yt-button-view-model {@attach attachChevronButton}
     ></yt-button-view-model>
   {:else}
     <div style="padding: 4px 8px" aria-busy="true" aria-label="Loading video info">
