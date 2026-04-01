@@ -76,7 +76,7 @@ interface ProtocolMap {
   pipelineRemoval(data: { videoId: string; tabId: number }): void;
   pipelineQueueRemove(data: { videoId: string; type: DownloadType }): void;
   pipelineFFmpegReady(data: Record<string, never>): void;
-  pipelineDownload(data: { blobBase64: string; mimeType: string; filename: string }): void;
+  pipelineDownload(data: { blobUrl: string; mimeType: string; filename: string }): void;
 }
 
 export const { sendMessage, onMessage } =

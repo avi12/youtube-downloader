@@ -38,7 +38,7 @@ export function onSabrBodyCaptured(callback: (tabId: number) => void) {
 
 function handleSabrRequest(
   details: Browser.webRequest.OnBeforeRequestDetails
-): undefined {
+) {
   if (details.tabId < 0) {
     return undefined;
   }
@@ -76,7 +76,7 @@ export function getCapturedSabrData(tabId: number) {
  * The PO token is at: VideoPlaybackAbrRequest.streamerContext.poToken
  * In protobuf wire format: field 19 (StreamerContext) > field 2 (poToken)
  */
-export function extractPoTokenFromBody(body: number[]): string | null {
+export function extractPoTokenFromBody(body: number[]) {
   const buf = new Uint8Array(body);
   let offset = 0;
 

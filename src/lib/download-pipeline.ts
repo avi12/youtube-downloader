@@ -73,7 +73,7 @@ async function removeFromStorageQueue(videoId: string, type: DownloadType) {
 
 // ─── Single-stream download (audio-only or video-only) ───────────────────────
 
-function toUint8Array(data: Uint8Array | null): Uint8Array | null {
+function toUint8Array(data: Uint8Array | null) {
   if (!data) {
     return null;
   }
@@ -87,21 +87,15 @@ function toUint8Array(data: Uint8Array | null): Uint8Array | null {
 }
 
 async function triggerDownload(data: Uint8Array, filenameOutput: string) {
-  // Offscreen documents can't use browser.downloads directly.
-  // Encode as base64 and send to background for the actual download.
-  let binary = "";
-  const chunkSize = 8192;
+  const mimeType = getMimeType(filenameOutput);
+  const filename = getCompatibleFilename(filenameOutput);
+  const blob = new Blob([new Uint8Array(data)], { type: mimeType });
+  const blobUrl = URL.createObjectURL(blob);
 
-  for (let offset = 0; offset < data.byteLength; offset += chunkSize) {
-    const chunk = data.subarray(offset, Math.min(offset + chunkSize, data.byteLength));
-    binary += String.fromCharCode(...chunk);
-  }
+  await sendMessage("pipelineDownload", { blobUrl, mimeType, filename });
 
-  await sendMessage("pipelineDownload", {
-    blobBase64: btoa(binary),
-    mimeType: getMimeType(filenameOutput),
-    filename: getCompatibleFilename(filenameOutput)
-  });
+  // Revoke after a delay to let the download start
+  setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
 }
 
 async function processSingleMedia(item: ProcessStreamData) {

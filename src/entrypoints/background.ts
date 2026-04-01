@@ -138,7 +138,7 @@ export default defineBackground(() => {
     function assembleStreamChunks(
       chunks: Map<number, Uint8Array>,
       totalChunks: number
-    ): Uint8Array | null {
+    ) {
       if (totalChunks === 0) {
         return null;
       }
@@ -358,10 +358,8 @@ export default defineBackground(() => {
   });
 
   onMessage("pipelineDownload", async ({ data }) => {
-    const dataUrl = `data:${data.mimeType};base64,${data.blobBase64}`;
-
     await browser.downloads.download({
-      url: dataUrl,
+      url: data.blobUrl,
       filename: data.filename
     });
   });
