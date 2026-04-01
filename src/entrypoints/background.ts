@@ -70,7 +70,7 @@ export default defineBackground(() => {
       return offscreenDocumentPromise;
     }
 
-    void ensureOffscreenDocument();
+    ensureOffscreenDocument();
 
     // Receive chunk from content script, forward to offscreen for accumulation.
     // 1 MB per message stays well under the runtime.sendMessage size limit.
@@ -117,7 +117,7 @@ export default defineBackground(() => {
       );
     }
 
-    void initFirefoxPipeline();
+    initFirefoxPipeline();
 
     interface FirefoxAudioStream {
       chunks: Map<number, Uint8Array>;
@@ -395,7 +395,9 @@ export default defineBackground(() => {
 
     delete tabTracker[tabId];
     clearCapturedSabrData(tabId);
-    tracked.videoIdsAvailable.forEach(videoId => untrackVideoForTab(videoId, tabId));
+    for (const videoId of tracked.videoIdsAvailable) {
+      untrackVideoForTab(videoId, tabId);
+    }
     await cancelDownloads(tracked.videoIdsAvailable);
   });
 
@@ -409,7 +411,9 @@ export default defineBackground(() => {
       return;
     }
 
-    tracked.videoIdsAvailable.forEach(videoId => untrackVideoForTab(videoId, tabId));
+    for (const videoId of tracked.videoIdsAvailable) {
+      untrackVideoForTab(videoId, tabId);
+    }
     clearCapturedSabrData(tabId);
     await cancelDownloads(tracked.videoIdsAvailable);
 

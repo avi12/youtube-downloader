@@ -75,9 +75,9 @@
 
       // Add yt-options-renderer scope for cursor:pointer and :hover.
       // role, aria-selected, and tabindex are set via HTML attributes in the template.
-      elMovedDropdown.querySelectorAll("tp-yt-paper-item").forEach(item => {
-        item.classList.add("style-scope", "yt-options-renderer");
-      });
+      for (const elItem of elMovedDropdown.querySelectorAll("tp-yt-paper-item")) {
+        elItem.classList.add("style-scope", "yt-options-renderer");
+      }
 
       const items = Array.from(elMovedDropdown.querySelectorAll<HTMLElement>("tp-yt-paper-item"));
 

@@ -396,7 +396,7 @@ export default defineContentScript({
       const { clientVersion, clientName } = readYtcfg();
       const videoData: VideoData = buildVideoData(playerResponse, clientVersion, clientName);
       videoDataCache.set(videoData.videoId, videoData);
-      void pageMessenger.sendMessage("videoData", videoData);
+      pageMessenger.sendMessage("videoData", videoData);
 
       // Start capturing SourceBuffer data for this video
       activeVideoId = videoData.videoId;
@@ -424,7 +424,7 @@ export default defineContentScript({
       }
 
       if (location.pathname === "/watch") {
-        void injectSegmentedDownloadButton(videoData);
+        injectSegmentedDownloadButton(videoData);
       }
     }
 
@@ -881,7 +881,7 @@ export default defineContentScript({
       elDropdown.restoreFocusOnClose = false;
 
       // Notify the isolated world where to mount the Svelte panel
-      void pageMessenger.sendMessage("panelContentReady", { contentId: panelContentId });
+      pageMessenger.sendMessage("panelContentReady", { contentId: panelContentId });
 
       // Set Polymer scoping class and data AFTER insertion so connectedCallback
       // does not wipe the class attribute
@@ -944,14 +944,14 @@ export default defineContentScript({
           if (isDownloading) {
             isDownloading = false;
             refreshButtons();
-            void pageMessenger.sendMessage("cancelDownload", { videoIds: [videoId] });
+            pageMessenger.sendMessage("cancelDownload", { videoIds: [videoId] });
           } else {
             isDone = false;
             isInterrupted = false;
             isDownloading = true;
             downloadProgress = 0;
             refreshButtons();
-            void performDownload({
+            performDownload({
               type: defaultDownloadType,
               videoId,
               videoItag: defaultVideoItag,
@@ -1078,7 +1078,7 @@ export default defineContentScript({
 
     function handleNavigation() {
       cleanupSegmentedButton();
-      void pageMessenger.sendMessage("navigation", { url: location.href });
+      pageMessenger.sendMessage("navigation", { url: location.href });
     }
 
     // - Panel button initialisation bridge -
@@ -1197,7 +1197,7 @@ export default defineContentScript({
     pageMessenger.onMessage("requestVideoData", async ({ data }) => {
       const { videoId } = data;
       if (videoDataCache.has(videoId)) {
-        void pageMessenger.sendMessage("videoData", videoDataCache.get(videoId)!);
+        pageMessenger.sendMessage("videoData", videoDataCache.get(videoId)!);
         return;
       }
 

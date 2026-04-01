@@ -63,7 +63,11 @@
         options = value ?? { ...initialOptions };
       })
     ];
-    return () => unwatches.forEach(unwatch => unwatch());
+    return () => {
+      for (const unwatch of unwatches) {
+        unwatch();
+      }
+    };
   }
 
   // --- Actions ---------------------------------------------------------------

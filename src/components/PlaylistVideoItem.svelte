@@ -27,7 +27,7 @@
         videoData = data;
       }
     });
-    void pageMessenger.sendMessage("requestVideoData", { videoId });
+    pageMessenger.sendMessage("requestVideoData", { videoId });
     return unsubscribe;
   });
 
@@ -101,7 +101,7 @@
       `${videoData.title}.${videoData.isMusic ? options.ext.audio : options.ext.video}`
     );
 
-    void pageMessenger.sendMessage("downloadRequest", {
+    pageMessenger.sendMessage("downloadRequest", {
       type: videoData.isMusic ? "audio" : "video+audio",
       videoId,
       videoItag: selectedVideoFormat?.itag ?? 0,

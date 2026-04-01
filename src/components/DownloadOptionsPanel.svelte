@@ -85,7 +85,7 @@
 
   // Notify the MAIN world download button tooltip when filename or quality changes
   $effect(() => {
-    void pageMessenger.sendMessage("filenameChanged", {
+    pageMessenger.sendMessage("filenameChanged", {
       filename: fullFilename,
       quality: qualityLabel(),
       videoItag: selectedVideoFormat?.itag,
@@ -207,7 +207,7 @@
   // -- Actions ----------------------------------------------------------------
 
   function closePanel() {
-    void pageMessenger.sendMessage("panelClosed", {});
+    pageMessenger.sendMessage("panelClosed", {});
   }
 
   function handleDownloadTypeChange(newType: DownloadType) {
@@ -234,7 +234,7 @@
       progressType = "";
     }
 
-    void pageMessenger.sendMessage("downloadRequest", {
+    pageMessenger.sendMessage("downloadRequest", {
       type: downloadType,
       videoId: videoData.videoId,
       videoItag: selectedVideoFormat?.itag ?? 0,
@@ -247,7 +247,7 @@
   async function cancelDownload() {
     isDownloading = false;
     progress = 0;
-    void pageMessenger.sendMessage("cancelDownload", { videoIds: [videoData.videoId] });
+    pageMessenger.sendMessage("cancelDownload", { videoIds: [videoData.videoId] });
   }
 
   function handleKeydown(e: KeyboardEvent) {

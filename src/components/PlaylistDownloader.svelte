@@ -157,7 +157,11 @@
       musicListItem.watch(() => checkCompletion()),
       videoOnlyListItem.watch(() => checkCompletion())
     ];
-    stopWatching = () => unwatches.forEach(unwatch => unwatch());
+    stopWatching = () => {
+      for (const unwatch of unwatches) {
+        unwatch();
+      }
+    };
   }
 
   async function cancelPlaylistDownload() {
