@@ -8,13 +8,13 @@
  * - Mounts Svelte UI for playlist pages
  */
 
-import DownloadOptionsPanel from "../components/DownloadOptionsPanel.svelte";
-import PlaylistDownloader from "../components/PlaylistDownloader.svelte";
-import PlaylistVideoItem from "../components/PlaylistVideoItem.svelte";
-import { sendMessage, onMessage } from "../lib/messaging";
-import { pageMessenger } from "../lib/page-messenger";
-import { optionsItem } from "../lib/storage";
-import type { Options, VideoData } from "../types";
+import DownloadOptionsPanel from "@/components/DownloadOptionsPanel.svelte";
+import PlaylistDownloader from "@/components/PlaylistDownloader.svelte";
+import PlaylistVideoItem from "@/components/PlaylistVideoItem.svelte";
+import { sendMessage, onMessage } from "@/lib/messaging";
+import { pageMessenger } from "@/lib/page-messenger";
+import { optionsItem } from "@/lib/storage";
+import type { Options, VideoData } from "@/types";
 import { mount, unmount } from "svelte";
 
 export default defineContentScript({
