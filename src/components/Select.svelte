@@ -18,6 +18,14 @@
   }: Props = $props();
 
   function attachDropdown(element: Element) {
+    if ("updateStyles" in element && typeof element.updateStyles === "function") {
+      element.updateStyles({
+        "--paper-input-container-color": "var(--yt-spec-text-secondary, #aaa)",
+        "--paper-input-container-focus-color": "var(--yt-spec-call-to-action, rgb(62 166 255))",
+        "--paper-input-container-input-color": "var(--yt-spec-text-primary, #f1f1f1)"
+      });
+    }
+
     let elMovedDropdown: Element | null = null;
     let elChevronInput: HTMLElement | null = null;
 

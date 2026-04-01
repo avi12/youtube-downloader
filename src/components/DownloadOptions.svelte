@@ -136,6 +136,18 @@
     validateFilename(e.target, value.trim());
   }
 
+  function applyPolymerTheme(element: Element) {
+    if (!("updateStyles" in element) || typeof element.updateStyles !== "function") {
+      return;
+    }
+
+    element.updateStyles({
+      "--paper-input-container-color": "var(--yt-spec-text-secondary, #aaa)",
+      "--paper-input-container-focus-color": "var(--yt-spec-call-to-action, rgb(62 166 255))",
+      "--paper-input-container-input-color": "var(--yt-spec-text-primary, #f1f1f1)"
+    });
+  }
+
   function handleDownloadTypeSelect(newValue: string) {
     const type = DOWNLOAD_TYPES.find(item => item.value === newValue);
     if (type) {
@@ -185,6 +197,7 @@
   <!-- Filename -->
   <tp-yt-paper-input
     id="filename-input"
+    {@attach applyPolymerTheme}
     aria-describedby={!isFilenameValid ? "filename-error" : undefined}
     aria-invalid={!isFilenameValid || undefined}
     autocomplete="off"
