@@ -1,6 +1,12 @@
 /node_modules/
-/dist/build/
-dist_packed
+/dist/
+/dist_packed/
+/.output/
+/.wxt/
+
+# FFmpeg WASM files (large binaries — copied from node_modules at build time)
+/public/ffmpeg-core.js
+/public/ffmpeg-core.wasm
 
 .DS_Store
 .idea

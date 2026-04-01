@@ -1,11 +1,15 @@
 {
-  "include": ["src/**/*"],
-  "exclude": ["node_modules/*", "dist/*"],
+  "extends": "./.wxt/tsconfig.json",
   "compilerOptions": {
+    "strict": true,
+    "moduleResolution": "bundler",
+    "module": "ESNext",
     "target": "ESNext",
-    "typeRoots": ["node_modules/@types"],
-    "types": ["svelte", "chrome"],
-    "moduleResolution": "Node"
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
+    "resolveJsonModule": true,
+    "allowImportingTsExtensions": true,
+    "noEmit": true
   },
-  "extends": "@tsconfig/svelte/tsconfig.json"
+  "include": ["src/**/*", "wxt.config.ts", ".wxt/wxt.d.ts"],
+  "exclude": ["src/scripts/**"]
 }
