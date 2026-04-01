@@ -1,0 +1,53 @@
+{
+  "extends": ["stylelint-config-ccb"],
+  "customSyntax": "postcss-html",
+  "rules": {
+    "plugin/stylelint-no-indistinguishable-colors": null,
+    "color-format/format": null,
+    "prettier/prettier": null,
+    "matterialize/stylelint-require-units": null,
+
+    "no-unknown-custom-properties": null,
+    "csstools/value-no-unknown-custom-properties": null,
+    "csstree/validator": null,
+
+    "color-no-hex": null,
+
+
+    "property-disallowed-list": null,
+    "function-disallowed-list": null,
+    "declaration-property-value-allowed-list": null,
+    "declaration-property-value-disallowed-list": null,
+    "declaration-property-unit-allowed-list": null,
+    "declaration-no-important": null,
+    "time-min-milliseconds": null,
+
+    "selector-max-type": null,
+    "selector-nested-pattern": [null],
+    "selector-pseudo-element-allowed-list": null,
+    "selector-pseudo-class-no-unknown": null,
+    "selector-pseudo-class-disallowed-list": null,
+    "selector-max-pseudo-class": null,
+    "selector-max-id": null,
+    "selector-class-pattern": [null],
+    "selector-max-universal": null,
+    "selector-max-attribute": null,
+
+    "at-rule-allowed-list": null,
+    "at-rule-descriptor-value-no-unknown": null,
+
+    "max-nesting-depth": [99, {}],
+    "custom-property-empty-line-before": "never",
+    "a11y/font-size-is-readable": true,
+
+    "plugin/no-unsupported-browser-features": null,
+
+    "@stylistic/linebreaks": null
+  },
+  "overrides": [
+    {
+      "files": ["**/*.css"],
+      "customSyntax": "postcss"
+    }
+  ]
+}
