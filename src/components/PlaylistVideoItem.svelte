@@ -151,7 +151,7 @@
     element.dispatchEvent(new CustomEvent("ytdl:set-yt-button-data", {
       detail: {
         iconName: getItemIconName(),
-        title: buttonLabel(),
+        title: "",
         accessibilityText: videoData ? `${buttonLabel()} ${videoData.title}` : buttonLabel(),
         style: "MONO",
         type: "TONAL",
