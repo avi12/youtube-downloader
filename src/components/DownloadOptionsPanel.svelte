@@ -361,6 +361,17 @@
     });
   }
 
+  function attachPanelProgress(element: Element) {
+    if (!("updateStyles" in element) || typeof element.updateStyles !== "function") {
+      return;
+    }
+
+    element.updateStyles({
+      "--paper-progress-active-color": "var(--yt-spec-call-to-action, rgb(62 166 255))",
+      "--paper-progress-container-color": "transparent"
+    });
+  }
+
   // -- Focus trap attach function ---------------------------------------------
 
   function attachPanel(element: Element) {
@@ -494,7 +505,7 @@
 {/snippet}
 
 <div
-  class="panel"
+  style="overflow: hidden; width: 380px"
   {@attach attachPanel}
   aria-labelledby="ytdl-panel-title"
   aria-modal="true"
@@ -502,8 +513,11 @@
   role="dialog"
   tabindex="-1"
 >
-  <div class="panel-header">
-    <h2 id="ytdl-panel-title" class="panel-title">Download options</h2>
+  <div style="display: flex; justify-content: space-between; align-items: center; padding: 20px 24px 16px">
+    <h2
+      id="ytdl-panel-title"
+      style="margin: 0; font-weight: 400; font-size: 1.6rem; line-height: 1.375"
+    >Download options</h2>
     <yt-button-view-model
       class={scopingClass}
       {@attach attachCloseButton}
@@ -515,7 +529,7 @@
     ></yt-button-view-model>
   </div>
 
-  <div class="panel-body">
+  <div style="padding: 0 24px">
     <DownloadOptions
       audioFormats={videoData.audioFormats}
       {downloadType}
@@ -533,27 +547,22 @@
     />
   </div>
 
-  <div class="panel-footer">
+  <div style="padding: 16px 24px 20px">
     {#if isDownloading || isQueued}
-      <div class="footer-progress">
+      <div style="display: flex; flex-direction: column; gap: 6px">
         {#if showProgress}
-          <div
-            class="progress-track"
-            aria-label={progressDescription()}
-            aria-valuemax={1}
-            aria-valuemin={0}
-            aria-valuenow={progress}
-            role="progressbar"
-          >
-            <div style="--fill-scale: {progress};" class="progress-fill"></div>
-          </div>
-          <div class="progress-row">
-            <span class="progress-label" aria-live="polite">{progressDescription()}</span>
+          <tp-yt-paper-progress
+            {@attach attachPanelProgress}
+            value={Math.round(progress * 100)}
+          ></tp-yt-paper-progress>
+          <div style="display: flex; justify-content: space-between; align-items: center">
+            <span style="font-size: 1.3rem" aria-live="polite">{progressDescription()}</span>
             {@render cancelBtn()}
           </div>
         {:else}
-          <div class="progress-row">
-            <span class="progress-label" aria-live="polite">
+          <tp-yt-paper-progress {@attach attachPanelProgress} indeterminate></tp-yt-paper-progress>
+          <div style="display: flex; justify-content: space-between; align-items: center">
+            <span style="font-size: 1.3rem" aria-live="polite">
               {isQueued ? "Queued" : "Starting…"}
             </span>
             {@render cancelBtn()}
@@ -561,7 +570,7 @@
         {/if}
       </div>
     {:else if isDone}
-      <div class="footer-done" role="status">
+      <div style="display: flex; gap: 8px; align-items: center; font-size: 1.3rem" role="status">
         <svg
           aria-hidden="true"
           fill="currentColor"
@@ -585,93 +594,3 @@
     {/if}
   </div>
 </div>
-
-<style>
-  /* -- Panel shell ---------------------------------------------------------- */
-
-  .panel {
-    overflow: hidden;
-    width: 380px;
-
-    /* background, border-radius, box-shadow, color, and font all cascade from
-       the ytd-menu-popup-renderer host element managed by YouTube's Polymer runtime */
-  }
-
-  /* -- Header --------------------------------------------------------------- */
-
-  .panel-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding-block: 20px 16px;
-    padding-inline: 24px;
-  }
-
-  .panel-title {
-    margin: 0;
-    color: var(--yt-spec-text-primary, rgb(15 15 15));
-    font-weight: 400;
-    font-size: 1.6rem;
-    line-height: 1.375;
-  }
-
-  /* -- Body ----------------------------------------------------------------- */
-
-  .panel-body {
-    padding: 0 24px;
-  }
-
-  /* -- Footer --------------------------------------------------------------- */
-
-  .panel-footer {
-    padding-block: 16px 20px;
-    padding-inline: 24px;
-  }
-
-  /* -- Progress ------------------------------------------------------------- */
-
-  .footer-progress {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .progress-track {
-    overflow: hidden;
-    height: 4px;
-    border-radius: 2px;
-    background: color-mix(in sRGB, var(--yt-spec-text-primary, currentColor) 10%, transparent);
-  }
-
-  .progress-fill {
-    --fill-scale: 0;
-
-    height: 100%;
-    border-radius: 2px;
-    background: var(--yt-spec-call-to-action, rgb(6 95 212));
-    transition: transform 300ms ease;
-    transform: scaleX(var(--fill-scale));
-    transform-origin: left center;
-  }
-
-  .progress-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
-
-  .progress-label {
-    color: var(--yt-spec-text-secondary, rgb(96 96 96));
-    font-size: 1.3rem;
-  }
-
-  /* -- Done state ----------------------------------------------------------- */
-
-  .footer-done {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    color: var(--yt-spec-text-secondary, rgb(96 96 96));
-    font-size: 1.4rem;
-  }
-</style>

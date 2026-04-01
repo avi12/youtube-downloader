@@ -39,9 +39,9 @@ export default defineContentScript({
 
       unmount(currentPlaylistUi);
       currentPlaylistUi = null;
-      document
-        .querySelectorAll("[data-ytdl-playlist-downloader]")
-        .forEach(element => element.remove());
+      for (const element of document.querySelectorAll("[data-ytdl-playlist-downloader]")) {
+        element.remove();
+      }
     }
 
     // The dropdown DOM is owned by the MAIN world; isolated world only manages

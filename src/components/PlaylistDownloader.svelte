@@ -161,66 +161,73 @@
       startPlaylistDownload();
     }
   }
+
+  function attachPlaylistButton(element: Element) {
+    if (!(element instanceof HTMLElement)) {
+      return;
+    }
+
+    element.addEventListener("click", handleDownloadClick);
+    element.dispatchEvent(new CustomEvent("ytdl:set-yt-button-data", {
+      detail: {
+        iconName: isDownloading ? "CLOSE" : "DOWNLOAD",
+        title: downloadButtonLabel(),
+        accessibilityText: downloadButtonLabel(),
+        style: "MONO",
+        type: "TONAL",
+        buttonSize: "DEFAULT",
+        state: checkedDownloadableVideos.length === 0 && !isDownloading ? "DISABLED" : "ACTIVE",
+        isFullWidth: false,
+        isDisabled: checkedDownloadableVideos.length === 0 && !isDownloading,
+        tooltip: downloadButtonLabel()
+      },
+      bubbles: true
+    }));
+  }
+
+  function attachPlaylistProgress(element: Element) {
+    if (!("updateStyles" in element) || typeof element.updateStyles !== "function") {
+      return;
+    }
+
+    element.updateStyles({
+      "--paper-progress-active-color": "var(--yt-spec-call-to-action, rgb(62 166 255))",
+      "--paper-progress-container-color": "transparent"
+    });
+  }
 </script>
 
-<div class="playlist-downloader" aria-label="Playlist Downloader" role="region">
+<div
+  style="display: flex; flex-direction: column; gap: 8px; padding: 12px 0"
+  aria-label="Playlist Downloader"
+  role="region"
+>
   {#if error}
-    <div class="error-message" role="alert">{error}</div>
+    <div
+      style:padding="8px 12px"
+      style:border-radius="4px"
+      style:background="var(--yt-spec-error-indicator, rgb(204 0 0))"
+      style:color="#fff"
+      style:font-size="1.3rem"
+      role="alert"
+    >{error}</div>
   {/if}
 
-  <div class="controls">
-    <button
-      class="download-button"
-      class:download-button--downloading={isDownloading}
-      aria-busy={isDownloading}
-      aria-label={downloadButtonLabel()}
-      disabled={checkedDownloadableVideos.length === 0 && !isDownloading}
-      onclick={handleDownloadClick}
-    >
-      <svg
-        aria-hidden="true"
-        fill="currentColor"
-        focusable="false"
-        height="24"
-        width="24"
-      >
-        {#if isDownloading}
-          <!-- Cancel icon -->
-          <path
-            d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59
-               6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"
-          />
-        {:else}
-          <!-- Download all icon -->
-          <path
-            d="M20.18 18.67V18H4.18V18.67H20.18ZM16.18 10.73L15.73 10.27
-               L13.31 12.73V6H12.68V12.73L10.26 10.27L9.82 10.73L13 13.91
-               L16.18 10.73Z"
-          />
-        {/if}
-      </svg>
-      <span>{downloadButtonLabel()}</span>
-    </button>
+  <div style="display: flex; flex-direction: column; gap: 8px">
+    <yt-button-view-model {@attach attachPlaylistButton}
+    ></yt-button-view-model>
 
     {#if isDownloading && totalCount > 0}
-      <div
-        class="progress-bar"
-        aria-label={`${downloadedCount} of ${totalCount} downloaded`}
-        aria-valuemax={totalCount}
-        aria-valuemin={0}
-        aria-valuenow={downloadedCount}
-        role="progressbar"
-      >
-        <div
-          style="--fill-scale: {downloadedCount / totalCount};"
-          class="progress-fill"
-        ></div>
-      </div>
+      <tp-yt-paper-progress
+        {@attach attachPlaylistProgress}
+        max={totalCount}
+        value={downloadedCount}
+      ></tp-yt-paper-progress>
     {/if}
   </div>
 
   {#if downloadableVideos.length < videoDataMap.size}
-    <p class="info-text" role="status">
+    <p style="margin: 0; font-size: 1.2rem" role="status">
       {videoDataMap.size - downloadableVideos.length} video{videoDataMap.size -
         downloadableVideos.length === 1
         ? ""
@@ -228,99 +235,3 @@
     </p>
   {/if}
 </div>
-
-<style>
-  :global(body) {
-    margin: 0;
-  }
-
-  :host {
-    display: block;
-    padding: 12px 0;
-  }
-
-  .playlist-downloader {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    font-family: Roboto, Arial, sans-serif;
-  }
-
-  .controls {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-
-  .download-button {
-    display: inline-flex;
-    gap: 8px;
-    align-items: center;
-    padding: 8px 16px;
-    border: none;
-    border-radius: 18px;
-    background: var(--yt-spec-brand-button-background, rgb(6 95 212));
-    color: rgb(255 255 255);
-    font-family: inherit;
-    font-weight: 500;
-    font-size: 1.4rem;
-    white-space: nowrap;
-    cursor: pointer;
-    transition: background-color 150ms;
-  }
-
-  .download-button:disabled {
-    background: var(--yt-spec-10-percent-layer, rgb(0 0 0 / 10%));
-    color: var(--yt-spec-text-disabled, rgb(0 0 0 / 38%));
-    cursor: default;
-  }
-
-  .download-button:hover:not(:disabled) {
-    background: var(--yt-spec-brand-button-background-hover, rgb(3 86 196));
-  }
-
-  .download-button--downloading {
-    background: var(--yt-spec-error-indicator, rgb(204 0 0));
-  }
-
-  .download-button--downloading:hover:not(:disabled) {
-    background: rgb(170 0 0);
-  }
-
-  .download-button svg {
-    flex-shrink: 0;
-  }
-
-  .progress-bar {
-    overflow: hidden;
-    height: 4px;
-    border-radius: 2px;
-    background: var(--yt-spec-10-percent-layer, rgb(0 0 0 / 10%));
-  }
-
-  .progress-fill {
-    --fill-scale: 0;
-
-    width: 100%;
-    height: 100%;
-    border-radius: 2px;
-    background: var(--yt-spec-brand-button-background, rgb(6 95 212));
-    transition: transform 300ms ease;
-    transform: scaleX(var(--fill-scale));
-    transform-origin: left;
-  }
-
-  .info-text {
-    margin: 0;
-    color: var(--yt-spec-text-secondary, rgb(96 96 96));
-    font-size: 1.2rem;
-  }
-
-  .error-message {
-    padding: 8px 12px;
-    border-radius: 4px;
-    background: var(--yt-spec-error-indicator, rgb(204 0 0));
-    color: rgb(255 255 255);
-    font-size: 1.3rem;
-  }
-</style>

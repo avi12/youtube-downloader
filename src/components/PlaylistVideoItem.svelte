@@ -20,8 +20,6 @@
   let isDownloading = $state(false);
   let isDone = $state(false);
   let isQueued = $state(false);
-  let progress = $state(0);
-
   // Request video data from MAIN world and track when it arrives
   $effect(() => {
     const unsubscribe = pageMessenger.onMessage("videoData", ({ data }) => {
@@ -40,14 +38,12 @@
     }
 
     if (data.isRemoved) {
-      progress = 0;
       isDownloading = false;
       isDone = false;
       isQueued = false;
       return;
     }
 
-    progress = data.progress;
     isDone = data.progress >= 1;
   }));
 
@@ -95,7 +91,6 @@
 
     isDone = false;
     isDownloading = !isDownloading;
-    progress = 0;
 
     if (!isDownloading || isQueued) {
       await sendMessage("cancelDownload", { videoIds: [videoId] });
@@ -115,145 +110,50 @@
       sabrConfig: videoData.sabrConfig
     });
   }
+
+  function getItemIconName() {
+    if (isDone) {
+      return "DOWNLOAD_DONE";
+    }
+
+    if (isDownloading) {
+      return "CLOSE";
+    }
+
+    return "DOWNLOAD";
+  }
+
+  function attachItemButton(element: Element) {
+    if (!(element instanceof HTMLElement)) {
+      return;
+    }
+
+    element.addEventListener("click", toggleDownload);
+    element.dispatchEvent(new CustomEvent("ytdl:set-yt-button-data", {
+      detail: {
+        iconName: getItemIconName(),
+        title: buttonLabel(),
+        accessibilityText: videoData ? `${buttonLabel()} ${videoData.title}` : buttonLabel(),
+        style: "MONO",
+        type: "TONAL",
+        buttonSize: "DEFAULT",
+        state: !videoData?.isDownloadable ? "DISABLED" : "ACTIVE",
+        isFullWidth: false,
+        isDisabled: !videoData?.isDownloadable,
+        tooltip: buttonLabel()
+      },
+      bubbles: true
+    }));
+  }
 </script>
 
-<div class="playlist-item-downloader">
+<div style="display: flex; align-items: center">
   {#if videoData}
-    <button
-      class="download-button"
-      class:download-button--disabled={!videoData.isDownloadable}
-      class:download-button--done={isDone}
-      class:download-button--downloading={isDownloading}
-      aria-busy={isDownloading && !isDone}
-      aria-label={`${buttonLabel()} ${videoData.title}`}
-      disabled={!videoData.isDownloadable}
-      onclick={toggleDownload}
-    >
-      {#if isDownloading && progress > 0 && progress < 1}
-        <span
-          style="--fill-scale: {progress};"
-          class="download-progress"
-          aria-hidden="true"
-        ></span>
-      {/if}
-      <svg
-        aria-hidden="true"
-        fill="currentColor"
-        focusable="false"
-        height="20"
-        width="20"
-      >
-        {#if isDownloading}
-          <path
-            d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12
-               5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12 19 6.41z"
-          />
-        {:else if isDone}
-          <path
-            d="M20.13,5.41 18.72,4 9.53,13.19 5.28,8.95 3.87,10.36
-               9.53,16.02M5 18h14v2H5z"
-          />
-        {:else}
-          <path
-            d="M17 18V19H6V18H17ZM16.5 11.4L15.8 10.7L12 14.4V4H11V14.4
-               L7.2 10.6L6.5 11.3L11.5 16.3L16.5 11.4Z"
-          />
-        {/if}
-      </svg>
-      <span class="button-text">{buttonLabel()}</span>
-    </button>
+    <yt-button-view-model {@attach attachItemButton}
+    ></yt-button-view-model>
   {:else}
-    <div class="loading-indicator" aria-busy="true" aria-label="Loading video info">
-      <div class="spinner"></div>
+    <div style="padding: 4px 8px" aria-busy="true" aria-label="Loading video info">
+      <tp-yt-paper-spinner-lite active></tp-yt-paper-spinner-lite>
     </div>
   {/if}
 </div>
-
-<style>
-  :global(body) {
-    margin: 0;
-  }
-
-  :host {
-    display: contents;
-  }
-
-  .playlist-item-downloader {
-    display: flex;
-    align-items: center;
-  }
-
-  .download-button {
-    position: relative;
-    display: flex;
-    gap: 4px;
-    align-items: center;
-    overflow: hidden;
-    padding: 4px 8px;
-    border: 1px solid var(--yt-spec-10-percent-layer, rgb(0 0 0 / 20%));
-    border-radius: 12px;
-    background: transparent;
-    color: var(--yt-spec-text-secondary, rgb(96 96 96));
-    font-family: Roboto, Arial, sans-serif;
-    font-size: 1.2rem;
-    white-space: nowrap;
-    cursor: pointer;
-    transition: background-color 100ms, border-color 100ms;
-  }
-
-  .download-button:hover:not(:disabled) {
-    border-color: var(--yt-spec-text-secondary, rgb(96 96 96));
-    background-color: var(--yt-spec-10-percent-layer, rgb(0 0 0 / 5%));
-  }
-
-  .download-button--disabled {
-    opacity: 40%;
-    cursor: default;
-  }
-
-  .download-button--done {
-    border-color: currentColor;
-    color: var(--yt-spec-brand-icon-active, rgb(6 95 212));
-  }
-
-  .download-progress {
-    --fill-scale: 0;
-
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: var(--yt-spec-brand-icon-active, rgb(6 95 212));
-    opacity: 15%;
-    transition: transform 200ms;
-    transform: scaleX(var(--fill-scale));
-    transform-origin: left;
-  }
-
-  .button-text {
-    position: relative;
-    z-index: 1;
-    font-weight: 500;
-    font-size: 1.2rem;
-  }
-
-  .loading-indicator {
-    padding: 4px 8px;
-  }
-
-  .spinner {
-    width: 16px;
-    height: 16px;
-    border: 2px solid var(--yt-spec-10-percent-layer, rgb(0 0 0 / 20%));
-    border-top-color: var(--yt-spec-text-secondary, rgb(96 96 96));
-    border-radius: 50%;
-    animation: 800ms spin linear infinite;
-  }
-
-  @keyframes spin {
-    to {
-      transform: rotate(360deg);
-    }
-  }
-</style>

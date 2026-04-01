@@ -144,9 +144,9 @@
   }
 </script>
 
-<div class="options">
+<div style="display: flex; flex-direction: column; gap: 14px; padding-bottom: 4px">
   <!-- Type -->
-  <div class="field">
+  <div style="display: flex; flex-direction: column; gap: 6px">
     <Select
       id="type-select"
       disabled={isDownloading}
@@ -158,7 +158,7 @@
   </div>
 
   <!-- Quality -->
-  <div class="field">
+  <div style="display: flex; flex-direction: column; gap: 6px">
     <Select
       id="quality-select"
       disabled={isDownloading}
@@ -183,93 +183,16 @@
   </div>
 
   <!-- Filename -->
-  <div class="field">
-    <label class="field-label" for="filename-input">Filename</label>
-    <div class="field-bar" class:field-bar--error={!isFilenameValid}>
-      <input
-        id="filename-input"
-        class="field-input"
-        aria-describedby={!isFilenameValid ? "filename-error" : undefined}
-        aria-invalid={!isFilenameValid}
-        autocomplete="off"
-        disabled={isDownloading}
-        oninput={handleFilenameInput}
-        type="text"
-        value={fullFilename}
-      />
-    </div>
-  </div>
-
-  <!-- Filename validation error -->
-  {#if !isFilenameValid}
-    <p id="filename-error" class="extension-error" aria-live="polite" role="alert">
-      {filenameValidationError}
-    </p>
-  {/if}
+  <tp-yt-paper-input
+    id="filename-input"
+    aria-describedby={!isFilenameValid ? "filename-error" : undefined}
+    aria-invalid={!isFilenameValid || undefined}
+    autocomplete="off"
+    disabled={isDownloading || undefined}
+    error-message={filenameValidationError || undefined}
+    invalid={!isFilenameValid || undefined}
+    label="Filename"
+    oninput={handleFilenameInput}
+    value={fullFilename}
+  ></tp-yt-paper-input>
 </div>
-
-<style>
-  .options {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-    padding-bottom: 4px;
-    color: var(--yt-spec-text-primary, rgb(15 15 15));
-    font-family: Roboto, Noto, sans-serif;
-    font-size: 1.4rem;
-  }
-
-  /* -- Fields --------------------------------------------------------------- */
-
-  .field {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .field-label {
-    color: var(--yt-spec-text-secondary, rgb(96 96 96));
-    font-size: 1.3rem;
-    line-height: 1;
-  }
-
-  .field-bar {
-    display: flex;
-    align-items: center;
-    height: 48px;
-    padding: 0 16px;
-    border: 1px solid color-mix(in sRGB, var(--yt-spec-text-primary, rgb(15 15 15)) 12%, transparent);
-    border-radius: 12px;
-    background: var(--yt-spec-menu-background, rgb(242 242 242));
-    transition: border-color 100ms;
-  }
-
-  .field-bar:focus-within {
-    border-color: var(--yt-spec-text-primary, rgb(15 15 15));
-  }
-
-  .field-bar--error {
-    border-color: rgb(204 0 0);
-  }
-
-  .field-input {
-    flex: 1;
-    align-self: stretch;
-    min-width: 0;
-    border: none;
-    background: transparent;
-    color: var(--yt-spec-text-primary, rgb(15 15 15));
-    outline-style: none;
-    font-family: inherit;
-    font-size: 1.4rem;
-  }
-
-  /* -- Extension error ------------------------------------------------------ */
-
-  .extension-error {
-    margin-top: -6px;
-    color: rgb(204 0 0);
-    font-size: 1.2rem;
-    line-height: 1.4;
-  }
-</style>
