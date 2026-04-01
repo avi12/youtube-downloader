@@ -291,6 +291,11 @@ export default defineBackground(() => {
     await interruptedDownloadsItem.setValue(current);
   });
 
+  onMessage("getInterruptedDownload", async ({ data }) => {
+    const current = await interruptedDownloadsItem.getValue();
+    return current[data.videoId] ?? null;
+  });
+
   onMessage("processStreamError", async ({ data, sender }) => {
     const tabId = sender.tab?.id;
     if (!tabId) {

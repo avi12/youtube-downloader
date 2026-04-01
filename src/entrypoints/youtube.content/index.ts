@@ -248,7 +248,7 @@ export default defineContentScript({
     // - pageMessenger event listeners -
 
     // Receive video data from MAIN world - store for panel use
-    const unsubscribeVideoData = pageMessenger.onMessage("videoData", ({ data }) => {
+    const unsubscribeVideoData = pageMessenger.onMessage("videoData", async ({ data }) => {
       if (location.pathname !== "/watch") {
         return;
       }
@@ -259,6 +259,26 @@ export default defineContentScript({
       }
 
       currentVideoData = data;
+
+      // Check for interrupted download and expose to MAIN world via DOM
+      const interrupted = await sendMessage("getInterruptedDownload", { videoId: data.videoId });
+      let elInterrupted = document.getElementById("ytdl-interrupted");
+      if (interrupted) {
+        if (!elInterrupted) {
+          elInterrupted = document.createElement("div");
+          elInterrupted.id = "ytdl-interrupted";
+          elInterrupted.hidden = true;
+          document.documentElement.append(elInterrupted);
+        }
+
+        elInterrupted.dataset.videoId = interrupted.videoId;
+        elInterrupted.dataset.type = interrupted.type;
+        elInterrupted.dataset.filenameOutput = interrupted.filenameOutput;
+        elInterrupted.dataset.videoItag = String(interrupted.videoItag);
+        elInterrupted.dataset.audioItag = String(interrupted.audioItag);
+      } else {
+        elInterrupted?.remove();
+      }
     });
     context.onInvalidated(unsubscribeVideoData);
 
@@ -432,6 +452,23 @@ export default defineContentScript({
 
     addEventListener("ytdl:stream-error", handleStreamError);
     context.onInvalidated(() => removeEventListener("ytdl:stream-error", handleStreamError));
+
+    // Persist/clear interrupted download state (from MAIN world to background storage)
+    document.addEventListener("ytdl:persist-interrupted", async (e: Event) => {
+      if (!(e instanceof CustomEvent)) {
+        return;
+      }
+
+      await sendMessage("persistInterruptedDownload", e.detail);
+    });
+
+    document.addEventListener("ytdl:clear-interrupted", async (e: Event) => {
+      if (!(e instanceof CustomEvent)) {
+        return;
+      }
+
+      await sendMessage("clearInterruptedDownload", { videoId: e.detail.videoId });
+    });
 
     // Handle SABR downloads (videos with no direct format URLs).
     // Fetches streams via YouTube's server-side ABR endpoint using the PO token

@@ -38,9 +38,10 @@ interface ProtocolMap {
   // Content script → Background: get captured SABR request body for this tab
   getCapturedSabrBody(data: Record<string, never>): { body: string; url: string; poToken: string } | null;
 
-  // Content script → Background: persist/clear interrupted download state
+  // Content script → Background: persist/clear/query interrupted download state
   persistInterruptedDownload(data: InterruptedDownload): void;
   clearInterruptedDownload(data: { videoId: string }): void;
+  getInterruptedDownload(data: { videoId: string }): InterruptedDownload | null;
 
   // Content script → Background: download all items in a playlist
   requestPlaylistDownload(data: { items: DownloadRequest[] }): void;

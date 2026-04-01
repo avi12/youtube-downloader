@@ -570,9 +570,15 @@ export default defineContentScript({
           );
 
           capturedMedia.delete(videoId);
+          document.dispatchEvent(new CustomEvent("ytdl:clear-interrupted", { detail: { videoId } }));
           return;
         } catch (sabrError) {
           console.warn("[ytdl] SabrStream failed, trying fallback:", sabrError);
+          document.dispatchEvent(new CustomEvent("ytdl:persist-interrupted", {
+            detail: {
+              videoId, type, filenameOutput, videoItag, audioItag, timestamp: Date.now()
+            }
+          }));
         }
       }
 
@@ -623,6 +629,13 @@ export default defineContentScript({
         capturedMedia.delete(videoId);
         return;
       }
+
+      // All strategies failed - persist as interrupted so user can resume later
+      document.dispatchEvent(new CustomEvent("ytdl:persist-interrupted", {
+        detail: {
+          videoId, type, filenameOutput, videoItag, audioItag, timestamp: Date.now()
+        }
+      }));
 
       dispatchStreamError(videoId, "No download method available - try reloading the page");
     }
@@ -691,8 +704,17 @@ export default defineContentScript({
 
       let isDownloading = false;
       let isDone = false;
+      let isInterrupted = false;
       let isPanelOpen = false;
       let downloadProgress = 0;
+
+      // Check for interrupted download from a previous session
+      const elInterrupted = document.getElementById("ytdl-interrupted");
+      if (elInterrupted?.dataset.videoId === videoId) {
+        isInterrupted = true;
+        defaultVideoItag = parseInt(elInterrupted.dataset.videoItag ?? "0") || defaultVideoItag;
+        defaultAudioItag = parseInt(elInterrupted.dataset.audioItag ?? "0") || defaultAudioItag;
+      }
 
       // Grab Polymer CSS scoping class from last native yt-button-view-model
       const nativeButtons = elActionsContainer.querySelectorAll("yt-button-view-model");
@@ -749,6 +771,9 @@ export default defineContentScript({
         } else if (isDownloading) {
           title = "Cancel";
           accessibilityText = "Cancel download";
+        } else if (isInterrupted) {
+          title = "Resume";
+          accessibilityText = "Resume download";
         }
 
         const isDisabled = !videoData.isDownloadable;
@@ -922,6 +947,7 @@ export default defineContentScript({
             void pageMessenger.sendMessage("cancelDownload", { videoIds: [videoId] });
           } else {
             isDone = false;
+            isInterrupted = false;
             isDownloading = true;
             downloadProgress = 0;
             refreshButtons();
