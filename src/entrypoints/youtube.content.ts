@@ -154,16 +154,16 @@ export default defineContentScript({
       }
 
       const mutationObserver = new MutationObserver(mutations => {
-        mutations.forEach(mutation => {
-          mutation.addedNodes.forEach(node => {
+        for (const mutation of mutations) {
+          for (const node of mutation.addedNodes) {
             if (
-              node instanceof HTMLElement &&
-              node.tagName.toLowerCase() === "ytd-playlist-video-renderer"
+              node instanceof HTMLElement
+              && node.tagName.toLowerCase() === "ytd-playlist-video-renderer"
             ) {
               injectPlaylistVideoItemUi(node);
             }
-          });
-        });
+          }
+        }
       });
 
       mutationObserver.observe(elContents, { childList: true });
@@ -210,40 +210,146 @@ export default defineContentScript({
       ui.mount();
     }
 
+    // - Video grid injection (homepage, subscriptions, channel) -
+
+    let gridObserver: MutationObserver | null = null;
+
+    function cleanupGridUi() {
+      gridObserver?.disconnect();
+      gridObserver = null;
+
+      for (const element of document.querySelectorAll("[data-ytdl-grid-item]")) {
+        element.remove();
+      }
+    }
+
+    function extractVideoIdFromLockup(elLockup: Element) {
+      const contentIdClass = [...elLockup.classList].find(cls => cls.startsWith("content-id-"));
+      if (contentIdClass) {
+        return contentIdClass.replace("content-id-", "");
+      }
+
+      const elLink = elLockup.querySelector<HTMLAnchorElement>("a[href*=\"/watch\"]");
+      if (!elLink) {
+        return null;
+      }
+
+      try {
+        return new URLSearchParams(new URL(elLink.href).search).get("v");
+      } catch {
+        return null;
+      }
+    }
+
+    async function injectGridVideoButton(elLockup: Element) {
+      const videoId = extractVideoIdFromLockup(elLockup);
+      if (!videoId) {
+        return;
+      }
+
+      if (elLockup.querySelector(`[data-ytdl-grid-item="${videoId}"]`)) {
+        return;
+      }
+
+      const elMenuContainer = elLockup.querySelector(".yt-lockup-metadata-view-model__menu-button");
+      if (!elMenuContainer) {
+        return;
+      }
+
+      const elItemContainer = document.createElement("div");
+      elItemContainer.setAttribute("data-ytdl-grid-item", videoId);
+      elMenuContainer.insertAdjacentElement("beforebegin", elItemContainer);
+
+      const ui = await createShadowRootUi(context, {
+        name: `ytdl-grid-item-${videoId}`,
+        position: "inline",
+        anchor: elItemContainer,
+        onMount(elUiContainer) {
+          mount(PlaylistVideoItem, {
+            target: elUiContainer,
+            props: { videoId, options: currentOptions }
+          });
+        }
+      });
+
+      ui.mount();
+    }
+
+    function injectGridVideoButtons() {
+      const lockups = document.querySelectorAll("yt-lockup-view-model");
+
+      for (const elLockup of lockups) {
+        injectGridVideoButton(elLockup);
+      }
+
+      gridObserver?.disconnect();
+      gridObserver = new MutationObserver(mutations => {
+        for (const mutation of mutations) {
+          for (const node of mutation.addedNodes) {
+            if (!(node instanceof HTMLElement)) {
+              continue;
+            }
+
+            const lockupsInNode = node.matches("yt-lockup-view-model")
+              ? [node]
+              : [...node.querySelectorAll("yt-lockup-view-model")];
+
+            for (const elLockup of lockupsInNode) {
+              injectGridVideoButton(elLockup);
+            }
+          }
+        }
+      });
+
+      const elPageContent = document.querySelector("ytd-page-manager") ?? document.body;
+      gridObserver.observe(elPageContent, { childList: true, subtree: true });
+      context.onInvalidated(() => gridObserver?.disconnect());
+    }
+
     // - Navigation handler -
+
+    function isVideoGridPage(pathname: string) {
+      return pathname === "/"
+        || pathname.startsWith("/feed/")
+        || pathname.startsWith("/@");
+    }
 
     async function handlePageChange(url: string) {
       const { pathname } = new URL(url);
       if (pathname === "/watch") {
         cleanupPlaylistUi();
+        cleanupGridUi();
         cleanupPanelUi();
         setNativeDownloadVisibility(!currentOptions.isRemoveNativeDownload);
       } else if (pathname === "/playlist") {
         cleanupPanelUi();
+        cleanupGridUi();
         setNativeDownloadVisibility(true);
         await injectPlaylistDownloaderUi();
         await handlePlaylistVideoAdditions();
+      } else if (isVideoGridPage(pathname)) {
+        cleanupPanelUi();
+        cleanupPlaylistUi();
+        setNativeDownloadVisibility(true);
+        injectGridVideoButtons();
       } else {
         cleanupPanelUi();
         cleanupPlaylistUi();
+        cleanupGridUi();
         setNativeDownloadVisibility(true);
       }
     }
 
     // - pageMessenger event listeners -
 
-    // Receive video data from MAIN world - store for panel use
+    // Receive video data from MAIN world - store for panel use and check interrupted state
     const unsubscribeVideoData = pageMessenger.onMessage("videoData", async ({ data }) => {
-      if (location.pathname !== "/watch") {
-        return;
+      if (location.pathname === "/watch") {
+        const urlVideoId = new URLSearchParams(location.search).get("v");
+        if (data.videoId === urlVideoId) {
+          currentVideoData = data;
+        }
       }
-
-      const urlVideoId = new URLSearchParams(location.search).get("v");
-      if (data.videoId !== urlVideoId) {
-        return;
-      }
-
-      currentVideoData = data;
 
       // Check for interrupted download and expose to MAIN world via DOM
       const interrupted = await sendMessage("getInterruptedDownload", { videoId: data.videoId });
@@ -413,13 +519,17 @@ export default defineContentScript({
         ...extraAudioStreams.map(track => track.label)
       ];
 
+      const playlistContext = playlistContextByVideoId.get(videoId);
+      playlistContextByVideoId.delete(videoId);
+
       await sendMessage("streamEnd", {
         type: downloadType,
         videoId,
         filenameOutput,
         videoMimeType,
         audioMimeType,
-        audioTrackLabels
+        audioTrackLabels,
+        ...playlistContext
       });
     }
 
@@ -484,8 +594,23 @@ export default defineContentScript({
     addEventListener("ytdl:sabr-download", handleSabrDownload);
     context.onInvalidated(() => removeEventListener("ytdl:sabr-download", handleSabrDownload));
 
+    // Track playlist context per videoId so streamEnd can include playlist info
+    const playlistContextByVideoId = new Map<string, {
+      playlistId: string;
+      playlistTitle: string;
+      playlistTotalCount: number;
+    }>();
+
     // Trigger a download item dispatched from background (playlist downloads)
     onMessage("executeDownloadItem", ({ data }) => {
+      if (data.playlistId) {
+        playlistContextByVideoId.set(data.videoId, {
+          playlistId: data.playlistId,
+          playlistTitle: data.playlistTitle ?? "Playlist",
+          playlistTotalCount: data.playlistTotalCount ?? 1
+        });
+      }
+
       void pageMessenger.sendMessage("downloadRequest", data);
     });
 

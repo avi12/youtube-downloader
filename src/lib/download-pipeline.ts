@@ -11,6 +11,7 @@ import { sendMessage } from "./messaging";
 import { getCompatibleFilename, getMimeType } from "./utils";
 import type { DownloadType, ProcessStreamData, ProgressType } from "@/types";
 import { FFmpeg } from "@ffmpeg/ffmpeg";
+import { zipSync } from "fflate";
 
 // ─── FFmpeg configuration ────────────────────────────────────────────────────
 
@@ -88,6 +89,50 @@ async function triggerDownload(data: Uint8Array, filenameOutput: string) {
   setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
 }
 
+// ─── Playlist zip bundling ───────────────────────────────────────────────────
+
+interface PlaylistBundle {
+  playlistTitle: string;
+  totalCount: number;
+  files: Map<string, { filename: string; data: Uint8Array }>;
+  tabId: number;
+}
+
+const playlistBundles = new Map<string, PlaylistBundle>();
+
+function addToPlaylistBundle(
+  playlistId: string, playlistTitle: string, totalCount: number,
+  tabId: number, filename: string, data: Uint8Array
+) {
+  if (!playlistBundles.has(playlistId)) {
+    playlistBundles.set(playlistId, {
+      playlistTitle,
+      totalCount,
+      files: new Map(),
+      tabId
+    });
+  }
+
+  const bundle = playlistBundles.get(playlistId)!;
+  bundle.files.set(filename, { filename, data });
+
+  if (bundle.files.size < bundle.totalCount) {
+    return;
+  }
+
+  // All files collected - create zip
+  const zipEntries: Record<string, Uint8Array> = {};
+  for (const [, file] of bundle.files) {
+    zipEntries[file.filename] = file.data;
+  }
+
+  const zipped = zipSync(zipEntries);
+  const zipFilename = getCompatibleFilename(`${bundle.playlistTitle}.zip`);
+  playlistBundles.delete(playlistId);
+
+  triggerDownload(zipped, zipFilename);
+}
+
 async function processSingleMedia(item: ProcessStreamData) {
   const {
     videoId, type, filenameOutput, videoData, audioData, tabId
@@ -99,6 +144,15 @@ async function processSingleMedia(item: ProcessStreamData) {
   }
 
   await reportProgress(videoId, 0.99, type === "audio" ? "audio" : "video", tabId);
+
+  if (item.playlistId) {
+    addToPlaylistBundle(
+      item.playlistId, item.playlistTitle ?? "Playlist",
+      item.playlistTotalCount ?? 1, tabId, filenameOutput, data
+    );
+    return;
+  }
+
   await triggerDownload(data, filenameOutput);
 }
 
@@ -220,7 +274,17 @@ async function processVideoAudio(item: ProcessStreamData, ffmpeg: FFmpeg) {
     }
 
     const filesToDelete = [videoFilename, primaryAudioFilename, outputFilename, ...extraAudioFilenames];
-    await Promise.all(filesToDelete.map(filename => ffmpeg.deleteFile(filename)));
+    for (const file of filesToDelete) {
+      await ffmpeg.deleteFile(file);
+    }
+
+    if (item.playlistId) {
+      addToPlaylistBundle(
+        item.playlistId, item.playlistTitle ?? "Playlist",
+        item.playlistTotalCount ?? 1, tabId, downloadFilename, ffmpegOutput
+      );
+      return;
+    }
 
     await triggerDownload(ffmpegOutput, downloadFilename);
   } finally {

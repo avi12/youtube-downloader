@@ -202,7 +202,8 @@ export default defineBackground(() => {
       }
 
       const {
-        videoId, type, filenameOutput, videoMimeType, audioMimeType, audioTrackLabels
+        videoId, type, filenameOutput, videoMimeType, audioMimeType, audioTrackLabels,
+        playlistId, playlistTitle, playlistTotalCount
       } = data;
       trackVideoForTab(videoId, tabId);
 
@@ -243,7 +244,10 @@ export default defineBackground(() => {
         audioMimeType,
         primaryAudioLabel: audioTrackLabels[0],
         additionalAudioStreams,
-        tabId
+        tabId,
+        playlistId,
+        playlistTitle,
+        playlistTotalCount
       });
     });
   }

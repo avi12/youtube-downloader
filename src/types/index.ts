@@ -48,6 +48,9 @@ export type DownloadRequest = {
   audioItag: number;
   filenameOutput: string;
   sabrConfig?: SabrConfig | null;
+  playlistId?: string;
+  playlistTitle?: string;
+  playlistTotalCount?: number;
 };
 
 export type InterruptedDownload = {
@@ -91,7 +94,12 @@ export type StreamData = {
   additionalAudioStreams?: AudioStreamData[];
 };
 
-export type ProcessStreamData = StreamData & { tabId: number };
+export type ProcessStreamData = StreamData & {
+  tabId: number;
+  playlistId?: string;
+  playlistTitle?: string;
+  playlistTotalCount?: number;
+};
 
 export type StreamError = {
   videoId: string;

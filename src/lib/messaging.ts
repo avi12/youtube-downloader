@@ -30,6 +30,9 @@ interface ProtocolMap {
     videoMimeType: string;
     audioMimeType: string;
     audioTrackLabels: string[];
+    playlistId?: string;
+    playlistTitle?: string;
+    playlistTotalCount?: number;
   }): void;
 
   // Content script → Background: SABR stream fetch failed
@@ -44,7 +47,11 @@ interface ProtocolMap {
   getInterruptedDownload(data: { videoId: string }): InterruptedDownload | null;
 
   // Content script → Background: download all items in a playlist
-  requestPlaylistDownload(data: { items: DownloadRequest[] }): void;
+  requestPlaylistDownload(data: {
+    items: DownloadRequest[];
+    playlistTitle?: string;
+    isZipBundle?: boolean;
+  }): void;
 
   // Content script → Background: cancel one or more downloads
   cancelDownload(data: { videoIds: string[] }): void;
@@ -77,6 +84,9 @@ interface ProtocolMap {
     audioMimeType: string;
     audioTrackLabels: string[];
     tabId: number;
+    playlistId?: string;
+    playlistTitle?: string;
+    playlistTotalCount?: number;
   }): void;
 
   // Background → Offscreen (Chrome only): cancel one or more downloads

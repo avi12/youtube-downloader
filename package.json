@@ -24,6 +24,7 @@
     "@ffmpeg/ffmpeg": "^0.12.15",
     "@ffmpeg/util": "^0.12.2",
     "@webext-core/messaging": "^2.3.0",
+    "fflate": "^0.8.2",
     "googlevideo": "^4.0.4"
   },
   "devDependencies": {

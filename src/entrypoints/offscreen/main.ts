@@ -93,7 +93,8 @@ onMessage("processStreamChunk", ({ data }) => {
 onMessage("processStreamEnd", ({ data }) => {
   console.log(`[ytdl:offscreen] streamEnd for ${data.videoId}, type=${data.type}, accumulators:`, [...streamAccumulators.keys()]);
   const {
-    videoId, type, filenameOutput, videoMimeType, audioMimeType, audioTrackLabels, tabId
+    videoId, type, filenameOutput, videoMimeType, audioMimeType, audioTrackLabels, tabId,
+    playlistId, playlistTitle, playlistTotalCount
   } = data;
   const accumulator = streamAccumulators.get(videoId);
   streamAccumulators.delete(videoId);
@@ -125,7 +126,10 @@ onMessage("processStreamEnd", ({ data }) => {
     audioMimeType,
     primaryAudioLabel: audioTrackLabels[0],
     additionalAudioStreams,
-    tabId
+    tabId,
+    playlistId,
+    playlistTitle,
+    playlistTotalCount
   });
 });
 

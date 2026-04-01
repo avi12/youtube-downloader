@@ -90,6 +90,12 @@
     totalCount = checkedDownloadableVideos.length;
     downloadedCount = 0;
 
+    const playlistTitle = document.querySelector(
+      "yt-dynamic-text-view-model .yt-core-attributed-string, h1#title"
+    )?.textContent?.trim() ?? "Playlist";
+
+    const playlistId = new URLSearchParams(location.search).get("list") ?? `playlist-${Date.now()}`;
+
     const downloadRequests = checkedDownloadableVideos.map(data => {
       const downloadType: DownloadType = data.isMusic ? "audio" : "video+audio";
       const extension = data.isMusic ? options.ext.audio : options.ext.video;
@@ -101,12 +107,19 @@
         videoItag: data.videoFormats[0]?.itag ?? 0,
         audioItag: data.audioFormats[0]?.itag ?? 0,
         filenameOutput,
-        sabrConfig: data.sabrConfig
+        sabrConfig: data.sabrConfig,
+        playlistId,
+        playlistTitle,
+        playlistTotalCount: checkedDownloadableVideos.length
       };
     });
 
     try {
-      await sendMessage("requestPlaylistDownload", { items: downloadRequests });
+      await sendMessage("requestPlaylistDownload", {
+        items: downloadRequests,
+        playlistTitle,
+        isZipBundle: true
+      });
     } catch {
       error = "Failed to start downloads - please try again";
       isDownloading = false;
