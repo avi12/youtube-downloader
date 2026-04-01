@@ -106,29 +106,16 @@ export function injectGridVideoButtons(
     injectGridVideoButton(context, options, elCard);
   }
 
-  for (const elCard of document.querySelectorAll(VIDEO_CARD_SELECTOR)) {
-    inject(elCard);
+  function scanAllCards() {
+    for (const elCard of document.querySelectorAll(VIDEO_CARD_SELECTOR)) {
+      inject(elCard);
+    }
   }
 
+  scanAllCards();
+
   gridObserver?.disconnect();
-  gridObserver = new MutationObserver(mutations => {
-    for (const mutation of mutations) {
-      for (const node of mutation.addedNodes) {
-        if (!(node instanceof HTMLElement)) {
-          continue;
-        }
-
-        if (node.matches(VIDEO_CARD_SELECTOR)) {
-          inject(node);
-          continue;
-        }
-
-        for (const elCard of node.querySelectorAll(VIDEO_CARD_SELECTOR)) {
-          inject(elCard);
-        }
-      }
-    }
-  });
+  gridObserver = new MutationObserver(scanAllCards);
 
   const elPageContent = document.querySelector(PAGE_MANAGER_SELECTOR) ?? document.body;
   gridObserver.observe(elPageContent, { childList: true, subtree: true });
@@ -136,7 +123,11 @@ export function injectGridVideoButtons(
 }
 
 export function isVideoGridPage(pathname: string) {
-  return pathname === "/"
-    || pathname.startsWith("/feed/")
-    || pathname.startsWith("/@");
+  if (pathname === "/" || pathname.startsWith("/feed/")) {
+    return true;
+  }
+
+  // Channel URLs: /@handle, /c/name, /channel/id, /user/name
+  const channelPrefixes = ["/@", "/c/", "/channel/", "/user/"];
+  return channelPrefixes.some(prefix => pathname.startsWith(prefix));
 }
