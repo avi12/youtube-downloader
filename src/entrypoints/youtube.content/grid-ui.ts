@@ -80,6 +80,12 @@ function injectGridVideoButton(
     return;
   }
 
+  // Ensure the menu renders above the title text (they overlap due to position:absolute)
+  const elMenu = elCard.querySelector("ytd-menu-renderer");
+  if (elMenu instanceof HTMLElement) {
+    elMenu.style.zIndex = "1";
+  }
+
   const elItemContainer = document.createElement("div");
   elItemContainer.setAttribute("data-ytdl-grid-item", videoId);
   elAnchor.append(elItemContainer);
