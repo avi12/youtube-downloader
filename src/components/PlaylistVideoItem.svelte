@@ -157,34 +157,40 @@
       return;
     }
 
-    const elPopupSlot = document.createElement("ytd-menu-popup-renderer");
-    elPopupSlot.setAttribute("slot", "dropdown-content");
+    // Create dropdown via MAIN world bridge - Polymer elements need the
+    // MAIN world's Polymer runtime to function (open/close, positioning).
+    const panelContentId = `ytdl-grid-panel-${videoId}`;
 
-    elDropdown = document.createElement("tp-yt-iron-dropdown");
-    elDropdown.append(elPopupSlot);
+    document.dispatchEvent(new CustomEvent("ytdl:create-dropdown", {
+      detail: {
+        contentId: panelContentId,
+        positionTargetSelector: `[data-ytdl-grid-item="${videoId}"]`
+      }
+    }));
 
-    const elPopupContainer = document.querySelector("ytd-popup-container") ?? document.body;
-    elPopupContainer.append(elDropdown);
+    // Wait for the MAIN world to create the dropdown, then mount Svelte inside it
+    const checkInterval = setInterval(() => {
+      const elContent = document.getElementById(panelContentId);
+      if (!elContent) {
+        return;
+      }
 
-    Object.assign(elDropdown, {
-      positionTarget: elButtonGroup,
-      horizontalAlign: "left",
-      verticalAlign: "top",
-      noOverlap: true,
-      dynamicAlign: true
-    });
+      clearInterval(checkInterval);
+      elDropdown = elContent.closest("tp-yt-iron-dropdown");
 
-    panelInstance = mount(DownloadOptionsPanel, {
-      target: elPopupSlot,
-      props: { videoData, options }
-    });
+      panelInstance = mount(DownloadOptionsPanel, {
+        target: elContent,
+        props: { videoData, options }
+      });
 
-    elDropdown.open();
+      elDropdown?.addEventListener("iron-overlay-closed", () => {
+        isPanelOpen = false;
+        closePanel();
+      });
+    }, 50);
 
-    elDropdown.addEventListener("iron-overlay-closed", () => {
-      isPanelOpen = false;
-      closePanel();
-    });
+    // Timeout after 2s
+    setTimeout(() => clearInterval(checkInterval), 2000);
   }
 
   function closePanel() {
@@ -193,8 +199,10 @@
       panelInstance = null;
     }
 
-    elDropdown?.remove();
-    elDropdown = null;
+    if (elDropdown) {
+      document.dispatchEvent(new CustomEvent("ytdl:close-dropdown", { detail: { videoId } }));
+      elDropdown = null;
+    }
   }
 
   function togglePanel() {

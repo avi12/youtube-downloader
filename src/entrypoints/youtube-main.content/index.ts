@@ -1100,6 +1100,56 @@ export default defineContentScript({
 
     document.addEventListener("ytdl:set-yt-button-data", handleSetButtonData);
 
+    // Create/close Polymer dropdown for grid/playlist item panels.
+    // The isolated world can't use Polymer elements (open/close, positioning)
+    // so it delegates creation to the MAIN world.
+    const gridDropdowns = new Map<string, HTMLElement>();
+
+    document.addEventListener("ytdl:create-dropdown", (e: Event) => {
+      if (!(e instanceof CustomEvent)) {
+        return;
+      }
+
+      const { contentId, positionTargetSelector } = e.detail;
+      const elPositionTarget = document.querySelector(positionTargetSelector);
+      if (!elPositionTarget) {
+        return;
+      }
+
+      const elDropdownContentSlot = document.createElement("ytd-menu-popup-renderer");
+      elDropdownContentSlot.setAttribute("slot", "dropdown-content");
+      elDropdownContentSlot.id = contentId;
+
+      const elDropdown = document.createElement("tp-yt-iron-dropdown");
+      elDropdown.append(elDropdownContentSlot);
+
+      const elPopupContainer = document.querySelector("ytd-popup-container") ?? document.body;
+      elPopupContainer.append(elDropdown);
+
+      elDropdown.positionTarget = elPositionTarget;
+      elDropdown.horizontalAlign = "left";
+      elDropdown.verticalAlign = "top";
+      elDropdown.noOverlap = true;
+      elDropdown.dynamicAlign = true;
+
+      elDropdown.open();
+      gridDropdowns.set(contentId, elDropdown);
+    });
+
+    document.addEventListener("ytdl:close-dropdown", (e: Event) => {
+      if (!(e instanceof CustomEvent)) {
+        return;
+      }
+
+      const { videoId: dropdownVideoId } = e.detail;
+      const contentId = `ytdl-grid-panel-${dropdownVideoId}`;
+      const elDropdown = gridDropdowns.get(contentId);
+      if (elDropdown) {
+        elDropdown.remove();
+        gridDropdowns.delete(contentId);
+      }
+    });
+
     // Polymer's IronFocusedBehavior tracks keyboard vs pointer focus via
     // receivedFocusFromKeyboard, but it doesn't reflect to an attribute.
     // Bridge it to a [keyboard-focused] attribute so CSS in the isolated world
