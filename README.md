@@ -39,7 +39,7 @@ If you can, I'd love if you can port it to [Manifest V3](https://developer.chrom
 
 ## Pop-up page
 
-<img src="https://user-images.githubusercontent.com/6422804/135845589-cf654082-7f7c-4d48-8f5a-226dfd88699a.png" alt="Pop-up page: Download manager" style="margin-bottom: 10px" />
+<img src="https://user-images.githubusercontent.com/6422804/135845589-cf654082-7f7c-4d48-8f5a-226dfd88699a.png" alt="Pop-up page: Download manager" style="margin-bottom: 10px;" />
 <img src="https://user-images.githubusercontent.com/6422804/135846001-2a92e721-8436-4b4f-91a0-5770bdaa41a7.png" alt="Pop-up page: Global options">
 </details>
 
