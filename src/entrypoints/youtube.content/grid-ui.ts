@@ -21,21 +21,7 @@ export function cleanupGridUi() {
 }
 
 function extractVideoIdFromLockup(elLockup: Element) {
-  const contentIdMatch = elLockup.className.match(/content-id-(\S+)/);
-  if (contentIdMatch) {
-    return contentIdMatch[1];
-  }
-
-  const elLink = elLockup.querySelector<HTMLAnchorElement>("a[href*=\"/watch\"]");
-  if (!elLink) {
-    return null;
-  }
-
-  try {
-    return new URLSearchParams(new URL(elLink.href).search).get("v");
-  } catch {
-    return null;
-  }
+  return elLockup.className.match(/content-id-(\S+)/)?.[1] ?? null;
 }
 
 async function injectGridVideoButton(
