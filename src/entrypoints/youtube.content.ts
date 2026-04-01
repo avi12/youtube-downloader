@@ -19,16 +19,9 @@ import { mount, unmount } from "svelte";
 
 export default defineContentScript({
   matches: ["https://www.youtube.com/*"],
-  cssInjectionMode: "ui",
+  cssInjectionMode: "manifest",
   async main(context) {
     localStorage.setItem("ytdl_cs_version", String(Date.now()));
-    // Inject component styles into the page for createIntegratedUi
-    // (createIntegratedUi does not auto-inject CSS unlike createShadowRootUi)
-    const elStyleLink = document.createElement("link");
-    elStyleLink.rel = "stylesheet";
-    elStyleLink.href = browser.runtime.getURL("/content-scripts/youtube.css");
-    document.head.append(elStyleLink);
-    context.onInvalidated(() => elStyleLink.remove());
 
     // - State -
 
