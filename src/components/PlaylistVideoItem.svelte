@@ -4,6 +4,8 @@
   import { videoQueueItem } from "../lib/storage";
   import { getCompatibleFilename } from "../lib/utils";
   import type { Options, VideoData } from "../types";
+  import DownloadOptionsPanel from "./DownloadOptionsPanel.svelte";
+  import { mount, unmount } from "svelte";
 
   type Props = {
     videoId: string;
@@ -135,12 +137,74 @@
   }
 
   let isPanelOpen = $state(false);
+  let elDropdown: HTMLElement | null = null;
+  let panelInstance: ReturnType<typeof mount> | null = null;
+  let elButtonGroup: HTMLElement | null = null;
 
   function setButtonData(element: Element, data: Record<string, unknown>) {
     element.dispatchEvent(new CustomEvent("ytdl:set-yt-button-data", {
       detail: data,
       bubbles: true
     }));
+  }
+
+  function openPanel() {
+    if (!videoData || !elButtonGroup) {
+      return;
+    }
+
+    if (elDropdown) {
+      return;
+    }
+
+    const elPopupSlot = document.createElement("ytd-menu-popup-renderer");
+    elPopupSlot.setAttribute("slot", "dropdown-content");
+
+    elDropdown = document.createElement("tp-yt-iron-dropdown");
+    elDropdown.append(elPopupSlot);
+
+    const elPopupContainer = document.querySelector("ytd-popup-container") ?? document.body;
+    elPopupContainer.append(elDropdown);
+
+    Object.assign(elDropdown, {
+      positionTarget: elButtonGroup,
+      horizontalAlign: "left",
+      verticalAlign: "top",
+      noOverlap: true,
+      dynamicAlign: true
+    });
+
+    panelInstance = mount(DownloadOptionsPanel, {
+      target: elPopupSlot,
+      props: { videoData, options }
+    });
+
+    elDropdown.open();
+
+    elDropdown.addEventListener("iron-overlay-closed", () => {
+      isPanelOpen = false;
+      closePanel();
+    });
+  }
+
+  function closePanel() {
+    if (panelInstance) {
+      unmount(panelInstance);
+      panelInstance = null;
+    }
+
+    elDropdown?.remove();
+    elDropdown = null;
+  }
+
+  function togglePanel() {
+    isPanelOpen = !isPanelOpen;
+
+    if (isPanelOpen) {
+      openPanel();
+    } else {
+      closePanel();
+    }
   }
 
   function attachDownloadButton(element: Element) {
@@ -176,27 +240,33 @@
     element.addEventListener("click", (e: Event) => {
       e.stopPropagation();
       e.preventDefault();
-      isPanelOpen = !isPanelOpen;
+      togglePanel();
     });
 
     setButtonData(element, {
-      iconName: isPanelOpen ? "EXPAND_LESS" : "EXPAND_MORE",
+      iconName: "EXPAND_MORE",
       title: "",
-      accessibilityText: isPanelOpen ? "Close download options" : "Download options",
+      accessibilityText: "Download options",
       style: "MONO",
       type: "TONAL",
       buttonSize: "DEFAULT",
       state: !videoData?.isDownloadable ? "DISABLED" : "ACTIVE",
       isFullWidth: false,
       isDisabled: !videoData?.isDownloadable,
-      tooltip: isPanelOpen ? "Close options" : "Options"
+      tooltip: "Options"
     });
 
     element.setAttribute("style", "margin-left: 0 !important");
   }
+
+  function attachButtonGroup(element: Element) {
+    if (element instanceof HTMLElement) {
+      elButtonGroup = element;
+    }
+  }
 </script>
 
-<div style="display: flex; align-items: center">
+<div style="display: flex; align-items: center" {@attach attachButtonGroup}>
   {#if videoData}
     <yt-button-view-model {@attach attachDownloadButton}
     ></yt-button-view-model>
