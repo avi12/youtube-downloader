@@ -1132,6 +1132,10 @@ export default defineContentScript({
       elDropdown.noOverlap = true;
       elDropdown.dynamicAlign = true;
 
+      // Override ytd-menu-popup-renderer's auto-sizing which constrains to 0
+      elDropdownContentSlot.style.maxWidth = "none";
+      elDropdownContentSlot.style.maxHeight = "none";
+
       elDropdown.open();
       gridDropdowns.set(contentId, elDropdown);
     });
