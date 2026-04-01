@@ -8,6 +8,9 @@
  * - Mounts Svelte UI for playlist pages
  */
 
+import DownloadOptionsPanel from "../components/DownloadOptionsPanel.svelte";
+import PlaylistDownloader from "../components/PlaylistDownloader.svelte";
+import PlaylistVideoItem from "../components/PlaylistVideoItem.svelte";
 import { sendMessage, onMessage } from "../lib/messaging";
 import { pageMessenger } from "../lib/page-messenger";
 import { optionsItem } from "../lib/storage";
@@ -26,17 +29,6 @@ export default defineContentScript({
     elStyleLink.href = browser.runtime.getURL("/content-scripts/youtube.css");
     document.head.append(elStyleLink);
     context.onInvalidated(() => elStyleLink.remove());
-
-    // Pre-import Svelte components
-    const [
-      { default: DownloadOptionsPanel },
-      { default: PlaylistDownloader },
-      { default: PlaylistVideoItem }
-    ] = await Promise.all([
-      import("../components/DownloadOptionsPanel.svelte"),
-      import("../components/PlaylistDownloader.svelte"),
-      import("../components/PlaylistVideoItem.svelte")
-    ]);
 
     // - State -
 
