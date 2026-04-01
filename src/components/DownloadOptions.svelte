@@ -136,15 +136,18 @@
     validateFilename(e.target, value.trim());
   }
 
-  function applyPolymerTheme(element: Element) {
-    if (!("updateStyles" in element) || typeof element.updateStyles !== "function") {
-      return;
-    }
+  const POLYMER_THEME_STYLES = {
+    "--paper-input-container-color": "var(--yt-spec-text-secondary, #aaa)",
+    "--paper-input-container-focus-color": "var(--yt-spec-call-to-action, rgb(62 166 255))",
+    "--paper-input-container-input-color": "var(--yt-spec-text-primary, #f1f1f1)"
+  };
 
-    element.updateStyles({
-      "--paper-input-container-color": "var(--yt-spec-text-secondary, #aaa)",
-      "--paper-input-container-focus-color": "var(--yt-spec-call-to-action, rgb(62 166 255))",
-      "--paper-input-container-input-color": "var(--yt-spec-text-primary, #f1f1f1)"
+  function applyPolymerTheme(element: Element) {
+    // Apply after Polymer's connectedCallback completes
+    requestAnimationFrame(() => {
+      if ("updateStyles" in element && typeof element.updateStyles === "function") {
+        element.updateStyles(POLYMER_THEME_STYLES);
+      }
     });
   }
 

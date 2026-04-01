@@ -17,14 +17,21 @@
     id, label, options, value, disabled = false, onchange
   }: Props = $props();
 
-  function attachDropdown(element: Element) {
-    if ("updateStyles" in element && typeof element.updateStyles === "function") {
-      element.updateStyles({
-        "--paper-input-container-color": "var(--yt-spec-text-secondary, #aaa)",
-        "--paper-input-container-focus-color": "var(--yt-spec-call-to-action, rgb(62 166 255))",
-        "--paper-input-container-input-color": "var(--yt-spec-text-primary, #f1f1f1)"
-      });
+  function applyThemeStyles(element: Element) {
+    if (!("updateStyles" in element) || typeof element.updateStyles !== "function") {
+      return;
     }
+
+    element.updateStyles({
+      "--paper-input-container-color": "var(--yt-spec-text-secondary, #aaa)",
+      "--paper-input-container-focus-color": "var(--yt-spec-call-to-action, rgb(62 166 255))",
+      "--paper-input-container-input-color": "var(--yt-spec-text-primary, #f1f1f1)"
+    });
+  }
+
+  function attachDropdown(element: Element) {
+    // Apply after Polymer's connectedCallback completes
+    requestAnimationFrame(() => applyThemeStyles(element));
 
     let elMovedDropdown: Element | null = null;
     let elChevronInput: HTMLElement | null = null;
