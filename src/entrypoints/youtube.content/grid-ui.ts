@@ -9,6 +9,9 @@ import PlaylistVideoItem from "@/components/PlaylistVideoItem.svelte";
 import type { Options } from "@/types";
 import { mount } from "svelte";
 
+const LOCKUP_SELECTOR = "yt-lockup-view-model";
+const PAGE_MANAGER_SELECTOR = "ytd-page-manager";
+
 let gridObserver: MutationObserver | null = null;
 
 export function cleanupGridUi() {
@@ -62,8 +65,12 @@ export function injectGridVideoButtons(
   context: InstanceType<typeof ContentScriptContext>,
   options: Options
 ) {
-  for (const elLockup of document.querySelectorAll("yt-lockup-view-model")) {
-    injectGridVideoButton(context, options, elLockup);
+  function inject(elLockup: Element) {
+    injectGridVideoButton(context, options, elLockup).catch(() => {});
+  }
+
+  for (const elLockup of document.querySelectorAll(LOCKUP_SELECTOR)) {
+    inject(elLockup);
   }
 
   gridObserver?.disconnect();
@@ -74,19 +81,19 @@ export function injectGridVideoButtons(
           continue;
         }
 
-        if (node.matches("yt-lockup-view-model")) {
-          injectGridVideoButton(context, options, node);
+        if (node.matches(LOCKUP_SELECTOR)) {
+          inject(node);
           continue;
         }
 
-        for (const elLockup of node.querySelectorAll("yt-lockup-view-model")) {
-          injectGridVideoButton(context, options, elLockup);
+        for (const elLockup of node.querySelectorAll(LOCKUP_SELECTOR)) {
+          inject(elLockup);
         }
       }
     }
   });
 
-  const elPageContent = document.querySelector("ytd-page-manager") ?? document.body;
+  const elPageContent = document.querySelector(PAGE_MANAGER_SELECTOR) ?? document.body;
   gridObserver.observe(elPageContent, { childList: true, subtree: true });
   context.onInvalidated(() => gridObserver?.disconnect());
 }
