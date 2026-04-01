@@ -33,8 +33,10 @@ export default defineContentScript({
 
     // ─── Native download button visibility ──────────────────────────────
 
+    const NATIVE_DOWNLOAD_SELECTOR = "ytd-download-button-renderer";
+
     function setNativeDownloadVisibility(isVisible: boolean) {
-      for (const elButton of document.querySelectorAll<HTMLElement>("ytd-download-button-renderer")) {
+      for (const elButton of document.querySelectorAll<HTMLElement>(NATIVE_DOWNLOAD_SELECTOR)) {
         elButton.style.display = isVisible ? "" : "none";
       }
     }
@@ -90,7 +92,7 @@ export default defineContentScript({
     crossWorldMessenger.onMessage("navigation", async ({ data }) => {
       currentVideoData = null;
       await handlePageChange(data.url);
-      forwardSabrCredentialsWithRetry();
+      forwardSabrCredentialsWithRetry().catch(() => {});
     });
 
     crossWorldMessenger.onMessage("panelContentReady", async ({ data }) => {
@@ -131,7 +133,7 @@ export default defineContentScript({
 
     listenForInterruptedDownloadEvents();
     listenForSabrBodyReady();
-    forwardSabrCredentialsWithRetry();
+    forwardSabrCredentialsWithRetry().catch(() => {});
 
     const unwatchOptions = optionsItem.watch(newOptions => {
       if (!newOptions) {
