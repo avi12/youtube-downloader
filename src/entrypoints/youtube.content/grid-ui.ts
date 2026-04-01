@@ -21,9 +21,9 @@ export function cleanupGridUi() {
 }
 
 function extractVideoIdFromLockup(elLockup: Element) {
-  const contentIdClass = [...elLockup.classList].find(cls => cls.startsWith("content-id-"));
-  if (contentIdClass) {
-    return contentIdClass.replace("content-id-", "");
+  const contentIdMatch = elLockup.className.match(/content-id-(\S+)/);
+  if (contentIdMatch) {
+    return contentIdMatch[1];
   }
 
   const elLink = elLockup.querySelector<HTMLAnchorElement>("a[href*=\"/watch\"]");
