@@ -18,6 +18,7 @@ import { cleanupPanelUi, mountPanelUi } from "./panel-ui";
 import { cleanupPlaylistUi, handlePlaylistVideoAdditions, injectPlaylistDownloaderUi } from "./playlist-ui";
 import { handleStreamData, handleStreamError, setPlaylistContext } from "./stream-transfer";
 import { crossWorldMessenger } from "@/lib/cross-world-messenger";
+import { removeDownload, updateDownloadProgress } from "@/lib/download-state";
 import { sendMessage, onMessage } from "@/lib/messaging";
 import { forwardSabrCredentialsWithRetry, listenForSabrBodyReady } from "@/lib/sabr-credentials";
 import { optionsItem } from "@/lib/storage";
@@ -119,8 +120,15 @@ export default defineContentScript({
 
     onMessage("updateDownloadProgress", ({ data }) => {
       crossWorldMessenger.sendMessage("progress", data);
-      // Dispatch to all PlaylistVideoItem instances via DOM event
+      // Dispatch to all component instances via DOM event
       document.dispatchEvent(new CustomEvent("ytdl:progress-update", { detail: data }));
+
+      // Update shared reactive store for declarative observers
+      if (data.isRemoved) {
+        removeDownload(data.videoId);
+      } else {
+        updateDownloadProgress(data.videoId, data.progress, data.progressType);
+      }
     });
 
     // ─── Event listeners ────────────────────────────────────────────────

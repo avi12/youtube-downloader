@@ -1,5 +1,6 @@
 <script lang="ts">
   import { crossWorldMessenger } from "../lib/cross-world-messenger";
+  import { getDownloadState, startDownload, cancelDownload as cancelDownloadState } from "../lib/download-state";
   import { sendMessage } from "../lib/messaging";
   import { videoQueueItem } from "../lib/storage";
   import { getCompatibleFilename } from "../lib/utils";
@@ -23,9 +24,10 @@
   const { videoId, options }: Props = $props();
 
   let videoData = $state<VideoData | null>(null);
-  let isDownloading = $state(false);
-  let isDone = $state(false);
-  let isQueued = $state(false);
+  const downloadState = $derived(getDownloadState(videoId));
+  const isDownloading = $derived(downloadState.isDownloading);
+  const isDone = $derived(downloadState.isDone);
+  const isQueued = $derived(downloadState.isQueued);
   // Listen for video data dispatched by the orchestrator via DOM events.
   // Each component filters by videoId. DOM events support multiple listeners
   // unlike crossWorldMessenger which only allows one per message type.
@@ -46,66 +48,21 @@
     return () => document.removeEventListener("ytdl:video-data-received", handleVideoData);
   });
 
-  // Track progress updates via DOM events (same reason as above)
+  // Reactively refresh the download button when shared download state changes
   $effect(() => {
-    function handleProgress(e: Event) {
-      if (!(e instanceof CustomEvent) || e.detail.videoId !== videoId) {
-        return;
-      }
-
-      if (e.detail.isRemoved) {
-        isDownloading = false;
-        isDone = false;
-        isQueued = false;
-        refreshDownloadButton();
-        return;
-      }
-
-      isDownloading = e.detail.progress < 1;
-      isDone = e.detail.progress >= 1;
-      refreshDownloadButton();
-    }
-
-    function handleDownloadStarted(e: Event) {
-      if (!(e instanceof CustomEvent) || e.detail.videoId !== videoId) {
-        return;
-      }
-
-      isDownloading = true;
-      isDone = false;
-      refreshDownloadButton();
-    }
-
-    function handleDownloadCancelled(e: Event) {
-      if (!(e instanceof CustomEvent) || e.detail.videoId !== videoId) {
-        return;
-      }
-
-      isDownloading = false;
-      isDone = false;
-      refreshDownloadButton();
-    }
-
-    document.addEventListener("ytdl:progress-update", handleProgress);
-    document.addEventListener("ytdl:download-started", handleDownloadStarted);
-    document.addEventListener("ytdl:download-cancelled", handleDownloadCancelled);
-
-    return () => {
-      document.removeEventListener("ytdl:progress-update", handleProgress);
-      document.removeEventListener("ytdl:download-started", handleDownloadStarted);
-      document.removeEventListener("ytdl:download-cancelled", handleDownloadCancelled);
-    };
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
+    downloadState;
+    refreshDownloadButton();
   });
 
-  // Track queue position
-  function handleQueueChange(queue: { videoId: string }[] | null) {
+  // Track queue position - update shared store
+  $effect(() => videoQueueItem.watch(queue => {
     const currentQueue = queue ?? [];
     const isInQueue = currentQueue.some(item => item.videoId === videoId);
     const isCurrentlyDownloading = currentQueue[0]?.videoId === videoId;
-    isQueued = isInQueue && !isCurrentlyDownloading;
-  }
-
-  $effect(() => videoQueueItem.watch(handleQueueChange));
+    const state = getDownloadState(videoId);
+    state.isQueued = isInQueue && !isCurrentlyDownloading;
+  }));
 
   const buttonLabel = $derived(() => {
     if (!videoData?.isDownloadable) {
@@ -139,14 +96,13 @@
       return;
     }
 
-    isDone = false;
-    isDownloading = !isDownloading;
-    refreshDownloadButton();
-
-    if (!isDownloading || isQueued) {
+    if (isDownloading) {
+      cancelDownloadState(videoId);
       await sendMessage("cancelDownload", { videoIds: [videoId] });
       return;
     }
+
+    startDownload(videoId);
 
     const filenameOutput = getCompatibleFilename(
       `${videoData.title}.${videoData.isMusic ? options.ext.audio : options.ext.video}`

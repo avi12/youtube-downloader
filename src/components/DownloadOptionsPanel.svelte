@@ -1,5 +1,6 @@
 <script lang="ts">
   import { crossWorldMessenger } from "../lib/cross-world-messenger";
+  import { startDownload as startDownloadState, cancelDownload as cancelDownloadState } from "../lib/download-state";
   import { statusProgressItem, videoQueueItem } from "../lib/storage";
   import { getCompatibleFilename, waitForVideoElement } from "../lib/utils";
   import {
@@ -243,8 +244,7 @@
       progressType = "";
     }
 
-    // Notify parent (PlaylistVideoItem) that download started
-    document.dispatchEvent(new CustomEvent("ytdl:download-started", { detail: { videoId: videoData.videoId } }));
+    startDownloadState(videoData.videoId);
 
     crossWorldMessenger.sendMessage("downloadRequest", {
       type: downloadType,
@@ -260,7 +260,7 @@
     isDownloading = false;
     progress = 0;
 
-    document.dispatchEvent(new CustomEvent("ytdl:download-cancelled", { detail: { videoId: videoData.videoId } }));
+    cancelDownloadState(videoData.videoId);
 
     crossWorldMessenger.sendMessage("cancelDownload", { videoIds: [videoData.videoId] });
   }
