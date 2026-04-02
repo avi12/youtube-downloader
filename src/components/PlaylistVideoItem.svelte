@@ -230,14 +230,18 @@
         document.dispatchEvent(new CustomEvent("ytdl:open-dropdown", { detail: { contentId: panelContentId } }));
       });
 
-      function handleClose() {
-        isPanelOpen = false;
-        closePanel();
-        document.removeEventListener("ytdl:panel-closed", handleClose);
+      function handleOverlayClose() {
+        if (isPanelOpen) {
+          isPanelOpen = false;
+          closePanel();
+        }
+
+        elDropdown?.removeEventListener("iron-overlay-closed", handleOverlayClose);
+        document.removeEventListener("ytdl:panel-closed", handleOverlayClose);
       }
 
-      elDropdown?.addEventListener("iron-overlay-closed", handleClose);
-      document.addEventListener("ytdl:panel-closed", handleClose);
+      elDropdown?.addEventListener("iron-overlay-closed", handleOverlayClose);
+      document.addEventListener("ytdl:panel-closed", handleOverlayClose);
     }, 50);
 
     // Timeout after 2s
