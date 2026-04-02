@@ -28,24 +28,33 @@
   const isDownloading = $derived(downloadState.isDownloading);
   const isDone = $derived(downloadState.isDone);
   const isQueued = $derived(downloadState.isQueued);
+  let isLoadFailed = $state(false);
+
   // Listen for video data dispatched by the orchestrator via DOM events.
   // Each component filters by videoId. DOM events support multiple listeners
   // unlike crossWorldMessenger which only allows one per message type.
   $effect(() => {
     function handleVideoData(e: Event) {
-      if (!(e instanceof CustomEvent)) {
+      if (!(e instanceof CustomEvent) || e.detail.videoId !== videoId) {
         return;
       }
 
-      if (e.detail.videoId === videoId) {
-        videoData = e.detail;
-      }
+      videoData = e.detail;
     }
 
     document.addEventListener("ytdl:video-data-received", handleVideoData);
     crossWorldMessenger.sendMessage("requestVideoData", { videoId });
 
-    return () => document.removeEventListener("ytdl:video-data-received", handleVideoData);
+    const loadTimeout = setTimeout(() => {
+      if (!videoData) {
+        isLoadFailed = true;
+      }
+    }, 10_000);
+
+    return () => {
+      document.removeEventListener("ytdl:video-data-received", handleVideoData);
+      clearTimeout(loadTimeout);
+    };
   });
 
   // Reactively refresh the download button when shared download state changes
@@ -294,7 +303,7 @@
     ></yt-button-view-model>
     <yt-button-view-model {@attach attachChevronButton}
     ></yt-button-view-model>
-  {:else}
+  {:else if !isLoadFailed}
     <div
       style="display: flex; align-items: center; height: 36px; padding: 0 8px"
       aria-busy="true"
