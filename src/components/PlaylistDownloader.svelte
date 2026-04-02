@@ -209,27 +209,24 @@
   }
 
   function attachPlaylistProgress(element: Element) {
-    if (!("updateStyles" in element) || typeof element.updateStyles !== "function") {
-      return;
+    const updateStyles = "updateStyles" in element
+      ? element.updateStyles
+      : undefined;
+    if (typeof updateStyles === "function") {
+      updateStyles({
+        "--paper-progress-active-color": "var(--yt-spec-call-to-action, rgb(62 166 255))",
+        "--paper-progress-container-color": "transparent"
+      });
     }
-
-    element.updateStyles({
-      "--paper-progress-active-color": "var(--yt-spec-call-to-action, rgb(62 166 255))",
-      "--paper-progress-container-color": "transparent"
-    });
   }
 </script>
 
-<div
-  style="display: flex; flex-direction: column; gap: 8px; padding: 12px 0"
-  aria-label="Playlist Downloader"
-  role="region"
->
+<div class="ytdl-playlist-container" aria-label="Playlist Downloader" role="region">
   {#if error}
     <div class="ytdl-error-banner" role="alert">{error}</div>
   {/if}
 
-  <div style="display: flex; flex-direction: column; gap: 8px">
+  <div class="ytdl-playlist-actions">
     <yt-button-view-model {@attach attachPlaylistButton}
     ></yt-button-view-model>
 
@@ -243,7 +240,7 @@
   </div>
 
   {#if downloadableVideos.length < videoDataMap.size}
-    <p style="margin: 0; font-size: 1.2rem" role="status">
+    <p class="ytdl-restriction-notice" role="status">
       {videoDataMap.size - downloadableVideos.length} video{videoDataMap.size -
         downloadableVideos.length === 1
         ? ""
@@ -253,11 +250,29 @@
 </div>
 
 <style>
+  .ytdl-playlist-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 12px 0;
+  }
+
+  .ytdl-playlist-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
   .ytdl-error-banner {
     padding: 8px 12px;
     border-radius: 4px;
     background: var(--yt-spec-error-indicator, rgb(204 0 0));
     color: #fff;
     font-size: 1.3rem;
+  }
+
+  .ytdl-restriction-notice {
+    margin: 0;
+    font-size: 1.2rem;
   }
 </style>

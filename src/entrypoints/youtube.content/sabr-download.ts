@@ -110,11 +110,16 @@ export function listenForDownloadRequests() {
 
 async function handleDownload(request: DownloadRequest) {
   // Strategy 1: Background SabrStream (future-proof, uses YouTube's SABR protocol)
-  if (request.sabrConfig) {
+  // TODO: Re-enable once background SABR + cookie auth is verified
+  const isSabrEnabled = false;
+  if (isSabrEnabled && request.sabrConfig) {
     const poToken = await waitForPoToken(10_000);
     if (poToken) {
       try {
-        const isSuccess = await sendMessage(MessageType.SabrDownload, { request, poToken });
+        const isSuccess = await Promise.race([
+          sendMessage(MessageType.SabrDownload, { request, poToken }),
+          new Promise<false>(resolve => setTimeout(() => resolve(false), 30_000))
+        ]);
         if (isSuccess) {
           return;
         }

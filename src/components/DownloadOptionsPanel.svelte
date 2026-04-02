@@ -511,7 +511,7 @@
 {/snippet}
 
 <div
-  style="overflow: hidden; width: 380px; color: var(--yt-spec-text-primary, inherit)"
+  class="ytdl-panel"
   {@attach attachPanel}
   aria-labelledby="ytdl-panel-title"
   aria-modal="true"
@@ -519,11 +519,8 @@
   role="dialog"
   tabindex="-1"
 >
-  <div style="display: flex; justify-content: space-between; align-items: center; padding: 20px 24px 16px">
-    <h2
-      id="ytdl-panel-title"
-      style="margin: 0; font-weight: 400; font-size: 1.6rem; line-height: 1.375"
-    >Download options</h2>
+  <div class="ytdl-panel-header">
+    <h2 id="ytdl-panel-title" class="ytdl-panel-title">Download options</h2>
     <yt-button-view-model
       class={scopingClass}
       {@attach attachCloseButton}
@@ -535,7 +532,7 @@
     ></yt-button-view-model>
   </div>
 
-  <div style="padding: 0 24px">
+  <div class="ytdl-panel-body">
     <DownloadOptions
       audioFormats={videoData.audioFormats}
       {downloadType}
@@ -553,22 +550,22 @@
     />
   </div>
 
-  <div style="padding: 16px 24px 20px; min-height: 52px">
+  <div class="ytdl-panel-footer">
     {#if isDownloading || isQueued}
-      <div style="display: flex; flex-direction: column; gap: 6px">
+      <div class="ytdl-progress-section">
         {#if showProgress}
           <tp-yt-paper-progress
             {@attach attachPanelProgress}
             value={Math.round(progress * 100)}
           ></tp-yt-paper-progress>
-          <div style="display: flex; justify-content: space-between; align-items: center">
-            <span style="font-size: 1.3rem" aria-live="polite">{progressDescription()}</span>
+          <div class="ytdl-progress-row">
+            <span class="ytdl-progress-label" aria-live="polite">{progressDescription()}</span>
             {@render cancelBtn()}
           </div>
         {:else}
           <tp-yt-paper-progress {@attach attachPanelProgress} indeterminate></tp-yt-paper-progress>
-          <div style="display: flex; justify-content: space-between; align-items: center">
-            <span style="font-size: 1.3rem" aria-live="polite">
+          <div class="ytdl-progress-row">
+            <span class="ytdl-progress-label" aria-live="polite">
               {isQueued ? "Queued" : "Downloading"}
             </span>
             {@render cancelBtn()}
@@ -576,7 +573,7 @@
         {/if}
       </div>
     {:else if isDone}
-      <div style="display: flex; gap: 8px; align-items: center; font-size: 1.3rem" role="status">
+      <div class="ytdl-done-status" role="status">
         <svg
           aria-hidden="true"
           fill="currentColor"
@@ -600,3 +597,57 @@
     {/if}
   </div>
 </div>
+
+<style>
+  .ytdl-panel {
+    overflow: hidden;
+    width: 380px;
+    color: var(--yt-spec-text-primary, inherit);
+  }
+
+  .ytdl-panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 24px 16px;
+  }
+
+  .ytdl-panel-title {
+    margin: 0;
+    font-weight: 400;
+    font-size: 1.6rem;
+    line-height: 1.375;
+  }
+
+  .ytdl-panel-body {
+    padding: 0 24px;
+  }
+
+  .ytdl-panel-footer {
+    padding: 16px 24px 20px;
+    min-height: 52px;
+  }
+
+  .ytdl-progress-section {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .ytdl-progress-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .ytdl-progress-label {
+    font-size: 1.3rem;
+  }
+
+  .ytdl-done-status {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    font-size: 1.3rem;
+  }
+</style>

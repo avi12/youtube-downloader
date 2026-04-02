@@ -149,9 +149,9 @@
   }
 </script>
 
-<div style="display: flex; flex-direction: column; gap: 14px; padding-bottom: 4px">
+<div class="ytdl-options-container">
   <!-- Type -->
-  <div style="display: flex; flex-direction: column; gap: 6px">
+  <div class="ytdl-options-field">
     <Select
       id="type-select"
       disabled={isDownloading}
@@ -163,7 +163,7 @@
   </div>
 
   <!-- Quality -->
-  <div style="display: flex; flex-direction: column; gap: 6px">
+  <div class="ytdl-options-field">
     <Select
       id="quality-select"
       disabled={isDownloading}
@@ -202,3 +202,18 @@
     value={fullFilename}
   ></tp-yt-paper-input>
 </div>
+
+<style>
+  .ytdl-options-container {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    padding-bottom: 4px;
+  }
+
+  .ytdl-options-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+</style>
