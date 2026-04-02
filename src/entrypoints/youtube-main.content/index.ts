@@ -12,7 +12,12 @@
 import { buildVideoData, extractPlayerResponseFromHtml } from "./youtube-api";
 import { crossWorldMessenger } from "@/lib/cross-world-messenger";
 import { generatePoToken } from "@/lib/po-token-generator";
-import { interruptedDownloadStore, sabrCredentials, videoDataStore } from "@/lib/synced-stores.svelte";
+import {
+  interruptedDownloadStore,
+  playlistMetadataSignal,
+  sabrCredentials,
+  videoDataStore
+} from "@/lib/synced-stores.svelte";
 import { getCompatibleFilename, waitForVisibleElement } from "@/lib/utils";
 import {
   ButtonSize,
@@ -35,6 +40,19 @@ import { buildSabrFormat } from "googlevideo/utils";
 declare global {
   interface Window {
     ytInitialPlayerResponse?: PlayerResponse;
+    ytInitialData?: {
+      header?: {
+        playlistHeaderRenderer?: {
+          title?: { simpleText?: string };
+          playlistId?: string;
+        };
+      };
+      metadata?: {
+        playlistMetadataRenderer?: {
+          title?: string;
+        };
+      };
+    };
   }
 }
 
@@ -1022,6 +1040,29 @@ export default defineContentScript({
     function handleNavigation() {
       cleanupSegmentedButton();
       crossWorldMessenger.sendMessage("navigation", { url: location.href });
+      extractPlaylistMetadata();
+    }
+
+    function extractPlaylistMetadata() {
+      const initialData = window.ytInitialData;
+      if (!initialData) {
+        playlistMetadataSignal.value = null;
+        return;
+      }
+
+      const headerRenderer = initialData.header?.playlistHeaderRenderer;
+      const metadataRenderer = initialData.metadata?.playlistMetadataRenderer;
+
+      const playlistTitle = headerRenderer?.title?.simpleText
+        ?? metadataRenderer?.title
+        ?? "";
+      const playlistId = headerRenderer?.playlistId ?? "";
+      if (!playlistTitle && !playlistId) {
+        playlistMetadataSignal.value = null;
+        return;
+      }
+
+      playlistMetadataSignal.value = { playlistId, playlistTitle };
     }
 
     // - Panel button initialisation bridge -

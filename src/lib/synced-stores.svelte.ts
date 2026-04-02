@@ -43,6 +43,17 @@ export const downloadProgressStore = createSyncedMap<DownloadProgressState>(
   "download-progress"
 );
 
+// ─── Playlist metadata (MAIN world writes, isolated world reads) ────────
+
+export interface PlaylistMetadata {
+  playlistId: string;
+  playlistTitle: string;
+}
+
+export const playlistMetadataSignal = createSyncedSignal<PlaylistMetadata | null>(
+  "playlist-metadata", null
+);
+
 // ─── Download requests (isolated world writes, MAIN world reads) ────────
 // One-shot commands: writing triggers MAIN world to start a download.
 

@@ -6,6 +6,7 @@
   import { MessageType, sendMessage } from "../lib/messaging";
   import { applyPolymerCustomStyles, PAPER_PROGRESS_THEME } from "../lib/polymer-utils";
   import { musicListItem, videoOnlyListItem, videoQueueItem } from "../lib/storage";
+  import { playlistMetadataSignal } from "../lib/synced-stores.svelte";
   import { videoDataStore } from "../lib/synced-stores.svelte";
   import { getCompatibleFilename } from "../lib/utils";
   import type { DownloadType, Options, VideoData } from "../types";
@@ -97,11 +98,9 @@
     totalCount = checkedDownloadableVideos.length;
     downloadedCount = 0;
 
-    const playlistTitle = document.querySelector(
-      "yt-dynamic-text-view-model .yt-core-attributed-string, h1#title"
-    )?.textContent?.trim() ?? "Playlist";
-
-    const playlistId = new URLSearchParams(location.search).get("list") ?? `playlist-${Date.now()}`;
+    const metadata = playlistMetadataSignal.value;
+    const playlistTitle = metadata?.playlistTitle || "Playlist";
+    const playlistId = metadata?.playlistId || `playlist-${Date.now()}`;
 
     const downloadRequests = checkedDownloadableVideos.map(data => {
       const downloadType: DownloadType = data.isMusic ? "audio" : "video+audio";
