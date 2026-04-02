@@ -165,34 +165,23 @@
 
   // -- Progress updates -------------------------------------------------------
 
+  // Reactively sync progress from the shared download progress store
   $effect(() => {
-    function handleProgress(e: Event) {
-      if (!(e instanceof CustomEvent) || e.detail.videoId !== videoData.videoId) {
-        return;
-      }
-
-      if (e.detail.isRemoved) {
-        progress = 0;
-        progressType = "";
-        isDownloading = false;
-        isDone = false;
-        isQueued = false;
-        return;
-      }
-
-      isDownloading = true;
-      progress = e.detail.progress;
-      progressType = e.detail.progressType;
-      isDone = e.detail.progress >= 1;
-
-      if (isDone) {
-        isDownloading = false;
-      }
+    const state = downloadProgressStore.get(videoData.videoId);
+    if (!state) {
+      progress = 0;
+      progressType = "";
+      isDownloading = false;
+      isDone = false;
+      isQueued = false;
+      return;
     }
 
-    document.addEventListener("ytdl:progress-update", handleProgress);
-
-    return () => document.removeEventListener("ytdl:progress-update", handleProgress);
+    isDownloading = state.isDownloading;
+    isDone = state.isDone;
+    isQueued = state.isQueued;
+    progress = state.progress;
+    progressType = state.progressType;
   });
 
   // -- Queue position tracking ------------------------------------------------

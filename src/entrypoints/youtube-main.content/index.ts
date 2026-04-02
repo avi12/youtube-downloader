@@ -11,7 +11,7 @@
 
 import { buildVideoData, extractPlayerResponseFromHtml } from "./youtube-api";
 import { crossWorldMessenger } from "@/lib/cross-world-messenger";
-import { sabrCredentials, videoDataStore } from "@/lib/synced-stores";
+import { interruptedDownloadStore, sabrCredentials, videoDataStore } from "@/lib/synced-stores";
 import { getCompatibleFilename, waitForVisibleElement } from "@/lib/utils";
 import {
   ButtonSize,
@@ -718,11 +718,11 @@ export default defineContentScript({
       let downloadProgress = 0;
 
       // Check for interrupted download from a previous session
-      const elInterrupted = document.getElementById("ytdl-interrupted");
-      if (elInterrupted?.dataset.videoId === videoId) {
+      const interrupted = interruptedDownloadStore.get(videoId);
+      if (interrupted) {
         isInterrupted = true;
-        defaultVideoItag = parseInt(elInterrupted.dataset.videoItag ?? "0") || defaultVideoItag;
-        defaultAudioItag = parseInt(elInterrupted.dataset.audioItag ?? "0") || defaultAudioItag;
+        defaultVideoItag = interrupted.videoItag || defaultVideoItag;
+        defaultAudioItag = interrupted.audioItag || defaultAudioItag;
       }
 
       // Grab Polymer CSS scoping class from last native yt-button-view-model
@@ -1247,9 +1247,8 @@ export default defineContentScript({
     });
 
     // Handle video data requests from grid/playlist items.
-    // crossWorldMessenger carries the request (isolated → MAIN), and
-    // the response flows back via crossWorldMessenger("videoData")
-    // → orchestrator → ytdl:video-data-received DOM event (same world).
+    // Isolated world sends requestVideoData via crossWorldMessenger,
+    // MAIN world fetches and writes to videoDataStore (synced signal).
     const videoDataQueue: string[] = [];
     let isProcessingVideoDataQueue = false;
 
