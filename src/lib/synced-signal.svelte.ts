@@ -35,7 +35,10 @@ addEventListener("message", e => {
 });
 
 function broadcast(key: string, value: unknown) {
-  postMessage({ namespace: NAMESPACE, key, value }, "*");
+  // JSON round-trip strips non-cloneable properties (Polymer objects,
+  // functions, circular references) that would cause postMessage to throw
+  const serializableValue = JSON.parse(JSON.stringify(value));
+  postMessage({ namespace: NAMESPACE, key, value: serializableValue }, "*");
 }
 
 function subscribe(key: string, callback: SyncCallback) {
