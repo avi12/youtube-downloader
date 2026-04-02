@@ -3,7 +3,15 @@
   import { sendMessage } from "../lib/messaging";
   import { videoQueueItem } from "../lib/storage";
   import { getCompatibleFilename } from "../lib/utils";
-  import type { Options, VideoData } from "../types";
+  import {
+    ButtonSize,
+    ButtonState,
+    ButtonStyle,
+    ButtonType,
+    IconName,
+    type Options,
+    type VideoData
+  } from "../types";
   import DownloadOptionsPanel from "./DownloadOptionsPanel.svelte";
   import { mount, unmount } from "svelte";
 
@@ -49,10 +57,12 @@
         isDownloading = false;
         isDone = false;
         isQueued = false;
+        refreshDownloadButton();
         return;
       }
 
       isDone = e.detail.progress >= 1;
+      refreshDownloadButton();
     }
 
     document.addEventListener("ytdl:progress-update", handleProgress);
@@ -104,6 +114,7 @@
 
     isDone = false;
     isDownloading = !isDownloading;
+    refreshDownloadButton();
 
     if (!isDownloading || isQueued) {
       await sendMessage("cancelDownload", { videoIds: [videoId] });
@@ -126,20 +137,40 @@
 
   function getItemIconName() {
     if (isDone) {
-      return "DOWNLOAD_DONE";
+      return IconName.Downloaded;
     }
 
     if (isDownloading) {
-      return "CLOSE";
+      return IconName.Close;
     }
 
-    return "DOWNLOAD";
+    return IconName.Download;
   }
 
   let isPanelOpen = $state(false);
   let elDropdown: HTMLElement | null = null;
   let panelInstance: ReturnType<typeof mount> | null = null;
   let elButtonGroup: HTMLElement | null = null;
+  let elDownloadBtn: Element | null = null;
+
+  function refreshDownloadButton() {
+    if (!elDownloadBtn) {
+      return;
+    }
+
+    setButtonData(elDownloadBtn, {
+      iconName: getItemIconName(),
+      title: "",
+      accessibilityText: videoData ? `${buttonLabel()} ${videoData.title}` : buttonLabel(),
+      style: ButtonStyle.Mono,
+      type: ButtonType.Tonal,
+      buttonSize: ButtonSize.Default,
+      state: !videoData?.isDownloadable ? ButtonState.Disabled : ButtonState.Active,
+      isFullWidth: false,
+      isDisabled: !videoData?.isDownloadable,
+      tooltip: buttonLabel()
+    });
+  }
 
   function setButtonData(element: Element, data: Record<string, unknown>) {
     element.dispatchEvent(new CustomEvent("ytdl:set-yt-button-data", {
@@ -229,24 +260,15 @@
       return;
     }
 
-    element.addEventListener("click", (e: Event) => {
+    elDownloadBtn = element;
+
+    element.addEventListener("click", e => {
       e.stopPropagation();
       e.preventDefault();
       toggleDownload();
     });
 
-    setButtonData(element, {
-      iconName: getItemIconName(),
-      title: "",
-      accessibilityText: videoData ? `${buttonLabel()} ${videoData.title}` : buttonLabel(),
-      style: "MONO",
-      type: "TONAL",
-      buttonSize: "DEFAULT",
-      state: !videoData?.isDownloadable ? "DISABLED" : "ACTIVE",
-      isFullWidth: false,
-      isDisabled: !videoData?.isDownloadable,
-      tooltip: buttonLabel()
-    });
+    refreshDownloadButton();
   }
 
   function attachChevronButton(element: Element) {
@@ -254,20 +276,20 @@
       return;
     }
 
-    element.addEventListener("click", (e: Event) => {
+    element.addEventListener("click", e => {
       e.stopPropagation();
       e.preventDefault();
       togglePanel();
     });
 
     setButtonData(element, {
-      iconName: "EXPAND_MORE",
+      iconName: IconName.ExpandMore,
       title: "",
       accessibilityText: "Download options",
-      style: "MONO",
-      type: "TONAL",
-      buttonSize: "DEFAULT",
-      state: !videoData?.isDownloadable ? "DISABLED" : "ACTIVE",
+      style: ButtonStyle.Mono,
+      type: ButtonType.Tonal,
+      buttonSize: ButtonSize.Default,
+      state: !videoData?.isDownloadable ? ButtonState.Disabled : ButtonState.Active,
       isFullWidth: false,
       isDisabled: !videoData?.isDownloadable,
       tooltip: "Options"
