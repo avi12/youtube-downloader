@@ -63,7 +63,20 @@
   // -- Derived ----------------------------------------------------------------
 
   const isDownloadable = $derived(videoData.isDownloadable);
-  const showProgress = $derived(isDownloading && progress > 0 && progress < 1);
+  const showProgress = $derived(isDownloading && progress > 0);
+
+  // Weighted progress: download = 0-80%, mux = 80-100%
+  const displayProgress = $derived.by(() => {
+    if (!isDownloading) {
+      return 0;
+    }
+
+    if (progressType === "ffmpeg") {
+      return 80 + progress * 20;
+    }
+
+    return progress * 80;
+  });
   const fullFilename = $derived(getCompatibleFilename(`${filename}.${extension}`));
 
   const qualityLabel = $derived(() => {
@@ -92,19 +105,6 @@
       videoItag: selectedVideoFormat?.itag,
       audioItag: selectedAudioFormat?.itag
     });
-  });
-
-  const progressDescription = $derived(() => {
-    const percentage = (progress * 100).toFixed(1);
-    if (downloadType !== "video+audio") {
-      return `${percentage}% (${downloadType} only)`;
-    }
-
-    if (progressType === "ffmpeg") {
-      return `${percentage}% (stitching)`;
-    }
-
-    return `${percentage}% (downloading)`;
   });
 
   // -- Video quality matching -------------------------------------------------
@@ -553,24 +553,23 @@
   <div class="ytdl-panel-footer">
     {#if isDownloading || isQueued}
       <div class="ytdl-progress-section">
-        {#if showProgress}
-          <tp-yt-paper-progress
-            {@attach attachPanelProgress}
-            value={Math.round(progress * 100)}
-          ></tp-yt-paper-progress>
-          <div class="ytdl-progress-row">
-            <span class="ytdl-progress-label" aria-live="polite">{progressDescription()}</span>
-            {@render cancelBtn()}
-          </div>
-        {:else}
-          <tp-yt-paper-progress {@attach attachPanelProgress} indeterminate></tp-yt-paper-progress>
-          <div class="ytdl-progress-row">
-            <span class="ytdl-progress-label" aria-live="polite">
-              {isQueued ? "Queued" : "Downloading"}
-            </span>
-            {@render cancelBtn()}
-          </div>
-        {/if}
+        <tp-yt-paper-progress
+          {@attach attachPanelProgress}
+          indeterminate={!showProgress}
+          value={showProgress ? Math.round(displayProgress) : 0}
+        ></tp-yt-paper-progress>
+        <div class="ytdl-progress-row">
+          <span class="ytdl-progress-label" aria-live="polite">
+            {#if showProgress}
+              {Math.round(displayProgress)}% - {progressType === "ffmpeg" ? "Processing" : "Downloading"}
+            {:else if isQueued}
+              Queued
+            {:else}
+              Starting
+            {/if}
+          </span>
+          {@render cancelBtn()}
+        </div>
       </div>
     {:else if isDone}
       <div class="ytdl-done-status" role="status">
