@@ -226,14 +226,7 @@
   role="region"
 >
   {#if error}
-    <div
-      style:padding="8px 12px"
-      style:border-radius="4px"
-      style:background="var(--yt-spec-error-indicator, rgb(204 0 0))"
-      style:color="#fff"
-      style:font-size="1.3rem"
-      role="alert"
-    >{error}</div>
+    <div class="ytdl-error-banner" role="alert">{error}</div>
   {/if}
 
   <div style="display: flex; flex-direction: column; gap: 8px">
@@ -258,3 +251,13 @@
     </p>
   {/if}
 </div>
+
+<style>
+  .ytdl-error-banner {
+    padding: 8px 12px;
+    border-radius: 4px;
+    background: var(--yt-spec-error-indicator, rgb(204 0 0));
+    color: #fff;
+    font-size: 1.3rem;
+  }
+</style>
