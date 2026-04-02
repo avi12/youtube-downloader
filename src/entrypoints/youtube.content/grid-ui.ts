@@ -56,10 +56,10 @@ function extractVideoId(elCard: Element) {
 }
 
 function findAnchorElement(elCard: Element) {
-  // yt-lockup-view-model: inject after the metadata container
-  const elMetadata = elCard.querySelector(".yt-lockup-view-model__metadata");
-  if (elMetadata) {
-    return elMetadata;
+  // yt-lockup-view-model: inject after the text container (aligned with title)
+  const elTextContainer = elCard.querySelector(".yt-lockup-metadata-view-model__text-container");
+  if (elTextContainer) {
+    return elTextContainer;
   }
 
   // ytd-rich-item-renderer: inject after #details as a sibling
@@ -93,8 +93,8 @@ function injectGridVideoButton(
 
   // For yt-lockup-view-model (.yt-lockup-view-model__metadata):
   // insert after as a new row below the metadata
-  if (elAnchor.classList.contains("yt-lockup-view-model__metadata")) {
-    elAnchor.insertAdjacentElement("afterend", elItemContainer);
+  if (elAnchor.classList.contains("yt-lockup-metadata-view-model__text-container")) {
+    elAnchor.append(elItemContainer);
   } else {
     elAnchor.append(elItemContainer);
   }
