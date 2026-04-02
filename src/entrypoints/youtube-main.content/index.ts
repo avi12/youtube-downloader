@@ -580,7 +580,10 @@ export default defineContentScript({
       );
       // Strategy 1: SabrStream - independently fetch the full video without
       // relying on playback state. Works even if the video is paused.
-      // Read SABR credentials from synced signal (written by isolated world)
+      // Read SABR credentials from synced signal or DOM fallback.
+      // The postMessage from the isolated world may arrive before the
+      // MAIN world's listener is ready, so also check the DOM element
+      // that sabr-credentials.ts writes as a persistent fallback.
       const creds = sabrCredentials.value;
       if (creds?.url) {
         capturedSabrUrl = creds.url;
@@ -588,6 +591,17 @@ export default defineContentScript({
 
       if (creds?.poToken) {
         capturedPoToken = creds.poToken;
+      }
+
+      if (!capturedPoToken || !capturedSabrUrl) {
+        const elCredentials = document.getElementById("ytdl-sabr-credentials");
+        if (elCredentials?.dataset.url) {
+          capturedSabrUrl = elCredentials.dataset.url;
+        }
+
+        if (elCredentials?.dataset.poToken) {
+          capturedPoToken = elCredentials.dataset.poToken;
+        }
       }
 
       const hasSabrCredentials = capturedPoToken && capturedSabrUrl;
