@@ -7,6 +7,7 @@ import {
   startSabrRequestCapture
 } from "../lib/sabr-request-capture";
 import { clearLocalStorage, interruptedDownloadsItem, isFFmpegReadyItem, statusProgressItem } from "../lib/storage";
+import type { DownloadType } from "../types";
 
 export default defineBackground(() => {
   startSabrRequestCapture();
@@ -313,13 +314,19 @@ export default defineBackground(() => {
 
   onMessage(MessageType.DirectDownload, async ({ data, sender }) => {
     const tabId = sender.tab?.id ?? 0;
-    const videoId = "videoId" in data ? String(data.videoId) : "";
-    const videoUrl = "videoUrl" in data ? data.videoUrl : null;
-    const audioUrl = "audioUrl" in data ? data.audioUrl : null;
-    const filenameOutput = "filenameOutput" in data ? String(data.filenameOutput) : "";
-    const videoMimeType = "videoMimeType" in data ? String(data.videoMimeType) : "video/mp4";
-    const audioMimeType = "audioMimeType" in data ? String(data.audioMimeType) : "audio/mp4";
-    const downloadType = "type" in data ? data.type : "video+audio";
+
+    const {
+      videoId, videoUrl, audioUrl, filenameOutput,
+      videoMimeType, audioMimeType, type: downloadType
+    } = data as {
+      videoId: string;
+      videoUrl: string | null;
+      audioUrl: string | null;
+      filenameOutput: string;
+      videoMimeType: string;
+      audioMimeType: string;
+      type: DownloadType;
+    };
 
     try {
       async function fetchStream(url: string) {
