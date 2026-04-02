@@ -116,55 +116,84 @@ export default defineContentScript({
         return { value: unsignedValue, offset: currentOffset };
       }
 
+      function skipField(wireType: number, currentOffset: number) {
+        if (wireType === WIRE_TYPE_VARINT) {
+          return readVarint(currentOffset).offset;
+        }
+
+        if (wireType === WIRE_TYPE_FIXED64) {
+          return currentOffset + FIXED64_BYTE_LENGTH;
+        }
+
+        if (wireType === WIRE_TYPE_FIXED32) {
+          return currentOffset + FIXED32_BYTE_LENGTH;
+        }
+
+        return -1;
+      }
+
+      function extractPoTokenFromContext(contextData: Uint8Array) {
+        let contextOffset = 0;
+
+        while (contextOffset < contextData.byteLength) {
+          const contextTag = readVarint(contextOffset);
+          contextOffset = contextTag.offset;
+          const contextFieldNumber = contextTag.value >> FIELD_NUMBER_SHIFT;
+          const contextWireType = contextTag.value & WIRE_TYPE_MASK;
+          if (contextWireType !== WIRE_TYPE_LENGTH_DELIMITED) {
+            const skipped = skipField(contextWireType, contextOffset);
+            if (skipped === -1) {
+              break;
+            }
+
+            contextOffset = skipped;
+            continue;
+          }
+
+          const contextFieldLength = readVarint(contextOffset);
+          contextOffset = contextFieldLength.offset;
+
+          if (contextFieldNumber === PO_TOKEN_FIELD_NUMBER && contextFieldLength.value > 0) {
+            const poTokenBytes = contextData.subarray(
+              contextOffset, contextOffset + contextFieldLength.value
+            );
+
+            return btoa(String.fromCharCode(...poTokenBytes));
+          }
+
+          contextOffset += contextFieldLength.value;
+        }
+
+        return null;
+      }
+
       while (offset < bytes.byteLength) {
         const tag = readVarint(offset);
         offset = tag.offset;
         const fieldNumber = tag.value >> FIELD_NUMBER_SHIFT;
         const wireType = tag.value & WIRE_TYPE_MASK;
-        if (wireType === WIRE_TYPE_LENGTH_DELIMITED) {
-          const fieldLength = readVarint(offset);
-          offset = fieldLength.offset;
-
-          if (fieldNumber === STREAMER_CONTEXT_FIELD_NUMBER) {
-            const contextData = bytes.subarray(offset, offset + fieldLength.value);
-            let contextOffset = 0;
-
-            while (contextOffset < contextData.byteLength) {
-              const contextTag = readVarint(contextOffset);
-              contextOffset = contextTag.offset;
-              const contextFieldNumber = contextTag.value >> 3;
-              const contextWireType = contextTag.value & 0x7;
-              if (contextWireType === WIRE_TYPE_LENGTH_DELIMITED) {
-                const contextFieldLength = readVarint(contextOffset);
-                contextOffset = contextFieldLength.offset;
-
-                if (contextFieldNumber === PO_TOKEN_FIELD_NUMBER && contextFieldLength.value > 0) {
-                  const poTokenBytes = contextData.subarray(
-                    contextOffset, contextOffset + contextFieldLength.value
-                  );
-
-                  return btoa(String.fromCharCode(...poTokenBytes));
-                }
-
-                contextOffset += contextFieldLength.value;
-              } else if (contextWireType === WIRE_TYPE_VARINT) {
-                contextOffset = readVarint(contextOffset).offset;
-              } else {
-                break;
-              }
-            }
+        if (wireType !== WIRE_TYPE_LENGTH_DELIMITED) {
+          const skipped = skipField(wireType, offset);
+          if (skipped === -1) {
+            break;
           }
 
-          offset += fieldLength.value;
-        } else if (wireType === WIRE_TYPE_VARINT) {
-          offset = readVarint(offset).offset;
-        } else if (wireType === WIRE_TYPE_FIXED64) {
-          offset += FIXED64_BYTE_LENGTH;
-        } else if (wireType === WIRE_TYPE_FIXED32) {
-          offset += FIXED32_BYTE_LENGTH;
-        } else {
-          break;
+          offset = skipped;
+          continue;
         }
+
+        const fieldLength = readVarint(offset);
+        offset = fieldLength.offset;
+
+        if (fieldNumber === STREAMER_CONTEXT_FIELD_NUMBER) {
+          const contextData = bytes.subarray(offset, offset + fieldLength.value);
+          const poToken = extractPoTokenFromContext(contextData);
+          if (poToken) {
+            return poToken;
+          }
+        }
+
+        offset += fieldLength.value;
       }
 
       return null;
