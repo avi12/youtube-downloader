@@ -164,29 +164,35 @@
 
   // -- Progress updates -------------------------------------------------------
 
-  $effect(() => crossWorldMessenger.onMessage("progress", ({ data }) => {
-    if (data.videoId !== videoData.videoId) {
-      return;
+  $effect(() => {
+    function handleProgress(e: Event) {
+      if (!(e instanceof CustomEvent) || e.detail.videoId !== videoData.videoId) {
+        return;
+      }
+
+      if (e.detail.isRemoved) {
+        progress = 0;
+        progressType = "";
+        isDownloading = false;
+        isDone = false;
+        isQueued = false;
+        return;
+      }
+
+      isDownloading = true;
+      progress = e.detail.progress;
+      progressType = e.detail.progressType;
+      isDone = e.detail.progress >= 1;
+
+      if (isDone) {
+        isDownloading = false;
+      }
     }
 
-    if (data.isRemoved) {
-      progress = 0;
-      progressType = "";
-      isDownloading = false;
-      isDone = false;
-      isQueued = false;
-      return;
-    }
+    document.addEventListener("ytdl:progress-update", handleProgress);
 
-    isDownloading = true;
-    progress = data.progress;
-    progressType = data.progressType;
-    isDone = data.progress >= 1;
-
-    if (isDone) {
-      isDownloading = false;
-    }
-  }));
+    return () => document.removeEventListener("ytdl:progress-update", handleProgress);
+  });
 
   // -- Queue position tracking ------------------------------------------------
 
@@ -253,6 +259,9 @@
   async function cancelDownload() {
     isDownloading = false;
     progress = 0;
+
+    document.dispatchEvent(new CustomEvent("ytdl:download-cancelled", { detail: { videoId: videoData.videoId } }));
+
     crossWorldMessenger.sendMessage("cancelDownload", { videoIds: [videoData.videoId] });
   }
 
@@ -553,7 +562,7 @@
     />
   </div>
 
-  <div style="padding: 16px 24px 20px">
+  <div style="padding: 16px 24px 20px; min-height: 52px">
     {#if isDownloading || isQueued}
       <div style="display: flex; flex-direction: column; gap: 6px">
         {#if showProgress}

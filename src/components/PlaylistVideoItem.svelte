@@ -76,12 +76,24 @@
       refreshDownloadButton();
     }
 
+    function handleDownloadCancelled(e: Event) {
+      if (!(e instanceof CustomEvent) || e.detail.videoId !== videoId) {
+        return;
+      }
+
+      isDownloading = false;
+      isDone = false;
+      refreshDownloadButton();
+    }
+
     document.addEventListener("ytdl:progress-update", handleProgress);
     document.addEventListener("ytdl:download-started", handleDownloadStarted);
+    document.addEventListener("ytdl:download-cancelled", handleDownloadCancelled);
 
     return () => {
       document.removeEventListener("ytdl:progress-update", handleProgress);
       document.removeEventListener("ytdl:download-started", handleDownloadStarted);
+      document.removeEventListener("ytdl:download-cancelled", handleDownloadCancelled);
     };
   });
 
