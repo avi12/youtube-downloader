@@ -43,7 +43,7 @@
     }
 
     document.addEventListener("ytdl:video-data-received", handleVideoData);
-    crossWorldMessenger.sendMessage("requestVideoData", { videoId });
+    document.dispatchEvent(new CustomEvent("ytdl:request-video-data", { detail: { videoId } }));
 
     const loadTimeout = setTimeout(() => {
       if (!videoData) {

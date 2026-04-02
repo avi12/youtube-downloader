@@ -1265,23 +1265,63 @@ export default defineContentScript({
     });
 
     // Handle video data requests from playlist items (via isolated world)
-    crossWorldMessenger.onMessage("requestVideoData", async ({ data }) => {
-      const { videoId } = data;
+    // Handle video data requests from grid/playlist items.
+    // Uses a DOM event instead of crossWorldMessenger.onMessage because
+    // onMessage only allows one listener per message type.
+    // Requests are queued and processed sequentially to avoid rate limiting.
+    const videoDataQueue: string[] = [];
+    let isProcessingVideoDataQueue = false;
+
+    async function processVideoDataQueue() {
+      if (isProcessingVideoDataQueue) {
+        return;
+      }
+
+      isProcessingVideoDataQueue = true;
+
+      while (videoDataQueue.length > 0) {
+        const videoId = videoDataQueue.shift()!;        if (videoDataCache.has(videoId)) {
+          crossWorldMessenger.sendMessage("videoData", videoDataCache.get(videoId)!);
+          continue;
+        }
+
+        for (let iAttempt = 0; iAttempt < 2; iAttempt++) {
+          try {
+            const response = await fetch(`https://www.youtube.com/watch?v=${videoId}`);
+            const html = await response.text();
+            const playerResponse = extractPlayerResponseFromHtml(html);
+            if (playerResponse) {
+              buildAndDispatchVideoData(playerResponse);
+            }
+
+            break;
+          } catch {
+            if (iAttempt === 0) {
+              await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+          }
+        }
+      }
+
+      isProcessingVideoDataQueue = false;
+    }
+
+    document.addEventListener("ytdl:request-video-data", (e: Event) => {
+      if (!(e instanceof CustomEvent)) {
+        return;
+      }
+
+      const { videoId } = e.detail;
       if (videoDataCache.has(videoId)) {
         crossWorldMessenger.sendMessage("videoData", videoDataCache.get(videoId)!);
         return;
       }
 
-      try {
-        const response = await fetch(`https://www.youtube.com/watch?v=${videoId}`);
-        const html = await response.text();
-        const playerResponse = extractPlayerResponseFromHtml(html);
-        if (playerResponse) {
-          buildAndDispatchVideoData(playerResponse);
-        }
-      } catch {
-        // Silently fail - PlaylistVideoItem shows loading indicator
+      if (!videoDataQueue.includes(videoId)) {
+        videoDataQueue.push(videoId);
       }
+
+      processVideoDataQueue();
     });
 
     if (document.readyState === "complete") {
