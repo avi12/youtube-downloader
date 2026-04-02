@@ -151,16 +151,16 @@
   let elButtonGroup: HTMLElement | null = null;
   let elDownloadBtn: Element | null = null;
 
-  const isMuxing = $derived(downloadState.progressType === "ffmpeg");
-
-  // Weighted display progress: download = 0-80%, mux = 80-95%, done = 100%
+  // Weighted progress: download phase = 0-80%, mux phase = 80-100%
+  // Both phases report their own 0-1 progress, combined into a single 0-100 value
   const displayProgress = $derived.by(() => {
     if (!isDownloading) {
       return 0;
     }
 
-    if (isMuxing) {
-      return 80 + downloadState.progress * 15;
+    const isMuxPhase = downloadState.progressType === "ffmpeg";
+    if (isMuxPhase) {
+      return 80 + downloadState.progress * 20;
     }
 
     return downloadState.progress * 80;
@@ -171,7 +171,8 @@
       return buttonLabel();
     }
 
-    return isMuxing ? "Processing" : "Downloading";
+    const phase = downloadState.progressType === "ffmpeg" ? "Processing" : "Downloading";
+    return `${Math.round(displayProgress)}% - ${phase}`;
   }
 
   function refreshDownloadButton() {
@@ -335,9 +336,9 @@
   }
 </script>
 
-<div style:display="inline-flex" style:flex-direction="column" {@attach attachButtonGroup}>
+<div class="ytdl-button-group" {@attach attachButtonGroup}>
   {#if videoData?.isDownloadable}
-    <div style:display="flex" style:align-items="center">
+    <div class="ytdl-button-row">
       <yt-button-view-model {@attach attachDownloadButton}
       ></yt-button-view-model>
       <yt-button-view-model {@attach attachChevronButton}
@@ -345,24 +346,39 @@
     </div>
     {#if isDownloading}
       <tp-yt-paper-progress
-        style:width="100%"
-        style:height="3px"
-        style:margin-top="2px"
+        class="ytdl-progress-bar"
         aria-label={getProgressTooltip()}
-        indeterminate={isMuxing}
         value={Math.round(displayProgress)}
       ></tp-yt-paper-progress>
     {/if}
   {:else if !videoData && !isLoadFailed}
-    <div
-      style:display="flex"
-      style:align-items="center"
-      style:height="36px"
-      style:padding="0 8px"
-      aria-busy="true"
-      aria-label="Loading video info"
-    >
+    <div class="ytdl-spinner-container" aria-busy="true" aria-label="Loading video info">
       <tp-yt-paper-spinner-lite active></tp-yt-paper-spinner-lite>
     </div>
   {/if}
 </div>
+
+<style>
+  .ytdl-button-group {
+    display: inline-flex;
+    flex-direction: column;
+  }
+
+  .ytdl-button-row {
+    display: flex;
+    align-items: center;
+  }
+
+  .ytdl-progress-bar {
+    width: 100%;
+    height: 3px;
+    margin-top: 2px;
+  }
+
+  .ytdl-spinner-container {
+    display: flex;
+    align-items: center;
+    height: 36px;
+    padding: 0 8px;
+  }
+</style>
