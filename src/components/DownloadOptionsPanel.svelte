@@ -229,7 +229,7 @@
       isDownloading: true, isDone: false, isQueued: false, progress: 0, progressType: ""
     });
 
-    crossWorldMessenger.sendMessage("downloadRequest", {
+    await crossWorldMessenger.sendMessage("downloadRequest", {
       type: downloadType,
       videoId: videoData.videoId,
       videoItag: selectedVideoFormat?.itag ?? 0,
@@ -245,7 +245,7 @@
 
     downloadProgressStore.delete(videoData.videoId);
 
-    crossWorldMessenger.sendMessage("cancelDownload", { videoIds: [videoData.videoId] });
+    await crossWorldMessenger.sendMessage("cancelDownload", { videoIds: [videoData.videoId] });
   }
 
   function handleKeydown(e: KeyboardEvent) {
