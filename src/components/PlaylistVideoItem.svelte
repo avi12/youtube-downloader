@@ -327,7 +327,11 @@
     <yt-button-view-model {@attach attachChevronButton}
     ></yt-button-view-model>
   {:else}
-    <div style="padding: 4px 8px" aria-busy="true" aria-label="Loading video info">
+    <div
+      style="display: flex; align-items: center; height: 36px; padding: 0 8px"
+      aria-busy="true"
+      aria-label="Loading video info"
+    >
       <tp-yt-paper-spinner-lite active></tp-yt-paper-spinner-lite>
     </div>
   {/if}
