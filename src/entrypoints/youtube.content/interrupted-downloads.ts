@@ -5,7 +5,7 @@
  */
 
 import { sendMessage } from "@/lib/messaging";
-import { interruptedDownloadStore } from "@/lib/synced-stores";
+import { interruptedDownloadStore } from "@/lib/synced-stores.svelte";
 
 export async function checkInterruptedDownload(videoId: string) {
   const interrupted = await sendMessage("getInterruptedDownload", { videoId });

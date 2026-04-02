@@ -5,7 +5,7 @@
  * appear as reactive updates in the other via window.postMessage.
  */
 
-import { createSyncedMap, createSyncedSignal } from "./synced-signal";
+import { createSyncedMap, createSyncedSignal } from "./synced-signal.svelte";
 import type { InterruptedDownload, VideoData } from "@/types";
 
 // ─── SABR credentials (MAIN world writes, isolated world reads) ──────────

@@ -2,7 +2,7 @@
   import { crossWorldMessenger } from "../lib/cross-world-messenger";
   import { sendMessage } from "../lib/messaging";
   import { videoQueueItem } from "../lib/storage";
-  import { downloadProgressStore, type DownloadProgressState, videoDataStore } from "../lib/synced-stores";
+  import { downloadProgressStore, type DownloadProgressState, videoDataStore } from "../lib/synced-stores.svelte";
   import { getCompatibleFilename } from "../lib/utils";
   import {
     ButtonSize,

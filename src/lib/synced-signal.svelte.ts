@@ -8,6 +8,8 @@
  * Works on Chrome MV3 and Firefox MV3 (128+).
  */
 
+import { SvelteMap } from "svelte/reactivity";
+
 const NAMESPACE = "ytdl-sync";
 
 // ─── Transport layer ─────────────────────────────────────────────────────────
@@ -15,7 +17,7 @@ const NAMESPACE = "ytdl-sync";
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type SyncCallback = (value: any) => void;
 
-const listeners = new Map<string, Set<SyncCallback>>();
+const listeners = new SvelteMap<string, Set<SyncCallback>>();
 
 addEventListener("message", e => {
   if (e.data?.namespace !== NAMESPACE) {
@@ -77,7 +79,7 @@ export function createSyncedSignal<T>(key: string, initial: T) {
 // ─── Map-based signal ────────────────────────────────────────────────────────
 
 export function createSyncedMap<T>(keyPrefix: string) {
-  const entries = $state(new Map<string, T>());
+  const entries = new SvelteMap<string, T>();
   let isSyncing = false;
 
   subscribe(keyPrefix, incoming => {

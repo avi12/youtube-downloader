@@ -21,7 +21,7 @@ import { crossWorldMessenger } from "@/lib/cross-world-messenger";
 import { sendMessage, onMessage } from "@/lib/messaging";
 import { forwardSabrCredentialsWithRetry, listenForSabrBodyReady } from "@/lib/sabr-credentials";
 import { optionsItem } from "@/lib/storage";
-import { downloadProgressStore } from "@/lib/synced-stores";
+import { downloadProgressStore } from "@/lib/synced-stores.svelte";
 import type { Options, VideoData } from "@/types";
 
 export default defineContentScript({

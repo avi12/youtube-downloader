@@ -7,7 +7,7 @@
  */
 
 import { sendMessage, onMessage } from "./messaging";
-import { sabrCredentials } from "./synced-stores";
+import { sabrCredentials } from "./synced-stores.svelte";
 
 let isCredentialsForwarded = false;
 

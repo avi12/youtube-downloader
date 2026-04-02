@@ -1,7 +1,7 @@
 <script lang="ts">
   import { crossWorldMessenger } from "../lib/cross-world-messenger";
   import { statusProgressItem, videoQueueItem } from "../lib/storage";
-  import { downloadProgressStore } from "../lib/synced-stores";
+  import { downloadProgressStore } from "../lib/synced-stores.svelte";
   import { getCompatibleFilename, waitForVideoElement } from "../lib/utils";
   import {
     ButtonSize,

@@ -11,7 +11,7 @@
 
 import { buildVideoData, extractPlayerResponseFromHtml } from "./youtube-api";
 import { crossWorldMessenger } from "@/lib/cross-world-messenger";
-import { interruptedDownloadStore, sabrCredentials, videoDataStore } from "@/lib/synced-stores";
+import { interruptedDownloadStore, sabrCredentials, videoDataStore } from "@/lib/synced-stores.svelte";
 import { getCompatibleFilename, waitForVisibleElement } from "@/lib/utils";
 import {
   ButtonSize,

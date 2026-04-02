@@ -5,7 +5,7 @@
    */
   import { sendMessage } from "../lib/messaging";
   import { musicListItem, videoOnlyListItem, videoQueueItem } from "../lib/storage";
-  import { videoDataStore } from "../lib/synced-stores";
+  import { videoDataStore } from "../lib/synced-stores.svelte";
   import { getCompatibleFilename } from "../lib/utils";
   import type { DownloadType, Options, VideoData } from "../types";
   import { SvelteMap } from "svelte/reactivity";
