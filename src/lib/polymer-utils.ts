@@ -4,28 +4,11 @@ export const PAPER_INPUT_THEME: Record<string, string> = {
   "--paper-input-container-input-color": "var(--yt-spec-text-primary, #f1f1f1)"
 };
 
-/**
- * Applies custom CSS properties to a Polymer element.
- * Uses customStyle + updateStyles() when available (Polymer-managed elements),
- * falls back to style.setProperty for dynamically created elements.
- */
 export function applyPolymerCustomStyles(
   element: Element,
   styles: Record<string, string>
 ) {
   if (!(element instanceof HTMLElement)) {
-    return;
-  }
-
-  if (
-    "customStyle" in element
-    && typeof element.customStyle === "object"
-    && element.customStyle !== null
-    && "updateStyles" in element
-    && typeof element.updateStyles === "function"
-  ) {
-    Object.assign(element.customStyle, styles);
-    element.updateStyles();
     return;
   }
 
