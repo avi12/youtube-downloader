@@ -20,6 +20,9 @@ interface PageMessengerSchema {
   proxyFetch(data: { url: string; bodyBase64: string }):
     { status: number; bodyBase64: string } | null;
 
+  // Background → isolated world → MAIN world: request fresh PO token
+  refreshPoToken(data: { videoId: string }): string | null;
+
   // Isolated world → all (MAIN world + Svelte components)
   progress(data: ProgressUpdate): void;
 }

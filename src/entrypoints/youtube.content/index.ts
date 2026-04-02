@@ -135,6 +135,11 @@ export default defineContentScript({
       return sendMessage(MessageType.ProxyFetch, data);
     });
 
+    // Relay PO token refresh requests from background to MAIN world
+    onMessage(MessageType.RefreshPoToken, async ({ data }) => {
+      return crossWorldMessenger.sendMessage("refreshPoToken", data);
+    });
+
     onMessage(MessageType.UpdateDownloadProgress, ({ data }) => {
       crossWorldMessenger.sendMessage("progress", data);
 

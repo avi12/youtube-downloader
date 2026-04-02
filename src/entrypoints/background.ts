@@ -438,17 +438,13 @@ export default defineBackground(() => {
   onMessage(MessageType.SabrDownload, async ({ data, sender }) => {
     const { request, poToken } = data;
     const tabId = sender.tab?.id ?? 0;
-    console.log("[ytdl:bg] sabrDownload received:", request.videoId, "po:", poToken?.length, "hasSabr:", !!request.sabrConfig);
-
     if (!request.sabrConfig) {
-      console.log("[ytdl:bg] No sabrConfig");
       return false;
     }
 
     try {
       const { SabrStream } = await import("googlevideo/sabr-stream");
       const { buildSabrFormat } = await import("googlevideo/utils");
-      console.log("[ytdl:bg] SabrStream imported, formats:", request.sabrConfig.formats.length);
 
       const sabrConfig = request.sabrConfig;
       const sabrFormats = sabrConfig.formats.map(format => buildSabrFormat({
@@ -473,21 +469,31 @@ export default defineBackground(() => {
       const videoFormat = sabrFormats.find(format => format.itag === request.videoItag);
       const audioFormat = sabrFormats.find(format => format.itag === request.audioItag);
       if (!videoFormat || !audioFormat) {
-        browser.storage.local.set({ ytdlBgDebug: `format not found: v=${request.videoItag}(${!!videoFormat}) a=${request.audioItag}(${!!audioFormat})` });
         return false;
       }
 
-      browser.storage.local.set({ ytdlBgDebug: `starting SabrStream, po=${poToken.substring(0, 20)}...` });
+      // Build a fetch wrapper that includes YouTube session cookies.
+      // The background has host_permissions (no CORS), but googlevideo
+      // needs session context for authenticated streaming.
+      async function sabrFetch(input: RequestInfo | URL, init?: RequestInit) {
+        const youtubeCookies = await browser.cookies.getAll({ domain: ".youtube.com" });
+        const cookieString = youtubeCookies
+          .map(cookie => `${cookie.name}=${cookie.value}`)
+          .join("; ");
 
-      const sabrStream = new SabrStream({
-        fetch: (input: RequestInfo | URL, init?: RequestInit) => fetch(input, {
+        return fetch(input, {
           ...init,
           headers: {
             ...Object.fromEntries(new Headers(init?.headers).entries()),
             origin: "https://www.youtube.com",
-            referer: "https://www.youtube.com/"
+            referer: "https://www.youtube.com/",
+            cookie: cookieString
           }
-        }),
+        });
+      }
+
+      const sabrStream = new SabrStream({
+        fetch: sabrFetch,
         serverAbrStreamingUrl: sabrConfig.serverAbrStreamingUrl,
         videoPlaybackUstreamerConfig: sabrConfig.videoPlaybackUstreamerConfig,
         poToken: poToken || undefined,
@@ -497,6 +503,21 @@ export default defineBackground(() => {
         },
         formats: sabrFormats,
         durationMs
+      });
+
+      // Refresh PO token when YouTube's SPS escalates
+      (sabrStream as { on(event: string, listener: (...args: unknown[]) => void): void }).on("streamProtectionStatusUpdate", async (sps: unknown) => {
+        const { status } = sps as { status: number };
+        if (status >= 2) {
+          try {
+            const freshToken = await sendMessage(MessageType.RefreshPoToken, { videoId: request.videoId }, tabId);
+            if (freshToken) {
+              sabrStream.setPoToken(freshToken);
+            }
+          } catch {
+            // Token refresh failed - SabrStream will throw on status 3
+          }
+        }
       });
 
       const { videoStream, audioStream } = await sabrStream.start({

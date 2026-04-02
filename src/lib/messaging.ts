@@ -28,6 +28,7 @@ export enum MessageType {
   ExecuteDownloadItem = "executeDownloadItem",
   SabrBodyReady = "sabrBodyReady",
   UpdateDownloadProgress = "updateDownloadProgress",
+  RefreshPoToken = "refreshPoToken",
 
   // Background → Offscreen
   ProcessStreamChunk = "processStreamChunk",
@@ -121,6 +122,9 @@ interface ProtocolMap {
 
   // Background → Content script (per tab): progress update
   updateDownloadProgress(data: ProgressUpdate): void;
+
+  // Background → Content script (per tab): request fresh PO token
+  refreshPoToken(data: { videoId: string }): string | null;
 
   // Background → Offscreen (Chrome only): forwarded stream chunk
   processStreamChunk(data: {

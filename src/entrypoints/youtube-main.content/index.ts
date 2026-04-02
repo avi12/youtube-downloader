@@ -1180,6 +1180,17 @@ export default defineContentScript({
       await performDownload(data);
     });
 
+    // Refresh PO token on demand (background requests this when SPS escalates)
+    crossWorldMessenger.onMessage("refreshPoToken", async ({ data }) => {
+      try {
+        const token = await generatePoToken(data.videoId);
+        capturedPoToken = token;
+        return token;
+      } catch {
+        return null;
+      }
+    });
+
     // Handle video data requests from grid/playlist items.
     // Isolated world writes to videoDataRequests synced map,
     // which arrives here via postMessage. MAIN world fetches
