@@ -62,11 +62,11 @@ function findAnchorElement(elCard: Element) {
     return elMenuButton;
   }
 
-  // ytd-rich-item-renderer: inject in #buttons (YouTube's designated
-  // action button slot inside the card metadata area)
-  const elButtons = elCard.querySelector("#meta #buttons");
-  if (elButtons) {
-    return elButtons;
+  // ytd-rich-item-renderer: inject in the #menu area alongside
+  // the 3-dot menu. #meta has overflow:auto which causes scrollbars.
+  const elMenuDiv = elCard.querySelector("#details > #menu");
+  if (elMenuDiv) {
+    return elMenuDiv;
   }
 
   return null;
