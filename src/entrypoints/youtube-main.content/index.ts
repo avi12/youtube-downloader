@@ -1496,18 +1496,69 @@ export default defineContentScript({
           throw new Error("No download URLs available");
         }
 
-        async function fetchMediaData(url: string) {
+        let totalExpectedBytes = 0;
+        let totalReceivedBytes = 0;
+
+        async function fetchMediaData(url: string, streamType: string) {
           const response = await fetch(url);
           if (!response.ok) {
             throw new Error(`Media fetch failed: ${response.status}`);
           }
 
-          return new Uint8Array(await response.arrayBuffer());
+          const contentLength = Number(response.headers.get("content-length") ?? 0);
+          totalExpectedBytes += contentLength;
+
+          if (!response.body) {
+            return new Uint8Array(await response.arrayBuffer());
+          }
+
+          const reader = response.body.getReader();
+          const chunks: Uint8Array[] = [];
+          let receivedBytes = 0;
+
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) {
+              break;
+            }
+
+            chunks.push(value);
+            receivedBytes += value.byteLength;
+            totalReceivedBytes += value.byteLength;
+
+            // Report progress via synced signal
+            if (totalExpectedBytes > 0) {
+              postMessage({
+                namespace: "ytdl-sync",
+                key: "download-progress",
+                value: {
+                  mapKey: downloadVideoId,
+                  mapValue: {
+                    isDownloading: true,
+                    isDone: false,
+                    isQueued: false,
+                    progress: totalReceivedBytes / totalExpectedBytes,
+                    progressType: streamType
+                  }
+                }
+              }, "*");
+            }
+          }
+
+          const result = new Uint8Array(receivedBytes);
+          let writeOffset = 0;
+
+          for (const chunk of chunks) {
+            result.set(chunk, writeOffset);
+            writeOffset += chunk.byteLength;
+          }
+
+          return result;
         }
 
         const [videoData, audioData] = await Promise.all([
-          videoUrl ? fetchMediaData(videoUrl) : Promise.resolve(null),
-          audioUrl ? fetchMediaData(audioUrl) : Promise.resolve(null)
+          videoUrl ? fetchMediaData(videoUrl, "video") : Promise.resolve(null),
+          audioUrl ? fetchMediaData(audioUrl, "audio") : Promise.resolve(null)
         ]);
 
         const videoMimeType = videoFormat?.mimeType?.split(";")?.[0] ?? "video/mp4";
