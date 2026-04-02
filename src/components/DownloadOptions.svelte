@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { applyPolymerCustomStyles, PAPER_INPUT_THEME } from "../lib/polymer-utils";
   import { supportedExtensions } from "../lib/utils";
   import type { AdaptiveFormatItem, DownloadType } from "../types";
   import Select from "./Select.svelte";
@@ -136,19 +137,8 @@
     validateFilename(e.target, value.trim());
   }
 
-  const POLYMER_THEME_STYLES = {
-    "--paper-input-container-color": "var(--yt-spec-text-secondary, #aaa)",
-    "--paper-input-container-focus-color": "var(--yt-spec-call-to-action, rgb(62 166 255))",
-    "--paper-input-container-input-color": "var(--yt-spec-text-primary, #f1f1f1)"
-  };
-
   function applyPolymerTheme(element: Element) {
-    // Apply after Polymer's connectedCallback completes
-    requestAnimationFrame(() => {
-      if ("updateStyles" in element && typeof element.updateStyles === "function") {
-        element.updateStyles(POLYMER_THEME_STYLES);
-      }
-    });
+    applyPolymerCustomStyles(element, PAPER_INPUT_THEME);
   }
 
   function handleDownloadTypeSelect(newValue: string) {
