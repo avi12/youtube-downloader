@@ -40,7 +40,6 @@
 
   let isDownloading = $state(false);
   let isDone = $state(false);
-  let isQueued = $state(false);
   let progress = $state(0);
   let progressType = $state<ProgressType | "">("");
 
@@ -63,8 +62,6 @@
   // -- Derived ----------------------------------------------------------------
 
   const isDownloadable = $derived(videoData.isDownloadable);
-  const showProgress = $derived(isDownloading && progress > 0);
-
   // Weighted progress: download = 0-80%, mux = 80-100%
   const displayProgress = $derived.by(() => {
     if (!isDownloading) {
@@ -173,13 +170,11 @@
       progressType = "";
       isDownloading = false;
       isDone = false;
-      isQueued = false;
       return;
     }
 
     isDownloading = state.isDownloading;
     isDone = state.isDone;
-    isQueued = state.isQueued;
     progress = state.progress;
     progressType = state.progressType;
   });
@@ -188,10 +183,7 @@
 
   function onQueueChange(queue: { videoId: string }[] | null) {
     const currentQueue = queue ?? [];
-    const isInQueue = currentQueue.some(item => item.videoId === videoData.videoId);
     const isCurrentlyProcessing = currentQueue[0]?.videoId === videoData.videoId;
-    isQueued = isInQueue && !isCurrentlyProcessing;
-
     if (isCurrentlyProcessing) {
       progress = 0;
       progressType = "";
@@ -551,22 +543,15 @@
   </div>
 
   <div class="ytdl-panel-footer">
-    {#if isDownloading || isQueued}
+    {#if isDownloading}
       <div class="ytdl-progress-section">
         <tp-yt-paper-progress
           {@attach attachPanelProgress}
-          indeterminate={!showProgress}
-          value={showProgress ? Math.round(displayProgress) : 0}
+          value={Math.round(displayProgress)}
         ></tp-yt-paper-progress>
         <div class="ytdl-progress-row">
           <span class="ytdl-progress-label" aria-live="polite">
-            {#if showProgress}
-              {Math.round(displayProgress)}% - {progressType === "ffmpeg" ? "Processing" : "Downloading"}
-            {:else if isQueued}
-              Queued
-            {:else}
-              Starting
-            {/if}
+            {Math.round(displayProgress)}% - {progressType === "ffmpeg" ? "Processing" : "Downloading"}
           </span>
           {@render cancelBtn()}
         </div>
