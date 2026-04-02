@@ -66,9 +66,23 @@
       refreshDownloadButton();
     }
 
-    document.addEventListener("ytdl:progress-update", handleProgress);
+    function handleDownloadStarted(e: Event) {
+      if (!(e instanceof CustomEvent) || e.detail.videoId !== videoId) {
+        return;
+      }
 
-    return () => document.removeEventListener("ytdl:progress-update", handleProgress);
+      isDownloading = true;
+      isDone = false;
+      refreshDownloadButton();
+    }
+
+    document.addEventListener("ytdl:progress-update", handleProgress);
+    document.addEventListener("ytdl:download-started", handleDownloadStarted);
+
+    return () => {
+      document.removeEventListener("ytdl:progress-update", handleProgress);
+      document.removeEventListener("ytdl:download-started", handleDownloadStarted);
+    };
   });
 
   // Track queue position

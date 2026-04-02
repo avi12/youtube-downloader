@@ -237,6 +237,9 @@
       progressType = "";
     }
 
+    // Notify parent (PlaylistVideoItem) that download started
+    document.dispatchEvent(new CustomEvent("ytdl:download-started", { detail: { videoId: videoData.videoId } }));
+
     crossWorldMessenger.sendMessage("downloadRequest", {
       type: downloadType,
       videoId: videoData.videoId,
@@ -566,7 +569,7 @@
           <tp-yt-paper-progress {@attach attachPanelProgress} indeterminate></tp-yt-paper-progress>
           <div style="display: flex; justify-content: space-between; align-items: center">
             <span style="font-size: 1.3rem" aria-live="polite">
-              {isQueued ? "Queued" : "Starting…"}
+              {isQueued ? "Queued" : "Downloading"}
             </span>
             {@render cancelBtn()}
           </div>
