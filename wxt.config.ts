@@ -13,6 +13,7 @@ export default defineConfig({
       "downloads",
       "storage",
       "tabs",
+      "cookies",
       "webRequest",
       ...(browser === "chrome" ? ["offscreen"] : [])
     ],

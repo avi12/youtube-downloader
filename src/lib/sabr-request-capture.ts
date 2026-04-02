@@ -48,7 +48,9 @@ function handleSabrRequest(
   }
 
   const bodyBytes = new Uint8Array(details.requestBody.raw[0].bytes);
-  const isFirstCapture = !capturedByTab.has(details.tabId);
+  const previousData = capturedByTab.get(details.tabId);
+  const isFirstCapture = !previousData;
+
   // Always save the latest SABR request body. The PO token evolves during
   // the session, so the latest body has the most valid token.
   capturedByTab.set(details.tabId, {
@@ -58,17 +60,43 @@ function handleSabrRequest(
     timestamp: Date.now()
   });
 
-  if (isFirstCapture) {
+  // Notify on first capture, AND whenever a PO token is first found.
+  // The initial SABR handshake has no PO token - it only appears in
+  // subsequent requests once the player starts streaming.
+  const hadPoTokenBefore = previousData
+    ? !!extractPoTokenFromBody(previousData.body)
+    : false;
+
+  const hasPoTokenNow = !!extractPoTokenFromBody(Array.from(bodyBytes));
+  const isNewPoToken = hasPoTokenNow && !hadPoTokenBefore;
+  if (isFirstCapture || isNewPoToken) {
     onCaptureCallback?.(details.tabId);
   }
 }
 
 /**
  * Returns the captured SABR request data for a given tab.
- * The body contains the PO token and full ABR state from YouTube's player.
+ * Falls back to the most recent capture from any tab when the
+ * requesting tab has no data (e.g. channel pages with no player).
  */
 export function getCapturedSabrData(tabId: number) {
-  return capturedByTab.get(tabId) ?? null;
+  return capturedByTab.get(tabId) ?? getLatestCapturedSabrData();
+}
+
+/**
+ * Returns the most recently captured SABR data across all tabs.
+ * Used as a fallback for tabs that never had a video player.
+ */
+function getLatestCapturedSabrData() {
+  let latest: CapturedSabrData | null = null;
+
+  for (const entry of capturedByTab.values()) {
+    if (!latest || entry.timestamp > latest.timestamp) {
+      latest = entry;
+    }
+  }
+
+  return latest;
 }
 
 /**

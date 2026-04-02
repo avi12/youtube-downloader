@@ -75,7 +75,7 @@ if (process.env.CHROME_WITH_PROFILE === "1") {
 // The WXT-managed Chrome is identified by --remote-debugging-port=9229.
 // Kill it on startup (clears orphaned processes from previous crashes) and on
 // exit (so Chrome always terminates with WXT).
-function killWxtChrome(): void {
+function killWxtChrome() {
   try {
     if (osPlatform === "win32") {
       execSync(
@@ -104,7 +104,7 @@ export default defineWebExtConfig({
     edge: edgeByPlatform[osPlatform] ?? "",
     opera: operaByPlatform[osPlatform] ?? ""
   },
-  startUrls: ["https://www.youtube.com/watch?v=6gqCjmP0cjs"],
+  startUrls: ["https://www.youtube.com/watch?v=wjggoT-3oVM&t=184s"],
   keepProfileChanges: true,
   ...process.env.CHROME_WITH_PROFILE === "1" && { chromiumProfile: resolve(import.meta.dirname, "../User Data") },
   firefoxArgs: ["-marionette", "-marionette-port", "2828"],

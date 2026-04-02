@@ -1,4 +1,4 @@
-import { onMessage, sendMessage } from "../lib/messaging";
+import { MessageType, onMessage, sendMessage } from "../lib/messaging";
 import {
   clearCapturedSabrData,
   extractPoTokenFromBody,
@@ -13,7 +13,7 @@ export default defineBackground(() => {
   onSabrBodyCaptured(tabId => {
     // Content script might not be ready yet during initial page load.
     // Send notification and silently ignore connection errors.
-    sendMessage("sabrBodyReady", {}, tabId).catch(() => {});
+    sendMessage(MessageType.SabrBodyReady, {}, tabId).catch(() => {});
   });
 
   // - Tab tracking -
@@ -37,44 +37,50 @@ export default defineBackground(() => {
     videoIdToTabIds[videoId] = videoIdToTabIds[videoId].filter(id => id !== tabId);
   }
 
-  // - Offscreen document management + chunk forwarding (Chrome only) -
+  // - Offscreen document management (Chrome only) -
 
-  if (import.meta.env.CHROME) {
-    let offscreenDocumentPromise: Promise<void> | null = null;
+  let offscreenDocumentPromise: Promise<void> | null = null;
 
-    function ensureOffscreenDocument() {
-      if (offscreenDocumentPromise) {
-        return offscreenDocumentPromise;
-      }
+  function ensureOffscreenDocument() {
+    if (import.meta.env.FIREFOX) {
+      return Promise.resolve();
+    }
 
-      offscreenDocumentPromise = (async () => {
-        let existingContexts: Browser.runtime.ExtensionContext[] = [];
-        try {
-          const contextTypes = [browser.runtime.ContextType.OFFSCREEN_DOCUMENT];
-          existingContexts = await browser.runtime.getContexts({ contextTypes });
-        } catch {
-          // getContexts not available in all environments
-        }
-
-        if (existingContexts.length > 0) {
-          return;
-        }
-
-        await browser.offscreen.createDocument({
-          url: "/offscreen.html",
-          reasons: [browser.offscreen.Reason.WORKERS],
-          justification: "FFmpeg WASM processing requires a Worker context"
-        });
-      })();
-
+    if (offscreenDocumentPromise) {
       return offscreenDocumentPromise;
     }
 
+    offscreenDocumentPromise = (async () => {
+      let existingContexts: Browser.runtime.ExtensionContext[] = [];
+      try {
+        const contextTypes = [browser.runtime.ContextType.OFFSCREEN_DOCUMENT];
+        existingContexts = await browser.runtime.getContexts({ contextTypes });
+      } catch {
+        // getContexts not available in all environments
+      }
+
+      if (existingContexts.length > 0) {
+        return;
+      }
+
+      await browser.offscreen.createDocument({
+        url: "/offscreen.html",
+        reasons: [browser.offscreen.Reason.WORKERS],
+        justification: "FFmpeg WASM processing requires a Worker context"
+      });
+    })();
+
+    return offscreenDocumentPromise;
+  }
+
+  // - Chunk forwarding (Chrome only) -
+
+  if (!import.meta.env.FIREFOX) {
     ensureOffscreenDocument();
 
     // Receive chunk from content script, forward to offscreen for accumulation.
     // 1 MB per message stays well under the runtime.sendMessage size limit.
-    onMessage("streamChunk", async ({ data, sender }) => {
+    onMessage(MessageType.StreamChunk, async ({ data, sender }) => {
       const tabId = sender.tab?.id;
       if (!tabId) {
         console.warn("[ytdl:bg] streamChunk: no tabId");
@@ -82,11 +88,11 @@ export default defineBackground(() => {
       }
 
       await ensureOffscreenDocument();
-      await sendMessage("processStreamChunk", { ...data, tabId });
+      await sendMessage(MessageType.ProcessStreamChunk, { ...data, tabId });
     });
 
     // Receive stream-end signal, track tab, forward to offscreen for FFmpeg muxing.
-    onMessage("streamEnd", async ({ data, sender }) => {
+    onMessage(MessageType.StreamEnd, async ({ data, sender }) => {
       const tabId = sender.tab?.id;
       if (!tabId) {
         return;
@@ -94,14 +100,14 @@ export default defineBackground(() => {
 
       trackVideoForTab(data.videoId, tabId);
 
-      if (!tabTracker[tabId]) {
-        tabTracker[tabId] = { videoIdsAvailable: [data.videoId] };
-      } else if (!tabTracker[tabId].videoIdsAvailable.includes(data.videoId)) {
+      tabTracker[tabId] ??= { videoIdsAvailable: [] };
+
+      if (!tabTracker[tabId].videoIdsAvailable.includes(data.videoId)) {
         tabTracker[tabId].videoIdsAvailable.push(data.videoId);
       }
 
       await ensureOffscreenDocument();
-      await sendMessage("processStreamEnd", { ...data, tabId });
+      await sendMessage(MessageType.ProcessStreamEnd, { ...data, tabId });
     });
   }
 
@@ -161,7 +167,7 @@ export default defineBackground(() => {
       return result;
     }
 
-    onMessage("streamChunk", ({ data, sender }) => {
+    onMessage(MessageType.StreamChunk, ({ data, sender }) => {
       const tabId = sender.tab?.id;
       if (!tabId) {
         return;
@@ -195,7 +201,7 @@ export default defineBackground(() => {
       }
     });
 
-    onMessage("streamEnd", async ({ data, sender }) => {
+    onMessage(MessageType.StreamEnd, async ({ data, sender }) => {
       const tabId = sender.tab?.id;
       if (!tabId) {
         return;
@@ -253,8 +259,8 @@ export default defineBackground(() => {
   }
 
   async function cancelDownloads(videoIds: string[]) {
-    if (import.meta.env.CHROME) {
-      await sendMessage("cancelProcessing", { videoIds });
+    if (!import.meta.env.FIREFOX) {
+      await sendMessage(MessageType.CancelProcessing, { videoIds });
     } else {
       const { cancelDownloadsByIds } = await import("../lib/download-pipeline");
       await cancelDownloadsByIds(videoIds);
@@ -263,7 +269,146 @@ export default defineBackground(() => {
 
   // - Message handlers -
 
-  onMessage("getCapturedSabrBody", async ({ sender }) => {
+  onMessage(MessageType.ProxyFetch, async ({ data }) => {
+    const fetchUrl = "url" in data ? String(data.url) : "";
+    const bodyBase64 = "bodyBase64" in data ? String(data.bodyBase64) : "";
+
+    try {
+      const bodyBytes = Uint8Array.from(atob(bodyBase64), character => character.charCodeAt(0));
+
+      // Include YouTube session cookies - googlevideo.com needs them for auth
+      const youtubeCookies = await browser.cookies.getAll({ domain: ".youtube.com" });
+      const googlevideoCookies = await browser.cookies.getAll({ domain: ".googlevideo.com" });
+      const allCookies = [...youtubeCookies, ...googlevideoCookies];
+      const cookieString = allCookies.map(cookie => `${cookie.name}=${cookie.value}`).join("; ");
+
+      const response = await fetch(fetchUrl, {
+        method: "POST",
+        headers: {
+          "content-type": "application/x-protobuf",
+          accept: "application/vnd.yt-ump",
+          origin: "https://www.youtube.com",
+          cookie: cookieString
+        },
+        body: bodyBytes
+      });
+
+      const responseBuffer = await response.arrayBuffer();
+      const responseBytes = new Uint8Array(responseBuffer);
+      let responseBase64 = "";
+      const batchSize = 8192;
+
+      for (let offset = 0; offset < responseBytes.byteLength; offset += batchSize) {
+        responseBase64 += String.fromCharCode(
+          ...responseBytes.subarray(offset, Math.min(offset + batchSize, responseBytes.byteLength))
+        );
+      }
+
+      return { status: response.status, bodyBase64: btoa(responseBase64) };
+    } catch (error) {
+      console.error("[ytdl:bg] proxyFetch error:", error);
+      return null;
+    }
+  });
+
+  onMessage(MessageType.DirectDownload, async ({ data, sender }) => {
+    const tabId = sender.tab?.id ?? 0;
+    const videoId = "videoId" in data ? String(data.videoId) : "";
+    const videoUrl = "videoUrl" in data ? data.videoUrl : null;
+    const audioUrl = "audioUrl" in data ? data.audioUrl : null;
+    const filenameOutput = "filenameOutput" in data ? String(data.filenameOutput) : "";
+    const videoMimeType = "videoMimeType" in data ? String(data.videoMimeType) : "video/mp4";
+    const audioMimeType = "audioMimeType" in data ? String(data.audioMimeType) : "audio/mp4";
+    const downloadType = "type" in data ? data.type : "video+audio";
+
+    try {
+      async function fetchStream(url: string) {
+        const headers = { "Accept-Encoding": "identity" };
+        const response = await fetch(url, { headers });
+        if (!response.ok) {
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        return new Uint8Array(await response.arrayBuffer());
+      }
+
+      const [videoData, audioData] = await Promise.all([
+        videoUrl && downloadType !== "audio" ? fetchStream(videoUrl) : Promise.resolve(null),
+        audioUrl && downloadType !== "video" ? fetchStream(audioUrl) : Promise.resolve(null)
+      ]);
+      console.log(`[ytdl:bg] directDownload: video=${videoData?.byteLength ?? 0} audio=${audioData?.byteLength ?? 0}`);
+
+      if (!import.meta.env.FIREFOX) {
+        await ensureOffscreenDocument();
+
+        async function sendChunksToOffscreen(streamType: string, streamData: Uint8Array) {
+          const chunkSize = 1024 * 1024;
+          const totalChunks = Math.ceil(streamData.byteLength / chunkSize);
+
+          for (let iChunk = 0; iChunk < totalChunks; iChunk++) {
+            const start = iChunk * chunkSize;
+            const chunk = streamData.slice(start, start + chunkSize);
+            let base64 = "";
+            const batchSize = 8192;
+
+            for (let batchOffset = 0; batchOffset < chunk.byteLength; batchOffset += batchSize) {
+              base64 += String.fromCharCode(
+                ...chunk.subarray(batchOffset, Math.min(batchOffset + batchSize, chunk.byteLength))
+              );
+            }
+
+            await sendMessage(MessageType.ProcessStreamChunk, {
+              videoId,
+              streamType,
+              iChunk,
+              totalChunks,
+              chunkBase64: btoa(base64),
+              tabId
+            });
+          }
+        }
+
+        if (videoData) {
+          await sendChunksToOffscreen("video", videoData);
+        }
+
+        if (audioData) {
+          await sendChunksToOffscreen("audio", audioData);
+        }
+
+        await sendMessage(MessageType.ProcessStreamEnd, {
+          type: downloadType,
+          videoId,
+          filenameOutput,
+          videoMimeType,
+          audioMimeType,
+          audioTrackLabels: [""],
+          tabId
+        });
+      } else {
+        const { enqueueStreamData } = await import("../lib/download-pipeline");
+        await enqueueStreamData({
+          type: downloadType,
+          videoId,
+          filenameOutput,
+          videoData,
+          audioData,
+          videoMimeType,
+          audioMimeType,
+          primaryAudioLabel: "",
+          additionalAudioStreams: [],
+          tabId
+        });
+      }
+
+      return true;
+    } catch (error) {
+      console.error("[ytdl:bg] directDownload failed:", error);
+      return false;
+    }
+  });
+
+  onMessage(MessageType.GetCapturedSabrBody, async ({ sender }) => {
     const tabId = sender.tab?.id;
     if (!tabId) {
       return null;
@@ -283,24 +428,200 @@ export default defineBackground(() => {
     };
   });
 
-  onMessage("persistInterruptedDownload", async ({ data }) => {
+  onMessage(MessageType.SabrDownload, async ({ data, sender }) => {
+    const { request, poToken } = data;
+    const tabId = sender.tab?.id ?? 0;
+    console.log("[ytdl:bg] sabrDownload received:", request.videoId, "po:", poToken?.length, "hasSabr:", !!request.sabrConfig);
+
+    if (!request.sabrConfig) {
+      console.log("[ytdl:bg] No sabrConfig");
+      return false;
+    }
+
+    try {
+      const { SabrStream } = await import("googlevideo/sabr-stream");
+      const { buildSabrFormat } = await import("googlevideo/utils");
+      console.log("[ytdl:bg] SabrStream imported, formats:", request.sabrConfig.formats.length);
+
+      const sabrConfig = request.sabrConfig;
+      const sabrFormats = sabrConfig.formats.map(format => buildSabrFormat({
+        itag: format.itag,
+        lastModified: String(format.lastModified),
+        xtags: format.xtags,
+        width: format.width,
+        height: format.height,
+        mimeType: format.mimeType,
+        audioQuality: format.audioQuality,
+        bitrate: format.bitrate,
+        averageBitrate: format.averageBitrate,
+        quality: format.quality,
+        qualityLabel: format.qualityLabel ?? undefined,
+        audioTrackId: format.audioTrack?.id,
+        approxDurationMs: format.approxDurationMs,
+        contentLength: format.contentLength,
+        isDrc: false
+      }));
+
+      const durationMs = parseInt(sabrConfig.formats[0]?.approxDurationMs ?? "0");
+      const videoFormat = sabrFormats.find(format => format.itag === request.videoItag);
+      const audioFormat = sabrFormats.find(format => format.itag === request.audioItag);
+      if (!videoFormat || !audioFormat) {
+        browser.storage.local.set({ ytdlBgDebug: `format not found: v=${request.videoItag}(${!!videoFormat}) a=${request.audioItag}(${!!audioFormat})` });
+        return false;
+      }
+
+      browser.storage.local.set({ ytdlBgDebug: `starting SabrStream, po=${poToken.substring(0, 20)}...` });
+
+      const sabrStream = new SabrStream({
+        fetch: (input: RequestInfo | URL, init?: RequestInit) => fetch(input, {
+          ...init,
+          headers: {
+            ...Object.fromEntries(new Headers(init?.headers).entries()),
+            origin: "https://www.youtube.com",
+            referer: "https://www.youtube.com/"
+          }
+        }),
+        serverAbrStreamingUrl: sabrConfig.serverAbrStreamingUrl,
+        videoPlaybackUstreamerConfig: sabrConfig.videoPlaybackUstreamerConfig,
+        poToken: poToken || undefined,
+        clientInfo: {
+          clientName: sabrConfig.clientName,
+          clientVersion: sabrConfig.clientVersion
+        },
+        formats: sabrFormats,
+        durationMs
+      });
+
+      const { videoStream, audioStream } = await sabrStream.start({
+        videoFormat,
+        audioFormat
+      });
+
+      // Collect full streams in memory (no CORS issues in background)
+      async function collectStream(stream: ReadableStream<Uint8Array>) {
+        const reader = stream.getReader();
+        const chunks: Uint8Array[] = [];
+        let totalBytes = 0;
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) {
+            break;
+          }
+
+          chunks.push(value);
+          totalBytes += value.byteLength;
+        }
+        const result = new Uint8Array(totalBytes);
+        let offset = 0;
+        for (const chunk of chunks) {
+          result.set(chunk, offset);
+          offset += chunk.byteLength;
+        }
+        return result;
+      }
+
+      const [videoData, audioData] = await Promise.all([
+        collectStream(videoStream),
+        collectStream(audioStream)
+      ]);
+
+      const videoMimeType = sabrConfig.formats.find(
+        format => format.itag === request.videoItag
+      )?.mimeType.split(";")[0] ?? "video/mp4";
+
+      const audioMimeType = sabrConfig.formats.find(
+        format => format.itag === request.audioItag
+      )?.mimeType.split(";")[0] ?? "audio/mp4";
+      // Feed directly into the pipeline (bypass chunk relay)
+      if (!import.meta.env.FIREFOX) {
+        await ensureOffscreenDocument();
+
+        // Send chunks to offscreen
+        async function sendChunksToOffscreen(streamType: string, streamData: Uint8Array) {
+          const chunkSize = 1024 * 1024;
+          const totalChunks = Math.ceil(streamData.byteLength / chunkSize);
+          for (let iChunk = 0; iChunk < totalChunks; iChunk++) {
+            const start = iChunk * chunkSize;
+            const chunk = streamData.slice(start, start + chunkSize);
+            let base64 = "";
+            const batchSize = 8192;
+            for (let batchOffset = 0; batchOffset < chunk.byteLength; batchOffset += batchSize) {
+              base64 += String.fromCharCode(
+                ...chunk.subarray(batchOffset, Math.min(batchOffset + batchSize, chunk.byteLength))
+              );
+            }
+            await sendMessage(MessageType.ProcessStreamChunk, {
+              videoId: request.videoId,
+              streamType,
+              iChunk,
+              totalChunks,
+              chunkBase64: btoa(base64),
+              tabId
+            });
+          }
+        }
+
+        if (request.type !== "audio" && videoData.byteLength > 0) {
+          await sendChunksToOffscreen("video", videoData);
+        }
+
+        if (request.type !== "video" && audioData.byteLength > 0) {
+          await sendChunksToOffscreen("audio", audioData);
+        }
+
+        await sendMessage(MessageType.ProcessStreamEnd, {
+          type: request.type,
+          videoId: request.videoId,
+          filenameOutput: request.filenameOutput,
+          videoMimeType,
+          audioMimeType,
+          audioTrackLabels: [""],
+          tabId
+        });
+      } else {
+        // Firefox: process directly in background
+        const { enqueueStreamData } = await import("../lib/download-pipeline");
+        await enqueueStreamData({
+          videoId: request.videoId,
+          filenameOutput: request.filenameOutput,
+          type: request.type,
+          videoData: request.type !== "audio" ? videoData : null,
+          audioData: request.type !== "video" ? audioData : null,
+          videoMimeType,
+          audioMimeType,
+          primaryAudioLabel: "",
+          additionalAudioStreams: [],
+          tabId
+        });
+      }
+
+      return true;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error("[ytdl:bg] SabrStream download failed:", errorMessage);
+      browser.storage.local.set({ ytdlBgDebug: `error: ${errorMessage}` });
+      return false;
+    }
+  });
+
+  onMessage(MessageType.PersistInterruptedDownload, async ({ data }) => {
     const current = await interruptedDownloadsItem.getValue();
     current[data.videoId] = data;
     await interruptedDownloadsItem.setValue(current);
   });
 
-  onMessage("clearInterruptedDownload", async ({ data }) => {
+  onMessage(MessageType.ClearInterruptedDownload, async ({ data }) => {
     const current = await interruptedDownloadsItem.getValue();
     delete current[data.videoId];
     await interruptedDownloadsItem.setValue(current);
   });
 
-  onMessage("getInterruptedDownload", async ({ data }) => {
+  onMessage(MessageType.GetInterruptedDownload, async ({ data }) => {
     const current = await interruptedDownloadsItem.getValue();
     return current[data.videoId] ?? null;
   });
 
-  onMessage("processStreamError", async ({ data, sender }) => {
+  onMessage(MessageType.ProcessStreamError, async ({ data, sender }) => {
     const tabId = sender.tab?.id;
     if (!tabId) {
       return;
@@ -308,7 +629,7 @@ export default defineBackground(() => {
 
     console.error("[ytdl] Stream error for", data.videoId, data.error);
     await sendMessage(
-      "updateDownloadProgress",
+      MessageType.UpdateDownloadProgress,
       {
         videoId: data.videoId,
         progress: 0,
@@ -319,42 +640,42 @@ export default defineBackground(() => {
     );
   });
 
-  onMessage("requestPlaylistDownload", async ({ data, sender }) => {
+  onMessage(MessageType.RequestPlaylistDownload, async ({ data, sender }) => {
     const tabId = sender.tab?.id;
     if (!tabId) {
       return;
     }
 
     for (const item of data.items) {
-      await sendMessage("executeDownloadItem", item, tabId);
+      await sendMessage(MessageType.ExecuteDownloadItem, item, tabId);
     }
   });
 
-  onMessage("cancelDownload", async ({ data }) => {
+  onMessage(MessageType.CancelDownload, async ({ data }) => {
     await cancelDownloads(data.videoIds);
   });
 
   // - Pipeline storage handlers (chrome.storage unavailable in offscreen) -
 
-  onMessage("pipelineProgress", async ({ data }) => {
+  onMessage(MessageType.PipelineProgress, async ({ data }) => {
     const {
       videoId, progress, progressType, tabId
     } = data;
     const current = await statusProgressItem.getValue();
     current[videoId] = { progress, progressType };
     await Promise.allSettled([
-      sendMessage("updateDownloadProgress", { videoId, progress, progressType }, tabId),
+      sendMessage(MessageType.UpdateDownloadProgress, { videoId, progress, progressType }, tabId),
       statusProgressItem.setValue(current)
     ]);
   });
 
-  onMessage("pipelineRemoval", async ({ data }) => {
+  onMessage(MessageType.PipelineRemoval, async ({ data }) => {
     const { videoId, tabId } = data;
     const current = await statusProgressItem.getValue();
     delete current[videoId];
     await Promise.allSettled([
       sendMessage(
-        "updateDownloadProgress",
+        MessageType.UpdateDownloadProgress,
         {
           videoId,
           progress: 0,
@@ -367,18 +688,18 @@ export default defineBackground(() => {
     ]);
   });
 
-  onMessage("pipelineQueueRemove", async ({ data }) => {
+  onMessage(MessageType.PipelineQueueRemove, async ({ data }) => {
     const { videoId } = data;
     const current = await statusProgressItem.getValue();
     delete current[videoId];
     await statusProgressItem.setValue(current);
   });
 
-  onMessage("pipelineFFmpegReady", async () => {
+  onMessage(MessageType.PipelineFFmpegReady, async () => {
     await isFFmpegReadyItem.setValue(true);
   });
 
-  onMessage("pipelineDownload", async ({ data }) => {
+  onMessage(MessageType.PipelineDownload, async ({ data }) => {
     await browser.downloads.download({
       url: data.blobUrl,
       filename: data.filename

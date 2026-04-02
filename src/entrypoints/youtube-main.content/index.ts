@@ -11,6 +11,7 @@
 
 import { buildVideoData, extractPlayerResponseFromHtml } from "./youtube-api";
 import { crossWorldMessenger } from "@/lib/cross-world-messenger";
+import { generatePoToken } from "@/lib/po-token-generator";
 import { interruptedDownloadStore, sabrCredentials, videoDataStore } from "@/lib/synced-stores.svelte";
 import { getCompatibleFilename, waitForVisibleElement } from "@/lib/utils";
 import {
@@ -326,11 +327,49 @@ export default defineContentScript({
       const sabrFormats = sabrConfig.formats.map(adaptiveFormatToSabrFormat);
       const durationMs = parseInt(sabrConfig.formats[0]?.approxDurationMs ?? "0");
 
+      // Wrap fetch to avoid CORS preflight on googlevideo.com.
+      // SabrStream sends non-safelisted headers (content-type: application/x-protobuf,
+      // accept: application/vnd.yt-ump) which trigger preflight OPTIONS requests.
+      // Googlevideo.com doesn't handle OPTIONS, so we rewrite to safelisted values.
+      // The server accepts any Content-Type and ignores Accept.
+      // Fetch wrapper that tries originalFetch first (goes through YouTube's
+      // Service Worker for CORS). If it fails (CORS preflight or network error),
+      // retries through the background service worker which has host_permissions.
+      async function sabrFetchWithFallback(input: RequestInfo | URL, init?: RequestInit) {
+        try {
+          return await originalFetch(input, init);
+        } catch {
+          // CORS preflight failed - relay through background
+          const url = input instanceof URL ? input.href : String(input);
+          let bodyArray = new Uint8Array(0);
+          const rawBody = init?.body;
+          if (rawBody instanceof ArrayBuffer) {
+            bodyArray = new Uint8Array(rawBody);
+          } else if (ArrayBuffer.isView(rawBody)) {
+            bodyArray = new Uint8Array(rawBody.buffer, rawBody.byteOffset, rawBody.byteLength);
+          }
+
+          const result = await crossWorldMessenger.sendMessage("proxyFetch", {
+            url,
+            bodyBase64: btoa(String.fromCharCode(...bodyArray))
+          });
+          if (!result?.bodyBase64) {
+            throw new TypeError("Background fetch failed");
+          }
+
+          const responseBytes = Uint8Array.from(atob(result.bodyBase64), character => character.charCodeAt(0));
+          return new Response(responseBytes, {
+            status: result.status,
+            headers: { "content-type": "application/vnd.yt-ump" }
+          });
+        }
+      }
+
       return new SabrStream({
-        fetch: originalFetch,
+        fetch: sabrFetchWithFallback,
         serverAbrStreamingUrl: sabrConfig.serverAbrStreamingUrl,
         videoPlaybackUstreamerConfig: sabrConfig.videoPlaybackUstreamerConfig,
-        poToken: capturedPoToken,
+        poToken: capturedPoToken || sabrCredentials.value?.poToken || undefined,
         clientInfo: {
           clientName: sabrConfig.clientName,
           clientVersion: sabrConfig.clientVersion
@@ -479,34 +518,18 @@ export default defineContentScript({
       if (location.pathname === "/watch") {
         injectSegmentedDownloadButton(videoData);
 
-        // Auto-download when opened from channel/grid page
-        const searchParams = new URLSearchParams(location.search);
-        if (searchParams.get("ytdl") === "1") {
-          // Remove the parameter to prevent re-download on refresh
-          searchParams.delete("ytdl");
-          const cleanUrl = `${location.pathname}?${searchParams.toString()}`;
-          history.replaceState(null, "", cleanUrl);
-
-          // Wait for SABR credentials then start download
-          const autoDownloadInterval = setInterval(() => {
-            const creds = sabrCredentials.value;
-            const elCreds = document.getElementById("ytdl-sabr-credentials");
-            const hasCredentials = creds?.poToken || elCreds?.dataset.poToken;
-            if (!hasCredentials) {
-              return;
-            }
-
-            clearInterval(autoDownloadInterval);
-            performDownload({
-              type: videoData.isMusic ? "audio" : "video+audio",
-              videoId: videoData.videoId,
-              videoItag: videoData.videoFormats[0]?.itag ?? 0,
-              audioItag: videoData.audioFormats[0]?.itag ?? 0,
-              filenameOutput: getCompatibleFilename(`${videoData.title}.${videoData.isMusic ? "mp3" : "mp4"}`)
-            });
-          }, 500);
-
-          setTimeout(() => clearInterval(autoDownloadInterval), 30_000);
+        // Generate PO token via BotGuard (independent of video playback)
+        if (!capturedPoToken) {
+          generatePoToken(videoData.videoId).then(token => {
+            capturedPoToken = token;
+            // Broadcast to isolated world via synced signal
+            sabrCredentials.value = {
+              url: videoData.sabrConfig?.serverAbrStreamingUrl ?? "",
+              poToken: token
+            };
+          }).catch(error => {
+            console.warn("[ytdl] PO token generation failed:", error);
+          });
         }
       }
     }
@@ -637,21 +660,14 @@ export default defineContentScript({
         }
       }
 
-      // SabrStream requires YouTube's Service Worker for CORS (only on watch pages).
-      // On other pages, open the video in a new tab to download.
-      if (location.pathname !== "/watch") {
-        open(`https://www.youtube.com/watch?v=${videoId}&ytdl=1`, "_blank");
-        return;
-      }
-
-      const hasSabrCredentials = capturedPoToken && capturedSabrUrl;
-      if (hasSabrCredentials && cachedVideoData.sabrConfig && videoFormat && audioFormat) {
+      if (cachedVideoData.sabrConfig && videoFormat && audioFormat) {
         try {
           console.log("[ytdl] Fetching via SabrStream (independent of playback)");
 
           const primaryResult = await fetchViaSabrStream(
             cachedVideoData.sabrConfig, videoFormat, audioFormat
           );
+          console.log(`[ytdl] SabrStream done: video=${primaryResult.videoData.byteLength} audio=${primaryResult.audioData.byteLength}`);
 
           // Fetch additional audio tracks in parallel
           const additionalAudioData = await Promise.all(
@@ -1063,13 +1079,19 @@ export default defineContentScript({
             isDownloading = true;
             downloadProgress = 0;
             refreshButtons();
-            performDownload({
-              type: defaultDownloadType,
-              videoId,
-              videoItag: defaultVideoItag,
-              audioItag: defaultAudioItag,
-              filenameOutput: defaultFilename
-            });
+            // Broadcast via synced signal so the isolated world handles it
+            // using the direct URL download approach (android_vr client)
+            postMessage({
+              namespace: "ytdl-sync",
+              key: "download-request",
+              value: JSON.parse(JSON.stringify({
+                type: defaultDownloadType,
+                videoId,
+                videoItag: defaultVideoItag,
+                audioItag: defaultAudioItag,
+                filenameOutput: defaultFilename
+              }))
+            }, "*");
           }
 
           return;
@@ -1349,17 +1371,6 @@ export default defineContentScript({
       await performDownload(data);
     });
 
-    // Handle download requests from grid items via synced signal (postMessage)
-    addEventListener("message", e => {
-      if (e.data?.namespace !== "ytdl-sync" || e.data.key !== "download-request") {
-        return;
-      }
-
-      if (e.data.value) {
-        performDownload(e.data.value);
-      }
-    });
-
     // Handle video data requests from grid/playlist items.
     // Isolated world writes to videoDataRequests synced map,
     // which arrives here via postMessage. MAIN world fetches
@@ -1422,6 +1433,93 @@ export default defineContentScript({
       }
 
       processVideoDataQueue();
+    });
+
+    // Handle direct download requests from the isolated world.
+    // Uses the android_vr client (no SABR, no PO token needed) to get
+    // direct URLs, fetches video+audio in the MAIN world (YouTube's
+    // Service Worker handles CORS), then dispatches via stream-data event.
+    addEventListener("message", async e => {
+      if (e.data?.namespace !== "ytdl-sync" || e.data.key !== "direct-download-request") {
+        return;
+      }
+
+      const {
+        videoId: downloadVideoId, videoItag, audioItag, filenameOutput, type: downloadType
+      } = e.data.value;
+
+      try {
+        const visitorData = ytcfg?.get("VISITOR_DATA") ?? "";
+
+        const playerData = await (await originalFetch(
+          "https://www.youtube.com/youtubei/v1/player?prettyPrint=false",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json", "X-Goog-Visitor-Id": String(visitorData) },
+            body: JSON.stringify({
+              videoId: downloadVideoId,
+              context: {
+                client: {
+                  clientName: "ANDROID_VR",
+                  clientVersion: "1.65.10",
+                  androidSdkVersion: 34,
+                  osName: "Android",
+                  osVersion: "14",
+                  platform: "MOBILE"
+                }
+              },
+              contentCheckOk: true,
+              racyCheckOk: true
+            })
+          }
+        )).json();
+        if (playerData.playabilityStatus?.status !== "OK") {
+          throw new Error(`Player status: ${playerData.playabilityStatus?.status}`);
+        }
+
+        const formats = playerData.streamingData?.adaptiveFormats ?? [];
+        const videoFormat = formats.find((format: { itag: number }) => format.itag === videoItag)
+          ?? formats.find((format: { mimeType?: string }) => format.mimeType?.startsWith("video"));
+        const audioFormat = formats.find((format: { itag: number }) => format.itag === audioItag)
+          ?? formats.find((format: { mimeType?: string }) => format.mimeType?.startsWith("audio"));
+
+        const videoUrl = downloadType !== "audio" ? videoFormat?.url : null;
+        const audioUrl = downloadType !== "video" ? audioFormat?.url : null;
+        if (!videoUrl && !audioUrl) {
+          throw new Error("No download URLs available");
+        }
+
+        async function fetchMediaData(url: string) {
+          const response = await originalFetch(url, { headers: { "Accept-Encoding": "identity" } });
+
+          return new Uint8Array(await response.arrayBuffer());
+        }
+
+        const [videoData, audioData] = await Promise.all([
+          videoUrl ? fetchMediaData(videoUrl) : Promise.resolve(null),
+          audioUrl ? fetchMediaData(audioUrl) : Promise.resolve(null)
+        ]);
+
+        const videoMimeType = videoFormat?.mimeType?.split(";")?.[0] ?? "video/mp4";
+        const audioMimeType = audioFormat?.mimeType?.split(";")?.[0] ?? "audio/mp4";
+
+        dispatchEvent(new CustomEvent("ytdl:stream-data", {
+          detail: {
+            downloadType,
+            videoId: downloadVideoId,
+            filenameOutput,
+            videoData: videoData ?? null,
+            audioData: audioData ?? null,
+            videoMimeType,
+            audioMimeType,
+            audioLabel: "",
+            additionalAudioData: []
+          }
+        }));
+      } catch (error) {
+        console.error("[ytdl] Direct download failed:", error);
+        dispatchEvent(new CustomEvent("ytdl:stream-error", { detail: { videoId: downloadVideoId, error: String(error) } }));
+      }
     });
 
     if (document.readyState === "complete") {

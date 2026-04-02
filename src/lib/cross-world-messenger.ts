@@ -16,6 +16,10 @@ interface PageMessengerSchema {
   filenameChanged(data: { filename: string; quality?: string; videoItag?: number; audioItag?: number }): void;
   requestVideoData(data: { videoId: string }): void;
 
+  // MAIN world → isolated world: proxy fetch through background (CORS bypass)
+  proxyFetch(data: { url: string; bodyBase64: string }):
+    { status: number; bodyBase64: string } | null;
+
   // Isolated world → all (MAIN world + Svelte components)
   progress(data: ProgressUpdate): void;
 }
