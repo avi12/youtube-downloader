@@ -1131,7 +1131,17 @@ export default defineContentScript({
       elDropdown.verticalAlign = "top";
       elDropdown.noOverlap = true;
       elDropdown.dynamicAlign = true;
+      elDropdown.allowOutsideScroll = false;
+      elDropdown.restoreFocusOnClose = false;
 
+      // Refit the dropdown when panel content changes size (e.g. progress bar appears)
+      const resizeObserver = new ResizeObserver(() => {
+        if (elDropdown.opened) {
+          elDropdown.refit();
+        }
+      });
+
+      resizeObserver.observe(elDropdownContentSlot);
       gridDropdowns.set(contentId, elDropdown);
     });
 
