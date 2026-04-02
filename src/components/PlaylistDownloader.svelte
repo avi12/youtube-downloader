@@ -4,6 +4,7 @@
    * Appears in the playlist header and allows downloading all checked videos.
    */
   import { MessageType, sendMessage } from "../lib/messaging";
+  import { applyPolymerCustomStyles, PAPER_PROGRESS_THEME } from "../lib/polymer-utils";
   import { musicListItem, videoOnlyListItem, videoQueueItem } from "../lib/storage";
   import { videoDataStore } from "../lib/synced-stores.svelte";
   import { getCompatibleFilename } from "../lib/utils";
@@ -73,7 +74,7 @@
       : downloadableVideos.filter(data => checkedVideoIds.has(data.videoId))
   );
 
-  const downloadButtonLabel = $derived(() => {
+  const downloadButtonLabel = $derived.by(() => {
     if (isDownloading) {
       return `Downloading ${downloadedCount}/${totalCount}`;
     }
@@ -194,30 +195,22 @@
     element.dispatchEvent(new CustomEvent("ytdl:set-yt-button-data", {
       detail: {
         iconName: isDownloading ? "CLOSE" : "DOWNLOAD",
-        title: downloadButtonLabel(),
-        accessibilityText: downloadButtonLabel(),
+        title: downloadButtonLabel,
+        accessibilityText: downloadButtonLabel,
         style: "MONO",
         type: "TONAL",
         buttonSize: "DEFAULT",
         state: checkedDownloadableVideos.length === 0 && !isDownloading ? "DISABLED" : "ACTIVE",
         isFullWidth: false,
         isDisabled: checkedDownloadableVideos.length === 0 && !isDownloading,
-        tooltip: downloadButtonLabel()
+        tooltip: downloadButtonLabel
       },
       bubbles: true
     }));
   }
 
   function attachPlaylistProgress(element: Element) {
-    const updateStyles = "updateStyles" in element
-      ? element.updateStyles
-      : undefined;
-    if (typeof updateStyles === "function") {
-      updateStyles({
-        "--paper-progress-active-color": "var(--yt-spec-call-to-action, rgb(62 166 255))",
-        "--paper-progress-container-color": "transparent"
-      });
-    }
+    applyPolymerCustomStyles(element, PAPER_PROGRESS_THEME);
   }
 </script>
 
