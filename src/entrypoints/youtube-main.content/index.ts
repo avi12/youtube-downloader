@@ -32,7 +32,12 @@ import {
 import { SabrStream } from "googlevideo/sabr-stream";
 import { buildSabrFormat } from "googlevideo/utils";
 
-declare const ytInitialPlayerResponse: PlayerResponse | undefined;
+declare global {
+  interface Window {
+    ytInitialPlayerResponse?: PlayerResponse;
+  }
+}
+
 declare const ytcfg: { get: (key: string) => unknown } | undefined;
 
 interface TpYtIronDropdown extends HTMLElement {
@@ -535,7 +540,7 @@ export default defineContentScript({
     }
 
     function extractAndDispatchVideoData() {
-      const playerResponse = ytInitialPlayerResponse ?? null;
+      const playerResponse = window.ytInitialPlayerResponse ?? null;
       if (!playerResponse || !location.pathname.startsWith("/watch")) {
         return;
       }
@@ -1447,14 +1452,16 @@ export default defineContentScript({
       const {
         videoId: downloadVideoId, videoItag, audioItag, filenameOutput, type: downloadType
       } = e.data.value;
+      console.log("[ytdl] direct-download-request received:", downloadVideoId);
 
       try {
         const visitorData = ytcfg?.get("VISITOR_DATA") ?? "";
 
-        const playerData = await (await originalFetch(
+        const playerData = await (await globalThis.fetch(
           "https://www.youtube.com/youtubei/v1/player?prettyPrint=false",
           {
             method: "POST",
+            credentials: "include",
             headers: { "Content-Type": "application/json", "X-Goog-Visitor-Id": String(visitorData) },
             body: JSON.stringify({
               videoId: downloadVideoId,
@@ -1490,7 +1497,10 @@ export default defineContentScript({
         }
 
         async function fetchMediaData(url: string) {
-          const response = await originalFetch(url, { headers: { "Accept-Encoding": "identity" } });
+          const response = await fetch(url);
+          if (!response.ok) {
+            throw new Error(`Media fetch failed: ${response.status}`);
+          }
 
           return new Uint8Array(await response.arrayBuffer());
         }
