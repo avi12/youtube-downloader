@@ -151,15 +151,27 @@
   let elButtonGroup: HTMLElement | null = null;
   let elDownloadBtn: Element | null = null;
 
+  const isMuxing = $derived(downloadState.progressType === "ffmpeg");
+
+  // Weighted display progress: download = 0-80%, mux = 80-95%, done = 100%
+  const displayProgress = $derived.by(() => {
+    if (!isDownloading) {
+      return 0;
+    }
+
+    if (isMuxing) {
+      return 80 + downloadState.progress * 15;
+    }
+
+    return downloadState.progress * 80;
+  });
+
   function getProgressTooltip() {
-    const progress = downloadState.progress;
-    if (!isDownloading || progress <= 0) {
+    if (!isDownloading || downloadState.progress <= 0) {
       return buttonLabel();
     }
 
-    const percentage = Math.round(progress * 100);
-    const phase = downloadState.progressType === "ffmpeg" ? "stitching" : "downloading";
-    return `${percentage}% ${phase}`;
+    return isMuxing ? "Processing" : "Downloading";
   }
 
   function refreshDownloadButton() {
@@ -320,7 +332,7 @@
   }
 </script>
 
-<div style:display="flex" style:flex-direction="column" {@attach attachButtonGroup}>
+<div style:display="inline-flex" style:flex-direction="column" {@attach attachButtonGroup}>
   {#if videoData?.isDownloadable}
     <div style:display="flex" style:align-items="center">
       <yt-button-view-model {@attach attachDownloadButton}
@@ -331,9 +343,11 @@
     {#if isDownloading}
       <tp-yt-paper-progress
         style:width="100%"
-        style:margin-top="4px"
-        aria-label="{Math.round(downloadState.progress * 100)}% downloaded"
-        value={Math.round(downloadState.progress * 100)}
+        style:height="3px"
+        style:margin-top="2px"
+        aria-label={getProgressTooltip()}
+        indeterminate={isMuxing}
+        value={Math.round(displayProgress)}
       ></tp-yt-paper-progress>
     {/if}
   {:else if !videoData && !isLoadFailed}
