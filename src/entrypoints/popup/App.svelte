@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { sendMessage } from "../../lib/messaging";
+  import { MessageType, sendMessage } from "../../lib/messaging";
   import {
     isFFmpegReadyItem,
     musicListItem,
@@ -73,7 +73,7 @@
   // --- Actions ---------------------------------------------------------------
 
   async function cancelDownload(videoIds: string[]) {
-    await sendMessage("cancelDownload", { videoIds });
+    await sendMessage(MessageType.CancelDownload, { videoIds });
   }
 
   async function cancelAllInQueue() {

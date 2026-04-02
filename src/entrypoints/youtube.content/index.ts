@@ -16,9 +16,10 @@ import { cleanupGridUi, injectGridVideoButtons, isVideoGridPage } from "./grid-u
 import { checkInterruptedDownload, listenForInterruptedDownloadEvents } from "./interrupted-downloads";
 import { cleanupPanelUi, mountPanelUi } from "./panel-ui";
 import { cleanupPlaylistUi, handlePlaylistVideoAdditions, injectPlaylistDownloaderUi } from "./playlist-ui";
+import { listenForDownloadRequests } from "./sabr-download";
 import { handleStreamData, handleStreamError, setPlaylistContext } from "./stream-transfer";
 import { crossWorldMessenger } from "@/lib/cross-world-messenger";
-import { sendMessage, onMessage } from "@/lib/messaging";
+import { MessageType, sendMessage, onMessage } from "@/lib/messaging";
 import { forwardSabrCredentialsWithRetry, listenForSabrBodyReady } from "@/lib/sabr-credentials";
 import { optionsItem } from "@/lib/storage";
 import { downloadProgressStore } from "@/lib/synced-stores.svelte";
@@ -103,7 +104,7 @@ export default defineContentScript({
     });
 
     crossWorldMessenger.onMessage("cancelDownload", async ({ data }) => {
-      await sendMessage("cancelDownload", { videoIds: data.videoIds });
+      await sendMessage(MessageType.CancelDownload, { videoIds: data.videoIds });
     });
 
     // Also handle cancel from grid items via synced signal
@@ -113,11 +114,11 @@ export default defineContentScript({
       }
 
       if (e.data.value?.videoIds) {
-        sendMessage("cancelDownload", { videoIds: e.data.value.videoIds });
+        sendMessage(MessageType.CancelDownload, { videoIds: e.data.value.videoIds });
       }
     });
 
-    onMessage("executeDownloadItem", ({ data }) => {
+    onMessage(MessageType.ExecuteDownloadItem, ({ data }) => {
       if (data.playlistId) {
         setPlaylistContext(data.videoId, {
           playlistId: data.playlistId,
@@ -129,7 +130,12 @@ export default defineContentScript({
       crossWorldMessenger.sendMessage("downloadRequest", data);
     });
 
-    onMessage("updateDownloadProgress", ({ data }) => {
+    // Proxy fetch requests from MAIN world through the background
+    crossWorldMessenger.onMessage("proxyFetch", async ({ data }) => {
+      return sendMessage(MessageType.ProxyFetch, data);
+    });
+
+    onMessage(MessageType.UpdateDownloadProgress, ({ data }) => {
       crossWorldMessenger.sendMessage("progress", data);
 
       // Update synced store - components derive state reactively
@@ -156,6 +162,7 @@ export default defineContentScript({
 
     listenForInterruptedDownloadEvents();
     listenForSabrBodyReady();
+    listenForDownloadRequests();
     forwardSabrCredentialsWithRetry().catch(() => {});
 
     const unwatchOptions = optionsItem.watch(newOptions => {

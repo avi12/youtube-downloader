@@ -3,7 +3,7 @@
    * Playlist-level download button.
    * Appears in the playlist header and allows downloading all checked videos.
    */
-  import { sendMessage } from "../lib/messaging";
+  import { MessageType, sendMessage } from "../lib/messaging";
   import { musicListItem, videoOnlyListItem, videoQueueItem } from "../lib/storage";
   import { videoDataStore } from "../lib/synced-stores.svelte";
   import { getCompatibleFilename } from "../lib/utils";
@@ -121,7 +121,7 @@
     });
 
     try {
-      await sendMessage("requestPlaylistDownload", {
+      await sendMessage(MessageType.RequestPlaylistDownload, {
         items: downloadRequests,
         playlistTitle,
         isZipBundle: true
@@ -172,7 +172,7 @@
 
   async function cancelPlaylistDownload() {
     const videoIds = checkedDownloadableVideos.map(data => data.videoId);
-    await sendMessage("cancelDownload", { videoIds });
+    await sendMessage(MessageType.CancelDownload, { videoIds });
     isDownloading = false;
     downloadedCount = 0;
   }

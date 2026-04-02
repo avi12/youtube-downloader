@@ -6,7 +6,7 @@
  */
 
 import { createSyncedMap, createSyncedSignal } from "./synced-signal.svelte";
-import type { DownloadRequest, InterruptedDownload, VideoData } from "@/types";
+import type { DownloadRequest, InterruptedDownload, ProgressType, VideoData } from "@/types";
 
 // ─── SABR credentials (MAIN world writes, isolated world reads) ──────────
 
@@ -36,7 +36,7 @@ export interface DownloadProgressState {
   isDone: boolean;
   isQueued: boolean;
   progress: number;
-  progressType: string;
+  progressType: ProgressType | "";
 }
 
 export const downloadProgressStore = createSyncedMap<DownloadProgressState>(

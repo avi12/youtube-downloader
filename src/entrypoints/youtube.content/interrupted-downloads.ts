@@ -4,11 +4,11 @@
  * communication.
  */
 
-import { sendMessage } from "@/lib/messaging";
+import { MessageType, sendMessage } from "@/lib/messaging";
 import { interruptedDownloadStore } from "@/lib/synced-stores.svelte";
 
 export async function checkInterruptedDownload(videoId: string) {
-  const interrupted = await sendMessage("getInterruptedDownload", { videoId });
+  const interrupted = await sendMessage(MessageType.GetInterruptedDownload, { videoId });
   if (interrupted) {
     interruptedDownloadStore.set(videoId, interrupted);
   } else {
@@ -22,7 +22,7 @@ export function listenForInterruptedDownloadEvents() {
       return;
     }
 
-    await sendMessage("persistInterruptedDownload", e.detail);
+    await sendMessage(MessageType.PersistInterruptedDownload, e.detail);
     interruptedDownloadStore.set(e.detail.videoId, e.detail);
   });
 
@@ -31,7 +31,7 @@ export function listenForInterruptedDownloadEvents() {
       return;
     }
 
-    await sendMessage("clearInterruptedDownload", { videoId: e.detail.videoId });
+    await sendMessage(MessageType.ClearInterruptedDownload, { videoId: e.detail.videoId });
     interruptedDownloadStore.delete(e.detail.videoId);
   });
 }

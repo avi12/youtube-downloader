@@ -4,7 +4,7 @@
  * Chrome's runtime.sendMessage size limit.
  */
 
-import { sendMessage } from "@/lib/messaging";
+import { MessageType, sendMessage } from "@/lib/messaging";
 
 const TRANSFER_CHUNK_SIZE = 1024 * 1024;
 
@@ -32,7 +32,7 @@ async function sendStreamChunks(
     const start = iChunk * TRANSFER_CHUNK_SIZE;
     const chunk = data.slice(start, start + TRANSFER_CHUNK_SIZE);
 
-    await sendMessage("streamChunk", {
+    await sendMessage(MessageType.StreamChunk, {
       videoId,
       streamType,
       iChunk,
@@ -89,7 +89,7 @@ export async function handleStreamData(e: Event) {
   const playlistContext = playlistContextByVideoId.get(videoId);
   playlistContextByVideoId.delete(videoId);
 
-  await sendMessage("streamEnd", {
+  await sendMessage(MessageType.StreamEnd, {
     type: downloadType,
     videoId,
     filenameOutput,
@@ -106,5 +106,5 @@ export async function handleStreamError(e: Event) {
   }
 
   const { videoId, error }: { videoId: string; error: string } = e.detail;
-  await sendMessage("processStreamError", { videoId, error });
+  await sendMessage(MessageType.ProcessStreamError, { videoId, error });
 }

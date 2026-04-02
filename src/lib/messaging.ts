@@ -7,6 +7,41 @@ import type {
 } from "../types";
 import { defineExtensionMessaging } from "@webext-core/messaging";
 
+// ─── Message types ───────────────────────────────────────────────────────────
+
+export enum MessageType {
+  // Content script → Background
+  StreamChunk = "streamChunk",
+  StreamEnd = "streamEnd",
+  ProcessStreamError = "processStreamError",
+  GetCapturedSabrBody = "getCapturedSabrBody",
+  SabrDownload = "sabrDownload",
+  ProxyFetch = "proxyFetch",
+  DirectDownload = "directDownload",
+  PersistInterruptedDownload = "persistInterruptedDownload",
+  ClearInterruptedDownload = "clearInterruptedDownload",
+  GetInterruptedDownload = "getInterruptedDownload",
+  RequestPlaylistDownload = "requestPlaylistDownload",
+  CancelDownload = "cancelDownload",
+
+  // Background → Content script
+  ExecuteDownloadItem = "executeDownloadItem",
+  SabrBodyReady = "sabrBodyReady",
+  UpdateDownloadProgress = "updateDownloadProgress",
+
+  // Background → Offscreen
+  ProcessStreamChunk = "processStreamChunk",
+  ProcessStreamEnd = "processStreamEnd",
+  CancelProcessing = "cancelProcessing",
+
+  // Offscreen → Background
+  PipelineProgress = "pipelineProgress",
+  PipelineRemoval = "pipelineRemoval",
+  PipelineQueueRemove = "pipelineQueueRemove",
+  PipelineFFmpegReady = "pipelineFFmpegReady",
+  PipelineDownload = "pipelineDownload"
+}
+
 // ─── Protocol definition ──────────────────────────────────────────────────────
 
 interface ProtocolMap {
@@ -40,6 +75,28 @@ interface ProtocolMap {
 
   // Content script → Background: get captured SABR request body for this tab
   getCapturedSabrBody(data: Record<string, never>): { body: string; url: string; poToken: string } | null;
+
+  // Content script → Background: run SabrStream download in the background
+  // Background has host_permissions so fetch() bypasses CORS for googlevideo.com
+  sabrDownload(data: {
+    request: DownloadRequest;
+    poToken: string;
+  }): boolean;
+
+  // Content script → Background: proxy fetch through background (CORS bypass)
+  proxyFetch(data: { url: string; bodyBase64: string }):
+    { status: number; bodyBase64: string } | null;
+
+  // Content script → Background: download video/audio via direct URL
+  directDownload(data: {
+    videoId: string;
+    videoUrl: string | null;
+    audioUrl: string | null;
+    filenameOutput: string;
+    videoMimeType: string;
+    audioMimeType: string;
+    type: DownloadType;
+  }): boolean;
 
   // Content script → Background: persist/clear/query interrupted download state
   persistInterruptedDownload(data: InterruptedDownload): void;

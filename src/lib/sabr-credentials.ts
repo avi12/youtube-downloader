@@ -6,13 +6,13 @@
  * to the MAIN world via window.postMessage automatically.
  */
 
-import { sendMessage, onMessage } from "./messaging";
+import { MessageType, sendMessage, onMessage } from "./messaging";
 import { sabrCredentials } from "./synced-stores.svelte";
 
 let isCredentialsForwarded = false;
 
 async function forwardSabrCredentials() {
-  const captured = await sendMessage("getCapturedSabrBody", {});
+  const captured = await sendMessage(MessageType.GetCapturedSabrBody, {});
   if (!captured?.poToken) {
     return;
   }
@@ -49,7 +49,7 @@ export async function forwardSabrCredentialsWithRetry() {
 }
 
 export function listenForSabrBodyReady() {
-  onMessage("sabrBodyReady", () => {
+  onMessage(MessageType.SabrBodyReady, () => {
     forwardSabrCredentials();
   });
 }

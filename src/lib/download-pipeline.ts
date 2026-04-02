@@ -7,7 +7,7 @@
  * FFmpeg jobs, each with its own instance that can be independently cancelled.
  */
 
-import { sendMessage } from "./messaging";
+import { MessageType, sendMessage } from "./messaging";
 import { getCompatibleFilename, getMimeType } from "./utils";
 import type { DownloadType, ProcessStreamData, ProgressType } from "@/types";
 import { FFmpeg } from "@ffmpeg/ffmpeg";
@@ -19,7 +19,7 @@ let ffmpegUrls: { coreURL: string; wasmURL: string; classWorkerURL: string } | n
 
 export function initFFmpeg(coreURL: string, wasmURL: string, classWorkerURL: string) {
   ffmpegUrls = { coreURL, wasmURL, classWorkerURL };
-  sendMessage("pipelineFFmpegReady", {}).catch(() => {});
+  sendMessage(MessageType.PipelineFFmpegReady, {}).catch(() => {});
 }
 
 async function createFFmpegInstance() {
@@ -51,17 +51,17 @@ async function reportProgress(
   progressType: ProgressType,
   tabId: number
 ) {
-  await sendMessage("pipelineProgress", {
+  await sendMessage(MessageType.PipelineProgress, {
     videoId, progress, progressType, tabId
   });
 }
 
 async function reportRemoval(videoId: string, tabId: number) {
-  await sendMessage("pipelineRemoval", { videoId, tabId });
+  await sendMessage(MessageType.PipelineRemoval, { videoId, tabId });
 }
 
 async function removeFromStorageQueue(videoId: string, type: DownloadType) {
-  await sendMessage("pipelineQueueRemove", { videoId, type });
+  await sendMessage(MessageType.PipelineQueueRemove, { videoId, type });
 }
 
 // ─── Single-stream download (audio-only or video-only) ──────────────────────
@@ -86,7 +86,7 @@ async function triggerDownload(data: Uint8Array, filenameOutput: string) {
   if (typeof Blob !== "undefined" && typeof URL.createObjectURL === "function") {
     const blob = new Blob([new Uint8Array(data)], { type: mimeType });
     const blobUrl = URL.createObjectURL(blob);
-    await sendMessage("pipelineDownload", { blobUrl, mimeType, filename });
+    await sendMessage(MessageType.PipelineDownload, { blobUrl, mimeType, filename });
     setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
     return;
   }
@@ -100,7 +100,7 @@ async function triggerDownload(data: Uint8Array, filenameOutput: string) {
   }
 
   const blobUrl = `data:${mimeType};base64,${btoa(binary)}`;
-  await sendMessage("pipelineDownload", { blobUrl, mimeType, filename });
+  await sendMessage(MessageType.PipelineDownload, { blobUrl, mimeType, filename });
 }
 
 // ─── Playlist zip bundling ───────────────────────────────────────────────────

@@ -6,7 +6,7 @@
  */
 
 import { cancelDownloadsByIds, enqueueStreamData, initFFmpeg } from "@/lib/download-pipeline.ts";
-import { onMessage } from "@/lib/messaging.ts";
+import { MessageType, onMessage } from "@/lib/messaging.ts";
 
 // Start loading FFmpeg immediately
 initFFmpeg(
@@ -62,7 +62,7 @@ function base64ToUint8Array(base64: string) {
   return Uint8Array.from(binaryString, char => char.charCodeAt(0));
 }
 
-onMessage("processStreamChunk", ({ data }) => {
+onMessage(MessageType.ProcessStreamChunk, ({ data }) => {
   const {
     videoId, streamType, iChunk, totalChunks, chunkBase64
   } = data;
@@ -90,7 +90,7 @@ onMessage("processStreamChunk", ({ data }) => {
   }
 });
 
-onMessage("processStreamEnd", ({ data }) => {
+onMessage(MessageType.ProcessStreamEnd, ({ data }) => {
   console.log(`[ytdl:offscreen] streamEnd for ${data.videoId}, type=${data.type}, accumulators:`, [...streamAccumulators.keys()]);
   const {
     videoId, type, filenameOutput, videoMimeType, audioMimeType, audioTrackLabels, tabId,
@@ -133,6 +133,6 @@ onMessage("processStreamEnd", ({ data }) => {
   });
 });
 
-onMessage("cancelProcessing", async ({ data }) => {
+onMessage(MessageType.CancelProcessing, async ({ data }) => {
   await cancelDownloadsByIds(data.videoIds);
 });
