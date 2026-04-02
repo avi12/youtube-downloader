@@ -25,6 +25,7 @@ Let TypeScript infer return types instead of annotating them explicitly.
 Extract @attach arrow functions in Svelte templates to named functions in the script block.
 do not add `window.` prefixes.  
 don't use `.forEach`, use `for-of` instead.  
+if there is a callback arrow function, don't explicitly assign a type to the param.  
 
 Variable naming rules:
 1. If a variable represents an element, it should be prefixed with "el"
