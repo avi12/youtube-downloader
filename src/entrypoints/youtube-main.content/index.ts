@@ -141,12 +141,12 @@ export default defineContentScript({
           const contextFieldNumber = contextTag.value >> FIELD_NUMBER_SHIFT;
           const contextWireType = contextTag.value & WIRE_TYPE_MASK;
           if (contextWireType !== WIRE_TYPE_LENGTH_DELIMITED) {
-            const skipped = skipField(contextWireType, contextOffset);
-            if (skipped === -1) {
+            const offsetAfterField = skipField(contextWireType, contextOffset);
+            if (offsetAfterField === -1) {
               break;
             }
 
-            contextOffset = skipped;
+            contextOffset = offsetAfterField;
             continue;
           }
 
@@ -173,12 +173,12 @@ export default defineContentScript({
         const fieldNumber = tag.value >> FIELD_NUMBER_SHIFT;
         const wireType = tag.value & WIRE_TYPE_MASK;
         if (wireType !== WIRE_TYPE_LENGTH_DELIMITED) {
-          const skipped = skipField(wireType, offset);
-          if (skipped === -1) {
+          const offsetAfterField = skipField(wireType, offset);
+          if (offsetAfterField === -1) {
             break;
           }
 
-          offset = skipped;
+          offset = offsetAfterField;
           continue;
         }
 
