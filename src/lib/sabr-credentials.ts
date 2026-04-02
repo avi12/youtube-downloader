@@ -1,12 +1,13 @@
 /**
  * Forwards SABR credentials (PO token + URL) captured by the background's
- * webRequest listener to the MAIN world via a hidden DOM element.
+ * webRequest listener to the MAIN world via a synced signal.
  *
- * CustomEvents don't reliably cross Chrome's isolated/MAIN world boundary,
- * so we use a shared DOM element (#ytdl-sabr-credentials) instead.
+ * The isolated world writes to sabrCredentials.value, which syncs
+ * to the MAIN world via window.postMessage automatically.
  */
 
 import { sendMessage, onMessage } from "./messaging";
+import { sabrCredentials } from "./synced-stores";
 
 let isCredentialsForwarded = false;
 
@@ -17,17 +18,7 @@ async function forwardSabrCredentials() {
   }
 
   isCredentialsForwarded = true;
-
-  let elCredentials = document.getElementById("ytdl-sabr-credentials");
-  if (!elCredentials) {
-    elCredentials = document.createElement("div");
-    elCredentials.id = "ytdl-sabr-credentials";
-    elCredentials.hidden = true;
-    document.documentElement.append(elCredentials);
-  }
-
-  elCredentials.dataset.url = captured.url;
-  elCredentials.dataset.poToken = captured.poToken;
+  sabrCredentials.value = { url: captured.url, poToken: captured.poToken };
 }
 
 export async function forwardSabrCredentialsWithRetry() {

@@ -3,6 +3,7 @@
   import { getDownloadState, startDownload, cancelDownload as cancelDownloadState } from "../lib/download-state";
   import { sendMessage } from "../lib/messaging";
   import { videoQueueItem } from "../lib/storage";
+  import { videoDataStore } from "../lib/synced-stores";
   import { getCompatibleFilename } from "../lib/utils";
   import {
     ButtonSize,
@@ -30,19 +31,16 @@
   const isQueued = $derived(downloadState.isQueued);
   let isLoadFailed = $state(false);
 
-  // Request video data from MAIN world via crossWorldMessenger.
-  // Responses arrive via ytdl:video-data-received DOM event dispatched
-  // by the orchestrator (same isolated world, so DOM events work).
+  // Reactively read video data from the synced store.
+  // The MAIN world writes to videoDataStore, which syncs via postMessage.
   $effect(() => {
-    function handleVideoData(e: Event) {
-      if (!(e instanceof CustomEvent) || e.detail.videoId !== videoId) {
-        return;
-      }
-
-      videoData = e.detail;
+    const storeData = videoDataStore.get(videoId);
+    if (storeData) {
+      videoData = storeData;
+      return;
     }
 
-    document.addEventListener("ytdl:video-data-received", handleVideoData);
+    // Request from MAIN world if not in store yet
     crossWorldMessenger.sendMessage("requestVideoData", { videoId });
 
     const loadTimeout = setTimeout(() => {
@@ -51,10 +49,7 @@
       }
     }, 15_000);
 
-    return () => {
-      document.removeEventListener("ytdl:video-data-received", handleVideoData);
-      clearTimeout(loadTimeout);
-    };
+    return () => clearTimeout(loadTimeout);
   });
 
   // Reactively refresh the download button when shared download state changes

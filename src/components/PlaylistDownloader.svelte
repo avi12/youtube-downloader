@@ -5,6 +5,7 @@
    */
   import { sendMessage } from "../lib/messaging";
   import { musicListItem, videoOnlyListItem, videoQueueItem } from "../lib/storage";
+  import { videoDataStore } from "../lib/synced-stores";
   import { getCompatibleFilename } from "../lib/utils";
   import type { DownloadType, Options, VideoData } from "../types";
   import { SvelteMap } from "svelte/reactivity";
@@ -24,19 +25,14 @@
   let error = $state("");
 
   // Collect video data as each playlist item reports in
-  // Collect video data as each item resolves (same isolated world)
+  // Reactively sync video data from the synced store
   $effect(() => {
-    function handleVideoData(e: Event) {
-      if (!(e instanceof CustomEvent)) {
-        return;
+    for (const videoId of videoDataStore.keys()) {
+      const data = videoDataStore.get(videoId);
+      if (data && !videoDataMap.has(videoId)) {
+        videoDataMap.set(videoId, data);
       }
-
-      videoDataMap.set(e.detail.videoId, e.detail);
     }
-
-    document.addEventListener("ytdl:video-data-received", handleVideoData);
-
-    return () => document.removeEventListener("ytdl:video-data-received", handleVideoData);
   });
 
   // Track checkboxes for per-video selection

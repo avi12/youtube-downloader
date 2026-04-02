@@ -79,13 +79,13 @@ export default defineContentScript({
 
     // ─── Message bridging ───────────────────────────────────────────────
 
+    // The MAIN world writes video data to the synced store (videoDataStore).
+    // Components read from it reactively. But the orchestrator still needs
+    // currentVideoData for the watch page panel mount.
     crossWorldMessenger.onMessage("videoData", async ({ data }) => {
       if (location.pathname === "/watch") {
         currentVideoData = data;
       }
-
-      // Dispatch to all PlaylistVideoItem instances via DOM event
-      document.dispatchEvent(new CustomEvent("ytdl:video-data-received", { detail: data }));
 
       await checkInterruptedDownload(data.videoId);
     });
