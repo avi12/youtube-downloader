@@ -61,6 +61,7 @@
         return;
       }
 
+      isDownloading = e.detail.progress < 1;
       isDone = e.detail.progress >= 1;
       refreshDownloadButton();
     }
@@ -184,7 +185,7 @@
       return;
     }
 
-    if (elDropdown) {
+    const currentVideoData = videoData;    if (elDropdown) {
       return;
     }
 
@@ -211,7 +212,7 @@
 
       panelInstance = mount(DownloadOptionsPanel, {
         target: elContent,
-        props: { videoData, options }
+        props: { videoData: currentVideoData, options }
       });
 
       // Open after content is mounted so ytd-menu-popup-renderer sizes correctly
