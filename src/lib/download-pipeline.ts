@@ -41,7 +41,6 @@ interface ActiveJob {
 }
 
 const activeJobs = new Map<string, ActiveJob>();
-const downloadQueue: ProcessStreamData[] = [];
 
 // ─── Progress reporting ──────────────────────────────────────────────────────
 
@@ -333,24 +332,15 @@ async function processItem(item: ProcessStreamData) {
   }
 }
 
-function processQueue() {
-  while (downloadQueue.length > 0) {
-    const item = downloadQueue.shift()!;
-    processItem(item).catch(() => {});
-  }
-}
-
 // ─── Public API ──────────────────────────────────────────────────────────────
 
 export function enqueueStreamData(data: ProcessStreamData) {
-  const isDuplicate = downloadQueue.some(item => item.videoId === data.videoId)
-    || activeJobs.has(data.videoId);
-  if (isDuplicate) {
+  if (activeJobs.has(data.videoId)) {
     return;
   }
 
-  downloadQueue.push(data);
-  processQueue();
+  // Process immediately - all downloads run in parallel
+  processItem(data).catch(() => {});
 }
 
 export async function cancelDownloadsByIds(videoIds: string[]) {
@@ -363,11 +353,6 @@ export async function cancelDownloadsByIds(videoIds: string[]) {
       continue;
     }
 
-    const queuedIndex = downloadQueue.findIndex(item => item.videoId === videoId);
-    if (queuedIndex >= 0) {
-      const [removed] = downloadQueue.splice(queuedIndex, 1);
-      await removeFromStorageQueue(videoId, removed.type);
-      await reportRemoval(videoId, removed.tabId);
-    }
+    // No queue to check - downloads run immediately
   }
 }
