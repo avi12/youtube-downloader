@@ -321,12 +321,12 @@
 </script>
 
 <div style="display: flex; align-items: center" {@attach attachButtonGroup}>
-  {#if videoData}
+  {#if videoData?.isDownloadable}
     <yt-button-view-model {@attach attachDownloadButton}
     ></yt-button-view-model>
     <yt-button-view-model {@attach attachChevronButton}
     ></yt-button-view-model>
-  {:else if !isLoadFailed}
+  {:else if !videoData && !isLoadFailed}
     <div
       style="display: flex; align-items: center; height: 36px; padding: 0 8px"
       aria-busy="true"
