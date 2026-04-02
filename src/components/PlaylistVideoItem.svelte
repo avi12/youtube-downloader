@@ -222,14 +222,19 @@
       }
     }));
 
-    // Wait for the MAIN world to create the dropdown, mount Svelte, then open
-    const checkInterval = setInterval(() => {
+    // Wait for the MAIN world to create the dropdown
+    function handleDropdownReady(e: Event) {
+      if (!(e instanceof CustomEvent) || e.detail?.contentId !== panelContentId) {
+        return;
+      }
+
+      document.removeEventListener("ytdl:dropdown-ready", handleDropdownReady);
+
       const elContent = document.getElementById(panelContentId);
       if (!elContent) {
         return;
       }
 
-      clearInterval(checkInterval);
       elDropdown = elContent.closest("tp-yt-iron-dropdown");
 
       panelInstance = mount(DownloadOptionsPanel, {
@@ -237,7 +242,6 @@
         props: { videoData: currentVideoData, options }
       });
 
-      // Open after content is mounted so ytd-menu-popup-renderer sizes correctly
       requestAnimationFrame(() => {
         document.dispatchEvent(new CustomEvent("ytdl:open-dropdown", { detail: { contentId: panelContentId } }));
       });
@@ -254,10 +258,9 @@
 
       elDropdown?.addEventListener("iron-overlay-closed", handleOverlayClose);
       document.addEventListener("ytdl:panel-closed", handleOverlayClose);
-    }, 50);
+    }
 
-    // Timeout after 2s
-    setTimeout(() => clearInterval(checkInterval), 2000);
+    document.addEventListener("ytdl:dropdown-ready", handleDropdownReady);
   }
 
   function closePanel() {

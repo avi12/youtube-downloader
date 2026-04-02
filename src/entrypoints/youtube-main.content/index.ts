@@ -1127,6 +1127,9 @@ export default defineContentScript({
 
       resizeObserver.observe(elDropdownContentSlot);
       gridDropdowns.set(contentId, elDropdown);
+
+      // Notify the isolated world that the dropdown is ready
+      document.dispatchEvent(new CustomEvent("ytdl:dropdown-ready", { detail: { contentId } }));
     });
 
     document.addEventListener("ytdl:open-dropdown", e => {
