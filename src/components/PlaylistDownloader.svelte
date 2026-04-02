@@ -24,6 +24,7 @@
   let error = $state("");
 
   // Collect video data as each playlist item reports in
+  // Collect video data as each item resolves (same isolated world)
   $effect(() => {
     function handleVideoData(e: Event) {
       if (!(e instanceof CustomEvent)) {

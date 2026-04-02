@@ -1264,11 +1264,10 @@ export default defineContentScript({
       await performDownload(data);
     });
 
-    // Handle video data requests from playlist items (via isolated world)
     // Handle video data requests from grid/playlist items.
-    // Uses a DOM event instead of crossWorldMessenger.onMessage because
-    // onMessage only allows one listener per message type.
-    // Requests are queued and processed sequentially to avoid rate limiting.
+    // crossWorldMessenger carries the request (isolated → MAIN), and
+    // the response flows back via crossWorldMessenger("videoData")
+    // → orchestrator → ytdl:video-data-received DOM event (same world).
     const videoDataQueue: string[] = [];
     let isProcessingVideoDataQueue = false;
 
@@ -1306,13 +1305,8 @@ export default defineContentScript({
       isProcessingVideoDataQueue = false;
     }
 
-    document.addEventListener("ytdl:request-video-data", (e: Event) => {
-      if (!(e instanceof CustomEvent)) {
-        return;
-      }
-
-      const { videoId } = e.detail;
-      if (videoDataCache.has(videoId)) {
+    crossWorldMessenger.onMessage("requestVideoData", ({ data }) => {
+      const { videoId } = data;      if (videoDataCache.has(videoId)) {
         crossWorldMessenger.sendMessage("videoData", videoDataCache.get(videoId)!);
         return;
       }

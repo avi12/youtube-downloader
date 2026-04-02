@@ -30,9 +30,9 @@
   const isQueued = $derived(downloadState.isQueued);
   let isLoadFailed = $state(false);
 
-  // Listen for video data dispatched by the orchestrator via DOM events.
-  // Each component filters by videoId. DOM events support multiple listeners
-  // unlike crossWorldMessenger which only allows one per message type.
+  // Request video data from MAIN world via crossWorldMessenger.
+  // Responses arrive via ytdl:video-data-received DOM event dispatched
+  // by the orchestrator (same isolated world, so DOM events work).
   $effect(() => {
     function handleVideoData(e: Event) {
       if (!(e instanceof CustomEvent) || e.detail.videoId !== videoId) {
@@ -43,13 +43,13 @@
     }
 
     document.addEventListener("ytdl:video-data-received", handleVideoData);
-    document.dispatchEvent(new CustomEvent("ytdl:request-video-data", { detail: { videoId } }));
+    crossWorldMessenger.sendMessage("requestVideoData", { videoId });
 
     const loadTimeout = setTimeout(() => {
       if (!videoData) {
         isLoadFailed = true;
       }
-    }, 10_000);
+    }, 15_000);
 
     return () => {
       document.removeEventListener("ytdl:video-data-received", handleVideoData);
