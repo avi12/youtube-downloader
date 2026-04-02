@@ -18,7 +18,7 @@ type SyncCallback = (value: any) => void;
 const listeners = new Map<string, Set<SyncCallback>>();
 
 addEventListener("message", (e: MessageEvent) => {
-  if (e.data?.ns !== NAMESPACE) {
+  if (e.data?.namespace !== NAMESPACE) {
     return;
   }
 
@@ -33,7 +33,7 @@ addEventListener("message", (e: MessageEvent) => {
 });
 
 function broadcast(key: string, value: unknown) {
-  postMessage({ ns: NAMESPACE, key, value }, "*");
+  postMessage({ namespace: NAMESPACE, key, value }, "*");
 }
 
 function subscribe(key: string, callback: SyncCallback) {
