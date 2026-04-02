@@ -104,20 +104,21 @@
     videoData?.audioFormats[0] ?? null
   );
 
-  async function toggleDownload() {
+  let isDownloadPending = false;
+
+  function toggleDownload() {
     if (!videoData?.isDownloadable) {
       return;
     }
 
-    if (isDownloading) {
+    if (isDownloadPending || isDownloading) {
+      isDownloadPending = false;
       downloadProgressStore.delete(videoId);
       cancelRequestSignal.value = { videoIds: [videoId] };
       return;
     }
 
-    downloadProgressStore.set(videoId, {
-      isDownloading: true, isDone: false, isQueued: false, progress: 0, progressType: ""
-    });
+    isDownloadPending = true;
 
     const filenameOutput = getCompatibleFilename(
       `${videoData.title}.${videoData.isMusic ? options.ext.audio : options.ext.video}`
@@ -131,6 +132,10 @@
       filenameOutput,
       sabrConfig: videoData.sabrConfig
     };
+
+    downloadProgressStore.set(videoId, {
+      isDownloading: true, isDone: false, isQueued: false, progress: 0, progressType: ""
+    });
   }
 
   function getItemIconName() {
@@ -151,22 +156,35 @@
   let elButtonGroup: HTMLElement | null = null;
   let elDownloadBtn: Element | null = null;
 
+  function getProgressTooltip() {
+    const progress = downloadState.progress;
+    if (!isDownloading || progress <= 0) {
+      return buttonLabel();
+    }
+
+    const percentage = Math.round(progress * 100);
+    const phase = downloadState.progressType === "ffmpeg" ? "stitching" : "downloading";
+    return `${percentage}% ${phase}`;
+  }
+
   function refreshDownloadButton() {
     if (!elDownloadBtn) {
       return;
     }
 
+    const tooltip = isDownloading ? getProgressTooltip() : buttonLabel();
+
     setButtonData(elDownloadBtn, {
       iconName: getItemIconName(),
       title: "",
-      accessibilityText: videoData ? `${buttonLabel()} ${videoData.title}` : buttonLabel(),
+      accessibilityText: videoData ? `${tooltip} ${videoData.title}` : tooltip,
       style: ButtonStyle.Mono,
       type: ButtonType.Tonal,
       buttonSize: ButtonSize.Default,
       state: !videoData?.isDownloadable ? ButtonState.Disabled : ButtonState.Active,
       isFullWidth: false,
       isDisabled: !videoData?.isDownloadable,
-      tooltip: buttonLabel()
+      tooltip
     });
   }
 
