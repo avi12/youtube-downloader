@@ -320,15 +320,28 @@
   }
 </script>
 
-<div style="display: flex; align-items: center" {@attach attachButtonGroup}>
+<div style:display="flex" style:flex-direction="column" {@attach attachButtonGroup}>
   {#if videoData?.isDownloadable}
-    <yt-button-view-model {@attach attachDownloadButton}
-    ></yt-button-view-model>
-    <yt-button-view-model {@attach attachChevronButton}
-    ></yt-button-view-model>
+    <div style:display="flex" style:align-items="center">
+      <yt-button-view-model {@attach attachDownloadButton}
+      ></yt-button-view-model>
+      <yt-button-view-model {@attach attachChevronButton}
+      ></yt-button-view-model>
+    </div>
+    {#if isDownloading}
+      <tp-yt-paper-progress
+        style:width="100%"
+        style:margin-top="4px"
+        aria-label="{Math.round(downloadState.progress * 100)}% downloaded"
+        value={Math.round(downloadState.progress * 100)}
+      ></tp-yt-paper-progress>
+    {/if}
   {:else if !videoData && !isLoadFailed}
     <div
-      style="display: flex; align-items: center; height: 36px; padding: 0 8px"
+      style:display="flex"
+      style:align-items="center"
+      style:height="36px"
+      style:padding="0 8px"
       aria-busy="true"
       aria-label="Loading video info"
     >
