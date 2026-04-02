@@ -17,7 +17,7 @@ export async function checkInterruptedDownload(videoId: string) {
 }
 
 export function listenForInterruptedDownloadEvents() {
-  document.addEventListener("ytdl:persist-interrupted", async (e: Event) => {
+  document.addEventListener("ytdl:persist-interrupted", async e => {
     if (!(e instanceof CustomEvent)) {
       return;
     }
@@ -26,7 +26,7 @@ export function listenForInterruptedDownloadEvents() {
     interruptedDownloadStore.set(e.detail.videoId, e.detail);
   });
 
-  document.addEventListener("ytdl:clear-interrupted", async (e: Event) => {
+  document.addEventListener("ytdl:clear-interrupted", async e => {
     if (!(e instanceof CustomEvent)) {
       return;
     }

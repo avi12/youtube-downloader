@@ -17,7 +17,7 @@ type SyncCallback = (value: any) => void;
 
 const listeners = new Map<string, Set<SyncCallback>>();
 
-addEventListener("message", (e: MessageEvent) => {
+addEventListener("message", e => {
   if (e.data?.namespace !== NAMESPACE) {
     return;
   }

@@ -1114,7 +1114,7 @@ export default defineContentScript({
     // so it delegates creation to the MAIN world.
     const gridDropdowns = new Map<string, TpYtIronDropdown>();
 
-    document.addEventListener("ytdl:create-dropdown", (e: Event) => {
+    document.addEventListener("ytdl:create-dropdown", e => {
       if (!(e instanceof CustomEvent)) {
         return;
       }
@@ -1154,7 +1154,7 @@ export default defineContentScript({
       gridDropdowns.set(contentId, elDropdown);
     });
 
-    document.addEventListener("ytdl:open-dropdown", (e: Event) => {
+    document.addEventListener("ytdl:open-dropdown", e => {
       if (!(e instanceof CustomEvent)) {
         return;
       }
@@ -1165,7 +1165,7 @@ export default defineContentScript({
       }
     });
 
-    document.addEventListener("ytdl:close-dropdown", (e: Event) => {
+    document.addEventListener("ytdl:close-dropdown", e => {
       if (!(e instanceof CustomEvent)) {
         return;
       }
