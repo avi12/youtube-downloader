@@ -208,6 +208,9 @@
 
   function closePanel() {
     crossWorldMessenger.sendMessage("panelClosed", {});
+    // Also dispatch DOM event for grid/playlist panels where crossWorldMessenger
+    // panelClosed listener is owned by the watch page
+    document.dispatchEvent(new CustomEvent("ytdl:panel-closed"));
   }
 
   function handleDownloadTypeChange(newType: DownloadType) {

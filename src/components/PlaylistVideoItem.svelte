@@ -188,10 +188,14 @@
         document.dispatchEvent(new CustomEvent("ytdl:open-dropdown", { detail: { contentId: panelContentId } }));
       });
 
-      elDropdown?.addEventListener("iron-overlay-closed", () => {
+      function handleClose() {
         isPanelOpen = false;
         closePanel();
-      });
+        document.removeEventListener("ytdl:panel-closed", handleClose);
+      }
+
+      elDropdown?.addEventListener("iron-overlay-closed", handleClose);
+      document.addEventListener("ytdl:panel-closed", handleClose);
     }, 50);
 
     // Timeout after 2s
