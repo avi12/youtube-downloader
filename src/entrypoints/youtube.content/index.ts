@@ -140,7 +140,13 @@ export default defineContentScript({
 
       // Update synced store - components derive state reactively
       if (data.isRemoved) {
-        downloadProgressStore.delete(data.videoId);
+        downloadProgressStore.set(data.videoId, {
+          isDownloading: false,
+          isDone: true,
+          isQueued: false,
+          progress: 1,
+          progressType: ""
+        });
       } else {
         downloadProgressStore.set(data.videoId, {
           isDownloading: data.progress < 1,
