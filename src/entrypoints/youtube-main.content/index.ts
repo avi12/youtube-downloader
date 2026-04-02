@@ -1247,8 +1247,9 @@ export default defineContentScript({
     });
 
     // Handle video data requests from grid/playlist items.
-    // Isolated world sends requestVideoData via crossWorldMessenger,
-    // MAIN world fetches and writes to videoDataStore (synced signal).
+    // Isolated world writes to videoDataRequests synced map,
+    // which arrives here via postMessage. MAIN world fetches
+    // and writes results to videoDataStore.
     const videoDataQueue: string[] = [];
     let isProcessingVideoDataQueue = false;
 
@@ -1286,9 +1287,19 @@ export default defineContentScript({
       isProcessingVideoDataQueue = false;
     }
 
-    crossWorldMessenger.onMessage("requestVideoData", ({ data }) => {
-      const { videoId } = data;      if (videoDataCache.has(videoId)) {
-        crossWorldMessenger.sendMessage("videoData", videoDataCache.get(videoId)!);
+    // Observe video data requests arriving via synced signal (postMessage)
+    addEventListener("message", e => {
+      if (e.data?.namespace !== "ytdl-sync" || e.data?.key !== "video-data-request") {
+        return;
+      }
+
+      const videoId = e.data.value?.mapKey;
+      if (!videoId) {
+        return;
+      }
+
+      if (videoDataCache.has(videoId)) {
+        videoDataStore.set(videoId, videoDataCache.get(videoId)!);
         return;
       }
 

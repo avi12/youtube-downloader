@@ -19,9 +19,15 @@ export const sabrCredentials = createSyncedSignal<SabrCredentials | null>(
   "sabr-credentials", null
 );
 
-// ─── Video data cache (MAIN world writes, isolated world reads) ──────────
+// ─── Video data (MAIN world writes, isolated world reads) ───────────────
 
 export const videoDataStore = createSyncedMap<VideoData>("video-data");
+
+// ─── Video data requests (isolated world writes, MAIN world reads) ──────
+// Used to request video metadata for grid/playlist items.
+// The MAIN world observes new entries and fetches the data.
+
+export const videoDataRequests = createSyncedMap<boolean>("video-data-request");
 
 // ─── Download progress (both worlds read/write) ─────────────────────────
 

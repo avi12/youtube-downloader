@@ -19,7 +19,7 @@ let ffmpegUrls: { coreURL: string; wasmURL: string; classWorkerURL: string } | n
 
 export function initFFmpeg(coreURL: string, wasmURL: string, classWorkerURL: string) {
   ffmpegUrls = { coreURL, wasmURL, classWorkerURL };
-  sendMessage("pipelineFFmpegReady", {});
+  sendMessage("pipelineFFmpegReady", {}).catch(() => {});
 }
 
 async function createFFmpegInstance() {
@@ -66,7 +66,7 @@ async function removeFromStorageQueue(videoId: string, type: DownloadType) {
 
 // ─── Single-stream download (audio-only or video-only) ──────────────────────
 
-function toUint8Array(data: Uint8Array | null) {
+function toUint8Array(data: Uint8Array | Record<string, number> | null) {
   if (!data) {
     return null;
   }
@@ -144,7 +144,7 @@ function addToPlaylistBundle(
   const zipFilename = getCompatibleFilename(`${bundle.playlistTitle}.zip`);
   playlistBundles.delete(playlistId);
 
-  triggerDownload(zipped, zipFilename);
+  triggerDownload(zipped, zipFilename).catch(() => {});
 }
 
 async function processSingleMedia(item: ProcessStreamData) {
@@ -336,7 +336,7 @@ async function processItem(item: ProcessStreamData) {
 function processQueue() {
   while (downloadQueue.length > 0) {
     const item = downloadQueue.shift()!;
-    processItem(item);
+    processItem(item).catch(() => {});
   }
 }
 

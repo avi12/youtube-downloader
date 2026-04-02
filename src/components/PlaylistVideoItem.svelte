@@ -2,7 +2,12 @@
   import { crossWorldMessenger } from "../lib/cross-world-messenger";
   import { sendMessage } from "../lib/messaging";
   import { videoQueueItem } from "../lib/storage";
-  import { downloadProgressStore, type DownloadProgressState, videoDataStore } from "../lib/synced-stores.svelte";
+  import {
+    downloadProgressStore,
+    type DownloadProgressState,
+    videoDataRequests,
+    videoDataStore
+  } from "../lib/synced-stores.svelte";
   import { getCompatibleFilename } from "../lib/utils";
   import {
     ButtonSize,
@@ -43,8 +48,8 @@
       return;
     }
 
-    // Request from MAIN world if not in store yet
-    crossWorldMessenger.sendMessage("requestVideoData", { videoId });
+    // Request from MAIN world via synced signal (crosses world boundary)
+    videoDataRequests.set(videoId, true);
 
     const loadTimeout = setTimeout(() => {
       if (!videoData) {
