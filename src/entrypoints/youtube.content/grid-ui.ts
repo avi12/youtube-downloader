@@ -62,11 +62,12 @@ function findAnchorElement(elCard: Element) {
     return elMenuButton;
   }
 
-  // ytd-rich-item-renderer: inject in the #menu area alongside
-  // the 3-dot menu. #meta has overflow:auto which causes scrollbars.
-  const elMenuDiv = elCard.querySelector("#details > #menu");
-  if (elMenuDiv) {
-    return elMenuDiv;
+  // ytd-rich-item-renderer: inject after #details as a sibling
+  // inside #dismissible. #meta has overflow:auto (causes scrollbars)
+  // and #menu is too narrow (covers the 3-dot button).
+  const elDetails = elCard.querySelector("#dismissible > #details");
+  if (elDetails) {
+    return elDetails;
   }
 
   return null;
@@ -89,7 +90,14 @@ function injectGridVideoButton(
 
   const elItemContainer = document.createElement("div");
   elItemContainer.setAttribute("data-ytdl-grid-item", videoId);
-  elAnchor.append(elItemContainer);
+
+  // For yt-lockup-view-model: append inside the anchor
+  // For ytd-rich-item-renderer (#details): insert after as a sibling
+  if (elAnchor.id === "details") {
+    elAnchor.insertAdjacentElement("afterend", elItemContainer);
+  } else {
+    elAnchor.append(elItemContainer);
+  }
 
   const ui = createIntegratedUi(context, {
     position: "inline",
