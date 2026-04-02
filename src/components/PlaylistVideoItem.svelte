@@ -104,21 +104,16 @@
     videoData?.audioFormats[0] ?? null
   );
 
-  let isDownloadPending = false;
-
   function toggleDownload() {
     if (!videoData?.isDownloadable) {
       return;
     }
 
-    if (isDownloadPending || isDownloading) {
-      isDownloadPending = false;
+    if (isDownloading) {
       downloadProgressStore.delete(videoId);
       cancelRequestSignal.value = { videoIds: [videoId] };
       return;
     }
-
-    isDownloadPending = true;
 
     const filenameOutput = getCompatibleFilename(
       `${videoData.title}.${videoData.isMusic ? options.ext.audio : options.ext.video}`
