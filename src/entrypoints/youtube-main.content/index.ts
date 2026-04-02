@@ -325,7 +325,7 @@ export default defineContentScript({
 
       return new SabrStream({
         fetch: originalFetch,
-        serverAbrStreamingUrl: capturedSabrUrl || sabrConfig.serverAbrStreamingUrl,
+        serverAbrStreamingUrl: sabrConfig.serverAbrStreamingUrl,
         videoPlaybackUstreamerConfig: sabrConfig.videoPlaybackUstreamerConfig,
         poToken: capturedPoToken,
         clientInfo: {
