@@ -319,6 +319,9 @@ export default defineContentScript({
       return result;
     }
 
+    // On watch pages, YouTube's Service Worker handles CORS for googlevideo.com.
+    // On other pages, use the page's fetch which may get CORS-blocked - SabrStream
+    // will fall back to SourceBuffer capture in that case.
     function createSabrStream(sabrConfig: NonNullable<VideoData["sabrConfig"]>) {
       const sabrFormats = sabrConfig.formats.map(adaptiveFormatToSabrFormat);
       const durationMs = parseInt(sabrConfig.formats[0]?.approxDurationMs ?? "0");
