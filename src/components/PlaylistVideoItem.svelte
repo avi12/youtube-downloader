@@ -1,9 +1,8 @@
 <script lang="ts">
   import { crossWorldMessenger } from "../lib/cross-world-messenger";
-  import { getDownloadState, startDownload, cancelDownload as cancelDownloadState } from "../lib/download-state";
   import { sendMessage } from "../lib/messaging";
   import { videoQueueItem } from "../lib/storage";
-  import { videoDataStore } from "../lib/synced-stores";
+  import { downloadProgressStore, type DownloadProgressState, videoDataStore } from "../lib/synced-stores";
   import { getCompatibleFilename } from "../lib/utils";
   import {
     ButtonSize,
@@ -25,7 +24,11 @@
   const { videoId, options }: Props = $props();
 
   let videoData = $state<VideoData | null>(null);
-  const downloadState = $derived(getDownloadState(videoId));
+  const defaultProgressState: DownloadProgressState = {
+    isDownloading: false, isDone: false, isQueued: false, progress: 0, progressType: ""
+  };
+
+  const downloadState = $derived(downloadProgressStore.get(videoId) ?? defaultProgressState);
   const isDownloading = $derived(downloadState.isDownloading);
   const isDone = $derived(downloadState.isDone);
   const isQueued = $derived(downloadState.isQueued);
@@ -64,8 +67,9 @@
     const currentQueue = queue ?? [];
     const isInQueue = currentQueue.some(item => item.videoId === videoId);
     const isCurrentlyDownloading = currentQueue[0]?.videoId === videoId;
-    const state = getDownloadState(videoId);
-    state.isQueued = isInQueue && !isCurrentlyDownloading;
+    const current = downloadProgressStore.get(videoId) ?? { ...defaultProgressState };
+    current.isQueued = isInQueue && !isCurrentlyDownloading;
+    downloadProgressStore.set(videoId, current);
   }));
 
   const buttonLabel = $derived(() => {
@@ -101,12 +105,14 @@
     }
 
     if (isDownloading) {
-      cancelDownloadState(videoId);
+      downloadProgressStore.delete(videoId);
       await sendMessage("cancelDownload", { videoIds: [videoId] });
       return;
     }
 
-    startDownload(videoId);
+    downloadProgressStore.set(videoId, {
+      isDownloading: true, isDone: false, isQueued: false, progress: 0, progressType: ""
+    });
 
     const filenameOutput = getCompatibleFilename(
       `${videoData.title}.${videoData.isMusic ? options.ext.audio : options.ext.video}`

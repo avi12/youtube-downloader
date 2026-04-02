@@ -18,10 +18,10 @@ import { cleanupPanelUi, mountPanelUi } from "./panel-ui";
 import { cleanupPlaylistUi, handlePlaylistVideoAdditions, injectPlaylistDownloaderUi } from "./playlist-ui";
 import { handleStreamData, handleStreamError, setPlaylistContext } from "./stream-transfer";
 import { crossWorldMessenger } from "@/lib/cross-world-messenger";
-import { removeDownload, updateDownloadProgress } from "@/lib/download-state";
 import { sendMessage, onMessage } from "@/lib/messaging";
 import { forwardSabrCredentialsWithRetry, listenForSabrBodyReady } from "@/lib/sabr-credentials";
 import { optionsItem } from "@/lib/storage";
+import { downloadProgressStore } from "@/lib/synced-stores";
 import type { Options, VideoData } from "@/types";
 
 export default defineContentScript({
@@ -120,14 +120,18 @@ export default defineContentScript({
 
     onMessage("updateDownloadProgress", ({ data }) => {
       crossWorldMessenger.sendMessage("progress", data);
-      // Dispatch to all component instances via DOM event
-      document.dispatchEvent(new CustomEvent("ytdl:progress-update", { detail: data }));
 
-      // Update shared reactive store for declarative observers
+      // Update synced store - components derive state reactively
       if (data.isRemoved) {
-        removeDownload(data.videoId);
+        downloadProgressStore.delete(data.videoId);
       } else {
-        updateDownloadProgress(data.videoId, data.progress, data.progressType);
+        downloadProgressStore.set(data.videoId, {
+          isDownloading: data.progress < 1,
+          isDone: data.progress >= 1,
+          isQueued: false,
+          progress: data.progress,
+          progressType: data.progressType
+        });
       }
     });
 

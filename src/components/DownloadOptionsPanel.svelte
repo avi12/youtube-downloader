@@ -1,7 +1,7 @@
 <script lang="ts">
   import { crossWorldMessenger } from "../lib/cross-world-messenger";
-  import { startDownload as startDownloadState, cancelDownload as cancelDownloadState } from "../lib/download-state";
   import { statusProgressItem, videoQueueItem } from "../lib/storage";
+  import { downloadProgressStore } from "../lib/synced-stores";
   import { getCompatibleFilename, waitForVideoElement } from "../lib/utils";
   import {
     ButtonSize,
@@ -244,7 +244,9 @@
       progressType = "";
     }
 
-    startDownloadState(videoData.videoId);
+    downloadProgressStore.set(videoData.videoId, {
+      isDownloading: true, isDone: false, isQueued: false, progress: 0, progressType: ""
+    });
 
     crossWorldMessenger.sendMessage("downloadRequest", {
       type: downloadType,
@@ -260,7 +262,7 @@
     isDownloading = false;
     progress = 0;
 
-    cancelDownloadState(videoData.videoId);
+    downloadProgressStore.delete(videoData.videoId);
 
     crossWorldMessenger.sendMessage("cancelDownload", { videoIds: [videoData.videoId] });
   }
