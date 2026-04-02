@@ -6,7 +6,7 @@
  */
 
 import { createSyncedMap, createSyncedSignal } from "./synced-signal.svelte";
-import type { InterruptedDownload, VideoData } from "@/types";
+import type { DownloadRequest, InterruptedDownload, VideoData } from "@/types";
 
 // ─── SABR credentials (MAIN world writes, isolated world reads) ──────────
 
@@ -41,6 +41,19 @@ export interface DownloadProgressState {
 
 export const downloadProgressStore = createSyncedMap<DownloadProgressState>(
   "download-progress"
+);
+
+// ─── Download requests (isolated world writes, MAIN world reads) ────────
+// One-shot commands: writing triggers MAIN world to start a download.
+
+export const downloadRequestSignal = createSyncedSignal<DownloadRequest | null>(
+  "download-request", null
+);
+
+// ─── Cancel requests (isolated world writes, MAIN world reads) ──────────
+
+export const cancelRequestSignal = createSyncedSignal<{ videoIds: string[] } | null>(
+  "cancel-request", null
 );
 
 // ─── Interrupted downloads (background writes via isolated, MAIN reads) ──

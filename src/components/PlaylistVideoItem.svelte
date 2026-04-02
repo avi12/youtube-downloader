@@ -1,10 +1,10 @@
 <script lang="ts">
-  import { crossWorldMessenger } from "../lib/cross-world-messenger";
-  import { sendMessage } from "../lib/messaging";
   import { videoQueueItem } from "../lib/storage";
   import {
+    cancelRequestSignal,
     downloadProgressStore,
     type DownloadProgressState,
+    downloadRequestSignal,
     videoDataRequests,
     videoDataStore
   } from "../lib/synced-stores.svelte";
@@ -111,7 +111,7 @@
 
     if (isDownloading) {
       downloadProgressStore.delete(videoId);
-      await sendMessage("cancelDownload", { videoIds: [videoId] });
+      cancelRequestSignal.value = { videoIds: [videoId] };
       return;
     }
 
@@ -123,14 +123,14 @@
       `${videoData.title}.${videoData.isMusic ? options.ext.audio : options.ext.video}`
     );
 
-    crossWorldMessenger.sendMessage("downloadRequest", {
+    downloadRequestSignal.value = {
       type: videoData.isMusic ? "audio" : "video+audio",
       videoId,
       videoItag: selectedVideoFormat?.itag ?? 0,
       audioItag: selectedAudioFormat?.itag ?? 0,
       filenameOutput,
       sabrConfig: videoData.sabrConfig
-    });
+    };
   }
 
   function getItemIconName() {

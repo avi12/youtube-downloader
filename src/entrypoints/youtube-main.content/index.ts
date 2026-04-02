@@ -77,57 +77,75 @@ export default defineContentScript({
     let capturedSabrUrl = "";
     let capturedPoToken = "";
 
+    const VARINT_VALUE_MASK = 0x7f;
+    const VARINT_CONTINUATION_MASK = 0x80;
+    const VARINT_BITS_PER_BYTE = 7;
+    const WIRE_TYPE_LENGTH_DELIMITED = 2;
+    const WIRE_TYPE_VARINT = 0;
+    const WIRE_TYPE_FIXED64 = 1;
+    const WIRE_TYPE_FIXED32 = 5;
+    const FIXED64_BYTE_LENGTH = 8;
+    const FIXED32_BYTE_LENGTH = 4;
+    const STREAMER_CONTEXT_FIELD_NUMBER = 19;
+    const PO_TOKEN_FIELD_NUMBER = 2;
+
     function extractPoTokenFromBytes(bytes: Uint8Array) {
       let offset = 0;
 
-      function readVarint(off: number) {
+      function readVarint(startOffset: number) {
         let value = 0;
         let shift = 0;
-        while (off < bytes.byteLength) {
-          const byte = bytes[off++];
-          value |= (byte & 0x7f) << shift;
+        let currentOffset = startOffset;
 
-          if ((byte & 0x80) === 0) {
+        while (currentOffset < bytes.byteLength) {
+          const byte = bytes[currentOffset++];
+          const valueBits = byte & VARINT_VALUE_MASK;
+          const hasContinuationBit = (byte & VARINT_CONTINUATION_MASK) !== 0;
+          value |= valueBits << shift;
+
+          if (!hasContinuationBit) {
             break;
           }
 
-          shift += 7;
+          shift += VARINT_BITS_PER_BYTE;
         }
-        return { value: value >>> 0, offset: off };
+
+        const unsignedValue = value >>> 0;
+        return { value: unsignedValue, offset: currentOffset };
       }
 
-      // Find field 19 (StreamerContext) - tag = (19 << 3) | 2 = 154
       while (offset < bytes.byteLength) {
         const tag = readVarint(offset);
         offset = tag.offset;
         const fieldNumber = tag.value >> 3;
         const wireType = tag.value & 0x7;
-        if (wireType === 2) {
-          const length = readVarint(offset);
-          offset = length.offset;
+        if (wireType === WIRE_TYPE_LENGTH_DELIMITED) {
+          const fieldLength = readVarint(offset);
+          offset = fieldLength.offset;
 
-          if (fieldNumber === 19) {
-            // Parse StreamerContext for field 2 (poToken)
-            const contextData = bytes.subarray(offset, offset + length.value);
+          if (fieldNumber === STREAMER_CONTEXT_FIELD_NUMBER) {
+            const contextData = bytes.subarray(offset, offset + fieldLength.value);
             let contextOffset = 0;
+
             while (contextOffset < contextData.byteLength) {
               const contextTag = readVarint(contextOffset);
               contextOffset = contextTag.offset;
-              const contextField = contextTag.value >> 3;
-              const contextWire = contextTag.value & 0x7;
-              if (contextWire === 2) {
-                const contextLength = readVarint(contextOffset);
-                contextOffset = contextLength.offset;
+              const contextFieldNumber = contextTag.value >> 3;
+              const contextWireType = contextTag.value & 0x7;
+              if (contextWireType === WIRE_TYPE_LENGTH_DELIMITED) {
+                const contextFieldLength = readVarint(contextOffset);
+                contextOffset = contextFieldLength.offset;
 
-                if (contextField === 2 && contextLength.value > 0) {
+                if (contextFieldNumber === PO_TOKEN_FIELD_NUMBER && contextFieldLength.value > 0) {
                   const poTokenBytes = contextData.subarray(
-                    contextOffset, contextOffset + contextLength.value
+                    contextOffset, contextOffset + contextFieldLength.value
                   );
+
                   return btoa(String.fromCharCode(...poTokenBytes));
                 }
 
-                contextOffset += contextLength.value;
-              } else if (contextWire === 0) {
+                contextOffset += contextFieldLength.value;
+              } else if (contextWireType === WIRE_TYPE_VARINT) {
                 contextOffset = readVarint(contextOffset).offset;
               } else {
                 break;
@@ -135,13 +153,13 @@ export default defineContentScript({
             }
           }
 
-          offset += length.value;
-        } else if (wireType === 0) {
+          offset += fieldLength.value;
+        } else if (wireType === WIRE_TYPE_VARINT) {
           offset = readVarint(offset).offset;
-        } else if (wireType === 1) {
-          offset += 8;
-        } else if (wireType === 5) {
-          offset += 4;
+        } else if (wireType === WIRE_TYPE_FIXED64) {
+          offset += FIXED64_BYTE_LENGTH;
+        } else if (wireType === WIRE_TYPE_FIXED32) {
+          offset += FIXED32_BYTE_LENGTH;
         } else {
           break;
         }
@@ -1244,6 +1262,17 @@ export default defineContentScript({
     // Handle download requests from Svelte panel components (via isolated world)
     crossWorldMessenger.onMessage("downloadRequest", async ({ data }) => {
       await performDownload(data);
+    });
+
+    // Handle download requests from grid items via synced signal (postMessage)
+    addEventListener("message", e => {
+      if (e.data?.namespace !== "ytdl-sync" || e.data.key !== "download-request") {
+        return;
+      }
+
+      if (e.data.value) {
+        performDownload(e.data.value);
+      }
     });
 
     // Handle video data requests from grid/playlist items.

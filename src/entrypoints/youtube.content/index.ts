@@ -106,6 +106,17 @@ export default defineContentScript({
       await sendMessage("cancelDownload", { videoIds: data.videoIds });
     });
 
+    // Also handle cancel from grid items via synced signal
+    addEventListener("message", e => {
+      if (e.data?.namespace !== "ytdl-sync" || e.data.key !== "cancel-request") {
+        return;
+      }
+
+      if (e.data.value?.videoIds) {
+        sendMessage("cancelDownload", { videoIds: e.data.value.videoIds });
+      }
+    });
+
     onMessage("executeDownloadItem", ({ data }) => {
       if (data.playlistId) {
         setPlaylistContext(data.videoId, {
