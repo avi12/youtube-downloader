@@ -478,6 +478,36 @@ export default defineContentScript({
 
       if (location.pathname === "/watch") {
         injectSegmentedDownloadButton(videoData);
+
+        // Auto-download when opened from channel/grid page
+        const searchParams = new URLSearchParams(location.search);
+        if (searchParams.get("ytdl") === "1") {
+          // Remove the parameter to prevent re-download on refresh
+          searchParams.delete("ytdl");
+          const cleanUrl = `${location.pathname}?${searchParams.toString()}`;
+          history.replaceState(null, "", cleanUrl);
+
+          // Wait for SABR credentials then start download
+          const autoDownloadInterval = setInterval(() => {
+            const creds = sabrCredentials.value;
+            const elCreds = document.getElementById("ytdl-sabr-credentials");
+            const hasCredentials = creds?.poToken || elCreds?.dataset.poToken;
+            if (!hasCredentials) {
+              return;
+            }
+
+            clearInterval(autoDownloadInterval);
+            performDownload({
+              type: videoData.isMusic ? "audio" : "video+audio",
+              videoId: videoData.videoId,
+              videoItag: videoData.videoFormats[0]?.itag ?? 0,
+              audioItag: videoData.audioFormats[0]?.itag ?? 0,
+              filenameOutput: getCompatibleFilename(`${videoData.title}.${videoData.isMusic ? "mp3" : "mp4"}`)
+            });
+          }, 500);
+
+          setTimeout(() => clearInterval(autoDownloadInterval), 30_000);
+        }
       }
     }
 
@@ -605,6 +635,13 @@ export default defineContentScript({
         if (elCredentials?.dataset.poToken) {
           capturedPoToken = elCredentials.dataset.poToken;
         }
+      }
+
+      // SabrStream requires YouTube's Service Worker for CORS (only on watch pages).
+      // On other pages, open the video in a new tab to download.
+      if (location.pathname !== "/watch") {
+        open(`https://www.youtube.com/watch?v=${videoId}&ytdl=1`, "_blank");
+        return;
       }
 
       const hasSabrCredentials = capturedPoToken && capturedSabrUrl;
