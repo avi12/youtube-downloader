@@ -80,6 +80,8 @@ export default defineContentScript({
     const VARINT_VALUE_MASK = 0x7f;
     const VARINT_CONTINUATION_MASK = 0x80;
     const VARINT_BITS_PER_BYTE = 7;
+    const WIRE_TYPE_MASK = 0x7;
+    const FIELD_NUMBER_SHIFT = 3;
     const WIRE_TYPE_LENGTH_DELIMITED = 2;
     const WIRE_TYPE_VARINT = 0;
     const WIRE_TYPE_FIXED64 = 1;
@@ -100,10 +102,10 @@ export default defineContentScript({
         while (currentOffset < bytes.byteLength) {
           const byte = bytes[currentOffset++];
           const valueBits = byte & VARINT_VALUE_MASK;
-          const hasContinuationBit = (byte & VARINT_CONTINUATION_MASK) !== 0;
+          const isContinuationBit = (byte & VARINT_CONTINUATION_MASK) !== 0;
           value |= valueBits << shift;
 
-          if (!hasContinuationBit) {
+          if (!isContinuationBit) {
             break;
           }
 
@@ -117,8 +119,8 @@ export default defineContentScript({
       while (offset < bytes.byteLength) {
         const tag = readVarint(offset);
         offset = tag.offset;
-        const fieldNumber = tag.value >> 3;
-        const wireType = tag.value & 0x7;
+        const fieldNumber = tag.value >> FIELD_NUMBER_SHIFT;
+        const wireType = tag.value & WIRE_TYPE_MASK;
         if (wireType === WIRE_TYPE_LENGTH_DELIMITED) {
           const fieldLength = readVarint(offset);
           offset = fieldLength.offset;
