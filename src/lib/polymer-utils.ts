@@ -5,26 +5,31 @@ export const PAPER_INPUT_THEME: Record<string, string> = {
 };
 
 /**
- * Applies custom CSS properties to a Polymer element via the
- * customStyle API. This is the proper Polymer way to set CSS
- * custom properties that Shady DOM scoping doesn't override.
+ * Applies custom CSS properties to a Polymer element.
+ * Uses customStyle + updateStyles() when available (Polymer-managed elements),
+ * falls back to style.setProperty for dynamically created elements.
  */
 export function applyPolymerCustomStyles(
   element: Element,
   styles: Record<string, string>
 ) {
-  if (!("customStyle" in element) || !("updateStyles" in element)) {
+  if (!(element instanceof HTMLElement)) {
     return;
   }
 
-  const customStyle = element.customStyle;
-  if (typeof customStyle !== "object" || !customStyle) {
-    return;
-  }
-
-  Object.assign(customStyle, styles);
-
-  if (typeof element.updateStyles === "function") {
+  if (
+    "customStyle" in element
+    && typeof element.customStyle === "object"
+    && element.customStyle !== null
+    && "updateStyles" in element
+    && typeof element.updateStyles === "function"
+  ) {
+    Object.assign(element.customStyle, styles);
     element.updateStyles();
+    return;
+  }
+
+  for (const [property, value] of Object.entries(styles)) {
+    element.style.setProperty(property, value);
   }
 }
