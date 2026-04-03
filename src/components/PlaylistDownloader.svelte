@@ -259,7 +259,7 @@
     padding: 8px 12px;
     border-radius: 4px;
     background: var(--yt-spec-error-indicator, rgb(204 0 0));
-    color: #fff;
+    color: #ffffff;
     font-size: 1.3rem;
   }
 

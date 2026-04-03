@@ -23,7 +23,7 @@ don't use em dash, use regular hyphen.
 After each modification, lint the project with ESLint and Stylelint and svelte-check and knip.
 Let TypeScript infer return types instead of annotating them explicitly.
 Extract @attach arrow functions in Svelte templates to named functions in the script block.
-do not add `window.` prefixes.  
+Avoid adding `window.` prefixes, unless it will increase the readability, in which case it is allowed.  
 don't use `.forEach`, use `for-of` instead.  
 if there is a callback arrow function, don't explicitly assign a type to the param.  
 
