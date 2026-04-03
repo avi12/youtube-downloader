@@ -3,6 +3,7 @@
     cancelRequestSignal,
     downloadProgressStore,
     type DownloadProgressState,
+    SyncKey,
     videoDataRequests,
     videoDataStore
   } from "../lib/synced-stores.svelte";
@@ -57,11 +58,12 @@
     return () => clearTimeout(loadTimeout);
   });
 
-  // Reactively refresh the download button when shared download state changes
+  // Reactively refresh buttons when shared download state changes.
+  // Reading downloadState registers it as a reactive dependency.
   $effect(() => {
-    // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-    downloadState;
+    void downloadState;
     refreshDownloadButton();
+    refreshChevronButton();
   });
 
   const buttonLabel = $derived(() => {
@@ -113,6 +115,8 @@
   let panelInstance: ReturnType<typeof mount> | null = null;
   let elButtonGroup: HTMLElement | null = null;
   let elDownloadBtn: Element | null = null;
+  let elChevronBtn: Element | null = null;
+  let pendingDropdownListener: ((e: MessageEvent) => void) | null = null;
 
   // Weighted progress: download phase = 0-80%, mux phase = 80-100%
   // Both phases report their own 0-1 progress, combined into a single 0-100 value
@@ -211,18 +215,20 @@
     // MAIN world's Polymer runtime to function (open/close, positioning).
     const panelContentId = `ytdl-grid-panel-${videoId}`;
 
-    document.dispatchEvent(new CustomEvent("ytdl:create-dropdown", {
-      detail: {
+    postMessage({
+      namespace: "ytdl-sync",
+      key: SyncKey.CreateDropdown,
+      value: {
         contentId: panelContentId,
         positionTargetSelector: `[data-ytdl-grid-item="${videoId}"]`
       }
-    }));
+    }, location.origin);
 
     // Wait for the MAIN world to create the dropdown.
     // Uses postMessage (not CustomEvent.detail) because CustomEvent.detail
     // is not accessible when crossing from MAIN world to isolated world.
     function handleDropdownReady(e: MessageEvent) {
-      if (e.data?.namespace !== "ytdl-sync" || e.data?.key !== "dropdown-ready") {
+      if (e.data?.namespace !== "ytdl-sync" || e.data?.key !== SyncKey.DropdownReady) {
         return;
       }
 
@@ -231,6 +237,10 @@
       }
 
       removeEventListener("message", handleDropdownReady);
+
+      if (panelInstance) {
+        return;
+      }
 
       const elContent = document.getElementById(panelContentId);
       if (!elContent) {
@@ -242,10 +252,6 @@
       panelInstance = mount(DownloadOptionsPanel, {
         target: elContent,
         props: { videoData: currentVideoData, options }
-      });
-
-      requestAnimationFrame(() => {
-        document.dispatchEvent(new CustomEvent("ytdl:open-dropdown", { detail: { contentId: panelContentId } }));
       });
 
       function handleOverlayClose() {
@@ -262,23 +268,30 @@
       document.addEventListener("ytdl:panel-closed", handleOverlayClose);
     }
 
+    pendingDropdownListener = handleDropdownReady;
     addEventListener("message", handleDropdownReady);
   }
 
   function closePanel() {
+    if (pendingDropdownListener) {
+      removeEventListener("message", pendingDropdownListener);
+      pendingDropdownListener = null;
+    }
+
     if (panelInstance) {
       unmount(panelInstance);
       panelInstance = null;
     }
 
     if (elDropdown) {
-      document.dispatchEvent(new CustomEvent("ytdl:close-dropdown", { detail: { videoId } }));
+      postMessage({ namespace: "ytdl-sync", key: SyncKey.CloseDropdown, value: { videoId } }, location.origin);
       elDropdown = null;
     }
   }
 
   function togglePanel() {
     isPanelOpen = !isPanelOpen;
+    refreshChevronButton();
 
     if (isPanelOpen) {
       openPanel();
@@ -303,19 +316,13 @@
     refreshDownloadButton();
   }
 
-  function attachChevronButton(element: Element) {
-    if (!(element instanceof HTMLElement)) {
+  function refreshChevronButton() {
+    if (!elChevronBtn) {
       return;
     }
 
-    element.addEventListener("click", e => {
-      e.stopPropagation();
-      e.preventDefault();
-      togglePanel();
-    });
-
-    setButtonData(element, {
-      iconName: IconName.ExpandMore,
+    setButtonData(elChevronBtn, {
+      iconName: isPanelOpen ? IconName.ExpandLess : IconName.ExpandMore,
       title: "",
       accessibilityText: "Download options",
       style: ButtonStyle.Mono,
@@ -326,7 +333,22 @@
       isDisabled: !videoData?.isDownloadable,
       tooltip: "Options"
     });
+  }
 
+  function attachChevronButton(element: Element) {
+    if (!(element instanceof HTMLElement)) {
+      return;
+    }
+
+    elChevronBtn = element;
+
+    element.addEventListener("click", e => {
+      e.stopPropagation();
+      e.preventDefault();
+      togglePanel();
+    });
+
+    refreshChevronButton();
     element.setAttribute("style", "margin-left: 0 !important");
   }
 

@@ -4,6 +4,7 @@
   import { downloadProgressStore } from "../lib/synced-stores.svelte";
   import { getCompatibleFilename, getOutputExtension, waitForVideoElement } from "../lib/utils";
   import DownloadOptions from "./DownloadOptions.svelte";
+  import panelFocusStyles from "./panel-focus.css?inline";
   import {
     ButtonSize,
     ButtonState,
@@ -15,6 +16,8 @@
     type DownloadType,
     type Options,
     type ProgressType,
+    isValidPolymerElement,
+    tpYtPaperProgressSchema,
     type VideoData
   } from "@/types";
   import { untrack } from "svelte";
@@ -207,9 +210,19 @@
 
   $effect(() => videoQueueItem.watch(onQueueChange));
 
+  // -- Inert focus trap --------------------------------------------------------
+
+  let removeInert: (() => void) | null = null;
+
+  function releaseInertTrap() {
+    removeInert?.();
+    removeInert = null;
+  }
+
   // -- Actions ----------------------------------------------------------------
 
   function closePanel() {
+    releaseInertTrap();
     crossWorldMessenger.sendMessage("panelClosed", {});
     // Also dispatch DOM event for grid/playlist panels where crossWorldMessenger
     // panelClosed listener is owned by the watch page
@@ -375,7 +388,7 @@
   }
 
   function attachPanelProgress(element: Element) {
-    if (!("updateStyles" in element) || typeof element.updateStyles !== "function") {
+    if (!isValidPolymerElement(element, tpYtPaperProgressSchema)) {
       return;
     }
 
@@ -385,7 +398,36 @@
     });
   }
 
-  // -- Focus trap attach function ---------------------------------------------
+  // -- Focus management --------------------------------------------------------
+
+  /**
+   * Marks all elements outside the panel's ancestor chain as `inert`,
+   * creating a native focus trap without manual Tab/Shift-Tab interception.
+   * Returns a cleanup function that removes the inert attributes.
+   */
+  function applyInertTrap(elPanel: HTMLElement) {
+    const inertedElements: HTMLElement[] = [];
+
+    // Walk from the panel up to body, marking siblings of each ancestor as inert.
+    // This keeps the panel and its container chain focusable while everything
+    // else on the page becomes inert (unfocusable + hidden from assistive tech).
+    for (let elAncestor = elPanel; elAncestor && elAncestor !== document.body; elAncestor = elAncestor.parentElement!) {
+      for (const elSibling of elAncestor.parentElement?.children ?? []) {
+        if (elSibling === elAncestor || !(elSibling instanceof HTMLElement) || elSibling.inert) {
+          continue;
+        }
+
+        elSibling.inert = true;
+        inertedElements.push(elSibling);
+      }
+    }
+
+    return () => {
+      for (const element of inertedElements) {
+        element.inert = false;
+      }
+    };
+  }
 
   function attachPanel(element: Element) {
     if (!(element instanceof HTMLElement)) {
@@ -396,41 +438,8 @@
     // to a [keyboard-focused] attribute on tp-yt-paper-dropdown-menu.
     // Target that attribute so the focus ring only appears for keyboard users.
     const elFocusStyle = document.createElement("style");
-    elFocusStyle.textContent = [
-      "tp-yt-paper-dropdown-menu[keyboard-focused] tp-yt-paper-input {",
-      "  outline: 2px solid var(--yt-spec-call-to-action, rgb(6 95 212));",
-      "  outline-offset: 2px;",
-      "  border-radius: 2px;",
-      "}"
-    ].join(" ");
+    elFocusStyle.textContent = panelFocusStyles;
     element.append(elFocusStyle);
-
-    const TABBABLE_SELECTOR = [
-      "button:not([disabled])",
-      "tp-yt-paper-input:not([disabled])",
-      "input:not([disabled]):not([type=\"hidden\"])",
-      "a[href]",
-      "[tabindex=\"0\"]"
-    ].join(", ");
-
-    // Returns the first tabbable element in the panel body/footer, skipping the
-    // panel header (Close button). This makes Tab wrap from the last element back
-    // to the first content control (Type dropdown), not the Close button.
-    // The Close button is still reachable via Shift-Tab from the Type dropdown.
-    function getFirstTabbable() {
-      for (const candidate of element.querySelectorAll<HTMLElement>(TABBABLE_SELECTOR)) {
-        if (candidate.getAttribute("tabindex") !== "-1" && !candidate.closest(".panel-header")) {
-          return candidate;
-        }
-      }
-      return null;
-    }
-
-    function getLastTabbable() {
-      const all = Array.from(element.querySelectorAll<HTMLElement>(TABBABLE_SELECTOR))
-        .filter(candidate => candidate.getAttribute("tabindex") !== "-1");
-      return all[all.length - 1] ?? null;
-    }
 
     // Clear stale focus state from a previous panel session so focus always
     // starts fresh on the first dropdown.
@@ -441,7 +450,7 @@
       elDropdown.querySelector("tp-yt-paper-input")?.removeAttribute("focused");
     }
 
-    const elInitialFocus = element.querySelector<HTMLElement>("tp-yt-paper-input:not([disabled])") ?? getFirstTabbable();
+    const elInitialFocus = element.querySelector<HTMLElement>("tp-yt-paper-input:not([disabled])");
     elInitialFocus?.focus();
 
     // The panel always opens via keyboard (Enter on chevron), so the initial
@@ -449,16 +458,21 @@
     // receivedFocusFromKeyboard may not be initialized yet at mount time.
     elInitialFocus?.closest("tp-yt-paper-dropdown-menu")?.setAttribute("keyboard-focused", "");
 
-    let isShiftTab = false;
-    function onKeydown(e: KeyboardEvent) {
-      isShiftTab = e.key === "Tab" && e.shiftKey;
+    // Apply the inert focus trap AFTER Polymer opens the dropdown.
+    // Applying it before open() interferes with Polymer's overlay mechanics.
+    const elDropdownRoot = element.closest<HTMLElement>("tp-yt-iron-dropdown") ?? element;
+
+    function onOverlayOpened() {
+      elDropdownRoot.removeEventListener("iron-overlay-opened", onOverlayOpened);
+      removeInert = applyInertTrap(elDropdownRoot);
     }
-    document.addEventListener("keydown", onKeydown, true);
+
+    elDropdownRoot.addEventListener("iron-overlay-opened", onOverlayOpened);
 
     // Polymer's IronFocusedBehavior doesn't always clear the focused attribute
     // from sibling dropdowns when Tab moves between them. Explicitly clear stale
     // focused state so only the active dropdown shows the focus ring.
-    function clearStaleFocus() {
+    function onFocusIn() {
       for (const elDropdown of element.querySelectorAll("tp-yt-paper-dropdown-menu[focused]")) {
         if (elDropdown.contains(document.activeElement)) {
           continue;
@@ -470,35 +484,11 @@
       }
     }
 
-    // Focus trap: document-level focusin catches Tab even when Polymer stops
-    // keydown propagation inside yt-button-view-model.
-    // Also clears stale Polymer focused state from sibling dropdowns.
-    function onFocusIn(e: FocusEvent) {
-      const target = e.target;
-      if (!(target instanceof Node)) {
-        return;
-      }
-
-      clearStaleFocus();
-
-      if (element.contains(target)) {
-        return;
-      }
-
-      if (target instanceof Element && target.closest("tp-yt-iron-dropdown[data-ytdl-moved]") !== null) {
-        return;
-      }
-
-      if (isShiftTab) {
-        getLastTabbable()?.focus();
-      } else {
-        getFirstTabbable()?.focus();
-      }
-    }
-
     document.addEventListener("focusin", onFocusIn);
+
     return () => {
-      document.removeEventListener("keydown", onKeydown, true);
+      releaseInertTrap();
+      elDropdownRoot.removeEventListener("iron-overlay-opened", onOverlayOpened);
       document.removeEventListener("focusin", onFocusIn);
       elFocusStyle.remove();
     };
