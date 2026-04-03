@@ -1,0 +1,9 @@
+.dropdown-content {
+  scrollbar-width: none;
+}
+
+tp-yt-paper-item:focus {
+  background-color: color-mix(in sRGB, var(--yt-spec-text-primary, currentColor) 10%, transparent);
+  outline: 2px solid var(--yt-spec-call-to-action, rgb(6 95 212));
+  outline-offset: -2px;
+}

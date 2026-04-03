@@ -37,7 +37,7 @@ export function injectPlaylistDownloaderUi(
   }
 
   const elMountContainer = document.createElement("div");
-  elMountContainer.setAttribute("data-ytdl-playlist-downloader", "true");
+  elMountContainer.dataset.ytdlPlaylistDownloader = "true";
   elHeader.append(elMountContainer);
 
   const ui = createIntegratedUi(context, {
@@ -75,7 +75,7 @@ function injectPlaylistVideoItemUi(
   }
 
   const elItemContainer = document.createElement("div");
-  elItemContainer.setAttribute("data-ytdl-item", videoId);
+  elItemContainer.dataset.ytdlItem = videoId;
   elMenu.append(elItemContainer);
 
   const ui = createIntegratedUi(context, {

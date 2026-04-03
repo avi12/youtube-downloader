@@ -1,0 +1,25 @@
+[data-ytdl-download-group] {
+  position: relative;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  margin-left: 8px;
+}
+
+[data-ytdl-chevron] {
+  margin-left: 0 !important;
+}
+
+.ytdl-watch-progress {
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: 0;
+  z-index: 1;
+  block-size: 2px;
+  opacity: 0%;
+  pointer-events: none;
+}
+
+.ytdl-native-hidden {
+  display: none;
+}

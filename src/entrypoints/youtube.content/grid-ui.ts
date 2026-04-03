@@ -89,7 +89,7 @@ function injectGridVideoButton(
   }
 
   const elItemContainer = document.createElement("div");
-  elItemContainer.setAttribute("data-ytdl-grid-item", videoId);
+  elItemContainer.dataset.ytdlGridItem = videoId;
 
   // For yt-lockup-view-model (.yt-lockup-view-model__metadata):
   // insert after as a new row below the metadata
@@ -128,7 +128,7 @@ function injectGridDownloadAllButton(
   }
 
   const elContainer = document.createElement("div");
-  elContainer.setAttribute("data-ytdl-grid-downloader", "true");
+  elContainer.dataset.ytdlGridDownloader = "true";
   elContainer.style.display = "inline-flex";
   elContainer.style.alignItems = "center";
   elContainer.style.marginInlineStart = "8px";

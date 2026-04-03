@@ -1,5 +1,6 @@
 <script lang="ts">
   import { applyPolymerCustomStyles, PAPER_INPUT_THEME } from "../lib/polymer-utils";
+  import selectDropdownStyles from "./select-dropdown.css?inline";
 
   type Option = {
     value: string;
@@ -43,7 +44,7 @@
 
       elMovedDropdown = elIronDropdown;
       document.body.append(elIronDropdown);
-      elIronDropdown.setAttribute("data-ytdl-moved", "");
+      elIronDropdown.dataset.ytdlMoved = "";
 
       // The native input[role="button"] (the chevron arrow inside tp-yt-paper-input)
       // is a Polymer internal detail. tp-yt-paper-input is already the tab stop,
@@ -59,12 +60,8 @@
       // does not provide a focus ring on tp-yt-paper-item by default.
       if (!elIronDropdown.querySelector("[data-ytdl-style]")) {
         const elStyle = document.createElement("style");
-        elStyle.setAttribute("data-ytdl-style", "");
-        elStyle.textContent = [
-          ".dropdown-content { scrollbar-width: none; }",
-          ".dropdown-content::-webkit-scrollbar { display: none; }",
-          "tp-yt-paper-item:focus { outline: 2px solid var(--yt-spec-call-to-action, rgb(6 95 212)); outline-offset: -2px; background-color: color-mix(in sRGB, var(--yt-spec-text-primary, currentColor) 10%, transparent); }"
-        ].join(" ");
+        elStyle.dataset.ytdlStyle = "";
+        elStyle.textContent = selectDropdownStyles;
         elIronDropdown.append(elStyle);
       }
 
