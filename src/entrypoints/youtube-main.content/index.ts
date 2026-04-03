@@ -90,7 +90,7 @@ export default defineContentScript({
   matches: ["https://www.youtube.com/*"],
   world: "MAIN",
   runAt: "document_start",
-  main() {
+  async main() {
     // ─── Capture infrastructure (document_start) ────────────────────────
     // Patches fetch() and SourceBuffer.appendBuffer BEFORE YouTube loads.
 
@@ -252,7 +252,7 @@ export default defineContentScript({
     const sourceBufferMimeTypes = new WeakMap<SourceBuffer, string>();
 
     const originalAddSourceBuffer = MediaSource.prototype.addSourceBuffer;
-    MediaSource.prototype.addSourceBuffer = function (mimeType: string) {
+    MediaSource.prototype.addSourceBuffer = function (mimeType) {
       const sourceBuffer = originalAddSourceBuffer.call(this, mimeType);
       if (mimeType.startsWith("video") || mimeType.startsWith("audio")) {
         sourceBufferMimeTypes.set(sourceBuffer, mimeType);
@@ -265,18 +265,12 @@ export default defineContentScript({
     const pendingChunks: Array<{ mimeType: string; data: Uint8Array }> = [];
 
     const originalAppendBuffer = SourceBuffer.prototype.appendBuffer;
-    SourceBuffer.prototype.appendBuffer = function (data: BufferSource) {
+    SourceBuffer.prototype.appendBuffer = function (data) {
       const mimeType = sourceBufferMimeTypes.get(this);
       if (mimeType) {
-        let chunk: Uint8Array;
-        if (data instanceof ArrayBuffer) {
-          chunk = new Uint8Array(data);
-        } else if (data instanceof Uint8Array) {
-          chunk = data;
-        } else {
-          chunk = new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
-        }
-
+        const chunk = data instanceof ArrayBuffer
+          ? new Uint8Array(data)
+          : new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
         if (!activeVideoId || !capturedMedia.has(activeVideoId)) {
           pendingChunks.push({ mimeType, data: chunk.slice() });
         } else {
@@ -311,7 +305,7 @@ export default defineContentScript({
       return { clientVersion, clientName };
     }
 
-    function buildAndDispatchVideoData(playerResponse: PlayerResponse) {
+    async function buildAndDispatchVideoData(playerResponse: PlayerResponse) {
       const { clientVersion, clientName } = readYtcfg();
       const videoData: VideoData = buildVideoData(playerResponse, clientVersion, clientName);
       videoDataCache.set(videoData.videoId, videoData);
@@ -343,45 +337,77 @@ export default defineContentScript({
       }
 
       if (location.pathname === "/watch") {
-        injectSegmentedDownloadButton(videoData);
+        await injectSegmentedDownloadButton(videoData);
 
         // Generate PO token via BotGuard (independent of video playback)
         if (!capturedPoToken) {
-          generatePoToken(videoData.videoId).then(token => {
-            capturedPoToken = token;
+          try {
+            capturedPoToken = await generatePoToken(videoData.videoId);
             // Broadcast to isolated world via synced signal
             sabrCredentials.value = {
               url: videoData.sabrConfig?.serverAbrStreamingUrl ?? "",
-              poToken: token
+              poToken: capturedPoToken
             };
-          }).catch(error => {
+          } catch (error) {
             console.warn("[ytdl] PO token generation failed:", error);
-          });
+          }
         }
       }
     }
 
-    function extractAndDispatchVideoData() {
+    async function extractAndDispatchVideoData() {
       const playerResponse = window.ytInitialPlayerResponse ?? null;
       if (!playerResponse || !location.pathname.startsWith("/watch")) {
         return;
       }
 
-      buildAndDispatchVideoData(playerResponse);
+      await buildAndDispatchVideoData(playerResponse);
     }
 
     // - Download handler -
     // Fetches full video and audio streams directly from YouTube's CDN using
     // the pre-signed URLs in AdaptiveFormatItem, then posts to isolated world.
 
-    async function fetchStreamFromUrl(url: string) {
+    async function fetchStreamFromUrl(
+      url: string,
+      onProgress: (receivedBytes: number, totalBytes: number) => void
+    ) {
       const response = await fetch(url);
       if (!response.ok) {
         throw new Error(`HTTP ${response.status} fetching stream`);
       }
 
-      const buffer = await response.arrayBuffer();
-      return new Uint8Array(buffer);
+      const contentLength = Number(response.headers.get("content-length") ?? 0);
+      if (!response.body) {
+        const buffer = await response.arrayBuffer();
+        onProgress(buffer.byteLength, buffer.byteLength);
+        return new Uint8Array(buffer);
+      }
+
+      const reader = response.body.getReader();
+      const chunks: Uint8Array[] = [];
+      let receivedBytes = 0;
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) {
+          break;
+        }
+
+        chunks.push(value);
+        receivedBytes += value.byteLength;
+        onProgress(receivedBytes, contentLength);
+      }
+
+      const result = new Uint8Array(receivedBytes);
+      let writeOffset = 0;
+
+      for (const chunk of chunks) {
+        result.set(chunk, writeOffset);
+        writeOffset += chunk.byteLength;
+      }
+
+      return result;
     }
 
     function getExtraAudioFormats(
@@ -541,11 +567,42 @@ export default defineContentScript({
       const hasDirectUrls = (videoFormat?.url) || (audioFormat?.url);
       if (hasDirectUrls) {
         try {
+          let totalExpectedBytes = 0;
+          let totalReceivedBytes = 0;
+
+          function reportDownloadProgress(receivedBytes: number, totalBytes: number) {
+            totalExpectedBytes = Math.max(totalExpectedBytes, totalBytes);
+            totalReceivedBytes = receivedBytes;
+
+            if (totalExpectedBytes > 0) {
+              postMessage({
+                namespace: "ytdl-sync",
+                key: "download-progress",
+                value: {
+                  mapKey: videoId,
+                  mapValue: {
+                    isDownloading: true,
+                    isDone: false,
+                    isQueued: false,
+                    progress: Math.min(totalReceivedBytes / totalExpectedBytes, 1),
+                    progressType: "video"
+                  }
+                }
+              }, "*");
+            }
+          }
+
           const [videoBytes, audioBytes, ...extraAudioBytes] = await Promise.all([
-            videoFormat?.url ? fetchStreamFromUrl(videoFormat.url) : Promise.resolve(null),
-            audioFormat?.url ? fetchStreamFromUrl(audioFormat.url) : Promise.resolve(null),
+            videoFormat?.url
+              ? fetchStreamFromUrl(videoFormat.url, reportDownloadProgress)
+              : Promise.resolve(null),
+            audioFormat?.url
+              ? fetchStreamFromUrl(audioFormat.url, reportDownloadProgress)
+              : Promise.resolve(null),
             ...extraAudioFormats.map(format =>
-              format.url ? fetchStreamFromUrl(format.url) : Promise.resolve(null)
+              format.url
+                ? fetchStreamFromUrl(format.url, reportDownloadProgress)
+                : Promise.resolve(null)
             )
           ]);
 
@@ -836,7 +893,7 @@ export default defineContentScript({
       elDropdown.restoreFocusOnClose = false;
 
       // Notify the isolated world where to mount the Svelte panel
-      crossWorldMessenger.sendMessage("panelContentReady", { contentId: panelContentId });
+      await crossWorldMessenger.sendMessage("panelContentReady", { contentId: panelContentId });
 
       // Set Polymer scoping class and data AFTER insertion so connectedCallback
       // does not wipe the class attribute
@@ -1037,9 +1094,9 @@ export default defineContentScript({
     // yt-navigate-finish fires first but ytInitialPlayerResponse is still stale.
     // yt-page-data-updated fires after and ytd-watch-flexy.playerData has the fresh response.
 
-    function handleNavigation() {
+    async function handleNavigation() {
       cleanupSegmentedButton();
-      crossWorldMessenger.sendMessage("navigation", { url: location.href });
+      await crossWorldMessenger.sendMessage("navigation", { url: location.href });
       extractPlaylistMetadata();
     }
 
@@ -1128,8 +1185,10 @@ export default defineContentScript({
       resizeObserver.observe(elDropdownContentSlot);
       gridDropdowns.set(contentId, elDropdown);
 
-      // Notify the isolated world that the dropdown is ready
-      document.dispatchEvent(new CustomEvent("ytdl:dropdown-ready", { detail: { contentId } }));
+      // Notify the isolated world that the dropdown is ready.
+      // Use postMessage (not CustomEvent.detail) because CustomEvent.detail
+      // is not accessible when crossing from MAIN world to isolated world.
+      postMessage({ namespace: "ytdl-sync", key: "dropdown-ready", value: { contentId } }, "*");
     });
 
     document.addEventListener("ytdl:open-dropdown", e => {
@@ -1197,27 +1256,28 @@ export default defineContentScript({
     document.addEventListener("focusin", handleDropdownFocusIn);
     document.addEventListener("focusout", handleDropdownFocusOut);
 
-    document.addEventListener("yt-navigate-finish", handleNavigation);
+    async function handleNavigateSuccess() {
+      await handleNavigation();
 
-    async function handlePageDataUpdated(e: Event) {
-      if (!(e instanceof CustomEvent)) {
+      if (location.pathname !== "/watch") {
         return;
       }
 
-      const { pageType }: { pageType?: string } = e.detail;
-      if (pageType !== "watch") {
-        return;
-      }
+      // YouTube updates ytd-watch-flexy.playerData asynchronously after
+      // navigation. Poll briefly until it matches the current video ID.
+      const expectedVideoId = new URLSearchParams(location.search).get("v");
+      for (let iAttempt = 0; iAttempt < 20; iAttempt++) {
+        const playerResponse = document.querySelector("ytd-watch-flexy")?.playerData ?? null;
+        if (playerResponse?.videoDetails?.videoId === expectedVideoId) {
+          await buildAndDispatchVideoData(playerResponse);
+          return;
+        }
 
-      const playerResponse = document.querySelector("ytd-watch-flexy")?.playerData ?? null;
-      if (!playerResponse) {
-        return;
+        await new Promise(resolve => setTimeout(resolve, 250));
       }
-
-      buildAndDispatchVideoData(playerResponse);
     }
 
-    document.addEventListener("yt-page-data-updated", handlePageDataUpdated);
+    navigation.addEventListener("navigatesuccess", handleNavigateSuccess);
 
     // Handle download requests from Svelte panel components (via isolated world)
     crossWorldMessenger.onMessage("downloadRequest", async ({ data }) => {
@@ -1250,7 +1310,8 @@ export default defineContentScript({
       isProcessingVideoDataQueue = true;
 
       while (videoDataQueue.length > 0) {
-        const videoId = videoDataQueue.shift()!;        if (videoDataCache.has(videoId)) {
+        const videoId = videoDataQueue.shift()!;
+        if (videoDataCache.has(videoId)) {
           videoDataStore.set(videoId, videoDataCache.get(videoId)!);
           continue;
         }
@@ -1261,7 +1322,7 @@ export default defineContentScript({
             const html = await response.text();
             const playerResponse = extractPlayerResponseFromHtml(html);
             if (playerResponse) {
-              buildAndDispatchVideoData(playerResponse);
+              await buildAndDispatchVideoData(playerResponse);
             }
 
             break;
@@ -1277,7 +1338,7 @@ export default defineContentScript({
     }
 
     // Observe video data requests arriving via synced signal (postMessage)
-    addEventListener("message", e => {
+    addEventListener("message", async e => {
       if (e.data?.namespace !== "ytdl-sync" || e.data?.key !== "video-data-request") {
         return;
       }
@@ -1296,8 +1357,61 @@ export default defineContentScript({
         videoDataQueue.push(videoId);
       }
 
-      processVideoDataQueue();
+      await processVideoDataQueue();
     });
+
+    // Fetch player data from the android_vr client and resolve format URLs.
+    async function fetchPlayerFormats(
+      videoId: string,
+      downloadType: DownloadType,
+      videoItag: number,
+      audioItag: number
+    ) {
+      const visitorData = ytcfg?.get("VISITOR_DATA") ?? "";
+
+      const playerData = await (await globalThis.fetch(
+        "https://www.youtube.com/youtubei/v1/player?prettyPrint=false",
+        {
+          method: "POST",
+          credentials: "include",
+          headers: { "Content-Type": "application/json", "X-Goog-Visitor-Id": String(visitorData) },
+          body: JSON.stringify({
+            videoId,
+            context: {
+              client: {
+                clientName: "ANDROID_VR",
+                clientVersion: "1.65.10",
+                androidSdkVersion: 34,
+                osName: "Android",
+                osVersion: "14",
+                platform: "MOBILE"
+              }
+            },
+            contentCheckOk: true,
+            racyCheckOk: true
+          })
+        }
+      )).json();
+      if (playerData.playabilityStatus?.status !== "OK") {
+        throw new Error(`Player status: ${playerData.playabilityStatus?.status}`);
+      }
+
+      const formats = playerData.streamingData?.adaptiveFormats ?? [];
+      const videoFormat = formats.find((format: { itag: number }) => format.itag === videoItag)
+        ?? formats.find((format: { mimeType?: string }) => format.mimeType?.startsWith("video"));
+      const audioFormat = formats.find((format: { itag: number }) => format.itag === audioItag)
+        ?? formats.find((format: { mimeType?: string }) => format.mimeType?.startsWith("audio"));
+
+      const videoUrl = downloadType !== "audio" ? videoFormat?.url : null;
+      const audioUrl = downloadType !== "video" ? audioFormat?.url : null;
+      if (!videoUrl && !audioUrl) {
+        throw new Error("No download URLs available");
+      }
+
+      return {
+        videoUrl, audioUrl, videoFormat, audioFormat
+      };
+    }
 
     // Handle direct download requests from the isolated world.
     // Uses the android_vr client (no SABR, no PO token needed) to get
@@ -1314,46 +1428,11 @@ export default defineContentScript({
       console.log("[ytdl] direct-download-request received:", downloadVideoId);
 
       try {
-        const visitorData = ytcfg?.get("VISITOR_DATA") ?? "";
-
-        const playerData = await (await globalThis.fetch(
-          "https://www.youtube.com/youtubei/v1/player?prettyPrint=false",
-          {
-            method: "POST",
-            credentials: "include",
-            headers: { "Content-Type": "application/json", "X-Goog-Visitor-Id": String(visitorData) },
-            body: JSON.stringify({
-              videoId: downloadVideoId,
-              context: {
-                client: {
-                  clientName: "ANDROID_VR",
-                  clientVersion: "1.65.10",
-                  androidSdkVersion: 34,
-                  osName: "Android",
-                  osVersion: "14",
-                  platform: "MOBILE"
-                }
-              },
-              contentCheckOk: true,
-              racyCheckOk: true
-            })
-          }
-        )).json();
-        if (playerData.playabilityStatus?.status !== "OK") {
-          throw new Error(`Player status: ${playerData.playabilityStatus?.status}`);
-        }
-
-        const formats = playerData.streamingData?.adaptiveFormats ?? [];
-        const videoFormat = formats.find((format: { itag: number }) => format.itag === videoItag)
-          ?? formats.find((format: { mimeType?: string }) => format.mimeType?.startsWith("video"));
-        const audioFormat = formats.find((format: { itag: number }) => format.itag === audioItag)
-          ?? formats.find((format: { mimeType?: string }) => format.mimeType?.startsWith("audio"));
-
-        const videoUrl = downloadType !== "audio" ? videoFormat?.url : null;
-        const audioUrl = downloadType !== "video" ? audioFormat?.url : null;
-        if (!videoUrl && !audioUrl) {
-          throw new Error("No download URLs available");
-        }
+        const {
+          videoUrl, audioUrl, videoFormat, audioFormat
+        } = await fetchPlayerFormats(
+          downloadVideoId, downloadType, videoItag, audioItag
+        );
 
         let totalExpectedBytes = 0;
         let totalReceivedBytes = 0;
@@ -1443,9 +1522,9 @@ export default defineContentScript({
     });
 
     if (document.readyState === "complete") {
-      extractAndDispatchVideoData();
+      await extractAndDispatchVideoData();
     } else {
-      addEventListener("load", extractAndDispatchVideoData, { once: true });
+      addEventListener("load", () => extractAndDispatchVideoData(), { once: true });
     }
   }
 });
