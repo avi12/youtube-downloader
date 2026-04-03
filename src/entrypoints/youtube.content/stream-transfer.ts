@@ -5,6 +5,7 @@
  */
 
 import { MessageType, sendMessage } from "@/lib/messaging";
+import { downloadProgressStore } from "@/lib/synced-stores.svelte";
 
 const TRANSFER_CHUNK_SIZE = 1024 * 1024;
 
@@ -106,5 +107,10 @@ export async function handleStreamError(e: Event) {
   }
 
   const { videoId, error }: { videoId: string; error: string } = e.detail;
-  await sendMessage(MessageType.ProcessStreamError, { videoId, error });
+  console.error("[ytdl] Stream error for", videoId, error);
+
+  // Reset download state so the button isn't stuck at "downloading"
+  downloadProgressStore.delete(videoId);
+
+  await sendMessage(MessageType.ProcessStreamError, { videoId, error }).catch(() => {});
 }
