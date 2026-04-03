@@ -351,9 +351,10 @@ export default defineContentScript({
 
     async function fetchStreamFromUrl(
       url: string,
-      onProgress: (receivedBytes: number, totalBytes: number) => void
+      onProgress: (receivedBytes: number, totalBytes: number) => void,
+      fetchSignal?: AbortSignal
     ) {
-      const response = await fetch(url);
+      const response = await fetch(url, { signal: fetchSignal });
       if (!response.ok) {
         throw new Error(`HTTP ${response.status} fetching stream`);
       }
@@ -464,6 +465,23 @@ export default defineContentScript({
       dispatchEvent(new CustomEvent("ytdl:stream-error", { detail: { videoId, error } }));
     }
 
+    const activeDownloads = new Map<string, AbortController>();
+
+    function cancelActiveDownload(videoId: string) {
+      const controller = activeDownloads.get(videoId);
+      if (controller) {
+        controller.abort();
+        activeDownloads.delete(videoId);
+      }
+    }
+
+    // Listen for cancel requests from the isolated world
+    crossWorldMessenger.onMessage("cancelDownload", ({ data }) => {
+      for (const id of data.videoIds) {
+        cancelActiveDownload(id);
+      }
+    });
+
     async function performDownload({
       type,
       videoId,
@@ -471,214 +489,229 @@ export default defineContentScript({
       audioItag,
       filenameOutput
     }: Pick<DownloadRequest, "type" | "videoId" | "videoItag" | "audioItag" | "filenameOutput">) {
-      const cachedVideoData = videoDataCache.get(videoId);
-      if (!cachedVideoData) {
-        console.error("[ytdl] No video data cached for", videoId);
-        return;
-      }
+      cancelActiveDownload(videoId);
+      const abortController = new AbortController();
+      activeDownloads.set(videoId, abortController);
+      const { signal } = abortController;
 
-      const videoFormat = type !== "audio"
-        ? (cachedVideoData.videoFormats.find(format => format.itag === videoItag) ?? cachedVideoData.videoFormats[0])
-        : null;
-      const audioFormat = type !== "video"
-        ? (cachedVideoData.audioFormats.find(format => format.itag === audioItag) ?? cachedVideoData.audioFormats[0])
-        : null;
-
-      const videoMimeType = videoFormat?.mimeType.split(";")[0] ?? "video/mp4";
-      const audioMimeType = audioFormat?.mimeType.split(";")[0] ?? "audio/mp4";
-      const audioLabel = audioFormat?.audioTrack?.displayName ?? "";
-      const extraAudioFormats = getExtraAudioFormats(
-        cachedVideoData.audioFormats, audioFormat?.audioTrack?.id
-      );
-      // Strategy 1: SabrStream - independently fetch the full video without
-      // relying on playback state. Works even if the video is paused.
-      // Read SABR credentials from synced signal or DOM fallback.
-      // The postMessage from the isolated world may arrive before the
-      // MAIN world's listener is ready, so also check the DOM element
-      // that sabr-credentials.ts writes as a persistent fallback.
-      const creds = sabrCredentials.value;
-      if (creds?.url) {
-        capturedSabrUrl = creds.url;
-      }
-
-      if (creds?.poToken) {
-        capturedPoToken = creds.poToken;
-      }
-
-      if (!capturedPoToken || !capturedSabrUrl) {
-        const elCredentials = document.getElementById("ytdl-sabr-credentials");
-        if (elCredentials?.dataset.url) {
-          capturedSabrUrl = elCredentials.dataset.url;
-        }
-
-        if (elCredentials?.dataset.poToken) {
-          capturedPoToken = elCredentials.dataset.poToken;
-        }
-      }
-
-      if (cachedVideoData.sabrConfig && videoFormat && audioFormat) {
-        try {
-          console.log("[ytdl] Fetching via SabrStream (independent of playback)");
-
-          const primaryResult = await fetchViaSabrStream(
-            cachedVideoData.sabrConfig, videoFormat, audioFormat
-          );
-          console.log(`[ytdl] SabrStream done: video=${primaryResult.videoData.byteLength} audio=${primaryResult.audioData.byteLength}`);
-
-          // Fetch additional audio tracks in parallel
-          const additionalAudioData = await Promise.all(
-            extraAudioFormats.map(async format => {
-              try {
-                const audioData = await fetchAudioViaSabrStream(
-                  cachedVideoData.sabrConfig!, format
-                );
-
-                return {
-                  data: audioData,
-                  mimeType: format.mimeType.split(";")[0] ?? "audio/mp4",
-                  label: format.audioTrack?.displayName ?? ""
-                };
-              } catch (trackError) {
-                console.warn("[ytdl] Extra audio track failed:", format.audioTrack?.displayName, trackError);
-                return null;
-              }
-            })
-          );
-
-          dispatchStreamData({
-            type,
-            videoId,
-            filenameOutput,
-            videoData: type !== "audio" ? primaryResult.videoData : null,
-            audioData: type !== "video" ? primaryResult.audioData : null,
-            videoMimeType,
-            audioMimeType,
-            audioLabel,
-            additionalAudioData: additionalAudioData
-              .filter((track): track is NonNullable<typeof track> => track !== null)
-          });
-
-          capturedMedia.delete(videoId);
-          document.dispatchEvent(new CustomEvent("ytdl:clear-interrupted", { detail: { videoId } }));
+      try {
+        const cachedVideoData = videoDataCache.get(videoId);
+        if (!cachedVideoData) {
+          console.error("[ytdl] No video data cached for", videoId);
           return;
-        } catch (sabrError) {
-          console.warn("[ytdl] SabrStream failed, trying fallback:", sabrError);
-          document.dispatchEvent(new CustomEvent("ytdl:persist-interrupted", {
-            detail: {
-              videoId, type, filenameOutput, videoItag, audioItag, timestamp: Date.now()
-            }
-          }));
         }
-      }
 
-      // Strategy 2: CDN fetch with signature decryption.
-      // Formats either have a direct `url` or an encrypted `signatureCipher`.
-      // Decrypt signatureCipher using the transformation sequence from player.js.
-      const hasDownloadableFormats = videoFormat?.url || videoFormat?.signatureCipher
-        || audioFormat?.url || audioFormat?.signatureCipher;      if (hasDownloadableFormats) {
-        try {
-          const [resolvedVideoUrl, resolvedAudioUrl, ...resolvedExtraUrls] = await Promise.all([
-            type !== "audio" ? resolveFormatUrl(videoFormat) : Promise.resolve(null),
-            type !== "video" ? resolveFormatUrl(audioFormat) : Promise.resolve(null),
-            ...extraAudioFormats.map(format => resolveFormatUrl(format))
-          ]);          if (!resolvedVideoUrl && !resolvedAudioUrl) {
-            console.warn("[ytdl] Could not resolve any format URLs");
-          } else {
-            let totalExpectedBytes = 0;
-            let totalReceivedBytes = 0;
+        const videoFormat = type !== "audio"
+          ? (cachedVideoData.videoFormats.find(format => format.itag === videoItag) ?? cachedVideoData.videoFormats[0])
+          : null;
+        const audioFormat = type !== "video"
+          ? (cachedVideoData.audioFormats.find(format => format.itag === audioItag) ?? cachedVideoData.audioFormats[0])
+          : null;
 
-            function reportDownloadProgress(receivedBytes: number, totalBytes: number) {
-              totalExpectedBytes = Math.max(totalExpectedBytes, totalBytes);
-              totalReceivedBytes = receivedBytes;
+        const videoMimeType = videoFormat?.mimeType.split(";")[0] ?? "video/mp4";
+        const audioMimeType = audioFormat?.mimeType.split(";")[0] ?? "audio/mp4";
+        const audioLabel = audioFormat?.audioTrack?.displayName ?? "";
+        const extraAudioFormats = getExtraAudioFormats(
+          cachedVideoData.audioFormats, audioFormat?.audioTrack?.id
+        );
+        // Strategy 1: SabrStream - independently fetch the full video without
+        // relying on playback state. Works even if the video is paused.
+        // Read SABR credentials from synced signal or DOM fallback.
+        // The postMessage from the isolated world may arrive before the
+        // MAIN world's listener is ready, so also check the DOM element
+        // that sabr-credentials.ts writes as a persistent fallback.
+        const creds = sabrCredentials.value;
+        if (creds?.url) {
+          capturedSabrUrl = creds.url;
+        }
 
-              if (totalExpectedBytes > 0) {
-                postMessage({
-                  namespace: "ytdl-sync",
-                  key: SyncKey.DownloadProgress,
-                  value: {
-                    mapKey: videoId,
-                    mapValue: {
-                      isDownloading: true,
-                      isDone: false,
-                      isQueued: false,
-                      progress: Math.min(totalReceivedBytes / totalExpectedBytes, 1),
-                      progressType: "video"
-                    }
-                  }
-                }, location.origin);
-              }
-            }
+        if (creds?.poToken) {
+          capturedPoToken = creds.poToken;
+        }
 
-            const [videoBytes, audioBytes, ...extraAudioBytes] = await Promise.all([
-              resolvedVideoUrl
-                ? fetchStreamFromUrl(resolvedVideoUrl, reportDownloadProgress)
-                : Promise.resolve(null),
-              resolvedAudioUrl
-                ? fetchStreamFromUrl(resolvedAudioUrl, reportDownloadProgress)
-                : Promise.resolve(null),
-              ...resolvedExtraUrls.map(url =>
-                url
-                  ? fetchStreamFromUrl(url, reportDownloadProgress)
-                  : Promise.resolve(null)
-              )
-            ]);
+        if (!capturedPoToken || !capturedSabrUrl) {
+          const elCredentials = document.getElementById("ytdl-sabr-credentials");
+          if (elCredentials?.dataset.url) {
+            capturedSabrUrl = elCredentials.dataset.url;
+          }
 
-            const additionalAudioData = extraAudioFormats.map((format, iTrack) => ({
-              data: extraAudioBytes[iTrack] ?? null,
-              mimeType: format.mimeType.split(";")[0] ?? "audio/mp4",
-              label: format.audioTrack?.displayName ?? `Track ${iTrack + 2}`
-            }));
+          if (elCredentials?.dataset.poToken) {
+            capturedPoToken = elCredentials.dataset.poToken;
+          }
+        }
+
+        if (cachedVideoData.sabrConfig && videoFormat && audioFormat) {
+          try {
+            console.log("[ytdl] Fetching via SabrStream (independent of playback)");
+
+            const primaryResult = await fetchViaSabrStream(
+              cachedVideoData.sabrConfig, videoFormat, audioFormat
+            );
+            console.log(`[ytdl] SabrStream done: video=${primaryResult.videoData.byteLength} audio=${primaryResult.audioData.byteLength}`);
+
+            // Fetch additional audio tracks in parallel
+            const additionalAudioData = await Promise.all(
+              extraAudioFormats.map(async format => {
+                try {
+                  const audioData = await fetchAudioViaSabrStream(
+                    cachedVideoData.sabrConfig!, format
+                  );
+
+                  return {
+                    data: audioData,
+                    mimeType: format.mimeType.split(";")[0] ?? "audio/mp4",
+                    label: format.audioTrack?.displayName ?? ""
+                  };
+                } catch (trackError) {
+                  console.warn("[ytdl] Extra audio track failed:", format.audioTrack?.displayName, trackError);
+                  return null;
+                }
+              })
+            );
 
             dispatchStreamData({
               type,
               videoId,
               filenameOutput,
-              videoData: videoBytes,
-              audioData: audioBytes,
+              videoData: type !== "audio" ? primaryResult.videoData : null,
+              audioData: type !== "video" ? primaryResult.audioData : null,
               videoMimeType,
               audioMimeType,
               audioLabel,
-              additionalAudioData
+              additionalAudioData: additionalAudioData
+                .filter((track): track is NonNullable<typeof track> => track !== null)
             });
+
+            capturedMedia.delete(videoId);
+            document.dispatchEvent(new CustomEvent("ytdl:clear-interrupted", { detail: { videoId } }));
             return;
+          } catch (sabrError) {
+            console.warn("[ytdl] SabrStream failed, trying fallback:", sabrError);
+            document.dispatchEvent(new CustomEvent("ytdl:persist-interrupted", {
+              detail: {
+                videoId, type, filenameOutput, videoItag, audioItag, timestamp: Date.now()
+              }
+            }));
           }
-        } catch (cdnError) {
-          console.warn("[ytdl] CDN fetch failed, trying SourceBuffer fallback:", cdnError);
         }
-      }
 
-      // Strategy 3: SourceBuffer capture - use whatever the player has buffered.
-      // This is a last resort: it only has what the player loaded so far.
-      const capture = capturedMedia.get(videoId);
-      if (capture && (capture.videoTotalBytes > 0 || capture.audioTotalBytes > 0)) {
-        const videoBytes = assembleChunks(capture.videoChunks, capture.videoTotalBytes);
-        const audioBytes = assembleChunks(capture.audioChunks, capture.audioTotalBytes);
-        console.log(`[ytdl] SourceBuffer fallback: video=${videoBytes.byteLength} audio=${audioBytes.byteLength}`);
+        // Strategy 2: CDN fetch with signature decryption.
+        // Formats either have a direct `url` or an encrypted `signatureCipher`.
+        // Decrypt signatureCipher using the transformation sequence from player.js.
+        const hasDownloadableFormats = videoFormat?.url || videoFormat?.signatureCipher
+        || audioFormat?.url || audioFormat?.signatureCipher;        if (hasDownloadableFormats) {
+          try {
+            const [resolvedVideoUrl, resolvedAudioUrl, ...resolvedExtraUrls] = await Promise.all([
+              type !== "audio" ? resolveFormatUrl(videoFormat) : Promise.resolve(null),
+              type !== "video" ? resolveFormatUrl(audioFormat) : Promise.resolve(null),
+              ...extraAudioFormats.map(format => resolveFormatUrl(format))
+            ]);            if (!resolvedVideoUrl && !resolvedAudioUrl) {
+              console.warn("[ytdl] Could not resolve any format URLs");
+            } else {
+              let totalExpectedBytes = 0;
+              let totalReceivedBytes = 0;
 
-        dispatchStreamData({
-          type,
-          videoId,
-          filenameOutput,
-          videoData: videoBytes,
-          audioData: audioBytes,
-          videoMimeType: capture.videoMimeType,
-          audioMimeType: capture.audioMimeType,
-          audioLabel,
-          additionalAudioData: []
-        });
+              function reportDownloadProgress(receivedBytes: number, totalBytes: number) {
+                totalExpectedBytes = Math.max(totalExpectedBytes, totalBytes);
+                totalReceivedBytes = receivedBytes;
 
-        capturedMedia.delete(videoId);
-        return;
-      }
+                if (totalExpectedBytes > 0) {
+                  postMessage({
+                    namespace: "ytdl-sync",
+                    key: SyncKey.DownloadProgress,
+                    value: {
+                      mapKey: videoId,
+                      mapValue: {
+                        isDownloading: true,
+                        isDone: false,
+                        isQueued: false,
+                        progress: Math.min(totalReceivedBytes / totalExpectedBytes, 1),
+                        progressType: "video"
+                      }
+                    }
+                  }, location.origin);
+                }
+              }
 
-      // All strategies failed - persist as interrupted so user can resume later
-      document.dispatchEvent(new CustomEvent("ytdl:persist-interrupted", {
-        detail: {
-          videoId, type, filenameOutput, videoItag, audioItag, timestamp: Date.now()
+              const [videoBytes, audioBytes, ...extraAudioBytes] = await Promise.all([
+                resolvedVideoUrl
+                  ? fetchStreamFromUrl(resolvedVideoUrl, reportDownloadProgress, signal)
+                  : Promise.resolve(null),
+                resolvedAudioUrl
+                  ? fetchStreamFromUrl(resolvedAudioUrl, reportDownloadProgress, signal)
+                  : Promise.resolve(null),
+                ...resolvedExtraUrls.map(url =>
+                  url
+                    ? fetchStreamFromUrl(url, reportDownloadProgress, signal)
+                    : Promise.resolve(null)
+                )
+              ]);
+
+              const additionalAudioData = extraAudioFormats.map((format, iTrack) => ({
+                data: extraAudioBytes[iTrack] ?? null,
+                mimeType: format.mimeType.split(";")[0] ?? "audio/mp4",
+                label: format.audioTrack?.displayName ?? `Track ${iTrack + 2}`
+              }));
+
+              dispatchStreamData({
+                type,
+                videoId,
+                filenameOutput,
+                videoData: videoBytes,
+                audioData: audioBytes,
+                videoMimeType,
+                audioMimeType,
+                audioLabel,
+                additionalAudioData
+              });
+              return;
+            }
+          } catch (cdnError) {
+            console.warn("[ytdl] CDN fetch failed, trying SourceBuffer fallback:", cdnError);
+          }
         }
-      }));
 
-      dispatchStreamError(videoId, "No download method available - try reloading the page");
+        // Strategy 3: SourceBuffer capture - use whatever the player has buffered.
+        // This is a last resort: it only has what the player loaded so far.
+        const capture = capturedMedia.get(videoId);
+        if (capture && (capture.videoTotalBytes > 0 || capture.audioTotalBytes > 0)) {
+          const videoBytes = assembleChunks(capture.videoChunks, capture.videoTotalBytes);
+          const audioBytes = assembleChunks(capture.audioChunks, capture.audioTotalBytes);
+          console.log(`[ytdl] SourceBuffer fallback: video=${videoBytes.byteLength} audio=${audioBytes.byteLength}`);
+
+          dispatchStreamData({
+            type,
+            videoId,
+            filenameOutput,
+            videoData: videoBytes,
+            audioData: audioBytes,
+            videoMimeType: capture.videoMimeType,
+            audioMimeType: capture.audioMimeType,
+            audioLabel,
+            additionalAudioData: []
+          });
+
+          capturedMedia.delete(videoId);
+          return;
+        }
+
+        // All strategies failed - persist as interrupted so user can resume later
+        document.dispatchEvent(new CustomEvent("ytdl:persist-interrupted", {
+          detail: {
+            videoId, type, filenameOutput, videoItag, audioItag, timestamp: Date.now()
+          }
+        }));
+
+        dispatchStreamError(videoId, "No download method available - try reloading the page");
+      } catch (error) {
+        if (signal.aborted) {
+          return;
+        }
+
+        throw error;
+      } finally {
+        activeDownloads.delete(videoId);
+      }
     }
 
     function assembleChunks(chunks: Uint8Array[], totalBytes: number) {

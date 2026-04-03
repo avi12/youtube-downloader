@@ -3,11 +3,12 @@
     cancelRequestSignal,
     downloadProgressStore,
     type DownloadProgressState,
+    downloadRequestSignal,
     SyncKey,
     videoDataRequests,
     videoDataStore
   } from "../lib/synced-stores.svelte";
-  import { getOutputExtension } from "../lib/utils";
+  import { getCompatibleFilename, getOutputExtension } from "../lib/utils";
   import {
     ButtonSize,
     ButtonState,
@@ -93,9 +94,26 @@
       return;
     }
 
-    // Open the options panel so the user can see filename, quality,
-    // and extension before confirming the download
-    togglePanel();
+    const selectedVideoFormat = videoData.videoFormats[0] ?? null;
+    const selectedAudioFormat = videoData.audioFormats[0] ?? null;
+    const userExtension = videoData.isMusic ? options.ext.audio : options.ext.video;
+    const outputExtension = selectedVideoFormat && selectedAudioFormat && !videoData.isMusic
+      ? getOutputExtension(selectedVideoFormat.mimeType, selectedAudioFormat.mimeType, userExtension)
+      : userExtension;
+    const filenameOutput = getCompatibleFilename(`${videoData.title}.${outputExtension}`);
+
+    downloadRequestSignal.value = {
+      type: videoData.isMusic ? "audio" : "video+audio",
+      videoId,
+      videoItag: selectedVideoFormat?.itag ?? 0,
+      audioItag: selectedAudioFormat?.itag ?? 0,
+      filenameOutput,
+      sabrConfig: videoData.sabrConfig
+    };
+
+    downloadProgressStore.set(videoId, {
+      isDownloading: true, isDone: false, isQueued: false, progress: 0, progressType: ""
+    });
   }
 
   function getItemIconName() {
