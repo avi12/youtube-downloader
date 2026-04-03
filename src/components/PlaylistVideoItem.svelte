@@ -220,7 +220,7 @@
       key: SyncKey.CreateDropdown,
       value: {
         contentId: panelContentId,
-        positionTargetSelector: `[data-ytdl-grid-item="${videoId}"]`
+        positionTargetSelector: `[data-ytdl-grid-item="${videoId}"] .ytdl-button-group`
       }
     }, location.origin);
 
