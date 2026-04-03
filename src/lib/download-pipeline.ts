@@ -8,28 +8,69 @@
  */
 
 import { MessageType, sendMessage } from "./messaging";
-import { getCompatibleFilename, getMimeType } from "./utils";
+import { getCompatibleFilename, getMimeType, getOutputExtension } from "./utils";
 import type { DownloadType, ProcessStreamData, ProgressType } from "@/types";
 import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { zipSync } from "fflate";
 
 // ─── FFmpeg configuration ────────────────────────────────────────────────────
+// A single FFmpeg instance is reused across all mux jobs. WASM can only run one
+// exec() at a time, so mux operations are serialized via a queue while downloads
+// still run in parallel.
 
 let ffmpegUrls: { coreURL: string; wasmURL: string; classWorkerURL: string } | null = null;
+let sharedFFmpeg: FFmpeg | null = null;
 
 export function initFFmpeg(coreURL: string, wasmURL: string, classWorkerURL: string) {
   ffmpegUrls = { coreURL, wasmURL, classWorkerURL };
   sendMessage(MessageType.PipelineFFmpegReady, {}).catch(() => {});
 }
 
-async function createFFmpegInstance() {
+async function getFFmpegInstance() {
   if (!ffmpegUrls) {
     throw new Error("initFFmpeg() must be called before processing video+audio downloads");
   }
 
-  const instance = new FFmpeg();
-  await instance.load(ffmpegUrls);
-  return instance;
+  if (!sharedFFmpeg) {
+    sharedFFmpeg = new FFmpeg();
+    await sharedFFmpeg.load(ffmpegUrls);
+  }
+
+  return sharedFFmpeg;
+}
+
+// ─── Mux queue (serialized FFmpeg exec) ─────────────────────────────────────
+
+const muxQueue: (() => Promise<void>)[] = [];
+let isMuxing = false;
+
+async function processMuxQueue() {
+  if (isMuxing) {
+    return;
+  }
+
+  isMuxing = true;
+
+  while (muxQueue.length > 0) {
+    const job = muxQueue.shift()!;
+    await job();
+  }
+
+  isMuxing = false;
+}
+
+function enqueueMuxJob(job: () => Promise<void>) {
+  return new Promise<void>((resolve, reject) => {
+    muxQueue.push(async () => {
+      try {
+        await job();
+        resolve();
+      } catch (error) {
+        reject(error);
+      }
+    });
+    processMuxQueue();
+  });
 }
 
 // ─── Active jobs ─────────────────────────────────────────────────────────────
@@ -172,8 +213,8 @@ async function processSingleMedia(item: ProcessStreamData) {
 // ─── Video + audio mux via FFmpeg ────────────────────────────────────────────
 
 function determineOutputExtension(
-  isVideoWebm: boolean,
-  isAudioWebm: boolean,
+  videoMimeType: string,
+  audioMimeType: string,
   hasExtraTracks: boolean,
   filenameOutput: string
 ) {
@@ -181,15 +222,8 @@ function determineOutputExtension(
     return "mkv";
   }
 
-  if (isVideoWebm && isAudioWebm) {
-    return "webm";
-  }
-
-  if (!isVideoWebm && !isAudioWebm) {
-    return filenameOutput.split(".").pop() ?? "mp4";
-  }
-
-  return "mkv";
+  const userExtension = filenameOutput.split(".").pop() ?? "mp4";
+  return getOutputExtension(videoMimeType, audioMimeType, userExtension);
 }
 
 async function processVideoAudio(item: ProcessStreamData, ffmpeg: FFmpeg) {
@@ -212,12 +246,10 @@ async function processVideoAudio(item: ProcessStreamData, ffmpeg: FFmpeg) {
 
   await reportProgress(videoId, 0.5, "video", tabId);
 
-  const isVideoWebm = videoMimeType.includes("webm");
-  const isAudioWebm = audioMimeType.includes("webm");
-  const videoExtension = isVideoWebm ? "webm" : "mp4";
-  const audioExtension = isAudioWebm ? "webm" : "m4a";
+  const videoExtension = videoMimeType.includes("webm") ? "webm" : "mp4";
+  const audioExtension = audioMimeType.includes("webm") ? "webm" : "m4a";
   const hasExtraTracks = (additionalAudioStreams?.length ?? 0) > 0;
-  const outputExtension = determineOutputExtension(isVideoWebm, isAudioWebm, hasExtraTracks, filenameOutput);
+  const outputExtension = determineOutputExtension(videoMimeType, audioMimeType, hasExtraTracks, filenameOutput);
 
   const filenameBase = filenameOutput.replace(/\.[^.]+$/, "");
   const downloadFilename = `${filenameBase}.${outputExtension}`;
@@ -313,14 +345,11 @@ async function processItem(item: ProcessStreamData) {
 
   try {
     if (item.type === "video+audio") {
-      const ffmpeg = await createFFmpegInstance();
-      job.ffmpeg = ffmpeg;
-
-      try {
+      await enqueueMuxJob(async () => {
+        const ffmpeg = await getFFmpegInstance();
+        job.ffmpeg = ffmpeg;
         await processVideoAudio(item, ffmpeg);
-      } finally {
-        ffmpeg.terminate();
-      }
+      });
     } else {
       await processSingleMedia(item);
     }
@@ -346,13 +375,18 @@ export function enqueueStreamData(data: ProcessStreamData) {
 export async function cancelDownloadsByIds(videoIds: string[]) {
   for (const videoId of videoIds) {
     const activeJob = activeJobs.get(videoId);
-    if (activeJob) {
-      activeJob.ffmpeg?.terminate();
-      activeJobs.delete(videoId);
-      await reportRemoval(videoId, activeJob.tabId);
+    if (!activeJob) {
       continue;
     }
 
-    // No queue to check - downloads run immediately
+    // If this job is actively using FFmpeg, terminate and recreate the shared
+    // instance so the next queued mux can proceed.
+    if (activeJob.ffmpeg) {
+      activeJob.ffmpeg.terminate();
+      sharedFFmpeg = null;
+    }
+
+    activeJobs.delete(videoId);
+    await reportRemoval(videoId, activeJob.tabId);
   }
 }
