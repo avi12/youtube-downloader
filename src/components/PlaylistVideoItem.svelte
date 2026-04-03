@@ -6,6 +6,7 @@
     videoDataRequests,
     videoDataStore
   } from "../lib/synced-stores.svelte";
+  import { getOutputExtension } from "../lib/utils";
   import {
     ButtonSize,
     ButtonState,
@@ -128,13 +129,44 @@
     return downloadState.progress * 80;
   });
 
-  function getProgressTooltip() {
-    if (!isDownloading || downloadState.progress <= 0) {
+  function getDefaultQualityLabel() {
+    if (!videoData) {
+      return "";
+    }
+
+    const videoFormat = videoData.videoFormats[0];
+    if (!videoFormat) {
+      return "";
+    }
+
+    return `${videoFormat.height}p${videoFormat.fps ? ` ${videoFormat.fps}fps` : ""}`;
+  }
+
+  function getButtonTooltip() {
+    if (isDownloading) {
+      if (downloadState.progress <= 0) {
+        return buttonLabel();
+      }
+
+      const phase = downloadState.progressType === "ffmpeg" ? "Processing" : "Downloading";
+      return `${Math.round(displayProgress)}% - ${phase}`;
+    }
+
+    if (!videoData?.isDownloadable) {
       return buttonLabel();
     }
 
-    const phase = downloadState.progressType === "ffmpeg" ? "Processing" : "Downloading";
-    return `${Math.round(displayProgress)}% - ${phase}`;
+    const quality = getDefaultQualityLabel();
+    const videoFormat = videoData.videoFormats[0];
+    const audioFormat = videoData.audioFormats[0];
+    const extension = videoFormat && audioFormat
+      ? getOutputExtension(videoFormat.mimeType, audioFormat.mimeType, options.ext.video)
+      : options.ext.video;
+    if (!quality) {
+      return `${videoData.title}.${extension}`;
+    }
+
+    return `${videoData.title}.${extension} - ${quality}`;
   }
 
   function refreshDownloadButton() {
@@ -142,7 +174,7 @@
       return;
     }
 
-    const tooltip = isDownloading ? getProgressTooltip() : buttonLabel();
+    const tooltip = getButtonTooltip();
 
     setButtonData(elDownloadBtn, {
       iconName: getItemIconName(),
@@ -315,7 +347,7 @@
       {#if isDownloading}
         <tp-yt-paper-progress
           class="ytdl-progress-bar"
-          aria-label={getProgressTooltip()}
+          aria-label={getButtonTooltip()}
           value={Math.round(displayProgress)}
         ></tp-yt-paper-progress>
       {/if}
