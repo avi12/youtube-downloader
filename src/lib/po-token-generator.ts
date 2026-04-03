@@ -38,7 +38,9 @@ export async function generatePoToken(videoId: string) {
     throw new Error("No BotGuard challenge data received");
   }
 
-  // Step 2: Wait for YouTube's BotGuard VM
+  // Step 2: Wait for YouTube's BotGuard VM.
+  // BotGuard is YouTube's undocumented anti-bot runtime with a fully dynamic
+  // shape that can't be statically typed - any is intentional here.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const globalRecord: Record<string, any> = globalThis;
 

@@ -9,13 +9,16 @@
  * 3. Relay data and events to/from the isolated world via crossWorldMessenger
  */
 
+import watchButtonStyles from "./watch-button.css?inline";
 import { buildVideoData, extractPlayerResponseFromHtml } from "./youtube-api";
 import { crossWorldMessenger } from "@/lib/cross-world-messenger";
 import { generatePoToken } from "@/lib/po-token-generator";
+import { decryptSignatureCipher } from "@/lib/signature-decryptor";
 import {
   interruptedDownloadStore,
   playlistMetadataSignal,
   sabrCredentials,
+  SyncKey,
   videoDataStore
 } from "@/lib/synced-stores.svelte";
 import { getCompatibleFilename } from "@/lib/utils";
@@ -32,6 +35,7 @@ import {
   type PlayerResponse,
   type ProgressUpdate,
   type VideoData,
+  type TpYtIronDropdownElement,
   type YtButtonViewModelElement
 } from "@/types";
 import { SabrStream } from "googlevideo/sabr-stream";
@@ -58,30 +62,8 @@ declare global {
 
 declare const ytcfg: { get: (key: string) => unknown } | undefined;
 
-interface TpYtIronDropdown extends HTMLElement {
-  positionTarget: Element | null;
-  horizontalAlign: string;
-  verticalAlign: string;
-  noOverlap: boolean;
-  dynamicAlign: boolean;
-  allowOutsideScroll: boolean;
-  restoreFocusOnClose: boolean;
-  opened: boolean;
-  open(): void;
-  close(): void;
-  refit(): void;
-}
-
-interface TpYtPaperProgress extends HTMLElement {
-  value: number;
-  max: number;
-  indeterminate: boolean;
-}
-
 declare global {
   interface HTMLElementTagNameMap {
-    "tp-yt-iron-dropdown": TpYtIronDropdown;
-    "tp-yt-paper-progress": TpYtPaperProgress;
     "ytd-watch-flexy": HTMLElement & { playerData: PlayerResponse | null };
   }
 }
@@ -89,7 +71,6 @@ declare global {
 export default defineContentScript({
   matches: ["https://www.youtube.com/*"],
   world: "MAIN",
-  runAt: "document_start",
   async main() {
     // ─── Capture infrastructure (document_start) ────────────────────────
     // Patches fetch() and SourceBuffer.appendBuffer BEFORE YouTube loads.
@@ -410,6 +391,22 @@ export default defineContentScript({
       return result;
     }
 
+    async function resolveFormatUrl(format: AdaptiveFormatItem | null) {
+      if (!format) {
+        return null;
+      }
+
+      if (format.url) {
+        return format.url;
+      }
+
+      if (format.signatureCipher) {
+        return decryptSignatureCipher(format.signatureCipher);
+      }
+
+      return null;
+    }
+
     function getExtraAudioFormats(
       audioFormats: AdaptiveFormatItem[],
       selectedTrackId: string | undefined
@@ -574,67 +571,77 @@ export default defineContentScript({
         }
       }
 
-      // Strategy 2: Direct CDN fetch - formats include pre-signed URLs.
-      const hasDirectUrls = (videoFormat?.url) || (audioFormat?.url);
-      if (hasDirectUrls) {
+      // Strategy 2: CDN fetch with signature decryption.
+      // Formats either have a direct `url` or an encrypted `signatureCipher`.
+      // Decrypt signatureCipher using the transformation sequence from player.js.
+      const hasDownloadableFormats = videoFormat?.url || videoFormat?.signatureCipher
+        || audioFormat?.url || audioFormat?.signatureCipher;      if (hasDownloadableFormats) {
         try {
-          let totalExpectedBytes = 0;
-          let totalReceivedBytes = 0;
+          const [resolvedVideoUrl, resolvedAudioUrl, ...resolvedExtraUrls] = await Promise.all([
+            type !== "audio" ? resolveFormatUrl(videoFormat) : Promise.resolve(null),
+            type !== "video" ? resolveFormatUrl(audioFormat) : Promise.resolve(null),
+            ...extraAudioFormats.map(format => resolveFormatUrl(format))
+          ]);          if (!resolvedVideoUrl && !resolvedAudioUrl) {
+            console.warn("[ytdl] Could not resolve any format URLs");
+          } else {
+            let totalExpectedBytes = 0;
+            let totalReceivedBytes = 0;
 
-          function reportDownloadProgress(receivedBytes: number, totalBytes: number) {
-            totalExpectedBytes = Math.max(totalExpectedBytes, totalBytes);
-            totalReceivedBytes = receivedBytes;
+            function reportDownloadProgress(receivedBytes: number, totalBytes: number) {
+              totalExpectedBytes = Math.max(totalExpectedBytes, totalBytes);
+              totalReceivedBytes = receivedBytes;
 
-            if (totalExpectedBytes > 0) {
-              postMessage({
-                namespace: "ytdl-sync",
-                key: "download-progress",
-                value: {
-                  mapKey: videoId,
-                  mapValue: {
-                    isDownloading: true,
-                    isDone: false,
-                    isQueued: false,
-                    progress: Math.min(totalReceivedBytes / totalExpectedBytes, 1),
-                    progressType: "video"
+              if (totalExpectedBytes > 0) {
+                postMessage({
+                  namespace: "ytdl-sync",
+                  key: SyncKey.DownloadProgress,
+                  value: {
+                    mapKey: videoId,
+                    mapValue: {
+                      isDownloading: true,
+                      isDone: false,
+                      isQueued: false,
+                      progress: Math.min(totalReceivedBytes / totalExpectedBytes, 1),
+                      progressType: "video"
+                    }
                   }
-                }
-              }, "*");
+                }, location.origin);
+              }
             }
+
+            const [videoBytes, audioBytes, ...extraAudioBytes] = await Promise.all([
+              resolvedVideoUrl
+                ? fetchStreamFromUrl(resolvedVideoUrl, reportDownloadProgress)
+                : Promise.resolve(null),
+              resolvedAudioUrl
+                ? fetchStreamFromUrl(resolvedAudioUrl, reportDownloadProgress)
+                : Promise.resolve(null),
+              ...resolvedExtraUrls.map(url =>
+                url
+                  ? fetchStreamFromUrl(url, reportDownloadProgress)
+                  : Promise.resolve(null)
+              )
+            ]);
+
+            const additionalAudioData = extraAudioFormats.map((format, iTrack) => ({
+              data: extraAudioBytes[iTrack] ?? null,
+              mimeType: format.mimeType.split(";")[0] ?? "audio/mp4",
+              label: format.audioTrack?.displayName ?? `Track ${iTrack + 2}`
+            }));
+
+            dispatchStreamData({
+              type,
+              videoId,
+              filenameOutput,
+              videoData: videoBytes,
+              audioData: audioBytes,
+              videoMimeType,
+              audioMimeType,
+              audioLabel,
+              additionalAudioData
+            });
+            return;
           }
-
-          const [videoBytes, audioBytes, ...extraAudioBytes] = await Promise.all([
-            videoFormat?.url
-              ? fetchStreamFromUrl(videoFormat.url, reportDownloadProgress)
-              : Promise.resolve(null),
-            audioFormat?.url
-              ? fetchStreamFromUrl(audioFormat.url, reportDownloadProgress)
-              : Promise.resolve(null),
-            ...extraAudioFormats.map(format =>
-              format.url
-                ? fetchStreamFromUrl(format.url, reportDownloadProgress)
-                : Promise.resolve(null)
-            )
-          ]);
-
-          const additionalAudioData = extraAudioFormats.map((format, iTrack) => ({
-            data: extraAudioBytes[iTrack] ?? null,
-            mimeType: format.mimeType.split(";")[0] ?? "audio/mp4",
-            label: format.audioTrack?.displayName ?? `Track ${iTrack + 2}`
-          }));
-
-          dispatchStreamData({
-            type,
-            videoId,
-            filenameOutput,
-            videoData: videoBytes,
-            audioData: audioBytes,
-            videoMimeType,
-            audioMimeType,
-            audioLabel,
-            additionalAudioData
-          });
-          return;
         } catch (cdnError) {
           console.warn("[ytdl] CDN fetch failed, trying SourceBuffer fallback:", cdnError);
         }
@@ -807,7 +814,7 @@ export default defineContentScript({
 
       const elNativeDownload = findNativeDownloadButton();
       if (elNativeDownload) {
-        elNativeDownload.setAttribute("style", "display: none");
+        elNativeDownload.classList.add("ytdl-native-hidden");
       }
 
       // - Button data builders -
@@ -885,25 +892,30 @@ export default defineContentScript({
       // margin-left matches the gap YouTube gives every other action-bar item via
       // its [button-renderer] + yt-button-view-model adjacent-sibling rule; our div
       // is not a yt-button-view-model so it doesn't receive that rule automatically.
+      // Inject styles once for the download button group
+      if (!document.getElementById("ytdl-watch-styles")) {
+        const elStyle = document.createElement("style");
+        elStyle.id = "ytdl-watch-styles";
+        elStyle.textContent = watchButtonStyles;
+        document.head.append(elStyle);
+      }
+
       const elGroup = document.createElement("div");
-      elGroup.setAttribute("data-ytdl-download-group", "true");
-      elGroup.setAttribute("style", "display: flex; align-items: center; margin-left: 8px; position: relative; overflow: hidden;");
+      elGroup.dataset.ytdlDownloadGroup = "true";
 
       const elDownloadButton = document.createElement("yt-button-view-model");
       const elChevronButton = document.createElement("yt-button-view-model");
 
       const elProgressBar = document.createElement("tp-yt-paper-progress");
-      elProgressBar.setAttribute("style", "position: absolute; bottom: 0; left: 0; right: 0; height: 2px; pointer-events: none; z-index: 1; opacity: 0");
+      elProgressBar.classList.add("ytdl-watch-progress");
 
       elGroup.append(elDownloadButton, elChevronButton, elProgressBar);
 
       // Polymer's Shady DOM requires updateStyles for CSS custom properties
-      if ("updateStyles" in elProgressBar && typeof elProgressBar.updateStyles === "function") {
-        elProgressBar.updateStyles({
-          "--paper-progress-active-color": "var(--yt-spec-call-to-action, rgb(62 166 255))",
-          "--paper-progress-container-color": "transparent"
-        });
-      }
+      elProgressBar.updateStyles({
+        "--paper-progress-active-color": "var(--yt-spec-call-to-action, rgb(62 166 255))",
+        "--paper-progress-container-color": "transparent"
+      });
 
       // Insert group in the slot the native download button occupied.
       if (elNativeDownload) {
@@ -924,7 +936,7 @@ export default defineContentScript({
       // Its shadow DOM exposes a default <slot>, so our Svelte content mounts
       // as light DOM children and is projected through that slot.
       const elDropdownContentSlot = document.createElement("ytd-menu-popup-renderer");
-      elDropdownContentSlot.setAttribute("slot", "dropdown-content");
+      elDropdownContentSlot.slot = "dropdown-content";
       elDropdownContentSlot.id = panelContentId;
       elDropdown.append(elDropdownContentSlot);
 
@@ -945,15 +957,14 @@ export default defineContentScript({
 
       // Set Polymer scoping class and data AFTER insertion so connectedCallback
       // does not wipe the class attribute
-      elDownloadButton.setAttribute("class", scopingClass);
-      elDownloadButton.setAttribute("data-ytdl-download", "true");
+      elDownloadButton.classList.add(...scopingClass.split(" ").filter(Boolean));
+      elDownloadButton.dataset.ytdlDownload = "true";
       elDownloadButton.data = buildDownloadData();
 
-      elChevronButton.setAttribute("class", scopingClass);
-      // Suppress the automatic margin-left that YouTube's CSS would add between
-      // adjacent yt-button-view-model siblings - the two buttons must sit flush.
-      elChevronButton.setAttribute("style", "margin-left: 0 !important");
-      elChevronButton.setAttribute("data-ytdl-chevron", "true");
+      elChevronButton.classList.add(...scopingClass.split(" ").filter(Boolean));
+      // [data-ytdl-chevron] suppresses the automatic margin-left between
+      // adjacent yt-button-view-model siblings so the buttons sit flush.
+      elChevronButton.dataset.ytdlChevron = "true";
       elChevronButton.data = buildChevronData();
 
       // - Segmented classes -
@@ -1005,27 +1016,25 @@ export default defineContentScript({
             isDownloading = false;
             refreshButtons();
             crossWorldMessenger.sendMessage("cancelDownload", { videoIds: [videoId] });
-          } else {
-            isDone = false;
-            isInterrupted = false;
-            isDownloading = true;
-            downloadProgress = 0;
-            refreshButtons();
-            // Broadcast via synced signal so the isolated world handles it
-            // using the direct URL download approach (android_vr client)
-            postMessage({
-              namespace: "ytdl-sync",
-              key: "download-request",
-              value: JSON.parse(JSON.stringify({
-                type: defaultDownloadType,
-                videoId,
-                videoItag: defaultVideoItag,
-                audioItag: defaultAudioItag,
-                filenameOutput: defaultFilename
-              }))
-            }, "*");
+            return;
           }
 
+          isDone = false;
+          isInterrupted = false;
+          isDownloading = true;
+          downloadProgress = 0;
+          refreshButtons();
+          postMessage({
+            namespace: "ytdl-sync",
+            key: SyncKey.DownloadRequest,
+            value: JSON.parse(JSON.stringify({
+              type: defaultDownloadType,
+              videoId,
+              videoItag: defaultVideoItag,
+              audioItag: defaultAudioItag,
+              filenameOutput: defaultFilename
+            }))
+          }, location.origin);
           return;
         }
 
@@ -1134,7 +1143,7 @@ export default defineContentScript({
         elDropdown.removeEventListener("iron-overlay-closed", handleDropdownClosed);
         elGroup.remove();
         elDropdown.remove();
-        elNativeDownload?.removeAttribute("style");
+        elNativeDownload?.classList.remove("ytdl-native-hidden");
       };
     }
 
@@ -1192,21 +1201,29 @@ export default defineContentScript({
     // Create/close Polymer dropdown for grid/playlist item panels.
     // The isolated world can't use Polymer elements (open/close, positioning)
     // so it delegates creation to the MAIN world.
-    const gridDropdowns = new Map<string, TpYtIronDropdown>();
+    const gridDropdowns = new Map<string, TpYtIronDropdownElement>();
 
-    document.addEventListener("ytdl:create-dropdown", e => {
-      if (!(e instanceof CustomEvent)) {
+    addEventListener("message", e => {
+      if (e.data?.namespace !== "ytdl-sync" || e.data.key !== SyncKey.CreateDropdown) {
         return;
       }
 
-      const { contentId, positionTargetSelector } = e.detail;
+      const { contentId, positionTargetSelector } = e.data.value;
       const elPositionTarget = document.querySelector(positionTargetSelector);
       if (!elPositionTarget) {
         return;
       }
 
+      // Clean up any existing dropdown for this content ID (from a previous open)
+      const existingDropdown = gridDropdowns.get(contentId);
+      if (existingDropdown) {
+        existingDropdown.close();
+        existingDropdown.remove();
+        gridDropdowns.delete(contentId);
+      }
+
       const elDropdownContentSlot = document.createElement("ytd-menu-popup-renderer");
-      elDropdownContentSlot.setAttribute("slot", "dropdown-content");
+      elDropdownContentSlot.slot = "dropdown-content";
       elDropdownContentSlot.id = contentId;
 
       const elDropdown = document.createElement("tp-yt-iron-dropdown");
@@ -1233,29 +1250,18 @@ export default defineContentScript({
       resizeObserver.observe(elDropdownContentSlot);
       gridDropdowns.set(contentId, elDropdown);
 
-      // Notify the isolated world that the dropdown is ready.
-      // Use postMessage (not CustomEvent.detail) because CustomEvent.detail
-      // is not accessible when crossing from MAIN world to isolated world.
-      postMessage({ namespace: "ytdl-sync", key: "dropdown-ready", value: { contentId } }, "*");
+      // Notify the isolated world that the dropdown is ready, then open it.
+      // Opening after a frame lets Polymer finish initialization.
+      postMessage({ namespace: "ytdl-sync", key: SyncKey.DropdownReady, value: { contentId } }, location.origin);
+      requestAnimationFrame(() => elDropdown.open());
     });
 
-    document.addEventListener("ytdl:open-dropdown", e => {
-      if (!(e instanceof CustomEvent)) {
+    addEventListener("message", e => {
+      if (e.data?.namespace !== "ytdl-sync" || e.data.key !== SyncKey.CloseDropdown) {
         return;
       }
 
-      const elDropdown = gridDropdowns.get(e.detail.contentId);
-      if (elDropdown) {
-        elDropdown.open();
-      }
-    });
-
-    document.addEventListener("ytdl:close-dropdown", e => {
-      if (!(e instanceof CustomEvent)) {
-        return;
-      }
-
-      const { videoId: dropdownVideoId } = e.detail;
+      const { videoId: dropdownVideoId } = e.data.value;
       const contentId = `ytdl-grid-panel-${dropdownVideoId}`;
       const elDropdown = gridDropdowns.get(contentId);
       if (elDropdown) {
@@ -1279,7 +1285,7 @@ export default defineContentScript({
         return;
       }
 
-      if ("receivedFocusFromKeyboard" in elDropdown && elDropdown.receivedFocusFromKeyboard) {
+      if (elDropdown.receivedFocusFromKeyboard) {
         elDropdown.setAttribute("keyboard-focused", "");
       }
     }
@@ -1387,7 +1393,7 @@ export default defineContentScript({
 
     // Observe video data requests arriving via synced signal (postMessage)
     addEventListener("message", async e => {
-      if (e.data?.namespace !== "ytdl-sync" || e.data?.key !== "video-data-request") {
+      if (e.data?.namespace !== "ytdl-sync" || e.data?.key !== SyncKey.VideoDataRequest) {
         return;
       }
 
@@ -1466,7 +1472,7 @@ export default defineContentScript({
     // direct URLs, fetches video+audio in the MAIN world (YouTube's
     // Service Worker handles CORS), then dispatches via stream-data event.
     addEventListener("message", async e => {
-      if (e.data?.namespace !== "ytdl-sync" || e.data.key !== "direct-download-request") {
+      if (e.data?.namespace !== "ytdl-sync" || e.data.key !== SyncKey.DirectDownloadRequest) {
         return;
       }
 
@@ -1516,7 +1522,7 @@ export default defineContentScript({
             if (totalExpectedBytes > 0) {
               postMessage({
                 namespace: "ytdl-sync",
-                key: "download-progress",
+                key: SyncKey.DownloadProgress,
                 value: {
                   mapKey: downloadVideoId,
                   mapValue: {
@@ -1527,7 +1533,7 @@ export default defineContentScript({
                     progressType: streamType
                   }
                 }
-              }, "*");
+              }, location.origin);
             }
           }
 
