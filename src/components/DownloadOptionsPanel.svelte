@@ -253,6 +253,7 @@
       progressType = "";
     }
 
+    downloadProgressStore.unsuppress(videoData.videoId);
     downloadProgressStore.set(videoData.videoId, {
       isDownloading: true, isDone: false, isQueued: false, progress: 0, progressType: ""
     });

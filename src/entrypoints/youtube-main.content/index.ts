@@ -475,9 +475,19 @@ export default defineContentScript({
       }
     }
 
-    // Listen for cancel requests from the isolated world
+    // Listen for cancel requests from the isolated world (both paths)
     crossWorldMessenger.onMessage("cancelDownload", ({ data }) => {
       for (const id of data.videoIds) {
+        cancelActiveDownload(id);
+      }
+    });
+
+    addEventListener("message", e => {
+      if (e.data?.namespace !== "ytdl-sync" || e.data.key !== SyncKey.CancelDownload) {
+        return;
+      }
+
+      for (const id of e.data.value?.videoIds ?? []) {
         cancelActiveDownload(id);
       }
     });

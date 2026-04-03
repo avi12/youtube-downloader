@@ -17,12 +17,18 @@ import { checkInterruptedDownload, listenForInterruptedDownloadEvents } from "./
 import { cleanupPanelUi, mountPanelUi } from "./panel-ui";
 import { cleanupPlaylistUi, handlePlaylistVideoAdditions, injectPlaylistDownloaderUi } from "./playlist-ui";
 import { listenForDownloadRequests } from "./sabr-download";
-import { handleStreamData, handleStreamError, setPlaylistContext } from "./stream-transfer";
+import {
+  cancelStreamTransfer,
+  handleStreamData,
+  handleStreamError,
+  setPlaylistContext,
+  uncancelStreamTransfer
+} from "./stream-transfer";
 import { crossWorldMessenger } from "@/lib/cross-world-messenger";
 import { MessageType, sendMessage, onMessage } from "@/lib/messaging";
 import { forwardSabrCredentialsWithRetry, listenForSabrBodyReady } from "@/lib/sabr-credentials";
 import { optionsItem } from "@/lib/storage";
-import { downloadProgressStore } from "@/lib/synced-stores.svelte";
+import { downloadProgressStore, SyncKey } from "@/lib/synced-stores.svelte";
 import type { Options, VideoData } from "@/types";
 
 export default defineContentScript({
@@ -114,6 +120,18 @@ export default defineContentScript({
       }
 
       if (e.data.value?.videoIds) {
+        for (const id of e.data.value.videoIds) {
+          cancelStreamTransfer(id);
+        }
+
+        // Notify MAIN world to abort active fetches via postMessage
+        // (not crossWorldMessenger, which would loop back to our own handler)
+        postMessage({
+          namespace: "ytdl-sync",
+          key: SyncKey.CancelDownload,
+          value: { videoIds: e.data.value.videoIds }
+        }, location.origin);
+        // Notify background to cancel FFmpeg processing
         sendMessage(MessageType.CancelDownload, { videoIds: e.data.value.videoIds });
       }
     });
@@ -127,6 +145,7 @@ export default defineContentScript({
         });
       }
 
+      uncancelStreamTransfer(data.videoId);
       crossWorldMessenger.sendMessage("downloadRequest", data);
     });
 

@@ -9,6 +9,7 @@
  * first as it has host_permissions for googlevideo.com.
  */
 
+import { uncancelStreamTransfer } from "./stream-transfer";
 import { MessageType, sendMessage } from "@/lib/messaging";
 import { sabrCredentials, SyncKey } from "@/lib/synced-stores.svelte";
 import type { DownloadRequest } from "@/types";
@@ -52,6 +53,7 @@ export function listenForDownloadRequests() {
       return;
     }
 
+    uncancelStreamTransfer(request.videoId);
     handleDownload(request);
   });
 }

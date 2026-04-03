@@ -8,6 +8,15 @@ import { MessageType, sendMessage } from "@/lib/messaging";
 import { downloadProgressStore } from "@/lib/synced-stores.svelte";
 
 const TRANSFER_CHUNK_SIZE = 1024 * 1024;
+const cancelledVideoIds = new Set<string>();
+
+export function cancelStreamTransfer(videoId: string) {
+  cancelledVideoIds.add(videoId);
+}
+
+export function uncancelStreamTransfer(videoId: string) {
+  cancelledVideoIds.delete(videoId);
+}
 
 function uint8ToBase64(bytes: Uint8Array) {
   let binary = "";
@@ -30,8 +39,16 @@ async function sendStreamChunks(
   const totalChunks = Math.ceil(data.byteLength / TRANSFER_CHUNK_SIZE);
 
   for (let iChunk = 0; iChunk < totalChunks; iChunk++) {
+    // Yield to the event loop so cancel signals can be processed
+    // and the UI stays responsive during large transfers
+    await new Promise(resolve => setTimeout(resolve, 0));
+
+    if (cancelledVideoIds.has(videoId)) {
+      return;
+    }
+
     const start = iChunk * TRANSFER_CHUNK_SIZE;
-    const chunk = data.slice(start, start + TRANSFER_CHUNK_SIZE);
+    const chunk = data.subarray(start, start + TRANSFER_CHUNK_SIZE);
 
     await sendMessage(MessageType.StreamChunk, {
       videoId,
@@ -65,6 +82,10 @@ export async function handleStreamData(e: Event) {
     videoData, audioData, videoMimeType, audioMimeType,
     audioLabel, additionalAudioData
   } = e.detail;
+  if (cancelledVideoIds.has(videoId)) {
+    return;
+  }
+
   if (videoData) {
     await sendStreamChunks(videoId, "video", videoData);
   }

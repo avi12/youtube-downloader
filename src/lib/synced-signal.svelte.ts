@@ -8,7 +8,7 @@
  * Works on Chrome MV3 and Firefox MV3 (128+).
  */
 
-import { SvelteMap } from "svelte/reactivity";
+import { SvelteMap, SvelteSet } from "svelte/reactivity";
 
 const NAMESPACE = "ytdl-sync";
 
@@ -17,6 +17,7 @@ export enum SyncKey {
   CreateDropdown = "create-dropdown",
   CloseDropdown = "close-dropdown",
   DropdownReady = "dropdown-ready",
+  CancelDownload = "cancel-download",
   DownloadRequest = "download-request",
   DirectDownloadRequest = "direct-download-request",
   DownloadProgress = "download-progress",
@@ -96,9 +97,15 @@ export function createSyncedSignal<T>(key: string, initial: T) {
 
 export function createSyncedMap<T>(keyPrefix: string) {
   const entries = new SvelteMap<string, T>();
+  const suppressed = new SvelteSet<string>();
   let isSyncing = false;
 
   subscribe(keyPrefix, incoming => {
+    // Ignore stale progress updates for cancelled downloads
+    if (suppressed.has(incoming.mapKey)) {
+      return;
+    }
+
     isSyncing = true;
     entries.set(incoming.mapKey, incoming.mapValue);
     isSyncing = false;
@@ -109,6 +116,10 @@ export function createSyncedMap<T>(keyPrefix: string) {
       return entries.get(mapKey);
     },
     set(mapKey: string, value: T) {
+      if (suppressed.has(mapKey)) {
+        return;
+      }
+
       entries.set(mapKey, value);
 
       if (!isSyncing) {
@@ -118,12 +129,18 @@ export function createSyncedMap<T>(keyPrefix: string) {
     has(mapKey: string) {
       return entries.has(mapKey);
     },
+    /** Marks a key as suppressed - all set/sync updates are ignored until unsuppress. */
     delete(mapKey: string) {
+      suppressed.add(mapKey);
       entries.delete(mapKey);
 
       if (!isSyncing) {
         broadcast(keyPrefix, { mapKey, mapValue: undefined });
       }
+    },
+    /** Clears suppression so set/sync updates are accepted again. */
+    unsuppress(mapKey: string) {
+      suppressed.delete(mapKey);
     },
     get size() {
       return entries.size;

@@ -111,6 +111,7 @@
       sabrConfig: videoData.sabrConfig
     };
 
+    downloadProgressStore.unsuppress(videoId);
     downloadProgressStore.set(videoId, {
       isDownloading: true, isDone: false, isQueued: false, progress: 0, progressType: ""
     });
