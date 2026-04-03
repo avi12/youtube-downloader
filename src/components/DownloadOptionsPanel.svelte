@@ -2,7 +2,8 @@
   import { crossWorldMessenger } from "../lib/cross-world-messenger";
   import { statusProgressItem, videoQueueItem } from "../lib/storage";
   import { downloadProgressStore } from "../lib/synced-stores.svelte";
-  import { getCompatibleFilename, waitForVideoElement } from "../lib/utils";
+  import { getCompatibleFilename, getOutputExtension, waitForVideoElement } from "../lib/utils";
+  import DownloadOptions from "./DownloadOptions.svelte";
   import {
     ButtonSize,
     ButtonState,
@@ -15,8 +16,7 @@
     type Options,
     type ProgressType,
     type VideoData
-  } from "../types";
-  import DownloadOptions from "./DownloadOptions.svelte";
+  } from "@/types";
   import { untrack } from "svelte";
 
   // Grab Polymer's scoping class from an existing action-bar button so that
@@ -61,6 +61,21 @@
 
   // -- Derived ----------------------------------------------------------------
 
+  // Keep the displayed extension in sync with the actual output container.
+  // FFmpeg may produce webm/mkv instead of the user's default extension when
+  // the selected video and audio codecs require a different container.
+  const actualExtension = $derived.by(() => {
+    if (downloadType === "audio") {
+      return extension;
+    }
+
+    if (!selectedVideoFormat || !selectedAudioFormat) {
+      return extension;
+    }
+
+    return getOutputExtension(selectedVideoFormat.mimeType, selectedAudioFormat.mimeType, extension);
+  });
+
   const isDownloadable = $derived(videoData.isDownloadable);
   // Weighted progress: download = 0-80%, mux = 80-100%
   const displayProgress = $derived.by(() => {
@@ -74,7 +89,7 @@
 
     return progress * 80;
   });
-  const fullFilename = $derived(getCompatibleFilename(`${filename}.${extension}`));
+  const fullFilename = $derived(getCompatibleFilename(`${filename}.${actualExtension}`));
 
   const qualityLabel = $derived(() => {
     if (downloadType === "audio") {
@@ -593,7 +608,8 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 20px 24px 16px;
+    padding-block: 20px 16px;
+    padding-inline: 24px;
   }
 
   .ytdl-panel-title {
@@ -608,8 +624,9 @@
   }
 
   .ytdl-panel-footer {
-    padding: 16px 24px 20px;
     min-height: 52px;
+    padding-block: 16px 20px;
+    padding-inline: 24px;
   }
 
   .ytdl-progress-section {

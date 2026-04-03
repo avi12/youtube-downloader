@@ -68,6 +68,30 @@ export function getMimeType(filename: string) {
   return extensionToMimeAll[getFileExtension(filename)];
 }
 
+// ─── Container format utilities ──────────────────────────────────────────────
+
+/**
+ * Determines the actual output container extension based on the video and audio
+ * stream codecs. FFmpeg requires compatible container formats - mixing webm and
+ * mp4 codecs requires MKV as the container.
+ */
+export function getOutputExtension(
+  videoMimeType: string,
+  audioMimeType: string,
+  userExtension: string
+) {
+  const isVideoWebm = videoMimeType.includes("webm");
+  const isAudioWebm = audioMimeType.includes("webm");  if (isVideoWebm && isAudioWebm) {
+    return "webm";
+  }
+
+  if (!isVideoWebm && !isAudioWebm) {
+    return userExtension;
+  }
+
+  return "mkv";
+}
+
 // ─── Video quality utilities ──────────────────────────────────────────────────
 
 export const videoQualities = [4320, 2160, 1440, 1080, 720, 480, 360, 240, 144];
@@ -94,9 +118,11 @@ export function getVideoIdFromUrl(url: string) {
 
 export function isVideoLive(playerResponse: PlayerResponse) {
   const { videoDetails, microformat } = playerResponse;
+  // isLive and isLiveNow indicate currently live. isLiveContent means
+  // "this was/is live content" which includes past live streams that
+  // are downloadable, so we must NOT check it here.
   return (
     videoDetails?.isLive === true ||
-    videoDetails?.isLiveContent === true ||
     microformat?.playerMicroformatRenderer.liveBroadcastDetails
       ?.isLiveNow === true
   );
@@ -108,7 +134,7 @@ export function isVideoDownloadable(playerResponse: PlayerResponse) {
   }
 
   const { status } = playerResponse.playabilityStatus;
-  if (status === "LIVE_STREAM_OFFLINE" || status === "LOGIN_REQUIRED" || status === "ERROR") {
+  if (status === "LOGIN_REQUIRED" || status === "ERROR") {
     return false;
   }
 
