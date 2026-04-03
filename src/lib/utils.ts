@@ -156,67 +156,6 @@ export function isVideoMusic(playerResponse: PlayerResponse) {
 
 // ─── DOM utilities ────────────────────────────────────────────────────────────
 
-export function waitForElement(
-  selector: string,
-  root: Document | Element = document
-) {
-  const existing = root.querySelector(selector);
-  if (existing) {
-    return Promise.resolve(existing);
-  }
-
-  return new Promise<Element>(resolve => {
-    const observer = new MutationObserver(() => {
-      const elMatch = root.querySelector(selector);
-      if (!elMatch) {
-        return;
-      }
-
-      observer.disconnect();
-      resolve(elMatch);
-    });
-    observer.observe(
-      root instanceof Document ? root.documentElement : root,
-      { childList: true, subtree: true }
-    );
-  });
-}
-
-export function waitForVisibleElement(
-  selector: string,
-  root: Document | Element = document
-) {
-  function isVisible(elCandidate: HTMLElement) {
-    return elCandidate.offsetWidth > 0 && elCandidate.offsetHeight > 0;
-  }
-
-  function findVisible() {
-    const elements = root.querySelectorAll<HTMLElement>(selector);
-    return [...elements].find(isVisible);
-  }
-
-  const existing = findVisible();
-  if (existing) {
-    return Promise.resolve(existing);
-  }
-
-  return new Promise<HTMLElement>(resolve => {
-    const observer = new MutationObserver(() => {
-      const elMatch = findVisible();
-      if (!elMatch) {
-        return;
-      }
-
-      observer.disconnect();
-      resolve(elMatch);
-    });
-    observer.observe(
-      root instanceof Document ? root.documentElement : root,
-      { childList: true, subtree: true }
-    );
-  });
-}
-
 export function waitForVideoElement() {
   return new Promise<HTMLVideoElement>(resolve => {
     const observer = new MutationObserver(() => {

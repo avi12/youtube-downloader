@@ -18,17 +18,17 @@ import {
   sabrCredentials,
   videoDataStore
 } from "@/lib/synced-stores.svelte";
-import { getCompatibleFilename, waitForVisibleElement } from "@/lib/utils";
+import { getCompatibleFilename } from "@/lib/utils";
 import {
+  type AdaptiveFormatItem,
   ButtonSize,
   ButtonState,
   ButtonStyle,
   ButtonType,
-  IconName,
-  type AdaptiveFormatItem,
   type ButtonViewModelData,
   type DownloadRequest,
   type DownloadType,
+  IconName,
   type PlayerResponse,
   type ProgressUpdate,
   type VideoData,
@@ -431,17 +431,23 @@ export default defineContentScript({
       });
     }
 
-    function dispatchStreamData(
-      type: DownloadType,
-      videoId: string,
-      filenameOutput: string,
-      videoData: Uint8Array | null,
-      audioData: Uint8Array | null,
-      videoMimeType: string,
-      audioMimeType: string,
-      audioLabel: string,
-      additionalAudioData: Array<{ data: Uint8Array | null; mimeType: string; label: string }>
-    ) {
+    interface StreamDataEvent {
+      type: DownloadType;
+      videoId: string;
+      filenameOutput: string;
+      videoData: Uint8Array | null;
+      audioData: Uint8Array | null;
+      videoMimeType: string;
+      audioMimeType: string;
+      audioLabel: string;
+      additionalAudioData: Array<{ data: Uint8Array | null; mimeType: string; label: string }>;
+    }
+
+    function dispatchStreamData({
+      type, videoId, filenameOutput,
+      videoData, audioData, videoMimeType, audioMimeType,
+      audioLabel, additionalAudioData
+    }: StreamDataEvent) {
       dispatchEvent(new CustomEvent("ytdl:stream-data", {
         detail: {
           downloadType: type,
@@ -542,13 +548,18 @@ export default defineContentScript({
             })
           );
 
-          dispatchStreamData(
-            type, videoId, filenameOutput,
-            type !== "audio" ? primaryResult.videoData : null,
-            type !== "video" ? primaryResult.audioData : null,
-            videoMimeType, audioMimeType, audioLabel,
-            additionalAudioData.filter((track): track is NonNullable<typeof track> => track !== null)
-          );
+          dispatchStreamData({
+            type,
+            videoId,
+            filenameOutput,
+            videoData: type !== "audio" ? primaryResult.videoData : null,
+            audioData: type !== "video" ? primaryResult.audioData : null,
+            videoMimeType,
+            audioMimeType,
+            audioLabel,
+            additionalAudioData: additionalAudioData
+              .filter((track): track is NonNullable<typeof track> => track !== null)
+          });
 
           capturedMedia.delete(videoId);
           document.dispatchEvent(new CustomEvent("ytdl:clear-interrupted", { detail: { videoId } }));
@@ -612,12 +623,17 @@ export default defineContentScript({
             label: format.audioTrack?.displayName ?? `Track ${iTrack + 2}`
           }));
 
-          dispatchStreamData(
-            type, videoId, filenameOutput,
-            videoBytes, audioBytes,
-            videoMimeType, audioMimeType, audioLabel,
+          dispatchStreamData({
+            type,
+            videoId,
+            filenameOutput,
+            videoData: videoBytes,
+            audioData: audioBytes,
+            videoMimeType,
+            audioMimeType,
+            audioLabel,
             additionalAudioData
-          );
+          });
           return;
         } catch (cdnError) {
           console.warn("[ytdl] CDN fetch failed, trying SourceBuffer fallback:", cdnError);
@@ -632,11 +648,17 @@ export default defineContentScript({
         const audioBytes = assembleChunks(capture.audioChunks, capture.audioTotalBytes);
         console.log(`[ytdl] SourceBuffer fallback: video=${videoBytes.byteLength} audio=${audioBytes.byteLength}`);
 
-        dispatchStreamData(
-          type, videoId, filenameOutput,
-          videoBytes, audioBytes,
-          capture.videoMimeType, capture.audioMimeType, audioLabel, []
-        );
+        dispatchStreamData({
+          type,
+          videoId,
+          filenameOutput,
+          videoData: videoBytes,
+          audioData: audioBytes,
+          videoMimeType: capture.videoMimeType,
+          audioMimeType: capture.audioMimeType,
+          audioLabel,
+          additionalAudioData: []
+        });
 
         capturedMedia.delete(videoId);
         return;
@@ -677,17 +699,43 @@ export default defineContentScript({
     let cleanupCurrentButton: (() => void) | null = null;
     let injectionGeneration = 0;
 
-    async function findVideoActionsContainer() {
-      for (const selector of VIDEO_ACTION_BUTTON_SELECTORS) {
-        const element = await Promise.race([
-          waitForVisibleElement(selector),
-          new Promise<null>(resolve => setTimeout(() => resolve(null), 3000))
-        ]);
-        if (element) {
-          return element;
+    function findVideoActionsContainer() {
+      function findFirstVisible() {
+        for (const selector of VIDEO_ACTION_BUTTON_SELECTORS) {
+          for (const element of document.querySelectorAll<HTMLElement>(selector)) {
+            if (element.offsetWidth > 0 && element.offsetHeight > 0) {
+              return element;
+            }
+          }
         }
+
+        return null;
       }
-      return null;
+
+      const existing = findFirstVisible();
+      if (existing) {
+        return Promise.resolve(existing);
+      }
+
+      return new Promise<HTMLElement | null>(resolve => {
+        const timeout = setTimeout(() => {
+          observer.disconnect();
+          resolve(null);
+        }, 10_000);
+
+        const observer = new MutationObserver(() => {
+          const element = findFirstVisible();
+          if (!element) {
+            return;
+          }
+
+          observer.disconnect();
+          clearTimeout(timeout);
+          resolve(element);
+        });
+
+        observer.observe(document.documentElement, { childList: true, subtree: true });
+      });
     }
 
     function cleanupSegmentedButton() {
