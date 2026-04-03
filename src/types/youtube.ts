@@ -1,6 +1,8 @@
 // Types describing YouTube's API responses and Polymer runtime elements.
 // These are not our own types - they mirror shapes defined by YouTube.
 
+import { z } from "zod";
+
 type Thumbnail = {
   thumbnails: { url: string; width: number; height: number }[];
 };
@@ -8,14 +10,14 @@ type Thumbnail = {
 export type MediaItem = {
   itag: number;
   url?: string;
-  mimeType: string;
+  mimeType: `${"video" | "audio"}/${string}`;
   bitrate: number;
-  initRange: { start: "0"; end: string };
-  indexRange: { start: string; end: string };
+  initRange: { start: "0"; end: `${number}` };
+  indexRange: { start: `${number}`; end: `${number}` };
   lastModified: number;
-  contentLength: string;
+  contentLength: `${number}`;
   averageBitrate: number;
-  approxDurationMs: string;
+  approxDurationMs: `${number}`;
 };
 
 export enum VideoQuality {
@@ -62,8 +64,8 @@ export type FormatItem = MediaItem & {
   fps: 30;
   qualityLabel: QualityLabel.P144 | QualityLabel.P360 | QualityLabel.P480 | QualityLabel.P720;
   audioQuality: AudioQuality;
-  projectionType: string;
-  audioSampleRate: string;
+  projectionType: "RECTANGULAR";
+  audioSampleRate: `${number}`;
   audioChannels: number;
 };
 
@@ -76,9 +78,9 @@ export type AdaptiveFormatItem = MediaItem & {
   averageBitrate: number;
   audioQuality?: AudioQuality;
   colorInfo?: {
-    primaries: string;
-    transferCharacteristics: string;
-    matrixCoefficients: string;
+    primaries: "COLOR_PRIMARIES_BT709" | "COLOR_PRIMARIES_BT2020" | (string & {});
+    transferCharacteristics: "COLOR_TRANSFER_CHARACTERISTICS_BT709" | "COLOR_TRANSFER_CHARACTERISTICS_SMPTEST2084" | (string & {});
+    matrixCoefficients: "COLOR_MATRIX_COEFFICIENTS_BT709" | "COLOR_MATRIX_COEFFICIENTS_BT2020_NCL" | (string & {});
   };
   audioTrack?: {
     id: string;
@@ -86,9 +88,9 @@ export type AdaptiveFormatItem = MediaItem & {
     audioIsDefault: boolean;
   };
   signatureCipher?: string;
-  projectionType?: string;
+  projectionType?: "RECTANGULAR" | "MESH";
   highReplication?: boolean;
-  audioSampleRate?: string;
+  audioSampleRate?: `${number}`;
   loudnessDb?: number;
   audioChannels?: number;
   xtags?: string;
@@ -103,11 +105,11 @@ export type PlayerResponse = {
   videoDetails?: {
     videoId: string;
     title: string;
-    lengthSeconds: string;
+    lengthSeconds: `${number}`;
     channelId: string;
     shortDescription: string;
     thumbnail: Thumbnail;
-    viewCount: string;
+    viewCount: `${number}`;
     author: string;
     isPrivate: boolean;
     isLiveContent?: boolean;
@@ -119,14 +121,14 @@ export type PlayerResponse = {
       liveBroadcastDetails?: { isLiveNow: true; startTimestamp: string };
       title: { simpleText: string };
       description: { simpleText: string };
-      lengthSeconds: string;
+      lengthSeconds: `${number}`;
       category: string;
-      publishDate: string;
+      publishDate: `${number}-${number}-${number}`;
       ownerChannelName: string;
     };
   };
   streamingData?: {
-    expiresInSeconds: string;
+    expiresInSeconds: `${number}`;
     formats: FormatItem[];
     adaptiveFormats: AdaptiveFormatItem[];
     serverAbrStreamingUrl?: string;
@@ -262,14 +264,70 @@ export type ButtonViewModelData = {
   loggingDirectives?: Record<string, unknown>;
 };
 
+// ─── Polymer element schemas ─────────────────────────────────────────────────
+// Zod schemas validate at runtime that YouTube's Polymer elements expose the
+// methods and properties we depend on. Each schema is the single source of
+// truth - the TypeScript type is derived via z.infer.
+
+const polymerMethod = z.custom<(...args: unknown[]) => unknown>(value => typeof value === "function");
+
+export const tpYtPaperProgressSchema = z.looseObject({
+  value: z.number(),
+  max: z.number(),
+  indeterminate: z.boolean(),
+  updateStyles: polymerMethod
+});
+
+// Types use explicit method signatures since z.infer can't express them.
+// The schemas above validate the shape at runtime; these types provide
+// compile-time autocomplete and type checking for call sites.
+
 export interface YtButtonViewModelElement extends HTMLElement {
   data: ButtonViewModelData;
+}
+
+export interface TpYtPaperDropdownMenuElement extends HTMLElement {
+  receivedFocusFromKeyboard: boolean;
+}
+
+export interface TpYtPaperProgressElement extends HTMLElement {
+  value: number;
+  max: number;
+  indeterminate: boolean;
+  updateStyles(styles: Record<string, string>): void;
+}
+
+export interface TpYtIronDropdownElement extends HTMLElement {
+  positionTarget: Element | null;
+  horizontalAlign: "left" | "right";
+  verticalAlign: "top" | "bottom";
+  noOverlap: boolean;
+  dynamicAlign: boolean;
+  allowOutsideScroll: boolean;
+  restoreFocusOnClose: boolean;
+  opened: boolean;
+  open(): void;
+  close(): void;
+  refit(): void;
+}
+
+/**
+ * Validates that an Element conforms to a Polymer element schema.
+ * Returns the narrowed type on success, null on failure.
+ */
+export function isValidPolymerElement<T>(
+  element: Element,
+  schema: z.ZodType<T>
+): element is HTMLElement & T {
+  return schema.safeParse(element).success;
 }
 
 declare global {
   interface HTMLElementTagNameMap {
     "yt-button-view-model": YtButtonViewModelElement;
-    "tp-yt-paper-dropdown-menu": HTMLElement;
+    "tp-yt-paper-dropdown-menu": TpYtPaperDropdownMenuElement;
+    "tp-yt-paper-progress": TpYtPaperProgressElement;
+    "tp-yt-iron-dropdown": TpYtIronDropdownElement;
     "tp-yt-paper-listbox": HTMLElement;
     "tp-yt-paper-item": HTMLElement;
   }

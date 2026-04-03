@@ -6,6 +6,9 @@ export type { AdaptiveFormatItem,
   FormatItem,
   MediaItem,
   PlayerResponse,
+  TpYtIronDropdownElement,
+  TpYtPaperDropdownMenuElement,
+  TpYtPaperProgressElement,
   YtButtonViewModelElement } from "./youtube";
 
 export { AudioQuality,
@@ -18,6 +21,8 @@ export { AudioQuality,
   QualityLabel,
   TooltipPlacement,
   TooltipStyle,
+  tpYtPaperProgressSchema,
+  isValidPolymerElement,
   VideoQuality } from "./youtube";
 
 // -- Extension state types ----------------------------------------------------

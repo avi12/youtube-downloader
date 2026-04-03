@@ -25,7 +25,8 @@
     "@ffmpeg/util": "^0.12.2",
     "@webext-core/messaging": "^2.3.0",
     "fflate": "^0.8.2",
-    "googlevideo": "^4.0.4"
+    "googlevideo": "^4.0.4",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
