@@ -1,14 +1,11 @@
 <script lang="ts">
-  import { videoQueueItem } from "../lib/storage";
   import {
     cancelRequestSignal,
     downloadProgressStore,
     type DownloadProgressState,
-    downloadRequestSignal,
     videoDataRequests,
     videoDataStore
   } from "../lib/synced-stores.svelte";
-  import { getCompatibleFilename } from "../lib/utils";
   import {
     ButtonSize,
     ButtonState,
@@ -36,7 +33,6 @@
   const downloadState = $derived(downloadProgressStore.get(videoId) ?? defaultProgressState);
   const isDownloading = $derived(downloadState.isDownloading);
   const isDone = $derived(downloadState.isDone);
-  const isQueued = $derived(downloadState.isQueued);
   let isLoadFailed = $state(false);
 
   // Reactively read video data from the synced store.
@@ -67,27 +63,13 @@
     refreshDownloadButton();
   });
 
-  // Track queue position - update shared store
-  $effect(() => videoQueueItem.watch(queue => {
-    const currentQueue = queue ?? [];
-    const isInQueue = currentQueue.some(item => item.videoId === videoId);
-    const isCurrentlyDownloading = currentQueue[0]?.videoId === videoId;
-    const current = downloadProgressStore.get(videoId) ?? { ...defaultProgressState };
-    current.isQueued = isInQueue && !isCurrentlyDownloading;
-    downloadProgressStore.set(videoId, current);
-  }));
-
   const buttonLabel = $derived(() => {
     if (!videoData?.isDownloadable) {
       return "N/A";
     }
 
     if (isDone) {
-      return "Done";
-    }
-
-    if (isQueued) {
-      return "Queued";
+      return "Downloaded";
     }
 
     if (isDownloading) {
@@ -97,14 +79,7 @@
     return "Download";
   });
 
-  const selectedVideoFormat = $derived(
-    videoData?.videoFormats[0] ?? null
-  );
-  const selectedAudioFormat = $derived(
-    videoData?.audioFormats[0] ?? null
-  );
-
-  function toggleDownload() {
+  function handleDownloadClick() {
     if (!videoData?.isDownloadable) {
       return;
     }
@@ -115,27 +90,14 @@
       return;
     }
 
-    const filenameOutput = getCompatibleFilename(
-      `${videoData.title}.${videoData.isMusic ? options.ext.audio : options.ext.video}`
-    );
-
-    downloadRequestSignal.value = {
-      type: videoData.isMusic ? "audio" : "video+audio",
-      videoId,
-      videoItag: selectedVideoFormat?.itag ?? 0,
-      audioItag: selectedAudioFormat?.itag ?? 0,
-      filenameOutput,
-      sabrConfig: videoData.sabrConfig
-    };
-
-    downloadProgressStore.set(videoId, {
-      isDownloading: true, isDone: false, isQueued: false, progress: 0, progressType: ""
-    });
+    // Open the options panel so the user can see filename, quality,
+    // and extension before confirming the download
+    togglePanel();
   }
 
   function getItemIconName() {
     if (isDone) {
-      return IconName.Downloaded;
+      return IconName.CheckCircleThick;
     }
 
     if (isDownloading) {
@@ -208,7 +170,8 @@
       return;
     }
 
-    const currentVideoData = videoData;    if (elDropdown) {
+    const currentVideoData = videoData;
+    if (elDropdown) {
       return;
     }
 
@@ -223,13 +186,19 @@
       }
     }));
 
-    // Wait for the MAIN world to create the dropdown
-    function handleDropdownReady(e: Event) {
-      if (!(e instanceof CustomEvent) || e.detail?.contentId !== panelContentId) {
+    // Wait for the MAIN world to create the dropdown.
+    // Uses postMessage (not CustomEvent.detail) because CustomEvent.detail
+    // is not accessible when crossing from MAIN world to isolated world.
+    function handleDropdownReady(e: MessageEvent) {
+      if (e.data?.namespace !== "ytdl-sync" || e.data?.key !== "dropdown-ready") {
         return;
       }
 
-      document.removeEventListener("ytdl:dropdown-ready", handleDropdownReady);
+      if (e.data.value?.contentId !== panelContentId) {
+        return;
+      }
+
+      removeEventListener("message", handleDropdownReady);
 
       const elContent = document.getElementById(panelContentId);
       if (!elContent) {
@@ -261,7 +230,7 @@
       document.addEventListener("ytdl:panel-closed", handleOverlayClose);
     }
 
-    document.addEventListener("ytdl:dropdown-ready", handleDropdownReady);
+    addEventListener("message", handleDropdownReady);
   }
 
   function closePanel() {
@@ -296,7 +265,7 @@
     element.addEventListener("click", e => {
       e.stopPropagation();
       e.preventDefault();
-      toggleDownload();
+      handleDownloadClick();
     });
 
     refreshDownloadButton();
@@ -343,14 +312,14 @@
       ></yt-button-view-model>
       <yt-button-view-model {@attach attachChevronButton}
       ></yt-button-view-model>
+      {#if isDownloading}
+        <tp-yt-paper-progress
+          class="ytdl-progress-bar"
+          aria-label={getProgressTooltip()}
+          value={Math.round(displayProgress)}
+        ></tp-yt-paper-progress>
+      {/if}
     </div>
-    {#if isDownloading}
-      <tp-yt-paper-progress
-        class="ytdl-progress-bar"
-        aria-label={getProgressTooltip()}
-        value={Math.round(displayProgress)}
-      ></tp-yt-paper-progress>
-    {/if}
   {:else if !videoData && !isLoadFailed}
     <div class="ytdl-spinner-container" aria-busy="true" aria-label="Loading video info">
       <tp-yt-paper-spinner-lite active></tp-yt-paper-spinner-lite>
@@ -365,14 +334,17 @@
   }
 
   .ytdl-button-row {
+    position: relative;
     display: flex;
     align-items: center;
+    overflow: hidden;
   }
 
   .ytdl-progress-bar {
-    width: 100%;
-    height: 3px;
-    margin-top: 2px;
+    position: absolute;
+    inset-inline: 0;
+    inset-block-end: 0;
+    block-size: 3px;
   }
 
   .ytdl-spinner-container {
