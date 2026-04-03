@@ -62,12 +62,13 @@ function findAnchorElement(elCard: Element) {
     return elTextContainer;
   }
 
-  // ytd-rich-item-renderer: inject after #details as a sibling
-  // inside #dismissible. #meta has overflow:auto (causes scrollbars)
-  // and #menu is too narrow (covers the 3-dot button).
-  const elDetails = elCard.querySelector("#dismissible > #details");
-  if (elDetails) {
-    return elDetails;
+  // ytd-rich-item-renderer (channel pages): inject after #details
+  // as a sibling inside #dismissible so the buttons appear below
+  // the title row, not crammed inside the horizontal flex layout.
+  const elDismissible = elCard.querySelector("#dismissible");
+  const elDetails = elDismissible?.querySelector("#details");
+  if (elDismissible && elDetails) {
+    return elDismissible;
   }
 
   return null;
@@ -91,10 +92,11 @@ function injectGridVideoButton(
   const elItemContainer = document.createElement("div");
   elItemContainer.dataset.ytdlGridItem = videoId;
 
-  // For yt-lockup-view-model (.yt-lockup-view-model__metadata):
-  // insert after as a new row below the metadata
-  if (elAnchor.classList.contains("yt-lockup-metadata-view-model__text-container")) {
-    elAnchor.append(elItemContainer);
+  // For yt-lockup-view-model (subscriptions/homepage): append inside text container
+  // For ytd-rich-item-renderer (channel pages): insert after #details
+  const elDetails = elAnchor.querySelector("#details");
+  if (elDetails) {
+    elDetails.insertAdjacentElement("afterend", elItemContainer);
   } else {
     elAnchor.append(elItemContainer);
   }
