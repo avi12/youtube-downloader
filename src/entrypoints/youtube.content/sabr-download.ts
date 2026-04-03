@@ -10,7 +10,7 @@
  */
 
 import { MessageType, sendMessage } from "@/lib/messaging";
-import { sabrCredentials } from "@/lib/synced-stores.svelte";
+import { sabrCredentials, SyncKey } from "@/lib/synced-stores.svelte";
 import type { DownloadRequest } from "@/types";
 
 async function waitForPoToken(timeoutMs = 10_000) {
@@ -43,7 +43,7 @@ async function waitForPoToken(timeoutMs = 10_000) {
 
 export function listenForDownloadRequests() {
   addEventListener("message", e => {
-    if (e.data?.namespace !== "ytdl-sync" || e.data.key !== "download-request") {
+    if (e.data?.namespace !== "ytdl-sync" || e.data.key !== SyncKey.DownloadRequest) {
       return;
     }
 
@@ -82,7 +82,7 @@ async function handleDownload(request: DownloadRequest) {
   // fetches media directly. It has proper YouTube session context.
   postMessage({
     namespace: "ytdl-sync",
-    key: "direct-download-request",
+    key: SyncKey.DirectDownloadRequest,
     value: {
       videoId: request.videoId,
       videoItag: request.videoItag,
@@ -90,5 +90,5 @@ async function handleDownload(request: DownloadRequest) {
       filenameOutput: request.filenameOutput,
       type: request.type
     }
-  }, "*");
+  }, location.origin);
 }

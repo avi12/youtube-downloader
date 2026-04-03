@@ -12,8 +12,21 @@ import { SvelteMap } from "svelte/reactivity";
 
 const NAMESPACE = "ytdl-sync";
 
+/** Keys for cross-world postMessage signals (ytdl-sync namespace). */
+export enum SyncKey {
+  CreateDropdown = "create-dropdown",
+  CloseDropdown = "close-dropdown",
+  DropdownReady = "dropdown-ready",
+  DownloadRequest = "download-request",
+  DirectDownloadRequest = "direct-download-request",
+  DownloadProgress = "download-progress",
+  VideoDataRequest = "video-data-request"
+}
+
 // ─── Transport layer ─────────────────────────────────────────────────────────
 
+// Callbacks receive deserialized postMessage data - uses `any` because
+// the generic type parameter isn't available at the transport layer
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type SyncCallback = (value: any) => void;
 
@@ -38,7 +51,7 @@ function broadcast(key: string, value: unknown) {
   // JSON round-trip strips non-cloneable properties (Polymer objects,
   // functions, circular references) that would cause postMessage to throw
   const serializableValue = JSON.parse(JSON.stringify(value));
-  postMessage({ namespace: NAMESPACE, key, value: serializableValue }, "*");
+  postMessage({ namespace: NAMESPACE, key, value: serializableValue }, location.origin);
 }
 
 function subscribe(key: string, callback: SyncCallback) {
