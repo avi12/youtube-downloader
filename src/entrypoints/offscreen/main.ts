@@ -1,8 +1,11 @@
 /**
- * Offscreen document - Chrome MV3 only.
+ * FFmpeg processor page.
  *
- * Runs in a persistent context (not a service worker), so FFmpeg WASM
- * processing completes without being killed by the browser.
+ * Chrome: runs as an offscreen document (persistent, not killed by SW lifecycle).
+ * Firefox: opened as a background tab (no offscreen API available).
+ *
+ * Both provide a full DOM context with Worker + WASM support, so FFmpeg
+ * processing completes without crashing the background script.
  */
 
 import { cancelDownloadsByIds, enqueueStreamData, initFFmpeg } from "@/lib/download-pipeline.ts";

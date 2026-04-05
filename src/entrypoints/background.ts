@@ -14,7 +14,7 @@ export default defineBackground(() => {
   onSabrBodyCaptured(tabId => {
     // Content script might not be ready yet during initial page load.
     // Send notification and silently ignore connection errors.
-    sendMessage(MessageType.SabrBodyReady, {}, tabId).catch(() => {});
+    void sendMessage(MessageType.SabrBodyReady, {}, tabId);
   });
 
   // - Tab tracking -
@@ -38,233 +38,141 @@ export default defineBackground(() => {
     videoIdToTabIds[videoId] = videoIdToTabIds[videoId].filter(id => id !== tabId);
   }
 
-  // - Offscreen document management (Chrome only) -
+  // - FFmpeg processor management -
+  // Chrome: offscreen document (persistent, not killed by SW lifecycle)
+  // Firefox: background tab with offscreen.html (no offscreen API available)
 
-  let offscreenDocumentPromise: Promise<void> | null = null;
+  let processorReady: Promise<void> | null = null;
+  let firefoxProcessorTabId: number | null = null;
 
-  function ensureOffscreenDocument() {
-    if (import.meta.env.FIREFOX) {
-      return Promise.resolve();
+  function ensureProcessor() {
+    if (processorReady) {
+      return processorReady;
     }
 
-    if (offscreenDocumentPromise) {
-      return offscreenDocumentPromise;
+    processorReady = import.meta.env.FIREFOX
+      ? ensureFirefoxProcessorTab()
+      : ensureChromeOffscreenDocument();
+
+    return processorReady;
+  }
+
+  async function ensureChromeOffscreenDocument() {
+    let existingContexts: Browser.runtime.ExtensionContext[] = [];
+    try {
+      const contextTypes = [browser.runtime.ContextType.OFFSCREEN_DOCUMENT];
+      existingContexts = await browser.runtime.getContexts({ contextTypes });
+    } catch {
+      // getContexts not available in all environments
     }
 
-    offscreenDocumentPromise = (async () => {
-      let existingContexts: Browser.runtime.ExtensionContext[] = [];
+    if (existingContexts.length > 0) {
+      return;
+    }
+
+    await browser.offscreen.createDocument({
+      url: "/offscreen.html",
+      reasons: [browser.offscreen.Reason.WORKERS],
+      justification: "FFmpeg WASM processing requires a Worker context"
+    });
+  }
+
+  async function ensureFirefoxProcessorTab() {
+    // Check if existing tab is still alive
+    if (firefoxProcessorTabId !== null) {
       try {
-        const contextTypes = [browser.runtime.ContextType.OFFSCREEN_DOCUMENT];
-        existingContexts = await browser.runtime.getContexts({ contextTypes });
+        await browser.tabs.get(firefoxProcessorTabId);
+        return;
       } catch {
-        // getContexts not available in all environments
+        firefoxProcessorTabId = null;
       }
+    }
 
-      if (existingContexts.length > 0) {
-        return;
-      }
+    const tab = await browser.tabs.create({
+      url: browser.runtime.getURL("/offscreen.html"),
+      active: false
+    });
 
-      await browser.offscreen.createDocument({
-        url: "/offscreen.html",
-        reasons: [browser.offscreen.Reason.WORKERS],
-        justification: "FFmpeg WASM processing requires a Worker context"
-      });
-    })();
-
-    return offscreenDocumentPromise;
+    firefoxProcessorTabId = tab.id ?? null;
   }
 
-  // - Chunk forwarding (Chrome only) -
+  void ensureProcessor();
 
-  if (!import.meta.env.FIREFOX) {
-    ensureOffscreenDocument();
+  // - Chunk forwarding to processor -
 
-    // Receive chunk from content script, forward to offscreen for accumulation.
-    // 1 MB per message stays well under the runtime.sendMessage size limit.
-    onMessage(MessageType.StreamChunk, async ({ data, sender }) => {
-      const tabId = sender.tab?.id;
-      if (!tabId) {
-        console.warn("[ytdl:bg] streamChunk: no tabId");
-        return;
-      }
-
-      await ensureOffscreenDocument();
-      await sendMessage(MessageType.ProcessStreamChunk, { ...data, tabId });
-    });
-
-    // Receive stream-end signal, track tab, forward to offscreen for FFmpeg muxing.
-    onMessage(MessageType.StreamEnd, async ({ data, sender }) => {
-      const tabId = sender.tab?.id;
-      if (!tabId) {
-        return;
-      }
-
-      trackVideoForTab(data.videoId, tabId);
-
-      tabTracker[tabId] ??= { videoIdsAvailable: [] };
-
-      if (!tabTracker[tabId].videoIdsAvailable.includes(data.videoId)) {
-        tabTracker[tabId].videoIdsAvailable.push(data.videoId);
-      }
-
-      await ensureOffscreenDocument();
-      await sendMessage(MessageType.ProcessStreamEnd, { ...data, tabId });
-    });
-  }
-
-  // - Firefox: eager FFmpeg init + chunk accumulation -
-
-  if (import.meta.env.FIREFOX) {
-    async function initFirefoxPipeline() {
-      const { initFFmpeg } = await import("../lib/download-pipeline");
-      initFFmpeg(
-        browser.runtime.getURL("/node_modules/@ffmpeg/core/dist/esm/ffmpeg-core.js"),
-        browser.runtime.getURL("/node_modules/@ffmpeg/core/dist/esm/ffmpeg-core.wasm"),
-        browser.runtime.getURL("/node_modules/@ffmpeg/ffmpeg/dist/esm/worker.js")
-      );
+  onMessage(MessageType.StreamChunk, async ({ data, sender }) => {
+    const tabId = sender.tab?.id;
+    if (!tabId) {
+      console.warn("[ytdl:bg] streamChunk: no tabId");
+      return;
     }
 
-    initFirefoxPipeline();
+    await ensureProcessor();
+    await sendMessage(MessageType.ProcessStreamChunk, { ...data, tabId });
+  });
 
-    interface FirefoxAudioStream {
-      chunks: Map<number, Uint8Array>;
-      totalChunks: number;
+  onMessage(MessageType.StreamEnd, async ({ data, sender }) => {
+    const tabId = sender.tab?.id;
+    if (!tabId) {
+      return;
     }
 
-    interface FirefoxStreamAccumulator {
-      videoChunks: Map<number, Uint8Array>;
-      totalVideoChunks: number;
-      // Key: "audio", "audio-extra-0", "audio-extra-1", ...
-      audioStreams: Map<string, FirefoxAudioStream>;
+    trackVideoForTab(data.videoId, tabId);
+
+    tabTracker[tabId] ??= { videoIdsAvailable: [] };
+
+    if (!tabTracker[tabId].videoIdsAvailable.includes(data.videoId)) {
+      tabTracker[tabId].videoIdsAvailable.push(data.videoId);
     }
 
-    // Firefox has no offscreen document - accumulate chunks here, then call
-    // enqueueStreamData directly once all chunks for a video have arrived.
-    const streamAccumulators = new Map<string, FirefoxStreamAccumulator>();
-
-    function assembleStreamChunks(
-      chunks: Map<number, Uint8Array>,
-      totalChunks: number
-    ) {
-      if (totalChunks === 0) {
-        return null;
-      }
-
-      const totalBytes = Array.from(chunks.values())
-        .reduce((sum, chunk) => sum + chunk.byteLength, 0);
-      const result = new Uint8Array(totalBytes);
-      let offset = 0;
-
-      for (let iChunk = 0; iChunk < totalChunks; iChunk++) {
-        const chunk = chunks.get(iChunk);
-        if (!chunk) {
-          continue;
-        }
-
-        result.set(chunk, offset);
-        offset += chunk.byteLength;
-      }
-
-      return result;
-    }
-
-    onMessage(MessageType.StreamChunk, ({ data, sender }) => {
-      const tabId = sender.tab?.id;
-      if (!tabId) {
-        return;
-      }
-
-      const {
-        videoId, streamType, iChunk, totalChunks, chunkBase64
-      } = data;
-      if (!streamAccumulators.has(videoId)) {
-        streamAccumulators.set(videoId, {
-          videoChunks: new Map(),
-          totalVideoChunks: 0,
-          audioStreams: new Map()
-        });
-      }
-
-      const accumulator = streamAccumulators.get(videoId)!;
-      const binaryString = atob(chunkBase64);
-      const normalizedChunk = Uint8Array.from(binaryString, char => char.charCodeAt(0));
-      if (streamType === "video") {
-        accumulator.videoChunks.set(iChunk, normalizedChunk);
-        accumulator.totalVideoChunks = totalChunks;
-      } else {
-        if (!accumulator.audioStreams.has(streamType)) {
-          accumulator.audioStreams.set(streamType, { chunks: new Map(), totalChunks: 0 });
-        }
-
-        const audioStream = accumulator.audioStreams.get(streamType)!;
-        audioStream.chunks.set(iChunk, normalizedChunk);
-        audioStream.totalChunks = totalChunks;
-      }
-    });
-
-    onMessage(MessageType.StreamEnd, async ({ data, sender }) => {
-      const tabId = sender.tab?.id;
-      if (!tabId) {
-        return;
-      }
-
-      const {
-        videoId, type, filenameOutput, videoMimeType, audioMimeType, audioTrackLabels,
-        playlistId, playlistTitle, playlistTotalCount
-      } = data;
-      trackVideoForTab(videoId, tabId);
-
-      if (!tabTracker[tabId]) {
-        tabTracker[tabId] = { videoIdsAvailable: [videoId] };
-      } else if (!tabTracker[tabId].videoIdsAvailable.includes(videoId)) {
-        tabTracker[tabId].videoIdsAvailable.push(videoId);
-      }
-
-      const accumulator = streamAccumulators.get(videoId);
-      streamAccumulators.delete(videoId);
-
-      const primaryAudio = accumulator?.audioStreams.get("audio");
-      const extraTrackLabels = audioTrackLabels.slice(1);
-      const additionalAudioStreams = extraTrackLabels.map((label, iTrack) => {
-        const audioStream = accumulator?.audioStreams.get(`audio-extra-${iTrack}`);
-        return {
-          data: audioStream
-            ? assembleStreamChunks(audioStream.chunks, audioStream.totalChunks)
-            : null,
-          mimeType: audioMimeType,
-          label
-        };
-      });
-
-      const { enqueueStreamData } = await import("../lib/download-pipeline");
-      enqueueStreamData({
-        type,
-        videoId,
-        filenameOutput,
-        videoData: accumulator
-          ? assembleStreamChunks(accumulator.videoChunks, accumulator.totalVideoChunks)
-          : null,
-        audioData: primaryAudio
-          ? assembleStreamChunks(primaryAudio.chunks, primaryAudio.totalChunks)
-          : null,
-        videoMimeType,
-        audioMimeType,
-        primaryAudioLabel: audioTrackLabels[0],
-        additionalAudioStreams,
-        tabId,
-        playlistId,
-        playlistTitle,
-        playlistTotalCount
-      });
-    });
-  }
+    await ensureProcessor();
+    await sendMessage(MessageType.ProcessStreamEnd, { ...data, tabId });
+  });
 
   async function cancelDownloads(videoIds: string[]) {
-    if (!import.meta.env.FIREFOX) {
-      await sendMessage(MessageType.CancelProcessing, { videoIds });
-    } else {
-      const { cancelDownloadsByIds } = await import("../lib/download-pipeline");
-      await cancelDownloadsByIds(videoIds);
+    await sendMessage(MessageType.CancelProcessing, { videoIds });
+  }
+
+  // Split binary data into 1 MB base64-encoded chunks and forward to processor.
+  // Used by DirectDownload and SabrDownload handlers that already have full
+  // video/audio buffers in the background (bypassing the content script relay).
+  async function sendChunksToProcessor(
+    videoId: string, tabId: number,
+    videoData: Uint8Array | null, audioData: Uint8Array | null
+  ) {
+    async function sendChunks(streamType: string, streamData: Uint8Array) {
+      const chunkSize = 1024 * 1024;
+      const totalChunks = Math.ceil(streamData.byteLength / chunkSize);
+
+      for (let iChunk = 0; iChunk < totalChunks; iChunk++) {
+        const start = iChunk * chunkSize;
+        const chunk = streamData.slice(start, start + chunkSize);
+        let base64 = "";
+        const batchSize = 8192;
+
+        for (let batchOffset = 0; batchOffset < chunk.byteLength; batchOffset += batchSize) {
+          base64 += String.fromCharCode(
+            ...chunk.subarray(batchOffset, Math.min(batchOffset + batchSize, chunk.byteLength))
+          );
+        }
+
+        await sendMessage(MessageType.ProcessStreamChunk, {
+          videoId,
+          streamType,
+          iChunk,
+          totalChunks,
+          chunkBase64: btoa(base64),
+          tabId
+        });
+      }
+    }
+
+    if (videoData) {
+      await sendChunks("video", videoData);
+    }
+
+    if (audioData) {
+      await sendChunks("audio", audioData);
     }
   }
 
@@ -345,68 +253,17 @@ export default defineBackground(() => {
       ]);
       console.log(`[ytdl:bg] directDownload: video=${videoData?.byteLength ?? 0} audio=${audioData?.byteLength ?? 0}`);
 
-      if (!import.meta.env.FIREFOX) {
-        await ensureOffscreenDocument();
-
-        async function sendChunksToOffscreen(streamType: string, streamData: Uint8Array) {
-          const chunkSize = 1024 * 1024;
-          const totalChunks = Math.ceil(streamData.byteLength / chunkSize);
-
-          for (let iChunk = 0; iChunk < totalChunks; iChunk++) {
-            const start = iChunk * chunkSize;
-            const chunk = streamData.slice(start, start + chunkSize);
-            let base64 = "";
-            const batchSize = 8192;
-
-            for (let batchOffset = 0; batchOffset < chunk.byteLength; batchOffset += batchSize) {
-              base64 += String.fromCharCode(
-                ...chunk.subarray(batchOffset, Math.min(batchOffset + batchSize, chunk.byteLength))
-              );
-            }
-
-            await sendMessage(MessageType.ProcessStreamChunk, {
-              videoId,
-              streamType,
-              iChunk,
-              totalChunks,
-              chunkBase64: btoa(base64),
-              tabId
-            });
-          }
-        }
-
-        if (videoData) {
-          await sendChunksToOffscreen("video", videoData);
-        }
-
-        if (audioData) {
-          await sendChunksToOffscreen("audio", audioData);
-        }
-
-        await sendMessage(MessageType.ProcessStreamEnd, {
-          type: downloadType,
-          videoId,
-          filenameOutput,
-          videoMimeType,
-          audioMimeType,
-          audioTrackLabels: [""],
-          tabId
-        });
-      } else {
-        const { enqueueStreamData } = await import("../lib/download-pipeline");
-        await enqueueStreamData({
-          type: downloadType,
-          videoId,
-          filenameOutput,
-          videoData,
-          audioData,
-          videoMimeType,
-          audioMimeType,
-          primaryAudioLabel: "",
-          additionalAudioStreams: [],
-          tabId
-        });
-      }
+      await ensureProcessor();
+      await sendChunksToProcessor(videoId, tabId, videoData, audioData);
+      await sendMessage(MessageType.ProcessStreamEnd, {
+        type: downloadType,
+        videoId,
+        filenameOutput,
+        videoMimeType,
+        audioMimeType,
+        audioTrackLabels: [""],
+        tabId
+      });
 
       return true;
     } catch (error) {
@@ -560,74 +417,27 @@ export default defineBackground(() => {
       const audioMimeType = sabrConfig.formats.find(
         format => format.itag === request.audioItag
       )?.mimeType.split(";")[0] ?? "audio/mp4";
-      // Feed directly into the pipeline (bypass chunk relay)
-      if (!import.meta.env.FIREFOX) {
-        await ensureOffscreenDocument();
-
-        // Send chunks to offscreen
-        async function sendChunksToOffscreen(streamType: string, streamData: Uint8Array) {
-          const chunkSize = 1024 * 1024;
-          const totalChunks = Math.ceil(streamData.byteLength / chunkSize);
-          for (let iChunk = 0; iChunk < totalChunks; iChunk++) {
-            const start = iChunk * chunkSize;
-            const chunk = streamData.slice(start, start + chunkSize);
-            let base64 = "";
-            const batchSize = 8192;
-            for (let batchOffset = 0; batchOffset < chunk.byteLength; batchOffset += batchSize) {
-              base64 += String.fromCharCode(
-                ...chunk.subarray(batchOffset, Math.min(batchOffset + batchSize, chunk.byteLength))
-              );
-            }
-            await sendMessage(MessageType.ProcessStreamChunk, {
-              videoId: request.videoId,
-              streamType,
-              iChunk,
-              totalChunks,
-              chunkBase64: btoa(base64),
-              tabId
-            });
-          }
-        }
-
-        if (request.type !== "audio" && videoData.byteLength > 0) {
-          await sendChunksToOffscreen("video", videoData);
-        }
-
-        if (request.type !== "video" && audioData.byteLength > 0) {
-          await sendChunksToOffscreen("audio", audioData);
-        }
-
-        await sendMessage(MessageType.ProcessStreamEnd, {
-          type: request.type,
-          videoId: request.videoId,
-          filenameOutput: request.filenameOutput,
-          videoMimeType,
-          audioMimeType,
-          audioTrackLabels: [""],
-          tabId
-        });
-      } else {
-        // Firefox: process directly in background
-        const { enqueueStreamData } = await import("../lib/download-pipeline");
-        await enqueueStreamData({
-          videoId: request.videoId,
-          filenameOutput: request.filenameOutput,
-          type: request.type,
-          videoData: request.type !== "audio" ? videoData : null,
-          audioData: request.type !== "video" ? audioData : null,
-          videoMimeType,
-          audioMimeType,
-          primaryAudioLabel: "",
-          additionalAudioStreams: [],
-          tabId
-        });
-      }
+      await ensureProcessor();
+      await sendChunksToProcessor(
+        request.videoId, tabId,
+        request.type !== "audio" && videoData.byteLength > 0 ? videoData : null,
+        request.type !== "video" && audioData.byteLength > 0 ? audioData : null
+      );
+      await sendMessage(MessageType.ProcessStreamEnd, {
+        type: request.type,
+        videoId: request.videoId,
+        filenameOutput: request.filenameOutput,
+        videoMimeType,
+        audioMimeType,
+        audioTrackLabels: [""],
+        tabId
+      });
 
       return true;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       console.error("[ytdl:bg] SabrStream download failed:", errorMessage);
-      browser.storage.local.set({ ytdlBgDebug: `error: ${errorMessage}` });
+      void browser.storage.local.set({ ytdlBgDebug: `error: ${errorMessage}` });
       return false;
     }
   });
@@ -737,6 +547,13 @@ export default defineBackground(() => {
   // - Tab lifecycle -
 
   browser.tabs.onRemoved.addListener(async tabId => {
+    // Reset Firefox processor tab if it was closed
+    if (tabId === firefoxProcessorTabId) {
+      firefoxProcessorTabId = null;
+      processorReady = null;
+      return;
+    }
+
     const tracked = tabTracker[tabId];
     if (!tracked) {
       return;
