@@ -114,15 +114,21 @@ export default defineContentScript({
         cancelStreamTransfer(id);
       }
 
-      // Notify background to cancel FFmpeg processing
       void sendMessage(MessageType.CancelDownload, { videoIds });
+
+      // Notify MAIN world to abort active fetches via postMessage
+      // (not crossWorldMessenger, which would loop back to our own handler)
+      postMessage({
+        namespace: SYNC_NAMESPACE,
+        key: SyncKey.CancelDownload,
+        value: { videoIds }
+      }, location.origin);
     }
 
     crossWorldMessenger.onMessage(CrossWorldMessage.CancelDownload, ({ data }) => {
       handleCancel(data.videoIds);
     });
 
-    // Also handle cancel from grid items via synced signal
     addEventListener("message", e => {
       if (e.data?.namespace !== SYNC_NAMESPACE || e.data.key !== SyncKey.CancelRequest) {
         return;
@@ -130,14 +136,6 @@ export default defineContentScript({
 
       if (e.data.value?.videoIds) {
         handleCancel(e.data.value.videoIds);
-
-        // Notify MAIN world to abort active fetches via postMessage
-        // (not crossWorldMessenger, which would loop back to our own handler)
-        postMessage({
-          namespace: SYNC_NAMESPACE,
-          key: SyncKey.CancelDownload,
-          value: { videoIds: e.data.value.videoIds }
-        }, location.origin);
       }
     });
 
