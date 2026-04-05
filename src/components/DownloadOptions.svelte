@@ -3,7 +3,6 @@
   import { supportedExtensions } from "../lib/utils";
   import type { AdaptiveFormatItem, DownloadType } from "../types";
   import Select from "./Select.svelte";
-  import { z } from "zod";
 
   type Props = {
     downloadType: DownloadType;
@@ -40,52 +39,31 @@
   const extensionType = $derived(downloadType === "audio" ? "audio" : "video");
   const fullFilename = $derived(`${filename}.${extension}`);
 
-  const filenameValidationError = $derived.by(() => {
-    const schema = createFilenameSchema(extensionType);
-    const result = schema.safeParse(fullFilename);
-    if (result.success) {
-      return "";
+  function getFilenameError(value: string, type: "video" | "audio") {
+    const dotIndex = value.indexOf(".");
+    if (dotIndex === -1) {
+      return "Filename needs a file extension";
     }
 
-    return result.error.issues[0].message;
-  });
-  const isFilenameValid = $derived(!filenameValidationError);
+    const name = value.slice(0, value.lastIndexOf("."));
+    if (!name.trim()) {
+      return "Filename can't be empty";
+    }
 
-  function createFilenameSchema(type: "video" | "audio") {
+    const ext = value.slice(value.lastIndexOf(".") + 1).toLowerCase();
     const validExtensions = supportedExtensions[type];
-    return z.string().superRefine((value, context) => {
-      const dotIndex = value.indexOf(".");
-      if (dotIndex === -1) {
-        context.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Filename needs a file extension"
-        });
-        return;
-      }
+    if (!validExtensions.includes(ext)) {
+      return `Extension .${ext} isn't supported for ${type} - try ${validExtensions.join(", ")}`;
+    }
 
-      const name = value.slice(0, value.lastIndexOf("."));
-      if (!name.trim()) {
-        context.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Filename can't be empty"
-        });
-        return;
-      }
-
-      const ext = value.slice(value.lastIndexOf(".") + 1).toLowerCase();
-      if (!validExtensions.includes(ext)) {
-        context.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: `Extension .${ext} isn't supported for ${type} - try ${validExtensions.join(", ")}`
-        });
-      }
-    });
+    return "";
   }
 
+  const filenameValidationError = $derived(getFilenameError(fullFilename, extensionType));
+  const isFilenameValid = $derived(!filenameValidationError);
+
   function validateFilename(elInput: HTMLInputElement, value: string) {
-    const schema = createFilenameSchema(extensionType);
-    const result = schema.safeParse(value);
-    const errorMessage = result.success ? "" : result.error.issues[0].message;
+    const errorMessage = getFilenameError(value, extensionType);
     elInput.setCustomValidity(errorMessage);
     elInput.reportValidity();
   }

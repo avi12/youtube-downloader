@@ -159,7 +159,7 @@
       return;
     }
 
-    updateAudioExtension(target.value);
+    void updateAudioExtension(target.value);
   }
 
   function handleVideoExtensionChange(e: Event) {
@@ -168,7 +168,7 @@
       return;
     }
 
-    updateVideoExtension(target.value);
+    void updateVideoExtension(target.value);
   }
 
   function handleVideoQualityChange(e: Event) {
@@ -177,7 +177,7 @@
       return;
     }
 
-    updateVideoQuality(Number(target.value));
+    void updateVideoQuality(Number(target.value));
   }
 
   function handleRemoveNativeDownloadChange(e: Event) {
@@ -186,7 +186,7 @@
       return;
     }
 
-    updateRemoveNativeDownload(target.checked);
+    void updateRemoveNativeDownload(target.checked);
   }
 
   // --- Lifecycle -------------------------------------------------------------
@@ -212,7 +212,7 @@
       ]);
     }
 
-    initialize();
+    void initialize();
     return listenToStorageChanges();
   });
 

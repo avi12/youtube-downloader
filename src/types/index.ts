@@ -1,29 +1,22 @@
 // Re-export YouTube API/runtime types
 import type { AdaptiveFormatItem, PlayerResponse } from "./youtube";
 
-export type { AdaptiveFormatItem,
+export type {
+  AdaptiveFormatItem,
   ButtonViewModelData,
-  FormatItem,
-  MediaItem,
   PlayerResponse,
   TpYtIronDropdownElement,
-  TpYtPaperDropdownMenuElement,
-  TpYtPaperProgressElement,
-  YtButtonViewModelElement } from "./youtube";
+  YtButtonViewModelElement
+} from "./youtube";
 
-export { AudioQuality,
+export {
   ButtonSize,
   ButtonState,
   ButtonStyle,
   ButtonType,
   IconName,
-  PlayabilityStatus,
-  QualityLabel,
-  TooltipPlacement,
-  TooltipStyle,
-  tpYtPaperProgressSchema,
-  isValidPolymerElement,
-  VideoQuality } from "./youtube";
+  isPolymerProgressElement
+} from "./youtube";
 
 // -- Extension state types ----------------------------------------------------
 
@@ -104,6 +97,18 @@ export type ProcessStreamData = StreamData & {
   playlistId?: string;
   playlistTitle?: string;
   playlistTotalCount?: number;
+};
+
+export type StreamDataPayload = {
+  downloadType: DownloadType;
+  videoId: string;
+  filenameOutput: string;
+  videoData: Uint8Array | null;
+  audioData: Uint8Array | null;
+  videoMimeType: string;
+  audioMimeType: string;
+  audioLabel: string;
+  additionalAudioData: AudioStreamData[];
 };
 
 export type StreamError = {

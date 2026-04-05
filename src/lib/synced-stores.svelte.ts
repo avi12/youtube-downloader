@@ -8,7 +8,7 @@
 import { createSyncedMap, createSyncedSignal } from "./synced-signal.svelte";
 import type { DownloadRequest, InterruptedDownload, ProgressType, VideoData } from "@/types";
 
-export { SyncKey } from "./synced-signal.svelte";
+export { SYNC_NAMESPACE, SyncKey } from "./synced-signal.svelte";
 
 // ─── SABR credentials (MAIN world writes, isolated world reads) ──────────
 

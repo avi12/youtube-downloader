@@ -4,6 +4,7 @@
     downloadProgressStore,
     type DownloadProgressState,
     downloadRequestSignal,
+    SYNC_NAMESPACE,
     SyncKey,
     videoDataRequests,
     videoDataStore
@@ -235,7 +236,7 @@
     const panelContentId = `ytdl-grid-panel-${videoId}`;
 
     postMessage({
-      namespace: "ytdl-sync",
+      namespace: SYNC_NAMESPACE,
       key: SyncKey.CreateDropdown,
       value: {
         contentId: panelContentId,
@@ -247,7 +248,7 @@
     // Uses postMessage (not CustomEvent.detail) because CustomEvent.detail
     // is not accessible when crossing from MAIN world to isolated world.
     function handleDropdownReady(e: MessageEvent) {
-      if (e.data?.namespace !== "ytdl-sync" || e.data?.key !== SyncKey.DropdownReady) {
+      if (e.data?.namespace !== SYNC_NAMESPACE || e.data?.key !== SyncKey.DropdownReady) {
         return;
       }
 
@@ -298,12 +299,16 @@
     }
 
     if (panelInstance) {
-      unmount(panelInstance);
+      void unmount(panelInstance);
       panelInstance = null;
     }
 
     if (elDropdown) {
-      postMessage({ namespace: "ytdl-sync", key: SyncKey.CloseDropdown, value: { videoId } }, location.origin);
+      postMessage({
+        namespace: SYNC_NAMESPACE,
+        key: SyncKey.CloseDropdown,
+        value: { videoId }
+      }, location.origin);
       elDropdown = null;
     }
   }

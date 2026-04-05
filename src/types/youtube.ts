@@ -1,8 +1,6 @@
 // Types describing YouTube's API responses and Polymer runtime elements.
 // These are not our own types - they mirror shapes defined by YouTube.
 
-import { z } from "zod";
-
 type Thumbnail = {
   thumbnails: { url: string; width: number; height: number }[];
 };
@@ -264,23 +262,13 @@ export type ButtonViewModelData = {
   loggingDirectives?: Record<string, unknown>;
 };
 
-// ─── Polymer element schemas ─────────────────────────────────────────────────
-// Zod schemas validate at runtime that YouTube's Polymer elements expose the
-// methods and properties we depend on. Each schema is the single source of
-// truth - the TypeScript type is derived via z.infer.
+// ─── Polymer element type guards ─────────────────────────────────────────────
+// Runtime checks for YouTube's Polymer custom elements. Zod can't be used
+// in content scripts because YouTube's Trusted Types CSP blocks it.
 
-const polymerMethod = z.custom<(...args: unknown[]) => unknown>(value => typeof value === "function");
-
-export const tpYtPaperProgressSchema = z.looseObject({
-  value: z.number(),
-  max: z.number(),
-  indeterminate: z.boolean(),
-  updateStyles: polymerMethod
-});
-
-// Types use explicit method signatures since z.infer can't express them.
-// The schemas above validate the shape at runtime; these types provide
-// compile-time autocomplete and type checking for call sites.
+export function isPolymerProgressElement(element: Element): element is TpYtPaperProgressElement {
+  return "updateStyles" in element && "value" in element;
+}
 
 export interface YtButtonViewModelElement extends HTMLElement {
   data: ButtonViewModelData;
@@ -309,17 +297,6 @@ export interface TpYtIronDropdownElement extends HTMLElement {
   open(): void;
   close(): void;
   refit(): void;
-}
-
-/**
- * Validates that an Element conforms to a Polymer element schema.
- * Returns the narrowed type on success, null on failure.
- */
-export function isValidPolymerElement<T>(
-  element: Element,
-  schema: z.ZodType<T>
-): element is HTMLElement & T {
-  return schema.safeParse(element).success;
 }
 
 declare global {
