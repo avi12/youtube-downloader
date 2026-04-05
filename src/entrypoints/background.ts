@@ -273,12 +273,7 @@ export default defineBackground(() => {
       console.log(`[ytdl:bg] directDownload: video=${videoData?.byteLength ?? 0} audio=${audioData?.byteLength ?? 0}`);
 
       await ensureProcessor();
-      await sendChunksToProcessor({
-        videoId,
-        tabId,
-        videoData,
-        audioData
-      });
+      await sendChunksToProcessor({ videoId, tabId, videoData, audioData });
       await sendMessage(MessageType.ProcessStreamEnd, {
         type: downloadType,
         videoId,

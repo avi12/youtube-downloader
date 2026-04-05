@@ -306,12 +306,7 @@ async function processVideoAudio(item: ProcessStreamData, ffmpeg: FFmpeg) {
   const videoExtension = videoMimeType.includes("webm") ? "webm" : "mp4";
   const audioExtension = audioMimeType.includes("webm") ? "webm" : "m4a";
   const hasExtraTracks = (additionalAudioStreams?.length ?? 0) > 0;
-  const outputExtension = determineOutputExtension({
-    videoMimeType,
-    audioMimeType,
-    hasExtraTracks,
-    filenameOutput
-  });
+  const outputExtension = determineOutputExtension({ videoMimeType, audioMimeType, hasExtraTracks, filenameOutput });
 
   const filenameBase = filenameOutput.replace(/\.[^.]+$/, "");
   const downloadFilename = `${filenameBase}.${outputExtension}`;

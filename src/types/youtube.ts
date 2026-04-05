@@ -1,10 +1,19 @@
 // Types describing YouTube's API responses and Polymer runtime elements.
 // These are not our own types - they mirror shapes defined by YouTube.
 
+type ThumbnailEntry = {
+  url: string;
+  width: number;
+  height: number;
+};
+
 type Thumbnail = {
-  thumbnails: { url: string;
-    width: number;
-    height: number; }[];
+  thumbnails: ThumbnailEntry[];
+};
+
+type ByteRange = {
+  start: `${number}`;
+  end: `${number}`;
 };
 
 export type MediaItem = {
@@ -12,10 +21,8 @@ export type MediaItem = {
   url?: string;
   mimeType: `${"video" | "audio"}/${string}`;
   bitrate: number;
-  initRange: { start: "0";
-    end: `${number}`; };
-  indexRange: { start: `${number}`;
-    end: `${number}`; };
+  initRange: ByteRange;
+  indexRange: ByteRange;
   lastModified: number;
   contentLength: `${number}`;
   averageBitrate: number;

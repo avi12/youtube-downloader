@@ -105,11 +105,7 @@ export function handlePlaylistVideoAdditions(
   }
 
   for (const elVideoItem of elContents.querySelectorAll("ytd-playlist-video-renderer")) {
-    injectPlaylistVideoItemUi({
-      context,
-      options,
-      elVideoItem
-    });
+    injectPlaylistVideoItemUi({ context, options, elVideoItem });
   }
 
   const mutationObserver = new MutationObserver(mutations => {

@@ -158,11 +158,7 @@ export function injectGridVideoButtons(
   options: Options
 ) {
   function inject(elCard: Element) {
-    injectGridVideoButton({
-      context,
-      options,
-      elCard
-    });
+    injectGridVideoButton({ context, options, elCard });
   }
 
   function scanAllCards() {

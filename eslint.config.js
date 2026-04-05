@@ -92,12 +92,12 @@ const tsStyleRules = {
   "@stylistic/object-curly-newline": [
     "error",
     {
-      ObjectExpression: { multiline: true, minProperties: 4 },
-      ObjectPattern: { multiline: true, minProperties: 4 },
-      ExportDeclaration: { multiline: true, minProperties: 4 }
+      ObjectExpression: { consistent: true, multiline: true },
+      ObjectPattern: { consistent: true, multiline: true },
+      ExportDeclaration: { consistent: true, multiline: true }
     }
   ],
-  "@stylistic/object-property-newline": ["error", { allowAllPropertiesOnSameLine: false }],
+  "@stylistic/object-property-newline": ["error", { allowAllPropertiesOnSameLine: true }],
   "id-length": ["error", { min: 3, exceptions: ["z", "_", "i", "fs", "id", "os", "e", "db", "mi", "ui", "HL", "GL", "js", "q", "to", "dd", "mm", "x", "y", "d"], properties: "never" }],
   "func-style": ["error", "declaration", { allowArrowFunctions: false }],
   "no-restricted-syntax": [
