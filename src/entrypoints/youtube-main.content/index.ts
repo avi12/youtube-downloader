@@ -166,7 +166,9 @@ export default defineContentScript({
             throw new TypeError("Background fetch failed");
           }
 
-          const responseBytes = Uint8Array.from(atob(result.bodyBase64), character => character.charCodeAt(0));
+          const responseBytes = Uint8Array.from(atob(result.bodyBase64), character => {
+            return character.charCodeAt(0);
+          });
           return new Response(responseBytes, {
             status: result.status,
             headers: { "content-type": "application/vnd.yt-ump" }
@@ -508,10 +510,14 @@ export default defineContentScript({
         }
 
         const videoFormat = type !== "audio"
-          ? (cachedVideoData.videoFormats.find(format => format.itag === videoItag) ?? cachedVideoData.videoFormats[0])
+          ? (cachedVideoData.videoFormats.find(format => {
+            return format.itag === videoItag;
+          }) ?? cachedVideoData.videoFormats[0])
           : null;
         const audioFormat = type !== "video"
-          ? (cachedVideoData.audioFormats.find(format => format.itag === audioItag) ?? cachedVideoData.audioFormats[0])
+          ? (cachedVideoData.audioFormats.find(format => {
+            return format.itag === audioItag;
+          }) ?? cachedVideoData.audioFormats[0])
           : null;
 
         const videoMimeType = videoFormat?.mimeType.split(";")[0] ?? "video/mp4";
@@ -585,7 +591,9 @@ export default defineContentScript({
               audioMimeType,
               audioLabel,
               additionalAudioData: additionalAudioData
-                .filter((track): track is NonNullable<typeof track> => track !== null)
+                .filter((track): track is NonNullable<typeof track> => {
+                  return track !== null;
+                })
             });
 
             capturedMedia.delete(videoId);
@@ -610,7 +618,9 @@ export default defineContentScript({
             const [resolvedVideoUrl, resolvedAudioUrl, ...resolvedExtraUrls] = await Promise.all([
               type !== "audio" ? resolveFormatUrl(videoFormat) : Promise.resolve(null),
               type !== "video" ? resolveFormatUrl(audioFormat) : Promise.resolve(null),
-              ...extraAudioFormats.map(format => resolveFormatUrl(format))
+              ...extraAudioFormats.map(format => {
+                return resolveFormatUrl(format);
+              })
             ]);            if (!resolvedVideoUrl && !resolvedAudioUrl) {
               console.warn("[ytdl] Could not resolve any format URLs");
             } else {
@@ -646,18 +656,21 @@ export default defineContentScript({
                 resolvedAudioUrl
                   ? fetchStreamFromUrl(resolvedAudioUrl, reportDownloadProgress, signal)
                   : Promise.resolve(null),
-                ...resolvedExtraUrls.map(url =>
-                  url
+                ...resolvedExtraUrls.map(url => {
+                  return url
                     ? fetchStreamFromUrl(url, reportDownloadProgress, signal)
-                    : Promise.resolve(null)
+                    : Promise.resolve(null);
+                }
                 )
               ]);
 
-              const additionalAudioData = extraAudioFormats.map((format, iTrack) => ({
-                data: extraAudioBytes[iTrack] ?? null,
-                mimeType: format.mimeType.split(";")[0] ?? "audio/mp4",
-                label: format.audioTrack?.displayName ?? `Track ${iTrack + 2}`
-              }));
+              const additionalAudioData = extraAudioFormats.map((format, iTrack) => {
+                return {
+                  data: extraAudioBytes[iTrack] ?? null,
+                  mimeType: format.mimeType.split(";")[0] ?? "audio/mp4",
+                  label: format.audioTrack?.displayName ?? `Track ${iTrack + 2}`
+                };
+              });
 
               dispatchStreamData({
                 type,
@@ -1177,7 +1190,9 @@ export default defineContentScript({
 
       addEventListener("message", handleSyncedProgress);
       const unsubscribePanelClosed = crossWorldMessenger.onMessage(
-        CrossWorldMessage.PanelClosed, () => handlePanelClosed()
+        CrossWorldMessage.PanelClosed, () => {
+          return handlePanelClosed();
+        }
       );
       const unsubscribeFilenameChanged = crossWorldMessenger.onMessage(
         CrossWorldMessage.FilenameChanged, ({ data }) => {
@@ -1319,7 +1334,9 @@ export default defineContentScript({
       // Notify the isolated world that the dropdown is ready, then open it.
       // Opening after a frame lets Polymer finish initialization.
       postMessage({ namespace: SYNC_NAMESPACE, key: SyncKey.DropdownReady, value: { contentId } }, location.origin);
-      requestAnimationFrame(() => elDropdown.open());
+      requestAnimationFrame(() => {
+        return elDropdown.open();
+      });
     });
 
     addEventListener("message", e => {
@@ -1393,7 +1410,9 @@ export default defineContentScript({
           return;
         }
 
-        await new Promise(resolve => setTimeout(resolve, 250));
+        await new Promise(resolve => {
+          return setTimeout(resolve, 250);
+        });
       }
     }
 
@@ -1555,10 +1574,18 @@ export default defineContentScript({
       }
 
       const formats = playerData.streamingData?.adaptiveFormats ?? [];
-      const videoFormat = formats.find((format: { itag: number }) => format.itag === videoItag)
-        ?? formats.find((format: { mimeType?: string }) => format.mimeType?.startsWith("video"));
-      const audioFormat = formats.find((format: { itag: number }) => format.itag === audioItag)
-        ?? formats.find((format: { mimeType?: string }) => format.mimeType?.startsWith("audio"));
+      const videoFormat = formats.find((format: { itag: number }) => {
+        return format.itag === videoItag;
+      })
+        ?? formats.find((format: { mimeType?: string }) => {
+          return format.mimeType?.startsWith("video");
+        });
+      const audioFormat = formats.find((format: { itag: number }) => {
+        return format.itag === audioItag;
+      })
+        ?? formats.find((format: { mimeType?: string }) => {
+          return format.mimeType?.startsWith("audio");
+        });
 
       const videoUrl = downloadType !== "audio" ? videoFormat?.url : null;
       const audioUrl = downloadType !== "video" ? audioFormat?.url : null;
@@ -1705,7 +1732,9 @@ export default defineContentScript({
     if (document.readyState === "complete") {
       await extractAndDispatchVideoData();
     } else {
-      addEventListener("load", () => extractAndDispatchVideoData(), { once: true });
+      addEventListener("load", () => {
+        return extractAndDispatchVideoData();
+      }, { once: true });
     }
   }
 });

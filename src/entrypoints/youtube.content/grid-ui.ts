@@ -172,11 +172,15 @@ export function injectGridVideoButtons(
 
   const elPageContent = document.querySelector(PAGE_MANAGER_SELECTOR) ?? document.body;
   gridObserver.observe(elPageContent, { childList: true, subtree: true });
-  context.onInvalidated(() => gridObserver?.disconnect());
+  context.onInvalidated(() => {
+    return gridObserver?.disconnect();
+  });
 }
 
 const NON_GRID_ROUTES = ["/watch", "/playlist", "/shorts", "/results", "/premium", "/account"];
 
 export function isVideoGridPage(pathname: string) {
-  return !NON_GRID_ROUTES.some(route => pathname.startsWith(route));
+  return !NON_GRID_ROUTES.some(route => {
+    return pathname.startsWith(route);
+  });
 }

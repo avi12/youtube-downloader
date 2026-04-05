@@ -35,7 +35,9 @@ export default defineBackground(() => {
       return;
     }
 
-    videoIdToTabIds[videoId] = videoIdToTabIds[videoId].filter(id => id !== tabId);
+    videoIdToTabIds[videoId] = videoIdToTabIds[videoId].filter(id => {
+      return id !== tabId;
+    });
   }
 
   // - FFmpeg processor management -
@@ -183,13 +185,17 @@ export default defineBackground(() => {
     const bodyBase64 = "bodyBase64" in data ? String(data.bodyBase64) : "";
 
     try {
-      const bodyBytes = Uint8Array.from(atob(bodyBase64), character => character.charCodeAt(0));
+      const bodyBytes = Uint8Array.from(atob(bodyBase64), character => {
+        return character.charCodeAt(0);
+      });
 
       // Include YouTube session cookies - googlevideo.com needs them for auth
       const youtubeCookies = await browser.cookies.getAll({ domain: ".youtube.com" });
       const googlevideoCookies = await browser.cookies.getAll({ domain: ".googlevideo.com" });
       const allCookies = [...youtubeCookies, ...googlevideoCookies];
-      const cookieString = allCookies.map(cookie => `${cookie.name}=${cookie.value}`).join("; ");
+      const cookieString = allCookies.map(cookie => {
+        return `${cookie.name}=${cookie.value}`;
+      }).join("; ");
 
       const response = await fetch(fetchUrl, {
         method: "POST",
@@ -304,27 +310,33 @@ export default defineBackground(() => {
       const { buildSabrFormat } = await import("googlevideo/utils");
 
       const sabrConfig = request.sabrConfig;
-      const sabrFormats = sabrConfig.formats.map(format => buildSabrFormat({
-        itag: format.itag,
-        lastModified: String(format.lastModified),
-        xtags: format.xtags,
-        width: format.width,
-        height: format.height,
-        mimeType: format.mimeType,
-        audioQuality: format.audioQuality,
-        bitrate: format.bitrate,
-        averageBitrate: format.averageBitrate,
-        quality: format.quality,
-        qualityLabel: format.qualityLabel ?? undefined,
-        audioTrackId: format.audioTrack?.id,
-        approxDurationMs: format.approxDurationMs,
-        contentLength: format.contentLength,
-        isDrc: false
-      }));
+      const sabrFormats = sabrConfig.formats.map(format => {
+        return buildSabrFormat({
+          itag: format.itag,
+          lastModified: String(format.lastModified),
+          xtags: format.xtags,
+          width: format.width,
+          height: format.height,
+          mimeType: format.mimeType,
+          audioQuality: format.audioQuality,
+          bitrate: format.bitrate,
+          averageBitrate: format.averageBitrate,
+          quality: format.quality,
+          qualityLabel: format.qualityLabel ?? undefined,
+          audioTrackId: format.audioTrack?.id,
+          approxDurationMs: format.approxDurationMs,
+          contentLength: format.contentLength,
+          isDrc: false
+        });
+      });
 
       const durationMs = parseInt(sabrConfig.formats[0]?.approxDurationMs ?? "0");
-      const videoFormat = sabrFormats.find(format => format.itag === request.videoItag);
-      const audioFormat = sabrFormats.find(format => format.itag === request.audioItag);
+      const videoFormat = sabrFormats.find(format => {
+        return format.itag === request.videoItag;
+      });
+      const audioFormat = sabrFormats.find(format => {
+        return format.itag === request.audioItag;
+      });
       if (!videoFormat || !audioFormat) {
         return false;
       }
@@ -335,7 +347,9 @@ export default defineBackground(() => {
       async function sabrFetch(input: RequestInfo | URL, init?: RequestInit) {
         const youtubeCookies = await browser.cookies.getAll({ domain: ".youtube.com" });
         const cookieString = youtubeCookies
-          .map(cookie => `${cookie.name}=${cookie.value}`)
+          .map(cookie => {
+            return `${cookie.name}=${cookie.value}`;
+          })
           .join("; ");
 
         return fetch(input, {
@@ -411,11 +425,15 @@ export default defineBackground(() => {
       ]);
 
       const videoMimeType = sabrConfig.formats.find(
-        format => format.itag === request.videoItag
+        format => {
+          return format.itag === request.videoItag;
+        }
       )?.mimeType.split(";")[0] ?? "video/mp4";
 
       const audioMimeType = sabrConfig.formats.find(
-        format => format.itag === request.audioItag
+        format => {
+          return format.itag === request.audioItag;
+        }
       )?.mimeType.split(";")[0] ?? "audio/mp4";
       await ensureProcessor();
       await sendChunksToProcessor(

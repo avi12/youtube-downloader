@@ -128,6 +128,7 @@ const tsStyleRules = {
       newlinesBetween: 0
     }
   ],
+  "arrow-body-style": ["error", "always"],
   "no-nested-ternary": "error",
   "@typescript-eslint/consistent-type-assertions": ["error", { assertionStyle: "never" }],
   "@typescript-eslint/no-floating-promises": "error"

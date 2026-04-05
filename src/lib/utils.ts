@@ -48,13 +48,15 @@ export const extensionToMimeAll: Record<string, string> = {
 
 export const extensionToMime: { video: Record<string, string>; audio: Record<string, string> } = {
   video: Object.fromEntries(
-    Object.entries(extensionToMimeAll).filter(([, mimeType]) =>
-      mimeType.startsWith("video")
+    Object.entries(extensionToMimeAll).filter(([, mimeType]) => {
+      return mimeType.startsWith("video");
+    }
     )
   ),
   audio: Object.fromEntries(
-    Object.entries(extensionToMimeAll).filter(([, mimeType]) =>
-      mimeType.startsWith("audio")
+    Object.entries(extensionToMimeAll).filter(([, mimeType]) => {
+      return mimeType.startsWith("audio");
+    }
     )
   )
 };
@@ -144,7 +146,9 @@ export function isVideoDownloadable(playerResponse: PlayerResponse) {
   }
 
   const formats = streamingData.adaptiveFormats ?? [];
-  return formats.some(format => Boolean(format.url) || Boolean(format.signatureCipher))
+  return formats.some(format => {
+    return Boolean(format.url) || Boolean(format.signatureCipher);
+  })
     || Boolean(streamingData.serverAbrStreamingUrl);
 }
 

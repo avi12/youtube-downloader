@@ -49,7 +49,9 @@ export async function generatePoToken(videoId: string) {
       break;
     }
 
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => {
+      return setTimeout(resolve, 500);
+    });
   }
 
   const botGuardVm = globalRecord[globalName];

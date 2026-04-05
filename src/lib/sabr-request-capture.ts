@@ -181,7 +181,9 @@ export function extractPoTokenFromBody(body: number[]) {
 export function getDebugCaptureState() {
   return {
     capturedTabIds: [...capturedByTab.keys()],
-    sizes: [...capturedByTab.entries()].map(([id, d]) => ({ tabId: id, bodySize: d.body.length }))
+    sizes: [...capturedByTab.entries()].map(([id, d]) => {
+      return { tabId: id, bodySize: d.body.length };
+    })
   };
 }
 

@@ -42,7 +42,9 @@ async function sendStreamChunks(
   for (let iChunk = 0; iChunk < totalChunks; iChunk++) {
     // Yield to the event loop so cancel signals can be processed
     // and the UI stays responsive during large transfers
-    await new Promise(resolve => setTimeout(resolve, 0));
+    await new Promise(resolve => {
+      return setTimeout(resolve, 0);
+    });
 
     if (cancelledVideoIds.has(videoId)) {
       return;
@@ -102,7 +104,9 @@ export async function handleStreamData(payload: StreamDataPayload) {
 
   const audioTrackLabels = [
     audioLabel ?? "",
-    ...extraAudioStreams.map(track => track.label)
+    ...extraAudioStreams.map(track => {
+      return track.label;
+    })
   ];
 
   const playlistContext = playlistContextByVideoId.get(videoId);

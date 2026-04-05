@@ -127,7 +127,9 @@ async function triggerDownload(data: Uint8Array, filenameOutput: string) {
     const blob = new Blob([new Uint8Array(data)], { type: mimeType });
     const blobUrl = URL.createObjectURL(blob);
     await sendMessage(MessageType.PipelineDownload, { blobUrl, mimeType, filename });
-    setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+    setTimeout(() => {
+      return URL.revokeObjectURL(blobUrl);
+    }, 60_000);
     return;
   }
 
@@ -296,7 +298,9 @@ async function processVideoAudio(item: ProcessStreamData, ffmpeg: FFmpeg) {
 
     const audioTrackLabels = [
       item.primaryAudioLabel ?? "",
-      ...(additionalAudioStreams ?? []).slice(0, extraAudioFilenames.length).map(stream => stream.label)
+      ...(additionalAudioStreams ?? []).slice(0, extraAudioFilenames.length).map(stream => {
+        return stream.label;
+      })
     ];
 
     for (let iTrack = 0; iTrack < audioTrackLabels.length; iTrack++) {

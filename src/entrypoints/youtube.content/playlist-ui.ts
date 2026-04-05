@@ -116,5 +116,7 @@ export function handlePlaylistVideoAdditions(
   });
 
   mutationObserver.observe(elContents, { childList: true });
-  context.onInvalidated(() => mutationObserver.disconnect());
+  context.onInvalidated(() => {
+    return mutationObserver.disconnect();
+  });
 }

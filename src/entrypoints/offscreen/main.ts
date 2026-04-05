@@ -43,7 +43,9 @@ function assembleStreamChunks(chunks: Map<number, Uint8Array>, totalChunks: numb
   }
 
   const totalBytes = chunks.values()
-    .reduce((sum, chunk) => sum + chunk.byteLength, 0);
+    .reduce((sum, chunk) => {
+      return sum + chunk.byteLength;
+    }, 0);
   const result = new Uint8Array(totalBytes);
   let offset = 0;
 
@@ -62,7 +64,9 @@ function assembleStreamChunks(chunks: Map<number, Uint8Array>, totalChunks: numb
 
 function base64ToUint8Array(base64: string) {
   const binaryString = atob(base64);
-  return Uint8Array.from(binaryString, char => char.charCodeAt(0));
+  return Uint8Array.from(binaryString, char => {
+    return char.charCodeAt(0);
+  });
 }
 
 onMessage(MessageType.ProcessStreamChunk, ({ data }) => {
