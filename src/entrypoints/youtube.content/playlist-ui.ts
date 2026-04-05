@@ -54,11 +54,11 @@ export function injectPlaylistDownloaderUi(
   ui.mount();
 }
 
-function injectPlaylistVideoItemUi(
-  context: InstanceType<typeof ContentScriptContext>,
-  options: Options,
-  elVideoItem: Element
-) {
+function injectPlaylistVideoItemUi({ context, options, elVideoItem }: {
+  context: InstanceType<typeof ContentScriptContext>;
+  options: Options;
+  elVideoItem: Element;
+}) {
   const elVideoIdLink = elVideoItem.querySelector<HTMLAnchorElement>("a#video-title");
   if (!elVideoIdLink) {
     return;
@@ -102,14 +102,14 @@ export function handlePlaylistVideoAdditions(
   }
 
   for (const elVideoItem of elContents.querySelectorAll("ytd-playlist-video-renderer")) {
-    injectPlaylistVideoItemUi(context, options, elVideoItem);
+    injectPlaylistVideoItemUi({ context, options, elVideoItem });
   }
 
   const mutationObserver = new MutationObserver(mutations => {
     for (const mutation of mutations) {
       for (const node of mutation.addedNodes) {
         if (node instanceof HTMLElement && node.tagName.toLowerCase() === "ytd-playlist-video-renderer") {
-          injectPlaylistVideoItemUi(context, options, node);
+          injectPlaylistVideoItemUi({ context, options, elVideoItem: node });
         }
       }
     }

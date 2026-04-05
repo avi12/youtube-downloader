@@ -19,12 +19,14 @@ export function cleanupPanelUi() {
   currentInstance = null;
 }
 
-export function mountPanelUi(
-  context: InstanceType<typeof ContentScriptContext>,
-  contentId: string,
-  videoData: VideoData,
-  options: Options
-) {
+export function mountPanelUi({
+  context, contentId, videoData, options
+}: {
+  context: InstanceType<typeof ContentScriptContext>;
+  contentId: string;
+  videoData: VideoData;
+  options: Options;
+}) {
   cleanupPanelUi();
 
   const elContent = document.getElementById(contentId);

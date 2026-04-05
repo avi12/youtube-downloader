@@ -12,11 +12,11 @@ import { cancelDownloadsByIds, enqueueStreamData, initFFmpeg } from "@/lib/downl
 import { MessageType, onMessage } from "@/lib/messaging.ts";
 
 // Start loading FFmpeg immediately
-initFFmpeg(
-  browser.runtime.getURL("/node_modules/@ffmpeg/core/dist/esm/ffmpeg-core.js"),
-  browser.runtime.getURL("/node_modules/@ffmpeg/core/dist/esm/ffmpeg-core.wasm"),
-  browser.runtime.getURL("/node_modules/@ffmpeg/ffmpeg/dist/esm/worker.js")
-);
+initFFmpeg({
+  coreURL: browser.runtime.getURL("/node_modules/@ffmpeg/core/dist/esm/ffmpeg-core.js"),
+  wasmURL: browser.runtime.getURL("/node_modules/@ffmpeg/core/dist/esm/ffmpeg-core.wasm"),
+  classWorkerURL: browser.runtime.getURL("/node_modules/@ffmpeg/ffmpeg/dist/esm/worker.js")
+});
 
 // ─── Chunk accumulation ────────────────────────────────────────────────────────
 // Large video+audio data is split into 1 MB chunks by the content script to

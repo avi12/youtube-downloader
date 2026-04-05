@@ -138,10 +138,14 @@ export default defineBackground(() => {
   // Split binary data into 1 MB base64-encoded chunks and forward to processor.
   // Used by DirectDownload and SabrDownload handlers that already have full
   // video/audio buffers in the background (bypassing the content script relay).
-  async function sendChunksToProcessor(
-    videoId: string, tabId: number,
-    videoData: Uint8Array | null, audioData: Uint8Array | null
-  ) {
+  async function sendChunksToProcessor({
+    videoId, tabId, videoData, audioData
+  }: {
+    videoId: string;
+    tabId: number;
+    videoData: Uint8Array | null;
+    audioData: Uint8Array | null;
+  }) {
     async function sendChunks(streamType: string, streamData: Uint8Array) {
       const chunkSize = 1024 * 1024;
       const totalChunks = Math.ceil(streamData.byteLength / chunkSize);
@@ -260,7 +264,9 @@ export default defineBackground(() => {
       console.log(`[ytdl:bg] directDownload: video=${videoData?.byteLength ?? 0} audio=${audioData?.byteLength ?? 0}`);
 
       await ensureProcessor();
-      await sendChunksToProcessor(videoId, tabId, videoData, audioData);
+      await sendChunksToProcessor({
+        videoId, tabId, videoData, audioData
+      });
       await sendMessage(MessageType.ProcessStreamEnd, {
         type: downloadType,
         videoId,
@@ -436,11 +442,12 @@ export default defineBackground(() => {
         }
       )?.mimeType.split(";")[0] ?? "audio/mp4";
       await ensureProcessor();
-      await sendChunksToProcessor(
-        request.videoId, tabId,
-        request.type !== "audio" && videoData.byteLength > 0 ? videoData : null,
-        request.type !== "video" && audioData.byteLength > 0 ? audioData : null
-      );
+      await sendChunksToProcessor({
+        videoId: request.videoId,
+        tabId,
+        videoData: request.type !== "audio" && videoData.byteLength > 0 ? videoData : null,
+        audioData: request.type !== "video" && audioData.byteLength > 0 ? audioData : null
+      });
       await sendMessage(MessageType.ProcessStreamEnd, {
         type: request.type,
         videoId: request.videoId,

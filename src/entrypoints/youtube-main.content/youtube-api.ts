@@ -70,11 +70,11 @@ export function getFormatsFromPlayerResponse(
 
 // ─── VideoData assembly ───────────────────────────────────────────────────────
 
-export function extractSabrConfig(
-  playerResponse: PlayerResponse,
-  clientVersion: string,
-  clientName: number
-): SabrConfig | null {
+export function extractSabrConfig({ playerResponse, clientVersion, clientName }: {
+  playerResponse: PlayerResponse;
+  clientVersion: string;
+  clientName: number;
+}): SabrConfig | null {
   const serverAbrStreamingUrl = playerResponse.streamingData?.serverAbrStreamingUrl;
   const videoPlaybackUstreamerConfig = playerResponse.playerConfig
     ?.mediaCommonConfig?.mediaUstreamerRequestConfig?.videoPlaybackUstreamerConfig;
@@ -91,11 +91,11 @@ export function extractSabrConfig(
   };
 }
 
-export function buildVideoData(
-  playerResponse: PlayerResponse,
-  clientVersion: string,
-  clientName: number
-) {
+export function buildVideoData({ playerResponse, clientVersion, clientName }: {
+  playerResponse: PlayerResponse;
+  clientVersion: string;
+  clientName: number;
+}) {
   const isDownloadable = isVideoDownloadable(playerResponse);
   const isLive = isVideoLive(playerResponse);
   const isMusic = isVideoMusic(playerResponse);
@@ -114,7 +114,7 @@ export function buildVideoData(
     isLive,
     videoFormats: getUniqueVideoFormats(allFormats),
     audioFormats: getAudioFormats(allFormats),
-    sabrConfig: extractSabrConfig(playerResponse, clientVersion, clientName)
+    sabrConfig: extractSabrConfig({ playerResponse, clientVersion, clientName })
   };
 }
 

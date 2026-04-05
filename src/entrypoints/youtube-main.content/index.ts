@@ -291,7 +291,7 @@ export default defineContentScript({
 
     async function buildAndDispatchVideoData(playerResponse: PlayerResponse) {
       const { clientVersion, clientName } = readYtcfg();
-      const videoData: VideoData = buildVideoData(playerResponse, clientVersion, clientName);
+      const videoData: VideoData = buildVideoData({ playerResponse, clientVersion, clientName });
       videoDataCache.set(videoData.videoId, videoData);
       videoDataStore.set(videoData.videoId, videoData);
 

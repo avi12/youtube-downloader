@@ -105,7 +105,9 @@ export default defineContentScript({
 
     crossWorldMessenger.onMessage(CrossWorldMessage.PanelContentReady, ({ data }) => {
       if (currentVideoData) {
-        mountPanelUi(context, data.contentId, currentVideoData, currentOptions);
+        mountPanelUi({
+          context, contentId: data.contentId, videoData: currentVideoData, options: currentOptions
+        });
       }
     });
 

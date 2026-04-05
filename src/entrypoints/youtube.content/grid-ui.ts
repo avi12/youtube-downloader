@@ -74,11 +74,11 @@ function findAnchorElement(elCard: Element) {
   return null;
 }
 
-function injectGridVideoButton(
-  context: InstanceType<typeof ContentScriptContext>,
-  options: Options,
-  elCard: Element
-) {
+function injectGridVideoButton({ context, options, elCard }: {
+  context: InstanceType<typeof ContentScriptContext>;
+  options: Options;
+  elCard: Element;
+}) {
   const videoId = extractVideoId(elCard);
   if (!videoId || elCard.querySelector(`[data-ytdl-grid-item="${videoId}"]`)) {
     return;
@@ -155,7 +155,7 @@ export function injectGridVideoButtons(
   options: Options
 ) {
   function inject(elCard: Element) {
-    injectGridVideoButton(context, options, elCard);
+    injectGridVideoButton({ context, options, elCard });
   }
 
   function scanAllCards() {

@@ -32,11 +32,11 @@ function uint8ToBase64(bytes: Uint8Array) {
   return btoa(binary);
 }
 
-async function sendStreamChunks(
-  videoId: string,
-  streamType: string,
-  data: Uint8Array
-) {
+async function sendStreamChunks({ videoId, streamType, data }: {
+  videoId: string;
+  streamType: string;
+  data: Uint8Array;
+}) {
   const totalChunks = Math.ceil(data.byteLength / TRANSFER_CHUNK_SIZE);
 
   for (let iChunk = 0; iChunk < totalChunks; iChunk++) {
@@ -86,11 +86,11 @@ export async function handleStreamData(payload: StreamDataPayload) {
   }
 
   if (videoData) {
-    await sendStreamChunks(videoId, "video", videoData);
+    await sendStreamChunks({ videoId, streamType: "video", data: videoData });
   }
 
   if (audioData) {
-    await sendStreamChunks(videoId, "audio", audioData);
+    await sendStreamChunks({ videoId, streamType: "audio", data: audioData });
   }
 
   const extraAudioStreams = additionalAudioData ?? [];
@@ -98,7 +98,7 @@ export async function handleStreamData(payload: StreamDataPayload) {
   for (let iTrack = 0; iTrack < extraAudioStreams.length; iTrack++) {
     const track = extraAudioStreams[iTrack];
     if (track.data) {
-      await sendStreamChunks(videoId, `audio-extra-${iTrack}`, track.data);
+      await sendStreamChunks({ videoId, streamType: `audio-extra-${iTrack}`, data: track.data });
     }
   }
 

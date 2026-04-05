@@ -21,7 +21,11 @@ import { zipSync } from "fflate";
 let ffmpegUrls: { coreURL: string; wasmURL: string; classWorkerURL: string } | null = null;
 let sharedFFmpeg: FFmpeg | null = null;
 
-export function initFFmpeg(coreURL: string, wasmURL: string, classWorkerURL: string) {
+export function initFFmpeg({ coreURL, wasmURL, classWorkerURL }: {
+  coreURL: string;
+  wasmURL: string;
+  classWorkerURL: string;
+}) {
   ffmpegUrls = { coreURL, wasmURL, classWorkerURL };
   void sendMessage(MessageType.PipelineFFmpegReady, {});
 }
@@ -85,12 +89,14 @@ const activeJobs = new Map<string, ActiveJob>();
 
 // ─── Progress reporting ──────────────────────────────────────────────────────
 
-async function reportProgress(
-  videoId: string,
-  progress: number,
-  progressType: ProgressType,
-  tabId: number
-) {
+async function reportProgress({
+  videoId, progress, progressType, tabId
+}: {
+  videoId: string;
+  progress: number;
+  progressType: ProgressType;
+  tabId: number;
+}) {
   await sendMessage(MessageType.PipelineProgress, {
     videoId, progress, progressType, tabId
   });
@@ -156,10 +162,16 @@ interface PlaylistBundle {
 
 const playlistBundles = new Map<string, PlaylistBundle>();
 
-function addToPlaylistBundle(
-  playlistId: string, playlistTitle: string, totalCount: number,
-  tabId: number, filename: string, data: Uint8Array
-) {
+function addToPlaylistBundle({
+  playlistId, playlistTitle, totalCount, tabId, filename, data
+}: {
+  playlistId: string;
+  playlistTitle: string;
+  totalCount: number;
+  tabId: number;
+  filename: string;
+  data: Uint8Array;
+}) {
   if (!playlistBundles.has(playlistId)) {
     playlistBundles.set(playlistId, {
       playlistTitle,
@@ -199,13 +211,19 @@ async function processSingleMedia(item: ProcessStreamData) {
     return;
   }
 
-  await reportProgress(videoId, 0.99, type === "audio" ? "audio" : "video", tabId);
+  await reportProgress({
+    videoId, progress: 0.99, progressType: type === "audio" ? "audio" : "video", tabId
+  });
 
   if (item.playlistId) {
-    addToPlaylistBundle(
-      item.playlistId, item.playlistTitle ?? "Playlist",
-      item.playlistTotalCount ?? 1, tabId, filenameOutput, data
-    );
+    addToPlaylistBundle({
+      playlistId: item.playlistId,
+      playlistTitle: item.playlistTitle ?? "Playlist",
+      totalCount: item.playlistTotalCount ?? 1,
+      tabId,
+      filename: filenameOutput,
+      data
+    });
     return;
   }
 
@@ -214,12 +232,14 @@ async function processSingleMedia(item: ProcessStreamData) {
 
 // ─── Video + audio mux via FFmpeg ────────────────────────────────────────────
 
-function determineOutputExtension(
-  videoMimeType: string,
-  audioMimeType: string,
-  hasExtraTracks: boolean,
-  filenameOutput: string
-) {
+function determineOutputExtension({
+  videoMimeType, audioMimeType, hasExtraTracks, filenameOutput
+}: {
+  videoMimeType: string;
+  audioMimeType: string;
+  hasExtraTracks: boolean;
+  filenameOutput: string;
+}) {
   if (hasExtraTracks) {
     return "mkv";
   }
@@ -246,12 +266,16 @@ async function processVideoAudio(item: ProcessStreamData, ffmpeg: FFmpeg) {
     return;
   }
 
-  await reportProgress(videoId, 0.5, "video", tabId);
+  await reportProgress({
+    videoId, progress: 0.5, progressType: "video", tabId
+  });
 
   const videoExtension = videoMimeType.includes("webm") ? "webm" : "mp4";
   const audioExtension = audioMimeType.includes("webm") ? "webm" : "m4a";
   const hasExtraTracks = (additionalAudioStreams?.length ?? 0) > 0;
-  const outputExtension = determineOutputExtension(videoMimeType, audioMimeType, hasExtraTracks, filenameOutput);
+  const outputExtension = determineOutputExtension({
+    videoMimeType, audioMimeType, hasExtraTracks, filenameOutput
+  });
 
   const filenameBase = filenameOutput.replace(/\.[^.]+$/, "");
   const downloadFilename = `${filenameBase}.${outputExtension}`;
@@ -260,7 +284,9 @@ async function processVideoAudio(item: ProcessStreamData, ffmpeg: FFmpeg) {
   const outputFilename = getCompatibleFilename(`${videoId}-${downloadFilename}`);
 
   function handleFFmpegProgress({ progress }: { progress: number }) {
-    void reportProgress(videoId, 0.5 + progress * 0.5, "ffmpeg", tabId);
+    void reportProgress({
+      videoId, progress: 0.5 + progress * 0.5, progressType: "ffmpeg", tabId
+    });
   }
 
   ffmpeg.on("progress", handleFFmpegProgress);
@@ -328,10 +354,14 @@ async function processVideoAudio(item: ProcessStreamData, ffmpeg: FFmpeg) {
     }
 
     if (item.playlistId) {
-      addToPlaylistBundle(
-        item.playlistId, item.playlistTitle ?? "Playlist",
-        item.playlistTotalCount ?? 1, tabId, downloadFilename, ffmpegOutput
-      );
+      addToPlaylistBundle({
+        playlistId: item.playlistId,
+        playlistTitle: item.playlistTitle ?? "Playlist",
+        totalCount: item.playlistTotalCount ?? 1,
+        tabId,
+        filename: downloadFilename,
+        data: ffmpegOutput
+      });
       return;
     }
 
