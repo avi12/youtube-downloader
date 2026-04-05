@@ -109,7 +109,16 @@ export default defineContentScript({
       }
     });
 
-    function handleCancel(videoIds: string[]) {
+    addEventListener("message", e => {
+      if (e.data?.namespace !== SYNC_NAMESPACE || e.data.key !== SyncKey.CancelRequest) {
+        return;
+      }
+
+      const { videoIds } = e.data.value ?? {};
+      if (!videoIds) {
+        return;
+      }
+
       for (const id of videoIds) {
         cancelStreamTransfer(id);
       }
@@ -123,16 +132,6 @@ export default defineContentScript({
         key: SyncKey.CancelDownload,
         value: { videoIds }
       }, location.origin);
-    }
-
-    addEventListener("message", e => {
-      if (e.data?.namespace !== SYNC_NAMESPACE || e.data.key !== SyncKey.CancelRequest) {
-        return;
-      }
-
-      if (e.data.value?.videoIds) {
-        handleCancel(e.data.value.videoIds);
-      }
     });
 
     onMessage(MessageType.ExecuteDownloadItem, ({ data }) => {
