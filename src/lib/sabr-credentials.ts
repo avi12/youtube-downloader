@@ -50,6 +50,6 @@ export async function forwardSabrCredentialsWithRetry() {
 
 export function listenForSabrBodyReady() {
   onMessage(MessageType.SabrBodyReady, () => {
-    forwardSabrCredentials();
+    void forwardSabrCredentials();
   });
 }

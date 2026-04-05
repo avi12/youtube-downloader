@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { crossWorldMessenger } from "../lib/cross-world-messenger";
+  import { CrossWorldMessage, crossWorldMessenger } from "../lib/cross-world-messenger";
   import { statusProgressItem, videoQueueItem } from "../lib/storage";
   import { downloadProgressStore } from "../lib/synced-stores.svelte";
   import { getCompatibleFilename, getOutputExtension, waitForVideoElement } from "../lib/utils";
@@ -16,8 +16,7 @@
     type DownloadType,
     type Options,
     type ProgressType,
-    isValidPolymerElement,
-    tpYtPaperProgressSchema,
+    isPolymerProgressElement,
     type VideoData
   } from "@/types";
   import { untrack } from "svelte";
@@ -114,7 +113,7 @@
 
   // Notify the MAIN world download button tooltip when filename or quality changes
   $effect(() => {
-    crossWorldMessenger.sendMessage("filenameChanged", {
+    void crossWorldMessenger.sendMessage(CrossWorldMessage.FilenameChanged, {
       filename: fullFilename,
       quality: qualityLabel(),
       videoItag: selectedVideoFormat?.itag,
@@ -139,10 +138,10 @@
 
   $effect(() => {
     if (options.videoQualityMode === "current-quality") {
-      matchVideoFormatToCurrentQuality();
+      void matchVideoFormatToCurrentQuality();
       const elVideo = document.querySelector("video");
       function onCanPlay() {
-        matchVideoFormatToCurrentQuality();
+        void matchVideoFormatToCurrentQuality();
       }
       elVideo?.addEventListener("canplay", onCanPlay);
       return () => elVideo?.removeEventListener("canplay", onCanPlay);
@@ -175,7 +174,7 @@
       isDone = existing.progress >= 1;
     }
 
-    restoreProgress();
+    void restoreProgress();
   });
 
   // -- Progress updates -------------------------------------------------------
@@ -223,7 +222,7 @@
 
   function closePanel() {
     releaseInertTrap();
-    crossWorldMessenger.sendMessage("panelClosed", {});
+    void crossWorldMessenger.sendMessage(CrossWorldMessage.PanelClosed, {});
     // Also dispatch DOM event for grid/playlist panels where crossWorldMessenger
     // panelClosed listener is owned by the watch page
     document.dispatchEvent(new CustomEvent("ytdl:panel-closed"));
@@ -236,7 +235,7 @@
     extension = newType === "audio" ? options.ext.audio : options.ext.video;
   }
 
-  async function startDownload() {
+  function startDownload() {
     if (isDownloading || !isDownloadable || !selectedAudioFormat) {
       return;
     }
@@ -258,7 +257,7 @@
       isDownloading: true, isDone: false, isQueued: false, progress: 0, progressType: ""
     });
 
-    await crossWorldMessenger.sendMessage("downloadRequest", {
+    void crossWorldMessenger.sendMessage(CrossWorldMessage.DownloadRequest, {
       type: downloadType,
       videoId: videoData.videoId,
       videoItag: selectedVideoFormat?.itag ?? 0,
@@ -268,13 +267,15 @@
     });
   }
 
-  async function cancelDownload() {
+  function cancelDownload() {
     isDownloading = false;
     progress = 0;
 
     downloadProgressStore.delete(videoData.videoId);
 
-    await crossWorldMessenger.sendMessage("cancelDownload", { videoIds: [videoData.videoId] });
+    void crossWorldMessenger.sendMessage(
+      CrossWorldMessage.CancelDownload, { videoIds: [videoData.videoId] }
+    );
   }
 
   function handleKeydown(e: KeyboardEvent) {
@@ -389,7 +390,7 @@
   }
 
   function attachPanelProgress(element: Element) {
-    if (!isValidPolymerElement(element, tpYtPaperProgressSchema)) {
+    if (!isPolymerProgressElement(element)) {
       return;
     }
 

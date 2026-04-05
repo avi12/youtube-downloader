@@ -15,7 +15,7 @@ export function cleanupPanelUi() {
     return;
   }
 
-  unmount(currentInstance);
+  void unmount(currentInstance);
   currentInstance = null;
 }
 

@@ -23,7 +23,7 @@ let sharedFFmpeg: FFmpeg | null = null;
 
 export function initFFmpeg(coreURL: string, wasmURL: string, classWorkerURL: string) {
   ffmpegUrls = { coreURL, wasmURL, classWorkerURL };
-  sendMessage(MessageType.PipelineFFmpegReady, {}).catch(() => {});
+  void sendMessage(MessageType.PipelineFFmpegReady, {});
 }
 
 async function getFFmpegInstance() {
@@ -69,7 +69,7 @@ function enqueueMuxJob(job: () => Promise<void>) {
         reject(error);
       }
     });
-    processMuxQueue();
+    void processMuxQueue();
   });
 }
 
@@ -184,7 +184,7 @@ function addToPlaylistBundle(
   const zipFilename = getCompatibleFilename(`${bundle.playlistTitle}.zip`);
   playlistBundles.delete(playlistId);
 
-  triggerDownload(zipped, zipFilename).catch(() => {});
+  void triggerDownload(zipped, zipFilename);
 }
 
 async function processSingleMedia(item: ProcessStreamData) {
@@ -258,7 +258,7 @@ async function processVideoAudio(item: ProcessStreamData, ffmpeg: FFmpeg) {
   const outputFilename = getCompatibleFilename(`${videoId}-${downloadFilename}`);
 
   function handleFFmpegProgress({ progress }: { progress: number }) {
-    reportProgress(videoId, 0.5 + progress * 0.5, "ffmpeg", tabId);
+    void reportProgress(videoId, 0.5 + progress * 0.5, "ffmpeg", tabId);
   }
 
   ffmpeg.on("progress", handleFFmpegProgress);
@@ -369,7 +369,7 @@ export function enqueueStreamData(data: ProcessStreamData) {
   }
 
   // Process immediately - all downloads run in parallel
-  processItem(data).catch(() => {});
+  void processItem(data);
 }
 
 export async function cancelDownloadsByIds(videoIds: string[]) {

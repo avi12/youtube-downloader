@@ -88,13 +88,13 @@ const tsStyleRules = {
   "@stylistic/padded-blocks": ["error", "never"],
   "@stylistic/rest-spread-spacing": ["error", "never"],
   "@stylistic/spaced-comment": ["error", "always"],
-  "import-newlines/enforce": ["error", { items: 4, "max-len": 120 }],
+  "import-newlines/enforce": ["error", { items: 4, "max-len": 120, forceSingleLine: true }],
   "@stylistic/object-curly-newline": [
     "error",
     {
       ObjectExpression: { multiline: true, minProperties: 4 },
       ObjectPattern: { multiline: true, minProperties: 4 },
-      ExportDeclaration: "never"
+      ExportDeclaration: { multiline: true, minProperties: 4 }
     }
   ],
   "@stylistic/object-property-newline": ["error", { allowAllPropertiesOnSameLine: true }],
@@ -129,7 +129,8 @@ const tsStyleRules = {
     }
   ],
   "no-nested-ternary": "error",
-  "@typescript-eslint/consistent-type-assertions": ["error", { assertionStyle: "never" }]
+  "@typescript-eslint/consistent-type-assertions": ["error", { assertionStyle: "never" }],
+  "@typescript-eslint/no-floating-promises": "error"
 };
 
 const sharedPlugins = {
@@ -156,6 +157,7 @@ export default [
     files: ["**/*.{ts,js,mjs}", "eslint.config.js"],
     languageOptions: {
       parser: tsEslint.parser,
+      parserOptions: { project: "./tsconfig.json" },
       globals: sharedGlobals
     },
     plugins: sharedPlugins,
@@ -165,7 +167,7 @@ export default [
     files: ["**/*.svelte"],
     languageOptions: {
       parser: svelteParser,
-      parserOptions: { parser: tsEslint.parser },
+      parserOptions: { parser: tsEslint.parser, project: "./tsconfig.json", extraFileExtensions: [".svelte"] },
       globals: sharedGlobals
     },
     plugins: sharedPlugins,

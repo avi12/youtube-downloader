@@ -179,9 +179,9 @@
 
   function handleDownloadClick() {
     if (isDownloading) {
-      cancelPlaylistDownload();
+      void cancelPlaylistDownload();
     } else {
-      startPlaylistDownload();
+      void startPlaylistDownload();
     }
   }
 

@@ -15,7 +15,7 @@ export function cleanupPlaylistUi() {
     return;
   }
 
-  unmount(currentPlaylistUi);
+  void unmount(currentPlaylistUi);
   currentPlaylistUi = null;
 
   for (const elItem of document.querySelectorAll("[data-ytdl-playlist-downloader]")) {

@@ -11,7 +11,7 @@
 
 import { uncancelStreamTransfer } from "./stream-transfer";
 import { MessageType, sendMessage } from "@/lib/messaging";
-import { sabrCredentials, SyncKey } from "@/lib/synced-stores.svelte";
+import { sabrCredentials, SYNC_NAMESPACE, SyncKey } from "@/lib/synced-stores.svelte";
 import type { DownloadRequest } from "@/types";
 
 async function waitForPoToken(timeoutMs = 10_000) {
@@ -44,7 +44,7 @@ async function waitForPoToken(timeoutMs = 10_000) {
 
 export function listenForDownloadRequests() {
   addEventListener("message", e => {
-    if (e.data?.namespace !== "ytdl-sync" || e.data.key !== SyncKey.DownloadRequest) {
+    if (e.data?.namespace !== SYNC_NAMESPACE || e.data.key !== SyncKey.DownloadRequest) {
       return;
     }
 
@@ -54,7 +54,7 @@ export function listenForDownloadRequests() {
     }
 
     uncancelStreamTransfer(request.videoId);
-    handleDownload(request);
+    void handleDownload(request);
   });
 }
 
@@ -83,7 +83,7 @@ async function handleDownload(request: DownloadRequest) {
   // The MAIN world calls the /player API with android_vr client and
   // fetches media directly. It has proper YouTube session context.
   postMessage({
-    namespace: "ytdl-sync",
+    namespace: SYNC_NAMESPACE,
     key: SyncKey.DirectDownloadRequest,
     value: {
       videoId: request.videoId,

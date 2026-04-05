@@ -10,6 +10,6 @@
     "allowImportingTsExtensions": true,
     "noEmit": true
   },
-  "include": ["src/**/*", "wxt.config.ts", ".wxt/wxt.d.ts"],
+  "include": ["src/**/*", "src/**/*.svelte", "wxt.config.ts", ".wxt/wxt.d.ts"],
   "exclude": ["src/scripts/**"]
 }

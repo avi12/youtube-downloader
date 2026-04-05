@@ -25,7 +25,7 @@ export function cleanupGridUi() {
   gridObserver = null;
 
   if (gridDownloaderInstance) {
-    unmount(gridDownloaderInstance);
+    void unmount(gridDownloaderInstance);
     gridDownloaderInstance = null;
   }
 
