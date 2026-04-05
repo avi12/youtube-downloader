@@ -110,7 +110,10 @@ export default defineBackground(() => {
     }
 
     await ensureProcessor();
-    await sendMessage(MessageType.ProcessStreamChunk, { ...data, tabId });
+    await sendMessage(MessageType.ProcessStreamChunk, {
+      ...data,
+      tabId
+    });
   });
 
   onMessage(MessageType.StreamEnd, async ({ data, sender }) => {
@@ -128,7 +131,10 @@ export default defineBackground(() => {
     }
 
     await ensureProcessor();
-    await sendMessage(MessageType.ProcessStreamEnd, { ...data, tabId });
+    await sendMessage(MessageType.ProcessStreamEnd, {
+      ...data,
+      tabId
+    });
   });
 
   async function cancelDownloads(videoIds: string[]) {
@@ -223,7 +229,10 @@ export default defineBackground(() => {
         );
       }
 
-      return { status: response.status, bodyBase64: btoa(responseBase64) };
+      return {
+        status: response.status,
+        bodyBase64: btoa(responseBase64)
+      };
     } catch (error) {
       console.error("[ytdl:bg] proxyFetch error:", error);
       return null;
@@ -265,7 +274,10 @@ export default defineBackground(() => {
 
       await ensureProcessor();
       await sendChunksToProcessor({
-        videoId, tabId, videoData, audioData
+        videoId,
+        tabId,
+        videoData,
+        audioData
       });
       await sendMessage(MessageType.ProcessStreamEnd, {
         type: downloadType,
@@ -525,9 +537,16 @@ export default defineBackground(() => {
       videoId, progress, progressType, tabId
     } = data;
     const current = await statusProgressItem.getValue();
-    current[videoId] = { progress, progressType };
+    current[videoId] = {
+      progress,
+      progressType
+    };
     await Promise.allSettled([
-      sendMessage(MessageType.UpdateDownloadProgress, { videoId, progress, progressType }, tabId),
+      sendMessage(MessageType.UpdateDownloadProgress, {
+        videoId,
+        progress,
+        progressType
+      }, tabId),
       statusProgressItem.setValue(current)
     ]);
   });

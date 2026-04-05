@@ -26,7 +26,12 @@ export async function generatePoToken(videoId: string) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         engagementType: "ENGAGEMENT_TYPE_UNBOUND",
-        context: { client: { clientName: "WEB", clientVersion } }
+        context: {
+          client: {
+            clientName: "WEB",
+            clientVersion
+          }
+        }
       })
     }
   );

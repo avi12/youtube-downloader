@@ -84,7 +84,10 @@ function injectPlaylistVideoItemUi({ context, options, elVideoItem }: {
     onMount(elUiContainer) {
       mount(PlaylistVideoItem, {
         target: elUiContainer,
-        props: { videoId, options }
+        props: {
+          videoId,
+          options
+        }
       });
     }
   });
@@ -102,14 +105,22 @@ export function handlePlaylistVideoAdditions(
   }
 
   for (const elVideoItem of elContents.querySelectorAll("ytd-playlist-video-renderer")) {
-    injectPlaylistVideoItemUi({ context, options, elVideoItem });
+    injectPlaylistVideoItemUi({
+      context,
+      options,
+      elVideoItem
+    });
   }
 
   const mutationObserver = new MutationObserver(mutations => {
     for (const mutation of mutations) {
       for (const node of mutation.addedNodes) {
         if (node instanceof HTMLElement && node.tagName.toLowerCase() === "ytd-playlist-video-renderer") {
-          injectPlaylistVideoItemUi({ context, options, elVideoItem: node });
+          injectPlaylistVideoItemUi({
+            context,
+            options,
+            elVideoItem: node
+          });
         }
       }
     }

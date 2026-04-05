@@ -11,9 +11,11 @@
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
-type TransformOp = { type: "swap"; argument: number }
+type TransformOp = { type: "swap";
+  argument: number; }
   | { type: "reverse" }
-  | { type: "splice"; argument: number };
+  | { type: "splice";
+    argument: number; };
 
 interface DecryptorState {
   operations: TransformOp[];
@@ -120,7 +122,10 @@ function extractTransformOperations(playerSource: string, functionName: string) 
     if (opType === "reverse") {
       operations.push({ type: "reverse" });
     } else {
-      operations.push({ type: opType, argument });
+      operations.push({
+        type: opType,
+        argument
+      });
     }
   }
 
@@ -198,7 +203,10 @@ async function initDecryptor() {
     throw new Error("Could not extract transform operations from player.js");
   }
 
-  cachedState = { operations, playerJsUrl };
+  cachedState = {
+    operations,
+    playerJsUrl
+  };
   return cachedState;
 }
 

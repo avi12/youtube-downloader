@@ -107,7 +107,10 @@ function injectGridVideoButton({ context, options, elCard }: {
     onMount(elUiContainer) {
       mount(PlaylistVideoItem, {
         target: elUiContainer,
-        props: { videoId, options }
+        props: {
+          videoId,
+          options
+        }
       });
     }
   });
@@ -155,7 +158,11 @@ export function injectGridVideoButtons(
   options: Options
 ) {
   function inject(elCard: Element) {
-    injectGridVideoButton({ context, options, elCard });
+    injectGridVideoButton({
+      context,
+      options,
+      elCard
+    });
   }
 
   function scanAllCards() {
@@ -171,7 +178,10 @@ export function injectGridVideoButtons(
   gridObserver = new MutationObserver(scanAllCards);
 
   const elPageContent = document.querySelector(PAGE_MANAGER_SELECTOR) ?? document.body;
-  gridObserver.observe(elPageContent, { childList: true, subtree: true });
+  gridObserver.observe(elPageContent, {
+    childList: true,
+    subtree: true
+  });
   context.onInvalidated(() => {
     return gridObserver?.disconnect();
   });

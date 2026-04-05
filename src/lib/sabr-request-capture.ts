@@ -121,7 +121,10 @@ export function extractPoTokenFromBody(body: number[]) {
 
       shift += 7;
     }
-    return { value: value >>> 0, offset: off };
+    return {
+      value: value >>> 0,
+      offset: off
+    };
   }
 
   // Find field 19 (StreamerContext) - tag = (19 << 3) | 2 = 154
@@ -182,7 +185,10 @@ export function getDebugCaptureState() {
   return {
     capturedTabIds: [...capturedByTab.keys()],
     sizes: [...capturedByTab.entries()].map(([id, d]) => {
-      return { tabId: id, bodySize: d.body.length };
+      return {
+        tabId: id,
+        bodySize: d.body.length
+      };
     })
   };
 }

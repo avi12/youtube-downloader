@@ -254,7 +254,11 @@
 
     downloadProgressStore.unsuppress(videoData.videoId);
     downloadProgressStore.set(videoData.videoId, {
-      isDownloading: true, isDone: false, isQueued: false, progress: 0, progressType: ""
+      isDownloading: true,
+      isDone: false,
+      isQueued: false,
+      progress: 0,
+      progressType: ""
     });
 
     void crossWorldMessenger.sendMessage(CrossWorldMessage.DownloadRequest, {
@@ -300,7 +304,10 @@
   // Named functions (not inlined) so TypeScript can type the `element`
   // parameter without inline type annotations, which Svelte templates reject.
   function dispatchButtonData(element: Element, data: ButtonViewModelData) {
-    element.dispatchEvent(new CustomEvent("ytdl:set-yt-button-data", { detail: data, bubbles: true }));
+    element.dispatchEvent(new CustomEvent("ytdl:set-yt-button-data", {
+      detail: data,
+      bubbles: true
+    }));
   }
 
   function attachCloseButton(element: Element) {
@@ -330,7 +337,10 @@
           return;
         }
 
-        dispatchButtonData(element, { ...closeData, tooltip: "Close" });
+        dispatchButtonData(element, {
+          ...closeData,
+          tooltip: "Close"
+        });
       });
 
       elButton.addEventListener("blur", () => {
@@ -351,7 +361,10 @@
         observer.disconnect();
         onButtonAvailable(elInner);
       });
-      observer.observe(element, { childList: true, subtree: true });
+      observer.observe(element, {
+        childList: true,
+        subtree: true
+      });
     }
   }
 

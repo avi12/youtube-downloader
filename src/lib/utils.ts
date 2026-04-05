@@ -46,7 +46,8 @@ export const extensionToMimeAll: Record<string, string> = {
   "3gp": "video/3gpp"
 };
 
-export const extensionToMime: { video: Record<string, string>; audio: Record<string, string> } = {
+export const extensionToMime: { video: Record<string, string>;
+  audio: Record<string, string>; } = {
   video: Object.fromEntries(
     Object.entries(extensionToMimeAll).filter(([, mimeType]) => {
       return mimeType.startsWith("video");
@@ -101,7 +102,10 @@ export const videoQualities = [4320, 2160, 1440, 1080, 720, 480, 360, 240, 144];
 export const defaultVideoQuality = 1080;
 
 export const initialOptions: Options = {
-  ext: { audio: "mp3", video: "mp4" },
+  ext: {
+    audio: "mp3",
+    video: "mp4"
+  },
   videoQualityMode: "current-quality",
   videoQuality: defaultVideoQuality,
   isRemoveNativeDownload: false
@@ -171,7 +175,10 @@ export function waitForVideoElement() {
       observer.disconnect();
       resolve(elVideo);
     });
-    observer.observe(document.body, { childList: true, subtree: true });
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
   });
 }
 

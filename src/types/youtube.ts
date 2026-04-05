@@ -2,7 +2,9 @@
 // These are not our own types - they mirror shapes defined by YouTube.
 
 type Thumbnail = {
-  thumbnails: { url: string; width: number; height: number }[];
+  thumbnails: { url: string;
+    width: number;
+    height: number; }[];
 };
 
 export type MediaItem = {
@@ -10,8 +12,10 @@ export type MediaItem = {
   url?: string;
   mimeType: `${"video" | "audio"}/${string}`;
   bitrate: number;
-  initRange: { start: "0"; end: `${number}` };
-  indexRange: { start: `${number}`; end: `${number}` };
+  initRange: { start: "0";
+    end: `${number}`; };
+  indexRange: { start: `${number}`;
+    end: `${number}`; };
   lastModified: number;
   contentLength: `${number}`;
   averageBitrate: number;
@@ -116,7 +120,8 @@ export type PlayerResponse = {
   };
   microformat?: {
     playerMicroformatRenderer: {
-      liveBroadcastDetails?: { isLiveNow: true; startTimestamp: string };
+      liveBroadcastDetails?: { isLiveNow: true;
+        startTimestamp: string; };
       title: { simpleText: string };
       description: { simpleText: string };
       lengthSeconds: `${number}`;
@@ -230,7 +235,9 @@ export type ButtonViewModelData = {
 
   // Display
   iconName?: IconName | (string & {});
-  iconImage?: { url: string; width: number; height: number };
+  iconImage?: { url: string;
+    width: number;
+    height: number; };
   title?: string;
   tooltip?: string;
   tooltipData?: {

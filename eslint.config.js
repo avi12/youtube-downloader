@@ -97,7 +97,7 @@ const tsStyleRules = {
       ExportDeclaration: { multiline: true, minProperties: 4 }
     }
   ],
-  "@stylistic/object-property-newline": ["error", { allowAllPropertiesOnSameLine: true }],
+  "@stylistic/object-property-newline": ["error", { allowAllPropertiesOnSameLine: false }],
   "id-length": ["error", { min: 3, exceptions: ["z", "_", "i", "fs", "id", "os", "e", "db", "mi", "ui", "HL", "GL", "js", "q", "to", "dd", "mm", "x", "y", "d"], properties: "never" }],
   "func-style": ["error", "declaration", { allowArrowFunctions: false }],
   "no-restricted-syntax": [

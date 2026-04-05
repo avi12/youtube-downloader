@@ -66,7 +66,8 @@ export type VideoQueueItem = {
 };
 
 export type Options = {
-  ext: { audio: string; video: string };
+  ext: { audio: string;
+    video: string; };
   videoQualityMode: "best" | "current-quality" | "custom";
   videoQuality: number;
   isRemoveNativeDownload: boolean;
@@ -118,7 +119,8 @@ export type StreamError = {
 
 // -- UI types -----------------------------------------------------------------
 
-export type MovableItem = { id: string; title: string };
+export type MovableItem = { id: string;
+  title: string; };
 
 export type VideoData = {
   playerResponse: PlayerResponse;

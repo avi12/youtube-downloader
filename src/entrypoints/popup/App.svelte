@@ -25,7 +25,8 @@
     Record<string, { filenameOutput: string }>
   >({});
   let statusProgress = $state<
-    Record<string, { progress: number; progressType: ProgressType }>
+    Record<string, { progress: number;
+      progressType: ProgressType; }>
   >({});
   let options = $state<Options>({ ...initialOptions });
   let draggedVideoId = $state<string | null>(null);
@@ -132,11 +133,17 @@
   // --- Settings --------------------------------------------------------------
 
   async function updateAudioExtension(extension: string) {
-    await setOption("ext", { ...options.ext, audio: extension });
+    await setOption("ext", {
+      ...options.ext,
+      audio: extension
+    });
   }
 
   async function updateVideoExtension(extension: string) {
-    await setOption("ext", { ...options.ext, video: extension });
+    await setOption("ext", {
+      ...options.ext,
+      video: extension
+    });
   }
 
   async function updateVideoQualityMode(

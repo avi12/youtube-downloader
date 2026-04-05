@@ -67,7 +67,10 @@ async function handleDownload(request: DownloadRequest) {
     if (poToken) {
       try {
         const isSuccess = await Promise.race([
-          sendMessage(MessageType.SabrDownload, { request, poToken }),
+          sendMessage(MessageType.SabrDownload, {
+            request,
+            poToken
+          }),
           new Promise<false>(resolve => {
             return setTimeout(() => {
               return resolve(false);

@@ -2,7 +2,8 @@ import type { InterruptedDownload, Options, ProgressType, VideoQueueItem } from 
 import { initialOptions } from "./utils";
 
 type VideoDetailsMap = Record<string, { filenameOutput: string }>;
-type StatusProgressMap = Record<string, { progress: number; progressType: ProgressType }>;
+type StatusProgressMap = Record<string, { progress: number;
+  progressType: ProgressType; }>;
 
 export const videoQueueItem = storage.defineItem<VideoQueueItem[]>("local:videoQueue", { fallback: [] });
 

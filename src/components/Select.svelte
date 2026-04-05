@@ -115,7 +115,10 @@
         // Close the overlay - Polymer's auto-close is also broken by the DOM move.
         elMovedDropdown?.dispatchEvent(
           new KeyboardEvent("keydown", {
-            key: "Escape", bubbles: true, cancelable: true, composed: true
+            key: "Escape",
+            bubbles: true,
+            cancelable: true,
+            composed: true
           })
         );
       }
@@ -178,7 +181,10 @@
               if (items[iCurrent].getAttribute("data-value") === value) {
                 elMovedDropdown?.dispatchEvent(
                   new KeyboardEvent("keydown", {
-                    key: "Escape", bubbles: true, cancelable: true, composed: true
+                    key: "Escape",
+                    bubbles: true,
+                    cancelable: true,
+                    composed: true
                   })
                 );
               }
@@ -194,7 +200,10 @@
             e.stopPropagation();
             elMovedDropdown?.dispatchEvent(
               new KeyboardEvent("keydown", {
-                key: "Escape", bubbles: true, cancelable: true, composed: true
+                key: "Escape",
+                bubbles: true,
+                cancelable: true,
+                composed: true
               })
             );
             break;

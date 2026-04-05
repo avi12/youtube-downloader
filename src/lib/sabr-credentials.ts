@@ -18,7 +18,10 @@ async function forwardSabrCredentials() {
   }
 
   isCredentialsForwarded = true;
-  sabrCredentials.value = { url: captured.url, poToken: captured.poToken };
+  sabrCredentials.value = {
+    url: captured.url,
+    poToken: captured.poToken
+  };
 
   // Also persist in DOM as fallback - the postMessage may arrive
   // before the MAIN world's listener is ready

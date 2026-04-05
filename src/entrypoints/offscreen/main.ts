@@ -88,7 +88,10 @@ onMessage(MessageType.ProcessStreamChunk, ({ data }) => {
     accumulator.totalVideoChunks = totalChunks;
   } else {
     if (!accumulator.audioStreams.has(streamType)) {
-      accumulator.audioStreams.set(streamType, { chunks: new Map(), totalChunks: 0 });
+      accumulator.audioStreams.set(streamType, {
+        chunks: new Map(),
+        totalChunks: 0
+      });
     }
 
     const audioStream = accumulator.audioStreams.get(streamType)!;

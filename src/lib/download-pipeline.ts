@@ -18,7 +18,9 @@ import { zipSync } from "fflate";
 // exec() at a time, so mux operations are serialized via a queue while downloads
 // still run in parallel.
 
-let ffmpegUrls: { coreURL: string; wasmURL: string; classWorkerURL: string } | null = null;
+let ffmpegUrls: { coreURL: string;
+  wasmURL: string;
+  classWorkerURL: string; } | null = null;
 let sharedFFmpeg: FFmpeg | null = null;
 
 export function initFFmpeg({ coreURL, wasmURL, classWorkerURL }: {
@@ -26,7 +28,11 @@ export function initFFmpeg({ coreURL, wasmURL, classWorkerURL }: {
   wasmURL: string;
   classWorkerURL: string;
 }) {
-  ffmpegUrls = { coreURL, wasmURL, classWorkerURL };
+  ffmpegUrls = {
+    coreURL,
+    wasmURL,
+    classWorkerURL
+  };
   void sendMessage(MessageType.PipelineFFmpegReady, {});
 }
 
@@ -98,16 +104,25 @@ async function reportProgress({
   tabId: number;
 }) {
   await sendMessage(MessageType.PipelineProgress, {
-    videoId, progress, progressType, tabId
+    videoId,
+    progress,
+    progressType,
+    tabId
   });
 }
 
 async function reportRemoval(videoId: string, tabId: number) {
-  await sendMessage(MessageType.PipelineRemoval, { videoId, tabId });
+  await sendMessage(MessageType.PipelineRemoval, {
+    videoId,
+    tabId
+  });
 }
 
 async function removeFromStorageQueue(videoId: string, type: DownloadType) {
-  await sendMessage(MessageType.PipelineQueueRemove, { videoId, type });
+  await sendMessage(MessageType.PipelineQueueRemove, {
+    videoId,
+    type
+  });
 }
 
 // ─── Single-stream download (audio-only or video-only) ──────────────────────
@@ -132,7 +147,11 @@ async function triggerDownload(data: Uint8Array, filenameOutput: string) {
   if (typeof Blob !== "undefined" && typeof URL.createObjectURL === "function") {
     const blob = new Blob([new Uint8Array(data)], { type: mimeType });
     const blobUrl = URL.createObjectURL(blob);
-    await sendMessage(MessageType.PipelineDownload, { blobUrl, mimeType, filename });
+    await sendMessage(MessageType.PipelineDownload, {
+      blobUrl,
+      mimeType,
+      filename
+    });
     setTimeout(() => {
       return URL.revokeObjectURL(blobUrl);
     }, 60_000);
@@ -148,7 +167,11 @@ async function triggerDownload(data: Uint8Array, filenameOutput: string) {
   }
 
   const blobUrl = `data:${mimeType};base64,${btoa(binary)}`;
-  await sendMessage(MessageType.PipelineDownload, { blobUrl, mimeType, filename });
+  await sendMessage(MessageType.PipelineDownload, {
+    blobUrl,
+    mimeType,
+    filename
+  });
 }
 
 // ─── Playlist zip bundling ───────────────────────────────────────────────────
@@ -156,7 +179,8 @@ async function triggerDownload(data: Uint8Array, filenameOutput: string) {
 interface PlaylistBundle {
   playlistTitle: string;
   totalCount: number;
-  files: Map<string, { filename: string; data: Uint8Array }>;
+  files: Map<string, { filename: string;
+    data: Uint8Array; }>;
   tabId: number;
 }
 
@@ -182,7 +206,10 @@ function addToPlaylistBundle({
   }
 
   const bundle = playlistBundles.get(playlistId)!;
-  bundle.files.set(filename, { filename, data });
+  bundle.files.set(filename, {
+    filename,
+    data
+  });
 
   if (bundle.files.size < bundle.totalCount) {
     return;
@@ -212,7 +239,10 @@ async function processSingleMedia(item: ProcessStreamData) {
   }
 
   await reportProgress({
-    videoId, progress: 0.99, progressType: type === "audio" ? "audio" : "video", tabId
+    videoId,
+    progress: 0.99,
+    progressType: type === "audio" ? "audio" : "video",
+    tabId
   });
 
   if (item.playlistId) {
@@ -267,14 +297,20 @@ async function processVideoAudio(item: ProcessStreamData, ffmpeg: FFmpeg) {
   }
 
   await reportProgress({
-    videoId, progress: 0.5, progressType: "video", tabId
+    videoId,
+    progress: 0.5,
+    progressType: "video",
+    tabId
   });
 
   const videoExtension = videoMimeType.includes("webm") ? "webm" : "mp4";
   const audioExtension = audioMimeType.includes("webm") ? "webm" : "m4a";
   const hasExtraTracks = (additionalAudioStreams?.length ?? 0) > 0;
   const outputExtension = determineOutputExtension({
-    videoMimeType, audioMimeType, hasExtraTracks, filenameOutput
+    videoMimeType,
+    audioMimeType,
+    hasExtraTracks,
+    filenameOutput
   });
 
   const filenameBase = filenameOutput.replace(/\.[^.]+$/, "");
@@ -285,7 +321,10 @@ async function processVideoAudio(item: ProcessStreamData, ffmpeg: FFmpeg) {
 
   function handleFFmpegProgress({ progress }: { progress: number }) {
     void reportProgress({
-      videoId, progress: 0.5 + progress * 0.5, progressType: "ffmpeg", tabId
+      videoId,
+      progress: 0.5 + progress * 0.5,
+      progressType: "ffmpeg",
+      tabId
     });
   }
 
@@ -374,7 +413,11 @@ async function processVideoAudio(item: ProcessStreamData, ffmpeg: FFmpeg) {
 // ─── Job processing ──────────────────────────────────────────────────────────
 
 async function processItem(item: ProcessStreamData) {
-  const job: ActiveJob = { ffmpeg: null, videoId: item.videoId, tabId: item.tabId };
+  const job: ActiveJob = {
+    ffmpeg: null,
+    videoId: item.videoId,
+    tabId: item.tabId
+  };
   activeJobs.set(item.videoId, job);
 
   try {

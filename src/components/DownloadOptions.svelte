@@ -68,10 +68,20 @@
     elInput.reportValidity();
   }
 
-  const DOWNLOAD_TYPES: { value: DownloadType; label: string }[] = [
-    { value: "video+audio", label: "Video + Audio" },
-    { value: "video", label: "Video only" },
-    { value: "audio", label: "Audio only" }
+  const DOWNLOAD_TYPES: { value: DownloadType;
+    label: string; }[] = [
+    {
+      value: "video+audio",
+      label: "Video + Audio"
+    },
+    {
+      value: "video",
+      label: "Video only"
+    },
+    {
+      value: "audio",
+      label: "Audio only"
+    }
   ];
 
   const isAudio = $derived(downloadType === "audio");
@@ -85,7 +95,10 @@
       : videoFormats.map(format => {
         const isPremium = format.qualityLabel?.includes("Premium") ?? false;
         const base = `${format.height}p${format.fps ? ` ${format.fps}fps` : ""}`;
-        return { value: format.itag.toString(), label: isPremium ? `${base} (Enhanced)` : base };
+        return {
+          value: format.itag.toString(),
+          label: isPremium ? `${base} (Enhanced)` : base
+        };
       })
   );
 

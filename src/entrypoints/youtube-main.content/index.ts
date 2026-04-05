@@ -207,7 +207,10 @@ export default defineContentScript({
         collectReadableStream(audioStream)
       ]);
 
-      return { videoData, audioData };
+      return {
+        videoData,
+        audioData
+      };
     }
 
     async function fetchAudioViaSabrStream(
@@ -246,7 +249,8 @@ export default defineContentScript({
     };
 
     // Buffer data before activeVideoId is set (init segments arrive early)
-    const pendingChunks: Array<{ mimeType: string; data: Uint8Array }> = [];
+    const pendingChunks: Array<{ mimeType: string;
+      data: Uint8Array; }> = [];
 
     const originalAppendBuffer = SourceBuffer.prototype.appendBuffer;
     SourceBuffer.prototype.appendBuffer = function (data) {
@@ -256,7 +260,10 @@ export default defineContentScript({
           ? new Uint8Array(data)
           : new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
         if (!activeVideoId || !capturedMedia.has(activeVideoId)) {
-          pendingChunks.push({ mimeType, data: chunk.slice() });
+          pendingChunks.push({
+            mimeType,
+            data: chunk.slice()
+          });
         } else {
           addChunkToCapture(capturedMedia.get(activeVideoId)!, mimeType, chunk);
         }
@@ -286,12 +293,19 @@ export default defineContentScript({
       const clientVersion = typeof clientVersionRaw === "string" ? clientVersionRaw : "";
       const clientNameRaw = ytcfg?.get("INNERTUBE_CONTEXT_CLIENT_NAME");
       const clientName = typeof clientNameRaw === "number" ? clientNameRaw : 1;
-      return { clientVersion, clientName };
+      return {
+        clientVersion,
+        clientName
+      };
     }
 
     async function buildAndDispatchVideoData(playerResponse: PlayerResponse) {
       const { clientVersion, clientName } = readYtcfg();
-      const videoData: VideoData = buildVideoData({ playerResponse, clientVersion, clientName });
+      const videoData: VideoData = buildVideoData({
+        playerResponse,
+        clientVersion,
+        clientName
+      });
       videoDataCache.set(videoData.videoId, videoData);
       videoDataStore.set(videoData.videoId, videoData);
 
@@ -441,7 +455,9 @@ export default defineContentScript({
       videoMimeType: string;
       audioMimeType: string;
       audioLabel: string;
-      additionalAudioData: Array<{ data: Uint8Array | null; mimeType: string; label: string }>;
+      additionalAudioData: Array<{ data: Uint8Array | null;
+        mimeType: string;
+        label: string; }>;
     }
 
     function dispatchStreamData({
@@ -467,7 +483,10 @@ export default defineContentScript({
     }
 
     function dispatchStreamError(videoId: string, error: string) {
-      void crossWorldMessenger.sendMessage(CrossWorldMessage.StreamError, { videoId, error });
+      void crossWorldMessenger.sendMessage(CrossWorldMessage.StreamError, {
+        videoId,
+        error
+      });
     }
 
     const activeDownloads = new Map<string, AbortController>();
@@ -603,7 +622,12 @@ export default defineContentScript({
             console.warn("[ytdl] SabrStream failed, trying fallback:", sabrError);
             document.dispatchEvent(new CustomEvent("ytdl:persist-interrupted", {
               detail: {
-                videoId, type, filenameOutput, videoItag, audioItag, timestamp: Date.now()
+                videoId,
+                type,
+                filenameOutput,
+                videoItag,
+                audioItag,
+                timestamp: Date.now()
               }
             }));
           }
@@ -717,7 +741,12 @@ export default defineContentScript({
         // All strategies failed - persist as interrupted so user can resume later
         document.dispatchEvent(new CustomEvent("ytdl:persist-interrupted", {
           detail: {
-            videoId, type, filenameOutput, videoItag, audioItag, timestamp: Date.now()
+            videoId,
+            type,
+            filenameOutput,
+            videoItag,
+            audioItag,
+            timestamp: Date.now()
           }
         }));
 
@@ -793,7 +822,10 @@ export default defineContentScript({
           resolve(element);
         });
 
-        observer.observe(document.documentElement, { childList: true, subtree: true });
+        observer.observe(document.documentElement, {
+          childList: true,
+          subtree: true
+        });
       });
     }
 
@@ -1037,8 +1069,14 @@ export default defineContentScript({
       }
 
       const segmentedObserver = new MutationObserver(applySegmentedClasses);
-      segmentedObserver.observe(elDownloadButton, { childList: true, subtree: true });
-      segmentedObserver.observe(elChevronButton, { childList: true, subtree: true });
+      segmentedObserver.observe(elDownloadButton, {
+        childList: true,
+        subtree: true
+      });
+      segmentedObserver.observe(elChevronButton, {
+        childList: true,
+        subtree: true
+      });
       requestAnimationFrame(applySegmentedClasses);
 
       function refreshButtons() {
@@ -1257,7 +1295,10 @@ export default defineContentScript({
         return;
       }
 
-      playlistMetadataSignal.value = { playlistId, playlistTitle };
+      playlistMetadataSignal.value = {
+        playlistId,
+        playlistTitle
+      };
     }
 
     // - Panel button initialisation bridge -
@@ -1333,7 +1374,11 @@ export default defineContentScript({
 
       // Notify the isolated world that the dropdown is ready, then open it.
       // Opening after a frame lets Polymer finish initialization.
-      postMessage({ namespace: SYNC_NAMESPACE, key: SyncKey.DropdownReady, value: { contentId } }, location.origin);
+      postMessage({
+        namespace: SYNC_NAMESPACE,
+        key: SyncKey.DropdownReady,
+        value: { contentId }
+      }, location.origin);
       requestAnimationFrame(() => {
         return elDropdown.open();
       });
@@ -1551,7 +1596,10 @@ export default defineContentScript({
         {
           method: "POST",
           credentials: "include",
-          headers: { "Content-Type": "application/json", "X-Goog-Visitor-Id": String(visitorData) },
+          headers: {
+            "Content-Type": "application/json",
+            "X-Goog-Visitor-Id": String(visitorData)
+          },
           body: JSON.stringify({
             videoId,
             context: {
@@ -1594,7 +1642,10 @@ export default defineContentScript({
       }
 
       return {
-        videoUrl, audioUrl, videoFormat, audioFormat
+        videoUrl,
+        audioUrl,
+        videoFormat,
+        audioFormat
       };
     }
 
@@ -1722,7 +1773,10 @@ export default defineContentScript({
 
         console.error("[ytdl] Direct download failed:", error);
         void crossWorldMessenger.sendMessage(
-          CrossWorldMessage.StreamError, { videoId: downloadVideoId, error: String(error) }
+          CrossWorldMessage.StreamError, {
+            videoId: downloadVideoId,
+            error: String(error)
+          }
         );
       } finally {
         activeDownloads.delete(downloadVideoId);

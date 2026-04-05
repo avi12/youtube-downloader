@@ -30,7 +30,8 @@ interface PageMessengerSchema {
   [CrossWorldMessage.VideoData](data: VideoData): void;
   [CrossWorldMessage.Navigation](data: { url: string }): void;
   [CrossWorldMessage.PanelContentReady](data: { contentId: string }): void;
-  [CrossWorldMessage.StreamError](data: { videoId: string; error: string }): void;
+  [CrossWorldMessage.StreamError](data: { videoId: string;
+    error: string; }): void;
   [CrossWorldMessage.DownloadRequest](data: DownloadRequest): void;
   [CrossWorldMessage.PanelClosed](data: Record<string, never>): void;
   [CrossWorldMessage.FilenameChanged](data: {
@@ -40,8 +41,10 @@ interface PageMessengerSchema {
     audioItag?: number;
   }): void;
   [CrossWorldMessage.RequestVideoData](data: { videoId: string }): void;
-  [CrossWorldMessage.ProxyFetch](data: { url: string; bodyBase64: string }):
-    { status: number; bodyBase64: string } | null;
+  [CrossWorldMessage.ProxyFetch](data: { url: string;
+    bodyBase64: string; }):
+    { status: number;
+      bodyBase64: string; } | null;
   [CrossWorldMessage.RefreshPoToken](data: { videoId: string }): string | null;
   [CrossWorldMessage.Progress](data: ProgressUpdate): void;
 }

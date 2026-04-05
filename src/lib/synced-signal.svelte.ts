@@ -54,7 +54,11 @@ function broadcast(key: string, value: unknown) {
   // JSON round-trip strips non-cloneable properties (Polymer objects,
   // functions, circular references) that would cause postMessage to throw
   const serializableValue = JSON.parse(JSON.stringify(value));
-  postMessage({ namespace: SYNC_NAMESPACE, key, value: serializableValue }, location.origin);
+  postMessage({
+    namespace: SYNC_NAMESPACE,
+    key,
+    value: serializableValue
+  }, location.origin);
 }
 
 function subscribe(key: string, callback: SyncCallback) {
@@ -125,7 +129,10 @@ export function createSyncedMap<T>(keyPrefix: string) {
       entries.set(mapKey, value);
 
       if (!isSyncing) {
-        broadcast(keyPrefix, { mapKey, mapValue: value });
+        broadcast(keyPrefix, {
+          mapKey,
+          mapValue: value
+        });
       }
     },
     has(mapKey: string) {
@@ -137,7 +144,10 @@ export function createSyncedMap<T>(keyPrefix: string) {
       entries.delete(mapKey);
 
       if (!isSyncing) {
-        broadcast(keyPrefix, { mapKey, mapValue: undefined });
+        broadcast(keyPrefix, {
+          mapKey,
+          mapValue: undefined
+        });
       }
     },
     /** Clears suppression so set/sync updates are accepted again. */

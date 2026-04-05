@@ -31,7 +31,11 @@
 
   let videoData = $state<VideoData | null>(null);
   const defaultProgressState: DownloadProgressState = {
-    isDownloading: false, isDone: false, isQueued: false, progress: 0, progressType: ""
+    isDownloading: false,
+    isDone: false,
+    isQueued: false,
+    progress: 0,
+    progressType: ""
   };
 
   const downloadState = $derived(downloadProgressStore.get(videoId) ?? defaultProgressState);
@@ -114,7 +118,11 @@
 
     downloadProgressStore.unsuppress(videoId);
     downloadProgressStore.set(videoId, {
-      isDownloading: true, isDone: false, isQueued: false, progress: 0, progressType: ""
+      isDownloading: true,
+      isDone: false,
+      isQueued: false,
+      progress: 0,
+      progressType: ""
     });
   }
 
@@ -271,7 +279,10 @@
 
       panelInstance = mount(DownloadOptionsPanel, {
         target: elContent,
-        props: { videoData: currentVideoData, options }
+        props: {
+          videoData: currentVideoData,
+          options
+        }
       });
 
       function handleOverlayClose() {

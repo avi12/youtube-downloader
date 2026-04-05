@@ -75,7 +75,9 @@ interface ProtocolMap {
   processStreamError(data: StreamError): void;
 
   // Content script → Background: get captured SABR request body for this tab
-  getCapturedSabrBody(data: Record<string, never>): { body: string; url: string; poToken: string } | null;
+  getCapturedSabrBody(data: Record<string, never>): { body: string;
+    url: string;
+    poToken: string; } | null;
 
   // Content script → Background: run SabrStream download in the background
   // Background has host_permissions so fetch() bypasses CORS for googlevideo.com
@@ -85,8 +87,10 @@ interface ProtocolMap {
   }): boolean;
 
   // Content script → Background: proxy fetch through background (CORS bypass)
-  proxyFetch(data: { url: string; bodyBase64: string }):
-    { status: number; bodyBase64: string } | null;
+  proxyFetch(data: { url: string;
+    bodyBase64: string; }):
+    { status: number;
+      bodyBase64: string; } | null;
 
   // Content script → Background: download video/audio via direct URL
   directDownload(data: {
@@ -155,10 +159,14 @@ interface ProtocolMap {
 
   // Offscreen → Background: storage operations (chrome.storage unavailable in offscreen)
   pipelineProgress(data: ProgressUpdate & { tabId: number }): void;
-  pipelineRemoval(data: { videoId: string; tabId: number }): void;
-  pipelineQueueRemove(data: { videoId: string; type: DownloadType }): void;
+  pipelineRemoval(data: { videoId: string;
+    tabId: number; }): void;
+  pipelineQueueRemove(data: { videoId: string;
+    type: DownloadType; }): void;
   pipelineFFmpegReady(data: Record<string, never>): void;
-  pipelineDownload(data: { blobUrl: string; mimeType: string; filename: string }): void;
+  pipelineDownload(data: { blobUrl: string;
+    mimeType: string;
+    filename: string; }): void;
 }
 
 export const { sendMessage, onMessage } =

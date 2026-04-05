@@ -86,11 +86,19 @@ export async function handleStreamData(payload: StreamDataPayload) {
   }
 
   if (videoData) {
-    await sendStreamChunks({ videoId, streamType: "video", data: videoData });
+    await sendStreamChunks({
+      videoId,
+      streamType: "video",
+      data: videoData
+    });
   }
 
   if (audioData) {
-    await sendStreamChunks({ videoId, streamType: "audio", data: audioData });
+    await sendStreamChunks({
+      videoId,
+      streamType: "audio",
+      data: audioData
+    });
   }
 
   const extraAudioStreams = additionalAudioData ?? [];
@@ -98,7 +106,11 @@ export async function handleStreamData(payload: StreamDataPayload) {
   for (let iTrack = 0; iTrack < extraAudioStreams.length; iTrack++) {
     const track = extraAudioStreams[iTrack];
     if (track.data) {
-      await sendStreamChunks({ videoId, streamType: `audio-extra-${iTrack}`, data: track.data });
+      await sendStreamChunks({
+        videoId,
+        streamType: `audio-extra-${iTrack}`,
+        data: track.data
+      });
     }
   }
 
@@ -123,11 +135,15 @@ export async function handleStreamData(payload: StreamDataPayload) {
   });
 }
 
-export async function handleStreamError({ videoId, error }: { videoId: string; error: string }) {
+export async function handleStreamError({ videoId, error }: { videoId: string;
+  error: string; }) {
   console.error("[ytdl] Stream error for", videoId, error);
 
   // Reset download state so the button isn't stuck at "downloading"
   downloadProgressStore.delete(videoId);
 
-  await sendMessage(MessageType.ProcessStreamError, { videoId, error });
+  await sendMessage(MessageType.ProcessStreamError, {
+    videoId,
+    error
+  });
 }
