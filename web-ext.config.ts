@@ -107,7 +107,7 @@ export default defineWebExtConfig({
   startUrls: ["https://www.youtube.com/watch?v=wjggoT-3oVM&t=184s"],
   keepProfileChanges: true,
   ...process.env.CHROME_WITH_PROFILE === "1" && { chromiumProfile: resolve(import.meta.dirname, "../User Data") },
-  firefoxArgs: ["-marionette", "-marionette-port", "2828"],
+  firefoxArgs: ["-marionette", "-marionette-port", "2828", "--remote-debugging-port", "9225"],
   ...process.env.FIREFOX_WITH_PROFILE === "1" && { firefoxProfile: findDefaultFirefoxProfile() },
   chromiumArgs: [
     `--lang=${LANG}`,

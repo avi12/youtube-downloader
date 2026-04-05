@@ -21,6 +21,11 @@ export default defineConfig({
       "https://www.youtube.com/*",
       "https://*.googlevideo.com/*"
     ],
+    ...(browser === "firefox" && {
+      browser_specific_settings: {
+        gecko: { id: "youtube-downloader@avi12" }
+      }
+    }),
     content_security_policy: {
       extension_pages:
         "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
@@ -38,6 +43,9 @@ export default defineConfig({
         matches: ["<all_urls>"]
       }
     ]
+  }),
+  vite: () => ({
+    server: { strictPort: false }
   }),
   hooks: {
     "prepare:publicPaths"(_, paths) {

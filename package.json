@@ -10,6 +10,7 @@
     "dev": "wxt",
     "dev:with-profile": "bunx cross-env CHROME_WITH_PROFILE=1 wxt",
     "dev:firefox": "wxt -b firefox --mv3",
+    "dev:firefox-with-profile": "bunx cross-env FIREFOX_WITH_PROFILE=1 wxt -b firefox --mv3",
     "build": "wxt build",
     "build:firefox": "wxt build -b firefox --mv3",
     "pack": "wxt zip",
@@ -25,8 +26,7 @@
     "@ffmpeg/util": "^0.12.2",
     "@webext-core/messaging": "^2.3.0",
     "fflate": "^0.8.2",
-    "googlevideo": "^4.0.4",
-    "zod": "^4.3.6"
+    "googlevideo": "^4.0.4"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
