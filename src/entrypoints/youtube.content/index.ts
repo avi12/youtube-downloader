@@ -103,7 +103,7 @@ export default defineContentScript({
       void forwardSabrCredentialsWithRetry();
     });
 
-    crossWorldMessenger.onMessage(CrossWorldMessage.PanelContentReady, async ({ data }) => {
+    crossWorldMessenger.onMessage(CrossWorldMessage.PanelContentReady, ({ data }) => {
       if (currentVideoData) {
         mountPanelUi(context, data.contentId, currentVideoData, currentOptions);
       }
@@ -118,7 +118,7 @@ export default defineContentScript({
       void sendMessage(MessageType.CancelDownload, { videoIds });
     }
 
-    crossWorldMessenger.onMessage(CrossWorldMessage.CancelDownload, async ({ data }) => {
+    crossWorldMessenger.onMessage(CrossWorldMessage.CancelDownload, ({ data }) => {
       handleCancel(data.videoIds);
     });
 
