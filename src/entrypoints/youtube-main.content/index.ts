@@ -1032,20 +1032,22 @@ export default defineContentScript({
       elDropdown.allowOutsideScroll = false;
       elDropdown.restoreFocusOnClose = false;
 
-      // Notify the isolated world where to mount the Svelte panel
-      await crossWorldMessenger.sendMessage(CrossWorldMessage.PanelContentReady, { contentId: panelContentId });
+      // Notify the isolated world where to mount the Svelte panel.
+      // Fire-and-forget: must not await, or the button setup below never runs
+      // (sendMessage waits for a response that never comes for void handlers).
+      void crossWorldMessenger.sendMessage(CrossWorldMessage.PanelContentReady, { contentId: panelContentId });
 
       // Set Polymer scoping class and data AFTER insertion so connectedCallback
       // does not wipe the class attribute
       elDownloadButton.classList.add(...scopingClass.split(" ").filter(Boolean));
-      elDownloadButton.dataset.ytdlDownload = "true";
       elDownloadButton.data = buildDownloadData();
+      elDownloadButton.dataset.ytdlDownload = "true";
 
       elChevronButton.classList.add(...scopingClass.split(" ").filter(Boolean));
+      elChevronButton.data = buildChevronData();
       // [data-ytdl-chevron] suppresses the automatic margin-left between
       // adjacent yt-button-view-model siblings so the buttons sit flush.
       elChevronButton.dataset.ytdlChevron = "true";
-      elChevronButton.data = buildChevronData();
 
       // - Segmented classes -
       // Polymer renders <button> into light DOM asynchronously.
