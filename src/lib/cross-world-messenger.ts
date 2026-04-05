@@ -12,7 +12,6 @@ export enum CrossWorldMessage {
 
   // Isolated world / Svelte → MAIN world
   DownloadRequest = "downloadRequest",
-  CancelDownload = "cancelDownload",
   PanelClosed = "panelClosed",
   FilenameChanged = "filenameChanged",
   RequestVideoData = "requestVideoData",
@@ -33,7 +32,6 @@ interface PageMessengerSchema {
   [CrossWorldMessage.PanelContentReady](data: { contentId: string }): void;
   [CrossWorldMessage.StreamError](data: { videoId: string; error: string }): void;
   [CrossWorldMessage.DownloadRequest](data: DownloadRequest): void;
-  [CrossWorldMessage.CancelDownload](data: { videoIds: string[] }): void;
   [CrossWorldMessage.PanelClosed](data: Record<string, never>): void;
   [CrossWorldMessage.FilenameChanged](data: {
     filename: string;

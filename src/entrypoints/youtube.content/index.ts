@@ -125,10 +125,6 @@ export default defineContentScript({
       }, location.origin);
     }
 
-    crossWorldMessenger.onMessage(CrossWorldMessage.CancelDownload, ({ data }) => {
-      handleCancel(data.videoIds);
-    });
-
     addEventListener("message", e => {
       if (e.data?.namespace !== SYNC_NAMESPACE || e.data.key !== SyncKey.CancelRequest) {
         return;

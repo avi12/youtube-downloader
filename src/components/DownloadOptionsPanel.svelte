@@ -1,7 +1,7 @@
 <script lang="ts">
   import { CrossWorldMessage, crossWorldMessenger } from "../lib/cross-world-messenger";
   import { statusProgressItem, videoQueueItem } from "../lib/storage";
-  import { downloadProgressStore } from "../lib/synced-stores.svelte";
+  import { cancelRequestSignal, downloadProgressStore } from "../lib/synced-stores.svelte";
   import { getCompatibleFilename, getOutputExtension, waitForVideoElement } from "../lib/utils";
   import DownloadOptions from "./DownloadOptions.svelte";
   import panelFocusStyles from "./panel-focus.css?inline";
@@ -273,9 +273,7 @@
 
     downloadProgressStore.delete(videoData.videoId);
 
-    void crossWorldMessenger.sendMessage(
-      CrossWorldMessage.CancelDownload, { videoIds: [videoData.videoId] }
-    );
+    cancelRequestSignal.value = { videoIds: [videoData.videoId] };
   }
 
   function handleKeydown(e: KeyboardEvent) {

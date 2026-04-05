@@ -478,13 +478,6 @@ export default defineContentScript({
       }
     }
 
-    // Listen for cancel requests from the isolated world (both paths)
-    crossWorldMessenger.onMessage(CrossWorldMessage.CancelDownload, ({ data }) => {
-      for (const id of data.videoIds) {
-        cancelActiveDownload(id);
-      }
-    });
-
     addEventListener("message", e => {
       if (e.data?.namespace !== SYNC_NAMESPACE || e.data.key !== SyncKey.CancelDownload) {
         return;
@@ -1060,7 +1053,12 @@ export default defineContentScript({
           if (isDownloading) {
             isDownloading = false;
             refreshButtons();
-            void crossWorldMessenger.sendMessage(CrossWorldMessage.CancelDownload, { videoIds: [videoId] });
+            cancelActiveDownload(videoId);
+            postMessage({
+              namespace: SYNC_NAMESPACE,
+              key: SyncKey.CancelRequest,
+              value: { videoIds: [videoId] }
+            }, location.origin);
             return;
           }
 
