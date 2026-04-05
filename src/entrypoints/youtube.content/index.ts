@@ -24,11 +24,11 @@ import {
   setPlaylistContext,
   uncancelStreamTransfer
 } from "./stream-transfer";
-import { crossWorldMessenger } from "@/lib/cross-world-messenger";
+import { CrossWorldMessage, crossWorldMessenger } from "@/lib/cross-world-messenger";
 import { MessageType, sendMessage, onMessage } from "@/lib/messaging";
 import { forwardSabrCredentialsWithRetry, listenForSabrBodyReady } from "@/lib/sabr-credentials";
 import { optionsItem } from "@/lib/storage";
-import { downloadProgressStore, SyncKey } from "@/lib/synced-stores.svelte";
+import { downloadProgressStore, SYNC_NAMESPACE, SyncKey } from "@/lib/synced-stores.svelte";
 import type { Options, VideoData } from "@/types";
 
 export default defineContentScript({
@@ -89,7 +89,7 @@ export default defineContentScript({
     // The MAIN world writes video data to the synced store (videoDataStore).
     // Components read from it reactively. But the orchestrator still needs
     // currentVideoData for the watch page panel mount.
-    crossWorldMessenger.onMessage("videoData", async ({ data }) => {
+    crossWorldMessenger.onMessage(CrossWorldMessage.VideoData, async ({ data }) => {
       if (location.pathname === "/watch") {
         currentVideoData = data;
       }
@@ -97,42 +97,47 @@ export default defineContentScript({
       await checkInterruptedDownload(data.videoId);
     });
 
-    crossWorldMessenger.onMessage("navigation", async ({ data }) => {
+    crossWorldMessenger.onMessage(CrossWorldMessage.Navigation, async ({ data }) => {
       currentVideoData = null;
       await handlePageChange(data.url);
-      forwardSabrCredentialsWithRetry().catch(() => {});
+      void forwardSabrCredentialsWithRetry();
     });
 
-    crossWorldMessenger.onMessage("panelContentReady", async ({ data }) => {
+    crossWorldMessenger.onMessage(CrossWorldMessage.PanelContentReady, async ({ data }) => {
       if (currentVideoData) {
         mountPanelUi(context, data.contentId, currentVideoData, currentOptions);
       }
     });
 
-    crossWorldMessenger.onMessage("cancelDownload", async ({ data }) => {
-      await sendMessage(MessageType.CancelDownload, { videoIds: data.videoIds });
+    function handleCancel(videoIds: string[]) {
+      for (const id of videoIds) {
+        cancelStreamTransfer(id);
+      }
+
+      // Notify background to cancel FFmpeg processing
+      void sendMessage(MessageType.CancelDownload, { videoIds });
+    }
+
+    crossWorldMessenger.onMessage(CrossWorldMessage.CancelDownload, async ({ data }) => {
+      handleCancel(data.videoIds);
     });
 
     // Also handle cancel from grid items via synced signal
     addEventListener("message", e => {
-      if (e.data?.namespace !== "ytdl-sync" || e.data.key !== "cancel-request") {
+      if (e.data?.namespace !== SYNC_NAMESPACE || e.data.key !== SyncKey.CancelRequest) {
         return;
       }
 
       if (e.data.value?.videoIds) {
-        for (const id of e.data.value.videoIds) {
-          cancelStreamTransfer(id);
-        }
+        handleCancel(e.data.value.videoIds);
 
         // Notify MAIN world to abort active fetches via postMessage
         // (not crossWorldMessenger, which would loop back to our own handler)
         postMessage({
-          namespace: "ytdl-sync",
+          namespace: SYNC_NAMESPACE,
           key: SyncKey.CancelDownload,
           value: { videoIds: e.data.value.videoIds }
         }, location.origin);
-        // Notify background to cancel FFmpeg processing
-        sendMessage(MessageType.CancelDownload, { videoIds: e.data.value.videoIds });
       }
     });
 
@@ -146,21 +151,21 @@ export default defineContentScript({
       }
 
       uncancelStreamTransfer(data.videoId);
-      crossWorldMessenger.sendMessage("downloadRequest", data);
+      void crossWorldMessenger.sendMessage(CrossWorldMessage.DownloadRequest, data);
     });
 
     // Proxy fetch requests from MAIN world through the background
-    crossWorldMessenger.onMessage("proxyFetch", async ({ data }) => {
+    crossWorldMessenger.onMessage(CrossWorldMessage.ProxyFetch, async ({ data }) => {
       return sendMessage(MessageType.ProxyFetch, data);
     });
 
     // Relay PO token refresh requests from background to MAIN world
     onMessage(MessageType.RefreshPoToken, async ({ data }) => {
-      return crossWorldMessenger.sendMessage("refreshPoToken", data);
+      return crossWorldMessenger.sendMessage(CrossWorldMessage.RefreshPoToken, data);
     });
 
     onMessage(MessageType.UpdateDownloadProgress, ({ data }) => {
-      crossWorldMessenger.sendMessage("progress", data);
+      void crossWorldMessenger.sendMessage(CrossWorldMessage.Progress, data);
 
       // Update synced store - components derive state reactively
       if (data.isRemoved) {
@@ -184,16 +189,19 @@ export default defineContentScript({
 
     // ─── Event listeners ────────────────────────────────────────────────
 
-    addEventListener("ytdl:stream-data", handleStreamData);
-    context.onInvalidated(() => removeEventListener("ytdl:stream-data", handleStreamData));
+    addEventListener("message", e => {
+      if (e.data?.namespace !== SYNC_NAMESPACE || e.data.key !== SyncKey.StreamData) {
+        return;
+      }
 
-    addEventListener("ytdl:stream-error", handleStreamError);
-    context.onInvalidated(() => removeEventListener("ytdl:stream-error", handleStreamError));
+      void handleStreamData(e.data.value);
+    });
+    crossWorldMessenger.onMessage(CrossWorldMessage.StreamError, ({ data }) => handleStreamError(data));
 
     listenForInterruptedDownloadEvents();
     listenForSabrBodyReady();
     listenForDownloadRequests();
-    forwardSabrCredentialsWithRetry().catch(() => {});
+    void forwardSabrCredentialsWithRetry();
 
     const unwatchOptions = optionsItem.watch(newOptions => {
       if (!newOptions) {

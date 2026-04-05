@@ -10,7 +10,7 @@
 
 import { SvelteMap, SvelteSet } from "svelte/reactivity";
 
-const NAMESPACE = "ytdl-sync";
+export const SYNC_NAMESPACE = "ytdl-sync";
 
 /** Keys for cross-world postMessage signals (ytdl-sync namespace). */
 export enum SyncKey {
@@ -18,10 +18,12 @@ export enum SyncKey {
   CloseDropdown = "close-dropdown",
   DropdownReady = "dropdown-ready",
   CancelDownload = "cancel-download",
+  CancelRequest = "cancel-request",
   DownloadRequest = "download-request",
   DirectDownloadRequest = "direct-download-request",
   DownloadProgress = "download-progress",
-  VideoDataRequest = "video-data-request"
+  VideoDataRequest = "video-data-request",
+  StreamData = "stream-data"
 }
 
 // ─── Transport layer ─────────────────────────────────────────────────────────
@@ -34,7 +36,7 @@ type SyncCallback = (value: any) => void;
 const listeners = new SvelteMap<string, Set<SyncCallback>>();
 
 addEventListener("message", e => {
-  if (e.data?.namespace !== NAMESPACE) {
+  if (e.data?.namespace !== SYNC_NAMESPACE) {
     return;
   }
 
@@ -52,7 +54,7 @@ function broadcast(key: string, value: unknown) {
   // JSON round-trip strips non-cloneable properties (Polymer objects,
   // functions, circular references) that would cause postMessage to throw
   const serializableValue = JSON.parse(JSON.stringify(value));
-  postMessage({ namespace: NAMESPACE, key, value: serializableValue }, location.origin);
+  postMessage({ namespace: SYNC_NAMESPACE, key, value: serializableValue }, location.origin);
 }
 
 function subscribe(key: string, callback: SyncCallback) {

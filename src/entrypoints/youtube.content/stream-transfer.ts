@@ -6,6 +6,7 @@
 
 import { MessageType, sendMessage } from "@/lib/messaging";
 import { downloadProgressStore } from "@/lib/synced-stores.svelte";
+import type { StreamDataPayload } from "@/types";
 
 const TRANSFER_CHUNK_SIZE = 1024 * 1024;
 const cancelledVideoIds = new Set<string>();
@@ -72,16 +73,12 @@ export function setPlaylistContext(videoId: string, context: PlaylistContext) {
   playlistContextByVideoId.set(videoId, context);
 }
 
-export async function handleStreamData(e: Event) {
-  if (!(e instanceof CustomEvent)) {
-    return;
-  }
-
+export async function handleStreamData(payload: StreamDataPayload) {
   const {
     downloadType, videoId, filenameOutput,
     videoData, audioData, videoMimeType, audioMimeType,
     audioLabel, additionalAudioData
-  } = e.detail;
+  } = payload;
   if (cancelledVideoIds.has(videoId)) {
     return;
   }
@@ -94,7 +91,7 @@ export async function handleStreamData(e: Event) {
     await sendStreamChunks(videoId, "audio", audioData);
   }
 
-  const extraAudioStreams: Array<{ data: Uint8Array; label: string }> = additionalAudioData ?? [];
+  const extraAudioStreams = additionalAudioData ?? [];
 
   for (let iTrack = 0; iTrack < extraAudioStreams.length; iTrack++) {
     const track = extraAudioStreams[iTrack];
@@ -122,16 +119,11 @@ export async function handleStreamData(e: Event) {
   });
 }
 
-export async function handleStreamError(e: Event) {
-  if (!(e instanceof CustomEvent)) {
-    return;
-  }
-
-  const { videoId, error }: { videoId: string; error: string } = e.detail;
+export async function handleStreamError({ videoId, error }: { videoId: string; error: string }) {
   console.error("[ytdl] Stream error for", videoId, error);
 
   // Reset download state so the button isn't stuck at "downloading"
   downloadProgressStore.delete(videoId);
 
-  await sendMessage(MessageType.ProcessStreamError, { videoId, error }).catch(() => {});
+  await sendMessage(MessageType.ProcessStreamError, { videoId, error });
 }

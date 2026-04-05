@@ -11,13 +11,14 @@
 
 import watchButtonStyles from "./watch-button.css?inline";
 import { buildVideoData, extractPlayerResponseFromHtml } from "./youtube-api";
-import { crossWorldMessenger } from "@/lib/cross-world-messenger";
+import { CrossWorldMessage, crossWorldMessenger } from "@/lib/cross-world-messenger";
 import { generatePoToken } from "@/lib/po-token-generator";
 import { decryptSignatureCipher } from "@/lib/signature-decryptor";
 import {
   interruptedDownloadStore,
   playlistMetadataSignal,
   sabrCredentials,
+  SYNC_NAMESPACE,
   SyncKey,
   videoDataStore
 } from "@/lib/synced-stores.svelte";
@@ -157,7 +158,7 @@ export default defineContentScript({
             bodyArray = new Uint8Array(rawBody.buffer, rawBody.byteOffset, rawBody.byteLength);
           }
 
-          const result = await crossWorldMessenger.sendMessage("proxyFetch", {
+          const result = await crossWorldMessenger.sendMessage(CrossWorldMessage.ProxyFetch, {
             url,
             bodyBase64: btoa(String.fromCharCode(...bodyArray))
           });
@@ -446,8 +447,10 @@ export default defineContentScript({
       videoData, audioData, videoMimeType, audioMimeType,
       audioLabel, additionalAudioData
     }: StreamDataEvent) {
-      dispatchEvent(new CustomEvent("ytdl:stream-data", {
-        detail: {
+      postMessage({
+        namespace: SYNC_NAMESPACE,
+        key: SyncKey.StreamData,
+        value: {
           downloadType: type,
           videoId,
           filenameOutput,
@@ -458,11 +461,11 @@ export default defineContentScript({
           audioLabel,
           additionalAudioData
         }
-      }));
+      }, location.origin);
     }
 
     function dispatchStreamError(videoId: string, error: string) {
-      dispatchEvent(new CustomEvent("ytdl:stream-error", { detail: { videoId, error } }));
+      void crossWorldMessenger.sendMessage(CrossWorldMessage.StreamError, { videoId, error });
     }
 
     const activeDownloads = new Map<string, AbortController>();
@@ -476,14 +479,14 @@ export default defineContentScript({
     }
 
     // Listen for cancel requests from the isolated world (both paths)
-    crossWorldMessenger.onMessage("cancelDownload", ({ data }) => {
+    crossWorldMessenger.onMessage(CrossWorldMessage.CancelDownload, ({ data }) => {
       for (const id of data.videoIds) {
         cancelActiveDownload(id);
       }
     });
 
     addEventListener("message", e => {
-      if (e.data?.namespace !== "ytdl-sync" || e.data.key !== SyncKey.CancelDownload) {
+      if (e.data?.namespace !== SYNC_NAMESPACE || e.data.key !== SyncKey.CancelDownload) {
         return;
       }
 
@@ -627,7 +630,7 @@ export default defineContentScript({
 
                 if (totalExpectedBytes > 0) {
                   postMessage({
-                    namespace: "ytdl-sync",
+                    namespace: SYNC_NAMESPACE,
                     key: SyncKey.DownloadProgress,
                     value: {
                       mapKey: videoId,
@@ -996,7 +999,7 @@ export default defineContentScript({
       elDropdown.restoreFocusOnClose = false;
 
       // Notify the isolated world where to mount the Svelte panel
-      await crossWorldMessenger.sendMessage("panelContentReady", { contentId: panelContentId });
+      await crossWorldMessenger.sendMessage(CrossWorldMessage.PanelContentReady, { contentId: panelContentId });
 
       // Set Polymer scoping class and data AFTER insertion so connectedCallback
       // does not wipe the class attribute
@@ -1044,8 +1047,7 @@ export default defineContentScript({
 
       // - Click handler -
 
-      function handleClick(e: Event) {
-        const target = e.target;
+      function handleClick({ target }: Event) {
         if (!(target instanceof Node)) {
           return;
         }
@@ -1058,7 +1060,7 @@ export default defineContentScript({
           if (isDownloading) {
             isDownloading = false;
             refreshButtons();
-            crossWorldMessenger.sendMessage("cancelDownload", { videoIds: [videoId] });
+            void crossWorldMessenger.sendMessage(CrossWorldMessage.CancelDownload, { videoIds: [videoId] });
             return;
           }
 
@@ -1068,7 +1070,7 @@ export default defineContentScript({
           downloadProgress = 0;
           refreshButtons();
           postMessage({
-            namespace: "ytdl-sync",
+            namespace: SYNC_NAMESPACE,
             key: SyncKey.DownloadRequest,
             value: JSON.parse(JSON.stringify({
               type: defaultDownloadType,
@@ -1156,22 +1158,44 @@ export default defineContentScript({
       });
       resizeObserver.observe(elDropdownContentSlot);
 
-      const unsubscribeProgress = crossWorldMessenger.onMessage("progress", handleProgress);
-      const unsubscribePanelClosed = crossWorldMessenger.onMessage("panelClosed", () => handlePanelClosed());
-      const unsubscribeFilenameChanged = crossWorldMessenger.onMessage("filenameChanged", ({ data }) => {
-        defaultFilename = data.filename;
-        defaultQuality = data.quality ?? "";
+      const unsubscribeProgress = crossWorldMessenger.onMessage(
+        CrossWorldMessage.Progress, handleProgress
+      );
 
-        if (data.videoItag !== undefined) {
-          defaultVideoItag = data.videoItag;
+      // Also listen for direct download progress via synced signal (postMessage)
+      function handleSyncedProgress(e: MessageEvent) {
+        if (e.data?.namespace !== SYNC_NAMESPACE || e.data.key !== SyncKey.DownloadProgress) {
+          return;
         }
 
-        if (data.audioItag !== undefined) {
-          defaultAudioItag = data.audioItag;
+        const { mapKey, mapValue } = e.data.value ?? {};
+        if (mapKey !== videoId || !mapValue) {
+          return;
         }
 
+        downloadProgress = mapValue.progress;
         refreshButtons();
-      });
+      }
+
+      addEventListener("message", handleSyncedProgress);
+      const unsubscribePanelClosed = crossWorldMessenger.onMessage(
+        CrossWorldMessage.PanelClosed, () => handlePanelClosed()
+      );
+      const unsubscribeFilenameChanged = crossWorldMessenger.onMessage(
+        CrossWorldMessage.FilenameChanged, ({ data }) => {
+          defaultFilename = data.filename;
+          defaultQuality = data.quality ?? "";
+
+          if (data.videoItag !== undefined) {
+            defaultVideoItag = data.videoItag;
+          }
+
+          if (data.audioItag !== undefined) {
+            defaultAudioItag = data.audioItag;
+          }
+
+          refreshButtons();
+        });
 
       elActionsContainer.addEventListener("click", handleClick);
       elDropdown.addEventListener("iron-overlay-closed", handleDropdownClosed);
@@ -1181,6 +1205,7 @@ export default defineContentScript({
         resizeObserver.disconnect();
         elActionsContainer.removeEventListener("click", handleClick);
         unsubscribeProgress();
+        removeEventListener("message", handleSyncedProgress);
         unsubscribePanelClosed();
         unsubscribeFilenameChanged();
         elDropdown.removeEventListener("iron-overlay-closed", handleDropdownClosed);
@@ -1196,7 +1221,7 @@ export default defineContentScript({
 
     async function handleNavigation() {
       cleanupSegmentedButton();
-      await crossWorldMessenger.sendMessage("navigation", { url: location.href });
+      await crossWorldMessenger.sendMessage(CrossWorldMessage.Navigation, { url: location.href });
       extractPlaylistMetadata();
     }
 
@@ -1247,7 +1272,7 @@ export default defineContentScript({
     const gridDropdowns = new Map<string, TpYtIronDropdownElement>();
 
     addEventListener("message", e => {
-      if (e.data?.namespace !== "ytdl-sync" || e.data.key !== SyncKey.CreateDropdown) {
+      if (e.data?.namespace !== SYNC_NAMESPACE || e.data.key !== SyncKey.CreateDropdown) {
         return;
       }
 
@@ -1295,12 +1320,12 @@ export default defineContentScript({
 
       // Notify the isolated world that the dropdown is ready, then open it.
       // Opening after a frame lets Polymer finish initialization.
-      postMessage({ namespace: "ytdl-sync", key: SyncKey.DropdownReady, value: { contentId } }, location.origin);
+      postMessage({ namespace: SYNC_NAMESPACE, key: SyncKey.DropdownReady, value: { contentId } }, location.origin);
       requestAnimationFrame(() => elDropdown.open());
     });
 
     addEventListener("message", e => {
-      if (e.data?.namespace !== "ytdl-sync" || e.data.key !== SyncKey.CloseDropdown) {
+      if (e.data?.namespace !== SYNC_NAMESPACE || e.data.key !== SyncKey.CloseDropdown) {
         return;
       }
 
@@ -1377,12 +1402,12 @@ export default defineContentScript({
     navigation.addEventListener("navigatesuccess", handleNavigateSuccess);
 
     // Handle download requests from Svelte panel components (via isolated world)
-    crossWorldMessenger.onMessage("downloadRequest", async ({ data }) => {
+    crossWorldMessenger.onMessage(CrossWorldMessage.DownloadRequest, async ({ data }) => {
       await performDownload(data);
     });
 
     // Refresh PO token on demand (background requests this when SPS escalates)
-    crossWorldMessenger.onMessage("refreshPoToken", async ({ data }) => {
+    crossWorldMessenger.onMessage(CrossWorldMessage.RefreshPoToken, async ({ data }) => {
       try {
         const token = await generatePoToken(data.videoId);
         capturedPoToken = token;
@@ -1393,50 +1418,89 @@ export default defineContentScript({
     });
 
     // Handle video data requests from grid/playlist items.
-    // Isolated world writes to videoDataRequests synced map,
-    // which arrives here via postMessage. MAIN world fetches
-    // and writes results to videoDataStore.
-    const videoDataQueue: string[] = [];
-    let isProcessingVideoDataQueue = false;
+    // Uses YouTube's /player API directly instead of fetching full watch pages,
+    // which is faster and avoids rate-limiting from HTML page requests.
 
-    async function processVideoDataQueue() {
-      if (isProcessingVideoDataQueue) {
+    const MAX_CONCURRENT_FETCHES = 3;
+    const videoDataPending = new Set<string>();
+    let activeVideoDataFetches = 0;
+
+    async function fetchVideoDataViaApi(videoId: string) {
+      // The /player API returns UNPLAYABLE on non-watch pages, so fetch
+      // the watch page HTML and extract ytInitialPlayerResponse instead.
+      const isWatchPage = location.pathname === "/watch";
+      if (isWatchPage) {
+        const { clientVersion, clientName } = readYtcfg();
+        const visitorData = ytcfg?.get("VISITOR_DATA") ?? "";
+        const signatureTimestamp = ytcfg?.get("STS");
+
+        const playerData = await (await globalThis.fetch(
+          "https://www.youtube.com/youtubei/v1/player?prettyPrint=false",
+          {
+            method: "POST",
+            credentials: "include",
+            headers: {
+              "Content-Type": "application/json",
+              "X-Goog-Visitor-Id": String(visitorData)
+            },
+            body: JSON.stringify({
+              videoId,
+              context: {
+                client: {
+                  clientName: clientName === 1 ? "WEB" : String(clientName),
+                  clientVersion: String(clientVersion)
+                }
+              },
+              playbackContext: { contentPlaybackContext: { signatureTimestamp } },
+              contentCheckOk: true,
+              racyCheckOk: true
+            })
+          }
+        )).json();
+        if (playerData?.videoDetails?.videoId) {
+          await buildAndDispatchVideoData(playerData);
+          return;
+        }
+      }
+
+      // Fallback: fetch watch page HTML and extract player response
+      const html = await (await globalThis.fetch(
+        `https://www.youtube.com/watch?v=${videoId}`,
+        { credentials: "include" }
+      )).text();
+
+      const playerResponse = extractPlayerResponseFromHtml(html);
+      if (playerResponse?.videoDetails?.videoId) {
+        await buildAndDispatchVideoData(playerResponse);
+      }
+    }
+
+    async function processNextVideoData() {
+      if (activeVideoDataFetches >= MAX_CONCURRENT_FETCHES || videoDataPending.size === 0) {
         return;
       }
 
-      isProcessingVideoDataQueue = true;
-
-      while (videoDataQueue.length > 0) {
-        const videoId = videoDataQueue.shift()!;
-        if (videoDataCache.has(videoId)) {
-          videoDataStore.set(videoId, videoDataCache.get(videoId)!);
-          continue;
-        }
-
-        for (let iAttempt = 0; iAttempt < 2; iAttempt++) {
-          try {
-            const response = await fetch(`https://www.youtube.com/watch?v=${videoId}`);
-            const html = await response.text();
-            const playerResponse = extractPlayerResponseFromHtml(html);
-            if (playerResponse) {
-              await buildAndDispatchVideoData(playerResponse);
-            }
-
-            break;
-          } catch {
-            if (iAttempt === 0) {
-              await new Promise(resolve => setTimeout(resolve, 1000));
-            }
-          }
-        }
+      const { value: videoId } = videoDataPending.values().next();
+      if (!videoId) {
+        return;
       }
 
-      isProcessingVideoDataQueue = false;
+      videoDataPending.delete(videoId);
+      activeVideoDataFetches++;
+
+      try {
+        await fetchVideoDataViaApi(videoId);
+      } catch (error) {
+        console.warn("[ytdl] Failed to fetch video data for", videoId, error);
+      } finally {
+        activeVideoDataFetches--;
+        void processNextVideoData();
+      }
     }
 
     // Observe video data requests arriving via synced signal (postMessage)
-    addEventListener("message", async e => {
-      if (e.data?.namespace !== "ytdl-sync" || e.data?.key !== SyncKey.VideoDataRequest) {
+    addEventListener("message", e => {
+      if (e.data?.namespace !== SYNC_NAMESPACE || e.data?.key !== SyncKey.VideoDataRequest) {
         return;
       }
 
@@ -1450,11 +1514,10 @@ export default defineContentScript({
         return;
       }
 
-      if (!videoDataQueue.includes(videoId)) {
-        videoDataQueue.push(videoId);
+      if (!videoDataPending.has(videoId)) {
+        videoDataPending.add(videoId);
+        void processNextVideoData();
       }
-
-      await processVideoDataQueue();
     });
 
     // Fetch player data from the android_vr client and resolve format URLs.
@@ -1515,7 +1578,7 @@ export default defineContentScript({
     // direct URLs, fetches video+audio in the MAIN world (YouTube's
     // Service Worker handles CORS), then dispatches via stream-data event.
     addEventListener("message", async e => {
-      if (e.data?.namespace !== "ytdl-sync" || e.data.key !== SyncKey.DirectDownloadRequest) {
+      if (e.data?.namespace !== SYNC_NAMESPACE || e.data.key !== SyncKey.DirectDownloadRequest) {
         return;
       }
 
@@ -1523,6 +1586,11 @@ export default defineContentScript({
         videoId: downloadVideoId, videoItag, audioItag, filenameOutput, type: downloadType
       } = e.data.value;
       console.log("[ytdl] direct-download-request received:", downloadVideoId);
+
+      cancelActiveDownload(downloadVideoId);
+      const abortController = new AbortController();
+      activeDownloads.set(downloadVideoId, abortController);
+      const { signal } = abortController;
 
       try {
         const {
@@ -1535,7 +1603,7 @@ export default defineContentScript({
         let totalReceivedBytes = 0;
 
         async function fetchMediaData(url: string, streamType: string) {
-          const response = await fetch(url);
+          const response = await fetch(url, { signal });
           if (!response.ok) {
             throw new Error(`Media fetch failed: ${response.status}`);
           }
@@ -1552,6 +1620,11 @@ export default defineContentScript({
           let receivedBytes = 0;
 
           while (true) {
+            if (signal.aborted) {
+              await reader.cancel();
+              return null;
+            }
+
             const { done, value } = await reader.read();
             if (done) {
               break;
@@ -1564,7 +1637,7 @@ export default defineContentScript({
             // Report progress via synced signal
             if (totalExpectedBytes > 0) {
               postMessage({
-                namespace: "ytdl-sync",
+                namespace: SYNC_NAMESPACE,
                 key: SyncKey.DownloadProgress,
                 value: {
                   mapKey: downloadVideoId,
@@ -1595,12 +1668,17 @@ export default defineContentScript({
           videoUrl ? fetchMediaData(videoUrl, "video") : Promise.resolve(null),
           audioUrl ? fetchMediaData(audioUrl, "audio") : Promise.resolve(null)
         ]);
+        if (signal.aborted) {
+          return;
+        }
 
         const videoMimeType = videoFormat?.mimeType?.split(";")?.[0] ?? "video/mp4";
         const audioMimeType = audioFormat?.mimeType?.split(";")?.[0] ?? "audio/mp4";
 
-        dispatchEvent(new CustomEvent("ytdl:stream-data", {
-          detail: {
+        postMessage({
+          namespace: SYNC_NAMESPACE,
+          key: SyncKey.StreamData,
+          value: {
             downloadType,
             videoId: downloadVideoId,
             filenameOutput,
@@ -1611,10 +1689,18 @@ export default defineContentScript({
             audioLabel: "",
             additionalAudioData: []
           }
-        }));
+        }, location.origin);
       } catch (error) {
+        if (signal.aborted) {
+          return;
+        }
+
         console.error("[ytdl] Direct download failed:", error);
-        dispatchEvent(new CustomEvent("ytdl:stream-error", { detail: { videoId: downloadVideoId, error: String(error) } }));
+        void crossWorldMessenger.sendMessage(
+          CrossWorldMessage.StreamError, { videoId: downloadVideoId, error: String(error) }
+        );
+      } finally {
+        activeDownloads.delete(downloadVideoId);
       }
     });
 
