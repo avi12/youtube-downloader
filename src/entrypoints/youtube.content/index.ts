@@ -149,14 +149,14 @@ export default defineContentScript({
     });
 
     // Proxy fetch requests from MAIN world through the background
-    crossWorldMessenger.onMessage(CrossWorldMessage.ProxyFetch, ({ data }) =>
-      sendMessage(MessageType.ProxyFetch, data)
-    );
+    crossWorldMessenger.onMessage(CrossWorldMessage.ProxyFetch, ({ data }) => {
+      return sendMessage(MessageType.ProxyFetch, data);
+    });
 
     // Relay PO token refresh requests from background to MAIN world
-    onMessage(MessageType.RefreshPoToken, ({ data }) =>
-      crossWorldMessenger.sendMessage(CrossWorldMessage.RefreshPoToken, data)
-    );
+    onMessage(MessageType.RefreshPoToken, ({ data }) => {
+      return crossWorldMessenger.sendMessage(CrossWorldMessage.RefreshPoToken, data);
+    });
 
     onMessage(MessageType.UpdateDownloadProgress, ({ data }) => {
       void crossWorldMessenger.sendMessage(CrossWorldMessage.Progress, data);
@@ -190,7 +190,10 @@ export default defineContentScript({
 
       void handleStreamData(e.data.value);
     });
-    crossWorldMessenger.onMessage(CrossWorldMessage.StreamError, ({ data }) => handleStreamError(data));
+
+    crossWorldMessenger.onMessage(CrossWorldMessage.StreamError, ({ data }) => {
+      void handleStreamError(data);
+    });
 
     listenForInterruptedDownloadEvents();
     listenForSabrBodyReady();
