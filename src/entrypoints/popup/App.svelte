@@ -683,6 +683,7 @@
     --surface-active: rgb(6 95 212 / 5%);
 
     width: 420px;
+    margin: 0;
     background-color: var(--bg);
     color: var(--fg);
     font-family: Roboto, Arial, sans-serif;
@@ -707,6 +708,7 @@
   .popup-container {
     display: flex;
     flex-direction: column;
+    max-height: 600px;
   }
 
   .popup-header {
@@ -791,7 +793,6 @@
     flex: 1;
     overflow-y: auto;
     min-height: 120px;
-    max-height: 500px;
     padding: 12px 16px;
   }
 
