@@ -643,12 +643,24 @@
   }
 
   :global(body) {
+    --bg: rgb(255 255 255);
+    --fg: rgb(15 15 15);
+    --fg-muted: rgb(0 0 0 / 55%);
+    --fg-subtle: rgb(0 0 0 / 45%);
+    --border: rgb(0 0 0 / 10%);
+    --accent: rgb(6 95 212);
+    --accent-hover: rgb(6 95 212 / 10%);
+    --danger: rgb(204 0 0);
+    --danger-hover: rgb(204 0 0 / 10%);
+    --surface: rgb(0 0 0 / 3%);
+    --surface-active: rgb(6 95 212 / 5%);
+
     overflow: hidden;
     width: 420px;
     min-height: 200px;
     max-height: 600px;
-    background-color: rgb(255 255 255);
-    color: rgb(15 15 15);
+    background-color: var(--bg);
+    color: var(--fg);
     font-family: Roboto, Arial, sans-serif;
     font-size: 1.4rem;
     line-height: 1.5;
@@ -656,8 +668,17 @@
 
   @media (prefers-color-scheme: dark) {
     :global(body) {
-      background-color: rgb(33 33 33);
-      color: rgb(232 232 232);
+      --bg: rgb(33 33 33);
+      --fg: rgb(232 232 232);
+      --fg-muted: rgb(255 255 255 / 75%);
+      --fg-subtle: rgb(255 255 255 / 70%);
+      --border: rgb(255 255 255 / 10%);
+      --accent: rgb(100 160 235);
+      --accent-hover: rgb(6 95 212 / 20%);
+      --danger: rgb(204 0 0);
+      --danger-hover: rgb(204 0 0 / 15%);
+      --surface: rgb(255 255 255 / 5%);
+      --surface-active: rgb(6 95 212 / 10%);
     }
   }
 
@@ -673,15 +694,8 @@
     z-index: 10;
     padding-block: 12px 0;
     padding-inline: 16px;
-    border-bottom: 1px solid rgb(0 0 0 / 10%);
-    background: rgb(255 255 255);
-  }
-
-  @media (prefers-color-scheme: dark) {
-    .popup-header {
-      border-bottom-color: rgb(255 255 255 / 10%);
-      background: rgb(33 33 33);
-    }
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
   }
 
   .popup-header-top {
@@ -698,27 +712,17 @@
   }
 
   .popup-credit {
-    color: rgb(0 0 0 / 55%);
+    color: var(--fg-muted);
     font-size: 1.2rem;
   }
 
   .popup-credit a {
-    color: rgb(6 95 212);
+    color: var(--accent);
     text-decoration: none;
   }
 
   .popup-credit a:hover {
     text-decoration: underline;
-  }
-
-  @media (prefers-color-scheme: dark) {
-    .popup-credit {
-      color: rgb(255 255 255 / 55%);
-    }
-
-    .popup-credit a {
-      color: rgb(100 160 235);
-    }
   }
 
   .tab-nav {
@@ -734,7 +738,7 @@
     border: none;
     border-bottom: 2px solid transparent;
     background: transparent;
-    color: rgb(0 0 0 / 60%);
+    color: var(--fg-muted);
     font-family: inherit;
     font-weight: 500;
     font-size: 1.3rem;
@@ -744,27 +748,12 @@
   }
 
   .tab-nav-button:hover {
-    color: rgb(15 15 15);
+    color: var(--fg);
   }
 
   .tab-nav-button--active {
-    border-bottom-color: rgb(15 15 15);
-    color: rgb(15 15 15);
-  }
-
-  @media (prefers-color-scheme: dark) {
-    .tab-nav-button {
-      color: rgb(255 255 255 / 60%);
-    }
-
-    .tab-nav-button:hover,
-    .tab-nav-button--active {
-      color: rgb(232 232 232);
-    }
-
-    .tab-nav-button--active {
-      border-bottom-color: rgb(232 232 232);
-    }
+    border-bottom-color: var(--fg);
+    color: var(--fg);
   }
 
   .badge {
@@ -775,7 +764,7 @@
     height: 18px;
     padding: 0 5px;
     border-radius: 9px;
-    background: rgb(204 0 0);
+    background: var(--danger);
     color: rgb(255 255 255);
     font-weight: 600;
     font-size: 1.1rem;
@@ -792,15 +781,9 @@
 
   .empty-state {
     padding: 24px 0;
-    color: rgb(0 0 0 / 50%);
+    color: var(--fg-subtle);
     font-size: 1.3rem;
     text-align: center;
-  }
-
-  @media (prefers-color-scheme: dark) {
-    .empty-state {
-      color: rgb(255 255 255 / 50%);
-    }
   }
 
   section + section {
@@ -824,15 +807,9 @@
   }
 
   .loading-badge {
-    color: rgb(0 0 0 / 50%);
+    color: var(--fg-subtle);
     font-weight: 400;
     font-size: 1.1rem;
-  }
-
-  @media (prefers-color-scheme: dark) {
-    .loading-badge {
-      color: rgb(255 255 255 / 50%);
-    }
   }
 
   .cancel-all-button {
@@ -840,14 +817,14 @@
     border: none;
     border-radius: 2px;
     background: transparent;
-    color: rgb(204 0 0);
+    color: var(--danger);
     font-family: inherit;
     font-size: 1.2rem;
     cursor: pointer;
   }
 
   .cancel-all-button:hover {
-    background: rgb(204 0 0 / 10%);
+    background: var(--danger-hover);
   }
 
   .download-list {
@@ -864,17 +841,17 @@
     padding: 8px;
     border: 1px solid transparent;
     border-radius: 4px;
-    background: rgb(0 0 0 / 3%);
+    background: var(--surface);
     transition: background-color 100ms;
   }
 
   .download-item--current {
     border-color: rgb(6 95 212 / 20%);
-    background: rgb(6 95 212 / 5%);
+    background: var(--surface-active);
   }
 
   .download-item--drag-over {
-    border-color: rgb(6 95 212);
+    border-color: var(--accent);
   }
 
   .download-item[draggable="true"] {
@@ -883,16 +860,6 @@
 
   .download-item[draggable="true"]:active {
     cursor: grabbing;
-  }
-
-  @media (prefers-color-scheme: dark) {
-    .download-item {
-      background: rgb(255 255 255 / 5%);
-    }
-
-    .download-item--current {
-      background: rgb(6 95 212 / 10%);
-    }
   }
 
   .queue-position {
@@ -904,15 +871,9 @@
     height: 20px;
     margin-top: 1px;
     border-radius: 50%;
-    background: rgb(0 0 0 / 10%);
+    background: var(--border);
     font-weight: 600;
     font-size: 1.1rem;
-  }
-
-  @media (prefers-color-scheme: dark) {
-    .queue-position {
-      background: rgb(255 255 255 / 10%);
-    }
   }
 
   .download-item-content {
@@ -934,13 +895,7 @@
     overflow: hidden;
     height: 3px;
     border-radius: 2px;
-    background: rgb(0 0 0 / 10%);
-  }
-
-  @media (prefers-color-scheme: dark) {
-    .download-progress {
-      background: rgb(255 255 255 / 10%);
-    }
+    background: var(--border);
   }
 
   .download-progress-fill {
@@ -949,7 +904,7 @@
     width: 100%;
     height: 100%;
     border-radius: 2px;
-    background: rgb(6 95 212);
+    background: var(--accent);
     transition: transform 200ms;
     transform: scaleX(var(--fill-scale));
     transform-origin: left;
@@ -957,15 +912,8 @@
 
   .download-progress-label,
   .download-status-label {
-    color: rgb(0 0 0 / 50%);
+    color: var(--fg-subtle);
     font-size: 1.1rem;
-  }
-
-  @media (prefers-color-scheme: dark) {
-    .download-progress-label,
-    .download-status-label {
-      color: rgb(255 255 255 / 50%);
-    }
   }
 
   .item-cancel-button {
@@ -974,7 +922,7 @@
     border: none;
     border-radius: 2px;
     background: transparent;
-    color: rgb(0 0 0 / 40%);
+    color: var(--fg-subtle);
     font-size: 1.6rem;
     line-height: 1;
     cursor: pointer;
@@ -982,14 +930,8 @@
   }
 
   .item-cancel-button:hover {
-    background: rgb(204 0 0 / 10%);
-    color: rgb(204 0 0);
-  }
-
-  @media (prefers-color-scheme: dark) {
-    .item-cancel-button {
-      color: rgb(255 255 255 / 40%);
-    }
+    background: var(--danger-hover);
+    color: var(--danger);
   }
 
   /* -- Settings tab ------------------------------------------------------- */
@@ -1002,27 +944,15 @@
 
   .settings-group {
     padding: 12px;
-    border: 1px solid rgb(0 0 0 / 10%);
+    border: 1px solid var(--border);
     border-radius: 6px;
-  }
-
-  @media (prefers-color-scheme: dark) {
-    .settings-group {
-      border-color: rgb(255 255 255 / 10%);
-    }
   }
 
   .settings-legend {
     padding: 0 4px;
-    color: rgb(0 0 0 / 60%);
+    color: var(--fg-muted);
     font-weight: 600;
     font-size: 1.2rem;
-  }
-
-  @media (prefers-color-scheme: dark) {
-    .settings-legend {
-      color: rgb(255 255 255 / 60%);
-    }
   }
 
   .settings-row {
@@ -1060,7 +990,7 @@
 
   .settings-select {
     padding: 4px 8px;
-    border: 1px solid rgb(0 0 0 / 20%);
+    border: 1px solid var(--border);
     border-radius: 4px;
     background: transparent;
     color: inherit;
@@ -1069,30 +999,18 @@
     cursor: pointer;
   }
 
-  @media (prefers-color-scheme: dark) {
-    .settings-select {
-      border-color: rgb(255 255 255 / 20%);
-    }
-  }
-
   [type="radio"],
   [type="checkbox"] {
     flex-shrink: 0;
     width: 16px;
     height: 16px;
-    accent-color: rgb(6 95 212);
+    accent-color: var(--accent);
     cursor: pointer;
   }
 
   .settings-hint {
     margin-top: 6px;
-    color: rgb(0 0 0 / 55%);
+    color: var(--fg-muted);
     font-size: 1.1rem;
-  }
-
-  @media (prefers-color-scheme: dark) {
-    .settings-hint {
-      color: rgb(255 255 255 / 55%);
-    }
   }
 </style>
