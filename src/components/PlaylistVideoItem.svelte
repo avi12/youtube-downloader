@@ -1,5 +1,6 @@
 <script lang="ts">
   import { CrossWorldMessage, crossWorldMessenger } from "../lib/cross-world-messenger";
+  import { MessageType, sendMessage } from "../lib/messaging";
   import {
     cancelRequestSignal,
     downloadProgressStore,
@@ -91,6 +92,7 @@
   });
 
   function handleDownloadClick() {
+    console.log("[ytdl] handleDownloadClick", videoId, "downloadable:", videoData?.isDownloadable, "isDownloading:", isDownloading);
     if (!videoData?.isDownloadable) {
       return;
     }
@@ -102,7 +104,7 @@
     }
 
     let downloadType: DownloadType = videoData.isMusic ? "audio" : "video+audio";
-    if (options.defaultDownloadType !== "auto") {
+    if (options.defaultDownloadType && options.defaultDownloadType !== "auto") {
       downloadType = options.defaultDownloadType;
     }
 
@@ -116,13 +118,17 @@
       : resolvedExtension;
     const filenameOutput = getCompatibleFilename(`${videoData.title}.${outputExtension}`);
 
-    void crossWorldMessenger.sendMessage(CrossWorldMessage.DownloadRequest, {
-      type: downloadType,
+    console.log("[ytdl] Sending DirectDownload for", videoId);
+    sendMessage(MessageType.DirectDownload, {
       videoId,
       videoItag: selectedVideoFormat?.itag ?? 0,
       audioItag: selectedAudioFormat?.itag ?? 0,
       filenameOutput,
-      sabrConfig: videoData.sabrConfig
+      type: downloadType
+    }).then(result => {
+      console.log("[ytdl] DirectDownload response:", result);
+    }).catch(error => {
+      console.error("[ytdl] Grid download failed:", error);
     });
 
     downloadProgressStore.unsuppress(videoId);

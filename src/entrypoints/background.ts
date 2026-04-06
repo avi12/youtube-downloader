@@ -25,7 +25,7 @@ async function fetchPlayerResponse(videoId: string) {
   const marker = "var ytInitialPlayerResponse = ";
   const iStart = html.indexOf(marker);
   if (iStart === -1) {
-    throw new Error("Could not find ytInitialPlayerResponse in watch page");
+    throw new Error(`Could not find ytInitialPlayerResponse (html length: ${html.length}, has consent: ${html.includes("consent")}, status: ${response.status})`);
   }
 
   const iJsonStart = iStart + marker.length;
@@ -290,8 +290,7 @@ export default defineBackground(() => {
     try {
       const playerResponse = await fetchPlayerResponse(videoId);
       if (playerResponse.playabilityStatus?.status !== "OK") {
-        console.error("[ytdl:bg] Player status:", playerResponse.playabilityStatus?.status);
-        return false;
+        throw new Error(`Player status: ${playerResponse.playabilityStatus?.status}`);
       }
 
       const formats = playerResponse.streamingData?.adaptiveFormats ?? [];
@@ -302,8 +301,7 @@ export default defineBackground(() => {
         return format.itag === audioItag;
       });
       if (!videoFormat?.url && !audioFormat?.url) {
-        console.error("[ytdl:bg] No direct URLs - formats may be signature-ciphered");
-        return false;
+        throw new Error("No direct URLs - formats may be signature-ciphered");
       }
 
       const videoUrl = downloadType !== "audio" ? videoFormat?.url : null;
@@ -357,8 +355,9 @@ export default defineBackground(() => {
 
       return true;
     } catch (error) {
-      console.error("[ytdl:bg] directDownload failed:", error);
-      return false;
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error("[ytdl:bg] directDownload failed:", errorMessage);
+      throw new Error(errorMessage);
     }
   });
 
