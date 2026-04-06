@@ -47,10 +47,33 @@ export const extensionToMime = {
   audio: filterExtensionsByPrefix("audio")
 };
 
+export const AUTO_EXTENSION = "auto";
+export const AUTO_EXTENSION_LABEL = "Auto (match source)";
+
 export const supportedExtensions = {
-  video: Object.keys(extensionToMime.video),
-  audio: Object.keys(extensionToMime.audio)
+  video: [AUTO_EXTENSION, ...Object.keys(extensionToMime.video)],
+  audio: [AUTO_EXTENSION, ...Object.keys(extensionToMime.audio)]
 };
+
+/**
+ * Resolves "auto" to the natural container for the given MIME type.
+ * Pass-through for explicit extensions.
+ */
+export function resolveAutoExtension(extension: string, mimeType: string, type: "video" | "audio") {
+  if (extension !== AUTO_EXTENSION) {
+    return extension;
+  }
+
+  if (mimeType.includes("webm")) {
+    return type === "audio" ? "weba" : "webm";
+  }
+
+  if (mimeType.includes("ogg")) {
+    return "ogg";
+  }
+
+  return type === "audio" ? "m4a" : "mp4";
+}
 
 type SupportedExtension = keyof typeof extensionToMimeAll;
 
@@ -99,9 +122,10 @@ export const defaultVideoQuality = 1080;
 
 export const initialOptions: Options = {
   ext: {
-    audio: "m4a",
-    video: "mp4"
+    audio: AUTO_EXTENSION,
+    video: AUTO_EXTENSION
   },
+  defaultDownloadType: "auto",
   videoQualityMode: "current-quality",
   videoQuality: defaultVideoQuality,
   isRemoveNativeDownload: false

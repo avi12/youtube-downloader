@@ -65,9 +65,14 @@ export type VideoQueueItem = {
   filenameOutput: string;
 };
 
+export type DownloadTypePreference = "auto" | DownloadType;
+
 export type Options = {
-  ext: { audio: string;
-    video: string; };
+  ext: {
+    audio: string;
+    video: string;
+  };
+  defaultDownloadType: DownloadTypePreference;
   videoQualityMode: "best" | "current-quality" | "custom";
   videoQuality: number;
   isRemoveNativeDownload: boolean;

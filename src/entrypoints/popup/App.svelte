@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Autocomplete from "../../components/Autocomplete.svelte";
   import { MessageType, sendMessage } from "../../lib/messaging";
   import {
     isFFmpegReadyItem,
@@ -11,7 +12,7 @@
     videoQueueItem
   } from "../../lib/storage";
   import { initialOptions, supportedExtensions, videoQualities } from "../../lib/utils";
-  import type { Options, ProgressType, VideoQueueItem } from "../../types";
+  import type { DownloadTypePreference, Options, ProgressType, VideoQueueItem } from "../../types";
   import { onMount } from "svelte";
 
   // --- State -----------------------------------------------------------------
@@ -132,18 +133,22 @@
 
   // --- Settings --------------------------------------------------------------
 
-  async function updateAudioExtension(extension: string) {
-    await setOption("ext", {
+  function updateAudioExtension(extension: string) {
+    void setOption("ext", {
       ...options.ext,
       audio: extension
     });
   }
 
-  async function updateVideoExtension(extension: string) {
-    await setOption("ext", {
+  function updateVideoExtension(extension: string) {
+    void setOption("ext", {
       ...options.ext,
       video: extension
     });
+  }
+
+  function updateDefaultDownloadType(type: DownloadTypePreference) {
+    void setOption("defaultDownloadType", type);
   }
 
   async function updateVideoQualityMode(
@@ -158,24 +163,6 @@
 
   async function updateRemoveNativeDownload(remove: boolean) {
     await setOption("isRemoveNativeDownload", remove);
-  }
-
-  function handleAudioExtensionChange(e: Event) {
-    const { target } = e;
-    if (!(target instanceof HTMLSelectElement)) {
-      return;
-    }
-
-    void updateAudioExtension(target.value);
-  }
-
-  function handleVideoExtensionChange(e: Event) {
-    const { target } = e;
-    if (!(target instanceof HTMLSelectElement)) {
-      return;
-    }
-
-    void updateVideoExtension(target.value);
   }
 
   function handleVideoQualityChange(e: Event) {
@@ -240,7 +227,12 @@
 
 <div class="popup-container">
   <header class="popup-header">
-    <h1 class="popup-title">YouTube Downloader</h1>
+    <div class="popup-header-top">
+      <h1 class="popup-title">YouTube Downloader</h1>
+      <span class="popup-credit">
+        by <a href="https://avi12.com" rel="noopener noreferrer" target="_blank">Avi</a>
+      </span>
+    </div>
     <nav class="tab-nav" aria-label="Navigation">
       <button
         class="tab-nav-button"
@@ -477,43 +469,81 @@
     {:else}
       <!-- --- Settings tab ---------------------------------------------- -->
       <div class="settings-container">
-        <!-- Audio extension -->
+        <!-- Video format -->
         <fieldset class="settings-group">
-          <legend class="settings-legend">Default audio format</legend>
-          <div class="settings-row">
-            <label class="settings-label" for="audio-ext-select">Format</label>
-            <select
-              id="audio-ext-select"
-              class="settings-select"
-              onchange={handleAudioExtensionChange}
-              value={options.ext.audio}
-            >
-              {#each supportedExtensions.audio as ext (ext)}
-                <option selected={ext === options.ext.audio} value={ext}
-                  >{ext}</option
-                >
-              {/each}
-            </select>
-          </div>
+          <legend class="settings-legend">Video format</legend>
+          <Autocomplete
+            id="video-ext"
+            label="Container"
+            onchange={updateVideoExtension}
+            options={supportedExtensions.video}
+            value={options.ext.video}
+          />
         </fieldset>
 
-        <!-- Video extension -->
+        <!-- Audio format -->
         <fieldset class="settings-group">
-          <legend class="settings-legend">Default video format</legend>
+          <legend class="settings-legend">Audio format</legend>
+          <Autocomplete
+            id="audio-ext"
+            label="Container"
+            onchange={updateAudioExtension}
+            options={supportedExtensions.audio}
+            value={options.ext.audio}
+          />
+          <p class="settings-hint">Used for audio-only downloads</p>
+        </fieldset>
+
+        <!-- Default download type -->
+        <fieldset class="settings-group">
+          <legend class="settings-legend">Download type</legend>
           <div class="settings-row">
-            <label class="settings-label" for="video-ext-select">Format</label>
-            <select
-              id="video-ext-select"
-              class="settings-select"
-              onchange={handleVideoExtensionChange}
-              value={options.ext.video}
-            >
-              {#each supportedExtensions.video as ext (ext)}
-                <option selected={ext === options.ext.video} value={ext}
-                  >{ext}</option
-                >
-              {/each}
-            </select>
+            <label class="settings-label settings-radio-label">
+              <input
+                name="download-type"
+                checked={options.defaultDownloadType === "auto"}
+                onchange={() => updateDefaultDownloadType("auto")}
+                type="radio"
+                value="auto"
+              />
+              Auto (video for videos, audio for music)
+            </label>
+          </div>
+          <div class="settings-row">
+            <label class="settings-label settings-radio-label">
+              <input
+                name="download-type"
+                checked={options.defaultDownloadType === "video+audio"}
+                onchange={() => updateDefaultDownloadType("video+audio")}
+                type="radio"
+                value="video+audio"
+              />
+              Always video + audio
+            </label>
+          </div>
+          <div class="settings-row">
+            <label class="settings-label settings-radio-label">
+              <input
+                name="download-type"
+                checked={options.defaultDownloadType === "video"}
+                onchange={() => updateDefaultDownloadType("video")}
+                type="radio"
+                value="video"
+              />
+              Always video only
+            </label>
+          </div>
+          <div class="settings-row">
+            <label class="settings-label settings-radio-label">
+              <input
+                name="download-type"
+                checked={options.defaultDownloadType === "audio"}
+                onchange={() => updateDefaultDownloadType("audio")}
+                type="radio"
+                value="audio"
+              />
+              Always audio only
+            </label>
           </div>
         </fieldset>
 
@@ -596,14 +626,6 @@
             </label>
           </div>
         </fieldset>
-
-        <footer class="settings-footer">
-          <p>
-            Made by <a href="https://avi12.com" rel="noopener noreferrer" target="_blank"
-              >avi12</a
-            >
-          </p>
-        </footer>
       </div>
     {/if}
   </main>
@@ -662,11 +684,41 @@
     }
   }
 
-  .popup-title {
+  .popup-header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
     margin-bottom: 8px;
+  }
+
+  .popup-title {
     color: inherit;
     font-weight: 600;
     font-size: 1.6rem;
+  }
+
+  .popup-credit {
+    color: rgb(0 0 0 / 55%);
+    font-size: 1.2rem;
+  }
+
+  .popup-credit a {
+    color: rgb(6 95 212);
+    text-decoration: none;
+  }
+
+  .popup-credit a:hover {
+    text-decoration: underline;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    .popup-credit {
+      color: rgb(255 255 255 / 55%);
+    }
+
+    .popup-credit a {
+      color: rgb(100 160 235);
+    }
   }
 
   .tab-nav {
@@ -1032,25 +1084,15 @@
     cursor: pointer;
   }
 
-  .settings-footer {
-    padding-top: 8px;
-    color: rgb(0 0 0 / 50%);
-    font-size: 1.2rem;
-    text-align: center;
+  .settings-hint {
+    margin-top: 6px;
+    color: rgb(0 0 0 / 55%);
+    font-size: 1.1rem;
   }
 
   @media (prefers-color-scheme: dark) {
-    .settings-footer {
-      color: rgb(255 255 255 / 50%);
+    .settings-hint {
+      color: rgb(255 255 255 / 55%);
     }
-  }
-
-  .settings-footer a {
-    color: rgb(6 95 212);
-    text-decoration: none;
-  }
-
-  .settings-footer a:hover {
-    text-decoration: underline;
   }
 </style>
