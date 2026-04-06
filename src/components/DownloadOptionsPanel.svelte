@@ -551,7 +551,7 @@
     <DownloadOptions
       audioFormats={videoData.audioFormats}
       {downloadType}
-      {extension}
+      extension={actualExtension}
       {filename}
       {isDownloading}
       onaudioformatchange={format => (selectedAudioFormat = format)}
