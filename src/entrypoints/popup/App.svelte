@@ -449,15 +449,16 @@
 </div>
 
 <style>
-  :global(html) {
-    font-size: max(0.625em, 10px);
-  }
+  :global {
+    html {
+      font-size: max(1rem, 16px);
+    }
 
-  :global(*, *::before, *::after) {
-    box-sizing: border-box;
-  }
+    *, *::before, *::after {
+      box-sizing: border-box;
+    }
 
-  :global(body) {
+    body {
     /* M3 Expressive - light theme tokens */
     --md-sys-color-surface: #fef7ff;
     --md-sys-color-surface-container: #f3edf7;
@@ -494,7 +495,7 @@
     background-color: var(--bg);
     color: var(--fg);
     font-family: "Google Sans", Roboto, Arial, sans-serif;
-    font-size: 1.4rem;
+    font-size: 0.875rem;
     line-height: 1.5;
 
     @media (prefers-color-scheme: dark) {
@@ -514,6 +515,7 @@
       --md-sys-color-error-container: #8c1d18;
       --md-sys-color-on-error-container: #f9dedc;
     }
+  }
   }
 
   .popup-container {
@@ -537,13 +539,13 @@
   .popup-title {
     color: var(--fg);
     font-weight: 500;
-    font-size: 1.8rem;
+    font-size: 1.125rem;
     letter-spacing: 0;
   }
 
   .popup-credit {
     color: var(--fg-muted);
-    font-size: 1.2rem;
+    font-size: 0.75rem;
 
     & a {
       color: var(--accent);
@@ -577,7 +579,7 @@
     color: var(--fg-muted);
     font-family: inherit;
     font-weight: 500;
-    font-size: 1.3rem;
+    font-size: 0.8125rem;
     white-space: nowrap;
     cursor: pointer;
     transition: background-color 200ms, color 200ms;
@@ -610,7 +612,7 @@
     background: var(--danger);
     color: rgb(255 255 255);
     font-weight: 600;
-    font-size: 1.1rem;
+    font-size: 0.6875rem;
   }
 
   .popup-content {
@@ -625,7 +627,7 @@
   .empty-state {
     padding: 32px 0;
     color: var(--fg-subtle);
-    font-size: 1.3rem;
+    font-size: 0.8125rem;
     text-align: center;
   }
 
@@ -646,13 +648,13 @@
     align-items: center;
     color: var(--fg);
     font-weight: 500;
-    font-size: 1.3rem;
+    font-size: 0.8125rem;
   }
 
   .loading-badge {
     color: var(--fg-subtle);
     font-weight: 400;
-    font-size: 1.1rem;
+    font-size: 0.6875rem;
   }
 
   .cancel-all-button {
@@ -662,7 +664,7 @@
     background: transparent;
     color: var(--danger);
     font-family: inherit;
-    font-size: 1.2rem;
+    font-size: 0.75rem;
     cursor: pointer;
     transition: background-color 200ms;
 
@@ -723,7 +725,7 @@
     background: var(--surface-high);
     color: var(--fg-muted);
     font-weight: 600;
-    font-size: 1.1rem;
+    font-size: 0.6875rem;
   }
 
   .download-item-content {
@@ -736,7 +738,7 @@
 
   .download-filename {
     overflow: hidden;
-    font-size: 1.2rem;
+    font-size: 0.75rem;
     text-overflow: ellipsis;
     white-space: nowrap;
   }
@@ -763,7 +765,7 @@
   .download-progress-label,
   .download-status-label {
     color: var(--fg-subtle);
-    font-size: 1.1rem;
+    font-size: 0.6875rem;
   }
 
   .item-cancel-button {
@@ -775,7 +777,7 @@
     border-radius: 14px;
     background: transparent;
     color: var(--fg-subtle);
-    font-size: 1.4rem;
+    font-size: 0.875rem;
     line-height: 1;
     cursor: pointer;
     transition: background-color 200ms, color 200ms;

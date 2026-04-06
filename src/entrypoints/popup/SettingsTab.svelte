@@ -223,7 +223,7 @@
     margin-bottom: 8px;
     color: var(--accent);
     font-weight: 500;
-    font-size: 1.2rem;
+    font-size: 0.75rem;
     letter-spacing: 0.02em;
   }
 
@@ -248,7 +248,7 @@
 
   .settings-label {
     flex: 1;
-    font-size: 1.3rem;
+    font-size: 0.8125rem;
   }
 
   .settings-radio-label,
@@ -256,7 +256,7 @@
     display: flex;
     gap: 10px;
     align-items: center;
-    font-size: 1.3rem;
+    font-size: 0.8125rem;
     cursor: pointer;
   }
 
@@ -267,7 +267,7 @@
     background: var(--bg, transparent);
     color: inherit;
     font-family: inherit;
-    font-size: 1.3rem;
+    font-size: 0.8125rem;
     cursor: pointer;
 
     &:focus-visible {
@@ -289,6 +289,6 @@
   .settings-hint {
     margin-top: 8px;
     color: var(--fg-subtle);
-    font-size: 1.1rem;
+    font-size: 0.6875rem;
   }
 </style>

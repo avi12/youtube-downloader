@@ -48,7 +48,7 @@
 
   .format-select-label {
     flex: 1;
-    font-size: 1.3rem;
+    font-size: 0.8125rem;
   }
 
   .format-select-control {
@@ -59,7 +59,7 @@
     background: var(--bg, transparent);
     color: var(--fg, inherit);
     font-family: inherit;
-    font-size: 1.3rem;
+    font-size: 0.8125rem;
     cursor: pointer;
 
     &:focus-visible {
