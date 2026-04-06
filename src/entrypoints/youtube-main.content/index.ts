@@ -1090,7 +1090,8 @@ export default defineContentScript({
 
       // - Click handler -
 
-      function handleClick({ target }: Event) {
+      function handleClick(e: Event) {
+        const { target } = e;
         if (!(target instanceof Node)) {
           return;
         }
@@ -1140,6 +1141,9 @@ export default defineContentScript({
           refreshButtons();
 
           if (isPanelOpen) {
+            // Stop propagation so Polymer's click-outside handler
+            // doesn't immediately close the dropdown we just opened
+            e.stopPropagation();
             elDropdown.open();
             elChevronButton.querySelector<HTMLButtonElement>("button")?.blur();
           } else {
