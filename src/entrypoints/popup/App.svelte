@@ -450,7 +450,7 @@
 
 <style>
   :global(html) {
-    font-size: 0.625em;
+    font-size: max(0.625em, 10px);
   }
 
   :global(*, *::before, *::after) {
