@@ -1291,9 +1291,9 @@ export default defineContentScript({
     // yt-navigate-finish fires first but ytInitialPlayerResponse is still stale.
     // yt-page-data-updated fires after and ytd-watch-flexy.playerData has the fresh response.
 
-    async function handleNavigation() {
+    function handleNavigation() {
       cleanupSegmentedButton();
-      await crossWorldMessenger.sendMessage(CrossWorldMessage.Navigation, { url: location.href });
+      void crossWorldMessenger.sendMessage(CrossWorldMessage.Navigation, { url: location.href });
       extractPlaylistMetadata();
     }
 
