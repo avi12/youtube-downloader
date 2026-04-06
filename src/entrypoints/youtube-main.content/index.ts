@@ -1345,15 +1345,10 @@ export default defineContentScript({
       };
     }
 
-    addEventListener("message", e => {
-      if (e.data?.namespace !== SYNC_NAMESPACE || e.data.key !== SyncKey.SetButtonData) {
-        return;
-      }
-
-      const { selector, data } = e.data.value ?? {};
-      const element = document.querySelector(selector);
+    crossWorldMessenger.onMessage(CrossWorldMessage.SetButtonData, ({ data }) => {
+      const element = document.querySelector(data.selector);
       if (element) {
-        Object.assign(element, { data });
+        Object.assign(element, { data: data.data });
       }
     });
 

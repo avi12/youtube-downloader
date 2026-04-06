@@ -1,7 +1,7 @@
 <script lang="ts">
   import { CrossWorldMessage, crossWorldMessenger } from "../lib/cross-world-messenger";
   import { statusProgressItem, videoQueueItem } from "../lib/storage";
-  import { cancelRequestSignal, downloadProgressStore, SYNC_NAMESPACE, SyncKey } from "../lib/synced-stores.svelte";
+  import { cancelRequestSignal, downloadProgressStore } from "../lib/synced-stores.svelte";
   import { getCompatibleFilename, getOutputExtension, resolveAutoExtension, waitForVideoElement } from "../lib/utils";
   import DownloadOptions from "./DownloadOptions.svelte";
   import panelFocusStyles from "./panel-focus.css?inline";
@@ -326,14 +326,10 @@
       element.setAttribute("data-ytdl-button-id", `panel-btn-${buttonIdCounter++}`);
     }
 
-    postMessage({
-      namespace: SYNC_NAMESPACE,
-      key: SyncKey.SetButtonData,
-      value: {
-        selector: `[data-ytdl-button-id="${element.getAttribute("data-ytdl-button-id")}"]`,
-        data
-      }
-    }, location.origin);
+    void crossWorldMessenger.sendMessage(CrossWorldMessage.SetButtonData, {
+      selector: `[data-ytdl-button-id="${element.getAttribute("data-ytdl-button-id")}"]`,
+      data
+    });
   }
 
   function attachCloseButton(element: Element) {

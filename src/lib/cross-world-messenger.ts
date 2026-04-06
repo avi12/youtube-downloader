@@ -23,7 +23,8 @@ export enum CrossWorldMessage {
   RefreshPoToken = "refreshPoToken",
 
   // Isolated world → all (MAIN world + Svelte components)
-  Progress = "progress"
+  Progress = "progress",
+  SetButtonData = "setButtonData"
 }
 
 interface PageMessengerSchema {
@@ -50,6 +51,10 @@ interface PageMessengerSchema {
       bodyBase64: string; } | null;
   [CrossWorldMessage.RefreshPoToken](data: { videoId: string }): string | null;
   [CrossWorldMessage.Progress](data: ProgressUpdate): void;
+  [CrossWorldMessage.SetButtonData](data: {
+    selector: string;
+    data: Record<string, unknown>;
+  }): void;
 }
 
 export const crossWorldMessenger = defineCustomEventMessaging<PageMessengerSchema>({ namespace: "ytdl" });

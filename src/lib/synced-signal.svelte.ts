@@ -23,8 +23,7 @@ export enum SyncKey {
   DirectDownloadRequest = "direct-download-request",
   DownloadProgress = "download-progress",
   VideoDataRequest = "video-data-request",
-  StreamData = "stream-data",
-  SetButtonData = "set-button-data"
+  StreamData = "stream-data"
 }
 
 // ─── Transport layer ─────────────────────────────────────────────────────────

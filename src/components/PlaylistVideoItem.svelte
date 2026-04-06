@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { CrossWorldMessage, crossWorldMessenger } from "../lib/cross-world-messenger";
   import {
     cancelRequestSignal,
     downloadProgressStore,
@@ -239,14 +240,10 @@
       element.setAttribute("data-ytdl-button-id", `btn-${videoId}-${buttonIdCounter++}`);
     }
 
-    postMessage({
-      namespace: SYNC_NAMESPACE,
-      key: SyncKey.SetButtonData,
-      value: {
-        selector: `[data-ytdl-button-id="${element.getAttribute("data-ytdl-button-id")}"]`,
-        data
-      }
-    }, location.origin);
+    void crossWorldMessenger.sendMessage(CrossWorldMessage.SetButtonData, {
+      selector: `[data-ytdl-button-id="${element.getAttribute("data-ytdl-button-id")}"]`,
+      data
+    });
   }
 
   function openPanel() {
