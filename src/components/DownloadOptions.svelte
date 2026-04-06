@@ -40,8 +40,13 @@
   const fullFilename = $derived(`${filename}.${extension}`);
 
   function getFilenameError(value: string, type: "video" | "audio") {
-    const dotIndex = value.indexOf(".");
-    if (dotIndex === -1) {
+    const illegalMatch = value.match(/[<>:"/\\|?*]/);
+    if (illegalMatch) {
+      return `Character "${illegalMatch[0]}" isn't allowed in filenames`;
+    }
+
+    const iDot = value.indexOf(".");
+    if (iDot === -1) {
       return "Filename needs a file extension";
     }
 
@@ -51,6 +56,10 @@
     }
 
     const ext = value.slice(value.lastIndexOf(".") + 1).toLowerCase();
+    if (!ext) {
+      return "Filename needs a file extension";
+    }
+
     const validExtensions = supportedExtensions[type];
     if (!validExtensions.includes(ext)) {
       return `Extension .${ext} isn't supported for ${type} - try ${validExtensions.join(", ")}`;
@@ -65,7 +74,6 @@
   function validateFilename(elInput: HTMLInputElement, value: string) {
     const errorMessage = getFilenameError(value, extensionType);
     elInput.setCustomValidity(errorMessage);
-    elInput.reportValidity();
   }
 
   const DOWNLOAD_TYPES: { value: DownloadType;
@@ -113,19 +121,17 @@
       return;
     }
 
-    const value = e.target.value;
-    const parts = value.trim().split(".");
-    const newExtension = parts.pop() ?? "";
-    const newFilename = parts.join(".");
-    if (newFilename) {
-      onfilenamechange(newFilename);
+    const value = e.target.value.trim();
+    const iLastDot = value.lastIndexOf(".");
+    if (iLastDot === -1) {
+      onfilenamechange(value);
+      onextensionchange("");
+    } else {
+      onfilenamechange(value.slice(0, iLastDot));
+      onextensionchange(value.slice(iLastDot + 1));
     }
 
-    if (newExtension) {
-      onextensionchange(newExtension);
-    }
-
-    validateFilename(e.target, value.trim());
+    validateFilename(e.target, value);
   }
 
   function applyPolymerTheme(element: Element) {
