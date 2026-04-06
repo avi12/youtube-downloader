@@ -109,6 +109,10 @@ const tsStyleRules = {
     {
       selector: "ForOfStatement > CallExpression[callee.object.name='Object'][callee.property.name='keys']",
       message: "Use a for-in loop instead of for-of Object.keys()."
+    },
+    {
+      selector: "MemberExpression[object.name='Reflect']",
+      message: "Do not use Reflect. Use direct property access instead."
     }
   ],
   "@stylistic/padding-line-between-statements": [

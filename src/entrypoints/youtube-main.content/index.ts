@@ -1347,11 +1347,11 @@ export default defineContentScript({
 
     crossWorldMessenger.onMessage(CrossWorldMessage.SetButtonData, ({ data }) => {
       const element = document.querySelector(data.selector);
-      if (!element) {
+      if (!element || !("data" in element)) {
         return;
       }
 
-      Object.assign(element, { data: data.data });
+      element.data = data.data;
 
       if (!element.hasAttribute("data-ytdl-click-bound")) {
         element.setAttribute("data-ytdl-click-bound", "true");

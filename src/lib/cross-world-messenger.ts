@@ -1,4 +1,4 @@
-import type { DownloadRequest, ProgressUpdate, VideoData } from "@/types";
+import type { ButtonViewModelData, DownloadRequest, ProgressUpdate, VideoData } from "@/types";
 import { defineCustomEventMessaging } from "@webext-core/messaging/page";
 
 // ─── Protocol definition ──────────────────────────────────────────────────────
@@ -53,7 +53,7 @@ interface PageMessengerSchema {
   [CrossWorldMessage.Progress](data: ProgressUpdate): void;
   [CrossWorldMessage.SetButtonData](data: {
     selector: string;
-    data: Record<string, unknown>;
+    data: ButtonViewModelData;
   }): void;
 }
 
