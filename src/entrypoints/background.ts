@@ -14,12 +14,30 @@ async function fetchPlayerResponse(videoId: string) {
     credentials: "include"
   });
   const html = await response.text();
-  const match = html.match(/var ytInitialPlayerResponse\s*=\s*(\{.+?\});\s*(?:var|<\/script>)/s);
-  if (!match) {
-    throw new Error("Could not extract player response from watch page");
+
+  const marker = "var ytInitialPlayerResponse = ";
+  const iStart = html.indexOf(marker);
+  if (iStart === -1) {
+    throw new Error("Could not find ytInitialPlayerResponse in watch page");
   }
 
-  return JSON.parse(match[1]);
+  const iJsonStart = iStart + marker.length;
+  let depth = 0;
+  let iEnd = iJsonStart;
+  for (let iChar = iJsonStart; iChar < html.length; iChar++) {
+    if (html[iChar] === "{") {
+      depth++;
+    } else if (html[iChar] === "}") {
+      depth--;
+
+      if (depth === 0) {
+        iEnd = iChar + 1;
+        break;
+      }
+    }
+  }
+
+  return JSON.parse(html.slice(iJsonStart, iEnd));
 }
 
 export default defineBackground(() => {

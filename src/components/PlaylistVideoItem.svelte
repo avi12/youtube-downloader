@@ -4,7 +4,6 @@
     cancelRequestSignal,
     downloadProgressStore,
     type DownloadProgressState,
-    downloadRequestSignal,
     SYNC_NAMESPACE,
     SyncKey,
     videoDataRequests,
@@ -117,14 +116,14 @@
       : resolvedExtension;
     const filenameOutput = getCompatibleFilename(`${videoData.title}.${outputExtension}`);
 
-    downloadRequestSignal.value = {
+    void crossWorldMessenger.sendMessage(CrossWorldMessage.DownloadRequest, {
       type: downloadType,
       videoId,
       videoItag: selectedVideoFormat?.itag ?? 0,
       audioItag: selectedAudioFormat?.itag ?? 0,
       filenameOutput,
       sabrConfig: videoData.sabrConfig
-    };
+    });
 
     downloadProgressStore.unsuppress(videoId);
     downloadProgressStore.set(videoId, {
