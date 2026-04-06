@@ -9,26 +9,46 @@
     videoOnlyListItem,
     videoQueueItem
   } from "../../lib/storage";
-  import { initialOptions } from "../../lib/utils";
+  import { initialOptions as defaultOptions } from "../../lib/utils";
   import type { Options, ProgressType, VideoQueueItem } from "../../types";
   import SettingsTab from "./SettingsTab.svelte";
   import { onMount } from "svelte";
 
+  // --- Props (pre-fetched in main.ts for instant render) ---------------------
+
+  type Props = {
+    initialIsFFmpegReady: boolean;
+    initialVideoQueue: VideoQueueItem[];
+    initialMusicList: string[];
+    initialVideoOnlyList: string[];
+    initialVideoDetails: Record<string, { filenameOutput: string }>;
+    initialStatusProgress: Record<string, {
+      progress: number;
+      progressType: ProgressType;
+    }>;
+    initialOptions: Options;
+  };
+
+  const {
+    initialIsFFmpegReady,
+    initialVideoQueue,
+    initialMusicList,
+    initialVideoOnlyList,
+    initialVideoDetails,
+    initialStatusProgress,
+    initialOptions
+  }: Props = $props();
+
   // --- State -----------------------------------------------------------------
 
   let activeTab = $state<"queue" | "settings">("queue");
-  let isFFmpegReady = $state(false);
-  let videoQueue = $state<VideoQueueItem[]>([]);
-  let musicList = $state<string[]>([]);
-  let videoOnlyList = $state<string[]>([]);
-  let videoDetails = $state<
-    Record<string, { filenameOutput: string }>
-  >({});
-  let statusProgress = $state<
-    Record<string, { progress: number;
-      progressType: ProgressType; }>
-  >({});
-  let options = $state<Options>({ ...initialOptions });
+  let isFFmpegReady = $state(initialIsFFmpegReady);
+  let videoQueue = $state(initialVideoQueue);
+  let musicList = $state(initialMusicList);
+  let videoOnlyList = $state(initialVideoOnlyList);
+  let videoDetails = $state(initialVideoDetails);
+  let statusProgress = $state(initialStatusProgress);
+  let options = $state<Options>(initialOptions);
   let draggedVideoId = $state<string | null>(null);
   let dragOverVideoId = $state<string | null>(null);
 
@@ -61,7 +81,7 @@
         statusProgress = value ?? {};
       }),
       optionsItem.watch(value => {
-        options = value ?? { ...initialOptions };
+        options = value ?? { ...defaultOptions };
       })
     ];
     return () => {
@@ -146,30 +166,7 @@
 
   // --- Lifecycle -------------------------------------------------------------
 
-  onMount(() => {
-    async function initialize() {
-      [
-        isFFmpegReady,
-        videoQueue,
-        musicList,
-        videoOnlyList,
-        videoDetails,
-        statusProgress,
-        options
-      ] = await Promise.all([
-        isFFmpegReadyItem.getValue(),
-        videoQueueItem.getValue(),
-        musicListItem.getValue(),
-        videoOnlyListItem.getValue(),
-        videoDetailsItem.getValue(),
-        statusProgressItem.getValue(),
-        optionsItem.getValue()
-      ]);
-    }
-
-    void initialize();
-    return listenToStorageChanges();
-  });
+  onMount(listenToStorageChanges);
 
   function getProgressLabel(videoId: string) {
     const prog = statusProgress[videoId];
