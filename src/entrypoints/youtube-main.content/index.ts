@@ -833,6 +833,11 @@ export default defineContentScript({
 
     async function injectSegmentedDownloadButton(videoData: VideoData) {
       cleanupSegmentedButton();
+
+      if (!videoData.isDownloadable) {
+        return;
+      }
+
       const generation = ++injectionGeneration;
 
       const elActionsContainer = await findVideoActionsContainer();
