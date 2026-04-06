@@ -208,30 +208,33 @@
   .settings-container {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 12px;
   }
 
   .settings-group {
-    padding: 12px;
-    border: 1px solid var(--border);
-    border-radius: 6px;
+    padding: 16px;
+    border: none;
+    border-radius: 16px;
+    background: var(--surface);
   }
 
   .settings-legend {
-    padding: 0 4px;
-    color: var(--fg-muted);
-    font-weight: 600;
+    padding: 0;
+    margin-bottom: 8px;
+    color: var(--accent);
+    font-weight: 500;
     font-size: 1.2rem;
+    letter-spacing: 0.02em;
   }
 
   .settings-row {
     display: flex;
-    gap: 8px;
+    gap: 10px;
     align-items: center;
-    padding: 4px 0;
+    padding: 6px 0;
 
     & + & {
-      margin-top: 4px;
+      margin-top: 2px;
     }
   }
 
@@ -239,8 +242,8 @@
     display: flex;
     gap: 8px;
     align-items: center;
-    margin-top: 8px;
-    padding-left: 24px;
+    margin-top: 10px;
+    padding-left: 26px;
   }
 
   .settings-label {
@@ -251,35 +254,40 @@
   .settings-radio-label,
   .settings-toggle-label {
     display: flex;
-    gap: 8px;
+    gap: 10px;
     align-items: center;
     font-size: 1.3rem;
     cursor: pointer;
   }
 
   .settings-select {
-    padding: 4px 8px;
+    padding: 6px 10px;
     border: 1px solid var(--border);
-    border-radius: 4px;
-    background: transparent;
+    border-radius: 12px;
+    background: var(--bg, transparent);
     color: inherit;
     font-family: inherit;
     font-size: 1.3rem;
     cursor: pointer;
+
+    &:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
   }
 
   [type="radio"],
   [type="checkbox"] {
     flex-shrink: 0;
-    width: 16px;
-    height: 16px;
+    width: 18px;
+    height: 18px;
     accent-color: var(--accent);
     cursor: pointer;
   }
 
   .settings-hint {
-    margin-top: 6px;
-    color: var(--fg-muted);
+    margin-top: 8px;
+    color: var(--fg-subtle);
     font-size: 1.1rem;
   }
 </style>

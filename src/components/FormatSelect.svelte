@@ -52,19 +52,19 @@
   }
 
   .format-select-control {
-    min-width: 140px;
-    padding: 6px 8px;
+    min-width: 150px;
+    padding: 8px 12px;
     border: 1px solid var(--border);
-    border-radius: 4px;
-    background: var(--bg);
-    color: var(--fg);
+    border-radius: 12px;
+    background: var(--bg, transparent);
+    color: var(--fg, inherit);
     font-family: inherit;
     font-size: 1.3rem;
     cursor: pointer;
 
     &:focus-visible {
       outline: 2px solid var(--accent);
-      outline-offset: -1px;
+      outline-offset: 2px;
     }
   }
 </style>
