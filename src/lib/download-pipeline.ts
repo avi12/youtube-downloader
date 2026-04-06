@@ -8,8 +8,8 @@
  */
 
 import { MessageType, sendMessage } from "./messaging";
-import { getCompatibleFilename, getMimeType, getOutputExtension } from "./utils";
-import type { DownloadType, ProcessStreamData, ProgressType } from "@/types";
+import { getCompatibleFilename, getFileExtension, getMimeType, getOutputExtension } from "./utils";
+import type { DownloadType, ProcessStreamData, ProgressType, VideoMetadata } from "@/types";
 import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { zipSync } from "fflate";
 
@@ -228,12 +228,90 @@ function addToPlaylistBundle({
   void triggerDownload(zipped, zipFilename);
 }
 
+async function fetchThumbnail(url: string) {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      return null;
+    }
+
+    return new Uint8Array(await response.arrayBuffer());
+  } catch {
+    return null;
+  }
+}
+
+async function embedMusicMetadata(
+  audioData: Uint8Array,
+  filenameOutput: string,
+  metadata: VideoMetadata,
+  ffmpeg: FFmpeg
+) {
+  const audioExtension = getFileExtension(filenameOutput) || "m4a";
+  const inputFilename = `input.${audioExtension}`;
+  const outputFilename = getCompatibleFilename(filenameOutput);
+
+  await ffmpeg.writeFile(inputFilename, audioData);
+
+  const ffmpegArgs = ["-i", inputFilename];
+
+  // Download and attach thumbnail as cover art
+  let hasCoverArt = false;
+  if (metadata.thumbnailUrl) {
+    const thumbnailData = await fetchThumbnail(metadata.thumbnailUrl);
+    if (thumbnailData) {
+      await ffmpeg.writeFile("cover.jpg", thumbnailData);
+      ffmpegArgs.push("-i", "cover.jpg");
+      hasCoverArt = true;
+    }
+  }
+
+  ffmpegArgs.push("-map", "0:a");
+
+  if (hasCoverArt) {
+    ffmpegArgs.push("-map", "1:v");
+    ffmpegArgs.push("-c:v", "mjpeg");
+    ffmpegArgs.push("-disposition:v", "attached_pic");
+  }
+
+  ffmpegArgs.push("-c:a", "copy");
+  ffmpegArgs.push("-metadata", `title=${metadata.title}`);
+  ffmpegArgs.push("-metadata", `artist=${metadata.artist}`);
+
+  if (metadata.date) {
+    ffmpegArgs.push("-metadata", `date=${metadata.date}`);
+  }
+
+  ffmpegArgs.push(outputFilename);
+
+  const exitCode = await ffmpeg.exec(ffmpegArgs);
+  if (exitCode !== 0) {
+    // Fallback: return original data without tags
+    await ffmpeg.deleteFile(inputFilename);
+    return audioData;
+  }
+
+  const taggedOutput = await ffmpeg.readFile(outputFilename);
+  await ffmpeg.deleteFile(inputFilename);
+  await ffmpeg.deleteFile(outputFilename);
+
+  if (hasCoverArt) {
+    await ffmpeg.deleteFile("cover.jpg");
+  }
+
+  if (!(taggedOutput instanceof Uint8Array)) {
+    return audioData;
+  }
+
+  return taggedOutput;
+}
+
 async function processSingleMedia(item: ProcessStreamData) {
   const {
     videoId, type, filenameOutput, videoData, audioData, tabId
   } = item;
   const rawData = type === "audio" ? audioData : videoData;
-  const data = toUint8Array(rawData);
+  let data = toUint8Array(rawData);
   if (!data) {
     return;
   }
@@ -244,6 +322,28 @@ async function processSingleMedia(item: ProcessStreamData) {
     progressType: type === "audio" ? "audio" : "video",
     tabId
   });
+
+  // Embed ID3 tags and cover art for music downloads
+  if (type === "audio" && item.metadata?.isMusic) {
+    await reportProgress({
+      videoId,
+      progress: 0.5,
+      progressType: "ffmpeg",
+      tabId
+    });
+
+    await enqueueMuxJob(async () => {
+      const ffmpeg = await getFFmpegInstance();
+      data = await embedMusicMetadata(data!, filenameOutput, item.metadata!, ffmpeg);
+    });
+
+    await reportProgress({
+      videoId,
+      progress: 1,
+      progressType: "ffmpeg",
+      tabId
+    });
+  }
 
   if (item.playlistId) {
     addToPlaylistBundle({

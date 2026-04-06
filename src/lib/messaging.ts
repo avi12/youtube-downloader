@@ -3,6 +3,7 @@ import type {
   DownloadType,
   InterruptedDownload,
   ProgressUpdate,
+  VideoMetadata,
   StreamError
 } from "../types";
 import { defineExtensionMessaging } from "@webext-core/messaging";
@@ -69,6 +70,7 @@ interface ProtocolMap {
     playlistId?: string;
     playlistTitle?: string;
     playlistTotalCount?: number;
+    metadata?: VideoMetadata;
   }): void;
 
   // Content script → Background: SABR stream fetch failed
@@ -152,6 +154,7 @@ interface ProtocolMap {
     playlistId?: string;
     playlistTitle?: string;
     playlistTotalCount?: number;
+    metadata?: VideoMetadata;
   }): void;
 
   // Background → Offscreen (Chrome only): cancel one or more downloads

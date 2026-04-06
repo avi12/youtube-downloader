@@ -98,11 +98,20 @@ export type StreamData = {
   additionalAudioStreams?: AudioStreamData[];
 };
 
+export type VideoMetadata = {
+  title: string;
+  artist: string;
+  date?: string;
+  thumbnailUrl?: string;
+  isMusic: boolean;
+};
+
 export type ProcessStreamData = StreamData & {
   tabId: number;
   playlistId?: string;
   playlistTitle?: string;
   playlistTotalCount?: number;
+  metadata?: VideoMetadata;
 };
 
 export type StreamDataPayload = {
@@ -115,6 +124,7 @@ export type StreamDataPayload = {
   audioMimeType: string;
   audioLabel: string;
   additionalAudioData: AudioStreamData[];
+  metadata?: VideoMetadata;
 };
 
 export type StreamError = {

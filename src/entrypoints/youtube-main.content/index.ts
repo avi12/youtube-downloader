@@ -458,6 +458,28 @@ export default defineContentScript({
         label: string; }>;
     }
 
+    function buildVideoMetadata(videoId: string) {
+      const cached = videoDataCache.get(videoId);
+      if (!cached) {
+        return undefined;
+      }
+
+      const { playerResponse } = cached;
+      const thumbnails = playerResponse.videoDetails?.thumbnail?.thumbnails ?? [];
+      // Pick the largest thumbnail for cover art
+      const thumbnailUrl = thumbnails.length > 0
+        ? thumbnails[thumbnails.length - 1].url
+        : undefined;
+
+      return {
+        title: cached.title,
+        artist: playerResponse.videoDetails?.author ?? "",
+        date: playerResponse.microformat?.playerMicroformatRenderer.publishDate,
+        thumbnailUrl,
+        isMusic: cached.isMusic
+      };
+    }
+
     function dispatchStreamData({
       type, videoId, filenameOutput,
       videoData, audioData, videoMimeType, audioMimeType,
@@ -475,7 +497,8 @@ export default defineContentScript({
           videoMimeType,
           audioMimeType,
           audioLabel,
-          additionalAudioData
+          additionalAudioData,
+          metadata: buildVideoMetadata(videoId)
         }
       }, location.origin);
     }

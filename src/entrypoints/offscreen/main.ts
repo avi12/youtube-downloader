@@ -139,7 +139,8 @@ onMessage(MessageType.ProcessStreamEnd, ({ data }) => {
     tabId,
     playlistId,
     playlistTitle,
-    playlistTotalCount
+    playlistTotalCount,
+    metadata: data.metadata
   });
 });
 

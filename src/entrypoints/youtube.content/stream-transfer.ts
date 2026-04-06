@@ -131,6 +131,7 @@ export async function handleStreamData(payload: StreamDataPayload) {
     videoMimeType,
     audioMimeType,
     audioTrackLabels,
+    metadata: payload.metadata,
     ...playlistContext
   });
 }
