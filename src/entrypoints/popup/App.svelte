@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Autocomplete from "../../components/Autocomplete.svelte";
+  import FormatSelect from "../../components/FormatSelect.svelte";
   import { MessageType, sendMessage } from "../../lib/messaging";
   import {
     isFFmpegReadyItem,
@@ -501,7 +501,7 @@
         <!-- Video format -->
         <fieldset class="settings-group">
           <legend class="settings-legend">Video format</legend>
-          <Autocomplete
+          <FormatSelect
             id="video-ext"
             label="Container"
             onchange={updateVideoExtension}
@@ -513,7 +513,7 @@
         <!-- Audio format -->
         <fieldset class="settings-group">
           <legend class="settings-legend">Audio format</legend>
-          <Autocomplete
+          <FormatSelect
             id="audio-ext"
             label="Container"
             onchange={updateAudioExtension}

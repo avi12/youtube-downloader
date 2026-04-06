@@ -1,0 +1,70 @@
+<script lang="ts">
+  import { AUTO_EXTENSION, AUTO_EXTENSION_LABEL } from "../lib/utils";
+
+  type Props = {
+    id: string;
+    label: string;
+    options: string[];
+    value: string;
+    onchange: (value: string) => void;
+  };
+
+  const { id, label, options, value, onchange }: Props = $props();
+
+  function handleChange(e: Event) {
+    const { target } = e;
+    if (target instanceof HTMLSelectElement) {
+      onchange(target.value);
+    }
+  }
+
+  function formatLabel(option: string) {
+    return option === AUTO_EXTENSION ? AUTO_EXTENSION_LABEL : option;
+  }
+</script>
+
+<div class="format-select">
+  <label class="format-select-label" for={id}>{label}</label>
+  <select
+    {id}
+    class="format-select-control"
+    onchange={handleChange}
+    {value}
+  >
+    {#each options as option (option)}
+      <option selected={option === value} value={option}>
+        {formatLabel(option)}
+      </option>
+    {/each}
+  </select>
+</div>
+
+<style>
+  .format-select {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .format-select-label {
+    flex: 1;
+    font-size: 1.3rem;
+  }
+
+  .format-select-control {
+    min-width: 140px;
+    padding: 6px 8px;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    background: var(--bg);
+    color: var(--fg);
+    font-family: inherit;
+    font-size: 1.3rem;
+    cursor: pointer;
+
+    &:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: -1px;
+    }
+  }
+</style>
