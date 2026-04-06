@@ -183,6 +183,20 @@
     void updateRemoveNativeDownload(target.checked);
   }
 
+  function handleTabKeydown(e: KeyboardEvent) {
+    const tabs: ("queue" | "settings")[] = ["queue", "settings"];
+    const iCurrent = tabs.indexOf(activeTab);
+    if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+      e.preventDefault();
+      activeTab = tabs[(iCurrent + 1) % tabs.length];
+      document.getElementById(`tab-${activeTab}`)?.focus();
+    } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+      e.preventDefault();
+      activeTab = tabs[(iCurrent - 1 + tabs.length) % tabs.length];
+      document.getElementById(`tab-${activeTab}`)?.focus();
+    }
+  }
+
   // --- Lifecycle -------------------------------------------------------------
 
   onMount(() => {
@@ -233,12 +247,17 @@
         by <a href="https://avi12.com" rel="noopener noreferrer" target="_blank">Avi</a>
       </span>
     </div>
-    <nav class="tab-nav" aria-label="Navigation">
+    <div class="tab-nav" role="tablist">
       <button
+        id="tab-queue"
         class="tab-nav-button"
         class:tab-nav-button--active={activeTab === "queue"}
-        aria-pressed={activeTab === "queue"}
+        aria-controls="panel-queue"
+        aria-selected={activeTab === "queue"}
         onclick={() => (activeTab = "queue")}
+        onkeydown={handleTabKeydown}
+        role="tab"
+        tabindex={activeTab === "queue" ? 0 : -1}
       >
         Downloads
         {#if totalActiveDownloads > 0}
@@ -248,17 +267,27 @@
         {/if}
       </button>
       <button
+        id="tab-settings"
         class="tab-nav-button"
         class:tab-nav-button--active={activeTab === "settings"}
-        aria-pressed={activeTab === "settings"}
+        aria-controls="panel-settings"
+        aria-selected={activeTab === "settings"}
         onclick={() => (activeTab = "settings")}
+        onkeydown={handleTabKeydown}
+        role="tab"
+        tabindex={activeTab === "settings" ? 0 : -1}
       >
         Settings
       </button>
-    </nav>
+    </div>
   </header>
 
-  <main class="popup-content">
+  <div
+    id={activeTab === "queue" ? "panel-queue" : "panel-settings"}
+    class="popup-content"
+    aria-labelledby={activeTab === "queue" ? "tab-queue" : "tab-settings"}
+    role="tabpanel"
+  >
     {#if activeTab === "queue"}
       <!-- --- Queue tab ------------------------------------------------ -->
       {#if totalActiveDownloads === 0}
@@ -628,7 +657,7 @@
         </fieldset>
       </div>
     {/if}
-  </main>
+  </div>
 </div>
 
 <style>
