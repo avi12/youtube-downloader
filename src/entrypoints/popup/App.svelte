@@ -13,7 +13,7 @@
   import { initialOptions as defaultOptions } from "@/lib/utils";
   import { ProgressType } from "@/types";
   import type { Options, VideoQueueItem } from "@/types";
-  import { onMount } from "svelte";
+  import { onMount, untrack } from "svelte";
 
   const percentFormatter = new Intl.NumberFormat(browser.i18n.getUILanguage(), {
     style: "percent",
@@ -48,20 +48,20 @@
   // --- State -----------------------------------------------------------------
 
   let activeTab = $state<"queue" | "settings">("queue");
-  let isFFmpegReady = $state(initialIsFFmpegReady);
-  let videoQueue = $state(initialVideoQueue);
-  let musicList = $state(initialMusicList);
-  let videoOnlyList = $state(initialVideoOnlyList);
-  let videoDetails = $state(initialVideoDetails);
-  let statusProgress = $state(initialStatusProgress);
-  let options = $state<Options>(initialOptions);
+  let isFFmpegReady = $state(untrack(() => initialIsFFmpegReady));
+  let videoDownloads = $state(untrack(() => initialVideoQueue));
+  let musicList = $state(untrack(() => initialMusicList));
+  let videoOnlyList = $state(untrack(() => initialVideoOnlyList));
+  let videoDetails = $state(untrack(() => initialVideoDetails));
+  let statusProgress = $state(untrack(() => initialStatusProgress));
+  let options = $state<Options>(untrack(() => initialOptions));
   let draggedVideoId = $state<string | null>(null);
   let dragOverVideoId = $state<string | null>(null);
 
   // --- Derived ---------------------------------------------------------------
 
   const totalActiveDownloads = $derived(
-    videoQueue.length + musicList.length + videoOnlyList.length
+    videoDownloads.length + musicList.length + videoOnlyList.length
   );
 
   // --- Storage listener ------------------------------------------------------
@@ -72,7 +72,7 @@
         isFFmpegReady = value ?? false;
       }),
       videoQueueItem.watch(value => {
-        videoQueue = value ?? [];
+        videoDownloads = value ?? [];
       }),
       musicListItem.watch(value => {
         musicList = value ?? [];
@@ -104,7 +104,7 @@
   }
 
   function cancelAllInQueue() {
-    const allIds = videoQueue.map(item => item.videoId);
+    const allIds = videoDownloads.map(item => item.videoId);
     if (allIds.length > 0) {
       cancelDownload(allIds);
     }
@@ -136,17 +136,17 @@
       return;
     }
 
-    const fromIndex = videoQueue.findIndex(
+    const fromIndex = videoDownloads.findIndex(
       item => item.videoId === draggedVideoId
     );
-    const toIndex = videoQueue.findIndex(
+    const toIndex = videoDownloads.findIndex(
       item => item.videoId === dragOverVideoId
     );
     if (fromIndex === -1 || toIndex === -1) {
       return;
     }
 
-    const reordered = [...videoQueue];
+    const reordered = [...videoDownloads];
     const [removed] = reordered.splice(fromIndex, 1);
     reordered.splice(toIndex, 0, removed);
 
@@ -244,11 +244,11 @@
         <p class="empty-state">No active downloads</p>
       {:else}
         <!-- Video+Audio queue (FFmpeg) -->
-        {#if videoQueue.length > 0}
-          <section aria-labelledby="video-queue-heading">
+        {#if videoDownloads.length > 0}
+          <section aria-labelledby="video-downloads-heading">
             <div class="section-header">
-              <h2 id="video-queue-heading" class="section-title">
-                Video queue
+              <h2 id="video-downloads-heading" class="section-title">
+                Video downloads
                 {#if !isFFmpegReady}
                   <span class="loading-badge" aria-label="FFmpeg loading">
                     Loading FFmpeg…
@@ -266,17 +266,17 @@
 
             <ul
               class="download-list"
-              aria-label="Video download queue"
+              aria-label="Active video downloads"
               role="list"
             >
-              {#each videoQueue as item, index (item.videoId)}
+              {#each videoDownloads as item, index (item.videoId)}
                 {@const detail = videoDetails[item.videoId]}
                 {@const progress = statusProgress[item.videoId]}
                 <li
                   class="download-item"
                   class:download-item--current={index === 0}
                   class:download-item--drag-over={dragOverVideoId === item.videoId}
-                  aria-label="Queue position {index + 1}: {detail?.filenameOutput ?? item.videoId}"
+                  aria-label="{detail?.filenameOutput ?? item.videoId}"
                   draggable="true"
                   ondragover={e => {
                     e.preventDefault();
@@ -294,19 +294,12 @@
                       >{detail?.filenameOutput ?? item.videoId}</span
                     >
                     {#if progress}
-                      <div
+                      <progress
                         class="download-progress"
                         aria-label={getProgressLabel(item.videoId)}
-                        aria-valuemax={1}
-                        aria-valuemin={0}
-                        aria-valuenow={progress.progress}
-                        role="progressbar"
-                      >
-                        <div
-                          style="--fill-scale: {progress.progress};"
-                          class="download-progress-fill"
-                        ></div>
-                      </div>
+                        max={1}
+                        value={progress.progress}
+                      ></progress>
                       <span class="download-progress-label"
                         >{getProgressLabel(item.videoId)}</span
                       >
@@ -315,7 +308,7 @@
                         {isFFmpegReady ? "Processing…" : "Waiting for FFmpeg…"}
                       </span>
                     {:else}
-                      <span class="download-status-label">Queued</span>
+                      <span class="download-status-label">Downloading</span>
                     {/if}
                   </div>
                   <button
@@ -355,19 +348,12 @@
                       >{detail?.filenameOutput ?? videoId}</span
                     >
                     {#if progress}
-                      <div
+                      <progress
                         class="download-progress"
                         aria-label={getProgressLabel(videoId)}
-                        aria-valuemax={1}
-                        aria-valuemin={0}
-                        aria-valuenow={progress.progress}
-                        role="progressbar"
-                      >
-                        <div
-                          style="--fill-scale: {progress.progress};"
-                          class="download-progress-fill"
-                        ></div>
-                      </div>
+                        max={1}
+                        value={progress.progress}
+                      ></progress>
                       <span class="download-progress-label"
                         >{getProgressLabel(videoId)}</span
                       >
@@ -414,19 +400,12 @@
                       >{detail?.filenameOutput ?? videoId}</span
                     >
                     {#if progress}
-                      <div
+                      <progress
                         class="download-progress"
                         aria-label={getProgressLabel(videoId)}
-                        aria-valuemax={1}
-                        aria-valuemin={0}
-                        aria-valuenow={progress.progress}
-                        role="progressbar"
-                      >
-                        <div
-                          style="--fill-scale: {progress.progress};"
-                          class="download-progress-fill"
-                        ></div>
-                      </div>
+                        max={1}
+                        value={progress.progress}
+                      ></progress>
                       <span class="download-progress-label"
                         >{getProgressLabel(videoId)}</span
                       >
@@ -747,22 +726,27 @@
   }
 
   .download-progress {
-    overflow: hidden;
-    height: 4px;
-    border-radius: 2px;
-    background: var(--border);
-  }
-
-  .download-progress-fill {
-    --fill-scale: 0;
-
     width: 100%;
-    height: 100%;
+    height: 4px;
+    border: none;
     border-radius: 2px;
-    background: var(--accent);
-    transition: transform 300ms cubic-bezier(0.2, 0, 0, 1);
-    transform: scaleX(var(--fill-scale));
-    transform-origin: left;
+    appearance: none;
+
+    &::-webkit-progress-bar {
+      border-radius: 2px;
+      background: var(--border);
+    }
+
+    &::-webkit-progress-value {
+      border-radius: 2px;
+      background: var(--accent);
+      transition: width 300ms cubic-bezier(0.2, 0, 0, 1);
+    }
+
+    &::-moz-progress-bar {
+      border-radius: 2px;
+      background: var(--accent);
+    }
   }
 
   .download-progress-label,
