@@ -18,7 +18,7 @@ export enum MessageType {
   GetCapturedSabrBody = "getCapturedSabrBody",
   SabrDownload = "sabrDownload",
   ProxyFetch = "proxyFetch",
-  DirectDownload = "directDownload",
+  ResolveFormatUrls = "resolveFormatUrls",
   PersistInterruptedDownload = "persistInterruptedDownload",
   ClearInterruptedDownload = "clearInterruptedDownload",
   GetInterruptedDownload = "getInterruptedDownload",
@@ -95,13 +95,16 @@ interface ProtocolMap {
       bodyBase64: string; } | null;
 
   // Content script → Background: download video/audio via direct URL
-  directDownload(data: {
+  resolveFormatUrls(data: {
     videoId: string;
     videoItag: number;
     audioItag: number;
-    filenameOutput: string;
-    type: DownloadType;
-  }): boolean;
+  }): {
+    videoUrl: string | null;
+    audioUrl: string | null;
+    videoMimeType: string;
+    audioMimeType: string;
+  } | null;
 
   // Content script → Background: persist/clear/query interrupted download state
   persistInterruptedDownload(data: InterruptedDownload): void;

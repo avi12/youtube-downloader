@@ -91,9 +91,7 @@
     return "Download";
   });
 
-  function handleDownloadClick() {
-    console.log("[ytdl] handleDownloadClick", videoId, "downloadable:", videoData?.isDownloadable, "isDownloading:", isDownloading);
-
+  async function handleDownloadClick() {
     if (!videoData?.isDownloadable) {
       return;
     }
@@ -119,20 +117,6 @@
       : resolvedExtension;
     const filenameOutput = getCompatibleFilename(`${videoData.title}.${outputExtension}`);
 
-    console.log("[ytdl] Sending DirectDownload for", videoId);
-    sendMessage(MessageType.DirectDownload, {
-      videoId,
-      videoItag: selectedVideoFormat?.itag ?? 0,
-      audioItag: selectedAudioFormat?.itag ?? 0,
-      filenameOutput,
-      type: downloadType
-    }).then(result => {
-      console.log("[ytdl] DirectDownload response:", result);
-    }).catch(error => {
-      console.error("[ytdl] Grid download failed:", error);
-    });
-
-    downloadProgressStore.unsuppress(videoId);
     downloadProgressStore.set(videoId, {
       isDownloading: true,
       isDone: false,
@@ -140,6 +124,30 @@
       progress: 0,
       progressType: ""
     });
+
+    const resolved = await sendMessage(MessageType.ResolveFormatUrls, {
+      videoId,
+      videoItag: selectedVideoFormat?.itag ?? 0,
+      audioItag: selectedAudioFormat?.itag ?? 0
+    });
+    if (!resolved) {
+      downloadProgressStore.delete(videoId);
+      return;
+    }
+
+    postMessage({
+      namespace: SYNC_NAMESPACE,
+      key: SyncKey.DirectDownloadRequest,
+      value: {
+        videoId,
+        videoUrl: resolved.videoUrl,
+        audioUrl: resolved.audioUrl,
+        videoMimeType: resolved.videoMimeType,
+        audioMimeType: resolved.audioMimeType,
+        filenameOutput,
+        type: downloadType
+      }
+    }, location.origin);
   }
 
   function getItemIconName() {
@@ -374,7 +382,7 @@
 
     const clickedId = e.data.value?.buttonId;
     if (clickedId && elDownloadBtn?.getAttribute("data-ytdl-button-id") === clickedId) {
-      handleDownloadClick();
+      void handleDownloadClick();
     }
   });
 

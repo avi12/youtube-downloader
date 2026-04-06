@@ -277,20 +277,13 @@ export default defineBackground(() => {
     }
   });
 
-  onMessage(MessageType.DirectDownload, async ({ data, sender }) => {
-    const tabId = sender.tab?.id ?? 0;
-    const {
-      videoId,
-      videoItag,
-      audioItag,
-      filenameOutput,
-      type: downloadType
-    } = data;
+  onMessage(MessageType.ResolveFormatUrls, async ({ data }) => {
+    const { videoId, videoItag, audioItag } = data;
 
     try {
       const playerResponse = await fetchPlayerResponse(videoId);
       if (playerResponse.playabilityStatus?.status !== "OK") {
-        throw new Error(`Player status: ${playerResponse.playabilityStatus?.status}`);
+        return null;
       }
 
       const formats = playerResponse.streamingData?.adaptiveFormats ?? [];
@@ -300,64 +293,15 @@ export default defineBackground(() => {
       const audioFormat = formats.find((format: { itag: number }) => {
         return format.itag === audioItag;
       });
-      if (!videoFormat?.url && !audioFormat?.url) {
-        throw new Error("No direct URLs - formats may be signature-ciphered");
-      }
 
-      const videoUrl = downloadType !== "audio" ? videoFormat?.url : null;
-      const audioUrl = downloadType !== "video" ? audioFormat?.url : null;
-      const videoMimeType = videoFormat?.mimeType?.split(";")?.[0] ?? "video/mp4";
-      const audioMimeType = audioFormat?.mimeType?.split(";")?.[0] ?? "audio/mp4";
-
-      const ytCookies = await browser.cookies.getAll({ domain: ".youtube.com" });
-      const gvCookies = await browser.cookies.getAll({ domain: ".googlevideo.com" });
-      const mediaCookieString = [...ytCookies, ...gvCookies]
-        .map(cookie => {
-          return `${cookie.name}=${cookie.value}`;
-        })
-        .join("; ");
-
-      async function fetchStream(url: string) {
-        const response = await fetch(url, {
-          headers: {
-            "Accept-Encoding": "identity",
-            cookie: mediaCookieString
-          }
-        });
-        if (!response.ok) {
-          throw new Error(`HTTP ${response.status}`);
-        }
-
-        return new Uint8Array(await response.arrayBuffer());
-      }
-
-      const [videoData, audioData] = await Promise.all([
-        videoUrl ? fetchStream(videoUrl) : Promise.resolve(null),
-        audioUrl ? fetchStream(audioUrl) : Promise.resolve(null)
-      ]);
-
-      await ensureProcessor();
-      await sendChunksToProcessor({
-        videoId,
-        tabId,
-        videoData,
-        audioData
-      });
-      await sendMessage(MessageType.ProcessStreamEnd, {
-        type: downloadType,
-        videoId,
-        filenameOutput,
-        videoMimeType,
-        audioMimeType,
-        audioTrackLabels: [""],
-        tabId
-      });
-
-      return true;
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      console.error("[ytdl:bg] directDownload failed:", errorMessage);
-      throw new Error(errorMessage);
+      return {
+        videoUrl: videoFormat?.url ?? null,
+        audioUrl: audioFormat?.url ?? null,
+        videoMimeType: videoFormat?.mimeType?.split(";")?.[0] ?? "video/mp4",
+        audioMimeType: audioFormat?.mimeType?.split(";")?.[0] ?? "audio/mp4"
+      };
+    } catch {
+      return null;
     }
   });
 

@@ -1631,86 +1631,18 @@ export default defineContentScript({
       }
     });
 
-    // Fetch player data from the android_vr client and resolve format URLs.
-    async function fetchPlayerFormats(
-      videoId: string,
-      downloadType: DownloadType,
-      videoItag: number,
-      audioItag: number
-    ) {
-      const visitorData = ytcfg?.get("VISITOR_DATA") ?? "";
-
-      const playerData = await (await globalThis.fetch(
-        "https://www.youtube.com/youtubei/v1/player?prettyPrint=false",
-        {
-          method: "POST",
-          credentials: "include",
-          headers: {
-            "Content-Type": "application/json",
-            "X-Goog-Visitor-Id": String(visitorData)
-          },
-          body: JSON.stringify({
-            videoId,
-            context: {
-              client: {
-                clientName: "ANDROID_VR",
-                clientVersion: "1.65.10",
-                androidSdkVersion: 34,
-                osName: "Android",
-                osVersion: "14",
-                platform: "MOBILE"
-              }
-            },
-            contentCheckOk: true,
-            racyCheckOk: true
-          })
-        }
-      )).json();
-      if (playerData.playabilityStatus?.status !== "OK") {
-        throw new Error(`Player status: ${playerData.playabilityStatus?.status}`);
-      }
-
-      const formats = playerData.streamingData?.adaptiveFormats ?? [];
-      const videoFormat = formats.find((format: { itag: number }) => {
-        return format.itag === videoItag;
-      })
-        ?? formats.find((format: { mimeType?: string }) => {
-          return format.mimeType?.startsWith("video");
-        });
-      const audioFormat = formats.find((format: { itag: number }) => {
-        return format.itag === audioItag;
-      })
-        ?? formats.find((format: { mimeType?: string }) => {
-          return format.mimeType?.startsWith("audio");
-        });
-
-      const videoUrl = downloadType !== "audio" ? videoFormat?.url : null;
-      const audioUrl = downloadType !== "video" ? audioFormat?.url : null;
-      if (!videoUrl && !audioUrl) {
-        throw new Error("No download URLs available");
-      }
-
-      return {
-        videoUrl,
-        audioUrl,
-        videoFormat,
-        audioFormat
-      };
-    }
-
-    // Handle direct download requests from the isolated world.
-    // Uses the android_vr client (no SABR, no PO token needed) to get
-    // direct URLs, fetches video+audio in the MAIN world (YouTube's
-    // Service Worker handles CORS), then dispatches via stream-data event.
+    // Handle direct download requests with pre-resolved URLs.
+    // The background resolves format URLs via authenticated watch page fetch.
+    // The MAIN world fetches the actual media (persistent context, YouTube CORS).
     addEventListener("message", async e => {
       if (e.data?.namespace !== SYNC_NAMESPACE || e.data.key !== SyncKey.DirectDownloadRequest) {
         return;
       }
 
       const {
-        videoId: downloadVideoId, videoItag, audioItag, filenameOutput, type: downloadType
+        videoId: downloadVideoId, videoUrl, audioUrl,
+        videoMimeType, audioMimeType, filenameOutput, type: downloadType
       } = e.data.value;
-      console.log("[ytdl] direct-download-request received:", downloadVideoId);
 
       cancelActiveDownload(downloadVideoId);
       const abortController = new AbortController();
@@ -1718,12 +1650,6 @@ export default defineContentScript({
       const { signal } = abortController;
 
       try {
-        const {
-          videoUrl, audioUrl, videoFormat, audioFormat
-        } = await fetchPlayerFormats(
-          downloadVideoId, downloadType, videoItag, audioItag
-        );
-
         let totalExpectedBytes = 0;
         let totalReceivedBytes = 0;
 
@@ -1796,9 +1722,6 @@ export default defineContentScript({
         if (signal.aborted) {
           return;
         }
-
-        const videoMimeType = videoFormat?.mimeType?.split(";")?.[0] ?? "video/mp4";
-        const audioMimeType = audioFormat?.mimeType?.split(";")?.[0] ?? "audio/mp4";
 
         postMessage({
           namespace: SYNC_NAMESPACE,
