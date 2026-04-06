@@ -1,4 +1,5 @@
-import type { Options, PlayerResponse } from "../types";
+import type { Options, PlayerResponse } from "@/types";
+import { PlayabilityStatus } from "@/types/youtube";
 
 // ─── Filename utilities ───────────────────────────────────────────────────────
 
@@ -98,7 +99,7 @@ export const defaultVideoQuality = 1080;
 
 export const initialOptions: Options = {
   ext: {
-    audio: "mp3",
+    audio: "m4a",
     video: "mp4"
   },
   videoQualityMode: "current-quality",
@@ -108,25 +109,11 @@ export const initialOptions: Options = {
 
 // ─── YouTube utilities ────────────────────────────────────────────────────────
 
-export function getVideoIdFromUrl(url: string) {
-  try {
-    const { search } = new URL(url);
-    return new URLSearchParams(search).get("v");
-  } catch {
-    return null;
-  }
-}
-
 export function isVideoLive(playerResponse: PlayerResponse) {
-  const { videoDetails, microformat } = playerResponse;
-  // isLive and isLiveNow indicate currently live. isLiveContent means
-  // "this was/is live content" which includes past live streams that
-  // are downloadable, so we must NOT check it here.
-  return (
-    videoDetails?.isLive === true ||
-    microformat?.playerMicroformatRenderer.liveBroadcastDetails
-      ?.isLiveNow === true
-  );
+  // isLive indicates currently live. isLiveContent means "this was/is
+  // live content" which includes past live streams that are downloadable,
+  // so we must NOT check it here.
+  return !!playerResponse.videoDetails?.isLive;
 }
 
 export function isVideoDownloadable(playerResponse: PlayerResponse) {
@@ -135,7 +122,7 @@ export function isVideoDownloadable(playerResponse: PlayerResponse) {
   }
 
   const { status } = playerResponse.playabilityStatus;
-  if (status === "LOGIN_REQUIRED" || status === "ERROR") {
+  if (status === PlayabilityStatus.LoginRequired || status === PlayabilityStatus.Error) {
     return false;
   }
 
@@ -175,30 +162,4 @@ export function waitForVideoElement() {
       subtree: true
     });
   });
-}
-
-// ─── Difference utility ───────────────────────────────────────────────────────
-
-export function getOptionDiff(
-  newOptions: Options,
-  oldOptions: Options
-) {
-  const result: Partial<Options> = {};
-  if (JSON.stringify(newOptions.ext) !== JSON.stringify(oldOptions.ext)) {
-    result.ext = newOptions.ext;
-  }
-
-  if (newOptions.videoQualityMode !== oldOptions.videoQualityMode) {
-    result.videoQualityMode = newOptions.videoQualityMode;
-  }
-
-  if (newOptions.videoQuality !== oldOptions.videoQuality) {
-    result.videoQuality = newOptions.videoQuality;
-  }
-
-  if (newOptions.isRemoveNativeDownload !== oldOptions.isRemoveNativeDownload) {
-    result.isRemoveNativeDownload = newOptions.isRemoveNativeDownload;
-  }
-
-  return result;
 }

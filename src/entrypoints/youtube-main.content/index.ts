@@ -846,7 +846,17 @@ export default defineContentScript({
       }
 
       const { videoId } = videoData;
-      const defaultExtension = videoData.isMusic ? "mp3" : "mp4";
+      const defaultFormat = videoData.isMusic
+        ? videoData.audioFormats[0]
+        : videoData.videoFormats[0];
+      const isWebm = defaultFormat?.mimeType.includes("webm");
+      let defaultExtension = "mp4";
+      if (isWebm) {
+        defaultExtension = "webm";
+      } else if (videoData.isMusic) {
+        defaultExtension = "m4a";
+      }
+
       let defaultFilename = getCompatibleFilename(
         `${videoData.title}.${defaultExtension}`
       );
