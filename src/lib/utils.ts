@@ -22,7 +22,7 @@ export function getFileExtension(filename: string) {
 
 // Only containers that FFmpeg can remux YouTube streams into with -c copy.
 // YouTube produces H.264/VP9/AV1 video and AAC/Opus/Vorbis audio.
-export const extensionToMimeAll: Record<string, string> = {
+export const extensionToMimeAll = {
   m4a: "audio/mp4",
   mkv: "video/x-matroska",
   mp3: "audio/mpeg",
@@ -31,10 +31,14 @@ export const extensionToMimeAll: Record<string, string> = {
   opus: "audio/opus",
   weba: "audio/webm",
   webm: "video/webm"
-};
+} as const;
 
-export const extensionToMime: { video: Record<string, string>;
-  audio: Record<string, string>; } = {
+interface ExtensionsByMediaType {
+  video: Record<string, string>;
+  audio: Record<string, string>;
+}
+
+export const extensionToMime: ExtensionsByMediaType = {
   video: Object.fromEntries(
     Object.entries(extensionToMimeAll).filter(([, mimeType]) => {
       return mimeType.startsWith("video");
@@ -54,8 +58,19 @@ export const supportedExtensions = {
   audio: Object.keys(extensionToMime.audio)
 };
 
+type SupportedExtension = keyof typeof extensionToMimeAll;
+
+function isSupportedExtension(extension: string): extension is SupportedExtension {
+  return extension in extensionToMimeAll;
+}
+
 export function getMimeType(filename: string) {
-  return extensionToMimeAll[getFileExtension(filename)];
+  const extension = getFileExtension(filename);
+  if (!isSupportedExtension(extension)) {
+    return undefined;
+  }
+
+  return extensionToMimeAll[extension];
 }
 
 // ─── Container format utilities ──────────────────────────────────────────────
