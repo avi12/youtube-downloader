@@ -9,7 +9,8 @@
     videoDataRequests,
     videoDataStore
   } from "../lib/synced-stores.svelte";
-  import { getCompatibleFilename, getOutputExtension } from "../lib/utils";
+  import { getCompatibleFilename, getOutputExtension, resolveAutoExtension } from "../lib/utils";
+  import type { DownloadType } from "../types";
   import {
     ButtonSize,
     ButtonState,
@@ -99,16 +100,23 @@
       return;
     }
 
+    let downloadType: DownloadType = videoData.isMusic ? "audio" : "video+audio";
+    if (options.defaultDownloadType !== "auto") {
+      downloadType = options.defaultDownloadType;
+    }
+
     const selectedVideoFormat = videoData.videoFormats[0] ?? null;
     const selectedAudioFormat = videoData.audioFormats[0] ?? null;
-    const userExtension = videoData.isMusic ? options.ext.audio : options.ext.video;
+    const extPref = videoData.isMusic ? options.ext.audio : options.ext.video;
+    const defaultFormat = videoData.isMusic ? selectedAudioFormat : selectedVideoFormat;
+    const resolvedExtension = resolveAutoExtension(extPref, defaultFormat?.mimeType ?? "", videoData.isMusic ? "audio" : "video");
     const outputExtension = selectedVideoFormat && selectedAudioFormat && !videoData.isMusic
-      ? getOutputExtension(selectedVideoFormat.mimeType, selectedAudioFormat.mimeType, userExtension)
-      : userExtension;
+      ? getOutputExtension(selectedVideoFormat.mimeType, selectedAudioFormat.mimeType, resolvedExtension)
+      : resolvedExtension;
     const filenameOutput = getCompatibleFilename(`${videoData.title}.${outputExtension}`);
 
     downloadRequestSignal.value = {
-      type: videoData.isMusic ? "audio" : "video+audio",
+      type: downloadType,
       videoId,
       videoItag: selectedVideoFormat?.itag ?? 0,
       audioItag: selectedAudioFormat?.itag ?? 0,
@@ -191,9 +199,10 @@
     const quality = getDefaultQualityLabel();
     const videoFormat = videoData.videoFormats[0];
     const audioFormat = videoData.audioFormats[0];
+    const resolvedExt = resolveAutoExtension(options.ext.video, videoFormat?.mimeType ?? "", "video");
     const extension = videoFormat && audioFormat
-      ? getOutputExtension(videoFormat.mimeType, audioFormat.mimeType, options.ext.video)
-      : options.ext.video;
+      ? getOutputExtension(videoFormat.mimeType, audioFormat.mimeType, resolvedExt)
+      : resolvedExt;
     if (!quality) {
       return `${videoData.title}.${extension}`;
     }

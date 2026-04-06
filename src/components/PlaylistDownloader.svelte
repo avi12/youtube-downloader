@@ -8,7 +8,7 @@
   import { musicListItem, videoOnlyListItem, videoQueueItem } from "../lib/storage";
   import { playlistMetadataSignal } from "../lib/synced-stores.svelte";
   import { videoDataStore } from "../lib/synced-stores.svelte";
-  import { getCompatibleFilename } from "../lib/utils";
+  import { getCompatibleFilename, resolveAutoExtension } from "../lib/utils";
   import type { DownloadType, Options, VideoData } from "../types";
   import { SvelteMap } from "svelte/reactivity";
 
@@ -103,8 +103,14 @@
     const playlistId = metadata?.playlistId || `playlist-${Date.now()}`;
 
     const downloadRequests = checkedDownloadableVideos.map(data => {
-      const downloadType: DownloadType = data.isMusic ? "audio" : "video+audio";
-      const extension = data.isMusic ? options.ext.audio : options.ext.video;
+      let downloadType: DownloadType = data.isMusic ? "audio" : "video+audio";
+      if (options.defaultDownloadType !== "auto") {
+        downloadType = options.defaultDownloadType;
+      }
+
+      const extPref = data.isMusic ? options.ext.audio : options.ext.video;
+      const defaultFormat = data.isMusic ? data.audioFormats[0] : data.videoFormats[0];
+      const extension = resolveAutoExtension(extPref, defaultFormat?.mimeType ?? "", data.isMusic ? "audio" : "video");
       const filenameOutput = getCompatibleFilename(`${data.title}.${extension}`);
 
       return {

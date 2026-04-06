@@ -2,7 +2,7 @@
   import { CrossWorldMessage, crossWorldMessenger } from "../lib/cross-world-messenger";
   import { statusProgressItem, videoQueueItem } from "../lib/storage";
   import { cancelRequestSignal, downloadProgressStore } from "../lib/synced-stores.svelte";
-  import { getCompatibleFilename, getOutputExtension, waitForVideoElement } from "../lib/utils";
+  import { getCompatibleFilename, getOutputExtension, resolveAutoExtension, waitForVideoElement } from "../lib/utils";
   import DownloadOptions from "./DownloadOptions.svelte";
   import panelFocusStyles from "./panel-focus.css?inline";
   import {
@@ -48,7 +48,13 @@
   // -- Format selection -------------------------------------------------------
 
   let downloadType = $state<DownloadType>(
-    untrack(() => (videoData.isMusic ? "audio" : "video+audio"))
+    untrack(() => {
+      if (options.defaultDownloadType !== "auto") {
+        return options.defaultDownloadType;
+      }
+
+      return videoData.isMusic ? "audio" : "video+audio";
+    })
   );
   let selectedVideoFormat = $state<AdaptiveFormatItem | null>(
     untrack(() => videoData.videoFormats[0] ?? null)
@@ -58,7 +64,13 @@
   );
   let filename = $state(untrack(() => videoData.title));
   let extension = $state(
-    untrack(() => (videoData.isMusic ? options.ext.audio : options.ext.video))
+    untrack(() => {
+      const extPref = videoData.isMusic ? options.ext.audio : options.ext.video;
+      const defaultFormat = videoData.isMusic
+        ? videoData.audioFormats[0]
+        : videoData.videoFormats[0];
+      return resolveAutoExtension(extPref, defaultFormat?.mimeType ?? "", videoData.isMusic ? "audio" : "video");
+    })
   );
 
   // -- Derived ----------------------------------------------------------------
@@ -236,7 +248,9 @@
     isDownloading = false;
     progress = 0;
     downloadType = newType;
-    extension = newType === "audio" ? options.ext.audio : options.ext.video;
+    const extPref = newType === "audio" ? options.ext.audio : options.ext.video;
+    const format = newType === "audio" ? selectedAudioFormat : selectedVideoFormat;
+    extension = resolveAutoExtension(extPref, format?.mimeType ?? "", newType === "audio" ? "audio" : "video");
   }
 
   function startDownload() {
