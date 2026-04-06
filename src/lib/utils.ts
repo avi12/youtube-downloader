@@ -10,7 +10,12 @@ export function getCompatibleFilename(filename: string) {
 }
 
 export function getFileExtension(filename: string) {
-  return filename.split(".").pop() ?? "";
+  const iDot = filename.lastIndexOf(".");
+  if (iDot === -1) {
+    return "";
+  }
+
+  return filename.slice(iDot + 1);
 }
 
 // ─── MIME types ───────────────────────────────────────────────────────────────
