@@ -29,7 +29,10 @@ export enum CrossWorldMessage {
 interface PageMessengerSchema {
   [CrossWorldMessage.VideoData](data: VideoData): void;
   [CrossWorldMessage.Navigation](data: { url: string }): void;
-  [CrossWorldMessage.PanelContentReady](data: { contentId: string }): void;
+  [CrossWorldMessage.PanelContentReady](data: {
+    contentId: string;
+    videoData: VideoData;
+  }): void;
   [CrossWorldMessage.StreamError](data: { videoId: string;
     error: string; }): void;
   [CrossWorldMessage.DownloadRequest](data: DownloadRequest): void;

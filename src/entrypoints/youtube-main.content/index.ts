@@ -1041,7 +1041,10 @@ export default defineContentScript({
       // Notify the isolated world where to mount the Svelte panel.
       // Fire-and-forget: must not await, or the button setup below never runs
       // (sendMessage waits for a response that never comes for void handlers).
-      void crossWorldMessenger.sendMessage(CrossWorldMessage.PanelContentReady, { contentId: panelContentId });
+      void crossWorldMessenger.sendMessage(CrossWorldMessage.PanelContentReady, {
+        contentId: panelContentId,
+        videoData
+      });
 
       // Set Polymer scoping class and data AFTER insertion so connectedCallback
       // does not wipe the class attribute

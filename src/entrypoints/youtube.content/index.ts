@@ -29,7 +29,7 @@ import { MessageType, sendMessage, onMessage } from "@/lib/messaging";
 import { forwardSabrCredentialsWithRetry, listenForSabrBodyReady } from "@/lib/sabr-credentials";
 import { optionsItem } from "@/lib/storage";
 import { downloadProgressStore, SYNC_NAMESPACE, SyncKey } from "@/lib/synced-stores.svelte";
-import type { Options, VideoData } from "@/types";
+import type { Options } from "@/types";
 
 export default defineContentScript({
   matches: ["https://www.youtube.com/*"],
@@ -37,7 +37,6 @@ export default defineContentScript({
     // ─── State ───────────────────────────────────────────────────────────
 
     let currentOptions: Options = await optionsItem.getValue();
-    let currentVideoData: VideoData | null = null;
 
     // ─── Native download button visibility ──────────────────────────────
 
@@ -86,32 +85,22 @@ export default defineContentScript({
 
     // ─── Message bridging ───────────────────────────────────────────────
 
-    // The MAIN world writes video data to the synced store (videoDataStore).
-    // Components read from it reactively. But the orchestrator still needs
-    // currentVideoData for the watch page panel mount.
     crossWorldMessenger.onMessage(CrossWorldMessage.VideoData, async ({ data }) => {
-      if (location.pathname === "/watch") {
-        currentVideoData = data;
-      }
-
       await checkInterruptedDownload(data.videoId);
     });
 
     crossWorldMessenger.onMessage(CrossWorldMessage.Navigation, async ({ data }) => {
-      currentVideoData = null;
       await handlePageChange(data.url);
       void forwardSabrCredentialsWithRetry();
     });
 
     crossWorldMessenger.onMessage(CrossWorldMessage.PanelContentReady, ({ data }) => {
-      if (currentVideoData) {
-        mountPanelUi({
-          context,
-          contentId: data.contentId,
-          videoData: currentVideoData,
-          options: currentOptions
-        });
-      }
+      mountPanelUi({
+        context,
+        contentId: data.contentId,
+        videoData: data.videoData,
+        options: currentOptions
+      });
     });
 
     addEventListener("message", e => {
