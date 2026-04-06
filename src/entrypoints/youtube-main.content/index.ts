@@ -22,7 +22,7 @@ import {
   SyncKey,
   videoDataStore
 } from "@/lib/synced-stores.svelte";
-import { getCompatibleFilename } from "@/lib/utils";
+import { getCompatibleFilename, getOutputExtension } from "@/lib/utils";
 import {
   type AdaptiveFormatItem,
   ButtonSize,
@@ -65,14 +65,7 @@ declare const ytcfg: { get: (key: string) => unknown } | undefined;
 
 declare global {
   interface HTMLElementTagNameMap {
-    "ytd-watch-flexy": HTMLElement & {
-      playerData: PlayerResponse | null;
-      __data?: {
-        videoPrimaryInfoRenderer?: {
-          title?: { runs?: { text: string }[] };
-        };
-      };
-    };
+    "ytd-watch-flexy": HTMLElement & { playerData: PlayerResponse | null };
   }
 }
 
@@ -309,19 +302,6 @@ export default defineContentScript({
     async function buildAndDispatchVideoData(playerResponse: PlayerResponse) {
       const { clientVersion, clientName } = readYtcfg();
       const videoData: VideoData = buildVideoData({ playerResponse, clientVersion, clientName });
-
-      // YouTube A/B tests titles - the displayed title may differ from
-      // playerResponse.videoDetails.title. Prefer what the user sees
-      // via Polymer's runtime data model.
-      const titleRuns = document.querySelector("ytd-watch-flexy")
-        ?.__data?.videoPrimaryInfoRenderer?.title?.runs;
-      const displayedTitle = titleRuns
-        ?.map(run => {
-          return run.text;
-        }).join("");
-      if (displayedTitle) {
-        videoData.title = displayedTitle;
-      }
 
       videoDataCache.set(videoData.videoId, videoData);
       videoDataStore.set(videoData.videoId, videoData);
@@ -867,23 +847,21 @@ export default defineContentScript({
       }
 
       const { videoId } = videoData;
-      const defaultFormat = videoData.isMusic
-        ? videoData.audioFormats[0]
-        : videoData.videoFormats[0];
-      const isWebm = defaultFormat?.mimeType.includes("webm");
-      let defaultExtension = "mp4";
-      if (isWebm) {
-        defaultExtension = "webm";
-      } else if (videoData.isMusic) {
-        defaultExtension = "m4a";
+      let defaultVideoItag = videoData.videoFormats[0]?.itag ?? 0;
+      let defaultAudioItag = videoData.audioFormats[0]?.itag ?? 0;
+      const defaultVideoMime = videoData.videoFormats[0]?.mimeType ?? "video/mp4";
+      const defaultAudioMime = videoData.audioFormats[0]?.mimeType ?? "audio/mp4";
+      let defaultExtension: string;
+      if (videoData.isMusic) {
+        defaultExtension = defaultAudioMime.includes("webm") ? "webm" : "m4a";
+      } else {
+        defaultExtension = getOutputExtension(defaultVideoMime, defaultAudioMime, "mp4");
       }
 
       let defaultFilename = getCompatibleFilename(
         `${videoData.title}.${defaultExtension}`
       );
       let defaultQuality = "";
-      let defaultVideoItag = videoData.videoFormats[0]?.itag ?? 0;
-      let defaultAudioItag = videoData.audioFormats[0]?.itag ?? 0;
       const defaultDownloadType: DownloadType = videoData.isMusic ? "audio" : "video+audio";
 
       let isDownloading = false;
