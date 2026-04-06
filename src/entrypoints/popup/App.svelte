@@ -63,26 +63,37 @@
     videoDownloads.length + musicList.length + videoOnlyList.length
   );
 
-  let elDownloadsTab = $state<HTMLButtonElement>();
-  let elSettingsTab = $state<HTMLButtonElement>();
+  const tabs: { id: Tab; label: string }[] = [
+    {
+      id: Tab.Downloads,
+      label: "Downloads"
+    },
+    {
+      id: Tab.Settings,
+      label: "Settings"
+    }
+  ];
 
-  const tabElements = {
-    [Tab.Downloads]: () => elDownloadsTab,
-    [Tab.Settings]: () => elSettingsTab
-  };
+  const tabButtonElements: Record<string, HTMLButtonElement> = {};
 
-  const allTabs = Object.values(Tab);
+  function registerTabButton(tabId: Tab) {
+    return (element: Element) => {
+      if (element instanceof HTMLButtonElement) {
+        tabButtonElements[tabId] = element;
+      }
+    };
+  }
 
   function handleTabKeydown(e: KeyboardEvent) {
-    const iCurrent = allTabs.indexOf(activeTab);
+    const iCurrent = tabs.findIndex(tab => tab.id === activeTab);
     if (e.key === "ArrowRight" || e.key === "ArrowDown") {
       e.preventDefault();
-      activeTab = allTabs[(iCurrent + 1) % allTabs.length];
-      tabElements[activeTab]()?.focus();
+      activeTab = tabs[(iCurrent + 1) % tabs.length].id;
+      tabButtonElements[activeTab]?.focus();
     } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
       e.preventDefault();
-      activeTab = allTabs[(iCurrent - 1 + allTabs.length) % allTabs.length];
-      tabElements[activeTab]()?.focus();
+      activeTab = tabs[(iCurrent - 1 + tabs.length) % tabs.length].id;
+      tabButtonElements[activeTab]?.focus();
     }
   }
 
@@ -128,37 +139,26 @@
       </span>
     </div>
     <div class="tab-nav" role="tablist">
-      <button
-        bind:this={elDownloadsTab}
-        class="tab-nav-button"
-        class:tab-nav-button--active={activeTab === Tab.Downloads}
-        aria-controls="panel-downloads"
-        aria-selected={activeTab === Tab.Downloads}
-        onclick={() => (activeTab = Tab.Downloads)}
-        onkeydown={handleTabKeydown}
-        role="tab"
-        tabindex={activeTab === Tab.Downloads ? 0 : -1}
-      >
-        Downloads
-        {#if totalActiveDownloads > 0}
-          <span class="badge" aria-label="{totalActiveDownloads} active"
-            >{totalActiveDownloads}</span
-          >
-        {/if}
-      </button>
-      <button
-        bind:this={elSettingsTab}
-        class="tab-nav-button"
-        class:tab-nav-button--active={activeTab === Tab.Settings}
-        aria-controls="panel-settings"
-        aria-selected={activeTab === Tab.Settings}
-        onclick={() => (activeTab = Tab.Settings)}
-        onkeydown={handleTabKeydown}
-        role="tab"
-        tabindex={activeTab === Tab.Settings ? 0 : -1}
-      >
-        Settings
-      </button>
+      {#each tabs as tab (tab.id)}
+        <button
+          class="tab-nav-button"
+          class:tab-nav-button--active={activeTab === tab.id}
+          {@attach registerTabButton(tab.id)}
+          aria-controls="panel-{tab.id}"
+          aria-selected={activeTab === tab.id}
+          onclick={() => (activeTab = tab.id)}
+          onkeydown={handleTabKeydown}
+          role="tab"
+          tabindex={activeTab === tab.id ? 0 : -1}
+        >
+          {tab.label}
+          {#if tab.id === Tab.Downloads && totalActiveDownloads > 0}
+            <span class="badge" aria-label="{totalActiveDownloads} active"
+              >{totalActiveDownloads}</span
+            >
+          {/if}
+        </button>
+      {/each}
     </div>
   </header>
 
