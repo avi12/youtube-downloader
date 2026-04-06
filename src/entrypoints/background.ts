@@ -10,27 +10,16 @@ import { clearLocalStorage, interruptedDownloadsItem, isFFmpegReadyItem, statusP
 import { ProgressType } from "../types";
 
 async function fetchPlayerResponse(videoId: string) {
-  const response = await fetch(
-    "https://www.youtube.com/youtubei/v1/player?prettyPrint=false",
-    {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        videoId,
-        context: {
-          client: {
-            clientName: "WEB",
-            clientVersion: "2.20260403.01.00"
-          }
-        },
-        contentCheckOk: true,
-        racyCheckOk: true
-      })
-    }
-  );
+  const response = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
+    credentials: "include"
+  });
+  const html = await response.text();
+  const match = html.match(/var ytInitialPlayerResponse\s*=\s*(\{.+?\});\s*(?:var|<\/script>)/s);
+  if (!match) {
+    throw new Error("Could not extract player response from watch page");
+  }
 
-  return response.json();
+  return JSON.parse(match[1]);
 }
 
 export default defineBackground(() => {
@@ -275,6 +264,11 @@ export default defineBackground(() => {
 
     try {
       const playerResponse = await fetchPlayerResponse(videoId);
+      if (playerResponse.playabilityStatus?.status !== "OK") {
+        console.error("[ytdl:bg] Player status:", playerResponse.playabilityStatus?.status);
+        return false;
+      }
+
       const formats = playerResponse.streamingData?.adaptiveFormats ?? [];
       const videoFormat = formats.find((format: { itag: number }) => {
         return format.itag === videoItag;
@@ -282,6 +276,10 @@ export default defineBackground(() => {
       const audioFormat = formats.find((format: { itag: number }) => {
         return format.itag === audioItag;
       });
+      if (!videoFormat?.url && !audioFormat?.url) {
+        console.error("[ytdl:bg] No direct URLs - formats may be signature-ciphered");
+        return false;
+      }
 
       const videoUrl = downloadType !== "audio" ? videoFormat?.url : null;
       const audioUrl = downloadType !== "video" ? audioFormat?.url : null;
