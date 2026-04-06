@@ -304,6 +304,7 @@ export default defineContentScript({
       const videoData: VideoData = buildVideoData({ playerResponse, clientVersion, clientName });
       videoDataCache.set(videoData.videoId, videoData);
       videoDataStore.set(videoData.videoId, videoData);
+      void crossWorldMessenger.sendMessage(CrossWorldMessage.VideoData, videoData);
 
       // Start capturing SourceBuffer data for this video
       activeVideoId = videoData.videoId;
