@@ -1347,8 +1347,25 @@ export default defineContentScript({
 
     crossWorldMessenger.onMessage(CrossWorldMessage.SetButtonData, ({ data }) => {
       const element = document.querySelector(data.selector);
-      if (element) {
-        Object.assign(element, { data: data.data });
+      if (!element) {
+        return;
+      }
+
+      Object.assign(element, { data: data.data });
+
+      if (!element.hasAttribute("data-ytdl-click-bound")) {
+        element.setAttribute("data-ytdl-click-bound", "true");
+        element.addEventListener("click", e => {
+          e.stopPropagation();
+          const buttonId = element.getAttribute("data-ytdl-button-id");
+          if (buttonId) {
+            postMessage({
+              namespace: SYNC_NAMESPACE,
+              key: SyncKey.ButtonClick,
+              value: { buttonId }
+            }, location.origin);
+          }
+        });
       }
     });
 

@@ -93,6 +93,7 @@
 
   function handleDownloadClick() {
     console.log("[ytdl] handleDownloadClick", videoId, "downloadable:", videoData?.isDownloadable, "isDownloading:", isDownloading);
+
     if (!videoData?.isDownloadable) {
       return;
     }
@@ -363,15 +364,19 @@
     }
 
     elDownloadBtn = element;
-
-    element.addEventListener("click", e => {
-      e.stopPropagation();
-      e.preventDefault();
-      handleDownloadClick();
-    });
-
     refreshDownloadButton();
   }
+
+  addEventListener("message", e => {
+    if (e.data?.namespace !== SYNC_NAMESPACE || e.data.key !== SyncKey.ButtonClick) {
+      return;
+    }
+
+    const clickedId = e.data.value?.buttonId;
+    if (clickedId && elDownloadBtn?.getAttribute("data-ytdl-button-id") === clickedId) {
+      handleDownloadClick();
+    }
+  });
 
   function refreshChevronButton() {
     if (!elChevronBtn) {
@@ -398,16 +403,20 @@
     }
 
     elChevronBtn = element;
-
-    element.addEventListener("click", e => {
-      e.stopPropagation();
-      e.preventDefault();
-      togglePanel();
-    });
-
     refreshChevronButton();
     element.setAttribute("style", "margin-left: 0 !important");
   }
+
+  addEventListener("message", e => {
+    if (e.data?.namespace !== SYNC_NAMESPACE || e.data.key !== SyncKey.ButtonClick) {
+      return;
+    }
+
+    const clickedId = e.data.value?.buttonId;
+    if (clickedId && elChevronBtn?.getAttribute("data-ytdl-button-id") === clickedId) {
+      togglePanel();
+    }
+  });
 
   function attachButtonGroup(element: Element) {
     if (element instanceof HTMLElement) {

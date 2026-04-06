@@ -7,7 +7,7 @@
   import { MessageType, sendMessage } from "../lib/messaging";
   import { applyPolymerCustomStyles, PAPER_PROGRESS_THEME } from "../lib/polymer-utils";
   import { musicListItem, videoOnlyListItem, videoQueueItem } from "../lib/storage";
-  import { playlistMetadataSignal, videoDataStore } from "../lib/synced-stores.svelte";
+  import { playlistMetadataSignal, SYNC_NAMESPACE, SyncKey, videoDataStore } from "../lib/synced-stores.svelte";
   import { getCompatibleFilename, resolveAutoExtension } from "../lib/utils";
   import type { DownloadType, Options, VideoData } from "../types";
   import { SvelteMap } from "svelte/reactivity";
@@ -196,8 +196,6 @@
       return;
     }
 
-    element.addEventListener("click", handleDownloadClick);
-
     if (!element.hasAttribute("data-ytdl-button-id")) {
       element.setAttribute("data-ytdl-button-id", "playlist-download-btn");
     }
@@ -222,6 +220,16 @@
   function attachPlaylistProgress(element: Element) {
     applyPolymerCustomStyles(element, PAPER_PROGRESS_THEME);
   }
+
+  addEventListener("message", e => {
+    if (e.data?.namespace !== SYNC_NAMESPACE || e.data.key !== SyncKey.ButtonClick) {
+      return;
+    }
+
+    if (e.data.value?.buttonId === "playlist-download-btn") {
+      handleDownloadClick();
+    }
+  });
 </script>
 
 <div class="ytdl-playlist-container" aria-label="Playlist Downloader" role="region">
