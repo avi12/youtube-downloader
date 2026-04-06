@@ -1,3 +1,4 @@
+import App from "./App.svelte";
 import {
   isFFmpegReadyItem,
   musicListItem,
@@ -6,11 +7,8 @@ import {
   videoDetailsItem,
   videoOnlyListItem,
   videoQueueItem
-} from "../../lib/storage";
-import App from "./App.svelte";
+} from "@/lib/storage";
 import { mount } from "svelte";
-
-const elApp = document.getElementById("app")!;
 
 const [
   isFFmpegReady,
@@ -31,7 +29,7 @@ const [
 ]);
 
 mount(App, {
-  target: elApp,
+  target: document.getElementById("app")!,
   props: {
     initialIsFFmpegReady: isFFmpegReady,
     initialVideoQueue: videoQueue,

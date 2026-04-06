@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { MessageType, sendMessage } from "../../lib/messaging";
+  import SettingsTab from "./SettingsTab.svelte";
+  import { MessageType, sendMessage } from "@/lib/messaging";
   import {
     isFFmpegReadyItem,
     musicListItem,
@@ -8,10 +9,9 @@
     videoDetailsItem,
     videoOnlyListItem,
     videoQueueItem
-  } from "../../lib/storage";
-  import { initialOptions as defaultOptions } from "../../lib/utils";
-  import type { Options, ProgressType, VideoQueueItem } from "../../types";
-  import SettingsTab from "./SettingsTab.svelte";
+  } from "@/lib/storage";
+  import { initialOptions as defaultOptions } from "@/lib/utils";
+  import type { Options, ProgressType, VideoQueueItem } from "@/types";
   import { onMount } from "svelte";
 
   // --- Props (pre-fetched in main.ts for instant render) ---------------------
