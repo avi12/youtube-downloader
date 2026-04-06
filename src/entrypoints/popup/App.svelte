@@ -73,26 +73,26 @@
 
   // --- Actions ---------------------------------------------------------------
 
-  async function cancelDownload(videoIds: string[]) {
-    await sendMessage(MessageType.CancelDownload, { videoIds });
+  function cancelDownload(videoIds: string[]) {
+    void sendMessage(MessageType.CancelDownload, { videoIds });
   }
 
-  async function cancelAllInQueue() {
+  function cancelAllInQueue() {
     const allIds = videoQueue.map(item => item.videoId);
     if (allIds.length > 0) {
-      await cancelDownload(allIds);
+      cancelDownload(allIds);
     }
   }
 
-  async function cancelAllMusic() {
+  function cancelAllMusic() {
     if (musicList.length > 0) {
-      await cancelDownload(musicList);
+      cancelDownload(musicList);
     }
   }
 
-  async function cancelAllVideoOnly() {
+  function cancelAllVideoOnly() {
     if (videoOnlyList.length > 0) {
-      await cancelDownload(videoOnlyList);
+      cancelDownload(videoOnlyList);
     }
   }
 
