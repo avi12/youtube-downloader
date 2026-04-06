@@ -18,6 +18,7 @@
     onaudioformatchange: (format: AdaptiveFormatItem) => void;
     onfilenamechange: (filename: string) => void;
     onextensionchange: (extension: string) => void;
+    onvalidationchange: (isValid: boolean) => void;
   };
 
   const {
@@ -33,7 +34,8 @@
     onvideoformatchange,
     onaudioformatchange,
     onfilenamechange,
-    onextensionchange
+    onextensionchange,
+    onvalidationchange
   }: Props = $props();
 
   const extensionType = $derived(downloadType === "audio" ? "audio" : "video");
@@ -70,6 +72,10 @@
 
   const filenameValidationError = $derived(getFilenameError(fullFilename, extensionType));
   const isFilenameValid = $derived(!filenameValidationError);
+
+  $effect(() => {
+    onvalidationchange(isFilenameValid);
+  });
 
   function validateFilename(elInput: HTMLInputElement, value: string) {
     const errorMessage = getFilenameError(value, extensionType);

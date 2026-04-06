@@ -209,6 +209,10 @@
 
   $effect(() => videoQueueItem.watch(onQueueChange));
 
+  // -- Filename validation ------------------------------------------------------
+
+  let isFilenameValid = $state(true);
+
   // -- Inert focus trap --------------------------------------------------------
 
   let removeInert: (() => void) | null = null;
@@ -236,7 +240,7 @@
   }
 
   function startDownload() {
-    if (isDownloading || !isDownloadable || !selectedAudioFormat) {
+    if (isDownloading || !isDownloadable || !isFilenameValid || !selectedAudioFormat) {
       return;
     }
 
@@ -392,9 +396,9 @@
         style: ButtonStyle.CallToAction,
         type: ButtonType.Filled,
         buttonSize: ButtonSize.Default,
-        state: isDownloadable ? ButtonState.Active : ButtonState.Disabled,
+        state: isDownloadable && isFilenameValid ? ButtonState.Active : ButtonState.Disabled,
         isFullWidth: true,
-        isDisabled: !isDownloadable,
+        isDisabled: !isDownloadable || !isFilenameValid,
         tooltip: ""
       });
     });
@@ -554,6 +558,7 @@
       ondownloadtypechange={handleDownloadTypeChange}
       onextensionchange={newExtension => (extension = newExtension)}
       onfilenamechange={newFilename => (filename = newFilename)}
+      onvalidationchange={isValid => (isFilenameValid = isValid)}
       onvideoformatchange={format => (selectedVideoFormat = format)}
       {selectedAudioFormat}
       {selectedVideoFormat}
