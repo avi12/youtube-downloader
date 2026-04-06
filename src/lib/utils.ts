@@ -33,24 +33,17 @@ export const extensionToMimeAll = {
   webm: "video/webm"
 } as const;
 
-interface ExtensionsByMediaType {
-  video: Record<string, string>;
-  audio: Record<string, string>;
+function filterExtensionsByPrefix(prefix: string) {
+  return Object.fromEntries(
+    Object.entries(extensionToMimeAll).filter(([, mime]) => {
+      return mime.startsWith(prefix);
+    })
+  );
 }
 
-export const extensionToMime: ExtensionsByMediaType = {
-  video: Object.fromEntries(
-    Object.entries(extensionToMimeAll).filter(([, mimeType]) => {
-      return mimeType.startsWith("video");
-    }
-    )
-  ),
-  audio: Object.fromEntries(
-    Object.entries(extensionToMimeAll).filter(([, mimeType]) => {
-      return mimeType.startsWith("audio");
-    }
-    )
-  )
+export const extensionToMime = {
+  video: filterExtensionsByPrefix("video"),
+  audio: filterExtensionsByPrefix("audio")
 };
 
 export const supportedExtensions = {
