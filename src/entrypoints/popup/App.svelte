@@ -43,7 +43,12 @@
     initialOptions
   }: Props = $props();
 
-  let activeTab = $state<"queue" | "settings">("queue");
+  enum Tab {
+    Downloads = "downloads",
+    Settings = "settings"
+  }
+
+  let activeTab = $state(Tab.Downloads);
   let isFFmpegReady = $state(untrack(() => initialIsFFmpegReady));
   let videoDownloads = $state(untrack(() => initialVideoQueue));
   let musicList = $state(untrack(() => initialMusicList));
@@ -56,7 +61,30 @@
     videoDownloads.length + musicList.length + videoOnlyList.length
   );
 
-  function watchStorageChanges() {
+  let elDownloadsTab = $state<HTMLButtonElement>();
+  let elSettingsTab = $state<HTMLButtonElement>();
+
+  const tabElements = {
+    [Tab.Downloads]: () => elDownloadsTab,
+    [Tab.Settings]: () => elSettingsTab
+  };
+
+  const allTabs = Object.values(Tab);
+
+  function handleTabKeydown(e: KeyboardEvent) {
+    const iCurrent = allTabs.indexOf(activeTab);
+    if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+      e.preventDefault();
+      activeTab = allTabs[(iCurrent + 1) % allTabs.length];
+      tabElements[activeTab]()?.focus();
+    } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+      e.preventDefault();
+      activeTab = allTabs[(iCurrent - 1 + allTabs.length) % allTabs.length];
+      tabElements[activeTab]()?.focus();
+    }
+  }
+
+  onMount(() => {
     const unwatches = [
       isFFmpegReadyItem.watch(value => {
         isFFmpegReady = value ?? false;
@@ -80,28 +108,13 @@
         options = value ?? { ...defaultOptions };
       })
     ];
+
     return () => {
       for (const unwatch of unwatches) {
         unwatch();
       }
     };
-  }
-
-  function handleTabKeydown(e: KeyboardEvent) {
-    const tabs: ("queue" | "settings")[] = ["queue", "settings"];
-    const iCurrent = tabs.indexOf(activeTab);
-    if (e.key === "ArrowRight" || e.key === "ArrowDown") {
-      e.preventDefault();
-      activeTab = tabs[(iCurrent + 1) % tabs.length];
-      document.getElementById(`tab-${activeTab}`)?.focus();
-    } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
-      e.preventDefault();
-      activeTab = tabs[(iCurrent - 1 + tabs.length) % tabs.length];
-      document.getElementById(`tab-${activeTab}`)?.focus();
-    }
-  }
-
-  onMount(watchStorageChanges);
+  });
 </script>
 
 <div class="popup-container">
@@ -114,15 +127,15 @@
     </div>
     <div class="tab-nav" role="tablist">
       <button
-        id="tab-queue"
+        bind:this={elDownloadsTab}
         class="tab-nav-button"
-        class:tab-nav-button--active={activeTab === "queue"}
-        aria-controls="panel-queue"
-        aria-selected={activeTab === "queue"}
-        onclick={() => (activeTab = "queue")}
+        class:tab-nav-button--active={activeTab === Tab.Downloads}
+        aria-controls="panel-downloads"
+        aria-selected={activeTab === Tab.Downloads}
+        onclick={() => (activeTab = Tab.Downloads)}
         onkeydown={handleTabKeydown}
         role="tab"
-        tabindex={activeTab === "queue" ? 0 : -1}
+        tabindex={activeTab === Tab.Downloads ? 0 : -1}
       >
         Downloads
         {#if totalActiveDownloads > 0}
@@ -132,15 +145,15 @@
         {/if}
       </button>
       <button
-        id="tab-settings"
+        bind:this={elSettingsTab}
         class="tab-nav-button"
-        class:tab-nav-button--active={activeTab === "settings"}
+        class:tab-nav-button--active={activeTab === Tab.Settings}
         aria-controls="panel-settings"
-        aria-selected={activeTab === "settings"}
-        onclick={() => (activeTab = "settings")}
+        aria-selected={activeTab === Tab.Settings}
+        onclick={() => (activeTab = Tab.Settings)}
         onkeydown={handleTabKeydown}
         role="tab"
-        tabindex={activeTab === "settings" ? 0 : -1}
+        tabindex={activeTab === Tab.Settings ? 0 : -1}
       >
         Settings
       </button>
@@ -148,12 +161,11 @@
   </header>
 
   <div
-    id={activeTab === "queue" ? "panel-queue" : "panel-settings"}
+    id="panel-{activeTab}"
     class="popup-content"
-    aria-labelledby={activeTab === "queue" ? "tab-queue" : "tab-settings"}
     role="tabpanel"
   >
-    {#if activeTab === "queue"}
+    {#if activeTab === Tab.Downloads}
       <DownloadsTab
         {isFFmpegReady}
         {musicList}

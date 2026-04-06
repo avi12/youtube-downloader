@@ -1,7 +1,6 @@
 <script lang="ts">
   import DownloadItem from "./DownloadItem.svelte";
   import { MessageType, sendMessage } from "@/lib/messaging";
-  import { videoQueueItem } from "@/lib/storage";
   import { ProgressType } from "@/types";
   import type { VideoQueueItem } from "@/types";
 
@@ -55,30 +54,6 @@
     if (videoOnlyList.length > 0) {
       cancelDownload(videoOnlyList);
     }
-  }
-
-  let draggedVideoId = $state<string | null>(null);
-  let dragOverVideoId = $state<string | null>(null);
-
-  async function handleDrop() {
-    if (!draggedVideoId || !dragOverVideoId || draggedVideoId === dragOverVideoId) {
-      return;
-    }
-
-    const fromIndex = videoDownloads.findIndex(item => item.videoId === draggedVideoId);
-    const toIndex = videoDownloads.findIndex(item => item.videoId === dragOverVideoId);
-    if (fromIndex === -1 || toIndex === -1) {
-      return;
-    }
-
-    const reordered = [...videoDownloads];
-    const [removed] = reordered.splice(fromIndex, 1);
-    reordered.splice(toIndex, 0, removed);
-
-    await videoQueueItem.setValue(reordered);
-
-    draggedVideoId = null;
-    dragOverVideoId = null;
   }
 
   function getProgressLabel(videoId: string) {
@@ -141,19 +116,9 @@
         {#each videoDownloads as item, index (item.videoId)}
           <li
             class="download-item"
-            class:download-item--current={index === 0}
-            class:download-item--drag-over={dragOverVideoId === item.videoId}
             aria-label={getFilename(item.videoId)}
-            draggable="true"
-            ondragover={e => {
-              e.preventDefault();
-              dragOverVideoId = item.videoId;
-            }}
-            ondragstart={() => (draggedVideoId = item.videoId)}
-            ondrop={handleDrop}
             role="listitem"
           >
-            <span class="queue-position" aria-hidden="true">{index + 1}</span>
             <DownloadItem
               filename={getFilename(item.videoId)}
               oncancel={() => cancelDownload([item.videoId])}
@@ -298,34 +263,4 @@
     transition: background-color 200ms;
   }
 
-  .download-item--current {
-    background: var(--accent-container);
-  }
-
-  .download-item--drag-over {
-    outline: 2px solid var(--accent);
-    outline-offset: -2px;
-  }
-
-  .download-item[draggable="true"] {
-    cursor: grab;
-
-    &:active {
-      cursor: grabbing;
-    }
-  }
-
-  .queue-position {
-    display: flex;
-    flex-shrink: 0;
-    justify-content: center;
-    align-items: center;
-    width: 24px;
-    height: 24px;
-    border-radius: 12px;
-    background: var(--surface-high);
-    color: var(--fg-muted);
-    font-weight: 600;
-    font-size: 0.6875rem;
-  }
 </style>
