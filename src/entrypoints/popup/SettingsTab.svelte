@@ -281,6 +281,7 @@
     flex-shrink: 0;
     width: 18px;
     height: 18px;
+    margin-top: 1px;
     accent-color: var(--accent);
     cursor: pointer;
   }
