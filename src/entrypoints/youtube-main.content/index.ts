@@ -1345,18 +1345,23 @@ export default defineContentScript({
       };
     }
 
-    crossWorldMessenger.onMessage(CrossWorldMessage.SetButtonData, ({ data }) => {
-      const element = document.querySelector(data.selector);
+    addEventListener("message", e => {
+      if (e.data?.namespace !== SYNC_NAMESPACE || e.data.key !== SyncKey.SetButtonData) {
+        return;
+      }
+
+      const { selector, data: buttonData } = e.data.value ?? {};
+      const element = document.querySelector<HTMLElement>(selector);
       if (!element || !("data" in element)) {
         return;
       }
 
-      element.data = data.data;
+      element.data = buttonData;
 
       if (!element.hasAttribute("data-ytdl-click-bound")) {
         element.setAttribute("data-ytdl-click-bound", "true");
-        element.addEventListener("click", e => {
-          e.stopPropagation();
+        element.addEventListener("click", clickEvent => {
+          clickEvent.stopPropagation();
           const buttonId = element.getAttribute("data-ytdl-button-id");
           if (buttonId) {
             postMessage({

@@ -1,4 +1,4 @@
-import type { ButtonViewModelData, DownloadRequest, ProgressUpdate, VideoData } from "@/types";
+import type { DownloadRequest, ProgressUpdate, VideoData } from "@/types";
 import { defineCustomEventMessaging } from "@webext-core/messaging/page";
 
 // ─── Protocol definition ──────────────────────────────────────────────────────
@@ -23,8 +23,7 @@ export enum CrossWorldMessage {
   RefreshPoToken = "refreshPoToken",
 
   // Isolated world → all (MAIN world + Svelte components)
-  Progress = "progress",
-  SetButtonData = "setButtonData"
+  Progress = "progress"
 }
 
 interface PageMessengerSchema {
@@ -51,10 +50,6 @@ interface PageMessengerSchema {
       bodyBase64: string; } | null;
   [CrossWorldMessage.RefreshPoToken](data: { videoId: string }): string | null;
   [CrossWorldMessage.Progress](data: ProgressUpdate): void;
-  [CrossWorldMessage.SetButtonData](data: {
-    selector: string;
-    data: ButtonViewModelData;
-  }): void;
 }
 
 export const crossWorldMessenger = defineCustomEventMessaging<PageMessengerSchema>({ namespace: "ytdl" });

@@ -24,6 +24,7 @@ export enum SyncKey {
   DownloadProgress = "download-progress",
   VideoDataRequest = "video-data-request",
   StreamData = "stream-data",
+  SetButtonData = "set-button-data",
   ButtonClick = "button-click"
 }
 

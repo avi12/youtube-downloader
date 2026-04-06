@@ -3,7 +3,6 @@
    * Playlist-level download button.
    * Appears in the playlist header and allows downloading all checked videos.
    */
-  import { CrossWorldMessage, crossWorldMessenger } from "../lib/cross-world-messenger";
   import { MessageType, sendMessage } from "../lib/messaging";
   import { applyPolymerCustomStyles, PAPER_PROGRESS_THEME } from "../lib/polymer-utils";
   import { musicListItem, videoOnlyListItem, videoQueueItem } from "../lib/storage";
@@ -200,21 +199,25 @@
       element.setAttribute("data-ytdl-button-id", "playlist-download-btn");
     }
 
-    void crossWorldMessenger.sendMessage(CrossWorldMessage.SetButtonData, {
-      selector: `[data-ytdl-button-id="${element.getAttribute("data-ytdl-button-id")}"]`,
-      data: {
-        iconName: isDownloading ? "CLOSE" : "DOWNLOAD",
-        title: downloadButtonLabel,
-        accessibilityText: downloadButtonLabel,
-        style: "MONO",
-        type: "TONAL",
-        buttonSize: "DEFAULT",
-        state: checkedDownloadableVideos.length === 0 && !isDownloading ? "DISABLED" : "ACTIVE",
-        isFullWidth: false,
-        isDisabled: checkedDownloadableVideos.length === 0 && !isDownloading,
-        tooltip: downloadButtonLabel
+    postMessage({
+      namespace: SYNC_NAMESPACE,
+      key: SyncKey.SetButtonData,
+      value: {
+        selector: `[data-ytdl-button-id="${element.getAttribute("data-ytdl-button-id")}"]`,
+        data: {
+          iconName: isDownloading ? "CLOSE" : "DOWNLOAD",
+          title: downloadButtonLabel,
+          accessibilityText: downloadButtonLabel,
+          style: "MONO",
+          type: "TONAL",
+          buttonSize: "DEFAULT",
+          state: checkedDownloadableVideos.length === 0 && !isDownloading ? "DISABLED" : "ACTIVE",
+          isFullWidth: false,
+          isDisabled: checkedDownloadableVideos.length === 0 && !isDownloading,
+          tooltip: downloadButtonLabel
+        }
       }
-    });
+    }, location.origin);
   }
 
   function attachPlaylistProgress(element: Element) {
