@@ -22,7 +22,11 @@ export {
 
 export type DownloadType = "video+audio" | "video" | "audio";
 
-export type ProgressType = "video" | "audio" | "ffmpeg";
+export enum ProgressType {
+  Video = "video",
+  Audio = "audio",
+  FFmpeg = "ffmpeg"
+}
 
 export type ProgressUpdate = {
   videoId: string;

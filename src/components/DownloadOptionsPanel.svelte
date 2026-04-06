@@ -15,7 +15,7 @@
     type ButtonViewModelData,
     type DownloadType,
     type Options,
-    type ProgressType,
+    ProgressType,
     isPolymerProgressElement,
     type VideoData
   } from "@/types";
@@ -97,7 +97,7 @@
       return 0;
     }
 
-    if (progressType === "ffmpeg") {
+    if (progressType === ProgressType.FFmpeg) {
       return 80 + progress * 20;
     }
 
@@ -589,7 +589,7 @@
         ></tp-yt-paper-progress>
         <div class="ytdl-progress-row">
           <span class="ytdl-progress-label" aria-live="polite">
-            {Math.round(displayProgress)}% - {progressType === "ffmpeg" ? "Processing" : "Downloading"}
+            {Math.round(displayProgress)}% - {progressType === ProgressType.FFmpeg ? "Processing" : "Downloading"}
           </span>
           {@render cancelBtn()}
         </div>

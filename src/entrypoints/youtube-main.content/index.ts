@@ -33,6 +33,7 @@ import {
   type DownloadRequest,
   type DownloadType,
   IconName,
+  ProgressType,
   type PlayerResponse,
   type ProgressUpdate,
   type VideoData,
@@ -687,7 +688,7 @@ export default defineContentScript({
                         isDone: false,
                         isQueued: false,
                         progress: Math.min(totalReceivedBytes / totalExpectedBytes, 1),
-                        progressType: "video"
+                        progressType: ProgressType.Video
                       }
                     }
                   }, location.origin);

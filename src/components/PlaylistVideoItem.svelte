@@ -10,6 +10,7 @@
     videoDataStore
   } from "../lib/synced-stores.svelte";
   import { getCompatibleFilename, getOutputExtension, resolveAutoExtension } from "../lib/utils";
+  import { ProgressType } from "../types";
   import type { DownloadType } from "../types";
   import {
     ButtonSize,
@@ -161,7 +162,7 @@
       return 0;
     }
 
-    const isMuxPhase = downloadState.progressType === "ffmpeg";
+    const isMuxPhase = downloadState.progressType === ProgressType.FFmpeg;
     if (isMuxPhase) {
       return 80 + downloadState.progress * 20;
     }
@@ -188,7 +189,7 @@
         return buttonLabel();
       }
 
-      const phase = downloadState.progressType === "ffmpeg" ? "Processing" : "Downloading";
+      const phase = downloadState.progressType === ProgressType.FFmpeg ? "Processing" : "Downloading";
       return `${Math.round(displayProgress)}% - ${phase}`;
     }
 

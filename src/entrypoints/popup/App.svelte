@@ -11,8 +11,14 @@
     videoQueueItem
   } from "@/lib/storage";
   import { initialOptions as defaultOptions } from "@/lib/utils";
-  import type { Options, ProgressType, VideoQueueItem } from "@/types";
+  import { ProgressType } from "@/types";
+  import type { Options, VideoQueueItem } from "@/types";
   import { onMount } from "svelte";
+
+  const percentFormatter = new Intl.NumberFormat(browser.i18n.getUILanguage(), {
+    style: "percent",
+    maximumFractionDigits: 1
+  });
 
   // --- Props (pre-fetched in main.ts for instant render) ---------------------
 
@@ -174,12 +180,12 @@
       return "";
     }
 
-    const percentage = (prog.progress * 100).toFixed(1);
-    if (prog.progressType === "ffmpeg") {
-      return `${percentage}% stitching`;
+    const percentage = percentFormatter.format(prog.progress);
+    if (prog.progressType === ProgressType.FFmpeg) {
+      return `${percentage} stitching`;
     }
 
-    return `${percentage}% (${prog.progressType})`;
+    return `${percentage} (${prog.progressType})`;
   }
 </script>
 

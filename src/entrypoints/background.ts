@@ -7,6 +7,7 @@ import {
   startSabrRequestCapture
 } from "../lib/sabr-request-capture";
 import { clearLocalStorage, interruptedDownloadsItem, isFFmpegReadyItem, statusProgressItem } from "../lib/storage";
+import { ProgressType } from "../types";
 import type { DownloadType } from "../types";
 
 export default defineBackground(() => {
@@ -503,7 +504,7 @@ export default defineBackground(() => {
       {
         videoId: data.videoId,
         progress: 0,
-        progressType: "video",
+        progressType: ProgressType.Video,
         isRemoved: true
       },
       tabId
@@ -556,7 +557,7 @@ export default defineBackground(() => {
         {
           videoId,
           progress: 0,
-          progressType: "video",
+          progressType: ProgressType.Video,
           isRemoved: true
         },
         tabId

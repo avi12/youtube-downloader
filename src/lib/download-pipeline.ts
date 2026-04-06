@@ -9,7 +9,8 @@
 
 import { MessageType, sendMessage } from "./messaging";
 import { getCompatibleFilename, getFileExtension, getMimeType, getOutputExtension } from "./utils";
-import type { DownloadType, ProcessStreamData, ProgressType, VideoMetadata } from "@/types";
+import { ProgressType } from "@/types";
+import type { DownloadType, ProcessStreamData, VideoMetadata } from "@/types";
 import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { zipSync } from "fflate";
 
@@ -319,7 +320,7 @@ async function processSingleMedia(item: ProcessStreamData) {
   await reportProgress({
     videoId,
     progress: 0.99,
-    progressType: type === "audio" ? "audio" : "video",
+    progressType: type === "audio" ? ProgressType.Audio : ProgressType.Video,
     tabId
   });
 
@@ -328,7 +329,7 @@ async function processSingleMedia(item: ProcessStreamData) {
     await reportProgress({
       videoId,
       progress: 0.5,
-      progressType: "ffmpeg",
+      progressType: ProgressType.FFmpeg,
       tabId
     });
 
@@ -340,7 +341,7 @@ async function processSingleMedia(item: ProcessStreamData) {
     await reportProgress({
       videoId,
       progress: 1,
-      progressType: "ffmpeg",
+      progressType: ProgressType.FFmpeg,
       tabId
     });
   }
@@ -399,7 +400,7 @@ async function processVideoAudio(item: ProcessStreamData, ffmpeg: FFmpeg) {
   await reportProgress({
     videoId,
     progress: 0.5,
-    progressType: "video",
+    progressType: ProgressType.Video,
     tabId
   });
 
@@ -418,7 +419,7 @@ async function processVideoAudio(item: ProcessStreamData, ffmpeg: FFmpeg) {
     void reportProgress({
       videoId,
       progress: 0.5 + progress * 0.5,
-      progressType: "ffmpeg",
+      progressType: ProgressType.FFmpeg,
       tabId
     });
   }
