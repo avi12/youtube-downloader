@@ -8,7 +8,30 @@ import {
 } from "../lib/sabr-request-capture";
 import { clearLocalStorage, interruptedDownloadsItem, isFFmpegReadyItem, statusProgressItem } from "../lib/storage";
 import { ProgressType } from "../types";
-import type { DownloadType } from "../types";
+
+async function fetchPlayerResponse(videoId: string) {
+  const response = await fetch(
+    "https://www.youtube.com/youtubei/v1/player?prettyPrint=false",
+    {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        videoId,
+        context: {
+          client: {
+            clientName: "WEB",
+            clientVersion: "2.20260403.01.00"
+          }
+        },
+        contentCheckOk: true,
+        racyCheckOk: true
+      })
+    }
+  );
+
+  return response.json();
+}
 
 export default defineBackground(() => {
   startSabrRequestCapture();
@@ -242,24 +265,34 @@ export default defineBackground(() => {
 
   onMessage(MessageType.DirectDownload, async ({ data, sender }) => {
     const tabId = sender.tab?.id ?? 0;
-
     const {
-      videoId, videoUrl, audioUrl, filenameOutput,
-      videoMimeType, audioMimeType, type: downloadType
-    } = data as {
-      videoId: string;
-      videoUrl: string | null;
-      audioUrl: string | null;
-      filenameOutput: string;
-      videoMimeType: string;
-      audioMimeType: string;
-      type: DownloadType;
-    };
+      videoId,
+      videoItag,
+      audioItag,
+      filenameOutput,
+      type: downloadType
+    } = data;
 
     try {
+      const playerResponse = await fetchPlayerResponse(videoId);
+      const formats = playerResponse.streamingData?.adaptiveFormats ?? [];
+      const videoFormat = formats.find((format: { itag: number }) => {
+        return format.itag === videoItag;
+      });
+      const audioFormat = formats.find((format: { itag: number }) => {
+        return format.itag === audioItag;
+      });
+
+      const videoUrl = downloadType !== "audio" ? videoFormat?.url : null;
+      const audioUrl = downloadType !== "video" ? audioFormat?.url : null;
+      const videoMimeType = videoFormat?.mimeType?.split(";")?.[0] ?? "video/mp4";
+      const audioMimeType = audioFormat?.mimeType?.split(";")?.[0] ?? "audio/mp4";
+
       async function fetchStream(url: string) {
-        const headers = { "Accept-Encoding": "identity" };
-        const response = await fetch(url, { headers });
+        const response = await fetch(url, {
+          credentials: "include",
+          headers: { "Accept-Encoding": "identity" }
+        });
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}`);
         }
@@ -268,13 +301,17 @@ export default defineBackground(() => {
       }
 
       const [videoData, audioData] = await Promise.all([
-        videoUrl && downloadType !== "audio" ? fetchStream(videoUrl) : Promise.resolve(null),
-        audioUrl && downloadType !== "video" ? fetchStream(audioUrl) : Promise.resolve(null)
+        videoUrl ? fetchStream(videoUrl) : Promise.resolve(null),
+        audioUrl ? fetchStream(audioUrl) : Promise.resolve(null)
       ]);
-      console.log(`[ytdl:bg] directDownload: video=${videoData?.byteLength ?? 0} audio=${audioData?.byteLength ?? 0}`);
 
       await ensureProcessor();
-      await sendChunksToProcessor({ videoId, tabId, videoData, audioData });
+      await sendChunksToProcessor({
+        videoId,
+        tabId,
+        videoData,
+        audioData
+      });
       await sendMessage(MessageType.ProcessStreamEnd, {
         type: downloadType,
         videoId,

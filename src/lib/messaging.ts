@@ -97,11 +97,9 @@ interface ProtocolMap {
   // Content script → Background: download video/audio via direct URL
   directDownload(data: {
     videoId: string;
-    videoUrl: string | null;
-    audioUrl: string | null;
+    videoItag: number;
+    audioItag: number;
     filenameOutput: string;
-    videoMimeType: string;
-    audioMimeType: string;
     type: DownloadType;
   }): boolean;
 
