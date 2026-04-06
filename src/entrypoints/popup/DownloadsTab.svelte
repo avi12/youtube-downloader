@@ -34,8 +34,6 @@
     videoDownloads.length + musicList.length + videoOnlyList.length
   );
 
-  // --- Actions ---------------------------------------------------------------
-
   function cancelDownload(videoIds: string[]) {
     void sendMessage(MessageType.CancelDownload, { videoIds });
   }
@@ -58,8 +56,6 @@
       cancelDownload(videoOnlyList);
     }
   }
-
-  // --- Drag-and-drop ---------------------------------------------------------
 
   let draggedVideoId = $state<string | null>(null);
   let dragOverVideoId = $state<string | null>(null);
@@ -84,8 +80,6 @@
     draggedVideoId = null;
     dragOverVideoId = null;
   }
-
-  // --- Helpers ---------------------------------------------------------------
 
   function getProgressLabel(videoId: string) {
     const prog = statusProgress[videoId];

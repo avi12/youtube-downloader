@@ -20,8 +20,6 @@
     maximumFractionDigits: 1
   });
 
-  // --- Props (pre-fetched in main.ts for instant render) ---------------------
-
   type Props = {
     initialIsFFmpegReady: boolean;
     initialVideoQueue: VideoQueueItem[];
@@ -45,8 +43,6 @@
     initialOptions
   }: Props = $props();
 
-  // --- State -----------------------------------------------------------------
-
   let activeTab = $state<"queue" | "settings">("queue");
   let isFFmpegReady = $state(untrack(() => initialIsFFmpegReady));
   let videoDownloads = $state(untrack(() => initialVideoQueue));
@@ -56,15 +52,11 @@
   let statusProgress = $state(untrack(() => initialStatusProgress));
   let options = $state<Options>(untrack(() => initialOptions));
 
-  // --- Derived ---------------------------------------------------------------
-
   const totalActiveDownloads = $derived(
     videoDownloads.length + musicList.length + videoOnlyList.length
   );
 
-  // --- Storage listener ------------------------------------------------------
-
-  function listenToStorageChanges() {
+  function watchStorageChanges() {
     const unwatches = [
       isFFmpegReadyItem.watch(value => {
         isFFmpegReady = value ?? false;
@@ -95,8 +87,6 @@
     };
   }
 
-  // --- Tabs ------------------------------------------------------------------
-
   function handleTabKeydown(e: KeyboardEvent) {
     const tabs: ("queue" | "settings")[] = ["queue", "settings"];
     const iCurrent = tabs.indexOf(activeTab);
@@ -111,9 +101,7 @@
     }
   }
 
-  // --- Lifecycle -------------------------------------------------------------
-
-  onMount(listenToStorageChanges);
+  onMount(watchStorageChanges);
 </script>
 
 <div class="popup-container">
@@ -192,7 +180,6 @@
     }
 
     body {
-      /* M3 Expressive - light theme tokens */
       --md-sys-color-surface: #fef7ff;
       --md-sys-color-surface-container: #f3edf7;
       --md-sys-color-surface-container-high: #ece6f0;
@@ -209,7 +196,6 @@
       --md-sys-color-error-container: #f9dedc;
       --md-sys-color-on-error-container: #410e0b;
 
-      /* Semantic aliases */
       --bg: var(--md-sys-color-surface);
       --fg: var(--md-sys-color-on-surface);
       --fg-muted: var(--md-sys-color-on-surface-variant);
