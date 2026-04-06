@@ -707,17 +707,12 @@
   .popup-container {
     display: flex;
     flex-direction: column;
-    height: 100%;
   }
 
   .popup-header {
-    position: sticky;
-    top: 0;
-    z-index: 10;
     padding-block: 12px 0;
     padding-inline: 16px;
     border-bottom: 1px solid var(--border);
-    background: var(--bg);
   }
 
   .popup-header-top {
