@@ -682,9 +682,7 @@
     --surface: rgb(0 0 0 / 3%);
     --surface-active: rgb(6 95 212 / 5%);
 
-    overflow: hidden;
     width: 420px;
-    max-height: 600px;
     background-color: var(--bg);
     color: var(--fg);
     font-family: Roboto, Arial, sans-serif;
