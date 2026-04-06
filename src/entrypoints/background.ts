@@ -10,8 +10,15 @@ import { clearLocalStorage, interruptedDownloadsItem, isFFmpegReadyItem, statusP
 import { ProgressType } from "../types";
 
 async function fetchPlayerResponse(videoId: string) {
+  const youtubeCookies = await browser.cookies.getAll({ domain: ".youtube.com" });
+  const cookieString = youtubeCookies
+    .map(cookie => {
+      return `${cookie.name}=${cookie.value}`;
+    })
+    .join("; ");
+
   const response = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
-    credentials: "include"
+    headers: { cookie: cookieString }
   });
   const html = await response.text();
 
@@ -304,10 +311,20 @@ export default defineBackground(() => {
       const videoMimeType = videoFormat?.mimeType?.split(";")?.[0] ?? "video/mp4";
       const audioMimeType = audioFormat?.mimeType?.split(";")?.[0] ?? "audio/mp4";
 
+      const ytCookies = await browser.cookies.getAll({ domain: ".youtube.com" });
+      const gvCookies = await browser.cookies.getAll({ domain: ".googlevideo.com" });
+      const mediaCookieString = [...ytCookies, ...gvCookies]
+        .map(cookie => {
+          return `${cookie.name}=${cookie.value}`;
+        })
+        .join("; ");
+
       async function fetchStream(url: string) {
         const response = await fetch(url, {
-          credentials: "include",
-          headers: { "Accept-Encoding": "identity" }
+          headers: {
+            "Accept-Encoding": "identity",
+            cookie: mediaCookieString
+          }
         });
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}`);
