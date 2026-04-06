@@ -23,7 +23,7 @@
 {/snippet}
 
 <div class="download-item-content">
-  <span class="download-filename">{filename}</span>
+  <span class="download-filename" title={filename}>{filename}</span>
   {#if progress !== null}
     <progress
       class="download-progress"

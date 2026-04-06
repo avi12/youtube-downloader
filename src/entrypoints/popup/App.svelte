@@ -135,7 +135,7 @@
     <div class="popup-header-top">
       <h1 class="popup-title">YouTube Downloader</h1>
       <span class="popup-credit">
-        by <a href="https://avi12.com" rel="noopener noreferrer" target="_blank">Avi</a>
+        by <a href="https://avi12.com" target="_blank">Avi</a>
       </span>
     </div>
     <div class="tab-nav" role="tablist">

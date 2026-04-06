@@ -92,7 +92,20 @@
 </script>
 
 {#if totalActiveDownloads === 0}
-  <p class="empty-state">No active downloads</p>
+  <div class="empty-state">
+    <svg
+      class="empty-state-icon"
+      aria-hidden="true"
+      fill="currentColor"
+      height="48"
+      viewBox="0 0 24 24"
+      width="48"
+    >
+      <path d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z" />
+    </svg>
+    <p class="empty-state-text">No active downloads</p>
+    <p class="empty-state-hint">Downloads appear here when you start one from YouTube</p>
+  </div>
 {:else}
   {#if videoDownloads.length > 0}
     <section aria-labelledby="video-downloads-heading">
@@ -191,10 +204,27 @@
 
 <style>
   .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
     padding: 32px 0;
-    color: var(--fg-subtle);
-    font-size: 0.8125rem;
     text-align: center;
+  }
+
+  .empty-state-icon {
+    color: var(--border);
+  }
+
+  .empty-state-text {
+    color: var(--fg-muted);
+    font-weight: 500;
+    font-size: 0.875rem;
+  }
+
+  .empty-state-hint {
+    color: var(--fg-subtle);
+    font-size: 0.75rem;
   }
 
   section + section {
