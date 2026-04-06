@@ -65,7 +65,14 @@ declare const ytcfg: { get: (key: string) => unknown } | undefined;
 
 declare global {
   interface HTMLElementTagNameMap {
-    "ytd-watch-flexy": HTMLElement & { playerData: PlayerResponse | null };
+    "ytd-watch-flexy": HTMLElement & {
+      playerData: PlayerResponse | null;
+      __data?: {
+        videoPrimaryInfoRenderer?: {
+          title?: { runs?: { text: string }[] };
+        };
+      };
+    };
   }
 }
 
@@ -302,6 +309,20 @@ export default defineContentScript({
     async function buildAndDispatchVideoData(playerResponse: PlayerResponse) {
       const { clientVersion, clientName } = readYtcfg();
       const videoData: VideoData = buildVideoData({ playerResponse, clientVersion, clientName });
+
+      // YouTube A/B tests titles - the displayed title may differ from
+      // playerResponse.videoDetails.title. Prefer what the user sees
+      // via Polymer's runtime data model.
+      const titleRuns = document.querySelector("ytd-watch-flexy")
+        ?.__data?.videoPrimaryInfoRenderer?.title?.runs;
+      const displayedTitle = titleRuns
+        ?.map(run => {
+          return run.text;
+        }).join("");
+      if (displayedTitle) {
+        videoData.title = displayedTitle;
+      }
+
       videoDataCache.set(videoData.videoId, videoData);
       videoDataStore.set(videoData.videoId, videoData);
       void crossWorldMessenger.sendMessage(CrossWorldMessage.VideoData, videoData);
