@@ -15,35 +15,17 @@ export function getFileExtension(filename: string) {
 
 // ─── MIME types ───────────────────────────────────────────────────────────────
 
+// Only containers that FFmpeg can remux YouTube streams into with -c copy.
+// YouTube produces H.264/VP9/AV1 video and AAC/Opus/Vorbis audio.
 export const extensionToMimeAll: Record<string, string> = {
-  aac: "audio/aac",
-  aif: "audio/x-aiff",
-  aifc: "audio/x-aiff",
-  aiff: "audio/x-aiff",
-  au: "audio/basic",
-  avi: "video/x-msvideo",
-  m3u: "audio/x-mpegurl",
   m4a: "audio/mp4",
   mkv: "video/x-matroska",
   mp3: "audio/mpeg",
   mp4: "video/mp4",
-  mpeg: "video/mpeg",
-  oga: "audio/ogg",
   ogg: "audio/ogg",
-  ogm: "audio/ogg",
-  ogv: "video/ogg",
   opus: "audio/opus",
-  ra: "audio/vnd.rn-realaudio",
-  ram: "audio/vnd.rn-realaudio",
-  snd: "audio/basic",
-  spx: "audio/ogg",
-  ts: "video/mp2t",
-  wav: "audio/vnd.wav",
   weba: "audio/webm",
-  webm: "video/webm",
-  wmv: "video/x-ms-wmv",
-  "3g2": "video/3gpp2",
-  "3gp": "video/3gpp"
+  webm: "video/webm"
 };
 
 export const extensionToMime: { video: Record<string, string>;
