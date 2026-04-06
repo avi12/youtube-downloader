@@ -43,12 +43,14 @@
     initialOptions
   }: Props = $props();
 
-  enum Tab {
-    Downloads = "downloads",
-    Settings = "settings"
-  }
+  const Tab = {
+    Downloads: "downloads",
+    Settings: "settings"
+  } as const;
 
-  let activeTab = $state(Tab.Downloads);
+  type Tab = (typeof Tab)[keyof typeof Tab];
+
+  let activeTab = $state<Tab>(Tab.Downloads);
   let isFFmpegReady = $state(untrack(() => initialIsFFmpegReady));
   let videoDownloads = $state(untrack(() => initialVideoQueue));
   let musicList = $state(untrack(() => initialMusicList));
