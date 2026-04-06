@@ -232,11 +232,21 @@
     });
   }
 
+  let buttonIdCounter = 0;
+
   function setButtonData(element: Element, data: Record<string, unknown>) {
-    element.dispatchEvent(new CustomEvent("ytdl:set-yt-button-data", {
-      detail: data,
-      bubbles: true
-    }));
+    if (!element.hasAttribute("data-ytdl-button-id")) {
+      element.setAttribute("data-ytdl-button-id", `btn-${videoId}-${buttonIdCounter++}`);
+    }
+
+    postMessage({
+      namespace: SYNC_NAMESPACE,
+      key: SyncKey.SetButtonData,
+      value: {
+        selector: `[data-ytdl-button-id="${element.getAttribute("data-ytdl-button-id")}"]`,
+        data
+      }
+    }, location.origin);
   }
 
   function openPanel() {

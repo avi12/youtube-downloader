@@ -1345,24 +1345,17 @@ export default defineContentScript({
       };
     }
 
-    // - Panel button initialisation bridge -
-    // yt-button-view-model's `.data` setter is defined by Polymer in the MAIN
-    // world. The isolated-world Svelte component cannot invoke it directly.
-    // It dispatches a bubbling "ytdl:set-yt-button-data" event so this handler
-    // (running in the MAIN world) can set the property on its behalf.
-    function handleSetButtonData(e: Event) {
-      if (!(e instanceof CustomEvent)) {
+    addEventListener("message", e => {
+      if (e.data?.namespace !== SYNC_NAMESPACE || e.data.key !== SyncKey.SetButtonData) {
         return;
       }
 
-      if (!(e.target instanceof HTMLElement)) {
-        return;
+      const { selector, data } = e.data.value ?? {};
+      const element = document.querySelector(selector);
+      if (element) {
+        Object.assign(element, { data });
       }
-
-      Object.assign(e.target, { data: e.detail });
-    }
-
-    document.addEventListener("ytdl:set-yt-button-data", handleSetButtonData);
+    });
 
     // Create/close Polymer dropdown for grid/playlist item panels.
     // The isolated world can't use Polymer elements (open/close, positioning)

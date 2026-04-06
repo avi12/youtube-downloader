@@ -6,8 +6,7 @@
   import { MessageType, sendMessage } from "../lib/messaging";
   import { applyPolymerCustomStyles, PAPER_PROGRESS_THEME } from "../lib/polymer-utils";
   import { musicListItem, videoOnlyListItem, videoQueueItem } from "../lib/storage";
-  import { playlistMetadataSignal } from "../lib/synced-stores.svelte";
-  import { videoDataStore } from "../lib/synced-stores.svelte";
+  import { playlistMetadataSignal, SYNC_NAMESPACE, SyncKey, videoDataStore } from "../lib/synced-stores.svelte";
   import { getCompatibleFilename, resolveAutoExtension } from "../lib/utils";
   import type { DownloadType, Options, VideoData } from "../types";
   import { SvelteMap } from "svelte/reactivity";
@@ -197,21 +196,30 @@
     }
 
     element.addEventListener("click", handleDownloadClick);
-    element.dispatchEvent(new CustomEvent("ytdl:set-yt-button-data", {
-      detail: {
-        iconName: isDownloading ? "CLOSE" : "DOWNLOAD",
-        title: downloadButtonLabel,
-        accessibilityText: downloadButtonLabel,
-        style: "MONO",
-        type: "TONAL",
-        buttonSize: "DEFAULT",
-        state: checkedDownloadableVideos.length === 0 && !isDownloading ? "DISABLED" : "ACTIVE",
-        isFullWidth: false,
-        isDisabled: checkedDownloadableVideos.length === 0 && !isDownloading,
-        tooltip: downloadButtonLabel
-      },
-      bubbles: true
-    }));
+
+    if (!element.hasAttribute("data-ytdl-button-id")) {
+      element.setAttribute("data-ytdl-button-id", "playlist-download-btn");
+    }
+
+    postMessage({
+      namespace: SYNC_NAMESPACE,
+      key: SyncKey.SetButtonData,
+      value: {
+        selector: `[data-ytdl-button-id="${element.getAttribute("data-ytdl-button-id")}"]`,
+        data: {
+          iconName: isDownloading ? "CLOSE" : "DOWNLOAD",
+          title: downloadButtonLabel,
+          accessibilityText: downloadButtonLabel,
+          style: "MONO",
+          type: "TONAL",
+          buttonSize: "DEFAULT",
+          state: checkedDownloadableVideos.length === 0 && !isDownloading ? "DISABLED" : "ACTIVE",
+          isFullWidth: false,
+          isDisabled: checkedDownloadableVideos.length === 0 && !isDownloading,
+          tooltip: downloadButtonLabel
+        }
+      }
+    }, location.origin);
   }
 
   function attachPlaylistProgress(element: Element) {

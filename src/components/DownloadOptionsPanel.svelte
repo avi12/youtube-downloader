@@ -1,7 +1,7 @@
 <script lang="ts">
   import { CrossWorldMessage, crossWorldMessenger } from "../lib/cross-world-messenger";
   import { statusProgressItem, videoQueueItem } from "../lib/storage";
-  import { cancelRequestSignal, downloadProgressStore } from "../lib/synced-stores.svelte";
+  import { cancelRequestSignal, downloadProgressStore, SYNC_NAMESPACE, SyncKey } from "../lib/synced-stores.svelte";
   import { getCompatibleFilename, getOutputExtension, resolveAutoExtension, waitForVideoElement } from "../lib/utils";
   import DownloadOptions from "./DownloadOptions.svelte";
   import panelFocusStyles from "./panel-focus.css?inline";
@@ -319,13 +319,21 @@
   }
 
   // -- YouTube native button attach functions ---------------------------------
-  // Named functions (not inlined) so TypeScript can type the `element`
-  // parameter without inline type annotations, which Svelte templates reject.
+  let buttonIdCounter = 0;
+
   function dispatchButtonData(element: Element, data: ButtonViewModelData) {
-    element.dispatchEvent(new CustomEvent("ytdl:set-yt-button-data", {
-      detail: data,
-      bubbles: true
-    }));
+    if (!element.hasAttribute("data-ytdl-button-id")) {
+      element.setAttribute("data-ytdl-button-id", `panel-btn-${buttonIdCounter++}`);
+    }
+
+    postMessage({
+      namespace: SYNC_NAMESPACE,
+      key: SyncKey.SetButtonData,
+      value: {
+        selector: `[data-ytdl-button-id="${element.getAttribute("data-ytdl-button-id")}"]`,
+        data
+      }
+    }, location.origin);
   }
 
   function attachCloseButton(element: Element) {
