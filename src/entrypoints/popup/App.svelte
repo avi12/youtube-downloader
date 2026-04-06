@@ -665,10 +665,8 @@
     font-size: 0.625em;
   }
 
-  :global(*) {
+  :global(*, *::before, *::after) {
     box-sizing: border-box;
-    margin: 0;
-    padding: 0;
   }
 
   :global(body) {
@@ -686,17 +684,14 @@
 
     overflow: hidden;
     width: 420px;
-    min-height: 200px;
     max-height: 600px;
     background-color: var(--bg);
     color: var(--fg);
     font-family: Roboto, Arial, sans-serif;
     font-size: 1.4rem;
     line-height: 1.5;
-  }
 
-  @media (prefers-color-scheme: dark) {
-    :global(body) {
+    @media (prefers-color-scheme: dark) {
       --bg: rgb(33 33 33);
       --fg: rgb(232 232 232);
       --fg-muted: rgb(255 255 255 / 75%);
@@ -802,6 +797,7 @@
   .popup-content {
     flex: 1;
     overflow-y: auto;
+    min-height: 120px;
     max-height: 500px;
     padding: 12px 16px;
   }
