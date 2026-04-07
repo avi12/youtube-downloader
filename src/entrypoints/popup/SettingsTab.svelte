@@ -219,8 +219,8 @@
   }
 
   .settings-legend {
-    padding: 0;
     margin-bottom: 8px;
+    padding: 0;
     color: var(--accent);
     font-weight: 500;
     font-size: 0.75rem;

@@ -141,9 +141,29 @@ export default defineContentScript({
       void crossWorldMessenger.sendMessage(CrossWorldMessage.DownloadRequest, data);
     });
 
-    // Proxy fetch requests from MAIN world through the background
-    crossWorldMessenger.onMessage(CrossWorldMessage.ProxyFetch, ({ data }) => {
-      return sendMessage(MessageType.ProxyFetch, data);
+    // Proxy fetch requests from MAIN world through the background.
+    // Uses CustomEvent (not postMessage) because postMessage doesn't cross
+    // the MAIN/isolated world boundary in Chrome MV3.
+    // ProxyFetch uses raw chrome.runtime.sendMessage (not @webext-core/messaging)
+    // to reach BOTH the background (DNR cookie update) and offscreen doc (fetch).
+    // The offscreen doc claims the response; the background just does side effects.
+    addEventListener("ytdl:proxy-fetch-request", async (e: Event) => {
+      const { requestId, url, bodyBase64 } = (e as CustomEvent).detail;
+      try {
+        const result = await browser.runtime.sendMessage({
+          type: "ytdl:proxy-fetch",
+          url,
+          bodyBase64,
+          cookies: document.cookie
+        });
+        dispatchEvent(new CustomEvent("ytdl:proxy-fetch-response", {
+          detail: { requestId, result }
+        }));
+      } catch {
+        dispatchEvent(new CustomEvent("ytdl:proxy-fetch-response", {
+          detail: { requestId, result: null }
+        }));
+      }
     });
 
     // Relay PO token refresh requests from background to MAIN world
@@ -174,6 +194,26 @@ export default defineContentScript({
       }
     });
 
+    // ─── SW keepalive ────────────────────────────────────────────────────
+    // The background sends StartKeepalive after opening a watch tab for
+    // grid downloads. We ping the SW every 25s to prevent Chrome from
+    // killing it during long downloads.
+    onMessage(MessageType.StartKeepalive, ({ data }) => {
+      const keepaliveInterval = globalThis.setInterval(async () => {
+        try {
+          await sendMessage(MessageType.Keepalive, {});
+        } catch {
+          // SW died or extension reloaded - stop pinging
+          globalThis.clearInterval(keepaliveInterval);
+        }
+      }, 25_000);
+
+      // Stop when the tab is closed or navigation changes
+      addEventListener("beforeunload", () => {
+        globalThis.clearInterval(keepaliveInterval);
+      });
+    });
+
     // ─── Event listeners ────────────────────────────────────────────────
 
     addEventListener("message", e => {
@@ -192,6 +232,7 @@ export default defineContentScript({
     listenForSabrBodyReady();
     listenForDownloadRequests();
     void forwardSabrCredentialsWithRetry();
+
 
     const unwatchOptions = optionsItem.watch(newOptions => {
       if (!newOptions) {

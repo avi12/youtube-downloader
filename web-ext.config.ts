@@ -1,7 +1,6 @@
-import { execSync } from "node:child_process";
-import { readdirSync, existsSync, cpSync } from "node:fs";
+import { readdirSync, existsSync } from "node:fs";
 import { homedir } from "node:os";
-import { join, basename, resolve } from "node:path";
+import { join } from "node:path";
 import { defineWebExtConfig } from "wxt";
 
 const { LANG = "en" } = process.env;
@@ -43,8 +42,13 @@ function findDefaultFirefoxProfile() {
   }
 }
 
-const LOCK_FILES = new Set(["lockfile", "SingletonLock", "SingletonCookie", "SingletonSocket", "LOCK"]);
+import { cpSync, mkdirSync } from "node:fs";
+import { dirname, resolve } from "node:path";
 
+// Set up a Chrome profile with Bookmarks from the real profile.
+// Session data (Cookies, Login Data) uses DPAPI encryption tied to the
+// original profile path, so it can't be copied. The user signs in once
+// and the session persists via keepProfileChanges.
 function setupChromeProfile() {
   const chromeSrcByPlatform: Partial<Record<NodeJS.Platform, string>> = {
     win32: join(process.env.LOCALAPPDATA!, "Google", "Chrome", "User Data"),
@@ -53,48 +57,28 @@ function setupChromeProfile() {
   };
   const src = chromeSrcByPlatform[osPlatform];
   if (!src || !existsSync(src)) {
-    return;
+    return undefined;
   }
 
   const dest = resolve(import.meta.dirname, "../User Data");
   if (existsSync(dest)) {
-    return;
+    return join(dest, "Default");
   }
 
-  console.log(`Copying Chrome profile from ${src} to ${dest}...`);
-  cpSync(src, dest, { recursive: true, filter: src => !LOCK_FILES.has(basename(src)) });
-  console.log("Done.");
-}
-
-if (process.env.CHROME_WITH_PROFILE === "1") {
-  setupChromeProfile();
-}
-
-// ─── Chrome lifecycle management ──────────────────────────────────────────────
-
-// The WXT-managed Chrome is identified by --remote-debugging-port=9229.
-// Kill it on startup (clears orphaned processes from previous crashes) and on
-// exit (so Chrome always terminates with WXT).
-function killWxtChrome() {
-  try {
-    if (osPlatform === "win32") {
-      execSync(
-        "powershell -NoProfile -Command \"$p=(Get-NetTCPConnection -LocalPort 9229 -EA SilentlyContinue|Select -First 1).OwningProcess;if($p){Stop-Process -Id $p -Force -EA SilentlyContinue}\"",
-        { stdio: "ignore" }
-      );
-    } else {
-      execSync("lsof -ti:9229 | xargs kill -9 2>/dev/null || true", { stdio: "ignore" });
+  console.log(`Setting up Chrome profile from ${src}...`);
+  for (const profileDir of ["Default", "Profile 1"]) {
+    const srcFile = join(src, profileDir, "Bookmarks");
+    if (!existsSync(srcFile)) {
+      continue;
     }
-  } catch {
-    // Ignore - Chrome may not be running
-  }
-}
 
-// Only active during `wxt dev` - build commands don't launch a browser
-const isDevRun = process.argv.some(arg => arg === "dev" || arg.endsWith("/dev"));
-if (isDevRun) {
-  killWxtChrome();
-  process.on("exit", killWxtChrome);
+    const destFile = join(dest, profileDir, "Bookmarks");
+    mkdirSync(dirname(destFile), { recursive: true });
+    cpSync(srcFile, destFile);
+  }
+  console.log("Done.");
+
+  return join(dest, "Default");
 }
 
 // ─── Config ───────────────────────────────────────────────────────────────────
@@ -104,16 +88,14 @@ export default defineWebExtConfig({
     edge: edgeByPlatform[osPlatform] ?? "",
     opera: operaByPlatform[osPlatform] ?? ""
   },
-  startUrls: ["https://www.youtube.com/watch?v=wjggoT-3oVM&t=184s"],
+  startUrls: ["https://www.youtube.com/feed/subscriptions "],
   keepProfileChanges: true,
-  ...process.env.CHROME_WITH_PROFILE === "1" && { chromiumProfile: resolve(import.meta.dirname, "../User Data") },
+  ...process.env.CHROME_WITH_PROFILE === "1" && { chromiumProfile: setupChromeProfile() },
   firefoxArgs: ["-marionette", "-marionette-port", "2828", "--remote-debugging-port", "9225"],
   ...process.env.FIREFOX_WITH_PROFILE === "1" && { firefoxProfile: findDefaultFirefoxProfile() },
   chromiumArgs: [
     `--lang=${LANG}`,
     "--remote-debugging-port=9229",
-    "--isolated",
-    "--disable-blink-features=AutomationControlled",
-    ...[process.env.CHROME_WITH_PROFILE === "1" ? "--profile-directory=Default" : ""]
+    "--disable-blink-features=AutomationControlled"
   ]
 });

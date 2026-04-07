@@ -12,7 +12,13 @@ import { sabrCredentials } from "./synced-stores.svelte";
 let isCredentialsForwarded = false;
 
 async function forwardSabrCredentials() {
-  const captured = await sendMessage(MessageType.GetCapturedSabrBody, {});
+  let captured;
+  try {
+    captured = await sendMessage(MessageType.GetCapturedSabrBody, {});
+  } catch {
+    // SW not ready yet - will retry via forwardSabrCredentialsWithRetry
+    return;
+  }
   if (!captured?.poToken) {
     return;
   }

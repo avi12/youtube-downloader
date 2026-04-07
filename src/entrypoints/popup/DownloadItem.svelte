@@ -61,11 +61,11 @@
   }
 
   .download-progress {
+    appearance: none;
     width: 100%;
     height: 4px;
     border: none;
     border-radius: 2px;
-    appearance: none;
 
     &::-webkit-progress-bar {
       border-radius: 2px;

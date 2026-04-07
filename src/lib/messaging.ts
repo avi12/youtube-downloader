@@ -23,9 +23,13 @@ export enum MessageType {
   ClearInterruptedDownload = "clearInterruptedDownload",
   GetInterruptedDownload = "getInterruptedDownload",
   RequestPlaylistDownload = "requestPlaylistDownload",
+  DownloadViaWatchPage = "downloadViaWatchPage",
   CancelDownload = "cancelDownload",
 
   // Background → Content script
+  StartKeepalive = "startKeepalive",
+  Keepalive = "keepalive",
+
   ExecuteDownloadItem = "executeDownloadItem",
   SabrBodyReady = "sabrBodyReady",
   UpdateDownloadProgress = "updateDownloadProgress",
@@ -35,6 +39,9 @@ export enum MessageType {
   ProcessStreamChunk = "processStreamChunk",
   ProcessStreamEnd = "processStreamEnd",
   CancelProcessing = "cancelProcessing",
+
+  // Background → Offscreen
+  OffscreenProxyFetch = "offscreenProxyFetch",
 
   // Offscreen → Background
   PipelineProgress = "pipelineProgress",
@@ -86,10 +93,18 @@ interface ProtocolMap {
   sabrDownload(data: {
     request: DownloadRequest;
     poToken: string;
+    cookies: string;
   }): boolean;
 
   // Content script → Background: proxy fetch through background (CORS bypass)
   proxyFetch(data: { url: string;
+    bodyBase64: string;
+    cookies?: string; }):
+    { status: number;
+      bodyBase64: string; } | null;
+
+  // Background → Offscreen: proxy fetch through offscreen doc (DNR applies here)
+  offscreenProxyFetch(data: { url: string;
     bodyBase64: string; }):
     { status: number;
       bodyBase64: string; } | null;
@@ -111,6 +126,10 @@ interface ProtocolMap {
   clearInterruptedDownload(data: { videoId: string }): void;
   getInterruptedDownload(data: { videoId: string }): InterruptedDownload | null;
 
+  // Content script → Background: open a background watch tab to download.
+  // YouTube's SW handles googlevideo CORS only on top-level watch pages.
+  downloadViaWatchPage(data: DownloadRequest): void;
+
   // Content script → Background: download all items in a playlist
   requestPlaylistDownload(data: {
     items: DownloadRequest[];
@@ -120,6 +139,12 @@ interface ProtocolMap {
 
   // Content script → Background: cancel one or more downloads
   cancelDownload(data: { videoIds: string[] }): void;
+
+  // Background → Content script: start pinging the SW to keep it alive
+  startKeepalive(data: { videoId: string }): void;
+
+  // Content script → Background: keepalive ping (resets SW idle timer)
+  keepalive(data: Record<string, never>): void;
 
   // Background → Content script (per tab): trigger a single download item
   executeDownloadItem(data: DownloadRequest): void;

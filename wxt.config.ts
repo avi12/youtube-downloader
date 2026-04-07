@@ -15,11 +15,15 @@ export default defineConfig({
       "tabs",
       "cookies",
       "webRequest",
+      "declarativeNetRequest",
+      "scripting",
       ...(browser === "chrome" ? ["offscreen"] : [])
     ],
     host_permissions: [
       "https://www.youtube.com/*",
-      "https://*.googlevideo.com/*"
+      "https://*.googlevideo.com/*",
+      "http://localhost/*",
+      "https://localhost/*"
     ],
     ...(browser === "firefox" && {
       browser_specific_settings: {

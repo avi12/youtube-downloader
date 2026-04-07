@@ -57,7 +57,7 @@ function extractVideoId(elCard: Element) {
 
 function findAnchorElement(elCard: Element) {
   // yt-lockup-view-model: inject after the text container (aligned with title)
-  const elTextContainer = elCard.querySelector(".yt-lockup-metadata-view-model__text-container");
+  const elTextContainer = elCard.querySelector(".ytLockupMetadataViewModelTextContainer");
   if (elTextContainer) {
     return elTextContainer;
   }

@@ -206,8 +206,8 @@
   .empty-state {
     display: flex;
     flex-direction: column;
-    align-items: center;
     gap: 8px;
+    align-items: center;
     padding: 32px 0;
     text-align: center;
   }

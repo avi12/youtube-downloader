@@ -43,11 +43,36 @@ export async function generatePoToken(videoId: string) {
     throw new Error("No BotGuard challenge data received");
   }
 
-  // Step 2: Wait for YouTube's BotGuard VM.
+  // Step 2: Wait for YouTube's BotGuard VM, loading the interpreter if needed.
+  // On watch pages YouTube pre-loads BotGuard; on other pages (subscriptions,
+  // homepage) it doesn't, so we load the interpreter script ourselves.
   // BotGuard is YouTube's undocumented anti-bot runtime with a fully dynamic
   // shape that can't be statically typed - any is intentional here.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const globalRecord: Record<string, any> = globalThis;
+
+  if (!globalRecord[globalName]?.a) {
+    // Extract interpreter URL from TrustedResourceUrl wrapper
+    const interpreterUrlRaw = challengeData.bgChallenge?.interpreterUrl;
+    const interpreterUrl: string | undefined =
+      typeof interpreterUrlRaw === "string"
+        ? interpreterUrlRaw
+        : interpreterUrlRaw?.privateDoNotAccessOrElseTrustedResourceUrlWrappedValue;
+
+    if (interpreterUrl) {
+      const fullUrl = interpreterUrl.startsWith("//")
+        ? `https:${interpreterUrl}`
+        : interpreterUrl;
+
+      await new Promise<void>((resolve, reject) => {
+        const elScript = document.createElement("script");
+        elScript.src = fullUrl;
+        elScript.onload = () => resolve();
+        elScript.onerror = () => reject(new Error("Failed to load BotGuard interpreter"));
+        document.head.append(elScript);
+      });
+    }
+  }
 
   for (let iAttempt = 0; iAttempt < 60; iAttempt++) {
     if (globalRecord[globalName]?.a) {

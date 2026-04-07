@@ -82,10 +82,27 @@ onMessage(MessageType.ProcessStreamChunk, ({ data }) => {
   }
 
   const accumulator = streamAccumulators.get(videoId)!;
+
+  // iChunk === -1 is a final marker that sets the correct totalChunks
+  // (used by streaming SabrDownload where total is unknown during transfer)
+  if (iChunk === -1) {
+    if (streamType === "video") {
+      accumulator.totalVideoChunks = totalChunks;
+    } else {
+      const audioStream = accumulator.audioStreams.get(streamType);
+      if (audioStream) {
+        audioStream.totalChunks = totalChunks;
+      }
+    }
+    return;
+  }
+
   const decodedChunk = base64ToUint8Array(chunkBase64);
   if (streamType === "video") {
     accumulator.videoChunks.set(iChunk, decodedChunk);
-    accumulator.totalVideoChunks = totalChunks;
+    if (totalChunks > 0) {
+      accumulator.totalVideoChunks = totalChunks;
+    }
   } else {
     if (!accumulator.audioStreams.has(streamType)) {
       accumulator.audioStreams.set(streamType, {
@@ -96,7 +113,9 @@ onMessage(MessageType.ProcessStreamChunk, ({ data }) => {
 
     const audioStream = accumulator.audioStreams.get(streamType)!;
     audioStream.chunks.set(iChunk, decodedChunk);
-    audioStream.totalChunks = totalChunks;
+    if (totalChunks > 0) {
+      audioStream.totalChunks = totalChunks;
+    }
   }
 });
 
@@ -146,4 +165,66 @@ onMessage(MessageType.ProcessStreamEnd, ({ data }) => {
 
 onMessage(MessageType.CancelProcessing, async ({ data }) => {
   await cancelDownloadsByIds(data.videoIds);
+});
+
+// Proxy fetch through the offscreen document context via Port connection.
+// The background SW connects via chrome.runtime.connect and sends fetch
+// requests. declarativeNetRequest injects Cookie/Origin headers for
+// background_page requests (but not service_worker), so DNR applies here.
+browser.runtime.onConnect.addListener(port => {
+  if (port.name !== "ytdl-proxy-fetch") {
+    return;
+  }
+
+  port.onMessage.addListener(async (message: { requestId: string; url: string; bodyBase64: string }) => {
+    const { requestId, url, bodyBase64 } = message;
+    console.log("[ytdl:offscreen] Port request received:", url.substring(0, 60));
+
+    try {
+      const bodyBytes = Uint8Array.from(atob(bodyBase64), character => {
+        return character.charCodeAt(0);
+      });
+
+      // Use XMLHttpRequest instead of fetch. Chrome sets Origin: chrome-extension://
+      // on fetch() which googlevideo rejects with 403. XHR in extension pages with
+      // host_permissions doesn't send the extension Origin.
+      const response = await new Promise<Response>((resolveXhr, rejectXhr) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open("POST", url);
+        xhr.setRequestHeader("Content-Type", "application/x-protobuf");
+        xhr.responseType = "arraybuffer";
+        xhr.onload = () => {
+          resolveXhr(new Response(xhr.response, {
+            status: xhr.status,
+            statusText: xhr.statusText,
+            headers: { "content-type": xhr.getResponseHeader("content-type") ?? "application/octet-stream" }
+          }));
+        };
+        xhr.onerror = () => rejectXhr(new TypeError("Network error"));
+        xhr.timeout = 60000;
+        xhr.ontimeout = () => rejectXhr(new TypeError("Timeout"));
+        xhr.send(bodyBytes);
+      });
+
+      const responseBuffer = await response.arrayBuffer();
+      const responseBytes = new Uint8Array(responseBuffer);
+      let responseBase64 = "";
+      const batchSize = 8192;
+
+      for (let offset = 0; offset < responseBytes.byteLength; offset += batchSize) {
+        responseBase64 += String.fromCharCode(
+          ...responseBytes.subarray(offset, Math.min(offset + batchSize, responseBytes.byteLength))
+        );
+      }
+
+      console.log("[ytdl:offscreen] Port response:", response.status, "size:", responseBytes.byteLength);
+      port.postMessage({
+        requestId,
+        result: { status: response.status, bodyBase64: btoa(responseBase64) }
+      });
+    } catch (error) {
+      console.error("[ytdl:offscreen] proxyFetch error:", error);
+      port.postMessage({ requestId, result: null });
+    }
+  });
 });

@@ -159,7 +159,8 @@ export default [
   ...svelteEslint.configs["flat/recommended"],
   globalIgnores(["build/**", "node_modules/**", ".output/**"]),
   {
-    files: ["**/*.{ts,js,mjs}", "eslint.config.js"],
+    files: ["**/*.{ts,js,mjs}"],
+    ignores: ["eslint.config.js"],
     languageOptions: {
       parser: tsEslint.parser,
       parserOptions: { project: "./tsconfig.json" },
@@ -167,6 +168,19 @@ export default [
     },
     plugins: sharedPlugins,
     rules: tsStyleRules
+  },
+  {
+    files: ["eslint.config.js"],
+    languageOptions: {
+      parser: tsEslint.parser,
+      globals: sharedGlobals
+    },
+    plugins: sharedPlugins,
+    rules: {
+      ...tsStyleRules,
+      "@typescript-eslint/no-floating-promises": "off",
+      "@typescript-eslint/consistent-type-assertions": "off"
+    }
   },
   {
     files: ["**/*.svelte"],

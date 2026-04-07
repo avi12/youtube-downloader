@@ -7,10 +7,10 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
-    "dev": "wxt",
-    "dev:with-profile": "bunx cross-env CHROME_WITH_PROFILE=1 wxt",
+    "dev:with-profile": "pnpx cross-env CHROME_WITH_PROFILE=1 wxt",
+    "dev:stable": "node scripts/dev-server.mjs",
     "dev:firefox": "wxt -b firefox --mv3",
-    "dev:firefox-with-profile": "bunx cross-env FIREFOX_WITH_PROFILE=1 wxt -b firefox --mv3",
+    "dev:firefox-with-profile": "pnpx cross-env FIREFOX_WITH_PROFILE=1 wxt -b firefox --mv3",
     "build": "wxt build",
     "build:firefox": "wxt build -b firefox --mv3",
     "pack": "wxt zip",
@@ -18,7 +18,7 @@
     "postinstall": "wxt prepare",
     "lint": "eslint --fix",
     "stylelint": "stylelint . --fix",
-    "svelte:check": "bunx svelte-check"
+    "svelte:check": "pnpx svelte-check"
   },
   "dependencies": {
     "@ffmpeg/core": "0.12.10",

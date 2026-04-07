@@ -8,8 +8,9 @@
     "lib": ["ESNext", "DOM", "DOM.Iterable"],
     "resolveJsonModule": true,
     "allowImportingTsExtensions": true,
+    "allowJs": true,
     "noEmit": true
   },
-  "include": ["src/**/*", "src/**/*.svelte", "wxt.config.ts", ".wxt/wxt.d.ts"],
+  "include": ["src/**/*", "src/**/*.svelte", "scripts/**/*.mjs", "wxt.config.ts", ".wxt/wxt.d.ts"],
   "exclude": ["src/scripts/**"]
 }

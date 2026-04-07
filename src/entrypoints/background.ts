@@ -9,13 +9,7 @@ import {
 import { clearLocalStorage, interruptedDownloadsItem, isFFmpegReadyItem, statusProgressItem } from "../lib/storage";
 import { ProgressType } from "../types";
 
-async function fetchPlayerResponse(videoId: string) {
-  const youtubeCookies = await browser.cookies.getAll({ domain: ".youtube.com" });
-  const cookieString = youtubeCookies
-    .map(cookie => {
-      return `${cookie.name}=${cookie.value}`;
-    })
-    .join("; ");
+async function fetchPlayerResponse(videoId: string, cookieString: string) {
 
   const response = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
     headers: { cookie: cookieString }
@@ -48,6 +42,156 @@ async function fetchPlayerResponse(videoId: string) {
 }
 
 export default defineBackground(() => {
+  // Register content scripts dynamically. persistAcrossSessions keeps them
+  // across SW restarts, so we only register when missing.
+  void (async () => {
+    const registered = await browser.scripting.getRegisteredContentScripts();
+    // Always unregister and re-register to pick up config changes
+    // (e.g. allFrames toggled, runAt changed).
+    const allIds = registered.map(script => {
+      return script.id;
+    });
+    if (allIds.length > 0) {
+      await browser.scripting.unregisterContentScripts({ ids: allIds });
+    }
+
+    await browser.scripting.registerContentScripts([
+      {
+        id: "ytdl-main",
+        js: ["content-scripts/youtube-main.js"],
+        matches: ["https://www.youtube.com/*"],
+        world: "MAIN",
+        runAt: "document_start"
+      },
+      {
+        id: "ytdl-isolated",
+        js: ["content-scripts/youtube.js"],
+        css: ["content-scripts/youtube.css"],
+        matches: ["https://www.youtube.com/*"],
+        runAt: "document_idle"
+      }
+    ]);
+  })();
+
+  // On install/update, inject into existing YouTube tabs.
+  // Dynamically registered scripts only apply to NEW navigations.
+  browser.runtime.onInstalled.addListener(async () => {
+    try {
+      const youtubeTabs = await browser.tabs.query({ url: "https://www.youtube.com/*" });
+      for (const tab of youtubeTabs) {
+        if (!tab.id) {
+          continue;
+        }
+
+        await browser.scripting.executeScript({
+          target: { tabId: tab.id },
+          files: ["content-scripts/youtube-main.js"],
+          world: "MAIN"
+        }).catch(() => {});
+
+        await browser.scripting.executeScript({
+          target: { tabId: tab.id },
+          files: ["content-scripts/youtube.js"]
+        }).catch(() => {});
+
+        await browser.scripting.insertCSS({
+          target: { tabId: tab.id },
+          files: ["content-scripts/youtube.css"]
+        }).catch(() => {});
+      }
+    } catch {
+      // Tabs not ready yet - scripts will inject on next navigation
+    }
+  });
+
+  // Rewrite Origin header on googlevideo requests from the extension.
+  // Chrome strips Origin/Cookie from service worker fetch even with host_permissions.
+  // Use declarativeNetRequest to inject the required headers.
+  // Only available on Chrome (not Firefox), guarded by optional chaining.
+  // @ts-expect-error -- chrome.declarativeNetRequest is Chrome-only and not in WXT types
+  const declarativeNetRequest = globalThis.chrome?.declarativeNetRequest;
+  // Cookie string for googlevideo requests.
+  // chrome.cookies.getAll() returns empty in copied profiles (DPAPI encryption),
+  // so we build the string from individual cookie.get() calls instead.
+  let cachedYoutubeCookies = "";
+
+  const YOUTUBE_COOKIE_NAMES = [
+    "SID", "HSID", "SSID", "APISID", "SAPISID", "LOGIN_INFO", "PREF",
+    "__Secure-1PSID", "__Secure-3PSID", "__Secure-1PAPISID", "__Secure-3PAPISID",
+    "__Secure-1PSIDTS", "__Secure-3PSIDTS", "NID", "SIDCC",
+    "__Secure-1PSIDCC", "__Secure-3PSIDCC"
+  ];
+
+  async function buildYoutubeCookieString() {
+    const parts: string[] = [];
+    for (const name of YOUTUBE_COOKIE_NAMES) {
+      const cookie = await browser.cookies.get({ url: "https://www.youtube.com", name });
+      if (cookie) {
+        parts.push(`${cookie.name}=${cookie.value}`);
+      }
+    }
+    return parts.join("; ");
+  }
+
+  async function updateGooglevideoHeaderRules(cookieString?: string) {
+    if (!declarativeNetRequest) {
+      console.log("[ytdl:bg] DNR not available");
+      return;
+    }
+
+    if (cookieString) {
+      cachedYoutubeCookies = cookieString;
+    }
+
+    const cookieHeaders = cachedYoutubeCookies
+      ? [{ header: "Cookie", operation: "set", value: cachedYoutubeCookies }]
+      : [];
+
+    await declarativeNetRequest.updateDynamicRules({
+      removeRuleIds: [1, 2],
+      addRules: [
+        {
+          // Rule for extension-initiated requests (background/offscreen, tabId -1)
+          id: 1,
+          priority: 1,
+          action: {
+            type: "modifyHeaders",
+            requestHeaders: [
+              { header: "Origin", operation: "set", value: "https://www.youtube.com" },
+              { header: "Sec-Fetch-Site", operation: "set", value: "cross-site" },
+              { header: "Sec-Fetch-Mode", operation: "set", value: "cors" },
+              ...cookieHeaders
+            ]
+          },
+          condition: {
+            urlFilter: "*googlevideo.com*",
+            tabIds: [-1]
+          }
+        },
+        {
+          // Rule for tab-initiated requests (content scripts)
+          id: 2,
+          priority: 1,
+          action: {
+            type: "modifyHeaders",
+            requestHeaders: [
+              { header: "Origin", operation: "set", value: "https://www.youtube.com" },
+              { header: "Sec-Fetch-Site", operation: "set", value: "cross-site" },
+              { header: "Sec-Fetch-Mode", operation: "set", value: "cors" }
+            ]
+          },
+          condition: {
+            urlFilter: "*googlevideo.com*"
+          }
+        }
+      ]
+    });
+  }
+  void (async () => {
+    const cookies = await buildYoutubeCookieString();
+    await updateGooglevideoHeaderRules(cookies);
+  })();
+
   startSabrRequestCapture();
   onSabrBodyCaptured(tabId => {
     // Content script might not be ready yet during initial page load.
@@ -228,60 +372,71 @@ export default defineBackground(() => {
 
   // - Message handlers -
 
+  // ProxyFetch: update DNR cookies, then relay to offscreen doc via Port.
+  // @webext-core/messaging's sendMessage doesn't reach offscreen docs,
+  // so we use chrome.runtime.connect for a direct port connection.
+  let offscreenPort: Browser.runtime.Port | null = null;
+
+  function getOffscreenPort() {
+    if (offscreenPort) {
+      return offscreenPort;
+    }
+
+    // The offscreen doc listens for connections named "ytdl-proxy-fetch"
+    offscreenPort = browser.runtime.connect({ name: "ytdl-proxy-fetch" });
+    offscreenPort.onDisconnect.addListener(() => {
+      offscreenPort = null;
+    });
+    return offscreenPort;
+  }
+
   onMessage(MessageType.ProxyFetch, async ({ data }) => {
+    const pageCookies = "cookies" in data ? String(data.cookies ?? "") : "";
     const fetchUrl = "url" in data ? String(data.url) : "";
     const bodyBase64 = "bodyBase64" in data ? String(data.bodyBase64) : "";
 
-    try {
-      const bodyBytes = Uint8Array.from(atob(bodyBase64), character => {
-        return character.charCodeAt(0);
-      });
+    if (pageCookies) {
+      await updateGooglevideoHeaderRules(pageCookies);
+    }
 
-      // Include YouTube session cookies - googlevideo.com needs them for auth
-      const youtubeCookies = await browser.cookies.getAll({ domain: ".youtube.com" });
-      const googlevideoCookies = await browser.cookies.getAll({ domain: ".googlevideo.com" });
-      const allCookies = [...youtubeCookies, ...googlevideoCookies];
-      const cookieString = allCookies.map(cookie => {
-        return `${cookie.name}=${cookie.value}`;
-      }).join("; ");
-
-      const response = await fetch(fetchUrl, {
-        method: "POST",
-        headers: {
-          "content-type": "application/x-protobuf",
-          accept: "application/vnd.yt-ump",
-          origin: "https://www.youtube.com",
-          cookie: cookieString
-        },
-        body: bodyBytes
-      });
-
-      const responseBuffer = await response.arrayBuffer();
-      const responseBytes = new Uint8Array(responseBuffer);
-      let responseBase64 = "";
-      const batchSize = 8192;
-
-      for (let offset = 0; offset < responseBytes.byteLength; offset += batchSize) {
-        responseBase64 += String.fromCharCode(
-          ...responseBytes.subarray(offset, Math.min(offset + batchSize, responseBytes.byteLength))
-        );
-      }
-
-      return {
-        status: response.status,
-        bodyBase64: btoa(responseBase64)
-      };
-    } catch (error) {
-      console.error("[ytdl:bg] proxyFetch error:", error);
+    if (!fetchUrl) {
       return null;
     }
+
+    await ensureProcessor();
+
+    // Relay through offscreen doc via Port (DNR applies to background_page)
+    return new Promise<{ status: number; bodyBase64: string } | null>(resolve => {
+      console.log("[ytdl:bg] ProxyFetch relaying via Port");
+      const port = getOffscreenPort();
+      const requestId = Math.random().toString(36).slice(2);
+
+      function onResponse(message: { requestId: string; result: { status: number; bodyBase64: string } | null }) {
+        if (message.requestId !== requestId) {
+          return;
+        }
+
+        port.onMessage.removeListener(onResponse);
+        resolve(message.result);
+      }
+
+      port.onMessage.addListener(onResponse);
+      port.postMessage({ requestId, url: fetchUrl, bodyBase64 });
+
+      // Timeout after 60s
+      globalThis.setTimeout(() => {
+        port.onMessage.removeListener(onResponse);
+        resolve(null);
+      }, 60_000);
+    });
   });
 
   onMessage(MessageType.ResolveFormatUrls, async ({ data }) => {
     const { videoId, videoItag, audioItag } = data;
 
     try {
-      const playerResponse = await fetchPlayerResponse(videoId);
+      const cookies = cachedYoutubeCookies || await buildYoutubeCookieString();
+      const playerResponse = await fetchPlayerResponse(videoId, cookies);
       if (playerResponse.playabilityStatus?.status !== "OK") {
         return null;
       }
@@ -326,11 +481,16 @@ export default defineBackground(() => {
   });
 
   onMessage(MessageType.SabrDownload, async ({ data, sender }) => {
-    const { request, poToken } = data;
+    const { request, poToken, cookies } = data;
     const tabId = sender.tab?.id ?? 0;
     if (!request.sabrConfig) {
       return false;
     }
+
+    // Update DNR rule with Origin header for googlevideo requests.
+    // Ensure offscreen doc is ready (sabrFetch relays through it).
+    await updateGooglevideoHeaderRules();
+    await ensureProcessor();
 
     try {
       const { SabrStream } = await import("googlevideo/sabr-stream");
@@ -368,25 +528,20 @@ export default defineBackground(() => {
         return false;
       }
 
-      // Build a fetch wrapper that includes YouTube session cookies.
-      // The background has host_permissions (no CORS), but googlevideo
-      // needs session context for authenticated streaming.
+      // Fetch wrapper for SabrStream. declarativeNetRequest overrides
+      // Origin and Sec-Fetch-Site headers at the network layer so
+      // googlevideo accepts the request from the extension context.
       async function sabrFetch(input: RequestInfo | URL, init?: RequestInit) {
-        const youtubeCookies = await browser.cookies.getAll({ domain: ".youtube.com" });
-        const cookieString = youtubeCookies
-          .map(cookie => {
-            return `${cookie.name}=${cookie.value}`;
-          })
-          .join("; ");
+        const url = input instanceof URL ? input.href : String(input);
 
-        return fetch(input, {
-          ...init,
+        return fetch(url, {
+          method: "POST",
           headers: {
-            ...Object.fromEntries(new Headers(init?.headers).entries()),
-            origin: "https://www.youtube.com",
-            referer: "https://www.youtube.com/",
-            cookie: cookieString
-          }
+            "content-type": "application/x-protobuf",
+            accept: "application/vnd.yt-ump"
+          },
+          body: init?.body,
+          signal: init?.signal
         });
       }
 
@@ -404,9 +559,11 @@ export default defineBackground(() => {
       });
 
       // Refresh PO token when YouTube's SPS escalates
-      (sabrStream as { on(event: string, listener: (...args: unknown[]) => void): void }).on("streamProtectionStatusUpdate", async (sps: unknown) => {
-        const { status } = sps as { status: number };
-        if (status >= 2) {
+      const sabrEmitter: { on(event: string, listener: (...args: unknown[]) => void): void } = sabrStream;
+      sabrEmitter.on("streamProtectionStatusUpdate", async (sps: unknown) => {
+        const spsData = sps && typeof sps === "object" && "status" in sps ? sps : { status: 0 };
+        const { status } = spsData;
+        if (typeof status === "number" && status >= 2) {
           try {
             const freshToken = await sendMessage(MessageType.RefreshPoToken, { videoId: request.videoId }, tabId);
             if (freshToken) {
@@ -418,38 +575,12 @@ export default defineBackground(() => {
         }
       });
 
+      await ensureProcessor();
+
       const { videoStream, audioStream } = await sabrStream.start({
         videoFormat,
         audioFormat
       });
-
-      // Collect full streams in memory (no CORS issues in background)
-      async function collectStream(stream: ReadableStream<Uint8Array>) {
-        const reader = stream.getReader();
-        const chunks: Uint8Array[] = [];
-        let totalBytes = 0;
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) {
-            break;
-          }
-
-          chunks.push(value);
-          totalBytes += value.byteLength;
-        }
-        const result = new Uint8Array(totalBytes);
-        let offset = 0;
-        for (const chunk of chunks) {
-          result.set(chunk, offset);
-          offset += chunk.byteLength;
-        }
-        return result;
-      }
-
-      const [videoData, audioData] = await Promise.all([
-        collectStream(videoStream),
-        collectStream(audioStream)
-      ]);
 
       const videoMimeType = sabrConfig.formats.find(
         format => {
@@ -462,13 +593,81 @@ export default defineBackground(() => {
           return format.itag === request.audioItag;
         }
       )?.mimeType.split(";")[0] ?? "audio/mp4";
-      await ensureProcessor();
-      await sendChunksToProcessor({
-        videoId: request.videoId,
-        tabId,
-        videoData: request.type !== "audio" && videoData.byteLength > 0 ? videoData : null,
-        audioData: request.type !== "video" && audioData.byteLength > 0 ? audioData : null
-      });
+
+      // Stream chunks to the processor AS they arrive instead of buffering
+      // the entire video in SW memory (which causes Chrome to kill the SW).
+      const chunkSize = 1024 * 1024;
+
+      async function streamToProcessor(
+        stream: ReadableStream<Uint8Array>,
+        streamType: string
+      ) {
+        const reader = stream.getReader();
+        let buffer = new Uint8Array(0);
+        let iChunk = 0;
+
+        while (true) {
+          const { done, value } = await reader.read();
+
+          if (value) {
+            // Append to buffer
+            const newBuffer = new Uint8Array(buffer.byteLength + value.byteLength);
+            newBuffer.set(buffer);
+            newBuffer.set(value, buffer.byteLength);
+            buffer = newBuffer;
+          }
+
+          // Send complete chunks (1MB each) as they accumulate
+          while (buffer.byteLength >= chunkSize || (done && buffer.byteLength > 0)) {
+            const slice = buffer.slice(0, chunkSize);
+            buffer = buffer.slice(chunkSize);
+
+            let base64 = "";
+            const batchSize = 8192;
+            for (let offset = 0; offset < slice.byteLength; offset += batchSize) {
+              base64 += String.fromCharCode(
+                ...slice.subarray(offset, Math.min(offset + batchSize, slice.byteLength))
+              );
+            }
+
+            await sendMessage(MessageType.ProcessStreamChunk, {
+              videoId: request.videoId,
+              streamType,
+              iChunk,
+              totalChunks: 0, // Unknown total - processor handles this
+              chunkBase64: btoa(base64),
+              tabId
+            });
+            iChunk++;
+
+            if (buffer.byteLength === 0) {
+              break;
+            }
+          }
+
+          if (done) {
+            // Send a final marker chunk with the correct total
+            await sendMessage(MessageType.ProcessStreamChunk, {
+              videoId: request.videoId,
+              streamType,
+              iChunk: -1, // Marker: total count
+              totalChunks: iChunk,
+              chunkBase64: "",
+              tabId
+            });
+            break;
+          }
+        }
+      }
+
+      await Promise.all([
+        request.type !== "audio"
+          ? streamToProcessor(videoStream, "video")
+          : videoStream.cancel(),
+        request.type !== "video"
+          ? streamToProcessor(audioStream, "audio")
+          : audioStream.cancel()
+      ]);
       await sendMessage(MessageType.ProcessStreamEnd, {
         type: request.type,
         videoId: request.videoId,
@@ -523,6 +722,71 @@ export default defineBackground(() => {
       tabId
     );
   });
+
+  // Open a background watch tab to download a video. YouTube's Service Worker
+  // on watch pages handles googlevideo CORS only for top-level navigations
+  // (not iframes or extension contexts). The content script on the new tab
+  // receives ExecuteDownloadItem and processes the download. Tab closes when done.
+  onMessage(MessageType.DownloadViaWatchPage, async ({ data, sender }) => {
+    const watchUrl = `https://www.youtube.com/watch?v=${data.videoId}`;
+
+    const tab = await browser.tabs.create({
+      url: watchUrl,
+      active: false
+    });
+
+    if (!tab.id) {
+      return;
+    }
+
+    const watchTabId = tab.id;
+
+    // Wait for the tab to finish loading
+    await new Promise<void>(resolve => {
+      function onUpdated(tabId: number, changeInfo: Browser.tabs.OnUpdatedChangeInfoType) {
+        if (tabId === watchTabId && changeInfo.status === "complete") {
+          browser.tabs.onUpdated.removeListener(onUpdated);
+          resolve();
+        }
+      }
+      browser.tabs.onUpdated.addListener(onUpdated);
+      globalThis.setTimeout(() => {
+        browser.tabs.onUpdated.removeListener(onUpdated);
+        resolve();
+      }, 30_000);
+    });
+
+    // Give content scripts time to initialize
+    await new Promise(resolve => {
+      return globalThis.setTimeout(resolve, 3000);
+    });
+
+    // Send the download request to the watch tab's content script
+    try {
+      await sendMessage(MessageType.ExecuteDownloadItem, data, watchTabId);
+    } catch {
+      await new Promise(resolve => {
+        return globalThis.setTimeout(resolve, 5000);
+      });
+      await sendMessage(MessageType.ExecuteDownloadItem, data, watchTabId);
+    }
+
+    // Track this tab so it gets cleaned up when the download completes
+    trackVideoForTab(data.videoId, watchTabId);
+    tabTracker[watchTabId] ??= { videoIdsAvailable: [] };
+    tabTracker[watchTabId].videoIdsAvailable.push(data.videoId);
+
+    // Keep the SW alive by pinging from the watch tab every 25s
+    await sendMessage(MessageType.StartKeepalive, { videoId: data.videoId }, watchTabId);
+
+    // Close the tab when the download is done (max 15 min safety net)
+    globalThis.setTimeout(() => {
+      browser.tabs.remove(watchTabId).catch(() => {});
+    }, 15 * 60 * 1000);
+  });
+
+  // Keepalive ping from content scripts - resets SW idle timer
+  onMessage(MessageType.Keepalive, () => {});
 
   onMessage(MessageType.RequestPlaylistDownload, async ({ data, sender }) => {
     const tabId = sender.tab?.id;

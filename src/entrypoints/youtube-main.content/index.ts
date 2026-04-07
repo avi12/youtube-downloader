@@ -133,48 +133,84 @@ export default defineContentScript({
     // On watch pages, YouTube's Service Worker handles CORS for googlevideo.com.
     // On other pages, use the page's fetch which may get CORS-blocked - SabrStream
     // will fall back to SourceBuffer capture in that case.
+    let proxyFetchRequestId = 0;
+
     function createSabrStream(sabrConfig: NonNullable<VideoData["sabrConfig"]>) {
       const sabrFormats = sabrConfig.formats.map(adaptiveFormatToSabrFormat);
       const durationMs = parseInt(sabrConfig.formats[0]?.approxDurationMs ?? "0");
 
-      // Wrap fetch to avoid CORS preflight on googlevideo.com.
-      // SabrStream sends non-safelisted headers (content-type: application/x-protobuf,
-      // accept: application/vnd.yt-ump) which trigger preflight OPTIONS requests.
-      // Googlevideo.com doesn't handle OPTIONS, so we rewrite to safelisted values.
-      // The server accepts any Content-Type and ignores Accept.
-      // Fetch wrapper that tries originalFetch first (goes through YouTube's
-      // Service Worker for CORS). If it fails (CORS preflight or network error),
-      // retries through the background service worker which has host_permissions.
-      async function sabrFetchWithFallback(input: RequestInfo | URL, init?: RequestInit) {
-        try {
-          return await originalFetch(input, init);
-        } catch {
-          // CORS preflight failed - relay through background
-          const url = input instanceof URL ? input.href : String(input);
-          let bodyArray = new Uint8Array(0);
-          const rawBody = init?.body;
-          if (rawBody instanceof ArrayBuffer) {
-            bodyArray = new Uint8Array(rawBody);
-          } else if (ArrayBuffer.isView(rawBody)) {
-            bodyArray = new Uint8Array(rawBody.buffer, rawBody.byteOffset, rawBody.byteLength);
+      // Relay a fetch through the isolated world → background using CustomEvent.
+      // CustomEvents cross the MAIN/isolated world boundary (unlike postMessage).
+      function proxyFetchViaBackground(url: string, bodyBase64: string) {
+        const requestId = proxyFetchRequestId++;
+        return new Promise<{ status: number; bodyBase64: string } | null>((resolve) => {
+          function handleResponse(e: Event) {
+            const detail = (e as CustomEvent).detail;
+            if (detail?.requestId !== requestId) {
+              return;
+            }
+
+            removeEventListener("ytdl:proxy-fetch-response", handleResponse);
+            resolve(detail.result);
           }
 
-          const result = await crossWorldMessenger.sendMessage(CrossWorldMessage.ProxyFetch, {
-            url,
-            bodyBase64: btoa(String.fromCharCode(...bodyArray))
-          });
-          if (!result?.bodyBase64) {
-            throw new TypeError("Background fetch failed");
-          }
+          addEventListener("ytdl:proxy-fetch-response", handleResponse);
+          dispatchEvent(new CustomEvent("ytdl:proxy-fetch-request", {
+            detail: { requestId, url, bodyBase64 }
+          }));
 
-          const responseBytes = Uint8Array.from(atob(result.bodyBase64), character => {
-            return character.charCodeAt(0);
-          });
-          return new Response(responseBytes, {
-            status: result.status,
-            headers: { "content-type": "application/vnd.yt-ump" }
-          });
+          // Timeout after 60s
+          setTimeout(() => {
+            removeEventListener("ytdl:proxy-fetch-response", handleResponse);
+            resolve(null);
+          }, 60_000);
+        });
+      }
+
+      // On non-watch pages, YouTube's SW doesn't handle googlevideo CORS.
+      // Create a hidden iframe pointing to a YouTube watch URL - the iframe
+      // loads YouTube's SW which handles googlevideo CORS, and since it's
+      // same-origin we can call iframe.contentWindow.fetch directly.
+      let iframeFetch: typeof fetch | null = null;
+
+      async function getIframeFetch() {
+        if (iframeFetch) {
+          return iframeFetch;
         }
+
+        const elIframe = document.createElement("iframe");
+        elIframe.src = "https://www.youtube.com/embed/dQw4w9WgXcQ";
+        elIframe.style.display = "none";
+        document.body.append(elIframe);
+
+        // Wait for iframe to load (SW registers)
+        await new Promise<void>(resolve => {
+          elIframe.addEventListener("load", () => resolve(), { once: true });
+        });
+
+        // Wait a bit more for the SW to initialize
+        await new Promise(resolve => {
+          return setTimeout(resolve, 2000);
+        });
+
+        iframeFetch = elIframe.contentWindow!.fetch.bind(elIframe.contentWindow);
+        return iframeFetch;
+      }
+
+      async function sabrFetchWithFallback(input: RequestInfo | URL, init?: RequestInit) {
+        const isWatchPage = location.pathname === "/watch";
+
+        if (isWatchPage) {
+          try {
+            return await originalFetch(input, init);
+          } catch {
+            // Fall through to iframe fetch
+          }
+        }
+
+        // Use iframe's fetch which goes through YouTube's SW (handles CORS)
+        const fetchFn = await getIframeFetch();
+        return fetchFn(input, init);
       }
 
       return new SabrStream({
@@ -736,8 +772,40 @@ export default defineContentScript({
           }
         }
 
-        // Strategy 3: SourceBuffer capture - use whatever the player has buffered.
-        // This is a last resort: it only has what the player loaded so far.
+        // Strategy 3: SourceBuffer capture - wait for the player to finish buffering.
+        // Speed up playback so the full video is captured as fast as possible.
+        const elVideo = document.querySelector<HTMLVideoElement>("video");
+        if (elVideo && !elVideo.ended) {
+          const originalRate = elVideo.playbackRate;
+          elVideo.playbackRate = 16;
+          elVideo.muted = true;
+          if (elVideo.paused) {
+            elVideo.play().catch(() => {});
+          }
+
+          console.log("[ytdl] SourceBuffer fallback: speeding up playback to capture full video");
+
+          await new Promise<void>(resolve => {
+            function onEnded() {
+              elVideo.removeEventListener("ended", onEnded);
+              resolve();
+            }
+            elVideo.addEventListener("ended", onEnded);
+            // Safety timeout: max 5 min even at 16x speed
+            globalThis.setTimeout(() => {
+              elVideo.removeEventListener("ended", onEnded);
+              resolve();
+            }, 5 * 60 * 1000);
+          });
+
+          elVideo.playbackRate = originalRate;
+        }
+
+        // Give SourceBuffer a moment to flush final chunks
+        await new Promise(resolve => {
+          return globalThis.setTimeout(resolve, 1000);
+        });
+
         const capture = capturedMedia.get(videoId);
         if (capture && (capture.videoTotalBytes > 0 || capture.audioTotalBytes > 0)) {
           const videoBytes = assembleChunks(capture.videoChunks, capture.videoTotalBytes);

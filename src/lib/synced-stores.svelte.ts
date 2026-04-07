@@ -69,6 +69,13 @@ export const cancelRequestSignal = createSyncedSignal<{ videoIds: string[] } | n
   "cancel-request", null
 );
 
+// ─── Button click relay (MAIN world writes, isolated world reads) ──────
+// Relays Polymer button clicks from MAIN world to isolated world components.
+
+export const buttonClickSignal = createSyncedSignal<{ buttonId: string } | null>(
+  "button-click", null
+);
+
 // ─── Interrupted downloads (background writes via isolated, MAIN reads) ──
 
 export const interruptedDownloadStore = createSyncedMap<InterruptedDownload>(

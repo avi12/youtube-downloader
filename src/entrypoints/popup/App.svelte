@@ -189,7 +189,9 @@
       font-size: max(1rem, 16px);
     }
 
-    *, *::before, *::after {
+    *,
+ *::before,
+ *::after {
       box-sizing: border-box;
     }
 
@@ -203,13 +205,12 @@
       --md-sys-color-outline: #79747e;
       --md-sys-color-outline-variant: #cac4d0;
       --md-sys-color-primary: #6750a4;
-      --md-sys-color-on-primary: #fff;
+      --md-sys-color-on-primary: #ffffff;
       --md-sys-color-primary-container: #eaddff;
       --md-sys-color-secondary-container: #e8def8;
       --md-sys-color-error: #b3261e;
       --md-sys-color-error-container: #f9dedc;
       --md-sys-color-on-error-container: #410e0b;
-
       --bg: var(--md-sys-color-surface);
       --fg: var(--md-sys-color-on-surface);
       --fg-muted: var(--md-sys-color-on-surface-variant);

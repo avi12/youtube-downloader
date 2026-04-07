@@ -25,7 +25,9 @@ export enum SyncKey {
   VideoDataRequest = "video-data-request",
   StreamData = "stream-data",
   SetButtonData = "set-button-data",
-  ButtonClick = "button-click"
+  ButtonClick = "button-click",
+  ProxyFetchRequest = "proxy-fetch-request",
+  ProxyFetchResponse = "proxy-fetch-response"
 }
 
 // ─── Transport layer ─────────────────────────────────────────────────────────

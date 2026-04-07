@@ -1,6 +1,15 @@
+<script lang="ts" module>
+  // Module-level guard to prevent duplicate download triggers from
+  // multiple component instances responding to the same ButtonClick message
+  // eslint-disable-next-line svelte/prefer-svelte-reactivity
+  const activeDownloadClicks = new Set<string>();
+</script>
+
 <script lang="ts">
+  import { CrossWorldMessage, crossWorldMessenger } from "../lib/cross-world-messenger";
   import { MessageType, sendMessage } from "../lib/messaging";
   import {
+    buttonClickSignal,
     cancelRequestSignal,
     downloadProgressStore,
     type DownloadProgressState,
@@ -91,7 +100,7 @@
   });
 
   async function handleDownloadClick() {
-    if (!videoData?.isDownloadable) {
+    if (!videoData?.isDownloadable || activeDownloadClicks.has(videoId)) {
       return;
     }
 
@@ -115,7 +124,11 @@
       ? getOutputExtension(selectedVideoFormat.mimeType, selectedAudioFormat.mimeType, resolvedExtension)
       : resolvedExtension;
     const filenameOutput = getCompatibleFilename(`${videoData.title}.${outputExtension}`);
+    if (!videoData.sabrConfig) {
+      return;
+    }
 
+    activeDownloadClicks.add(videoId);
     downloadProgressStore.set(videoId, {
       isDownloading: true,
       isDone: false,
@@ -124,29 +137,20 @@
       progressType: ""
     });
 
-    const resolved = await sendMessage(MessageType.ResolveFormatUrls, {
-      videoId,
-      videoItag: selectedVideoFormat?.itag ?? 0,
-      audioItag: selectedAudioFormat?.itag ?? 0
-    });
-    if (!resolved) {
-      downloadProgressStore.delete(videoId);
-      return;
-    }
-
-    postMessage({
-      namespace: SYNC_NAMESPACE,
-      key: SyncKey.DirectDownloadRequest,
-      value: {
+    try {
+      // Chrome strips Origin from extension SW fetch, causing googlevideo 403.
+      // Open a background watch tab where YouTube's SW handles CORS natively.
+      // The tab is created inactive so the user stays on subscriptions.
+      await sendMessage(MessageType.DownloadViaWatchPage, {
+        type: downloadType,
         videoId,
-        videoUrl: resolved.videoUrl,
-        audioUrl: resolved.audioUrl,
-        videoMimeType: resolved.videoMimeType,
-        audioMimeType: resolved.audioMimeType,
-        filenameOutput,
-        type: downloadType
-      }
-    }, location.origin);
+        videoItag: selectedVideoFormat?.itag ?? 0,
+        audioItag: selectedAudioFormat?.itag ?? 0,
+        filenameOutput
+      });
+    } finally {
+      activeDownloadClicks.delete(videoId);
+    }
   }
 
   function getItemIconName() {
@@ -378,13 +382,9 @@
     refreshDownloadButton();
   }
 
-  addEventListener("message", e => {
-    if (e.data?.namespace !== SYNC_NAMESPACE || e.data.key !== SyncKey.ButtonClick) {
-      return;
-    }
-
-    const clickedId = e.data.value?.buttonId;
-    if (clickedId && elDownloadBtn?.getAttribute("data-ytdl-button-id") === clickedId) {
+  $effect(() => {
+    const clicked = buttonClickSignal.value;
+    if (clicked?.buttonId && elDownloadBtn?.getAttribute("data-ytdl-button-id") === clicked.buttonId) {
       void handleDownloadClick();
     }
   });
@@ -418,13 +418,9 @@
     element.setAttribute("style", "margin-left: 0 !important");
   }
 
-  addEventListener("message", e => {
-    if (e.data?.namespace !== SYNC_NAMESPACE || e.data.key !== SyncKey.ButtonClick) {
-      return;
-    }
-
-    const clickedId = e.data.value?.buttonId;
-    if (clickedId && elChevronBtn?.getAttribute("data-ytdl-button-id") === clickedId) {
+  $effect(() => {
+    const clicked = buttonClickSignal.value;
+    if (clicked?.buttonId && elChevronBtn?.getAttribute("data-ytdl-button-id") === clicked.buttonId) {
       togglePanel();
     }
   });
