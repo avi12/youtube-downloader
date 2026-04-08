@@ -20,7 +20,7 @@
   } from "@/lib/synced-stores.svelte";
   import { getOutputExtension, resolveAutoExtension, resolveVideoFilename } from "@/lib/utils";
   import { ProgressType } from "@/types";
-  import type { DownloadType } from "@/types";
+  import { DownloadType } from "@/types";
   import {
     ButtonSize,
     ButtonState,
@@ -110,7 +110,7 @@
       return;
     }
 
-    let downloadType: DownloadType = videoData.isMusic ? "audio" : "video+audio";
+    let downloadType: DownloadType = videoData.isMusic ? DownloadType.Audio : DownloadType.VideoAndAudio;
     if (options.defaultDownloadType && options.defaultDownloadType !== "auto") {
       downloadType = options.defaultDownloadType;
     }
@@ -212,7 +212,7 @@
     const quality = getDefaultQualityLabel();
     const videoFormat = videoData.videoFormats[0];
     const audioFormat = videoData.audioFormats[0];
-    const resolvedExt = resolveAutoExtension(options.ext.video, videoFormat?.mimeType ?? "", "video");
+    const resolvedExt = resolveAutoExtension(options.ext.video, videoFormat?.mimeType ?? "", DownloadType.Video);
     const extension = videoFormat && audioFormat
       ? getOutputExtension(videoFormat.mimeType, audioFormat.mimeType, resolvedExt)
       : resolvedExt;

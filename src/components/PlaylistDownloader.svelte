@@ -15,7 +15,8 @@
     ButtonType,
     IconName
   } from "@/types";
-  import type { DownloadType, Options, VideoData } from "@/types";
+  import { DownloadType } from "@/types";
+  import type { Options, VideoData } from "@/types";
   import { SvelteMap, SvelteSet } from "svelte/reactivity";
 
   type Props = { options: Options };
@@ -107,7 +108,7 @@
     const playlistId = metadata?.playlistId || `playlist-${Date.now()}`;
 
     const downloadRequests = checkedDownloadableVideos.map(data => {
-      let downloadType: DownloadType = data.isMusic ? "audio" : "video+audio";
+      let downloadType: DownloadType = data.isMusic ? DownloadType.Audio : DownloadType.VideoAndAudio;
       if (options.defaultDownloadType !== "auto") {
         downloadType = options.defaultDownloadType;
       }

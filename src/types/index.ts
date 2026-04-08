@@ -22,7 +22,11 @@ export {
 
 // -- Extension state types ----------------------------------------------------
 
-export type DownloadType = "video+audio" | "video" | "audio";
+export enum DownloadType {
+  VideoAndAudio = "video+audio",
+  Video = "video",
+  Audio = "audio"
+}
 
 export enum ProgressType {
   Video = "video",

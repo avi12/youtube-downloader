@@ -13,7 +13,7 @@
     IconName,
     type AdaptiveFormatItem,
     type ButtonViewModelData,
-    type DownloadType,
+    DownloadType,
     type Options,
     ProgressType,
     isPolymerProgressElement,
@@ -53,7 +53,7 @@
         return options.defaultDownloadType;
       }
 
-      return videoData.isMusic ? "audio" : "video+audio";
+      return videoData.isMusic ? DownloadType.Audio : DownloadType.VideoAndAudio;
     })
   );
   let selectedVideoFormat = $state<AdaptiveFormatItem | null>(
@@ -69,7 +69,7 @@
       const defaultFormat = videoData.isMusic
         ? videoData.audioFormats[0]
         : videoData.videoFormats[0];
-      return resolveAutoExtension(extPref, defaultFormat?.mimeType ?? "", videoData.isMusic ? "audio" : "video");
+      return resolveAutoExtension(extPref, defaultFormat?.mimeType ?? "", videoData.isMusic ? DownloadType.Audio : DownloadType.Video);
     })
   );
 
@@ -79,7 +79,7 @@
   // FFmpeg may produce webm/mkv instead of the user's default extension when
   // the selected video and audio codecs require a different container.
   const actualExtension = $derived.by(() => {
-    if (downloadType === "audio") {
+    if (downloadType === DownloadType.Audio) {
       return extension;
     }
 
@@ -106,7 +106,7 @@
   const fullFilename = $derived(getCompatibleFilename(`${filename}.${actualExtension}`));
 
   const qualityLabel = $derived(() => {
-    if (downloadType === "audio") {
+    if (downloadType === DownloadType.Audio) {
       if (!selectedAudioFormat) {
         return "";
       }
@@ -248,9 +248,9 @@
     isDownloading = false;
     progress = 0;
     downloadType = newType;
-    const extPref = newType === "audio" ? options.ext.audio : options.ext.video;
-    const format = newType === "audio" ? selectedAudioFormat : selectedVideoFormat;
-    extension = resolveAutoExtension(extPref, format?.mimeType ?? "", newType === "audio" ? "audio" : "video");
+    const extPref = newType === DownloadType.Audio ? options.ext.audio : options.ext.video;
+    const format = newType === DownloadType.Audio ? selectedAudioFormat : selectedVideoFormat;
+    extension = resolveAutoExtension(extPref, format?.mimeType ?? "", newType === DownloadType.Audio ? DownloadType.Audio : DownloadType.Video);
   }
 
   function startDownload() {
@@ -258,7 +258,7 @@
       return;
     }
 
-    if (downloadType !== "audio" && !selectedVideoFormat) {
+    if (downloadType !== DownloadType.Audio && !selectedVideoFormat) {
       return;
     }
 
@@ -266,7 +266,7 @@
     isDone = false;
     progress = 0;
 
-    if (downloadType === "video+audio") {
+    if (downloadType === DownloadType.VideoAndAudio) {
       progressType = "";
     }
 

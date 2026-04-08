@@ -16,7 +16,8 @@ import {
   uint8ToBase64
 } from "./utils";
 import { ProgressType } from "@/types";
-import type { DownloadType, ProcessStreamData, VideoMetadata } from "@/types";
+import { DownloadType } from "@/types";
+import type { ProcessStreamData, VideoMetadata } from "@/types";
 import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { zipSync } from "fflate";
 
@@ -312,7 +313,7 @@ async function processSingleMedia(item: ProcessStreamData) {
   const {
     videoId, type, filenameOutput, videoData, audioData, tabId
   } = item;
-  const rawData = type === "audio" ? audioData : videoData;
+  const rawData = type === DownloadType.Audio ? audioData : videoData;
   let data = toUint8Array(rawData);
   if (!data) {
     return;
@@ -321,12 +322,12 @@ async function processSingleMedia(item: ProcessStreamData) {
   await reportProgress({
     videoId,
     progress: 0.99,
-    progressType: type === "audio" ? ProgressType.Audio : ProgressType.Video,
+    progressType: type === DownloadType.Audio ? ProgressType.Audio : ProgressType.Video,
     tabId
   });
 
   // Embed ID3 tags and cover art for music downloads
-  if (type === "audio" && item.metadata?.isMusic) {
+  if (type === DownloadType.Audio && item.metadata?.isMusic) {
     await reportProgress({
       videoId,
       progress: 0.5,
@@ -516,7 +517,7 @@ async function processItem(item: ProcessStreamData) {
   activeJobs.set(item.videoId, job);
 
   try {
-    if (item.type === "video+audio") {
+    if (item.type === DownloadType.VideoAndAudio) {
       await enqueueMuxJob(async () => {
         const ffmpeg = await getFFmpegInstance();
         job.ffmpeg = ffmpeg;

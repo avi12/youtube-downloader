@@ -31,7 +31,7 @@ import {
   ButtonType,
   type ButtonViewModelData,
   type DownloadRequest,
-  type DownloadType,
+  DownloadType,
   IconName,
   ProgressType,
   type PlayerResponse,
@@ -465,10 +465,10 @@ export default defineContentScript({
           return;
         }
 
-        const videoFormat = type !== "audio"
+        const videoFormat = type !== DownloadType.Audio
           ? (cachedVideoData.videoFormats.find(format => format.itag === videoItag) ?? cachedVideoData.videoFormats[0])
           : null;
-        const audioFormat = type !== "video"
+        const audioFormat = type !== DownloadType.Video
           ? (cachedVideoData.audioFormats.find(format => format.itag === audioItag) ?? cachedVideoData.audioFormats[0])
           : null;
 
@@ -537,8 +537,8 @@ export default defineContentScript({
               type,
               videoId,
               filenameOutput,
-              videoData: type !== "audio" ? primaryResult.videoData : null,
-              audioData: type !== "video" ? primaryResult.audioData : null,
+              videoData: type !== DownloadType.Audio ? primaryResult.videoData : null,
+              audioData: type !== DownloadType.Video ? primaryResult.audioData : null,
               videoMimeType,
               audioMimeType,
               audioLabel,
@@ -571,8 +571,8 @@ export default defineContentScript({
         || audioFormat?.url || audioFormat?.signatureCipher;        if (hasDownloadableFormats) {
           try {
             const [resolvedVideoUrl, resolvedAudioUrl, ...resolvedExtraUrls] = await Promise.all([
-              type !== "audio" ? resolveFormatUrl(videoFormat) : Promise.resolve(null),
-              type !== "video" ? resolveFormatUrl(audioFormat) : Promise.resolve(null),
+              type !== DownloadType.Audio ? resolveFormatUrl(videoFormat) : Promise.resolve(null),
+              type !== DownloadType.Video ? resolveFormatUrl(audioFormat) : Promise.resolve(null),
               ...extraAudioFormats.map(format => resolveFormatUrl(format))
             ]);            if (!resolvedVideoUrl && !resolvedAudioUrl) {
               console.warn("[ytdl] Could not resolve any format URLs");
@@ -842,7 +842,7 @@ export default defineContentScript({
         `${videoData.title}.${defaultExtension}`
       );
       let defaultQuality = "";
-      const defaultDownloadType: DownloadType = videoData.isMusic ? "audio" : "video+audio";
+      const defaultDownloadType: DownloadType = videoData.isMusic ? DownloadType.Audio : DownloadType.VideoAndAudio;
 
       let isDownloading = false;
       let isDone = false;

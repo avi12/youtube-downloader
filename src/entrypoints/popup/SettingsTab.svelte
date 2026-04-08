@@ -2,6 +2,7 @@
   import FormatSelect from "@/components/FormatSelect.svelte";
   import { setOption } from "@/lib/storage";
   import { supportedExtensions, videoQualities } from "@/lib/utils";
+  import { DownloadType } from "@/types";
   import type { DownloadTypePreference, Options } from "@/types";
 
   type Props = { options: Options };
@@ -90,8 +91,8 @@
       <label class="settings-label settings-radio-label">
         <input
           name="download-type"
-          checked={options.defaultDownloadType === "video+audio"}
-          onchange={() => updateDefaultDownloadType("video+audio")}
+          checked={options.defaultDownloadType === DownloadType.VideoAndAudio}
+          onchange={() => updateDefaultDownloadType(DownloadType.VideoAndAudio)}
           type="radio"
           value="video+audio"
         />
@@ -102,8 +103,8 @@
       <label class="settings-label settings-radio-label">
         <input
           name="download-type"
-          checked={options.defaultDownloadType === "video"}
-          onchange={() => updateDefaultDownloadType("video")}
+          checked={options.defaultDownloadType === DownloadType.Video}
+          onchange={() => updateDefaultDownloadType(DownloadType.Video)}
           type="radio"
           value="video"
         />
@@ -114,8 +115,8 @@
       <label class="settings-label settings-radio-label">
         <input
           name="download-type"
-          checked={options.defaultDownloadType === "audio"}
-          onchange={() => updateDefaultDownloadType("audio")}
+          checked={options.defaultDownloadType === DownloadType.Audio}
+          onchange={() => updateDefaultDownloadType(DownloadType.Audio)}
           type="radio"
           value="audio"
         />

@@ -2,7 +2,8 @@
   import Select from "./Select.svelte";
   import { applyPolymerCustomStyles, PAPER_INPUT_THEME } from "@/lib/polymer-utils";
   import { splitFilenameAndExtension, supportedExtensions } from "@/lib/utils";
-  import type { AdaptiveFormatItem, DownloadType } from "@/types";
+  import { DownloadType } from "@/types";
+  import type { AdaptiveFormatItem } from "@/types";
 
   type Props = {
     downloadType: DownloadType;
@@ -38,10 +39,10 @@
     onvalidationchange
   }: Props = $props();
 
-  const extensionType = $derived(downloadType === "audio" ? "audio" : "video");
+  const extensionType = $derived(downloadType === DownloadType.Audio ? DownloadType.Audio : DownloadType.Video);
   const fullFilename = $derived(`${filename}.${extension}`);
 
-  function getFilenameError(value: string, type: "video" | "audio") {
+  function getFilenameError(value: string, type: DownloadType.Video | DownloadType.Audio) {
     const illegalMatch = value.match(/[<>:"/\\|?*]/);
     if (illegalMatch) {
       return `Character "${illegalMatch[0]}" isn't allowed in filenames`;
@@ -82,20 +83,20 @@
     label: string;
   }[] = [
     {
-      value: "video+audio",
+      value: DownloadType.VideoAndAudio,
       label: "Video + Audio"
     },
     {
-      value: "video",
+      value: DownloadType.Video,
       label: "Video only"
     },
     {
-      value: "audio",
+      value: DownloadType.Audio,
       label: "Audio only"
     }
   ];
 
-  const isAudio = $derived(downloadType === "audio");
+  const isAudio = $derived(downloadType === DownloadType.Audio);
 
   const qualityOptions = $derived(
     isAudio

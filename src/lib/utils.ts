@@ -1,3 +1,4 @@
+import { DownloadType } from "@/types";
 import type { Options, PlayerResponse, VideoData } from "@/types";
 import { PlayabilityStatus } from "@/types/youtube";
 
@@ -66,20 +67,22 @@ export const supportedExtensions = {
  * Resolves "auto" to the natural container for the given MIME type.
  * Pass-through for explicit extensions.
  */
-export function resolveAutoExtension(extension: string, mimeType: string, type: "video" | "audio") {
+export function resolveAutoExtension(
+  extension: string, mimeType: string, type: DownloadType.Video | DownloadType.Audio
+) {
   if (extension !== AUTO_EXTENSION) {
     return extension;
   }
 
   if (mimeType.includes("webm")) {
-    return type === "audio" ? "weba" : "webm";
+    return type === DownloadType.Audio ? "weba" : "webm";
   }
 
   if (mimeType.includes("ogg")) {
     return "ogg";
   }
 
-  return type === "audio" ? "m4a" : "mp4";
+  return type === DownloadType.Audio ? "m4a" : "mp4";
 }
 
 type SupportedExtension = keyof typeof extensionToMimeAll;
@@ -234,7 +237,7 @@ export function resolveVideoFilename(videoData: VideoData, options: Options, tit
   const audioFormat = videoData.audioFormats[0] ?? null;
   const extPref = videoData.isMusic ? options.ext.audio : options.ext.video;
   const defaultFormat = videoData.isMusic ? audioFormat : videoFormat;
-  const resolvedExtension = resolveAutoExtension(extPref, defaultFormat?.mimeType ?? "", videoData.isMusic ? "audio" : "video");
+  const resolvedExtension = resolveAutoExtension(extPref, defaultFormat?.mimeType ?? "", videoData.isMusic ? DownloadType.Audio : DownloadType.Video);
   const outputExtension = videoFormat && audioFormat && !videoData.isMusic
     ? getOutputExtension(videoFormat.mimeType, audioFormat.mimeType, resolvedExtension)
     : resolvedExtension;
