@@ -16,9 +16,8 @@
     type DownloadProgressState,
     videoDataStore
   } from "@/lib/synced-stores.svelte";
-  import { getOutputExtension, resolveAutoExtension, resolveVideoFilename } from "@/lib/utils";
-  import { ProgressType } from "@/types";
-  import { DownloadType } from "@/types";
+  import { calculateWeightedProgress, formatVideoQualityLabel, getOutputExtension, resolveAutoExtension, resolveVideoFilename } from "@/lib/utils";
+  import { DownloadType, ProgressType } from "@/types";
   import {
     ButtonSize,
     ButtonState,
@@ -166,31 +165,11 @@
   let unsubscribeDropdownReady: (() => void) | null = null;
 
   // Weighted progress: download phase = 0-80%, mux phase = 80-100%
-  // Both phases report their own 0-1 progress, combined into a single 0-100 value
-  const displayProgress = $derived.by(() => {
-    if (!isDownloading) {
-      return 0;
-    }
-
-    const isMuxPhase = downloadState.progressType === ProgressType.FFmpeg;
-    if (isMuxPhase) {
-      return 80 + downloadState.progress * 20;
-    }
-
-    return downloadState.progress * 80;
-  });
+  const displayProgress = $derived(calculateWeightedProgress(isDownloading, downloadState.progress, downloadState.progressType));
 
   function getDefaultQualityLabel() {
-    if (!videoData) {
-      return "";
-    }
-
-    const videoFormat = videoData.videoFormats[0];
-    if (!videoFormat) {
-      return "";
-    }
-
-    return `${videoFormat.height}p${videoFormat.fps ? ` ${videoFormat.fps}fps` : ""}`;
+    const videoFormat = videoData?.videoFormats[0];
+    return videoFormat ? formatVideoQualityLabel(videoFormat) : "";
   }
 
   function getButtonTooltip() {

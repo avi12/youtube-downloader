@@ -1,7 +1,7 @@
 <script lang="ts">
   import Select from "./Select.svelte";
   import { applyPolymerCustomStyles, PAPER_INPUT_THEME } from "@/lib/polymer-utils";
-  import { splitFilenameAndExtension, supportedExtensions } from "@/lib/utils";
+  import { formatVideoQualityLabel, splitFilenameAndExtension, supportedExtensions } from "@/lib/utils";
   import { DownloadType } from "@/types";
   import type { AdaptiveFormatItem } from "@/types";
 
@@ -101,14 +101,10 @@
       }));
     }
 
-    return videoFormats.map(format => {
-      const isPremium = format.qualityLabel?.includes("Premium") ?? false;
-      const base = `${format.height}p${format.fps ? ` ${format.fps}fps` : ""}`;
-      return {
-        value: format.itag.toString(),
-        label: isPremium ? `${base} (Enhanced)` : base
-      };
-    });
+    return videoFormats.map(format => ({
+      value: format.itag.toString(),
+      label: formatVideoQualityLabel(format)
+    }));
   });
 
   const qualityValue = $derived(isAudio
