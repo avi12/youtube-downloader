@@ -191,6 +191,8 @@ export default defineContentScript({
     // grid downloads. We ping the SW every 25s to prevent Chrome from
     // killing it during long downloads.
     onMessage(MessageType.StartKeepalive, () => {
+      // 25s keeps the SW alive without hammering it; Chrome kills idle SWs after ~30s
+      const swKeepaliveIntervalMs = 25_000;
       const keepaliveInterval = setInterval(async () => {
         try {
           await sendMessage(MessageType.Keepalive, {});
@@ -198,7 +200,7 @@ export default defineContentScript({
           // SW died or extension reloaded - stop pinging
           clearInterval(keepaliveInterval);
         }
-      }, 25_000);
+      }, swKeepaliveIntervalMs);
 
       // Stop when the tab is closed or navigation changes
       addEventListener("beforeunload", () => {
@@ -239,9 +241,9 @@ export default defineContentScript({
     onMessage(MessageType.CreateDownloadIframe, ({ data }) => {
       const { videoId, watchUrl } = data;
 
-      const existing = downloadIframes.get(videoId);
-      if (existing) {
-        existing.remove();
+      const elExistingIframe = downloadIframes.get(videoId);
+      if (elExistingIframe) {
+        elExistingIframe.remove();
         downloadIframes.delete(videoId);
       }
 
