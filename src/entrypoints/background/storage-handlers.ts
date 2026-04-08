@@ -1,6 +1,7 @@
 import { MessageType, onMessage } from "@/lib/messaging";
 import { extractPoTokenFromBody, getCapturedSabrData } from "@/lib/sabr-request-capture";
 import { interruptedDownloadsItem } from "@/lib/storage";
+import { uint8ToBase64 } from "@/lib/utils";
 
 export function registerStorageHandlers() {
   onMessage(MessageType.GetCapturedSabrBody, ({ sender }) => {
@@ -17,7 +18,7 @@ export function registerStorageHandlers() {
     const poToken = extractPoTokenFromBody(captured.body) ?? "";
 
     return {
-      body: btoa(String.fromCharCode(...captured.body)),
+      body: uint8ToBase64(new Uint8Array(captured.body)),
       url: captured.url,
       poToken
     };
