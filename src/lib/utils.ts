@@ -19,6 +19,15 @@ export function getFileExtension(filename: string) {
   return filename.slice(iDot + 1);
 }
 
+export function splitFilenameAndExtension(filename: string) {
+  const iDot = filename.lastIndexOf(".");
+  if (iDot === -1) {
+    return { name: filename, extension: "" };
+  }
+
+  return { name: filename.slice(0, iDot), extension: filename.slice(iDot + 1) };
+}
+
 // ─── MIME types ───────────────────────────────────────────────────────────────
 
 // Only containers that FFmpeg can remux YouTube streams into with -c copy.

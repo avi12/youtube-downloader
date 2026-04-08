@@ -1,7 +1,7 @@
 <script lang="ts">
   import Select from "./Select.svelte";
   import { applyPolymerCustomStyles, PAPER_INPUT_THEME } from "@/lib/polymer-utils";
-  import { supportedExtensions } from "@/lib/utils";
+  import { splitFilenameAndExtension, supportedExtensions } from "@/lib/utils";
   import type { AdaptiveFormatItem, DownloadType } from "@/types";
 
   type Props = {
@@ -47,17 +47,12 @@
       return `Character "${illegalMatch[0]}" isn't allowed in filenames`;
     }
 
-    const iDot = value.indexOf(".");
-    if (iDot === -1) {
-      return "Filename needs a file extension";
-    }
-
-    const name = value.slice(0, value.lastIndexOf("."));
+    const { name, extension } = splitFilenameAndExtension(value);
     if (!name.trim()) {
       return "Filename can't be empty";
     }
 
-    const ext = value.slice(value.lastIndexOf(".") + 1).toLowerCase();
+    const ext = extension.toLowerCase();
     if (!ext) {
       return "Filename needs a file extension";
     }
@@ -128,14 +123,9 @@
     }
 
     const value = e.target.value.trim();
-    const iLastDot = value.lastIndexOf(".");
-    if (iLastDot === -1) {
-      onfilenamechange(value);
-      onextensionchange("");
-    } else {
-      onfilenamechange(value.slice(0, iLastDot));
-      onextensionchange(value.slice(iLastDot + 1));
-    }
+    const { name, extension } = splitFilenameAndExtension(value);
+    onfilenamechange(name);
+    onextensionchange(extension);
 
     validateFilename(e.target, value);
   }
