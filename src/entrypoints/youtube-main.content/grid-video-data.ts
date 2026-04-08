@@ -1,0 +1,108 @@
+import { cancelActiveDownload } from "./download";
+import { buildAndDispatchVideoData, videoDataCache, readYtcfg } from "./video-data";
+import { extractPlayerResponseFromHtml } from "./youtube-api";
+import { SYNC_NAMESPACE, SyncKey, videoDataStore } from "@/lib/synced-stores.svelte";
+
+declare const ytcfg: { get: (key: string) => unknown } | undefined;
+
+const MAX_CONCURRENT_FETCHES = 3;
+const videoDataPending = new Set<string>();
+let activeVideoDataFetches = 0;
+
+async function fetchVideoDataViaApi(videoId: string) {
+  // The /player API returns UNPLAYABLE on non-watch pages, so fetch
+  // the watch page HTML and extract ytInitialPlayerResponse instead.
+  const isWatchPage = location.pathname === "/watch";
+  if (isWatchPage) {
+    const { clientVersion, clientName } = readYtcfg();
+    const visitorData = ytcfg?.get("VISITOR_DATA") ?? "";
+    const signatureTimestamp = ytcfg?.get("STS");
+
+    const playerData = await (await globalThis.fetch(
+      "https://www.youtube.com/youtubei/v1/player?prettyPrint=false",
+      {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Goog-Visitor-Id": String(visitorData)
+        },
+        body: JSON.stringify({
+          videoId,
+          context: {
+            client: {
+              clientName: clientName === 1 ? "WEB" : String(clientName),
+              clientVersion: String(clientVersion)
+            }
+          },
+          playbackContext: { contentPlaybackContext: { signatureTimestamp } },
+          contentCheckOk: true,
+          racyCheckOk: true
+        })
+      }
+    )).json();
+    if (playerData?.videoDetails?.videoId) {
+      await buildAndDispatchVideoData(playerData, cancelActiveDownload);
+      return;
+    }
+  }
+
+  // Fallback: fetch watch page HTML and extract player response
+  const html = await (await globalThis.fetch(
+    `https://www.youtube.com/watch?v=${videoId}`,
+    { credentials: "include" }
+  )).text();
+
+  const playerResponse = extractPlayerResponseFromHtml(html);
+  if (playerResponse?.videoDetails?.videoId) {
+    await buildAndDispatchVideoData(playerResponse, cancelActiveDownload);
+  }
+}
+
+async function processNextVideoData() {
+  if (activeVideoDataFetches >= MAX_CONCURRENT_FETCHES || videoDataPending.size === 0) {
+    return;
+  }
+
+  const { value: videoId } = videoDataPending.values().next();
+  if (!videoId) {
+    return;
+  }
+
+  videoDataPending.delete(videoId);
+  activeVideoDataFetches++;
+
+  try {
+    await fetchVideoDataViaApi(videoId);
+  } catch (error) {
+    console.warn("[ytdl] Failed to fetch video data for", videoId, error);
+  } finally {
+    activeVideoDataFetches--;
+    void processNextVideoData();
+  }
+}
+
+function handleVideoDataRequest(e: MessageEvent) {
+  if (e.data?.namespace !== SYNC_NAMESPACE || e.data?.key !== SyncKey.VideoDataRequest) {
+    return;
+  }
+
+  const videoId = e.data.value?.mapKey;
+  if (!videoId) {
+    return;
+  }
+
+  if (videoDataCache.has(videoId)) {
+    videoDataStore.set(videoId, videoDataCache.get(videoId)!);
+    return;
+  }
+
+  if (!videoDataPending.has(videoId)) {
+    videoDataPending.add(videoId);
+    void processNextVideoData();
+  }
+}
+
+export function registerGridVideoDataHandler() {
+  addEventListener("message", handleVideoDataRequest);
+}

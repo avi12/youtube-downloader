@@ -35,3 +35,4 @@ Variable naming rules:
 1. If a variable represents an element, it should be prefixed with "el"
 2. If a variable represents an index, it should be prefixed with "i", unless it's in a for loop, in which case use "I" as-is
 3. If a variable represents a boolean, it should be prefixed with "is"
+4. An event callback's first parameter must always be "e"
