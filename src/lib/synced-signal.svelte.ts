@@ -1,13 +1,14 @@
 /**
- * Cross-world reactive signals using window.postMessage.
+ * Cross-world reactive signals using defineCustomEventMessaging.
  *
- * Both MAIN and isolated content script worlds share window.postMessage,
- * making it the only reliable cross-world communication channel.
- * Each signal wraps a Svelte 5 $state and syncs writes via postMessage.
+ * Both MAIN and isolated content script worlds share window's custom events,
+ * making defineCustomEventMessaging the reliable cross-world communication channel.
+ * Each signal wraps a Svelte 5 $state and syncs writes via custom events.
  *
  * Works on Chrome MV3 and Firefox MV3 (128+).
  */
 
+import { defineCustomEventMessaging } from "@webext-core/messaging/page";
 import { SvelteMap, SvelteSet } from "svelte/reactivity";
 
 export const SYNC_NAMESPACE = "ytdl-sync";
@@ -30,61 +31,24 @@ export enum SyncKey {
   ProxyFetchResponse = "proxy-fetch-response"
 }
 
-// ─── Transport layer ─────────────────────────────────────────────────────────
-
-// Callbacks receive deserialized postMessage data - uses `unknown` since
-// the generic type parameter isn't available at the transport layer
-type SyncCallback = (value: unknown) => void;
-
-const listeners = new SvelteMap<string, Set<SyncCallback>>();
-
-addEventListener("message", e => {
-  if (e.data?.namespace !== SYNC_NAMESPACE) {
-    return;
-  }
-
-  const callbacks = listeners.get(e.data.key);
-  if (!callbacks) {
-    return;
-  }
-
-  for (const callback of callbacks) {
-    callback(e.data.value);
-  }
-});
-
-function broadcast(key: string, value: unknown) {
-  // JSON round-trip strips non-cloneable properties (Polymer objects,
-  // functions, circular references) that would cause postMessage to throw
-  const serializableValue = JSON.parse(JSON.stringify(value));
-  postMessage({
-    namespace: SYNC_NAMESPACE,
-    key,
-    value: serializableValue
-  }, location.origin);
-}
-
-function subscribe(key: string, callback: SyncCallback) {
-  if (!listeners.has(key)) {
-    listeners.set(key, new Set());
-  }
-
-  listeners.get(key)!.add(callback);
-
-  return () => {
-    listeners.get(key)?.delete(callback);
-  };
-}
-
 // ─── Single-value signal ─────────────────────────────────────────────────────
 
-export function createSyncedSignal<T>(key: string, initial: T) {
+type SignalSchema<T> = { value: (data: T) => void };
+type SignalMessenger<T> = ReturnType<typeof defineCustomEventMessaging<SignalSchema<T>>>;
+
+export function createSignalMessenger<T>(key: string): SignalMessenger<T> {
+  return defineCustomEventMessaging<SignalSchema<T>>({
+    namespace: `${SYNC_NAMESPACE}-${key}`
+  });
+}
+
+export function createSyncedSignal<T>(messenger: SignalMessenger<T>, initial: NoInfer<T>) {
   let current = $state(initial);
   let isSyncing = false;
 
-  subscribe(key, incoming => {
+  messenger.onMessage("value", ({ data }) => {
     isSyncing = true;
-    current = incoming as T;
+    current = data;
     isSyncing = false;
   });
 
@@ -96,7 +60,7 @@ export function createSyncedSignal<T>(key: string, initial: T) {
       current = newValue;
 
       if (!isSyncing) {
-        broadcast(key, newValue);
+        void messenger.sendMessage("value", newValue);
       }
     }
   };
@@ -104,68 +68,70 @@ export function createSyncedSignal<T>(key: string, initial: T) {
 
 // ─── Map-based signal ────────────────────────────────────────────────────────
 
-export function createSyncedMap<T>(keyPrefix: string) {
-  const entries = new SvelteMap<string, T>();
+type MapEntryPayload<T> = {
+  mapKey: string;
+  mapValue: T | undefined;
+};
+type MapSchema<T> = { entry: (data: MapEntryPayload<T>) => void };
+type MapMessenger<T> = ReturnType<typeof defineCustomEventMessaging<MapSchema<T>>>;
+
+export function createMapMessenger<T>(key: string): MapMessenger<T> {
+  return defineCustomEventMessaging<MapSchema<T>>({
+    namespace: `${SYNC_NAMESPACE}-${key}`
+  });
+}
+
+export function createSyncedMap<T>(messenger: MapMessenger<T>) {
+  const map = new SvelteMap<string, T>();
   const suppressed = new SvelteSet<string>();
   let isSyncing = false;
 
-  subscribe(keyPrefix, incoming => {
-    // Transport layer uses `unknown`; we control the broadcast shape
-    const { mapKey, mapValue } = incoming as { mapKey: string; mapValue: T };    // Ignore stale progress updates for cancelled downloads
+  messenger.onMessage("entry", ({ data: { mapKey, mapValue } }) => {
     if (suppressed.has(mapKey)) {
       return;
     }
 
     isSyncing = true;
-    entries.set(mapKey, mapValue);
+
+    if (mapValue === undefined) {
+      map.delete(mapKey);
+    } else {
+      map.set(mapKey, mapValue);
+    }
+
     isSyncing = false;
   });
 
   return {
-    get(mapKey: string) {
-      return entries.get(mapKey);
+    get(key: string) {
+      return map.get(key);
+    },
+    keys() {
+      return map.keys();
     },
     set(mapKey: string, value: T) {
       if (suppressed.has(mapKey)) {
         return;
       }
 
-      entries.set(mapKey, value);
+      map.set(mapKey, value);
 
       if (!isSyncing) {
-        broadcast(keyPrefix, {
-          mapKey,
-          mapValue: value
-        });
+        void messenger.sendMessage("entry", { mapKey, mapValue: value });
       }
-    },
-    has(mapKey: string) {
-      return entries.has(mapKey);
     },
     /** Marks a key as suppressed - all set/sync updates are ignored until unsuppress. */
     delete(mapKey: string) {
       suppressed.add(mapKey);
-      entries.delete(mapKey);
+      map.delete(mapKey);
 
       if (!isSyncing) {
-        broadcast(keyPrefix, {
-          mapKey,
-          mapValue: undefined
-        });
+        void messenger.sendMessage("entry", { mapKey, mapValue: undefined });
       }
     },
     /** Clears suppression so set/sync updates are accepted again. */
     unsuppress(mapKey: string) {
       suppressed.delete(mapKey);
-    },
-    get size() {
-      return entries.size;
-    },
-    values() {
-      return entries.values();
-    },
-    keys() {
-      return entries.keys();
     }
   };
 }
