@@ -6,6 +6,7 @@
 
 import { MessageType, sendMessage } from "@/lib/messaging";
 import { downloadProgressStore } from "@/lib/synced-stores.svelte";
+import { uint8ToBase64 } from "@/lib/utils";
 import type { StreamDataPayload } from "@/types";
 
 const TRANSFER_CHUNK_SIZE = 1024 * 1024;
@@ -17,19 +18,6 @@ export function cancelStreamTransfer(videoId: string) {
 
 export function uncancelStreamTransfer(videoId: string) {
   cancelledVideoIds.delete(videoId);
-}
-
-function uint8ToBase64(bytes: Uint8Array) {
-  let binary = "";
-  const batchSize = 8192;
-
-  for (let offset = 0; offset < bytes.byteLength; offset += batchSize) {
-    binary += String.fromCharCode(
-      ...bytes.subarray(offset, Math.min(offset + batchSize, bytes.byteLength))
-    );
-  }
-
-  return btoa(binary);
 }
 
 async function sendStreamChunks({ videoId, streamType, data }: {

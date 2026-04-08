@@ -17,7 +17,7 @@
     videoDataRequests,
     videoDataStore
   } from "@/lib/synced-stores.svelte";
-  import { getCompatibleFilename, getOutputExtension, resolveAutoExtension } from "@/lib/utils";
+  import { getOutputExtension, resolveAutoExtension, resolveVideoFilename } from "@/lib/utils";
   import { ProgressType } from "@/types";
   import type { DownloadType } from "@/types";
   import {
@@ -116,14 +116,7 @@
 
     const selectedVideoFormat = videoData.videoFormats[0] ?? null;
     const selectedAudioFormat = videoData.audioFormats[0] ?? null;
-    const extPref = videoData.isMusic ? options.ext.audio : options.ext.video;
-    const defaultFormat = videoData.isMusic ? selectedAudioFormat : selectedVideoFormat;
-    const resolvedExtension = resolveAutoExtension(extPref, defaultFormat?.mimeType ?? "", videoData.isMusic ? "audio" : "video");
-    const outputExtension = selectedVideoFormat && selectedAudioFormat && !videoData.isMusic
-      ? getOutputExtension(selectedVideoFormat.mimeType, selectedAudioFormat.mimeType, resolvedExtension)
-      : resolvedExtension;
-    const title = gridTitle || videoData.title;
-    const filenameOutput = getCompatibleFilename(`${title}.${outputExtension}`);
+    const filenameOutput = resolveVideoFilename(videoData, options, gridTitle);
     if (!videoData.sabrConfig) {
       return;
     }

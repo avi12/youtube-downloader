@@ -13,7 +13,7 @@
     SyncKey,
     videoDataStore
   } from "@/lib/synced-stores.svelte";
-  import { getCompatibleFilename, resolveAutoExtension } from "@/lib/utils";
+  import { resolveVideoFilename } from "@/lib/utils";
   import type { DownloadType, Options, VideoData } from "@/types";
   import { SvelteMap, SvelteSet } from "svelte/reactivity";
 
@@ -111,10 +111,7 @@
         downloadType = options.defaultDownloadType;
       }
 
-      const extPref = data.isMusic ? options.ext.audio : options.ext.video;
-      const defaultFormat = data.isMusic ? data.audioFormats[0] : data.videoFormats[0];
-      const extension = resolveAutoExtension(extPref, defaultFormat?.mimeType ?? "", data.isMusic ? "audio" : "video");
-      const filenameOutput = getCompatibleFilename(`${data.title}.${extension}`);
+      const filenameOutput = resolveVideoFilename(data, options);
 
       return {
         type: downloadType,

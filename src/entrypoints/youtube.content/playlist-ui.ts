@@ -5,6 +5,7 @@
 
 import PlaylistDownloader from "@/components/PlaylistDownloader.svelte";
 import PlaylistVideoItem from "@/components/PlaylistVideoItem.svelte";
+import { getVideoIdFromUrl } from "@/lib/utils";
 import type { Options } from "@/types";
 import { mount, unmount } from "svelte";
 
@@ -64,7 +65,7 @@ function injectPlaylistVideoItemUi({ context, options, elVideoItem }: {
     return;
   }
 
-  const videoId = new URLSearchParams(new URL(elVideoIdLink.href).search).get("v");
+  const videoId = getVideoIdFromUrl(elVideoIdLink.href);
   if (!videoId || elVideoItem.querySelector(`[data-ytdl-item="${videoId}"]`)) {
     return;
   }

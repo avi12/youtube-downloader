@@ -1,4 +1,4 @@
-import type { Options, PlayerResponse } from "@/types";
+import type { Options, PlayerResponse, VideoData } from "@/types";
 import { PlayabilityStatus } from "@/types/youtube";
 
 // ─── Filename utilities ───────────────────────────────────────────────────────
@@ -191,4 +191,53 @@ export function waitForVideoElement() {
       subtree: true
     });
   });
+}
+
+// ─── Binary utilities ─────────────────────────────────────────────────────────
+
+/**
+ * Converts a Uint8Array to a base64 string using batched String.fromCharCode
+ * to avoid stack overflow on large arrays.
+ */
+export function uint8ToBase64(bytes: Uint8Array) {
+  const batchSize = 8192;
+  let binary = "";
+
+  for (let offset = 0; offset < bytes.byteLength; offset += batchSize) {
+    binary += String.fromCharCode(
+      ...bytes.subarray(offset, Math.min(offset + batchSize, bytes.byteLength))
+    );
+  }
+
+  return btoa(binary);
+}
+
+// ─── URL utilities ────────────────────────────────────────────────────────────
+
+/** Extracts the YouTube video ID from a watch URL (?v=...). Returns null if not found. */
+export function getVideoIdFromUrl(url: string) {
+  try {
+    return new URLSearchParams(new URL(url).search).get("v");
+  } catch {
+    return null;
+  }
+}
+
+// ─── Download utilities ───────────────────────────────────────────────────────
+
+/**
+ * Resolves the output filename for a video download based on its formats and options.
+ * Handles music vs video, auto-extension resolution, and mux container selection.
+ */
+export function resolveVideoFilename(videoData: VideoData, options: Options, titleOverride?: string) {
+  const videoFormat = videoData.videoFormats[0] ?? null;
+  const audioFormat = videoData.audioFormats[0] ?? null;
+  const extPref = videoData.isMusic ? options.ext.audio : options.ext.video;
+  const defaultFormat = videoData.isMusic ? audioFormat : videoFormat;
+  const resolvedExtension = resolveAutoExtension(extPref, defaultFormat?.mimeType ?? "", videoData.isMusic ? "audio" : "video");
+  const outputExtension = videoFormat && audioFormat && !videoData.isMusic
+    ? getOutputExtension(videoFormat.mimeType, audioFormat.mimeType, resolvedExtension)
+    : resolvedExtension;
+  const title = titleOverride ?? videoData.title;
+  return getCompatibleFilename(`${title}.${outputExtension}`);
 }

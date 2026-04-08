@@ -11,6 +11,7 @@
 
 import PlaylistDownloader from "@/components/PlaylistDownloader.svelte";
 import PlaylistVideoItem from "@/components/PlaylistVideoItem.svelte";
+import { getVideoIdFromUrl } from "@/lib/utils";
 import type { Options } from "@/types";
 import { mount, unmount } from "svelte";
 
@@ -48,11 +49,7 @@ function extractVideoId(elCard: Element) {
     return null;
   }
 
-  try {
-    return new URLSearchParams(new URL(elLink.href).search).get("v");
-  } catch {
-    return null;
-  }
+  return getVideoIdFromUrl(elLink.href);
 }
 
 function findAnchorElement(elCard: Element) {

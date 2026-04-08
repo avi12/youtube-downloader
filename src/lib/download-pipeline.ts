@@ -8,7 +8,13 @@
  */
 
 import { MessageType, sendMessage } from "./messaging";
-import { getCompatibleFilename, getFileExtension, getMimeType, getOutputExtension } from "./utils";
+import {
+  getCompatibleFilename,
+  getFileExtension,
+  getMimeType,
+  getOutputExtension,
+  uint8ToBase64
+} from "./utils";
 import { ProgressType } from "@/types";
 import type { DownloadType, ProcessStreamData, VideoMetadata } from "@/types";
 import { FFmpeg } from "@ffmpeg/ffmpeg";
@@ -160,14 +166,7 @@ async function triggerDownload(data: Uint8Array, filenameOutput: string) {
   }
 
   // Firefox fallback: base64 data URL
-  let binary = "";
-  for (let offset = 0; offset < data.byteLength; offset += 8192) {
-    binary += String.fromCharCode(
-      ...data.subarray(offset, Math.min(offset + 8192, data.byteLength))
-    );
-  }
-
-  const blobUrl = `data:${mimeType};base64,${btoa(binary)}`;
+  const blobUrl = `data:${mimeType};base64,${uint8ToBase64(data)}`;
   await sendMessage(MessageType.PipelineDownload, {
     blobUrl,
     mimeType,
