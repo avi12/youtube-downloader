@@ -11,6 +11,14 @@ const GOOG_API_KEY = "AIzaSyDyT5W0Jh49F30Pqqtyfdf7pDLFKLJoAnw";
 
 declare const ytcfg: { get(key: string): unknown } | undefined;
 
+interface ChallengeResponse {
+  bgChallenge?: {
+    program: string;
+    globalName: string;
+    interpreterUrl: string | { privateDoNotAccessOrElseTrustedResourceUrlWrappedValue: string };
+  };
+}
+
 export async function generatePoToken(videoId: string) {
   const clientVersion = typeof ytcfg !== "undefined"
     ? String(ytcfg.get("INNERTUBE_CLIENT_VERSION") ?? "2.20260401.01.00")
@@ -34,7 +42,7 @@ export async function generatePoToken(videoId: string) {
     }
   );
 
-  const challengeData = await challengeResponse.json();
+  const challengeData = await challengeResponse.json() as ChallengeResponse;
   const program: string | undefined = challengeData.bgChallenge?.program;
   const globalName: string | undefined = challengeData.bgChallenge?.globalName;
   if (!program || !globalName) {
