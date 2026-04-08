@@ -139,54 +139,71 @@ export function extractPoTokenFromBody(body: number[]) {
     };
   }
 
+  function parseStreamerContext(ctxData: Uint8Array) {
+    let ctxOffset = 0;
+    while (ctxOffset < ctxData.byteLength) {
+      const ctxTag = readVarint(ctxOffset);
+      ctxOffset = ctxTag.offset;
+      const ctxField = ctxTag.value >> PROTO_FIELD_NUMBER_SHIFT;
+      const ctxWire = ctxTag.value & PROTO_WIRE_TYPE_MASK;
+      if (ctxWire === WIRE_TYPE_VARINT) {
+        ctxOffset = readVarint(ctxOffset).offset;
+        continue;
+      }
+
+      if (ctxWire !== WIRE_TYPE_LENGTH_DELIMITED) {
+        break;
+      }
+
+      const ctxLen = readVarint(ctxOffset);
+      ctxOffset = ctxLen.offset;
+
+      if (ctxField === FIELD_PO_TOKEN && ctxLen.value > 0) {
+        const poTokenBytes = ctxData.subarray(ctxOffset, ctxOffset + ctxLen.value);
+        return btoa(String.fromCharCode(...poTokenBytes));
+      }
+
+      ctxOffset += ctxLen.value;
+    }
+    return null;
+  }
+
   // Find field 19 (StreamerContext) - tag = (19 << 3) | 2 = 154
   while (offset < buf.byteLength) {
     const tag = readVarint(offset);
     offset = tag.offset;
     const fieldNumber = tag.value >> PROTO_FIELD_NUMBER_SHIFT;
     const wireType = tag.value & PROTO_WIRE_TYPE_MASK;
-    if (wireType === WIRE_TYPE_LENGTH_DELIMITED) {
-      const len = readVarint(offset);
-      offset = len.offset;
-
-      if (fieldNumber === FIELD_STREAMER_CONTEXT) {
-        // Parse StreamerContext for field 2 (poToken)
-        const ctxData = buf.subarray(offset, offset + len.value);
-        let ctxOffset = 0;
-
-        while (ctxOffset < ctxData.byteLength) {
-          const ctxTag = readVarint(ctxOffset);
-          ctxOffset = ctxTag.offset;
-          const ctxField = ctxTag.value >> PROTO_FIELD_NUMBER_SHIFT;
-          const ctxWire = ctxTag.value & PROTO_WIRE_TYPE_MASK;
-          if (ctxWire === WIRE_TYPE_LENGTH_DELIMITED) {
-            const ctxLen = readVarint(ctxOffset);
-            ctxOffset = ctxLen.offset;
-
-            if (ctxField === FIELD_PO_TOKEN && ctxLen.value > 0) {
-              const poTokenBytes = ctxData.subarray(ctxOffset, ctxOffset + ctxLen.value);
-              return btoa(String.fromCharCode(...poTokenBytes));
-            }
-
-            ctxOffset += ctxLen.value;
-          } else if (ctxWire === WIRE_TYPE_VARINT) {
-            ctxOffset = readVarint(ctxOffset).offset;
-          } else {
-            break;
-          }
-        }
-      }
-
-      offset += len.value;
-    } else if (wireType === WIRE_TYPE_VARINT) {
+    if (wireType === WIRE_TYPE_VARINT) {
       offset = readVarint(offset).offset;
-    } else if (wireType === WIRE_TYPE_64_BIT) {
+      continue;
+    }
+
+    if (wireType === WIRE_TYPE_64_BIT) {
       offset += WIRE_64_BIT_BYTE_SIZE;
-    } else if (wireType === WIRE_TYPE_32_BIT) {
+      continue;
+    }
+
+    if (wireType === WIRE_TYPE_32_BIT) {
       offset += WIRE_32_BIT_BYTE_SIZE;
-    } else {
+      continue;
+    }
+
+    if (wireType !== WIRE_TYPE_LENGTH_DELIMITED) {
       break;
     }
+
+    const len = readVarint(offset);
+    offset = len.offset;
+
+    if (fieldNumber === FIELD_STREAMER_CONTEXT) {
+      const poToken = parseStreamerContext(buf.subarray(offset, offset + len.value));
+      if (poToken) {
+        return poToken;
+      }
+    }
+
+    offset += len.value;
   }
 
   return null;
