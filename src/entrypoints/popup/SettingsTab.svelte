@@ -2,7 +2,7 @@
   import FormatSelect from "@/components/FormatSelect.svelte";
   import { setOption } from "@/lib/storage";
   import { supportedExtensions, videoQualities } from "@/lib/utils";
-  import { DownloadType } from "@/types";
+  import { DownloadType, VideoQualityMode } from "@/types";
   import type { DownloadTypePreference, Options } from "@/types";
 
   type Props = { options: Options };
@@ -119,10 +119,10 @@
       <label class="settings-label settings-radio-label">
         <input
           name="quality-mode"
-          checked={options.videoQualityMode === "current-quality"}
-          onchange={() => updateVideoQualityMode("current-quality")}
+          checked={options.videoQualityMode === VideoQualityMode.CurrentQuality}
+          onchange={() => updateVideoQualityMode(VideoQualityMode.CurrentQuality)}
           type="radio"
-          value="current-quality"
+          value={VideoQualityMode.CurrentQuality}
         />
         Match current player quality
       </label>
@@ -131,10 +131,10 @@
       <label class="settings-label settings-radio-label">
         <input
           name="quality-mode"
-          checked={options.videoQualityMode === "best"}
-          onchange={() => updateVideoQualityMode("best")}
+          checked={options.videoQualityMode === VideoQualityMode.Best}
+          onchange={() => updateVideoQualityMode(VideoQualityMode.Best)}
           type="radio"
-          value="best"
+          value={VideoQualityMode.Best}
         />
         Best available quality
       </label>
@@ -143,14 +143,14 @@
       <label class="settings-label settings-radio-label">
         <input
           name="quality-mode"
-          checked={options.videoQualityMode === "custom"}
-          onchange={() => updateVideoQualityMode("custom")}
+          checked={options.videoQualityMode === VideoQualityMode.Custom}
+          onchange={() => updateVideoQualityMode(VideoQualityMode.Custom)}
           type="radio"
-          value="custom"
+          value={VideoQualityMode.Custom}
         />
         Custom quality
       </label>
-      {#if options.videoQualityMode === "custom"}
+      {#if options.videoQualityMode === VideoQualityMode.Custom}
         <div class="settings-sub-row">
           <label class="settings-label" for="custom-quality-select">
             Quality

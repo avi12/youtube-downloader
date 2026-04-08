@@ -34,6 +34,12 @@ export enum ProgressType {
   FFmpeg = "ffmpeg"
 }
 
+export enum VideoQualityMode {
+  Best = "best",
+  CurrentQuality = "current-quality",
+  Custom = "custom"
+}
+
 export type ProgressUpdate = {
   videoId: string;
   progress: number;
@@ -83,7 +89,7 @@ export type Options = {
     video: string;
   };
   defaultDownloadType: DownloadTypePreference;
-  videoQualityMode: "best" | "current-quality" | "custom";
+  videoQualityMode: VideoQualityMode;
   videoQuality: number;
   isRemoveNativeDownload: boolean;
 };

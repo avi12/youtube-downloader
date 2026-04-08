@@ -1,5 +1,5 @@
-import { DownloadType } from "@/types";
-import type { Options, PlayerResponse, VideoData } from "@/types";
+import { DownloadType, ProgressType, VideoQualityMode } from "@/types";
+import type { AdaptiveFormatItem, Options, PlayerResponse, VideoData } from "@/types";
 import { PlayabilityStatus } from "@/types/youtube";
 
 // ─── Filename utilities ───────────────────────────────────────────────────────
@@ -133,7 +133,7 @@ export const initialOptions: Options = {
     video: AUTO_EXTENSION
   },
   defaultDownloadType: "auto",
-  videoQualityMode: "current-quality",
+  videoQualityMode: VideoQualityMode.CurrentQuality,
   videoQuality: defaultVideoQuality,
   isRemoveNativeDownload: false
 };
@@ -219,6 +219,30 @@ export function getVideoIdFromUrl(url: string) {
   } catch {
     return null;
   }
+}
+
+// ─── Format display utilities ─────────────────────────────────────────────────
+
+export function formatVideoQualityLabel(format: Pick<AdaptiveFormatItem, "height" | "fps" | "qualityLabel">) {
+  const base = `${format.height}p${format.fps ? ` ${format.fps}fps` : ""}`;
+  const isPremium = format.qualityLabel?.includes("Premium") ?? false;
+  return isPremium ? `${base} (Enhanced)` : base;
+}
+
+/**
+ * Calculates weighted download progress: download phase = 0–80%, mux phase = 80–100%.
+ * Both phases report their own 0–1 progress value.
+ */
+export function calculateWeightedProgress(isDownloading: boolean, progress: number, progressType: ProgressType | "") {
+  if (!isDownloading) {
+    return 0;
+  }
+
+  if (progressType === ProgressType.FFmpeg) {
+    return 80 + progress * 20;
+  }
+
+  return progress * 80;
 }
 
 // ─── Download utilities ───────────────────────────────────────────────────────
