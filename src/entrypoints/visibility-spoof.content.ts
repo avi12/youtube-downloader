@@ -25,5 +25,6 @@ export default defineContentScript({
       },
       configurable: true
     });
+    document.hasFocus = () => true;
   }
 });
