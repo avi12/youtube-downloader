@@ -364,14 +364,14 @@ async function processSingleMedia(item: ProcessStreamData) {
 // ─── Video + audio mux via FFmpeg ────────────────────────────────────────────
 
 function determineOutputExtension({
-  videoMimeType, audioMimeType, hasExtraTracks, filenameOutput
+  videoMimeType, audioMimeType, isExtraTracksPresent, filenameOutput
 }: {
   videoMimeType: string;
   audioMimeType: string;
-  hasExtraTracks: boolean;
+  isExtraTracksPresent: boolean;
   filenameOutput: string;
 }) {
-  if (hasExtraTracks) {
+  if (isExtraTracksPresent) {
     return "mkv";
   }
 
@@ -406,8 +406,10 @@ async function processVideoAudio(item: ProcessStreamData, ffmpeg: FFmpeg) {
 
   const videoExtension = videoMimeType.includes("webm") ? "webm" : "mp4";
   const audioExtension = audioMimeType.includes("webm") ? "webm" : "m4a";
-  const hasExtraTracks = (additionalAudioStreams?.length ?? 0) > 0;
-  const outputExtension = determineOutputExtension({ videoMimeType, audioMimeType, hasExtraTracks, filenameOutput });
+  const isExtraTracksPresent = (additionalAudioStreams?.length ?? 0) > 0;
+  const outputExtension = determineOutputExtension({
+    videoMimeType, audioMimeType, isExtraTracksPresent, filenameOutput
+  });
 
   const filenameBase = filenameOutput.replace(/\.[^.]+$/, "");
   const downloadFilename = `${filenameBase}.${outputExtension}`;
