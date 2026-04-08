@@ -142,13 +142,6 @@ export type StreamError = {
   error: string;
 };
 
-// -- UI types -----------------------------------------------------------------
-
-export type MovableItem = {
-  id: string;
-  title: string;
-};
-
 export type VideoData = {
   playerResponse: PlayerResponse;
   videoId: string;

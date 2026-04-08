@@ -6,13 +6,13 @@
  */
 
 import { createMapMessenger, createSignalMessenger, createSyncedMap, createSyncedSignal } from "./synced-signal.svelte";
-import type { DownloadRequest, InterruptedDownload, ProgressType, VideoData } from "@/types";
+import type { InterruptedDownload, ProgressType, VideoData } from "@/types";
 
 export { SYNC_NAMESPACE, SyncKey } from "./synced-signal.svelte";
 
 // ─── SABR credentials (MAIN world writes, isolated world reads) ──────────
 
-export interface SabrCredentials {
+interface SabrCredentials {
   url: string;
   poToken: string;
 }
@@ -46,7 +46,7 @@ export const downloadProgressStore = createSyncedMap(createMapMessenger<Download
 
 // ─── Playlist metadata (MAIN world writes, isolated world reads) ────────
 
-export interface PlaylistMetadata {
+interface PlaylistMetadata {
   playlistId: string;
   playlistTitle: string;
 }
@@ -58,11 +58,6 @@ export const playlistMetadataSignal = createSyncedSignal(
 
 // ─── Download requests (isolated world writes, MAIN world reads) ────────
 // One-shot commands: writing triggers MAIN world to start a download.
-
-export const downloadRequestSignal = createSyncedSignal(
-  createSignalMessenger<DownloadRequest | null>("download-request"),
-  null
-);
 
 // ─── Cancel requests (isolated world writes, MAIN world reads) ──────────
 

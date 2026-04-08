@@ -1,0 +1,12 @@
+{
+  "$schema": "https://unpkg.com/knip@latest/schema.json",
+  "entry": [
+    "wxt.config.ts",
+    "web-ext.config.ts",
+    "src/entrypoints/**/{index,main}.ts",
+    "src/entrypoints/*.content.ts",
+    "src/entrypoints/*.content/index.ts"
+  ],
+  "project": ["src/**/*.{ts,svelte}"],
+  "ignore": ["scripts/**", "dev/**", ".wxt/**"]
+}

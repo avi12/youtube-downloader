@@ -1,6 +1,6 @@
 import { MessageType, sendMessage } from "@/lib/messaging";
 
-export const videoIdToTabIds: Record<string, number[]> = {};
+const videoIdToTabIds: Record<string, number[]> = {};
 export const tabTracker: Record<number, { videoIdsAvailable: string[] }> = {};
 
 export function trackVideoForTab(videoId: string, tabId: number) {

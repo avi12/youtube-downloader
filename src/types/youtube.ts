@@ -282,11 +282,11 @@ export interface YtButtonViewModelElement extends HTMLElement {
   data: ButtonViewModelData;
 }
 
-export interface TpYtPaperDropdownMenuElement extends HTMLElement {
+interface TpYtPaperDropdownMenuElement extends HTMLElement {
   receivedFocusFromKeyboard: boolean;
 }
 
-export interface TpYtPaperProgressElement extends HTMLElement {
+interface TpYtPaperProgressElement extends HTMLElement {
   value: number;
   max: number;
   indeterminate: boolean;

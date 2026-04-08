@@ -3,11 +3,11 @@ import type { AdaptiveFormatItem, PlayerResponse, SabrConfig } from "@/types";
 
 // ─── Format parsing utilities ─────────────────────────────────────────────────
 
-export function sortFormatsByBitrate(formats: AdaptiveFormatItem[]) {
+function sortFormatsByBitrate(formats: AdaptiveFormatItem[]) {
   return [...formats].sort((formatA, formatB) => formatB.bitrate - formatA.bitrate);
 }
 
-export function getUniqueVideoFormats(formats: AdaptiveFormatItem[]) {
+function getUniqueVideoFormats(formats: AdaptiveFormatItem[]) {
   const videoFormats = formats.filter(format => format.mimeType.startsWith("video"));
   // Deduplicate by height + premium status so both standard and enhanced
   // bitrate variants appear as separate dropdown entries.
@@ -29,7 +29,7 @@ export function getUniqueVideoFormats(formats: AdaptiveFormatItem[]) {
   });
 }
 
-export function getAudioFormats(formats: AdaptiveFormatItem[]) {
+function getAudioFormats(formats: AdaptiveFormatItem[]) {
   const audioFormats = formats.filter(format => format.mimeType.startsWith("audio"));
   // Deduplicate by itag + audioTrack.id so different language tracks
   // with the same itag (e.g., original + dubbed, both itag 140) are preserved.
@@ -45,17 +45,13 @@ export function getAudioFormats(formats: AdaptiveFormatItem[]) {
   });
 }
 
-export function getVideoQualityLabel(format: AdaptiveFormatItem) {
-  return Math.min(format.height ?? 0, format.width ?? 0);
-}
-
-export function getFormatsFromPlayerResponse(playerResponse: PlayerResponse) {
+function getFormatsFromPlayerResponse(playerResponse: PlayerResponse) {
   return playerResponse.streamingData?.adaptiveFormats ?? [];
 }
 
 // ─── VideoData assembly ───────────────────────────────────────────────────────
 
-export function extractSabrConfig({ playerResponse, clientVersion, clientName }: {
+function extractSabrConfig({ playerResponse, clientVersion, clientName }: {
   playerResponse: PlayerResponse;
   clientVersion: string;
   clientName: number;
@@ -132,16 +128,6 @@ export function extractPlayerResponseFromHtml(html: string) {
   try {
     const parsed: PlayerResponse = JSON.parse(html.slice(jsonStart, end));
     return parsed;
-  } catch {
-    return null;
-  }
-}
-
-// ─── Playlist data ────────────────────────────────────────────────────────────
-
-export function extractPlaylistIdFromUrl(url: string) {
-  try {
-    return new URLSearchParams(new URL(url).search).get("list");
   } catch {
     return null;
   }

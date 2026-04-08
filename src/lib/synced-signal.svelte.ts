@@ -24,11 +24,8 @@ export enum SyncKey {
   DirectDownloadRequest = "direct-download-request",
   DownloadProgress = "download-progress",
   VideoDataRequest = "video-data-request",
-  StreamData = "stream-data",
   SetButtonData = "set-button-data",
-  ButtonClick = "button-click",
-  ProxyFetchRequest = "proxy-fetch-request",
-  ProxyFetchResponse = "proxy-fetch-response"
+  ButtonClick = "button-click"
 }
 
 // ─── Single-value signal ─────────────────────────────────────────────────────

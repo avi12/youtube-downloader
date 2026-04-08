@@ -32,7 +32,7 @@ export function splitFilenameAndExtension(filename: string) {
 
 // Only containers that FFmpeg can remux YouTube streams into with -c copy.
 // YouTube produces H.264/VP9/AV1 video and AAC/Opus/Vorbis audio.
-export const extensionToMimeAll = {
+const extensionToMimeAll = {
   m4a: "audio/mp4",
   mkv: "video/x-matroska",
   mp3: "audio/mpeg",
@@ -47,7 +47,7 @@ function filterExtensionsByPrefix(prefix: string) {
   return Object.fromEntries(Object.entries(extensionToMimeAll).filter(([, mime]) => mime.startsWith(prefix)));
 }
 
-export const extensionToMime = {
+const extensionToMime = {
   video: filterExtensionsByPrefix("video"),
   audio: filterExtensionsByPrefix("audio")
 };
@@ -125,7 +125,7 @@ export function getOutputExtension(
 
 export const videoQualities = [4320, 2160, 1440, 1080, 720, 480, 360, 240, 144];
 
-export const defaultVideoQuality = 1080;
+const defaultVideoQuality = 1080;
 
 export const initialOptions: Options = {
   ext: {
