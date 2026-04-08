@@ -420,7 +420,7 @@ async function processVideoAudio(item: ProcessStreamData, ffmpeg: FFmpeg) {
   function handleFFmpegProgress({ progress }: { progress: number }) {
     void reportProgress({
       videoId,
-      progress: 0.5 + progress * 0.5,
+      progress: 0.5 + (progress * 0.5),
       progressType: ProgressType.FFmpeg,
       tabId
     });
