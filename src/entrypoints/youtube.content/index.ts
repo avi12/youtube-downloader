@@ -142,8 +142,7 @@ export default defineContentScript({
 
     onMessage(MessageType.ExecuteDownloadItem, ({ data }) => {
       // Only handle on watch/embed pages (including download iframes).
-      const isPlayerPage = location.pathname === "/watch" || location.pathname.startsWith("/embed/");
-      if (!isPlayerPage) {
+      if (!/^\/(watch|embed\/)/.test(location.pathname)) {
         return;
       }
 
