@@ -105,7 +105,7 @@ export type StreamData = {
   // Label for the primary audio track (shown in VLC track selector)
   primaryAudioLabel?: string;
   // Additional language tracks to embed alongside the primary
-  additionalAudioStreams?: AudioStreamData[];
+  additionalAudioStreams: AudioStreamData[];
 };
 
 export type VideoMetadata = {

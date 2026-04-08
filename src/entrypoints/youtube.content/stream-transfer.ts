@@ -87,7 +87,7 @@ export async function handleStreamData(payload: StreamDataPayload) {
     });
   }
 
-  const extraAudioStreams = additionalAudioData ?? [];
+  const extraAudioStreams = additionalAudioData;
 
   for (let iTrack = 0; iTrack < extraAudioStreams.length; iTrack++) {
     const track = extraAudioStreams[iTrack];

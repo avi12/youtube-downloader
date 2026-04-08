@@ -406,7 +406,7 @@ async function processVideoAudio(item: ProcessStreamData, ffmpeg: FFmpeg) {
 
   const videoExtension = videoMimeType.includes("webm") ? "webm" : "mp4";
   const audioExtension = audioMimeType.includes("webm") ? "webm" : "m4a";
-  const isExtraTracksPresent = Boolean(additionalAudioStreams?.length);
+  const isExtraTracksPresent = Boolean(additionalAudioStreams.length);
   const outputExtension = determineOutputExtension({
     videoMimeType, audioMimeType, isExtraTracksPresent, filenameOutput
   });
@@ -433,8 +433,8 @@ async function processVideoAudio(item: ProcessStreamData, ffmpeg: FFmpeg) {
     await ffmpeg.writeFile(primaryAudioFilename, audioData);
 
     const extraAudioFilenames: string[] = [];
-    for (let iTrack = 0; iTrack < (additionalAudioStreams?.length ?? 0); iTrack++) {
-      const stream = additionalAudioStreams![iTrack];
+    for (let iTrack = 0; iTrack < additionalAudioStreams.length; iTrack++) {
+      const stream = additionalAudioStreams[iTrack];
       const extraData = toUint8Array(stream.data);
       if (!extraData) {
         continue;
@@ -461,7 +461,7 @@ async function processVideoAudio(item: ProcessStreamData, ffmpeg: FFmpeg) {
 
     const audioTrackLabels = [
       item.primaryAudioLabel ?? "",
-      ...(additionalAudioStreams ?? []).slice(0, extraAudioFilenames.length).map(stream => stream.label)
+      ...additionalAudioStreams.slice(0, extraAudioFilenames.length).map(stream => stream.label)
     ];
 
     for (let iTrack = 0; iTrack < audioTrackLabels.length; iTrack++) {
