@@ -1,0 +1,81 @@
+/**
+ * Patches MediaSource and SourceBuffer prototypes at document_start so all
+ * appended media chunks are captured before YouTube's player initializes.
+ *
+ * Must run at document_start because YouTube's player creates SourceBuffers
+ * before document_idle fires. If patched later, sourceBufferMimeTypes is never
+ * populated and appendBuffer captures nothing.
+ *
+ * Capture state is stored on window.__ytdlCapture so the document_idle
+ * youtube-main.content script can read and write it.
+ */
+
+import type { YtdlCaptureState, YtdlMediaCapture } from "@/types";
+
+export default defineContentScript({
+  matches: ["https://www.youtube.com/*"],
+  world: "MAIN",
+  runAt: "document_start",
+  allFrames: true,
+  main() {
+    // Skip non-download iframes (ads, embeds)
+    if (self !== top && !location.search.includes("ytdl=1")) {
+      return;
+    }
+
+    const sourceBufferMimeTypes = new WeakMap<SourceBuffer, string>();
+
+    function addChunkToCapture(capture: YtdlMediaCapture, mimeType: string, chunk: Uint8Array) {
+      if (mimeType.startsWith("video")) {
+        capture.videoChunks.push(chunk.slice());
+        capture.videoTotalBytes += chunk.byteLength;
+        capture.videoMimeType = mimeType.split(";")[0];
+      } else {
+        capture.audioChunks.push(chunk.slice());
+        capture.audioTotalBytes += chunk.byteLength;
+        capture.audioMimeType = mimeType.split(";")[0];
+      }
+    }
+
+    const captureState: YtdlCaptureState = {
+      activeVideoId: "",
+      pendingChunks: [],
+      capturedMedia: new Map(),
+      sourceBufferMimeTypes,
+      addChunkToCapture
+    };
+
+    window.__ytdlCapture = captureState;
+
+    const originalAddSourceBuffer = MediaSource.prototype.addSourceBuffer;
+    MediaSource.prototype.addSourceBuffer = function (mimeType) {
+      const sourceBuffer = originalAddSourceBuffer.call(this, mimeType);
+      if (mimeType.startsWith("video") || mimeType.startsWith("audio")) {
+        sourceBufferMimeTypes.set(sourceBuffer, mimeType);
+      }
+
+      return sourceBuffer;
+    };
+
+    const originalAppendBuffer = SourceBuffer.prototype.appendBuffer;
+    SourceBuffer.prototype.appendBuffer = function (data) {
+      const mimeType = sourceBufferMimeTypes.get(this);
+      if (mimeType) {
+        const chunk = data instanceof ArrayBuffer
+          ? new Uint8Array(data)
+          : new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
+        const { activeVideoId, capturedMedia, pendingChunks } = captureState;
+        if (!activeVideoId || !capturedMedia.has(activeVideoId)) {
+          pendingChunks.push({
+            mimeType,
+            data: chunk.slice()
+          });
+        } else {
+          addChunkToCapture(capturedMedia.get(activeVideoId)!, mimeType, chunk);
+        }
+      }
+
+      return originalAppendBuffer.call(this, data);
+    };
+  }
+});

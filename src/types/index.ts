@@ -6,7 +6,9 @@ export type {
   ButtonViewModelData,
   PlayerResponse,
   TpYtIronDropdownElement,
-  YtButtonViewModelElement
+  YtButtonViewModelElement,
+  YtdlCaptureState,
+  YtdlMediaCapture
 } from "./youtube";
 
 export {
