@@ -1,6 +1,6 @@
 import watchButtonStyles from "./watch-button.css?inline";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/cross-world-messenger";
-import { SYNC_NAMESPACE, SyncKey, interruptedDownloadStore } from "@/lib/synced-stores.svelte";
+import { interruptedDownloadStore } from "@/lib/synced-stores.svelte";
 import { getCompatibleFilename, getOutputExtension } from "@/lib/utils";
 import {
   ButtonSize,
@@ -344,11 +344,7 @@ export async function injectSegmentedDownloadButton(
         isDownloading = false;
         refreshButtons();
         cancelActiveDownload(videoId);
-        postMessage({
-          namespace: SYNC_NAMESPACE,
-          key: SyncKey.CancelRequest,
-          value: { videoIds: [videoId] }
-        }, location.origin);
+        void crossWorldMessenger.sendMessage(CrossWorldMessage.CancelRequest, { videoIds: [videoId] });
         return;
       }
 
@@ -357,17 +353,14 @@ export async function injectSegmentedDownloadButton(
       isDownloading = true;
       downloadProgress = 0;
       refreshButtons();
-      postMessage({
-        namespace: SYNC_NAMESPACE,
-        key: SyncKey.DownloadRequest,
-        value: JSON.parse(JSON.stringify({
-          type: defaultDownloadType,
-          videoId,
-          videoItag: defaultVideoItag,
-          audioItag: defaultAudioItag,
-          filenameOutput: defaultFilename
-        }))
-      }, location.origin);
+      void crossWorldMessenger.sendMessage(CrossWorldMessage.WatchDownloadRequest, {
+        type: defaultDownloadType,
+        videoId,
+        videoItag: defaultVideoItag,
+        audioItag: defaultAudioItag,
+        filenameOutput: defaultFilename,
+        sabrConfig: null
+      });
       return;
     }
 
@@ -447,22 +440,18 @@ export async function injectSegmentedDownloadButton(
 
   const unsubscribeProgress = crossWorldMessenger.onMessage(CrossWorldMessage.Progress, handleProgress);
 
-  // Also listen for direct download progress via synced signal (postMessage)
-  function handleSyncedProgress(e: MessageEvent) {
-    if (e.data?.namespace !== SYNC_NAMESPACE || e.data.key !== SyncKey.DownloadProgress) {
-      return;
+  const unsubscribeDownloadProgress = crossWorldMessenger.onMessage(
+    CrossWorldMessage.DownloadProgress,
+    ({ data }) => {
+      if (data.videoId !== videoId) {
+        return;
+      }
+
+      downloadProgress = data.progress;
+      refreshButtons();
     }
+  );
 
-    const { mapKey, mapValue } = e.data.value ?? {};
-    if (mapKey !== videoId || !mapValue) {
-      return;
-    }
-
-    downloadProgress = mapValue.progress;
-    refreshButtons();
-  }
-
-  addEventListener("message", handleSyncedProgress);
   const unsubscribePanelClosed = crossWorldMessenger.onMessage(
     CrossWorldMessage.PanelClosed, () => handlePanelClosed()
   );
@@ -491,7 +480,7 @@ export async function injectSegmentedDownloadButton(
     resizeObserver.disconnect();
     elActionsContainer.removeEventListener("click", handleClick);
     unsubscribeProgress();
-    removeEventListener("message", handleSyncedProgress);
+    unsubscribeDownloadProgress();
     unsubscribePanelClosed();
     unsubscribeFilenameChanged();
     elDropdown.removeEventListener("iron-overlay-closed", handleDropdownClosed);

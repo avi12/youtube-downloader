@@ -9,14 +9,13 @@
  * 3. Relay data and events to/from the isolated world via crossWorldMessenger
  */
 
-import { registerDirectDownloadHandler } from "./direct-download";
 import { cancelActiveDownload, performDownload } from "./download";
 import { registerGridDropdownHandlers } from "./grid-dropdown";
 import { registerGridVideoDataHandler } from "./grid-video-data";
 import { handleNavigateSuccess } from "./playlist-metadata";
 import { extractAndDispatchVideoData } from "./video-data";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/cross-world-messenger";
-import { SYNC_NAMESPACE, SyncKey } from "@/lib/synced-stores.svelte";
+import { buttonClickSignal } from "@/lib/synced-stores.svelte";
 import { type PlayerResponse } from "@/types";
 
 declare global {
@@ -43,8 +42,13 @@ export default defineContentScript({
     }
 
     // Handle download requests from Svelte panel components (via isolated world)
-    crossWorldMessenger.onMessage(CrossWorldMessage.DownloadRequest, async ({ data }) => {
-      await performDownload(data);
+    crossWorldMessenger.onMessage(CrossWorldMessage.DownloadRequest, ({ data }) => {
+      void performDownload(data);
+    });
+
+    // Handle download requests from the watch-button (MAIN world → MAIN world via messenger)
+    crossWorldMessenger.onMessage(CrossWorldMessage.WatchDownloadRequest, ({ data }) => {
+      void performDownload(data);
     });
 
     crossWorldMessenger.onMessage(CrossWorldMessage.CancelDownload, ({ data }) => {
@@ -54,13 +58,8 @@ export default defineContentScript({
     });
 
     // SetButtonData/ButtonClick bridge: sets Polymer button data from isolated world
-    // and relays click events back via postMessage
-    addEventListener("message", e => {
-      if (e.data?.namespace !== SYNC_NAMESPACE || e.data.key !== SyncKey.SetButtonData) {
-        return;
-      }
-
-      const { selector, data: buttonData } = e.data.value ?? {};
+    // and relays click events back via crossWorldMessenger
+    crossWorldMessenger.onMessage(CrossWorldMessage.SetButtonData, ({ data: { selector, data: buttonData } }) => {
       const elButton = document.querySelector<HTMLElement>(selector);
       if (!elButton || !("data" in elButton)) {
         return;
@@ -68,25 +67,22 @@ export default defineContentScript({
 
       elButton.data = buttonData;
 
-      if (!elButton.hasAttribute("data-ytdl-click-bound")) {
-        elButton.setAttribute("data-ytdl-click-bound", "true");
-        elButton.addEventListener("click", clickEvent => {
-          clickEvent.stopPropagation();
-          const buttonId = elButton.getAttribute("data-ytdl-button-id");
-          if (buttonId) {
-            postMessage({
-              namespace: SYNC_NAMESPACE,
-              key: SyncKey.ButtonClick,
-              value: { buttonId }
-            }, location.origin);
-          }
-        });
+      if (elButton.hasAttribute("data-ytdl-click-bound")) {
+        return;
       }
+
+      elButton.setAttribute("data-ytdl-click-bound", "true");
+      elButton.addEventListener("click", e => {
+        e.stopPropagation();
+        const buttonId = elButton.getAttribute("data-ytdl-button-id");
+        if (buttonId) {
+          buttonClickSignal.value = { buttonId };
+        }
+      });
     });
 
     registerGridDropdownHandlers();
     registerGridVideoDataHandler();
-    registerDirectDownloadHandler();
 
     navigation.addEventListener("navigatesuccess", handleNavigateSuccess);
 

@@ -1,7 +1,8 @@
 import { cancelActiveDownload } from "./download";
 import { buildAndDispatchVideoData, videoDataCache, readYtcfg } from "./video-data";
 import { extractPlayerResponseFromHtml } from "./youtube-api";
-import { SYNC_NAMESPACE, SyncKey, videoDataStore } from "@/lib/synced-stores.svelte";
+import { CrossWorldMessage, crossWorldMessenger } from "@/lib/cross-world-messenger";
+import { videoDataStore } from "@/lib/synced-stores.svelte";
 
 declare const ytcfg: { get: (key: string) => unknown } | undefined;
 
@@ -82,16 +83,7 @@ async function processNextVideoData() {
   }
 }
 
-function handleVideoDataRequest(e: MessageEvent) {
-  if (e.data?.namespace !== SYNC_NAMESPACE || e.data?.key !== SyncKey.VideoDataRequest) {
-    return;
-  }
-
-  const videoId = e.data.value?.mapKey;
-  if (!videoId) {
-    return;
-  }
-
+function requestVideoData(videoId: string) {
   if (videoDataCache.has(videoId)) {
     videoDataStore.set(videoId, videoDataCache.get(videoId)!);
     return;
@@ -104,5 +96,7 @@ function handleVideoDataRequest(e: MessageEvent) {
 }
 
 export function registerGridVideoDataHandler() {
-  addEventListener("message", handleVideoDataRequest);
+  crossWorldMessenger.onMessage(CrossWorldMessage.RequestVideoData, ({ data }) => {
+    requestVideoData(data.videoId);
+  });
 }

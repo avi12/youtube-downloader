@@ -1,4 +1,5 @@
-import { SYNC_NAMESPACE, SyncKey } from "@/lib/synced-stores.svelte";
+import { CrossWorldMessage, crossWorldMessenger } from "@/lib/cross-world-messenger";
+import type { ButtonViewModelData } from "@/types";
 
 export const PAPER_PROGRESS_THEME: Record<string, string> = {
   "--paper-progress-active-color": "var(--yt-spec-call-to-action, rgb(62 166 255))",
@@ -28,13 +29,9 @@ export function applyPolymerCustomStyles(
  * Sends button data to the MAIN world's Polymer yt-button-view-model.
  * The element must already have a data-ytdl-button-id attribute set.
  */
-export function sendButtonData(elButton: Element, data: Record<string, unknown>) {
-  postMessage({
-    namespace: SYNC_NAMESPACE,
-    key: SyncKey.SetButtonData,
-    value: {
-      selector: `[data-ytdl-button-id="${elButton.getAttribute("data-ytdl-button-id")}"]`,
-      data
-    }
-  }, location.origin);
+export function sendButtonData(elButton: Element, data: ButtonViewModelData) {
+  void crossWorldMessenger.sendMessage(CrossWorldMessage.SetButtonData, {
+    selector: `[data-ytdl-button-id="${elButton.getAttribute("data-ytdl-button-id")}"]`,
+    data
+  });
 }

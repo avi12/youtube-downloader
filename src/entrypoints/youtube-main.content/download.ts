@@ -3,8 +3,8 @@ import { fetchViaSabrStream, fetchAudioViaSabrStream } from "./sabr";
 import { fetchStreamFromUrl, resolveFormatUrl, assembleChunks } from "./stream-fetch";
 import { videoDataCache, buildVideoMetadata, captureState } from "./video-data";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/cross-world-messenger";
-import { SYNC_NAMESPACE, SyncKey, sabrCredentials } from "@/lib/synced-stores.svelte";
-import { type AdaptiveFormatItem, type DownloadRequest, DownloadType, ProgressType } from "@/types";
+import { sabrCredentials } from "@/lib/synced-stores.svelte";
+import { type AdaptiveFormatItem, type DownloadRequest, DownloadType } from "@/types";
 
 export interface StreamDataEvent {
   type: DownloadType;
@@ -231,20 +231,11 @@ export async function performDownload({
             totalReceivedBytes = receivedBytes;
 
             if (totalExpectedBytes > 0) {
-              postMessage({
-                namespace: SYNC_NAMESPACE,
-                key: SyncKey.DownloadProgress,
-                value: {
-                  mapKey: videoId,
-                  mapValue: {
-                    isDownloading: true,
-                    isDone: false,
-                    isQueued: false,
-                    progress: Math.min(totalReceivedBytes / totalExpectedBytes, 1),
-                    progressType: ProgressType.Video
-                  }
-                }
-              }, location.origin);
+              void crossWorldMessenger.sendMessage(CrossWorldMessage.DownloadProgress, {
+                videoId,
+                progress: Math.min(totalReceivedBytes / totalExpectedBytes, 1),
+                progressType: "video"
+              });
             }
           }
 

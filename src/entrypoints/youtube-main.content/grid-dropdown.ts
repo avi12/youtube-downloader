@@ -1,14 +1,9 @@
-import { SYNC_NAMESPACE, SyncKey } from "@/lib/synced-stores.svelte";
-import { type TpYtIronDropdownElement } from "@/types";
+import { CrossWorldMessage, crossWorldMessenger } from "@/lib/cross-world-messenger";
+import type { TpYtIronDropdownElement } from "@/types";
 
 const gridDropdowns = new Map<string, TpYtIronDropdownElement>();
 
-function handleCreateDropdown(e: MessageEvent) {
-  if (e.data?.namespace !== SYNC_NAMESPACE || e.data.key !== SyncKey.CreateDropdown) {
-    return;
-  }
-
-  const { contentId, positionTargetSelector } = e.data.value;
+function createGridDropdown(contentId: string, positionTargetSelector: string) {
   const elPositionTarget = document.querySelector(positionTargetSelector);
   if (!elPositionTarget) {
     return;
@@ -52,21 +47,12 @@ function handleCreateDropdown(e: MessageEvent) {
 
   // Notify the isolated world that the dropdown is ready, then open it.
   // Opening after a frame lets Polymer finish initialization.
-  postMessage({
-    namespace: SYNC_NAMESPACE,
-    key: SyncKey.DropdownReady,
-    value: { contentId }
-  }, location.origin);
+  void crossWorldMessenger.sendMessage(CrossWorldMessage.DropdownReady, { contentId });
   requestAnimationFrame(() => elDropdown.open());
 }
 
-function handleCloseDropdown(e: MessageEvent) {
-  if (e.data?.namespace !== SYNC_NAMESPACE || e.data.key !== SyncKey.CloseDropdown) {
-    return;
-  }
-
-  const { videoId: dropdownVideoId } = e.data.value;
-  const contentId = `ytdl-grid-panel-${dropdownVideoId}`;
+function closeGridDropdown(videoId: string) {
+  const contentId = `ytdl-grid-panel-${videoId}`;
   const elDropdown = gridDropdowns.get(contentId);
   if (elDropdown) {
     elDropdown.close();
@@ -112,8 +98,12 @@ function handleDropdownFocusOut(e: FocusEvent) {
 }
 
 export function registerGridDropdownHandlers() {
-  addEventListener("message", handleCreateDropdown);
-  addEventListener("message", handleCloseDropdown);
+  crossWorldMessenger.onMessage(CrossWorldMessage.CreateDropdown, ({ data }) => {
+    createGridDropdown(data.contentId, data.positionTargetSelector);
+  });
+  crossWorldMessenger.onMessage(CrossWorldMessage.CloseDropdown, ({ data }) => {
+    closeGridDropdown(data.videoId);
+  });
   document.addEventListener("focusin", handleDropdownFocusIn);
   document.addEventListener("focusout", handleDropdownFocusOut);
 }
