@@ -4,9 +4,9 @@ export const videoIdToTabIds: Record<string, number[]> = {};
 export const tabTracker: Record<number, { videoIdsAvailable: string[] }> = {};
 
 export function trackVideoForTab(videoId: string, tabId: number) {
-  if (!videoIdToTabIds[videoId]) {
-    videoIdToTabIds[videoId] = [tabId];
-  } else if (!videoIdToTabIds[videoId].includes(tabId)) {
+  videoIdToTabIds[videoId] ??= [];
+
+  if (!videoIdToTabIds[videoId].includes(tabId)) {
     videoIdToTabIds[videoId].push(tabId);
   }
 }
@@ -16,7 +16,10 @@ export function untrackVideoForTab(videoId: string, tabId: number) {
     return;
   }
 
-  videoIdToTabIds[videoId] = videoIdToTabIds[videoId].filter(id => id !== tabId);
+  const iTabId = videoIdToTabIds[videoId].indexOf(tabId);
+  if (iTabId !== -1) {
+    videoIdToTabIds[videoId].splice(iTabId, 1);
+  }
 }
 
 export async function cancelDownloads(videoIds: string[]) {
