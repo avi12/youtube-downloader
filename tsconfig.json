@@ -11,6 +11,5 @@
     "allowJs": true,
     "noEmit": true
   },
-  "include": ["src/**/*", "src/**/*.svelte", "scripts/**/*.mjs", "wxt.config.ts", ".wxt/wxt.d.ts"],
-  "exclude": ["src/scripts/**"]
+  "exclude": ["scripts/**"]
 }
