@@ -51,7 +51,10 @@ export default defineConfig({
       strictPort: false,
       watch: { usePolling: true, interval: 1000 }
     },
-    build: { sourcemap: true }
+    build: {
+      sourcemap: true,
+      watch: { chokidar: { usePolling: true, interval: 1000 } }
+    }
   }),
   hooks: {
     "prepare:publicPaths"(_, paths) {
