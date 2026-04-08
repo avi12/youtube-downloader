@@ -164,18 +164,15 @@ async function triggerDownload(data: Uint8Array, filenameOutput: string) {
     });
     await new Promise(resolve => setTimeout(resolve, 60_000));
     URL.revokeObjectURL(blobUrl);
-    return;
   } catch {
-    // Firefox service worker: fall back to base64 data URL
+    const blobUrl = `data:${mimeType};base64,${uint8ToBase64(data)}`;
+    await sendMessage(MessageType.PipelineDownload, {
+      blobUrl,
+      mimeType,
+      filename
+    });
   }
-  const blobUrl = `data:${mimeType};base64,${uint8ToBase64(data)}`;
-  await sendMessage(MessageType.PipelineDownload, {
-    blobUrl,
-    mimeType,
-    filename
-  });
 }
-
 // ─── Playlist zip bundling ───────────────────────────────────────────────────
 
 interface PlaylistBundle {
