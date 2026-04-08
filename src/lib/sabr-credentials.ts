@@ -54,9 +54,7 @@ export async function forwardSabrCredentialsWithRetry() {
       return;
     }
 
-    await new Promise(resolve => {
-      return setTimeout(resolve, 500);
-    });
+    await new Promise(resolve => setTimeout(resolve, 500));
   }
 }
 

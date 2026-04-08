@@ -62,12 +62,8 @@ export async function generatePoToken(videoId: string) {
       await new Promise<void>((resolve, reject) => {
         const elScript = document.createElement("script");
         elScript.src = fullUrl;
-        elScript.onload = () => {
-          return resolve();
-        };
-        elScript.onerror = () => {
-          return reject(new Error("Failed to load BotGuard interpreter"));
-        };
+        elScript.onload = () => resolve();
+        elScript.onerror = () => reject(new Error("Failed to load BotGuard interpreter"));
         document.head.append(elScript);
       });
     }
@@ -78,9 +74,7 @@ export async function generatePoToken(videoId: string) {
       break;
     }
 
-    await new Promise(resolve => {
-      return setTimeout(resolve, 500);
-    });
+    await new Promise(resolve => setTimeout(resolve, 500));
   }
 
   const botGuardVm = globalRecord[globalName];

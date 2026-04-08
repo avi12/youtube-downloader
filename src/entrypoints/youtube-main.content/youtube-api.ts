@@ -6,17 +6,13 @@ import type { AdaptiveFormatItem, PlayerResponse, SabrConfig } from "@/types";
 export function sortFormatsByBitrate(
   formats: AdaptiveFormatItem[]
 ) {
-  return [...formats].sort((formatA, formatB) => {
-    return formatB.bitrate - formatA.bitrate;
-  });
+  return [...formats].sort((formatA, formatB) => formatB.bitrate - formatA.bitrate);
 }
 
 export function getUniqueVideoFormats(
   formats: AdaptiveFormatItem[]
 ) {
-  const videoFormats = formats.filter(format => {
-    return format.mimeType.startsWith("video");
-  }
+  const videoFormats = formats.filter(format => format.mimeType.startsWith("video")
   );
   // Deduplicate by height + premium status so both standard and enhanced
   // bitrate variants appear as separate dropdown entries.
@@ -41,9 +37,7 @@ export function getUniqueVideoFormats(
 export function getAudioFormats(
   formats: AdaptiveFormatItem[]
 ) {
-  const audioFormats = formats.filter(format => {
-    return format.mimeType.startsWith("audio");
-  });
+  const audioFormats = formats.filter(format => format.mimeType.startsWith("audio"));
   // Deduplicate by itag + audioTrack.id so different language tracks
   // with the same itag (e.g., original + dubbed, both itag 140) are preserved.
   const seenKeys = new Set<string>();

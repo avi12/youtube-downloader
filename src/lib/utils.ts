@@ -36,9 +36,7 @@ export const extensionToMimeAll = {
 
 function filterExtensionsByPrefix(prefix: string) {
   return Object.fromEntries(
-    Object.entries(extensionToMimeAll).filter(([, mime]) => {
-      return mime.startsWith(prefix);
-    })
+    Object.entries(extensionToMimeAll).filter(([, mime]) => mime.startsWith(prefix))
   );
 }
 
@@ -156,9 +154,7 @@ export function isVideoDownloadable(playerResponse: PlayerResponse) {
   }
 
   const formats = streamingData.adaptiveFormats ?? [];
-  return formats.some(format => {
-    return Boolean(format.url) || Boolean(format.signatureCipher);
-  })
+  return formats.some(format => Boolean(format.url) || Boolean(format.signatureCipher))
     || Boolean(streamingData.serverAbrStreamingUrl);
 }
 

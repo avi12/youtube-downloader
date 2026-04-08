@@ -182,15 +182,11 @@ export function injectGridVideoButtons(
     childList: true,
     subtree: true
   });
-  context.onInvalidated(() => {
-    return gridObserver?.disconnect();
-  });
+  context.onInvalidated(() => gridObserver?.disconnect());
 }
 
 const NON_GRID_ROUTES = ["/watch", "/playlist", "/shorts", "/results", "/premium", "/account"];
 
 export function isVideoGridPage(pathname: string) {
-  return !NON_GRID_ROUTES.some(route => {
-    return pathname.startsWith(route);
-  });
+  return !NON_GRID_ROUTES.some(route => pathname.startsWith(route));
 }
