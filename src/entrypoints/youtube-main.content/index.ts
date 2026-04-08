@@ -650,8 +650,10 @@ export default defineContentScript({
         // Strategy 3: SourceBuffer capture - play the video at accelerated speed.
         // Use 4x (not 16x) so the buffer can keep up with the network.
         // Handle buffer underruns by waiting and resuming playback.
-        const elVideo = document.querySelector<HTMLVideoElement>("video");
-        if (elVideo && !elVideo.ended) {
+        const elVideoNullable = document.querySelector<HTMLVideoElement>("video");
+        if (elVideoNullable && !elVideoNullable.ended) {
+          // Capture as a non-null const so TypeScript preserves the type inside closures
+          const elVideo = elVideoNullable;
           elVideo.playbackRate = 4;
           elVideo.muted = true;
           elVideo.play().catch(() => {});

@@ -49,7 +49,7 @@ async function ensureFirefoxProcessorTab() {
   firefoxProcessorTabId = tab.id ?? null;
 }
 
-export function ensureProcessor() {
+export async function ensureProcessor() {
   if (processorReady) {
     return processorReady;
   }

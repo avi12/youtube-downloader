@@ -48,7 +48,9 @@ export async function generatePoToken(videoId: string) {
   // homepage) it doesn't, so we load the interpreter script ourselves.
   // BotGuard is YouTube's undocumented anti-bot runtime with a fully dynamic
   // shape that can't be statically typed.
-  const globalRecord: Record<string, Record<string, unknown>> = globalThis;  if (!globalRecord[globalName]?.a) {
+  // BotGuard has a fully dynamic shape - cast through unknown to access it
+  const globalRecord = globalThis as unknown as Record<string, Record<string, unknown>>;
+  if (!globalRecord[globalName]?.a) {
     // Extract interpreter URL from TrustedResourceUrl wrapper
     const interpreterUrlRaw = challengeData.bgChallenge?.interpreterUrl;
     const interpreterUrl: string | undefined =
@@ -77,7 +79,8 @@ export async function generatePoToken(videoId: string) {
     await new Promise(resolve => setTimeout(resolve, 500));
   }
 
-  const botGuardVm = globalRecord[globalName];
+  // BotGuard VM shape is fully dynamic - typed just enough to call it
+  const botGuardVm = globalRecord[globalName] as { a?: (...args: unknown[]) => unknown[] } | undefined;
   if (!botGuardVm?.a) {
     throw new Error(`BotGuard VM not found at window.${globalName}`);
   }
@@ -90,7 +93,8 @@ export async function generatePoToken(videoId: string) {
     throw new Error("Sync snapshot function not available");
   }
 
-  const snapshotResponse = syncSnapshotFunction([undefined, undefined, webPoSignalOutput, undefined]);
+  const callSnapshotFunction = syncSnapshotFunction as (args: unknown[]) => unknown;
+  const snapshotResponse = callSnapshotFunction([undefined, undefined, webPoSignalOutput, undefined]);
   if (!snapshotResponse) {
     throw new Error("Empty snapshot response");
   }

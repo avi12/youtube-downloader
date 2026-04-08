@@ -84,7 +84,7 @@ export function createSyncedSignal<T>(key: string, initial: T) {
 
   subscribe(key, incoming => {
     isSyncing = true;
-    current = incoming;
+    current = incoming as T;
     isSyncing = false;
   });
 
@@ -110,13 +110,14 @@ export function createSyncedMap<T>(keyPrefix: string) {
   let isSyncing = false;
 
   subscribe(keyPrefix, incoming => {
-    // Ignore stale progress updates for cancelled downloads
-    if (suppressed.has(incoming.mapKey)) {
+    // Transport layer uses `unknown`; we control the broadcast shape
+    const { mapKey, mapValue } = incoming as { mapKey: string; mapValue: T };    // Ignore stale progress updates for cancelled downloads
+    if (suppressed.has(mapKey)) {
       return;
     }
 
     isSyncing = true;
-    entries.set(incoming.mapKey, incoming.mapValue);
+    entries.set(mapKey, mapValue);
     isSyncing = false;
   });
 

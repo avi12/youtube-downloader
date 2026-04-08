@@ -47,13 +47,13 @@ export default defineConfig({
     ]
   }),
   vite: () => ({
-    server: { strictPort: false },
-    build: {
-      sourcemap: true,
+    server: {
+      strictPort: false,
       // Native fs events are unreliable on Windows; polling ensures file
       // changes are always detected by WXT's dev server watcher
       watch: { usePolling: true, interval: 500 }
-    }
+    },
+    build: { sourcemap: true }
   }),
   hooks: {
     "prepare:publicPaths"(_, paths) {

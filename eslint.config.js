@@ -222,6 +222,20 @@ export default [
       "@typescript-eslint/triple-slash-reference": "off"
     }
   },
+  // Transport layer bridges unknown postMessage data to generic T — type assertions unavoidable
+  {
+    files: ["src/lib/synced-signal.svelte.ts"],
+    rules: {
+      "@typescript-eslint/consistent-type-assertions": "off"
+    }
+  },
+  // BotGuard VM has a fully dynamic runtime shape — type assertions unavoidable
+  {
+    files: ["src/lib/po-token-generator.ts"],
+    rules: {
+      "@typescript-eslint/consistent-type-assertions": "off"
+    }
+  },
   // Legacy pre-WXT scripts — incompatible with current rules, not part of new architecture
   {
     files: ["src/scripts/**"],
