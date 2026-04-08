@@ -366,7 +366,7 @@ export default defineBackground(() => {
 
   browser.runtime.onInstalled.addListener(async ({ reason }) => {
     // Only clear storage on fresh install, not on reload/update
-    if (reason === "install") {
+    if (reason === browser.runtime.OnInstalledReason.INSTALL) {
       await clearLocalStorage();
     }
   });
