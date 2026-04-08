@@ -71,7 +71,7 @@ interface ProtocolMap {
     playlistId?: string;
     playlistTitle?: string;
     playlistTotalCount?: number;
-    metadata?: VideoMetadata;
+    metadata?: VideoMetadata | null;
   }): void;
 
   // Content script → Background: SABR stream fetch failed
@@ -150,7 +150,7 @@ interface ProtocolMap {
     playlistId?: string;
     playlistTitle?: string;
     playlistTotalCount?: number;
-    metadata?: VideoMetadata;
+    metadata?: VideoMetadata | null;
   }): void;
 
   // Background → Offscreen (Chrome only): cancel one or more downloads
