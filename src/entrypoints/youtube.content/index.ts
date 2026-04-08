@@ -35,13 +35,6 @@ import type { Options } from "@/types";
 export default defineContentScript({
   matches: ["https://www.youtube.com/*"],
   async main(context) {
-    // Skip non-download iframes. Only the main page and download iframes
-    // (&ytdl=1 marker) need content script initialization.
-    const isDownloadIframe = self !== top && location.search.includes("ytdl=1");
-    if (self !== top && !isDownloadIframe) {
-      return;
-    }
-
     // ─── State ───────────────────────────────────────────────────────────
 
     let currentOptions: Options = await optionsItem.getValue();
@@ -98,10 +91,7 @@ export default defineContentScript({
     });
 
     crossWorldMessenger.onMessage(CrossWorldMessage.Navigation, async ({ data }) => {
-      if (!isDownloadIframe) {
-        await handlePageChange(data.url);
-      }
-
+      await handlePageChange(data.url);
       void forwardSabrCredentialsWithRetry();
     });
 
@@ -140,12 +130,6 @@ export default defineContentScript({
     });
 
     onMessage(MessageType.ExecuteDownloadItem, ({ data }) => {
-      // Only process on watch pages (including hidden download iframes).
-      // The subscriptions page MAIN world can't fetch googlevideo (CORS).
-      if (location.pathname !== "/watch") {
-        return;
-      }
-
       if (data.playlistId) {
         setPlaylistContext(data.videoId, {
           playlistId: data.playlistId,
@@ -300,8 +284,6 @@ export default defineContentScript({
 
     // ─── Initial page handling ──────────────────────────────────────────
 
-    if (!isDownloadIframe) {
-      await handlePageChange(location.href);
-    }
+    await handlePageChange(location.href);
   }
 });

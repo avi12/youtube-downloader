@@ -74,28 +74,8 @@ export default defineContentScript({
   matches: ["https://www.youtube.com/*"],
   world: "MAIN",
   async main() {
-    // Skip non-download iframes. Content scripts run in all frames (allFrames: true)
-    // but only the download iframe (&ytdl=1) and the main page need initialization.
-    const isDownloadIframe = self !== top && location.search.includes("ytdl=1");
-    if (self !== top && !isDownloadIframe) {
-      return;
-    }
-
-    // ─── Visibility spoofing ────────────────────────────────────────────
-    // YouTube pauses video playback when the tab is not focused.
-    // Override visibilityState so the player streams in background iframes/tabs.
-    Object.defineProperty(document, "visibilityState", {
-      get() {
-        return "visible";
-      },
-      configurable: true
-    });
-    Object.defineProperty(document, "hidden", {
-      get() {
-        return false;
-      },
-      configurable: true
-    });
+    // Visibility spoofing is handled by visibility-spoof.content.ts
+    // (runs at document_start in all frames including download iframes).
 
     // ─── Capture infrastructure (document_start) ────────────────────────
     // Patches fetch() and SourceBuffer.appendBuffer BEFORE YouTube loads.
