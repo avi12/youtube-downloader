@@ -8,8 +8,6 @@
 import { createMapMessenger, createSignalMessenger, createSyncedMap, createSyncedSignal } from "./synced-signal.svelte";
 import type { InterruptedDownload, ProgressType, VideoData } from "@/types";
 
-export { SYNC_NAMESPACE, SyncKey } from "./synced-signal.svelte";
-
 // ─── SABR credentials (MAIN world writes, isolated world reads) ──────────
 
 interface SabrCredentials {
@@ -25,12 +23,6 @@ export const sabrCredentials = createSyncedSignal(
 // ─── Video data (MAIN world writes, isolated world reads) ───────────────
 
 export const videoDataStore = createSyncedMap(createMapMessenger<VideoData>("video-data"));
-
-// ─── Video data requests (isolated world writes, MAIN world reads) ──────
-// Used to request video metadata for grid/playlist items.
-// The MAIN world observes new entries and fetches the data.
-
-export const videoDataRequests = createSyncedMap(createMapMessenger<boolean>("video-data-request"));
 
 // ─── Download progress (both worlds read/write) ─────────────────────────
 

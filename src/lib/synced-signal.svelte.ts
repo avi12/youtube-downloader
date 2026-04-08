@@ -11,28 +11,14 @@
 import { defineCustomEventMessaging } from "@webext-core/messaging/page";
 import { SvelteMap, SvelteSet } from "svelte/reactivity";
 
-export const SYNC_NAMESPACE = "ytdl-sync";
-
-/** Keys for cross-world postMessage signals (ytdl-sync namespace). */
-export enum SyncKey {
-  CreateDropdown = "create-dropdown",
-  CloseDropdown = "close-dropdown",
-  DropdownReady = "dropdown-ready",
-  CancelRequest = "cancel-request",
-  DownloadRequest = "download-request",
-  DirectDownloadRequest = "direct-download-request",
-  DownloadProgress = "download-progress",
-  VideoDataRequest = "video-data-request",
-  SetButtonData = "set-button-data",
-  ButtonClick = "button-click"
-}
+const SYNC_NAMESPACE = "ytdl-sync";
 
 // ─── Single-value signal ─────────────────────────────────────────────────────
 
 type SignalSchema<T> = { value: (data: T) => void };
 type SignalMessenger<T> = ReturnType<typeof defineCustomEventMessaging<SignalSchema<T>>>;
 
-export function createSignalMessenger<T>(key: string): SignalMessenger<T> {
+export function createSignalMessenger<T>(key: string) {
   return defineCustomEventMessaging<SignalSchema<T>>({
     namespace: `${SYNC_NAMESPACE}-${key}`
   });
