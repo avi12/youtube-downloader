@@ -162,7 +162,7 @@ async function triggerDownload(data: Uint8Array, filenameOutput: string) {
       mimeType,
       filename
     });
-    await new Promise<void>(resolve => setTimeout(resolve, 60_000));
+    await new Promise(resolve => setTimeout(resolve, 60_000));
     URL.revokeObjectURL(blobUrl);
     return;
   } catch {
