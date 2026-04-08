@@ -46,15 +46,23 @@ export async function generatePoToken(videoId: string) {
   // homepage) it doesn't, so we load the interpreter script ourselves.
   // BotGuard is YouTube's undocumented anti-bot runtime with a fully dynamic
   // shape that can't be statically typed.
-  // BotGuard has a fully dynamic shape - cast through unknown to access it
-  const globalRecord = globalThis as unknown as Record<string, Record<string, unknown>>;
-  if (!globalRecord[globalName]?.a) {
+  function getBotGuardVm(name: string) {
+    const entry = Object.getOwnPropertyDescriptor(globalThis, name)?.value;
+    if (entry === null || typeof entry !== "object" || !("a" in entry)) {
+      return null;
+    }
+
+    return entry;
+  }
+
+  if (!getBotGuardVm(globalName)) {
     // Extract interpreter URL from TrustedResourceUrl wrapper
     const interpreterUrlRaw = challengeData.bgChallenge?.interpreterUrl;
     const interpreterUrl: string | undefined =
       typeof interpreterUrlRaw === "string"
         ? interpreterUrlRaw
-        : interpreterUrlRaw?.privateDoNotAccessOrElseTrustedResourceUrlWrappedValue;    if (interpreterUrl) {
+        : interpreterUrlRaw?.privateDoNotAccessOrElseTrustedResourceUrlWrappedValue;
+    if (interpreterUrl) {
       await new Promise<void>((resolve, reject) => {
         const elScript = document.createElement("script");
         elScript.src = new URL(interpreterUrl, location.href).href;
@@ -66,7 +74,7 @@ export async function generatePoToken(videoId: string) {
   }
 
   for (let i = 0; i < 60; i++) {
-    if (globalRecord[globalName]?.a) {
+    if (getBotGuardVm(globalName)) {
       break;
     }
 
@@ -74,8 +82,8 @@ export async function generatePoToken(videoId: string) {
   }
 
   // BotGuard VM shape is fully dynamic - typed just enough to call it
-  const botGuardVm = globalRecord[globalName] as { a?: (...args: unknown[]) => unknown[] } | undefined;
-  if (!botGuardVm?.a) {
+  const botGuardVm = getBotGuardVm(globalName);
+  if (!botGuardVm || typeof botGuardVm.a !== "function") {
     throw new Error(`BotGuard VM not found at window.${globalName}`);
   }
 
