@@ -94,7 +94,8 @@ const tsStyleRules = {
     {
       ObjectExpression: { consistent: true, multiline: true },
       ObjectPattern: { consistent: true, multiline: true },
-      ExportDeclaration: { consistent: true, multiline: true }
+      ExportDeclaration: { consistent: true, multiline: true },
+      TSTypeLiteral: { minProperties: 2 }
     }
   ],
   "@stylistic/object-property-newline": ["error", { allowAllPropertiesOnSameLine: true }],
@@ -222,13 +223,7 @@ export default [
       "@typescript-eslint/triple-slash-reference": "off"
     }
   },
-  // Transport layer bridges unknown postMessage data to generic T — type assertions unavoidable
-  {
-    files: ["src/lib/synced-signal.svelte.ts"],
-    rules: {
-      "@typescript-eslint/consistent-type-assertions": "off"
-    }
-  },
+
   // BotGuard VM has a fully dynamic runtime shape — type assertions unavoidable
   {
     files: ["src/lib/po-token-generator.ts"],
