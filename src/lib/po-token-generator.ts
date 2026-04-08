@@ -92,7 +92,7 @@ export async function generatePoToken(videoId: string) {
   }
 
   // Step 3: Sync snapshot (async callback doesn't work from content script)
-  const webPoSignalOutput: unknown[] = [];
+  const webPoSignalOutput: [((input: Uint8Array) => Promise<(input: Uint8Array) => Promise<Uint8Array>>)?] = [];
   const initResult = botGuardVm.a(program, () => {}, true, undefined, () => {}, [[], []]);
   const syncSnapshotFunction = initResult?.[0];
   if (typeof syncSnapshotFunction !== "function") {
