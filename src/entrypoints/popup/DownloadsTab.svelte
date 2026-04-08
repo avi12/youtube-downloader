@@ -61,7 +61,7 @@
 
   function getVideoStatusLabel(videoId: string, index: number) {
     if (getProgress(videoId) !== null) {
-      return undefined;
+      return null;
     }
 
     if (index === 0) {

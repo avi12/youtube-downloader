@@ -93,7 +93,7 @@ function isSupportedExtension(extension: string): extension is SupportedExtensio
 export function getMimeType(filename: string) {
   const extension = getFileExtension(filename);
   if (!isSupportedExtension(extension)) {
-    return undefined;
+    return null;
   }
 
   return extensionToMimeAll[extension];

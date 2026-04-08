@@ -3,7 +3,7 @@
     filename: string;
     progress: number | null;
     progressLabel: string;
-    statusLabel?: string;
+    statusLabel?: string | null;
     oncancel: () => void;
   };
 

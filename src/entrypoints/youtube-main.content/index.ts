@@ -381,7 +381,7 @@ export default defineContentScript({
     function buildVideoMetadata(videoId: string) {
       const cached = videoDataCache.get(videoId);
       if (!cached) {
-        return undefined;
+        return null;
       }
 
       const { playerResponse } = cached;

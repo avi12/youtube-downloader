@@ -121,7 +121,7 @@ export type ProcessStreamData = StreamData & {
   playlistId?: string;
   playlistTitle?: string;
   playlistTotalCount?: number;
-  metadata?: VideoMetadata;
+  metadata?: VideoMetadata | null;
 };
 
 export type StreamDataPayload = {
@@ -134,7 +134,7 @@ export type StreamDataPayload = {
   audioMimeType: string;
   audioLabel: string;
   additionalAudioData: AudioStreamData[];
-  metadata?: VideoMetadata;
+  metadata?: VideoMetadata | null;
 };
 
 export type StreamError = {
