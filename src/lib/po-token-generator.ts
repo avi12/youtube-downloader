@@ -6,9 +6,6 @@
  * the synchronous snapshot function to avoid async callback issues.
  */
 
-const REQUEST_KEY = "O43z0dpjhgX20SCx4KAo";
-const GOOG_API_KEY = "AIzaSyDyT5W0Jh49F30Pqqtyfdf7pDLFKLJoAnw";
-
 declare const ytcfg: { get(key: string): unknown } | undefined;
 
 interface ChallengeResponse {
@@ -20,9 +17,13 @@ interface ChallengeResponse {
 }
 
 export async function generatePoToken(videoId: string) {
-  const clientVersion = typeof ytcfg !== "undefined"
-    ? String(ytcfg.get("INNERTUBE_CLIENT_VERSION") ?? "2.20260401.01.00")
-    : "2.20260401.01.00";
+  function getYtcfgValue(key: string, fallback: string) {
+    return typeof ytcfg !== "undefined" ? String(ytcfg.get(key) ?? fallback) : fallback;
+  }
+
+  const clientVersion = getYtcfgValue("INNERTUBE_CLIENT_VERSION", "2.20260401.01.00");
+  const requestKey = getYtcfgValue("BOTGUARD_EXPERIMENT_ID", "O43z0dpjhgX20SCx4KAo");
+  const googApiKey = getYtcfgValue("INNERTUBE_API_KEY", "AIzaSyDyT5W0Jh49F30Pqqtyfdf7pDLFKLJoAnw");
 
   // Step 1: Fetch challenge
   const challengeResponse = await fetch(
@@ -113,10 +114,10 @@ export async function generatePoToken(videoId: string) {
       method: "POST",
       headers: {
         "content-type": "application/json+protobuf",
-        "x-goog-api-key": GOOG_API_KEY,
+        "x-goog-api-key": googApiKey,
         "x-user-agent": "grpc-web-javascript/0.1"
       },
-      body: JSON.stringify([REQUEST_KEY, snapshotResponse])
+      body: JSON.stringify([requestKey, snapshotResponse])
     }
   );
 
