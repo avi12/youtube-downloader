@@ -7,8 +7,7 @@ import { PlayabilityStatus } from "@/types/youtube";
 export function getCompatibleFilename(filename: string) {
   // Remove characters forbidden on any OS: < > : " \ / | ? *
   // Also remove single quotes and backticks which break FFmpeg WASM arg parsing
-  const universalForbidden = /[<>:"'\\/|?*`]/g;
-  return filename.replace(universalForbidden, "");
+  return filename.replaceAll(/[<>:"'\\/|?*`]/g, "");
 }
 
 export function getFileExtension(filename: string) {
