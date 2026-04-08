@@ -257,19 +257,19 @@ async function embedMusicMetadata(
   const ffmpegArgs = ["-i", inputFilename];
 
   // Download and attach thumbnail as cover art
-  let hasCoverArt = false;
+  let isCoverArtPresent = false;
   if (metadata.thumbnailUrl) {
     const thumbnailData = await fetchThumbnail(metadata.thumbnailUrl);
     if (thumbnailData) {
       await ffmpeg.writeFile("cover.jpg", thumbnailData);
       ffmpegArgs.push("-i", "cover.jpg");
-      hasCoverArt = true;
+      isCoverArtPresent = true;
     }
   }
 
   ffmpegArgs.push("-map", "0:a");
 
-  if (hasCoverArt) {
+  if (isCoverArtPresent) {
     ffmpegArgs.push("-map", "1:v");
     ffmpegArgs.push("-c:v", "mjpeg");
     ffmpegArgs.push("-disposition:v", "attached_pic");
@@ -293,12 +293,11 @@ async function embedMusicMetadata(
   }
 
   const taggedOutput = await ffmpeg.readFile(outputFilename);
-  await ffmpeg.deleteFile(inputFilename);
-  await ffmpeg.deleteFile(outputFilename);
-
-  if (hasCoverArt) {
-    await ffmpeg.deleteFile("cover.jpg");
-  }
+  await Promise.all([
+    ffmpeg.deleteFile(inputFilename),
+    ffmpeg.deleteFile(outputFilename),
+    ...(isCoverArtPresent ? [ffmpeg.deleteFile("cover.jpg")] : [])
+  ]);
 
   if (typeof taggedOutput === "string") {
     return audioData;
@@ -429,23 +428,26 @@ async function processVideoAudio(item: ProcessStreamData, ffmpeg: FFmpeg) {
   ffmpeg.on("progress", handleFFmpegProgress);
 
   try {
-    await ffmpeg.writeFile(videoFilename, videoData);
-    await ffmpeg.writeFile(primaryAudioFilename, audioData);
+    await Promise.all([
+      ffmpeg.writeFile(videoFilename, videoData),
+      ffmpeg.writeFile(primaryAudioFilename, audioData)
+    ]);
 
-    const extraAudioFilenames: string[] = [];
-    for (let i = 0; i < additionalAudioStreams.length; i++) {
-      const stream = additionalAudioStreams[i];
-      const extraData = toUint8Array(stream.data);
-      if (!extraData) {
-        continue;
-      }
+    const extraAudioEntries = additionalAudioStreams
+      .map((stream, i) => {
+        const extraData = toUint8Array(stream.data);
+        if (!extraData) {
+          return null;
+        }
 
-      const isExtraWebm = stream.mimeType.includes("webm");
-      const extraExtension = isExtraWebm ? "webm" : "m4a";
-      const extraFilename = `${videoId}-audio-extra-${i}.${extraExtension}`;
-      await ffmpeg.writeFile(extraFilename, extraData);
-      extraAudioFilenames.push(extraFilename);
-    }
+        const isExtraWebm = stream.mimeType.includes("webm");
+        const extraExtension = isExtraWebm ? "webm" : "m4a";
+        return { filename: `${videoId}-audio-extra-${i}.${extraExtension}`, data: extraData };
+      })
+      .filter(entry => entry !== null);
+
+    await Promise.all(extraAudioEntries.map(entry => ffmpeg.writeFile(entry.filename, entry.data)));
+    const extraAudioFilenames = extraAudioEntries.map(entry => entry.filename);
 
     const ffmpegArgs = ["-i", videoFilename, "-i", primaryAudioFilename];
     for (const extraFilename of extraAudioFilenames) {
@@ -483,10 +485,10 @@ async function processVideoAudio(item: ProcessStreamData, ffmpeg: FFmpeg) {
       throw new Error("FFmpeg readFile returned unexpected string output");
     }
 
-    const filesToDelete = [videoFilename, primaryAudioFilename, outputFilename, ...extraAudioFilenames];
-    for (const file of filesToDelete) {
-      await ffmpeg.deleteFile(file);
-    }
+    await Promise.all(
+      [videoFilename, primaryAudioFilename, outputFilename, ...extraAudioFilenames]
+        .map(file => ffmpeg.deleteFile(file))
+    );
 
     if (item.playlistId) {
       addToPlaylistBundle({
@@ -546,10 +548,10 @@ export function enqueueStreamData(data: ProcessStreamData) {
 }
 
 export async function cancelDownloadsByIds(videoIds: string[]) {
-  for (const videoId of videoIds) {
+  await Promise.all(videoIds.map(async videoId => {
     const activeJob = activeJobs.get(videoId);
     if (!activeJob) {
-      continue;
+      return;
     }
 
     // If this job is actively using FFmpeg, terminate and recreate the shared
@@ -561,5 +563,5 @@ export async function cancelDownloadsByIds(videoIds: string[]) {
 
     activeJobs.delete(videoId);
     await reportRemoval(videoId, activeJob.tabId);
-  }
+  }));
 }

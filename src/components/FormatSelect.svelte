@@ -11,9 +11,6 @@
 
   const { id, label, options, value, onchange }: Props = $props();
 
-  function formatLabel(option: string) {
-    return option === AUTO_EXTENSION ? AUTO_EXTENSION_LABEL : option;
-  }
 </script>
 
 <div class="format-select">
@@ -30,7 +27,7 @@
   >
     {#each options as option (option)}
       <option selected={option === value} value={option}>
-        {formatLabel(option)}
+        {option === AUTO_EXTENSION ? AUTO_EXTENSION_LABEL : option}
       </option>
     {/each}
   </select>

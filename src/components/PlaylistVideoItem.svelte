@@ -83,7 +83,7 @@
     refreshChevronButton();
   });
 
-  const buttonLabel = $derived(() => {
+  const buttonLabel = $derived.by(() => {
     if (!videoData?.isDownloadable) {
       return "N/A";
     }
@@ -198,7 +198,7 @@
   function getButtonTooltip() {
     if (isDownloading) {
       if (downloadState.progress <= 0) {
-        return buttonLabel();
+        return buttonLabel;
       }
 
       const phase = downloadState.progressType === ProgressType.FFmpeg ? "Processing" : "Downloading";
@@ -206,7 +206,7 @@
     }
 
     if (!videoData?.isDownloadable) {
-      return buttonLabel();
+      return buttonLabel;
     }
 
     const quality = getDefaultQualityLabel();

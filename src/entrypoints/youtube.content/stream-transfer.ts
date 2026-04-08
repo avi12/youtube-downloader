@@ -71,38 +71,26 @@ export async function handleStreamData(payload: StreamDataPayload) {
     return;
   }
 
+  const streamTasks: Promise<void>[] = [];
   if (videoData) {
-    await sendStreamChunks({
-      videoId,
-      streamType: "video",
-      data: videoData
-    });
+    streamTasks.push(sendStreamChunks({ videoId, streamType: "video", data: videoData }));
   }
 
   if (audioData) {
-    await sendStreamChunks({
-      videoId,
-      streamType: "audio",
-      data: audioData
-    });
+    streamTasks.push(sendStreamChunks({ videoId, streamType: "audio", data: audioData }));
   }
 
-  const extraAudioStreams = additionalAudioData;
-
-  for (let i = 0; i < extraAudioStreams.length; i++) {
-    const track = extraAudioStreams[i];
+  for (const [i, track] of additionalAudioData.entries()) {
     if (track.data) {
-      await sendStreamChunks({
-        videoId,
-        streamType: `audio-extra-${i}`,
-        data: track.data
-      });
+      streamTasks.push(sendStreamChunks({ videoId, streamType: `audio-extra-${i}`, data: track.data }));
     }
   }
 
+  await Promise.all(streamTasks);
+
   const audioTrackLabels = [
     audioLabel ?? "",
-    ...extraAudioStreams.map(track => track.label)
+    ...additionalAudioData.map(track => track.label)
   ];
 
   const playlistContext = playlistContextByVideoId.get(videoId);
