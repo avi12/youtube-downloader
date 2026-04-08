@@ -75,12 +75,14 @@ async function main() {
   console.log("File changes trigger auto-rebuild + extension reload.");
   console.log("Press Ctrl+C to stop.\n");
 
-  const keepAlive = setInterval(() => {}, 30_000);
+  // Node exits when the event loop is empty; this timer keeps the process alive
+  const keepAliveIntervalMs = 30_000;
+  const keepAlive = setInterval(() => {}, keepAliveIntervalMs);
 
   for (const signal of ["SIGINT", "SIGTERM"] as const) {
-    process.on(signal, async () => {
+    process.on(signal, () => {
       clearInterval(keepAlive);
-      await server.close().catch(() => {});
+      void server.stop();
       process.exit(0);
     });
   }

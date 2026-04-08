@@ -8,8 +8,8 @@
  * processing completes without crashing the background script.
  */
 
-import { cancelDownloadsByIds, enqueueStreamData, initFFmpeg } from "@/lib/download-pipeline.ts";
-import { MessageType, onMessage } from "@/lib/messaging.ts";
+import { cancelDownloadsByIds, enqueueStreamData, initFFmpeg } from "@/lib/download-pipeline";
+import { MessageType, onMessage } from "@/lib/messaging";
 
 // Start loading FFmpeg immediately
 initFFmpeg({
