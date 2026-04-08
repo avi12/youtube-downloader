@@ -150,7 +150,7 @@ function toUint8Array(data: Uint8Array | Record<string, number> | null) {
 }
 
 async function triggerDownload(data: Uint8Array, filenameOutput: string) {
-  const mimeType = getMimeType(filenameOutput) ?? "application/octet-stream";
+  const mimeType = getMimeType(filenameOutput) || "application/octet-stream";
   const filename = getCompatibleFilename(filenameOutput);
   // Chrome offscreen document has Blob + URL.createObjectURL.
   // Firefox service worker does not, so fall back to base64 data URL.
