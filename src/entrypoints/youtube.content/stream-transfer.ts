@@ -32,13 +32,13 @@ async function sendStreamChunks({ videoId, streamType, data }: {
   const totalChunks = Math.ceil(data.byteLength / TRANSFER_CHUNK_SIZE);
 
   await Promise.all(
-    Array.from({ length: totalChunks }, (_, i) => {
-      const start = i * TRANSFER_CHUNK_SIZE;
+    Array.from({ length: totalChunks }, (_, iChunk) => {
+      const start = iChunk * TRANSFER_CHUNK_SIZE;
       const chunk = data.subarray(start, start + TRANSFER_CHUNK_SIZE);
       return sendMessage(MessageType.StreamChunk, {
         videoId,
         streamType,
-        iChunk: i,
+        iChunk,
         totalChunks,
         chunkBase64: uint8ToBase64(chunk)
       });
