@@ -121,12 +121,6 @@
     applyPolymerCustomStyles(elTarget, PAPER_INPUT_THEME);
   }
 
-  function handleDownloadTypeSelect(newValue: string) {
-    const type = DOWNLOAD_TYPES.find(item => item.value === newValue);
-    if (type) {
-      ondownloadtypechange(type.value);
-    }
-  }
 </script>
 
 <div class="ytdl-options-container">
@@ -136,7 +130,12 @@
       id="type-select"
       disabled={isDownloading}
       label="Type"
-      onchange={handleDownloadTypeSelect}
+      onchange={newValue => {
+        const type = DOWNLOAD_TYPES.find(item => item.value === newValue);
+        if (type) {
+          ondownloadtypechange(type.value);
+        }
+      }}
       options={DOWNLOAD_TYPES}
       value={downloadType}
     />
