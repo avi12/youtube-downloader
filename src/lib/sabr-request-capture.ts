@@ -209,17 +209,6 @@ export function extractPoTokenFromBody(body: number[]) {
   return null;
 }
 
-/** Debug: returns all captured tab IDs. */
-export function getDebugCaptureState() {
-  return {
-    capturedTabIds: [...capturedByTab.keys()],
-    sizes: [...capturedByTab.entries()].map(([id, d]) => ({
-      tabId: id,
-      bodySize: d.body.length
-    }))
-  };
-}
-
 /**
  * Clears captured data for a tab (on navigation or tab close).
  */
