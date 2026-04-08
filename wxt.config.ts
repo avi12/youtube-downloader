@@ -45,7 +45,8 @@ export default defineConfig({
     ]
   }),
   vite: () => ({
-    server: { strictPort: false }
+    server: { strictPort: false },
+    build: { sourcemap: "inline" }
   }),
   hooks: {
     "prepare:publicPaths"(_, paths) {
