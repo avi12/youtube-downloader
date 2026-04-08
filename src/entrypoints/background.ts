@@ -9,6 +9,10 @@ import {
 import { clearLocalStorage, interruptedDownloadsItem, isFFmpegReadyItem, statusProgressItem } from "../lib/storage";
 import { ProgressType } from "../types";
 
+enum TabStatus {
+  Loading = "loading"
+}
+
 export default defineBackground(() => {
   // Content scripts are declared statically via defineContentScript in each
   // entrypoint file. WXT generates the manifest content_scripts entries.
@@ -36,9 +40,7 @@ export default defineBackground(() => {
       return;
     }
 
-    videoIdToTabIds[videoId] = videoIdToTabIds[videoId].filter(id => {
-      return id !== tabId;
-    });
+    videoIdToTabIds[videoId] = videoIdToTabIds[videoId].filter(id => id !== tabId);
   }
 
   // - FFmpeg processor management -
@@ -172,14 +174,14 @@ export default defineBackground(() => {
     return current[data.videoId] ?? null;
   });
 
-  onMessage(MessageType.ProcessStreamError, async ({ data, sender }) => {
+  onMessage(MessageType.ProcessStreamError, ({ data, sender }) => {
     const tabId = sender.tab?.id;
     if (!tabId) {
       return;
     }
 
     console.error("[ytdl] Stream error for", data.videoId, data.error);
-    await sendMessage(
+    void sendMessage(
       MessageType.UpdateDownloadProgress,
       {
         videoId: data.videoId,
@@ -208,41 +210,29 @@ export default defineBackground(() => {
     }, originTabId);
 
     // Wait for iframe load + content scripts to initialize
+    const iframeReadyTimeoutMs = 30_000;
     await new Promise<void>(resolve => {
+      const timeoutId = setTimeout(resolve, iframeReadyTimeoutMs);
       const removeListener = onMessage(MessageType.DownloadIframeReady, ({ data: readyData }) => {
-        if (readyData.videoId === data.videoId) {
-          removeListener();
-          resolve();
+        if (readyData.videoId !== data.videoId) {
+          return;
         }
-      });
 
-      setTimeout(() => {
+        clearTimeout(timeoutId);
         removeListener();
         resolve();
-      }, 30_000);
-    });
-
-    // Give YouTube player and content scripts time to initialize
-    await new Promise(resolve => {
-      return setTimeout(resolve, 8000);
+      });
     });
 
     // Send download request - only the iframe's content script handles it
     // (isWatchPage guard filters out the subscriptions page)
-    try {
-      await sendMessage(MessageType.ExecuteDownloadItem, data, originTabId);
-    } catch {
-      await new Promise(resolve => {
-        return setTimeout(resolve, 3000);
-      });
-      await sendMessage(MessageType.ExecuteDownloadItem, data, originTabId);
-    }
+    await sendMessage(MessageType.ExecuteDownloadItem, data, originTabId);
 
     trackVideoForTab(data.videoId, originTabId);
     tabTracker[originTabId] ??= { videoIdsAvailable: [] };
     tabTracker[originTabId].videoIdsAvailable.push(data.videoId);
 
-    void sendMessage(MessageType.StartKeepalive, { videoId: data.videoId }, originTabId);
+    await sendMessage(MessageType.StartKeepalive, { videoId: data.videoId }, originTabId);
   });
 
   // Keepalive ping from content scripts - resets SW idle timer
@@ -254,10 +244,11 @@ export default defineBackground(() => {
       return;
     }
 
-    await Promise.all(data.items.map(item => {
-      return sendMessage(MessageType.ExecuteDownloadItem, item, tabId);
-    }
-    ));
+    await Promise.allSettled(
+      data.items.map(item =>
+        sendMessage(MessageType.ExecuteDownloadItem, item, tabId)
+      )
+    );
   });
 
   onMessage(MessageType.CancelDownload, ({ data }) => {
@@ -308,12 +299,12 @@ export default defineBackground(() => {
     await statusProgressItem.setValue(current);
   });
 
-  onMessage(MessageType.PipelineFFmpegReady, async () => {
-    await isFFmpegReadyItem.setValue(true);
+  onMessage(MessageType.PipelineFFmpegReady, () => {
+    void isFFmpegReadyItem.setValue(true);
   });
 
-  onMessage(MessageType.PipelineDownload, async ({ data }) => {
-    await browser.downloads.download({
+  onMessage(MessageType.PipelineDownload, ({ data }) => {
+    void browser.downloads.download({
       url: data.blobUrl,
       filename: data.filename
     });
@@ -328,46 +319,46 @@ export default defineBackground(() => {
       return;
     }
 
-    const tracked = tabTracker[tabId];
-    if (!tracked) {
+    const tabState = tabTracker[tabId];
+    if (!tabState) {
       return;
     }
 
     delete tabTracker[tabId];
     clearCapturedSabrData(tabId);
 
-    for (const videoId of tracked.videoIdsAvailable) {
+    for (const videoId of tabState.videoIdsAvailable) {
       untrackVideoForTab(videoId, tabId);
     }
 
-    await cancelDownloads(tracked.videoIdsAvailable);
+    await cancelDownloads(tabState.videoIdsAvailable);
   });
 
   browser.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
-    if (changeInfo.status !== "loading" || !tab.url?.includes("youtube.com")) {
+    if (changeInfo.status !== TabStatus.Loading || !tab.url?.includes("youtube.com")) {
       return;
     }
 
-    const tracked = tabTracker[tabId];
-    if (!tracked) {
+    const tabState = tabTracker[tabId];
+    if (!tabState) {
       return;
     }
 
-    for (const videoId of tracked.videoIdsAvailable) {
+    for (const videoId of tabState.videoIdsAvailable) {
       untrackVideoForTab(videoId, tabId);
     }
 
     clearCapturedSabrData(tabId);
-    await cancelDownloads(tracked.videoIdsAvailable);
+    await cancelDownloads(tabState.videoIdsAvailable);
     tabTracker[tabId] = { videoIdsAvailable: [] };
   });
 
   // - Initialization -
 
-  browser.runtime.onInstalled.addListener(async ({ reason }) => {
+  browser.runtime.onInstalled.addListener(({ reason }) => {
     // Only clear storage on fresh install, not on reload/update
     if (reason === browser.runtime.OnInstalledReason.INSTALL) {
-      await clearLocalStorage();
+      void clearLocalStorage();
     }
   });
 });

@@ -23,7 +23,10 @@ export enum CrossWorldMessage {
   RefreshPoToken = "refreshPoToken",
 
   // Isolated world → all (MAIN world + Svelte components)
-  Progress = "progress"
+  Progress = "progress",
+
+  // MAIN world → isolated world: player is initialized and ready to handle downloads
+  IframePlayerReady = "iframePlayerReady"
 }
 
 interface PageMessengerSchema {
@@ -50,6 +53,7 @@ interface PageMessengerSchema {
       bodyBase64: string; } | null;
   [CrossWorldMessage.RefreshPoToken](data: { videoId: string }): string | null;
   [CrossWorldMessage.Progress](data: ProgressUpdate): void;
+  [CrossWorldMessage.IframePlayerReady](data: { videoId: string }): void;
 }
 
 export const crossWorldMessenger = defineCustomEventMessaging<PageMessengerSchema>({ namespace: "ytdl" });

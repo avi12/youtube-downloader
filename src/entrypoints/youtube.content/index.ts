@@ -158,9 +158,10 @@ export default defineContentScript({
     });
 
     // Relay PO token refresh requests from background to MAIN world
-    onMessage(MessageType.RefreshPoToken, ({ data }) => {
-      return crossWorldMessenger.sendMessage(CrossWorldMessage.RefreshPoToken, data);
-    });
+    onMessage(
+      MessageType.RefreshPoToken,
+      ({ data }) => crossWorldMessenger.sendMessage(CrossWorldMessage.RefreshPoToken, data)
+    );
 
     onMessage(MessageType.UpdateDownloadProgress, ({ data }) => {
       void crossWorldMessenger.sendMessage(CrossWorldMessage.Progress, data);
@@ -219,6 +220,10 @@ export default defineContentScript({
       void handleStreamError(data);
     });
 
+    crossWorldMessenger.onMessage(CrossWorldMessage.IframePlayerReady, ({ data }) => {
+      void sendMessage(MessageType.DownloadIframeReady, { videoId: data.videoId });
+    });
+
     listenForInterruptedDownloadEvents();
     listenForSabrBodyReady();
     listenForDownloadRequests();
@@ -246,10 +251,6 @@ export default defineContentScript({
       elIframe.src = watchUrl;
       document.body.append(elIframe);
       downloadIframes.set(videoId, elIframe);
-
-      elIframe.addEventListener("load", () => {
-        void sendMessage(MessageType.DownloadIframeReady, { videoId });
-      });
 
       context.onInvalidated(() => {
         elIframe.remove();
