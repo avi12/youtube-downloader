@@ -223,10 +223,3 @@ export async function decryptSignatureCipher(signatureCipher: string) {
 
   return `${decodeURIComponent(url)}&${sigParam}=${encodeURIComponent(decryptedSig)}`;
 }
-
-/**
- * Returns whether the decryptor has been successfully initialized.
- */
-export function isDecryptorReady() {
-  return cachedState !== null;
-}
