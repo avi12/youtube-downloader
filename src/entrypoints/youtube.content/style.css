@@ -1,0 +1,9 @@
+.ytdl-download-iframe {
+  position: fixed;
+  top: -100px;
+  left: -100px;
+  width: 1px;
+  height: 1px;
+  opacity: 0%;
+  pointer-events: none;
+}

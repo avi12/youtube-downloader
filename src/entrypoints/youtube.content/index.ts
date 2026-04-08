@@ -24,6 +24,7 @@ import {
   setPlaylistContext,
   uncancelStreamTransfer
 } from "./stream-transfer";
+import "./style.css";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/cross-world-messenger";
 import { MessageType, sendMessage, onMessage } from "@/lib/messaging";
 import { forwardSabrCredentialsWithRetry, listenForSabrBodyReady } from "@/lib/sabr-credentials";
@@ -255,14 +256,9 @@ export default defineContentScript({
     void forwardSabrCredentialsWithRetry();
 
     // ─── Hidden iframe for downloads ────────────────────────────────────
-    const elStyle = document.createElement("style");
-    elStyle.textContent = ".ytdl-download-iframe{position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;top:-100px;left:-100px}";
-    document.head.append(elStyle);
-    context.onInvalidated(() => {
-      return elStyle.remove();
-    });
     // Creates a hidden iframe to a watch page. The MAIN world content script
     // spoofs visibilityState so YouTube's player streams in the iframe.
+    // Iframe styling is in style.css (.ytdl-download-iframe).
 
     const downloadIframes = new Map<string, HTMLIFrameElement>();
 
