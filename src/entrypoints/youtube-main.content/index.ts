@@ -131,90 +131,12 @@ export default defineContentScript({
     }
 
     // On watch pages, YouTube's Service Worker handles CORS for googlevideo.com.
-    // On other pages, use the page's fetch which may get CORS-blocked - SabrStream
-    // will fall back to SourceBuffer capture in that case.
-    let proxyFetchRequestId = 0;
-
     function createSabrStream(sabrConfig: NonNullable<VideoData["sabrConfig"]>) {
       const sabrFormats = sabrConfig.formats.map(adaptiveFormatToSabrFormat);
       const durationMs = parseInt(sabrConfig.formats[0]?.approxDurationMs ?? "0");
 
-      // Relay a fetch through the isolated world → background using CustomEvent.
-      // CustomEvents cross the MAIN/isolated world boundary (unlike postMessage).
-      function proxyFetchViaBackground(url: string, bodyBase64: string) {
-        const requestId = proxyFetchRequestId++;
-        return new Promise<{ status: number; bodyBase64: string } | null>((resolve) => {
-          function handleResponse(e: Event) {
-            const detail = (e as CustomEvent).detail;
-            if (detail?.requestId !== requestId) {
-              return;
-            }
-
-            removeEventListener("ytdl:proxy-fetch-response", handleResponse);
-            resolve(detail.result);
-          }
-
-          addEventListener("ytdl:proxy-fetch-response", handleResponse);
-          dispatchEvent(new CustomEvent("ytdl:proxy-fetch-request", {
-            detail: { requestId, url, bodyBase64 }
-          }));
-
-          // Timeout after 60s
-          setTimeout(() => {
-            removeEventListener("ytdl:proxy-fetch-response", handleResponse);
-            resolve(null);
-          }, 60_000);
-        });
-      }
-
-      // On non-watch pages, YouTube's SW doesn't handle googlevideo CORS.
-      // Create a hidden iframe pointing to a YouTube watch URL - the iframe
-      // loads YouTube's SW which handles googlevideo CORS, and since it's
-      // same-origin we can call iframe.contentWindow.fetch directly.
-      let iframeFetch: typeof fetch | null = null;
-
-      async function getIframeFetch() {
-        if (iframeFetch) {
-          return iframeFetch;
-        }
-
-        const elIframe = document.createElement("iframe");
-        elIframe.src = "https://www.youtube.com/embed/dQw4w9WgXcQ";
-        elIframe.style.display = "none";
-        document.body.append(elIframe);
-
-        // Wait for iframe to load (SW registers)
-        await new Promise<void>(resolve => {
-          elIframe.addEventListener("load", () => resolve(), { once: true });
-        });
-
-        // Wait a bit more for the SW to initialize
-        await new Promise(resolve => {
-          return setTimeout(resolve, 2000);
-        });
-
-        iframeFetch = elIframe.contentWindow!.fetch.bind(elIframe.contentWindow);
-        return iframeFetch;
-      }
-
-      async function sabrFetchWithFallback(input: RequestInfo | URL, init?: RequestInit) {
-        const isWatchPage = location.pathname === "/watch";
-
-        if (isWatchPage) {
-          try {
-            return await originalFetch(input, init);
-          } catch {
-            // Fall through to iframe fetch
-          }
-        }
-
-        // Use iframe's fetch which goes through YouTube's SW (handles CORS)
-        const fetchFn = await getIframeFetch();
-        return fetchFn(input, init);
-      }
-
       return new SabrStream({
-        fetch: sabrFetchWithFallback,
+        fetch: originalFetch,
         serverAbrStreamingUrl: sabrConfig.serverAbrStreamingUrl,
         videoPlaybackUstreamerConfig: sabrConfig.videoPlaybackUstreamerConfig,
         poToken: capturedPoToken || sabrCredentials.value?.poToken || undefined,
@@ -779,6 +701,7 @@ export default defineContentScript({
           const originalRate = elVideo.playbackRate;
           elVideo.playbackRate = 16;
           elVideo.muted = true;
+
           if (elVideo.paused) {
             elVideo.play().catch(() => {});
           }

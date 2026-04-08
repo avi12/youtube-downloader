@@ -49,17 +49,13 @@ export async function generatePoToken(videoId: string) {
   // BotGuard is YouTube's undocumented anti-bot runtime with a fully dynamic
   // shape that can't be statically typed - any is intentional here.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const globalRecord: Record<string, any> = globalThis;
-
-  if (!globalRecord[globalName]?.a) {
+  const globalRecord: Record<string, any> = globalThis;  if (!globalRecord[globalName]?.a) {
     // Extract interpreter URL from TrustedResourceUrl wrapper
     const interpreterUrlRaw = challengeData.bgChallenge?.interpreterUrl;
     const interpreterUrl: string | undefined =
       typeof interpreterUrlRaw === "string"
         ? interpreterUrlRaw
-        : interpreterUrlRaw?.privateDoNotAccessOrElseTrustedResourceUrlWrappedValue;
-
-    if (interpreterUrl) {
+        : interpreterUrlRaw?.privateDoNotAccessOrElseTrustedResourceUrlWrappedValue;    if (interpreterUrl) {
       const fullUrl = interpreterUrl.startsWith("//")
         ? `https:${interpreterUrl}`
         : interpreterUrl;
@@ -67,8 +63,12 @@ export async function generatePoToken(videoId: string) {
       await new Promise<void>((resolve, reject) => {
         const elScript = document.createElement("script");
         elScript.src = fullUrl;
-        elScript.onload = () => resolve();
-        elScript.onerror = () => reject(new Error("Failed to load BotGuard interpreter"));
+        elScript.onload = () => {
+          return resolve();
+        };
+        elScript.onerror = () => {
+          return reject(new Error("Failed to load BotGuard interpreter"));
+        };
         document.head.append(elScript);
       });
     }

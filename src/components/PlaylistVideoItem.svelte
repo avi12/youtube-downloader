@@ -6,7 +6,6 @@
 </script>
 
 <script lang="ts">
-  import { CrossWorldMessage, crossWorldMessenger } from "../lib/cross-world-messenger";
   import { MessageType, sendMessage } from "../lib/messaging";
   import {
     buttonClickSignal,

@@ -19,6 +19,7 @@ async function forwardSabrCredentials() {
     // SW not ready yet - will retry via forwardSabrCredentialsWithRetry
     return;
   }
+
   if (!captured?.poToken) {
     return;
   }

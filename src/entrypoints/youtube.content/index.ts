@@ -148,7 +148,12 @@ export default defineContentScript({
     // to reach BOTH the background (DNR cookie update) and offscreen doc (fetch).
     // The offscreen doc claims the response; the background just does side effects.
     addEventListener("ytdl:proxy-fetch-request", async (e: Event) => {
-      const { requestId, url, bodyBase64 } = (e as CustomEvent).detail;
+      const detail = (e instanceof CustomEvent) ? e.detail : null;
+      if (!detail) {
+        return;
+      }
+
+      const { requestId, url, bodyBase64 } = detail;
       try {
         const result = await browser.runtime.sendMessage({
           type: "ytdl:proxy-fetch",
@@ -198,7 +203,7 @@ export default defineContentScript({
     // The background sends StartKeepalive after opening a watch tab for
     // grid downloads. We ping the SW every 25s to prevent Chrome from
     // killing it during long downloads.
-    onMessage(MessageType.StartKeepalive, ({ data }) => {
+    onMessage(MessageType.StartKeepalive, () => {
       const keepaliveInterval = globalThis.setInterval(async () => {
         try {
           await sendMessage(MessageType.Keepalive, {});
@@ -232,7 +237,6 @@ export default defineContentScript({
     listenForSabrBodyReady();
     listenForDownloadRequests();
     void forwardSabrCredentialsWithRetry();
-
 
     const unwatchOptions = optionsItem.watch(newOptions => {
       if (!newOptions) {

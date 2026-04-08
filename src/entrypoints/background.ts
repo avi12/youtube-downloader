@@ -10,7 +10,6 @@ import { clearLocalStorage, interruptedDownloadsItem, isFFmpegReadyItem, statusP
 import { ProgressType } from "../types";
 
 async function fetchPlayerResponse(videoId: string, cookieString: string) {
-
   const response = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
     headers: { cookie: cookieString }
   });
@@ -148,10 +147,9 @@ export default defineBackground(() => {
       : [];
 
     await declarativeNetRequest.updateDynamicRules({
-      removeRuleIds: [1, 2],
+      removeRuleIds: [1],
       addRules: [
         {
-          // Rule for extension-initiated requests (background/offscreen, tabId -1)
           id: 1,
           priority: 1,
           action: {
@@ -161,23 +159,6 @@ export default defineBackground(() => {
               { header: "Sec-Fetch-Site", operation: "set", value: "cross-site" },
               { header: "Sec-Fetch-Mode", operation: "set", value: "cors" },
               ...cookieHeaders
-            ]
-          },
-          condition: {
-            urlFilter: "*googlevideo.com*",
-            tabIds: [-1]
-          }
-        },
-        {
-          // Rule for tab-initiated requests (content scripts)
-          id: 2,
-          priority: 1,
-          action: {
-            type: "modifyHeaders",
-            requestHeaders: [
-              { header: "Origin", operation: "set", value: "https://www.youtube.com" },
-              { header: "Sec-Fetch-Site", operation: "set", value: "cross-site" },
-              { header: "Sec-Fetch-Mode", operation: "set", value: "cors" }
             ]
           },
           condition: {
@@ -323,53 +304,6 @@ export default defineBackground(() => {
     await sendMessage(MessageType.CancelProcessing, { videoIds });
   }
 
-  // Split binary data into 1 MB base64-encoded chunks and forward to processor.
-  // Used by DirectDownload and SabrDownload handlers that already have full
-  // video/audio buffers in the background (bypassing the content script relay).
-  async function sendChunksToProcessor({
-    videoId, tabId, videoData, audioData
-  }: {
-    videoId: string;
-    tabId: number;
-    videoData: Uint8Array | null;
-    audioData: Uint8Array | null;
-  }) {
-    async function sendChunks(streamType: string, streamData: Uint8Array) {
-      const chunkSize = 1024 * 1024;
-      const totalChunks = Math.ceil(streamData.byteLength / chunkSize);
-
-      for (let iChunk = 0; iChunk < totalChunks; iChunk++) {
-        const start = iChunk * chunkSize;
-        const chunk = streamData.slice(start, start + chunkSize);
-        let base64 = "";
-        const batchSize = 8192;
-
-        for (let batchOffset = 0; batchOffset < chunk.byteLength; batchOffset += batchSize) {
-          base64 += String.fromCharCode(
-            ...chunk.subarray(batchOffset, Math.min(batchOffset + batchSize, chunk.byteLength))
-          );
-        }
-
-        await sendMessage(MessageType.ProcessStreamChunk, {
-          videoId,
-          streamType,
-          iChunk,
-          totalChunks,
-          chunkBase64: btoa(base64),
-          tabId
-        });
-      }
-    }
-
-    if (videoData) {
-      await sendChunks("video", videoData);
-    }
-
-    if (audioData) {
-      await sendChunks("audio", audioData);
-    }
-  }
-
   // - Message handlers -
 
   // ProxyFetch: update DNR cookies, then relay to offscreen doc via Port.
@@ -394,7 +328,6 @@ export default defineBackground(() => {
     const pageCookies = "cookies" in data ? String(data.cookies ?? "") : "";
     const fetchUrl = "url" in data ? String(data.url) : "";
     const bodyBase64 = "bodyBase64" in data ? String(data.bodyBase64) : "";
-
     if (pageCookies) {
       await updateGooglevideoHeaderRules(pageCookies);
     }
@@ -487,9 +420,15 @@ export default defineBackground(() => {
       return false;
     }
 
-    // Update DNR rule with Origin header for googlevideo requests.
-    // Ensure offscreen doc is ready (sabrFetch relays through it).
-    await updateGooglevideoHeaderRules();
+    // Update DNR rules with cookies + Origin for googlevideo requests.
+    // The offscreen XHR proxy needs DNR to inject proper headers.
+    if (cookies) {
+      await updateGooglevideoHeaderRules(cookies);
+    } else if (!cachedYoutubeCookies) {
+      const builtCookies = await buildYoutubeCookieString();
+      await updateGooglevideoHeaderRules(builtCookies);
+    }
+
     await ensureProcessor();
 
     try {
@@ -528,20 +467,55 @@ export default defineBackground(() => {
         return false;
       }
 
-      // Fetch wrapper for SabrStream. declarativeNetRequest overrides
-      // Origin and Sec-Fetch-Site headers at the network layer so
-      // googlevideo accepts the request from the extension context.
+      // Fetch wrapper for SabrStream. Routes through the offscreen document's
+      // XHR proxy. Chrome strips Origin from SW fetch, causing 403. The offscreen
+      // doc's XHR + declarativeNetRequest properly sets Origin for googlevideo.
       async function sabrFetch(input: RequestInfo | URL, init?: RequestInit) {
         const url = input instanceof URL ? input.href : String(input);
+        let bodyBytes: Uint8Array;
+        if (init?.body instanceof Uint8Array) {
+          bodyBytes = init.body;
+        } else if (init?.body) {
+          bodyBytes = new Uint8Array(await new Response(init.body).arrayBuffer());
+        } else {
+          bodyBytes = new Uint8Array(0);
+        }
 
-        return fetch(url, {
-          method: "POST",
-          headers: {
-            "content-type": "application/x-protobuf",
-            accept: "application/vnd.yt-ump"
-          },
-          body: init?.body,
-          signal: init?.signal
+        let bodyBase64 = "";
+        const batchSize = 8192;
+        for (let offset = 0; offset < bodyBytes.byteLength; offset += batchSize) {
+          bodyBase64 += String.fromCharCode(
+            ...bodyBytes.subarray(offset, Math.min(offset + batchSize, bodyBytes.byteLength))
+          );
+        }
+        bodyBase64 = btoa(bodyBase64);
+
+        const port = getOffscreenPort();
+        const requestId = `sabr-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+        const result = await new Promise<{ status: number; bodyBase64: string } | null>(resolve => {
+          function onMessage(response: { requestId: string; result: { status: number; bodyBase64: string } | null }) {
+            if (response.requestId !== requestId) {
+              return;
+            }
+
+            port.onMessage.removeListener(onMessage);
+            resolve(response.result);
+          }
+          port.onMessage.addListener(onMessage);
+          port.postMessage({ requestId, url, bodyBase64 });
+        });
+        if (!result) {
+          throw new TypeError("Failed to fetch via offscreen proxy");
+        }
+
+        const responseBytes = Uint8Array.from(atob(result.bodyBase64), character => {
+          return character.charCodeAt(0);
+        });
+
+        return new Response(responseBytes, {
+          status: result.status,
+          headers: { "content-type": "application/vnd.yt-ump" }
         });
       }
 
@@ -608,7 +582,6 @@ export default defineBackground(() => {
 
         while (true) {
           const { done, value } = await reader.read();
-
           if (value) {
             // Append to buffer
             const newBuffer = new Uint8Array(buffer.byteLength + value.byteLength);
@@ -727,14 +700,13 @@ export default defineBackground(() => {
   // on watch pages handles googlevideo CORS only for top-level navigations
   // (not iframes or extension contexts). The content script on the new tab
   // receives ExecuteDownloadItem and processes the download. Tab closes when done.
-  onMessage(MessageType.DownloadViaWatchPage, async ({ data, sender }) => {
+  onMessage(MessageType.DownloadViaWatchPage, async ({ data }) => {
     const watchUrl = `https://www.youtube.com/watch?v=${data.videoId}`;
 
     const tab = await browser.tabs.create({
       url: watchUrl,
       active: false
     });
-
     if (!tab.id) {
       return;
     }

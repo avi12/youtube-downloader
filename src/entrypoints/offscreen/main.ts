@@ -81,9 +81,7 @@ onMessage(MessageType.ProcessStreamChunk, ({ data }) => {
     });
   }
 
-  const accumulator = streamAccumulators.get(videoId)!;
-
-  // iChunk === -1 is a final marker that sets the correct totalChunks
+  const accumulator = streamAccumulators.get(videoId)!;  // iChunk === -1 is a final marker that sets the correct totalChunks
   // (used by streaming SabrDownload where total is unknown during transfer)
   if (iChunk === -1) {
     if (streamType === "video") {
@@ -94,12 +92,14 @@ onMessage(MessageType.ProcessStreamChunk, ({ data }) => {
         audioStream.totalChunks = totalChunks;
       }
     }
+
     return;
   }
 
   const decodedChunk = base64ToUint8Array(chunkBase64);
   if (streamType === "video") {
     accumulator.videoChunks.set(iChunk, decodedChunk);
+
     if (totalChunks > 0) {
       accumulator.totalVideoChunks = totalChunks;
     }
@@ -113,6 +113,7 @@ onMessage(MessageType.ProcessStreamChunk, ({ data }) => {
 
     const audioStream = accumulator.audioStreams.get(streamType)!;
     audioStream.chunks.set(iChunk, decodedChunk);
+
     if (totalChunks > 0) {
       audioStream.totalChunks = totalChunks;
     }
@@ -200,9 +201,13 @@ browser.runtime.onConnect.addListener(port => {
             headers: { "content-type": xhr.getResponseHeader("content-type") ?? "application/octet-stream" }
           }));
         };
-        xhr.onerror = () => rejectXhr(new TypeError("Network error"));
+        xhr.onerror = () => {
+          return rejectXhr(new TypeError("Network error"));
+        };
         xhr.timeout = 60000;
-        xhr.ontimeout = () => rejectXhr(new TypeError("Timeout"));
+        xhr.ontimeout = () => {
+          return rejectXhr(new TypeError("Timeout"));
+        };
         xhr.send(bodyBytes);
       });
 
