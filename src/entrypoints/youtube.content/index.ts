@@ -37,7 +37,8 @@ export default defineContentScript({
   allFrames: true,
   async main(context) {
     // Skip non-download iframes (ads, embeds)
-    if (self !== top && !location.search.includes("ytdl=1")) {
+    const isDownloadIframe = self !== top && location.search.includes("ytdl=1");
+    if (self !== top && !isDownloadIframe) {
       return;
     }
 
