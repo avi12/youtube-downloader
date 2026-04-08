@@ -17,6 +17,7 @@ export default defineConfig({
       "webRequest",
       "declarativeNetRequest",
       "scripting",
+      "nativeMessaging",
       ...(browser === "chrome" ? ["offscreen"] : [])
     ],
     host_permissions: [

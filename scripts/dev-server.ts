@@ -3,7 +3,7 @@
  * WXT dev client keeps SW alive + registers content scripts.
  * File watcher auto-rebuilds + reloads.
  *
- * Usage: node scripts/dev-server.mjs
+ * Usage: bun scripts/dev-server.ts
  */
 
 import { createServer } from "wxt";
@@ -16,10 +16,9 @@ const LOG_FILE = join(PROJECT_ROOT, ".dev-server.log");
 const LANG = process.env.LANG ?? "en";
 const START_URL = "https://www.youtube.com/feed/subscriptions";
 
-function log(...args) {
+function log(...args: unknown[]) {
   const timestamp = new Date().toISOString().substring(11, 19);
   const message = `[${timestamp}] ${args.join(" ")}`;
-  // eslint-disable-next-line no-console
   console.log(message);
   try { appendFileSync(LOG_FILE, `${message}\n`); } catch {
     // Logging is best-effort
@@ -33,11 +32,12 @@ function setupChromeProfile() {
   }
 
   const home = homedir();
-  const src = {
+  const platformPaths: Record<string, string> = {
     win32: join(process.env.LOCALAPPDATA ?? "", "Google", "Chrome", "User Data"),
     darwin: join(home, "Library", "Application Support", "Google", "Chrome"),
     linux: join(home, ".config", "google-chrome")
-  }[process.platform];
+  };
+  const src = platformPaths[process.platform];
 
   if (!src || !existsSync(src)) {
     mkdirSync(join(dest, "Default"), { recursive: true });
@@ -46,7 +46,10 @@ function setupChromeProfile() {
 
   for (const dir of ["Default", "Profile 1"]) {
     const srcFile = join(src, dir, "Bookmarks");
-    if (!existsSync(srcFile)) continue;
+    if (!existsSync(srcFile)) {
+      continue;
+    }
+
     const destFile = join(dest, dir, "Bookmarks");
     mkdirSync(dirname(destFile), { recursive: true });
     cpSync(srcFile, destFile);
@@ -80,10 +83,22 @@ async function main() {
   await server.start();
   log(`Dev server at ${server.origin}`);
   log("Press Ctrl+C to stop.\n");
+
+  // Keep the process alive - WXT's server runs in the background
+  // but bun may exit if the event loop appears empty.
+  const keepAlive = setInterval(() => {}, 30_000);
+
+  for (const signal of ["SIGINT", "SIGTERM"] as const) {
+    process.on(signal, async () => {
+      log("Shutting down...");
+      clearInterval(keepAlive);
+      await server.close().catch(() => {});
+      process.exit(0);
+    });
+  }
 }
 
 main().catch(error => {
-  // eslint-disable-next-line no-console
   console.error("Fatal:", error);
   process.exit(1);
 });

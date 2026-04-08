@@ -1,0 +1,7 @@
+{
+  "name": "com.avi12.youtube_downloader",
+  "description": "YouTube Downloader native messaging host - makes HTTP requests with proper headers",
+  "path": "",
+  "type": "stdio",
+  "allowed_origins": []
+}

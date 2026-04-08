@@ -40,7 +40,112 @@ async function fetchPlayerResponse(videoId: string, cookieString: string) {
   return JSON.parse(html.slice(iJsonStart, iEnd));
 }
 
+const NATIVE_HOST_NAME = "com.avi12.youtube_downloader";
+
 export default defineBackground(() => {
+  // ─── Native messaging for googlevideo requests ─────────────────────────
+  // Chrome forces `Origin: chrome-extension://` on all extension requests,
+  // which googlevideo rejects. The native host makes requests directly
+  // with `Origin: https://www.youtube.com`.
+
+  let nativePort: Browser.runtime.Port | null = null;
+
+  function getNativePort() {
+    if (nativePort) {
+      return nativePort;
+    }
+
+    nativePort = browser.runtime.connectNative(NATIVE_HOST_NAME);
+    nativePort.onDisconnect.addListener(() => {
+      const error = browser.runtime.lastError;
+      if (error) {
+        console.warn("[ytdl:bg] Native host disconnected:", error.message);
+      }
+
+      nativePort = null;
+    });
+
+    return nativePort;
+  }
+
+  interface NativeResponse {
+    requestId: string;
+    type: string;
+    status: number;
+    bodyBase64: string;
+    // Chunked response fields
+    iChunk?: number;
+    totalChunks?: number;
+    chunkBase64?: string;
+    // Error
+    error?: string;
+  }
+
+  async function nativeFetch(request: {
+    requestId: string;
+    url: string;
+    bodyBase64: string;
+    cookies: string;
+  }) {
+    const port = getNativePort();
+
+    return new Promise<{ status: number; bodyBase64: string } | null>(resolve => {
+      const chunks = new Map<number, string>();
+      let expectedChunks = 0;
+
+      function handleMessage(response: NativeResponse) {
+        if (response.requestId !== request.requestId) {
+          return;
+        }
+
+        if (response.type === "error") {
+          port.onMessage.removeListener(handleMessage);
+          resolve(null);
+          return;
+        }
+
+        if (response.type === "response") {
+          port.onMessage.removeListener(handleMessage);
+          resolve({ status: response.status, bodyBase64: response.bodyBase64 });
+          return;
+        }
+
+        if (response.type === "chunk") {
+          expectedChunks = response.totalChunks ?? 0;
+          chunks.set(response.iChunk ?? 0, response.chunkBase64 ?? "");
+
+          if (chunks.size >= expectedChunks) {
+            port.onMessage.removeListener(handleMessage);
+            let fullBase64 = "";
+            for (let i = 0; i < expectedChunks; i++) {
+              fullBase64 += chunks.get(i) ?? "";
+            }
+            resolve({ status: response.status, bodyBase64: fullBase64 });
+          }
+        }
+      }
+
+      port.onMessage.addListener(handleMessage);
+      port.postMessage({
+        requestId: request.requestId,
+        type: "fetch",
+        url: request.url,
+        bodyBase64: request.bodyBase64,
+        cookies: request.cookies,
+        method: "POST",
+        headers: {
+          "Content-Type": "application/x-protobuf"
+        }
+      });
+
+      // Timeout after 60s
+      globalThis.setTimeout(() => {
+        port.onMessage.removeListener(handleMessage);
+        resolve(null);
+      }, 60_000);
+    });
+  }
+
   // Register content scripts dynamically. persistAcrossSessions keeps them
   // across SW restarts, so we only register when missing.
   void (async () => {
@@ -467,9 +572,10 @@ export default defineBackground(() => {
         return false;
       }
 
-      // Fetch wrapper for SabrStream. Routes through the offscreen document's
-      // XHR proxy. Chrome strips Origin from SW fetch, causing 403. The offscreen
-      // doc's XHR + declarativeNetRequest properly sets Origin for googlevideo.
+      // Fetch wrapper for SabrStream. Routes through the native messaging host
+      // which makes HTTP requests directly with proper Origin/Cookie headers.
+      // Chrome strips Origin from all extension-initiated requests, so the host
+      // process is the only way to send `Origin: https://www.youtube.com`.
       async function sabrFetch(input: RequestInfo | URL, init?: RequestInit) {
         const url = input instanceof URL ? input.href : String(input);
         let bodyBytes: Uint8Array;
@@ -481,8 +587,8 @@ export default defineBackground(() => {
           bodyBytes = new Uint8Array(0);
         }
 
-        let bodyBase64 = "";
         const batchSize = 8192;
+        let bodyBase64 = "";
         for (let offset = 0; offset < bodyBytes.byteLength; offset += batchSize) {
           bodyBase64 += String.fromCharCode(
             ...bodyBytes.subarray(offset, Math.min(offset + batchSize, bodyBytes.byteLength))
@@ -490,31 +596,23 @@ export default defineBackground(() => {
         }
         bodyBase64 = btoa(bodyBase64);
 
-        const port = getOffscreenPort();
         const requestId = `sabr-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-
-        const result = await new Promise<{ status: number; bodyBase64: string } | null>(resolve => {
-          function onMessage(response: { requestId: string; result: { status: number; bodyBase64: string } | null }) {
-            if (response.requestId !== requestId) {
-              return;
-            }
-
-            port.onMessage.removeListener(onMessage);
-            resolve(response.result);
-          }
-          port.onMessage.addListener(onMessage);
-          port.postMessage({ requestId, url, bodyBase64 });
+        const nativeResponse = await nativeFetch({
+          requestId,
+          url,
+          bodyBase64,
+          cookies: cachedYoutubeCookies
         });
-        if (!result) {
-          throw new TypeError("Failed to fetch via offscreen proxy");
+        if (!nativeResponse) {
+          throw new TypeError("Native messaging host returned no response");
         }
 
-        const responseBytes = Uint8Array.from(atob(result.bodyBase64), character => {
+        const responseBytes = Uint8Array.from(atob(nativeResponse.bodyBase64), character => {
           return character.charCodeAt(0);
         });
 
         return new Response(responseBytes, {
-          status: result.status,
+          status: nativeResponse.status,
           headers: { "content-type": "application/vnd.yt-ump" }
         });
       }
@@ -696,10 +794,11 @@ export default defineBackground(() => {
     );
   });
 
-  // Open a background watch tab to download a video. YouTube's Service Worker
-  // on watch pages handles googlevideo CORS only for top-level navigations
-  // (not iframes or extension contexts). The content script on the new tab
-  // receives ExecuteDownloadItem and processes the download. Tab closes when done.
+  // Download a video via a background watch tab. YouTube's Service Worker
+  // on watch pages handles googlevideo CORS for the player's media requests.
+  // The content script captures media via SourceBuffer at 16x speed.
+  // Note: native messaging host was attempted but googlevideo binds SABR
+  // sessions to the browser context, rejecting requests from external clients.
   onMessage(MessageType.DownloadViaWatchPage, async ({ data }) => {
     const watchUrl = `https://www.youtube.com/watch?v=${data.videoId}`;
 
@@ -721,6 +820,7 @@ export default defineBackground(() => {
           resolve();
         }
       }
+
       browser.tabs.onUpdated.addListener(onUpdated);
       globalThis.setTimeout(() => {
         browser.tabs.onUpdated.removeListener(onUpdated);
