@@ -54,11 +54,8 @@ export function registerDownloadHandlers() {
       return;
     }
 
-    void Promise.allSettled(
-      data.items.map(item =>
-        sendMessage(MessageType.ExecuteDownloadItem, item, tabId)
-      )
-    );
+    void Promise.allSettled(data.items.map(item =>
+      sendMessage(MessageType.ExecuteDownloadItem, item, tabId)));
   });
 
   onMessage(MessageType.CancelDownload, ({ data }) => {

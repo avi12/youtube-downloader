@@ -30,9 +30,7 @@ export function injectPlaylistDownloaderUi(
 ) {
   cleanupPlaylistUi();
 
-  const elHeader = document.querySelector(
-    "ytd-playlist-header-renderer, ytd-playlist-sidebar-primary-info-renderer"
-  );
+  const elHeader = document.querySelector("ytd-playlist-header-renderer, ytd-playlist-sidebar-primary-info-renderer");
   if (!elHeader) {
     return;
   }

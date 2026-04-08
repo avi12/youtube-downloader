@@ -122,9 +122,7 @@ export async function generatePoToken(videoId: string) {
     throw new Error("WebPo signal function not available");
   }
 
-  const mintFunction = await signalFunction(
-    new TextEncoder().encode(integrityData[0])
-  );
+  const mintFunction = await signalFunction(new TextEncoder().encode(integrityData[0]));
   if (typeof mintFunction !== "function") {
     throw new Error("Mint function not available");
   }

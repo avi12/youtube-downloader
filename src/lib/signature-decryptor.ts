@@ -58,9 +58,7 @@ function findSignatureFunctionName(playerSource: string) {
 function extractTransformOperations(playerSource: string, functionName: string) {
   // Find the function body: var fn = function(a) { a = a.split(""); ... };
   const escapedName = escapeRegExp(functionName);
-  const functionPattern = new RegExp(
-    `(?:var\\s+${escapedName}|${escapedName}\\s*=\\s*function)\\s*=?\\s*function\\s*\\(([a-zA-Z])\\)\\s*\\{([^}]+)\\}`
-  );
+  const functionPattern = new RegExp(`(?:var\\s+${escapedName}|${escapedName}\\s*=\\s*function)\\s*=?\\s*function\\s*\\(([a-zA-Z])\\)\\s*\\{([^}]+)\\}`);
   const functionMatch = playerSource.match(functionPattern);
   if (!functionMatch) {
     return null;
@@ -78,9 +76,7 @@ function extractTransformOperations(playerSource: string, functionName: string) 
 
   // Extract the helper object definition to classify each method
   const escapedHelper = escapeRegExp(helperName);
-  const helperPattern = new RegExp(
-    `var\\s+${escapedHelper}\\s*=\\s*\\{([\\s\\S]*?)\\};`
-  );
+  const helperPattern = new RegExp(`var\\s+${escapedHelper}\\s*=\\s*\\{([\\s\\S]*?)\\};`);
   const helperObjMatch = playerSource.match(helperPattern);
   if (!helperObjMatch) {
     return null;

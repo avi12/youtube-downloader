@@ -70,15 +70,11 @@
     return () => document.removeEventListener("change", handleCheckboxChange);
   });
 
-  const downloadableVideos = $derived(
-    [...videoDataMap.values()].filter(data => data.isDownloadable)
-  );
+  const downloadableVideos = $derived([...videoDataMap.values()].filter(data => data.isDownloadable));
 
-  const checkedDownloadableVideos = $derived(
-    checkedVideoIds.size === 0
-      ? downloadableVideos
-      : downloadableVideos.filter(data => checkedVideoIds.has(data.videoId))
-  );
+  const checkedDownloadableVideos = $derived(checkedVideoIds.size === 0
+    ? downloadableVideos
+    : downloadableVideos.filter(data => checkedVideoIds.has(data.videoId)));
 
   const downloadButtonLabel = $derived.by(() => {
     if (isDownloading) {
@@ -150,12 +146,10 @@
         videoOnlyListItem.getValue()
       ]);
 
-      const remaining = downloadRequests.filter(
-        request =>
-          queueValues.some(item => item.videoId === request.videoId) ||
+      const remaining = downloadRequests.filter(request =>
+        queueValues.some(item => item.videoId === request.videoId) ||
           musicValues.includes(request.videoId) ||
-          videoOnlyValues.includes(request.videoId)
-      ).length;
+          videoOnlyValues.includes(request.videoId)).length;
 
       downloadedCount = totalCount - remaining;
 

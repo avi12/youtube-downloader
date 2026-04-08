@@ -44,9 +44,7 @@ export const extensionToMimeAll = {
 } as const;
 
 function filterExtensionsByPrefix(prefix: string) {
-  return Object.fromEntries(
-    Object.entries(extensionToMimeAll).filter(([, mime]) => mime.startsWith(prefix))
-  );
+  return Object.fromEntries(Object.entries(extensionToMimeAll).filter(([, mime]) => mime.startsWith(prefix)));
 }
 
 export const extensionToMime = {
@@ -206,9 +204,7 @@ export function uint8ToBase64(bytes: Uint8Array) {
   let binary = "";
 
   for (let offset = 0; offset < bytes.byteLength; offset += batchSize) {
-    binary += String.fromCharCode(
-      ...bytes.subarray(offset, Math.min(offset + batchSize, bytes.byteLength))
-    );
+    binary += String.fromCharCode(...bytes.subarray(offset, Math.min(offset + batchSize, bytes.byteLength)));
   }
 
   return btoa(binary);

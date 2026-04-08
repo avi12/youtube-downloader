@@ -485,10 +485,8 @@ async function processVideoAudio(item: ProcessStreamData, ffmpeg: FFmpeg) {
       throw new Error("FFmpeg readFile returned unexpected string output");
     }
 
-    await Promise.all(
-      [videoFilename, primaryAudioFilename, outputFilename, ...extraAudioFilenames]
-        .map(file => ffmpeg.deleteFile(file))
-    );
+    await Promise.all([videoFilename, primaryAudioFilename, outputFilename, ...extraAudioFilenames]
+      .map(file => ffmpeg.deleteFile(file)));
 
     if (item.playlistId) {
       addToPlaylistBundle({

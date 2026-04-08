@@ -24,17 +24,13 @@ export const sabrCredentials = createSyncedSignal(
 
 // ─── Video data (MAIN world writes, isolated world reads) ───────────────
 
-export const videoDataStore = createSyncedMap(
-  createMapMessenger<VideoData>("video-data")
-);
+export const videoDataStore = createSyncedMap(createMapMessenger<VideoData>("video-data"));
 
 // ─── Video data requests (isolated world writes, MAIN world reads) ──────
 // Used to request video metadata for grid/playlist items.
 // The MAIN world observes new entries and fetches the data.
 
-export const videoDataRequests = createSyncedMap(
-  createMapMessenger<boolean>("video-data-request")
-);
+export const videoDataRequests = createSyncedMap(createMapMessenger<boolean>("video-data-request"));
 
 // ─── Download progress (both worlds read/write) ─────────────────────────
 
@@ -46,9 +42,7 @@ export interface DownloadProgressState {
   progressType: ProgressType | "";
 }
 
-export const downloadProgressStore = createSyncedMap(
-  createMapMessenger<DownloadProgressState>("download-progress")
-);
+export const downloadProgressStore = createSyncedMap(createMapMessenger<DownloadProgressState>("download-progress"));
 
 // ─── Playlist metadata (MAIN world writes, isolated world reads) ────────
 
@@ -87,6 +81,4 @@ export const buttonClickSignal = createSyncedSignal(
 
 // ─── Interrupted downloads (background writes via isolated, MAIN reads) ──
 
-export const interruptedDownloadStore = createSyncedMap(
-  createMapMessenger<InterruptedDownload>("interrupted-download")
-);
+export const interruptedDownloadStore = createSyncedMap(createMapMessenger<InterruptedDownload>("interrupted-download"));

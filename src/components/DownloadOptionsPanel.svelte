@@ -47,31 +47,23 @@
 
   // -- Format selection -------------------------------------------------------
 
-  let downloadType = $state<DownloadType>(
-    untrack(() => {
-      if (options.defaultDownloadType !== "auto") {
-        return options.defaultDownloadType;
-      }
+  let downloadType = $state<DownloadType>(untrack(() => {
+    if (options.defaultDownloadType !== "auto") {
+      return options.defaultDownloadType;
+    }
 
-      return videoData.isMusic ? DownloadType.Audio : DownloadType.VideoAndAudio;
-    })
-  );
-  let selectedVideoFormat = $state<AdaptiveFormatItem | null>(
-    untrack(() => videoData.videoFormats[0] ?? null)
-  );
-  let selectedAudioFormat = $state<AdaptiveFormatItem | null>(
-    untrack(() => videoData.audioFormats[0] ?? null)
-  );
+    return videoData.isMusic ? DownloadType.Audio : DownloadType.VideoAndAudio;
+  }));
+  let selectedVideoFormat = $state<AdaptiveFormatItem | null>(untrack(() => videoData.videoFormats[0] ?? null));
+  let selectedAudioFormat = $state<AdaptiveFormatItem | null>(untrack(() => videoData.audioFormats[0] ?? null));
   let filename = $state(untrack(() => videoData.title));
-  let extension = $state(
-    untrack(() => {
-      const extPref = videoData.isMusic ? options.ext.audio : options.ext.video;
-      const defaultFormat = videoData.isMusic
-        ? videoData.audioFormats[0]
-        : videoData.videoFormats[0];
-      return resolveAutoExtension(extPref, defaultFormat?.mimeType ?? "", videoData.isMusic ? DownloadType.Audio : DownloadType.Video);
-    })
-  );
+  let extension = $state(untrack(() => {
+    const extPref = videoData.isMusic ? options.ext.audio : options.ext.video;
+    const defaultFormat = videoData.isMusic
+      ? videoData.audioFormats[0]
+      : videoData.videoFormats[0];
+    return resolveAutoExtension(extPref, defaultFormat?.mimeType ?? "", videoData.isMusic ? DownloadType.Audio : DownloadType.Video);
+  }));
 
   // -- Derived ----------------------------------------------------------------
 
@@ -139,10 +131,9 @@
     try {
       const elVideo = await waitForVideoElement();
       const currentQuality = Math.min(elVideo.videoHeight, elVideo.videoWidth);
-      selectedVideoFormat =
-        videoData.videoFormats.find(
-          format => Math.min(format.height ?? 0, format.width ?? 0) === currentQuality
-        ) ?? videoData.videoFormats[0] ?? null;
+      selectedVideoFormat = videoData.videoFormats.find(
+        format => Math.min(format.height ?? 0, format.width ?? 0) === currentQuality
+      ) ?? videoData.videoFormats[0] ?? null;
     } catch {
       selectedVideoFormat = videoData.videoFormats[0] ?? null;
     }
@@ -164,10 +155,9 @@
       return;
     }
 
-    selectedVideoFormat =
-      videoData.videoFormats.find(
-        format => Math.min(format.height ?? 0, format.width ?? 0) === options.videoQuality
-      ) ?? videoData.videoFormats[0] ?? null;
+    selectedVideoFormat = videoData.videoFormats.find(
+      format => Math.min(format.height ?? 0, format.width ?? 0) === options.videoQuality
+    ) ?? videoData.videoFormats[0] ?? null;
   });
 
   // -- Restore existing download state on mount -------------------------------

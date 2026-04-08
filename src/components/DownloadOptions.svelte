@@ -111,11 +111,9 @@
     });
   });
 
-  const qualityValue = $derived(
-    isAudio
-      ? (selectedAudioFormat?.itag.toString() ?? "")
-      : (selectedVideoFormat?.itag.toString() ?? "")
-  );
+  const qualityValue = $derived(isAudio
+    ? (selectedAudioFormat?.itag.toString() ?? "")
+    : (selectedVideoFormat?.itag.toString() ?? ""));
 
   function applyPolymerTheme(elTarget: Element) {
     applyPolymerCustomStyles(elTarget, PAPER_INPUT_THEME);

@@ -19,9 +19,7 @@ export const statusProgressItem = storage.defineItem<StatusProgressMap>("local:s
 
 export const isFFmpegReadyItem = storage.defineItem<boolean>("local:isFFmpegReady", { fallback: false });
 
-export const interruptedDownloadsItem = storage.defineItem<Record<string, InterruptedDownload>>(
-  "local:interruptedDownloads", { fallback: {} }
-);
+export const interruptedDownloadsItem = storage.defineItem<Record<string, InterruptedDownload>>("local:interruptedDownloads", { fallback: {} });
 
 export const optionsItem = storage.defineItem<Options>("sync:options", { fallback: initialOptions });
 

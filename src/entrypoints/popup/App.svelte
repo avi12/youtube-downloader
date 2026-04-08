@@ -59,9 +59,7 @@
   let statusProgress = $state(untrack(() => initialStatusProgress));
   let options = $state<Options>(untrack(() => initialOptions));
 
-  const totalActiveDownloads = $derived(
-    videoDownloads.length + musicList.length + videoOnlyList.length
-  );
+  const totalActiveDownloads = $derived(videoDownloads.length + musicList.length + videoOnlyList.length);
 
   const tabs: {
     id: Tab; label: string;

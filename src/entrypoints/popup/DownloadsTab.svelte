@@ -29,9 +29,7 @@
     percentFormatter
   }: Props = $props();
 
-  const totalActiveDownloads = $derived(
-    videoDownloads.length + musicList.length + videoOnlyList.length
-  );
+  const totalActiveDownloads = $derived(videoDownloads.length + musicList.length + videoOnlyList.length);
 
   function cancelDownload(videoIds: string[]) {
     void sendMessage(MessageType.CancelDownload, { videoIds });

@@ -36,9 +36,7 @@ export function onSabrBodyCaptured(callback: (tabId: number) => void) {
   onCaptureCallback = callback;
 }
 
-function handleSabrRequest(
-  details: Browser.webRequest.OnBeforeRequestDetails
-) {
+function handleSabrRequest(details: Browser.webRequest.OnBeforeRequestDetails) {
   if (details.tabId < 0) {
     return undefined;
   }

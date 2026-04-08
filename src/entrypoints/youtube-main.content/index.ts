@@ -475,9 +475,7 @@ export default defineContentScript({
         const videoMimeType = videoFormat?.mimeType.split(";")[0] ?? "video/mp4";
         const audioMimeType = audioFormat?.mimeType.split(";")[0] ?? "audio/mp4";
         const audioLabel = audioFormat?.audioTrack?.displayName ?? "";
-        const extraAudioFormats = getExtraAudioFormats(
-          cachedVideoData.audioFormats, audioFormat?.audioTrack?.id
-        );
+        const extraAudioFormats = getExtraAudioFormats(cachedVideoData.audioFormats, audioFormat?.audioTrack?.id);
         // Strategy 1: SabrStream - independently fetch the full video without
         // relying on playback state. Works even if the video is paused.
         // Read SABR credentials from synced signal or DOM fallback.
@@ -508,30 +506,24 @@ export default defineContentScript({
           try {
             console.log("[ytdl] Fetching via SabrStream (independent of playback)");
 
-            const primaryResult = await fetchViaSabrStream(
-              cachedVideoData.sabrConfig, videoFormat, audioFormat
-            );
+            const primaryResult = await fetchViaSabrStream(cachedVideoData.sabrConfig, videoFormat, audioFormat);
             console.log(`[ytdl] SabrStream done: video=${primaryResult.videoData.byteLength} audio=${primaryResult.audioData.byteLength}`);
 
             // Fetch additional audio tracks in parallel
-            const additionalAudioData = await Promise.all(
-              extraAudioFormats.map(async format => {
-                try {
-                  const audioData = await fetchAudioViaSabrStream(
-                    cachedVideoData.sabrConfig!, format
-                  );
+            const additionalAudioData = await Promise.all(extraAudioFormats.map(async format => {
+              try {
+                const audioData = await fetchAudioViaSabrStream(cachedVideoData.sabrConfig!, format);
 
-                  return {
-                    data: audioData,
-                    mimeType: format.mimeType.split(";")[0] ?? "audio/mp4",
-                    label: format.audioTrack?.displayName ?? ""
-                  };
-                } catch (trackError) {
-                  console.warn("[ytdl] Extra audio track failed:", format.audioTrack?.displayName, trackError);
-                  return null;
-                }
-              })
-            );
+                return {
+                  data: audioData,
+                  mimeType: format.mimeType.split(";")[0] ?? "audio/mp4",
+                  label: format.audioTrack?.displayName ?? ""
+                };
+              } catch (trackError) {
+                console.warn("[ytdl] Extra audio track failed:", format.audioTrack?.displayName, trackError);
+                return null;
+              }
+            }));
 
             dispatchStreamData({
               type,
@@ -611,8 +603,7 @@ export default defineContentScript({
                   : Promise.resolve(null),
                 ...resolvedExtraUrls.map(url => url
                   ? fetchStreamFromUrl(url, reportDownloadProgress, signal)
-                  : Promise.resolve(null)
-                )
+                  : Promise.resolve(null))
               ]);
 
               const additionalAudioData = extraAudioFormats.map((format, i) => ({
@@ -838,9 +829,7 @@ export default defineContentScript({
         defaultExtension = getOutputExtension(defaultVideoMime, defaultAudioMime, "mp4");
       }
 
-      let defaultFilename = getCompatibleFilename(
-        `${videoData.title}.${defaultExtension}`
-      );
+      let defaultFilename = getCompatibleFilename(`${videoData.title}.${defaultExtension}`);
       let defaultQuality = "";
       const defaultDownloadType: DownloadType = videoData.isMusic ? DownloadType.Audio : DownloadType.VideoAndAudio;
 
@@ -870,9 +859,7 @@ export default defineContentScript({
       // aria-label, rather than assuming position - the Share button sits between
       // like/dislike and Download in the action bar and would otherwise be hidden.
       function findNativeDownloadButton() {
-        const buttons = elActionsContainer!.querySelectorAll<YtButtonViewModelElement>(
-          "yt-button-view-model"
-        );
+        const buttons = elActionsContainer!.querySelectorAll<YtButtonViewModelElement>("yt-button-view-model");
         for (const button of buttons) {
           if (button.data?.iconName?.includes(IconName.Download)) {
             return button;
@@ -1208,9 +1195,7 @@ export default defineContentScript({
       });
       resizeObserver.observe(elDropdownContentSlot);
 
-      const unsubscribeProgress = crossWorldMessenger.onMessage(
-        CrossWorldMessage.Progress, handleProgress
-      );
+      const unsubscribeProgress = crossWorldMessenger.onMessage(CrossWorldMessage.Progress, handleProgress);
 
       // Also listen for direct download progress via synced signal (postMessage)
       function handleSyncedProgress(e: MessageEvent) {
@@ -1245,7 +1230,8 @@ export default defineContentScript({
           }
 
           refreshButtons();
-        });
+        }
+      );
 
       elActionsContainer.addEventListener("click", handleClick);
       elDropdown.addEventListener("iron-overlay-closed", handleDropdownClosed);
@@ -1685,12 +1671,10 @@ export default defineContentScript({
         }
 
         console.error("[ytdl] Direct download failed:", error);
-        void crossWorldMessenger.sendMessage(
-          CrossWorldMessage.StreamError, {
-            videoId: downloadVideoId,
-            error: String(error)
-          }
-        );
+        void crossWorldMessenger.sendMessage(CrossWorldMessage.StreamError, {
+          videoId: downloadVideoId,
+          error: String(error)
+        });
       } finally {
         activeDownloads.delete(downloadVideoId);
       }

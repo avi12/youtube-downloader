@@ -1,0 +1,61 @@
+uid=7_0 RootWebArea "Extensions - YouTube Downloader" url="chrome://extensions/?id=hmcmoecpiockpfaaeehagiidhkfgijdk"
+  uid=7_1 banner
+    uid=7_2 heading "Extensions" level="1"
+    uid=7_3 searchbox "Search extensions"
+    uid=7_4 StaticText "Developer mode"
+    uid=7_5 button "Developer mode" pressed
+    uid=7_6 button "Load unpacked"
+    uid=7_7 button "Pack extension"
+    uid=7_8 button "Update" description="Update extensions now"
+  uid=7_9 navigation
+    uid=7_10 menu orientation="vertical"
+      uid=7_11 menuitem "My extensions"
+      uid=7_12 menuitem "Keyboard shortcuts"
+    uid=7_13 StaticText "Developing extensions? Stay up to date on "
+    uid=7_14 link "What's New" url="https://developer.chrome.com/docs/extensions/whats-new?utm_source=ext_sidebar&hl=en-US"
+      uid=7_15 StaticText "What's New"
+    uid=7_16 StaticText " with Chrome Extension developer documentation."
+    uid=7_17 StaticText "Discover more extensions and themes on the "
+    uid=7_18 link "Chrome Web Store" url="https://chromewebstore.google.com/category/extensions?utm_source=ext_sidebar&hl=en-US"
+      uid=7_19 StaticText "Chrome Web Store"
+  uid=7_20 main
+    uid=8_0 button "YouTube Downloader details page back button" focusable focused roledescription="Click to navigate away from YouTube Downloader details page."
+    uid=8_1 heading "YouTube Downloader" level="1"
+    uid=8_2 button "Reload" description="Related to YouTube Downloader"
+    uid=8_3 StaticText "On"
+    uid=8_4 button "On, extension enabled" description="YouTube Downloader" pressed
+    uid=8_5 heading "Description" level="2"
+    uid=8_6 StaticText "Download YouTube videos and audio directly from the page"
+    uid=8_7 heading "Version" level="2"
+    uid=8_8 StaticText "2.0.0"
+    uid=8_9 heading "Size" level="2"
+    uid=8_10 StaticText "34.5 MB"
+    uid=8_11 heading "ID" level="2"
+    uid=8_12 StaticText "hmcmoecpiockpfaaeehagiidhkfgijdk"
+    uid=8_13 heading "Inspect views" level="2"
+    uid=8_14 link "service worker"
+      uid=8_15 StaticText "service worker"
+    uid=8_16 link "offscreen.html"
+      uid=8_17 StaticText "offscreen.html"
+    uid=8_18 heading "Permissions" level="2"
+    uid=8_19 StaticText "Read your browsing history"
+    uid=8_20 StaticText "Block content on any page"
+    uid=8_21 StaticText "Manage your downloads"
+    uid=8_22 heading "Site access" level="2"
+    uid=8_23 StaticText "This extension can read and change your data on sites. You can control which sites the extension can access."
+    uid=8_24 link "Learn more about extension permissions" url="https://support.google.com/chrome?p=enable_extensions"
+    uid=8_25 button "Automatically allow access on the following sites Learn more about extension permissions" pressed
+    uid=8_26 button "http://localhost/*" disableable disabled pressed
+    uid=8_27 button "https://*.googlevideo.com/*" disableable disabled pressed
+    uid=8_28 button "https://www.youtube.com/*" disableable disabled pressed
+    uid=8_29 link "Site settings" description="Opens in new tab"
+    uid=8_30 button "Pin to toolbar"
+    uid=8_31 button "Allow in Incognito Warning: Google Chrome cannot prevent extensions from recording your browsing history. To disable this extension in Incognito mode, unselect this option. Changes to this setting will be applied once Chrome restarts. "
+    uid=8_32 button "Allow access to file URLs Changes to this setting will be applied once Chrome restarts." pressed
+    uid=8_33 button "Collect errors" pressed
+    uid=8_34 heading "Source" level="2"
+    uid=8_35 StaticText "Unpacked extension"
+    uid=8_36 StaticText "Loaded from:"
+    uid=8_37 link "C:\repositories\avi\youtube-downloader\.output\chrome-mv3-dev"
+      uid=8_38 StaticText "C:\repositories\avi\youtube-downloader\.output\chrome-mv3-dev"
+    uid=8_39 link "Remove extension"
