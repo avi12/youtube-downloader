@@ -15,7 +15,7 @@
   } from "@/lib/synced-stores.svelte";
   import { getCompatibleFilename, resolveAutoExtension } from "@/lib/utils";
   import type { DownloadType, Options, VideoData } from "@/types";
-  import { SvelteMap } from "svelte/reactivity";
+  import { SvelteMap, SvelteSet } from "svelte/reactivity";
 
   type Props = {
     options: Options;
@@ -25,7 +25,7 @@
 
   // Map of videoId to VideoData for all videos that have been fetched
   const videoDataMap = new SvelteMap<string, VideoData>();
-  let checkedVideoIds = $state<Set<string>>(new Set());
+  const checkedVideoIds = new SvelteSet<string>();
   let isDownloading = $state(false);
   let downloadedCount = $state(0);
   let totalCount = $state(0);
@@ -59,9 +59,9 @@
     }
 
     if (elTarget.checked) {
-      checkedVideoIds = new Set([...checkedVideoIds, videoId]);
+      checkedVideoIds.add(videoId);
     } else {
-      checkedVideoIds = new Set([...checkedVideoIds].filter(id => id !== videoId));
+      checkedVideoIds.delete(videoId);
     }
   }
 
