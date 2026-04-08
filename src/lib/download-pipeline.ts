@@ -406,7 +406,7 @@ async function processVideoAudio(item: ProcessStreamData, ffmpeg: FFmpeg) {
 
   const videoExtension = videoMimeType.includes("webm") ? "webm" : "mp4";
   const audioExtension = audioMimeType.includes("webm") ? "webm" : "m4a";
-  const isExtraTracksPresent = (additionalAudioStreams?.length ?? 0) > 0;
+  const isExtraTracksPresent = !!additionalAudioStreams?.length;
   const outputExtension = determineOutputExtension({
     videoMimeType, audioMimeType, isExtraTracksPresent, filenameOutput
   });
