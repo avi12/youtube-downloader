@@ -77,8 +77,10 @@
     elInput.setCustomValidity(errorMessage);
   }
 
-  const DOWNLOAD_TYPES: { value: DownloadType;
-    label: string; }[] = [
+  const DOWNLOAD_TYPES: {
+    value: DownloadType;
+    label: string;
+  }[] = [
     {
       value: "video+audio",
       label: "Video + Audio"
@@ -130,8 +132,8 @@
     validateFilename(e.target, value);
   }
 
-  function applyPolymerTheme(element: Element) {
-    applyPolymerCustomStyles(element, PAPER_INPUT_THEME);
+  function applyPolymerTheme(elTarget: Element) {
+    applyPolymerCustomStyles(elTarget, PAPER_INPUT_THEME);
   }
 
   function handleDownloadTypeSelect(newValue: string) {

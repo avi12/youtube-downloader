@@ -17,9 +17,7 @@
   import type { DownloadType, Options, VideoData } from "@/types";
   import { SvelteMap, SvelteSet } from "svelte/reactivity";
 
-  type Props = {
-    options: Options;
-  };
+  type Props = { options: Options };
 
   const { options }: Props = $props();
 
@@ -196,20 +194,20 @@
     }
   }
 
-  function attachPlaylistButton(element: Element) {
-    if (!(element instanceof HTMLElement)) {
+  function attachPlaylistButton(elButton: Element) {
+    if (!(elButton instanceof HTMLElement)) {
       return;
     }
 
-    if (!element.hasAttribute("data-ytdl-button-id")) {
-      element.setAttribute("data-ytdl-button-id", "playlist-download-btn");
+    if (!elButton.hasAttribute("data-ytdl-button-id")) {
+      elButton.setAttribute("data-ytdl-button-id", "playlist-download-btn");
     }
 
     postMessage({
       namespace: SYNC_NAMESPACE,
       key: SyncKey.SetButtonData,
       value: {
-        selector: `[data-ytdl-button-id="${element.getAttribute("data-ytdl-button-id")}"]`,
+        selector: `[data-ytdl-button-id="${elButton.getAttribute("data-ytdl-button-id")}"]`,
         data: {
           iconName: isDownloading ? "CLOSE" : "DOWNLOAD",
           title: downloadButtonLabel,
@@ -226,8 +224,8 @@
     }, location.origin);
   }
 
-  function attachPlaylistProgress(element: Element) {
-    applyPolymerCustomStyles(element, PAPER_PROGRESS_THEME);
+  function attachPlaylistProgress(elProgress: Element) {
+    applyPolymerCustomStyles(elProgress, PAPER_PROGRESS_THEME);
   }
 
   $effect(() => {

@@ -8,12 +8,13 @@ import { MessageType, sendMessage } from "@/lib/messaging";
 import { interruptedDownloadStore } from "@/lib/synced-stores.svelte";
 
 export async function checkInterruptedDownload(videoId: string) {
-  const interrupted = await sendMessage(MessageType.GetInterruptedDownload, { videoId });
-  if (interrupted) {
-    interruptedDownloadStore.set(videoId, interrupted);
-  } else {
+  const interruptedDownload = await sendMessage(MessageType.GetInterruptedDownload, { videoId });
+  if (!interruptedDownload) {
     interruptedDownloadStore.delete(videoId);
+    return;
   }
+
+  interruptedDownloadStore.set(videoId, interruptedDownload);
 }
 
 export function listenForInterruptedDownloadEvents() {

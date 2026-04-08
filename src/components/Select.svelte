@@ -20,14 +20,14 @@
     id, label, options, value, disabled = false, onchange
   }: Props = $props();
 
-  function attachDropdown(element: Element) {
-    applyPolymerCustomStyles(element, PAPER_INPUT_THEME);
+  function attachDropdown(elTarget: Element) {
+    applyPolymerCustomStyles(elTarget, PAPER_INPUT_THEME);
 
     let elMovedDropdown: Element | null = null;
     let elChevronInput: HTMLElement | null = null;
 
     function onChevronFocus() {
-      const elTrigger = element.querySelector<HTMLElement>("tp-yt-paper-input");
+      const elTrigger = elTarget.querySelector<HTMLElement>("tp-yt-paper-input");
       elTrigger?.focus();
     }
 
@@ -37,7 +37,7 @@
     // document.body BEFORE it opens to escape the transform context
     // and avoid the visible flicker.
     requestAnimationFrame(() => {
-      const elIronDropdown = element.querySelector("tp-yt-iron-dropdown");
+      const elIronDropdown = elTarget.querySelector("tp-yt-iron-dropdown");
       if (!elIronDropdown) {
         return;
       }
@@ -51,7 +51,7 @@
       // so this duplicate unlabeled element should not be in the tab order.
       // Polymer may reset tabindex after value changes, so we also redirect focus
       // via a listener to ensure Enter always opens the dropdown from the proper trigger.
-      elChevronInput = element.querySelector<HTMLElement>("input[role=\"button\"]");
+      elChevronInput = elTarget.querySelector<HTMLElement>("input[role=\"button\"]");
       elChevronInput?.setAttribute("tabindex", "-1");
       elChevronInput?.addEventListener("focus", onChevronFocus);
 
@@ -107,7 +107,7 @@
 
         // Update the trigger's displayed label since Polymer's binding is broken.
         const selectedOption = options.find(option => option.value === dataValue);
-        const elTrigger = element.querySelector("tp-yt-paper-input");
+        const elTrigger = elTarget.querySelector("tp-yt-paper-input");
         if (elTrigger instanceof HTMLElement && selectedOption) {
           Object.assign(elTrigger, { value: selectedOption.label });
         }
@@ -226,7 +226,7 @@
     // requestAnimationFrame defers past any post-close focus management Polymer
     // runs synchronously (e.g. _applyFocus), so our call always wins.
     function handleOverlayClosed() {
-      const elTrigger = element.querySelector<HTMLElement>("tp-yt-paper-input");
+      const elTrigger = elTarget.querySelector<HTMLElement>("tp-yt-paper-input");
       requestAnimationFrame(() => elTrigger?.focus());
     }
 

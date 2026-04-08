@@ -321,22 +321,22 @@
   // -- YouTube native button attach functions ---------------------------------
   let buttonIdCounter = 0;
 
-  function dispatchButtonData(element: Element, data: ButtonViewModelData) {
-    if (!element.hasAttribute("data-ytdl-button-id")) {
-      element.setAttribute("data-ytdl-button-id", `panel-btn-${buttonIdCounter++}`);
+  function dispatchButtonData(elButton: Element, data: ButtonViewModelData) {
+    if (!elButton.hasAttribute("data-ytdl-button-id")) {
+      elButton.setAttribute("data-ytdl-button-id", `panel-btn-${buttonIdCounter++}`);
     }
 
     postMessage({
       namespace: SYNC_NAMESPACE,
       key: SyncKey.SetButtonData,
       value: {
-        selector: `[data-ytdl-button-id="${element.getAttribute("data-ytdl-button-id")}"]`,
+        selector: `[data-ytdl-button-id="${elButton.getAttribute("data-ytdl-button-id")}"]`,
         data
       }
     }, location.origin);
   }
 
-  function attachCloseButton(element: Element) {
+  function attachCloseButton(elTarget: Element) {
     const closeData: ButtonViewModelData = {
       iconName: IconName.Close,
       title: "",
@@ -350,7 +350,7 @@
       tooltip: ""
     };
 
-    dispatchButtonData(element, closeData);
+    dispatchButtonData(elTarget, closeData);
 
     // Show "Close" tooltip only on keyboard focus (Tab), not on mouse hover.
     // Polymer's tp-yt-paper-tooltip shows on both hover and focus by default,
@@ -363,23 +363,23 @@
           return;
         }
 
-        dispatchButtonData(element, {
+        dispatchButtonData(elTarget, {
           ...closeData,
           tooltip: "Close"
         });
       });
 
       elButton.addEventListener("blur", () => {
-        dispatchButtonData(element, closeData);
+        dispatchButtonData(elTarget, closeData);
       });
     }
 
-    const elButton = element.querySelector("button");
+    const elButton = elTarget.querySelector("button");
     if (elButton) {
       onButtonAvailable(elButton);
     } else {
       const observer = new MutationObserver(() => {
-        const elInner = element.querySelector("button");
+        const elInner = elTarget.querySelector("button");
         if (!elInner) {
           return;
         }
@@ -387,15 +387,15 @@
         observer.disconnect();
         onButtonAvailable(elInner);
       });
-      observer.observe(element, {
+      observer.observe(elTarget, {
         childList: true,
         subtree: true
       });
     }
   }
 
-  function attachCancelButton(element: Element) {
-    dispatchButtonData(element, {
+  function attachCancelButton(elButton: Element) {
+    dispatchButtonData(elButton, {
       iconName: "",
       title: "Cancel",
       accessibilityText: "Cancel",
@@ -409,9 +409,9 @@
     });
   }
 
-  function attachDownloadButton(element: Element) {
+  function attachDownloadButton(elButton: Element) {
     $effect(() => {
-      dispatchButtonData(element, {
+      dispatchButtonData(elButton, {
         iconName: IconName.Download,
         title: "Download",
         accessibilityText: "Download",
@@ -426,12 +426,12 @@
     });
   }
 
-  function attachPanelProgress(element: Element) {
-    if (!isPolymerProgressElement(element)) {
+  function attachPanelProgress(elProgress: Element) {
+    if (!isPolymerProgressElement(elProgress)) {
       return;
     }
 
-    element.updateStyles({
+    elProgress.updateStyles({
       "--paper-progress-active-color": "var(--yt-spec-call-to-action, rgb(62 166 255))",
       "--paper-progress-container-color": "transparent"
     });
@@ -462,14 +462,14 @@
     }
 
     return () => {
-      for (const element of inertedElements) {
-        element.inert = false;
+      for (const elProgress of inertedElements) {
+        elProgress.inert = false;
       }
     };
   }
 
-  function attachPanel(element: Element) {
-    if (!(element instanceof HTMLElement)) {
+  function attachPanel(elPanel: Element) {
+    if (!(elPanel instanceof HTMLElement)) {
       return;
     }
 
@@ -478,18 +478,18 @@
     // Target that attribute so the focus ring only appears for keyboard users.
     const elFocusStyle = document.createElement("style");
     elFocusStyle.textContent = panelFocusStyles;
-    element.append(elFocusStyle);
+    elPanel.append(elFocusStyle);
 
     // Clear stale focus state from a previous panel session so focus always
     // starts fresh on the first dropdown.
-    for (const elDropdown of element.querySelectorAll("tp-yt-paper-dropdown-menu")) {
+    for (const elDropdown of elPanel.querySelectorAll("tp-yt-paper-dropdown-menu")) {
       elDropdown.removeAttribute("keyboard-focused");
       elDropdown.removeAttribute("focused");
       elDropdown.querySelector("tp-yt-paper-menu-button")?.removeAttribute("focused");
       elDropdown.querySelector("tp-yt-paper-input")?.removeAttribute("focused");
     }
 
-    const elInitialFocus = element.querySelector<HTMLElement>("tp-yt-paper-input:not([disabled])");
+    const elInitialFocus = elPanel.querySelector<HTMLElement>("tp-yt-paper-input:not([disabled])");
     elInitialFocus?.focus();
 
     // The panel always opens via keyboard (Enter on chevron), so the initial
@@ -499,7 +499,7 @@
 
     // Apply the inert focus trap AFTER Polymer opens the dropdown.
     // Applying it before open() interferes with Polymer's overlay mechanics.
-    const elDropdownRoot = element.closest<HTMLElement>("tp-yt-iron-dropdown") ?? element;
+    const elDropdownRoot = elPanel.closest<HTMLElement>("tp-yt-iron-dropdown") ?? elPanel;
 
     elDropdownRoot.addEventListener("iron-overlay-opened", () => {
       removeInert = applyInertTrap(elDropdownRoot);
@@ -514,7 +514,7 @@
     // from sibling dropdowns when Tab moves between them. Explicitly clear stale
     // focused state so only the active dropdown shows the focus ring.
     function onFocusIn() {
-      for (const elDropdown of element.querySelectorAll("tp-yt-paper-dropdown-menu[focused]")) {
+      for (const elDropdown of elPanel.querySelectorAll("tp-yt-paper-dropdown-menu[focused]")) {
         if (elDropdown.contains(document.activeElement)) {
           continue;
         }

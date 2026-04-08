@@ -252,16 +252,16 @@
 
   let buttonIdCounter = 0;
 
-  function setButtonData(element: Element, data: Record<string, unknown>) {
-    if (!element.hasAttribute("data-ytdl-button-id")) {
-      element.setAttribute("data-ytdl-button-id", `btn-${videoId}-${buttonIdCounter++}`);
+  function setButtonData(elButton: Element, data: Record<string, unknown>) {
+    if (!elButton.hasAttribute("data-ytdl-button-id")) {
+      elButton.setAttribute("data-ytdl-button-id", `btn-${videoId}-${buttonIdCounter++}`);
     }
 
     postMessage({
       namespace: SYNC_NAMESPACE,
       key: SyncKey.SetButtonData,
       value: {
-        selector: `[data-ytdl-button-id="${element.getAttribute("data-ytdl-button-id")}"]`,
+        selector: `[data-ytdl-button-id="${elButton.getAttribute("data-ytdl-button-id")}"]`,
         data
       }
     }, location.origin);
@@ -373,12 +373,12 @@
     }
   }
 
-  function attachDownloadButton(element: Element) {
-    if (!(element instanceof HTMLElement)) {
+  function attachDownloadButton(elButton: Element) {
+    if (!(elButton instanceof HTMLElement)) {
       return;
     }
 
-    elDownloadBtn = element;
+    elDownloadBtn = elButton;
     refreshDownloadButton();
   }
 
@@ -408,14 +408,14 @@
     });
   }
 
-  function attachChevronButton(element: Element) {
-    if (!(element instanceof HTMLElement)) {
+  function attachChevronButton(elButton: Element) {
+    if (!(elButton instanceof HTMLElement)) {
       return;
     }
 
-    elChevronBtn = element;
+    elChevronBtn = elButton;
     refreshChevronButton();
-    element.setAttribute("style", "margin-left: 0 !important");
+    elButton.setAttribute("style", "margin-left: 0 !important");
   }
 
   $effect(() => {
@@ -425,9 +425,9 @@
     }
   });
 
-  function attachButtonGroup(element: Element) {
-    if (element instanceof HTMLElement) {
-      elButtonGroup = element;
+  function attachButtonGroup(elTarget: Element) {
+    if (elTarget instanceof HTMLElement) {
+      elButtonGroup = elTarget;
     }
   }
 </script>
