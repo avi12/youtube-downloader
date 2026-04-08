@@ -3,7 +3,7 @@ import { extractPoTokenFromBody, getCapturedSabrData } from "@/lib/sabr-request-
 import { interruptedDownloadsItem } from "@/lib/storage";
 
 export function registerStorageHandlers() {
-  onMessage(MessageType.GetCapturedSabrBody, async ({ sender }) => {
+  onMessage(MessageType.GetCapturedSabrBody, ({ sender }) => {
     const tabId = sender.tab?.id;
     if (!tabId) {
       return null;

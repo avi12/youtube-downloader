@@ -48,13 +48,13 @@ export function registerDownloadHandlers() {
 
   onMessage(MessageType.Keepalive, () => {});
 
-  onMessage(MessageType.RequestPlaylistDownload, async ({ data, sender }) => {
+  onMessage(MessageType.RequestPlaylistDownload, ({ data, sender }) => {
     const tabId = sender.tab?.id;
     if (!tabId) {
       return;
     }
 
-    await Promise.allSettled(
+    void Promise.allSettled(
       data.items.map(item =>
         sendMessage(MessageType.ExecuteDownloadItem, item, tabId)
       )
