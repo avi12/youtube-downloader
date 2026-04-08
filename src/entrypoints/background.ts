@@ -364,7 +364,10 @@ export default defineBackground(() => {
 
   // - Initialization -
 
-  browser.runtime.onInstalled.addListener(async () => {
-    await clearLocalStorage();
+  browser.runtime.onInstalled.addListener(async ({ reason }) => {
+    // Only clear storage on fresh install, not on reload/update
+    if (reason === "install") {
+      await clearLocalStorage();
+    }
   });
 });
