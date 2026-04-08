@@ -1,26 +1,11 @@
 <script lang="ts">
   import DownloadOptions from "./DownloadOptions.svelte";
+  import { createPanelState } from "./DownloadOptionsPanel.svelte.ts";
   import panelFocusStyles from "./panel-focus.css?inline";
+  import { applyInertTrap } from "@/lib/inert-trap";
+  import { attachCancelButton, attachCloseButton, attachDownloadButton, attachPanelProgress } from "@/lib/panel-button-attachments";
   import { CrossWorldMessage, crossWorldMessenger } from "@/lib/cross-world-messenger";
-  import { sendButtonData } from "@/lib/polymer-utils";
-  import { statusProgressItem, videoQueueItem } from "@/lib/storage";
-  import { cancelRequestSignal, downloadProgressStore } from "@/lib/synced-stores.svelte";
-  import { getCompatibleFilename, getOutputExtension, resolveAutoExtension, waitForVideoElement } from "@/lib/utils";
-  import {
-    ButtonSize,
-    ButtonState,
-    ButtonStyle,
-    ButtonType,
-    IconName,
-    type AdaptiveFormatItem,
-    type ButtonViewModelData,
-    DownloadType,
-    type Options,
-    ProgressType,
-    isPolymerProgressElement,
-    type VideoData
-  } from "@/types";
-  import { untrack } from "svelte";
+  import { ProgressType, type Options, type VideoData } from "@/types";
 
   // Grab Polymer's scoping class from an existing action-bar button so that
   // yt-button-view-model elements in this panel receive identical styling.
@@ -34,189 +19,11 @@
     options: Options;
   };
 
-  const { videoData, options }: Props = $props();
+  const props: Props = $props();
 
-  // -- Download state ---------------------------------------------------------
-  // State persists for the lifetime of the component (one per video).
-  // Closing/reopening the dropdown does not remount this component, so all
-  // download progress is preserved across panel open/close cycles.
+  const panel = createPanelState(() => props.videoData, () => props.options);
 
-  let isDownloading = $state(false);
-  let isDone = $state(false);
-  let progress = $state(0);
-  let progressType = $state<ProgressType | "">("");
-
-  // -- Format selection -------------------------------------------------------
-
-  let downloadType = $state<DownloadType>(untrack(() => {
-    if (options.defaultDownloadType !== "auto") {
-      return options.defaultDownloadType;
-    }
-
-    return videoData.isMusic ? DownloadType.Audio : DownloadType.VideoAndAudio;
-  }));
-  let selectedVideoFormat = $state<AdaptiveFormatItem | null>(untrack(() => videoData.videoFormats[0] ?? null));
-  let selectedAudioFormat = $state<AdaptiveFormatItem | null>(untrack(() => videoData.audioFormats[0] ?? null));
-  let filename = $state(untrack(() => videoData.title));
-  let extension = $state(untrack(() => {
-    const extPref = videoData.isMusic ? options.ext.audio : options.ext.video;
-    const defaultFormat = videoData.isMusic
-      ? videoData.audioFormats[0]
-      : videoData.videoFormats[0];
-    return resolveAutoExtension(extPref, defaultFormat?.mimeType ?? "", videoData.isMusic ? DownloadType.Audio : DownloadType.Video);
-  }));
-
-  // -- Derived ----------------------------------------------------------------
-
-  // Keep the displayed extension in sync with the actual output container.
-  // FFmpeg may produce webm/mkv instead of the user's default extension when
-  // the selected video and audio codecs require a different container.
-  const actualExtension = $derived.by(() => {
-    if (downloadType === DownloadType.Audio) {
-      return extension;
-    }
-
-    if (!selectedVideoFormat || !selectedAudioFormat) {
-      return extension;
-    }
-
-    return getOutputExtension(selectedVideoFormat.mimeType, selectedAudioFormat.mimeType, extension);
-  });
-
-  const isDownloadable = $derived(videoData.isDownloadable);
-  // Weighted progress: download = 0-80%, mux = 80-100%
-  const displayProgress = $derived.by(() => {
-    if (!isDownloading) {
-      return 0;
-    }
-
-    if (progressType === ProgressType.FFmpeg) {
-      return 80 + progress * 20;
-    }
-
-    return progress * 80;
-  });
-  const fullFilename = $derived(getCompatibleFilename(`${filename}.${actualExtension}`));
-
-  const qualityLabel = $derived.by(() => {
-    if (downloadType === DownloadType.Audio) {
-      if (!selectedAudioFormat) {
-        return "";
-      }
-
-      return `${Math.floor(selectedAudioFormat.bitrate / 1000)} kbps`;
-    }
-
-    if (!selectedVideoFormat) {
-      return "";
-    }
-
-    const isPremium = selectedVideoFormat.qualityLabel?.includes("Premium") ?? false;
-    const base = `${selectedVideoFormat.height}p${selectedVideoFormat.fps ? ` ${selectedVideoFormat.fps}fps` : ""}`;
-    return isPremium ? `${base} (Enhanced)` : base;
-  });
-
-  // Notify the MAIN world download button tooltip when filename or quality changes
-  $effect(() => {
-    void crossWorldMessenger.sendMessage(CrossWorldMessage.FilenameChanged, {
-      filename: fullFilename,
-      quality: qualityLabel,
-      videoItag: selectedVideoFormat?.itag,
-      audioItag: selectedAudioFormat?.itag
-    });
-  });
-
-  // -- Video quality matching -------------------------------------------------
-
-  async function matchVideoFormatToCurrentQuality() {
-    try {
-      const elVideo = await waitForVideoElement();
-      const currentQuality = Math.min(elVideo.videoHeight, elVideo.videoWidth);
-      selectedVideoFormat = videoData.videoFormats.find(
-        format => Math.min(format.height ?? 0, format.width ?? 0) === currentQuality
-      ) ?? videoData.videoFormats[0] ?? null;
-    } catch {
-      selectedVideoFormat = videoData.videoFormats[0] ?? null;
-    }
-  }
-
-  $effect(() => {
-    if (options.videoQualityMode === "current-quality") {
-      void matchVideoFormatToCurrentQuality();
-      const elVideo = document.querySelector("video");
-      function onCanPlay() {
-        void matchVideoFormatToCurrentQuality();
-      }
-      elVideo?.addEventListener("canplay", onCanPlay);
-      return () => elVideo?.removeEventListener("canplay", onCanPlay);
-    }
-
-    if (options.videoQualityMode === "best") {
-      selectedVideoFormat = videoData.videoFormats[0] ?? null;
-      return;
-    }
-
-    selectedVideoFormat = videoData.videoFormats.find(
-      format => Math.min(format.height ?? 0, format.width ?? 0) === options.videoQuality
-    ) ?? videoData.videoFormats[0] ?? null;
-  });
-
-  // -- Restore existing download state on mount -------------------------------
-
-  $effect(() => {
-    async function restoreProgress() {
-      const currentProgress = await statusProgressItem.getValue();
-      const existing = currentProgress[videoData.videoId];
-      if (!existing) {
-        return;
-      }
-
-      progress = existing.progress;
-      progressType = existing.progressType;
-      isDownloading = existing.progress > 0 && existing.progress < 1;
-      isDone = existing.progress >= 1;
-    }
-
-    void restoreProgress();
-  });
-
-  // -- Progress updates -------------------------------------------------------
-
-  // Reactively sync progress from the shared download progress store
-  $effect(() => {
-    const state = downloadProgressStore.get(videoData.videoId);
-    if (!state) {
-      progress = 0;
-      progressType = "";
-      isDownloading = false;
-      isDone = false;
-      return;
-    }
-
-    isDownloading = state.isDownloading;
-    isDone = state.isDone;
-    progress = state.progress;
-    progressType = state.progressType;
-  });
-
-  // -- Queue position tracking ------------------------------------------------
-
-  function onQueueChange(queue: { videoId: string }[] | null) {
-    const currentQueue = queue ?? [];
-    const isCurrentlyProcessing = currentQueue[0]?.videoId === videoData.videoId;
-    if (isCurrentlyProcessing) {
-      progress = 0;
-      progressType = "";
-    }
-  }
-
-  $effect(() => videoQueueItem.watch(onQueueChange));
-
-  // -- Filename validation ------------------------------------------------------
-
-  let isFilenameValid = $state(true);
-
-  // -- Inert focus trap --------------------------------------------------------
+  // -- Inert focus trap -------------------------------------------------------
 
   let removeInert: (() => void) | null = null;
 
@@ -235,60 +42,6 @@
     document.dispatchEvent(new CustomEvent("ytdl:panel-closed"));
   }
 
-  function handleDownloadTypeChange(newType: DownloadType) {
-    isDownloading = false;
-    progress = 0;
-    downloadType = newType;
-    const extPref = newType === DownloadType.Audio ? options.ext.audio : options.ext.video;
-    const format = newType === DownloadType.Audio ? selectedAudioFormat : selectedVideoFormat;
-    extension = resolveAutoExtension(extPref, format?.mimeType ?? "", newType === DownloadType.Audio ? DownloadType.Audio : DownloadType.Video);
-  }
-
-  function startDownload() {
-    if (isDownloading || !isDownloadable || !isFilenameValid || !selectedAudioFormat) {
-      return;
-    }
-
-    if (downloadType !== DownloadType.Audio && !selectedVideoFormat) {
-      return;
-    }
-
-    isDownloading = true;
-    isDone = false;
-    progress = 0;
-
-    if (downloadType === DownloadType.VideoAndAudio) {
-      progressType = "";
-    }
-
-    downloadProgressStore.unsuppress(videoData.videoId);
-    downloadProgressStore.set(videoData.videoId, {
-      isDownloading: true,
-      isDone: false,
-      isQueued: false,
-      progress: 0,
-      progressType: ""
-    });
-
-    void crossWorldMessenger.sendMessage(CrossWorldMessage.DownloadRequest, {
-      type: downloadType,
-      videoId: videoData.videoId,
-      videoItag: selectedVideoFormat?.itag ?? 0,
-      audioItag: selectedAudioFormat.itag,
-      filenameOutput: fullFilename,
-      sabrConfig: videoData.sabrConfig
-    });
-  }
-
-  function cancelDownload() {
-    isDownloading = false;
-    progress = 0;
-
-    downloadProgressStore.delete(videoData.videoId);
-
-    cancelRequestSignal.value = { videoIds: [videoData.videoId] };
-  }
-
   function handleActivationKeydown(callback: () => void) {
     return (e: KeyboardEvent) => {
       if (e.key === "Enter" || e.key === " ") {
@@ -297,154 +50,13 @@
     };
   }
 
-  function handleDownloadKeydown(e: KeyboardEvent) {
-    if (e.key === "Enter" || e.key === " ") {
-      startDownload();
-    }
+  // -- Polymer button attaches ------------------------------------------------
+
+  function attachDownloadBtn(elButton: Element) {
+    attachDownloadButton(elButton, () => panel.isDownloadable, () => panel.isFilenameValid);
   }
 
-  // -- YouTube native button attach functions ---------------------------------
-  let buttonIdCounter = 0;
-
-  function dispatchButtonData(elButton: Element, data: ButtonViewModelData) {
-    if (!elButton.hasAttribute("data-ytdl-button-id")) {
-      elButton.setAttribute("data-ytdl-button-id", `panel-btn-${buttonIdCounter++}`);
-    }
-
-    sendButtonData(elButton, data);
-  }
-
-  function attachCloseButton(elTarget: Element) {
-    const closeData: ButtonViewModelData = {
-      iconName: IconName.Close,
-      title: "",
-      accessibilityText: "Close",
-      style: ButtonStyle.Mono,
-      type: ButtonType.Tonal,
-      buttonSize: ButtonSize.Default,
-      state: ButtonState.Active,
-      isFullWidth: false,
-      isDisabled: false,
-      tooltip: ""
-    };
-
-    dispatchButtonData(elTarget, closeData);
-
-    // Show "Close" tooltip only on keyboard focus (Tab), not on mouse hover.
-    // Polymer's tp-yt-paper-tooltip shows on both hover and focus by default,
-    // so we dynamically set the tooltip text only when :focus-visible matches.
-    // Polymer renders the inner <button> asynchronously, so we observe until
-    // it appears rather than relying on requestAnimationFrame timing.
-    function onButtonAvailable(elButton: HTMLButtonElement) {
-      elButton.addEventListener("focus", () => {
-        if (!elButton.matches(":focus-visible")) {
-          return;
-        }
-
-        dispatchButtonData(elTarget, {
-          ...closeData,
-          tooltip: "Close"
-        });
-      });
-
-      elButton.addEventListener("blur", () => {
-        dispatchButtonData(elTarget, closeData);
-      });
-    }
-
-    const elButton = elTarget.querySelector("button");
-    if (elButton) {
-      onButtonAvailable(elButton);
-    } else {
-      const observer = new MutationObserver(() => {
-        const elInner = elTarget.querySelector("button");
-        if (!elInner) {
-          return;
-        }
-
-        observer.disconnect();
-        onButtonAvailable(elInner);
-      });
-      observer.observe(elTarget, {
-        childList: true,
-        subtree: true
-      });
-    }
-  }
-
-  function attachCancelButton(elButton: Element) {
-    dispatchButtonData(elButton, {
-      iconName: "",
-      title: "Cancel",
-      accessibilityText: "Cancel",
-      style: ButtonStyle.Mono,
-      type: ButtonType.Tonal,
-      buttonSize: ButtonSize.Small,
-      state: ButtonState.Active,
-      isFullWidth: false,
-      isDisabled: false,
-      tooltip: ""
-    });
-  }
-
-  function attachDownloadButton(elButton: Element) {
-    $effect(() => {
-      dispatchButtonData(elButton, {
-        iconName: IconName.Download,
-        title: "Download",
-        accessibilityText: "Download",
-        style: ButtonStyle.CallToAction,
-        type: ButtonType.Filled,
-        buttonSize: ButtonSize.Default,
-        state: isDownloadable && isFilenameValid ? ButtonState.Active : ButtonState.Disabled,
-        isFullWidth: true,
-        isDisabled: !isDownloadable || !isFilenameValid,
-        tooltip: ""
-      });
-    });
-  }
-
-  function attachPanelProgress(elProgress: Element) {
-    if (!isPolymerProgressElement(elProgress)) {
-      return;
-    }
-
-    elProgress.updateStyles({
-      "--paper-progress-active-color": "var(--yt-spec-call-to-action, rgb(62 166 255))",
-      "--paper-progress-container-color": "transparent"
-    });
-  }
-
-  // -- Focus management --------------------------------------------------------
-
-  /**
-   * Marks all elements outside the panel's ancestor chain as `inert`,
-   * creating a native focus trap without manual Tab/Shift-Tab interception.
-   * Returns a cleanup function that removes the inert attributes.
-   */
-  function applyInertTrap(elPanel: HTMLElement) {
-    const inertedElements: HTMLElement[] = [];
-
-    // Walk from the panel up to body, marking siblings of each ancestor as inert.
-    // This keeps the panel and its container chain focusable while everything
-    // else on the page becomes inert (unfocusable + hidden from assistive tech).
-    for (let elAncestor = elPanel; elAncestor && elAncestor !== document.body; elAncestor = elAncestor.parentElement!) {
-      for (const elSibling of elAncestor.parentElement?.children ?? []) {
-        if (elSibling === elAncestor || !(elSibling instanceof HTMLElement) || elSibling.inert) {
-          continue;
-        }
-
-        elSibling.inert = true;
-        inertedElements.push(elSibling);
-      }
-    }
-
-    return () => {
-      for (const elProgress of inertedElements) {
-        elProgress.inert = false;
-      }
-    };
-  }
+  // -- Focus management -------------------------------------------------------
 
   function attachPanel(elPanel: Element) {
     if (!(elPanel instanceof HTMLElement)) {
@@ -511,15 +123,14 @@
       elFocusStyle.remove();
     };
   }
-
 </script>
 
 {#snippet cancelBtn()}
   <yt-button-view-model
     class={scopingClass}
     {@attach attachCancelButton}
-    onclick={cancelDownload}
-    onkeydown={handleActivationKeydown(cancelDownload)}
+    onclick={panel.cancelDownload}
+    onkeydown={handleActivationKeydown(panel.cancelDownload)}
     role="button"
     tabindex="0"
   ></yt-button-view-model>
@@ -553,38 +164,38 @@
 
   <div class="ytdl-panel-body">
     <DownloadOptions
-      audioFormats={videoData.audioFormats}
-      {downloadType}
-      extension={actualExtension}
-      {filename}
-      {isDownloading}
-      onaudioformatchange={format => (selectedAudioFormat = format)}
-      ondownloadtypechange={handleDownloadTypeChange}
-      onextensionchange={newExtension => (extension = newExtension)}
-      onfilenamechange={newFilename => (filename = newFilename)}
-      onvalidationchange={isValid => (isFilenameValid = isValid)}
-      onvideoformatchange={format => (selectedVideoFormat = format)}
-      {selectedAudioFormat}
-      {selectedVideoFormat}
-      videoFormats={videoData.videoFormats}
+      audioFormats={props.videoData.audioFormats}
+      downloadType={panel.downloadType}
+      extension={panel.actualExtension}
+      filename={panel.filename}
+      isDownloading={panel.isDownloading}
+      onaudioformatchange={format => (panel.selectedAudioFormat = format)}
+      ondownloadtypechange={panel.handleDownloadTypeChange}
+      onextensionchange={newExtension => (panel.extension = newExtension)}
+      onfilenamechange={newFilename => (panel.filename = newFilename)}
+      onvalidationchange={isValid => (panel.isFilenameValid = isValid)}
+      onvideoformatchange={format => (panel.selectedVideoFormat = format)}
+      selectedAudioFormat={panel.selectedAudioFormat}
+      selectedVideoFormat={panel.selectedVideoFormat}
+      videoFormats={props.videoData.videoFormats}
     />
   </div>
 
   <div class="ytdl-panel-footer">
-    {#if isDownloading}
+    {#if panel.isDownloading}
       <div class="ytdl-progress-section">
         <tp-yt-paper-progress
           {@attach attachPanelProgress}
-          value={Math.round(displayProgress)}
+          value={Math.round(panel.displayProgress)}
         ></tp-yt-paper-progress>
         <div class="ytdl-progress-row">
           <span class="ytdl-progress-label" aria-live="polite">
-            {Math.round(displayProgress)}% - {progressType === ProgressType.FFmpeg ? "Processing" : "Downloading"}
+            {Math.round(panel.displayProgress)}% - {panel.progressType === ProgressType.FFmpeg ? "Processing" : "Downloading"}
           </span>
           {@render cancelBtn()}
         </div>
       </div>
-    {:else if isDone}
+    {:else if panel.isDone}
       <div class="ytdl-done-status" role="status">
         <svg
           aria-hidden="true"
@@ -600,9 +211,9 @@
     {:else}
       <yt-button-view-model
         class={scopingClass}
-        {@attach attachDownloadButton}
-        onclick={startDownload}
-        onkeydown={handleDownloadKeydown}
+        {@attach attachDownloadBtn}
+        onclick={panel.startDownload}
+        onkeydown={handleActivationKeydown(panel.startDownload)}
         role="button"
         tabindex="0"
       ></yt-button-view-model>
