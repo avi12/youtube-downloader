@@ -142,11 +142,11 @@ function toUint8Array(data: Uint8Array | Record<string, number> | null) {
     return null;
   }
 
-  if (!(data instanceof Uint8Array)) {
+  if (!ArrayBuffer.isView(data)) {
     return new Uint8Array(Object.values(data));
   }
 
-  return data;
+  return new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
 }
 
 async function triggerDownload(data: Uint8Array, filenameOutput: string) {
@@ -300,7 +300,7 @@ async function embedMusicMetadata(
     await ffmpeg.deleteFile("cover.jpg");
   }
 
-  if (!(taggedOutput instanceof Uint8Array)) {
+  if (typeof taggedOutput === "string") {
     return audioData;
   }
 
@@ -477,7 +477,7 @@ async function processVideoAudio(item: ProcessStreamData, ffmpeg: FFmpeg) {
     }
 
     const ffmpegOutput = await ffmpeg.readFile(outputFilename);
-    if (!(ffmpegOutput instanceof Uint8Array)) {
+    if (typeof ffmpegOutput === "string") {
       throw new Error("FFmpeg readFile returned unexpected string output");
     }
 
