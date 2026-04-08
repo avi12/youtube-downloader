@@ -103,6 +103,20 @@ function getLatestCapturedSabrData() {
  * In protobuf wire format: field 19 (StreamerContext) > field 2 (poToken)
  */
 export function extractPoTokenFromBody(body: number[]) {
+  const VARINT_DATA_BITS_MASK = 0x7f;
+  const VARINT_CONTINUATION_BIT = 0x80;
+  const VARINT_BITS_PER_BYTE = 7;
+  const PROTO_FIELD_NUMBER_SHIFT = 3;
+  const PROTO_WIRE_TYPE_MASK = 0x7;
+  const WIRE_TYPE_VARINT = 0;
+  const WIRE_TYPE_64_BIT = 1;
+  const WIRE_TYPE_LENGTH_DELIMITED = 2;
+  const WIRE_TYPE_32_BIT = 5;
+  const WIRE_64_BIT_BYTE_SIZE = 8;
+  const WIRE_32_BIT_BYTE_SIZE = 4;
+  const FIELD_STREAMER_CONTEXT = 19;
+  const FIELD_PO_TOKEN = 2;
+
   const buf = new Uint8Array(body);
   let offset = 0;
 
@@ -111,13 +125,13 @@ export function extractPoTokenFromBody(body: number[]) {
     let shift = 0;
     while (off < buf.byteLength) {
       const byte = buf[off++];
-      value |= (byte & 0x7f) << shift;
+      value |= (byte & VARINT_DATA_BITS_MASK) << shift;
 
-      if ((byte & 0x80) === 0) {
+      if ((byte & VARINT_CONTINUATION_BIT) === 0) {
         break;
       }
 
-      shift += 7;
+      shift += VARINT_BITS_PER_BYTE;
     }
     return {
       value: value >>> 0,
@@ -129,13 +143,13 @@ export function extractPoTokenFromBody(body: number[]) {
   while (offset < buf.byteLength) {
     const tag = readVarint(offset);
     offset = tag.offset;
-    const fieldNumber = tag.value >> 3;
-    const wireType = tag.value & 0x7;
-    if (wireType === 2) {
+    const fieldNumber = tag.value >> PROTO_FIELD_NUMBER_SHIFT;
+    const wireType = tag.value & PROTO_WIRE_TYPE_MASK;
+    if (wireType === WIRE_TYPE_LENGTH_DELIMITED) {
       const len = readVarint(offset);
       offset = len.offset;
 
-      if (fieldNumber === 19) {
+      if (fieldNumber === FIELD_STREAMER_CONTEXT) {
         // Parse StreamerContext for field 2 (poToken)
         const ctxData = buf.subarray(offset, offset + len.value);
         let ctxOffset = 0;
@@ -143,19 +157,19 @@ export function extractPoTokenFromBody(body: number[]) {
         while (ctxOffset < ctxData.byteLength) {
           const ctxTag = readVarint(ctxOffset);
           ctxOffset = ctxTag.offset;
-          const ctxField = ctxTag.value >> 3;
-          const ctxWire = ctxTag.value & 0x7;
-          if (ctxWire === 2) {
+          const ctxField = ctxTag.value >> PROTO_FIELD_NUMBER_SHIFT;
+          const ctxWire = ctxTag.value & PROTO_WIRE_TYPE_MASK;
+          if (ctxWire === WIRE_TYPE_LENGTH_DELIMITED) {
             const ctxLen = readVarint(ctxOffset);
             ctxOffset = ctxLen.offset;
 
-            if (ctxField === 2 && ctxLen.value > 0) {
+            if (ctxField === FIELD_PO_TOKEN && ctxLen.value > 0) {
               const poTokenBytes = ctxData.subarray(ctxOffset, ctxOffset + ctxLen.value);
               return btoa(String.fromCharCode(...poTokenBytes));
             }
 
             ctxOffset += ctxLen.value;
-          } else if (ctxWire === 0) {
+          } else if (ctxWire === WIRE_TYPE_VARINT) {
             ctxOffset = readVarint(ctxOffset).offset;
           } else {
             break;
@@ -164,12 +178,12 @@ export function extractPoTokenFromBody(body: number[]) {
       }
 
       offset += len.value;
-    } else if (wireType === 0) {
+    } else if (wireType === WIRE_TYPE_VARINT) {
       offset = readVarint(offset).offset;
-    } else if (wireType === 1) {
-      offset += 8;
-    } else if (wireType === 5) {
-      offset += 4;
+    } else if (wireType === WIRE_TYPE_64_BIT) {
+      offset += WIRE_64_BIT_BYTE_SIZE;
+    } else if (wireType === WIRE_TYPE_32_BIT) {
+      offset += WIRE_32_BIT_BYTE_SIZE;
     } else {
       break;
     }
