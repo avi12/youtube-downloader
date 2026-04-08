@@ -25,24 +25,25 @@ async function sendStreamChunks({ videoId, streamType, data }: {
   streamType: string;
   data: Uint8Array;
 }) {
+  if (cancelledVideoIds.has(videoId)) {
+    return;
+  }
+
   const totalChunks = Math.ceil(data.byteLength / TRANSFER_CHUNK_SIZE);
 
-  for (let i = 0; i < totalChunks; i++) {
-    if (cancelledVideoIds.has(videoId)) {
-      return;
-    }
-
-    const start = i * TRANSFER_CHUNK_SIZE;
-    const chunk = data.subarray(start, start + TRANSFER_CHUNK_SIZE);
-
-    await sendMessage(MessageType.StreamChunk, {
-      videoId,
-      streamType,
-      iChunk: i,
-      totalChunks,
-      chunkBase64: uint8ToBase64(chunk)
-    });
-  }
+  await Promise.all(
+    Array.from({ length: totalChunks }, (_, i) => {
+      const start = i * TRANSFER_CHUNK_SIZE;
+      const chunk = data.subarray(start, start + TRANSFER_CHUNK_SIZE);
+      return sendMessage(MessageType.StreamChunk, {
+        videoId,
+        streamType,
+        iChunk: i,
+        totalChunks,
+        chunkBase64: uint8ToBase64(chunk)
+      });
+    })
+  );
 }
 
 interface PlaylistContext {
