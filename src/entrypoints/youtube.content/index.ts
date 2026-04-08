@@ -16,7 +16,7 @@ import { CrossWorldMessage, crossWorldMessenger } from "@/lib/cross-world-messen
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging";
 import { forwardSabrCredentialsWithRetry, listenForSabrBodyReady } from "@/lib/sabr-credentials";
 import { optionsItem } from "@/lib/storage";
-import { downloadProgressStore, SYNC_NAMESPACE, SyncKey } from "@/lib/synced-stores.svelte";
+import { downloadProgressStore } from "@/lib/synced-stores.svelte";
 import type { Options } from "@/types";
 
 export default defineContentScript({
@@ -51,15 +51,8 @@ export default defineContentScript({
       });
     });
 
-    addEventListener("message", e => {
-      if (e.data?.namespace !== SYNC_NAMESPACE || e.data.key !== SyncKey.CancelRequest) {
-        return;
-      }
-
-      const { videoIds } = e.data.value ?? {};
-      if (!videoIds) {
-        return;
-      }
+    crossWorldMessenger.onMessage(CrossWorldMessage.CancelRequest, ({ data }) => {
+      const { videoIds } = data;
 
       for (const id of videoIds) {
         cancelStreamTransfer(id);

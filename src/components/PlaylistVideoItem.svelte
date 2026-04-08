@@ -6,6 +6,7 @@
 
 <script lang="ts">
   import DownloadOptionsPanel from "./DownloadOptionsPanel.svelte";
+  import { CrossWorldMessage, crossWorldMessenger } from "@/lib/cross-world-messenger";
   import { MessageType, sendMessage } from "@/lib/messaging";
   import { sendButtonData } from "@/lib/polymer-utils";
   import {
@@ -13,9 +14,6 @@
     cancelRequestSignal,
     downloadProgressStore,
     type DownloadProgressState,
-    SYNC_NAMESPACE,
-    SyncKey,
-    videoDataRequests,
     videoDataStore
   } from "@/lib/synced-stores.svelte";
   import { getOutputExtension, resolveAutoExtension, resolveVideoFilename } from "@/lib/utils";
@@ -55,7 +53,7 @@
   let isLoadFailed = $state(false);
 
   // Reactively read video data from the synced store.
-  // The MAIN world writes to videoDataStore, which syncs via postMessage.
+  // The MAIN world writes to videoDataStore, which syncs via custom events.
   $effect(() => {
     const storeData = videoDataStore.get(videoId);
     if (storeData) {
@@ -63,8 +61,8 @@
       return;
     }
 
-    // Request from MAIN world via synced signal (crosses world boundary)
-    videoDataRequests.set(videoId, true);
+    // Request from MAIN world via crossWorldMessenger (crosses world boundary)
+    void crossWorldMessenger.sendMessage(CrossWorldMessage.RequestVideoData, { videoId });
 
     const loadTimeout = setTimeout(() => {
       if (!videoData) {
@@ -165,7 +163,7 @@
   let elButtonGroup: HTMLElement | null = null;
   let elDownloadBtn: Element | null = null;
   let elChevronBtn: Element | null = null;
-  let pendingDropdownListener: ((e: MessageEvent) => void) | null = null;
+  let unsubscribeDropdownReady: (() => void) | null = null;
 
   // Weighted progress: download phase = 0-80%, mux phase = 80-100%
   // Both phases report their own 0-1 progress, combined into a single 0-100 value
@@ -267,28 +265,19 @@
     // MAIN world's Polymer runtime to function (open/close, positioning).
     const panelContentId = `ytdl-grid-panel-${videoId}`;
 
-    postMessage({
-      namespace: SYNC_NAMESPACE,
-      key: SyncKey.CreateDropdown,
-      value: {
-        contentId: panelContentId,
-        positionTargetSelector: `[data-ytdl-grid-item="${videoId}"] .ytdl-button-group`
-      }
-    }, location.origin);
+    void crossWorldMessenger.sendMessage(CrossWorldMessage.CreateDropdown, {
+      contentId: panelContentId,
+      positionTargetSelector: `[data-ytdl-grid-item="${videoId}"] .ytdl-button-group`
+    });
 
-    // Wait for the MAIN world to create the dropdown.
-    // Uses postMessage (not CustomEvent.detail) because CustomEvent.detail
-    // is not accessible when crossing from MAIN world to isolated world.
-    function handleDropdownReady(e: MessageEvent) {
-      if (e.data?.namespace !== SYNC_NAMESPACE || e.data?.key !== SyncKey.DropdownReady) {
+    // Wait for the MAIN world to signal the dropdown is ready.
+    unsubscribeDropdownReady = crossWorldMessenger.onMessage(CrossWorldMessage.DropdownReady, ({ data }) => {
+      if (data.contentId !== panelContentId) {
         return;
       }
 
-      if (e.data.value?.contentId !== panelContentId) {
-        return;
-      }
-
-      removeEventListener("message", handleDropdownReady);
+      unsubscribeDropdownReady?.();
+      unsubscribeDropdownReady = null;
 
       if (panelInstance) {
         return;
@@ -321,16 +310,13 @@
 
       elDropdown?.addEventListener("iron-overlay-closed", handleOverlayClose);
       document.addEventListener("ytdl:panel-closed", handleOverlayClose);
-    }
-
-    pendingDropdownListener = handleDropdownReady;
-    addEventListener("message", handleDropdownReady);
+    });
   }
 
   function closePanel() {
-    if (pendingDropdownListener) {
-      removeEventListener("message", pendingDropdownListener);
-      pendingDropdownListener = null;
+    if (unsubscribeDropdownReady) {
+      unsubscribeDropdownReady();
+      unsubscribeDropdownReady = null;
     }
 
     if (panelInstance) {
@@ -339,11 +325,7 @@
     }
 
     if (elDropdown) {
-      postMessage({
-        namespace: SYNC_NAMESPACE,
-        key: SyncKey.CloseDropdown,
-        value: { videoId }
-      }, location.origin);
+      void crossWorldMessenger.sendMessage(CrossWorldMessage.CloseDropdown, { videoId });
       elDropdown = null;
     }
   }
