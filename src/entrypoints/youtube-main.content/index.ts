@@ -48,17 +48,11 @@ declare global {
   interface Window {
     ytInitialPlayerResponse?: PlayerResponse;
     ytInitialData?: {
-      header?: {
-        playlistHeaderRenderer?: {
-          title?: { simpleText?: string };
-          playlistId?: string;
-        };
-      };
-      metadata?: {
-        playlistMetadataRenderer?: {
-          title?: string;
-        };
-      };
+      header?: { playlistHeaderRenderer?: {
+        title?: { simpleText?: string };
+        playlistId?: string;
+      }; };
+      metadata?: { playlistMetadataRenderer?: { title?: string } };
     };
   }
 }
@@ -377,9 +371,11 @@ export default defineContentScript({
       videoMimeType: string;
       audioMimeType: string;
       audioLabel: string;
-      additionalAudioData: Array<{ data: Uint8Array | null;
+      additionalAudioData: Array<{
+        data: Uint8Array | null;
         mimeType: string;
-        label: string; }>;
+        label: string;
+      }>;
     }
 
     function buildVideoMetadata(videoId: string) {
@@ -409,22 +405,18 @@ export default defineContentScript({
       videoData, audioData, videoMimeType, audioMimeType,
       audioLabel, additionalAudioData
     }: StreamDataEvent) {
-      postMessage({
-        namespace: SYNC_NAMESPACE,
-        key: SyncKey.StreamData,
-        value: {
-          downloadType: type,
-          videoId,
-          filenameOutput,
-          videoData,
-          audioData,
-          videoMimeType,
-          audioMimeType,
-          audioLabel,
-          additionalAudioData,
-          metadata: buildVideoMetadata(videoId)
-        }
-      }, location.origin);
+      void crossWorldMessenger.sendMessage(CrossWorldMessage.StreamData, {
+        downloadType: type,
+        videoId,
+        filenameOutput,
+        videoData,
+        audioData,
+        videoMimeType,
+        audioMimeType,
+        audioLabel,
+        additionalAudioData,
+        metadata: buildVideoMetadata(videoId)
+      });
     }
 
     function dispatchStreamError(videoId: string, error: string) {
@@ -776,9 +768,9 @@ export default defineContentScript({
     function findVideoActionsContainer() {
       function findFirstVisible() {
         for (const selector of VIDEO_ACTION_BUTTON_SELECTORS) {
-          for (const element of document.querySelectorAll<HTMLElement>(selector)) {
-            if (element.offsetWidth > 0 && element.offsetHeight > 0) {
-              return element;
+          for (const elButton of document.querySelectorAll<HTMLElement>(selector)) {
+            if (elButton.offsetWidth > 0 && elButton.offsetHeight > 0) {
+              return elButton;
             }
           }
         }
@@ -798,14 +790,14 @@ export default defineContentScript({
         }, 10_000);
 
         const observer = new MutationObserver(() => {
-          const element = findFirstVisible();
-          if (!element) {
+          const elVisible = findFirstVisible();
+          if (!elVisible) {
             return;
           }
 
           observer.disconnect();
           clearTimeout(timeout);
-          resolve(element);
+          resolve(elVisible);
         });
 
         observer.observe(document.documentElement, {
@@ -1314,18 +1306,18 @@ export default defineContentScript({
       }
 
       const { selector, data: buttonData } = e.data.value ?? {};
-      const element = document.querySelector<HTMLElement>(selector);
-      if (!element || !("data" in element)) {
+      const elButton = document.querySelector<HTMLElement>(selector);
+      if (!elButton || !("data" in elButton)) {
         return;
       }
 
-      element.data = buttonData;
+      elButton.data = buttonData;
 
-      if (!element.hasAttribute("data-ytdl-click-bound")) {
-        element.setAttribute("data-ytdl-click-bound", "true");
-        element.addEventListener("click", clickEvent => {
+      if (!elButton.hasAttribute("data-ytdl-click-bound")) {
+        elButton.setAttribute("data-ytdl-click-bound", "true");
+        elButton.addEventListener("click", clickEvent => {
           clickEvent.stopPropagation();
-          const buttonId = element.getAttribute("data-ytdl-button-id");
+          const buttonId = elButton.getAttribute("data-ytdl-button-id");
           if (buttonId) {
             postMessage({
               namespace: SYNC_NAMESPACE,
@@ -1479,17 +1471,6 @@ export default defineContentScript({
     // Handle download requests from Svelte panel components (via isolated world)
     crossWorldMessenger.onMessage(CrossWorldMessage.DownloadRequest, async ({ data }) => {
       await performDownload(data);
-    });
-
-    // Refresh PO token on demand (background requests this when SPS escalates)
-    crossWorldMessenger.onMessage(CrossWorldMessage.RefreshPoToken, async ({ data }) => {
-      try {
-        const token = await generatePoToken(data.videoId);
-        capturedPoToken = token;
-        return token;
-      } catch {
-        return null;
-      }
     });
 
     // Handle video data requests from grid/playlist items.
@@ -1687,21 +1668,17 @@ export default defineContentScript({
           return;
         }
 
-        postMessage({
-          namespace: SYNC_NAMESPACE,
-          key: SyncKey.StreamData,
-          value: {
-            downloadType,
-            videoId: downloadVideoId,
-            filenameOutput,
-            videoData: videoData ?? null,
-            audioData: audioData ?? null,
-            videoMimeType,
-            audioMimeType,
-            audioLabel: "",
-            additionalAudioData: []
-          }
-        }, location.origin);
+        void crossWorldMessenger.sendMessage(CrossWorldMessage.StreamData, {
+          downloadType,
+          videoId: downloadVideoId,
+          filenameOutput,
+          videoData: videoData ?? null,
+          audioData: audioData ?? null,
+          videoMimeType,
+          audioMimeType,
+          audioLabel: "",
+          additionalAudioData: []
+        });
       } catch (error) {
         if (signal.aborted) {
           return;

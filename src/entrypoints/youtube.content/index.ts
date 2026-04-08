@@ -88,31 +88,18 @@ export default defineContentScript({
       void crossWorldMessenger.sendMessage(CrossWorldMessage.DownloadRequest, data);
     });
 
-    onMessage(
-      MessageType.RefreshPoToken,
-      ({ data }) => crossWorldMessenger.sendMessage(CrossWorldMessage.RefreshPoToken, data)
-    );
-
     onMessage(MessageType.UpdateDownloadProgress, ({ data }) => {
       void crossWorldMessenger.sendMessage(CrossWorldMessage.Progress, data);
 
-      downloadProgressStore.set(data.videoId, data.isRemoved
-        ? { isDownloading: false, isDone: true, isQueued: false, progress: 1, progressType: "" }
-        : {
-          isDownloading: data.progress < 1,
-          isDone: data.progress >= 1,
-          isQueued: false,
-          progress: data.progress,
-          progressType: data.progressType
-        });
+      const isDownloading = !data.isRemoved && data.progress < 1;
+      const isDone = data.isRemoved || data.progress >= 1;
+      const progress = data.isRemoved ? 1 : data.progress;
+      const progressType = data.isRemoved ? "" : data.progressType;
+      downloadProgressStore.set(data.videoId, { isDownloading, isDone, isQueued: false, progress, progressType });
     });
 
-    addEventListener("message", e => {
-      if (e.data?.namespace !== SYNC_NAMESPACE || e.data.key !== SyncKey.StreamData) {
-        return;
-      }
-
-      void handleStreamData(e.data.value);
+    crossWorldMessenger.onMessage(CrossWorldMessage.StreamData, ({ data }) => {
+      void handleStreamData(data);
     });
 
     crossWorldMessenger.onMessage(CrossWorldMessage.StreamError, ({ data }) => {

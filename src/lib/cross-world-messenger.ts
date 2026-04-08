@@ -1,4 +1,4 @@
-import type { DownloadRequest, ProgressUpdate, VideoData } from "@/types";
+import type { DownloadRequest, ProgressUpdate, StreamDataPayload, VideoData } from "@/types";
 import { defineCustomEventMessaging } from "@webext-core/messaging/page";
 
 // ─── Protocol definition ──────────────────────────────────────────────────────
@@ -9,6 +9,7 @@ export enum CrossWorldMessage {
   Navigation = "navigation",
   PanelContentReady = "panelContentReady",
   StreamError = "streamError",
+  StreamData = "streamData",
 
   // Isolated world / Svelte → MAIN world
   DownloadRequest = "downloadRequest",
@@ -18,9 +19,6 @@ export enum CrossWorldMessage {
 
   // MAIN world → isolated world: proxy fetch through background (CORS bypass)
   ProxyFetch = "proxyFetch",
-
-  // Background → isolated world → MAIN world: request fresh PO token
-  RefreshPoToken = "refreshPoToken",
 
   // Isolated world → all (MAIN world + Svelte components)
   Progress = "progress",
@@ -36,8 +34,11 @@ interface PageMessengerSchema {
     contentId: string;
     videoData: VideoData;
   }): void;
-  [CrossWorldMessage.StreamError](data: { videoId: string;
-    error: string; }): void;
+  [CrossWorldMessage.StreamError](data: {
+    videoId: string;
+    error: string;
+  }): void;
+  [CrossWorldMessage.StreamData](data: StreamDataPayload): void;
   [CrossWorldMessage.DownloadRequest](data: DownloadRequest): void;
   [CrossWorldMessage.PanelClosed](data: Record<string, never>): void;
   [CrossWorldMessage.FilenameChanged](data: {
@@ -47,11 +48,14 @@ interface PageMessengerSchema {
     audioItag?: number;
   }): void;
   [CrossWorldMessage.RequestVideoData](data: { videoId: string }): void;
-  [CrossWorldMessage.ProxyFetch](data: { url: string;
-    bodyBase64: string; }):
-    { status: number;
-      bodyBase64: string; } | null;
-  [CrossWorldMessage.RefreshPoToken](data: { videoId: string }): string | null;
+  [CrossWorldMessage.ProxyFetch](data: {
+    url: string;
+    bodyBase64: string;
+  }): {
+    status: number;
+    bodyBase64: string;
+  } | null;
+
   [CrossWorldMessage.Progress](data: ProgressUpdate): void;
   [CrossWorldMessage.IframePlayerReady](data: { videoId: string }): void;
 }
