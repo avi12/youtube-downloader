@@ -35,6 +35,13 @@ import type { Options } from "@/types";
 export default defineContentScript({
   matches: ["https://www.youtube.com/*"],
   async main(context) {
+    // Skip non-download iframes (ads, embeds). Only the main page and
+    // download iframes (&ytdl=1) need full initialization.
+    const isDownloadIframe = self !== top && location.search.includes("ytdl=1");
+    if (self !== top && !isDownloadIframe) {
+      return;
+    }
+
     // ─── State ───────────────────────────────────────────────────────────
 
     let currentOptions: Options = await optionsItem.getValue();
@@ -91,7 +98,10 @@ export default defineContentScript({
     });
 
     crossWorldMessenger.onMessage(CrossWorldMessage.Navigation, async ({ data }) => {
-      await handlePageChange(data.url);
+      if (!isDownloadIframe) {
+        await handlePageChange(data.url);
+      }
+
       void forwardSabrCredentialsWithRetry();
     });
 
@@ -130,6 +140,11 @@ export default defineContentScript({
     });
 
     onMessage(MessageType.ExecuteDownloadItem, ({ data }) => {
+      // Only handle in watch page context (including download iframes).
+      if (location.pathname !== "/watch") {
+        return;
+      }
+
       if (data.playlistId) {
         setPlaylistContext(data.videoId, {
           playlistId: data.playlistId,
@@ -332,6 +347,8 @@ export default defineContentScript({
 
     // ─── Initial page handling ──────────────────────────────────────────
 
-    await handlePageChange(location.href);
+    if (!isDownloadIframe) {
+      await handlePageChange(location.href);
+    }
   }
 });

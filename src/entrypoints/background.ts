@@ -165,14 +165,15 @@ export default defineBackground(() => {
         js: ["content-scripts/youtube-main.js"],
         matches: ["https://www.youtube.com/*"],
         world: "MAIN",
-        runAt: "document_start"
+        runAt: "document_start",
+        allFrames: true
       },
       {
         id: "ytdl-isolated",
         js: ["content-scripts/youtube.js"],
         css: ["content-scripts/youtube.css"],
         matches: ["https://www.youtube.com/*"],
-        runAt: "document_idle"
+        allFrames: true
       }
     ]);
   })();
@@ -804,7 +805,7 @@ export default defineBackground(() => {
       return;
     }
 
-    const watchUrl = `https://www.youtube.com/watch?v=${data.videoId}`;
+    const watchUrl = `https://www.youtube.com/watch?v=${data.videoId}&ytdl=1`;
 
     // Tell the subscriptions page to create the hidden iframe
     await sendMessage(MessageType.CreateDownloadIframe, {
@@ -826,70 +827,26 @@ export default defineBackground(() => {
       }, 30_000);
     });
 
-    // Find the iframe's frameId
-    const probeResults = await browser.scripting.executeScript({
-      target: { tabId: originTabId, allFrames: true },
-      func(videoId: string) {
-        return self !== top
-          && location.pathname === "/watch"
-          && location.search.includes(`v=${videoId}`);
-      },
-      args: [data.videoId]
-    });
-
-    const iframeResult = probeResults.find(result => {
-      return result.result === true;
-    });
-    if (!iframeResult) {
-      console.error("[ytdl:bg] Could not find download iframe for", data.videoId);
-      return;
-    }
-
-    // Report download started to the UI
-    await sendMessage(MessageType.UpdateDownloadProgress, {
-      videoId: data.videoId,
-      progress: 0,
-      progressType: ProgressType.Video
-    }, originTabId);
-
-    // Wait for YouTube player to initialize in the iframe.
-    // Visibility spoofing is handled by visibility-spoof.content.ts
-    // (allFrames: true, document_start).
+    // Wait for iframe content scripts and YouTube player to initialize.
+    // Content scripts inject via allFrames: true (manifest + registerContentScripts).
     await new Promise(resolve => {
       return setTimeout(resolve, 8000);
     });
 
-    // Tell the content script to play the iframe's video at 4x speed.
-    // Uses same-origin DOM access (not executeScript which YouTube overrides).
-    await sendMessage(MessageType.StartIframePlayback, {
-      videoId: data.videoId
-    }, originTabId);
+    // Send download request to the tab. The isWatchPage guard ensures
+    // only the iframe's content script (on /watch) handles it.
+    try {
+      await sendMessage(MessageType.ExecuteDownloadItem, data, originTabId);
+    } catch {
+      await new Promise(resolve => {
+        return setTimeout(resolve, 3000);
+      });
+      await sendMessage(MessageType.ExecuteDownloadItem, data, originTabId);
+    }
 
-    // Listen for playback progress and forward to UI
-    const removeProgressListener = onMessage(MessageType.IframePlaybackProgress, ({ data: progressData }) => {
-      if (progressData.videoId !== data.videoId) {
-        return;
-      }
-
-      const progress = progressData.duration > 0
-        ? progressData.currentTime / progressData.duration
-        : 0;
-
-      void sendMessage(MessageType.UpdateDownloadProgress, {
-        videoId: data.videoId,
-        progress: Math.min(progress * 0.8, 0.8),
-        progressType: ProgressType.Video
-      }, originTabId);
-
-      if (progressData.ended) {
-        removeProgressListener();
-      }
-    });
-
-    // Safety cleanup after 15 min
-    setTimeout(() => {
-      removeProgressListener();
-    }, 15 * 60 * 1000);
+    trackVideoForTab(data.videoId, originTabId);
+    tabTracker[originTabId] ??= { videoIdsAvailable: [] };
+    tabTracker[originTabId].videoIdsAvailable.push(data.videoId);
 
     // Keep SW alive
     await sendMessage(MessageType.StartKeepalive, { videoId: data.videoId }, originTabId);

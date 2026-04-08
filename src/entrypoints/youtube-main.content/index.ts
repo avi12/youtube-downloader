@@ -74,8 +74,12 @@ export default defineContentScript({
   matches: ["https://www.youtube.com/*"],
   world: "MAIN",
   async main() {
-    // Visibility spoofing is handled by visibility-spoof.content.ts
-    // (runs at document_start in all frames including download iframes).
+    // Skip non-download iframes (ads, embeds). Only the main page and
+    // download iframes (&ytdl=1) need full initialization.
+    const isDownloadIframe = self !== top && location.search.includes("ytdl=1");
+    if (self !== top && !isDownloadIframe) {
+      return;
+    }
 
     // ─── Capture infrastructure (document_start) ────────────────────────
     // Patches fetch() and SourceBuffer.appendBuffer BEFORE YouTube loads.
