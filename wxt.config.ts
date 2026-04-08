@@ -47,7 +47,10 @@ export default defineConfig({
     ]
   }),
   vite: () => ({
-    server: { strictPort: false },
+    server: {
+      strictPort: false,
+      watch: { usePolling: true, interval: 1000 }
+    },
     build: { sourcemap: true }
   }),
   hooks: {

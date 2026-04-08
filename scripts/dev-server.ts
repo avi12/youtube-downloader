@@ -2,7 +2,6 @@
  * Dev server: WXT createServer + web-ext manages Chrome.
  * Copies the user's Chrome Default profile (Bookmarks only) so the dev
  * instance is signed in without locking the original profile.
- * WXT dev client auto-rebuilds on file changes and reloads the extension.
  *
  * Usage: bun scripts/dev-server.ts
  */
@@ -37,8 +36,6 @@ function setupDevProfile() {
     return devProfile;
   }
 
-  // Copy only Bookmarks from each profile - other files cause DPAPI
-  // encryption issues on Windows and aren't needed for dev.
   for (const profileDir of ["Default", "Profile 1"]) {
     const bookmarksPath = join(source, profileDir, "Bookmarks");
     if (!existsSync(bookmarksPath)) {
