@@ -43,8 +43,8 @@ export async function generatePoToken(videoId: string) {
   );
 
   const challengeData: ChallengeResponse = await challengeResponse.json();
-  const program: string | undefined = challengeData.bgChallenge?.program;
-  const globalName: string | undefined = challengeData.bgChallenge?.globalName;
+  const program = challengeData.bgChallenge?.program;
+  const globalName = challengeData.bgChallenge?.globalName;
   if (!program || !globalName) {
     throw new Error("No BotGuard challenge data received");
   }
@@ -55,14 +55,14 @@ export async function generatePoToken(videoId: string) {
   // BotGuard is YouTube's undocumented anti-bot runtime with a fully dynamic
   // shape that can't be statically typed.
   function getBotGuardVm(name: string) {
-    const entry: unknown = Object.getOwnPropertyDescriptor(globalThis, name)?.value;
+    const entry = Object.getOwnPropertyDescriptor(globalThis, name)?.value;
     return entry !== null && typeof entry === "object" && "a" in entry ? entry : null;
   }
 
   if (!getBotGuardVm(globalName)) {
     // Extract interpreter URL from TrustedResourceUrl wrapper
     const interpreterUrlRaw = challengeData.bgChallenge?.interpreterUrl;
-    const interpreterUrl: string | undefined =
+    const interpreterUrl =
       typeof interpreterUrlRaw === "string"
         ? interpreterUrlRaw
         : interpreterUrlRaw?.privateDoNotAccessOrElseTrustedResourceUrlWrappedValue;
@@ -92,14 +92,14 @@ export async function generatePoToken(videoId: string) {
   }
 
   // Step 3: Sync snapshot (async callback doesn't work from content script)
-  const webPoSignalOutput: unknown[] = [];
+  const webPoSignalOutput = new Array<unknown>();
   const initResult = botGuardVm.a(program, () => {}, true, undefined, () => {}, [[], []]);
   const syncSnapshotFunction = initResult?.[0];
   if (typeof syncSnapshotFunction !== "function") {
     throw new Error("Sync snapshot function not available");
   }
 
-  const snapshotResponse: unknown = syncSnapshotFunction.call(
+  const snapshotResponse = syncSnapshotFunction.call(
     null, [undefined, undefined, webPoSignalOutput, undefined]
   );
   if (!snapshotResponse) {
