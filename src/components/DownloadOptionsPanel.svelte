@@ -105,7 +105,7 @@
   });
   const fullFilename = $derived(getCompatibleFilename(`${filename}.${actualExtension}`));
 
-  const qualityLabel = $derived(() => {
+  const qualityLabel = $derived.by(() => {
     if (downloadType === DownloadType.Audio) {
       if (!selectedAudioFormat) {
         return "";
@@ -127,7 +127,7 @@
   $effect(() => {
     void crossWorldMessenger.sendMessage(CrossWorldMessage.FilenameChanged, {
       filename: fullFilename,
-      quality: qualityLabel(),
+      quality: qualityLabel,
       videoItag: selectedVideoFormat?.itag,
       audioItag: selectedAudioFormat?.itag
     });
