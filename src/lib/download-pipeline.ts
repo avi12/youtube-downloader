@@ -162,7 +162,8 @@ async function triggerDownload(data: Uint8Array, filenameOutput: string) {
       mimeType,
       filename
     });
-    setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+    await new Promise<void>(resolve => setTimeout(resolve, 60_000));
+    URL.revokeObjectURL(blobUrl);
     return;
   } catch {
     // Firefox service worker: fall back to base64 data URL
