@@ -73,7 +73,12 @@ declare global {
 export default defineContentScript({
   matches: ["https://www.youtube.com/*"],
   world: "MAIN",
+  allFrames: true,
   async main() {
+    // Skip non-download iframes (ads, embeds)
+    if (self !== top && !location.search.includes("ytdl=1")) {
+      return;
+    }
     // ─── Capture infrastructure (document_start) ────────────────────────
     // Patches fetch() and SourceBuffer.appendBuffer BEFORE YouTube loads.
 

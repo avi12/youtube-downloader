@@ -191,10 +191,9 @@ export default defineBackground(() => {
     );
   });
 
-  // Download via hidden iframe. The content script creates the iframe, then
-  // the background injects scripts into the iframe via executeScript + frameIds.
-  // visibility-spoof.content.ts (allFrames: true) ensures YouTube's player
-  // streams even in hidden iframes. No allFrames on main content scripts.
+  // Download via hidden iframe. Content scripts auto-inject into the iframe
+  // via allFrames: true (with isDownloadIframe guard to skip non-download iframes).
+  // visibility-spoof.content.ts ensures YouTube's player streams in hidden iframes.
   onMessage(MessageType.DownloadViaWatchPage, async ({ data, sender }) => {
     const originTabId = sender.tab?.id;
     if (!originTabId) {
@@ -208,7 +207,7 @@ export default defineBackground(() => {
       watchUrl
     }, originTabId);
 
-    // Wait for iframe load signal
+    // Wait for iframe load + content scripts to initialize
     await new Promise<void>(resolve => {
       const removeListener = onMessage(MessageType.DownloadIframeReady, ({ data: readyData }) => {
         if (readyData.videoId === data.videoId) {
@@ -223,50 +222,13 @@ export default defineBackground(() => {
       }, 30_000);
     });
 
-    // Find the iframe's frameId
-    const probeResults = await browser.scripting.executeScript({
-      target: { tabId: originTabId, allFrames: true },
-      func(videoId: string) {
-        return self !== top
-          && location.pathname === "/watch"
-          && location.search.includes(`v=${videoId}`);
-      },
-      args: [data.videoId]
-    });
-
-    const iframeResult = probeResults.find(result => {
-      return result.result === true;
-    });
-    if (!iframeResult) {
-      console.error("[ytdl:bg] Could not find download iframe for", data.videoId);
-      return;
-    }
-
-    const frameIds = [iframeResult.frameId];
-
-    // Wait for YouTube player to initialize
+    // Give YouTube player and content scripts time to initialize
     await new Promise(resolve => {
       return setTimeout(resolve, 8000);
     });
 
-    // Inject content scripts into the iframe
-    await browser.scripting.executeScript({
-      target: { tabId: originTabId, frameIds },
-      files: ["content-scripts/youtube-main.js"],
-      world: "MAIN"
-    }).catch(() => {});
-
-    await browser.scripting.executeScript({
-      target: { tabId: originTabId, frameIds },
-      files: ["content-scripts/youtube.js"]
-    }).catch(() => {});
-
-    // Give injected scripts time to initialize
-    await new Promise(resolve => {
-      return setTimeout(resolve, 3000);
-    });
-
-    // Send download request to the tab - the iframe's content script handles it
+    // Send download request - only the iframe's content script handles it
+    // (isWatchPage guard filters out the subscriptions page)
     try {
       await sendMessage(MessageType.ExecuteDownloadItem, data, originTabId);
     } catch {

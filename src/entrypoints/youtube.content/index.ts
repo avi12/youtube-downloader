@@ -34,7 +34,13 @@ import type { Options } from "@/types";
 
 export default defineContentScript({
   matches: ["https://www.youtube.com/*"],
+  allFrames: true,
   async main(context) {
+    // Skip non-download iframes (ads, embeds)
+    if (self !== top && !location.search.includes("ytdl=1")) {
+      return;
+    }
+
     // ─── State ───────────────────────────────────────────────────────────
 
     let currentOptions: Options = await optionsItem.getValue();
