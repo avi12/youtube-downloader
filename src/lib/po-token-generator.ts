@@ -47,12 +47,8 @@ export async function generatePoToken(videoId: string) {
   // BotGuard is YouTube's undocumented anti-bot runtime with a fully dynamic
   // shape that can't be statically typed.
   function getBotGuardVm(name: string) {
-    const entry = Object.getOwnPropertyDescriptor(globalThis, name)?.value;
-    if (entry === null || typeof entry !== "object" || !("a" in entry)) {
-      return null;
-    }
-
-    return entry;
+    const entry: unknown = Object.getOwnPropertyDescriptor(globalThis, name)?.value;
+    return entry !== null && typeof entry === "object" && "a" in entry ? entry : null;
   }
 
   if (!getBotGuardVm(globalName)) {
