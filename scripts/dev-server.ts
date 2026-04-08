@@ -1,27 +1,56 @@
 /**
  * Dev server: WXT createServer + web-ext manages Chrome.
- * Uses the default Chrome profile so the user is already signed in.
+ * Copies the user's Chrome Default profile (Bookmarks only) so the dev
+ * instance is signed in without locking the original profile.
  * WXT dev client auto-rebuilds on file changes and reloads the extension.
  *
  * Usage: bun scripts/dev-server.ts
  */
 
 import { createServer } from "wxt";
-import { join, resolve } from "node:path";
-import { platform } from "node:os";
+import { existsSync, cpSync, mkdirSync } from "node:fs";
+import { dirname, join, resolve } from "node:path";
+import { homedir, platform } from "node:os";
 
 const PROJECT_ROOT = resolve(import.meta.dirname, "..");
 const LANG = process.env.LANG ?? "en";
 const START_URL = "https://www.youtube.com/feed/subscriptions";
+const DEV_USER_DATA = resolve(PROJECT_ROOT, "..", "User Data");
 
-function getDefaultChromeProfile() {
-  const platformPaths: Record<string, string> = {
-    win32: join(process.env.LOCALAPPDATA ?? "", "Google", "Chrome", "User Data", "Default"),
-    darwin: join(process.env.HOME ?? "", "Library", "Application Support", "Google", "Chrome", "Default"),
-    linux: join(process.env.HOME ?? "", ".config", "google-chrome", "Default")
+function setupDevProfile() {
+  const devProfile = join(DEV_USER_DATA, "Default");
+
+  if (existsSync(devProfile)) {
+    return devProfile;
+  }
+
+  const home = homedir();
+  const sourceUserData: Record<string, string> = {
+    win32: join(process.env.LOCALAPPDATA ?? "", "Google", "Chrome", "User Data"),
+    darwin: join(home, "Library", "Application Support", "Google", "Chrome"),
+    linux: join(home, ".config", "google-chrome")
   };
+  const source = sourceUserData[platform()];
 
-  return platformPaths[platform()];
+  if (!source || !existsSync(source)) {
+    mkdirSync(devProfile, { recursive: true });
+    return devProfile;
+  }
+
+  // Copy only Bookmarks from each profile - other files cause DPAPI
+  // encryption issues on Windows and aren't needed for dev.
+  for (const profileDir of ["Default", "Profile 1"]) {
+    const bookmarksPath = join(source, profileDir, "Bookmarks");
+    if (!existsSync(bookmarksPath)) {
+      continue;
+    }
+
+    const destPath = join(DEV_USER_DATA, profileDir, "Bookmarks");
+    mkdirSync(dirname(destPath), { recursive: true });
+    cpSync(bookmarksPath, destPath);
+  }
+
+  return devProfile;
 }
 
 async function main() {
@@ -35,7 +64,7 @@ async function main() {
     webExt: {
       startUrls: [START_URL],
       keepProfileChanges: true,
-      chromiumProfile: getDefaultChromeProfile(),
+      chromiumProfile: setupDevProfile(),
       chromiumArgs: [
         `--lang=${LANG}`,
         "--remote-debugging-port=9229",
