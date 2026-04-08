@@ -31,7 +31,6 @@ export enum MessageType {
   ExecuteDownloadItem = "executeDownloadItem",
   SabrBodyReady = "sabrBodyReady",
   UpdateDownloadProgress = "updateDownloadProgress",
-  RefreshPoToken = "refreshPoToken",
 
   // Background → Offscreen
   ProcessStreamChunk = "processStreamChunk",
@@ -79,9 +78,11 @@ interface ProtocolMap {
   processStreamError(data: StreamError): void;
 
   // Content script → Background: get captured SABR request body for this tab
-  getCapturedSabrBody(data: Record<string, never>): { body: string;
+  getCapturedSabrBody(data: Record<string, never>): {
+    body: string;
     url: string;
-    poToken: string; } | null;
+    poToken: string;
+  } | null;
 
   // Content script → Background: persist/clear/query interrupted download state
   persistInterruptedDownload(data: InterruptedDownload): void;
@@ -92,7 +93,9 @@ interface ProtocolMap {
   downloadViaWatchPage(data: DownloadRequest): void;
 
   // Background → Content script: create a hidden iframe for downloading
-  createDownloadIframe(data: { videoId: string; watchUrl: string }): void;
+  createDownloadIframe(data: {
+    videoId: string; watchUrl: string;
+  }): void;
 
   // Content script → Background: iframe loaded
   downloadIframeReady(data: { videoId: string }): void;
@@ -155,14 +158,20 @@ interface ProtocolMap {
 
   // Offscreen → Background: storage operations (chrome.storage unavailable in offscreen)
   pipelineProgress(data: ProgressUpdate & { tabId: number }): void;
-  pipelineRemoval(data: { videoId: string;
-    tabId: number; }): void;
-  pipelineQueueRemove(data: { videoId: string;
-    type: DownloadType; }): void;
+  pipelineRemoval(data: {
+    videoId: string;
+    tabId: number;
+  }): void;
+  pipelineQueueRemove(data: {
+    videoId: string;
+    type: DownloadType;
+  }): void;
   pipelineFFmpegReady(data: Record<string, never>): void;
-  pipelineDownload(data: { blobUrl: string;
+  pipelineDownload(data: {
+    blobUrl: string;
     mimeType: string;
-    filename: string; }): void;
+    filename: string;
+  }): void;
 }
 
 export const { sendMessage, onMessage } =
