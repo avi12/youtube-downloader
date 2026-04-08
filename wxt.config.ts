@@ -13,6 +13,7 @@ export default defineConfig({
       "downloads",
       "storage",
       "tabs",
+      "scripting",
       ...(browser === "chrome" ? ["offscreen"] : [])
     ],
     host_permissions: [
@@ -46,7 +47,7 @@ export default defineConfig({
   }),
   vite: () => ({
     server: { strictPort: false },
-    build: { sourcemap: "inline" }
+    build: { sourcemap: true }
   }),
   hooks: {
     "prepare:publicPaths"(_, paths) {
