@@ -158,36 +158,6 @@ export default defineContentScript({
       void crossWorldMessenger.sendMessage(CrossWorldMessage.DownloadRequest, data);
     });
 
-    // Proxy fetch requests from MAIN world through the background.
-    // Uses CustomEvent (not postMessage) because postMessage doesn't cross
-    // the MAIN/isolated world boundary in Chrome MV3.
-    // ProxyFetch uses raw chrome.runtime.sendMessage (not @webext-core/messaging)
-    // to reach BOTH the background (DNR cookie update) and offscreen doc (fetch).
-    // The offscreen doc claims the response; the background just does side effects.
-    addEventListener("ytdl:proxy-fetch-request", async (e: Event) => {
-      const detail = (e instanceof CustomEvent) ? e.detail : null;
-      if (!detail) {
-        return;
-      }
-
-      const { requestId, url, bodyBase64 } = detail;
-      try {
-        const result = await browser.runtime.sendMessage({
-          type: "ytdl:proxy-fetch",
-          url,
-          bodyBase64,
-          cookies: document.cookie
-        });
-        dispatchEvent(new CustomEvent("ytdl:proxy-fetch-response", {
-          detail: { requestId, result }
-        }));
-      } catch {
-        dispatchEvent(new CustomEvent("ytdl:proxy-fetch-response", {
-          detail: { requestId, result: null }
-        }));
-      }
-    });
-
     // Relay PO token refresh requests from background to MAIN world
     onMessage(MessageType.RefreshPoToken, ({ data }) => {
       return crossWorldMessenger.sendMessage(CrossWorldMessage.RefreshPoToken, data);
@@ -285,54 +255,6 @@ export default defineContentScript({
       context.onInvalidated(() => {
         elIframe.remove();
         downloadIframes.delete(videoId);
-      });
-    });
-
-    // Play iframe video at 4x speed via same-origin DOM access.
-    // executeScript from the background can't reliably control YouTube's player
-    // because it runs in a fresh execution context that the player overrides.
-    onMessage(MessageType.StartIframePlayback, ({ data: playbackData }) => {
-      const elIframe = downloadIframes.get(playbackData.videoId);
-      if (!elIframe) {
-        return;
-      }
-
-      const elVideo = elIframe.contentDocument?.querySelector("video");
-      if (!elVideo) {
-        return;
-      }
-
-      elVideo.muted = true;
-      elVideo.playbackRate = 4;
-      elVideo.play().catch(() => {});
-
-      // Poll progress and report to background. Resume on buffer underruns.
-      const progressInterval = setInterval(() => {
-        if (elVideo.ended) {
-          clearInterval(progressInterval);
-          void sendMessage(MessageType.IframePlaybackProgress, {
-            videoId: playbackData.videoId,
-            currentTime: elVideo.currentTime,
-            duration: elVideo.duration || 0,
-            ended: true
-          });
-          return;
-        }
-
-        if (elVideo.paused) {
-          elVideo.play().catch(() => {});
-        }
-
-        void sendMessage(MessageType.IframePlaybackProgress, {
-          videoId: playbackData.videoId,
-          currentTime: elVideo.currentTime,
-          duration: elVideo.duration || 0,
-          ended: false
-        });
-      }, 3000);
-
-      context.onInvalidated(() => {
-        clearInterval(progressInterval);
       });
     });
 

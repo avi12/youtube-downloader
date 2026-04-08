@@ -16,9 +16,6 @@ export enum MessageType {
   StreamEnd = "streamEnd",
   ProcessStreamError = "processStreamError",
   GetCapturedSabrBody = "getCapturedSabrBody",
-  SabrDownload = "sabrDownload",
-  ProxyFetch = "proxyFetch",
-  ResolveFormatUrls = "resolveFormatUrls",
   PersistInterruptedDownload = "persistInterruptedDownload",
   ClearInterruptedDownload = "clearInterruptedDownload",
   GetInterruptedDownload = "getInterruptedDownload",
@@ -26,14 +23,11 @@ export enum MessageType {
   DownloadViaWatchPage = "downloadViaWatchPage",
   CreateDownloadIframe = "createDownloadIframe",
   DownloadIframeReady = "downloadIframeReady",
-  StartIframePlayback = "startIframePlayback",
-  IframePlaybackProgress = "iframePlaybackProgress",
   CancelDownload = "cancelDownload",
 
   // Background → Content script
   StartKeepalive = "startKeepalive",
   Keepalive = "keepalive",
-
   ExecuteDownloadItem = "executeDownloadItem",
   SabrBodyReady = "sabrBodyReady",
   UpdateDownloadProgress = "updateDownloadProgress",
@@ -43,9 +37,6 @@ export enum MessageType {
   ProcessStreamChunk = "processStreamChunk",
   ProcessStreamEnd = "processStreamEnd",
   CancelProcessing = "cancelProcessing",
-
-  // Background → Offscreen
-  OffscreenProxyFetch = "offscreenProxyFetch",
 
   // Offscreen → Background
   PipelineProgress = "pipelineProgress",
@@ -92,39 +83,6 @@ interface ProtocolMap {
     url: string;
     poToken: string; } | null;
 
-  // Content script → Background: run SabrStream download in the background
-  // Background has host_permissions so fetch() bypasses CORS for googlevideo.com
-  sabrDownload(data: {
-    request: DownloadRequest;
-    poToken: string;
-    cookies: string;
-  }): boolean;
-
-  // Content script → Background: proxy fetch through background (CORS bypass)
-  proxyFetch(data: { url: string;
-    bodyBase64: string;
-    cookies?: string; }):
-    { status: number;
-      bodyBase64: string; } | null;
-
-  // Background → Offscreen: proxy fetch through offscreen doc (DNR applies here)
-  offscreenProxyFetch(data: { url: string;
-    bodyBase64: string; }):
-    { status: number;
-      bodyBase64: string; } | null;
-
-  // Content script → Background: download video/audio via direct URL
-  resolveFormatUrls(data: {
-    videoId: string;
-    videoItag: number;
-    audioItag: number;
-  }): {
-    videoUrl: string | null;
-    audioUrl: string | null;
-    videoMimeType: string;
-    audioMimeType: string;
-  } | null;
-
   // Content script → Background: persist/clear/query interrupted download state
   persistInterruptedDownload(data: InterruptedDownload): void;
   clearInterruptedDownload(data: { videoId: string }): void;
@@ -138,17 +96,6 @@ interface ProtocolMap {
 
   // Content script → Background: iframe loaded
   downloadIframeReady(data: { videoId: string }): void;
-
-  // Background → Content script: start playing iframe video at 4x speed
-  startIframePlayback(data: { videoId: string }): void;
-
-  // Content script → Background: iframe video progress update
-  iframePlaybackProgress(data: {
-    videoId: string;
-    currentTime: number;
-    duration: number;
-    ended: boolean;
-  }): void;
 
   // Content script → Background: download all items in a playlist
   requestPlaylistDownload(data: {

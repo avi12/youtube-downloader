@@ -13,11 +13,7 @@ export default defineConfig({
       "downloads",
       "storage",
       "tabs",
-      "cookies",
-      "webRequest",
       "declarativeNetRequest",
-      "scripting",
-      "nativeMessaging",
       ...(browser === "chrome" ? ["offscreen"] : [])
     ],
     host_permissions: [
