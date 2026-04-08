@@ -2,10 +2,6 @@ import { isFirefoxProcessorTab, resetProcessorState } from "./processor";
 import { cancelDownloads, tabTracker, untrackVideoForTab } from "./tab-tracker";
 import { clearCapturedSabrData } from "@/lib/sabr-request-capture";
 
-enum TabStatus {
-  Loading = "loading"
-}
-
 export function registerTabLifecycleHandlers() {
   browser.tabs.onRemoved.addListener(async tabId => {
     if (isFirefoxProcessorTab(tabId)) {
@@ -29,7 +25,7 @@ export function registerTabLifecycleHandlers() {
   });
 
   browser.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
-    if (changeInfo.status !== TabStatus.Loading || !tab.url?.includes("youtube.com")) {
+    if (changeInfo.status !== browser.tabs.TabStatus.LOADING || !tab.url?.includes("youtube.com")) {
       return;
     }
 
