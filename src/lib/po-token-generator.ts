@@ -55,13 +55,9 @@ export async function generatePoToken(videoId: string) {
       typeof interpreterUrlRaw === "string"
         ? interpreterUrlRaw
         : interpreterUrlRaw?.privateDoNotAccessOrElseTrustedResourceUrlWrappedValue;    if (interpreterUrl) {
-      const fullUrl = interpreterUrl.startsWith("//")
-        ? `https:${interpreterUrl}`
-        : interpreterUrl;
-
       await new Promise<void>((resolve, reject) => {
         const elScript = document.createElement("script");
-        elScript.src = fullUrl;
+        elScript.src = new URL(interpreterUrl, location.href).href;
         elScript.onload = () => resolve();
         elScript.onerror = () => reject(new Error("Failed to load BotGuard interpreter"));
         document.head.append(elScript);
