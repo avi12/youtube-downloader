@@ -16,6 +16,7 @@ export enum CrossWorldMessage {
   PanelClosed = "panelClosed",
   FilenameChanged = "filenameChanged",
   RequestVideoData = "requestVideoData",
+  CancelDownload = "cancelDownload",
 
   // MAIN world → isolated world: proxy fetch through background (CORS bypass)
   ProxyFetch = "proxyFetch",
@@ -58,6 +59,7 @@ interface PageMessengerSchema {
 
   [CrossWorldMessage.Progress](data: ProgressUpdate): void;
   [CrossWorldMessage.IframePlayerReady](data: { videoId: string }): void;
+  [CrossWorldMessage.CancelDownload](data: { videoIds: string[] }): void;
 }
 
 export const crossWorldMessenger = defineCustomEventMessaging<PageMessengerSchema>({ namespace: "ytdl" });

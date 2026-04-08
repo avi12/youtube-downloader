@@ -18,7 +18,6 @@ export enum SyncKey {
   CreateDropdown = "create-dropdown",
   CloseDropdown = "close-dropdown",
   DropdownReady = "dropdown-ready",
-  CancelDownload = "cancel-download",
   CancelRequest = "cancel-request",
   DownloadRequest = "download-request",
   DirectDownloadRequest = "direct-download-request",

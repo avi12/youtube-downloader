@@ -12,31 +12,26 @@ declare global {
 }
 
 export function extractPlaylistMetadata() {
-  const initialData = window.ytInitialData;
-  if (!initialData) {
+  const { header, metadata } = window.ytInitialData ?? {};
+  if (!header && !metadata) {
     playlistMetadataSignal.value = null;
     return;
   }
 
-  const headerRenderer = initialData.header?.playlistHeaderRenderer;
-  const metadataRenderer = initialData.metadata?.playlistMetadataRenderer;
+  const { playlistHeaderRenderer: headerRenderer } = header ?? {};
+  const { playlistMetadataRenderer: metadataRenderer } = metadata ?? {};
 
-  const playlistTitle = headerRenderer?.title?.simpleText
-    ?? metadataRenderer?.title
-    ?? "";
+  const playlistTitle = headerRenderer?.title?.simpleText ?? metadataRenderer?.title ?? "";
   const playlistId = headerRenderer?.playlistId ?? "";
   if (!playlistTitle && !playlistId) {
     playlistMetadataSignal.value = null;
     return;
   }
 
-  playlistMetadataSignal.value = {
-    playlistId,
-    playlistTitle
-  };
+  playlistMetadataSignal.value = { playlistId, playlistTitle };
 }
 
-export async function handleNavigation() {
+export function handleNavigation() {
   cleanupSegmentedButton();
   void crossWorldMessenger.sendMessage(CrossWorldMessage.Navigation, { url: location.href });
   extractPlaylistMetadata();

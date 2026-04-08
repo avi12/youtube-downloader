@@ -66,9 +66,7 @@ export default defineContentScript({
       }
 
       void sendMessage(MessageType.CancelDownload, { videoIds });
-
-      // postMessage instead of crossWorldMessenger to avoid looping back to this handler
-      postMessage({ namespace: SYNC_NAMESPACE, key: SyncKey.CancelDownload, value: { videoIds } }, location.origin);
+      void crossWorldMessenger.sendMessage(CrossWorldMessage.CancelDownload, { videoIds });
     });
 
     onMessage(MessageType.ExecuteDownloadItem, ({ data }) => {

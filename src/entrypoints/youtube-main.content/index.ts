@@ -47,13 +47,8 @@ export default defineContentScript({
       await performDownload(data);
     });
 
-    // Cancel downloads via synced signal (postMessage)
-    addEventListener("message", e => {
-      if (e.data?.namespace !== SYNC_NAMESPACE || e.data.key !== SyncKey.CancelDownload) {
-        return;
-      }
-
-      for (const videoId of e.data.value?.videoIds ?? []) {
+    crossWorldMessenger.onMessage(CrossWorldMessage.CancelDownload, ({ data }) => {
+      for (const videoId of data.videoIds) {
         cancelActiveDownload(videoId);
       }
     });
