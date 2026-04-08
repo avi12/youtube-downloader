@@ -117,19 +117,6 @@
       : (selectedVideoFormat?.itag.toString() ?? "")
   );
 
-  function handleFilenameInput(e: Event) {
-    if (!(e.target instanceof HTMLInputElement)) {
-      return;
-    }
-
-    const value = e.target.value.trim();
-    const { name, extension } = splitFilenameAndExtension(value);
-    onfilenamechange(name);
-    onextensionchange(extension);
-
-    e.target.setCustomValidity(getFilenameError(value, extensionType));
-  }
-
   function applyPolymerTheme(elTarget: Element) {
     applyPolymerCustomStyles(elTarget, PAPER_INPUT_THEME);
   }
@@ -191,7 +178,18 @@
     error-message={filenameValidationError || undefined}
     invalid={!isFilenameValid || undefined}
     label="Filename"
-    oninput={handleFilenameInput}
+    oninput={e => {
+      if (!(e.target instanceof HTMLInputElement)) {
+        return;
+      }
+
+      const value = e.target.value.trim();
+      const { name, extension } = splitFilenameAndExtension(value);
+      onfilenamechange(name);
+      onextensionchange(extension);
+
+      e.target.setCustomValidity(getFilenameError(value, extensionType));
+    }}
     value={fullFilename}
   ></tp-yt-paper-input>
 </div>
