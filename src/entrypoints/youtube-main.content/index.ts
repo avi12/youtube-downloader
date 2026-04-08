@@ -615,10 +615,10 @@ export default defineContentScript({
                 )
               ]);
 
-              const additionalAudioData = extraAudioFormats.map((format, iTrack) => ({
-                data: extraAudioBytes[iTrack] ?? null,
+              const additionalAudioData = extraAudioFormats.map((format, i) => ({
+                data: extraAudioBytes[i] ?? null,
                 mimeType: format.mimeType.split(";")[0] ?? "audio/mp4",
-                label: format.audioTrack?.displayName ?? `Track ${iTrack + 2}`
+                label: format.audioTrack?.displayName ?? `Track ${i + 2}`
               }));
 
               dispatchStreamData({
@@ -1455,7 +1455,7 @@ export default defineContentScript({
       // YouTube updates ytd-watch-flexy.playerData asynchronously after
       // navigation. Poll briefly until it matches the current video ID.
       const expectedVideoId = new URLSearchParams(location.search).get("v");
-      for (let iAttempt = 0; iAttempt < 20; iAttempt++) {
+      for (let i = 0; i < 20; i++) {
         const playerResponse = document.querySelector("ytd-watch-flexy")?.playerData ?? null;
         if (playerResponse?.videoDetails?.videoId === expectedVideoId) {
           await buildAndDispatchVideoData(playerResponse);

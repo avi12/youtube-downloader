@@ -27,7 +27,7 @@ async function sendStreamChunks({ videoId, streamType, data }: {
 }) {
   const totalChunks = Math.ceil(data.byteLength / TRANSFER_CHUNK_SIZE);
 
-  for (let iChunk = 0; iChunk < totalChunks; iChunk++) {
+  for (let i = 0; i < totalChunks; i++) {
     // Yield to the event loop so cancel signals can be processed
     // and the UI stays responsive during large transfers
     await new Promise(resolve => setTimeout(resolve, 0));
@@ -36,13 +36,13 @@ async function sendStreamChunks({ videoId, streamType, data }: {
       return;
     }
 
-    const start = iChunk * TRANSFER_CHUNK_SIZE;
+    const start = i * TRANSFER_CHUNK_SIZE;
     const chunk = data.subarray(start, start + TRANSFER_CHUNK_SIZE);
 
     await sendMessage(MessageType.StreamChunk, {
       videoId,
       streamType,
-      iChunk,
+      iChunk: i,
       totalChunks,
       chunkBase64: uint8ToBase64(chunk)
     });
@@ -89,12 +89,12 @@ export async function handleStreamData(payload: StreamDataPayload) {
 
   const extraAudioStreams = additionalAudioData;
 
-  for (let iTrack = 0; iTrack < extraAudioStreams.length; iTrack++) {
-    const track = extraAudioStreams[iTrack];
+  for (let i = 0; i < extraAudioStreams.length; i++) {
+    const track = extraAudioStreams[i];
     if (track.data) {
       await sendStreamChunks({
         videoId,
-        streamType: `audio-extra-${iTrack}`,
+        streamType: `audio-extra-${i}`,
         data: track.data
       });
     }

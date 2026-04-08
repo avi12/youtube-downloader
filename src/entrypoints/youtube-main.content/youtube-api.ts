@@ -125,14 +125,14 @@ export function extractPlayerResponseFromHtml(html: string) {
   let depth = 0;
   let end = jsonStart;
 
-  for (let iChar = jsonStart; iChar < html.length; iChar++) {
-    if (html[iChar] === "{") {
+  for (let i = jsonStart; i < html.length; i++) {
+    if (html[i] === "{") {
       depth++;
-    } else if (html[iChar] === "}") {
+    } else if (html[i] === "}") {
       depth--;
 
       if (depth === 0) {
-        end = iChar + 1;
+        end = i + 1;
         break;
       }
     }

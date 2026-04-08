@@ -69,7 +69,7 @@ export async function generatePoToken(videoId: string) {
     }
   }
 
-  for (let iAttempt = 0; iAttempt < 60; iAttempt++) {
+  for (let i = 0; i < 60; i++) {
     if (globalRecord[globalName]?.a) {
       break;
     }

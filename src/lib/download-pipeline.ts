@@ -453,8 +453,8 @@ async function processVideoAudio(item: ProcessStreamData, ffmpeg: FFmpeg) {
     }
 
     ffmpegArgs.push("-map", "0:v:0");
-    for (let iInput = 0; iInput <= extraAudioFilenames.length; iInput++) {
-      ffmpegArgs.push("-map", `${iInput + 1}:a:0`);
+    for (let i = 0; i <= extraAudioFilenames.length; i++) {
+      ffmpegArgs.push("-map", `${i + 1}:a:0`);
     }
 
     ffmpegArgs.push("-c:v", "copy", "-c:a", "copy");
@@ -464,10 +464,10 @@ async function processVideoAudio(item: ProcessStreamData, ffmpeg: FFmpeg) {
       ...additionalAudioStreams.slice(0, extraAudioFilenames.length).map(stream => stream.label)
     ];
 
-    for (let iTrack = 0; iTrack < audioTrackLabels.length; iTrack++) {
-      const label = audioTrackLabels[iTrack];
+    for (let i = 0; i < audioTrackLabels.length; i++) {
+      const label = audioTrackLabels[i];
       if (label) {
-        ffmpegArgs.push(`-metadata:s:a:${iTrack}`, `title=${label}`);
+        ffmpegArgs.push(`-metadata:s:a:${i}`, `title=${label}`);
       }
     }
 
