@@ -146,7 +146,7 @@ export function isVideoLive(playerResponse: PlayerResponse) {
   // isLive indicates currently live. isLiveContent means "this was/is
   // live content" which includes past live streams that are downloadable,
   // so we must NOT check it here.
-  return !!playerResponse.videoDetails?.isLive;
+  return Boolean(playerResponse.videoDetails?.isLive);
 }
 
 export function isVideoDownloadable(playerResponse: PlayerResponse) {
