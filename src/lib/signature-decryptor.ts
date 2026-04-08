@@ -104,14 +104,13 @@ function extractTransformOperations(playerSource: string, functionName: string) 
   }
 
   // Parse the operation sequence from the function body
-  const operations: TransformOp[] = [];
   const callPattern = new RegExp(
     `${escapedHelper}\\.([a-zA-Z0-9$]+)\\([^,]+,\\s*(\\d+)\\)`,
     "g"
   );
-  let callMatch;
+  const operations: TransformOp[] = [];
 
-  while ((callMatch = callPattern.exec(functionBody)) !== null) {
+  for (const callMatch of functionBody.matchAll(callPattern)) {
     const methodName = callMatch[1];
     const argument = Number.parseInt(callMatch[2], 10);
     const opType = methodTypes.get(methodName);
@@ -122,10 +121,7 @@ function extractTransformOperations(playerSource: string, functionName: string) 
     if (opType === "reverse") {
       operations.push({ type: "reverse" });
     } else {
-      operations.push({
-        type: opType,
-        argument
-      });
+      operations.push({ type: opType, argument });
     }
   }
 
