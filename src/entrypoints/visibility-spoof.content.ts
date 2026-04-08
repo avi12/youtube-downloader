@@ -1,10 +1,11 @@
 /**
- * Minimal content script that spoofs document.visibilityState in all frames.
- * Runs at document_start so YouTube's player thinks the page is visible,
- * enabling media streaming in hidden iframes and background tabs.
+ * Spoofs page visibility and iframe detection in all frames at document_start.
+ * YouTube's player checks these to decide whether to stream media:
+ * - visibilityState/hidden: pauses in background tabs
+ * - hasFocus: pauses when tab loses focus
+ * - frameElement/top: limits streaming in iframes
  *
- * This is a separate script from the main content scripts to avoid WXT
- * context conflicts when using allFrames: true.
+ * Separate from main content scripts to avoid WXT context conflicts.
  */
 
 export default defineContentScript({
@@ -26,5 +27,15 @@ export default defineContentScript({
       configurable: true
     });
     document.hasFocus = () => true;
+
+    // Make iframes appear as top-level pages to YouTube's player
+    if (self !== top) {
+      Object.defineProperty(window, "frameElement", {
+        get() {
+          return null;
+        },
+        configurable: true
+      });
+    }
   }
 });
