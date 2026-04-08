@@ -1,4 +1,4 @@
-import { cancelDownloads, tabTracker, trackVideoForTab } from "./tab-tracker";
+import { cancelDownloads, trackVideoForTab } from "./tab-tracker";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging";
 
 export function registerDownloadHandlers() {
@@ -40,8 +40,6 @@ export function registerDownloadHandlers() {
     await sendMessage(MessageType.ExecuteDownloadItem, data, originTabId);
 
     trackVideoForTab(data.videoId, originTabId);
-    tabTracker[originTabId] ??= { videoIdsAvailable: [] };
-    tabTracker[originTabId].videoIdsAvailable.push(data.videoId);
 
     await sendMessage(MessageType.StartKeepalive, { videoId: data.videoId }, originTabId);
   });

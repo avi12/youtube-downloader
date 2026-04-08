@@ -1,5 +1,5 @@
 import { ensureProcessor } from "./processor";
-import { tabTracker, trackVideoForTab } from "./tab-tracker";
+import { trackVideoForTab } from "./tab-tracker";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging";
 
 export function registerChunkHandlers() {
@@ -20,12 +20,6 @@ export function registerChunkHandlers() {
     }
 
     trackVideoForTab(data.videoId, tabId);
-    tabTracker[tabId] ??= { videoIdsAvailable: [] };
-
-    if (!tabTracker[tabId].videoIdsAvailable.includes(data.videoId)) {
-      tabTracker[tabId].videoIdsAvailable.push(data.videoId);
-    }
-
     await ensureProcessor();
     await sendMessage(MessageType.ProcessStreamEnd, { ...data, tabId });
   });

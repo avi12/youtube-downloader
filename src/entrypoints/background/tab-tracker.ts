@@ -9,6 +9,12 @@ export function trackVideoForTab(videoId: string, tabId: number) {
   if (!videoIdToTabIds[videoId].includes(tabId)) {
     videoIdToTabIds[videoId].push(tabId);
   }
+
+  tabTracker[tabId] ??= { videoIdsAvailable: [] };
+
+  if (!tabTracker[tabId].videoIdsAvailable.includes(videoId)) {
+    tabTracker[tabId].videoIdsAvailable.push(videoId);
+  }
 }
 
 export function untrackVideoForTab(videoId: string, tabId: number) {
