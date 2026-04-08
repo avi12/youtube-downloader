@@ -27,7 +27,8 @@ Extract @attach arrow functions in Svelte templates to named functions in the sc
 Avoid adding `window.` prefixes, unless it will increase the readability, in which case it is allowed.  
 don't use `.forEach`, use `for-of` instead.  
 if there is a callback arrow function, don't explicitly assign a type to the param.  
-avoid using hardcoded strings, use enums instea.  
+avoid using hardcoded strings, use enums instead.  
+Avoid using `setTimeout` unless absolutely necessary.  
 
 Variable naming rules:
 1. If a variable represents an element, it should be prefixed with "el"
