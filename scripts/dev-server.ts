@@ -1,55 +1,31 @@
 /**
  * Dev server: WXT createServer + web-ext manages Chrome.
+ * Uses the default Chrome profile so the user is already signed in.
  * WXT dev client auto-rebuilds on file changes and reloads the extension.
  *
  * Usage: bun scripts/dev-server.ts
  */
 
 import { createServer } from "wxt";
-import { existsSync, cpSync, mkdirSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
-import { homedir } from "node:os";
+import { join, resolve } from "node:path";
+import { platform } from "node:os";
 
 const PROJECT_ROOT = resolve(import.meta.dirname, "..");
 const LANG = process.env.LANG ?? "en";
 const START_URL = "https://www.youtube.com/feed/subscriptions";
 
-function setupChromeProfile() {
-  const dest = resolve(PROJECT_ROOT, "..", "User Data");
-  if (existsSync(dest)) {
-    return join(dest, "Default");
-  }
-
-  const home = homedir();
+function getDefaultChromeProfile() {
   const platformPaths: Record<string, string> = {
-    win32: join(process.env.LOCALAPPDATA ?? "", "Google", "Chrome", "User Data"),
-    darwin: join(home, "Library", "Application Support", "Google", "Chrome"),
-    linux: join(home, ".config", "google-chrome")
+    win32: join(process.env.LOCALAPPDATA ?? "", "Google", "Chrome", "User Data", "Default"),
+    darwin: join(process.env.HOME ?? "", "Library", "Application Support", "Google", "Chrome", "Default"),
+    linux: join(process.env.HOME ?? "", ".config", "google-chrome", "Default")
   };
-  const src = platformPaths[process.platform];
 
-  if (!src || !existsSync(src)) {
-    mkdirSync(join(dest, "Default"), { recursive: true });
-    return join(dest, "Default");
-  }
-
-  for (const dir of ["Default", "Profile 1"]) {
-    const srcFile = join(src, dir, "Bookmarks");
-    if (!existsSync(srcFile)) {
-      continue;
-    }
-
-    const destFile = join(dest, dir, "Bookmarks");
-    mkdirSync(dirname(destFile), { recursive: true });
-    cpSync(srcFile, destFile);
-  }
-
-  return join(dest, "Default");
+  return platformPaths[platform()];
 }
 
 async function main() {
   process.chdir(PROJECT_ROOT);
-  const chromiumProfile = setupChromeProfile();
 
   const server = await createServer({
     root: PROJECT_ROOT,
@@ -59,7 +35,7 @@ async function main() {
     webExt: {
       startUrls: [START_URL],
       keepProfileChanges: true,
-      chromiumProfile,
+      chromiumProfile: getDefaultChromeProfile(),
       chromiumArgs: [
         `--lang=${LANG}`,
         "--remote-debugging-port=9229",
