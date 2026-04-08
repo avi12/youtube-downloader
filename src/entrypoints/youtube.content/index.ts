@@ -141,8 +141,8 @@ export default defineContentScript({
     });
 
     onMessage(MessageType.ExecuteDownloadItem, ({ data }) => {
-      // Only handle on watch/embed pages (including download iframes).
-      if (!/^\/(watch|embed\/)/.test(location.pathname)) {
+      // Only handle on watch pages (including download iframes).
+      if (location.pathname !== "/watch") {
         return;
       }
 

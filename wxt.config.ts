@@ -14,6 +14,7 @@ export default defineConfig({
       "storage",
       "tabs",
       "scripting",
+      "webRequest",
       ...(browser === "chrome" ? ["offscreen"] : [])
     ],
     host_permissions: [
