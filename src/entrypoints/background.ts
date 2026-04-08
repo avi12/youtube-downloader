@@ -828,9 +828,9 @@ export default defineBackground(() => {
       }, 30_000);
     });
 
-    // Give content scripts time to initialize
+    // Give content scripts and YouTube player time to initialize
     await new Promise(resolve => {
-      return globalThis.setTimeout(resolve, 3000);
+      return globalThis.setTimeout(resolve, 5000);
     });
 
     // Send the download request to the watch tab's content script

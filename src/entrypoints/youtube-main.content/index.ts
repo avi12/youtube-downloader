@@ -74,6 +74,23 @@ export default defineContentScript({
   matches: ["https://www.youtube.com/*"],
   world: "MAIN",
   async main() {
+    // ─── Visibility spoofing ────────────────────────────────────────────
+    // YouTube pauses video playback when the tab is not focused.
+    // Override visibilityState so the player streams in background tabs
+    // (used for grid downloads that open a hidden watch tab).
+    Object.defineProperty(document, "visibilityState", {
+      get() {
+        return "visible";
+      },
+      configurable: true
+    });
+    Object.defineProperty(document, "hidden", {
+      get() {
+        return false;
+      },
+      configurable: true
+    });
+
     // ─── Capture infrastructure (document_start) ────────────────────────
     // Patches fetch() and SourceBuffer.appendBuffer BEFORE YouTube loads.
 
