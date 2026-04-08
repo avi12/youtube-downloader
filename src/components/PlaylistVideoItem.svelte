@@ -7,6 +7,7 @@
 <script lang="ts">
   import DownloadOptionsPanel from "./DownloadOptionsPanel.svelte";
   import { MessageType, sendMessage } from "@/lib/messaging";
+  import { sendButtonData } from "@/lib/polymer-utils";
   import {
     buttonClickSignal,
     cancelRequestSignal,
@@ -229,7 +230,8 @@
 
     const tooltip = getButtonTooltip();
 
-    setButtonData(elDownloadBtn, {
+    assignButtonId(elDownloadBtn);
+    sendButtonData(elDownloadBtn, {
       iconName: getItemIconName(),
       title: "",
       accessibilityText: videoData ? `${tooltip} ${videoData.title}` : tooltip,
@@ -245,19 +247,10 @@
 
   let buttonIdCounter = 0;
 
-  function setButtonData(elButton: Element, data: Record<string, unknown>) {
+  function assignButtonId(elButton: Element) {
     if (!elButton.hasAttribute("data-ytdl-button-id")) {
       elButton.setAttribute("data-ytdl-button-id", `btn-${videoId}-${buttonIdCounter++}`);
     }
-
-    postMessage({
-      namespace: SYNC_NAMESPACE,
-      key: SyncKey.SetButtonData,
-      value: {
-        selector: `[data-ytdl-button-id="${elButton.getAttribute("data-ytdl-button-id")}"]`,
-        data
-      }
-    }, location.origin);
   }
 
   function openPanel() {
@@ -387,7 +380,8 @@
       return;
     }
 
-    setButtonData(elChevronBtn, {
+    assignButtonId(elChevronBtn);
+    sendButtonData(elChevronBtn, {
       iconName: isPanelOpen ? IconName.ExpandLess : IconName.ExpandMore,
       title: "",
       accessibilityText: "Download options",

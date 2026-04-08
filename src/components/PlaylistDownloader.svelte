@@ -4,16 +4,17 @@
    * Appears in the playlist header and allows downloading all checked videos.
    */
   import { MessageType, sendMessage } from "@/lib/messaging";
-  import { applyPolymerCustomStyles, PAPER_PROGRESS_THEME } from "@/lib/polymer-utils";
+  import { applyPolymerCustomStyles, PAPER_PROGRESS_THEME, sendButtonData } from "@/lib/polymer-utils";
   import { musicListItem, videoOnlyListItem, videoQueueItem } from "@/lib/storage";
-  import {
-    buttonClickSignal,
-    playlistMetadataSignal,
-    SYNC_NAMESPACE,
-    SyncKey,
-    videoDataStore
-  } from "@/lib/synced-stores.svelte";
+  import { buttonClickSignal, playlistMetadataSignal, videoDataStore } from "@/lib/synced-stores.svelte";
   import { resolveVideoFilename } from "@/lib/utils";
+  import {
+    ButtonSize,
+    ButtonState,
+    ButtonStyle,
+    ButtonType,
+    IconName
+  } from "@/types";
   import type { DownloadType, Options, VideoData } from "@/types";
   import { SvelteMap, SvelteSet } from "svelte/reactivity";
 
@@ -200,25 +201,19 @@
       elButton.setAttribute("data-ytdl-button-id", "playlist-download-btn");
     }
 
-    postMessage({
-      namespace: SYNC_NAMESPACE,
-      key: SyncKey.SetButtonData,
-      value: {
-        selector: `[data-ytdl-button-id="${elButton.getAttribute("data-ytdl-button-id")}"]`,
-        data: {
-          iconName: isDownloading ? "CLOSE" : "DOWNLOAD",
-          title: downloadButtonLabel,
-          accessibilityText: downloadButtonLabel,
-          style: "MONO",
-          type: "TONAL",
-          buttonSize: "DEFAULT",
-          state: checkedDownloadableVideos.length === 0 && !isDownloading ? "DISABLED" : "ACTIVE",
-          isFullWidth: false,
-          isDisabled: checkedDownloadableVideos.length === 0 && !isDownloading,
-          tooltip: downloadButtonLabel
-        }
-      }
-    }, location.origin);
+    const isDisabled = checkedDownloadableVideos.length === 0 && !isDownloading;
+    sendButtonData(elButton, {
+      iconName: isDownloading ? IconName.Close : IconName.Download,
+      title: downloadButtonLabel,
+      accessibilityText: downloadButtonLabel,
+      style: ButtonStyle.Mono,
+      type: ButtonType.Tonal,
+      buttonSize: ButtonSize.Default,
+      state: isDisabled ? ButtonState.Disabled : ButtonState.Active,
+      isFullWidth: false,
+      isDisabled,
+      tooltip: downloadButtonLabel
+    });
   }
 
   function attachPlaylistProgress(elProgress: Element) {
