@@ -141,8 +141,9 @@ export default defineContentScript({
     });
 
     onMessage(MessageType.ExecuteDownloadItem, ({ data }) => {
-      // Only handle in watch page context (including download iframes).
-      if (location.pathname !== "/watch") {
+      // Only handle on watch/embed pages (including download iframes).
+      const isPlayerPage = location.pathname === "/watch" || location.pathname.startsWith("/embed/");
+      if (!isPlayerPage) {
         return;
       }
 
@@ -243,7 +244,6 @@ export default defineContentScript({
 
       const elIframe = document.createElement("iframe");
       elIframe.classList.add("ytdl-download-iframe");
-      elIframe.allow = "autoplay";
       elIframe.src = watchUrl;
       document.body.append(elIframe);
       downloadIframes.set(videoId, elIframe);
