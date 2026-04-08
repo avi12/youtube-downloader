@@ -1,21 +1,8 @@
-/**
- * Isolated world content script - orchestrates UI injection and message bridging.
- *
- * UI injection is delegated to focused modules:
- * - panel-ui: DownloadOptionsPanel in the watch page dropdown
- * - playlist-ui: playlist header + per-video buttons
- * - grid-ui: per-video buttons on homepage/subscriptions/channel
- *
- * Data flow is delegated to:
- * - stream-transfer: chunked binary transfer to background
- * - sabr-credentials: PO token forwarding from background to MAIN world
- * - interrupted-downloads: resume state persistence
- */
-
-import { cleanupGridUi, injectGridVideoButtons, isVideoGridPage } from "./grid-ui";
+import { listenForDownloadIframes } from "./download-iframe";
 import { checkInterruptedDownload, listenForInterruptedDownloadEvents } from "./interrupted-downloads";
-import { cleanupPanelUi, mountPanelUi } from "./panel-ui";
-import { cleanupPlaylistUi, handlePlaylistVideoAdditions, injectPlaylistDownloaderUi } from "./playlist-ui";
+import { listenForKeepalive } from "./keepalive";
+import { handlePageChange, setNativeDownloadVisibility } from "./page-router";
+import { mountPanelUi } from "./panel-ui";
 import { listenForDownloadRequests } from "./sabr-download";
 import {
   cancelStreamTransfer,
@@ -26,7 +13,7 @@ import {
 } from "./stream-transfer";
 import "./style.css";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/cross-world-messenger";
-import { MessageType, sendMessage, onMessage } from "@/lib/messaging";
+import { MessageType, onMessage, sendMessage } from "@/lib/messaging";
 import { forwardSabrCredentialsWithRetry, listenForSabrBodyReady } from "@/lib/sabr-credentials";
 import { optionsItem } from "@/lib/storage";
 import { downloadProgressStore, SYNC_NAMESPACE, SyncKey } from "@/lib/synced-stores.svelte";
@@ -36,70 +23,20 @@ export default defineContentScript({
   matches: ["https://www.youtube.com/*"],
   allFrames: true,
   async main(context) {
-    // Skip non-download iframes (ads, embeds)
     const isDownloadIframe = self !== top && location.search.includes("ytdl=1");
     if (self !== top && !isDownloadIframe) {
       return;
     }
 
-    // ─── State ───────────────────────────────────────────────────────────
-
     let currentOptions: Options = await optionsItem.getValue();
-
-    // ─── Native download button visibility ──────────────────────────────
-
-    const NATIVE_DOWNLOAD_SELECTOR = "ytd-download-button-renderer";
-
-    function setNativeDownloadVisibility(isVisible: boolean) {
-      for (const elButton of document.querySelectorAll<HTMLElement>(NATIVE_DOWNLOAD_SELECTOR)) {
-        elButton.style.display = isVisible ? "" : "none";
-      }
-    }
-
-    // ─── Navigation routing ─────────────────────────────────────────────
-
-    async function handlePageChange(url: string) {
-      const { pathname } = new URL(url);
-      if (pathname === "/watch") {
-        cleanupPlaylistUi();
-        cleanupGridUi();
-        cleanupPanelUi();
-        setNativeDownloadVisibility(!currentOptions.isRemoveNativeDownload);
-        return;
-      }
-
-      if (pathname === "/playlist") {
-        cleanupPanelUi();
-        cleanupGridUi();
-        setNativeDownloadVisibility(true);
-        injectPlaylistDownloaderUi(context, currentOptions);
-        handlePlaylistVideoAdditions(context, currentOptions);
-        return;
-      }
-
-      if (isVideoGridPage(pathname)) {
-        cleanupPanelUi();
-        cleanupPlaylistUi();
-        setNativeDownloadVisibility(true);
-        injectGridVideoButtons(context, currentOptions);
-        return;
-      }
-
-      cleanupPanelUi();
-      cleanupPlaylistUi();
-      cleanupGridUi();
-      setNativeDownloadVisibility(true);
-    }
-
-    // ─── Message bridging ───────────────────────────────────────────────
 
     crossWorldMessenger.onMessage(CrossWorldMessage.VideoData, async ({ data }) => {
       await checkInterruptedDownload(data.videoId);
     });
 
-    crossWorldMessenger.onMessage(CrossWorldMessage.Navigation, async ({ data }) => {
+    crossWorldMessenger.onMessage(CrossWorldMessage.Navigation, ({ data }) => {
       if (!isDownloadIframe) {
-        await handlePageChange(data.url);
+        handlePageChange(data.url, context, currentOptions);
       }
 
       void forwardSabrCredentialsWithRetry();
@@ -130,17 +67,11 @@ export default defineContentScript({
 
       void sendMessage(MessageType.CancelDownload, { videoIds });
 
-      // Notify MAIN world to abort active fetches via postMessage
-      // (not crossWorldMessenger, which would loop back to our own handler)
-      postMessage({
-        namespace: SYNC_NAMESPACE,
-        key: SyncKey.CancelDownload,
-        value: { videoIds }
-      }, location.origin);
+      // postMessage instead of crossWorldMessenger to avoid looping back to this handler
+      postMessage({ namespace: SYNC_NAMESPACE, key: SyncKey.CancelDownload, value: { videoIds } }, location.origin);
     });
 
     onMessage(MessageType.ExecuteDownloadItem, ({ data }) => {
-      // Only handle on watch pages (including download iframes).
       if (location.pathname !== "/watch") {
         return;
       }
@@ -157,7 +88,6 @@ export default defineContentScript({
       void crossWorldMessenger.sendMessage(CrossWorldMessage.DownloadRequest, data);
     });
 
-    // Relay PO token refresh requests from background to MAIN world
     onMessage(
       MessageType.RefreshPoToken,
       ({ data }) => crossWorldMessenger.sendMessage(CrossWorldMessage.RefreshPoToken, data)
@@ -166,49 +96,16 @@ export default defineContentScript({
     onMessage(MessageType.UpdateDownloadProgress, ({ data }) => {
       void crossWorldMessenger.sendMessage(CrossWorldMessage.Progress, data);
 
-      // Update synced store - components derive state reactively
-      if (data.isRemoved) {
-        downloadProgressStore.set(data.videoId, {
-          isDownloading: false,
-          isDone: true,
-          isQueued: false,
-          progress: 1,
-          progressType: ""
-        });
-      } else {
-        downloadProgressStore.set(data.videoId, {
+      downloadProgressStore.set(data.videoId, data.isRemoved
+        ? { isDownloading: false, isDone: true, isQueued: false, progress: 1, progressType: "" }
+        : {
           isDownloading: data.progress < 1,
           isDone: data.progress >= 1,
           isQueued: false,
           progress: data.progress,
           progressType: data.progressType
         });
-      }
     });
-
-    // ─── SW keepalive ────────────────────────────────────────────────────
-    // The background sends StartKeepalive after opening a watch tab for
-    // grid downloads. We ping the SW every 25s to prevent Chrome from
-    // killing it during long downloads.
-    onMessage(MessageType.StartKeepalive, () => {
-      // 25s keeps the SW alive without hammering it; Chrome kills idle SWs after ~30s
-      const swKeepaliveIntervalMs = 25_000;
-      const keepaliveInterval = setInterval(async () => {
-        try {
-          await sendMessage(MessageType.Keepalive, {});
-        } catch {
-          // SW died or extension reloaded - stop pinging
-          clearInterval(keepaliveInterval);
-        }
-      }, swKeepaliveIntervalMs);
-
-      // Stop when the tab is closed or navigation changes
-      addEventListener("beforeunload", () => {
-        clearInterval(keepaliveInterval);
-      });
-    });
-
-    // ─── Event listeners ────────────────────────────────────────────────
 
     addEventListener("message", e => {
       if (e.data?.namespace !== SYNC_NAMESPACE || e.data.key !== SyncKey.StreamData) {
@@ -229,36 +126,9 @@ export default defineContentScript({
     listenForInterruptedDownloadEvents();
     listenForSabrBodyReady();
     listenForDownloadRequests();
+    listenForKeepalive();
+    listenForDownloadIframes(context);
     void forwardSabrCredentialsWithRetry();
-
-    // ─── Hidden iframe for downloads ────────────────────────────────────
-    // Creates a hidden iframe to a watch page. The MAIN world content script
-    // spoofs visibilityState so YouTube's player streams in the iframe.
-    // Iframe styling is in style.css (.ytdl-download-iframe).
-
-    const downloadIframes = new Map<string, HTMLIFrameElement>();
-
-    onMessage(MessageType.CreateDownloadIframe, ({ data }) => {
-      const { videoId, watchUrl } = data;
-
-      const elExistingIframe = downloadIframes.get(videoId);
-      if (elExistingIframe) {
-        elExistingIframe.remove();
-        downloadIframes.delete(videoId);
-      }
-
-      const elIframe = document.createElement("iframe");
-      elIframe.classList.add("ytdl-download-iframe");
-      elIframe.allow = "autoplay";
-      elIframe.src = watchUrl;
-      document.body.append(elIframe);
-      downloadIframes.set(videoId, elIframe);
-
-      context.onInvalidated(() => {
-        elIframe.remove();
-        downloadIframes.delete(videoId);
-      });
-    });
 
     const unwatchOptions = optionsItem.watch(newOptions => {
       if (!newOptions) {
@@ -270,10 +140,8 @@ export default defineContentScript({
     });
     context.onInvalidated(unwatchOptions);
 
-    // ─── Initial page handling ──────────────────────────────────────────
-
     if (!isDownloadIframe) {
-      await handlePageChange(location.href);
+      handlePageChange(location.href, context, currentOptions);
     }
   }
 });
