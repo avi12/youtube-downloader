@@ -74,10 +74,16 @@ export default defineContentScript({
   matches: ["https://www.youtube.com/*"],
   world: "MAIN",
   async main() {
+    // Skip non-download iframes. Content scripts run in all frames (allFrames: true)
+    // but only the download iframe (&ytdl=1) and the main page need initialization.
+    const isDownloadIframe = self !== top && location.search.includes("ytdl=1");
+    if (self !== top && !isDownloadIframe) {
+      return;
+    }
+
     // ─── Visibility spoofing ────────────────────────────────────────────
     // YouTube pauses video playback when the tab is not focused.
-    // Override visibilityState so the player streams in background tabs
-    // (used for grid downloads that open a hidden watch tab).
+    // Override visibilityState so the player streams in background iframes/tabs.
     Object.defineProperty(document, "visibilityState", {
       get() {
         return "visible";
@@ -711,39 +717,59 @@ export default defineContentScript({
           }
         }
 
-        // Strategy 3: SourceBuffer capture - wait for the player to finish buffering.
-        // Speed up playback so the full video is captured as fast as possible.
+        // Strategy 3: SourceBuffer capture - play the video at accelerated speed.
+        // Use 4x (not 16x) so the buffer can keep up with the network.
+        // Handle buffer underruns by waiting and resuming playback.
         const elVideo = document.querySelector<HTMLVideoElement>("video");
         if (elVideo && !elVideo.ended) {
-          const originalRate = elVideo.playbackRate;
-          elVideo.playbackRate = 16;
+          elVideo.playbackRate = 4;
           elVideo.muted = true;
+          elVideo.play().catch(() => {});
 
-          if (elVideo.paused) {
-            elVideo.play().catch(() => {});
-          }
-
-          console.log("[ytdl] SourceBuffer fallback: speeding up playback to capture full video");
+          console.log("[ytdl] SourceBuffer fallback: playing at 4x to capture full video");
 
           await new Promise<void>(resolve => {
-            function onEnded() {
-              elVideo.removeEventListener("ended", onEnded);
+            let isResolved = false;
+
+            function done() {
+              if (isResolved) {
+                return;
+              }
+
+              isResolved = true;
+              elVideo.removeEventListener("ended", done);
               resolve();
             }
-            elVideo.addEventListener("ended", onEnded);
-            // Safety timeout: max 5 min even at 16x speed
+
+            elVideo.addEventListener("ended", done);
+
+            // Handle buffer underruns: YouTube pauses when buffer runs dry.
+            // Poll and resume playback until the video ends.
+            const resumeInterval = globalThis.setInterval(() => {
+              if (elVideo.ended || isResolved) {
+                globalThis.clearInterval(resumeInterval);
+                done();
+                return;
+              }
+
+              if (elVideo.paused) {
+                elVideo.play().catch(() => {});
+              }
+            }, 2000);
+
+            // Safety timeout: max 10 min
             globalThis.setTimeout(() => {
-              elVideo.removeEventListener("ended", onEnded);
-              resolve();
-            }, 5 * 60 * 1000);
+              globalThis.clearInterval(resumeInterval);
+              done();
+            }, 10 * 60 * 1000);
           });
 
-          elVideo.playbackRate = originalRate;
+          elVideo.playbackRate = 1;
         }
 
         // Give SourceBuffer a moment to flush final chunks
         await new Promise(resolve => {
-          return globalThis.setTimeout(resolve, 1000);
+          return globalThis.setTimeout(resolve, 2000);
         });
 
         const capture = capturedMedia.get(videoId);

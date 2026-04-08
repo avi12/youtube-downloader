@@ -34,6 +34,13 @@ import type { Options } from "@/types";
 export default defineContentScript({
   matches: ["https://www.youtube.com/*"],
   async main(context) {
+    // Skip non-download iframes. Only the main page and download iframes
+    // (&ytdl=1 marker) need content script initialization.
+    const isDownloadIframe = self !== top && location.search.includes("ytdl=1");
+    if (self !== top && !isDownloadIframe) {
+      return;
+    }
+
     // ─── State ───────────────────────────────────────────────────────────
 
     let currentOptions: Options = await optionsItem.getValue();
@@ -90,7 +97,10 @@ export default defineContentScript({
     });
 
     crossWorldMessenger.onMessage(CrossWorldMessage.Navigation, async ({ data }) => {
-      await handlePageChange(data.url);
+      if (!isDownloadIframe) {
+        await handlePageChange(data.url);
+      }
+
       void forwardSabrCredentialsWithRetry();
     });
 
@@ -245,6 +255,12 @@ export default defineContentScript({
     void forwardSabrCredentialsWithRetry();
 
     // ─── Hidden iframe for downloads ────────────────────────────────────
+    const elStyle = document.createElement("style");
+    elStyle.textContent = ".ytdl-download-iframe{position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;top:-100px;left:-100px}";
+    document.head.append(elStyle);
+    context.onInvalidated(() => {
+      return elStyle.remove();
+    });
     // Creates a hidden iframe to a watch page. The MAIN world content script
     // spoofs visibilityState so YouTube's player streams in the iframe.
 
@@ -260,7 +276,8 @@ export default defineContentScript({
       }
 
       const elIframe = document.createElement("iframe");
-      elIframe.style.cssText = "position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;top:-100px;left:-100px";
+      elIframe.classList.add("ytdl-download-iframe");
+      elIframe.allow = "autoplay";
       elIframe.src = watchUrl;
       document.body.append(elIframe);
       downloadIframes.set(videoId, elIframe);
@@ -287,6 +304,8 @@ export default defineContentScript({
 
     // ─── Initial page handling ──────────────────────────────────────────
 
-    await handlePageChange(location.href);
+    if (!isDownloadIframe) {
+      await handlePageChange(location.href);
+    }
   }
 });

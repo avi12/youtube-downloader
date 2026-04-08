@@ -165,14 +165,16 @@ export default defineBackground(() => {
         js: ["content-scripts/youtube-main.js"],
         matches: ["https://www.youtube.com/*"],
         world: "MAIN",
-        runAt: "document_start"
+        runAt: "document_start",
+        allFrames: true
       },
       {
         id: "ytdl-isolated",
         js: ["content-scripts/youtube.js"],
         css: ["content-scripts/youtube.css"],
         matches: ["https://www.youtube.com/*"],
-        runAt: "document_idle"
+        runAt: "document_idle",
+        allFrames: true
       }
     ]);
   })();
@@ -794,29 +796,24 @@ export default defineBackground(() => {
     );
   });
 
-  // Download a video via a background watch tab. YouTube's Service Worker
-  // on watch pages handles googlevideo CORS for the player's media requests.
-  // The content script captures media via SourceBuffer at 16x speed.
-  // Note: native messaging host was attempted but googlevideo binds SABR
-  // sessions to the browser context, rejecting requests from external clients.
+  // Download via hidden iframe. Content scripts with allFrames inject into
+  // the iframe at document_start (via &ytdl=1 URL marker). The MAIN world
+  // spoofs visibilityState so YouTube's player streams in the background.
   onMessage(MessageType.DownloadViaWatchPage, async ({ data, sender }) => {
-    const watchUrl = `https://www.youtube.com/watch?v=${data.videoId}`;
-
-    // Tell the content script on the originating tab to create a hidden
-    // iframe to the watch page. The MAIN world content script spoofs
-    // visibilityState so YouTube's player streams in the iframe.
-    // No new tab or window needed.
     const originTabId = sender.tab?.id;
     if (!originTabId) {
       return;
     }
+
+    // The &ytdl=1 marker tells content scripts this is a download iframe
+    const watchUrl = `https://www.youtube.com/watch?v=${data.videoId}&ytdl=1`;
 
     await sendMessage(MessageType.CreateDownloadIframe, {
       videoId: data.videoId,
       watchUrl
     }, originTabId);
 
-    // Wait for iframe to load
+    // Wait for iframe to load (content scripts inject automatically via allFrames)
     await new Promise<void>(resolve => {
       const removeListener = onMessage(MessageType.DownloadIframeReady, ({ data: readyData }) => {
         if (readyData.videoId === data.videoId) {
@@ -830,79 +827,27 @@ export default defineBackground(() => {
       }, 30_000);
     });
 
-    // Find the iframe's frameId via a lightweight probe
-    const probeResults = await browser.scripting.executeScript({
-      target: { tabId: originTabId, allFrames: true },
-      func(videoId: string) {
-        return self !== top
-          && location.pathname === "/watch"
-          && location.search.includes(videoId);
-      },
-      args: [data.videoId]
-    });
-
-    const iframeResult = probeResults.find(result => {
-      return result.result === true;
-    });
-    if (!iframeResult) {
-      console.error("[ytdl:bg] Could not find download iframe for", data.videoId);
-      return;
-    }
-
-    const watchFrameId = iframeResult.frameId;
-
-    // Inject content scripts into the iframe
-    await browser.scripting.executeScript({
-      target: { tabId: originTabId, frameIds: [watchFrameId] },
-      files: ["content-scripts/youtube-main.js"],
-      world: "MAIN"
-    }).catch(() => {});
-
-    await browser.scripting.executeScript({
-      target: { tabId: originTabId, frameIds: [watchFrameId] },
-      files: ["content-scripts/youtube.js"]
-    }).catch(() => {});
-
-    const watchTabId = originTabId;
-
-    // Wait for the tab to finish loading
-    await new Promise<void>(resolve => {
-      function onUpdated(tabId: number, changeInfo: Browser.tabs.OnUpdatedChangeInfoType) {
-        if (tabId === watchTabId && changeInfo.status === "complete") {
-          browser.tabs.onUpdated.removeListener(onUpdated);
-          resolve();
-        }
-      }
-
-      browser.tabs.onUpdated.addListener(onUpdated);
-      globalThis.setTimeout(() => {
-        browser.tabs.onUpdated.removeListener(onUpdated);
-        resolve();
-      }, 30_000);
-    });
-
-    // Give content scripts and YouTube player time to initialize
+    // Give YouTube player time to initialize in the iframe
     await new Promise(resolve => {
       return globalThis.setTimeout(resolve, 5000);
     });
 
-    // Send the download request to the watch tab's content script
+    // Send download request - only the iframe's content script handles it
+    // (isWatchPage guard filters out the subscriptions page)
     try {
-      await sendMessage(MessageType.ExecuteDownloadItem, data, watchTabId);
+      await sendMessage(MessageType.ExecuteDownloadItem, data, originTabId);
     } catch {
       await new Promise(resolve => {
-        return globalThis.setTimeout(resolve, 5000);
+        return globalThis.setTimeout(resolve, 3000);
       });
-      await sendMessage(MessageType.ExecuteDownloadItem, data, watchTabId);
+      await sendMessage(MessageType.ExecuteDownloadItem, data, originTabId);
     }
 
-    // Track this tab so it gets cleaned up when the download completes
-    trackVideoForTab(data.videoId, watchTabId);
-    tabTracker[watchTabId] ??= { videoIdsAvailable: [] };
-    tabTracker[watchTabId].videoIdsAvailable.push(data.videoId);
+    trackVideoForTab(data.videoId, originTabId);
+    tabTracker[originTabId] ??= { videoIdsAvailable: [] };
+    tabTracker[originTabId].videoIdsAvailable.push(data.videoId);
 
-    // Keep the SW alive by pinging from the watch tab every 25s
-    await sendMessage(MessageType.StartKeepalive, { videoId: data.videoId }, watchTabId);
+    await sendMessage(MessageType.StartKeepalive, { videoId: data.videoId }, originTabId);
 
     // Clean up iframe when done (max 15 min safety net)
     // The iframe cleanup is handled by the content script's progress handler.
