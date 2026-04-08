@@ -28,10 +28,6 @@ async function sendStreamChunks({ videoId, streamType, data }: {
   const totalChunks = Math.ceil(data.byteLength / TRANSFER_CHUNK_SIZE);
 
   for (let i = 0; i < totalChunks; i++) {
-    // Yield to the event loop so cancel signals can be processed
-    // and the UI stays responsive during large transfers
-    await new Promise(resolve => setTimeout(resolve, 0));
-
     if (cancelledVideoIds.has(videoId)) {
       return;
     }
