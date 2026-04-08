@@ -86,19 +86,6 @@
     };
   }
 
-  function handleTabKeydown(e: KeyboardEvent) {
-    const iCurrent = tabs.findIndex(tab => tab.id === activeTab);
-    if (e.key === "ArrowRight" || e.key === "ArrowDown") {
-      e.preventDefault();
-      activeTab = tabs[(iCurrent + 1) % tabs.length].id;
-      tabButtonElements[activeTab]?.focus();
-    } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
-      e.preventDefault();
-      activeTab = tabs[(iCurrent - 1 + tabs.length) % tabs.length].id;
-      tabButtonElements[activeTab]?.focus();
-    }
-  }
-
   onMount(() => {
     const unwatches = [
       isFFmpegReadyItem.watch(value => {
@@ -149,7 +136,18 @@
           aria-controls="panel-{tab.id}"
           aria-selected={activeTab === tab.id}
           onclick={() => (activeTab = tab.id)}
-          onkeydown={handleTabKeydown}
+          onkeydown={e => {
+            const iCurrent = tabs.findIndex(tab => tab.id === activeTab);
+            if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+              e.preventDefault();
+              activeTab = tabs[(iCurrent + 1) % tabs.length].id;
+              tabButtonElements[activeTab]?.focus();
+            } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+              e.preventDefault();
+              activeTab = tabs[(iCurrent - 1 + tabs.length) % tabs.length].id;
+              tabButtonElements[activeTab]?.focus();
+            }
+          }}
           role="tab"
           tabindex={activeTab === tab.id ? 0 : -1}
         >

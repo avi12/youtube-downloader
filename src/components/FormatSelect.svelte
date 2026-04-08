@@ -11,13 +11,6 @@
 
   const { id, label, options, value, onchange }: Props = $props();
 
-  function handleChange(e: Event) {
-    const { target } = e;
-    if (target instanceof HTMLSelectElement) {
-      onchange(target.value);
-    }
-  }
-
   function formatLabel(option: string) {
     return option === AUTO_EXTENSION ? AUTO_EXTENSION_LABEL : option;
   }
@@ -28,7 +21,11 @@
   <select
     {id}
     class="format-select-control"
-    onchange={handleChange}
+    onchange={e => {
+      if (e.target instanceof HTMLSelectElement) {
+        onchange(e.target.value);
+      }
+    }}
     {value}
   >
     {#each options as option (option)}

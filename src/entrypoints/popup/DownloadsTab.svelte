@@ -37,25 +37,6 @@
     void sendMessage(MessageType.CancelDownload, { videoIds });
   }
 
-  function cancelAllVideo() {
-    const allIds = videoDownloads.map(item => item.videoId);
-    if (allIds.length > 0) {
-      cancelDownload(allIds);
-    }
-  }
-
-  function cancelAllMusic() {
-    if (musicList.length > 0) {
-      cancelDownload(musicList);
-    }
-  }
-
-  function cancelAllVideoOnly() {
-    if (videoOnlyList.length > 0) {
-      cancelDownload(videoOnlyList);
-    }
-  }
-
   function getProgressLabel(videoId: string) {
     const prog = statusProgress[videoId];
     if (!prog) {
@@ -119,7 +100,12 @@
         <button
           class="cancel-all-button"
           aria-label="Cancel all video downloads"
-          onclick={cancelAllVideo}
+          onclick={() => {
+            const allIds = videoDownloads.map(item => item.videoId);
+            if (allIds.length > 0) {
+              cancelDownload(allIds);
+            }
+          }}
         >
           Cancel all
         </button>
@@ -152,7 +138,11 @@
         <button
           class="cancel-all-button"
           aria-label="Cancel all audio downloads"
-          onclick={cancelAllMusic}
+          onclick={() => {
+            if (musicList.length > 0) {
+              cancelDownload(musicList);
+            }
+          }}
         >
           Cancel all
         </button>
@@ -180,7 +170,11 @@
         <button
           class="cancel-all-button"
           aria-label="Cancel all video-only downloads"
-          onclick={cancelAllVideoOnly}
+          onclick={() => {
+            if (videoOnlyList.length > 0) {
+              cancelDownload(videoOnlyList);
+            }
+          }}
         >
           Cancel all
         </button>

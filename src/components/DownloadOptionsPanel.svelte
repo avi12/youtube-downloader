@@ -298,12 +298,6 @@
     cancelRequestSignal.value = { videoIds: [videoData.videoId] };
   }
 
-  function handleKeydown(e: KeyboardEvent) {
-    if (e.key === "Escape") {
-      closePanel();
-    }
-  }
-
   function handleActivationKeydown(callback: () => void) {
     return (e: KeyboardEvent) => {
       if (e.key === "Enter" || e.key === " ") {
@@ -552,7 +546,11 @@
   {@attach attachPanel}
   aria-labelledby="ytdl-panel-title"
   aria-modal="true"
-  onkeydown={handleKeydown}
+  onkeydown={e => {
+    if (e.key === "Escape") {
+      closePanel();
+    }
+  }}
   role="dialog"
   tabindex="-1"
 >

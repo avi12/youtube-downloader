@@ -31,19 +31,6 @@
     void setOption("videoQualityMode", mode);
   }
 
-  function handleVideoQualityChange(e: Event) {
-    const { target } = e;
-    if (target instanceof HTMLSelectElement) {
-      void setOption("videoQuality", Number(target.value));
-    }
-  }
-
-  function handleRemoveNativeDownloadChange(e: Event) {
-    const { target } = e;
-    if (target instanceof HTMLInputElement) {
-      void setOption("isRemoveNativeDownload", target.checked);
-    }
-  }
 </script>
 
 <div class="settings-container">
@@ -171,7 +158,11 @@
           <select
             id="custom-quality-select"
             class="settings-select"
-            onchange={handleVideoQualityChange}
+            onchange={e => {
+              if (e.target instanceof HTMLSelectElement) {
+                void setOption("videoQuality", Number(e.target.value));
+              }
+            }}
             value={options.videoQuality}
           >
             {#each videoQualities as quality (quality)}
@@ -194,7 +185,11 @@
       <label class="settings-label settings-toggle-label">
         <input
           checked={options.isRemoveNativeDownload}
-          onchange={handleRemoveNativeDownloadChange}
+          onchange={e => {
+            if (e.target instanceof HTMLInputElement) {
+              void setOption("isRemoveNativeDownload", e.target.checked);
+            }
+          }}
           type="checkbox"
         />
         Hide YouTube's native download button
