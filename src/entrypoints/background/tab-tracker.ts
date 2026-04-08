@@ -1,5 +1,4 @@
-import { sendMessage } from "../../lib/messaging";
-import { MessageType } from "../../lib/messaging";
+import { MessageType, sendMessage } from "@/lib/messaging";
 
 export const videoIdToTabIds: Record<string, number[]> = {};
 export const tabTracker: Record<number, { videoIdsAvailable: string[] }> = {};

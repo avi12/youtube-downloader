@@ -1,5 +1,5 @@
-import { MessageType, onMessage, sendMessage } from "../../lib/messaging";
 import { cancelDownloads, tabTracker, trackVideoForTab } from "./tab-tracker";
+import { MessageType, onMessage, sendMessage } from "@/lib/messaging";
 
 export function registerDownloadHandlers() {
   // Download via hidden iframe. Content scripts auto-inject into the iframe

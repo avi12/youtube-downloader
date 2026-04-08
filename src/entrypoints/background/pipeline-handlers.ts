@@ -1,6 +1,6 @@
-import { MessageType, onMessage, sendMessage } from "../../lib/messaging";
-import { isFFmpegReadyItem, statusProgressItem } from "../../lib/storage";
-import { ProgressType } from "../../types";
+import { MessageType, onMessage, sendMessage } from "@/lib/messaging";
+import { isFFmpegReadyItem, statusProgressItem } from "@/lib/storage";
+import { ProgressType } from "@/types";
 
 export function registerPipelineHandlers() {
   onMessage(MessageType.ProcessStreamError, ({ data, sender }) => {

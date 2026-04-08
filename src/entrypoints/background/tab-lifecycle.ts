@@ -1,6 +1,6 @@
-import { clearCapturedSabrData } from "../../lib/sabr-request-capture";
 import { isFirefoxProcessorTab, resetProcessorState } from "./processor";
 import { cancelDownloads, tabTracker, untrackVideoForTab } from "./tab-tracker";
+import { clearCapturedSabrData } from "@/lib/sabr-request-capture";
 
 enum TabStatus {
   Loading = "loading"

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { AUTO_EXTENSION, AUTO_EXTENSION_LABEL } from "../lib/utils";
+  import { AUTO_EXTENSION, AUTO_EXTENSION_LABEL } from "@/lib/utils";
 
   type Props = {
     id: string;

@@ -5,7 +5,8 @@
 </script>
 
 <script lang="ts">
-  import { MessageType, sendMessage } from "../lib/messaging";
+  import DownloadOptionsPanel from "./DownloadOptionsPanel.svelte";
+  import { MessageType, sendMessage } from "@/lib/messaging";
   import {
     buttonClickSignal,
     cancelRequestSignal,
@@ -15,10 +16,10 @@
     SyncKey,
     videoDataRequests,
     videoDataStore
-  } from "../lib/synced-stores.svelte";
-  import { getCompatibleFilename, getOutputExtension, resolveAutoExtension } from "../lib/utils";
-  import { ProgressType } from "../types";
-  import type { DownloadType } from "../types";
+  } from "@/lib/synced-stores.svelte";
+  import { getCompatibleFilename, getOutputExtension, resolveAutoExtension } from "@/lib/utils";
+  import { ProgressType } from "@/types";
+  import type { DownloadType } from "@/types";
   import {
     ButtonSize,
     ButtonState,
@@ -27,8 +28,7 @@
     IconName,
     type Options,
     type VideoData
-  } from "../types";
-  import DownloadOptionsPanel from "./DownloadOptionsPanel.svelte";
+  } from "@/types";
   import { mount, unmount } from "svelte";
 
   type Props = {

@@ -5,7 +5,7 @@ import type {
   ProgressUpdate,
   VideoMetadata,
   StreamError
-} from "../types";
+} from "@/types";
 import { defineExtensionMessaging } from "@webext-core/messaging";
 
 // ─── Message types ───────────────────────────────────────────────────────────

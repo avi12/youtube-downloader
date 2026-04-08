@@ -1,8 +1,8 @@
 <script lang="ts">
-  import FormatSelect from "../../components/FormatSelect.svelte";
-  import { setOption } from "../../lib/storage";
-  import { supportedExtensions, videoQualities } from "../../lib/utils";
-  import type { DownloadTypePreference, Options } from "../../types";
+  import FormatSelect from "@/components/FormatSelect.svelte";
+  import { setOption } from "@/lib/storage";
+  import { supportedExtensions, videoQualities } from "@/lib/utils";
+  import type { DownloadTypePreference, Options } from "@/types";
 
   type Props = {
     options: Options;

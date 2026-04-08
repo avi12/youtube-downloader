@@ -1,5 +1,5 @@
-import type { InterruptedDownload, Options, ProgressType, VideoQueueItem } from "../types";
 import { initialOptions } from "./utils";
+import type { InterruptedDownload, Options, ProgressType, VideoQueueItem } from "@/types";
 
 type VideoDetailsMap = Record<string, { filenameOutput: string }>;
 type StatusProgressMap = Record<string, { progress: number;

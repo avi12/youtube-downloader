@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { applyPolymerCustomStyles, PAPER_INPUT_THEME } from "../lib/polymer-utils";
   import selectDropdownStyles from "./select-dropdown.css?inline";
+  import { applyPolymerCustomStyles, PAPER_INPUT_THEME } from "@/lib/polymer-utils";
 
   type Option = {
     value: string;

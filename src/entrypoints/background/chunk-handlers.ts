@@ -1,6 +1,6 @@
-import { MessageType, onMessage, sendMessage } from "../../lib/messaging";
 import { ensureProcessor } from "./processor";
 import { tabTracker, trackVideoForTab } from "./tab-tracker";
+import { MessageType, onMessage, sendMessage } from "@/lib/messaging";
 
 export function registerChunkHandlers() {
   onMessage(MessageType.StreamChunk, async ({ data, sender }) => {

@@ -3,18 +3,18 @@
    * Playlist-level download button.
    * Appears in the playlist header and allows downloading all checked videos.
    */
-  import { MessageType, sendMessage } from "../lib/messaging";
-  import { applyPolymerCustomStyles, PAPER_PROGRESS_THEME } from "../lib/polymer-utils";
-  import { musicListItem, videoOnlyListItem, videoQueueItem } from "../lib/storage";
+  import { MessageType, sendMessage } from "@/lib/messaging";
+  import { applyPolymerCustomStyles, PAPER_PROGRESS_THEME } from "@/lib/polymer-utils";
+  import { musicListItem, videoOnlyListItem, videoQueueItem } from "@/lib/storage";
   import {
     buttonClickSignal,
     playlistMetadataSignal,
     SYNC_NAMESPACE,
     SyncKey,
     videoDataStore
-  } from "../lib/synced-stores.svelte";
-  import { getCompatibleFilename, resolveAutoExtension } from "../lib/utils";
-  import type { DownloadType, Options, VideoData } from "../types";
+  } from "@/lib/synced-stores.svelte";
+  import { getCompatibleFilename, resolveAutoExtension } from "@/lib/utils";
+  import type { DownloadType, Options, VideoData } from "@/types";
   import { SvelteMap } from "svelte/reactivity";
 
   type Props = {

@@ -1,6 +1,6 @@
-import { MessageType, onMessage } from "../../lib/messaging";
-import { extractPoTokenFromBody, getCapturedSabrData } from "../../lib/sabr-request-capture";
-import { interruptedDownloadsItem } from "../../lib/storage";
+import { MessageType, onMessage } from "@/lib/messaging";
+import { extractPoTokenFromBody, getCapturedSabrData } from "@/lib/sabr-request-capture";
+import { interruptedDownloadsItem } from "@/lib/storage";
 
 export function registerStorageHandlers() {
   onMessage(MessageType.GetCapturedSabrBody, async ({ sender }) => {

@@ -1,12 +1,12 @@
-import { MessageType, sendMessage } from "../../lib/messaging";
-import { onSabrBodyCaptured, startSabrRequestCapture } from "../../lib/sabr-request-capture";
-import { clearLocalStorage } from "../../lib/storage";
 import { registerChunkHandlers } from "./chunk-handlers";
 import { registerDownloadHandlers } from "./download-handlers";
 import { registerPipelineHandlers } from "./pipeline-handlers";
 import { ensureProcessor } from "./processor";
 import { registerStorageHandlers } from "./storage-handlers";
 import { registerTabLifecycleHandlers } from "./tab-lifecycle";
+import { MessageType, sendMessage } from "@/lib/messaging";
+import { onSabrBodyCaptured, startSabrRequestCapture } from "@/lib/sabr-request-capture";
+import { clearLocalStorage } from "@/lib/storage";
 
 export default defineBackground(() => {
   startSabrRequestCapture();

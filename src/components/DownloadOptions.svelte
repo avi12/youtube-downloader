@@ -1,8 +1,8 @@
 <script lang="ts">
-  import { applyPolymerCustomStyles, PAPER_INPUT_THEME } from "../lib/polymer-utils";
-  import { supportedExtensions } from "../lib/utils";
-  import type { AdaptiveFormatItem, DownloadType } from "../types";
   import Select from "./Select.svelte";
+  import { applyPolymerCustomStyles, PAPER_INPUT_THEME } from "@/lib/polymer-utils";
+  import { supportedExtensions } from "@/lib/utils";
+  import type { AdaptiveFormatItem, DownloadType } from "@/types";
 
   type Props = {
     downloadType: DownloadType;
