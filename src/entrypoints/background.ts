@@ -139,7 +139,7 @@ export default defineBackground(() => {
       });
 
       // Timeout after 60s
-      globalThis.setTimeout(() => {
+      setTimeout(() => {
         port.onMessage.removeListener(handleMessage);
         resolve(null);
       }, 60_000);
@@ -211,9 +211,9 @@ export default defineBackground(() => {
   // Rewrite Origin header on googlevideo requests from the extension.
   // Chrome strips Origin/Cookie from service worker fetch even with host_permissions.
   // Use declarativeNetRequest to inject the required headers.
-  // Available on Chrome and Firefox MV3. WXT's `browser` resolves correctly.
-  // @ts-expect-error -- declarativeNetRequest not in WXT types
-  const declarativeNetRequest = browser.declarativeNetRequest;
+  // declarativeNetRequest is available on Chrome and Firefox MV3 but
+  // missing from WXT's type definitions. Access via bracket notation.
+  const declarativeNetRequest = browser["declarativeNetRequest"];
   // Cookie string for googlevideo requests.
   // chrome.cookies.getAll() returns empty in copied profiles (DPAPI encryption),
   // so we build the string from individual cookie.get() calls instead.
@@ -462,7 +462,7 @@ export default defineBackground(() => {
       port.postMessage({ requestId, url: fetchUrl, bodyBase64 });
 
       // Timeout after 60s
-      globalThis.setTimeout(() => {
+      setTimeout(() => {
         port.onMessage.removeListener(onResponse);
         resolve(null);
       }, 60_000);
@@ -820,7 +820,7 @@ export default defineBackground(() => {
           resolve();
         }
       });
-      globalThis.setTimeout(() => {
+      setTimeout(() => {
         removeListener();
         resolve();
       }, 30_000);
@@ -856,7 +856,7 @@ export default defineBackground(() => {
     // Visibility spoofing is handled by visibility-spoof.content.ts
     // (allFrames: true, document_start).
     await new Promise(resolve => {
-      return globalThis.setTimeout(resolve, 8000);
+      return setTimeout(resolve, 8000);
     });
 
     // Tell the content script to play the iframe's video at 4x speed.
@@ -887,7 +887,7 @@ export default defineBackground(() => {
     });
 
     // Safety cleanup after 15 min
-    globalThis.setTimeout(() => {
+    setTimeout(() => {
       removeProgressListener();
     }, 15 * 60 * 1000);
 

@@ -1,4 +1,5 @@
 use pnpm.  
+use the `browser` namespace.  
 use early returns whenever it'll make the code more readable. and maintainable.
 Use functional programming.  
 use wxt for the extension framework.  

@@ -205,18 +205,18 @@ export default defineContentScript({
     // grid downloads. We ping the SW every 25s to prevent Chrome from
     // killing it during long downloads.
     onMessage(MessageType.StartKeepalive, () => {
-      const keepaliveInterval = globalThis.setInterval(async () => {
+      const keepaliveInterval = setInterval(async () => {
         try {
           await sendMessage(MessageType.Keepalive, {});
         } catch {
           // SW died or extension reloaded - stop pinging
-          globalThis.clearInterval(keepaliveInterval);
+          clearInterval(keepaliveInterval);
         }
       }, 25_000);
 
       // Stop when the tab is closed or navigation changes
       addEventListener("beforeunload", () => {
-        globalThis.clearInterval(keepaliveInterval);
+        clearInterval(keepaliveInterval);
       });
     });
 
@@ -291,9 +291,9 @@ export default defineContentScript({
       elVideo.play().catch(() => {});
 
       // Poll progress and report to background. Resume on buffer underruns.
-      const progressInterval = globalThis.setInterval(() => {
+      const progressInterval = setInterval(() => {
         if (elVideo.ended) {
-          globalThis.clearInterval(progressInterval);
+          clearInterval(progressInterval);
           void sendMessage(MessageType.IframePlaybackProgress, {
             videoId: playbackData.videoId,
             currentTime: elVideo.currentTime,
@@ -316,7 +316,7 @@ export default defineContentScript({
       }, 3000);
 
       context.onInvalidated(() => {
-        globalThis.clearInterval(progressInterval);
+        clearInterval(progressInterval);
       });
     });
 

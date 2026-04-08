@@ -725,9 +725,9 @@ export default defineContentScript({
 
             // Handle buffer underruns: YouTube pauses when buffer runs dry.
             // Poll and resume playback until the video ends.
-            const resumeInterval = globalThis.setInterval(() => {
+            const resumeInterval = setInterval(() => {
               if (elVideo.ended || isResolved) {
-                globalThis.clearInterval(resumeInterval);
+                clearInterval(resumeInterval);
                 done();
                 return;
               }
@@ -738,8 +738,8 @@ export default defineContentScript({
             }, 2000);
 
             // Safety timeout: max 10 min
-            globalThis.setTimeout(() => {
-              globalThis.clearInterval(resumeInterval);
+            setTimeout(() => {
+              clearInterval(resumeInterval);
               done();
             }, 10 * 60 * 1000);
           });
@@ -749,7 +749,7 @@ export default defineContentScript({
 
         // Give SourceBuffer a moment to flush final chunks
         await new Promise(resolve => {
-          return globalThis.setTimeout(resolve, 2000);
+          return setTimeout(resolve, 2000);
         });
 
         const capture = capturedMedia.get(videoId);

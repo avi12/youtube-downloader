@@ -47,9 +47,8 @@ export async function generatePoToken(videoId: string) {
   // On watch pages YouTube pre-loads BotGuard; on other pages (subscriptions,
   // homepage) it doesn't, so we load the interpreter script ourselves.
   // BotGuard is YouTube's undocumented anti-bot runtime with a fully dynamic
-  // shape that can't be statically typed - any is intentional here.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const globalRecord: Record<string, any> = globalThis;  if (!globalRecord[globalName]?.a) {
+  // shape that can't be statically typed.
+  const globalRecord: Record<string, Record<string, unknown>> = globalThis;  if (!globalRecord[globalName]?.a) {
     // Extract interpreter URL from TrustedResourceUrl wrapper
     const interpreterUrlRaw = challengeData.bgChallenge?.interpreterUrl;
     const interpreterUrl: string | undefined =
@@ -90,8 +89,7 @@ export async function generatePoToken(videoId: string) {
   }
 
   // Step 3: Sync snapshot (async callback doesn't work from content script)
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const webPoSignalOutput: any[] = [];
+  const webPoSignalOutput: unknown[] = [];
   const initResult = botGuardVm.a(program, () => {}, true, undefined, () => {}, [[], []]);
   const syncSnapshotFunction = initResult?.[0];
   if (typeof syncSnapshotFunction !== "function") {

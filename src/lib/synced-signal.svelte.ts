@@ -32,10 +32,9 @@ export enum SyncKey {
 
 // ─── Transport layer ─────────────────────────────────────────────────────────
 
-// Callbacks receive deserialized postMessage data - uses `any` because
+// Callbacks receive deserialized postMessage data - uses `unknown` since
 // the generic type parameter isn't available at the transport layer
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-type SyncCallback = (value: any) => void;
+type SyncCallback = (value: unknown) => void;
 
 const listeners = new SvelteMap<string, Set<SyncCallback>>();
 

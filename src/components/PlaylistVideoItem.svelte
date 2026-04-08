@@ -1,8 +1,7 @@
 <script lang="ts" module>
   // Module-level guard to prevent duplicate download triggers from
   // multiple component instances responding to the same ButtonClick message
-  // eslint-disable-next-line svelte/prefer-svelte-reactivity
-  const activeDownloadClicks = new Set<string>();
+  const activeDownloadClicks = $state(new Set<string>());
 </script>
 
 <script lang="ts">
