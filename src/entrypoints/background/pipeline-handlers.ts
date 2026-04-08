@@ -1,6 +1,23 @@
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging";
 import { isFFmpegReadyItem, statusProgressItem } from "@/lib/storage";
 import { ProgressType } from "@/types";
+import type { ProgressUpdate } from "@/types";
+
+type StatusProgressMap = Awaited<ReturnType<typeof statusProgressItem.getValue>>;
+
+async function updateStatusProgress(
+  mutate: (current: StatusProgressMap) => void,
+  progressUpdate: ProgressUpdate,
+  tabId: number
+) {
+  const current = await statusProgressItem.getValue();
+  mutate(current);
+
+  await Promise.allSettled([
+    sendMessage(MessageType.UpdateDownloadProgress, progressUpdate, tabId),
+    statusProgressItem.setValue(current)
+  ]);
+}
 
 export function registerPipelineHandlers() {
   onMessage(MessageType.ProcessStreamError, ({ data, sender }) => {
@@ -24,37 +41,24 @@ export function registerPipelineHandlers() {
 
   onMessage(MessageType.PipelineProgress, async ({ data }) => {
     const { videoId, progress, progressType, tabId } = data;
-    const current = await statusProgressItem.getValue();
-    current[videoId] = { progress, progressType };
-
-    await Promise.allSettled([
-      sendMessage(MessageType.UpdateDownloadProgress, {
-        videoId,
-        progress,
-        progressType
-      }, tabId),
-      statusProgressItem.setValue(current)
-    ]);
+    await updateStatusProgress(
+      current => {
+        current[videoId] = { progress, progressType };
+      },
+      { videoId, progress, progressType },
+      tabId
+    );
   });
 
   onMessage(MessageType.PipelineRemoval, async ({ data }) => {
     const { videoId, tabId } = data;
-    const current = await statusProgressItem.getValue();
-    delete current[videoId];
-
-    await Promise.allSettled([
-      sendMessage(
-        MessageType.UpdateDownloadProgress,
-        {
-          videoId,
-          progress: 0,
-          progressType: ProgressType.Video,
-          isRemoved: true
-        },
-        tabId
-      ),
-      statusProgressItem.setValue(current)
-    ]);
+    await updateStatusProgress(
+      current => {
+        delete current[videoId];
+      },
+      { videoId, progress: 0, progressType: ProgressType.Video, isRemoved: true },
+      tabId
+    );
   });
 
   onMessage(MessageType.PipelineQueueRemove, async ({ data }) => {
