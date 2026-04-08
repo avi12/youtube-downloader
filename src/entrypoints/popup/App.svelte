@@ -63,7 +63,9 @@
     videoDownloads.length + musicList.length + videoOnlyList.length
   );
 
-  const tabs: { id: Tab; label: string }[] = [
+  const tabs: {
+    id: Tab; label: string;
+  }[] = [
     {
       id: Tab.Downloads,
       label: "Downloads"

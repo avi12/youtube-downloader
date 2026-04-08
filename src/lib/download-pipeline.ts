@@ -19,9 +19,11 @@ import { zipSync } from "fflate";
 // exec() at a time, so mux operations are serialized via a queue while downloads
 // still run in parallel.
 
-let ffmpegUrls: { coreURL: string;
+let ffmpegUrls: {
+  coreURL: string;
   wasmURL: string;
-  classWorkerURL: string; } | null = null;
+  classWorkerURL: string;
+} | null = null;
 let sharedFFmpeg: FFmpeg | null = null;
 
 export function initFFmpeg({ coreURL, wasmURL, classWorkerURL }: {
@@ -178,8 +180,10 @@ async function triggerDownload(data: Uint8Array, filenameOutput: string) {
 interface PlaylistBundle {
   playlistTitle: string;
   totalCount: number;
-  files: Map<string, { filename: string;
-    data: Uint8Array; }>;
+  files: Map<string, {
+    filename: string;
+    data: Uint8Array;
+  }>;
   tabId: number;
 }
 

@@ -7,9 +7,7 @@ type ThumbnailEntry = {
   height: number;
 };
 
-type Thumbnail = {
-  thumbnails: ThumbnailEntry[];
-};
+type Thumbnail = { thumbnails: ThumbnailEntry[] };
 
 type ByteRange = {
   start: `${number}`;
@@ -125,18 +123,18 @@ export type PlayerResponse = {
     isLive?: boolean;
     allowRatings: boolean;
   };
-  microformat?: {
-    playerMicroformatRenderer: {
-      liveBroadcastDetails?: { isLiveNow: true;
-        startTimestamp: string; };
-      title: { simpleText: string };
-      description: { simpleText: string };
-      lengthSeconds: `${number}`;
-      category: string;
-      publishDate: `${number}-${number}-${number}`;
-      ownerChannelName: string;
+  microformat?: { playerMicroformatRenderer: {
+    liveBroadcastDetails?: {
+      isLiveNow: true;
+      startTimestamp: string;
     };
-  };
+    title: { simpleText: string };
+    description: { simpleText: string };
+    lengthSeconds: `${number}`;
+    category: string;
+    publishDate: `${number}-${number}-${number}`;
+    ownerChannelName: string;
+  }; };
   streamingData?: {
     expiresInSeconds: `${number}`;
     formats: FormatItem[];
@@ -144,11 +142,7 @@ export type PlayerResponse = {
     serverAbrStreamingUrl?: string;
   };
   playerConfig?: {
-    mediaCommonConfig?: {
-      mediaUstreamerRequestConfig?: {
-        videoPlaybackUstreamerConfig?: string;
-      };
-    };
+    mediaCommonConfig?: { mediaUstreamerRequestConfig?: { videoPlaybackUstreamerConfig?: string } };
     [key: string]: unknown;
   };
 };
@@ -242,18 +236,18 @@ export type ButtonViewModelData = {
 
   // Display
   iconName?: IconName | (string & {});
-  iconImage?: { url: string;
+  iconImage?: {
+    url: string;
     width: number;
-    height: number; };
+    height: number;
+  };
   title?: string;
   tooltip?: string;
-  tooltipData?: {
-    tooltipViewModel?: {
-      tooltipText: string;
-      placement: TooltipPlacement;
-      style: TooltipStyle;
-    };
-  };
+  tooltipData?: { tooltipViewModel?: {
+    tooltipText: string;
+    placement: TooltipPlacement;
+    style: TooltipStyle;
+  }; };
 
   // State and layout
   state?: ButtonState;
@@ -339,7 +333,9 @@ export interface YtdlMediaCapture {
 
 export interface YtdlCaptureState {
   activeVideoId: string;
-  pendingChunks: Array<{ mimeType: string; data: Uint8Array }>;
+  pendingChunks: Array<{
+    mimeType: string; data: Uint8Array;
+  }>;
   capturedMedia: Map<string, YtdlMediaCapture>;
   sourceBufferMimeTypes: WeakMap<SourceBuffer, string>;
   addChunkToCapture: (capture: YtdlMediaCapture, mimeType: string, chunk: Uint8Array) => void;

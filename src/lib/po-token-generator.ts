@@ -9,9 +9,7 @@
 const REQUEST_KEY = "O43z0dpjhgX20SCx4KAo";
 const GOOG_API_KEY = "AIzaSyDyT5W0Jh49F30Pqqtyfdf7pDLFKLJoAnw";
 
-declare const ytcfg: {
-  get(key: string): unknown;
-} | undefined;
+declare const ytcfg: { get(key: string): unknown } | undefined;
 
 export async function generatePoToken(videoId: string) {
   const clientVersion = typeof ytcfg !== "undefined"

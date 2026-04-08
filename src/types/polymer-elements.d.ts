@@ -20,9 +20,7 @@ declare namespace svelteHTML {
       class?: string;
       "aria-label"?: string;
     };
-    "tp-yt-paper-spinner-lite": {
-      active?: boolean;
-    };
+    "tp-yt-paper-spinner-lite": { active?: boolean };
     "tp-yt-paper-input": {
       id?: string;
       value?: string;

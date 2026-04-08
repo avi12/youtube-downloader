@@ -11,11 +11,15 @@
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
-type TransformOp = { type: "swap";
-  argument: number; }
+type TransformOp = {
+  type: "swap";
+  argument: number;
+}
   | { type: "reverse" }
-  | { type: "splice";
-    argument: number; };
+  | {
+    type: "splice";
+    argument: number;
+  };
 
 interface DecryptorState {
   operations: TransformOp[];

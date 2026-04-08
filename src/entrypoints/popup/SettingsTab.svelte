@@ -4,9 +4,7 @@
   import { supportedExtensions, videoQualities } from "@/lib/utils";
   import type { DownloadTypePreference, Options } from "@/types";
 
-  type Props = {
-    options: Options;
-  };
+  type Props = { options: Options };
 
   const { options }: Props = $props();
 

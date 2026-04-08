@@ -132,8 +132,10 @@ export async function handleStreamData(payload: StreamDataPayload) {
   });
 }
 
-export async function handleStreamError({ videoId, error }: { videoId: string;
-  error: string; }) {
+export async function handleStreamError({ videoId, error }: {
+  videoId: string;
+  error: string;
+}) {
   console.error("[ytdl] Stream error for", videoId, error);
 
   // Reset download state so the button isn't stuck at "downloading"
