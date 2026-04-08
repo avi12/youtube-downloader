@@ -200,7 +200,7 @@ export default defineBackground(() => {
       return;
     }
 
-    const watchUrl = `https://www.youtube.com/watch?v=${data.videoId}&ytdl=1&autoplay=0`;
+    const watchUrl = `https://www.youtube.com/watch?v=${data.videoId}&ytdl=1`;
 
     await sendMessage(MessageType.CreateDownloadIframe, {
       videoId: data.videoId,
