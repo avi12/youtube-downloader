@@ -24,6 +24,8 @@ export enum MessageType {
   GetInterruptedDownload = "getInterruptedDownload",
   RequestPlaylistDownload = "requestPlaylistDownload",
   DownloadViaWatchPage = "downloadViaWatchPage",
+  CreateDownloadIframe = "createDownloadIframe",
+  DownloadIframeReady = "downloadIframeReady",
   CancelDownload = "cancelDownload",
 
   // Background → Content script
@@ -126,9 +128,14 @@ interface ProtocolMap {
   clearInterruptedDownload(data: { videoId: string }): void;
   getInterruptedDownload(data: { videoId: string }): InterruptedDownload | null;
 
-  // Content script → Background: open a background watch tab to download.
-  // YouTube's SW handles googlevideo CORS only on top-level watch pages.
+  // Content script → Background: download via hidden iframe to watch page.
   downloadViaWatchPage(data: DownloadRequest): void;
+
+  // Background → Content script: create a hidden iframe for downloading
+  createDownloadIframe(data: { videoId: string; watchUrl: string }): void;
+
+  // Content script → Background: iframe loaded
+  downloadIframeReady(data: { videoId: string }): void;
 
   // Content script → Background: download all items in a playlist
   requestPlaylistDownload(data: {

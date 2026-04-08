@@ -129,6 +129,12 @@ export default defineContentScript({
     });
 
     onMessage(MessageType.ExecuteDownloadItem, ({ data }) => {
+      // Only process on watch pages (including hidden download iframes).
+      // The subscriptions page MAIN world can't fetch googlevideo (CORS).
+      if (location.pathname !== "/watch") {
+        return;
+      }
+
       if (data.playlistId) {
         setPlaylistContext(data.videoId, {
           playlistId: data.playlistId,
@@ -237,6 +243,37 @@ export default defineContentScript({
     listenForSabrBodyReady();
     listenForDownloadRequests();
     void forwardSabrCredentialsWithRetry();
+
+    // ─── Hidden iframe for downloads ────────────────────────────────────
+    // Creates a hidden iframe to a watch page. The MAIN world content script
+    // spoofs visibilityState so YouTube's player streams in the iframe.
+
+    const downloadIframes = new Map<string, HTMLIFrameElement>();
+
+    onMessage(MessageType.CreateDownloadIframe, ({ data }) => {
+      const { videoId, watchUrl } = data;
+
+      const existing = downloadIframes.get(videoId);
+      if (existing) {
+        existing.remove();
+        downloadIframes.delete(videoId);
+      }
+
+      const elIframe = document.createElement("iframe");
+      elIframe.style.cssText = "position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;top:-100px;left:-100px";
+      elIframe.src = watchUrl;
+      document.body.append(elIframe);
+      downloadIframes.set(videoId, elIframe);
+
+      elIframe.addEventListener("load", () => {
+        void sendMessage(MessageType.DownloadIframeReady, { videoId });
+      });
+
+      context.onInvalidated(() => {
+        elIframe.remove();
+        downloadIframes.delete(videoId);
+      });
+    });
 
     const unwatchOptions = optionsItem.watch(newOptions => {
       if (!newOptions) {

@@ -799,18 +799,71 @@ export default defineBackground(() => {
   // The content script captures media via SourceBuffer at 16x speed.
   // Note: native messaging host was attempted but googlevideo binds SABR
   // sessions to the browser context, rejecting requests from external clients.
-  onMessage(MessageType.DownloadViaWatchPage, async ({ data }) => {
+  onMessage(MessageType.DownloadViaWatchPage, async ({ data, sender }) => {
     const watchUrl = `https://www.youtube.com/watch?v=${data.videoId}`;
 
-    const tab = await browser.tabs.create({
-      url: watchUrl,
-      active: false
-    });
-    if (!tab.id) {
+    // Tell the content script on the originating tab to create a hidden
+    // iframe to the watch page. The MAIN world content script spoofs
+    // visibilityState so YouTube's player streams in the iframe.
+    // No new tab or window needed.
+    const originTabId = sender.tab?.id;
+    if (!originTabId) {
       return;
     }
 
-    const watchTabId = tab.id;
+    await sendMessage(MessageType.CreateDownloadIframe, {
+      videoId: data.videoId,
+      watchUrl
+    }, originTabId);
+
+    // Wait for iframe to load
+    await new Promise<void>(resolve => {
+      const removeListener = onMessage(MessageType.DownloadIframeReady, ({ data: readyData }) => {
+        if (readyData.videoId === data.videoId) {
+          removeListener();
+          resolve();
+        }
+      });
+      globalThis.setTimeout(() => {
+        removeListener();
+        resolve();
+      }, 30_000);
+    });
+
+    // Find the iframe's frameId via a lightweight probe
+    const probeResults = await browser.scripting.executeScript({
+      target: { tabId: originTabId, allFrames: true },
+      func(videoId: string) {
+        return self !== top
+          && location.pathname === "/watch"
+          && location.search.includes(videoId);
+      },
+      args: [data.videoId]
+    });
+
+    const iframeResult = probeResults.find(result => {
+      return result.result === true;
+    });
+    if (!iframeResult) {
+      console.error("[ytdl:bg] Could not find download iframe for", data.videoId);
+      return;
+    }
+
+    const watchFrameId = iframeResult.frameId;
+
+    // Inject content scripts into the iframe
+    await browser.scripting.executeScript({
+      target: { tabId: originTabId, frameIds: [watchFrameId] },
+      files: ["content-scripts/youtube-main.js"],
+      world: "MAIN"
+    }).catch(() => {});
+
+    await browser.scripting.executeScript({
+      target: { tabId: originTabId, frameIds: [watchFrameId] },
+      files: ["content-scripts/youtube.js"]
+    }).catch(() => {});
+
+    const watchTabId = originTabId;
 
     // Wait for the tab to finish loading
     await new Promise<void>(resolve => {
@@ -851,10 +904,8 @@ export default defineBackground(() => {
     // Keep the SW alive by pinging from the watch tab every 25s
     await sendMessage(MessageType.StartKeepalive, { videoId: data.videoId }, watchTabId);
 
-    // Close the tab when the download is done (max 15 min safety net)
-    globalThis.setTimeout(() => {
-      browser.tabs.remove(watchTabId).catch(() => {});
-    }, 15 * 60 * 1000);
+    // Clean up iframe when done (max 15 min safety net)
+    // The iframe cleanup is handled by the content script's progress handler.
   });
 
   // Keepalive ping from content scripts - resets SW idle timer
