@@ -220,6 +220,7 @@ export async function decryptSignatureCipher(signatureCipher: string) {
 
   const { operations } = await initDecryptor();
   const decryptedSig = applyTransforms(decodeURIComponent(encryptedSig), operations);
-
-  return `${decodeURIComponent(url)}&${sigParam}=${encodeURIComponent(decryptedSig)}`;
+  const resultUrl = new URL(decodeURIComponent(url));
+  resultUrl.searchParams.set(sigParam, decryptedSig);
+  return resultUrl.href;
 }
