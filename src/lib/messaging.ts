@@ -26,6 +26,8 @@ export enum MessageType {
   DownloadViaWatchPage = "downloadViaWatchPage",
   CreateDownloadIframe = "createDownloadIframe",
   DownloadIframeReady = "downloadIframeReady",
+  StartIframePlayback = "startIframePlayback",
+  IframePlaybackProgress = "iframePlaybackProgress",
   CancelDownload = "cancelDownload",
 
   // Background → Content script
@@ -136,6 +138,17 @@ interface ProtocolMap {
 
   // Content script → Background: iframe loaded
   downloadIframeReady(data: { videoId: string }): void;
+
+  // Background → Content script: start playing iframe video at 4x speed
+  startIframePlayback(data: { videoId: string }): void;
+
+  // Content script → Background: iframe video progress update
+  iframePlaybackProgress(data: {
+    videoId: string;
+    currentTime: number;
+    duration: number;
+    ended: boolean;
+  }): void;
 
   // Content script → Background: download all items in a playlist
   requestPlaylistDownload(data: {

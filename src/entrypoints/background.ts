@@ -211,9 +211,9 @@ export default defineBackground(() => {
   // Rewrite Origin header on googlevideo requests from the extension.
   // Chrome strips Origin/Cookie from service worker fetch even with host_permissions.
   // Use declarativeNetRequest to inject the required headers.
-  // Only available on Chrome (not Firefox), guarded by optional chaining.
-  // @ts-expect-error -- chrome.declarativeNetRequest is Chrome-only and not in WXT types
-  const declarativeNetRequest = globalThis.chrome?.declarativeNetRequest;
+  // Available on Chrome and Firefox MV3. WXT's `browser` resolves correctly.
+  // @ts-expect-error -- declarativeNetRequest not in WXT types
+  const declarativeNetRequest = browser.declarativeNetRequest;
   // Cookie string for googlevideo requests.
   // chrome.cookies.getAll() returns empty in copied profiles (DPAPI encryption),
   // so we build the string from individual cookie.get() calls instead.
@@ -852,72 +852,44 @@ export default defineBackground(() => {
       progressType: ProgressType.Video
     }, originTabId);
 
-    // Visibility spoofing is handled by visibility-spoof.content.ts
-    // (registered with allFrames: true, runs at document_start).
     // Wait for YouTube player to initialize in the iframe.
+    // Visibility spoofing is handled by visibility-spoof.content.ts
+    // (allFrames: true, document_start).
     await new Promise(resolve => {
       return globalThis.setTimeout(resolve, 8000);
     });
 
-    // Start playback at 4x and monitor via polling from the background
-    await browser.scripting.executeScript({
-      target: { tabId: originTabId, frameIds: [iframeResult.frameId] },
-      world: "MAIN",
-      func() {
-        const video = document.querySelector("video");
-        if (video) {
-          video.muted = true;
-          video.playbackRate = 4;
-          video.play().catch(() => {});
-        }
+    // Tell the content script to play the iframe's video at 4x speed.
+    // Uses same-origin DOM access (not executeScript which YouTube overrides).
+    await sendMessage(MessageType.StartIframePlayback, {
+      videoId: data.videoId
+    }, originTabId);
+
+    // Listen for playback progress and forward to UI
+    const removeProgressListener = onMessage(MessageType.IframePlaybackProgress, ({ data: progressData }) => {
+      if (progressData.videoId !== data.videoId) {
+        return;
+      }
+
+      const progress = progressData.duration > 0
+        ? progressData.currentTime / progressData.duration
+        : 0;
+
+      void sendMessage(MessageType.UpdateDownloadProgress, {
+        videoId: data.videoId,
+        progress: Math.min(progress * 0.8, 0.8),
+        progressType: ProgressType.Video
+      }, originTabId);
+
+      if (progressData.ended) {
+        removeProgressListener();
       }
     });
 
-    // Poll video progress and report to UI
-    const pollInterval = globalThis.setInterval(async () => {
-      try {
-        const [result] = await browser.scripting.executeScript({
-          target: { tabId: originTabId, frameIds: [iframeResult.frameId] },
-          func() {
-            const video = document.querySelector("video");
-            if (!video) {
-              return { currentTime: 0, duration: 0, ended: false, paused: false };
-            }
-
-            // Resume if paused (buffer underrun)
-            if (video.paused && !video.ended) {
-              video.play().catch(() => {});
-            }
-
-            return {
-              currentTime: video.currentTime,
-              duration: video.duration || 0,
-              ended: video.ended,
-              paused: video.paused
-            };
-          }
-        });
-
-        const state = result?.result;
-        if (!state) {
-          return;
-        }
-
-        const progress = state.duration > 0 ? state.currentTime / state.duration : 0;
-        await sendMessage(MessageType.UpdateDownloadProgress, {
-          videoId: data.videoId,
-          progress: Math.min(progress * 0.8, 0.8), // 0-80% is playback, 80-100% is FFmpeg
-          progressType: ProgressType.Video
-        }, originTabId);
-
-        if (state.ended) {
-          globalThis.clearInterval(pollInterval);
-        }
-      } catch {
-        // Tab/frame might be gone
-        globalThis.clearInterval(pollInterval);
-      }
-    }, 3000);
+    // Safety cleanup after 15 min
+    globalThis.setTimeout(() => {
+      removeProgressListener();
+    }, 15 * 60 * 1000);
 
     // Keep SW alive
     await sendMessage(MessageType.StartKeepalive, { videoId: data.videoId }, originTabId);

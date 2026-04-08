@@ -272,6 +272,54 @@ export default defineContentScript({
       });
     });
 
+    // Play iframe video at 4x speed via same-origin DOM access.
+    // executeScript from the background can't reliably control YouTube's player
+    // because it runs in a fresh execution context that the player overrides.
+    onMessage(MessageType.StartIframePlayback, ({ data: playbackData }) => {
+      const elIframe = downloadIframes.get(playbackData.videoId);
+      if (!elIframe) {
+        return;
+      }
+
+      const elVideo = elIframe.contentDocument?.querySelector("video");
+      if (!elVideo) {
+        return;
+      }
+
+      elVideo.muted = true;
+      elVideo.playbackRate = 4;
+      elVideo.play().catch(() => {});
+
+      // Poll progress and report to background. Resume on buffer underruns.
+      const progressInterval = globalThis.setInterval(() => {
+        if (elVideo.ended) {
+          globalThis.clearInterval(progressInterval);
+          void sendMessage(MessageType.IframePlaybackProgress, {
+            videoId: playbackData.videoId,
+            currentTime: elVideo.currentTime,
+            duration: elVideo.duration || 0,
+            ended: true
+          });
+          return;
+        }
+
+        if (elVideo.paused) {
+          elVideo.play().catch(() => {});
+        }
+
+        void sendMessage(MessageType.IframePlaybackProgress, {
+          videoId: playbackData.videoId,
+          currentTime: elVideo.currentTime,
+          duration: elVideo.duration || 0,
+          ended: false
+        });
+      }, 3000);
+
+      context.onInvalidated(() => {
+        globalThis.clearInterval(progressInterval);
+      });
+    });
+
     const unwatchOptions = optionsItem.watch(newOptions => {
       if (!newOptions) {
         return;
