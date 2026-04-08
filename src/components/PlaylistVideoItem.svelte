@@ -33,10 +33,11 @@
 
   type Props = {
     videoId: string;
+    gridTitle?: string;
     options: Options;
   };
 
-  const { videoId, options }: Props = $props();
+  const { videoId, gridTitle, options }: Props = $props();
 
   let videoData = $state<VideoData | null>(null);
   const defaultProgressState: DownloadProgressState = {
@@ -121,7 +122,8 @@
     const outputExtension = selectedVideoFormat && selectedAudioFormat && !videoData.isMusic
       ? getOutputExtension(selectedVideoFormat.mimeType, selectedAudioFormat.mimeType, resolvedExtension)
       : resolvedExtension;
-    const filenameOutput = getCompatibleFilename(`${videoData.title}.${outputExtension}`);
+    const title = gridTitle || videoData.title;
+    const filenameOutput = getCompatibleFilename(`${title}.${outputExtension}`);
     if (!videoData.sabrConfig) {
       return;
     }

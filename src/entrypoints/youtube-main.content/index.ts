@@ -73,6 +73,7 @@ declare global {
 export default defineContentScript({
   matches: ["https://www.youtube.com/*"],
   world: "MAIN",
+  allFrames: true,
   async main() {
     // Skip non-download iframes (ads, embeds). Only the main page and
     // download iframes (&ytdl=1) need full initialization.

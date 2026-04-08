@@ -89,6 +89,9 @@ function injectGridVideoButton({ context, options, elCard }: {
     return;
   }
 
+  // Extract the grid title from YouTube's DOM (may differ from player response title)
+  const gridTitle = elCard.querySelector("h3")?.textContent?.trim() ?? "";
+
   const elItemContainer = document.createElement("div");
   elItemContainer.dataset.ytdlGridItem = videoId;
 
@@ -109,6 +112,7 @@ function injectGridVideoButton({ context, options, elCard }: {
         target: elUiContainer,
         props: {
           videoId,
+          gridTitle,
           options
         }
       });

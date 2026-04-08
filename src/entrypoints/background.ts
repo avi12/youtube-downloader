@@ -146,68 +146,8 @@ export default defineBackground(() => {
     });
   }
 
-  // Register content scripts dynamically. persistAcrossSessions keeps them
-  // across SW restarts, so we only register when missing.
-  void (async () => {
-    const registered = await browser.scripting.getRegisteredContentScripts();
-    // Always unregister and re-register to pick up config changes
-    // (e.g. allFrames toggled, runAt changed).
-    const allIds = registered.map(script => {
-      return script.id;
-    });
-    if (allIds.length > 0) {
-      await browser.scripting.unregisterContentScripts({ ids: allIds });
-    }
-
-    await browser.scripting.registerContentScripts([
-      {
-        id: "ytdl-main",
-        js: ["content-scripts/youtube-main.js"],
-        matches: ["https://www.youtube.com/*"],
-        world: "MAIN",
-        runAt: "document_start",
-        allFrames: true
-      },
-      {
-        id: "ytdl-isolated",
-        js: ["content-scripts/youtube.js"],
-        css: ["content-scripts/youtube.css"],
-        matches: ["https://www.youtube.com/*"],
-        allFrames: true
-      }
-    ]);
-  })();
-
-  // On install/update, inject into existing YouTube tabs.
-  // Dynamically registered scripts only apply to NEW navigations.
-  browser.runtime.onInstalled.addListener(async () => {
-    try {
-      const youtubeTabs = await browser.tabs.query({ url: "https://www.youtube.com/*" });
-      for (const tab of youtubeTabs) {
-        if (!tab.id) {
-          continue;
-        }
-
-        await browser.scripting.executeScript({
-          target: { tabId: tab.id },
-          files: ["content-scripts/youtube-main.js"],
-          world: "MAIN"
-        }).catch(() => {});
-
-        await browser.scripting.executeScript({
-          target: { tabId: tab.id },
-          files: ["content-scripts/youtube.js"]
-        }).catch(() => {});
-
-        await browser.scripting.insertCSS({
-          target: { tabId: tab.id },
-          files: ["content-scripts/youtube.css"]
-        }).catch(() => {});
-      }
-    } catch {
-      // Tabs not ready yet - scripts will inject on next navigation
-    }
-  });
+  // Content scripts are declared statically via defineContentScript in each
+  // entrypoint file. WXT generates the manifest content_scripts entries.
 
   // Rewrite Origin header on googlevideo requests from the extension.
   // Chrome strips Origin/Cookie from service worker fetch even with host_permissions.
