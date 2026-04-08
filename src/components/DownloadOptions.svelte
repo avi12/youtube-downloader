@@ -73,11 +73,6 @@
     onvalidationchange(isFilenameValid);
   });
 
-  function validateFilename(elInput: HTMLInputElement, value: string) {
-    const errorMessage = getFilenameError(value, extensionType);
-    elInput.setCustomValidity(errorMessage);
-  }
-
   const DOWNLOAD_TYPES: {
     value: DownloadType;
     label: string;
@@ -98,21 +93,23 @@
 
   const isAudio = $derived(downloadType === DownloadType.Audio);
 
-  const qualityOptions = $derived(
-    isAudio
-      ? audioFormats.map(format => ({
+  const qualityOptions = $derived.by(() => {
+    if (isAudio) {
+      return audioFormats.map(format => ({
         value: format.itag.toString(),
         label: `${Math.floor(format.bitrate / 1000)} kbps`
-      }))
-      : videoFormats.map(format => {
-        const isPremium = format.qualityLabel?.includes("Premium") ?? false;
-        const base = `${format.height}p${format.fps ? ` ${format.fps}fps` : ""}`;
-        return {
-          value: format.itag.toString(),
-          label: isPremium ? `${base} (Enhanced)` : base
-        };
-      })
-  );
+      }));
+    }
+
+    return videoFormats.map(format => {
+      const isPremium = format.qualityLabel?.includes("Premium") ?? false;
+      const base = `${format.height}p${format.fps ? ` ${format.fps}fps` : ""}`;
+      return {
+        value: format.itag.toString(),
+        label: isPremium ? `${base} (Enhanced)` : base
+      };
+    });
+  });
 
   const qualityValue = $derived(
     isAudio
@@ -130,7 +127,7 @@
     onfilenamechange(name);
     onextensionchange(extension);
 
-    validateFilename(e.target, value);
+    e.target.setCustomValidity(getFilenameError(value, extensionType));
   }
 
   function applyPolymerTheme(elTarget: Element) {
