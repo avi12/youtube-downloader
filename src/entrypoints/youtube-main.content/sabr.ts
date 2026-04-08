@@ -3,7 +3,7 @@ import { type AdaptiveFormatItem, type VideoData } from "@/types";
 import { SabrStream } from "googlevideo/sabr-stream";
 import { buildSabrFormat } from "googlevideo/utils";
 
-export function adaptiveFormatToSabrFormat(format: AdaptiveFormatItem) {
+function adaptiveFormatToSabrFormat(format: AdaptiveFormatItem) {
   return buildSabrFormat({
     itag: format.itag,
     lastModified: String(format.lastModified),
@@ -23,7 +23,7 @@ export function adaptiveFormatToSabrFormat(format: AdaptiveFormatItem) {
   });
 }
 
-export async function collectReadableStream(stream: ReadableStream<Uint8Array>) {
+async function collectReadableStream(stream: ReadableStream<Uint8Array>) {
   const reader = stream.getReader();
   const chunks: Uint8Array[] = [];
   let totalBytes = 0;
@@ -49,7 +49,7 @@ export async function collectReadableStream(stream: ReadableStream<Uint8Array>) 
 }
 
 // On watch pages, YouTube's Service Worker handles CORS for googlevideo.com.
-export function createSabrStream(
+function createSabrStream(
   sabrConfig: NonNullable<VideoData["sabrConfig"]>,
   originalFetch: typeof globalThis.fetch,
   capturedPoToken: string

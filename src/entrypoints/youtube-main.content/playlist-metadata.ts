@@ -11,7 +11,7 @@ declare global {
   }
 }
 
-export function extractPlaylistMetadata() {
+function extractPlaylistMetadata() {
   const { header, metadata } = window.ytInitialData ?? {};
   if (!header && !metadata) {
     playlistMetadataSignal.value = null;
@@ -31,7 +31,7 @@ export function extractPlaylistMetadata() {
   playlistMetadataSignal.value = { playlistId, playlistTitle };
 }
 
-export function handleNavigation() {
+function handleNavigation() {
   cleanupSegmentedButton();
   void crossWorldMessenger.sendMessage(CrossWorldMessage.Navigation, { url: location.href });
   extractPlaylistMetadata();

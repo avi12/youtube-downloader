@@ -3,7 +3,6 @@ import { checkInterruptedDownload, listenForInterruptedDownloadEvents } from "./
 import { listenForKeepalive } from "./keepalive";
 import { handlePageChange, setNativeDownloadVisibility } from "./page-router";
 import { mountPanelUi } from "./panel-ui";
-import { listenForDownloadRequests } from "./sabr-download";
 import {
   cancelStreamTransfer,
   handleStreamData,
@@ -101,9 +100,12 @@ export default defineContentScript({
       void sendMessage(MessageType.DownloadIframeReady, { videoId: data.videoId });
     });
 
+    crossWorldMessenger.onMessage(CrossWorldMessage.DownloadRequest, ({ data }) => {
+      uncancelStreamTransfer(data.videoId);
+    });
+
     listenForInterruptedDownloadEvents();
     listenForSabrBodyReady();
-    listenForDownloadRequests();
     listenForKeepalive();
     listenForDownloadIframes(context);
     void forwardSabrCredentialsWithRetry();

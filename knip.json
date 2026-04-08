@@ -8,5 +8,5 @@
     "src/entrypoints/*.content/index.ts"
   ],
   "project": ["src/**/*.{ts,svelte}"],
-  "ignore": ["scripts/**", "dev/**", ".wxt/**"]
+  "ignoreDependencies": ["@ffmpeg/core", "@ffmpeg/core-st", "@ffmpeg/util", "ws", "@stylistic/stylelint-plugin", "@wxt-dev/module-svelte"]
 }

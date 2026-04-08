@@ -6,7 +6,7 @@ import { CrossWorldMessage, crossWorldMessenger } from "@/lib/cross-world-messen
 import { sabrCredentials } from "@/lib/synced-stores.svelte";
 import { type AdaptiveFormatItem, type DownloadRequest, DownloadType } from "@/types";
 
-export interface StreamDataEvent {
+interface StreamDataEvent {
   type: DownloadType;
   videoId: string;
   filenameOutput: string;
@@ -22,7 +22,7 @@ export interface StreamDataEvent {
   }>;
 }
 
-export const activeDownloads = new Map<string, AbortController>();
+const activeDownloads = new Map<string, AbortController>();
 
 export function cancelActiveDownload(videoId: string) {
   const controller = activeDownloads.get(videoId);
@@ -32,7 +32,7 @@ export function cancelActiveDownload(videoId: string) {
   }
 }
 
-export function getExtraAudioFormats(
+function getExtraAudioFormats(
   audioFormats: AdaptiveFormatItem[],
   selectedTrackId: string | undefined
 ) {
@@ -53,7 +53,7 @@ export function getExtraAudioFormats(
   });
 }
 
-export function dispatchStreamData({
+function dispatchStreamData({
   type, videoId, filenameOutput,
   videoData, audioData, videoMimeType, audioMimeType,
   audioLabel, additionalAudioData
@@ -72,7 +72,7 @@ export function dispatchStreamData({
   });
 }
 
-export function dispatchStreamError(videoId: string, error: string) {
+function dispatchStreamError(videoId: string, error: string) {
   void crossWorldMessenger.sendMessage(CrossWorldMessage.StreamError, {
     videoId,
     error

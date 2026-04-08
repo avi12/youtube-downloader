@@ -15,7 +15,7 @@ import {
   type YtButtonViewModelElement
 } from "@/types";
 
-export const VIDEO_ACTION_BUTTON_SELECTORS = [
+const VIDEO_ACTION_BUTTON_SELECTORS = [
   "#above-the-fold #top-level-buttons-computed",
   "ytd-watch-metadata #top-level-buttons-computed",
   "#top-level-buttons-computed"
