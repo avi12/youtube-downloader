@@ -154,7 +154,7 @@ async function triggerDownload(data: Uint8Array, filenameOutput: string) {
   const filename = getCompatibleFilename(filenameOutput);
   // Chrome offscreen document has Blob + URL.createObjectURL.
   // Firefox service worker does not, so fall back to base64 data URL.
-  if (typeof Blob !== "undefined" && typeof URL.createObjectURL === "function") {
+  try {
     const blob = new Blob([new Uint8Array(data)], { type: mimeType });
     const blobUrl = URL.createObjectURL(blob);
     await sendMessage(MessageType.PipelineDownload, {
@@ -164,9 +164,9 @@ async function triggerDownload(data: Uint8Array, filenameOutput: string) {
     });
     setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
     return;
+  } catch {
+    // Firefox service worker: fall back to base64 data URL
   }
-
-  // Firefox fallback: base64 data URL
   const blobUrl = `data:${mimeType};base64,${uint8ToBase64(data)}`;
   await sendMessage(MessageType.PipelineDownload, {
     blobUrl,
