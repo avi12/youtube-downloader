@@ -225,27 +225,4 @@ export default [
     }
   },
 
-  // BotGuard VM has a fully dynamic runtime shape — type assertions unavoidable
-  {
-    files: ["src/lib/po-token-generator.ts"],
-    rules: {
-      "@typescript-eslint/consistent-type-assertions": "off"
-    }
-  },
-  // Legacy pre-WXT scripts — incompatible with current rules, not part of new architecture
-  {
-    files: ["src/scripts/**"],
-    rules: {
-      "@typescript-eslint/consistent-type-assertions": "off",
-      "@typescript-eslint/ban-types": "off",
-      "@typescript-eslint/no-unsafe-function-type": "off",
-      "no-async-promise-executor": "off",
-      "no-constant-condition": "off",
-      "func-style": "off",
-      "no-restricted-syntax": "off",
-      "svelte/require-each-key": "off",
-      "@stylistic/max-len": "off",
-      "id-length": "off"
-    }
-  }
 ];

@@ -42,7 +42,7 @@ export async function generatePoToken(videoId: string) {
     }
   );
 
-  const challengeData = await challengeResponse.json() as ChallengeResponse;
+  const challengeData: ChallengeResponse = await challengeResponse.json();
   const program: string | undefined = challengeData.bgChallenge?.program;
   const globalName: string | undefined = challengeData.bgChallenge?.globalName;
   if (!program || !globalName) {
@@ -99,8 +99,9 @@ export async function generatePoToken(videoId: string) {
     throw new Error("Sync snapshot function not available");
   }
 
-  const callSnapshotFunction = syncSnapshotFunction as (args: unknown[]) => unknown;
-  const snapshotResponse = callSnapshotFunction([undefined, undefined, webPoSignalOutput, undefined]);
+  const snapshotResponse: unknown = syncSnapshotFunction.call(
+    null, [undefined, undefined, webPoSignalOutput, undefined]
+  );
   if (!snapshotResponse) {
     throw new Error("Empty snapshot response");
   }
