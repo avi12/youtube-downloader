@@ -1045,11 +1045,12 @@ export default defineContentScript({
 
       // Set Polymer scoping class and data AFTER insertion so connectedCallback
       // does not wipe the class attribute
-      elDownloadButton.classList.add(...scopingClass.split(" ").filter(Boolean));
+      const scopingClasses = scopingClass.match(/\S+/g) ?? [];
+      elDownloadButton.classList.add(...scopingClasses);
       elDownloadButton.data = buildDownloadData();
       elDownloadButton.dataset.ytdlDownload = "true";
 
-      elChevronButton.classList.add(...scopingClass.split(" ").filter(Boolean));
+      elChevronButton.classList.add(...scopingClasses);
       elChevronButton.data = buildChevronData();
       // [data-ytdl-chevron] suppresses the automatic margin-left between
       // adjacent yt-button-view-model siblings so the buttons sit flush.
