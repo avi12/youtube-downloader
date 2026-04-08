@@ -47,14 +47,8 @@ export default defineConfig({
     ]
   }),
   vite: () => ({
-    server: {
-      strictPort: false,
-      watch: { usePolling: true, interval: 1000 }
-    },
-    build: {
-      sourcemap: true,
-      watch: { chokidar: { usePolling: true, interval: 1000 } }
-    }
+    server: { strictPort: false },
+    build: { sourcemap: true }
   }),
   hooks: {
     "prepare:publicPaths"(_, paths) {
