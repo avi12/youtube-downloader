@@ -433,8 +433,8 @@ async function processVideoAudio(item: ProcessStreamData, ffmpeg: FFmpeg) {
     await ffmpeg.writeFile(primaryAudioFilename, audioData);
 
     const extraAudioFilenames: string[] = [];
-    for (let iTrack = 0; iTrack < additionalAudioStreams.length; iTrack++) {
-      const stream = additionalAudioStreams[iTrack];
+    for (let i = 0; i < additionalAudioStreams.length; i++) {
+      const stream = additionalAudioStreams[i];
       const extraData = toUint8Array(stream.data);
       if (!extraData) {
         continue;
@@ -442,7 +442,7 @@ async function processVideoAudio(item: ProcessStreamData, ffmpeg: FFmpeg) {
 
       const isExtraWebm = stream.mimeType.includes("webm");
       const extraExtension = isExtraWebm ? "webm" : "m4a";
-      const extraFilename = `${videoId}-audio-extra-${iTrack}.${extraExtension}`;
+      const extraFilename = `${videoId}-audio-extra-${i}.${extraExtension}`;
       await ffmpeg.writeFile(extraFilename, extraData);
       extraAudioFilenames.push(extraFilename);
     }
