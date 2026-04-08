@@ -242,7 +242,7 @@ export default defineBackground(() => {
     tabTracker[originTabId] ??= { videoIdsAvailable: [] };
     tabTracker[originTabId].videoIdsAvailable.push(data.videoId);
 
-    await sendMessage(MessageType.StartKeepalive, { videoId: data.videoId }, originTabId);
+    void sendMessage(MessageType.StartKeepalive, { videoId: data.videoId }, originTabId);
   });
 
   // Keepalive ping from content scripts - resets SW idle timer
@@ -254,13 +254,14 @@ export default defineBackground(() => {
       return;
     }
 
-    for (const item of data.items) {
-      await sendMessage(MessageType.ExecuteDownloadItem, item, tabId);
+    await Promise.all(data.items.map(item => {
+      return sendMessage(MessageType.ExecuteDownloadItem, item, tabId);
     }
+    ));
   });
 
-  onMessage(MessageType.CancelDownload, async ({ data }) => {
-    await cancelDownloads(data.videoIds);
+  onMessage(MessageType.CancelDownload, ({ data }) => {
+    void cancelDownloads(data.videoIds);
   });
 
   // - Pipeline storage handlers (chrome.storage unavailable in offscreen) -
