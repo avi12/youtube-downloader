@@ -55,7 +55,7 @@ export function createSabrStream(
   capturedPoToken: string
 ) {
   const sabrFormats = sabrConfig.formats.map(adaptiveFormatToSabrFormat);
-  const durationMs = parseInt(sabrConfig.formats[0]?.approxDurationMs ?? "0");
+  const durationMs = parseInt(sabrConfig.formats[0]?.approxDurationMs ?? "0", 10);
 
   return new SabrStream({
     fetch: originalFetch,

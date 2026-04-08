@@ -57,7 +57,7 @@ export async function buildAndDispatchVideoData(
   cancelActiveDownload: (videoId: string) => void
 ) {
   const { clientVersion, clientName } = readYtcfg();
-  const videoData: VideoData = buildVideoData({ playerResponse, clientVersion, clientName });
+  const videoData = buildVideoData({ playerResponse, clientVersion, clientName });
 
   videoDataCache.set(videoData.videoId, videoData);
   videoDataStore.set(videoData.videoId, videoData);
