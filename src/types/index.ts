@@ -41,6 +41,16 @@ export enum VideoQualityMode {
   Custom = "custom"
 }
 
+export enum PlaylistDownloadMode {
+  Fast = "fast",
+  DataSaver = "dataSaver"
+}
+
+export enum PlaylistOutputMode {
+  Individual = "individual",
+  Zip = "zip"
+}
+
 export type ProgressUpdate = {
   videoId: string;
   progress: number;

@@ -117,7 +117,8 @@ interface ProtocolMap {
   requestPlaylistDownload(data: {
     items: DownloadRequest[];
     playlistTitle?: string;
-    isZipBundle?: boolean;
+    isZipBundle: boolean;
+    isSequential: boolean;
   }): void;
 
   // Content script → Background: cancel one or more downloads

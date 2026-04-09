@@ -1,3 +1,4 @@
+import { signalVideoComplete } from "./sequential-queue";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging";
 import { isFFmpegReadyItem, statusProgressItem } from "@/lib/storage";
 import { ProgressType } from "@/types";
@@ -66,6 +67,7 @@ export function registerPipelineHandlers() {
     const current = await statusProgressItem.getValue();
     delete current[videoId];
     await statusProgressItem.setValue(current);
+    signalVideoComplete(videoId);
   });
 
   onMessage(MessageType.PipelineFFmpegReady, () => {

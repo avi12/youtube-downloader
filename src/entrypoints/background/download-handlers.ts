@@ -1,7 +1,16 @@
+import { awaitVideoComplete } from "./sequential-queue";
 import { cancelDownloads, trackVideoForTab } from "./tab-tracker";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging";
+import type { DownloadRequest } from "@/types";
 
 const bufferChunkSize = 8192;
+
+async function dispatchSequentially(items: DownloadRequest[], tabId: number) {
+  for (const item of items) {
+    await sendMessage(MessageType.ExecuteDownloadItem, item, tabId);
+    await awaitVideoComplete(item.videoId);
+  }
+}
 
 export function registerDownloadHandlers() {
   // Proxy SABR fetch requests through the background SW, which has host_permissions
@@ -96,8 +105,12 @@ export function registerDownloadHandlers() {
       return;
     }
 
-    void Promise.allSettled(data.items.map(item =>
-      sendMessage(MessageType.ExecuteDownloadItem, item, tabId)));
+    if (data.isSequential) {
+      void dispatchSequentially(data.items, tabId);
+    } else {
+      void Promise.allSettled(data.items.map(item =>
+        sendMessage(MessageType.ExecuteDownloadItem, item, tabId)));
+    }
   });
 
   onMessage(MessageType.CancelDownload, ({ data }) => {

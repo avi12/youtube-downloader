@@ -13,7 +13,9 @@
     ButtonState,
     ButtonStyle,
     ButtonType,
-    IconName
+    IconName,
+    PlaylistDownloadMode,
+    PlaylistOutputMode
   } from "@/types";
   import { DownloadType } from "@/types";
   import type { Options, VideoData } from "@/types";
@@ -30,6 +32,8 @@
   let downloadedCount = $state(0);
   let totalCount = $state(0);
   let error = $state("");
+  let downloadMode = $state(PlaylistDownloadMode.Fast);
+  let outputMode = $state(PlaylistOutputMode.Zip);
 
   // Collect video data as each playlist item reports in
   // Reactively sync video data from the synced store
@@ -102,6 +106,7 @@
     const metadata = playlistMetadataSignal.value;
     const playlistTitle = metadata?.playlistTitle || "Playlist";
     const playlistId = metadata?.playlistId || `playlist-${Date.now()}`;
+    const isZipBundle = outputMode === PlaylistOutputMode.Zip;
 
     const downloadRequests = checkedDownloadableVideos.map(data => {
       let downloadType: DownloadType = data.isMusic ? DownloadType.Audio : DownloadType.VideoAndAudio;
@@ -118,9 +123,11 @@
         audioItag: data.audioFormats[0]?.itag ?? 0,
         filenameOutput,
         sabrConfig: data.sabrConfig,
-        playlistId,
-        playlistTitle,
-        playlistTotalCount: checkedDownloadableVideos.length
+        ...(isZipBundle && {
+          playlistId,
+          playlistTitle,
+          playlistTotalCount: checkedDownloadableVideos.length
+        })
       };
     });
 
@@ -128,7 +135,8 @@
       await sendMessage(MessageType.RequestPlaylistDownload, {
         items: downloadRequests,
         playlistTitle,
-        isZipBundle: true
+        isZipBundle,
+        isSequential: downloadMode === PlaylistDownloadMode.DataSaver
       });
     } catch {
       error = "Failed to start downloads - please try again";
@@ -187,6 +195,120 @@
     }
   }
 
+  // ─── Download mode toggle buttons ────────────────────────────────────────────
+
+  let elFastButton = $state<HTMLElement | null>(null);
+  let elDataSaverButton = $state<HTMLElement | null>(null);
+  let elIndividualButton = $state<HTMLElement | null>(null);
+  let elZipButton = $state<HTMLElement | null>(null);
+
+  function sendModeButtonData(
+    elButton: HTMLElement, label: string, tooltip: string, isActive: boolean, buttonId: string
+  ) {
+    if (!elButton.hasAttribute("data-ytdl-button-id")) {
+      elButton.setAttribute("data-ytdl-button-id", buttonId);
+    }
+
+    sendButtonData(elButton, {
+      iconName: IconName.None,
+      title: label,
+      accessibilityText: label,
+      style: ButtonStyle.Mono,
+      type: isActive ? ButtonType.Tonal : ButtonType.Outline,
+      buttonSize: ButtonSize.Default,
+      state: ButtonState.Active,
+      isFullWidth: false,
+      isDisabled: false,
+      tooltip
+    });
+  }
+
+  function refreshModeButtons() {
+    if (elFastButton) {
+      sendModeButtonData(
+        elFastButton,
+        "Fast",
+        "Download all videos simultaneously",
+        downloadMode === PlaylistDownloadMode.Fast,
+        "playlist-mode-fast"
+      );
+    }
+
+    if (elDataSaverButton) {
+      sendModeButtonData(
+        elDataSaverButton,
+        "Data saver",
+        "Download videos one at a time to save bandwidth",
+        downloadMode === PlaylistDownloadMode.DataSaver,
+        "playlist-mode-data-saver"
+      );
+    }
+
+    if (elIndividualButton) {
+      sendModeButtonData(
+        elIndividualButton,
+        "Individual files",
+        "Save each video as a separate file",
+        outputMode === PlaylistOutputMode.Individual,
+        "playlist-output-individual"
+      );
+    }
+
+    if (elZipButton) {
+      sendModeButtonData(
+        elZipButton,
+        "ZIP bundle",
+        "Bundle all videos into a single ZIP file",
+        outputMode === PlaylistOutputMode.Zip,
+        "playlist-output-zip"
+      );
+    }
+  }
+
+  $effect(() => {
+    void downloadMode;
+    void outputMode;
+    refreshModeButtons();
+  });
+
+  function attachFastButton(elButton: Element) {
+    if (!(elButton instanceof HTMLElement)) {
+      return;
+    }
+
+    elFastButton = elButton;
+    refreshModeButtons();
+  }
+
+  function attachDataSaverButton(elButton: Element) {
+    if (!(elButton instanceof HTMLElement)) {
+      return;
+    }
+
+    elDataSaverButton = elButton;
+    refreshModeButtons();
+  }
+
+  function attachIndividualButton(elButton: Element) {
+    if (!(elButton instanceof HTMLElement)) {
+      return;
+    }
+
+    elIndividualButton = elButton;
+    refreshModeButtons();
+  }
+
+  function attachZipButton(elButton: Element) {
+    if (!(elButton instanceof HTMLElement)) {
+      return;
+    }
+
+    elZipButton = elButton;
+    refreshModeButtons();
+  }
+
+  // ─── Download button ──────────────────────────────────────────────────────────
+
   function attachPlaylistButton(elButton: Element) {
     if (!(elButton instanceof HTMLElement)) {
       return;
@@ -216,8 +338,33 @@
   }
 
   $effect(() => {
-    if (buttonClickSignal.value?.buttonId === "playlist-download-btn") {
+    const clicked = buttonClickSignal.value;
+    if (!clicked?.buttonId) {
+      return;
+    }
+
+    if (clicked.buttonId === "playlist-download-btn") {
       handleDownloadClick();
+      return;
+    }
+
+    if (clicked.buttonId === "playlist-mode-fast") {
+      downloadMode = PlaylistDownloadMode.Fast;
+      return;
+    }
+
+    if (clicked.buttonId === "playlist-mode-data-saver") {
+      downloadMode = PlaylistDownloadMode.DataSaver;
+      return;
+    }
+
+    if (clicked.buttonId === "playlist-output-individual") {
+      outputMode = PlaylistOutputMode.Individual;
+      return;
+    }
+
+    if (clicked.buttonId === "playlist-output-zip") {
+      outputMode = PlaylistOutputMode.Zip;
     }
   });
 </script>
@@ -227,9 +374,18 @@
     <div class="ytdl-error-banner" role="alert">{error}</div>
   {/if}
 
+  <div class="ytdl-toggle-group" aria-label="Download speed" role="group">
+    <yt-button-view-model {@attach attachFastButton}></yt-button-view-model>
+    <yt-button-view-model {@attach attachDataSaverButton}></yt-button-view-model>
+  </div>
+
+  <div class="ytdl-toggle-group" aria-label="Output format" role="group">
+    <yt-button-view-model {@attach attachIndividualButton}></yt-button-view-model>
+    <yt-button-view-model {@attach attachZipButton}></yt-button-view-model>
+  </div>
+
   <div class="ytdl-playlist-actions">
-    <yt-button-view-model {@attach attachPlaylistButton}
-    ></yt-button-view-model>
+    <yt-button-view-model {@attach attachPlaylistButton}></yt-button-view-model>
 
     {#if isDownloading && totalCount > 0}
       <tp-yt-paper-progress
@@ -256,6 +412,11 @@
     flex-direction: column;
     gap: 8px;
     padding: 12px 0;
+  }
+
+  .ytdl-toggle-group {
+    display: flex;
+    gap: 4px;
   }
 
   .ytdl-playlist-actions {

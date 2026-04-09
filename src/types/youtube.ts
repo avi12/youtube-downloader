@@ -176,6 +176,7 @@ export enum ButtonState {
 }
 
 export enum IconName {
+  None = "",
   AccessTime = "ACCESS_TIME",
   AccountBox = "ACCOUNT_BOX",
   Add = "ADD",
