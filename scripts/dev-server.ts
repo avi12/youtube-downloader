@@ -1,26 +1,37 @@
 /**
- * Dev server: WXT createServer + web-ext manages Chrome.
- * Copies the user's Chrome Default profile (Bookmarks only) so the dev
- * instance is signed in without locking the original profile.
+ * Dev server: production builds (with source maps) + Chrome with sideloaded extension.
+ * Uses ./User Data/Profile 1 for the Chrome profile.
+ * On file changes: rebuilds for production and reloads extension + YouTube tabs.
  *
- * Usage: bun scripts/dev-server.ts
+ * Chrome 126+ requires Extensions.loadUnpacked via CDP debug pipes.
+ * web-ext-run (used by WXT internally) handles this via chrome-launcher.
+ * Must run under Node (not Bun) because pipe fd mapping requires Node's spawn.
+ *
+ * Usage: npx tsx scripts/dev-server.ts
  */
 
-import { createServer } from "wxt";
+import { build } from "wxt";
+import chokidar from "chokidar";
+import { debounce } from "perfect-debounce";
+import { resolve, join, dirname } from "node:path";
 import { existsSync, cpSync, mkdirSync } from "node:fs";
-import { dirname, join, resolve } from "node:path";
 import { homedir, platform } from "node:os";
 
 const PROJECT_ROOT = resolve(import.meta.dirname, "..");
-const LANG = process.env.LANG ?? "en";
+const OUTPUT_DIR = resolve(PROJECT_ROOT, ".output/chrome-mv3");
+const USER_DATA_DIR = resolve(PROJECT_ROOT, "User Data");
+const PROFILE_NAME = "Profile 1";
+const LANGUAGE = process.env.LANG ?? "en";
 const START_URL = "https://www.youtube.com/feed/subscriptions";
-const DEV_USER_DATA = resolve(PROJECT_ROOT, "..", "User Data");
+const CDP_PORT = 9229;
+const REBUILD_DEBOUNCE_MS = 800;
+
+// ── Chrome profile setup ────────────────────────────────────────────────────
 
 function setupDevProfile() {
-  const devProfile = join(DEV_USER_DATA, "Default");
-
-  if (existsSync(devProfile)) {
-    return devProfile;
+  const profileDirectory = join(USER_DATA_DIR, PROFILE_NAME);
+  if (existsSync(profileDirectory)) {
+    return profileDirectory;
   }
 
   const home = homedir();
@@ -32,60 +43,151 @@ function setupDevProfile() {
   const source = sourceUserData[platform()];
 
   if (!source || !existsSync(source)) {
-    mkdirSync(devProfile, { recursive: true });
-    return devProfile;
+    mkdirSync(profileDirectory, { recursive: true });
+    return profileDirectory;
   }
 
-  for (const profileDir of ["Default", "Profile 1"]) {
-    const bookmarksPath = join(source, profileDir, "Bookmarks");
+  console.log(`Setting up Chrome profile from ${source}...`);
+  for (const directory of ["Default", PROFILE_NAME]) {
+    const bookmarksPath = join(source, directory, "Bookmarks");
     if (!existsSync(bookmarksPath)) {
       continue;
     }
-
-    const destPath = join(DEV_USER_DATA, profileDir, "Bookmarks");
-    mkdirSync(dirname(destPath), { recursive: true });
-    cpSync(bookmarksPath, destPath);
+    const destinationPath = join(USER_DATA_DIR, directory, "Bookmarks");
+    mkdirSync(dirname(destinationPath), { recursive: true });
+    cpSync(bookmarksPath, destinationPath);
   }
+  console.log("Profile setup complete.");
 
-  return devProfile;
+  return profileDirectory;
 }
+
+// ── Tab reload via HTTP CDP ─────────────────────────────────────────────────
+
+async function reloadYouTubeTabs() {
+  try {
+    const pagesResponse = await fetch(`http://localhost:${CDP_PORT}/json`);
+    const pages: Array<{ url: string; webSocketDebuggerUrl?: string }> =
+      await pagesResponse.json();
+
+    for (const page of pages) {
+      if (!page.url?.includes("youtube.com") || !page.webSocketDebuggerUrl) {
+        continue;
+      }
+      const websocket = new WebSocket(page.webSocketDebuggerUrl);
+      await new Promise<void>(resolve => {
+        websocket.onopen = () => {
+          websocket.send(
+            JSON.stringify({ id: 1, method: "Page.reload", params: {} })
+          );
+        };
+        websocket.onmessage = e => {
+          const data = JSON.parse(String(e.data));
+          if (data.id === 1) {
+            websocket.close();
+            resolve();
+          }
+        };
+        websocket.onerror = () => resolve();
+      });
+    }
+  } catch {
+    // CDP HTTP endpoint not available
+  }
+}
+
+// ── Build ───────────────────────────────────────────────────────────────────
+
+async function buildExtension() {
+  await build({
+    root: PROJECT_ROOT,
+    browser: "chrome",
+    manifestVersion: 3
+  });
+}
+
+// ── Main ────────────────────────────────────────────────────────────────────
 
 async function main() {
   process.chdir(PROJECT_ROOT);
 
-  const server = await createServer({
-    root: PROJECT_ROOT,
-    browser: "chrome",
-    manifestVersion: 3,
-    mode: "development",
-    webExt: {
-      startUrls: [START_URL],
-      keepProfileChanges: true,
-      chromiumProfile: setupDevProfile(),
-      chromiumArgs: [
-        `--lang=${LANG}`,
-        "--remote-debugging-port=9229",
-        "--disable-blink-features=AutomationControlled"
-      ]
+  const profileDirectory = setupDevProfile();
+
+  console.log("Building extension (production + source maps)...");
+  await buildExtension();
+  console.log("Build complete.\n");
+
+  // Suppress noisy web-ext-run logs
+  const WARN_LOG_LEVEL = 40;
+  const webExtLogger = await import("web-ext-run/util/logger");
+  webExtLogger.consoleStream.write = ({
+    level,
+    msg
+  }: {
+    level: number;
+    msg: string;
+    name: string;
+  }) => {
+    if (level >= WARN_LOG_LEVEL) {
+      console.warn(msg);
     }
+  };
+
+  // Launch Chrome via web-ext-run (handles CDP pipes for extension loading)
+  const webExtRun = await import("web-ext-run");
+  const runner = await webExtRun.default.cmd.run(
+    {
+      target: "chromium",
+      sourceDir: OUTPUT_DIR,
+      startUrl: [START_URL],
+      keepProfileChanges: true,
+      chromiumProfile: profileDirectory,
+      args: [
+        `--lang=${LANGUAGE}`,
+        `--remote-debugging-port=${CDP_PORT}`,
+        "--disable-blink-features=AutomationControlled"
+      ],
+      noReload: true,
+      noInput: true
+    },
+    { shouldExitProgram: false }
+  );
+
+  console.log("Chrome launched with extension sideloaded.");
+  console.log("Watching for file changes...\n");
+
+  const watcher = chokidar.watch("src", {
+    cwd: PROJECT_ROOT,
+    ignoreInitial: true,
+    usePolling: true,
+    interval: 500
   });
 
-  await server.start();
-  console.log(`Dev server at ${server.origin}`);
-  console.log("File changes trigger auto-rebuild + extension reload.");
-  console.log("Press Ctrl+C to stop.\n");
+  const onFileChange = debounce(async (_event: string, filePath: string) => {
+    console.log(`\nChange detected: ${filePath}`);
+    console.log("Rebuilding...");
+    try {
+      await buildExtension();
+      await runner.reloadAllExtensions();
+      await reloadYouTubeTabs();
+      console.log(`Reloaded at ${new Date().toLocaleTimeString()}`);
+    } catch (error) {
+      console.error("Rebuild failed:", error);
+    }
+  }, REBUILD_DEBOUNCE_MS);
 
-  // Node exits when the event loop is empty; this timer keeps the process alive
-  const keepAliveIntervalMs = 30_000;
-  const keepAlive = setInterval(() => {}, keepAliveIntervalMs);
+  watcher.on("all", (event, filePath) => onFileChange(event, filePath));
 
   for (const signal of ["SIGINT", "SIGTERM"] as const) {
     process.on(signal, () => {
-      clearInterval(keepAlive);
-      void server.stop();
+      void watcher.close();
+      void runner.exit();
       process.exit(0);
     });
   }
+
+  // Keep process alive until signal
+  await new Promise(() => {});
 }
 
 main().catch(error => {
