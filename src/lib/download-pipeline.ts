@@ -358,10 +358,19 @@ async function processSingleMedia(item: ProcessStreamData) {
       tabId
     });
 
-    await enqueueMuxJob(async () => {
-      const ffmpeg = getFFmpeg();
-      data = await embedMusicMetadata(data!, filenameOutput, item.metadata!, ffmpeg);
-    });
+    function handleMusicFFmpegProgress({ progress }: Progress) {
+      void reportProgress({ videoId, progress, progressType: ProgressType.FFmpeg, tabId });
+    }
+
+    progressHandlers.add(handleMusicFFmpegProgress);
+    try {
+      await enqueueMuxJob(async () => {
+        const ffmpeg = getFFmpeg();
+        data = await embedMusicMetadata(data!, filenameOutput, item.metadata!, ffmpeg);
+      });
+    } finally {
+      progressHandlers.delete(handleMusicFFmpegProgress);
+    }
 
     await reportProgress({
       videoId,
