@@ -1,3 +1,4 @@
+import { signalFFmpegReady } from "./processor";
 import { signalVideoComplete } from "./sequential-queue";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging";
 import { isFFmpegReadyItem, statusProgressItem } from "@/lib/storage";
@@ -72,6 +73,7 @@ export function registerPipelineHandlers() {
 
   onMessage(MessageType.PipelineFFmpegReady, () => {
     void isFFmpegReadyItem.setValue(true);
+    signalFFmpegReady();
   });
 
   onMessage(MessageType.PipelineDownload, ({ data }) => {

@@ -1,5 +1,6 @@
 let processorReady: Promise<void> | null = null;
 let firefoxProcessorTabId: number | null = null;
+let resolveFFmpegReady: (() => void) | null = null;
 
 export function isFirefoxProcessorTab(tabId: number) {
   return tabId === firefoxProcessorTabId;
@@ -8,6 +9,20 @@ export function isFirefoxProcessorTab(tabId: number) {
 export function resetProcessorState() {
   processorReady = null;
   firefoxProcessorTabId = null;
+  resolveFFmpegReady = null;
+}
+
+// Called by pipeline-handlers when the offscreen document signals FFmpeg is loaded.
+// Resolves processorReady so pending chunk sends can proceed.
+export function signalFFmpegReady() {
+  resolveFFmpegReady?.();
+  resolveFFmpegReady = null;
+}
+
+function waitForFFmpegReady() {
+  return new Promise<void>(resolve => {
+    resolveFFmpegReady = resolve;
+  });
 }
 
 async function ensureChromeOffscreenDocument() {
@@ -21,20 +36,26 @@ async function ensureChromeOffscreenDocument() {
   }
 
   if (existingContexts.length > 0) {
-    // In dev, close the stale offscreen document so the new one picks up hot-reload
-    // code changes. In production the document is reused across SW restarts for efficiency.
-    if (!import.meta.env.DEV) {
-      return;
-    }
-
-    await browser.offscreen.closeDocument().catch(() => {});
+    // The offscreen document is already alive — FFmpeg is loaded and ready.
+    // WXT handles hot-reloading via a full extension reload, which closes
+    // and recreates all contexts including this one.
+    return;
   }
 
+  // Set up the FFmpeg-ready promise BEFORE createDocument so we can't miss
+  // the PipelineFFmpegReady signal that fires right after FFmpeg initializes.
+  const ffmpegReady = waitForFFmpegReady();
   await browser.offscreen.createDocument({
     url: "/offscreen.html",
     reasons: [browser.offscreen.Reason.WORKERS],
     justification: "FFmpeg WASM processing requires a Worker context"
   });
+
+  // Wait until initFFmpeg() fires PipelineFFmpegReady → signalFFmpegReady().
+  // Without this, chunks forwarded right after createDocument() are dropped
+  // because the offscreen's onMessage handlers aren't registered until after
+  // the top-level `await createFFmpegCore({})` resolves.
+  await ffmpegReady;
 }
 
 async function ensureFirefoxProcessorTab() {
@@ -47,12 +68,14 @@ async function ensureFirefoxProcessorTab() {
     }
   }
 
+  const ffmpegReady = waitForFFmpegReady();
   const tab = await browser.tabs.create({
     url: browser.runtime.getURL("/offscreen.html"),
     active: false
   });
 
   firefoxProcessorTabId = tab.id ?? null;
+  await ffmpegReady;
 }
 
 export async function ensureProcessor() {
