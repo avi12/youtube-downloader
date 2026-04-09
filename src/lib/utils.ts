@@ -233,8 +233,9 @@ export function formatVideoQualityLabel(format: Pick<AdaptiveFormatItem, "height
 }
 
 /**
- * Calculates weighted download progress: download phase = 0–80%, mux phase = 80–100%.
+ * Calculates weighted download progress: download phase = 0–70%, mux phase = 70–100%.
  * Both phases report their own 0–1 progress value.
+ * When progress reaches 100%, the browser download starts immediately.
  */
 export function calculateWeightedProgress(isDownloading: boolean, progress: number, progressType: ProgressType | "") {
   if (!isDownloading) {
@@ -242,10 +243,10 @@ export function calculateWeightedProgress(isDownloading: boolean, progress: numb
   }
 
   if (progressType === ProgressType.FFmpeg) {
-    return 80 + progress * 20;
+    return 70 + progress * 30;
   }
 
-  return progress * 80;
+  return progress * 70;
 }
 
 // ─── Download utilities ───────────────────────────────────────────────────────

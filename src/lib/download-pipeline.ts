@@ -79,7 +79,7 @@ async function processMuxQueue() {
   isMuxing = false;
 }
 
-function enqueueMuxJob(job: () => Promise<void>) {
+async function enqueueMuxJob(job: () => Promise<void>) {
   return new Promise<void>((resolve, reject) => {
     muxQueue.push(async () => {
       try {
@@ -327,7 +327,7 @@ async function processSingleMedia(item: ProcessStreamData) {
   if (type === DownloadType.Audio && item.metadata?.isMusic) {
     await reportProgress({
       videoId,
-      progress: 0.5,
+      progress: 0,
       progressType: ProgressType.FFmpeg,
       tabId
     });
@@ -344,6 +344,13 @@ async function processSingleMedia(item: ProcessStreamData) {
       tabId
     });
   }
+
+  await reportProgress({
+    videoId,
+    progress: 1,
+    progressType: ProgressType.FFmpeg,
+    tabId
+  });
 
   if (item.playlistId) {
     addToPlaylistBundle({
@@ -387,6 +394,13 @@ async function processVideoAudio(item: ProcessStreamData, ffmpeg: FFmpeg) {
   const videoData = toUint8Array(item.videoData);
   const audioData = toUint8Array(item.audioData);
   if (!videoData || !audioData) {
+    await reportProgress({
+      videoId,
+      progress: 1,
+      progressType: ProgressType.FFmpeg,
+      tabId
+    });
+
     if (videoData) {
       await triggerDownload(videoData, filenameOutput);
     } else if (audioData) {
@@ -398,8 +412,8 @@ async function processVideoAudio(item: ProcessStreamData, ffmpeg: FFmpeg) {
 
   await reportProgress({
     videoId,
-    progress: 0.5,
-    progressType: ProgressType.Video,
+    progress: 0,
+    progressType: ProgressType.FFmpeg,
     tabId
   });
 
@@ -419,7 +433,7 @@ async function processVideoAudio(item: ProcessStreamData, ffmpeg: FFmpeg) {
   function handleFFmpegProgress({ progress }: { progress: number }) {
     void reportProgress({
       videoId,
-      progress: 0.5 + (progress * 0.5),
+      progress,
       progressType: ProgressType.FFmpeg,
       tabId
     });
@@ -487,6 +501,13 @@ async function processVideoAudio(item: ProcessStreamData, ffmpeg: FFmpeg) {
 
     await Promise.all([videoFilename, primaryAudioFilename, outputFilename, ...extraAudioFilenames]
       .map(file => ffmpeg.deleteFile(file)));
+
+    await reportProgress({
+      videoId,
+      progress: 1,
+      progressType: ProgressType.FFmpeg,
+      tabId
+    });
 
     if (item.playlistId) {
       addToPlaylistBundle({

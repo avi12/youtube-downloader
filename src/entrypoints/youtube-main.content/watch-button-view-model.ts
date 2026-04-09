@@ -51,7 +51,9 @@ export function buildDownloadData(state: ButtonViewState): ButtonViewModelData {
 
   let tooltip = "";
   if (state.isDownloadable) {
-    if (state.isDownloading && state.downloadProgress > 0) {
+    if (state.isDownloading && state.downloadProgress === 0) {
+      tooltip = "Preparing";
+    } else if (state.isDownloading) {
       tooltip = percentFormatter.format(state.downloadProgress);
     } else {
       tooltip = state.quality ? `${state.filename} - ${state.quality}` : state.filename;
