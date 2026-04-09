@@ -9,7 +9,7 @@
     attachCloseButton,
     attachDownloadButton,
     attachPanelProgress
-  } from "@/lib/panel-button-attachments";
+  } from "@/lib/panel-button-attachments.svelte";
   import { ProgressType, type Options, type VideoData } from "@/types";
 
   // Grab Polymer's scoping class from an existing action-bar button so that
