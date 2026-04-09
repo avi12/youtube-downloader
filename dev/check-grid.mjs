@@ -29,9 +29,13 @@ for (const page of subPages) {
     });
     ws.on("message", raw => {
       const m = JSON.parse(raw.toString());
-      if (m.id === 1) { resolve(m.result?.result?.value); ws.close(); }
+      if (m.id === 1) {
+        resolve(m.result?.result?.value); ws.close();
+      }
     });
-    setTimeout(() => { ws.close(); resolve("timeout"); }, 5000);
+    setTimeout(() => {
+      ws.close(); resolve("timeout");
+    }, 5000);
   });
   console.log(`Page ${page.id.substring(0, 12)}:`, result);
 }

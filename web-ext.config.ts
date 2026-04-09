@@ -1,6 +1,8 @@
 import { readdirSync, existsSync } from "node:fs";
+import { cpSync, mkdirSync } from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { dirname, resolve } from "node:path";
 import { defineWebExtConfig } from "wxt";
 
 const { LANG = "en" } = process.env;
@@ -41,9 +43,6 @@ function findDefaultFirefoxProfile() {
     return join(profilesDir, found);
   }
 }
-
-import { cpSync, mkdirSync } from "node:fs";
-import { dirname, resolve } from "node:path";
 
 // Set up a Chrome profile with Bookmarks from the real profile.
 // Session data (Cookies, Login Data) uses DPAPI encryption tied to the

@@ -20,10 +20,14 @@ function cdpEval(wsUrl, expression, awaitPromise = false) {
     });
     ws.on("message", raw => {
       const m = JSON.parse(raw.toString());
-      if (m.id === 1) { resolve(m.result?.result?.value || JSON.stringify(m.result)); ws.close(); }
+      if (m.id === 1) {
+        resolve(m.result?.result?.value || JSON.stringify(m.result)); ws.close();
+      }
     });
     ws.on("error", reject);
-    setTimeout(() => { ws.close(); reject(new Error("timeout")); }, 10000);
+    setTimeout(() => {
+      ws.close(); reject(new Error("timeout"));
+    }, 10000);
   });
 }
 
@@ -34,10 +38,13 @@ console.log("YouTube pages:", ytPages.map(p => p.url.substring(0, 60)).join(", "
 if (ACTION === "navigate") {
   // Navigate a YouTube page to subscriptions
   const page = ytPages[0];
-  if (!page) { console.log("No YouTube page"); process.exit(1); }
+  if (!page) {
+    console.log("No YouTube page"); process.exit(1);
+  }
+
   console.log("Navigating", page.url.substring(0, 40), "to subscriptions...");
   const result = await cdpEval(page.webSocketDebuggerUrl,
-    'location.href = "https://www.youtube.com/feed/subscriptions"; "ok"');
+    "location.href = \"https://www.youtube.com/feed/subscriptions\"; \"ok\"");
   console.log("Result:", result);
 }
 
@@ -59,7 +66,9 @@ if (ACTION === "check") {
 if (ACTION === "click") {
   const videoId = process.argv[4] || "SbrLYkh8Ppw";
   const subsPage = ytPages.find(p => p.url.includes("subscriptions"));
-  if (!subsPage) { console.log("No subscriptions page"); process.exit(1); }
+  if (!subsPage) {
+    console.log("No subscriptions page"); process.exit(1);
+  }
 
   const result = await cdpEval(subsPage.webSocketDebuggerUrl, `
     (() => {
@@ -75,7 +84,9 @@ if (ACTION === "click") {
 if (ACTION === "monitor") {
   const videoId = process.argv[4] || "SbrLYkh8Ppw";
   const subsPage = ytPages.find(p => p.url.includes("subscriptions"));
-  if (!subsPage) { console.log("No subscriptions page"); process.exit(1); }
+  if (!subsPage) {
+    console.log("No subscriptions page"); process.exit(1);
+  }
 
   for (let i = 0; i < 12; i++) {
     await new Promise(r => setTimeout(r, 5000));

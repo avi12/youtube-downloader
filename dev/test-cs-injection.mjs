@@ -6,7 +6,13 @@ function cdpGet(path) {
     const request = http.get(`http://localhost:9229${path}`, res => {
       let d = "";
       res.on("data", c => d += c);
-      res.on("end", () => { try { resolve(JSON.parse(d)); } catch { resolve(null); } });
+      res.on("end", () => {
+        try {
+          resolve(JSON.parse(d));
+        } catch {
+          resolve(null);
+        }
+      });
     });
     request.on("error", () => resolve(null));
   });
@@ -19,16 +25,22 @@ async function cdpEval(wsUrl, expression) {
   return new Promise(resolve => {
     ws.on("message", d => {
       const p = JSON.parse(d.toString());
-      if (p.id === 1) { ws.close(); resolve(p.result?.result?.value || p.result?.exceptionDetails?.text || "no result"); }
+      if (p.id === 1) {
+        ws.close(); resolve(p.result?.result?.value || p.result?.exceptionDetails?.text || "no result");
+      }
     });
-    setTimeout(() => { ws.close(); resolve("timeout"); }, 15000);
+    setTimeout(() => {
+      ws.close(); resolve("timeout");
+    }, 15000);
   });
 }
 
 async function main() {
   const targets = await cdpGet("/json/list");
   const sw = targets?.find(t => t.type === "service_worker" && t.url.includes("hmcmoecpiockpfaaeehagiidhkfgijdk"));
-  if (!sw) { console.log("no SW"); return; }
+  if (!sw) {
+    console.log("no SW"); return;
+  }
 
   // Step 1: Unregister all, register minimal test
   console.log("Step 1: Registering minimal test content script...");
@@ -63,7 +75,9 @@ async function main() {
 
   const targets2 = await cdpGet("/json/list");
   const pg = targets2?.find(t => t.type === "page" && t.url.includes("subscriptions"));
-  if (!pg) { console.log("  No subscriptions page"); return; }
+  if (!pg) {
+    console.log("  No subscriptions page"); return;
+  }
 
   const check = await cdpEval(pg.webSocketDebuggerUrl, `JSON.stringify({
     btns: document.querySelectorAll("[data-ytdl-button-id]").length,

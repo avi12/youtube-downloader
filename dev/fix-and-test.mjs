@@ -16,7 +16,10 @@ function cdpEval(wsUrl, expression, contextId) {
     const ws = new WebSocket(wsUrl);
     ws.on("open", () => {
       const params = { expression, awaitPromise: true };
-      if (contextId) params.contextId = contextId;
+      if (contextId) {
+        params.contextId = contextId;
+      }
+
       ws.send(JSON.stringify({ id: 1, method: "Runtime.evaluate", params }));
     });
     ws.on("message", raw => {
@@ -27,7 +30,9 @@ function cdpEval(wsUrl, expression, contextId) {
       }
     });
     ws.on("error", reject);
-    setTimeout(() => { ws.close(); reject(new Error("timeout")); }, 15000);
+    setTimeout(() => {
+      ws.close(); reject(new Error("timeout"));
+    }, 15000);
   });
 }
 
@@ -35,7 +40,9 @@ const pages = await cdpRequest("/json/list");
 
 // Step 1: Unregister stale content scripts
 const sw = pages.find(p => p.type === "service_worker" && p.url.includes("background"));
-if (!sw) { console.log("No extension SW"); process.exit(1); }
+if (!sw) {
+  console.log("No extension SW"); process.exit(1);
+}
 
 console.log("Step 1: Unregistering stale content scripts...");
 const unregResult = await cdpEval(sw.webSocketDebuggerUrl, `
@@ -58,11 +65,11 @@ if (!subsPage) {
   const ytPage = pages.find(p => p.url.includes("youtube") && p.type === "page");
   if (ytPage) {
     console.log("Step 2: Navigating to subscriptions...");
-    await cdpEval(ytPage.webSocketDebuggerUrl, 'location.href = "https://www.youtube.com/feed/subscriptions"; "ok"');
+    await cdpEval(ytPage.webSocketDebuggerUrl, "location.href = \"https://www.youtube.com/feed/subscriptions\"; \"ok\"");
   }
 } else {
   console.log("Step 2: Reloading subscriptions page...");
-  await cdpEval(subsPage.webSocketDebuggerUrl, 'location.reload(); "reloading"');
+  await cdpEval(subsPage.webSocketDebuggerUrl, "location.reload(); \"reloading\"");
 }
 
 // Step 3: Wait for grid items
@@ -71,7 +78,9 @@ await new Promise(r => setTimeout(r, 12000));
 
 const pages2 = await cdpRequest("/json/list");
 const subs = pages2.find(p => p.url.includes("subscriptions") && p.type === "page");
-if (!subs) { console.log("No subscriptions page"); process.exit(1); }
+if (!subs) {
+  console.log("No subscriptions page"); process.exit(1);
+}
 
 const gridCheck = await cdpEval(subs.webSocketDebuggerUrl, `
   (() => {

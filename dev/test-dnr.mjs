@@ -2,11 +2,17 @@ import http from "node:http";
 import WebSocket from "ws";
 
 function cdpGet(path) {
-  return new Promise((resolve) => {
+  return new Promise(resolve => {
     http.get(`http://localhost:9229${path}`, res => {
       let d = "";
       res.on("data", c => d += c);
-      res.on("end", () => { try { resolve(JSON.parse(d)); } catch { resolve(null); } });
+      res.on("end", () => {
+        try {
+          resolve(JSON.parse(d));
+        } catch {
+          resolve(null);
+        }
+      });
     }).on("error", () => resolve(null));
   });
 }
@@ -14,14 +20,19 @@ function cdpGet(path) {
 async function cdpEvalSW(expression) {
   const targets = await cdpGet("/json/list");
   const sw = targets?.find(t => t.type === "service_worker" && t.url.includes("hmcmoecpiockpfaaeehagiidhkfgijdk"));
-  if (!sw) throw new Error("No SW");
+  if (!sw) {
+    throw new Error("No SW");
+  }
+
   const ws = new WebSocket(sw.webSocketDebuggerUrl);
   await new Promise(r => ws.on("open", r));
   ws.send(JSON.stringify({ id: 1, method: "Runtime.evaluate", params: { expression, returnByValue: true, awaitPromise: true } }));
   return new Promise(r => {
     ws.on("message", d => {
       const p = JSON.parse(d.toString());
-      if (p.id === 1) { ws.close(); r(p.result?.result?.value); }
+      if (p.id === 1) {
+        ws.close(); r(p.result?.result?.value);
+      }
     });
   });
 }
@@ -29,14 +40,19 @@ async function cdpEvalSW(expression) {
 async function cdpEvalPage(expression) {
   const targets = await cdpGet("/json/list");
   const pg = targets?.find(t => t.type === "page" && t.url.includes("youtube"));
-  if (!pg) throw new Error("No page");
+  if (!pg) {
+    throw new Error("No page");
+  }
+
   const ws = new WebSocket(pg.webSocketDebuggerUrl);
   await new Promise(r => ws.on("open", r));
   ws.send(JSON.stringify({ id: 1, method: "Runtime.evaluate", params: { expression, returnByValue: true, awaitPromise: true } }));
   return new Promise(r => {
     ws.on("message", d => {
       const p = JSON.parse(d.toString());
-      if (p.id === 1) { ws.close(); r(p.result?.result?.value); }
+      if (p.id === 1) {
+        ws.close(); r(p.result?.result?.value);
+      }
     });
   });
 }
@@ -89,4 +105,6 @@ async function main() {
   console.log("Test fetch result:", fetchResult);
 }
 
-main().then(() => process.exit(0)).catch(e => { console.error(e); process.exit(1); });
+main().then(() => process.exit(0)).catch(e => {
+  console.error(e); process.exit(1);
+});

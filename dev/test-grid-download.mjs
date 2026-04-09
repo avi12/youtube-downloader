@@ -56,6 +56,7 @@ ws.on("message", raw => {
     } else if (msg.result?.exceptionDetails) {
       console.log("ERROR:", msg.result.exceptionDetails.text);
     }
+
     ws.close();
     process.exit();
   }
