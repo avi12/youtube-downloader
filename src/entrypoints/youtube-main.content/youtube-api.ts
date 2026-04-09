@@ -3,10 +3,6 @@ import type { AdaptiveFormatItem, PlayerResponse } from "@/types";
 
 // ─── Format parsing utilities ─────────────────────────────────────────────────
 
-function sortFormatsByBitrate(formats: AdaptiveFormatItem[]) {
-  return formats.toSorted((formatA, formatB) => formatB.bitrate - formatA.bitrate);
-}
-
 function getUniqueVideoFormats(formats: AdaptiveFormatItem[]) {
   const videoFormats = formats.filter(format => format.mimeType.startsWith("video"));
   // Deduplicate by height + premium status so both standard and enhanced
@@ -47,6 +43,10 @@ function getAudioFormats(formats: AdaptiveFormatItem[]) {
 
 // ─── VideoData assembly ───────────────────────────────────────────────────────
 
+function byBitrateDesc(formatA: AdaptiveFormatItem, formatB: AdaptiveFormatItem) {
+  return formatB.bitrate - formatA.bitrate;
+}
+
 function extractSabrConfig({ playerResponse, clientVersion, clientName }: {
   playerResponse: PlayerResponse;
   clientVersion: string;
@@ -77,9 +77,8 @@ export function buildVideoData({ playerResponse, clientVersion, clientName }: {
   const isLive = isVideoLive(playerResponse);
   const isMusic = isVideoMusic(playerResponse);
 
-  const allFormats = isDownloadable
-    ? sortFormatsByBitrate(playerResponse.streamingData?.adaptiveFormats ?? [])
-    : [];
+  const allFormats = (isDownloadable ? playerResponse.streamingData?.adaptiveFormats : null)
+    ?.toSorted(byBitrateDesc) ?? [];
 
   const { videoDetails } = playerResponse;
   return {
