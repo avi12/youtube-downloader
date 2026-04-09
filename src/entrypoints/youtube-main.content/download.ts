@@ -2,9 +2,9 @@ import { capturedPoToken, capturedSabrUrl, setPoTokenCredentials } from "./crede
 import { fetchViaSabrStream, fetchAudioViaSabrStream } from "./sabr";
 import { fetchStreamFromUrl, resolveFormatUrl, assembleChunks } from "./stream-fetch";
 import { videoDataCache, buildVideoMetadata, captureState } from "./video-data";
-import { CrossWorldMessage, crossWorldMessenger } from "@/lib/cross-world-messenger";
+import { crossWorldMessenger, CrossWorldMessage } from "@/lib/cross-world-messenger";
 import { sabrCredentials } from "@/lib/synced-stores.svelte";
-import { type AdaptiveFormatItem, type DownloadRequest, DownloadType } from "@/types";
+import { type AdaptiveFormatItem, type DownloadRequest, DownloadType, ProgressType } from "@/types";
 
 interface StreamDataEvent {
   type: DownloadType;
@@ -72,6 +72,74 @@ function dispatchStreamData({
   });
 }
 
+// SABR fetches are proxied through the background SW, which has host_permissions
+// for googlevideo.com and bypasses CORS without preflight. Direct content script
+// fetches to googlevideo.com are blocked by CORS because the browser only adds
+// sec-fetch-storage-access: active for YouTube's own player, not extension scripts.
+const sabrBodyChunkSize = 8192;
+
+// Creates a fetch function that proxies requests through the background SW and
+// optionally reports download progress based on bytes received vs. expected total.
+// Pass totalExpectedBytes=0 to skip progress reporting (e.g. for extra audio tracks).
+function createSabrFetch(videoId: string, totalExpectedBytes: number) {
+  let receivedBytes = 0;
+
+  return async function (input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+    const url = input instanceof Request ? input.url : String(input);
+    const method = init?.method ?? (input instanceof Request ? input.method : "GET");
+
+    let bodyBase64 = "";
+    if (init?.body) {
+      const bodyBuffer = await new Response(init.body).arrayBuffer();
+      const bodyBytes = new Uint8Array(bodyBuffer);
+      let binary = "";
+      for (let byteOffset = 0; byteOffset < bodyBytes.length; byteOffset += sabrBodyChunkSize) {
+        binary += String.fromCharCode(...bodyBytes.subarray(byteOffset, byteOffset + sabrBodyChunkSize));
+      }
+
+      bodyBase64 = btoa(binary);
+    }
+
+    const headers: Record<string, string> = {};
+    const headersInit = init?.headers ?? (input instanceof Request ? input.headers : undefined);
+    if (headersInit) {
+      for (const [key, value] of new Headers(headersInit)) {
+        headers[key] = value;
+      }
+    }
+
+    const result = await crossWorldMessenger.sendMessage(CrossWorldMessage.ProxyFetch, {
+      url,
+      method,
+      bodyBase64,
+      headers
+    });
+    if (!result) {
+      throw new Error("[ytdl] Proxy fetch failed");
+    }
+
+    const responseBinary = atob(result.bodyBase64);
+    const responseBytes = new Uint8Array(responseBinary.length);
+    for (let byteIndex = 0; byteIndex < responseBinary.length; byteIndex++) {
+      responseBytes[byteIndex] = responseBinary.charCodeAt(byteIndex);
+    }
+
+    if (totalExpectedBytes > 0) {
+      receivedBytes += responseBytes.length;
+      void crossWorldMessenger.sendMessage(CrossWorldMessage.DownloadProgress, {
+        videoId,
+        progress: Math.min(receivedBytes / totalExpectedBytes, 1),
+        progressType: ProgressType.Video
+      });
+    }
+
+    return new Response(responseBytes, {
+      status: result.status,
+      headers: result.responseHeaders
+    });
+  };
+}
+
 function dispatchStreamError(videoId: string, error: string) {
   void crossWorldMessenger.sendMessage(CrossWorldMessage.StreamError, {
     videoId,
@@ -86,7 +154,6 @@ export async function performDownload({
   audioItag,
   filenameOutput
 }: Pick<DownloadRequest, "type" | "videoId" | "videoItag" | "audioItag" | "filenameOutput">) {
-  sessionStorage.setItem("ytdl-debug", `performDownload called: ${videoId} type=${type}`);
   cancelActiveDownload(videoId);
   const abortController = new AbortController();
   activeDownloads.set(videoId, abortController);
@@ -143,29 +210,30 @@ export async function performDownload({
       setPoTokenCredentials(currentPoToken, currentSabrUrl);
     }
 
-    const originalFetch = globalThis.fetch.bind(globalThis);
     if (cachedVideoData.sabrConfig && videoFormat && audioFormat) {
       try {
         console.log("[ytdl] Fetching via SabrStream (independent of playback)");
-        sessionStorage.setItem("ytdl-debug", "SABR fetching...");
+
+        const videoExpectedBytes = videoFormat.contentLength ? parseInt(videoFormat.contentLength, 10) : 0;
+        const audioExpectedBytes = audioFormat.contentLength ? parseInt(audioFormat.contentLength, 10) : 0;
+        const sabrFetch = createSabrFetch(videoId, videoExpectedBytes + audioExpectedBytes);
 
         const primaryResult = await fetchViaSabrStream(
           cachedVideoData.sabrConfig,
           videoFormat,
           audioFormat,
-          originalFetch,
+          sabrFetch,
           currentPoToken
         );
         console.log(`[ytdl] SabrStream done: video=${primaryResult.videoData.byteLength} audio=${primaryResult.audioData.byteLength}`);
-        sessionStorage.setItem("ytdl-debug", `SABR done v=${primaryResult.videoData.byteLength} a=${primaryResult.audioData.byteLength}`);
 
-        // Fetch additional audio tracks in parallel
+        // Fetch additional audio tracks in parallel (no progress tracking for extra tracks)
         const additionalAudioData = await Promise.all(extraAudioFormats.map(async format => {
           try {
             const audioData = await fetchAudioViaSabrStream(
               cachedVideoData.sabrConfig!,
               format,
-              originalFetch,
+              createSabrFetch(videoId, 0),
               currentPoToken
             );
 

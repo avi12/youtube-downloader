@@ -10,6 +10,7 @@ export default defineConfig({
     name: "YouTube Downloader",
     description: "Download YouTube videos and audio directly from the page",
     permissions: [
+      "cookies",
       "downloads",
       "storage",
       "tabs",

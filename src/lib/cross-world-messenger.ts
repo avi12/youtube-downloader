@@ -5,6 +5,7 @@ import type {
   StreamDataPayload,
   VideoData
 } from "@/types";
+import { ProgressType } from "@/types";
 import { defineCustomEventMessaging } from "@webext-core/messaging/page";
 
 // ─── Protocol definition ──────────────────────────────────────────────────────
@@ -24,7 +25,7 @@ export enum CrossWorldMessage {
   RequestVideoData = "requestVideoData",
   CancelDownload = "cancelDownload",
 
-  // MAIN world → isolated world: proxy fetch through background (CORS bypass)
+  // MAIN world → isolated world: proxy fetch through extension context (bypasses CORS via host_permissions)
   ProxyFetch = "proxyFetch",
 
   // Isolated world → all (MAIN world + Svelte components)
@@ -35,9 +36,6 @@ export enum CrossWorldMessage {
 
   // MAIN world → isolated world: cancel an active download
   CancelRequest = "cancelRequest",
-
-  // Isolated world / watch-button → MAIN world: trigger a download
-  WatchDownloadRequest = "watchDownloadRequest",
 
   // Isolated world → MAIN world: set Polymer button data
   SetButtonData = "setButtonData",
@@ -78,24 +76,19 @@ interface PageMessengerSchema {
   [CrossWorldMessage.RequestVideoData](data: { videoId: string }): void;
   [CrossWorldMessage.ProxyFetch](data: {
     url: string;
+    method: string;
     bodyBase64: string;
+    headers: Record<string, string>;
   }): {
     status: number;
     bodyBase64: string;
+    responseHeaders: Record<string, string>;
   } | null;
 
   [CrossWorldMessage.Progress](data: ProgressUpdate): void;
   [CrossWorldMessage.IframePlayerReady](data: { videoId: string }): void;
   [CrossWorldMessage.CancelDownload](data: { videoIds: string[] }): void;
   [CrossWorldMessage.CancelRequest](data: { videoIds: string[] }): void;
-  [CrossWorldMessage.WatchDownloadRequest](data: {
-    type: DownloadRequest["type"];
-    videoId: string;
-    videoItag: number;
-    audioItag: number;
-    filenameOutput: string;
-    sabrConfig: DownloadRequest["sabrConfig"];
-  }): void;
   [CrossWorldMessage.SetButtonData](data: {
     selector: string;
     data: ButtonViewModelData;
@@ -109,7 +102,7 @@ interface PageMessengerSchema {
   [CrossWorldMessage.DownloadProgress](data: {
     videoId: string;
     progress: number;
-    progressType: string;
+    progressType: ProgressType;
   }): void;
 }
 

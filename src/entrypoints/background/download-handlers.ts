@@ -1,7 +1,50 @@
 import { cancelDownloads, trackVideoForTab } from "./tab-tracker";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging";
 
+const bufferChunkSize = 8192;
+
 export function registerDownloadHandlers() {
+  // Proxy SABR fetch requests through the background SW, which has host_permissions
+  // for googlevideo.com and bypasses CORS without preflight. credentials: 'include'
+  // lets the browser attach any existing googlevideo.com cookies automatically.
+  // SABR authentication uses a Bearer PO token, not YouTube session cookies.
+  onMessage(MessageType.BackgroundProxyFetch, async ({ data }) => {
+    const { url, method, bodyBase64, headers } = data;
+
+    const bodyBinary = atob(bodyBase64);
+    const bodyBytes = new Uint8Array(bodyBinary.length);
+    for (let i = 0; i < bodyBinary.length; i++) {
+      bodyBytes[i] = bodyBinary.charCodeAt(i);
+    }
+
+    try {
+      const response = await fetch(url, {
+        method,
+        body: bodyBytes.length > 0 ? bodyBytes : undefined,
+        headers,
+        credentials: "include"
+      });
+
+      const responseBuffer = await response.arrayBuffer();
+      const responseBytes = new Uint8Array(responseBuffer);
+
+      let responseBinary = "";
+      for (let i = 0; i < responseBytes.length; i += bufferChunkSize) {
+        responseBinary += String.fromCharCode(...responseBytes.subarray(i, i + bufferChunkSize));
+      }
+
+      const responseHeaders: Record<string, string> = {};
+      for (const [key, value] of response.headers) {
+        responseHeaders[key] = value;
+      }
+
+      return { status: response.status, bodyBase64: btoa(responseBinary), responseHeaders };
+    } catch (fetchError) {
+      console.error("[ytdl] BackgroundProxyFetch error:", fetchError);
+      return null;
+    }
+  });
+
   // Download via hidden iframe. Content scripts auto-inject into the iframe
   // via allFrames: true (with isDownloadIframe guard to skip non-download iframes).
   // visibility-spoof.content.ts ensures YouTube's player streams in hidden iframes.
@@ -11,7 +54,8 @@ export function registerDownloadHandlers() {
       return;
     }
 
-    const watchUrl = `https://www.youtube.com/watch?v=${data.videoId}&ytdl=1`;
+    const watchParams = new URLSearchParams({ v: data.videoId, ytdl: "1", mute: "1" });
+    const watchUrl = `https://www.youtube.com/watch?${watchParams.toString()}`;
 
     await sendMessage(MessageType.CreateDownloadIframe, {
       videoId: data.videoId,

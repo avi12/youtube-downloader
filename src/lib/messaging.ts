@@ -12,6 +12,7 @@ import { defineExtensionMessaging } from "@webext-core/messaging";
 
 export enum MessageType {
   // Content script → Background
+  BackgroundProxyFetch = "backgroundProxyFetch",
   StreamChunk = "streamChunk",
   StreamEnd = "streamEnd",
   ProcessStreamError = "processStreamError",
@@ -48,6 +49,18 @@ export enum MessageType {
 // ─── Protocol definition ──────────────────────────────────────────────────────
 
 interface ProtocolMap {
+  // Content script → Background: proxy fetch through background SW (bypasses CORS via host_permissions + cookies)
+  backgroundProxyFetch(data: {
+    url: string;
+    method: string;
+    bodyBase64: string;
+    headers: Record<string, string>;
+  }): {
+    status: number;
+    bodyBase64: string;
+    responseHeaders: Record<string, string>;
+  } | null;
+
   // Content script → Background: stream chunk (1 MB base64-encoded segment)
   // streamType is "video", "audio", or "audio-extra-{index}" for additional language tracks
   // Binary data is base64-encoded because runtime.sendMessage uses JSON serialization

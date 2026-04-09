@@ -16,7 +16,7 @@ import { MessageType, onMessage, sendMessage } from "@/lib/messaging";
 import { forwardSabrCredentialsWithRetry, listenForSabrBodyReady } from "@/lib/sabr-credentials";
 import { optionsItem } from "@/lib/storage";
 import { downloadProgressStore } from "@/lib/synced-stores.svelte";
-import type { Options } from "@/types";
+import { type Options } from "@/types";
 
 export default defineContentScript({
   matches: ["https://www.youtube.com/*"],
@@ -103,6 +103,24 @@ export default defineContentScript({
     crossWorldMessenger.onMessage(CrossWorldMessage.DownloadRequest, ({ data }) => {
       uncancelStreamTransfer(data.videoId);
     });
+
+    // Sync SABR/CDN download progress (from MAIN world) into downloadProgressStore
+    // so the panel and popup reflect byte-level progress before muxing begins.
+    crossWorldMessenger.onMessage(CrossWorldMessage.DownloadProgress, ({ data }) => {
+      downloadProgressStore.set(data.videoId, {
+        isDownloading: true,
+        isDone: false,
+        progress: data.progress,
+        progressType: data.progressType
+      });
+    });
+
+    // Proxy fetch requests from MAIN world through the background SW, which has
+    // host_permissions for googlevideo.com and bypasses CORS without preflight.
+    crossWorldMessenger.onMessage(
+      CrossWorldMessage.ProxyFetch,
+      ({ data }) => sendMessage(MessageType.BackgroundProxyFetch, data)
+    );
 
     listenForInterruptedDownloadEvents();
     listenForSabrBodyReady();
