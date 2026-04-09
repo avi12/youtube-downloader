@@ -202,20 +202,21 @@
           {@render cancelBtn()}
         </div>
       </div>
-    {:else if panel.isDone}
-      <div class="ytdl-done-status" role="status">
-        <svg
-          aria-hidden="true"
-          fill="currentColor"
-          height="20"
-          viewBox="0 0 24 24"
-          width="20"
-        >
-          <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
-        </svg>
-        <span>Download complete</span>
-      </div>
     {:else}
+      {#if panel.isDone}
+        <div class="ytdl-done-status" role="status">
+          <svg
+            aria-hidden="true"
+            fill="currentColor"
+            height="20"
+            viewBox="0 0 24 24"
+            width="20"
+          >
+            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+          </svg>
+          <span>Download complete</span>
+        </div>
+      {/if}
       <yt-button-view-model
         class={scopingClass}
         {@attach attachDownloadBtn}
