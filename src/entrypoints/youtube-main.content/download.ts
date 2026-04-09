@@ -86,6 +86,7 @@ export async function performDownload({
   audioItag,
   filenameOutput
 }: Pick<DownloadRequest, "type" | "videoId" | "videoItag" | "audioItag" | "filenameOutput">) {
+  sessionStorage.setItem("ytdl-debug", `performDownload called: ${videoId} type=${type}`);
   cancelActiveDownload(videoId);
   const abortController = new AbortController();
   activeDownloads.set(videoId, abortController);
@@ -146,6 +147,7 @@ export async function performDownload({
     if (cachedVideoData.sabrConfig && videoFormat && audioFormat) {
       try {
         console.log("[ytdl] Fetching via SabrStream (independent of playback)");
+        sessionStorage.setItem("ytdl-debug", "SABR fetching...");
 
         const primaryResult = await fetchViaSabrStream(
           cachedVideoData.sabrConfig,
@@ -155,6 +157,7 @@ export async function performDownload({
           currentPoToken
         );
         console.log(`[ytdl] SabrStream done: video=${primaryResult.videoData.byteLength} audio=${primaryResult.audioData.byteLength}`);
+        sessionStorage.setItem("ytdl-debug", `SABR done v=${primaryResult.videoData.byteLength} a=${primaryResult.audioData.byteLength}`);
 
         // Fetch additional audio tracks in parallel
         const additionalAudioData = await Promise.all(extraAudioFormats.map(async format => {
