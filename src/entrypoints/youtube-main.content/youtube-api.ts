@@ -45,10 +45,6 @@ function getAudioFormats(formats: AdaptiveFormatItem[]) {
   });
 }
 
-function getFormatsFromPlayerResponse(playerResponse: PlayerResponse) {
-  return playerResponse.streamingData?.adaptiveFormats ?? [];
-}
-
 // ─── VideoData assembly ───────────────────────────────────────────────────────
 
 function extractSabrConfig({ playerResponse, clientVersion, clientName }: {
@@ -82,7 +78,7 @@ export function buildVideoData({ playerResponse, clientVersion, clientName }: {
   const isMusic = isVideoMusic(playerResponse);
 
   const allFormats = isDownloadable
-    ? sortFormatsByBitrate(getFormatsFromPlayerResponse(playerResponse))
+    ? sortFormatsByBitrate(playerResponse.streamingData?.adaptiveFormats ?? [])
     : [];
 
   const { videoDetails } = playerResponse;
