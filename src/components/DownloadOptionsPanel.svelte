@@ -134,6 +134,7 @@
   <yt-button-view-model
     class={scopingClass}
     {@attach attachCancelButton}
+    data-ytdl-button-id="ytdl-panel-cancel"
     onclick={panel.cancelDownload}
     onkeydown={handleActivationKeydown(panel.cancelDownload)}
     role="button"
@@ -160,6 +161,7 @@
       class={scopingClass}
       {@attach attachCloseButton}
       aria-label="Close"
+      data-ytdl-button-id="ytdl-panel-close"
       onclick={closePanel}
       onkeydown={handleActivationKeydown(closePanel)}
       role="button"
@@ -217,6 +219,7 @@
       <yt-button-view-model
         class={scopingClass}
         {@attach attachDownloadBtn}
+        data-ytdl-button-id="ytdl-panel-download"
         onclick={panel.startDownload}
         onkeydown={handleActivationKeydown(panel.startDownload)}
         role="button"
