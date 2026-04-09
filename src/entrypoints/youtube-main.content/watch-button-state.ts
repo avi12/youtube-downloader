@@ -2,7 +2,7 @@ import { interruptedDownloadStore } from "@/lib/synced-stores.svelte";
 import { getCompatibleFilename, getOutputExtension } from "@/lib/utils";
 import { DownloadType, type VideoData } from "@/types";
 
-export interface DownloadButtonState {
+interface DownloadButtonState {
   videoItag: number;
   audioItag: number;
   filename: string;
