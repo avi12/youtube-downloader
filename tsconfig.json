@@ -1,15 +1,8 @@
 {
   "extends": "./.wxt/tsconfig.json",
   "compilerOptions": {
-    "strict": true,
-    "moduleResolution": "bundler",
-    "module": "ESNext",
-    "target": "ESNext",
-    "lib": ["ESNext", "DOM", "DOM.Iterable"],
-    "resolveJsonModule": true,
-    "allowImportingTsExtensions": true,
-    "allowJs": true,
-    "noEmit": true
+    "types": ["svelte"],
+    "allowImportingTsExtensions": true
   },
   "exclude": ["scripts/**"]
 }

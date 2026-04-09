@@ -17,6 +17,7 @@
     "pack:firefox": "wxt zip -b firefox --mv3",
     "postinstall": "wxt prepare",
     "lint": "eslint --fix",
+    "compile": "tsc --noEmit",
     "stylelint": "stylelint . --fix",
     "svelte:check": "pnpx svelte-check"
   },
@@ -45,7 +46,7 @@
     "stylelint-config-ccb": "^3.31.1",
     "svelte": "^5.55.0",
     "svelte-eslint-parser": "^1.6.0",
-    "typescript": "^6.0.2",
+    "typescript": "^5.9.3",
     "typescript-eslint": "^8.57.2",
     "ws": "^8.20.0",
     "wxt": "^0.20.20"
