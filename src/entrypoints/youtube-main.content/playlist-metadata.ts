@@ -38,7 +38,7 @@ function handleNavigation() {
 }
 
 export async function handleNavigateSuccess() {
-  await handleNavigation();
+  handleNavigation();
 
   if (location.pathname !== "/watch") {
     return;
