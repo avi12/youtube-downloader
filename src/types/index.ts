@@ -78,6 +78,7 @@ export type DownloadRequest = {
   audioItag: number;
   filenameOutput: string;
   sabrConfig?: SabrConfig | null;
+  isIframeFallback?: boolean;
   playlistId?: string;
   playlistTitle?: string;
   playlistTotalCount?: number;

@@ -50,7 +50,10 @@ export enum CrossWorldMessage {
   CloseDropdown = "closeDropdown",
 
   // MAIN world → MAIN world (watch-button): progress from CDN/direct download
-  DownloadProgress = "downloadProgress"
+  DownloadProgress = "downloadProgress",
+
+  // MAIN world → isolated world: iframe fallback when SABR+CDN both fail
+  DownloadViaIframe = "downloadViaIframe"
 }
 
 interface PageMessengerSchema {
@@ -104,6 +107,7 @@ interface PageMessengerSchema {
     progress: number;
     progressType: ProgressType;
   }): void;
+  [CrossWorldMessage.DownloadViaIframe](data: DownloadRequest): void;
 }
 
 export const crossWorldMessenger = defineCustomEventMessaging<PageMessengerSchema>({ namespace: "ytdl" });

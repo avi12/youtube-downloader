@@ -96,6 +96,10 @@ export default defineContentScript({
       void handleStreamError(data);
     });
 
+    crossWorldMessenger.onMessage(CrossWorldMessage.DownloadViaIframe, ({ data }) => {
+      void sendMessage(MessageType.DownloadViaWatchPage, data);
+    });
+
     crossWorldMessenger.onMessage(CrossWorldMessage.IframePlayerReady, ({ data }) => {
       void sendMessage(MessageType.DownloadIframeReady, { videoId: data.videoId });
     });
