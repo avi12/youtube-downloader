@@ -92,7 +92,7 @@ export default defineContentScript({
     registerGridDropdownHandlers();
     registerGridVideoDataHandler();
 
-    navigation.addEventListener("navigatesuccess", handleNavigateSuccess);
+    document.addEventListener("yt-navigate-finish", handleNavigateSuccess);
 
     if (document.readyState === "complete") {
       await extractAndDispatchVideoData(cancelActiveDownload);
