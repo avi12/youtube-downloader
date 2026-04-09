@@ -20,7 +20,7 @@ const core = await createFFmpegCore({});
 initFFmpeg(core);
 
 // ─── Chunk accumulation ────────────────────────────────────────────────────────
-// the content script splits Large video+audio data into 1 MB chunks to
+// The content script splits large video+audio data into 1 MB chunks to
 // stay under Chrome's runtime.sendMessage size limit. Reassemble here before
 // handing off to FFmpeg.
 
