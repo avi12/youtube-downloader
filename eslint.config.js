@@ -154,8 +154,6 @@ const sharedPlugins = {
 const sharedGlobals = {
   ...globals.browser,
   ...globals.node,
-  Browser: "readonly",
-  browser: "readonly",
   chrome: "readonly"
 };
 
@@ -163,7 +161,7 @@ export default [
   eslint.configs.recommended,
   ...tsEslint.configs.recommended,
   ...svelteEslint.configs["flat/recommended"],
-  globalIgnores(["build/**", "node_modules/**", ".output/**"]),
+  globalIgnores(["build/**", "node_modules/**", ".output/**", ".wxt/**", "scripts/**"]),
   {
     files: ["**/*.{ts,js,mjs}"],
     ignores: ["eslint.config.js"],
@@ -206,26 +204,5 @@ export default [
       "@typescript-eslint/no-explicit-any": "off",
       "prefer-const": ["error", { destructuring: "all" }]
     }
-  },
-  // Standalone debug/analysis scripts — not part of the extension build
-  {
-    files: ["scripts/**"],
-    rules: {
-      "id-length": "off",
-      "no-nested-ternary": "off",
-      "@stylistic/max-len": "off",
-      "func-style": "off",
-      "no-restricted-syntax": "off"
-    }
-  },
-  // WXT auto-generated declaration files — not editable, regenerated on pnpm install
-  {
-    files: [".wxt/**"],
-    rules: {
-      "@stylistic/max-len": "off",
-      "@typescript-eslint/ban-ts-comment": "off",
-      "@typescript-eslint/triple-slash-reference": "off"
-    }
   }
-
 ];
