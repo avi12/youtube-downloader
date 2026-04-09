@@ -32,12 +32,12 @@ export function buildDownloadData(state: ButtonViewState): ButtonViewModelData {
   }
 
   let title = "Download";
+  // accessibilityText is more descriptive than title for screen reader context
   let accessibilityText = "Download";
   if (!state.isDownloadable) {
     title = "Not downloadable";
     accessibilityText = "Not downloadable";
   } else if (state.isDone) {
-    title = "Download";
     accessibilityText = "Download again";
   } else if (state.isDownloading) {
     title = "Cancel";
