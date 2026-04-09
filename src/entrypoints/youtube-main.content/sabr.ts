@@ -71,26 +71,16 @@ function createSabrStream(
   });
 }
 
-export async function fetchViaSabrStream(
+export async function fetchVideoViaSabrStream(
   sabrConfig: NonNullable<VideoData["sabrConfig"]>,
   videoFormat: AdaptiveFormatItem,
-  audioFormat: AdaptiveFormatItem,
   originalFetch: typeof globalThis.fetch,
   capturedPoToken: string
 ) {
   const sabrStream = createSabrStream(sabrConfig, originalFetch, capturedPoToken);
-
-  const { videoStream, audioStream } = await sabrStream.start({
-    videoFormat: adaptiveFormatToSabrFormat(videoFormat),
-    audioFormat: adaptiveFormatToSabrFormat(audioFormat)
-  });
-
-  const [videoData, audioData] = await Promise.all([
-    collectReadableStream(videoStream),
-    collectReadableStream(audioStream)
-  ]);
-
-  return { videoData, audioData };
+  const targetFormat = adaptiveFormatToSabrFormat(videoFormat);
+  const { videoStream } = await sabrStream.start({ videoFormat: targetFormat });
+  return collectReadableStream(videoStream);
 }
 
 export async function fetchAudioViaSabrStream(
