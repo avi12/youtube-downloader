@@ -7,6 +7,11 @@ import {
   IconName
 } from "@/types";
 
+const percentFormatter = new Intl.NumberFormat(document.documentElement.lang, {
+  style: "percent",
+  maximumFractionDigits: 0
+});
+
 export interface ButtonViewState {
   isDownloading: boolean;
   isDone: boolean;
@@ -47,7 +52,7 @@ export function buildDownloadData(state: ButtonViewState): ButtonViewModelData {
   let tooltip = "";
   if (state.isDownloadable) {
     if (state.isDownloading && state.downloadProgress > 0) {
-      tooltip = `${Math.round(state.downloadProgress * 100)}%`;
+      tooltip = percentFormatter.format(state.downloadProgress);
     } else {
       tooltip = state.quality ? `${state.filename} - ${state.quality}` : state.filename;
     }
