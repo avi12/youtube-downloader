@@ -47,7 +47,6 @@
   const defaultProgressState: DownloadProgressState = {
     isDownloading: false,
     isDone: false,
-    isQueued: false,
     progress: 0,
     progressType: ""
   };
@@ -129,7 +128,6 @@
     downloadProgressStore.set(videoId, {
       isDownloading: true,
       isDone: false,
-      isQueued: false,
       progress: 0,
       progressType: ""
     });

@@ -220,7 +220,6 @@ export function createPanelState(getVideoData: () => VideoData, getOptions: () =
     downloadProgressStore.set(videoId, {
       isDownloading: true,
       isDone: false,
-      isQueued: false,
       progress: 0,
       progressType: ""
     });

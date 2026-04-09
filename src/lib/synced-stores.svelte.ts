@@ -29,7 +29,6 @@ export const videoDataStore = createSyncedMap(createMapMessenger<VideoData>("vid
 export interface DownloadProgressState {
   isDownloading: boolean;
   isDone: boolean;
-  isQueued: boolean;
   progress: number;
   progressType: ProgressType | "";
 }
