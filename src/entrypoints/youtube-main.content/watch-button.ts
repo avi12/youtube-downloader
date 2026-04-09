@@ -1,25 +1,14 @@
-import watchButtonStyles from "./watch-button.css?inline";
-import { CrossWorldMessage, crossWorldMessenger } from "@/lib/cross-world-messenger";
-import { interruptedDownloadStore } from "@/lib/synced-stores.svelte";
-import { getCompatibleFilename, getOutputExtension } from "@/lib/utils";
+import { findVideoActionsContainer } from "./watch-button-container";
 import {
-  ButtonSize,
-  ButtonState,
-  ButtonStyle,
-  ButtonType,
-  type ButtonViewModelData,
-  DownloadType,
-  IconName,
-  type ProgressUpdate,
-  type VideoData,
-  type YtButtonViewModelElement
-} from "@/types";
-
-const VIDEO_ACTION_BUTTON_SELECTORS = [
-  "#above-the-fold #top-level-buttons-computed",
-  "ytd-watch-metadata #top-level-buttons-computed",
-  "#top-level-buttons-computed"
-];
+  createButtonGroup,
+  createDropdownElement,
+  findNativeDownloadButton,
+  injectWatchButtonStyles
+} from "./watch-button-dom";
+import { buildInitialDownloadState } from "./watch-button-state";
+import { buildChevronData, buildDownloadData, type ButtonViewState } from "./watch-button-view-model";
+import { CrossWorldMessage, crossWorldMessenger } from "@/lib/cross-world-messenger";
+import { type ProgressUpdate, type VideoData } from "@/types";
 
 let cleanupCurrentButton: (() => void) | null = null;
 let injectionGeneration = 0;
@@ -30,46 +19,6 @@ export function cleanupSegmentedButton() {
   cleanupCurrentButton = null;
   containerSearchAbort?.abort();
   containerSearchAbort = null;
-}
-
-async function findVideoActionsContainer() {
-  function findFirstVisible() {
-    for (const selector of VIDEO_ACTION_BUTTON_SELECTORS) {
-      for (const elButton of document.querySelectorAll<HTMLElement>(selector)) {
-        if (elButton.offsetWidth > 0 && elButton.offsetHeight > 0) {
-          return elButton;
-        }
-      }
-    }
-
-    return null;
-  }
-
-  const existing = findFirstVisible();
-  if (existing) {
-    return existing;
-  }
-
-  containerSearchAbort = new AbortController();
-  const { signal } = containerSearchAbort;
-
-  return new Promise<HTMLElement | null>(resolve => {
-    const observer = new MutationObserver(() => {
-      const elVisible = findFirstVisible();
-      if (!elVisible) {
-        return;
-      }
-
-      observer.disconnect();
-      resolve(elVisible);
-    });
-
-    observer.observe(document.documentElement, { childList: true, subtree: true });
-    signal.addEventListener("abort", () => {
-      observer.disconnect();
-      resolve(null);
-    }, { once: true });
-  });
 }
 
 export async function injectSegmentedDownloadButton(
@@ -84,194 +33,43 @@ export async function injectSegmentedDownloadButton(
 
   const generation = ++injectionGeneration;
 
-  const elActionsContainer = await findVideoActionsContainer();
+  containerSearchAbort = new AbortController();
+  const elActionsContainer = await findVideoActionsContainer(containerSearchAbort.signal);
   if (!elActionsContainer || generation !== injectionGeneration) {
     return;
   }
 
   const { videoId } = videoData;
-  let defaultVideoItag = videoData.videoFormats[0]?.itag ?? 0;
-  let defaultAudioItag = videoData.audioFormats[0]?.itag ?? 0;
-  const defaultVideoMime = videoData.videoFormats[0]?.mimeType ?? "video/mp4";
-  const defaultAudioMime = videoData.audioFormats[0]?.mimeType ?? "audio/mp4";
-  let defaultExtension: string;
-  if (videoData.isMusic) {
-    defaultExtension = defaultAudioMime.includes("webm") ? "webm" : "m4a";
-  } else {
-    defaultExtension = getOutputExtension(defaultVideoMime, defaultAudioMime, "mp4");
-  }
+  const initialState = buildInitialDownloadState(videoData);
 
-  let defaultFilename = getCompatibleFilename(`${videoData.title}.${defaultExtension}`);
-  let defaultQuality = "";
-  const defaultDownloadType: DownloadType = videoData.isMusic ? DownloadType.Audio : DownloadType.VideoAndAudio;
+  let defaultVideoItag = initialState.videoItag;
+  let defaultAudioItag = initialState.audioItag;
+  let defaultFilename = initialState.filename;
+  let defaultQuality = initialState.quality;
+  const defaultDownloadType = initialState.downloadType;
 
   let isDownloading = false;
   let isDone = false;
-  let isInterrupted = false;
+  let isInterrupted = initialState.isInterrupted;
   let isPanelOpen = false;
   let downloadProgress = 0;
 
-  // Check for interrupted download from a previous session
-  const interrupted = interruptedDownloadStore.get(videoId);
-  if (interrupted) {
-    isInterrupted = true;
-    defaultVideoItag = interrupted.videoItag || defaultVideoItag;
-    defaultAudioItag = interrupted.audioItag || defaultAudioItag;
-  }
-
   // Grab Polymer CSS scoping class from last native yt-button-view-model
   const nativeButtons = elActionsContainer.querySelectorAll("yt-button-view-model");
-  const scopingClass =
-    nativeButtons[nativeButtons.length - 1]?.getAttribute("class") ?? "";
+  const scopingClass = nativeButtons[nativeButtons.length - 1]?.getAttribute("class") ?? "";
 
-  // Hide YouTube's native Download button.
-  // We use setAttribute("style",...) rather than .style property because Polymer
-  // overrides the .style getter on yt-button-view-model with a Symbol.
-  // We identify it by .data.iconName (set by Polymer) or the inner button's
-  // aria-label, rather than assuming position - the Share button sits between
-  // like/dislike and Download in the action bar and would otherwise be hidden.
-  function findNativeDownloadButton() {
-    const buttons = elActionsContainer!.querySelectorAll<YtButtonViewModelElement>("yt-button-view-model");
-    for (const button of buttons) {
-      if (button.data?.iconName?.includes(IconName.Download)) {
-        return button;
-      }
+  injectWatchButtonStyles();
 
-      const elInnerButton = button.querySelector("button");
-      if (elInnerButton?.getAttribute("aria-label")?.toLowerCase().includes("download")) {
-        return button;
-      }
-    }
-
-    return null;
-  }
-
-  const elNativeDownload = findNativeDownloadButton();
+  const elNativeDownload = findNativeDownloadButton(elActionsContainer);
   if (elNativeDownload) {
     elNativeDownload.classList.add("ytdl-native-hidden");
   }
 
-  function buildDownloadData() {
-    let iconName = IconName.Download;
-    if (isDone) {
-      iconName = IconName.Downloaded;
-    } else if (isDownloading) {
-      iconName = IconName.Close;
-    }
+  const { elGroup, elDownloadButton, elChevronButton, elProgressBar } =
+    createButtonGroup(elActionsContainer, elNativeDownload, scopingClass);
 
-    let title = "Download";
-    let accessibilityText = "Download";
-    if (!videoData.isDownloadable) {
-      title = "Not downloadable";
-      accessibilityText = "Not downloadable";
-    } else if (isDone) {
-      title = "Download";
-      accessibilityText = "Download again";
-    } else if (isDownloading) {
-      title = "Cancel";
-      accessibilityText = "Cancel download";
-    } else if (isInterrupted) {
-      title = "Resume";
-      accessibilityText = "Resume download";
-    }
-
-    const isDisabled = !videoData.isDownloadable;
-
-    let tooltip = "";
-    if (videoData.isDownloadable) {
-      if (isDownloading && downloadProgress > 0) {
-        tooltip = `${Math.round(downloadProgress * 100)}%`;
-      } else {
-        tooltip = defaultQuality ? `${defaultFilename} - ${defaultQuality}` : defaultFilename;
-      }
-    }
-
-    return {
-      iconName,
-      title,
-      accessibilityText,
-      style: ButtonStyle.Mono,
-      type: ButtonType.Tonal,
-      buttonSize: ButtonSize.Default,
-      state: isDisabled ? ButtonState.Disabled : ButtonState.Active,
-      isFullWidth: false,
-      isDisabled,
-      tooltip
-    } satisfies ButtonViewModelData;
-  }
-
-  function buildChevronData() {
-    const isDisabled = (isDownloading && !isDone) || !videoData.isDownloadable;
-
-    return {
-      iconName: isPanelOpen ? IconName.ExpandLess : IconName.ExpandMore,
-      title: "",
-      accessibilityText: isPanelOpen ? "Close download options" : "Open download options",
-      style: ButtonStyle.Mono,
-      type: ButtonType.Tonal,
-      buttonSize: ButtonSize.Default,
-      state: isDisabled ? ButtonState.Disabled : ButtonState.Active,
-      isFullWidth: false,
-      isDisabled,
-      tooltip: isPanelOpen ? "Close download options" : "Download options"
-    } satisfies ButtonViewModelData;
-  }
-
-  // Inject styles once for the download button group
-  if (!document.getElementById("ytdl-watch-styles")) {
-    const elStyle = document.createElement("style");
-    elStyle.id = "ytdl-watch-styles";
-    elStyle.textContent = watchButtonStyles;
-    document.head.append(elStyle);
-  }
-
-  const elGroup = document.createElement("div");
-  elGroup.dataset.ytdlDownloadGroup = "true";
-
-  const elDownloadButton = document.createElement("yt-button-view-model");
-  const elChevronButton = document.createElement("yt-button-view-model");
-
-  const elProgressBar = document.createElement("tp-yt-paper-progress");
-  elProgressBar.classList.add("ytdl-watch-progress");
-
-  elGroup.append(elDownloadButton, elChevronButton, elProgressBar);
-
-  // Polymer's Shady DOM requires updateStyles for CSS custom properties
-  elProgressBar.updateStyles({
-    "--paper-progress-active-color": "var(--yt-spec-call-to-action, rgb(62 166 255))",
-    "--paper-progress-container-color": "transparent"
-  });
-
-  // Insert group in the slot the native download button occupied.
-  if (elNativeDownload) {
-    elNativeDownload.insertAdjacentElement("beforebegin", elGroup);
-  } else {
-    elActionsContainer.append(elGroup);
-  }
-
-  const panelContentId = `ytdl-panel-content-${videoId}`;
-  const elDropdown = document.createElement("tp-yt-iron-dropdown");
-
-  // ytd-menu-popup-renderer is YouTube's native popup shell: it provides
-  // theme-aware background, border-radius, and box-shadow automatically.
-  // Its shadow DOM exposes a default <slot>, so our Svelte content mounts
-  // as light DOM children and is projected through that slot.
-  const elDropdownContentSlot = document.createElement("ytd-menu-popup-renderer");
-  elDropdownContentSlot.slot = "dropdown-content";
-  elDropdownContentSlot.id = panelContentId;
-  elDropdown.append(elDropdownContentSlot);
-
-  const elPopupContainer = document.querySelector("ytd-popup-container") ?? document.body;
-  elPopupContainer.append(elDropdown);
-
-  // Set Polymer properties after the element is connected to the DOM
-  elDropdown.positionTarget = elGroup;
-  elDropdown.horizontalAlign = "left";
-  elDropdown.verticalAlign = "top";
-  elDropdown.noOverlap = true;
-  elDropdown.dynamicAlign = true;
-  elDropdown.allowOutsideScroll = false;
-  elDropdown.restoreFocusOnClose = false;
+  const { elDropdown, elDropdownContentSlot, panelContentId } =
+    createDropdownElement(videoId, elGroup);
 
   // Notify the isolated world where to mount the Svelte panel.
   // Fire-and-forget: must not await, or the button setup below never runs
@@ -281,54 +79,47 @@ export async function injectSegmentedDownloadButton(
     videoData
   });
 
-  // Set Polymer scoping class and data AFTER insertion so connectedCallback
-  // does not wipe the class attribute
-  const scopingClasses = scopingClass.match(/\S+/g) ?? [];
-  elDownloadButton.classList.add(...scopingClasses);
-  elDownloadButton.data = buildDownloadData();
-  elDownloadButton.dataset.ytdlDownload = "true";
-
-  elChevronButton.classList.add(...scopingClasses);
-  elChevronButton.data = buildChevronData();
-  // [data-ytdl-chevron] suppresses the automatic margin-left between
-  // adjacent yt-button-view-model siblings so the buttons sit flush.
-  elChevronButton.dataset.ytdlChevron = "true";
-
   // Polymer renders <button> into light DOM asynchronously.
   // We use a MutationObserver + requestAnimationFrame to apply the classes
   // as soon as the element is available (and after any re-render).
   function applySegmentedClasses() {
-    const elDownloadInnerButton = elDownloadButton.querySelector<HTMLButtonElement>("button");
-    const elChevronInnerButton = elChevronButton.querySelector<HTMLButtonElement>("button");
-    if (elDownloadInnerButton) {
-      elDownloadInnerButton.classList.add("yt-spec-button-shape-next--segmented-start");
-    }
-
-    if (elChevronInnerButton) {
-      elChevronInnerButton.classList.add("yt-spec-button-shape-next--segmented-end");
-    }
+    elDownloadButton.querySelector<HTMLButtonElement>("button")
+      ?.classList.add("yt-spec-button-shape-next--segmented-start");
+    elChevronButton.querySelector<HTMLButtonElement>("button")
+      ?.classList.add("yt-spec-button-shape-next--segmented-end");
   }
 
   const segmentedObserver = new MutationObserver(applySegmentedClasses);
-  segmentedObserver.observe(elDownloadButton, {
-    childList: true,
-    subtree: true
-  });
-  segmentedObserver.observe(elChevronButton, {
-    childList: true,
-    subtree: true
-  });
+  segmentedObserver.observe(elDownloadButton, { childList: true, subtree: true });
+  segmentedObserver.observe(elChevronButton, { childList: true, subtree: true });
   requestAnimationFrame(applySegmentedClasses);
 
+  function getViewState(): ButtonViewState {
+    return {
+      isDownloading,
+      isDone,
+      isInterrupted,
+      isPanelOpen,
+      downloadProgress,
+      filename: defaultFilename,
+      quality: defaultQuality,
+      isDownloadable: videoData.isDownloadable
+    };
+  }
+
   function refreshButtons() {
-    elDownloadButton.data = buildDownloadData();
-    elChevronButton.data = buildChevronData();
+    const viewState = getViewState();
+    elDownloadButton.data = buildDownloadData(viewState);
+    elChevronButton.data = buildChevronData(viewState);
     requestAnimationFrame(applySegmentedClasses);
 
     elProgressBar.indeterminate = isDownloading && downloadProgress === 0;
     elProgressBar.value = Math.round(downloadProgress * 100);
     elProgressBar.style.opacity = isDownloading ? "1" : "0";
   }
+
+  // Set initial button data after all elements are ready
+  refreshButtons();
 
   function handleClick(e: Event) {
     const { target } = e;
@@ -390,7 +181,7 @@ export async function injectSegmentedDownloadButton(
       return;
     }
 
-    if (data.isRemoved) {
+    if (data.isRemoved === true) {
       isDownloading = false;
       downloadProgress = 0;
       refreshButtons();
@@ -439,7 +230,10 @@ export async function injectSegmentedDownloadButton(
   });
   resizeObserver.observe(elDropdownContentSlot);
 
-  const unsubscribeProgress = crossWorldMessenger.onMessage(CrossWorldMessage.Progress, handleProgress);
+  const unsubscribeProgress = crossWorldMessenger.onMessage(
+    CrossWorldMessage.Progress,
+    handleProgress
+  );
 
   const unsubscribeDownloadProgress = crossWorldMessenger.onMessage(
     CrossWorldMessage.DownloadProgress,
@@ -454,10 +248,13 @@ export async function injectSegmentedDownloadButton(
   );
 
   const unsubscribePanelClosed = crossWorldMessenger.onMessage(
-    CrossWorldMessage.PanelClosed, () => handlePanelClosed()
+    CrossWorldMessage.PanelClosed,
+    () => handlePanelClosed()
   );
+
   const unsubscribeFilenameChanged = crossWorldMessenger.onMessage(
-    CrossWorldMessage.FilenameChanged, ({ data }) => {
+    CrossWorldMessage.FilenameChanged,
+    ({ data }) => {
       defaultFilename = data.filename;
       defaultQuality = data.quality ?? "";
 

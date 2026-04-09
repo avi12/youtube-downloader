@@ -6,6 +6,7 @@ export type {
   ButtonViewModelData,
   PlayerResponse,
   TpYtIronDropdownElement,
+  TpYtPaperProgressElement,
   YtButtonViewModelElement,
   YtdlCaptureState,
   YtdlMediaCapture

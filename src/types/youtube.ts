@@ -286,7 +286,7 @@ interface TpYtPaperDropdownMenuElement extends HTMLElement {
   receivedFocusFromKeyboard: boolean;
 }
 
-interface TpYtPaperProgressElement extends HTMLElement {
+export interface TpYtPaperProgressElement extends HTMLElement {
   value: number;
   max: number;
   indeterminate: boolean;
