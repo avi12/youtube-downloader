@@ -53,20 +53,20 @@ export function createButtonGroup(
 ): ButtonGroupElements {
   const scopingClasses = scopingClass.match(/\S+/g) ?? [];
 
-  const elGroup: HTMLDivElement = document.createElement("div");
+  const elGroup = document.createElement("div");
   elGroup.dataset.ytdlDownloadGroup = "true";
 
-  const elDownloadButton: YtButtonViewModelElement = document.createElement("yt-button-view-model");
+  const elDownloadButton = document.createElement("yt-button-view-model");
   elDownloadButton.classList.add(...scopingClasses);
   elDownloadButton.dataset.ytdlDownload = "true";
 
-  const elChevronButton: YtButtonViewModelElement = document.createElement("yt-button-view-model");
+  const elChevronButton = document.createElement("yt-button-view-model");
   elChevronButton.classList.add(...scopingClasses);
   // [data-ytdl-chevron] suppresses the automatic margin-left between
   // adjacent yt-button-view-model siblings so the buttons sit flush.
   elChevronButton.dataset.ytdlChevron = "true";
 
-  const elProgressBar: TpYtPaperProgressElement = document.createElement("tp-yt-paper-progress");
+  const elProgressBar = document.createElement("tp-yt-paper-progress");
   elProgressBar.classList.add("ytdl-watch-progress");
 
   elGroup.append(elDownloadButton, elChevronButton, elProgressBar);
@@ -89,7 +89,7 @@ export function createButtonGroup(
 export function createDropdownElement(videoId: string, elGroup: HTMLElement): DropdownElements {
   const panelContentId = `ytdl-panel-content-${videoId}`;
 
-  const elDropdown: TpYtIronDropdownElement = document.createElement("tp-yt-iron-dropdown");
+  const elDropdown = document.createElement("tp-yt-iron-dropdown");
 
   // ytd-menu-popup-renderer is YouTube's native popup shell: it provides
   // theme-aware background, border-radius, and box-shadow automatically.
