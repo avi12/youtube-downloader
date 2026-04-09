@@ -1,9 +1,9 @@
 import { isFirefoxProcessorTab, resetProcessorState } from "./processor";
-import { cancelDownloads, tabTracker, untrackVideoForTab } from "./tab-tracker";
+import { tabTracker, untrackVideoForTab } from "./tab-tracker";
 import { clearCapturedSabrData } from "@/lib/sabr-request-capture";
 
 export function registerTabLifecycleHandlers() {
-  browser.tabs.onRemoved.addListener(async tabId => {
+  browser.tabs.onRemoved.addListener(tabId => {
     if (isFirefoxProcessorTab(tabId)) {
       resetProcessorState();
       return;
@@ -20,11 +20,9 @@ export function registerTabLifecycleHandlers() {
     for (const videoId of tabState.videoIdsAvailable) {
       untrackVideoForTab(videoId, tabId);
     }
-
-    await cancelDownloads(tabState.videoIdsAvailable);
   });
 
-  browser.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
+  browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     if (changeInfo.status !== browser.tabs.TabStatus.LOADING || !tab.url?.includes("youtube.com")) {
       return;
     }
@@ -39,7 +37,6 @@ export function registerTabLifecycleHandlers() {
     }
 
     clearCapturedSabrData(tabId);
-    await cancelDownloads(tabState.videoIdsAvailable);
     tabTracker[tabId] = { videoIdsAvailable: [] };
   });
 }

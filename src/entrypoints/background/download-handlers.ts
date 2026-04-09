@@ -1,3 +1,4 @@
+import { cancelBackgroundDownload, startBackgroundDownload } from "./background-downloader";
 import { awaitVideoComplete } from "./sequential-queue";
 import { cancelDownloads, trackVideoForTab } from "./tab-tracker";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging";
@@ -116,6 +117,16 @@ export function registerDownloadHandlers() {
   });
 
   onMessage(MessageType.CancelDownload, ({ data }) => {
+    for (const videoId of data.videoIds) {
+      cancelBackgroundDownload(videoId);
+    }
+
     void cancelDownloads(data.videoIds);
+  });
+
+  onMessage(MessageType.StartBackgroundDownload, async ({ data, sender }) => {
+    const tabId = sender.tab?.id ?? -1;
+    trackVideoForTab(data.videoId, tabId);
+    await startBackgroundDownload(data, tabId);
   });
 }

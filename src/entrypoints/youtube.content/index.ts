@@ -14,7 +14,7 @@ import "./style.css";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/cross-world-messenger";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging";
 import { forwardSabrCredentialsWithRetry, listenForSabrBodyReady } from "@/lib/sabr-credentials";
-import { optionsItem } from "@/lib/storage";
+import { optionsItem, statusProgressItem } from "@/lib/storage";
 import { downloadProgressStore } from "@/lib/synced-stores.svelte";
 import { type Options } from "@/types";
 
@@ -131,6 +131,16 @@ export default defineContentScript({
     listenForKeepalive();
     listenForDownloadIframes(context);
     void forwardSabrCredentialsWithRetry();
+
+    const storedProgress = await statusProgressItem.getValue();
+    for (const [videoId, { progress, progressType }] of Object.entries(storedProgress)) {
+      downloadProgressStore.set(videoId, {
+        isDownloading: true,
+        isDone: false,
+        progress,
+        progressType
+      });
+    }
 
     const unwatchOptions = optionsItem.watch(newOptions => {
       if (!newOptions) {
