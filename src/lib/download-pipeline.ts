@@ -18,7 +18,7 @@ import {
 import { ProgressType } from "@/types";
 import { DownloadType } from "@/types";
 import type { ProcessStreamData, VideoMetadata } from "@/types";
-import { FFmpeg } from "@ffmpeg/ffmpeg";
+import type { FFmpegCoreModule, Progress } from "@ffmpeg/types";
 import { zipSync } from "fflate";
 
 // ─── FFmpeg configuration ────────────────────────────────────────────────────
@@ -26,34 +26,22 @@ import { zipSync } from "fflate";
 // exec() at a time, so mux operations are serialized via a queue while downloads
 // still run in parallel.
 
-let ffmpegUrls: {
-  coreURL: string;
-  wasmURL: string;
-  classWorkerURL: string;
-} | null = null;
-let sharedFFmpeg: FFmpeg | null = null;
+let sharedFFmpeg: FFmpegCoreModule | null = null;
+const progressHandlers = new Set<(progress: Progress) => void>();
 
-export function initFFmpeg({ coreURL, wasmURL, classWorkerURL }: {
-  coreURL: string;
-  wasmURL: string;
-  classWorkerURL: string;
-}) {
-  ffmpegUrls = {
-    coreURL,
-    wasmURL,
-    classWorkerURL
-  };
+export function initFFmpeg(core: FFmpegCoreModule) {
+  sharedFFmpeg = core;
+  core.setProgress(progress => {
+    for (const handler of progressHandlers) {
+      handler(progress);
+    }
+  });
   void sendMessage(MessageType.PipelineFFmpegReady, {});
 }
 
-async function getFFmpegInstance() {
-  if (!ffmpegUrls) {
-    throw new Error("initFFmpeg() must be called before processing video+audio downloads");
-  }
-
+function getFFmpeg() {
   if (!sharedFFmpeg) {
-    sharedFFmpeg = new FFmpeg();
-    await sharedFFmpeg.load(ffmpegUrls);
+    throw new Error("initFFmpeg() must be called before processing video+audio downloads");
   }
 
   return sharedFFmpeg;
@@ -96,7 +84,6 @@ async function enqueueMuxJob(job: () => Promise<void>) {
 // ─── Active jobs ─────────────────────────────────────────────────────────────
 
 interface ActiveJob {
-  ffmpeg: FFmpeg | null;
   videoId: string;
   tabId: number;
 }
@@ -229,14 +216,43 @@ function addToPlaylistBundle({
   void triggerDownload(zipped, zipFilename);
 }
 
+function matchesMagicBytes(data: Uint8Array, bytes: number[], offset = 0) {
+  return bytes.every((byte, i) => data[offset + i] === byte);
+}
+
+const jpegMagicBytes = [0xFF, 0xD8, 0xFF];
+const pngMagicBytes = [0x89, 0x50, 0x4E, 0x47];
+const riffMagicBytes = [0x52, 0x49, 0x46, 0x46];
+const webpMagicBytes = [0x57, 0x45, 0x42, 0x50];
+const webpMagicOffset = 8;
+
+function detectImageExtension(data: Uint8Array) {
+  if (matchesMagicBytes(data, jpegMagicBytes)) {
+    return "jpg";
+  }
+
+  if (matchesMagicBytes(data, pngMagicBytes)) {
+    return "png";
+  }
+
+  if (matchesMagicBytes(data, riffMagicBytes) && matchesMagicBytes(data, webpMagicBytes, webpMagicOffset)) {
+    return "webp";
+  }
+
+  return "jpg";
+}
+
+const thumbnailFetchTimeoutMs = 10_000;
+
 async function fetchThumbnail(url: string) {
   try {
-    const response = await fetch(url);
+    const response = await fetch(url, { signal: AbortSignal.timeout(thumbnailFetchTimeoutMs) });
     if (!response.ok) {
       return null;
     }
 
-    return new Uint8Array(await response.arrayBuffer());
+    const data = new Uint8Array(await response.arrayBuffer());
+    return { data, extension: detectImageExtension(data) };
   } catch {
     return null;
   }
@@ -246,23 +262,27 @@ async function embedMusicMetadata(
   audioData: Uint8Array,
   filenameOutput: string,
   metadata: VideoMetadata,
-  ffmpeg: FFmpeg
+  ffmpeg: FFmpegCoreModule
 ) {
   const audioExtension = getFileExtension(filenameOutput) || "m4a";
   const inputFilename = `input.${audioExtension}`;
   const outputFilename = getCompatibleFilename(filenameOutput);
 
-  await ffmpeg.writeFile(inputFilename, audioData);
+  ffmpeg.FS.writeFile(inputFilename, audioData);
 
   const ffmpegArgs = ["-i", inputFilename];
 
-  // Download and attach thumbnail as cover art
+  // Download and attach thumbnail as cover art.
+  // WebM containers don't support MJPEG cover art — skip for weba/webm.
+  const isWebmAudio = audioExtension === "weba" || audioExtension === "webm";
   let isCoverArtPresent = false;
-  if (metadata.thumbnailUrl) {
-    const thumbnailData = await fetchThumbnail(metadata.thumbnailUrl);
-    if (thumbnailData) {
-      await ffmpeg.writeFile("cover.jpg", thumbnailData);
-      ffmpegArgs.push("-i", "cover.jpg");
+  let coverFilename = "";
+  if (metadata.thumbnailUrl && !isWebmAudio) {
+    const thumbnail = await fetchThumbnail(metadata.thumbnailUrl);
+    if (thumbnail) {
+      coverFilename = `cover.${thumbnail.extension}`;
+      ffmpeg.FS.writeFile(coverFilename, thumbnail.data);
+      ffmpegArgs.push("-i", coverFilename);
       isCoverArtPresent = true;
     }
   }
@@ -270,8 +290,11 @@ async function embedMusicMetadata(
   ffmpegArgs.push("-map", "0:a");
 
   if (isCoverArtPresent) {
-    ffmpegArgs.push("-map", "1:v");
-    ffmpegArgs.push("-c:v", "mjpeg");
+    ffmpegArgs.push("-map", "1");
+    // JPEG is already MJPEG — copy as-is. Other formats (WebP, PNG) must be
+    // transcoded to MJPEG since that is what MP4/M4A cover art expects.
+    const isJpeg = coverFilename.endsWith(".jpg");
+    ffmpegArgs.push("-c:v", isJpeg ? "copy" : "mjpeg");
     ffmpegArgs.push("-disposition:v", "attached_pic");
   }
 
@@ -285,21 +308,24 @@ async function embedMusicMetadata(
 
   ffmpegArgs.push(outputFilename);
 
-  const exitCode = await ffmpeg.exec(ffmpegArgs);
+  const exitCode = ffmpeg.exec(...ffmpegArgs);
   if (exitCode !== 0) {
     // Fallback: return original data without tags
-    await ffmpeg.deleteFile(inputFilename);
+    ffmpeg.FS.unlink(inputFilename);
     return audioData;
   }
 
-  const taggedOutput = await ffmpeg.readFile(outputFilename);
-  await Promise.all([
-    ffmpeg.deleteFile(inputFilename),
-    ffmpeg.deleteFile(outputFilename),
-    ...(isCoverArtPresent ? [ffmpeg.deleteFile("cover.jpg")] : [])
-  ]);
+  const taggedOutput = ffmpeg.FS.readFile(outputFilename, { encoding: "binary" });
+  ffmpeg.FS.unlink(inputFilename);
+  ffmpeg.FS.unlink(outputFilename);
 
-  if (typeof taggedOutput === "string") {
+  if (isCoverArtPresent) {
+    ffmpeg.FS.unlink(coverFilename);
+  }
+
+  // Guard against empty output — can happen if FFmpeg silently fails
+  // (e.g. MJPEG cover art rejected for WebM container)
+  if (typeof taggedOutput === "string" || taggedOutput.byteLength === 0) {
     return audioData;
   }
 
@@ -333,7 +359,7 @@ async function processSingleMedia(item: ProcessStreamData) {
     });
 
     await enqueueMuxJob(async () => {
-      const ffmpeg = await getFFmpegInstance();
+      const ffmpeg = getFFmpeg();
       data = await embedMusicMetadata(data!, filenameOutput, item.metadata!, ffmpeg);
     });
 
@@ -385,7 +411,7 @@ function determineOutputExtension({
   return getOutputExtension(videoMimeType, audioMimeType, userExtension);
 }
 
-async function processVideoAudio(item: ProcessStreamData, ffmpeg: FFmpeg) {
+async function processVideoAudio(item: ProcessStreamData, ffmpeg: FFmpegCoreModule) {
   const {
     videoId, filenameOutput,
     videoMimeType, audioMimeType, tabId,
@@ -430,7 +456,7 @@ async function processVideoAudio(item: ProcessStreamData, ffmpeg: FFmpeg) {
   const primaryAudioFilename = `${videoId}-audio.${audioExtension}`;
   const outputFilename = getCompatibleFilename(`${videoId}-${downloadFilename}`);
 
-  function handleFFmpegProgress({ progress }: { progress: number }) {
+  function handleFFmpegProgress({ progress }: Progress) {
     void reportProgress({
       videoId,
       progress,
@@ -439,13 +465,11 @@ async function processVideoAudio(item: ProcessStreamData, ffmpeg: FFmpeg) {
     });
   }
 
-  ffmpeg.on("progress", handleFFmpegProgress);
+  progressHandlers.add(handleFFmpegProgress);
 
   try {
-    await Promise.all([
-      ffmpeg.writeFile(videoFilename, videoData),
-      ffmpeg.writeFile(primaryAudioFilename, audioData)
-    ]);
+    ffmpeg.FS.writeFile(videoFilename, videoData);
+    ffmpeg.FS.writeFile(primaryAudioFilename, audioData);
 
     const extraAudioEntries = additionalAudioStreams
       .map((stream, i) => {
@@ -460,7 +484,9 @@ async function processVideoAudio(item: ProcessStreamData, ffmpeg: FFmpeg) {
       })
       .filter(entry => entry !== null);
 
-    await Promise.all(extraAudioEntries.map(entry => ffmpeg.writeFile(entry.filename, entry.data)));
+    for (const entry of extraAudioEntries) {
+      ffmpeg.FS.writeFile(entry.filename, entry.data);
+    }
     const extraAudioFilenames = extraAudioEntries.map(entry => entry.filename);
 
     const ffmpegArgs = ["-i", videoFilename, "-i", primaryAudioFilename];
@@ -489,18 +515,19 @@ async function processVideoAudio(item: ProcessStreamData, ffmpeg: FFmpeg) {
 
     ffmpegArgs.push(outputFilename);
 
-    const exitCode = await ffmpeg.exec(ffmpegArgs);
+    const exitCode = ffmpeg.exec(...ffmpegArgs);
     if (exitCode !== 0) {
       throw new Error(`FFmpeg exited with code ${exitCode}`);
     }
 
-    const ffmpegOutput = await ffmpeg.readFile(outputFilename);
+    const ffmpegOutput = ffmpeg.FS.readFile(outputFilename, { encoding: "binary" });
     if (typeof ffmpegOutput === "string") {
       throw new Error("FFmpeg readFile returned unexpected string output");
     }
 
-    await Promise.all([videoFilename, primaryAudioFilename, outputFilename, ...extraAudioFilenames]
-      .map(file => ffmpeg.deleteFile(file)));
+    for (const file of [videoFilename, primaryAudioFilename, outputFilename, ...extraAudioFilenames]) {
+      ffmpeg.FS.unlink(file);
+    }
 
     await reportProgress({
       videoId,
@@ -523,7 +550,7 @@ async function processVideoAudio(item: ProcessStreamData, ffmpeg: FFmpeg) {
 
     await triggerDownload(ffmpegOutput, downloadFilename);
   } finally {
-    ffmpeg.off("progress", handleFFmpegProgress);
+    progressHandlers.delete(handleFFmpegProgress);
   }
 }
 
@@ -531,7 +558,6 @@ async function processVideoAudio(item: ProcessStreamData, ffmpeg: FFmpeg) {
 
 async function processItem(item: ProcessStreamData) {
   const job: ActiveJob = {
-    ffmpeg: null,
     videoId: item.videoId,
     tabId: item.tabId
   };
@@ -540,9 +566,7 @@ async function processItem(item: ProcessStreamData) {
   try {
     if (item.type === DownloadType.VideoAndAudio) {
       await enqueueMuxJob(async () => {
-        const ffmpeg = await getFFmpegInstance();
-        job.ffmpeg = ffmpeg;
-        await processVideoAudio(item, ffmpeg);
+        await processVideoAudio(item, getFFmpeg());
       });
     } else {
       await processSingleMedia(item);
@@ -571,13 +595,6 @@ export async function cancelDownloadsByIds(videoIds: string[]) {
     const activeJob = activeJobs.get(videoId);
     if (!activeJob) {
       return;
-    }
-
-    // If this job is actively using FFmpeg, terminate and recreate the shared
-    // instance so the next queued mux can proceed.
-    if (activeJob.ffmpeg) {
-      activeJob.ffmpeg.terminate();
-      sharedFFmpeg = null;
     }
 
     activeJobs.delete(videoId);

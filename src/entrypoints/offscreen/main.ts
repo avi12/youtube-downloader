@@ -10,16 +10,17 @@
 
 import { cancelDownloadsByIds, enqueueStreamData, initFFmpeg } from "@/lib/download-pipeline";
 import { MessageType, onMessage } from "@/lib/messaging";
+import type { FFmpegCoreModuleFactory } from "@ffmpeg/types";
 
-// Start loading FFmpeg immediately
-initFFmpeg({
-  coreURL: browser.runtime.getURL("/node_modules/@ffmpeg/core/dist/esm/ffmpeg-core.js"),
-  wasmURL: browser.runtime.getURL("/node_modules/@ffmpeg/core/dist/esm/ffmpeg-core.wasm"),
-  classWorkerURL: browser.runtime.getURL("/node_modules/@ffmpeg/ffmpeg/dist/esm/worker.js")
-});
+// Loaded via <script> tag in index.html — the UMD build sets this global and
+// resolves ffmpeg-core.wasm relative to document.currentScript.src automatically.
+declare const createFFmpegCore: FFmpegCoreModuleFactory;
+
+const core = await createFFmpegCore({});
+initFFmpeg(core);
 
 // ─── Chunk accumulation ────────────────────────────────────────────────────────
-// Large video+audio data is split into 1 MB chunks by the content script to
+// the content script splits Large video+audio data into 1 MB chunks to
 // stay under Chrome's runtime.sendMessage size limit. Reassemble here before
 // handing off to FFmpeg.
 
@@ -77,8 +78,9 @@ onMessage(MessageType.ProcessStreamChunk, ({ data }) => {
     });
   }
 
-  const accumulator = streamAccumulators.get(videoId)!;  // iChunk === -1 is a final marker that sets the correct totalChunks
+  // iChunk === -1 is a final marker that sets the correct totalChunks
   // (used by streaming SabrDownload where total is unknown during transfer)
+  const accumulator = streamAccumulators.get(videoId)!;
   if (iChunk === -1) {
     if (streamType === "video") {
       accumulator.totalVideoChunks = totalChunks;
@@ -117,7 +119,6 @@ onMessage(MessageType.ProcessStreamChunk, ({ data }) => {
 });
 
 onMessage(MessageType.ProcessStreamEnd, ({ data }) => {
-  console.log(`[ytdl:offscreen] streamEnd for ${data.videoId}, type=${data.type}, accumulators:`, [...streamAccumulators.keys()]);
   const {
     videoId, type, filenameOutput, videoMimeType, audioMimeType, audioTrackLabels, tabId,
     playlistId, playlistTitle, playlistTotalCount

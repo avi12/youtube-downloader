@@ -16,11 +16,14 @@ export default defineConfig({
       "tabs",
       "scripting",
       "webRequest",
+      "declarativeNetRequest",
+      "declarativeNetRequestWithHostAccess",
       ...(browser === "chrome" ? ["offscreen"] : [])
     ],
     host_permissions: [
       "https://www.youtube.com/*",
       "https://*.googlevideo.com/*",
+      "https://i.ytimg.com/*",
       "http://localhost/*",
       "https://localhost/*"
     ],
@@ -36,12 +39,7 @@ export default defineConfig({
     web_accessible_resources: [
       {
         resources: [
-          ...(browser === "chrome" ? ["offscreen.html"] : []),
-          "node_modules/@ffmpeg/core/dist/esm/ffmpeg-core.js",
-          "node_modules/@ffmpeg/core/dist/esm/ffmpeg-core.wasm",
-          "node_modules/@ffmpeg/ffmpeg/dist/esm/worker.js",
-          "node_modules/@ffmpeg/ffmpeg/dist/esm/const.js",
-          "node_modules/@ffmpeg/ffmpeg/dist/esm/errors.js"
+          ...(browser === "chrome" ? ["offscreen.html"] : [])
         ],
         matches: ["<all_urls>"]
       }
@@ -58,26 +56,16 @@ export default defineConfig({
   }),
   hooks: {
     "prepare:publicPaths"(_, paths) {
-      const ffmpegPaths = [
-        "node_modules/@ffmpeg/core/dist/esm/ffmpeg-core.js",
-        "node_modules/@ffmpeg/core/dist/esm/ffmpeg-core.wasm",
-        "node_modules/@ffmpeg/ffmpeg/dist/esm/worker.js",
-        "node_modules/@ffmpeg/ffmpeg/dist/esm/const.js",
-        "node_modules/@ffmpeg/ffmpeg/dist/esm/errors.js"
-      ];
-
-      paths.push(...ffmpegPaths);
+      paths.push(
+        "node_modules/@ffmpeg/core/dist/umd/ffmpeg-core.js",
+        "node_modules/@ffmpeg/core/dist/umd/ffmpeg-core.wasm"
+      );
     },
     "build:publicAssets"(_, assets) {
-      const ffmpegAssets = [
-        "node_modules/@ffmpeg/core/dist/esm/ffmpeg-core.js",
-        "node_modules/@ffmpeg/core/dist/esm/ffmpeg-core.wasm",
-        "node_modules/@ffmpeg/ffmpeg/dist/esm/worker.js",
-        "node_modules/@ffmpeg/ffmpeg/dist/esm/const.js",
-        "node_modules/@ffmpeg/ffmpeg/dist/esm/errors.js"
-      ];
-
-      for (const path of ffmpegAssets) {
+      for (const path of [
+        "node_modules/@ffmpeg/core/dist/umd/ffmpeg-core.js",
+        "node_modules/@ffmpeg/core/dist/umd/ffmpeg-core.wasm"
+      ]) {
         assets.push({ absoluteSrc: resolve(path), relativeDest: path });
       }
     }
