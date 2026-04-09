@@ -40,13 +40,15 @@ export function enqueueStreamData(data: ProcessStreamData) {
 }
 
 export async function cancelDownloadsByIds(videoIds: string[]) {
-  await Promise.all(videoIds.map(async videoId => {
-    const activeJob = activeJobs.get(videoId);
-    if (!activeJob) {
-      return;
-    }
+  await Promise.all(
+    videoIds.map(async videoId => {
+      const activeJob = activeJobs.get(videoId);
+      if (!activeJob) {
+        return;
+      }
 
-    activeJobs.delete(videoId);
-    await reportRemoval(videoId, activeJob.tabId);
-  }));
+      activeJobs.delete(videoId);
+      await reportRemoval(videoId, activeJob.tabId);
+    })
+  );
 }
