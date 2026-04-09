@@ -9,7 +9,8 @@ import {
 import { buildInitialDownloadState } from "./watch-button-state";
 import { buildChevronData, buildDownloadData, type ButtonViewState } from "./watch-button-view-model";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/cross-world-messenger";
-import { type ProgressUpdate, type VideoData } from "@/types";
+import { calculateWeightedProgress } from "@/lib/utils";
+import { ProgressType, type ProgressUpdate, type VideoData } from "@/types";
 
 let cleanupCurrentButton: (() => void) | null = null;
 let injectionGeneration = 0;
@@ -54,6 +55,7 @@ export async function injectSegmentedDownloadButton(
   let isInterrupted = initialState.isInterrupted;
   let isPanelOpen = false;
   let downloadProgress = 0;
+  let downloadProgressType: ProgressType | "" = "";
 
   // Grab Polymer CSS scoping class from last native yt-button-view-model
   const nativeButtons = elActionsContainer.querySelectorAll("yt-button-view-model");
@@ -96,12 +98,13 @@ export async function injectSegmentedDownloadButton(
   requestAnimationFrame(applySegmentedClasses);
 
   function getViewState(): ButtonViewState {
+    const weightedProgress = calculateWeightedProgress(isDownloading, downloadProgress, downloadProgressType) / 100;
     return {
       isDownloading,
       isDone,
       isInterrupted,
       isPanelOpen,
-      downloadProgress,
+      downloadProgress: weightedProgress,
       filename: defaultFilename,
       quality: defaultQuality,
       isDownloadable: videoData.isDownloadable
@@ -115,7 +118,7 @@ export async function injectSegmentedDownloadButton(
     requestAnimationFrame(applySegmentedClasses);
 
     elProgressBar.indeterminate = isDownloading && downloadProgress === 0;
-    elProgressBar.value = Math.round(downloadProgress * 100);
+    elProgressBar.value = Math.round(viewState.downloadProgress * 100);
     elProgressBar.style.opacity = isDownloading ? "1" : "0";
   }
 
@@ -184,16 +187,19 @@ export async function injectSegmentedDownloadButton(
     if (data.isRemoved === true) {
       isDownloading = false;
       downloadProgress = 0;
+      downloadProgressType = "";
       refreshButtons();
       return;
     }
 
     downloadProgress = data.progress;
+    downloadProgressType = data.progressType;
 
     if (data.progress >= 1) {
       isDone = true;
       isDownloading = false;
       downloadProgress = 0;
+      downloadProgressType = "";
     }
 
     refreshButtons();
@@ -243,6 +249,7 @@ export async function injectSegmentedDownloadButton(
       }
 
       downloadProgress = data.progress;
+      downloadProgressType = data.progressType;
       refreshButtons();
     }
   );
