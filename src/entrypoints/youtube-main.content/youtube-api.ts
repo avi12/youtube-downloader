@@ -4,7 +4,7 @@ import type { AdaptiveFormatItem, PlayerResponse } from "@/types";
 // ─── Format parsing utilities ─────────────────────────────────────────────────
 
 function sortFormatsByBitrate(formats: AdaptiveFormatItem[]) {
-  return [...formats].sort((formatA, formatB) => formatB.bitrate - formatA.bitrate);
+  return formats.toSorted((formatA, formatB) => formatB.bitrate - formatA.bitrate);
 }
 
 function getUniqueVideoFormats(formats: AdaptiveFormatItem[]) {
