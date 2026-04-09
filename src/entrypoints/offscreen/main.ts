@@ -10,6 +10,7 @@
 
 import { cancelDownloadsByIds, enqueueStreamData, initFFmpeg } from "@/lib/download-pipeline";
 import { MessageType, onMessage } from "@/lib/messaging";
+import { StreamType } from "@/types";
 import type { FFmpegCoreModuleFactory } from "@ffmpeg/types";
 
 // Loaded via <script> tag in index.html — the UMD build sets this global and
@@ -82,7 +83,7 @@ onMessage(MessageType.ProcessStreamChunk, ({ data }) => {
   // (used by streaming SabrDownload where total is unknown during transfer)
   const accumulator = streamAccumulators.get(videoId)!;
   if (iChunk === -1) {
-    if (streamType === "video") {
+    if (streamType === StreamType.Video) {
       accumulator.totalVideoChunks = totalChunks;
     } else {
       const audioStream = accumulator.audioStreams.get(streamType);
@@ -95,7 +96,7 @@ onMessage(MessageType.ProcessStreamChunk, ({ data }) => {
   }
 
   const decodedChunk = base64ToUint8Array(chunkBase64);
-  if (streamType === "video") {
+  if (streamType === StreamType.Video) {
     accumulator.videoChunks.set(iChunk, decodedChunk);
 
     if (totalChunks > 0) {

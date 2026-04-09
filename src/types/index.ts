@@ -51,6 +51,11 @@ export enum PlaylistOutputMode {
   Zip = "zip"
 }
 
+export enum StreamType {
+  Video = "video",
+  Audio = "audio"
+}
+
 export type ProgressUpdate = {
   videoId: string;
   progress: number;

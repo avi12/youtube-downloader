@@ -7,6 +7,7 @@
 import { MessageType, sendMessage } from "@/lib/messaging";
 import { downloadProgressStore } from "@/lib/synced-stores.svelte";
 import { uint8ToBase64 } from "@/lib/utils";
+import { StreamType } from "@/types";
 import type { StreamDataPayload } from "@/types";
 
 const TRANSFER_CHUNK_SIZE = 1024 * 1024;
@@ -70,11 +71,11 @@ export async function handleStreamData(payload: StreamDataPayload) {
 
   const streamTasks: Promise<void>[] = [];
   if (videoData) {
-    streamTasks.push(sendStreamChunks({ videoId, streamType: "video", data: videoData }));
+    streamTasks.push(sendStreamChunks({ videoId, streamType: StreamType.Video, data: videoData }));
   }
 
   if (audioData) {
-    streamTasks.push(sendStreamChunks({ videoId, streamType: "audio", data: audioData }));
+    streamTasks.push(sendStreamChunks({ videoId, streamType: StreamType.Audio, data: audioData }));
   }
 
   for (const [i, track] of additionalAudioData.entries()) {
