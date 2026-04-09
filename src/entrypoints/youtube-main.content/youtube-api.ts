@@ -102,31 +102,10 @@ export function buildVideoData({ playerResponse, clientVersion, clientName }: {
 // ─── Player response extraction from raw HTML ────────────────────────────────
 
 export function extractPlayerResponseFromHtml(html: string) {
-  const marker = "var ytInitialPlayerResponse = ";
-  const startIndex = html.indexOf(marker);
-  if (startIndex === -1) {
-    return null;
-  }
-
-  const jsonStart = startIndex + marker.length;
-  let depth = 0;
-  let end = jsonStart;
-
-  for (let i = jsonStart; i < html.length; i++) {
-    if (html[i] === "{") {
-      depth++;
-    } else if (html[i] === "}") {
-      depth--;
-
-      if (depth === 0) {
-        end = i + 1;
-        break;
-      }
-    }
-  }
-
+  // YouTube always terminates ytInitialPlayerResponse with ;\s*var or ;\s*</script>
   try {
-    const parsed: PlayerResponse = JSON.parse(html.slice(jsonStart, end));
+    const match = html.match(/var ytInitialPlayerResponse\s*=\s*(.+?);\s*(?:var\s|<\/script>)/s);
+    const parsed: PlayerResponse = JSON.parse(match?.[1] ?? "");
     return parsed;
   } catch {
     return null;
