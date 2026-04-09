@@ -326,30 +326,50 @@ export async function performDownload({
         if (!resolvedVideoUrl && !resolvedAudioUrl) {
           console.warn("[ytdl] Could not resolve any format URLs");
         } else {
-          let totalExpectedBytes = 0;
-          let totalReceivedBytes = 0;
+          const videoExpectedBytes = videoFormat?.contentLength ? parseInt(videoFormat.contentLength, 10) : 0;
+          const audioExpectedBytes = audioFormat?.contentLength ? parseInt(audioFormat.contentLength, 10) : 0;
+          let videoReceivedBytes = 0;
+          let audioReceivedBytes = 0;
+          let videoTotalBytes = videoExpectedBytes;
+          let audioTotalBytes = audioExpectedBytes;
 
-          function reportDownloadProgress(receivedBytes: number, totalBytes: number) {
-            totalExpectedBytes = Math.max(totalExpectedBytes, totalBytes);
-            totalReceivedBytes = receivedBytes;
-
-            if (totalExpectedBytes > 0) {
-              void crossWorldMessenger.sendMessage(CrossWorldMessage.DownloadProgress, {
-                videoId,
-                progress: Math.min(totalReceivedBytes / totalExpectedBytes, 1),
-                progressType: ProgressType.Video
-              });
+          function reportCombinedProgress() {
+            const totalExpected = videoTotalBytes + audioTotalBytes;
+            if (totalExpected === 0) {
+              return;
             }
+
+            void crossWorldMessenger.sendMessage(CrossWorldMessage.DownloadProgress, {
+              videoId,
+              progress: Math.min((videoReceivedBytes + audioReceivedBytes) / totalExpected, 1),
+              progressType: ProgressType.Video
+            });
           }
 
-          function fetchOrNull(url: string | null) {
-            return url ? fetchStreamFromUrl(url, reportDownloadProgress, signal) : null;
+          function fetchOrNull(url: string | null, onProgress: (received: number, total: number) => void) {
+            return url ? fetchStreamFromUrl(url, onProgress, signal) : null;
           }
 
           const [videoBytes, audioBytes, ...extraAudioBytes] = await Promise.all([
-            fetchOrNull(resolvedVideoUrl),
-            fetchOrNull(resolvedAudioUrl),
-            ...resolvedExtraUrls.map(fetchOrNull)
+            fetchOrNull(resolvedVideoUrl, (received, total) => {
+              videoReceivedBytes = received;
+
+              if (total > 0) {
+                videoTotalBytes = total;
+              }
+
+              reportCombinedProgress();
+            }),
+            fetchOrNull(resolvedAudioUrl, (received, total) => {
+              audioReceivedBytes = received;
+
+              if (total > 0) {
+                audioTotalBytes = total;
+              }
+
+              reportCombinedProgress();
+            }),
+            ...resolvedExtraUrls.map(url => fetchOrNull(url, () => {}))
           ]);
 
           const additionalAudioData = extraAudioFormats.map((format, i) => ({
