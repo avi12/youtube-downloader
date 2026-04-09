@@ -1,12 +1,10 @@
+import { sendStreamChunksToOffscreen } from "./offscreen-transfer";
 import { ensureProcessor } from "./processor";
+import { createProgressFetch, fetchWithProgress, sendProgressUpdate } from "./progress-fetch";
 import { MessageType, sendMessage } from "@/lib/messaging";
 import { fetchAudioViaSabrStream, fetchVideoViaSabrStream } from "@/lib/sabr-download";
-import { statusProgressItem } from "@/lib/storage";
-import { uint8ToBase64 } from "@/lib/utils";
 import { DownloadType, ProgressType, StreamType } from "@/types";
 import type { DownloadRequest, SabrConfig } from "@/types";
-
-const TRANSFER_CHUNK_SIZE = 1024 * 1024;
 
 const activeBackgroundDownloads = new Map<string, AbortController>();
 
@@ -18,117 +16,6 @@ export function cancelBackgroundDownload(videoId: string) {
 
   controller.abort();
   activeBackgroundDownloads.delete(videoId);
-}
-
-async function sendProgressUpdate(
-  videoId: string,
-  progress: number,
-  progressType: ProgressType,
-  tabId: number
-) {
-  const current = await statusProgressItem.getValue();
-  current[videoId] = { progress, progressType };
-  await Promise.allSettled([
-    statusProgressItem.setValue(current),
-    sendMessage(MessageType.UpdateDownloadProgress, { videoId, progress, progressType }, tabId)
-  ]);
-}
-
-function createProgressFetch(
-  signal: AbortSignal,
-  onBytesReceived: (bytes: number) => void
-) {
-  return async (input: RequestInfo | URL, init?: RequestInit) => {
-    const response = await fetch(input, { ...init, signal, credentials: "include" });
-    if (!response.body) {
-      const buffer = await response.arrayBuffer();
-      onBytesReceived(buffer.byteLength);
-      return new Response(buffer, { status: response.status, headers: response.headers });
-    }
-
-    const reader = response.body.getReader();
-    const chunks: Uint8Array[] = [];
-    let totalBytes = 0;
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) {
-        break;
-      }
-
-      chunks.push(value);
-      totalBytes += value.byteLength;
-      onBytesReceived(value.byteLength);
-    }
-
-    const result = new Uint8Array(totalBytes);
-    let writeOffset = 0;
-    for (const chunk of chunks) {
-      result.set(chunk, writeOffset);
-      writeOffset += chunk.byteLength;
-    }
-
-    return new Response(result, { status: response.status, headers: response.headers });
-  };
-}
-
-async function fetchWithProgress(
-  url: string,
-  signal: AbortSignal,
-  onBytesReceived: (bytes: number) => void
-) {
-  const response = await fetch(url, { signal, credentials: "include" });
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status} fetching stream`);
-  }
-
-  if (!response.body) {
-    const buffer = await response.arrayBuffer();
-    onBytesReceived(buffer.byteLength);
-    return new Uint8Array(buffer);
-  }
-
-  const reader = response.body.getReader();
-  const chunks: Uint8Array[] = [];
-  let receivedBytes = 0;
-
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) {
-      break;
-    }
-
-    chunks.push(value);
-    receivedBytes += value.byteLength;
-    onBytesReceived(value.byteLength);
-  }
-
-  const result = new Uint8Array(receivedBytes);
-  let writeOffset = 0;
-  for (const chunk of chunks) {
-    result.set(chunk, writeOffset);
-    writeOffset += chunk.byteLength;
-  }
-
-  return result;
-}
-
-async function sendStreamChunksToOffscreen(videoId: string, streamType: string, data: Uint8Array, tabId: number) {
-  const totalChunks = Math.ceil(data.byteLength / TRANSFER_CHUNK_SIZE);
-  await Promise.all(
-    Array.from({ length: totalChunks }, (_, iChunk) => {
-      const start = iChunk * TRANSFER_CHUNK_SIZE;
-      const chunk = data.subarray(start, start + TRANSFER_CHUNK_SIZE);
-      return sendMessage(MessageType.ProcessStreamChunk, {
-        videoId,
-        streamType,
-        iChunk,
-        totalChunks,
-        chunkBase64: uint8ToBase64(chunk),
-        tabId
-      });
-    })
-  );
 }
 
 function buildEffectiveSabrConfig(sabrConfig: SabrConfig, sabrUrl: string | undefined): SabrConfig {
