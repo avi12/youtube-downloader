@@ -100,20 +100,20 @@ export async function buildAndDispatchVideoData(
     await injectSegmentedDownloadButton(videoData, cancelActiveDownload);
 
     // Generate PO token via BotGuard (independent of video playback)
-    const creds = sabrCredentials.value;
-    const currentPoToken = creds?.poToken ?? "";
-    if (!currentPoToken) {
-      try {
-        const poToken = await generatePoToken(videoData.videoId);
-        setPoTokenCredentials(poToken, videoData.sabrConfig?.serverAbrStreamingUrl ?? "");
-        // Broadcast to isolated world via synced signal
-        sabrCredentials.value = {
-          url: videoData.sabrConfig?.serverAbrStreamingUrl ?? "",
-          poToken
-        };
-      } catch (error) {
-        console.warn("[ytdl] PO token generation failed:", error);
-      }
+    if (sabrCredentials.value?.poToken) {
+      return;
+    }
+
+    try {
+      const poToken = await generatePoToken(videoData.videoId);
+      setPoTokenCredentials(poToken, videoData.sabrConfig?.serverAbrStreamingUrl ?? "");
+      // Broadcast to isolated world via synced signal
+      sabrCredentials.value = {
+        url: videoData.sabrConfig?.serverAbrStreamingUrl ?? "",
+        poToken
+      };
+    } catch (error) {
+      console.warn("[ytdl] PO token generation failed:", error);
     }
   }
 }
