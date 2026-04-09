@@ -23,13 +23,16 @@ const VIDEO_ACTION_BUTTON_SELECTORS = [
 
 let cleanupCurrentButton: (() => void) | null = null;
 let injectionGeneration = 0;
+let containerSearchAbort: AbortController | null = null;
 
 export function cleanupSegmentedButton() {
   cleanupCurrentButton?.();
   cleanupCurrentButton = null;
+  containerSearchAbort?.abort();
+  containerSearchAbort = null;
 }
 
-function findVideoActionsContainer() {
+async function findVideoActionsContainer() {
   function findFirstVisible() {
     for (const selector of VIDEO_ACTION_BUTTON_SELECTORS) {
       for (const elButton of document.querySelectorAll<HTMLElement>(selector)) {
@@ -44,15 +47,13 @@ function findVideoActionsContainer() {
 
   const existing = findFirstVisible();
   if (existing) {
-    return Promise.resolve(existing);
+    return existing;
   }
 
-  return new Promise<HTMLElement | null>(resolve => {
-    const timeout = setTimeout(() => {
-      observer.disconnect();
-      resolve(null);
-    }, 10_000);
+  containerSearchAbort = new AbortController();
+  const { signal } = containerSearchAbort;
 
+  return new Promise<HTMLElement | null>(resolve => {
     const observer = new MutationObserver(() => {
       const elVisible = findFirstVisible();
       if (!elVisible) {
@@ -60,14 +61,14 @@ function findVideoActionsContainer() {
       }
 
       observer.disconnect();
-      clearTimeout(timeout);
       resolve(elVisible);
     });
 
-    observer.observe(document.documentElement, {
-      childList: true,
-      subtree: true
-    });
+    observer.observe(document.documentElement, { childList: true, subtree: true });
+    signal.addEventListener("abort", () => {
+      observer.disconnect();
+      resolve(null);
+    }, { once: true });
   });
 }
 
