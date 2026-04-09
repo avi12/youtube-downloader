@@ -1,7 +1,6 @@
 import { registerChunkHandlers } from "./chunk-handlers";
 import { registerDownloadHandlers } from "./download-handlers";
 import { registerPipelineHandlers } from "./pipeline-handlers";
-import { ensureProcessor } from "./processor";
 import { registerStorageHandlers } from "./storage-handlers";
 import { registerTabLifecycleHandlers } from "./tab-lifecycle";
 import { MessageType, sendMessage } from "@/lib/messaging";
@@ -58,8 +57,6 @@ export default defineBackground(() => {
   onSabrBodyCaptured(tabId => {
     void sendMessage(MessageType.SabrBodyReady, {}, tabId);
   });
-
-  void ensureProcessor();
 
   registerChunkHandlers();
   registerDownloadHandlers();
