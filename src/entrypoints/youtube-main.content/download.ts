@@ -367,10 +367,12 @@ export async function performDownload({
 
           isResolved = true;
           elVideo.removeEventListener("ended", done);
+          elVideo.playbackRate = 1;
           resolve();
         }
 
         elVideo.addEventListener("ended", done);
+        signal.addEventListener("abort", done, { once: true });
 
         // Handle buffer underruns: YouTube pauses when buffer runs dry.
         // Poll and resume playback until the video ends.
@@ -392,8 +394,6 @@ export async function performDownload({
           done();
         }, 10 * 60 * 1000);
       });
-
-      elVideo.playbackRate = 1;
     }
 
     // Give SourceBuffer a moment to flush final chunks
