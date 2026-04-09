@@ -1,6 +1,6 @@
 <script lang="ts">
   import DownloadOptions from "./DownloadOptions.svelte";
-  import { createPanelState } from "./DownloadOptionsPanel.svelte.ts";
+  import { createPanelState } from "./DownloadOptionsPanel.state.svelte.ts";
   import panelFocusStyles from "./panel-focus.css?inline";
   import { CrossWorldMessage, crossWorldMessenger } from "@/lib/cross-world-messenger";
   import { applyInertTrap } from "@/lib/inert-trap";

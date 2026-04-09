@@ -19,6 +19,12 @@ import {
 } from "@/types";
 import { untrack } from "svelte";
 
+// For music downloads, prefer M4A (AAC) over WebM/Opus — M4A supports MJPEG cover art embedding.
+// Formats are already sorted by bitrate descending, so find() returns the highest-quality M4A.
+function getPreferredMusicAudioFormat(audioFormats: AdaptiveFormatItem[]) {
+  return audioFormats.find(format => format.mimeType.includes("mp4")) ?? audioFormats[0] ?? null;
+}
+
 export function createPanelState(getVideoData: () => VideoData, getOptions: () => Options) {
   // -- Download state ----------------------------------------------------------
 
@@ -40,13 +46,20 @@ export function createPanelState(getVideoData: () => VideoData, getOptions: () =
   }));
 
   let selectedVideoFormat = $state<AdaptiveFormatItem | null>(untrack(() => getVideoData().videoFormats[0] ?? null));
-  let selectedAudioFormat = $state<AdaptiveFormatItem | null>(untrack(() => getVideoData().audioFormats[0] ?? null));
+  let selectedAudioFormat = $state<AdaptiveFormatItem | null>(untrack(() => {
+    const videoData = getVideoData();
+    return videoData.isMusic
+      ? getPreferredMusicAudioFormat(videoData.audioFormats)
+      : videoData.audioFormats[0] ?? null;
+  }));
   let filename = $state(untrack(() => getVideoData().title));
   let extension = $state(untrack(() => {
     const videoData = getVideoData();
     const options = getOptions();
     const extPref = videoData.isMusic ? options.ext.audio : options.ext.video;
-    const defaultFormat = videoData.isMusic ? videoData.audioFormats[0] : videoData.videoFormats[0];
+    const defaultFormat = videoData.isMusic
+      ? getPreferredMusicAudioFormat(videoData.audioFormats)
+      : videoData.videoFormats[0];
     return resolveAutoExtension(extPref, defaultFormat?.mimeType ?? "", videoData.isMusic ? DownloadType.Audio : DownloadType.Video);
   }));
   let isFilenameValid = $state(true);
@@ -234,12 +247,15 @@ export function createPanelState(getVideoData: () => VideoData, getOptions: () =
     });
   }
 
-  function cancelDownload() {
+  async function cancelDownload() {
     const { videoId } = getVideoData();
     isDownloading = false;
     progress = 0;
     downloadProgressStore.delete(videoId);
     cancelRequestSignal.value = { videoIds: [videoId] };
+    const currentProgress = await statusProgressItem.getValue();
+    delete currentProgress[videoId];
+    await statusProgressItem.setValue(currentProgress);
   }
 
   return {
