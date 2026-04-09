@@ -81,9 +81,9 @@ export default defineContentScript({
 
       elButton.setAttribute("data-ytdl-click-bound", "true");
       elButton.addEventListener("click", e => {
-        e.stopPropagation();
         const buttonId = elButton.getAttribute("data-ytdl-button-id");
         if (buttonId) {
+          e.stopPropagation();
           buttonClickSignal.value = { buttonId };
         }
       });
