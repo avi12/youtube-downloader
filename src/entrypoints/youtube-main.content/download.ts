@@ -1,7 +1,7 @@
 import { capturedPoToken, capturedSabrUrl, setPoTokenCredentials } from "./credentials";
-import { fetchViaSabrStream, fetchAudioViaSabrStream } from "./sabr";
-import { fetchStreamFromUrl, resolveFormatUrl, assembleChunks } from "./stream-fetch";
-import { videoDataCache, buildVideoMetadata, captureState } from "./video-data";
+import { fetchAudioViaSabrStream, fetchVideoViaSabrStream } from "./sabr";
+import { fetchStreamFromUrl, resolveFormatUrl } from "./stream-fetch";
+import { videoDataCache, buildVideoMetadata } from "./video-data";
 import { crossWorldMessenger, CrossWorldMessage } from "@/lib/cross-world-messenger";
 import { sabrCredentials } from "@/lib/synced-stores.svelte";
 import { type AdaptiveFormatItem, type DownloadRequest, DownloadType, ProgressType } from "@/types";
@@ -79,11 +79,9 @@ function dispatchStreamData({
 const sabrBodyChunkSize = 8192;
 
 // Creates a fetch function that proxies requests through the background SW and
-// optionally reports download progress based on bytes received vs. expected total.
-// Pass totalExpectedBytes=0 to skip progress reporting (e.g. for extra audio tracks).
-async function createSabrFetch(videoId: string, totalExpectedBytes: number) {
-  let receivedBytes = 0;
-
+// calls onBytesReceived with the byte delta for each response, allowing the
+// caller to aggregate progress across parallel streams.
+async function createSabrFetch(videoId: string, onBytesReceived: (bytes: number) => void) {
   return async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = input instanceof Request ? input.url : String(input);
     const method = init?.method ?? (input instanceof Request ? input.method : "GET");
@@ -124,14 +122,7 @@ async function createSabrFetch(videoId: string, totalExpectedBytes: number) {
       responseBytes[byteIndex] = responseBinary.charCodeAt(byteIndex);
     }
 
-    if (totalExpectedBytes > 0) {
-      receivedBytes += responseBytes.length;
-      void crossWorldMessenger.sendMessage(CrossWorldMessage.DownloadProgress, {
-        videoId,
-        progress: Math.min(receivedBytes / totalExpectedBytes, 1),
-        progressType: ProgressType.Video
-      });
-    }
+    onBytesReceived(responseBytes.length);
 
     return new Response(responseBytes, {
       status: result.status,
@@ -152,8 +143,15 @@ export async function performDownload({
   videoId,
   videoItag,
   audioItag,
-  filenameOutput
-}: Pick<DownloadRequest, "type" | "videoId" | "videoItag" | "audioItag" | "filenameOutput">) {
+  filenameOutput,
+  isIframeFallback
+}: Pick<DownloadRequest, "type" | "videoId" | "videoItag" | "audioItag" | "filenameOutput" | "isIframeFallback">) {
+  // Iframe fallback: only execute in the download iframe, not the parent page.
+  // This prevents the parent watch page from double-downloading.
+  if (isIframeFallback && self === top) {
+    return;
+  }
+
   cancelActiveDownload(videoId);
   const abortController = new AbortController();
   activeDownloads.set(videoId, abortController);
@@ -213,7 +211,7 @@ export async function performDownload({
     }
 
     // Audio-only downloads (e.g. music) need fetchAudioViaSabrStream since videoFormat is null.
-    // VideoAndAudio downloads use fetchViaSabrStream which fetches both streams together.
+    // VideoAndAudio downloads use fetchVideoViaSabrStream + fetchAudioViaSabrStream in parallel.
     const isAudioOnly = type === DownloadType.Audio;
     const canUseSabr = Boolean(cachedVideoData.sabrConfig && audioFormat && (isAudioOnly || videoFormat));
     if (canUseSabr) {
@@ -234,7 +232,18 @@ export async function performDownload({
         }>;
         if (isAudioOnly) {
           const audioExpectedBytes = audioFormat!.contentLength ? parseInt(audioFormat!.contentLength, 10) : 0;
-          const sabrFetch = await createSabrFetch(videoId, audioExpectedBytes);
+          let audioReceivedBytes = 0;
+          const sabrFetch = await createSabrFetch(videoId, bytes => {
+            audioReceivedBytes += bytes;
+
+            if (audioExpectedBytes > 0) {
+              void crossWorldMessenger.sendMessage(CrossWorldMessage.DownloadProgress, {
+                videoId,
+                progress: Math.min(audioReceivedBytes / audioExpectedBytes, 1),
+                progressType: ProgressType.Video
+              });
+            }
+          });
           primaryAudioData = await fetchAudioViaSabrStream(
             effectiveSabrConfig,
             audioFormat!,
@@ -246,29 +255,47 @@ export async function performDownload({
         } else {
           const videoExpectedBytes = videoFormat!.contentLength ? parseInt(videoFormat!.contentLength, 10) : 0;
           const audioExpectedBytes = audioFormat!.contentLength ? parseInt(audioFormat!.contentLength, 10) : 0;
-          const sabrFetch = await createSabrFetch(videoId, videoExpectedBytes + audioExpectedBytes);
+          const totalExpectedBytes = videoExpectedBytes + audioExpectedBytes;
+          let videoReceivedBytes = 0;
+          let audioReceivedBytes = 0;
 
-          const primaryResult = await fetchViaSabrStream(
-            effectiveSabrConfig,
-            videoFormat!,
-            audioFormat!,
-            sabrFetch,
-            currentPoToken
-          );
-          console.log(`[ytdl] SabrStream done: video=${primaryResult.videoData.byteLength} audio=${primaryResult.audioData.byteLength}`);
-          primaryVideoData = primaryResult.videoData;
-          primaryAudioData = primaryResult.audioData;
+          function reportParallelProgress() {
+            if (totalExpectedBytes === 0) {
+              return;
+            }
 
-          // Fetch additional audio tracks in parallel (no progress tracking for extra tracks)
+            void crossWorldMessenger.sendMessage(CrossWorldMessage.DownloadProgress, {
+              videoId,
+              progress: Math.min((videoReceivedBytes + audioReceivedBytes) / totalExpectedBytes, 1),
+              progressType: ProgressType.Video
+            });
+          }
+
+          const videoSabrFetch = await createSabrFetch(videoId, bytes => {
+            videoReceivedBytes += bytes;
+            reportParallelProgress();
+          });
+          const audioSabrFetch = await createSabrFetch(videoId, bytes => {
+            audioReceivedBytes += bytes;
+            reportParallelProgress();
+          });
+
+          [primaryVideoData, primaryAudioData] = await Promise.all([
+            fetchVideoViaSabrStream(effectiveSabrConfig, videoFormat!, videoSabrFetch, currentPoToken),
+            fetchAudioViaSabrStream(effectiveSabrConfig, audioFormat!, audioSabrFetch, currentPoToken)
+          ]);
+          console.log(`[ytdl] SabrStream done (parallel): video=${primaryVideoData?.byteLength ?? 0} audio=${primaryAudioData.byteLength}`);
+
+          // Fetch additional audio tracks in parallel (no progress tracking)
           additionalAudioData = (await Promise.all(extraAudioFormats.map(async format => {
             try {
+              const extraSabrFetch = await createSabrFetch(videoId, () => {});
               const audioData = await fetchAudioViaSabrStream(
                 effectiveSabrConfig,
                 format,
-                await createSabrFetch(videoId, 0),
+                extraSabrFetch,
                 currentPoToken
               );
-
               return {
                 data: audioData,
                 mimeType: format.mimeType.split(";")[0] ?? "audio/mp4",
@@ -293,7 +320,6 @@ export async function performDownload({
           additionalAudioData
         });
 
-        captureState.capturedMedia.delete(videoId);
         document.dispatchEvent(new CustomEvent("ytdl:clear-interrupted", { detail: { videoId } }));
         return;
       } catch (sabrError) {
@@ -392,85 +418,23 @@ export async function performDownload({
           return;
         }
       } catch (cdnError) {
-        console.warn("[ytdl] CDN fetch failed, trying SourceBuffer fallback:", cdnError);
+        console.warn("[ytdl] CDN fetch failed, trying iframe fallback:", cdnError);
       }
     }
 
-    // Strategy 3: SourceBuffer capture - play the video at accelerated speed.
-    // Use 4x (not 16x) so the buffer can keep up with the network.
-    // Handle buffer underruns by waiting and resuming playback.
-    const elVideoNullable = document.querySelector<HTMLVideoElement>("video");
-    if (elVideoNullable && !elVideoNullable.ended) {
-      // Capture as a non-null const so TypeScript preserves the type inside closures
-      const elVideo = elVideoNullable;
-      elVideo.playbackRate = 4;
-      elVideo.muted = true;
-      elVideo.play().catch(() => {});
-
-      console.log("[ytdl] SourceBuffer fallback: playing at 4x to capture full video");
-
-      await new Promise<void>(resolve => {
-        let isResolved = false;
-
-        function done() {
-          if (isResolved) {
-            return;
-          }
-
-          isResolved = true;
-          elVideo.removeEventListener("ended", done);
-          elVideo.playbackRate = 1;
-          resolve();
-        }
-
-        elVideo.addEventListener("ended", done);
-        signal.addEventListener("abort", done, { once: true });
-
-        // Handle buffer underruns: YouTube pauses when buffer runs dry.
-        // Poll and resume playback until the video ends.
-        const resumeInterval = setInterval(() => {
-          if (elVideo.ended || isResolved) {
-            clearInterval(resumeInterval);
-            done();
-            return;
-          }
-
-          if (elVideo.paused) {
-            elVideo.play().catch(() => {});
-          }
-        }, 2000);
-
-        // Safety timeout: max 10 min
-        setTimeout(() => {
-          clearInterval(resumeInterval);
-          done();
-        }, 10 * 60 * 1000);
-      });
-    }
-
-    // Give SourceBuffer a moment to flush final chunks
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    const { capturedMedia } = captureState;
-    const capture = capturedMedia.get(videoId);
-    if (capture && (capture.videoTotalBytes > 0 || capture.audioTotalBytes > 0)) {
-      const videoBytes = assembleChunks(capture.videoChunks, capture.videoTotalBytes);
-      const audioBytes = assembleChunks(capture.audioChunks, capture.audioTotalBytes);
-      console.log(`[ytdl] SourceBuffer fallback: video=${videoBytes.byteLength} audio=${audioBytes.byteLength}`);
-
-      dispatchStreamData({
+    // Strategy 3: Iframe fallback - load a hidden iframe with a fresh watch-page
+    // session to get new SABR credentials. Only attempted when this is not
+    // already an iframe attempt (isIframeFallback guard prevents recursion).
+    if (!isIframeFallback) {
+      console.log("[ytdl] SABR+CDN failed, trying iframe fallback");
+      void crossWorldMessenger.sendMessage(CrossWorldMessage.DownloadViaIframe, {
         type,
         videoId,
         filenameOutput,
-        videoData: videoBytes,
-        audioData: audioBytes,
-        videoMimeType: capture.videoMimeType,
-        audioMimeType: capture.audioMimeType,
-        audioLabel,
-        additionalAudioData: []
+        videoItag,
+        audioItag,
+        isIframeFallback: true
       });
-
-      capturedMedia.delete(videoId);
       return;
     }
 
