@@ -21,7 +21,13 @@ async function ensureChromeOffscreenDocument() {
   }
 
   if (existingContexts.length > 0) {
-    return;
+    // In dev, close the stale offscreen document so the new one picks up hot-reload
+    // code changes. In production the document is reused across SW restarts for efficiency.
+    if (!import.meta.env.DEV) {
+      return;
+    }
+
+    await browser.offscreen.closeDocument().catch(() => {});
   }
 
   await browser.offscreen.createDocument({
