@@ -46,14 +46,17 @@ export async function handleNavigateSuccess() {
 
   // YouTube updates ytd-watch-flexy.playerData asynchronously after
   // navigation. Poll briefly until it matches the current video ID.
+  const playerDataPollAttempts = 20;
+  const playerDataPollIntervalMs = 250;
   const expectedVideoId = new URLSearchParams(location.search).get("v");
-  for (let i = 0; i < 20; i++) {
+
+  for (const _ of Array.from({ length: playerDataPollAttempts })) {
     const playerResponse = document.querySelector("ytd-watch-flexy")?.playerData ?? null;
     if (playerResponse?.videoDetails?.videoId === expectedVideoId) {
       await buildAndDispatchVideoData(playerResponse, cancelActiveDownload);
       return;
     }
 
-    await new Promise(resolve => setTimeout(resolve, 250));
+    await new Promise(resolve => setTimeout(resolve, playerDataPollIntervalMs));
   }
 }
