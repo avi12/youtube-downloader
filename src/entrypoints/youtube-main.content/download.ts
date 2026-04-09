@@ -239,16 +239,14 @@ export async function performDownload({
             }
           }
 
+          function fetchOrNull(url: string | null) {
+            return url ? fetchStreamFromUrl(url, reportDownloadProgress, signal) : null;
+          }
+
           const [videoBytes, audioBytes, ...extraAudioBytes] = await Promise.all([
-            resolvedVideoUrl
-              ? fetchStreamFromUrl(resolvedVideoUrl, reportDownloadProgress, signal)
-              : Promise.resolve(null),
-            resolvedAudioUrl
-              ? fetchStreamFromUrl(resolvedAudioUrl, reportDownloadProgress, signal)
-              : Promise.resolve(null),
-            ...resolvedExtraUrls.map(url => url
-              ? fetchStreamFromUrl(url, reportDownloadProgress, signal)
-              : Promise.resolve(null))
+            fetchOrNull(resolvedVideoUrl),
+            fetchOrNull(resolvedAudioUrl),
+            ...resolvedExtraUrls.map(fetchOrNull)
           ]);
 
           const additionalAudioData = extraAudioFormats.map((format, i) => ({
