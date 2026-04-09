@@ -41,13 +41,21 @@ export default defineContentScript({
       return;
     }
 
+    // In download iframes, mute any video that appears - the iframe is for data
+    // fetching only and must never play audio
+    if (self !== top) {
+      function muteVideo() {
+        const elVideo = document.querySelector<HTMLVideoElement>("video");
+        if (elVideo) {
+          elVideo.muted = true;
+        }
+      }
+      muteVideo();
+      new MutationObserver(muteVideo).observe(document.documentElement, { childList: true, subtree: true });
+    }
+
     // Handle download requests from Svelte panel components (via isolated world)
     crossWorldMessenger.onMessage(CrossWorldMessage.DownloadRequest, ({ data }) => {
-      void performDownload(data);
-    });
-
-    // Handle download requests from the watch-button (MAIN world → MAIN world via messenger)
-    crossWorldMessenger.onMessage(CrossWorldMessage.WatchDownloadRequest, ({ data }) => {
       void performDownload(data);
     });
 

@@ -1,3 +1,4 @@
+import { performDownload } from "./download";
 import { findVideoActionsContainer } from "./watch-button-container";
 import {
   createButtonGroup,
@@ -127,7 +128,7 @@ export async function injectSegmentedDownloadButton(
       return;
     }
 
-    if (elDownloadButton.contains(target)) {
+    if (elGroup.children[0]?.contains(target)) {
       if (!videoData.isDownloadable) {
         return;
       }
@@ -145,18 +146,17 @@ export async function injectSegmentedDownloadButton(
       isDownloading = true;
       downloadProgress = 0;
       refreshButtons();
-      void crossWorldMessenger.sendMessage(CrossWorldMessage.WatchDownloadRequest, {
+      void performDownload({
         type: defaultDownloadType,
         videoId,
         videoItag: defaultVideoItag,
         audioItag: defaultAudioItag,
-        filenameOutput: defaultFilename,
-        sabrConfig: null
+        filenameOutput: defaultFilename
       });
       return;
     }
 
-    if (elChevronButton.contains(target)) {
+    if (elGroup.children[1]?.contains(target)) {
       if (!videoData.isDownloadable) {
         return;
       }
@@ -270,13 +270,13 @@ export async function injectSegmentedDownloadButton(
     }
   );
 
-  elActionsContainer.addEventListener("click", handleClick);
+  elGroup.addEventListener("click", handleClick);
   elDropdown.addEventListener("iron-overlay-closed", handleDropdownClosed);
 
   cleanupCurrentButton = () => {
     segmentedObserver.disconnect();
     resizeObserver.disconnect();
-    elActionsContainer.removeEventListener("click", handleClick);
+    elGroup.removeEventListener("click", handleClick);
     unsubscribeProgress();
     unsubscribeDownloadProgress();
     unsubscribePanelClosed();

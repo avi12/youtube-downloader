@@ -14,7 +14,6 @@ export function listenForDownloadIframes(context: InstanceType<typeof ContentScr
 
     const elIframe = document.createElement("iframe");
     elIframe.classList.add("ytdl-download-iframe");
-    elIframe.allow = "autoplay";
     elIframe.src = watchUrl;
     document.body.append(elIframe);
     downloadIframes.set(videoId, elIframe);
