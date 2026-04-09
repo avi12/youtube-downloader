@@ -23,7 +23,9 @@ export async function generatePoToken(videoId: string) {
 
   const clientVersion = getYtcfgValue("INNERTUBE_CLIENT_VERSION", "2.20260401.01.00");
   const requestKey = getYtcfgValue("BOTGUARD_EXPERIMENT_ID", "O43z0dpjhgX20SCx4KAo");
-  const googApiKey = getYtcfgValue("INNERTUBE_API_KEY", "AIzaSyDyT5W0Jh49F30Pqqtyfdf7pDLFKLJoAnw");
+  // INNERTUBE_API_KEY from ytcfg does not have the Web Anti-Abuse API enabled —
+  // use the hardcoded YouTube web key which is what YouTube's own BotGuard uses.
+  const waaApiKey = "AIzaSyDyT5W0Jh49F30Pqqtyfdf7pDLFKLJoAnw";
 
   // Step 1: Fetch challenge
   const challengeResponse = await fetch(
@@ -108,14 +110,15 @@ export async function generatePoToken(videoId: string) {
   }
 
   // Step 4: Exchange snapshot for integrity token
+  // Use YouTube's own proxy endpoint — the direct jnn-pa.googleapis.com endpoint
+  // returns 403 from content script context, but the youtube.com proxy succeeds.
   const integrityResponse = await fetch(
-    "https://jnn-pa.googleapis.com/$rpc/google.internal.waa.v1.Waa/GenerateIT",
+    "https://www.youtube.com/api/jnn/v1/GenerateIT",
     {
       method: "POST",
       headers: {
         "content-type": "application/json+protobuf",
-        "x-goog-api-key": googApiKey,
-        "x-user-agent": "grpc-web-javascript/0.1"
+        "x-goog-api-key": waaApiKey
       },
       body: JSON.stringify([requestKey, snapshotResponse])
     }
@@ -132,7 +135,10 @@ export async function generatePoToken(videoId: string) {
     throw new Error("WebPo signal function not available");
   }
 
-  const mintFunction = await signalFunction(new TextEncoder().encode(integrityData[0]));
+  // integrityData[0] is a base64-encoded binary blob — decode it to bytes before passing.
+  // TextEncoder would give UTF-8 bytes of the base64 string, not the actual token bytes.
+  const integrityTokenBytes = Uint8Array.from(atob(integrityData[0]), char => char.charCodeAt(0));
+  const mintFunction = await signalFunction(integrityTokenBytes);
   if (typeof mintFunction !== "function") {
     throw new Error("Mint function not available");
   }
