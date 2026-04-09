@@ -175,8 +175,8 @@ export function isVideoMusic(playerResponse: PlayerResponse) {
 
 // ─── DOM utilities ────────────────────────────────────────────────────────────
 
-export function waitForVideoElement() {
-  return new Promise<HTMLVideoElement>(resolve => {
+export function waitForVideoElement(signal?: AbortSignal) {
+  return new Promise<HTMLVideoElement>((resolve, reject) => {
     const observer = new MutationObserver(() => {
       const elVideo = document.querySelector<HTMLVideoElement>("video");
       if (!elVideo || elVideo.videoHeight === 0) {
@@ -186,10 +186,13 @@ export function waitForVideoElement() {
       observer.disconnect();
       resolve(elVideo);
     });
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true
-    });
+
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    signal?.addEventListener("abort", () => {
+      observer.disconnect();
+      reject(new DOMException("Aborted", "AbortError"));
+    }, { once: true });
   });
 }
 

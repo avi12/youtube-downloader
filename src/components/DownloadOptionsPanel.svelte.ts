@@ -89,10 +89,10 @@ export function createPanelState(getVideoData: () => VideoData, getOptions: () =
 
   // -- Video quality matching --------------------------------------------------
 
-  async function matchVideoFormatToCurrentQuality() {
+  async function matchVideoFormatToCurrentQuality(signal: AbortSignal) {
     const videoData = getVideoData();
     try {
-      const elVideo = await waitForVideoElement();
+      const elVideo = await waitForVideoElement(signal);
       const currentQuality = Math.min(elVideo.videoHeight, elVideo.videoWidth);
       selectedVideoFormat = videoData.videoFormats.find(
         format => Math.min(format.height ?? 0, format.width ?? 0) === currentQuality
@@ -106,13 +106,17 @@ export function createPanelState(getVideoData: () => VideoData, getOptions: () =
     const options = getOptions();
     const videoData = getVideoData();
     if (options.videoQualityMode === VideoQualityMode.CurrentQuality) {
-      void matchVideoFormatToCurrentQuality();
+      const abortController = new AbortController();
+      void matchVideoFormatToCurrentQuality(abortController.signal);
       const elVideo = document.querySelector("video");
       function onCanPlay() {
-        void matchVideoFormatToCurrentQuality();
+        void matchVideoFormatToCurrentQuality(abortController.signal);
       }
       elVideo?.addEventListener("canplay", onCanPlay);
-      return () => elVideo?.removeEventListener("canplay", onCanPlay);
+      return () => {
+        abortController.abort();
+        elVideo?.removeEventListener("canplay", onCanPlay);
+      };
     }
 
     if (options.videoQualityMode === VideoQualityMode.Best) {
