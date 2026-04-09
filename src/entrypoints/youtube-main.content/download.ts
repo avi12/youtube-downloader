@@ -81,10 +81,10 @@ const sabrBodyChunkSize = 8192;
 // Creates a fetch function that proxies requests through the background SW and
 // optionally reports download progress based on bytes received vs. expected total.
 // Pass totalExpectedBytes=0 to skip progress reporting (e.g. for extra audio tracks).
-function createSabrFetch(videoId: string, totalExpectedBytes: number) {
+async function createSabrFetch(videoId: string, totalExpectedBytes: number) {
   let receivedBytes = 0;
 
-  return async function (input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+  return async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = input instanceof Request ? input.url : String(input);
     const method = init?.method ?? (input instanceof Request ? input.method : "GET");
 
@@ -191,7 +191,9 @@ export async function performDownload({
       currentSabrUrl = creds.url;
     }
 
-    if (creds?.poToken) {
+    // Only fall back to captured token if BotGuard didn't generate one —
+    // the captured protobuf token is truncated (15 bytes) and unusable for SABR auth.
+    if (!currentPoToken && creds?.poToken) {
       currentPoToken = creds.poToken;
     }
 
@@ -201,7 +203,7 @@ export async function performDownload({
         currentSabrUrl = elCredentials.dataset.url;
       }
 
-      if (elCredentials?.dataset.poToken) {
+      if (!currentPoToken && elCredentials?.dataset.poToken) {
         currentPoToken = elCredentials.dataset.poToken;
       }
     }
@@ -210,55 +212,85 @@ export async function performDownload({
       setPoTokenCredentials(currentPoToken, currentSabrUrl);
     }
 
-    if (cachedVideoData.sabrConfig && videoFormat && audioFormat) {
+    // Audio-only downloads (e.g. music) need fetchAudioViaSabrStream since videoFormat is null.
+    // VideoAndAudio downloads use fetchViaSabrStream which fetches both streams together.
+    const isAudioOnly = type === DownloadType.Audio;
+    const canUseSabr = Boolean(cachedVideoData.sabrConfig && audioFormat && (isAudioOnly || videoFormat));
+    if (canUseSabr) {
       try {
         console.log("[ytdl] Fetching via SabrStream (independent of playback)");
 
-        const videoExpectedBytes = videoFormat.contentLength ? parseInt(videoFormat.contentLength, 10) : 0;
-        const audioExpectedBytes = audioFormat.contentLength ? parseInt(audioFormat.contentLength, 10) : 0;
-        const sabrFetch = createSabrFetch(videoId, videoExpectedBytes + audioExpectedBytes);
+        // Prefer the webRequest-captured SABR URL (has full signature params like sig=, lsig=, spc=)
+        // over the base serverAbrStreamingUrl from ytInitialPlayerResponse (lacks auth params).
+        const sabrConfig = cachedVideoData.sabrConfig!;
+        const effectiveSabrConfig = currentSabrUrl && currentSabrUrl !== sabrConfig.serverAbrStreamingUrl
+          ? { ...sabrConfig, serverAbrStreamingUrl: currentSabrUrl }
+          : sabrConfig;
 
-        const primaryResult = await fetchViaSabrStream(
-          cachedVideoData.sabrConfig,
-          videoFormat,
-          audioFormat,
-          sabrFetch,
-          currentPoToken
-        );
-        console.log(`[ytdl] SabrStream done: video=${primaryResult.videoData.byteLength} audio=${primaryResult.audioData.byteLength}`);
+        let primaryVideoData: Uint8Array | null = null;
+        let primaryAudioData: Uint8Array;
+        let additionalAudioData: Array<{
+          data: Uint8Array | null; mimeType: string; label: string;
+        }>;
+        if (isAudioOnly) {
+          const audioExpectedBytes = audioFormat!.contentLength ? parseInt(audioFormat!.contentLength, 10) : 0;
+          const sabrFetch = await createSabrFetch(videoId, audioExpectedBytes);
+          primaryAudioData = await fetchAudioViaSabrStream(
+            effectiveSabrConfig,
+            audioFormat!,
+            sabrFetch,
+            currentPoToken
+          );
+          console.log(`[ytdl] SabrStream done: audio=${primaryAudioData.byteLength}`);
+          additionalAudioData = [];
+        } else {
+          const videoExpectedBytes = videoFormat!.contentLength ? parseInt(videoFormat!.contentLength, 10) : 0;
+          const audioExpectedBytes = audioFormat!.contentLength ? parseInt(audioFormat!.contentLength, 10) : 0;
+          const sabrFetch = await createSabrFetch(videoId, videoExpectedBytes + audioExpectedBytes);
 
-        // Fetch additional audio tracks in parallel (no progress tracking for extra tracks)
-        const additionalAudioData = await Promise.all(extraAudioFormats.map(async format => {
-          try {
-            const audioData = await fetchAudioViaSabrStream(
-              cachedVideoData.sabrConfig!,
-              format,
-              createSabrFetch(videoId, 0),
-              currentPoToken
-            );
+          const primaryResult = await fetchViaSabrStream(
+            effectiveSabrConfig,
+            videoFormat!,
+            audioFormat!,
+            sabrFetch,
+            currentPoToken
+          );
+          console.log(`[ytdl] SabrStream done: video=${primaryResult.videoData.byteLength} audio=${primaryResult.audioData.byteLength}`);
+          primaryVideoData = primaryResult.videoData;
+          primaryAudioData = primaryResult.audioData;
 
-            return {
-              data: audioData,
-              mimeType: format.mimeType.split(";")[0] ?? "audio/mp4",
-              label: format.audioTrack?.displayName ?? ""
-            };
-          } catch (trackError) {
-            console.warn("[ytdl] Extra audio track failed:", format.audioTrack?.displayName, trackError);
-            return null;
-          }
-        }));
+          // Fetch additional audio tracks in parallel (no progress tracking for extra tracks)
+          additionalAudioData = (await Promise.all(extraAudioFormats.map(async format => {
+            try {
+              const audioData = await fetchAudioViaSabrStream(
+                effectiveSabrConfig,
+                format,
+                await createSabrFetch(videoId, 0),
+                currentPoToken
+              );
+
+              return {
+                data: audioData,
+                mimeType: format.mimeType.split(";")[0] ?? "audio/mp4",
+                label: format.audioTrack?.displayName ?? ""
+              };
+            } catch (trackError) {
+              console.warn("[ytdl] Extra audio track failed:", format.audioTrack?.displayName, trackError);
+              return null;
+            }
+          }))).filter((track): track is NonNullable<typeof track> => track !== null);
+        }
 
         dispatchStreamData({
           type,
           videoId,
           filenameOutput,
-          videoData: type !== DownloadType.Audio ? primaryResult.videoData : null,
-          audioData: type !== DownloadType.Video ? primaryResult.audioData : null,
+          videoData: type !== DownloadType.Audio ? primaryVideoData : null,
+          audioData: primaryAudioData,
           videoMimeType,
           audioMimeType,
           audioLabel,
-          additionalAudioData: additionalAudioData
-            .filter((track): track is NonNullable<typeof track> => track !== null)
+          additionalAudioData
         });
 
         captureState.capturedMedia.delete(videoId);

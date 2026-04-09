@@ -20,14 +20,18 @@ async function forwardSabrCredentials() {
     return;
   }
 
-  if (!captured?.poToken) {
+  if (!captured?.url) {
     return;
   }
+
+  // The captured body's PO token may be absent (initial SABR handshake has none).
+  // Fall back to whatever BotGuard token the MAIN world has already synced in.
+  const poToken = captured.poToken || sabrCredentials.value?.poToken || "";
 
   isCredentialsForwarded = true;
   sabrCredentials.value = {
     url: captured.url,
-    poToken: captured.poToken
+    poToken
   };
 
   // Also persist in DOM as fallback - the postMessage may arrive
@@ -41,7 +45,7 @@ async function forwardSabrCredentials() {
   }
 
   elCredentials.dataset.url = captured.url;
-  elCredentials.dataset.poToken = captured.poToken;
+  elCredentials.dataset.poToken = poToken;
 }
 
 export async function forwardSabrCredentialsWithRetry() {

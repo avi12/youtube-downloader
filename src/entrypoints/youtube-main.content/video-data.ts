@@ -1,4 +1,4 @@
-import { setPoTokenCredentials } from "./credentials";
+import { capturedPoToken, setPoTokenCredentials } from "./credentials";
 import { injectSegmentedDownloadButton } from "./watch-button";
 import { buildVideoData } from "./youtube-api";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/cross-world-messenger";
@@ -99,17 +99,21 @@ export async function buildAndDispatchVideoData(
   if (location.pathname === "/watch") {
     await injectSegmentedDownloadButton(videoData, cancelActiveDownload);
 
-    // Generate PO token via BotGuard (independent of video playback)
-    if (sabrCredentials.value?.poToken) {
+    // Generate PO token via BotGuard (independent of video playback).
+    // Use capturedPoToken (module var) as the guard — sabrCredentials.value.poToken
+    // may hold the truncated 15-byte captured token which is not a valid BotGuard token.
+    if (capturedPoToken) {
       return;
     }
 
     try {
       const poToken = await generatePoToken(videoData.videoId);
-      setPoTokenCredentials(poToken, videoData.sabrConfig?.serverAbrStreamingUrl ?? "");
-      // Broadcast to isolated world via synced signal
+      const sabrUrl = videoData.sabrConfig?.serverAbrStreamingUrl ?? "";
+      setPoTokenCredentials(poToken, sabrUrl);
+      // Broadcast to isolated world via synced signal.
+      // Preserve the isolated world's captured URL (has decrypted n param) if already set.
       sabrCredentials.value = {
-        url: videoData.sabrConfig?.serverAbrStreamingUrl ?? "",
+        url: sabrCredentials.value?.url || sabrUrl,
         poToken
       };
     } catch (error) {
