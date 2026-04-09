@@ -25,6 +25,7 @@ export enum MessageType {
   CreateDownloadIframe = "createDownloadIframe",
   DownloadIframeReady = "downloadIframeReady",
   CancelDownload = "cancelDownload",
+  StartBackgroundDownload = "startBackgroundDownload",
 
   // Background → Content script
   StartKeepalive = "startKeepalive",
@@ -123,6 +124,9 @@ interface ProtocolMap {
 
   // Content script → Background: cancel one or more downloads
   cancelDownload(data: { videoIds: string[] }): void;
+
+  // Content script → Background: start a download in the background SW
+  startBackgroundDownload(data: DownloadRequest): void;
 
   // Background → Content script: start pinging the SW to keep it alive
   startKeepalive(data: { videoId: string }): void;

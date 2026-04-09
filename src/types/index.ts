@@ -82,6 +82,16 @@ export type DownloadRequest = {
   playlistId?: string;
   playlistTitle?: string;
   playlistTotalCount?: number;
+  poToken?: string;
+  sabrUrl?: string;
+  videoFormat?: AdaptiveFormatItem | null;
+  audioFormat?: AdaptiveFormatItem | null;
+  additionalAudioFormats?: AdaptiveFormatItem[];
+  primaryAudioLabel?: string;
+  metadata?: VideoMetadata | null;
+  resolvedVideoUrl?: string | null;
+  resolvedAudioUrl?: string | null;
+  resolvedExtraAudioUrls?: (string | null)[];
 };
 
 export type InterruptedDownload = {
