@@ -85,7 +85,7 @@ export default defineContentScript({
       const isDone = data.isRemoved || data.progress >= 1;
       const progress = data.isRemoved ? 1 : data.progress;
       const progressType = data.isRemoved ? "" : data.progressType;
-      downloadProgressStore.set(data.videoId, { isDownloading, isDone, isQueued: false, progress, progressType });
+      downloadProgressStore.set(data.videoId, { isDownloading, isDone, progress, progressType });
     });
 
     crossWorldMessenger.onMessage(CrossWorldMessage.StreamData, ({ data }) => {

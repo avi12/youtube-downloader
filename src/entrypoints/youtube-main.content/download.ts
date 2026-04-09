@@ -305,7 +305,7 @@ export async function performDownload({
               void crossWorldMessenger.sendMessage(CrossWorldMessage.DownloadProgress, {
                 videoId,
                 progress: Math.min(totalReceivedBytes / totalExpectedBytes, 1),
-                progressType: "video"
+                progressType: ProgressType.Video
               });
             }
           }
