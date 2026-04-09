@@ -16,7 +16,13 @@
     type DownloadProgressState,
     videoDataStore
   } from "@/lib/synced-stores.svelte";
-  import { calculateWeightedProgress, formatVideoQualityLabel, getOutputExtension, resolveAutoExtension, resolveVideoFilename } from "@/lib/utils";
+  import {
+    calculateWeightedProgress,
+    formatVideoQualityLabel,
+    getOutputExtension,
+    resolveAutoExtension,
+    resolveVideoFilename
+  } from "@/lib/utils";
   import { DownloadType, ProgressType } from "@/types";
   import {
     ButtonSize,
@@ -165,7 +171,9 @@
   let unsubscribeDropdownReady: (() => void) | null = null;
 
   // Weighted progress: download phase = 0-80%, mux phase = 80-100%
-  const displayProgress = $derived(calculateWeightedProgress(isDownloading, downloadState.progress, downloadState.progressType));
+  const displayProgress = $derived(
+    calculateWeightedProgress(isDownloading, downloadState.progress, downloadState.progressType)
+  );
 
   function getDefaultQualityLabel() {
     const videoFormat = videoData?.videoFormats[0];

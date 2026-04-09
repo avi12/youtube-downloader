@@ -1,5 +1,5 @@
 import { isVideoDownloadable, isVideoLive, isVideoMusic } from "@/lib/utils";
-import type { AdaptiveFormatItem, PlayerResponse, SabrConfig } from "@/types";
+import type { AdaptiveFormatItem, PlayerResponse } from "@/types";
 
 // ─── Format parsing utilities ─────────────────────────────────────────────────
 
@@ -55,7 +55,7 @@ function extractSabrConfig({ playerResponse, clientVersion, clientName }: {
   playerResponse: PlayerResponse;
   clientVersion: string;
   clientName: number;
-}): SabrConfig | null {
+}) {
   const serverAbrStreamingUrl = playerResponse.streamingData?.serverAbrStreamingUrl;
   const videoPlaybackUstreamerConfig = playerResponse.playerConfig
     ?.mediaCommonConfig?.mediaUstreamerRequestConfig?.videoPlaybackUstreamerConfig;

@@ -2,9 +2,14 @@
   import DownloadOptions from "./DownloadOptions.svelte";
   import { createPanelState } from "./DownloadOptionsPanel.svelte.ts";
   import panelFocusStyles from "./panel-focus.css?inline";
-  import { applyInertTrap } from "@/lib/inert-trap";
-  import { attachCancelButton, attachCloseButton, attachDownloadButton, attachPanelProgress } from "@/lib/panel-button-attachments";
   import { CrossWorldMessage, crossWorldMessenger } from "@/lib/cross-world-messenger";
+  import { applyInertTrap } from "@/lib/inert-trap";
+  import {
+    attachCancelButton,
+    attachCloseButton,
+    attachDownloadButton,
+    attachPanelProgress
+  } from "@/lib/panel-button-attachments";
   import { ProgressType, type Options, type VideoData } from "@/types";
 
   // Grab Polymer's scoping class from an existing action-bar button so that

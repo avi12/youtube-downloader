@@ -57,7 +57,7 @@ type MapEntryPayload<T> = {
 type MapSchema<T> = { entry: (data: MapEntryPayload<T>) => void };
 type MapMessenger<T> = ReturnType<typeof defineCustomEventMessaging<MapSchema<T>>>;
 
-export function createMapMessenger<T>(key: string): MapMessenger<T> {
+export function createMapMessenger<T>(key: string) {
   return defineCustomEventMessaging<MapSchema<T>>({
     namespace: `${SYNC_NAMESPACE}-${key}`
   });
