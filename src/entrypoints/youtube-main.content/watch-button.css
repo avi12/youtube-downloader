@@ -16,7 +16,7 @@
   inset-block-end: 0;
   z-index: 1;
   block-size: 2px;
-  opacity: 0%;
+  opacity: 0;
   pointer-events: none;
 }
 
