@@ -94,7 +94,7 @@ export async function handleStreamData(payload: StreamDataPayload) {
   const playlistContext = playlistContextByVideoId.get(videoId);
   playlistContextByVideoId.delete(videoId);
 
-  await sendMessage(MessageType.StreamEnd, {
+  void sendMessage(MessageType.StreamEnd, {
     type: downloadType,
     videoId,
     filenameOutput,
@@ -106,7 +106,7 @@ export async function handleStreamData(payload: StreamDataPayload) {
   });
 }
 
-export async function handleStreamError({ videoId, error }: {
+export function handleStreamError({ videoId, error }: {
   videoId: string;
   error: string;
 }) {
@@ -115,7 +115,7 @@ export async function handleStreamError({ videoId, error }: {
   // Reset download state so the button isn't stuck at "downloading"
   downloadProgressStore.delete(videoId);
 
-  await sendMessage(MessageType.ProcessStreamError, {
+  void sendMessage(MessageType.ProcessStreamError, {
     videoId,
     error
   });

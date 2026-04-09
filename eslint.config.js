@@ -1,5 +1,5 @@
 import eslint from "@eslint/js";
-import promiseAllMultiline from "./eslint-rules/promise-all-multiline.js";
+import multilineArgParenNewline from "./eslint-rules/multiline-arg-paren-newline.js";
 import stylistic from "@stylistic/eslint-plugin";
 import importPlugin from "eslint-plugin-import";
 import importNewlines from "eslint-plugin-import-newlines";
@@ -137,7 +137,7 @@ const tsStyleRules = {
   "arrow-body-style": ["error", "as-needed"],
   "@stylistic/function-call-argument-newline": ["error", "consistent"],
   "@stylistic/function-paren-newline": ["error", "consistent"],
-  "local/promise-all-multiline": "error",
+  "local/multiline-arg-paren-newline": "error",
   "no-nested-ternary": "error",
   "@typescript-eslint/consistent-type-assertions": ["error", { assertionStyle: "never" }],
   "@typescript-eslint/no-floating-promises": "error"
@@ -148,7 +148,7 @@ const sharedPlugins = {
   import: importPlugin,
   "import-newlines": importNewlines,
   perfectionist,
-  local: { rules: { "promise-all-multiline": promiseAllMultiline } }
+  local: { rules: { "multiline-arg-paren-newline": multilineArgParenNewline } }
 };
 
 const sharedGlobals = {

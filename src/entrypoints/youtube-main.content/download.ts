@@ -287,25 +287,27 @@ export async function performDownload({
           console.log(`[ytdl] SabrStream done (parallel): video=${primaryVideoData?.byteLength ?? 0} audio=${primaryAudioData.byteLength}`);
 
           // Fetch additional audio tracks in parallel (no progress tracking)
-          additionalAudioData = (await Promise.all(extraAudioFormats.map(async format => {
-            try {
-              const extraSabrFetch = await createSabrFetch(videoId, () => {});
-              const audioData = await fetchAudioViaSabrStream(
-                effectiveSabrConfig,
-                format,
-                extraSabrFetch,
-                currentPoToken
-              );
-              return {
-                data: audioData,
-                mimeType: format.mimeType.split(";")[0] ?? "audio/mp4",
-                label: format.audioTrack?.displayName ?? ""
-              };
-            } catch (trackError) {
-              console.warn("[ytdl] Extra audio track failed:", format.audioTrack?.displayName, trackError);
-              return null;
-            }
-          }))).filter((track): track is NonNullable<typeof track> => track !== null);
+          additionalAudioData = (await Promise.all(
+            extraAudioFormats.map(async format => {
+              try {
+                const extraSabrFetch = await createSabrFetch(videoId, () => {});
+                const audioData = await fetchAudioViaSabrStream(
+                  effectiveSabrConfig,
+                  format,
+                  extraSabrFetch,
+                  currentPoToken
+                );
+                return {
+                  data: audioData,
+                  mimeType: format.mimeType.split(";")[0] ?? "audio/mp4",
+                  label: format.audioTrack?.displayName ?? ""
+                };
+              } catch (trackError) {
+                console.warn("[ytdl] Extra audio track failed:", format.audioTrack?.displayName, trackError);
+                return null;
+              }
+            })
+          )).filter((track): track is NonNullable<typeof track> => track !== null);
         }
 
         dispatchStreamData({
@@ -324,16 +326,18 @@ export async function performDownload({
         return;
       } catch (sabrError) {
         console.warn("[ytdl] SabrStream failed, trying fallback:", sabrError);
-        document.dispatchEvent(new CustomEvent("ytdl:persist-interrupted", {
-          detail: {
-            videoId,
-            type,
-            filenameOutput,
-            videoItag,
-            audioItag,
-            timestamp: Date.now()
-          }
-        }));
+        document.dispatchEvent(
+          new CustomEvent("ytdl:persist-interrupted", {
+            detail: {
+              videoId,
+              type,
+              filenameOutput,
+              videoItag,
+              audioItag,
+              timestamp: Date.now()
+            }
+          })
+        );
       }
     }
 
@@ -439,16 +443,18 @@ export async function performDownload({
     }
 
     // All strategies failed - persist as interrupted so user can resume later
-    document.dispatchEvent(new CustomEvent("ytdl:persist-interrupted", {
-      detail: {
-        videoId,
-        type,
-        filenameOutput,
-        videoItag,
-        audioItag,
-        timestamp: Date.now()
-      }
-    }));
+    document.dispatchEvent(
+      new CustomEvent("ytdl:persist-interrupted", {
+        detail: {
+          videoId,
+          type,
+          filenameOutput,
+          videoItag,
+          audioItag,
+          timestamp: Date.now()
+        }
+      })
+    );
 
     dispatchStreamError(videoId, "No download method available - try reloading the page");
   } catch (error) {

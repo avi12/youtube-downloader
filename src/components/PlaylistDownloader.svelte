@@ -76,9 +76,11 @@
 
   const downloadableVideos = $derived([...videoDataMap.values()].filter(data => data.isDownloadable));
 
-  const checkedDownloadableVideos = $derived(checkedVideoIds.size === 0
-    ? downloadableVideos
-    : downloadableVideos.filter(data => checkedVideoIds.has(data.videoId)));
+  const checkedDownloadableVideos = $derived(
+    checkedVideoIds.size === 0
+      ? downloadableVideos
+      : downloadableVideos.filter(data => checkedVideoIds.has(data.videoId))
+  );
 
   const downloadButtonLabel = $derived.by(() => {
     if (isDownloading) {

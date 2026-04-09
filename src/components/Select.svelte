@@ -113,12 +113,14 @@
         }
 
         // Close the overlay - Polymer's auto-close is also broken by the DOM move.
-        elMovedDropdown?.dispatchEvent(new KeyboardEvent("keydown", {
-          key: "Escape",
-          bubbles: true,
-          cancelable: true,
-          composed: true
-        }));
+        elMovedDropdown?.dispatchEvent(
+          new KeyboardEvent("keydown", {
+            key: "Escape",
+            bubbles: true,
+            cancelable: true,
+            composed: true
+          })
+        );
       }
 
       elMovedDropdown.addEventListener("selected-changed", handleSelectedChanged);
@@ -177,12 +179,14 @@
               // If the focused item is already selected, selected-changed will not
               // fire (value unchanged). Close the overlay directly in that case.
               if (items[iCurrent].getAttribute("data-value") === value) {
-                elMovedDropdown?.dispatchEvent(new KeyboardEvent("keydown", {
-                  key: "Escape",
-                  bubbles: true,
-                  cancelable: true,
-                  composed: true
-                }));
+                elMovedDropdown?.dispatchEvent(
+                  new KeyboardEvent("keydown", {
+                    key: "Escape",
+                    bubbles: true,
+                    cancelable: true,
+                    composed: true
+                  })
+                );
               }
             }
 
@@ -194,12 +198,14 @@
             // to the trigger so the user can continue tabbing through the panel.
             e.preventDefault();
             e.stopPropagation();
-            elMovedDropdown?.dispatchEvent(new KeyboardEvent("keydown", {
-              key: "Escape",
-              bubbles: true,
-              cancelable: true,
-              composed: true
-            }));
+            elMovedDropdown?.dispatchEvent(
+              new KeyboardEvent("keydown", {
+                key: "Escape",
+                bubbles: true,
+                cancelable: true,
+                composed: true
+              })
+            );
             break;
           }
         }

@@ -35,33 +35,39 @@ export function createPanelState(getVideoData: () => VideoData, getOptions: () =
 
   // -- Format selection --------------------------------------------------------
 
-  let downloadType = $state<DownloadType>(untrack(() => {
-    const options = getOptions();
-    const videoData = getVideoData();
-    if (options.defaultDownloadType !== "auto") {
-      return options.defaultDownloadType;
-    }
+  let downloadType = $state<DownloadType>(
+    untrack(() => {
+      const options = getOptions();
+      const videoData = getVideoData();
+      if (options.defaultDownloadType !== "auto") {
+        return options.defaultDownloadType;
+      }
 
-    return videoData.isMusic ? DownloadType.Audio : DownloadType.VideoAndAudio;
-  }));
+      return videoData.isMusic ? DownloadType.Audio : DownloadType.VideoAndAudio;
+    })
+  );
 
   let selectedVideoFormat = $state<AdaptiveFormatItem | null>(untrack(() => getVideoData().videoFormats[0] ?? null));
-  let selectedAudioFormat = $state<AdaptiveFormatItem | null>(untrack(() => {
-    const videoData = getVideoData();
-    return videoData.isMusic
-      ? getPreferredMusicAudioFormat(videoData.audioFormats)
-      : videoData.audioFormats[0] ?? null;
-  }));
+  let selectedAudioFormat = $state<AdaptiveFormatItem | null>(
+    untrack(() => {
+      const videoData = getVideoData();
+      return videoData.isMusic
+        ? getPreferredMusicAudioFormat(videoData.audioFormats)
+        : videoData.audioFormats[0] ?? null;
+    })
+  );
   let filename = $state(untrack(() => getVideoData().title));
-  let extension = $state(untrack(() => {
-    const videoData = getVideoData();
-    const options = getOptions();
-    const extPref = videoData.isMusic ? options.ext.audio : options.ext.video;
-    const defaultFormat = videoData.isMusic
-      ? getPreferredMusicAudioFormat(videoData.audioFormats)
-      : videoData.videoFormats[0];
-    return resolveAutoExtension(extPref, defaultFormat?.mimeType ?? "", videoData.isMusic ? DownloadType.Audio : DownloadType.Video);
-  }));
+  let extension = $state(
+    untrack(() => {
+      const videoData = getVideoData();
+      const options = getOptions();
+      const extPref = videoData.isMusic ? options.ext.audio : options.ext.video;
+      const defaultFormat = videoData.isMusic
+        ? getPreferredMusicAudioFormat(videoData.audioFormats)
+        : videoData.videoFormats[0];
+      return resolveAutoExtension(extPref, defaultFormat?.mimeType ?? "", videoData.isMusic ? DownloadType.Audio : DownloadType.Video);
+    })
+  );
   let isFilenameValid = $state(true);
 
   // -- Derived -----------------------------------------------------------------

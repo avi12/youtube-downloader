@@ -93,7 +93,7 @@ export default defineContentScript({
     });
 
     crossWorldMessenger.onMessage(CrossWorldMessage.StreamError, ({ data }) => {
-      void handleStreamError(data);
+      handleStreamError(data);
     });
 
     crossWorldMessenger.onMessage(CrossWorldMessage.DownloadViaIframe, ({ data }) => {
