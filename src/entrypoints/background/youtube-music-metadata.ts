@@ -3,6 +3,12 @@ import type { VideoMetadata } from "@/types";
 const YOUTUBE_MUSIC_SEARCH_URL = "https://music.youtube.com/youtubei/v1/search?prettyPrint=false";
 const SONG_FILTER_PARAMS = "EgWKAQIIAWoKEAkQAxAEEAoQBQ%3D%3D";
 
+interface ThumbnailEntry {
+  url: string;
+  width: number;
+  height: number;
+}
+
 interface SearchRun {
   text: string;
   navigationEndpoint?: {
@@ -25,6 +31,11 @@ interface FlexColumn {
 interface SearchItem {
   musicResponsiveListItemRenderer?: {
     flexColumns?: FlexColumn[];
+    thumbnail?: {
+      musicThumbnailRenderer?: {
+        thumbnail?: { thumbnails?: ThumbnailEntry[] };
+      };
+    };
   };
 }
 
@@ -67,7 +78,12 @@ function parseSearchResult(item: SearchItem) {
     return null;
   }
 
-  return { songTitle, artist: artists.join(", "), mainArtist, album };
+  const thumbnails = item.musicResponsiveListItemRenderer?.thumbnail
+    ?.musicThumbnailRenderer?.thumbnail?.thumbnails;
+  const rawThumbnailUrl = thumbnails?.at(-1)?.url;
+  const thumbnailUrl = rawThumbnailUrl?.replace(/=w\d+-h\d+/, "=w544-h544");
+
+  return { songTitle, artist: artists.join(", "), mainArtist, album, thumbnailUrl };
 }
 
 export async function fetchYouTubeMusicMetadata(
@@ -113,7 +129,8 @@ export async function fetchYouTubeMusicMetadata(
       title: parsed.songTitle || existingMetadata.title,
       artist: parsed.artist || existingMetadata.artist,
       albumArtist: parsed.mainArtist !== parsed.artist ? parsed.mainArtist : existingMetadata.albumArtist,
-      album: parsed.album || existingMetadata.album
+      album: parsed.album || existingMetadata.album,
+      thumbnailUrl: parsed.thumbnailUrl || existingMetadata.thumbnailUrl
     };
   } catch {
     return existingMetadata;
