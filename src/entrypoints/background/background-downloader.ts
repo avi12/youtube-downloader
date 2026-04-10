@@ -1,4 +1,4 @@
-import { sendStreamChunksToOffscreen } from "./offscreen-transfer";
+import { sendStreamChunksToOffscreen, sendToOffscreen } from "./offscreen-transfer";
 import { ensureProcessor } from "./processor";
 import { createProgressFetch, fetchWithProgress, sendProgressUpdate } from "./progress-fetch";
 import { fetchYouTubeMusicMetadata } from "./youtube-music-metadata";
@@ -283,7 +283,7 @@ export async function startBackgroundDownload(request: DownloadRequest, tabId: n
 
     const enrichedMetadata = await enrichedMetadataPromise;
 
-    await sendMessage(MessageType.ProcessStreamEnd, {
+    sendToOffscreen(MessageType.ProcessStreamEnd, {
       type,
       videoId,
       filenameOutput,

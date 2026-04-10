@@ -2,12 +2,27 @@ import { MessageType, sendMessage } from "@/lib/messaging";
 import { statusProgressItem } from "@/lib/storage";
 import { ProgressType } from "@/types";
 
+const progressThrottleIntervalMs = 1000;
+const lastProgressTimestamps = new Map<string, number>();
+
 export async function sendProgressUpdate(
   videoId: string,
   progress: number,
   progressType: ProgressType,
   tabId: number
 ) {
+  const isComplete = progress >= 1;
+  if (!isComplete) {
+    const now = Date.now();
+    const lastSent = lastProgressTimestamps.get(videoId) ?? 0;
+    if (now - lastSent < progressThrottleIntervalMs) {
+      return;
+    }
+    lastProgressTimestamps.set(videoId, now);
+  } else {
+    lastProgressTimestamps.delete(videoId);
+  }
+
   const current = await statusProgressItem.getValue();
   current[videoId] = { progress, progressType };
   await Promise.allSettled([

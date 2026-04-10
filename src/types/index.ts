@@ -147,7 +147,6 @@ export type VideoMetadata = {
   albumArtist?: string;
   album?: string;
   genre?: string;
-  description?: string;
   date?: string;
   thumbnailUrl?: string;
   isMusic: boolean;

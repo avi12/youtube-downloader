@@ -59,7 +59,6 @@ export function buildVideoMetadata(videoId: string) {
     albumArtist: albumArtist !== artist ? albumArtist : undefined,
     album: descriptionMeta.album,
     genre,
-    description: description.slice(0, 500),
     date: renderer?.publishDate,
     thumbnailUrl,
     isMusic: cached.isMusic

@@ -78,28 +78,28 @@ export async function embedMusicMetadata(
     ffmpegArgs.push("-disposition:v", "attached_pic");
   }
 
+  function sanitizeForFFmpeg(value: string) {
+    return value.replaceAll(/[\n\r"\\]/g, " ").trim();
+  }
+
   ffmpegArgs.push("-c:a", "copy");
-  ffmpegArgs.push("-metadata", `title=${metadata.title}`);
-  ffmpegArgs.push("-metadata", `artist=${metadata.artist}`);
+  ffmpegArgs.push("-metadata", `title=${sanitizeForFFmpeg(metadata.title)}`);
+  ffmpegArgs.push("-metadata", `artist=${sanitizeForFFmpeg(metadata.artist)}`);
 
   if (metadata.albumArtist) {
-    ffmpegArgs.push("-metadata", `album_artist=${metadata.albumArtist}`);
+    ffmpegArgs.push("-metadata", `album_artist=${sanitizeForFFmpeg(metadata.albumArtist)}`);
   }
 
   if (metadata.album) {
-    ffmpegArgs.push("-metadata", `album=${metadata.album}`);
+    ffmpegArgs.push("-metadata", `album=${sanitizeForFFmpeg(metadata.album)}`);
   }
 
   if (metadata.genre) {
-    ffmpegArgs.push("-metadata", `genre=${metadata.genre}`);
+    ffmpegArgs.push("-metadata", `genre=${sanitizeForFFmpeg(metadata.genre)}`);
   }
 
   if (metadata.date) {
     ffmpegArgs.push("-metadata", `date=${metadata.date}`);
-  }
-
-  if (metadata.description) {
-    ffmpegArgs.push("-metadata", `comment=${metadata.description}`);
   }
 
   ffmpegArgs.push(outputFilename);

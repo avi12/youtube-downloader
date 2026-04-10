@@ -9,8 +9,9 @@
  */
 
 import { cancelDownloadsByIds, enqueueStreamData, initFFmpeg } from "@/lib/download-pipeline";
-import { MessageType, onMessage } from "@/lib/messaging";
-import { StreamType } from "@/types";
+import { MessageType, sendMessage } from "@/lib/messaging";
+import { DownloadType, StreamType } from "@/types";
+import type { VideoMetadata } from "@/types";
 import type { FFmpegCoreModuleFactory } from "@ffmpeg/types";
 
 // Loaded via <script> tag in index.html — the UMD build sets this global and
@@ -67,7 +68,28 @@ function base64ToUint8Array(base64: string) {
   return Uint8Array.from(binaryString, char => char.charCodeAt(0));
 }
 
-onMessage(MessageType.ProcessStreamChunk, ({ data }) => {
+const OFFSCREEN_PORT_NAME = "ytdl-offscreen";
+
+browser.runtime.onConnect.addListener(port => {
+  if (port.name !== OFFSCREEN_PORT_NAME) {
+    return;
+  }
+
+  port.onMessage.addListener((message: { type?: string; data?: Record<string, unknown> }) => {
+    if (message.type === MessageType.ProcessStreamChunk) {
+      handleProcessStreamChunk(message.data as Parameters<typeof handleProcessStreamChunk>[0]);
+    } else if (message.type === MessageType.ProcessStreamEnd) {
+      handleProcessStreamEnd(message.data as Parameters<typeof handleProcessStreamEnd>[0]);
+    } else if (message.type === MessageType.CancelProcessing) {
+      void cancelDownloadsByIds((message.data as { videoIds: string[] }).videoIds);
+    }
+  });
+});
+
+function handleProcessStreamChunk(data: {
+  videoId: string; streamType: string; iChunk: number;
+  totalChunks: number; chunkBase64: string; tabId: number;
+}) {
   const {
     videoId, streamType, iChunk, totalChunks, chunkBase64
   } = data;
@@ -117,9 +139,14 @@ onMessage(MessageType.ProcessStreamChunk, ({ data }) => {
       audioStream.totalChunks = totalChunks;
     }
   }
-});
+}
 
-onMessage(MessageType.ProcessStreamEnd, ({ data }) => {
+function handleProcessStreamEnd(data: {
+  videoId: string; type: DownloadType; filenameOutput: string;
+  videoMimeType: string; audioMimeType: string; audioTrackLabels: string[];
+  tabId: number; playlistId?: string; playlistTitle?: string;
+  playlistTotalCount?: number; metadata?: VideoMetadata | null;
+}) {
   const {
     videoId, type, filenameOutput, videoMimeType, audioMimeType, audioTrackLabels, tabId,
     playlistId, playlistTitle, playlistTotalCount
@@ -160,8 +187,6 @@ onMessage(MessageType.ProcessStreamEnd, ({ data }) => {
     playlistTotalCount,
     metadata: data.metadata
   });
-});
+}
 
-onMessage(MessageType.CancelProcessing, async ({ data }) => {
-  await cancelDownloadsByIds(data.videoIds);
-});
+
