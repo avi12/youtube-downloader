@@ -18,11 +18,5 @@ export async function triggerDownload(data: Uint8Array, filenameOutput: string) 
   const filename = getCompatibleFilename(filenameOutput);
   const blob = new Blob([new Uint8Array(data)], { type: mimeType });
   const blobUrl = URL.createObjectURL(blob);
-  try {
-    // Background handler awaits browser.downloads.download() before returning,
-    // so the blob URL stays alive until Chrome has taken ownership of the data.
-    await sendMessage(MessageType.PipelineDownload, { blobUrl, mimeType, filename });
-  } finally {
-    URL.revokeObjectURL(blobUrl);
-  }
+  await sendMessage(MessageType.PipelineDownload, { blobUrl, mimeType, filename });
 }

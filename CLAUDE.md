@@ -31,6 +31,7 @@ avoid using hardcoded strings, use enums instead.
 Avoid using `setTimeout` unless absolutely necessary.  
 If you need to use a hardcoded number or a string, first try to use an enum, and if no enum exists, either make the enum if it makes sense, or put in a descriptive variable.  
 The dev server script (scripts/dev-server.ts) is configured such that on every file modification under src/, the extension is automatically rebuilt and reloaded and every YouTube page is reloaded, allowing proper content scripts reinjections.  
+Avoid comments unless absolutely necessary, prefer using descriptive variables and functions.  
 
 Variable naming rules:
 1. If a variable represents an element, it should be prefixed with "el"

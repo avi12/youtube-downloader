@@ -40,18 +40,71 @@ export function buildVideoMetadata(videoId: string) {
   const { videoDetails, microformat } = playerResponse;
   const { thumbnail } = videoDetails ?? {};
   const thumbnails = thumbnail?.thumbnails ?? [];
-  // Pick the largest thumbnail for cover art
   const thumbnailUrl = thumbnails.length > 0
     ? thumbnails[thumbnails.length - 1].url
     : undefined;
 
+  const renderer = microformat?.playerMicroformatRenderer;
+  const description = videoDetails?.shortDescription ?? "";
+  const titleMeta = parseMusicTitle(cached.title);
+  const descriptionMeta = parseDescriptionMetadata(description);
+  const genre = renderer?.category === "Music" ? "Music" : renderer?.category;
+
+  const artist = descriptionMeta.artist || titleMeta.fullArtist || videoDetails?.author || "";
+  const albumArtist = descriptionMeta.mainArtist || titleMeta.mainArtist || undefined;
+
   return {
-    title: cached.title,
-    artist: videoDetails?.author ?? "",
-    date: microformat?.playerMicroformatRenderer.publishDate,
+    title: descriptionMeta.songTitle || titleMeta.songTitle,
+    artist,
+    albumArtist: albumArtist !== artist ? albumArtist : undefined,
+    album: descriptionMeta.album,
+    genre,
+    description: description.slice(0, 500),
+    date: renderer?.publishDate,
     thumbnailUrl,
     isMusic: cached.isMusic
   };
+}
+
+const videoTitleSuffixPattern = /\s*[\[(](?:official\s+(?:music\s+)?video|(?:official\s+)?lyric(?:s)?\s*(?:video)?|(?:official\s+)?audio|4k\s*remaster(?:ed)?|remaster(?:ed)?|hd|hq|visualizer|clip\s+officiel|video\s*oficial)[\])]\s*/gi;
+
+const featuringPattern = /\s+(?:ft\.?|feat\.?|featuring)\s+(.+)$/i;
+
+function parseMusicTitle(title: string) {
+  const cleaned = title.replaceAll(videoTitleSuffixPattern, "").trim();
+
+  const separatorIndex = cleaned.search(/\s[-–]\s/);
+  if (separatorIndex === -1) {
+    return { mainArtist: "", fullArtist: "", songTitle: cleaned };
+  }
+
+  const mainArtist = cleaned.slice(0, separatorIndex).trim();
+  const afterSeparator = cleaned.slice(separatorIndex + 3).trim();
+
+  const featMatch = afterSeparator.match(featuringPattern);
+  const songTitle = afterSeparator.replace(featuringPattern, "").trim();
+  const fullArtist = featMatch
+    ? `${mainArtist} feat. ${featMatch[1].trim()}`
+    : mainArtist;
+
+  return { mainArtist, fullArtist, songTitle };
+}
+
+function parseDescriptionMetadata(description: string) {
+  if (!description.startsWith("Provided to YouTube")) {
+    return { songTitle: undefined, artist: undefined, mainArtist: undefined, album: undefined };
+  }
+
+  const lines = description.split("\n").filter(line => line.trim());
+  const titleArtistLine = lines[1] ?? "";
+  const parts = titleArtistLine.split(" · ");
+  const songTitle = parts[0]?.trim() || undefined;
+  const artists = parts.slice(1);
+  const mainArtist = artists[0]?.trim() || undefined;
+  const artist = artists.join(", ") || undefined;
+  const album = lines[2]?.trim() || undefined;
+
+  return { songTitle, artist, mainArtist, album };
 }
 
 export async function buildAndDispatchVideoData(

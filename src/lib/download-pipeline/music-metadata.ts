@@ -82,8 +82,24 @@ export async function embedMusicMetadata(
   ffmpegArgs.push("-metadata", `title=${metadata.title}`);
   ffmpegArgs.push("-metadata", `artist=${metadata.artist}`);
 
+  if (metadata.albumArtist) {
+    ffmpegArgs.push("-metadata", `album_artist=${metadata.albumArtist}`);
+  }
+
+  if (metadata.album) {
+    ffmpegArgs.push("-metadata", `album=${metadata.album}`);
+  }
+
+  if (metadata.genre) {
+    ffmpegArgs.push("-metadata", `genre=${metadata.genre}`);
+  }
+
   if (metadata.date) {
     ffmpegArgs.push("-metadata", `date=${metadata.date}`);
+  }
+
+  if (metadata.description) {
+    ffmpegArgs.push("-metadata", `comment=${metadata.description}`);
   }
 
   ffmpegArgs.push(outputFilename);
