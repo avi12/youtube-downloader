@@ -38,7 +38,8 @@ export enum MessageType {
   PipelineProgress = "pipelineProgress",
   PipelineRemoval = "pipelineRemoval",
   PipelineQueueRemove = "pipelineQueueRemove",
-  PipelineFFmpegReady = "pipelineFFmpegReady"
+  PipelineFFmpegReady = "pipelineFFmpegReady",
+  PipelineDownload = "pipelineDownload"
 }
 
 // ─── Protocol definition ──────────────────────────────────────────────────────
@@ -151,6 +152,7 @@ interface ProtocolMap {
     type: DownloadType;
   }): void;
   pipelineFFmpegReady(data: Record<string, never>): void;
+  pipelineDownload(data: { blobUrl: string; mimeType: string; filename: string }): void;
 }
 
 export const { sendMessage, onMessage } =

@@ -75,4 +75,11 @@ export function registerPipelineHandlers() {
     void isFFmpegReadyItem.setValue(true);
     signalFFmpegReady();
   });
+
+  onMessage(MessageType.PipelineDownload, async ({ data }) => {
+    await browser.downloads.download({
+      url: data.blobUrl,
+      filename: data.filename
+    });
+  });
 }
