@@ -1,5 +1,5 @@
 import { MessageType, sendMessage } from "../messaging";
-import { getCompatibleFilename, getMimeType, uint8ToBase64 } from "../utils";
+import { getCompatibleFilename, getMimeType } from "../utils";
 
 export function toUint8Array(data: Uint8Array | Record<string, number> | null) {
   if (!data) {
@@ -16,14 +16,13 @@ export function toUint8Array(data: Uint8Array | Record<string, number> | null) {
 export async function triggerDownload(data: Uint8Array, filenameOutput: string) {
   const mimeType = getMimeType(filenameOutput) || "application/octet-stream";
   const filename = getCompatibleFilename(filenameOutput);
+  const blob = new Blob([new Uint8Array(data)], { type: mimeType });
+  const blobUrl = URL.createObjectURL(blob);
   try {
-    const blob = new Blob([new Uint8Array(data)], { type: mimeType });
-    const blobUrl = URL.createObjectURL(blob);
+    // Background handler awaits browser.downloads.download() before returning,
+    // so the blob URL stays alive until Chrome has taken ownership of the data.
     await sendMessage(MessageType.PipelineDownload, { blobUrl, mimeType, filename });
-    await new Promise(resolve => setTimeout(resolve, 60_000));
+  } finally {
     URL.revokeObjectURL(blobUrl);
-  } catch {
-    const blobUrl = `data:${mimeType};base64,${uint8ToBase64(data)}`;
-    await sendMessage(MessageType.PipelineDownload, { blobUrl, mimeType, filename });
   }
 }

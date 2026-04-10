@@ -6,7 +6,7 @@ import { registerStorageHandlers } from "./storage-handlers";
 import { registerTabLifecycleHandlers } from "./tab-lifecycle";
 import { MessageType, sendMessage } from "@/lib/messaging";
 import { onSabrBodyCaptured, startSabrRequestCapture } from "@/lib/sabr-request-capture";
-import { clearLocalStorage } from "@/lib/storage";
+import { clearLocalStorage, statusProgressItem } from "@/lib/storage";
 
 const sabrOriginRuleId = 1;
 
@@ -58,6 +58,9 @@ export default defineBackground(() => {
   onSabrBodyCaptured(tabId => {
     void sendMessage(MessageType.SabrBodyReady, {}, tabId);
   });
+
+  // No in-memory downloads survive a SW restart - clear stale progress state
+  void statusProgressItem.setValue({});
 
   // Proactively load FFmpeg so it's ready before the first download.
   // ensureProcessor() reuses the existing offscreen document if alive,
