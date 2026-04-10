@@ -6,14 +6,14 @@ import {
   type YtButtonViewModelElement
 } from "@/types";
 
-export interface ButtonGroupElements {
+interface ButtonGroupElements {
   elGroup: HTMLDivElement;
   elDownloadButton: YtButtonViewModelElement;
   elChevronButton: YtButtonViewModelElement;
   elProgressBar: TpYtPaperProgressElement;
 }
 
-export interface DropdownElements {
+interface DropdownElements {
   elDropdown: TpYtIronDropdownElement;
   elDropdownContentSlot: HTMLElement;
   panelContentId: string;

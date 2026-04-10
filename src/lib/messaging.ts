@@ -34,11 +34,6 @@ export enum MessageType {
   SabrBodyReady = "sabrBodyReady",
   UpdateDownloadProgress = "updateDownloadProgress",
 
-  // Background → Offscreen
-  ProcessStreamChunk = "processStreamChunk",
-  ProcessStreamEnd = "processStreamEnd",
-  CancelProcessing = "cancelProcessing",
-
   // Offscreen → Background
   PipelineProgress = "pipelineProgress",
   PipelineRemoval = "pipelineRemoval",
@@ -146,35 +141,7 @@ interface ProtocolMap {
   // Background → Content script (per tab): request fresh PO token
   refreshPoToken(data: { videoId: string }): string | null;
 
-  // Background → Offscreen (Chrome only): forwarded stream chunk
-  processStreamChunk(data: {
-    videoId: string;
-    streamType: string;
-    iChunk: number;
-    totalChunks: number;
-    chunkBase64: string;
-    tabId: number;
-  }): void;
-
-  // Background → Offscreen (Chrome only): all chunks forwarded, trigger processing
-  processStreamEnd(data: {
-    type: DownloadType;
-    videoId: string;
-    filenameOutput: string;
-    videoMimeType: string;
-    audioMimeType: string;
-    audioTrackLabels: string[];
-    tabId: number;
-    playlistId?: string;
-    playlistTitle?: string;
-    playlistTotalCount?: number;
-    metadata?: VideoMetadata | null;
-  }): void;
-
-  // Background → Offscreen (Chrome only): cancel one or more downloads
-  cancelProcessing(data: { videoIds: string[] }): void;
-
-  // Offscreen → Background: storage operations (chrome.storage unavailable in offscreen)
+  // Offscreen → Background
   pipelineProgress(data: ProgressUpdate & { tabId: number }): void;
   pipelineRemoval(data: {
     videoId: string;

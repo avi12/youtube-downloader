@@ -2,7 +2,7 @@ import { type AdaptiveFormatItem, type SabrConfig } from "@/types";
 import { SabrStream } from "googlevideo/sabr-stream";
 import { buildSabrFormat } from "googlevideo/utils";
 
-export function adaptiveFormatToSabrFormat(format: AdaptiveFormatItem) {
+function adaptiveFormatToSabrFormat(format: AdaptiveFormatItem) {
   return buildSabrFormat({
     itag: format.itag,
     lastModified: String(format.lastModified),
@@ -22,7 +22,7 @@ export function adaptiveFormatToSabrFormat(format: AdaptiveFormatItem) {
   });
 }
 
-export async function collectReadableStream(stream: ReadableStream<Uint8Array>) {
+async function collectReadableStream(stream: ReadableStream<Uint8Array>) {
   const reader = stream.getReader();
   const chunks: Uint8Array[] = [];
   let totalBytes = 0;
@@ -47,7 +47,7 @@ export async function collectReadableStream(stream: ReadableStream<Uint8Array>) 
   return result;
 }
 
-export function createSabrStream(
+function createSabrStream(
   sabrConfig: SabrConfig,
   fetchFn: typeof globalThis.fetch,
   poToken: string

@@ -14,7 +14,7 @@ export const videoDataCache = new Map<string, VideoData>();
 // which runs at document_start. We read/write it via window.__ytdlCapture.
 // Fall back to a no-op stub if the capture script didn't initialize
 // (e.g., on non-download pages where it returned early).
-export const captureState: YtdlCaptureState = window.__ytdlCapture ?? {
+const captureState: YtdlCaptureState = window.__ytdlCapture ?? {
   activeVideoId: "",
   pendingChunks: [],
   capturedMedia: new Map(),
