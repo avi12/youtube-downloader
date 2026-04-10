@@ -21,7 +21,7 @@ async function updateStatusProgress(
   ]);
 }
 
-function waitForDownloadComplete(downloadId: number) {
+async function waitForDownloadComplete(downloadId: number) {
   return new Promise<void>((resolve, reject) => {
     function onChanged(delta: Browser.downloads.DownloadDelta) {
       if (delta.id !== downloadId || !delta.state) {

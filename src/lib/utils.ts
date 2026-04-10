@@ -175,7 +175,7 @@ export function isVideoMusic(playerResponse: PlayerResponse) {
 
 // ─── DOM utilities ────────────────────────────────────────────────────────────
 
-export function waitForVideoElement(signal?: AbortSignal) {
+export async function waitForVideoElement(signal?: AbortSignal) {
   return new Promise<HTMLVideoElement>((resolve, reject) => {
     const observer = new MutationObserver(() => {
       const elVideo = document.querySelector<HTMLVideoElement>("video");

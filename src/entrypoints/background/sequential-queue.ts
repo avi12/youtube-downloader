@@ -7,8 +7,8 @@ const MaxVideoDownloadMs = 10 * 60 * 1_000;
 
 const completionCallbacks = new Map<string, () => void>();
 
-export function awaitVideoComplete(videoId: string): Promise<void> {
-  return new Promise(resolve => {
+export async function awaitVideoComplete(videoId: string) {
+  return new Promise<void>(resolve => {
     const timeoutId = setTimeout(() => {
       completionCallbacks.delete(videoId);
       resolve();
