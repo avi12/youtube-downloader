@@ -85,14 +85,17 @@ export function attachCancelButton(elButton: Element) {
 export function attachDownloadButton(
   elButton: Element,
   getIsDownloadable: () => boolean,
-  getIsFilenameValid: () => boolean
+  getIsFilenameValid: () => boolean,
+  getIsDone: () => boolean
 ) {
   $effect(() => {
     const isActive = getIsDownloadable() && getIsFilenameValid();
+    const isDone = getIsDone();
+    const title = isDone ? "Download again" : "Download";
     dispatchButtonData(elButton, {
       iconName: IconName.Download,
-      title: "Download",
-      accessibilityText: "Download",
+      title,
+      accessibilityText: title,
       style: ButtonStyle.CallToAction,
       type: ButtonType.Filled,
       buttonSize: ButtonSize.Default,

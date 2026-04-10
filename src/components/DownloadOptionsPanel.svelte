@@ -15,8 +15,7 @@
   // Grab Polymer's scoping class from an existing action-bar button so that
   // yt-button-view-model elements in this panel receive identical styling.
   const scopingClass =
-    document.querySelector("[data-ytdl-download-group] yt-button-view-model")?.getAttribute("class") ??
-    document.querySelector("yt-button-view-model")?.getAttribute("class") ??
+    document.querySelector("[data-ytdl-download-group] yt-button-view-model, yt-button-view-model")?.getAttribute("class") ??
     "";
 
   type Props = {
@@ -58,7 +57,7 @@
   // -- Polymer button attaches ------------------------------------------------
 
   function attachDownloadBtn(elButton: Element) {
-    attachDownloadButton(elButton, () => panel.isDownloadable, () => panel.isFilenameValid);
+    attachDownloadButton(elButton, () => panel.isDownloadable, () => panel.isFilenameValid, () => panel.isDone);
   }
 
   // -- Focus management -------------------------------------------------------
@@ -130,18 +129,6 @@
   }
 </script>
 
-{#snippet cancelBtn()}
-  <yt-button-view-model
-    class={scopingClass}
-    {@attach attachCancelButton}
-    data-ytdl-button-id="ytdl-panel-cancel"
-    onclick={panel.cancelDownload}
-    onkeydown={handleActivationKeydown(panel.cancelDownload)}
-    role="button"
-    tabindex="0"
-  ></yt-button-view-model>
-{/snippet}
-
 <div
   class="ytdl-panel"
   {@attach attachPanel}
@@ -199,33 +186,53 @@
           <span class="ytdl-progress-label" aria-live="polite">
             {Math.round(panel.displayProgress)}% - {panel.progressType === ProgressType.FFmpeg ? "Processing" : "Downloading"}
           </span>
-          {@render cancelBtn()}
+          <yt-button-view-model
+            class={scopingClass}
+            {@attach attachCancelButton}
+            data-ytdl-button-id="ytdl-panel-cancel"
+            onclick={panel.cancelDownload}
+            onkeydown={handleActivationKeydown(panel.cancelDownload)}
+            role="button"
+            tabindex="0"
+          ></yt-button-view-model>
         </div>
       </div>
     {:else}
       {#if panel.isDone}
-        <div class="ytdl-done-status" role="status">
-          <svg
-            aria-hidden="true"
-            fill="currentColor"
-            height="20"
-            viewBox="0 0 24 24"
-            width="20"
-          >
-            <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
-          </svg>
-          <span>Download complete</span>
+        <div class="ytdl-done-row">
+          <div class="ytdl-done-status" role="status">
+            <svg
+              aria-hidden="true"
+              fill="currentColor"
+              height="20"
+              viewBox="0 0 24 24"
+              width="20"
+            >
+              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
+            </svg>
+            <span>Downloaded</span>
+          </div>
+          <yt-button-view-model
+            class={scopingClass}
+            {@attach attachDownloadBtn}
+            data-ytdl-button-id="ytdl-panel-download"
+            onclick={panel.startDownload}
+            onkeydown={handleActivationKeydown(panel.startDownload)}
+            role="button"
+            tabindex="0"
+          ></yt-button-view-model>
         </div>
+      {:else}
+        <yt-button-view-model
+          class={scopingClass}
+          {@attach attachDownloadBtn}
+          data-ytdl-button-id="ytdl-panel-download"
+          onclick={panel.startDownload}
+          onkeydown={handleActivationKeydown(panel.startDownload)}
+          role="button"
+          tabindex="0"
+        ></yt-button-view-model>
       {/if}
-      <yt-button-view-model
-        class={scopingClass}
-        {@attach attachDownloadBtn}
-        data-ytdl-button-id="ytdl-panel-download"
-        onclick={panel.startDownload}
-        onkeydown={handleActivationKeydown(panel.startDownload)}
-        role="button"
-        tabindex="0"
-      ></yt-button-view-model>
     {/if}
   </div>
 </div>
@@ -278,10 +285,17 @@
     font-size: 1.3rem;
   }
 
+  .ytdl-done-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
   .ytdl-done-status {
     display: flex;
     gap: 8px;
     align-items: center;
+    color: var(--yt-spec-call-to-action, #3ea6ff);
     font-size: 1.3rem;
   }
 </style>
