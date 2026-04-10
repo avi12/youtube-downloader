@@ -3,6 +3,7 @@ import { statusProgressItem, videoQueueItem } from "@/lib/storage";
 import { cancelRequestSignal, downloadProgressStore } from "@/lib/synced-stores.svelte";
 import {
   calculateWeightedProgress,
+  formatAudioCodecLabel,
   formatVideoQualityLabel,
   getCompatibleFilename,
   getOutputExtension,
@@ -90,7 +91,9 @@ export function createPanelState(getVideoData: () => VideoData, getOptions: () =
 
   const qualityLabel = $derived.by(() => {
     if (downloadType === DownloadType.Audio) {
-      return selectedAudioFormat ? `${Math.floor(selectedAudioFormat.bitrate / 1000)} kbps` : "";
+      return selectedAudioFormat
+        ? `${Math.floor(selectedAudioFormat.bitrate / 1000)} kbps (${formatAudioCodecLabel(selectedAudioFormat.mimeType)})`
+        : "";
     }
 
     return selectedVideoFormat ? formatVideoQualityLabel(selectedVideoFormat) : "";
