@@ -16,16 +16,18 @@ for (const page of subPages) {
   const ws = new WebSocket(page.webSocketDebuggerUrl);
   const result = await new Promise(resolve => {
     ws.on("open", () => {
-      ws.send(JSON.stringify({
-        id: 1,
-        method: "Runtime.evaluate",
-        params: {
-          expression: `JSON.stringify({
+      ws.send(
+        JSON.stringify({
+          id: 1,
+          method: "Runtime.evaluate",
+          params: {
+            expression: `JSON.stringify({
             gridItems: document.querySelectorAll('[data-ytdl-grid-item]').length,
             buttons: document.querySelectorAll('[data-ytdl-grid-item] yt-button-view-model button').length
           })`
-        }
-      }));
+          }
+        })
+      );
     });
     ws.on("message", raw => {
       const m = JSON.parse(raw.toString());

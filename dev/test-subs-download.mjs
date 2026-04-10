@@ -50,7 +50,8 @@ if (ACTION === "navigate") {
 
 if (ACTION === "check") {
   for (const page of ytPages) {
-    const result = await cdpEval(page.webSocketDebuggerUrl, `
+    const result = await cdpEval(
+      page.webSocketDebuggerUrl, `
       JSON.stringify({
         url: location.href.substring(0, 50),
         gridItems: document.querySelectorAll('[data-ytdl-grid-item]').length,
@@ -58,7 +59,8 @@ if (ACTION === "check") {
         firstId: document.querySelector('[data-ytdl-grid-item]')?.dataset?.ytdlGridItem,
         firstLabel: document.querySelector('[data-ytdl-grid-item] yt-button-view-model button')?.getAttribute('aria-label')?.substring(0,60)
       })
-    `);
+    `
+    );
     console.log(result);
   }
 }
@@ -70,14 +72,16 @@ if (ACTION === "click") {
     console.log("No subscriptions page"); process.exit(1);
   }
 
-  const result = await cdpEval(subsPage.webSocketDebuggerUrl, `
+  const result = await cdpEval(
+    subsPage.webSocketDebuggerUrl, `
     (() => {
       const item = document.querySelector('[data-ytdl-grid-item="${videoId}"]');
       const btn = item?.querySelector('yt-button-view-model button');
       btn?.click();
       return 'clicked: ' + btn?.getAttribute('aria-label')?.substring(0, 50);
     })()
-  `);
+  `
+  );
   console.log(result);
 }
 
@@ -91,7 +95,8 @@ if (ACTION === "monitor") {
   for (let i = 0; i < 12; i++) {
     await new Promise(r => setTimeout(r, 5000));
     try {
-      const result = await cdpEval(subsPage.webSocketDebuggerUrl, `
+      const result = await cdpEval(
+        subsPage.webSocketDebuggerUrl, `
         (() => {
           const item = document.querySelector('[data-ytdl-grid-item="${videoId}"]');
           const btn = item?.querySelector('yt-button-view-model button');
@@ -101,7 +106,8 @@ if (ACTION === "monitor") {
             progress: p?.getAttribute('value')
           });
         })()
-      `);
+      `
+      );
       console.log("T+" + ((i + 1) * 5) + "s:", result);
     } catch {
       console.log("T+" + ((i + 1) * 5) + "s: connection lost");

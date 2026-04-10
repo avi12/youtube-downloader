@@ -11,11 +11,12 @@ if (!page) {
 
 const ws = new WebSocket(page.webSocketDebuggerUrl);
 ws.on("open", () => {
-  ws.send(JSON.stringify({
-    id: 1,
-    method: "Runtime.evaluate",
-    params: {
-      expression: `
+  ws.send(
+    JSON.stringify({
+      id: 1,
+      method: "Runtime.evaluate",
+      params: {
+        expression: `
         (async () => {
           const btns = document.querySelectorAll('[data-ytdl-grid-item] yt-button-view-model');
           const gridItems = document.querySelectorAll('[data-ytdl-grid-item]');
@@ -43,9 +44,10 @@ ws.on("open", () => {
           });
         })()
       `,
-      awaitPromise: true
-    }
-  }));
+        awaitPromise: true
+      }
+    })
+  );
 });
 
 ws.on("message", raw => {

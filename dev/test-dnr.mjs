@@ -64,7 +64,8 @@ async function main() {
   console.log("Sample:", cookies.substring(0, 80));
 
   // Step 2: Update DNR rule with real cookies
-  const updateResult = await cdpEvalSW(`(async () => {
+  const updateResult = await cdpEvalSW(
+    `(async () => {
     const cookies = ${JSON.stringify(cookies)};
     await chrome.declarativeNetRequest.updateDynamicRules({
       removeRuleIds: [1],
@@ -86,11 +87,13 @@ async function main() {
     });
     const rules = await chrome.declarativeNetRequest.getDynamicRules();
     return JSON.stringify({ cookieLen: rules[0]?.action?.requestHeaders?.find(h => h.header === "Cookie")?.value?.length });
-  })()`);
+  })()`
+  );
   console.log("DNR rule updated:", updateResult);
 
   // Step 3: Make a real test fetch from the SW to googlevideo
-  const fetchResult = await cdpEvalSW(`(async () => {
+  const fetchResult = await cdpEvalSW(
+    `(async () => {
     try {
       const r = await fetch("https://rr2---sn-nhpax-ua8d.googlevideo.com/videoplayback?test=1", {
         method: "POST",
@@ -101,7 +104,8 @@ async function main() {
     } catch (e) {
       return JSON.stringify({ error: e.message });
     }
-  })()`);
+  })()`
+  );
   console.log("Test fetch result:", fetchResult);
 }
 

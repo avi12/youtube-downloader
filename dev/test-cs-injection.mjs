@@ -44,7 +44,8 @@ async function main() {
 
   // Step 1: Unregister all, register minimal test
   console.log("Step 1: Registering minimal test content script...");
-  const reg = await cdpEval(sw.webSocketDebuggerUrl, `(async()=>{
+  const reg = await cdpEval(
+    sw.webSocketDebuggerUrl, `(async()=>{
     const ex = await chrome.scripting.getRegisteredContentScripts();
     if (ex.length) await chrome.scripting.unregisterContentScripts({ids:ex.map(s=>s.id)});
     await chrome.scripting.registerContentScripts([{
@@ -56,17 +57,20 @@ async function main() {
     }]);
     const after = await chrome.scripting.getRegisteredContentScripts();
     return "Registered " + after.length + " scripts: " + after.map(s=>s.id).join(", ");
-  })()`);
+  })()`
+  );
   console.log("  ", reg);
 
   // Step 2: Navigate tab
   console.log("Step 2: Navigating YouTube tab...");
-  const nav = await cdpEval(sw.webSocketDebuggerUrl, `(async()=>{
+  const nav = await cdpEval(
+    sw.webSocketDebuggerUrl, `(async()=>{
     const tabs = await chrome.tabs.query({url:"https://www.youtube.com/*"});
     if (!tabs.length) return "no tabs";
     await chrome.tabs.update(tabs[0].id, {url: "https://www.youtube.com/feed/subscriptions"});
     return "navigated tab " + tabs[0].id;
-  })()`);
+  })()`
+  );
   console.log("  ", nav);
 
   // Step 3: Wait and check
@@ -79,17 +83,20 @@ async function main() {
     console.log("  No subscriptions page"); return;
   }
 
-  const check = await cdpEval(pg.webSocketDebuggerUrl, `JSON.stringify({
+  const check = await cdpEval(
+    pg.webSocketDebuggerUrl, `JSON.stringify({
     btns: document.querySelectorAll("[data-ytdl-button-id]").length,
     items: document.querySelectorAll("[data-ytdl-grid-item]").length,
     scripts: document.querySelectorAll("script[src*='chrome-extension']").length,
     wxtActive: typeof __wxt_content_script_invalidated !== "undefined"
-  })`);
+  })`
+  );
   console.log("  Page state:", check);
 
   // Step 4: Check if the script file itself has errors by injecting it manually
   console.log("Step 4: Manual executeScript test...");
-  const manual = await cdpEval(sw.webSocketDebuggerUrl, `(async()=>{
+  const manual = await cdpEval(
+    sw.webSocketDebuggerUrl, `(async()=>{
     const tabs = await chrome.tabs.query({url:"https://www.youtube.com/*"});
     if (!tabs.length) return "no tabs";
     try {
@@ -98,15 +105,18 @@ async function main() {
     } catch(e) {
       return "executeScript error: " + e.message;
     }
-  })()`);
+  })()`
+  );
   console.log("  ", manual);
 
   // Step 5: Check page again after manual inject
   await new Promise(r => setTimeout(r, 10000));
-  const check2 = await cdpEval(pg.webSocketDebuggerUrl, `JSON.stringify({
+  const check2 = await cdpEval(
+    pg.webSocketDebuggerUrl, `JSON.stringify({
     btns: document.querySelectorAll("[data-ytdl-button-id]").length,
     items: document.querySelectorAll("[data-ytdl-grid-item]").length
-  })`);
+  })`
+  );
   console.log("  After manual inject:", check2);
 }
 

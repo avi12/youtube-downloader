@@ -45,7 +45,8 @@ if (!sw) {
 }
 
 console.log("Step 1: Unregistering stale content scripts...");
-const unregResult = await cdpEval(sw.webSocketDebuggerUrl, `
+const unregResult = await cdpEval(
+  sw.webSocketDebuggerUrl, `
   (async () => {
     const scripts = await chrome.scripting.getRegisteredContentScripts();
     const staleIds = scripts.filter(s => !s.id.includes("youtube")).map(s => s.id);
@@ -55,7 +56,8 @@ const unregResult = await cdpEval(sw.webSocketDebuggerUrl, `
     const remaining = await chrome.scripting.getRegisteredContentScripts();
     return JSON.stringify({ removed: staleIds, remaining: remaining.map(s => s.id) });
   })()
-`);
+`
+);
 console.log(unregResult);
 
 // Step 2: Reload the subscriptions page
@@ -82,23 +84,27 @@ if (!subs) {
   console.log("No subscriptions page"); process.exit(1);
 }
 
-const gridCheck = await cdpEval(subs.webSocketDebuggerUrl, `
+const gridCheck = await cdpEval(
+  subs.webSocketDebuggerUrl, `
   (() => {
     const gi = document.querySelectorAll('[data-ytdl-grid-item]');
     const btns = document.querySelectorAll('[data-ytdl-grid-item] yt-button-view-model button');
     return JSON.stringify({ gridItems: gi.length, buttons: btns.length });
   })()
-`);
+`
+);
 console.log("Grid:", gridCheck);
 
 // Step 4: Check registered scripts again
 const sw2 = pages2.find(p => p.type === "service_worker" && p.url.includes("background"));
-const scripts = await cdpEval(sw2.webSocketDebuggerUrl, `
+const scripts = await cdpEval(
+  sw2.webSocketDebuggerUrl, `
   (async () => {
     const scripts = await chrome.scripting.getRegisteredContentScripts();
     return JSON.stringify(scripts.map(s => s.id));
   })()
-`);
+`
+);
 console.log("Registered scripts:", scripts);
 
 process.exit();

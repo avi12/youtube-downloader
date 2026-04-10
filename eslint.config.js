@@ -1,5 +1,5 @@
-import eslint from "@eslint/js";
 import multilineArgParenNewline from "./eslint-rules/multiline-arg-paren-newline.js";
+import eslint from "@eslint/js";
 import stylistic from "@stylistic/eslint-plugin";
 import importPlugin from "eslint-plugin-import";
 import importNewlines from "eslint-plugin-import-newlines";

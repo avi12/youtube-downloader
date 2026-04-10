@@ -47,7 +47,6 @@ export default {
         const hasMultilineNonLiteralArgument = node.arguments.some(
           arg => !inlineArgumentTypes.has(arg.type) && arg.loc.start.line !== arg.loc.end.line
         );
-
         if (!hasMultilineNonLiteralArgument) {
           return;
         }
@@ -58,7 +57,6 @@ export default {
         const closeParen = sourceCode.getLastToken(node);
         const baseIndent = " ".repeat(node.loc.start.column);
         const argIndent = `${baseIndent}  `;
-
         if (openParen.loc.end.line === firstArg.loc.start.line) {
           context.report({
             node,
