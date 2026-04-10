@@ -115,6 +115,7 @@ export type PlayerResponse = {
     lengthSeconds: `${number}`;
     channelId: string;
     shortDescription: string;
+    keywords?: string[];
     thumbnail: Thumbnail;
     viewCount: `${number}`;
     author: string;

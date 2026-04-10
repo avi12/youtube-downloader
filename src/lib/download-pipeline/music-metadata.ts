@@ -94,8 +94,8 @@ export async function embedMusicMetadata(
     ffmpegArgs.push("-metadata", `album=${sanitizeForFFmpeg(metadata.album)}`);
   }
 
-  if (metadata.genre) {
-    ffmpegArgs.push("-metadata", `genre=${sanitizeForFFmpeg(metadata.genre)}`);
+  if (metadata.genres?.length) {
+    ffmpegArgs.push("-metadata", `genre=${sanitizeForFFmpeg(metadata.genres.join(", "))}`);
   }
 
   if (metadata.date) {

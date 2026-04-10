@@ -108,7 +108,7 @@ export async function performDownload({
       ...extraAudioFormats.map(format => resolveFormatUrl(format))
     ]);
 
-    const metadata = buildVideoMetadata(videoId);
+    const metadata = await buildVideoMetadata(videoId);
 
     const enrichedRequest: DownloadRequest = {
       type,
