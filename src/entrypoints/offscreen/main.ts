@@ -9,7 +9,7 @@
  */
 
 import { cancelDownloadsByIds, enqueueStreamData, initFFmpeg } from "@/lib/download-pipeline";
-import { MessageType, sendMessage } from "@/lib/messaging";
+import { OffscreenMessageType, listenForOffscreenMessages } from "@/lib/offscreen-messaging";
 import { DownloadType, StreamType } from "@/types";
 import type { VideoMetadata } from "@/types";
 import type { FFmpegCoreModuleFactory } from "@ffmpeg/types";
@@ -68,22 +68,12 @@ function base64ToUint8Array(base64: string) {
   return Uint8Array.from(binaryString, char => char.charCodeAt(0));
 }
 
-const OFFSCREEN_PORT_NAME = "ytdl-offscreen";
-
-browser.runtime.onConnect.addListener(port => {
-  if (port.name !== OFFSCREEN_PORT_NAME) {
-    return;
+listenForOffscreenMessages({
+  [OffscreenMessageType.ProcessStreamChunk]: handleProcessStreamChunk,
+  [OffscreenMessageType.ProcessStreamEnd]: handleProcessStreamEnd,
+  [OffscreenMessageType.CancelProcessing]: data => {
+    void cancelDownloadsByIds(data.videoIds);
   }
-
-  port.onMessage.addListener((message: { type?: string; data?: Record<string, unknown> }) => {
-    if (message.type === MessageType.ProcessStreamChunk) {
-      handleProcessStreamChunk(message.data as Parameters<typeof handleProcessStreamChunk>[0]);
-    } else if (message.type === MessageType.ProcessStreamEnd) {
-      handleProcessStreamEnd(message.data as Parameters<typeof handleProcessStreamEnd>[0]);
-    } else if (message.type === MessageType.CancelProcessing) {
-      void cancelDownloadsByIds((message.data as { videoIds: string[] }).videoIds);
-    }
-  });
 });
 
 function handleProcessStreamChunk(data: {

@@ -1,6 +1,7 @@
 import { ensureProcessor } from "./processor";
 import { trackVideoForTab } from "./tab-tracker";
-import { MessageType, onMessage, sendMessage } from "@/lib/messaging";
+import { MessageType, onMessage } from "@/lib/messaging";
+import { OffscreenMessageType, sendToOffscreen } from "@/lib/offscreen-messaging";
 
 export function registerChunkHandlers() {
   onMessage(MessageType.StreamChunk, async ({ data, sender }) => {
@@ -10,7 +11,7 @@ export function registerChunkHandlers() {
     }
 
     await ensureProcessor();
-    await sendMessage(MessageType.ProcessStreamChunk, { ...data, tabId });
+    sendToOffscreen(OffscreenMessageType.ProcessStreamChunk, { ...data, tabId });
   });
 
   onMessage(MessageType.StreamEnd, async ({ data, sender }) => {
@@ -21,6 +22,6 @@ export function registerChunkHandlers() {
 
     trackVideoForTab(data.videoId, tabId);
     await ensureProcessor();
-    await sendMessage(MessageType.ProcessStreamEnd, { ...data, tabId });
+    sendToOffscreen(OffscreenMessageType.ProcessStreamEnd, { ...data, tabId });
   });
 }

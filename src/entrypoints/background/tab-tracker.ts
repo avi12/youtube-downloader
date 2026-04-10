@@ -1,5 +1,5 @@
-import { sendToOffscreen } from "./offscreen-transfer";
 import { MessageType, sendMessage } from "@/lib/messaging";
+import { OffscreenMessageType, sendToOffscreen } from "@/lib/offscreen-messaging";
 
 const videoIdToTabIds: Record<string, number[]> = {};
 export const tabTracker: Record<number, { videoIdsAvailable: string[] }> = {};
@@ -30,6 +30,6 @@ export function untrackVideoForTab(videoId: string, tabId: number) {
 }
 
 export async function cancelDownloads(videoIds: string[]) {
-  sendToOffscreen(MessageType.CancelProcessing, { videoIds });
+  sendToOffscreen(OffscreenMessageType.CancelProcessing, { videoIds });
 
 }
