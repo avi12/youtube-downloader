@@ -48,7 +48,7 @@ export function buildVideoMetadata(videoId: string) {
   const description = videoDetails?.shortDescription ?? "";
   const titleMeta = parseMusicTitle(cached.title);
   const descriptionMeta = parseDescriptionMetadata(description);
-  const genre = renderer?.category === "Music" ? "Music" : renderer?.category;
+  const genre = renderer?.category !== "Music" ? renderer?.category : undefined;
 
   const artist = descriptionMeta.artist || titleMeta.fullArtist || videoDetails?.author || "";
   const albumArtist = descriptionMeta.mainArtist || titleMeta.mainArtist || undefined;

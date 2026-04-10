@@ -56,8 +56,9 @@ export async function startBackgroundDownload(request: DownloadRequest, tabId: n
   try {
     const isAudioOnly = type === DownloadType.Audio;
 
-    const enrichedMetadataPromise = metadata?.isMusic
-      ? fetchYouTubeMusicMetadata(filenameOutput, metadata)
+    const musicSearchQuery = metadata ? `${metadata.artist} ${metadata.title}` : "";
+    const enrichedMetadataPromise = metadata?.isMusic && musicSearchQuery.trim()
+      ? fetchYouTubeMusicMetadata(musicSearchQuery, metadata)
       : Promise.resolve(metadata);
 
     const effectiveSabrConfig = sabrConfig
