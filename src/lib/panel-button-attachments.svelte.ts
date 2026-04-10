@@ -67,6 +67,21 @@ export function attachCloseButton(elTarget: Element) {
   observer.observe(elTarget, { childList: true, subtree: true });
 }
 
+export function attachDoneIcon(elButton: Element) {
+  dispatchButtonData(elButton, {
+    iconName: IconName.CheckCircleThick,
+    title: "",
+    accessibilityText: "",
+    style: ButtonStyle.CallToAction,
+    type: ButtonType.Text,
+    buttonSize: ButtonSize.Small,
+    state: ButtonState.Disabled,
+    isFullWidth: false,
+    isDisabled: true,
+    tooltip: ""
+  });
+}
+
 export function attachCancelButton(elButton: Element) {
   dispatchButtonData(elButton, {
     iconName: "",

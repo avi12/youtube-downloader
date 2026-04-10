@@ -7,10 +7,16 @@
   import {
     attachCancelButton,
     attachCloseButton,
+    attachDoneIcon,
     attachDownloadButton,
     attachPanelProgress
   } from "@/lib/panel-button-attachments.svelte";
   import { ProgressType, type Options, type VideoData } from "@/types";
+
+  const percentFormatter = new Intl.NumberFormat(document.documentElement.lang || undefined, {
+    style: "percent",
+    maximumFractionDigits: 0
+  });
 
   // Grab Polymer's scoping class from an existing action-bar button so that
   // yt-button-view-model elements in this panel receive identical styling.
@@ -184,7 +190,7 @@
         ></tp-yt-paper-progress>
         <div class="ytdl-progress-row">
           <span class="ytdl-progress-label" aria-live="polite">
-            {Math.round(panel.displayProgress)}% - {panel.progressType === ProgressType.FFmpeg ? "Processing" : "Downloading"}
+            {percentFormatter.format(panel.displayProgress / 100)} - {panel.progressType === ProgressType.FFmpeg ? "Processing" : "Downloading"}
           </span>
           <yt-button-view-model
             class={scopingClass}
@@ -201,15 +207,10 @@
       {#if panel.isDone}
         <div class="ytdl-done-row">
           <div class="ytdl-done-status" role="status">
-            <svg
-              aria-hidden="true"
-              fill="currentColor"
-              height="20"
-              viewBox="0 0 24 24"
-              width="20"
-            >
-              <path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" />
-            </svg>
+            <yt-button-view-model
+              class={scopingClass}
+              {@attach attachDoneIcon}
+            ></yt-button-view-model>
             <span>Downloaded</span>
           </div>
           <yt-button-view-model
