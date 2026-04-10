@@ -18,6 +18,121 @@ import { optionsItem, statusProgressItem } from "@/lib/storage";
 import { downloadProgressStore } from "@/lib/synced-stores.svelte";
 import { type Options } from "@/types";
 
+function registerCrossWorldHandlers(
+  isDownloadIframe: boolean,
+  context: InstanceType<typeof ContentScriptContext>,
+  getOptions: () => Options
+) {
+  crossWorldMessenger.onMessage(CrossWorldMessage.VideoData, async ({ data }) => {
+    await checkInterruptedDownload(data.videoId);
+  });
+
+  crossWorldMessenger.onMessage(CrossWorldMessage.Navigation, ({ data }) => {
+    if (!isDownloadIframe) {
+      handlePageChange(data.url, context, getOptions());
+    }
+
+    void forwardSabrCredentialsWithRetry();
+  });
+
+  crossWorldMessenger.onMessage(CrossWorldMessage.PanelContentReady, ({ data }) => {
+    mountPanelUi({
+      context,
+      contentId: data.contentId,
+      videoData: data.videoData,
+      options: getOptions()
+    });
+  });
+
+  crossWorldMessenger.onMessage(CrossWorldMessage.CancelRequest, ({ data }) => {
+    for (const id of data.videoIds) {
+      cancelStreamTransfer(id);
+    }
+
+    void sendMessage(MessageType.CancelDownload, { videoIds: data.videoIds });
+    void crossWorldMessenger.sendMessage(CrossWorldMessage.CancelDownload, { videoIds: data.videoIds });
+  });
+
+  crossWorldMessenger.onMessage(CrossWorldMessage.StreamData, ({ data }) => {
+    void handleStreamData(data);
+  });
+
+  crossWorldMessenger.onMessage(CrossWorldMessage.StreamError, ({ data }) => {
+    handleStreamError(data);
+  });
+
+  crossWorldMessenger.onMessage(CrossWorldMessage.DownloadViaIframe, ({ data }) => {
+    void sendMessage(MessageType.DownloadViaWatchPage, data);
+  });
+
+  crossWorldMessenger.onMessage(CrossWorldMessage.StartBackgroundDownload, ({ data }) => {
+    void sendMessage(MessageType.StartBackgroundDownload, data);
+  });
+
+  crossWorldMessenger.onMessage(CrossWorldMessage.IframePlayerReady, ({ data }) => {
+    void sendMessage(MessageType.DownloadIframeReady, { videoId: data.videoId });
+  });
+
+  crossWorldMessenger.onMessage(CrossWorldMessage.DownloadRequest, ({ data }) => {
+    uncancelStreamTransfer(data.videoId);
+  });
+
+  crossWorldMessenger.onMessage(CrossWorldMessage.DownloadProgress, ({ data }) => {
+    downloadProgressStore.set(data.videoId, {
+      isDownloading: true,
+      isDone: false,
+      progress: data.progress,
+      progressType: data.progressType
+    });
+  });
+
+  crossWorldMessenger.onMessage(
+    CrossWorldMessage.ProxyFetch,
+    ({ data }) => sendMessage(MessageType.BackgroundProxyFetch, data)
+  );
+}
+
+function registerBackgroundMessageHandlers() {
+  onMessage(MessageType.ExecuteDownloadItem, ({ data }) => {
+    if (location.pathname !== "/watch") {
+      return;
+    }
+
+    if (data.playlistId) {
+      setPlaylistContext(data.videoId, {
+        playlistId: data.playlistId,
+        playlistTitle: data.playlistTitle ?? "Playlist",
+        playlistTotalCount: data.playlistTotalCount ?? 1
+      });
+    }
+
+    uncancelStreamTransfer(data.videoId);
+    void crossWorldMessenger.sendMessage(CrossWorldMessage.DownloadRequest, data);
+  });
+
+  onMessage(MessageType.UpdateDownloadProgress, ({ data }) => {
+    void crossWorldMessenger.sendMessage(CrossWorldMessage.Progress, data);
+
+    const isDownloading = !data.isRemoved && data.progress < 1;
+    const isDone = data.isRemoved || data.progress >= 1;
+    const progress = data.isRemoved ? 1 : data.progress;
+    const progressType = data.isRemoved ? "" : data.progressType;
+    downloadProgressStore.set(data.videoId, { isDownloading, isDone, progress, progressType });
+  });
+}
+
+async function restoreStoredProgress() {
+  const storedProgress = await statusProgressItem.getValue();
+  for (const [videoId, { progress, progressType }] of Object.entries(storedProgress)) {
+    downloadProgressStore.set(videoId, {
+      isDownloading: true,
+      isDone: false,
+      progress,
+      progressType
+    });
+  }
+}
+
 export default defineContentScript({
   matches: ["https://www.youtube.com/*"],
   allFrames: true,
@@ -29,122 +144,15 @@ export default defineContentScript({
 
     let currentOptions: Options = await optionsItem.getValue();
 
-    crossWorldMessenger.onMessage(CrossWorldMessage.VideoData, async ({ data }) => {
-      await checkInterruptedDownload(data.videoId);
-    });
-
-    crossWorldMessenger.onMessage(CrossWorldMessage.Navigation, ({ data }) => {
-      if (!isDownloadIframe) {
-        handlePageChange(data.url, context, currentOptions);
-      }
-
-      void forwardSabrCredentialsWithRetry();
-    });
-
-    crossWorldMessenger.onMessage(CrossWorldMessage.PanelContentReady, ({ data }) => {
-      mountPanelUi({
-        context,
-        contentId: data.contentId,
-        videoData: data.videoData,
-        options: currentOptions
-      });
-    });
-
-    crossWorldMessenger.onMessage(CrossWorldMessage.CancelRequest, ({ data }) => {
-      const { videoIds } = data;
-
-      for (const id of videoIds) {
-        cancelStreamTransfer(id);
-      }
-
-      void sendMessage(MessageType.CancelDownload, { videoIds });
-      void crossWorldMessenger.sendMessage(CrossWorldMessage.CancelDownload, { videoIds });
-    });
-
-    onMessage(MessageType.ExecuteDownloadItem, ({ data }) => {
-      if (location.pathname !== "/watch") {
-        return;
-      }
-
-      if (data.playlistId) {
-        setPlaylistContext(data.videoId, {
-          playlistId: data.playlistId,
-          playlistTitle: data.playlistTitle ?? "Playlist",
-          playlistTotalCount: data.playlistTotalCount ?? 1
-        });
-      }
-
-      uncancelStreamTransfer(data.videoId);
-      void crossWorldMessenger.sendMessage(CrossWorldMessage.DownloadRequest, data);
-    });
-
-    onMessage(MessageType.UpdateDownloadProgress, ({ data }) => {
-      void crossWorldMessenger.sendMessage(CrossWorldMessage.Progress, data);
-
-      const isDownloading = !data.isRemoved && data.progress < 1;
-      const isDone = data.isRemoved || data.progress >= 1;
-      const progress = data.isRemoved ? 1 : data.progress;
-      const progressType = data.isRemoved ? "" : data.progressType;
-      downloadProgressStore.set(data.videoId, { isDownloading, isDone, progress, progressType });
-    });
-
-    crossWorldMessenger.onMessage(CrossWorldMessage.StreamData, ({ data }) => {
-      void handleStreamData(data);
-    });
-
-    crossWorldMessenger.onMessage(CrossWorldMessage.StreamError, ({ data }) => {
-      handleStreamError(data);
-    });
-
-    crossWorldMessenger.onMessage(CrossWorldMessage.DownloadViaIframe, ({ data }) => {
-      void sendMessage(MessageType.DownloadViaWatchPage, data);
-    });
-
-    crossWorldMessenger.onMessage(CrossWorldMessage.StartBackgroundDownload, ({ data }) => {
-      void sendMessage(MessageType.StartBackgroundDownload, data);
-    });
-
-    crossWorldMessenger.onMessage(CrossWorldMessage.IframePlayerReady, ({ data }) => {
-      void sendMessage(MessageType.DownloadIframeReady, { videoId: data.videoId });
-    });
-
-    crossWorldMessenger.onMessage(CrossWorldMessage.DownloadRequest, ({ data }) => {
-      uncancelStreamTransfer(data.videoId);
-    });
-
-    // Sync SABR/CDN download progress (from MAIN world) into downloadProgressStore
-    // so the panel and popup reflect byte-level progress before muxing begins.
-    crossWorldMessenger.onMessage(CrossWorldMessage.DownloadProgress, ({ data }) => {
-      downloadProgressStore.set(data.videoId, {
-        isDownloading: true,
-        isDone: false,
-        progress: data.progress,
-        progressType: data.progressType
-      });
-    });
-
-    // Proxy fetch requests from MAIN world through the background SW, which has
-    // host_permissions for googlevideo.com and bypasses CORS without preflight.
-    crossWorldMessenger.onMessage(
-      CrossWorldMessage.ProxyFetch,
-      ({ data }) => sendMessage(MessageType.BackgroundProxyFetch, data)
-    );
-
+    registerCrossWorldHandlers(isDownloadIframe, context, () => currentOptions);
+    registerBackgroundMessageHandlers();
     listenForInterruptedDownloadEvents();
     listenForSabrBodyReady();
     listenForKeepalive();
     listenForDownloadIframes(context);
     void forwardSabrCredentialsWithRetry();
 
-    const storedProgress = await statusProgressItem.getValue();
-    for (const [videoId, { progress, progressType }] of Object.entries(storedProgress)) {
-      downloadProgressStore.set(videoId, {
-        isDownloading: true,
-        isDone: false,
-        progress,
-        progressType
-      });
-    }
+    await restoreStoredProgress();
 
     const unwatchOptions = optionsItem.watch(newOptions => {
       if (!newOptions) {
