@@ -24,7 +24,10 @@ export async function sendProgressUpdate(
     lastProgressTimestamps.delete(videoId);
   }
 
-  await statusProgressItem.setValue({ [videoId]: { progress, progressType } });
+  // TODO: re-enable once the tab hang issue is resolved
+  // Progress updates to the tab cause the YouTube page to freeze.
+  // await sendMessage(MessageType.UpdateDownloadProgress, { videoId, progress, progressType }, tabId);
+  void tabId;
 }
 
 export function createProgressFetch(
