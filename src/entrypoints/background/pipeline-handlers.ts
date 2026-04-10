@@ -21,6 +21,26 @@ async function updateStatusProgress(
   ]);
 }
 
+function waitForDownloadComplete(downloadId: number) {
+  return new Promise<void>((resolve, reject) => {
+    function onChanged(delta: Browser.downloads.DownloadDelta) {
+      if (delta.id !== downloadId || !delta.state) {
+        return;
+      }
+
+      if (delta.state.current === "complete") {
+        browser.downloads.onChanged.removeListener(onChanged);
+        resolve();
+      } else if (delta.state.current === "interrupted") {
+        browser.downloads.onChanged.removeListener(onChanged);
+        reject(new Error("Download interrupted"));
+      }
+    }
+
+    browser.downloads.onChanged.addListener(onChanged);
+  });
+}
+
 export function registerPipelineHandlers() {
   onMessage(MessageType.ProcessStreamError, ({ data, sender }) => {
     const tabId = sender.tab?.id;
@@ -77,9 +97,11 @@ export function registerPipelineHandlers() {
   });
 
   onMessage(MessageType.PipelineDownload, async ({ data }) => {
-    await browser.downloads.download({
+    const downloadId = await browser.downloads.download({
       url: data.blobUrl,
       filename: data.filename
     });
+
+    await waitForDownloadComplete(downloadId);
   });
 }

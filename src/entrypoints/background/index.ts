@@ -73,6 +73,14 @@ export default defineBackground(() => {
   registerStorageHandlers();
   registerTabLifecycleHandlers();
 
+  browser.runtime.onMessage.addListener((message: { type?: string; url?: string; filename?: string }) => {
+    if (message.type !== "__ytdl_download" || !message.url || !message.filename) {
+      return;
+    }
+
+    void browser.downloads.download({ url: message.url, filename: message.filename });
+  });
+
   browser.runtime.onInstalled.addListener(({ reason }) => {
     // Only clear storage on fresh install, not on reload/update
     if (reason === browser.runtime.OnInstalledReason.INSTALL) {

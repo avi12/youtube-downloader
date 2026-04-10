@@ -11,31 +11,17 @@ interface ThumbnailEntry {
 
 interface SearchRun {
   text: string;
-  navigationEndpoint?: {
-    browseEndpoint?: {
-      browseEndpointContextSupportedConfigs?: {
-        browseEndpointContextMusicConfig?: {
-          pageType?: string;
-        };
-      };
-    };
-  };
+  navigationEndpoint?: { browseEndpoint?: { browseEndpointContextSupportedConfigs?: { browseEndpointContextMusicConfig?: { pageType?: string } } } };
 }
 
 interface FlexColumn {
-  musicResponsiveListItemFlexColumnRenderer?: {
-    text?: { runs?: SearchRun[] };
-  };
+  musicResponsiveListItemFlexColumnRenderer?: { text?: { runs?: SearchRun[] } };
 }
 
 interface SearchItem {
   musicResponsiveListItemRenderer?: {
     flexColumns?: FlexColumn[];
-    thumbnail?: {
-      musicThumbnailRenderer?: {
-        thumbnail?: { thumbnails?: ThumbnailEntry[] };
-      };
-    };
+    thumbnail?: { musicThumbnailRenderer?: { thumbnail?: { thumbnails?: ThumbnailEntry[] } } };
   };
 }
 
@@ -66,6 +52,7 @@ function parseSearchResult(item: SearchItem) {
     const pageType = extractPageType(run);
     if (pageType === "MUSIC_PAGE_TYPE_ARTIST") {
       artists.push(run.text);
+
       if (!mainArtist) {
         mainArtist = run.text;
       }
@@ -102,7 +89,6 @@ export async function fetchYouTubeMusicMetadata(
         }
       })
     });
-
     if (!response.ok) {
       return existingMetadata;
     }

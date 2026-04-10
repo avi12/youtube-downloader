@@ -124,9 +124,10 @@ export function registerDownloadHandlers() {
     void cancelDownloads(data.videoIds);
   });
 
-  onMessage(MessageType.StartBackgroundDownload, ({ data, sender }) => {
+  onMessage(MessageType.StartBackgroundDownload, async ({ data, sender }) => {
     const tabId = sender.tab?.id ?? -1;
     trackVideoForTab(data.videoId, tabId);
     void startBackgroundDownload(data, tabId);
+    await sendMessage(MessageType.StartKeepalive, { videoId: data.videoId }, tabId);
   });
 }

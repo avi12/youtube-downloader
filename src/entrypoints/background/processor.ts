@@ -36,10 +36,11 @@ async function ensureChromeOffscreenDocument() {
   }
 
   if (existingContexts.length > 0) {
-    // The offscreen document is already alive — FFmpeg is loaded and ready.
-    // WXT handles hot-reloading via a full extension reload, which closes
-    // and recreates all contexts including this one.
-    return;
+    try {
+      await browser.offscreen.closeDocument();
+    } catch {
+      // Already closed
+    }
   }
 
   // Set up the FFmpeg-ready promise BEFORE createDocument so we can't miss

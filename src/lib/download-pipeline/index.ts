@@ -25,6 +25,7 @@ async function processItem(item: ProcessStreamData) {
     }
   } catch (error) {
     console.error("[ytdl:pipeline] Mux/download failed:", item.videoId, error);
+    await reportRemoval(item.videoId, item.tabId);
   } finally {
     activeJobs.delete(item.videoId);
     await removeFromStorageQueue(item.videoId, item.type);
