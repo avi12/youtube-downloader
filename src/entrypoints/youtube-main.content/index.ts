@@ -44,14 +44,15 @@ export default defineContentScript({
     // In download iframes, mute any video that appears - the iframe is for data
     // fetching only and must never play audio
     if (self !== top) {
-      const muteObserver = new MutationObserver(() => {
+      let muteObserver: MutationObserver | null = new MutationObserver(() => {
         const elVideo = document.querySelector<HTMLVideoElement>("video");
         if (!elVideo) {
           return;
         }
 
         elVideo.muted = true;
-        muteObserver.disconnect();
+        muteObserver?.disconnect();
+        muteObserver = null;
       });
       muteObserver.observe(document.documentElement, { childList: true, subtree: true });
     }
