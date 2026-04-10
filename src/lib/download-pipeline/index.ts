@@ -1,11 +1,50 @@
+import { MessageType, sendMessage } from "../messaging";
+import { getCompatibleFilename, getMimeType, uint8ToBase64 } from "../utils";
 import { enqueueMuxJob } from "./ffmpeg-instance";
-import { reportRemoval, removeFromStorageQueue } from "./pipeline-reporting";
 import { processSingleMedia } from "./process-single-media";
 import { processVideoAudio } from "./process-video-audio";
-import { DownloadType } from "@/types";
+import { DownloadType, ProgressType } from "@/types";
 import type { ProcessStreamData } from "@/types";
 
 export { initFFmpeg } from "./ffmpeg-instance";
+
+export function toUint8Array(data: Uint8Array | Record<string, number> | null) {
+  if (!data) {
+    return null;
+  }
+
+  if (!ArrayBuffer.isView(data)) {
+    return new Uint8Array(Object.values(data));
+  }
+
+  return new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
+}
+
+export async function triggerDownload(data: Uint8Array, filenameOutput: string) {
+  const mimeType = getMimeType(filenameOutput) || "application/octet-stream";
+  const filename = getCompatibleFilename(filenameOutput);
+  const dataUrl = `data:${mimeType};base64,${uint8ToBase64(data)}`;
+  await sendMessage(MessageType.PipelineDownload, { blobUrl: dataUrl, mimeType, filename });
+}
+
+export async function reportProgress({
+  videoId, progress, progressType, tabId
+}: {
+  videoId: string;
+  progress: number;
+  progressType: ProgressType;
+  tabId: number;
+}) {
+  await sendMessage(MessageType.PipelineProgress, { videoId, progress, progressType, tabId });
+}
+
+async function reportRemoval(videoId: string, tabId: number) {
+  await sendMessage(MessageType.PipelineRemoval, { videoId, tabId });
+}
+
+async function removeFromStorageQueue(videoId: string, type: DownloadType) {
+  await sendMessage(MessageType.PipelineQueueRemove, { videoId, type });
+}
 
 interface ActiveJob {
   videoId: string;

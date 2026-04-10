@@ -1,18 +1,16 @@
-import { registerChunkHandlers } from "./chunk-handlers";
 import { registerDownloadHandlers } from "./download-handlers";
 import { registerPipelineHandlers } from "./pipeline-handlers";
-import { ensureProcessor } from "./processor";
-import { registerStorageHandlers } from "./storage-handlers";
-import { registerTabLifecycleHandlers } from "./tab-lifecycle";
-import { MessageType, sendMessage } from "@/lib/messaging";
-import { onSabrBodyCaptured, startSabrRequestCapture } from "@/lib/sabr-request-capture";
-import { clearLocalStorage, statusProgressItem } from "@/lib/storage";
+import { isFirefoxProcessorTab, ensureProcessor, resetProcessorState } from "./processor";
+import { tabTracker, trackVideoForTab, untrackVideoForTab } from "./tab-tracker";
+import { MessageType, onMessage, sendMessage } from "@/lib/messaging";
+import { OffscreenMessageType, sendToOffscreen } from "@/lib/offscreen-messaging";
+import { clearCapturedSabrData, onSabrBodyCaptured, startSabrRequestCapture } from "@/lib/sabr-request-capture";
+import { extractPoTokenFromBody, getCapturedSabrData } from "@/lib/sabr-request-capture";
+import { clearLocalStorage, interruptedDownloadsItem, statusProgressItem } from "@/lib/storage";
+import { uint8ToBase64 } from "@/lib/utils";
 
 const sabrOriginRuleId = 1;
 
-// The background SW can't set the 'Origin' forbidden header via fetch() — the
-// CDN requires Origin: https://www.youtube.com to authorize SABR requests.
-// declarativeNetRequest injects it at the network layer, bypassing the restriction.
 async function registerSabrOriginRule() {
   await browser.declarativeNetRequest.updateDynamicRules({
     removeRuleIds: [sabrOriginRuleId],
@@ -22,33 +20,113 @@ async function registerSabrOriginRule() {
       action: {
         type: "modifyHeaders" as const,
         requestHeaders: [
-          {
-            header: "Origin",
-            operation: "set" as const,
-            value: "https://www.youtube.com"
-          },
-          {
-            header: "Referer",
-            operation: "set" as const,
-            value: "https://www.youtube.com/"
-          },
-          {
-            header: "Sec-Fetch-Site",
-            operation: "set" as const,
-            value: "cross-site"
-          },
-          {
-            header: "Sec-Fetch-Storage-Access",
-            operation: "set" as const,
-            value: "active"
-          }
+          { header: "Origin", operation: "set" as const, value: "https://www.youtube.com" },
+          { header: "Referer", operation: "set" as const, value: "https://www.youtube.com/" },
+          { header: "Sec-Fetch-Site", operation: "set" as const, value: "cross-site" },
+          { header: "Sec-Fetch-Storage-Access", operation: "set" as const, value: "active" }
         ]
       },
-      condition: {
-        urlFilter: "||googlevideo.com/videoplayback"
-        // No resourceTypes filter — matches all types including SW fetch() requests
-      }
+      condition: { urlFilter: "||googlevideo.com/videoplayback" }
     }]
+  });
+}
+
+function registerChunkHandlers() {
+  onMessage(MessageType.StreamChunk, async ({ data, sender }) => {
+    const tabId = sender.tab?.id;
+    if (!tabId) {
+      return;
+    }
+
+    await ensureProcessor();
+    sendToOffscreen(OffscreenMessageType.ProcessStreamChunk, { ...data, tabId });
+  });
+
+  onMessage(MessageType.StreamEnd, async ({ data, sender }) => {
+    const tabId = sender.tab?.id;
+    if (!tabId) {
+      return;
+    }
+
+    trackVideoForTab(data.videoId, tabId);
+    await ensureProcessor();
+    sendToOffscreen(OffscreenMessageType.ProcessStreamEnd, { ...data, tabId });
+  });
+}
+
+function registerStorageHandlers() {
+  onMessage(MessageType.GetCapturedSabrBody, ({ sender }) => {
+    const tabId = sender.tab?.id;
+    if (!tabId) {
+      return null;
+    }
+
+    const captured = getCapturedSabrData(tabId);
+    if (!captured) {
+      return null;
+    }
+
+    return {
+      body: uint8ToBase64(new Uint8Array(captured.body)),
+      url: captured.url,
+      poToken: extractPoTokenFromBody(captured.body) ?? ""
+    };
+  });
+
+  onMessage(MessageType.PersistInterruptedDownload, async ({ data }) => {
+    const current = await interruptedDownloadsItem.getValue();
+    current[data.videoId] = data;
+    await interruptedDownloadsItem.setValue(current);
+  });
+
+  onMessage(MessageType.ClearInterruptedDownload, async ({ data }) => {
+    const current = await interruptedDownloadsItem.getValue();
+    delete current[data.videoId];
+    await interruptedDownloadsItem.setValue(current);
+  });
+
+  onMessage(MessageType.GetInterruptedDownload, async ({ data }) => {
+    const current = await interruptedDownloadsItem.getValue();
+    return current[data.videoId] ?? null;
+  });
+}
+
+function registerTabLifecycleHandlers() {
+  browser.tabs.onRemoved.addListener(tabId => {
+    if (isFirefoxProcessorTab(tabId)) {
+      resetProcessorState();
+      return;
+    }
+
+    const tabState = tabTracker[tabId];
+    if (!tabState) {
+      return;
+    }
+
+    delete tabTracker[tabId];
+    clearCapturedSabrData(tabId);
+
+    for (const videoId of tabState.videoIdsAvailable) {
+      untrackVideoForTab(videoId, tabId);
+    }
+  });
+
+  browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
+    if (changeInfo.status !== browser.tabs.TabStatus.LOADING || !tab.url?.includes("youtube.com")) {
+      return;
+    }
+
+    const tabState = tabTracker[tabId];
+    if (!tabState) {
+      return;
+    }
+
+    for (const videoId of tabState.videoIdsAvailable) {
+      untrackVideoForTab(videoId, tabId);
+    }
+
+    clearCapturedSabrData(tabId);
+    tabTracker[tabId] = { videoIdsAvailable: [] };
   });
 }
 
@@ -59,12 +137,7 @@ export default defineBackground(() => {
     void sendMessage(MessageType.SabrBodyReady, {}, tabId);
   });
 
-  // No in-memory downloads survive a SW restart - clear stale progress state
   void statusProgressItem.setValue({});
-
-  // Proactively load FFmpeg so it's ready before the first download.
-  // ensureProcessor() reuses the existing offscreen document if alive,
-  // so this is safe to call on every SW restart.
   void ensureProcessor();
 
   registerChunkHandlers();
@@ -74,7 +147,6 @@ export default defineBackground(() => {
   registerTabLifecycleHandlers();
 
   browser.runtime.onInstalled.addListener(({ reason }) => {
-    // Only clear storage on fresh install, not on reload/update
     if (reason === browser.runtime.OnInstalledReason.INSTALL) {
       void clearLocalStorage();
     }

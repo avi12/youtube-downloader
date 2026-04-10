@@ -1,7 +1,7 @@
+import { toUint8Array, triggerDownload } from ".";
+import { reportProgress } from ".";
 import { enqueueMuxJob, getFFmpeg, progressHandlers } from "./ffmpeg-instance";
-import { toUint8Array, triggerDownload } from "./media-utils";
 import { embedMusicMetadata } from "./music-metadata";
-import { reportProgress } from "./pipeline-reporting";
 import { addToPlaylistBundle } from "./playlist-bundle";
 import { DownloadType, ProgressType } from "@/types";
 import type { ProcessStreamData } from "@/types";

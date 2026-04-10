@@ -1,7 +1,7 @@
+import { toUint8Array, triggerDownload } from ".";
+import { reportProgress } from ".";
 import { getCompatibleFilename, getOutputExtension } from "../utils";
 import { getFFmpeg, progressHandlers } from "./ffmpeg-instance";
-import { toUint8Array, triggerDownload } from "./media-utils";
-import { reportProgress } from "./pipeline-reporting";
 import { addToPlaylistBundle } from "./playlist-bundle";
 import { ProgressType } from "@/types";
 import type { ProcessStreamData } from "@/types";

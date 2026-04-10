@@ -1,13 +1,36 @@
-import { sendStreamChunksToOffscreen } from "./offscreen-transfer";
 import { ensureProcessor } from "./processor";
 import { createProgressFetch, fetchWithProgress, sendProgressUpdate } from "./progress-fetch";
 import { fetchYouTubeMusicMetadata } from "./youtube-music-metadata";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/offscreen-messaging";
 import { fetchAudioViaSabrStream, fetchVideoViaSabrStream } from "@/lib/sabr-download";
+import { uint8ToBase64 } from "@/lib/utils";
 import { DownloadType, ProgressType, StreamType } from "@/types";
 import type { AdaptiveFormatItem, DownloadRequest, SabrConfig, VideoMetadata } from "@/types";
 
 const activeBackgroundDownloads = new Map<string, AbortController>();
+const TRANSFER_CHUNK_SIZE = 1024 * 1024;
+
+function sendStreamChunksToOffscreen(
+  videoId: string,
+  streamType: string,
+  data: Uint8Array,
+  tabId: number
+) {
+  const totalChunks = Math.ceil(data.byteLength / TRANSFER_CHUNK_SIZE);
+
+  for (let iChunk = 0; iChunk < totalChunks; iChunk++) {
+    const start = iChunk * TRANSFER_CHUNK_SIZE;
+    const chunk = data.subarray(start, start + TRANSFER_CHUNK_SIZE);
+    sendToOffscreen(OffscreenMessageType.ProcessStreamChunk, {
+      videoId,
+      streamType,
+      iChunk,
+      totalChunks,
+      chunkBase64: uint8ToBase64(chunk),
+      tabId
+    });
+  }
+}
 
 interface DownloadResult {
   videoData: Uint8Array | null;
@@ -237,23 +260,19 @@ async function dispatchToOffscreen(
 
   const resolvedVideoMimeType = request.videoFormat?.mimeType.split(";")[0] ?? "video/mp4";
   const resolvedAudioMimeType = request.audioFormat?.mimeType.split(";")[0] ?? "audio/mp4";
-
-  const streamTasks: Promise<void>[] = [];
   if (result.videoData) {
-    streamTasks.push(sendStreamChunksToOffscreen(request.videoId, StreamType.Video, result.videoData, tabId));
+    sendStreamChunksToOffscreen(request.videoId, StreamType.Video, result.videoData, tabId);
   }
 
   if (result.audioData) {
-    streamTasks.push(sendStreamChunksToOffscreen(request.videoId, StreamType.Audio, result.audioData, tabId));
+    sendStreamChunksToOffscreen(request.videoId, StreamType.Audio, result.audioData, tabId);
   }
 
   for (const [i, track] of result.additionalAudioTracks.entries()) {
     if (track.data) {
-      streamTasks.push(sendStreamChunksToOffscreen(request.videoId, `audio-extra-${i}`, track.data, tabId));
+      sendStreamChunksToOffscreen(request.videoId, `audio-extra-${i}`, track.data, tabId);
     }
   }
-
-  await Promise.all(streamTasks);
 
   const audioTrackLabels = [
     request.primaryAudioLabel ?? "",
