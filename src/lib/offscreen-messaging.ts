@@ -64,7 +64,7 @@ function dispatchOffscreenMessage(handlers: Partial<HandlerMap>, message: Offscr
   }
 }
 
-// ─── Background side ─────────────────────────────────────────────────────────
+// ─── Background (sender) ────────────────────────────────────────────────────
 
 let offscreenPort: Browser.runtime.Port | null = null;
 
@@ -86,23 +86,7 @@ function sendToOffscreen<T extends OffscreenMessageType>(
   getOffscreenPort().postMessage({ type, data });
 }
 
-function listenForOffscreenResponses(handlers: Partial<HandlerMap>) {
-  const port = getOffscreenPort();
-  port.onMessage.addListener((message: OffscreenMessage) => {
-    dispatchOffscreenMessage(handlers, message);
-  });
-}
-
-// ─── Offscreen side ──────────────────────────────────────────────────────────
-
-let connectedPort: Browser.runtime.Port | null = null;
-
-function sendFromOffscreen<T extends OffscreenMessageType>(
-  type: T,
-  data: OffscreenProtocolMap[T]
-) {
-  connectedPort?.postMessage({ type, data });
-}
+// ─── Offscreen (receiver) ───────────────────────────────────────────────────
 
 function listenForOffscreenMessages(handlers: HandlerMap) {
   browser.runtime.onConnect.addListener(port => {
@@ -110,21 +94,10 @@ function listenForOffscreenMessages(handlers: HandlerMap) {
       return;
     }
 
-    connectedPort = port;
-    port.onDisconnect.addListener(() => {
-      connectedPort = null;
-    });
-
     port.onMessage.addListener((message: OffscreenMessage) => {
       dispatchOffscreenMessage(handlers, message);
     });
   });
 }
 
-export {
-  OffscreenMessageType,
-  sendToOffscreen,
-  listenForOffscreenResponses,
-  sendFromOffscreen,
-  listenForOffscreenMessages
-};
+export { OffscreenMessageType, sendToOffscreen, listenForOffscreenMessages };
