@@ -117,7 +117,7 @@ function extractGenresFromKeywords(keywords: string[], genreSet: Set<string>) {
   return [...matched];
 }
 
-const videoTitleSuffixPattern = /\s*[\[(](?:official\s+(?:music\s+)?video|(?:official\s+)?lyric(?:s)?\s*(?:video)?|(?:official\s+)?audio|4k\s*remaster(?:ed)?|remaster(?:ed)?|hd|hq|visualizer|clip\s+officiel|video\s*oficial)[\])]\s*/gi;
+const videoTitleSuffixPattern = /\s*[[(](?:official\s+(?:music\s+)?video|(?:official\s+)?lyric(?:s)?\s*(?:video)?|(?:official\s+)?audio|4k\s*remaster(?:ed)?|remaster(?:ed)?|hd|hq|visualizer|clip\s+officiel|video\s*oficial)[)\]]\s*/gi;
 
 const featuringPattern = /\s+(?:ft\.?|feat\.?|featuring)\s+(.+)$/i;
 

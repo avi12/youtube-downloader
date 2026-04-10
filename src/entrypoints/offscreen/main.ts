@@ -71,14 +71,18 @@ function base64ToUint8Array(base64: string) {
 listenForOffscreenMessages({
   [OffscreenMessageType.ProcessStreamChunk]: handleProcessStreamChunk,
   [OffscreenMessageType.ProcessStreamEnd]: handleProcessStreamEnd,
-  [OffscreenMessageType.CancelProcessing]: data => {
+  [OffscreenMessageType.CancelProcessing](data) {
     void cancelDownloadsByIds(data.videoIds);
   }
 });
 
 function handleProcessStreamChunk(data: {
-  videoId: string; streamType: string; iChunk: number;
-  totalChunks: number; chunkBase64: string; tabId: number;
+  videoId: string;
+  streamType: string;
+  iChunk: number;
+  totalChunks: number;
+  chunkBase64: string;
+  tabId: number;
 }) {
   const {
     videoId, streamType, iChunk, totalChunks, chunkBase64
@@ -132,10 +136,17 @@ function handleProcessStreamChunk(data: {
 }
 
 function handleProcessStreamEnd(data: {
-  videoId: string; type: DownloadType; filenameOutput: string;
-  videoMimeType: string; audioMimeType: string; audioTrackLabels: string[];
-  tabId: number; playlistId?: string; playlistTitle?: string;
-  playlistTotalCount?: number; metadata?: VideoMetadata | null;
+  videoId: string;
+  type: DownloadType;
+  filenameOutput: string;
+  videoMimeType: string;
+  audioMimeType: string;
+  audioTrackLabels: string[];
+  tabId: number;
+  playlistId?: string;
+  playlistTitle?: string;
+  playlistTotalCount?: number;
+  metadata?: VideoMetadata | null;
 }) {
   const {
     videoId, type, filenameOutput, videoMimeType, audioMimeType, audioTrackLabels, tabId,
@@ -178,5 +189,3 @@ function handleProcessStreamEnd(data: {
     metadata: data.metadata
   });
 }
-
-

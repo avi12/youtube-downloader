@@ -73,8 +73,6 @@ export default defineBackground(() => {
   registerStorageHandlers();
   registerTabLifecycleHandlers();
 
-
-
   browser.runtime.onInstalled.addListener(({ reason }) => {
     // Only clear storage on fresh install, not on reload/update
     if (reason === browser.runtime.OnInstalledReason.INSTALL) {

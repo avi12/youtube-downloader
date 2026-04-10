@@ -12,7 +12,9 @@ const activeBackgroundDownloads = new Map<string, AbortController>();
 interface DownloadResult {
   videoData: Uint8Array | null;
   audioData: Uint8Array | null;
-  additionalAudioTracks: Array<{ data: Uint8Array | null; mimeType: string; label: string }>;
+  additionalAudioTracks: Array<{
+    data: Uint8Array | null; mimeType: string; label: string;
+  }>;
 }
 
 export function cancelBackgroundDownload(videoId: string) {
@@ -84,8 +86,12 @@ async function downloadVideoAudioViaSabr(
     void sendProgressUpdate(videoId, Math.min(totalReceived / totalExpected, 1), ProgressType.Video, tabId);
   }
 
-  const videoFetch = createProgressFetch(signal, bytes => { videoReceivedBytes += bytes; reportProgress(); });
-  const audioFetch = createProgressFetch(signal, bytes => { audioReceivedBytes += bytes; reportProgress(); });
+  const videoFetch = createProgressFetch(signal, bytes => {
+    videoReceivedBytes += bytes; reportProgress();
+  });
+  const audioFetch = createProgressFetch(signal, bytes => {
+    audioReceivedBytes += bytes; reportProgress();
+  });
 
   return Promise.all([
     fetchVideoViaSabrStream(config, videoFormat, videoFetch, poToken),
@@ -133,9 +139,10 @@ async function downloadViaSabr(
   }
 
   const resolvedPoToken = poToken ?? "";
-
   if (isAudioOnly) {
-    const audioData = await downloadAudioOnlyViaSabr(effectiveConfig!, audioFormat!, resolvedPoToken, signal, videoId, tabId);
+    const audioData = await downloadAudioOnlyViaSabr(
+      effectiveConfig!, audioFormat!, resolvedPoToken, signal, videoId, tabId
+    );
     return { videoData: null, audioData, additionalAudioTracks: [] };
   }
 
@@ -155,7 +162,10 @@ async function downloadViaCdn(
   videoId: string,
   tabId: number
 ): Promise<DownloadResult | null> {
-  const { type, videoFormat, audioFormat, resolvedVideoUrl, resolvedAudioUrl, resolvedExtraAudioUrls, additionalAudioFormats } = request;
+  const {
+    type, videoFormat, audioFormat, resolvedVideoUrl,
+    resolvedAudioUrl, resolvedExtraAudioUrls, additionalAudioFormats
+  } = request;
   if (!resolvedVideoUrl && !resolvedAudioUrl) {
     return null;
   }
@@ -188,10 +198,14 @@ async function downloadViaCdn(
   const extraUrls = resolvedExtraAudioUrls ?? [];
   const cdnResults = await Promise.all([
     type !== DownloadType.Audio
-      ? fetchStream(resolvedVideoUrl, bytes => { videoReceivedBytes += bytes; videoTotalBytes = Math.max(videoTotalBytes, videoReceivedBytes); reportProgress(); })
+      ? fetchStream(resolvedVideoUrl, bytes => {
+        videoReceivedBytes += bytes; videoTotalBytes = Math.max(videoTotalBytes, videoReceivedBytes); reportProgress();
+      })
       : Promise.resolve(null),
     type !== DownloadType.Video
-      ? fetchStream(resolvedAudioUrl, bytes => { audioReceivedBytes += bytes; audioTotalBytes = Math.max(audioTotalBytes, audioReceivedBytes); reportProgress(); })
+      ? fetchStream(resolvedAudioUrl, bytes => {
+        audioReceivedBytes += bytes; audioTotalBytes = Math.max(audioTotalBytes, audioReceivedBytes); reportProgress();
+      })
       : Promise.resolve(null),
     ...extraUrls.map(url => fetchStream(url, () => {}))
   ]);

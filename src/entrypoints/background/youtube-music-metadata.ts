@@ -9,9 +9,13 @@ interface ThumbnailEntry {
   height: number;
 }
 
+interface BrowseEndpoint {
+  browseEndpointContextSupportedConfigs?: { browseEndpointContextMusicConfig?: { pageType?: string } };
+}
+
 interface SearchRun {
   text: string;
-  navigationEndpoint?: { browseEndpoint?: { browseEndpointContextSupportedConfigs?: { browseEndpointContextMusicConfig?: { pageType?: string } } } };
+  navigationEndpoint?: { browseEndpoint?: BrowseEndpoint };
 }
 
 interface FlexColumn {
@@ -98,7 +102,8 @@ export async function fetchYouTubeMusicMetadata(
       ?.tabs?.[0]?.tabRenderer?.content?.sectionListRenderer?.contents;
 
     const songShelf = contents?.find(
-      (c: { musicShelfRenderer?: { contents?: SearchItem[] } }) => c.musicShelfRenderer?.contents
+      (section: { musicShelfRenderer?: { contents?: SearchItem[] } }) =>
+        section.musicShelfRenderer?.contents
     );
     const firstItem = songShelf?.musicShelfRenderer?.contents?.[0];
     if (!firstItem) {

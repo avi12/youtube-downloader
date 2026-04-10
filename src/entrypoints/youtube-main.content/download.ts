@@ -67,7 +67,9 @@ function resolveCredentials() {
 }
 
 function selectFormats(
-  videoData: { videoFormats: AdaptiveFormatItem[]; audioFormats: AdaptiveFormatItem[] },
+  videoData: {
+    videoFormats: AdaptiveFormatItem[]; audioFormats: AdaptiveFormatItem[];
+  },
   type: DownloadType,
   videoItag: number | undefined,
   audioItag: number | undefined

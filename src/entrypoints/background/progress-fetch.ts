@@ -18,6 +18,7 @@ export async function sendProgressUpdate(
     if (now - lastSent < progressThrottleIntervalMs) {
       return;
     }
+
     lastProgressTimestamps.set(videoId, now);
   } else {
     lastProgressTimestamps.delete(videoId);

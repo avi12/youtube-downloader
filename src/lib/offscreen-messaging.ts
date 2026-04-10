@@ -1,4 +1,4 @@
-import type { DownloadType, ProgressUpdate, VideoMetadata } from "@/types";
+import type { DownloadType, VideoMetadata } from "@/types";
 
 const OFFSCREEN_PORT_NAME = "ytdl-offscreen";
 
@@ -30,9 +30,7 @@ interface OffscreenProtocolMap {
     playlistTotalCount?: number;
     metadata?: VideoMetadata | null;
   };
-  [OffscreenMessageType.CancelProcessing]: {
-    videoIds: string[];
-  };
+  [OffscreenMessageType.CancelProcessing]: { videoIds: string[] };
 }
 
 interface OffscreenMessage<T extends OffscreenMessageType = OffscreenMessageType> {
@@ -74,11 +72,12 @@ function listenForOffscreenMessages(handlers: HandlerMap) {
     }
 
     port.onMessage.addListener((message: OffscreenMessage) => {
-      const handler = handlers[message.type] as OffscreenHandler<typeof message.type> | undefined;
-      handler?.(message.data);
+      if (message.type in handlers) {
+        // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- discriminated union dispatch
+        (handlers[message.type] as ((data: OffscreenProtocolMap[OffscreenMessageType]) => void))?.(message.data);
+      }
     });
   });
 }
 
 export { OffscreenMessageType, sendToOffscreen, listenForOffscreenMessages };
-export type { OffscreenProtocolMap };
