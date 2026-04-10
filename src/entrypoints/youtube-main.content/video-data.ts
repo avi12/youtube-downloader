@@ -37,7 +37,9 @@ export function buildVideoMetadata(videoId: string) {
   }
 
   const { playerResponse } = cached;
-  const thumbnails = playerResponse.videoDetails?.thumbnail?.thumbnails ?? [];
+  const { videoDetails, microformat } = playerResponse;
+  const { thumbnail } = videoDetails ?? {};
+  const thumbnails = thumbnail?.thumbnails ?? [];
   // Pick the largest thumbnail for cover art
   const thumbnailUrl = thumbnails.length > 0
     ? thumbnails[thumbnails.length - 1].url
@@ -45,8 +47,8 @@ export function buildVideoMetadata(videoId: string) {
 
   return {
     title: cached.title,
-    artist: playerResponse.videoDetails?.author ?? "",
-    date: playerResponse.microformat?.playerMicroformatRenderer.publishDate,
+    artist: videoDetails?.author ?? "",
+    date: microformat?.playerMicroformatRenderer.publishDate,
     thumbnailUrl,
     isMusic: cached.isMusic
   };
@@ -108,7 +110,7 @@ export async function buildAndDispatchVideoData(
 
     try {
       const poToken = await generatePoToken(videoData.videoId);
-      const sabrUrl = videoData.sabrConfig?.serverAbrStreamingUrl ?? "";
+      const { serverAbrStreamingUrl: sabrUrl = "" } = videoData.sabrConfig ?? {};
       setPoTokenCredentials(poToken, sabrUrl);
       // Broadcast to isolated world via synced signal.
       // Preserve the isolated world's captured URL (has decrypted n param) if already set.

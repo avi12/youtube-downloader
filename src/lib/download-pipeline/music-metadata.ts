@@ -28,11 +28,9 @@ function detectImageExtension(data: Uint8Array) {
   return "jpg";
 }
 
-const thumbnailFetchTimeoutMs = 10_000;
-
 async function fetchThumbnail(url: string) {
   try {
-    const response = await fetch(url, { signal: AbortSignal.timeout(thumbnailFetchTimeoutMs) });
+    const response = await fetch(url);
     if (!response.ok) {
       return null;
     }
