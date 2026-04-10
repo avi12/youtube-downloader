@@ -275,6 +275,19 @@ async function dispatchToOffscreen(
   });
 }
 
+async function enrichMetadataFromYouTubeMusic(metadata: VideoMetadata | null | undefined) {
+  if (!metadata?.isMusic) {
+    return metadata;
+  }
+
+  const searchQuery = `${metadata.artist} ${metadata.title}`.trim();
+  if (!searchQuery) {
+    return metadata;
+  }
+
+  return fetchYouTubeMusicMetadata(searchQuery, metadata);
+}
+
 export async function startBackgroundDownload(request: DownloadRequest, tabId: number) {
   const { videoId, metadata } = request;
   cancelBackgroundDownload(videoId);
@@ -283,10 +296,7 @@ export async function startBackgroundDownload(request: DownloadRequest, tabId: n
   const { signal } = abortController;
 
   try {
-    const musicSearchQuery = metadata ? `${metadata.artist} ${metadata.title}` : "";
-    const enrichedMetadataPromise = metadata?.isMusic && musicSearchQuery.trim()
-      ? fetchYouTubeMusicMetadata(musicSearchQuery, metadata)
-      : Promise.resolve(metadata);
+    const enrichedMetadataPromise = enrichMetadataFromYouTubeMusic(metadata);
 
     let result: DownloadResult | null = null;
 
