@@ -1,7 +1,7 @@
 <script lang="ts">
   import Select from "./Select.svelte";
   import { applyPolymerCustomStyles, PAPER_INPUT_THEME } from "@/lib/polymer-utils";
-  import { formatVideoQualityLabel, splitFilenameAndExtension, supportedExtensions } from "@/lib/utils";
+  import { formatAudioCodecLabel, formatVideoQualityLabel, splitFilenameAndExtension, supportedExtensions } from "@/lib/utils";
   import { DownloadType } from "@/types";
   import type { AdaptiveFormatItem } from "@/types";
 
@@ -97,7 +97,7 @@
     if (isAudio) {
       return audioFormats.map(format => ({
         value: format.itag.toString(),
-        label: `${Math.floor(format.bitrate / 1000)} kbps`
+        label: `${Math.floor(format.bitrate / 1000)} kbps (${formatAudioCodecLabel(format.mimeType)})`
       }));
     }
 

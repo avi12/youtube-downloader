@@ -232,6 +232,24 @@ export function formatVideoQualityLabel(format: Pick<AdaptiveFormatItem, "height
   return isPremium ? `${base} (Enhanced)` : base;
 }
 
+export function formatAudioCodecLabel(mimeType: string) {
+  const codecMatch = mimeType.match(/codecs="([^"]+)"/);
+  const codec = codecMatch?.[1] ?? "";
+  if (codec.startsWith("mp4a")) {
+    return "AAC";
+  }
+
+  if (codec === "opus") {
+    return "Opus";
+  }
+
+  if (codec.startsWith("ec-3")) {
+    return "EC-3";
+  }
+
+  return codec || (mimeType.split(";")[0].split("/")[1] ?? "");
+}
+
 /**
  * Calculates weighted download progress: download phase = 0–70%, mux phase = 70–100%.
  * Both phases report their own 0–1 progress value.
