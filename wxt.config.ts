@@ -1,12 +1,17 @@
 import { resolve } from "node:path";
 import { defineConfig } from "wxt";
 
+const ffmpegAssetPaths = [
+  "node_modules/@ffmpeg/core/dist/umd/ffmpeg-core.js",
+  "node_modules/@ffmpeg/core/dist/umd/ffmpeg-core.wasm"
+];
+
 export default defineConfig({
   srcDir: "src",
   publicDir: "src/public",
   modules: ["@wxt-dev/module-svelte"],
   manifestVersion: 3,
-  manifest: ({ browser }) => ({
+  manifest: ({ browser, mode }) => ({
     name: "YouTube Downloader",
     description: "Download YouTube videos and audio directly from the page",
     permissions: [
@@ -24,12 +29,11 @@ export default defineConfig({
       "https://www.youtube.com/*",
       "https://*.googlevideo.com/*",
       "https://i.ytimg.com/*",
-      "http://localhost/*",
-      "https://localhost/*"
+      ...(mode === "development" ? ["http://localhost/*", "https://localhost/*"] : [])
     ],
     ...(browser === "firefox" && {
       browser_specific_settings: {
-        gecko: { id: "youtube-downloader@avi12" }
+        gecko: { id: "youtube-downloader@avi12.com" }
       }
     }),
     content_security_policy: {
@@ -56,16 +60,10 @@ export default defineConfig({
   }),
   hooks: {
     "prepare:publicPaths"(_, paths) {
-      paths.push(
-        "node_modules/@ffmpeg/core/dist/umd/ffmpeg-core.js",
-        "node_modules/@ffmpeg/core/dist/umd/ffmpeg-core.wasm"
-      );
+      paths.push(...ffmpegAssetPaths);
     },
     "build:publicAssets"(_, assets) {
-      for (const path of [
-        "node_modules/@ffmpeg/core/dist/umd/ffmpeg-core.js",
-        "node_modules/@ffmpeg/core/dist/umd/ffmpeg-core.wasm"
-      ]) {
+      for (const path of ffmpegAssetPaths) {
         assets.push({ absoluteSrc: resolve(path), relativeDest: path });
       }
     }
