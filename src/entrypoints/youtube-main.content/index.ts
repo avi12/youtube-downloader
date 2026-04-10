@@ -44,7 +44,7 @@ export default defineContentScript({
     // In download iframes, mute any video that appears - the iframe is for data
     // fetching only and must never play audio
     if (self !== top) {
-      new MutationObserver((_, observer) => {
+      const muteObserver = new MutationObserver((_, observer) => {
         const elVideo = document.querySelector<HTMLVideoElement>("video");
         if (!elVideo) {
           return;
@@ -52,7 +52,8 @@ export default defineContentScript({
 
         elVideo.muted = true;
         observer.disconnect();
-      }).observe(document.documentElement, { childList: true, subtree: true });
+      });
+      muteObserver.observe(document.documentElement, { childList: true, subtree: true });
     }
 
     // Handle download requests from Svelte panel components (via isolated world)
