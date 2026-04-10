@@ -38,12 +38,33 @@ interface OffscreenProtocolMap {
   };
 }
 
-interface OffscreenMessage<T extends OffscreenMessageType = OffscreenMessageType> {
-  type: T;
-  data: OffscreenProtocolMap[T];
+type OffscreenMessage = {
+  [T in OffscreenMessageType]: {
+    type: T; data: OffscreenProtocolMap[T];
+  };
+}[OffscreenMessageType];
+
+type OffscreenHandler<T extends OffscreenMessageType> = (data: OffscreenProtocolMap[T]) => void;
+type HandlerMap = { [T in OffscreenMessageType]?: OffscreenHandler<T> };
+
+function dispatchOffscreenMessage(handlers: Partial<HandlerMap>, message: OffscreenMessage) {
+  switch (message.type) {
+    case OffscreenMessageType.ProcessStreamChunk:
+      handlers[OffscreenMessageType.ProcessStreamChunk]?.(message.data);
+      break;
+    case OffscreenMessageType.ProcessStreamEnd:
+      handlers[OffscreenMessageType.ProcessStreamEnd]?.(message.data);
+      break;
+    case OffscreenMessageType.CancelProcessing:
+      handlers[OffscreenMessageType.CancelProcessing]?.(message.data);
+      break;
+    case OffscreenMessageType.PipelineDownload:
+      handlers[OffscreenMessageType.PipelineDownload]?.(message.data);
+      break;
+  }
 }
 
-// ─── Background (sender + receiver) ──────────────────────────────────────────
+// ─── Background side ─────────────────────────────────────────────────────────
 
 let offscreenPort: Browser.runtime.Port | null = null;
 
@@ -62,27 +83,17 @@ function sendToOffscreen<T extends OffscreenMessageType>(
   type: T,
   data: OffscreenProtocolMap[T]
 ) {
-  getOffscreenPort().postMessage({ type, data } satisfies OffscreenMessage<T>);
+  getOffscreenPort().postMessage({ type, data });
 }
 
-type BackgroundHandler<T extends OffscreenMessageType> = (data: OffscreenProtocolMap[T]) => void;
-
-function onOffscreenMessage<T extends OffscreenMessageType>(
-  type: T,
-  handler: BackgroundHandler<T>
-) {
+function listenForOffscreenResponses(handlers: Partial<HandlerMap>) {
   const port = getOffscreenPort();
   port.onMessage.addListener((message: OffscreenMessage) => {
-    if (message.type === type) {
-      handler(message.data as OffscreenProtocolMap[T]);
-    }
+    dispatchOffscreenMessage(handlers, message);
   });
 }
 
-// ─── Offscreen (receiver + sender) ───────────────────────────────────────────
-
-type OffscreenHandler<T extends OffscreenMessageType> = (data: OffscreenProtocolMap[T]) => void;
-type HandlerMap = { [T in OffscreenMessageType]?: OffscreenHandler<T> };
+// ─── Offscreen side ──────────────────────────────────────────────────────────
 
 let connectedPort: Browser.runtime.Port | null = null;
 
@@ -90,7 +101,7 @@ function sendFromOffscreen<T extends OffscreenMessageType>(
   type: T,
   data: OffscreenProtocolMap[T]
 ) {
-  connectedPort?.postMessage({ type, data } satisfies OffscreenMessage<T>);
+  connectedPort?.postMessage({ type, data });
 }
 
 function listenForOffscreenMessages(handlers: HandlerMap) {
@@ -105,10 +116,7 @@ function listenForOffscreenMessages(handlers: HandlerMap) {
     });
 
     port.onMessage.addListener((message: OffscreenMessage) => {
-      if (message.type in handlers) {
-        // eslint-disable-next-line @typescript-eslint/consistent-type-assertions -- discriminated union dispatch
-        (handlers[message.type] as ((data: OffscreenProtocolMap[OffscreenMessageType]) => void))?.(message.data);
-      }
+      dispatchOffscreenMessage(handlers, message);
     });
   });
 }
@@ -116,7 +124,7 @@ function listenForOffscreenMessages(handlers: HandlerMap) {
 export {
   OffscreenMessageType,
   sendToOffscreen,
-  onOffscreenMessage,
+  listenForOffscreenResponses,
   sendFromOffscreen,
   listenForOffscreenMessages
 };

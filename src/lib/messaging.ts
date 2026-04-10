@@ -38,7 +38,7 @@ export enum MessageType {
   PipelineProgress = "pipelineProgress",
   PipelineRemoval = "pipelineRemoval",
   PipelineQueueRemove = "pipelineQueueRemove",
-  PipelineFFmpegReady = "pipelineFFmpegReady",
+  PipelineFFmpegReady = "pipelineFFmpegReady"
 }
 
 // ─── Protocol definition ──────────────────────────────────────────────────────
