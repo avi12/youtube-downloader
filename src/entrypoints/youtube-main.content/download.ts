@@ -35,11 +35,64 @@ function getExtraAudioFormats(
   });
 }
 
-function dispatchStreamError(videoId: string, error: string) {
-  void crossWorldMessenger.sendMessage(CrossWorldMessage.StreamError, {
-    videoId,
-    error
-  });
+function resolveCredentials() {
+  let currentPoToken = capturedPoToken;
+  let currentSabrUrl = capturedSabrUrl;
+
+  const creds = sabrCredentials.value;
+  if (creds?.url) {
+    currentSabrUrl = creds.url;
+  }
+
+  if (!currentPoToken && creds?.poToken) {
+    currentPoToken = creds.poToken;
+  }
+
+  if (!currentPoToken || !currentSabrUrl) {
+    const elCredentials = document.getElementById("ytdl-sabr-credentials");
+    if (elCredentials?.dataset.url) {
+      currentSabrUrl = elCredentials.dataset.url;
+    }
+
+    if (!currentPoToken && elCredentials?.dataset.poToken) {
+      currentPoToken = elCredentials.dataset.poToken;
+    }
+  }
+
+  if (currentPoToken !== capturedPoToken || currentSabrUrl !== capturedSabrUrl) {
+    setPoTokenCredentials(currentPoToken, currentSabrUrl);
+  }
+
+  return { poToken: currentPoToken, sabrUrl: currentSabrUrl };
+}
+
+function selectFormats(
+  videoData: { videoFormats: AdaptiveFormatItem[]; audioFormats: AdaptiveFormatItem[] },
+  type: DownloadType,
+  videoItag: number | undefined,
+  audioItag: number | undefined
+) {
+  const videoFormat = type !== DownloadType.Audio
+    ? (videoData.videoFormats.find(format => format.itag === videoItag) ?? videoData.videoFormats[0])
+    : null;
+  const audioFormat = type !== DownloadType.Video
+    ? (videoData.audioFormats.find(format => format.itag === audioItag) ?? videoData.audioFormats[0])
+    : null;
+
+  return { videoFormat, audioFormat };
+}
+
+async function preResolveCdnUrls(
+  type: DownloadType,
+  videoFormat: AdaptiveFormatItem | null,
+  audioFormat: AdaptiveFormatItem | null,
+  extraAudioFormats: AdaptiveFormatItem[]
+) {
+  return Promise.all([
+    type !== DownloadType.Audio ? resolveFormatUrl(videoFormat) : Promise.resolve(null),
+    type !== DownloadType.Video ? resolveFormatUrl(audioFormat) : Promise.resolve(null),
+    ...extraAudioFormats.map(format => resolveFormatUrl(format))
+  ]);
 }
 
 export async function performDownload({
@@ -65,49 +118,12 @@ export async function performDownload({
       return;
     }
 
-    const videoFormat = type !== DownloadType.Audio
-      ? (cachedVideoData.videoFormats.find(format => format.itag === videoItag) ?? cachedVideoData.videoFormats[0])
-      : null;
-    const audioFormat = type !== DownloadType.Video
-      ? (cachedVideoData.audioFormats.find(format => format.itag === audioItag) ?? cachedVideoData.audioFormats[0])
-      : null;
-
-    const audioLabel = audioFormat?.audioTrack?.displayName ?? "";
+    const { videoFormat, audioFormat } = selectFormats(cachedVideoData, type, videoItag, audioItag);
     const extraAudioFormats = getExtraAudioFormats(cachedVideoData.audioFormats, audioFormat?.audioTrack?.id);
+    const credentials = resolveCredentials();
 
-    const creds = sabrCredentials.value;
-    let currentPoToken = capturedPoToken;
-    let currentSabrUrl = capturedSabrUrl;
-    if (creds?.url) {
-      currentSabrUrl = creds.url;
-    }
-
-    if (!currentPoToken && creds?.poToken) {
-      currentPoToken = creds.poToken;
-    }
-
-    if (!currentPoToken || !currentSabrUrl) {
-      const elCredentials = document.getElementById("ytdl-sabr-credentials");
-      if (elCredentials?.dataset.url) {
-        currentSabrUrl = elCredentials.dataset.url;
-      }
-
-      if (!currentPoToken && elCredentials?.dataset.poToken) {
-        currentPoToken = elCredentials.dataset.poToken;
-      }
-    }
-
-    if (currentPoToken !== capturedPoToken || currentSabrUrl !== capturedSabrUrl) {
-      setPoTokenCredentials(currentPoToken, currentSabrUrl);
-    }
-
-    // Pre-resolve CDN URLs so background SW can use them as fallback
-    const [resolvedVideoUrl, resolvedAudioUrl, ...resolvedExtraAudioUrls] = await Promise.all([
-      type !== DownloadType.Audio ? resolveFormatUrl(videoFormat ?? null) : Promise.resolve(null),
-      type !== DownloadType.Video ? resolveFormatUrl(audioFormat ?? null) : Promise.resolve(null),
-      ...extraAudioFormats.map(format => resolveFormatUrl(format))
-    ]);
-
+    const [resolvedVideoUrl, resolvedAudioUrl, ...resolvedExtraAudioUrls] =
+      await preResolveCdnUrls(type, videoFormat, audioFormat, extraAudioFormats);
     const metadata = await buildVideoMetadata(videoId);
 
     const enrichedRequest: DownloadRequest = {
@@ -118,12 +134,12 @@ export async function performDownload({
       filenameOutput,
       isIframeFallback,
       sabrConfig: cachedVideoData.sabrConfig,
-      poToken: currentPoToken,
-      sabrUrl: currentSabrUrl,
+      poToken: credentials.poToken,
+      sabrUrl: credentials.sabrUrl,
       videoFormat,
       audioFormat,
       additionalAudioFormats: extraAudioFormats,
-      primaryAudioLabel: audioLabel,
+      primaryAudioLabel: audioFormat?.audioTrack?.displayName ?? "",
       metadata,
       resolvedVideoUrl,
       resolvedAudioUrl,
@@ -133,12 +149,7 @@ export async function performDownload({
       playlistTotalCount: undefined
     };
 
-    try {
-      void crossWorldMessenger.sendMessage(CrossWorldMessage.StartBackgroundDownload, enrichedRequest);
-    } catch (error) {
-      dispatchStreamError(videoId, "Failed to start background download");
-      throw error;
-    }
+    void crossWorldMessenger.sendMessage(CrossWorldMessage.StartBackgroundDownload, enrichedRequest);
   } catch (error) {
     if (abortController.signal.aborted) {
       return;
