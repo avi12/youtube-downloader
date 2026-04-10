@@ -3,7 +3,7 @@ import { registerPipelineHandlers } from "./pipeline-handlers";
 import { isFirefoxProcessorTab, ensureProcessor, resetProcessorState } from "./processor";
 import { tabTracker, trackVideoForTab, untrackVideoForTab } from "./tab-tracker";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging";
-import { OffscreenMessageType, sendToOffscreen } from "@/lib/offscreen-messaging";
+import { OffscreenMessageType, onOffscreenMessage, sendToOffscreen } from "@/lib/offscreen-messaging";
 import { clearCapturedSabrData, onSabrBodyCaptured, startSabrRequestCapture } from "@/lib/sabr-request-capture";
 import { extractPoTokenFromBody, getCapturedSabrData } from "@/lib/sabr-request-capture";
 import { clearLocalStorage, interruptedDownloadsItem, statusProgressItem } from "@/lib/storage";
@@ -138,7 +138,12 @@ export default defineBackground(() => {
   });
 
   void statusProgressItem.setValue({});
-  void ensureProcessor();
+
+  void ensureProcessor().then(() => {
+    onOffscreenMessage(OffscreenMessageType.PipelineDownload, data => {
+      void browser.downloads.download({ url: data.dataUrl, filename: data.filename });
+    });
+  });
 
   registerChunkHandlers();
   registerDownloadHandlers();

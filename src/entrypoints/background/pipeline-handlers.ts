@@ -96,12 +96,4 @@ export function registerPipelineHandlers() {
     signalFFmpegReady();
   });
 
-  onMessage(MessageType.PipelineDownload, async ({ data }) => {
-    const downloadId = await browser.downloads.download({
-      url: data.blobUrl,
-      filename: data.filename
-    });
-
-    await waitForDownloadComplete(downloadId);
-  });
 }

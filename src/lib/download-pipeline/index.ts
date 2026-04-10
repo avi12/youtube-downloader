@@ -1,4 +1,5 @@
 import { MessageType, sendMessage } from "../messaging";
+import { OffscreenMessageType, sendFromOffscreen } from "../offscreen-messaging";
 import { getCompatibleFilename, getMimeType, uint8ToBase64 } from "../utils";
 import { enqueueMuxJob } from "./ffmpeg-instance";
 import { processSingleMedia } from "./process-single-media";
@@ -20,11 +21,11 @@ export function toUint8Array(data: Uint8Array | Record<string, number> | null) {
   return new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
 }
 
-export async function triggerDownload(data: Uint8Array, filenameOutput: string) {
+export function triggerDownload(data: Uint8Array, filenameOutput: string) {
   const mimeType = getMimeType(filenameOutput) || "application/octet-stream";
   const filename = getCompatibleFilename(filenameOutput);
   const dataUrl = `data:${mimeType};base64,${uint8ToBase64(data)}`;
-  await sendMessage(MessageType.PipelineDownload, { blobUrl: dataUrl, mimeType, filename });
+  sendFromOffscreen(OffscreenMessageType.PipelineDownload, { dataUrl, filename });
 }
 
 export async function reportProgress({
