@@ -100,6 +100,10 @@ export default defineContentScript({
       void sendMessage(MessageType.DownloadViaWatchPage, data);
     });
 
+    crossWorldMessenger.onMessage(CrossWorldMessage.StartBackgroundDownload, ({ data }) => {
+      void sendMessage(MessageType.StartBackgroundDownload, data);
+    });
+
     crossWorldMessenger.onMessage(CrossWorldMessage.IframePlayerReady, ({ data }) => {
       void sendMessage(MessageType.DownloadIframeReady, { videoId: data.videoId });
     });

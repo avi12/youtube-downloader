@@ -2,7 +2,6 @@ import { capturedPoToken, capturedSabrUrl, setPoTokenCredentials } from "./crede
 import { resolveFormatUrl } from "./stream-fetch";
 import { buildVideoMetadata, videoDataCache } from "./video-data";
 import { crossWorldMessenger, CrossWorldMessage } from "@/lib/cross-world-messenger";
-import { MessageType, sendMessage } from "@/lib/messaging";
 import { sabrCredentials } from "@/lib/synced-stores.svelte";
 import { type AdaptiveFormatItem, type DownloadRequest, DownloadType } from "@/types";
 
@@ -135,7 +134,7 @@ export async function performDownload({
     };
 
     try {
-      await sendMessage(MessageType.StartBackgroundDownload, enrichedRequest);
+      void crossWorldMessenger.sendMessage(CrossWorldMessage.StartBackgroundDownload, enrichedRequest);
     } catch (error) {
       dispatchStreamError(videoId, "Failed to start background download");
       throw error;

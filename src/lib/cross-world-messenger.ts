@@ -53,7 +53,10 @@ export enum CrossWorldMessage {
   DownloadProgress = "downloadProgress",
 
   // MAIN world → isolated world: iframe fallback when SABR+CDN both fail
-  DownloadViaIframe = "downloadViaIframe"
+  DownloadViaIframe = "downloadViaIframe",
+
+  // MAIN world → isolated world → background: start download in background SW
+  StartBackgroundDownload = "startBackgroundDownload"
 }
 
 interface PageMessengerSchema {
@@ -108,6 +111,7 @@ interface PageMessengerSchema {
     progressType: ProgressType;
   }): void;
   [CrossWorldMessage.DownloadViaIframe](data: DownloadRequest): void;
+  [CrossWorldMessage.StartBackgroundDownload](data: DownloadRequest): void;
 }
 
 export const crossWorldMessenger = defineCustomEventMessaging<PageMessengerSchema>({ namespace: "ytdl" });
