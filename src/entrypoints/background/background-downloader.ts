@@ -1,6 +1,7 @@
 import { sendStreamChunksToOffscreen } from "./offscreen-transfer";
 import { ensureProcessor } from "./processor";
 import { createProgressFetch, fetchWithProgress, sendProgressUpdate } from "./progress-fetch";
+import { fetchYouTubeMusicMetadata } from "./youtube-music-metadata";
 import { MessageType, sendMessage } from "@/lib/messaging";
 import { fetchAudioViaSabrStream, fetchVideoViaSabrStream } from "@/lib/sabr-download";
 import { DownloadType, ProgressType, StreamType } from "@/types";
@@ -54,6 +55,10 @@ export async function startBackgroundDownload(request: DownloadRequest, tabId: n
 
   try {
     const isAudioOnly = type === DownloadType.Audio;
+
+    const enrichedMetadataPromise = metadata?.isMusic
+      ? fetchYouTubeMusicMetadata(filenameOutput, metadata)
+      : Promise.resolve(metadata);
 
     const effectiveSabrConfig = sabrConfig
       ? buildEffectiveSabrConfig(sabrConfig, sabrUrl)
@@ -194,25 +199,32 @@ export async function startBackgroundDownload(request: DownloadRequest, tabId: n
           );
         }
 
+        function fetchCdnStream(url: string | null | undefined, onBytes: (bytes: number) => void) {
+          if (!url) {
+            return Promise.resolve(null);
+          }
+
+          return fetchWithProgress(url, signal, onBytes);
+        }
+
         const extraUrls = resolvedExtraAudioUrls ?? [];
 
         const cdnResults = await Promise.all([
-          resolvedVideoUrl && type !== DownloadType.Audio
-            ? fetchWithProgress(resolvedVideoUrl, signal, bytes => {
+          type !== DownloadType.Audio
+            ? fetchCdnStream(resolvedVideoUrl, bytes => {
               videoReceivedBytes += bytes;
               videoTotalBytes = Math.max(videoTotalBytes, videoReceivedBytes);
               reportCdnProgress();
             })
             : Promise.resolve(null),
-          resolvedAudioUrl && type !== DownloadType.Video
-            ? fetchWithProgress(resolvedAudioUrl, signal, bytes => {
+          type !== DownloadType.Video
+            ? fetchCdnStream(resolvedAudioUrl, bytes => {
               audioReceivedBytes += bytes;
               audioTotalBytes = Math.max(audioTotalBytes, audioReceivedBytes);
               reportCdnProgress();
             })
             : Promise.resolve(null),
-          ...extraUrls.map(url =>
-            url ? fetchWithProgress(url, signal, () => {}) : Promise.resolve(null))
+          ...extraUrls.map(url => fetchCdnStream(url, () => {}))
         ]);
 
         primaryVideoData = cdnResults[0] ?? null;
@@ -268,6 +280,8 @@ export async function startBackgroundDownload(request: DownloadRequest, tabId: n
       ...additionalAudioData.map(track => track.label)
     ];
 
+    const enrichedMetadata = await enrichedMetadataPromise;
+
     await sendMessage(MessageType.ProcessStreamEnd, {
       type,
       videoId,
@@ -279,7 +293,7 @@ export async function startBackgroundDownload(request: DownloadRequest, tabId: n
       playlistId,
       playlistTitle,
       playlistTotalCount,
-      metadata
+      metadata: enrichedMetadata
     });
   } catch (error) {
     if (signal.aborted) {

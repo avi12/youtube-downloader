@@ -26,7 +26,7 @@ export default defineConfig({
       ...(browser === "chrome" ? ["offscreen"] : [])
     ],
     host_permissions: [
-      "https://www.youtube.com/*",
+      "https://*.youtube.com/*",
       "https://*.googlevideo.com/*",
       "https://i.ytimg.com/*",
       ...(mode === "development" ? ["http://localhost/*", "https://localhost/*"] : [])
