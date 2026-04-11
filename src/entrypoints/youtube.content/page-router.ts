@@ -1,4 +1,4 @@
-import { cleanupGridUi, injectGridVideoButtons, isVideoGridPage } from "./grid-ui";
+import { cleanupGridUi, injectGridVideoButtons } from "./grid-ui";
 import { cleanupPanelUi } from "./panel-ui";
 import { cleanupPlaylistUi, handlePlaylistVideoAdditions, injectPlaylistDownloaderUi } from "./playlist-ui";
 import type { Options } from "@/types";
@@ -17,34 +17,23 @@ export function handlePageChange(
   options: Options
 ) {
   const { pathname } = new URL(url);
+
+  cleanupPanelUi();
+  cleanupPlaylistUi();
+  cleanupGridUi();
+
   if (pathname === "/watch") {
-    cleanupPlaylistUi();
-    cleanupGridUi();
-    cleanupPanelUi();
     setNativeDownloadVisibility(!options.isRemoveNativeDownload);
     return;
   }
 
+  setNativeDownloadVisibility(true);
+
   if (pathname === "/playlist") {
-    cleanupPanelUi();
-    cleanupGridUi();
-    setNativeDownloadVisibility(true);
     injectPlaylistDownloaderUi(context, options);
     handlePlaylistVideoAdditions(context, options);
     return;
   }
 
-  if (isVideoGridPage(pathname)) {
-    cleanupPanelUi();
-    cleanupPlaylistUi();
-    cleanupGridUi();
-    setNativeDownloadVisibility(true);
-    injectGridVideoButtons(context, options);
-    return;
-  }
-
-  cleanupPanelUi();
-  cleanupPlaylistUi();
-  cleanupGridUi();
-  setNativeDownloadVisibility(true);
+  injectGridVideoButtons(context, options);
 }

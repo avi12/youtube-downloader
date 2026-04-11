@@ -188,8 +188,3 @@ export function injectGridVideoButtons(
   });
 }
 
-const NON_GRID_ROUTES = ["/watch", "/playlist", "/shorts", "/results", "/premium", "/account"];
-
-export function isVideoGridPage(pathname: string) {
-  return !NON_GRID_ROUTES.some(route => pathname.startsWith(route));
-}
