@@ -154,25 +154,50 @@ function injectGridDownloadAllButton(
   ui.mount();
 }
 
+const INJECTION_BATCH_SIZE = 10;
+
+function scanAndInjectCards(
+  context: InstanceType<typeof ContentScriptContext>,
+  options: Options
+) {
+  const pendingCards = [...document.querySelectorAll(VIDEO_CARD_SELECTOR)].filter(
+    elCard => {
+      const videoId = extractVideoId(elCard);
+      return videoId && !elCard.querySelector(`[data-ytdl-grid-item="${videoId}"]`);
+    }
+  );
+
+  if (pendingCards.length === 0) {
+    return;
+  }
+
+  let iBatch = 0;
+  function injectBatch() {
+    const start = iBatch * INJECTION_BATCH_SIZE;
+    const batch = pendingCards.slice(start, start + INJECTION_BATCH_SIZE);
+
+    for (const elCard of batch) {
+      injectGridVideoButton({ context, options, elCard });
+    }
+
+    iBatch++;
+    if (start + INJECTION_BATCH_SIZE < pendingCards.length) {
+      requestAnimationFrame(injectBatch);
+    }
+  }
+
+  injectBatch();
+}
+
 export function injectGridVideoButtons(
   context: InstanceType<typeof ContentScriptContext>,
   options: Options
 ) {
-  function inject(elCard: Element) {
-    injectGridVideoButton({ context, options, elCard });
-  }
-
-  function scanAllCards() {
-    for (const elCard of document.querySelectorAll(VIDEO_CARD_SELECTOR)) {
-      inject(elCard);
-    }
-  }
-
-  scanAllCards();
+  scanAndInjectCards(context, options);
   injectGridDownloadAllButton(context, options);
 
   gridObserver?.disconnect();
-  gridObserver = new MutationObserver(scanAllCards);
+  gridObserver = new MutationObserver(() => scanAndInjectCards(context, options));
 
   const elPageContent = document.querySelector(PAGE_MANAGER_SELECTOR) ?? document.body;
   gridObserver.observe(elPageContent, {
