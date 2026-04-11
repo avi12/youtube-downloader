@@ -37,6 +37,7 @@ export function handlePageChange(
   if (isVideoGridPage(pathname)) {
     cleanupPanelUi();
     cleanupPlaylistUi();
+    cleanupGridUi();
     setNativeDownloadVisibility(true);
     injectGridVideoButtons(context, options);
     return;
