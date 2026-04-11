@@ -393,11 +393,11 @@
       ></yt-button-view-model>
       <yt-button-view-model {@attach attachChevronButton}
       ></yt-button-view-model>
-      {#if isDownloading}
+      {#if isDownloading || isDone}
         <tp-yt-paper-progress
           class="ytdl-progress-bar"
           aria-label={getButtonTooltip()}
-          value={Math.round(displayProgress)}
+          value={isDone ? 100 : Math.round(displayProgress)}
         ></tp-yt-paper-progress>
       {/if}
     </div>
@@ -423,8 +423,9 @@
 
   .ytdl-progress-bar {
     position: absolute;
-    inset-inline: 0;
     inset-block-end: 0;
+    inset-inline-start: 0;
+    inline-size: 100%;
     block-size: 3px;
   }
 
