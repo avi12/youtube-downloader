@@ -57,7 +57,7 @@ export function createPanelState(getVideoData: () => VideoData, getOptions: () =
         : videoData.audioFormats[0] ?? null;
     })
   );
-  let filename = $state(untrack(() => getVideoData().title));
+  let filename = $state(untrack(() => getCompatibleFilename(getVideoData().title)));
   let extension = $state(
     untrack(() => {
       const videoData = getVideoData();
