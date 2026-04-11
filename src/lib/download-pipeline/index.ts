@@ -25,7 +25,16 @@ export async function triggerDownload(data: Uint8Array, filenameOutput: string) 
   const filename = getCompatibleFilename(filenameOutput);
   const blob = new Blob([new Uint8Array(data)], { type: mimeType });
   const blobUrl = URL.createObjectURL(blob);
-  await sendMessage(MessageType.PipelineDownload, { blobUrl, mimeType, filename });
+
+  // Blob URLs are scoped to the document that created them (offscreen doc).
+  // browser.downloads.download() in the background SW can't access them.
+  // Trigger the download directly from this document via an anchor element.
+  const elAnchor = document.createElement("a");
+  elAnchor.href = blobUrl;
+  elAnchor.download = filename;
+  elAnchor.click();
+
+  URL.revokeObjectURL(blobUrl);
 }
 
 export async function reportProgress({
