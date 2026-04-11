@@ -1,6 +1,7 @@
 import { ensureProcessor } from "./processor";
 import { createProgressFetch, fetchWithProgress, sendProgressUpdate } from "./progress-fetch";
 import { fetchYouTubeMusicMetadata } from "./youtube-music-metadata";
+import { MessageType, sendMessage } from "@/lib/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/offscreen-messaging";
 import { fetchAudioViaSabrStream, fetchVideoViaSabrStream } from "@/lib/sabr-download";
 import { uint8ToBase64 } from "@/lib/utils";
@@ -344,6 +345,9 @@ export async function startBackgroundDownload(request: DownloadRequest, tabId: n
 
     if (!result?.audioData && !result?.videoData) {
       console.warn("[ytdl:bg] No download method succeeded for", videoId);
+      void sendMessage(MessageType.UpdateDownloadProgress, {
+        videoId, progress: 0, progressType: ProgressType.Video, isRemoved: true
+      }, tabId);
       return;
     }
 
@@ -355,6 +359,9 @@ export async function startBackgroundDownload(request: DownloadRequest, tabId: n
     }
 
     console.warn("[ytdl:bg] Background download failed:", error);
+    void sendMessage(MessageType.UpdateDownloadProgress, {
+      videoId, progress: 0, progressType: ProgressType.Video, isRemoved: true
+    }, tabId);
   } finally {
     activeBackgroundDownloads.delete(videoId);
   }

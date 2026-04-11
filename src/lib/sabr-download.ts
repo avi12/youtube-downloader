@@ -22,19 +22,24 @@ function adaptiveFormatToSabrFormat(format: AdaptiveFormatItem) {
   });
 }
 
+const STREAM_STALL_TIMEOUT_MS = 30_000;
+
 async function collectReadableStream(stream: ReadableStream<Uint8Array>) {
   const reader = stream.getReader();
   const chunks: Uint8Array[] = [];
   let totalBytes = 0;
 
   while (true) {
-    const { done, value } = await reader.read();
-    if (done) {
+    const readResult = await Promise.race([
+      reader.read(),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("SABR stream stalled")), STREAM_STALL_TIMEOUT_MS))
+    ]);    if (readResult.done) {
       break;
     }
 
-    chunks.push(value);
-    totalBytes += value.byteLength;
+    chunks.push(readResult.value);
+    totalBytes += readResult.value.byteLength;
   }
 
   const result = new Uint8Array(totalBytes);
