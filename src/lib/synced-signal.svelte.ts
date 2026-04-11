@@ -102,6 +102,14 @@ export function createSyncedMap<T>(messenger: MapMessenger<T>) {
         void messenger.sendMessage("entry", { mapKey, mapValue: value });
       }
     },
+    /** Updates the local Svelte map without dispatching to the other world. */
+    setLocal(mapKey: string, value: T) {
+      if (suppressed.has(mapKey)) {
+        return;
+      }
+
+      map.set(mapKey, value);
+    },
     /** Marks a key as suppressed - all set/sync updates are ignored until unsuppress. */
     delete(mapKey: string) {
       suppressed.add(mapKey);

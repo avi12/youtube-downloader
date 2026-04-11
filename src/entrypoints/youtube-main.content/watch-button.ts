@@ -8,6 +8,7 @@ import {
 } from "./watch-button-dom";
 import { buildInitialDownloadState } from "./watch-button-state";
 import { buildChevronData, buildDownloadData, type ButtonViewState } from "./watch-button-view-model";
+import { CrossWorldEvent, onCrossWorldEvent } from "@/lib/cross-world-events";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/cross-world-messenger";
 import { calculateWeightedProgress } from "@/lib/utils";
 import { ProgressType, type ProgressUpdate, type VideoData } from "@/types";
@@ -236,9 +237,9 @@ export async function injectSegmentedDownloadButton(
   });
   resizeObserver.observe(elDropdownContentSlot);
 
-  const unsubscribeProgress = crossWorldMessenger.onMessage(
-    CrossWorldMessage.Progress,
-    handleProgress
+  const unsubscribeProgress = onCrossWorldEvent(
+    CrossWorldEvent.ProgressUpdate,
+    data => handleProgress({ data })
   );
 
   const unsubscribeDownloadProgress = crossWorldMessenger.onMessage(

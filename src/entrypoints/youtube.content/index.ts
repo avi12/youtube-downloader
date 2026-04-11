@@ -11,6 +11,7 @@ import {
   uncancelStreamTransfer
 } from "./stream-transfer";
 import "./style.css";
+import { CrossWorldEvent, emitCrossWorldEvent } from "@/lib/cross-world-events";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/cross-world-messenger";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging";
 import { forwardSabrCredentialsWithRetry, listenForSabrBodyReady } from "@/lib/sabr-credentials";
@@ -78,7 +79,7 @@ function registerCrossWorldHandlers(
   });
 
   crossWorldMessenger.onMessage(CrossWorldMessage.DownloadProgress, ({ data }) => {
-    downloadProgressStore.set(data.videoId, {
+    downloadProgressStore.setLocal(data.videoId, {
       isDownloading: true,
       isDone: false,
       progress: data.progress,
@@ -111,13 +112,21 @@ function registerBackgroundMessageHandlers() {
   });
 
   onMessage(MessageType.UpdateDownloadProgress, ({ data }) => {
-    void crossWorldMessenger.sendMessage(CrossWorldMessage.Progress, data);
+    if (data.isRemoved) {
+      downloadProgressStore.delete(data.videoId);
+      emitCrossWorldEvent(CrossWorldEvent.ProgressUpdate, data);
+      return;
+    }
 
-    const isDownloading = !data.isRemoved && data.progress < 1;
-    const isDone = data.isRemoved || data.progress >= 1;
-    const progress = data.isRemoved ? 1 : data.progress;
-    const progressType = data.isRemoved ? "" : data.progressType;
-    downloadProgressStore.set(data.videoId, { isDownloading, isDone, progress, progressType });
+    const isComplete = data.progress >= 1;
+    downloadProgressStore.setLocal(data.videoId, {
+      isDownloading: !isComplete,
+      isDone: isComplete,
+      progress: data.progress,
+      progressType: data.progressType
+    });
+
+    emitCrossWorldEvent(CrossWorldEvent.ProgressUpdate, data);
   });
 }
 

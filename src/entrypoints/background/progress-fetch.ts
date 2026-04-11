@@ -2,7 +2,7 @@ import { MessageType, sendMessage } from "@/lib/messaging";
 import { statusProgressItem } from "@/lib/storage";
 import { ProgressType } from "@/types";
 
-const progressThrottleIntervalMs = 3000;
+const progressThrottleIntervalMs = 5000;
 const lastProgressTimestamps = new Map<string, number>();
 
 export async function sendProgressUpdate(
@@ -24,10 +24,7 @@ export async function sendProgressUpdate(
     lastProgressTimestamps.delete(videoId);
   }
 
-  // TODO: re-enable once the tab hang issue is resolved
-  // Progress updates to the tab cause the YouTube page to freeze.
-  // await sendMessage(MessageType.UpdateDownloadProgress, { videoId, progress, progressType }, tabId);
-  void tabId;
+  await sendMessage(MessageType.UpdateDownloadProgress, { videoId, progress, progressType }, tabId);
 }
 
 export function createProgressFetch(
@@ -68,6 +65,8 @@ export function createProgressFetch(
   };
 }
 
+const STREAM_STALL_TIMEOUT_MS = 30_000;
+
 export async function fetchWithProgress(
   url: string,
   signal: AbortSignal,
@@ -89,14 +88,17 @@ export async function fetchWithProgress(
   let receivedBytes = 0;
 
   while (true) {
-    const { done, value } = await reader.read();
-    if (done) {
+    const readResult = await Promise.race([
+      reader.read(),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error("Stream stalled")), STREAM_STALL_TIMEOUT_MS))
+    ]);    if (readResult.done) {
       break;
     }
 
-    chunks.push(value);
-    receivedBytes += value.byteLength;
-    onBytesReceived(value.byteLength);
+    chunks.push(readResult.value);
+    receivedBytes += readResult.value.byteLength;
+    onBytesReceived(readResult.value.byteLength);
   }
 
   const result = new Uint8Array(receivedBytes);

@@ -1,10 +1,4 @@
-import type {
-  ButtonViewModelData,
-  DownloadRequest,
-  ProgressUpdate,
-  StreamDataPayload,
-  VideoData
-} from "@/types";
+import type { ButtonViewModelData, DownloadRequest, StreamDataPayload, VideoData } from "@/types";
 import { ProgressType } from "@/types";
 import { defineCustomEventMessaging } from "@webext-core/messaging/page";
 
@@ -27,9 +21,6 @@ export enum CrossWorldMessage {
 
   // MAIN world → isolated world: proxy fetch through extension context (bypasses CORS via host_permissions)
   ProxyFetch = "proxyFetch",
-
-  // Isolated world → all (MAIN world + Svelte components)
-  Progress = "progress",
 
   // MAIN world → isolated world: player is initialized and ready to handle downloads
   IframePlayerReady = "iframePlayerReady",
@@ -91,7 +82,6 @@ interface PageMessengerSchema {
     responseHeaders: Record<string, string>;
   } | null;
 
-  [CrossWorldMessage.Progress](data: ProgressUpdate): void;
   [CrossWorldMessage.IframePlayerReady](data: { videoId: string }): void;
   [CrossWorldMessage.CancelDownload](data: { videoIds: string[] }): void;
   [CrossWorldMessage.CancelRequest](data: { videoIds: string[] }): void;
