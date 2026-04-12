@@ -1,4 +1,5 @@
 import multilineArgParenNewline from "./eslint-rules/multiline-arg-paren-newline.js";
+import noPaddedTag from "./eslint-rules/no-padded-tag.js";
 import eslint from "@eslint/js";
 import stylistic from "@stylistic/eslint-plugin";
 import importPlugin from "eslint-plugin-import";
@@ -138,6 +139,7 @@ const tsStyleRules = {
   "@stylistic/function-call-argument-newline": ["error", "consistent"],
   "@stylistic/function-paren-newline": ["error", "consistent"],
   "local/multiline-arg-paren-newline": "error",
+  "local/no-padded-tag": "error",
   "no-nested-ternary": "error",
   "@typescript-eslint/consistent-type-assertions": ["error", { assertionStyle: "never" }],
   "@typescript-eslint/no-floating-promises": "error"
@@ -148,7 +150,12 @@ const sharedPlugins = {
   import: importPlugin,
   "import-newlines": importNewlines,
   perfectionist,
-  local: { rules: { "multiline-arg-paren-newline": multilineArgParenNewline } }
+  local: {
+    rules: {
+      "multiline-arg-paren-newline": multilineArgParenNewline,
+      "no-padded-tag": noPaddedTag
+    }
+  }
 };
 
 const sharedGlobals = {
