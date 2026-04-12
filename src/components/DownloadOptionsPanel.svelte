@@ -4,7 +4,6 @@
   import panelFocusStyles from "./panel-focus.css?inline";
   import { CrossWorldMessage, crossWorldMessenger } from "@/lib/cross-world-messenger";
   import { applyInertTrap } from "@/lib/inert-trap";
-  import { buttonClickSignal } from "@/lib/synced-stores.svelte";
   import {
     attachCancelButton,
     attachCloseButton,
@@ -12,6 +11,7 @@
     attachDownloadButton,
     attachPanelProgress
   } from "@/lib/panel-button-attachments.svelte";
+  import { buttonClickSignal } from "@/lib/synced-stores.svelte";
   import { ProgressType, type Options, type VideoData } from "@/types";
 
   const percentFormatter = new Intl.NumberFormat(document.documentElement.lang || undefined, {

@@ -1,10 +1,10 @@
 import { ensureProcessor } from "./processor";
 import { createProgressFetch, fetchWithProgress, sendProgressUpdate } from "./progress-fetch";
 import { fetchYouTubeMusicMetadata } from "./youtube-music-metadata";
+import { uint8ToBase64 } from "@/lib/binary";
 import { MessageType, sendMessage } from "@/lib/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/offscreen-messaging";
 import { fetchAudioViaSabrStream, fetchVideoViaSabrStream } from "@/lib/sabr-download";
-import { uint8ToBase64 } from "@/lib/utils";
 import { DownloadType, ProgressType, StreamType } from "@/types";
 import type { AdaptiveFormatItem, DownloadRequest, SabrConfig, VideoMetadata } from "@/types";
 

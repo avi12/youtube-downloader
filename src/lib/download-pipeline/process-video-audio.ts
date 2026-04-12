@@ -1,6 +1,6 @@
 import { toUint8Array, triggerDownload } from ".";
 import { reportProgress } from ".";
-import { getCompatibleFilename, getOutputExtension } from "../utils";
+import { getCompatibleFilename, getOutputExtension } from "../containers";
 import { getFFmpeg, progressHandlers } from "./ffmpeg-instance";
 import { addToPlaylistBundle } from "./playlist-bundle";
 import { ProgressType } from "@/types";

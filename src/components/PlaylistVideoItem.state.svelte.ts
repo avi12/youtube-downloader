@@ -1,3 +1,4 @@
+import { getOutputExtension, resolveAutoExtension, resolveVideoFilename } from "@/lib/containers";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/cross-world-messenger";
 import { MessageType, sendMessage } from "@/lib/messaging";
 import {
@@ -6,13 +7,7 @@ import {
   type DownloadProgressState,
   videoDataStore
 } from "@/lib/synced-stores.svelte";
-import {
-  calculateWeightedProgress,
-  formatVideoQualityLabel,
-  getOutputExtension,
-  resolveAutoExtension,
-  resolveVideoFilename
-} from "@/lib/utils";
+import { calculateWeightedProgress, formatVideoQualityLabel } from "@/lib/video-helpers";
 import {
   DownloadType,
   IconName,

@@ -1,5 +1,5 @@
 import PlaylistVideoItem from "@/components/PlaylistVideoItem.svelte";
-import { getVideoIdFromUrl } from "@/lib/utils";
+import { getVideoIdFromUrl } from "@/lib/youtube-url";
 import type { Options } from "@/types";
 import { mount } from "svelte";
 

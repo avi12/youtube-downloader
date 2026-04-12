@@ -1,7 +1,8 @@
 <script lang="ts">
   import FormatSelect from "./FormatSelect.svelte";
+  import { supportedExtensions } from "@/lib/containers";
   import { setOption } from "@/lib/storage";
-  import { supportedExtensions, videoQualities } from "@/lib/utils";
+  import { videoQualities } from "@/lib/video-helpers";
   import { DownloadType, VideoQualityMode } from "@/types";
   import type { DownloadTypePreference, Options } from "@/types";
 
@@ -30,7 +31,6 @@
   function updateVideoQualityMode(mode: Options["videoQualityMode"]) {
     void setOption("videoQualityMode", mode);
   }
-
 </script>
 
 <div class="settings-container">

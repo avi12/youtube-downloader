@@ -1,3 +1,4 @@
+import { getCompatibleFilename, getOutputExtension, resolveAutoExtension } from "@/lib/containers";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/cross-world-messenger";
 import { statusProgressItem, videoQueueItem } from "@/lib/storage";
 import { cancelRequestSignal, downloadProgressStore } from "@/lib/synced-stores.svelte";
@@ -5,11 +6,8 @@ import {
   calculateWeightedProgress,
   formatAudioCodecLabel,
   formatVideoQualityLabel,
-  getCompatibleFilename,
-  getOutputExtension,
-  resolveAutoExtension,
   waitForVideoElement
-} from "@/lib/utils";
+} from "@/lib/video-helpers";
 import {
   DownloadType,
   ProgressType,

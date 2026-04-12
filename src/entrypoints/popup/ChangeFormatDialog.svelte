@@ -1,6 +1,6 @@
 <script lang="ts">
+  import { audioContainers, videoContainers } from "@/lib/containers";
   import { MessageType, sendMessage } from "@/lib/messaging";
-  import { audioContainers, videoContainers } from "@/lib/utils";
   import type { RecentDownloadEntry } from "@/types";
 
   type Props = {
@@ -30,13 +30,19 @@
   function describeEstimatedTime(sizeBytes: number) {
     const approxSecondsPerMegabyte = 0.05;
     const seconds = Math.max(1, Math.round((sizeBytes / (1024 * 1024)) * approxSecondsPerMegabyte));
-    if (seconds < 60) return `~${seconds}s`;
+    if (seconds < 60) {
+      return `~${seconds}s`;
+    }
+
     const minutes = Math.round(seconds / 60);
     return `~${minutes} min`;
   }
 
   async function handleConfirm() {
-    if (!selectedTarget || isSubmitting) return;
+    if (!selectedTarget || isSubmitting) {
+      return;
+    }
+
     isSubmitting = true;
     try {
       await sendMessage(MessageType.TranscodeRecentDownload, {
@@ -51,11 +57,15 @@
   }
 
   function handleBackdropClick(e: MouseEvent) {
-    if (e.target === e.currentTarget) onClose();
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
   }
 
   function handleKeydown(e: KeyboardEvent) {
-    if (e.key === "Escape") onClose();
+    if (e.key === "Escape") {
+      onClose();
+    }
   }
 </script>
 
@@ -67,12 +77,12 @@
   role="presentation"
 >
   <div
+    class="dialog"
     aria-labelledby="change-format-title"
     aria-modal="true"
-    class="dialog"
     role="dialog"
   >
-    <h2 class="dialog-title" id="change-format-title">Change format</h2>
+    <h2 id="change-format-title" class="dialog-title">Change format</h2>
     <p class="dialog-body">
       Convert <strong>{entry.title}</strong> from <code>{entry.container}</code> to:
     </p>
@@ -80,14 +90,14 @@
     {#if availableTargets.length === 0}
       <p class="dialog-note">No alternative formats available for this file.</p>
     {:else}
-      <div class="target-list" role="radiogroup" aria-label="Target format">
+      <div class="target-list" aria-label="Target format" role="radiogroup">
         {#each availableTargets as target (target)}
           <label class="target-option">
             <input
-              bind:group={selectedTarget}
               name="target-format"
               type="radio"
               value={target}
+              bind:group={selectedTarget}
             />
             <span>{target}</span>
           </label>

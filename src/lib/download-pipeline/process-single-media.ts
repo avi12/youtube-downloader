@@ -1,6 +1,6 @@
 import { toUint8Array, triggerDownload } from ".";
 import { reportProgress } from ".";
-import { getFileExtension } from "../utils";
+import { getFileExtension } from "../containers";
 import { enqueueMuxJob, getFFmpeg, progressHandlers } from "./ffmpeg-instance";
 import { embedMusicMetadata } from "./music-metadata";
 import { addToPlaylistBundle } from "./playlist-bundle";

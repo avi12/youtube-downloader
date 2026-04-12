@@ -3,6 +3,7 @@ import { registerPipelineHandlers } from "./pipeline-handlers";
 import { isFirefoxProcessorTab, ensureProcessor, resetProcessorState } from "./processor";
 import { registerRecentDownloadsRetention } from "./recent-downloads-retention";
 import { tabTracker, trackVideoForTab, untrackVideoForTab } from "./tab-tracker";
+import { uint8ToBase64 } from "@/lib/binary";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/offscreen-messaging";
 import { clearCapturedSabrData, onSabrBodyCaptured, startSabrRequestCapture } from "@/lib/sabr-request-capture";
@@ -16,7 +17,6 @@ import {
   videoOnlyListItem,
   videoQueueItem
 } from "@/lib/storage";
-import { uint8ToBase64 } from "@/lib/utils";
 
 const sabrOriginRuleId = 1;
 

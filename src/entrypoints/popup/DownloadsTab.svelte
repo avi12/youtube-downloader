@@ -180,7 +180,7 @@
 
     {#if recentDownloads.length > 0}
       <section class="recent-section" aria-labelledby="recent-section-heading">
-        <h2 class="recent-section-heading" id="recent-section-heading">Recent</h2>
+        <h2 id="recent-section-heading" class="recent-section-heading">Recent</h2>
         <ul class="recent-list" role="list">
           {#each recentDownloads as entry (entry.id)}
             <li role="listitem">

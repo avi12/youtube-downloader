@@ -1,0 +1,116 @@
+import { AUTO_EXTENSION } from "./containers";
+import { ProgressType, VideoQualityMode } from "@/types";
+import type { AdaptiveFormatItem, Options, PlayerResponse } from "@/types";
+import { PlayabilityStatus } from "@/types/youtube";
+
+// ─── Quality + default options ────────────────────────────────────────────────
+
+export const videoQualities = [4320, 2160, 1440, 1080, 720, 480, 360, 240, 144];
+
+const defaultVideoQuality = 1080;
+
+export const initialOptions: Options = {
+  ext: {
+    audio: AUTO_EXTENSION,
+    video: AUTO_EXTENSION
+  },
+  defaultDownloadType: "auto",
+  videoQualityMode: VideoQualityMode.Best,
+  videoQuality: defaultVideoQuality,
+  isRemoveNativeDownload: false
+};
+
+// ─── YouTube playability checks ───────────────────────────────────────────────
+
+export function isVideoLive(playerResponse: PlayerResponse) {
+  // isLive means "currently live". isLiveContent also matches past-live VODs
+  // (which are downloadable), so do not read it here.
+  return Boolean(playerResponse.videoDetails?.isLive);
+}
+
+export function isVideoDownloadable(playerResponse: PlayerResponse) {
+  if (isVideoLive(playerResponse)) {
+    return false;
+  }
+
+  const { status } = playerResponse.playabilityStatus;
+  if (status === PlayabilityStatus.LoginRequired || status === PlayabilityStatus.Error) {
+    return false;
+  }
+
+  const { streamingData } = playerResponse;
+  if (!streamingData) {
+    return false;
+  }
+
+  const formats = streamingData.adaptiveFormats ?? [];
+  return formats.some(format => Boolean(format.url) || Boolean(format.signatureCipher))
+    || Boolean(streamingData.serverAbrStreamingUrl);
+}
+
+export function isVideoMusic(playerResponse: PlayerResponse) {
+  return playerResponse.microformat?.playerMicroformatRenderer.category === "Music";
+}
+
+// ─── DOM wait helper ──────────────────────────────────────────────────────────
+
+export async function waitForVideoElement(signal?: AbortSignal) {
+  return new Promise<HTMLVideoElement>((resolve, reject) => {
+    const observer = new MutationObserver(() => {
+      const elVideo = document.querySelector<HTMLVideoElement>("video");
+      if (!elVideo || elVideo.videoHeight === 0) {
+        return;
+      }
+
+      observer.disconnect();
+      resolve(elVideo);
+    });
+
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    signal?.addEventListener("abort", () => {
+      observer.disconnect();
+      reject(new DOMException("Aborted", "AbortError"));
+    }, { once: true });
+  });
+}
+
+// ─── Format display labels ────────────────────────────────────────────────────
+
+export function formatVideoQualityLabel(format: Pick<AdaptiveFormatItem, "height" | "fps" | "qualityLabel">) {
+  const base = `${format.height}p${format.fps ? ` ${format.fps}fps` : ""}`;
+  const isPremium = format.qualityLabel?.includes("Premium") ?? false;
+  return isPremium ? `${base} (Enhanced)` : base;
+}
+
+export function formatAudioCodecLabel(mimeType: string) {
+  const codecMatch = mimeType.match(/codecs="([^"]+)"/);
+  const codec = codecMatch?.[1] ?? "";
+  if (codec.startsWith("mp4a")) {
+    return "AAC";
+  }
+
+  if (codec === "opus") {
+    return "Opus";
+  }
+
+  if (codec.startsWith("ec-3")) {
+    return "EC-3";
+  }
+
+  return codec || (mimeType.split(";")[0].split("/")[1] ?? "");
+}
+
+// ─── Weighted progress (download phase 0–70%, mux phase 70–100%) ──────────────
+
+export function calculateWeightedProgress(isDownloading: boolean, progress: number, progressType: ProgressType | "") {
+  if (!isDownloading) {
+    return 0;
+  }
+
+  if (progressType === ProgressType.FFmpeg) {
+    return 70 + progress * 30;
+  }
+
+  return progress * 70;
+}

@@ -1,4 +1,4 @@
-import { getCompatibleFilename, getFileExtension } from "../utils";
+import { getCompatibleFilename, getFileExtension } from "../containers";
 import type { FFmpegCoreModule } from "@ffmpeg/types";
 
 const audioCodecByExtension: Record<string, string> = {

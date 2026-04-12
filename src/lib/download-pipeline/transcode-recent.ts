@@ -1,6 +1,6 @@
 import { triggerDownload } from ".";
+import { videoContainers } from "../containers";
 import { getRecentDownloadBlob, getAllRecentDownloads } from "../recent-downloads-db";
-import { videoContainers } from "../utils";
 import { enqueueMuxJob, getFFmpeg } from "./ffmpeg-instance";
 import type { RecentDownloadEntry } from "@/types";
 

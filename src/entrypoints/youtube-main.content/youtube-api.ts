@@ -1,4 +1,4 @@
-import { isVideoDownloadable, isVideoLive, isVideoMusic } from "@/lib/utils";
+import { isVideoDownloadable, isVideoLive, isVideoMusic } from "@/lib/video-helpers";
 import type { AdaptiveFormatItem, PlayerResponse } from "@/types";
 
 // ─── Format parsing utilities ─────────────────────────────────────────────────

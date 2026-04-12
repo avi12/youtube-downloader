@@ -1,4 +1,4 @@
-import { getFileExtension, getCompatibleFilename } from "../utils";
+import { getFileExtension, getCompatibleFilename } from "../containers";
 import type { VideoMetadata } from "@/types";
 import type { FFmpegCoreModule } from "@ffmpeg/types";
 

@@ -1,9 +1,9 @@
 import { revealAllPlaylistVideos, scrollVideoItemIntoView } from "./PlaylistDownloader.scroll";
+import { resolveVideoFilename } from "@/lib/containers";
 import { MessageType, sendMessage } from "@/lib/messaging";
 import { checkedPlaylistVideos } from "@/lib/playlist-selection.svelte";
 import { musicListItem, videoOnlyListItem, videoQueueItem } from "@/lib/storage";
 import { downloadProgressStore, playlistMetadataSignal, videoDataStore } from "@/lib/synced-stores.svelte";
-import { resolveVideoFilename } from "@/lib/utils";
 import {
   DownloadType,
   PlaylistDownloadMode,

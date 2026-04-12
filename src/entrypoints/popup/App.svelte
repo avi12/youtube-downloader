@@ -14,7 +14,7 @@
     videoOnlyListItem,
     videoQueueItem
   } from "@/lib/storage";
-  import { initialOptions as defaultOptions } from "@/lib/utils";
+  import { initialOptions as defaultOptions } from "@/lib/video-helpers";
   import { ProgressType } from "@/types";
   import type { Options, RecentDownloadEntry, VideoQueueItem } from "@/types";
   import { onMount, untrack } from "svelte";
@@ -285,7 +285,6 @@
       }
     }
   }
-
 
   .popup-content {
     flex: 1;

@@ -1,7 +1,8 @@
 <script lang="ts">
   import PolymerSelect from "./PolymerSelect.svelte";
+  import { splitFilenameAndExtension, supportedExtensions } from "@/lib/containers";
   import { applyPolymerCustomStyles, PAPER_INPUT_THEME } from "@/lib/polymer-utils";
-  import { formatAudioCodecLabel, formatVideoQualityLabel, splitFilenameAndExtension, supportedExtensions } from "@/lib/utils";
+  import { formatAudioCodecLabel, formatVideoQualityLabel } from "@/lib/video-helpers";
   import { DownloadType } from "@/types";
   import type { AdaptiveFormatItem } from "@/types";
 
@@ -116,7 +117,6 @@
   function applyPolymerTheme(elTarget: Element) {
     applyPolymerCustomStyles(elTarget, PAPER_INPUT_THEME);
   }
-
 </script>
 
 <div class="ytdl-options-container">

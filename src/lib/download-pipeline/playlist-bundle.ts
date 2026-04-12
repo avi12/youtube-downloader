@@ -1,5 +1,5 @@
 import { triggerDownload } from ".";
-import { getCompatibleFilename } from "../utils";
+import { getCompatibleFilename } from "../containers";
 import { zipSync } from "fflate";
 
 interface PlaylistBundle {

@@ -20,17 +20,32 @@
 
   function formatRelativeAge(deltaMs: number) {
     const seconds = Math.floor(deltaMs / 1000);
-    if (seconds < 60) return "just now";
+    if (seconds < 60) {
+      return "just now";
+    }
+
     const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) return `${minutes} min ago`;
+    if (minutes < 60) {
+      return `${minutes} min ago`;
+    }
+
     const hours = Math.floor(minutes / 60);
     return `${hours} hr ago`;
   }
 
   function formatBytes(bytes: number) {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
-    if (bytes < 1024 * 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    if (bytes < 1024) {
+      return `${bytes} B`;
+    }
+
+    if (bytes < 1024 * 1024) {
+      return `${(bytes / 1024).toFixed(0)} KB`;
+    }
+
+    if (bytes < 1024 * 1024 * 1024) {
+      return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    }
+
     return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
   }
 
@@ -60,7 +75,10 @@
   }
 
   function handleDocumentClick(e: MouseEvent) {
-    if (!isMenuOpen) return;
+    if (!isMenuOpen) {
+      return;
+    }
+
     const target = e.target;
     if (target instanceof Node && (elMenu?.contains(target) || elTrigger?.contains(target))) {
       return;
@@ -77,7 +95,10 @@
   }
 
   $effect(() => {
-    if (!isMenuOpen) return;
+    if (!isMenuOpen) {
+      return;
+    }
+
     document.addEventListener("click", handleDocumentClick);
     document.addEventListener("keydown", handleKeydown);
     return () => {
