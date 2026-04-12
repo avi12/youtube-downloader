@@ -111,7 +111,21 @@ function registerBackgroundMessageHandlers() {
     void crossWorldMessenger.sendMessage(CrossWorldMessage.DownloadRequest, data);
   });
 
+  const lastReportedProgress = new Map<string, number>();
+
   onMessage(MessageType.UpdateDownloadProgress, ({ data }) => {
+    // Dedup redundant progress values before doing cross-world event work
+    if (!data.isRemoved) {
+      const last = lastReportedProgress.get(data.videoId);
+      if (last === data.progress) {
+        return;
+      }
+
+      lastReportedProgress.set(data.videoId, data.progress);
+    } else {
+      lastReportedProgress.delete(data.videoId);
+    }
+
     if (data.isRemoved) {
       downloadProgressStore.delete(data.videoId);
       emitCrossWorldEvent(CrossWorldEvent.ProgressUpdate, data);

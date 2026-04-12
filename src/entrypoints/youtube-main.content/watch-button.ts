@@ -180,12 +180,22 @@ export async function injectSegmentedDownloadButton(
     }
   }
 
+  let lastProgressReported = -1;
+
   function handleProgress({ data }: { data: ProgressUpdate }) {
     if (data.videoId !== videoId) {
       return;
     }
 
-    if (data.isRemoved === true) {
+    // Dedup identical progress values to avoid thousands of redundant
+    // Polymer re-renders (FFmpeg fires progress=1 thousands of times).
+    if (!data.isRemoved && data.progress === lastProgressReported) {
+      return;
+    }
+
+    lastProgressReported = data.isRemoved ? -1 : data.progress;
+
+    if (data.isRemoved) {
       isDownloading = false;
       downloadProgress = 0;
       downloadProgressType = "";

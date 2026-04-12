@@ -38,6 +38,7 @@ export function buildDownloadData(state: ButtonViewState): ButtonViewModelData {
     title = "Not downloadable";
     accessibilityText = "Not downloadable";
   } else if (state.isDone) {
+    title = "Downloaded";
     accessibilityText = "Download again";
   } else if (state.isDownloading) {
     title = "Cancel";
