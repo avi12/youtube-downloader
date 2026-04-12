@@ -93,8 +93,16 @@ export function registerPipelineHandlers() {
   });
 
   onMessage(MessageType.PipelineDownload, async ({ data }) => {
+    // Fetch the offscreen-owned Blob into the SW's own context and re-wrap
+    // it in an SW-owned Blob URL. Prevents Chrome from marking the download
+    // as "Deleted" when the offscreen document is recycled before Chrome's
+    // downloads service finishes streaming the original blob URL.
+    const swBlob = await fetch(data.blobUrl).then(response => response.blob());
+    const swBlobUrl = URL.createObjectURL(swBlob);
+    swBlobKeepalive.add(swBlob);
+
     const targetDownloadId = await browser.downloads.download({
-      url: data.blobUrl,
+      url: swBlobUrl,
       filename: data.filename
     });
     if (data.recentContext) {
@@ -102,6 +110,11 @@ export function registerPipelineHandlers() {
     }
   });
 }
+
+// Keep Blob refs alive so Chrome's downloads service can finish reading the
+// blob URL even if the offscreen document that originated the bytes is
+// recycled mid-read. Never cleared — acceptable for the session lifetime.
+const swBlobKeepalive = new Set<Blob>();
 
 function persistOnDownloadComplete(
   targetDownloadId: number,
