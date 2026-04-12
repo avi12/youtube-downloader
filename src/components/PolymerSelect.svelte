@@ -67,7 +67,21 @@
 
       elIronDropdown.addEventListener("iron-overlay-opened", handleOverlayOpened);
       elIronDropdown.addEventListener("iron-overlay-closed", handleOverlayClosed);
+
+      syncTriggerDisplay();
     });
+
+    // Moving tp-yt-iron-dropdown to document.body breaks Polymer's binding
+    // between the listbox's selected value and the trigger's displayed label,
+    // so the trigger would show the raw data-value (e.g. itag "7206") instead
+    // of the option label (e.g. "2160p 60fps"). Sync it manually.
+    function syncTriggerDisplay(dataValue: string = value) {
+      const selectedOption = options.find(option => option.value === dataValue);
+      const elTrigger = elTarget.querySelector("tp-yt-paper-input");
+      if (elTrigger instanceof HTMLElement && selectedOption) {
+        Object.assign(elTrigger, { value: selectedOption.label });
+      }
+    }
 
     function handleOverlayOpened() {
       if (!elMovedDropdown) {
@@ -105,12 +119,7 @@
 
         onchange(dataValue);
 
-        // Update the trigger's displayed label since Polymer's binding is broken.
-        const selectedOption = options.find(option => option.value === dataValue);
-        const elTrigger = elTarget.querySelector("tp-yt-paper-input");
-        if (elTrigger instanceof HTMLElement && selectedOption) {
-          Object.assign(elTrigger, { value: selectedOption.label });
-        }
+        syncTriggerDisplay(dataValue);
 
         // Close the overlay - Polymer's auto-close is also broken by the DOM move.
         elMovedDropdown?.dispatchEvent(
