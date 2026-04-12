@@ -3,11 +3,9 @@
    * Playlist-level download button.
    * Appears in the playlist header and allows downloading all checked videos.
    */
-  import { MessageType, sendMessage } from "@/lib/messaging";
+  import { createPlaylistDownloaderState } from "./PlaylistDownloader.state.svelte";
   import { applyPolymerCustomStyles, PAPER_PROGRESS_THEME, sendButtonData } from "@/lib/polymer-utils";
-  import { musicListItem, videoOnlyListItem, videoQueueItem } from "@/lib/storage";
-  import { buttonClickSignal, playlistMetadataSignal, videoDataStore } from "@/lib/synced-stores.svelte";
-  import { resolveVideoFilename } from "@/lib/utils";
+  import { buttonClickSignal } from "@/lib/synced-stores.svelte";
   import {
     ButtonSize,
     ButtonState,
@@ -17,327 +15,145 @@
     PlaylistDownloadMode,
     PlaylistOutputMode
   } from "@/types";
-  import { DownloadType } from "@/types";
-  import type { Options, VideoData } from "@/types";
-  import { SvelteMap, SvelteSet } from "svelte/reactivity";
+  import type { Options } from "@/types";
+  import { SvelteMap } from "svelte/reactivity";
 
   type Props = { options: Options };
 
   const { options }: Props = $props();
+  const state = createPlaylistDownloaderState(() => options);
 
-  // Map of videoId to VideoData for all videos that have been fetched
-  const videoDataMap = new SvelteMap<string, VideoData>();
-  const checkedVideoIds = new SvelteSet<string>();
-  let isDownloading = $state(false);
-  let downloadedCount = $state(0);
-  let totalCount = $state(0);
-  let error = $state("");
-  let downloadMode = $state(PlaylistDownloadMode.Fast);
-  let outputMode = $state(PlaylistOutputMode.Zip);
+  // ─── Toggle buttons (mode + output) — single DRY factory ─────────────────────
 
-  // Collect video data as each playlist item reports in
-  // Reactively sync video data from the synced store
-  $effect(() => {
-    for (const videoId of videoDataStore.keys()) {
-      const data = videoDataStore.get(videoId);
-      if (data && !videoDataMap.has(videoId)) {
-        videoDataMap.set(videoId, data);
-      }
-    }
-  });
+  type ToggleButtonConfig = {
+    id: string;
+    label: string;
+    tooltip: string;
+    isActive(): boolean;
+    onClick(): void;
+  };
 
-  // Track checkboxes for per-video selection
-  function handleCheckboxChange(e: Event) {
-    if (!(e.target instanceof HTMLInputElement)) {
-      return;
-    }
-
-    const elTarget = e.target;
-    if (!elTarget.matches("[data-ytdl-checkbox]")) {
-      return;
-    }
-
-    const videoId = elTarget.dataset.videoId ?? "";
-    if (!videoId) {
-      return;
-    }
-
-    if (elTarget.checked) {
-      checkedVideoIds.add(videoId);
-    } else {
-      checkedVideoIds.delete(videoId);
-    }
+  function setDownloadMode(mode: PlaylistDownloadMode) {
+    state.downloadMode = mode;
   }
 
-  $effect(() => {
-    document.addEventListener("change", handleCheckboxChange);
-    return () => document.removeEventListener("change", handleCheckboxChange);
-  });
+  function setOutputMode(mode: PlaylistOutputMode) {
+    state.outputMode = mode;
+  }
 
-  const downloadableVideos = $derived([...videoDataMap.values()].filter(data => data.isDownloadable));
-
-  const checkedDownloadableVideos = $derived(
-    checkedVideoIds.size === 0
-      ? downloadableVideos
-      : downloadableVideos.filter(data => checkedVideoIds.has(data.videoId))
-  );
-
-  const downloadButtonLabel = $derived.by(() => {
-    if (isDownloading) {
-      return `Downloading ${downloadedCount}/${totalCount}`;
+  const toggleButtons: ToggleButtonConfig[] = [
+    {
+      id: "playlist-mode-fast",
+      label: "Fast",
+      tooltip: "Download all videos simultaneously",
+      isActive: () => state.downloadMode === PlaylistDownloadMode.Fast,
+      onClick: () => setDownloadMode(PlaylistDownloadMode.Fast)
+    },
+    {
+      id: "playlist-mode-data-saver",
+      label: "Data saver",
+      tooltip: "Download videos one at a time to save bandwidth",
+      isActive: () => state.downloadMode === PlaylistDownloadMode.DataSaver,
+      onClick: () => setDownloadMode(PlaylistDownloadMode.DataSaver)
+    },
+    {
+      id: "playlist-output-individual",
+      label: "Individual files",
+      tooltip: "Save each video as a separate file",
+      isActive: () => state.outputMode === PlaylistOutputMode.Individual,
+      onClick: () => setOutputMode(PlaylistOutputMode.Individual)
+    },
+    {
+      id: "playlist-output-zip",
+      label: "ZIP bundle",
+      tooltip: "Bundle all videos into a single ZIP file",
+      isActive: () => state.outputMode === PlaylistOutputMode.Zip,
+      onClick: () => setOutputMode(PlaylistOutputMode.Zip)
     }
+  ];
 
-    const count = checkedDownloadableVideos.length;
-    if (count === 0) {
-      return "No downloadable videos";
-    }
+  const toggleButtonElements = new SvelteMap<string, HTMLElement>();
 
-    return `Download ${count} video${count === 1 ? "" : "s"}`;
-  });
-
-  async function startPlaylistDownload() {
-    if (checkedDownloadableVideos.length === 0) {
+  function refreshToggleButton(config: ToggleButtonConfig) {
+    const elButton = toggleButtonElements.get(config.id);
+    if (!elButton) {
       return;
     }
 
-    error = "";
-    isDownloading = true;
-    totalCount = checkedDownloadableVideos.length;
-    downloadedCount = 0;
-
-    const metadata = playlistMetadataSignal.value;
-    const playlistTitle = metadata?.playlistTitle || "Playlist";
-    const playlistId = metadata?.playlistId || `playlist-${Date.now()}`;
-    const isZipBundle = outputMode === PlaylistOutputMode.Zip;
-
-    const downloadRequests = checkedDownloadableVideos.map(data => {
-      let downloadType: DownloadType = data.isMusic ? DownloadType.Audio : DownloadType.VideoAndAudio;
-      if (options.defaultDownloadType !== "auto") {
-        downloadType = options.defaultDownloadType;
-      }
-
-      const filenameOutput = resolveVideoFilename(data, options);
-
-      return {
-        type: downloadType,
-        videoId: data.videoId,
-        videoItag: data.videoFormats[0]?.itag ?? 0,
-        audioItag: data.audioFormats[0]?.itag ?? 0,
-        filenameOutput,
-        sabrConfig: data.sabrConfig,
-        ...(isZipBundle && {
-          playlistId,
-          playlistTitle,
-          playlistTotalCount: checkedDownloadableVideos.length
-        })
-      };
-    });
-
-    try {
-      await sendMessage(MessageType.RequestPlaylistDownload, {
-        items: downloadRequests,
-        playlistTitle,
-        isZipBundle,
-        isSequential: downloadMode === PlaylistDownloadMode.DataSaver
-      });
-    } catch {
-      error = "Failed to start downloads - please try again";
-      isDownloading = false;
-      return;
-    }
-
-    // Track completion via storage changes
-    let stopWatching: (() => void) | null = null;
-
-    async function checkCompletion() {
-      const [queueValues, musicValues, videoOnlyValues] = await Promise.all([
-        videoQueueItem.getValue(),
-        musicListItem.getValue(),
-        videoOnlyListItem.getValue()
-      ]);
-
-      const remaining = downloadRequests.filter(request =>
-        queueValues.some(item => item.videoId === request.videoId) ||
-          musicValues.includes(request.videoId) ||
-          videoOnlyValues.includes(request.videoId)).length;
-
-      downloadedCount = totalCount - remaining;
-
-      if (remaining === 0) {
-        isDownloading = false;
-        stopWatching?.();
-        stopWatching = null;
-      }
-    }
-
-    const unwatches = [
-      videoQueueItem.watch(() => checkCompletion()),
-      musicListItem.watch(() => checkCompletion()),
-      videoOnlyListItem.watch(() => checkCompletion())
-    ];
-    stopWatching = () => {
-      for (const unwatch of unwatches) {
-        unwatch();
-      }
-    };
-  }
-
-  async function cancelPlaylistDownload() {
-    const videoIds = checkedDownloadableVideos.map(data => data.videoId);
-    await sendMessage(MessageType.CancelDownload, { videoIds });
-    isDownloading = false;
-    downloadedCount = 0;
-  }
-
-  function handleDownloadClick() {
-    if (isDownloading) {
-      void cancelPlaylistDownload();
-    } else {
-      void startPlaylistDownload();
-    }
-  }
-
-  // ─── Download mode toggle buttons ────────────────────────────────────────────
-
-  let elFastButton = $state<HTMLElement | null>(null);
-  let elDataSaverButton = $state<HTMLElement | null>(null);
-  let elIndividualButton = $state<HTMLElement | null>(null);
-  let elZipButton = $state<HTMLElement | null>(null);
-
-  function sendModeButtonData(
-    elButton: HTMLElement, label: string, tooltip: string, isActive: boolean, buttonId: string
-  ) {
     if (!elButton.hasAttribute("data-ytdl-button-id")) {
-      elButton.setAttribute("data-ytdl-button-id", buttonId);
+      elButton.setAttribute("data-ytdl-button-id", config.id);
     }
 
     sendButtonData(elButton, {
       iconName: IconName.None,
-      title: label,
-      accessibilityText: label,
+      title: config.label,
+      accessibilityText: config.label,
       style: ButtonStyle.Mono,
-      type: isActive ? ButtonType.Tonal : ButtonType.Outline,
+      type: config.isActive() ? ButtonType.Tonal : ButtonType.Outline,
       buttonSize: ButtonSize.Default,
       state: ButtonState.Active,
       isFullWidth: false,
       isDisabled: false,
-      tooltip
+      tooltip: config.tooltip
     });
   }
 
-  function refreshModeButtons() {
-    if (elFastButton) {
-      sendModeButtonData(
-        elFastButton,
-        "Fast",
-        "Download all videos simultaneously",
-        downloadMode === PlaylistDownloadMode.Fast,
-        "playlist-mode-fast"
-      );
+  function refreshAllToggleButtons() {
+    for (const config of toggleButtons) {
+      refreshToggleButton(config);
     }
+  }
 
-    if (elDataSaverButton) {
-      sendModeButtonData(
-        elDataSaverButton,
-        "Data saver",
-        "Download videos one at a time to save bandwidth",
-        downloadMode === PlaylistDownloadMode.DataSaver,
-        "playlist-mode-data-saver"
-      );
-    }
+  function createToggleAttacher(config: ToggleButtonConfig) {
+    return (elButton: Element) => {
+      if (!(elButton instanceof HTMLElement)) {
+        return;
+      }
 
-    if (elIndividualButton) {
-      sendModeButtonData(
-        elIndividualButton,
-        "Individual files",
-        "Save each video as a separate file",
-        outputMode === PlaylistOutputMode.Individual,
-        "playlist-output-individual"
-      );
-    }
-
-    if (elZipButton) {
-      sendModeButtonData(
-        elZipButton,
-        "ZIP bundle",
-        "Bundle all videos into a single ZIP file",
-        outputMode === PlaylistOutputMode.Zip,
-        "playlist-output-zip"
-      );
-    }
+      toggleButtonElements.set(config.id, elButton);
+      refreshToggleButton(config);
+    };
   }
 
   $effect(() => {
-    void downloadMode;
-    void outputMode;
-    refreshModeButtons();
+    void state.downloadMode;
+    void state.outputMode;
+    refreshAllToggleButtons();
   });
 
-  function attachFastButton(elButton: Element) {
-    if (!(elButton instanceof HTMLElement)) {
-      return;
-    }
+  // ─── Download button ─────────────────────────────────────────────────────────
 
-    elFastButton = elButton;
-    refreshModeButtons();
-  }
+  const DOWNLOAD_BUTTON_ID = "playlist-download-btn";
 
-  function attachDataSaverButton(elButton: Element) {
-    if (!(elButton instanceof HTMLElement)) {
-      return;
-    }
-
-    elDataSaverButton = elButton;
-    refreshModeButtons();
-  }
-
-  function attachIndividualButton(elButton: Element) {
-    if (!(elButton instanceof HTMLElement)) {
-      return;
-    }
-
-    elIndividualButton = elButton;
-    refreshModeButtons();
-  }
-
-  function attachZipButton(elButton: Element) {
-    if (!(elButton instanceof HTMLElement)) {
-      return;
-    }
-
-    elZipButton = elButton;
-    refreshModeButtons();
-  }
-
-  // ─── Download button ──────────────────────────────────────────────────────────
-
-  function attachPlaylistButton(elButton: Element) {
+  function attachDownloadButton(elButton: Element) {
     if (!(elButton instanceof HTMLElement)) {
       return;
     }
 
     if (!elButton.hasAttribute("data-ytdl-button-id")) {
-      elButton.setAttribute("data-ytdl-button-id", "playlist-download-btn");
+      elButton.setAttribute("data-ytdl-button-id", DOWNLOAD_BUTTON_ID);
     }
 
-    const isDisabled = checkedDownloadableVideos.length === 0 && !isDownloading;
+    const isDisabled = state.checkedDownloadableVideos.length === 0 && !state.isDownloading;
     sendButtonData(elButton, {
-      iconName: isDownloading ? IconName.Close : IconName.Download,
-      title: downloadButtonLabel,
-      accessibilityText: downloadButtonLabel,
+      iconName: state.isDownloading ? IconName.Close : IconName.Download,
+      title: state.downloadButtonLabel,
+      accessibilityText: state.downloadButtonLabel,
       style: ButtonStyle.Mono,
       type: ButtonType.Tonal,
       buttonSize: ButtonSize.Default,
       state: isDisabled ? ButtonState.Disabled : ButtonState.Active,
       isFullWidth: false,
       isDisabled,
-      tooltip: downloadButtonLabel
+      tooltip: state.downloadButtonLabel
     });
   }
 
-  function attachPlaylistProgress(elProgress: Element) {
+  function attachProgressBar(elProgress: Element) {
     applyPolymerCustomStyles(elProgress, PAPER_PROGRESS_THEME);
   }
+
+  // ─── Click dispatcher ────────────────────────────────────────────────────────
 
   $effect(() => {
     const clicked = buttonClickSignal.value;
@@ -345,63 +161,47 @@
       return;
     }
 
-    if (clicked.buttonId === "playlist-download-btn") {
-      handleDownloadClick();
+    if (clicked.buttonId === DOWNLOAD_BUTTON_ID) {
+      state.toggleDownload();
       return;
     }
 
-    if (clicked.buttonId === "playlist-mode-fast") {
-      downloadMode = PlaylistDownloadMode.Fast;
-      return;
-    }
-
-    if (clicked.buttonId === "playlist-mode-data-saver") {
-      downloadMode = PlaylistDownloadMode.DataSaver;
-      return;
-    }
-
-    if (clicked.buttonId === "playlist-output-individual") {
-      outputMode = PlaylistOutputMode.Individual;
-      return;
-    }
-
-    if (clicked.buttonId === "playlist-output-zip") {
-      outputMode = PlaylistOutputMode.Zip;
-    }
+    const config = toggleButtons.find(button => button.id === clicked.buttonId);
+    config?.onClick();
   });
 </script>
 
 <div class="ytdl-playlist-container" aria-label="Playlist Downloader" role="region">
-  {#if error}
-    <div class="ytdl-error-banner" role="alert">{error}</div>
+  {#if state.error}
+    <div class="ytdl-error-banner" role="alert">{state.error}</div>
   {/if}
 
   <div class="ytdl-toggle-group" aria-label="Download speed" role="group">
-    <yt-button-view-model {@attach attachFastButton}></yt-button-view-model>
-    <yt-button-view-model {@attach attachDataSaverButton}></yt-button-view-model>
+    <yt-button-view-model {@attach createToggleAttacher(toggleButtons[0])}></yt-button-view-model>
+    <yt-button-view-model {@attach createToggleAttacher(toggleButtons[1])}></yt-button-view-model>
   </div>
 
   <div class="ytdl-toggle-group" aria-label="Output format" role="group">
-    <yt-button-view-model {@attach attachIndividualButton}></yt-button-view-model>
-    <yt-button-view-model {@attach attachZipButton}></yt-button-view-model>
+    <yt-button-view-model {@attach createToggleAttacher(toggleButtons[2])}></yt-button-view-model>
+    <yt-button-view-model {@attach createToggleAttacher(toggleButtons[3])}></yt-button-view-model>
   </div>
 
   <div class="ytdl-playlist-actions">
-    <yt-button-view-model {@attach attachPlaylistButton}></yt-button-view-model>
+    <yt-button-view-model {@attach attachDownloadButton}></yt-button-view-model>
 
-    {#if isDownloading && totalCount > 0}
+    {#if state.isDownloading && state.totalCount > 0}
       <tp-yt-paper-progress
-        {@attach attachPlaylistProgress}
-        max={totalCount}
-        value={downloadedCount}
+        {@attach attachProgressBar}
+        max={state.totalCount}
+        value={state.downloadedCount}
       ></tp-yt-paper-progress>
     {/if}
   </div>
 
-  {#if downloadableVideos.length < videoDataMap.size}
+  {#if state.downloadableVideos.length < state.videoDataMapSize}
     <p class="ytdl-restriction-notice" role="status">
-      {videoDataMap.size - downloadableVideos.length} video{videoDataMap.size -
-        downloadableVideos.length === 1
+      {state.videoDataMapSize - state.downloadableVideos.length} video{state.videoDataMapSize -
+        state.downloadableVideos.length === 1
         ? ""
         : "s"} not downloadable (private or restricted)
     </p>
