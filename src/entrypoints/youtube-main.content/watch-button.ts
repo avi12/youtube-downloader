@@ -118,7 +118,7 @@ export async function injectSegmentedDownloadButton(
     elChevronButton.data = buildChevronData(viewState);
     requestAnimationFrame(applySegmentedClasses);
 
-    elProgressBar.indeterminate = isDownloading && downloadProgress === 0;
+    elProgressBar.indeterminate = isDownloading && downloadProgressType === "";
     elProgressBar.value = Math.round(viewState.downloadProgress * 100);
     elProgressBar.style.opacity = isDownloading ? "1" : "0";
   }
