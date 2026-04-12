@@ -4,6 +4,7 @@
    * Appears in the playlist header and allows downloading all checked videos.
    */
   import { createPlaylistDownloaderState } from "./PlaylistDownloader.state.svelte";
+  import { createPlaylistToggleButtons } from "./PlaylistDownloader.toggle-buttons.svelte";
   import { applyPolymerCustomStyles, PAPER_PROGRESS_THEME, sendButtonData } from "@/lib/polymer-utils";
   import { buttonClickSignal } from "@/lib/synced-stores.svelte";
   import {
@@ -12,114 +13,22 @@
     ButtonStyle,
     ButtonType,
     IconName,
-    PlaylistDownloadMode,
-    PlaylistOutputMode
+    PlaylistDownloadMode
   } from "@/types";
   import type { Options } from "@/types";
   import { untrack } from "svelte";
-  import { SvelteMap } from "svelte/reactivity";
 
   type Props = { options: Options };
 
   const { options }: Props = $props();
   const state = createPlaylistDownloaderState(() => options);
 
-  // ─── Toggle buttons (mode + output) — single DRY factory ─────────────────────
-
-  type ToggleButtonConfig = {
-    id: string;
-    label: string;
-    tooltip: string;
-    isActive(): boolean;
-    onClick(): void;
-  };
-
-  function setDownloadMode(mode: PlaylistDownloadMode) {
-    state.downloadMode = mode;
-  }
-
-  function setOutputMode(mode: PlaylistOutputMode) {
-    state.outputMode = mode;
-  }
-
-  const toggleButtons: ToggleButtonConfig[] = [
-    {
-      id: "playlist-mode-fast",
-      label: "Fast",
-      tooltip: "Download all videos simultaneously",
-      isActive: () => state.downloadMode === PlaylistDownloadMode.Fast,
-      onClick: () => setDownloadMode(PlaylistDownloadMode.Fast)
-    },
-    {
-      id: "playlist-mode-data-saver",
-      label: "Data saver",
-      tooltip: "Download videos one at a time to save bandwidth",
-      isActive: () => state.downloadMode === PlaylistDownloadMode.DataSaver,
-      onClick: () => setDownloadMode(PlaylistDownloadMode.DataSaver)
-    },
-    {
-      id: "playlist-output-individual",
-      label: "Individual files",
-      tooltip: "Save each video as a separate file",
-      isActive: () => state.outputMode === PlaylistOutputMode.Individual,
-      onClick: () => setOutputMode(PlaylistOutputMode.Individual)
-    },
-    {
-      id: "playlist-output-zip",
-      label: "ZIP bundle",
-      tooltip: "Bundle all videos into a single ZIP file",
-      isActive: () => state.outputMode === PlaylistOutputMode.Zip,
-      onClick: () => setOutputMode(PlaylistOutputMode.Zip)
-    }
-  ];
-
-  const toggleButtonElements = new SvelteMap<string, HTMLElement>();
-
-  function refreshToggleButton(config: ToggleButtonConfig) {
-    const elButton = toggleButtonElements.get(config.id);
-    if (!elButton) {
-      return;
-    }
-
-    if (!elButton.hasAttribute("data-ytdl-button-id")) {
-      elButton.setAttribute("data-ytdl-button-id", config.id);
-    }
-
-    sendButtonData(elButton, {
-      iconName: IconName.None,
-      title: config.label,
-      accessibilityText: config.label,
-      style: ButtonStyle.Mono,
-      type: config.isActive() ? ButtonType.Tonal : ButtonType.Outline,
-      buttonSize: ButtonSize.Default,
-      state: ButtonState.Active,
-      isFullWidth: false,
-      isDisabled: false,
-      tooltip: config.tooltip
-    });
-  }
-
-  function refreshAllToggleButtons() {
-    for (const config of toggleButtons) {
-      refreshToggleButton(config);
-    }
-  }
-
-  function createToggleAttacher(config: ToggleButtonConfig) {
-    return (elButton: Element) => {
-      if (!(elButton instanceof HTMLElement)) {
-        return;
-      }
-
-      toggleButtonElements.set(config.id, elButton);
-      refreshToggleButton(config);
-    };
-  }
+  const toggleButtons = createPlaylistToggleButtons(state);
 
   $effect(() => {
     void state.downloadMode;
     void state.outputMode;
-    refreshAllToggleButtons();
+    toggleButtons.refreshAll();
   });
 
   // ─── Download button ─────────────────────────────────────────────────────────
@@ -265,8 +174,7 @@
         return;
       }
 
-      const config = toggleButtons.find(button => button.id === clicked.buttonId);
-      config?.onClick();
+      toggleButtons.handleClick(clicked.buttonId);
     });
   });
 
@@ -279,13 +187,13 @@
   {/if}
 
   <div class="ytdl-toggle-group" aria-label="Download speed" role="group">
-    <yt-button-view-model {@attach createToggleAttacher(toggleButtons[0])}></yt-button-view-model>
-    <yt-button-view-model {@attach createToggleAttacher(toggleButtons[1])}></yt-button-view-model>
+    <yt-button-view-model {@attach toggleButtons.createAttacher(toggleButtons.buttons[0])}></yt-button-view-model>
+    <yt-button-view-model {@attach toggleButtons.createAttacher(toggleButtons.buttons[1])}></yt-button-view-model>
   </div>
 
   <div class="ytdl-toggle-group" aria-label="Output format" role="group">
-    <yt-button-view-model {@attach createToggleAttacher(toggleButtons[2])}></yt-button-view-model>
-    <yt-button-view-model {@attach createToggleAttacher(toggleButtons[3])}></yt-button-view-model>
+    <yt-button-view-model {@attach toggleButtons.createAttacher(toggleButtons.buttons[2])}></yt-button-view-model>
+    <yt-button-view-model {@attach toggleButtons.createAttacher(toggleButtons.buttons[3])}></yt-button-view-model>
   </div>
 
   <div class="ytdl-playlist-actions">
