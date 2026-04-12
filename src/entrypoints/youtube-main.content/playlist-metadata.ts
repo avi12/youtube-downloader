@@ -52,7 +52,9 @@ export async function handleNavigateSuccess() {
 
   for (const _ of Array.from({ length: playerDataPollAttempts })) {
     const playerResponse = document.querySelector("ytd-watch-flexy")?.playerData ?? null;
-    if (playerResponse?.videoDetails?.videoId === expectedVideoId) {
+    const isReady = playerResponse?.videoDetails?.videoId === expectedVideoId
+      && playerResponse.playabilityStatus?.status !== "UNPLAYABLE";
+    if (isReady) {
       await buildAndDispatchVideoData(playerResponse, cancelActiveDownload);
       return;
     }

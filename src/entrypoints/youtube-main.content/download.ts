@@ -1,6 +1,6 @@
 import { capturedPoToken, capturedSabrUrl, setPoTokenCredentials } from "./credentials";
 import { resolveFormatUrl } from "./stream-fetch";
-import { buildVideoMetadata, videoDataCache } from "./video-data";
+import { buildVideoMetadata, generatePoTokenIfNeeded, videoDataCache } from "./video-data";
 import { crossWorldMessenger, CrossWorldMessage } from "@/lib/cross-world-messenger";
 import { sabrCredentials } from "@/lib/synced-stores.svelte";
 import { type AdaptiveFormatItem, type DownloadRequest, DownloadType } from "@/types";
@@ -66,6 +66,27 @@ function resolveCredentials() {
   return { poToken: currentPoToken, sabrUrl: currentSabrUrl };
 }
 
+const credentialPollIntervalMs = 200;
+const credentialPollMaxWaitMs = 5000;
+
+async function resolveCredentialsWithRetry() {
+  const initial = resolveCredentials();
+  if (initial.poToken) {
+    return initial;
+  }
+
+  const deadline = Date.now() + credentialPollMaxWaitMs;
+  while (Date.now() < deadline) {
+    await new Promise<void>(resolve => setTimeout(resolve, credentialPollIntervalMs));
+    const result = resolveCredentials();
+    if (result.poToken) {
+      return result;
+    }
+  }
+
+  return resolveCredentials();
+}
+
 function selectFormats(
   videoData: {
     videoFormats: AdaptiveFormatItem[]; audioFormats: AdaptiveFormatItem[];
@@ -122,7 +143,11 @@ export async function performDownload({
 
     const { videoFormat, audioFormat } = selectFormats(cachedVideoData, type, videoItag, audioItag);
     const extraAudioFormats = getExtraAudioFormats(cachedVideoData.audioFormats, audioFormat?.audioTrack?.id);
-    const credentials = resolveCredentials();
+    // Generate PO token on click. BotGuard's synchronous VM computation
+    // blocks the main thread briefly - runs here so the block happens at
+    // click-time (expected latency) rather than at download completion.
+    await generatePoTokenIfNeeded(cachedVideoData);
+    const credentials = await resolveCredentialsWithRetry();
 
     const [resolvedVideoUrl, resolvedAudioUrl, ...resolvedExtraAudioUrls] =
       await preResolveCdnUrls(type, videoFormat, audioFormat, extraAudioFormats);

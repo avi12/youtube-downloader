@@ -1,4 +1,4 @@
-import { capturedPoToken, setPoTokenCredentials } from "./credentials";
+import { capturedPoToken, capturedPoTokenVideoId, setPoTokenCredentials } from "./credentials";
 import { injectSegmentedDownloadButton } from "./watch-button";
 import { buildVideoData } from "./youtube-api";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/cross-world-messenger";
@@ -158,6 +158,24 @@ function parseDescriptionMetadata(description: string) {
   return { songTitle, artist, mainArtist, album };
 }
 
+export async function generatePoTokenIfNeeded(videoData: VideoData) {
+  if (capturedPoToken && capturedPoTokenVideoId === videoData.videoId) {
+    return;
+  }
+
+  try {
+    const poToken = await generatePoToken(videoData.videoId);
+    const { serverAbrStreamingUrl: sabrUrl = "" } = videoData.sabrConfig ?? {};
+    setPoTokenCredentials(poToken, sabrUrl, videoData.videoId);
+    sabrCredentials.value = {
+      url: sabrCredentials.value?.url || sabrUrl,
+      poToken
+    };
+  } catch (error) {
+    console.warn("[ytdl] PO token generation failed:", error);
+  }
+}
+
 export async function buildAndDispatchVideoData(
   playerResponse: PlayerResponse,
   cancelActiveDownload: (videoId: string) => void
@@ -196,43 +214,36 @@ export async function buildAndDispatchVideoData(
     pendingChunks.length = 0;
   }
 
-  // Signal the isolated world once capture state is ready so it can notify
-  // the background that this iframe's player is initialized and ready
+  // For download iframes: generate PO token before signaling ready so
+  // the background download has valid SABR credentials immediately.
   if (self !== top) {
+    await generatePoTokenIfNeeded(videoData);
     void crossWorldMessenger.sendMessage(CrossWorldMessage.IframePlayerReady, { videoId: videoData.videoId });
+    return;
   }
 
   if (location.pathname === "/watch") {
     await injectSegmentedDownloadButton(videoData, cancelActiveDownload);
-
-    // Generate PO token via BotGuard (independent of video playback).
-    // Use capturedPoToken (module var) as the guard — sabrCredentials.value.poToken
-    // may hold the truncated 15-byte captured token which is not a valid BotGuard token.
-    if (capturedPoToken) {
-      return;
-    }
-
-    try {
-      const poToken = await generatePoToken(videoData.videoId);
-      const { serverAbrStreamingUrl: sabrUrl = "" } = videoData.sabrConfig ?? {};
-      setPoTokenCredentials(poToken, sabrUrl);
-      // Broadcast to isolated world via synced signal.
-      // Preserve the isolated world's captured URL (has decrypted n param) if already set.
-      sabrCredentials.value = {
-        url: sabrCredentials.value?.url || sabrUrl,
-        poToken
-      };
-    } catch (error) {
-      console.warn("[ytdl] PO token generation failed:", error);
-    }
   }
 }
 
+const playerResponsePollAttempts = 20;
+const playerResponsePollIntervalMs = 250;
+
 export async function extractAndDispatchVideoData(cancelActiveDownload: (videoId: string) => void) {
-  const playerResponse = window.ytInitialPlayerResponse ?? null;
-  if (!playerResponse || !location.pathname.startsWith("/watch")) {
+  if (!location.pathname.startsWith("/watch")) {
     return;
   }
 
-  await buildAndDispatchVideoData(playerResponse, cancelActiveDownload);
+  for (let i = 0; i < playerResponsePollAttempts; i++) {
+    const playerResponse = window.ytInitialPlayerResponse ?? null;
+    const isReady = playerResponse?.videoDetails?.videoId
+      && playerResponse.playabilityStatus?.status !== "UNPLAYABLE";
+    if (isReady) {
+      await buildAndDispatchVideoData(playerResponse, cancelActiveDownload);
+      return;
+    }
+
+    await new Promise(resolve => setTimeout(resolve, playerResponsePollIntervalMs));
+  }
 }
