@@ -82,6 +82,7 @@ export function createPlaylistDownloaderState(getOptions: () => Options) {
   });
 
   const downloadableVideos = $derived([...videoDataMap.values()].filter(data => data.isDownloadable));
+  const nonDownloadableCount = $derived(videoDataMap.size - downloadableVideos.length);
 
   const checkedDownloadableVideos = $derived(
     checkedVideoIds.size === 0
@@ -210,6 +211,9 @@ export function createPlaylistDownloaderState(getOptions: () => Options) {
     },
     get downloadableVideos() {
       return downloadableVideos;
+    },
+    get nonDownloadableCount() {
+      return nonDownloadableCount;
     },
     get checkedDownloadableVideos() {
       return checkedDownloadableVideos;

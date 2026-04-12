@@ -198,12 +198,10 @@
     {/if}
   </div>
 
-  {#if state.downloadableVideos.length < state.videoDataMapSize}
+  {#if state.nonDownloadableCount > 0}
     <p class="ytdl-restriction-notice" role="status">
-      {state.videoDataMapSize - state.downloadableVideos.length} video{state.videoDataMapSize -
-        state.downloadableVideos.length === 1
-        ? ""
-        : "s"} not downloadable (private or restricted)
+      {state.nonDownloadableCount} video{state.nonDownloadableCount === 1 ? "" : "s"} not downloadable
+      (private or restricted)
     </p>
   {/if}
 </div>

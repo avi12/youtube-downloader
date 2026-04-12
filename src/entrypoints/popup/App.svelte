@@ -1,6 +1,7 @@
 <script lang="ts">
   import DownloadsTab from "./DownloadsTab.svelte";
   import SettingsTab from "./SettingsTab.svelte";
+  import TabNav from "./TabNav.svelte";
   import {
     isFFmpegReadyItem,
     musicListItem,
@@ -63,28 +64,10 @@
 
   const totalActiveDownloads = $derived(videoDownloads.length + musicList.length + videoOnlyList.length);
 
-  const tabs: {
-    id: Tab; label: string;
-  }[] = [
-    {
-      id: Tab.Downloads,
-      label: "Downloads"
-    },
-    {
-      id: Tab.Settings,
-      label: "Settings"
-    }
-  ];
-
-  const tabButtonElements: Record<string, HTMLButtonElement> = {};
-
-  function registerTabButton(tabId: Tab) {
-    return (element: Element) => {
-      if (element instanceof HTMLButtonElement) {
-        tabButtonElements[tabId] = element;
-      }
-    };
-  }
+  const tabs = $derived([
+    { id: Tab.Downloads, label: "Downloads", badge: totalActiveDownloads },
+    { id: Tab.Settings, label: "Settings" }
+  ]);
 
   onMount(() => {
     const unwatches = [
@@ -127,39 +110,7 @@
         by <a href="https://avi12.com" target="_blank">Avi</a>
       </span>
     </div>
-    <div class="tab-nav" role="tablist">
-      {#each tabs as tab (tab.id)}
-        <button
-          class="tab-nav-button"
-          class:tab-nav-button--active={activeTab === tab.id}
-          {@attach registerTabButton(tab.id)}
-          aria-controls="panel-{tab.id}"
-          aria-selected={activeTab === tab.id}
-          onclick={() => (activeTab = tab.id)}
-          onkeydown={e => {
-            const iCurrent = tabs.findIndex(tab => tab.id === activeTab);
-            if (e.key === "ArrowRight" || e.key === "ArrowDown") {
-              e.preventDefault();
-              activeTab = tabs[(iCurrent + 1) % tabs.length].id;
-              tabButtonElements[activeTab]?.focus();
-            } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
-              e.preventDefault();
-              activeTab = tabs[(iCurrent - 1 + tabs.length) % tabs.length].id;
-              tabButtonElements[activeTab]?.focus();
-            }
-          }}
-          role="tab"
-          tabindex={activeTab === tab.id ? 0 : -1}
-        >
-          {tab.label}
-          {#if tab.id === Tab.Downloads && totalActiveDownloads > 0}
-            <span class="badge" aria-label="{totalActiveDownloads} active"
-              >{totalActiveDownloads}</span
-            >
-          {/if}
-        </button>
-      {/each}
-    </div>
+    <TabNav {activeTab} onChange={id => (activeTab = id)} {tabs} />
   </header>
 
   <div
@@ -291,62 +242,6 @@
     }
   }
 
-  .tab-nav {
-    display: flex;
-    gap: 4px;
-    padding: 4px;
-    border-radius: 16px;
-    background: var(--surface);
-  }
-
-  .tab-nav-button {
-    display: flex;
-    flex: 1;
-    gap: 6px;
-    justify-content: center;
-    align-items: center;
-    padding: 8px 16px;
-    border: none;
-    border-radius: 12px;
-    background: transparent;
-    color: var(--fg-muted);
-    font-family: inherit;
-    font-weight: 500;
-    font-size: 0.8125rem;
-    white-space: nowrap;
-    cursor: pointer;
-    transition: background-color 200ms, color 200ms;
-
-    &:hover {
-      background: var(--accent-hover);
-      color: var(--fg);
-    }
-
-    &:focus-visible {
-      outline: 2px solid var(--accent);
-      outline-offset: 2px;
-    }
-  }
-
-  .tab-nav-button--active {
-    background: var(--accent-container);
-    color: var(--accent);
-    font-weight: 600;
-  }
-
-  .badge {
-    display: inline-flex;
-    justify-content: center;
-    align-items: center;
-    min-width: 18px;
-    height: 18px;
-    padding: 0 5px;
-    border-radius: 9px;
-    background: var(--danger);
-    color: rgb(255 255 255);
-    font-weight: 600;
-    font-size: 0.6875rem;
-  }
 
   .popup-content {
     flex: 1;
