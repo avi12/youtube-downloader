@@ -6,34 +6,19 @@
 
 <script lang="ts">
   import DownloadOptionsPanel from "./DownloadOptionsPanel.svelte";
+  import { createPlaylistVideoItemState } from "./PlaylistVideoItem.state.svelte";
   import { CrossWorldMessage, crossWorldMessenger } from "@/lib/cross-world-messenger";
-  import { MessageType, sendMessage } from "@/lib/messaging";
   import { sendButtonData } from "@/lib/polymer-utils";
-  import {
-    buttonClickSignal,
-    cancelRequestSignal,
-    downloadProgressStore,
-    type DownloadProgressState,
-    videoDataStore
-  } from "@/lib/synced-stores.svelte";
-  import {
-    calculateWeightedProgress,
-    formatVideoQualityLabel,
-    getOutputExtension,
-    resolveAutoExtension,
-    resolveVideoFilename
-  } from "@/lib/utils";
-  import { DownloadType, ProgressType } from "@/types";
+  import { buttonClickSignal } from "@/lib/synced-stores.svelte";
   import {
     ButtonSize,
     ButtonState,
     ButtonStyle,
     ButtonType,
     IconName,
-    type Options,
-    type VideoData
+    type Options
   } from "@/types";
-  import { mount, unmount } from "svelte";
+  import { mount, unmount, untrack } from "svelte";
 
   type Props = {
     videoId: string;
@@ -42,49 +27,76 @@
   };
 
   const { videoId, gridTitle, options }: Props = $props();
+  // videoId + gridTitle are stable for the component's lifetime (grid keys by videoId).
+  // untrack() acknowledges this so Svelte doesn't warn about capturing initial values.
+  const itemState = createPlaylistVideoItemState(
+    untrack(() => videoId),
+    untrack(() => gridTitle),
+    () => options,
+    activeDownloadClicks
+  );
 
-  let videoData = $state<VideoData | null>(null);
-  const defaultProgressState: DownloadProgressState = {
-    isDownloading: false,
-    isDone: false,
-    progress: 0,
-    progressType: ""
-  };
+  const downloadButtonId = $derived(`btn-${videoId}-download`);
+  const chevronButtonId = $derived(`btn-${videoId}-chevron`);
 
-  const downloadState = $derived(downloadProgressStore.get(videoId) ?? defaultProgressState);
-  const isDownloading = $derived(downloadState.isDownloading);
-  const isDone = $derived(downloadState.isDone);
-  let isLoadFailed = $state(false);
+  // ─── Button refresh (throttled) ──────────────────────────────────────────────
 
-  // Reactively read video data from the synced store.
-  // The MAIN world writes to videoDataStore, which syncs via custom events.
-  $effect(() => {
-    const storeData = videoDataStore.get(videoId);
-    if (storeData) {
-      videoData = storeData;
-      return;
-    }
+  let elButtonGroup: HTMLElement | null = null;
+  let elDownloadBtn: Element | null = null;
+  let elChevronBtn: Element | null = null;
 
-    // Request from MAIN world via crossWorldMessenger (crosses world boundary)
-    void crossWorldMessenger.sendMessage(CrossWorldMessage.RequestVideoData, { videoId });
-
-    const loadTimeout = setTimeout(() => {
-      if (!videoData) {
-        isLoadFailed = true;
-      }
-    }, 15_000);
-
-    return () => clearTimeout(loadTimeout);
-  });
-
-  // Reactively refresh Polymer buttons when download state changes.
-  // Throttle sendButtonData calls to avoid flooding Polymer re-renders
-  // during rapid progress updates (100+ ticks/sec would freeze the page).
   let buttonRefreshTimer: ReturnType<typeof setTimeout> | null = null;
   const buttonRefreshIntervalMs = 250;
 
+  function assignButtonId(elButton: Element, id: string) {
+    if (elButton.getAttribute("data-ytdl-button-id") !== id) {
+      elButton.setAttribute("data-ytdl-button-id", id);
+    }
+  }
+
+  function refreshDownloadButton() {
+    if (!elDownloadBtn) {
+      return;
+    }
+
+    const tooltip = itemState.buttonTooltip();
+    assignButtonId(elDownloadBtn, downloadButtonId);
+    sendButtonData(elDownloadBtn, {
+      iconName: itemState.downloadIconName(),
+      title: "",
+      accessibilityText: itemState.videoData ? `${tooltip} ${itemState.videoData.title}` : tooltip,
+      style: ButtonStyle.Mono,
+      type: ButtonType.Tonal,
+      buttonSize: ButtonSize.Default,
+      state: !itemState.videoData?.isDownloadable ? ButtonState.Disabled : ButtonState.Active,
+      isFullWidth: false,
+      isDisabled: !itemState.videoData?.isDownloadable,
+      tooltip
+    });
+  }
+
+  function refreshChevronButton() {
+    if (!elChevronBtn) {
+      return;
+    }
+
+    assignButtonId(elChevronBtn, chevronButtonId);
+    sendButtonData(elChevronBtn, {
+      iconName: isPanelOpen ? IconName.ExpandLess : IconName.ExpandMore,
+      title: "",
+      accessibilityText: "Download options",
+      style: ButtonStyle.Mono,
+      type: ButtonType.Tonal,
+      buttonSize: ButtonSize.Default,
+      state: !itemState.videoData?.isDownloadable ? ButtonState.Disabled : ButtonState.Active,
+      isFullWidth: false,
+      isDisabled: !itemState.videoData?.isDownloadable,
+      tooltip: "Options"
+    });
+  }
+
   $effect(() => {
-    void downloadState;
+    void itemState.downloadState;
 
     if (buttonRefreshTimer) {
       return;
@@ -100,167 +112,19 @@
     }, buttonRefreshIntervalMs);
   });
 
-  const buttonLabel = $derived.by(() => {
-    if (!videoData?.isDownloadable) {
-      return "N/A";
-    }
-
-    if (isDone) {
-      return "Downloaded";
-    }
-
-    if (isDownloading) {
-      return "Cancel";
-    }
-
-    return "Download";
-  });
-
-  async function handleDownloadClick() {
-    if (!videoData?.isDownloadable || activeDownloadClicks.has(videoId)) {
-      return;
-    }
-
-    if (isDownloading) {
-      downloadProgressStore.delete(videoId);
-      cancelRequestSignal.value = { videoIds: [videoId] };
-      return;
-    }
-
-    let downloadType: DownloadType = videoData.isMusic ? DownloadType.Audio : DownloadType.VideoAndAudio;
-    if (options.defaultDownloadType && options.defaultDownloadType !== "auto") {
-      downloadType = options.defaultDownloadType;
-    }
-
-    const selectedVideoFormat = videoData.videoFormats[0] ?? null;
-    const selectedAudioFormat = videoData.audioFormats[0] ?? null;
-    const filenameOutput = resolveVideoFilename(videoData, options, gridTitle);
-
-    activeDownloadClicks.add(videoId);
-    downloadProgressStore.unsuppress(videoId);
-    downloadProgressStore.set(videoId, {
-      isDownloading: true,
-      isDone: false,
-      progress: 0,
-      progressType: ""
-    });
-
-    try {
-      // Chrome strips Origin from extension SW fetch, causing googlevideo 403.
-      // Open a background watch tab where YouTube's SW handles CORS natively.
-      // The tab is created inactive so the user stays on subscriptions.
-      await sendMessage(MessageType.DownloadViaWatchPage, {
-        type: downloadType,
-        videoId,
-        videoItag: selectedVideoFormat?.itag ?? 0,
-        audioItag: selectedAudioFormat?.itag ?? 0,
-        filenameOutput
-      });
-    } finally {
-      activeDownloadClicks.delete(videoId);
-    }
-  }
-
-  function getItemIconName() {
-    if (isDone) {
-      return IconName.CheckCircleThick;
-    }
-
-    if (isDownloading) {
-      return IconName.Close;
-    }
-
-    return IconName.Download;
-  }
+  // ─── Dropdown panel ──────────────────────────────────────────────────────────
 
   let isPanelOpen = $state(false);
   let elDropdown: HTMLElement | null = null;
   let panelInstance: ReturnType<typeof mount> | null = null;
-  let elButtonGroup: HTMLElement | null = null;
-  let elDownloadBtn: Element | null = null;
-  let elChevronBtn: Element | null = null;
   let unsubscribeDropdownReady: (() => void) | null = null;
 
-  // Weighted progress: download phase = 0-80%, mux phase = 80-100%
-  const displayProgress = $derived(
-    calculateWeightedProgress(isDownloading, downloadState.progress, downloadState.progressType)
-  );
-
-  function getDefaultQualityLabel() {
-    const videoFormat = videoData?.videoFormats[0];
-    return videoFormat ? formatVideoQualityLabel(videoFormat) : "";
-  }
-
-  function getButtonTooltip() {
-    if (isDownloading) {
-      if (downloadState.progress <= 0) {
-        return buttonLabel;
-      }
-
-      const phase = downloadState.progressType === ProgressType.FFmpeg ? "Processing" : "Downloading";
-      return `${Math.round(displayProgress)}% - ${phase}`;
-    }
-
-    if (!videoData?.isDownloadable) {
-      return buttonLabel;
-    }
-
-    const quality = getDefaultQualityLabel();
-    const videoFormat = videoData.videoFormats[0];
-    const audioFormat = videoData.audioFormats[0];
-    const resolvedExt = resolveAutoExtension(options.ext.video, videoFormat?.mimeType ?? "", DownloadType.Video);
-    const extension = videoFormat && audioFormat
-      ? getOutputExtension(videoFormat.mimeType, audioFormat.mimeType, resolvedExt)
-      : resolvedExt;
-    if (!quality) {
-      return `${videoData.title}.${extension}`;
-    }
-
-    return `${videoData.title}.${extension} - ${quality}`;
-  }
-
-  function refreshDownloadButton() {
-    if (!elDownloadBtn) {
-      return;
-    }
-
-    const tooltip = getButtonTooltip();
-
-    assignButtonId(elDownloadBtn, "download");
-    sendButtonData(elDownloadBtn, {
-      iconName: getItemIconName(),
-      title: "",
-      accessibilityText: videoData ? `${tooltip} ${videoData.title}` : tooltip,
-      style: ButtonStyle.Mono,
-      type: ButtonType.Tonal,
-      buttonSize: ButtonSize.Default,
-      state: !videoData?.isDownloadable ? ButtonState.Disabled : ButtonState.Active,
-      isFullWidth: false,
-      isDisabled: !videoData?.isDownloadable,
-      tooltip
-    });
-  }
-
-  const downloadButtonId = $derived(`btn-${videoId}-download`);
-  const chevronButtonId = $derived(`btn-${videoId}-chevron`);
-
-  function assignButtonId(elButton: Element, target: "download" | "chevron") {
-    const expectedId = target === "download" ? downloadButtonId : chevronButtonId;
-    if (elButton.getAttribute("data-ytdl-button-id") !== expectedId) {
-      elButton.setAttribute("data-ytdl-button-id", expectedId);
-    }
-  }
-
   function openPanel() {
-    if (!videoData || !elButtonGroup) {
+    if (!itemState.videoData || !elButtonGroup || elDropdown) {
       return;
     }
 
-    const currentVideoData = videoData;
-    if (elDropdown) {
-      return;
-    }
-
+    const currentVideoData = itemState.videoData;
     // Create dropdown via MAIN world bridge - Polymer elements need the
     // MAIN world's Polymer runtime to function (open/close, positioning).
     const panelContentId = `ytdl-grid-panel-${videoId}`;
@@ -270,7 +134,6 @@
       positionTargetSelector: `[data-ytdl-grid-item="${videoId}"] .ytdl-button-group`
     });
 
-    // Wait for the MAIN world to signal the dropdown is ready.
     unsubscribeDropdownReady = crossWorldMessenger.onMessage(CrossWorldMessage.DropdownReady, ({ data }) => {
       if (data.contentId !== panelContentId) {
         return;
@@ -292,10 +155,7 @@
 
       panelInstance = mount(DownloadOptionsPanel, {
         target: elContent,
-        props: {
-          videoData: currentVideoData,
-          options
-        }
+        props: { videoData: currentVideoData, options }
       });
 
       function handleOverlayClose() {
@@ -341,6 +201,14 @@
     }
   }
 
+  // ─── Button attach + click dispatch ──────────────────────────────────────────
+
+  function attachButtonGroup(elTarget: Element) {
+    if (elTarget instanceof HTMLElement) {
+      elButtonGroup = elTarget;
+    }
+  }
+
   function attachDownloadButton(elButton: Element) {
     if (!(elButton instanceof HTMLElement)) {
       return;
@@ -348,35 +216,6 @@
 
     elDownloadBtn = elButton;
     refreshDownloadButton();
-  }
-
-  $effect(() => {
-    const clicked = buttonClickSignal.value;
-    if (clicked?.buttonId && downloadButtonId === clicked.buttonId) {
-      queueMicrotask(() => {
-        void handleDownloadClick();
-      });
-    }
-  });
-
-  function refreshChevronButton() {
-    if (!elChevronBtn) {
-      return;
-    }
-
-    assignButtonId(elChevronBtn, "chevron");
-    sendButtonData(elChevronBtn, {
-      iconName: isPanelOpen ? IconName.ExpandLess : IconName.ExpandMore,
-      title: "",
-      accessibilityText: "Download options",
-      style: ButtonStyle.Mono,
-      type: ButtonType.Tonal,
-      buttonSize: ButtonSize.Default,
-      state: !videoData?.isDownloadable ? ButtonState.Disabled : ButtonState.Active,
-      isFullWidth: false,
-      isDisabled: !videoData?.isDownloadable,
-      tooltip: "Options"
-    });
   }
 
   function attachChevronButton(elButton: Element) {
@@ -391,36 +230,39 @@
 
   $effect(() => {
     const clicked = buttonClickSignal.value;
-    if (clicked?.buttonId && chevronButtonId === clicked.buttonId) {
+    if (!clicked?.buttonId) {
+      return;
+    }
+
+    if (clicked.buttonId === downloadButtonId) {
       queueMicrotask(() => {
-        togglePanel();
+        void itemState.handleDownloadClick();
       });
+      return;
+    }
+
+    if (clicked.buttonId === chevronButtonId) {
+      queueMicrotask(() => togglePanel());
     }
   });
-
-  function attachButtonGroup(elTarget: Element) {
-    if (elTarget instanceof HTMLElement) {
-      elButtonGroup = elTarget;
-    }
-  }
 </script>
 
 <div class="ytdl-button-group" {@attach attachButtonGroup}>
-  {#if videoData?.isDownloadable}
+  {#if itemState.videoData?.isDownloadable}
     <div class="ytdl-button-row">
       <yt-button-view-model {@attach attachDownloadButton}
       ></yt-button-view-model>
       <yt-button-view-model {@attach attachChevronButton}
       ></yt-button-view-model>
-      {#if isDownloading || isDone}
+      {#if itemState.isDownloading || itemState.isDone}
         <tp-yt-paper-progress
           class="ytdl-progress-bar"
-          aria-label={getButtonTooltip()}
-          value={isDone ? 100 : Math.round(displayProgress)}
+          aria-label={itemState.buttonTooltip()}
+          value={itemState.isDone ? 100 : Math.round(itemState.displayProgress)}
         ></tp-yt-paper-progress>
       {/if}
     </div>
-  {:else if !videoData && !isLoadFailed}
+  {:else if !itemState.videoData && !itemState.isLoadFailed}
     <div class="ytdl-spinner-container" aria-busy="true" aria-label="Loading video info">
       <tp-yt-paper-spinner-lite active></tp-yt-paper-spinner-lite>
     </div>
