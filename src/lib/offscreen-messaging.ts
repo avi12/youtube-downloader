@@ -1,4 +1,4 @@
-import type { DownloadType, VideoMetadata } from "@/types";
+import type { DownloadRequest, DownloadType, VideoMetadata } from "@/types";
 
 const OFFSCREEN_PORT_NAME = "ytdl-offscreen";
 
@@ -7,7 +7,9 @@ enum OffscreenMessageType {
   ProcessStreamEnd = "processStreamEnd",
   CancelProcessing = "cancelProcessing",
   PipelineDownload = "pipelineDownload",
-  TranscodeRecentDownload = "transcodeRecentDownload"
+  TranscodeRecentDownload = "transcodeRecentDownload",
+  StartOffscreenDownload = "startOffscreenDownload",
+  CancelOffscreenDownload = "cancelOffscreenDownload"
 }
 
 interface OffscreenProtocolMap {
@@ -41,6 +43,11 @@ interface OffscreenProtocolMap {
     entryId: string;
     targetContainer: string;
   };
+  [OffscreenMessageType.StartOffscreenDownload]: {
+    request: DownloadRequest;
+    tabId: number;
+  };
+  [OffscreenMessageType.CancelOffscreenDownload]: { videoId: string };
 }
 
 type OffscreenMessage = {
@@ -68,6 +75,12 @@ function dispatchOffscreenMessage(handlers: Partial<HandlerMap>, message: Offscr
       break;
     case OffscreenMessageType.TranscodeRecentDownload:
       handlers[OffscreenMessageType.TranscodeRecentDownload]?.(message.data);
+      break;
+    case OffscreenMessageType.StartOffscreenDownload:
+      handlers[OffscreenMessageType.StartOffscreenDownload]?.(message.data);
+      break;
+    case OffscreenMessageType.CancelOffscreenDownload:
+      handlers[OffscreenMessageType.CancelOffscreenDownload]?.(message.data);
       break;
   }
 }
