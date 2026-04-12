@@ -10,7 +10,6 @@ import { buildInitialDownloadState } from "./watch-button-state";
 import { buildChevronData, buildDownloadData, type ButtonViewState } from "./watch-button-view-model";
 import { CrossWorldEvent, onCrossWorldEvent } from "@/lib/cross-world-events";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/cross-world-messenger";
-import { calculateWeightedProgress } from "@/lib/utils";
 import { ProgressType, type ProgressUpdate, type VideoData } from "@/types";
 
 let cleanupCurrentButton: (() => void) | null = null;
@@ -99,23 +98,47 @@ export async function injectSegmentedDownloadButton(
   requestAnimationFrame(applySegmentedClasses);
 
   function getViewState(): ButtonViewState {
-    const weightedProgress = calculateWeightedProgress(isDownloading, downloadProgress, downloadProgressType) / 100;
     return {
       isDownloading,
       isDone,
       isInterrupted,
       isPanelOpen,
-      downloadProgress: weightedProgress,
+      downloadProgress: isDownloading ? downloadProgress : 0,
       filename: defaultFilename,
       quality: defaultQuality,
       isDownloadable: videoData.isDownloadable
     };
   }
 
+  let lastRenderedButtonKey = "";
+  let lastRenderedChevronKey = "";
+
   function refreshButtons() {
     const viewState = getViewState();
-    elDownloadButton.data = buildDownloadData(viewState);
-    elChevronButton.data = buildChevronData(viewState);
+
+    const downloadButtonKey = [
+      viewState.isDownloading,
+      viewState.isDone,
+      viewState.isInterrupted,
+      viewState.isDownloadable,
+      Math.round(viewState.downloadProgress * 100),
+      downloadProgressType
+    ].join("|");
+    if (downloadButtonKey !== lastRenderedButtonKey) {
+      lastRenderedButtonKey = downloadButtonKey;
+      elDownloadButton.data = buildDownloadData(viewState);
+    }
+
+    const chevronKey = [
+      viewState.isPanelOpen,
+      viewState.isDownloading && !viewState.isDone,
+      viewState.isDownloadable
+    ].join("|");
+    if (chevronKey !== lastRenderedChevronKey) {
+      lastRenderedChevronKey = chevronKey;
+      elChevronButton.data = buildChevronData(viewState);
+    }
+
     requestAnimationFrame(applySegmentedClasses);
 
     elProgressBar.indeterminate = isDownloading && downloadProgressType === "";

@@ -84,7 +84,6 @@ export function registerPipelineHandlers() {
       url: data.blobUrl,
       filename: data.filename
     });
-
     if (data.recentContext) {
       void persistOnDownloadComplete(targetDownloadId, data);
     }
