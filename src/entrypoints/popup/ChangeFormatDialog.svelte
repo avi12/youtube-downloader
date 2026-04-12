@@ -1,5 +1,6 @@
 <script lang="ts">
   import { MessageType, sendMessage } from "@/lib/messaging";
+  import { audioContainers, videoContainers } from "@/lib/utils";
   import type { RecentDownloadEntry } from "@/types";
 
   type Props = {
@@ -9,12 +10,9 @@
 
   const { entry, onClose }: Props = $props();
 
-  const videoContainerTargets = ["mp4", "mkv", "webm"];
-  const audioContainerTargets = ["mp3", "m4a", "ogg", "opus", "flac"];
-
-  const isVideoContainer = $derived(videoContainerTargets.includes(entry.container));
+  const isVideoContainer = $derived(videoContainers.includes(entry.container));
   const availableTargets = $derived(
-    (isVideoContainer ? videoContainerTargets : audioContainerTargets)
+    (isVideoContainer ? videoContainers : audioContainers)
       .filter(target => target !== entry.container)
   );
 

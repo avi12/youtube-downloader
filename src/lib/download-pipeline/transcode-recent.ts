@@ -1,5 +1,6 @@
 import { triggerDownload } from ".";
 import { getRecentDownloadBlob, getAllRecentDownloads } from "../recent-downloads-db";
+import { videoContainers } from "../utils";
 import { enqueueMuxJob, getFFmpeg } from "./ffmpeg-instance";
 import type { RecentDownloadEntry } from "@/types";
 
@@ -9,11 +10,9 @@ function swapFileExtension(filename: string, extension: string) {
   return `${base}.${extension}`;
 }
 
-const videoContainers = new Set(["mp4", "mkv", "webm"]);
-
 function buildFfmpegArgs(sourceFilename: string, outputFilename: string, targetContainer: string) {
   const args = ["-i", sourceFilename];
-  if (videoContainers.has(targetContainer)) {
+  if (videoContainers.includes(targetContainer)) {
     args.push("-c:v", "copy", "-c:a", "copy");
   }
 

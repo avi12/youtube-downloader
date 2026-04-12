@@ -55,9 +55,12 @@ const extensionToMime = {
 export const AUTO_EXTENSION = "auto";
 export const AUTO_EXTENSION_LABEL = "Auto (match source)";
 
+export const videoContainers = Object.keys(extensionToMime.video);
+export const audioContainers = Object.keys(extensionToMime.audio);
+
 export const supportedExtensions = {
-  video: [AUTO_EXTENSION, ...Object.keys(extensionToMime.video)],
-  audio: [AUTO_EXTENSION, ...Object.keys(extensionToMime.audio)]
+  video: [AUTO_EXTENSION, ...videoContainers],
+  audio: [AUTO_EXTENSION, ...audioContainers]
 };
 
 /**
