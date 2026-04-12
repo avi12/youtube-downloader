@@ -1,16 +1,14 @@
-import PlaylistDownloader from "@/components/PlaylistDownloader.svelte";
 import PlaylistVideoItem from "@/components/PlaylistVideoItem.svelte";
 import { getVideoIdFromUrl } from "@/lib/utils";
 import type { Options } from "@/types";
-import { mount, unmount } from "svelte";
+import { mount } from "svelte";
 
-const VIDEO_CARD_SELECTOR = "yt-lockup-view-model, ytd-rich-item-renderer";
+const VIDEO_CARD_SELECTOR = "yt-lockup-view-model, ytd-rich-item-renderer, ytd-grid-video-renderer";
 const PAGE_MANAGER_SELECTOR = "ytd-page-manager";
 const VIEWPORT_MARGIN = "200px";
 
 let gridObserver: MutationObserver | null = null;
 let visibilityObserver: IntersectionObserver | null = null;
-let gridDownloaderInstance: ReturnType<typeof mount> | null = null;
 
 export function cleanupGridUi() {
   gridObserver?.disconnect();
@@ -18,12 +16,7 @@ export function cleanupGridUi() {
   visibilityObserver?.disconnect();
   visibilityObserver = null;
 
-  if (gridDownloaderInstance) {
-    void unmount(gridDownloaderInstance);
-    gridDownloaderInstance = null;
-  }
-
-  for (const elItem of document.querySelectorAll("[data-ytdl-grid-item], [data-ytdl-grid-downloader]")) {
+  for (const elItem of document.querySelectorAll("[data-ytdl-grid-item]")) {
     elItem.remove();
   }
 }
@@ -135,47 +128,12 @@ function observePendingCards() {
   }
 }
 
-function injectGridDownloadAllButton(
-  context: InstanceType<typeof ContentScriptContext>,
-  options: Options
-) {
-  if (document.querySelector("[data-ytdl-grid-downloader]")) {
-    return;
-  }
-
-  const elChipBar = document.querySelector("chip-bar-view-model");
-  if (!elChipBar) {
-    return;
-  }
-
-  const elContainer = document.createElement("div");
-  elContainer.dataset.ytdlGridDownloader = "true";
-  elContainer.style.display = "inline-flex";
-  elContainer.style.alignItems = "center";
-  elContainer.style.marginInlineStart = "8px";
-  elChipBar.insertAdjacentElement("afterend", elContainer);
-
-  const ui = createIntegratedUi(context, {
-    position: "inline",
-    anchor: elContainer,
-    onMount(elUiContainer) {
-      gridDownloaderInstance = mount(PlaylistDownloader, {
-        target: elUiContainer,
-        props: { options }
-      });
-    }
-  });
-
-  ui.mount();
-}
-
 export function injectGridVideoButtons(
   context: InstanceType<typeof ContentScriptContext>,
   options: Options
 ) {
   visibilityObserver = createVisibilityObserver(context, options);
   observePendingCards();
-  injectGridDownloadAllButton(context, options);
 
   gridObserver?.disconnect();
   gridObserver = new MutationObserver(observePendingCards);
@@ -187,4 +145,3 @@ export function injectGridVideoButtons(
     visibilityObserver?.disconnect();
   });
 }
-
