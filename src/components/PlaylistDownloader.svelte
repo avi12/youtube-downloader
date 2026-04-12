@@ -124,6 +124,7 @@
   // ─── Download button ─────────────────────────────────────────────────────────
 
   const DOWNLOAD_BUTTON_ID = "playlist-download-btn";
+  const DOWNLOAD_ALL_BUTTON_ID = "playlist-download-all-btn";
 
   function attachDownloadButton(elButton: Element) {
     if (!(elButton instanceof HTMLElement)) {
@@ -149,8 +150,55 @@
     });
   }
 
+  function attachDownloadAllButton(elButton: Element) {
+    if (!(elButton instanceof HTMLElement)) {
+      return;
+    }
+
+    if (!elButton.hasAttribute("data-ytdl-button-id")) {
+      elButton.setAttribute("data-ytdl-button-id", DOWNLOAD_ALL_BUTTON_ID);
+    }
+
+    const isBusy = state.isRevealingAll || state.isDownloading;
+    const downloadAllLabel = state.isRevealingAll
+      ? `Loading all videos (${state.revealedVideoCount})`
+      : "Download entire playlist";
+
+    sendButtonData(elButton, {
+      iconName: state.isRevealingAll ? IconName.Close : IconName.Download,
+      title: downloadAllLabel,
+      accessibilityText: downloadAllLabel,
+      style: ButtonStyle.Mono,
+      type: ButtonType.Outline,
+      buttonSize: ButtonSize.Default,
+      state: isBusy && !state.isRevealingAll ? ButtonState.Disabled : ButtonState.Active,
+      isFullWidth: false,
+      isDisabled: isBusy && !state.isRevealingAll,
+      tooltip: downloadAllLabel
+    });
+  }
+
   function attachProgressBar(elProgress: Element) {
     applyPolymerCustomStyles(elProgress, PAPER_PROGRESS_THEME);
+  }
+
+  function attachScrollSyncCheckbox(elCheckbox: Element) {
+    if (!(elCheckbox instanceof HTMLElement)) {
+      return;
+    }
+
+    function readCheckedAttribute() {
+      return elCheckbox.hasAttribute("checked");
+    }
+
+    function handleCheckedChanged() {
+      const nextChecked = readCheckedAttribute();
+      if (nextChecked !== state.isScrollSyncEnabled) {
+        state.isScrollSyncEnabled = nextChecked;
+      }
+    }
+
+    elCheckbox.addEventListener("checked-changed", handleCheckedChanged);
   }
 
   // ─── Click dispatcher ────────────────────────────────────────────────────────
@@ -166,9 +214,21 @@
       return;
     }
 
+    if (clicked.buttonId === DOWNLOAD_ALL_BUTTON_ID) {
+      if (state.isRevealingAll) {
+        state.cancelReveal();
+      } else {
+        void state.revealAndDownloadAll();
+      }
+
+      return;
+    }
+
     const config = toggleButtons.find(button => button.id === clicked.buttonId);
     config?.onClick();
   });
+
+  const isDataSaverSelected = $derived(state.downloadMode === PlaylistDownloadMode.DataSaver);
 </script>
 
 <div class="ytdl-playlist-container" aria-label="Playlist Downloader" role="region">
@@ -188,6 +248,7 @@
 
   <div class="ytdl-playlist-actions">
     <yt-button-view-model {@attach attachDownloadButton}></yt-button-view-model>
+    <yt-button-view-model {@attach attachDownloadAllButton}></yt-button-view-model>
 
     {#if state.isDownloading && state.totalCount > 0}
       <tp-yt-paper-progress
@@ -197,6 +258,17 @@
       ></tp-yt-paper-progress>
     {/if}
   </div>
+
+  {#if isDataSaverSelected}
+    <div class="ytdl-scroll-sync-option">
+      <tp-yt-paper-checkbox
+        {@attach attachScrollSyncCheckbox}
+        checked={state.isScrollSyncEnabled || undefined}
+      >
+        Scroll to currently-downloading video
+      </tp-yt-paper-checkbox>
+    </div>
+  {/if}
 
   {#if state.nonDownloadableCount > 0}
     <p class="ytdl-restriction-notice" role="status">
@@ -236,5 +308,13 @@
   .ytdl-restriction-notice {
     margin: 0;
     font-size: 1.2rem;
+  }
+
+  .ytdl-scroll-sync-option {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    font-size: 1.2rem;
+    cursor: pointer;
   }
 </style>

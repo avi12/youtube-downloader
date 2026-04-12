@@ -1,6 +1,7 @@
+import { revealAllPlaylistVideos, scrollVideoItemIntoView } from "./PlaylistDownloader.scroll";
 import { MessageType, sendMessage } from "@/lib/messaging";
 import { musicListItem, videoOnlyListItem, videoQueueItem } from "@/lib/storage";
-import { playlistMetadataSignal, videoDataStore } from "@/lib/synced-stores.svelte";
+import { downloadProgressStore, playlistMetadataSignal, videoDataStore } from "@/lib/synced-stores.svelte";
 import { resolveVideoFilename } from "@/lib/utils";
 import {
   DownloadType,
@@ -47,6 +48,11 @@ export function createPlaylistDownloaderState(getOptions: () => Options) {
   let error = $state("");
   let downloadMode = $state(PlaylistDownloadMode.Fast);
   let outputMode = $state(PlaylistOutputMode.Zip);
+  let isRevealingAll = $state(false);
+  let revealedVideoCount = $state(0);
+  let isScrollSyncEnabled = $state(false);
+  let shouldStartDownloadAfterReveal = false;
+  let abortReveal = false;
 
   // Sync video data from the synced store as each playlist item reports in
   $effect(() => {
@@ -184,6 +190,68 @@ export function createPlaylistDownloaderState(getOptions: () => Options) {
     }
   }
 
+  async function revealAllVideos() {
+    if (isRevealingAll) {
+      return;
+    }
+
+    isRevealingAll = true;
+    abortReveal = false;
+    revealedVideoCount = videoDataMap.size;
+
+    await revealAllPlaylistVideos(
+      update => {
+        revealedVideoCount = update.revealedCount;
+      },
+      () => abortReveal
+    );
+
+    isRevealingAll = false;
+
+    if (abortReveal) {
+      shouldStartDownloadAfterReveal = false;
+      return;
+    }
+
+    if (shouldStartDownloadAfterReveal) {
+      shouldStartDownloadAfterReveal = false;
+      await startDownload();
+    }
+  }
+
+  function cancelReveal() {
+    abortReveal = true;
+  }
+
+  async function revealAndDownloadAll() {
+    checkedVideoIds.clear();
+    shouldStartDownloadAfterReveal = true;
+    await revealAllVideos();
+  }
+
+  const activeDownloadVideoId = $derived.by(() => {
+    if (!isDownloading || downloadMode !== PlaylistDownloadMode.DataSaver) {
+      return null;
+    }
+
+    for (const video of checkedDownloadableVideos) {
+      const progressEntry = downloadProgressStore.get(video.videoId);
+      if (progressEntry?.isDownloading) {
+        return video.videoId;
+      }
+    }
+
+    return null;
+  });
+
+  $effect(() => {
+    if (!isScrollSyncEnabled || !activeDownloadVideoId) {
+      return;
+    }
+
+    scrollVideoItemIntoView(activeDownloadVideoId);
+  });
+
   return {
     get isDownloading() {
       return isDownloading;
@@ -224,6 +292,20 @@ export function createPlaylistDownloaderState(getOptions: () => Options) {
     get videoDataMapSize() {
       return videoDataMap.size;
     },
-    toggleDownload
+    get isRevealingAll() {
+      return isRevealingAll;
+    },
+    get revealedVideoCount() {
+      return revealedVideoCount;
+    },
+    get isScrollSyncEnabled() {
+      return isScrollSyncEnabled;
+    },
+    set isScrollSyncEnabled(value) {
+      isScrollSyncEnabled = value;
+    },
+    toggleDownload,
+    revealAndDownloadAll,
+    cancelReveal
   };
 }
