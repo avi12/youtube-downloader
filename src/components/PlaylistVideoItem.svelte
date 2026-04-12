@@ -59,10 +59,10 @@
       return;
     }
 
-    const tooltip = itemState.buttonTooltip();
+    const tooltip = itemState.buttonTooltip;
     assignButtonId(elDownloadBtn, downloadButtonId);
     sendButtonData(elDownloadBtn, {
-      iconName: itemState.downloadIconName(),
+      iconName: itemState.downloadIconName,
       title: "",
       accessibilityText: itemState.videoData ? `${tooltip} ${itemState.videoData.title}` : tooltip,
       style: ButtonStyle.Mono,
@@ -257,7 +257,7 @@
       {#if itemState.isDownloading || itemState.isDone}
         <tp-yt-paper-progress
           class="ytdl-progress-bar"
-          aria-label={itemState.buttonTooltip()}
+          aria-label={itemState.buttonTooltip}
           value={itemState.isDone ? 100 : Math.round(itemState.displayProgress)}
         ></tp-yt-paper-progress>
       {/if}

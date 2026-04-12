@@ -81,36 +81,38 @@ export function createPlaylistVideoItemState(
     calculateWeightedProgress(isDownloading, downloadState.progress, downloadState.progressType)
   );
 
-  function buttonTooltip() {
+  const buttonTooltip = $derived.by(() => {
     if (isDownloading) {
       if (downloadState.progress <= 0) {
         return buttonLabel;
       }
 
-      const phase = downloadState.progressType === ProgressType.FFmpeg ? "Processing" : "Downloading";
-      return `${Math.round(displayProgress)}% - ${phase}`;
+      const activePhaseLabel = downloadState.progressType === ProgressType.FFmpeg ? "Processing" : "Downloading";
+      return `${Math.round(displayProgress)}% - ${activePhaseLabel}`;
     }
 
     if (!videoData?.isDownloadable) {
       return buttonLabel;
     }
 
-    const options = getOptions();
-    const videoFormat = videoData.videoFormats[0];
-    const audioFormat = videoData.audioFormats[0];
-    const resolvedExt = resolveAutoExtension(options.ext.video, videoFormat?.mimeType ?? "", DownloadType.Video);
-    const extension = videoFormat && audioFormat
-      ? getOutputExtension(videoFormat.mimeType, audioFormat.mimeType, resolvedExt)
-      : resolvedExt;
-    const quality = videoFormat ? formatVideoQualityLabel(videoFormat) : "";
-    if (!quality) {
-      return `${videoData.title}.${extension}`;
+    const currentOptions = getOptions();
+    const primaryVideoFormat = videoData.videoFormats[0];
+    const primaryAudioFormat = videoData.audioFormats[0];
+    const resolvedContainerExtension = resolveAutoExtension(
+      currentOptions.ext.video, primaryVideoFormat?.mimeType ?? "", DownloadType.Video
+    );
+    const containerExtension = primaryVideoFormat && primaryAudioFormat
+      ? getOutputExtension(primaryVideoFormat.mimeType, primaryAudioFormat.mimeType, resolvedContainerExtension)
+      : resolvedContainerExtension;
+    const qualityLabel = primaryVideoFormat ? formatVideoQualityLabel(primaryVideoFormat) : "";
+    if (!qualityLabel) {
+      return `${videoData.title}.${containerExtension}`;
     }
 
-    return `${videoData.title}.${extension} - ${quality}`;
-  }
+    return `${videoData.title}.${containerExtension} - ${qualityLabel}`;
+  });
 
-  function downloadIconName() {
+  const downloadIconName = $derived.by(() => {
     if (isDone) {
       return IconName.CheckCircleThick;
     }
@@ -120,7 +122,7 @@ export function createPlaylistVideoItemState(
     }
 
     return IconName.Download;
-  }
+  });
 
   async function startDownload() {
     if (!videoData?.isDownloadable) {
@@ -195,8 +197,12 @@ export function createPlaylistVideoItemState(
     get displayProgress() {
       return displayProgress;
     },
-    buttonTooltip,
-    downloadIconName,
+    get buttonTooltip() {
+      return buttonTooltip;
+    },
+    get downloadIconName() {
+      return downloadIconName;
+    },
     handleDownloadClick
   };
 }
