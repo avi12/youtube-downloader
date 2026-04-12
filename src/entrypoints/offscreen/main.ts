@@ -9,6 +9,7 @@
  */
 
 import { cancelDownloadsByIds, enqueueStreamData, initFFmpeg } from "@/lib/download-pipeline";
+import { transcodeRecentDownload } from "@/lib/download-pipeline/transcode-recent";
 import { OffscreenMessageType, listenForOffscreenMessages } from "@/lib/offscreen-messaging";
 import { DownloadType, StreamType } from "@/types";
 import type { VideoMetadata } from "@/types";
@@ -73,6 +74,9 @@ listenForOffscreenMessages({
   [OffscreenMessageType.ProcessStreamEnd]: handleProcessStreamEnd,
   [OffscreenMessageType.CancelProcessing](data) {
     void cancelDownloadsByIds(data.videoIds);
+  },
+  [OffscreenMessageType.TranscodeRecentDownload](data) {
+    void transcodeRecentDownload(data);
   }
 });
 

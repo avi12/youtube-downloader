@@ -6,7 +6,8 @@ enum OffscreenMessageType {
   ProcessStreamChunk = "processStreamChunk",
   ProcessStreamEnd = "processStreamEnd",
   CancelProcessing = "cancelProcessing",
-  PipelineDownload = "pipelineDownload"
+  PipelineDownload = "pipelineDownload",
+  TranscodeRecentDownload = "transcodeRecentDownload"
 }
 
 interface OffscreenProtocolMap {
@@ -36,6 +37,10 @@ interface OffscreenProtocolMap {
     dataUrl: string;
     filename: string;
   };
+  [OffscreenMessageType.TranscodeRecentDownload]: {
+    entryId: string;
+    targetContainer: string;
+  };
 }
 
 type OffscreenMessage = {
@@ -60,6 +65,9 @@ function dispatchOffscreenMessage(handlers: Partial<HandlerMap>, message: Offscr
       break;
     case OffscreenMessageType.PipelineDownload:
       handlers[OffscreenMessageType.PipelineDownload]?.(message.data);
+      break;
+    case OffscreenMessageType.TranscodeRecentDownload:
+      handlers[OffscreenMessageType.TranscodeRecentDownload]?.(message.data);
       break;
   }
 }

@@ -1,3 +1,6 @@
+import { ensureProcessor } from "./processor";
+import { MessageType, onMessage } from "@/lib/messaging";
+import { OffscreenMessageType, sendToOffscreen } from "@/lib/offscreen-messaging";
 import { pruneRecentDownloads } from "@/lib/recent-downloads-db";
 
 const RETENTION_ALARM_NAME = "ytdl-prune-recent-downloads";
@@ -20,6 +23,7 @@ export function registerRecentDownloadsRetention() {
     openPopupCount++;
     port.onDisconnect.addListener(() => {
       openPopupCount = Math.max(0, openPopupCount - 1);
+
       if (openPopupCount === 0) {
         void prune();
       }
@@ -33,5 +37,10 @@ export function registerRecentDownloadsRetention() {
     }
 
     void prune();
+  });
+
+  onMessage(MessageType.TranscodeRecentDownload, async ({ data }) => {
+    await ensureProcessor();
+    sendToOffscreen(OffscreenMessageType.TranscodeRecentDownload, data);
   });
 }
