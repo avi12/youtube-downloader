@@ -122,7 +122,9 @@ export async function injectSegmentedDownloadButton(
       viewState.isInterrupted,
       viewState.isDownloadable,
       Math.round(viewState.downloadProgress * 100),
-      downloadProgressType
+      downloadProgressType,
+      viewState.filename,
+      viewState.quality
     ].join("|");
     if (downloadButtonKey !== lastRenderedButtonKey) {
       lastRenderedButtonKey = downloadButtonKey;
