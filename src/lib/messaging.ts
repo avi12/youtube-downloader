@@ -40,7 +40,10 @@ export enum MessageType {
   PipelineRemoval = "pipelineRemoval",
   PipelineQueueRemove = "pipelineQueueRemove",
   PipelineFFmpegReady = "pipelineFFmpegReady",
-  PipelineDownload = "pipelineDownload"
+  PipelineDownload = "pipelineDownload",
+
+  // Background → Popup
+  RecentDownloadsChanged = "recentDownloadsChanged"
 }
 
 // ─── Protocol definition ──────────────────────────────────────────────────────
@@ -160,7 +163,14 @@ interface ProtocolMap {
     blobUrl: string;
     mimeType: string;
     filename: string;
+    recentContext?: {
+      videoId: string;
+      title: string;
+      channel: string;
+      thumbnailUrl?: string;
+    };
   }): void;
+  recentDownloadsChanged(data: Record<string, never>): void;
 }
 
 export const { sendMessage, onMessage } =

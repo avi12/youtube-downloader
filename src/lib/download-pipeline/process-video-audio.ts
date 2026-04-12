@@ -31,10 +31,16 @@ export async function processVideoAudio(item: ProcessStreamData) {
   if (!videoData || !audioData) {
     await reportProgress({ videoId, progress: 1, progressType: ProgressType.FFmpeg, tabId });
 
+    const recentContext = {
+      videoId,
+      title: item.metadata?.title ?? filenameOutput,
+      channel: item.metadata?.artist ?? "",
+      thumbnailUrl: item.metadata?.thumbnailUrl
+    };
     if (videoData) {
-      await triggerDownload(videoData, filenameOutput);
+      await triggerDownload(videoData, filenameOutput, recentContext);
     } else if (audioData) {
-      await triggerDownload(audioData, filenameOutput);
+      await triggerDownload(audioData, filenameOutput, recentContext);
     }
 
     return;
@@ -143,7 +149,12 @@ export async function processVideoAudio(item: ProcessStreamData) {
       return;
     }
 
-    await triggerDownload(ffmpegOutput, downloadFilename);
+    await triggerDownload(ffmpegOutput, downloadFilename, {
+      videoId,
+      title: item.metadata?.title ?? filenameOutput,
+      channel: item.metadata?.artist ?? "",
+      thumbnailUrl: item.metadata?.thumbnailUrl
+    });
     await reportProgress({ videoId, progress: 1, progressType: ProgressType.FFmpeg, tabId });
   } finally {
     progressHandlers.delete(handleFFmpegProgress);

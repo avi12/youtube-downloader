@@ -152,6 +152,20 @@ export type VideoMetadata = {
   isMusic: boolean;
 };
 
+export type RecentDownloadEntry = {
+  id: string;
+  downloadId: number;
+  videoId: string;
+  title: string;
+  channel: string;
+  filename: string;
+  container: string;
+  mimeType: string;
+  size: number;
+  thumbnailUrl?: string;
+  completedAt: number;
+};
+
 export type ProcessStreamData = StreamData & {
   tabId: number;
   playlistId?: string;

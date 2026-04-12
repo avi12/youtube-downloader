@@ -1,9 +1,10 @@
 import { signalFFmpegReady } from "./processor";
 import { signalVideoComplete } from "./sequential-queue";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging";
+import { addRecentDownload } from "@/lib/recent-downloads-db";
 import { isFFmpegReadyItem, statusProgressItem } from "@/lib/storage";
 import { ProgressType } from "@/types";
-import type { ProgressUpdate } from "@/types";
+import type { ProgressUpdate, RecentDownloadEntry } from "@/types";
 
 type StatusProgressMap = Awaited<ReturnType<typeof statusProgressItem.getValue>>;
 
@@ -80,6 +81,7 @@ export function registerPipelineHandlers() {
 
   onMessage(MessageType.PipelineDownload, async ({ data }) => {
     let targetDownloadId = -1;
+    let finalState = "";
 
     const downloadComplete = new Promise<void>(resolve => {
       function handleChanged(delta: {
@@ -91,6 +93,7 @@ export function registerPipelineHandlers() {
         }
 
         if (delta.state.current === "complete" || delta.state.current === "interrupted") {
+          finalState = delta.state.current;
           browser.downloads.onChanged.removeListener(handleChanged);
           resolve();
         }
@@ -105,5 +108,60 @@ export function registerPipelineHandlers() {
     });
 
     await downloadComplete;
+
+    if (finalState === "complete" && data.recentContext) {
+      await persistRecentDownload(targetDownloadId, data);
+    }
   });
+}
+
+async function persistRecentDownload(
+  downloadId: number,
+  data: {
+    blobUrl: string;
+    mimeType: string;
+    filename: string;
+    recentContext?: {
+      videoId: string;
+      title: string;
+      channel: string;
+      thumbnailUrl?: string;
+    };
+  }
+) {
+  const context = data.recentContext;
+  if (!context) {
+    return;
+  }
+
+  try {
+    const response = await fetch(data.blobUrl);
+    const blob = await response.blob();
+    const entry: RecentDownloadEntry = {
+      id: crypto.randomUUID(),
+      downloadId,
+      videoId: context.videoId,
+      title: context.title,
+      channel: context.channel,
+      filename: data.filename,
+      container: extractContainer(data.filename),
+      mimeType: data.mimeType,
+      size: blob.size,
+      thumbnailUrl: context.thumbnailUrl,
+      completedAt: Date.now()
+    };
+    await addRecentDownload(entry, blob);
+    try {
+      await sendMessage(MessageType.RecentDownloadsChanged, {});
+    } catch {
+      // Popup not open — ignore.
+    }
+  } catch (error) {
+    console.warn("[ytdl:bg] Persist recent download failed:", error);
+  }
+}
+
+function extractContainer(filename: string) {
+  const dotIndex = filename.lastIndexOf(".");
+  return dotIndex === -1 ? "" : filename.slice(dotIndex + 1).toLowerCase();
 }

@@ -56,6 +56,11 @@ export async function processSingleMedia(item: ProcessStreamData) {
     return;
   }
 
-  await triggerDownload(data, filenameOutput);
+  await triggerDownload(data, filenameOutput, {
+    videoId,
+    title: item.metadata?.title ?? filenameOutput,
+    channel: item.metadata?.artist ?? "",
+    thumbnailUrl: item.metadata?.thumbnailUrl
+  });
   await reportProgress({ videoId, progress: 1, progressType: ProgressType.FFmpeg, tabId });
 }

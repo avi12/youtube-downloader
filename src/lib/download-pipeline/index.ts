@@ -29,7 +29,18 @@ const activeBlobUrls = new Map<string, Blob>();
 // as "Deleted" because the source URL becomes invalid. Keep URLs alive for the
 // user's session so "Show in folder" works. The offscreen document's lifecycle
 // cleans them up eventually.
-export async function triggerDownload(data: Uint8Array, filenameOutput: string) {
+type RecentDownloadContext = {
+  videoId: string;
+  title: string;
+  channel: string;
+  thumbnailUrl?: string;
+};
+
+export async function triggerDownload(
+  data: Uint8Array,
+  filenameOutput: string,
+  recentContext?: RecentDownloadContext
+) {
   const mimeType = getMimeType(filenameOutput) || "application/octet-stream";
   const filename = getCompatibleFilename(filenameOutput);
   const blob = new Blob([new Uint8Array(data)], { type: mimeType });
@@ -38,7 +49,7 @@ export async function triggerDownload(data: Uint8Array, filenameOutput: string) 
 
   // Await the file save so the caller can report progress=1 only after
   // the file is actually written to disk (not just after FFmpeg muxing).
-  await sendMessage(MessageType.PipelineDownload, { blobUrl, mimeType, filename });
+  await sendMessage(MessageType.PipelineDownload, { blobUrl, mimeType, filename, recentContext });
 }
 
 // Throttle progress updates to avoid flooding the main thread with
