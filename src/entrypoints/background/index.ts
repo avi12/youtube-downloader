@@ -12,22 +12,23 @@ import { uint8ToBase64 } from "@/lib/utils";
 const sabrOriginRuleId = 1;
 
 async function registerSabrOriginRule() {
+  const rule: Browser.declarativeNetRequest.Rule = {
+    id: sabrOriginRuleId,
+    priority: 1,
+    action: {
+      type: "modifyHeaders",
+      requestHeaders: [
+        { header: "Origin", operation: "set", value: "https://www.youtube.com" },
+        { header: "Referer", operation: "set", value: "https://www.youtube.com/" },
+        { header: "Sec-Fetch-Site", operation: "set", value: "cross-site" },
+        { header: "Sec-Fetch-Storage-Access", operation: "set", value: "active" }
+      ]
+    },
+    condition: { urlFilter: "||googlevideo.com/videoplayback" }
+  };
   await browser.declarativeNetRequest.updateDynamicRules({
     removeRuleIds: [sabrOriginRuleId],
-    addRules: [{
-      id: sabrOriginRuleId,
-      priority: 1,
-      action: {
-        type: "modifyHeaders" as const,
-        requestHeaders: [
-          { header: "Origin", operation: "set" as const, value: "https://www.youtube.com" },
-          { header: "Referer", operation: "set" as const, value: "https://www.youtube.com/" },
-          { header: "Sec-Fetch-Site", operation: "set" as const, value: "cross-site" },
-          { header: "Sec-Fetch-Storage-Access", operation: "set" as const, value: "active" }
-        ]
-      },
-      condition: { urlFilter: "||googlevideo.com/videoplayback" }
-    }]
+    addRules: [rule]
   });
 }
 

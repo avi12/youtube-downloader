@@ -43,6 +43,8 @@
     initialOptions
   }: Props = $props();
 
+  // `as const` used for enum-like literals since TypeScript `enum` inside
+  // a Svelte component is flagged as a non-reactive update by the compiler
   const Tab = {
     Downloads: "downloads",
     Settings: "settings"

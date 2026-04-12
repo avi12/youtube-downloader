@@ -20,9 +20,7 @@ export function signalFFmpegReady() {
 }
 
 async function waitForFFmpegReady() {
-  return new Promise<void>(resolve => {
-    resolveFFmpegReady = resolve;
-  });
+  return new Promise<void>(resolve => resolveFFmpegReady = resolve);
 }
 
 async function ensureChromeOffscreenDocument() {
