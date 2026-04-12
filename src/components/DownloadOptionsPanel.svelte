@@ -4,6 +4,7 @@
   import panelFocusStyles from "./panel-focus.css?inline";
   import { CrossWorldMessage, crossWorldMessenger } from "@/lib/cross-world-messenger";
   import { applyInertTrap } from "@/lib/inert-trap";
+  import { buttonClickSignal } from "@/lib/synced-stores.svelte";
   import {
     attachCancelButton,
     attachCloseButton,
@@ -44,6 +45,8 @@
 
   // -- Actions ----------------------------------------------------------------
 
+  const closeButtonId = "ytdl-panel-close";
+
   function closePanel() {
     releaseInertTrap();
     void crossWorldMessenger.sendMessage(CrossWorldMessage.PanelClosed, {});
@@ -51,6 +54,17 @@
     // panelClosed listener is owned by the watch page
     document.dispatchEvent(new CustomEvent("ytdl:panel-closed"));
   }
+
+  // yt-button-view-model doesn't fire Svelte's onclick when the user clicks
+  // the inner Polymer-rendered <button>. Grid + watch buttons work around
+  // this by routing clicks through the MAIN-world buttonClickSignal bus —
+  // do the same here for the panel close button.
+  $effect(() => {
+    const clicked = buttonClickSignal.value;
+    if (clicked?.buttonId === closeButtonId) {
+      closePanel();
+    }
+  });
 
   function handleActivationKeydown(callback: () => void) {
     return (e: KeyboardEvent) => {
@@ -154,8 +168,7 @@
       class={scopingClass}
       {@attach attachCloseButton}
       aria-label="Close"
-      data-ytdl-button-id="ytdl-panel-close"
-      onclick={closePanel}
+      data-ytdl-button-id={closeButtonId}
       onkeydown={handleActivationKeydown(closePanel)}
       role="button"
       tabindex="0"
