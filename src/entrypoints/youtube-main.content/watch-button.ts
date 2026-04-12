@@ -206,7 +206,7 @@ export async function injectSegmentedDownloadButton(
     downloadProgress = data.progress;
     downloadProgressType = data.progressType;
 
-    if (data.progress >= 1) {
+    if (data.progress >= 1 && data.progressType === ProgressType.FFmpeg) {
       isDone = true;
       isDownloading = false;
       downloadProgress = 0;

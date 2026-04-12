@@ -80,38 +80,53 @@ export function registerPipelineHandlers() {
   });
 
   onMessage(MessageType.PipelineDownload, async ({ data }) => {
-    let targetDownloadId = -1;
-    let finalState = "";
-
-    const downloadComplete = new Promise<void>(resolve => {
-      function handleChanged(delta: {
-        id: number;
-        state?: { current?: string };
-      }) {
-        if (delta.id !== targetDownloadId || !delta.state?.current) {
-          return;
-        }
-
-        if (delta.state.current === "complete" || delta.state.current === "interrupted") {
-          finalState = delta.state.current;
-          browser.downloads.onChanged.removeListener(handleChanged);
-          resolve();
-        }
-      }
-
-      browser.downloads.onChanged.addListener(handleChanged);
-    });
-
-    targetDownloadId = await browser.downloads.download({
+    const targetDownloadId = await browser.downloads.download({
       url: data.blobUrl,
       filename: data.filename
     });
 
-    await downloadComplete;
-
-    if (finalState === "complete" && data.recentContext) {
-      await persistRecentDownload(targetDownloadId, data);
+    if (data.recentContext) {
+      void persistOnDownloadComplete(targetDownloadId, data);
     }
+  });
+}
+
+function persistOnDownloadComplete(
+  targetDownloadId: number,
+  data: {
+    blobUrl: string;
+    mimeType: string;
+    filename: string;
+    recentContext?: {
+      videoId: string;
+      title: string;
+      channel: string;
+      thumbnailUrl?: string;
+    };
+  }
+) {
+  return new Promise<void>(resolve => {
+    function handleChanged(delta: {
+      id: number;
+      state?: { current?: string };
+    }) {
+      if (delta.id !== targetDownloadId || !delta.state?.current) {
+        return;
+      }
+
+      if (delta.state.current === "complete") {
+        browser.downloads.onChanged.removeListener(handleChanged);
+        void persistRecentDownload(targetDownloadId, data).finally(resolve);
+        return;
+      }
+
+      if (delta.state.current === "interrupted") {
+        browser.downloads.onChanged.removeListener(handleChanged);
+        resolve();
+      }
+    }
+
+    browser.downloads.onChanged.addListener(handleChanged);
   });
 }
 
