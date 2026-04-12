@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Select from "./Select.svelte";
+  import PolymerSelect from "./PolymerSelect.svelte";
   import { applyPolymerCustomStyles, PAPER_INPUT_THEME } from "@/lib/polymer-utils";
   import { formatAudioCodecLabel, formatVideoQualityLabel, splitFilenameAndExtension, supportedExtensions } from "@/lib/utils";
   import { DownloadType } from "@/types";
@@ -122,7 +122,7 @@
 <div class="ytdl-options-container">
   <!-- Type -->
   <div class="ytdl-options-field">
-    <Select
+    <PolymerSelect
       id="type-select"
       disabled={isDownloading}
       label="Type"
@@ -139,7 +139,7 @@
 
   <!-- Quality -->
   <div class="ytdl-options-field">
-    <Select
+    <PolymerSelect
       id="quality-select"
       disabled={isDownloading}
       label="Quality"
