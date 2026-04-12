@@ -16,7 +16,7 @@ interface OffscreenProtocolMap {
     streamType: string;
     iChunk: number;
     totalChunks: number;
-    chunk: Uint8Array;
+    chunkBase64: string;
     tabId: number;
   };
   [OffscreenMessageType.ProcessStreamEnd]: {

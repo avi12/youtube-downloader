@@ -64,6 +64,11 @@ function assembleStreamChunks(chunks: Map<number, Uint8Array>, totalChunks: numb
   return result;
 }
 
+function base64ToUint8Array(base64: string) {
+  const binaryString = atob(base64);
+  return Uint8Array.from(binaryString, char => char.charCodeAt(0));
+}
+
 listenForOffscreenMessages({
   [OffscreenMessageType.ProcessStreamChunk]: handleProcessStreamChunk,
   [OffscreenMessageType.ProcessStreamEnd]: handleProcessStreamEnd,
@@ -80,11 +85,11 @@ function handleProcessStreamChunk(data: {
   streamType: string;
   iChunk: number;
   totalChunks: number;
-  chunk: Uint8Array;
+  chunkBase64: string;
   tabId: number;
 }) {
   const {
-    videoId, streamType, iChunk, totalChunks, chunk
+    videoId, streamType, iChunk, totalChunks, chunkBase64
   } = data;
   if (!streamAccumulators.has(videoId)) {
     streamAccumulators.set(videoId, {
@@ -110,8 +115,9 @@ function handleProcessStreamChunk(data: {
     return;
   }
 
+  const decodedChunk = base64ToUint8Array(chunkBase64);
   if (streamType === StreamType.Video) {
-    accumulator.videoChunks.set(iChunk, chunk);
+    accumulator.videoChunks.set(iChunk, decodedChunk);
 
     if (totalChunks > 0) {
       accumulator.totalVideoChunks = totalChunks;
@@ -125,7 +131,7 @@ function handleProcessStreamChunk(data: {
     }
 
     const audioStream = accumulator.audioStreams.get(streamType)!;
-    audioStream.chunks.set(iChunk, chunk);
+    audioStream.chunks.set(iChunk, decodedChunk);
 
     if (totalChunks > 0) {
       audioStream.totalChunks = totalChunks;
