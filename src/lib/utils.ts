@@ -133,7 +133,7 @@ export const initialOptions: Options = {
     video: AUTO_EXTENSION
   },
   defaultDownloadType: "auto",
-  videoQualityMode: VideoQualityMode.CurrentQuality,
+  videoQualityMode: VideoQualityMode.Best,
   videoQuality: defaultVideoQuality,
   isRemoveNativeDownload: false
 };
