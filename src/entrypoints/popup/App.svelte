@@ -1,7 +1,10 @@
 <script lang="ts">
+  import ChangeFormatDialog from "./ChangeFormatDialog.svelte";
   import DownloadsTab from "./DownloadsTab.svelte";
   import SettingsTab from "./SettingsTab.svelte";
   import TabNav from "./TabNav.svelte";
+  import { MessageType, onMessage } from "@/lib/messaging";
+  import { getAllRecentDownloads } from "@/lib/recent-downloads-db";
   import {
     isFFmpegReadyItem,
     musicListItem,
@@ -13,7 +16,7 @@
   } from "@/lib/storage";
   import { initialOptions as defaultOptions } from "@/lib/utils";
   import { ProgressType } from "@/types";
-  import type { Options, VideoQueueItem } from "@/types";
+  import type { Options, RecentDownloadEntry, VideoQueueItem } from "@/types";
   import { onMount, untrack } from "svelte";
 
   const percentFormatter = new Intl.NumberFormat(browser.i18n.getUILanguage(), {
@@ -61,6 +64,21 @@
   let videoDetails = $state(untrack(() => initialVideoDetails));
   let statusProgress = $state(untrack(() => initialStatusProgress));
   let options = $state<Options>(untrack(() => initialOptions));
+  let recentDownloads = $state<RecentDownloadEntry[]>([]);
+  let now = $state(Date.now());
+  let pendingFormatChangeEntry = $state<RecentDownloadEntry | null>(null);
+
+  async function refreshRecentDownloads() {
+    recentDownloads = await getAllRecentDownloads();
+  }
+
+  function handleChangeFormat(entry: RecentDownloadEntry) {
+    pendingFormatChangeEntry = entry;
+  }
+
+  function handleCloseDialog() {
+    pendingFormatChangeEntry = null;
+  }
 
   const totalActiveDownloads = $derived(videoDownloads.length + musicList.length + videoOnlyList.length);
 
@@ -69,7 +87,18 @@
     { id: Tab.Settings, label: "Settings" }
   ]);
 
+  const relativeAgeTickMs = 30_000;
+
   onMount(() => {
+    void refreshRecentDownloads();
+    const popupPort = browser.runtime.connect({ name: "popup" });
+    const unregisterRecentHandler = onMessage(MessageType.RecentDownloadsChanged, () => {
+      void refreshRecentDownloads();
+    });
+    const relativeAgeTimer = setInterval(() => {
+      now = Date.now();
+    }, relativeAgeTickMs);
+
     const unwatches = [
       isFFmpegReadyItem.watch(value => {
         isFFmpegReady = value ?? false;
@@ -98,6 +127,10 @@
       for (const unwatch of unwatches) {
         unwatch();
       }
+
+      unregisterRecentHandler();
+      clearInterval(relativeAgeTimer);
+      popupPort.disconnect();
     };
   });
 </script>
@@ -122,7 +155,11 @@
       <DownloadsTab
         {isFFmpegReady}
         {musicList}
+        {now}
+        onChangeFormat={handleChangeFormat}
+        onRecentChanged={refreshRecentDownloads}
         {percentFormatter}
+        {recentDownloads}
         {statusProgress}
         {videoDetails}
         {videoDownloads}
@@ -132,6 +169,13 @@
       <SettingsTab {options} />
     {/if}
   </div>
+
+  {#if pendingFormatChangeEntry}
+    <ChangeFormatDialog
+      entry={pendingFormatChangeEntry}
+      onClose={handleCloseDialog}
+    />
+  {/if}
 </div>
 
 <style>

@@ -1,9 +1,11 @@
 <script lang="ts">
   import DownloadItem from "./DownloadItem.svelte";
   import DownloadSection from "./DownloadSection.svelte";
+  import RecentDownloadItem from "./RecentDownloadItem.svelte";
   import { MessageType, sendMessage } from "@/lib/messaging";
+  import { deleteRecentDownload } from "@/lib/recent-downloads-db";
   import { ProgressType } from "@/types";
-  import type { VideoQueueItem } from "@/types";
+  import type { RecentDownloadEntry, VideoQueueItem } from "@/types";
 
   type ProgressEntry = {
     progress: number;
@@ -18,6 +20,10 @@
     videoDetails: Record<string, { filenameOutput: string }>;
     statusProgress: Record<string, ProgressEntry>;
     percentFormatter: Intl.NumberFormat;
+    recentDownloads: RecentDownloadEntry[];
+    now: number;
+    onChangeFormat: (entry: RecentDownloadEntry) => void;
+    onRecentChanged: () => void;
   };
 
   const {
@@ -27,10 +33,28 @@
     videoOnlyList,
     videoDetails,
     statusProgress,
-    percentFormatter
+    percentFormatter,
+    recentDownloads,
+    now,
+    onChangeFormat,
+    onRecentChanged
   }: Props = $props();
 
   const totalActiveDownloads = $derived(videoDownloads.length + musicList.length + videoOnlyList.length);
+  const hasAnyContent = $derived(totalActiveDownloads > 0 || recentDownloads.length > 0);
+
+  async function handleShowInFolder(entry: RecentDownloadEntry) {
+    try {
+      await browser.downloads.show(entry.downloadId);
+    } catch (error) {
+      console.warn("[ytdl:popup] Show in folder failed:", error);
+    }
+  }
+
+  async function handleRemove(entry: RecentDownloadEntry) {
+    await deleteRecentDownload(entry.id);
+    onRecentChanged();
+  }
 
   const videoDownloadIds = $derived(videoDownloads.map(item => item.videoId));
 
@@ -69,7 +93,7 @@
   }
 </script>
 
-{#if totalActiveDownloads === 0}
+{#if !hasAnyContent}
   <div class="empty-state">
     <svg
       class="empty-state-icon"
@@ -81,11 +105,12 @@
     >
       <path d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z" />
     </svg>
-    <p class="empty-state-text">No active downloads</p>
+    <p class="empty-state-text">No downloads yet</p>
     <p class="empty-state-hint">Downloads appear here when you start one from YouTube</p>
   </div>
 {:else}
   <div class="download-sections">
+    {#if totalActiveDownloads > 0}
   <DownloadSection
     cancelAriaLabel="Cancel all video downloads"
     listAriaLabel="Active video downloads"
@@ -151,6 +176,26 @@
       </li>
     {/snippet}
   </DownloadSection>
+    {/if}
+
+    {#if recentDownloads.length > 0}
+      <section class="recent-section" aria-labelledby="recent-section-heading">
+        <h2 class="recent-section-heading" id="recent-section-heading">Recent</h2>
+        <ul class="recent-list" role="list">
+          {#each recentDownloads as entry (entry.id)}
+            <li role="listitem">
+              <RecentDownloadItem
+                {entry}
+                {now}
+                onChangeFormat={() => onChangeFormat(entry)}
+                onRemove={() => handleRemove(entry)}
+                onShowInFolder={() => handleShowInFolder(entry)}
+              />
+            </li>
+          {/each}
+        </ul>
+      </section>
+    {/if}
   </div>
 {/if}
 
@@ -194,5 +239,28 @@
     border-radius: 16px;
     background: var(--surface);
     transition: background-color 200ms;
+  }
+
+  .recent-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .recent-section-heading {
+    margin: 0;
+    padding: 0 4px;
+    color: var(--fg-muted);
+    font-weight: 500;
+    font-size: 0.8125rem;
+  }
+
+  .recent-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
   }
 </style>

@@ -43,7 +43,10 @@ export enum MessageType {
   PipelineDownload = "pipelineDownload",
 
   // Background → Popup
-  RecentDownloadsChanged = "recentDownloadsChanged"
+  RecentDownloadsChanged = "recentDownloadsChanged",
+
+  // Popup → Background
+  TranscodeRecentDownload = "transcodeRecentDownload"
 }
 
 // ─── Protocol definition ──────────────────────────────────────────────────────
@@ -171,6 +174,10 @@ interface ProtocolMap {
     };
   }): void;
   recentDownloadsChanged(data: Record<string, never>): void;
+  transcodeRecentDownload(data: {
+    entryId: string;
+    targetContainer: string;
+  }): void;
 }
 
 export const { sendMessage, onMessage } =

@@ -1,0 +1,37 @@
+import { pruneRecentDownloads } from "@/lib/recent-downloads-db";
+
+const RETENTION_ALARM_NAME = "ytdl-prune-recent-downloads";
+const RETENTION_DURATION_MS = 10 * 60 * 1000;
+const POPUP_PORT_NAME = "popup";
+
+let openPopupCount = 0;
+
+async function prune() {
+  const threshold = Date.now() - RETENTION_DURATION_MS;
+  await pruneRecentDownloads(threshold, new Set());
+}
+
+export function registerRecentDownloadsRetention() {
+  browser.runtime.onConnect.addListener(port => {
+    if (port.name !== POPUP_PORT_NAME) {
+      return;
+    }
+
+    openPopupCount++;
+    port.onDisconnect.addListener(() => {
+      openPopupCount = Math.max(0, openPopupCount - 1);
+      if (openPopupCount === 0) {
+        void prune();
+      }
+    });
+  });
+
+  browser.alarms.create(RETENTION_ALARM_NAME, { periodInMinutes: 1 });
+  browser.alarms.onAlarm.addListener(alarm => {
+    if (alarm.name !== RETENTION_ALARM_NAME || openPopupCount > 0) {
+      return;
+    }
+
+    void prune();
+  });
+}
