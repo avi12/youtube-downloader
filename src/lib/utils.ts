@@ -30,9 +30,11 @@ export function splitFilenameAndExtension(filename: string) {
 
 // ─── MIME types ───────────────────────────────────────────────────────────────
 
-// Only containers that FFmpeg can remux YouTube streams into with -c copy.
-// YouTube produces H.264/VP9/AV1 video and AAC/Opus/Vorbis audio.
+// Containers FFmpeg can remux YouTube streams into with -c copy, plus flac
+// which requires re-encoding (YouTube produces H.264/VP9/AV1 video and
+// AAC/Opus/Vorbis audio).
 const extensionToMimeAll: Record<string, string> = {
+  flac: "audio/flac",
   m4a: "audio/mp4",
   mkv: "video/x-matroska",
   mp3: "audio/mpeg",

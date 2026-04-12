@@ -1,10 +1,16 @@
 import { toUint8Array, triggerDownload } from ".";
 import { reportProgress } from ".";
+import { getFileExtension } from "../utils";
 import { enqueueMuxJob, getFFmpeg, progressHandlers } from "./ffmpeg-instance";
 import { embedMusicMetadata } from "./music-metadata";
 import { addToPlaylistBundle } from "./playlist-bundle";
+import { transcodeAudio } from "./transcode-audio";
 import { DownloadType, ProgressType } from "@/types";
 import type { ProcessStreamData } from "@/types";
+
+function sourceAudioExtension(audioMimeType: string) {
+  return audioMimeType.includes("webm") ? "weba" : "m4a";
+}
 
 export async function processSingleMedia(item: ProcessStreamData) {
   const { videoId, type, filenameOutput, videoData, audioData, tabId } = item;
@@ -21,25 +27,46 @@ export async function processSingleMedia(item: ProcessStreamData) {
     tabId
   });
 
-  if (type === DownloadType.Audio && item.metadata?.isMusic) {
+  const isAudio = type === DownloadType.Audio;
+  const sourceExtension = isAudio ? sourceAudioExtension(item.audioMimeType) : "";
+  const outputExtension = getFileExtension(filenameOutput);
+  const isFlacTarget = isAudio && outputExtension === "flac";
+
+  const ffmpegProgressCap = 0.99;
+  function handleFfmpegProgress({ progress }: { progress: number }) {
+    void reportProgress({
+      videoId,
+      progress: Math.min(progress, ffmpegProgressCap),
+      progressType: ProgressType.FFmpeg,
+      tabId
+    });
+  }
+
+  if (isAudio && item.metadata?.isMusic) {
     await reportProgress({ videoId, progress: 0, progressType: ProgressType.FFmpeg, tabId });
 
-    // Cap FFmpeg progress below 1 — progress=1 is signaled after file save.
-    const ffmpegProgressCap = 0.99;
-
-    function handleMusicFFmpegProgress({ progress }: { progress: number }) {
-      const cappedProgress = Math.min(progress, ffmpegProgressCap);
-      void reportProgress({ videoId, progress: cappedProgress, progressType: ProgressType.FFmpeg, tabId });
-    }
-
-    progressHandlers.add(handleMusicFFmpegProgress);
+    progressHandlers.add(handleFfmpegProgress);
     try {
       await enqueueMuxJob(async () => {
         const ffmpeg = getFFmpeg();
-        data = await embedMusicMetadata(data!, filenameOutput, item.metadata!, ffmpeg);
+        data = await embedMusicMetadata(data!, filenameOutput, sourceExtension, item.metadata!, ffmpeg);
       });
     } finally {
-      progressHandlers.delete(handleMusicFFmpegProgress);
+      progressHandlers.delete(handleFfmpegProgress);
+    }
+  } else if (isFlacTarget) {
+    // FLAC can't hold AAC/Opus, so re-encode even when there's no music
+    // metadata to embed.
+    await reportProgress({ videoId, progress: 0, progressType: ProgressType.FFmpeg, tabId });
+
+    progressHandlers.add(handleFfmpegProgress);
+    try {
+      await enqueueMuxJob(async () => {
+        const ffmpeg = getFFmpeg();
+        data = await transcodeAudio(data!, sourceExtension, filenameOutput, ffmpeg);
+      });
+    } finally {
+      progressHandlers.delete(handleFfmpegProgress);
     }
   }
 

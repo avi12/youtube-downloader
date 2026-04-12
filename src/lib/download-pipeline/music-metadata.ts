@@ -54,21 +54,25 @@ async function fetchThumbnail(url: string) {
 export async function embedMusicMetadata(
   audioData: Uint8Array,
   filenameOutput: string,
+  sourceExtension: string,
   metadata: VideoMetadata,
   ffmpeg: FFmpegCoreModule
 ) {
-  const audioExtension = getFileExtension(filenameOutput) || "m4a";
-  const inputFilename = `input.${audioExtension}`;
+  const outputExtension = getFileExtension(filenameOutput) || sourceExtension;
+  const inputFilename = `input.${sourceExtension}`;
   const outputFilename = getCompatibleFilename(filenameOutput);
 
   ffmpeg.FS.writeFile(inputFilename, audioData);
 
   const ffmpegArgs = ["-i", inputFilename];
 
-  const isWebmAudio = audioExtension === "weba" || audioExtension === "webm";
+  // WebM (Matroska) containers don't hold attached_pic the same way as MP4/FLAC,
+  // so skip cover art when either side is WebM-based.
+  const isWebmSource = sourceExtension === "weba" || sourceExtension === "webm";
+  const isWebmOutput = outputExtension === "weba" || outputExtension === "webm";
   let isCoverArtPresent = false;
   let coverFilename = "";
-  if (metadata.thumbnailUrl && !isWebmAudio) {
+  if (metadata.thumbnailUrl && !isWebmSource && !isWebmOutput) {
     const thumbnail = await fetchThumbnail(metadata.thumbnailUrl);
     if (thumbnail) {
       coverFilename = `cover.${thumbnail.extension}`;
@@ -91,7 +95,10 @@ export async function embedMusicMetadata(
     return value.replaceAll(/[\n\r"\\]/g, " ").trim();
   }
 
-  ffmpegArgs.push("-c:a", "copy");
+  // FLAC can't hold AAC/Opus, so re-encode to the FLAC codec. Every other
+  // supported container can remux the source stream.
+  const audioCodec = outputExtension === "flac" ? "flac" : "copy";
+  ffmpegArgs.push("-c:a", audioCodec);
   ffmpegArgs.push("-metadata", `title=${sanitizeForFFmpeg(metadata.title)}`);
   ffmpegArgs.push("-metadata", `artist=${sanitizeForFFmpeg(metadata.artist)}`);
 
