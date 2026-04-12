@@ -68,6 +68,7 @@ export function createButtonGroup(
 
   const elProgressBar = document.createElement("tp-yt-paper-progress");
   elProgressBar.classList.add("ytdl-watch-progress");
+  elProgressBar.max = 100;
 
   elGroup.append(elDownloadButton, elChevronButton, elProgressBar);
 

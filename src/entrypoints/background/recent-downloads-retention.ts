@@ -30,7 +30,7 @@ export function registerRecentDownloadsRetention() {
     });
   });
 
-  browser.alarms.create(RETENTION_ALARM_NAME, { periodInMinutes: 1 });
+  void browser.alarms.create(RETENTION_ALARM_NAME, { periodInMinutes: 1 });
   browser.alarms.onAlarm.addListener(alarm => {
     if (alarm.name !== RETENTION_ALARM_NAME || openPopupCount > 0) {
       return;

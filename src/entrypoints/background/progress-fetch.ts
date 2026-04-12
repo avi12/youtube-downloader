@@ -1,5 +1,4 @@
 import { MessageType, sendMessage } from "@/lib/messaging";
-import { statusProgressItem } from "@/lib/storage";
 import { ProgressType } from "@/types";
 
 const progressThrottleIntervalMs = 5000;
