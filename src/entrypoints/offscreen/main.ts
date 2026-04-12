@@ -8,7 +8,6 @@
  * processing completes without crashing the background script.
  */
 
-import { cancelOffscreenDownload, startOffscreenDownload } from "./offscreen-downloader";
 import { cancelDownloadsByIds, enqueueStreamData, initFFmpeg } from "@/lib/download-pipeline";
 import { transcodeRecentDownload } from "@/lib/download-pipeline/transcode-recent";
 import { OffscreenMessageType, listenForOffscreenMessages } from "@/lib/offscreen-messaging";
@@ -78,12 +77,6 @@ listenForOffscreenMessages({
   },
   [OffscreenMessageType.TranscodeRecentDownload](data) {
     void transcodeRecentDownload(data);
-  },
-  [OffscreenMessageType.StartOffscreenDownload](data) {
-    void startOffscreenDownload(data.request, data.tabId);
-  },
-  [OffscreenMessageType.CancelOffscreenDownload](data) {
-    cancelOffscreenDownload(data.videoId);
   }
 });
 
