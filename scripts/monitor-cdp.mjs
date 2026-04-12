@@ -54,8 +54,9 @@ function monitor(wsUrl, label) {
 }
 
 const targets = await listTargets();
-const sw = targets.find(t => t.type === "service_worker");
-const offscreen = targets.find(t => t.url?.includes("offscreen"));
+const EXT_ID = "iakmamcpgldfjjbeamagdkelogmokjpj";
+const sw = targets.find(t => t.type === "service_worker" && t.url?.includes(EXT_ID));
+const offscreen = targets.find(t => t.url?.includes(`${EXT_ID}/offscreen`));
 
 console.log("SW:", sw?.webSocketDebuggerUrl ?? "not found");
 console.log("Offscreen:", offscreen?.webSocketDebuggerUrl ?? "not found");
