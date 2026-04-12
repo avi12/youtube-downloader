@@ -4,7 +4,6 @@ import { fetchYouTubeMusicMetadata } from "./youtube-music-metadata";
 import { MessageType, sendMessage } from "@/lib/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/offscreen-messaging";
 import { fetchAudioViaSabrStream, fetchVideoViaSabrStream } from "@/lib/sabr-download";
-import { uint8ToBase64 } from "@/lib/utils";
 import { DownloadType, ProgressType, StreamType } from "@/types";
 import type { AdaptiveFormatItem, DownloadRequest, SabrConfig, VideoMetadata } from "@/types";
 
@@ -21,13 +20,13 @@ function sendStreamChunksToOffscreen(
 
   for (let iChunk = 0; iChunk < totalChunks; iChunk++) {
     const start = iChunk * TRANSFER_CHUNK_SIZE;
-    const chunk = data.subarray(start, start + TRANSFER_CHUNK_SIZE);
+    const chunk = data.slice(start, start + TRANSFER_CHUNK_SIZE);
     sendToOffscreen(OffscreenMessageType.ProcessStreamChunk, {
       videoId,
       streamType,
       iChunk,
       totalChunks,
-      chunkBase64: uint8ToBase64(chunk),
+      chunk,
       tabId
     });
   }

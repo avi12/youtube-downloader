@@ -41,7 +41,10 @@ function registerChunkHandlers() {
     }
 
     await ensureProcessor();
-    sendToOffscreen(OffscreenMessageType.ProcessStreamChunk, { ...data, tabId });
+    const { chunkBase64, ...rest } = data;
+    const binary = atob(chunkBase64);
+    const chunk = Uint8Array.from(binary, char => char.charCodeAt(0));
+    sendToOffscreen(OffscreenMessageType.ProcessStreamChunk, { ...rest, chunk, tabId });
   });
 
   onMessage(MessageType.StreamEnd, async ({ data, sender }) => {
