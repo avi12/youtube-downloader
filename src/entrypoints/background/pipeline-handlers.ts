@@ -2,8 +2,15 @@ import { signalFFmpegReady } from "./processor";
 import { signalVideoComplete } from "./sequential-queue";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging";
 import { addRecentDownload } from "@/lib/recent-downloads-db";
-import { isFFmpegReadyItem, statusProgressItem } from "@/lib/storage";
-import { ProgressType } from "@/types";
+import {
+  isFFmpegReadyItem,
+  musicListItem,
+  statusProgressItem,
+  videoDetailsItem,
+  videoOnlyListItem,
+  videoQueueItem
+} from "@/lib/storage";
+import { DownloadType, ProgressType } from "@/types";
 import type { ProgressUpdate, RecentDownloadEntry } from "@/types";
 
 type StatusProgressMap = Awaited<ReturnType<typeof statusProgressItem.getValue>>;
@@ -43,6 +50,10 @@ export function registerPipelineHandlers() {
     void sendMessage(MessageType.RemoveDownloadIframe, { videoId: data.videoId }, tabId);
   });
 
+  onMessage(MessageType.PipelineStart, async ({ data }) => {
+    await enqueueToPopupList(data.videoId, data.type, data.filenameOutput);
+  });
+
   onMessage(MessageType.PipelineProgress, async ({ data }) => {
     const { videoId, progress, progressType, tabId } = data;
     await updateStatusProgress(
@@ -63,6 +74,7 @@ export function registerPipelineHandlers() {
       { videoId, progress: 0, progressType: ProgressType.Video, isRemoved: true },
       tabId
     );
+    await removeFromPopupList(videoId);
     void sendMessage(MessageType.RemoveDownloadIframe, { videoId }, tabId);
   });
 
@@ -71,6 +83,7 @@ export function registerPipelineHandlers() {
     const current = await statusProgressItem.getValue();
     delete current[videoId];
     await statusProgressItem.setValue(current);
+    await removeFromPopupList(videoId);
     signalVideoComplete(videoId);
   });
 
@@ -173,6 +186,66 @@ async function persistRecentDownload(
   } catch (error) {
     console.warn("[ytdl:bg] Persist recent download failed:", error);
   }
+}
+
+async function enqueueToPopupList(videoId: string, type: DownloadType, filenameOutput: string) {
+  const details = await videoDetailsItem.getValue();
+  details[videoId] = { filenameOutput };
+  await videoDetailsItem.setValue(details);
+
+  if (type === DownloadType.VideoAndAudio) {
+    const queue = await videoQueueItem.getValue();
+    if (!queue.some(item => item.videoId === videoId)) {
+      queue.push({ videoId, filenameOutput });
+      await videoQueueItem.setValue(queue);
+    }
+
+    return;
+  }
+
+  const listItem = type === DownloadType.Audio ? musicListItem : videoOnlyListItem;
+  const list = await listItem.getValue();
+  if (!list.includes(videoId)) {
+    list.push(videoId);
+    await listItem.setValue(list);
+  }
+}
+
+async function removeFromPopupList(videoId: string) {
+  const [queue, musicList, videoOnlyList, details] = await Promise.all([
+    videoQueueItem.getValue(),
+    musicListItem.getValue(),
+    videoOnlyListItem.getValue(),
+    videoDetailsItem.getValue()
+  ]);
+
+  const queueIndex = queue.findIndex(item => item.videoId === videoId);
+  const musicIndex = musicList.indexOf(videoId);
+  const videoOnlyIndex = videoOnlyList.indexOf(videoId);
+  const hadDetails = videoId in details;
+
+  const writes: Promise<void>[] = [];
+  if (queueIndex !== -1) {
+    queue.splice(queueIndex, 1);
+    writes.push(videoQueueItem.setValue(queue));
+  }
+
+  if (musicIndex !== -1) {
+    musicList.splice(musicIndex, 1);
+    writes.push(musicListItem.setValue(musicList));
+  }
+
+  if (videoOnlyIndex !== -1) {
+    videoOnlyList.splice(videoOnlyIndex, 1);
+    writes.push(videoOnlyListItem.setValue(videoOnlyList));
+  }
+
+  if (hadDetails) {
+    delete details[videoId];
+    writes.push(videoDetailsItem.setValue(details));
+  }
+
+  await Promise.all(writes);
 }
 
 function extractContainer(filename: string) {

@@ -115,6 +115,13 @@ const activeJobs = new Map<string, ActiveJob>();
 async function processItem(item: ProcessStreamData) {
   activeJobs.set(item.videoId, { videoId: item.videoId, tabId: item.tabId });
 
+  await sendMessage(MessageType.PipelineStart, {
+    videoId: item.videoId,
+    type: item.type,
+    filenameOutput: item.filenameOutput,
+    tabId: item.tabId
+  });
+
   try {
     if (item.type === DownloadType.VideoAndAudio) {
       await enqueueMuxJob(() => processVideoAudio(item));

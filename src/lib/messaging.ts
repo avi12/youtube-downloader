@@ -40,6 +40,7 @@ export enum MessageType {
   PipelineRemoval = "pipelineRemoval",
   PipelineQueueRemove = "pipelineQueueRemove",
   PipelineFFmpegReady = "pipelineFFmpegReady",
+  PipelineStart = "pipelineStart",
   PipelineDownload = "pipelineDownload",
 
   // Background → Popup
@@ -162,6 +163,12 @@ interface ProtocolMap {
     type: DownloadType;
   }): void;
   pipelineFFmpegReady(data: Record<string, never>): void;
+  pipelineStart(data: {
+    videoId: string;
+    type: DownloadType;
+    filenameOutput: string;
+    tabId: number;
+  }): void;
   pipelineDownload(data: {
     blobUrl: string;
     mimeType: string;

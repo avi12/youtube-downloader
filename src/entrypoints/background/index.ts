@@ -7,7 +7,15 @@ import { MessageType, onMessage, sendMessage } from "@/lib/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/offscreen-messaging";
 import { clearCapturedSabrData, onSabrBodyCaptured, startSabrRequestCapture } from "@/lib/sabr-request-capture";
 import { extractPoTokenFromBody, getCapturedSabrData } from "@/lib/sabr-request-capture";
-import { clearLocalStorage, interruptedDownloadsItem, statusProgressItem } from "@/lib/storage";
+import {
+  clearLocalStorage,
+  interruptedDownloadsItem,
+  musicListItem,
+  statusProgressItem,
+  videoDetailsItem,
+  videoOnlyListItem,
+  videoQueueItem
+} from "@/lib/storage";
 import { uint8ToBase64 } from "@/lib/utils";
 
 const sabrOriginRuleId = 1;
@@ -140,6 +148,10 @@ export default defineBackground(() => {
   });
 
   void statusProgressItem.setValue({});
+  void videoQueueItem.setValue([]);
+  void musicListItem.setValue([]);
+  void videoOnlyListItem.setValue([]);
+  void videoDetailsItem.setValue({});
 
   void ensureProcessor();
 
