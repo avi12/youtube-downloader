@@ -11,7 +11,9 @@ import type { AdaptiveFormatItem, DownloadRequest, SabrConfig, VideoMetadata } f
 const activeBackgroundDownloads = new Map<string, AbortController>();
 const TRANSFER_CHUNK_SIZE = 1024 * 1024;
 
-function sendStreamChunksToOffscreen(
+const yieldEveryNChunks = 32;
+
+async function sendStreamChunksToOffscreen(
   videoId: string,
   streamType: string,
   data: Uint8Array,
@@ -30,6 +32,12 @@ function sendStreamChunksToOffscreen(
       chunkBase64: uint8ToBase64(chunk),
       tabId
     });
+
+    // Yield so Chrome's extension IPC broker can drain and unrelated
+    // messaging (content-script progress, popup, etc.) stays responsive.
+    if ((iChunk + 1) % yieldEveryNChunks === 0) {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    }
   }
 }
 
@@ -261,19 +269,22 @@ async function dispatchToOffscreen(
 
   const resolvedVideoMimeType = request.videoFormat?.mimeType.split(";")[0] ?? "video/mp4";
   const resolvedAudioMimeType = request.audioFormat?.mimeType.split(";")[0] ?? "audio/mp4";
+  const transferJobs: Promise<void>[] = [];
   if (result.videoData) {
-    sendStreamChunksToOffscreen(request.videoId, StreamType.Video, result.videoData, tabId);
+    transferJobs.push(sendStreamChunksToOffscreen(request.videoId, StreamType.Video, result.videoData, tabId));
   }
 
   if (result.audioData) {
-    sendStreamChunksToOffscreen(request.videoId, StreamType.Audio, result.audioData, tabId);
+    transferJobs.push(sendStreamChunksToOffscreen(request.videoId, StreamType.Audio, result.audioData, tabId));
   }
 
   for (const [i, track] of result.additionalAudioTracks.entries()) {
     if (track.data) {
-      sendStreamChunksToOffscreen(request.videoId, `audio-extra-${i}`, track.data, tabId);
+      transferJobs.push(sendStreamChunksToOffscreen(request.videoId, `audio-extra-${i}`, track.data, tabId));
     }
   }
+
+  await Promise.all(transferJobs);
 
   const audioTrackLabels = [
     request.primaryAudioLabel ?? "",

@@ -2,6 +2,7 @@ import { cancelBackgroundDownload, startBackgroundDownload } from "./background-
 import { awaitVideoComplete } from "./sequential-queue";
 import { cancelDownloads, trackVideoForTab } from "./tab-tracker";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging";
+import { ProgressType } from "@/types";
 import type { DownloadRequest } from "@/types";
 
 const bufferChunkSize = 8192;
@@ -64,38 +65,46 @@ export function registerDownloadHandlers() {
       return;
     }
 
-    const watchParams = new URLSearchParams({ v: data.videoId, ytdl: "1", mute: "1" });
-    const watchUrl = `https://www.youtube.com/watch?${watchParams.toString()}`;
+    try {
+      const watchParams = new URLSearchParams({ v: data.videoId, ytdl: "1", mute: "1" });
+      const watchUrl = `https://www.youtube.com/watch?${watchParams.toString()}`;
 
-    await sendMessage(MessageType.CreateDownloadIframe, {
-      videoId: data.videoId,
-      watchUrl
-    }, originTabId);
+      await sendMessage(MessageType.CreateDownloadIframe, {
+        videoId: data.videoId,
+        watchUrl
+      }, originTabId);
 
-    // Wait for the iframe's MAIN world content script to signal player initialization.
-    // IframePlayerReady is sent after capture state is set up, bridged to background
-    // as DownloadIframeReady by the isolated world. Timeout prevents hanging forever.
-    const iframeReadyTimeoutMs = 30_000;
-    await new Promise<void>(resolve => {
-      const timeoutId = setTimeout(resolve, iframeReadyTimeoutMs);
-      const removeListener = onMessage(MessageType.DownloadIframeReady, ({ data: readyData }) => {
-        if (readyData.videoId !== data.videoId) {
-          return;
-        }
+      // Wait for the iframe's MAIN world content script to signal player initialization.
+      // IframePlayerReady is sent after capture state is set up, bridged to background
+      // as DownloadIframeReady by the isolated world. Timeout prevents hanging forever.
+      const iframeReadyTimeoutMs = 30_000;
+      await new Promise<void>(resolve => {
+        const timeoutId = setTimeout(resolve, iframeReadyTimeoutMs);
+        const removeListener = onMessage(MessageType.DownloadIframeReady, ({ data: readyData }) => {
+          if (readyData.videoId !== data.videoId) {
+            return;
+          }
 
-        clearTimeout(timeoutId);
-        removeListener();
-        resolve();
+          clearTimeout(timeoutId);
+          removeListener();
+          resolve();
+        });
       });
-    });
 
-    // Send download request - only the iframe's content script handles it
-    // (isWatchPage guard filters out the subscriptions page)
-    await sendMessage(MessageType.ExecuteDownloadItem, data, originTabId);
+      // Send download request - only the iframe's content script handles it
+      // (isWatchPage guard filters out the subscriptions page)
+      await sendMessage(MessageType.ExecuteDownloadItem, data, originTabId);
 
-    trackVideoForTab(data.videoId, originTabId);
+      trackVideoForTab(data.videoId, originTabId);
 
-    await sendMessage(MessageType.StartKeepalive, { videoId: data.videoId }, originTabId);
+      await sendMessage(MessageType.StartKeepalive, { videoId: data.videoId }, originTabId);
+    } catch (error) {
+      console.error("[ytdl:bg] DownloadViaWatchPage failed:", data.videoId, error);
+      void sendMessage(MessageType.RemoveDownloadIframe, { videoId: data.videoId }, originTabId);
+      void sendMessage(MessageType.UpdateDownloadProgress, {
+        videoId: data.videoId, progress: 0, progressType: ProgressType.Video, isRemoved: true
+      }, originTabId);
+    }
   });
 
   onMessage(MessageType.Keepalive, () => {});
