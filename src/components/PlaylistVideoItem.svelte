@@ -8,6 +8,7 @@
   import DownloadOptionsPanel from "./DownloadOptionsPanel.svelte";
   import { createPlaylistVideoItemState } from "./PlaylistVideoItem.state.svelte";
   import { CrossWorldMessage, crossWorldMessenger } from "@/lib/cross-world-messenger";
+  import { checkedPlaylistVideos } from "@/lib/playlist-selection.svelte";
   import { sendButtonData } from "@/lib/polymer-utils";
   import { buttonClickSignal } from "@/lib/synced-stores.svelte";
   import {
@@ -23,10 +24,30 @@
   type Props = {
     videoId: string;
     gridTitle?: string;
+    isPlaylistItem?: boolean;
     options: Options;
   };
 
-  const { videoId, gridTitle, options }: Props = $props();
+  const { videoId, gridTitle, isPlaylistItem = false, options }: Props = $props();
+
+  const isChecked = $derived(checkedPlaylistVideos.has(videoId));
+
+  // Sync the selection set from the Polymer checkbox's reported state. Using
+  // `e.target.checked` (not a toggle) keeps programmatic writes idempotent:
+  // when selectAll/clearSelection flips `isChecked`, Polymer re-fires the
+  // `change` event, but this handler no-ops because the set already matches.
+  function handleCheckboxChange(e: Event) {
+    if (!(e.target instanceof HTMLElement)) {
+      return;
+    }
+
+    const isNowChecked = e.target.hasAttribute("checked");
+    if (isNowChecked && !checkedPlaylistVideos.has(videoId)) {
+      checkedPlaylistVideos.add(videoId);
+    } else if (!isNowChecked && checkedPlaylistVideos.has(videoId)) {
+      checkedPlaylistVideos.delete(videoId);
+    }
+  }
   // videoId + gridTitle are stable for the component's lifetime (grid keys by videoId).
   // untrack() acknowledges this so Svelte doesn't warn about capturing initial values.
   const itemState = createPlaylistVideoItemState(
@@ -250,6 +271,14 @@
 <div class="ytdl-button-group" {@attach attachButtonGroup}>
   {#if itemState.videoData?.isDownloadable}
     <div class="ytdl-button-row">
+      {#if isPlaylistItem}
+        <tp-yt-paper-checkbox
+          class="ytdl-select-checkbox"
+          aria-label="Select for download"
+          checked={isChecked || undefined}
+          onchange={handleCheckboxChange}
+        ></tp-yt-paper-checkbox>
+      {/if}
       <yt-button-view-model {@attach attachDownloadButton}
       ></yt-button-view-model>
       <yt-button-view-model {@attach attachChevronButton}
@@ -273,6 +302,10 @@
   .ytdl-button-group {
     display: inline-flex;
     flex-direction: column;
+  }
+
+  .ytdl-select-checkbox {
+    margin-right: 4px;
   }
 
   .ytdl-button-row {

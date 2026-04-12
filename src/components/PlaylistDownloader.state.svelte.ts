@@ -1,5 +1,6 @@
 import { revealAllPlaylistVideos, scrollVideoItemIntoView } from "./PlaylistDownloader.scroll";
 import { MessageType, sendMessage } from "@/lib/messaging";
+import { checkedPlaylistVideos } from "@/lib/playlist-selection.svelte";
 import { musicListItem, videoOnlyListItem, videoQueueItem } from "@/lib/storage";
 import { downloadProgressStore, playlistMetadataSignal, videoDataStore } from "@/lib/synced-stores.svelte";
 import { resolveVideoFilename } from "@/lib/utils";
@@ -11,9 +12,7 @@ import {
   type Options,
   type VideoData
 } from "@/types";
-import { SvelteMap, SvelteSet } from "svelte/reactivity";
-
-const CHECKBOX_ATTRIBUTE = "data-ytdl-checkbox";
+import { SvelteMap } from "svelte/reactivity";
 
 function buildDownloadRequest(
   data: VideoData,
@@ -41,7 +40,6 @@ function buildDownloadRequest(
 
 export function createPlaylistDownloaderState(getOptions: () => Options) {
   const videoDataMap = new SvelteMap<string, VideoData>();
-  const checkedVideoIds = new SvelteSet<string>();
   let isDownloading = $state(false);
   let downloadedCount = $state(0);
   let totalCount = $state(0);
@@ -64,36 +62,13 @@ export function createPlaylistDownloaderState(getOptions: () => Options) {
     }
   });
 
-  // Track checkboxes for per-video selection
-  function handleCheckboxChange(e: Event) {
-    if (!(e.target instanceof HTMLInputElement) || !e.target.matches(`[${CHECKBOX_ATTRIBUTE}]`)) {
-      return;
-    }
-
-    const videoId = e.target.dataset.videoId ?? "";
-    if (!videoId) {
-      return;
-    }
-
-    if (e.target.checked) {
-      checkedVideoIds.add(videoId);
-    } else {
-      checkedVideoIds.delete(videoId);
-    }
-  }
-
-  $effect(() => {
-    document.addEventListener("change", handleCheckboxChange);
-    return () => document.removeEventListener("change", handleCheckboxChange);
-  });
-
   const downloadableVideos = $derived([...videoDataMap.values()].filter(data => data.isDownloadable));
   const nonDownloadableCount = $derived(videoDataMap.size - downloadableVideos.length);
-
-  const checkedDownloadableVideos = $derived(
-    checkedVideoIds.size === 0
-      ? downloadableVideos
-      : downloadableVideos.filter(data => checkedVideoIds.has(data.videoId))
+  const selectedDownloadableVideos = $derived(
+    downloadableVideos.filter(data => checkedPlaylistVideos.has(data.videoId))
+  );
+  const isAllSelected = $derived(
+    downloadableVideos.length > 0 && selectedDownloadableVideos.length === downloadableVideos.length
   );
 
   const downloadButtonLabel = $derived.by(() => {
@@ -101,9 +76,9 @@ export function createPlaylistDownloaderState(getOptions: () => Options) {
       return `Downloading ${downloadedCount}/${totalCount}`;
     }
 
-    const count = checkedDownloadableVideos.length;
+    const count = selectedDownloadableVideos.length;
     if (count === 0) {
-      return "No downloadable videos";
+      return "Select videos to download";
     }
 
     return `Download ${count} video${count === 1 ? "" : "s"}`;
@@ -139,14 +114,16 @@ export function createPlaylistDownloaderState(getOptions: () => Options) {
     ];
   }
 
-  async function startDownload() {
-    if (checkedDownloadableVideos.length === 0) {
+  let activeDownloadRequests: DownloadRequest[] = [];
+
+  async function startDownload(videos: readonly VideoData[]) {
+    if (videos.length === 0) {
       return;
     }
 
     error = "";
     isDownloading = true;
-    totalCount = checkedDownloadableVideos.length;
+    totalCount = videos.length;
     downloadedCount = 0;
 
     const metadata = playlistMetadataSignal.value;
@@ -154,10 +131,9 @@ export function createPlaylistDownloaderState(getOptions: () => Options) {
     const playlistId = metadata?.playlistId || `playlist-${Date.now()}`;
     const isZipBundle = outputMode === PlaylistOutputMode.Zip;
 
-    const downloadRequests = checkedDownloadableVideos.map(data =>
-      buildDownloadRequest(
-        data, getOptions(), playlistId, playlistTitle, checkedDownloadableVideos.length, isZipBundle
-      ));
+    const downloadRequests = videos.map(data =>
+      buildDownloadRequest(data, getOptions(), playlistId, playlistTitle, videos.length, isZipBundle));
+    activeDownloadRequests = downloadRequests;
 
     try {
       await sendMessage(MessageType.RequestPlaylistDownload, {
@@ -176,18 +152,28 @@ export function createPlaylistDownloaderState(getOptions: () => Options) {
   }
 
   async function cancelDownload() {
-    const videoIds = checkedDownloadableVideos.map(data => data.videoId);
+    const videoIds = activeDownloadRequests.map(request => request.videoId);
     await sendMessage(MessageType.CancelDownload, { videoIds });
     isDownloading = false;
     downloadedCount = 0;
   }
 
-  function toggleDownload() {
+  function toggleSelectedDownload() {
     if (isDownloading) {
       void cancelDownload();
     } else {
-      void startDownload();
+      void startDownload(selectedDownloadableVideos);
     }
+  }
+
+  function selectAll() {
+    for (const video of downloadableVideos) {
+      checkedPlaylistVideos.add(video.videoId);
+    }
+  }
+
+  function clearSelection() {
+    checkedPlaylistVideos.clear();
   }
 
   async function revealAllVideos() {
@@ -215,7 +201,7 @@ export function createPlaylistDownloaderState(getOptions: () => Options) {
 
     if (shouldStartDownloadAfterReveal) {
       shouldStartDownloadAfterReveal = false;
-      await startDownload();
+      await startDownload(downloadableVideos);
     }
   }
 
@@ -224,7 +210,6 @@ export function createPlaylistDownloaderState(getOptions: () => Options) {
   }
 
   async function revealAndDownloadAll() {
-    checkedVideoIds.clear();
     shouldStartDownloadAfterReveal = true;
     await revealAllVideos();
   }
@@ -234,10 +219,10 @@ export function createPlaylistDownloaderState(getOptions: () => Options) {
       return null;
     }
 
-    for (const video of checkedDownloadableVideos) {
-      const progressEntry = downloadProgressStore.get(video.videoId);
+    for (const request of activeDownloadRequests) {
+      const progressEntry = downloadProgressStore.get(request.videoId);
       if (progressEntry?.isDownloading) {
-        return video.videoId;
+        return request.videoId;
       }
     }
 
@@ -283,8 +268,11 @@ export function createPlaylistDownloaderState(getOptions: () => Options) {
     get nonDownloadableCount() {
       return nonDownloadableCount;
     },
-    get checkedDownloadableVideos() {
-      return checkedDownloadableVideos;
+    get selectedDownloadableVideos() {
+      return selectedDownloadableVideos;
+    },
+    get isAllSelected() {
+      return isAllSelected;
     },
     get downloadButtonLabel() {
       return downloadButtonLabel;
@@ -304,8 +292,10 @@ export function createPlaylistDownloaderState(getOptions: () => Options) {
     set isScrollSyncEnabled(value) {
       isScrollSyncEnabled = value;
     },
-    toggleDownload,
+    toggleSelectedDownload,
     revealAndDownloadAll,
-    cancelReveal
+    cancelReveal,
+    selectAll,
+    clearSelection
   };
 }

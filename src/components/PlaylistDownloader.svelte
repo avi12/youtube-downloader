@@ -16,6 +16,7 @@
     PlaylistOutputMode
   } from "@/types";
   import type { Options } from "@/types";
+  import { untrack } from "svelte";
   import { SvelteMap } from "svelte/reactivity";
 
   type Props = { options: Options };
@@ -125,6 +126,32 @@
 
   const DOWNLOAD_BUTTON_ID = "playlist-download-btn";
   const DOWNLOAD_ALL_BUTTON_ID = "playlist-download-all-btn";
+  const SELECT_ALL_BUTTON_ID = "playlist-select-all-btn";
+
+  function attachSelectAllButton(elButton: Element) {
+    if (!(elButton instanceof HTMLElement)) {
+      return;
+    }
+
+    if (!elButton.hasAttribute("data-ytdl-button-id")) {
+      elButton.setAttribute("data-ytdl-button-id", SELECT_ALL_BUTTON_ID);
+    }
+
+    const hasAny = state.downloadableVideos.length > 0;
+    const label = state.isAllSelected ? "Clear selection" : "Select all";
+    sendButtonData(elButton, {
+      iconName: IconName.None,
+      title: label,
+      accessibilityText: label,
+      style: ButtonStyle.Mono,
+      type: ButtonType.Outline,
+      buttonSize: ButtonSize.Default,
+      state: hasAny ? ButtonState.Active : ButtonState.Disabled,
+      isFullWidth: false,
+      isDisabled: !hasAny,
+      tooltip: label
+    });
+  }
 
   function attachDownloadButton(elButton: Element) {
     if (!(elButton instanceof HTMLElement)) {
@@ -135,7 +162,7 @@
       elButton.setAttribute("data-ytdl-button-id", DOWNLOAD_BUTTON_ID);
     }
 
-    const isDisabled = state.checkedDownloadableVideos.length === 0 && !state.isDownloading;
+    const isDisabled = state.selectedDownloadableVideos.length === 0 && !state.isDownloading;
     sendButtonData(elButton, {
       iconName: state.isDownloading ? IconName.Close : IconName.Download,
       title: state.downloadButtonLabel,
@@ -209,23 +236,38 @@
       return;
     }
 
-    if (clicked.buttonId === DOWNLOAD_BUTTON_ID) {
-      state.toggleDownload();
-      return;
-    }
-
-    if (clicked.buttonId === DOWNLOAD_ALL_BUTTON_ID) {
-      if (state.isRevealingAll) {
-        state.cancelReveal();
-      } else {
-        void state.revealAndDownloadAll();
+    // State reads inside the dispatcher must be untracked — otherwise the
+    // effect re-runs when the click mutates state (e.g. isAllSelected flips
+    // after selectAll) and re-executes the same branch with inverted logic.
+    untrack(() => {
+      if (clicked.buttonId === DOWNLOAD_BUTTON_ID) {
+        state.toggleSelectedDownload();
+        return;
       }
 
-      return;
-    }
+      if (clicked.buttonId === DOWNLOAD_ALL_BUTTON_ID) {
+        if (state.isRevealingAll) {
+          state.cancelReveal();
+        } else {
+          void state.revealAndDownloadAll();
+        }
 
-    const config = toggleButtons.find(button => button.id === clicked.buttonId);
-    config?.onClick();
+        return;
+      }
+
+      if (clicked.buttonId === SELECT_ALL_BUTTON_ID) {
+        if (state.isAllSelected) {
+          state.clearSelection();
+        } else {
+          state.selectAll();
+        }
+
+        return;
+      }
+
+      const config = toggleButtons.find(button => button.id === clicked.buttonId);
+      config?.onClick();
+    });
   });
 
   const isDataSaverSelected = $derived(state.downloadMode === PlaylistDownloadMode.DataSaver);
@@ -247,6 +289,12 @@
   </div>
 
   <div class="ytdl-playlist-actions">
+    <div class="ytdl-selection-row">
+      <yt-button-view-model {@attach attachSelectAllButton}></yt-button-view-model>
+      <span class="ytdl-selection-count" aria-live="polite">
+        {state.selectedDownloadableVideos.length} / {state.downloadableVideos.length} selected
+      </span>
+    </div>
     <yt-button-view-model {@attach attachDownloadButton}></yt-button-view-model>
     <yt-button-view-model {@attach attachDownloadAllButton}></yt-button-view-model>
 
@@ -295,6 +343,17 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
+  }
+
+  .ytdl-selection-row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .ytdl-selection-count {
+    color: var(--yt-spec-text-secondary, #aaa);
+    font-size: 1.2rem;
   }
 
   .ytdl-error-banner {

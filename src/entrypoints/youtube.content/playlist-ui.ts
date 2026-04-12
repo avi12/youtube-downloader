@@ -5,6 +5,7 @@
 
 import PlaylistDownloader from "@/components/PlaylistDownloader.svelte";
 import PlaylistVideoItem from "@/components/PlaylistVideoItem.svelte";
+import { checkedPlaylistVideos } from "@/lib/playlist-selection.svelte";
 import { getVideoIdFromUrl } from "@/lib/utils";
 import type { Options } from "@/types";
 import { mount, unmount } from "svelte";
@@ -20,6 +21,8 @@ export function cleanupPlaylistUi() {
     void unmount(currentPlaylistUi);
     currentPlaylistUi = null;
   }
+
+  checkedPlaylistVideos.clear();
 
   for (const elItem of document.querySelectorAll("[data-ytdl-playlist-downloader]")) {
     elItem.remove();
@@ -141,6 +144,7 @@ function injectPlaylistVideoItemUi({ context, options, elVideoItem }: {
         target: elUiContainer,
         props: {
           videoId,
+          isPlaylistItem: true,
           options
         }
       });
