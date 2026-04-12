@@ -10,27 +10,83 @@ import type { Options } from "@/types";
 import { mount, unmount } from "svelte";
 
 let currentPlaylistUi: ReturnType<typeof mount> | null = null;
+let headerMountAbort: AbortController | null = null;
 
 export function cleanupPlaylistUi() {
-  if (!currentPlaylistUi) {
-    return;
-  }
+  headerMountAbort?.abort();
+  headerMountAbort = null;
 
-  void unmount(currentPlaylistUi);
-  currentPlaylistUi = null;
+  if (currentPlaylistUi) {
+    void unmount(currentPlaylistUi);
+    currentPlaylistUi = null;
+  }
 
   for (const elItem of document.querySelectorAll("[data-ytdl-playlist-downloader]")) {
     elItem.remove();
   }
 }
 
-export function injectPlaylistDownloaderUi(
+function waitForPlaylistHeaderMount(signal: AbortSignal) {
+  return new Promise<HTMLElement | null>(resolve => {
+    const initial = findPlaylistHeaderMount();
+    if (initial) {
+      resolve(initial);
+      return;
+    }
+
+    const observer = new MutationObserver(() => {
+      const elHeader = findPlaylistHeaderMount();
+      if (!elHeader) {
+        return;
+      }
+
+      observer.disconnect();
+      resolve(elHeader);
+    });
+
+    observer.observe(document.body, { childList: true, subtree: true });
+
+    signal.addEventListener("abort", () => {
+      observer.disconnect();
+      resolve(null);
+    }, { once: true });
+  });
+}
+
+function findPlaylistHeaderMount() {
+  // YouTube renders several duplicate page-header instances (legacy, responsive,
+  // hidden). Target the flex-actions row that's actually visible on screen, then
+  // mount into its parent (.ytPageHeaderViewModelHeadlineInfo).
+  for (const elFlex of document.querySelectorAll<HTMLElement>("yt-flexible-actions-view-model")) {
+    if (elFlex.getBoundingClientRect().height <= 0) {
+      continue;
+    }
+
+    const elHeadline = elFlex.closest<HTMLElement>(".ytPageHeaderViewModelHeadlineInfo");
+    if (elHeadline) {
+      return elHeadline;
+    }
+  }
+
+  for (const elHeader of document.querySelectorAll<HTMLElement>(
+    "ytd-playlist-header-renderer, ytd-playlist-sidebar-primary-info-renderer"
+  )) {
+    if (elHeader.getBoundingClientRect().height > 0) {
+      return elHeader;
+    }
+  }
+
+  return null;
+}
+
+export async function injectPlaylistDownloaderUi(
   context: InstanceType<typeof ContentScriptContext>,
   options: Options
 ) {
   cleanupPlaylistUi();
 
-  const elHeader = document.querySelector("ytd-playlist-header-renderer, ytd-playlist-sidebar-primary-info-renderer");
+  headerMountAbort = new AbortController();
+  const elHeader = await waitForPlaylistHeaderMount(headerMountAbort.signal);
   if (!elHeader) {
     return;
   }

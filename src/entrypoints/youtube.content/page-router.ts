@@ -30,7 +30,7 @@ export function handlePageChange(
   setNativeDownloadVisibility(true);
 
   if (pathname === "/playlist") {
-    injectPlaylistDownloaderUi(context, options);
+    void injectPlaylistDownloaderUi(context, options);
     handlePlaylistVideoAdditions(context, options);
     return;
   }
