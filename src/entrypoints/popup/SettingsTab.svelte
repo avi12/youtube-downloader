@@ -1,5 +1,5 @@
 <script lang="ts">
-  import FormatSelect from "@/components/FormatSelect.svelte";
+  import FormatSelect from "./FormatSelect.svelte";
   import { setOption } from "@/lib/storage";
   import { supportedExtensions, videoQualities } from "@/lib/utils";
   import { DownloadType, VideoQualityMode } from "@/types";
