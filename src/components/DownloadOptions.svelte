@@ -167,10 +167,10 @@
     id="filename-input"
     {@attach applyPolymerTheme}
     aria-describedby={!isFilenameValid ? "filename-error" : undefined}
-    aria-invalid={!isFilenameValid || undefined}
+    aria-invalid={!isFilenameValid}
     autocomplete="off"
     disabled={isDownloading || undefined}
-    error-message={filenameValidationError || undefined}
+    error-message={filenameValidationError}
     invalid={!isFilenameValid || undefined}
     label="Filename"
     oninput={e => {
@@ -182,8 +182,6 @@
       const { name, extension } = splitFilenameAndExtension(value);
       onfilenamechange(name);
       onextensionchange(extension);
-
-      e.target.setCustomValidity(getFilenameError(value, extensionType));
     }}
     value={fullFilename}
   ></tp-yt-paper-input>
