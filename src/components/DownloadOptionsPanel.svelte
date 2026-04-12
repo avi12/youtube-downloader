@@ -46,6 +46,8 @@
   // -- Actions ----------------------------------------------------------------
 
   const closeButtonId = "ytdl-panel-close";
+  const downloadButtonId = "ytdl-panel-download";
+  const cancelButtonId = "ytdl-panel-cancel";
 
   function closePanel() {
     releaseInertTrap();
@@ -56,13 +58,20 @@
   }
 
   // yt-button-view-model doesn't fire Svelte's onclick when the user clicks
-  // the inner Polymer-rendered <button>. Grid + watch buttons work around
-  // this by routing clicks through the MAIN-world buttonClickSignal bus —
-  // do the same here for the panel close button.
+  // the inner Polymer-rendered <button>. Route every panel button through the
+  // MAIN-world buttonClickSignal bus.
   $effect(() => {
     const clicked = buttonClickSignal.value;
-    if (clicked?.buttonId === closeButtonId) {
+    if (!clicked?.buttonId) {
+      return;
+    }
+
+    if (clicked.buttonId === closeButtonId) {
       closePanel();
+    } else if (clicked.buttonId === downloadButtonId) {
+      panel.startDownload();
+    } else if (clicked.buttonId === cancelButtonId) {
+      void panel.cancelDownload();
     }
   });
 
