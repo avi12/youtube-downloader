@@ -28,9 +28,18 @@ function detectImageExtension(data: Uint8Array) {
   return "jpg";
 }
 
+// FFmpeg WASM's default build can't transcode WebP → MJPEG for attached_pic —
+// ffmpeg.exec hangs indefinitely on the WebP decoder. YouTube exposes both
+// WebP and JPEG variants under different path prefixes, so prefer the JPEG one.
+function preferJpegThumbnail(url: string) {
+  return url
+    .replace("/vi_webp/", "/vi/")
+    .replace(/\.webp(\?|$)/, ".jpg$1");
+}
+
 async function fetchThumbnail(url: string) {
   try {
-    const response = await fetch(url);
+    const response = await fetch(preferJpegThumbnail(url));
     if (!response.ok) {
       return null;
     }
