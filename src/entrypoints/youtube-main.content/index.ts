@@ -69,10 +69,21 @@ export default defineContentScript({
 
     // SetButtonData/ButtonClick bridge: sets Polymer button data from isolated world
     // and relays click events back via crossWorldMessenger
+    // Track the latest buttonId per element so click handlers always
+    // dispatch the current ID even after Polymer strips the attribute.
+    const buttonIdByElement = new WeakMap<HTMLElement, string>();
+
     crossWorldMessenger.onMessage(CrossWorldMessage.SetButtonData, ({ data: { selector, data: buttonData } }) => {
       const elButton = document.querySelector<HTMLElement>(selector);
       if (!elButton || !("data" in elButton)) {
         return;
+      }
+
+      // Capture buttonId before setting .data — Polymer's render cycle
+      // strips non-registered attributes like data-ytdl-button-id
+      const buttonId = elButton.getAttribute("data-ytdl-button-id");
+      if (buttonId) {
+        buttonIdByElement.set(elButton, buttonId);
       }
 
       elButton.data = buttonData;
@@ -83,10 +94,10 @@ export default defineContentScript({
 
       elButton.setAttribute("data-ytdl-click-bound", "true");
       elButton.addEventListener("click", e => {
-        const buttonId = elButton.getAttribute("data-ytdl-button-id");
-        if (buttonId) {
+        const currentButtonId = buttonIdByElement.get(elButton);
+        if (currentButtonId) {
           e.stopPropagation();
-          buttonClickSignal.value = { buttonId };
+          buttonClickSignal.value = { buttonId: currentButtonId };
         }
       });
     });

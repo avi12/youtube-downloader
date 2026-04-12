@@ -77,12 +77,27 @@
     return () => clearTimeout(loadTimeout);
   });
 
-  // Reactively refresh buttons when shared download state changes.
-  // Reading downloadState registers it as a reactive dependency.
+  // Reactively refresh Polymer buttons when download state changes.
+  // Throttle sendButtonData calls to avoid flooding Polymer re-renders
+  // during rapid progress updates (100+ ticks/sec would freeze the page).
+  let buttonRefreshTimer: ReturnType<typeof setTimeout> | null = null;
+  const buttonRefreshIntervalMs = 250;
+
   $effect(() => {
     void downloadState;
-    refreshDownloadButton();
-    refreshChevronButton();
+
+    if (buttonRefreshTimer) {
+      return;
+    }
+
+    queueMicrotask(() => {
+      refreshDownloadButton();
+      refreshChevronButton();
+    });
+
+    buttonRefreshTimer = setTimeout(() => {
+      buttonRefreshTimer = null;
+    }, buttonRefreshIntervalMs);
   });
 
   const buttonLabel = $derived.by(() => {
@@ -120,11 +135,9 @@
     const selectedVideoFormat = videoData.videoFormats[0] ?? null;
     const selectedAudioFormat = videoData.audioFormats[0] ?? null;
     const filenameOutput = resolveVideoFilename(videoData, options, gridTitle);
-    if (!videoData.sabrConfig) {
-      return;
-    }
 
     activeDownloadClicks.add(videoId);
+    downloadProgressStore.unsuppress(videoId);
     downloadProgressStore.set(videoId, {
       isDownloading: true,
       isDone: false,
@@ -213,7 +226,7 @@
 
     const tooltip = getButtonTooltip();
 
-    assignButtonId(elDownloadBtn);
+    assignButtonId(elDownloadBtn, "download");
     sendButtonData(elDownloadBtn, {
       iconName: getItemIconName(),
       title: "",
@@ -228,11 +241,13 @@
     });
   }
 
-  let buttonIdCounter = 0;
+  const downloadButtonId = $derived(`btn-${videoId}-download`);
+  const chevronButtonId = $derived(`btn-${videoId}-chevron`);
 
-  function assignButtonId(elButton: Element) {
-    if (!elButton.hasAttribute("data-ytdl-button-id")) {
-      elButton.setAttribute("data-ytdl-button-id", `btn-${videoId}-${buttonIdCounter++}`);
+  function assignButtonId(elButton: Element, target: "download" | "chevron") {
+    const expectedId = target === "download" ? downloadButtonId : chevronButtonId;
+    if (elButton.getAttribute("data-ytdl-button-id") !== expectedId) {
+      elButton.setAttribute("data-ytdl-button-id", expectedId);
     }
   }
 
@@ -337,8 +352,10 @@
 
   $effect(() => {
     const clicked = buttonClickSignal.value;
-    if (clicked?.buttonId && elDownloadBtn?.getAttribute("data-ytdl-button-id") === clicked.buttonId) {
-      void handleDownloadClick();
+    if (clicked?.buttonId && downloadButtonId === clicked.buttonId) {
+      queueMicrotask(() => {
+        void handleDownloadClick();
+      });
     }
   });
 
@@ -347,7 +364,7 @@
       return;
     }
 
-    assignButtonId(elChevronBtn);
+    assignButtonId(elChevronBtn, "chevron");
     sendButtonData(elChevronBtn, {
       iconName: isPanelOpen ? IconName.ExpandLess : IconName.ExpandMore,
       title: "",
@@ -374,8 +391,10 @@
 
   $effect(() => {
     const clicked = buttonClickSignal.value;
-    if (clicked?.buttonId && elChevronBtn?.getAttribute("data-ytdl-button-id") === clicked.buttonId) {
-      togglePanel();
+    if (clicked?.buttonId && chevronButtonId === clicked.buttonId) {
+      queueMicrotask(() => {
+        togglePanel();
+      });
     }
   });
 
@@ -425,8 +444,8 @@
     position: absolute;
     inset-block-end: 0;
     inset-inline-start: 0;
-    inline-size: 100%;
     block-size: 3px;
+    inline-size: 100%;
   }
 
   .ytdl-spinner-container {
