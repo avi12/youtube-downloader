@@ -1,0 +1,2 @@
+patchedDependencies:
+  lie@3.3.0: patches/lie@3.3.0.patch
