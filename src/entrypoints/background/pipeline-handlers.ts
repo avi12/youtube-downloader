@@ -39,6 +39,7 @@ export function registerPipelineHandlers() {
       },
       tabId
     );
+    void sendMessage(MessageType.RemoveDownloadIframe, { videoId: data.videoId }, tabId);
   });
 
   onMessage(MessageType.PipelineProgress, async ({ data }) => {
@@ -61,6 +62,7 @@ export function registerPipelineHandlers() {
       { videoId, progress: 0, progressType: ProgressType.Video, isRemoved: true },
       tabId
     );
+    void sendMessage(MessageType.RemoveDownloadIframe, { videoId }, tabId);
   });
 
   onMessage(MessageType.PipelineQueueRemove, async ({ data }) => {
@@ -77,9 +79,31 @@ export function registerPipelineHandlers() {
   });
 
   onMessage(MessageType.PipelineDownload, async ({ data }) => {
-    await browser.downloads.download({
+    let targetDownloadId = -1;
+
+    const downloadComplete = new Promise<void>(resolve => {
+      function handleChanged(delta: {
+        id: number;
+        state?: { current?: string };
+      }) {
+        if (delta.id !== targetDownloadId || !delta.state?.current) {
+          return;
+        }
+
+        if (delta.state.current === "complete" || delta.state.current === "interrupted") {
+          browser.downloads.onChanged.removeListener(handleChanged);
+          resolve();
+        }
+      }
+
+      browser.downloads.onChanged.addListener(handleChanged);
+    });
+
+    targetDownloadId = await browser.downloads.download({
       url: data.blobUrl,
       filename: data.filename
     });
+
+    await downloadComplete;
   });
 }

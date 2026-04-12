@@ -23,4 +23,12 @@ export function listenForDownloadIframes(context: InstanceType<typeof ContentScr
       downloadIframes.delete(videoId);
     });
   });
+
+  onMessage(MessageType.RemoveDownloadIframe, ({ data }) => {
+    const elIframe = downloadIframes.get(data.videoId);
+    if (elIframe) {
+      elIframe.remove();
+      downloadIframes.delete(data.videoId);
+    }
+  });
 }

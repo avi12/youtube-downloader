@@ -24,8 +24,12 @@ export async function processSingleMedia(item: ProcessStreamData) {
   if (type === DownloadType.Audio && item.metadata?.isMusic) {
     await reportProgress({ videoId, progress: 0, progressType: ProgressType.FFmpeg, tabId });
 
+    // Cap FFmpeg progress below 1 — progress=1 is signaled after file save.
+    const ffmpegProgressCap = 0.99;
+
     function handleMusicFFmpegProgress({ progress }: { progress: number }) {
-      void reportProgress({ videoId, progress, progressType: ProgressType.FFmpeg, tabId });
+      const cappedProgress = Math.min(progress, ffmpegProgressCap);
+      void reportProgress({ videoId, progress: cappedProgress, progressType: ProgressType.FFmpeg, tabId });
     }
 
     progressHandlers.add(handleMusicFFmpegProgress);
@@ -37,11 +41,10 @@ export async function processSingleMedia(item: ProcessStreamData) {
     } finally {
       progressHandlers.delete(handleMusicFFmpegProgress);
     }
-
-    await reportProgress({ videoId, progress: 1, progressType: ProgressType.FFmpeg, tabId });
   }
 
   if (item.playlistId) {
+    await reportProgress({ videoId, progress: 1, progressType: ProgressType.FFmpeg, tabId });
     addToPlaylistBundle({
       playlistId: item.playlistId,
       playlistTitle: item.playlistTitle ?? "Playlist",
@@ -54,4 +57,5 @@ export async function processSingleMedia(item: ProcessStreamData) {
   }
 
   await triggerDownload(data, filenameOutput);
+  await reportProgress({ videoId, progress: 1, progressType: ProgressType.FFmpeg, tabId });
 }

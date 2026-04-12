@@ -20,22 +20,34 @@ export function toUint8Array(data: Uint8Array | Record<string, number> | null) {
   return new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
 }
 
+// Keep blob references alive until Chrome's download manager finishes reading them.
+// Without this, GC can collect the Blob before the download completes, causing
+// Chrome to mark the download as "Deleted".
+const activeBlobUrls = new Map<string, Blob>();
+
+// Delay blob URL revocation - once revoked, chrome://downloads marks the entry
+// as "Deleted" because the source URL becomes invalid. Keep URLs alive for the
+// user's session so "Show in folder" works. The offscreen document's lifecycle
+// cleans them up eventually.
 export async function triggerDownload(data: Uint8Array, filenameOutput: string) {
   const mimeType = getMimeType(filenameOutput) || "application/octet-stream";
   const filename = getCompatibleFilename(filenameOutput);
   const blob = new Blob([new Uint8Array(data)], { type: mimeType });
   const blobUrl = URL.createObjectURL(blob);
+  activeBlobUrls.set(blobUrl, blob);
 
-  // Blob URLs are scoped to the document that created them (offscreen doc).
-  // browser.downloads.download() in the background SW can't access them.
-  // Trigger the download directly from this document via an anchor element.
-  const elAnchor = document.createElement("a");
-  elAnchor.href = blobUrl;
-  elAnchor.download = filename;
-  elAnchor.click();
-
-  URL.revokeObjectURL(blobUrl);
+  // Await the file save so the caller can report progress=1 only after
+  // the file is actually written to disk (not just after FFmpeg muxing).
+  await sendMessage(MessageType.PipelineDownload, { blobUrl, mimeType, filename });
 }
+
+// Throttle progress updates to avoid flooding the main thread with
+// thousands of Polymer button re-renders per download (FFmpeg fires
+// progress events on every frame/packet — including thousands of
+// redundant progress=1 events at the end of muxing).
+const progressThrottleIntervalMs = 200;
+const lastProgressTimestamps = new Map<string, number>();
+const completedVideoIds = new Set<string>();
 
 export async function reportProgress({
   videoId, progress, progressType, tabId
@@ -45,6 +57,32 @@ export async function reportProgress({
   progressType: ProgressType;
   tabId: number;
 }) {
+  // A new download starts with progress=0 — reset completion flag.
+  if (progress === 0) {
+    completedVideoIds.delete(videoId);
+    lastProgressTimestamps.delete(videoId);
+  }
+
+  // Skip redundant progress=1 events after the first one.
+  if (progress >= 1) {
+    if (completedVideoIds.has(videoId)) {
+      return;
+    }
+
+    completedVideoIds.add(videoId);
+    lastProgressTimestamps.delete(videoId);
+    await sendMessage(MessageType.PipelineProgress, { videoId, progress, progressType, tabId });
+    return;
+  }
+
+  // Throttle intermediate progress to avoid excessive re-renders.
+  const now = Date.now();
+  const lastSent = lastProgressTimestamps.get(videoId) ?? 0;
+  if (now - lastSent < progressThrottleIntervalMs) {
+    return;
+  }
+
+  lastProgressTimestamps.set(videoId, now);
   await sendMessage(MessageType.PipelineProgress, { videoId, progress, progressType, tabId });
 }
 

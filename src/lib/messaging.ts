@@ -23,6 +23,7 @@ export enum MessageType {
   RequestPlaylistDownload = "requestPlaylistDownload",
   DownloadViaWatchPage = "downloadViaWatchPage",
   CreateDownloadIframe = "createDownloadIframe",
+  RemoveDownloadIframe = "removeDownloadIframe",
   DownloadIframeReady = "downloadIframeReady",
   CancelDownload = "cancelDownload",
   StartBackgroundDownload = "startBackgroundDownload",
@@ -106,6 +107,9 @@ interface ProtocolMap {
     videoId: string; watchUrl: string;
   }): void;
 
+  // Background → Content script: remove download iframe after completion
+  removeDownloadIframe(data: { videoId: string }): void;
+
   // Content script → Background: iframe loaded
   downloadIframeReady(data: { videoId: string }): void;
 
@@ -152,7 +156,11 @@ interface ProtocolMap {
     type: DownloadType;
   }): void;
   pipelineFFmpegReady(data: Record<string, never>): void;
-  pipelineDownload(data: { blobUrl: string; mimeType: string; filename: string }): void;
+  pipelineDownload(data: {
+    blobUrl: string;
+    mimeType: string;
+    filename: string;
+  }): void;
 }
 
 export const { sendMessage, onMessage } =

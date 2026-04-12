@@ -57,8 +57,13 @@ export async function processVideoAudio(item: ProcessStreamData) {
 
   const ffmpeg = getFFmpeg();
 
+  // Cap FFmpeg's progress below 1 — we only signal progress=1 after the
+  // file is actually saved to disk (not just after FFmpeg muxing completes).
+  const ffmpegProgressCap = 0.99;
+
   function handleFFmpegProgress({ progress }: { progress: number }) {
-    void reportProgress({ videoId, progress, progressType: ProgressType.FFmpeg, tabId });
+    const cappedProgress = Math.min(progress, ffmpegProgressCap);
+    void reportProgress({ videoId, progress: cappedProgress, progressType: ProgressType.FFmpeg, tabId });
   }
 
   progressHandlers.add(handleFFmpegProgress);
@@ -125,9 +130,8 @@ export async function processVideoAudio(item: ProcessStreamData) {
       ffmpeg.FS.unlink(file);
     }
 
-    await reportProgress({ videoId, progress: 1, progressType: ProgressType.FFmpeg, tabId });
-
     if (item.playlistId) {
+      await reportProgress({ videoId, progress: 1, progressType: ProgressType.FFmpeg, tabId });
       addToPlaylistBundle({
         playlistId: item.playlistId,
         playlistTitle: item.playlistTitle ?? "Playlist",
@@ -140,6 +144,7 @@ export async function processVideoAudio(item: ProcessStreamData) {
     }
 
     await triggerDownload(ffmpegOutput, downloadFilename);
+    await reportProgress({ videoId, progress: 1, progressType: ProgressType.FFmpeg, tabId });
   } finally {
     progressHandlers.delete(handleFFmpegProgress);
   }
