@@ -288,6 +288,12 @@
 </div>
 
 <style>
+  :global(ytd-menu-renderer.ytd-playlist-video-renderer:has([data-ytdl-item])) {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+  }
+
   .ytdl-button-group {
     display: inline-flex;
     flex-direction: column;

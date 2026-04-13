@@ -121,14 +121,14 @@ function injectPlaylistVideoItemUi({ context, options, elVideoItem }: {
     return;
   }
 
-  const elMenu = elVideoItem.querySelector("ytd-menu-renderer");
-  if (!elMenu?.parentElement) {
+  const elTopLevelActions = elVideoItem.querySelector("ytd-menu-renderer #top-level-buttons-computed");
+  if (!elTopLevelActions) {
     return;
   }
 
   const elItemContainer = document.createElement("div");
   elItemContainer.dataset.ytdlItem = videoId;
-  elMenu.parentElement.insertBefore(elItemContainer, elMenu);
+  elTopLevelActions.append(elItemContainer);
 
   const ui = createIntegratedUi(context, {
     position: "inline",
