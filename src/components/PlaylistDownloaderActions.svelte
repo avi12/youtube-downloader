@@ -2,7 +2,6 @@
   import type { createPlaylistActionButtons } from "./PlaylistDownloader.action-buttons.svelte";
   import type { createPlaylistDownloaderState } from "./PlaylistDownloader.state.svelte";
   import { applyPolymerCustomStyles, PAPER_PROGRESS_THEME } from "@/lib/polymer-utils";
-  import { PlaylistDownloadMode } from "@/types";
 
   type Props = {
     playlist: ReturnType<typeof createPlaylistDownloaderState>;
@@ -10,8 +9,6 @@
   };
 
   const { playlist, actionButtons }: Props = $props();
-
-  const isDataSaverSelected = $derived(playlist.downloadMode === PlaylistDownloadMode.DataSaver);
 
   function attachProgressBar(elProgress: Element) {
     applyPolymerCustomStyles(elProgress, PAPER_PROGRESS_THEME);
@@ -40,11 +37,12 @@
 <div class="ytdl-playlist-actions">
   <div class="ytdl-selection-row">
     <yt-button-view-model {@attach actionButtons.attachSelectAll}></yt-button-view-model>
-    <span class="ytdl-selection-count" aria-live="polite">
-      {playlist.selectedDownloadableVideos.length} of {playlist.downloadableVideos.length}
-      video{playlist.downloadableVideos.length === 1 ? "" : "s"} selected
-    </span>
+    <yt-button-view-model {@attach actionButtons.attachDeselectAll}></yt-button-view-model>
   </div>
+  <span class="ytdl-selection-count" aria-live="polite">
+    {playlist.selectedDownloadableVideos.length} of {playlist.downloadableVideos.length}
+    video{playlist.downloadableVideos.length === 1 ? "" : "s"} selected
+  </span>
   <yt-button-view-model {@attach actionButtons.attachDownload}></yt-button-view-model>
 
   <div class="ytdl-or-divider" aria-hidden="true">
@@ -62,11 +60,10 @@
   {/if}
 </div>
 
-<div class="ytdl-scroll-sync-option" class:is-disabled={!isDataSaverSelected}>
+<div class="ytdl-scroll-sync-option">
   <tp-yt-paper-checkbox
     {@attach attachScrollSyncCheckbox}
     checked={playlist.isScrollSyncEnabled ? "" : undefined}
-    disabled={!isDataSaverSelected ? "" : undefined}
   >
     Scroll to currently-downloading video
   </tp-yt-paper-checkbox>
@@ -156,11 +153,5 @@
     align-items: center;
     font-size: 1.2rem;
     cursor: pointer;
-    transition: opacity 200ms ease;
-  }
-
-  .ytdl-scroll-sync-option.is-disabled {
-    opacity: 50%;
-    cursor: not-allowed;
   }
 </style>

@@ -26,7 +26,9 @@
   $effect(() => {
     void playlist.downloadableVideos.length;
     void playlist.isAllSelected;
+    void playlist.selectedDownloadableVideos.length;
     actionButtons.refreshSelectAll();
+    actionButtons.refreshDeselectAll();
   });
 
   $effect(() => {

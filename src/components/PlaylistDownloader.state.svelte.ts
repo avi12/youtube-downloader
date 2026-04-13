@@ -251,7 +251,7 @@ export function createPlaylistDownloaderState(getOptions: () => Options) {
   }
 
   const activeDownloadVideoId = $derived.by(() => {
-    if (!isDownloading || downloadMode !== PlaylistDownloadMode.DataSaver) {
+    if (!isDownloading) {
       return null;
     }
 
