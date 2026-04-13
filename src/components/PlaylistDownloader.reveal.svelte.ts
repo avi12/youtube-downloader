@@ -8,8 +8,8 @@ export function createRevealState(
 ) {
   let isRevealingAll = $state(false);
   let revealedVideoCount = $state(0);
-  let shouldStartDownloadAfterReveal = false;
-  let abortReveal = false;
+  let isDownloadPendingReveal = false;
+  let isRevealCanceled = false;
 
   async function revealAllVideos() {
     if (isRevealingAll) {
@@ -17,35 +17,35 @@ export function createRevealState(
     }
 
     isRevealingAll = true;
-    abortReveal = false;
+    isRevealCanceled = false;
     revealedVideoCount = getVideoDataMapSize();
 
     await revealAllPlaylistVideos(
       update => {
         revealedVideoCount = update.revealedCount;
       },
-      () => abortReveal
+      () => isRevealCanceled
     );
 
     isRevealingAll = false;
 
-    if (abortReveal) {
-      shouldStartDownloadAfterReveal = false;
+    if (isRevealCanceled) {
+      isDownloadPendingReveal = false;
       return;
     }
 
-    if (shouldStartDownloadAfterReveal) {
-      shouldStartDownloadAfterReveal = false;
+    if (isDownloadPendingReveal) {
+      isDownloadPendingReveal = false;
       await startDownload(getDownloadableVideos());
     }
   }
 
   function cancelReveal() {
-    abortReveal = true;
+    isRevealCanceled = true;
   }
 
   async function revealAndDownloadAll() {
-    shouldStartDownloadAfterReveal = true;
+    isDownloadPendingReveal = true;
     await revealAllVideos();
   }
 

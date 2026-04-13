@@ -44,12 +44,12 @@ function handleSabrRequest(details: Browser.webRequest.OnBeforeRequestDetails) {
 
   // The initial SABR handshake has no PO token; it only appears once the player starts streaming,
   // so also notify on first-seen PO token.
-  const hadPoTokenBefore = previousData
+  const isPreviousPoToken = previousData
     ? Boolean(extractPoTokenFromBody(previousData.body))
     : false;
 
-  const hasPoTokenNow = Boolean(extractPoTokenFromBody(Array.from(bodyBytes)));
-  const isNewPoToken = hasPoTokenNow && !hadPoTokenBefore;
+  const isPoTokenPresent = Boolean(extractPoTokenFromBody(Array.from(bodyBytes)));
+  const isNewPoToken = isPoTokenPresent && !isPreviousPoToken;
   if (isFirstCapture || isNewPoToken) {
     onCaptureCallback?.(details.tabId);
   }
