@@ -1,11 +1,8 @@
 import { DownloadType } from "@/types";
 import type { Options, VideoData } from "@/types";
 
-// ─── Filename utilities ───────────────────────────────────────────────────────
-
 export function getCompatibleFilename(filename: string) {
-  // Forbidden on any OS: < > : " \ / | ? * — plus backticks, which break
-  // FFmpeg WASM argument parsing.
+  // Strips the OS-forbidden set < > : " \ / | ? * plus backticks (which break FFmpeg WASM argument parsing).
   return filename.replaceAll(/[<>:"\\/|?*`]/g, "");
 }
 
@@ -27,11 +24,7 @@ export function splitFilenameAndExtension(filename: string) {
   return { name: filename.slice(0, iDot), extension: filename.slice(iDot + 1) };
 }
 
-// ─── Container MIME map ───────────────────────────────────────────────────────
-
-// Containers FFmpeg can remux YouTube streams into with -c copy, plus flac
-// which requires re-encoding (YouTube produces H.264/VP9/AV1 video and
-// AAC/Opus/Vorbis audio).
+// Containers FFmpeg can remux YouTube streams into with -c copy, plus flac which requires re-encoding.
 const extensionToMimeAll: Record<string, string> = {
   flac: "audio/flac",
   m4a: "audio/mp4",
@@ -97,8 +90,7 @@ export function getMimeType(filename: string) {
   return extensionToMimeAll[extension];
 }
 
-// FFmpeg requires compatible container formats — mixing WebM and MP4 codecs
-// forces MKV as the output container.
+// Mixing WebM and MP4 codecs forces MKV as the output container.
 export function getOutputExtension(
   videoMimeType: string,
   audioMimeType: string,
@@ -116,8 +108,6 @@ export function getOutputExtension(
 
   return "mkv";
 }
-
-// ─── Download filename resolver ───────────────────────────────────────────────
 
 export function resolveVideoFilename(videoData: VideoData, options: Options, titleOverride?: string) {
   const videoFormat = videoData.videoFormats[0] ?? null;

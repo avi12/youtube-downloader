@@ -55,8 +55,7 @@ export async function processSingleMedia(item: ProcessStreamData) {
       progressHandlers.delete(handleFfmpegProgress);
     }
   } else if (isFlacTarget) {
-    // FLAC can't hold AAC/Opus, so re-encode even when there's no music
-    // metadata to embed.
+    // FLAC can't hold AAC/Opus, so re-encode even without music metadata to embed.
     await reportProgress({ videoId, progress: 0, progressType: ProgressType.FFmpeg, tabId });
 
     progressHandlers.add(handleFfmpegProgress);

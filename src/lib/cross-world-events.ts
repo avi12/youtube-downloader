@@ -12,8 +12,6 @@ import type { ProgressUpdate } from "@/types";
 
 const EVENT_PREFIX = "ytdl-event";
 
-// ─── Protocol ────────────────────────────────────────────────────────────────
-
 export enum CrossWorldEvent {
   ProgressUpdate = "progressUpdate"
 }
@@ -21,8 +19,6 @@ export enum CrossWorldEvent {
 interface CrossWorldEventMap {
   [CrossWorldEvent.ProgressUpdate]: ProgressUpdate;
 }
-
-// ─── API ─────────────────────────────────────────────────────────────────────
 
 export function emitCrossWorldEvent<T extends CrossWorldEvent>(
   type: T,

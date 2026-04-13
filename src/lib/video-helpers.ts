@@ -3,8 +3,6 @@ import { ProgressType, VideoQualityMode } from "@/types";
 import type { AdaptiveFormatItem, Options, PlayerResponse } from "@/types";
 import { PlayabilityStatus } from "@/types/youtube";
 
-// ─── Quality + default options ────────────────────────────────────────────────
-
 export const videoQualities = [4320, 2160, 1440, 1080, 720, 480, 360, 240, 144];
 
 const defaultVideoQuality = 1080;
@@ -20,11 +18,8 @@ export const initialOptions: Options = {
   isRemoveNativeDownload: false
 };
 
-// ─── YouTube playability checks ───────────────────────────────────────────────
-
 export function isVideoLive(playerResponse: PlayerResponse) {
-  // isLive means "currently live". isLiveContent also matches past-live VODs
-  // (which are downloadable), so do not read it here.
+  // isLiveContent also matches past-live VODs (which are downloadable), so don't read it here.
   return Boolean(playerResponse.videoDetails?.isLive);
 }
 
@@ -52,8 +47,6 @@ export function isVideoMusic(playerResponse: PlayerResponse) {
   return playerResponse.microformat?.playerMicroformatRenderer.category === "Music";
 }
 
-// ─── DOM wait helper ──────────────────────────────────────────────────────────
-
 export async function waitForVideoElement(signal?: AbortSignal) {
   return new Promise<HTMLVideoElement>((resolve, reject) => {
     const observer = new MutationObserver(() => {
@@ -74,8 +67,6 @@ export async function waitForVideoElement(signal?: AbortSignal) {
     }, { once: true });
   });
 }
-
-// ─── Format display labels ────────────────────────────────────────────────────
 
 export function formatVideoQualityLabel(format: Pick<AdaptiveFormatItem, "height" | "fps" | "qualityLabel">) {
   const base = `${format.height}p${format.fps ? ` ${format.fps}fps` : ""}`;
@@ -101,8 +92,7 @@ export function formatAudioCodecLabel(mimeType: string) {
   return codec || (mimeType.split(";")[0].split("/")[1] ?? "");
 }
 
-// ─── Weighted progress (download phase 0–70%, mux phase 70–100%) ──────────────
-
+// download phase is 0-70%, mux phase is 70-100%.
 export function calculateWeightedProgress(isDownloading: boolean, progress: number, progressType: ProgressType | "") {
   if (!isDownloading) {
     return 0;

@@ -2,51 +2,37 @@ import type { ButtonViewModelData, DownloadRequest, StreamDataPayload, VideoData
 import { ProgressType } from "@/types";
 import { defineCustomEventMessaging } from "@webext-core/messaging/page";
 
-// ─── Protocol definition ──────────────────────────────────────────────────────
-
 export enum CrossWorldMessage {
-  // MAIN world → isolated world
   VideoData = "videoData",
   Navigation = "navigation",
   PanelContentReady = "panelContentReady",
   StreamError = "streamError",
   StreamData = "streamData",
 
-  // Isolated world / Svelte → MAIN world
   DownloadRequest = "downloadRequest",
   PanelClosed = "panelClosed",
   FilenameChanged = "filenameChanged",
   RequestVideoData = "requestVideoData",
   CancelDownload = "cancelDownload",
 
-  // MAIN world → isolated world: proxy fetch through extension context (bypasses CORS via host_permissions)
   ProxyFetch = "proxyFetch",
 
-  // MAIN world → isolated world: player is initialized and ready to handle downloads
   IframePlayerReady = "iframePlayerReady",
 
-  // MAIN world → isolated world: cancel an active download
   CancelRequest = "cancelRequest",
 
-  // Isolated world → MAIN world: set Polymer button data
   SetButtonData = "setButtonData",
 
-  // Isolated world → MAIN world: create a grid dropdown
   CreateDropdown = "createDropdown",
 
-  // MAIN world → isolated world: grid dropdown is ready
   DropdownReady = "dropdownReady",
 
-  // Isolated world → MAIN world: close a grid dropdown
   CloseDropdown = "closeDropdown",
 
-  // MAIN world → MAIN world (watch-button): progress from CDN/direct download
   DownloadProgress = "downloadProgress",
 
-  // MAIN world → isolated world: iframe fallback when SABR+CDN both fail
   DownloadViaIframe = "downloadViaIframe",
 
-  // MAIN world → isolated world → background: start download in background SW
   StartBackgroundDownload = "startBackgroundDownload"
 }
 

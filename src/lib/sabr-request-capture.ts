@@ -1,13 +1,3 @@
-/**
- * Captures YouTube player's SABR request bodies via chrome.webRequest.
- *
- * YouTube's SABR requests contain a PO (Proof of Origin) token that we
- * cannot generate ourselves. By capturing the player's own request body
- * (which includes the PO token), we can replay it for our downloads.
- *
- * Runs in the background service worker.
- */
-
 type CapturedSabrData = {
   body: number[];
   url: string;
@@ -17,10 +7,6 @@ type CapturedSabrData = {
 
 const capturedByTab = new Map<number, CapturedSabrData>();
 
-/**
- * Starts listening for SABR requests from YouTube pages.
- * Should be called once from the background service worker.
- */
 export function startSabrRequestCapture() {
   browser.webRequest.onBeforeRequest.addListener(
     handleSabrRequest,
@@ -31,7 +17,6 @@ export function startSabrRequestCapture() {
 
 let onCaptureCallback: ((tabId: number) => void) | null = null;
 
-/** Registers a callback invoked the first time a SABR body is captured per tab. */
 export function onSabrBodyCaptured(callback: (tabId: number) => void) {
   onCaptureCallback = callback;
 }
@@ -49,8 +34,7 @@ function handleSabrRequest(details: Browser.webRequest.OnBeforeRequestDetails) {
   const previousData = capturedByTab.get(details.tabId);
   const isFirstCapture = !previousData;
 
-  // Always save the latest SABR request body. The PO token evolves during
-  // the session, so the latest body has the most valid token.
+  // The PO token evolves during the session, so the latest body has the most valid token.
   capturedByTab.set(details.tabId, {
     body: Array.from(bodyBytes),
     url: details.url,
@@ -58,9 +42,8 @@ function handleSabrRequest(details: Browser.webRequest.OnBeforeRequestDetails) {
     timestamp: Date.now()
   });
 
-  // Notify on first capture, AND whenever a PO token is first found.
-  // The initial SABR handshake has no PO token - it only appears in
-  // subsequent requests once the player starts streaming.
+  // The initial SABR handshake has no PO token; it only appears once the player starts streaming,
+  // so also notify on first-seen PO token.
   const hadPoTokenBefore = previousData
     ? Boolean(extractPoTokenFromBody(previousData.body))
     : false;
@@ -72,19 +55,12 @@ function handleSabrRequest(details: Browser.webRequest.OnBeforeRequestDetails) {
   }
 }
 
-/**
- * Returns the captured SABR request data for a given tab.
- * Falls back to the most recent capture from any tab when the
- * requesting tab has no data (e.g. channel pages with no player).
- */
+// Falls back to the most recent capture from any tab when the requesting tab has no data
+// (e.g., channel pages with no player).
 export function getCapturedSabrData(tabId: number) {
   return capturedByTab.get(tabId) ?? getLatestCapturedSabrData();
 }
 
-/**
- * Returns the most recently captured SABR data across all tabs.
- * Used as a fallback for tabs that never had a video player.
- */
 function getLatestCapturedSabrData() {
   let latest: CapturedSabrData | null = null;
 
@@ -168,7 +144,6 @@ export function extractPoTokenFromBody(body: number[]) {
     return null;
   }
 
-  // Find field 19 (StreamerContext) - tag = (19 << 3) | 2 = 154
   while (offset < buf.byteLength) {
     const tag = readVarint(offset);
     offset = tag.offset;
@@ -209,9 +184,6 @@ export function extractPoTokenFromBody(body: number[]) {
   return null;
 }
 
-/**
- * Clears captured data for a tab (on navigation or tab close).
- */
 export function clearCapturedSabrData(tabId: number) {
   capturedByTab.delete(tabId);
 }

@@ -1,11 +1,3 @@
-/**
- * Forwards SABR credentials (PO token + URL) captured by the background's
- * webRequest listener to the MAIN world via a synced signal.
- *
- * The isolated world writes to sabrCredentials.value, which syncs
- * to the MAIN world via window.postMessage automatically.
- */
-
 import { MessageType, sendMessage, onMessage } from "./messaging";
 import { sabrCredentials } from "./synced-stores.svelte";
 
@@ -16,7 +8,7 @@ async function forwardSabrCredentials() {
   try {
     captured = await sendMessage(MessageType.GetCapturedSabrBody, {});
   } catch {
-    // SW not ready yet - will retry via forwardSabrCredentialsWithRetry
+    // SW is not ready yet; will retry via forwardSabrCredentialsWithRetry.
     return;
   }
 
@@ -24,8 +16,7 @@ async function forwardSabrCredentials() {
     return;
   }
 
-  // The captured body's PO token may be absent (initial SABR handshake has none).
-  // Fall back to whatever BotGuard token the MAIN world has already synced in.
+  // Initial SABR handshake has no PO token, so fall back to whatever BotGuard token the MAIN world already synced in.
   const poToken = captured.poToken || sabrCredentials.value?.poToken || "";
 
   isCredentialsForwarded = true;
@@ -34,8 +25,7 @@ async function forwardSabrCredentials() {
     poToken
   };
 
-  // Also persist in DOM as fallback - the postMessage may arrive
-  // before the MAIN world's listener is ready
+  // postMessage may arrive before the MAIN world's listener is ready, so persist in DOM as fallback.
   let elCredentials = document.getElementById("ytdl-sabr-credentials");
   if (!elCredentials) {
     elCredentials = document.createElement("div");

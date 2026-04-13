@@ -1,4 +1,3 @@
-// Re-export YouTube API/runtime types
 import type { AdaptiveFormatItem, PlayerResponse } from "./youtube";
 
 export type {
@@ -20,8 +19,6 @@ export {
   IconName,
   isPolymerProgressElement
 } from "./youtube";
-
-// -- Extension state types ----------------------------------------------------
 
 export enum DownloadType {
   VideoAndAudio = "video+audio",
@@ -135,9 +132,7 @@ export type StreamData = {
   audioData: Uint8Array | null;
   videoMimeType: string;
   audioMimeType: string;
-  // Label for the primary audio track (shown in VLC track selector)
   primaryAudioLabel?: string;
-  // Additional language tracks to embed alongside the primary
   additionalAudioStreams: AudioStreamData[];
 };
 

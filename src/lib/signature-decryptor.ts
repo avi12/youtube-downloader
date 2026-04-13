@@ -1,16 +1,3 @@
-/**
- * Decrypts YouTube's signatureCipher to produce direct download URLs.
- *
- * YouTube encrypts format URLs using a signature cipher that consists of
- * three operations (swap, reverse, splice) applied in a specific sequence.
- * The sequence is defined in player.js and changes with each player version.
- *
- * This module extracts the operation sequence from the loaded player.js,
- * then applies it to decrypt the signature - no eval() or Function() needed.
- */
-
-// ─── Types ──────────────────────────────────────────────────────────────────
-
 type TransformOp = {
   type: "swap";
   argument: number;
@@ -28,10 +15,7 @@ interface DecryptorState {
 
 let cachedState: DecryptorState | null = null;
 
-// ─── Player.js parsing ──────────────────────────────────────────────────────
-
-// Patterns to find the initial signature function name in player.js.
-// These match where the decrypted signature is passed to a URL parameter setter.
+// Match where the decrypted signature is passed to a URL parameter setter in player.js.
 const FUNCTION_NAME_PATTERNS = [
   /\b[cs]\s*&&\s*[adf]\.set\([^,]+\s*,\s*encodeURIComponent\(([a-zA-Z0-9$]+)\(/,
   /\bm=([a-zA-Z0-9$]{2,})\(decodeURIComponent\(h\.s\)\)/,
@@ -56,7 +40,6 @@ function findSignatureFunctionName(playerSource: string) {
 }
 
 function extractTransformOperations(playerSource: string, functionName: string) {
-  // Find the function body: var fn = function(a) { a = a.split(""); ... };
   const escapedName = escapeRegExp(functionName);
   const functionPattern = new RegExp(`(?:var\\s+${escapedName}|${escapedName}\\s*=\\s*function)\\s*=?\\s*function\\s*\\(([a-zA-Z])\\)\\s*\\{([^}]+)\\}`);
   const functionMatch = playerSource.match(functionPattern);
@@ -66,7 +49,6 @@ function extractTransformOperations(playerSource: string, functionName: string) 
 
   const functionBody = functionMatch[2];
 
-  // Find the helper object name from calls like HelperObj.method(a, N)
   const helperMatch = functionBody.match(/([a-zA-Z0-9$]+)\.[a-zA-Z0-9$]+\(/);
   if (!helperMatch) {
     return null;
@@ -74,7 +56,6 @@ function extractTransformOperations(playerSource: string, functionName: string) 
 
   const helperName = helperMatch[1];
 
-  // Extract the helper object definition to classify each method
   const escapedHelper = escapeRegExp(helperName);
   const helperPattern = new RegExp(`var\\s+${escapedHelper}\\s*=\\s*\\{([\\s\\S]*?)\\};`);
   const helperObjMatch = playerSource.match(helperPattern);
@@ -84,10 +65,8 @@ function extractTransformOperations(playerSource: string, functionName: string) 
 
   const helperBody = helperObjMatch[1];
 
-  // Classify each method in the helper object
   const methodTypes = new Map<string, "swap" | "reverse" | "splice">();
 
-  // Match method definitions: methodName: function(a, b) { ... }
   const methodPattern = /([a-zA-Z0-9$]+)\s*:\s*function\s*\([^)]*\)\s*\{([^}]+)\}/g;
   let methodMatch;
 
@@ -103,7 +82,6 @@ function extractTransformOperations(playerSource: string, functionName: string) 
     }
   }
 
-  // Parse the operation sequence from the function body
   const callPattern = new RegExp(
     `${escapedHelper}\\.([a-zA-Z0-9$]+)\\([^,]+,\\s*(\\d+)\\)`,
     "g"
@@ -127,8 +105,6 @@ function extractTransformOperations(playerSource: string, functionName: string) 
 
   return operations.length > 0 ? operations : null;
 }
-
-// ─── Signature decryption ───────────────────────────────────────────────────
 
 function applyTransforms(signature: string, operations: TransformOp[]) {
   const characters = signature.split("");
@@ -154,8 +130,6 @@ function applyTransforms(signature: string, operations: TransformOp[]) {
   return characters.join("");
 }
 
-// ─── Public API ─────────────────────────────────────────────────────────────
-
 function getPlayerJsUrl() {
   const scripts = document.querySelectorAll<HTMLScriptElement>("script[src*='/player/']");
 
@@ -165,7 +139,6 @@ function getPlayerJsUrl() {
     }
   }
 
-  // Fallback: search in page source for player URL
   const pageSource = document.documentElement.innerHTML;
   const playerMatch = pageSource.match(/"(\/s\/player\/[^"]+\/base\.js)"/);
   if (playerMatch) {
@@ -181,7 +154,6 @@ async function initDecryptor() {
     throw new Error("Could not find player.js URL");
   }
 
-  // Return cached if same player version
   if (cachedState?.playerJsUrl === playerJsUrl) {
     return cachedState;
   }
@@ -206,9 +178,6 @@ async function initDecryptor() {
   return cachedState;
 }
 
-/**
- * Parses a signatureCipher string and returns the decrypted download URL.
- */
 export async function decryptSignatureCipher(signatureCipher: string) {
   const params = new URLSearchParams(signatureCipher);
   const encryptedSig = params.get("s");

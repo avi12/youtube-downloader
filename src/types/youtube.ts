@@ -1,6 +1,3 @@
-// Types describing YouTube's API responses and Polymer runtime elements.
-// These are not our own types - they mirror shapes defined by YouTube.
-
 type ThumbnailEntry = {
   url: string;
   width: number;
@@ -148,8 +145,6 @@ export type PlayerResponse = {
   };
 };
 
-// -- YouTube Polymer button view model ----------------------------------------
-
 export enum ButtonSize {
   Default = "BUTTON_VIEW_MODEL_SIZE_DEFAULT",
   Large = "BUTTON_VIEW_MODEL_SIZE_LARGE",
@@ -230,13 +225,11 @@ export enum TooltipStyle {
 }
 
 export type ButtonViewModelData = {
-  // Required display properties
   accessibilityText: string;
   buttonSize: ButtonSize;
   style: ButtonStyle;
   type: ButtonType;
 
-  // Display
   iconName?: IconName | (string & {});
   iconImage?: {
     url: string;
@@ -251,30 +244,24 @@ export type ButtonViewModelData = {
     style: TooltipStyle;
   }; };
 
-  // State and layout
   state?: ButtonState;
   isDisabled?: boolean;
   isFullWidth?: boolean;
   enableFullWidthMargins?: boolean;
   enableIconButton?: boolean;
 
-  // Accessibility
   accessibilityId?: string;
 
-  // Interaction
   onTap?: Record<string, unknown>;
   targetId?: string;
 
-  // Tracking
   trackingParams?: string;
   shouldLogGestures?: boolean;
   useYoutubeLoggingDirectives?: boolean;
   loggingDirectives?: Record<string, unknown>;
 };
 
-// ─── Polymer element type guards ─────────────────────────────────────────────
-// Runtime checks for YouTube's Polymer custom elements. Zod can't be used
-// in content scripts because YouTube's Trusted Types CSP blocks it.
+// Zod can't be used in content scripts because YouTube's Trusted Types CSP blocks it.
 
 export function isPolymerProgressElement(element: Element): element is TpYtPaperProgressElement {
   return "updateStyles" in element && "value" in element;

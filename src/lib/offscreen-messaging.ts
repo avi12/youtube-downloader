@@ -72,8 +72,6 @@ function dispatchOffscreenMessage(handlers: Partial<HandlerMap>, message: Offscr
   }
 }
 
-// ─── Background (sender) ────────────────────────────────────────────────────
-
 let offscreenPort: Browser.runtime.Port | null = null;
 
 function getOffscreenPort() {
@@ -93,8 +91,6 @@ function sendToOffscreen<T extends OffscreenMessageType>(
 ) {
   getOffscreenPort().postMessage({ type, data });
 }
-
-// ─── Offscreen (receiver) ───────────────────────────────────────────────────
 
 function listenForOffscreenMessages(handlers: HandlerMap) {
   browser.runtime.onConnect.addListener(port => {

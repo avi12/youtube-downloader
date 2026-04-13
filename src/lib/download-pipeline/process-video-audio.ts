@@ -63,8 +63,7 @@ export async function processVideoAudio(item: ProcessStreamData) {
 
   const ffmpeg = getFFmpeg();
 
-  // Cap FFmpeg's progress below 1 — we only signal progress=1 after the
-  // file is actually saved to disk (not just after FFmpeg muxing completes).
+  // progress=1 is reserved for after the file is actually saved to disk (not just after FFmpeg muxing completes).
   const ffmpegProgressCap = 0.99;
 
   function handleFFmpegProgress({ progress }: { progress: number }) {

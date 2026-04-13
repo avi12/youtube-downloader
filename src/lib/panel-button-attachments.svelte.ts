@@ -29,11 +29,8 @@ export function attachCloseButton(elTarget: Element) {
 
   dispatchButtonData(elTarget, closeData);
 
-  // Show the "Close" tooltip only on keyboard focus (Tab), not on mouse hover.
-  // Polymer's tp-yt-paper-tooltip shows on both hover and focus by default,
-  // so we dynamically set the tooltip text only when :focus-visible matches.
-  // Polymer renders the inner <button> asynchronously, so we observe until
-  // it appears rather than relying on requestAnimationFrame timing.
+  // Polymer's tp-yt-paper-tooltip shows on both hover and focus;
+  // set tooltip text only when :focus-visible matches so hover stays silent.
   function onButtonAvailable(elButton: HTMLButtonElement) {
     elButton.addEventListener("focus", () => {
       if (!elButton.matches(":focus-visible")) {

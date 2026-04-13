@@ -25,10 +25,7 @@ export function applyPolymerCustomStyles(
   }
 }
 
-/**
- * Sends button data to the MAIN world's Polymer yt-button-view-model.
- * The element must already have a data-ytdl-button-id attribute set.
- */
+// The element must already have a data-ytdl-button-id attribute set.
 export function sendButtonData(elButton: Element, data: ButtonViewModelData) {
   void crossWorldMessenger.sendMessage(CrossWorldMessage.SetButtonData, {
     selector: `[data-ytdl-button-id="${elButton.getAttribute("data-ytdl-button-id")}"]`,

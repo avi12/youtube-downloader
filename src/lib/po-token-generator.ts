@@ -1,11 +1,3 @@
-/**
- * Generates YouTube PO (Proof of Origin) tokens using the sync
- * BotGuard snapshot. Runs directly in the MAIN world content script.
- *
- * Uses YouTube's existing BotGuard VM (loaded on the page) with
- * the synchronous snapshot function to avoid async callback issues.
- */
-
 declare const ytcfg: { get(key: string): unknown } | undefined;
 
 interface ChallengeResponse {
@@ -23,11 +15,10 @@ export async function generatePoToken(videoId: string) {
 
   const clientVersion = getYtcfgValue("INNERTUBE_CLIENT_VERSION", "2.20260401.01.00");
   const requestKey = getYtcfgValue("BOTGUARD_EXPERIMENT_ID", "O43z0dpjhgX20SCx4KAo");
-  // INNERTUBE_API_KEY from ytcfg does not have the Web Anti-Abuse API enabled —
-  // use the hardcoded YouTube web key which is what YouTube's own BotGuard uses.
+  // INNERTUBE_API_KEY from ytcfg doesn't have Web Anti-Abuse API enabled;
+  // this hardcoded YouTube web key is what YouTube's own BotGuard uses.
   const waaApiKey = "AIzaSyDyT5W0Jh49F30Pqqtyfdf7pDLFKLJoAnw";
 
-  // Step 1: Fetch challenge
   const challengeResponse = await fetch(
     "https://www.youtube.com/youtubei/v1/att/get?prettyPrint=false",
     {
@@ -52,18 +43,13 @@ export async function generatePoToken(videoId: string) {
     throw new Error("No BotGuard challenge data received");
   }
 
-  // Step 2: Wait for YouTube's BotGuard VM, loading the interpreter if needed.
-  // On watch pages YouTube pre-loads BotGuard; on other pages (subscriptions,
-  // homepage) it doesn't, so we load the interpreter script ourselves.
-  // BotGuard is YouTube's undocumented anti-bot runtime with a fully dynamic
-  // shape that can't be statically typed.
+  // On non-watch pages (subscriptions, homepage) BotGuard isn't pre-loaded, so load the interpreter ourselves.
   function getBotGuardVm(name: string) {
     const entry = Object.getOwnPropertyDescriptor(globalThis, name)?.value;
     return entry !== null && typeof entry === "object" && "a" in entry ? entry : null;
   }
 
   if (!getBotGuardVm(globalName)) {
-    // Extract interpreter URL from TrustedResourceUrl wrapper
     const interpreterUrlRaw = challengeData.bgChallenge?.interpreterUrl;
     const interpreterUrl =
       typeof interpreterUrlRaw === "string"
@@ -88,13 +74,12 @@ export async function generatePoToken(videoId: string) {
     await new Promise(resolve => setTimeout(resolve, 500));
   }
 
-  // BotGuard VM shape is fully dynamic - typed just enough to call it
   const botGuardVm = getBotGuardVm(globalName);
   if (!botGuardVm || typeof botGuardVm.a !== "function") {
     throw new Error(`BotGuard VM not found at window.${globalName}`);
   }
 
-  // Step 3: Sync snapshot (async callback doesn't work from content script)
+  // Async callback doesn't work from content script, so use sync snapshot.
   const webPoSignalOutput: [((input: Uint8Array) => Promise<(input: Uint8Array) => Promise<Uint8Array>>)?] = [];
   const initResult = botGuardVm.a(program, () => {}, true, undefined, () => {}, [[], []]);
   const syncSnapshotFunction = initResult?.[0];
@@ -109,9 +94,7 @@ export async function generatePoToken(videoId: string) {
     throw new Error("Empty snapshot response");
   }
 
-  // Step 4: Exchange snapshot for integrity token
-  // Use YouTube's own proxy endpoint — the direct jnn-pa.googleapis.com endpoint
-  // returns 403 from content script context, but the youtube.com proxy succeeds.
+  // Direct jnn-pa.googleapis.com returns 403 from content script context; the youtube.com proxy endpoint succeeds.
   const integrityResponse = await fetch(
     "https://www.youtube.com/api/jnn/v1/GenerateIT",
     {
@@ -129,13 +112,11 @@ export async function generatePoToken(videoId: string) {
     throw new Error("No integrity token received");
   }
 
-  // Step 5: Mint PO token
   const signalFunction = webPoSignalOutput[0];
   if (typeof signalFunction !== "function") {
     throw new Error("WebPo signal function not available");
   }
 
-  // integrityData[0] is a base64-encoded binary blob — decode it to bytes before passing.
   // TextEncoder would give UTF-8 bytes of the base64 string, not the actual token bytes.
   const integrityTokenBytes = Uint8Array.from(atob(integrityData[0]), char => char.charCodeAt(0));
   const mintFunction = await signalFunction(integrityTokenBytes);

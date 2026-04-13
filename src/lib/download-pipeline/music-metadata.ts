@@ -28,9 +28,8 @@ function detectImageExtension(data: Uint8Array) {
   return "jpg";
 }
 
-// FFmpeg WASM's default build can't transcode WebP → MJPEG for attached_pic —
-// ffmpeg.exec hangs indefinitely on the WebP decoder. YouTube exposes both
-// WebP and JPEG variants under different path prefixes, so prefer the JPEG one.
+// FFmpeg WASM's default build hangs indefinitely on the WebP decoder for attached_pic
+// transcoding, so swap YouTube's WebP thumbnail path for the JPEG variant.
 function preferJpegThumbnail(url: string) {
   return url
     .replace("/vi_webp/", "/vi/")
@@ -66,8 +65,7 @@ export async function embedMusicMetadata(
 
   const ffmpegArgs = ["-i", inputFilename];
 
-  // WebM (Matroska) containers don't hold attached_pic the same way as MP4/FLAC,
-  // so skip cover art when either side is WebM-based.
+  // WebM (Matroska) doesn't hold attached_pic like MP4/FLAC, so skip cover art when either side is WebM.
   const isWebmSource = sourceExtension === "weba" || sourceExtension === "webm";
   const isWebmOutput = outputExtension === "weba" || outputExtension === "webm";
   let isCoverArtPresent = false;
@@ -95,8 +93,7 @@ export async function embedMusicMetadata(
     return value.replaceAll(/[\n\r"\\]/g, " ").trim();
   }
 
-  // FLAC can't hold AAC/Opus, so re-encode to the FLAC codec. Every other
-  // supported container can remux the source stream.
+  // FLAC can't hold AAC/Opus, so re-encode to FLAC; all other supported containers can remux the source stream.
   const audioCodec = outputExtension === "flac" ? "flac" : "copy";
   ffmpegArgs.push("-c:a", audioCodec);
   ffmpegArgs.push("-metadata", `title=${sanitizeForFFmpeg(metadata.title)}`);

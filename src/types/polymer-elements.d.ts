@@ -1,8 +1,3 @@
-/**
- * Type declarations for YouTube's Polymer custom elements.
- * Suppresses "Unknown html tag" warnings in Svelte templates.
- */
-
 declare namespace svelteHTML {
   interface IntrinsicElements {
     "yt-button-view-model": {
