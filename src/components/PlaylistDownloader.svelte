@@ -70,8 +70,9 @@
       role="heading"
     >Speed</yt-formatted-string>
     <div class="ytdl-chip-row" aria-labelledby="ytdl-speed-label" role="group">
-      <yt-button-view-model {@attach toggleButtons.createAttacher(toggleButtons.buttons[0])}></yt-button-view-model>
-      <yt-button-view-model {@attach toggleButtons.createAttacher(toggleButtons.buttons[1])}></yt-button-view-model>
+      {#each toggleButtons.groups.speed as button (button.id)}
+        <yt-button-view-model {@attach toggleButtons.createAttacher(button)}></yt-button-view-model>
+      {/each}
     </div>
   </section>
 
@@ -83,8 +84,9 @@
       role="heading"
     >Output</yt-formatted-string>
     <div class="ytdl-chip-row" aria-labelledby="ytdl-output-label" role="group">
-      <yt-button-view-model {@attach toggleButtons.createAttacher(toggleButtons.buttons[2])}></yt-button-view-model>
-      <yt-button-view-model {@attach toggleButtons.createAttacher(toggleButtons.buttons[3])}></yt-button-view-model>
+      {#each toggleButtons.groups.output as button (button.id)}
+        <yt-button-view-model {@attach toggleButtons.createAttacher(button)}></yt-button-view-model>
+      {/each}
     </div>
   </section>
 
@@ -104,10 +106,9 @@
       {/if}
     </yt-formatted-string>
     <div class="ytdl-chip-row ytdl-chip-row-wrap" aria-labelledby="ytdl-type-label" role="group">
-      <yt-button-view-model {@attach toggleButtons.createAttacher(toggleButtons.buttons[4])}></yt-button-view-model>
-      <yt-button-view-model {@attach toggleButtons.createAttacher(toggleButtons.buttons[5])}></yt-button-view-model>
-      <yt-button-view-model {@attach toggleButtons.createAttacher(toggleButtons.buttons[6])}></yt-button-view-model>
-      <yt-button-view-model {@attach toggleButtons.createAttacher(toggleButtons.buttons[7])}></yt-button-view-model>
+      {#each toggleButtons.groups.type as button (button.id)}
+        <yt-button-view-model {@attach toggleButtons.createAttacher(button)}></yt-button-view-model>
+      {/each}
     </div>
   </section>
 
