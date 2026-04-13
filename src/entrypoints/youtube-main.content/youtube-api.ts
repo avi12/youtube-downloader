@@ -11,7 +11,7 @@ function getUniqueVideoFormats(formats: AdaptiveFormatItem[]) {
       return false;
     }
 
-    const isPremium = format.qualityLabel?.includes("Premium") ?? false;
+    const isPremium = /Premium/.test(format.qualityLabel ?? "");
     const key = `${format.height}-${isPremium}`;
     if (seen.has(key)) {
       return false;

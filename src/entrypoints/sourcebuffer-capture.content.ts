@@ -8,7 +8,7 @@ export default defineContentScript({
   runAt: "document_start",
   allFrames: true,
   main() {
-    if (self !== top && !location.search.includes("ytdl=1")) {
+    if (self !== top && !/ytdl=1/.test(location.search)) {
       return;
     }
 

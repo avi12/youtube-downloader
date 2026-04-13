@@ -38,7 +38,7 @@ export function findNativeDownloadButton(elActionsContainer: HTMLElement) {
     }
 
     const elInnerButton = button.querySelector("button");
-    if (elInnerButton?.getAttribute("aria-label")?.toLowerCase().includes("download")) {
+    if (/download/i.test(elInnerButton?.getAttribute("aria-label") ?? "")) {
       return button;
     }
   }

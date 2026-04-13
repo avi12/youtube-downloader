@@ -32,7 +32,7 @@ export default defineContentScript({
   world: "MAIN",
   allFrames: true,
   async main() {
-    if (self !== top && !location.search.includes("ytdl=1")) {
+    if (self !== top && !/ytdl=1/.test(location.search)) {
       return;
     }
 

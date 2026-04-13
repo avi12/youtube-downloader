@@ -81,9 +81,9 @@ function extractTransformOperations(playerSource: string, functionName: string) 
   while ((methodMatch = methodPattern.exec(helperBody)) !== null) {
     const methodName = methodMatch[1];
     const methodBody = methodMatch[2];
-    if (methodBody.includes("reverse")) {
+    if (/reverse/.test(methodBody)) {
       methodTypes.set(methodName, TransformOpType.Reverse);
-    } else if (methodBody.includes("splice")) {
+    } else if (/splice/.test(methodBody)) {
       methodTypes.set(methodName, TransformOpType.Splice);
     } else {
       methodTypes.set(methodName, TransformOpType.Swap);
@@ -146,7 +146,7 @@ function getPlayerJsUrl() {
   const scripts = document.querySelectorAll<HTMLScriptElement>("script[src*='/player/']");
 
   for (const script of scripts) {
-    if (script.src.includes("player_ias") || script.src.includes("base.js")) {
+    if (/player_ias|base\.js/.test(script.src)) {
       return script.src;
     }
   }

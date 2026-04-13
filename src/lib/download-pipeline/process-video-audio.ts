@@ -48,8 +48,8 @@ export async function processVideoAudio(item: ProcessStreamData) {
 
   await reportProgress({ videoId, progress: 0, progressType: ProgressType.FFmpeg, tabId });
 
-  const videoExtension = videoMimeType.includes("webm") ? "webm" : "mp4";
-  const audioExtension = audioMimeType.includes("webm") ? "webm" : "m4a";
+  const videoExtension = /webm/.test(videoMimeType) ? "webm" : "mp4";
+  const audioExtension = /webm/.test(audioMimeType) ? "webm" : "m4a";
   const isExtraTracksPresent = Boolean(additionalAudioStreams.length);
   const outputExtension = determineOutputExtension({
     videoMimeType, audioMimeType, isExtraTracksPresent, filenameOutput
@@ -86,7 +86,7 @@ export async function processVideoAudio(item: ProcessStreamData) {
           return null;
         }
 
-        const isExtraWebm = stream.mimeType.includes("webm");
+        const isExtraWebm = /webm/.test(stream.mimeType);
         const extraExtension = isExtraWebm ? "webm" : "m4a";
         return { filename: `${videoId}-audio-extra-${i}.${extraExtension}`, data: extraData };
       })
