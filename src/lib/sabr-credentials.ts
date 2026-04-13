@@ -41,7 +41,7 @@ async function forwardSabrCredentials() {
 export async function forwardSabrCredentialsWithRetry() {
   isCredentialsForwarded = false;
 
-  for (let i = 0; i < 30; i++) {
+  for (let attempt = 0; attempt < 30; attempt++) {
     await forwardSabrCredentials();
 
     if (isCredentialsForwarded) {

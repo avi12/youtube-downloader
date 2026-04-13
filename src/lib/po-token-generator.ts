@@ -66,7 +66,7 @@ export async function generatePoToken(videoId: string) {
     }
   }
 
-  for (let i = 0; i < 60; i++) {
+  for (let attempt = 0; attempt < 60; attempt++) {
     if (getBotGuardVm(globalName)) {
       break;
     }

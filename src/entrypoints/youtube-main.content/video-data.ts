@@ -229,7 +229,7 @@ export async function extractAndDispatchVideoData(cancelActiveDownload: (videoId
     return;
   }
 
-  for (let i = 0; i < playerResponsePollAttempts; i++) {
+  for (let attempt = 0; attempt < playerResponsePollAttempts; attempt++) {
     const playerResponse = window.ytInitialPlayerResponse ?? null;
     const isReady = playerResponse?.videoDetails?.videoId
       && playerResponse.playabilityStatus?.status !== "UNPLAYABLE";

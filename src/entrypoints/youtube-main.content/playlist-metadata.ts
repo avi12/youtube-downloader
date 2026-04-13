@@ -50,7 +50,7 @@ export async function handleNavigateSuccess() {
   const playerDataPollIntervalMs = 250;
   const expectedVideoId = new URLSearchParams(location.search).get("v");
 
-  for (const _ of Array.from({ length: playerDataPollAttempts })) {
+  for (let attempt = 0; attempt < playerDataPollAttempts; attempt++) {
     const playerResponse = document.querySelector("ytd-watch-flexy")?.playerData ?? null;
     const isReady = playerResponse?.videoDetails?.videoId === expectedVideoId
       && playerResponse.playabilityStatus?.status !== "UNPLAYABLE";
