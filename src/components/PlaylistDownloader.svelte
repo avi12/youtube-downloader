@@ -282,48 +282,40 @@
     </div>
   </section>
 
-  <section class="ytdl-section" class:is-disabled={isVideoExtDisabled} aria-labelledby="ytdl-video-format-label">
-    <yt-formatted-string
-      id="ytdl-video-format-label"
-      class="ytdl-section-title"
-      aria-level="3"
-      role="heading"
-    >
-      Video format
-      {#if playlist.isVideoExtOverridden}
-        <span class="ytdl-override-dot" aria-hidden="true" title="Different from your default"></span>
-      {/if}
-    </yt-formatted-string>
+  <section class="ytdl-section ytdl-section-select" class:is-disabled={isVideoExtDisabled}>
     <PolymerSelect
       id="playlist-video-ext"
       disabled={isVideoExtDisabled}
-      label="Container"
+      label="Video format"
       onchange={handleVideoExtChange}
       options={videoExtOptions}
       value={playlist.effectiveVideoExt}
     />
+    {#if playlist.isVideoExtOverridden}
+      <span
+        class="ytdl-override-dot ytdl-override-dot-floating"
+        aria-hidden="true"
+        title="Different from your default"
+      ></span>
+    {/if}
   </section>
 
-  <section class="ytdl-section" class:is-disabled={isAudioExtDisabled} aria-labelledby="ytdl-audio-format-label">
-    <yt-formatted-string
-      id="ytdl-audio-format-label"
-      class="ytdl-section-title"
-      aria-level="3"
-      role="heading"
-    >
-      Audio format
-      {#if playlist.isAudioExtOverridden}
-        <span class="ytdl-override-dot" aria-hidden="true" title="Different from your default"></span>
-      {/if}
-    </yt-formatted-string>
+  <section class="ytdl-section ytdl-section-select" class:is-disabled={isAudioExtDisabled}>
     <PolymerSelect
       id="playlist-audio-ext"
       disabled={isAudioExtDisabled}
-      label="Container"
+      label="Audio format"
       onchange={handleAudioExtChange}
       options={audioExtOptions}
       value={playlist.effectiveAudioExt}
     />
+    {#if playlist.isAudioExtOverridden}
+      <span
+        class="ytdl-override-dot ytdl-override-dot-floating"
+        aria-hidden="true"
+        title="Different from your default"
+      ></span>
+    {/if}
   </section>
 
   {#if playlist.hasAnyOverride}
@@ -422,6 +414,16 @@
   .ytdl-section.is-disabled {
     opacity: 50%;
     pointer-events: none;
+  }
+
+  .ytdl-section-select {
+    position: relative;
+  }
+
+  .ytdl-override-dot-floating {
+    position: absolute;
+    top: 14px;
+    right: -12px;
   }
 
   .ytdl-reset-link {
