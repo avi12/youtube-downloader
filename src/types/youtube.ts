@@ -1,23 +1,16 @@
-type ThumbnailEntry = {
-  url: string;
-  width: number;
-  height: number;
-};
-
-type Thumbnail = { thumbnails: ThumbnailEntry[] };
-
-type ByteRange = {
-  start: `${number}`;
-  end: `${number}`;
-};
-
 export type MediaItem = {
   itag: number;
   url?: string;
   mimeType: `${"video" | "audio"}/${string}`;
   bitrate: number;
-  initRange: ByteRange;
-  indexRange: ByteRange;
+  initRange: {
+    start: `${number}`;
+    end: `${number}`;
+  };
+  indexRange: {
+    start: `${number}`;
+    end: `${number}`;
+  };
   lastModified: number;
   contentLength: `${number}`;
   averageBitrate: number;
@@ -125,7 +118,13 @@ export type PlayerResponse = {
     channelId: string;
     shortDescription: string;
     keywords?: string[];
-    thumbnail: Thumbnail;
+    thumbnail: {
+      thumbnails: {
+        url: string;
+        width: number;
+        height: number;
+      }[];
+    };
     viewCount: `${number}`;
     author: string;
     isPrivate: boolean;

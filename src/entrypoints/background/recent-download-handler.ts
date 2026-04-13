@@ -5,21 +5,19 @@ import type { RecentDownloadEntry } from "@/types";
 // Maps videoId to the browser download ID so users can discard a completed file.
 const completedDownloadIds = new Map<string, number>();
 
-type PipelineDownloadData = {
-  blobUrl: string;
-  mimeType: string;
-  filename: string;
-  recentContext?: {
-    videoId: string;
-    title: string;
-    channel: string;
-    thumbnailUrl?: string;
-  };
-};
-
 function persistOnDownloadComplete(
   targetDownloadId: number,
-  data: PipelineDownloadData
+  data: {
+    blobUrl: string;
+    mimeType: string;
+    filename: string;
+    recentContext?: {
+      videoId: string;
+      title: string;
+      channel: string;
+      thumbnailUrl?: string;
+    };
+  }
 ) {
   return new Promise<void>(resolve => {
     function handleChanged(delta: {
@@ -50,7 +48,7 @@ function persistOnDownloadComplete(
 
 async function persistRecentDownload(
   downloadId: number,
-  data: PipelineDownloadData
+  data: Parameters<typeof persistOnDownloadComplete>[1]
 ) {
   const context = data.recentContext;
   if (!context) {

@@ -97,16 +97,12 @@ export const crossWorldMessenger = defineCustomEventMessaging<PageMessengerSchem
 
 const buttonClickEventName = "ytdl-btn-click";
 
-type ButtonClickDetail = {
-  buttonId: string;
-};
-
-function isButtonClickEvent(e: Event): e is CustomEvent<ButtonClickDetail> {
+function isButtonClickEvent(e: Event): e is CustomEvent<{ buttonId: string }> {
   return e instanceof CustomEvent && typeof e.detail?.buttonId === "string";
 }
 
 export function dispatchButtonClick(buttonId: string) {
-  dispatchEvent(new CustomEvent<ButtonClickDetail>(buttonClickEventName, { detail: { buttonId } }));
+  dispatchEvent(new CustomEvent<{ buttonId: string }>(buttonClickEventName, { detail: { buttonId } }));
 }
 
 export function onButtonClick(handler: (buttonId: string) => void) {

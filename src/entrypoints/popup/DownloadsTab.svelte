@@ -9,11 +9,6 @@
   import type { RecentDownloadEntry, VideoQueueItem } from "@/types";
   import { browser } from "#imports";
 
-  type ProgressEntry = {
-    progress: number;
-    progressType: ProgressType;
-  };
-
   type Props = {
     isFFmpegReady: boolean;
     videoDownloads: VideoQueueItem[];
@@ -22,7 +17,10 @@
     videoDetails: Record<string, {
       filenameOutput: string;
     }>;
-    statusProgress: Record<string, ProgressEntry>;
+    statusProgress: Record<string, {
+      progress: number;
+      progressType: ProgressType;
+    }>;
     percentFormatter: Intl.NumberFormat;
     recentDownloads: RecentDownloadEntry[];
     now: number;

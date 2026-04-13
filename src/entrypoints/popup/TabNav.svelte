@@ -1,12 +1,10 @@
 <script generics="T extends string" lang="ts">
-  type Tab = {
-    id: T;
-    label: string;
-    badge?: number;
-  };
-
   type Props = {
-    tabs: Tab[];
+    tabs: {
+      id: T;
+      label: string;
+      badge?: number;
+    }[];
     activeTab: T;
     onChange(id: T): void;
   };

@@ -2,15 +2,13 @@
   import selectDropdownStyles from "./select-dropdown.css?inline";
   import { applyPolymerCustomStyles, PAPER_INPUT_THEME } from "@/lib/polymer-utils";
 
-  type Option = {
-    value: string;
-    label: string;
-  };
-
   type Props = {
     id?: string;
     label: string;
-    options: Option[];
+    options: {
+      value: string;
+      label: string;
+    }[];
     value: string;
     disabled?: boolean;
     onchange: (value: string) => void;

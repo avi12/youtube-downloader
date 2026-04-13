@@ -1,23 +1,20 @@
 import { initialOptions } from "./video-helpers";
 import type { InterruptedDownload, Options, ProgressType, VideoQueueItem } from "@/types";
 
-type VideoDetailsMap = Record<string, {
-  filenameOutput: string;
-}>;
-type StatusProgressMap = Record<string, {
-  progress: number;
-  progressType: ProgressType;
-}>;
-
 export const videoQueueItem = storage.defineItem<VideoQueueItem[]>("local:videoQueue", { fallback: [] });
 
 export const musicListItem = storage.defineItem<string[]>("local:musicList", { fallback: [] });
 
 export const videoOnlyListItem = storage.defineItem<string[]>("local:videoOnlyList", { fallback: [] });
 
-export const videoDetailsItem = storage.defineItem<VideoDetailsMap>("local:videoDetails", { fallback: {} });
+export const videoDetailsItem = storage.defineItem<Record<string, {
+  filenameOutput: string;
+}>>("local:videoDetails", { fallback: {} });
 
-export const statusProgressItem = storage.defineItem<StatusProgressMap>("local:statusProgress", { fallback: {} });
+export const statusProgressItem = storage.defineItem<Record<string, {
+  progress: number;
+  progressType: ProgressType;
+}>>("local:statusProgress", { fallback: {} });
 
 export const isFFmpegReadyItem = storage.defineItem<boolean>("local:isFFmpegReady", { fallback: false });
 

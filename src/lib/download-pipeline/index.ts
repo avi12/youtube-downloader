@@ -24,17 +24,15 @@ export function toUint8Array(data: Uint8Array | Record<string, number> | null) {
 // causing Chrome to mark it "Deleted". Revocation is also deferred so "Show in folder" keeps working.
 const activeBlobUrls = new Map<string, Blob>();
 
-type RecentDownloadContext = {
-  videoId: string;
-  title: string;
-  channel: string;
-  thumbnailUrl?: string;
-};
-
 export async function triggerDownload(
   data: Uint8Array,
   filenameOutput: string,
-  recentContext?: RecentDownloadContext
+  recentContext?: {
+    videoId: string;
+    title: string;
+    channel: string;
+    thumbnailUrl?: string;
+  }
 ) {
   const mimeType = getMimeType(filenameOutput) || "application/octet-stream";
   const filename = getCompatibleFilename(filenameOutput);
