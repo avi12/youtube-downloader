@@ -1,3 +1,7 @@
+import type { ButtonViewModelData } from "@/lib/polymer-utils";
+
+export type { ButtonViewModelData };
+
 export type MediaItem = {
   itag: number;
   url?: string;
@@ -254,45 +258,6 @@ export const TooltipStyle = {
 } as const;
 
 export type TooltipStyle = (typeof TooltipStyle)[keyof typeof TooltipStyle];
-
-export type ButtonViewModelData = {
-  accessibilityText: string;
-  buttonSize: ButtonSize;
-  style: ButtonStyle;
-  type: ButtonType;
-
-  iconName?: IconName | (string & {});
-  iconImage?: {
-    url: string;
-    width: number;
-    height: number;
-  };
-  title?: string;
-  tooltip?: string;
-  tooltipData?: {
-    tooltipViewModel?: {
-      tooltipText: string;
-      placement: TooltipPlacement;
-      style: TooltipStyle;
-    };
-  };
-
-  state?: ButtonState;
-  isDisabled?: boolean;
-  isFullWidth?: boolean;
-  enableFullWidthMargins?: boolean;
-  enableIconButton?: boolean;
-
-  accessibilityId?: string;
-
-  onTap?: Record<string, unknown>;
-  targetId?: string;
-
-  trackingParams?: string;
-  shouldLogGestures?: boolean;
-  useYoutubeLoggingDirectives?: boolean;
-  loggingDirectives?: Record<string, unknown>;
-};
 
 // Zod can't be used in content scripts because YouTube's Trusted Types CSP blocks it.
 

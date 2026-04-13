@@ -17,6 +17,8 @@ export {
   ButtonStyle,
   ButtonType,
   IconName,
+  TooltipPlacement,
+  TooltipStyle,
   isPolymerProgressElement
 } from "./youtube";
 

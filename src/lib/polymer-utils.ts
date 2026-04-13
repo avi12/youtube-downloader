@@ -1,5 +1,13 @@
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/cross-world-messenger";
-import type { ButtonViewModelData } from "@/types";
+import type {
+  ButtonSize,
+  ButtonState,
+  ButtonStyle,
+  ButtonType,
+  IconName,
+  TooltipPlacement,
+  TooltipStyle
+} from "@/types";
 
 export const PAPER_PROGRESS_THEME: Record<string, string> = {
   "--paper-progress-active-color": "var(--yt-spec-call-to-action, rgb(62 166 255))",
@@ -26,9 +34,43 @@ export function applyPolymerCustomStyles(
 }
 
 // The element must already have a data-ytdl-button-id attribute set.
-export function sendButtonData(elButton: Element, data: ButtonViewModelData) {
+export function sendButtonData(elButton: Element, data: {
+  accessibilityText: string;
+  buttonSize: ButtonSize;
+  style: ButtonStyle;
+  type: ButtonType;
+  iconName?: IconName | (string & {});
+  iconImage?: {
+    url: string;
+    width: number;
+    height: number;
+  };
+  title?: string;
+  tooltip?: string;
+  tooltipData?: {
+    tooltipViewModel?: {
+      tooltipText: string;
+      placement: TooltipPlacement;
+      style: TooltipStyle;
+    };
+  };
+  state?: ButtonState;
+  isDisabled?: boolean;
+  isFullWidth?: boolean;
+  enableFullWidthMargins?: boolean;
+  enableIconButton?: boolean;
+  accessibilityId?: string;
+  onTap?: Record<string, unknown>;
+  targetId?: string;
+  trackingParams?: string;
+  shouldLogGestures?: boolean;
+  useYoutubeLoggingDirectives?: boolean;
+  loggingDirectives?: Record<string, unknown>;
+}) {
   void crossWorldMessenger.sendMessage(CrossWorldMessage.SetButtonData, {
     selector: `[data-ytdl-button-id="${elButton.getAttribute("data-ytdl-button-id")}"]`,
     data
   });
 }
+
+export type ButtonViewModelData = Parameters<typeof sendButtonData>[1];
