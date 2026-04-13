@@ -197,6 +197,11 @@
       // chevron direction from there.
       elDropdown?.addEventListener("iron-overlay-opened", () => refreshChevronButton(), { once: true });
 
+      // Window resize can flip iron-dropdown from below to above or vice versa
+      // (it calls its own refit), so keep the chevron in sync until the panel
+      // closes.
+      window.addEventListener("resize", refreshChevronButton);
+
       function handleOverlayClose() {
         if (isPanelOpen) {
           isPanelOpen = false;
@@ -213,6 +218,8 @@
   }
 
   function closePanel() {
+    window.removeEventListener("resize", refreshChevronButton);
+
     if (unsubscribeDropdownReady) {
       unsubscribeDropdownReady();
       unsubscribeDropdownReady = null;
