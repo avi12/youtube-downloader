@@ -90,6 +90,10 @@
     });
   }
 
+  // iron-dropdown's shadow/margin can make its bottom edge sit a couple pixels
+  // past the anchor's top, so a strict "bottom <= top" misses the above case.
+  const panelAboveOverlapPx = 4;
+
   function isPanelAboveChevron() {
     if (!isPanelOpen || !elDropdown || !elChevronBtn) {
       return false;
@@ -97,7 +101,7 @@
 
     const chevronRect = elChevronBtn.getBoundingClientRect();
     const dropdownRect = elDropdown.getBoundingClientRect();
-    return dropdownRect.bottom <= chevronRect.top + 4;
+    return dropdownRect.bottom <= chevronRect.top + panelAboveOverlapPx;
   }
 
   function refreshChevronButton() {
