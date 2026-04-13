@@ -32,7 +32,7 @@ export function createPlaylistToggleButtons(state: ToggleState) {
       {
         id: "playlist-mode-fast",
         label: "All at once",
-        tooltip: "Download every video in parallel - fastest, uses more bandwidth",
+        tooltip: "Download all at once",
         isActive: () => state.downloadMode === PlaylistDownloadMode.Fast,
         onClick() {
           state.downloadMode = PlaylistDownloadMode.Fast;
@@ -41,7 +41,7 @@ export function createPlaylistToggleButtons(state: ToggleState) {
       {
         id: "playlist-mode-data-saver",
         label: "One at a time",
-        tooltip: "Download videos sequentially - slower, saves bandwidth",
+        tooltip: "Download one at a time",
         isActive: () => state.downloadMode === PlaylistDownloadMode.DataSaver,
         onClick() {
           state.downloadMode = PlaylistDownloadMode.DataSaver;
@@ -52,7 +52,7 @@ export function createPlaylistToggleButtons(state: ToggleState) {
       {
         id: "playlist-output-individual",
         label: "Separate files",
-        tooltip: "Save each video as its own file in your downloads folder",
+        tooltip: "Save as separate files",
         isActive: () => state.outputMode === PlaylistOutputMode.Individual,
         onClick() {
           state.outputMode = PlaylistOutputMode.Individual;
@@ -61,7 +61,7 @@ export function createPlaylistToggleButtons(state: ToggleState) {
       {
         id: "playlist-output-zip",
         label: "Single ZIP",
-        tooltip: "Bundle every video into one ZIP archive",
+        tooltip: "Bundle into one ZIP",
         isActive: () => state.outputMode === PlaylistOutputMode.Zip,
         onClick() {
           state.outputMode = PlaylistOutputMode.Zip;
@@ -72,7 +72,7 @@ export function createPlaylistToggleButtons(state: ToggleState) {
       {
         id: "playlist-type-auto",
         label: "Auto",
-        tooltip: "Music videos as audio, everything else as video + audio",
+        tooltip: "Auto: audio for music, video+audio for rest",
         isActive: () => state.effectiveDownloadType === "auto",
         onClick() {
           state.effectiveDownloadType = "auto";
@@ -81,7 +81,7 @@ export function createPlaylistToggleButtons(state: ToggleState) {
       {
         id: "playlist-type-video-audio",
         label: "Video + audio",
-        tooltip: "Download every video with its audio muxed in",
+        tooltip: "Video + audio stream",
         isActive: () => state.effectiveDownloadType === DownloadType.VideoAndAudio,
         onClick() {
           state.effectiveDownloadType = DownloadType.VideoAndAudio;
@@ -90,7 +90,7 @@ export function createPlaylistToggleButtons(state: ToggleState) {
       {
         id: "playlist-type-video",
         label: "Video only",
-        tooltip: "Download video stream only, no audio",
+        tooltip: "Video stream only",
         isActive: () => state.effectiveDownloadType === DownloadType.Video,
         onClick() {
           state.effectiveDownloadType = DownloadType.Video;
@@ -99,7 +99,7 @@ export function createPlaylistToggleButtons(state: ToggleState) {
       {
         id: "playlist-type-audio",
         label: "Audio only",
-        tooltip: "Download audio stream only (useful for music or podcasts)",
+        tooltip: "Audio stream only",
         isActive: () => state.effectiveDownloadType === DownloadType.Audio,
         onClick() {
           state.effectiveDownloadType = DownloadType.Audio;

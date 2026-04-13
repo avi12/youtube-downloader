@@ -45,7 +45,7 @@ export function createPlaylistActionButtons(state: ActionState) {
       state: hasSelection ? ButtonState.Active : ButtonState.Disabled,
       isFullWidth: false,
       isDisabled: !hasSelection,
-      tooltip: "Uncheck all selected videos"
+      tooltip: "Deselect all"
     });
   }
 
@@ -81,8 +81,8 @@ export function createPlaylistActionButtons(state: ActionState) {
       ? `Revealing hidden videos (${state.revealedVideoCount})`
       : "Grab the whole playlist";
     const tooltip = state.isRevealingAll
-      ? "Stop loading the rest of the playlist"
-      : "Scroll through the playlist to reveal any hidden videos, then download every one (ignores the checkboxes)";
+      ? "Stop revealing"
+      : "Reveal all videos and download";
 
     sendButtonData(elDownloadAll, {
       iconName: state.isRevealingAll ? IconName.Close : IconName.PlaylistAdd,
