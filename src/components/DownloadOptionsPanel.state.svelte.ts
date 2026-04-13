@@ -1,7 +1,7 @@
 import { getCompatibleFilename, getOutputExtension, resolveAutoExtension } from "@/lib/containers";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/cross-world-messenger";
 import { statusProgressItem, videoQueueItem } from "@/lib/storage";
-import { cancelRequestSignal, downloadProgressStore } from "@/lib/synced-stores.svelte";
+import { downloadProgressStore } from "@/lib/synced-stores.svelte";
 import {
   calculateWeightedProgress,
   formatAudioCodecLabel,
@@ -241,7 +241,7 @@ export function createPanelState(getVideoData: () => VideoData, getOptions: () =
     isDownloading = false;
     progress = 0;
     downloadProgressStore.delete(videoId);
-    cancelRequestSignal.value = { videoIds: [videoId] };
+    void crossWorldMessenger.sendMessage(CrossWorldMessage.CancelRequest, { videoIds: [videoId] });
     const currentProgress = await statusProgressItem.getValue();
     delete currentProgress[videoId];
     await statusProgressItem.setValue(currentProgress);

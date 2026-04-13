@@ -4,7 +4,7 @@
   import { createPlaylistToggleButtons } from "./PlaylistDownloader.toggle-buttons.svelte";
   import PlaylistDownloaderActions from "./PlaylistDownloaderActions.svelte";
   import PlaylistDownloaderFormatSections from "./PlaylistDownloaderFormatSections.svelte";
-  import { buttonClickSignal } from "@/lib/synced-stores.svelte";
+  import { onButtonClick } from "@/lib/cross-world-messenger";
   import type { Options } from "@/types";
   import { untrack } from "svelte";
 
@@ -57,45 +57,15 @@
     actionButtons.refreshDownloadAll();
   });
 
-  $effect(() => {
-    function handleSelectAllShortcut(e: KeyboardEvent) {
-      if (!(e.ctrlKey || e.metaKey) || e.key !== "a") {
-        return;
-      }
-
-      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
-        return;
-      }
-
-      e.preventDefault();
-
-      if (playlist.isAllSelected) {
-        playlist.clearSelection();
-      } else {
-        playlist.selectAll();
-      }
-    }
-
-    document.addEventListener("keydown", handleSelectAllShortcut);
-    return () => document.removeEventListener("keydown", handleSelectAllShortcut);
-  });
-
-  $effect(() => {
-    const clicked = buttonClickSignal.value;
-    if (!clicked?.buttonId) {
-      return;
-    }
-
-    // Dispatch reads must be untracked; otherwise the effect re-runs after the click
-    // mutates state and re-executes the same branch with inverted logic.
+  $effect(() => onButtonClick(buttonId => {
     untrack(() => {
-      if (actionButtons.handleClick(clicked.buttonId)) {
+      if (actionButtons.handleClick(buttonId)) {
         return;
       }
 
-      toggleButtons.handleClick(clicked.buttonId);
+      toggleButtons.handleClick(buttonId);
     });
-  });
+  }));
 </script>
 
 <section class="ytdl-playlist-container" aria-label="Playlist Downloader">

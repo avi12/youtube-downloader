@@ -2,7 +2,7 @@
   import DownloadOptions from "./DownloadOptions.svelte";
   import { createFocusManager } from "./DownloadOptionsPanel.focus.svelte";
   import { createPanelState } from "./DownloadOptionsPanel.state.svelte.ts";
-  import { CrossWorldMessage, crossWorldMessenger } from "@/lib/cross-world-messenger";
+  import { CrossWorldMessage, crossWorldMessenger, onButtonClick } from "@/lib/cross-world-messenger";
   import {
     attachCancelButton,
     attachCloseButton,
@@ -10,7 +10,6 @@
     attachDownloadButton,
     attachPanelProgress
   } from "@/lib/panel-button-attachments.svelte";
-  import { buttonClickSignal } from "@/lib/synced-stores.svelte";
   import { ProgressType, type Options, type VideoData } from "@/types";
 
   const percentFormatter = new Intl.NumberFormat(document.documentElement.lang || undefined, {
@@ -42,22 +41,15 @@
     document.dispatchEvent(new CustomEvent("ytdl:panel-closed"));
   }
 
-  // yt-button-view-model doesn't fire Svelte's onclick when the user clicks the inner
-  // Polymer-rendered <button>, so route every panel button through the MAIN-world buttonClickSignal bus.
-  $effect(() => {
-    const clicked = buttonClickSignal.value;
-    if (!clicked?.buttonId) {
-      return;
-    }
-
-    if (clicked.buttonId === closeButtonId) {
+  $effect(() => onButtonClick(buttonId => {
+    if (buttonId === closeButtonId) {
       closePanel();
-    } else if (clicked.buttonId === downloadButtonId) {
+    } else if (buttonId === downloadButtonId) {
       panel.startDownload();
-    } else if (clicked.buttonId === cancelButtonId) {
+    } else if (buttonId === cancelButtonId) {
       void panel.cancelDownload();
     }
-  });
+  }));
 
   function handleActivationKeydown(callback: () => void) {
     return (e: KeyboardEvent) => {

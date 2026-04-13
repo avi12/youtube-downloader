@@ -1,12 +1,7 @@
 import { getOutputExtension, resolveAutoExtension, resolveVideoFilename } from "@/lib/containers";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/cross-world-messenger";
 import { MessageType, sendMessage } from "@/lib/messaging";
-import {
-  cancelRequestSignal,
-  downloadProgressStore,
-  type DownloadProgressState,
-  videoDataStore
-} from "@/lib/synced-stores.svelte";
+import { downloadProgressStore, type DownloadProgressState, videoDataStore } from "@/lib/synced-stores.svelte";
 import { calculateWeightedProgress, formatVideoQualityLabel } from "@/lib/video-helpers";
 import {
   DownloadType,
@@ -33,10 +28,17 @@ export function createPlaylistVideoItemState(
 ) {
   let videoData = $state<VideoData | null>(null);
   let isLoadFailed = $state(false);
+  let isLocallyDone = $state(false);
 
   const downloadState = $derived(downloadProgressStore.get(videoId) ?? defaultProgressState);
   const isDownloading = $derived(downloadState.isDownloading);
   const isDone = $derived(downloadState.isDone);
+
+  $effect(() => {
+    if (downloadState.isDone) {
+      isLocallyDone = true;
+    }
+  });
 
   $effect(() => {
     const storeData = videoDataStore.get(videoId);
@@ -61,7 +63,7 @@ export function createPlaylistVideoItemState(
       return "N/A";
     }
 
-    if (isDone) {
+    if (isLocallyDone || isDone) {
       return "Downloaded";
     }
 
@@ -77,6 +79,10 @@ export function createPlaylistVideoItemState(
   );
 
   const buttonTooltip = $derived.by(() => {
+    if (isLocallyDone || isDone) {
+      return "Click to discard the downloaded file";
+    }
+
     if (isDownloading) {
       if (downloadState.progress <= 0) {
         return buttonLabel;
@@ -108,7 +114,7 @@ export function createPlaylistVideoItemState(
   });
 
   const downloadIconName = $derived.by(() => {
-    if (isDone) {
+    if (isLocallyDone || isDone) {
       return IconName.CheckCircleThick;
     }
 
@@ -132,6 +138,7 @@ export function createPlaylistVideoItemState(
 
     const filenameOutput = resolveVideoFilename(videoData, options, gridTitle);
 
+    isLocallyDone = false;
     downloadProgressStore.unsuppress(videoId);
     downloadProgressStore.set(videoId, {
       isDownloading: true,
@@ -158,7 +165,13 @@ export function createPlaylistVideoItemState(
 
     if (isDownloading) {
       downloadProgressStore.delete(videoId);
-      cancelRequestSignal.value = { videoIds: [videoId] };
+      void crossWorldMessenger.sendMessage(CrossWorldMessage.CancelRequest, { videoIds: [videoId] });
+      return;
+    }
+
+    if (isLocallyDone || isDone) {
+      isLocallyDone = false;
+      void sendMessage(MessageType.DiscardDownload, { videoId });
       return;
     }
 
@@ -185,6 +198,9 @@ export function createPlaylistVideoItemState(
     },
     get isDone() {
       return isDone;
+    },
+    get isLocallyDone() {
+      return isLocallyDone;
     },
     get buttonLabel() {
       return buttonLabel;

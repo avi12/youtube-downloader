@@ -32,14 +32,4 @@ export const playlistMetadataSignal = createSyncedSignal(
   null
 );
 
-export const cancelRequestSignal = createSyncedSignal(
-  createSignalMessenger<{ videoIds: string[] } | null>("cancel-request"),
-  null
-);
-
-export const buttonClickSignal = createSyncedSignal(
-  createSignalMessenger<{ buttonId: string } | null>("button-click"),
-  null
-);
-
 export const interruptedDownloadStore = createSyncedMap(createMapMessenger<InterruptedDownload>("interrupted-download"));

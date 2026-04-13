@@ -91,3 +91,26 @@ interface PageMessengerSchema {
 }
 
 export const crossWorldMessenger = defineCustomEventMessaging<PageMessengerSchema>({ namespace: "ytdl" });
+
+const buttonClickEventName = "ytdl-btn-click";
+
+type ButtonClickDetail = { buttonId: string };
+
+function isButtonClickEvent(e: Event): e is CustomEvent<ButtonClickDetail> {
+  return e instanceof CustomEvent && typeof e.detail?.buttonId === "string";
+}
+
+export function dispatchButtonClick(buttonId: string) {
+  dispatchEvent(new CustomEvent<ButtonClickDetail>(buttonClickEventName, { detail: { buttonId } }));
+}
+
+export function onButtonClick(handler: (buttonId: string) => void) {
+  function listener(e: Event) {
+    if (isButtonClickEvent(e)) {
+      handler(e.detail.buttonId);
+    }
+  }
+
+  addEventListener(buttonClickEventName, listener);
+  return () => removeEventListener(buttonClickEventName, listener);
+}
