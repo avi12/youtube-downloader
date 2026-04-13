@@ -1,18 +1,18 @@
-const enum TransformOpType {
-  Swap = "swap",
-  Reverse = "reverse",
-  Splice = "splice"
-}
+const TransformOpType = {
+  Swap: "swap",
+  Reverse: "reverse",
+  Splice: "splice"
+} as const;
 
 type TransformOp = {
-  type: TransformOpType.Swap;
+  type: typeof TransformOpType.Swap;
   argument: number;
 }
   | {
-    type: TransformOpType.Reverse;
+    type: typeof TransformOpType.Reverse;
   }
   | {
-    type: TransformOpType.Splice;
+    type: typeof TransformOpType.Splice;
     argument: number;
   };
 
@@ -73,7 +73,7 @@ function extractTransformOperations(playerSource: string, functionName: string) 
 
   const helperBody = helperObjMatch[1];
 
-  const methodTypes = new Map<string, TransformOpType>();
+  const methodTypes = new Map<string, (typeof TransformOpType)[keyof typeof TransformOpType]>();
 
   const methodPattern = /([a-zA-Z0-9$]+)\s*:\s*function\s*\([^)]*\)\s*\{([^}]+)\}/g;
   let methodMatch;
@@ -127,9 +127,9 @@ function applyTransforms(signature: string, operations: TransformOp[]) {
         break;
       case TransformOpType.Swap: {
         const position = operation.argument % characters.length;
-        const temp = characters[0];
-        characters[0] = characters[position];
-        characters[position] = temp;
+        characters[0] = String.fromCharCode(characters[0].charCodeAt(0) ^ characters[position].charCodeAt(0));
+        characters[position] = String.fromCharCode(characters[position].charCodeAt(0) ^ characters[0].charCodeAt(0));
+        characters[0] = String.fromCharCode(characters[0].charCodeAt(0) ^ characters[position].charCodeAt(0));
         break;
       }
     }
