@@ -89,7 +89,8 @@ async function resolveCredentialsWithRetry() {
 
 function selectFormats(
   videoData: {
-    videoFormats: AdaptiveFormatItem[]; audioFormats: AdaptiveFormatItem[];
+    videoFormats: AdaptiveFormatItem[];
+    audioFormats: AdaptiveFormatItem[];
   },
   type: DownloadType,
   videoItag: number | undefined,

@@ -13,7 +13,9 @@
     initialVideoQueue: VideoQueueItem[];
     initialMusicList: string[];
     initialVideoOnlyList: string[];
-    initialVideoDetails: Record<string, { filenameOutput: string }>;
+    initialVideoDetails: Record<string, {
+      filenameOutput: string;
+    }>;
     initialStatusProgress: Record<string, {
       progress: number;
       progressType: ProgressType;
@@ -36,15 +38,17 @@
     maximumFractionDigits: 1
   });
 
-  const appState = createAppState(untrack(() => ({
-    initialIsFFmpegReady,
-    initialVideoQueue,
-    initialMusicList,
-    initialVideoOnlyList,
-    initialVideoDetails,
-    initialStatusProgress,
-    initialOptions
-  })));
+  const appState = createAppState(
+    untrack(() => ({
+      initialIsFFmpegReady,
+      initialVideoQueue,
+      initialMusicList,
+      initialVideoOnlyList,
+      initialVideoDetails,
+      initialStatusProgress,
+      initialOptions
+    }))
+  );
 </script>
 
 <div class="popup-container">

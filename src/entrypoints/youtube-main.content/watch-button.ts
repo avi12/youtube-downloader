@@ -202,7 +202,9 @@ export async function injectSegmentedDownloadButton(
 
   let lastProgressReported = -1;
 
-  function handleProgress({ data }: { data: ProgressUpdate }) {
+  function handleProgress({ data }: {
+    data: ProgressUpdate;
+  }) {
     if (data.videoId !== videoId) {
       return;
     }

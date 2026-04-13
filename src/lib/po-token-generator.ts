@@ -1,10 +1,14 @@
-declare const ytcfg: { get(key: string): unknown } | undefined;
+declare const ytcfg: {
+  get(key: string): unknown;
+} | undefined;
 
 interface ChallengeResponse {
   bgChallenge?: {
     program: string;
     globalName: string;
-    interpreterUrl: string | { privateDoNotAccessOrElseTrustedResourceUrlWrappedValue: string };
+    interpreterUrl: string | {
+      privateDoNotAccessOrElseTrustedResourceUrlWrappedValue: string;
+    };
   };
 }
 

@@ -1,7 +1,9 @@
 import { initialOptions } from "./video-helpers";
 import type { InterruptedDownload, Options, ProgressType, VideoQueueItem } from "@/types";
 
-type VideoDetailsMap = Record<string, { filenameOutput: string }>;
+type VideoDetailsMap = Record<string, {
+  filenameOutput: string;
+}>;
 type StatusProgressMap = Record<string, {
   progress: number;
   progressType: ProgressType;

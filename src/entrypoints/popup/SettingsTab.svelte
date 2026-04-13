@@ -6,12 +6,15 @@
   import { DownloadType, VideoQualityMode } from "@/types";
   import type { DownloadTypePreference, Options } from "@/types";
 
-  type Props = { options: Options };
+  type Props = {
+    options: Options;
+  };
 
   const { options }: Props = $props();
 
   const downloadTypeOptions: Array<{
-    value: DownloadTypePreference; label: string;
+    value: DownloadTypePreference;
+    label: string;
   }> = [
     { value: "auto", label: "Auto (video for videos, audio for music)" },
     { value: DownloadType.VideoAndAudio, label: "Always video + audio" },
@@ -20,7 +23,8 @@
   ];
 
   const qualityModeOptions: Array<{
-    value: Options["videoQualityMode"]; label: string;
+    value: Options["videoQualityMode"];
+    label: string;
   }> = [
     { value: VideoQualityMode.CurrentQuality, label: "Match current player quality" },
     { value: VideoQualityMode.Best, label: "Best available quality" },

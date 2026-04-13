@@ -3,7 +3,9 @@ import { SvelteMap, SvelteSet } from "svelte/reactivity";
 
 const SYNC_NAMESPACE = "ytdl-sync";
 
-type SignalSchema<T> = { value: (data: T) => void };
+type SignalSchema<T> = {
+  value: (data: T) => void;
+};
 type SignalMessenger<T> = ReturnType<typeof defineCustomEventMessaging<SignalSchema<T>>>;
 
 export function createSignalMessenger<T>(key: string) {
@@ -40,7 +42,9 @@ type MapEntryPayload<T> = {
   mapKey: string;
   mapValue: T | undefined;
 };
-type MapSchema<T> = { entry: (data: MapEntryPayload<T>) => void };
+type MapSchema<T> = {
+  entry: (data: MapEntryPayload<T>) => void;
+};
 type MapMessenger<T> = ReturnType<typeof defineCustomEventMessaging<MapSchema<T>>>;
 
 export function createMapMessenger<T>(key: string) {

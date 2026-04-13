@@ -1,7 +1,9 @@
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/offscreen-messaging";
 
 const videoIdToTabIds: Record<string, number[]> = {};
-export const tabTracker: Record<number, { videoIdsAvailable: string[] }> = {};
+export const tabTracker: Record<number, {
+  videoIdsAvailable: string[];
+}> = {};
 
 export function trackVideoForTab(videoId: string, tabId: number) {
   videoIdToTabIds[videoId] ??= [];

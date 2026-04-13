@@ -12,7 +12,9 @@ export const DOWNLOAD_BUTTON_ID = "playlist-download-btn";
 export const DOWNLOAD_ALL_BUTTON_ID = "playlist-download-all-btn";
 
 type ActionState = {
-  selectedDownloadableVideos: { length: number };
+  selectedDownloadableVideos: {
+    length: number;
+  };
   isDownloading: boolean;
   isRevealingAll: boolean;
   revealedVideoCount: number;

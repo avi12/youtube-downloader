@@ -91,18 +91,27 @@ interface ProtocolMap {
   } | null;
 
   persistInterruptedDownload(data: InterruptedDownload): void;
-  clearInterruptedDownload(data: { videoId: string }): void;
-  getInterruptedDownload(data: { videoId: string }): InterruptedDownload | null;
+  clearInterruptedDownload(data: {
+    videoId: string;
+  }): void;
+  getInterruptedDownload(data: {
+    videoId: string;
+  }): InterruptedDownload | null;
 
   downloadViaWatchPage(data: DownloadRequest): void;
 
   createDownloadIframe(data: {
-    videoId: string; watchUrl: string;
+    videoId: string;
+    watchUrl: string;
   }): void;
 
-  removeDownloadIframe(data: { videoId: string }): void;
+  removeDownloadIframe(data: {
+    videoId: string;
+  }): void;
 
-  downloadIframeReady(data: { videoId: string }): void;
+  downloadIframeReady(data: {
+    videoId: string;
+  }): void;
 
   requestPlaylistDownload(data: {
     items: DownloadRequest[];
@@ -111,11 +120,15 @@ interface ProtocolMap {
     isSequential: boolean;
   }): void;
 
-  cancelDownload(data: { videoIds: string[] }): void;
+  cancelDownload(data: {
+    videoIds: string[];
+  }): void;
 
   startBackgroundDownload(data: DownloadRequest): void;
 
-  startKeepalive(data: { videoId: string }): void;
+  startKeepalive(data: {
+    videoId: string;
+  }): void;
 
   keepalive(data: Record<string, never>): void;
 
@@ -125,9 +138,13 @@ interface ProtocolMap {
 
   updateDownloadProgress(data: ProgressUpdate): void;
 
-  refreshPoToken(data: { videoId: string }): string | null;
+  refreshPoToken(data: {
+    videoId: string;
+  }): string | null;
 
-  pipelineProgress(data: ProgressUpdate & { tabId: number }): void;
+  pipelineProgress(data: ProgressUpdate & {
+    tabId: number;
+  }): void;
   pipelineRemoval(data: {
     videoId: string;
     tabId: number;
@@ -159,7 +176,9 @@ interface ProtocolMap {
     entryId: string;
     targetContainer: string;
   }): void;
-  discardDownload(data: { videoId: string }): void;
+  discardDownload(data: {
+    videoId: string;
+  }): void;
 }
 
 export const { sendMessage, onMessage } =

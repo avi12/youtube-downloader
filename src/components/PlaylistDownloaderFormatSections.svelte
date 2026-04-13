@@ -4,7 +4,9 @@
   import { AUTO_EXTENSION, AUTO_EXTENSION_LABEL, supportedExtensions } from "@/lib/containers";
   import { DownloadType } from "@/types";
 
-  type Props = { playlist: ReturnType<typeof createPlaylistDownloaderState> };
+  type Props = {
+    playlist: ReturnType<typeof createPlaylistDownloaderState>;
+  };
 
   const { playlist }: Props = $props();
 

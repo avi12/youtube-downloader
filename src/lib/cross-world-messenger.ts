@@ -38,7 +38,9 @@ export enum CrossWorldMessage {
 
 interface PageMessengerSchema {
   [CrossWorldMessage.VideoData](data: VideoData): void;
-  [CrossWorldMessage.Navigation](data: { url: string }): void;
+  [CrossWorldMessage.Navigation](data: {
+    url: string;
+  }): void;
   [CrossWorldMessage.PanelContentReady](data: {
     contentId: string;
     videoData: VideoData;
@@ -56,7 +58,9 @@ interface PageMessengerSchema {
     videoItag?: number;
     audioItag?: number;
   }): void;
-  [CrossWorldMessage.RequestVideoData](data: { videoId: string }): void;
+  [CrossWorldMessage.RequestVideoData](data: {
+    videoId: string;
+  }): void;
   [CrossWorldMessage.ProxyFetch](data: {
     url: string;
     method: string;
@@ -68,9 +72,15 @@ interface PageMessengerSchema {
     responseHeaders: Record<string, string>;
   } | null;
 
-  [CrossWorldMessage.IframePlayerReady](data: { videoId: string }): void;
-  [CrossWorldMessage.CancelDownload](data: { videoIds: string[] }): void;
-  [CrossWorldMessage.CancelRequest](data: { videoIds: string[] }): void;
+  [CrossWorldMessage.IframePlayerReady](data: {
+    videoId: string;
+  }): void;
+  [CrossWorldMessage.CancelDownload](data: {
+    videoIds: string[];
+  }): void;
+  [CrossWorldMessage.CancelRequest](data: {
+    videoIds: string[];
+  }): void;
   [CrossWorldMessage.SetButtonData](data: {
     selector: string;
     data: ButtonViewModelData;
@@ -79,8 +89,12 @@ interface PageMessengerSchema {
     contentId: string;
     positionTargetSelector: string;
   }): void;
-  [CrossWorldMessage.DropdownReady](data: { contentId: string }): void;
-  [CrossWorldMessage.CloseDropdown](data: { videoId: string }): void;
+  [CrossWorldMessage.DropdownReady](data: {
+    contentId: string;
+  }): void;
+  [CrossWorldMessage.CloseDropdown](data: {
+    videoId: string;
+  }): void;
   [CrossWorldMessage.DownloadProgress](data: {
     videoId: string;
     progress: number;
@@ -94,7 +108,9 @@ export const crossWorldMessenger = defineCustomEventMessaging<PageMessengerSchem
 
 const buttonClickEventName = "ytdl-btn-click";
 
-type ButtonClickDetail = { buttonId: string };
+type ButtonClickDetail = {
+  buttonId: string;
+};
 
 function isButtonClickEvent(e: Event): e is CustomEvent<ButtonClickDetail> {
   return e instanceof CustomEvent && typeof e.detail?.buttonId === "string";

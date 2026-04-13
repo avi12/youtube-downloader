@@ -32,7 +32,9 @@ interface OffscreenProtocolMap {
     playlistTotalCount?: number;
     metadata?: VideoMetadata | null;
   };
-  [OffscreenMessageType.CancelProcessing]: { videoIds: string[] };
+  [OffscreenMessageType.CancelProcessing]: {
+    videoIds: string[];
+  };
   [OffscreenMessageType.PipelineDownload]: {
     dataUrl: string;
     filename: string;
@@ -45,7 +47,8 @@ interface OffscreenProtocolMap {
 
 type OffscreenMessage = {
   [T in OffscreenMessageType]: {
-    type: T; data: OffscreenProtocolMap[T];
+    type: T;
+    data: OffscreenProtocolMap[T];
   };
 }[OffscreenMessageType];
 

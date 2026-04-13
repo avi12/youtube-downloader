@@ -33,7 +33,9 @@ export async function processSingleMedia(item: ProcessStreamData) {
   const isFlacTarget = isAudio && outputExtension === "flac";
 
   const ffmpegProgressCap = 0.99;
-  function handleFfmpegProgress({ progress }: { progress: number }) {
+  function handleFfmpegProgress({ progress }: {
+    progress: number;
+  }) {
     void reportProgress({
       videoId,
       progress: Math.min(progress, ffmpegProgressCap),

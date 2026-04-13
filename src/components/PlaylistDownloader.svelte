@@ -8,7 +8,9 @@
   import type { Options } from "@/types";
   import { untrack } from "svelte";
 
-  type Props = { options: Options };
+  type Props = {
+    options: Options;
+  };
 
   const { options }: Props = $props();
   const playlist = createPlaylistDownloaderState(() => options);

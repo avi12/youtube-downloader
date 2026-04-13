@@ -19,7 +19,9 @@
     videoDownloads: VideoQueueItem[];
     musicList: string[];
     videoOnlyList: string[];
-    videoDetails: Record<string, { filenameOutput: string }>;
+    videoDetails: Record<string, {
+      filenameOutput: string;
+    }>;
     statusProgress: Record<string, ProgressEntry>;
     percentFormatter: Intl.NumberFormat;
     recentDownloads: RecentDownloadEntry[];

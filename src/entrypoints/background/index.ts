@@ -156,7 +156,9 @@ export default defineBackground(() => {
   void ensureProcessor();
 
   browser.runtime.onMessage.addListener((message: {
-    type?: string; dataUrl?: string; filename?: string;
+    type?: string;
+    dataUrl?: string;
+    filename?: string;
   }) => {
     if (message.type !== OffscreenMessageType.PipelineDownload || !message.dataUrl || !message.filename) {
       return;

@@ -66,7 +66,9 @@ export async function processVideoAudio(item: ProcessStreamData) {
   // progress=1 is reserved for after the file is actually saved to disk (not just after FFmpeg muxing completes).
   const ffmpegProgressCap = 0.99;
 
-  function handleFFmpegProgress({ progress }: { progress: number }) {
+  function handleFFmpegProgress({ progress }: {
+    progress: number;
+  }) {
     const cappedProgress = Math.min(progress, ffmpegProgressCap);
     void reportProgress({ videoId, progress: cappedProgress, progressType: ProgressType.FFmpeg, tabId });
   }

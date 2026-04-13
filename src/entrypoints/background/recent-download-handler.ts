@@ -24,7 +24,9 @@ function persistOnDownloadComplete(
   return new Promise<void>(resolve => {
     function handleChanged(delta: {
       id: number;
-      state?: { current?: string };
+      state?: {
+        current?: string;
+      };
     }) {
       if (delta.id !== targetDownloadId || !delta.state?.current) {
         return;

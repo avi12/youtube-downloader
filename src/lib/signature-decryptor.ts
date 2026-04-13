@@ -2,7 +2,9 @@ type TransformOp = {
   type: "swap";
   argument: number;
 }
-  | { type: "reverse" }
+  | {
+    type: "reverse";
+  }
   | {
     type: "splice";
     argument: number;

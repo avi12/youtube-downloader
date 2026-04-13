@@ -10,11 +10,19 @@ declare global {
   interface Window {
     ytInitialPlayerResponse?: PlayerResponse;
     ytInitialData?: {
-      header?: { playlistHeaderRenderer?: {
-        title?: { simpleText?: string };
-        playlistId?: string;
-      }; };
-      metadata?: { playlistMetadataRenderer?: { title?: string } };
+      header?: {
+        playlistHeaderRenderer?: {
+          title?: {
+            simpleText?: string;
+          };
+          playlistId?: string;
+        };
+      };
+      metadata?: {
+        playlistMetadataRenderer?: {
+          title?: string;
+        };
+      };
     };
   }
 }
@@ -38,7 +46,9 @@ export default defineContentScript({
 
         elVideo.muted = true;
         elVideo.pause();
-        const elPlayer = document.querySelector<HTMLElement & { pauseVideo?: () => void }>("#movie_player");
+        const elPlayer = document.querySelector<HTMLElement & {
+          pauseVideo?: () => void;
+        }>("#movie_player");
         elPlayer?.pauseVideo?.();
         observer.disconnect();
       });

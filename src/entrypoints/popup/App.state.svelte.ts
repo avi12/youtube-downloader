@@ -26,7 +26,9 @@ type Props = {
   initialVideoQueue: VideoQueueItem[];
   initialMusicList: string[];
   initialVideoOnlyList: string[];
-  initialVideoDetails: Record<string, { filenameOutput: string }>;
+  initialVideoDetails: Record<string, {
+    filenameOutput: string;
+  }>;
   initialStatusProgress: Record<string, {
     progress: number;
     progressType: ProgressType;

@@ -13,7 +13,9 @@ export interface DownloadResult {
   videoData: Uint8Array | null;
   audioData: Uint8Array | null;
   additionalAudioTracks: Array<{
-    data: Uint8Array | null; mimeType: string; label: string;
+    data: Uint8Array | null;
+    mimeType: string;
+    label: string;
   }>;
 }
 

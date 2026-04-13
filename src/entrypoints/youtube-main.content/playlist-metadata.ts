@@ -7,7 +7,9 @@ import { type PlayerResponse } from "@/types";
 
 declare global {
   interface HTMLElementTagNameMap {
-    "ytd-watch-flexy": HTMLElement & { playerData: PlayerResponse | null };
+    "ytd-watch-flexy": HTMLElement & {
+      playerData: PlayerResponse | null;
+    };
   }
 }
 

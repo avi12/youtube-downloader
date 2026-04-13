@@ -10,22 +10,38 @@ interface ThumbnailEntry {
 }
 
 interface BrowseEndpoint {
-  browseEndpointContextSupportedConfigs?: { browseEndpointContextMusicConfig?: { pageType?: string } };
+  browseEndpointContextSupportedConfigs?: {
+    browseEndpointContextMusicConfig?: {
+      pageType?: string;
+    };
+  };
 }
 
 interface SearchRun {
   text: string;
-  navigationEndpoint?: { browseEndpoint?: BrowseEndpoint };
+  navigationEndpoint?: {
+    browseEndpoint?: BrowseEndpoint;
+  };
 }
 
 interface FlexColumn {
-  musicResponsiveListItemFlexColumnRenderer?: { text?: { runs?: SearchRun[] } };
+  musicResponsiveListItemFlexColumnRenderer?: {
+    text?: {
+      runs?: SearchRun[];
+    };
+  };
 }
 
 interface SearchItem {
   musicResponsiveListItemRenderer?: {
     flexColumns?: FlexColumn[];
-    thumbnail?: { musicThumbnailRenderer?: { thumbnail?: { thumbnails?: ThumbnailEntry[] } } };
+    thumbnail?: {
+      musicThumbnailRenderer?: {
+        thumbnail?: {
+          thumbnails?: ThumbnailEntry[];
+        };
+      };
+    };
   };
 }
 
@@ -102,7 +118,11 @@ export async function fetchYouTubeMusicMetadata(
       ?.tabs?.[0]?.tabRenderer?.content?.sectionListRenderer?.contents;
 
     const songShelf = contents?.find(
-      (section: { musicShelfRenderer?: { contents?: SearchItem[] } }) =>
+      (section: {
+        musicShelfRenderer?: {
+          contents?: SearchItem[];
+        };
+      }) =>
         section.musicShelfRenderer?.contents
     );
     const firstItem = songShelf?.musicShelfRenderer?.contents?.[0];

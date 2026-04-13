@@ -6,7 +6,9 @@ import { generatePoToken } from "@/lib/po-token-generator";
 import { sabrCredentials, videoDataStore } from "@/lib/synced-stores.svelte";
 import { type PlayerResponse, type VideoData, type YtdlCaptureState } from "@/types";
 
-declare const ytcfg: { get: (key: string) => unknown } | undefined;
+declare const ytcfg: {
+  get: (key: string) => unknown;
+} | undefined;
 
 export const videoDataCache = new Map<string, VideoData>();
 
