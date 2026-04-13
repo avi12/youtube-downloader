@@ -5,6 +5,7 @@
 </script>
 
 <script lang="ts">
+  import { batchDownloadStatus } from "./PlaylistDownloader.state.svelte";
   import { createPanelManager } from "./PlaylistVideoItem.panel.svelte";
   import { createPlaylistVideoItemState } from "./PlaylistVideoItem.state.svelte";
   import { checkedPlaylistVideos } from "@/lib/playlist-selection.svelte";
@@ -52,6 +53,8 @@
     () => options,
     activeDownloadClicks
   );
+
+  const isCheckboxDisabled = $derived(batchDownloadStatus.isRunning || itemState.isDownloading);
 
   const downloadButtonId = $derived(`btn-${videoId}-download`);
   const chevronButtonId = $derived(`btn-${videoId}-chevron`);
@@ -208,6 +211,7 @@
         <tp-yt-paper-checkbox
           aria-label="Select for download"
           checked={isChecked ? "" : undefined}
+          disabled={isCheckboxDisabled ? "" : undefined}
           onchange={handleCheckboxChange}
         ></tp-yt-paper-checkbox>
       {/if}
