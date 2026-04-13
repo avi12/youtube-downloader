@@ -1,11 +1,9 @@
-type CapturedSabrData = {
+const capturedByTab = new Map<number, {
   body: number[];
   url: string;
   tabId: number;
   timestamp: number;
-};
-
-const capturedByTab = new Map<number, CapturedSabrData>();
+}>();
 
 export function startSabrRequestCapture() {
   browser.webRequest.onBeforeRequest.addListener(
@@ -62,7 +60,7 @@ export function getCapturedSabrData(tabId: number) {
 }
 
 function getLatestCapturedSabrData() {
-  let latest: CapturedSabrData | null = null;
+  let latest: Parameters<(typeof capturedByTab)["set"]>[1] | null = null;
 
   for (const entry of capturedByTab.values()) {
     if (!latest || entry.timestamp > latest.timestamp) {
