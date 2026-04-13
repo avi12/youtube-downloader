@@ -1,9 +1,8 @@
 <script lang="ts">
   import DownloadOptions from "./DownloadOptions.svelte";
+  import { createFocusManager } from "./DownloadOptionsPanel.focus.svelte";
   import { createPanelState } from "./DownloadOptionsPanel.state.svelte.ts";
-  import panelFocusStyles from "./panel-focus.css?inline";
   import { CrossWorldMessage, crossWorldMessenger } from "@/lib/cross-world-messenger";
-  import { applyInertTrap } from "@/lib/inert-trap";
   import {
     attachCancelButton,
     attachCloseButton,
@@ -31,20 +30,14 @@
   const props: Props = $props();
 
   const panel = createPanelState(() => props.videoData, () => props.options);
-
-  let removeInert: (() => void) | null = null;
-
-  function releaseInertTrap() {
-    removeInert?.();
-    removeInert = null;
-  }
+  const focusManager = createFocusManager();
 
   const closeButtonId = "ytdl-panel-close";
   const downloadButtonId = "ytdl-panel-download";
   const cancelButtonId = "ytdl-panel-cancel";
 
   function closePanel() {
-    releaseInertTrap();
+    focusManager.release();
     void crossWorldMessenger.sendMessage(CrossWorldMessage.PanelClosed, {});
     document.dispatchEvent(new CustomEvent("ytdl:panel-closed"));
   }
@@ -77,67 +70,11 @@
   function attachDownloadBtn(elButton: Element) {
     attachDownloadButton(elButton, () => panel.isDownloadable, () => panel.isFilenameValid, () => panel.isDone);
   }
-
-  function attachPanel(elPanel: Element) {
-    if (!(elPanel instanceof HTMLElement)) {
-      return;
-    }
-
-    const elFocusStyle = document.createElement("style");
-    elFocusStyle.textContent = panelFocusStyles;
-    elPanel.append(elFocusStyle);
-
-    for (const elDropdown of elPanel.querySelectorAll("tp-yt-paper-dropdown-menu")) {
-      elDropdown.removeAttribute("keyboard-focused");
-      elDropdown.removeAttribute("focused");
-      elDropdown.querySelector("tp-yt-paper-menu-button")?.removeAttribute("focused");
-      elDropdown.querySelector("tp-yt-paper-input")?.removeAttribute("focused");
-    }
-
-    const elInitialFocus = elPanel.querySelector<HTMLElement>("tp-yt-paper-input:not([disabled])");
-    elInitialFocus?.focus();
-
-    // Polymer's receivedFocusFromKeyboard may not be initialized yet at mount time, so set the attribute directly.
-    elInitialFocus?.closest("tp-yt-paper-dropdown-menu")?.setAttribute("keyboard-focused", "");
-
-    // Applying the inert trap before open() interferes with Polymer's overlay mechanics.
-    const elDropdownRoot = elPanel.closest<HTMLElement>("tp-yt-iron-dropdown") ?? elPanel;
-
-    elDropdownRoot.addEventListener("iron-overlay-opened", () => {
-      removeInert = applyInertTrap(elDropdownRoot);
-
-      // Release the inert trap when Polymer closes the overlay externally
-      // (click-outside or Escape) since closePanel() only handles explicit close.
-      elDropdownRoot.addEventListener("iron-overlay-closed", releaseInertTrap, { once: true });
-    });
-
-    // Polymer's IronFocusedBehavior doesn't always clear the focused attribute
-    // from sibling dropdowns when Tab moves between them.
-    function onFocusIn() {
-      for (const elDropdown of elPanel.querySelectorAll("tp-yt-paper-dropdown-menu[focused]")) {
-        if (elDropdown.contains(document.activeElement)) {
-          continue;
-        }
-
-        elDropdown.removeAttribute("focused");
-        elDropdown.querySelector("tp-yt-paper-menu-button")?.removeAttribute("focused");
-        elDropdown.querySelector("tp-yt-paper-input")?.removeAttribute("focused");
-      }
-    }
-
-    document.addEventListener("focusin", onFocusIn);
-
-    return () => {
-      releaseInertTrap();
-      document.removeEventListener("focusin", onFocusIn);
-      elFocusStyle.remove();
-    };
-  }
 </script>
 
 <div
   class="ytdl-panel"
-  {@attach attachPanel}
+  {@attach focusManager.attach}
   aria-labelledby="ytdl-panel-title"
   aria-modal="true"
   onkeydown={e => {
