@@ -219,6 +219,7 @@
         <tp-yt-paper-progress
           class="ytdl-progress-bar"
           aria-label={itemState.buttonTooltip}
+          indeterminate={!itemState.isDone && itemState.displayProgress === 0 || undefined}
           value={itemState.isDone ? 100 : Math.round(itemState.displayProgress)}
         ></tp-yt-paper-progress>
       {/if}

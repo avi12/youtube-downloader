@@ -15,6 +15,10 @@ import {
 } from "@/types";
 import { SvelteMap } from "svelte/reactivity";
 
+// Shared across every PlaylistVideoItem so they can disable their checkboxes
+// during a batch download without needing a prop chain.
+export const batchDownloadStatus = $state({ isRunning: false });
+
 // User-facing preferences live at module scope so they survive any re-mount
 // of the panel (e.g. when YouTube rebuilds the header subtree on theme
 // transitions and our mount container gets re-created).
@@ -136,6 +140,7 @@ export function createPlaylistDownloaderState(getOptions: () => Options) {
 
       if (remaining === 0) {
         isDownloading = false;
+        batchDownloadStatus.isRunning = false;
         for (const unwatch of unwatches) {
           unwatch();
         }
@@ -158,8 +163,19 @@ export function createPlaylistDownloaderState(getOptions: () => Options) {
 
     error = "";
     isDownloading = true;
+    batchDownloadStatus.isRunning = true;
     totalCount = videos.length;
     downloadedCount = 0;
+
+    for (const video of videos) {
+      downloadProgressStore.unsuppress(video.videoId);
+      downloadProgressStore.set(video.videoId, {
+        isDownloading: true,
+        isDone: false,
+        progress: 0,
+        progressType: ""
+      });
+    }
 
     const metadata = playlistMetadataSignal.value;
     const playlistTitle = metadata?.playlistTitle || "Playlist";
@@ -191,7 +207,14 @@ export function createPlaylistDownloaderState(getOptions: () => Options) {
     const videoIds = activeDownloadRequests.map(request => request.videoId);
     await sendMessage(MessageType.CancelDownload, { videoIds });
     isDownloading = false;
+    batchDownloadStatus.isRunning = false;
     downloadedCount = 0;
+
+    for (const videoId of videoIds) {
+      if (!downloadProgressStore.get(videoId)?.isDone) {
+        downloadProgressStore.delete(videoId);
+      }
+    }
   }
 
   function toggleSelectedDownload() {
