@@ -140,6 +140,13 @@ export function createPanelState(getVideoData: () => VideoData, getOptions: () =
       null;
   });
 
+  function applyDownloadState(state: Parameters<typeof downloadProgressStore.set>[1]) {
+    isDownloading = state.isDownloading;
+    isDone = state.isDone;
+    progress = state.progress;
+    progressType = state.progressType;
+  }
+
   $effect(() => {
     const { videoId } = getVideoData();
 
@@ -150,10 +157,12 @@ export function createPanelState(getVideoData: () => VideoData, getOptions: () =
         return;
       }
 
-      progress = existing.progress;
-      progressType = existing.progressType;
-      isDownloading = existing.progress > 0 && existing.progress < 1;
-      isDone = existing.progress >= 1;
+      applyDownloadState({
+        progress: existing.progress,
+        progressType: existing.progressType,
+        isDownloading: existing.progress > 0 && existing.progress < 1,
+        isDone: existing.progress >= 1
+      });
     }
 
     void restoreProgress();
@@ -161,19 +170,14 @@ export function createPanelState(getVideoData: () => VideoData, getOptions: () =
 
   $effect(() => {
     const { videoId } = getVideoData();
-    const state = downloadProgressStore.get(videoId);
-    if (!state) {
-      progress = 0;
-      progressType = "";
-      isDownloading = false;
-      isDone = false;
-      return;
-    }
-
-    isDownloading = state.isDownloading;
-    isDone = state.isDone;
-    progress = state.progress;
-    progressType = state.progressType;
+    applyDownloadState(
+      downloadProgressStore.get(videoId) ?? {
+        isDownloading: false,
+        isDone: false,
+        progress: 0,
+        progressType: ""
+      }
+    );
   });
 
   $effect(() => {

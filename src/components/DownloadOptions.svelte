@@ -43,7 +43,7 @@
   const extensionType = $derived(downloadType === DownloadType.Audio ? DownloadType.Audio : DownloadType.Video);
   const fullFilename = $derived(`${filename}.${extension}`);
 
-  function getFilenameError(value: string, type: DownloadType.Video | DownloadType.Audio) {
+  function getFilenameError(value: string, type: typeof DownloadType.Video | typeof DownloadType.Audio) {
     const illegalMatch = value.match(/[<>:"/\\|?*]/);
     if (illegalMatch) {
       return `Character "${illegalMatch[0]}" isn't allowed in filenames`;
