@@ -1,28 +1,12 @@
 <script lang="ts">
+  import { createAppState, Tab } from "./App.state.svelte";
   import ChangeFormatDialog from "./ChangeFormatDialog.svelte";
   import DownloadsTab from "./DownloadsTab.svelte";
   import SettingsTab from "./SettingsTab.svelte";
   import TabNav from "./TabNav.svelte";
-  import { MessageType, onMessage } from "@/lib/messaging";
-  import { getAllRecentDownloads } from "@/lib/recent-downloads-db";
-  import {
-    isFFmpegReadyItem,
-    musicListItem,
-    optionsItem,
-    statusProgressItem,
-    videoDetailsItem,
-    videoOnlyListItem,
-    videoQueueItem
-  } from "@/lib/storage";
-  import { initialOptions as defaultOptions } from "@/lib/video-helpers";
   import { ProgressType } from "@/types";
-  import type { Options, RecentDownloadEntry, VideoQueueItem } from "@/types";
-  import { onMount, untrack } from "svelte";
-
-  const percentFormatter = new Intl.NumberFormat(browser.i18n.getUILanguage(), {
-    style: "percent",
-    maximumFractionDigits: 1
-  });
+  import type { Options, VideoQueueItem } from "@/types";
+  import { untrack } from "svelte";
 
   type Props = {
     initialIsFFmpegReady: boolean;
@@ -47,91 +31,20 @@
     initialOptions
   }: Props = $props();
 
-  // TypeScript `enum` inside a Svelte component is flagged as a non-reactive update by the compiler.
-  const Tab = {
-    Downloads: "downloads",
-    Settings: "settings"
-  } as const;
-
-  type Tab = (typeof Tab)[keyof typeof Tab];
-
-  let activeTab = $state<Tab>(Tab.Downloads);
-  let isFFmpegReady = $state(untrack(() => initialIsFFmpegReady));
-  let videoDownloads = $state(untrack(() => initialVideoQueue));
-  let musicList = $state(untrack(() => initialMusicList));
-  let videoOnlyList = $state(untrack(() => initialVideoOnlyList));
-  let videoDetails = $state(untrack(() => initialVideoDetails));
-  let statusProgress = $state(untrack(() => initialStatusProgress));
-  let options = $state<Options>(untrack(() => initialOptions));
-  let recentDownloads = $state<RecentDownloadEntry[]>([]);
-  let now = $state(Date.now());
-  let pendingFormatChangeEntry = $state<RecentDownloadEntry | null>(null);
-
-  async function refreshRecentDownloads() {
-    recentDownloads = await getAllRecentDownloads();
-  }
-
-  function handleChangeFormat(entry: RecentDownloadEntry) {
-    pendingFormatChangeEntry = entry;
-  }
-
-  function handleCloseDialog() {
-    pendingFormatChangeEntry = null;
-  }
-
-  const totalActiveDownloads = $derived(videoDownloads.length + musicList.length + videoOnlyList.length);
-
-  const tabs = $derived([
-    { id: Tab.Downloads, label: "Downloads", badge: totalActiveDownloads },
-    { id: Tab.Settings, label: "Settings" }
-  ]);
-
-  const relativeAgeTickMs = 30_000;
-
-  onMount(() => {
-    void refreshRecentDownloads();
-    const popupPort = browser.runtime.connect({ name: "popup" });
-    const unregisterRecentHandler = onMessage(MessageType.RecentDownloadsChanged, () => {
-      void refreshRecentDownloads();
-    });
-    const relativeAgeTimer = setInterval(() => {
-      now = Date.now();
-    }, relativeAgeTickMs);
-
-    const unwatches = [
-      isFFmpegReadyItem.watch(value => {
-        isFFmpegReady = value ?? false;
-      }),
-      videoQueueItem.watch(value => {
-        videoDownloads = value ?? [];
-      }),
-      musicListItem.watch(value => {
-        musicList = value ?? [];
-      }),
-      videoOnlyListItem.watch(value => {
-        videoOnlyList = value ?? [];
-      }),
-      videoDetailsItem.watch(value => {
-        videoDetails = value ?? {};
-      }),
-      statusProgressItem.watch(value => {
-        statusProgress = value ?? {};
-      }),
-      optionsItem.watch(value => {
-        options = value ?? { ...defaultOptions };
-      })
-    ];
-
-    return () => {
-      for (const unwatch of unwatches) {
-        unwatch();
-      }
-
-      unregisterRecentHandler();
-      clearInterval(relativeAgeTimer);
-      popupPort.disconnect();
-    };
+  const percentFormatter = new Intl.NumberFormat(browser.i18n.getUILanguage(), {
+    style: "percent",
+    maximumFractionDigits: 1
   });
+
+  const appState = createAppState(untrack(() => ({
+    initialIsFFmpegReady,
+    initialVideoQueue,
+    initialMusicList,
+    initialVideoOnlyList,
+    initialVideoDetails,
+    initialStatusProgress,
+    initialOptions
+  })));
 </script>
 
 <div class="popup-container">
@@ -142,37 +55,37 @@
         by <a href="https://avi12.com" target="_blank">Avi</a>
       </span>
     </div>
-    <TabNav {activeTab} onChange={id => (activeTab = id)} {tabs} />
+    <TabNav activeTab={appState.activeTab} onChange={id => (appState.activeTab = id)} tabs={appState.tabs} />
   </header>
 
   <div
-    id="panel-{activeTab}"
+    id="panel-{appState.activeTab}"
     class="popup-content"
     role="tabpanel"
   >
-    {#if activeTab === Tab.Downloads}
+    {#if appState.activeTab === Tab.Downloads}
       <DownloadsTab
-        {isFFmpegReady}
-        {musicList}
-        {now}
-        onChangeFormat={handleChangeFormat}
-        onRecentChanged={refreshRecentDownloads}
+        isFFmpegReady={appState.isFFmpegReady}
+        musicList={appState.musicList}
+        now={appState.now}
+        onChangeFormat={appState.handleChangeFormat}
+        onRecentChanged={appState.refreshRecentDownloads}
         {percentFormatter}
-        {recentDownloads}
-        {statusProgress}
-        {videoDetails}
-        {videoDownloads}
-        {videoOnlyList}
+        recentDownloads={appState.recentDownloads}
+        statusProgress={appState.statusProgress}
+        videoDetails={appState.videoDetails}
+        videoDownloads={appState.videoDownloads}
+        videoOnlyList={appState.videoOnlyList}
       />
     {:else}
-      <SettingsTab {options} />
+      <SettingsTab options={appState.options} />
     {/if}
   </div>
 
-  {#if pendingFormatChangeEntry}
+  {#if appState.pendingFormatChangeEntry}
     <ChangeFormatDialog
-      entry={pendingFormatChangeEntry}
-      onClose={handleCloseDialog}
+      entry={appState.pendingFormatChangeEntry}
+      onClose={appState.handleCloseDialog}
     />
   {/if}
 </div>
