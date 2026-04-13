@@ -20,38 +20,50 @@ export {
   isPolymerProgressElement
 } from "./youtube";
 
-export enum DownloadType {
-  VideoAndAudio = "video+audio",
-  Video = "video",
-  Audio = "audio"
-}
+export const DownloadType = {
+  VideoAndAudio: "video+audio",
+  Video: "video",
+  Audio: "audio"
+} as const;
 
-export enum ProgressType {
-  Video = "video",
-  Audio = "audio",
-  FFmpeg = "ffmpeg"
-}
+export type DownloadType = (typeof DownloadType)[keyof typeof DownloadType];
 
-export enum VideoQualityMode {
-  Best = "best",
-  CurrentQuality = "current-quality",
-  Custom = "custom"
-}
+export const ProgressType = {
+  Video: "video",
+  Audio: "audio",
+  FFmpeg: "ffmpeg"
+} as const;
 
-export enum PlaylistDownloadMode {
-  Fast = "fast",
-  DataSaver = "dataSaver"
-}
+export type ProgressType = (typeof ProgressType)[keyof typeof ProgressType];
 
-export enum PlaylistOutputMode {
-  Individual = "individual",
-  Zip = "zip"
-}
+export const VideoQualityMode = {
+  Best: "best",
+  CurrentQuality: "current-quality",
+  Custom: "custom"
+} as const;
 
-export enum StreamType {
-  Video = "video",
-  Audio = "audio"
-}
+export type VideoQualityMode = (typeof VideoQualityMode)[keyof typeof VideoQualityMode];
+
+export const PlaylistDownloadMode = {
+  Fast: "fast",
+  DataSaver: "dataSaver"
+} as const;
+
+export type PlaylistDownloadMode = (typeof PlaylistDownloadMode)[keyof typeof PlaylistDownloadMode];
+
+export const PlaylistOutputMode = {
+  Individual: "individual",
+  Zip: "zip"
+} as const;
+
+export type PlaylistOutputMode = (typeof PlaylistOutputMode)[keyof typeof PlaylistOutputMode];
+
+export const StreamType = {
+  Video: "video",
+  Audio: "audio"
+} as const;
+
+export type StreamType = (typeof StreamType)[keyof typeof StreamType];
 
 export type ProgressUpdate = {
   videoId: string;

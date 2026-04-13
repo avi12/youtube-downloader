@@ -24,49 +24,61 @@ export type MediaItem = {
   approxDurationMs: `${number}`;
 };
 
-export enum VideoQuality {
-  Tiny = "tiny",
-  Medium = "medium",
-  Large = "large",
-  Hd720 = "hd720",
-  Hd1080 = "hd1080",
-  Hd1440 = "hd1440",
-  Hd2160 = "hd2160",
-  Hd4320 = "hd4320"
-}
+export const VideoQuality = {
+  Tiny: "tiny",
+  Medium: "medium",
+  Large: "large",
+  Hd720: "hd720",
+  Hd1080: "hd1080",
+  Hd1440: "hd1440",
+  Hd2160: "hd2160",
+  Hd4320: "hd4320"
+} as const;
 
-export enum QualityLabel {
-  P144 = "144p",
-  P240 = "240p",
-  P360 = "360p",
-  P480 = "480p",
-  P720 = "720p",
-  P1080 = "1080p",
-  P1440 = "1440p",
-  P2160 = "2160p",
-  P4320 = "4320p"
-}
+export type VideoQuality = (typeof VideoQuality)[keyof typeof VideoQuality];
 
-export enum AudioQuality {
-  Low = "AUDIO_QUALITY_LOW",
-  Medium = "AUDIO_QUALITY_MEDIUM"
-}
+export const QualityLabel = {
+  P144: "144p",
+  P240: "240p",
+  P360: "360p",
+  P480: "480p",
+  P720: "720p",
+  P1080: "1080p",
+  P1440: "1440p",
+  P2160: "2160p",
+  P4320: "4320p"
+} as const;
 
-export enum PlayabilityStatus {
-  Ok = "OK",
-  Unplayable = "UNPLAYABLE",
-  LoginRequired = "LOGIN_REQUIRED",
-  Error = "ERROR",
-  LiveStreamOffline = "LIVE_STREAM_OFFLINE",
-  AgeCheckRequired = "AGE_CHECK_REQUIRED"
-}
+export type QualityLabel = (typeof QualityLabel)[keyof typeof QualityLabel];
+
+export const AudioQuality = {
+  Low: "AUDIO_QUALITY_LOW",
+  Medium: "AUDIO_QUALITY_MEDIUM"
+} as const;
+
+export type AudioQuality = (typeof AudioQuality)[keyof typeof AudioQuality];
+
+export const PlayabilityStatus = {
+  Ok: "OK",
+  Unplayable: "UNPLAYABLE",
+  LoginRequired: "LOGIN_REQUIRED",
+  Error: "ERROR",
+  LiveStreamOffline: "LIVE_STREAM_OFFLINE",
+  AgeCheckRequired: "AGE_CHECK_REQUIRED"
+} as const;
+
+export type PlayabilityStatus = (typeof PlayabilityStatus)[keyof typeof PlayabilityStatus];
 
 export type FormatItem = MediaItem & {
   width: number;
   height: number;
-  quality: VideoQuality.Tiny | VideoQuality.Medium | VideoQuality.Hd720;
+  quality: typeof VideoQuality.Tiny | typeof VideoQuality.Medium | typeof VideoQuality.Hd720;
   fps: 30;
-  qualityLabel: QualityLabel.P144 | QualityLabel.P360 | QualityLabel.P480 | QualityLabel.P720;
+  qualityLabel:
+    | typeof QualityLabel.P144
+    | typeof QualityLabel.P360
+    | typeof QualityLabel.P480
+    | typeof QualityLabel.P720;
   audioQuality: AudioQuality;
   projectionType: "RECTANGULAR";
   audioSampleRate: `${number}`;
@@ -151,84 +163,98 @@ export type PlayerResponse = {
   };
 };
 
-export enum ButtonSize {
-  Default = "BUTTON_VIEW_MODEL_SIZE_DEFAULT",
-  Large = "BUTTON_VIEW_MODEL_SIZE_LARGE",
-  Small = "BUTTON_VIEW_MODEL_SIZE_SMALL",
-  XSmall = "BUTTON_VIEW_MODEL_SIZE_XSMALL"
-}
+export const ButtonSize = {
+  Default: "BUTTON_VIEW_MODEL_SIZE_DEFAULT",
+  Large: "BUTTON_VIEW_MODEL_SIZE_LARGE",
+  Small: "BUTTON_VIEW_MODEL_SIZE_SMALL",
+  XSmall: "BUTTON_VIEW_MODEL_SIZE_XSMALL"
+} as const;
 
-export enum ButtonStyle {
-  CallToAction = "BUTTON_VIEW_MODEL_STYLE_CALL_TO_ACTION",
-  Custom = "BUTTON_VIEW_MODEL_STYLE_CUSTOM",
-  Mono = "BUTTON_VIEW_MODEL_STYLE_MONO",
-  Overlay = "BUTTON_VIEW_MODEL_STYLE_OVERLAY"
-}
+export type ButtonSize = (typeof ButtonSize)[keyof typeof ButtonSize];
 
-export enum ButtonType {
-  Filled = "BUTTON_VIEW_MODEL_TYPE_FILLED",
-  Outline = "BUTTON_VIEW_MODEL_TYPE_OUTLINE",
-  Text = "BUTTON_VIEW_MODEL_TYPE_TEXT",
-  Tonal = "BUTTON_VIEW_MODEL_TYPE_TONAL"
-}
+export const ButtonStyle = {
+  CallToAction: "BUTTON_VIEW_MODEL_STYLE_CALL_TO_ACTION",
+  Custom: "BUTTON_VIEW_MODEL_STYLE_CUSTOM",
+  Mono: "BUTTON_VIEW_MODEL_STYLE_MONO",
+  Overlay: "BUTTON_VIEW_MODEL_STYLE_OVERLAY"
+} as const;
 
-export enum ButtonState {
-  Active = "BUTTON_VIEW_MODEL_STATE_ACTIVE",
-  Disabled = "BUTTON_VIEW_MODEL_STATE_DISABLED"
-}
+export type ButtonStyle = (typeof ButtonStyle)[keyof typeof ButtonStyle];
 
-export enum IconName {
-  None = "",
-  AccessTime = "ACCESS_TIME",
-  AccountBox = "ACCOUNT_BOX",
-  Add = "ADD",
-  BookmarkBorder = "BOOKMARK_BORDER",
-  CheckCircleThick = "CHECK_CIRCLE_THICK",
-  ChevronLeft = "CHEVRON_LEFT",
-  ChevronRight = "CHEVRON_RIGHT",
-  Close = "CLOSE",
-  Comment = "COMMENT",
-  ContentCut = "CONTENT_CUT",
-  CreationLive = "CREATION_LIVE",
-  CreationPost = "CREATION_POST",
-  CreationUpload = "CREATION_UPLOAD",
-  Dislike = "DISLIKE",
-  Download = "DOWNLOAD",
-  Downloaded = "DOWNLOADED",
-  ExpandLess = "EXPAND_LESS",
-  ExpandMore = "EXPAND_MORE",
-  Feedback = "FEEDBACK",
-  Flag = "FLAG",
-  Info = "INFO",
-  LaptopMobile = "LAPTOP_MOBILE",
-  Like = "LIKE",
-  MessageBubbleOverlap = "MESSAGE_BUBBLE_OVERLAP",
-  MicrophoneOn = "MICROPHONE_ON",
-  MoneyHeart = "MONEY_HEART",
-  MoreVert = "MORE_VERT",
-  MyVideos = "MY_VIDEOS",
-  NotificationsCairo = "NOTIFICATIONS_CAIRO",
-  PlaylistAdd = "PLAYLIST_ADD",
-  PremiumStandaloneCairo = "PREMIUM_STANDALONE_CAIRO",
-  Remove = "REMOVE",
-  Search = "SEARCH",
-  Share = "SHARE",
-  Sort = "SORT",
-  Spark = "SPARK",
-  Visibility = "VISIBILITY",
-  VisibilityOff = "VISIBILITY_OFF",
-  WatchLater = "WATCH_LATER",
-  YoutubePremiumLogo = "YOUTUBE_PREMIUM_LOGO",
-  YoutubeShortsBrand24 = "YOUTUBE_SHORTS_BRAND_24"
-}
+export const ButtonType = {
+  Filled: "BUTTON_VIEW_MODEL_TYPE_FILLED",
+  Outline: "BUTTON_VIEW_MODEL_TYPE_OUTLINE",
+  Text: "BUTTON_VIEW_MODEL_TYPE_TEXT",
+  Tonal: "BUTTON_VIEW_MODEL_TYPE_TONAL"
+} as const;
 
-export enum TooltipPlacement {
-  Top = "TOOLTIP_VIEW_MODEL_PLACEMENT_TOP"
-}
+export type ButtonType = (typeof ButtonType)[keyof typeof ButtonType];
 
-export enum TooltipStyle {
-  Player = "TOOLTIP_VIEW_MODEL_STYLE_PLAYER"
-}
+export const ButtonState = {
+  Active: "BUTTON_VIEW_MODEL_STATE_ACTIVE",
+  Disabled: "BUTTON_VIEW_MODEL_STATE_DISABLED"
+} as const;
+
+export type ButtonState = (typeof ButtonState)[keyof typeof ButtonState];
+
+export const IconName = {
+  None: "",
+  AccessTime: "ACCESS_TIME",
+  AccountBox: "ACCOUNT_BOX",
+  Add: "ADD",
+  BookmarkBorder: "BOOKMARK_BORDER",
+  CheckCircleThick: "CHECK_CIRCLE_THICK",
+  ChevronLeft: "CHEVRON_LEFT",
+  ChevronRight: "CHEVRON_RIGHT",
+  Close: "CLOSE",
+  Comment: "COMMENT",
+  ContentCut: "CONTENT_CUT",
+  CreationLive: "CREATION_LIVE",
+  CreationPost: "CREATION_POST",
+  CreationUpload: "CREATION_UPLOAD",
+  Dislike: "DISLIKE",
+  Download: "DOWNLOAD",
+  Downloaded: "DOWNLOADED",
+  ExpandLess: "EXPAND_LESS",
+  ExpandMore: "EXPAND_MORE",
+  Feedback: "FEEDBACK",
+  Flag: "FLAG",
+  Info: "INFO",
+  LaptopMobile: "LAPTOP_MOBILE",
+  Like: "LIKE",
+  MessageBubbleOverlap: "MESSAGE_BUBBLE_OVERLAP",
+  MicrophoneOn: "MICROPHONE_ON",
+  MoneyHeart: "MONEY_HEART",
+  MoreVert: "MORE_VERT",
+  MyVideos: "MY_VIDEOS",
+  NotificationsCairo: "NOTIFICATIONS_CAIRO",
+  PlaylistAdd: "PLAYLIST_ADD",
+  PremiumStandaloneCairo: "PREMIUM_STANDALONE_CAIRO",
+  Remove: "REMOVE",
+  Search: "SEARCH",
+  Share: "SHARE",
+  Sort: "SORT",
+  Spark: "SPARK",
+  Visibility: "VISIBILITY",
+  VisibilityOff: "VISIBILITY_OFF",
+  WatchLater: "WATCH_LATER",
+  YoutubePremiumLogo: "YOUTUBE_PREMIUM_LOGO",
+  YoutubeShortsBrand24: "YOUTUBE_SHORTS_BRAND_24"
+} as const;
+
+export type IconName = (typeof IconName)[keyof typeof IconName];
+
+export const TooltipPlacement = {
+  Top: "TOOLTIP_VIEW_MODEL_PLACEMENT_TOP"
+} as const;
+
+export type TooltipPlacement = (typeof TooltipPlacement)[keyof typeof TooltipPlacement];
+
+export const TooltipStyle = {
+  Player: "TOOLTIP_VIEW_MODEL_STYLE_PLAYER"
+} as const;
+
+export type TooltipStyle = (typeof TooltipStyle)[keyof typeof TooltipStyle];
 
 export type ButtonViewModelData = {
   accessibilityText: string;
