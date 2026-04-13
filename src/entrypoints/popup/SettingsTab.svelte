@@ -10,175 +10,107 @@
 
   const { options }: Props = $props();
 
-  function updateAudioExtension(extension: string) {
-    void setOption("ext", {
-      ...options.ext,
-      audio: extension
-    });
-  }
+  const downloadTypeOptions: Array<{
+    value: DownloadTypePreference; label: string;
+  }> = [
+    { value: "auto", label: "Auto (video for videos, audio for music)" },
+    { value: DownloadType.VideoAndAudio, label: "Always video + audio" },
+    { value: DownloadType.Video, label: "Always video only" },
+    { value: DownloadType.Audio, label: "Always audio only" }
+  ];
 
-  function updateVideoExtension(extension: string) {
-    void setOption("ext", {
-      ...options.ext,
-      video: extension
-    });
-  }
-
-  function updateDefaultDownloadType(type: DownloadTypePreference) {
-    void setOption("defaultDownloadType", type);
-  }
-
-  function updateVideoQualityMode(mode: Options["videoQualityMode"]) {
-    void setOption("videoQualityMode", mode);
-  }
+  const qualityModeOptions: Array<{
+    value: Options["videoQualityMode"]; label: string;
+  }> = [
+    { value: VideoQualityMode.CurrentQuality, label: "Match current player quality" },
+    { value: VideoQualityMode.Best, label: "Best available quality" },
+    { value: VideoQualityMode.Custom, label: "Custom quality" }
+  ];
 </script>
 
 <div class="settings-container">
-  <!-- Video format -->
   <fieldset class="settings-group">
     <legend class="settings-legend">Video format</legend>
     <FormatSelect
       id="video-ext"
       label="Container"
-      onchange={updateVideoExtension}
+      onchange={extension => void setOption("ext", { ...options.ext, video: extension })}
       options={supportedExtensions.video}
       value={options.ext.video}
     />
   </fieldset>
 
-  <!-- Audio format -->
   <fieldset class="settings-group">
     <legend class="settings-legend">Audio format</legend>
     <FormatSelect
       id="audio-ext"
       label="Container"
-      onchange={updateAudioExtension}
+      onchange={extension => void setOption("ext", { ...options.ext, audio: extension })}
       options={supportedExtensions.audio}
       value={options.ext.audio}
     />
     <p class="settings-hint">Used for audio-only downloads</p>
   </fieldset>
 
-  <!-- Default download type -->
   <fieldset class="settings-group">
     <legend class="settings-legend">Download type</legend>
-    <div class="settings-row">
-      <label class="settings-label settings-radio-label">
-        <input
-          name="download-type"
-          checked={options.defaultDownloadType === "auto"}
-          onchange={() => updateDefaultDownloadType("auto")}
-          type="radio"
-          value="auto"
-        />
-        Auto (video for videos, audio for music)
-      </label>
-    </div>
-    <div class="settings-row">
-      <label class="settings-label settings-radio-label">
-        <input
-          name="download-type"
-          checked={options.defaultDownloadType === DownloadType.VideoAndAudio}
-          onchange={() => updateDefaultDownloadType(DownloadType.VideoAndAudio)}
-          type="radio"
-          value="video+audio"
-        />
-        Always video + audio
-      </label>
-    </div>
-    <div class="settings-row">
-      <label class="settings-label settings-radio-label">
-        <input
-          name="download-type"
-          checked={options.defaultDownloadType === DownloadType.Video}
-          onchange={() => updateDefaultDownloadType(DownloadType.Video)}
-          type="radio"
-          value="video"
-        />
-        Always video only
-      </label>
-    </div>
-    <div class="settings-row">
-      <label class="settings-label settings-radio-label">
-        <input
-          name="download-type"
-          checked={options.defaultDownloadType === DownloadType.Audio}
-          onchange={() => updateDefaultDownloadType(DownloadType.Audio)}
-          type="radio"
-          value="audio"
-        />
-        Always audio only
-      </label>
-    </div>
+    {#each downloadTypeOptions as { value, label } (value)}
+      <div class="settings-row">
+        <label class="settings-label settings-radio-label">
+          <input
+            name="download-type"
+            checked={options.defaultDownloadType === value}
+            onchange={() => void setOption("defaultDownloadType", value)}
+            type="radio"
+            {value}
+          />
+          {label}
+        </label>
+      </div>
+    {/each}
   </fieldset>
 
-  <!-- Video quality -->
   <fieldset class="settings-group">
     <legend class="settings-legend">Video quality</legend>
-    <div class="settings-row">
-      <label class="settings-label settings-radio-label">
-        <input
-          name="quality-mode"
-          checked={options.videoQualityMode === VideoQualityMode.CurrentQuality}
-          onchange={() => updateVideoQualityMode(VideoQualityMode.CurrentQuality)}
-          type="radio"
-          value={VideoQualityMode.CurrentQuality}
-        />
-        Match current player quality
-      </label>
-    </div>
-    <div class="settings-row">
-      <label class="settings-label settings-radio-label">
-        <input
-          name="quality-mode"
-          checked={options.videoQualityMode === VideoQualityMode.Best}
-          onchange={() => updateVideoQualityMode(VideoQualityMode.Best)}
-          type="radio"
-          value={VideoQualityMode.Best}
-        />
-        Best available quality
-      </label>
-    </div>
-    <div class="settings-row">
-      <label class="settings-label settings-radio-label">
-        <input
-          name="quality-mode"
-          checked={options.videoQualityMode === VideoQualityMode.Custom}
-          onchange={() => updateVideoQualityMode(VideoQualityMode.Custom)}
-          type="radio"
-          value={VideoQualityMode.Custom}
-        />
-        Custom quality
-      </label>
-      {#if options.videoQualityMode === VideoQualityMode.Custom}
-        <div class="settings-sub-row">
-          <label class="settings-label" for="custom-quality-select">
-            Quality
-          </label>
-          <select
-            id="custom-quality-select"
-            class="settings-select"
-            onchange={e => {
-              if (e.target instanceof HTMLSelectElement) {
-                void setOption("videoQuality", Number(e.target.value));
-              }
-            }}
-            value={options.videoQuality}
-          >
-            {#each videoQualities as quality (quality)}
-              <option
-                selected={quality === options.videoQuality}
-                value={quality}
-                >{quality}p</option
-              >
-            {/each}
-          </select>
-        </div>
-      {/if}
-    </div>
+    {#each qualityModeOptions as { value, label } (value)}
+      <div class="settings-row">
+        <label class="settings-label settings-radio-label">
+          <input
+            name="quality-mode"
+            checked={options.videoQualityMode === value}
+            onchange={() => void setOption("videoQualityMode", value)}
+            type="radio"
+            {value}
+          />
+          {label}
+        </label>
+        {#if value === VideoQualityMode.Custom && options.videoQualityMode === VideoQualityMode.Custom}
+          <div class="settings-sub-row">
+            <label class="settings-label" for="custom-quality-select">Quality</label>
+            <select
+              id="custom-quality-select"
+              class="settings-select"
+              onchange={e => {
+                if (e.target instanceof HTMLSelectElement) {
+                  void setOption("videoQuality", Number(e.target.value));
+                }
+              }}
+              value={options.videoQuality}
+            >
+              {#each videoQualities as quality (quality)}
+                <option
+                  selected={quality === options.videoQuality}
+                  value={quality}
+                  >{quality}p</option
+                >
+              {/each}
+            </select>
+          </div>
+        {/if}
+      </div>
+    {/each}
   </fieldset>
 
-  <!-- Remove native download button -->
   <fieldset class="settings-group">
     <legend class="settings-legend">YouTube integration</legend>
     <div class="settings-row">

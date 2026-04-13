@@ -111,71 +111,71 @@
 {:else}
   <div class="download-sections">
     {#if totalActiveDownloads > 0}
-  <DownloadSection
-    cancelAriaLabel="Cancel all video downloads"
-    listAriaLabel="Active video downloads"
-    loadingBadge={!isFFmpegReady ? "Loading FFmpeg…" : undefined}
-    onCancelAll={() => cancelDownload(videoDownloadIds)}
-    sectionId="video-downloads"
-    title="Video downloads"
-    videoIds={videoDownloadIds}
-  >
-    {#snippet renderItem(videoId: string, index: number)}
-      <li
-        class="download-item"
-        aria-label={getFilename(videoId)}
-        role="listitem"
+      <DownloadSection
+        cancelAriaLabel="Cancel all video downloads"
+        listAriaLabel="Active video downloads"
+        loadingBadge={!isFFmpegReady ? "Loading FFmpeg…" : undefined}
+        onCancelAll={() => cancelDownload(videoDownloadIds)}
+        sectionId="video-downloads"
+        title="Video downloads"
+        videoIds={videoDownloadIds}
       >
-        <DownloadItem
-          filename={getFilename(videoId)}
-          oncancel={() => cancelDownload([videoId])}
-          progress={getProgress(videoId)}
-          progressLabel={getProgressLabel(videoId)}
-          statusLabel={getProgress(videoId) === null ? getVideoStatusLabel(index) : null}
-        />
-      </li>
-    {/snippet}
-  </DownloadSection>
+        {#snippet renderItem(videoId: string, index: number)}
+          <li
+            class="download-item"
+            aria-label={getFilename(videoId)}
+            role="listitem"
+          >
+            <DownloadItem
+              filename={getFilename(videoId)}
+              oncancel={() => cancelDownload([videoId])}
+              progress={getProgress(videoId)}
+              progressLabel={getProgressLabel(videoId)}
+              statusLabel={getProgress(videoId) === null ? getVideoStatusLabel(index) : null}
+            />
+          </li>
+        {/snippet}
+      </DownloadSection>
 
-  <DownloadSection
-    cancelAriaLabel="Cancel all audio downloads"
-    listAriaLabel="Audio downloads"
-    onCancelAll={() => cancelDownload(musicList)}
-    sectionId="music-list"
-    title="Audio"
-    videoIds={musicList}
-  >
-    {#snippet renderItem(videoId: string)}
-      <li class="download-item" role="listitem">
-        <DownloadItem
-          filename={getFilename(videoId)}
-          oncancel={() => cancelDownload([videoId])}
-          progress={getProgress(videoId)}
-          progressLabel={getProgressLabel(videoId)}
-        />
-      </li>
-    {/snippet}
-  </DownloadSection>
+      <DownloadSection
+        cancelAriaLabel="Cancel all audio downloads"
+        listAriaLabel="Audio downloads"
+        onCancelAll={() => cancelDownload(musicList)}
+        sectionId="music-list"
+        title="Audio"
+        videoIds={musicList}
+      >
+        {#snippet renderItem(videoId: string)}
+          <li class="download-item" role="listitem">
+            <DownloadItem
+              filename={getFilename(videoId)}
+              oncancel={() => cancelDownload([videoId])}
+              progress={getProgress(videoId)}
+              progressLabel={getProgressLabel(videoId)}
+            />
+          </li>
+        {/snippet}
+      </DownloadSection>
 
-  <DownloadSection
-    cancelAriaLabel="Cancel all video-only downloads"
-    listAriaLabel="Video-only downloads"
-    onCancelAll={() => cancelDownload(videoOnlyList)}
-    sectionId="video-only"
-    title="Video only"
-    videoIds={videoOnlyList}
-  >
-    {#snippet renderItem(videoId: string)}
-      <li class="download-item" role="listitem">
-        <DownloadItem
-          filename={getFilename(videoId)}
-          oncancel={() => cancelDownload([videoId])}
-          progress={getProgress(videoId)}
-          progressLabel={getProgressLabel(videoId)}
-        />
-      </li>
-    {/snippet}
-  </DownloadSection>
+      <DownloadSection
+        cancelAriaLabel="Cancel all video-only downloads"
+        listAriaLabel="Video-only downloads"
+        onCancelAll={() => cancelDownload(videoOnlyList)}
+        sectionId="video-only"
+        title="Video only"
+        videoIds={videoOnlyList}
+      >
+        {#snippet renderItem(videoId: string)}
+          <li class="download-item" role="listitem">
+            <DownloadItem
+              filename={getFilename(videoId)}
+              oncancel={() => cancelDownload([videoId])}
+              progress={getProgress(videoId)}
+              progressLabel={getProgressLabel(videoId)}
+            />
+          </li>
+        {/snippet}
+      </DownloadSection>
     {/if}
 
     {#if recentDownloads.length > 0}
