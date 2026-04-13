@@ -86,12 +86,18 @@
 
   <yt-button-view-model {@attach actionButtons.attachDownloadAll}></yt-button-view-model>
 
-  {#if playlist.isDownloading && playlist.totalCount > 0}
+  {#if playlist.isRevealingAll || (playlist.isDownloading && playlist.totalCount > 0)}
     <tp-yt-paper-progress
       {@attach attachProgressBar}
-      indeterminate={playlist.downloadedCount === 0 || undefined}
-      max={playlist.totalCount}
-      value={playlist.downloadedCount}
+      aria-label={playlist.isRevealingAll
+        ? `Loading playlist: ${playlist.revealedVideoCount} videos found`
+        : `Downloading ${playlist.downloadedCount} of ${playlist.totalCount} videos`}
+      aria-valuetext={playlist.isRevealingAll
+        ? `${playlist.revealedVideoCount} videos found`
+        : `${playlist.downloadedCount} of ${playlist.totalCount} complete`}
+      indeterminate={playlist.isRevealingAll || playlist.totalProgress === 0 || undefined}
+      max={1}
+      value={playlist.totalProgress}
     ></tp-yt-paper-progress>
   {/if}
 </div>

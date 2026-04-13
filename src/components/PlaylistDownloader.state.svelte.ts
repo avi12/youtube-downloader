@@ -273,6 +273,19 @@ export function createPlaylistDownloaderState(getOptions: () => Options) {
     await revealAllVideos();
   }
 
+  const totalProgress = $derived.by(() => {
+    if (!isDownloading || totalCount === 0) {
+      return 0;
+    }
+
+    let sum = 0;
+    for (const request of activeDownloadRequests) {
+      const entry = downloadProgressStore.get(request.videoId);
+      sum += entry?.progress ?? 0;
+    }
+    return sum / totalCount;
+  });
+
   const activeDownloadVideoId = $derived.by(() => {
     if (!isDownloading) {
       return null;
@@ -371,6 +384,9 @@ export function createPlaylistDownloaderState(getOptions: () => Options) {
     },
     get hasAnyOverride() {
       return hasAnyOverride;
+    },
+    get totalProgress() {
+      return totalProgress;
     },
     get isDownloadTypeOverridden() {
       return downloadTypeOverride !== null;
