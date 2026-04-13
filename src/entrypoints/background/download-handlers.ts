@@ -1,20 +1,77 @@
 import { cancelBackgroundDownload, startBackgroundDownload } from "./background-downloader";
-import { awaitVideoComplete } from "./sequential-queue";
-import { cancelDownloads, trackVideoForTab } from "./tab-tracker";
+import { awaitVideoComplete, signalVideoComplete } from "./sequential-queue";
+import { cancelDownloads, getTabIdsForVideo, trackVideoForTab } from "./tab-tracker";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging";
 import { ProgressType } from "@/types";
 import type { DownloadRequest } from "@/types";
 
 const bufferChunkSize = 8192;
+const iframeReadyTimeoutMs = 30_000;
+
+// One persistent listener dispatches to per-videoId resolve functions.
+// @webext-core/messaging allows only one listener per type per context,
+// so registering inside downloadViaWatchPage would throw on the 2nd parallel call.
+// Stores the frameId alongside the resolve callback so ExecuteDownloadItem
+// can be sent directly to the correct iframe instead of all frames in the tab.
+const pendingIframeReady = new Map<string, (frameId: number) => void>();
+
+function initIframeReadyListener() {
+  onMessage(MessageType.DownloadIframeReady, ({ data, sender }) => {
+    pendingIframeReady.get(data.videoId)?.(sender.frameId ?? 0);
+    pendingIframeReady.delete(data.videoId);
+  });
+}
+
+async function downloadViaWatchPage(data: DownloadRequest, tabId: number) {
+  try {
+    const watchParams = new URLSearchParams({ v: data.videoId, ytdl: "1", mute: "1" });
+    const watchUrl = `https://www.youtube.com/watch?${watchParams.toString()}`;
+
+    await sendMessage(MessageType.CreateDownloadIframe, {
+      videoId: data.videoId,
+      watchUrl
+    }, tabId);
+
+    let iframeFrameId = 0;
+
+    await new Promise<void>(resolve => {
+      const timeoutId = setTimeout(() => {
+        pendingIframeReady.delete(data.videoId);
+        resolve();
+      }, iframeReadyTimeoutMs);
+
+      pendingIframeReady.set(data.videoId, frameId => {
+        iframeFrameId = frameId;
+        clearTimeout(timeoutId);
+        resolve();
+      });
+    });
+
+    await sendMessage(MessageType.ExecuteDownloadItem, data, { tabId, frameId: iframeFrameId });
+
+    trackVideoForTab(data.videoId, tabId);
+
+    await sendMessage(MessageType.StartKeepalive, { videoId: data.videoId }, tabId);
+  } catch (error) {
+    console.error("[ytdl:bg] DownloadViaWatchPage failed:", data.videoId, error);
+    pendingIframeReady.delete(data.videoId);
+    void sendMessage(MessageType.RemoveDownloadIframe, { videoId: data.videoId }, tabId);
+    void sendMessage(MessageType.UpdateDownloadProgress, {
+      videoId: data.videoId, progress: 0, progressType: ProgressType.Video, isRemoved: true
+    }, tabId);
+  }
+}
 
 async function dispatchSequentially(items: DownloadRequest[], tabId: number) {
   for (const item of items) {
-    await sendMessage(MessageType.DownloadViaWatchPage, item, tabId);
+    await downloadViaWatchPage(item, tabId);
     await awaitVideoComplete(item.videoId);
   }
 }
 
 export function registerDownloadHandlers() {
+  initIframeReadyListener();
+
   // Background SW has host_permissions for googlevideo.com and bypasses CORS preflight;
   // credentials: 'include' attaches any existing googlevideo cookies.
   onMessage(MessageType.BackgroundProxyFetch, async ({ data }) => {
@@ -54,47 +111,13 @@ export function registerDownloadHandlers() {
     }
   });
 
-  onMessage(MessageType.DownloadViaWatchPage, async ({ data, sender }) => {
+  onMessage(MessageType.DownloadViaWatchPage, ({ data, sender }) => {
     const originTabId = sender.tab?.id;
     if (!originTabId) {
       return;
     }
 
-    try {
-      const watchParams = new URLSearchParams({ v: data.videoId, ytdl: "1", mute: "1" });
-      const watchUrl = `https://www.youtube.com/watch?${watchParams.toString()}`;
-
-      await sendMessage(MessageType.CreateDownloadIframe, {
-        videoId: data.videoId,
-        watchUrl
-      }, originTabId);
-
-      const iframeReadyTimeoutMs = 30_000;
-      await new Promise<void>(resolve => {
-        const timeoutId = setTimeout(resolve, iframeReadyTimeoutMs);
-        const removeListener = onMessage(MessageType.DownloadIframeReady, ({ data: readyData }) => {
-          if (readyData.videoId !== data.videoId) {
-            return;
-          }
-
-          clearTimeout(timeoutId);
-          removeListener();
-          resolve();
-        });
-      });
-
-      await sendMessage(MessageType.ExecuteDownloadItem, data, originTabId);
-
-      trackVideoForTab(data.videoId, originTabId);
-
-      await sendMessage(MessageType.StartKeepalive, { videoId: data.videoId }, originTabId);
-    } catch (error) {
-      console.error("[ytdl:bg] DownloadViaWatchPage failed:", data.videoId, error);
-      void sendMessage(MessageType.RemoveDownloadIframe, { videoId: data.videoId }, originTabId);
-      void sendMessage(MessageType.UpdateDownloadProgress, {
-        videoId: data.videoId, progress: 0, progressType: ProgressType.Video, isRemoved: true
-      }, originTabId);
-    }
+    void downloadViaWatchPage(data, originTabId);
   });
 
   onMessage(MessageType.Keepalive, () => {});
@@ -108,16 +131,17 @@ export function registerDownloadHandlers() {
     if (data.isSequential) {
       void dispatchSequentially(data.items, tabId);
     } else {
-      void Promise.allSettled(
-        data.items.map(item =>
-          sendMessage(MessageType.DownloadViaWatchPage, item, tabId))
-      );
+      void Promise.allSettled(data.items.map(item => downloadViaWatchPage(item, tabId)));
     }
   });
 
   onMessage(MessageType.CancelDownload, ({ data }) => {
     for (const videoId of data.videoIds) {
       cancelBackgroundDownload(videoId);
+      signalVideoComplete(videoId);
+      for (const tabId of getTabIdsForVideo(videoId)) {
+        void sendMessage(MessageType.RemoveDownloadIframe, { videoId }, tabId);
+      }
     }
 
     void cancelDownloads(data.videoIds);
