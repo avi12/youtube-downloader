@@ -61,14 +61,9 @@
   });
 </script>
 
-<tp-yt-paper-card class="ytdl-playlist-container" aria-label="Playlist Downloader" elevation="1" role="region">
+<tp-yt-paper-card class="ytdl-playlist-container" aria-label="Playlist Downloader" elevation="0" role="region">
   <section class="ytdl-section" aria-labelledby="ytdl-speed-label">
-    <yt-formatted-string
-      id="ytdl-speed-label"
-      class="ytdl-section-title"
-      aria-level="3"
-      role="heading"
-    >Speed</yt-formatted-string>
+    <h3 id="ytdl-speed-label" class="ytdl-section-title">Speed</h3>
     <div class="ytdl-chip-row" aria-labelledby="ytdl-speed-label" role="group">
       {#each toggleButtons.groups.speed as button (button.id)}
         <yt-button-view-model {@attach toggleButtons.createAttacher(button)}></yt-button-view-model>
@@ -77,12 +72,7 @@
   </section>
 
   <section class="ytdl-section" aria-labelledby="ytdl-output-label">
-    <yt-formatted-string
-      id="ytdl-output-label"
-      class="ytdl-section-title"
-      aria-level="3"
-      role="heading"
-    >Output</yt-formatted-string>
+    <h3 id="ytdl-output-label" class="ytdl-section-title">Output</h3>
     <div class="ytdl-chip-row" aria-labelledby="ytdl-output-label" role="group">
       {#each toggleButtons.groups.output as button (button.id)}
         <yt-button-view-model {@attach toggleButtons.createAttacher(button)}></yt-button-view-model>
@@ -91,12 +81,7 @@
   </section>
 
   <section class="ytdl-section" aria-labelledby="ytdl-type-label">
-    <yt-formatted-string
-      id="ytdl-type-label"
-      class="ytdl-section-title"
-      aria-level="3"
-      role="heading"
-    >
+    <h3 id="ytdl-type-label" class="ytdl-section-title">
       Type
       {#if playlist.isDownloadTypeOverridden}
         <span class="ytdl-override-badge" role="status">
@@ -104,7 +89,7 @@
           <span class="ytdl-visually-hidden">customized</span>
         </span>
       {/if}
-    </yt-formatted-string>
+    </h3>
     <div class="ytdl-chip-row ytdl-chip-row-wrap" aria-labelledby="ytdl-type-label" role="group">
       {#each toggleButtons.groups.type as button (button.id)}
         <yt-button-view-model {@attach toggleButtons.createAttacher(button)}></yt-button-view-model>
@@ -119,11 +104,15 @@
 
 <style>
   .ytdl-playlist-container {
+    --paper-card-background-color: var(--yt-spec-raised-background, var(--yt-spec-base-background, #ffffff));
+    --paper-card-header-color: var(--yt-spec-text-primary, #0f0f0f);
+
     display: flex;
     flex-direction: column;
     gap: 8px;
     margin: 12px 0;
     padding: 12px 16px;
+    color: var(--yt-spec-text-primary, #0f0f0f);
   }
 
   :global(.ytdl-section) {
@@ -142,6 +131,10 @@
     display: inline-flex;
     gap: 6px;
     align-items: center;
+    margin: 0;
+    font-weight: 500;
+    font-size: 1.4rem;
+    line-height: 1.2;
   }
 
   .ytdl-chip-row {
