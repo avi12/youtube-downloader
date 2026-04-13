@@ -1,4 +1,5 @@
 import { getCompatibleFilename, getFileExtension } from "../containers";
+import { tryUnlink } from "./ffmpeg-instance";
 import type { FFmpegCoreModule } from "@ffmpeg/types";
 
 const audioCodecByExtension: Record<string, string> = {
@@ -31,11 +32,7 @@ export async function transcodeAudio(
 
     return output;
   } finally {
-    try {
-      ffmpeg.FS.unlink(inputFilename);
-    } catch { /* already removed */ }
-    try {
-      ffmpeg.FS.unlink(outputFilename);
-    } catch { /* already removed */ }
+    tryUnlink(ffmpeg, inputFilename);
+    tryUnlink(ffmpeg, outputFilename);
   }
 }

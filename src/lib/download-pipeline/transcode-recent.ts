@@ -1,8 +1,7 @@
 import { triggerDownload } from ".";
 import { videoContainers } from "../containers";
 import { getRecentDownloadBlob, getAllRecentDownloads } from "../recent-downloads-db";
-import { enqueueMuxJob, getFFmpeg } from "./ffmpeg-instance";
-import type { RecentDownloadEntry } from "@/types";
+import { enqueueMuxJob, getFFmpeg, tryUnlink } from "./ffmpeg-instance";
 
 function swapFileExtension(filename: string, extension: string) {
   const dotIndex = filename.lastIndexOf(".");
@@ -25,7 +24,7 @@ export async function transcodeRecentDownload({ entryId, targetContainer }: {
   targetContainer: string;
 }) {
   const allEntries = await getAllRecentDownloads();
-  const entry: RecentDownloadEntry | undefined = allEntries.find(item => item.id === entryId);
+  const entry = allEntries.find(item => item.id === entryId);
   if (!entry) {
     console.warn("[ytdl:transcode] Entry not found:", entryId);
     return;
@@ -65,12 +64,8 @@ export async function transcodeRecentDownload({ entryId, targetContainer }: {
         thumbnailUrl: entry.thumbnailUrl
       });
     } finally {
-      try {
-        ffmpeg.FS.unlink(sourceFilename);
-      } catch { /* file may not exist */ }
-      try {
-        ffmpeg.FS.unlink(outputFilename);
-      } catch { /* file may not exist */ }
+      tryUnlink(ffmpeg, sourceFilename);
+      tryUnlink(ffmpeg, outputFilename);
     }
   });
 }

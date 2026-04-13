@@ -22,6 +22,14 @@ export function getFFmpeg() {
   return sharedFFmpeg;
 }
 
+export function tryUnlink(ffmpeg: FFmpegCoreModule, filename: string) {
+  try {
+    ffmpeg.FS.unlink(filename);
+  } catch {
+    // File may not exist if ffmpeg never wrote it
+  }
+}
+
 const muxQueue: (() => Promise<void>)[] = [];
 let isMuxing = false;
 
