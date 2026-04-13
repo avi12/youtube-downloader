@@ -60,7 +60,7 @@ export function getCapturedSabrData(tabId: number) {
 }
 
 function getLatestCapturedSabrData() {
-  let latest: Parameters<(typeof capturedByTab)["set"]>[1] | null = null;
+  let latest: ReturnType<typeof capturedByTab.get>;
 
   for (const entry of capturedByTab.values()) {
     if (!latest || entry.timestamp > latest.timestamp) {
@@ -68,7 +68,7 @@ function getLatestCapturedSabrData() {
     }
   }
 
-  return latest;
+  return latest ?? null;
 }
 
 /**
