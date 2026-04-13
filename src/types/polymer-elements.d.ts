@@ -57,5 +57,12 @@ declare namespace svelteHTML {
     };
     "ytd-popup-container": Record<string, unknown>;
     "yt-dynamic-text-view-model": Record<string, unknown>;
+    "tp-yt-paper-card": {
+      class?: string;
+      heading?: string;
+      elevation?: string | number;
+      role?: string;
+      "aria-label"?: string;
+    };
   }
 }

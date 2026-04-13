@@ -61,7 +61,7 @@
   });
 </script>
 
-<div class="ytdl-playlist-container" aria-label="Playlist Downloader" role="region">
+<tp-yt-paper-card class="ytdl-playlist-container" aria-label="Playlist Downloader" elevation="1" role="region">
   <section class="ytdl-section" aria-labelledby="ytdl-speed-label">
     <yt-formatted-string
       id="ytdl-speed-label"
@@ -114,14 +114,15 @@
   <PlaylistDownloaderFormatSections {playlist} />
 
   <PlaylistDownloaderActions {actionButtons} {playlist} />
-</div>
+</tp-yt-paper-card>
 
 <style>
   .ytdl-playlist-container {
     display: flex;
     flex-direction: column;
     gap: 8px;
-    padding: 12px 0;
+    margin: 12px 0;
+    padding: 12px 16px;
   }
 
   :global(.ytdl-section) {
