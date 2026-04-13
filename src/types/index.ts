@@ -11,6 +11,11 @@ export type {
   YtdlMediaCapture
 } from "./youtube";
 
+export type { RecentDownloadEntry } from "@/lib/recent-downloads-db";
+export type { VideoQueueItem } from "@/lib/storage";
+export type { InterruptedDownload, ProgressUpdate } from "@/lib/messaging";
+export type { StreamDataPayload } from "@/lib/cross-world-messenger";
+
 export {
   ButtonSize,
   ButtonState,
@@ -67,13 +72,6 @@ export const StreamType = {
 
 export type StreamType = (typeof StreamType)[keyof typeof StreamType];
 
-export type ProgressUpdate = {
-  videoId: string;
-  progress: number;
-  progressType: ProgressType;
-  isRemoved?: boolean;
-};
-
 export type SabrConfig = {
   serverAbrStreamingUrl: string;
   videoPlaybackUstreamerConfig: string;
@@ -103,20 +101,6 @@ export type DownloadRequest = {
   resolvedVideoUrl?: string | null;
   resolvedAudioUrl?: string | null;
   resolvedExtraAudioUrls?: (string | null)[];
-};
-
-export type InterruptedDownload = {
-  videoId: string;
-  type: DownloadType;
-  filenameOutput: string;
-  videoItag: number;
-  audioItag: number;
-  timestamp: number;
-};
-
-export type VideoQueueItem = {
-  videoId: string;
-  filenameOutput: string;
 };
 
 export type DownloadTypePreference = "auto" | DownloadType;
@@ -159,42 +143,11 @@ export type VideoMetadata = {
   isMusic: boolean;
 };
 
-export type RecentDownloadEntry = {
-  id: string;
-  downloadId: number;
-  videoId: string;
-  title: string;
-  channel: string;
-  filename: string;
-  container: string;
-  mimeType: string;
-  size: number;
-  thumbnailUrl?: string;
-  completedAt: number;
-};
-
 export type ProcessStreamData = StreamData & {
   tabId: number;
   playlistId?: string;
   playlistTitle?: string;
   playlistTotalCount?: number;
-  metadata?: VideoMetadata | null;
-};
-
-export type StreamDataPayload = {
-  downloadType: DownloadType;
-  videoId: string;
-  filenameOutput: string;
-  videoData: Uint8Array | null;
-  audioData: Uint8Array | null;
-  videoMimeType: string;
-  audioMimeType: string;
-  audioLabel: string;
-  additionalAudioData: {
-    data: Uint8Array | null;
-    mimeType: string;
-    label: string;
-  }[];
   metadata?: VideoMetadata | null;
 };
 

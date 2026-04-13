@@ -1,7 +1,12 @@
 import { initialOptions } from "./video-helpers";
-import type { InterruptedDownload, Options, ProgressType, VideoQueueItem } from "@/types";
+import type { InterruptedDownload, Options, ProgressType } from "@/types";
 
-export const videoQueueItem = storage.defineItem<VideoQueueItem[]>("local:videoQueue", { fallback: [] });
+export const videoQueueItem = storage.defineItem<{
+  videoId: string;
+  filenameOutput: string;
+}[]>("local:videoQueue", { fallback: [] });
+
+export type VideoQueueItem = Parameters<typeof videoQueueItem.setValue>[0][number];
 
 export const musicListItem = storage.defineItem<string[]>("local:musicList", { fallback: [] });
 

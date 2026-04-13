@@ -1,4 +1,10 @@
-import type { ButtonViewModelData, DownloadRequest, StreamDataPayload, VideoData } from "@/types";
+import type {
+  ButtonViewModelData,
+  DownloadRequest,
+  DownloadType,
+  VideoData,
+  VideoMetadata
+} from "@/types";
 import { ProgressType } from "@/types";
 import { defineCustomEventMessaging } from "@webext-core/messaging/page";
 
@@ -38,7 +44,22 @@ interface PageMessengerSchema {
     videoId: string;
     error: string;
   }): void;
-  [CrossWorldMessage.StreamData](data: StreamDataPayload): void;
+  [CrossWorldMessage.StreamData](data: {
+    downloadType: DownloadType;
+    videoId: string;
+    filenameOutput: string;
+    videoData: Uint8Array | null;
+    audioData: Uint8Array | null;
+    videoMimeType: string;
+    audioMimeType: string;
+    audioLabel: string;
+    additionalAudioData: {
+      data: Uint8Array | null;
+      mimeType: string;
+      label: string;
+    }[];
+    metadata?: VideoMetadata | null;
+  }): void;
   [CrossWorldMessage.DownloadRequest](data: DownloadRequest): void;
   [CrossWorldMessage.PanelClosed](data: Record<string, never>): void;
   [CrossWorldMessage.FilenameChanged](data: {
@@ -94,6 +115,8 @@ interface PageMessengerSchema {
 }
 
 export const crossWorldMessenger = defineCustomEventMessaging<PageMessengerSchema>({ namespace: "ytdl" });
+
+export type StreamDataPayload = Parameters<PageMessengerSchema[typeof CrossWorldMessage.StreamData]>[0];
 
 const buttonClickEventName = "ytdl-btn-click";
 

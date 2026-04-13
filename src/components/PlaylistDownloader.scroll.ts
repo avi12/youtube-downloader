@@ -31,11 +31,6 @@ async function waitForRoundTransition() {
   await new Promise(resolve => setTimeout(resolve, revealPollIntervalMs));
 }
 
-export type RevealProgressUpdate = {
-  revealedCount: number;
-  hasMore: boolean;
-};
-
 /**
  * Scrolls the playlist container until no new video renderers appear for
  * several consecutive polls. YouTube's infinite-scroll loads in batches of
@@ -44,7 +39,10 @@ export type RevealProgressUpdate = {
  * stall case by requiring multiple stable rounds before giving up.
  */
 export async function revealAllPlaylistVideos(
-  onProgress: (update: RevealProgressUpdate) => void,
+  onProgress: (update: {
+    revealedCount: number;
+    hasMore: boolean;
+  }) => void,
   shouldAbort: () => boolean
 ) {
   const elContents = queryPlaylistContents();

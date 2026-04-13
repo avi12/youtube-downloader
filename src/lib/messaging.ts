@@ -1,10 +1,4 @@
-import type {
-  DownloadRequest,
-  DownloadType,
-  InterruptedDownload,
-  ProgressUpdate,
-  VideoMetadata
-} from "@/types";
+import type { DownloadRequest, DownloadType, ProgressType, VideoMetadata } from "@/types";
 import { defineExtensionMessaging } from "@webext-core/messaging";
 
 export const MessageType = {
@@ -87,13 +81,20 @@ interface ProtocolMap {
     poToken: string;
   } | null;
 
-  persistInterruptedDownload(data: InterruptedDownload): void;
+  persistInterruptedDownload(data: {
+    videoId: string;
+    type: DownloadType;
+    filenameOutput: string;
+    videoItag: number;
+    audioItag: number;
+    timestamp: number;
+  }): void;
   clearInterruptedDownload(data: {
     videoId: string;
   }): void;
   getInterruptedDownload(data: {
     videoId: string;
-  }): InterruptedDownload | null;
+  }): Parameters<ProtocolMap["persistInterruptedDownload"]>[0] | null;
 
   downloadViaWatchPage(data: DownloadRequest): void;
 
@@ -133,13 +134,18 @@ interface ProtocolMap {
 
   sabrBodyReady(data: Record<string, never>): void;
 
-  updateDownloadProgress(data: ProgressUpdate): void;
+  updateDownloadProgress(data: {
+    videoId: string;
+    progress: number;
+    progressType: ProgressType;
+    isRemoved?: boolean;
+  }): void;
 
   refreshPoToken(data: {
     videoId: string;
   }): string | null;
 
-  pipelineProgress(data: ProgressUpdate & {
+  pipelineProgress(data: Parameters<ProtocolMap["updateDownloadProgress"]>[0] & {
     tabId: number;
   }): void;
   pipelineRemoval(data: {
@@ -183,3 +189,6 @@ export const { sendMessage, onMessage } =
     // Allow raw runtime.sendMessage calls (e.g. __ytdl_stream binary transfer) to pass through without throwing.
     breakError: true
   });
+
+export type InterruptedDownload = Parameters<ProtocolMap["persistInterruptedDownload"]>[0];
+export type ProgressUpdate = Parameters<ProtocolMap["updateDownloadProgress"]>[0];

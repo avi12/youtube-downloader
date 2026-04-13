@@ -1,5 +1,3 @@
-import type { RecentDownloadEntry } from "@/types";
-
 const DB_NAME = "ytdl-recent-downloads";
 const DB_VERSION = 1;
 const ENTRIES_STORE = "entries";
@@ -39,7 +37,19 @@ function awaitTransaction(transaction: IDBTransaction) {
   });
 }
 
-export async function addRecentDownload(entry: RecentDownloadEntry, blob: Blob) {
+export async function addRecentDownload(entry: {
+  id: string;
+  downloadId: number;
+  videoId: string;
+  title: string;
+  channel: string;
+  filename: string;
+  container: string;
+  mimeType: string;
+  size: number;
+  thumbnailUrl?: string;
+  completedAt: number;
+}, blob: Blob) {
   const db = await openDatabase();
   const transaction = db.transaction([ENTRIES_STORE, BLOBS_STORE], "readwrite");
   transaction.objectStore(ENTRIES_STORE).put(entry);
@@ -47,6 +57,8 @@ export async function addRecentDownload(entry: RecentDownloadEntry, blob: Blob) 
   await awaitTransaction(transaction);
   db.close();
 }
+
+export type RecentDownloadEntry = Parameters<typeof addRecentDownload>[0];
 
 export async function getAllRecentDownloads() {
   const db = await openDatabase();
