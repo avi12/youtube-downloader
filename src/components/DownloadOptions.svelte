@@ -169,6 +169,7 @@
     aria-describedby={!isFilenameValid ? "filename-error" : undefined}
     aria-invalid={!isFilenameValid}
     autocomplete="off"
+    dir="auto"
     disabled={isDownloading || undefined}
     error-message={filenameValidationError}
     invalid={!isFilenameValid || undefined}

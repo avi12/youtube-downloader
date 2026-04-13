@@ -203,6 +203,7 @@ export default [
     plugins: sharedPlugins,
     rules: {
       ...tsStyleRules,
+      "svelte/no-at-html-tags": "off",
       "svelte/sort-attributes": "error",
       "svelte/shorthand-directive": "error",
       "arrow-body-style": ["error", "as-needed"],

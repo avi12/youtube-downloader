@@ -20,6 +20,7 @@ declare namespace svelteHTML {
       id?: string;
       value?: string;
       label?: string;
+      dir?: string;
       disabled?: boolean | undefined;
       invalid?: boolean | undefined;
       "error-message"?: string | undefined;

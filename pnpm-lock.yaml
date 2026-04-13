@@ -38,6 +38,9 @@ importers:
       '@ffmpeg/core-st':
         specifier: 0.11.1
         version: 0.11.1
+      '@material-symbols/svg-400':
+        specifier: ^0.44.1
+        version: 0.44.1
       '@stylistic/eslint-plugin':
         specifier: ^5.10.0
         version: 5.10.0(eslint@10.1.0(jiti@2.6.1))
@@ -493,6 +496,9 @@ packages:
   '@lukeed/csprng@1.1.0':
     resolution: {integrity: sha512-Z7C/xXCiGWsg0KuKsHTKJxbWhpI3Vs5GwLfOean7MGyVFGqdRgBbAjOCh6u4bbjPc/8MJ2pZmK/0DLdCbivLDA==}
     engines: {node: '>=8'}
+
+  '@material-symbols/svg-400@0.44.1':
+    resolution: {integrity: sha512-Ku/NsX6pqk0yCx5ir2KX1IyaTC2D6SL8893g+Exvmb5N2swm+mYdtBRAZrDSgdWFkbUTAkaJUzh1WOPfUzV74A==}
 
   '@nodelib/fs.scandir@2.1.5':
     resolution: {integrity: sha512-vq24Bq3ym5HEQm2NKCr3yXDwjc7vTsEThRDnkp2DK9p1uqLR+DHurm/NOTo0KG7HYHU7eppKZj3MyqYuMBf62g==}
@@ -3722,6 +3728,8 @@ snapshots:
   '@keyv/serialize@1.1.1': {}
 
   '@lukeed/csprng@1.1.0': {}
+
+  '@material-symbols/svg-400@0.44.1': {}
 
   '@nodelib/fs.scandir@2.1.5':
     dependencies:

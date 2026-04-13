@@ -1,4 +1,5 @@
 <script lang="ts">
+  import moreActionsIcon from "./icons/more-actions.svg?raw";
   import type { RecentDownloadEntry } from "@/types";
 
   type Props = {
@@ -124,12 +125,13 @@
   <div class="recent-body">
     <button
       class="recent-filename"
+      data-tooltip={entry.title}
+      dir="auto"
       onclick={handleFilenameClick}
       onkeydown={handleFilenameKeydown}
-      title="Show in folder"
       type="button"
     >
-      {entry.title}
+      <span class="recent-filename-text">{entry.title}</span>
     </button>
     <p class="recent-meta">
       {#if entry.channel}<span>{entry.channel}</span> · {/if}
@@ -148,9 +150,7 @@
       onclick={toggleMenu}
       type="button"
     >
-      <svg aria-hidden="true" fill="currentColor" height="20" viewBox="0 0 24 24" width="20">
-        <path d="M12 8a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm0 6a2 2 0 1 0 0-4 2 2 0 0 0 0 4Zm0 6a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" />
-      </svg>
+      {@html moreActionsIcon}
     </button>
 
     {#if isMenuOpen}
@@ -161,6 +161,7 @@
       >
         <button
           class="recent-menu-item"
+          dir="auto"
           onclick={() => handleMenuAction(onShowInFolder)}
           role="menuitem"
           type="button"
@@ -169,6 +170,7 @@
         </button>
         <button
           class="recent-menu-item"
+          dir="auto"
           onclick={() => handleMenuAction(onChangeFormat)}
           role="menuitem"
           type="button"
@@ -177,6 +179,7 @@
         </button>
         <button
           class="recent-menu-item recent-menu-item-danger"
+          dir="auto"
           onclick={() => handleMenuAction(onRemove)}
           role="menuitem"
           type="button"
@@ -222,8 +225,8 @@
   }
 
   .recent-filename {
+    position: relative;
     display: block;
-    overflow: hidden;
     width: 100%;
     padding: 0;
     border: none;
@@ -232,13 +235,10 @@
     font-family: inherit;
     font-weight: 500;
     font-size: 0.8125rem;
-    text-align: left;
-    text-overflow: ellipsis;
-    white-space: nowrap;
     cursor: pointer;
 
-    &:hover,
-    &:focus-visible {
+    &:hover .recent-filename-text,
+    &:focus-visible .recent-filename-text {
       text-decoration: underline;
     }
 
@@ -247,6 +247,36 @@
       outline: 2px solid var(--accent);
       outline-offset: 2px;
     }
+
+    &::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: calc(100% + 4px);
+      left: 0;
+      z-index: 10;
+      max-width: 280px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      background: var(--fg);
+      color: var(--bg);
+      font-weight: 400;
+      font-size: 0.6875rem;
+      word-break: break-all;
+      pointer-events: none;
+      opacity: 0%;
+      transition: opacity 150ms;
+    }
+
+    &:hover::after {
+      opacity: 100%;
+    }
+  }
+
+  .recent-filename-text {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .recent-meta {
@@ -323,7 +353,6 @@
     color: var(--fg);
     font-family: inherit;
     font-size: 0.8125rem;
-    text-align: left;
     cursor: pointer;
 
     &:hover,

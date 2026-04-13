@@ -1,6 +1,7 @@
 <script lang="ts">
   import DownloadItem from "./DownloadItem.svelte";
   import DownloadSection from "./DownloadSection.svelte";
+  import downloadIcon from "./icons/download.svg?raw";
   import RecentDownloadItem from "./RecentDownloadItem.svelte";
   import { MessageType, sendMessage } from "@/lib/messaging";
   import { deleteRecentDownload } from "@/lib/recent-downloads-db";
@@ -96,16 +97,7 @@
 
 {#if !hasAnyContent}
   <div class="empty-state">
-    <svg
-      class="empty-state-icon"
-      aria-hidden="true"
-      fill="currentColor"
-      height="48"
-      viewBox="0 0 24 24"
-      width="48"
-    >
-      <path d="M5 20h14v-2H5v2zM19 9h-4V3H9v6H5l7 7 7-7z" />
-    </svg>
+    <span class="empty-state-icon">{@html downloadIcon}</span>
     <p class="empty-state-text">No downloads yet</p>
     <p class="empty-state-hint">Downloads appear here when you start one from YouTube</p>
   </div>
@@ -211,6 +203,7 @@
   }
 
   .empty-state-icon {
+    display: contents;
     color: var(--border);
   }
 

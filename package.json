@@ -32,6 +32,7 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@ffmpeg/core-st": "0.11.1",
+    "@material-symbols/svg-400": "^0.44.1",
     "@stylistic/eslint-plugin": "^5.10.0",
     "@stylistic/stylelint-plugin": "^5.1.0",
     "@wxt-dev/module-svelte": "^2.0.5",
