@@ -90,14 +90,27 @@
     });
   }
 
+  function isPanelAboveChevron() {
+    if (!isPanelOpen || !elDropdown || !elChevronBtn) {
+      return false;
+    }
+
+    const chevronRect = elChevronBtn.getBoundingClientRect();
+    const dropdownRect = elDropdown.getBoundingClientRect();
+    return dropdownRect.bottom <= chevronRect.top + 4;
+  }
+
   function refreshChevronButton() {
     if (!elChevronBtn) {
       return;
     }
 
     assignButtonId(elChevronBtn, chevronButtonId);
+    // Chevron points at the panel: up when the panel sits above, down when
+    // it sits below (including the closed state, which hints at where the
+    // panel will appear by default).
     sendButtonData(elChevronBtn, {
-      iconName: isPanelOpen ? IconName.ExpandLess : IconName.ExpandMore,
+      iconName: isPanelAboveChevron() ? IconName.ExpandLess : IconName.ExpandMore,
       title: "",
       accessibilityText: "Download options",
       style: ButtonStyle.Mono,
@@ -141,10 +154,14 @@
     // Polymer elements need the MAIN world's Polymer runtime to function,
     // so create the dropdown via the MAIN world bridge.
     const panelContentId = `ytdl-grid-panel-${videoId}`;
+    // Grid cards mark themselves with data-ytdl-grid-item, playlist rows with
+    // data-ytdl-item. Match either so iron-dropdown can anchor on both pages.
+    const positionTargetSelector
+      = `[data-ytdl-grid-item="${videoId}"] .ytdl-button-group, [data-ytdl-item="${videoId}"] .ytdl-button-group`;
 
     void crossWorldMessenger.sendMessage(CrossWorldMessage.CreateDropdown, {
       contentId: panelContentId,
-      positionTargetSelector: `[data-ytdl-grid-item="${videoId}"] .ytdl-button-group`
+      positionTargetSelector
     });
 
     unsubscribeDropdownReady = crossWorldMessenger.onMessage(CrossWorldMessage.DropdownReady, ({ data }) => {
@@ -170,6 +187,11 @@
         target: elContent,
         props: { videoData: currentVideoData, options }
       });
+
+      // iron-dropdown only finishes positioning on iron-overlay-opened — that's
+      // when the anchor-relative above/below decision is final, so refresh the
+      // chevron direction from there.
+      elDropdown?.addEventListener("iron-overlay-opened", () => refreshChevronButton(), { once: true });
 
       function handleOverlayClose() {
         if (isPanelOpen) {
