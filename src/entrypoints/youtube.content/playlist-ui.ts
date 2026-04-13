@@ -7,10 +7,14 @@ import { mount, unmount } from "svelte";
 
 let currentPlaylistUi: ReturnType<typeof mount> | null = null;
 let headerMountAbort: AbortController | null = null;
+let headerReinjectObserver: MutationObserver | null = null;
 
 export function cleanupPlaylistUi() {
   headerMountAbort?.abort();
   headerMountAbort = null;
+
+  headerReinjectObserver?.disconnect();
+  headerReinjectObserver = null;
 
   if (currentPlaylistUi) {
     void unmount(currentPlaylistUi);
@@ -104,6 +108,21 @@ export async function injectPlaylistDownloaderUi(
   });
 
   ui.mount();
+
+  // YouTube rebuilds the header subtree on theme transitions (and some other
+  // SPA re-renders), which detaches our mount container. Re-inject when that
+  // happens so the panel survives.
+  headerReinjectObserver = new MutationObserver(() => {
+    if (document.contains(elMountContainer)) {
+      return;
+    }
+
+    headerReinjectObserver?.disconnect();
+    headerReinjectObserver = null;
+    void injectPlaylistDownloaderUi(context, options);
+  });
+
+  headerReinjectObserver.observe(document.body, { childList: true, subtree: true });
 }
 
 function injectPlaylistVideoItemUi({ context, options, elVideoItem }: {

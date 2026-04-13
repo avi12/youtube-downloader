@@ -15,6 +15,16 @@ import {
 } from "@/types";
 import { SvelteMap } from "svelte/reactivity";
 
+// User-facing preferences live at module scope so they survive any re-mount
+// of the panel (e.g. when YouTube rebuilds the header subtree on theme
+// transitions and our mount container gets re-created).
+let downloadMode = $state(PlaylistDownloadMode.Fast);
+let outputMode = $state(PlaylistOutputMode.Zip);
+let isScrollSyncEnabled = $state(false);
+let downloadTypeOverride = $state<DownloadTypePreference | null>(null);
+let videoExtOverride = $state<string | null>(null);
+let audioExtOverride = $state<string | null>(null);
+
 function buildDownloadRequest(
   data: VideoData,
   options: Options,
@@ -45,14 +55,8 @@ export function createPlaylistDownloaderState(getOptions: () => Options) {
   let downloadedCount = $state(0);
   let totalCount = $state(0);
   let error = $state("");
-  let downloadMode = $state(PlaylistDownloadMode.Fast);
-  let outputMode = $state(PlaylistOutputMode.Zip);
   let isRevealingAll = $state(false);
   let revealedVideoCount = $state(0);
-
-  let downloadTypeOverride = $state<DownloadTypePreference | null>(null);
-  let videoExtOverride = $state<string | null>(null);
-  let audioExtOverride = $state<string | null>(null);
 
   const effectiveDownloadType = $derived<DownloadTypePreference>(
     downloadTypeOverride ?? getOptions().defaultDownloadType
@@ -80,7 +84,7 @@ export function createPlaylistDownloaderState(getOptions: () => Options) {
     videoExtOverride = null;
     audioExtOverride = null;
   }
-  let isScrollSyncEnabled = $state(false);
+
   let shouldStartDownloadAfterReveal = false;
   let abortReveal = false;
 
