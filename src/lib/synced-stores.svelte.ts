@@ -11,14 +11,16 @@ export const sabrCredentials = createSyncedSignal(
 
 export const videoDataStore = createSyncedMap(createMapMessenger<VideoData>("video-data"));
 
-export interface DownloadProgressState {
-  isDownloading: boolean;
-  isDone: boolean;
-  progress: number;
-  progressType: ProgressType | "";
-}
+export const downloadProgressStore = createSyncedMap(
+  createMapMessenger<{
+    isDownloading: boolean;
+    isDone: boolean;
+    progress: number;
+    progressType: ProgressType | "";
+  }>("download-progress")
+);
 
-export const downloadProgressStore = createSyncedMap(createMapMessenger<DownloadProgressState>("download-progress"));
+export type DownloadProgressState = Parameters<(typeof downloadProgressStore)["set"]>[1];
 
 export const playlistMetadataSignal = createSyncedSignal(
   createSignalMessenger<{
