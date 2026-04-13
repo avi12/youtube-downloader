@@ -88,6 +88,7 @@
   {#if playlist.isDownloading && playlist.totalCount > 0}
     <tp-yt-paper-progress
       {@attach attachProgressBar}
+      indeterminate={playlist.downloadedCount === 0 || undefined}
       max={playlist.totalCount}
       value={playlist.downloadedCount}
     ></tp-yt-paper-progress>
