@@ -148,6 +148,22 @@ function injectPlaylistVideoItemUi({ context, options, elVideoItem }: {
   ui.mount();
 }
 
+const PLAYLIST_VIDEO_TAG = "ytd-playlist-video-renderer";
+
+function injectIntoSubtree(
+  root: Element,
+  context: InstanceType<typeof ContentScriptContext>,
+  options: Options
+) {
+  if (root.tagName.toLowerCase() === PLAYLIST_VIDEO_TAG) {
+    injectPlaylistVideoItemUi({ context, options, elVideoItem: root });
+  }
+
+  for (const elVideoItem of root.querySelectorAll(PLAYLIST_VIDEO_TAG)) {
+    injectPlaylistVideoItemUi({ context, options, elVideoItem });
+  }
+}
+
 export function handlePlaylistVideoAdditions(
   context: InstanceType<typeof ContentScriptContext>,
   options: Options
@@ -157,24 +173,18 @@ export function handlePlaylistVideoAdditions(
     return;
   }
 
-  for (const elVideoItem of elContents.querySelectorAll("ytd-playlist-video-renderer")) {
-    injectPlaylistVideoItemUi({ context, options, elVideoItem });
-  }
+  injectIntoSubtree(elContents, context, options);
 
   const mutationObserver = new MutationObserver(mutations => {
     for (const mutation of mutations) {
       for (const node of mutation.addedNodes) {
-        if (node instanceof HTMLElement && node.tagName.toLowerCase() === "ytd-playlist-video-renderer") {
-          injectPlaylistVideoItemUi({
-            context,
-            options,
-            elVideoItem: node
-          });
+        if (node instanceof Element) {
+          injectIntoSubtree(node, context, options);
         }
       }
     }
   });
 
-  mutationObserver.observe(elContents, { childList: true });
+  mutationObserver.observe(elContents, { childList: true, subtree: true });
   context.onInvalidated(() => mutationObserver.disconnect());
 }

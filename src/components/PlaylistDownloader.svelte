@@ -149,7 +149,10 @@
     >
       Type
       {#if playlist.isDownloadTypeOverridden}
-        <span class="ytdl-override-dot" aria-hidden="true" title="Different from your default"></span>
+        <span class="ytdl-override-badge" role="status">
+          <span class="ytdl-override-dot" aria-hidden="true"></span>
+          <span class="ytdl-visually-hidden">customized</span>
+        </span>
       {/if}
     </yt-formatted-string>
     <div class="ytdl-chip-row ytdl-chip-row-wrap" aria-labelledby="ytdl-type-label" role="group">
@@ -170,11 +173,10 @@
       value={playlist.effectiveVideoExt}
     />
     {#if playlist.isVideoExtOverridden}
-      <span
-        class="ytdl-override-dot ytdl-override-dot-floating"
-        aria-hidden="true"
-        title="Different from your default"
-      ></span>
+      <span class="ytdl-override-badge ytdl-override-badge-floating" role="status">
+        <span class="ytdl-override-dot" aria-hidden="true"></span>
+        <span class="ytdl-visually-hidden">customized</span>
+      </span>
     {/if}
   </section>
 
@@ -188,11 +190,10 @@
       value={playlist.effectiveAudioExt}
     />
     {#if playlist.isAudioExtOverridden}
-      <span
-        class="ytdl-override-dot ytdl-override-dot-floating"
-        aria-hidden="true"
-        title="Different from your default"
-      ></span>
+      <span class="ytdl-override-badge ytdl-override-badge-floating" role="status">
+        <span class="ytdl-override-dot" aria-hidden="true"></span>
+        <span class="ytdl-visually-hidden">customized</span>
+      </span>
     {/if}
   </section>
 
@@ -298,10 +299,27 @@
     position: relative;
   }
 
-  .ytdl-override-dot-floating {
+  .ytdl-override-badge {
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .ytdl-override-badge-floating {
     position: absolute;
     top: 14px;
     right: -12px;
+  }
+
+  .ytdl-visually-hidden {
+    position: absolute;
+    overflow: hidden;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    border: 0;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 
   .ytdl-reset-link {
