@@ -133,7 +133,7 @@
     >
       <span class="recent-filename-text">{entry.title}</span>
     </button>
-    <p class="recent-meta">
+    <p class="recent-meta" dir="auto">
       {#if entry.channel}<span>{entry.channel}</span> · {/if}
       <span>{sizeLabel}</span> ·
       <span>{relativeAgeLabel}</span>
@@ -262,8 +262,8 @@
       font-weight: 400;
       font-size: 0.6875rem;
       word-break: break-all;
-      pointer-events: none;
       opacity: 0%;
+      pointer-events: none;
       transition: opacity 150ms;
     }
 
