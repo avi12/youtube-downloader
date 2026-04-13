@@ -208,8 +208,6 @@
 
   const isDataSaverSelected = $derived(playlist.downloadMode === PlaylistDownloadMode.DataSaver);
 
-  let isAdvancedOpen = $state(false);
-
   function formatExtensionLabel(extension: string) {
     return extension === AUTO_EXTENSION ? AUTO_EXTENSION_LABEL : extension.toUpperCase();
   }
@@ -223,10 +221,6 @@
 
   const isVideoExtDisabled = $derived(playlist.effectiveDownloadType === DownloadType.Audio);
   const isAudioExtDisabled = $derived(playlist.effectiveDownloadType === DownloadType.Video);
-
-  function toggleAdvanced() {
-    isAdvancedOpen = !isAdvancedOpen;
-  }
 
   function handleVideoExtChange(value: string) {
     playlist.effectiveVideoExt = value;
@@ -288,44 +282,55 @@
     </div>
   </section>
 
-  <details class="ytdl-advanced" open={isAdvancedOpen || undefined}>
-    <summary class="ytdl-advanced-summary" onclick={toggleAdvanced}>
-      <yt-formatted-string>Advanced format</yt-formatted-string>
-      {#if playlist.isVideoExtOverridden || playlist.isAudioExtOverridden}
-        <span class="ytdl-override-dot" aria-hidden="true" title="Format overridden"></span>
+  <section class="ytdl-section" class:is-disabled={isVideoExtDisabled} aria-labelledby="ytdl-video-format-label">
+    <yt-formatted-string
+      id="ytdl-video-format-label"
+      class="ytdl-section-title"
+      aria-level="3"
+      role="heading"
+    >
+      Video format
+      {#if playlist.isVideoExtOverridden}
+        <span class="ytdl-override-dot" aria-hidden="true" title="Different from your default"></span>
       {/if}
-    </summary>
+    </yt-formatted-string>
+    <PolymerSelect
+      id="playlist-video-ext"
+      disabled={isVideoExtDisabled}
+      label="Container"
+      onchange={handleVideoExtChange}
+      options={videoExtOptions}
+      value={playlist.effectiveVideoExt}
+    />
+  </section>
 
-    <div class="ytdl-advanced-body">
-      <div class="ytdl-advanced-field" class:is-disabled={isVideoExtDisabled}>
-        <PolymerSelect
-          id="playlist-video-ext"
-          disabled={isVideoExtDisabled}
-          label="Video format"
-          onchange={handleVideoExtChange}
-          options={videoExtOptions}
-          value={playlist.effectiveVideoExt}
-        />
-      </div>
-
-      <div class="ytdl-advanced-field" class:is-disabled={isAudioExtDisabled}>
-        <PolymerSelect
-          id="playlist-audio-ext"
-          disabled={isAudioExtDisabled}
-          label="Audio format"
-          onchange={handleAudioExtChange}
-          options={audioExtOptions}
-          value={playlist.effectiveAudioExt}
-        />
-      </div>
-
-      {#if playlist.hasAnyOverride}
-        <button class="ytdl-reset-link" onclick={playlist.resetOverrides} type="button">
-          Reset to my defaults
-        </button>
+  <section class="ytdl-section" class:is-disabled={isAudioExtDisabled} aria-labelledby="ytdl-audio-format-label">
+    <yt-formatted-string
+      id="ytdl-audio-format-label"
+      class="ytdl-section-title"
+      aria-level="3"
+      role="heading"
+    >
+      Audio format
+      {#if playlist.isAudioExtOverridden}
+        <span class="ytdl-override-dot" aria-hidden="true" title="Different from your default"></span>
       {/if}
-    </div>
-  </details>
+    </yt-formatted-string>
+    <PolymerSelect
+      id="playlist-audio-ext"
+      disabled={isAudioExtDisabled}
+      label="Container"
+      onchange={handleAudioExtChange}
+      options={audioExtOptions}
+      value={playlist.effectiveAudioExt}
+    />
+  </section>
+
+  {#if playlist.hasAnyOverride}
+    <button class="ytdl-reset-link" onclick={playlist.resetOverrides} type="button">
+      Reset to my defaults
+    </button>
+  {/if}
 
   <div class="ytdl-playlist-actions">
     <div class="ytdl-selection-row">
@@ -384,6 +389,7 @@
     flex-direction: column;
     gap: 8px;
     padding: 10px 0;
+    transition: opacity 150ms ease;
 
     & + & {
       border-top: 1px solid var(--yt-spec-10-percent-layer, rgb(255 255 255 / 10%));
@@ -413,50 +419,9 @@
     background: var(--yt-spec-call-to-action, #3ea6ff);
   }
 
-  .ytdl-advanced {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    padding: 10px 0;
-    border-top: 1px solid var(--yt-spec-10-percent-layer, rgb(255 255 255 / 10%));
-  }
-
-  .ytdl-advanced-summary {
-    display: flex;
-    gap: 6px;
-    align-items: center;
-    list-style: none;
-    cursor: pointer;
-
-    &::-webkit-details-marker {
-      display: none;
-    }
-
-    &::before {
-      content: "▸";
-      display: inline-block;
-      transition: transform 180ms ease;
-    }
-  }
-
-  .ytdl-advanced[open] .ytdl-advanced-summary::before {
-    transform: rotate(90deg);
-  }
-
-  .ytdl-advanced-body {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    padding-left: 12px;
-  }
-
-  .ytdl-advanced-field {
-    transition: opacity 150ms ease;
-
-    &.is-disabled {
-      opacity: 50%;
-      pointer-events: none;
-    }
+  .ytdl-section.is-disabled {
+    opacity: 50%;
+    pointer-events: none;
   }
 
   .ytdl-reset-link {
