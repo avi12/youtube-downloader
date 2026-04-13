@@ -259,11 +259,11 @@
   }
 
   .recent-menu-wrap {
-    position: relative;
     flex-shrink: 0;
   }
 
   .recent-menu-trigger {
+    anchor-name: --recent-menu-trigger;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -288,9 +288,10 @@
   }
 
   .recent-menu {
-    position: absolute;
-    top: 36px;
-    right: 0;
+    position: fixed;
+    position-anchor: --recent-menu-trigger;
+    top: anchor(bottom);
+    right: anchor(right);
     z-index: 10;
     display: flex;
     flex-direction: column;
