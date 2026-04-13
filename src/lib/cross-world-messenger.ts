@@ -2,39 +2,28 @@ import type { ButtonViewModelData, DownloadRequest, StreamDataPayload, VideoData
 import { ProgressType } from "@/types";
 import { defineCustomEventMessaging } from "@webext-core/messaging/page";
 
-export enum CrossWorldMessage {
-  VideoData = "videoData",
-  Navigation = "navigation",
-  PanelContentReady = "panelContentReady",
-  StreamError = "streamError",
-  StreamData = "streamData",
-
-  DownloadRequest = "downloadRequest",
-  PanelClosed = "panelClosed",
-  FilenameChanged = "filenameChanged",
-  RequestVideoData = "requestVideoData",
-  CancelDownload = "cancelDownload",
-
-  ProxyFetch = "proxyFetch",
-
-  IframePlayerReady = "iframePlayerReady",
-
-  CancelRequest = "cancelRequest",
-
-  SetButtonData = "setButtonData",
-
-  CreateDropdown = "createDropdown",
-
-  DropdownReady = "dropdownReady",
-
-  CloseDropdown = "closeDropdown",
-
-  DownloadProgress = "downloadProgress",
-
-  DownloadViaIframe = "downloadViaIframe",
-
-  StartBackgroundDownload = "startBackgroundDownload"
-}
+export const CrossWorldMessage = {
+  VideoData: "videoData",
+  Navigation: "navigation",
+  PanelContentReady: "panelContentReady",
+  StreamError: "streamError",
+  StreamData: "streamData",
+  DownloadRequest: "downloadRequest",
+  PanelClosed: "panelClosed",
+  FilenameChanged: "filenameChanged",
+  RequestVideoData: "requestVideoData",
+  CancelDownload: "cancelDownload",
+  ProxyFetch: "proxyFetch",
+  IframePlayerReady: "iframePlayerReady",
+  CancelRequest: "cancelRequest",
+  SetButtonData: "setButtonData",
+  CreateDropdown: "createDropdown",
+  DropdownReady: "dropdownReady",
+  CloseDropdown: "closeDropdown",
+  DownloadProgress: "downloadProgress",
+  DownloadViaIframe: "downloadViaIframe",
+  StartBackgroundDownload: "startBackgroundDownload"
+} as const;
 
 interface PageMessengerSchema {
   [CrossWorldMessage.VideoData](data: VideoData): void;

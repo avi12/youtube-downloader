@@ -8,42 +8,37 @@ import type {
 } from "@/types";
 import { defineExtensionMessaging } from "@webext-core/messaging";
 
-export enum MessageType {
-  BackgroundProxyFetch = "backgroundProxyFetch",
-  StreamChunk = "streamChunk",
-  StreamEnd = "streamEnd",
-  ProcessStreamError = "processStreamError",
-  GetCapturedSabrBody = "getCapturedSabrBody",
-  PersistInterruptedDownload = "persistInterruptedDownload",
-  ClearInterruptedDownload = "clearInterruptedDownload",
-  GetInterruptedDownload = "getInterruptedDownload",
-  RequestPlaylistDownload = "requestPlaylistDownload",
-  DownloadViaWatchPage = "downloadViaWatchPage",
-  CreateDownloadIframe = "createDownloadIframe",
-  RemoveDownloadIframe = "removeDownloadIframe",
-  DownloadIframeReady = "downloadIframeReady",
-  CancelDownload = "cancelDownload",
-  StartBackgroundDownload = "startBackgroundDownload",
-
-  StartKeepalive = "startKeepalive",
-  Keepalive = "keepalive",
-  ExecuteDownloadItem = "executeDownloadItem",
-  SabrBodyReady = "sabrBodyReady",
-  UpdateDownloadProgress = "updateDownloadProgress",
-
-  PipelineProgress = "pipelineProgress",
-  PipelineRemoval = "pipelineRemoval",
-  PipelineQueueRemove = "pipelineQueueRemove",
-  PipelineFFmpegReady = "pipelineFFmpegReady",
-  PipelineStart = "pipelineStart",
-  PipelineDownload = "pipelineDownload",
-
-  RecentDownloadsChanged = "recentDownloadsChanged",
-
-  TranscodeRecentDownload = "transcodeRecentDownload",
-
-  DiscardDownload = "discardDownload"
-}
+export const MessageType = {
+  BackgroundProxyFetch: "backgroundProxyFetch",
+  StreamChunk: "streamChunk",
+  StreamEnd: "streamEnd",
+  ProcessStreamError: "processStreamError",
+  GetCapturedSabrBody: "getCapturedSabrBody",
+  PersistInterruptedDownload: "persistInterruptedDownload",
+  ClearInterruptedDownload: "clearInterruptedDownload",
+  GetInterruptedDownload: "getInterruptedDownload",
+  RequestPlaylistDownload: "requestPlaylistDownload",
+  DownloadViaWatchPage: "downloadViaWatchPage",
+  CreateDownloadIframe: "createDownloadIframe",
+  RemoveDownloadIframe: "removeDownloadIframe",
+  DownloadIframeReady: "downloadIframeReady",
+  CancelDownload: "cancelDownload",
+  StartBackgroundDownload: "startBackgroundDownload",
+  StartKeepalive: "startKeepalive",
+  Keepalive: "keepalive",
+  ExecuteDownloadItem: "executeDownloadItem",
+  SabrBodyReady: "sabrBodyReady",
+  UpdateDownloadProgress: "updateDownloadProgress",
+  PipelineProgress: "pipelineProgress",
+  PipelineRemoval: "pipelineRemoval",
+  PipelineQueueRemove: "pipelineQueueRemove",
+  PipelineFFmpegReady: "pipelineFFmpegReady",
+  PipelineStart: "pipelineStart",
+  PipelineDownload: "pipelineDownload",
+  RecentDownloadsChanged: "recentDownloadsChanged",
+  TranscodeRecentDownload: "transcodeRecentDownload",
+  DiscardDownload: "discardDownload"
+} as const;
 
 interface ProtocolMap {
   // Proxies fetch through the background SW, bypassing CORS via host_permissions + cookies.

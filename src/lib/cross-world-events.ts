@@ -12,9 +12,11 @@ import type { ProgressUpdate } from "@/types";
 
 const EVENT_PREFIX = "ytdl-event";
 
-export enum CrossWorldEvent {
-  ProgressUpdate = "progressUpdate"
-}
+export const CrossWorldEvent = {
+  ProgressUpdate: "progressUpdate"
+} as const;
+
+type CrossWorldEvent = (typeof CrossWorldEvent)[keyof typeof CrossWorldEvent];
 
 interface CrossWorldEventMap {
   [CrossWorldEvent.ProgressUpdate]: ProgressUpdate;

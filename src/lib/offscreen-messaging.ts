@@ -2,13 +2,15 @@ import type { DownloadType, VideoMetadata } from "@/types";
 
 const OFFSCREEN_PORT_NAME = "ytdl-offscreen";
 
-enum OffscreenMessageType {
-  ProcessStreamChunk = "processStreamChunk",
-  ProcessStreamEnd = "processStreamEnd",
-  CancelProcessing = "cancelProcessing",
-  PipelineDownload = "pipelineDownload",
-  TranscodeRecentDownload = "transcodeRecentDownload"
-}
+const OffscreenMessageType = {
+  ProcessStreamChunk: "processStreamChunk",
+  ProcessStreamEnd: "processStreamEnd",
+  CancelProcessing: "cancelProcessing",
+  PipelineDownload: "pipelineDownload",
+  TranscodeRecentDownload: "transcodeRecentDownload"
+} as const;
+
+type OffscreenMessageType = (typeof OffscreenMessageType)[keyof typeof OffscreenMessageType];
 
 interface OffscreenProtocolMap {
   [OffscreenMessageType.ProcessStreamChunk]: {
