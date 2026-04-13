@@ -21,7 +21,9 @@ export const Tab = {
 
 export type Tab = (typeof Tab)[keyof typeof Tab];
 
-type Props = {
+const relativeAgeTickMs = 30_000;
+
+export function createAppState(props: {
   initialIsFFmpegReady: boolean;
   initialVideoQueue: VideoQueueItem[];
   initialMusicList: string[];
@@ -34,11 +36,7 @@ type Props = {
     progressType: ProgressType;
   }>;
   initialOptions: Options;
-};
-
-const relativeAgeTickMs = 30_000;
-
-export function createAppState(props: Props) {
+}) {
   let activeTab = $state<Tab>(Tab.Downloads);
   let isFFmpegReady = $state(props.initialIsFFmpegReady);
   let videoDownloads = $state(props.initialVideoQueue);

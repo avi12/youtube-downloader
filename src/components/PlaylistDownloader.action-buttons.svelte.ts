@@ -11,7 +11,7 @@ export const DESELECT_ALL_BUTTON_ID = "playlist-deselect-all-btn";
 export const DOWNLOAD_BUTTON_ID = "playlist-download-btn";
 export const DOWNLOAD_ALL_BUTTON_ID = "playlist-download-all-btn";
 
-type ActionState = {
+export function createPlaylistActionButtons(state: {
   selectedDownloadableVideos: {
     length: number;
   };
@@ -23,9 +23,7 @@ type ActionState = {
   toggleSelectedDownload(): void;
   revealAndDownloadAll(): Promise<void> | void;
   cancelReveal(): void;
-};
-
-export function createPlaylistActionButtons(state: ActionState) {
+}) {
   let elDeselectAll = $state<HTMLElement | null>(null);
   let elDownload = $state<HTMLElement | null>(null);
   let elDownloadAll = $state<HTMLElement | null>(null);

@@ -1,13 +1,11 @@
 import { createMapMessenger, createSignalMessenger, createSyncedMap, createSyncedSignal } from "./synced-signal.svelte";
 import type { InterruptedDownload, ProgressType, VideoData } from "@/types";
 
-interface SabrCredentials {
-  url: string;
-  poToken: string;
-}
-
 export const sabrCredentials = createSyncedSignal(
-  createSignalMessenger<SabrCredentials | null>("sabr-credentials"),
+  createSignalMessenger<{
+    url: string;
+    poToken: string;
+  } | null>("sabr-credentials"),
   null
 );
 
@@ -22,13 +20,11 @@ export interface DownloadProgressState {
 
 export const downloadProgressStore = createSyncedMap(createMapMessenger<DownloadProgressState>("download-progress"));
 
-interface PlaylistMetadata {
-  playlistId: string;
-  playlistTitle: string;
-}
-
 export const playlistMetadataSignal = createSyncedSignal(
-  createSignalMessenger<PlaylistMetadata | null>("playlist-metadata"),
+  createSignalMessenger<{
+    playlistId: string;
+    playlistTitle: string;
+  } | null>("playlist-metadata"),
   null
 );
 

@@ -41,15 +41,13 @@ async function sendStreamChunks({ videoId, streamType, data }: {
   );
 }
 
-interface PlaylistContext {
+const playlistContextByVideoId = new Map<string, {
   playlistId: string;
   playlistTitle: string;
   playlistTotalCount: number;
-}
+}>();
 
-const playlistContextByVideoId = new Map<string, PlaylistContext>();
-
-export function setPlaylistContext(videoId: string, context: PlaylistContext) {
+export function setPlaylistContext(videoId: string, context: Parameters<typeof playlistContextByVideoId.set>[1]) {
   playlistContextByVideoId.set(videoId, context);
 }
 

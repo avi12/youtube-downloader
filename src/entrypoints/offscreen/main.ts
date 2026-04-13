@@ -13,18 +13,14 @@ const core = await createFFmpegCore({});
 initFFmpeg(core);
 
 // Content script splits video+audio into 1 MB chunks to stay under runtime.sendMessage size limit.
-interface AudioStreamAccumulator {
-  chunks: Map<number, Uint8Array>;
-  totalChunks: number;
-}
-
-interface StreamAccumulator {
+const streamAccumulators = new Map<string, {
   videoChunks: Map<number, Uint8Array>;
   totalVideoChunks: number;
-  audioStreams: Map<string, AudioStreamAccumulator>;
-}
-
-const streamAccumulators = new Map<string, StreamAccumulator>();
+  audioStreams: Map<string, {
+    chunks: Map<number, Uint8Array>;
+    totalChunks: number;
+  }>;
+}>();
 
 function assembleStreamChunks(chunks: Map<number, Uint8Array>, totalChunks: number) {
   if (totalChunks === 0) {

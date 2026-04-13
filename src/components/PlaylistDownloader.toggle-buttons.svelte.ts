@@ -12,21 +12,11 @@ import {
 } from "@/types";
 import { SvelteMap } from "svelte/reactivity";
 
-type ToggleButtonConfig = {
-  id: string;
-  label: string;
-  tooltip: string;
-  isActive(): boolean;
-  onClick(): void;
-};
-
-type ToggleState = {
+export function createPlaylistToggleButtons(state: {
   downloadMode: PlaylistDownloadMode;
   outputMode: PlaylistOutputMode;
   effectiveDownloadType: DownloadTypePreference;
-};
-
-export function createPlaylistToggleButtons(state: ToggleState) {
+}) {
   const groups = {
     speed: [
       {
@@ -106,12 +96,18 @@ export function createPlaylistToggleButtons(state: ToggleState) {
         }
       }
     ]
-  } satisfies Record<string, ToggleButtonConfig[]>;
+  } satisfies Record<string, {
+    id: string;
+    label: string;
+    tooltip: string;
+    isActive(): boolean;
+    onClick(): void;
+  }[]>;
 
   const allButtons = [...groups.speed, ...groups.output, ...groups.type];
   const elements = new SvelteMap<string, HTMLElement>();
 
-  function refresh(config: ToggleButtonConfig) {
+  function refresh(config: (typeof allButtons)[number]) {
     const elButton = elements.get(config.id);
     if (!elButton) {
       return;
@@ -141,7 +137,7 @@ export function createPlaylistToggleButtons(state: ToggleState) {
     }
   }
 
-  function createAttacher(config: ToggleButtonConfig) {
+  function createAttacher(config: (typeof allButtons)[number]) {
     return (elButton: Element) => {
       if (!(elButton instanceof HTMLElement)) {
         return;

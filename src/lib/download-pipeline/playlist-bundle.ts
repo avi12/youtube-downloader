@@ -2,7 +2,7 @@ import { triggerDownload } from ".";
 import { getCompatibleFilename } from "../containers";
 import { zipSync } from "fflate";
 
-interface PlaylistBundle {
+const playlistBundles = new Map<string, {
   playlistTitle: string;
   totalCount: number;
   files: Map<string, {
@@ -10,9 +10,7 @@ interface PlaylistBundle {
     data: Uint8Array;
   }>;
   tabId: number;
-}
-
-const playlistBundles = new Map<string, PlaylistBundle>();
+}>();
 
 export function addToPlaylistBundle({
   playlistId, playlistTitle, totalCount, tabId, filename, data
