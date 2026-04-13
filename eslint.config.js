@@ -1,3 +1,4 @@
+import expandNestedTypeLiteral from "./eslint-rules/expand-nested-type-literal.js";
 import multilineArgParenNewline from "./eslint-rules/multiline-arg-paren-newline.js";
 import noPaddedTag from "./eslint-rules/no-padded-tag.js";
 import eslint from "@eslint/js";
@@ -96,8 +97,7 @@ const tsStyleRules = {
     {
       ObjectExpression: { consistent: true, multiline: true },
       ObjectPattern: { consistent: true, multiline: true },
-      ExportDeclaration: { consistent: true, multiline: true },
-      TSTypeLiteral: { minProperties: 2 }
+      ExportDeclaration: { consistent: true, multiline: true }
     }
   ],
   "@stylistic/object-property-newline": ["error", { allowAllPropertiesOnSameLine: true }],
@@ -138,6 +138,7 @@ const tsStyleRules = {
   "arrow-body-style": ["error", "as-needed"],
   "@stylistic/function-call-argument-newline": ["error", "consistent"],
   "@stylistic/function-paren-newline": ["error", "consistent"],
+  "local/expand-nested-type-literal": "error",
   "local/multiline-arg-paren-newline": "error",
   "local/no-padded-tag": "error",
   "no-nested-ternary": "error",
@@ -152,6 +153,7 @@ const sharedPlugins = {
   perfectionist,
   local: {
     rules: {
+      "expand-nested-type-literal": expandNestedTypeLiteral,
       "multiline-arg-paren-newline": multilineArgParenNewline,
       "no-padded-tag": noPaddedTag
     }
