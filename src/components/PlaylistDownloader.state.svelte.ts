@@ -1,4 +1,5 @@
-import { revealAllPlaylistVideos, scrollVideoItemIntoView } from "./PlaylistDownloader.scroll";
+import { createRevealState } from "./PlaylistDownloader.reveal.svelte";
+import { scrollVideoItemIntoView } from "./PlaylistDownloader.scroll";
 import { resolveVideoFilename } from "@/lib/containers";
 import { MessageType, sendMessage } from "@/lib/messaging";
 import { checkedPlaylistVideos } from "@/lib/playlist-selection.svelte";
@@ -12,7 +13,7 @@ import {
   type Options,
   type VideoData
 } from "@/types";
-import { SvelteMap } from "svelte/reactivity";
+import { SvelteMap, SvelteSet } from "svelte/reactivity";
 
 // Shared across every PlaylistVideoItem so they can disable their checkboxes
 // during a batch download without needing a prop chain.
@@ -57,8 +58,6 @@ export function createPlaylistDownloaderState(getOptions: () => Options) {
   let isDownloading = $state(false);
   let totalCount = $state(0);
   let error = $state("");
-  let isRevealingAll = $state(false);
-  let revealedVideoCount = $state(0);
 
   const effectiveDownloadType = $derived<DownloadTypePreference>(
     downloadTypeOverride ?? getOptions().defaultDownloadType
@@ -87,9 +86,6 @@ export function createPlaylistDownloaderState(getOptions: () => Options) {
     audioExtOverride = null;
   }
 
-  let shouldStartDownloadAfterReveal = false;
-  let abortReveal = false;
-
   $effect(() => {
     for (const videoId of videoDataStore.keys()) {
       const data = videoDataStore.get(videoId);
@@ -110,13 +106,26 @@ export function createPlaylistDownloaderState(getOptions: () => Options) {
 
   let activeDownloadRequests = $state<DownloadRequest[]>([]);
 
-  // A video is done when its progress entry has been removed from the store
-  // (isRemoved: true from PipelineRemoval) or marked as complete (isDone: true).
-  const downloadedCount = $derived(
-    activeDownloadRequests.filter(request => {
+  // Sticky set: once a batch video is done (completed or cancelled), it stays
+  // done even if the user re-downloads it individually during the same batch.
+  // This prevents individually-restarted videos from extending the batch.
+  const batchDoneIds = new SvelteSet<string>();
+
+  $effect(() => {
+    for (const request of activeDownloadRequests) {
+      if (batchDoneIds.has(request.videoId)) {
+        continue;
+      }
+
       const entry = downloadProgressStore.get(request.videoId);
-      return !entry || entry.isDone;
-    }).length
+      if (!entry || entry.isDone) {
+        batchDoneIds.add(request.videoId);
+      }
+    }
+  });
+
+  const downloadedCount = $derived(
+    activeDownloadRequests.filter(request => batchDoneIds.has(request.videoId)).length
   );
 
   const downloadButtonLabel = $derived.by(() => {
@@ -150,6 +159,7 @@ export function createPlaylistDownloaderState(getOptions: () => Options) {
     isDownloading = true;
     batchDownloadStatus.isRunning = true;
     totalCount = videos.length;
+    batchDoneIds.clear();
 
     for (const video of videos) {
       downloadProgressStore.unsuppress(video.videoId);
@@ -219,43 +229,11 @@ export function createPlaylistDownloaderState(getOptions: () => Options) {
     checkedPlaylistVideos.clear();
   }
 
-  async function revealAllVideos() {
-    if (isRevealingAll) {
-      return;
-    }
-
-    isRevealingAll = true;
-    abortReveal = false;
-    revealedVideoCount = videoDataMap.size;
-
-    await revealAllPlaylistVideos(
-      update => {
-        revealedVideoCount = update.revealedCount;
-      },
-      () => abortReveal
-    );
-
-    isRevealingAll = false;
-
-    if (abortReveal) {
-      shouldStartDownloadAfterReveal = false;
-      return;
-    }
-
-    if (shouldStartDownloadAfterReveal) {
-      shouldStartDownloadAfterReveal = false;
-      await startDownload(downloadableVideos);
-    }
-  }
-
-  function cancelReveal() {
-    abortReveal = true;
-  }
-
-  async function revealAndDownloadAll() {
-    shouldStartDownloadAfterReveal = true;
-    await revealAllVideos();
-  }
+  const reveal = createRevealState(
+    () => videoDataMap.size,
+    () => downloadableVideos,
+    startDownload
+  );
 
   // Count of playlist videos being downloaded individually (outside of a batch).
   const activeIndividualDownloadCount = $derived.by(() => {
@@ -364,10 +342,10 @@ export function createPlaylistDownloaderState(getOptions: () => Options) {
       return videoDataMap.size;
     },
     get isRevealingAll() {
-      return isRevealingAll;
+      return reveal.isRevealingAll;
     },
     get revealedVideoCount() {
-      return revealedVideoCount;
+      return reveal.revealedVideoCount;
     },
     get isScrollSyncEnabled() {
       return isScrollSyncEnabled;
@@ -413,8 +391,8 @@ export function createPlaylistDownloaderState(getOptions: () => Options) {
     },
     resetOverrides,
     toggleSelectedDownload,
-    revealAndDownloadAll,
-    cancelReveal,
+    revealAndDownloadAll: reveal.revealAndDownloadAll,
+    cancelReveal: reveal.cancelReveal,
     selectAll,
     clearSelection
   };
