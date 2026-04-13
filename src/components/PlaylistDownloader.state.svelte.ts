@@ -9,6 +9,7 @@ import {
   PlaylistDownloadMode,
   PlaylistOutputMode,
   type DownloadRequest,
+  type DownloadTypePreference,
   type Options,
   type VideoData
 } from "@/types";
@@ -22,7 +23,7 @@ function buildDownloadRequest(
   playlistTotalCount: number,
   isZipBundle: boolean
 ): DownloadRequest {
-  let downloadType: DownloadType = data.isMusic ? DownloadType.Audio : DownloadType.VideoAndAudio;
+  let downloadType = data.isMusic ? DownloadType.Audio : DownloadType.VideoAndAudio;
   if (options.defaultDownloadType !== "auto") {
     downloadType = options.defaultDownloadType;
   }
@@ -48,6 +49,37 @@ export function createPlaylistDownloaderState(getOptions: () => Options) {
   let outputMode = $state(PlaylistOutputMode.Zip);
   let isRevealingAll = $state(false);
   let revealedVideoCount = $state(0);
+
+  let downloadTypeOverride = $state<DownloadTypePreference | null>(null);
+  let videoExtOverride = $state<string | null>(null);
+  let audioExtOverride = $state<string | null>(null);
+
+  const effectiveDownloadType = $derived<DownloadTypePreference>(
+    downloadTypeOverride ?? getOptions().defaultDownloadType
+  );
+  const effectiveVideoExt = $derived(videoExtOverride ?? getOptions().ext.video);
+  const effectiveAudioExt = $derived(audioExtOverride ?? getOptions().ext.audio);
+  const hasAnyOverride = $derived(
+    downloadTypeOverride !== null || videoExtOverride !== null || audioExtOverride !== null
+  );
+
+  function buildEffectiveOptions(): Options {
+    const base = getOptions();
+    return {
+      ...base,
+      defaultDownloadType: effectiveDownloadType,
+      ext: {
+        video: effectiveVideoExt,
+        audio: effectiveAudioExt
+      }
+    };
+  }
+
+  function resetOverrides() {
+    downloadTypeOverride = null;
+    videoExtOverride = null;
+    audioExtOverride = null;
+  }
   let isScrollSyncEnabled = $state(false);
   let shouldStartDownloadAfterReveal = false;
   let abortReveal = false;
@@ -73,12 +105,12 @@ export function createPlaylistDownloaderState(getOptions: () => Options) {
 
   const downloadButtonLabel = $derived.by(() => {
     if (isDownloading) {
-      return `Downloading ${downloadedCount}/${totalCount}`;
+      return `Downloading ${downloadedCount} of ${totalCount}`;
     }
 
     const count = selectedDownloadableVideos.length;
     if (count === 0) {
-      return "Select videos to download";
+      return "Download selected";
     }
 
     return `Download ${count} video${count === 1 ? "" : "s"}`;
@@ -131,8 +163,9 @@ export function createPlaylistDownloaderState(getOptions: () => Options) {
     const playlistId = metadata?.playlistId || `playlist-${Date.now()}`;
     const isZipBundle = outputMode === PlaylistOutputMode.Zip;
 
+    const resolvedOptions = buildEffectiveOptions();
     const downloadRequests = videos.map(data =>
-      buildDownloadRequest(data, getOptions(), playlistId, playlistTitle, videos.length, isZipBundle));
+      buildDownloadRequest(data, resolvedOptions, playlistId, playlistTitle, videos.length, isZipBundle));
     activeDownloadRequests = downloadRequests;
 
     try {
@@ -292,6 +325,37 @@ export function createPlaylistDownloaderState(getOptions: () => Options) {
     set isScrollSyncEnabled(value) {
       isScrollSyncEnabled = value;
     },
+    get effectiveDownloadType() {
+      return effectiveDownloadType;
+    },
+    set effectiveDownloadType(value) {
+      downloadTypeOverride = value === getOptions().defaultDownloadType ? null : value;
+    },
+    get effectiveVideoExt() {
+      return effectiveVideoExt;
+    },
+    set effectiveVideoExt(value) {
+      videoExtOverride = value === getOptions().ext.video ? null : value;
+    },
+    get effectiveAudioExt() {
+      return effectiveAudioExt;
+    },
+    set effectiveAudioExt(value) {
+      audioExtOverride = value === getOptions().ext.audio ? null : value;
+    },
+    get hasAnyOverride() {
+      return hasAnyOverride;
+    },
+    get isDownloadTypeOverridden() {
+      return downloadTypeOverride !== null;
+    },
+    get isVideoExtOverridden() {
+      return videoExtOverride !== null;
+    },
+    get isAudioExtOverridden() {
+      return audioExtOverride !== null;
+    },
+    resetOverrides,
     toggleSelectedDownload,
     revealAndDownloadAll,
     cancelReveal,

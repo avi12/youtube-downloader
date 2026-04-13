@@ -5,6 +5,8 @@
    */
   import { createPlaylistDownloaderState } from "./PlaylistDownloader.state.svelte";
   import { createPlaylistToggleButtons } from "./PlaylistDownloader.toggle-buttons.svelte";
+  import PolymerSelect from "./PolymerSelect.svelte";
+  import { AUTO_EXTENSION, AUTO_EXTENSION_LABEL, supportedExtensions } from "@/lib/containers";
   import { applyPolymerCustomStyles, PAPER_PROGRESS_THEME, sendButtonData } from "@/lib/polymer-utils";
   import { buttonClickSignal } from "@/lib/synced-stores.svelte";
   import {
@@ -12,6 +14,7 @@
     ButtonState,
     ButtonStyle,
     ButtonType,
+    DownloadType,
     IconName,
     PlaylistDownloadMode
   } from "@/types";
@@ -21,15 +24,9 @@
   type Props = { options: Options };
 
   const { options }: Props = $props();
-  const state = createPlaylistDownloaderState(() => options);
+  const playlist = createPlaylistDownloaderState(() => options);
 
-  const toggleButtons = createPlaylistToggleButtons(state);
-
-  $effect(() => {
-    void state.downloadMode;
-    void state.outputMode;
-    toggleButtons.refreshAll();
-  });
+  const toggleButtons = createPlaylistToggleButtons(playlist);
 
   // ─── Download button ─────────────────────────────────────────────────────────
 
@@ -37,29 +34,94 @@
   const DOWNLOAD_ALL_BUTTON_ID = "playlist-download-all-btn";
   const SELECT_ALL_BUTTON_ID = "playlist-select-all-btn";
 
+  let elSelectAllButton = $state<HTMLElement | null>(null);
+  let elDownloadButton = $state<HTMLElement | null>(null);
+  let elDownloadAllButton = $state<HTMLElement | null>(null);
+
+  $effect(() => {
+    void playlist.downloadMode;
+    void playlist.outputMode;
+    toggleButtons.refreshAll();
+  });
+
+  $effect(() => {
+    if (!elSelectAllButton) {
+      return;
+    }
+
+    const hasAny = playlist.downloadableVideos.length > 0;
+    const label = playlist.isAllSelected ? "Clear selection" : "Check all loaded";
+    const tooltip = playlist.isAllSelected
+      ? "Uncheck every video in this list"
+      : "Check every video currently loaded in this list (scroll down to load more)";
+    sendButtonData(elSelectAllButton, {
+      iconName: IconName.None,
+      title: label,
+      accessibilityText: label,
+      style: ButtonStyle.Mono,
+      type: playlist.isAllSelected ? ButtonType.Tonal : ButtonType.Outline,
+      buttonSize: ButtonSize.Default,
+      state: hasAny ? ButtonState.Active : ButtonState.Disabled,
+      isFullWidth: false,
+      isDisabled: !hasAny,
+      tooltip
+    });
+  });
+
+  $effect(() => {
+    if (!elDownloadButton) {
+      return;
+    }
+
+    const isDisabled = playlist.selectedDownloadableVideos.length === 0 && !playlist.isDownloading;
+    sendButtonData(elDownloadButton, {
+      iconName: playlist.isDownloading ? IconName.Close : IconName.Download,
+      title: playlist.downloadButtonLabel,
+      accessibilityText: playlist.downloadButtonLabel,
+      style: ButtonStyle.Mono,
+      type: ButtonType.Tonal,
+      buttonSize: ButtonSize.Default,
+      state: isDisabled ? ButtonState.Disabled : ButtonState.Active,
+      isFullWidth: false,
+      isDisabled,
+      tooltip: playlist.downloadButtonLabel
+    });
+  });
+
+  $effect(() => {
+    if (!elDownloadAllButton) {
+      return;
+    }
+
+    const isBusy = playlist.isRevealingAll || playlist.isDownloading;
+    const downloadAllLabel = playlist.isRevealingAll
+      ? `Revealing hidden videos (${playlist.revealedVideoCount})`
+      : "Grab the whole playlist";
+    const downloadAllTooltip = playlist.isRevealingAll
+      ? "Stop loading the rest of the playlist"
+      : "Scroll through the playlist to reveal any hidden videos, then download every one (ignores the checkboxes)";
+
+    sendButtonData(elDownloadAllButton, {
+      iconName: playlist.isRevealingAll ? IconName.Close : IconName.PlaylistAdd,
+      title: downloadAllLabel,
+      accessibilityText: downloadAllLabel,
+      style: ButtonStyle.Mono,
+      type: ButtonType.Outline,
+      buttonSize: ButtonSize.Default,
+      state: isBusy && !playlist.isRevealingAll ? ButtonState.Disabled : ButtonState.Active,
+      isFullWidth: false,
+      isDisabled: isBusy && !playlist.isRevealingAll,
+      tooltip: downloadAllTooltip
+    });
+  });
+
   function attachSelectAllButton(elButton: Element) {
     if (!(elButton instanceof HTMLElement)) {
       return;
     }
 
-    if (!elButton.hasAttribute("data-ytdl-button-id")) {
-      elButton.setAttribute("data-ytdl-button-id", SELECT_ALL_BUTTON_ID);
-    }
-
-    const hasAny = state.downloadableVideos.length > 0;
-    const label = state.isAllSelected ? "Clear selection" : "Select all";
-    sendButtonData(elButton, {
-      iconName: IconName.None,
-      title: label,
-      accessibilityText: label,
-      style: ButtonStyle.Mono,
-      type: ButtonType.Outline,
-      buttonSize: ButtonSize.Default,
-      state: hasAny ? ButtonState.Active : ButtonState.Disabled,
-      isFullWidth: false,
-      isDisabled: !hasAny,
-      tooltip: label
-    });
+    elButton.setAttribute("data-ytdl-button-id", SELECT_ALL_BUTTON_ID);
+    elSelectAllButton = elButton;
   }
 
   function attachDownloadButton(elButton: Element) {
@@ -67,23 +129,8 @@
       return;
     }
 
-    if (!elButton.hasAttribute("data-ytdl-button-id")) {
-      elButton.setAttribute("data-ytdl-button-id", DOWNLOAD_BUTTON_ID);
-    }
-
-    const isDisabled = state.selectedDownloadableVideos.length === 0 && !state.isDownloading;
-    sendButtonData(elButton, {
-      iconName: state.isDownloading ? IconName.Close : IconName.Download,
-      title: state.downloadButtonLabel,
-      accessibilityText: state.downloadButtonLabel,
-      style: ButtonStyle.Mono,
-      type: ButtonType.Tonal,
-      buttonSize: ButtonSize.Default,
-      state: isDisabled ? ButtonState.Disabled : ButtonState.Active,
-      isFullWidth: false,
-      isDisabled,
-      tooltip: state.downloadButtonLabel
-    });
+    elButton.setAttribute("data-ytdl-button-id", DOWNLOAD_BUTTON_ID);
+    elDownloadButton = elButton;
   }
 
   function attachDownloadAllButton(elButton: Element) {
@@ -91,27 +138,8 @@
       return;
     }
 
-    if (!elButton.hasAttribute("data-ytdl-button-id")) {
-      elButton.setAttribute("data-ytdl-button-id", DOWNLOAD_ALL_BUTTON_ID);
-    }
-
-    const isBusy = state.isRevealingAll || state.isDownloading;
-    const downloadAllLabel = state.isRevealingAll
-      ? `Loading all videos (${state.revealedVideoCount})`
-      : "Download entire playlist";
-
-    sendButtonData(elButton, {
-      iconName: state.isRevealingAll ? IconName.Close : IconName.Download,
-      title: downloadAllLabel,
-      accessibilityText: downloadAllLabel,
-      style: ButtonStyle.Mono,
-      type: ButtonType.Outline,
-      buttonSize: ButtonSize.Default,
-      state: isBusy && !state.isRevealingAll ? ButtonState.Disabled : ButtonState.Active,
-      isFullWidth: false,
-      isDisabled: isBusy && !state.isRevealingAll,
-      tooltip: downloadAllLabel
-    });
+    elButton.setAttribute("data-ytdl-button-id", DOWNLOAD_ALL_BUTTON_ID);
+    elDownloadAllButton = elButton;
   }
 
   function attachProgressBar(elProgress: Element) {
@@ -129,8 +157,8 @@
 
     function handleCheckedChanged() {
       const nextChecked = readCheckedAttribute();
-      if (nextChecked !== state.isScrollSyncEnabled) {
-        state.isScrollSyncEnabled = nextChecked;
+      if (nextChecked !== playlist.isScrollSyncEnabled) {
+        playlist.isScrollSyncEnabled = nextChecked;
       }
     }
 
@@ -150,25 +178,25 @@
     // after selectAll) and re-executes the same branch with inverted logic.
     untrack(() => {
       if (clicked.buttonId === DOWNLOAD_BUTTON_ID) {
-        state.toggleSelectedDownload();
+        playlist.toggleSelectedDownload();
         return;
       }
 
       if (clicked.buttonId === DOWNLOAD_ALL_BUTTON_ID) {
-        if (state.isRevealingAll) {
-          state.cancelReveal();
+        if (playlist.isRevealingAll) {
+          playlist.cancelReveal();
         } else {
-          void state.revealAndDownloadAll();
+          void playlist.revealAndDownloadAll();
         }
 
         return;
       }
 
       if (clicked.buttonId === SELECT_ALL_BUTTON_ID) {
-        if (state.isAllSelected) {
-          state.clearSelection();
+        if (playlist.isAllSelected) {
+          playlist.clearSelection();
         } else {
-          state.selectAll();
+          playlist.selectAll();
         }
 
         return;
@@ -178,57 +206,151 @@
     });
   });
 
-  const isDataSaverSelected = $derived(state.downloadMode === PlaylistDownloadMode.DataSaver);
+  const isDataSaverSelected = $derived(playlist.downloadMode === PlaylistDownloadMode.DataSaver);
+
+  let isAdvancedOpen = $state(false);
+
+  function formatExtensionLabel(extension: string) {
+    return extension === AUTO_EXTENSION ? AUTO_EXTENSION_LABEL : extension.toUpperCase();
+  }
+
+  const videoExtOptions = $derived(
+    supportedExtensions.video.map(extension => ({ value: extension, label: formatExtensionLabel(extension) }))
+  );
+  const audioExtOptions = $derived(
+    supportedExtensions.audio.map(extension => ({ value: extension, label: formatExtensionLabel(extension) }))
+  );
+
+  const isVideoExtDisabled = $derived(playlist.effectiveDownloadType === DownloadType.Audio);
+  const isAudioExtDisabled = $derived(playlist.effectiveDownloadType === DownloadType.Video);
+
+  function toggleAdvanced() {
+    isAdvancedOpen = !isAdvancedOpen;
+  }
+
+  function handleVideoExtChange(value: string) {
+    playlist.effectiveVideoExt = value;
+  }
+
+  function handleAudioExtChange(value: string) {
+    playlist.effectiveAudioExt = value;
+  }
 </script>
 
 <div class="ytdl-playlist-container" aria-label="Playlist Downloader" role="region">
-  {#if state.error}
-    <div class="ytdl-error-banner" role="alert">{state.error}</div>
+  {#if playlist.error}
+    <div class="ytdl-error-banner" role="alert">{playlist.error}</div>
   {/if}
 
-  <div class="ytdl-toggle-group" aria-label="Download speed" role="group">
-    <yt-button-view-model {@attach toggleButtons.createAttacher(toggleButtons.buttons[0])}></yt-button-view-model>
-    <yt-button-view-model {@attach toggleButtons.createAttacher(toggleButtons.buttons[1])}></yt-button-view-model>
+  <div class="ytdl-labelled-toggle" aria-labelledby="ytdl-speed-label" role="group">
+    <span id="ytdl-speed-label" class="ytdl-toggle-label">Speed</span>
+    <div class="ytdl-toggle-group">
+      <yt-button-view-model {@attach toggleButtons.createAttacher(toggleButtons.buttons[0])}></yt-button-view-model>
+      <yt-button-view-model {@attach toggleButtons.createAttacher(toggleButtons.buttons[1])}></yt-button-view-model>
+    </div>
   </div>
 
-  <div class="ytdl-toggle-group" aria-label="Output format" role="group">
-    <yt-button-view-model {@attach toggleButtons.createAttacher(toggleButtons.buttons[2])}></yt-button-view-model>
-    <yt-button-view-model {@attach toggleButtons.createAttacher(toggleButtons.buttons[3])}></yt-button-view-model>
+  <div class="ytdl-labelled-toggle" aria-labelledby="ytdl-output-label" role="group">
+    <span id="ytdl-output-label" class="ytdl-toggle-label">Output</span>
+    <div class="ytdl-toggle-group">
+      <yt-button-view-model {@attach toggleButtons.createAttacher(toggleButtons.buttons[2])}></yt-button-view-model>
+      <yt-button-view-model {@attach toggleButtons.createAttacher(toggleButtons.buttons[3])}></yt-button-view-model>
+    </div>
   </div>
+
+  <div class="ytdl-labelled-toggle" aria-labelledby="ytdl-type-label" role="group">
+    <span id="ytdl-type-label" class="ytdl-toggle-label">
+      Type
+      {#if playlist.isDownloadTypeOverridden}
+        <span class="ytdl-override-dot" aria-hidden="true" title="Different from your default"></span>
+      {/if}
+    </span>
+    <div class="ytdl-toggle-group ytdl-toggle-group-wrap">
+      <yt-button-view-model {@attach toggleButtons.createAttacher(toggleButtons.buttons[4])}></yt-button-view-model>
+      <yt-button-view-model {@attach toggleButtons.createAttacher(toggleButtons.buttons[5])}></yt-button-view-model>
+      <yt-button-view-model {@attach toggleButtons.createAttacher(toggleButtons.buttons[6])}></yt-button-view-model>
+      <yt-button-view-model {@attach toggleButtons.createAttacher(toggleButtons.buttons[7])}></yt-button-view-model>
+    </div>
+  </div>
+
+  <details class="ytdl-advanced" open={isAdvancedOpen || undefined}>
+    <summary class="ytdl-advanced-summary" onclick={toggleAdvanced}>
+      <span>Advanced format</span>
+      {#if playlist.isVideoExtOverridden || playlist.isAudioExtOverridden}
+        <span class="ytdl-override-dot" aria-hidden="true" title="Format overridden"></span>
+      {/if}
+    </summary>
+
+    <div class="ytdl-advanced-body">
+      <div class="ytdl-advanced-field" class:is-disabled={isVideoExtDisabled}>
+        <PolymerSelect
+          id="playlist-video-ext"
+          disabled={isVideoExtDisabled}
+          label="Video format"
+          onchange={handleVideoExtChange}
+          options={videoExtOptions}
+          value={playlist.effectiveVideoExt}
+        />
+      </div>
+
+      <div class="ytdl-advanced-field" class:is-disabled={isAudioExtDisabled}>
+        <PolymerSelect
+          id="playlist-audio-ext"
+          disabled={isAudioExtDisabled}
+          label="Audio format"
+          onchange={handleAudioExtChange}
+          options={audioExtOptions}
+          value={playlist.effectiveAudioExt}
+        />
+      </div>
+
+      {#if playlist.hasAnyOverride}
+        <button class="ytdl-reset-link" onclick={playlist.resetOverrides} type="button">
+          Reset to my defaults
+        </button>
+      {/if}
+    </div>
+  </details>
 
   <div class="ytdl-playlist-actions">
     <div class="ytdl-selection-row">
       <yt-button-view-model {@attach attachSelectAllButton}></yt-button-view-model>
       <span class="ytdl-selection-count" aria-live="polite">
-        {state.selectedDownloadableVideos.length} / {state.downloadableVideos.length} selected
+        {playlist.selectedDownloadableVideos.length} of {playlist.downloadableVideos.length}
+        video{playlist.downloadableVideos.length === 1 ? "" : "s"} selected
       </span>
     </div>
     <yt-button-view-model {@attach attachDownloadButton}></yt-button-view-model>
+
+    <div class="ytdl-or-divider" aria-hidden="true">
+      <span>or, skip selecting</span>
+    </div>
+
     <yt-button-view-model {@attach attachDownloadAllButton}></yt-button-view-model>
 
-    {#if state.isDownloading && state.totalCount > 0}
+    {#if playlist.isDownloading && playlist.totalCount > 0}
       <tp-yt-paper-progress
         {@attach attachProgressBar}
-        max={state.totalCount}
-        value={state.downloadedCount}
+        max={playlist.totalCount}
+        value={playlist.downloadedCount}
       ></tp-yt-paper-progress>
     {/if}
   </div>
 
-  {#if isDataSaverSelected}
-    <div class="ytdl-scroll-sync-option">
-      <tp-yt-paper-checkbox
-        {@attach attachScrollSyncCheckbox}
-        checked={state.isScrollSyncEnabled || undefined}
-      >
-        Scroll to currently-downloading video
-      </tp-yt-paper-checkbox>
-    </div>
-  {/if}
+  <div class="ytdl-scroll-sync-option" class:is-disabled={!isDataSaverSelected}>
+    <tp-yt-paper-checkbox
+      {@attach attachScrollSyncCheckbox}
+      checked={playlist.isScrollSyncEnabled ? "" : undefined}
+      disabled={!isDataSaverSelected ? "" : undefined}
+    >
+      Scroll to currently-downloading video
+    </tp-yt-paper-checkbox>
+  </div>
 
-  {#if state.nonDownloadableCount > 0}
+  {#if playlist.nonDownloadableCount > 0}
     <p class="ytdl-restriction-notice" role="status">
-      {state.nonDownloadableCount} video{state.nonDownloadableCount === 1 ? "" : "s"} not downloadable
+      <span class="ytdl-restriction-icon" aria-hidden="true">i</span>
+      {playlist.nonDownloadableCount} video{playlist.nonDownloadableCount === 1 ? "" : "s"} not downloadable
       (private or restricted)
     </p>
   {/if}
@@ -242,9 +364,102 @@
     padding: 12px 0;
   }
 
+  .ytdl-labelled-toggle {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .ytdl-toggle-label {
+    display: inline-flex;
+    gap: 6px;
+    align-items: center;
+    min-width: 52px;
+    color: var(--yt-spec-text-secondary, #aaaaaa);
+    font-weight: 500;
+    font-size: 1.2rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+  }
+
   .ytdl-toggle-group {
     display: flex;
     gap: 4px;
+  }
+
+  .ytdl-toggle-group-wrap {
+    flex-wrap: wrap;
+  }
+
+  .ytdl-override-dot {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--yt-spec-call-to-action, #3ea6ff);
+  }
+
+  .ytdl-advanced {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-top: 4px;
+    border-top: 1px solid var(--yt-spec-10-percent-layer, rgb(255 255 255 / 10%));
+  }
+
+  .ytdl-advanced-summary {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    color: var(--yt-spec-text-secondary, #aaaaaa);
+    list-style: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+
+    &::-webkit-details-marker {
+      display: none;
+    }
+
+    &::before {
+      content: "▸";
+      display: inline-block;
+      transition: transform 180ms ease;
+    }
+  }
+
+  .ytdl-advanced[open] .ytdl-advanced-summary::before {
+    transform: rotate(90deg);
+  }
+
+  .ytdl-advanced-body {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-left: 12px;
+  }
+
+  .ytdl-advanced-field {
+    transition: opacity 150ms ease;
+
+    &.is-disabled {
+      opacity: 50%;
+      pointer-events: none;
+    }
+  }
+
+  .ytdl-reset-link {
+    align-self: flex-start;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: var(--yt-spec-call-to-action, #3ea6ff);
+    font-family: inherit;
+    font-size: 1.2rem;
+    cursor: pointer;
+
+    &:hover {
+      text-decoration: underline;
+    }
   }
 
   .ytdl-playlist-actions {
@@ -260,8 +475,27 @@
   }
 
   .ytdl-selection-count {
-    color: var(--yt-spec-text-secondary, #aaa);
+    color: var(--yt-spec-text-secondary, #aaaaaa);
     font-size: 1.2rem;
+  }
+
+  .ytdl-or-divider {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin: 4px 0;
+    color: var(--yt-spec-text-secondary, #aaaaaa);
+    font-size: 1.1rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .ytdl-or-divider::before,
+  .ytdl-or-divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+    background: var(--yt-spec-10-percent-layer, rgb(255 255 255 / 10%));
   }
 
   .ytdl-error-banner {
@@ -273,8 +507,28 @@
   }
 
   .ytdl-restriction-notice {
+    display: flex;
+    gap: 6px;
+    align-items: center;
     margin: 0;
+    color: var(--yt-spec-text-secondary, #aaaaaa);
     font-size: 1.2rem;
+  }
+
+  .ytdl-restriction-icon {
+    display: inline-flex;
+    flex-shrink: 0;
+    justify-content: center;
+    align-items: center;
+    width: 16px;
+    height: 16px;
+    border: 1px solid currentColor;
+    border-radius: 50%;
+    font-family: serif;
+    font-style: italic;
+    font-weight: 700;
+    font-size: 1.1rem;
+    line-height: 1;
   }
 
   .ytdl-scroll-sync-option {
@@ -283,5 +537,11 @@
     align-items: center;
     font-size: 1.2rem;
     cursor: pointer;
+    transition: opacity 200ms ease;
+  }
+
+  .ytdl-scroll-sync-option.is-disabled {
+    opacity: 50%;
+    cursor: not-allowed;
   }
 </style>
