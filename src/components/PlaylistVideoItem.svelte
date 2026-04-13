@@ -253,6 +253,7 @@
     flex-shrink: 0;
     gap: 4px;
     align-items: center;
+    padding-inline-start: 8px;
     overflow: hidden;
   }
 
