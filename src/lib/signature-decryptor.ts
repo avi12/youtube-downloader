@@ -1,12 +1,18 @@
+const enum TransformOpType {
+  Swap = "swap",
+  Reverse = "reverse",
+  Splice = "splice"
+}
+
 type TransformOp = {
-  type: "swap";
+  type: TransformOpType.Swap;
   argument: number;
 }
   | {
-    type: "reverse";
+    type: TransformOpType.Reverse;
   }
   | {
-    type: "splice";
+    type: TransformOpType.Splice;
     argument: number;
   };
 
@@ -67,7 +73,7 @@ function extractTransformOperations(playerSource: string, functionName: string) 
 
   const helperBody = helperObjMatch[1];
 
-  const methodTypes = new Map<string, "swap" | "reverse" | "splice">();
+  const methodTypes = new Map<string, TransformOpType>();
 
   const methodPattern = /([a-zA-Z0-9$]+)\s*:\s*function\s*\([^)]*\)\s*\{([^}]+)\}/g;
   let methodMatch;
@@ -76,11 +82,11 @@ function extractTransformOperations(playerSource: string, functionName: string) 
     const methodName = methodMatch[1];
     const methodBody = methodMatch[2];
     if (methodBody.includes("reverse")) {
-      methodTypes.set(methodName, "reverse");
+      methodTypes.set(methodName, TransformOpType.Reverse);
     } else if (methodBody.includes("splice")) {
-      methodTypes.set(methodName, "splice");
+      methodTypes.set(methodName, TransformOpType.Splice);
     } else {
-      methodTypes.set(methodName, "swap");
+      methodTypes.set(methodName, TransformOpType.Swap);
     }
   }
 
@@ -98,8 +104,8 @@ function extractTransformOperations(playerSource: string, functionName: string) 
       continue;
     }
 
-    if (opType === "reverse") {
-      operations.push({ type: "reverse" });
+    if (opType === TransformOpType.Reverse) {
+      operations.push({ type: TransformOpType.Reverse });
     } else {
       operations.push({ type: opType, argument });
     }
@@ -113,13 +119,13 @@ function applyTransforms(signature: string, operations: TransformOp[]) {
 
   for (const operation of operations) {
     switch (operation.type) {
-      case "reverse":
+      case TransformOpType.Reverse:
         characters.reverse();
         break;
-      case "splice":
+      case TransformOpType.Splice:
         characters.splice(0, operation.argument);
         break;
-      case "swap": {
+      case TransformOpType.Swap: {
         const position = operation.argument % characters.length;
         const temp = characters[0];
         characters[0] = characters[position];
