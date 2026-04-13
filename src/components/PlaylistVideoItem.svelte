@@ -253,7 +253,9 @@
     flex-shrink: 0;
     gap: 4px;
     align-items: center;
-    padding-inline-start: 8px;
+    padding-inline-start: calc(
+      (var(--paper-checkbox-ink-size, 48px) - var(--paper-checkbox-size, 18px)) / 2
+    );
     overflow: hidden;
   }
 
