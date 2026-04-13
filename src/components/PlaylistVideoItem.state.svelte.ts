@@ -131,7 +131,7 @@ export function createPlaylistVideoItemState(
     }
 
     const options = getOptions();
-    let downloadType = videoData.isMusic ? DownloadType.Audio : DownloadType.VideoAndAudio;
+    let downloadType: DownloadType = videoData.isMusic ? DownloadType.Audio : DownloadType.VideoAndAudio;
     if (options.defaultDownloadType && options.defaultDownloadType !== "auto") {
       downloadType = options.defaultDownloadType;
     }

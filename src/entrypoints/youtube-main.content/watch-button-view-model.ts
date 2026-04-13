@@ -24,7 +24,7 @@ export interface ButtonViewState {
 }
 
 export function buildDownloadData(state: ButtonViewState): ButtonViewModelData {
-  let iconName = IconName.Download;
+  let iconName: IconName = IconName.Download;
   if (state.isDone) {
     iconName = IconName.CheckCircleThick;
   } else if (state.isDownloading) {

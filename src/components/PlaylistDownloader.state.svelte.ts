@@ -22,7 +22,7 @@ export const batchDownloadStatus = $state({ isRunning: false });
 // User-facing preferences live at module scope so they survive any re-mount
 // of the panel (e.g. when YouTube rebuilds the header subtree on theme
 // transitions and our mount container gets re-created).
-let downloadMode = $state(PlaylistDownloadMode.Fast);
+let downloadMode = $state<PlaylistDownloadMode>(PlaylistDownloadMode.Fast);
 let outputMode = $state(PlaylistOutputMode.Zip);
 let isScrollSyncEnabled = $state(false);
 let downloadTypeOverride = $state<DownloadTypePreference | null>(null);
@@ -37,7 +37,7 @@ function buildDownloadRequest(
   playlistTotalCount: number,
   isZipBundle: boolean
 ): DownloadRequest {
-  let downloadType = data.isMusic ? DownloadType.Audio : DownloadType.VideoAndAudio;
+  let downloadType: DownloadType = data.isMusic ? DownloadType.Audio : DownloadType.VideoAndAudio;
   if (options.defaultDownloadType !== "auto") {
     downloadType = options.defaultDownloadType;
   }

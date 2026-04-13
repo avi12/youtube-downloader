@@ -58,7 +58,7 @@ export const supportedExtensions = {
 };
 
 export function resolveAutoExtension(
-  extension: string, mimeType: string, type: DownloadType.Video | DownloadType.Audio
+  extension: string, mimeType: string, type: typeof DownloadType.Video | typeof DownloadType.Audio
 ) {
   if (extension !== AUTO_EXTENSION) {
     return extension;
