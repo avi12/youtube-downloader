@@ -14,7 +14,6 @@
     playlist.selectedDownloadableVideos.length > 0 && !playlist.isAllSelected
   );
   const selectAllLabel = $derived(playlist.isAllSelected ? "Deselect all" : "Select all");
-  const selectAllShortcut = navigator.platform.toUpperCase().startsWith("MAC") ? "⌘A" : "Ctrl+A";
   const isSelectAllDisabled = $derived(playlist.downloadableVideos.length === 0);
 
   let elSelectAllCheckbox = $state<HTMLElement | null>(null);
@@ -53,6 +52,32 @@
   function attachProgressBar(elProgress: Element) {
     applyPolymerCustomStyles(elProgress, PAPER_PROGRESS_THEME);
   }
+
+  const progressAriaLabel = $derived.by(() => {
+    if (playlist.isRevealingAll) {
+      return `Loading playlist: ${playlist.revealedVideoCount} videos found`;
+    }
+
+    if (playlist.isDownloading) {
+      return `Downloading ${playlist.downloadedCount} of ${playlist.totalCount} videos`;
+    }
+
+    const count = playlist.activeIndividualDownloadCount;
+    return `Downloading ${count} video${count === 1 ? "" : "s"}`;
+  });
+
+  const progressAriaValueText = $derived.by(() => {
+    if (playlist.isRevealingAll) {
+      return `${playlist.revealedVideoCount} videos found`;
+    }
+
+    if (playlist.isDownloading) {
+      return `${playlist.downloadedCount} of ${playlist.totalCount} complete`;
+    }
+
+    const count = playlist.activeIndividualDownloadCount;
+    return `${count} video${count === 1 ? "" : "s"} in progress`;
+  });
 </script>
 
 {#if playlist.error}
@@ -68,7 +93,7 @@
       disabled={isSelectAllDisabled ? "" : undefined}
       onchange={handleSelectAllChange}
     >
-      {selectAllLabel} · {selectAllShortcut}
+      {selectAllLabel}
     </tp-yt-paper-checkbox>
     <yt-button-view-model {@attach actionButtons.attachDeselectAll}></yt-button-view-model>
   </div>
@@ -86,15 +111,13 @@
 
   <yt-button-view-model {@attach actionButtons.attachDownloadAll}></yt-button-view-model>
 
-  {#if playlist.isRevealingAll || (playlist.isDownloading && playlist.totalCount > 0)}
+  {#if playlist.isRevealingAll
+    || (playlist.isDownloading && playlist.totalCount > 0)
+    || playlist.activeIndividualDownloadCount > 0}
     <tp-yt-paper-progress
       {@attach attachProgressBar}
-      aria-label={playlist.isRevealingAll
-        ? `Loading playlist: ${playlist.revealedVideoCount} videos found`
-        : `Downloading ${playlist.downloadedCount} of ${playlist.totalCount} videos`}
-      aria-valuetext={playlist.isRevealingAll
-        ? `${playlist.revealedVideoCount} videos found`
-        : `${playlist.downloadedCount} of ${playlist.totalCount} complete`}
+      aria-label={progressAriaLabel}
+      aria-valuetext={progressAriaValueText}
       indeterminate={playlist.isRevealingAll || playlist.totalProgress === 0 || undefined}
       max={1}
       value={playlist.totalProgress}
@@ -123,6 +146,10 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
+  }
+
+  .ytdl-playlist-actions :global(tp-yt-paper-progress) {
+    width: 100%;
   }
 
   .ytdl-select-row {

@@ -2,7 +2,6 @@ import { revealAllPlaylistVideos, scrollVideoItemIntoView } from "./PlaylistDown
 import { resolveVideoFilename } from "@/lib/containers";
 import { MessageType, sendMessage } from "@/lib/messaging";
 import { checkedPlaylistVideos } from "@/lib/playlist-selection.svelte";
-import { musicListItem, videoOnlyListItem, videoQueueItem } from "@/lib/storage";
 import { downloadProgressStore, playlistMetadataSignal, videoDataStore } from "@/lib/synced-stores.svelte";
 import {
   DownloadType,
@@ -56,7 +55,6 @@ function buildDownloadRequest(
 export function createPlaylistDownloaderState(getOptions: () => Options) {
   const videoDataMap = new SvelteMap<string, VideoData>();
   let isDownloading = $state(false);
-  let downloadedCount = $state(0);
   let totalCount = $state(0);
   let error = $state("");
   let isRevealingAll = $state(false);
@@ -110,6 +108,17 @@ export function createPlaylistDownloaderState(getOptions: () => Options) {
     downloadableVideos.length > 0 && selectedDownloadableVideos.length === downloadableVideos.length
   );
 
+  let activeDownloadRequests = $state<DownloadRequest[]>([]);
+
+  // A video is done when its progress entry has been removed from the store
+  // (isRemoved: true from PipelineRemoval) or marked as complete (isDone: true).
+  const downloadedCount = $derived(
+    activeDownloadRequests.filter(request => {
+      const entry = downloadProgressStore.get(request.videoId);
+      return !entry || entry.isDone;
+    }).length
+  );
+
   const downloadButtonLabel = $derived.by(() => {
     if (isDownloading) {
       return `Downloading ${downloadedCount} of ${totalCount}`;
@@ -123,38 +132,14 @@ export function createPlaylistDownloaderState(getOptions: () => Options) {
     return `Download ${count} video${count === 1 ? "" : "s"}`;
   });
 
-  function watchCompletion(downloadRequests: DownloadRequest[]) {
-    async function checkCompletion() {
-      const [queueValues, musicValues, videoOnlyValues] = await Promise.all([
-        videoQueueItem.getValue(),
-        musicListItem.getValue(),
-        videoOnlyListItem.getValue()
-      ]);
-
-      const remaining = downloadRequests.filter(request =>
-        queueValues.some(item => item.videoId === request.videoId) ||
-          musicValues.includes(request.videoId) ||
-          videoOnlyValues.includes(request.videoId)).length;
-
-      downloadedCount = totalCount - remaining;
-
-      if (remaining === 0) {
-        isDownloading = false;
-        batchDownloadStatus.isRunning = false;
-        for (const unwatch of unwatches) {
-          unwatch();
-        }
-      }
+  $effect(() => {
+    if (!isDownloading || totalCount === 0 || downloadedCount < totalCount) {
+      return;
     }
 
-    const unwatches = [
-      videoQueueItem.watch(() => checkCompletion()),
-      musicListItem.watch(() => checkCompletion()),
-      videoOnlyListItem.watch(() => checkCompletion())
-    ];
-  }
-
-  let activeDownloadRequests: DownloadRequest[] = [];
+    isDownloading = false;
+    batchDownloadStatus.isRunning = false;
+  });
 
   async function startDownload(videos: readonly VideoData[]) {
     if (videos.length === 0) {
@@ -165,7 +150,6 @@ export function createPlaylistDownloaderState(getOptions: () => Options) {
     isDownloading = true;
     batchDownloadStatus.isRunning = true;
     totalCount = videos.length;
-    downloadedCount = 0;
 
     for (const video of videos) {
       downloadProgressStore.unsuppress(video.videoId);
@@ -199,21 +183,21 @@ export function createPlaylistDownloaderState(getOptions: () => Options) {
       isDownloading = false;
       return;
     }
-
-    watchCompletion(downloadRequests);
   }
 
   async function cancelDownload() {
-    const videoIds = activeDownloadRequests.map(request => request.videoId);
-    await sendMessage(MessageType.CancelDownload, { videoIds });
+    const activeVideoIds = activeDownloadRequests
+      .filter(request => downloadProgressStore.get(request.videoId)?.isDownloading)
+      .map(request => request.videoId);
+    if (activeVideoIds.length > 0) {
+      await sendMessage(MessageType.CancelDownload, { videoIds: activeVideoIds });
+    }
+
     isDownloading = false;
     batchDownloadStatus.isRunning = false;
-    downloadedCount = 0;
 
-    for (const videoId of videoIds) {
-      if (!downloadProgressStore.get(videoId)?.isDone) {
-        downloadProgressStore.delete(videoId);
-      }
+    for (const videoId of activeVideoIds) {
+      downloadProgressStore.delete(videoId);
     }
   }
 
@@ -273,17 +257,44 @@ export function createPlaylistDownloaderState(getOptions: () => Options) {
     await revealAllVideos();
   }
 
-  const totalProgress = $derived.by(() => {
-    if (!isDownloading || totalCount === 0) {
+  // Count of playlist videos being downloaded individually (outside of a batch).
+  const activeIndividualDownloadCount = $derived.by(() => {
+    if (isDownloading) {
       return 0;
     }
 
-    let sum = 0;
-    for (const request of activeDownloadRequests) {
-      const entry = downloadProgressStore.get(request.videoId);
-      sum += entry?.progress ?? 0;
+    let count = 0;
+    for (const videoId of videoDataMap.keys()) {
+      if (downloadProgressStore.get(videoId)?.isDownloading) {
+        count++;
+      }
     }
-    return sum / totalCount;
+    return count;
+  });
+
+  const totalProgress = $derived.by(() => {
+    if (isDownloading && totalCount > 0) {
+      let sum = 0;
+      for (const request of activeDownloadRequests) {
+        const entry = downloadProgressStore.get(request.videoId);
+        // A missing entry means the video finished and was removed from the store.
+        sum += entry?.progress ?? 1;
+      }
+      return sum / totalCount;
+    }
+
+    if (activeIndividualDownloadCount > 0) {
+      let sum = 0;
+      for (const videoId of videoDataMap.keys()) {
+        const entry = downloadProgressStore.get(videoId);
+        if (entry?.isDownloading) {
+          sum += entry.progress;
+        }
+      }
+      return sum / activeIndividualDownloadCount;
+    }
+
+    return 0;
   });
 
   const activeDownloadVideoId = $derived.by(() => {
@@ -384,6 +395,9 @@ export function createPlaylistDownloaderState(getOptions: () => Options) {
     },
     get hasAnyOverride() {
       return hasAnyOverride;
+    },
+    get activeIndividualDownloadCount() {
+      return activeIndividualDownloadCount;
     },
     get totalProgress() {
       return totalProgress;
