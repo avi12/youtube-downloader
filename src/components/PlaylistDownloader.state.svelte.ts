@@ -84,7 +84,6 @@ export function createPlaylistDownloaderState(getOptions: () => Options) {
   let shouldStartDownloadAfterReveal = false;
   let abortReveal = false;
 
-  // Sync video data from the synced store as each playlist item reports in
   $effect(() => {
     for (const videoId of videoDataStore.keys()) {
       const data = videoDataStore.get(videoId);

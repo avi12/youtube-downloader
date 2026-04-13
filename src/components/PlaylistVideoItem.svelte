@@ -1,6 +1,6 @@
 <script lang="ts" module>
-  // Module-level guard to prevent duplicate download triggers from
-  // multiple component instances responding to the same ButtonClick message
+  // Guards against duplicate downloads from multiple component instances
+  // responding to the same ButtonClick.
   const activeDownloadClicks = $state(new Set<string>());
 </script>
 
@@ -32,10 +32,8 @@
 
   const isChecked = $derived(checkedPlaylistVideos.has(videoId));
 
-  // Sync the selection set from the Polymer checkbox's reported state. Using
-  // `e.target.checked` (not a toggle) keeps programmatic writes idempotent:
-  // when selectAll/clearSelection flips `isChecked`, Polymer re-fires the
-  // `change` event, but this handler no-ops because the set already matches.
+  // Reading `e.target.checked` (not toggling) keeps programmatic writes idempotent
+  // when selectAll/clearSelection flips isChecked.
   function handleCheckboxChange(e: Event) {
     if (!(e.target instanceof HTMLElement)) {
       return;
@@ -48,8 +46,6 @@
       checkedPlaylistVideos.delete(videoId);
     }
   }
-  // videoId + gridTitle are stable for the component's lifetime (grid keys by videoId).
-  // untrack() acknowledges this so Svelte doesn't warn about capturing initial values.
   const itemState = createPlaylistVideoItemState(
     untrack(() => videoId),
     untrack(() => gridTitle),
@@ -59,8 +55,6 @@
 
   const downloadButtonId = $derived(`btn-${videoId}-download`);
   const chevronButtonId = $derived(`btn-${videoId}-chevron`);
-
-  // ─── Button refresh (throttled) ──────────────────────────────────────────────
 
   let elButtonGroup: HTMLElement | null = null;
   let elDownloadBtn: Element | null = null;
@@ -133,8 +127,6 @@
     }, buttonRefreshIntervalMs);
   });
 
-  // ─── Dropdown panel ──────────────────────────────────────────────────────────
-
   let isPanelOpen = $state(false);
   let elDropdown: HTMLElement | null = null;
   let panelInstance: ReturnType<typeof mount> | null = null;
@@ -146,8 +138,8 @@
     }
 
     const currentVideoData = itemState.videoData;
-    // Create dropdown via MAIN world bridge - Polymer elements need the
-    // MAIN world's Polymer runtime to function (open/close, positioning).
+    // Polymer elements need the MAIN world's Polymer runtime to function,
+    // so create the dropdown via the MAIN world bridge.
     const panelContentId = `ytdl-grid-panel-${videoId}`;
 
     void crossWorldMessenger.sendMessage(CrossWorldMessage.CreateDropdown, {
@@ -221,8 +213,6 @@
       closePanel();
     }
   }
-
-  // ─── Button attach + click dispatch ──────────────────────────────────────────
 
   function attachButtonGroup(elTarget: Element) {
     if (elTarget instanceof HTMLElement) {

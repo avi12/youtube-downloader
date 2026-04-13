@@ -18,21 +18,16 @@ import {
 } from "@/types";
 import { untrack } from "svelte";
 
-// For music downloads, prefer M4A (AAC) over WebM/Opus — M4A supports MJPEG cover art embedding.
-// Formats are already sorted by bitrate descending, so find() returns the highest-quality M4A.
+// Prefer M4A (AAC) over WebM/Opus for music because M4A supports MJPEG cover art embedding.
 function getPreferredMusicAudioFormat(audioFormats: AdaptiveFormatItem[]) {
   return audioFormats.find(format => format.mimeType.includes("mp4")) ?? audioFormats[0] ?? null;
 }
 
 export function createPanelState(getVideoData: () => VideoData, getOptions: () => Options) {
-  // -- Download state ----------------------------------------------------------
-
   let isDownloading = $state(false);
   let isDone = $state(false);
   let progress = $state(0);
   let progressType = $state<ProgressType | "">("");
-
-  // -- Format selection --------------------------------------------------------
 
   let downloadType = $state<DownloadType>(
     untrack(() => {
@@ -69,8 +64,6 @@ export function createPanelState(getVideoData: () => VideoData, getOptions: () =
   );
   let isFilenameValid = $state(true);
 
-  // -- Derived -----------------------------------------------------------------
-
   const actualExtension = $derived.by(() => {
     if (downloadType === DownloadType.Audio) {
       return extension;
@@ -97,7 +90,6 @@ export function createPanelState(getVideoData: () => VideoData, getOptions: () =
     return selectedVideoFormat ? formatVideoQualityLabel(selectedVideoFormat) : "";
   });
 
-  // Notify the MAIN world download button tooltip when filename or quality changes
   $effect(() => {
     void crossWorldMessenger.sendMessage(CrossWorldMessage.FilenameChanged, {
       filename: fullFilename,
@@ -106,8 +98,6 @@ export function createPanelState(getVideoData: () => VideoData, getOptions: () =
       audioItag: selectedAudioFormat?.itag
     });
   });
-
-  // -- Video quality matching --------------------------------------------------
 
   async function matchVideoFormatToCurrentQuality(signal: AbortSignal) {
     const videoData = getVideoData();
@@ -150,8 +140,6 @@ export function createPanelState(getVideoData: () => VideoData, getOptions: () =
       null;
   });
 
-  // -- Restore existing download state on mount --------------------------------
-
   $effect(() => {
     const { videoId } = getVideoData();
 
@@ -171,8 +159,6 @@ export function createPanelState(getVideoData: () => VideoData, getOptions: () =
     void restoreProgress();
   });
 
-  // -- Progress updates -------------------------------------------------------
-
   $effect(() => {
     const { videoId } = getVideoData();
     const state = downloadProgressStore.get(videoId);
@@ -190,8 +176,6 @@ export function createPanelState(getVideoData: () => VideoData, getOptions: () =
     progressType = state.progressType;
   });
 
-  // -- Queue position tracking ------------------------------------------------
-
   $effect(() => {
     const { videoId } = getVideoData();
     return videoQueueItem.watch(queue => {
@@ -204,8 +188,6 @@ export function createPanelState(getVideoData: () => VideoData, getOptions: () =
       progressType = "";
     });
   });
-
-  // -- Actions ----------------------------------------------------------------
 
   function handleDownloadTypeChange(newType: DownloadType) {
     const options = getOptions();

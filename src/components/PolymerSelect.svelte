@@ -46,18 +46,14 @@
       document.body.append(elIronDropdown);
       elIronDropdown.dataset.ytdlMoved = "";
 
-      // The native input[role="button"] (the chevron arrow inside tp-yt-paper-input)
-      // is a Polymer internal detail. tp-yt-paper-input is already the tab stop,
-      // so this duplicate unlabeled element should not be in the tab order.
-      // Polymer may reset tabindex after value changes, so we also redirect focus
-      // via a listener to ensure Enter always opens the dropdown from the proper trigger.
+      // tp-yt-paper-input is already the tab stop; the inner chevron input should not be
+      // in the tab order. Polymer may reset tabindex after value changes,
+      // so redirect focus via a listener too.
       elChevronInput = elTarget.querySelector<HTMLElement>("input[role=\"button\"]");
       elChevronInput?.setAttribute("tabindex", "-1");
       elChevronInput?.addEventListener("focus", onChevronFocus);
 
-      // Hide scrollbar and add focus style for keyboard-navigated items.
-      // Focus visibility is required by WCAG 2.4.7 - YouTube's Polymer runtime
-      // does not provide a focus ring on tp-yt-paper-item by default.
+      // WCAG 2.4.7 focus ring - YouTube's Polymer runtime does not provide one on tp-yt-paper-item.
       if (!elIronDropdown.querySelector("[data-ytdl-style]")) {
         const elStyle = document.createElement("style");
         elStyle.dataset.ytdlStyle = "";
@@ -88,8 +84,7 @@
         return;
       }
 
-      // Add yt-options-renderer scope for cursor:pointer and :hover.
-      // role, aria-selected, and tabindex are set via HTML attributes in the template.
+      // yt-options-renderer scope provides cursor:pointer and :hover.
       for (const elItem of elMovedDropdown.querySelectorAll("tp-yt-paper-item")) {
         elItem.classList.add("style-scope", "yt-options-renderer");
       }
@@ -102,11 +97,9 @@
         ?? items[0];
       elInitialFocus?.focus();
 
-      // Moving tp-yt-iron-dropdown to document.body severs Polymer's data binding
-      // between the listbox and tp-yt-paper-dropdown-menu. As a result, value-changed
-      // never fires on the dropdown-menu after selection (for both mouse and keyboard).
-      // We listen to selected-changed directly on the moved dropdown, which always
-      // fires, and handle state + display update ourselves.
+      // Moving tp-yt-iron-dropdown to document.body severs Polymer's data binding,
+      // so value-changed never fires on the dropdown-menu after selection.
+      // Listen to selected-changed on the moved dropdown instead.
       function handleSelectedChanged(e: Event) {
         if (!(e instanceof CustomEvent)) {
           return;
@@ -121,7 +114,7 @@
 
         syncTriggerDisplay(dataValue);
 
-        // Close the overlay - Polymer's auto-close is also broken by the DOM move.
+        // Polymer's auto-close is broken by the DOM move.
         elMovedDropdown?.dispatchEvent(
           new KeyboardEvent("keydown", {
             key: "Escape",
@@ -134,16 +127,8 @@
 
       elMovedDropdown.addEventListener("selected-changed", handleSelectedChanged);
 
-      // WAI-ARIA keyboard contract for a listbox popup:
-      // Arrow Down/Up  - move focus between options (with wrap-around)
-      // Home / End     - jump to first / last option
-      // Enter / Space  - select focused option and close
-      // Tab            - close popup and return focus to trigger
-      // Escape         - handled natively by Polymer's IronOverlayBehavior
-      //
-      // Use capture phase so this fires before Polymer's IronMenuBehavior /
-      // IronButtonState handlers, which call stopPropagation() on arrow keys and
-      // Enter - preventing bubble-phase listeners on elMovedDropdown from ever running.
+      // Capture phase fires before Polymer's IronMenuBehavior/IronButtonState handlers,
+      // which stopPropagation() on arrows/Enter and would block bubble-phase listeners.
       function onListboxKeydown(e: Event) {
         if (!(e instanceof KeyboardEvent)) {
           return;
@@ -185,8 +170,7 @@
             if (iCurrent >= 0) {
               items[iCurrent].click();
 
-              // If the focused item is already selected, selected-changed will not
-              // fire (value unchanged). Close the overlay directly in that case.
+              // If the focused item is already selected, selected-changed will not fire.
               if (items[iCurrent].getAttribute("data-value") === value) {
                 elMovedDropdown?.dispatchEvent(
                   new KeyboardEvent("keydown", {
@@ -202,9 +186,7 @@
             break;
           }
           case "Tab": {
-            // Prevent Tab from escaping to the browser chrome while the popup is
-            // open. Close via synthetic Escape; handleOverlayClosed returns focus
-            // to the trigger so the user can continue tabbing through the panel.
+            // Close via synthetic Escape so handleOverlayClosed returns focus to the trigger.
             e.preventDefault();
             e.stopPropagation();
             elMovedDropdown?.dispatchEvent(
@@ -231,9 +213,7 @@
       );
     }
 
-    // Return focus to the dropdown trigger when the overlay closes.
-    // requestAnimationFrame defers past any post-close focus management Polymer
-    // runs synchronously (e.g. _applyFocus), so our call always wins.
+    // requestAnimationFrame defers past Polymer's synchronous _applyFocus so our focus call wins.
     function handleOverlayClosed() {
       const elTrigger = elTarget.querySelector<HTMLElement>("tp-yt-paper-input");
       requestAnimationFrame(() => elTrigger?.focus());
@@ -247,8 +227,6 @@
     };
   }
 
-  // Grab Polymer's scoping class so tp-yt-paper-dropdown-menu receives
-  // identical styling to existing YouTube dropdown instances.
   const scopingClass =
     document.querySelector("yt-dropdown-menu")?.getAttribute("class") ?? "";
 </script>

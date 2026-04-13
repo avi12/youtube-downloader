@@ -19,8 +19,6 @@
     maximumFractionDigits: 0
   });
 
-  // Grab Polymer's scoping class from an existing action-bar button so that
-  // yt-button-view-model elements in this panel receive identical styling.
   const scopingClass =
     document.querySelector("[data-ytdl-download-group] yt-button-view-model, yt-button-view-model")?.getAttribute("class") ??
     "";
@@ -34,16 +32,12 @@
 
   const panel = createPanelState(() => props.videoData, () => props.options);
 
-  // -- Inert focus trap -------------------------------------------------------
-
   let removeInert: (() => void) | null = null;
 
   function releaseInertTrap() {
     removeInert?.();
     removeInert = null;
   }
-
-  // -- Actions ----------------------------------------------------------------
 
   const closeButtonId = "ytdl-panel-close";
   const downloadButtonId = "ytdl-panel-download";
@@ -52,14 +46,11 @@
   function closePanel() {
     releaseInertTrap();
     void crossWorldMessenger.sendMessage(CrossWorldMessage.PanelClosed, {});
-    // Also dispatch DOM event for grid/playlist panels where crossWorldMessenger
-    // panelClosed listener is owned by the watch page
     document.dispatchEvent(new CustomEvent("ytdl:panel-closed"));
   }
 
-  // yt-button-view-model doesn't fire Svelte's onclick when the user clicks
-  // the inner Polymer-rendered <button>. Route every panel button through the
-  // MAIN-world buttonClickSignal bus.
+  // yt-button-view-model doesn't fire Svelte's onclick when the user clicks the inner
+  // Polymer-rendered <button>, so route every panel button through the MAIN-world buttonClickSignal bus.
   $effect(() => {
     const clicked = buttonClickSignal.value;
     if (!clicked?.buttonId) {
@@ -83,28 +74,19 @@
     };
   }
 
-  // -- Polymer button attaches ------------------------------------------------
-
   function attachDownloadBtn(elButton: Element) {
     attachDownloadButton(elButton, () => panel.isDownloadable, () => panel.isFilenameValid, () => panel.isDone);
   }
-
-  // -- Focus management -------------------------------------------------------
 
   function attachPanel(elPanel: Element) {
     if (!(elPanel instanceof HTMLElement)) {
       return;
     }
 
-    // The MAIN world bridges Polymer's receivedFocusFromKeyboard property
-    // to a [keyboard-focused] attribute on tp-yt-paper-dropdown-menu.
-    // Target that attribute so the focus ring only appears for keyboard users.
     const elFocusStyle = document.createElement("style");
     elFocusStyle.textContent = panelFocusStyles;
     elPanel.append(elFocusStyle);
 
-    // Clear stale focus state from a previous panel session so focus always
-    // starts fresh on the first dropdown.
     for (const elDropdown of elPanel.querySelectorAll("tp-yt-paper-dropdown-menu")) {
       elDropdown.removeAttribute("keyboard-focused");
       elDropdown.removeAttribute("focused");
@@ -115,27 +97,22 @@
     const elInitialFocus = elPanel.querySelector<HTMLElement>("tp-yt-paper-input:not([disabled])");
     elInitialFocus?.focus();
 
-    // The panel always opens via keyboard (Enter on chevron), so the initial
-    // focus is keyboard-initiated. Set the attribute directly because Polymer's
-    // receivedFocusFromKeyboard may not be initialized yet at mount time.
+    // Polymer's receivedFocusFromKeyboard may not be initialized yet at mount time, so set the attribute directly.
     elInitialFocus?.closest("tp-yt-paper-dropdown-menu")?.setAttribute("keyboard-focused", "");
 
-    // Apply the inert focus trap AFTER Polymer opens the dropdown.
-    // Applying it before open() interferes with Polymer's overlay mechanics.
+    // Applying the inert trap before open() interferes with Polymer's overlay mechanics.
     const elDropdownRoot = elPanel.closest<HTMLElement>("tp-yt-iron-dropdown") ?? elPanel;
 
     elDropdownRoot.addEventListener("iron-overlay-opened", () => {
       removeInert = applyInertTrap(elDropdownRoot);
 
       // Release the inert trap when Polymer closes the overlay externally
-      // (click-outside or Escape key) - closePanel() only handles explicit close.
-      // Registered here so it only fires after a successful open.
+      // (click-outside or Escape) since closePanel() only handles explicit close.
       elDropdownRoot.addEventListener("iron-overlay-closed", releaseInertTrap, { once: true });
     });
 
     // Polymer's IronFocusedBehavior doesn't always clear the focused attribute
-    // from sibling dropdowns when Tab moves between them. Explicitly clear stale
-    // focused state so only the active dropdown shows the focus ring.
+    // from sibling dropdowns when Tab moves between them.
     function onFocusIn() {
       for (const elDropdown of elPanel.querySelectorAll("tp-yt-paper-dropdown-menu[focused]")) {
         if (elDropdown.contains(document.activeElement)) {

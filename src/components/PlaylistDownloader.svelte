@@ -1,8 +1,4 @@
 <script lang="ts">
-  /**
-   * Playlist-level download button.
-   * Appears in the playlist header and allows downloading all checked videos.
-   */
   import { createPlaylistDownloaderState } from "./PlaylistDownloader.state.svelte";
   import { createPlaylistToggleButtons } from "./PlaylistDownloader.toggle-buttons.svelte";
   import PolymerSelect from "./PolymerSelect.svelte";
@@ -27,8 +23,6 @@
   const playlist = createPlaylistDownloaderState(() => options);
 
   const toggleButtons = createPlaylistToggleButtons(playlist);
-
-  // ─── Download button ─────────────────────────────────────────────────────────
 
   const DOWNLOAD_BUTTON_ID = "playlist-download-btn";
   const DOWNLOAD_ALL_BUTTON_ID = "playlist-download-all-btn";
@@ -165,17 +159,14 @@
     elCheckbox.addEventListener("checked-changed", handleCheckedChanged);
   }
 
-  // ─── Click dispatcher ────────────────────────────────────────────────────────
-
   $effect(() => {
     const clicked = buttonClickSignal.value;
     if (!clicked?.buttonId) {
       return;
     }
 
-    // State reads inside the dispatcher must be untracked — otherwise the
-    // effect re-runs when the click mutates state (e.g. isAllSelected flips
-    // after selectAll) and re-executes the same branch with inverted logic.
+    // State reads inside the dispatcher must be untracked; otherwise the effect re-runs
+    // when the click mutates state and re-executes the same branch with inverted logic.
     untrack(() => {
       if (clicked.buttonId === DOWNLOAD_BUTTON_ID) {
         playlist.toggleSelectedDownload();
