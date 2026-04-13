@@ -273,7 +273,6 @@
     <div class="ytdl-button-row">
       {#if isPlaylistItem}
         <tp-yt-paper-checkbox
-          class="ytdl-select-checkbox"
           aria-label="Select for download"
           checked={isChecked || undefined}
           onchange={handleCheckboxChange}
@@ -304,13 +303,11 @@
     flex-direction: column;
   }
 
-  .ytdl-select-checkbox {
-    margin-right: 4px;
-  }
-
   .ytdl-button-row {
     position: relative;
     display: flex;
+    flex-shrink: 0;
+    gap: 4px;
     align-items: center;
     overflow: hidden;
   }
