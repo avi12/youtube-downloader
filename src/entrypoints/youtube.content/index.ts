@@ -168,25 +168,25 @@ export default defineContentScript({
 
     registerCrossWorldHandlers(isDownloadIframe, context, () => currentOptions);
     registerBackgroundMessageHandlers();
-    listenForInterruptedDownloadEvents();
     listenForSabrBodyReady();
-    listenForKeepalive();
-    listenForDownloadIframes(context);
     void forwardSabrCredentialsWithRetry();
 
-    await restoreStoredProgress();
-
-    const unwatchOptions = optionsItem.watch(newOptions => {
-      if (!newOptions) {
-        return;
-      }
-
-      currentOptions = newOptions;
-      setNativeDownloadVisibility(!currentOptions.isRemoveNativeDownload);
-    });
-    context.onInvalidated(unwatchOptions);
-
     if (!isDownloadIframe) {
+      listenForInterruptedDownloadEvents();
+      listenForKeepalive();
+      listenForDownloadIframes(context);
+      await restoreStoredProgress();
+
+      const unwatchOptions = optionsItem.watch(newOptions => {
+        if (!newOptions) {
+          return;
+        }
+
+        currentOptions = newOptions;
+        setNativeDownloadVisibility(!currentOptions.isRemoveNativeDownload);
+      });
+      context.onInvalidated(unwatchOptions);
+
       handlePageChange(location.href, context, currentOptions);
     }
   }

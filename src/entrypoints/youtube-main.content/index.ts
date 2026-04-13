@@ -3,8 +3,7 @@ import { registerGridDropdownHandlers } from "./grid-dropdown";
 import { registerGridVideoDataHandler } from "./grid-video-data";
 import { handleNavigateSuccess } from "./playlist-metadata";
 import { extractAndDispatchVideoData } from "./video-data";
-import { CrossWorldMessage, crossWorldMessenger } from "@/lib/cross-world-messenger";
-import { buttonClickSignal } from "@/lib/synced-stores.svelte";
+import { CrossWorldMessage, crossWorldMessenger, dispatchButtonClick } from "@/lib/cross-world-messenger";
 import { type PlayerResponse } from "@/types";
 
 declare global {
@@ -29,18 +28,21 @@ export default defineContentScript({
       return;
     }
 
-    // Download iframes are for data fetching only and must never play audio.
+    // Download iframes are for data fetching only and must never play audio or video.
     if (self !== top) {
-      const muteObserver = new MutationObserver((_, observer) => {
+      const muteAndPauseObserver = new MutationObserver((_, observer) => {
         const elVideo = document.querySelector<HTMLVideoElement>("video");
         if (!elVideo) {
           return;
         }
 
         elVideo.muted = true;
+        elVideo.pause();
+        const elPlayer = document.querySelector<HTMLElement & { pauseVideo?: () => void }>("#movie_player");
+        elPlayer?.pauseVideo?.();
         observer.disconnect();
       });
-      muteObserver.observe(document.documentElement, { childList: true, subtree: true });
+      muteAndPauseObserver.observe(document.documentElement, { childList: true, subtree: true });
     }
 
     // Handle download requests from Svelte panel components (via isolated world)
@@ -81,7 +83,7 @@ export default defineContentScript({
         const currentButtonId = buttonIdByElement.get(elButton);
         if (currentButtonId) {
           e.stopPropagation();
-          buttonClickSignal.value = { buttonId: currentButtonId };
+          dispatchButtonClick(currentButtonId);
         }
       });
     });
