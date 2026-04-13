@@ -58,6 +58,29 @@
   });
 
   $effect(() => {
+    function handleSelectAllShortcut(e: KeyboardEvent) {
+      if (!(e.ctrlKey || e.metaKey) || e.key !== "a") {
+        return;
+      }
+
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+        return;
+      }
+
+      e.preventDefault();
+
+      if (playlist.isAllSelected) {
+        playlist.clearSelection();
+      } else {
+        playlist.selectAll();
+      }
+    }
+
+    document.addEventListener("keydown", handleSelectAllShortcut);
+    return () => document.removeEventListener("keydown", handleSelectAllShortcut);
+  });
+
+  $effect(() => {
     const clicked = buttonClickSignal.value;
     if (!clicked?.buttonId) {
       return;
