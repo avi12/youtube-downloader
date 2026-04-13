@@ -7,20 +7,16 @@ import {
   IconName
 } from "@/types";
 
-export const SELECT_ALL_BUTTON_ID = "playlist-select-all-btn";
 export const DESELECT_ALL_BUTTON_ID = "playlist-deselect-all-btn";
 export const DOWNLOAD_BUTTON_ID = "playlist-download-btn";
 export const DOWNLOAD_ALL_BUTTON_ID = "playlist-download-all-btn";
 
 type ActionState = {
-  downloadableVideos: { length: number };
   selectedDownloadableVideos: { length: number };
-  isAllSelected: boolean;
   isDownloading: boolean;
   isRevealingAll: boolean;
   revealedVideoCount: number;
   downloadButtonLabel: string;
-  selectAll(): void;
   clearSelection(): void;
   toggleSelectedDownload(): void;
   revealAndDownloadAll(): Promise<void> | void;
@@ -28,32 +24,9 @@ type ActionState = {
 };
 
 export function createPlaylistActionButtons(state: ActionState) {
-  let elSelectAll = $state<HTMLElement | null>(null);
   let elDeselectAll = $state<HTMLElement | null>(null);
   let elDownload = $state<HTMLElement | null>(null);
   let elDownloadAll = $state<HTMLElement | null>(null);
-
-  function refreshSelectAll() {
-    if (!elSelectAll) {
-      return;
-    }
-
-    elSelectAll.setAttribute("data-ytdl-button-id", SELECT_ALL_BUTTON_ID);
-    const hasAny = state.downloadableVideos.length > 0;
-    const isDisabled = !hasAny || state.isAllSelected;
-    sendButtonData(elSelectAll, {
-      iconName: IconName.None,
-      title: "Check all loaded",
-      accessibilityText: "Check all loaded",
-      style: ButtonStyle.Mono,
-      type: ButtonType.Outline,
-      buttonSize: ButtonSize.Default,
-      state: isDisabled ? ButtonState.Disabled : ButtonState.Active,
-      isFullWidth: false,
-      isDisabled,
-      tooltip: "Check every video currently loaded in this list (scroll down to load more)"
-    });
-  }
 
   function refreshDeselectAll() {
     if (!elDeselectAll) {
@@ -72,7 +45,7 @@ export function createPlaylistActionButtons(state: ActionState) {
       state: hasSelection ? ButtonState.Active : ButtonState.Disabled,
       isFullWidth: false,
       isDisabled: !hasSelection,
-      tooltip: "Uncheck every video in this list"
+      tooltip: "Uncheck all selected videos"
     });
   }
 
@@ -125,15 +98,6 @@ export function createPlaylistActionButtons(state: ActionState) {
     });
   }
 
-  function attachSelectAll(elButton: Element) {
-    if (!(elButton instanceof HTMLElement)) {
-      return;
-    }
-
-    elButton.setAttribute("data-ytdl-button-id", SELECT_ALL_BUTTON_ID);
-    elSelectAll = elButton;
-  }
-
   function attachDeselectAll(elButton: Element) {
     if (!(elButton instanceof HTMLElement)) {
       return;
@@ -162,6 +126,11 @@ export function createPlaylistActionButtons(state: ActionState) {
   }
 
   function handleClick(buttonId: string) {
+    if (buttonId === DESELECT_ALL_BUTTON_ID) {
+      state.clearSelection();
+      return true;
+    }
+
     if (buttonId === DOWNLOAD_BUTTON_ID) {
       state.toggleSelectedDownload();
       return true;
@@ -177,25 +146,13 @@ export function createPlaylistActionButtons(state: ActionState) {
       return true;
     }
 
-    if (buttonId === SELECT_ALL_BUTTON_ID) {
-      state.selectAll();
-      return true;
-    }
-
-    if (buttonId === DESELECT_ALL_BUTTON_ID) {
-      state.clearSelection();
-      return true;
-    }
-
     return false;
   }
 
   return {
-    attachSelectAll,
     attachDeselectAll,
     attachDownload,
     attachDownloadAll,
-    refreshSelectAll,
     refreshDeselectAll,
     refreshDownload,
     refreshDownloadAll,

@@ -16,6 +16,21 @@
   const toggleButtons = createPlaylistToggleButtons(playlist);
   const actionButtons = createPlaylistActionButtons(playlist);
 
+  function attachScrollSyncCheckbox(elCheckbox: Element) {
+    if (!(elCheckbox instanceof HTMLElement)) {
+      return;
+    }
+
+    function handleCheckedChanged() {
+      const nextChecked = elCheckbox.hasAttribute("checked");
+      if (nextChecked !== playlist.isScrollSyncEnabled) {
+        playlist.isScrollSyncEnabled = nextChecked;
+      }
+    }
+
+    elCheckbox.addEventListener("checked-changed", handleCheckedChanged);
+  }
+
   $effect(() => {
     void playlist.downloadMode;
     void playlist.outputMode;
@@ -24,10 +39,7 @@
   });
 
   $effect(() => {
-    void playlist.downloadableVideos.length;
-    void playlist.isAllSelected;
     void playlist.selectedDownloadableVideos.length;
-    actionButtons.refreshSelectAll();
     actionButtons.refreshDeselectAll();
   });
 
@@ -101,6 +113,19 @@
 
   <PlaylistDownloaderFormatSections {playlist} />
 
+  <section class="ytdl-section" aria-labelledby="ytdl-scroll-sync-label">
+    <h3 id="ytdl-scroll-sync-label" class="ytdl-section-title">While downloading</h3>
+    <tp-yt-paper-checkbox
+      {@attach attachScrollSyncCheckbox}
+      checked={playlist.isScrollSyncEnabled ? "" : undefined}
+    >
+      Scroll to the current video
+    </tp-yt-paper-checkbox>
+    <span class="ytdl-scroll-sync-hint">
+      Scrolls to each video as it downloads - works with both download options
+    </span>
+  </section>
+
   <PlaylistDownloaderActions {actionButtons} {playlist} />
 </section>
 
@@ -126,6 +151,15 @@
     & + & {
       border-top: 1px solid var(--yt-spec-10-percent-layer, rgb(255 255 255 / 10%));
     }
+  }
+
+  :global(.ytdl-playlist-container tp-yt-paper-checkbox) {
+    font-size: 1.4rem;
+  }
+
+  .ytdl-scroll-sync-hint {
+    color: var(--yt-spec-text-secondary, #aaaaaa);
+    font-size: 1.2rem;
   }
 
   .ytdl-section-title {

@@ -10,23 +10,47 @@
 
   const { playlist, actionButtons }: Props = $props();
 
-  function attachProgressBar(elProgress: Element) {
-    applyPolymerCustomStyles(elProgress, PAPER_PROGRESS_THEME);
+  const isIndeterminate = $derived(
+    playlist.selectedDownloadableVideos.length > 0 && !playlist.isAllSelected
+  );
+  const selectAllLabel = $derived(playlist.isAllSelected ? "Deselect all" : "Select all");
+  const isSelectAllDisabled = $derived(playlist.downloadableVideos.length === 0);
+
+  let elSelectAllCheckbox = $state<HTMLElement | null>(null);
+
+  function attachSelectAllCheckbox(elCheckbox: Element) {
+    if (elCheckbox instanceof HTMLElement) {
+      elSelectAllCheckbox = elCheckbox;
+    }
   }
 
-  function attachScrollSyncCheckbox(elCheckbox: Element) {
-    if (!(elCheckbox instanceof HTMLElement)) {
+  function handleSelectAllChange(e: Event) {
+    if (!(e.target instanceof HTMLElement)) {
       return;
     }
 
-    function handleCheckedChanged() {
-      const nextChecked = elCheckbox.hasAttribute("checked");
-      if (nextChecked !== playlist.isScrollSyncEnabled) {
-        playlist.isScrollSyncEnabled = nextChecked;
-      }
+    const isNowChecked = e.target.hasAttribute("checked");
+    if (isNowChecked) {
+      playlist.selectAll();
+    } else {
+      playlist.clearSelection();
+    }
+  }
+
+  $effect(() => {
+    if (!elSelectAllCheckbox) {
+      return;
     }
 
-    elCheckbox.addEventListener("checked-changed", handleCheckedChanged);
+    if (isIndeterminate) {
+      elSelectAllCheckbox.setAttribute("indeterminate", "");
+    } else {
+      elSelectAllCheckbox.removeAttribute("indeterminate");
+    }
+  });
+
+  function attachProgressBar(elProgress: Element) {
+    applyPolymerCustomStyles(elProgress, PAPER_PROGRESS_THEME);
   }
 </script>
 
@@ -35,14 +59,24 @@
 {/if}
 
 <div class="ytdl-playlist-actions">
-  <div class="ytdl-selection-row">
-    <yt-button-view-model {@attach actionButtons.attachSelectAll}></yt-button-view-model>
+  <div class="ytdl-select-row">
+    <tp-yt-paper-checkbox
+      {@attach attachSelectAllCheckbox}
+      aria-label={selectAllLabel}
+      checked={playlist.isAllSelected ? "" : undefined}
+      disabled={isSelectAllDisabled ? "" : undefined}
+      onchange={handleSelectAllChange}
+    >
+      {selectAllLabel}
+    </tp-yt-paper-checkbox>
     <yt-button-view-model {@attach actionButtons.attachDeselectAll}></yt-button-view-model>
   </div>
+
   <span class="ytdl-selection-count" aria-live="polite">
     {playlist.selectedDownloadableVideos.length} of {playlist.downloadableVideos.length}
     video{playlist.downloadableVideos.length === 1 ? "" : "s"} selected
   </span>
+
   <yt-button-view-model {@attach actionButtons.attachDownload}></yt-button-view-model>
 
   <div class="ytdl-or-divider" aria-hidden="true">
@@ -58,15 +92,6 @@
       value={playlist.downloadedCount}
     ></tp-yt-paper-progress>
   {/if}
-</div>
-
-<div class="ytdl-scroll-sync-option">
-  <tp-yt-paper-checkbox
-    {@attach attachScrollSyncCheckbox}
-    checked={playlist.isScrollSyncEnabled ? "" : undefined}
-  >
-    Scroll to currently-downloading video
-  </tp-yt-paper-checkbox>
 </div>
 
 {#if playlist.nonDownloadableCount > 0}
@@ -92,9 +117,9 @@
     gap: 8px;
   }
 
-  .ytdl-selection-row {
+  .ytdl-select-row {
     display: flex;
-    gap: 12px;
+    gap: 8px;
     align-items: center;
   }
 
@@ -145,13 +170,5 @@
     font-weight: 700;
     font-size: 1.1rem;
     line-height: 1;
-  }
-
-  .ytdl-scroll-sync-option {
-    display: flex;
-    gap: 6px;
-    align-items: center;
-    font-size: 1.2rem;
-    cursor: pointer;
   }
 </style>

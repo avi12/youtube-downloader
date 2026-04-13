@@ -55,7 +55,20 @@ declare namespace svelteHTML {
       role?: string;
       tabindex?: string | number;
     };
+    "tp-yt-paper-checkbox": {
+      checked?: "" | undefined;
+      indeterminate?: "" | undefined;
+      disabled?: "" | undefined;
+      "aria-label"?: string;
+      onchange?: (e: Event) => void;
+    };
     "ytd-popup-container": Record<string, unknown>;
     "yt-dynamic-text-view-model": Record<string, unknown>;
+    "yt-formatted-string": {
+      class?: string;
+      "split-lines"?: boolean;
+      "force-default-style"?: boolean;
+      dir?: string;
+    };
   }
 }
