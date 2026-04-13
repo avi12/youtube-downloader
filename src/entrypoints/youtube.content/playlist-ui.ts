@@ -122,13 +122,13 @@ function injectPlaylistVideoItemUi({ context, options, elVideoItem }: {
   }
 
   const elMenu = elVideoItem.querySelector("ytd-menu-renderer");
-  if (!elMenu) {
+  if (!elMenu?.parentElement) {
     return;
   }
 
   const elItemContainer = document.createElement("div");
   elItemContainer.dataset.ytdlItem = videoId;
-  elMenu.append(elItemContainer);
+  elMenu.parentElement.insertBefore(elItemContainer, elMenu);
 
   const ui = createIntegratedUi(context, {
     position: "inline",
