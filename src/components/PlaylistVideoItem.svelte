@@ -5,9 +5,8 @@
 </script>
 
 <script lang="ts">
-  import DownloadOptionsPanel from "./DownloadOptionsPanel.svelte";
+  import { createPanelManager } from "./PlaylistVideoItem.panel.svelte";
   import { createPlaylistVideoItemState } from "./PlaylistVideoItem.state.svelte";
-  import { CrossWorldMessage, crossWorldMessenger } from "@/lib/cross-world-messenger";
   import { checkedPlaylistVideos } from "@/lib/playlist-selection.svelte";
   import { sendButtonData } from "@/lib/polymer-utils";
   import { buttonClickSignal } from "@/lib/synced-stores.svelte";
@@ -19,7 +18,7 @@
     IconName,
     type Options
   } from "@/types";
-  import { mount, unmount, untrack } from "svelte";
+  import { untrack } from "svelte";
 
   type Props = {
     videoId: string;
@@ -46,6 +45,7 @@
       checkedPlaylistVideos.delete(videoId);
     }
   }
+
   const itemState = createPlaylistVideoItemState(
     untrack(() => videoId),
     untrack(() => gridTitle),
@@ -95,12 +95,12 @@
   const panelAboveOverlapPx = 4;
 
   function isPanelAboveChevron() {
-    if (!isPanelOpen || !elDropdown || !elChevronBtn) {
+    if (!panel.isOpen || !panel.elDropdown || !elChevronBtn) {
       return false;
     }
 
     const chevronRect = elChevronBtn.getBoundingClientRect();
-    const dropdownRect = elDropdown.getBoundingClientRect();
+    const dropdownRect = panel.elDropdown.getBoundingClientRect();
     return dropdownRect.bottom <= chevronRect.top + panelAboveOverlapPx;
   }
 
@@ -144,107 +144,17 @@
     }, buttonRefreshIntervalMs);
   });
 
-  let isPanelOpen = $state(false);
-  let elDropdown: HTMLElement | null = null;
-  let panelInstance: ReturnType<typeof mount> | null = null;
-  let unsubscribeDropdownReady: (() => void) | null = null;
-
-  function openPanel() {
-    if (!itemState.videoData || !elButtonGroup || elDropdown) {
-      return;
-    }
-
-    const currentVideoData = itemState.videoData;
-    // Polymer elements need the MAIN world's Polymer runtime to function,
-    // so create the dropdown via the MAIN world bridge.
-    const panelContentId = `ytdl-grid-panel-${videoId}`;
-    // Grid cards mark themselves with data-ytdl-grid-item, playlist rows with
-    // data-ytdl-item. Match either so iron-dropdown can anchor on both pages.
-    const positionTargetSelector
-      = `[data-ytdl-grid-item="${videoId}"] .ytdl-button-group, [data-ytdl-item="${videoId}"] .ytdl-button-group`;
-
-    void crossWorldMessenger.sendMessage(CrossWorldMessage.CreateDropdown, {
-      contentId: panelContentId,
-      positionTargetSelector
-    });
-
-    unsubscribeDropdownReady = crossWorldMessenger.onMessage(CrossWorldMessage.DropdownReady, ({ data }) => {
-      if (data.contentId !== panelContentId) {
-        return;
-      }
-
-      unsubscribeDropdownReady?.();
-      unsubscribeDropdownReady = null;
-
-      if (panelInstance) {
-        return;
-      }
-
-      const elContent = document.getElementById(panelContentId);
-      if (!elContent) {
-        return;
-      }
-
-      elDropdown = elContent.closest("tp-yt-iron-dropdown");
-
-      panelInstance = mount(DownloadOptionsPanel, {
-        target: elContent,
-        props: { videoData: currentVideoData, options }
-      });
-
-      // iron-dropdown only finishes positioning on iron-overlay-opened — that's
-      // when the anchor-relative above/below decision is final, so refresh the
-      // chevron direction from there.
-      elDropdown?.addEventListener("iron-overlay-opened", () => refreshChevronButton(), { once: true });
-
-      // Window resize can flip iron-dropdown from below to above or vice versa
-      // (it calls its own refit), so keep the chevron in sync until the panel
-      // closes.
-      window.addEventListener("resize", refreshChevronButton);
-
-      function handleOverlayClose() {
-        if (isPanelOpen) {
-          isPanelOpen = false;
-          closePanel();
-        }
-
-        elDropdown?.removeEventListener("iron-overlay-closed", handleOverlayClose);
-        document.removeEventListener("ytdl:panel-closed", handleOverlayClose);
-      }
-
-      elDropdown?.addEventListener("iron-overlay-closed", handleOverlayClose);
-      document.addEventListener("ytdl:panel-closed", handleOverlayClose);
-    });
-  }
-
-  function closePanel() {
-    window.removeEventListener("resize", refreshChevronButton);
-
-    if (unsubscribeDropdownReady) {
-      unsubscribeDropdownReady();
-      unsubscribeDropdownReady = null;
-    }
-
-    if (panelInstance) {
-      void unmount(panelInstance);
-      panelInstance = null;
-    }
-
-    if (elDropdown) {
-      void crossWorldMessenger.sendMessage(CrossWorldMessage.CloseDropdown, { videoId });
-      elDropdown = null;
-    }
-  }
+  const panel = createPanelManager(
+    untrack(() => videoId),
+    () => itemState.videoData,
+    () => options,
+    () => elButtonGroup,
+    refreshChevronButton
+  );
 
   function togglePanel() {
-    isPanelOpen = !isPanelOpen;
+    panel.toggle();
     refreshChevronButton();
-
-    if (isPanelOpen) {
-      openPanel();
-    } else {
-      closePanel();
-    }
   }
 
   function attachButtonGroup(elTarget: Element) {
