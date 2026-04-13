@@ -135,8 +135,8 @@
     inset: 0;
     z-index: 50;
     display: flex;
-    align-items: center;
     justify-content: center;
+    align-items: center;
     padding: 16px;
     background: rgb(0 0 0 / 40%);
     animation: backdrop-in 200ms ease-out;
@@ -245,7 +245,7 @@
     }
 
     &[disabled] {
-      opacity: 0.5;
+      opacity: 50%;
       cursor: not-allowed;
     }
   }
@@ -271,20 +271,22 @@
 
   @keyframes backdrop-in {
     from {
-      opacity: 0;
+      opacity: 0%;
     }
+
     to {
-      opacity: 1;
+      opacity: 100%;
     }
   }
 
   @keyframes dialog-in {
     from {
-      opacity: 0;
+      opacity: 0%;
       transform: scale(0.92) translateY(8px);
     }
+
     to {
-      opacity: 1;
+      opacity: 100%;
       transform: scale(1) translateY(0);
     }
   }

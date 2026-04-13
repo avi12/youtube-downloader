@@ -205,11 +205,11 @@
 
   .recent-thumb {
     flex-shrink: 0;
+    object-fit: cover;
     width: 48px;
     height: 48px;
     border-radius: 8px;
     background: var(--surface-high);
-    object-fit: cover;
   }
 
   .recent-thumb-placeholder {
@@ -223,18 +223,18 @@
 
   .recent-filename {
     display: block;
+    overflow: hidden;
     width: 100%;
     padding: 0;
-    overflow: hidden;
     border: none;
     background: none;
     color: var(--fg);
-    text-align: left;
-    text-overflow: ellipsis;
-    white-space: nowrap;
     font-family: inherit;
     font-weight: 500;
     font-size: 0.8125rem;
+    text-align: left;
+    text-overflow: ellipsis;
+    white-space: nowrap;
     cursor: pointer;
 
     &:hover,
@@ -243,19 +243,19 @@
     }
 
     &:focus-visible {
+      border-radius: 4px;
       outline: 2px solid var(--accent);
       outline-offset: 2px;
-      border-radius: 4px;
     }
   }
 
   .recent-meta {
-    margin: 2px 0 0;
     overflow: hidden;
+    margin: 2px 0 0;
     color: var(--fg-muted);
+    font-size: 0.6875rem;
     text-overflow: ellipsis;
     white-space: nowrap;
-    font-size: 0.6875rem;
   }
 
   .recent-menu-wrap {
@@ -265,8 +265,8 @@
 
   .recent-menu-trigger {
     display: flex;
-    align-items: center;
     justify-content: center;
+    align-items: center;
     width: 32px;
     height: 32px;
     padding: 0;
@@ -289,8 +289,8 @@
 
   .recent-menu {
     position: absolute;
-    right: 0;
     top: 36px;
+    right: 0;
     z-index: 10;
     display: flex;
     flex-direction: column;
@@ -304,11 +304,12 @@
 
   @keyframes menu-in {
     from {
-      opacity: 0;
+      opacity: 0%;
       transform: scale(0.92) translateY(-4px);
     }
+
     to {
-      opacity: 1;
+      opacity: 100%;
       transform: scale(1) translateY(0);
     }
   }
@@ -319,9 +320,9 @@
     border-radius: 8px;
     background: transparent;
     color: var(--fg);
-    text-align: left;
     font-family: inherit;
     font-size: 0.8125rem;
+    text-align: left;
     cursor: pointer;
 
     &:hover,

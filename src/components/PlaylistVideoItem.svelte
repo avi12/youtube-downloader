@@ -297,7 +297,7 @@
       {#if isPlaylistItem}
         <tp-yt-paper-checkbox
           aria-label="Select for download"
-          checked={isChecked || undefined}
+          checked={isChecked ? "" : undefined}
           onchange={handleCheckboxChange}
         ></tp-yt-paper-checkbox>
       {/if}
