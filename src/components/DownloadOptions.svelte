@@ -116,6 +116,10 @@
 
   function applyPolymerTheme(elTarget: Element) {
     applyPolymerCustomStyles(elTarget, PAPER_INPUT_THEME);
+    const elInput = elTarget.querySelector("input");
+    if (elInput) {
+      elInput.dir = "auto";
+    }
   }
 </script>
 
@@ -169,7 +173,6 @@
     aria-describedby={!isFilenameValid ? "filename-error" : undefined}
     aria-invalid={!isFilenameValid}
     autocomplete="off"
-    dir="auto"
     disabled={isDownloading || undefined}
     error-message={filenameValidationError}
     invalid={!isFilenameValid || undefined}
