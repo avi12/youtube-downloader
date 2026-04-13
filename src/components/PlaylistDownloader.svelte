@@ -242,40 +242,55 @@
     <div class="ytdl-error-banner" role="alert">{playlist.error}</div>
   {/if}
 
-  <div class="ytdl-labelled-toggle" aria-labelledby="ytdl-speed-label" role="group">
-    <span id="ytdl-speed-label" class="ytdl-toggle-label">Speed</span>
-    <div class="ytdl-toggle-group">
+  <section class="ytdl-section" aria-labelledby="ytdl-speed-label">
+    <yt-formatted-string
+      id="ytdl-speed-label"
+      class="ytdl-section-title"
+      aria-level="3"
+      role="heading"
+    >Speed</yt-formatted-string>
+    <div class="ytdl-chip-row" aria-labelledby="ytdl-speed-label" role="group">
       <yt-button-view-model {@attach toggleButtons.createAttacher(toggleButtons.buttons[0])}></yt-button-view-model>
       <yt-button-view-model {@attach toggleButtons.createAttacher(toggleButtons.buttons[1])}></yt-button-view-model>
     </div>
-  </div>
+  </section>
 
-  <div class="ytdl-labelled-toggle" aria-labelledby="ytdl-output-label" role="group">
-    <span id="ytdl-output-label" class="ytdl-toggle-label">Output</span>
-    <div class="ytdl-toggle-group">
+  <section class="ytdl-section" aria-labelledby="ytdl-output-label">
+    <yt-formatted-string
+      id="ytdl-output-label"
+      class="ytdl-section-title"
+      aria-level="3"
+      role="heading"
+    >Output</yt-formatted-string>
+    <div class="ytdl-chip-row" aria-labelledby="ytdl-output-label" role="group">
       <yt-button-view-model {@attach toggleButtons.createAttacher(toggleButtons.buttons[2])}></yt-button-view-model>
       <yt-button-view-model {@attach toggleButtons.createAttacher(toggleButtons.buttons[3])}></yt-button-view-model>
     </div>
-  </div>
+  </section>
 
-  <div class="ytdl-labelled-toggle" aria-labelledby="ytdl-type-label" role="group">
-    <span id="ytdl-type-label" class="ytdl-toggle-label">
+  <section class="ytdl-section" aria-labelledby="ytdl-type-label">
+    <yt-formatted-string
+      id="ytdl-type-label"
+      class="ytdl-section-title"
+      aria-level="3"
+      role="heading"
+    >
       Type
       {#if playlist.isDownloadTypeOverridden}
         <span class="ytdl-override-dot" aria-hidden="true" title="Different from your default"></span>
       {/if}
-    </span>
-    <div class="ytdl-toggle-group ytdl-toggle-group-wrap">
+    </yt-formatted-string>
+    <div class="ytdl-chip-row ytdl-chip-row-wrap" aria-labelledby="ytdl-type-label" role="group">
       <yt-button-view-model {@attach toggleButtons.createAttacher(toggleButtons.buttons[4])}></yt-button-view-model>
       <yt-button-view-model {@attach toggleButtons.createAttacher(toggleButtons.buttons[5])}></yt-button-view-model>
       <yt-button-view-model {@attach toggleButtons.createAttacher(toggleButtons.buttons[6])}></yt-button-view-model>
       <yt-button-view-model {@attach toggleButtons.createAttacher(toggleButtons.buttons[7])}></yt-button-view-model>
     </div>
-  </div>
+  </section>
 
   <details class="ytdl-advanced" open={isAdvancedOpen || undefined}>
     <summary class="ytdl-advanced-summary" onclick={toggleAdvanced}>
-      <span>Advanced format</span>
+      <yt-formatted-string>Advanced format</yt-formatted-string>
       {#if playlist.isVideoExtOverridden || playlist.isAudioExtOverridden}
         <span class="ytdl-override-dot" aria-hidden="true" title="Format overridden"></span>
       {/if}
@@ -364,30 +379,29 @@
     padding: 12px 0;
   }
 
-  .ytdl-labelled-toggle {
+  .ytdl-section {
     display: flex;
-    gap: 10px;
-    align-items: center;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 0;
+
+    & + & {
+      border-top: 1px solid var(--yt-spec-10-percent-layer, rgb(255 255 255 / 10%));
+    }
   }
 
-  .ytdl-toggle-label {
+  .ytdl-section-title {
     display: inline-flex;
     gap: 6px;
     align-items: center;
-    min-width: 52px;
-    color: var(--yt-spec-text-secondary, #aaaaaa);
-    font-weight: 500;
-    font-size: 1.2rem;
-    letter-spacing: 0.05em;
-    text-transform: uppercase;
   }
 
-  .ytdl-toggle-group {
+  .ytdl-chip-row {
     display: flex;
-    gap: 4px;
+    gap: 6px;
   }
 
-  .ytdl-toggle-group-wrap {
+  .ytdl-chip-row-wrap {
     flex-wrap: wrap;
   }
 
@@ -403,7 +417,7 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
-    padding-top: 4px;
+    padding: 10px 0;
     border-top: 1px solid var(--yt-spec-10-percent-layer, rgb(255 255 255 / 10%));
   }
 
@@ -411,9 +425,7 @@
     display: flex;
     gap: 6px;
     align-items: center;
-    color: var(--yt-spec-text-secondary, #aaaaaa);
     list-style: none;
-    font-size: 1.2rem;
     cursor: pointer;
 
     &::-webkit-details-marker {
