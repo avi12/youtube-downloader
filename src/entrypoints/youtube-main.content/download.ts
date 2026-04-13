@@ -124,8 +124,11 @@ export async function performDownload({
   videoItag,
   audioItag,
   filenameOutput,
-  isIframeFallback
-}: Pick<DownloadRequest, "type" | "videoId" | "videoItag" | "audioItag" | "filenameOutput" | "isIframeFallback">) {
+  isIframeFallback,
+  playlistId,
+  playlistTitle,
+  playlistTotalCount
+}: Pick<DownloadRequest, "type" | "videoId" | "videoItag" | "audioItag" | "filenameOutput" | "isIframeFallback" | "playlistId" | "playlistTitle" | "playlistTotalCount">) {
   if (isIframeFallback && self === top) {
     return;
   }
@@ -170,9 +173,9 @@ export async function performDownload({
       resolvedVideoUrl,
       resolvedAudioUrl,
       resolvedExtraAudioUrls,
-      playlistId: undefined,
-      playlistTitle: undefined,
-      playlistTotalCount: undefined
+      playlistId,
+      playlistTitle,
+      playlistTotalCount
     };
 
     void crossWorldMessenger.sendMessage(CrossWorldMessage.StartBackgroundDownload, enrichedRequest);
