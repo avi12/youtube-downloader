@@ -61,7 +61,7 @@
   });
 </script>
 
-<tp-yt-paper-card class="ytdl-playlist-container" aria-label="Playlist Downloader" elevation="0" role="region">
+<section class="ytdl-playlist-container" aria-label="Playlist Downloader">
   <section class="ytdl-section" aria-labelledby="ytdl-speed-label">
     <h3 id="ytdl-speed-label" class="ytdl-section-title">Speed</h3>
     <div class="ytdl-chip-row" aria-labelledby="ytdl-speed-label" role="group">
@@ -100,18 +100,17 @@
   <PlaylistDownloaderFormatSections {playlist} />
 
   <PlaylistDownloaderActions {actionButtons} {playlist} />
-</tp-yt-paper-card>
+</section>
 
 <style>
   .ytdl-playlist-container {
-    --paper-card-background-color: var(--yt-spec-raised-background, var(--yt-spec-base-background, #ffffff));
-    --paper-card-header-color: var(--yt-spec-text-primary, #0f0f0f);
-
     display: flex;
     flex-direction: column;
     gap: 8px;
     margin: 12px 0;
     padding: 12px 16px;
+    border-radius: 12px;
+    background: var(--yt-spec-raised-background, var(--yt-spec-base-background, #ffffff));
     color: var(--yt-spec-text-primary, #0f0f0f);
   }
 
