@@ -130,12 +130,6 @@ export type Options = {
   isRemoveNativeDownload: boolean;
 };
 
-export type AudioStreamData = {
-  data: Uint8Array | null;
-  mimeType: string;
-  label: string;
-};
-
 export type StreamData = {
   type: DownloadType;
   videoId: string;
@@ -145,7 +139,11 @@ export type StreamData = {
   videoMimeType: string;
   audioMimeType: string;
   primaryAudioLabel?: string;
-  additionalAudioStreams: AudioStreamData[];
+  additionalAudioStreams: {
+    data: Uint8Array | null;
+    mimeType: string;
+    label: string;
+  }[];
 };
 
 export type VideoMetadata = {
@@ -190,13 +188,12 @@ export type StreamDataPayload = {
   videoMimeType: string;
   audioMimeType: string;
   audioLabel: string;
-  additionalAudioData: AudioStreamData[];
+  additionalAudioData: {
+    data: Uint8Array | null;
+    mimeType: string;
+    label: string;
+  }[];
   metadata?: VideoMetadata | null;
-};
-
-export type StreamError = {
-  videoId: string;
-  error: string;
 };
 
 export type VideoData = {

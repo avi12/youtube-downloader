@@ -3,8 +3,7 @@ import type {
   DownloadType,
   InterruptedDownload,
   ProgressUpdate,
-  VideoMetadata,
-  StreamError
+  VideoMetadata
 } from "@/types";
 import { defineExtensionMessaging } from "@webext-core/messaging";
 
@@ -77,7 +76,10 @@ interface ProtocolMap {
     metadata?: VideoMetadata | null;
   }): void;
 
-  processStreamError(data: StreamError): void;
+  processStreamError(data: {
+    videoId: string;
+    error: string;
+  }): void;
 
   getCapturedSabrBody(data: Record<string, never>): {
     body: string;
