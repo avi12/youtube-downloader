@@ -34,11 +34,9 @@
     "selector-max-attribute": null,
 
     "at-rule-allowed-list": null,
-    "at-rule-descriptor-value-no-unknown": null,
 
     "max-nesting-depth": [99, {}],
     "custom-property-empty-line-before": "never",
-    "a11y/font-size-is-readable": true,
 
     "plugin/no-unsupported-browser-features": null,
 
@@ -46,7 +44,7 @@
   },
   "overrides": [
     {
-      "files": ["**/*.css"],
+      "files": ["src/**/*.css"],
       "customSyntax": "postcss"
     }
   ]

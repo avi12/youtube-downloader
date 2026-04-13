@@ -263,7 +263,6 @@
   }
 
   .recent-menu-trigger {
-    anchor-name: --recent-menu-trigger;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -276,6 +275,7 @@
     color: var(--fg-muted);
     cursor: pointer;
     transition: background-color 150ms;
+    anchor-name: --recent-menu-trigger;
 
     &:hover {
       background: var(--surface-high);
@@ -289,7 +289,6 @@
 
   .recent-menu {
     position: fixed;
-    position-anchor: --recent-menu-trigger;
     top: anchor(bottom);
     right: anchor(right);
     z-index: 10;
@@ -301,6 +300,7 @@
     background: var(--surface-high);
     box-shadow: 0 4px 16px rgb(0 0 0 / 15%);
     animation: menu-in 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    position-anchor: --recent-menu-trigger;
   }
 
   @keyframes menu-in {

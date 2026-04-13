@@ -6,6 +6,7 @@
   import { deleteRecentDownload } from "@/lib/recent-downloads-db";
   import { ProgressType } from "@/types";
   import type { RecentDownloadEntry, VideoQueueItem } from "@/types";
+  import { browser } from "#imports";
 
   type ProgressEntry = {
     progress: number;
@@ -45,7 +46,7 @@
 
   async function handleShowInFolder(entry: RecentDownloadEntry) {
     try {
-      await browser.downloads.show(entry.downloadId);
+      browser.downloads.show(entry.downloadId);
     } catch (error) {
       console.warn("[ytdl:popup] Show in folder failed:", error);
     }
@@ -120,7 +121,7 @@
         title="Video downloads"
         videoIds={videoDownloadIds}
       >
-        {#snippet renderItem(videoId: string, index: number)}
+        {#snippet renderItem(videoId, index)}
           <li
             class="download-item"
             aria-label={getFilename(videoId)}
@@ -145,7 +146,7 @@
         title="Audio"
         videoIds={musicList}
       >
-        {#snippet renderItem(videoId: string)}
+        {#snippet renderItem(videoId)}
           <li class="download-item" role="listitem">
             <DownloadItem
               filename={getFilename(videoId)}
@@ -165,7 +166,7 @@
         title="Video only"
         videoIds={videoOnlyList}
       >
-        {#snippet renderItem(videoId: string)}
+        {#snippet renderItem(videoId)}
           <li class="download-item" role="listitem">
             <DownloadItem
               filename={getFilename(videoId)}
