@@ -9,7 +9,7 @@ const bufferChunkSize = 8192;
 
 async function dispatchSequentially(items: DownloadRequest[], tabId: number) {
   for (const item of items) {
-    await sendMessage(MessageType.ExecuteDownloadItem, item, tabId);
+    await sendMessage(MessageType.DownloadViaWatchPage, item, tabId);
     await awaitVideoComplete(item.videoId);
   }
 }
@@ -110,7 +110,7 @@ export function registerDownloadHandlers() {
     } else {
       void Promise.allSettled(
         data.items.map(item =>
-          sendMessage(MessageType.ExecuteDownloadItem, item, tabId))
+          sendMessage(MessageType.DownloadViaWatchPage, item, tabId))
       );
     }
   });
