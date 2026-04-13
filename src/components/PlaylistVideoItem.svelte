@@ -8,9 +8,9 @@
   import { batchDownloadStatus } from "./PlaylistDownloader.state.svelte";
   import { createPanelManager } from "./PlaylistVideoItem.panel.svelte";
   import { createPlaylistVideoItemState } from "./PlaylistVideoItem.state.svelte";
+  import { onButtonClick } from "@/lib/cross-world-messenger";
   import { checkedPlaylistVideos } from "@/lib/playlist-selection.svelte";
   import { sendButtonData } from "@/lib/polymer-utils";
-  import { buttonClickSignal } from "@/lib/synced-stores.svelte";
   import {
     ButtonSize,
     ButtonState,
@@ -185,23 +185,15 @@
     elButton.setAttribute("style", "margin-left: 0 !important");
   }
 
-  $effect(() => {
-    const clicked = buttonClickSignal.value;
-    if (!clicked?.buttonId) {
-      return;
-    }
-
-    if (clicked.buttonId === downloadButtonId) {
+  $effect(() => onButtonClick(buttonId => {
+    if (buttonId === downloadButtonId) {
       queueMicrotask(() => {
         void itemState.handleDownloadClick();
       });
-      return;
-    }
-
-    if (clicked.buttonId === chevronButtonId) {
+    } else if (buttonId === chevronButtonId) {
       queueMicrotask(() => togglePanel());
     }
-  });
+  }));
 </script>
 
 <div class="ytdl-button-group" {@attach attachButtonGroup}>
@@ -219,13 +211,16 @@
       ></yt-button-view-model>
       <yt-button-view-model {@attach attachChevronButton}
       ></yt-button-view-model>
-      {#if itemState.isDownloading || itemState.isDone}
-        <tp-yt-paper-progress
-          class="ytdl-progress-bar"
-          aria-label={itemState.buttonTooltip}
-          indeterminate={!itemState.isDone && itemState.displayProgress === 0 || undefined}
-          value={itemState.isDone ? 100 : Math.round(itemState.displayProgress)}
-        ></tp-yt-paper-progress>
+      {#if itemState.isDownloading || itemState.isDone || itemState.isLocallyDone}
+        <div class="ytdl-progress-container">
+          <tp-yt-paper-progress
+            class="ytdl-progress-bar"
+            aria-label={itemState.buttonTooltip}
+            indeterminate={(!itemState.isDone && !itemState.isLocallyDone && itemState.displayProgress === 0)
+              || undefined}
+            value={itemState.isDone || itemState.isLocallyDone ? 100 : Math.round(itemState.displayProgress)}
+          ></tp-yt-paper-progress>
+        </div>
       {/if}
     </div>
   {:else if !itemState.videoData && !itemState.isLoadFailed}
@@ -253,17 +248,23 @@
     flex-shrink: 0;
     gap: 4px;
     align-items: center;
-    padding-inline-start: calc(
-      (var(--paper-checkbox-ink-size, 48px) - var(--paper-checkbox-size, 18px)) / 2
-    );
-    overflow: hidden;
+    padding:
+      calc(
+        (var(--paper-checkbox-ink-size, 48px) - var(--paper-checkbox-size, 18px)) / 2
+      );
   }
 
-  .ytdl-progress-bar {
+  .ytdl-progress-container {
     position: absolute;
     inset-block-end: 0;
     inset-inline-start: 0;
+    overflow: hidden;
     block-size: 3px;
+    inline-size: 100%;
+  }
+
+  .ytdl-progress-bar {
+    block-size: 100%;
     inline-size: 100%;
   }
 

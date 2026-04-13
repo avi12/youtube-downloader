@@ -18,7 +18,7 @@
     "postinstall": "wxt prepare",
     "lint": "eslint --fix",
     "compile": "tsc --noEmit",
-    "stylelint": "stylelint . --fix",
+    "stylelint": "stylelint \"src/**/*.{css,svelte}\" --fix",
     "svelte:check": "pnpx svelte-check"
   },
   "dependencies": {

@@ -40,7 +40,9 @@ export enum MessageType {
 
   RecentDownloadsChanged = "recentDownloadsChanged",
 
-  TranscodeRecentDownload = "transcodeRecentDownload"
+  TranscodeRecentDownload = "transcodeRecentDownload",
+
+  DiscardDownload = "discardDownload"
 }
 
 interface ProtocolMap {
@@ -157,6 +159,7 @@ interface ProtocolMap {
     entryId: string;
     targetContainer: string;
   }): void;
+  discardDownload(data: { videoId: string }): void;
 }
 
 export const { sendMessage, onMessage } =
