@@ -127,9 +127,13 @@ function applyTransforms(signature: string, operations: TransformOp[]) {
         break;
       case TransformOpType.Swap: {
         const position = operation.argument % characters.length;
-        characters[0] = String.fromCharCode(characters[0].charCodeAt(0) ^ characters[position].charCodeAt(0));
-        characters[position] = String.fromCharCode(characters[position].charCodeAt(0) ^ characters[0].charCodeAt(0));
-        characters[0] = String.fromCharCode(characters[0].charCodeAt(0) ^ characters[position].charCodeAt(0));
+        let firstCode = characters[0].charCodeAt(0);
+        let positionCode = characters[position].charCodeAt(0);
+        firstCode ^= positionCode;
+        positionCode ^= firstCode;
+        firstCode ^= positionCode;
+        characters[0] = String.fromCharCode(firstCode);
+        characters[position] = String.fromCharCode(positionCode);
         break;
       }
     }
