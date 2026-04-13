@@ -62,6 +62,7 @@
 <div class="ytdl-playlist-actions">
   <div class="ytdl-select-row">
     <tp-yt-paper-checkbox
+      id="ytdl-select-all-checkbox"
       {@attach attachSelectAllCheckbox}
       aria-label={selectAllLabel}
       checked={playlist.isAllSelected ? "" : undefined}
@@ -70,13 +71,15 @@
     >
       {selectAllLabel}
     </tp-yt-paper-checkbox>
+    <tp-yt-paper-tooltip for="ytdl-select-all-checkbox" position="bottom">
+      {selectAllShortcut}
+    </tp-yt-paper-tooltip>
     <yt-button-view-model {@attach actionButtons.attachDeselectAll}></yt-button-view-model>
   </div>
 
   <span class="ytdl-selection-count" aria-live="polite">
     {playlist.selectedDownloadableVideos.length} of {playlist.downloadableVideos.length}
     video{playlist.downloadableVideos.length === 1 ? "" : "s"} selected
-    <kbd class="ytdl-shortcut-hint" aria-label="Keyboard shortcut: {selectAllShortcut}">{selectAllShortcut}</kbd>
   </span>
 
   <yt-button-view-model {@attach actionButtons.attachDownload}></yt-button-view-model>
@@ -129,17 +132,6 @@
   .ytdl-selection-count {
     color: var(--yt-spec-text-secondary, #aaaaaa);
     font-size: 1.2rem;
-  }
-
-  .ytdl-shortcut-hint {
-    display: inline-block;
-    margin-inline-start: 6px;
-    padding: 1px 5px;
-    border: 1px solid var(--yt-spec-10-percent-layer, rgb(255 255 255 / 10%));
-    border-radius: 4px;
-    font-family: inherit;
-    font-size: 1rem;
-    vertical-align: middle;
   }
 
   .ytdl-or-divider {
