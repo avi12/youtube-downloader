@@ -3,6 +3,7 @@ import { buildAndDispatchVideoData, videoDataCache, readYtcfg } from "./video-da
 import { extractPlayerResponseFromHtml } from "./youtube-api";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/cross-world-messenger";
 import { videoDataStore } from "@/lib/synced-stores.svelte";
+import type { PlayerResponse } from "@/types";
 
 declare const ytcfg: { get: (key: string) => unknown } | undefined;
 
@@ -19,7 +20,7 @@ async function fetchVideoDataViaApi(videoId: string) {
     const visitorData = ytcfg?.get("VISITOR_DATA") ?? "";
     const signatureTimestamp = ytcfg?.get("STS");
 
-    const playerData = await (await globalThis.fetch(
+    const response = await globalThis.fetch(
       "https://www.youtube.com/youtubei/v1/player?prettyPrint=false",
       {
         method: "POST",
@@ -41,7 +42,8 @@ async function fetchVideoDataViaApi(videoId: string) {
           racyCheckOk: true
         })
       }
-    )).json();
+    );
+    const playerData: PlayerResponse = await response.json();
     if (playerData?.videoDetails?.videoId) {
       await buildAndDispatchVideoData(playerData, cancelActiveDownload);
       return;
