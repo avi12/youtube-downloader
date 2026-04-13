@@ -1,19 +1,12 @@
 <script lang="ts">
+  import { createPlaylistActionButtons } from "./PlaylistDownloader.action-buttons.svelte";
   import { createPlaylistDownloaderState } from "./PlaylistDownloader.state.svelte";
   import { createPlaylistToggleButtons } from "./PlaylistDownloader.toggle-buttons.svelte";
   import PolymerSelect from "./PolymerSelect.svelte";
   import { AUTO_EXTENSION, AUTO_EXTENSION_LABEL, supportedExtensions } from "@/lib/containers";
-  import { applyPolymerCustomStyles, PAPER_PROGRESS_THEME, sendButtonData } from "@/lib/polymer-utils";
+  import { applyPolymerCustomStyles, PAPER_PROGRESS_THEME } from "@/lib/polymer-utils";
   import { buttonClickSignal } from "@/lib/synced-stores.svelte";
-  import {
-    ButtonSize,
-    ButtonState,
-    ButtonStyle,
-    ButtonType,
-    DownloadType,
-    IconName,
-    PlaylistDownloadMode
-  } from "@/types";
+  import { DownloadType, PlaylistDownloadMode } from "@/types";
   import type { Options } from "@/types";
   import { untrack } from "svelte";
 
@@ -23,14 +16,7 @@
   const playlist = createPlaylistDownloaderState(() => options);
 
   const toggleButtons = createPlaylistToggleButtons(playlist);
-
-  const DOWNLOAD_BUTTON_ID = "playlist-download-btn";
-  const DOWNLOAD_ALL_BUTTON_ID = "playlist-download-all-btn";
-  const SELECT_ALL_BUTTON_ID = "playlist-select-all-btn";
-
-  let elSelectAllButton = $state<HTMLElement | null>(null);
-  let elDownloadButton = $state<HTMLElement | null>(null);
-  let elDownloadAllButton = $state<HTMLElement | null>(null);
+  const actionButtons = createPlaylistActionButtons(playlist);
 
   $effect(() => {
     void playlist.downloadMode;
@@ -39,102 +25,24 @@
   });
 
   $effect(() => {
-    if (!elSelectAllButton) {
-      return;
-    }
-
-    const hasAny = playlist.downloadableVideos.length > 0;
-    const label = playlist.isAllSelected ? "Clear selection" : "Check all loaded";
-    const tooltip = playlist.isAllSelected
-      ? "Uncheck every video in this list"
-      : "Check every video currently loaded in this list (scroll down to load more)";
-    sendButtonData(elSelectAllButton, {
-      iconName: IconName.None,
-      title: label,
-      accessibilityText: label,
-      style: ButtonStyle.Mono,
-      type: playlist.isAllSelected ? ButtonType.Tonal : ButtonType.Outline,
-      buttonSize: ButtonSize.Default,
-      state: hasAny ? ButtonState.Active : ButtonState.Disabled,
-      isFullWidth: false,
-      isDisabled: !hasAny,
-      tooltip
-    });
+    void playlist.downloadableVideos.length;
+    void playlist.isAllSelected;
+    actionButtons.refreshSelectAll();
   });
 
   $effect(() => {
-    if (!elDownloadButton) {
-      return;
-    }
-
-    const isDisabled = playlist.selectedDownloadableVideos.length === 0 && !playlist.isDownloading;
-    sendButtonData(elDownloadButton, {
-      iconName: playlist.isDownloading ? IconName.Close : IconName.Download,
-      title: playlist.downloadButtonLabel,
-      accessibilityText: playlist.downloadButtonLabel,
-      style: ButtonStyle.Mono,
-      type: ButtonType.Tonal,
-      buttonSize: ButtonSize.Default,
-      state: isDisabled ? ButtonState.Disabled : ButtonState.Active,
-      isFullWidth: false,
-      isDisabled,
-      tooltip: playlist.downloadButtonLabel
-    });
+    void playlist.selectedDownloadableVideos.length;
+    void playlist.isDownloading;
+    void playlist.downloadButtonLabel;
+    actionButtons.refreshDownload();
   });
 
   $effect(() => {
-    if (!elDownloadAllButton) {
-      return;
-    }
-
-    const isBusy = playlist.isRevealingAll || playlist.isDownloading;
-    const downloadAllLabel = playlist.isRevealingAll
-      ? `Revealing hidden videos (${playlist.revealedVideoCount})`
-      : "Grab the whole playlist";
-    const downloadAllTooltip = playlist.isRevealingAll
-      ? "Stop loading the rest of the playlist"
-      : "Scroll through the playlist to reveal any hidden videos, then download every one (ignores the checkboxes)";
-
-    sendButtonData(elDownloadAllButton, {
-      iconName: playlist.isRevealingAll ? IconName.Close : IconName.PlaylistAdd,
-      title: downloadAllLabel,
-      accessibilityText: downloadAllLabel,
-      style: ButtonStyle.Mono,
-      type: ButtonType.Outline,
-      buttonSize: ButtonSize.Default,
-      state: isBusy && !playlist.isRevealingAll ? ButtonState.Disabled : ButtonState.Active,
-      isFullWidth: false,
-      isDisabled: isBusy && !playlist.isRevealingAll,
-      tooltip: downloadAllTooltip
-    });
+    void playlist.isRevealingAll;
+    void playlist.isDownloading;
+    void playlist.revealedVideoCount;
+    actionButtons.refreshDownloadAll();
   });
-
-  function attachSelectAllButton(elButton: Element) {
-    if (!(elButton instanceof HTMLElement)) {
-      return;
-    }
-
-    elButton.setAttribute("data-ytdl-button-id", SELECT_ALL_BUTTON_ID);
-    elSelectAllButton = elButton;
-  }
-
-  function attachDownloadButton(elButton: Element) {
-    if (!(elButton instanceof HTMLElement)) {
-      return;
-    }
-
-    elButton.setAttribute("data-ytdl-button-id", DOWNLOAD_BUTTON_ID);
-    elDownloadButton = elButton;
-  }
-
-  function attachDownloadAllButton(elButton: Element) {
-    if (!(elButton instanceof HTMLElement)) {
-      return;
-    }
-
-    elButton.setAttribute("data-ytdl-button-id", DOWNLOAD_ALL_BUTTON_ID);
-    elDownloadAllButton = elButton;
-  }
 
   function attachProgressBar(elProgress: Element) {
     applyPolymerCustomStyles(elProgress, PAPER_PROGRESS_THEME);
@@ -165,31 +73,10 @@
       return;
     }
 
-    // State reads inside the dispatcher must be untracked; otherwise the effect re-runs
-    // when the click mutates state and re-executes the same branch with inverted logic.
+    // Dispatch reads must be untracked; otherwise the effect re-runs after the click
+    // mutates state and re-executes the same branch with inverted logic.
     untrack(() => {
-      if (clicked.buttonId === DOWNLOAD_BUTTON_ID) {
-        playlist.toggleSelectedDownload();
-        return;
-      }
-
-      if (clicked.buttonId === DOWNLOAD_ALL_BUTTON_ID) {
-        if (playlist.isRevealingAll) {
-          playlist.cancelReveal();
-        } else {
-          void playlist.revealAndDownloadAll();
-        }
-
-        return;
-      }
-
-      if (clicked.buttonId === SELECT_ALL_BUTTON_ID) {
-        if (playlist.isAllSelected) {
-          playlist.clearSelection();
-        } else {
-          playlist.selectAll();
-        }
-
+      if (actionButtons.handleClick(clicked.buttonId)) {
         return;
       }
 
@@ -317,19 +204,19 @@
 
   <div class="ytdl-playlist-actions">
     <div class="ytdl-selection-row">
-      <yt-button-view-model {@attach attachSelectAllButton}></yt-button-view-model>
+      <yt-button-view-model {@attach actionButtons.attachSelectAll}></yt-button-view-model>
       <span class="ytdl-selection-count" aria-live="polite">
         {playlist.selectedDownloadableVideos.length} of {playlist.downloadableVideos.length}
         video{playlist.downloadableVideos.length === 1 ? "" : "s"} selected
       </span>
     </div>
-    <yt-button-view-model {@attach attachDownloadButton}></yt-button-view-model>
+    <yt-button-view-model {@attach actionButtons.attachDownload}></yt-button-view-model>
 
     <div class="ytdl-or-divider" aria-hidden="true">
       <span>or, skip selecting</span>
     </div>
 
-    <yt-button-view-model {@attach attachDownloadAllButton}></yt-button-view-model>
+    <yt-button-view-model {@attach actionButtons.attachDownloadAll}></yt-button-view-model>
 
     {#if playlist.isDownloading && playlist.totalCount > 0}
       <tp-yt-paper-progress
