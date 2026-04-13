@@ -1,9 +1,9 @@
 <script lang="ts">
   import { createPlaylistActionButtons } from "./PlaylistDownloader.action-buttons.svelte";
-  import PlaylistDownloaderActions from "./PlaylistDownloader.actions.svelte";
-  import PlaylistDownloaderFormatSections from "./PlaylistDownloader.format-sections.svelte";
   import { createPlaylistDownloaderState } from "./PlaylistDownloader.state.svelte";
   import { createPlaylistToggleButtons } from "./PlaylistDownloader.toggle-buttons.svelte";
+  import PlaylistDownloaderActions from "./PlaylistDownloaderActions.svelte";
+  import PlaylistDownloaderFormatSections from "./PlaylistDownloaderFormatSections.svelte";
   import { buttonClickSignal } from "@/lib/synced-stores.svelte";
   import type { Options } from "@/types";
   import { untrack } from "svelte";
