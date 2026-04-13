@@ -28,6 +28,10 @@ export function untrackVideoForTab(videoId: string, tabId: number) {
   }
 }
 
+export function getTabIdsForVideo(videoId: string): number[] {
+  return videoIdToTabIds[videoId] ?? [];
+}
+
 export async function cancelDownloads(videoIds: string[]) {
   sendToOffscreen(OffscreenMessageType.CancelProcessing, { videoIds });
 }

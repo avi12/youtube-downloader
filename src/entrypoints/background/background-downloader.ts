@@ -5,10 +5,54 @@ import { uint8ToBase64 } from "@/lib/binary";
 import { MessageType, sendMessage } from "@/lib/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/offscreen-messaging";
 import { fetchAudioViaSabrStream, fetchVideoViaSabrStream } from "@/lib/sabr-download";
+import { interruptedDownloadsItem } from "@/lib/storage";
 import { DownloadType, ProgressType, StreamType } from "@/types";
-import type { AdaptiveFormatItem, DownloadRequest, SabrConfig, VideoMetadata } from "@/types";
+import type {
+  AdaptiveFormatItem,
+  DownloadRequest,
+  InterruptedDownload,
+  SabrConfig,
+  VideoMetadata
+} from "@/types";
 
 const activeBackgroundDownloads = new Map<string, AbortController>();
+const pendingNetworkRetries = new Map<string, {
+  request: DownloadRequest;
+  tabId: number;
+}>();
+
+addEventListener("online", () => {
+  const retries = [...pendingNetworkRetries.values()];
+  pendingNetworkRetries.clear();
+  for (const { request, tabId } of retries) {
+    void startBackgroundDownload(request, tabId);
+  }
+});
+
+async function persistInterruptedDownload(request: DownloadRequest) {
+  const interrupted: InterruptedDownload = {
+    videoId: request.videoId,
+    type: request.type,
+    filenameOutput: request.filenameOutput,
+    videoItag: request.videoItag,
+    audioItag: request.audioItag,
+    timestamp: Date.now()
+  };
+  const current = await interruptedDownloadsItem.getValue();
+  current[request.videoId] = interrupted;
+  await interruptedDownloadsItem.setValue(current);
+}
+
+async function clearInterruptedDownload(videoId: string) {
+  const current = await interruptedDownloadsItem.getValue();
+  if (!(videoId in current)) {
+    return;
+  }
+
+  delete current[videoId];
+  await interruptedDownloadsItem.setValue(current);
+}
+
 const TRANSFER_CHUNK_SIZE = 1024 * 1024;
 
 const yieldEveryNChunks = 32;
@@ -318,6 +362,17 @@ async function enrichMetadataFromYouTubeMusic(metadata: VideoMetadata | null | u
   return fetchYouTubeMusicMetadata(searchQuery, metadata);
 }
 
+function reportDownloadRemoved(videoId: string, tabId: number) {
+  void sendMessage(MessageType.UpdateDownloadProgress, {
+    videoId, progress: 0, progressType: ProgressType.Video, isRemoved: true
+  }, tabId);
+}
+
+function queueNetworkRetry(request: DownloadRequest, tabId: number) {
+  pendingNetworkRetries.set(request.videoId, { request, tabId });
+  void persistInterruptedDownload(request);
+}
+
 export async function startBackgroundDownload(request: DownloadRequest, tabId: number) {
   const { videoId, metadata } = request;
   cancelBackgroundDownload(videoId);
@@ -348,30 +403,38 @@ export async function startBackgroundDownload(request: DownloadRequest, tabId: n
           return;
         }
 
+        if (!navigator.onLine) {
+          queueNetworkRetry(request, tabId);
+          return;
+        }
+
         console.warn("[ytdl:bg] CDN fetch failed:", cdnError);
+        reportDownloadRemoved(videoId, tabId);
         return;
       }
     }
 
     if (!result?.audioData && !result?.videoData) {
       console.warn("[ytdl:bg] No download method succeeded for", videoId);
-      void sendMessage(MessageType.UpdateDownloadProgress, {
-        videoId, progress: 0, progressType: ProgressType.Video, isRemoved: true
-      }, tabId);
+      reportDownloadRemoved(videoId, tabId);
       return;
     }
 
     const enrichedMetadata = await enrichedMetadataPromise;
     await dispatchToOffscreen(request, result, enrichedMetadata, tabId);
+    void clearInterruptedDownload(videoId);
   } catch (error) {
     if (signal.aborted) {
       return;
     }
 
+    if (!navigator.onLine) {
+      queueNetworkRetry(request, tabId);
+      return;
+    }
+
     console.warn("[ytdl:bg] Background download failed:", error);
-    void sendMessage(MessageType.UpdateDownloadProgress, {
-      videoId, progress: 0, progressType: ProgressType.Video, isRemoved: true
-    }, tabId);
+    reportDownloadRemoved(videoId, tabId);
   } finally {
     activeBackgroundDownloads.delete(videoId);
   }
