@@ -1,12 +1,9 @@
 import { isVideoDownloadable, isVideoLive, isVideoMusic } from "@/lib/video-helpers";
 import type { AdaptiveFormatItem, PlayerResponse } from "@/types";
 
-// ─── Format parsing utilities ─────────────────────────────────────────────────
-
 function getUniqueVideoFormats(formats: AdaptiveFormatItem[]) {
   const videoFormats = formats.filter(format => format.mimeType.startsWith("video"));
-  // Deduplicate by height + premium status so both standard and enhanced
-  // bitrate variants appear as separate dropdown entries.
+  // Dedup by height + premium status so standard and enhanced bitrate variants are distinct.
   const seen = new Set<string>();
 
   return videoFormats.filter(format => {
@@ -27,8 +24,8 @@ function getUniqueVideoFormats(formats: AdaptiveFormatItem[]) {
 
 function getAudioFormats(formats: AdaptiveFormatItem[]) {
   const audioFormats = formats.filter(format => format.mimeType.startsWith("audio"));
-  // Deduplicate by itag + audioTrack.id so different language tracks
-  // with the same itag (e.g., original + dubbed, both itag 140) are preserved.
+  // Dedup by itag + audioTrack.id so different language tracks with the same itag
+  // (e.g. original + dubbed) are preserved.
   const seenKeys = new Set<string>();
   return audioFormats.filter(format => {
     const key = `${format.itag}:${format.audioTrack?.id ?? ""}`;
@@ -40,8 +37,6 @@ function getAudioFormats(formats: AdaptiveFormatItem[]) {
     return true;
   });
 }
-
-// ─── VideoData assembly ───────────────────────────────────────────────────────
 
 function byBitrateDesc(formatA: AdaptiveFormatItem, formatB: AdaptiveFormatItem) {
   return formatB.bitrate - formatA.bitrate;
@@ -94,10 +89,7 @@ export function buildVideoData({ playerResponse, clientVersion, clientName }: {
   };
 }
 
-// ─── Player response extraction from raw HTML ────────────────────────────────
-
 export function extractPlayerResponseFromHtml(html: string) {
-  // YouTube always terminates ytInitialPlayerResponse with ;\s*var or ;\s*</script>
   try {
     const match = html.match(/var ytInitialPlayerResponse\s*=\s*(.+?);\s*(?:var\s|<\/script>)/s);
     const parsed: PlayerResponse = JSON.parse(match?.[1] ?? "");

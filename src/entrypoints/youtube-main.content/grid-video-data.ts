@@ -11,8 +11,8 @@ const videoDataPending = new Set<string>();
 let activeVideoDataFetches = 0;
 
 async function fetchVideoDataViaApi(videoId: string) {
-  // The /player API returns UNPLAYABLE on non-watch pages, so fetch
-  // the watch page HTML and extract ytInitialPlayerResponse instead.
+  // /player returns UNPLAYABLE on non-watch pages, so fall back to scraping
+  // ytInitialPlayerResponse from watch page HTML.
   const isWatchPage = location.pathname === "/watch";
   if (isWatchPage) {
     const { clientVersion, clientName } = readYtcfg();
@@ -48,7 +48,6 @@ async function fetchVideoDataViaApi(videoId: string) {
     }
   }
 
-  // Fallback: fetch watch page HTML and extract player response
   const html = await (await globalThis.fetch(
     `https://www.youtube.com/watch?v=${videoId}`,
     { credentials: "include" }

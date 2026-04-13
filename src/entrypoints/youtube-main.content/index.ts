@@ -1,14 +1,3 @@
-/**
- * MAIN world content script - runs in the page's JavaScript context.
- *
- * Responsibilities:
- * 1. Read window.ytInitialPlayerResponse and process streaming URLs
- * 2. Inject a segmented download button group into the action bar using
- *    YouTube's native yt-button-view-model elements so they look identical
- *    to YouTube's own buttons (including tooltips, icons, hover states)
- * 3. Relay data and events to/from the isolated world via crossWorldMessenger
- */
-
 import { cancelActiveDownload, performDownload } from "./download";
 import { registerGridDropdownHandlers } from "./grid-dropdown";
 import { registerGridVideoDataHandler } from "./grid-video-data";
@@ -36,13 +25,11 @@ export default defineContentScript({
   world: "MAIN",
   allFrames: true,
   async main() {
-    // Skip non-download iframes (ads, embeds)
     if (self !== top && !location.search.includes("ytdl=1")) {
       return;
     }
 
-    // In download iframes, mute any video that appears - the iframe is for data
-    // fetching only and must never play audio
+    // Download iframes are for data fetching only and must never play audio.
     if (self !== top) {
       const muteObserver = new MutationObserver((_, observer) => {
         const elVideo = document.querySelector<HTMLVideoElement>("video");
@@ -67,10 +54,8 @@ export default defineContentScript({
       }
     });
 
-    // SetButtonData/ButtonClick bridge: sets Polymer button data from isolated world
-    // and relays click events back via crossWorldMessenger
-    // Track the latest buttonId per element so click handlers always
-    // dispatch the current ID even after Polymer strips the attribute.
+    // Track the latest buttonId per element so click handlers dispatch the current ID
+    // even after Polymer strips the data attribute.
     const buttonIdByElement = new WeakMap<HTMLElement, string>();
 
     crossWorldMessenger.onMessage(CrossWorldMessage.SetButtonData, ({ data: { selector, data: buttonData } }) => {
@@ -79,8 +64,7 @@ export default defineContentScript({
         return;
       }
 
-      // Capture buttonId before setting .data — Polymer's render cycle
-      // strips non-registered attributes like data-ytdl-button-id
+      // Polymer's render cycle strips non-registered attributes, so capture buttonId before setting .data.
       const buttonId = elButton.getAttribute("data-ytdl-button-id");
       if (buttonId) {
         buttonIdByElement.set(elButton, buttonId);

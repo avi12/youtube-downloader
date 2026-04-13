@@ -1,13 +1,3 @@
-/**
- * FFmpeg processor page.
- *
- * Chrome: runs as an offscreen document (persistent, not killed by SW lifecycle).
- * Firefox: opened as a background tab (no offscreen API available).
- *
- * Both provide a full DOM context with Worker + WASM support, so FFmpeg
- * processing completes without crashing the background script.
- */
-
 import { cancelDownloadsByIds, enqueueStreamData, initFFmpeg } from "@/lib/download-pipeline";
 import { transcodeRecentDownload } from "@/lib/download-pipeline/transcode-recent";
 import { OffscreenMessageType, listenForOffscreenMessages } from "@/lib/offscreen-messaging";
@@ -15,18 +5,14 @@ import { DownloadType, StreamType } from "@/types";
 import type { VideoMetadata } from "@/types";
 import type { FFmpegCoreModuleFactory } from "@ffmpeg/types";
 
-// Loaded via <script> tag in index.html — the UMD build sets this global and
-// resolves ffmpeg-core.wasm relative to document.currentScript.src automatically.
+// Loaded via <script> tag in index.html; the UMD build sets this global
+// and resolves ffmpeg-core.wasm relative to document.currentScript.src.
 declare const createFFmpegCore: FFmpegCoreModuleFactory;
 
 const core = await createFFmpegCore({});
 initFFmpeg(core);
 
-// ─── Chunk accumulation ────────────────────────────────────────────────────────
-// The content script splits large video+audio data into 1 MB chunks to
-// stay under Chrome's runtime.sendMessage size limit. Reassemble here before
-// handing off to FFmpeg.
-
+// Content script splits video+audio into 1 MB chunks to stay under runtime.sendMessage size limit.
 interface AudioStreamAccumulator {
   chunks: Map<number, Uint8Array>;
   totalChunks: number;
@@ -35,7 +21,6 @@ interface AudioStreamAccumulator {
 interface StreamAccumulator {
   videoChunks: Map<number, Uint8Array>;
   totalVideoChunks: number;
-  // Key: "audio", "audio-extra-0", "audio-extra-1", ...
   audioStreams: Map<string, AudioStreamAccumulator>;
 }
 
@@ -99,8 +84,8 @@ function handleProcessStreamChunk(data: {
     });
   }
 
-  // iChunk === -1 is a final marker that sets the correct totalChunks
-  // (used by streaming SabrDownload where total is unknown during transfer)
+  // iChunk === -1 is a final marker that sets totalChunks for streaming SabrDownload
+  // where total is unknown during transfer.
   const accumulator = streamAccumulators.get(videoId)!;
   if (iChunk === -1) {
     if (streamType === StreamType.Video) {

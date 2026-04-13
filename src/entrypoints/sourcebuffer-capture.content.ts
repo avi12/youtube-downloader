@@ -1,15 +1,5 @@
-/**
- * Patches MediaSource and SourceBuffer prototypes at document_start so all
- * appended media chunks are captured before YouTube's player initializes.
- *
- * Must run at document_start because YouTube's player creates SourceBuffers
- * before document_idle fires. If patched later, sourceBufferMimeTypes is never
- * populated and appendBuffer captures nothing.
- *
- * Capture state is stored on window.__ytdlCapture so the document_idle
- * youtube-main.content script can read and write it.
- */
-
+// Must run at document_start because YouTube creates SourceBuffers before document_idle;
+// patching later means sourceBufferMimeTypes is empty and appendBuffer captures nothing.
 import type { YtdlCaptureState, YtdlMediaCapture } from "@/types";
 
 export default defineContentScript({
@@ -18,7 +8,6 @@ export default defineContentScript({
   runAt: "document_start",
   allFrames: true,
   main() {
-    // Skip non-download iframes (ads, embeds)
     if (self !== top && !location.search.includes("ytdl=1")) {
       return;
     }

@@ -57,7 +57,6 @@ export async function injectSegmentedDownloadButton(
   let downloadProgress = 0;
   let downloadProgressType: ProgressType | "" = "";
 
-  // Grab Polymer CSS scoping class from last native yt-button-view-model
   const nativeButtons = elActionsContainer.querySelectorAll("yt-button-view-model");
   const scopingClass = nativeButtons[nativeButtons.length - 1]?.getAttribute("class") ?? "";
 
@@ -74,17 +73,15 @@ export async function injectSegmentedDownloadButton(
   const { elDropdown, elDropdownContentSlot, panelContentId } =
     createDropdownElement(videoId, elGroup);
 
-  // Notify the isolated world where to mount the Svelte panel.
-  // Fire-and-forget: must not await, or the button setup below never runs
-  // (sendMessage waits for a response that never comes for void handlers).
+  // Must not await: sendMessage waits for a response that never comes for void handlers,
+  // blocking the rest of button setup.
   void crossWorldMessenger.sendMessage(CrossWorldMessage.PanelContentReady, {
     contentId: panelContentId,
     videoData
   });
 
-  // Polymer renders <button> into light DOM asynchronously.
-  // We use a MutationObserver + requestAnimationFrame to apply the classes
-  // as soon as the element is available (and after any re-render).
+  // Polymer renders <button> into light DOM asynchronously; MutationObserver + rAF applies
+  // the classes whenever the element appears or re-renders.
   function applySegmentedClasses() {
     elDownloadButton.querySelector<HTMLButtonElement>("button")
       ?.classList.add("yt-spec-button-shape-next--segmented-start");
@@ -148,7 +145,6 @@ export async function injectSegmentedDownloadButton(
     elProgressBar.style.opacity = isDownloading ? "1" : "0";
   }
 
-  // Set initial button data after all elements are ready
   refreshButtons();
 
   function handleClick(e: Event) {
@@ -194,8 +190,7 @@ export async function injectSegmentedDownloadButton(
       refreshButtons();
 
       if (isPanelOpen) {
-        // Stop propagation so Polymer's click-outside handler
-        // doesn't immediately close the dropdown we just opened
+        // Polymer's click-outside would otherwise immediately close the dropdown we just opened.
         e.stopPropagation();
         elDropdown.open();
         elChevronButton.querySelector<HTMLButtonElement>("button")?.blur();
@@ -212,8 +207,7 @@ export async function injectSegmentedDownloadButton(
       return;
     }
 
-    // Dedup identical progress values to avoid thousands of redundant
-    // Polymer re-renders (FFmpeg fires progress=1 thousands of times).
+    // FFmpeg fires progress=1 thousands of times; dedup to avoid redundant Polymer re-renders.
     if (!data.isRemoved && data.progress === lastProgressReported) {
       return;
     }
@@ -251,7 +245,6 @@ export async function injectSegmentedDownloadButton(
     elDropdown.close();
   }
 
-  // From Polymer (click-outside, Escape key): sync MAIN world state
   function handleDropdownClosed() {
     if (!isPanelOpen) {
       return;
@@ -259,12 +252,10 @@ export async function injectSegmentedDownloadButton(
 
     isPanelOpen = false;
     refreshButtons();
-    // Restore focus to the chevron button
     elChevronButton.querySelector<HTMLButtonElement>("button")?.focus();
   }
 
-  // Refit the dropdown whenever the panel content resizes (e.g. switching tabs)
-  // so the dropdown stays anchored to the button group rather than floating away.
+  // Keep the dropdown anchored to the button group when panel content resizes (e.g. tab switches).
   const resizeObserver = new ResizeObserver(() => {
     if (elDropdown.opened) {
       elDropdown.refit();

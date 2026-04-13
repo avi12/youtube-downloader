@@ -9,7 +9,6 @@ function createGridDropdown(contentId: string, positionTargetSelector: string) {
     return;
   }
 
-  // Clean up any existing dropdown for this content ID (from a previous open)
   const existingDropdown = gridDropdowns.get(contentId);
   if (existingDropdown) {
     existingDropdown.close();
@@ -35,7 +34,6 @@ function createGridDropdown(contentId: string, positionTargetSelector: string) {
   elDropdown.allowOutsideScroll = false;
   elDropdown.restoreFocusOnClose = false;
 
-  // Refit the dropdown when panel content changes size (e.g. progress bar appears)
   const resizeObserver = new ResizeObserver(() => {
     if (elDropdown.opened) {
       elDropdown.refit();
@@ -45,7 +43,6 @@ function createGridDropdown(contentId: string, positionTargetSelector: string) {
   resizeObserver.observe(elDropdownContentSlot);
   gridDropdowns.set(contentId, elDropdown);
 
-  // Notify the isolated world that the dropdown is ready, then open it.
   // Opening after a frame lets Polymer finish initialization.
   void crossWorldMessenger.sendMessage(CrossWorldMessage.DropdownReady, { contentId });
   requestAnimationFrame(() => elDropdown.open());
@@ -61,10 +58,8 @@ function closeGridDropdown(videoId: string) {
   }
 }
 
-// Polymer's IronFocusedBehavior tracks keyboard vs pointer focus via
-// receivedFocusFromKeyboard, but it doesn't reflect to an attribute.
-// Bridge it to a [keyboard-focused] attribute so CSS in the isolated world
-// can show a focus ring only for keyboard users (WCAG 2.4.7).
+// Polymer's IronFocusedBehavior doesn't reflect keyboard vs pointer focus to an attribute;
+// bridge it to [keyboard-focused] so CSS can gate the focus ring (WCAG 2.4.7).
 function handleDropdownFocusIn(e: FocusEvent) {
   if (!(e.target instanceof Element)) {
     return;

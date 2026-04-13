@@ -1,8 +1,3 @@
-/**
- * Injects playlist download UI: a header-level "Download All" button
- * and per-video download buttons in playlist video renderers.
- */
-
 import PlaylistDownloader from "@/components/PlaylistDownloader.svelte";
 import PlaylistVideoItem from "@/components/PlaylistVideoItem.svelte";
 import { checkedPlaylistVideos } from "@/lib/playlist-selection.svelte";
@@ -57,9 +52,8 @@ function waitForPlaylistHeaderMount(signal: AbortSignal) {
 }
 
 function findPlaylistHeaderMount() {
-  // YouTube renders several duplicate page-header instances (legacy, responsive,
-  // hidden). Target the flex-actions row that's actually visible on screen, then
-  // mount into its parent (.ytPageHeaderViewModelHeadlineInfo).
+  // YouTube renders duplicate page-header instances (legacy, responsive, hidden);
+  // target the flex-actions row that's actually visible.
   for (const elFlex of document.querySelectorAll<HTMLElement>("yt-flexible-actions-view-model")) {
     if (elFlex.getBoundingClientRect().height <= 0) {
       continue;

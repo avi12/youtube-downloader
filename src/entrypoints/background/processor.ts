@@ -12,8 +12,6 @@ export function resetProcessorState() {
   resolveFFmpegReady = null;
 }
 
-// Called by pipeline-handlers when the offscreen document signals FFmpeg is loaded.
-// Resolves processorReady so pending chunk sends can proceed.
 export function signalFFmpegReady() {
   resolveFFmpegReady?.();
   resolveFFmpegReady = null;
@@ -41,8 +39,8 @@ async function ensureChromeOffscreenDocument() {
     }
   }
 
-  // Set up the FFmpeg-ready promise BEFORE createDocument so we can't miss
-  // the PipelineFFmpegReady signal that fires right after FFmpeg initializes.
+  // Set up the ready promise BEFORE createDocument so we can't miss
+  // the PipelineFFmpegReady signal that fires right after initialization.
   const ffmpegReady = waitForFFmpegReady();
   await browser.offscreen.createDocument({
     url: "/offscreen.html",
@@ -50,10 +48,8 @@ async function ensureChromeOffscreenDocument() {
     justification: "FFmpeg WASM processing requires a Worker context"
   });
 
-  // Wait until initFFmpeg() fires PipelineFFmpegReady → signalFFmpegReady().
-  // Without this, chunks forwarded right after createDocument() are dropped
-  // because the offscreen's onMessage handlers aren't registered until after
-  // the top-level `await createFFmpegCore({})` resolves.
+  // Offscreen's onMessage handlers aren't registered until createFFmpegCore({}) resolves,
+  // so waiting here avoids chunks being dropped right after createDocument().
   await ffmpegReady;
 }
 

@@ -62,8 +62,7 @@ export function createButtonGroup(
 
   const elChevronButton = document.createElement("yt-button-view-model");
   elChevronButton.classList.add(...scopingClasses);
-  // [data-ytdl-chevron] suppresses the automatic margin-left between
-  // adjacent yt-button-view-model siblings so the buttons sit flush.
+  // Suppresses the automatic margin-left between adjacent yt-button-view-model siblings so the buttons sit flush.
   elChevronButton.dataset.ytdlChevron = "true";
 
   const elProgressBar = document.createElement("tp-yt-paper-progress");
@@ -78,7 +77,7 @@ export function createButtonGroup(
     elActionsContainer.append(elGroup);
   }
 
-  // Polymer's Shady DOM requires updateStyles for CSS custom properties
+  // Polymer's Shady DOM requires updateStyles for CSS custom properties.
   elProgressBar.updateStyles({
     "--paper-progress-active-color": "var(--yt-spec-call-to-action, rgb(62 166 255))",
     "--paper-progress-container-color": "transparent"
@@ -92,10 +91,8 @@ export function createDropdownElement(videoId: string, elGroup: HTMLElement): Dr
 
   const elDropdown = document.createElement("tp-yt-iron-dropdown");
 
-  // ytd-menu-popup-renderer is YouTube's native popup shell: it provides
-  // theme-aware background, border-radius, and box-shadow automatically.
-  // Its shadow DOM exposes a default <slot>, so our Svelte content mounts
-  // as light DOM children and is projected through that slot.
+  // ytd-menu-popup-renderer provides theme-aware background, border-radius, and box-shadow,
+  // and its shadow DOM exposes a default <slot> for our content.
   const elDropdownContentSlot = document.createElement("ytd-menu-popup-renderer");
   elDropdownContentSlot.slot = "dropdown-content";
   elDropdownContentSlot.id = panelContentId;
@@ -104,7 +101,7 @@ export function createDropdownElement(videoId: string, elGroup: HTMLElement): Dr
   const elPopupContainer = document.querySelector("ytd-popup-container") ?? document.body;
   elPopupContainer.append(elDropdown);
 
-  // Set Polymer properties after the element is connected to the DOM
+  // Polymer properties must be set after the element is connected to the DOM.
   elDropdown.positionTarget = elGroup;
   elDropdown.horizontalAlign = "left";
   elDropdown.verticalAlign = "top";

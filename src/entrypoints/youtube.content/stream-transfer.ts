@@ -1,9 +1,3 @@
-/**
- * Transfers large binary streams from the MAIN world to the background
- * by splitting them into base64-encoded 1MB chunks that stay under
- * Chrome's runtime.sendMessage size limit.
- */
-
 import { uint8ToBase64 } from "@/lib/binary";
 import { MessageType, sendMessage } from "@/lib/messaging";
 import { downloadProgressStore } from "@/lib/synced-stores.svelte";
@@ -112,7 +106,6 @@ export function handleStreamError({ videoId, error }: {
 }) {
   console.error("[ytdl] Stream error for", videoId, error);
 
-  // Reset download state so the button isn't stuck at "downloading"
   downloadProgressStore.delete(videoId);
 
   void sendMessage(MessageType.ProcessStreamError, {

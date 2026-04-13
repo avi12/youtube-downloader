@@ -1,9 +1,3 @@
-/**
- * Mounts DownloadOptionsPanel into the tp-yt-iron-dropdown slot
- * created by the MAIN world. Stays mounted until navigation so
- * state is preserved across panel open/close cycles.
- */
-
 import DownloadOptionsPanel from "@/components/DownloadOptionsPanel.svelte";
 import type { Options, VideoData } from "@/types";
 import { mount, unmount } from "svelte";

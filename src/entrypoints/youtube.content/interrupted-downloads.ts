@@ -1,9 +1,3 @@
-/**
- * Manages interrupted download state persistence between the MAIN world
- * and background storage, using the synced signal store for cross-world
- * communication.
- */
-
 import { MessageType, sendMessage } from "@/lib/messaging";
 import { interruptedDownloadStore } from "@/lib/synced-stores.svelte";
 

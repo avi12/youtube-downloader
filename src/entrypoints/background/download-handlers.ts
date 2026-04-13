@@ -15,10 +15,8 @@ async function dispatchSequentially(items: DownloadRequest[], tabId: number) {
 }
 
 export function registerDownloadHandlers() {
-  // Proxy SABR fetch requests through the background SW, which has host_permissions
-  // for googlevideo.com and bypasses CORS without preflight. credentials: 'include'
-  // lets the browser attach any existing googlevideo.com cookies automatically.
-  // SABR authentication uses a Bearer PO token, not YouTube session cookies.
+  // Background SW has host_permissions for googlevideo.com and bypasses CORS preflight;
+  // credentials: 'include' attaches any existing googlevideo cookies.
   onMessage(MessageType.BackgroundProxyFetch, async ({ data }) => {
     const { url, method, bodyBase64, headers } = data;
 
@@ -56,9 +54,6 @@ export function registerDownloadHandlers() {
     }
   });
 
-  // Download via hidden iframe. Content scripts auto-inject into the iframe
-  // via allFrames: true (with isDownloadIframe guard to skip non-download iframes).
-  // visibility-spoof.content.ts ensures YouTube's player streams in hidden iframes.
   onMessage(MessageType.DownloadViaWatchPage, async ({ data, sender }) => {
     const originTabId = sender.tab?.id;
     if (!originTabId) {
@@ -74,9 +69,6 @@ export function registerDownloadHandlers() {
         watchUrl
       }, originTabId);
 
-      // Wait for the iframe's MAIN world content script to signal player initialization.
-      // IframePlayerReady is sent after capture state is set up, bridged to background
-      // as DownloadIframeReady by the isolated world. Timeout prevents hanging forever.
       const iframeReadyTimeoutMs = 30_000;
       await new Promise<void>(resolve => {
         const timeoutId = setTimeout(resolve, iframeReadyTimeoutMs);
@@ -91,8 +83,6 @@ export function registerDownloadHandlers() {
         });
       });
 
-      // Send download request - only the iframe's content script handles it
-      // (isWatchPage guard filters out the subscriptions page)
       await sendMessage(MessageType.ExecuteDownloadItem, data, originTabId);
 
       trackVideoForTab(data.videoId, originTabId);

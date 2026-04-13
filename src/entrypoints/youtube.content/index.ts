@@ -114,7 +114,6 @@ function registerBackgroundMessageHandlers() {
   const lastReportedProgress = new Map<string, number>();
 
   onMessage(MessageType.UpdateDownloadProgress, ({ data }) => {
-    // Dedup redundant progress values before doing cross-world event work
     if (!data.isRemoved) {
       const last = lastReportedProgress.get(data.videoId);
       if (last === data.progress) {

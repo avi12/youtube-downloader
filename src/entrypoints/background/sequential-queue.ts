@@ -1,8 +1,3 @@
-/**
- * Completion signaling for sequential playlist dispatch.
- * download-handlers.ts awaits per-video completion; pipeline-handlers.ts signals it.
- */
-
 const MaxVideoDownloadMs = 10 * 60 * 1_000;
 
 const completionCallbacks = new Map<string, () => void>();

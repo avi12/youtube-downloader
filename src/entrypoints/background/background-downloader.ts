@@ -33,8 +33,7 @@ async function sendStreamChunksToOffscreen(
       tabId
     });
 
-    // Yield so Chrome's extension IPC broker can drain and unrelated
-    // messaging (content-script progress, popup, etc.) stays responsive.
+    // Yield so Chrome's IPC broker can drain and unrelated messaging stays responsive.
     if ((iChunk + 1) % yieldEveryNChunks === 0) {
       await new Promise(resolve => setTimeout(resolve, 0));
     }

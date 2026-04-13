@@ -10,10 +10,7 @@ declare const ytcfg: { get: (key: string) => unknown } | undefined;
 
 export const videoDataCache = new Map<string, VideoData>();
 
-// SourceBuffer capture state is managed by sourcebuffer-capture.content.ts
-// which runs at document_start. We read/write it via window.__ytdlCapture.
-// Fall back to a no-op stub if the capture script didn't initialize
-// (e.g., on non-download pages where it returned early).
+// Fallback no-op stub for pages where sourcebuffer-capture.content.ts didn't initialize.
 const captureState: YtdlCaptureState = window.__ytdlCapture ?? {
   activeVideoId: "",
   pendingChunks: [],
@@ -187,7 +184,6 @@ export async function buildAndDispatchVideoData(
   videoDataStore.set(videoData.videoId, videoData);
   void crossWorldMessenger.sendMessage(CrossWorldMessage.VideoData, videoData);
 
-  // Start capturing SourceBuffer data for this video
   captureState.activeVideoId = videoData.videoId;
 
   const { capturedMedia, addChunkToCapture } = captureState;
@@ -202,7 +198,6 @@ export async function buildAndDispatchVideoData(
     });
   }
 
-  // Flush chunks that arrived before activeVideoId was set (init segments)
   const { pendingChunks } = captureState;
   if (pendingChunks.length > 0) {
     const capture = capturedMedia.get(captureState.activeVideoId)!;
@@ -214,8 +209,7 @@ export async function buildAndDispatchVideoData(
     pendingChunks.length = 0;
   }
 
-  // For download iframes: generate PO token before signaling ready so
-  // the background download has valid SABR credentials immediately.
+  // Generate PO token before IframePlayerReady so the background download has valid SABR credentials immediately.
   if (self !== top) {
     await generatePoTokenIfNeeded(videoData);
     void crossWorldMessenger.sendMessage(CrossWorldMessage.IframePlayerReady, { videoId: videoData.videoId });

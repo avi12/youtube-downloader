@@ -1,13 +1,5 @@
-/**
- * Spoofs page visibility and iframe detection in all frames at document_start.
- * YouTube's player checks these to decide whether to stream media:
- * - visibilityState/hidden: pauses in background tabs
- * - hasFocus: pauses when tab loses focus
- * - frameElement/top: limits streaming in iframes
- *
- * Separate from main content scripts to avoid WXT context conflicts.
- */
-
+// YouTube's player pauses streaming in background tabs, unfocused tabs, and iframes;
+// spoof visibility/focus/frame so it always streams.
 export default defineContentScript({
   matches: ["https://www.youtube.com/*"],
   world: "MAIN",
@@ -28,7 +20,6 @@ export default defineContentScript({
     });
     document.hasFocus = () => true;
 
-    // Make iframes appear as top-level pages to YouTube's player
     if (self !== top) {
       Object.defineProperty(window, "frameElement", {
         get() {

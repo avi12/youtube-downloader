@@ -143,9 +143,8 @@ export async function performDownload({
 
     const { videoFormat, audioFormat } = selectFormats(cachedVideoData, type, videoItag, audioItag);
     const extraAudioFormats = getExtraAudioFormats(cachedVideoData.audioFormats, audioFormat?.audioTrack?.id);
-    // Generate PO token on click. BotGuard's synchronous VM computation
-    // blocks the main thread briefly - runs here so the block happens at
-    // click-time (expected latency) rather than at download completion.
+    // BotGuard's synchronous VM briefly blocks the main thread,
+    // so do it at click-time (expected latency) rather than download completion.
     await generatePoTokenIfNeeded(cachedVideoData);
     const credentials = await resolveCredentialsWithRetry();
 
