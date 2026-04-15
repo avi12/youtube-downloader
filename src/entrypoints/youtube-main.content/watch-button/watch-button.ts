@@ -1,4 +1,4 @@
-import { performDownload } from "./download";
+import { performDownload } from "../video/download";
 import { findVideoActionsContainer } from "./watch-button-container";
 import {
   createButtonGroup,

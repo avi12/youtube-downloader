@@ -1,8 +1,8 @@
-import { cancelActiveDownload, performDownload } from "./download";
-import { registerGridDropdownHandlers } from "./grid-dropdown";
-import { registerGridVideoDataHandler } from "./grid-video-data";
-import { handleNavigateSuccess } from "./playlist-metadata";
-import { extractAndDispatchVideoData } from "./video-data";
+import { registerGridDropdownHandlers } from "./grid/grid-dropdown";
+import { registerGridVideoDataHandler } from "./grid/grid-video-data";
+import { cancelActiveDownload, performDownload } from "./video/download";
+import { handleNavigateSuccess } from "./video/playlist-metadata";
+import { extractAndDispatchVideoData } from "./video/video-data";
 import { CrossWorldMessage, crossWorldMessenger, dispatchButtonClick } from "@/lib/messaging/cross-world-messenger";
 import { type PlayerResponse } from "@/types";
 

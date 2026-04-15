@@ -1,16 +1,16 @@
-import { listenForDownloadIframes } from "./download-iframe";
-import { checkInterruptedDownload, listenForInterruptedDownloadEvents } from "./interrupted-downloads";
-import { listenForKeepalive } from "./keepalive";
-import { handlePageChange, setNativeDownloadVisibility } from "./page-router";
-import { mountPanelUi } from "./panel-ui";
+import { listenForDownloadIframes } from "./download/download-iframe";
+import { checkInterruptedDownload, listenForInterruptedDownloadEvents } from "./download/interrupted-downloads";
+import { listenForKeepalive } from "./download/keepalive";
 import {
   cancelStreamTransfer,
   handleStreamData,
   handleStreamError,
   setPlaylistContext,
   uncancelStreamTransfer
-} from "./stream-transfer";
+} from "./download/stream-transfer";
 import "./style.css";
+import { handlePageChange, setNativeDownloadVisibility } from "./ui/page-router";
+import { mountPanelUi } from "./ui/panel-ui";
 import { CrossWorldEvent, emitCrossWorldEvent } from "@/lib/messaging/cross-world-events";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";

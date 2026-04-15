@@ -1,5 +1,5 @@
+import { injectSegmentedDownloadButton } from "../watch-button/watch-button";
 import { capturedPoToken, capturedPoTokenVideoId, setPoTokenCredentials } from "./credentials";
-import { injectSegmentedDownloadButton } from "./watch-button";
 import { buildVideoData } from "./youtube-api";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { sabrCredentials, videoDataStore } from "@/lib/ui/synced-stores.svelte";

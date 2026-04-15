@@ -75,7 +75,7 @@ async function persistRecentDownload(
     try {
       await sendMessage(MessageType.RecentDownloadsChanged, {});
     } catch {
-      // Popup not open — ignore.
+      // Popup not open - ignore.
     }
   } catch (error) {
     console.warn("[ytdl:bg] Persist recent download failed:", error);
@@ -113,7 +113,7 @@ export function registerRecentDownloadHandlers() {
     try {
       await browser.downloads.removeFile(downloadId);
     } catch {
-      // Firefox does not support removeFile — silently ignore
+      // Firefox does not support removeFile - silently ignore
     }
 
     await browser.downloads.erase({ id: downloadId });

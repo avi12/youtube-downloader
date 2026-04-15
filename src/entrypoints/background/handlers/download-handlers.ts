@@ -1,7 +1,7 @@
-import { cancelBackgroundDownload, startBackgroundDownload } from "./background-downloader";
-import { enqueueToPopupList, removeFromPopupList } from "./popup-list";
-import { awaitVideoComplete, signalVideoComplete } from "./sequential-queue";
-import { cancelDownloads, getTabIdsForVideo, trackVideoForTab } from "./tab-tracker";
+import { cancelBackgroundDownload, startBackgroundDownload } from "../download/background-downloader";
+import { enqueueToPopupList, removeFromPopupList } from "../queue/popup-list";
+import { awaitVideoComplete, signalVideoComplete } from "../queue/sequential-queue";
+import { cancelDownloads, getTabIdsForVideo, trackVideoForTab } from "../queue/tab-tracker";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
 import { ProgressType } from "@/types";
 import type { DownloadRequest } from "@/types";

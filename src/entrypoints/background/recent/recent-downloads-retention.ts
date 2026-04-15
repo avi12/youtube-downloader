@@ -1,4 +1,4 @@
-import { ensureProcessor } from "./processor";
+import { ensureProcessor } from "../handlers/processor";
 import { MessageType, onMessage } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
 import { pruneRecentDownloads } from "@/lib/storage/recent-downloads-db";

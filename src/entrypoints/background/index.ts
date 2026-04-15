@@ -1,8 +1,8 @@
-import { registerDownloadHandlers } from "./download-handlers";
-import { registerPipelineHandlers } from "./pipeline-handlers";
-import { isFirefoxProcessorTab, ensureProcessor, resetProcessorState } from "./processor";
-import { registerRecentDownloadsRetention } from "./recent-downloads-retention";
-import { tabTracker, trackVideoForTab, untrackVideoForTab } from "./tab-tracker";
+import { registerDownloadHandlers } from "./handlers/download-handlers";
+import { registerPipelineHandlers } from "./handlers/pipeline-handlers";
+import { isFirefoxProcessorTab, ensureProcessor, resetProcessorState } from "./handlers/processor";
+import { tabTracker, trackVideoForTab, untrackVideoForTab } from "./queue/tab-tracker";
+import { registerRecentDownloadsRetention } from "./recent/recent-downloads-retention";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
 import {

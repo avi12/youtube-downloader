@@ -1,7 +1,7 @@
-import { enqueueToPopupList, removeFromPopupList } from "./popup-list";
+import { enqueueToPopupList, removeFromPopupList } from "../queue/popup-list";
+import { signalVideoComplete } from "../queue/sequential-queue";
+import { registerRecentDownloadHandlers } from "../recent/recent-download-handler";
 import { signalFFmpegReady } from "./processor";
-import { registerRecentDownloadHandlers } from "./recent-download-handler";
-import { signalVideoComplete } from "./sequential-queue";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
 import { isFFmpegReadyItem, statusProgressItem } from "@/lib/storage/storage";
 import { ProgressType } from "@/types";

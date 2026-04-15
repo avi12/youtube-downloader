@@ -1,5 +1,5 @@
+import { ensureProcessor } from "../handlers/processor";
 import { downloadViaCdn } from "./cdn-downloader";
-import { ensureProcessor } from "./processor";
 import { downloadViaSabr } from "./sabr-downloader";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
