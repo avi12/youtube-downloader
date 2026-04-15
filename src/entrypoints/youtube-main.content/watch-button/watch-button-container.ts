@@ -33,7 +33,8 @@ export async function findVideoActionsContainer(signal: AbortSignal) {
       resolve(elVisible);
     });
 
-    observer.observe(document.documentElement, { childList: true, subtree: true });
+    const childListSubtreeOptions = { childList: true, subtree: true };
+    observer.observe(document.documentElement, childListSubtreeOptions);
     signal.addEventListener("abort", () => {
       observer.disconnect();
       resolve(null);

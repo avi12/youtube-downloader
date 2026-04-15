@@ -64,7 +64,8 @@ export function attachCloseButton(elTarget: Element) {
     onButtonAvailable(elInner);
   });
 
-  observer.observe(elTarget, { childList: true, subtree: true });
+  const childListSubtreeOptions = { childList: true, subtree: true };
+  observer.observe(elTarget, childListSubtreeOptions);
 }
 
 export function attachDoneIcon(elButton: Element) {

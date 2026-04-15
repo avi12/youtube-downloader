@@ -90,8 +90,9 @@ export async function injectSegmentedDownloadButton(
   }
 
   const segmentedObserver = new MutationObserver(applySegmentedClasses);
-  segmentedObserver.observe(elDownloadButton, { childList: true, subtree: true });
-  segmentedObserver.observe(elChevronButton, { childList: true, subtree: true });
+  const childListSubtreeOptions = { childList: true, subtree: true };
+  segmentedObserver.observe(elDownloadButton, childListSubtreeOptions);
+  segmentedObserver.observe(elChevronButton, childListSubtreeOptions);
   requestAnimationFrame(applySegmentedClasses);
 
   function getViewState(): ButtonViewState {

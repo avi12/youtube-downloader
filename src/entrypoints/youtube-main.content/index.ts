@@ -52,7 +52,8 @@ export default defineContentScript({
         elPlayer?.pauseVideo?.();
         observer.disconnect();
       });
-      muteAndPauseObserver.observe(document.documentElement, { childList: true, subtree: true });
+      const childListSubtreeOptions = { childList: true, subtree: true };
+      muteAndPauseObserver.observe(document.documentElement, childListSubtreeOptions);
     }
 
     // Handle download requests from Svelte panel components (via isolated world)

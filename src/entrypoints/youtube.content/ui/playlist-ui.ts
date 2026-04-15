@@ -45,7 +45,8 @@ function waitForPlaylistHeaderMount(signal: AbortSignal) {
       resolve(elHeader);
     });
 
-    observer.observe(document.body, { childList: true, subtree: true });
+    const childListSubtreeOptions = { childList: true, subtree: true };
+    observer.observe(document.body, childListSubtreeOptions);
 
     signal.addEventListener("abort", () => {
       observer.disconnect();
@@ -117,7 +118,8 @@ export async function injectPlaylistDownloaderUi(
     void injectPlaylistDownloaderUi(context);
   });
 
-  headerReinjectObserver.observe(document.body, { childList: true, subtree: true });
+  const childListSubtreeOptions = { childList: true, subtree: true };
+  headerReinjectObserver.observe(document.body, childListSubtreeOptions);
 }
 
 function injectPlaylistVideoItemUi({ context, elVideoItem }: {
@@ -190,6 +192,7 @@ export function handlePlaylistVideoAdditions(context: InstanceType<typeof Conten
     }
   });
 
-  mutationObserver.observe(elContents, { childList: true, subtree: true });
+  const childListSubtreeOptions = { childList: true, subtree: true };
+  mutationObserver.observe(elContents, childListSubtreeOptions);
   context.onInvalidated(() => mutationObserver.disconnect());
 }

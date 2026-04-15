@@ -59,7 +59,8 @@ export async function waitForVideoElement(signal?: AbortSignal) {
       resolve(elVideo);
     });
 
-    observer.observe(document.body, { childList: true, subtree: true });
+    const childListSubtreeOptions = { childList: true, subtree: true };
+    observer.observe(document.body, childListSubtreeOptions);
 
     signal?.addEventListener("abort", () => {
       observer.disconnect();

@@ -96,6 +96,7 @@ function isCardPending(elCard: Element) {
 }
 
 function createVisibilityObserver(context: InstanceType<typeof ContentScriptContext>) {
+  const viewportMarginOptions = { rootMargin: VIEWPORT_MARGIN };
   return new IntersectionObserver(
     entries => {
       for (const entry of entries) {
@@ -107,7 +108,7 @@ function createVisibilityObserver(context: InstanceType<typeof ContentScriptCont
         mountGridButton({ context, elCard: entry.target });
       }
     },
-    { rootMargin: VIEWPORT_MARGIN }
+    viewportMarginOptions
   );
 }
 
@@ -131,7 +132,8 @@ export function injectGridVideoButtons(context: InstanceType<typeof ContentScrip
   gridObserver = new MutationObserver(observePendingCards);
 
   const elPageContent = document.querySelector(PAGE_MANAGER_SELECTOR) ?? document.body;
-  gridObserver.observe(elPageContent, { childList: true, subtree: true });
+  const childListSubtreeOptions = { childList: true, subtree: true };
+  gridObserver.observe(elPageContent, childListSubtreeOptions);
   context.onInvalidated(() => {
     gridObserver?.disconnect();
     visibilityObserver?.disconnect();
