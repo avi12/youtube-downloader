@@ -132,7 +132,7 @@ export function createPlaylistDownloaderState() {
   // Tracks the highest video resolution discovered so far across all playlist videos.
   // Grows as more video data loads (e.g. on scroll), never shrinks - so quality
   // options only expand, preventing confusing option removal mid-session.
-  const maxAvailableHeight = $derived.by(() => {
+  const maxAvailableQuality = $derived.by(() => {
     let max = 0;
     for (const data of videoDataMap.values()) {
       for (const format of data.videoFormats) {
@@ -387,8 +387,8 @@ export function createPlaylistDownloaderState() {
     get videoDataMapSize() {
       return videoDataMap.size;
     },
-    get maxAvailableHeight() {
-      return maxAvailableHeight;
+    get maxAvailableQuality() {
+      return maxAvailableQuality;
     },
     get isRevealingAll() {
       return reveal.isRevealingAll;

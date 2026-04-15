@@ -27,7 +27,7 @@
   const qualityOptions = $derived([
     { value: VideoQualityMode.Best, label: "Best quality" },
     ...videoQualities
-      .filter(height => !playlist.maxAvailableHeight || height <= playlist.maxAvailableHeight)
+      .filter(height => !playlist.maxAvailableQuality || height <= playlist.maxAvailableQuality)
       .map(height => ({ value: String(height), label: `${height}p` }))
   ]);
 
