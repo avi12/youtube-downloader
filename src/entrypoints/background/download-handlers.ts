@@ -74,6 +74,7 @@ async function dispatchSequentially(items: DownloadRequest[], tabId: number, sig
 
     await downloadViaWatchPage(item, tabId);
     await awaitVideoComplete(item.videoId);
+    await sendMessage(MessageType.RemoveDownloadIframe, { videoId: item.videoId }, tabId);
   }
 }
 
