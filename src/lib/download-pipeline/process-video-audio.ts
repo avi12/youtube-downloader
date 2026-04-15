@@ -1,7 +1,6 @@
-import { toUint8Array, triggerDownload } from ".";
-import { reportProgress } from ".";
+import { toUint8Array, triggerDownload, reportProgress } from ".";
 import { getCompatibleFilename, getOutputExtension } from "../containers";
-import { getFFmpeg, progressHandlers } from "./ffmpeg-instance";
+import { getFFmpeg, progressHandlers, tryUnlink } from "./ffmpeg-instance";
 import { addToPlaylistBundle } from "./playlist-bundle";
 import { ProgressType } from "@/types";
 import type { ProcessStreamData } from "@/types";
@@ -26,8 +25,8 @@ export async function processVideoAudio(item: ProcessStreamData) {
   const {
     videoId, filenameOutput, videoMimeType, audioMimeType, tabId, additionalAudioStreams
   } = item;
-  const videoData = toUint8Array(item.videoData);
-  const audioData = toUint8Array(item.audioData);
+  let videoData: Uint8Array | null = toUint8Array(item.videoData);
+  let audioData: Uint8Array | null = toUint8Array(item.audioData);
   if (!videoData || !audioData) {
     await reportProgress({ videoId, progress: 1, progressType: ProgressType.FFmpeg, tabId });
 
@@ -75,45 +74,45 @@ export async function processVideoAudio(item: ProcessStreamData) {
 
   progressHandlers.add(handleFFmpegProgress);
 
+  // Filenames and labels for extra audio tracks; populated inside try so finally can clean up.
+  const extraAudioTracks: {
+    filename: string;
+    label: string;
+  }[] = [];
+
   try {
     ffmpeg.FS.writeFile(videoFilename, videoData);
+    videoData = null; // WASM has its own copy — release the JS buffer
+
     ffmpeg.FS.writeFile(primaryAudioFilename, audioData);
+    audioData = null; // release
 
-    const extraAudioEntries = additionalAudioStreams
-      .map((stream, i) => {
-        const extraData = toUint8Array(stream.data);
-        if (!extraData) {
-          return null;
-        }
+    for (const [i, stream] of additionalAudioStreams.entries()) {
+      let extraData: Uint8Array | null = toUint8Array(stream.data);
+      if (!extraData) {
+        continue;
+      }
 
-        const isExtraWebm = /webm/.test(stream.mimeType);
-        const extraExtension = isExtraWebm ? "webm" : "m4a";
-        return { filename: `${videoId}-audio-extra-${i}.${extraExtension}`, data: extraData };
-      })
-      .filter(entry => entry !== null);
-
-    for (const entry of extraAudioEntries) {
-      ffmpeg.FS.writeFile(entry.filename, entry.data);
+      const extraExtension = /webm/.test(stream.mimeType) ? "webm" : "m4a";
+      const extraFilename = `${videoId}-audio-extra-${i}.${extraExtension}`;
+      ffmpeg.FS.writeFile(extraFilename, extraData);
+      extraData = null; // release
+      extraAudioTracks.push({ filename: extraFilename, label: stream.label });
     }
 
-    const extraAudioFilenames = extraAudioEntries.map(entry => entry.filename);
     const ffmpegArgs = ["-i", videoFilename, "-i", primaryAudioFilename];
-    for (const extraFilename of extraAudioFilenames) {
-      ffmpegArgs.push("-i", extraFilename);
+    for (const { filename } of extraAudioTracks) {
+      ffmpegArgs.push("-i", filename);
     }
 
     ffmpegArgs.push("-map", "0:v:0");
-    for (let i = 0; i <= extraAudioFilenames.length; i++) {
+    for (let i = 0; i <= extraAudioTracks.length; i++) {
       ffmpegArgs.push("-map", `${i + 1}:a:0`);
     }
 
     ffmpegArgs.push("-c:v", "copy", "-c:a", "copy");
 
-    const audioTrackLabels = [
-      item.primaryAudioLabel ?? "",
-      ...additionalAudioStreams.slice(0, extraAudioFilenames.length).map(stream => stream.label)
-    ];
-
+    const audioTrackLabels = [item.primaryAudioLabel ?? "", ...extraAudioTracks.map(track => track.label)];
     for (let i = 0; i < audioTrackLabels.length; i++) {
       const label = audioTrackLabels[i];
       if (label) {
@@ -131,10 +130,6 @@ export async function processVideoAudio(item: ProcessStreamData) {
     const ffmpegOutput = ffmpeg.FS.readFile(outputFilename, { encoding: "binary" });
     if (typeof ffmpegOutput === "string") {
       throw new Error("FFmpeg readFile returned unexpected string output");
-    }
-
-    for (const file of [videoFilename, primaryAudioFilename, outputFilename, ...extraAudioFilenames]) {
-      ffmpeg.FS.unlink(file);
     }
 
     if (item.playlistId) {
@@ -159,5 +154,11 @@ export async function processVideoAudio(item: ProcessStreamData) {
     await reportProgress({ videoId, progress: 1, progressType: ProgressType.FFmpeg, tabId });
   } finally {
     progressHandlers.delete(handleFFmpegProgress);
+    tryUnlink(ffmpeg, videoFilename);
+    tryUnlink(ffmpeg, primaryAudioFilename);
+    tryUnlink(ffmpeg, outputFilename);
+    for (const { filename } of extraAudioTracks) {
+      tryUnlink(ffmpeg, filename);
+    }
   }
 }
