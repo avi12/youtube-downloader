@@ -3,6 +3,8 @@ const DB_VERSION = 1;
 const ENTRIES_STORE = "entries";
 const BLOBS_STORE = "blobs";
 
+let dbConnection: IDBDatabase | null = null;
+
 function openDatabase() {
   return new Promise<IDBDatabase>((resolve, reject) => {
     const openRequest = indexedDB.open(DB_NAME, DB_VERSION);
@@ -20,6 +22,18 @@ function openDatabase() {
     openRequest.onsuccess = () => resolve(openRequest.result);
     openRequest.onerror = () => reject(openRequest.error);
   });
+}
+
+async function getDatabase() {
+  if (dbConnection) {
+    return dbConnection;
+  }
+
+  dbConnection = await openDatabase();
+  dbConnection.onclose = () => {
+    dbConnection = null;
+  };
+  return dbConnection;
 }
 
 function awaitRequest<T>(request: IDBRequest<T>) {
@@ -50,48 +64,44 @@ export async function addRecentDownload(entry: {
   thumbnailUrl?: string;
   completedAt: number;
 }, blob: Blob) {
-  const db = await openDatabase();
+  const db = await getDatabase();
   const transaction = db.transaction([ENTRIES_STORE, BLOBS_STORE], "readwrite");
   transaction.objectStore(ENTRIES_STORE).put(entry);
   transaction.objectStore(BLOBS_STORE).put(blob, entry.id);
   await awaitTransaction(transaction);
-  db.close();
 }
 
 export type RecentDownloadEntry = Parameters<typeof addRecentDownload>[0];
 
 export async function getAllRecentDownloads() {
-  const db = await openDatabase();
+  const db = await getDatabase();
   const transaction = db.transaction(ENTRIES_STORE, "readonly");
   const entries: RecentDownloadEntry[] = await awaitRequest(
     transaction.objectStore(ENTRIES_STORE).getAll()
   );
-  db.close();
   return entries.toSorted((entryA, entryB) => entryB.completedAt - entryA.completedAt);
 }
 
 export async function getRecentDownloadBlob(id: string) {
-  const db = await openDatabase();
+  const db = await getDatabase();
   const transaction = db.transaction(BLOBS_STORE, "readonly");
   const blob = await awaitRequest(transaction.objectStore(BLOBS_STORE).get(id));
-  db.close();
   return blob instanceof Blob ? blob : null;
 }
 
 export async function deleteRecentDownload(id: string) {
-  const db = await openDatabase();
+  const db = await getDatabase();
   const transaction = db.transaction([ENTRIES_STORE, BLOBS_STORE], "readwrite");
   transaction.objectStore(ENTRIES_STORE).delete(id);
   transaction.objectStore(BLOBS_STORE).delete(id);
   await awaitTransaction(transaction);
-  db.close();
 }
 
 export async function pruneRecentDownloads(
   olderThanTimestamp: number,
   protectedIds: ReadonlySet<string>
 ) {
-  const db = await openDatabase();
+  const db = await getDatabase();
   const transaction = db.transaction([ENTRIES_STORE, BLOBS_STORE], "readwrite");
   const entriesStore = transaction.objectStore(ENTRIES_STORE);
   const blobsStore = transaction.objectStore(BLOBS_STORE);
@@ -114,5 +124,4 @@ export async function pruneRecentDownloads(
   };
 
   await awaitTransaction(transaction);
-  db.close();
 }
