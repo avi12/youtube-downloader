@@ -129,30 +129,37 @@ export async function downloadViaSabr({ request, signal, tabId }: {
   const isAudioOnly = type === DownloadType.Audio;
 
   const effectiveConfig = sabrConfig ? buildEffectiveSabrConfig({ sabrConfig, sabrUrl }) : null;
-  const isSabrAvailable = Boolean(effectiveConfig && audioFormat && (isAudioOnly || videoFormat));
-  if (!isSabrAvailable) {
+  if (!effectiveConfig || !audioFormat) {
+    return null;
+  }
+
+  if (!isAudioOnly && !videoFormat) {
     return null;
   }
 
   const resolvedPoToken = poToken ?? "";
   if (isAudioOnly) {
     const audioData = await downloadAudioOnlyViaSabr({
-      config: effectiveConfig!, audioFormat: audioFormat!, poToken: resolvedPoToken, signal, videoId, tabId
+      config: effectiveConfig, audioFormat, poToken: resolvedPoToken, signal, videoId, tabId
     });
     return { videoData: null, audioData, additionalAudioTracks: [] };
   }
 
+  if (!videoFormat) {
+    return null;
+  }
+
   const [videoData, audioData] = await downloadVideoAudioViaSabr({
-    config: effectiveConfig!,
-    videoFormat: videoFormat!,
-    audioFormat: audioFormat!,
+    config: effectiveConfig,
+    videoFormat,
+    audioFormat,
     poToken: resolvedPoToken,
     signal,
     videoId,
     tabId
   });
   const additionalAudioTracks = await downloadExtraAudioTracksViaSabr({
-    config: effectiveConfig!, formats: additionalAudioFormats ?? [], poToken: resolvedPoToken, signal
+    config: effectiveConfig, formats: additionalAudioFormats ?? [], poToken: resolvedPoToken, signal
   });
 
   return { videoData, audioData, additionalAudioTracks };

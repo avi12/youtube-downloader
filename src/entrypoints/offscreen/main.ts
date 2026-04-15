@@ -85,7 +85,11 @@ function handleProcessStreamChunk(data: {
 
   // iChunk === -1 is a final marker that sets totalChunks for streaming SabrDownload
   // where total is unknown during transfer.
-  const accumulator = streamAccumulators.get(videoId)!;
+  const accumulator = streamAccumulators.get(videoId);
+  if (!accumulator) {
+    return;
+  }
+
   if (iChunk === -1) {
     if (streamType === StreamType.Video) {
       accumulator.totalVideoChunks = totalChunks;
@@ -114,7 +118,11 @@ function handleProcessStreamChunk(data: {
       });
     }
 
-    const audioStream = accumulator.audioStreams.get(streamType)!;
+    const audioStream = accumulator.audioStreams.get(streamType);
+    if (!audioStream) {
+      return;
+    }
+
     audioStream.chunks.set(iChunk, decodedChunk);
 
     if (totalChunks > 0) {

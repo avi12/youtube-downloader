@@ -45,14 +45,20 @@ export async function processSingleMedia(item: ProcessStreamData) {
   }
 
   if (isAudio && item.metadata?.isMusic) {
+    const metadata = item.metadata;
     await reportProgress({ videoId, progress: 0, progressType: ProgressType.FFmpeg, tabId });
 
     progressHandlers.add(handleFfmpegProgress);
     try {
       await enqueueMuxJob(async () => {
         const ffmpeg = getFFmpeg();
+        const audioData = data;
+        if (!audioData) {
+          return;
+        }
+
         data = await embedMusicMetadata({
-          audioData: data!, filenameOutput, sourceExtension, metadata: item.metadata!, ffmpeg
+          audioData, filenameOutput, sourceExtension, metadata, ffmpeg
         });
       });
     } finally {
@@ -66,7 +72,12 @@ export async function processSingleMedia(item: ProcessStreamData) {
     try {
       await enqueueMuxJob(async () => {
         const ffmpeg = getFFmpeg();
-        data = await transcodeAudio({ audioData: data!, sourceExtension, filenameOutput, ffmpeg });
+        const audioData = data;
+        if (!audioData) {
+          return;
+        }
+
+        data = await transcodeAudio({ audioData, sourceExtension, filenameOutput, ffmpeg });
       });
     } finally {
       progressHandlers.delete(handleFfmpegProgress);

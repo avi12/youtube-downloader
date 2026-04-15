@@ -28,8 +28,13 @@ const [
   optionsItem.getValue()
 ]);
 
+const elApp = document.getElementById("app");
+if (!elApp) {
+  throw new Error("Missing #app element");
+}
+
 mount(App, {
-  target: document.getElementById("app")!,
+  target: elApp,
   props: {
     initialIsFFmpegReady: isFFmpegReady,
     initialVideoQueue: videoQueue,

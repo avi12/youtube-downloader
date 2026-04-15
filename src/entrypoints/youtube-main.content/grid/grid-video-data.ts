@@ -85,8 +85,9 @@ async function processNextVideoData() {
 }
 
 function requestVideoData(videoId: string) {
-  if (videoDataCache.has(videoId)) {
-    videoDataStore.set(videoId, videoDataCache.get(videoId)!);
+  const cachedVideoData = videoDataCache.get(videoId);
+  if (cachedVideoData) {
+    videoDataStore.set(videoId, cachedVideoData);
     return;
   }
 

@@ -31,7 +31,11 @@ export function addToPlaylistBundle({
     });
   }
 
-  const bundle = playlistBundles.get(playlistId)!;
+  const bundle = playlistBundles.get(playlistId);
+  if (!bundle) {
+    return;
+  }
+
   bundle.files.set(filename, { filename, data });
 
   if (bundle.files.size < bundle.totalCount) {

@@ -1,7 +1,8 @@
 export function applyInertTrap(elPanel: HTMLElement) {
   const inertedElements: HTMLElement[] = [];
 
-  for (let elAncestor = elPanel; elAncestor && elAncestor !== document.body; elAncestor = elAncestor.parentElement!) {
+  let elAncestor: HTMLElement | null = elPanel;
+  while (elAncestor && elAncestor !== document.body) {
     for (const elSibling of elAncestor.parentElement?.children ?? []) {
       if (elSibling === elAncestor || !(elSibling instanceof HTMLElement) || elSibling.inert || elSibling.hasAttribute("data-ytdl-moved")) {
         continue;
@@ -10,6 +11,8 @@ export function applyInertTrap(elPanel: HTMLElement) {
       elSibling.inert = true;
       inertedElements.push(elSibling);
     }
+
+    elAncestor = elAncestor.parentElement;
   }
 
   return () => {

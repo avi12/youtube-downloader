@@ -205,7 +205,11 @@ export async function buildAndDispatchVideoData({ playerResponse, cancelActiveDo
 
   const { pendingChunks } = captureState;
   if (pendingChunks.length > 0) {
-    const capture = capturedMedia.get(captureState.activeVideoId)!;
+    const capture = capturedMedia.get(captureState.activeVideoId);
+    if (!capture) {
+      return;
+    }
+
     for (const pending of pendingChunks) {
       addChunkToCapture({ capture, mimeType: pending.mimeType, chunk: pending.data });
     }
