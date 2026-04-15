@@ -1,4 +1,5 @@
 import { cancelBackgroundDownload, startBackgroundDownload } from "./background-downloader";
+import { enqueueToPopupList, removeFromPopupList } from "./popup-list";
 import { awaitVideoComplete, signalVideoComplete } from "./sequential-queue";
 import { cancelDownloads, getTabIdsForVideo, trackVideoForTab } from "./tab-tracker";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging";
@@ -23,6 +24,8 @@ function initIframeReadyListener() {
 }
 
 async function downloadViaWatchPage(data: DownloadRequest, tabId: number) {
+  await enqueueToPopupList(data.videoId, data.type, data.filenameOutput);
+
   try {
     const watchParams = new URLSearchParams({ v: data.videoId, ytdl: "1", mute: "1" });
     const watchUrl = `https://www.youtube.com/watch?${watchParams.toString()}`;
@@ -55,6 +58,7 @@ async function downloadViaWatchPage(data: DownloadRequest, tabId: number) {
   } catch (error) {
     console.error("[ytdl:bg] DownloadViaWatchPage failed:", data.videoId, error);
     pendingIframeReady.delete(data.videoId);
+    void removeFromPopupList(data.videoId);
     void sendMessage(MessageType.RemoveDownloadIframe, { videoId: data.videoId }, tabId);
     void sendMessage(MessageType.UpdateDownloadProgress, {
       videoId: data.videoId, progress: 0, progressType: ProgressType.Video, isRemoved: true
@@ -122,10 +126,14 @@ export function registerDownloadHandlers() {
 
   onMessage(MessageType.Keepalive, () => {});
 
-  onMessage(MessageType.RequestPlaylistDownload, ({ data, sender }) => {
+  onMessage(MessageType.RequestPlaylistDownload, async ({ data, sender }) => {
     const tabId = sender.tab?.id;
     if (!tabId) {
       return;
+    }
+
+    for (const item of data.items) {
+      await enqueueToPopupList(item.videoId, item.type, item.filenameOutput);
     }
 
     if (data.isSequential) {
@@ -139,6 +147,7 @@ export function registerDownloadHandlers() {
     for (const videoId of data.videoIds) {
       cancelBackgroundDownload(videoId);
       signalVideoComplete(videoId);
+      void removeFromPopupList(videoId);
       for (const tabId of getTabIdsForVideo(videoId)) {
         void sendMessage(MessageType.RemoveDownloadIframe, { videoId }, tabId);
       }
