@@ -19,7 +19,7 @@ export function buildInitialDownloadState(videoData: VideoData): DownloadButtonS
 
   let extension: string;
   if (videoData.isMusic) {
-    extension = /webm/.test(audioMime) ? "webm" : "m4a";
+    extension = audioMime.includes("webm") ? "webm" : "m4a";
   } else {
     extension = getOutputExtension({ videoMimeType: videoMime, audioMimeType: audioMime, userExtension: "mp4" });
   }

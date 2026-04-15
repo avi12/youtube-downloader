@@ -19,7 +19,7 @@ import { untrack } from "svelte";
 
 // Prefer M4A (AAC) over WebM/Opus for music because M4A supports MJPEG cover art embedding.
 function getPreferredMusicAudioFormat(audioFormats: AdaptiveFormatItem[]) {
-  return audioFormats.find(format => /mp4/.test(format.mimeType)) ?? audioFormats[0] ?? null;
+  return audioFormats.find(format => format.mimeType.includes("mp4")) ?? audioFormats[0] ?? null;
 }
 
 export function createPanelState(getVideoData: () => VideoData) {

@@ -84,9 +84,9 @@ function extractTransformOperations({ playerSource, functionName }: {
   while ((methodMatch = methodPattern.exec(helperBody)) !== null) {
     const methodName = methodMatch[1];
     const methodBody = methodMatch[2];
-    if (/reverse/.test(methodBody)) {
+    if (methodBody.includes("reverse")) {
       methodTypes.set(methodName, TransformOpType.Reverse);
-    } else if (/splice/.test(methodBody)) {
+    } else if (methodBody.includes("splice")) {
       methodTypes.set(methodName, TransformOpType.Splice);
     } else {
       methodTypes.set(methodName, TransformOpType.Swap);

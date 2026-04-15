@@ -71,7 +71,7 @@ export async function waitForVideoElement(signal?: AbortSignal) {
 
 export function formatVideoQualityLabel(format: Pick<AdaptiveFormatItem, "height" | "fps" | "qualityLabel">) {
   const base = `${format.height}p${format.fps ? ` ${format.fps}fps` : ""}`;
-  const isPremium = /Premium/.test(format.qualityLabel ?? "");
+  const isPremium = (format.qualityLabel ?? "").includes("Premium");
   return isPremium ? `${base} (Enhanced)` : base;
 }
 

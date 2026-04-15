@@ -30,13 +30,13 @@ function persistOnDownloadComplete({ targetDownloadId, data }: {
         return;
       }
 
-      if (delta.state.current === "complete") {
+      if (delta.state.current === browser.downloads.State.COMPLETE) {
         browser.downloads.onChanged.removeListener(handleChanged);
         void persistRecentDownload({ downloadId: targetDownloadId, data }).finally(resolve);
         return;
       }
 
-      if (delta.state.current === "interrupted") {
+      if (delta.state.current === browser.downloads.State.INTERRUPTED) {
         browser.downloads.onChanged.removeListener(handleChanged);
         resolve();
       }

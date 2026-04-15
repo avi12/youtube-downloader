@@ -64,11 +64,11 @@ export function resolveAutoExtension({ extension, mimeType, type }: {
     return extension;
   }
 
-  if (/webm/.test(mimeType)) {
+  if (mimeType.includes("webm")) {
     return type === DownloadType.Audio ? "weba" : "webm";
   }
 
-  if (/ogg/.test(mimeType)) {
+  if (mimeType.includes("ogg")) {
     return "ogg";
   }
 
@@ -96,8 +96,8 @@ export function getOutputExtension({ videoMimeType, audioMimeType, userExtension
   audioMimeType: string;
   userExtension: string;
 }) {
-  const isVideoWebm = /webm/.test(videoMimeType);
-  const isAudioWebm = /webm/.test(audioMimeType);
+  const isVideoWebm = videoMimeType.includes("webm");
+  const isAudioWebm = audioMimeType.includes("webm");
   if (isVideoWebm && isAudioWebm) {
     return "webm";
   }

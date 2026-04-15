@@ -9,7 +9,7 @@ import type { ProcessStreamData } from "@/types";
 import { getFileExtension } from "~/lib/utils/containers";
 
 function sourceAudioExtension(audioMimeType: string) {
-  return /webm/.test(audioMimeType) ? "weba" : "m4a";
+  return audioMimeType.includes("webm") ? "weba" : "m4a";
 }
 
 export async function processSingleMedia(item: ProcessStreamData) {
