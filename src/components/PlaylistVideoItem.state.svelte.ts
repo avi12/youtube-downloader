@@ -1,15 +1,14 @@
 import { getOutputExtension, resolveAutoExtension, resolveVideoFilename } from "@/lib/containers";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/cross-world-messenger";
 import { MessageType, sendMessage } from "@/lib/messaging";
-import { downloadProgressStore, type DownloadProgressState, videoDataStore } from "@/lib/synced-stores.svelte";
-import { calculateWeightedProgress, formatVideoQualityLabel } from "@/lib/video-helpers";
 import {
-  DownloadType,
-  IconName,
-  ProgressType,
-  type Options,
-  type VideoData
-} from "@/types";
+  contentOptions,
+  downloadProgressStore,
+  type DownloadProgressState,
+  videoDataStore
+} from "@/lib/synced-stores.svelte";
+import { calculateWeightedProgress, formatVideoQualityLabel } from "@/lib/video-helpers";
+import { DownloadType, IconName, ProgressType, type VideoData } from "@/types";
 
 const videoDataLoadTimeoutMs = 15_000;
 
@@ -23,7 +22,6 @@ const defaultProgressState: DownloadProgressState = {
 export function createPlaylistVideoItemState(
   videoId: string,
   gridTitle: string | undefined,
-  getOptions: () => Options,
   activeDownloadClicks: Set<string>
 ) {
   let videoData = $state<VideoData | null>(null);
@@ -96,7 +94,7 @@ export function createPlaylistVideoItemState(
       return buttonLabel;
     }
 
-    const currentOptions = getOptions();
+    const currentOptions = contentOptions.value;
     const primaryVideoFormat = videoData.videoFormats[0];
     const primaryAudioFormat = videoData.audioFormats[0];
     const resolvedContainerExtension = resolveAutoExtension(
@@ -130,7 +128,7 @@ export function createPlaylistVideoItemState(
       return;
     }
 
-    const options = getOptions();
+    const options = contentOptions.value;
     let downloadType: DownloadType = videoData.isMusic ? DownloadType.Audio : DownloadType.VideoAndAudio;
     if (options.defaultDownloadType && options.defaultDownloadType !== "auto") {
       downloadType = options.defaultDownloadType;

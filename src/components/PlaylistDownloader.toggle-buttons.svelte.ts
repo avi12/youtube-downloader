@@ -16,6 +16,7 @@ export function createPlaylistToggleButtons(state: {
   downloadMode: PlaylistDownloadMode;
   outputMode: PlaylistOutputMode;
   effectiveDownloadType: DownloadTypePreference;
+  isDownloading: boolean;
 }) {
   const groups = {
     speed: [
@@ -124,9 +125,9 @@ export function createPlaylistToggleButtons(state: {
       style: ButtonStyle.Mono,
       type: config.isActive() ? ButtonType.Tonal : ButtonType.Outline,
       buttonSize: ButtonSize.Default,
-      state: ButtonState.Active,
+      state: state.isDownloading ? ButtonState.Disabled : ButtonState.Active,
       isFullWidth: false,
-      isDisabled: false,
+      isDisabled: state.isDownloading,
       tooltip: config.tooltip
     });
   }

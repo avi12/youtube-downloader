@@ -10,7 +10,7 @@
     attachDownloadButton,
     attachPanelProgress
   } from "@/lib/panel-button-attachments.svelte";
-  import { ProgressType, type Options, type VideoData } from "@/types";
+  import { ProgressType, type VideoData } from "@/types";
 
   const percentFormatter = new Intl.NumberFormat(document.documentElement.lang || undefined, {
     style: "percent",
@@ -23,12 +23,11 @@
 
   type Props = {
     videoData: VideoData;
-    options: Options;
   };
 
   const props: Props = $props();
 
-  const panel = createPanelState(() => props.videoData, () => props.options);
+  const panel = createPanelState(() => props.videoData);
   const focusManager = createFocusManager();
 
   const closeButtonId = "ytdl-panel-close";

@@ -34,7 +34,7 @@ export function createPlaylistActionButtons(state: {
     }
 
     elDeselectAll.setAttribute("data-ytdl-button-id", DESELECT_ALL_BUTTON_ID);
-    const hasSelection = state.selectedDownloadableVideos.length > 0;
+    const isDisabled = state.selectedDownloadableVideos.length === 0 || state.isDownloading;
     sendButtonData(elDeselectAll, {
       iconName: IconName.None,
       title: "Deselect all",
@@ -42,9 +42,9 @@ export function createPlaylistActionButtons(state: {
       style: ButtonStyle.Mono,
       type: ButtonType.Outline,
       buttonSize: ButtonSize.Default,
-      state: hasSelection ? ButtonState.Active : ButtonState.Disabled,
+      state: isDisabled ? ButtonState.Disabled : ButtonState.Active,
       isFullWidth: false,
-      isDisabled: !hasSelection,
+      isDisabled,
       tooltip: "Deselect all"
     });
   }

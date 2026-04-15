@@ -1,12 +1,11 @@
 import DownloadOptionsPanel from "./DownloadOptionsPanel.svelte";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/cross-world-messenger";
-import type { Options, VideoData } from "@/types";
+import type { VideoData } from "@/types";
 import { mount, unmount } from "svelte";
 
 export function createPanelManager(
   videoId: string,
   getVideoData: () => VideoData | null,
-  getOptions: () => Options,
   getElButtonGroup: () => HTMLElement | null,
   onChevronRefresh: () => void
 ) {
@@ -55,7 +54,7 @@ export function createPanelManager(
       // so create the dropdown via the MAIN world bridge.
       panelInstance = mount(DownloadOptionsPanel, {
         target: elContent,
-        props: { videoData, options: getOptions() }
+        props: { videoData }
       });
 
       // iron-dropdown only finishes positioning on iron-overlay-opened — that's

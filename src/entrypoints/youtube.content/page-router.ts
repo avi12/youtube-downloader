@@ -1,7 +1,7 @@
 import { cleanupGridUi, injectGridVideoButtons } from "./grid-ui";
 import { cleanupPanelUi } from "./panel-ui";
 import { cleanupPlaylistUi, handlePlaylistVideoAdditions, injectPlaylistDownloaderUi } from "./playlist-ui";
-import type { Options } from "@/types";
+import { contentOptions } from "@/lib/synced-stores.svelte";
 
 const NATIVE_DOWNLOAD_SELECTOR = "ytd-download-button-renderer";
 
@@ -13,8 +13,7 @@ export function setNativeDownloadVisibility(isVisible: boolean) {
 
 export function handlePageChange(
   url: string,
-  context: InstanceType<typeof ContentScriptContext>,
-  options: Options
+  context: InstanceType<typeof ContentScriptContext>
 ) {
   const { pathname } = new URL(url);
 
@@ -23,17 +22,17 @@ export function handlePageChange(
   cleanupGridUi();
 
   if (pathname === "/watch") {
-    setNativeDownloadVisibility(!options.isRemoveNativeDownload);
+    setNativeDownloadVisibility(!contentOptions.value.isRemoveNativeDownload);
     return;
   }
 
   setNativeDownloadVisibility(true);
 
   if (pathname === "/playlist") {
-    void injectPlaylistDownloaderUi(context, options);
-    handlePlaylistVideoAdditions(context, options);
+    void injectPlaylistDownloaderUi(context);
+    handlePlaylistVideoAdditions(context);
     return;
   }
 
-  injectGridVideoButtons(context, options);
+  injectGridVideoButtons(context);
 }

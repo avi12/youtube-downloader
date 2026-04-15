@@ -1,7 +1,7 @@
 import { getCompatibleFilename, getOutputExtension, resolveAutoExtension } from "@/lib/containers";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/cross-world-messenger";
 import { statusProgressItem, videoQueueItem } from "@/lib/storage";
-import { downloadProgressStore } from "@/lib/synced-stores.svelte";
+import { contentOptions, downloadProgressStore } from "@/lib/synced-stores.svelte";
 import {
   calculateWeightedProgress,
   formatAudioCodecLabel,
@@ -13,7 +13,6 @@ import {
   ProgressType,
   VideoQualityMode,
   type AdaptiveFormatItem,
-  type Options,
   type VideoData
 } from "@/types";
 import { untrack } from "svelte";
@@ -23,7 +22,7 @@ function getPreferredMusicAudioFormat(audioFormats: AdaptiveFormatItem[]) {
   return audioFormats.find(format => /mp4/.test(format.mimeType)) ?? audioFormats[0] ?? null;
 }
 
-export function createPanelState(getVideoData: () => VideoData, getOptions: () => Options) {
+export function createPanelState(getVideoData: () => VideoData) {
   let isDownloading = $state(false);
   let isDone = $state(false);
   let progress = $state(0);
@@ -31,7 +30,7 @@ export function createPanelState(getVideoData: () => VideoData, getOptions: () =
 
   let downloadType = $state<DownloadType>(
     untrack(() => {
-      const options = getOptions();
+      const options = contentOptions.value;
       const videoData = getVideoData();
       if (options.defaultDownloadType !== "auto") {
         return options.defaultDownloadType;
@@ -54,7 +53,7 @@ export function createPanelState(getVideoData: () => VideoData, getOptions: () =
   let extension = $state(
     untrack(() => {
       const videoData = getVideoData();
-      const options = getOptions();
+      const options = contentOptions.value;
       const extPref = videoData.isMusic ? options.ext.audio : options.ext.video;
       const defaultFormat = videoData.isMusic
         ? getPreferredMusicAudioFormat(videoData.audioFormats)
@@ -113,7 +112,7 @@ export function createPanelState(getVideoData: () => VideoData, getOptions: () =
   }
 
   $effect(() => {
-    const options = getOptions();
+    const options = contentOptions.value;
     const videoData = getVideoData();
     if (options.videoQualityMode === VideoQualityMode.CurrentQuality) {
       const abortController = new AbortController();
@@ -194,7 +193,7 @@ export function createPanelState(getVideoData: () => VideoData, getOptions: () =
   });
 
   function handleDownloadTypeChange(newType: DownloadType) {
-    const options = getOptions();
+    const options = contentOptions.value;
     isDownloading = false;
     progress = 0;
     downloadType = newType;

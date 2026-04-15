@@ -1,6 +1,5 @@
 import PlaylistVideoItem from "@/components/PlaylistVideoItem.svelte";
 import { getVideoIdFromUrl } from "@/lib/youtube-url";
-import type { Options } from "@/types";
 import { mount } from "svelte";
 
 const VIDEO_CARD_SELECTOR = "yt-lockup-view-model, ytd-rich-item-renderer, ytd-grid-video-renderer";
@@ -51,11 +50,7 @@ function findAnchorElement(elCard: Element) {
   return null;
 }
 
-function mountGridButton(
-  context: InstanceType<typeof ContentScriptContext>,
-  options: Options,
-  elCard: Element
-) {
+function mountGridButton(context: InstanceType<typeof ContentScriptContext>, elCard: Element) {
   const videoId = extractVideoId(elCard);
   if (!videoId || elCard.querySelector(`[data-ytdl-grid-item="${videoId}"]`)) {
     return;
@@ -84,7 +79,7 @@ function mountGridButton(
     onMount(elUiContainer) {
       mount(PlaylistVideoItem, {
         target: elUiContainer,
-        props: { videoId, gridTitle, options }
+        props: { videoId, gridTitle }
       });
     }
   });
@@ -97,10 +92,7 @@ function isCardPending(elCard: Element) {
   return videoId && !elCard.querySelector(`[data-ytdl-grid-item="${videoId}"]`);
 }
 
-function createVisibilityObserver(
-  context: InstanceType<typeof ContentScriptContext>,
-  options: Options
-) {
+function createVisibilityObserver(context: InstanceType<typeof ContentScriptContext>) {
   return new IntersectionObserver(
     entries => {
       for (const entry of entries) {
@@ -109,7 +101,7 @@ function createVisibilityObserver(
         }
 
         visibilityObserver?.unobserve(entry.target);
-        mountGridButton(context, options, entry.target);
+        mountGridButton(context, entry.target);
       }
     },
     { rootMargin: VIEWPORT_MARGIN }
@@ -128,11 +120,8 @@ function observePendingCards() {
   }
 }
 
-export function injectGridVideoButtons(
-  context: InstanceType<typeof ContentScriptContext>,
-  options: Options
-) {
-  visibilityObserver = createVisibilityObserver(context, options);
+export function injectGridVideoButtons(context: InstanceType<typeof ContentScriptContext>) {
+  visibilityObserver = createVisibilityObserver(context);
   observePendingCards();
 
   gridObserver?.disconnect();

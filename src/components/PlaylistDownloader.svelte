@@ -5,15 +5,9 @@
   import PlaylistDownloaderActions from "./PlaylistDownloaderActions.svelte";
   import PlaylistDownloaderFormatSections from "./PlaylistDownloaderFormatSections.svelte";
   import { onButtonClick } from "@/lib/cross-world-messenger";
-  import type { Options } from "@/types";
   import { untrack } from "svelte";
 
-  type Props = {
-    options: Options;
-  };
-
-  const { options }: Props = $props();
-  const playlist = createPlaylistDownloaderState(() => options);
+  const playlist = createPlaylistDownloaderState();
 
   const toggleButtons = createPlaylistToggleButtons(playlist);
   const actionButtons = createPlaylistActionButtons(playlist);
@@ -24,9 +18,9 @@
     }
 
     function handleCheckedChanged() {
-      const nextChecked = elCheckbox.hasAttribute("checked");
-      if (nextChecked !== playlist.isScrollSyncEnabled) {
-        playlist.isScrollSyncEnabled = nextChecked;
+      const isChecked = elCheckbox.hasAttribute("checked");
+      if (isChecked !== playlist.isScrollSyncEnabled) {
+        playlist.isScrollSyncEnabled = isChecked;
       }
     }
 
@@ -37,11 +31,13 @@
     void playlist.downloadMode;
     void playlist.outputMode;
     void playlist.effectiveDownloadType;
+    void playlist.isDownloading;
     toggleButtons.refreshAll();
   });
 
   $effect(() => {
     void playlist.selectedDownloadableVideos.length;
+    void playlist.isDownloading;
     actionButtons.refreshDeselectAll();
   });
 
@@ -113,6 +109,7 @@
     <tp-yt-paper-checkbox
       {@attach attachScrollSyncCheckbox}
       checked={playlist.isScrollSyncEnabled ? "" : undefined}
+      disabled={playlist.isDownloading ? "" : undefined}
     >
       Scroll to the current video
     </tp-yt-paper-checkbox>

@@ -13,8 +13,8 @@
   const isIndeterminate = $derived(
     playlist.selectedDownloadableVideos.length > 0 && !playlist.isAllSelected
   );
-  const selectAllLabel = $derived(playlist.isAllSelected ? "Deselect all" : "Select all");
-  const isSelectAllDisabled = $derived(playlist.downloadableVideos.length === 0);
+  const selectAllLabel = $derived(playlist.isAllSelected ? "Deselect all" : "Select all loaded");
+  const isSelectAllDisabled = $derived(playlist.downloadableVideos.length === 0 || playlist.isDownloading);
 
   let elSelectAllCheckbox = $state<HTMLElement | null>(null);
 

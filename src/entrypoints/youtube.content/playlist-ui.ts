@@ -2,7 +2,6 @@ import PlaylistDownloader from "@/components/PlaylistDownloader.svelte";
 import PlaylistVideoItem from "@/components/PlaylistVideoItem.svelte";
 import { checkedPlaylistVideos } from "@/lib/playlist-selection.svelte";
 import { getVideoIdFromUrl } from "@/lib/youtube-url";
-import type { Options } from "@/types";
 import { mount, unmount } from "svelte";
 
 let currentPlaylistUi: ReturnType<typeof mount> | null = null;
@@ -81,8 +80,7 @@ function findPlaylistHeaderMount() {
 }
 
 export async function injectPlaylistDownloaderUi(
-  context: InstanceType<typeof ContentScriptContext>,
-  options: Options
+  context: InstanceType<typeof ContentScriptContext>
 ) {
   cleanupPlaylistUi();
 
@@ -100,10 +98,7 @@ export async function injectPlaylistDownloaderUi(
     position: "inline",
     anchor: elMountContainer,
     onMount(elUiContainer) {
-      currentPlaylistUi = mount(PlaylistDownloader, {
-        target: elUiContainer,
-        props: { options }
-      });
+      currentPlaylistUi = mount(PlaylistDownloader, { target: elUiContainer });
     }
   });
 
@@ -119,15 +114,14 @@ export async function injectPlaylistDownloaderUi(
 
     headerReinjectObserver?.disconnect();
     headerReinjectObserver = null;
-    void injectPlaylistDownloaderUi(context, options);
+    void injectPlaylistDownloaderUi(context);
   });
 
   headerReinjectObserver.observe(document.body, { childList: true, subtree: true });
 }
 
-function injectPlaylistVideoItemUi({ context, options, elVideoItem }: {
+function injectPlaylistVideoItemUi({ context, elVideoItem }: {
   context: InstanceType<typeof ContentScriptContext>;
-  options: Options;
   elVideoItem: Element;
 }) {
   const elVideoIdLink = elVideoItem.querySelector<HTMLAnchorElement>("a#video-title");
@@ -155,11 +149,7 @@ function injectPlaylistVideoItemUi({ context, options, elVideoItem }: {
     onMount(elUiContainer) {
       mount(PlaylistVideoItem, {
         target: elUiContainer,
-        props: {
-          videoId,
-          isPlaylistItem: true,
-          options
-        }
+        props: { videoId, isPlaylistItem: true }
       });
     }
   });
@@ -169,36 +159,29 @@ function injectPlaylistVideoItemUi({ context, options, elVideoItem }: {
 
 const PLAYLIST_VIDEO_TAG = "ytd-playlist-video-renderer";
 
-function injectIntoSubtree(
-  root: Element,
-  context: InstanceType<typeof ContentScriptContext>,
-  options: Options
-) {
+function injectIntoSubtree(root: Element, context: InstanceType<typeof ContentScriptContext>) {
   if (root.tagName.toLowerCase() === PLAYLIST_VIDEO_TAG) {
-    injectPlaylistVideoItemUi({ context, options, elVideoItem: root });
+    injectPlaylistVideoItemUi({ context, elVideoItem: root });
   }
 
   for (const elVideoItem of root.querySelectorAll(PLAYLIST_VIDEO_TAG)) {
-    injectPlaylistVideoItemUi({ context, options, elVideoItem });
+    injectPlaylistVideoItemUi({ context, elVideoItem });
   }
 }
 
-export function handlePlaylistVideoAdditions(
-  context: InstanceType<typeof ContentScriptContext>,
-  options: Options
-) {
+export function handlePlaylistVideoAdditions(context: InstanceType<typeof ContentScriptContext>) {
   const elContents = document.querySelector("ytd-playlist-video-list-renderer #contents");
   if (!elContents) {
     return;
   }
 
-  injectIntoSubtree(elContents, context, options);
+  injectIntoSubtree(elContents, context);
 
   const mutationObserver = new MutationObserver(mutations => {
     for (const mutation of mutations) {
       for (const node of mutation.addedNodes) {
         if (node instanceof Element) {
-          injectIntoSubtree(node, context, options);
+          injectIntoSubtree(node, context);
         }
       }
     }

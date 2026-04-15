@@ -1,5 +1,18 @@
 import { createMapMessenger, createSignalMessenger, createSyncedMap, createSyncedSignal } from "./synced-signal.svelte";
-import type { InterruptedDownload, ProgressType, VideoData } from "@/types";
+import { initialOptions } from "./video-helpers";
+import type { InterruptedDownload, Options, ProgressType, VideoData } from "@/types";
+
+let optionsState = $state<Options>(initialOptions);
+
+export const contentOptions = {
+  get value() {
+    return optionsState;
+  }
+};
+
+export function initContentOptions(options: Options) {
+  optionsState = options;
+}
 
 export const sabrCredentials = createSyncedSignal(
   createSignalMessenger<{

@@ -16,8 +16,7 @@
     ButtonState,
     ButtonStyle,
     ButtonType,
-    IconName,
-    type Options
+    IconName
   } from "@/types";
   import { untrack } from "svelte";
 
@@ -25,10 +24,9 @@
     videoId: string;
     gridTitle?: string;
     isPlaylistItem?: boolean;
-    options: Options;
   };
 
-  const { videoId, gridTitle, isPlaylistItem = false, options }: Props = $props();
+  const { videoId, gridTitle, isPlaylistItem = false }: Props = $props();
 
   const isChecked = $derived(checkedPlaylistVideos.has(videoId));
 
@@ -50,7 +48,6 @@
   const itemState = createPlaylistVideoItemState(
     untrack(() => videoId),
     untrack(() => gridTitle),
-    () => options,
     activeDownloadClicks
   );
 
@@ -150,7 +147,6 @@
   const panel = createPanelManager(
     untrack(() => videoId),
     () => itemState.videoData,
-    () => options,
     () => elButtonGroup,
     refreshChevronButton
   );

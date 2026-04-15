@@ -1,5 +1,5 @@
 import DownloadOptionsPanel from "@/components/DownloadOptionsPanel.svelte";
-import type { Options, VideoData } from "@/types";
+import type { VideoData } from "@/types";
 import { mount, unmount } from "svelte";
 
 let currentInstance: ReturnType<typeof mount> | null = null;
@@ -14,12 +14,11 @@ export function cleanupPanelUi() {
 }
 
 export function mountPanelUi({
-  context, contentId, videoData, options
+  context, contentId, videoData
 }: {
   context: InstanceType<typeof ContentScriptContext>;
   contentId: string;
   videoData: VideoData;
-  options: Options;
 }) {
   cleanupPanelUi();
 
@@ -34,10 +33,7 @@ export function mountPanelUi({
     onMount(elUiContainer) {
       currentInstance = mount(DownloadOptionsPanel, {
         target: elUiContainer,
-        props: {
-          videoData,
-          options
-        }
+        props: { videoData }
       });
     }
   });

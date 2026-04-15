@@ -16,13 +16,11 @@ import { CrossWorldMessage, crossWorldMessenger } from "@/lib/cross-world-messen
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging";
 import { forwardSabrCredentialsWithRetry, listenForSabrBodyReady } from "@/lib/sabr-credentials";
 import { optionsItem, statusProgressItem } from "@/lib/storage";
-import { downloadProgressStore } from "@/lib/synced-stores.svelte";
-import { type Options } from "@/types";
+import { downloadProgressStore, initContentOptions } from "@/lib/synced-stores.svelte";
 
 function registerCrossWorldHandlers(
   isDownloadIframe: boolean,
-  context: InstanceType<typeof ContentScriptContext>,
-  getOptions: () => Options
+  context: InstanceType<typeof ContentScriptContext>
 ) {
   crossWorldMessenger.onMessage(CrossWorldMessage.VideoData, async ({ data }) => {
     await checkInterruptedDownload(data.videoId);
@@ -30,7 +28,7 @@ function registerCrossWorldHandlers(
 
   crossWorldMessenger.onMessage(CrossWorldMessage.Navigation, ({ data }) => {
     if (!isDownloadIframe) {
-      handlePageChange(data.url, context, getOptions());
+      handlePageChange(data.url, context);
     }
 
     void forwardSabrCredentialsWithRetry();
@@ -40,8 +38,7 @@ function registerCrossWorldHandlers(
     mountPanelUi({
       context,
       contentId: data.contentId,
-      videoData: data.videoData,
-      options: getOptions()
+      videoData: data.videoData
     });
   });
 
@@ -164,9 +161,10 @@ export default defineContentScript({
       return;
     }
 
-    let currentOptions: Options = await optionsItem.getValue();
+    const currentOptions = await optionsItem.getValue();
+    initContentOptions(currentOptions);
 
-    registerCrossWorldHandlers(isDownloadIframe, context, () => currentOptions);
+    registerCrossWorldHandlers(isDownloadIframe, context);
     registerBackgroundMessageHandlers();
     listenForSabrBodyReady();
     void forwardSabrCredentialsWithRetry();
@@ -182,12 +180,12 @@ export default defineContentScript({
           return;
         }
 
-        currentOptions = newOptions;
-        setNativeDownloadVisibility(!currentOptions.isRemoveNativeDownload);
+        initContentOptions(newOptions);
+        setNativeDownloadVisibility(!newOptions.isRemoveNativeDownload);
       });
       context.onInvalidated(unwatchOptions);
 
-      handlePageChange(location.href, context, currentOptions);
+      handlePageChange(location.href, context);
     }
   }
 });
