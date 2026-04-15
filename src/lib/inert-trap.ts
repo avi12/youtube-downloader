@@ -3,7 +3,7 @@ export function applyInertTrap(elPanel: HTMLElement) {
 
   for (let elAncestor = elPanel; elAncestor && elAncestor !== document.body; elAncestor = elAncestor.parentElement!) {
     for (const elSibling of elAncestor.parentElement?.children ?? []) {
-      if (elSibling === elAncestor || !(elSibling instanceof HTMLElement) || elSibling.inert) {
+      if (elSibling === elAncestor || !(elSibling instanceof HTMLElement) || elSibling.inert || elSibling.hasAttribute("data-ytdl-moved")) {
         continue;
       }
 
