@@ -14,12 +14,12 @@ import { ProgressType } from "@/types";
 import type { Options, RecentDownloadEntry, VideoQueueItem } from "@/types";
 
 // TypeScript `enum` inside a Svelte component is flagged as a non-reactive update by the compiler.
-export const Tab = {
+export const PopupPanel = {
   Downloads: "downloads",
   Settings: "settings"
 } as const;
 
-export type Tab = (typeof Tab)[keyof typeof Tab];
+export type PopupPanel = (typeof PopupPanel)[keyof typeof PopupPanel];
 
 const relativeAgeTickMs = 30_000;
 
@@ -37,7 +37,7 @@ export function createAppState(props: {
   }>;
   initialOptions: Options;
 }) {
-  let activeTab = $state<Tab>(Tab.Downloads);
+  let activePanel = $state<PopupPanel>(PopupPanel.Downloads);
   let isFFmpegReady = $state(props.initialIsFFmpegReady);
   let videoDownloads = $state(props.initialVideoQueue);
   let musicList = $state(props.initialMusicList);
@@ -56,8 +56,8 @@ export function createAppState(props: {
   const totalActiveDownloads = $derived(videoDownloads.length + musicList.length + videoOnlyList.length);
 
   const tabs = $derived([
-    { id: Tab.Downloads, label: "Downloads", badge: totalActiveDownloads },
-    { id: Tab.Settings, label: "Settings" }
+    { id: PopupPanel.Downloads, label: "Downloads", badge: totalActiveDownloads },
+    { id: PopupPanel.Settings, label: "Settings" }
   ]);
 
   $effect(() => {
@@ -106,11 +106,11 @@ export function createAppState(props: {
   });
 
   return {
-    get activeTab() {
-      return activeTab;
+    get activePanel() {
+      return activePanel;
     },
-    set activeTab(value: Tab) {
-      activeTab = value;
+    set activePanel(value: PopupPanel) {
+      activePanel = value;
     },
     get isFFmpegReady() {
       return isFFmpegReady;

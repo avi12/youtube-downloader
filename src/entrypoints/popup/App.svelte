@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { createAppState, Tab } from "./App.state.svelte";
+  import { createAppState, PopupPanel } from "./App.state.svelte";
   import ChangeFormatDialog from "./ChangeFormatDialog.svelte";
   import DownloadsTab from "./DownloadsTab.svelte";
   import SettingsTab from "./SettingsTab.svelte";
@@ -59,15 +59,15 @@
         by <a href="https://avi12.com" target="_blank">Avi</a>
       </span>
     </div>
-    <TabNav activeTab={appState.activeTab} onChange={id => (appState.activeTab = id)} tabs={appState.tabs} />
+    <TabNav activeTab={appState.activePanel} onChange={id => (appState.activePanel = id)} tabs={appState.tabs} />
   </header>
 
   <div
-    id="panel-{appState.activeTab}"
+    id="panel-{appState.activePanel}"
     class="popup-content"
     role="tabpanel"
   >
-    {#if appState.activeTab === Tab.Downloads}
+    {#if appState.activePanel === PopupPanel.Downloads}
       <DownloadsTab
         isFFmpegReady={appState.isFFmpegReady}
         musicList={appState.musicList}
