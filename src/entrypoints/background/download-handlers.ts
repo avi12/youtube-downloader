@@ -66,12 +66,18 @@ async function downloadViaWatchPage(data: DownloadRequest, tabId: number) {
   }
 }
 
-async function dispatchSequentially(items: DownloadRequest[], tabId: number) {
+async function dispatchSequentially(items: DownloadRequest[], tabId: number, signal: AbortSignal) {
   for (const item of items) {
+    if (signal.aborted) {
+      break;
+    }
+
     await downloadViaWatchPage(item, tabId);
     await awaitVideoComplete(item.videoId);
   }
 }
+
+let currentSequenceAbort: AbortController | null = null;
 
 export function registerDownloadHandlers() {
   initIframeReadyListener();
@@ -132,18 +138,25 @@ export function registerDownloadHandlers() {
       return;
     }
 
+    currentSequenceAbort?.abort();
+    currentSequenceAbort = null;
+
     for (const item of data.items) {
       await enqueueToPopupList(item.videoId, item.type, item.filenameOutput);
     }
 
     if (data.isSequential) {
-      void dispatchSequentially(data.items, tabId);
+      currentSequenceAbort = new AbortController();
+      void dispatchSequentially(data.items, tabId, currentSequenceAbort.signal);
     } else {
       void Promise.allSettled(data.items.map(item => downloadViaWatchPage(item, tabId)));
     }
   });
 
   onMessage(MessageType.CancelDownload, ({ data }) => {
+    currentSequenceAbort?.abort();
+    currentSequenceAbort = null;
+
     for (const videoId of data.videoIds) {
       cancelBackgroundDownload(videoId);
       signalVideoComplete(videoId);
