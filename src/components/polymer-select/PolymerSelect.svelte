@@ -57,7 +57,7 @@
       // fires selected-changed. Listen for it here to keep the trigger label in sync.
       // This is necessary because the DOM move severs Polymer's own binding.
       const elListbox = elIronDropdown.querySelector("tp-yt-paper-listbox");
-      elListbox?.addEventListener("selected-changed", (e: Event) => {
+      elListbox?.addEventListener("selected-changed", e => {
         // While the overlay is open the user is interacting; handleSelectedChanged
         // (registered in handleOverlayOpened) owns that case. Calling syncTriggerDisplay
         // here would trigger Polymer to close the dropdown before handleSelectedChanged
@@ -66,7 +66,7 @@
           return;
         }
 
-        const dataValue: string = e.detail?.value;
+        const dataValue = String(e.detail?.value);
         if (dataValue) {
           syncTriggerDisplay(dataValue);
         }
