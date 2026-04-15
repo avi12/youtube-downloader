@@ -30,7 +30,7 @@
       .filter(height => !playlist.maxAvailableQuality || height <= playlist.maxAvailableQuality)
       .map(height => ({
         value: String(height),
-        label: height <= playlist.guaranteedQuality ? `${height}p` : `Up to ${height}p`
+        label: !playlist.isRevealingAll && height <= playlist.guaranteedQuality ? `${height}p` : `Up to ${height}p`
       }))
   ]);
 

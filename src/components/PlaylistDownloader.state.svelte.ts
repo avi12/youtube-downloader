@@ -19,6 +19,7 @@ import {
   type Options,
   type VideoData
 } from "@/types";
+import { untrack } from "svelte";
 import { SvelteMap, SvelteSet } from "svelte/reactivity";
 
 // Shared across every PlaylistVideoItem so they can disable their checkboxes
@@ -120,8 +121,12 @@ export function createPlaylistDownloaderState() {
   $effect(() => {
     for (const videoId of videoDataStore.keys()) {
       const data = videoDataStore.get(videoId);
-      if (data && !videoDataMap.has(videoId)) {
-        videoDataMap.set(videoId, data);
+      if (data) {
+        untrack(() => {
+          if (!videoDataMap.has(videoId)) {
+            videoDataMap.set(videoId, data);
+          }
+        });
       }
     }
   });
@@ -129,24 +134,24 @@ export function createPlaylistDownloaderState() {
   const downloadableVideos = $derived([...videoDataMap.values()].filter(data => data.isDownloadable));
   const nonDownloadableCount = $derived(videoDataMap.size - downloadableVideos.length);
 
-  // Tracks the highest video resolution discovered so far across all playlist videos.
-  // Grows as more video data loads (e.g. on scroll), never shrinks - so quality
-  // options only expand, preventing confusing option removal mid-session.
+  // Highest resolution found across all videos - drives which quality options are shown.
+  // Kept separate from guaranteedQuality so it can be evaluated independently during reveal.
   const maxAvailableQuality = $derived.by(() => {
     let max = 0;
     for (const data of videoDataMap.values()) {
       for (const format of data.videoFormats) {
-        if ((format.height ?? 0) > max) {
-          max = format.height ?? 0;
+        const height = format.height ?? 0;
+        if (height > max) {
+          max = height;
         }
       }
     }
     return max;
   });
 
-  // The lowest of each video's personal max quality - i.e. the quality that
-  // every loaded video is guaranteed to reach. Heights at or below this need
-  // no "Up to" qualifier; heights above it are only achievable by some videos.
+  // Lowest of each video's personal best - drives "Up to" label qualifier.
+  // Kept as a separate lazy derived so it is never evaluated during reveal:
+  // PlaylistDownloaderFormatSections short-circuits it with isRevealingAll.
   const guaranteedQuality = $derived.by(() => {
     if (videoDataMap.size === 0) {
       return 0;
@@ -156,8 +161,9 @@ export function createPlaylistDownloaderState() {
     for (const data of videoDataMap.values()) {
       let videoMax = 0;
       for (const format of data.videoFormats) {
-        if ((format.height ?? 0) > videoMax) {
-          videoMax = format.height ?? 0;
+        const height = format.height ?? 0;
+        if (height > videoMax) {
+          videoMax = height;
         }
       }
 
@@ -231,9 +237,12 @@ export function createPlaylistDownloaderState() {
     totalCount = videos.length;
     batchDoneIds.clear();
 
+    // Use setLocal to batch-initialise progress without firing a cross-world
+    // sync message per video - prevents N separate reactive cycles across all
+    // PlaylistVideoItem components when starting a large playlist download.
     for (const video of videos) {
       downloadProgressStore.unsuppress(video.videoId);
-      downloadProgressStore.set(video.videoId, {
+      downloadProgressStore.setLocal(video.videoId, {
         isDownloading: true,
         isDone: false,
         progress: 0,
