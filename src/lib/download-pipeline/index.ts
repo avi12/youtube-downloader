@@ -20,9 +20,10 @@ export function toUint8Array(data: Uint8Array | Record<string, number> | null) {
   return new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
 }
 
-// Keep blob references alive - without this, GC can collect the Blob before the download completes,
-// causing Chrome to mark it "Deleted". Revocation is also deferred so "Show in folder" keeps working.
+// Keep blob references alive until Chrome has read the data off the blob URL and written it to disk.
+// Revoke after a generous delay so the "Show in folder" feature also has time to work.
 const activeBlobUrls = new Map<string, Blob>();
+const BlobRevocationDelayMs = 60_000;
 
 export async function triggerDownload(
   data: Uint8Array,
@@ -43,6 +44,11 @@ export async function triggerDownload(
   // Await so the caller reports progress=1 only after the file is written to disk,
   // not just after FFmpeg muxing.
   await sendMessage(MessageType.PipelineDownload, { blobUrl, mimeType, filename, recentContext });
+
+  setTimeout(() => {
+    URL.revokeObjectURL(blobUrl);
+    activeBlobUrls.delete(blobUrl);
+  }, BlobRevocationDelayMs);
 }
 
 // FFmpeg fires progress events per frame/packet including thousands of redundant progress=1 events,
