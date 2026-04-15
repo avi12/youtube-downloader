@@ -163,6 +163,7 @@ const sharedPlugins = {
 const sharedGlobals = {
   ...globals.browser,
   ...globals.node,
+  browser: "readonly",
   chrome: "readonly"
 };
 
@@ -170,13 +171,13 @@ export default [
   eslint.configs.recommended,
   ...tsEslint.configs.recommended,
   ...svelteEslint.configs["flat/recommended"],
-  globalIgnores(["build/**", "node_modules/**", ".output/**", ".wxt/**", "scripts/**"]),
+  globalIgnores(["build/**", "node_modules/**", ".output/**", ".wxt/**", "scripts/**", "User Data/**", "patches/**"]),
   {
     files: ["**/*.{ts,js,mjs}"],
     ignores: ["eslint.config.js"],
     languageOptions: {
       parser: tsEslint.parser,
-      parserOptions: { project: "./tsconfig.json" },
+      parserOptions: { projectService: { allowDefaultProject: ["eslint-rules/*.js"] } },
       globals: sharedGlobals
     },
     plugins: sharedPlugins,
@@ -199,7 +200,7 @@ export default [
     files: ["**/*.svelte"],
     languageOptions: {
       parser: svelteParser,
-      parserOptions: { parser: tsEslint.parser, project: "./tsconfig.json", extraFileExtensions: [".svelte"] },
+      parserOptions: { parser: tsEslint.parser, projectService: true, extraFileExtensions: [".svelte"] },
       globals: sharedGlobals
     },
     plugins: sharedPlugins,
