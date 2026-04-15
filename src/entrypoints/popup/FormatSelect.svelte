@@ -2,14 +2,14 @@
   import { AUTO_EXTENSION, AUTO_EXTENSION_LABEL } from "@/lib/utils/containers";
 
   type Props = {
-    id: string;
     label: string;
     options: string[];
     value: string;
     onchange: (value: string) => void;
   };
 
-  const { id, label, options, value, onchange }: Props = $props();
+  const { label, options, value, onchange }: Props = $props();
+  const id = $props.id();
 </script>
 
 <div class="format-select">

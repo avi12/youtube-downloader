@@ -33,7 +33,6 @@
   <fieldset class="settings-group">
     <legend class="settings-legend">Video format</legend>
     <FormatSelect
-      id="video-ext"
       label="Container"
       onchange={extension => void setOption("ext", { ...options.ext, video: extension })}
       options={supportedExtensions.video}
@@ -44,7 +43,6 @@
   <fieldset class="settings-group">
     <legend class="settings-legend">Audio format</legend>
     <FormatSelect
-      id="audio-ext"
       label="Container"
       onchange={extension => void setOption("ext", { ...options.ext, audio: extension })}
       options={supportedExtensions.audio}
