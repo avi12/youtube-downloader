@@ -1,4 +1,4 @@
-import PlaylistVideoItem from "@/components/PlaylistVideoItem.svelte";
+import PlaylistVideoItem from "@/components/playlist-downloader/PlaylistVideoItem.svelte";
 import { getVideoIdFromUrl } from "@/lib/youtube/youtube-url";
 import { mount } from "svelte";
 

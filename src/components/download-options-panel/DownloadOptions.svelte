@@ -1,5 +1,5 @@
 <script lang="ts">
-  import PolymerSelect from "./PolymerSelect.svelte";
+  import PolymerSelect from "../polymer-select/PolymerSelect.svelte";
   import { applyPolymerCustomStyles, PAPER_INPUT_THEME } from "@/lib/ui/polymer-utils";
   import { splitFilenameAndExtension, supportedExtensions } from "@/lib/utils/containers";
   import { formatAudioCodecLabel, formatVideoQualityLabel } from "@/lib/youtube/video-helpers";

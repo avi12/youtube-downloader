@@ -1,6 +1,6 @@
 <script lang="ts">
+  import PolymerSelect from "../polymer-select/PolymerSelect.svelte";
   import type { createPlaylistDownloaderState } from "./PlaylistDownloader.state.svelte";
-  import PolymerSelect from "./PolymerSelect.svelte";
   import { AUTO_EXTENSION, AUTO_EXTENSION_LABEL, supportedExtensions } from "@/lib/utils/containers";
   import { videoQualities } from "@/lib/youtube/video-helpers";
   import { DownloadType, VideoQualityMode } from "@/types";

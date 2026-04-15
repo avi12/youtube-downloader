@@ -1,4 +1,4 @@
-import DownloadOptionsPanel from "@/components/DownloadOptionsPanel.svelte";
+import DownloadOptionsPanel from "@/components/download-options-panel/DownloadOptionsPanel.svelte";
 import type { VideoData } from "@/types";
 import { mount, unmount } from "svelte";
 

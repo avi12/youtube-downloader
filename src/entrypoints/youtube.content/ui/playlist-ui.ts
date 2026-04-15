@@ -1,5 +1,5 @@
-import PlaylistDownloader from "@/components/PlaylistDownloader.svelte";
-import PlaylistVideoItem from "@/components/PlaylistVideoItem.svelte";
+import PlaylistDownloader from "@/components/playlist-downloader/PlaylistDownloader.svelte";
+import PlaylistVideoItem from "@/components/playlist-downloader/PlaylistVideoItem.svelte";
 import { checkedPlaylistVideos } from "@/lib/ui/playlist-selection.svelte";
 import { getVideoIdFromUrl } from "@/lib/youtube/youtube-url";
 import { mount, unmount } from "svelte";
