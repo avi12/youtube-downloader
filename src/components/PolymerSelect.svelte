@@ -51,6 +51,22 @@
       elChevronInput?.setAttribute("tabindex", "-1");
       elChevronInput?.addEventListener("focus", onChevronFocus);
 
+      // When an external value change (e.g. popup settings propagating to the page) causes
+      // Svelte's template render effect to update tp-yt-paper-listbox[selected], Polymer
+      // fires selected-changed. Listen for it here to keep the trigger label in sync.
+      // This is necessary because the DOM move severs Polymer's own binding.
+      const elListbox = elIronDropdown.querySelector("tp-yt-paper-listbox");
+      elListbox?.addEventListener("selected-changed", (e: Event) => {
+        if (!(e instanceof CustomEvent)) {
+          return;
+        }
+
+        const dataValue: string = e.detail?.value;
+        if (dataValue) {
+          syncTriggerDisplay(dataValue);
+        }
+      });
+
       // WCAG 2.4.7 focus ring - YouTube's Polymer runtime does not provide one on tp-yt-paper-item.
       if (!elIronDropdown.querySelector("[data-ytdl-style]")) {
         const elStyle = document.createElement("style");
@@ -73,7 +89,7 @@
       const selectedOption = options.find(option => option.value === dataValue);
       const elTrigger = elTarget.querySelector("tp-yt-paper-input");
       if (elTrigger instanceof HTMLElement && selectedOption) {
-        Object.assign(elTrigger, { value: selectedOption.label });
+        elTrigger.setAttribute("value", selectedOption.label);
       }
     }
 
