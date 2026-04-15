@@ -11,10 +11,10 @@ export type {
   YtdlMediaCapture
 } from "./youtube";
 
-export type { RecentDownloadEntry } from "@/lib/recent-downloads-db";
-export type { VideoQueueItem } from "@/lib/storage";
-export type { InterruptedDownload, ProgressUpdate } from "@/lib/messaging";
-export type { StreamDataPayload } from "@/lib/cross-world-messenger";
+export type { RecentDownloadEntry } from "@/lib/storage/recent-downloads-db";
+export type { VideoQueueItem } from "@/lib/storage/storage";
+export type { InterruptedDownload, ProgressUpdate } from "@/lib/messaging/messaging";
+export type { StreamDataPayload } from "@/lib/messaging/cross-world-messenger";
 
 export {
   ButtonSize,

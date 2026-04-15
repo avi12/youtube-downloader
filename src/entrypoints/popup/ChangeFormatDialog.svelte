@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { audioContainers, videoContainers } from "@/lib/containers";
-  import { MessageType, sendMessage } from "@/lib/messaging";
+  import { MessageType, sendMessage } from "@/lib/messaging/messaging";
+  import { audioContainers, videoContainers } from "@/lib/utils/containers";
   import type { RecentDownloadEntry } from "@/types";
 
   type Props = {

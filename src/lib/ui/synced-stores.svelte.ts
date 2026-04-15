@@ -1,6 +1,11 @@
-import { createMapMessenger, createSignalMessenger, createSyncedMap, createSyncedSignal } from "./synced-signal.svelte";
-import { initialOptions } from "./video-helpers";
 import type { InterruptedDownload, Options, ProgressType, VideoData } from "@/types";
+import {
+  createMapMessenger,
+  createSignalMessenger,
+  createSyncedMap,
+  createSyncedSignal
+} from "~/lib/ui/synced-signal.svelte";
+import { initialOptions } from "~/lib/youtube/video-helpers";
 
 let optionsState = $state<Options>(initialOptions);
 

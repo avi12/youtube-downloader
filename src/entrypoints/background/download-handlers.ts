@@ -2,7 +2,7 @@ import { cancelBackgroundDownload, startBackgroundDownload } from "./background-
 import { enqueueToPopupList, removeFromPopupList } from "./popup-list";
 import { awaitVideoComplete, signalVideoComplete } from "./sequential-queue";
 import { cancelDownloads, getTabIdsForVideo, trackVideoForTab } from "./tab-tracker";
-import { MessageType, onMessage, sendMessage } from "@/lib/messaging";
+import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
 import { ProgressType } from "@/types";
 import type { DownloadRequest } from "@/types";
 

@@ -1,4 +1,4 @@
-import { musicListItem, videoDetailsItem, videoOnlyListItem, videoQueueItem } from "@/lib/storage";
+import { musicListItem, videoDetailsItem, videoOnlyListItem, videoQueueItem } from "@/lib/storage/storage";
 import { DownloadType } from "@/types";
 
 export async function enqueueToPopupList(videoId: string, type: DownloadType, filenameOutput: string) {

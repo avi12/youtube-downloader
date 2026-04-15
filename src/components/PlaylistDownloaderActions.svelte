@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { createPlaylistActionButtons } from "./PlaylistDownloader.action-buttons.svelte";
   import type { createPlaylistDownloaderState } from "./PlaylistDownloader.state.svelte";
-  import { applyPolymerCustomStyles, PAPER_PROGRESS_THEME } from "@/lib/polymer-utils";
+  import { applyPolymerCustomStyles, PAPER_PROGRESS_THEME } from "@/lib/ui/polymer-utils";
 
   type Props = {
     playlist: ReturnType<typeof createPlaylistDownloaderState>;

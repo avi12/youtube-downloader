@@ -1,12 +1,12 @@
 import { toUint8Array, triggerDownload } from ".";
 import { reportProgress } from ".";
-import { getFileExtension } from "../containers";
 import { enqueueMuxJob, getFFmpeg, progressHandlers } from "./ffmpeg-instance";
 import { embedMusicMetadata } from "./music-metadata";
 import { addToPlaylistBundle } from "./playlist-bundle";
 import { transcodeAudio } from "./transcode-audio";
 import { DownloadType, ProgressType } from "@/types";
 import type { ProcessStreamData } from "@/types";
+import { getFileExtension } from "~/lib/utils/containers";
 
 function sourceAudioExtension(audioMimeType: string) {
   return /webm/.test(audioMimeType) ? "weba" : "m4a";

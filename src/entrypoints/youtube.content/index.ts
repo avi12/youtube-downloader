@@ -11,12 +11,12 @@ import {
   uncancelStreamTransfer
 } from "./stream-transfer";
 import "./style.css";
-import { CrossWorldEvent, emitCrossWorldEvent } from "@/lib/cross-world-events";
-import { CrossWorldMessage, crossWorldMessenger } from "@/lib/cross-world-messenger";
-import { MessageType, onMessage, sendMessage } from "@/lib/messaging";
-import { forwardSabrCredentialsWithRetry, listenForSabrBodyReady } from "@/lib/sabr-credentials";
-import { optionsItem, statusProgressItem } from "@/lib/storage";
-import { downloadProgressStore, initContentOptions } from "@/lib/synced-stores.svelte";
+import { CrossWorldEvent, emitCrossWorldEvent } from "@/lib/messaging/cross-world-events";
+import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
+import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
+import { optionsItem, statusProgressItem } from "@/lib/storage/storage";
+import { downloadProgressStore, initContentOptions } from "@/lib/ui/synced-stores.svelte";
+import { forwardSabrCredentialsWithRetry, listenForSabrBodyReady } from "@/lib/youtube/sabr-credentials";
 
 function registerCrossWorldHandlers(
   isDownloadIframe: boolean,

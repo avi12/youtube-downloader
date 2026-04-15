@@ -1,5 +1,5 @@
 import PlaylistVideoItem from "@/components/PlaylistVideoItem.svelte";
-import { getVideoIdFromUrl } from "@/lib/youtube-url";
+import { getVideoIdFromUrl } from "@/lib/youtube/youtube-url";
 import { mount } from "svelte";
 
 const VIDEO_CARD_SELECTOR = "yt-lockup-view-model, ytd-rich-item-renderer, ytd-grid-video-renderer";

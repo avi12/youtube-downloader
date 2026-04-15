@@ -1,10 +1,10 @@
-import { getCompatibleFilename, getMimeType } from "../containers";
-import { MessageType, sendMessage } from "../messaging";
 import { enqueueMuxJob } from "./ffmpeg-instance";
 import { processSingleMedia } from "./process-single-media";
 import { processVideoAudio } from "./process-video-audio";
 import { DownloadType, ProgressType } from "@/types";
 import type { ProcessStreamData } from "@/types";
+import { MessageType, sendMessage } from "~/lib/messaging/messaging";
+import { getCompatibleFilename, getMimeType } from "~/lib/utils/containers";
 
 export { initFFmpeg } from "./ffmpeg-instance";
 
@@ -38,7 +38,7 @@ export async function triggerDownload(
   const mimeType = getMimeType(filenameOutput) || "application/octet-stream";
   const filename = getCompatibleFilename(filenameOutput);
   // Our data always comes from WASM/fetch/fflate, never SharedArrayBuffer.
-  const blob = new Blob([data as Uint8Array<ArrayBuffer>], { type: mimeType });
+  const blob = new Blob([new Uint8Array(data)], { type: mimeType });
   const blobUrl = URL.createObjectURL(blob);
   activeBlobUrls.set(blobUrl, blob);
 

@@ -1,9 +1,9 @@
 import { capturedPoToken, capturedPoTokenVideoId, setPoTokenCredentials } from "./credentials";
 import { injectSegmentedDownloadButton } from "./watch-button";
 import { buildVideoData } from "./youtube-api";
-import { CrossWorldMessage, crossWorldMessenger } from "@/lib/cross-world-messenger";
-import { generatePoToken } from "@/lib/po-token-generator";
-import { sabrCredentials, videoDataStore } from "@/lib/synced-stores.svelte";
+import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
+import { sabrCredentials, videoDataStore } from "@/lib/ui/synced-stores.svelte";
+import { generatePoToken } from "@/lib/youtube/po-token-generator";
 import { type PlayerResponse, type VideoData, type YtdlCaptureState } from "@/types";
 
 declare const ytcfg: {

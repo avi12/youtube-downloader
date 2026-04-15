@@ -1,4 +1,4 @@
-import { MessageType, onMessage, sendMessage } from "@/lib/messaging";
+import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
 
 // 25s keeps the SW alive; Chrome kills idle SWs after ~30s
 const swKeepaliveIntervalMs = 25_000;

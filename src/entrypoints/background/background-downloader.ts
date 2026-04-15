@@ -1,11 +1,11 @@
 import { downloadViaCdn } from "./cdn-downloader";
 import { ensureProcessor } from "./processor";
 import { downloadViaSabr } from "./sabr-downloader";
-import { fetchYouTubeMusicMetadata } from "./youtube-music-metadata";
-import { uint8ToBase64 } from "@/lib/binary";
-import { MessageType, sendMessage } from "@/lib/messaging";
-import { OffscreenMessageType, sendToOffscreen } from "@/lib/offscreen-messaging";
-import { interruptedDownloadsItem } from "@/lib/storage";
+import { MessageType, sendMessage } from "@/lib/messaging/messaging";
+import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
+import { interruptedDownloadsItem } from "@/lib/storage/storage";
+import { uint8ToBase64 } from "@/lib/utils/binary";
+import { fetchYouTubeMusicMetadata } from "@/lib/youtube/youtube-music-metadata";
 import { ProgressType, StreamType } from "@/types";
 import type { DownloadRequest, InterruptedDownload, VideoMetadata } from "@/types";
 

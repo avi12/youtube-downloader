@@ -1,7 +1,7 @@
-import { getFileExtension, getCompatibleFilename } from "../containers";
 import { tryUnlink } from "./ffmpeg-instance";
 import type { VideoMetadata } from "@/types";
 import type { FFmpegCoreModule } from "@ffmpeg/types";
+import { getFileExtension, getCompatibleFilename } from "~/lib/utils/containers";
 
 function matchesMagicBytes(data: Uint8Array, bytes: number[], offset = 0) {
   return bytes.every((byte, i) => data[offset + i] === byte);

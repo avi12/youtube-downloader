@@ -3,7 +3,7 @@ import { registerGridDropdownHandlers } from "./grid-dropdown";
 import { registerGridVideoDataHandler } from "./grid-video-data";
 import { handleNavigateSuccess } from "./playlist-metadata";
 import { extractAndDispatchVideoData } from "./video-data";
-import { CrossWorldMessage, crossWorldMessenger, dispatchButtonClick } from "@/lib/cross-world-messenger";
+import { CrossWorldMessage, crossWorldMessenger, dispatchButtonClick } from "@/lib/messaging/cross-world-messenger";
 import { type PlayerResponse } from "@/types";
 
 declare global {

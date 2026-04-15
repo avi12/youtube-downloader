@@ -1,6 +1,6 @@
 <script lang="ts">
   import selectDropdownStyles from "./select-dropdown.css?inline";
-  import { applyPolymerCustomStyles, PAPER_INPUT_THEME } from "@/lib/polymer-utils";
+  import { applyPolymerCustomStyles, PAPER_INPUT_THEME } from "@/lib/ui/polymer-utils";
 
   type Props = {
     id?: string;

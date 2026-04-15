@@ -1,4 +1,4 @@
-import { CrossWorldMessage, crossWorldMessenger } from "@/lib/cross-world-messenger";
+import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import type { TpYtIronDropdownElement } from "@/types";
 
 const gridDropdowns = new Map<string, TpYtIronDropdownElement>();

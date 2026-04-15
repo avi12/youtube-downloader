@@ -1,4 +1,4 @@
-import { sendButtonData } from "@/lib/polymer-utils";
+import { sendButtonData } from "@/lib/ui/polymer-utils";
 import {
   ButtonSize,
   ButtonState,

@@ -8,8 +8,8 @@ import {
 } from "./watch-button-dom";
 import { buildInitialDownloadState } from "./watch-button-state";
 import { buildChevronData, buildDownloadData, type ButtonViewState } from "./watch-button-view-model";
-import { CrossWorldEvent, onCrossWorldEvent } from "@/lib/cross-world-events";
-import { CrossWorldMessage, crossWorldMessenger } from "@/lib/cross-world-messenger";
+import { CrossWorldEvent, onCrossWorldEvent } from "@/lib/messaging/cross-world-events";
+import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { ProgressType, type ProgressUpdate, type VideoData } from "@/types";
 
 let cleanupCurrentButton: (() => void) | null = null;

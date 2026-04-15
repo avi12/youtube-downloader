@@ -1,13 +1,13 @@
-import { getCompatibleFilename, getOutputExtension, resolveAutoExtension } from "@/lib/containers";
-import { CrossWorldMessage, crossWorldMessenger } from "@/lib/cross-world-messenger";
-import { statusProgressItem, videoQueueItem } from "@/lib/storage";
-import { contentOptions, downloadProgressStore } from "@/lib/synced-stores.svelte";
+import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
+import { statusProgressItem, videoQueueItem } from "@/lib/storage/storage";
+import { contentOptions, downloadProgressStore } from "@/lib/ui/synced-stores.svelte";
+import { getCompatibleFilename, getOutputExtension, resolveAutoExtension } from "@/lib/utils/containers";
 import {
   calculateWeightedProgress,
   formatAudioCodecLabel,
   formatVideoQualityLabel,
   waitForVideoElement
-} from "@/lib/video-helpers";
+} from "@/lib/youtube/video-helpers";
 import {
   DownloadType,
   ProgressType,

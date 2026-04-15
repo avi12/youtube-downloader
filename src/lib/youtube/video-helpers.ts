@@ -1,7 +1,7 @@
-import { AUTO_EXTENSION } from "./containers";
 import { ProgressType, VideoQualityMode } from "@/types";
 import type { AdaptiveFormatItem, Options, PlayerResponse } from "@/types";
 import { PlayabilityStatus } from "@/types/youtube";
+import { AUTO_EXTENSION } from "~/lib/utils/containers";
 
 export const videoQualities = [4320, 2160, 1440, 1080, 720, 480, 360, 240, 144];
 

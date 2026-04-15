@@ -1,4 +1,4 @@
-import { isVideoDownloadable, isVideoLive, isVideoMusic } from "@/lib/video-helpers";
+import { isVideoDownloadable, isVideoLive, isVideoMusic } from "@/lib/youtube/video-helpers";
 import type { AdaptiveFormatItem, PlayerResponse } from "@/types";
 
 function getUniqueVideoFormats(formats: AdaptiveFormatItem[]) {

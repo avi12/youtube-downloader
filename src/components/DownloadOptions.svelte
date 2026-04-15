@@ -1,8 +1,8 @@
 <script lang="ts">
   import PolymerSelect from "./PolymerSelect.svelte";
-  import { splitFilenameAndExtension, supportedExtensions } from "@/lib/containers";
-  import { applyPolymerCustomStyles, PAPER_INPUT_THEME } from "@/lib/polymer-utils";
-  import { formatAudioCodecLabel, formatVideoQualityLabel } from "@/lib/video-helpers";
+  import { applyPolymerCustomStyles, PAPER_INPUT_THEME } from "@/lib/ui/polymer-utils";
+  import { splitFilenameAndExtension, supportedExtensions } from "@/lib/utils/containers";
+  import { formatAudioCodecLabel, formatVideoQualityLabel } from "@/lib/youtube/video-helpers";
   import { DownloadType } from "@/types";
   import type { AdaptiveFormatItem } from "@/types";
 

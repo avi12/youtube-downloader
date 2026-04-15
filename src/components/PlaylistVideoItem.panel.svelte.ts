@@ -1,5 +1,5 @@
 import DownloadOptionsPanel from "./DownloadOptionsPanel.svelte";
-import { CrossWorldMessage, crossWorldMessenger } from "@/lib/cross-world-messenger";
+import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import type { VideoData } from "@/types";
 import { mount, unmount } from "svelte";
 

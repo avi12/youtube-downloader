@@ -1,7 +1,7 @@
 import PlaylistDownloader from "@/components/PlaylistDownloader.svelte";
 import PlaylistVideoItem from "@/components/PlaylistVideoItem.svelte";
-import { checkedPlaylistVideos } from "@/lib/playlist-selection.svelte";
-import { getVideoIdFromUrl } from "@/lib/youtube-url";
+import { checkedPlaylistVideos } from "@/lib/ui/playlist-selection.svelte";
+import { getVideoIdFromUrl } from "@/lib/youtube/youtube-url";
 import { mount, unmount } from "svelte";
 
 let currentPlaylistUi: ReturnType<typeof mount> | null = null;

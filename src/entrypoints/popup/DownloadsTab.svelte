@@ -3,8 +3,8 @@
   import DownloadSection from "./DownloadSection.svelte";
   import downloadIcon from "./icons/download.svg?raw";
   import RecentDownloadItem from "./RecentDownloadItem.svelte";
-  import { MessageType, sendMessage } from "@/lib/messaging";
-  import { deleteRecentDownload } from "@/lib/recent-downloads-db";
+  import { MessageType, sendMessage } from "@/lib/messaging/messaging";
+  import { deleteRecentDownload } from "@/lib/storage/recent-downloads-db";
   import { ProgressType } from "@/types";
   import type { RecentDownloadEntry, VideoQueueItem } from "@/types";
   import { browser } from "#imports";

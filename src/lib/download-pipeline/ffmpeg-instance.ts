@@ -1,5 +1,5 @@
-import { MessageType, sendMessage } from "../messaging";
 import type { FFmpegCoreModule, Progress } from "@ffmpeg/types";
+import { MessageType, sendMessage } from "~/lib/messaging/messaging";
 
 let sharedFFmpeg: FFmpegCoreModule | null = null;
 export const progressHandlers = new Set<(progress: Progress) => void>();

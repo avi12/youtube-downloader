@@ -7,7 +7,7 @@ import {
   videoDetailsItem,
   videoOnlyListItem,
   videoQueueItem
-} from "@/lib/storage";
+} from "@/lib/storage/storage";
 import { mount } from "svelte";
 
 const [

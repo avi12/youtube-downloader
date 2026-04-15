@@ -1,4 +1,4 @@
-import { MessageType, onMessage } from "@/lib/messaging";
+import { MessageType, onMessage } from "@/lib/messaging/messaging";
 
 export function listenForDownloadIframes(context: InstanceType<typeof ContentScriptContext>) {
   const downloadIframes = new Map<string, HTMLIFrameElement>();

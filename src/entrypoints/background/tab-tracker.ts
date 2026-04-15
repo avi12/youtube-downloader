@@ -1,4 +1,4 @@
-import { OffscreenMessageType, sendToOffscreen } from "@/lib/offscreen-messaging";
+import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
 
 const videoIdToTabIds: Record<string, number[]> = {};
 export const tabTracker: Record<number, {

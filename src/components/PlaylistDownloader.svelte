@@ -4,7 +4,7 @@
   import { createPlaylistToggleButtons } from "./PlaylistDownloader.toggle-buttons.svelte";
   import PlaylistDownloaderActions from "./PlaylistDownloaderActions.svelte";
   import PlaylistDownloaderFormatSections from "./PlaylistDownloaderFormatSections.svelte";
-  import { onButtonClick } from "@/lib/cross-world-messenger";
+  import { onButtonClick } from "@/lib/messaging/cross-world-messenger";
   import { untrack } from "svelte";
 
   const playlist = createPlaylistDownloaderState();

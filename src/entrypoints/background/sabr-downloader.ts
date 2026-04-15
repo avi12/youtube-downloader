@@ -1,7 +1,7 @@
 import type { DownloadResult } from "./background-downloader";
 import { createProgressFetch } from "./progress-fetch";
 import { sendProgressUpdate } from "./progress-fetch";
-import { fetchAudioViaSabrStream, fetchVideoViaSabrStream } from "@/lib/sabr-download";
+import { fetchAudioViaSabrStream, fetchVideoViaSabrStream } from "@/lib/youtube/sabr-download";
 import { DownloadType, ProgressType } from "@/types";
 import type { AdaptiveFormatItem, DownloadRequest, SabrConfig } from "@/types";
 

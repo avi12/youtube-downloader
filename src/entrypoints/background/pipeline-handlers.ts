@@ -2,8 +2,8 @@ import { enqueueToPopupList, removeFromPopupList } from "./popup-list";
 import { signalFFmpegReady } from "./processor";
 import { registerRecentDownloadHandlers } from "./recent-download-handler";
 import { signalVideoComplete } from "./sequential-queue";
-import { MessageType, onMessage, sendMessage } from "@/lib/messaging";
-import { isFFmpegReadyItem, statusProgressItem } from "@/lib/storage";
+import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
+import { isFFmpegReadyItem, statusProgressItem } from "@/lib/storage/storage";
 import { ProgressType } from "@/types";
 import type { ProgressUpdate } from "@/types";
 

@@ -3,11 +3,8 @@ import { registerPipelineHandlers } from "./pipeline-handlers";
 import { isFirefoxProcessorTab, ensureProcessor, resetProcessorState } from "./processor";
 import { registerRecentDownloadsRetention } from "./recent-downloads-retention";
 import { tabTracker, trackVideoForTab, untrackVideoForTab } from "./tab-tracker";
-import { uint8ToBase64 } from "@/lib/binary";
-import { MessageType, onMessage, sendMessage } from "@/lib/messaging";
-import { OffscreenMessageType, sendToOffscreen } from "@/lib/offscreen-messaging";
-import { clearCapturedSabrData, onSabrBodyCaptured, startSabrRequestCapture } from "@/lib/sabr-request-capture";
-import { extractPoTokenFromBody, getCapturedSabrData } from "@/lib/sabr-request-capture";
+import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
+import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
 import {
   clearLocalStorage,
   interruptedDownloadsItem,
@@ -16,7 +13,10 @@ import {
   videoDetailsItem,
   videoOnlyListItem,
   videoQueueItem
-} from "@/lib/storage";
+} from "@/lib/storage/storage";
+import { uint8ToBase64 } from "@/lib/utils/binary";
+import { clearCapturedSabrData, onSabrBodyCaptured, startSabrRequestCapture } from "@/lib/youtube/sabr-request-capture";
+import { extractPoTokenFromBody, getCapturedSabrData } from "@/lib/youtube/sabr-request-capture";
 
 const sabrOriginRuleId = 1;
 

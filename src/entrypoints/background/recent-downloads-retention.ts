@@ -1,7 +1,7 @@
 import { ensureProcessor } from "./processor";
-import { MessageType, onMessage } from "@/lib/messaging";
-import { OffscreenMessageType, sendToOffscreen } from "@/lib/offscreen-messaging";
-import { pruneRecentDownloads } from "@/lib/recent-downloads-db";
+import { MessageType, onMessage } from "@/lib/messaging/messaging";
+import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
+import { pruneRecentDownloads } from "@/lib/storage/recent-downloads-db";
 
 const RETENTION_ALARM_NAME = "ytdl-prune-recent-downloads";
 const RETENTION_DURATION_MS = 10 * 60 * 1000;

@@ -1,5 +1,5 @@
 import { triggerDownload } from ".";
-import { getCompatibleFilename } from "../containers";
+import { getCompatibleFilename } from "~/lib/utils/containers";
 import { zipSync } from "fflate";
 
 const playlistBundles = new Map<string, {

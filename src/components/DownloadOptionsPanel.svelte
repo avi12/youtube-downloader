@@ -2,14 +2,14 @@
   import DownloadOptions from "./DownloadOptions.svelte";
   import { createFocusManager } from "./DownloadOptionsPanel.focus.svelte";
   import { createPanelState } from "./DownloadOptionsPanel.state.svelte.ts";
-  import { CrossWorldMessage, crossWorldMessenger, onButtonClick } from "@/lib/cross-world-messenger";
+  import { CrossWorldMessage, crossWorldMessenger, onButtonClick } from "@/lib/messaging/cross-world-messenger";
   import {
     attachCancelButton,
     attachCloseButton,
     attachDoneIcon,
     attachDownloadButton,
     attachPanelProgress
-  } from "@/lib/panel-button-attachments.svelte";
+  } from "@/lib/ui/panel-button-attachments.svelte";
   import { ProgressType, type VideoData } from "@/types";
 
   const percentFormatter = new Intl.NumberFormat(document.documentElement.lang || undefined, {

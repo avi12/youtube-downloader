@@ -1,14 +1,14 @@
 import { createRevealState } from "./PlaylistDownloader.reveal.svelte";
 import { scrollVideoItemIntoView } from "./PlaylistDownloader.scroll";
-import { resolveVideoFilename } from "@/lib/containers";
-import { MessageType, sendMessage } from "@/lib/messaging";
-import { checkedPlaylistVideos } from "@/lib/playlist-selection.svelte";
+import { MessageType, sendMessage } from "@/lib/messaging/messaging";
+import { checkedPlaylistVideos } from "@/lib/ui/playlist-selection.svelte";
 import {
   contentOptions,
   downloadProgressStore,
   playlistMetadataSignal,
   videoDataStore
-} from "@/lib/synced-stores.svelte";
+} from "@/lib/ui/synced-stores.svelte";
+import { resolveVideoFilename } from "@/lib/utils/containers";
 import {
   DownloadType,
   PlaylistDownloadMode,

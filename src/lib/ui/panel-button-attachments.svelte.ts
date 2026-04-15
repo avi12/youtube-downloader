@@ -1,4 +1,3 @@
-import { sendButtonData } from "@/lib/polymer-utils";
 import {
   ButtonSize,
   ButtonState,
@@ -8,6 +7,7 @@ import {
   isPolymerProgressElement,
   type ButtonViewModelData
 } from "@/types";
+import { sendButtonData } from "~/lib/ui/polymer-utils";
 
 function dispatchButtonData(elButton: Element, data: ButtonViewModelData) {
   sendButtonData(elButton, data);

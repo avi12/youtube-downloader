@@ -1,5 +1,5 @@
-import { getCompatibleFilename, getOutputExtension } from "@/lib/containers";
-import { interruptedDownloadStore } from "@/lib/synced-stores.svelte";
+import { interruptedDownloadStore } from "@/lib/ui/synced-stores.svelte";
+import { getCompatibleFilename, getOutputExtension } from "@/lib/utils/containers";
 import { DownloadType, type VideoData } from "@/types";
 
 interface DownloadButtonState {

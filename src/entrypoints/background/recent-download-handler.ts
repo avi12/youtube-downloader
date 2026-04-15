@@ -1,5 +1,5 @@
-import { MessageType, onMessage, sendMessage } from "@/lib/messaging";
-import { addRecentDownload } from "@/lib/recent-downloads-db";
+import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
+import { addRecentDownload } from "@/lib/storage/recent-downloads-db";
 import type { RecentDownloadEntry } from "@/types";
 
 // Maps videoId to the browser download ID so users can discard a completed file.

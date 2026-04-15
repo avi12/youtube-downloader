@@ -1,8 +1,8 @@
 <script lang="ts">
   import FormatSelect from "./FormatSelect.svelte";
-  import { supportedExtensions } from "@/lib/containers";
-  import { setOption } from "@/lib/storage";
-  import { videoQualities } from "@/lib/video-helpers";
+  import { setOption } from "@/lib/storage/storage";
+  import { supportedExtensions } from "@/lib/utils/containers";
+  import { videoQualities } from "@/lib/youtube/video-helpers";
   import { DownloadType, VideoQualityMode } from "@/types";
   import type { DownloadTypePreference, Options } from "@/types";
 

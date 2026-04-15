@@ -1,4 +1,4 @@
-import type { ButtonViewModelData } from "@/lib/polymer-utils";
+import type { ButtonViewModelData } from "@/lib/ui/polymer-utils";
 
 export type { ButtonViewModelData };
 

@@ -1,6 +1,6 @@
 import { cancelDownloadsByIds, enqueueStreamData, initFFmpeg } from "@/lib/download-pipeline";
 import { transcodeRecentDownload } from "@/lib/download-pipeline/transcode-recent";
-import { OffscreenMessageType, listenForOffscreenMessages } from "@/lib/offscreen-messaging";
+import { OffscreenMessageType, listenForOffscreenMessages } from "@/lib/messaging/offscreen-messaging";
 import { DownloadType, StreamType } from "@/types";
 import type { VideoMetadata } from "@/types";
 import type { FFmpegCoreModuleFactory } from "@ffmpeg/types";

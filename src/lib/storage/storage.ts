@@ -1,5 +1,5 @@
-import { initialOptions } from "./video-helpers";
 import type { InterruptedDownload, Options, ProgressType } from "@/types";
+import { initialOptions } from "~/lib/youtube/video-helpers";
 
 export const videoQueueItem = storage.defineItem<{
   videoId: string;

@@ -1,7 +1,7 @@
 import { cleanupGridUi, injectGridVideoButtons } from "./grid-ui";
 import { cleanupPanelUi } from "./panel-ui";
 import { cleanupPlaylistUi, handlePlaylistVideoAdditions, injectPlaylistDownloaderUi } from "./playlist-ui";
-import { contentOptions } from "@/lib/synced-stores.svelte";
+import { contentOptions } from "@/lib/ui/synced-stores.svelte";
 
 const NATIVE_DOWNLOAD_SELECTOR = "ytd-download-button-renderer";
 

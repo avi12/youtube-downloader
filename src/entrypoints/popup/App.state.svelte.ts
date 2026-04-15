@@ -1,5 +1,5 @@
-import { MessageType, onMessage } from "@/lib/messaging";
-import { getAllRecentDownloads } from "@/lib/recent-downloads-db";
+import { MessageType, onMessage } from "@/lib/messaging/messaging";
+import { getAllRecentDownloads } from "@/lib/storage/recent-downloads-db";
 import {
   isFFmpegReadyItem,
   musicListItem,
@@ -8,8 +8,8 @@ import {
   videoDetailsItem,
   videoOnlyListItem,
   videoQueueItem
-} from "@/lib/storage";
-import { initialOptions as defaultOptions } from "@/lib/video-helpers";
+} from "@/lib/storage/storage";
+import { initialOptions as defaultOptions } from "@/lib/youtube/video-helpers";
 import { ProgressType } from "@/types";
 import type { Options, RecentDownloadEntry, VideoQueueItem } from "@/types";
 

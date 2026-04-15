@@ -1,8 +1,8 @@
 import { capturedPoToken, capturedSabrUrl, setPoTokenCredentials } from "./credentials";
 import { resolveFormatUrl } from "./stream-fetch";
 import { buildVideoMetadata, generatePoTokenIfNeeded, videoDataCache } from "./video-data";
-import { crossWorldMessenger, CrossWorldMessage } from "@/lib/cross-world-messenger";
-import { sabrCredentials } from "@/lib/synced-stores.svelte";
+import { crossWorldMessenger, CrossWorldMessage } from "@/lib/messaging/cross-world-messenger";
+import { sabrCredentials } from "@/lib/ui/synced-stores.svelte";
 import { type AdaptiveFormatItem, type DownloadRequest, DownloadType } from "@/types";
 
 const activeDownloads = new Map<string, AbortController>();

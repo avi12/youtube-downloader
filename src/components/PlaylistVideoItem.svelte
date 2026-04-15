@@ -8,9 +8,9 @@
   import { batchDownloadStatus } from "./PlaylistDownloader.state.svelte";
   import { createPanelManager } from "./PlaylistVideoItem.panel.svelte";
   import { createPlaylistVideoItemState } from "./PlaylistVideoItem.state.svelte";
-  import { onButtonClick } from "@/lib/cross-world-messenger";
-  import { checkedPlaylistVideos } from "@/lib/playlist-selection.svelte";
-  import { sendButtonData } from "@/lib/polymer-utils";
+  import { onButtonClick } from "@/lib/messaging/cross-world-messenger";
+  import { checkedPlaylistVideos } from "@/lib/ui/playlist-selection.svelte";
+  import { sendButtonData } from "@/lib/ui/polymer-utils";
   import {
     ButtonSize,
     ButtonState,
