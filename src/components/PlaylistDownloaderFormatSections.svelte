@@ -2,7 +2,8 @@
   import type { createPlaylistDownloaderState } from "./PlaylistDownloader.state.svelte";
   import PolymerSelect from "./PolymerSelect.svelte";
   import { AUTO_EXTENSION, AUTO_EXTENSION_LABEL, supportedExtensions } from "@/lib/containers";
-  import { DownloadType } from "@/types";
+  import { videoQualities } from "@/lib/video-helpers";
+  import { DownloadType, VideoQualityMode } from "@/types";
 
   type Props = {
     playlist: ReturnType<typeof createPlaylistDownloaderState>;
@@ -21,8 +22,20 @@
     supportedExtensions.audio.map(extension => ({ value: extension, label: formatExtensionLabel(extension) }))
   );
 
-  const isVideoExtDisabled = $derived(playlist.effectiveDownloadType === DownloadType.Audio);
-  const isAudioExtDisabled = $derived(playlist.effectiveDownloadType === DownloadType.Video);
+  // Only include resolutions that exist in at least one loaded playlist video.
+  // Falls back to showing all options until the first video data arrives.
+  const qualityOptions = $derived([
+    { value: VideoQualityMode.Best, label: "Best quality" },
+    ...videoQualities
+      .filter(height => !playlist.maxAvailableHeight || height <= playlist.maxAvailableHeight)
+      .map(height => ({ value: String(height), label: `${height}p` }))
+  ]);
+
+  const isVideoTypeDisabled = $derived(playlist.effectiveDownloadType === DownloadType.Audio);
+  const isAudioExtTypeDisabled = $derived(playlist.effectiveDownloadType === DownloadType.Video);
+  const isVideoExtDisabled = $derived(isVideoTypeDisabled || playlist.isDownloading);
+  const isAudioExtDisabled = $derived(isAudioExtTypeDisabled || playlist.isDownloading);
+  const isQualityDisabled = $derived(isVideoTypeDisabled || playlist.isDownloading);
 
   function handleVideoExtChange(value: string) {
     playlist.effectiveVideoExt = value;
@@ -31,9 +44,30 @@
   function handleAudioExtChange(value: string) {
     playlist.effectiveAudioExt = value;
   }
+
+  function handleQualityChange(value: string) {
+    playlist.effectiveQuality = value;
+  }
 </script>
 
-<section class="ytdl-section ytdl-section-select" class:is-disabled={isVideoExtDisabled}>
+<section class="ytdl-section ytdl-section-select" class:is-disabled={isVideoTypeDisabled}>
+  <PolymerSelect
+    id="playlist-video-quality"
+    disabled={isQualityDisabled}
+    label="Video quality"
+    onchange={handleQualityChange}
+    options={qualityOptions}
+    value={playlist.effectiveQuality}
+  />
+  {#if playlist.isQualityOverridden}
+    <span class="ytdl-override-badge ytdl-override-badge-floating" role="status">
+      <span class="ytdl-override-dot" aria-hidden="true"></span>
+      <span class="ytdl-visually-hidden">customized</span>
+    </span>
+  {/if}
+</section>
+
+<section class="ytdl-section ytdl-section-select" class:is-disabled={isVideoTypeDisabled}>
   <PolymerSelect
     id="playlist-video-ext"
     disabled={isVideoExtDisabled}
@@ -50,7 +84,7 @@
   {/if}
 </section>
 
-<section class="ytdl-section ytdl-section-select" class:is-disabled={isAudioExtDisabled}>
+<section class="ytdl-section ytdl-section-select" class:is-disabled={isAudioExtTypeDisabled}>
   <PolymerSelect
     id="playlist-audio-ext"
     disabled={isAudioExtDisabled}
@@ -68,7 +102,7 @@
 </section>
 
 {#if playlist.hasAnyOverride}
-  <button class="ytdl-reset-link" onclick={playlist.resetOverrides} type="button">
+  <button class="ytdl-reset-link" disabled={playlist.isDownloading} onclick={playlist.resetOverrides} type="button">
     Reset to my defaults
   </button>
 {/if}

@@ -3,11 +3,17 @@ import { scrollVideoItemIntoView } from "./PlaylistDownloader.scroll";
 import { resolveVideoFilename } from "@/lib/containers";
 import { MessageType, sendMessage } from "@/lib/messaging";
 import { checkedPlaylistVideos } from "@/lib/playlist-selection.svelte";
-import { downloadProgressStore, playlistMetadataSignal, videoDataStore } from "@/lib/synced-stores.svelte";
+import {
+  contentOptions,
+  downloadProgressStore,
+  playlistMetadataSignal,
+  videoDataStore
+} from "@/lib/synced-stores.svelte";
 import {
   DownloadType,
   PlaylistDownloadMode,
   PlaylistOutputMode,
+  VideoQualityMode,
   type DownloadRequest,
   type DownloadTypePreference,
   type Options,
@@ -28,6 +34,17 @@ let isScrollSyncEnabled = $state(false);
 let downloadTypeOverride = $state<DownloadTypePreference | null>(null);
 let videoExtOverride = $state<string | null>(null);
 let audioExtOverride = $state<string | null>(null);
+let videoQualityOverride = $state<string | null>(null);
+
+// Maps popup quality settings to a single PolymerSelect-compatible value.
+// "best" means always pick the highest bitrate; a numeric string (e.g. "1080")
+// means pick that resolution and fall back to best if unavailable.
+// CurrentQuality is watch-page-only, so it maps to "best" in playlist context.
+function optionsToQualityValue(options: Options) {
+  return options.videoQualityMode === VideoQualityMode.Custom
+    ? String(options.videoQuality)
+    : VideoQualityMode.Best;
+}
 
 function buildDownloadRequest(
   data: VideoData,
@@ -42,10 +59,14 @@ function buildDownloadRequest(
     downloadType = options.defaultDownloadType;
   }
 
+  const videoFormat = options.videoQualityMode === VideoQualityMode.Best
+    ? data.videoFormats[0]
+    : (data.videoFormats.find(format => format.height === options.videoQuality) ?? data.videoFormats[0]);
+
   return {
     type: downloadType,
     videoId: data.videoId,
-    videoItag: data.videoFormats[0]?.itag ?? 0,
+    videoItag: videoFormat?.itag ?? 0,
     audioItag: data.audioFormats[0]?.itag ?? 0,
     filenameOutput: resolveVideoFilename(data, options),
     sabrConfig: data.sabrConfig,
@@ -53,30 +74,39 @@ function buildDownloadRequest(
   };
 }
 
-export function createPlaylistDownloaderState(getOptions: () => Options) {
+export function createPlaylistDownloaderState() {
   const videoDataMap = new SvelteMap<string, VideoData>();
   let isDownloading = $state(false);
   let totalCount = $state(0);
   let error = $state("");
 
   const effectiveDownloadType = $derived<DownloadTypePreference>(
-    downloadTypeOverride ?? getOptions().defaultDownloadType
+    downloadTypeOverride ?? contentOptions.value.defaultDownloadType
   );
-  const effectiveVideoExt = $derived(videoExtOverride ?? getOptions().ext.video);
-  const effectiveAudioExt = $derived(audioExtOverride ?? getOptions().ext.audio);
+  const effectiveVideoExt = $derived(videoExtOverride ?? contentOptions.value.ext.video);
+  const effectiveAudioExt = $derived(audioExtOverride ?? contentOptions.value.ext.audio);
+  const effectiveQuality = $derived(videoQualityOverride ?? optionsToQualityValue(contentOptions.value));
   const hasAnyOverride = $derived(
-    downloadTypeOverride !== null || videoExtOverride !== null || audioExtOverride !== null
+    downloadTypeOverride !== null
+    || videoExtOverride !== null
+    || audioExtOverride !== null
+    || videoQualityOverride !== null
   );
 
-  function buildEffectiveOptions(): Options {
-    const base = getOptions();
+  function buildEffectiveOptions() {
+    const base = contentOptions.value;
+    const qualityValue = effectiveQuality;
     return {
       ...base,
       defaultDownloadType: effectiveDownloadType,
       ext: {
         video: effectiveVideoExt,
         audio: effectiveAudioExt
-      }
+      },
+      videoQualityMode: qualityValue === VideoQualityMode.Best
+        ? VideoQualityMode.Best
+        : VideoQualityMode.Custom,
+      videoQuality: qualityValue === VideoQualityMode.Best ? base.videoQuality : Number(qualityValue)
     };
   }
 
@@ -84,6 +114,7 @@ export function createPlaylistDownloaderState(getOptions: () => Options) {
     downloadTypeOverride = null;
     videoExtOverride = null;
     audioExtOverride = null;
+    videoQualityOverride = null;
   }
 
   $effect(() => {
@@ -97,6 +128,21 @@ export function createPlaylistDownloaderState(getOptions: () => Options) {
 
   const downloadableVideos = $derived([...videoDataMap.values()].filter(data => data.isDownloadable));
   const nonDownloadableCount = $derived(videoDataMap.size - downloadableVideos.length);
+
+  // Tracks the highest video resolution discovered so far across all playlist videos.
+  // Grows as more video data loads (e.g. on scroll), never shrinks - so quality
+  // options only expand, preventing confusing option removal mid-session.
+  const maxAvailableHeight = $derived.by(() => {
+    let max = 0;
+    for (const data of videoDataMap.values()) {
+      for (const format of data.videoFormats) {
+        if ((format.height ?? 0) > max) {
+          max = format.height ?? 0;
+        }
+      }
+    }
+    return max;
+  });
   const selectedDownloadableVideos = $derived(
     downloadableVideos.filter(data => checkedPlaylistVideos.has(data.videoId))
   );
@@ -341,6 +387,9 @@ export function createPlaylistDownloaderState(getOptions: () => Options) {
     get videoDataMapSize() {
       return videoDataMap.size;
     },
+    get maxAvailableHeight() {
+      return maxAvailableHeight;
+    },
     get isRevealingAll() {
       return reveal.isRevealingAll;
     },
@@ -357,19 +406,25 @@ export function createPlaylistDownloaderState(getOptions: () => Options) {
       return effectiveDownloadType;
     },
     set effectiveDownloadType(value) {
-      downloadTypeOverride = value === getOptions().defaultDownloadType ? null : value;
+      downloadTypeOverride = value === contentOptions.value.defaultDownloadType ? null : value;
     },
     get effectiveVideoExt() {
       return effectiveVideoExt;
     },
     set effectiveVideoExt(value) {
-      videoExtOverride = value === getOptions().ext.video ? null : value;
+      videoExtOverride = value === contentOptions.value.ext.video ? null : value;
     },
     get effectiveAudioExt() {
       return effectiveAudioExt;
     },
     set effectiveAudioExt(value) {
-      audioExtOverride = value === getOptions().ext.audio ? null : value;
+      audioExtOverride = value === contentOptions.value.ext.audio ? null : value;
+    },
+    get effectiveQuality() {
+      return effectiveQuality;
+    },
+    set effectiveQuality(value) {
+      videoQualityOverride = value === optionsToQualityValue(contentOptions.value) ? null : value;
     },
     get hasAnyOverride() {
       return hasAnyOverride;
@@ -388,6 +443,9 @@ export function createPlaylistDownloaderState(getOptions: () => Options) {
     },
     get isAudioExtOverridden() {
       return audioExtOverride !== null;
+    },
+    get isQualityOverridden() {
+      return videoQualityOverride !== null;
     },
     resetOverrides,
     toggleSelectedDownload,
