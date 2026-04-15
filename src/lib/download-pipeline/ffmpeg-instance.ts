@@ -22,7 +22,10 @@ export function getFFmpeg() {
   return sharedFFmpeg;
 }
 
-export function tryUnlink(ffmpeg: FFmpegCoreModule, filename: string) {
+export function tryUnlink({ ffmpeg, filename }: {
+  ffmpeg: FFmpegCoreModule;
+  filename: string;
+}) {
   try {
     ffmpeg.FS.unlink(filename);
   } catch (_) {

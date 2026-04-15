@@ -18,7 +18,7 @@ function determineOutputExtension({
   }
 
   const userExtension = filenameOutput.split(".").pop() ?? "mp4";
-  return getOutputExtension(videoMimeType, audioMimeType, userExtension);
+  return getOutputExtension({ videoMimeType, audioMimeType, userExtension });
 }
 
 export async function processVideoAudio(item: ProcessStreamData) {
@@ -69,9 +69,9 @@ export async function processVideoAudio(item: ProcessStreamData) {
           thumbnailUrl: item.metadata?.thumbnailUrl
         };
         if (videoData) {
-          await triggerDownload(videoData, filenameOutput, recentContext);
+          await triggerDownload({ data: videoData, filenameOutput, recentContext });
         } else if (audioData) {
-          await triggerDownload(audioData, filenameOutput, recentContext);
+          await triggerDownload({ data: audioData, filenameOutput, recentContext });
         }
 
         return;
@@ -139,20 +139,24 @@ export async function processVideoAudio(item: ProcessStreamData) {
       return;
     }
 
-    await triggerDownload(ffmpegOutput, downloadFilename, {
-      videoId,
-      title: item.metadata?.title ?? filenameOutput,
-      channel: item.metadata?.artist ?? "",
-      thumbnailUrl: item.metadata?.thumbnailUrl
+    await triggerDownload({
+      data: ffmpegOutput,
+      filenameOutput: downloadFilename,
+      recentContext: {
+        videoId,
+        title: item.metadata?.title ?? filenameOutput,
+        channel: item.metadata?.artist ?? "",
+        thumbnailUrl: item.metadata?.thumbnailUrl
+      }
     });
     await reportProgress({ videoId, progress: 1, progressType: ProgressType.FFmpeg, tabId });
   } finally {
     progressHandlers.delete(handleFFmpegProgress);
-    tryUnlink(ffmpeg, videoFilename);
-    tryUnlink(ffmpeg, primaryAudioFilename);
-    tryUnlink(ffmpeg, outputFilename);
+    tryUnlink({ ffmpeg, filename: videoFilename });
+    tryUnlink({ ffmpeg, filename: primaryAudioFilename });
+    tryUnlink({ ffmpeg, filename: outputFilename });
     for (const { filename } of extraAudioTracks) {
-      tryUnlink(ffmpeg, filename);
+      tryUnlink({ ffmpeg, filename });
     }
   }
 }

@@ -118,17 +118,20 @@ export function createPlaylistToggleButtons(state: {
       elButton.setAttribute("data-ytdl-button-id", config.id);
     }
 
-    sendButtonData(elButton, {
-      iconName: IconName.None,
-      title: config.label,
-      accessibilityText: config.label,
-      style: ButtonStyle.Mono,
-      type: config.isActive() ? ButtonType.Tonal : ButtonType.Outline,
-      buttonSize: ButtonSize.Default,
-      state: state.isDownloading ? ButtonState.Disabled : ButtonState.Active,
-      isFullWidth: false,
-      isDisabled: state.isDownloading,
-      tooltip: config.tooltip
+    sendButtonData({
+      elButton,
+      data: {
+        iconName: IconName.None,
+        title: config.label,
+        accessibilityText: config.label,
+        style: ButtonStyle.Mono,
+        type: config.isActive() ? ButtonType.Tonal : ButtonType.Outline,
+        buttonSize: ButtonSize.Default,
+        state: state.isDownloading ? ButtonState.Disabled : ButtonState.Active,
+        isFullWidth: false,
+        isDisabled: state.isDownloading,
+        tooltip: config.tooltip
+      }
     });
   }
 

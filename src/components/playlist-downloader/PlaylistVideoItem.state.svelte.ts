@@ -19,11 +19,11 @@ const defaultProgressState: DownloadProgressState = {
   progressType: ""
 };
 
-export function createPlaylistVideoItemState(
-  videoId: string,
-  gridTitle: string | undefined,
-  activeDownloadClicks: Set<string>
-) {
+export function createPlaylistVideoItemState({ videoId, gridTitle, activeDownloadClicks }: {
+  videoId: string;
+  gridTitle: string | undefined;
+  activeDownloadClicks: Set<string>;
+}) {
   let videoData = $state<VideoData | null>(null);
   let isLoadFailed = $state(false);
   let isLocallyDone = $state(false);
@@ -73,7 +73,11 @@ export function createPlaylistVideoItemState(
   });
 
   const displayProgress = $derived(
-    calculateWeightedProgress(isDownloading, downloadState.progress, downloadState.progressType)
+    calculateWeightedProgress({
+      isDownloading,
+      progress: downloadState.progress,
+      progressType: downloadState.progressType
+    })
   );
 
   const buttonTooltip = $derived.by(() => {
@@ -97,11 +101,17 @@ export function createPlaylistVideoItemState(
     const currentOptions = contentOptions.value;
     const primaryVideoFormat = videoData.videoFormats[0];
     const primaryAudioFormat = videoData.audioFormats[0];
-    const resolvedContainerExtension = resolveAutoExtension(
-      currentOptions.ext.video, primaryVideoFormat?.mimeType ?? "", DownloadType.Video
-    );
+    const resolvedContainerExtension = resolveAutoExtension({
+      extension: currentOptions.ext.video,
+      mimeType: primaryVideoFormat?.mimeType ?? "",
+      type: DownloadType.Video
+    });
     const containerExtension = primaryVideoFormat && primaryAudioFormat
-      ? getOutputExtension(primaryVideoFormat.mimeType, primaryAudioFormat.mimeType, resolvedContainerExtension)
+      ? getOutputExtension({
+        videoMimeType: primaryVideoFormat.mimeType,
+        audioMimeType: primaryAudioFormat.mimeType,
+        userExtension: resolvedContainerExtension
+      })
       : resolvedContainerExtension;
     const qualityLabel = primaryVideoFormat ? formatVideoQualityLabel(primaryVideoFormat) : "";
     if (!qualityLabel) {
@@ -134,7 +144,7 @@ export function createPlaylistVideoItemState(
       downloadType = options.defaultDownloadType;
     }
 
-    const filenameOutput = resolveVideoFilename(videoData, options, gridTitle);
+    const filenameOutput = resolveVideoFilename({ videoData, options, titleOverride: gridTitle });
 
     isLocallyDone = false;
     downloadProgressStore.unsuppress(videoId);

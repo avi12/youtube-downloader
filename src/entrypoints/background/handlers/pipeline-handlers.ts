@@ -9,11 +9,11 @@ import type { ProgressUpdate } from "@/types";
 
 type StatusProgressMap = Awaited<ReturnType<typeof statusProgressItem.getValue>>;
 
-async function updateStatusProgress(
-  mutate: (current: StatusProgressMap) => void,
-  progressUpdate: ProgressUpdate,
-  tabId: number
-) {
+async function updateStatusProgress({ mutate, progressUpdate, tabId }: {
+  mutate: (current: StatusProgressMap) => void;
+  progressUpdate: ProgressUpdate;
+  tabId: number;
+}) {
   const current = await statusProgressItem.getValue();
   mutate(current);
 
@@ -47,29 +47,29 @@ export function registerPipelineHandlers() {
   });
 
   onMessage(MessageType.PipelineStart, async ({ data }) => {
-    await enqueueToPopupList(data.videoId, data.type, data.filenameOutput);
+    await enqueueToPopupList({ videoId: data.videoId, type: data.type, filenameOutput: data.filenameOutput });
   });
 
   onMessage(MessageType.PipelineProgress, async ({ data }) => {
     const { videoId, progress, progressType, tabId } = data;
-    await updateStatusProgress(
-      current => {
+    await updateStatusProgress({
+      mutate(current) {
         current[videoId] = { progress, progressType };
       },
-      { videoId, progress, progressType },
+      progressUpdate: { videoId, progress, progressType },
       tabId
-    );
+    });
   });
 
   onMessage(MessageType.PipelineRemoval, async ({ data }) => {
     const { videoId, tabId } = data;
-    await updateStatusProgress(
-      current => {
+    await updateStatusProgress({
+      mutate(current) {
         delete current[videoId];
       },
-      { videoId, progress: 0, progressType: ProgressType.Video, isRemoved: true },
+      progressUpdate: { videoId, progress: 0, progressType: ProgressType.Video, isRemoved: true },
       tabId
-    );
+    });
     await removeFromPopupList(videoId);
     void sendMessage(MessageType.RemoveDownloadIframe, { videoId }, tabId);
   });

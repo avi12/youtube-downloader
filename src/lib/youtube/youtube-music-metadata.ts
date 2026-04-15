@@ -93,10 +93,10 @@ function parseSearchResult(item: SearchItem) {
   return { songTitle, artist: artists.join(", "), mainArtist, album, thumbnailUrl };
 }
 
-export async function fetchYouTubeMusicMetadata(
-  searchQuery: string,
-  existingMetadata: VideoMetadata
-) {
+export async function fetchYouTubeMusicMetadata({ searchQuery, existingMetadata }: {
+  searchQuery: string;
+  existingMetadata: VideoMetadata;
+}) {
   try {
     const response = await fetch(YOUTUBE_MUSIC_SEARCH_URL, {
       method: "POST",

@@ -19,7 +19,7 @@
   }: Props = $props();
 
   function attachDropdown(elTarget: Element) {
-    applyPolymerCustomStyles(elTarget, PAPER_INPUT_THEME);
+    applyPolymerCustomStyles({ element: elTarget, styles: PAPER_INPUT_THEME });
 
     let elMovedDropdown: Element | null = null;
     let elChevronInput: HTMLElement | null = null;

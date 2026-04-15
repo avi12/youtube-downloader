@@ -67,7 +67,7 @@ function buildDownloadRequest(
     videoId: data.videoId,
     videoItag: videoFormat?.itag ?? 0,
     audioItag: data.audioFormats[0]?.itag ?? 0,
-    filenameOutput: resolveVideoFilename(data, options),
+    filenameOutput: resolveVideoFilename({ videoData: data, options }),
     sabrConfig: data.sabrConfig,
     ...(isZipBundle && { playlistId, playlistTitle, playlistTotalCount })
   };

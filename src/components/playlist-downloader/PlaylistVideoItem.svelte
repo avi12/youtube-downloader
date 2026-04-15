@@ -28,11 +28,11 @@
 
   const isChecked = $derived(checkedPlaylistVideos.has(videoId));
 
-  const itemState = createPlaylistVideoItemState(
-    untrack(() => videoId),
-    untrack(() => gridTitle),
+  const itemState = createPlaylistVideoItemState({
+    videoId: untrack(() => videoId),
+    gridTitle: untrack(() => gridTitle),
     activeDownloadClicks
-  );
+  });
 
   const isCheckboxDisabled = $derived(batchDownloadStatus.isRunning || itemState.isDownloading);
 
@@ -46,7 +46,10 @@
   let buttonRefreshTimer: ReturnType<typeof setTimeout> | null = null;
   const buttonRefreshIntervalMs = 250;
 
-  function assignButtonId(elButton: Element, id: string) {
+  function assignButtonId({ elButton, id }: {
+    elButton: Element;
+    id: string;
+  }) {
     if (elButton.getAttribute("data-ytdl-button-id") !== id) {
       elButton.setAttribute("data-ytdl-button-id", id);
     }
@@ -58,18 +61,21 @@
     }
 
     const tooltip = itemState.buttonTooltip;
-    assignButtonId(elDownloadBtn, downloadButtonId);
-    sendButtonData(elDownloadBtn, {
-      iconName: itemState.downloadIconName,
-      title: "",
-      accessibilityText: itemState.videoData ? `${tooltip} ${itemState.videoData.title}` : tooltip,
-      style: ButtonStyle.Mono,
-      type: ButtonType.Tonal,
-      buttonSize: ButtonSize.Default,
-      state: !itemState.videoData?.isDownloadable ? ButtonState.Disabled : ButtonState.Active,
-      isFullWidth: false,
-      isDisabled: !itemState.videoData?.isDownloadable,
-      tooltip
+    assignButtonId({ elButton: elDownloadBtn, id: downloadButtonId });
+    sendButtonData({
+      elButton: elDownloadBtn,
+      data: {
+        iconName: itemState.downloadIconName,
+        title: "",
+        accessibilityText: itemState.videoData ? `${tooltip} ${itemState.videoData.title}` : tooltip,
+        style: ButtonStyle.Mono,
+        type: ButtonType.Tonal,
+        buttonSize: ButtonSize.Default,
+        state: !itemState.videoData?.isDownloadable ? ButtonState.Disabled : ButtonState.Active,
+        isFullWidth: false,
+        isDisabled: !itemState.videoData?.isDownloadable,
+        tooltip
+      }
     });
   }
 
@@ -92,21 +98,24 @@
       return;
     }
 
-    assignButtonId(elChevronBtn, chevronButtonId);
+    assignButtonId({ elButton: elChevronBtn, id: chevronButtonId });
     // Chevron points at the panel: up when the panel sits above, down when
     // it sits below (including the closed state, which hints at where the
     // panel will appear by default).
-    sendButtonData(elChevronBtn, {
-      iconName: isPanelAboveChevron() ? IconName.ExpandLess : IconName.ExpandMore,
-      title: "",
-      accessibilityText: "Download options",
-      style: ButtonStyle.Mono,
-      type: ButtonType.Tonal,
-      buttonSize: ButtonSize.Default,
-      state: !itemState.videoData?.isDownloadable ? ButtonState.Disabled : ButtonState.Active,
-      isFullWidth: false,
-      isDisabled: !itemState.videoData?.isDownloadable,
-      tooltip: "Options"
+    sendButtonData({
+      elButton: elChevronBtn,
+      data: {
+        iconName: isPanelAboveChevron() ? IconName.ExpandLess : IconName.ExpandMore,
+        title: "",
+        accessibilityText: "Download options",
+        style: ButtonStyle.Mono,
+        type: ButtonType.Tonal,
+        buttonSize: ButtonSize.Default,
+        state: !itemState.videoData?.isDownloadable ? ButtonState.Disabled : ButtonState.Active,
+        isFullWidth: false,
+        isDisabled: !itemState.videoData?.isDownloadable,
+        tooltip: "Options"
+      }
     });
   }
 

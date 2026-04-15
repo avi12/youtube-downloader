@@ -51,19 +51,22 @@ function awaitTransaction(transaction: IDBTransaction) {
   });
 }
 
-export async function addRecentDownload(entry: {
-  id: string;
-  downloadId: number;
-  videoId: string;
-  title: string;
-  channel: string;
-  filename: string;
-  container: string;
-  mimeType: string;
-  size: number;
-  thumbnailUrl?: string;
-  completedAt: number;
-}, blob: Blob) {
+export async function addRecentDownload({ entry, blob }: {
+  entry: {
+    id: string;
+    downloadId: number;
+    videoId: string;
+    title: string;
+    channel: string;
+    filename: string;
+    container: string;
+    mimeType: string;
+    size: number;
+    thumbnailUrl?: string;
+    completedAt: number;
+  };
+  blob: Blob;
+}) {
   const db = await getDatabase();
   const transaction = db.transaction([ENTRIES_STORE, BLOBS_STORE], "readwrite");
   transaction.objectStore(ENTRIES_STORE).put(entry);
@@ -71,7 +74,7 @@ export async function addRecentDownload(entry: {
   await awaitTransaction(transaction);
 }
 
-export type RecentDownloadEntry = Parameters<typeof addRecentDownload>[0];
+export type RecentDownloadEntry = Parameters<typeof addRecentDownload>[0]["entry"];
 
 export async function getAllRecentDownloads() {
   const db = await getDatabase();
@@ -97,10 +100,10 @@ export async function deleteRecentDownload(id: string) {
   await awaitTransaction(transaction);
 }
 
-export async function pruneRecentDownloads(
-  olderThanTimestamp: number,
-  protectedIds: ReadonlySet<string>
-) {
+export async function pruneRecentDownloads({ olderThanTimestamp, protectedIds }: {
+  olderThanTimestamp: number;
+  protectedIds: ReadonlySet<string>;
+}) {
   const db = await getDatabase();
   const transaction = db.transaction([ENTRIES_STORE, BLOBS_STORE], "readwrite");
   const entriesStore = transaction.objectStore(ENTRIES_STORE);

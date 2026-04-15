@@ -50,7 +50,10 @@ function findAnchorElement(elCard: Element) {
   return null;
 }
 
-function mountGridButton(context: InstanceType<typeof ContentScriptContext>, elCard: Element) {
+function mountGridButton({ context, elCard }: {
+  context: InstanceType<typeof ContentScriptContext>;
+  elCard: Element;
+}) {
   const videoId = extractVideoId(elCard);
   if (!videoId || elCard.querySelector(`[data-ytdl-grid-item="${videoId}"]`)) {
     return;
@@ -101,7 +104,7 @@ function createVisibilityObserver(context: InstanceType<typeof ContentScriptCont
         }
 
         visibilityObserver?.unobserve(entry.target);
-        mountGridButton(context, entry.target);
+        mountGridButton({ context, elCard: entry.target });
       }
     },
     { rootMargin: VIEWPORT_MARGIN }

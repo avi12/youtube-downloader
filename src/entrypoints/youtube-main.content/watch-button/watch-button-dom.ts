@@ -46,11 +46,11 @@ export function findNativeDownloadButton(elActionsContainer: HTMLElement) {
   return null;
 }
 
-export function createButtonGroup(
-  elActionsContainer: HTMLElement,
-  elNativeDownload: YtButtonViewModelElement | null,
-  scopingClass: string
-): ButtonGroupElements {
+export function createButtonGroup({ elActionsContainer, elNativeDownload, scopingClass }: {
+  elActionsContainer: HTMLElement;
+  elNativeDownload: YtButtonViewModelElement | null;
+  scopingClass: string;
+}): ButtonGroupElements {
   const scopingClasses = scopingClass.match(/\S+/g) ?? [];
 
   const elGroup = document.createElement("div");
@@ -86,7 +86,10 @@ export function createButtonGroup(
   return { elGroup, elDownloadButton, elChevronButton, elProgressBar };
 }
 
-export function createDropdownElement(videoId: string, elGroup: HTMLElement): DropdownElements {
+export function createDropdownElement({ videoId, elGroup }: {
+  videoId: string;
+  elGroup: HTMLElement;
+}): DropdownElements {
   const panelContentId = `ytdl-panel-content-${videoId}`;
 
   const elDropdown = document.createElement("tp-yt-iron-dropdown");

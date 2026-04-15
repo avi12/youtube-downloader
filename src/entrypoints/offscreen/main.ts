@@ -22,7 +22,10 @@ const streamAccumulators = new Map<string, {
   }>;
 }>();
 
-function assembleStreamChunks(chunks: Map<number, Uint8Array>, totalChunks: number) {
+function assembleStreamChunks({ chunks, totalChunks }: {
+  chunks: Map<number, Uint8Array>;
+  totalChunks: number;
+}) {
   if (totalChunks === 0) {
     return null;
   }
@@ -146,7 +149,7 @@ function handleProcessStreamEnd(data: {
     const audioStream = accumulator?.audioStreams.get(`audio-extra-${iTrack}`);
     return {
       data: audioStream
-        ? assembleStreamChunks(audioStream.chunks, audioStream.totalChunks)
+        ? assembleStreamChunks({ chunks: audioStream.chunks, totalChunks: audioStream.totalChunks })
         : null,
       mimeType: audioMimeType,
       label
@@ -158,10 +161,10 @@ function handleProcessStreamEnd(data: {
     videoId,
     filenameOutput,
     videoData: accumulator
-      ? assembleStreamChunks(accumulator.videoChunks, accumulator.totalVideoChunks)
+      ? assembleStreamChunks({ chunks: accumulator.videoChunks, totalChunks: accumulator.totalVideoChunks })
       : null,
     audioData: primaryAudio
-      ? assembleStreamChunks(primaryAudio.chunks, primaryAudio.totalChunks)
+      ? assembleStreamChunks({ chunks: primaryAudio.chunks, totalChunks: primaryAudio.totalChunks })
       : null,
     videoMimeType,
     audioMimeType,

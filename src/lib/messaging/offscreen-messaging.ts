@@ -57,7 +57,10 @@ type OffscreenMessage = {
 type OffscreenHandler<T extends OffscreenMessageType> = (data: OffscreenProtocolMap[T]) => void;
 type HandlerMap = { [T in OffscreenMessageType]?: OffscreenHandler<T> };
 
-function dispatchOffscreenMessage(handlers: Partial<HandlerMap>, message: OffscreenMessage) {
+function dispatchOffscreenMessage({ handlers, message }: {
+  handlers: Partial<HandlerMap>;
+  message: OffscreenMessage;
+}) {
   switch (message.type) {
     case OffscreenMessageType.ProcessStreamChunk:
       handlers[OffscreenMessageType.ProcessStreamChunk]?.(message.data);
@@ -104,7 +107,7 @@ function listenForOffscreenMessages(handlers: HandlerMap) {
     }
 
     port.onMessage.addListener((message: OffscreenMessage) => {
-      dispatchOffscreenMessage(handlers, message);
+      dispatchOffscreenMessage({ handlers, message });
     });
   });
 }

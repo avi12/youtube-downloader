@@ -14,7 +14,11 @@ export default defineContentScript({
 
     const sourceBufferMimeTypes = new WeakMap<SourceBuffer, string>();
 
-    function addChunkToCapture(capture: YtdlMediaCapture, mimeType: string, chunk: Uint8Array) {
+    function addChunkToCapture({ capture, mimeType, chunk }: {
+      capture: YtdlMediaCapture;
+      mimeType: string;
+      chunk: Uint8Array;
+    }) {
       if (mimeType.startsWith("video")) {
         capture.videoChunks.push(chunk.slice());
         capture.videoTotalBytes += chunk.byteLength;
@@ -60,7 +64,7 @@ export default defineContentScript({
             data: chunk.slice()
           });
         } else {
-          addChunkToCapture(capturedMedia.get(activeVideoId)!, mimeType, chunk);
+          addChunkToCapture({ capture: capturedMedia.get(activeVideoId)!, mimeType, chunk });
         }
       }
 

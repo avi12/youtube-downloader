@@ -57,7 +57,7 @@ export async function handleNavigateSuccess() {
     const isReady = playerResponse?.videoDetails?.videoId === expectedVideoId
       && playerResponse.playabilityStatus?.status !== "UNPLAYABLE";
     if (isReady) {
-      await buildAndDispatchVideoData(playerResponse, cancelActiveDownload);
+      await buildAndDispatchVideoData({ playerResponse, cancelActiveDownload });
       return;
     }
 

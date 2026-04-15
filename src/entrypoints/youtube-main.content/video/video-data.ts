@@ -49,7 +49,7 @@ export async function buildVideoMetadata(videoId: string) {
   const descriptionMeta = parseDescriptionMetadata(description);
   const keywords = videoDetails?.keywords ?? [];
   const genreSet = await fetchYouTubeMusicGenres();
-  const genres = extractGenresFromKeywords(keywords, genreSet);
+  const genres = extractGenresFromKeywords({ keywords, genreSet });
 
   const artist = descriptionMeta.artist || titleMeta.fullArtist || videoDetails?.author || "";
   const albumArtist = descriptionMeta.mainArtist || titleMeta.mainArtist || undefined;
@@ -104,7 +104,10 @@ async function fetchYouTubeMusicGenres() {
   }
 }
 
-function extractGenresFromKeywords(keywords: string[], genreSet: Set<string>) {
+function extractGenresFromKeywords({ keywords, genreSet }: {
+  keywords: string[];
+  genreSet: Set<string>;
+}) {
   const matched = new Set<string>();
   for (const keyword of keywords) {
     const normalized = keyword.toLowerCase().trim();
@@ -165,7 +168,7 @@ export async function generatePoTokenIfNeeded(videoData: VideoData) {
   try {
     const poToken = await generatePoToken(videoData.videoId);
     const { serverAbrStreamingUrl: sabrUrl = "" } = videoData.sabrConfig ?? {};
-    setPoTokenCredentials(poToken, sabrUrl, videoData.videoId);
+    setPoTokenCredentials({ poToken, sabrUrl, videoId: videoData.videoId });
     sabrCredentials.value = {
       url: sabrCredentials.value?.url || sabrUrl,
       poToken
@@ -175,10 +178,10 @@ export async function generatePoTokenIfNeeded(videoData: VideoData) {
   }
 }
 
-export async function buildAndDispatchVideoData(
-  playerResponse: PlayerResponse,
-  cancelActiveDownload: (videoId: string) => void
-) {
+export async function buildAndDispatchVideoData({ playerResponse, cancelActiveDownload }: {
+  playerResponse: PlayerResponse;
+  cancelActiveDownload: (videoId: string) => void;
+}) {
   const { clientVersion, clientName } = readYtcfg();
   const videoData = buildVideoData({ playerResponse, clientVersion, clientName });
 
@@ -204,7 +207,7 @@ export async function buildAndDispatchVideoData(
   if (pendingChunks.length > 0) {
     const capture = capturedMedia.get(captureState.activeVideoId)!;
     for (const pending of pendingChunks) {
-      addChunkToCapture(capture, pending.mimeType, pending.data);
+      addChunkToCapture({ capture, mimeType: pending.mimeType, chunk: pending.data });
     }
 
     console.log(`[ytdl:capture] Flushed ${pendingChunks.length} pending chunks (init segments)`);
@@ -236,7 +239,7 @@ export async function extractAndDispatchVideoData(cancelActiveDownload: (videoId
     const isReady = playerResponse?.videoDetails?.videoId
       && playerResponse.playabilityStatus?.status !== "UNPLAYABLE";
     if (isReady) {
-      await buildAndDispatchVideoData(playerResponse, cancelActiveDownload);
+      await buildAndDispatchVideoData({ playerResponse, cancelActiveDownload });
       return;
     }
 

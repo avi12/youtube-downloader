@@ -3,7 +3,11 @@ import type { VideoMetadata } from "@/types";
 import type { FFmpegCoreModule } from "@ffmpeg/types";
 import { getFileExtension, getCompatibleFilename } from "~/lib/utils/containers";
 
-function matchesMagicBytes(data: Uint8Array, bytes: number[], offset = 0) {
+function matchesMagicBytes({ data, bytes, offset = 0 }: {
+  data: Uint8Array;
+  bytes: number[];
+  offset?: number;
+}) {
   return bytes.every((byte, i) => data[offset + i] === byte);
 }
 
@@ -14,15 +18,16 @@ const webpMagicBytes = [0x57, 0x45, 0x42, 0x50];
 const webpMagicOffset = 8;
 
 function detectImageExtension(data: Uint8Array) {
-  if (matchesMagicBytes(data, jpegMagicBytes)) {
+  if (matchesMagicBytes({ data, bytes: jpegMagicBytes })) {
     return "jpg";
   }
 
-  if (matchesMagicBytes(data, pngMagicBytes)) {
+  if (matchesMagicBytes({ data, bytes: pngMagicBytes })) {
     return "png";
   }
 
-  if (matchesMagicBytes(data, riffMagicBytes) && matchesMagicBytes(data, webpMagicBytes, webpMagicOffset)) {
+  if (matchesMagicBytes({ data, bytes: riffMagicBytes })
+    && matchesMagicBytes({ data, bytes: webpMagicBytes, offset: webpMagicOffset })) {
     return "webp";
   }
 
@@ -55,13 +60,13 @@ async function fetchThumbnail(url: string) {
   }
 }
 
-export async function embedMusicMetadata(
-  audioData: Uint8Array,
-  filenameOutput: string,
-  sourceExtension: string,
-  metadata: VideoMetadata,
-  ffmpeg: FFmpegCoreModule
-) {
+export async function embedMusicMetadata({ audioData, filenameOutput, sourceExtension, metadata, ffmpeg }: {
+  audioData: Uint8Array;
+  filenameOutput: string;
+  sourceExtension: string;
+  metadata: VideoMetadata;
+  ffmpeg: FFmpegCoreModule;
+}) {
   const outputExtension = getFileExtension(filenameOutput) || sourceExtension;
   const inputFilename = `input.${sourceExtension}`;
   const outputFilename = getCompatibleFilename(filenameOutput);
@@ -131,11 +136,11 @@ export async function embedMusicMetadata(
 
     return taggedOutput;
   } finally {
-    tryUnlink(ffmpeg, inputFilename);
-    tryUnlink(ffmpeg, outputFilename);
+    tryUnlink({ ffmpeg, filename: inputFilename });
+    tryUnlink({ ffmpeg, filename: outputFilename });
 
     if (isCoverArtPresent) {
-      tryUnlink(ffmpeg, coverFilename);
+      tryUnlink({ ffmpeg, filename: coverFilename });
     }
   }
 }

@@ -43,7 +43,10 @@
   const extensionType = $derived(downloadType === DownloadType.Audio ? DownloadType.Audio : DownloadType.Video);
   const fullFilename = $derived(`${filename}.${extension}`);
 
-  function getFilenameError(value: string, type: typeof DownloadType.Video | typeof DownloadType.Audio) {
+  function getFilenameError({ value, type }: {
+    value: string;
+    type: typeof DownloadType.Video | typeof DownloadType.Audio;
+  }) {
     const illegalMatch = value.match(/[<>:"/\\|?*]/);
     if (illegalMatch) {
       return `Character "${illegalMatch[0]}" isn't allowed in filenames`;
@@ -67,7 +70,7 @@
     return "";
   }
 
-  const filenameValidationError = $derived(getFilenameError(fullFilename, extensionType));
+  const filenameValidationError = $derived(getFilenameError({ value: fullFilename, type: extensionType }));
   const isFilenameValid = $derived(!filenameValidationError);
 
   $effect(() => {
@@ -115,7 +118,7 @@
   );
 
   function applyPolymerTheme(elTarget: Element) {
-    applyPolymerCustomStyles(elTarget, PAPER_INPUT_THEME);
+    applyPolymerCustomStyles({ element: elTarget, styles: PAPER_INPUT_THEME });
     const elInput = elTarget.querySelector("input");
     if (elInput) {
       elInput.dir = "auto";

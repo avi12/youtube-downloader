@@ -5,7 +5,10 @@ export const tabTracker: Record<number, {
   videoIdsAvailable: string[];
 }> = {};
 
-export function trackVideoForTab(videoId: string, tabId: number) {
+export function trackVideoForTab({ videoId, tabId }: {
+  videoId: string;
+  tabId: number;
+}) {
   videoIdToTabIds[videoId] ??= [];
 
   if (!videoIdToTabIds[videoId].includes(tabId)) {
@@ -19,7 +22,10 @@ export function trackVideoForTab(videoId: string, tabId: number) {
   }
 }
 
-export function untrackVideoForTab(videoId: string, tabId: number) {
+export function untrackVideoForTab({ videoId, tabId }: {
+  videoId: string;
+  tabId: number;
+}) {
   if (!videoIdToTabIds[videoId]) {
     return;
   }

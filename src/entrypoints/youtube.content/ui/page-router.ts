@@ -11,10 +11,10 @@ export function setNativeDownloadVisibility(isVisible: boolean) {
   }
 }
 
-export function handlePageChange(
-  url: string,
-  context: InstanceType<typeof ContentScriptContext>
-) {
+export function handlePageChange({ url, context }: {
+  url: string;
+  context: InstanceType<typeof ContentScriptContext>;
+}) {
   const { pathname } = new URL(url);
 
   cleanupPanelUi();

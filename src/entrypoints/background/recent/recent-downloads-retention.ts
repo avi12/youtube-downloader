@@ -11,7 +11,7 @@ let openPopupCount = 0;
 
 async function prune() {
   const threshold = Date.now() - RETENTION_DURATION_MS;
-  await pruneRecentDownloads(threshold, new Set());
+  await pruneRecentDownloads({ olderThanTimestamp: threshold, protectedIds: new Set() });
 }
 
 export function registerRecentDownloadsRetention() {

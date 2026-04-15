@@ -47,5 +47,5 @@ export function addToPlaylistBundle({
   const zipFilename = getCompatibleFilename(`${bundle.playlistTitle}.zip`);
   playlistBundles.delete(playlistId);
 
-  void triggerDownload(zipped, zipFilename);
+  void triggerDownload({ data: zipped, filenameOutput: zipFilename });
 }

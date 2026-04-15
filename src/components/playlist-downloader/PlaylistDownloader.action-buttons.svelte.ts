@@ -36,17 +36,20 @@ export function createPlaylistActionButtons(state: {
 
     elDeselectAll.setAttribute("data-ytdl-button-id", DESELECT_ALL_BUTTON_ID);
     const isDisabled = state.selectedDownloadableVideos.length === 0 || state.isDownloading;
-    sendButtonData(elDeselectAll, {
-      iconName: IconName.None,
-      title: "Deselect all",
-      accessibilityText: "Deselect all",
-      style: ButtonStyle.Mono,
-      type: ButtonType.Outline,
-      buttonSize: ButtonSize.Default,
-      state: isDisabled ? ButtonState.Disabled : ButtonState.Active,
-      isFullWidth: false,
-      isDisabled,
-      tooltip: "Deselect all"
+    sendButtonData({
+      elButton: elDeselectAll,
+      data: {
+        iconName: IconName.None,
+        title: "Deselect all",
+        accessibilityText: "Deselect all",
+        style: ButtonStyle.Mono,
+        type: ButtonType.Outline,
+        buttonSize: ButtonSize.Default,
+        state: isDisabled ? ButtonState.Disabled : ButtonState.Active,
+        isFullWidth: false,
+        isDisabled,
+        tooltip: "Deselect all"
+      }
     });
   }
 
@@ -57,17 +60,20 @@ export function createPlaylistActionButtons(state: {
 
     elDownload.setAttribute("data-ytdl-button-id", DOWNLOAD_BUTTON_ID);
     const isDisabled = state.selectedDownloadableVideos.length === 0 && !state.isDownloading;
-    sendButtonData(elDownload, {
-      iconName: state.isDownloading ? IconName.Close : IconName.Download,
-      title: state.downloadButtonLabel,
-      accessibilityText: state.downloadButtonLabel,
-      style: ButtonStyle.Mono,
-      type: ButtonType.Tonal,
-      buttonSize: ButtonSize.Default,
-      state: isDisabled ? ButtonState.Disabled : ButtonState.Active,
-      isFullWidth: false,
-      isDisabled,
-      tooltip: state.downloadButtonLabel
+    sendButtonData({
+      elButton: elDownload,
+      data: {
+        iconName: state.isDownloading ? IconName.Close : IconName.Download,
+        title: state.downloadButtonLabel,
+        accessibilityText: state.downloadButtonLabel,
+        style: ButtonStyle.Mono,
+        type: ButtonType.Tonal,
+        buttonSize: ButtonSize.Default,
+        state: isDisabled ? ButtonState.Disabled : ButtonState.Active,
+        isFullWidth: false,
+        isDisabled,
+        tooltip: state.downloadButtonLabel
+      }
     });
   }
 
@@ -85,17 +91,20 @@ export function createPlaylistActionButtons(state: {
       ? "Stop revealing"
       : "Reveal all videos and download";
 
-    sendButtonData(elDownloadAll, {
-      iconName: state.isRevealingAll ? IconName.Close : IconName.PlaylistAdd,
-      title: label,
-      accessibilityText: label,
-      style: ButtonStyle.Mono,
-      type: ButtonType.Outline,
-      buttonSize: ButtonSize.Default,
-      state: isBusy && !state.isRevealingAll ? ButtonState.Disabled : ButtonState.Active,
-      isFullWidth: false,
-      isDisabled: isBusy && !state.isRevealingAll,
-      tooltip
+    sendButtonData({
+      elButton: elDownloadAll,
+      data: {
+        iconName: state.isRevealingAll ? IconName.Close : IconName.PlaylistAdd,
+        title: label,
+        accessibilityText: label,
+        style: ButtonStyle.Mono,
+        type: ButtonType.Outline,
+        buttonSize: ButtonSize.Default,
+        state: isBusy && !state.isRevealingAll ? ButtonState.Disabled : ButtonState.Active,
+        isFullWidth: false,
+        isDisabled: isBusy && !state.isRevealingAll,
+        tooltip
+      }
     });
   }
 

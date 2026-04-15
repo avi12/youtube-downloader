@@ -28,7 +28,7 @@ function registerCrossWorldHandlers(
 
   crossWorldMessenger.onMessage(CrossWorldMessage.Navigation, ({ data }) => {
     if (!isDownloadIframe) {
-      handlePageChange(data.url, context);
+      handlePageChange({ url: data.url, context });
     }
 
     void forwardSabrCredentialsWithRetry();
@@ -97,10 +97,13 @@ function registerBackgroundMessageHandlers() {
     }
 
     if (data.playlistId) {
-      setPlaylistContext(data.videoId, {
-        playlistId: data.playlistId,
-        playlistTitle: data.playlistTitle ?? "Playlist",
-        playlistTotalCount: data.playlistTotalCount ?? 1
+      setPlaylistContext({
+        videoId: data.videoId,
+        context: {
+          playlistId: data.playlistId,
+          playlistTitle: data.playlistTitle ?? "Playlist",
+          playlistTotalCount: data.playlistTotalCount ?? 1
+        }
       });
     }
 
@@ -124,7 +127,7 @@ function registerBackgroundMessageHandlers() {
 
     if (data.isRemoved) {
       downloadProgressStore.delete(data.videoId);
-      emitCrossWorldEvent(CrossWorldEvent.ProgressUpdate, data);
+      emitCrossWorldEvent({ type: CrossWorldEvent.ProgressUpdate, data });
       return;
     }
 
@@ -136,7 +139,7 @@ function registerBackgroundMessageHandlers() {
       progressType: data.progressType
     });
 
-    emitCrossWorldEvent(CrossWorldEvent.ProgressUpdate, data);
+    emitCrossWorldEvent({ type: CrossWorldEvent.ProgressUpdate, data });
   });
 }
 
@@ -185,7 +188,7 @@ export default defineContentScript({
       });
       context.onInvalidated(unwatchOptions);
 
-      handlePageChange(location.href, context);
+      handlePageChange({ url: location.href, context });
     }
   }
 });

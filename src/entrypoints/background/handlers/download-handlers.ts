@@ -23,8 +23,11 @@ function initIframeReadyListener() {
   });
 }
 
-async function downloadViaWatchPage(data: DownloadRequest, tabId: number) {
-  await enqueueToPopupList(data.videoId, data.type, data.filenameOutput);
+async function downloadViaWatchPage({ data, tabId }: {
+  data: DownloadRequest;
+  tabId: number;
+}) {
+  await enqueueToPopupList({ videoId: data.videoId, type: data.type, filenameOutput: data.filenameOutput });
 
   try {
     const watchParams = new URLSearchParams({ v: data.videoId, ytdl: "1", mute: "1" });
@@ -52,7 +55,7 @@ async function downloadViaWatchPage(data: DownloadRequest, tabId: number) {
 
     await sendMessage(MessageType.ExecuteDownloadItem, data, { tabId, frameId: iframeFrameId });
 
-    trackVideoForTab(data.videoId, tabId);
+    trackVideoForTab({ videoId: data.videoId, tabId });
 
     await sendMessage(MessageType.StartKeepalive, { videoId: data.videoId }, tabId);
   } catch (error) {
@@ -66,13 +69,17 @@ async function downloadViaWatchPage(data: DownloadRequest, tabId: number) {
   }
 }
 
-async function dispatchSequentially(items: DownloadRequest[], tabId: number, signal: AbortSignal) {
+async function dispatchSequentially({ items, tabId, signal }: {
+  items: DownloadRequest[];
+  tabId: number;
+  signal: AbortSignal;
+}) {
   for (const item of items) {
     if (signal.aborted) {
       break;
     }
 
-    await downloadViaWatchPage(item, tabId);
+    await downloadViaWatchPage({ data: item, tabId });
     await awaitVideoComplete(item.videoId);
     await sendMessage(MessageType.RemoveDownloadIframe, { videoId: item.videoId }, tabId);
   }
@@ -128,7 +135,7 @@ export function registerDownloadHandlers() {
       return;
     }
 
-    void downloadViaWatchPage(data, originTabId);
+    void downloadViaWatchPage({ data, tabId: originTabId });
   });
 
   onMessage(MessageType.Keepalive, () => {});
@@ -143,14 +150,14 @@ export function registerDownloadHandlers() {
     currentSequenceAbort = null;
 
     for (const item of data.items) {
-      await enqueueToPopupList(item.videoId, item.type, item.filenameOutput);
+      await enqueueToPopupList({ videoId: item.videoId, type: item.type, filenameOutput: item.filenameOutput });
     }
 
     if (data.isSequential) {
       currentSequenceAbort = new AbortController();
-      void dispatchSequentially(data.items, tabId, currentSequenceAbort.signal);
+      void dispatchSequentially({ items: data.items, tabId, signal: currentSequenceAbort.signal });
     } else {
-      void Promise.allSettled(data.items.map(item => downloadViaWatchPage(item, tabId)));
+      void Promise.allSettled(data.items.map(item => downloadViaWatchPage({ data: item, tabId })));
     }
   });
 
@@ -172,8 +179,8 @@ export function registerDownloadHandlers() {
 
   onMessage(MessageType.StartBackgroundDownload, async ({ data, sender }) => {
     const tabId = sender.tab?.id ?? -1;
-    trackVideoForTab(data.videoId, tabId);
-    void startBackgroundDownload(data, tabId);
+    trackVideoForTab({ videoId: data.videoId, tabId });
+    void startBackgroundDownload({ request: data, tabId });
     await sendMessage(MessageType.StartKeepalive, { videoId: data.videoId }, tabId);
   });
 }

@@ -3,7 +3,10 @@ import type { TpYtIronDropdownElement } from "@/types";
 
 const gridDropdowns = new Map<string, TpYtIronDropdownElement>();
 
-function createGridDropdown(contentId: string, positionTargetSelector: string) {
+function createGridDropdown({ contentId, positionTargetSelector }: {
+  contentId: string;
+  positionTargetSelector: string;
+}) {
   const elPositionTarget = document.querySelector(positionTargetSelector);
   if (!elPositionTarget) {
     return;
@@ -94,7 +97,7 @@ function handleDropdownFocusOut(e: FocusEvent) {
 
 export function registerGridDropdownHandlers() {
   crossWorldMessenger.onMessage(CrossWorldMessage.CreateDropdown, ({ data }) => {
-    createGridDropdown(data.contentId, data.positionTargetSelector);
+    createGridDropdown({ contentId: data.contentId, positionTargetSelector: data.positionTargetSelector });
   });
   crossWorldMessenger.onMessage(CrossWorldMessage.CloseDropdown, ({ data }) => {
     closeGridDropdown(data.videoId);

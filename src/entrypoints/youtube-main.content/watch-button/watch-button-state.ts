@@ -21,7 +21,7 @@ export function buildInitialDownloadState(videoData: VideoData): DownloadButtonS
   if (videoData.isMusic) {
     extension = /webm/.test(audioMime) ? "webm" : "m4a";
   } else {
-    extension = getOutputExtension(videoMime, audioMime, "mp4");
+    extension = getOutputExtension({ videoMimeType: videoMime, audioMimeType: audioMime, userExtension: "mp4" });
   }
 
   const filename = getCompatibleFilename(`${videoData.title}.${extension}`);

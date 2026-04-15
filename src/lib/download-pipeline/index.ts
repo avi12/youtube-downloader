@@ -23,16 +23,16 @@ export function toUint8Array(data: Uint8Array | Record<string, number> | null) {
 const blobUrlsPendingRevocation = new Map<string, Blob>();
 const BlobRevocationDelayMs = 60_000;
 
-export async function triggerDownload(
-  data: Uint8Array,
-  filenameOutput: string,
+export async function triggerDownload({ data, filenameOutput, recentContext }: {
+  data: Uint8Array;
+  filenameOutput: string;
   recentContext?: {
     videoId: string;
     title: string;
     channel: string;
     thumbnailUrl?: string;
-  }
-) {
+  };
+}) {
   const mimeType = getMimeType(filenameOutput) || "application/octet-stream";
   const filename = getCompatibleFilename(filenameOutput);
   const blob = new Blob([new Uint8Array(data)], { type: mimeType });
@@ -87,11 +87,17 @@ export async function reportProgress({
   await sendMessage(MessageType.PipelineProgress, { videoId, progress, progressType, tabId });
 }
 
-async function reportRemoval(videoId: string, tabId: number) {
+async function reportRemoval({ videoId, tabId }: {
+  videoId: string;
+  tabId: number;
+}) {
   await sendMessage(MessageType.PipelineRemoval, { videoId, tabId });
 }
 
-async function removeFromStorageQueue(videoId: string, type: DownloadType) {
+async function removeFromStorageQueue({ videoId, type }: {
+  videoId: string;
+  type: DownloadType;
+}) {
   await sendMessage(MessageType.PipelineQueueRemove, { videoId, type });
 }
 
@@ -120,10 +126,10 @@ async function processItem(item: ProcessStreamData) {
     }
   } catch (error) {
     console.error("[ytdl:pipeline] Mux/download failed:", item.videoId, error);
-    await reportRemoval(item.videoId, item.tabId);
+    await reportRemoval({ videoId: item.videoId, tabId: item.tabId });
   } finally {
     activeJobs.delete(item.videoId);
-    await removeFromStorageQueue(item.videoId, item.type);
+    await removeFromStorageQueue({ videoId: item.videoId, type: item.type });
   }
 }
 
@@ -144,7 +150,7 @@ export async function cancelDownloadsByIds(videoIds: string[]) {
       }
 
       activeJobs.delete(videoId);
-      await reportRemoval(videoId, activeJob.tabId);
+      await reportRemoval({ videoId, tabId: activeJob.tabId });
     })
   );
 }

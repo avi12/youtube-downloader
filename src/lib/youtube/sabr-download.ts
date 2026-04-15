@@ -23,15 +23,18 @@ function adaptiveFormatToSabrFormat(format: AdaptiveFormatItem) {
   });
 }
 
-function collectReadableStream(stream: ReadableStream<Uint8Array>, expectedBytes: number) {
-  return readStreamToBuffer(stream.getReader(), expectedBytes);
+function collectReadableStream({ stream, expectedBytes }: {
+  stream: ReadableStream<Uint8Array>;
+  expectedBytes: number;
+}) {
+  return readStreamToBuffer({ reader: stream.getReader(), expectedBytes });
 }
 
-function createSabrStream(
-  sabrConfig: SabrConfig,
-  fetchFn: typeof globalThis.fetch,
-  poToken: string
-) {
+function createSabrStream({ sabrConfig, fetchFn, poToken }: {
+  sabrConfig: SabrConfig;
+  fetchFn: typeof globalThis.fetch;
+  poToken: string;
+}) {
   const sabrFormats = sabrConfig.formats.map(adaptiveFormatToSabrFormat);
   const durationMs = parseInt(sabrConfig.formats[0]?.approxDurationMs ?? "0", 10);
 
@@ -49,26 +52,26 @@ function createSabrStream(
   });
 }
 
-export async function fetchVideoViaSabrStream(
-  sabrConfig: SabrConfig,
-  videoFormat: AdaptiveFormatItem,
-  fetchFn: typeof globalThis.fetch,
-  poToken: string
-) {
-  const sabrStream = createSabrStream(sabrConfig, fetchFn, poToken);
+export async function fetchVideoViaSabrStream({ sabrConfig, videoFormat, fetchFn, poToken }: {
+  sabrConfig: SabrConfig;
+  videoFormat: AdaptiveFormatItem;
+  fetchFn: typeof globalThis.fetch;
+  poToken: string;
+}) {
+  const sabrStream = createSabrStream({ sabrConfig, fetchFn, poToken });
   const targetFormat = adaptiveFormatToSabrFormat(videoFormat);
   const { videoStream } = await sabrStream.start({ videoFormat: targetFormat });
-  return collectReadableStream(videoStream, parseInt(videoFormat.contentLength, 10));
+  return collectReadableStream({ stream: videoStream, expectedBytes: parseInt(videoFormat.contentLength, 10) });
 }
 
-export async function fetchAudioViaSabrStream(
-  sabrConfig: SabrConfig,
-  audioFormat: AdaptiveFormatItem,
-  fetchFn: typeof globalThis.fetch,
-  poToken: string
-) {
-  const sabrStream = createSabrStream(sabrConfig, fetchFn, poToken);
+export async function fetchAudioViaSabrStream({ sabrConfig, audioFormat, fetchFn, poToken }: {
+  sabrConfig: SabrConfig;
+  audioFormat: AdaptiveFormatItem;
+  fetchFn: typeof globalThis.fetch;
+  poToken: string;
+}) {
+  const sabrStream = createSabrStream({ sabrConfig, fetchFn, poToken });
   const targetFormat = adaptiveFormatToSabrFormat(audioFormat);
   const { audioStream } = await sabrStream.start({ audioFormat: targetFormat });
-  return collectReadableStream(audioStream, parseInt(audioFormat.contentLength, 10));
+  return collectReadableStream({ stream: audioStream, expectedBytes: parseInt(audioFormat.contentLength, 10) });
 }

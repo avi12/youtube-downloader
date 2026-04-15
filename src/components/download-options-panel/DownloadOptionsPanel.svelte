@@ -59,7 +59,12 @@
   }
 
   function attachDownloadBtn(elButton: Element) {
-    attachDownloadButton(elButton, () => panel.isDownloadable, () => panel.isFilenameValid, () => panel.isDone);
+    attachDownloadButton({
+      elButton,
+      getIsDownloadable: () => panel.isDownloadable,
+      getIsFilenameValid: () => panel.isFilenameValid,
+      getIsDone: () => panel.isDone
+    });
   }
 </script>
 

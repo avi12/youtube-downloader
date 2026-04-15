@@ -47,7 +47,10 @@ function findSignatureFunctionName(playerSource: string) {
   return null;
 }
 
-function extractTransformOperations(playerSource: string, functionName: string) {
+function extractTransformOperations({ playerSource, functionName }: {
+  playerSource: string;
+  functionName: string;
+}) {
   const escapedName = escapeRegExp(functionName);
   const functionPattern = new RegExp(`(?:var\\s+${escapedName}|${escapedName}\\s*=\\s*function)\\s*=?\\s*function\\s*\\(([a-zA-Z])\\)\\s*\\{([^}]+)\\}`);
   const functionMatch = playerSource.match(functionPattern);
@@ -114,7 +117,10 @@ function extractTransformOperations(playerSource: string, functionName: string) 
   return operations.length > 0 ? operations : null;
 }
 
-function applyTransforms(signature: string, operations: TransformOp[]) {
+function applyTransforms({ signature, operations }: {
+  signature: string;
+  operations: TransformOp[];
+}) {
   const characters = signature.split("");
 
   for (const operation of operations) {
@@ -178,7 +184,7 @@ async function initDecryptor() {
     throw new Error("Could not find signature function name in player.js");
   }
 
-  const operations = extractTransformOperations(playerSource, functionName);
+  const operations = extractTransformOperations({ playerSource, functionName });
   if (!operations) {
     throw new Error("Could not extract transform operations from player.js");
   }
@@ -200,7 +206,7 @@ export async function decryptSignatureCipher(signatureCipher: string) {
   }
 
   const { operations } = await initDecryptor();
-  const decryptedSig = applyTransforms(decodeURIComponent(encryptedSig), operations);
+  const decryptedSig = applyTransforms({ signature: decodeURIComponent(encryptedSig), operations });
   const resultUrl = new URL(decodeURIComponent(url));
   resultUrl.searchParams.set(sigParam, decryptedSig);
   return resultUrl.href;

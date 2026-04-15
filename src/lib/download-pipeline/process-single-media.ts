@@ -51,7 +51,9 @@ export async function processSingleMedia(item: ProcessStreamData) {
     try {
       await enqueueMuxJob(async () => {
         const ffmpeg = getFFmpeg();
-        data = await embedMusicMetadata(data!, filenameOutput, sourceExtension, item.metadata!, ffmpeg);
+        data = await embedMusicMetadata({
+          audioData: data!, filenameOutput, sourceExtension, metadata: item.metadata!, ffmpeg
+        });
       });
     } finally {
       progressHandlers.delete(handleFfmpegProgress);
@@ -64,7 +66,7 @@ export async function processSingleMedia(item: ProcessStreamData) {
     try {
       await enqueueMuxJob(async () => {
         const ffmpeg = getFFmpeg();
-        data = await transcodeAudio(data!, sourceExtension, filenameOutput, ffmpeg);
+        data = await transcodeAudio({ audioData: data!, sourceExtension, filenameOutput, ffmpeg });
       });
     } finally {
       progressHandlers.delete(handleFfmpegProgress);
@@ -84,11 +86,15 @@ export async function processSingleMedia(item: ProcessStreamData) {
     return;
   }
 
-  await triggerDownload(data, filenameOutput, {
-    videoId,
-    title: item.metadata?.title ?? filenameOutput,
-    channel: item.metadata?.artist ?? "",
-    thumbnailUrl: item.metadata?.thumbnailUrl
+  await triggerDownload({
+    data,
+    filenameOutput,
+    recentContext: {
+      videoId,
+      title: item.metadata?.title ?? filenameOutput,
+      channel: item.metadata?.artist ?? "",
+      thumbnailUrl: item.metadata?.thumbnailUrl
+    }
   });
   await reportProgress({ videoId, progress: 1, progressType: ProgressType.FFmpeg, tabId });
 }

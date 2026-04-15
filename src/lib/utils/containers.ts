@@ -55,9 +55,11 @@ export const supportedExtensions = {
   audio: [AUTO_EXTENSION, ...audioContainers]
 };
 
-export function resolveAutoExtension(
-  extension: string, mimeType: string, type: typeof DownloadType.Video | typeof DownloadType.Audio
-) {
+export function resolveAutoExtension({ extension, mimeType, type }: {
+  extension: string;
+  mimeType: string;
+  type: typeof DownloadType.Video | typeof DownloadType.Audio;
+}) {
   if (extension !== AUTO_EXTENSION) {
     return extension;
   }
@@ -89,11 +91,11 @@ export function getMimeType(filename: string) {
 }
 
 // Mixing WebM and MP4 codecs forces MKV as the output container.
-export function getOutputExtension(
-  videoMimeType: string,
-  audioMimeType: string,
-  userExtension: string
-) {
+export function getOutputExtension({ videoMimeType, audioMimeType, userExtension }: {
+  videoMimeType: string;
+  audioMimeType: string;
+  userExtension: string;
+}) {
   const isVideoWebm = /webm/.test(videoMimeType);
   const isAudioWebm = /webm/.test(audioMimeType);
   if (isVideoWebm && isAudioWebm) {
@@ -107,18 +109,24 @@ export function getOutputExtension(
   return "mkv";
 }
 
-export function resolveVideoFilename(videoData: VideoData, options: Options, titleOverride?: string) {
+export function resolveVideoFilename({ videoData, options, titleOverride }: {
+  videoData: VideoData;
+  options: Options;
+  titleOverride?: string;
+}) {
   const videoFormat = videoData.videoFormats[0] ?? null;
   const audioFormat = videoData.audioFormats[0] ?? null;
   const extPref = videoData.isMusic ? options.ext.audio : options.ext.video;
   const defaultFormat = videoData.isMusic ? audioFormat : videoFormat;
-  const resolvedExtension = resolveAutoExtension(
-    extPref,
-    defaultFormat?.mimeType ?? "",
-    videoData.isMusic ? DownloadType.Audio : DownloadType.Video
-  );
+  const resolvedExtension = resolveAutoExtension({
+    extension: extPref,
+    mimeType: defaultFormat?.mimeType ?? "",
+    type: videoData.isMusic ? DownloadType.Audio : DownloadType.Video
+  });
   const outputExtension = videoFormat && audioFormat && !videoData.isMusic
-    ? getOutputExtension(videoFormat.mimeType, audioFormat.mimeType, resolvedExtension)
+    ? getOutputExtension({
+      videoMimeType: videoFormat.mimeType, audioMimeType: audioFormat.mimeType, userExtension: resolvedExtension
+    })
     : resolvedExtension;
   const title = titleOverride ?? videoData.title;
   return getCompatibleFilename(`${title}.${outputExtension}`);

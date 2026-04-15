@@ -68,10 +68,10 @@ export async function injectSegmentedDownloadButton(
   }
 
   const { elGroup, elDownloadButton, elChevronButton, elProgressBar } =
-    createButtonGroup(elActionsContainer, elNativeDownload, scopingClass);
+    createButtonGroup({ elActionsContainer, elNativeDownload, scopingClass });
 
   const { elDropdown, elDropdownContentSlot, panelContentId } =
-    createDropdownElement(videoId, elGroup);
+    createDropdownElement({ videoId, elGroup });
 
   // Must not await: sendMessage waits for a response that never comes for void handlers,
   // blocking the rest of button setup.
@@ -265,10 +265,10 @@ export async function injectSegmentedDownloadButton(
   });
   resizeObserver.observe(elDropdownContentSlot);
 
-  const unsubscribeProgress = onCrossWorldEvent(
-    CrossWorldEvent.ProgressUpdate,
-    data => handleProgress({ data })
-  );
+  const unsubscribeProgress = onCrossWorldEvent({
+    type: CrossWorldEvent.ProgressUpdate,
+    handler: data => handleProgress({ data })
+  });
 
   const unsubscribeDownloadProgress = crossWorldMessenger.onMessage(
     CrossWorldMessage.DownloadProgress,

@@ -159,7 +159,10 @@ function injectPlaylistVideoItemUi({ context, elVideoItem }: {
 
 const PLAYLIST_VIDEO_TAG = "ytd-playlist-video-renderer";
 
-function injectIntoSubtree(root: Element, context: InstanceType<typeof ContentScriptContext>) {
+function injectIntoSubtree({ root, context }: {
+  root: Element;
+  context: InstanceType<typeof ContentScriptContext>;
+}) {
   if (root.tagName.toLowerCase() === PLAYLIST_VIDEO_TAG) {
     injectPlaylistVideoItemUi({ context, elVideoItem: root });
   }
@@ -175,13 +178,13 @@ export function handlePlaylistVideoAdditions(context: InstanceType<typeof Conten
     return;
   }
 
-  injectIntoSubtree(elContents, context);
+  injectIntoSubtree({ root: elContents, context });
 
   const mutationObserver = new MutationObserver(mutations => {
     for (const mutation of mutations) {
       for (const node of mutation.addedNodes) {
         if (node instanceof Element) {
-          injectIntoSubtree(node, context);
+          injectIntoSubtree({ root: node, context });
         }
       }
     }

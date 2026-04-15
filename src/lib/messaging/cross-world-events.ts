@@ -22,17 +22,17 @@ interface CrossWorldEventMap {
   [CrossWorldEvent.ProgressUpdate]: ProgressUpdate;
 }
 
-export function emitCrossWorldEvent<T extends CrossWorldEvent>(
-  type: T,
-  data: CrossWorldEventMap[T]
-) {
+export function emitCrossWorldEvent<T extends CrossWorldEvent>({ type, data }: {
+  type: T;
+  data: CrossWorldEventMap[T];
+}) {
   dispatchEvent(new CustomEvent(`${EVENT_PREFIX}:${type}`, { detail: data }));
 }
 
-export function onCrossWorldEvent<T extends CrossWorldEvent>(
-  type: T,
-  handler: (data: CrossWorldEventMap[T]) => void
-) {
+export function onCrossWorldEvent<T extends CrossWorldEvent>({ type, handler }: {
+  type: T;
+  handler: (data: CrossWorldEventMap[T]) => void;
+}) {
   const eventName = `${EVENT_PREFIX}:${type}`;
   function listener(e: Event) {
     if (e instanceof CustomEvent) {

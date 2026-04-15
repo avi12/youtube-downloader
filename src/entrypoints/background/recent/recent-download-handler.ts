@@ -5,8 +5,8 @@ import type { RecentDownloadEntry } from "@/types";
 // Maps videoId to the browser download ID so users can discard a completed file.
 const completedDownloadIds = new Map<string, number>();
 
-function persistOnDownloadComplete(
-  targetDownloadId: number,
+function persistOnDownloadComplete({ targetDownloadId, data }: {
+  targetDownloadId: number;
   data: {
     blobUrl: string;
     mimeType: string;
@@ -17,8 +17,8 @@ function persistOnDownloadComplete(
       channel: string;
       thumbnailUrl?: string;
     };
-  }
-) {
+  };
+}) {
   return new Promise<void>(resolve => {
     function handleChanged(delta: {
       id: number;
@@ -32,7 +32,7 @@ function persistOnDownloadComplete(
 
       if (delta.state.current === "complete") {
         browser.downloads.onChanged.removeListener(handleChanged);
-        void persistRecentDownload(targetDownloadId, data).finally(resolve);
+        void persistRecentDownload({ downloadId: targetDownloadId, data }).finally(resolve);
         return;
       }
 
@@ -46,10 +46,10 @@ function persistOnDownloadComplete(
   });
 }
 
-async function persistRecentDownload(
-  downloadId: number,
-  data: Parameters<typeof persistOnDownloadComplete>[1]
-) {
+async function persistRecentDownload({ downloadId, data }: {
+  downloadId: number;
+  data: Parameters<typeof persistOnDownloadComplete>[0]["data"];
+}) {
   const context = data.recentContext;
   if (!context) {
     return;
@@ -71,7 +71,7 @@ async function persistRecentDownload(
       thumbnailUrl: context.thumbnailUrl,
       completedAt: Date.now()
     };
-    await addRecentDownload(entry, blob);
+    await addRecentDownload({ entry, blob });
     try {
       await sendMessage(MessageType.RecentDownloadsChanged, {});
     } catch {
@@ -98,7 +98,7 @@ export function registerRecentDownloadHandlers() {
     }
 
     if (data.recentContext) {
-      void persistOnDownloadComplete(targetDownloadId, data);
+      void persistOnDownloadComplete({ targetDownloadId, data });
     }
   });
 

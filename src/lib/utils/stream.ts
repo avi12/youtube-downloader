@@ -1,11 +1,11 @@
 const STREAM_STALL_TIMEOUT_MS = 30_000;
 const STALL_CHECK_INTERVAL_MS = 1_000;
 
-export async function readStreamToBuffer(
-  reader: ReadableStreamDefaultReader<Uint8Array>,
-  expectedBytes: number,
-  onBytesReceived?: (bytes: number) => void
-) {
+export async function readStreamToBuffer({ reader, expectedBytes, onBytesReceived }: {
+  reader: ReadableStreamDefaultReader<Uint8Array>;
+  expectedBytes: number;
+  onBytesReceived?: (bytes: number) => void;
+}) {
   let lastActivityAt = Date.now();
   let isStalled = false;
   const stallChecker = setInterval(() => {

@@ -47,7 +47,10 @@ const playlistContextByVideoId = new Map<string, {
   playlistTotalCount: number;
 }>();
 
-export function setPlaylistContext(videoId: string, context: Parameters<typeof playlistContextByVideoId.set>[1]) {
+export function setPlaylistContext({ videoId, context }: {
+  videoId: string;
+  context: Parameters<typeof playlistContextByVideoId.set>[1];
+}) {
   playlistContextByVideoId.set(videoId, context);
 }
 

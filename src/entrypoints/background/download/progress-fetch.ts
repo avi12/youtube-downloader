@@ -5,12 +5,12 @@ import { ProgressType } from "@/types";
 const progressThrottleIntervalMs = 5000;
 const lastProgressTimestamps = new Map<string, number>();
 
-export async function sendProgressUpdate(
-  videoId: string,
-  progress: number,
-  progressType: ProgressType,
-  tabId: number
-) {
+export async function sendProgressUpdate({ videoId, progress, progressType, tabId }: {
+  videoId: string;
+  progress: number;
+  progressType: ProgressType;
+  tabId: number;
+}) {
   const isComplete = progress >= 1;
   if (!isComplete) {
     const now = Date.now();
@@ -27,10 +27,10 @@ export async function sendProgressUpdate(
   await sendMessage(MessageType.UpdateDownloadProgress, { videoId, progress, progressType }, tabId);
 }
 
-export function createProgressFetch(
-  signal: AbortSignal,
-  onBytesReceived: (bytes: number) => void
-) {
+export function createProgressFetch({ signal, onBytesReceived }: {
+  signal: AbortSignal;
+  onBytesReceived: (bytes: number) => void;
+}) {
   return async (input: RequestInfo | URL, init?: RequestInit) => {
     const response = await fetch(input, { ...init, signal, credentials: "include" });
     if (!response.body) {
@@ -40,16 +40,18 @@ export function createProgressFetch(
     }
 
     const contentLength = parseInt(response.headers.get("Content-Length") ?? "0", 10);
-    const data = await readStreamToBuffer(response.body.getReader(), contentLength, onBytesReceived);
+    const data = await readStreamToBuffer({
+      reader: response.body.getReader(), expectedBytes: contentLength, onBytesReceived
+    });
     return new Response(data, { status: response.status, headers: response.headers });
   };
 }
 
-export async function fetchWithProgress(
-  url: string,
-  signal: AbortSignal,
-  onBytesReceived: (bytes: number) => void
-) {
+export async function fetchWithProgress({ url, signal, onBytesReceived }: {
+  url: string;
+  signal: AbortSignal;
+  onBytesReceived: (bytes: number) => void;
+}) {
   const response = await fetch(url, { signal, credentials: "include" });
   if (!response.ok) {
     throw new Error(`HTTP ${response.status} fetching stream`);
@@ -62,5 +64,5 @@ export async function fetchWithProgress(
   }
 
   const contentLength = parseInt(response.headers.get("Content-Length") ?? "0", 10);
-  return readStreamToBuffer(response.body.getReader(), contentLength, onBytesReceived);
+  return readStreamToBuffer({ reader: response.body.getReader(), expectedBytes: contentLength, onBytesReceived });
 }

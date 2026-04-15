@@ -95,7 +95,11 @@ export function formatAudioCodecLabel(mimeType: string) {
 const DOWNLOAD_PHASE_WEIGHT = 70;
 const MUX_PHASE_WEIGHT = 30;
 
-export function calculateWeightedProgress(isDownloading: boolean, progress: number, progressType: ProgressType | "") {
+export function calculateWeightedProgress({ isDownloading, progress, progressType }: {
+  isDownloading: boolean;
+  progress: number;
+  progressType: ProgressType | "";
+}) {
   if (!isDownloading) {
     return 0;
   }

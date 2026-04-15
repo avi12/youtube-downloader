@@ -15,10 +15,10 @@ export function cancelActiveDownload(videoId: string) {
   }
 }
 
-function getExtraAudioFormats(
-  audioFormats: AdaptiveFormatItem[],
-  selectedTrackId: string | undefined
-) {
+function getExtraAudioFormats({ audioFormats, selectedTrackId }: {
+  audioFormats: AdaptiveFormatItem[];
+  selectedTrackId: string | undefined;
+}) {
   if (!selectedTrackId) {
     return [];
   }
@@ -60,7 +60,7 @@ function resolveCredentials() {
   }
 
   if (currentPoToken !== capturedPoToken || currentSabrUrl !== capturedSabrUrl) {
-    setPoTokenCredentials(currentPoToken, currentSabrUrl);
+    setPoTokenCredentials({ poToken: currentPoToken, sabrUrl: currentSabrUrl });
   }
 
   return { poToken: currentPoToken, sabrUrl: currentSabrUrl };
@@ -87,15 +87,15 @@ async function resolveCredentialsWithRetry() {
   return resolveCredentials();
 }
 
-function selectFormats(
+function selectFormats({ videoData, type, videoItag, audioItag }: {
   videoData: {
     videoFormats: AdaptiveFormatItem[];
     audioFormats: AdaptiveFormatItem[];
-  },
-  type: DownloadType,
-  videoItag: number | undefined,
-  audioItag: number | undefined
-) {
+  };
+  type: DownloadType;
+  videoItag: number | undefined;
+  audioItag: number | undefined;
+}) {
   const videoFormat = type !== DownloadType.Audio
     ? (videoData.videoFormats.find(format => format.itag === videoItag) ?? videoData.videoFormats[0])
     : null;
@@ -106,12 +106,12 @@ function selectFormats(
   return { videoFormat, audioFormat };
 }
 
-async function preResolveCdnUrls(
-  type: DownloadType,
-  videoFormat: AdaptiveFormatItem | null,
-  audioFormat: AdaptiveFormatItem | null,
-  extraAudioFormats: AdaptiveFormatItem[]
-) {
+async function preResolveCdnUrls({ type, videoFormat, audioFormat, extraAudioFormats }: {
+  type: DownloadType;
+  videoFormat: AdaptiveFormatItem | null;
+  audioFormat: AdaptiveFormatItem | null;
+  extraAudioFormats: AdaptiveFormatItem[];
+}) {
   return Promise.all([
     type !== DownloadType.Audio ? resolveFormatUrl(videoFormat) : Promise.resolve(null),
     type !== DownloadType.Video ? resolveFormatUrl(audioFormat) : Promise.resolve(null),
@@ -145,15 +145,17 @@ export async function performDownload({
       return;
     }
 
-    const { videoFormat, audioFormat } = selectFormats(cachedVideoData, type, videoItag, audioItag);
-    const extraAudioFormats = getExtraAudioFormats(cachedVideoData.audioFormats, audioFormat?.audioTrack?.id);
+    const { videoFormat, audioFormat } = selectFormats({ videoData: cachedVideoData, type, videoItag, audioItag });
+    const extraAudioFormats = getExtraAudioFormats({
+      audioFormats: cachedVideoData.audioFormats, selectedTrackId: audioFormat?.audioTrack?.id
+    });
     // BotGuard's synchronous VM briefly blocks the main thread,
     // so do it at click-time (expected latency) rather than download completion.
     await generatePoTokenIfNeeded(cachedVideoData);
     const credentials = await resolveCredentialsWithRetry();
 
     const [resolvedVideoUrl, resolvedAudioUrl, ...resolvedExtraAudioUrls] =
-      await preResolveCdnUrls(type, videoFormat, audioFormat, extraAudioFormats);
+      await preResolveCdnUrls({ type, videoFormat, audioFormat, extraAudioFormats });
     const metadata = await buildVideoMetadata(videoId);
 
     const enrichedRequest: DownloadRequest = {

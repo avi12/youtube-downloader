@@ -13,12 +13,15 @@ interface ChallengeResponse {
 }
 
 export async function generatePoToken(videoId: string) {
-  function getYtcfgValue(key: string, fallback: string) {
+  function getYtcfgValue({ key, fallback }: {
+    key: string;
+    fallback: string;
+  }) {
     return typeof ytcfg !== "undefined" ? String(ytcfg.get(key) ?? fallback) : fallback;
   }
 
-  const clientVersion = getYtcfgValue("INNERTUBE_CLIENT_VERSION", "2.20260401.01.00");
-  const requestKey = getYtcfgValue("BOTGUARD_EXPERIMENT_ID", "O43z0dpjhgX20SCx4KAo");
+  const clientVersion = getYtcfgValue({ key: "INNERTUBE_CLIENT_VERSION", fallback: "2.20260401.01.00" });
+  const requestKey = getYtcfgValue({ key: "BOTGUARD_EXPERIMENT_ID", fallback: "O43z0dpjhgX20SCx4KAo" });
   // INNERTUBE_API_KEY from ytcfg doesn't have Web Anti-Abuse API enabled;
   // this hardcoded YouTube web key is what YouTube's own BotGuard uses.
   const waaApiKey = "AIzaSyDyT5W0Jh49F30Pqqtyfdf7pDLFKLJoAnw";

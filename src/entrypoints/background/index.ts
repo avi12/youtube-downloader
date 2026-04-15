@@ -58,7 +58,7 @@ function registerChunkHandlers() {
       return;
     }
 
-    trackVideoForTab(data.videoId, tabId);
+    trackVideoForTab({ videoId: data.videoId, tabId });
     await ensureProcessor();
     sendToOffscreen(OffscreenMessageType.ProcessStreamEnd, { ...data, tabId });
   });
@@ -67,7 +67,7 @@ function registerChunkHandlers() {
 function registerStorageHandlers() {
   onMessage(MessageType.GetCapturedSabrBody, ({ sender }) => {
     const tabId = sender.tab?.id;
-    if (!tabId) {
+    if (typeof tabId !== "number") {
       return null;
     }
 
@@ -117,7 +117,7 @@ function registerTabLifecycleHandlers() {
     clearCapturedSabrData(tabId);
 
     for (const videoId of tabState.videoIdsAvailable) {
-      untrackVideoForTab(videoId, tabId);
+      untrackVideoForTab({ videoId, tabId });
     }
   });
 
@@ -132,7 +132,7 @@ function registerTabLifecycleHandlers() {
     }
 
     for (const videoId of tabState.videoIdsAvailable) {
-      untrackVideoForTab(videoId, tabId);
+      untrackVideoForTab({ videoId, tabId });
     }
 
     clearCapturedSabrData(tabId);

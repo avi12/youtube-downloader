@@ -29,7 +29,7 @@ addEventListener("online", () => {
   const retries = [...pendingNetworkRetries.values()];
   pendingNetworkRetries.clear();
   for (const { request, tabId } of retries) {
-    void startBackgroundDownload(request, tabId);
+    void startBackgroundDownload({ request, tabId });
   }
 });
 
@@ -60,12 +60,12 @@ async function clearInterruptedDownload(videoId: string) {
 const TRANSFER_CHUNK_SIZE = 1024 * 1024;
 const yieldEveryNChunks = 32;
 
-async function sendStreamChunksToOffscreen(
-  videoId: string,
-  streamType: string,
-  data: Uint8Array,
-  tabId: number
-) {
+async function sendStreamChunksToOffscreen({ videoId, streamType, data, tabId }: {
+  videoId: string;
+  streamType: string;
+  data: Uint8Array;
+  tabId: number;
+}) {
   const totalChunks = Math.ceil(data.byteLength / TRANSFER_CHUNK_SIZE);
 
   for (let iChunk = 0; iChunk < totalChunks; iChunk++) {
@@ -86,28 +86,40 @@ async function sendStreamChunksToOffscreen(
   }
 }
 
-async function dispatchToOffscreen(
-  request: DownloadRequest,
-  result: DownloadResult,
-  enrichedMetadata: VideoMetadata | null | undefined,
-  tabId: number
-) {
+async function dispatchToOffscreen({ request, result, enrichedMetadata, tabId }: {
+  request: DownloadRequest;
+  result: DownloadResult;
+  enrichedMetadata: VideoMetadata | null | undefined;
+  tabId: number;
+}) {
   await ensureProcessor();
 
   const resolvedVideoMimeType = request.videoFormat?.mimeType.split(";")[0] ?? "video/mp4";
   const resolvedAudioMimeType = request.audioFormat?.mimeType.split(";")[0] ?? "audio/mp4";
   const transferJobs: Promise<void>[] = [];
   if (result.videoData) {
-    transferJobs.push(sendStreamChunksToOffscreen(request.videoId, StreamType.Video, result.videoData, tabId));
+    transferJobs.push(
+      sendStreamChunksToOffscreen({
+        videoId: request.videoId, streamType: StreamType.Video, data: result.videoData, tabId
+      })
+    );
   }
 
   if (result.audioData) {
-    transferJobs.push(sendStreamChunksToOffscreen(request.videoId, StreamType.Audio, result.audioData, tabId));
+    transferJobs.push(
+      sendStreamChunksToOffscreen({
+        videoId: request.videoId, streamType: StreamType.Audio, data: result.audioData, tabId
+      })
+    );
   }
 
   for (const [i, track] of result.additionalAudioTracks.entries()) {
     if (track.data) {
-      transferJobs.push(sendStreamChunksToOffscreen(request.videoId, `audio-extra-${i}`, track.data, tabId));
+      transferJobs.push(
+        sendStreamChunksToOffscreen({
+          videoId: request.videoId, streamType: `audio-extra-${i}`, data: track.data, tabId
+        })
+      );
     }
   }
 
@@ -143,16 +155,22 @@ async function enrichMetadataFromYouTubeMusic(metadata: VideoMetadata | null | u
     return metadata;
   }
 
-  return fetchYouTubeMusicMetadata(searchQuery, metadata);
+  return fetchYouTubeMusicMetadata({ searchQuery, existingMetadata: metadata });
 }
 
-function reportDownloadRemoved(videoId: string, tabId: number) {
+function reportDownloadRemoved({ videoId, tabId }: {
+  videoId: string;
+  tabId: number;
+}) {
   void sendMessage(MessageType.UpdateDownloadProgress, {
     videoId, progress: 0, progressType: ProgressType.Video, isRemoved: true
   }, tabId);
 }
 
-function queueNetworkRetry(request: DownloadRequest, tabId: number) {
+function queueNetworkRetry({ request, tabId }: {
+  request: DownloadRequest;
+  tabId: number;
+}) {
   pendingNetworkRetries.set(request.videoId, { request, tabId });
   void persistInterruptedDownload(request);
 }
@@ -167,7 +185,10 @@ export function cancelBackgroundDownload(videoId: string) {
   activeBackgroundDownloads.delete(videoId);
 }
 
-export async function startBackgroundDownload(request: DownloadRequest, tabId: number) {
+export async function startBackgroundDownload({ request, tabId }: {
+  request: DownloadRequest;
+  tabId: number;
+}) {
   const { videoId, metadata } = request;
   cancelBackgroundDownload(videoId);
   const abortController = new AbortController();
@@ -180,7 +201,7 @@ export async function startBackgroundDownload(request: DownloadRequest, tabId: n
     let result: DownloadResult | null = null;
 
     try {
-      result = await downloadViaSabr(request, signal, tabId);
+      result = await downloadViaSabr({ request, signal, tabId });
     } catch (sabrError) {
       if (signal.aborted) {
         return;
@@ -191,31 +212,31 @@ export async function startBackgroundDownload(request: DownloadRequest, tabId: n
 
     if (!result?.audioData) {
       try {
-        result = await downloadViaCdn(request, signal, videoId, tabId);
+        result = await downloadViaCdn({ request, signal, videoId, tabId });
       } catch (cdnError) {
         if (signal.aborted) {
           return;
         }
 
         if (!navigator.onLine) {
-          queueNetworkRetry(request, tabId);
+          queueNetworkRetry({ request, tabId });
           return;
         }
 
         console.warn("[ytdl:bg] CDN fetch failed:", cdnError);
-        reportDownloadRemoved(videoId, tabId);
+        reportDownloadRemoved({ videoId, tabId });
         return;
       }
     }
 
     if (!result?.audioData && !result?.videoData) {
       console.warn("[ytdl:bg] No download method succeeded for", videoId);
-      reportDownloadRemoved(videoId, tabId);
+      reportDownloadRemoved({ videoId, tabId });
       return;
     }
 
     const enrichedMetadata = await enrichedMetadataPromise;
-    await dispatchToOffscreen(request, result, enrichedMetadata, tabId);
+    await dispatchToOffscreen({ request, result, enrichedMetadata, tabId });
     void clearInterruptedDownload(videoId);
   } catch (error) {
     if (signal.aborted) {
@@ -223,12 +244,12 @@ export async function startBackgroundDownload(request: DownloadRequest, tabId: n
     }
 
     if (!navigator.onLine) {
-      queueNetworkRetry(request, tabId);
+      queueNetworkRetry({ request, tabId });
       return;
     }
 
     console.warn("[ytdl:bg] Background download failed:", error);
-    reportDownloadRemoved(videoId, tabId);
+    reportDownloadRemoved({ videoId, tabId });
   } finally {
     activeBackgroundDownloads.delete(videoId);
   }

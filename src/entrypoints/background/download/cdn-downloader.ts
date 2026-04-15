@@ -5,12 +5,12 @@ import { parseContentLength } from "./sabr-downloader";
 import { DownloadType, ProgressType } from "@/types";
 import type { DownloadRequest } from "@/types";
 
-export async function downloadViaCdn(
-  request: DownloadRequest,
-  signal: AbortSignal,
-  videoId: string,
-  tabId: number
-): Promise<DownloadResult | null> {
+export async function downloadViaCdn({ request, signal, videoId, tabId }: {
+  request: DownloadRequest;
+  signal: AbortSignal;
+  videoId: string;
+  tabId: number;
+}): Promise<DownloadResult | null> {
   const {
     type, videoFormat, audioFormat, resolvedVideoUrl,
     resolvedAudioUrl, resolvedExtraAudioUrls, additionalAudioFormats
@@ -33,30 +33,45 @@ export async function downloadViaCdn(
       return;
     }
 
-    void sendProgressUpdate(videoId, Math.min(totalReceived / totalExpected, 1), ProgressType.Video, tabId);
+    void sendProgressUpdate({
+      videoId, progress: Math.min(totalReceived / totalExpected, 1), progressType: ProgressType.Video, tabId
+    });
   }
 
-  function fetchStream(url: string | null | undefined, onBytes: (bytes: number) => void) {
+  function fetchStream({ url, onBytes }: {
+    url: string | null | undefined;
+    onBytes: (bytes: number) => void;
+  }) {
     if (!url) {
       return Promise.resolve(null);
     }
 
-    return fetchWithProgress(url, signal, onBytes);
+    return fetchWithProgress({ url, signal, onBytesReceived: onBytes });
   }
 
   const extraUrls = resolvedExtraAudioUrls ?? [];
   const cdnResults = await Promise.all([
     type !== DownloadType.Audio
-      ? fetchStream(resolvedVideoUrl, bytes => {
-        videoReceivedBytes += bytes; videoTotalBytes = Math.max(videoTotalBytes, videoReceivedBytes); reportProgress();
+      ? fetchStream({
+        url: resolvedVideoUrl,
+        onBytes(bytes) {
+          videoReceivedBytes += bytes;
+          videoTotalBytes = Math.max(videoTotalBytes, videoReceivedBytes);
+          reportProgress();
+        }
       })
       : Promise.resolve(null),
     type !== DownloadType.Video
-      ? fetchStream(resolvedAudioUrl, bytes => {
-        audioReceivedBytes += bytes; audioTotalBytes = Math.max(audioTotalBytes, audioReceivedBytes); reportProgress();
+      ? fetchStream({
+        url: resolvedAudioUrl,
+        onBytes(bytes) {
+          audioReceivedBytes += bytes;
+          audioTotalBytes = Math.max(audioTotalBytes, audioReceivedBytes);
+          reportProgress();
+        }
       })
       : Promise.resolve(null),
-    ...extraUrls.map(url => fetchStream(url, () => {}))
+    ...extraUrls.map(url => fetchStream({ url, onBytes() {} }))
   ]);
 
   const additionalAudioTracks: DownloadResult["additionalAudioTracks"] = [];

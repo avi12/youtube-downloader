@@ -6,12 +6,12 @@ const audioCodecByExtension: Record<string, string> = {
   flac: "flac"
 };
 
-export async function transcodeAudio(
-  audioData: Uint8Array,
-  sourceExtension: string,
-  filenameOutput: string,
-  ffmpeg: FFmpegCoreModule
-) {
+export async function transcodeAudio({ audioData, sourceExtension, filenameOutput, ffmpeg }: {
+  audioData: Uint8Array;
+  sourceExtension: string;
+  filenameOutput: string;
+  ffmpeg: FFmpegCoreModule;
+}) {
   const outputExtension = getFileExtension(filenameOutput) || sourceExtension;
   const inputFilename = `input.${sourceExtension}`;
   const outputFilename = getCompatibleFilename(filenameOutput);
@@ -32,7 +32,7 @@ export async function transcodeAudio(
 
     return output;
   } finally {
-    tryUnlink(ffmpeg, inputFilename);
-    tryUnlink(ffmpeg, outputFilename);
+    tryUnlink({ ffmpeg, filename: inputFilename });
+    tryUnlink({ ffmpeg, filename: outputFilename });
   }
 }
