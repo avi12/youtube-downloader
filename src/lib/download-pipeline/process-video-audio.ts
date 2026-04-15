@@ -25,27 +25,6 @@ export async function processVideoAudio(item: ProcessStreamData) {
   const {
     videoId, filenameOutput, videoMimeType, audioMimeType, tabId, additionalAudioStreams
   } = item;
-  let videoData: Uint8Array | null = toUint8Array(item.videoData);
-  let audioData: Uint8Array | null = toUint8Array(item.audioData);
-  if (!videoData || !audioData) {
-    await reportProgress({ videoId, progress: 1, progressType: ProgressType.FFmpeg, tabId });
-
-    const recentContext = {
-      videoId,
-      title: item.metadata?.title ?? filenameOutput,
-      channel: item.metadata?.artist ?? "",
-      thumbnailUrl: item.metadata?.thumbnailUrl
-    };
-    if (videoData) {
-      await triggerDownload(videoData, filenameOutput, recentContext);
-    } else if (audioData) {
-      await triggerDownload(audioData, filenameOutput, recentContext);
-    }
-
-    return;
-  }
-
-  await reportProgress({ videoId, progress: 0, progressType: ProgressType.FFmpeg, tabId });
 
   const videoExtension = /webm/.test(videoMimeType) ? "webm" : "mp4";
   const audioExtension = /webm/.test(audioMimeType) ? "webm" : "m4a";
@@ -59,7 +38,6 @@ export async function processVideoAudio(item: ProcessStreamData) {
   const videoFilename = `${videoId}-video.${videoExtension}`;
   const primaryAudioFilename = `${videoId}-audio.${audioExtension}`;
   const outputFilename = getCompatibleFilename(`${videoId}-${downloadFilename}`);
-
   const ffmpeg = getFFmpeg();
 
   // progress=1 is reserved for after the file is actually saved to disk (not just after FFmpeg muxing completes).
@@ -74,21 +52,43 @@ export async function processVideoAudio(item: ProcessStreamData) {
 
   progressHandlers.add(handleFFmpegProgress);
 
-  // Filenames and labels for extra audio tracks; populated inside try so finally can clean up.
+  // Populated inside try so finally can enumerate filenames for cleanup.
   const extraAudioTracks: {
     filename: string;
     label: string;
   }[] = [];
 
   try {
-    ffmpeg.FS.writeFile(videoFilename, videoData);
-    videoData = null; // WASM has its own copy — release the JS buffer
+    // Block scope: videoData and audioData go out of scope at the closing brace,
+    // releasing the JS references before ffmpeg.exec runs — no mutation needed.
+    {
+      const videoData = toUint8Array(item.videoData);
+      const audioData = toUint8Array(item.audioData);
+      if (!videoData || !audioData) {
+        await reportProgress({ videoId, progress: 1, progressType: ProgressType.FFmpeg, tabId });
+        const recentContext = {
+          videoId,
+          title: item.metadata?.title ?? filenameOutput,
+          channel: item.metadata?.artist ?? "",
+          thumbnailUrl: item.metadata?.thumbnailUrl
+        };
+        if (videoData) {
+          await triggerDownload(videoData, filenameOutput, recentContext);
+        } else if (audioData) {
+          await triggerDownload(audioData, filenameOutput, recentContext);
+        }
 
-    ffmpeg.FS.writeFile(primaryAudioFilename, audioData);
-    audioData = null; // release
+        return;
+      }
 
+      await reportProgress({ videoId, progress: 0, progressType: ProgressType.FFmpeg, tabId });
+      ffmpeg.FS.writeFile(videoFilename, videoData);
+      ffmpeg.FS.writeFile(primaryAudioFilename, audioData);
+    }
+
+    // const extraData is iteration-scoped: each binding expires at the loop's closing brace.
     for (const [i, stream] of additionalAudioStreams.entries()) {
-      let extraData: Uint8Array | null = toUint8Array(stream.data);
+      const extraData = toUint8Array(stream.data);
       if (!extraData) {
         continue;
       }
@@ -96,7 +96,6 @@ export async function processVideoAudio(item: ProcessStreamData) {
       const extraExtension = /webm/.test(stream.mimeType) ? "webm" : "m4a";
       const extraFilename = `${videoId}-audio-extra-${i}.${extraExtension}`;
       ffmpeg.FS.writeFile(extraFilename, extraData);
-      extraData = null; // release
       extraAudioTracks.push({ filename: extraFilename, label: stream.label });
     }
 
