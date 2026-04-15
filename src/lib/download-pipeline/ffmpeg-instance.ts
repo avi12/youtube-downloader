@@ -28,7 +28,7 @@ export function tryUnlink({ ffmpeg, filename }: {
 }) {
   try {
     ffmpeg.FS.unlink(filename);
-  } catch (_) {
+  } catch {
     // file was never written by ffmpeg
   }
 }
@@ -44,7 +44,11 @@ async function processMuxQueue() {
   isMuxing = true;
 
   while (muxQueue.length > 0) {
-    const job = muxQueue.shift()!;
+    const job = muxQueue.shift();
+    if (!job) {
+      break;
+    }
+
     await job();
   }
 
