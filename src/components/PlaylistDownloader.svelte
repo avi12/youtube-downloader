@@ -52,6 +52,7 @@
     void playlist.isRevealingAll;
     void playlist.isDownloading;
     void playlist.revealedVideoCount;
+    void playlist.activeIndividualDownloadCount;
     actionButtons.refreshDownloadAll();
   });
 
@@ -109,7 +110,6 @@
     <tp-yt-paper-checkbox
       {@attach attachScrollSyncCheckbox}
       checked={playlist.isScrollSyncEnabled ? "" : undefined}
-      disabled={playlist.isDownloading ? "" : undefined}
     >
       Scroll to the current video
     </tp-yt-paper-checkbox>

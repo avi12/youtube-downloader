@@ -19,6 +19,7 @@ export function createPlaylistActionButtons(state: {
   isRevealingAll: boolean;
   revealedVideoCount: number;
   downloadButtonLabel: string;
+  activeIndividualDownloadCount: number;
   clearSelection(): void;
   toggleSelectedDownload(): void;
   revealAndDownloadAll(): Promise<void> | void;
@@ -76,7 +77,7 @@ export function createPlaylistActionButtons(state: {
     }
 
     elDownloadAll.setAttribute("data-ytdl-button-id", DOWNLOAD_ALL_BUTTON_ID);
-    const isBusy = state.isRevealingAll || state.isDownloading;
+    const isBusy = state.isRevealingAll || state.isDownloading || state.activeIndividualDownloadCount > 0;
     const label = state.isRevealingAll
       ? `Revealing hidden videos (${state.revealedVideoCount})`
       : "Grab the whole playlist";
