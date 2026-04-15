@@ -143,6 +143,30 @@ export function createPlaylistDownloaderState() {
     }
     return max;
   });
+
+  // The lowest of each video's personal max quality - i.e. the quality that
+  // every loaded video is guaranteed to reach. Heights at or below this need
+  // no "Up to" qualifier; heights above it are only achievable by some videos.
+  const guaranteedQuality = $derived.by(() => {
+    if (videoDataMap.size === 0) {
+      return 0;
+    }
+
+    let min = Infinity;
+    for (const data of videoDataMap.values()) {
+      let videoMax = 0;
+      for (const format of data.videoFormats) {
+        if ((format.height ?? 0) > videoMax) {
+          videoMax = format.height ?? 0;
+        }
+      }
+
+      if (videoMax < min) {
+        min = videoMax;
+      }
+    }
+    return min === Infinity ? 0 : min;
+  });
   const selectedDownloadableVideos = $derived(
     downloadableVideos.filter(data => checkedPlaylistVideos.has(data.videoId))
   );
@@ -389,6 +413,9 @@ export function createPlaylistDownloaderState() {
     },
     get maxAvailableQuality() {
       return maxAvailableQuality;
+    },
+    get guaranteedQuality() {
+      return guaranteedQuality;
     },
     get isRevealingAll() {
       return reveal.isRevealingAll;

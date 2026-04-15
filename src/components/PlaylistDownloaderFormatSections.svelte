@@ -28,7 +28,10 @@
     { value: VideoQualityMode.Best, label: "Best quality" },
     ...videoQualities
       .filter(height => !playlist.maxAvailableQuality || height <= playlist.maxAvailableQuality)
-      .map(height => ({ value: String(height), label: `${height}p` }))
+      .map(height => ({
+        value: String(height),
+        label: height <= playlist.guaranteedQuality ? `${height}p` : `Up to ${height}p`
+      }))
   ]);
 
   const isVideoTypeDisabled = $derived(playlist.effectiveDownloadType === DownloadType.Audio);
