@@ -99,7 +99,8 @@ export function extractPoTokenFromBody(body: number[]) {
     let value = 0;
     let shift = 0;
     while (off < buf.byteLength) {
-      const byte = buf[off++];
+      const byte = buf[off];
+      off++;
       value |= (byte & VARINT_DATA_BITS_MASK) << shift;
 
       if ((byte & VARINT_CONTINUATION_BIT) === 0) {
