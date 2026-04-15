@@ -107,21 +107,21 @@
     }
 
     body {
-      --md-sys-color-surface: #fef7ff;
-      --md-sys-color-surface-container: #f3edf7;
-      --md-sys-color-surface-container-high: #ece6f0;
-      --md-sys-color-surface-container-highest: #e6e0e9;
-      --md-sys-color-on-surface: #1d1b20;
-      --md-sys-color-on-surface-variant: #49454f;
-      --md-sys-color-outline: #79747e;
-      --md-sys-color-outline-variant: #cac4d0;
-      --md-sys-color-primary: #6750a4;
-      --md-sys-color-on-primary: #ffffff;
-      --md-sys-color-primary-container: #eaddff;
-      --md-sys-color-secondary-container: #e8def8;
-      --md-sys-color-error: #b3261e;
-      --md-sys-color-error-container: #f9dedc;
-      --md-sys-color-on-error-container: #410e0b;
+      --md-sys-color-surface: oklch(98.4% 0.0128 321.9deg);
+      --md-sys-color-surface-container: oklch(95.4% 0.0147 312.2deg);
+      --md-sys-color-surface-container-high: oklch(93.3% 0.0148 312.2deg);
+      --md-sys-color-surface-container-highest: oklch(91.4% 0.0137 314.8deg);
+      --md-sys-color-on-surface: oklch(22.7% 0.01 303.7deg);
+      --md-sys-color-on-surface-variant: oklch(39.8% 0.0174 303.7deg);
+      --md-sys-color-outline: oklch(51.6% 0.0186 309.9deg);
+      --md-sys-color-outline-variant: oklch(82.9% 0.0178 308.2deg);
+      --md-sys-color-primary: oklch(49.6% 0.1305 293.7deg);
+      --md-sys-color-on-primary: oklch(100% 0 0deg);
+      --md-sys-color-primary-container: oklch(91.8% 0.0477 302.8deg);
+      --md-sys-color-secondary-container: oklch(91.6% 0.0365 303.1deg);
+      --md-sys-color-error: oklch(50.1% 0.1783 28.7deg);
+      --md-sys-color-error-container: oklch(92.2% 0.0301 22.8deg);
+      --md-sys-color-on-error-container: oklch(25.4% 0.0794 27.6deg);
       --bg: var(--md-sys-color-surface);
       --fg: var(--md-sys-color-on-surface);
       --fg-muted: var(--md-sys-color-on-surface-variant);
@@ -144,21 +144,21 @@
       line-height: 1.5;
 
       @media (prefers-color-scheme: dark) {
-        --md-sys-color-surface: #141218;
-        --md-sys-color-surface-container: #211f26;
-        --md-sys-color-surface-container-high: #2b2930;
-        --md-sys-color-surface-container-highest: #36343b;
-        --md-sys-color-on-surface: #e6e0e9;
-        --md-sys-color-on-surface-variant: #cac4d0;
-        --md-sys-color-outline: #938f99;
-        --md-sys-color-outline-variant: #49454f;
-        --md-sys-color-primary: #d0bcff;
-        --md-sys-color-on-primary: #381e72;
-        --md-sys-color-primary-container: #4f378b;
-        --md-sys-color-secondary-container: #4a4458;
-        --md-sys-color-error: #f2b8b5;
-        --md-sys-color-error-container: #8c1d18;
-        --md-sys-color-on-error-container: #f9dedc;
+        --md-sys-color-surface: oklch(18.7% 0.0124 300.4deg);
+        --md-sys-color-surface-container: oklch(24.5% 0.0134 298.5deg);
+        --md-sys-color-surface-container-high: oklch(28.6% 0.0129 298.6deg);
+        --md-sys-color-surface-container-highest: oklch(33% 0.0125 298.8deg);
+        --md-sys-color-on-surface: oklch(91.4% 0.0137 314.8deg);
+        --md-sys-color-on-surface-variant: oklch(82.9% 0.0178 308.2deg);
+        --md-sys-color-outline: oklch(65.7% 0.0153 304deg);
+        --md-sys-color-outline-variant: oklch(39.8% 0.0174 303.7deg);
+        --md-sys-color-primary: oklch(83.5% 0.0946 298deg);
+        --md-sys-color-on-primary: oklch(32.5% 0.1353 291.2deg);
+        --md-sys-color-primary-container: oklch(41% 0.1337 292.7deg);
+        --md-sys-color-secondary-container: oklch(40.1% 0.034 298.6deg);
+        --md-sys-color-error: oklch(83.4% 0.0677 22deg);
+        --md-sys-color-error-container: oklch(42% 0.1473 28.1deg);
+        --md-sys-color-on-error-container: oklch(92.2% 0.0301 22.8deg);
       }
     }
   }

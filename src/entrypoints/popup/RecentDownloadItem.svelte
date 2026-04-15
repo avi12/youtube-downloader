@@ -267,7 +267,8 @@
       transition: opacity 150ms;
     }
 
-    &:hover::after {
+    &:hover::after,
+    &:focus-visible::after {
       opacity: 100%;
     }
   }
@@ -362,7 +363,8 @@
     }
 
     &:focus-visible {
-      outline: none;
+      outline: 2px solid var(--accent);
+      outline-offset: -2px;
     }
   }
 
