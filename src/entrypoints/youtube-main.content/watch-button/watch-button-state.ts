@@ -25,7 +25,7 @@ export function buildInitialDownloadState(videoData: VideoData): DownloadButtonS
   }
 
   const filename = getCompatibleFilename(`${videoData.title}.${extension}`);
-  const downloadType: DownloadType = videoData.isMusic ? DownloadType.Audio : DownloadType.VideoAndAudio;
+  const downloadType = videoData.isMusic ? DownloadType.Audio : DownloadType.VideoAndAudio;
 
   let isInterrupted = false;
   const interrupted = interruptedDownloadStore.get(videoData.videoId);

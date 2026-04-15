@@ -9,12 +9,12 @@ import type {
 } from "@/types";
 import { CrossWorldMessage, crossWorldMessenger } from "~/lib/messaging/cross-world-messenger";
 
-export const PAPER_PROGRESS_THEME: Record<string, string> = {
+export const PAPER_PROGRESS_THEME = {
   "--paper-progress-active-color": "var(--yt-spec-call-to-action, rgb(62 166 255))",
   "--paper-progress-container-color": "transparent"
 };
 
-export const PAPER_INPUT_THEME: Record<string, string> = {
+export const PAPER_INPUT_THEME = {
   "--paper-input-container-color": "var(--yt-spec-text-secondary, #aaa)",
   "--paper-input-container-focus-color": "var(--yt-spec-call-to-action, rgb(62 166 255))",
   "--paper-input-container-input-color": "var(--yt-spec-text-primary, #f1f1f1)"

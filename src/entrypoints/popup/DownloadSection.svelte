@@ -43,8 +43,8 @@
     </div>
 
     <ul class="download-list" aria-label={listAriaLabel} role="list">
-      {#each videoIds as videoId, index (videoId)}
-        {@render renderItem(videoId, index)}
+      {#each videoIds as videoId, i (videoId)}
+        {@render renderItem(videoId, i)}
       {/each}
     </ul>
   </section>

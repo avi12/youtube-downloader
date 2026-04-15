@@ -22,10 +22,7 @@
     { value: DownloadType.Audio, label: "Always audio only" }
   ];
 
-  const qualityModeOptions: Array<{
-    value: Options["videoQualityMode"];
-    label: string;
-  }> = [
+  const qualityModeOptions = [
     { value: VideoQualityMode.CurrentQuality, label: "Match current player quality" },
     { value: VideoQualityMode.Best, label: "Best available quality" },
     { value: VideoQualityMode.Custom, label: "Custom quality" }
