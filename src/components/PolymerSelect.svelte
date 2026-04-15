@@ -23,6 +23,7 @@
 
     let elMovedDropdown: Element | null = null;
     let elChevronInput: HTMLElement | null = null;
+    let isOverlayOpen = false;
 
     function onChevronFocus() {
       const elTrigger = elTarget.querySelector<HTMLElement>("tp-yt-paper-input");
@@ -57,7 +58,11 @@
       // This is necessary because the DOM move severs Polymer's own binding.
       const elListbox = elIronDropdown.querySelector("tp-yt-paper-listbox");
       elListbox?.addEventListener("selected-changed", (e: Event) => {
-        if (!(e instanceof CustomEvent)) {
+        // While the overlay is open the user is interacting; handleSelectedChanged
+        // (registered in handleOverlayOpened) owns that case. Calling syncTriggerDisplay
+        // here would trigger Polymer to close the dropdown before handleSelectedChanged
+        // fires, preventing onchange from being called.
+        if (isOverlayOpen || !(e instanceof CustomEvent)) {
           return;
         }
 
@@ -97,6 +102,8 @@
       if (!elMovedDropdown) {
         return;
       }
+
+      isOverlayOpen = true;
 
       // yt-options-renderer scope provides cursor:pointer and :hover.
       for (const elItem of elMovedDropdown.querySelectorAll("tp-yt-paper-item")) {
@@ -229,6 +236,7 @@
 
     // requestAnimationFrame defers past Polymer's synchronous _applyFocus so our focus call wins.
     function handleOverlayClosed() {
+      isOverlayOpen = false;
       const elTrigger = elTarget.querySelector<HTMLElement>("tp-yt-paper-input");
       requestAnimationFrame(() => elTrigger?.focus());
     }
