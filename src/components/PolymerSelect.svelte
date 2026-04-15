@@ -120,7 +120,9 @@
 
       // Moving tp-yt-iron-dropdown to document.body severs Polymer's data binding,
       // so value-changed never fires on the dropdown-menu after selection.
-      // Listen to selected-changed on the moved dropdown instead.
+      // Polymer fires selected-changed with bubbles:false, so listen on the listbox directly.
+      const elOpenListbox = elMovedDropdown.querySelector("tp-yt-paper-listbox");
+
       function handleSelectedChanged(e: Event) {
         if (!(e instanceof CustomEvent)) {
           return;
@@ -146,7 +148,7 @@
         );
       }
 
-      elMovedDropdown.addEventListener("selected-changed", handleSelectedChanged);
+      elOpenListbox?.addEventListener("selected-changed", handleSelectedChanged);
 
       // Capture phase fires before Polymer's IronMenuBehavior/IronButtonState handlers,
       // which stopPropagation() on arrows/Enter and would block bubble-phase listeners.
@@ -227,7 +229,7 @@
       elMovedDropdown.addEventListener(
         "iron-overlay-closed",
         () => {
-          elMovedDropdown?.removeEventListener("selected-changed", handleSelectedChanged);
+          elOpenListbox?.removeEventListener("selected-changed", handleSelectedChanged);
           elMovedDropdown?.removeEventListener("keydown", onListboxKeydown, true);
         },
         { once: true }
