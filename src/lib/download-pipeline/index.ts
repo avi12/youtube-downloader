@@ -37,7 +37,8 @@ export async function triggerDownload(
 ) {
   const mimeType = getMimeType(filenameOutput) || "application/octet-stream";
   const filename = getCompatibleFilename(filenameOutput);
-  const blob = new Blob([new Uint8Array(data)], { type: mimeType });
+  // Our data always comes from WASM/fetch/fflate, never SharedArrayBuffer.
+  const blob = new Blob([data as Uint8Array<ArrayBuffer>], { type: mimeType });
   const blobUrl = URL.createObjectURL(blob);
   activeBlobUrls.set(blobUrl, blob);
 
