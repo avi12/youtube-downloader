@@ -24,19 +24,6 @@
     }
   }
 
-  function handleSelectAllChange(e: Event) {
-    if (!(e.target instanceof HTMLElement)) {
-      return;
-    }
-
-    const isNowChecked = e.target.hasAttribute("checked");
-    if (isNowChecked) {
-      playlist.selectAll();
-    } else {
-      playlist.clearSelection();
-    }
-  }
-
   $effect(() => {
     if (!elSelectAllCheckbox) {
       return;
@@ -91,7 +78,18 @@
       aria-label={selectAllLabel}
       checked={playlist.isAllSelected ? "" : undefined}
       disabled={isSelectAllDisabled ? "" : undefined}
-      onchange={handleSelectAllChange}
+      onchange={e => {
+        if (!(e.target instanceof HTMLElement)) {
+          return;
+        }
+
+        const isNowChecked = e.target.hasAttribute("checked");
+        if (isNowChecked) {
+          playlist.selectAll();
+        } else {
+          playlist.clearSelection();
+        }
+      }}
     >
       {selectAllLabel}
     </tp-yt-paper-checkbox>

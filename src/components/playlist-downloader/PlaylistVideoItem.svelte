@@ -28,21 +28,6 @@
 
   const isChecked = $derived(checkedPlaylistVideos.has(videoId));
 
-  // Reading `e.target.checked` (not toggling) keeps programmatic writes idempotent
-  // when selectAll/clearSelection flips isChecked.
-  function handleCheckboxChange(e: Event) {
-    if (!(e.target instanceof HTMLElement)) {
-      return;
-    }
-
-    const isNowChecked = e.target.hasAttribute("checked");
-    if (isNowChecked && !checkedPlaylistVideos.has(videoId)) {
-      checkedPlaylistVideos.add(videoId);
-    } else if (!isNowChecked && checkedPlaylistVideos.has(videoId)) {
-      checkedPlaylistVideos.delete(videoId);
-    }
-  }
-
   const itemState = createPlaylistVideoItemState(
     untrack(() => videoId),
     untrack(() => gridTitle),
@@ -198,7 +183,20 @@
           aria-label="Select for download"
           checked={isChecked ? "" : undefined}
           disabled={isCheckboxDisabled ? "" : undefined}
-          onchange={handleCheckboxChange}
+          onchange={e => {
+            if (!(e.target instanceof HTMLElement)) {
+              return;
+            }
+
+            // Reading hasAttribute("checked") (not toggling) keeps programmatic writes idempotent
+            // when selectAll/clearSelection flips isChecked.
+            const isNowChecked = e.target.hasAttribute("checked");
+            if (isNowChecked && !checkedPlaylistVideos.has(videoId)) {
+              checkedPlaylistVideos.add(videoId);
+            } else if (!isNowChecked && checkedPlaylistVideos.has(videoId)) {
+              checkedPlaylistVideos.delete(videoId);
+            }
+          }}
         ></tp-yt-paper-checkbox>
       {/if}
       <yt-button-view-model {@attach attachDownloadButton}

@@ -20,21 +20,6 @@
       }
     };
   }
-
-  function handleKeydown(e: KeyboardEvent) {
-    const iCurrent = tabs.findIndex(tab => tab.id === activeTab);
-    if (e.key === "ArrowRight" || e.key === "ArrowDown") {
-      e.preventDefault();
-      const next = tabs[(iCurrent + 1) % tabs.length].id;
-      onChange(next);
-      tabButtonElements[next]?.focus();
-    } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
-      e.preventDefault();
-      const prev = tabs[(iCurrent - 1 + tabs.length) % tabs.length].id;
-      onChange(prev);
-      tabButtonElements[prev]?.focus();
-    }
-  }
 </script>
 
 <div class="tab-nav" role="tablist">
@@ -46,7 +31,20 @@
       aria-controls="panel-{tab.id}"
       aria-selected={activeTab === tab.id}
       onclick={() => onChange(tab.id)}
-      onkeydown={handleKeydown}
+      onkeydown={e => {
+        const iCurrent = tabs.findIndex(tab => tab.id === activeTab);
+        if (e.key === "ArrowRight" || e.key === "ArrowDown") {
+          e.preventDefault();
+          const next = tabs[(iCurrent + 1) % tabs.length].id;
+          onChange(next);
+          tabButtonElements[next]?.focus();
+        } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
+          e.preventDefault();
+          const prev = tabs[(iCurrent - 1 + tabs.length) % tabs.length].id;
+          onChange(prev);
+          tabButtonElements[prev]?.focus();
+        }
+      }}
       role="tab"
       tabindex={activeTab === tab.id ? 0 : -1}
     >

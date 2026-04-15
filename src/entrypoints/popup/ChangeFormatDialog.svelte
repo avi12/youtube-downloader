@@ -61,15 +61,14 @@
       onClose();
     }
   }
-
-  function handleKeydown(e: KeyboardEvent) {
-    if (e.key === "Escape") {
-      onClose();
-    }
-  }
 </script>
 
-<svelte:window onkeydown={handleKeydown} />
+<svelte:window
+onkeydown={e => {
+  if (e.key === "Escape") {
+    onClose();
+  }
+}} />
 
 <div
   class="dialog-backdrop"
