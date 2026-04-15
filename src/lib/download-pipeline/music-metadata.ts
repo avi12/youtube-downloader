@@ -1,4 +1,5 @@
 import { getFileExtension, getCompatibleFilename } from "../containers";
+import { tryUnlink } from "./ffmpeg-instance";
 import type { VideoMetadata } from "@/types";
 import type { FFmpegCoreModule } from "@ffmpeg/types";
 
@@ -26,6 +27,10 @@ function detectImageExtension(data: Uint8Array) {
   }
 
   return "jpg";
+}
+
+function sanitizeForFFmpeg(value: string) {
+  return value.replaceAll(/[\n\r"\\]/g, " ").trim();
 }
 
 // FFmpeg WASM's default build hangs indefinitely on the WebP decoder for attached_pic
@@ -89,10 +94,6 @@ export async function embedMusicMetadata(
     ffmpegArgs.push("-disposition:v", "attached_pic");
   }
 
-  function sanitizeForFFmpeg(value: string) {
-    return value.replaceAll(/[\n\r"\\]/g, " ").trim();
-  }
-
   // FLAC can't hold AAC/Opus, so re-encode to FLAC; all other supported containers can remux the source stream.
   const audioCodec = outputExtension === "flac" ? "flac" : "copy";
   ffmpegArgs.push("-c:a", audioCodec);
@@ -117,23 +118,24 @@ export async function embedMusicMetadata(
 
   ffmpegArgs.push(outputFilename);
 
-  const exitCode = ffmpeg.exec(...ffmpegArgs);
-  if (exitCode !== 0) {
-    ffmpeg.FS.unlink(inputFilename);
-    return audioData;
+  try {
+    const exitCode = ffmpeg.exec(...ffmpegArgs);
+    if (exitCode !== 0) {
+      return audioData;
+    }
+
+    const taggedOutput = ffmpeg.FS.readFile(outputFilename, { encoding: "binary" });
+    if (typeof taggedOutput === "string" || taggedOutput.byteLength === 0) {
+      return audioData;
+    }
+
+    return taggedOutput;
+  } finally {
+    tryUnlink(ffmpeg, inputFilename);
+    tryUnlink(ffmpeg, outputFilename);
+
+    if (isCoverArtPresent) {
+      tryUnlink(ffmpeg, coverFilename);
+    }
   }
-
-  const taggedOutput = ffmpeg.FS.readFile(outputFilename, { encoding: "binary" });
-  ffmpeg.FS.unlink(inputFilename);
-  ffmpeg.FS.unlink(outputFilename);
-
-  if (isCoverArtPresent) {
-    ffmpeg.FS.unlink(coverFilename);
-  }
-
-  if (typeof taggedOutput === "string" || taggedOutput.byteLength === 0) {
-    return audioData;
-  }
-
-  return taggedOutput;
 }
