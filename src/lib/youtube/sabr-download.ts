@@ -1,3 +1,4 @@
+import { readStreamToBuffer } from "@/lib/utils/stream";
 import { type AdaptiveFormatItem, type SabrConfig } from "@/types";
 import { SabrStream } from "googlevideo/sabr-stream";
 import { buildSabrFormat } from "googlevideo/utils";
@@ -22,34 +23,8 @@ function adaptiveFormatToSabrFormat(format: AdaptiveFormatItem) {
   });
 }
 
-const STREAM_STALL_TIMEOUT_MS = 30_000;
-
-async function collectReadableStream(stream: ReadableStream<Uint8Array>) {
-  const reader = stream.getReader();
-  const chunks: Uint8Array[] = [];
-  let totalBytes = 0;
-
-  while (true) {
-    const readResult = await Promise.race([
-      reader.read(),
-      new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("SABR stream stalled")), STREAM_STALL_TIMEOUT_MS))
-    ]);    if (readResult.done) {
-      break;
-    }
-
-    chunks.push(readResult.value);
-    totalBytes += readResult.value.byteLength;
-  }
-
-  const result = new Uint8Array(totalBytes);
-  let writeOffset = 0;
-  for (const chunk of chunks) {
-    result.set(chunk, writeOffset);
-    writeOffset += chunk.byteLength;
-  }
-
-  return result;
+function collectReadableStream(stream: ReadableStream<Uint8Array>, expectedBytes: number) {
+  return readStreamToBuffer(stream.getReader(), expectedBytes);
 }
 
 function createSabrStream(
@@ -83,7 +58,7 @@ export async function fetchVideoViaSabrStream(
   const sabrStream = createSabrStream(sabrConfig, fetchFn, poToken);
   const targetFormat = adaptiveFormatToSabrFormat(videoFormat);
   const { videoStream } = await sabrStream.start({ videoFormat: targetFormat });
-  return collectReadableStream(videoStream);
+  return collectReadableStream(videoStream, parseInt(videoFormat.contentLength, 10));
 }
 
 export async function fetchAudioViaSabrStream(
@@ -95,5 +70,5 @@ export async function fetchAudioViaSabrStream(
   const sabrStream = createSabrStream(sabrConfig, fetchFn, poToken);
   const targetFormat = adaptiveFormatToSabrFormat(audioFormat);
   const { audioStream } = await sabrStream.start({ audioFormat: targetFormat });
-  return collectReadableStream(audioStream);
+  return collectReadableStream(audioStream, parseInt(audioFormat.contentLength, 10));
 }

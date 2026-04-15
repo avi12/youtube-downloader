@@ -1,4 +1,5 @@
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
+import { readStreamToBuffer } from "@/lib/utils/stream";
 import { ProgressType } from "@/types";
 
 const progressThrottleIntervalMs = 5000;
@@ -38,33 +39,11 @@ export function createProgressFetch(
       return new Response(buffer, { status: response.status, headers: response.headers });
     }
 
-    const reader = response.body.getReader();
-    const chunks: Uint8Array[] = [];
-    let totalBytes = 0;
-
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) {
-        break;
-      }
-
-      chunks.push(value);
-      totalBytes += value.byteLength;
-      onBytesReceived(value.byteLength);
-    }
-
-    const result = new Uint8Array(totalBytes);
-    let writeOffset = 0;
-    for (const chunk of chunks) {
-      result.set(chunk, writeOffset);
-      writeOffset += chunk.byteLength;
-    }
-
-    return new Response(result, { status: response.status, headers: response.headers });
+    const contentLength = parseInt(response.headers.get("Content-Length") ?? "0", 10);
+    const data = await readStreamToBuffer(response.body.getReader(), contentLength, onBytesReceived);
+    return new Response(data, { status: response.status, headers: response.headers });
   };
 }
-
-const STREAM_STALL_TIMEOUT_MS = 30_000;
 
 export async function fetchWithProgress(
   url: string,
@@ -82,30 +61,6 @@ export async function fetchWithProgress(
     return new Uint8Array(buffer);
   }
 
-  const reader = response.body.getReader();
-  const chunks: Uint8Array[] = [];
-  let receivedBytes = 0;
-
-  while (true) {
-    const readResult = await Promise.race([
-      reader.read(),
-      new Promise<never>((_, reject) =>
-        setTimeout(() => reject(new Error("Stream stalled")), STREAM_STALL_TIMEOUT_MS))
-    ]);    if (readResult.done) {
-      break;
-    }
-
-    chunks.push(readResult.value);
-    receivedBytes += readResult.value.byteLength;
-    onBytesReceived(readResult.value.byteLength);
-  }
-
-  const result = new Uint8Array(receivedBytes);
-  let writeOffset = 0;
-  for (const chunk of chunks) {
-    result.set(chunk, writeOffset);
-    writeOffset += chunk.byteLength;
-  }
-
-  return result;
+  const contentLength = parseInt(response.headers.get("Content-Length") ?? "0", 10);
+  return readStreamToBuffer(response.body.getReader(), contentLength, onBytesReceived);
 }
