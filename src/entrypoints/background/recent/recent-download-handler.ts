@@ -83,8 +83,8 @@ async function persistRecentDownload(
 }
 
 function extractContainer(filename: string) {
-  const dotIndex = filename.lastIndexOf(".");
-  return dotIndex === -1 ? "" : filename.slice(dotIndex + 1).toLowerCase();
+  const iDot = filename.lastIndexOf(".");
+  return iDot === -1 ? "" : filename.slice(iDot + 1).toLowerCase();
 }
 
 export function registerRecentDownloadHandlers() {

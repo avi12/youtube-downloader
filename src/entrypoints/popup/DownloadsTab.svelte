@@ -43,7 +43,7 @@
   }: Props = $props();
 
   const totalActiveDownloads = $derived(videoDownloads.length + musicList.length + videoOnlyList.length);
-  const hasAnyContent = $derived(totalActiveDownloads > 0 || recentDownloads.length > 0);
+  const isAnyContentAvailable = $derived(totalActiveDownloads > 0 || recentDownloads.length > 0);
 
   async function handleShowInFolder(entry: RecentDownloadEntry) {
     try {
@@ -86,8 +86,8 @@
     return videoDetails[videoId]?.filenameOutput ?? videoId;
   }
 
-  function getVideoStatusLabel(index: number) {
-    if (index === 0) {
+  function getVideoStatusLabel(i: number) {
+    if (i === 0) {
       return isFFmpegReady ? "Processing…" : "Waiting for FFmpeg…";
     }
 
@@ -95,7 +95,7 @@
   }
 </script>
 
-{#if !hasAnyContent}
+{#if !isAnyContentAvailable}
   <div class="empty-state">
     <span class="empty-state-icon">{@html downloadIcon}</span>
     <p class="empty-state-text">No downloads yet</p>
@@ -113,7 +113,7 @@
         title="Video downloads"
         videoIds={videoDownloadIds}
       >
-        {#snippet renderItem(videoId, index)}
+        {#snippet renderItem(videoId, i)}
           <li
             class="download-item"
             aria-label={getFilename(videoId)}
@@ -124,7 +124,7 @@
               oncancel={() => cancelDownload([videoId])}
               progress={getProgress(videoId)}
               progressLabel={getProgressLabel(videoId)}
-              statusLabel={getProgress(videoId) === null ? getVideoStatusLabel(index) : null}
+              statusLabel={getProgress(videoId) === null ? getVideoStatusLabel(i) : null}
             />
           </li>
         {/snippet}

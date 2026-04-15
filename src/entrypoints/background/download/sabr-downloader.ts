@@ -111,8 +111,8 @@ export async function downloadViaSabr(
   const isAudioOnly = type === DownloadType.Audio;
 
   const effectiveConfig = sabrConfig ? buildEffectiveSabrConfig(sabrConfig, sabrUrl) : null;
-  const canUseSabr = Boolean(effectiveConfig && audioFormat && (isAudioOnly || videoFormat));
-  if (!canUseSabr) {
+  const isSabrAvailable = Boolean(effectiveConfig && audioFormat && (isAudioOnly || videoFormat));
+  if (!isSabrAvailable) {
     return null;
   }
 

@@ -32,28 +32,28 @@ export async function removeFromPopupList(videoId: string) {
     videoDetailsItem.getValue()
   ]);
 
-  const queueIndex = queue.findIndex(item => item.videoId === videoId);
-  const musicIndex = musicList.indexOf(videoId);
-  const videoOnlyIndex = videoOnlyList.indexOf(videoId);
-  const hadDetails = videoId in details;
+  const iQueue = queue.findIndex(item => item.videoId === videoId);
+  const iMusic = musicList.indexOf(videoId);
+  const iVideoOnly = videoOnlyList.indexOf(videoId);
+  const isDetailPresent = videoId in details;
 
   const writes: Promise<void>[] = [];
-  if (queueIndex !== -1) {
-    queue.splice(queueIndex, 1);
+  if (iQueue !== -1) {
+    queue.splice(iQueue, 1);
     writes.push(videoQueueItem.setValue(queue));
   }
 
-  if (musicIndex !== -1) {
-    musicList.splice(musicIndex, 1);
+  if (iMusic !== -1) {
+    musicList.splice(iMusic, 1);
     writes.push(musicListItem.setValue(musicList));
   }
 
-  if (videoOnlyIndex !== -1) {
-    videoOnlyList.splice(videoOnlyIndex, 1);
+  if (iVideoOnly !== -1) {
+    videoOnlyList.splice(iVideoOnly, 1);
     writes.push(videoOnlyListItem.setValue(videoOnlyList));
   }
 
-  if (hadDetails) {
+  if (isDetailPresent) {
     delete details[videoId];
     writes.push(videoDetailsItem.setValue(details));
   }

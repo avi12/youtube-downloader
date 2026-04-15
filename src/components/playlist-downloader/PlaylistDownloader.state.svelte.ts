@@ -87,7 +87,7 @@ export function createPlaylistDownloaderState() {
   const effectiveVideoExt = $derived(videoExtOverride ?? contentOptions.value.ext.video);
   const effectiveAudioExt = $derived(audioExtOverride ?? contentOptions.value.ext.audio);
   const effectiveQuality = $derived(videoQualityOverride ?? optionsToQualityValue(contentOptions.value));
-  const hasAnyOverride = $derived(
+  const isAnyOverrideActive = $derived(
     downloadTypeOverride !== null
     || videoExtOverride !== null
     || audioExtOverride !== null
@@ -462,8 +462,8 @@ export function createPlaylistDownloaderState() {
     set effectiveQuality(value) {
       videoQualityOverride = value === optionsToQualityValue(contentOptions.value) ? null : value;
     },
-    get hasAnyOverride() {
-      return hasAnyOverride;
+    get isAnyOverrideActive() {
+      return isAnyOverrideActive;
     },
     get activeIndividualDownloadCount() {
       return activeIndividualDownloadCount;

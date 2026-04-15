@@ -104,7 +104,7 @@
   {/if}
 </section>
 
-{#if playlist.hasAnyOverride}
+{#if playlist.isAnyOverrideActive}
   <button class="ytdl-reset-link" disabled={playlist.isDownloading} onclick={playlist.resetOverrides} type="button">
     Reset to my defaults
   </button>

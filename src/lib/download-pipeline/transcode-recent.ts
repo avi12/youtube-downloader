@@ -4,8 +4,8 @@ import { getRecentDownloadBlob, getAllRecentDownloads } from "~/lib/storage/rece
 import { videoContainers } from "~/lib/utils/containers";
 
 function swapFileExtension(filename: string, extension: string) {
-  const dotIndex = filename.lastIndexOf(".");
-  const base = dotIndex === -1 ? filename : filename.slice(0, dotIndex);
+  const iDot = filename.lastIndexOf(".");
+  const base = iDot === -1 ? filename : filename.slice(0, iDot);
   return `${base}.${extension}`;
 }
 

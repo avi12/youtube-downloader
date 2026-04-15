@@ -123,13 +123,13 @@ const featuringPattern = /\s+(?:ft\.?|feat\.?|featuring)\s+(.+)$/i;
 function parseMusicTitle(title: string) {
   const cleaned = title.replaceAll(videoTitleSuffixPattern, "").trim();
 
-  const separatorIndex = cleaned.search(/\s[-–]\s/);
-  if (separatorIndex === -1) {
+  const iSeparator = cleaned.search(/\s[-–]\s/);
+  if (iSeparator === -1) {
     return { mainArtist: "", fullArtist: "", songTitle: cleaned };
   }
 
-  const mainArtist = cleaned.slice(0, separatorIndex).trim();
-  const afterSeparator = cleaned.slice(separatorIndex + 3).trim();
+  const mainArtist = cleaned.slice(0, iSeparator).trim();
+  const afterSeparator = cleaned.slice(iSeparator + 3).trim();
 
   const featMatch = afterSeparator.match(featuringPattern);
   const songTitle = afterSeparator.replace(featuringPattern, "").trim();
