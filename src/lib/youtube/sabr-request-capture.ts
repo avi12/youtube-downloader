@@ -11,6 +11,7 @@ export function startSabrRequestCapture() {
     { urls: ["https://*.googlevideo.com/videoplayback*"] },
     ["requestBody"]
   );
+  browser.tabs.onRemoved.addListener(tabId => capturedByTab.delete(tabId));
 }
 
 let onCaptureCallback: ((tabId: number) => void) | null = null;
