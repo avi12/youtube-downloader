@@ -20,12 +20,7 @@ function persistOnDownloadComplete({ targetDownloadId, data }: {
   };
 }) {
   return new Promise<void>(resolve => {
-    function handleChanged(delta: {
-      id: number;
-      state?: {
-        current?: string;
-      };
-    }) {
+    function handleChanged(delta: Browser.downloads.DownloadDelta) {
       if (delta.id !== targetDownloadId || !delta.state?.current) {
         return;
       }
