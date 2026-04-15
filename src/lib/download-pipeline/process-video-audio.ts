@@ -40,27 +40,23 @@ export async function processVideoAudio(item: ProcessStreamData) {
   const outputFilename = getCompatibleFilename(`${videoId}-${downloadFilename}`);
   const ffmpeg = getFFmpeg();
 
-  // progress=1 is reserved for after the file is actually saved to disk (not just after FFmpeg muxing completes).
-  const ffmpegProgressCap = 0.99;
+  const ffmpegProgressCapBeforeSave = 0.99;
 
   function handleFFmpegProgress({ progress }: {
     progress: number;
   }) {
-    const cappedProgress = Math.min(progress, ffmpegProgressCap);
+    const cappedProgress = Math.min(progress, ffmpegProgressCapBeforeSave);
     void reportProgress({ videoId, progress: cappedProgress, progressType: ProgressType.FFmpeg, tabId });
   }
 
   progressHandlers.add(handleFFmpegProgress);
 
-  // Populated inside try so finally can enumerate filenames for cleanup.
   const extraAudioTracks: {
     filename: string;
     label: string;
   }[] = [];
 
   try {
-    // Block scope: videoData and audioData go out of scope at the closing brace,
-    // releasing the JS references before ffmpeg.exec runs — no mutation needed.
     {
       const videoData = toUint8Array(item.videoData);
       const audioData = toUint8Array(item.audioData);
@@ -86,7 +82,6 @@ export async function processVideoAudio(item: ProcessStreamData) {
       ffmpeg.FS.writeFile(primaryAudioFilename, audioData);
     }
 
-    // const extraData is iteration-scoped: each binding expires at the loop's closing brace.
     for (const [i, stream] of additionalAudioStreams.entries()) {
       const extraData = toUint8Array(stream.data);
       if (!extraData) {

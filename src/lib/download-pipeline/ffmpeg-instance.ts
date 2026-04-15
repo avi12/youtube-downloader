@@ -25,8 +25,8 @@ export function getFFmpeg() {
 export function tryUnlink(ffmpeg: FFmpegCoreModule, filename: string) {
   try {
     ffmpeg.FS.unlink(filename);
-  } catch {
-    // File may not exist if ffmpeg never wrote it
+  } catch (_) {
+    // file was never written by ffmpeg
   }
 }
 

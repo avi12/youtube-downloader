@@ -20,9 +20,7 @@ export function toUint8Array(data: Uint8Array | Record<string, number> | null) {
   return new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
 }
 
-// Keep blob references alive until Chrome has read the data off the blob URL and written it to disk.
-// Revoke after a generous delay so the "Show in folder" feature also has time to work.
-const activeBlobUrls = new Map<string, Blob>();
+const blobUrlsPendingRevocation = new Map<string, Blob>();
 const BlobRevocationDelayMs = 60_000;
 
 export async function triggerDownload(
@@ -37,18 +35,15 @@ export async function triggerDownload(
 ) {
   const mimeType = getMimeType(filenameOutput) || "application/octet-stream";
   const filename = getCompatibleFilename(filenameOutput);
-  // Our data always comes from WASM/fetch/fflate, never SharedArrayBuffer.
   const blob = new Blob([new Uint8Array(data)], { type: mimeType });
   const blobUrl = URL.createObjectURL(blob);
-  activeBlobUrls.set(blobUrl, blob);
+  blobUrlsPendingRevocation.set(blobUrl, blob);
 
-  // Await so the caller reports progress=1 only after the file is written to disk,
-  // not just after FFmpeg muxing.
   await sendMessage(MessageType.PipelineDownload, { blobUrl, mimeType, filename, recentContext });
 
   setTimeout(() => {
     URL.revokeObjectURL(blobUrl);
-    activeBlobUrls.delete(blobUrl);
+    blobUrlsPendingRevocation.delete(blobUrl);
   }, BlobRevocationDelayMs);
 }
 

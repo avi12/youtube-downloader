@@ -1,6 +1,4 @@
 <script lang="ts" module>
-  // Guards against duplicate downloads from multiple component instances
-  // responding to the same ButtonClick.
   const activeDownloadClicks = $state(new Set<string>());
 </script>
 

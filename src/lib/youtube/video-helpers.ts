@@ -92,15 +92,17 @@ export function formatAudioCodecLabel(mimeType: string) {
   return codec || (mimeType.split(";")[0].split("/")[1] ?? "");
 }
 
-// download phase is 0-70%, mux phase is 70-100%.
+const DOWNLOAD_PHASE_WEIGHT = 70;
+const MUX_PHASE_WEIGHT = 30;
+
 export function calculateWeightedProgress(isDownloading: boolean, progress: number, progressType: ProgressType | "") {
   if (!isDownloading) {
     return 0;
   }
 
   if (progressType === ProgressType.FFmpeg) {
-    return 70 + progress * 30;
+    return DOWNLOAD_PHASE_WEIGHT + progress * MUX_PHASE_WEIGHT;
   }
 
-  return progress * 70;
+  return progress * DOWNLOAD_PHASE_WEIGHT;
 }

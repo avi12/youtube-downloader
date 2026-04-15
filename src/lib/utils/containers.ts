@@ -2,7 +2,6 @@ import { DownloadType } from "@/types";
 import type { Options, VideoData } from "@/types";
 
 export function getCompatibleFilename(filename: string) {
-  // Strips the OS-forbidden set < > : " \ / | ? * plus backticks (which break FFmpeg WASM argument parsing).
   return filename.replaceAll(/[<>:"\\/|?*`]/g, "");
 }
 
@@ -24,7 +23,6 @@ export function splitFilenameAndExtension(filename: string) {
   return { name: filename.slice(0, iDot), extension: filename.slice(iDot + 1) };
 }
 
-// Containers FFmpeg can remux YouTube streams into with -c copy, plus flac which requires re-encoding.
 const extensionToMimeAll: Record<string, string> = {
   flac: "audio/flac",
   m4a: "audio/mp4",

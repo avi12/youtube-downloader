@@ -1,4 +1,3 @@
-// Batched String.fromCharCode to avoid stack overflow on large arrays.
 export function uint8ToBase64(bytes: Uint8Array) {
   const batchSize = 8192;
   let binary = "";

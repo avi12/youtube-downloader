@@ -22,8 +22,6 @@ import {
 import { untrack } from "svelte";
 import { SvelteMap, SvelteSet } from "svelte/reactivity";
 
-// Shared across every PlaylistVideoItem so they can disable their checkboxes
-// during a batch download without needing a prop chain.
 export const batchDownloadStatus = $state({ isRunning: false });
 
 // User-facing preferences live at module scope so they survive any re-mount
@@ -314,7 +312,6 @@ export function createPlaylistDownloaderState() {
     startDownload
   );
 
-  // Count of playlist videos being downloaded individually (outside of a batch).
   const activeIndividualDownloadCount = $derived.by(() => {
     if (isDownloading) {
       return 0;
@@ -416,9 +413,6 @@ export function createPlaylistDownloaderState() {
     },
     get downloadButtonLabel() {
       return downloadButtonLabel;
-    },
-    get videoDataMapSize() {
-      return videoDataMap.size;
     },
     get maxAvailableQuality() {
       return maxAvailableQuality;

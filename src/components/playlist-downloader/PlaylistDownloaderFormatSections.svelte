@@ -22,8 +22,6 @@
     supportedExtensions.audio.map(extension => ({ value: extension, label: formatExtensionLabel(extension) }))
   );
 
-  // Only include resolutions that exist in at least one loaded playlist video.
-  // Falls back to showing all options until the first video data arrives.
   const qualityOptions = $derived([
     { value: VideoQualityMode.Best, label: "Best quality" },
     ...videoQualities
