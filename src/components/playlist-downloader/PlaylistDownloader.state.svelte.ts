@@ -9,6 +9,7 @@ import {
   videoDataStore
 } from "@/lib/ui/synced-stores.svelte";
 import { resolveVideoFilename } from "@/lib/utils/containers";
+import { calculateWeightedProgress } from "@/lib/youtube/video-helpers";
 import {
   DownloadType,
   PlaylistDownloadMode,
@@ -356,8 +357,16 @@ export function createPlaylistDownloaderState() {
       let sum = 0;
       for (const request of activeDownloadRequests) {
         const entry = downloadProgressStore.get(request.videoId);
-        // A missing entry means the video finished and was removed from the store.
-        sum += entry?.progress ?? 1;
+        if (!entry) {
+          sum += 1;
+          continue;
+        }
+
+        sum += calculateWeightedProgress({
+          isDownloading: entry.isDownloading,
+          progress: entry.progress,
+          progressType: entry.progressType
+        }) / 100;
       }
       return sum / totalCount;
     }
@@ -367,7 +376,11 @@ export function createPlaylistDownloaderState() {
       for (const videoId of videoDataMap.keys()) {
         const entry = downloadProgressStore.get(videoId);
         if (entry?.isDownloading) {
-          sum += entry.progress;
+          sum += calculateWeightedProgress({
+            isDownloading: entry.isDownloading,
+            progress: entry.progress,
+            progressType: entry.progressType
+          }) / 100;
         }
       }
       return sum / activeIndividualDownloadCount;
