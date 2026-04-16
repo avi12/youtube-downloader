@@ -5,12 +5,34 @@
   import PlaylistDownloaderActions from "./PlaylistDownloaderActions.svelte";
   import PlaylistDownloaderFormatSections from "./PlaylistDownloaderFormatSections.svelte";
   import { onButtonClick } from "@/lib/messaging/cross-world-messenger";
+  import { PlaylistOutputMode } from "@/types";
   import { untrack } from "svelte";
 
   const playlist = createPlaylistDownloaderState();
 
   const toggleButtons = createPlaylistToggleButtons(playlist);
   const actionButtons = createPlaylistActionButtons(playlist);
+
+  let elZipInput = $state<HTMLInputElement | null>(null);
+
+  function attachZipInput(elTarget: Element) {
+    if (!(elTarget instanceof HTMLInputElement)) {
+      return;
+    }
+
+    elZipInput = elTarget;
+    return () => {
+      elZipInput = null;
+    };
+  }
+
+  $effect(() => {
+    if (!elZipInput) {
+      return;
+    }
+
+    elZipInput.value = playlist.effectiveZipName;
+  });
 
   function attachScrollSyncCheckbox(elCheckbox: Element) {
     if (!(elCheckbox instanceof HTMLElement)) {
@@ -84,6 +106,35 @@
         <yt-button-view-model {@attach toggleButtons.createAttacher(button)}></yt-button-view-model>
       {/each}
     </div>
+    {#if playlist.outputMode === PlaylistOutputMode.Zip}
+      <div class="ytdl-zip-name">
+        <label class="ytdl-zip-name-label" for="ytdl-zip-name-input">Filename</label>
+        <div class="ytdl-zip-name-field">
+          <input
+            id="ytdl-zip-name-input"
+            class="ytdl-zip-name-input"
+            {@attach attachZipInput}
+            aria-label="ZIP filename without extension"
+            disabled={playlist.isDownloading}
+            oninput={e => {
+              if (!(e.target instanceof HTMLInputElement)) {
+                return;
+              }
+
+              playlist.effectiveZipName = e.target.value;
+            }}
+            type="text"
+          />
+          <span class="ytdl-zip-ext" aria-hidden="true">.zip</span>
+          {#if playlist.isZipNameOverridden}
+            <span class="ytdl-override-badge" role="status">
+              <span class="ytdl-override-dot" aria-hidden="true"></span>
+              <span class="ytdl-visually-hidden">customized</span>
+            </span>
+          {/if}
+        </div>
+      </div>
+    {/if}
   </section>
 
   <section class="ytdl-section" aria-labelledby="ytdl-type-label">
@@ -171,5 +222,50 @@
 
   .ytdl-chip-row-wrap {
     flex-wrap: wrap;
+  }
+
+  .ytdl-zip-name {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .ytdl-zip-name-label {
+    color: var(--yt-spec-text-secondary, #aaaaaa);
+    font-size: 1.2rem;
+  }
+
+  .ytdl-zip-name-field {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .ytdl-zip-name-input {
+    flex: 1;
+    min-width: 0;
+    padding: 5px 8px;
+    border: 1px solid var(--yt-spec-10-percent-layer, rgb(255 255 255 / 10%));
+    border-radius: 4px;
+    background: transparent;
+    color: var(--yt-spec-text-primary, #0f0f0f);
+    font-family: inherit;
+    font-size: 1.3rem;
+
+    &:focus {
+      border-color: var(--yt-spec-call-to-action, #3ea6ff);
+      outline: none;
+    }
+
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.4;
+    }
+  }
+
+  .ytdl-zip-ext {
+    color: var(--yt-spec-text-secondary, #aaaaaa);
+    font-size: 1.3rem;
+    white-space: nowrap;
   }
 </style>

@@ -36,6 +36,7 @@ let downloadTypeOverride = $state<DownloadTypePreference | null>(null);
 let videoExtOverride = $state<string | null>(null);
 let audioExtOverride = $state<string | null>(null);
 let videoQualityOverride = $state<string | null>(null);
+let zipNameOverride = $state<string | null>(null);
 
 // Maps popup quality settings to a single PolymerSelect-compatible value.
 // "best" means always pick the highest bitrate; a numeric string (e.g. "1080")
@@ -87,11 +88,15 @@ export function createPlaylistDownloaderState() {
   const effectiveVideoExt = $derived(videoExtOverride ?? contentOptions.value.ext.video);
   const effectiveAudioExt = $derived(audioExtOverride ?? contentOptions.value.ext.audio);
   const effectiveQuality = $derived(videoQualityOverride ?? optionsToQualityValue(contentOptions.value));
+  const effectiveZipName = $derived(
+    zipNameOverride ?? playlistMetadataSignal.value?.playlistTitle ?? "Playlist"
+  );
   const isAnyOverrideActive = $derived(
     downloadTypeOverride !== null
     || videoExtOverride !== null
     || audioExtOverride !== null
     || videoQualityOverride !== null
+    || zipNameOverride !== null
   );
 
   function buildEffectiveOptions() {
@@ -116,6 +121,7 @@ export function createPlaylistDownloaderState() {
     videoExtOverride = null;
     audioExtOverride = null;
     videoQualityOverride = null;
+    zipNameOverride = null;
   }
 
   $effect(() => {
@@ -256,19 +262,18 @@ export function createPlaylistDownloaderState() {
     }
 
     const metadata = playlistMetadataSignal.value;
-    const playlistTitle = metadata?.playlistTitle || "Playlist";
     const playlistId = metadata?.playlistId || `playlist-${Date.now()}`;
     const isZipBundle = outputMode === PlaylistOutputMode.Zip;
 
     const resolvedOptions = buildEffectiveOptions();
     const downloadRequests = videos.map(data =>
-      buildDownloadRequest(data, resolvedOptions, playlistId, playlistTitle, videos.length, isZipBundle));
+      buildDownloadRequest(data, resolvedOptions, playlistId, effectiveZipName, videos.length, isZipBundle));
     activeDownloadRequests = downloadRequests;
 
     try {
       await sendMessage(MessageType.RequestPlaylistDownload, {
         items: downloadRequests,
-        playlistTitle,
+        playlistTitle: effectiveZipName,
         isZipBundle,
         isSequential: downloadMode === PlaylistDownloadMode.DataSaver
       });
@@ -485,6 +490,15 @@ export function createPlaylistDownloaderState() {
     },
     get isQualityOverridden() {
       return videoQualityOverride !== null;
+    },
+    get effectiveZipName() {
+      return effectiveZipName;
+    },
+    set effectiveZipName(value) {
+      zipNameOverride = value.trim() || null;
+    },
+    get isZipNameOverridden() {
+      return zipNameOverride !== null;
     },
     resetOverrides,
     toggleSelectedDownload,
