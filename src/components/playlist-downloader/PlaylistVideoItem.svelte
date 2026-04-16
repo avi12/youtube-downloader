@@ -72,9 +72,12 @@
 
     if (isCheckboxIndeterminate) {
       elCheckbox.setAttribute("indeterminate", "");
-    } else {
-      elCheckbox.removeAttribute("indeterminate");
+      elCheckbox.setAttribute("aria-checked", "mixed");
+      return;
     }
+
+    elCheckbox.removeAttribute("indeterminate");
+    elCheckbox.setAttribute("aria-checked", isChecked ? "true" : "false");
   });
 
   function assignButtonId({ elButton, id }: {
@@ -222,10 +225,10 @@
         <tp-yt-paper-checkbox
           {@attach attachCheckbox}
           aria-label="Select for download"
-          checked={!isCheckboxIndeterminate && isChecked ? "" : undefined}
+          checked={(isCheckboxIndeterminate || isChecked) ? "" : undefined}
           disabled={isCheckboxDisabled ? "" : undefined}
           onchange={e => {
-            if (!(e.target instanceof HTMLElement)) {
+            if (!(e.target instanceof HTMLElement) || isCheckboxDisabled) {
               return;
             }
 
@@ -300,5 +303,26 @@
     align-items: center;
     height: 36px;
     padding: 0 8px;
+  }
+
+  /*
+   * YouTube strips the indeterminate state from tp-yt-paper-checkbox.
+   * These rules restore it using the [indeterminate] attribute and the
+   * component's own CSS variables, so the dash adapts to YouTube's theme.
+   * Specificity (2,3,1) beats the checkmark animation rule (2,3,0).
+   */
+  :global(tp-yt-paper-checkbox[indeterminate] #checkbox.tp-yt-paper-checkbox) {
+    background-color: var(--paper-checkbox-checked-color, var(--primary-color));
+    border-color: var(--paper-checkbox-checked-color, var(--primary-color));
+  }
+
+  :global(tp-yt-paper-checkbox[indeterminate] #checkbox.tp-yt-paper-checkbox #checkmark.tp-yt-paper-checkbox) {
+    animation-name: none;
+    border-right-width: 0;
+    width: 50%;
+    height: 0;
+    top: 50%;
+    left: 25%;
+    translate: 0 -50%;
   }
 </style>
