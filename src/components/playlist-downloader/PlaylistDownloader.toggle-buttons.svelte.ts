@@ -22,8 +22,8 @@ export function createPlaylistToggleButtons(state: {
     speed: [
       {
         id: "playlist-mode-fast",
-        label: "All at once",
-        tooltip: "Download all at once",
+        label: "In parallel",
+        tooltip: "Download all in parallel",
         isActive: () => state.downloadMode === PlaylistDownloadMode.Fast,
         onClick() {
           state.downloadMode = PlaylistDownloadMode.Fast;
