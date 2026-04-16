@@ -13,7 +13,7 @@ declare global {
   }
 }
 
-function extractPlaylistMetadata() {
+export function extractPlaylistMetadata() {
   const { header, metadata } = window.ytInitialData ?? {};
   if (!header && !metadata) {
     playlistMetadataSignal.value = null;
@@ -25,12 +25,13 @@ function extractPlaylistMetadata() {
 
   const playlistTitle = headerRenderer?.title?.simpleText ?? metadataRenderer?.title ?? "";
   const playlistId = headerRenderer?.playlistId ?? "";
+  const playlistOwner = headerRenderer?.ownerText?.runs?.[0]?.text ?? "";
   if (!playlistTitle && !playlistId) {
     playlistMetadataSignal.value = null;
     return;
   }
 
-  playlistMetadataSignal.value = { playlistId, playlistTitle };
+  playlistMetadataSignal.value = { playlistId, playlistTitle, playlistOwner };
 }
 
 function handleNavigation() {

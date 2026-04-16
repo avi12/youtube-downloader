@@ -44,6 +44,7 @@ export const playlistMetadataSignal = createSyncedSignal(
   createSignalMessenger<{
     playlistId: string;
     playlistTitle: string;
+    playlistOwner: string;
   } | null>("playlist-metadata"),
   null
 );

@@ -38,6 +38,19 @@ let audioExtOverride = $state<string | null>(null);
 let videoQualityOverride = $state<string | null>(null);
 let zipNameOverride = $state<string | null>(null);
 
+function resolveDefaultZipName() {
+  const metadata = playlistMetadataSignal.value;
+  if (metadata?.playlistTitle) {
+    return metadata.playlistTitle;
+  }
+
+  if (metadata?.playlistOwner) {
+    return `${metadata.playlistOwner}'s playlist`;
+  }
+
+  return "Playlist";
+}
+
 // Maps popup quality settings to a single PolymerSelect-compatible value.
 // "best" means always pick the highest bitrate; a numeric string (e.g. "1080")
 // means pick that resolution and fall back to best if unavailable.
@@ -88,9 +101,7 @@ export function createPlaylistDownloaderState() {
   const effectiveVideoExt = $derived(videoExtOverride ?? contentOptions.value.ext.video);
   const effectiveAudioExt = $derived(audioExtOverride ?? contentOptions.value.ext.audio);
   const effectiveQuality = $derived(videoQualityOverride ?? optionsToQualityValue(contentOptions.value));
-  const effectiveZipName = $derived(
-    zipNameOverride ?? playlistMetadataSignal.value?.playlistTitle ?? "Playlist"
-  );
+  const effectiveZipName = $derived(zipNameOverride ?? resolveDefaultZipName());
   const isAnyOverrideActive = $derived(
     downloadTypeOverride !== null
     || videoExtOverride !== null
@@ -495,7 +506,8 @@ export function createPlaylistDownloaderState() {
       return effectiveZipName;
     },
     set effectiveZipName(value) {
-      zipNameOverride = value.trim() || null;
+      const trimmed = value.trim();
+      zipNameOverride = !trimmed || trimmed === resolveDefaultZipName() ? null : trimmed;
     },
     get isZipNameOverridden() {
       return zipNameOverride !== null;

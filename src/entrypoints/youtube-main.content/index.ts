@@ -1,7 +1,7 @@
 import { registerGridDropdownHandlers } from "./grid/grid-dropdown";
 import { registerGridVideoDataHandler } from "./grid/grid-video-data";
 import { cancelActiveDownload, performDownload } from "./video/download";
-import { handleNavigateSuccess } from "./video/playlist-metadata";
+import { extractPlaylistMetadata, handleNavigateSuccess } from "./video/playlist-metadata";
 import { extractAndDispatchVideoData } from "./video/video-data";
 import { CrossWorldMessage, crossWorldMessenger, dispatchButtonClick } from "@/lib/messaging/cross-world-messenger";
 import { type PlayerResponse } from "@/types";
@@ -16,6 +16,9 @@ declare global {
             simpleText?: string;
           };
           playlistId?: string;
+          ownerText?: {
+            runs?: Array<{ text?: string }>;
+          };
         };
       };
       metadata?: {
@@ -106,8 +109,12 @@ export default defineContentScript({
 
     if (document.readyState === "complete") {
       await extractAndDispatchVideoData(cancelActiveDownload);
+      extractPlaylistMetadata();
     } else {
-      addEventListener("load", () => extractAndDispatchVideoData(cancelActiveDownload), { once: true });
+      addEventListener("load", () => {
+        void extractAndDispatchVideoData(cancelActiveDownload);
+        extractPlaylistMetadata();
+      }, { once: true });
     }
   }
 });
