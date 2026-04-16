@@ -88,23 +88,25 @@
     {#if playlist.outputMode === PlaylistOutputMode.Zip}
       <div class="ytdl-zip-name">
         <label class="ytdl-zip-name-label" for="ytdl-zip-name-input">Filename</label>
-        <div class="ytdl-zip-name-field">
-          <input
-            id="ytdl-zip-name-input"
-            class="ytdl-zip-name-input"
-            aria-label="ZIP filename without extension"
-            disabled={playlist.isDownloading}
-            oninput={e => {
-              if (!(e.target instanceof HTMLInputElement)) {
-                return;
-              }
+        <div class="ytdl-zip-name-row">
+          <div class="ytdl-zip-name-field">
+            <input
+              id="ytdl-zip-name-input"
+              class="ytdl-zip-name-input"
+              aria-label="ZIP filename without extension"
+              disabled={playlist.isDownloading}
+              oninput={e => {
+                if (!(e.target instanceof HTMLInputElement)) {
+                  return;
+                }
 
-              playlist.effectiveZipName = e.target.value;
-            }}
-            type="text"
-            value={playlist.effectiveZipName}
-          />
-          <span class="ytdl-zip-ext" aria-hidden="true">.zip</span>
+                playlist.effectiveZipName = e.target.value;
+              }}
+              type="text"
+              value={playlist.effectiveZipName}
+            />
+            <span class="ytdl-zip-ext" aria-hidden="true">.zip</span>
+          </div>
           {#if playlist.isZipNameOverridden}
             <span class="ytdl-override-badge" role="status">
               <span class="ytdl-override-dot" aria-hidden="true"></span>
@@ -214,10 +216,26 @@
     font-size: 1.2rem;
   }
 
-  .ytdl-zip-name-field {
+  .ytdl-zip-name-row {
     display: flex;
-    gap: 2px;
+    gap: 6px;
+    align-items: center;
+  }
+
+  /* The shared underlined container that makes input + .zip look like one field */
+  .ytdl-zip-name-field {
+    display: inline-flex;
     align-items: baseline;
+    border-bottom: 1px solid var(--yt-spec-text-secondary, #aaaaaa);
+
+    &:focus-within {
+      border-bottom: 2px solid var(--yt-spec-call-to-action, rgb(62 166 255));
+    }
+
+    &:has(input:disabled) {
+      cursor: not-allowed;
+      opacity: 0.38;
+    }
   }
 
   .ytdl-zip-name-input {
@@ -225,27 +243,25 @@
     padding-block: 2px 4px;
     padding-inline: 0;
     border: none;
-    border-bottom: 1px solid var(--yt-spec-text-secondary, #aaaaaa);
     background: transparent;
     color: var(--yt-spec-text-primary, #0f0f0f);
     font-family: inherit;
     font-size: 1.4rem;
     field-sizing: content;
-
-    &:focus {
-      border-bottom: 2px solid var(--yt-spec-call-to-action, rgb(62 166 255));
-      outline: none;
-    }
+    outline: none;
 
     &:disabled {
       cursor: not-allowed;
-      opacity: 0.38;
     }
   }
 
   .ytdl-zip-ext {
+    padding-block: 2px 4px;
+    padding-inline-end: 2px;
     color: var(--yt-spec-text-secondary, #aaaaaa);
     font-size: 1.4rem;
     white-space: nowrap;
+    pointer-events: none;
+    user-select: none;
   }
 </style>
