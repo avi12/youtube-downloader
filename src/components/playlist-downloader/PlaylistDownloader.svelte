@@ -13,27 +13,6 @@
   const toggleButtons = createPlaylistToggleButtons(playlist);
   const actionButtons = createPlaylistActionButtons(playlist);
 
-  let elZipInput = $state<HTMLInputElement | null>(null);
-
-  function attachZipInput(elTarget: Element) {
-    if (!(elTarget instanceof HTMLInputElement)) {
-      return;
-    }
-
-    elZipInput = elTarget;
-    return () => {
-      elZipInput = null;
-    };
-  }
-
-  $effect(() => {
-    if (!elZipInput) {
-      return;
-    }
-
-    elZipInput.value = playlist.effectiveZipName;
-  });
-
   function attachScrollSyncCheckbox(elCheckbox: Element) {
     if (!(elCheckbox instanceof HTMLElement)) {
       return;
@@ -113,7 +92,6 @@
           <input
             id="ytdl-zip-name-input"
             class="ytdl-zip-name-input"
-            {@attach attachZipInput}
             aria-label="ZIP filename without extension"
             disabled={playlist.isDownloading}
             oninput={e => {
@@ -124,6 +102,7 @@
               playlist.effectiveZipName = e.target.value;
             }}
             type="text"
+            value={playlist.effectiveZipName}
           />
           <span class="ytdl-zip-ext" aria-hidden="true">.zip</span>
           {#if playlist.isZipNameOverridden}
@@ -237,35 +216,36 @@
 
   .ytdl-zip-name-field {
     display: flex;
-    gap: 6px;
-    align-items: center;
+    gap: 2px;
+    align-items: baseline;
   }
 
   .ytdl-zip-name-input {
-    flex: 1;
-    min-width: 0;
-    padding: 5px 8px;
-    border: 1px solid var(--yt-spec-10-percent-layer, rgb(255 255 255 / 10%));
-    border-radius: 4px;
+    min-width: 6ch;
+    padding-block: 2px 4px;
+    padding-inline: 0;
+    border: none;
+    border-bottom: 1px solid var(--yt-spec-text-secondary, #aaaaaa);
     background: transparent;
     color: var(--yt-spec-text-primary, #0f0f0f);
     font-family: inherit;
-    font-size: 1.3rem;
+    font-size: 1.4rem;
+    field-sizing: content;
 
     &:focus {
-      border-color: var(--yt-spec-call-to-action, #3ea6ff);
+      border-bottom: 2px solid var(--yt-spec-call-to-action, rgb(62 166 255));
       outline: none;
     }
 
     &:disabled {
       cursor: not-allowed;
-      opacity: 0.4;
+      opacity: 0.38;
     }
   }
 
   .ytdl-zip-ext {
     color: var(--yt-spec-text-secondary, #aaaaaa);
-    font-size: 1.3rem;
+    font-size: 1.4rem;
     white-space: nowrap;
   }
 </style>
