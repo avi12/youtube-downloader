@@ -94,6 +94,7 @@
               id="ytdl-zip-name-input"
               class="ytdl-zip-name-input"
               aria-label="ZIP filename without extension"
+              dir="auto"
               disabled={playlist.isDownloading}
               oninput={e => {
                 if (!(e.target instanceof HTMLInputElement)) {
@@ -105,7 +106,7 @@
               type="text"
               value={playlist.effectiveZipName}
             />
-            <span class="ytdl-zip-ext" aria-hidden="true">.zip</span>
+            <span class="ytdl-zip-ext" aria-hidden="true"></span>
           </div>
           {#if playlist.isZipNameOverridden}
             <span class="ytdl-override-badge" role="status">
@@ -224,31 +225,47 @@
 
   /* The shared underlined container that makes input + .zip look like one field */
   .ytdl-zip-name-field {
-    display: inline-flex;
-    align-items: baseline;
+    --zip-inset-start: auto;
+    --zip-inset-end: 0px;
+    --zip-padding-start: 0;
+    --zip-padding-end: 1.6em;
+    --zip-label: ".zip";
+
+    position: relative;
+    display: flex;
+    flex: 1;
     border-bottom: 1px solid var(--yt-spec-text-secondary, #aaaaaa);
+
+    &:has(:dir(rtl)) {
+      --zip-inset-start: 0px;
+      --zip-inset-end: auto;
+      --zip-padding-start: 1.6em;
+      --zip-padding-end: 0;
+      --zip-label: "zip.";
+    }
 
     &:focus-within {
       border-bottom: 2px solid var(--yt-spec-call-to-action, rgb(62 166 255));
     }
 
     &:has(input:disabled) {
+      opacity: 38%;
       cursor: not-allowed;
-      opacity: 0.38;
     }
   }
 
   .ytdl-zip-name-input {
-    min-width: 6ch;
+    flex: 1;
+    min-width: 0;
     padding-block: 2px 4px;
-    padding-inline: 0;
+    padding-inline-end: var(--zip-padding-end);
+    padding-inline-start: var(--zip-padding-start);
     border: none;
     background: transparent;
     color: var(--yt-spec-text-primary, #0f0f0f);
+    outline: none;
     font-family: inherit;
     font-size: 1.4rem;
-    field-sizing: content;
-    outline: none;
 
     &:disabled {
       cursor: not-allowed;
@@ -256,12 +273,22 @@
   }
 
   .ytdl-zip-ext {
-    padding-block: 2px 4px;
+    position: absolute;
+    inset-block: 0;
+    inset-inline-end: var(--zip-inset-end);
+    inset-inline-start: var(--zip-inset-start);
+    display: flex;
+    align-items: flex-end;
+    padding-block-end: 4px;
     padding-inline-end: 2px;
     color: var(--yt-spec-text-secondary, #aaaaaa);
     font-size: 1.4rem;
     white-space: nowrap;
     pointer-events: none;
     user-select: none;
+
+    &::before {
+      content: var(--zip-label);
+    }
   }
 </style>
