@@ -31,9 +31,12 @@
 
     if (isIndeterminate) {
       elSelectAllCheckbox.setAttribute("indeterminate", "");
-    } else {
-      elSelectAllCheckbox.removeAttribute("indeterminate");
+      elSelectAllCheckbox.setAttribute("aria-checked", "mixed");
+      return;
     }
+
+    elSelectAllCheckbox.removeAttribute("indeterminate");
+    elSelectAllCheckbox.setAttribute("aria-checked", playlist.isAllSelected ? "true" : "false");
   });
 
   function attachProgressBar(elProgress: Element) {
@@ -76,7 +79,7 @@
     <tp-yt-paper-checkbox
       {@attach attachSelectAllCheckbox}
       aria-label={selectAllLabel}
-      checked={playlist.isAllSelected ? "" : undefined}
+      checked={(playlist.isAllSelected || isIndeterminate) ? "" : undefined}
       disabled={isSelectAllDisabled ? "" : undefined}
       onchange={e => {
         if (!(e.target instanceof HTMLElement)) {
