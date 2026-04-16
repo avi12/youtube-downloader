@@ -23,6 +23,44 @@ function initIframeReadyListener() {
   });
 }
 
+// Returns the frameId of the ready iframe, or 0 if timed out.
+async function prepareIframe({ data, tabId }: {
+  data: DownloadRequest;
+  tabId: number;
+}): Promise<number> {
+  const watchParams = new URLSearchParams({ v: data.videoId, ytdl: "1", mute: "1" });
+  const watchUrl = `https://www.youtube.com/watch?${watchParams.toString()}`;
+
+  await sendMessage(MessageType.CreateDownloadIframe, { videoId: data.videoId, watchUrl }, tabId);
+
+  let iframeFrameId = 0;
+
+  await new Promise<void>(resolve => {
+    const timeoutId = setTimeout(() => {
+      pendingIframeReady.delete(data.videoId);
+      resolve();
+    }, iframeReadyTimeoutMs);
+
+    pendingIframeReady.set(data.videoId, frameId => {
+      iframeFrameId = frameId;
+      clearTimeout(timeoutId);
+      resolve();
+    });
+  });
+
+  return iframeFrameId;
+}
+
+async function executeIframeDownload({ data, tabId, iframeFrameId }: {
+  data: DownloadRequest;
+  tabId: number;
+  iframeFrameId: number;
+}) {
+  await sendMessage(MessageType.ExecuteDownloadItem, data, { tabId, frameId: iframeFrameId });
+  trackVideoForTab({ videoId: data.videoId, tabId });
+  await sendMessage(MessageType.StartKeepalive, { videoId: data.videoId }, tabId);
+}
+
 async function downloadViaWatchPage({ data, tabId }: {
   data: DownloadRequest;
   tabId: number;
@@ -30,34 +68,8 @@ async function downloadViaWatchPage({ data, tabId }: {
   await enqueueToPopupList({ videoId: data.videoId, type: data.type, filenameOutput: data.filenameOutput });
 
   try {
-    const watchParams = new URLSearchParams({ v: data.videoId, ytdl: "1", mute: "1" });
-    const watchUrl = `https://www.youtube.com/watch?${watchParams.toString()}`;
-
-    await sendMessage(MessageType.CreateDownloadIframe, {
-      videoId: data.videoId,
-      watchUrl
-    }, tabId);
-
-    let iframeFrameId = 0;
-
-    await new Promise<void>(resolve => {
-      const timeoutId = setTimeout(() => {
-        pendingIframeReady.delete(data.videoId);
-        resolve();
-      }, iframeReadyTimeoutMs);
-
-      pendingIframeReady.set(data.videoId, frameId => {
-        iframeFrameId = frameId;
-        clearTimeout(timeoutId);
-        resolve();
-      });
-    });
-
-    await sendMessage(MessageType.ExecuteDownloadItem, data, { tabId, frameId: iframeFrameId });
-
-    trackVideoForTab({ videoId: data.videoId, tabId });
-
-    await sendMessage(MessageType.StartKeepalive, { videoId: data.videoId }, tabId);
+    const iframeFrameId = await prepareIframe({ data, tabId });
+    await executeIframeDownload({ data, tabId, iframeFrameId });
   } catch (error) {
     console.error("[ytdl:bg] DownloadViaWatchPage failed:", data.videoId, error);
     pendingIframeReady.delete(data.videoId);
@@ -80,6 +92,45 @@ async function dispatchSequentially({ items, tabId, signal }: {
     }
 
     await downloadViaWatchPage({ data: item, tabId });
+    await awaitVideoComplete(item.videoId);
+    await sendMessage(MessageType.RemoveDownloadIframe, { videoId: item.videoId }, tabId);
+  }
+}
+
+// YouTube's SABR server rejects concurrent watch-page sessions: loading two iframes
+// simultaneously causes sabr.malformed_config on the second download. The fix is to
+// pre-load all iframes in parallel (fast), then execute SABR one at a time, removing
+// each iframe before the next one's download begins to clear the session state.
+async function dispatchParallel({ items, tabId, signal }: {
+  items: DownloadRequest[];
+  tabId: number;
+  signal: AbortSignal;
+}) {
+  // Load all iframes simultaneously so their players initialise in parallel.
+  const frameIds = await Promise.all(
+    items.map(item => prepareIframe({ data: item, tabId }).catch(() => 0))
+  );
+
+  // Execute downloads one at a time, removing each iframe before the next SABR
+  // session starts to prevent session-state conflicts on YouTube's servers.
+  for (let i = 0; i < items.length; i++) {
+    if (signal.aborted) {
+      break;
+    }
+
+    const item = items[i];
+    const iframeFrameId = frameIds[i];
+
+    try {
+      await executeIframeDownload({ data: item, tabId, iframeFrameId });
+    } catch (error) {
+      console.error("[ytdl:bg] executeIframeDownload failed:", item.videoId, error);
+      void removeFromPopupList(item.videoId);
+      void sendMessage(MessageType.UpdateDownloadProgress, {
+        videoId: item.videoId, progress: 0, progressType: ProgressType.Video, isRemoved: true
+      }, tabId);
+    }
+
     await awaitVideoComplete(item.videoId);
     await sendMessage(MessageType.RemoveDownloadIframe, { videoId: item.videoId }, tabId);
   }
@@ -153,11 +204,12 @@ export function registerDownloadHandlers() {
       await enqueueToPopupList({ videoId: item.videoId, type: item.type, filenameOutput: item.filenameOutput });
     }
 
+    currentSequenceAbort = new AbortController();
+
     if (data.isSequential) {
-      currentSequenceAbort = new AbortController();
       void dispatchSequentially({ items: data.items, tabId, signal: currentSequenceAbort.signal });
     } else {
-      void Promise.allSettled(data.items.map(item => downloadViaWatchPage({ data: item, tabId })));
+      void dispatchParallel({ items: data.items, tabId, signal: currentSequenceAbort.signal });
     }
   });
 
