@@ -1,5 +1,7 @@
+import { batchCanceledIds, batchDownloadStatus, batchVideoIds } from "./PlaylistDownloader.state.svelte";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
+import { checkedPlaylistVideos } from "@/lib/ui/playlist-selection.svelte";
 import {
   contentOptions,
   downloadProgressStore,
@@ -174,6 +176,12 @@ export function createPlaylistVideoItemState({ videoId, gridTitle, activeDownloa
     if (isDownloading) {
       downloadProgressStore.delete(videoId);
       void crossWorldMessenger.sendMessage(CrossWorldMessage.CancelRequest, { videoIds: [videoId] });
+
+      if (batchDownloadStatus.isRunning && batchVideoIds.has(videoId)) {
+        batchCanceledIds.add(videoId);
+        checkedPlaylistVideos.delete(videoId);
+      }
+
       return;
     }
 

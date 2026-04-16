@@ -23,6 +23,8 @@ import { untrack } from "svelte";
 import { SvelteMap, SvelteSet } from "svelte/reactivity";
 
 export const batchDownloadStatus = $state({ isRunning: false });
+export const batchVideoIds = new SvelteSet<string>();
+export const batchCanceledIds = new SvelteSet<string>();
 
 // User-facing preferences live at module scope so they survive any re-mount
 // of the panel (e.g. when YouTube rebuilds the header subtree on theme
@@ -222,6 +224,8 @@ export function createPlaylistDownloaderState() {
 
     isDownloading = false;
     batchDownloadStatus.isRunning = false;
+    batchVideoIds.clear();
+    batchCanceledIds.clear();
   });
 
   async function startDownload(videos: readonly VideoData[]) {
@@ -232,6 +236,8 @@ export function createPlaylistDownloaderState() {
     error = "";
     isDownloading = true;
     batchDownloadStatus.isRunning = true;
+    batchVideoIds.clear();
+    batchCanceledIds.clear();
     totalCount = videos.length;
     batchDoneIds.clear();
 
@@ -239,6 +245,7 @@ export function createPlaylistDownloaderState() {
     // sync message per video - prevents N separate reactive cycles across all
     // PlaylistVideoItem components when starting a large playlist download.
     for (const video of videos) {
+      batchVideoIds.add(video.videoId);
       downloadProgressStore.unsuppress(video.videoId);
       downloadProgressStore.setLocal(video.videoId, {
         isDownloading: true,
@@ -282,6 +289,8 @@ export function createPlaylistDownloaderState() {
 
     isDownloading = false;
     batchDownloadStatus.isRunning = false;
+    batchVideoIds.clear();
+    batchCanceledIds.clear();
 
     for (const videoId of activeVideoIds) {
       downloadProgressStore.delete(videoId);

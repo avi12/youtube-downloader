@@ -3,7 +3,7 @@
 </script>
 
 <script lang="ts">
-  import { batchDownloadStatus } from "./PlaylistDownloader.state.svelte";
+  import { batchCanceledIds, batchDownloadStatus, batchVideoIds } from "./PlaylistDownloader.state.svelte";
   import { createPanelManager } from "./PlaylistVideoItem.panel.svelte";
   import { createPlaylistVideoItemState } from "./PlaylistVideoItem.state.svelte";
   import { onButtonClick } from "@/lib/messaging/cross-world-messenger";
@@ -27,6 +27,8 @@
   const { videoId, gridTitle, isPlaylistItem = false }: Props = $props();
 
   const isChecked = $derived(checkedPlaylistVideos.has(videoId));
+  const isInBatch = $derived(batchVideoIds.has(videoId));
+  const isIndividuallyCanceled = $derived(batchCanceledIds.has(videoId));
 
   const itemState = createPlaylistVideoItemState({
     videoId: untrack(() => videoId),
@@ -34,17 +36,46 @@
     activeDownloadClicks
   });
 
-  const isCheckboxDisabled = $derived(batchDownloadStatus.isRunning || itemState.isDownloading);
+  // Indeterminate: video is in the active batch and is still being processed.
+  // isDownloading becomes false when: done (isDone=true), entry removed (ZIP path
+  // signals via PipelineRemoval without isDone), or individually canceled.
+  const isCheckboxIndeterminate = $derived(
+    batchDownloadStatus.isRunning && isInBatch && !isIndividuallyCanceled && itemState.isDownloading
+  );
+
+  // Disabled while the video is part of an active batch (downloading, queued, or individually canceled)
+  const isCheckboxDisabled = $derived(
+    (batchDownloadStatus.isRunning && isInBatch) || itemState.isDownloading
+  );
 
   const downloadButtonId = $derived(`btn-${videoId}-download`);
   const chevronButtonId = $derived(`btn-${videoId}-chevron`);
 
+  let elCheckbox = $state<HTMLElement | null>(null);
   let elButtonGroup: HTMLElement | null = null;
   let elDownloadBtn: Element | null = null;
   let elChevronBtn: Element | null = null;
 
   let buttonRefreshTimer: ReturnType<typeof setTimeout> | null = null;
   const buttonRefreshIntervalMs = 250;
+
+  function attachCheckbox(elTarget: Element) {
+    if (elTarget instanceof HTMLElement) {
+      elCheckbox = elTarget;
+    }
+  }
+
+  $effect(() => {
+    if (!elCheckbox) {
+      return;
+    }
+
+    if (isCheckboxIndeterminate) {
+      elCheckbox.setAttribute("indeterminate", "");
+    } else {
+      elCheckbox.removeAttribute("indeterminate");
+    }
+  });
 
   function assignButtonId({ elButton, id }: {
     elButton: Element;
@@ -189,8 +220,9 @@
     <div class="ytdl-button-row">
       {#if isPlaylistItem}
         <tp-yt-paper-checkbox
+          {@attach attachCheckbox}
           aria-label="Select for download"
-          checked={isChecked ? "" : undefined}
+          checked={!isCheckboxIndeterminate && isChecked ? "" : undefined}
           disabled={isCheckboxDisabled ? "" : undefined}
           onchange={e => {
             if (!(e.target instanceof HTMLElement)) {
