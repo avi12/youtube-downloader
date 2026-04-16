@@ -190,6 +190,7 @@
       onfilenamechange(name);
       onextensionchange(extension);
     }}
+    spellcheck={false}
     value={fullFilename}
   ></tp-yt-paper-input>
 </div>

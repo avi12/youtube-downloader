@@ -103,6 +103,7 @@
 
                 playlist.effectiveZipName = e.target.value;
               }}
+              spellcheck={false}
               type="text"
               value={playlist.effectiveZipName}
             />
