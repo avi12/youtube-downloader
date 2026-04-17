@@ -331,8 +331,8 @@ export function createPlaylistDownloaderState() {
     batchVideoIds.clear();
     batchCanceledIds.clear();
 
-    for (const videoId of activeVideoIds) {
-      downloadProgressStore.delete(videoId);
+    for (const request of activeDownloadRequests) {
+      downloadProgressStore.delete(request.videoId);
     }
   }
 

@@ -35,8 +35,14 @@ export function createPlaylistVideoItemState({ videoId, gridTitle, activeDownloa
   const isDone = $derived(downloadState.isDone);
 
   $effect(() => {
-    if (downloadState.isDone) {
+    const storeEntry = downloadProgressStore.get(videoId);
+    if (storeEntry?.isDone) {
       isLocallyDone = true;
+      return;
+    }
+
+    if (storeEntry === undefined) {
+      isLocallyDone = false;
     }
   });
 
