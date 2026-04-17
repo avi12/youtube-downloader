@@ -83,7 +83,8 @@ export function registerPipelineHandlers() {
         videoId,
         progress: 0,
         progressType: ProgressType.Video,
-        isRemoved: true
+        isRemoved: true,
+        isFailed: true
       },
       tabId
     });

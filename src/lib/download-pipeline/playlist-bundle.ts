@@ -49,6 +49,13 @@ export async function addToPlaylistBundle({
     return;
   }
 
+  if (bundle.totalCount !== totalCount) {
+    bundle.files.clear();
+    bundle.totalCount = totalCount;
+    bundle.playlistTitle = playlistTitle;
+    bundle.tabId = tabId;
+  }
+
   bundle.files.set(filename, {
     filename,
     data

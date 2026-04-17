@@ -79,15 +79,15 @@ async function downloadVideoAudioViaSabr({
   let audioReceivedBytes = 0;
 
   function reportProgress() {
-    const totalReceived = videoReceivedBytes + audioReceivedBytes;
-    const totalExpected = totalExpectedBytes || totalReceived;
-    if (totalExpected === 0) {
+    if (totalExpectedBytes === 0) {
       return;
     }
 
+    const totalReceived = videoReceivedBytes + audioReceivedBytes;
+
     void sendProgressUpdate({
       videoId,
-      progress: Math.min(totalReceived / totalExpected, 1),
+      progress: Math.min(totalReceived / totalExpectedBytes, 1),
       progressType: ProgressType.Video,
       tabId
     });
