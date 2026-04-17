@@ -7,6 +7,8 @@ const lastProgressTimestamps = new Map<string, number>();
 
 const maxCdnRetryAttempts = 3;
 const retryBaseDelayMs = 1_000;
+const httpStatusRangeNotSatisfiable = 416;
+const httpStatusOk = 200;
 
 function mergeUint8Arrays(first: Uint8Array, second: Uint8Array) {
   const merged = new Uint8Array(first.byteLength + second.byteLength);
@@ -66,21 +68,20 @@ export async function fetchWithProgress({ url, signal, onBytesReceived }: {
   let byteOffset = 0;
 
   for (let attempt = 0; attempt <= maxCdnRetryAttempts; attempt++) {
-    const headers: HeadersInit = byteOffset > 0 ? { Range: `bytes=${byteOffset}-` } : {};
-    const response = await fetch(url, { signal, credentials: "include", headers });
-    if (response.status === 416) {
+    const response = await fetch(url, { signal, credentials: "include", headers: byteOffset > 0 ? { Range: `bytes=${byteOffset}-` } : {} });
+    if (response.status === httpStatusRangeNotSatisfiable) {
       if (partialData) {
         return partialData;
       }
 
-      throw new Error("HTTP 416 Range Not Satisfiable");
+      throw new Error(`HTTP ${httpStatusRangeNotSatisfiable} Range Not Satisfiable`);
     }
 
     if (!response.ok) {
       throw new Error(`HTTP ${response.status} fetching stream`);
     }
 
-    if (byteOffset > 0 && response.status === 200) {
+    if (byteOffset > 0 && response.status === httpStatusOk) {
       onBytesReceived(-byteOffset);
       byteOffset = 0;
       partialData = null;

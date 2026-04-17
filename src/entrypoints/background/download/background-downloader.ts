@@ -195,6 +195,32 @@ export function cancelBackgroundDownload(videoId: string) {
   activeBackgroundDownloads.delete(videoId);
 }
 
+async function attemptSabrDownload({ request, signal, tabId }: {
+  request: DownloadRequest;
+  signal: AbortSignal;
+  tabId: number;
+}) {
+  const sabrAbortController = new AbortController();
+  let sabrStallTimeoutId = setTimeout(() => sabrAbortController.abort(), sabrStallTimeoutMs);
+  signal.addEventListener("abort", () => sabrAbortController.abort(), { once: true });
+
+  function resetSabrStallTimer() {
+    clearTimeout(sabrStallTimeoutId);
+    sabrStallTimeoutId = setTimeout(() => sabrAbortController.abort(), sabrStallTimeoutMs);
+  }
+
+  try {
+    return await downloadViaSabr({
+      request,
+      signal: sabrAbortController.signal,
+      tabId,
+      onProgress: resetSabrStallTimer
+    });
+  } finally {
+    clearTimeout(sabrStallTimeoutId);
+  }
+}
+
 export async function startBackgroundDownload({ request, tabId }: {
   request: DownloadRequest;
   tabId: number;
@@ -208,58 +234,20 @@ export async function startBackgroundDownload({ request, tabId }: {
   try {
     const enrichedMetadataPromise = enrichMetadataFromYouTubeMusic(metadata);
 
-    let result: DownloadResult | null = null;
-
-    try {
-      const sabrAbortController = new AbortController();
-      let sabrStallTimeoutId = setTimeout(() => sabrAbortController.abort(), sabrStallTimeoutMs);
-      signal.addEventListener("abort", () => sabrAbortController.abort(), { once: true });
-
-      function resetSabrStallTimer() {
-        clearTimeout(sabrStallTimeoutId);
-        sabrStallTimeoutId = setTimeout(() => sabrAbortController.abort(), sabrStallTimeoutMs);
-      }
-
-      try {
-        result = await downloadViaSabr({
-          request,
-          signal: sabrAbortController.signal,
-          tabId,
-          onProgress: resetSabrStallTimer
-        });
-      } finally {
-        clearTimeout(sabrStallTimeoutId);
-      }
-    } catch (sabrError) {
+    let result = await attemptSabrDownload({ request, signal, tabId }).catch(sabrError => {
       if (signal.aborted) {
-        return;
+        throw sabrError;
       }
 
       console.warn("[ytdl:bg] SABR failed, trying CDN:", sabrError);
-      // Reset the content script's progress to 0 so the UI shows an
-      // indeterminate bar rather than a frozen percentage while CDN starts.
+      // Resets the UI to indeterminate rather than a frozen percentage while CDN starts.
       void sendMessage(MessageType.UpdateDownloadProgress, {
         videoId, progress: 0, progressType: ProgressType.Video
       }, tabId);
-    }
-
+      return null;
+    });
     if (!result?.audioData) {
-      try {
-        result = await downloadViaCdn({ request, signal, videoId, tabId });
-      } catch (cdnError) {
-        if (signal.aborted) {
-          return;
-        }
-
-        if (!navigator.onLine) {
-          queueNetworkRetry({ request, tabId });
-          return;
-        }
-
-        console.warn("[ytdl:bg] CDN fetch failed:", cdnError);
-        reportDownloadFailed({ videoId, tabId });
-        return;
-      }
+      result = await downloadViaCdn({ request, signal, videoId, tabId });
     }
 
     if (!result?.audioData && !result?.videoData) {
