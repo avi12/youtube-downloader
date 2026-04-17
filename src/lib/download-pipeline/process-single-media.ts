@@ -85,8 +85,7 @@ export async function processSingleMedia(item: ProcessStreamData) {
   }
 
   if (item.playlistId) {
-    await reportProgress({ videoId, progress: 1, progressType: ProgressType.FFmpeg, tabId });
-    addToPlaylistBundle({
+    await addToPlaylistBundle({
       playlistId: item.playlistId,
       playlistTitle: item.playlistTitle ?? "Playlist",
       totalCount: item.playlistTotalCount ?? 1,
@@ -94,6 +93,7 @@ export async function processSingleMedia(item: ProcessStreamData) {
       filename: filenameOutput,
       data
     });
+    await reportProgress({ videoId, progress: 1, progressType: ProgressType.FFmpeg, tabId });
     return;
   }
 

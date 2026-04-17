@@ -1,6 +1,7 @@
 import { triggerDownload } from ".";
 import { getCompatibleFilename } from "~/lib/utils/containers";
-import { zipSync } from "fflate";
+import { zip } from "fflate";
+import type { AsyncZippable } from "fflate";
 
 const playlistBundles = new Map<string, {
   playlistTitle: string;
@@ -12,7 +13,19 @@ const playlistBundles = new Map<string, {
   tabId: number;
 }>();
 
-export function addToPlaylistBundle({
+function zipToBuffer(entries: AsyncZippable) {
+  return new Promise<Uint8Array>((resolve, reject) => {
+    zip(entries, (error, data) => {
+      if (error) {
+        reject(error);
+      } else {
+        resolve(data);
+      }
+    });
+  });
+}
+
+export async function addToPlaylistBundle({
   playlistId, playlistTitle, totalCount, tabId, filename, data
 }: {
   playlistId: string;
@@ -42,14 +55,14 @@ export function addToPlaylistBundle({
     return;
   }
 
-  const zipEntries: Record<string, Uint8Array> = {};
+  const zipEntries: AsyncZippable = {};
   for (const [, file] of bundle.files) {
-    zipEntries[file.filename] = file.data;
+    zipEntries[file.filename] = [file.data, { level: 0 }];
   }
 
-  const zipped = zipSync(zipEntries);
   const zipFilename = getCompatibleFilename(`${bundle.playlistTitle}.zip`);
   playlistBundles.delete(playlistId);
 
-  void triggerDownload({ data: zipped, filenameOutput: zipFilename });
+  const zipped = await zipToBuffer(zipEntries);
+  await triggerDownload({ data: zipped, filenameOutput: zipFilename });
 }
