@@ -66,8 +66,11 @@ export async function reportProgress({
   progressType: ProgressType;
   tabId: number;
 }) {
-  if (progress === 0) {
+  if (progress < 1) {
     completedVideoIds.delete(videoId);
+  }
+
+  if (progress === 0) {
     lastProgressTimestamps.delete(videoId);
   }
 

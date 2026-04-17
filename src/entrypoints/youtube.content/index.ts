@@ -119,7 +119,7 @@ function registerBackgroundMessageHandlers() {
   onMessage(MessageType.UpdateDownloadProgress, ({ data }) => {
     if (!data.isRemoved) {
       const last = lastReportedProgress.get(data.videoId);
-      if (last === data.progress) {
+      if (last !== undefined && last >= 1 && data.progress >= 1) {
         return;
       }
 
