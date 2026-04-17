@@ -379,7 +379,7 @@ export function createPlaylistDownloaderState() {
       let sum = 0;
       for (const request of activeDownloadRequests) {
         const entry = downloadProgressStore.get(request.videoId);
-        if (!entry) {
+        if (!entry || !entry.isDownloading) {
           sum += 1;
           continue;
         }

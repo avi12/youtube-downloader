@@ -120,8 +120,7 @@
       aria-label={progressAriaLabel}
       aria-valuetext={progressAriaValueText}
       indeterminate={playlist.isRevealingAll || playlist.totalProgress === 0 || undefined}
-      max={1}
-      value={playlist.totalProgress}
+      value={Math.round(playlist.totalProgress * 100)}
     ></tp-yt-paper-progress>
   {/if}
 </div>
