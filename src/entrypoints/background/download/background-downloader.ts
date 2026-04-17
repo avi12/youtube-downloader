@@ -20,6 +20,12 @@ export interface DownloadResult {
 }
 
 const activeBackgroundDownloads = new Map<string, AbortController>();
+
+// How long SABR can go without delivering any bytes before falling back to CDN.
+// A stall (no bytes received) is distinct from a slow connection: slow downloads
+// keep resetting this timer and are never killed, while a frozen SABR session
+// (re-downloading a recently-fetched video) gets detected and CDN is tried.
+const sabrStallTimeoutMs = 30_000;
 const pendingNetworkRetries = new Map<string, {
   request: DownloadRequest;
   tabId: number;
@@ -201,7 +207,25 @@ export async function startBackgroundDownload({ request, tabId }: {
     let result: DownloadResult | null = null;
 
     try {
-      result = await downloadViaSabr({ request, signal, tabId });
+      const sabrAbortController = new AbortController();
+      let sabrStallTimeoutId = setTimeout(() => sabrAbortController.abort(), sabrStallTimeoutMs);
+      signal.addEventListener("abort", () => sabrAbortController.abort(), { once: true });
+
+      function resetSabrStallTimer() {
+        clearTimeout(sabrStallTimeoutId);
+        sabrStallTimeoutId = setTimeout(() => sabrAbortController.abort(), sabrStallTimeoutMs);
+      }
+
+      try {
+        result = await downloadViaSabr({
+          request,
+          signal: sabrAbortController.signal,
+          tabId,
+          onProgress: resetSabrStallTimer
+        });
+      } finally {
+        clearTimeout(sabrStallTimeoutId);
+      }
     } catch (sabrError) {
       if (signal.aborted) {
         return;
