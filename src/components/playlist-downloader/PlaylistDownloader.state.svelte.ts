@@ -24,7 +24,7 @@ import {
 import { untrack } from "svelte";
 import { SvelteMap, SvelteSet } from "svelte/reactivity";
 
-export const batchDownloadStatus = $state({ isRunning: false });
+export const batchDownloadStatus = $state({ isRunning: false, isZipBatch: false });
 export const batchVideoIds = new SvelteSet<string>();
 export const batchCanceledIds = new SvelteSet<string>();
 
@@ -243,12 +243,14 @@ export function createPlaylistDownloaderState() {
 
     isDownloading = false;
     batchDownloadStatus.isRunning = false;
+    batchDownloadStatus.isZipBatch = false;
 
     for (const request of activeDownloadRequests) {
       if (batchCanceledIds.has(request.videoId)) {
         continue;
       }
 
+      downloadProgressStore.unsuppress(request.videoId);
       const entry = downloadProgressStore.get(request.videoId);
       if (!entry || !entry.isDone) {
         downloadProgressStore.setLocal(request.videoId, {
@@ -294,6 +296,7 @@ export function createPlaylistDownloaderState() {
     const metadata = playlistMetadataSignal.value;
     const playlistId = metadata?.playlistId || `playlist-${Date.now()}`;
     const isZipBundle = outputMode === PlaylistOutputMode.Zip;
+    batchDownloadStatus.isZipBatch = isZipBundle;
 
     const resolvedOptions = buildEffectiveOptions();
     const downloadRequests = videos.map(data =>
@@ -324,6 +327,7 @@ export function createPlaylistDownloaderState() {
 
     isDownloading = false;
     batchDownloadStatus.isRunning = false;
+    batchDownloadStatus.isZipBatch = false;
     batchVideoIds.clear();
     batchCanceledIds.clear();
 
