@@ -14,6 +14,7 @@ import {
   DownloadType,
   PlaylistDownloadMode,
   PlaylistOutputMode,
+  ProgressType,
   VideoQualityMode,
   type DownloadRequest,
   type DownloadTypePreference,
@@ -242,6 +243,23 @@ export function createPlaylistDownloaderState() {
 
     isDownloading = false;
     batchDownloadStatus.isRunning = false;
+
+    for (const request of activeDownloadRequests) {
+      if (batchCanceledIds.has(request.videoId)) {
+        continue;
+      }
+
+      const entry = downloadProgressStore.get(request.videoId);
+      if (!entry || !entry.isDone) {
+        downloadProgressStore.setLocal(request.videoId, {
+          isDownloading: false,
+          isDone: true,
+          progress: 1,
+          progressType: entry?.progressType ?? ProgressType.FFmpeg
+        });
+      }
+    }
+
     batchVideoIds.clear();
     batchCanceledIds.clear();
   });
