@@ -29,8 +29,7 @@ export const MessageType = {
   PipelineStart: "pipelineStart",
   PipelineDownload: "pipelineDownload",
   RecentDownloadsChanged: "recentDownloadsChanged",
-  TranscodeRecentDownload: "transcodeRecentDownload",
-  DiscardDownload: "discardDownload"
+  TranscodeRecentDownload: "transcodeRecentDownload"
 } as const;
 
 interface ProtocolMap {
@@ -178,9 +177,6 @@ interface ProtocolMap {
   transcodeRecentDownload(data: {
     entryId: string;
     targetContainer: string;
-  }): void;
-  discardDownload(data: {
-    videoId: string;
   }): void;
 }
 

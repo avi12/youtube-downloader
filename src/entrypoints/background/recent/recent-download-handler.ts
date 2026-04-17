@@ -2,9 +2,6 @@ import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
 import { addRecentDownload } from "@/lib/storage/recent-downloads-db";
 import type { RecentDownloadEntry } from "@/types";
 
-// Maps videoId to the browser download ID so users can discard a completed file.
-const completedDownloadIds = new Map<string, number>();
-
 function persistOnDownloadComplete({ targetDownloadId, data }: {
   targetDownloadId: number;
   data: {
@@ -88,29 +85,8 @@ export function registerRecentDownloadHandlers() {
       url: data.blobUrl,
       filename: data.filename
     });
-    if (data.recentContext?.videoId) {
-      completedDownloadIds.set(data.recentContext.videoId, targetDownloadId);
-    }
-
     if (data.recentContext) {
       void persistOnDownloadComplete({ targetDownloadId, data });
     }
-  });
-
-  onMessage(MessageType.DiscardDownload, async ({ data }) => {
-    const downloadId = completedDownloadIds.get(data.videoId);
-    completedDownloadIds.delete(data.videoId);
-
-    if (!downloadId) {
-      return;
-    }
-
-    try {
-      await browser.downloads.removeFile(downloadId);
-    } catch {
-      // Firefox does not support removeFile - silently ignore
-    }
-
-    await browser.downloads.erase({ id: downloadId });
   });
 }

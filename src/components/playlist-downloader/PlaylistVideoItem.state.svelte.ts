@@ -84,7 +84,7 @@ export function createPlaylistVideoItemState({ videoId, gridTitle, activeDownloa
 
   const buttonTooltip = $derived.by(() => {
     if (isLocallyDone || isDone) {
-      return "Click to discard the downloaded file";
+      return "Download again";
     }
 
     if (isDownloading) {
@@ -182,12 +182,6 @@ export function createPlaylistVideoItemState({ videoId, gridTitle, activeDownloa
         checkedPlaylistVideos.delete(videoId);
       }
 
-      return;
-    }
-
-    if (isLocallyDone || isDone) {
-      isLocallyDone = false;
-      void sendMessage(MessageType.DiscardDownload, { videoId });
       return;
     }
 
