@@ -147,7 +147,20 @@ function injectPlaylistVideoItemUi({ context, elVideoItem }: {
   }
 
   const videoId = getVideoIdFromUrl(elVideoIdLink.href);
-  if (!videoId || elVideoItem.querySelector(`[data-ytdl-item="${videoId}"]`)) {
+  if (!videoId) {
+    return;
+  }
+
+  // When a renderer is recycled for a different video, the previous video's
+  // container is still in the DOM. Remove it before injecting the new one so
+  // the old Svelte component is cleaned up and doesn't clutter the menu.
+  for (const elStale of elVideoItem.querySelectorAll("[data-ytdl-item]")) {
+    if (elStale.getAttribute("data-ytdl-item") !== videoId) {
+      elStale.remove();
+    }
+  }
+
+  if (elVideoItem.querySelector(`[data-ytdl-item="${videoId}"]`)) {
     return;
   }
 
@@ -199,10 +212,12 @@ function injectIntoSubtree({ root, context }: {
 
   // Polymer lazily renders #top-level-buttons-computed inside ytd-menu-renderer.
   // If the renderer was added before that element existed, injection was skipped.
-  // When the subtree mutation fires for a child node, retry the nearest renderer
-  // that hasn't been injected yet.
+  // When the subtree mutation fires for a child node, retry the nearest renderer.
+  // No pre-check here: injectPlaylistVideoItemUi does the per-videoId dedup, and
+  // a broad querySelector("[data-ytdl-item]") check would falsely skip recycled
+  // renderers that still carry a stale container from a previous video.
   const elParentRenderer = root.closest(PLAYLIST_VIDEO_TAG);
-  if (elParentRenderer && !elParentRenderer.querySelector("[data-ytdl-item]")) {
+  if (elParentRenderer) {
     injectPlaylistVideoItemUi({
       context,
       elVideoItem: elParentRenderer
@@ -228,6 +243,26 @@ export function handlePlaylistVideoAdditions(context: InstanceType<typeof Conten
           injectIntoSubtree({
             root: node,
             context
+          });
+        }
+      }
+
+      // Polymer's virtual DOM sync can remove our injected container from
+      // #top-level-buttons-computed without adding any replacement node,
+      // so no addedNodes event fires and the retry logic never triggers.
+      // Detect that case here and re-inject immediately.
+      for (const node of mutation.removedNodes) {
+        if (!(node instanceof Element) || !node.hasAttribute("data-ytdl-item")) {
+          continue;
+        }
+
+        const elParentRenderer = mutation.target instanceof Element
+          ? mutation.target.closest(PLAYLIST_VIDEO_TAG)
+          : null;
+        if (elParentRenderer) {
+          injectPlaylistVideoItemUi({
+            context,
+            elVideoItem: elParentRenderer
           });
         }
       }
