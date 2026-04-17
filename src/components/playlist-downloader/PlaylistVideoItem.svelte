@@ -36,16 +36,37 @@
     activeDownloadClicks
   });
 
-  // Indeterminate: video is in the active batch and is still being processed.
-  // isDownloading becomes false when: done (isDone=true), entry removed (ZIP path
-  // signals via PipelineRemoval without isDone), or individually canceled.
+  // Indeterminate: video is in the active batch and still actively downloading/processing.
   const isCheckboxIndeterminate = $derived(
     batchDownloadStatus.isRunning && isInBatch && !isIndividuallyCanceled && itemState.isDownloading
   );
 
-  // Disabled while the video is part of an active batch (downloading, queued, or individually canceled)
+  // Disabled while the video is part of an active batch, or individually downloading for the first
+  // time (isLocallyDone=false). isLocallyDone is sticky: once the download phase completes it stays
+  // true, so FFmpeg's transient isDownloading=true (after a premature batch completion caused by the
+  // download-phase progress=1) won't re-disable the checkbox.
   const isCheckboxDisabled = $derived(
-    (batchDownloadStatus.isRunning && isInBatch) || itemState.isDownloading
+    (batchDownloadStatus.isRunning && isInBatch) || (itemState.isDownloading && !itemState.isLocallyDone)
+  );
+
+  const isZipBatchActive = $derived(
+    batchDownloadStatus.isRunning && batchDownloadStatus.isZipBatch && isInBatch && !isIndividuallyCanceled
+  );
+
+  const isInProgressInZipBatch = $derived(isZipBatchActive && !itemState.isDownloading);
+
+  const isProgressBarVisible = $derived(
+    itemState.isDownloading || itemState.isDone || itemState.isLocallyDone || isInProgressInZipBatch
+  );
+
+  const isProgressBarIndeterminate = $derived(
+    !itemState.isDone && !itemState.isLocallyDone && !isInProgressInZipBatch && itemState.displayProgress === 0
+  );
+
+  const progressBarValue = $derived(
+    itemState.isDone || itemState.isLocallyDone || isInProgressInZipBatch
+      ? 100
+      : Math.round(itemState.displayProgress)
   );
 
   const downloadButtonId = $derived(`btn-${videoId}-download`);
@@ -95,6 +116,7 @@
     }
 
     const tooltip = itemState.buttonTooltip;
+    const isDownloadDisabled = !itemState.videoData?.isDownloadable || isInProgressInZipBatch;
     assignButtonId({ elButton: elDownloadBtn, id: downloadButtonId });
     sendButtonData({
       elButton: elDownloadBtn,
@@ -105,9 +127,9 @@
         style: ButtonStyle.Mono,
         type: ButtonType.Tonal,
         buttonSize: ButtonSize.Default,
-        state: !itemState.videoData?.isDownloadable ? ButtonState.Disabled : ButtonState.Active,
+        state: isDownloadDisabled ? ButtonState.Disabled : ButtonState.Active,
         isFullWidth: false,
-        isDisabled: !itemState.videoData?.isDownloadable,
+        isDisabled: isDownloadDisabled,
         tooltip
       }
     });
@@ -132,6 +154,7 @@
       return;
     }
 
+    const isChevronDisabled = !itemState.videoData?.isDownloadable || isZipBatchActive;
     assignButtonId({ elButton: elChevronBtn, id: chevronButtonId });
     // Chevron points at the panel: up when the panel sits above, down when
     // it sits below (including the closed state, which hints at where the
@@ -145,9 +168,9 @@
         style: ButtonStyle.Mono,
         type: ButtonType.Tonal,
         buttonSize: ButtonSize.Default,
-        state: !itemState.videoData?.isDownloadable ? ButtonState.Disabled : ButtonState.Active,
+        state: isChevronDisabled ? ButtonState.Disabled : ButtonState.Active,
         isFullWidth: false,
-        isDisabled: !itemState.videoData?.isDownloadable,
+        isDisabled: isChevronDisabled,
         tooltip: "Options"
       }
     });
@@ -155,6 +178,7 @@
 
   $effect(() => {
     void itemState.downloadState;
+    void isZipBatchActive;
 
     if (buttonRefreshTimer) {
       return;
@@ -208,11 +232,11 @@
   }
 
   $effect(() => onButtonClick(buttonId => {
-    if (buttonId === downloadButtonId) {
+    if (buttonId === downloadButtonId && !isInProgressInZipBatch) {
       queueMicrotask(() => {
         void itemState.handleDownloadClick();
       });
-    } else if (buttonId === chevronButtonId) {
+    } else if (buttonId === chevronButtonId && !isZipBatchActive) {
       queueMicrotask(() => togglePanel());
     }
   }));
@@ -247,14 +271,13 @@
       ></yt-button-view-model>
       <yt-button-view-model {@attach attachChevronButton}
       ></yt-button-view-model>
-      {#if itemState.isDownloading || itemState.isDone || itemState.isLocallyDone}
+      {#if isProgressBarVisible}
         <div class="ytdl-progress-container">
           <tp-yt-paper-progress
             class="ytdl-progress-bar"
             aria-label={itemState.buttonTooltip}
-            indeterminate={(!itemState.isDone && !itemState.isLocallyDone && itemState.displayProgress === 0)
-              || undefined}
-            value={itemState.isDone || itemState.isLocallyDone ? 100 : Math.round(itemState.displayProgress)}
+            indeterminate={isProgressBarIndeterminate || undefined}
+            value={progressBarValue}
           ></tp-yt-paper-progress>
         </div>
       {/if}
@@ -312,17 +335,17 @@
    * Specificity (2,3,1) beats the checkmark animation rule (2,3,0).
    */
   :global(tp-yt-paper-checkbox[indeterminate] #checkbox.tp-yt-paper-checkbox) {
-    background-color: var(--paper-checkbox-checked-color, var(--primary-color));
     border-color: var(--paper-checkbox-checked-color, var(--primary-color));
-  }
+    background-color: var(--paper-checkbox-checked-color, var(--primary-color));
 
-  :global(tp-yt-paper-checkbox[indeterminate] #checkbox.tp-yt-paper-checkbox #checkmark.tp-yt-paper-checkbox) {
-    animation-name: none;
-    border-right-width: 0;
-    width: 50%;
-    height: 0;
-    top: 50%;
-    left: 25%;
-    translate: 0 -50%;
+    :global(#checkmark.tp-yt-paper-checkbox) {
+      top: 50%;
+      left: 25%;
+      width: 50%;
+      height: 0;
+      border-right-width: 0;
+      translate: 0 -50%;
+      animation-name: none;
+    }
   }
 </style>
