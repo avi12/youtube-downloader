@@ -42,7 +42,7 @@ export function createPlaylistVideoItemState({ videoId, gridTitle, activeDownloa
       return;
     }
 
-    if (storeEntry === undefined) {
+    if (storeEntry === undefined || storeEntry.isFailed) {
       isLocallyDone = false;
     }
   });

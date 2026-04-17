@@ -102,6 +102,9 @@ export function createSyncedMap<T>(messenger: MapMessenger<T>) {
 
       map.set(mapKey, value);
     },
+    deleteLocal(mapKey: string) {
+      map.delete(mapKey);
+    },
     delete(mapKey: string) {
       suppressed.add(mapKey);
       map.delete(mapKey);

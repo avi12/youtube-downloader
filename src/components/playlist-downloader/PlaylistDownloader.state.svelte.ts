@@ -152,9 +152,7 @@ export function createPlaylistDownloaderState() {
       const data = videoDataStore.get(videoId);
       if (data) {
         untrack(() => {
-          if (!videoDataMap.has(videoId)) {
-            videoDataMap.set(videoId, data);
-          }
+          videoDataMap.set(videoId, data);
         });
       }
     }
@@ -264,7 +262,7 @@ export function createPlaylistDownloaderState() {
 
       downloadProgressStore.unsuppress(request.videoId);
       const entry = downloadProgressStore.get(request.videoId);
-      if (!entry || (!entry.isDone && !entry.isFailed)) {
+      if (entry && !entry.isDone && !entry.isFailed) {
         downloadProgressStore.setLocal(request.videoId, {
           isDownloading: false,
           isDone: true,
@@ -297,6 +295,7 @@ export function createPlaylistDownloaderState() {
     // PlaylistVideoItem components when starting a large playlist download.
     for (const video of videos) {
       batchVideoIds.add(video.videoId);
+      downloadProgressStore.deleteLocal(video.videoId);
       downloadProgressStore.unsuppress(video.videoId);
       downloadProgressStore.setLocal(video.videoId, {
         isDownloading: true,
