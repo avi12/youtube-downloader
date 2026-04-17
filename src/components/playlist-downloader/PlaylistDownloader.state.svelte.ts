@@ -200,6 +200,7 @@ export function createPlaylistDownloaderState() {
   );
 
   let activeDownloadRequests = $state<DownloadRequest[]>([]);
+  let completedBatchProgress = $state(0);
 
   // Sticky set: once a batch video is done (completed or cancelled), it stays
   // done even if the user re-downloads it individually during the same batch.
@@ -241,6 +242,7 @@ export function createPlaylistDownloaderState() {
       return;
     }
 
+    completedBatchProgress = 1;
     isDownloading = false;
     batchDownloadStatus.isRunning = false;
     batchDownloadStatus.isZipBatch = false;
@@ -271,6 +273,7 @@ export function createPlaylistDownloaderState() {
       return;
     }
 
+    completedBatchProgress = 0;
     error = "";
     isDownloading = true;
     batchDownloadStatus.isRunning = true;
@@ -325,6 +328,7 @@ export function createPlaylistDownloaderState() {
       await sendMessage(MessageType.CancelDownload, { videoIds: activeVideoIds });
     }
 
+    completedBatchProgress = 0;
     isDownloading = false;
     batchDownloadStatus.isRunning = false;
     batchDownloadStatus.isZipBatch = false;
@@ -408,7 +412,7 @@ export function createPlaylistDownloaderState() {
       return sum / activeIndividualDownloadCount;
     }
 
-    return 0;
+    return completedBatchProgress;
   });
 
   const activeDownloadVideoId = $derived.by(() => {
@@ -524,6 +528,9 @@ export function createPlaylistDownloaderState() {
     },
     get totalProgress() {
       return totalProgress;
+    },
+    get completedBatchProgress() {
+      return completedBatchProgress;
     },
     get isDownloadTypeOverridden() {
       return downloadTypeOverride !== null;

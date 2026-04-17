@@ -114,7 +114,8 @@
 
   {#if playlist.isRevealingAll
     || (playlist.isDownloading && playlist.totalCount > 0)
-    || playlist.activeIndividualDownloadCount > 0}
+    || playlist.activeIndividualDownloadCount > 0
+    || playlist.completedBatchProgress > 0}
     <tp-yt-paper-progress
       {@attach attachProgressBar}
       aria-label={progressAriaLabel}
