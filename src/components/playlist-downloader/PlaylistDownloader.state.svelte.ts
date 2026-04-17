@@ -380,7 +380,7 @@ export function createPlaylistDownloaderState() {
       for (const request of activeDownloadRequests) {
         const entry = downloadProgressStore.get(request.videoId);
         if (!entry || !entry.isDownloading) {
-          sum += 1;
+          sum += 100;
           continue;
         }
 
@@ -388,7 +388,7 @@ export function createPlaylistDownloaderState() {
           isDownloading: entry.isDownloading,
           progress: entry.progress,
           progressType: entry.progressType
-        }) / 100;
+        });
       }
       return sum / totalCount;
     }
@@ -402,7 +402,7 @@ export function createPlaylistDownloaderState() {
             isDownloading: entry.isDownloading,
             progress: entry.progress,
             progressType: entry.progressType
-          }) / 100;
+          });
         }
       }
       return sum / activeIndividualDownloadCount;
