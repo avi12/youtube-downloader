@@ -29,7 +29,11 @@ const tsStyleRules = {
   "@stylistic/quotes": ["error", "double", { allowTemplateLiterals: "always" }],
   "@stylistic/quote-props": ["error", "as-needed"],
   "@stylistic/semi": ["error"],
-  "@typescript-eslint/no-unused-vars": ["error", { varsIgnorePattern: "^_", argsIgnorePattern: "^_", caughtErrorsIgnorePattern: "^_" }],
+  "@typescript-eslint/no-unused-vars": ["error", {
+    varsIgnorePattern: "^_",
+    argsIgnorePattern: "^_",
+    caughtErrorsIgnorePattern: "^_"
+  }],
   "@typescript-eslint/no-explicit-any": "error",
   "@typescript-eslint/naming-convention": [
     "error",
@@ -50,10 +54,23 @@ const tsStyleRules = {
   "@stylistic/comma-dangle": ["error", "never"],
   "@stylistic/no-trailing-spaces": "error",
   "@stylistic/eol-last": ["error", "always"],
-  "@stylistic/no-multiple-empty-lines": ["error", { max: 1, maxEOF: 0, maxBOF: 0 }],
-  "@stylistic/comma-spacing": ["error", { before: false, after: true }],
-  "@stylistic/key-spacing": ["error", { beforeColon: false, afterColon: true }],
-  "@stylistic/keyword-spacing": ["error", { before: true, after: true }],
+  "@stylistic/no-multiple-empty-lines": ["error", {
+    max: 1,
+    maxEOF: 0,
+    maxBOF: 0
+  }],
+  "@stylistic/comma-spacing": ["error", {
+    before: false,
+    after: true
+  }],
+  "@stylistic/key-spacing": ["error", {
+    beforeColon: false,
+    afterColon: true
+  }],
+  "@stylistic/keyword-spacing": ["error", {
+    before: true,
+    after: true
+  }],
   "@stylistic/space-before-blocks": "error",
   "@stylistic/space-before-function-paren": [
     "error",
@@ -69,12 +86,24 @@ const tsStyleRules = {
   "@stylistic/computed-property-spacing": ["error", "never"],
   "@stylistic/template-curly-spacing": ["error", "never"],
   "@stylistic/block-spacing": ["error", "always"],
-  "@stylistic/semi-spacing": ["error", { before: false, after: true }],
+  "@stylistic/semi-spacing": ["error", {
+    before: false,
+    after: true
+  }],
   "@stylistic/no-extra-semi": "error",
   "@stylistic/type-annotation-spacing": "error",
   "@stylistic/member-delimiter-style": [
     "error",
-    { multiline: { delimiter: "semi", requireLast: true }, singleline: { delimiter: "semi", requireLast: false } }
+    {
+      multiline: {
+        delimiter: "semi",
+        requireLast: true
+      },
+      singleline: {
+        delimiter: "semi",
+        requireLast: false
+      }
+    }
   ],
   "@stylistic/no-mixed-spaces-and-tabs": "error",
   "@stylistic/no-tabs": "error",
@@ -91,17 +120,34 @@ const tsStyleRules = {
   "@stylistic/padded-blocks": ["error", "never"],
   "@stylistic/rest-spread-spacing": ["error", "never"],
   "@stylistic/spaced-comment": ["error", "always"],
-  "import-newlines/enforce": ["error", { items: 4, "max-len": 120, forceSingleLine: true }],
+  "import-newlines/enforce": ["error", {
+    items: 4,
+    "max-len": 120,
+    forceSingleLine: true
+  }],
   "@stylistic/object-curly-newline": [
     "error",
     {
-      ObjectExpression: { consistent: true, multiline: true },
-      ObjectPattern: { consistent: true, multiline: true },
-      ExportDeclaration: { consistent: true, multiline: true }
+      ObjectExpression: {
+        consistent: true,
+        multiline: true
+      },
+      ObjectPattern: {
+        consistent: true,
+        multiline: true
+      },
+      ExportDeclaration: {
+        consistent: true,
+        multiline: true
+      }
     }
   ],
   "@stylistic/object-property-newline": ["error", { allowAllPropertiesOnSameLine: false }],
-  "id-length": ["error", { min: 3, exceptions: ["z", "_", "i", "fs", "id", "os", "e", "db", "mi", "ui", "HL", "GL", "js", "q", "to", "dd", "mm", "x", "y", "d"], properties: "never" }],
+  "id-length": ["error", {
+    min: 3,
+    exceptions: ["z", "_", "i", "fs", "id", "os", "e", "db", "mi", "ui", "HL", "GL", "js", "q", "to", "dd", "mm", "x", "y", "d"],
+    properties: "never"
+  }],
   "func-style": ["error", "declaration", { allowArrowFunctions: false }],
   "no-restricted-syntax": [
     "error",
@@ -120,11 +166,31 @@ const tsStyleRules = {
   ],
   "@stylistic/padding-line-between-statements": [
     "error",
-    { blankLine: "always", prev: "import", next: ["const", "let", "function", "export", "type"] },
-    { blankLine: "any", prev: "import", next: "import" },
-    { blankLine: "always", prev: "*", next: "if" },
-    { blankLine: "never", prev: ["const", "let"], next: "if" },
-    { blankLine: "always", prev: "if", next: "*" }
+    {
+      blankLine: "always",
+      prev: "import",
+      next: ["const", "let", "function", "export", "type"]
+    },
+    {
+      blankLine: "any",
+      prev: "import",
+      next: "import"
+    },
+    {
+      blankLine: "always",
+      prev: "*",
+      next: "if"
+    },
+    {
+      blankLine: "never",
+      prev: ["const", "let"],
+      next: "if"
+    },
+    {
+      blankLine: "always",
+      prev: "if",
+      next: "*"
+    }
   ],
   "no-control-regex": "off",
   "object-shorthand": ["error", "always", { avoidExplicitReturnArrows: true }],
@@ -200,7 +266,11 @@ export default [
     files: ["**/*.svelte"],
     languageOptions: {
       parser: svelteParser,
-      parserOptions: { parser: tsEslint.parser, projectService: true, extraFileExtensions: [".svelte"] },
+      parserOptions: {
+        parser: tsEslint.parser,
+        projectService: true,
+        extraFileExtensions: [".svelte"]
+      },
       globals: sharedGlobals
     },
     plugins: sharedPlugins,

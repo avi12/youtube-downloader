@@ -55,7 +55,10 @@ export default defineConfig({
       strictPort: false,
       // Native fs events are unreliable on Windows; polling ensures file
       // changes are always detected by WXT's dev server watcher
-      watch: { usePolling: true, interval: 500 }
+      watch: {
+        usePolling: true,
+        interval: 500
+      }
     },
     build: { sourcemap: true }
   }),
@@ -65,7 +68,10 @@ export default defineConfig({
     },
     "build:publicAssets"(_, assets) {
       for (const path of ffmpegAssetPaths) {
-        assets.push({ absoluteSrc: resolve(path), relativeDest: path });
+        assets.push({
+          absoluteSrc: resolve(path),
+          relativeDest: path
+        });
       }
     }
   }
