@@ -218,8 +218,14 @@ export async function buildAndDispatchVideoData({ playerResponse, cancelActiveDo
     pendingChunks.length = 0;
   }
 
-  // Generate PO token before IframePlayerReady so the background download has valid SABR credentials immediately.
   if (self !== top) {
+    // Stop the player before generating the PO token so its SABR session is released
+    // before the background download starts a new one for the same video.
+    const elPlayer = document.querySelector<HTMLElement & {
+      stopVideo?: () => void;
+    }>("#movie_player");
+    elPlayer?.stopVideo?.();
+
     await generatePoTokenIfNeeded(videoData);
     void crossWorldMessenger.sendMessage(CrossWorldMessage.IframePlayerReady, { videoId: videoData.videoId });
     return;

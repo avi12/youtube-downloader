@@ -97,29 +97,17 @@ async function dispatchSequentially({ items, tabId, signal }: {
   }
 }
 
-// YouTube's SABR server rejects concurrent watch-page sessions: loading two iframes
-// simultaneously causes sabr.malformed_config on the second download. The fix is to
-// pre-load all iframes in parallel (fast), then execute SABR one at a time, removing
-// each iframe before the next one's download begins to clear the session state.
 async function dispatchParallel({ items, tabId, signal }: {
   items: DownloadRequest[];
   tabId: number;
   signal: AbortSignal;
 }) {
-  // Load all iframes simultaneously so their players initialise in parallel.
-  const frameIds = await Promise.all(
-    items.map(item => prepareIframe({ data: item, tabId }).catch(() => 0))
-  );
-
-  // Execute downloads one at a time, removing each iframe before the next SABR
-  // session starts to prevent session-state conflicts on YouTube's servers.
-  for (let i = 0; i < items.length; i++) {
+  for (const item of items) {
     if (signal.aborted) {
       break;
     }
 
-    const item = items[i];
-    const iframeFrameId = frameIds[i];
+    const iframeFrameId = await prepareIframe({ data: item, tabId }).catch(() => 0);
 
     try {
       await executeIframeDownload({ data: item, tabId, iframeFrameId });

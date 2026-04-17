@@ -41,22 +41,31 @@ export default defineContentScript({
 
     // Download iframes are for data fetching only and must never play audio or video.
     if (self !== top) {
-      const muteAndPauseObserver = new MutationObserver((_, observer) => {
+      function stopIframePlayer() {
         const elVideo = document.querySelector<HTMLVideoElement>("video");
         if (!elVideo) {
-          return;
+          return false;
         }
 
         elVideo.muted = true;
         elVideo.pause();
         const elPlayer = document.querySelector<HTMLElement & {
           pauseVideo?: () => void;
+          stopVideo?: () => void;
         }>("#movie_player");
+        elPlayer?.stopVideo?.();
         elPlayer?.pauseVideo?.();
-        observer.disconnect();
-      });
-      const childListSubtreeOptions = { childList: true, subtree: true };
-      muteAndPauseObserver.observe(document.documentElement, childListSubtreeOptions);
+        return true;
+      }
+
+      if (!stopIframePlayer()) {
+        const muteAndPauseObserver = new MutationObserver((_, observer) => {
+          if (stopIframePlayer()) {
+            observer.disconnect();
+          }
+        });
+        muteAndPauseObserver.observe(document.documentElement, { childList: true, subtree: true });
+      }
     }
 
     // Handle download requests from Svelte panel components (via isolated world)
