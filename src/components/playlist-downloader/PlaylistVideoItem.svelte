@@ -155,7 +155,7 @@
       return;
     }
 
-    const isChevronDisabled = !itemState.videoData?.isDownloadable || isZipBatchActive;
+    const isChevronDisabled = !itemState.videoData?.isDownloadable;
     assignButtonId({ elButton: elChevronBtn, id: chevronButtonId });
     // Chevron points at the panel: up when the panel sits above, down when
     // it sits below (including the closed state, which hints at where the
@@ -237,7 +237,7 @@
       queueMicrotask(() => {
         void itemState.handleDownloadClick();
       });
-    } else if (buttonId === chevronButtonId && !isZipBatchActive) {
+    } else if (buttonId === chevronButtonId) {
       queueMicrotask(() => togglePanel());
     }
   }));
