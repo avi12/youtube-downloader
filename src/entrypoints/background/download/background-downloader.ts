@@ -232,6 +232,11 @@ export async function startBackgroundDownload({ request, tabId }: {
       }
 
       console.warn("[ytdl:bg] SABR failed, trying CDN:", sabrError);
+      // Reset the content script's progress to 0 so the UI shows an
+      // indeterminate bar rather than a frozen percentage while CDN starts.
+      void sendMessage(MessageType.UpdateDownloadProgress, {
+        videoId, progress: 0, progressType: ProgressType.Video
+      }, tabId);
     }
 
     if (!result?.audioData) {
