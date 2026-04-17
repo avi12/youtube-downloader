@@ -41,12 +41,12 @@
     batchDownloadStatus.isRunning && isInBatch && !isIndividuallyCanceled && itemState.isDownloading
   );
 
-  // Disabled while the video is part of an active batch, or individually downloading for the first
+  // Disabled while any batch is running, or individually downloading for the first
   // time (isLocallyDone=false). isLocallyDone is sticky: once the download phase completes it stays
   // true, so FFmpeg's transient isDownloading=true (after a premature batch completion caused by the
   // download-phase progress=1) won't re-disable the checkbox.
   const isCheckboxDisabled = $derived(
-    (batchDownloadStatus.isRunning && isInBatch) || (itemState.isDownloading && !itemState.isLocallyDone)
+    batchDownloadStatus.isRunning || (itemState.isDownloading && !itemState.isLocallyDone)
   );
 
   const isZipBatchActive = $derived(
