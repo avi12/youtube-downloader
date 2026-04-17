@@ -196,6 +196,18 @@ function injectIntoSubtree({ root, context }: {
       elVideoItem
     });
   }
+
+  // Polymer lazily renders #top-level-buttons-computed inside ytd-menu-renderer.
+  // If the renderer was added before that element existed, injection was skipped.
+  // When the subtree mutation fires for a child node, retry the nearest renderer
+  // that hasn't been injected yet.
+  const elParentRenderer = root.closest(PLAYLIST_VIDEO_TAG);
+  if (elParentRenderer && !elParentRenderer.querySelector("[data-ytdl-item]")) {
+    injectPlaylistVideoItemUi({
+      context,
+      elVideoItem: elParentRenderer
+    });
+  }
 }
 
 export function handlePlaylistVideoAdditions(context: InstanceType<typeof ContentScriptContext>) {
