@@ -62,13 +62,14 @@ export function createProgressFetch({ signal, onBytesReceived }: {
       });
     }
 
-    const contentLength = parseInt(response.headers.get("Content-Length") ?? "0", 10);
-    const data = await readStreamToBuffer({
-      reader: response.body.getReader(),
-      expectedBytes: contentLength,
-      onBytesReceived
+    const progressStream = new TransformStream<Uint8Array, Uint8Array>({
+      transform(chunk, controller) {
+        onBytesReceived(chunk.byteLength);
+        controller.enqueue(chunk);
+      }
     });
-    return new Response(data, {
+
+    return new Response(response.body.pipeThrough(progressStream), {
       status: response.status,
       headers: response.headers
     });
