@@ -117,11 +117,12 @@
 
     const tooltip = itemState.buttonTooltip;
     const isDownloadDisabled = !itemState.videoData?.isDownloadable || isInProgressInZipBatch;
+    const downloadIconName = isInProgressInZipBatch ? IconName.CheckCircleThick : itemState.downloadIconName;
     assignButtonId({ elButton: elDownloadBtn, id: downloadButtonId });
     sendButtonData({
       elButton: elDownloadBtn,
       data: {
-        iconName: itemState.downloadIconName,
+        iconName: downloadIconName,
         title: "",
         accessibilityText: itemState.videoData ? `${tooltip} ${itemState.videoData.title}` : tooltip,
         style: ButtonStyle.Mono,
