@@ -5,10 +5,10 @@ import { ProgressType } from "@/types";
 const progressThrottleIntervalMs = 5000;
 const lastProgressTimestamps = new Map<string, number>();
 
-const maxCdnRetryAttempts = 3;
-const retryBaseDelayMs = 1_000;
-const httpStatusRangeNotSatisfiable = 416;
-const httpStatusOk = 200;
+const MAX_CDN_RETRY_ATTEMPTS = 3;
+const RETRY_BASE_DELAY_MS = 1_000;
+const HTTP_STATUS_RANGE_NOT_SATISFIABLE = 416;
+const HTTP_STATUS_OK = 200;
 
 function mergeUint8Arrays(first: Uint8Array, second: Uint8Array) {
   const merged = new Uint8Array(first.byteLength + second.byteLength);
@@ -67,21 +67,21 @@ export async function fetchWithProgress({ url, signal, onBytesReceived }: {
   let partialData: Uint8Array | null = null;
   let byteOffset = 0;
 
-  for (let attempt = 0; attempt <= maxCdnRetryAttempts; attempt++) {
+  for (let attempt = 0; attempt <= MAX_CDN_RETRY_ATTEMPTS; attempt++) {
     const response = await fetch(url, { signal, credentials: "include", headers: byteOffset > 0 ? { Range: `bytes=${byteOffset}-` } : {} });
-    if (response.status === httpStatusRangeNotSatisfiable) {
+    if (response.status === HTTP_STATUS_RANGE_NOT_SATISFIABLE) {
       if (partialData) {
         return partialData;
       }
 
-      throw new Error(`HTTP ${httpStatusRangeNotSatisfiable} Range Not Satisfiable`);
+      throw new Error(`HTTP ${HTTP_STATUS_RANGE_NOT_SATISFIABLE} Range Not Satisfiable`);
     }
 
     if (!response.ok) {
       throw new Error(`HTTP ${response.status} fetching stream`);
     }
 
-    if (byteOffset > 0 && response.status === httpStatusOk) {
+    if (byteOffset > 0 && response.status === HTTP_STATUS_OK) {
       onBytesReceived(-byteOffset);
       byteOffset = 0;
       partialData = null;
@@ -108,15 +108,15 @@ export async function fetchWithProgress({ url, signal, onBytesReceived }: {
 
       return partialData ? mergeUint8Arrays(partialData, newData) : newData;
     } catch (error) {
-      if (!(error instanceof StreamStallError) || attempt === maxCdnRetryAttempts) {
+      if (!(error instanceof StreamStallError) || attempt === MAX_CDN_RETRY_ATTEMPTS) {
         throw error;
       }
 
       partialData = partialData
         ? mergeUint8Arrays(partialData, error.partialData)
         : error.partialData;
-      console.warn(`[ytdl:bg] CDN stream interrupted at byte ${byteOffset}, retrying (${attempt + 1}/${maxCdnRetryAttempts})`);
-      await new Promise<void>(resolve => setTimeout(resolve, retryBaseDelayMs * (2 ** attempt)));
+      console.warn(`[ytdl:bg] CDN stream interrupted at byte ${byteOffset}, retrying (${attempt + 1}/${MAX_CDN_RETRY_ATTEMPTS})`);
+      await new Promise<void>(resolve => setTimeout(resolve, RETRY_BASE_DELAY_MS * (2 ** attempt)));
     }
   }
 
