@@ -35,6 +35,7 @@ export const downloadProgressStore = createSyncedMap(
     isDone: boolean;
     progress: number;
     progressType: ProgressType | "";
+    isFailed?: boolean;
   }>("download-progress")
 );
 

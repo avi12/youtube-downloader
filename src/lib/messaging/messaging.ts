@@ -138,6 +138,7 @@ interface ProtocolMap {
     progress: number;
     progressType: ProgressType;
     isRemoved?: boolean;
+    isFailed?: boolean;
   }): void;
 
   refreshPoToken(data: {

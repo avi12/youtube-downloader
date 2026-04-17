@@ -1,4 +1,6 @@
 import { ensureProcessor } from "../handlers/processor";
+import { removeFromPopupList } from "../queue/popup-list";
+import { signalVideoComplete } from "../queue/sequential-queue";
 import { downloadViaCdn } from "./cdn-downloader";
 import { downloadViaSabr } from "./sabr-downloader";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
@@ -164,13 +166,15 @@ async function enrichMetadataFromYouTubeMusic(metadata: VideoMetadata | null | u
   return fetchYouTubeMusicMetadata({ searchQuery, existingMetadata: metadata });
 }
 
-function reportDownloadRemoved({ videoId, tabId }: {
+function reportDownloadFailed({ videoId, tabId }: {
   videoId: string;
   tabId: number;
 }) {
   void sendMessage(MessageType.UpdateDownloadProgress, {
-    videoId, progress: 0, progressType: ProgressType.Video, isRemoved: true
+    videoId, progress: 0, progressType: ProgressType.Video, isRemoved: true, isFailed: true
   }, tabId);
+  void removeFromPopupList(videoId);
+  signalVideoComplete(videoId);
 }
 
 function queueNetworkRetry({ request, tabId }: {
@@ -253,14 +257,14 @@ export async function startBackgroundDownload({ request, tabId }: {
         }
 
         console.warn("[ytdl:bg] CDN fetch failed:", cdnError);
-        reportDownloadRemoved({ videoId, tabId });
+        reportDownloadFailed({ videoId, tabId });
         return;
       }
     }
 
     if (!result?.audioData && !result?.videoData) {
       console.warn("[ytdl:bg] No download method succeeded for", videoId);
-      reportDownloadRemoved({ videoId, tabId });
+      reportDownloadFailed({ videoId, tabId });
       return;
     }
 
@@ -278,7 +282,7 @@ export async function startBackgroundDownload({ request, tabId }: {
     }
 
     console.warn("[ytdl:bg] Background download failed:", error);
-    reportDownloadRemoved({ videoId, tabId });
+    reportDownloadFailed({ videoId, tabId });
   } finally {
     activeBackgroundDownloads.delete(videoId);
   }

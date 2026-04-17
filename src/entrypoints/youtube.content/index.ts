@@ -126,7 +126,18 @@ function registerBackgroundMessageHandlers() {
     }
 
     if (data.isRemoved) {
-      downloadProgressStore.delete(data.videoId);
+      if (data.isFailed) {
+        downloadProgressStore.setLocal(data.videoId, {
+          isDownloading: false,
+          isDone: false,
+          progress: 0,
+          progressType: data.progressType,
+          isFailed: true
+        });
+      } else {
+        downloadProgressStore.delete(data.videoId);
+      }
+
       emitCrossWorldEvent({ type: CrossWorldEvent.ProgressUpdate, data });
       return;
     }

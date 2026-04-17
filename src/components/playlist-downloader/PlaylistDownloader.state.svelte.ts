@@ -213,7 +213,7 @@ export function createPlaylistDownloaderState() {
       }
 
       const entry = downloadProgressStore.get(request.videoId);
-      if (!entry || entry.isDone) {
+      if (!entry || entry.isDone || entry.isFailed) {
         batchDoneIds.add(request.videoId);
       }
     }
@@ -252,7 +252,7 @@ export function createPlaylistDownloaderState() {
 
       downloadProgressStore.unsuppress(request.videoId);
       const entry = downloadProgressStore.get(request.videoId);
-      if (!entry || !entry.isDone) {
+      if (!entry || (!entry.isDone && !entry.isFailed)) {
         downloadProgressStore.setLocal(request.videoId, {
           isDownloading: false,
           isDone: true,

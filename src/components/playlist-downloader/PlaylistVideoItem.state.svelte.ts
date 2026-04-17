@@ -33,6 +33,7 @@ export function createPlaylistVideoItemState({ videoId, gridTitle, activeDownloa
   const downloadState = $derived(downloadProgressStore.get(videoId) ?? defaultProgressState);
   const isDownloading = $derived(downloadState.isDownloading);
   const isDone = $derived(downloadState.isDone);
+  const isDownloadFailed = $derived(downloadState.isFailed === true);
 
   $effect(() => {
     const storeEntry = downloadProgressStore.get(videoId);
@@ -77,6 +78,10 @@ export function createPlaylistVideoItemState({ videoId, gridTitle, activeDownloa
       return "Cancel";
     }
 
+    if (isDownloadFailed) {
+      return "Retry";
+    }
+
     return "Download";
   });
 
@@ -91,6 +96,10 @@ export function createPlaylistVideoItemState({ videoId, gridTitle, activeDownloa
   const buttonTooltip = $derived.by(() => {
     if (isLocallyDone || isDone) {
       return "Download again";
+    }
+
+    if (isDownloadFailed) {
+      return "Download failed - click to retry";
     }
 
     if (isDownloading) {
@@ -136,6 +145,10 @@ export function createPlaylistVideoItemState({ videoId, gridTitle, activeDownloa
 
     if (isDownloading) {
       return IconName.Close;
+    }
+
+    if (isDownloadFailed) {
+      return IconName.Info;
     }
 
     return IconName.Download;
@@ -214,6 +227,9 @@ export function createPlaylistVideoItemState({ videoId, gridTitle, activeDownloa
     },
     get isDone() {
       return isDone;
+    },
+    get isDownloadFailed() {
+      return isDownloadFailed;
     },
     get isLocallyDone() {
       return isLocallyDone;

@@ -179,6 +179,7 @@
 
   $effect(() => {
     void itemState.downloadState;
+    void itemState.isDownloadFailed;
     void isZipBatchActive;
 
     if (buttonRefreshTimer) {
