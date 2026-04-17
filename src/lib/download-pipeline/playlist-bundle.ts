@@ -49,7 +49,10 @@ export async function addToPlaylistBundle({
     return;
   }
 
-  bundle.files.set(filename, { filename, data });
+  bundle.files.set(filename, {
+    filename,
+    data
+  });
 
   if (bundle.files.size < bundle.totalCount) {
     return;
@@ -64,5 +67,8 @@ export async function addToPlaylistBundle({
   playlistBundles.delete(playlistId);
 
   const zipped = await zipToBuffer(zipEntries);
-  await triggerDownload({ data: zipped, filenameOutput: zipFilename });
+  await triggerDownload({
+    data: zipped,
+    filenameOutput: zipFilename
+  });
 }

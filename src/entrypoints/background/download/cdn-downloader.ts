@@ -34,7 +34,10 @@ export async function downloadViaCdn({ request, signal, videoId, tabId }: {
     }
 
     void sendProgressUpdate({
-      videoId, progress: Math.min(totalReceived / totalExpected, 1), progressType: ProgressType.Video, tabId
+      videoId,
+      progress: Math.min(totalReceived / totalExpected, 1),
+      progressType: ProgressType.Video,
+      tabId
     });
   }
 
@@ -46,7 +49,11 @@ export async function downloadViaCdn({ request, signal, videoId, tabId }: {
       return Promise.resolve(null);
     }
 
-    return fetchWithProgress({ url, signal, onBytesReceived: onBytes });
+    return fetchWithProgress({
+      url,
+      signal,
+      onBytesReceived: onBytes
+    });
   }
 
   const extraUrls = resolvedExtraAudioUrls ?? [];
@@ -71,7 +78,10 @@ export async function downloadViaCdn({ request, signal, videoId, tabId }: {
         }
       })
       : Promise.resolve(null),
-    ...extraUrls.map(url => fetchStream({ url, onBytes() {} }))
+    ...extraUrls.map(url => fetchStream({
+      url,
+      onBytes() {}
+    }))
   ]);
 
   const additionalAudioTracks: DownloadResult["additionalAudioTracks"] = [];

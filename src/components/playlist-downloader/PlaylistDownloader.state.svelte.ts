@@ -24,7 +24,10 @@ import {
 import { untrack } from "svelte";
 import { SvelteMap, SvelteSet } from "svelte/reactivity";
 
-export const batchDownloadStatus = $state({ isRunning: false, isZipBatch: false });
+export const batchDownloadStatus = $state({
+  isRunning: false,
+  isZipBatch: false
+});
 export const batchVideoIds = new SvelteSet<string>();
 export const batchCanceledIds = new SvelteSet<string>();
 
@@ -85,9 +88,16 @@ function buildDownloadRequest(
     videoId: data.videoId,
     videoItag: videoFormat?.itag ?? 0,
     audioItag: data.audioFormats[0]?.itag ?? 0,
-    filenameOutput: resolveVideoFilename({ videoData: data, options }),
+    filenameOutput: resolveVideoFilename({
+      videoData: data,
+      options
+    }),
     sabrConfig: data.sabrConfig,
-    ...(isZipBundle && { playlistId, playlistTitle, playlistTotalCount })
+    ...(isZipBundle && {
+      playlistId,
+      playlistTitle,
+      playlistTotalCount
+    })
   };
 }
 

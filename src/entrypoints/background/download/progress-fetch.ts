@@ -36,7 +36,11 @@ export async function sendProgressUpdate({ videoId, progress, progressType, tabI
     lastProgressTimestamps.delete(videoId);
   }
 
-  await sendMessage(MessageType.UpdateDownloadProgress, { videoId, progress, progressType }, tabId);
+  await sendMessage(MessageType.UpdateDownloadProgress, {
+    videoId,
+    progress,
+    progressType
+  }, tabId);
 }
 
 export function createProgressFetch({ signal, onBytesReceived }: {
@@ -44,18 +48,30 @@ export function createProgressFetch({ signal, onBytesReceived }: {
   onBytesReceived: (bytes: number) => void;
 }) {
   return async (input: RequestInfo | URL, init?: RequestInit) => {
-    const response = await fetch(input, { ...init, signal, credentials: "include" });
+    const response = await fetch(input, {
+      ...init,
+      signal,
+      credentials: "include"
+    });
     if (!response.body) {
       const buffer = await response.arrayBuffer();
       onBytesReceived(buffer.byteLength);
-      return new Response(buffer, { status: response.status, headers: response.headers });
+      return new Response(buffer, {
+        status: response.status,
+        headers: response.headers
+      });
     }
 
     const contentLength = parseInt(response.headers.get("Content-Length") ?? "0", 10);
     const data = await readStreamToBuffer({
-      reader: response.body.getReader(), expectedBytes: contentLength, onBytesReceived
+      reader: response.body.getReader(),
+      expectedBytes: contentLength,
+      onBytesReceived
     });
-    return new Response(data, { status: response.status, headers: response.headers });
+    return new Response(data, {
+      status: response.status,
+      headers: response.headers
+    });
   };
 }
 
@@ -68,7 +84,11 @@ export async function fetchWithProgress({ url, signal, onBytesReceived }: {
   let byteOffset = 0;
 
   for (let attempt = 0; attempt <= MAX_CDN_RETRY_ATTEMPTS; attempt++) {
-    const response = await fetch(url, { signal, credentials: "include", headers: byteOffset > 0 ? { Range: `bytes=${byteOffset}-` } : {} });
+    const response = await fetch(url, {
+      signal,
+      credentials: "include",
+      headers: byteOffset > 0 ? { Range: `bytes=${byteOffset}-` } : {}
+    });
     if (response.status === HTTP_STATUS_RANGE_NOT_SATISFIABLE) {
       if (partialData) {
         return partialData;

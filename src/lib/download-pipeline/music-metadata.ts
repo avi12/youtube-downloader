@@ -18,16 +18,29 @@ const webpMagicBytes = [0x57, 0x45, 0x42, 0x50];
 const webpMagicOffset = 8;
 
 function detectImageExtension(data: Uint8Array) {
-  if (matchesMagicBytes({ data, bytes: jpegMagicBytes })) {
+  if (matchesMagicBytes({
+    data,
+    bytes: jpegMagicBytes
+  })) {
     return "jpg";
   }
 
-  if (matchesMagicBytes({ data, bytes: pngMagicBytes })) {
+  if (matchesMagicBytes({
+    data,
+    bytes: pngMagicBytes
+  })) {
     return "png";
   }
 
-  if (matchesMagicBytes({ data, bytes: riffMagicBytes })
-    && matchesMagicBytes({ data, bytes: webpMagicBytes, offset: webpMagicOffset })) {
+  if (matchesMagicBytes({
+    data,
+    bytes: riffMagicBytes
+  })
+    && matchesMagicBytes({
+      data,
+      bytes: webpMagicBytes,
+      offset: webpMagicOffset
+    })) {
     return "webp";
   }
 
@@ -54,7 +67,10 @@ async function fetchThumbnail(url: string) {
     }
 
     const data = new Uint8Array(await response.arrayBuffer());
-    return { data, extension: detectImageExtension(data) };
+    return {
+      data,
+      extension: detectImageExtension(data)
+    };
   } catch {
     return null;
   }
@@ -136,11 +152,20 @@ export async function embedMusicMetadata({ audioData, filenameOutput, sourceExte
 
     return taggedOutput;
   } finally {
-    tryUnlink({ ffmpeg, filename: inputFilename });
-    tryUnlink({ ffmpeg, filename: outputFilename });
+    tryUnlink({
+      ffmpeg,
+      filename: inputFilename
+    });
+    tryUnlink({
+      ffmpeg,
+      filename: outputFilename
+    });
 
     if (isCoverArtPresent) {
-      tryUnlink({ ffmpeg, filename: coverFilename });
+      tryUnlink({
+        ffmpeg,
+        filename: coverFilename
+      });
     }
   }
 }

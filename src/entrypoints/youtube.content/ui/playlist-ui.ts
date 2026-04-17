@@ -45,7 +45,10 @@ function waitForPlaylistHeaderMount(signal: AbortSignal) {
       resolve(elHeader);
     });
 
-    const childListSubtreeOptions = { childList: true, subtree: true };
+    const childListSubtreeOptions = {
+      childList: true,
+      subtree: true
+    };
     observer.observe(document.body, childListSubtreeOptions);
 
     signal.addEventListener("abort", () => {
@@ -127,7 +130,10 @@ export async function injectPlaylistDownloaderUi(
     void injectPlaylistDownloaderUi(context);
   });
 
-  const childListSubtreeOptions = { childList: true, subtree: true };
+  const childListSubtreeOptions = {
+    childList: true,
+    subtree: true
+  };
   headerReinjectObserver.observe(document.body, childListSubtreeOptions);
 }
 
@@ -160,7 +166,10 @@ function injectPlaylistVideoItemUi({ context, elVideoItem }: {
     onMount(elUiContainer) {
       mount(PlaylistVideoItem, {
         target: elUiContainer,
-        props: { videoId, isPlaylistItem: true }
+        props: {
+          videoId,
+          isPlaylistItem: true
+        }
       });
     }
   });
@@ -175,11 +184,17 @@ function injectIntoSubtree({ root, context }: {
   context: InstanceType<typeof ContentScriptContext>;
 }) {
   if (root.tagName.toLowerCase() === PLAYLIST_VIDEO_TAG) {
-    injectPlaylistVideoItemUi({ context, elVideoItem: root });
+    injectPlaylistVideoItemUi({
+      context,
+      elVideoItem: root
+    });
   }
 
   for (const elVideoItem of root.querySelectorAll(PLAYLIST_VIDEO_TAG)) {
-    injectPlaylistVideoItemUi({ context, elVideoItem });
+    injectPlaylistVideoItemUi({
+      context,
+      elVideoItem
+    });
   }
 }
 
@@ -189,19 +204,28 @@ export function handlePlaylistVideoAdditions(context: InstanceType<typeof Conten
     return;
   }
 
-  injectIntoSubtree({ root: elContents, context });
+  injectIntoSubtree({
+    root: elContents,
+    context
+  });
 
   const mutationObserver = new MutationObserver(mutations => {
     for (const mutation of mutations) {
       for (const node of mutation.addedNodes) {
         if (node instanceof Element) {
-          injectIntoSubtree({ root: node, context });
+          injectIntoSubtree({
+            root: node,
+            context
+          });
         }
       }
     }
   });
 
-  const childListSubtreeOptions = { childList: true, subtree: true };
+  const childListSubtreeOptions = {
+    childList: true,
+    subtree: true
+  };
   mutationObserver.observe(elContents, childListSubtreeOptions);
   context.onInvalidated(() => mutationObserver.disconnect());
 }

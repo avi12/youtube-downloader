@@ -31,7 +31,11 @@ export function extractPlaylistMetadata() {
     return;
   }
 
-  playlistMetadataSignal.value = { playlistId, playlistTitle, playlistOwner };
+  playlistMetadataSignal.value = {
+    playlistId,
+    playlistTitle,
+    playlistOwner
+  };
 }
 
 function handleNavigation() {
@@ -58,7 +62,10 @@ export async function handleNavigateSuccess() {
     const isReady = playerResponse?.videoDetails?.videoId === expectedVideoId
       && playerResponse.playabilityStatus?.status !== "UNPLAYABLE";
     if (isReady) {
-      await buildAndDispatchVideoData({ playerResponse, cancelActiveDownload });
+      await buildAndDispatchVideoData({
+        playerResponse,
+        cancelActiveDownload
+      });
       return;
     }
 

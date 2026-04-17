@@ -45,7 +45,10 @@ export async function transcodeRecentDownload({ entryId, targetContainer }: {
 
   const sourceFilename = `source.${entry.container}`;
   const outputFilename = `output.${targetContainer}`;
-  const downloadFilename = swapFileExtension({ filename: entry.filename, extension: targetContainer });
+  const downloadFilename = swapFileExtension({
+    filename: entry.filename,
+    extension: targetContainer
+  });
   const inputBytes = new Uint8Array(await blob.arrayBuffer());
 
   await enqueueMuxJob(async () => {
@@ -54,7 +57,13 @@ export async function transcodeRecentDownload({ entryId, targetContainer }: {
     try {
       ffmpeg.FS.writeFile(sourceFilename, inputBytes);
 
-      const exitCode = ffmpeg.exec(...buildFfmpegArgs({ sourceFilename, outputFilename, targetContainer }));
+      const exitCode = ffmpeg.exec(
+        ...buildFfmpegArgs({
+          sourceFilename,
+          outputFilename,
+          targetContainer
+        })
+      );
       if (exitCode !== 0) {
         throw new Error(`FFmpeg exited with code ${exitCode}`);
       }
@@ -75,8 +84,14 @@ export async function transcodeRecentDownload({ entryId, targetContainer }: {
         }
       });
     } finally {
-      tryUnlink({ ffmpeg, filename: sourceFilename });
-      tryUnlink({ ffmpeg, filename: outputFilename });
+      tryUnlink({
+        ffmpeg,
+        filename: sourceFilename
+      });
+      tryUnlink({
+        ffmpeg,
+        filename: outputFilename
+      });
     }
   });
 }

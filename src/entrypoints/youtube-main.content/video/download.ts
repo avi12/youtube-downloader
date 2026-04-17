@@ -60,10 +60,16 @@ function resolveCredentials() {
   }
 
   if (currentPoToken !== capturedPoToken || currentSabrUrl !== capturedSabrUrl) {
-    setPoTokenCredentials({ poToken: currentPoToken, sabrUrl: currentSabrUrl });
+    setPoTokenCredentials({
+      poToken: currentPoToken,
+      sabrUrl: currentSabrUrl
+    });
   }
 
-  return { poToken: currentPoToken, sabrUrl: currentSabrUrl };
+  return {
+    poToken: currentPoToken,
+    sabrUrl: currentSabrUrl
+  };
 }
 
 const credentialPollIntervalMs = 200;
@@ -103,7 +109,10 @@ function selectFormats({ videoData, type, videoItag, audioItag }: {
     ? (videoData.audioFormats.find(format => format.itag === audioItag) ?? videoData.audioFormats[0])
     : null;
 
-  return { videoFormat, audioFormat };
+  return {
+    videoFormat,
+    audioFormat
+  };
 }
 
 async function preResolveCdnUrls({ type, videoFormat, audioFormat, extraAudioFormats }: {
@@ -145,9 +154,15 @@ export async function performDownload({
       return;
     }
 
-    const { videoFormat, audioFormat } = selectFormats({ videoData: cachedVideoData, type, videoItag, audioItag });
+    const { videoFormat, audioFormat } = selectFormats({
+      videoData: cachedVideoData,
+      type,
+      videoItag,
+      audioItag
+    });
     const extraAudioFormats = getExtraAudioFormats({
-      audioFormats: cachedVideoData.audioFormats, selectedTrackId: audioFormat?.audioTrack?.id
+      audioFormats: cachedVideoData.audioFormats,
+      selectedTrackId: audioFormat?.audioTrack?.id
     });
     // BotGuard's synchronous VM briefly blocks the main thread,
     // so do it at click-time (expected latency) rather than download completion.
@@ -155,7 +170,12 @@ export async function performDownload({
     const credentials = await resolveCredentialsWithRetry();
 
     const [resolvedVideoUrl, resolvedAudioUrl, ...resolvedExtraAudioUrls] =
-      await preResolveCdnUrls({ type, videoFormat, audioFormat, extraAudioFormats });
+      await preResolveCdnUrls({
+        type,
+        videoFormat,
+        audioFormat,
+        extraAudioFormats
+      });
     const metadata = await buildVideoMetadata(videoId);
 
     const enrichedRequest: DownloadRequest = {

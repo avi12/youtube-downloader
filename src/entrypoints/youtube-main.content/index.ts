@@ -64,7 +64,10 @@ export default defineContentScript({
             observer.disconnect();
           }
         });
-        muteAndPauseObserver.observe(document.documentElement, { childList: true, subtree: true });
+        muteAndPauseObserver.observe(document.documentElement, {
+          childList: true,
+          subtree: true
+        });
       }
     }
 

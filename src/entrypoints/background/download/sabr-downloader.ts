@@ -10,7 +10,10 @@ export function buildEffectiveSabrConfig({ sabrConfig, sabrUrl }: {
   sabrUrl: string | undefined;
 }): SabrConfig {
   if (sabrUrl && sabrUrl !== sabrConfig.serverAbrStreamingUrl) {
-    return { ...sabrConfig, serverAbrStreamingUrl: sabrUrl };
+    return {
+      ...sabrConfig,
+      serverAbrStreamingUrl: sabrUrl
+    };
   }
 
   return sabrConfig;
@@ -43,12 +46,20 @@ async function downloadAudioOnlyViaSabr({ config, audioFormat, poToken, signal, 
       onProgress?.();
       const totalBytes = audioExpectedBytes || audioReceivedBytes;
       void sendProgressUpdate({
-        videoId, progress: Math.min(audioReceivedBytes / totalBytes, 1), progressType: ProgressType.Video, tabId
+        videoId,
+        progress: Math.min(audioReceivedBytes / totalBytes, 1),
+        progressType: ProgressType.Video,
+        tabId
       });
     }
   });
 
-  return fetchAudioViaSabrStream({ sabrConfig: config, audioFormat, fetchFn: sabrFetch, poToken });
+  return fetchAudioViaSabrStream({
+    sabrConfig: config,
+    audioFormat,
+    fetchFn: sabrFetch,
+    poToken
+  });
 }
 
 async function downloadVideoAudioViaSabr({
@@ -75,7 +86,10 @@ async function downloadVideoAudioViaSabr({
     }
 
     void sendProgressUpdate({
-      videoId, progress: Math.min(totalReceived / totalExpected, 1), progressType: ProgressType.Video, tabId
+      videoId,
+      progress: Math.min(totalReceived / totalExpected, 1),
+      progressType: ProgressType.Video,
+      tabId
     });
   }
 
@@ -97,8 +111,18 @@ async function downloadVideoAudioViaSabr({
   });
 
   return Promise.all([
-    fetchVideoViaSabrStream({ sabrConfig: config, videoFormat, fetchFn: videoFetch, poToken }),
-    fetchAudioViaSabrStream({ sabrConfig: config, audioFormat, fetchFn: audioFetch, poToken })
+    fetchVideoViaSabrStream({
+      sabrConfig: config,
+      videoFormat,
+      fetchFn: videoFetch,
+      poToken
+    }),
+    fetchAudioViaSabrStream({
+      sabrConfig: config,
+      audioFormat,
+      fetchFn: audioFetch,
+      poToken
+    })
   ]);
 }
 
@@ -112,9 +136,15 @@ async function downloadExtraAudioTracksViaSabr({ config, formats, poToken, signa
 
   for (const format of formats) {
     try {
-      const sabrFetch = createProgressFetch({ signal, onBytesReceived() {} });
+      const sabrFetch = createProgressFetch({
+        signal,
+        onBytesReceived() {}
+      });
       const data = await fetchAudioViaSabrStream({
-        sabrConfig: config, audioFormat: format, fetchFn: sabrFetch, poToken
+        sabrConfig: config,
+        audioFormat: format,
+        fetchFn: sabrFetch,
+        poToken
       });
       tracks.push({
         data,
@@ -138,7 +168,10 @@ export async function downloadViaSabr({ request, signal, tabId, onProgress }: {
   const { videoId, type, sabrConfig, poToken, sabrUrl, videoFormat, audioFormat, additionalAudioFormats } = request;
   const isAudioOnly = type === DownloadType.Audio;
 
-  const effectiveConfig = sabrConfig ? buildEffectiveSabrConfig({ sabrConfig, sabrUrl }) : null;
+  const effectiveConfig = sabrConfig ? buildEffectiveSabrConfig({
+    sabrConfig,
+    sabrUrl
+  }) : null;
   if (!effectiveConfig || !audioFormat) {
     return null;
   }
@@ -150,9 +183,19 @@ export async function downloadViaSabr({ request, signal, tabId, onProgress }: {
   const resolvedPoToken = poToken ?? "";
   if (isAudioOnly) {
     const audioData = await downloadAudioOnlyViaSabr({
-      config: effectiveConfig, audioFormat, poToken: resolvedPoToken, signal, videoId, tabId, onProgress
+      config: effectiveConfig,
+      audioFormat,
+      poToken: resolvedPoToken,
+      signal,
+      videoId,
+      tabId,
+      onProgress
     });
-    return { videoData: null, audioData, additionalAudioTracks: [] };
+    return {
+      videoData: null,
+      audioData,
+      additionalAudioTracks: []
+    };
   }
 
   if (!videoFormat) {
@@ -170,8 +213,15 @@ export async function downloadViaSabr({ request, signal, tabId, onProgress }: {
     onProgress
   });
   const additionalAudioTracks = await downloadExtraAudioTracksViaSabr({
-    config: effectiveConfig, formats: additionalAudioFormats ?? [], poToken: resolvedPoToken, signal
+    config: effectiveConfig,
+    formats: additionalAudioFormats ?? [],
+    poToken: resolvedPoToken,
+    signal
   });
 
-  return { videoData, audioData, additionalAudioTracks };
+  return {
+    videoData,
+    audioData,
+    additionalAudioTracks
+  };
 }

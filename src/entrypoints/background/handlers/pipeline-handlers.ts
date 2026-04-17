@@ -47,16 +47,27 @@ export function registerPipelineHandlers() {
   });
 
   onMessage(MessageType.PipelineStart, async ({ data }) => {
-    await enqueueToPopupList({ videoId: data.videoId, type: data.type, filenameOutput: data.filenameOutput });
+    await enqueueToPopupList({
+      videoId: data.videoId,
+      type: data.type,
+      filenameOutput: data.filenameOutput
+    });
   });
 
   onMessage(MessageType.PipelineProgress, async ({ data }) => {
     const { videoId, progress, progressType, tabId } = data;
     await updateStatusProgress({
       mutate(current) {
-        current[videoId] = { progress, progressType };
+        current[videoId] = {
+          progress,
+          progressType
+        };
       },
-      progressUpdate: { videoId, progress, progressType },
+      progressUpdate: {
+        videoId,
+        progress,
+        progressType
+      },
       tabId
     });
   });
@@ -67,7 +78,12 @@ export function registerPipelineHandlers() {
       mutate(current) {
         delete current[videoId];
       },
-      progressUpdate: { videoId, progress: 0, progressType: ProgressType.Video, isRemoved: true },
+      progressUpdate: {
+        videoId,
+        progress: 0,
+        progressType: ProgressType.Video,
+        isRemoved: true
+      },
       tabId
     });
     await removeFromPopupList(videoId);

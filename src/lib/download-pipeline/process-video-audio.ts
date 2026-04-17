@@ -18,7 +18,11 @@ function determineOutputExtension({
   }
 
   const userExtension = filenameOutput.split(".").pop() ?? "mp4";
-  return getOutputExtension({ videoMimeType, audioMimeType, userExtension });
+  return getOutputExtension({
+    videoMimeType,
+    audioMimeType,
+    userExtension
+  });
 }
 
 export async function processVideoAudio(item: ProcessStreamData) {
@@ -30,7 +34,10 @@ export async function processVideoAudio(item: ProcessStreamData) {
   const audioExtension = audioMimeType.includes("webm") ? "webm" : "m4a";
   const isExtraTracksPresent = Boolean(additionalAudioStreams.length);
   const outputExtension = determineOutputExtension({
-    videoMimeType, audioMimeType, isExtraTracksPresent, filenameOutput
+    videoMimeType,
+    audioMimeType,
+    isExtraTracksPresent,
+    filenameOutput
   });
 
   const filenameBase = filenameOutput.replace(/\.[^.]+$/, "");
@@ -46,7 +53,12 @@ export async function processVideoAudio(item: ProcessStreamData) {
     progress: number;
   }) {
     const cappedProgress = Math.min(progress, ffmpegProgressCapBeforeSave);
-    void reportProgress({ videoId, progress: cappedProgress, progressType: ProgressType.FFmpeg, tabId });
+    void reportProgress({
+      videoId,
+      progress: cappedProgress,
+      progressType: ProgressType.FFmpeg,
+      tabId
+    });
   }
 
   progressHandlers.add(handleFFmpegProgress);
@@ -61,7 +73,12 @@ export async function processVideoAudio(item: ProcessStreamData) {
       const videoData = toUint8Array(item.videoData);
       const audioData = toUint8Array(item.audioData);
       if (!videoData || !audioData) {
-        await reportProgress({ videoId, progress: 1, progressType: ProgressType.FFmpeg, tabId });
+        await reportProgress({
+          videoId,
+          progress: 1,
+          progressType: ProgressType.FFmpeg,
+          tabId
+        });
         const recentContext = {
           videoId,
           title: item.metadata?.title ?? filenameOutput,
@@ -69,15 +86,28 @@ export async function processVideoAudio(item: ProcessStreamData) {
           thumbnailUrl: item.metadata?.thumbnailUrl
         };
         if (videoData) {
-          await triggerDownload({ data: videoData, filenameOutput, recentContext });
+          await triggerDownload({
+            data: videoData,
+            filenameOutput,
+            recentContext
+          });
         } else if (audioData) {
-          await triggerDownload({ data: audioData, filenameOutput, recentContext });
+          await triggerDownload({
+            data: audioData,
+            filenameOutput,
+            recentContext
+          });
         }
 
         return;
       }
 
-      await reportProgress({ videoId, progress: 0, progressType: ProgressType.FFmpeg, tabId });
+      await reportProgress({
+        videoId,
+        progress: 0,
+        progressType: ProgressType.FFmpeg,
+        tabId
+      });
       ffmpeg.FS.writeFile(videoFilename, videoData);
       ffmpeg.FS.writeFile(primaryAudioFilename, audioData);
     }
@@ -91,7 +121,10 @@ export async function processVideoAudio(item: ProcessStreamData) {
       const extraExtension = stream.mimeType.includes("webm") ? "webm" : "m4a";
       const extraFilename = `${videoId}-audio-extra-${i}.${extraExtension}`;
       ffmpeg.FS.writeFile(extraFilename, extraData);
-      extraAudioTracks.push({ filename: extraFilename, label: stream.label });
+      extraAudioTracks.push({
+        filename: extraFilename,
+        label: stream.label
+      });
     }
 
     const ffmpegArgs = ["-i", videoFilename, "-i", primaryAudioFilename];
@@ -135,7 +168,12 @@ export async function processVideoAudio(item: ProcessStreamData) {
         filename: downloadFilename,
         data: ffmpegOutput
       });
-      await reportProgress({ videoId, progress: 1, progressType: ProgressType.FFmpeg, tabId });
+      await reportProgress({
+        videoId,
+        progress: 1,
+        progressType: ProgressType.FFmpeg,
+        tabId
+      });
       return;
     }
 
@@ -149,14 +187,31 @@ export async function processVideoAudio(item: ProcessStreamData) {
         thumbnailUrl: item.metadata?.thumbnailUrl
       }
     });
-    await reportProgress({ videoId, progress: 1, progressType: ProgressType.FFmpeg, tabId });
+    await reportProgress({
+      videoId,
+      progress: 1,
+      progressType: ProgressType.FFmpeg,
+      tabId
+    });
   } finally {
     progressHandlers.delete(handleFFmpegProgress);
-    tryUnlink({ ffmpeg, filename: videoFilename });
-    tryUnlink({ ffmpeg, filename: primaryAudioFilename });
-    tryUnlink({ ffmpeg, filename: outputFilename });
+    tryUnlink({
+      ffmpeg,
+      filename: videoFilename
+    });
+    tryUnlink({
+      ffmpeg,
+      filename: primaryAudioFilename
+    });
+    tryUnlink({
+      ffmpeg,
+      filename: outputFilename
+    });
     for (const { filename } of extraAudioTracks) {
-      tryUnlink({ ffmpeg, filename });
+      tryUnlink({
+        ffmpeg,
+        filename
+      });
     }
   }
 }

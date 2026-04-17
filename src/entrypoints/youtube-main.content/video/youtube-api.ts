@@ -85,7 +85,11 @@ export function buildVideoData({ playerResponse, clientVersion, clientName }: {
     isLive,
     videoFormats: getUniqueVideoFormats(allFormats),
     audioFormats: getAudioFormats(allFormats),
-    sabrConfig: extractSabrConfig({ playerResponse, clientVersion, clientName })
+    sabrConfig: extractSabrConfig({
+      playerResponse,
+      clientVersion,
+      clientName
+    })
   };
 }
 

@@ -45,7 +45,10 @@ async function fetchVideoDataViaApi(videoId: string) {
     );
     const playerData: PlayerResponse = await response.json();
     if (playerData?.videoDetails?.videoId) {
-      await buildAndDispatchVideoData({ playerResponse: playerData, cancelActiveDownload });
+      await buildAndDispatchVideoData({
+        playerResponse: playerData,
+        cancelActiveDownload
+      });
       return;
     }
   }
@@ -57,7 +60,10 @@ async function fetchVideoDataViaApi(videoId: string) {
 
   const playerResponse = extractPlayerResponseFromHtml(html);
   if (playerResponse?.videoDetails?.videoId) {
-    await buildAndDispatchVideoData({ playerResponse, cancelActiveDownload });
+    await buildAndDispatchVideoData({
+      playerResponse,
+      cancelActiveDownload
+    });
   }
 }
 

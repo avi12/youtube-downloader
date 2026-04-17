@@ -21,7 +21,11 @@ export function buildInitialDownloadState(videoData: VideoData): DownloadButtonS
   if (videoData.isMusic) {
     extension = audioMime.includes("webm") ? "webm" : "m4a";
   } else {
-    extension = getOutputExtension({ videoMimeType: videoMime, audioMimeType: audioMime, userExtension: "mp4" });
+    extension = getOutputExtension({
+      videoMimeType: videoMime,
+      audioMimeType: audioMime,
+      userExtension: "mp4"
+    });
   }
 
   const filename = getCompatibleFilename(`${videoData.title}.${extension}`);
@@ -35,5 +39,12 @@ export function buildInitialDownloadState(videoData: VideoData): DownloadButtonS
     audioItag = interrupted.audioItag || audioItag;
   }
 
-  return { videoItag, audioItag, filename, quality: "", downloadType, isInterrupted };
+  return {
+    videoItag,
+    audioItag,
+    filename,
+    quality: "",
+    downloadType,
+    isInterrupted
+  };
 }

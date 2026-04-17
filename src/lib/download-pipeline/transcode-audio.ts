@@ -32,7 +32,13 @@ export async function transcodeAudio({ audioData, sourceExtension, filenameOutpu
 
     return output;
   } finally {
-    tryUnlink({ ffmpeg, filename: inputFilename });
-    tryUnlink({ ffmpeg, filename: outputFilename });
+    tryUnlink({
+      ffmpeg,
+      filename: inputFilename
+    });
+    tryUnlink({
+      ffmpeg,
+      filename: outputFilename
+    });
   }
 }

@@ -97,7 +97,10 @@ function handleDropdownFocusOut(e: FocusEvent) {
 
 export function registerGridDropdownHandlers() {
   crossWorldMessenger.onMessage(CrossWorldMessage.CreateDropdown, ({ data }) => {
-    createGridDropdown({ contentId: data.contentId, positionTargetSelector: data.positionTargetSelector });
+    createGridDropdown({
+      contentId: data.contentId,
+      positionTargetSelector: data.positionTargetSelector
+    });
   });
   crossWorldMessenger.onMessage(CrossWorldMessage.CloseDropdown, ({ data }) => {
     closeGridDropdown(data.videoId);

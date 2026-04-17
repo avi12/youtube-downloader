@@ -26,7 +26,10 @@ export function readYtcfg() {
   const clientVersion = typeof clientVersionRaw === "string" ? clientVersionRaw : "";
   const clientNameRaw = ytcfg?.get("INNERTUBE_CONTEXT_CLIENT_NAME");
   const clientName = typeof clientNameRaw === "number" ? clientNameRaw : 1;
-  return { clientVersion, clientName };
+  return {
+    clientVersion,
+    clientName
+  };
 }
 
 export async function buildVideoMetadata(videoId: string) {
@@ -49,7 +52,10 @@ export async function buildVideoMetadata(videoId: string) {
   const descriptionMeta = parseDescriptionMetadata(description);
   const keywords = videoDetails?.keywords ?? [];
   const genreSet = await fetchYouTubeMusicGenres();
-  const genres = extractGenresFromKeywords({ keywords, genreSet });
+  const genres = extractGenresFromKeywords({
+    keywords,
+    genreSet
+  });
 
   const artist = descriptionMeta.artist || titleMeta.fullArtist || videoDetails?.author || "";
   const albumArtist = descriptionMeta.mainArtist || titleMeta.mainArtist || undefined;
@@ -79,7 +85,12 @@ async function fetchYouTubeMusicGenres() {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         browseId: "FEmusic_moods_and_genres",
-        context: { client: { clientName: "WEB_REMIX", clientVersion: "1.20260408.01.00" } }
+        context: {
+          client: {
+            clientName: "WEB_REMIX",
+            clientVersion: "1.20260408.01.00"
+          }
+        }
       })
     });
 
@@ -128,7 +139,11 @@ function parseMusicTitle(title: string) {
 
   const iSeparator = cleaned.search(/\s[-–]\s/);
   if (iSeparator === -1) {
-    return { mainArtist: "", fullArtist: "", songTitle: cleaned };
+    return {
+      mainArtist: "",
+      fullArtist: "",
+      songTitle: cleaned
+    };
   }
 
   const mainArtist = cleaned.slice(0, iSeparator).trim();
@@ -140,12 +155,21 @@ function parseMusicTitle(title: string) {
     ? `${mainArtist} feat. ${featMatch[1].trim()}`
     : mainArtist;
 
-  return { mainArtist, fullArtist, songTitle };
+  return {
+    mainArtist,
+    fullArtist,
+    songTitle
+  };
 }
 
 function parseDescriptionMetadata(description: string) {
   if (!description.startsWith("Provided to YouTube")) {
-    return { songTitle: undefined, artist: undefined, mainArtist: undefined, album: undefined };
+    return {
+      songTitle: undefined,
+      artist: undefined,
+      mainArtist: undefined,
+      album: undefined
+    };
   }
 
   const lines = description.split("\n").filter(line => line.trim());
@@ -157,7 +181,12 @@ function parseDescriptionMetadata(description: string) {
   const artist = artists.join(", ") || undefined;
   const album = lines[2]?.trim() || undefined;
 
-  return { songTitle, artist, mainArtist, album };
+  return {
+    songTitle,
+    artist,
+    mainArtist,
+    album
+  };
 }
 
 export async function generatePoTokenIfNeeded(videoData: VideoData) {
@@ -168,7 +197,11 @@ export async function generatePoTokenIfNeeded(videoData: VideoData) {
   try {
     const poToken = await generatePoToken(videoData.videoId);
     const { serverAbrStreamingUrl: sabrUrl = "" } = videoData.sabrConfig ?? {};
-    setPoTokenCredentials({ poToken, sabrUrl, videoId: videoData.videoId });
+    setPoTokenCredentials({
+      poToken,
+      sabrUrl,
+      videoId: videoData.videoId
+    });
     sabrCredentials.value = {
       url: sabrCredentials.value?.url || sabrUrl,
       poToken
@@ -183,7 +216,11 @@ export async function buildAndDispatchVideoData({ playerResponse, cancelActiveDo
   cancelActiveDownload: (videoId: string) => void;
 }) {
   const { clientVersion, clientName } = readYtcfg();
-  const videoData = buildVideoData({ playerResponse, clientVersion, clientName });
+  const videoData = buildVideoData({
+    playerResponse,
+    clientVersion,
+    clientName
+  });
 
   videoDataCache.set(videoData.videoId, videoData);
   videoDataStore.set(videoData.videoId, videoData);
@@ -211,7 +248,11 @@ export async function buildAndDispatchVideoData({ playerResponse, cancelActiveDo
     }
 
     for (const pending of pendingChunks) {
-      addChunkToCapture({ capture, mimeType: pending.mimeType, chunk: pending.data });
+      addChunkToCapture({
+        capture,
+        mimeType: pending.mimeType,
+        chunk: pending.data
+      });
     }
 
     console.log(`[ytdl:capture] Flushed ${pendingChunks.length} pending chunks (init segments)`);
@@ -249,7 +290,10 @@ export async function extractAndDispatchVideoData(cancelActiveDownload: (videoId
     const isReady = playerResponse?.videoDetails?.videoId
       && playerResponse.playabilityStatus?.status !== "UNPLAYABLE";
     if (isReady) {
-      await buildAndDispatchVideoData({ playerResponse, cancelActiveDownload });
+      await buildAndDispatchVideoData({
+        playerResponse,
+        cancelActiveDownload
+      });
       return;
     }
 

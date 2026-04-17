@@ -83,7 +83,12 @@ export function createButtonGroup({ elActionsContainer, elNativeDownload, scopin
     "--paper-progress-container-color": "transparent"
   });
 
-  return { elGroup, elDownloadButton, elChevronButton, elProgressBar };
+  return {
+    elGroup,
+    elDownloadButton,
+    elChevronButton,
+    elProgressBar
+  };
 }
 
 export function createDropdownElement({ videoId, elGroup }: {
@@ -113,5 +118,9 @@ export function createDropdownElement({ videoId, elGroup }: {
   elDropdown.allowOutsideScroll = false;
   elDropdown.restoreFocusOnClose = false;
 
-  return { elDropdown, elDropdownContentSlot, panelContentId };
+  return {
+    elDropdown,
+    elDropdownContentSlot,
+    panelContentId
+  };
 }

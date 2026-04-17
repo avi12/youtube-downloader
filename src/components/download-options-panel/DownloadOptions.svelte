@@ -70,7 +70,12 @@
     return "";
   }
 
-  const filenameValidationError = $derived(getFilenameError({ value: fullFilename, type: extensionType }));
+  const filenameValidationError = $derived(
+    getFilenameError({
+      value: fullFilename,
+      type: extensionType
+    })
+  );
   const isFilenameValid = $derived(!filenameValidationError);
 
   $effect(() => {
@@ -118,7 +123,10 @@
   );
 
   function applyPolymerTheme(elTarget: Element) {
-    applyPolymerCustomStyles({ element: elTarget, styles: PAPER_INPUT_THEME });
+    applyPolymerCustomStyles({
+      element: elTarget,
+      styles: PAPER_INPUT_THEME
+    });
     const elInput = elTarget.querySelector("input");
     if (elInput) {
       elInput.dir = "auto";

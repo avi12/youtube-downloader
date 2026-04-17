@@ -39,7 +39,12 @@ export async function triggerDownload({ data, filenameOutput, recentContext }: {
   const blobUrl = URL.createObjectURL(blob);
   blobUrlsPendingRevocation.set(blobUrl, blob);
 
-  await sendMessage(MessageType.PipelineDownload, { blobUrl, mimeType, filename, recentContext });
+  await sendMessage(MessageType.PipelineDownload, {
+    blobUrl,
+    mimeType,
+    filename,
+    recentContext
+  });
 
   setTimeout(() => {
     URL.revokeObjectURL(blobUrl);
@@ -73,7 +78,12 @@ export async function reportProgress({
 
     completedVideoIds.add(videoId);
     lastProgressTimestamps.delete(videoId);
-    await sendMessage(MessageType.PipelineProgress, { videoId, progress, progressType, tabId });
+    await sendMessage(MessageType.PipelineProgress, {
+      videoId,
+      progress,
+      progressType,
+      tabId
+    });
     return;
   }
 
@@ -84,21 +94,32 @@ export async function reportProgress({
   }
 
   lastProgressTimestamps.set(videoId, now);
-  await sendMessage(MessageType.PipelineProgress, { videoId, progress, progressType, tabId });
+  await sendMessage(MessageType.PipelineProgress, {
+    videoId,
+    progress,
+    progressType,
+    tabId
+  });
 }
 
 async function reportRemoval({ videoId, tabId }: {
   videoId: string;
   tabId: number;
 }) {
-  await sendMessage(MessageType.PipelineRemoval, { videoId, tabId });
+  await sendMessage(MessageType.PipelineRemoval, {
+    videoId,
+    tabId
+  });
 }
 
 async function removeFromStorageQueue({ videoId, type }: {
   videoId: string;
   type: DownloadType;
 }) {
-  await sendMessage(MessageType.PipelineQueueRemove, { videoId, type });
+  await sendMessage(MessageType.PipelineQueueRemove, {
+    videoId,
+    type
+  });
 }
 
 interface ActiveJob {
@@ -109,7 +130,10 @@ interface ActiveJob {
 const activeJobs = new Map<string, ActiveJob>();
 
 async function processItem(item: ProcessStreamData) {
-  activeJobs.set(item.videoId, { videoId: item.videoId, tabId: item.tabId });
+  activeJobs.set(item.videoId, {
+    videoId: item.videoId,
+    tabId: item.tabId
+  });
 
   await sendMessage(MessageType.PipelineStart, {
     videoId: item.videoId,
@@ -126,10 +150,16 @@ async function processItem(item: ProcessStreamData) {
     }
   } catch (error) {
     console.error("[ytdl:pipeline] Mux/download failed:", item.videoId, error);
-    await reportRemoval({ videoId: item.videoId, tabId: item.tabId });
+    await reportRemoval({
+      videoId: item.videoId,
+      tabId: item.tabId
+    });
   } finally {
     activeJobs.delete(item.videoId);
-    await removeFromStorageQueue({ videoId: item.videoId, type: item.type });
+    await removeFromStorageQueue({
+      videoId: item.videoId,
+      type: item.type
+    });
   }
 }
 
@@ -150,7 +180,10 @@ export async function cancelDownloadsByIds(videoIds: string[]) {
       }
 
       activeJobs.delete(videoId);
-      await reportRemoval({ videoId, tabId: activeJob.tabId });
+      await reportRemoval({
+        videoId,
+        tabId: activeJob.tabId
+      });
     })
   );
 }

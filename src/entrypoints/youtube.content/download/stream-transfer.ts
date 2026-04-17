@@ -66,16 +66,34 @@ export async function handleStreamData(payload: StreamDataPayload) {
 
   const streamTasks: Promise<void>[] = [];
   if (videoData) {
-    streamTasks.push(sendStreamChunks({ videoId, streamType: StreamType.Video, data: videoData }));
+    streamTasks.push(
+      sendStreamChunks({
+        videoId,
+        streamType: StreamType.Video,
+        data: videoData
+      })
+    );
   }
 
   if (audioData) {
-    streamTasks.push(sendStreamChunks({ videoId, streamType: StreamType.Audio, data: audioData }));
+    streamTasks.push(
+      sendStreamChunks({
+        videoId,
+        streamType: StreamType.Audio,
+        data: audioData
+      })
+    );
   }
 
   for (const [i, track] of additionalAudioData.entries()) {
     if (track.data) {
-      streamTasks.push(sendStreamChunks({ videoId, streamType: `audio-extra-${i}`, data: track.data }));
+      streamTasks.push(
+        sendStreamChunks({
+          videoId,
+          streamType: `audio-extra-${i}`,
+          data: track.data
+        })
+      );
     }
   }
 

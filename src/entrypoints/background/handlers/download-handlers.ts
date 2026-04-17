@@ -28,10 +28,17 @@ async function prepareIframe({ data, tabId }: {
   data: DownloadRequest;
   tabId: number;
 }): Promise<number> {
-  const watchParams = new URLSearchParams({ v: data.videoId, ytdl: "1", mute: "1" });
+  const watchParams = new URLSearchParams({
+    v: data.videoId,
+    ytdl: "1",
+    mute: "1"
+  });
   const watchUrl = `https://www.youtube.com/watch?${watchParams.toString()}`;
 
-  await sendMessage(MessageType.CreateDownloadIframe, { videoId: data.videoId, watchUrl }, tabId);
+  await sendMessage(MessageType.CreateDownloadIframe, {
+    videoId: data.videoId,
+    watchUrl
+  }, tabId);
 
   let iframeFrameId = 0;
 
@@ -56,8 +63,14 @@ async function executeIframeDownload({ data, tabId, iframeFrameId }: {
   tabId: number;
   iframeFrameId: number;
 }) {
-  await sendMessage(MessageType.ExecuteDownloadItem, data, { tabId, frameId: iframeFrameId });
-  trackVideoForTab({ videoId: data.videoId, tabId });
+  await sendMessage(MessageType.ExecuteDownloadItem, data, {
+    tabId,
+    frameId: iframeFrameId
+  });
+  trackVideoForTab({
+    videoId: data.videoId,
+    tabId
+  });
   await sendMessage(MessageType.StartKeepalive, { videoId: data.videoId }, tabId);
 }
 
@@ -65,18 +78,32 @@ async function downloadViaWatchPage({ data, tabId }: {
   data: DownloadRequest;
   tabId: number;
 }) {
-  await enqueueToPopupList({ videoId: data.videoId, type: data.type, filenameOutput: data.filenameOutput });
+  await enqueueToPopupList({
+    videoId: data.videoId,
+    type: data.type,
+    filenameOutput: data.filenameOutput
+  });
 
   try {
-    const iframeFrameId = await prepareIframe({ data, tabId });
-    await executeIframeDownload({ data, tabId, iframeFrameId });
+    const iframeFrameId = await prepareIframe({
+      data,
+      tabId
+    });
+    await executeIframeDownload({
+      data,
+      tabId,
+      iframeFrameId
+    });
   } catch (error) {
     console.error("[ytdl:bg] DownloadViaWatchPage failed:", data.videoId, error);
     pendingIframeReady.delete(data.videoId);
     void removeFromPopupList(data.videoId);
     void sendMessage(MessageType.RemoveDownloadIframe, { videoId: data.videoId }, tabId);
     void sendMessage(MessageType.UpdateDownloadProgress, {
-      videoId: data.videoId, progress: 0, progressType: ProgressType.Video, isRemoved: true
+      videoId: data.videoId,
+      progress: 0,
+      progressType: ProgressType.Video,
+      isRemoved: true
     }, tabId);
   }
 }
@@ -91,7 +118,10 @@ async function dispatchSequentially({ items, tabId, signal }: {
       break;
     }
 
-    await downloadViaWatchPage({ data: item, tabId });
+    await downloadViaWatchPage({
+      data: item,
+      tabId
+    });
     await awaitVideoComplete(item.videoId);
     await sendMessage(MessageType.RemoveDownloadIframe, { videoId: item.videoId }, tabId);
   }
@@ -107,15 +137,25 @@ async function dispatchParallel({ items, tabId, signal }: {
       break;
     }
 
-    const iframeFrameId = await prepareIframe({ data: item, tabId }).catch(() => 0);
+    const iframeFrameId = await prepareIframe({
+      data: item,
+      tabId
+    }).catch(() => 0);
 
     try {
-      await executeIframeDownload({ data: item, tabId, iframeFrameId });
+      await executeIframeDownload({
+        data: item,
+        tabId,
+        iframeFrameId
+      });
     } catch (error) {
       console.error("[ytdl:bg] executeIframeDownload failed:", item.videoId, error);
       void removeFromPopupList(item.videoId);
       void sendMessage(MessageType.UpdateDownloadProgress, {
-        videoId: item.videoId, progress: 0, progressType: ProgressType.Video, isRemoved: true
+        videoId: item.videoId,
+        progress: 0,
+        progressType: ProgressType.Video,
+        isRemoved: true
       }, tabId);
     }
 
@@ -161,7 +201,11 @@ export function registerDownloadHandlers() {
         responseHeaders[key] = value;
       }
 
-      return { status: response.status, bodyBase64: btoa(responseBinary), responseHeaders };
+      return {
+        status: response.status,
+        bodyBase64: btoa(responseBinary),
+        responseHeaders
+      };
     } catch (fetchError) {
       console.error("[ytdl] BackgroundProxyFetch error:", fetchError);
       return null;
@@ -174,7 +218,10 @@ export function registerDownloadHandlers() {
       return;
     }
 
-    void downloadViaWatchPage({ data, tabId: originTabId });
+    void downloadViaWatchPage({
+      data,
+      tabId: originTabId
+    });
   });
 
   onMessage(MessageType.Keepalive, () => {});
@@ -189,15 +236,27 @@ export function registerDownloadHandlers() {
     currentSequenceAbort = null;
 
     for (const item of data.items) {
-      await enqueueToPopupList({ videoId: item.videoId, type: item.type, filenameOutput: item.filenameOutput });
+      await enqueueToPopupList({
+        videoId: item.videoId,
+        type: item.type,
+        filenameOutput: item.filenameOutput
+      });
     }
 
     currentSequenceAbort = new AbortController();
 
     if (data.isSequential) {
-      void dispatchSequentially({ items: data.items, tabId, signal: currentSequenceAbort.signal });
+      void dispatchSequentially({
+        items: data.items,
+        tabId,
+        signal: currentSequenceAbort.signal
+      });
     } else {
-      void dispatchParallel({ items: data.items, tabId, signal: currentSequenceAbort.signal });
+      void dispatchParallel({
+        items: data.items,
+        tabId,
+        signal: currentSequenceAbort.signal
+      });
     }
   });
 
@@ -219,8 +278,14 @@ export function registerDownloadHandlers() {
 
   onMessage(MessageType.StartBackgroundDownload, async ({ data, sender }) => {
     const tabId = sender.tab?.id ?? -1;
-    trackVideoForTab({ videoId: data.videoId, tabId });
-    void startBackgroundDownload({ request: data, tabId });
+    trackVideoForTab({
+      videoId: data.videoId,
+      tabId
+    });
+    void startBackgroundDownload({
+      request: data,
+      tabId
+    });
     await sendMessage(MessageType.StartKeepalive, { videoId: data.videoId }, tabId);
   });
 }

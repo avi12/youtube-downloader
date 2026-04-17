@@ -110,7 +110,10 @@ function extractTransformOperations({ playerSource, functionName }: {
     if (opType === TransformOpType.Reverse) {
       operations.push({ type: TransformOpType.Reverse });
     } else {
-      operations.push({ type: opType, argument });
+      operations.push({
+        type: opType,
+        argument
+      });
     }
   }
 
@@ -184,7 +187,10 @@ async function initDecryptor() {
     throw new Error("Could not find signature function name in player.js");
   }
 
-  const operations = extractTransformOperations({ playerSource, functionName });
+  const operations = extractTransformOperations({
+    playerSource,
+    functionName
+  });
   if (!operations) {
     throw new Error("Could not extract transform operations from player.js");
   }
@@ -206,7 +212,10 @@ export async function decryptSignatureCipher(signatureCipher: string) {
   }
 
   const { operations } = await initDecryptor();
-  const decryptedSig = applyTransforms({ signature: decodeURIComponent(encryptedSig), operations });
+  const decryptedSig = applyTransforms({
+    signature: decodeURIComponent(encryptedSig),
+    operations
+  });
   const resultUrl = new URL(decodeURIComponent(url));
   resultUrl.searchParams.set(sigParam, decryptedSig);
   return resultUrl.href;

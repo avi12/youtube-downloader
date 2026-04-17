@@ -56,8 +56,15 @@ export function createAppState(props: {
   const totalActiveDownloads = $derived(videoDownloads.length + musicList.length + videoOnlyList.length);
 
   const tabs = $derived([
-    { id: PopupPanel.Downloads, label: "Downloads", badge: totalActiveDownloads },
-    { id: PopupPanel.Settings, label: "Settings" }
+    {
+      id: PopupPanel.Downloads,
+      label: "Downloads",
+      badge: totalActiveDownloads
+    },
+    {
+      id: PopupPanel.Settings,
+      label: "Settings"
+    }
   ]);
 
   $effect(() => {

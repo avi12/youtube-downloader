@@ -97,7 +97,10 @@ function sendToOffscreen<T extends OffscreenMessageType>(
   type: T,
   data: OffscreenProtocolMap[T]
 ) {
-  getOffscreenPort().postMessage({ type, data });
+  getOffscreenPort().postMessage({
+    type,
+    data
+  });
 }
 
 function listenForOffscreenMessages(handlers: HandlerMap) {
@@ -107,7 +110,10 @@ function listenForOffscreenMessages(handlers: HandlerMap) {
     }
 
     port.onMessage.addListener((message: OffscreenMessage) => {
-      dispatchOffscreenMessage({ handlers, message });
+      dispatchOffscreenMessage({
+        handlers,
+        message
+      });
     });
   });
 }

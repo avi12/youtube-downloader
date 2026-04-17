@@ -118,7 +118,10 @@
     const tooltip = itemState.buttonTooltip;
     const isDownloadDisabled = !itemState.videoData?.isDownloadable || isInProgressInZipBatch;
     const downloadIconName = isInProgressInZipBatch ? IconName.CheckCircleThick : itemState.downloadIconName;
-    assignButtonId({ elButton: elDownloadBtn, id: downloadButtonId });
+    assignButtonId({
+      elButton: elDownloadBtn,
+      id: downloadButtonId
+    });
     sendButtonData({
       elButton: elDownloadBtn,
       data: {
@@ -156,7 +159,10 @@
     }
 
     const isChevronDisabled = !itemState.videoData?.isDownloadable;
-    assignButtonId({ elButton: elChevronBtn, id: chevronButtonId });
+    assignButtonId({
+      elButton: elChevronBtn,
+      id: chevronButtonId
+    });
     // Chevron points at the panel: up when the panel sits above, down when
     // it sits below (including the closed state, which hints at where the
     // panel will appear by default).

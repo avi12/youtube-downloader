@@ -17,10 +17,16 @@ export function getFileExtension(filename: string) {
 export function splitFilenameAndExtension(filename: string) {
   const iDot = filename.lastIndexOf(".");
   if (iDot === -1) {
-    return { name: filename, extension: "" };
+    return {
+      name: filename,
+      extension: ""
+    };
   }
 
-  return { name: filename.slice(0, iDot), extension: filename.slice(iDot + 1) };
+  return {
+    name: filename.slice(0, iDot),
+    extension: filename.slice(iDot + 1)
+  };
 }
 
 const extensionToMimeAll: Record<string, string> = {
@@ -125,7 +131,9 @@ export function resolveVideoFilename({ videoData, options, titleOverride }: {
   });
   const outputExtension = videoFormat && audioFormat && !videoData.isMusic
     ? getOutputExtension({
-      videoMimeType: videoFormat.mimeType, audioMimeType: audioFormat.mimeType, userExtension: resolvedExtension
+      videoMimeType: videoFormat.mimeType,
+      audioMimeType: audioFormat.mimeType,
+      userExtension: resolvedExtension
     })
     : resolvedExtension;
   const title = titleOverride ?? videoData.title;

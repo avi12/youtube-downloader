@@ -157,7 +157,10 @@ function handleProcessStreamEnd(data: {
     const audioStream = accumulator?.audioStreams.get(`audio-extra-${iTrack}`);
     return {
       data: audioStream
-        ? assembleStreamChunks({ chunks: audioStream.chunks, totalChunks: audioStream.totalChunks })
+        ? assembleStreamChunks({
+          chunks: audioStream.chunks,
+          totalChunks: audioStream.totalChunks
+        })
         : null,
       mimeType: audioMimeType,
       label
@@ -169,10 +172,16 @@ function handleProcessStreamEnd(data: {
     videoId,
     filenameOutput,
     videoData: accumulator
-      ? assembleStreamChunks({ chunks: accumulator.videoChunks, totalChunks: accumulator.totalVideoChunks })
+      ? assembleStreamChunks({
+        chunks: accumulator.videoChunks,
+        totalChunks: accumulator.totalVideoChunks
+      })
       : null,
     audioData: primaryAudio
-      ? assembleStreamChunks({ chunks: primaryAudio.chunks, totalChunks: primaryAudio.totalChunks })
+      ? assembleStreamChunks({
+        chunks: primaryAudio.chunks,
+        totalChunks: primaryAudio.totalChunks
+      })
       : null,
     videoMimeType,
     audioMimeType,

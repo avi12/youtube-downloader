@@ -16,14 +16,23 @@
   }
 
   const videoExtOptions = $derived(
-    supportedExtensions.video.map(extension => ({ value: extension, label: formatExtensionLabel(extension) }))
+    supportedExtensions.video.map(extension => ({
+      value: extension,
+      label: formatExtensionLabel(extension)
+    }))
   );
   const audioExtOptions = $derived(
-    supportedExtensions.audio.map(extension => ({ value: extension, label: formatExtensionLabel(extension) }))
+    supportedExtensions.audio.map(extension => ({
+      value: extension,
+      label: formatExtensionLabel(extension)
+    }))
   );
 
   const qualityOptions = $derived([
-    { value: VideoQualityMode.Best, label: "Best quality" },
+    {
+      value: VideoQualityMode.Best,
+      label: "Best quality"
+    },
     ...videoQualities
       .filter(height => !playlist.maxAvailableQuality || height <= playlist.maxAvailableQuality)
       .map(height => ({

@@ -37,7 +37,10 @@ addEventListener("online", () => {
   const retries = [...pendingNetworkRetries.values()];
   pendingNetworkRetries.clear();
   for (const { request, tabId } of retries) {
-    void startBackgroundDownload({ request, tabId });
+    void startBackgroundDownload({
+      request,
+      tabId
+    });
   }
 });
 
@@ -108,7 +111,10 @@ async function dispatchToOffscreen({ request, result, enrichedMetadata, tabId }:
   if (result.videoData) {
     transferJobs.push(
       sendStreamChunksToOffscreen({
-        videoId: request.videoId, streamType: StreamType.Video, data: result.videoData, tabId
+        videoId: request.videoId,
+        streamType: StreamType.Video,
+        data: result.videoData,
+        tabId
       })
     );
   }
@@ -116,7 +122,10 @@ async function dispatchToOffscreen({ request, result, enrichedMetadata, tabId }:
   if (result.audioData) {
     transferJobs.push(
       sendStreamChunksToOffscreen({
-        videoId: request.videoId, streamType: StreamType.Audio, data: result.audioData, tabId
+        videoId: request.videoId,
+        streamType: StreamType.Audio,
+        data: result.audioData,
+        tabId
       })
     );
   }
@@ -125,7 +134,10 @@ async function dispatchToOffscreen({ request, result, enrichedMetadata, tabId }:
     if (track.data) {
       transferJobs.push(
         sendStreamChunksToOffscreen({
-          videoId: request.videoId, streamType: `audio-extra-${i}`, data: track.data, tabId
+          videoId: request.videoId,
+          streamType: `audio-extra-${i}`,
+          data: track.data,
+          tabId
         })
       );
     }
@@ -163,7 +175,10 @@ async function enrichMetadataFromYouTubeMusic(metadata: VideoMetadata | null | u
     return metadata;
   }
 
-  return fetchYouTubeMusicMetadata({ searchQuery, existingMetadata: metadata });
+  return fetchYouTubeMusicMetadata({
+    searchQuery,
+    existingMetadata: metadata
+  });
 }
 
 function reportDownloadFailed({ videoId, tabId }: {
@@ -171,7 +186,11 @@ function reportDownloadFailed({ videoId, tabId }: {
   tabId: number;
 }) {
   void sendMessage(MessageType.UpdateDownloadProgress, {
-    videoId, progress: 0, progressType: ProgressType.Video, isRemoved: true, isFailed: true
+    videoId,
+    progress: 0,
+    progressType: ProgressType.Video,
+    isRemoved: true,
+    isFailed: true
   }, tabId);
   void removeFromPopupList(videoId);
   signalVideoComplete(videoId);
@@ -181,7 +200,10 @@ function queueNetworkRetry({ request, tabId }: {
   request: DownloadRequest;
   tabId: number;
 }) {
-  pendingNetworkRetries.set(request.videoId, { request, tabId });
+  pendingNetworkRetries.set(request.videoId, {
+    request,
+    tabId
+  });
   void persistInterruptedDownload(request);
 }
 
@@ -234,7 +256,11 @@ export async function startBackgroundDownload({ request, tabId }: {
   try {
     const enrichedMetadataPromise = enrichMetadataFromYouTubeMusic(metadata);
 
-    let result = await attemptSabrDownload({ request, signal, tabId }).catch(sabrError => {
+    let result = await attemptSabrDownload({
+      request,
+      signal,
+      tabId
+    }).catch(sabrError => {
       if (signal.aborted) {
         throw sabrError;
       }
@@ -242,22 +268,37 @@ export async function startBackgroundDownload({ request, tabId }: {
       console.warn("[ytdl:bg] SABR failed, trying CDN:", sabrError);
       // Resets the UI to indeterminate rather than a frozen percentage while CDN starts.
       void sendMessage(MessageType.UpdateDownloadProgress, {
-        videoId, progress: 0, progressType: ProgressType.Video
+        videoId,
+        progress: 0,
+        progressType: ProgressType.Video
       }, tabId);
       return null;
     });
     if (!result?.audioData) {
-      result = await downloadViaCdn({ request, signal, videoId, tabId });
+      result = await downloadViaCdn({
+        request,
+        signal,
+        videoId,
+        tabId
+      });
     }
 
     if (!result?.audioData && !result?.videoData) {
       console.warn("[ytdl:bg] No download method succeeded for", videoId);
-      reportDownloadFailed({ videoId, tabId });
+      reportDownloadFailed({
+        videoId,
+        tabId
+      });
       return;
     }
 
     const enrichedMetadata = await enrichedMetadataPromise;
-    await dispatchToOffscreen({ request, result, enrichedMetadata, tabId });
+    await dispatchToOffscreen({
+      request,
+      result,
+      enrichedMetadata,
+      tabId
+    });
     void clearInterruptedDownload(videoId);
   } catch (error) {
     if (signal.aborted) {
@@ -265,12 +306,18 @@ export async function startBackgroundDownload({ request, tabId }: {
     }
 
     if (!navigator.onLine) {
-      queueNetworkRetry({ request, tabId });
+      queueNetworkRetry({
+        request,
+        tabId
+      });
       return;
     }
 
     console.warn("[ytdl:bg] Background download failed:", error);
-    reportDownloadFailed({ videoId, tabId });
+    reportDownloadFailed({
+      videoId,
+      tabId
+    });
   } finally {
     activeBackgroundDownloads.delete(videoId);
   }

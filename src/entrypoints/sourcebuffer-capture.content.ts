@@ -66,7 +66,11 @@ export default defineContentScript({
         } else {
           const capture = capturedMedia.get(activeVideoId);
           if (capture) {
-            addChunkToCapture({ capture, mimeType, chunk });
+            addChunkToCapture({
+              capture,
+              mimeType,
+              chunk
+            });
           }
         }
       }

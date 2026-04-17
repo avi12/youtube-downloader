@@ -65,5 +65,8 @@ export function createFocusManager() {
     };
   }
 
-  return { release, attach };
+  return {
+    release,
+    attach
+  };
 }

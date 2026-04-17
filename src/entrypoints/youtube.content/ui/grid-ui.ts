@@ -82,7 +82,10 @@ function mountGridButton({ context, elCard }: {
     onMount(elUiContainer) {
       mount(PlaylistVideoItem, {
         target: elUiContainer,
-        props: { videoId, gridTitle }
+        props: {
+          videoId,
+          gridTitle
+        }
       });
     }
   });
@@ -105,7 +108,10 @@ function createVisibilityObserver(context: InstanceType<typeof ContentScriptCont
         }
 
         visibilityObserver?.unobserve(entry.target);
-        mountGridButton({ context, elCard: entry.target });
+        mountGridButton({
+          context,
+          elCard: entry.target
+        });
       }
     },
     viewportMarginOptions
@@ -132,7 +138,10 @@ export function injectGridVideoButtons(context: InstanceType<typeof ContentScrip
   gridObserver = new MutationObserver(observePendingCards);
 
   const elPageContent = document.querySelector(PAGE_MANAGER_SELECTOR) ?? document.body;
-  const childListSubtreeOptions = { childList: true, subtree: true };
+  const childListSubtreeOptions = {
+    childList: true,
+    subtree: true
+  };
   gridObserver.observe(elPageContent, childListSubtreeOptions);
   context.onInvalidated(() => {
     gridObserver?.disconnect();

@@ -46,7 +46,12 @@ export async function processSingleMedia(item: ProcessStreamData) {
 
   if (isAudio && item.metadata?.isMusic) {
     const metadata = item.metadata;
-    await reportProgress({ videoId, progress: 0, progressType: ProgressType.FFmpeg, tabId });
+    await reportProgress({
+      videoId,
+      progress: 0,
+      progressType: ProgressType.FFmpeg,
+      tabId
+    });
 
     progressHandlers.add(handleFfmpegProgress);
     try {
@@ -58,7 +63,11 @@ export async function processSingleMedia(item: ProcessStreamData) {
         }
 
         data = await embedMusicMetadata({
-          audioData, filenameOutput, sourceExtension, metadata, ffmpeg
+          audioData,
+          filenameOutput,
+          sourceExtension,
+          metadata,
+          ffmpeg
         });
       });
     } finally {
@@ -66,7 +75,12 @@ export async function processSingleMedia(item: ProcessStreamData) {
     }
   } else if (isFlacTarget) {
     // FLAC can't hold AAC/Opus, so re-encode even without music metadata to embed.
-    await reportProgress({ videoId, progress: 0, progressType: ProgressType.FFmpeg, tabId });
+    await reportProgress({
+      videoId,
+      progress: 0,
+      progressType: ProgressType.FFmpeg,
+      tabId
+    });
 
     progressHandlers.add(handleFfmpegProgress);
     try {
@@ -77,7 +91,12 @@ export async function processSingleMedia(item: ProcessStreamData) {
           return;
         }
 
-        data = await transcodeAudio({ audioData, sourceExtension, filenameOutput, ffmpeg });
+        data = await transcodeAudio({
+          audioData,
+          sourceExtension,
+          filenameOutput,
+          ffmpeg
+        });
       });
     } finally {
       progressHandlers.delete(handleFfmpegProgress);
@@ -93,7 +112,12 @@ export async function processSingleMedia(item: ProcessStreamData) {
       filename: filenameOutput,
       data
     });
-    await reportProgress({ videoId, progress: 1, progressType: ProgressType.FFmpeg, tabId });
+    await reportProgress({
+      videoId,
+      progress: 1,
+      progressType: ProgressType.FFmpeg,
+      tabId
+    });
     return;
   }
 
@@ -107,5 +131,10 @@ export async function processSingleMedia(item: ProcessStreamData) {
       thumbnailUrl: item.metadata?.thumbnailUrl
     }
   });
-  await reportProgress({ videoId, progress: 1, progressType: ProgressType.FFmpeg, tabId });
+  await reportProgress({
+    videoId,
+    progress: 1,
+    progressType: ProgressType.FFmpeg,
+    tabId
+  });
 }

@@ -13,7 +13,10 @@ export async function enqueueToPopupList({ videoId, type, filenameOutput }: {
   if (type === DownloadType.VideoAndAudio) {
     const queue = await videoQueueItem.getValue();
     if (!queue.some(item => item.videoId === videoId)) {
-      queue.push({ videoId, filenameOutput });
+      queue.push({
+        videoId,
+        filenameOutput
+      });
       await videoQueueItem.setValue(queue);
     }
 

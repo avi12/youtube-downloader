@@ -13,7 +13,10 @@ function dispatchButtonData({ elButton, data }: {
   elButton: Element;
   data: ButtonViewModelData;
 }) {
-  sendButtonData({ elButton, data });
+  sendButtonData({
+    elButton,
+    data
+  });
 }
 
 export function attachCloseButton(elTarget: Element) {
@@ -30,7 +33,10 @@ export function attachCloseButton(elTarget: Element) {
     tooltip: ""
   };
 
-  dispatchButtonData({ elButton: elTarget, data: closeData });
+  dispatchButtonData({
+    elButton: elTarget,
+    data: closeData
+  });
 
   // Polymer's tp-yt-paper-tooltip shows on both hover and focus;
   // set tooltip text only when :focus-visible matches so hover stays silent.
@@ -40,11 +46,20 @@ export function attachCloseButton(elTarget: Element) {
         return;
       }
 
-      dispatchButtonData({ elButton: elTarget, data: { ...closeData, tooltip: "Close" } });
+      dispatchButtonData({
+        elButton: elTarget,
+        data: {
+          ...closeData,
+          tooltip: "Close"
+        }
+      });
     });
 
     elButton.addEventListener("blur", () => {
-      dispatchButtonData({ elButton: elTarget, data: closeData });
+      dispatchButtonData({
+        elButton: elTarget,
+        data: closeData
+      });
     });
   }
 
@@ -64,7 +79,10 @@ export function attachCloseButton(elTarget: Element) {
     onButtonAvailable(elInner);
   });
 
-  const childListSubtreeOptions = { childList: true, subtree: true };
+  const childListSubtreeOptions = {
+    childList: true,
+    subtree: true
+  };
   observer.observe(elTarget, childListSubtreeOptions);
 }
 

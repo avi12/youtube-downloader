@@ -24,7 +24,10 @@ function persistOnDownloadComplete({ targetDownloadId, data }: {
 
       if (delta.state.current === browser.downloads.State.COMPLETE) {
         browser.downloads.onChanged.removeListener(handleChanged);
-        void persistRecentDownload({ downloadId: targetDownloadId, data }).finally(resolve);
+        void persistRecentDownload({
+          downloadId: targetDownloadId,
+          data
+        }).finally(resolve);
         return;
       }
 
@@ -63,7 +66,10 @@ async function persistRecentDownload({ downloadId, data }: {
       thumbnailUrl: context.thumbnailUrl,
       completedAt: Date.now()
     };
-    await addRecentDownload({ entry, blob });
+    await addRecentDownload({
+      entry,
+      blob
+    });
     try {
       await sendMessage(MessageType.RecentDownloadsChanged, {});
     } catch {
@@ -86,7 +92,10 @@ export function registerRecentDownloadHandlers() {
       filename: data.filename
     });
     if (data.recentContext) {
-      void persistOnDownloadComplete({ targetDownloadId, data });
+      void persistOnDownloadComplete({
+        targetDownloadId,
+        data
+      });
     }
   });
 }

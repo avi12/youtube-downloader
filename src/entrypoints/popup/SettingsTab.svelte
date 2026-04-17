@@ -16,16 +16,37 @@
     value: DownloadTypePreference;
     label: string;
   }> = [
-    { value: "auto", label: "Auto (video for videos, audio for music)" },
-    { value: DownloadType.VideoAndAudio, label: "Always video + audio" },
-    { value: DownloadType.Video, label: "Always video only" },
-    { value: DownloadType.Audio, label: "Always audio only" }
+    {
+      value: "auto",
+      label: "Auto (video for videos, audio for music)"
+    },
+    {
+      value: DownloadType.VideoAndAudio,
+      label: "Always video + audio"
+    },
+    {
+      value: DownloadType.Video,
+      label: "Always video only"
+    },
+    {
+      value: DownloadType.Audio,
+      label: "Always audio only"
+    }
   ];
 
   const qualityModeOptions = [
-    { value: VideoQualityMode.CurrentQuality, label: "Match current player quality" },
-    { value: VideoQualityMode.Best, label: "Best available quality" },
-    { value: VideoQualityMode.Custom, label: "Custom quality" }
+    {
+      value: VideoQualityMode.CurrentQuality,
+      label: "Match current player quality"
+    },
+    {
+      value: VideoQualityMode.Best,
+      label: "Best available quality"
+    },
+    {
+      value: VideoQualityMode.Custom,
+      label: "Custom quality"
+    }
   ];
 </script>
 
@@ -34,7 +55,10 @@
     <legend class="settings-legend">Video format</legend>
     <FormatSelect
       label="Container"
-      onchange={extension => void setOption("ext", { ...options.ext, video: extension })}
+      onchange={extension => void setOption("ext", {
+        ...options.ext,
+        video: extension
+      })}
       options={supportedExtensions.video}
       value={options.ext.video}
     />
@@ -44,7 +68,10 @@
     <legend class="settings-legend">Audio format</legend>
     <FormatSelect
       label="Container"
-      onchange={extension => void setOption("ext", { ...options.ext, audio: extension })}
+      onchange={extension => void setOption("ext", {
+        ...options.ext,
+        audio: extension
+      })}
       options={supportedExtensions.audio}
       value={options.ext.audio}
     />

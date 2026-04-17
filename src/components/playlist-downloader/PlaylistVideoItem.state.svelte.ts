@@ -165,7 +165,11 @@ export function createPlaylistVideoItemState({ videoId, gridTitle, activeDownloa
       downloadType = options.defaultDownloadType;
     }
 
-    const filenameOutput = resolveVideoFilename({ videoData, options, titleOverride: gridTitle });
+    const filenameOutput = resolveVideoFilename({
+      videoData,
+      options,
+      titleOverride: gridTitle
+    });
 
     isLocallyDone = false;
     downloadProgressStore.unsuppress(videoId);

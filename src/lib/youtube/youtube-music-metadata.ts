@@ -90,7 +90,13 @@ function parseSearchResult(item: SearchItem) {
   const rawThumbnailUrl = thumbnails?.at(-1)?.url;
   const thumbnailUrl = rawThumbnailUrl?.replace(/=w\d+-h\d+/, "=w544-h544");
 
-  return { songTitle, artist: artists.join(", "), mainArtist, album, thumbnailUrl };
+  return {
+    songTitle,
+    artist: artists.join(", "),
+    mainArtist,
+    album,
+    thumbnailUrl
+  };
 }
 
 export async function fetchYouTubeMusicMetadata({ searchQuery, existingMetadata }: {
@@ -105,7 +111,10 @@ export async function fetchYouTubeMusicMetadata({ searchQuery, existingMetadata 
         query: searchQuery,
         params: SONG_FILTER_PARAMS,
         context: {
-          client: { clientName: "WEB_REMIX", clientVersion: "1.20260408.01.00" }
+          client: {
+            clientName: "WEB_REMIX",
+            clientVersion: "1.20260408.01.00"
+          }
         }
       })
     });

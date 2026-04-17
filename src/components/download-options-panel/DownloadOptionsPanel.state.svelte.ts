@@ -58,7 +58,11 @@ export function createPanelState(getVideoData: () => VideoData) {
       const defaultFormat = videoData.isMusic
         ? getPreferredMusicAudioFormat(videoData.audioFormats)
         : videoData.videoFormats[0];
-      return resolveAutoExtension({ extension: extPref, mimeType: defaultFormat?.mimeType ?? "", type: videoData.isMusic ? DownloadType.Audio : DownloadType.Video });
+      return resolveAutoExtension({
+        extension: extPref,
+        mimeType: defaultFormat?.mimeType ?? "",
+        type: videoData.isMusic ? DownloadType.Audio : DownloadType.Video
+      });
     })
   );
   let isFilenameValid = $state(true);
@@ -80,7 +84,13 @@ export function createPanelState(getVideoData: () => VideoData) {
   });
 
   const isDownloadable = $derived(getVideoData().isDownloadable);
-  const displayProgress = $derived(calculateWeightedProgress({ isDownloading, progress, progressType }));
+  const displayProgress = $derived(
+    calculateWeightedProgress({
+      isDownloading,
+      progress,
+      progressType
+    })
+  );
   const fullFilename = $derived(getCompatibleFilename(`${filename}.${actualExtension}`));
 
   const qualityLabel = $derived.by(() => {
@@ -203,7 +213,11 @@ export function createPanelState(getVideoData: () => VideoData) {
     downloadType = newType;
     const extPref = newType === DownloadType.Audio ? options.ext.audio : options.ext.video;
     const format = newType === DownloadType.Audio ? selectedAudioFormat : selectedVideoFormat;
-    extension = resolveAutoExtension({ extension: extPref, mimeType: format?.mimeType ?? "", type: newType === DownloadType.Audio ? DownloadType.Audio : DownloadType.Video });
+    extension = resolveAutoExtension({
+      extension: extPref,
+      mimeType: format?.mimeType ?? "",
+      type: newType === DownloadType.Audio ? DownloadType.Audio : DownloadType.Video
+    });
   }
 
   function startDownload() {

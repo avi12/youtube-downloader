@@ -68,10 +68,17 @@ export async function injectSegmentedDownloadButton(
   }
 
   const { elGroup, elDownloadButton, elChevronButton, elProgressBar } =
-    createButtonGroup({ elActionsContainer, elNativeDownload, scopingClass });
+    createButtonGroup({
+      elActionsContainer,
+      elNativeDownload,
+      scopingClass
+    });
 
   const { elDropdown, elDropdownContentSlot, panelContentId } =
-    createDropdownElement({ videoId, elGroup });
+    createDropdownElement({
+      videoId,
+      elGroup
+    });
 
   // Must not await: sendMessage waits for a response that never comes for void handlers,
   // blocking the rest of button setup.
@@ -90,7 +97,10 @@ export async function injectSegmentedDownloadButton(
   }
 
   const segmentedObserver = new MutationObserver(applySegmentedClasses);
-  const childListSubtreeOptions = { childList: true, subtree: true };
+  const childListSubtreeOptions = {
+    childList: true,
+    subtree: true
+  };
   segmentedObserver.observe(elDownloadButton, childListSubtreeOptions);
   segmentedObserver.observe(elChevronButton, childListSubtreeOptions);
   requestAnimationFrame(applySegmentedClasses);

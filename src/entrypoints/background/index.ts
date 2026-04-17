@@ -27,10 +27,26 @@ async function registerSabrOriginRule() {
     action: {
       type: "modifyHeaders",
       requestHeaders: [
-        { header: "Origin", operation: "set", value: "https://www.youtube.com" },
-        { header: "Referer", operation: "set", value: "https://www.youtube.com/" },
-        { header: "Sec-Fetch-Site", operation: "set", value: "cross-site" },
-        { header: "Sec-Fetch-Storage-Access", operation: "set", value: "active" }
+        {
+          header: "Origin",
+          operation: "set",
+          value: "https://www.youtube.com"
+        },
+        {
+          header: "Referer",
+          operation: "set",
+          value: "https://www.youtube.com/"
+        },
+        {
+          header: "Sec-Fetch-Site",
+          operation: "set",
+          value: "cross-site"
+        },
+        {
+          header: "Sec-Fetch-Storage-Access",
+          operation: "set",
+          value: "active"
+        }
       ]
     },
     condition: { urlFilter: "||googlevideo.com/videoplayback" }
@@ -49,7 +65,10 @@ function registerChunkHandlers() {
     }
 
     await ensureProcessor();
-    sendToOffscreen(OffscreenMessageType.ProcessStreamChunk, { ...data, tabId });
+    sendToOffscreen(OffscreenMessageType.ProcessStreamChunk, {
+      ...data,
+      tabId
+    });
   });
 
   onMessage(MessageType.StreamEnd, async ({ data, sender }) => {
@@ -58,9 +77,15 @@ function registerChunkHandlers() {
       return;
     }
 
-    trackVideoForTab({ videoId: data.videoId, tabId });
+    trackVideoForTab({
+      videoId: data.videoId,
+      tabId
+    });
     await ensureProcessor();
-    sendToOffscreen(OffscreenMessageType.ProcessStreamEnd, { ...data, tabId });
+    sendToOffscreen(OffscreenMessageType.ProcessStreamEnd, {
+      ...data,
+      tabId
+    });
   });
 }
 
@@ -117,7 +142,10 @@ function registerTabLifecycleHandlers() {
     clearCapturedSabrData(tabId);
 
     for (const videoId of tabState.videoIdsAvailable) {
-      untrackVideoForTab({ videoId, tabId });
+      untrackVideoForTab({
+        videoId,
+        tabId
+      });
     }
   });
 
@@ -132,7 +160,10 @@ function registerTabLifecycleHandlers() {
     }
 
     for (const videoId of tabState.videoIdsAvailable) {
-      untrackVideoForTab({ videoId, tabId });
+      untrackVideoForTab({
+        videoId,
+        tabId
+      });
     }
 
     clearCapturedSabrData(tabId);
@@ -164,7 +195,10 @@ export default defineBackground(() => {
       return;
     }
 
-    void browser.downloads.download({ url: message.dataUrl, filename: message.filename });
+    void browser.downloads.download({
+      url: message.dataUrl,
+      filename: message.filename
+    });
   });
 
   registerChunkHandlers();

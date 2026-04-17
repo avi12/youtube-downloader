@@ -59,7 +59,10 @@ export async function waitForVideoElement(signal?: AbortSignal) {
       resolve(elVideo);
     });
 
-    const childListSubtreeOptions = { childList: true, subtree: true };
+    const childListSubtreeOptions = {
+      childList: true,
+      subtree: true
+    };
     observer.observe(document.body, childListSubtreeOptions);
 
     signal?.addEventListener("abort", () => {

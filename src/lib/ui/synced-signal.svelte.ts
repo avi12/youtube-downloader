@@ -89,7 +89,10 @@ export function createSyncedMap<T>(messenger: MapMessenger<T>) {
       map.set(mapKey, value);
 
       if (!isSyncing) {
-        void messenger.sendMessage("entry", { mapKey, mapValue: value });
+        void messenger.sendMessage("entry", {
+          mapKey,
+          mapValue: value
+        });
       }
     },
     setLocal(mapKey: string, value: T) {
@@ -104,7 +107,10 @@ export function createSyncedMap<T>(messenger: MapMessenger<T>) {
       map.delete(mapKey);
 
       if (!isSyncing) {
-        void messenger.sendMessage("entry", { mapKey, mapValue: undefined });
+        void messenger.sendMessage("entry", {
+          mapKey,
+          mapValue: undefined
+        });
       }
     },
     unsuppress(mapKey: string) {

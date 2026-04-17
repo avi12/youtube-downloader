@@ -158,5 +158,10 @@ export function createPlaylistToggleButtons(state: {
     return Boolean(match);
   }
 
-  return { groups, createAttacher, refreshAll, handleClick };
+  return {
+    groups,
+    createAttacher,
+    refreshAll,
+    handleClick
+  };
 }

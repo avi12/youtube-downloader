@@ -53,7 +53,10 @@ export async function revealAllPlaylistVideos(
   const deadline = Date.now() + revealMaxWaitMs;
   let stableRounds = 0;
   let lastCount = countRenderedVideos(elContents);
-  onProgress({ revealedCount: lastCount, hasMore: hasMoreToLoad(elContents) });
+  onProgress({
+    revealedCount: lastCount,
+    hasMore: hasMoreToLoad(elContents)
+  });
 
   while (Date.now() < deadline) {
     if (shouldAbort()) {
@@ -68,7 +71,10 @@ export async function revealAllPlaylistVideos(
     await waitForRoundTransition();
 
     const nextCount = countRenderedVideos(elContents);
-    onProgress({ revealedCount: nextCount, hasMore: hasMoreToLoad(elContents) });
+    onProgress({
+      revealedCount: nextCount,
+      hasMore: hasMoreToLoad(elContents)
+    });
 
     if (nextCount > lastCount) {
       stableRounds = 0;
@@ -91,5 +97,8 @@ export function scrollVideoItemIntoView(videoId: string) {
     return;
   }
 
-  elPlaylistItem.scrollIntoView({ behavior: "smooth", block: "center" });
+  elPlaylistItem.scrollIntoView({
+    behavior: "smooth",
+    block: "center"
+  });
 }

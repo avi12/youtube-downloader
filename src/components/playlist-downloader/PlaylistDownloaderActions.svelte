@@ -40,7 +40,10 @@
   });
 
   function attachProgressBar(elProgress: Element) {
-    applyPolymerCustomStyles({ element: elProgress, styles: PAPER_PROGRESS_THEME });
+    applyPolymerCustomStyles({
+      element: elProgress,
+      styles: PAPER_PROGRESS_THEME
+    });
   }
 
   const progressAriaLabel = $derived.by(() => {
