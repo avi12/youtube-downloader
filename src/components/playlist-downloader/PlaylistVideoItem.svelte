@@ -314,15 +314,15 @@
   :global(tp-yt-paper-checkbox[indeterminate] #checkbox.tp-yt-paper-checkbox) {
     background-color: var(--paper-checkbox-checked-color, var(--primary-color));
     border-color: var(--paper-checkbox-checked-color, var(--primary-color));
+  }
 
-    & :global(#checkmark.tp-yt-paper-checkbox) {
-      animation-name: none;
-      border-right-width: 0;
-      width: 50%;
-      height: 0;
-      top: 50%;
-      left: 25%;
-      translate: 0 -50%;
-    }
+  :global(tp-yt-paper-checkbox[indeterminate] #checkbox.tp-yt-paper-checkbox #checkmark.tp-yt-paper-checkbox) {
+    animation-name: none;
+    border-right-width: 0;
+    width: 50%;
+    height: 0;
+    top: 50%;
+    left: 25%;
+    translate: 0 -50%;
   }
 </style>
