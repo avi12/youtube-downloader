@@ -1,6 +1,6 @@
 import { cancelBackgroundDownload, startBackgroundDownload } from "../download/background-downloader";
 import { enqueueToPopupList, removeFromPopupList } from "../queue/popup-list";
-import { awaitVideoComplete, signalVideoComplete } from "../queue/sequential-queue";
+import { awaitBytesTransferred, awaitVideoComplete, signalVideoComplete } from "../queue/sequential-queue";
 import { cancelDownloads, getTabIdsForVideo, trackVideoForTab } from "../queue/tab-tracker";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
 import { ProgressType } from "@/types";
@@ -132,6 +132,8 @@ async function dispatchParallel({ items, tabId, signal }: {
   tabId: number;
   signal: AbortSignal;
 }) {
+  const completionPromises: Promise<void>[] = [];
+
   for (const item of items) {
     if (signal.aborted) {
       break;
@@ -159,9 +161,20 @@ async function dispatchParallel({ items, tabId, signal }: {
       }, tabId);
     }
 
-    await awaitVideoComplete(item.videoId);
-    await sendMessage(MessageType.RemoveDownloadIframe, { videoId: item.videoId }, tabId);
+    completionPromises.push(
+      awaitVideoComplete(item.videoId).then(() =>
+        sendMessage(MessageType.RemoveDownloadIframe, {
+          videoId: item.videoId
+        }, tabId))
+    );
+
+    // Wait only until bytes are in the offscreen doc before starting
+    // the next download - allows muxing phases to overlap while still
+    // preventing concurrent SABR sessions.
+    await awaitBytesTransferred(item.videoId);
   }
+
+  await Promise.all(completionPromises);
 }
 
 let currentSequenceAbort: AbortController | null = null;

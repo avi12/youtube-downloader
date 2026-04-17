@@ -252,7 +252,7 @@ export function createPlaylistDownloaderState() {
       return;
     }
 
-    completedBatchProgress = 1;
+    completedBatchProgress = 100;
     isDownloading = false;
     batchDownloadStatus.isRunning = false;
     batchDownloadStatus.isZipBatch = false;

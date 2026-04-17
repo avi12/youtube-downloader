@@ -55,11 +55,11 @@ function listenCDP(wsUrl, label, listenSeconds) {
   });
 }
 
-console.log("\nListening for 20 seconds. Trigger the 'All at once' download now!\n");
+console.log("\nListening for 60 seconds. Trigger the playlist download now!\n");
 
 const [swLogs, offLogs] = await Promise.all([
-  listenCDP(sw.webSocketDebuggerUrl, "SW", 20),
-  listenCDP(offscreen.webSocketDebuggerUrl, "OFFSCREEN", 20)
+  listenCDP(sw.webSocketDebuggerUrl, "SW", 60),
+  listenCDP(offscreen.webSocketDebuggerUrl, "OFFSCREEN", 60)
 ]);
 
 console.log("\n=== SUMMARY ===");

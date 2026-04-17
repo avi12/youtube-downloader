@@ -1,5 +1,5 @@
 import { enqueueToPopupList, removeFromPopupList } from "../queue/popup-list";
-import { signalVideoComplete } from "../queue/sequential-queue";
+import { signalBytesTransferred, signalVideoComplete } from "../queue/sequential-queue";
 import { registerRecentDownloadHandlers } from "../recent/recent-download-handler";
 import { signalFFmpegReady } from "./processor";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
@@ -52,6 +52,7 @@ export function registerPipelineHandlers() {
       type: data.type,
       filenameOutput: data.filenameOutput
     });
+    signalBytesTransferred(data.videoId);
   });
 
   onMessage(MessageType.PipelineProgress, async ({ data }) => {
