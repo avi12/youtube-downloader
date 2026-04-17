@@ -105,6 +105,15 @@ export async function injectPlaylistDownloaderUi(
 
   ui.mount();
 
+  function dismissYtdlTooltips() {
+    for (const elButton of document.querySelectorAll<HTMLElement>("[data-ytdl-button-id]")) {
+      elButton.dispatchEvent(new MouseEvent("mouseleave", { bubbles: true }));
+    }
+  }
+
+  document.addEventListener("scroll", dismissYtdlTooltips, true);
+  context.onInvalidated(() => document.removeEventListener("scroll", dismissYtdlTooltips, true));
+
   // YouTube rebuilds the header subtree on theme transitions (and some other
   // SPA re-renders), which detaches our mount container. Re-inject when that
   // happens so the panel survives.
