@@ -41,7 +41,15 @@ export async function readStreamToBuffer({ reader, expectedBytes, onBytesReceive
     }
   }, STALL_CHECK_INTERVAL_MS);
 
-  const preallocated = expectedBytes > 0 ? new Uint8Array(expectedBytes) : null;
+  let preallocated: Uint8Array | null = null;
+  if (expectedBytes > 0) {
+    try {
+      preallocated = new Uint8Array(expectedBytes);
+    } catch {
+      // OOM for large files - fall through to chunked accumulation
+    }
+  }
+
   const chunks: Uint8Array[] = [];
   let writeOffset = 0;
   let totalBytes = 0;
