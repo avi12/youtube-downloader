@@ -73,12 +73,6 @@ export async function processVideoAudio(item: ProcessStreamData) {
       const videoData = toUint8Array(item.videoData);
       const audioData = toUint8Array(item.audioData);
       if (!videoData || !audioData) {
-        await reportProgress({
-          videoId,
-          progress: 1,
-          progressType: ProgressType.FFmpeg,
-          tabId
-        });
         const recentContext = {
           videoId,
           title: item.metadata?.title ?? filenameOutput,
@@ -98,6 +92,13 @@ export async function processVideoAudio(item: ProcessStreamData) {
             recentContext
           });
         }
+
+        await reportProgress({
+          videoId,
+          progress: 1,
+          progressType: ProgressType.FFmpeg,
+          tabId
+        });
 
         return;
       }

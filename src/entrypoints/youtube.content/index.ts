@@ -17,6 +17,7 @@ import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
 import { optionsItem, statusProgressItem } from "@/lib/storage/storage";
 import { downloadProgressStore, initContentOptions } from "@/lib/ui/synced-stores.svelte";
 import { forwardSabrCredentialsWithRetry, listenForSabrBodyReady } from "@/lib/youtube/sabr-credentials";
+import { ProgressType } from "@/types";
 
 function registerCrossWorldHandlers(
   isDownloadIframe: boolean,
@@ -148,7 +149,7 @@ function registerBackgroundMessageHandlers() {
       return;
     }
 
-    const isComplete = data.progress >= 1;
+    const isComplete = data.progress >= 1 && data.progressType === ProgressType.FFmpeg;
     downloadProgressStore.setLocal(data.videoId, {
       isDownloading: !isComplete,
       isDone: isComplete,
