@@ -7,7 +7,7 @@ import { uint8ToBase64 } from "@/lib/utils/binary";
 import { ProgressType } from "@/types";
 import type { DownloadRequest } from "@/types";
 
-const iframeReadyTimeoutMs = 30_000;
+const IFRAME_READY_TIMEOUT_MS = 30_000;
 
 // One persistent listener dispatches to per-videoId resolve functions.
 // @webext-core/messaging allows only one listener per type per context,
@@ -46,7 +46,7 @@ async function prepareIframe({ data, tabId }: {
     const timeoutId = setTimeout(() => {
       pendingIframeReady.delete(data.videoId);
       resolve();
-    }, iframeReadyTimeoutMs);
+    }, IFRAME_READY_TIMEOUT_MS);
 
     pendingIframeReady.set(data.videoId, frameId => {
       iframeFrameId = frameId;

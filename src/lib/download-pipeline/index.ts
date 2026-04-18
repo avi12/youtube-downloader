@@ -21,7 +21,7 @@ export function toUint8Array(data: Uint8Array | Record<string, number> | null) {
 }
 
 const blobUrlsPendingRevocation = new Map<string, Blob>();
-const BlobRevocationDelayMs = 60_000;
+const BLOB_REVOCATION_DELAY_MS = 60_000;
 
 export async function triggerDownload({ data, filenameOutput, recentContext }: {
   data: Uint8Array;
@@ -49,12 +49,12 @@ export async function triggerDownload({ data, filenameOutput, recentContext }: {
   setTimeout(() => {
     URL.revokeObjectURL(blobUrl);
     blobUrlsPendingRevocation.delete(blobUrl);
-  }, BlobRevocationDelayMs);
+  }, BLOB_REVOCATION_DELAY_MS);
 }
 
 // FFmpeg fires progress events per frame/packet including thousands of redundant progress=1 events,
 // so throttle to avoid flooding Polymer button re-renders.
-const progressThrottleIntervalMs = 200;
+const PROGRESS_THROTTLE_INTERVAL_MS = 200;
 const lastProgressTimestamps = new Map<string, number>();
 const completedVideoIds = new Set<string>();
 
@@ -92,7 +92,7 @@ export async function reportProgress({
 
   const now = Date.now();
   const lastSent = lastProgressTimestamps.get(videoId) ?? 0;
-  if (now - lastSent < progressThrottleIntervalMs) {
+  if (now - lastSent < PROGRESS_THROTTLE_INTERVAL_MS) {
     return;
   }
 

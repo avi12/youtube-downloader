@@ -2,7 +2,7 @@ import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { StreamStallError, readStreamToBuffer } from "@/lib/utils/stream";
 import { ProgressType } from "@/types";
 
-const progressThrottleIntervalMs = 5000;
+const PROGRESS_THROTTLE_INTERVAL_MS = 5000;
 const lastProgressTimestamps = new Map<string, number>();
 
 const MAX_CDN_RETRY_ATTEMPTS = 3;
@@ -27,7 +27,7 @@ export async function sendProgressUpdate({ videoId, progress, progressType, tabI
   if (!isComplete) {
     const now = Date.now();
     const lastSent = lastProgressTimestamps.get(videoId) ?? 0;
-    if (now - lastSent < progressThrottleIntervalMs) {
+    if (now - lastSent < PROGRESS_THROTTLE_INTERVAL_MS) {
       return;
     }
 

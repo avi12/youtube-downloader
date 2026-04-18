@@ -1,7 +1,7 @@
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
 
-const chromeSwIdleKillMs = 30_000;
-const swKeepaliveIntervalMs = chromeSwIdleKillMs - 5_000;
+const CHROME_SW_IDLE_KILL_MS = 30_000;
+const SW_KEEPALIVE_INTERVAL_MS = CHROME_SW_IDLE_KILL_MS - 5_000;
 
 export function listenForKeepalive() {
   onMessage(MessageType.StartKeepalive, () => {
@@ -11,7 +11,7 @@ export function listenForKeepalive() {
       } catch {
         clearInterval(keepaliveInterval);
       }
-    }, swKeepaliveIntervalMs);
+    }, SW_KEEPALIVE_INTERVAL_MS);
 
     addEventListener("beforeunload", () => {
       clearInterval(keepaliveInterval);

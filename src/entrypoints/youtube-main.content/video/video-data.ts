@@ -277,15 +277,15 @@ export async function buildAndDispatchVideoData({ playerResponse, cancelActiveDo
   }
 }
 
-const playerResponsePollAttempts = 20;
-const playerResponsePollIntervalMs = 250;
+const PLAYER_RESPONSE_POLL_ATTEMPTS = 20;
+const PLAYER_RESPONSE_POLL_INTERVAL_MS = 250;
 
 export async function extractAndDispatchVideoData(cancelActiveDownload: (videoId: string) => void) {
   if (!location.pathname.startsWith("/watch")) {
     return;
   }
 
-  for (let attempt = 0; attempt < playerResponsePollAttempts; attempt++) {
+  for (let attempt = 0; attempt < PLAYER_RESPONSE_POLL_ATTEMPTS; attempt++) {
     const playerResponse = window.ytInitialPlayerResponse ?? null;
     const isReady = playerResponse?.videoDetails?.videoId
       && playerResponse.playabilityStatus?.status !== "UNPLAYABLE";
@@ -297,6 +297,6 @@ export async function extractAndDispatchVideoData(cancelActiveDownload: (videoId
       return;
     }
 
-    await new Promise(resolve => setTimeout(resolve, playerResponsePollIntervalMs));
+    await new Promise(resolve => setTimeout(resolve, PLAYER_RESPONSE_POLL_INTERVAL_MS));
   }
 }

@@ -19,7 +19,7 @@ import { uint8ToBase64 } from "@/lib/utils/binary";
 import { clearCapturedSabrData, onSabrBodyCaptured, startSabrRequestCapture } from "@/lib/youtube/sabr-request-capture";
 import { extractPoTokenFromBody, getCapturedSabrData } from "@/lib/youtube/sabr-request-capture";
 
-const sabrOriginRuleId = 1;
+const SABR_ORIGIN_RULE_ID = 1;
 
 async function registerSabrOriginRule() {
   const baseHeaders: Browser.declarativeNetRequest.ModifyHeaderInfo[] = [
@@ -52,7 +52,7 @@ async function registerSabrOriginRule() {
     ];
 
   const rule: Browser.declarativeNetRequest.Rule = {
-    id: sabrOriginRuleId,
+    id: SABR_ORIGIN_RULE_ID,
     priority: 1,
     action: {
       type: "modifyHeaders",
@@ -61,7 +61,7 @@ async function registerSabrOriginRule() {
     condition: { urlFilter: "||googlevideo.com/videoplayback" }
   };
   await browser.declarativeNetRequest.updateDynamicRules({
-    removeRuleIds: [sabrOriginRuleId],
+    removeRuleIds: [SABR_ORIGIN_RULE_ID],
     addRules: [rule]
   });
 }

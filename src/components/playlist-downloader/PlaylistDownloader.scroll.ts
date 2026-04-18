@@ -2,9 +2,9 @@ const PLAYLIST_CONTENTS_SELECTOR = "ytd-playlist-video-list-renderer #contents";
 const PLAYLIST_VIDEO_TAG = "ytd-playlist-video-renderer";
 const CONTINUATION_TAG = "ytd-continuation-item-renderer";
 
-const revealStableRoundsRequired = 3;
-const revealPollIntervalMs = 300;
-const revealMaxWaitMs = 120_000;
+const REVEAL_STABLE_ROUNDS_REQUIRED = 3;
+const REVEAL_POLL_INTERVAL_MS = 300;
+const REVEAL_MAX_WAIT_MS = 120_000;
 
 function queryPlaylistContents() {
   return document.querySelector(PLAYLIST_CONTENTS_SELECTOR);
@@ -28,7 +28,7 @@ function scrollContainerToBottom(elContents: Element) {
 }
 
 async function waitForRoundTransition() {
-  await new Promise(resolve => setTimeout(resolve, revealPollIntervalMs));
+  await new Promise(resolve => setTimeout(resolve, REVEAL_POLL_INTERVAL_MS));
 }
 
 /**
@@ -50,7 +50,7 @@ export async function revealAllPlaylistVideos(
     return;
   }
 
-  const deadline = Date.now() + revealMaxWaitMs;
+  const deadline = Date.now() + REVEAL_MAX_WAIT_MS;
   let stableRounds = 0;
   let lastCount = countRenderedVideos(elContents);
   onProgress({
@@ -84,7 +84,7 @@ export async function revealAllPlaylistVideos(
 
     stableRounds++;
 
-    if (stableRounds >= revealStableRoundsRequired) {
+    if (stableRounds >= REVEAL_STABLE_ROUNDS_REQUIRED) {
       return;
     }
   }

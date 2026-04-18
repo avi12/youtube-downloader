@@ -27,7 +27,7 @@ const activeBackgroundDownloads = new Map<string, AbortController>();
 // A stall (no bytes received) is distinct from a slow connection: slow downloads
 // keep resetting this timer and are never killed, while a frozen SABR session
 // (re-downloading a recently-fetched video) gets detected and CDN is tried.
-const sabrStallTimeoutMs = 30_000;
+const SABR_STALL_TIMEOUT_MS = 30_000;
 const pendingNetworkRetries = new Map<string, {
   request: DownloadRequest;
   tabId: number;
@@ -63,7 +63,7 @@ async function clearInterruptedDownload(videoId: string) {
   });
 }
 
-const yieldEveryNChunks = 32;
+const YIELD_EVERY_N_CHUNKS = 32;
 
 async function sendStreamChunksToOffscreen({ videoId, streamType, data, tabId }: {
   videoId: string;
@@ -85,7 +85,7 @@ async function sendStreamChunksToOffscreen({ videoId, streamType, data, tabId }:
       tabId
     });
 
-    if ((iChunk + 1) % yieldEveryNChunks === 0) {
+    if ((iChunk + 1) % YIELD_EVERY_N_CHUNKS === 0) {
       await new Promise(resolve => setTimeout(resolve, 0));
     }
   }
@@ -217,12 +217,12 @@ async function attemptSabrDownload({ request, signal, tabId }: {
   tabId: number;
 }) {
   const sabrAbortController = new AbortController();
-  let sabrStallTimeoutId = setTimeout(() => sabrAbortController.abort(), sabrStallTimeoutMs);
+  let sabrStallTimeoutId = setTimeout(() => sabrAbortController.abort(), SABR_STALL_TIMEOUT_MS);
   signal.addEventListener("abort", () => sabrAbortController.abort(), { once: true });
 
   function resetSabrStallTimer() {
     clearTimeout(sabrStallTimeoutId);
-    sabrStallTimeoutId = setTimeout(() => sabrAbortController.abort(), sabrStallTimeoutMs);
+    sabrStallTimeoutId = setTimeout(() => sabrAbortController.abort(), SABR_STALL_TIMEOUT_MS);
   }
 
   try {

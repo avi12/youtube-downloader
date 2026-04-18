@@ -12,7 +12,7 @@ import { getOutputExtension, resolveAutoExtension, resolveVideoFilename } from "
 import { calculateWeightedProgress, formatVideoQualityLabel } from "@/lib/youtube/video-helpers";
 import { DownloadType, IconName, ProgressType, type VideoData } from "@/types";
 
-const videoDataLoadTimeoutMs = 15_000;
+const VIDEO_DATA_LOAD_TIMEOUT_MS = 15_000;
 
 const defaultProgressState: DownloadProgressState = {
   isDownloading: false,
@@ -60,7 +60,7 @@ export function createPlaylistVideoItemState({ videoId, gridTitle, activeDownloa
       if (!videoData) {
         isLoadFailed = true;
       }
-    }, videoDataLoadTimeoutMs);
+    }, VIDEO_DATA_LOAD_TIMEOUT_MS);
 
     return () => clearTimeout(loadTimeout);
   });

@@ -21,7 +21,7 @@ export const PopupPanel = {
 
 export type PopupPanel = (typeof PopupPanel)[keyof typeof PopupPanel];
 
-const relativeAgeTickMs = 30_000;
+const RELATIVE_AGE_TICK_MS = 30_000;
 
 export function createAppState(props: {
   initialIsFFmpegReady: boolean;
@@ -75,7 +75,7 @@ export function createAppState(props: {
     });
     const relativeAgeTimer = setInterval(() => {
       now = Date.now();
-    }, relativeAgeTickMs);
+    }, RELATIVE_AGE_TICK_MS);
 
     const unwatches = [
       isFFmpegReadyItem.watch(value => {

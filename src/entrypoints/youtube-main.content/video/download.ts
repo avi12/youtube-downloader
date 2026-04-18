@@ -72,8 +72,8 @@ function resolveCredentials() {
   };
 }
 
-const credentialPollIntervalMs = 200;
-const credentialPollMaxWaitMs = 5000;
+const CREDENTIAL_POLL_INTERVAL_MS = 200;
+const CREDENTIAL_POLL_MAX_WAIT_MS = 5000;
 
 async function resolveCredentialsWithRetry() {
   const initial = resolveCredentials();
@@ -81,9 +81,9 @@ async function resolveCredentialsWithRetry() {
     return initial;
   }
 
-  const deadline = Date.now() + credentialPollMaxWaitMs;
+  const deadline = Date.now() + CREDENTIAL_POLL_MAX_WAIT_MS;
   while (Date.now() < deadline) {
-    await new Promise<void>(resolve => setTimeout(resolve, credentialPollIntervalMs));
+    await new Promise<void>(resolve => setTimeout(resolve, CREDENTIAL_POLL_INTERVAL_MS));
     const result = resolveCredentials();
     if (result.poToken) {
       return result;

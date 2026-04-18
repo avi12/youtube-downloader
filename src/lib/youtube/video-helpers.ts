@@ -6,7 +6,7 @@ import { CHILD_LIST_SUBTREE } from "~/lib/utils/dom";
 
 export const videoQualities = [4320, 2160, 1440, 1080, 720, 480, 360, 240, 144];
 
-const defaultVideoQuality = 1080;
+const DEFAULT_VIDEO_QUALITY = 1080;
 
 export const initialOptions: Options = {
   ext: {
@@ -15,7 +15,7 @@ export const initialOptions: Options = {
   },
   defaultDownloadType: "auto",
   videoQualityMode: VideoQualityMode.Best,
-  videoQuality: defaultVideoQuality,
+  videoQuality: DEFAULT_VIDEO_QUALITY,
   isShowNativeDownload: false,
   playlistDownloadMode: PlaylistDownloadMode.Fast,
   playlistOutputMode: PlaylistOutputMode.Individual,
