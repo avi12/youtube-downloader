@@ -33,14 +33,20 @@ export function injectWatchButtonStyles() {
 export function findNativeDownloadButton(elActionsContainer: HTMLElement) {
   const buttons = elActionsContainer.querySelectorAll<YtButtonViewModelElement>("yt-button-view-model");
   for (const button of buttons) {
-    if (button.data?.iconName?.includes(IconName.Download)) {
-      return button;
+    const isDownload = button.data?.iconName?.includes(IconName.Download)
+      || /download/i.test(button.querySelector("button")?.getAttribute("aria-label") ?? "");
+    if (!isDownload) {
+      continue;
     }
 
-    const elInnerButton = button.querySelector("button");
-    if (/download/i.test(elInnerButton?.getAttribute("aria-label") ?? "")) {
-      return button;
+    // Walk up to find the direct child of elActionsContainer so the entire
+    // native component (which may nest multiple chevrons) gets hidden/replaced.
+    let elCurrent: HTMLElement = button;
+    while (elCurrent.parentElement && elCurrent.parentElement !== elActionsContainer) {
+      elCurrent = elCurrent.parentElement;
     }
+
+    return elCurrent;
   }
 
   return null;
@@ -48,7 +54,7 @@ export function findNativeDownloadButton(elActionsContainer: HTMLElement) {
 
 export function createButtonGroup({ elActionsContainer, elNativeDownload, scopingClass }: {
   elActionsContainer: HTMLElement;
-  elNativeDownload: YtButtonViewModelElement | null;
+  elNativeDownload: HTMLElement | null;
   scopingClass: string;
 }): ButtonGroupElements {
   const scopingClasses = scopingClass.match(/\S+/g) ?? [];
