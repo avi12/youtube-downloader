@@ -13,6 +13,16 @@ import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-wo
 import { CHILD_LIST_SUBTREE } from "@/lib/utils/dom";
 import { ProgressType, type ProgressUpdate, type VideoData } from "@/types";
 
+const DOWNLOAD_PROGRESS_SHARE = 0.8;
+
+function mapToBarProgress(progress: number, progressType: ProgressType): number {
+  if (progressType === ProgressType.Video || progressType === ProgressType.Audio) {
+    return progress * DOWNLOAD_PROGRESS_SHARE;
+  }
+
+  return DOWNLOAD_PROGRESS_SHARE + progress * (1 - DOWNLOAD_PROGRESS_SHARE);
+}
+
 let cleanupCurrentButton: (() => void) | null = null;
 let injectionGeneration = 0;
 let containerSearchAbort: AbortController | null = null;
@@ -232,7 +242,7 @@ export async function injectSegmentedDownloadButton(
       return;
     }
 
-    downloadProgress = data.progress;
+    downloadProgress = mapToBarProgress(data.progress, data.progressType);
     downloadProgressType = data.progressType;
 
     if (data.progress >= 1 && data.progressType === ProgressType.FFmpeg) {
@@ -285,7 +295,7 @@ export async function injectSegmentedDownloadButton(
         return;
       }
 
-      downloadProgress = data.progress;
+      downloadProgress = mapToBarProgress(data.progress, data.progressType);
       downloadProgressType = data.progressType;
       refreshButtons();
     }
