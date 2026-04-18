@@ -126,11 +126,12 @@ async function downloadVideoAudioViaSabr({
   ]);
 }
 
-async function downloadExtraAudioTracksViaSabr({ config, formats, poToken, signal }: {
+async function downloadExtraAudioTracksViaSabr({ config, formats, poToken, signal, onProgress }: {
   config: SabrConfig;
   formats: AdaptiveFormatItem[];
   poToken: string;
   signal: AbortSignal;
+  onProgress?: () => void;
 }) {
   const tracks: DownloadResult["additionalAudioTracks"] = [];
 
@@ -138,7 +139,7 @@ async function downloadExtraAudioTracksViaSabr({ config, formats, poToken, signa
     try {
       const sabrFetch = createProgressFetch({
         signal,
-        onBytesReceived() {}
+        onBytesReceived() { onProgress?.(); }
       });
       const data = await fetchAudioViaSabrStream({
         sabrConfig: config,
@@ -216,7 +217,8 @@ export async function downloadViaSabr({ request, signal, tabId, onProgress }: {
     config: effectiveConfig,
     formats: additionalAudioFormats ?? [],
     poToken: resolvedPoToken,
-    signal
+    signal,
+    onProgress
   });
 
   return {
