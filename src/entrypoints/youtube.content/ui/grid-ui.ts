@@ -6,8 +6,6 @@ import { mount } from "svelte";
 const VIDEO_CARD_SELECTOR = "yt-lockup-view-model, ytd-rich-item-renderer, ytd-grid-video-renderer";
 const PAGE_MANAGER_SELECTOR = "ytd-page-manager";
 const VIEWPORT_MARGIN = "200px";
-// 2 buttons × 36px + 4px gap + 36px three-dot − 10px right-offset of .ytLockupMetadataViewModelMenuButton
-const MENU_BUTTON_TITLE_CLEARANCE_PX = 102;
 
 let gridObserver: MutationObserver | null = null;
 let visibilityObserver: IntersectionObserver | null = null;
@@ -93,7 +91,15 @@ function mountGridButton({ context, elCard }: {
     const elTitle = elAnchor.closest(".ytLockupMetadataViewModelHost")
       ?.querySelector<HTMLElement>(".ytLockupMetadataViewModelTitle");
     if (elTitle) {
-      elTitle.style.paddingInlineEnd = `${MENU_BUTTON_TITLE_CLEARANCE_PX}px`;
+      function updateTitlePadding() {
+        const buttonWidth = elItemContainer.offsetWidth;
+        if (buttonWidth > 0) {
+          elTitle!.style.paddingInlineEnd = `${buttonWidth}px`;
+        }
+      }
+      const resizeObserver = new ResizeObserver(updateTitlePadding);
+      resizeObserver.observe(elItemContainer);
+      context.onInvalidated(() => resizeObserver.disconnect());
     }
   } else {
     const elDetails = elAnchor.querySelector("#details");
