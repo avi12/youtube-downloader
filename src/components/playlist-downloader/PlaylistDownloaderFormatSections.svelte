@@ -118,44 +118,46 @@
 {/if}
 
 <style>
-  :global(.ytdl-section-select) {
-    position: relative;
-  }
+  :global {
+    .ytdl-section-select {
+      position: relative;
+    }
 
-  :global(.ytdl-section.is-disabled) {
-    opacity: 50%;
-    pointer-events: none;
-  }
+    .ytdl-section.is-disabled {
+      opacity: 50%;
+      pointer-events: none;
+    }
 
-  :global(.ytdl-override-badge) {
-    display: inline-flex;
-    align-items: center;
-  }
+    .ytdl-override-badge {
+      display: inline-flex;
+      align-items: center;
+    }
 
-  :global(.ytdl-override-badge-floating) {
-    position: absolute;
-    top: 14px;
-    right: -12px;
-  }
+    .ytdl-override-badge-floating {
+      position: absolute;
+      top: 14px;
+      right: -12px;
+    }
 
-  :global(.ytdl-override-dot) {
-    display: inline-block;
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--yt-spec-call-to-action, #3ea6ff);
-  }
+    .ytdl-override-dot {
+      display: inline-block;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--yt-spec-call-to-action, #3ea6ff);
+    }
 
-  :global(.ytdl-visually-hidden) {
-    position: absolute;
-    overflow: hidden;
-    width: 1px;
-    height: 1px;
-    margin: -1px;
-    padding: 0;
-    border: 0;
-    clip-path: inset(50%);
-    white-space: nowrap;
+    .ytdl-visually-hidden {
+      position: absolute;
+      overflow: hidden;
+      width: 1px;
+      height: 1px;
+      margin: -1px;
+      padding: 0;
+      border: 0;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
   }
 
   .ytdl-reset-link {

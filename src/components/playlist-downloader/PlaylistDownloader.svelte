@@ -167,20 +167,22 @@
     color: var(--yt-spec-text-primary, #0f0f0f);
   }
 
-  :global(.ytdl-section) {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding: 10px 0;
-    transition: opacity 150ms ease;
+  :global {
+    .ytdl-section {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      padding: 10px 0;
+      transition: opacity 150ms ease;
 
-    & + & {
-      border-top: 1px solid var(--yt-spec-10-percent-layer, rgb(255 255 255 / 10%));
+      & + & {
+        border-top: 1px solid var(--yt-spec-10-percent-layer, rgb(255 255 255 / 10%));
+      }
     }
-  }
 
-  :global(.ytdl-playlist-container tp-yt-paper-checkbox) {
-    font-size: 1.4rem;
+    .ytdl-playlist-container tp-yt-paper-checkbox {
+      font-size: 1.4rem;
+    }
   }
 
   .ytdl-scroll-sync-hint {
