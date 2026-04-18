@@ -1,4 +1,5 @@
 import { triggerDownload } from ".";
+import { MessageType, sendMessage } from "~/lib/messaging/messaging";
 import { getCompatibleFilename } from "~/lib/utils/containers";
 import { zip } from "fflate";
 import type { AsyncZippable } from "fflate";
@@ -73,9 +74,23 @@ export async function addToPlaylistBundle({
   const zipFilename = getCompatibleFilename(`${bundle.playlistTitle}.zip`);
   playlistBundles.delete(playlistId);
 
-  const zipped = await zipToBuffer(zipEntries);
-  await triggerDownload({
-    data: zipped,
-    filenameOutput: zipFilename
+  await sendMessage(MessageType.PipelineZipProgress, {
+    playlistId,
+    isDone: false,
+    tabId: bundle.tabId
   });
+
+  try {
+    const zipped = await zipToBuffer(zipEntries);
+    await triggerDownload({
+      data: zipped,
+      filenameOutput: zipFilename
+    });
+  } finally {
+    await sendMessage(MessageType.PipelineZipProgress, {
+      playlistId,
+      isDone: true,
+      tabId: bundle.tabId
+    });
+  }
 }

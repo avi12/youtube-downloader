@@ -42,6 +42,7 @@ let videoExtOverride = $state<string | null>(null);
 let audioExtOverride = $state<string | null>(null);
 let videoQualityOverride = $state<string | null>(null);
 let zipNameOverride = $state<string | null>(null);
+let currentZipBundleId = $state<string | null>(null);
 
 function resolveDefaultZipName() {
   const metadata = playlistMetadataSignal.value;
@@ -250,6 +251,17 @@ export function createPlaylistDownloaderState() {
       return;
     }
 
+    // For zip batches, hold here until the packaging step signals completion.
+    if (currentZipBundleId) {
+      const zipEntry = downloadProgressStore.get(`zip:${currentZipBundleId}`);
+      if (!zipEntry?.isDone) {
+        return;
+      }
+
+      downloadProgressStore.deleteLocal(`zip:${currentZipBundleId}`);
+      currentZipBundleId = null;
+    }
+
     completedBatchProgress = 100;
     isDownloading = false;
     batchDownloadStatus.isRunning = false;
@@ -309,6 +321,7 @@ export function createPlaylistDownloaderState() {
     const playlistId = metadata?.playlistId || `playlist-${Date.now()}`;
     const isZipBundle = outputMode === PlaylistOutputMode.Zip;
     batchDownloadStatus.isZipBatch = isZipBundle;
+    currentZipBundleId = isZipBundle ? playlistId : null;
 
     const resolvedOptions = buildEffectiveOptions();
     const downloadRequests = videos.map(data =>
@@ -343,6 +356,11 @@ export function createPlaylistDownloaderState() {
     batchDownloadStatus.isZipBatch = false;
     batchVideoIds.clear();
     batchCanceledIds.clear();
+
+    if (currentZipBundleId) {
+      downloadProgressStore.deleteLocal(`zip:${currentZipBundleId}`);
+      currentZipBundleId = null;
+    }
 
     for (const request of activeDownloadRequests) {
       downloadProgressStore.delete(request.videoId);
@@ -403,6 +421,16 @@ export function createPlaylistDownloaderState() {
           progressType: entry.progressType
         });
       }
+
+      // Zip packaging is an extra step after all downloads complete.
+      // Treat it as one additional slot so the bar only reaches 100 when
+      // the zip is actually ready to download.
+      if (currentZipBundleId) {
+        const zipEntry = downloadProgressStore.get(`zip:${currentZipBundleId}`);
+        sum += zipEntry?.isDone ? 100 : 0;
+        return sum / (totalCount + 1);
+      }
+
       return sum / totalCount;
     }
 

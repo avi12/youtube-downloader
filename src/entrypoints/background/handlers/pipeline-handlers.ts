@@ -105,4 +105,17 @@ export function registerPipelineHandlers() {
     void isFFmpegReadyItem.setValue(true);
     signalFFmpegReady();
   });
+
+  onMessage(MessageType.PipelineZipProgress, ({ data }) => {
+    const { playlistId, isDone, tabId } = data;
+    void sendMessage(
+      MessageType.UpdateDownloadProgress,
+      {
+        videoId: `zip:${playlistId}`,
+        progress: isDone ? 1 : 0,
+        progressType: ProgressType.Zip
+      },
+      tabId
+    );
+  });
 }

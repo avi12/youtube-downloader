@@ -29,7 +29,8 @@ export const MessageType = {
   PipelineStart: "pipelineStart",
   PipelineDownload: "pipelineDownload",
   RecentDownloadsChanged: "recentDownloadsChanged",
-  TranscodeRecentDownload: "transcodeRecentDownload"
+  TranscodeRecentDownload: "transcodeRecentDownload",
+  PipelineZipProgress: "pipelineZipProgress"
 } as const;
 
 interface ProtocolMap {
@@ -178,6 +179,11 @@ interface ProtocolMap {
   transcodeRecentDownload(data: {
     entryId: string;
     targetContainer: string;
+  }): void;
+  pipelineZipProgress(data: {
+    playlistId: string;
+    isDone: boolean;
+    tabId: number;
   }): void;
 }
 

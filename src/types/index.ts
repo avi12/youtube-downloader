@@ -38,7 +38,8 @@ export type DownloadType = (typeof DownloadType)[keyof typeof DownloadType];
 export const ProgressType = {
   Video: "video",
   Audio: "audio",
-  FFmpeg: "ffmpeg"
+  FFmpeg: "ffmpeg",
+  Zip: "zip"
 } as const;
 
 export type ProgressType = (typeof ProgressType)[keyof typeof ProgressType];
