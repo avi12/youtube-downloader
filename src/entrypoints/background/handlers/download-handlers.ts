@@ -3,10 +3,10 @@ import { enqueueToPopupList, removeFromPopupList } from "../queue/popup-list";
 import { awaitBytesTransferred, awaitVideoComplete, signalVideoComplete } from "../queue/sequential-queue";
 import { cancelDownloads, getTabIdsForVideo, trackVideoForTab } from "../queue/tab-tracker";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
+import { uint8ToBase64 } from "@/lib/utils/binary";
 import { ProgressType } from "@/types";
 import type { DownloadRequest } from "@/types";
 
-const bufferChunkSize = 8192;
 const iframeReadyTimeoutMs = 30_000;
 
 // One persistent listener dispatches to per-videoId resolve functions.
@@ -204,11 +204,6 @@ export function registerDownloadHandlers() {
       const responseBuffer = await response.arrayBuffer();
       const responseBytes = new Uint8Array(responseBuffer);
 
-      let responseBinary = "";
-      for (let i = 0; i < responseBytes.length; i += bufferChunkSize) {
-        responseBinary += String.fromCharCode(...responseBytes.subarray(i, i + bufferChunkSize));
-      }
-
       const responseHeaders: Record<string, string> = {};
       for (const [key, value] of response.headers) {
         responseHeaders[key] = value;
@@ -216,7 +211,7 @@ export function registerDownloadHandlers() {
 
       return {
         status: response.status,
-        bodyBase64: btoa(responseBinary),
+        bodyBase64: uint8ToBase64(responseBytes),
         responseHeaders
       };
     } catch (fetchError) {

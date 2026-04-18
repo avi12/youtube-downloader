@@ -1,10 +1,9 @@
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { downloadProgressStore } from "@/lib/ui/synced-stores.svelte";
-import { uint8ToBase64 } from "@/lib/utils/binary";
+import { TRANSFER_CHUNK_SIZE, uint8ToBase64 } from "@/lib/utils/binary";
 import { StreamType } from "@/types";
 import type { StreamDataPayload } from "@/types";
 
-const TRANSFER_CHUNK_SIZE = 1024 * 1024;
 const cancelledVideoIds = new Set<string>();
 
 export function cancelStreamTransfer(videoId: string) {

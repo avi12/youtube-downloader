@@ -6,7 +6,7 @@ import { downloadViaSabr } from "./sabr-downloader";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
 import { interruptedDownloadsItem, mutateStorageItem } from "@/lib/storage/storage";
-import { uint8ToBase64 } from "@/lib/utils/binary";
+import { TRANSFER_CHUNK_SIZE, uint8ToBase64 } from "@/lib/utils/binary";
 import { fetchYouTubeMusicMetadata } from "@/lib/youtube/youtube-music-metadata";
 import { ProgressType, StreamType } from "@/types";
 import type { DownloadRequest, VideoMetadata } from "@/types";
@@ -63,7 +63,6 @@ async function clearInterruptedDownload(videoId: string) {
   });
 }
 
-const TRANSFER_CHUNK_SIZE = 1024 * 1024;
 const yieldEveryNChunks = 32;
 
 async function sendStreamChunksToOffscreen({ videoId, streamType, data, tabId }: {
