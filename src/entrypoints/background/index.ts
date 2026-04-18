@@ -1,6 +1,6 @@
 import { registerDownloadHandlers } from "./handlers/download-handlers";
 import { registerPipelineHandlers } from "./handlers/pipeline-handlers";
-import { isFirefoxProcessorTab, ensureProcessor, resetProcessorState } from "./handlers/processor";
+import { ensureProcessor } from "./handlers/processor";
 import { tabTracker, trackVideoForTab, untrackVideoForTab } from "./queue/tab-tracker";
 import { registerRecentDownloadsRetention } from "./recent/recent-downloads-retention";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
@@ -21,33 +21,41 @@ import { extractPoTokenFromBody, getCapturedSabrData } from "@/lib/youtube/sabr-
 const sabrOriginRuleId = 1;
 
 async function registerSabrOriginRule() {
+  const baseHeaders: Browser.declarativeNetRequest.ModifyHeaderInfo[] = [
+    {
+      header: "Origin",
+      operation: "set",
+      value: "https://www.youtube.com"
+    },
+    {
+      header: "Referer",
+      operation: "set",
+      value: "https://www.youtube.com/"
+    }
+  ];
+
+  // Sec-Fetch-* headers are browser-managed in Firefox; overriding them aborts requests
+  const chromeOnlyHeaders: Browser.declarativeNetRequest.ModifyHeaderInfo[] = import.meta.env.FIREFOX
+    ? []
+    : [
+      {
+        header: "Sec-Fetch-Site",
+        operation: "set",
+        value: "cross-site"
+      },
+      {
+        header: "Sec-Fetch-Storage-Access",
+        operation: "set",
+        value: "active"
+      }
+    ];
+
   const rule: Browser.declarativeNetRequest.Rule = {
     id: sabrOriginRuleId,
     priority: 1,
     action: {
       type: "modifyHeaders",
-      requestHeaders: [
-        {
-          header: "Origin",
-          operation: "set",
-          value: "https://www.youtube.com"
-        },
-        {
-          header: "Referer",
-          operation: "set",
-          value: "https://www.youtube.com/"
-        },
-        {
-          header: "Sec-Fetch-Site",
-          operation: "set",
-          value: "cross-site"
-        },
-        {
-          header: "Sec-Fetch-Storage-Access",
-          operation: "set",
-          value: "active"
-        }
-      ]
+      requestHeaders: [...baseHeaders, ...chromeOnlyHeaders]
     },
     condition: { urlFilter: "||googlevideo.com/videoplayback" }
   };
@@ -128,11 +136,6 @@ function registerStorageHandlers() {
 
 function registerTabLifecycleHandlers() {
   browser.tabs.onRemoved.addListener(tabId => {
-    if (isFirefoxProcessorTab(tabId)) {
-      resetProcessorState();
-      return;
-    }
-
     const tabState = tabTracker[tabId];
     if (!tabState) {
       return;
@@ -183,6 +186,13 @@ export default defineBackground(() => {
   void musicListItem.setValue([]);
   void videoOnlyListItem.setValue([]);
   void videoDetailsItem.setValue({});
+
+  if (import.meta.env.FIREFOX) {
+    const processorUrl = browser.runtime.getURL("/offscreen.html");
+    void browser.tabs.query({ url: processorUrl }).then(
+      tabs => Promise.all(tabs.map(tab => tab.id !== undefined ? browser.tabs.remove(tab.id) : Promise.resolve()))
+    );
+  }
 
   void ensureProcessor();
 

@@ -1,16 +1,6 @@
 let processorReady: Promise<void> | null = null;
-let firefoxProcessorTabId: number | null = null;
 let resolveFFmpegReady: (() => void) | null = null;
-
-export function isFirefoxProcessorTab(tabId: number) {
-  return tabId === firefoxProcessorTabId;
-}
-
-export function resetProcessorState() {
-  processorReady = null;
-  firefoxProcessorTabId = null;
-  resolveFFmpegReady = null;
-}
+let firefoxProcessorFrame: HTMLIFrameElement | null = null;
 
 export function signalFFmpegReady() {
   resolveFFmpegReady?.();
@@ -53,23 +43,22 @@ async function ensureChromeOffscreenDocument() {
   await ffmpegReady;
 }
 
-async function ensureFirefoxProcessorTab() {
-  if (firefoxProcessorTabId !== null) {
-    try {
-      await browser.tabs.get(firefoxProcessorTabId);
-      return;
-    } catch {
-      firefoxProcessorTabId = null;
-    }
+async function ensureFirefoxProcessorFrame() {
+  if (firefoxProcessorFrame !== null && document.body.contains(firefoxProcessorFrame)) {
+    return;
   }
 
-  const ffmpegReady = waitForFFmpegReady();
-  const tab = await browser.tabs.create({
-    url: browser.runtime.getURL("/offscreen.html"),
-    active: false
-  });
+  firefoxProcessorFrame?.remove();
+  firefoxProcessorFrame = null;
 
-  firefoxProcessorTabId = tab.id ?? null;
+  const ffmpegReady = waitForFFmpegReady();
+
+  const elFrame = document.createElement("iframe");
+  elFrame.src = browser.runtime.getURL("/offscreen.html");
+  elFrame.style.display = "none";
+  document.body.appendChild(elFrame);
+  firefoxProcessorFrame = elFrame;
+
   await ffmpegReady;
 }
 
@@ -79,7 +68,7 @@ export async function ensureProcessor() {
   }
 
   processorReady = import.meta.env.FIREFOX
-    ? ensureFirefoxProcessorTab()
+    ? ensureFirefoxProcessorFrame()
     : ensureChromeOffscreenDocument();
 
   return processorReady;
