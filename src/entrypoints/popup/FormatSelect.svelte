@@ -2,7 +2,7 @@
   import { AUTO_EXTENSION, AUTO_EXTENSION_LABEL } from "@/lib/utils/containers";
 
   type Props = {
-    label: string;
+    label?: string;
     options: string[];
     value: string;
     onchange: (value: string) => void;
@@ -13,7 +13,9 @@
 </script>
 
 <div class="format-select">
-  <label class="format-select-label" for={id}>{label}</label>
+  {#if label}
+    <label class="format-select-label" for={id}>{label}</label>
+  {/if}
   <select
     {id}
     class="format-select-control"
@@ -45,6 +47,7 @@
   }
 
   .format-select-control {
+    flex: 1;
     min-width: 150px;
     padding: 8px 12px;
     border: 1px solid var(--border);
