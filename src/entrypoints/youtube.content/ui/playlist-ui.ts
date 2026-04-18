@@ -1,8 +1,14 @@
 import PlaylistDownloader from "@/components/playlist-downloader/PlaylistDownloader.svelte";
 import PlaylistVideoItem from "@/components/playlist-downloader/PlaylistVideoItem.svelte";
 import { checkedPlaylistVideos } from "@/lib/ui/playlist-selection.svelte";
+import { CHILD_LIST_SUBTREE } from "@/lib/utils/dom";
 import { getVideoIdFromUrl } from "@/lib/youtube/youtube-url";
 import { mount, unmount } from "svelte";
+
+const MOUSE_LEAVE_OPTIONS: MouseEventInit = {
+  bubbles: true,
+  composed: true
+};
 
 let currentPlaylistUi: ReturnType<typeof mount> | null = null;
 let headerMountAbort: AbortController | null = null;
@@ -45,11 +51,7 @@ function waitForPlaylistHeaderMount(signal: AbortSignal) {
       resolve(elHeader);
     });
 
-    const childListSubtreeOptions = {
-      childList: true,
-      subtree: true
-    };
-    observer.observe(document.body, childListSubtreeOptions);
+    observer.observe(document.body, CHILD_LIST_SUBTREE);
 
     signal.addEventListener("abort", () => {
       observer.disconnect();
@@ -108,14 +110,50 @@ export async function injectPlaylistDownloaderUi(
 
   ui.mount();
 
-  function dismissYtdlTooltips() {
-    for (const elButton of document.querySelectorAll<HTMLElement>("[data-ytdl-button-id]")) {
-      elButton.dispatchEvent(new MouseEvent("mouseleave", { bubbles: true }));
+  let elHoveredYtdlButton: HTMLElement | null = null;
+
+  function hideYtdlTooltip() {
+    document.querySelector<HTMLElement>("yt-tooltip yt-popover")?.hidePopover?.();
+    for (const elButton of document.querySelectorAll<HTMLElement>(
+      "[data-ytdl-button-id], [data-ytdl-button-id] button"
+    )) {
+      elButton.dispatchEvent(new MouseEvent("mouseleave", MOUSE_LEAVE_OPTIONS));
     }
   }
 
-  document.addEventListener("scroll", dismissYtdlTooltips, true);
-  context.onInvalidated(() => document.removeEventListener("scroll", dismissYtdlTooltips, true));
+  function trackHoveredButton(e: MouseEvent) {
+    if (!(e.target instanceof Element)) {
+      return;
+    }
+
+    const btn = e.target.closest<HTMLElement>("yt-button-view-model");
+    if (!btn && elHoveredYtdlButton) {
+      hideYtdlTooltip();
+    }
+
+    elHoveredYtdlButton = btn;
+  }
+
+  function dismissTooltipOnScroll() {
+    if (!elHoveredYtdlButton) {
+      return;
+    }
+
+    elHoveredYtdlButton = null;
+    // Only hide the popover — dispatching mouseleave while the cursor is still
+    // over the button causes YouTube to immediately re-show the tooltip.
+    document.querySelector<HTMLElement>("yt-tooltip yt-popover")?.hidePopover?.();
+  }
+
+  document.addEventListener("mouseover", trackHoveredButton, { passive: true });
+  document.addEventListener("scroll", dismissTooltipOnScroll, {
+    capture: true,
+    passive: true
+  });
+  context.onInvalidated(() => {
+    document.removeEventListener("mouseover", trackHoveredButton);
+    document.removeEventListener("scroll", dismissTooltipOnScroll, { capture: true });
+  });
 
   // YouTube rebuilds the header subtree on theme transitions (and some other
   // SPA re-renders), which detaches our mount container. Re-inject when that
@@ -130,11 +168,7 @@ export async function injectPlaylistDownloaderUi(
     void injectPlaylistDownloaderUi(context);
   });
 
-  const childListSubtreeOptions = {
-    childList: true,
-    subtree: true
-  };
-  headerReinjectObserver.observe(document.body, childListSubtreeOptions);
+  headerReinjectObserver.observe(document.body, CHILD_LIST_SUBTREE);
 }
 
 function injectPlaylistVideoItemUi({ context, elVideoItem }: {
@@ -269,10 +303,6 @@ export function handlePlaylistVideoAdditions(context: InstanceType<typeof Conten
     }
   });
 
-  const childListSubtreeOptions = {
-    childList: true,
-    subtree: true
-  };
-  mutationObserver.observe(elContents, childListSubtreeOptions);
+  mutationObserver.observe(elContents, CHILD_LIST_SUBTREE);
   context.onInvalidated(() => mutationObserver.disconnect());
 }
