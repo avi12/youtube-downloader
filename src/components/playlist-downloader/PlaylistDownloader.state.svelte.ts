@@ -467,6 +467,29 @@ export function createPlaylistDownloaderState() {
     return null;
   });
 
+  const currentPhaseLabel = $derived.by(() => {
+    if (!isDownloading) {
+      return "";
+    }
+
+    if (currentZipBundleId && downloadedCount >= totalCount) {
+      return "Building ZIP";
+    }
+
+    if (!activeDownloadVideoId) {
+      return "";
+    }
+
+    const entry = downloadProgressStore.get(activeDownloadVideoId);
+    const data = videoDataMap.get(activeDownloadVideoId);
+    const iVideo = activeDownloadRequests.findIndex(request => request.videoId === activeDownloadVideoId) + 1;
+    const videoLabel = data?.title ?? `Video ${iVideo}`;
+
+    return entry?.progressType === ProgressType.FFmpeg
+      ? `Processing ${videoLabel}`
+      : `Downloading ${videoLabel}`;
+  });
+
   $effect(() => {
     if (!isScrollSyncEnabled || !activeDownloadVideoId) {
       return;
@@ -568,6 +591,9 @@ export function createPlaylistDownloaderState() {
     },
     get completedBatchProgress() {
       return completedBatchProgress;
+    },
+    get currentPhaseLabel() {
+      return currentPhaseLabel;
     },
     get isDownloadTypeOverridden() {
       return downloadTypeOverride !== null;

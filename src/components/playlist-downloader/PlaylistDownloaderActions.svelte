@@ -119,6 +119,9 @@
     || (playlist.isDownloading && playlist.totalCount > 0)
     || playlist.activeIndividualDownloadCount > 0
     || playlist.completedBatchProgress > 0}
+    {#if playlist.currentPhaseLabel}
+      <span class="ytdl-phase-label" aria-live="polite">{playlist.currentPhaseLabel}</span>
+    {/if}
     <tp-yt-paper-progress
       {@attach attachProgressBar}
       aria-label={progressAriaLabel}
@@ -165,6 +168,14 @@
   .ytdl-selection-count {
     color: var(--yt-spec-text-secondary, #aaaaaa);
     font-size: 1.2rem;
+  }
+
+  .ytdl-phase-label {
+    overflow: hidden;
+    color: var(--yt-spec-text-secondary, #aaaaaa);
+    font-size: 1.2rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .ytdl-or-divider {
