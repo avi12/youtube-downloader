@@ -42,14 +42,19 @@ export default defineContentScript({
 
     // Download iframes are for data fetching only and must never play audio or video.
     if (self !== top) {
-      function stopIframePlayer() {
+      function silenceIframeVideo() {
         const elVideo = document.querySelector<HTMLVideoElement>("video");
         if (!elVideo) {
           return false;
         }
 
         elVideo.muted = true;
-        elVideo.pause();
+        elVideo.volume = 0;
+        elVideo.addEventListener("play", () => {
+          elVideo.muted = true;
+          elVideo.volume = 0;
+        });
+
         const elPlayer = document.querySelector<HTMLElement & {
           pauseVideo?: () => void;
           stopVideo?: () => void;
@@ -59,13 +64,13 @@ export default defineContentScript({
         return true;
       }
 
-      if (!stopIframePlayer()) {
-        const muteAndPauseObserver = new MutationObserver((_, observer) => {
-          if (stopIframePlayer()) {
+      if (!silenceIframeVideo()) {
+        const silenceObserver = new MutationObserver((_, observer) => {
+          if (silenceIframeVideo()) {
             observer.disconnect();
           }
         });
-        muteAndPauseObserver.observe(document.documentElement, CHILD_LIST_SUBTREE);
+        silenceObserver.observe(document.documentElement, CHILD_LIST_SUBTREE);
       }
     }
 
