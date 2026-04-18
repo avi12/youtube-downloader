@@ -1,4 +1,4 @@
-import { ProgressType, VideoQualityMode } from "@/types";
+import { PlaylistDownloadMode, PlaylistOutputMode, ProgressType, VideoQualityMode } from "@/types";
 import type { AdaptiveFormatItem, Options, PlayerResponse } from "@/types";
 import { PlayabilityStatus } from "@/types/youtube";
 import { AUTO_EXTENSION } from "~/lib/utils/containers";
@@ -16,7 +16,11 @@ export const initialOptions: Options = {
   defaultDownloadType: "auto",
   videoQualityMode: VideoQualityMode.Best,
   videoQuality: defaultVideoQuality,
-  isShowNativeDownload: false
+  isShowNativeDownload: false,
+  playlistDownloadMode: PlaylistDownloadMode.Fast,
+  playlistOutputMode: PlaylistOutputMode.Individual,
+  playlistAudioOutputMode: PlaylistOutputMode.Zip,
+  isPlaylistScrollSyncEnabled: false
 };
 
 export function isVideoLive(playerResponse: PlayerResponse) {

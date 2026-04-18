@@ -115,6 +115,10 @@ export type Options = {
   videoQualityMode: VideoQualityMode;
   videoQuality: number;
   isShowNativeDownload: boolean;
+  playlistDownloadMode: PlaylistDownloadMode;
+  playlistOutputMode: PlaylistOutputMode;
+  playlistAudioOutputMode: PlaylistOutputMode;
+  isPlaylistScrollSyncEnabled: boolean;
 };
 
 export type StreamData = {
