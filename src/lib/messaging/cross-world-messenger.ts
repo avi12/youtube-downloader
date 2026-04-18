@@ -28,7 +28,8 @@ export const CrossWorldMessage = {
   CloseDropdown: "closeDropdown",
   DownloadProgress: "downloadProgress",
   DownloadViaIframe: "downloadViaIframe",
-  StartBackgroundDownload: "startBackgroundDownload"
+  StartBackgroundDownload: "startBackgroundDownload",
+  OptionsUpdate: "optionsUpdate"
 } as const;
 
 interface PageMessengerSchema {
@@ -112,6 +113,9 @@ interface PageMessengerSchema {
   }): void;
   [CrossWorldMessage.DownloadViaIframe](data: DownloadRequest): void;
   [CrossWorldMessage.StartBackgroundDownload](data: DownloadRequest): void;
+  [CrossWorldMessage.OptionsUpdate](data: {
+    isShowNativeDownload: boolean;
+  }): void;
 }
 
 export const crossWorldMessenger = defineCustomEventMessaging<PageMessengerSchema>({ namespace: "ytdl" });

@@ -140,17 +140,21 @@
   <fieldset class="settings-group">
     <legend class="settings-legend">YouTube integration</legend>
     <div class="settings-row">
-      <label class="settings-label settings-toggle-label">
+      <span class="settings-label">Show native download button on watch page</span>
+      <label class="settings-switch" aria-label="Show native download button on watch page">
         <input
-          checked={options.isRemoveNativeDownload}
+          checked={options.isShowNativeDownload}
           onchange={e => {
             if (e.target instanceof HTMLInputElement) {
-              void setOption("isRemoveNativeDownload", e.target.checked);
+              void setOption("isShowNativeDownload", e.target.checked);
             }
           }}
+          role="switch"
           type="checkbox"
         />
-        Hide YouTube's native download button
+        <span class="settings-switch-track">
+          <span class="settings-switch-thumb"></span>
+        </span>
       </label>
     </div>
   </fieldset>
@@ -203,8 +207,7 @@
     font-size: 0.8125rem;
   }
 
-  .settings-radio-label,
-  .settings-toggle-label {
+  .settings-radio-label {
     display: flex;
     gap: 10px;
     align-items: center;
@@ -242,5 +245,50 @@
     margin-top: 8px;
     color: var(--fg-subtle);
     font-size: 0.6875rem;
+  }
+
+  .settings-switch {
+    position: relative;
+    display: inline-flex;
+    flex-shrink: 0;
+    cursor: pointer;
+  }
+
+  .settings-switch input {
+    position: absolute;
+    width: 0;
+    height: 0;
+    opacity: 0%;
+  }
+
+  .settings-switch-track {
+    display: flex;
+    align-items: center;
+    width: 36px;
+    height: 20px;
+    border-radius: 10px;
+    background: var(--border);
+  }
+
+  .settings-switch input:checked + .settings-switch-track {
+    background: var(--accent);
+  }
+
+  .settings-switch input:focus-visible + .settings-switch-track {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .settings-switch-thumb {
+    width: 14px;
+    height: 14px;
+    margin-left: 3px;
+    border-radius: 50%;
+    background: rgb(255 255 255);
+    transition: transform 200ms;
+  }
+
+  .settings-switch input:checked + .settings-switch-track .settings-switch-thumb {
+    transform: translateX(16px);
   }
 </style>

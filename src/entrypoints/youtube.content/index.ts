@@ -205,7 +205,10 @@ export default defineContentScript({
         }
 
         initContentOptions(newOptions);
-        setNativeDownloadVisibility(!newOptions.isRemoveNativeDownload);
+        setNativeDownloadVisibility(newOptions.isShowNativeDownload);
+        void crossWorldMessenger.sendMessage(CrossWorldMessage.OptionsUpdate, {
+          isShowNativeDownload: newOptions.isShowNativeDownload
+        });
       });
       context.onInvalidated(unwatchOptions);
 

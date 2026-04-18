@@ -16,7 +16,7 @@ export const initialOptions: Options = {
   defaultDownloadType: "auto",
   videoQualityMode: VideoQualityMode.Best,
   videoQuality: defaultVideoQuality,
-  isRemoveNativeDownload: false
+  isShowNativeDownload: false
 };
 
 export function isVideoLive(playerResponse: PlayerResponse) {

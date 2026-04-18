@@ -26,6 +26,13 @@ function mapToBarProgress(progress: number, progressType: ProgressType): number 
 let cleanupCurrentButton: (() => void) | null = null;
 let injectionGeneration = 0;
 let containerSearchAbort: AbortController | null = null;
+let isShowNativeDownload = false;
+let currentNativeDownload: HTMLElement | null = null;
+
+crossWorldMessenger.onMessage(CrossWorldMessage.OptionsUpdate, ({ data }) => {
+  isShowNativeDownload = data.isShowNativeDownload;
+  currentNativeDownload?.classList.toggle("ytdl-native-hidden", !isShowNativeDownload);
+});
 
 export function cleanupSegmentedButton() {
   cleanupCurrentButton?.();
@@ -74,7 +81,9 @@ export async function injectSegmentedDownloadButton(
   injectWatchButtonStyles();
 
   const elNativeDownload = findNativeDownloadButton(elActionsContainer);
-  if (elNativeDownload) {
+  currentNativeDownload = elNativeDownload;
+
+  if (!isShowNativeDownload && elNativeDownload) {
     elNativeDownload.classList.add("ytdl-native-hidden");
   }
 
@@ -339,5 +348,6 @@ export async function injectSegmentedDownloadButton(
     elGroup.remove();
     elDropdown.remove();
     elNativeDownload?.classList.remove("ytdl-native-hidden");
+    currentNativeDownload = null;
   };
 }

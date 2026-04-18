@@ -22,7 +22,7 @@ export function handlePageChange({ url, context }: {
   cleanupGridUi();
 
   if (pathname === "/watch") {
-    setNativeDownloadVisibility(!contentOptions.value.isRemoveNativeDownload);
+    setNativeDownloadVisibility(contentOptions.value.isShowNativeDownload);
     return;
   }
 

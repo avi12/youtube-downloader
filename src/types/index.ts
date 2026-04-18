@@ -114,7 +114,7 @@ export type Options = {
   defaultDownloadType: DownloadTypePreference;
   videoQualityMode: VideoQualityMode;
   videoQuality: number;
-  isRemoveNativeDownload: boolean;
+  isShowNativeDownload: boolean;
 };
 
 export type StreamData = {
