@@ -6,6 +6,8 @@ import { mount } from "svelte";
 const VIDEO_CARD_SELECTOR = "yt-lockup-view-model, ytd-rich-item-renderer, ytd-grid-video-renderer";
 const PAGE_MANAGER_SELECTOR = "ytd-page-manager";
 const VIEWPORT_MARGIN = "200px";
+// 2 buttons × 36px + 4px gap + 36px three-dot − 10px right-offset of .ytLockupMetadataViewModelMenuButton
+const MENU_BUTTON_TITLE_CLEARANCE_PX = 102;
 
 let gridObserver: MutationObserver | null = null;
 let visibilityObserver: IntersectionObserver | null = null;
@@ -17,6 +19,17 @@ export function cleanupGridUi() {
   visibilityObserver = null;
 
   for (const elItem of document.querySelectorAll("[data-ytdl-grid-item]")) {
+    const elMenuButton = elItem.closest(".ytLockupMetadataViewModelMenuButton");
+    if (elMenuButton instanceof HTMLElement) {
+      elMenuButton.style.display = "";
+      elMenuButton.style.alignItems = "";
+      const elTitle = elMenuButton.closest(".ytLockupMetadataViewModelHost")
+        ?.querySelector<HTMLElement>(".ytLockupMetadataViewModelTitle");
+      if (elTitle) {
+        elTitle.style.paddingInlineEnd = "";
+      }
+    }
+
     elItem.remove();
   }
 }
@@ -37,9 +50,9 @@ function extractVideoId(elCard: Element) {
 }
 
 function findAnchorElement(elCard: Element) {
-  const elTextContainer = elCard.querySelector(".ytLockupMetadataViewModelTextContainer");
-  if (elTextContainer) {
-    return elTextContainer;
+  const elMenuButton = elCard.querySelector(".ytLockupMetadataViewModelMenuButton");
+  if (elMenuButton) {
+    return elMenuButton;
   }
 
   const elDismissible = elCard.querySelector("#dismissible");
@@ -70,11 +83,25 @@ function mountGridButton({ context, elCard }: {
   const elItemContainer = document.createElement("div");
   elItemContainer.dataset.ytdlGridItem = videoId;
 
-  const elDetails = elAnchor.querySelector("#details");
-  if (elDetails) {
-    elDetails.insertAdjacentElement("afterend", elItemContainer);
+  if (elAnchor.classList.contains("ytLockupMetadataViewModelMenuButton")) {
+    if (elAnchor instanceof HTMLElement) {
+      elAnchor.style.display = "flex";
+      elAnchor.style.alignItems = "center";
+    }
+
+    elAnchor.prepend(elItemContainer);
+    const elTitle = elAnchor.closest(".ytLockupMetadataViewModelHost")
+      ?.querySelector<HTMLElement>(".ytLockupMetadataViewModelTitle");
+    if (elTitle) {
+      elTitle.style.paddingInlineEnd = `${MENU_BUTTON_TITLE_CLEARANCE_PX}px`;
+    }
   } else {
-    elAnchor.append(elItemContainer);
+    const elDetails = elAnchor.querySelector("#details");
+    if (elDetails) {
+      elDetails.insertAdjacentElement("afterend", elItemContainer);
+    } else {
+      elAnchor.append(elItemContainer);
+    }
   }
 
   const ui = createIntegratedUi(context, {
