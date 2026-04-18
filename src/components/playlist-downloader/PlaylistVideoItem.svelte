@@ -252,7 +252,7 @@
 
 <div class="ytdl-button-group" {@attach attachButtonGroup}>
   {#if itemState.videoData?.isDownloadable}
-    <div class="ytdl-button-row">
+    <div class="ytdl-button-row" class:ytdl-button-row--has-checkbox={isPlaylistItem}>
       {#if isPlaylistItem}
         <tp-yt-paper-checkbox
           {@attach attachCheckbox}
@@ -309,6 +309,9 @@
     flex-shrink: 0;
     gap: 4px;
     align-items: center;
+  }
+
+  .ytdl-button-row--has-checkbox {
     padding:
       calc(
         (var(--paper-checkbox-ink-size, 48px) - var(--paper-checkbox-size, 18px)) / 2
