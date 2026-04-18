@@ -139,7 +139,9 @@ async function downloadExtraAudioTracksViaSabr({ config, formats, poToken, signa
     try {
       const sabrFetch = createProgressFetch({
         signal,
-        onBytesReceived() { onProgress?.(); }
+        onBytesReceived() {
+          onProgress?.();
+        }
       });
       const data = await fetchAudioViaSabrStream({
         sabrConfig: config,
