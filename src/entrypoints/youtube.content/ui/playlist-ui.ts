@@ -126,12 +126,12 @@ export async function injectPlaylistDownloaderUi(
       return;
     }
 
-    const btn = e.target.closest<HTMLElement>("yt-button-view-model");
-    if (!btn && elHoveredYtdlButton) {
+    const elButton = e.target.closest<HTMLElement>("yt-button-view-model");
+    if (!elButton && elHoveredYtdlButton) {
       hideYtdlTooltip();
     }
 
-    elHoveredYtdlButton = btn;
+    elHoveredYtdlButton = elButton;
   }
 
   function dismissTooltipOnScroll() {
@@ -140,7 +140,7 @@ export async function injectPlaylistDownloaderUi(
     }
 
     elHoveredYtdlButton = null;
-    // Only hide the popover — dispatching mouseleave while the cursor is still
+    // Only hide the popover - dispatching mouseleave while the cursor is still
     // over the button causes YouTube to immediately re-show the tooltip.
     document.querySelector<HTMLElement>("yt-tooltip yt-popover")?.hidePopover?.();
   }

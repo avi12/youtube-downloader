@@ -57,7 +57,7 @@ export function createPanelManager(
         props: { videoData }
       });
 
-      // iron-dropdown only finishes positioning on iron-overlay-opened — that's
+      // iron-dropdown only finishes positioning on iron-overlay-opened - that's
       // when the anchor-relative above/below decision is final, so refresh the
       // chevron direction from there.
       elDropdown?.addEventListener("iron-overlay-opened", () => onChevronRefresh(), { once: true });
