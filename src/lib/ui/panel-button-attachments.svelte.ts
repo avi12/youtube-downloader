@@ -8,6 +8,7 @@ import {
   type ButtonViewModelData
 } from "@/types";
 import { sendButtonData } from "~/lib/ui/polymer-utils";
+import { CHILD_LIST_SUBTREE } from "~/lib/utils/dom";
 
 function dispatchButtonData({ elButton, data }: {
   elButton: Element;
@@ -79,11 +80,7 @@ export function attachCloseButton(elTarget: Element) {
     onButtonAvailable(elInner);
   });
 
-  const childListSubtreeOptions = {
-    childList: true,
-    subtree: true
-  };
-  observer.observe(elTarget, childListSubtreeOptions);
+  observer.observe(elTarget, CHILD_LIST_SUBTREE);
 }
 
 export function attachDoneIcon(elButton: Element) {

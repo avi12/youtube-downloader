@@ -1,3 +1,5 @@
+import { CHILD_LIST_SUBTREE } from "@/lib/utils/dom";
+
 const VIDEO_ACTION_BUTTON_SELECTORS = [
   "#above-the-fold #top-level-buttons-computed",
   "ytd-watch-metadata #top-level-buttons-computed",
@@ -33,11 +35,7 @@ export async function findVideoActionsContainer(signal: AbortSignal) {
       resolve(elVisible);
     });
 
-    const childListSubtreeOptions = {
-      childList: true,
-      subtree: true
-    };
-    observer.observe(document.documentElement, childListSubtreeOptions);
+    observer.observe(document.documentElement, CHILD_LIST_SUBTREE);
     signal.addEventListener("abort", () => {
       observer.disconnect();
       resolve(null);

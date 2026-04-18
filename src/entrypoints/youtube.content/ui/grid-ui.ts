@@ -1,4 +1,5 @@
 import PlaylistVideoItem from "@/components/playlist-downloader/PlaylistVideoItem.svelte";
+import { CHILD_LIST_SUBTREE } from "@/lib/utils/dom";
 import { getVideoIdFromUrl } from "@/lib/youtube/youtube-url";
 import { mount } from "svelte";
 
@@ -138,11 +139,7 @@ export function injectGridVideoButtons(context: InstanceType<typeof ContentScrip
   gridObserver = new MutationObserver(observePendingCards);
 
   const elPageContent = document.querySelector(PAGE_MANAGER_SELECTOR) ?? document.body;
-  const childListSubtreeOptions = {
-    childList: true,
-    subtree: true
-  };
-  gridObserver.observe(elPageContent, childListSubtreeOptions);
+  gridObserver.observe(elPageContent, CHILD_LIST_SUBTREE);
   context.onInvalidated(() => {
     gridObserver?.disconnect();
     visibilityObserver?.disconnect();

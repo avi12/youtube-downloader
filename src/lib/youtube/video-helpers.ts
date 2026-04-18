@@ -2,6 +2,7 @@ import { ProgressType, VideoQualityMode } from "@/types";
 import type { AdaptiveFormatItem, Options, PlayerResponse } from "@/types";
 import { PlayabilityStatus } from "@/types/youtube";
 import { AUTO_EXTENSION } from "~/lib/utils/containers";
+import { CHILD_LIST_SUBTREE } from "~/lib/utils/dom";
 
 export const videoQualities = [4320, 2160, 1440, 1080, 720, 480, 360, 240, 144];
 
@@ -59,11 +60,7 @@ export async function waitForVideoElement(signal?: AbortSignal) {
       resolve(elVideo);
     });
 
-    const childListSubtreeOptions = {
-      childList: true,
-      subtree: true
-    };
-    observer.observe(document.body, childListSubtreeOptions);
+    observer.observe(document.body, CHILD_LIST_SUBTREE);
 
     signal?.addEventListener("abort", () => {
       observer.disconnect();

@@ -10,6 +10,7 @@ import { buildInitialDownloadState } from "./watch-button-state";
 import { buildChevronData, buildDownloadData, type ButtonViewState } from "./watch-button-view-model";
 import { CrossWorldEvent, onCrossWorldEvent } from "@/lib/messaging/cross-world-events";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
+import { CHILD_LIST_SUBTREE } from "@/lib/utils/dom";
 import { ProgressType, type ProgressUpdate, type VideoData } from "@/types";
 
 let cleanupCurrentButton: (() => void) | null = null;
@@ -97,12 +98,8 @@ export async function injectSegmentedDownloadButton(
   }
 
   const segmentedObserver = new MutationObserver(applySegmentedClasses);
-  const childListSubtreeOptions = {
-    childList: true,
-    subtree: true
-  };
-  segmentedObserver.observe(elDownloadButton, childListSubtreeOptions);
-  segmentedObserver.observe(elChevronButton, childListSubtreeOptions);
+  segmentedObserver.observe(elDownloadButton, CHILD_LIST_SUBTREE);
+  segmentedObserver.observe(elChevronButton, CHILD_LIST_SUBTREE);
   requestAnimationFrame(applySegmentedClasses);
 
   function getViewState(): ButtonViewState {

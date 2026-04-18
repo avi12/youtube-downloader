@@ -4,6 +4,7 @@ import { cancelActiveDownload, performDownload } from "./video/download";
 import { extractPlaylistMetadata, handleNavigateSuccess } from "./video/playlist-metadata";
 import { extractAndDispatchVideoData } from "./video/video-data";
 import { CrossWorldMessage, crossWorldMessenger, dispatchButtonClick } from "@/lib/messaging/cross-world-messenger";
+import { CHILD_LIST_SUBTREE } from "@/lib/utils/dom";
 import { type PlayerResponse } from "@/types";
 
 declare global {
@@ -64,10 +65,7 @@ export default defineContentScript({
             observer.disconnect();
           }
         });
-        muteAndPauseObserver.observe(document.documentElement, {
-          childList: true,
-          subtree: true
-        });
+        muteAndPauseObserver.observe(document.documentElement, CHILD_LIST_SUBTREE);
       }
     }
 
