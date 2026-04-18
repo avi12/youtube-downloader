@@ -1,26 +1,29 @@
 /**
- * Dev server: production builds (with source maps) + Chrome with sideloaded extension.
- * Uses ./User Data/Profile 1 for the Chrome profile.
+ * Dev server: production builds (with source maps) + browser with sideloaded extension.
  * On file changes: rebuilds for production and reloads extension + YouTube tabs.
  *
  * Chrome 126+ requires Extensions.loadUnpacked via CDP debug pipes.
  * web-ext-run (used by WXT internally) handles this via chrome-launcher.
  * Must run under Node (not Bun) because pipe fd mapping requires Node's spawn.
  *
- * Usage: npx tsx scripts/dev-server.ts
+ * Usage:
+ *   npx tsx scripts/dev-server.ts           - Chrome
+ *   npx tsx scripts/dev-server.ts --firefox - Firefox
  */
 
 import { build } from "wxt";
 import chokidar from "chokidar";
 import { debounce } from "perfect-debounce";
 import { resolve, join, dirname } from "node:path";
-import { existsSync, cpSync, mkdirSync } from "node:fs";
+import { existsSync, cpSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
 import { homedir, platform } from "node:os";
 
+const IS_FIREFOX = process.argv.includes("--firefox");
 const PROJECT_ROOT = resolve(import.meta.dirname, "..");
-const OUTPUT_DIR = resolve(PROJECT_ROOT, ".output/chrome-mv3");
-const USER_DATA_DIR = resolve(PROJECT_ROOT, "User Data");
-const PROFILE_NAME = "Profile 1";
+const OUTPUT_DIR = resolve(PROJECT_ROOT, IS_FIREFOX ? ".output/firefox-mv3" : ".output/chrome-mv3");
+const USER_PROFILES_DIR = resolve(PROJECT_ROOT, "user-profiles");
+const CHROME_PROFILE_DIR = join(USER_PROFILES_DIR, "chrome");
 const LANGUAGE = process.env.LANG ?? "en";
 const START_URL = "https://www.youtube.com/feed/subscriptions";
 const CDP_PORT = 9229;
@@ -28,10 +31,11 @@ const REBUILD_DEBOUNCE_MS = 800;
 
 // ── Chrome profile setup ────────────────────────────────────────────────────
 
-function setupDevProfile() {
-  const profileDirectory = join(USER_DATA_DIR, PROFILE_NAME);
-  if (existsSync(profileDirectory)) {
-    return profileDirectory;
+const CHROME_PROFILE_SENTINEL = join(CHROME_PROFILE_DIR, "Default", ".seeded");
+
+function setupChromeProfile() {
+  if (existsSync(CHROME_PROFILE_SENTINEL)) {
+    return CHROME_PROFILE_DIR;
   }
 
   const home = homedir();
@@ -43,23 +47,108 @@ function setupDevProfile() {
   const source = sourceUserData[platform()];
 
   if (!source || !existsSync(source)) {
-    mkdirSync(profileDirectory, { recursive: true });
-    return profileDirectory;
+    mkdirSync(CHROME_PROFILE_DIR, { recursive: true });
+    return CHROME_PROFILE_DIR;
   }
 
   console.log(`Setting up Chrome profile from ${source}...`);
-  for (const directory of ["Default", PROFILE_NAME]) {
+  for (const directory of ["Default", "Profile 1"]) {
     const bookmarksPath = join(source, directory, "Bookmarks");
     if (!existsSync(bookmarksPath)) {
       continue;
     }
-    const destinationPath = join(USER_DATA_DIR, directory, "Bookmarks");
+    const destinationPath = join(CHROME_PROFILE_DIR, directory, "Bookmarks");
     mkdirSync(dirname(destinationPath), { recursive: true });
     cpSync(bookmarksPath, destinationPath);
   }
   console.log("Profile setup complete.");
 
-  return profileDirectory;
+  writeFileSync(CHROME_PROFILE_SENTINEL, "");
+  return CHROME_PROFILE_DIR;
+}
+
+const FIREFOX_SESSION_FILES = [
+  "cookies.sqlite",
+  "key4.db",
+  "logins.json",
+  "cert9.db",
+  "permissions.sqlite",
+  "places.sqlite",
+  "favicons.sqlite"
+];
+
+function findDefaultFirefoxProfilePath() {
+  const home = homedir();
+  const firefoxDataPaths: Record<string, string> = {
+    win32: join(process.env.APPDATA ?? "", "Mozilla", "Firefox"),
+    darwin: join(home, "Library", "Application Support", "Firefox"),
+    linux: join(home, ".mozilla", "firefox")
+  };
+  const firefoxDataPath = firefoxDataPaths[platform()];
+  const profilesIniPath = firefoxDataPath && join(firefoxDataPath, "profiles.ini");
+
+  if (!profilesIniPath || !existsSync(profilesIniPath)) {
+    return null;
+  }
+
+  const ini = readFileSync(profilesIniPath, "utf-8");
+  const sections = ini.split(/(?=^\[Profile\d)/m);
+  const defaultSection = sections.find(s => /^Default=1$/m.test(s));
+  const pathMatch = defaultSection?.match(/^Path=(.+)$/m);
+  const isRelative = /^IsRelative=1$/m.test(defaultSection ?? "");
+
+  if (!pathMatch) {
+    return null;
+  }
+
+  const profilePath = pathMatch[1].trim();
+  return isRelative ? join(firefoxDataPath, profilePath) : profilePath;
+}
+
+const FIREFOX_PROFILE_DIR = join(USER_PROFILES_DIR, "firefox");
+const FIREFOX_PROFILE_SENTINEL = join(FIREFOX_PROFILE_DIR, ".seeded");
+
+function setupFirefoxProfile() {
+  if (existsSync(FIREFOX_PROFILE_SENTINEL)) {
+    return FIREFOX_PROFILE_DIR;
+  }
+
+  mkdirSync(FIREFOX_PROFILE_DIR, { recursive: true });
+
+  const source = findDefaultFirefoxProfilePath();
+  if (source && existsSync(source)) {
+    console.log(`Setting up Firefox profile from ${source}...`);
+    for (const file of FIREFOX_SESSION_FILES) {
+      const sourcePath = join(source, file);
+      if (!existsSync(sourcePath)) {
+        continue;
+      }
+      cpSync(sourcePath, join(FIREFOX_PROFILE_DIR, file));
+    }
+    console.log("Profile setup complete.");
+  }
+
+  writeFileSync(FIREFOX_PROFILE_SENTINEL, "");
+  return FIREFOX_PROFILE_DIR;
+}
+
+// ── Firefox cleanup ─────────────────────────────────────────────────────────
+
+function killExistingFirefoxInstances() {
+  if (platform() !== "win32") {
+    return;
+  }
+  const script = `
+$profile = '${FIREFOX_PROFILE_DIR.replace(/'/g, "''")}'
+Get-CimInstance Win32_Process -Filter "name='firefox.exe'" |
+  Where-Object { $_.CommandLine -and $_.CommandLine.Contains($profile) } |
+  ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+`;
+  spawnSync("powershell", ["-NoProfile", "-NonInteractive", "-Command", "-"], {
+    input: script,
+    stdio: ["pipe", "ignore", "ignore"],
+    timeout: 5000
+  });
 }
 
 // ── Tab reload via HTTP CDP ─────────────────────────────────────────────────
@@ -101,7 +190,7 @@ async function reloadYouTubeTabs() {
 async function buildExtension() {
   await build({
     root: PROJECT_ROOT,
-    browser: "chrome",
+    browser: IS_FIREFOX ? "firefox" : "chrome",
     manifestVersion: 3
   });
 }
@@ -111,9 +200,13 @@ async function buildExtension() {
 async function main() {
   process.chdir(PROJECT_ROOT);
 
-  const profileDirectory = setupDevProfile();
+  if (IS_FIREFOX) {
+    killExistingFirefoxInstances();
+  }
 
-  console.log("Building extension (production + source maps)...");
+  const profileDirectory = IS_FIREFOX ? setupFirefoxProfile() : setupChromeProfile();
+
+  console.log(`Building extension for ${IS_FIREFOX ? "Firefox" : "Chrome"} (production + source maps)...`);
   await buildExtension();
   console.log("Build complete.\n");
 
@@ -133,27 +226,39 @@ async function main() {
     }
   };
 
-  // Launch Chrome via web-ext-run (handles CDP pipes for extension loading)
   const webExtRun = await import("web-ext-run");
-  const runner = await webExtRun.default.cmd.run(
-    {
-      target: "chromium",
-      sourceDir: OUTPUT_DIR,
-      startUrl: [START_URL],
-      keepProfileChanges: true,
-      chromiumProfile: profileDirectory,
-      args: [
-        `--lang=${LANGUAGE}`,
-        `--remote-debugging-port=${CDP_PORT}`,
-        "--disable-blink-features=AutomationControlled"
-      ],
-      noReload: true,
-      noInput: true
-    },
-    { shouldExitProgram: false }
-  );
 
-  console.log("Chrome launched with extension sideloaded.");
+  const runOptions = IS_FIREFOX
+    ? {
+        target: "firefox-desktop" as const,
+        sourceDir: OUTPUT_DIR,
+        startUrl: [START_URL],
+        keepProfileChanges: true,
+        firefoxProfile: profileDirectory,
+        args: [`--lang=${LANGUAGE}`, "--marionette", "--remote-debugging-port=9230"],
+        noReload: true,
+        noInput: true
+      }
+    : {
+        target: "chromium" as const,
+        sourceDir: OUTPUT_DIR,
+        startUrl: [START_URL],
+        keepProfileChanges: true,
+        chromiumProfile: profileDirectory,
+        args: [
+          `--lang=${LANGUAGE}`,
+          `--remote-debugging-port=${CDP_PORT}`,
+          "--disable-blink-features=AutomationControlled"
+        ],
+        noReload: true,
+        noInput: true
+      };
+
+  const runner = await webExtRun.default.cmd.run(runOptions, {
+    shouldExitProgram: false
+  });
+
+  console.log(`${IS_FIREFOX ? "Firefox" : "Chrome"} launched with extension sideloaded.`);
   console.log("Watching for file changes...\n");
 
   const watcher = chokidar.watch("src", {
@@ -169,7 +274,9 @@ async function main() {
     try {
       await buildExtension();
       await runner.reloadAllExtensions();
-      await reloadYouTubeTabs();
+      if (!IS_FIREFOX) {
+        await reloadYouTubeTabs();
+      }
       console.log(`Reloaded at ${new Date().toLocaleTimeString()}`);
     } catch (error) {
       console.error("Rebuild failed:", error);
