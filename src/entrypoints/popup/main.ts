@@ -8,6 +8,7 @@ import {
   videoOnlyListItem,
   videoQueueItem
 } from "@/lib/storage/storage";
+import { initialOptions as defaultOptions } from "@/lib/youtube/video-helpers";
 import { mount } from "svelte";
 
 const [
@@ -42,6 +43,9 @@ mount(App, {
     initialVideoOnlyList: videoOnlyList,
     initialVideoDetails: videoDetails,
     initialStatusProgress: statusProgress,
-    initialOptions: options
+    initialOptions: {
+      ...defaultOptions,
+      ...options
+    }
   }
 });

@@ -97,7 +97,10 @@ export function createAppState(props: {
         statusProgress = value ?? {};
       }),
       optionsItem.watch(value => {
-        options = value ?? { ...defaultOptions };
+        options = {
+          ...defaultOptions,
+          ...(value ?? {})
+        };
       })
     ];
 
