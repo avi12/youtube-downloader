@@ -1,6 +1,17 @@
 import type { InterruptedDownload, Options, ProgressType } from "@/types";
 import { initialOptions } from "~/lib/youtube/video-helpers";
 
+interface StorageItem<T> {
+  getValue(): Promise<T>;
+  setValue(value: T): Promise<void>;
+}
+
+export async function mutateStorageItem<T>(item: StorageItem<T>, mutator: (current: T) => void) {
+  const current = await item.getValue();
+  mutator(current);
+  await item.setValue(current);
+}
+
 export const videoQueueItem = storage.defineItem<{
   videoId: string;
   filenameOutput: string;
@@ -27,13 +38,10 @@ export const interruptedDownloadsItem = storage.defineItem<Record<string, Interr
 
 export const optionsItem = storage.defineItem<Options>("sync:options", { fallback: initialOptions });
 
-export async function setOption<Key extends keyof Options>(
-  key: Key,
-  value: Options[Key]
-) {
-  const current = await optionsItem.getValue();
-  current[key] = value;
-  await optionsItem.setValue(current);
+export async function setOption<Key extends keyof Options>(key: Key, value: Options[Key]) {
+  await mutateStorageItem(optionsItem, current => {
+    current[key] = value;
+  });
 }
 
 export async function clearLocalStorage() {

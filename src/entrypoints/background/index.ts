@@ -8,6 +8,7 @@ import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen
 import {
   clearLocalStorage,
   interruptedDownloadsItem,
+  mutateStorageItem,
   musicListItem,
   statusProgressItem,
   videoDetailsItem,
@@ -117,15 +118,15 @@ function registerStorageHandlers() {
   });
 
   onMessage(MessageType.PersistInterruptedDownload, async ({ data }) => {
-    const current = await interruptedDownloadsItem.getValue();
-    current[data.videoId] = data;
-    await interruptedDownloadsItem.setValue(current);
+    await mutateStorageItem(interruptedDownloadsItem, current => {
+      current[data.videoId] = data;
+    });
   });
 
   onMessage(MessageType.ClearInterruptedDownload, async ({ data }) => {
-    const current = await interruptedDownloadsItem.getValue();
-    delete current[data.videoId];
-    await interruptedDownloadsItem.setValue(current);
+    await mutateStorageItem(interruptedDownloadsItem, current => {
+      delete current[data.videoId];
+    });
   });
 
   onMessage(MessageType.GetInterruptedDownload, async ({ data }) => {

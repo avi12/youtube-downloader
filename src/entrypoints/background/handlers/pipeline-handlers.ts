@@ -3,7 +3,7 @@ import { signalBytesTransferred, signalVideoComplete } from "../queue/sequential
 import { registerRecentDownloadHandlers } from "../recent/recent-download-handler";
 import { signalFFmpegReady } from "./processor";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
-import { isFFmpegReadyItem, statusProgressItem } from "@/lib/storage/storage";
+import { isFFmpegReadyItem, mutateStorageItem, statusProgressItem } from "@/lib/storage/storage";
 import { ProgressType } from "@/types";
 import type { ProgressUpdate } from "@/types";
 
@@ -14,12 +14,9 @@ async function updateStatusProgress({ mutate, progressUpdate, tabId }: {
   progressUpdate: ProgressUpdate;
   tabId: number;
 }) {
-  const current = await statusProgressItem.getValue();
-  mutate(current);
-
   await Promise.allSettled([
     sendMessage(MessageType.UpdateDownloadProgress, progressUpdate, tabId),
-    statusProgressItem.setValue(current)
+    mutateStorageItem(statusProgressItem, mutate)
   ]);
 }
 
@@ -94,10 +91,12 @@ export function registerPipelineHandlers() {
 
   onMessage(MessageType.PipelineQueueRemove, async ({ data }) => {
     const { videoId } = data;
-    const current = await statusProgressItem.getValue();
-    delete current[videoId];
-    await statusProgressItem.setValue(current);
-    await removeFromPopupList(videoId);
+    await Promise.all([
+      mutateStorageItem(statusProgressItem, current => {
+        delete current[videoId];
+      }),
+      removeFromPopupList(videoId)
+    ]);
     signalVideoComplete(videoId);
   });
 

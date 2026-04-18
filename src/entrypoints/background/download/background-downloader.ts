@@ -5,11 +5,11 @@ import { downloadViaCdn } from "./cdn-downloader";
 import { downloadViaSabr } from "./sabr-downloader";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
-import { interruptedDownloadsItem } from "@/lib/storage/storage";
+import { interruptedDownloadsItem, mutateStorageItem } from "@/lib/storage/storage";
 import { uint8ToBase64 } from "@/lib/utils/binary";
 import { fetchYouTubeMusicMetadata } from "@/lib/youtube/youtube-music-metadata";
 import { ProgressType, StreamType } from "@/types";
-import type { DownloadRequest, InterruptedDownload, VideoMetadata } from "@/types";
+import type { DownloadRequest, VideoMetadata } from "@/types";
 
 export interface DownloadResult {
   videoData: Uint8Array | null;
@@ -45,27 +45,22 @@ addEventListener("online", () => {
 });
 
 async function persistInterruptedDownload(request: DownloadRequest) {
-  const interrupted: InterruptedDownload = {
-    videoId: request.videoId,
-    type: request.type,
-    filenameOutput: request.filenameOutput,
-    videoItag: request.videoItag,
-    audioItag: request.audioItag,
-    timestamp: Date.now()
-  };
-  const current = await interruptedDownloadsItem.getValue();
-  current[request.videoId] = interrupted;
-  await interruptedDownloadsItem.setValue(current);
+  await mutateStorageItem(interruptedDownloadsItem, current => {
+    current[request.videoId] = {
+      videoId: request.videoId,
+      type: request.type,
+      filenameOutput: request.filenameOutput,
+      videoItag: request.videoItag,
+      audioItag: request.audioItag,
+      timestamp: Date.now()
+    };
+  });
 }
 
 async function clearInterruptedDownload(videoId: string) {
-  const current = await interruptedDownloadsItem.getValue();
-  if (!(videoId in current)) {
-    return;
-  }
-
-  delete current[videoId];
-  await interruptedDownloadsItem.setValue(current);
+  await mutateStorageItem(interruptedDownloadsItem, current => {
+    delete current[videoId];
+  });
 }
 
 const TRANSFER_CHUNK_SIZE = 1024 * 1024;
