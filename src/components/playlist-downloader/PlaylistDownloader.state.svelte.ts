@@ -1,6 +1,7 @@
 import { createRevealState } from "./PlaylistDownloader.reveal.svelte";
 import { scrollVideoItemIntoView } from "./PlaylistDownloader.scroll";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
+import { setOption } from "@/lib/storage/storage";
 import { checkedPlaylistVideos } from "@/lib/ui/playlist-selection.svelte";
 import {
   contentOptions,
@@ -34,9 +35,9 @@ export const batchCanceledIds = new SvelteSet<string>();
 // User-facing preferences live at module scope so they survive any re-mount
 // of the panel (e.g. when YouTube rebuilds the header subtree on theme
 // transitions and our mount container gets re-created).
-let downloadMode = $state<PlaylistDownloadMode>(PlaylistDownloadMode.Fast);
-let outputMode = $state(PlaylistOutputMode.Zip);
-let isScrollSyncEnabled = $state(false);
+let downloadMode = $state<PlaylistDownloadMode>(contentOptions.value.playlistDownloadMode);
+let outputMode = $state(contentOptions.value.playlistOutputMode);
+let isScrollSyncEnabled = $state(contentOptions.value.isPlaylistScrollSyncEnabled);
 let downloadTypeOverride = $state<DownloadTypePreference | null>(null);
 let videoExtOverride = $state<string | null>(null);
 let audioExtOverride = $state<string | null>(null);
@@ -161,6 +162,17 @@ export function createPlaylistDownloaderState() {
 
   const downloadableVideos = $derived([...videoDataMap.values()].filter(data => data.isDownloadable));
   const nonDownloadableCount = $derived(videoDataMap.size - downloadableVideos.length);
+  const isAllMusicPlaylist = $derived(
+    downloadableVideos.length > 0 && downloadableVideos.every(video => video.isMusic)
+  );
+
+  $effect(() => {
+    downloadMode = contentOptions.value.playlistDownloadMode;
+    outputMode = isAllMusicPlaylist
+      ? contentOptions.value.playlistAudioOutputMode
+      : contentOptions.value.playlistOutputMode;
+    isScrollSyncEnabled = contentOptions.value.isPlaylistScrollSyncEnabled;
+  });
 
   // Highest resolution found across all videos - drives which quality options are shown.
   // Kept separate from guaranteedQuality so it can be evaluated independently during reveal.
@@ -516,12 +528,14 @@ export function createPlaylistDownloaderState() {
     },
     set downloadMode(value) {
       downloadMode = value;
+      void setOption("playlistDownloadMode", value);
     },
     get outputMode() {
       return outputMode;
     },
     set outputMode(value) {
       outputMode = value;
+      void setOption(isAllMusicPlaylist ? "playlistAudioOutputMode" : "playlistOutputMode", value);
     },
     get downloadableVideos() {
       return downloadableVideos;
@@ -555,6 +569,7 @@ export function createPlaylistDownloaderState() {
     },
     set isScrollSyncEnabled(value) {
       isScrollSyncEnabled = value;
+      void setOption("isPlaylistScrollSyncEnabled", value);
     },
     get effectiveDownloadType() {
       return effectiveDownloadType;
