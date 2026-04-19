@@ -9,6 +9,14 @@ import type { ProgressUpdate } from "@/types";
 
 type StatusProgressMap = Awaited<ReturnType<typeof statusProgressItem.getValue>>;
 
+const cancelledVideoIds = new Set<string>();
+
+export function markVideosCancelled(videoIds: string[]) {
+  for (const videoId of videoIds) {
+    cancelledVideoIds.add(videoId);
+  }
+}
+
 async function updateStatusProgress({ mutate, progressUpdate, tabId }: {
   mutate: (current: StatusProgressMap) => void;
   progressUpdate: ProgressUpdate;
@@ -44,11 +52,15 @@ export function registerPipelineHandlers() {
   });
 
   onMessage(MessageType.PipelineStart, async ({ data }) => {
-    await enqueueToPopupList({
-      videoId: data.videoId,
-      type: data.type,
-      filenameOutput: data.filenameOutput
-    });
+    if (!cancelledVideoIds.has(data.videoId)) {
+      await enqueueToPopupList({
+        videoId: data.videoId,
+        type: data.type,
+        filenameOutput: data.filenameOutput
+      });
+    }
+
+    cancelledVideoIds.delete(data.videoId);
     signalBytesTransferred(data.videoId);
   });
 

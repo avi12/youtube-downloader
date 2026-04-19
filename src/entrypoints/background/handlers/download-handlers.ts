@@ -2,6 +2,7 @@ import { cancelBackgroundDownload, startBackgroundDownload } from "../download/b
 import { enqueueToPopupList, removeFromPopupList } from "../queue/popup-list";
 import { awaitBytesTransferred, awaitVideoComplete, signalVideoComplete } from "../queue/sequential-queue";
 import { cancelDownloads, getTabIdsForVideo, trackVideoForTab } from "../queue/tab-tracker";
+import { markVideosCancelled } from "./pipeline-handlers";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
 import { uint8ToBase64 } from "@/lib/utils/binary";
 import { ProgressType } from "@/types";
@@ -271,6 +272,7 @@ export function registerDownloadHandlers() {
   onMessage(MessageType.CancelDownload, ({ data }) => {
     currentSequenceAbort?.abort();
     currentSequenceAbort = null;
+    markVideosCancelled(data.videoIds);
 
     for (const videoId of data.videoIds) {
       cancelBackgroundDownload(videoId);
@@ -289,6 +291,11 @@ export function registerDownloadHandlers() {
     trackVideoForTab({
       videoId: data.videoId,
       tabId
+    });
+    await enqueueToPopupList({
+      videoId: data.videoId,
+      type: data.type,
+      filenameOutput: data.filenameOutput
     });
     void startBackgroundDownload({
       request: data,
