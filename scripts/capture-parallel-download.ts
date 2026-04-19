@@ -1,32 +1,12 @@
-import http from "node:http";
+import { type CdpMessage, findExtensionTargets } from "./cdp-utils.js";
 import { setTimeout } from "node:timers/promises";
 import WebSocket from "ws";
 
 const CDP_PORT = 9229;
 const CHROME_EXT_ID = "iakmamcpgldfjjbeamagdkelogmokjpj";
-const OFFSCREEN_PATH = "offscreen.html";
 const LISTEN_DURATION_S = 60;
 
-interface CdpTarget {
-  id: string;
-  type: string;
-  url?: string;
-  webSocketDebuggerUrl?: string;
-}
-
-const targets = await new Promise<CdpTarget[]>(resolve => {
-  http.get(`http://localhost:${CDP_PORT}/json`, res => {
-    let data = "";
-    res.on("data", chunk => data += chunk);
-    res.on("end", () => {
-      const parsed: CdpTarget[] = JSON.parse(data);
-      resolve(parsed);
-    });
-  });
-});
-
-const serviceWorker = targets.find(target => target.type === "service_worker" && (target.url ?? "").includes(CHROME_EXT_ID));
-const offscreen = targets.find(target => (target.url ?? "").includes(OFFSCREEN_PATH));
+const { serviceWorker, offscreen } = await findExtensionTargets(CDP_PORT, CHROME_EXT_ID);
 
 console.log("SW:", serviceWorker?.id, serviceWorker?.webSocketDebuggerUrl);
 console.log("Offscreen:", offscreen?.id, offscreen?.url);
@@ -51,24 +31,24 @@ async function listenCDP(wsUrl: string, label: string, listenSeconds: number) {
     console.log(`[${label}] Listening for ${listenSeconds}s...`);
   });
 
-  socket.on("message", (rawData: string) => {
-    const msg = JSON.parse(rawData);
-    if (msg.method === "Runtime.consoleAPICalled") {
-      const text = msg.params.args.map((arg: Record<string, unknown>) => arg.value ?? arg.description ?? JSON.stringify(arg)).join(" ");
-      const entry = `[${label}:${msg.params.type}] ${text}`;
+  socket.on("message", rawData => {
+    const message: CdpMessage = JSON.parse(String(rawData));
+    if (message.method === "Runtime.consoleAPICalled") {
+      const text = (message.params?.args ?? []).map(arg => arg.value ?? arg.description ?? JSON.stringify(arg)).join(" ");
+      const entry = `[${label}:${message.params?.type}] ${text}`;
       console.log(entry);
       logs.push(entry);
     }
 
-    if (msg.method === "Runtime.exceptionThrown") {
-      const detail = msg.params.exceptionDetails;
+    if (message.method === "Runtime.exceptionThrown") {
+      const detail = message.params?.exceptionDetails;
       const entry = `[${label}:EX] ${detail?.exception?.description ?? detail?.text ?? "?"}`;
       console.log(entry);
       logs.push(entry);
     }
 
-    if (msg.method === "Log.entryAdded") {
-      const entry = `[${label}:log:${msg.params.entry.level}] ${msg.params.entry.text}`;
+    if (message.method === "Log.entryAdded") {
+      const entry = `[${label}:log:${message.params?.entry?.level}] ${message.params?.entry?.text}`;
       console.log(entry);
       logs.push(entry);
     }
@@ -81,10 +61,10 @@ async function listenCDP(wsUrl: string, label: string, listenSeconds: number) {
 
 console.log("\nListening for 60 seconds. Trigger the playlist download now!\n");
 
-const [swLogs, offLogs] = await Promise.all([
+const [serviceWorkerLogs, offscreenLogs] = await Promise.all([
   listenCDP(serviceWorker!.webSocketDebuggerUrl!, "SW", LISTEN_DURATION_S),
   listenCDP(offscreen!.webSocketDebuggerUrl!, "OFFSCREEN", LISTEN_DURATION_S)
 ]);
 
 console.log("\n=== SUMMARY ===");
-console.log(`SW: ${swLogs.length} entries, Offscreen: ${offLogs.length} entries`);
+console.log(`SW: ${serviceWorkerLogs.length} entries, Offscreen: ${offscreenLogs.length} entries`);

@@ -1,5 +1,5 @@
+import { fetchTargets } from "./cdp-utils.js";
 import { once } from "node:events";
-import http from "node:http";
 import WebSocket from "ws";
 
 const CDP_PORT = 9229;
@@ -7,23 +7,11 @@ const CHROME_EXT_ID = "iakmamcpgldfjjbeamagdkelogmokjpj";
 const OFFSCREEN_PATH = "offscreen.html";
 const EVAL_TIMEOUT_MS = 8_000;
 
-interface CdpTarget {
-  id: string;
-  type: string;
-  url?: string;
-  webSocketDebuggerUrl?: string;
+interface CdpEvalResponse {
+  result?: { result?: unknown };
 }
 
-const targets = await new Promise<CdpTarget[]>(resolve => {
-  http.get(`http://localhost:${CDP_PORT}/json`, res => {
-    let data = "";
-    res.on("data", chunk => data += chunk);
-    res.on("end", () => {
-      const parsed: CdpTarget[] = JSON.parse(data);
-      resolve(parsed);
-    });
-  });
-});
+const targets = await fetchTargets(CDP_PORT);
 
 const offscreen = targets.find(target => (target.url ?? "").includes(OFFSCREEN_PATH));
 const serviceWorker = targets.find(target => target.type === "service_worker" && (target.url ?? "").includes(CHROME_EXT_ID));
@@ -31,7 +19,7 @@ const serviceWorker = targets.find(target => target.type === "service_worker" &&
 console.log("Offscreen ID:", offscreen?.id);
 console.log("SW ID:", serviceWorker?.id);
 
-async function evalTarget(wsUrl: string, expr: string) {
+async function evalTarget(wsUrl: string, expression: string) {
   const signal = AbortSignal.timeout(EVAL_TIMEOUT_MS);
   const socket = new WebSocket(wsUrl);
 
@@ -41,7 +29,7 @@ async function evalTarget(wsUrl: string, expr: string) {
       id: 1,
       method: "Runtime.evaluate",
       params: {
-        expression: expr,
+        expression,
         returnByValue: true,
         awaitPromise: true
       }
@@ -50,7 +38,8 @@ async function evalTarget(wsUrl: string, expr: string) {
 
   const [rawData] = await once(socket, "message", { signal });
   socket.close();
-  return JSON.parse(String(rawData)).result?.result;
+  const parsed: CdpEvalResponse = JSON.parse(String(rawData));
+  return parsed.result?.result;
 }
 
 console.log("\n--- Offscreen state ---");

@@ -1,33 +1,23 @@
-import { once } from "node:events";
+import { fetchTargets } from "./cdp-utils.js";
 /**
  * CDP debug script - connects to service worker and offscreen document
  * Usage: node scripts/debug-cdp.mjs
  */
-import http from "node:http";
+import { once } from "node:events";
 import WebSocket from "ws";
 
 const CDP_PORT = 9229;
 const EVAL_TIMEOUT_MS = 8_000;
 
-interface CdpTarget {
-  id: string;
-  type: string;
-  url?: string;
-  webSocketDebuggerUrl?: string;
-}
-
-async function listTargets(): Promise<CdpTarget[]> {
-  return new Promise((resolve, reject) => {
-    http.get(`http://localhost:${CDP_PORT}/json`, res => {
-      let data = "";
-      res.on("data", chunk => data += chunk);
-      res.on("end", () => {
-        const parsed: CdpTarget[] = JSON.parse(data);
-        resolve(parsed);
-      });
-      res.on("error", reject);
-    });
-  });
+interface CdpMessage {
+  id?: number;
+  result?: {
+    exceptionDetails?: {
+      exception?: { description?: string };
+      text?: string;
+    };
+    result?: { value?: unknown };
+  };
 }
 
 async function evalInTarget(wsUrl: string, expression: string, awaitPromise = false) {
@@ -55,21 +45,21 @@ async function evalInTarget(wsUrl: string, expression: string, awaitPromise = fa
 
   while (true) {
     const [rawData] = await once(socket, "message", { signal });
-    const msg = JSON.parse(String(rawData));
-    if (msg.id === 2) {
+    const message: CdpMessage = JSON.parse(String(rawData));
+    if (message.id === 2) {
       socket.close();
 
-      if (msg.result?.exceptionDetails) {
-        throw new Error(msg.result.exceptionDetails.exception?.description ?? msg.result.exceptionDetails.text);
+      if (message.result?.exceptionDetails) {
+        throw new Error(message.result.exceptionDetails.exception?.description ?? message.result.exceptionDetails.text);
       }
 
-      return msg.result?.result?.value;
+      return message.result?.result?.value;
     }
   }
 }
 
 // Main
-const targets = await listTargets();
+const targets = await fetchTargets(CDP_PORT);
 const serviceWorker = targets.find(target => target.type === "service_worker");
 const offscreen = targets.find(target => target.url?.includes("offscreen"));
 const ytPage = targets.find(target => target.url?.includes("youtube.com/watch"));

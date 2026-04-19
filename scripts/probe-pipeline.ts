@@ -1,33 +1,13 @@
-import http from "node:http";
+import { type CdpMessage, findExtensionTargets } from "./cdp-utils.js";
 import { setTimeout } from "node:timers/promises";
 import WebSocket from "ws";
 
 const CDP_PORT = 9229;
 const CHROME_EXT_ID = "iakmamcpgldfjjbeamagdkelogmokjpj";
-const OFFSCREEN_PATH = "offscreen.html";
 const KICKOFF_DELAY_MS = 300;
 const LISTEN_DURATION_S = 3;
 
-interface CdpTarget {
-  id: string;
-  type: string;
-  url?: string;
-  webSocketDebuggerUrl?: string;
-}
-
-const targets = await new Promise<CdpTarget[]>(resolve => {
-  http.get(`http://localhost:${CDP_PORT}/json`, res => {
-    let data = "";
-    res.on("data", chunk => data += chunk);
-    res.on("end", () => {
-      const parsed: CdpTarget[] = JSON.parse(data);
-      resolve(parsed);
-    });
-  });
-});
-
-const serviceWorker = targets.find(target => target.type === "service_worker" && (target.url ?? "").includes(CHROME_EXT_ID));
-const offscreen = targets.find(target => (target.url ?? "").includes(OFFSCREEN_PATH));
+const { serviceWorker, offscreen } = await findExtensionTargets(CDP_PORT, CHROME_EXT_ID);
 
 console.log("SW:", serviceWorker?.id);
 console.log("Offscreen:", offscreen?.id);
@@ -66,24 +46,24 @@ async function runCDP(wsUrl: string, listenSeconds: number, kickoff: string | nu
     }
   });
 
-  socket.on("message", (rawData: string) => {
-    const msg = JSON.parse(rawData);
-    if (msg.method === "Runtime.consoleAPICalled") {
-      const text = msg.params.args.map((arg: Record<string, unknown>) => arg.value ?? arg.description ?? JSON.stringify(arg)).join(" ");
-      logs.push(`[${msg.params.type}] ${text}`);
+  socket.on("message", rawData => {
+    const message: CdpMessage = JSON.parse(String(rawData));
+    if (message.method === "Runtime.consoleAPICalled") {
+      const text = (message.params?.args ?? []).map(arg => arg.value ?? arg.description ?? JSON.stringify(arg)).join(" ");
+      logs.push(`[${message.params?.type}] ${text}`);
     }
 
-    if (msg.method === "Runtime.exceptionThrown") {
-      const detail = msg.params.exceptionDetails;
+    if (message.method === "Runtime.exceptionThrown") {
+      const detail = message.params?.exceptionDetails;
       logs.push(`[EX] ${detail?.exception?.description ?? detail?.text ?? "?"}`);
     }
 
-    if (msg.method === "Log.entryAdded") {
-      logs.push(`[log:${msg.params.entry.level}] ${msg.params.entry.text}`);
+    if (message.method === "Log.entryAdded") {
+      logs.push(`[log:${message.params?.entry?.level}] ${message.params?.entry?.text}`);
     }
 
-    if (msg.id === 3) {
-      logs.push(`[eval result] ${JSON.stringify(msg.result)}`);
+    if (message.id === 3) {
+      logs.push(`[eval result] ${JSON.stringify(message.result)}`);
     }
   });
 
@@ -110,10 +90,10 @@ const kickoff = `
 })()
 `;
 
-const swLogs = await runCDP(serviceWorker!.webSocketDebuggerUrl!, LISTEN_DURATION_S, kickoff);
+const serviceWorkerLogs = await runCDP(serviceWorker!.webSocketDebuggerUrl!, LISTEN_DURATION_S, kickoff);
 console.log("\n--- SW logs ---");
-swLogs.forEach(line => console.log(line));
+serviceWorkerLogs.forEach(line => console.log(line));
 
-const offLogs = await runCDP(offscreen!.webSocketDebuggerUrl!, LISTEN_DURATION_S, null);
+const offscreenLogs = await runCDP(offscreen!.webSocketDebuggerUrl!, LISTEN_DURATION_S, null);
 console.log("\n--- Offscreen logs (passive, 3s) ---");
-offLogs.forEach(line => console.log(line));
+offscreenLogs.forEach(line => console.log(line));

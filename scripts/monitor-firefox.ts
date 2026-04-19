@@ -19,7 +19,7 @@ const YTDL_ID = "youtube-downloader@avi12.com";
 const FIREFOX_RDP_PORT_FALLBACK = 64173;
 const CONNECT_SETTLE_MS = 600;
 const SUBSCRIBE_SETTLE_MS = 500;
-const durationMs = (parseInt(process.argv[2] ?? "30") || 30) * 1000;
+const durationMs = (parseInt(process.argv[2] ?? "30", 10) || 30) * 1000;
 
 // ── Port discovery ──────────────────────────────────────────────────────────
 
@@ -47,72 +47,75 @@ function findFirefoxRdpPort() {
 
 class RDP {
   port: number;
-  bufs: Buffer[];
-  totalLen: number;
-  pending: Map<string, (pkt: Record<string, unknown>) => void>;
-  onEvent: ((pkt: Record<string, unknown>) => void) | null;
-  sock: ReturnType<typeof net.connect> | null;
+  buffers: Buffer[];
+  totalLength: number;
+  pending: Map<string, (packet: Record<string, unknown>) => void>;
+  onEvent: ((packet: Record<string, unknown>) => void) | null;
+  socket: ReturnType<typeof net.connect> | null;
 
   constructor(port: number) {
     this.port = port;
-    this.bufs = [];
-    this.totalLen = 0;
+    this.buffers = [];
+    this.totalLength = 0;
     this.pending = new Map();
     this.onEvent = null;
-    this.sock = null;
+    this.socket = null;
   }
 
   connect() {
     return new Promise<void>((resolve, reject) => {
-      this.sock = net.connect(this.port, "127.0.0.1");
-      this.sock.on("data", (buf: Buffer) => {
-        this.bufs.push(buf);
-        this.totalLen += buf.length;
-        this._parse();
+      this.socket = net.connect(this.port, "127.0.0.1");
+      this.socket.on("data", (buffer: Buffer) => {
+        this.buffers.push(buffer);
+        this.totalLength += buffer.length;
+        this.parseIncoming();
       });
-      this.sock.on("error", reject);
-      this.sock.on("connect", async () => {
+      this.socket.on("error", reject);
+      this.socket.on("connect", async () => {
         await setTimeout(CONNECT_SETTLE_MS);
         resolve();
       });
     });
   }
 
-  _parse() {
+  private parseIncoming() {
     while (true) {
-      const buf = Buffer.concat(this.bufs);
-      const colonIdx = buf.indexOf(":");
-      if (colonIdx < 1) {
+      const buffer = Buffer.concat(this.buffers);
+      const iColon = buffer.indexOf(":");
+      if (iColon < 1) {
         break;
       }
 
-      const len = parseInt(buf.slice(0, colonIdx).toString());
-      if (isNaN(len) || this.totalLen < colonIdx + 1 + len) {
+      const length = parseInt(buffer.subarray(0, iColon).toString(), 10);
+      if (isNaN(length) || this.totalLength < iColon + 1 + length) {
         break;
       }
 
-      this.bufs = [buf.slice(colonIdx + 1 + len)];
-      this.totalLen -= colonIdx + 1 + len;
+      this.buffers = [buffer.subarray(iColon + 1 + length)];
+      this.totalLength -= iColon + 1 + length;
       try {
-        const pkt = JSON.parse(buf.slice(colonIdx + 1, colonIdx + 1 + len).toString("utf8"));
-        const handler = this.pending.get(pkt.from);
+        const packet: {
+          from: string;
+          [key: string]: unknown;
+        } = JSON.parse(buffer.subarray(iColon + 1, iColon + 1 + length).toString("utf8"));
+        const handler = this.pending.get(packet.from);
         if (handler) {
-          this.pending.delete(pkt.from);
-          handler(pkt);
+          this.pending.delete(packet.from);
+          handler(packet);
         } else {
-          this.onEvent?.(pkt);
+          this.onEvent?.(packet);
         }
       } catch { /* malformed packet */ }
     }
   }
 
   send(to: string, type: string, extra: Record<string, unknown> = {}) {
-    const msg = JSON.stringify({
+    const message = JSON.stringify({
       to,
       type,
       ...extra
     });
-    this.sock!.write(msg.length + ":" + msg);
+    this.socket!.write(message.length + ":" + message);
   }
 
   request(to: string, type: string, extra: Record<string, unknown> = {}) {
@@ -123,7 +126,7 @@ class RDP {
   }
 
   destroy() {
-    this.sock?.destroy();
+    this.socket?.destroy();
   }
 }
 
@@ -136,7 +139,7 @@ function subscribeWatcher(rdp: RDP, watcherActor: string) {
 
 // ── Message formatter ────────────────────────────────────────────────────────
 
-function formatArgs(args: Record<string, unknown>[] = []) {
+function formatArgs(args: (string | Record<string, unknown>)[] = []) {
   return args.map(arg => {
     if (typeof arg === "string") {
       return arg;
@@ -194,31 +197,30 @@ const rdp = new RDP(port);
 try {
   await rdp.connect();
 } catch (error) {
-  const msg = error instanceof Error ? error.message : String(error);
-  console.error(`Cannot connect to Firefox RDP on port ${port}: ${msg}`);
+  const errorMessage = error instanceof Error ? error.message : String(error);
+  console.error(`Cannot connect to Firefox RDP on port ${port}: ${errorMessage}`);
   console.error("Is the dev server running with --firefox?");
   process.exit(1);
 }
 
 // Set event handler BEFORE subscribing so we don't miss early events
-let msgCount = 0;
-rdp.onEvent = (pkt: Record<string, unknown>) => {
-  if (pkt.type !== "resources-available-array") {
+let messageCount = 0;
+rdp.onEvent = (packet: Record<string, unknown>) => {
+  if (packet.type !== "resources-available-array") {
     return;
   }
 
-  const arr = pkt.array;
-  if (!Array.isArray(arr)) {
+  const resourcesArray = packet.array;
+  if (!Array.isArray(resourcesArray)) {
     return;
   }
 
-  for (const item of arr) {
+  for (const item of resourcesArray) {
     if (!Array.isArray(item) || item.length < 2) {
       continue;
     }
 
-    const resourceType = item[0];
-    const rawMessages = item[1];
+    const [resourceType, rawMessages] = item;
     if (typeof resourceType !== "string" || resourceType !== "console-message") {
       continue;
     }
@@ -227,31 +229,31 @@ rdp.onEvent = (pkt: Record<string, unknown>) => {
       continue;
     }
 
-    for (const rawMsg of rawMessages) {
-      if (!isRecordObject(rawMsg)) {
+    for (const rawMessage of rawMessages) {
+      if (!isRecordObject(rawMessage)) {
         continue;
       }
 
-      const levelVal = rawMsg.level;
-      const level = typeof levelVal === "string" ? levelVal : "log";
-      const rawArgs = Array.isArray(rawMsg.arguments) ? rawMsg.arguments.filter(isRecordObject) : [];
-      const args = formatArgs(rawArgs);
-      if (!args.trim()) {
+      const levelValue = rawMessage.level;
+      const level = typeof levelValue === "string" ? levelValue : "log";
+      const rawArgs = Array.isArray(rawMessage.arguments) ? rawMessage.arguments.filter(isRecordObject) : [];
+      const formattedArgs = formatArgs(rawArgs);
+      if (!formattedArgs.trim()) {
         continue;
       }
 
-      const timestampVal = rawMsg.timeStamp;
-      const timestamp = typeof timestampVal === "number" ? timestampVal : Date.now();
+      const timestampValue = rawMessage.timeStamp;
+      const timestamp = typeof timestampValue === "number" ? timestampValue : Date.now();
       const time = new Date(timestamp).toISOString().slice(11, 23);
-      console.log(`[${time}][${level.toUpperCase()}] ${args}`);
-      msgCount++;
+      console.log(`[${time}][${level.toUpperCase()}] ${formattedArgs}`);
+      messageCount++;
     }
   }
 };
 
 // Find the extension
-const addonsResp = await rdp.request("root", "listAddons", { iconDataURL: false });
-const addons = addonsResp.addons;
+const addonsResponse = await rdp.request("root", "listAddons", { iconDataURL: false });
+const addons = addonsResponse.addons;
 const ytdl = Array.isArray(addons) ? addons.find(isYtdlAddon) : undefined;
 if (!ytdl) {
   console.error("YouTube Downloader extension not found in Firefox.");
@@ -261,23 +263,23 @@ if (!ytdl) {
 console.log(`Found: ${ytdl.name} (${ytdl.backgroundScriptStatus ?? "unknown status"})`);
 
 // Find YouTube tabs
-const tabsResp = await rdp.request("root", "listTabs");
-const rawTabs = tabsResp.tabs;
+const tabsResponse = await rdp.request("root", "listTabs");
+const rawTabs = tabsResponse.tabs;
 const youtubeTabs = (Array.isArray(rawTabs) ? rawTabs : []).filter(isFirefoxTab).filter(tab => tab.url?.includes("youtube.com"));
 console.log(`YouTube tabs: ${youtubeTabs.length}`);
 
 // Subscribe to extension background
-const extWatcherResp = await rdp.request(ytdl.actor, "getWatcher", { isServerTargetSwitchingEnabled: false });
-const extWatcherActor = extWatcherResp.actor;
-if (typeof extWatcherActor === "string") {
-  subscribeWatcher(rdp, extWatcherActor);
+const extensionWatcherResponse = await rdp.request(ytdl.actor, "getWatcher", { isServerTargetSwitchingEnabled: false });
+const extensionWatcherActor = extensionWatcherResponse.actor;
+if (typeof extensionWatcherActor === "string") {
+  subscribeWatcher(rdp, extensionWatcherActor);
   console.log("  Subscribed: extension background");
 }
 
 // Subscribe to each YouTube tab
 for (const tab of youtubeTabs) {
-  const tabWatcherResp = await rdp.request(tab.actor, "getWatcher", { isServerTargetSwitchingEnabled: false });
-  const tabWatcherActor = tabWatcherResp.actor;
+  const tabWatcherResponse = await rdp.request(tab.actor, "getWatcher", { isServerTargetSwitchingEnabled: false });
+  const tabWatcherActor = tabWatcherResponse.actor;
   if (typeof tabWatcherActor === "string") {
     subscribeWatcher(rdp, tabWatcherActor);
     console.log(`  Subscribed: tab: ${tab.url?.slice(0, 60)}`);
@@ -290,5 +292,5 @@ console.log(`\nMonitoring for ${durationMs / 1000}s...\n`);
 
 await setTimeout(durationMs);
 
-console.log(`\nDone. ${msgCount} message(s) captured.`);
+console.log(`\nDone. ${messageCount} message(s) captured.`);
 rdp.destroy();
