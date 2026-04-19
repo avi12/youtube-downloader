@@ -1,21 +1,23 @@
-const PLAYLIST_CONTENTS_SELECTOR = "ytd-playlist-video-list-renderer #contents";
-const PLAYLIST_VIDEO_TAG = "ytd-playlist-video-renderer";
-const CONTINUATION_TAG = "ytd-continuation-item-renderer";
+const Selector = {
+  PlaylistContents: "ytd-playlist-video-list-renderer #contents",
+  PlaylistVideo: "ytd-playlist-video-renderer",
+  Continuation: "ytd-continuation-item-renderer"
+} as const;
 
 const REVEAL_STABLE_ROUNDS_REQUIRED = 3;
 const REVEAL_POLL_INTERVAL_MS = 300;
 const REVEAL_MAX_WAIT_MS = 120_000;
 
 function queryPlaylistContents() {
-  return document.querySelector(PLAYLIST_CONTENTS_SELECTOR);
+  return document.querySelector(Selector.PlaylistContents);
 }
 
 function countRenderedVideos(elContents: Element) {
-  return elContents.querySelectorAll(PLAYLIST_VIDEO_TAG).length;
+  return elContents.querySelectorAll(Selector.PlaylistVideo).length;
 }
 
 function hasMoreToLoad(elContents: Element) {
-  return Boolean(elContents.querySelector(CONTINUATION_TAG));
+  return Boolean(elContents.querySelector(Selector.Continuation));
 }
 
 function scrollContainerToBottom(elContents: Element) {
@@ -92,7 +94,7 @@ export async function revealAllPlaylistVideos(
 
 export function scrollVideoItemIntoView(videoId: string) {
   const elItemAnchor = document.querySelector(`[data-ytdl-item="${CSS.escape(videoId)}"]`);
-  const elPlaylistItem = elItemAnchor?.closest(PLAYLIST_VIDEO_TAG);
+  const elPlaylistItem = elItemAnchor?.closest(Selector.PlaylistVideo);
   if (!(elPlaylistItem instanceof HTMLElement)) {
     return;
   }

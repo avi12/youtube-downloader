@@ -7,9 +7,11 @@ import {
   IconName
 } from "@/types";
 
-export const DESELECT_ALL_BUTTON_ID = "playlist-deselect-all-btn";
-export const DOWNLOAD_BUTTON_ID = "playlist-download-btn";
-export const DOWNLOAD_ALL_BUTTON_ID = "playlist-download-all-btn";
+export const ButtonId = {
+  DeselectAll: "playlist-deselect-all-btn",
+  Download: "playlist-download-btn",
+  DownloadAll: "playlist-download-all-btn"
+} as const;
 
 export function createPlaylistActionButtons(state: {
   selectedDownloadableVideos: {
@@ -34,7 +36,7 @@ export function createPlaylistActionButtons(state: {
       return;
     }
 
-    elDeselectAll.setAttribute("data-ytdl-button-id", DESELECT_ALL_BUTTON_ID);
+    elDeselectAll.setAttribute("data-ytdl-button-id", ButtonId.DeselectAll);
     const isDisabled = state.selectedDownloadableVideos.length === 0 || state.isDownloading;
     sendButtonData({
       elButton: elDeselectAll,
@@ -58,7 +60,7 @@ export function createPlaylistActionButtons(state: {
       return;
     }
 
-    elDownload.setAttribute("data-ytdl-button-id", DOWNLOAD_BUTTON_ID);
+    elDownload.setAttribute("data-ytdl-button-id", ButtonId.Download);
     const isDisabled = state.selectedDownloadableVideos.length === 0 && !state.isDownloading;
     sendButtonData({
       elButton: elDownload,
@@ -82,7 +84,7 @@ export function createPlaylistActionButtons(state: {
       return;
     }
 
-    elDownloadAll.setAttribute("data-ytdl-button-id", DOWNLOAD_ALL_BUTTON_ID);
+    elDownloadAll.setAttribute("data-ytdl-button-id", ButtonId.DownloadAll);
     const isBusy = state.isRevealingAll || state.isDownloading || state.activeIndividualDownloadCount > 0;
     const label = state.isRevealingAll
       ? `Revealing hidden videos (${state.revealedVideoCount})`
@@ -113,7 +115,7 @@ export function createPlaylistActionButtons(state: {
       return;
     }
 
-    elButton.setAttribute("data-ytdl-button-id", DESELECT_ALL_BUTTON_ID);
+    elButton.setAttribute("data-ytdl-button-id", ButtonId.DeselectAll);
     elDeselectAll = elButton;
   }
 
@@ -122,7 +124,7 @@ export function createPlaylistActionButtons(state: {
       return;
     }
 
-    elButton.setAttribute("data-ytdl-button-id", DOWNLOAD_BUTTON_ID);
+    elButton.setAttribute("data-ytdl-button-id", ButtonId.Download);
     elDownload = elButton;
   }
 
@@ -131,22 +133,22 @@ export function createPlaylistActionButtons(state: {
       return;
     }
 
-    elButton.setAttribute("data-ytdl-button-id", DOWNLOAD_ALL_BUTTON_ID);
+    elButton.setAttribute("data-ytdl-button-id", ButtonId.DownloadAll);
     elDownloadAll = elButton;
   }
 
   function handleClick(buttonId: string) {
-    if (buttonId === DESELECT_ALL_BUTTON_ID) {
+    if (buttonId === ButtonId.DeselectAll) {
       state.clearSelection();
       return true;
     }
 
-    if (buttonId === DOWNLOAD_BUTTON_ID) {
+    if (buttonId === ButtonId.Download) {
       state.toggleSelectedDownload();
       return true;
     }
 
-    if (buttonId === DOWNLOAD_ALL_BUTTON_ID) {
+    if (buttonId === ButtonId.DownloadAll) {
       if (state.isRevealingAll) {
         state.cancelReveal();
       } else {
