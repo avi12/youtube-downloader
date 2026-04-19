@@ -22,6 +22,7 @@
 - Don't use em dashes - use regular hyphens
 - If a callback arrow function has a typed param, don't annotate the type explicitly
 - Avoid nested try/catch - flatten with early returns or extracted functions
+- Apply parallel modifications whenever possible
 
 # Naming conventions
 - Variables and functions: `camelCase`, full words (no abbreviations)

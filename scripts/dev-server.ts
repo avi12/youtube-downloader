@@ -23,6 +23,8 @@ import {
 import { homedir, platform } from "node:os";
 import { resolve, join, dirname } from "node:path";
 import { debounce } from "perfect-debounce";
+import webExtRun from "web-ext-run";
+import { consoleStream as webExtConsoleStream } from "web-ext-run/util/logger";
 import { build } from "wxt";
 
 const IS_FIREFOX = process.argv.includes("--firefox");
@@ -30,7 +32,7 @@ const PROJECT_ROOT = resolve(import.meta.dirname, "..");
 const OUTPUT_DIR = resolve(PROJECT_ROOT, IS_FIREFOX ? ".output/firefox-mv3" : ".output/chrome-mv3");
 const USER_PROFILES_DIR = resolve(PROJECT_ROOT, "user-profiles");
 const CHROME_PROFILE_DIR = join(USER_PROFILES_DIR, "chrome");
-const LANGUAGE = process.env.LANG ?? "en";
+const { LANG = "en" } = process.env;
 const START_URL = "https://www.youtube.com/feed/subscriptions";
 const CDP_PORT = 9229;
 const REBUILD_DEBOUNCE_MS = 800;
@@ -45,8 +47,9 @@ function setupChromeProfile() {
   }
 
   const home = homedir();
+  const { LOCALAPPDATA = "" } = process.env;
   const sourceUserData: Record<string, string> = {
-    win32: join(process.env.LOCALAPPDATA ?? "", "Google", "Chrome", "User Data"),
+    win32: join(LOCALAPPDATA, "Google", "Chrome", "User Data"),
     darwin: join(home, "Library", "Application Support", "Google", "Chrome"),
     linux: join(home, ".config", "google-chrome")
   };
@@ -85,8 +88,9 @@ const FIREFOX_SESSION_FILES = [
 
 function findDefaultFirefoxProfilePath() {
   const home = homedir();
+  const { APPDATA = "" } = process.env;
   const firefoxDataPaths: Record<string, string> = {
-    win32: join(process.env.APPDATA ?? "", "Mozilla", "Firefox"),
+    win32: join(APPDATA, "Mozilla", "Firefox"),
     darwin: join(home, "Library", "Application Support", "Firefox"),
     linux: join(home, ".mozilla", "firefox")
   };
@@ -185,7 +189,7 @@ async function reloadYouTubeTabs() {
           );
         };
         websocket.onmessage = e => {
-          const data = JSON.parse(String(e.data));
+          const data: { id?: number } = JSON.parse(String(e.data));
           if (data.id === 1) {
             websocket.close();
             resolve();
@@ -195,7 +199,7 @@ async function reloadYouTubeTabs() {
       });
     }
   } catch {
-    // CDP HTTP endpoint not available
+    // CDP HTTP endpoint is not available
   }
 }
 
@@ -226,21 +230,11 @@ async function main() {
 
   // Suppress noisy web-ext-run logs
   const WARN_LOG_LEVEL = 40;
-  const webExtLogger = await import("web-ext-run/util/logger");
-  webExtLogger.consoleStream.write = ({
-    level,
-    msg
-  }: {
-    level: number;
-    msg: string;
-    name: string;
-  }) => {
+  webExtConsoleStream.write = ({ level, msg: message }) => {
     if (level >= WARN_LOG_LEVEL) {
-      console.warn(msg);
+      console.warn(message);
     }
   };
-
-  const webExtRun = await import("web-ext-run");
 
   const runOptions = IS_FIREFOX
     ? {
@@ -249,7 +243,7 @@ async function main() {
       startUrl: [START_URL],
       keepProfileChanges: true,
       firefoxProfile: profileDirectory,
-      args: [`--lang=${LANGUAGE}`, "--marionette", "--remote-debugging-port=9230"],
+      args: [`--lang=${LANG}`, "--marionette", "--remote-debugging-port=9230"],
       noReload: true,
       noInput: true
     }
@@ -260,7 +254,7 @@ async function main() {
       keepProfileChanges: true,
       chromiumProfile: profileDirectory,
       args: [
-        `--lang=${LANGUAGE}`,
+        `--lang=${LANG}`,
         `--remote-debugging-port=${CDP_PORT}`,
         "--disable-blink-features=AutomationControlled"
       ],
@@ -268,7 +262,7 @@ async function main() {
       noInput: true
     };
 
-  const runner = await webExtRun.default.cmd.run(runOptions, {
+  const runner = await webExtRun.cmd.run(runOptions, {
     shouldExitProgram: false
   });
 

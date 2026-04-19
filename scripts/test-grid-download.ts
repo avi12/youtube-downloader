@@ -7,6 +7,7 @@
  * Requires: logged-in Chrome profile at user-profiles/chrome
  */
 
+import { type CdpTarget } from "./cdp-utils.js";
 import { execSync } from "node:child_process";
 import { once } from "node:events";
 import http from "node:http";
@@ -14,16 +15,38 @@ import { join } from "node:path";
 import { setTimeout } from "node:timers/promises";
 import WebSocket from "ws";
 
-interface CdpTarget {
-  id: string;
-  type: string;
-  url?: string;
-  webSocketDebuggerUrl?: string;
-}
-
 interface CdpCookie {
   name: string;
   value: string;
+}
+
+interface CdpCookieResponse {
+  result?: { cookies?: CdpCookie[] };
+}
+
+interface CdpEvalResponse {
+  result?: {
+    exceptionDetails?: {
+      exception?: { description?: string };
+      text?: string;
+    };
+    result?: { value?: string };
+  };
+}
+
+interface ExtManifest {
+  permissions: string[];
+}
+
+interface GridResult {
+  gridItems: number;
+  videoId?: string;
+}
+
+interface DownloadState {
+  label?: string;
+  hasProgress: boolean;
+  progress?: string;
 }
 
 const CDP_PORT = 9230;
@@ -37,7 +60,8 @@ const MONITOR_POLL_COUNT = 24;
 const CHROME_START_URL = "https://www.youtube.com/watch?v=wjggoT-3oVM";
 const SUBS_URL = "https://www.youtube.com/feed/subscriptions";
 const AUTH_COOKIES = ["SID", "SSID", "LOGIN_INFO", "SAPISID"];
-const CHROME_PATH = join(process.env["ProgramFiles"]!, "Google/Chrome/Application/chrome.exe");
+const { ProgramFiles } = process.env;
+const CHROME_PATH = join(ProgramFiles!, "Google/Chrome/Application/chrome.exe");
 const EXT_PATH = join(import.meta.dirname, "../.output/chrome-mv3");
 const USER_DATA = join(import.meta.dirname, "../user-profiles/chrome");
 
@@ -54,7 +78,7 @@ async function fetchYtCookies(wsUrl: string): Promise<CdpCookie[]> {
   );
   const [rawData] = await once(socket, "message", { signal });
   socket.close();
-  const msg = JSON.parse(String(rawData));
+  const msg: CdpCookieResponse = JSON.parse(String(rawData));
   return msg.result?.cookies ?? [];
 }
 
@@ -94,12 +118,12 @@ async function cdpEval(wsUrl: string, expression: string, awaitPromise = false) 
   const [rawData] = await once(socket, "message", { signal });
   socket.close();
 
-  const msg = JSON.parse(String(rawData));
+  const msg: CdpEvalResponse = JSON.parse(String(rawData));
   if (msg.result?.exceptionDetails) {
     throw new Error(msg.result.exceptionDetails.exception?.description || msg.result.exceptionDetails.text);
   }
 
-  return msg.result?.result?.value;
+  return msg.result?.result?.value ?? "";
 }
 
 // Step 1: Build
@@ -108,7 +132,7 @@ execSync("pnpm build", { stdio: "inherit" });
 
 // Add declarativeNetRequest permission to manifest
 const manifestPath = join(EXT_PATH, "manifest.json");
-const manifest = JSON.parse(execSync(`cat "${manifestPath}"`).toString());
+const manifest: ExtManifest = JSON.parse(execSync(`cat "${manifestPath}"`).toString());
 if (!manifest.permissions.includes("declarativeNetRequest")) {
   manifest.permissions.push("declarativeNetRequest");
   execSync(`echo '${JSON.stringify(manifest, null, 2)}' > "${manifestPath}"`);
@@ -131,7 +155,7 @@ execSync(`start "" "${CHROME_PATH}" ${chromeArgs}`, { shell: "cmd.exe" });
 
 // Step 3: Wait for CDP
 console.log("Waiting for Chrome...");
-for (let index = 0; index < CDP_WAIT_RETRIES; index++) {
+for (let attempt = 0; attempt < CDP_WAIT_RETRIES; attempt++) {
   try {
     await cdpRequest("/json/version");
     break;
@@ -185,7 +209,7 @@ const gridResult = await cdpEval(
 `
 );
 
-const grid = JSON.parse(gridResult);
+const grid: GridResult = JSON.parse(gridResult);
 console.log(`Grid items: ${grid.gridItems}, first downloadable: ${grid.videoId}`);
 
 if (!grid.videoId) {
@@ -208,7 +232,7 @@ await cdpEval(
 
 // Step 8: Monitor progress
 console.log("Monitoring download progress...");
-for (let index = 0; index < MONITOR_POLL_COUNT; index++) {
+for (let i = 0; i < MONITOR_POLL_COUNT; i++) {
   await setTimeout(MONITOR_POLL_INTERVAL_MS);
   try {
     const result = await cdpEval(
@@ -225,8 +249,8 @@ for (let index = 0; index < MONITOR_POLL_COUNT; index++) {
       })()
     `
     );
-    const state = JSON.parse(result);
-    const elapsed = (index + 1) * (MONITOR_POLL_INTERVAL_MS / 1000);
+    const state: DownloadState = JSON.parse(result);
+    const elapsed = (i + 1) * (MONITOR_POLL_INTERVAL_MS / 1000);
     let status = "IDLE";
     if (state.label?.startsWith("Cancel")) {
       status = "DOWNLOADING";
@@ -241,7 +265,7 @@ for (let index = 0; index < MONITOR_POLL_COUNT; index++) {
       process.exit(0);
     }
   } catch {
-    console.log(`T+${(index + 1) * (MONITOR_POLL_INTERVAL_MS / 1000)}s: connection lost`);
+    console.log(`T+${(i + 1) * (MONITOR_POLL_INTERVAL_MS / 1000)}s: connection lost`);
     break;
   }
 }
