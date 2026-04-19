@@ -119,7 +119,11 @@
       width="48"
     />
   {:else}
-    <div class="recent-thumb recent-thumb-placeholder" aria-hidden="true"></div>
+    <div class="recent-thumb recent-thumb-placeholder" aria-hidden="true">
+      {#if entry.container}
+        <span class="recent-thumb-container">{entry.container.toUpperCase()}</span>
+      {/if}
+    </div>
   {/if}
 
   <div class="recent-body">
@@ -168,15 +172,17 @@
         >
           Show in folder
         </button>
-        <button
-          class="recent-menu-item"
-          dir="auto"
-          onclick={() => handleMenuAction(onChangeFormat)}
-          role="menuitem"
-          type="button"
-        >
-          Change format…
-        </button>
+        {#if entry.container !== "zip"}
+          <button
+            class="recent-menu-item"
+            dir="auto"
+            onclick={() => handleMenuAction(onChangeFormat)}
+            role="menuitem"
+            type="button"
+          >
+            Change format…
+          </button>
+        {/if}
         <button
           class="recent-menu-item recent-menu-item-danger"
           dir="auto"
@@ -216,7 +222,17 @@
   }
 
   .recent-thumb-placeholder {
+    display: flex;
+    justify-content: center;
+    align-items: center;
     background: linear-gradient(135deg, var(--surface-high), var(--border));
+  }
+
+  .recent-thumb-container {
+    color: var(--fg-muted);
+    font-weight: 700;
+    font-size: 0.625rem;
+    letter-spacing: 0.04em;
   }
 
   .recent-body {
@@ -236,11 +252,6 @@
     font-weight: 500;
     font-size: 0.8125rem;
     cursor: pointer;
-
-    &:hover .recent-filename-text,
-    &:focus-visible .recent-filename-text {
-      text-decoration: underline;
-    }
 
     &:focus-visible {
       border-radius: 4px;
@@ -278,11 +289,16 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+
+    .recent-filename:hover &,
+    .recent-filename:focus-visible & {
+      text-decoration: underline;
+    }
   }
 
   .recent-meta {
     overflow: hidden;
-    margin: 2px 0 0;
+    margin-top: 2px;
     color: var(--fg-muted);
     font-size: 0.6875rem;
     text-overflow: ellipsis;

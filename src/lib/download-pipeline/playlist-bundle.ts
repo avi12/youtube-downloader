@@ -84,7 +84,12 @@ export async function addToPlaylistBundle({
     const zipped = await zipToBuffer(zipEntries);
     await triggerDownload({
       data: zipped,
-      filenameOutput: zipFilename
+      filenameOutput: zipFilename,
+      recentContext: {
+        videoId: playlistId,
+        title: bundle.playlistTitle,
+        channel: `${bundle.totalCount} files`
+      }
     });
   } finally {
     await sendMessage(MessageType.PipelineZipProgress, {
