@@ -15,22 +15,22 @@ export default defineContentScript({
     if (self !== top) {
       const mediaProto = HTMLMediaElement.prototype;
 
-      const mutedDesc = Object.getOwnPropertyDescriptor(mediaProto, "muted");
-      if (mutedDesc?.set) {
-        const originalMutedSet = mutedDesc.set;
+      const mutedDescriptor = Object.getOwnPropertyDescriptor(mediaProto, "muted");
+      if (mutedDescriptor?.set) {
+        const originalMutedSet = mutedDescriptor.set;
         Object.defineProperty(mediaProto, "muted", {
-          ...mutedDesc,
+          ...mutedDescriptor,
           set(this: HTMLMediaElement) {
             originalMutedSet.call(this, true);
           }
         });
       }
 
-      const volumeDesc = Object.getOwnPropertyDescriptor(mediaProto, "volume");
-      if (volumeDesc?.set) {
-        const originalVolumeSet = volumeDesc.set;
+      const volumeDescriptor = Object.getOwnPropertyDescriptor(mediaProto, "volume");
+      if (volumeDescriptor?.set) {
+        const originalVolumeSet = volumeDescriptor.set;
         Object.defineProperty(mediaProto, "volume", {
-          ...volumeDesc,
+          ...volumeDescriptor,
           set(this: HTMLMediaElement) {
             originalVolumeSet.call(this, 0);
           }

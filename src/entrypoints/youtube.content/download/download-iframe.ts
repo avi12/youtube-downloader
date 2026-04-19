@@ -2,8 +2,8 @@ import { MessageType, onMessage } from "@/lib/messaging/messaging";
 import { CHILD_LIST_SUBTREE } from "@/lib/utils/dom";
 
 function silenceIframeAudio(elIframe: HTMLIFrameElement) {
-  const doc = elIframe.contentDocument;
-  if (!doc) {
+  const { contentDocument } = elIframe;
+  if (!contentDocument) {
     return;
   }
 
@@ -24,20 +24,20 @@ function silenceIframeAudio(elIframe: HTMLIFrameElement) {
     });
   }
 
-  const elVideo = doc.querySelector<HTMLVideoElement>("video");
+  const elVideo = contentDocument.querySelector<HTMLVideoElement>("video");
   if (elVideo) {
     applyToVideo(elVideo);
     return;
   }
 
   const observer = new MutationObserver(() => {
-    const elFound = doc.querySelector<HTMLVideoElement>("video");
+    const elFound = contentDocument.querySelector<HTMLVideoElement>("video");
     if (elFound) {
       observer.disconnect();
       applyToVideo(elFound);
     }
   });
-  observer.observe(doc.documentElement, CHILD_LIST_SUBTREE);
+  observer.observe(contentDocument.documentElement, CHILD_LIST_SUBTREE);
 }
 
 export function listenForDownloadIframes(context: InstanceType<typeof ContentScriptContext>) {
