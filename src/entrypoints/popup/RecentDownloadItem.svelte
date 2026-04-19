@@ -19,39 +19,29 @@
   const relativeAgeLabel = $derived(formatRelativeAge(now - entry.completedAt));
   const sizeLabel = $derived(formatBytes(entry.size));
 
+  const RTF = new Intl.RelativeTimeFormat(undefined, { numeric: "auto" });
+  const BYTE_UNITS = ["B", "KB", "MB", "GB"] as const;
+  const BYTE_DECIMALS = [0, 0, 1, 2] as const;
+  const AGE_THRESHOLDS: [number, Intl.RelativeTimeFormatUnit, number][] = [
+    [60, "second", 1],
+    [3600, "minute", 60],
+    [Infinity, "hour", 3600]
+  ];
+
   function formatRelativeAge(deltaMs: number) {
-    const seconds = Math.floor(deltaMs / 1000);
-    if (seconds < 60) {
-      return "just now";
-    }
-
-    const minutes = Math.floor(seconds / 60);
-    if (minutes < 60) {
-      return `${minutes} min ago`;
-    }
-
-    const hours = Math.floor(minutes / 60);
-    return `${hours} hr ago`;
+    const totalSeconds = Math.floor(deltaMs / 1000);
+    const [, unit, divisor] = AGE_THRESHOLDS.find(([threshold]) => totalSeconds < threshold)!;
+    return RTF.format(-Math.floor(totalSeconds / divisor), unit);
   }
 
   function formatBytes(bytes: number) {
-    if (bytes < 1024) {
-      return `${bytes} B`;
+    if (bytes === 0) {
+      return "0 B";
     }
 
-    if (bytes < 1024 * 1024) {
-      return `${(bytes / 1024).toFixed(0)} KB`;
-    }
-
-    if (bytes < 1024 * 1024 * 1024) {
-      return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-    }
-
-    return `${(bytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
-  }
-
-  function toggleMenu() {
-    isMenuOpen = !isMenuOpen;
+    const unitIndex = Math.min(Math.floor(Math.log2(bytes) / 10), BYTE_UNITS.length - 1);
+    const scaled = (bytes / 1024 ** unitIndex).toFixed(BYTE_DECIMALS[unitIndex]);
+    return `${scaled} ${BYTE_UNITS[unitIndex]}`;
   }
 
   function closeMenu() {
@@ -64,23 +54,12 @@
     closeMenu();
   }
 
-  function handleFilenameClick() {
-    onShowInFolder();
-  }
-
-  function handleFilenameKeydown(e: KeyboardEvent) {
-    if (e.key === "Enter" || e.key === " ") {
-      e.preventDefault();
-      onShowInFolder();
-    }
-  }
-
   function handleDocumentClick(e: MouseEvent) {
     if (!isMenuOpen) {
       return;
     }
 
-    const target = e.target;
+    const { target } = e;
     if (target instanceof Node && (elMenu?.contains(target) || elTrigger?.contains(target))) {
       return;
     }
@@ -129,10 +108,17 @@
   <div class="recent-body">
     <button
       class="recent-filename"
-      data-tooltip={entry.title}
+      data-tooltip={entry.filename}
       dir="auto"
-      onclick={handleFilenameClick}
-      onkeydown={handleFilenameKeydown}
+      onclick={onShowInFolder}
+      onkeydown={e => {
+        if (e.key !== "Enter" && e.key !== " ") {
+          return;
+        }
+
+        e.preventDefault();
+        onShowInFolder();
+      }}
       type="button"
     >
       <span class="recent-filename-text">{entry.title}</span>
@@ -151,7 +137,9 @@
       aria-expanded={isMenuOpen}
       aria-haspopup="menu"
       aria-label="More actions"
-      onclick={toggleMenu}
+      onclick={() => {
+        isMenuOpen = !isMenuOpen;
+      }}
       type="button"
     >
       {@html moreActionsIcon}
@@ -251,6 +239,7 @@
     font-family: inherit;
     font-weight: 500;
     font-size: 0.8125rem;
+    text-align: left;
     cursor: pointer;
 
     &:focus-visible {
