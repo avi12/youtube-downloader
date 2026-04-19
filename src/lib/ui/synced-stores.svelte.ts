@@ -28,6 +28,7 @@ export const sabrCredentials = createSyncedSignal(
 );
 
 export const videoDataStore = createSyncedMap(createMapMessenger<VideoData>("video-data"));
+export const videoDataFailedStore = createSyncedMap(createMapMessenger<boolean>("video-data-failed"));
 
 export const downloadProgressStore = createSyncedMap(
   createMapMessenger<{

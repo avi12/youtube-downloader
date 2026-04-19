@@ -6,13 +6,12 @@ import {
   contentOptions,
   downloadProgressStore,
   type DownloadProgressState,
+  videoDataFailedStore,
   videoDataStore
 } from "@/lib/ui/synced-stores.svelte";
 import { getOutputExtension, resolveAutoExtension, resolveVideoFilename } from "@/lib/utils/containers";
 import { calculateWeightedProgress, formatVideoQualityLabel } from "@/lib/youtube/video-helpers";
 import { DownloadType, IconName, ProgressType, type VideoData } from "@/types";
-
-const VIDEO_DATA_LOAD_TIMEOUT_MS = 15_000;
 
 const defaultProgressState: DownloadProgressState = {
   isDownloading: false,
@@ -54,15 +53,12 @@ export function createPlaylistVideoItemState({ videoId, gridTitle, activeDownloa
       return;
     }
 
+    if (videoDataFailedStore.get(videoId)) {
+      isLoadFailed = true;
+      return;
+    }
+
     void crossWorldMessenger.sendMessage(CrossWorldMessage.RequestVideoData, { videoId });
-
-    const loadTimeout = setTimeout(() => {
-      if (!videoData) {
-        isLoadFailed = true;
-      }
-    }, VIDEO_DATA_LOAD_TIMEOUT_MS);
-
-    return () => clearTimeout(loadTimeout);
   });
 
   const buttonLabel = $derived.by(() => {

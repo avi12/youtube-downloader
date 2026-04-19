@@ -2,7 +2,7 @@ import { cancelActiveDownload } from "../video/download";
 import { buildAndDispatchVideoData, videoDataCache, readYtcfg } from "../video/video-data";
 import { extractPlayerResponseFromHtml } from "../video/youtube-api";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
-import { videoDataStore } from "@/lib/ui/synced-stores.svelte";
+import { videoDataFailedStore, videoDataStore } from "@/lib/ui/synced-stores.svelte";
 import type { PlayerResponse } from "@/types";
 
 declare const ytcfg: { get: (key: string) => unknown } | undefined;
@@ -82,8 +82,13 @@ async function processNextVideoData() {
 
   try {
     await fetchVideoDataViaApi(videoId);
+
+    if (!videoDataCache.has(videoId)) {
+      videoDataFailedStore.set(videoId, true);
+    }
   } catch (error) {
     console.warn("[ytdl] Failed to fetch video data for", videoId, error);
+    videoDataFailedStore.set(videoId, true);
   } finally {
     activeVideoDataFetches--;
     void processNextVideoData();
