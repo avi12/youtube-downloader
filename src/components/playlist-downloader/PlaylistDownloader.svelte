@@ -28,7 +28,7 @@
     elCheckbox.addEventListener("checked-changed", handleCheckedChanged);
   }
 
-  $effect(() => {
+  $effect.pre(() => {
     void playlist.downloadMode;
     void playlist.outputMode;
     void playlist.effectiveDownloadType;

@@ -166,7 +166,7 @@ export function createPlaylistDownloaderState() {
     downloadableVideos.length > 0 && downloadableVideos.every(video => video.isMusic)
   );
 
-  $effect(() => {
+  $effect.pre(() => {
     downloadMode = contentOptions.value.playlistDownloadMode;
     outputMode = isAllMusicPlaylist
       ? contentOptions.value.playlistAudioOutputMode
