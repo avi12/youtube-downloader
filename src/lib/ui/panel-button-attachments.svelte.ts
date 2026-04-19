@@ -1,3 +1,5 @@
+import { sendButtonData } from "@/lib/ui/polymer-utils";
+import { CHILD_LIST_SUBTREE } from "@/lib/utils/dom";
 import {
   ButtonSize,
   ButtonState,
@@ -7,8 +9,6 @@ import {
   isPolymerProgressElement,
   type ButtonViewModelData
 } from "@/types";
-import { sendButtonData } from "~/lib/ui/polymer-utils";
-import { CHILD_LIST_SUBTREE } from "~/lib/utils/dom";
 
 function dispatchButtonData({ elButton, data }: {
   elButton: Element;

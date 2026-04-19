@@ -1,6 +1,6 @@
 import { tryUnlink } from "./ffmpeg-instance";
+import { getCompatibleFilename, getFileExtension } from "@/lib/utils/containers";
 import type { FFmpegCoreModule } from "@ffmpeg/types";
-import { getCompatibleFilename, getFileExtension } from "~/lib/utils/containers";
 
 const audioCodecByExtension: Record<string, string> = {
   flac: "flac"

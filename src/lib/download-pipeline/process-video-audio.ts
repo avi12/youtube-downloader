@@ -1,9 +1,9 @@
 import { toUint8Array, triggerDownload, reportProgress } from ".";
 import { getFFmpeg, progressHandlers, tryUnlink } from "./ffmpeg-instance";
 import { addToPlaylistBundle } from "./playlist-bundle";
+import { getCompatibleFilename, getOutputExtension } from "@/lib/utils/containers";
 import { ProgressType } from "@/types";
 import type { ProcessStreamData } from "@/types";
-import { getCompatibleFilename, getOutputExtension } from "~/lib/utils/containers";
 
 function determineOutputExtension({
   videoMimeType, audioMimeType, isExtraTracksPresent, filenameOutput

@@ -1,6 +1,6 @@
 import { triggerDownload } from ".";
-import { MessageType, sendMessage } from "~/lib/messaging/messaging";
-import { getCompatibleFilename } from "~/lib/utils/containers";
+import { MessageType, sendMessage } from "@/lib/messaging/messaging";
+import { getCompatibleFilename } from "@/lib/utils/containers";
 import { zip } from "fflate";
 import type { AsyncZippable } from "fflate";
 

@@ -1,3 +1,4 @@
+import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import type {
   ButtonSize,
   ButtonState,
@@ -7,7 +8,6 @@ import type {
   TooltipPlacement,
   TooltipStyle
 } from "@/types";
-import { CrossWorldMessage, crossWorldMessenger } from "~/lib/messaging/cross-world-messenger";
 
 export const PAPER_PROGRESS_THEME = {
   "--paper-progress-active-color": "var(--yt-spec-call-to-action, rgb(62 166 255))",

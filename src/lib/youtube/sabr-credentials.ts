@@ -1,5 +1,5 @@
-import { MessageType, sendMessage, onMessage } from "~/lib/messaging/messaging";
-import { sabrCredentials } from "~/lib/ui/synced-stores.svelte";
+import { MessageType, sendMessage, onMessage } from "@/lib/messaging/messaging";
+import { sabrCredentials } from "@/lib/ui/synced-stores.svelte";
 
 let isCredentialsForwarded = false;
 

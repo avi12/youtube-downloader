@@ -1,11 +1,11 @@
-import type { InterruptedDownload, Options, ProgressType, VideoData } from "@/types";
 import {
   createMapMessenger,
   createSignalMessenger,
   createSyncedMap,
   createSyncedSignal
-} from "~/lib/ui/synced-signal.svelte";
-import { initialOptions } from "~/lib/youtube/video-helpers";
+} from "@/lib/ui/synced-signal.svelte";
+import { initialOptions } from "@/lib/youtube/video-helpers";
+import type { InterruptedDownload, Options, ProgressType, VideoData } from "@/types";
 
 let optionsState = $state<Options>(initialOptions);
 

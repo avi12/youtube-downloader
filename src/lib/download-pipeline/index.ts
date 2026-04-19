@@ -1,10 +1,10 @@
 import { enqueueMuxJob } from "./ffmpeg-instance";
 import { processSingleMedia } from "./process-single-media";
 import { processVideoAudio } from "./process-video-audio";
+import { MessageType, sendMessage } from "@/lib/messaging/messaging";
+import { getCompatibleFilename, getMimeType } from "@/lib/utils/containers";
 import { DownloadType, ProgressType } from "@/types";
 import type { ProcessStreamData } from "@/types";
-import { MessageType, sendMessage } from "~/lib/messaging/messaging";
-import { getCompatibleFilename, getMimeType } from "~/lib/utils/containers";
 
 export { initFFmpeg } from "./ffmpeg-instance";
 

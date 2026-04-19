@@ -1,7 +1,7 @@
 import { triggerDownload } from ".";
 import { enqueueMuxJob, getFFmpeg, tryUnlink } from "./ffmpeg-instance";
-import { getRecentDownloadBlob, getAllRecentDownloads } from "~/lib/storage/recent-downloads-db";
-import { videoContainers } from "~/lib/utils/containers";
+import { getRecentDownloadBlob, getAllRecentDownloads } from "@/lib/storage/recent-downloads-db";
+import { videoContainers } from "@/lib/utils/containers";
 
 function swapFileExtension({ filename, extension }: {
   filename: string;
