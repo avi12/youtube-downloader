@@ -48,7 +48,8 @@ function decodeVarint(buffer: Uint8Array, offset: number) {
   let value = 0;
   let shift = 0;
   while (offset < buffer.byteLength) {
-    const byte = buffer[offset++];
+    const byte = buffer[offset];
+    offset++;
     value |= (byte & VARINT_DATA_MASK) << shift;
 
     if ((byte & VARINT_CONTINUE_MASK) === 0) {
@@ -69,9 +70,9 @@ function decodeProtobuf(buffer: Uint8Array): Record<number, ProtobufField[]> {
   while (offset < buffer.byteLength) {
     const tag = decodeVarint(buffer, offset);
     offset = tag.offset;
-    const fieldNum = tag.value >> FIELD_NUM_SHIFT;
+    const fieldNumber = tag.value >> FIELD_NUM_SHIFT;
     const wireType = tag.value & WIRE_TYPE_MASK;
-    if (fieldNum === 0) {
+    if (fieldNumber === 0) {
       break;
     }
 
@@ -84,13 +85,13 @@ function decodeProtobuf(buffer: Uint8Array): Record<number, ProtobufField[]> {
         value: varintResult.value
       };
     } else if (wireType === WIRE_TYPE_LENGTH_DELIMITED) {
-      const len = decodeVarint(buffer, offset);
-      offset = len.offset;
+      const length = decodeVarint(buffer, offset);
+      offset = length.offset;
       field = {
         wireType: WIRE_TYPE_LENGTH_DELIMITED,
-        value: buffer.slice(offset, offset + len.value)
+        value: buffer.slice(offset, offset + length.value)
       };
-      offset += len.value;
+      offset += length.value;
     } else if (wireType === WIRE_TYPE_FIXED64) {
       field = {
         wireType: WIRE_TYPE_FIXED64,
@@ -107,17 +108,17 @@ function decodeProtobuf(buffer: Uint8Array): Record<number, ProtobufField[]> {
       break;
     }
 
-    if (!fields[fieldNum]) {
-      fields[fieldNum] = [];
+    if (!fields[fieldNumber]) {
+      fields[fieldNumber] = [];
     }
 
-    fields[fieldNum].push(field);
+    fields[fieldNumber].push(field);
   }
   return fields;
 }
 
 function loadB64(path: string) {
-  return Uint8Array.from(atob(readFileSync(path, "utf8")), char => char.charCodeAt(0));
+  return Uint8Array.from(atob(readFileSync(path, "utf8")), character => character.charCodeAt(0));
 }
 
 function fieldDesc(field: ProtobufField) {
@@ -136,12 +137,12 @@ function fieldDesc(field: ProtobufField) {
   return `wire${field.wireType}`;
 }
 
-function printFields(label: string, buf: Uint8Array, indent = "") {
-  console.log(`${indent}${label} (${buf.byteLength}b):`);
-  const fields = decodeProtobuf(buf);
-  for (const [fieldNum, entries] of Object.entries(fields).sort(byNumericKey)) {
+function printFields(label: string, buffer: Uint8Array, indent = "") {
+  console.log(`${indent}${label} (${buffer.byteLength}b):`);
+  const fields = decodeProtobuf(buffer);
+  for (const [fieldNumber, entries] of Object.entries(fields).sort(byNumericKey)) {
     for (const entry of entries) {
-      console.log(`${indent}  field ${fieldNum}: ${fieldDesc(entry)}`);
+      console.log(`${indent}  field ${fieldNumber}: ${fieldDesc(entry)}`);
     }
   }
   return fields;
@@ -157,49 +158,49 @@ const ourFields = printFields("Ours", ourBytes);
 // Compare field 1 (clientAbrState)
 console.log("\n=== clientAbrState (field 1) ===");
 
-const ytField1 = ytFields[FIELD_CLIENT_ABR_STATE]?.[0];
-if (ytField1?.wireType === WIRE_TYPE_LENGTH_DELIMITED) {
-  printFields("YouTube", ytField1.value, "  ");
+const ytAbrStateField = ytFields[FIELD_CLIENT_ABR_STATE]?.[0];
+if (ytAbrStateField?.wireType === WIRE_TYPE_LENGTH_DELIMITED) {
+  printFields("YouTube", ytAbrStateField.value, "  ");
 }
 
-const ourField1 = ourFields[FIELD_CLIENT_ABR_STATE]?.[0];
-if (ourField1?.wireType === WIRE_TYPE_LENGTH_DELIMITED) {
-  printFields("Ours", ourField1.value, "  ");
+const ourAbrStateField = ourFields[FIELD_CLIENT_ABR_STATE]?.[0];
+if (ourAbrStateField?.wireType === WIRE_TYPE_LENGTH_DELIMITED) {
+  printFields("Ours", ourAbrStateField.value, "  ");
 }
 
 // Compare field 19 (streamerContext)
 console.log("\n=== streamerContext (field 19) ===");
 
-const ytField19 = ytFields[FIELD_STREAMER_CONTEXT]?.[0];
-if (ytField19?.wireType === WIRE_TYPE_LENGTH_DELIMITED) {
-  const ytCtx = printFields("YouTube", ytField19.value, "  ");
-  const ytCtxField1 = ytCtx[STREAMER_CTX_CLIENT_INFO]?.[0];
-  if (ytCtxField1?.wireType === WIRE_TYPE_LENGTH_DELIMITED) {
-    printFields("  clientInfo", ytCtxField1.value, "    ");
+const ytStreamerContextField = ytFields[FIELD_STREAMER_CONTEXT]?.[0];
+if (ytStreamerContextField?.wireType === WIRE_TYPE_LENGTH_DELIMITED) {
+  const ytStreamerContext = printFields("YouTube", ytStreamerContextField.value, "  ");
+  const ytClientInfoField = ytStreamerContext[STREAMER_CTX_CLIENT_INFO]?.[0];
+  if (ytClientInfoField?.wireType === WIRE_TYPE_LENGTH_DELIMITED) {
+    printFields("  clientInfo", ytClientInfoField.value, "    ");
   }
 
-  const ytCtxField2 = ytCtx[STREAMER_CTX_PO_TOKEN]?.[0];
-  if (ytCtxField2?.wireType === WIRE_TYPE_LENGTH_DELIMITED) {
-    console.log("  PO Token:", ytCtxField2.value.byteLength, "bytes");
+  const ytPoTokenField = ytStreamerContext[STREAMER_CTX_PO_TOKEN]?.[0];
+  if (ytPoTokenField?.wireType === WIRE_TYPE_LENGTH_DELIMITED) {
+    console.log("  PO Token:", ytPoTokenField.value.byteLength, "bytes");
   }
 
-  const ytCtxField3 = ytCtx[STREAMER_CTX_PLAYBACK_COOKIE]?.[0];
-  if (ytCtxField3?.wireType === WIRE_TYPE_LENGTH_DELIMITED) {
-    console.log("  playbackCookie:", ytCtxField3.value.byteLength, "bytes");
+  const ytPlaybackCookieField = ytStreamerContext[STREAMER_CTX_PLAYBACK_COOKIE]?.[0];
+  if (ytPlaybackCookieField?.wireType === WIRE_TYPE_LENGTH_DELIMITED) {
+    console.log("  playbackCookie:", ytPlaybackCookieField.value.byteLength, "bytes");
   }
 }
 
-const ourField19 = ourFields[FIELD_STREAMER_CONTEXT]?.[0];
-if (ourField19?.wireType === WIRE_TYPE_LENGTH_DELIMITED) {
-  const ourCtx = printFields("Ours", ourField19.value, "  ");
-  const ourCtxField1 = ourCtx[STREAMER_CTX_CLIENT_INFO]?.[0];
-  if (ourCtxField1?.wireType === WIRE_TYPE_LENGTH_DELIMITED) {
-    printFields("  clientInfo", ourCtxField1.value, "    ");
+const ourStreamerContextField = ourFields[FIELD_STREAMER_CONTEXT]?.[0];
+if (ourStreamerContextField?.wireType === WIRE_TYPE_LENGTH_DELIMITED) {
+  const ourStreamerContext = printFields("Ours", ourStreamerContextField.value, "  ");
+  const ourClientInfoField = ourStreamerContext[STREAMER_CTX_CLIENT_INFO]?.[0];
+  if (ourClientInfoField?.wireType === WIRE_TYPE_LENGTH_DELIMITED) {
+    printFields("  clientInfo", ourClientInfoField.value, "    ");
   }
 
-  const ourCtxField2 = ourCtx[STREAMER_CTX_PO_TOKEN]?.[0];
-  if (ourCtxField2?.wireType === WIRE_TYPE_LENGTH_DELIMITED) {
-    console.log("  PO Token:", ourCtxField2.value.byteLength, "bytes");
+  const ourPoTokenField = ourStreamerContext[STREAMER_CTX_PO_TOKEN]?.[0];
+  if (ourPoTokenField?.wireType === WIRE_TYPE_LENGTH_DELIMITED) {
+    console.log("  PO Token:", ourPoTokenField.value.byteLength, "bytes");
   } else {
     console.log("  NO PO Token");
   }

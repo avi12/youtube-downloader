@@ -7,6 +7,18 @@ const STREAMER_CONTEXT_FIELD = "19";
 const CLIENT_INFO_FIELD = "1";
 const PO_TOKEN_FIELD = "2";
 
+const VARINT_DATA_MASK = 0x7f;
+const VARINT_CONTINUE_MASK = 0x80;
+const VARINT_SHIFT_BITS = 7;
+const FIELD_NUM_SHIFT = 3;
+const WIRE_TYPE_MASK = 7;
+const WIRE_TYPE_VARINT = 0;
+const WIRE_TYPE_FIXED64 = 1;
+const WIRE_TYPE_LENGTH_DELIMITED = 2;
+const WIRE_TYPE_FIXED32 = 5;
+const FIXED64_BYTE_SIZE = 8;
+const FIXED32_BYTE_SIZE = 4;
+
 type VarintField = {
   type: "varint";
   value: number;
@@ -26,21 +38,22 @@ type Fixed64Field = {
 type ProtobufField = VarintField | BytesField | Fixed32Field | Fixed64Field;
 
 function byNumericKey(entryA: [string, ProtobufField[]], entryB: [string, ProtobufField[]]) {
-  return parseInt(entryA[0]) - parseInt(entryB[0]);
+  return parseInt(entryA[0], 10) - parseInt(entryB[0], 10);
 }
 
-function readVarint(buf: Uint8Array, offset: number) {
+function readVarint(buffer: Uint8Array, offset: number) {
   let value = 0;
   let shift = 0;
-  while (offset < buf.byteLength) {
-    const byte = buf[offset++];
-    value |= (byte & 0x7f) << shift;
+  while (offset < buffer.byteLength) {
+    const byte = buffer[offset];
+    offset++;
+    value |= (byte & VARINT_DATA_MASK) << shift;
 
-    if (!(byte & 0x80)) {
+    if (!(byte & VARINT_CONTINUE_MASK)) {
       break;
     }
 
-    shift += 7;
+    shift += VARINT_SHIFT_BITS;
   }
   return {
     value: value >>> 0,
@@ -48,62 +61,62 @@ function readVarint(buf: Uint8Array, offset: number) {
   };
 }
 
-function decodeFields(buf: Uint8Array): Record<number, ProtobufField[]> {
+function decodeFields(buffer: Uint8Array): Record<number, ProtobufField[]> {
   const fields: Record<number, ProtobufField[]> = {};
   let offset = 0;
-  while (offset < buf.byteLength) {
-    const tag = readVarint(buf, offset);
+  while (offset < buffer.byteLength) {
+    const tag = readVarint(buffer, offset);
     offset = tag.offset;
-    const fieldNum = tag.value >> 3;
-    const wireType = tag.value & 7;
-    if (fieldNum === 0) {
+    const fieldNumber = tag.value >> FIELD_NUM_SHIFT;
+    const wireType = tag.value & WIRE_TYPE_MASK;
+    if (fieldNumber === 0) {
       break;
     }
 
     let field: ProtobufField;
-    if (wireType === 0) {
-      const varintResult = readVarint(buf, offset);
+    if (wireType === WIRE_TYPE_VARINT) {
+      const varintResult = readVarint(buffer, offset);
       offset = varintResult.offset;
       field = {
         type: "varint",
         value: varintResult.value
       };
-    } else if (wireType === 2) {
-      const len = readVarint(buf, offset);
-      offset = len.offset;
+    } else if (wireType === WIRE_TYPE_LENGTH_DELIMITED) {
+      const length = readVarint(buffer, offset);
+      offset = length.offset;
       field = {
         type: "bytes",
-        data: buf.slice(offset, offset + len.value)
+        data: buffer.slice(offset, offset + length.value)
       };
-      offset += len.value;
-    } else if (wireType === 5) {
+      offset += length.value;
+    } else if (wireType === WIRE_TYPE_FIXED32) {
       field = {
         type: "f32",
-        data: buf.slice(offset, offset + 4)
+        data: buffer.slice(offset, offset + FIXED32_BYTE_SIZE)
       };
-      offset += 4;
-    } else if (wireType === 1) {
+      offset += FIXED32_BYTE_SIZE;
+    } else if (wireType === WIRE_TYPE_FIXED64) {
       field = {
         type: "f64",
-        data: buf.slice(offset, offset + 8)
+        data: buffer.slice(offset, offset + FIXED64_BYTE_SIZE)
       };
-      offset += 8;
+      offset += FIXED64_BYTE_SIZE;
     } else {
       break;
     }
 
-    if (!fields[fieldNum]) {
-      fields[fieldNum] = [];
+    if (!fields[fieldNumber]) {
+      fields[fieldNumber] = [];
     }
 
-    fields[fieldNum].push(field);
+    fields[fieldNumber].push(field);
   }
   return fields;
 }
 
 // Load the fresh initial request that returned 200
-const b64 = readFileSync(SABR_REQUEST_PATH, "utf8");
-const bytes = Uint8Array.from(atob(b64), char => char.charCodeAt(0));
+const base64 = readFileSync(SABR_REQUEST_PATH, "utf8");
+const bytes = Uint8Array.from(atob(base64), character => character.charCodeAt(0));
 
 const top = decodeFields(bytes);
 console.log("=== Top-level fields ===");
