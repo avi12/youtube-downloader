@@ -237,7 +237,7 @@ export default [
   eslint.configs.recommended,
   ...tsEslint.configs.recommended,
   ...svelteEslint.configs["flat/recommended"],
-  globalIgnores(["build/**", "node_modules/**", ".output/**", ".wxt/**", "scripts/**", "User Data/**", "patches/**"]),
+  globalIgnores(["build/**", "node_modules/**", ".output/**", ".wxt/**", "User Data/**", "patches/**"]),
   {
     files: ["**/*.{ts,js,mjs}"],
     ignores: ["eslint.config.js"],
