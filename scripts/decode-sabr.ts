@@ -115,10 +115,7 @@ function decodeProtobuf(buffer: Uint8Array, offset = 0, end = buffer.byteLength)
       break;
     }
 
-    if (!fields[fieldNumber]) {
-      fields[fieldNumber] = [];
-    }
-
+    fields[fieldNumber] ??= [];
     fields[fieldNumber].push(field);
   }
   return fields;
