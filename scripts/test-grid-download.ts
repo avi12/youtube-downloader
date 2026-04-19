@@ -4,55 +4,102 @@
  * subscriptions, clicks a download button, and monitors progress.
  *
  * Usage: node scripts/test-grid-download.mjs
- * Requires: logged-in Chrome profile at ../User Data
+ * Requires: logged-in Chrome profile at user-profiles/chrome
  */
 
-import { execSync } from "child_process";
-import http from "http";
-import { join } from "path";
+import { execSync } from "node:child_process";
+import { once } from "node:events";
+import http from "node:http";
+import { join } from "node:path";
+import { setTimeout } from "node:timers/promises";
 import WebSocket from "ws";
 
-const CDP_PORT = 9230;
-const CHROME_PATH = join(process.env.ProgramFiles, "Google/Chrome/Application/chrome.exe");
-const EXT_PATH = join(import.meta.dirname, "../.output/chrome-mv3");
-const USER_DATA = join(import.meta.dirname, "../../User Data");
+interface CdpTarget {
+  id: string;
+  type: string;
+  url?: string;
+  webSocketDebuggerUrl?: string;
+}
 
-function cdpRequest(path) {
-  return new Promise((resolve, reject) => {
+interface CdpCookie {
+  name: string;
+  value: string;
+}
+
+const CDP_PORT = 9230;
+const CDP_WAIT_RETRIES = 30;
+const CDP_RETRY_DELAY_MS = 1_000;
+const CDP_EVAL_TIMEOUT_MS = 30_000;
+const COOKIE_FETCH_TIMEOUT_MS = 5_000;
+const NAVIGATE_SETTLE_MS = 10_000;
+const MONITOR_POLL_INTERVAL_MS = 5_000;
+const MONITOR_POLL_COUNT = 24;
+const CHROME_START_URL = "https://www.youtube.com/watch?v=wjggoT-3oVM";
+const SUBS_URL = "https://www.youtube.com/feed/subscriptions";
+const AUTH_COOKIES = ["SID", "SSID", "LOGIN_INFO", "SAPISID"];
+const CHROME_PATH = join(process.env["ProgramFiles"]!, "Google/Chrome/Application/chrome.exe");
+const EXT_PATH = join(import.meta.dirname, "../.output/chrome-mv3");
+const USER_DATA = join(import.meta.dirname, "../user-profiles/chrome");
+
+async function fetchYtCookies(wsUrl: string): Promise<CdpCookie[]> {
+  const signal = AbortSignal.timeout(COOKIE_FETCH_TIMEOUT_MS);
+  const socket = new WebSocket(wsUrl);
+  await once(socket, "open", { signal });
+  socket.send(
+    JSON.stringify({
+      id: 1,
+      method: "Network.getCookies",
+      params: { urls: ["https://www.youtube.com"] }
+    })
+  );
+  const [rawData] = await once(socket, "message", { signal });
+  socket.close();
+  const msg = JSON.parse(String(rawData));
+  return msg.result?.cookies ?? [];
+}
+
+function cdpRequest(path: string) {
+  return new Promise<CdpTarget[]>((resolve, reject) => {
     http.get(`http://localhost:${CDP_PORT}${path}`, res => {
-      let d = "";
-      res.on("data", c => d += c);
+      let data = "";
+      res.on("data", chunk => data += chunk);
       res.on("end", () => {
-        try { resolve(JSON.parse(d)); } catch { reject(new Error(d)); }
+        try {
+          const parsed: CdpTarget[] = JSON.parse(data);
+          resolve(parsed);
+        } catch {
+          reject(new Error(data));
+        }
       });
     }).on("error", reject);
   });
 }
 
-function cdpEval(wsUrl, expression, awaitPromise = false) {
-  return new Promise((resolve, reject) => {
-    const ws = new WebSocket(wsUrl);
-    ws.on("open", () => {
-      ws.send(JSON.stringify({ id: 1, method: "Runtime.evaluate", params: { expression, awaitPromise } }));
-    });
-    ws.on("message", raw => {
-      const m = JSON.parse(raw.toString());
-      if (m.id === 1) {
-        if (m.result?.exceptionDetails) {
-          reject(new Error(m.result.exceptionDetails.exception?.description || m.result.exceptionDetails.text));
-        } else {
-          resolve(m.result?.result?.value);
-        }
-        ws.close();
-      }
-    });
-    ws.on("error", reject);
-    setTimeout(() => { ws.close(); reject(new Error("CDP eval timeout")); }, 30000);
-  });
-}
+async function cdpEval(wsUrl: string, expression: string, awaitPromise = false) {
+  const signal = AbortSignal.timeout(CDP_EVAL_TIMEOUT_MS);
+  const socket = new WebSocket(wsUrl);
 
-function sleep(ms) {
-  return new Promise(r => setTimeout(r, ms));
+  await once(socket, "open", { signal });
+  socket.send(
+    JSON.stringify({
+      id: 1,
+      method: "Runtime.evaluate",
+      params: {
+        expression,
+        awaitPromise
+      }
+    })
+  );
+
+  const [rawData] = await once(socket, "message", { signal });
+  socket.close();
+
+  const msg = JSON.parse(String(rawData));
+  if (msg.result?.exceptionDetails) {
+    throw new Error(msg.result.exceptionDetails.exception?.description || msg.result.exceptionDetails.text);
+  }
+
+  return msg.result?.result?.value;
 }
 
 // Step 1: Build
@@ -77,64 +124,55 @@ const chromeArgs = [
   "--disable-background-networking",
   "--disable-blink-features=AutomationControlled",
   "--lang=en",
-  "https://www.youtube.com/watch?v=wjggoT-3oVM"
-].map(a => `"${a}"`).join(" ");
+  CHROME_START_URL
+].map(arg => `"${arg}"`).join(" ");
 
 execSync(`start "" "${CHROME_PATH}" ${chromeArgs}`, { shell: "cmd.exe" });
 
 // Step 3: Wait for CDP
 console.log("Waiting for Chrome...");
-for (let i = 0; i < 30; i++) {
+for (let index = 0; index < CDP_WAIT_RETRIES; index++) {
   try {
     await cdpRequest("/json/version");
     break;
   } catch {
-    await sleep(1000);
+    await setTimeout(CDP_RETRY_DELAY_MS);
   }
 }
 
 // Step 4: Check auth
 const pages = await cdpRequest("/json/list");
-const ytPage = pages.find(p => p.url.includes("youtube") && p.type === "page");
+const ytPage = pages.find(page => (page.url ?? "").includes("youtube") && page.type === "page");
 if (!ytPage) {
   console.log("ERROR: No YouTube page found");
   process.exit(1);
 }
 
-const cookies = await new Promise((resolve, reject) => {
-  const ws = new WebSocket(ytPage.webSocketDebuggerUrl);
-  ws.on("open", () => {
-    ws.send(JSON.stringify({ id: 1, method: "Network.getCookies", params: { urls: ["https://www.youtube.com"] } }));
-  });
-  ws.on("message", raw => {
-    const m = JSON.parse(raw.toString());
-    if (m.id === 1) { resolve(m.result?.cookies || []); ws.close(); }
-  });
-  ws.on("error", reject);
-  setTimeout(() => reject(new Error("timeout")), 5000);
-});
+const cookies = await fetchYtCookies(ytPage.webSocketDebuggerUrl!);
 
-const authCookies = cookies.filter(c => ["SID", "SSID", "LOGIN_INFO", "SAPISID"].includes(c.name));
+const authCookies = cookies.filter(cookie => AUTH_COOKIES.includes(cookie.name));
 if (authCookies.length === 0) {
   console.log("ERROR: Not logged in. Sign in to YouTube first, then re-run.");
   process.exit(1);
 }
+
 console.log("Logged in.");
 
 // Step 5: Navigate to subscriptions
 console.log("Navigating to subscriptions...");
-await cdpEval(ytPage.webSocketDebuggerUrl, 'location.href = "https://www.youtube.com/feed/subscriptions"; "ok"');
-await sleep(10000);
+await cdpEval(ytPage.webSocketDebuggerUrl!, `location.href = "${SUBS_URL}"; "ok"`);
+await setTimeout(NAVIGATE_SETTLE_MS);
 
 // Step 6: Check grid items
 const pages2 = await cdpRequest("/json/list");
-const subsPage = pages2.find(p => p.url.includes("subscriptions") && p.type === "page");
+const subsPage = pages2.find(page => (page.url ?? "").includes("subscriptions") && page.type === "page");
 if (!subsPage) {
   console.log("ERROR: No subscriptions page");
   process.exit(1);
 }
 
-const gridResult = await cdpEval(subsPage.webSocketDebuggerUrl, `
+const gridResult = await cdpEval(
+  subsPage.webSocketDebuggerUrl!, `
   (() => {
     const items = document.querySelectorAll('[data-ytdl-grid-item]');
     const withBtn = [...items].find(el => el.querySelector('yt-button-view-model button'));
@@ -144,7 +182,8 @@ const gridResult = await cdpEval(subsPage.webSocketDebuggerUrl, `
       label: withBtn?.querySelector('yt-button-view-model button')?.getAttribute('aria-label')?.substring(0, 60)
     });
   })()
-`);
+`
+);
 
 const grid = JSON.parse(gridResult);
 console.log(`Grid items: ${grid.gridItems}, first downloadable: ${grid.videoId}`);
@@ -156,21 +195,24 @@ if (!grid.videoId) {
 
 // Step 7: Click download
 console.log(`Clicking download for ${grid.videoId}...`);
-await cdpEval(subsPage.webSocketDebuggerUrl, `
+await cdpEval(
+  subsPage.webSocketDebuggerUrl!, `
   (() => {
     const item = document.querySelector('[data-ytdl-grid-item="${grid.videoId}"]');
     const btn = item?.querySelector('yt-button-view-model button');
     btn?.click();
     return 'clicked';
   })()
-`);
+`
+);
 
 // Step 8: Monitor progress
 console.log("Monitoring download progress...");
-for (let i = 0; i < 24; i++) {
-  await sleep(5000);
+for (let index = 0; index < MONITOR_POLL_COUNT; index++) {
+  await setTimeout(MONITOR_POLL_INTERVAL_MS);
   try {
-    const result = await cdpEval(subsPage.webSocketDebuggerUrl, `
+    const result = await cdpEval(
+      subsPage.webSocketDebuggerUrl!, `
       (() => {
         const item = document.querySelector('[data-ytdl-grid-item="${grid.videoId}"]');
         const btn = item?.querySelector('yt-button-view-model button');
@@ -181,18 +223,25 @@ for (let i = 0; i < 24; i++) {
           hasProgress: !!progress
         });
       })()
-    `);
+    `
+    );
     const state = JSON.parse(result);
-    const elapsed = (i + 1) * 5;
-    console.log(`T+${elapsed}s: ${state.label?.startsWith("Cancel") ? "DOWNLOADING" : state.hasProgress ? "PROCESSING" : "IDLE"} progress=${state.progress || "n/a"}`);
+    const elapsed = (index + 1) * (MONITOR_POLL_INTERVAL_MS / 1000);
+    let status = "IDLE";
+    if (state.label?.startsWith("Cancel")) {
+      status = "DOWNLOADING";
+    } else if (state.hasProgress) {
+      status = "PROCESSING";
+    }
 
-    // Check if download completed (button shows checkmark label)
+    console.log(`T+${elapsed}s: ${status} progress=${state.progress || "n/a"}`);
+
     if (state.label?.includes("Downloaded")) {
       console.log("SUCCESS: Download completed!");
       process.exit(0);
     }
   } catch {
-    console.log(`T+${(i + 1) * 5}s: connection lost`);
+    console.log(`T+${(index + 1) * (MONITOR_POLL_INTERVAL_MS / 1000)}s: connection lost`);
     break;
   }
 }

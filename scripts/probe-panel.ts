@@ -1,28 +1,49 @@
-import http from "http";
-import { createRequire } from "module";
-const require = createRequire(import.meta.url);
-const WebSocket = require("C:/Users/Avi/AppData/Roaming/npm/node_modules/@google/gemini-cli/node_modules/ws/index.js");
+import http from "node:http";
+import { setTimeout } from "node:timers/promises";
+import WebSocket from "ws";
 
-const targets = await new Promise(resolve => {
-  http.get("http://localhost:9229/json", res => {
-    let d = ""; res.on("data", c => d += c);
-    res.on("end", () => resolve(JSON.parse(d)));
+const CDP_PORT = 9229;
+const CHROME_EXT_ID = "iakmamcpgldfjjbeamagdkelogmokjpj";
+const OFFSCREEN_PATH = "offscreen.html";
+const STARTUP_DELAY_MS = 400;
+const LISTEN_DURATION_MS = 6_000;
+
+interface CdpTarget {
+  id: string;
+  type: string;
+  url?: string;
+  webSocketDebuggerUrl?: string;
+}
+
+const targets = await new Promise<CdpTarget[]>(resolve => {
+  http.get(`http://localhost:${CDP_PORT}/json`, res => {
+    let data = "";
+    res.on("data", chunk => data += chunk);
+    res.on("end", () => {
+      const parsed: CdpTarget[] = JSON.parse(data);
+      resolve(parsed);
+    });
   });
 });
 
-const sw = targets.find(t => t.type === "service_worker" && (t.url ?? "").includes("iakmamcpgldfjjbeamagdkelogmokjpj"));
-const offscreen = targets.find(t => (t.url ?? "").includes("offscreen.html"));
-const tab = targets.find(t => t.type === "page" && (t.url ?? "").includes("youtube.com/watch"));
+const serviceWorker = targets.find(target => target.type === "service_worker" && (target.url ?? "").includes(CHROME_EXT_ID));
+const offscreen = targets.find(target => (target.url ?? "").includes(OFFSCREEN_PATH));
+const tab = targets.find(target => target.type === "page" && (target.url ?? "").includes("youtube.com/watch"));
 
-function attachMonitor(wsUrl, label) {
-  const ws = new WebSocket(wsUrl);
-  ws.on("open", () => {
-    ws.send(JSON.stringify({ id: 1, method: "Runtime.enable" }));
+function attachMonitor(wsUrl: string, label: string) {
+  const socket = new WebSocket(wsUrl);
+  socket.on("open", () => {
+    socket.send(
+      JSON.stringify({
+        id: 1,
+        method: "Runtime.enable"
+      })
+    );
   });
-  ws.on("message", data => {
-    const msg = JSON.parse(data);
+  socket.on("message", (rawData: string) => {
+    const msg = JSON.parse(rawData);
     if (msg.method === "Runtime.consoleAPICalled") {
-      const text = msg.params.args.map(a => a.value ?? a.description ?? JSON.stringify(a)).join(" ");
+      const text = msg.params.args.map((arg: Record<string, unknown>) => arg.value ?? arg.description ?? JSON.stringify(arg)).join(" ");
       console.log(`[${label}][${msg.params.type}] ${text}`);
     }
 
@@ -30,18 +51,21 @@ function attachMonitor(wsUrl, label) {
       console.log(`[${label}][EX] ${msg.params.exceptionDetails?.exception?.description ?? msg.params.exceptionDetails?.text ?? "?"}`);
     }
   });
-  return ws;
+  return socket;
 }
 
-const tabWs = attachMonitor(tab.webSocketDebuggerUrl, "TAB");
-const swWs = attachMonitor(sw.webSocketDebuggerUrl, "SW");
-const offWs = attachMonitor(offscreen.webSocketDebuggerUrl, "OFF");
+const tabSocket = attachMonitor(tab!.webSocketDebuggerUrl!, "TAB");
+const swSocket = attachMonitor(serviceWorker!.webSocketDebuggerUrl!, "SW");
+const offSocket = attachMonitor(offscreen!.webSocketDebuggerUrl!, "OFF");
 
-await new Promise(r => setTimeout(r, 400));
+await setTimeout(STARTUP_DELAY_MS);
 
-tabWs.send(JSON.stringify({
-  id: 10, method: "Runtime.evaluate", params: {
-    expression: `
+tabSocket.send(
+  JSON.stringify({
+    id: 10,
+    method: "Runtime.evaluate",
+    params: {
+      expression: `
 (async () => {
   const group = document.querySelector("[data-ytdl-download-group]");
   const buttons = group?.querySelectorAll("button");
@@ -59,9 +83,13 @@ tabWs.send(JSON.stringify({
   return "done";
 })()
     `,
-    awaitPromise: true, returnByValue: true
-  }
-}));
+      awaitPromise: true,
+      returnByValue: true
+    }
+  })
+);
 
-await new Promise(r => setTimeout(r, 6000));
-tabWs.close(); swWs.close(); offWs.close();
+await setTimeout(LISTEN_DURATION_MS);
+tabSocket.close();
+swSocket.close();
+offSocket.close();

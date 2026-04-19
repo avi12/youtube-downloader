@@ -11,13 +11,19 @@
  *   npx tsx scripts/dev-server.ts --firefox - Firefox
  */
 
-import { build } from "wxt";
 import chokidar from "chokidar";
-import { debounce } from "perfect-debounce";
-import { resolve, join, dirname } from "node:path";
-import { existsSync, cpSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { spawnSync } from "node:child_process";
+import {
+  existsSync,
+  cpSync,
+  mkdirSync,
+  readFileSync,
+  writeFileSync
+} from "node:fs";
 import { homedir, platform } from "node:os";
+import { resolve, join, dirname } from "node:path";
+import { debounce } from "perfect-debounce";
+import { build } from "wxt";
 
 const IS_FIREFOX = process.argv.includes("--firefox");
 const PROJECT_ROOT = resolve(import.meta.dirname, "..");
@@ -45,7 +51,6 @@ function setupChromeProfile() {
     linux: join(home, ".config", "google-chrome")
   };
   const source = sourceUserData[platform()];
-
   if (!source || !existsSync(source)) {
     mkdirSync(CHROME_PROFILE_DIR, { recursive: true });
     return CHROME_PROFILE_DIR;
@@ -57,6 +62,7 @@ function setupChromeProfile() {
     if (!existsSync(bookmarksPath)) {
       continue;
     }
+
     const destinationPath = join(CHROME_PROFILE_DIR, directory, "Bookmarks");
     mkdirSync(dirname(destinationPath), { recursive: true });
     cpSync(bookmarksPath, destinationPath);
@@ -86,17 +92,15 @@ function findDefaultFirefoxProfilePath() {
   };
   const firefoxDataPath = firefoxDataPaths[platform()];
   const profilesIniPath = firefoxDataPath && join(firefoxDataPath, "profiles.ini");
-
   if (!profilesIniPath || !existsSync(profilesIniPath)) {
     return null;
   }
 
   const ini = readFileSync(profilesIniPath, "utf-8");
   const sections = ini.split(/(?=^\[Profile\d)/m);
-  const defaultSection = sections.find(s => /^Default=1$/m.test(s));
+  const defaultSection = sections.find(section => /^Default=1$/m.test(section));
   const pathMatch = defaultSection?.match(/^Path=(.+)$/m);
   const isRelative = /^IsRelative=1$/m.test(defaultSection ?? "");
-
   if (!pathMatch) {
     return null;
   }
@@ -123,6 +127,7 @@ function setupFirefoxProfile() {
       if (!existsSync(sourcePath)) {
         continue;
       }
+
       cpSync(sourcePath, join(FIREFOX_PROFILE_DIR, file));
     }
     console.log("Profile setup complete.");
@@ -138,6 +143,7 @@ function killExistingFirefoxInstances() {
   if (platform() !== "win32") {
     return;
   }
+
   const script = `
 $profile = '${FIREFOX_PROFILE_DIR.replace(/'/g, "''")}'
 Get-CimInstance Win32_Process -Filter "name='firefox.exe'" |
@@ -156,18 +162,26 @@ Get-CimInstance Win32_Process -Filter "name='firefox.exe'" |
 async function reloadYouTubeTabs() {
   try {
     const pagesResponse = await fetch(`http://localhost:${CDP_PORT}/json`);
-    const pages: Array<{ url: string; webSocketDebuggerUrl?: string }> =
+    const pages: Array<{
+      url: string;
+      webSocketDebuggerUrl?: string;
+    }> =
       await pagesResponse.json();
 
     for (const page of pages) {
       if (!page.url?.includes("youtube.com") || !page.webSocketDebuggerUrl) {
         continue;
       }
+
       const websocket = new WebSocket(page.webSocketDebuggerUrl);
       await new Promise<void>(resolve => {
         websocket.onopen = () => {
           websocket.send(
-            JSON.stringify({ id: 1, method: "Page.reload", params: {} })
+            JSON.stringify({
+              id: 1,
+              method: "Page.reload",
+              params: {}
+            })
           );
         };
         websocket.onmessage = e => {
@@ -230,29 +244,29 @@ async function main() {
 
   const runOptions = IS_FIREFOX
     ? {
-        target: "firefox-desktop" as const,
-        sourceDir: OUTPUT_DIR,
-        startUrl: [START_URL],
-        keepProfileChanges: true,
-        firefoxProfile: profileDirectory,
-        args: [`--lang=${LANGUAGE}`, "--marionette", "--remote-debugging-port=9230"],
-        noReload: true,
-        noInput: true
-      }
+      target: "firefox-desktop" as const,
+      sourceDir: OUTPUT_DIR,
+      startUrl: [START_URL],
+      keepProfileChanges: true,
+      firefoxProfile: profileDirectory,
+      args: [`--lang=${LANGUAGE}`, "--marionette", "--remote-debugging-port=9230"],
+      noReload: true,
+      noInput: true
+    }
     : {
-        target: "chromium" as const,
-        sourceDir: OUTPUT_DIR,
-        startUrl: [START_URL],
-        keepProfileChanges: true,
-        chromiumProfile: profileDirectory,
-        args: [
-          `--lang=${LANGUAGE}`,
-          `--remote-debugging-port=${CDP_PORT}`,
-          "--disable-blink-features=AutomationControlled"
-        ],
-        noReload: true,
-        noInput: true
-      };
+      target: "chromium" as const,
+      sourceDir: OUTPUT_DIR,
+      startUrl: [START_URL],
+      keepProfileChanges: true,
+      chromiumProfile: profileDirectory,
+      args: [
+        `--lang=${LANGUAGE}`,
+        `--remote-debugging-port=${CDP_PORT}`,
+        "--disable-blink-features=AutomationControlled"
+      ],
+      noReload: true,
+      noInput: true
+    };
 
   const runner = await webExtRun.default.cmd.run(runOptions, {
     shouldExitProgram: false
@@ -274,9 +288,11 @@ async function main() {
     try {
       await buildExtension();
       await runner.reloadAllExtensions();
+
       if (!IS_FIREFOX) {
         await reloadYouTubeTabs();
       }
+
       console.log(`Reloaded at ${new Date().toLocaleTimeString()}`);
     } catch (error) {
       console.error("Rebuild failed:", error);

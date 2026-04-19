@@ -1,62 +1,82 @@
-import http from "http";
-import { createRequire } from "module";
-const require = createRequire(import.meta.url);
-const WebSocket = require("C:/Users/Avi/AppData/Roaming/npm/node_modules/@google/gemini-cli/node_modules/ws/index.js");
+import { once } from "node:events";
+import http from "node:http";
+import WebSocket from "ws";
 
-const targets = await new Promise((resolve) => {
-  http.get("http://localhost:9229/json", res => {
-    let d = "";
-    res.on("data", c => d += c);
-    res.on("end", () => resolve(JSON.parse(d)));
+const CDP_PORT = 9229;
+const CHROME_EXT_ID = "iakmamcpgldfjjbeamagdkelogmokjpj";
+const OFFSCREEN_PATH = "offscreen.html";
+const EVAL_TIMEOUT_MS = 8_000;
+
+interface CdpTarget {
+  id: string;
+  type: string;
+  url?: string;
+  webSocketDebuggerUrl?: string;
+}
+
+const targets = await new Promise<CdpTarget[]>(resolve => {
+  http.get(`http://localhost:${CDP_PORT}/json`, res => {
+    let data = "";
+    res.on("data", chunk => data += chunk);
+    res.on("end", () => {
+      const parsed: CdpTarget[] = JSON.parse(data);
+      resolve(parsed);
+    });
   });
 });
 
-const offscreen = targets.find(t => (t.url ?? "").includes("offscreen.html"));
-const sw = targets.find(t => t.type === "service_worker" && (t.url ?? "").includes("iakmamcpgldfjjbeamagdkelogmokjpj"));
+const offscreen = targets.find(target => (target.url ?? "").includes(OFFSCREEN_PATH));
+const serviceWorker = targets.find(target => target.type === "service_worker" && (target.url ?? "").includes(CHROME_EXT_ID));
 
 console.log("Offscreen ID:", offscreen?.id);
-console.log("SW ID:", sw?.id);
+console.log("SW ID:", serviceWorker?.id);
 
-function evalTarget(wsUrl, expr) {
-  return new Promise(resolve => {
-    const ws = new WebSocket(wsUrl);
-    ws.on("open", () => {
-      ws.send(JSON.stringify({
-        id: 1,
-        method: "Runtime.evaluate",
-        params: { expression: expr, returnByValue: true, awaitPromise: true }
-      }));
-    });
-    ws.on("message", data => {
-      const msg = JSON.parse(data);
-      if (msg.id === 1) {
-        resolve(msg.result?.result);
-        ws.close();
+async function evalTarget(wsUrl: string, expr: string) {
+  const signal = AbortSignal.timeout(EVAL_TIMEOUT_MS);
+  const socket = new WebSocket(wsUrl);
+
+  await once(socket, "open", { signal });
+  socket.send(
+    JSON.stringify({
+      id: 1,
+      method: "Runtime.evaluate",
+      params: {
+        expression: expr,
+        returnByValue: true,
+        awaitPromise: true
       }
-    });
-    setTimeout(() => { ws.close(); resolve({ timeout: true }); }, 8000);
-  });
+    })
+  );
+
+  const [rawData] = await once(socket, "message", { signal });
+  socket.close();
+  return JSON.parse(String(rawData)).result?.result;
 }
 
 console.log("\n--- Offscreen state ---");
-const offState = await evalTarget(offscreen.webSocketDebuggerUrl, `JSON.stringify({
+const offState = await evalTarget(
+  offscreen!.webSocketDebuggerUrl!, `JSON.stringify({
   docReady: document.readyState,
   hasCreateFFmpeg: typeof createFFmpegCore !== "undefined",
   href: location.href
-})`);
+})`
+);
 console.log(offState);
 
 console.log("\n--- SW storage ---");
-const swState = await evalTarget(sw.webSocketDebuggerUrl, `
+const swState = await evalTarget(
+  serviceWorker!.webSocketDebuggerUrl!, `
 (async () => {
   const q = await browser.storage.local.get(["local:videoQueue","local:statusProgress","local:musicList","local:videoDetails"]);
   return JSON.stringify(q, null, 2);
 })()
-`);
+`
+);
 console.log(swState);
 
 console.log("\n--- SW runtime probe ---");
-const probe = await evalTarget(sw.webSocketDebuggerUrl, `
+const probe = await evalTarget(
+  serviceWorker!.webSocketDebuggerUrl!, `
 (async () => {
   const items = await chrome.storage.local.get();
   const dynRules = await chrome.declarativeNetRequest.getDynamicRules();
@@ -66,16 +86,19 @@ const probe = await evalTarget(sw.webSocketDebuggerUrl, `
     dnrRules: dynRules.length
   }, null, 2);
 })()
-`);
+`
+);
 console.log(probe);
 
 console.log("\n--- Active downloads via chrome.downloads ---");
-const dls = await evalTarget(sw.webSocketDebuggerUrl, `
+const dls = await evalTarget(
+  serviceWorker!.webSocketDebuggerUrl!, `
 (async () => {
   const all = await chrome.downloads.search({ orderBy: ["-startTime"], limit: 3 });
   return JSON.stringify(all.map(d => ({
     id: d.id, filename: d.filename.slice(-40), state: d.state, exists: d.exists, mime: d.mime
   })), null, 2);
 })()
-`);
+`
+);
 console.log(dls);

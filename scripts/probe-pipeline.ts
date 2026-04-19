@@ -1,66 +1,95 @@
-import http from "http";
-import { createRequire } from "module";
-const require = createRequire(import.meta.url);
-const WebSocket = require("C:/Users/Avi/AppData/Roaming/npm/node_modules/@google/gemini-cli/node_modules/ws/index.js");
+import http from "node:http";
+import { setTimeout } from "node:timers/promises";
+import WebSocket from "ws";
 
-const targets = await new Promise(resolve => {
-  http.get("http://localhost:9229/json", res => {
-    let d = "";
-    res.on("data", c => d += c);
-    res.on("end", () => resolve(JSON.parse(d)));
+const CDP_PORT = 9229;
+const CHROME_EXT_ID = "iakmamcpgldfjjbeamagdkelogmokjpj";
+const OFFSCREEN_PATH = "offscreen.html";
+const KICKOFF_DELAY_MS = 300;
+const LISTEN_DURATION_S = 3;
+
+interface CdpTarget {
+  id: string;
+  type: string;
+  url?: string;
+  webSocketDebuggerUrl?: string;
+}
+
+const targets = await new Promise<CdpTarget[]>(resolve => {
+  http.get(`http://localhost:${CDP_PORT}/json`, res => {
+    let data = "";
+    res.on("data", chunk => data += chunk);
+    res.on("end", () => {
+      const parsed: CdpTarget[] = JSON.parse(data);
+      resolve(parsed);
+    });
   });
 });
 
-const sw = targets.find(t => t.type === "service_worker" && (t.url ?? "").includes("iakmamcpgldfjjbeamagdkelogmokjpj"));
-const offscreen = targets.find(t => (t.url ?? "").includes("offscreen.html"));
+const serviceWorker = targets.find(target => target.type === "service_worker" && (target.url ?? "").includes(CHROME_EXT_ID));
+const offscreen = targets.find(target => (target.url ?? "").includes(OFFSCREEN_PATH));
 
-console.log("SW:", sw?.id);
+console.log("SW:", serviceWorker?.id);
 console.log("Offscreen:", offscreen?.id);
 
-function runCDP(wsUrl, listenSeconds, kickoff) {
-  return new Promise(resolve => {
-    const logs = [];
-    const ws = new WebSocket(wsUrl);
-    ws.on("open", () => {
-      ws.send(JSON.stringify({ id: 1, method: "Runtime.enable" }));
-      ws.send(JSON.stringify({ id: 2, method: "Log.enable" }));
-      if (kickoff) {
-        setTimeout(() => {
-          ws.send(JSON.stringify({
-            id: 3,
-            method: "Runtime.evaluate",
-            params: { expression: kickoff, awaitPromise: true, returnByValue: true }
-          }));
-        }, 300);
-      }
-    });
+async function runCDP(wsUrl: string, listenSeconds: number, kickoff: string | null) {
+  const logs: string[] = [];
+  const socket = new WebSocket(wsUrl);
 
-    ws.on("message", data => {
-      const msg = JSON.parse(data);
-      if (msg.method === "Runtime.consoleAPICalled") {
-        const text = msg.params.args.map(a => a.value ?? a.description ?? JSON.stringify(a)).join(" ");
-        logs.push(`[${msg.params.type}] ${text}`);
-      }
+  socket.on("open", async () => {
+    socket.send(
+      JSON.stringify({
+        id: 1,
+        method: "Runtime.enable"
+      })
+    );
+    socket.send(
+      JSON.stringify({
+        id: 2,
+        method: "Log.enable"
+      })
+    );
 
-      if (msg.method === "Runtime.exceptionThrown") {
-        const detail = msg.params.exceptionDetails;
-        logs.push(`[EX] ${detail?.exception?.description ?? detail?.text ?? "?"}`);
-      }
-
-      if (msg.method === "Log.entryAdded") {
-        logs.push(`[log:${msg.params.entry.level}] ${msg.params.entry.text}`);
-      }
-
-      if (msg.id === 3) {
-        logs.push(`[eval result] ${JSON.stringify(msg.result)}`);
-      }
-    });
-
-    setTimeout(() => {
-      ws.close();
-      resolve(logs);
-    }, listenSeconds * 1000);
+    if (kickoff) {
+      await setTimeout(KICKOFF_DELAY_MS);
+      socket.send(
+        JSON.stringify({
+          id: 3,
+          method: "Runtime.evaluate",
+          params: {
+            expression: kickoff,
+            awaitPromise: true,
+            returnByValue: true
+          }
+        })
+      );
+    }
   });
+
+  socket.on("message", (rawData: string) => {
+    const msg = JSON.parse(rawData);
+    if (msg.method === "Runtime.consoleAPICalled") {
+      const text = msg.params.args.map((arg: Record<string, unknown>) => arg.value ?? arg.description ?? JSON.stringify(arg)).join(" ");
+      logs.push(`[${msg.params.type}] ${text}`);
+    }
+
+    if (msg.method === "Runtime.exceptionThrown") {
+      const detail = msg.params.exceptionDetails;
+      logs.push(`[EX] ${detail?.exception?.description ?? detail?.text ?? "?"}`);
+    }
+
+    if (msg.method === "Log.entryAdded") {
+      logs.push(`[log:${msg.params.entry.level}] ${msg.params.entry.text}`);
+    }
+
+    if (msg.id === 3) {
+      logs.push(`[eval result] ${JSON.stringify(msg.result)}`);
+    }
+  });
+
+  await setTimeout(listenSeconds * 1000);
+  socket.close();
+  return logs;
 }
 
 // Call startBackgroundDownload directly from SW with a minimal payload
@@ -81,10 +110,10 @@ const kickoff = `
 })()
 `;
 
-const swLogs = await runCDP(sw.webSocketDebuggerUrl, 3, kickoff);
+const swLogs = await runCDP(serviceWorker!.webSocketDebuggerUrl!, LISTEN_DURATION_S, kickoff);
 console.log("\n--- SW logs ---");
-swLogs.forEach(l => console.log(l));
+swLogs.forEach(line => console.log(line));
 
-const offLogs = await runCDP(offscreen.webSocketDebuggerUrl, 3, null);
+const offLogs = await runCDP(offscreen!.webSocketDebuggerUrl!, LISTEN_DURATION_S, null);
 console.log("\n--- Offscreen logs (passive, 3s) ---");
-offLogs.forEach(l => console.log(l));
+offLogs.forEach(line => console.log(line));

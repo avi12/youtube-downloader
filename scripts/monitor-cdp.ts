@@ -1,64 +1,75 @@
 /**
  * Monitor console logs from service worker and offscreen document via CDP.
- * Chrome only — for Firefox use monitor-firefox.mjs instead.
+ * Chrome only - for Firefox use monitor-firefox.ts instead.
  * Usage: node scripts/monitor-cdp.mjs [durationSeconds]
  */
-import http from "http";
-import { createRequire } from "module";
-
-const require = createRequire(import.meta.url);
-const WebSocket = require("C:\\Users\\Avi\\AppData\\Roaming\\npm\\node_modules\\@google\\gemini-cli\\node_modules\\ws\\index.js");
+import http from "node:http";
+import { setTimeout } from "node:timers/promises";
+import WebSocket from "ws";
 
 const CDP_PORT = 9229;
-const durationMs = (parseInt(process.argv[2] ?? "20") || 20) * 1000;
-
 const CHROME_EXT_ID = "iakmamcpgldfjjbeamagdkelogmokjpj";
+const DEFAULT_DURATION_S = 20;
+const durationMs = (parseInt(process.argv[2] ?? String(DEFAULT_DURATION_S)) || DEFAULT_DURATION_S) * 1000;
 
-async function listTargets() {
+interface CdpTarget {
+  id: string;
+  type: string;
+  url?: string;
+  webSocketDebuggerUrl?: string;
+}
+
+async function listTargets(): Promise<CdpTarget[]> {
   return new Promise((resolve, reject) => {
     const req = http.get(`http://localhost:${CDP_PORT}/json`, res => {
-      let d = "";
-      res.on("data", c => d += c);
-      res.on("end", () => resolve(JSON.parse(d)));
+      let data = "";
+      res.on("data", chunk => data += chunk);
+      res.on("end", () => {
+        const parsed: CdpTarget[] = JSON.parse(data);
+        resolve(parsed);
+      });
       res.on("error", reject);
     });
     req.on("error", reject);
   });
 }
 
-function monitor(wsUrl, label) {
-  return new Promise(resolve => {
-    const ws = new WebSocket(wsUrl);
-    const timer = setTimeout(() => {
-      ws.close(); resolve();
-    }, durationMs);
+async function monitor(wsUrl: string, label: string) {
+  const socket = new WebSocket(wsUrl);
 
-    ws.on("open", () => {
-      ws.send(JSON.stringify({ id: 1, method: "Runtime.enable" }));
-    });
-
-    ws.on("message", data => {
-      const msg = JSON.parse(data);
-      if (msg.method === "Runtime.consoleAPICalled") {
-        const text = msg.params.args
-          .map(a => a.value ?? a.description ?? JSON.stringify(a))
-          .join(" ");
-        console.log(`[${label}][${msg.params.type}] ${text}`);
-      }
-
-      if (msg.method === "Runtime.exceptionThrown") {
-        const detail = msg.params.exceptionDetails;
-        console.error(`[${label}][EX] ${detail?.exception?.description ?? detail?.text ?? "?"}`);
-      }
-    });
-
-    ws.on("error", e => {
-      clearTimeout(timer); console.error(`[${label}] WS error:`, e.message); resolve();
-    });
+  socket.on("open", () => {
+    socket.send(
+      JSON.stringify({
+        id: 1,
+        method: "Runtime.enable"
+      })
+    );
   });
+
+  socket.on("message", (rawData: string) => {
+    const msg = JSON.parse(rawData);
+    if (msg.method === "Runtime.consoleAPICalled") {
+      const text = msg.params.args
+        .map((arg: Record<string, unknown>) => arg.value ?? arg.description ?? JSON.stringify(arg))
+        .join(" ");
+      console.log(`[${label}][${msg.params.type}] ${text}`);
+    }
+
+    if (msg.method === "Runtime.exceptionThrown") {
+      const detail = msg.params.exceptionDetails;
+      console.error(`[${label}][EX] ${detail?.exception?.description ?? detail?.text ?? "?"}`);
+    }
+  });
+
+  socket.on("error", (error: Error) => {
+    console.error(`[${label}] WS error:`, error.message);
+  });
+
+  await setTimeout(durationMs);
+  socket.close();
 }
 
-let targets;
+let targets: CdpTarget[];
 try {
   targets = await listTargets();
 } catch {
@@ -66,21 +77,21 @@ try {
   process.exit(1);
 }
 
-const sw = targets.find(t => t.type === "service_worker" && t.url?.includes(CHROME_EXT_ID));
-const offscreen = targets.find(t => t.url?.includes(`${CHROME_EXT_ID}/offscreen`));
+const serviceWorker = targets.find(target => target.type === "service_worker" && target.url?.includes(CHROME_EXT_ID));
+const offscreen = targets.find(target => target.url?.includes(`${CHROME_EXT_ID}/offscreen`));
 
-console.log("SW:", sw?.webSocketDebuggerUrl ?? "not found");
+console.log("SW:", serviceWorker?.webSocketDebuggerUrl ?? "not found");
 console.log("Offscreen:", offscreen?.webSocketDebuggerUrl ?? "not found");
 console.log(`Monitoring for ${durationMs / 1000}s...\n`);
 
-if (!sw && !offscreen) {
+if (!serviceWorker && !offscreen) {
   console.error(`No extension targets found on port ${CDP_PORT}. Is the dev server running?`);
   process.exit(1);
 }
 
 await Promise.all([
-  sw ? monitor(sw.webSocketDebuggerUrl, "SW") : Promise.resolve(),
-  offscreen ? monitor(offscreen.webSocketDebuggerUrl, "OFFSCREEN") : Promise.resolve()
+  serviceWorker ? monitor(serviceWorker.webSocketDebuggerUrl!, "SW") : Promise.resolve(),
+  offscreen ? monitor(offscreen.webSocketDebuggerUrl!, "OFFSCREEN") : Promise.resolve()
 ]);
 
 console.log("Done.");
