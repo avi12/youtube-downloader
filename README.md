@@ -1,6 +1,7 @@
 # YouTube Downloader
 
-A browser extension for downloading YouTube videos with full format control, batch playlist downloads, and a built-in download manager.
+A browser extension for downloading YouTube videos with full format control, batch playlist downloads, and a built-in
+download manager.
 
 Made by [Avi](https://avi12.com)
 
@@ -29,7 +30,8 @@ Chrome, Edge, Opera, Opera GX, and Firefox (all MV3).
 
 - Per-video download buttons and checkboxes injected into each playlist item
 - Batch download selected videos with one click
-- **Speed** - choose between sequential (one at a time) or parallel (muxing phases overlap, SABR sessions stay sequential)
+- **Speed** - choose between sequential (one at a time) or parallel (muxing phases overlap, SABR sessions stay
+  sequential)
 - **Output** - separate files or a single ZIP archive; customize the ZIP filename
 - **Type** - video + audio, video only, or audio only for the whole batch
 - **Format** - per-type file extension override (e.g. force `.mp3` for audio)
@@ -85,7 +87,8 @@ pnpm dev:stable
 pnpm dev:stable-firefox
 ```
 
-The dev server builds for production (with source maps), launches a browser with the extension sideloaded, and reloads both the extension and any open YouTube tabs on every file change under `src/`.
+The dev server builds for production (with source maps), launches a browser with the extension sideloaded, and reloads
+both the extension and any open YouTube tabs on every file change under `src/`.
 
 ### Other dev commands
 
@@ -102,10 +105,10 @@ pnpm knip                 # Dead code detection
 
 ## Tech stack
 
-| Layer | Package |
-|---|---|
-| Extension framework | [WXT](https://wxt.dev) |
-| UI | [Svelte 5](https://svelte.dev) |
-| Video/audio muxing | [@ffmpeg/ffmpeg](https://github.com/ffmpegwasm/ffmpeg.wasm) |
-| Messaging | [@webext-core/messaging](https://webext-core.aklinker1.io) |
-| Streaming | SABR (YouTube's Scalable Adaptive Bit Rate protocol) |
+| Layer               | Package                                                     |
+|---------------------|-------------------------------------------------------------|
+| Extension framework | [WXT](https://wxt.dev)                                      |
+| UI                  | [Svelte 5](https://svelte.dev)                              |
+| Video/audio muxing  | [@ffmpeg/ffmpeg](https://github.com/ffmpegwasm/ffmpeg.wasm) |
+| Messaging           | [@webext-core/messaging](https://webext-core.aklinker1.io)  |
+| Streaming           | SABR (YouTube's Scalable Adaptive Bit Rate protocol)        |
