@@ -301,6 +301,7 @@
   .ytdl-button-group {
     display: inline-flex;
     flex-direction: column;
+    margin-inline-start: 8px;
   }
 
   .ytdl-button-row {
