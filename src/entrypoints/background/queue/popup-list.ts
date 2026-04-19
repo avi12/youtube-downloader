@@ -31,7 +31,9 @@ export async function enqueueToPopupList({ videoId, type, filenameOutput }: {
   }
 }
 
-export async function removeFromPopupList(videoId: string) {
+export async function removeFromPopupList(videoIds: string | string[]) {
+  const toRemove = new Set(typeof videoIds === "string" ? [videoIds] : videoIds);
+
   const [queue, musicList, videoOnlyList, details] = await Promise.all([
     videoQueueItem.getValue(),
     musicListItem.getValue(),
@@ -39,29 +41,29 @@ export async function removeFromPopupList(videoId: string) {
     videoDetailsItem.getValue()
   ]);
 
-  const iQueue = queue.findIndex(item => item.videoId === videoId);
-  const iMusic = musicList.indexOf(videoId);
-  const iVideoOnly = videoOnlyList.indexOf(videoId);
-  const isDetailPresent = videoId in details;
+  const filteredQueue = queue.filter(item => !toRemove.has(item.videoId));
+  const filteredMusic = musicList.filter(id => !toRemove.has(id));
+  const filteredVideoOnly = videoOnlyList.filter(id => !toRemove.has(id));
 
   const writes: Promise<void>[] = [];
-  if (iQueue !== -1) {
-    queue.splice(iQueue, 1);
-    writes.push(videoQueueItem.setValue(queue));
+  if (filteredQueue.length !== queue.length) {
+    writes.push(videoQueueItem.setValue(filteredQueue));
   }
 
-  if (iMusic !== -1) {
-    musicList.splice(iMusic, 1);
-    writes.push(musicListItem.setValue(musicList));
+  if (filteredMusic.length !== musicList.length) {
+    writes.push(musicListItem.setValue(filteredMusic));
   }
 
-  if (iVideoOnly !== -1) {
-    videoOnlyList.splice(iVideoOnly, 1);
-    writes.push(videoOnlyListItem.setValue(videoOnlyList));
+  if (filteredVideoOnly.length !== videoOnlyList.length) {
+    writes.push(videoOnlyListItem.setValue(filteredVideoOnly));
   }
 
-  if (isDetailPresent) {
-    delete details[videoId];
+  const removedDetails = [...toRemove].filter(id => id in details);
+  if (removedDetails.length > 0) {
+    for (const id of removedDetails) {
+      delete details[id];
+    }
+
     writes.push(videoDetailsItem.setValue(details));
   }
 

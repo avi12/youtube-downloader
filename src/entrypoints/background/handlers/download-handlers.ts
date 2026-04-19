@@ -275,12 +275,12 @@ export function registerDownloadHandlers() {
     for (const videoId of data.videoIds) {
       cancelBackgroundDownload(videoId);
       signalVideoComplete(videoId);
-      void removeFromPopupList(videoId);
       for (const tabId of getTabIdsForVideo(videoId)) {
         void sendMessage(MessageType.RemoveDownloadIframe, { videoId }, tabId);
       }
     }
 
+    void removeFromPopupList(data.videoIds);
     void cancelDownloads(data.videoIds);
   });
 
