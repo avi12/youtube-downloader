@@ -179,6 +179,7 @@ async function dispatchParallel({ items, tabId, signal }: {
 }
 
 let currentSequenceAbort: AbortController | null = null;
+let currentSequenceTabId: number | null = null;
 
 export function registerDownloadHandlers() {
   initIframeReadyListener();
@@ -243,6 +244,7 @@ export function registerDownloadHandlers() {
 
     currentSequenceAbort?.abort();
     currentSequenceAbort = null;
+    currentSequenceTabId = tabId;
 
     for (const item of data.items) {
       await enqueueToPopupList({
@@ -274,14 +276,33 @@ export function registerDownloadHandlers() {
     currentSequenceAbort = null;
     markVideosCancelled(data.videoIds);
 
+    const progressRemoval = {
+      progress: 0,
+      progressType: ProgressType.Video,
+      isRemoved: true
+    } as const;
+
     for (const videoId of data.videoIds) {
       cancelBackgroundDownload(videoId);
       signalVideoComplete(videoId);
-      for (const tabId of getTabIdsForVideo(videoId)) {
+      const trackedTabIds = getTabIdsForVideo(videoId);
+      for (const tabId of trackedTabIds) {
         void sendMessage(MessageType.RemoveDownloadIframe, { videoId }, tabId);
+        void sendMessage(MessageType.UpdateDownloadProgress, {
+          videoId,
+          ...progressRemoval
+        }, tabId);
+      }
+
+      if (currentSequenceTabId && !trackedTabIds.includes(currentSequenceTabId)) {
+        void sendMessage(MessageType.UpdateDownloadProgress, {
+          videoId,
+          ...progressRemoval
+        }, currentSequenceTabId);
       }
     }
 
+    currentSequenceTabId = null;
     void removeFromPopupList(data.videoIds);
     void cancelDownloads(data.videoIds);
   });

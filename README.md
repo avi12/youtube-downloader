@@ -2,7 +2,7 @@
 
 A browser extension for downloading YouTube videos with full format control, batch playlist downloads, and a built-in download manager.
 
-Made by [avi12](https://avi12.com)
+Made by [Avi](https://avi12.com)
 
 ## Supported browsers
 
@@ -38,15 +38,17 @@ Chrome, Edge, Opera, Opera GX, and Firefox (all MV3).
 - Select all / deselect all actions
 - Individual downloads are cancellable mid-flight
 
-### Grid pages (subscriptions, channel pages, search)
+### Subscriptions, channel pages, and search
 
 - Download buttons injected directly into YouTube's video card menus
 - Uses background service-worker fetch to bypass CORS restrictions on `googlevideo.com`
+- Downloads resume automatically on a flaky connection - partial progress is not lost
 
 ### Popup - Download manager
 
 - Live progress bars for every active download (video, audio, processing, ZIP phases)
 - Cancel individual downloads or cancel all at once
+- Downloads resume automatically if the connection drops mid-transfer
 - Recent downloads list - thumbnail, title, channel, file size, relative timestamp
 - Per-item actions: show in folder, change format, remove from history
 
