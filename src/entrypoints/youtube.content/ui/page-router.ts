@@ -3,12 +3,10 @@ import { cleanupPanelUi } from "./panel-ui";
 import { cleanupPlaylistUi, handlePlaylistVideoAdditions, injectPlaylistDownloaderUi } from "./playlist-ui";
 import { contentOptions } from "@/lib/ui/synced-stores.svelte";
 
-const NATIVE_DOWNLOAD_SELECTOR = "ytd-download-button-renderer";
+const HIDE_NATIVE_DOWNLOAD_CLASS = "ytdl-hide-native-download";
 
 export function setNativeDownloadVisibility(isVisible: boolean) {
-  for (const elButton of document.querySelectorAll<HTMLElement>(NATIVE_DOWNLOAD_SELECTOR)) {
-    elButton.style.display = isVisible ? "" : "none";
-  }
+  document.documentElement.classList.toggle(HIDE_NATIVE_DOWNLOAD_CLASS, !isVisible);
 }
 
 export function handlePageChange({ url, context }: {
@@ -26,7 +24,7 @@ export function handlePageChange({ url, context }: {
     return;
   }
 
-  setNativeDownloadVisibility(true);
+  setNativeDownloadVisibility(contentOptions.value.isShowNativeDownload);
 
   if (pathname === "/playlist") {
     void injectPlaylistDownloaderUi(context);
