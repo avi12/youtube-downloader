@@ -57,8 +57,9 @@ function parseSearchResult(item: SearchItem) {
     return null;
   }
 
-  const titleRuns = columns[0].musicResponsiveListItemFlexColumnRenderer?.text?.runs;
-  const metadataRuns = columns[1].musicResponsiveListItemFlexColumnRenderer?.text?.runs;
+  const [firstColumn, secondColumn] = columns;
+  const titleRuns = firstColumn.musicResponsiveListItemFlexColumnRenderer?.text?.runs;
+  const metadataRuns = secondColumn.musicResponsiveListItemFlexColumnRenderer?.text?.runs;
   if (!titleRuns || !metadataRuns) {
     return null;
   }

@@ -20,7 +20,7 @@
 
   $effect(() => {
     if (!selectedTarget && availableTargets.length > 0) {
-      selectedTarget = availableTargets[0];
+      [selectedTarget] = availableTargets;
     }
   });
   let isSubmitting = $state(false);

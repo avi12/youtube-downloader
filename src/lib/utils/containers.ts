@@ -120,8 +120,8 @@ export function resolveVideoFilename({ videoData, options, titleOverride }: {
   options: Options;
   titleOverride?: string;
 }) {
-  const videoFormat = videoData.videoFormats[0] ?? null;
-  const audioFormat = videoData.audioFormats[0] ?? null;
+  const [videoFormat = null] = videoData.videoFormats;
+  const [audioFormat = null] = videoData.audioFormats;
   const extPref = videoData.isMusic ? options.ext.audio : options.ext.video;
   const defaultFormat = videoData.isMusic ? audioFormat : videoFormat;
   const resolvedExtension = resolveAutoExtension({

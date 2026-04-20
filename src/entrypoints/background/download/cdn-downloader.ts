@@ -94,9 +94,10 @@ export async function downloadViaCdn({ request, signal, videoId, tabId }: {
     });
   }
 
+  const [videoData = null, audioData = null] = cdnResults;
   return {
-    videoData: cdnResults[0] ?? null,
-    audioData: cdnResults[1] ?? null,
+    videoData,
+    audioData,
     additionalAudioTracks
   };
 }

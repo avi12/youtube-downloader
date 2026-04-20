@@ -25,7 +25,7 @@ export function handleProcessStreamEnd(data: {
   STREAM_ACCUMULATORS.delete(videoId);
 
   const primaryAudio = accumulator?.audioStreams.get("audio");
-  const extraTrackLabels = audioTrackLabels.slice(1);
+  const [primaryAudioLabel, ...extraTrackLabels] = audioTrackLabels;
   const additionalAudioStreams = extraTrackLabels.map((label, iTrack) => {
     const audioStream = accumulator?.audioStreams.get(`audio-extra-${iTrack}`);
     return {
@@ -58,7 +58,7 @@ export function handleProcessStreamEnd(data: {
       : null,
     videoMimeType,
     audioMimeType,
-    primaryAudioLabel: audioTrackLabels[0],
+    primaryAudioLabel,
     additionalAudioStreams,
     tabId,
     playlistId,

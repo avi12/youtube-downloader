@@ -174,9 +174,8 @@ function parseDescriptionMetadata(description: string) {
 
   const lines = description.split("\n").filter(line => line.trim());
   const titleArtistLine = lines[1] ?? "";
-  const parts = titleArtistLine.split(" · ");
-  const songTitle = parts[0]?.trim() || undefined;
-  const artists = parts.slice(1);
+  const [rawTitle, ...artists] = titleArtistLine.split(" · ");
+  const songTitle = rawTitle?.trim() || undefined;
   const mainArtist = artists[0]?.trim() || undefined;
   const artist = artists.join(", ") || undefined;
   const album = lines[2]?.trim() || undefined;

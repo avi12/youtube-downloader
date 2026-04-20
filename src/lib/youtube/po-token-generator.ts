@@ -125,7 +125,7 @@ export async function generatePoToken(videoId: string) {
     throw new Error("No integrity token received");
   }
 
-  const signalFunction = webPoSignalOutput[0];
+  const [signalFunction] = webPoSignalOutput;
   if (typeof signalFunction !== "function") {
     throw new Error("WebPo signal function not available");
   }

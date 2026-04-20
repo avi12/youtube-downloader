@@ -12,10 +12,12 @@ interface DownloadButtonState {
 }
 
 export function buildInitialDownloadState(videoData: VideoData): DownloadButtonState {
-  let videoItag = videoData.videoFormats[0]?.itag ?? 0;
-  let audioItag = videoData.audioFormats[0]?.itag ?? 0;
-  const videoMime = videoData.videoFormats[0]?.mimeType ?? "video/mp4";
-  const audioMime = videoData.audioFormats[0]?.mimeType ?? "audio/mp4";
+  const [videoFormat] = videoData.videoFormats;
+  const [audioFormat] = videoData.audioFormats;
+  let videoItag = videoFormat?.itag ?? 0;
+  let audioItag = audioFormat?.itag ?? 0;
+  const videoMime = videoFormat?.mimeType ?? "video/mp4";
+  const audioMime = audioFormat?.mimeType ?? "audio/mp4";
 
   let extension: string;
   if (videoData.isMusic) {
