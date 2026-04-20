@@ -67,7 +67,10 @@ export async function fetchVideoViaSabrStream({ sabrConfig, videoFormat, fetchFn
     poToken
   });
   const targetFormat = adaptiveFormatToSabrFormat(videoFormat);
-  const { videoStream } = await sabrStream.start({ videoFormat: targetFormat });
+  const { videoStream } = await sabrStream.start({
+    videoFormat: targetFormat,
+    maxRetries: 2
+  });
   return collectReadableStream({
     stream: videoStream,
     expectedBytes: parseInt(videoFormat.contentLength, 10)
@@ -86,7 +89,10 @@ export async function fetchAudioViaSabrStream({ sabrConfig, audioFormat, fetchFn
     poToken
   });
   const targetFormat = adaptiveFormatToSabrFormat(audioFormat);
-  const { audioStream } = await sabrStream.start({ audioFormat: targetFormat });
+  const { audioStream } = await sabrStream.start({
+    audioFormat: targetFormat,
+    maxRetries: 2
+  });
   return collectReadableStream({
     stream: audioStream,
     expectedBytes: parseInt(audioFormat.contentLength, 10)

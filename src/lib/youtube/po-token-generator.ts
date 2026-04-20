@@ -143,9 +143,6 @@ export async function generatePoToken(videoId: string) {
     throw new Error("Mint function not available");
   }
 
-  // mintFunction produces a CDN-format token of (integrityBytes + 14 + videoIdBytes) bytes.
-  // SABR requires exactly 30 bytes; the first 30 bytes of the mint output are the SABR-compatible token.
   const tokenBytes = await mintFunction(new TextEncoder().encode(videoId));
-  const SABR_TOKEN_BYTE_LENGTH = 30;
-  return btoa(String.fromCharCode(...tokenBytes.slice(0, SABR_TOKEN_BYTE_LENGTH)));
+  return btoa(String.fromCharCode(...tokenBytes));
 }

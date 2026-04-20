@@ -2,7 +2,6 @@ import { resolve } from "node:path";
 import { defineConfig } from "wxt";
 
 const ffmpegAssetPaths = [
-  "node_modules/@ffmpeg/core/dist/umd/ffmpeg-core.js",
   "node_modules/@ffmpeg/core/dist/umd/ffmpeg-core.wasm"
 ];
 
