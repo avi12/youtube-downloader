@@ -308,7 +308,7 @@ export function registerDownloadHandlers() {
   });
 
   onMessage(MessageType.StartBackgroundDownload, async ({ data, sender }) => {
-    const tabId = sender.tab?.id ?? -1;
+    const tabId = sender.tab?.id ?? getTabIdsForVideo(data.videoId)[0] ?? -1;
     trackVideoForTab({
       videoId: data.videoId,
       tabId

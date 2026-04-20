@@ -1,7 +1,7 @@
 import { registerDownloadHandlers } from "./handlers/download-handlers";
 import { registerPipelineHandlers } from "./handlers/pipeline-handlers";
 import { ensureProcessor } from "./handlers/processor";
-import { tabTracker, trackVideoForTab, untrackVideoForTab } from "./queue/tab-tracker";
+import { getTabIdsForVideo, tabTracker, trackVideoForTab, untrackVideoForTab } from "./queue/tab-tracker";
 import { registerRecentDownloadsRetention } from "./recent/recent-downloads-retention";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
@@ -68,7 +68,7 @@ async function registerSabrOriginRule() {
 
 function registerChunkHandlers() {
   onMessage(MessageType.StreamChunk, async ({ data, sender }) => {
-    const tabId = sender.tab?.id;
+    const tabId = sender.tab?.id ?? getTabIdsForVideo(data.videoId)[0];
     if (!tabId) {
       return;
     }
@@ -81,7 +81,7 @@ function registerChunkHandlers() {
   });
 
   onMessage(MessageType.StreamEnd, async ({ data, sender }) => {
-    const tabId = sender.tab?.id;
+    const tabId = sender.tab?.id ?? getTabIdsForVideo(data.videoId)[0];
     if (!tabId) {
       return;
     }
@@ -175,7 +175,7 @@ function registerTabLifecycleHandlers() {
   });
 }
 
-export default defineBackground(() => {
+export default defineBackground(async () => {
   void registerSabrOriginRule();
   startSabrRequestCapture();
   onSabrBodyCaptured(tabId => {
@@ -190,9 +190,8 @@ export default defineBackground(() => {
 
   if (import.meta.env.FIREFOX) {
     const processorUrl = browser.runtime.getURL("/offscreen.html");
-    void browser.tabs.query({ url: processorUrl }).then(
-      tabs => Promise.all(tabs.map(tab => tab.id !== undefined ? browser.tabs.remove(tab.id) : Promise.resolve()))
-    );
+    const tabs = await browser.tabs.query({ url: processorUrl });
+    await Promise.all(tabs.map(tab => tab.id !== undefined ? browser.tabs.remove(tab.id) : Promise.resolve()));
   }
 
   void ensureProcessor();
