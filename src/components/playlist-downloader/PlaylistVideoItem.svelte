@@ -56,7 +56,7 @@
   const isInProgressInZipBatch = $derived(isZipBatchActive && !itemState.isDownloading);
 
   const isProgressBarVisible = $derived(
-    itemState.isDownloading || itemState.isDone || itemState.isLocallyDone || isInProgressInZipBatch
+    isPlaylistItem && (itemState.isDownloading || itemState.isDone || itemState.isLocallyDone || isInProgressInZipBatch)
   );
 
   const isProgressBarIndeterminate = $derived(
@@ -226,7 +226,19 @@
     }
 
     elDownloadBtn = elButton;
+
+    // Direct listener as fallback: Polymer may strip data-ytdl-button-id from non-first
+    // buttons before the MAIN world's SetButtonData handler can run querySelector,
+    // leaving those buttons without a click binding. This ISOLATED-world listener
+    // fires regardless and is guarded by activeDownloadClicks in handleDownloadClick.
+    function onDownloadClick() {
+      if (!isInProgressInZipBatch) {
+        queueMicrotask(() => void itemState.handleDownloadClick());
+      }
+    }
+    elButton.addEventListener("click", onDownloadClick);
     refreshDownloadButton();
+    return () => elButton.removeEventListener("click", onDownloadClick);
   }
 
   function attachChevronButton(elButton: Element) {
@@ -235,8 +247,14 @@
     }
 
     elChevronBtn = elButton;
+
+    function onChevronClick() {
+      queueMicrotask(togglePanel);
+    }
+    elButton.addEventListener("click", onChevronClick);
     refreshChevronButton();
     elButton.setAttribute("style", "margin-left: 0 !important");
+    return () => elButton.removeEventListener("click", onChevronClick);
   }
 
   $effect(() => onButtonClick(buttonId => {
@@ -329,6 +347,9 @@
   }
 
   .ytdl-progress-bar {
+    --paper-progress-active-color: var(--yt-spec-brand-link-text, #3ea6ff);
+    --paper-progress-container-color: var(--yt-spec-10-percent-layer, rgb(255 255 255 / 10%));
+
     block-size: 100%;
     inline-size: 100%;
   }
