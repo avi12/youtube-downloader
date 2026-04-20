@@ -186,7 +186,11 @@ export function injectGridVideoButtons(context: InstanceType<typeof ContentScrip
   gridObserver = new MutationObserver(observePendingCards);
 
   const elPageContent = document.querySelector(Selector.PageManager) ?? document.body;
-  gridObserver.observe(elPageContent, CHILD_LIST_SUBTREE);
+  gridObserver.observe(elPageContent, {
+    ...CHILD_LIST_SUBTREE,
+    attributes: true,
+    attributeFilter: ["data-ytdl-content-id"]
+  });
   context.onInvalidated(() => {
     gridObserver?.disconnect();
     visibilityObserver?.disconnect();

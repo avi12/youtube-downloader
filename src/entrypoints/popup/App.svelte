@@ -170,7 +170,8 @@
   }
 
   .popup-header {
-    padding: 16px 16px 0;
+    padding-block: 16px 0;
+    padding-inline: 16px;
     background: var(--bg);
   }
 
