@@ -1,4 +1,5 @@
 import { registerGridDropdownHandlers } from "./grid/grid-dropdown";
+import { registerGridTagger } from "./grid/grid-tagger";
 import { registerGridVideoDataHandler } from "./grid/grid-video-data";
 import { cancelActiveDownload, performDownload } from "./video/download";
 import { extractPlaylistMetadata, handleNavigateSuccess } from "./video/playlist-metadata";
@@ -118,6 +119,7 @@ export default defineContentScript({
     });
 
     registerGridDropdownHandlers();
+    registerGridTagger();
     registerGridVideoDataHandler();
 
     document.addEventListener("yt-navigate-finish", handleNavigateSuccess);
