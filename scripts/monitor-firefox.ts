@@ -139,14 +139,23 @@ function subscribeWatcher(rdp: RDP, watcherActor: string) {
 
 // ── Message formatter ────────────────────────────────────────────────────────
 
-function formatArgs(args: (string | Record<string, unknown>)[] = []) {
+function formatArgs(args: unknown[] = []) {
   return args.map(arg => {
     if (typeof arg === "string") {
       return arg;
     }
 
-    if (arg?.type === "object") {
-      const className = arg.class;
+    if (typeof arg !== "object" || arg === null || Array.isArray(arg)) {
+      return JSON.stringify(arg);
+    }
+
+    const objArg = arg as Record<string, unknown>;
+    if (objArg.type === "string" && typeof objArg.value === "string") {
+      return objArg.value;
+    }
+
+    if (objArg.type === "object") {
+      const className = objArg.class;
       return `[${typeof className === "string" ? className : "Object"}]`;
     }
 
@@ -236,7 +245,7 @@ rdp.onEvent = (packet: Record<string, unknown>) => {
 
       const levelValue = rawMessage.level;
       const level = typeof levelValue === "string" ? levelValue : "log";
-      const rawArgs = Array.isArray(rawMessage.arguments) ? rawMessage.arguments.filter(isRecordObject) : [];
+      const rawArgs: unknown[] = Array.isArray(rawMessage.arguments) ? rawMessage.arguments : [];
       const formattedArgs = formatArgs(rawArgs);
       if (!formattedArgs.trim()) {
         continue;

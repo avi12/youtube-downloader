@@ -39,9 +39,9 @@
       return "0 B";
     }
 
-    const unitIndex = Math.min(Math.floor(Math.log2(bytes) / 10), BYTE_UNITS.length - 1);
-    const scaled = (bytes / 1024 ** unitIndex).toFixed(BYTE_DECIMALS[unitIndex]);
-    return `${scaled} ${BYTE_UNITS[unitIndex]}`;
+    const iUnit = Math.min(Math.floor(Math.log2(bytes) / 10), BYTE_UNITS.length - 1);
+    const scaled = (bytes / 1024 ** iUnit).toFixed(BYTE_DECIMALS[iUnit]);
+    return `${scaled} ${BYTE_UNITS[iUnit]}`;
   }
 
   function closeMenu() {
