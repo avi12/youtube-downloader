@@ -36,33 +36,22 @@ function getExtraAudioFormats({ audioFormats, selectedTrackId }: {
 }
 
 function resolveCredentials() {
-  let currentPoToken = capturedPoToken;
-  let currentSabrUrl = capturedSabrUrl;
-
   const creds = sabrCredentials.value;
-  if (creds?.url) {
-    currentSabrUrl = creds.url;
-  }
+  const elCredentials = document.getElementById("ytdl-sabr-credentials");
 
-  if (!currentPoToken && creds?.poToken) {
-    currentPoToken = creds.poToken;
-  }
+  const currentPoToken =
+    creds?.poToken ||
+    elCredentials?.dataset.poToken ||
+    capturedPoToken;
 
-  if (!currentPoToken || !currentSabrUrl) {
-    const elCredentials = document.getElementById("ytdl-sabr-credentials");
-    if (elCredentials?.dataset.url) {
-      currentSabrUrl = elCredentials.dataset.url;
-    }
-
-    if (!currentPoToken && elCredentials?.dataset.poToken) {
-      currentPoToken = elCredentials.dataset.poToken;
-    }
-  }
-
+  const currentSabrUrl =
+    creds?.url ||
+    elCredentials?.dataset.url ||
+    capturedSabrUrl;
   if (currentPoToken !== capturedPoToken || currentSabrUrl !== capturedSabrUrl) {
     setPoTokenCredentials({
-      poToken: currentPoToken,
-      sabrUrl: currentSabrUrl
+      poToken: currentPoToken ?? "",
+      sabrUrl: currentSabrUrl ?? ""
     });
   }
 
@@ -164,8 +153,6 @@ export async function performDownload({
       audioFormats: cachedVideoData.audioFormats,
       selectedTrackId: audioFormat?.audioTrack?.id
     });
-    // BotGuard's synchronous VM briefly blocks the main thread,
-    // so do it at click-time (expected latency) rather than download completion.
     await generatePoTokenIfNeeded(cachedVideoData);
     const credentials = await resolveCredentialsWithRetry();
 

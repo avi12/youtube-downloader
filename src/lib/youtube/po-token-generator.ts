@@ -92,17 +92,22 @@ export async function generatePoToken(videoId: string) {
     throw new Error(`BotGuard VM not found at window.${globalName}`);
   }
 
-  // Async callback doesn't work from content script, so use sync snapshot.
-  const webPoSignalOutput: [((input: Uint8Array) => Promise<(input: Uint8Array) => Promise<Uint8Array>>)?] = [];
-  const initResult = botGuardVm.a(program, () => {}, true, undefined, () => {}, [[], []]);
-  const syncSnapshotFunction = initResult?.[0];
-  if (typeof syncSnapshotFunction !== "function") {
-    throw new Error("Sync snapshot function not available");
+  type SnapshotFn = (inputs: unknown[]) => string | null;
+  type BotGuardResult = [SnapshotFn?];
+  type SignalFn = (input: Uint8Array) => Promise<(input: Uint8Array) => Promise<Uint8Array>>;
+
+  const webPoSignalOutput: SignalFn[] = [];
+
+  type BotGuardInitResult = BotGuardResult | null | undefined;
+  const initResult: BotGuardInitResult = botGuardVm.a(
+    program, () => {}, true, undefined, () => {}, [[], []]
+  );
+  const snapshotFn = initResult?.[0];
+  if (typeof snapshotFn !== "function") {
+    throw new Error("BotGuard snapshot function not available");
   }
 
-  const snapshotResponse = syncSnapshotFunction.call(
-    null, [undefined, undefined, webPoSignalOutput, undefined]
-  );
+  const snapshotResponse = snapshotFn.call(null, [undefined, undefined, webPoSignalOutput, undefined]);
   if (!snapshotResponse) {
     throw new Error("Empty snapshot response");
   }
@@ -125,18 +130,22 @@ export async function generatePoToken(videoId: string) {
     throw new Error("No integrity token received");
   }
 
+  // TextEncoder would give UTF-8 bytes of the base64 string, not the actual token bytes.
+  const integrityTokenBytes = Uint8Array.from(atob(integrityData[0]), char => char.charCodeAt(0));
+
   const [signalFunction] = webPoSignalOutput;
   if (typeof signalFunction !== "function") {
     throw new Error("WebPo signal function not available");
   }
 
-  // TextEncoder would give UTF-8 bytes of the base64 string, not the actual token bytes.
-  const integrityTokenBytes = Uint8Array.from(atob(integrityData[0]), char => char.charCodeAt(0));
   const mintFunction = await signalFunction(integrityTokenBytes);
   if (typeof mintFunction !== "function") {
     throw new Error("Mint function not available");
   }
 
+  // mintFunction produces a CDN-format token of (integrityBytes + 14 + videoIdBytes) bytes.
+  // SABR requires exactly 30 bytes; the first 30 bytes of the mint output are the SABR-compatible token.
   const tokenBytes = await mintFunction(new TextEncoder().encode(videoId));
-  return btoa(String.fromCharCode(...tokenBytes));
+  const SABR_TOKEN_BYTE_LENGTH = 30;
+  return btoa(String.fromCharCode(...tokenBytes.slice(0, SABR_TOKEN_BYTE_LENGTH)));
 }
