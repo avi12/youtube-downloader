@@ -22,10 +22,17 @@ import {
 } from "node:fs";
 import { homedir, platform } from "node:os";
 import { resolve, join, dirname } from "node:path";
-import { debounce } from "perfect-debounce";
 import webExtRun from "web-ext-run";
 import { consoleStream as webExtConsoleStream } from "web-ext-run/util/logger";
 import { build } from "wxt";
+
+function debounce<TArgs extends unknown[]>(fn: (...args: TArgs) => Promise<void> | void, wait: number) {
+  let timeoutId: NodeJS.Timeout | undefined;
+  return (...args: TArgs) => {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => void fn(...args), wait);
+  };
+}
 
 const IS_FIREFOX = process.argv.includes("--firefox");
 const PROJECT_ROOT = resolve(import.meta.dirname, "..");
