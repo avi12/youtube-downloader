@@ -23,6 +23,7 @@ export default defineConfig({
       "webRequest",
       "declarativeNetRequest",
       "declarativeNetRequestWithHostAccess",
+      ...(browser === "firefox" ? ["webRequestBlocking"] : []),
       ...(browser === "chrome" ? ["offscreen"] : [])
     ],
     host_permissions: [
