@@ -1,0 +1,34 @@
+diff --git a/lib/firefox/preferences.js b/lib/firefox/preferences.js
+index 0ffb330216737be0d8e8d513dd059f375003b8ae..d4dcd67328d081d397ba2afc0395daf132ff17ba 100644
+--- a/lib/firefox/preferences.js
++++ b/lib/firefox/preferences.js
+@@ -42,7 +42,28 @@ const prefsCommon = {
+   // browser.link.open_newwindow is changed from 3 to 2 in:
+   // https://github.com/saadtazi/firefox-profile-js/blob/cafc793d940a779d280103ae17d02a92de862efc/lib/firefox_profile.js#L32
+   // Restore original value to avoid https://github.com/mozilla/web-ext/issues/1592
+-  'browser.link.open_newwindow': 3
++  'browser.link.open_newwindow': 3,
++
++  // ── YouTube automation-guard workaround (ytdl fork) ───────────────────────
++  // Stops Firefox from flipping the internal "automation / debugger" flags
++  // that make YouTube refuse to play video in dev Firefox.
++  // Keeps remote-debug functional (web-ext needs it to install the temp add-on)
++  // but hides the JS-visible automation signals BotGuard fingerprints.
++  // Hide navigator.webdriver from content JS. Historically controlled by this
++  // pref; on newer Firefox the internal Marionette service overrides it, which
++  // is why visibility-spoof.content.ts re-defines it in the page world as a
++  // belt-and-suspenders.
++  'dom.webdriver.enabled': false,
++  // 1 = Marionette only (what geckodriver / firefox-devtools MCP needs); do NOT
++  // set this to 0 — that kills the Marionette service and breaks MCP.
++  'remote.active-protocols': 1,
++  // Quiet Marionette so it doesn't broadcast its presence through internal
++  // prefs that some fingerprinting suites scrape.
++  'marionette.log.level': 'Fatal',
++  // Don't tell Mozilla about remote debugging sessions; reduces one more
++  // remote-control tell.
++  'toolkit.telemetry.enabled': false,
++  'toolkit.telemetry.unified': false
+ };
+ 
+ // Prefs specific to Firefox for Android.

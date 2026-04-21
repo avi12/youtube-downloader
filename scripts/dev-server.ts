@@ -250,6 +250,11 @@ async function main() {
       startUrl: [START_URL],
       keepProfileChanges: true,
       firefoxProfile: profileDirectory,
+      // --marionette is needed so the firefox-devtools MCP can attach.
+      // The pnpm patch on web-ext-run adds Firefox prefs (dom.webdriver.enabled=false,
+      // remote.active-protocols=1, marionette.log.level=Fatal) that hide the
+      // JS-observable automation signals YouTube's BotGuard fingerprints while
+      // keeping the Marionette service alive, so MCP + YouTube can coexist.
       args: [`--lang=${LANG}`, "--marionette", "--remote-debugging-port=9230"],
       noReload: true,
       noInput: true
