@@ -260,7 +260,9 @@ async function main() {
       // The pnpm patch on web-ext-run adds Firefox prefs (dom.webdriver.enabled=false,
       // remote.active-protocols=1, marionette.log.level=Fatal) that hide the
       // remaining JS-observable automation signals.
-      args: [`--lang=${LANG}`, "--marionette", "--remote-debugging-port=9230"],
+      // --allow-downgrade lets Playwright's Firefox re-open a profile previously
+      // touched by a newer stock Firefox without prompting the user to migrate.
+      args: [`--lang=${LANG}`, "--marionette", "--remote-debugging-port=9230", "--allow-downgrade"],
       noReload: true,
       noInput: true
     }
