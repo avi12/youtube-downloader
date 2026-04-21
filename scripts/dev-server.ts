@@ -12,20 +12,40 @@
  */
 
 import chokidar from "chokidar";
-import { spawnSync } from "node:child_process";
+import { execSync, spawnSync } from "node:child_process";
 import {
   existsSync,
   cpSync,
   mkdirSync,
   readFileSync,
+  rmSync,
   writeFileSync
 } from "node:fs";
 import { homedir, platform } from "node:os";
 import { resolve, join, dirname } from "node:path";
-import { firefox as playwrightFirefox } from "playwright-core";
 import webExtRun from "web-ext-run";
 import { consoleStream as webExtConsoleStream } from "web-ext-run/util/logger";
 import { build } from "wxt";
+
+function findFirefoxNightlyMsix() {
+  if (platform() !== "win32") {
+    return undefined;
+  }
+
+  try {
+    const installLocation = execSync(
+      `powershell -NoProfile -Command "(Get-AppxPackage Mozilla.MozillaFirefoxNightly -EA 0).InstallLocation"`,
+      { encoding: "utf8", timeout: 5000 }
+    ).trim();
+    if (!installLocation) {
+      return undefined;
+    }
+
+    return join(installLocation, "VFS", "ProgramFiles", "MozillaFirefoxNightly Package Root", "firefox.exe");
+  } catch {
+    return undefined;
+  }
+}
 
 function debounce<TArgs extends unknown[]>(fn: (...args: TArgs) => Promise<void> | void, wait: number) {
   let timeoutId: NodeJS.Timeout | undefined;
@@ -125,11 +145,22 @@ const FIREFOX_PROFILE_DIR = join(USER_PROFILES_DIR, "firefox");
 const FIREFOX_PROFILE_SENTINEL = join(FIREFOX_PROFILE_DIR, ".seeded");
 
 function setupFirefoxProfile() {
+  mkdirSync(FIREFOX_PROFILE_DIR, { recursive: true });
+
+  // Keep Firefox on auto/system theme (2) and tell it the system is dark
+  // (ui.systemUsesDarkTheme=1) — MSIX Firefox's dev profile sometimes can't
+  // read Windows' color scheme directly, so the pref pins the answer.
+  const userJs = [
+    `user_pref("ui.systemUsesDarkTheme", 1);`,
+    `user_pref("browser.theme.content-theme", 2);`,
+    `user_pref("browser.theme.toolbar-theme", 2);`,
+    `user_pref("layout.css.prefers-color-scheme.content-override", 2);`
+  ].join("\n") + "\n";
+  writeFileSync(join(FIREFOX_PROFILE_DIR, "user.js"), userJs);
+
   if (existsSync(FIREFOX_PROFILE_SENTINEL)) {
     return FIREFOX_PROFILE_DIR;
   }
-
-  mkdirSync(FIREFOX_PROFILE_DIR, { recursive: true });
 
   const source = findDefaultFirefoxProfilePath();
   if (source && existsSync(source)) {
@@ -149,7 +180,35 @@ function setupFirefoxProfile() {
   return FIREFOX_PROFILE_DIR;
 }
 
-// ── Firefox cleanup ─────────────────────────────────────────────────────────
+// ── Dev-profile browser cleanup ─────────────────────────────────────────────
+
+function killExistingChromeInstances() {
+  if (platform() !== "win32") {
+    return;
+  }
+
+  const script = `
+$profile = '${CHROME_PROFILE_DIR.replace(/'/g, "''")}'
+Get-CimInstance Win32_Process -Filter "name='chrome.exe'" |
+  Where-Object { $_.CommandLine -and $_.CommandLine.Contains($profile) } |
+  ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+Start-Sleep -Milliseconds 500
+`;
+  spawnSync("powershell", ["-NoProfile", "-NonInteractive", "-Command", "-"], {
+    input: script,
+    stdio: ["pipe", "ignore", "ignore"],
+    timeout: 10_000
+  });
+
+  for (const lockFile of ["lockfile", "SingletonLock", "SingletonCookie", "SingletonSocket"]) {
+    const lockPath = join(CHROME_PROFILE_DIR, lockFile);
+    if (existsSync(lockPath)) {
+      try {
+        rmSync(lockPath, { force: true });
+      } catch { /* held by OS, harmless */ }
+    }
+  }
+}
 
 function killExistingFirefoxInstances() {
   if (platform() !== "win32") {
@@ -161,53 +220,21 @@ $profile = '${FIREFOX_PROFILE_DIR.replace(/'/g, "''")}'
 Get-CimInstance Win32_Process -Filter "name='firefox.exe'" |
   Where-Object { $_.CommandLine -and $_.CommandLine.Contains($profile) } |
   ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+Start-Sleep -Milliseconds 500
 `;
   spawnSync("powershell", ["-NoProfile", "-NonInteractive", "-Command", "-"], {
     input: script,
     stdio: ["pipe", "ignore", "ignore"],
-    timeout: 5000
+    timeout: 10_000
   });
-}
 
-// ── Tab reload via HTTP CDP ─────────────────────────────────────────────────
-
-async function reloadYouTubeTabs() {
-  try {
-    const pagesResponse = await fetch(`http://localhost:${CDP_PORT}/json`);
-    const pages: Array<{
-      url: string;
-      webSocketDebuggerUrl?: string;
-    }> =
-      await pagesResponse.json();
-
-    for (const page of pages) {
-      if (!page.url?.includes("youtube.com") || !page.webSocketDebuggerUrl) {
-        continue;
-      }
-
-      const websocket = new WebSocket(page.webSocketDebuggerUrl);
-      await new Promise<void>(resolve => {
-        websocket.onopen = () => {
-          websocket.send(
-            JSON.stringify({
-              id: 1,
-              method: "Page.reload",
-              params: {}
-            })
-          );
-        };
-        websocket.onmessage = e => {
-          const data: { id?: number } = JSON.parse(String(e.data));
-          if (data.id === 1) {
-            websocket.close();
-            resolve();
-          }
-        };
-        websocket.onerror = () => resolve();
-      });
+  for (const lockFile of ["parent.lock", ".parentlock", "lock"]) {
+    const lockPath = join(FIREFOX_PROFILE_DIR, lockFile);
+    if (existsSync(lockPath)) {
+      try {
+        rmSync(lockPath, { force: true });
+      } catch { /* lock might be briefly held */ }
     }
-  } catch {
-    // CDP HTTP endpoint is not available
   }
 }
 
@@ -228,6 +255,8 @@ async function main() {
 
   if (IS_FIREFOX) {
     killExistingFirefoxInstances();
+  } else {
+    killExistingChromeInstances();
   }
 
   const profileDirectory = IS_FIREFOX ? setupFirefoxProfile() : setupChromeProfile();
@@ -244,6 +273,7 @@ async function main() {
     }
   };
 
+  const firefoxBinary = IS_FIREFOX ? findFirefoxNightlyMsix() : undefined;
   const runOptions = IS_FIREFOX
     ? {
       target: "firefox-desktop" as const,
@@ -251,17 +281,7 @@ async function main() {
       startUrl: [START_URL],
       keepProfileChanges: true,
       firefoxProfile: profileDirectory,
-      // Use Playwright's Firefox Testing build: it's a stock Firefox with the
-      // automation-detection fingerprints that YouTube's BotGuard checks
-      // already patched out, but Marionette still works so firefox-devtools
-      // MCP can attach.
-      firefox: playwrightFirefox.executablePath(),
-      // --marionette is needed so the firefox-devtools MCP can attach.
-      // The pnpm patch on web-ext-run adds Firefox prefs (dom.webdriver.enabled=false,
-      // remote.active-protocols=1, marionette.log.level=Fatal) that hide the
-      // remaining JS-observable automation signals.
-      // --allow-downgrade lets Playwright's Firefox re-open a profile previously
-      // touched by a newer stock Firefox without prompting the user to migrate.
+      firefox: firefoxBinary,
       args: [`--lang=${LANG}`, "--marionette", "--remote-debugging-port=9230", "--allow-downgrade"],
       noReload: true,
       noInput: true
@@ -301,10 +321,6 @@ async function main() {
     try {
       await buildExtension();
       await runner.reloadAllExtensions();
-
-      if (!IS_FIREFOX) {
-        await reloadYouTubeTabs();
-      }
 
       console.log(`Reloaded at ${new Date().toLocaleTimeString()}`);
     } catch (error) {
