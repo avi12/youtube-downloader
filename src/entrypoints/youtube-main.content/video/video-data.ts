@@ -3,7 +3,7 @@ import { capturedPoToken, capturedPoTokenVideoId, setPoTokenCredentials } from "
 import { buildVideoData } from "./youtube-api";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { sabrCredentials, videoDataStore } from "@/lib/ui/synced-stores.svelte";
-import { generatePoToken, refreshPoToken } from "@/lib/youtube/po-token-generator";
+import { generatePoToken } from "@/lib/youtube/po-token-generator";
 import { type PlayerResponse, type VideoData, type YtdlCaptureState } from "@/types";
 
 declare const ytcfg: {
@@ -188,31 +188,6 @@ function parseDescriptionMetadata(description: string) {
   };
 }
 
-const PO_TOKEN_BROADCAST_INTERVAL_MS = 10_000;
-const activePoTokenBroadcasts = new Set<string>();
-
-async function broadcastFreshPoToken(videoId: string) {
-  try {
-    const freshToken = await refreshPoToken(videoId);
-    if (freshToken) {
-      void crossWorldMessenger.sendMessage(CrossWorldMessage.PoTokenRefreshed, {
-        videoId,
-        poToken: freshToken
-      });
-    }
-  } catch { /* next tick retries */ }
-}
-
-function startPoTokenRefreshBroadcast(videoId: string) {
-  if (activePoTokenBroadcasts.has(videoId)) {
-    return;
-  }
-
-  activePoTokenBroadcasts.add(videoId);
-  void broadcastFreshPoToken(videoId);
-  setInterval(() => void broadcastFreshPoToken(videoId), PO_TOKEN_BROADCAST_INTERVAL_MS);
-}
-
 export async function generatePoTokenIfNeeded(videoData: VideoData) {
   if (capturedPoToken && capturedPoTokenVideoId === videoData.videoId) {
     return;
@@ -230,7 +205,6 @@ export async function generatePoTokenIfNeeded(videoData: VideoData) {
       url: sabrCredentials.value?.url || sabrUrl,
       poToken
     };
-    startPoTokenRefreshBroadcast(videoData.videoId);
   } catch (error) {
     console.warn("[ytdl] PO token generation failed:", error);
   }
@@ -285,14 +259,11 @@ export async function buildAndDispatchVideoData({ playerResponse, cancelActiveDo
   }
 
   if (self !== top) {
-    // The iframe player may play an ad before the real video, and its SABR requests would
-    // leak an ad-specific PO token into our capture. Stop the player fully so no ad plays,
-    // then generate a fresh BotGuard PO token that is unambiguously for this video.
+    // Stop the player before generating the PO token so its SABR session is released
+    // before the background download starts a new one for the same video.
     const elPlayer = document.querySelector<HTMLElement & {
-      pauseVideo?: () => void;
       stopVideo?: () => void;
     }>("#movie_player");
-    elPlayer?.pauseVideo?.();
     elPlayer?.stopVideo?.();
 
     await generatePoTokenIfNeeded(videoData);

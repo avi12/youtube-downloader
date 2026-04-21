@@ -1,33 +1,9 @@
 import type { DownloadResult } from "./background-downloader";
 import { createProgressFetch } from "./progress-fetch";
 import { sendProgressUpdate } from "./progress-fetch";
-import { rotateSabrSession } from "./session-rotator";
-import { MessageType, onMessage } from "@/lib/messaging/messaging";
-import { fetchAudioViaSabrStream, fetchVideoAudioViaSabrStream, type RotateSabrSession } from "@/lib/youtube/sabr-download";
+import { fetchAudioViaSabrStream, fetchVideoViaSabrStream } from "@/lib/youtube/sabr-download";
 import { DownloadType, ProgressType } from "@/types";
 import type { AdaptiveFormatItem, DownloadRequest, SabrConfig } from "@/types";
-
-const latestPoTokenByVideoId = new Map<string, string>();
-
-export function registerPoTokenRefreshListener() {
-  onMessage(MessageType.PoTokenRefreshed, ({ data }) => {
-    latestPoTokenByVideoId.set(data.videoId, data.poToken);
-  });
-}
-
-function buildRotateSessionCallback({ videoId, tabId }: {
-  videoId: string;
-  tabId: number;
-}): RotateSabrSession {
-  return async ({ stalePoToken }) => {
-    const fresh = await rotateSabrSession({ videoId, tabId, stalePoToken });
-    if (fresh?.poToken) {
-      latestPoTokenByVideoId.set(videoId, fresh.poToken);
-    }
-
-    return fresh;
-  };
-}
 
 export function buildEffectiveSabrConfig({ sabrConfig, sabrUrl }: {
   sabrConfig: SabrConfig;
@@ -82,8 +58,7 @@ async function downloadAudioOnlyViaSabr({ config, audioFormat, poToken, signal, 
     sabrConfig: config,
     audioFormat,
     fetchFn: sabrFetch,
-    poToken,
-    rotateSession: buildRotateSessionCallback({ videoId, tabId })
+    poToken
   });
 }
 
@@ -100,39 +75,55 @@ async function downloadVideoAudioViaSabr({
   onProgress?: () => void;
 }) {
   const totalExpectedBytes = parseContentLength(videoFormat) + parseContentLength(audioFormat);
-  let totalReceivedBytes = 0;
+  let videoReceivedBytes = 0;
+  let audioReceivedBytes = 0;
 
   function reportProgress() {
     if (totalExpectedBytes === 0) {
       return;
     }
 
+    const totalReceived = videoReceivedBytes + audioReceivedBytes;
+
     void sendProgressUpdate({
       videoId,
-      progress: Math.min(totalReceivedBytes / totalExpectedBytes, 1),
+      progress: Math.min(totalReceived / totalExpectedBytes, 1),
       progressType: ProgressType.Video,
       tabId
     });
   }
 
-  const combinedFetch = createProgressFetch({
+  const videoFetch = createProgressFetch({
     signal,
     onBytesReceived(bytes) {
-      totalReceivedBytes += bytes;
+      videoReceivedBytes += bytes;
+      onProgress?.();
+      reportProgress();
+    }
+  });
+  const audioFetch = createProgressFetch({
+    signal,
+    onBytesReceived(bytes) {
+      audioReceivedBytes += bytes;
       onProgress?.();
       reportProgress();
     }
   });
 
-  const { videoData, audioData } = await fetchVideoAudioViaSabrStream({
-    sabrConfig: config,
-    videoFormat,
-    audioFormat,
-    fetchFn: combinedFetch,
-    poToken,
-    rotateSession: buildRotateSessionCallback({ videoId, tabId })
-  });
-  return [videoData, audioData];
+  return Promise.all([
+    fetchVideoViaSabrStream({
+      sabrConfig: config,
+      videoFormat,
+      fetchFn: videoFetch,
+      poToken
+    }),
+    fetchAudioViaSabrStream({
+      sabrConfig: config,
+      audioFormat,
+      fetchFn: audioFetch,
+      poToken
+    })
+  ]);
 }
 
 async function downloadExtraAudioTracksViaSabr({ config, formats, poToken, signal, onProgress }: {

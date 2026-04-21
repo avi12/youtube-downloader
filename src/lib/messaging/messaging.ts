@@ -30,9 +30,7 @@ export const MessageType = {
   PipelineDownload: "pipelineDownload",
   RecentDownloadsChanged: "recentDownloadsChanged",
   TranscodeRecentDownload: "transcodeRecentDownload",
-  PipelineZipProgress: "pipelineZipProgress",
-  PoTokenRefreshed: "poTokenRefreshed",
-  RefreshDownloadIframe: "refreshDownloadIframe"
+  PipelineZipProgress: "pipelineZipProgress"
 } as const;
 
 interface ProtocolMap {
@@ -186,14 +184,6 @@ interface ProtocolMap {
     playlistId: string;
     isDone: boolean;
     tabId: number;
-  }): void;
-  poTokenRefreshed(data: {
-    videoId: string;
-    poToken: string;
-  }): void;
-  refreshDownloadIframe(data: {
-    videoId: string;
-    watchUrl: string;
   }): void;
 }
 

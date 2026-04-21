@@ -29,8 +29,7 @@ export const CrossWorldMessage = {
   DownloadProgress: "downloadProgress",
   DownloadViaIframe: "downloadViaIframe",
   StartBackgroundDownload: "startBackgroundDownload",
-  OptionsUpdate: "optionsUpdate",
-  PoTokenRefreshed: "poTokenRefreshed"
+  OptionsUpdate: "optionsUpdate"
 } as const;
 
 interface PageMessengerSchema {
@@ -116,10 +115,6 @@ interface PageMessengerSchema {
   [CrossWorldMessage.StartBackgroundDownload](data: DownloadRequest): void;
   [CrossWorldMessage.OptionsUpdate](data: {
     isShowNativeDownload: boolean;
-  }): void;
-  [CrossWorldMessage.PoTokenRefreshed](data: {
-    videoId: string;
-    poToken: string;
   }): void;
 }
 

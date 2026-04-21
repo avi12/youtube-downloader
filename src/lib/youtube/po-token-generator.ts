@@ -12,14 +12,14 @@ interface ChallengeResponse {
   };
 }
 
-function getYtcfgValue({ key, fallback }: {
-  key: string;
-  fallback: string;
-}) {
-  return typeof ytcfg !== "undefined" ? String(ytcfg.get(key) ?? fallback) : fallback;
-}
-
 export async function generatePoToken(videoId: string) {
+  function getYtcfgValue({ key, fallback }: {
+    key: string;
+    fallback: string;
+  }) {
+    return typeof ytcfg !== "undefined" ? String(ytcfg.get(key) ?? fallback) : fallback;
+  }
+
   const clientVersion = getYtcfgValue({
     key: "INNERTUBE_CLIENT_VERSION",
     fallback: "2.20260401.01.00"
@@ -146,16 +146,4 @@ export async function generatePoToken(videoId: string) {
   const tokenBytes = await mintFunction(new TextEncoder().encode(videoId));
   const SABR_TOKEN_BYTE_LENGTH = 30;
   return btoa(String.fromCharCode(...tokenBytes.slice(0, SABR_TOKEN_BYTE_LENGTH)));
-}
-
-// YouTube rotates its accepted attestation after a few SABR segments; the
-// BotGuard mint is deterministic per-snapshot, so refresh re-runs the full
-// handshake (new snapshot → new integrity token → new mint function) to
-// produce a genuinely different token each call.
-export async function refreshPoToken(videoId: string) {
-  try {
-    return await generatePoToken(videoId);
-  } catch {
-    return null;
-  }
 }

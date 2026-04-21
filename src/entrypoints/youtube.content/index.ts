@@ -72,10 +72,6 @@ function registerCrossWorldHandlers(
     void sendMessage(MessageType.StartBackgroundDownload, data);
   });
 
-  crossWorldMessenger.onMessage(CrossWorldMessage.PoTokenRefreshed, ({ data }) => {
-    void sendMessage(MessageType.PoTokenRefreshed, data);
-  });
-
   crossWorldMessenger.onMessage(CrossWorldMessage.IframePlayerReady, ({ data }) => {
     void sendMessage(MessageType.DownloadIframeReady, { videoId: data.videoId });
   });

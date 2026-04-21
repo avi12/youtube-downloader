@@ -1,4 +1,3 @@
-import { registerPoTokenRefreshListener } from "./download/sabr-downloader";
 import { registerDownloadHandlers } from "./handlers/download-handlers";
 import { registerPipelineHandlers } from "./handlers/pipeline-handlers";
 import { ensureProcessor } from "./handlers/processor";
@@ -21,32 +20,43 @@ import { clearCapturedSabrData, onSabrBodyCaptured, startSabrRequestCapture } fr
 import { extractPoTokenFromBody, getCapturedSabrData } from "@/lib/youtube/sabr-request-capture";
 
 const SABR_ORIGIN_RULE_ID = 1;
-const SABR_URL_PATTERN = "*://*.googlevideo.com/videoplayback*";
 
 async function registerSabrOriginRule() {
-  if (import.meta.env.FIREFOX) {
-    // Firefox's declarativeNetRequest doesn't apply to extension-initiated
-    // fetches, so googlevideo sees Origin: moz-extension://... and rejects
-    // the request. Blocking webRequest still works from extension context.
-    browser.webRequest.onBeforeSendHeaders.addListener(
-      rewriteSabrHeaders,
-      { urls: [SABR_URL_PATTERN] },
-      ["blocking", "requestHeaders"]
-    );
-    return;
-  }
+  const baseHeaders: Browser.declarativeNetRequest.ModifyHeaderInfo[] = [
+    {
+      header: "Origin",
+      operation: "set",
+      value: "https://www.youtube.com"
+    },
+    {
+      header: "Referer",
+      operation: "set",
+      value: "https://www.youtube.com/"
+    }
+  ];
+
+  // Sec-Fetch-* headers are browser-managed in Firefox; overriding them aborts requests
+  const chromeOnlyHeaders: Browser.declarativeNetRequest.ModifyHeaderInfo[] = import.meta.env.FIREFOX
+    ? []
+    : [
+      {
+        header: "Sec-Fetch-Site",
+        operation: "set",
+        value: "cross-site"
+      },
+      {
+        header: "Sec-Fetch-Storage-Access",
+        operation: "set",
+        value: "active"
+      }
+    ];
 
   const rule: Browser.declarativeNetRequest.Rule = {
     id: SABR_ORIGIN_RULE_ID,
     priority: 1,
     action: {
       type: "modifyHeaders",
-      requestHeaders: [
-        { header: "Origin", operation: "set", value: "https://www.youtube.com" },
-        { header: "Referer", operation: "set", value: "https://www.youtube.com/" },
-        { header: "Sec-Fetch-Site", operation: "set", value: "cross-site" },
-        { header: "Sec-Fetch-Storage-Access", operation: "set", value: "active" }
-      ]
+      requestHeaders: [...baseHeaders, ...chromeOnlyHeaders]
     },
     condition: { urlFilter: "||googlevideo.com/videoplayback" }
   };
@@ -54,18 +64,6 @@ async function registerSabrOriginRule() {
     removeRuleIds: [SABR_ORIGIN_RULE_ID],
     addRules: [rule]
   });
-}
-
-function rewriteSabrHeaders(details: Browser.webRequest.OnBeforeSendHeadersDetails) {
-  const requestHeaders = (details.requestHeaders ?? []).filter(header => {
-    const name = header.name.toLowerCase();
-    return name !== "origin" && name !== "referer";
-  });
-  requestHeaders.push(
-    { name: "Origin", value: "https://www.youtube.com" },
-    { name: "Referer", value: "https://www.youtube.com/" }
-  );
-  return { requestHeaders };
 }
 
 function registerChunkHandlers() {
@@ -216,7 +214,6 @@ export default defineBackground(async () => {
   registerChunkHandlers();
   registerDownloadHandlers();
   registerPipelineHandlers();
-  registerPoTokenRefreshListener();
   registerRecentDownloadsRetention();
   registerStorageHandlers();
   registerTabLifecycleHandlers();

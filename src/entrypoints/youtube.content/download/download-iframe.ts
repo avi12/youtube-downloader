@@ -72,24 +72,4 @@ export function listenForDownloadIframes(context: InstanceType<typeof ContentScr
       downloadIframes.delete(data.videoId);
     }
   });
-
-  onMessage(MessageType.RefreshDownloadIframe, ({ data }) => {
-    const elExisting = downloadIframes.get(data.videoId);
-    if (elExisting) {
-      elExisting.remove();
-      downloadIframes.delete(data.videoId);
-    }
-
-    const elIframe = document.createElement("iframe");
-    elIframe.classList.add("ytdl-download-iframe");
-    elIframe.src = data.watchUrl;
-    document.body.append(elIframe);
-    elIframe.addEventListener("load", () => silenceIframeAudio(elIframe));
-    downloadIframes.set(data.videoId, elIframe);
-
-    context.onInvalidated(() => {
-      elIframe.remove();
-      downloadIframes.delete(data.videoId);
-    });
-  });
 }
