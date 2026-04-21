@@ -188,7 +188,7 @@ function parseDescriptionMetadata(description: string) {
   };
 }
 
-const PO_TOKEN_BROADCAST_INTERVAL_MS = 3_000;
+const PO_TOKEN_BROADCAST_INTERVAL_MS = 10_000;
 const activePoTokenBroadcasts = new Set<string>();
 
 async function broadcastFreshPoToken(videoId: string) {

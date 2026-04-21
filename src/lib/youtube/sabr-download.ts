@@ -56,7 +56,7 @@ function createSabrStream({ sabrConfig, fetchFn, poToken }: {
 }
 
 type RefreshPoToken = () => Promise<string | null>;
-const PO_TOKEN_REFRESH_INTERVAL_MS = 3_000;
+const PO_TOKEN_REFRESH_INTERVAL_MS = 10_000;
 
 function startPoTokenRefreshLoop(sabrStream: SabrStream, refreshToken: RefreshPoToken) {
   return setInterval(async () => {

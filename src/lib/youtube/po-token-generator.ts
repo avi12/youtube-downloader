@@ -12,14 +12,14 @@ interface ChallengeResponse {
   };
 }
 
-export async function generatePoToken(videoId: string) {
-  function getYtcfgValue({ key, fallback }: {
-    key: string;
-    fallback: string;
-  }) {
-    return typeof ytcfg !== "undefined" ? String(ytcfg.get(key) ?? fallback) : fallback;
-  }
+function getYtcfgValue({ key, fallback }: {
+  key: string;
+  fallback: string;
+}) {
+  return typeof ytcfg !== "undefined" ? String(ytcfg.get(key) ?? fallback) : fallback;
+}
 
+export async function generatePoToken(videoId: string) {
   const clientVersion = getYtcfgValue({
     key: "INNERTUBE_CLIENT_VERSION",
     fallback: "2.20260401.01.00"
@@ -145,28 +145,17 @@ export async function generatePoToken(videoId: string) {
 
   const tokenBytes = await mintFunction(new TextEncoder().encode(videoId));
   const SABR_TOKEN_BYTE_LENGTH = 30;
-  const initialToken = btoa(String.fromCharCode(...tokenBytes.slice(0, SABR_TOKEN_BYTE_LENGTH)));
-  cacheMintFunction(videoId, mintFunction);
-  return initialToken;
+  return btoa(String.fromCharCode(...tokenBytes.slice(0, SABR_TOKEN_BYTE_LENGTH)));
 }
 
-type MintFunction = (input: Uint8Array) => Promise<Uint8Array>;
-
-const mintFunctionsByVideoId = new Map<string, MintFunction>();
-
-function cacheMintFunction(videoId: string, mintFunction: MintFunction) {
-  mintFunctionsByVideoId.set(videoId, mintFunction);
-}
-
-// YouTube rotates its accepted attestation after a few SABR segments; long
-// downloads call this to re-mint against the cached BotGuard snapshot.
+// YouTube rotates its accepted attestation after a few SABR segments; the
+// BotGuard mint is deterministic per-snapshot, so refresh re-runs the full
+// handshake (new snapshot → new integrity token → new mint function) to
+// produce a genuinely different token each call.
 export async function refreshPoToken(videoId: string) {
-  const mintFunction = mintFunctionsByVideoId.get(videoId);
-  if (!mintFunction) {
+  try {
+    return await generatePoToken(videoId);
+  } catch {
     return null;
   }
-
-  const tokenBytes = await mintFunction(new TextEncoder().encode(videoId));
-  const SABR_TOKEN_BYTE_LENGTH = 30;
-  return btoa(String.fromCharCode(...tokenBytes.slice(0, SABR_TOKEN_BYTE_LENGTH)));
 }
