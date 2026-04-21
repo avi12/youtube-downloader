@@ -44,6 +44,7 @@
     "eslint-plugin-perfectionist": "^5.7.0",
     "eslint-plugin-svelte": "^3.16.0",
     "globals": "^17.4.0",
+    "playwright-core": "^1.59.1",
     "postcss-html": "^1.8.1",
     "stylelint": "^17.6.0",
     "stylelint-config-ccb": "^3.31.1",

@@ -22,6 +22,7 @@ import {
 } from "node:fs";
 import { homedir, platform } from "node:os";
 import { resolve, join, dirname } from "node:path";
+import { firefox as playwrightFirefox } from "playwright-core";
 import webExtRun from "web-ext-run";
 import { consoleStream as webExtConsoleStream } from "web-ext-run/util/logger";
 import { build } from "wxt";
@@ -250,11 +251,15 @@ async function main() {
       startUrl: [START_URL],
       keepProfileChanges: true,
       firefoxProfile: profileDirectory,
+      // Use Playwright's Firefox Testing build: it's a stock Firefox with the
+      // automation-detection fingerprints that YouTube's BotGuard checks
+      // already patched out, but Marionette still works so firefox-devtools
+      // MCP can attach.
+      firefox: playwrightFirefox.executablePath(),
       // --marionette is needed so the firefox-devtools MCP can attach.
       // The pnpm patch on web-ext-run adds Firefox prefs (dom.webdriver.enabled=false,
       // remote.active-protocols=1, marionette.log.level=Fatal) that hide the
-      // JS-observable automation signals YouTube's BotGuard fingerprints while
-      // keeping the Marionette service alive, so MCP + YouTube can coexist.
+      // remaining JS-observable automation signals.
       args: [`--lang=${LANG}`, "--marionette", "--remote-debugging-port=9230"],
       noReload: true,
       noInput: true
