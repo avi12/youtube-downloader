@@ -14,10 +14,11 @@ export function startSabrRequestCapture() {
   browser.tabs.onRemoved.addListener(tabId => capturedByTab.delete(tabId));
 }
 
-let onCaptureCallback: ((tabId: number) => void) | null = null;
+const captureSubscribers = new Set<(tabId: number) => void>();
 
 export function onSabrBodyCaptured(callback: (tabId: number) => void) {
-  onCaptureCallback = callback;
+  captureSubscribers.add(callback);
+  return () => captureSubscribers.delete(callback);
 }
 
 function handleSabrRequest(details: Browser.webRequest.OnBeforeRequestDetails) {
@@ -41,16 +42,13 @@ function handleSabrRequest(details: Browser.webRequest.OnBeforeRequestDetails) {
     timestamp: Date.now()
   });
 
-  // The initial SABR handshake has no PO token; it only appears once the player starts streaming,
-  // so also notify on first-seen PO token.
-  const isPreviousPoToken = previousData
-    ? Boolean(extractPoTokenFromBody(previousData.body))
-    : false;
-
-  const isPoTokenPresent = Boolean(extractPoTokenFromBody(Array.from(bodyBytes)));
-  const isNewPoToken = isPoTokenPresent && !isPreviousPoToken;
-  if (isFirstCapture || isNewPoToken) {
-    onCaptureCallback?.(details.tabId);
+  const previousPoToken = previousData ? extractPoTokenFromBody(previousData.body) : null;
+  const currentPoToken = extractPoTokenFromBody(Array.from(bodyBytes));
+  const isPoTokenChanged = Boolean(currentPoToken) && currentPoToken !== previousPoToken;
+  if (isFirstCapture || isPoTokenChanged) {
+    for (const subscriber of captureSubscribers) {
+      subscriber(details.tabId);
+    }
   }
 }
 

@@ -1,8 +1,9 @@
 import type { DownloadResult } from "./background-downloader";
 import { createProgressFetch } from "./progress-fetch";
 import { sendProgressUpdate } from "./progress-fetch";
+import { rotateSabrSession } from "./session-rotator";
 import { MessageType, onMessage } from "@/lib/messaging/messaging";
-import { fetchAudioViaSabrStream, fetchVideoAudioViaSabrStream } from "@/lib/youtube/sabr-download";
+import { fetchAudioViaSabrStream, fetchVideoAudioViaSabrStream, type RotateSabrSession } from "@/lib/youtube/sabr-download";
 import { DownloadType, ProgressType } from "@/types";
 import type { AdaptiveFormatItem, DownloadRequest, SabrConfig } from "@/types";
 
@@ -14,13 +15,18 @@ export function registerPoTokenRefreshListener() {
   });
 }
 
-function takeRefreshedPoToken(videoId: string, lastUsed: string) {
-  const latest = latestPoTokenByVideoId.get(videoId);
-  if (!latest || latest === lastUsed) {
-    return null;
-  }
+function buildRotateSessionCallback({ videoId, tabId }: {
+  videoId: string;
+  tabId: number;
+}): RotateSabrSession {
+  return async ({ stalePoToken }) => {
+    const fresh = await rotateSabrSession({ videoId, tabId, stalePoToken });
+    if (fresh?.poToken) {
+      latestPoTokenByVideoId.set(videoId, fresh.poToken);
+    }
 
-  return latest;
+    return fresh;
+  };
 }
 
 export function buildEffectiveSabrConfig({ sabrConfig, sabrUrl }: {
@@ -72,20 +78,12 @@ async function downloadAudioOnlyViaSabr({ config, audioFormat, poToken, signal, 
     }
   });
 
-  let lastAppliedToken = poToken;
   return fetchAudioViaSabrStream({
     sabrConfig: config,
     audioFormat,
     fetchFn: sabrFetch,
     poToken,
-    async refreshToken() {
-      const next = takeRefreshedPoToken(videoId, lastAppliedToken);
-      if (next) {
-        lastAppliedToken = next;
-      }
-
-      return next;
-    }
+    rotateSession: buildRotateSessionCallback({ videoId, tabId })
   });
 }
 
@@ -126,21 +124,13 @@ async function downloadVideoAudioViaSabr({
     }
   });
 
-  let lastAppliedToken = poToken;
   const { videoData, audioData } = await fetchVideoAudioViaSabrStream({
     sabrConfig: config,
     videoFormat,
     audioFormat,
     fetchFn: combinedFetch,
     poToken,
-    async refreshToken() {
-      const next = takeRefreshedPoToken(videoId, lastAppliedToken);
-      if (next) {
-        lastAppliedToken = next;
-      }
-
-      return next;
-    }
+    rotateSession: buildRotateSessionCallback({ videoId, tabId })
   });
   return [videoData, audioData];
 }

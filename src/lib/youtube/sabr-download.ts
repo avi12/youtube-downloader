@@ -1,6 +1,5 @@
-import { readStreamToBuffer } from "@/lib/utils/stream";
 import { type AdaptiveFormatItem, type SabrConfig } from "@/types";
-import { SabrStream } from "googlevideo/sabr-stream";
+import { SabrStream, type SabrStreamState } from "googlevideo/sabr-stream";
 import { buildSabrFormat } from "googlevideo/utils";
 
 function adaptiveFormatToSabrFormat(format: AdaptiveFormatItem) {
@@ -20,16 +19,6 @@ function adaptiveFormatToSabrFormat(format: AdaptiveFormatItem) {
     approxDurationMs: format.approxDurationMs,
     contentLength: format.contentLength,
     isDrc: false
-  });
-}
-
-function collectReadableStream({ stream, expectedBytes }: {
-  stream: ReadableStream<Uint8Array>;
-  expectedBytes: number;
-}) {
-  return readStreamToBuffer({
-    reader: stream.getReader(),
-    expectedBytes
   });
 }
 
@@ -55,86 +44,145 @@ function createSabrStream({ sabrConfig, fetchFn, poToken }: {
   });
 }
 
-type RefreshPoToken = () => Promise<string | null>;
-const PO_TOKEN_REFRESH_INTERVAL_MS = 10_000;
+export type SabrSessionCredentials = {
+  sabrUrl?: string;
+  poToken?: string;
+};
 
-function startPoTokenRefreshLoop(sabrStream: SabrStream, refreshToken: RefreshPoToken) {
-  return setInterval(async () => {
+export type RotateSabrSession = (args: { stalePoToken: string }) => Promise<SabrSessionCredentials | null>;
+
+const MAX_SESSION_ROTATIONS = 8;
+
+async function streamWithRotation({ initialSabrConfig, poToken, fetchFn, startSession, rotateSession }: {
+  initialSabrConfig: SabrConfig;
+  poToken: string;
+  fetchFn: typeof globalThis.fetch;
+  startSession: (sabrStream: SabrStream, state?: SabrStreamState) => Promise<void>;
+  rotateSession?: RotateSabrSession;
+}) {
+  let currentConfig = initialSabrConfig;
+  let currentPoToken = poToken;
+  let resumeState: SabrStreamState | undefined;
+
+  for (let attempt = 0; attempt <= MAX_SESSION_ROTATIONS; attempt++) {
+    const sabrStream = createSabrStream({
+      sabrConfig: currentConfig,
+      fetchFn,
+      poToken: currentPoToken
+    });
+
     try {
-      const freshToken = await refreshToken();
-      if (freshToken) {
-        sabrStream.setPoToken(freshToken);
+      await startSession(sabrStream, resumeState);
+      return;
+    } catch (error) {
+      if (!rotateSession || attempt === MAX_SESSION_ROTATIONS) {
+        throw error;
       }
-    } catch { /* next tick will retry */ }
-  }, PO_TOKEN_REFRESH_INTERVAL_MS);
+
+      try {
+        resumeState = sabrStream.getState();
+      } catch {
+        resumeState = undefined;
+      }
+
+      const fresh = await rotateSession({ stalePoToken: currentPoToken });
+      if (!fresh?.poToken) {
+        throw error;
+      }
+
+      currentPoToken = fresh.poToken;
+      if (fresh.sabrUrl) {
+        currentConfig = { ...currentConfig, serverAbrStreamingUrl: fresh.sabrUrl };
+      }
+    }
+  }
 }
 
-export async function fetchVideoAudioViaSabrStream({ sabrConfig, videoFormat, audioFormat, fetchFn, poToken, refreshToken }: {
+export async function fetchVideoAudioViaSabrStream({ sabrConfig, videoFormat, audioFormat, fetchFn, poToken, rotateSession }: {
   sabrConfig: SabrConfig;
   videoFormat: AdaptiveFormatItem;
   audioFormat: AdaptiveFormatItem;
   fetchFn: typeof globalThis.fetch;
   poToken: string;
-  refreshToken?: RefreshPoToken;
+  rotateSession?: RotateSabrSession;
 }) {
-  const sabrStream = createSabrStream({
-    sabrConfig,
+  const videoChunks: Uint8Array[] = [];
+  const audioChunks: Uint8Array[] = [];
+
+  await streamWithRotation({
+    initialSabrConfig: sabrConfig,
+    poToken,
     fetchFn,
-    poToken
-  });
-  const refreshInterval = refreshToken ? startPoTokenRefreshLoop(sabrStream, refreshToken) : null;
-  try {
-    const { videoStream, audioStream } = await sabrStream.start({
-      videoFormat: adaptiveFormatToSabrFormat(videoFormat),
-      audioFormat: adaptiveFormatToSabrFormat(audioFormat),
-      maxRetries: 10
-    });
-    const [videoData, audioData] = await Promise.all([
-      collectReadableStream({
-        stream: videoStream,
-        expectedBytes: parseInt(videoFormat.contentLength, 10)
-      }),
-      collectReadableStream({
-        stream: audioStream,
-        expectedBytes: parseInt(audioFormat.contentLength, 10)
-      })
-    ]);
-    return {
-      videoData,
-      audioData
-    };
-  } finally {
-    if (refreshInterval) {
-      clearInterval(refreshInterval);
+    rotateSession,
+    async startSession(sabrStream, state) {
+      const { videoStream, audioStream } = await sabrStream.start({
+        videoFormat: adaptiveFormatToSabrFormat(videoFormat),
+        audioFormat: adaptiveFormatToSabrFormat(audioFormat),
+        maxRetries: 3,
+        state
+      });
+      await Promise.all([
+        drainInto(videoStream, videoChunks),
+        drainInto(audioStream, audioChunks)
+      ]);
     }
-  }
+  });
+
+  return {
+    videoData: concatChunks(videoChunks),
+    audioData: concatChunks(audioChunks)
+  };
 }
 
-export async function fetchAudioViaSabrStream({ sabrConfig, audioFormat, fetchFn, poToken, refreshToken }: {
+export async function fetchAudioViaSabrStream({ sabrConfig, audioFormat, fetchFn, poToken, rotateSession }: {
   sabrConfig: SabrConfig;
   audioFormat: AdaptiveFormatItem;
   fetchFn: typeof globalThis.fetch;
   poToken: string;
-  refreshToken?: RefreshPoToken;
+  rotateSession?: RotateSabrSession;
 }) {
-  const sabrStream = createSabrStream({
-    sabrConfig,
+  const audioChunks: Uint8Array[] = [];
+
+  await streamWithRotation({
+    initialSabrConfig: sabrConfig,
+    poToken,
     fetchFn,
-    poToken
+    rotateSession,
+    async startSession(sabrStream, state) {
+      const { audioStream } = await sabrStream.start({
+        audioFormat: adaptiveFormatToSabrFormat(audioFormat),
+        maxRetries: 3,
+        state
+      });
+      await drainInto(audioStream, audioChunks);
+    }
   });
-  const refreshInterval = refreshToken ? startPoTokenRefreshLoop(sabrStream, refreshToken) : null;
-  try {
-    const { audioStream } = await sabrStream.start({
-      audioFormat: adaptiveFormatToSabrFormat(audioFormat),
-      maxRetries: 10
-    });
-    return await collectReadableStream({
-      stream: audioStream,
-      expectedBytes: parseInt(audioFormat.contentLength, 10)
-    });
-  } finally {
-    if (refreshInterval) {
-      clearInterval(refreshInterval);
+
+  return concatChunks(audioChunks);
+}
+
+async function drainInto(stream: ReadableStream<Uint8Array>, chunks: Uint8Array[]) {
+  const reader = stream.getReader();
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) {
+      return;
+    }
+
+    if (value) {
+      chunks.push(value);
     }
   }
+}
+
+function concatChunks(chunks: Uint8Array[]) {
+  const totalBytes = chunks.reduce((sum, chunk) => sum + chunk.byteLength, 0);
+  const combined = new Uint8Array(totalBytes);
+  let offset = 0;
+  for (const chunk of chunks) {
+    combined.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+
+  return combined;
 }
