@@ -1,9 +1,27 @@
 import type { DownloadResult } from "./background-downloader";
 import { createProgressFetch } from "./progress-fetch";
 import { sendProgressUpdate } from "./progress-fetch";
-import { fetchAudioViaSabrStream, fetchVideoViaSabrStream } from "@/lib/youtube/sabr-download";
+import { MessageType, onMessage } from "@/lib/messaging/messaging";
+import { fetchAudioViaSabrStream, fetchVideoAudioViaSabrStream } from "@/lib/youtube/sabr-download";
 import { DownloadType, ProgressType } from "@/types";
 import type { AdaptiveFormatItem, DownloadRequest, SabrConfig } from "@/types";
+
+const latestPoTokenByVideoId = new Map<string, string>();
+
+export function registerPoTokenRefreshListener() {
+  onMessage(MessageType.PoTokenRefreshed, ({ data }) => {
+    latestPoTokenByVideoId.set(data.videoId, data.poToken);
+  });
+}
+
+function takeRefreshedPoToken(videoId: string, lastUsed: string) {
+  const latest = latestPoTokenByVideoId.get(videoId);
+  if (!latest || latest === lastUsed) {
+    return null;
+  }
+
+  return latest;
+}
 
 export function buildEffectiveSabrConfig({ sabrConfig, sabrUrl }: {
   sabrConfig: SabrConfig;
@@ -54,11 +72,20 @@ async function downloadAudioOnlyViaSabr({ config, audioFormat, poToken, signal, 
     }
   });
 
+  let lastAppliedToken = poToken;
   return fetchAudioViaSabrStream({
     sabrConfig: config,
     audioFormat,
     fetchFn: sabrFetch,
-    poToken
+    poToken,
+    async refreshToken() {
+      const next = takeRefreshedPoToken(videoId, lastAppliedToken);
+      if (next) {
+        lastAppliedToken = next;
+      }
+
+      return next;
+    }
   });
 }
 
@@ -75,55 +102,47 @@ async function downloadVideoAudioViaSabr({
   onProgress?: () => void;
 }) {
   const totalExpectedBytes = parseContentLength(videoFormat) + parseContentLength(audioFormat);
-  let videoReceivedBytes = 0;
-  let audioReceivedBytes = 0;
+  let totalReceivedBytes = 0;
 
   function reportProgress() {
     if (totalExpectedBytes === 0) {
       return;
     }
 
-    const totalReceived = videoReceivedBytes + audioReceivedBytes;
-
     void sendProgressUpdate({
       videoId,
-      progress: Math.min(totalReceived / totalExpectedBytes, 1),
+      progress: Math.min(totalReceivedBytes / totalExpectedBytes, 1),
       progressType: ProgressType.Video,
       tabId
     });
   }
 
-  const videoFetch = createProgressFetch({
+  const combinedFetch = createProgressFetch({
     signal,
     onBytesReceived(bytes) {
-      videoReceivedBytes += bytes;
-      onProgress?.();
-      reportProgress();
-    }
-  });
-  const audioFetch = createProgressFetch({
-    signal,
-    onBytesReceived(bytes) {
-      audioReceivedBytes += bytes;
+      totalReceivedBytes += bytes;
       onProgress?.();
       reportProgress();
     }
   });
 
-  return Promise.all([
-    fetchVideoViaSabrStream({
-      sabrConfig: config,
-      videoFormat,
-      fetchFn: videoFetch,
-      poToken
-    }),
-    fetchAudioViaSabrStream({
-      sabrConfig: config,
-      audioFormat,
-      fetchFn: audioFetch,
-      poToken
-    })
-  ]);
+  let lastAppliedToken = poToken;
+  const { videoData, audioData } = await fetchVideoAudioViaSabrStream({
+    sabrConfig: config,
+    videoFormat,
+    audioFormat,
+    fetchFn: combinedFetch,
+    poToken,
+    async refreshToken() {
+      const next = takeRefreshedPoToken(videoId, lastAppliedToken);
+      if (next) {
+        lastAppliedToken = next;
+      }
+
+      return next;
+    }
+  });
+  return [videoData, audioData];
 }
 
 async function downloadExtraAudioTracksViaSabr({ config, formats, poToken, signal, onProgress }: {

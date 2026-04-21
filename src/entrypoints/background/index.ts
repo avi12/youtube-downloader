@@ -1,3 +1,4 @@
+import { registerPoTokenRefreshListener } from "./download/sabr-downloader";
 import { registerDownloadHandlers } from "./handlers/download-handlers";
 import { registerPipelineHandlers } from "./handlers/pipeline-handlers";
 import { ensureProcessor } from "./handlers/processor";
@@ -215,6 +216,7 @@ export default defineBackground(async () => {
   registerChunkHandlers();
   registerDownloadHandlers();
   registerPipelineHandlers();
+  registerPoTokenRefreshListener();
   registerRecentDownloadsRetention();
   registerStorageHandlers();
   registerTabLifecycleHandlers();
