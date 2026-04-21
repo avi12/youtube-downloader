@@ -111,9 +111,9 @@ export async function injectSegmentedDownloadButton(
   // the classes whenever the element appears or re-renders.
   function applySegmentedClasses() {
     elDownloadButton.querySelector<HTMLButtonElement>("button")
-      ?.classList.add("yt-spec-button-shape-next--segmented-start");
+      ?.classList.add("ytSpecButtonShapeNextSegmentedStart");
     elChevronButton.querySelector<HTMLButtonElement>("button")
-      ?.classList.add("yt-spec-button-shape-next--segmented-end");
+      ?.classList.add("ytSpecButtonShapeNextSegmentedEnd");
   }
 
   const segmentedObserver = new MutationObserver(applySegmentedClasses);
