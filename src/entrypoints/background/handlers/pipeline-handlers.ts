@@ -4,7 +4,8 @@ import { getTabIdsForVideo } from "../queue/tab-tracker";
 import { registerRecentDownloadHandlers } from "../recent/recent-download-handler";
 import { signalFFmpegReady } from "./processor";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
-import { isFFmpegReadyItem, mutateStorageItem, statusProgressItem } from "@/lib/storage/storage";
+import { isFFmpegReadyItem } from "@/lib/storage/ffmpeg-ready";
+import { mutateStorageItem, statusProgressItem } from "@/lib/storage/storage";
 import { ProgressType } from "@/types";
 import type { ProgressUpdate } from "@/types";
 

@@ -1,6 +1,6 @@
 import { SvelteSet } from "svelte/reactivity";
 
-const SESSION_KEY = "session:ytdl-checked-playlist-videos";
+const SESSION_KEY = "local:ytdl-checked-playlist-videos";
 
 class PersistedSvelteSet extends SvelteSet<string> {
   override add(value: string) {
