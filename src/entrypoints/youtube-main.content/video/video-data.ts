@@ -259,14 +259,19 @@ export async function buildAndDispatchVideoData({ playerResponse, cancelActiveDo
   }
 
   if (self !== top) {
-    // Stop the player before generating the PO token so its SABR session is released
-    // before the background download starts a new one for the same video.
-    const elPlayer = document.querySelector<HTMLElement & {
-      stopVideo?: () => void;
-    }>("#movie_player");
-    elPlayer?.stopVideo?.();
-
     await generatePoTokenIfNeeded(videoData);
+
+    // Pause the hidden iframe player so it doesn't double-stream alongside
+    // the bg session's SABR download (saves bandwidth). Skip on Firefox —
+    // pausing/stopping the iframe's player tears down some of the state the
+    // bg SABR session relies on, and the download starts failing.
+    if (!import.meta.env.FIREFOX) {
+      const elPlayer = document.querySelector<HTMLElement & {
+        pauseVideo?: () => void;
+      }>("#movie_player");
+      elPlayer?.pauseVideo?.();
+    }
+
     void crossWorldMessenger.sendMessage(CrossWorldMessage.IframePlayerReady, { videoId: videoData.videoId });
     return;
   }
