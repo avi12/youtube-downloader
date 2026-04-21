@@ -24,10 +24,13 @@ function findFirefoxRdpPort() {
   try {
     const out = execSync(
       `powershell -Command "$firefoxPids = (Get-Process firefox -EA 0).Id; Get-NetTCPConnection -State Listen | Where-Object { $firefoxPids -contains $_.OwningProcess } | Select-Object -ExpandProperty LocalPort"`,
-      { encoding: "utf8", timeout: 5000 }
+      {
+        encoding: "utf8",
+        timeout: 5000
+      }
     );
-    const ports = out.trim().split(/\s+/).map(Number).filter(port => port > 1024 && port !== 9230);
-    return ports[0] ?? FIREFOX_RDP_PORT_FALLBACK;
+    const ports = out.trim().split(/\s+/).map(Number).filter(port => port > 1024);
+    return ports.find(port => port === FIREFOX_RDP_PORT_FALLBACK) ?? ports[0] ?? FIREFOX_RDP_PORT_FALLBACK;
   } catch {
     return FIREFOX_RDP_PORT_FALLBACK;
   }
@@ -103,7 +106,11 @@ class RDP {
   }
 
   send(to: string, type: string, extra: Record<string, unknown> = {}) {
-    const message = JSON.stringify({ to, type, ...extra });
+    const message = JSON.stringify({
+      to,
+      type,
+      ...extra
+    });
     this.socket!.write(Buffer.byteLength(message) + ":" + message);
   }
 
@@ -131,10 +138,12 @@ async function evalJs(rdp: RDP, consoleActor: string, expression: string): Promi
     if (result.type === "undefined") {
       return undefined;
     }
+
     if (result.type === "null") {
       return null;
     }
   }
+
   return result;
 }
 
@@ -144,13 +153,17 @@ const rdp = new RDP();
 await rdp.connect(port);
 
 const tabsResponse = await rdp.request("root", "listTabs");
-const tabs = (tabsResponse.tabs as Array<{ actor: string; url?: string }>) ?? [];
+const tabs = (tabsResponse.tabs as Array<{
+  actor: string;
+  url?: string;
+}>) ?? [];
 const sub = tabs.find(t => t.url?.includes("subscriptions"));
 if (!sub) {
   console.error("No subscriptions tab open in Firefox.");
   rdp.destroy();
   process.exit(1);
 }
+
 console.log("Found tab:", sub.url);
 
 const targetResponse = await rdp.request(sub.actor, "getTarget");
@@ -188,19 +201,22 @@ if (!grid.videoId) {
   process.exit(1);
 }
 
-const clickResult = await evalJs(rdp, consoleActor, `
+const clickResult = await evalJs(
+  rdp, consoleActor, `
   (() => {
     const item = document.querySelector('[data-ytdl-grid-item="${grid.videoId}"]');
     const btn = item?.querySelector('yt-button-view-model button');
     btn?.click();
     return btn ? 'clicked' : 'no-btn';
   })()
-`);
+`
+);
 console.log("Click:", clickResult);
 
 for (let i = 0; i < MAX_POLLS; i++) {
   await wait(POLL_INTERVAL_MS);
-  const stateJson = await evalJs(rdp, consoleActor, `
+  const stateJson = await evalJs(
+    rdp, consoleActor, `
     JSON.stringify((() => {
       const item = document.querySelector('[data-ytdl-grid-item="${grid.videoId}"]');
       const btn = item?.querySelector('yt-button-view-model button');
@@ -210,7 +226,8 @@ for (let i = 0; i < MAX_POLLS; i++) {
         progress: progress?.getAttribute('value')
       };
     })())
-  `);
+  `
+  );
   const state = JSON.parse(stateJson as string);
   const elapsed = (i + 1) * (POLL_INTERVAL_MS / 1000);
   console.log(`T+${elapsed}s: label="${state.label}" progress=${state.progress ?? "n/a"}`);
@@ -220,6 +237,7 @@ for (let i = 0; i < MAX_POLLS; i++) {
     rdp.destroy();
     process.exit(0);
   }
+
   if (label.includes("deleted") || label.includes("failed") || label.includes("error")) {
     console.log("FAILURE: Download failed.");
     rdp.destroy();

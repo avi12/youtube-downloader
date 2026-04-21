@@ -18,10 +18,13 @@ function findFirefoxRdpPort() {
   try {
     const out = execSync(
       `powershell -Command "$firefoxPids = (Get-Process firefox -EA 0).Id; Get-NetTCPConnection -State Listen | Where-Object { $firefoxPids -contains $_.OwningProcess } | Select-Object -ExpandProperty LocalPort"`,
-      { encoding: "utf8", timeout: 5000 }
+      {
+        encoding: "utf8",
+        timeout: 5000
+      }
     );
-    const ports = out.trim().split(/\s+/).map(Number).filter(port => port > 1024 && port !== 9230);
-    return ports[0] ?? FIREFOX_RDP_PORT_FALLBACK;
+    const ports = out.trim().split(/\s+/).map(Number).filter(port => port > 1024);
+    return ports.find(port => port === FIREFOX_RDP_PORT_FALLBACK) ?? ports[0] ?? FIREFOX_RDP_PORT_FALLBACK;
   } catch {
     return FIREFOX_RDP_PORT_FALLBACK;
   }
@@ -97,7 +100,11 @@ class RDP {
   }
 
   send(to: string, type: string, extra: Record<string, unknown> = {}) {
-    const message = JSON.stringify({ to, type, ...extra });
+    const message = JSON.stringify({
+      to,
+      type,
+      ...extra
+    });
     this.socket!.write(Buffer.byteLength(message) + ":" + message);
   }
 
@@ -125,10 +132,12 @@ async function evalJs(rdp: RDP, consoleActor: string, expression: string): Promi
     if (result.type === "undefined") {
       return undefined;
     }
+
     if (result.type === "null") {
       return null;
     }
   }
+
   return result;
 }
 
@@ -138,13 +147,17 @@ const rdp = new RDP();
 await rdp.connect(port);
 
 const tabsResponse = await rdp.request("root", "listTabs");
-const tabs = (tabsResponse.tabs as Array<{ actor: string; url?: string }>) ?? [];
+const tabs = (tabsResponse.tabs as Array<{
+  actor: string;
+  url?: string;
+}>) ?? [];
 const watchTab = tabs.find(t => t.url?.includes("/watch"));
 if (!watchTab) {
   console.error("No watch tab open in Firefox.");
   rdp.destroy();
   process.exit(1);
 }
+
 console.log("Found watch tab:", watchTab.url);
 
 const targetResponse = await rdp.request(watchTab.actor, "getTarget");
@@ -156,7 +169,8 @@ if (!consoleActor) {
   process.exit(1);
 }
 
-const clickResult = await evalJs(rdp, consoleActor, `
+const clickResult = await evalJs(
+  rdp, consoleActor, `
   JSON.stringify((() => {
     const elGroup = document.querySelector('[data-ytdl-download-group]');
     const elBtn = elGroup?.querySelector('yt-button-view-model:first-child button');
@@ -164,7 +178,8 @@ const clickResult = await evalJs(rdp, consoleActor, `
     elBtn?.click();
     return { clicked: !!elBtn, initialLabel: label.slice(0, 80) };
   })())
-`);
+`
+);
 console.log("Click:", clickResult);
 const click = JSON.parse(clickResult as string);
 if (!click.clicked) {
@@ -175,7 +190,8 @@ if (!click.clicked) {
 
 for (let i = 0; i < MAX_POLLS; i++) {
   await wait(POLL_INTERVAL_MS);
-  const stateJson = await evalJs(rdp, consoleActor, `
+  const stateJson = await evalJs(
+    rdp, consoleActor, `
     JSON.stringify((() => {
       const elGroup = document.querySelector('[data-ytdl-download-group]');
       const elBtn = elGroup?.querySelector('yt-button-view-model:first-child button');
@@ -183,7 +199,8 @@ for (let i = 0; i < MAX_POLLS; i++) {
       const elProgress = elGroup?.querySelector('tp-yt-paper-progress');
       return { label: label.slice(0, 80), progress: elProgress?.getAttribute('value') };
     })())
-  `);
+  `
+  );
   const state = JSON.parse(stateJson as string);
   const elapsed = (i + 1) * (POLL_INTERVAL_MS / 1000);
   console.log(`T+${elapsed}s: label="${state.label}" progress=${state.progress ?? "n/a"}`);
@@ -193,6 +210,7 @@ for (let i = 0; i < MAX_POLLS; i++) {
     rdp.destroy();
     process.exit(0);
   }
+
   if (label.includes("deleted") || label.includes("failed") || label.includes("error") || label.includes("retry")) {
     console.log("FAILURE: Download failed.");
     rdp.destroy();

@@ -16,7 +16,7 @@ import net from "node:net";
 import { setTimeout } from "node:timers/promises";
 
 const YTDL_ID = "youtube-downloader@avi12.com";
-const FIREFOX_RDP_PORT_FALLBACK = 64173;
+const FIREFOX_RDP_PORT_FALLBACK = 9230;
 const CONNECT_SETTLE_MS = 600;
 const SUBSCRIBE_SETTLE_MS = 500;
 const durationMs = (parseInt(process.argv[2] ?? "30", 10) || 30) * 1000;
@@ -36,8 +36,8 @@ function findFirefoxRdpPort() {
         timeout: 5000
       }
     );
-    const ports = out.trim().split(/\s+/).map(Number).filter(port => port > 1024 && port !== 9230);
-    return ports[0] ?? FIREFOX_RDP_PORT_FALLBACK;
+    const ports = out.trim().split(/\s+/).map(Number).filter(port => port > 1024);
+    return ports.find(port => port === FIREFOX_RDP_PORT_FALLBACK) ?? ports[0] ?? FIREFOX_RDP_PORT_FALLBACK;
   } catch {
     return FIREFOX_RDP_PORT_FALLBACK;
   }
