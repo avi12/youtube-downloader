@@ -12,7 +12,55 @@ interface ChallengeResponse {
   };
 }
 
+type MintFn = (input: Uint8Array) => Promise<Uint8Array>;
+
+const MINT_FN_TTL_MS = 30 * 60 * 1000;
+const MINT_FN_ERROR_COOLDOWN_MS = 60 * 1000;
+let cachedMintFn: MintFn | null = null;
+let cachedMintFnExpiresAt = 0;
+let mintFnErrorCooldownUntil = 0;
+let mintFnLastError: unknown = null;
+let pendingMintFn: Promise<MintFn> | null = null;
+
+async function getOrMintBotGuardFn(): Promise<MintFn> {
+  if (cachedMintFn && Date.now() < cachedMintFnExpiresAt) {
+    return cachedMintFn;
+  }
+
+  if (Date.now() < mintFnErrorCooldownUntil) {
+    throw mintFnLastError ?? new Error("PO token minting in cooldown");
+  }
+
+  if (pendingMintFn) {
+    return pendingMintFn;
+  }
+
+  const attempt = mintBotGuardFn();
+  pendingMintFn = attempt;
+  try {
+    cachedMintFn = await attempt;
+    cachedMintFnExpiresAt = Date.now() + MINT_FN_TTL_MS;
+    mintFnLastError = null;
+    return cachedMintFn;
+  } catch (error) {
+    mintFnErrorCooldownUntil = Date.now() + MINT_FN_ERROR_COOLDOWN_MS;
+    mintFnLastError = error;
+    throw error;
+  } finally {
+    pendingMintFn = null;
+  }
+}
+
 export async function generatePoToken(videoId: string) {
+  const mintFunction = await getOrMintBotGuardFn();
+
+  const SABR_PO_TOKEN_BYTES = 30;
+  const tokenBytes = await mintFunction(new TextEncoder().encode(videoId));
+  const sabrTokenBytes = tokenBytes.slice(0, SABR_PO_TOKEN_BYTES);
+  return btoa(String.fromCharCode(...sabrTokenBytes));
+}
+
+async function mintBotGuardFn(): Promise<MintFn> {
   function getYtcfgValue({ key, fallback }: {
     key: string;
     fallback: string;
@@ -143,11 +191,5 @@ export async function generatePoToken(videoId: string) {
     throw new Error("Mint function not available");
   }
 
-  // BotGuard returns a longer blob that YouTube's player slices to 30 bytes
-  // for the SABR streamerContext.poToken. Sending the full blob makes SABR
-  // respond with "attestation required" on Firefox.
-  const SABR_PO_TOKEN_BYTES = 30;
-  const tokenBytes = await mintFunction(new TextEncoder().encode(videoId));
-  const sabrTokenBytes = tokenBytes.slice(0, SABR_PO_TOKEN_BYTES);
-  return btoa(String.fromCharCode(...sabrTokenBytes));
+  return mintFunction;
 }
