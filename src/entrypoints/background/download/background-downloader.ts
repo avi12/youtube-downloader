@@ -211,31 +211,29 @@ export function cancelBackgroundDownload(videoId: string) {
   activeBackgroundDownloads.delete(videoId);
 }
 
-// Firefox-only: drive SABR ourselves (no SabrStream). Starts from YT
-// player's captured body (which passes attestation), then on each iteration:
-//   1. POST with incrementing &rn=N query param.
-//   2. Parse UMP response; collect MEDIA parts keyed by format+sequence.
-//   3. Splice the server's NEXT_REQUEST_POLICY.playbackCookie into the
-//      outgoing body's streamerContext so the server advances us.
-//
-// Known gap for full convergence (not yet implemented): ALSO advance
-// clientAbrState.playerTimeMs and populate bufferedRanges from parsed
-// MEDIA_HEADER timestamps (per yt-dlp's SABR reference implementation,
-// PR #13515). Without those, a server that ignores playbackCookie alone
-// will keep re-serving the same initial-segment window until the loop's
-// NO_PROGRESS_LIMIT trips.
-async function writeOwnSabrTrace(entry: Record<string, unknown>) {
+const OWN_SABR_TRACE_KEY = "ytdlOwnSabrTrace";
+const OWN_SABR_TRACE_MAX_ENTRIES = 200;
+
+async function writeOwnSabrTrace(entry: Record<string, unknown>, tabId?: number) {
   try {
-    const key = "ytdlOwnSabrTrace";
-    const current = await browser.storage.local.get(key);
-    const arr = Array.isArray(current[key]) ? current[key] as unknown[] : [];
-    arr.push({ t: Date.now(), ...entry });
-    if (arr.length > 200) {
-      arr.splice(0, arr.length - 200);
+    const current = await browser.storage.local.get(OWN_SABR_TRACE_KEY);
+    const trace = Array.isArray(current[OWN_SABR_TRACE_KEY]) ? current[OWN_SABR_TRACE_KEY] as unknown[] : [];
+    trace.push({ t: Date.now(), ...entry });
+    if (trace.length > OWN_SABR_TRACE_MAX_ENTRIES) {
+      trace.splice(0, trace.length - OWN_SABR_TRACE_MAX_ENTRIES);
     }
 
-    await browser.storage.local.set({ [key]: arr });
-  } catch { /* swallow */ }
+    await browser.storage.local.set({ [OWN_SABR_TRACE_KEY]: trace });
+  } catch {}
+
+  if (typeof tabId === "number" && tabId >= 0) {
+    try {
+      const serializedEntry = Object.entries(entry).map(([k, v]) => `${k}=${JSON.stringify(v)}`).join(" ");
+      await sendMessage(MessageType.BgDebugLog, {
+        msg: `own-sabr ${serializedEntry}`
+      }, tabId);
+    } catch {}
+  }
 }
 
 async function runFirefoxOwnSabr({ request, tabId, signal }: {
@@ -246,35 +244,45 @@ async function runFirefoxOwnSabr({ request, tabId, signal }: {
   const { getCapturedSabrData, extractPreferredFormatItagsFromBody } = await import("@/lib/youtube/sabr-request-capture");
   const { firefoxSabrSingleFetch, assembleMediaByFormat, spliceBodyWithPlaybackCookie, spliceBodyWithState } = await import("@/lib/youtube/firefox-sabr");
 
-  await writeOwnSabrTrace({ phase: "enter", tabId, videoId: request.videoId });
+  await writeOwnSabrTrace({ phase: "enter", videoId: request.videoId }, tabId);
   const captured = getCapturedSabrData(tabId);
   if (!captured) {
-    await writeOwnSabrTrace({ phase: "no-captured", tabId });
+    await writeOwnSabrTrace({ phase: "no-captured" }, tabId);
     return null;
   }
 
   const itags = extractPreferredFormatItagsFromBody(captured.body);
-  const videoItag = itags.video[0];
-  const audioItag = itags.audio[0];
-  if (videoItag === undefined || audioItag === undefined) {
-    await writeOwnSabrTrace({ phase: "no-itags", videoItag, audioItag });
+  if (itags.video[0] === undefined || itags.audio[0] === undefined) {
+    await writeOwnSabrTrace({ phase: "no-itags" }, tabId);
     return null;
   }
 
   let body = new Uint8Array(captured.body);
-  // Segments collected per itag, keyed by sequence number so duplicates from
-  // overlapping responses dedupe automatically.
   const collectedByItag = new Map<number, Map<number, Uint8Array>>();
-  // Per-format time coverage: max end-time (startMs + durationMs) and
-  // max segment index seen.
-  const formatState = new Map<number, { lastEndMs: number; lastSegmentIndex: number }>();
-  const videoExpected = parseInt(
-    request.sabrConfig?.formats.find(f => f.itag === videoItag)?.contentLength ?? "0", 10);
-  const audioExpected = parseInt(
-    request.sabrConfig?.formats.find(f => f.itag === audioItag)?.contentLength ?? "0", 10);
+  interface BufferedBatch {
+    itag: number;
+    startMs: number;
+    durationMs: number;
+    startSegmentIndex: number;
+    endSegmentIndex: number;
+  }
+  const bufferedBatches: BufferedBatch[] = [];
 
-  const MAX_ITERATIONS = 20;
-  const NO_PROGRESS_LIMIT = 3;
+  function contentLengthOf(itag: number) {
+    return parseInt(request.sabrConfig?.formats.find(f => f.itag === itag)?.contentLength ?? "0", 10);
+  }
+
+  function isAudioItag(itag: number) {
+    return request.sabrConfig?.formats.find(f => f.itag === itag)?.mimeType.startsWith("audio/") ?? false;
+  }
+
+  let videoItag = itags.video[0];
+  let audioItag = itags.audio[0];
+  let videoExpected = contentLengthOf(videoItag);
+  let audioExpected = contentLengthOf(audioItag);
+
+  const MAX_ITERATIONS = 200;
+  const NO_PROGRESS_LIMIT = 10;
   const baseUrl = new URL(captured.url);
   let noProgressIterations = 0;
   await writeOwnSabrTrace({
@@ -285,10 +293,10 @@ async function runFirefoxOwnSabr({ request, tabId, signal }: {
     audioExpected,
     bodyLen: body.byteLength,
     url: baseUrl.href.slice(0, 120)
-  });
+  }, tabId);
   for (let iter = 0; iter < MAX_ITERATIONS; iter++) {
     if (signal.aborted) {
-      await writeOwnSabrTrace({ phase: "abort", iter });
+      await writeOwnSabrTrace({ phase: "abort", iter }, tabId);
       return null;
     }
 
@@ -298,7 +306,7 @@ async function runFirefoxOwnSabr({ request, tabId, signal }: {
       body,
       signal
     }).catch(async (err: Error) => {
-      await writeOwnSabrTrace({ phase: "fetch-err", iter, err: err.message });
+      await writeOwnSabrTrace({ phase: "fetch-err", iter, err: err.message }, tabId);
       return null;
     });
     if (!fetchResult) {
@@ -312,7 +320,27 @@ async function runFirefoxOwnSabr({ request, tabId, signal }: {
       expectedAudioItag: audioItag
     });
 
+    if (iter === 0) {
+      const servedItags = new Set(segments.map(s => s.itag));
+      if (!servedItags.has(videoItag)) {
+        const alternative = segments.find(s => !isAudioItag(s.itag) && s.itag !== audioItag)?.itag;
+        if (alternative !== undefined) {
+          videoItag = alternative;
+          videoExpected = contentLengthOf(alternative);
+        }
+      }
+
+      if (!servedItags.has(audioItag)) {
+        const alternative = segments.find(s => isAudioItag(s.itag) && s.itag !== videoItag)?.itag;
+        if (alternative !== undefined) {
+          audioItag = alternative;
+          audioExpected = contentLengthOf(alternative);
+        }
+      }
+    }
+
     let newSegmentsThisIteration = 0;
+    const newSegmentsByItag = new Map<number, typeof segments>();
     for (const segment of segments) {
       if (segment.itag !== videoItag && segment.itag !== audioItag) {
         continue;
@@ -324,18 +352,22 @@ async function runFirefoxOwnSabr({ request, tabId, signal }: {
         collectedByItag.set(segment.itag, existing);
         newSegmentsThisIteration++;
 
-        const state = formatState.get(segment.itag) ?? { lastEndMs: 0, lastSegmentIndex: 0 };
-        const segEndMs = segment.startMs + segment.durationMs;
-        if (segEndMs > state.lastEndMs) {
-          state.lastEndMs = segEndMs;
-        }
-
-        if (segment.sequenceNumber > state.lastSegmentIndex) {
-          state.lastSegmentIndex = segment.sequenceNumber;
-        }
-
-        formatState.set(segment.itag, state);
+        const batch = newSegmentsByItag.get(segment.itag) ?? [];
+        batch.push(segment);
+        newSegmentsByItag.set(segment.itag, batch);
       }
+    }
+
+    for (const [itag, batch] of newSegmentsByItag) {
+      batch.sort((a, b) => a.sequenceNumber - b.sequenceNumber);
+      const totalDuration = batch.reduce((sum, s) => sum + s.durationMs, 0);
+      bufferedBatches.push({
+        itag,
+        startMs: batch[0].startMs,
+        durationMs: totalDuration,
+        startSegmentIndex: batch[0].sequenceNumber,
+        endSegmentIndex: batch[batch.length - 1].sequenceNumber
+      });
     }
 
     function bytesTotal(itag: number) {
@@ -359,8 +391,29 @@ async function runFirefoxOwnSabr({ request, tabId, signal }: {
       segsByItag[s.itag] = (segsByItag[s.itag] ?? 0) + 1;
     }
 
-    const videoState = formatState.get(videoItag);
-    const audioState = formatState.get(audioItag);
+    function latestEndMsFor(itag: number) {
+      let maxEnd = 0;
+      for (const batch of bufferedBatches) {
+        if (batch.itag === itag) {
+          const end = batch.startMs + batch.durationMs;
+          if (end > maxEnd) maxEnd = end;
+        }
+      }
+      return maxEnd;
+    }
+
+    function latestSegmentFor(itag: number) {
+      let maxSeg = 0;
+      for (const batch of bufferedBatches) {
+        if (batch.itag === itag && batch.endSegmentIndex > maxSeg) {
+          maxSeg = batch.endSegmentIndex;
+        }
+      }
+      return maxSeg;
+    }
+
+    const vEndMs = latestEndMsFor(videoItag);
+    const aEndMs = latestEndMsFor(audioItag);
     await writeOwnSabrTrace({
       phase: "iter",
       iter,
@@ -372,13 +425,14 @@ async function runFirefoxOwnSabr({ request, tabId, signal }: {
       aBytes: audioTotal,
       vExpected: videoExpected,
       aExpected: audioExpected,
-      vEndMs: videoState?.lastEndMs ?? 0,
-      aEndMs: audioState?.lastEndMs ?? 0,
-      vLastSeg: videoState?.lastSegmentIndex ?? 0,
-      aLastSeg: audioState?.lastSegmentIndex ?? 0,
+      vEndMs,
+      aEndMs,
+      vLastSeg: latestSegmentFor(videoItag),
+      aLastSeg: latestSegmentFor(audioItag),
       cookie: !!playbackCookie,
-      bodyLen: body.byteLength
-    });
+      bodyLen: body.byteLength,
+      batches: bufferedBatches.length
+    }, tabId);
 
     const videoDone = videoExpected > 0 && videoTotal >= videoExpected;
     const audioDone = audioExpected > 0 && audioTotal >= audioExpected;
@@ -400,30 +454,14 @@ async function runFirefoxOwnSabr({ request, tabId, signal }: {
       body = new Uint8Array(spliced);
     }
 
-    // Compute the new playerTimeMs = min across formats of their furthest-reached
-    // end time. This is what yt-dlp's SABR downloader uses.
-    const playerTimeMs = Math.min(
-      videoState?.lastEndMs ?? 0,
-      audioState?.lastEndMs ?? 0
-    );
-
-    const rangesForBody: Array<{ itag: number; startMs: number; durationMs: number; startSegmentIndex: number; endSegmentIndex: number }> = [];
-    for (const [itag, state] of formatState) {
-      if (state.lastEndMs > 0) {
-        rangesForBody.push({
-          itag,
-          startMs: 0,
-          durationMs: state.lastEndMs,
-          startSegmentIndex: 1,
-          endSegmentIndex: state.lastSegmentIndex
-        });
-      }
-    }
+    const PLAYER_LOOKAHEAD_MS = 5000;
+    const minEndMs = Math.min(vEndMs, aEndMs);
+    const playerTimeMs = minEndMs + PLAYER_LOOKAHEAD_MS;
 
     const splicedState = spliceBodyWithState({
       body,
       playerTimeMs,
-      ranges: rangesForBody
+      ranges: bufferedBatches
     });
     body = new Uint8Array(splicedState);
   }

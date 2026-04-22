@@ -188,24 +188,20 @@ export function clearCapturedSabrData(tabId: number) {
   capturedByTab.delete(tabId);
 }
 
-/**
- * Extracts YT player's preferredVideoFormatIds and preferredAudioFormatIds
- * (field 3 and field 2 of VideoPlaybackAbrRequest, each a repeated FormatId
- * message with itag at field 1) from a captured SABR request body.
- * The itags YT is actively requesting are what the server has primed a
- * response for; using them as our library's target formats ensures the
- * UMP response's MEDIA parts match what our library is looking for.
- */
-export function extractPreferredFormatItagsFromBody(body: number[]) {
+const PREFERRED_AUDIO_FORMAT_IDS_FIELD = 16;
+const PREFERRED_VIDEO_FORMAT_IDS_FIELD = 17;
+
+export function dumpFieldBytes(body: number[], targetField: number, maxEntries = 3) {
   const buf = new Uint8Array(body);
   let offset = 0;
+  const hits: string[] = [];
 
-  function readVarint(off: number) {
+  while (offset < buf.byteLength && hits.length < maxEntries) {
     let value = 0;
     let shift = 0;
-    while (off < buf.byteLength) {
-      const byte = buf[off];
-      off++;
+    while (offset < buf.byteLength) {
+      const byte = buf[offset];
+      offset++;
       value |= (byte & 0x7f) << shift;
       if ((byte & 0x80) === 0) {
         break;
@@ -213,50 +209,164 @@ export function extractPreferredFormatItagsFromBody(body: number[]) {
 
       shift += 7;
     }
-    return {
-      value: value >>> 0,
-      offset: off
-    };
-  }
 
-  function readItagFromFormatIdMessage(data: Uint8Array) {
-    let ctxOffset = 0;
-    while (ctxOffset < data.byteLength) {
-      const tag = readVarint(ctxOffset);
-      ctxOffset = tag.offset;
-      const fieldNumber = tag.value >> 3;
-      const wireType = tag.value & 0x7;
-      if (wireType === 0) {
-        const val = readVarint(ctxOffset);
-        if (fieldNumber === 1) {
-          return val.value;
+    const fieldNumber = value >>> 3;
+    const wireType = value & 0x7;
+
+    if (wireType === 0) {
+      while (offset < buf.byteLength && (buf[offset] & 0x80) !== 0) {
+        offset++;
+      }
+
+      offset++;
+    } else if (wireType === 1) {
+      offset += 8;
+    } else if (wireType === 5) {
+      offset += 4;
+    } else if (wireType === 2) {
+      let len = 0;
+      let lshift = 0;
+      while (offset < buf.byteLength) {
+        const byte = buf[offset];
+        offset++;
+        len |= (byte & 0x7f) << lshift;
+        if ((byte & 0x80) === 0) {
+          break;
         }
 
-        ctxOffset = val.offset;
-      } else if (wireType === 1) {
-        ctxOffset += 8;
-      } else if (wireType === 5) {
-        ctxOffset += 4;
-      } else if (wireType === 2) {
-        const len = readVarint(ctxOffset);
-        ctxOffset = len.offset + len.value;
-      } else {
-        break;
+        lshift += 7;
       }
+
+      if (fieldNumber === targetField) {
+        hits.push(Array.from(buf.subarray(offset, offset + Math.min(len, 32)))
+          .map(b => b.toString(16).padStart(2, "0")).join(" "));
+      }
+
+      offset += len;
+    } else {
+      break;
     }
-    return null;
   }
 
+  return hits;
+}
+
+export function inspectTopLevelFields(body: number[]) {
+  const buf = new Uint8Array(body);
+  let offset = 0;
+  const fieldCounts: Record<number, number> = {};
+
+  while (offset < buf.byteLength) {
+    let value = 0;
+    let shift = 0;
+    while (offset < buf.byteLength) {
+      const byte = buf[offset];
+      offset++;
+      value |= (byte & 0x7f) << shift;
+      if ((byte & 0x80) === 0) {
+        break;
+      }
+
+      shift += 7;
+    }
+
+    const fieldNumber = value >>> 3;
+    const wireType = value & 0x7;
+    fieldCounts[fieldNumber] = (fieldCounts[fieldNumber] ?? 0) + 1;
+
+    if (wireType === 0) {
+      while (offset < buf.byteLength && (buf[offset] & 0x80) !== 0) {
+        offset++;
+      }
+
+      offset++;
+    } else if (wireType === 1) {
+      offset += 8;
+    } else if (wireType === 5) {
+      offset += 4;
+    } else if (wireType === 2) {
+      let len = 0;
+      let lshift = 0;
+      while (offset < buf.byteLength) {
+        const byte = buf[offset];
+        offset++;
+        len |= (byte & 0x7f) << lshift;
+        if ((byte & 0x80) === 0) {
+          break;
+        }
+
+        lshift += 7;
+      }
+
+      offset += len;
+    } else {
+      break;
+    }
+  }
+
+  return fieldCounts;
+}
+
+function readVarintFromBuffer(buf: Uint8Array, off: number) {
+  let value = 0;
+  let shift = 0;
+  while (off < buf.byteLength) {
+    const byte = buf[off];
+    off++;
+    value |= (byte & 0x7f) << shift;
+    if ((byte & 0x80) === 0) {
+      break;
+    }
+
+    shift += 7;
+  }
+  return {
+    value: value >>> 0,
+    offset: off
+  };
+}
+
+function readItagFromFormatIdMessage(data: Uint8Array) {
+  let ctxOffset = 0;
+  while (ctxOffset < data.byteLength) {
+    const tag = readVarintFromBuffer(data, ctxOffset);
+    ctxOffset = tag.offset;
+    const fieldNumber = tag.value >> 3;
+    const wireType = tag.value & 0x7;
+    if (wireType === 0) {
+      const val = readVarintFromBuffer(data, ctxOffset);
+      if (fieldNumber === 1) {
+        return val.value;
+      }
+
+      ctxOffset = val.offset;
+    } else if (wireType === 1) {
+      ctxOffset += 8;
+    } else if (wireType === 5) {
+      ctxOffset += 4;
+    } else if (wireType === 2) {
+      const len = readVarintFromBuffer(data, ctxOffset);
+      ctxOffset = len.offset + len.value;
+    } else {
+      break;
+    }
+  }
+  return null;
+}
+
+export function extractPreferredFormatItagsFromBody(body: number[]) {
+  const buf = new Uint8Array(body);
+  let offset = 0;
   const video: number[] = [];
   const audio: number[] = [];
 
   while (offset < buf.byteLength) {
-    const tag = readVarint(offset);
+    const tag = readVarintFromBuffer(buf, offset);
     offset = tag.offset;
     const fieldNumber = tag.value >> 3;
     const wireType = tag.value & 0x7;
     if (wireType === 0) {
-      offset = readVarint(offset).offset;
+      offset = readVarintFromBuffer(buf, offset).offset;
       continue;
     }
 
@@ -274,13 +384,13 @@ export function extractPreferredFormatItagsFromBody(body: number[]) {
       break;
     }
 
-    const len = readVarint(offset);
+    const len = readVarintFromBuffer(buf, offset);
     offset = len.offset;
 
-    if (fieldNumber === 2 || fieldNumber === 3) {
+    if (fieldNumber === PREFERRED_AUDIO_FORMAT_IDS_FIELD || fieldNumber === PREFERRED_VIDEO_FORMAT_IDS_FIELD) {
       const itag = readItagFromFormatIdMessage(buf.subarray(offset, offset + len.value));
       if (itag !== null) {
-        if (fieldNumber === 3) {
+        if (fieldNumber === PREFERRED_VIDEO_FORMAT_IDS_FIELD) {
           video.push(itag);
         } else {
           audio.push(itag);

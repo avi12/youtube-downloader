@@ -404,10 +404,6 @@ export function spliceBodyWithPlaybackCookie(body: Uint8Array, cookieBytes: Uint
 }
 
 const FIELD_CLIENT_ABR_STATE = 1;
-// Per video_playback_abr_request.proto: bufferedRanges is top-level field 3
-// (not 23 — that was a wrong guess that got YT to silently ignore state and
-// loop-lock on the first segment window). Field numbers also cross-checked
-// against the googlevideo library's SabrStream.buildRequestBody.
 const FIELD_BUFFERED_RANGES = 3;
 const CLIENT_ABR_STATE_PLAYER_TIME_MS = 28;
 const BUFFERED_RANGE_FORMAT_ID = 1;
