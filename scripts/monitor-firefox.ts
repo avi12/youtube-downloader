@@ -16,7 +16,11 @@ import net from "node:net";
 import { setTimeout } from "node:timers/promises";
 
 const YTDL_ID = "youtube-downloader@avi12.com";
-const FIREFOX_RDP_PORT_FALLBACK = 9230;
+// 2828 = Marionette, 9230 = remote-debugging (CDP/BiDi). Neither speaks the
+// length-prefixed JSON RDP protocol. The actual devtools RDP server binds to
+// a dynamically-allocated port when `devtools.debugger.remote-enabled` is set.
+const FIREFOX_NON_RDP_PORTS = new Set([2828, 9230]);
+const FIREFOX_RDP_PORT_FALLBACK = 6000;
 const CONNECT_SETTLE_MS = 600;
 const SUBSCRIBE_SETTLE_MS = 500;
 const durationMs = (parseInt(process.argv[2] ?? "30", 10) || 30) * 1000;
@@ -36,8 +40,8 @@ function findFirefoxRdpPort() {
         timeout: 5000
       }
     );
-    const ports = out.trim().split(/\s+/).map(Number).filter(port => port > 1024);
-    return ports.find(port => port === FIREFOX_RDP_PORT_FALLBACK) ?? ports[0] ?? FIREFOX_RDP_PORT_FALLBACK;
+    const ports = out.trim().split(/\s+/).map(Number).filter(port => port > 1024 && !FIREFOX_NON_RDP_PORTS.has(port));
+    return ports[0] ?? FIREFOX_RDP_PORT_FALLBACK;
   } catch {
     return FIREFOX_RDP_PORT_FALLBACK;
   }
