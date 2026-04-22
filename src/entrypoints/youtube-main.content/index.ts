@@ -6,7 +6,6 @@ import { extractPlaylistMetadata, handleNavigateSuccess } from "./video/playlist
 import { extractAndDispatchVideoData } from "./video/video-data";
 import { CrossWorldMessage, crossWorldMessenger, dispatchButtonClick } from "@/lib/messaging/cross-world-messenger";
 import { CHILD_LIST_SUBTREE } from "@/lib/utils/dom";
-import { generatePoToken } from "@/lib/youtube/po-token-generator";
 import { type PlayerResponse } from "@/types";
 
 declare global {
@@ -87,24 +86,6 @@ export default defineContentScript({
       }
     });
 
-    crossWorldMessenger.onMessage(CrossWorldMessage.RefreshPoToken, async ({ data }) => {
-      try {
-        const poTokenBase64 = await generatePoToken(data.videoId);
-        return { poTokenBase64 };
-      } catch {
-        return null;
-      }
-    });
-
-    crossWorldMessenger.onMessage(CrossWorldMessage.AdvancePlayer, () => {
-      const elVideo = document.querySelector<HTMLVideoElement>("video.html5-main-video");
-      if (!elVideo) {
-        return;
-      }
-
-      elVideo.muted = true;
-      void elVideo.play().catch(() => {});
-    });
 
     // Track the latest buttonId per element so click handlers dispatch the current ID
     // even after Polymer strips the data attribute.

@@ -187,10 +187,7 @@ export async function downloadViaSabr({ request, signal, tabId, onProgress, firs
     return null;
   }
 
-  // On Firefox, our minted PO token triggers attestation-required even
-  // though YT player's captured body (with EMPTY PO token) works. Send an
-  // empty string so SabrStream omits the poToken field entirely.
-  const resolvedPoToken = import.meta.env.FIREFOX ? "" : (poToken ?? "");
+  const resolvedPoToken = poToken ?? "";
   if (isAudioOnly) {
     const audioData = await downloadAudioOnlyViaSabr({
       config: effectiveConfig,
