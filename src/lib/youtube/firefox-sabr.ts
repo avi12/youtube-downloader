@@ -404,13 +404,17 @@ export function spliceBodyWithPlaybackCookie(body: Uint8Array, cookieBytes: Uint
 }
 
 const FIELD_CLIENT_ABR_STATE = 1;
-const FIELD_BUFFERED_RANGES = 23;
-const CLIENT_ABR_STATE_PLAYER_TIME_MS = 15;
+// Per video_playback_abr_request.proto: bufferedRanges is top-level field 3
+// (not 23 — that was a wrong guess that got YT to silently ignore state and
+// loop-lock on the first segment window). Field numbers also cross-checked
+// against the googlevideo library's SabrStream.buildRequestBody.
+const FIELD_BUFFERED_RANGES = 3;
+const CLIENT_ABR_STATE_PLAYER_TIME_MS = 28;
 const BUFFERED_RANGE_FORMAT_ID = 1;
-const BUFFERED_RANGE_START_TIME_MS = 3;
-const BUFFERED_RANGE_DURATION_MS = 4;
-const BUFFERED_RANGE_START_SEGMENT_INDEX = 5;
-const BUFFERED_RANGE_END_SEGMENT_INDEX = 6;
+const BUFFERED_RANGE_START_TIME_MS = 2;
+const BUFFERED_RANGE_DURATION_MS = 3;
+const BUFFERED_RANGE_START_SEGMENT_INDEX = 4;
+const BUFFERED_RANGE_END_SEGMENT_INDEX = 5;
 const FORMAT_ID_ITAG = 1;
 
 function writeVarintToArray(out: number[], value: number) {
