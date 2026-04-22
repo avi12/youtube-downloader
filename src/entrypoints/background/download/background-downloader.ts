@@ -256,10 +256,13 @@ async function runFirefoxOwnSabr({ request, tabId, signal }: {
   const audioExpected = parseInt(
     request.sabrConfig?.formats.find(f => f.itag === audioItag)?.contentLength ?? "0", 10);
 
-  const MAX_ITERATIONS = 400;
-  const NO_PROGRESS_LIMIT = 5;
+  const MAX_ITERATIONS = 20;
+  const NO_PROGRESS_LIMIT = 3;
   const baseUrl = new URL(captured.url);
   let noProgressIterations = 0;
+  void sendMessage(MessageType.BgDebugLog, {
+    msg: `own-sabr start videoItag=${videoItag} audioItag=${audioItag} videoExpected=${videoExpected} audioExpected=${audioExpected}`
+  }, tabId).catch(() => {});
   for (let iter = 0; iter < MAX_ITERATIONS; iter++) {
     if (signal.aborted) {
       return null;
@@ -318,6 +321,10 @@ async function runFirefoxOwnSabr({ request, tabId, signal }: {
 
     const videoTotal = bytesTotal(videoItag);
     const audioTotal = bytesTotal(audioItag);
+
+    void sendMessage(MessageType.BgDebugLog, {
+      msg: `iter=${iter} resp=${response.byteLength} segs=${segments.length} new=${newSegmentsThisIteration} vBytes=${videoTotal}/${videoExpected} aBytes=${audioTotal}/${audioExpected} cookie=${!!playbackCookie}`
+    }, tabId).catch(() => {});
 
     const videoDone = videoExpected > 0 && videoTotal >= videoExpected;
     const audioDone = audioExpected > 0 && audioTotal >= audioExpected;

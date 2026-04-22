@@ -30,7 +30,8 @@ export const MessageType = {
   PipelineDownload: "pipelineDownload",
   RecentDownloadsChanged: "recentDownloadsChanged",
   TranscodeRecentDownload: "transcodeRecentDownload",
-  PipelineZipProgress: "pipelineZipProgress"
+  PipelineZipProgress: "pipelineZipProgress",
+  BgDebugLog: "bgDebugLog"
 } as const;
 
 interface ProtocolMap {
@@ -185,6 +186,7 @@ interface ProtocolMap {
     isDone: boolean;
     tabId: number;
   }): void;
+  bgDebugLog(data: { msg: string }): void;
 }
 
 export const { sendMessage, onMessage } =

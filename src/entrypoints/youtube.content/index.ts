@@ -192,6 +192,9 @@ export default defineContentScript({
       ...currentOptions
     });
 
+    onMessage(MessageType.BgDebugLog, ({ data }) => {
+      console.log("[ytdl-trace:bg]", data.msg);
+    });
     registerCrossWorldHandlers(isDownloadIframe, context);
     registerBackgroundMessageHandlers();
     listenForSabrBodyReady();
