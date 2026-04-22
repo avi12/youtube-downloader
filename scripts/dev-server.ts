@@ -60,7 +60,9 @@ const USER_PROFILES_DIR = resolve(PROJECT_ROOT, "user-profiles");
 const CHROME_PROFILE_DIR = join(USER_PROFILES_DIR, "chrome");
 const { LANG = "en" } = process.env;
 const START_URL = "https://www.youtube.com/feed/subscriptions";
-const CDP_PORT = 9229;
+const CDP_PORT = Number(process.env.YTDL_CDP_PORT ?? 9229);
+const FIREFOX_MARIONETTE_PORT = Number(process.env.YTDL_MARIONETTE_PORT ?? 2828);
+const FIREFOX_REMOTE_DEBUG_PORT = Number(process.env.YTDL_REMOTE_DEBUG_PORT ?? 9230);
 const REBUILD_DEBOUNCE_MS = 800;
 
 // ── Chrome profile setup ────────────────────────────────────────────────────
@@ -171,9 +173,19 @@ function stripFirefoxThemePins() {
   console.log(`Stripped ${lines.length - kept.length} pinned theme pref(s) from Firefox prefs.js`);
 }
 
+function writeFirefoxUserPrefs() {
+  const userJsPath = join(FIREFOX_PROFILE_DIR, "user.js");
+  const prefs = [
+    `user_pref("marionette.port", ${FIREFOX_MARIONETTE_PORT});`,
+    `user_pref("remote.active-protocols", 3);`
+  ].join("\n");
+  writeFileSync(userJsPath, prefs + "\n");
+}
+
 function setupFirefoxProfile() {
   mkdirSync(FIREFOX_PROFILE_DIR, { recursive: true });
   stripFirefoxThemePins();
+  writeFirefoxUserPrefs();
 
   if (existsSync(FIREFOX_PROFILE_SENTINEL)) {
     return FIREFOX_PROFILE_DIR;
@@ -299,7 +311,7 @@ async function main() {
       keepProfileChanges: true,
       firefoxProfile: profileDirectory,
       firefox: firefoxBinary,
-      args: [`--lang=${LANG}`, "--marionette", "--remote-debugging-port=9230", "--allow-downgrade"],
+      args: [`--lang=${LANG}`, "--marionette", `--remote-debugging-port=${FIREFOX_REMOTE_DEBUG_PORT}`, "--allow-downgrade"],
       noReload: true,
       noInput: true
     }
