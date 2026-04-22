@@ -252,17 +252,41 @@ export async function startBackgroundDownload({ request, tabId }: {
   try {
     const enrichedMetadataPromise = enrichMetadataFromYouTubeMusic(metadata);
 
+    let firstBodyOverride: Uint8Array | undefined = undefined;
+    let sabrRequest = request;
+    if (import.meta.env.FIREFOX) {
+      const { getCapturedSabrData, extractPreferredFormatItagsFromBody } = await import("@/lib/youtube/sabr-request-capture");
+      const captured = getCapturedSabrData(tabId);
+      if (captured) {
+        firstBodyOverride = new Uint8Array(captured.body);
+        const itags = extractPreferredFormatItagsFromBody(captured.body);
+        const ytVideoFormat = itags.video[0] !== undefined
+          ? request.sabrConfig?.formats.find(f => f.itag === itags.video[0])
+          : undefined;
+        const ytAudioFormat = itags.audio[0] !== undefined
+          ? request.sabrConfig?.formats.find(f => f.itag === itags.audio[0])
+          : undefined;
+        sabrRequest = {
+          ...request,
+          videoFormat: ytVideoFormat ?? request.videoFormat,
+          audioFormat: ytAudioFormat ?? request.audioFormat
+        };
+      }
+    }
+
     let result = await attemptSabrDownload({
-      request,
+      request: sabrRequest,
       signal,
-      tabId
+      tabId,
+      firstBodyOverride
     }).catch(sabrError => {
       if (signal.aborted) {
         throw sabrError;
       }
 
+      const sabrErrorMsg = sabrError instanceof Error ? `${sabrError.message}\n${sabrError.stack ?? ""}` : String(sabrError);
       console.warn("[ytdl:bg] SABR failed, trying CDN:", sabrError);
-      // Resets the UI to indeterminate rather than a frozen percentage while CDN starts.
+      void sendMessage(MessageType.BgDebugLog, { msg: `SABR failed: ${sabrErrorMsg}` }, tabId);
       void sendMessage(MessageType.UpdateDownloadProgress, {
         videoId,
         progress: 0,
@@ -281,6 +305,7 @@ export async function startBackgroundDownload({ request, tabId }: {
 
     if (!result?.audioData && !result?.videoData) {
       console.warn("[ytdl:bg] No download method succeeded for", videoId);
+      void sendMessage(MessageType.BgDebugLog, { msg: `No download method succeeded for ${videoId}` }, tabId);
       reportDownloadFailed({
         videoId,
         tabId
@@ -309,7 +334,9 @@ export async function startBackgroundDownload({ request, tabId }: {
       return;
     }
 
+    const errorMsg = error instanceof Error ? `${error.message}\n${error.stack ?? ""}` : String(error);
     console.warn("[ytdl:bg] Background download failed:", error);
+    void sendMessage(MessageType.BgDebugLog, { msg: `Background download failed: ${errorMsg}` }, tabId);
     reportDownloadFailed({
       videoId,
       tabId
