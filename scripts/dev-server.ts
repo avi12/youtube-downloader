@@ -35,7 +35,10 @@ function findFirefoxNightlyMsix() {
   try {
     const installLocation = execSync(
       `powershell -NoProfile -Command "(Get-AppxPackage Mozilla.MozillaFirefoxNightly -EA 0).InstallLocation"`,
-      { encoding: "utf8", timeout: 5000 }
+      {
+        encoding: "utf8",
+        timeout: 5000
+      }
     ).trim();
     if (!installLocation) {
       return undefined;
@@ -144,19 +147,38 @@ function findDefaultFirefoxProfilePath() {
 const FIREFOX_PROFILE_DIR = join(USER_PROFILES_DIR, "firefox");
 const FIREFOX_PROFILE_SENTINEL = join(FIREFOX_PROFILE_DIR, ".seeded");
 
+// Prefs that earlier dev-server versions pinned into user.js and that then
+// got persisted into prefs.js. They lock Firefox to dark regardless of the
+// Windows theme, which defeats live OS theme following. Stripping them on
+// every launch (while Firefox isn't writing the file) lets Firefox behave
+// like a normal install — unset → reads from OS → live-reacts to changes.
+const FIREFOX_THEME_PINS = [
+  "ui.systemUsesDarkTheme",
+  "browser.theme.content-theme",
+  "browser.theme.toolbar-theme",
+  "layout.css.prefers-color-scheme.content-override"
+];
+
+function stripFirefoxThemePins() {
+  const prefsPath = join(FIREFOX_PROFILE_DIR, "prefs.js");
+  if (!existsSync(prefsPath)) {
+    return;
+  }
+
+  const original = readFileSync(prefsPath, "utf-8");
+  const lines = original.split(/\r?\n/);
+  const kept = lines.filter(line => !FIREFOX_THEME_PINS.some(name => line.includes(`"${name}"`)));
+  if (kept.length === lines.length) {
+    return;
+  }
+
+  writeFileSync(prefsPath, kept.join("\n"));
+  console.log(`Stripped ${lines.length - kept.length} pinned theme pref(s) from Firefox prefs.js`);
+}
+
 function setupFirefoxProfile() {
   mkdirSync(FIREFOX_PROFILE_DIR, { recursive: true });
-
-  // Keep Firefox on auto/system theme (2) and tell it the system is dark
-  // (ui.systemUsesDarkTheme=1) — MSIX Firefox's dev profile sometimes can't
-  // read Windows' color scheme directly, so the pref pins the answer.
-  const userJs = [
-    `user_pref("ui.systemUsesDarkTheme", 1);`,
-    `user_pref("browser.theme.content-theme", 2);`,
-    `user_pref("browser.theme.toolbar-theme", 2);`,
-    `user_pref("layout.css.prefers-color-scheme.content-override", 2);`
-  ].join("\n") + "\n";
-  writeFileSync(join(FIREFOX_PROFILE_DIR, "user.js"), userJs);
+  stripFirefoxThemePins();
 
   if (existsSync(FIREFOX_PROFILE_SENTINEL)) {
     return FIREFOX_PROFILE_DIR;

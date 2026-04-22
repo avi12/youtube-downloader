@@ -143,6 +143,11 @@ export async function generatePoToken(videoId: string) {
     throw new Error("Mint function not available");
   }
 
+  // BotGuard returns a longer blob that YouTube's player slices to 30 bytes
+  // for the SABR streamerContext.poToken. Sending the full blob makes SABR
+  // respond with "attestation required" on Firefox.
+  const SABR_PO_TOKEN_BYTES = 30;
   const tokenBytes = await mintFunction(new TextEncoder().encode(videoId));
-  return btoa(String.fromCharCode(...tokenBytes));
+  const sabrTokenBytes = tokenBytes.slice(0, SABR_PO_TOKEN_BYTES);
+  return btoa(String.fromCharCode(...sabrTokenBytes));
 }
