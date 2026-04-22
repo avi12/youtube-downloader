@@ -63,7 +63,7 @@ async function downloadAudioOnlyViaSabr({ config, audioFormat, poToken, signal, 
 }
 
 async function downloadVideoAudioViaSabr({
-  config, videoFormat, audioFormat, poToken, signal, videoId, tabId, onProgress
+  config, videoFormat, audioFormat, poToken, signal, videoId, tabId, onProgress, firstBodyOverride
 }: {
   config: SabrConfig;
   videoFormat: AdaptiveFormatItem;
@@ -73,6 +73,7 @@ async function downloadVideoAudioViaSabr({
   videoId: string;
   tabId: number;
   onProgress?: () => void;
+  firstBodyOverride?: Uint8Array;
 }) {
   const totalExpectedBytes = parseContentLength(videoFormat) + parseContentLength(audioFormat);
   let videoReceivedBytes = 0;
@@ -95,6 +96,7 @@ async function downloadVideoAudioViaSabr({
 
   const videoFetch = createProgressFetch({
     signal,
+    firstBodyOverride,
     onBytesReceived(bytes) {
       videoReceivedBytes += bytes;
       onProgress?.();
@@ -103,6 +105,7 @@ async function downloadVideoAudioViaSabr({
   });
   const audioFetch = createProgressFetch({
     signal,
+    firstBodyOverride,
     onBytesReceived(bytes) {
       audioReceivedBytes += bytes;
       onProgress?.();
@@ -162,11 +165,12 @@ async function downloadExtraAudioTracksViaSabr({ config, formats, poToken, signa
   return tracks;
 }
 
-export async function downloadViaSabr({ request, signal, tabId, onProgress }: {
+export async function downloadViaSabr({ request, signal, tabId, onProgress, firstBodyOverride }: {
   request: DownloadRequest;
   signal: AbortSignal;
   tabId: number;
   onProgress?: () => void;
+  firstBodyOverride?: Uint8Array;
 }): Promise<DownloadResult | null> {
   const { videoId, type, sabrConfig, poToken, sabrUrl, videoFormat, audioFormat, additionalAudioFormats } = request;
   const isAudioOnly = type === DownloadType.Audio;
@@ -183,7 +187,10 @@ export async function downloadViaSabr({ request, signal, tabId, onProgress }: {
     return null;
   }
 
-  const resolvedPoToken = poToken ?? "";
+  // On Firefox, our minted PO token triggers attestation-required even
+  // though YT player's captured body (with EMPTY PO token) works. Send an
+  // empty string so SabrStream omits the poToken field entirely.
+  const resolvedPoToken = import.meta.env.FIREFOX ? "" : (poToken ?? "");
   if (isAudioOnly) {
     const audioData = await downloadAudioOnlyViaSabr({
       config: effectiveConfig,
@@ -207,6 +214,7 @@ export async function downloadViaSabr({ request, signal, tabId, onProgress }: {
 
   const [videoData, audioData] = await downloadVideoAudioViaSabr({
     config: effectiveConfig,
+    firstBodyOverride,
     videoFormat,
     audioFormat,
     poToken: resolvedPoToken,

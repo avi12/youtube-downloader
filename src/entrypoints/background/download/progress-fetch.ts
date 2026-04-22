@@ -43,13 +43,21 @@ export async function sendProgressUpdate({ videoId, progress, progressType, tabI
   }, tabId);
 }
 
-export function createProgressFetch({ signal, onBytesReceived }: {
+export function createProgressFetch({ signal, onBytesReceived, firstBodyOverride }: {
   signal: AbortSignal;
   onBytesReceived: (bytes: number) => void;
+  firstBodyOverride?: Uint8Array;
 }) {
+  let fetchCount = 0;
   return async (input: RequestInfo | URL, init?: RequestInit) => {
+    fetchCount++;
+    const useOverride = fetchCount === 1 && firstBodyOverride !== undefined;
+    const effectiveInit: RequestInit = useOverride
+      ? { ...init, body: firstBodyOverride as BodyInit }
+      : (init ?? {});
+
     const response = await fetch(input, {
-      ...init,
+      ...effectiveInit,
       signal,
       credentials: "include"
     });

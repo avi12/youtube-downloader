@@ -211,10 +211,11 @@ export function cancelBackgroundDownload(videoId: string) {
   activeBackgroundDownloads.delete(videoId);
 }
 
-async function attemptSabrDownload({ request, signal, tabId }: {
+async function attemptSabrDownload({ request, signal, tabId, firstBodyOverride }: {
   request: DownloadRequest;
   signal: AbortSignal;
   tabId: number;
+  firstBodyOverride?: Uint8Array;
 }) {
   const sabrAbortController = new AbortController();
   let sabrStallTimeoutId = setTimeout(() => sabrAbortController.abort(), SABR_STALL_TIMEOUT_MS);
@@ -230,6 +231,7 @@ async function attemptSabrDownload({ request, signal, tabId }: {
       request,
       signal: sabrAbortController.signal,
       tabId,
+      firstBodyOverride,
       onProgress: resetSabrStallTimer
     });
   } finally {
@@ -250,10 +252,23 @@ export async function startBackgroundDownload({ request, tabId }: {
   try {
     const enrichedMetadataPromise = enrichMetadataFromYouTubeMusic(metadata);
 
+    // On Firefox, the library's constructed SABR body is missing fields YT
+    // requires (observed: clientAbrState is 13 bytes vs YT player's 97).
+    // Seed the first fetch with the captured body so we pass the initial
+    // handshake; library takes over from UMP response onwards.
+    let firstBodyOverride: Uint8Array | undefined = undefined;
+    if (import.meta.env.FIREFOX) {
+      const { getCapturedSabrData } = await import("@/lib/youtube/sabr-request-capture");
+      const captured = getCapturedSabrData(tabId);
+      if (captured) {
+        firstBodyOverride = new Uint8Array(captured.body);
+      }
+    }
     let result = await attemptSabrDownload({
       request,
       signal,
-      tabId
+      tabId,
+      firstBodyOverride
     }).catch(sabrError => {
       if (signal.aborted) {
         throw sabrError;
