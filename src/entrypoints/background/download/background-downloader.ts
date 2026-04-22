@@ -255,17 +255,34 @@ export async function startBackgroundDownload({ request, tabId }: {
     // On Firefox, the library's constructed SABR body is missing fields YT
     // requires (observed: clientAbrState is 13 bytes vs YT player's 97).
     // Seed the first fetch with the captured body so we pass the initial
-    // handshake; library takes over from UMP response onwards.
+    // handshake; library takes over from UMP response onwards. Also swap
+    // the request's video/audio format IDs to match whatever YT player is
+    // actively requesting — otherwise the library's subsequent self-built
+    // requests ask for a format the server never decided to prime a
+    // response for, and no MEDIA parts are extracted.
     let firstBodyOverride: Uint8Array | undefined = undefined;
+    let sabrRequest = request;
     if (import.meta.env.FIREFOX) {
-      const { getCapturedSabrData } = await import("@/lib/youtube/sabr-request-capture");
+      const { getCapturedSabrData, extractPreferredFormatItagsFromBody } = await import("@/lib/youtube/sabr-request-capture");
       const captured = getCapturedSabrData(tabId);
       if (captured) {
         firstBodyOverride = new Uint8Array(captured.body);
+        const itags = extractPreferredFormatItagsFromBody(captured.body);
+        const ytVideoFormat = itags.video[0] !== undefined
+          ? request.sabrConfig?.formats.find(f => f.itag === itags.video[0])
+          : undefined;
+        const ytAudioFormat = itags.audio[0] !== undefined
+          ? request.sabrConfig?.formats.find(f => f.itag === itags.audio[0])
+          : undefined;
+        sabrRequest = {
+          ...request,
+          videoFormat: ytVideoFormat ?? request.videoFormat,
+          audioFormat: ytAudioFormat ?? request.audioFormat
+        };
       }
     }
     let result = await attemptSabrDownload({
-      request,
+      request: sabrRequest,
       signal,
       tabId,
       firstBodyOverride

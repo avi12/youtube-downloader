@@ -187,3 +187,109 @@ export function extractPoTokenFromBody(body: number[]) {
 export function clearCapturedSabrData(tabId: number) {
   capturedByTab.delete(tabId);
 }
+
+/**
+ * Extracts YT player's preferredVideoFormatIds and preferredAudioFormatIds
+ * (field 3 and field 2 of VideoPlaybackAbrRequest, each a repeated FormatId
+ * message with itag at field 1) from a captured SABR request body.
+ * The itags YT is actively requesting are what the server has primed a
+ * response for; using them as our library's target formats ensures the
+ * UMP response's MEDIA parts match what our library is looking for.
+ */
+export function extractPreferredFormatItagsFromBody(body: number[]) {
+  const buf = new Uint8Array(body);
+  let offset = 0;
+
+  function readVarint(off: number) {
+    let value = 0;
+    let shift = 0;
+    while (off < buf.byteLength) {
+      const byte = buf[off];
+      off++;
+      value |= (byte & 0x7f) << shift;
+      if ((byte & 0x80) === 0) {
+        break;
+      }
+
+      shift += 7;
+    }
+    return {
+      value: value >>> 0,
+      offset: off
+    };
+  }
+
+  function readItagFromFormatIdMessage(data: Uint8Array) {
+    let ctxOffset = 0;
+    while (ctxOffset < data.byteLength) {
+      const tag = readVarint(ctxOffset);
+      ctxOffset = tag.offset;
+      const fieldNumber = tag.value >> 3;
+      const wireType = tag.value & 0x7;
+      if (wireType === 0) {
+        const val = readVarint(ctxOffset);
+        if (fieldNumber === 1) {
+          return val.value;
+        }
+
+        ctxOffset = val.offset;
+      } else if (wireType === 1) {
+        ctxOffset += 8;
+      } else if (wireType === 5) {
+        ctxOffset += 4;
+      } else if (wireType === 2) {
+        const len = readVarint(ctxOffset);
+        ctxOffset = len.offset + len.value;
+      } else {
+        break;
+      }
+    }
+    return null;
+  }
+
+  const video: number[] = [];
+  const audio: number[] = [];
+
+  while (offset < buf.byteLength) {
+    const tag = readVarint(offset);
+    offset = tag.offset;
+    const fieldNumber = tag.value >> 3;
+    const wireType = tag.value & 0x7;
+    if (wireType === 0) {
+      offset = readVarint(offset).offset;
+      continue;
+    }
+
+    if (wireType === 1) {
+      offset += 8;
+      continue;
+    }
+
+    if (wireType === 5) {
+      offset += 4;
+      continue;
+    }
+
+    if (wireType !== 2) {
+      break;
+    }
+
+    const len = readVarint(offset);
+    offset = len.offset;
+
+    if (fieldNumber === 2 || fieldNumber === 3) {
+      const itag = readItagFromFormatIdMessage(buf.subarray(offset, offset + len.value));
+      if (itag !== null) {
+        if (fieldNumber === 3) {
+          video.push(itag);
+        } else {
+          audio.push(itag);
+        }
+      }
+    }
+
+    offset += len.value;
+  }
+
+  return { video, audio };
+}
