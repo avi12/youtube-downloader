@@ -31,7 +31,8 @@ export const MessageType = {
   RecentDownloadsChanged: "recentDownloadsChanged",
   TranscodeRecentDownload: "transcodeRecentDownload",
   PipelineZipProgress: "pipelineZipProgress",
-  BgDebugLog: "bgDebugLog"
+  BgDebugLog: "bgDebugLog",
+  RefreshPoToken: "refreshPoToken"
 } as const;
 
 interface ProtocolMap {
@@ -145,7 +146,7 @@ interface ProtocolMap {
 
   refreshPoToken(data: {
     videoId: string;
-  }): string | null;
+  }): { poTokenBase64: string } | null;
 
   pipelineProgress(data: Parameters<ProtocolMap["updateDownloadProgress"]>[0] & {
     tabId: number;

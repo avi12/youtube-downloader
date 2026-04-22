@@ -22,6 +22,8 @@ const UMP_PART_MEDIA = 21;
 const UMP_PART_MEDIA_END = 22;
 const UMP_PART_NEXT_REQUEST_POLICY = 35;
 const UMP_PART_FORMAT_INITIALIZATION_METADATA = 42;
+const UMP_PART_STREAM_PROTECTION_STATUS = 58;
+const STREAM_PROTECTION_STATUS_FIELD = 1;
 
 const PROTO_WIRE_VARINT = 0;
 const PROTO_WIRE_LENGTH_DELIMITED = 2;
@@ -202,6 +204,7 @@ interface SabrRunResult {
   audioBytes: Uint8Array;
   playbackCookie: Uint8Array | null;
   backoffTimeMs: number;
+  streamProtectionStatus: number;
   segments: SabrSegment[];
 }
 
@@ -288,6 +291,7 @@ function encodeLengthDelimited(fieldNumber: number, bytes: Uint8Array): Uint8Arr
 
 const FIELD_STREAMER_CONTEXT = 19;
 const FIELD_PLAYBACK_COOKIE = 3;
+const FIELD_PO_TOKEN = 2;
 
 /**
  * Takes a VideoPlaybackAbrRequest body and a PlaybackCookie (raw bytes),
@@ -405,6 +409,93 @@ export function spliceBodyWithPlaybackCookie(body: Uint8Array, cookieBytes: Uint
   const newStreamerField = encodeLengthDelimited(FIELD_STREAMER_CONTEXT, newCtx);
 
   // Splice it back into the body.
+  const before = body.subarray(0, streamerCtxStart);
+  const after = body.subarray(streamerCtxPayloadStart + streamerCtxPayloadLen);
+  const out = new Uint8Array(before.byteLength + newStreamerField.byteLength + after.byteLength);
+  out.set(before, 0);
+  out.set(newStreamerField, before.byteLength);
+  out.set(after, before.byteLength + newStreamerField.byteLength);
+  return out;
+}
+
+export function spliceBodyWithPoToken(body: Uint8Array, poTokenBytes: Uint8Array): Uint8Array {
+  let offset = 0;
+  let streamerCtxStart = -1;
+  let streamerCtxPayloadStart = -1;
+  let streamerCtxPayloadLen = -1;
+  while (offset < body.byteLength) {
+    const tagStart = offset;
+    const [tag, afterTag] = readProtobufVarint(body, offset);
+    if (tag < 0) break;
+    offset = afterTag;
+    const fieldNumber = tag >> 3;
+    const wireType = tag & 0x7;
+    if (wireType === PROTO_WIRE_VARINT) {
+      const [, next] = readProtobufVarint(body, offset);
+      offset = next;
+      continue;
+    }
+
+    if (wireType !== PROTO_WIRE_LENGTH_DELIMITED) break;
+    const [length, afterLength] = readProtobufVarint(body, offset);
+    if (length < 0) break;
+    if (fieldNumber === FIELD_STREAMER_CONTEXT) {
+      streamerCtxStart = tagStart;
+      streamerCtxPayloadStart = afterLength;
+      streamerCtxPayloadLen = length;
+      break;
+    }
+
+    offset = afterLength + length;
+  }
+
+  if (streamerCtxStart < 0) return body;
+
+  const ctx = body.subarray(streamerCtxPayloadStart, streamerCtxPayloadStart + streamerCtxPayloadLen);
+  const newPoTokenField = encodeLengthDelimited(FIELD_PO_TOKEN, poTokenBytes);
+  let innerOffset = 0;
+  let existingPoTokenStart = -1;
+  let existingPoTokenLen = 0;
+  while (innerOffset < ctx.byteLength) {
+    const innerTagStart = innerOffset;
+    const [innerTag, afterInnerTag] = readProtobufVarint(ctx, innerOffset);
+    if (innerTag < 0) break;
+    innerOffset = afterInnerTag;
+    const fieldNumber = innerTag >> 3;
+    const wireType = innerTag & 0x7;
+    if (wireType === PROTO_WIRE_VARINT) {
+      const [, next] = readProtobufVarint(ctx, innerOffset);
+      innerOffset = next;
+      continue;
+    }
+
+    if (wireType !== PROTO_WIRE_LENGTH_DELIMITED) break;
+    const [length, afterLength] = readProtobufVarint(ctx, innerOffset);
+    if (length < 0) break;
+    if (fieldNumber === FIELD_PO_TOKEN) {
+      existingPoTokenStart = innerTagStart;
+      existingPoTokenLen = afterLength + length - innerTagStart;
+      break;
+    }
+
+    innerOffset = afterLength + length;
+  }
+
+  let ctxWithoutPoToken: Uint8Array;
+  if (existingPoTokenStart >= 0) {
+    const before = ctx.subarray(0, existingPoTokenStart);
+    const after = ctx.subarray(existingPoTokenStart + existingPoTokenLen);
+    ctxWithoutPoToken = new Uint8Array(before.byteLength + after.byteLength);
+    ctxWithoutPoToken.set(before, 0);
+    ctxWithoutPoToken.set(after, before.byteLength);
+  } else {
+    ctxWithoutPoToken = ctx;
+  }
+
+  const newCtx = new Uint8Array(ctxWithoutPoToken.byteLength + newPoTokenField.byteLength);
+  newCtx.set(ctxWithoutPoToken, 0);
+  newCtx.set(newPoTokenField, ctxWithoutPoToken.byteLength);
+  const newStreamerField = encodeLengthDelimited(FIELD_STREAMER_CONTEXT, newCtx);
   const before = body.subarray(0, streamerCtxStart);
   const after = body.subarray(streamerCtxPayloadStart + streamerCtxPayloadLen);
   const out = new Uint8Array(before.byteLength + newStreamerField.byteLength + after.byteLength);
@@ -643,6 +734,7 @@ export function assembleMediaByFormat({ umpBody, expectedVideoItag, expectedAudi
   const mediaByHeaderId = new Map<number, Uint8Array[]>();
   let playbackCookie: Uint8Array | null = null;
   let backoffTimeMs = 0;
+  let streamProtectionStatus = 0;
 
   for (const part of parts) {
     if (part.type === UMP_PART_MEDIA_HEADER) {
@@ -664,6 +756,25 @@ export function assembleMediaByFormat({ umpBody, expectedVideoItag, expectedAudi
       const policy = parseNextRequestPolicy(part.data);
       playbackCookie = policy.playbackCookie;
       backoffTimeMs = policy.backoffTimeMs;
+    } else if (part.type === UMP_PART_STREAM_PROTECTION_STATUS) {
+      let offset = 0;
+      while (offset < part.data.byteLength) {
+        const [tag, afterTag] = readProtobufVarint(part.data, offset);
+        if (tag < 0) break;
+        offset = afterTag;
+        const fieldNumber = tag >> 3;
+        const wireType = tag & 0x7;
+        if (wireType === PROTO_WIRE_VARINT) {
+          const [value, next] = readProtobufVarint(part.data, offset);
+          if (fieldNumber === STREAM_PROTECTION_STATUS_FIELD) {
+            streamProtectionStatus = value;
+          }
+
+          offset = next;
+        } else {
+          break;
+        }
+      }
     }
   }
 
@@ -708,6 +819,7 @@ export function assembleMediaByFormat({ umpBody, expectedVideoItag, expectedAudi
     audioBytes: concatForItag(expectedAudioItag),
     playbackCookie,
     backoffTimeMs,
+    streamProtectionStatus,
     segments
   };
 }

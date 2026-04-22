@@ -314,11 +314,31 @@ async function runFirefoxOwnSabr({ request, tabId, signal }: {
     }
 
     const response = fetchResult.response;
-    const { playbackCookie, backoffTimeMs, segments } = assembleMediaByFormat({
+    const { playbackCookie, backoffTimeMs, streamProtectionStatus, segments } = assembleMediaByFormat({
       umpBody: response,
       expectedVideoItag: videoItag,
       expectedAudioItag: audioItag
     });
+
+    if (streamProtectionStatus >= 2) {
+      const STREAM_PROTECTION_ATTESTATION_REQUIRED = 3;
+      await writeOwnSabrTrace({
+        phase: "protection-status",
+        iter,
+        status: streamProtectionStatus
+      }, tabId);
+      if (streamProtectionStatus === STREAM_PROTECTION_ATTESTATION_REQUIRED) {
+        const { spliceBodyWithPoToken } = await import("@/lib/youtube/firefox-sabr");
+        const refreshResult = await sendMessage(MessageType.RefreshPoToken, { videoId: request.videoId }, tabId).catch(() => null);
+        if (refreshResult?.poTokenBase64) {
+          const poTokenBytes = Uint8Array.from(atob(refreshResult.poTokenBase64), c => c.charCodeAt(0));
+          body = new Uint8Array(spliceBodyWithPoToken(body, poTokenBytes));
+          await writeOwnSabrTrace({ phase: "po-token-refreshed", iter, poTokenLen: poTokenBytes.byteLength }, tabId);
+        } else {
+          await writeOwnSabrTrace({ phase: "po-token-refresh-failed", iter }, tabId);
+        }
+      }
+    }
 
     if (iter === 0) {
       const servedItags = new Set(segments.map(s => s.itag));
@@ -462,7 +482,7 @@ async function runFirefoxOwnSabr({ request, tabId, signal }: {
     const splicedState = spliceBodyWithState({
       body,
       playerTimeMs,
-      ranges: []
+      ranges: bufferedBatches
     });
     body = new Uint8Array(splicedState);
 

@@ -6,6 +6,7 @@ import { extractPlaylistMetadata, handleNavigateSuccess } from "./video/playlist
 import { extractAndDispatchVideoData } from "./video/video-data";
 import { CrossWorldMessage, crossWorldMessenger, dispatchButtonClick } from "@/lib/messaging/cross-world-messenger";
 import { CHILD_LIST_SUBTREE } from "@/lib/utils/dom";
+import { generatePoToken } from "@/lib/youtube/po-token-generator";
 import { type PlayerResponse } from "@/types";
 
 declare global {
@@ -83,6 +84,15 @@ export default defineContentScript({
     crossWorldMessenger.onMessage(CrossWorldMessage.CancelDownload, ({ data }) => {
       for (const videoId of data.videoIds) {
         cancelActiveDownload(videoId);
+      }
+    });
+
+    crossWorldMessenger.onMessage(CrossWorldMessage.RefreshPoToken, async ({ data }) => {
+      try {
+        const poTokenBase64 = await generatePoToken(data.videoId);
+        return { poTokenBase64 };
+      } catch {
+        return null;
       }
     });
 

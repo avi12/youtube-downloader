@@ -195,6 +195,10 @@ export default defineContentScript({
     onMessage(MessageType.BgDebugLog, ({ data }) => {
       console.log("[ytdl-trace:bg]", data.msg);
     });
+
+    onMessage(MessageType.RefreshPoToken, async ({ data }) => {
+      return await crossWorldMessenger.sendMessage(CrossWorldMessage.RefreshPoToken, data);
+    });
     registerCrossWorldHandlers(isDownloadIframe, context);
     registerBackgroundMessageHandlers();
     listenForSabrBodyReady();
