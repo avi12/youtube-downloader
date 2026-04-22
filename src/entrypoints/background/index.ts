@@ -20,6 +20,40 @@ import { clearCapturedSabrData, onSabrBodyCaptured, startSabrRequestCapture } fr
 import { extractPoTokenFromBody, getCapturedSabrData } from "@/lib/youtube/sabr-request-capture";
 
 const SABR_ORIGIN_RULE_ID = 1;
+const YT_SAPISID_ORIGIN = "https://www.youtube.com";
+
+async function sha1Hex(input: string) {
+  const digest = await crypto.subtle.digest("SHA-1", new TextEncoder().encode(input));
+  return Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, "0")).join("");
+}
+
+async function buildSapisidHashHeader(cookies: Browser.cookies.Cookie[]) {
+  const sapisid = cookies.find(c => c.name === "SAPISID")?.value;
+  const sapisid1p = cookies.find(c => c.name === "__Secure-1PAPISID")?.value;
+  const sapisid3p = cookies.find(c => c.name === "__Secure-3PAPISID")?.value;
+  if (!sapisid && !sapisid1p && !sapisid3p) {
+    return null;
+  }
+
+  const timestamp = Math.floor(Date.now() / 1000).toString();
+  const parts: string[] = [];
+  if (sapisid) {
+    const hash = await sha1Hex(`${timestamp} ${sapisid} ${YT_SAPISID_ORIGIN}`);
+    parts.push(`SAPISIDHASH ${timestamp}_${hash}`);
+  }
+
+  if (sapisid1p) {
+    const hash = await sha1Hex(`${timestamp} ${sapisid1p} ${YT_SAPISID_ORIGIN}`);
+    parts.push(`SAPISID1PHASH ${timestamp}_${hash}`);
+  }
+
+  if (sapisid3p) {
+    const hash = await sha1Hex(`${timestamp} ${sapisid3p} ${YT_SAPISID_ORIGIN}`);
+    parts.push(`SAPISID3PHASH ${timestamp}_${hash}`);
+  }
+
+  return parts.join(" ");
+}
 
 async function registerSabrOriginRule() {
   const baseHeaders: Browser.declarativeNetRequest.ModifyHeaderInfo[] = [
@@ -220,8 +254,24 @@ export default defineBackground(async () => {
         }
 
         const cookieHeader = cookies.map(c => `${c.name}=${c.value}`).join("; ");
-        const headers = (details.requestHeaders ?? []).filter(h => h.name.toLowerCase() !== "cookie");
+        const headers = (details.requestHeaders ?? []).filter(h => {
+          const name = h.name.toLowerCase();
+          return name !== "cookie" && name !== "authorization";
+        });
         headers.push({ name: "Cookie", value: cookieHeader });
+
+        // YouTube authenticates API/SABR requests with an Authorization header
+        // derived from the (1P|3P)APISID cookies. The page's JS computes it;
+        // our SW doesn't, so YT sees an authenticated-looking Cookie jar but
+        // no matching Authorization and treats the request as needing fresh
+        // attestation. Compute it the same way the player does.
+        const authHeader = await buildSapisidHashHeader(cookies);
+        if (authHeader) {
+          headers.push({ name: "Authorization", value: authHeader });
+          headers.push({ name: "X-Origin", value: "https://www.youtube.com" });
+          headers.push({ name: "X-Goog-AuthUser", value: "0" });
+        }
+
         return { requestHeaders: headers };
       },
       { urls: ["https://*.googlevideo.com/videoplayback*"] },
