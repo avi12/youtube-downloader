@@ -180,6 +180,55 @@ function registerTabLifecycleHandlers() {
 
 export default defineBackground(async () => {
   void registerSabrOriginRule();
+
+  // Firefox: log the Cookie header our SW fetch is about to send vs what
+  // youtube.com's real cookies are. Hypothesis: Firefox's cookie
+  // partitioning gives the background SW a different (or empty) cookie jar
+  // than the youtube.com page, so the PO token YT minted for the page's
+  // session doesn't match what the server sees for our SW fetch.
+  // Firefox doesn't automatically attach youtube.com cookies to extension
+  // background-SW cross-origin fetches even with `credentials: "include"` and
+  // `host_permissions` for googlevideo.com. Without a session cookie, YT
+  // can't match the PO token to any session and emits
+  // `streamProtectionStatus=3` (attestation required) on the UMP stream.
+  // Inject the YouTube cookies manually on googlevideo videoplayback
+  // requests originated by our SW (tabId === -1).
+  // Firefox accepts async webRequest listeners (returning a Promise<BlockingResponse>);
+  // the webextension-polyfill types don't model it, so cast the listener shape.
+  if (import.meta.env.FIREFOX) {
+    type AsyncBlockingListener = (
+      details: Browser.webRequest.OnBeforeSendHeadersDetails
+    ) => Promise<Browser.webRequest.BlockingResponse | undefined>;
+
+    const onBeforeSendHeaders = browser.webRequest.onBeforeSendHeaders as typeof browser.webRequest.onBeforeSendHeaders & {
+      addListener(
+        callback: AsyncBlockingListener,
+        filter: Browser.webRequest.RequestFilter,
+        extraInfoSpec: string[]
+      ): void;
+    };
+
+    onBeforeSendHeaders.addListener(
+      async details => {
+        if (details.tabId >= 0) {
+          return undefined;
+        }
+
+        const cookies = await browser.cookies.getAll({ url: "https://www.youtube.com/" });
+        if (cookies.length === 0) {
+          return undefined;
+        }
+
+        const cookieHeader = cookies.map(c => `${c.name}=${c.value}`).join("; ");
+        const headers = (details.requestHeaders ?? []).filter(h => h.name.toLowerCase() !== "cookie");
+        headers.push({ name: "Cookie", value: cookieHeader });
+        return { requestHeaders: headers };
+      },
+      { urls: ["https://*.googlevideo.com/videoplayback*"] },
+      ["blocking", "requestHeaders"]
+    );
+  }
+
   startSabrRequestCapture();
   onSabrBodyCaptured(tabId => {
     void sendMessage(MessageType.SabrBodyReady, {}, tabId);
