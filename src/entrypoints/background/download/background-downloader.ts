@@ -330,13 +330,30 @@ async function runFirefoxOwnSabr({ request, tabId, signal }: {
       if (streamProtectionStatus === STREAM_PROTECTION_ATTESTATION_REQUIRED) {
         const { spliceBodyWithPoToken } = await import("@/lib/youtube/firefox-sabr");
         const refreshResult = await sendMessage(MessageType.RefreshPoToken, { videoId: request.videoId }, tabId).catch(() => null);
+        let furthestEndMs = 0;
+        for (const batch of bufferedBatches) {
+          const end = batch.startMs + batch.durationMs;
+          if (end > furthestEndMs) furthestEndMs = end;
+        }
+
+        body = new Uint8Array(captured.body);
         if (refreshResult?.poTokenBase64) {
           const poTokenBytes = Uint8Array.from(atob(refreshResult.poTokenBase64), c => c.charCodeAt(0));
           body = new Uint8Array(spliceBodyWithPoToken(body, poTokenBytes));
-          await writeOwnSabrTrace({ phase: "po-token-refreshed", iter, poTokenLen: poTokenBytes.byteLength }, tabId);
-        } else {
-          await writeOwnSabrTrace({ phase: "po-token-refresh-failed", iter }, tabId);
         }
+
+        body = new Uint8Array(spliceBodyWithState({
+          body,
+          playerTimeMs: furthestEndMs,
+          ranges: bufferedBatches
+        }));
+        await writeOwnSabrTrace({
+          phase: "session-restart",
+          iter,
+          playerTimeMs: furthestEndMs,
+          bodyLen: body.byteLength,
+          gotNewToken: !!refreshResult?.poTokenBase64
+        }, tabId);
       }
     }
 
