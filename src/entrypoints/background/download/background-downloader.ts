@@ -211,11 +211,19 @@ export function cancelBackgroundDownload(videoId: string) {
   activeBackgroundDownloads.delete(videoId);
 }
 
-// Firefox-only: drive SABR ourselves (no SabrStream) by POSTing the captured
-// body, parsing UMP, accumulating MEDIA parts until each format's expected
-// contentLength is covered. Subsequent requests reuse the same captured body
-// — server de-duplicates by `rn` query param and segment number. Simple V1:
-// one request; if not enough bytes, let library path handle the rest.
+// Firefox-only: drive SABR ourselves (no SabrStream). Starts from YT
+// player's captured body (which passes attestation), then on each iteration:
+//   1. POST with incrementing &rn=N query param.
+//   2. Parse UMP response; collect MEDIA parts keyed by format+sequence.
+//   3. Splice the server's NEXT_REQUEST_POLICY.playbackCookie into the
+//      outgoing body's streamerContext so the server advances us.
+//
+// Known gap for full convergence (not yet implemented): ALSO advance
+// clientAbrState.playerTimeMs and populate bufferedRanges from parsed
+// MEDIA_HEADER timestamps (per yt-dlp's SABR reference implementation,
+// PR #13515). Without those, a server that ignores playbackCookie alone
+// will keep re-serving the same initial-segment window until the loop's
+// NO_PROGRESS_LIMIT trips.
 async function runFirefoxOwnSabr({ request, tabId, signal }: {
   request: DownloadRequest;
   tabId: number;
