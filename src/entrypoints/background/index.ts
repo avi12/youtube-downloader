@@ -58,7 +58,10 @@ async function registerSabrOriginRule() {
       type: "modifyHeaders",
       requestHeaders: [...baseHeaders, ...chromeOnlyHeaders]
     },
-    condition: { urlFilter: "||googlevideo.com/videoplayback" }
+    condition: {
+      urlFilter: "||googlevideo.com/videoplayback",
+      resourceTypes: ["xmlhttprequest", "sub_frame", "main_frame", "media", "other"]
+    }
   };
   await browser.declarativeNetRequest.updateDynamicRules({
     removeRuleIds: [SABR_ORIGIN_RULE_ID],
