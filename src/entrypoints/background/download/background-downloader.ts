@@ -314,7 +314,7 @@ async function runFirefoxOwnSabr({ request, tabId, signal }: {
     }
 
     const response = fetchResult.response;
-    const { playbackCookie, segments } = assembleMediaByFormat({
+    const { playbackCookie, backoffTimeMs, segments } = assembleMediaByFormat({
       umpBody: response,
       expectedVideoItag: videoItag,
       expectedAudioItag: audioItag
@@ -430,6 +430,7 @@ async function runFirefoxOwnSabr({ request, tabId, signal }: {
       vLastSeg: latestSegmentFor(videoItag),
       aLastSeg: latestSegmentFor(audioItag),
       cookie: !!playbackCookie,
+      backoffMs: backoffTimeMs,
       bodyLen: body.byteLength,
       batches: bufferedBatches.length
     }, tabId);
@@ -461,9 +462,13 @@ async function runFirefoxOwnSabr({ request, tabId, signal }: {
     const splicedState = spliceBodyWithState({
       body,
       playerTimeMs,
-      ranges: bufferedBatches
+      ranges: []
     });
     body = new Uint8Array(splicedState);
+
+    if (backoffTimeMs > 0) {
+      await new Promise(resolve => setTimeout(resolve, backoffTimeMs));
+    }
   }
 
   function concatSequencedMap(itag: number) {

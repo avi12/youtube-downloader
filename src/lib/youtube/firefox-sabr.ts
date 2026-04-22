@@ -201,37 +201,47 @@ interface SabrRunResult {
   videoBytes: Uint8Array;
   audioBytes: Uint8Array;
   playbackCookie: Uint8Array | null;
+  backoffTimeMs: number;
   segments: SabrSegment[];
 }
 
-/**
- * NEXT_REQUEST_POLICY (part 35) is a protobuf message. Its field 2 is the
- * PlaybackCookie (length-delimited sub-message), which YT expects us to
- * echo back in the next request's StreamerContext.playbackCookie to
- * advance the stream.
- */
-function extractPlaybackCookieFromNextRequestPolicy(data: Uint8Array): Uint8Array | null {
+const NEXT_REQUEST_POLICY_PLAYBACK_COOKIE = 7;
+const NEXT_REQUEST_POLICY_BACKOFF_TIME_MS = 4;
+
+interface NextRequestPolicy {
+  playbackCookie: Uint8Array | null;
+  backoffTimeMs: number;
+}
+
+function parseNextRequestPolicy(data: Uint8Array): NextRequestPolicy {
   let offset = 0;
+  let playbackCookie: Uint8Array | null = null;
+  let backoffTimeMs = 0;
+
   while (offset < data.byteLength) {
     const [tag, afterTag] = readProtobufVarint(data, offset);
     if (tag < 0) {
-      return null;
+      break;
     }
 
     offset = afterTag;
     const fieldNumber = tag >> 3;
     const wireType = tag & 0x7;
     if (wireType === PROTO_WIRE_VARINT) {
-      const [, next] = readProtobufVarint(data, offset);
+      const [value, next] = readProtobufVarint(data, offset);
+      if (fieldNumber === NEXT_REQUEST_POLICY_BACKOFF_TIME_MS) {
+        backoffTimeMs = value;
+      }
+
       offset = next;
     } else if (wireType === PROTO_WIRE_LENGTH_DELIMITED) {
       const [length, afterLength] = readProtobufVarint(data, offset);
       if (length < 0 || afterLength + length > data.byteLength) {
-        return null;
+        break;
       }
 
-      if (fieldNumber === 2) {
-        return data.subarray(afterLength, afterLength + length);
+      if (fieldNumber === NEXT_REQUEST_POLICY_PLAYBACK_COOKIE) {
+        playbackCookie = data.subarray(afterLength, afterLength + length);
       }
 
       offset = afterLength + length;
@@ -239,7 +249,8 @@ function extractPlaybackCookieFromNextRequestPolicy(data: Uint8Array): Uint8Arra
       break;
     }
   }
-  return null;
+
+  return { playbackCookie, backoffTimeMs };
 }
 
 /**
@@ -631,6 +642,7 @@ export function assembleMediaByFormat({ umpBody, expectedVideoItag, expectedAudi
   const headerById = new Map<number, MediaHeader>();
   const mediaByHeaderId = new Map<number, Uint8Array[]>();
   let playbackCookie: Uint8Array | null = null;
+  let backoffTimeMs = 0;
 
   for (const part of parts) {
     if (part.type === UMP_PART_MEDIA_HEADER) {
@@ -649,7 +661,9 @@ export function assembleMediaByFormat({ umpBody, expectedVideoItag, expectedAudi
       existing.push(chunk);
       mediaByHeaderId.set(headerId, existing);
     } else if (part.type === UMP_PART_NEXT_REQUEST_POLICY) {
-      playbackCookie = extractPlaybackCookieFromNextRequestPolicy(part.data);
+      const policy = parseNextRequestPolicy(part.data);
+      playbackCookie = policy.playbackCookie;
+      backoffTimeMs = policy.backoffTimeMs;
     }
   }
 
@@ -693,6 +707,7 @@ export function assembleMediaByFormat({ umpBody, expectedVideoItag, expectedAudi
     videoBytes: concatForItag(expectedVideoItag),
     audioBytes: concatForItag(expectedAudioItag),
     playbackCookie,
+    backoffTimeMs,
     segments
   };
 }
