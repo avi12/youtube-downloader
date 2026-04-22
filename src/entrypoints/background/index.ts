@@ -94,11 +94,15 @@ async function registerSabrOriginRule() {
     },
     condition: {
       urlFilter: "||googlevideo.com/videoplayback",
-      resourceTypes: ["xmlhttprequest", "sub_frame", "main_frame", "media", "other"]
+      resourceTypes: ["xmlhttprequest", "media"]
     }
   };
+  // Clear any dynamic rules left by prior installs before registering ours,
+  // in case an earlier (broader) rule id got stranded in the profile — that
+  // shape broke top-level navigations on Firefox.
+  const existing = await browser.declarativeNetRequest.getDynamicRules();
   await browser.declarativeNetRequest.updateDynamicRules({
-    removeRuleIds: [SABR_ORIGIN_RULE_ID],
+    removeRuleIds: existing.map(r => r.id),
     addRules: [rule]
   });
 }
