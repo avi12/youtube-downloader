@@ -211,6 +211,101 @@ export function cancelBackgroundDownload(videoId: string) {
   activeBackgroundDownloads.delete(videoId);
 }
 
+// Firefox-only: drive SABR ourselves (no SabrStream) by POSTing the captured
+// body, parsing UMP, accumulating MEDIA parts until each format's expected
+// contentLength is covered. Subsequent requests reuse the same captured body
+// — server de-duplicates by `rn` query param and segment number. Simple V1:
+// one request; if not enough bytes, let library path handle the rest.
+async function runFirefoxOwnSabr({ request, tabId, signal }: {
+  request: DownloadRequest;
+  tabId: number;
+  signal: AbortSignal;
+}): Promise<DownloadResult | null> {
+  const { getCapturedSabrData, extractPreferredFormatItagsFromBody } = await import("@/lib/youtube/sabr-request-capture");
+  const { firefoxSabrSingleFetch, assembleMediaByFormat } = await import("@/lib/youtube/firefox-sabr");
+
+  const captured = getCapturedSabrData(tabId);
+  if (!captured) {
+    return null;
+  }
+
+  const itags = extractPreferredFormatItagsFromBody(captured.body);
+  const videoItag = itags.video[0];
+  const audioItag = itags.audio[0];
+  if (videoItag === undefined || audioItag === undefined) {
+    return null;
+  }
+
+  const baseBody = new Uint8Array(captured.body);
+  const collectedVideo: Uint8Array[] = [];
+  const collectedAudio: Uint8Array[] = [];
+  const videoExpected = parseInt(
+    request.sabrConfig?.formats.find(f => f.itag === videoItag)?.contentLength ?? "0", 10);
+  const audioExpected = parseInt(
+    request.sabrConfig?.formats.find(f => f.itag === audioItag)?.contentLength ?? "0", 10);
+
+  const MAX_ITERATIONS = 200;
+  const baseUrl = new URL(captured.url);
+  for (let iter = 0; iter < MAX_ITERATIONS; iter++) {
+    if (signal.aborted) {
+      return null;
+    }
+
+    baseUrl.searchParams.set("rn", String(iter + 1));
+    const { response } = await firefoxSabrSingleFetch({
+      url: baseUrl.href,
+      body: baseBody,
+      signal
+    });
+    const { videoBytes, audioBytes } = assembleMediaByFormat({
+      umpBody: response,
+      expectedVideoItag: videoItag,
+      expectedAudioItag: audioItag
+    });
+    if (videoBytes.byteLength > 0) {
+      collectedVideo.push(videoBytes);
+    }
+
+    if (audioBytes.byteLength > 0) {
+      collectedAudio.push(audioBytes);
+    }
+
+    const videoTotal = collectedVideo.reduce((sum, b) => sum + b.byteLength, 0);
+    const audioTotal = collectedAudio.reduce((sum, b) => sum + b.byteLength, 0);
+
+    const videoDone = videoExpected > 0 && videoTotal >= videoExpected;
+    const audioDone = audioExpected > 0 && audioTotal >= audioExpected;
+    if (videoDone && audioDone) {
+      break;
+    }
+
+    // If no bytes in this iteration, no progress — break instead of looping.
+    if (videoBytes.byteLength === 0 && audioBytes.byteLength === 0) {
+      break;
+    }
+  }
+
+  function flatten(chunks: Uint8Array[]) {
+    const total = chunks.reduce((sum, c) => sum + c.byteLength, 0);
+    const out = new Uint8Array(total);
+    let offset = 0;
+    for (const chunk of chunks) {
+      out.set(chunk, offset);
+      offset += chunk.byteLength;
+    }
+    return out;
+  }
+
+  const videoData = collectedVideo.length > 0 ? flatten(collectedVideo) : null;
+  const audioData = collectedAudio.length > 0 ? flatten(collectedAudio) : null;
+
+  return {
+    videoData,
+    audioData,
+    additionalAudioTracks: []
+  };
+}
+
 async function attemptSabrDownload({ request, signal, tabId, firstBodyOverride }: {
   request: DownloadRequest;
   signal: AbortSignal;
@@ -260,6 +355,25 @@ export async function startBackgroundDownload({ request, tabId }: {
     // actively requesting — otherwise the library's subsequent self-built
     // requests ask for a format the server never decided to prime a
     // response for, and no MEDIA parts are extracted.
+    // On Firefox, skip SabrStream entirely and use our own UMP parser.
+    // The library's state machine fails to extract media when we seed it
+    // with YT player's captured body (server doesn't re-send
+    // FORMAT_INITIALIZATION_METADATA for a mid-session request).
+    if (import.meta.env.FIREFOX) {
+      const firefoxResult = await runFirefoxOwnSabr({ request, tabId, signal }).catch(() => null);
+      if (firefoxResult && (firefoxResult.videoData || firefoxResult.audioData)) {
+        const enrichedMetadata = await enrichedMetadataPromise;
+        await dispatchToOffscreen({
+          request,
+          result: firefoxResult,
+          enrichedMetadata,
+          tabId
+        });
+        void clearInterruptedDownload(videoId);
+        return;
+      }
+    }
+
     let firstBodyOverride: Uint8Array | undefined = undefined;
     let sabrRequest = request;
     if (import.meta.env.FIREFOX) {
