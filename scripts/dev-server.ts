@@ -13,6 +13,7 @@
 
 import chokidar from "chokidar";
 import { execSync, spawnSync } from "node:child_process";
+import { createServer } from "node:net";
 import {
   existsSync,
   cpSync,
@@ -62,8 +63,27 @@ const { LANG = "en" } = process.env;
 const START_URL = "https://www.youtube.com/feed/subscriptions";
 const CDP_PORT = Number(process.env.YTDL_CDP_PORT ?? 9229);
 const FIREFOX_MARIONETTE_PORT = Number(process.env.YTDL_MARIONETTE_PORT ?? 2828);
-const FIREFOX_REMOTE_DEBUG_PORT = Number(process.env.YTDL_REMOTE_DEBUG_PORT ?? 9230);
+const DEFAULT_FIREFOX_REMOTE_DEBUG_PORT = Number(process.env.YTDL_REMOTE_DEBUG_PORT ?? 9230);
 const REBUILD_DEBOUNCE_MS = 800;
+
+async function findFreeTcpPort(startPort: number) {
+  const MAX_PROBES = 50;
+  for (let port = startPort; port < startPort + MAX_PROBES; port++) {
+    const isAvailable = await new Promise<boolean>(resolvePromise => {
+      const server = createServer();
+      server.once("error", () => resolvePromise(false));
+      server.once("listening", () => {
+        server.close(() => resolvePromise(true));
+      });
+      server.listen(port, "127.0.0.1");
+    });
+    if (isAvailable) {
+      return port;
+    }
+  }
+
+  return startPort;
+}
 
 // ── Chrome profile setup ────────────────────────────────────────────────────
 
@@ -303,6 +323,11 @@ async function main() {
   };
 
   const firefoxBinary = IS_FIREFOX ? findFirefox() : undefined;
+  const firefoxRemoteDebugPort = IS_FIREFOX ? await findFreeTcpPort(DEFAULT_FIREFOX_REMOTE_DEBUG_PORT) : 0;
+  if (IS_FIREFOX && firefoxRemoteDebugPort !== DEFAULT_FIREFOX_REMOTE_DEBUG_PORT) {
+    console.log(`Firefox Remote Agent port ${DEFAULT_FIREFOX_REMOTE_DEBUG_PORT} busy; using ${firefoxRemoteDebugPort} instead`);
+  }
+
   const runOptions = IS_FIREFOX
     ? {
       target: "firefox-desktop" as const,
@@ -311,7 +336,7 @@ async function main() {
       keepProfileChanges: true,
       firefoxProfile: profileDirectory,
       firefox: firefoxBinary,
-      args: [`--lang=${LANG}`, "--marionette", `--remote-debugging-port=${FIREFOX_REMOTE_DEBUG_PORT}`, "--allow-downgrade"],
+      args: [`--lang=${LANG}`, "--marionette", `--remote-debugging-port=${firefoxRemoteDebugPort}`, "--allow-downgrade"],
       noReload: true,
       noInput: true
     }
