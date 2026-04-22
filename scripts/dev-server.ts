@@ -303,6 +303,7 @@ async function main() {
   process.chdir(PROJECT_ROOT);
 
   if (IS_FIREFOX) {
+    process.env.MOZ_REMOTE_ALLOW_SYSTEM_ACCESS = "1";
     killExistingFirefoxInstances();
   } else {
     killExistingChromeInstances();

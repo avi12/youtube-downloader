@@ -9,7 +9,7 @@
     "firefox-devtools-mcp": {
       "type": "stdio",
       "command": "cmd",
-      "args": ["/c", "bunx", "firefox-devtools-mcp@latest", "--connect-existing", "--marionette-port", "2828", "--enable-script"],
+      "args": ["/c", "bunx", "firefox-devtools-mcp@latest", "--connect-existing", "--marionette-port", "2828", "--enable-script", "--enable-privileged-context"],
       "env": {}
     }
   }
