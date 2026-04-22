@@ -230,7 +230,7 @@ async function runFirefoxOwnSabr({ request, tabId, signal }: {
   signal: AbortSignal;
 }): Promise<DownloadResult | null> {
   const { getCapturedSabrData, extractPreferredFormatItagsFromBody } = await import("@/lib/youtube/sabr-request-capture");
-  const { firefoxSabrSingleFetch, assembleMediaByFormat, spliceBodyWithPlaybackCookie } = await import("@/lib/youtube/firefox-sabr");
+  const { firefoxSabrSingleFetch, assembleMediaByFormat, spliceBodyWithPlaybackCookie, spliceBodyWithState } = await import("@/lib/youtube/firefox-sabr");
 
   const captured = getCapturedSabrData(tabId);
   if (!captured) {
@@ -245,15 +245,19 @@ async function runFirefoxOwnSabr({ request, tabId, signal }: {
   }
 
   let body = new Uint8Array(captured.body);
-  const collectedVideo: Uint8Array[] = [];
-  const collectedAudio: Uint8Array[] = [];
+  // Segments collected per itag, keyed by sequence number so duplicates from
+  // overlapping responses dedupe automatically.
+  const collectedByItag = new Map<number, Map<number, Uint8Array>>();
+  // Per-format time coverage: max end-time (startMs + durationMs) and
+  // max segment index seen.
+  const formatState = new Map<number, { lastEndMs: number; lastSegmentIndex: number }>();
   const videoExpected = parseInt(
     request.sabrConfig?.formats.find(f => f.itag === videoItag)?.contentLength ?? "0", 10);
   const audioExpected = parseInt(
     request.sabrConfig?.formats.find(f => f.itag === audioItag)?.contentLength ?? "0", 10);
 
   const MAX_ITERATIONS = 400;
-  const NO_PROGRESS_LIMIT = 3;
+  const NO_PROGRESS_LIMIT = 5;
   const baseUrl = new URL(captured.url);
   let noProgressIterations = 0;
   for (let iter = 0; iter < MAX_ITERATIONS; iter++) {
@@ -267,24 +271,53 @@ async function runFirefoxOwnSabr({ request, tabId, signal }: {
       body,
       signal
     });
-    const { videoBytes, audioBytes, playbackCookie } = assembleMediaByFormat({
+    const { playbackCookie, segments } = assembleMediaByFormat({
       umpBody: response,
       expectedVideoItag: videoItag,
       expectedAudioItag: audioItag
     });
 
-    const gotVideo = videoBytes.byteLength > 0;
-    const gotAudio = audioBytes.byteLength > 0;
-    if (gotVideo) {
-      collectedVideo.push(videoBytes);
+    let newSegmentsThisIteration = 0;
+    for (const segment of segments) {
+      if (segment.itag !== videoItag && segment.itag !== audioItag) {
+        continue;
+      }
+
+      const existing = collectedByItag.get(segment.itag) ?? new Map<number, Uint8Array>();
+      if (!existing.has(segment.sequenceNumber)) {
+        existing.set(segment.sequenceNumber, segment.bytes);
+        collectedByItag.set(segment.itag, existing);
+        newSegmentsThisIteration++;
+
+        const state = formatState.get(segment.itag) ?? { lastEndMs: 0, lastSegmentIndex: 0 };
+        const segEndMs = segment.startMs + segment.durationMs;
+        if (segEndMs > state.lastEndMs) {
+          state.lastEndMs = segEndMs;
+        }
+
+        if (segment.sequenceNumber > state.lastSegmentIndex) {
+          state.lastSegmentIndex = segment.sequenceNumber;
+        }
+
+        formatState.set(segment.itag, state);
+      }
     }
 
-    if (gotAudio) {
-      collectedAudio.push(audioBytes);
+    function bytesTotal(itag: number) {
+      const m = collectedByItag.get(itag);
+      if (!m) {
+        return 0;
+      }
+
+      let total = 0;
+      for (const bytes of m.values()) {
+        total += bytes.byteLength;
+      }
+      return total;
     }
 
-    const videoTotal = collectedVideo.reduce((sum, b) => sum + b.byteLength, 0);
-    const audioTotal = collectedAudio.reduce((sum, b) => sum + b.byteLength, 0);
+    const videoTotal = bytesTotal(videoItag);
+    const audioTotal = bytesTotal(audioItag);
 
     const videoDone = videoExpected > 0 && videoTotal >= videoExpected;
     const audioDone = audioExpected > 0 && audioTotal >= audioExpected;
@@ -292,7 +325,7 @@ async function runFirefoxOwnSabr({ request, tabId, signal }: {
       break;
     }
 
-    if (!gotVideo && !gotAudio) {
+    if (newSegmentsThisIteration === 0) {
       noProgressIterations++;
       if (noProgressIterations >= NO_PROGRESS_LIMIT) {
         break;
@@ -301,33 +334,61 @@ async function runFirefoxOwnSabr({ request, tabId, signal }: {
       noProgressIterations = 0;
     }
 
-    if (!playbackCookie) {
-      // Without a fresh playbackCookie, server will return the same segments.
-      // Still try once more in case transient; after NO_PROGRESS_LIMIT we bail.
-      continue;
+    if (playbackCookie) {
+      const spliced = spliceBodyWithPlaybackCookie(body, playbackCookie);
+      body = new Uint8Array(spliced);
     }
 
-    const spliced = spliceBodyWithPlaybackCookie(body, playbackCookie);
-    body = new Uint8Array(spliced);
+    // Compute the new playerTimeMs = min across formats of their furthest-reached
+    // end time. This is what yt-dlp's SABR downloader uses.
+    const videoState = formatState.get(videoItag);
+    const audioState = formatState.get(audioItag);
+    const playerTimeMs = Math.min(
+      videoState?.lastEndMs ?? 0,
+      audioState?.lastEndMs ?? 0
+    );
+
+    const rangesForBody: Array<{ itag: number; startMs: number; durationMs: number; startSegmentIndex: number; endSegmentIndex: number }> = [];
+    for (const [itag, state] of formatState) {
+      if (state.lastEndMs > 0) {
+        rangesForBody.push({
+          itag,
+          startMs: 0,
+          durationMs: state.lastEndMs,
+          startSegmentIndex: 1,
+          endSegmentIndex: state.lastSegmentIndex
+        });
+      }
+    }
+
+    const splicedState = spliceBodyWithState({
+      body,
+      playerTimeMs,
+      ranges: rangesForBody
+    });
+    body = new Uint8Array(splicedState);
   }
 
-  function flatten(chunks: Uint8Array[]) {
-    const total = chunks.reduce((sum, c) => sum + c.byteLength, 0);
+  function concatSequencedMap(itag: number) {
+    const m = collectedByItag.get(itag);
+    if (!m || m.size === 0) {
+      return null;
+    }
+
+    const sorted = [...m.entries()].sort((a, b) => a[0] - b[0]);
+    const total = sorted.reduce((sum, [, bytes]) => sum + bytes.byteLength, 0);
     const out = new Uint8Array(total);
     let offset = 0;
-    for (const chunk of chunks) {
-      out.set(chunk, offset);
-      offset += chunk.byteLength;
+    for (const [, bytes] of sorted) {
+      out.set(bytes, offset);
+      offset += bytes.byteLength;
     }
     return out;
   }
 
-  const videoData = collectedVideo.length > 0 ? flatten(collectedVideo) : null;
-  const audioData = collectedAudio.length > 0 ? flatten(collectedAudio) : null;
-
   return {
-    videoData,
-    audioData,
+    videoData: concatSequencedMap(videoItag),
+    audioData: concatSequencedMap(audioItag),
     additionalAudioTracks: []
   };
 }

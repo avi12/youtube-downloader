@@ -103,12 +103,19 @@ interface MediaHeader {
   headerId: number;
   itag: number;
   sequenceNumber: number;
+  startMs: number;
+  durationMs: number;
 }
 
+// Field numbers from googlevideo's media_header.proto:
+//   1 headerId, 2 videoId, 3 itag, 4 lmt, 9 sequenceNumber,
+//   11 startMs, 12 durationMs, 13 formatId, 15 timeRange
 function parseMediaHeader(data: Uint8Array): MediaHeader | null {
   let headerId = 0;
   let itag = 0;
   let sequenceNumber = 0;
+  let startMs = 0;
+  let durationMs = 0;
   let offset = 0;
   while (offset < data.byteLength) {
     const [tag, afterTag] = readProtobufVarint(data, offset);
@@ -129,7 +136,13 @@ function parseMediaHeader(data: Uint8Array): MediaHeader | null {
       if (fieldNumber === 1) {
         headerId = value;
       } else if (fieldNumber === 3) {
+        itag = value;
+      } else if (fieldNumber === 9) {
         sequenceNumber = value;
+      } else if (fieldNumber === 11) {
+        startMs = value;
+      } else if (fieldNumber === 12) {
+        durationMs = value;
       }
 
       offset = nextOffset;
@@ -139,8 +152,8 @@ function parseMediaHeader(data: Uint8Array): MediaHeader | null {
         return null;
       }
 
-      if (fieldNumber === 2) {
-        // formatId sub-message: field 1 is itag (varint)
+      if (fieldNumber === 13 && itag === 0) {
+        // formatId sub-message, preferred source of itag when not set inline
         const formatIdBytes = data.subarray(afterLength, afterLength + length);
         let inner = 0;
         while (inner < formatIdBytes.byteLength) {
@@ -173,13 +186,22 @@ function parseMediaHeader(data: Uint8Array): MediaHeader | null {
       break;
     }
   }
-  return { headerId, itag, sequenceNumber };
+  return { headerId, itag, sequenceNumber, startMs, durationMs };
+}
+
+export interface SabrSegment {
+  itag: number;
+  sequenceNumber: number;
+  startMs: number;
+  durationMs: number;
+  bytes: Uint8Array;
 }
 
 interface SabrRunResult {
   videoBytes: Uint8Array;
   audioBytes: Uint8Array;
   playbackCookie: Uint8Array | null;
+  segments: SabrSegment[];
 }
 
 /**
@@ -381,6 +403,199 @@ export function spliceBodyWithPlaybackCookie(body: Uint8Array, cookieBytes: Uint
   return out;
 }
 
+const FIELD_CLIENT_ABR_STATE = 1;
+const FIELD_BUFFERED_RANGES = 23;
+const CLIENT_ABR_STATE_PLAYER_TIME_MS = 15;
+const BUFFERED_RANGE_FORMAT_ID = 1;
+const BUFFERED_RANGE_START_TIME_MS = 3;
+const BUFFERED_RANGE_DURATION_MS = 4;
+const BUFFERED_RANGE_START_SEGMENT_INDEX = 5;
+const BUFFERED_RANGE_END_SEGMENT_INDEX = 6;
+const FORMAT_ID_ITAG = 1;
+
+function writeVarintToArray(out: number[], value: number) {
+  let v = value;
+  while (v >= 0x80) {
+    out.push((v & 0x7f) | 0x80);
+    v = Math.floor(v / 128);
+  }
+  out.push(v);
+}
+
+function encodeFormatId(itag: number): Uint8Array {
+  const payload: number[] = [];
+  writeVarintToArray(payload, (FORMAT_ID_ITAG << 3) | 0);
+  writeVarintToArray(payload, itag);
+  return encodeLengthDelimited(BUFFERED_RANGE_FORMAT_ID, new Uint8Array(payload));
+}
+
+function encodeBufferedRange(range: { itag: number; startMs: number; durationMs: number; startSegmentIndex: number; endSegmentIndex: number }): Uint8Array {
+  const payload: number[] = [];
+  const formatIdField = encodeFormatId(range.itag);
+  payload.push(...formatIdField);
+  writeVarintToArray(payload, (BUFFERED_RANGE_START_TIME_MS << 3) | 0);
+  writeVarintToArray(payload, range.startMs);
+  writeVarintToArray(payload, (BUFFERED_RANGE_DURATION_MS << 3) | 0);
+  writeVarintToArray(payload, range.durationMs);
+  writeVarintToArray(payload, (BUFFERED_RANGE_START_SEGMENT_INDEX << 3) | 0);
+  writeVarintToArray(payload, range.startSegmentIndex);
+  writeVarintToArray(payload, (BUFFERED_RANGE_END_SEGMENT_INDEX << 3) | 0);
+  writeVarintToArray(payload, range.endSegmentIndex);
+  return encodeLengthDelimited(FIELD_BUFFERED_RANGES, new Uint8Array(payload));
+}
+
+/**
+ * Finds a top-level length-delimited field in the body and returns its
+ * [tagStart, payloadStart, payloadLen] or null if absent.
+ */
+function findTopLevelLengthDelimitedField(body: Uint8Array, targetField: number):
+  { tagStart: number; payloadStart: number; payloadLen: number } | null {
+  let offset = 0;
+  while (offset < body.byteLength) {
+    const tagStart = offset;
+    const [tag, afterTag] = readProtobufVarint(body, offset);
+    if (tag < 0) {
+      break;
+    }
+
+    offset = afterTag;
+    const fieldNumber = tag >> 3;
+    const wireType = tag & 0x7;
+    if (wireType === PROTO_WIRE_VARINT) {
+      const [, next] = readProtobufVarint(body, offset);
+      offset = next;
+      continue;
+    }
+
+    if (wireType === 1) {
+      offset += 8;
+      continue;
+    }
+
+    if (wireType === 5) {
+      offset += 4;
+      continue;
+    }
+
+    if (wireType !== PROTO_WIRE_LENGTH_DELIMITED) {
+      break;
+    }
+
+    const [length, afterLength] = readProtobufVarint(body, offset);
+    if (length < 0) {
+      break;
+    }
+
+    if (fieldNumber === targetField) {
+      return {
+        tagStart,
+        payloadStart: afterLength,
+        payloadLen: length
+      };
+    }
+
+    offset = afterLength + length;
+  }
+  return null;
+}
+
+/**
+ * Updates clientAbrState.playerTimeMs (field 1 > field 15) and appends
+ * BufferedRange entries (field 23) to a VideoPlaybackAbrRequest body.
+ * Removes all existing BufferedRange entries first. Does nothing if body
+ * can't be parsed.
+ */
+export function spliceBodyWithState({ body, playerTimeMs, ranges }: {
+  body: Uint8Array;
+  playerTimeMs: number;
+  ranges: Array<{ itag: number; startMs: number; durationMs: number; startSegmentIndex: number; endSegmentIndex: number }>;
+}): Uint8Array {
+  let working = body;
+
+  // Step 1: update clientAbrState.playerTimeMs
+  const absField = findTopLevelLengthDelimitedField(working, FIELD_CLIENT_ABR_STATE);
+  if (absField) {
+    const abs = working.subarray(absField.payloadStart, absField.payloadStart + absField.payloadLen);
+    // Strip any existing playerTimeMs field then append the new one.
+    let inner = 0;
+    const kept: number[] = [];
+    while (inner < abs.byteLength) {
+      const tagStart = inner;
+      const [tag, afterTag] = readProtobufVarint(abs, inner);
+      if (tag < 0) {
+        break;
+      }
+
+      const fieldNumber = tag >> 3;
+      const wireType = tag & 0x7;
+      let fieldEnd: number;
+      if (wireType === PROTO_WIRE_VARINT) {
+        const [, next] = readProtobufVarint(abs, afterTag);
+        fieldEnd = next;
+      } else if (wireType === 1) {
+        fieldEnd = afterTag + 8;
+      } else if (wireType === 5) {
+        fieldEnd = afterTag + 4;
+      } else if (wireType === PROTO_WIRE_LENGTH_DELIMITED) {
+        const [len, afterLen] = readProtobufVarint(abs, afterTag);
+        fieldEnd = afterLen + len;
+      } else {
+        break;
+      }
+
+      if (fieldNumber !== CLIENT_ABR_STATE_PLAYER_TIME_MS) {
+        for (let i = tagStart; i < fieldEnd; i++) {
+          kept.push(abs[i]);
+        }
+      }
+
+      inner = fieldEnd;
+    }
+
+    writeVarintToArray(kept, (CLIENT_ABR_STATE_PLAYER_TIME_MS << 3) | 0);
+    writeVarintToArray(kept, playerTimeMs);
+    const newAbs = new Uint8Array(kept);
+    const newAbsField = encodeLengthDelimited(FIELD_CLIENT_ABR_STATE, newAbs);
+
+    const before = working.subarray(0, absField.tagStart);
+    const after = working.subarray(absField.payloadStart + absField.payloadLen);
+    const next = new Uint8Array(before.byteLength + newAbsField.byteLength + after.byteLength);
+    next.set(before, 0);
+    next.set(newAbsField, before.byteLength);
+    next.set(after, before.byteLength + newAbsField.byteLength);
+    working = next;
+  }
+
+  // Step 2: remove existing BufferedRange entries (top-level field 23) then append fresh ones.
+  // Strip all occurrences in a loop (repeated field).
+  while (true) {
+    const br = findTopLevelLengthDelimitedField(working, FIELD_BUFFERED_RANGES);
+    if (!br) {
+      break;
+    }
+
+    const totalLen = (br.payloadStart - br.tagStart) + br.payloadLen;
+    const before = working.subarray(0, br.tagStart);
+    const after = working.subarray(br.tagStart + totalLen);
+    const next = new Uint8Array(before.byteLength + after.byteLength);
+    next.set(before, 0);
+    next.set(after, before.byteLength);
+    working = next;
+  }
+
+  // Append new BufferedRange entries at end (order-agnostic for top-level).
+  const rangeEncodings = ranges.map(encodeBufferedRange);
+  const totalRangeLen = rangeEncodings.reduce((s, r) => s + r.byteLength, 0);
+  const withRanges = new Uint8Array(working.byteLength + totalRangeLen);
+  withRanges.set(working, 0);
+  let appendAt = working.byteLength;
+  for (const r of rangeEncodings) {
+    withRanges.set(r, appendAt);
+    appendAt += r.byteLength;
+  }
+  return withRanges;
+}
+
 export async function firefoxSabrSingleFetch({ url, body, signal }: {
   url: string;
   body: Uint8Array;
@@ -413,8 +628,7 @@ export function assembleMediaByFormat({ umpBody, expectedVideoItag, expectedAudi
   expectedAudioItag: number;
 }): SabrRunResult {
   const parts = parseUmpResponse(umpBody);
-  const headerIdToItag = new Map<number, number>();
-  const headerIdToSequence = new Map<number, number>();
+  const headerById = new Map<number, MediaHeader>();
   const mediaByHeaderId = new Map<number, Uint8Array[]>();
   let playbackCookie: Uint8Array | null = null;
 
@@ -422,11 +636,9 @@ export function assembleMediaByFormat({ umpBody, expectedVideoItag, expectedAudi
     if (part.type === UMP_PART_MEDIA_HEADER) {
       const header = parseMediaHeader(part.data);
       if (header) {
-        headerIdToItag.set(header.headerId, header.itag);
-        headerIdToSequence.set(header.headerId, header.sequenceNumber);
+        headerById.set(header.headerId, header);
       }
     } else if (part.type === UMP_PART_MEDIA) {
-      // MEDIA part's first varint is headerId, rest is bytes.
       const [headerId, afterHeaderId] = readProtobufVarint(part.data, 0);
       if (headerId < 0) {
         continue;
@@ -441,26 +653,38 @@ export function assembleMediaByFormat({ umpBody, expectedVideoItag, expectedAudi
     }
   }
 
-  function concatForItag(targetItag: number) {
-    const entries: Array<{ sequence: number; bytes: Uint8Array[] }> = [];
-    for (const [headerId, chunks] of mediaByHeaderId) {
-      if (headerIdToItag.get(headerId) === targetItag) {
-        entries.push({
-          sequence: headerIdToSequence.get(headerId) ?? 0,
-          bytes: chunks
-        });
-      }
+  const segments: SabrSegment[] = [];
+  for (const [headerId, chunks] of mediaByHeaderId) {
+    const header = headerById.get(headerId);
+    if (!header) {
+      continue;
     }
 
-    entries.sort((a, b) => a.sequence - b.sequence);
-    const total = entries.reduce((sum, e) => sum + e.bytes.reduce((s, b) => s + b.byteLength, 0), 0);
+    const total = chunks.reduce((sum, c) => sum + c.byteLength, 0);
+    const bytes = new Uint8Array(total);
+    let offset = 0;
+    for (const chunk of chunks) {
+      bytes.set(chunk, offset);
+      offset += chunk.byteLength;
+    }
+    segments.push({
+      itag: header.itag,
+      sequenceNumber: header.sequenceNumber,
+      startMs: header.startMs,
+      durationMs: header.durationMs,
+      bytes
+    });
+  }
+
+  function concatForItag(targetItag: number) {
+    const filtered = segments.filter(s => s.itag === targetItag);
+    filtered.sort((a, b) => a.sequenceNumber - b.sequenceNumber);
+    const total = filtered.reduce((sum, s) => sum + s.bytes.byteLength, 0);
     const out = new Uint8Array(total);
     let offset = 0;
-    for (const entry of entries) {
-      for (const chunk of entry.bytes) {
-        out.set(chunk, offset);
-        offset += chunk.byteLength;
-      }
+    for (const s of filtered) {
+      out.set(s.bytes, offset);
+      offset += s.bytes.byteLength;
     }
     return out;
   }
@@ -468,6 +692,7 @@ export function assembleMediaByFormat({ umpBody, expectedVideoItag, expectedAudi
   return {
     videoBytes: concatForItag(expectedVideoItag),
     audioBytes: concatForItag(expectedAudioItag),
-    playbackCookie
+    playbackCookie,
+    segments
   };
 }
