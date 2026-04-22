@@ -27,27 +27,22 @@ import webExtRun from "web-ext-run";
 import { consoleStream as webExtConsoleStream } from "web-ext-run/util/logger";
 import { build } from "wxt";
 
-function findFirefoxNightlyMsix() {
+function findFirefox() {
   if (platform() !== "win32") {
     return undefined;
   }
 
-  try {
-    const installLocation = execSync(
-      `powershell -NoProfile -Command "(Get-AppxPackage Mozilla.MozillaFirefoxNightly -EA 0).InstallLocation"`,
-      {
-        encoding: "utf8",
-        timeout: 5000
-      }
-    ).trim();
-    if (!installLocation) {
-      return undefined;
+  const candidatePaths = [
+    "C:\\Program Files\\Mozilla Firefox\\firefox.exe",
+    "C:\\Program Files (x86)\\Mozilla Firefox\\firefox.exe"
+  ];
+  for (const candidatePath of candidatePaths) {
+    if (existsSync(candidatePath)) {
+      return candidatePath;
     }
-
-    return join(installLocation, "VFS", "ProgramFiles", "MozillaFirefoxNightly Package Root", "firefox.exe");
-  } catch {
-    return undefined;
   }
+
+  return undefined;
 }
 
 function debounce<TArgs extends unknown[]>(fn: (...args: TArgs) => Promise<void> | void, wait: number) {
@@ -295,7 +290,7 @@ async function main() {
     }
   };
 
-  const firefoxBinary = IS_FIREFOX ? findFirefoxNightlyMsix() : undefined;
+  const firefoxBinary = IS_FIREFOX ? findFirefox() : undefined;
   const runOptions = IS_FIREFOX
     ? {
       target: "firefox-desktop" as const,
