@@ -30,7 +30,8 @@ export const CrossWorldMessage = {
   DownloadViaIframe: "downloadViaIframe",
   StartBackgroundDownload: "startBackgroundDownload",
   OptionsUpdate: "optionsUpdate",
-  RefreshPoToken: "refreshPoToken"
+  RefreshPoToken: "refreshPoToken",
+  AdvancePlayer: "advancePlayer"
 } as const;
 
 interface PageMessengerSchema {
@@ -122,6 +123,9 @@ interface PageMessengerSchema {
   }): {
     poTokenBase64: string;
   } | null;
+  [CrossWorldMessage.AdvancePlayer](data: {
+    targetTimeMs: number;
+  }): void;
 }
 
 export const crossWorldMessenger = defineCustomEventMessaging<PageMessengerSchema>({ namespace: "ytdl" });

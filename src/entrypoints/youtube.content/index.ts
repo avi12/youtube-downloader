@@ -199,6 +199,10 @@ export default defineContentScript({
     onMessage(MessageType.RefreshPoToken, async ({ data }) => {
       return await crossWorldMessenger.sendMessage(CrossWorldMessage.RefreshPoToken, data);
     });
+
+    onMessage(MessageType.AdvancePlayer, ({ data }) => {
+      void crossWorldMessenger.sendMessage(CrossWorldMessage.AdvancePlayer, data);
+    });
     registerCrossWorldHandlers(isDownloadIframe, context);
     registerBackgroundMessageHandlers();
     listenForSabrBodyReady();

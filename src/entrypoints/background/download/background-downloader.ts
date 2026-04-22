@@ -328,18 +328,47 @@ async function runFirefoxOwnSabr({ request, tabId, signal }: {
         status: streamProtectionStatus
       }, tabId);
       if (streamProtectionStatus === STREAM_PROTECTION_ATTESTATION_REQUIRED) {
-        const { spliceBodyWithPoToken } = await import("@/lib/youtube/firefox-sabr");
-        const refreshResult = await sendMessage(MessageType.RefreshPoToken, { videoId: request.videoId }, tabId).catch(() => null);
         let furthestEndMs = 0;
         for (const batch of bufferedBatches) {
           const end = batch.startMs + batch.durationMs;
           if (end > furthestEndMs) furthestEndMs = end;
         }
 
-        body = new Uint8Array(captured.body);
-        if (refreshResult?.poTokenBase64) {
-          const poTokenBytes = Uint8Array.from(atob(refreshResult.poTokenBase64), c => c.charCodeAt(0));
-          body = new Uint8Array(spliceBodyWithPoToken(body, poTokenBytes));
+        const capturedTimestampBefore = captured.timestamp;
+        const MS_PER_SECOND = 1000;
+        const SEEK_LOOKAHEAD_MS = 10_000;
+        void sendMessage(MessageType.AdvancePlayer, {
+          targetTimeMs: Math.floor(furthestEndMs + SEEK_LOOKAHEAD_MS)
+        }, tabId);
+        const FRESH_CAPTURE_WAIT_MS = 3000;
+        const POLL_INTERVAL_MS = 200;
+        let freshCaptured = null;
+        const deadline = Date.now() + FRESH_CAPTURE_WAIT_MS;
+        while (Date.now() < deadline) {
+          await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL_MS));
+          const current = getCapturedSabrData(tabId);
+          if (current && current.timestamp > capturedTimestampBefore) {
+            freshCaptured = current;
+            break;
+          }
+        }
+
+        if (freshCaptured) {
+          body = new Uint8Array(freshCaptured.body);
+          await writeOwnSabrTrace({
+            phase: "session-restart-fresh-capture",
+            iter,
+            bodyLen: body.byteLength,
+            keepingVideoItag: videoItag,
+            keepingAudioItag: audioItag
+          }, tabId);
+        } else {
+          body = new Uint8Array(captured.body);
+          await writeOwnSabrTrace({
+            phase: "session-restart-no-fresh",
+            iter,
+            fellBackToInitial: true
+          }, tabId);
         }
 
         body = new Uint8Array(spliceBodyWithState({
@@ -347,17 +376,10 @@ async function runFirefoxOwnSabr({ request, tabId, signal }: {
           playerTimeMs: furthestEndMs,
           ranges: bufferedBatches
         }));
-        await writeOwnSabrTrace({
-          phase: "session-restart",
-          iter,
-          playerTimeMs: furthestEndMs,
-          bodyLen: body.byteLength,
-          gotNewToken: !!refreshResult?.poTokenBase64
-        }, tabId);
       }
     }
 
-    if (iter === 0) {
+    if (segments.length > 0) {
       const servedItags = new Set(segments.map(s => s.itag));
       if (!servedItags.has(videoItag)) {
         const alternative = segments.find(s => !isAudioItag(s.itag) && s.itag !== audioItag)?.itag;

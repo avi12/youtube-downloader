@@ -96,6 +96,16 @@ export default defineContentScript({
       }
     });
 
+    crossWorldMessenger.onMessage(CrossWorldMessage.AdvancePlayer, () => {
+      const elVideo = document.querySelector<HTMLVideoElement>("video.html5-main-video");
+      if (!elVideo) {
+        return;
+      }
+
+      elVideo.muted = true;
+      void elVideo.play().catch(() => {});
+    });
+
     // Track the latest buttonId per element so click handlers dispatch the current ID
     // even after Polymer strips the data attribute.
     const buttonIdByElement = new WeakMap<HTMLElement, string>();
