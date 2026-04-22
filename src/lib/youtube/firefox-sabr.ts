@@ -20,6 +20,8 @@ import { extractPreferredFormatItagsFromBody } from "./sabr-request-capture";
 const UMP_PART_MEDIA_HEADER = 20;
 const UMP_PART_MEDIA = 21;
 const UMP_PART_MEDIA_END = 22;
+const UMP_PART_NEXT_REQUEST_POLICY = 35;
+const UMP_PART_FORMAT_INITIALIZATION_METADATA = 42;
 
 const PROTO_WIRE_VARINT = 0;
 const PROTO_WIRE_LENGTH_DELIMITED = 2;
@@ -177,6 +179,206 @@ function parseMediaHeader(data: Uint8Array): MediaHeader | null {
 interface SabrRunResult {
   videoBytes: Uint8Array;
   audioBytes: Uint8Array;
+  playbackCookie: Uint8Array | null;
+}
+
+/**
+ * NEXT_REQUEST_POLICY (part 35) is a protobuf message. Its field 2 is the
+ * PlaybackCookie (length-delimited sub-message), which YT expects us to
+ * echo back in the next request's StreamerContext.playbackCookie to
+ * advance the stream.
+ */
+function extractPlaybackCookieFromNextRequestPolicy(data: Uint8Array): Uint8Array | null {
+  let offset = 0;
+  while (offset < data.byteLength) {
+    const [tag, afterTag] = readProtobufVarint(data, offset);
+    if (tag < 0) {
+      return null;
+    }
+
+    offset = afterTag;
+    const fieldNumber = tag >> 3;
+    const wireType = tag & 0x7;
+    if (wireType === PROTO_WIRE_VARINT) {
+      const [, next] = readProtobufVarint(data, offset);
+      offset = next;
+    } else if (wireType === PROTO_WIRE_LENGTH_DELIMITED) {
+      const [length, afterLength] = readProtobufVarint(data, offset);
+      if (length < 0 || afterLength + length > data.byteLength) {
+        return null;
+      }
+
+      if (fieldNumber === 2) {
+        return data.subarray(afterLength, afterLength + length);
+      }
+
+      offset = afterLength + length;
+    } else {
+      break;
+    }
+  }
+  return null;
+}
+
+/**
+ * Encode a length-delimited protobuf field (tag varint + length varint + bytes).
+ */
+function encodeLengthDelimited(fieldNumber: number, bytes: Uint8Array): Uint8Array {
+  function varintLength(value: number) {
+    let len = 0;
+    let v = value;
+    do {
+      len++;
+      v >>>= 7;
+    } while (v > 0);
+    return len;
+  }
+
+  function writeVarint(out: number[], value: number) {
+    let v = value;
+    while (v >= 0x80) {
+      out.push((v & 0x7f) | 0x80);
+      v >>>= 7;
+    }
+    out.push(v);
+  }
+
+  const tag = (fieldNumber << 3) | 2;
+  const header: number[] = [];
+  writeVarint(header, tag);
+  writeVarint(header, bytes.byteLength);
+  const out = new Uint8Array(header.length + bytes.byteLength);
+  out.set(header, 0);
+  out.set(bytes, header.length);
+  return out;
+}
+
+const FIELD_STREAMER_CONTEXT = 19;
+const FIELD_PLAYBACK_COOKIE = 3;
+
+/**
+ * Takes a VideoPlaybackAbrRequest body and a PlaybackCookie (raw bytes),
+ * and returns a new body with the streamerContext.playbackCookie replaced
+ * (or added if absent). Done at the byte level to avoid depending on a
+ * full protobuf writer.
+ */
+export function spliceBodyWithPlaybackCookie(body: Uint8Array, cookieBytes: Uint8Array): Uint8Array {
+  // Pass 1: find streamerContext field at top level.
+  let offset = 0;
+  let streamerCtxStart = -1;
+  let streamerCtxLenOffset = -1;
+  let streamerCtxPayloadStart = -1;
+  let streamerCtxPayloadLen = -1;
+  let tagTotalLen = 0;
+  while (offset < body.byteLength) {
+    const tagStart = offset;
+    const [tag, afterTag] = readProtobufVarint(body, offset);
+    if (tag < 0) {
+      break;
+    }
+
+    offset = afterTag;
+    const fieldNumber = tag >> 3;
+    const wireType = tag & 0x7;
+    if (wireType === PROTO_WIRE_VARINT) {
+      const [, next] = readProtobufVarint(body, offset);
+      offset = next;
+      continue;
+    }
+
+    if (wireType !== PROTO_WIRE_LENGTH_DELIMITED) {
+      break;
+    }
+
+    const lenOffset = offset;
+    const [length, afterLength] = readProtobufVarint(body, offset);
+    if (length < 0) {
+      break;
+    }
+
+    if (fieldNumber === FIELD_STREAMER_CONTEXT) {
+      streamerCtxStart = tagStart;
+      streamerCtxLenOffset = lenOffset;
+      streamerCtxPayloadStart = afterLength;
+      streamerCtxPayloadLen = length;
+      tagTotalLen = afterLength - tagStart;
+      break;
+    }
+
+    offset = afterLength + length;
+  }
+
+  if (streamerCtxStart < 0 || streamerCtxPayloadStart < 0) {
+    return body;
+  }
+
+  // Pass 2: within streamerContext, find field 3 (playbackCookie) if any.
+  const ctx = body.subarray(streamerCtxPayloadStart, streamerCtxPayloadStart + streamerCtxPayloadLen);
+  const newCookieField = encodeLengthDelimited(FIELD_PLAYBACK_COOKIE, cookieBytes);
+  let innerOffset = 0;
+  let existingCookieStart = -1;
+  let existingCookieTotalLen = 0;
+  while (innerOffset < ctx.byteLength) {
+    const innerTagStart = innerOffset;
+    const [innerTag, afterInnerTag] = readProtobufVarint(ctx, innerOffset);
+    if (innerTag < 0) {
+      break;
+    }
+
+    innerOffset = afterInnerTag;
+    const fieldNumber = innerTag >> 3;
+    const wireType = innerTag & 0x7;
+    if (wireType === PROTO_WIRE_VARINT) {
+      const [, next] = readProtobufVarint(ctx, innerOffset);
+      innerOffset = next;
+      continue;
+    }
+
+    if (wireType !== PROTO_WIRE_LENGTH_DELIMITED) {
+      break;
+    }
+
+    const [length, afterLength] = readProtobufVarint(ctx, innerOffset);
+    if (length < 0) {
+      break;
+    }
+
+    if (fieldNumber === FIELD_PLAYBACK_COOKIE) {
+      existingCookieStart = innerTagStart;
+      existingCookieTotalLen = afterLength + length - innerTagStart;
+      break;
+    }
+
+    innerOffset = afterLength + length;
+  }
+
+  // Rebuild streamerContext bytes (existing cookie removed if any, then appended with new).
+  let ctxWithoutCookie: Uint8Array;
+  if (existingCookieStart >= 0) {
+    const before = ctx.subarray(0, existingCookieStart);
+    const after = ctx.subarray(existingCookieStart + existingCookieTotalLen);
+    ctxWithoutCookie = new Uint8Array(before.byteLength + after.byteLength);
+    ctxWithoutCookie.set(before, 0);
+    ctxWithoutCookie.set(after, before.byteLength);
+  } else {
+    ctxWithoutCookie = ctx;
+  }
+
+  const newCtx = new Uint8Array(ctxWithoutCookie.byteLength + newCookieField.byteLength);
+  newCtx.set(ctxWithoutCookie, 0);
+  newCtx.set(newCookieField, ctxWithoutCookie.byteLength);
+
+  // Re-encode the streamerContext length-delimited field.
+  const newStreamerField = encodeLengthDelimited(FIELD_STREAMER_CONTEXT, newCtx);
+
+  // Splice it back into the body.
+  const before = body.subarray(0, streamerCtxStart);
+  const after = body.subarray(streamerCtxPayloadStart + streamerCtxPayloadLen);
+  const out = new Uint8Array(before.byteLength + newStreamerField.byteLength + after.byteLength);
+  out.set(before, 0);
+  out.set(newStreamerField, before.byteLength);
+  out.set(after, before.byteLength + newStreamerField.byteLength);
+  return out;
 }
 
 export async function firefoxSabrSingleFetch({ url, body, signal }: {
@@ -214,6 +416,7 @@ export function assembleMediaByFormat({ umpBody, expectedVideoItag, expectedAudi
   const headerIdToItag = new Map<number, number>();
   const headerIdToSequence = new Map<number, number>();
   const mediaByHeaderId = new Map<number, Uint8Array[]>();
+  let playbackCookie: Uint8Array | null = null;
 
   for (const part of parts) {
     if (part.type === UMP_PART_MEDIA_HEADER) {
@@ -233,6 +436,8 @@ export function assembleMediaByFormat({ umpBody, expectedVideoItag, expectedAudi
       const existing = mediaByHeaderId.get(headerId) ?? [];
       existing.push(chunk);
       mediaByHeaderId.set(headerId, existing);
+    } else if (part.type === UMP_PART_NEXT_REQUEST_POLICY) {
+      playbackCookie = extractPlaybackCookieFromNextRequestPolicy(part.data);
     }
   }
 
@@ -262,6 +467,7 @@ export function assembleMediaByFormat({ umpBody, expectedVideoItag, expectedAudi
 
   return {
     videoBytes: concatForItag(expectedVideoItag),
-    audioBytes: concatForItag(expectedAudioItag)
+    audioBytes: concatForItag(expectedAudioItag),
+    playbackCookie
   };
 }

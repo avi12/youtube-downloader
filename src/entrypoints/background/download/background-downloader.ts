@@ -222,7 +222,7 @@ async function runFirefoxOwnSabr({ request, tabId, signal }: {
   signal: AbortSignal;
 }): Promise<DownloadResult | null> {
   const { getCapturedSabrData, extractPreferredFormatItagsFromBody } = await import("@/lib/youtube/sabr-request-capture");
-  const { firefoxSabrSingleFetch, assembleMediaByFormat } = await import("@/lib/youtube/firefox-sabr");
+  const { firefoxSabrSingleFetch, assembleMediaByFormat, spliceBodyWithPlaybackCookie } = await import("@/lib/youtube/firefox-sabr");
 
   const captured = getCapturedSabrData(tabId);
   if (!captured) {
@@ -236,7 +236,7 @@ async function runFirefoxOwnSabr({ request, tabId, signal }: {
     return null;
   }
 
-  const baseBody = new Uint8Array(captured.body);
+  let body = new Uint8Array(captured.body);
   const collectedVideo: Uint8Array[] = [];
   const collectedAudio: Uint8Array[] = [];
   const videoExpected = parseInt(
@@ -244,8 +244,10 @@ async function runFirefoxOwnSabr({ request, tabId, signal }: {
   const audioExpected = parseInt(
     request.sabrConfig?.formats.find(f => f.itag === audioItag)?.contentLength ?? "0", 10);
 
-  const MAX_ITERATIONS = 200;
+  const MAX_ITERATIONS = 400;
+  const NO_PROGRESS_LIMIT = 3;
   const baseUrl = new URL(captured.url);
+  let noProgressIterations = 0;
   for (let iter = 0; iter < MAX_ITERATIONS; iter++) {
     if (signal.aborted) {
       return null;
@@ -254,19 +256,22 @@ async function runFirefoxOwnSabr({ request, tabId, signal }: {
     baseUrl.searchParams.set("rn", String(iter + 1));
     const { response } = await firefoxSabrSingleFetch({
       url: baseUrl.href,
-      body: baseBody,
+      body,
       signal
     });
-    const { videoBytes, audioBytes } = assembleMediaByFormat({
+    const { videoBytes, audioBytes, playbackCookie } = assembleMediaByFormat({
       umpBody: response,
       expectedVideoItag: videoItag,
       expectedAudioItag: audioItag
     });
-    if (videoBytes.byteLength > 0) {
+
+    const gotVideo = videoBytes.byteLength > 0;
+    const gotAudio = audioBytes.byteLength > 0;
+    if (gotVideo) {
       collectedVideo.push(videoBytes);
     }
 
-    if (audioBytes.byteLength > 0) {
+    if (gotAudio) {
       collectedAudio.push(audioBytes);
     }
 
@@ -279,10 +284,23 @@ async function runFirefoxOwnSabr({ request, tabId, signal }: {
       break;
     }
 
-    // If no bytes in this iteration, no progress — break instead of looping.
-    if (videoBytes.byteLength === 0 && audioBytes.byteLength === 0) {
-      break;
+    if (!gotVideo && !gotAudio) {
+      noProgressIterations++;
+      if (noProgressIterations >= NO_PROGRESS_LIMIT) {
+        break;
+      }
+    } else {
+      noProgressIterations = 0;
     }
+
+    if (!playbackCookie) {
+      // Without a fresh playbackCookie, server will return the same segments.
+      // Still try once more in case transient; after NO_PROGRESS_LIMIT we bail.
+      continue;
+    }
+
+    const spliced = spliceBodyWithPlaybackCookie(body, playbackCookie);
+    body = new Uint8Array(spliced);
   }
 
   function flatten(chunks: Uint8Array[]) {
