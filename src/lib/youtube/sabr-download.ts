@@ -55,59 +55,34 @@ function createSabrStream({ sabrConfig, fetchFn, poToken }: {
   });
 }
 
-type RefreshPoToken = () => Promise<string | null>;
-const PO_TOKEN_REFRESH_INTERVAL_MS = 3_000;
-
-function startPoTokenRefreshLoop(sabrStream: SabrStream, refreshToken: RefreshPoToken) {
-  return setInterval(async () => {
-    try {
-      const freshToken = await refreshToken();
-      if (freshToken) {
-        sabrStream.setPoToken(freshToken);
-      }
-    } catch { /* next tick will retry */ }
-  }, PO_TOKEN_REFRESH_INTERVAL_MS);
-}
-
-export async function fetchVideoAudioViaSabrStream({ sabrConfig, videoFormat, audioFormat, fetchFn, poToken, refreshToken }: {
+// A single SABR session delivers video and audio interleaved; starting two parallel
+// sessions for the same video triggers YouTube's session-conflict detection (UMP 403).
+export async function fetchVideoAndAudioViaSabrStream({ sabrConfig, videoFormat, audioFormat, fetchFn, poToken }: {
   sabrConfig: SabrConfig;
   videoFormat: AdaptiveFormatItem;
   audioFormat: AdaptiveFormatItem;
   fetchFn: typeof globalThis.fetch;
   poToken: string;
-  refreshToken?: RefreshPoToken;
-}) {
+}): Promise<[Uint8Array, Uint8Array]> {
   const sabrStream = createSabrStream({
     sabrConfig,
     fetchFn,
     poToken
   });
-  const refreshInterval = refreshToken ? startPoTokenRefreshLoop(sabrStream, refreshToken) : null;
-  try {
-    const { videoStream, audioStream } = await sabrStream.start({
-      videoFormat: adaptiveFormatToSabrFormat(videoFormat),
-      audioFormat: adaptiveFormatToSabrFormat(audioFormat),
-      maxRetries: 10
-    });
-    const [videoData, audioData] = await Promise.all([
-      collectReadableStream({
-        stream: videoStream,
-        expectedBytes: parseInt(videoFormat.contentLength, 10)
-      }),
-      collectReadableStream({
-        stream: audioStream,
-        expectedBytes: parseInt(audioFormat.contentLength, 10)
-      })
-    ]);
-    return {
-      videoData,
-      audioData
-    };
-  } finally {
-    if (refreshInterval) {
-      clearInterval(refreshInterval);
-    }
-  }
+  const { videoStream, audioStream } = await sabrStream.start({
+    videoFormat: adaptiveFormatToSabrFormat(videoFormat),
+    audioFormat: adaptiveFormatToSabrFormat(audioFormat)
+  });
+  return Promise.all([
+    collectReadableStream({
+      stream: videoStream,
+      expectedBytes: parseInt(videoFormat.contentLength, 10)
+    }),
+    collectReadableStream({
+      stream: audioStream,
+      expectedBytes: parseInt(audioFormat.contentLength, 10)
+    })
+  ]);
 }
 
 export async function fetchAudioViaSabrStream({ sabrConfig, audioFormat, fetchFn, poToken, refreshToken }: {

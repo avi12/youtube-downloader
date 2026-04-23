@@ -1,8 +1,7 @@
 import type { DownloadResult } from "./background-downloader";
 import { createProgressFetch } from "./progress-fetch";
 import { sendProgressUpdate } from "./progress-fetch";
-import { MessageType, onMessage } from "@/lib/messaging/messaging";
-import { fetchAudioViaSabrStream, fetchVideoAudioViaSabrStream } from "@/lib/youtube/sabr-download";
+import { fetchAudioViaSabrStream, fetchVideoAndAudioViaSabrStream } from "@/lib/youtube/sabr-download";
 import { DownloadType, ProgressType } from "@/types";
 import type { AdaptiveFormatItem, DownloadRequest, SabrConfig } from "@/types";
 
@@ -104,45 +103,32 @@ async function downloadVideoAudioViaSabr({
   const totalExpectedBytes = parseContentLength(videoFormat) + parseContentLength(audioFormat);
   let totalReceivedBytes = 0;
 
-  function reportProgress() {
-    if (totalExpectedBytes === 0) {
-      return;
-    }
-
-    void sendProgressUpdate({
-      videoId,
-      progress: Math.min(totalReceivedBytes / totalExpectedBytes, 1),
-      progressType: ProgressType.Video,
-      tabId
-    });
-  }
-
-  const combinedFetch = createProgressFetch({
+  // A single SABR session delivers video and audio interleaved; bytes from both tracks
+  // are counted together against the combined expected size.
+  const sabrFetch = createProgressFetch({
     signal,
     onBytesReceived(bytes) {
       totalReceivedBytes += bytes;
       onProgress?.();
-      reportProgress();
+
+      if (totalExpectedBytes > 0) {
+        void sendProgressUpdate({
+          videoId,
+          progress: Math.min(totalReceivedBytes / totalExpectedBytes, 1),
+          progressType: ProgressType.Video,
+          tabId
+        });
+      }
     }
   });
 
-  let lastAppliedToken = poToken;
-  const { videoData, audioData } = await fetchVideoAudioViaSabrStream({
+  return fetchVideoAndAudioViaSabrStream({
     sabrConfig: config,
     videoFormat,
     audioFormat,
-    fetchFn: combinedFetch,
-    poToken,
-    async refreshToken() {
-      const next = takeRefreshedPoToken(videoId, lastAppliedToken);
-      if (next) {
-        lastAppliedToken = next;
-      }
-
-      return next;
-    }
+    fetchFn: sabrFetch,
+    poToken
   });
-  return [videoData, audioData];
 }
 
 async function downloadExtraAudioTracksViaSabr({ config, formats, poToken, signal, onProgress }: {
