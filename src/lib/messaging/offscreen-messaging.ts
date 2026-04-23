@@ -1,4 +1,4 @@
-import type { DownloadType, VideoMetadata } from "@/types";
+import type { DownloadType, SubtitleStream, VideoMetadata } from "@/types";
 
 const OFFSCREEN_PORT_NAME = "ytdl-offscreen";
 
@@ -28,6 +28,7 @@ interface OffscreenProtocolMap {
     videoMimeType: string;
     audioMimeType: string;
     audioTrackLabels: string[];
+    subtitleStreams?: SubtitleStream[];
     tabId: number;
     playlistId?: string;
     playlistTitle?: string;

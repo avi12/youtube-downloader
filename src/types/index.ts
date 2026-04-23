@@ -1,8 +1,9 @@
-import type { AdaptiveFormatItem, PlayerResponse } from "./youtube";
+import type { AdaptiveFormatItem, CaptionTrack, PlayerResponse } from "./youtube";
 
 export type {
   AdaptiveFormatItem,
   ButtonViewModelData,
+  CaptionTrack,
   PlayerResponse,
   TpYtIronDropdownElement,
   TpYtPaperProgressElement,
@@ -81,6 +82,12 @@ export type SabrConfig = {
   formats: AdaptiveFormatItem[];
 };
 
+export type SubtitleStream = {
+  srtContent: string;
+  languageCode: string;
+  label: string;
+};
+
 export type DownloadRequest = {
   type: DownloadType;
   videoId: string;
@@ -102,6 +109,7 @@ export type DownloadRequest = {
   resolvedVideoUrl?: string | null;
   resolvedAudioUrl?: string | null;
   resolvedExtraAudioUrls?: (string | null)[];
+  captionTracks?: CaptionTrack[];
 };
 
 export type DownloadTypePreference = "auto" | DownloadType;
@@ -135,6 +143,7 @@ export type StreamData = {
     mimeType: string;
     label: string;
   }[];
+  subtitleStreams: SubtitleStream[];
 };
 
 export type VideoMetadata = {
@@ -166,4 +175,5 @@ export type VideoData = {
   videoFormats: AdaptiveFormatItem[];
   audioFormats: AdaptiveFormatItem[];
   sabrConfig: SabrConfig | null;
+  captionTracks: CaptionTrack[];
 };

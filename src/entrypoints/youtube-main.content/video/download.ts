@@ -185,7 +185,8 @@ export async function performDownload({
       resolvedExtraAudioUrls,
       playlistId,
       playlistTitle,
-      playlistTotalCount
+      playlistTotalCount,
+      captionTracks: cachedVideoData.captionTracks
     };
 
     void crossWorldMessenger.sendMessage(CrossWorldMessage.StartBackgroundDownload, enrichedRequest);

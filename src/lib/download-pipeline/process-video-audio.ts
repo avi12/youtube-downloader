@@ -27,12 +27,13 @@ function determineOutputExtension({
 
 export async function processVideoAudio(item: ProcessStreamData) {
   const {
-    videoId, filenameOutput, videoMimeType, audioMimeType, tabId, additionalAudioStreams
+    videoId, filenameOutput, videoMimeType, audioMimeType, tabId, additionalAudioStreams,
+    subtitleStreams
   } = item;
 
   const videoExtension = videoMimeType.includes("webm") ? "webm" : "mp4";
   const audioExtension = audioMimeType.includes("webm") ? "webm" : "m4a";
-  const isExtraTracksPresent = Boolean(additionalAudioStreams.length);
+  const isExtraTracksPresent = Boolean(additionalAudioStreams.length || subtitleStreams.length);
   const outputExtension = determineOutputExtension({
     videoMimeType,
     audioMimeType,
@@ -65,6 +66,11 @@ export async function processVideoAudio(item: ProcessStreamData) {
 
   const extraAudioTracks: {
     filename: string;
+    label: string;
+  }[] = [];
+  const subtitleFiles: {
+    filename: string;
+    languageCode: string;
     label: string;
   }[] = [];
 
@@ -128,8 +134,22 @@ export async function processVideoAudio(item: ProcessStreamData) {
       });
     }
 
+    for (const [i, subtitle] of subtitleStreams.entries()) {
+      const subtitleFilename = `${videoId}-subtitle-${i}.srt`;
+      ffmpeg.FS.writeFile(subtitleFilename, new TextEncoder().encode(subtitle.srtContent));
+      subtitleFiles.push({
+        filename: subtitleFilename,
+        languageCode: subtitle.languageCode,
+        label: subtitle.label
+      });
+    }
+
     const ffmpegArgs = ["-i", videoFilename, "-i", primaryAudioFilename];
     for (const { filename } of extraAudioTracks) {
+      ffmpegArgs.push("-i", filename);
+    }
+
+    for (const { filename } of subtitleFiles) {
       ffmpegArgs.push("-i", filename);
     }
 
@@ -138,13 +158,30 @@ export async function processVideoAudio(item: ProcessStreamData) {
       ffmpegArgs.push("-map", `${i + 1}:a:0`);
     }
 
+    const subtitleInputOffset = 2 + extraAudioTracks.length;
+    for (let i = 0; i < subtitleFiles.length; i++) {
+      ffmpegArgs.push("-map", `${subtitleInputOffset + i}:s:0`);
+    }
+
     ffmpegArgs.push("-c:v", "copy", "-c:a", "copy");
+
+    if (subtitleFiles.length > 0) {
+      ffmpegArgs.push("-c:s", "srt");
+    }
 
     const audioTrackLabels = [item.primaryAudioLabel ?? "", ...extraAudioTracks.map(track => track.label)];
     for (let i = 0; i < audioTrackLabels.length; i++) {
       const label = audioTrackLabels[i];
       if (label) {
         ffmpegArgs.push(`-metadata:s:a:${i}`, `title=${label}`);
+      }
+    }
+
+    for (const [i, subtitle] of subtitleFiles.entries()) {
+      ffmpegArgs.push(`-metadata:s:s:${i}`, `language=${subtitle.languageCode}`);
+
+      if (subtitle.label) {
+        ffmpegArgs.push(`-metadata:s:s:${i}`, `title=${subtitle.label}`);
       }
     }
 
@@ -209,6 +246,13 @@ export async function processVideoAudio(item: ProcessStreamData) {
       filename: outputFilename
     });
     for (const { filename } of extraAudioTracks) {
+      tryUnlink({
+        ffmpeg,
+        filename
+      });
+    }
+
+    for (const { filename } of subtitleFiles) {
       tryUnlink({
         ffmpeg,
         filename

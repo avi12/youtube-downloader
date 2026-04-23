@@ -2,7 +2,7 @@ import { STREAM_ACCUMULATORS } from "./accumulator";
 import { assembleStreamChunks } from "./codec";
 import { enqueueStreamData } from "@/lib/download-pipeline";
 import { DownloadType } from "@/types";
-import type { VideoMetadata } from "@/types";
+import type { SubtitleStream, VideoMetadata } from "@/types";
 
 export function handleProcessStreamEnd(data: {
   videoId: string;
@@ -11,6 +11,7 @@ export function handleProcessStreamEnd(data: {
   videoMimeType: string;
   audioMimeType: string;
   audioTrackLabels: string[];
+  subtitleStreams?: SubtitleStream[];
   tabId: number;
   playlistId?: string;
   playlistTitle?: string;
@@ -18,8 +19,8 @@ export function handleProcessStreamEnd(data: {
   metadata?: VideoMetadata | null;
 }) {
   const {
-    videoId, type, filenameOutput, videoMimeType, audioMimeType, audioTrackLabels, tabId,
-    playlistId, playlistTitle, playlistTotalCount
+    videoId, type, filenameOutput, videoMimeType, audioMimeType, audioTrackLabels,
+    subtitleStreams = [], tabId, playlistId, playlistTitle, playlistTotalCount
   } = data;
   const accumulator = STREAM_ACCUMULATORS.get(videoId);
   STREAM_ACCUMULATORS.delete(videoId);
@@ -60,6 +61,7 @@ export function handleProcessStreamEnd(data: {
     audioMimeType,
     primaryAudioLabel,
     additionalAudioStreams,
+    subtitleStreams,
     tabId,
     playlistId,
     playlistTitle,

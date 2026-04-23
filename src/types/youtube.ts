@@ -109,6 +109,13 @@ export type AdaptiveFormatItem = MediaItem & {
   xtags?: string;
 };
 
+export type CaptionTrack = {
+  baseUrl: string;
+  name: { simpleText: string };
+  languageCode: string;
+  kind?: string;
+};
+
 export type PlayerResponse = {
   playabilityStatus: {
     status: `${PlayabilityStatus}`;
@@ -163,6 +170,11 @@ export type PlayerResponse = {
       };
     };
     [key: string]: unknown;
+  };
+  captions?: {
+    playerCaptionsTracklistRenderer: {
+      captionTracks: CaptionTrack[];
+    };
   };
 };
 

@@ -9,7 +9,7 @@ import { interruptedDownloadsItem, mutateStorageItem } from "@/lib/storage/stora
 import { TRANSFER_CHUNK_SIZE, uint8ToBase64 } from "@/lib/utils/binary";
 import { fetchYouTubeMusicMetadata } from "@/lib/youtube/youtube-music-metadata";
 import { ProgressType, StreamType } from "@/types";
-import type { DownloadRequest, VideoMetadata } from "@/types";
+import type { CaptionTrack, DownloadRequest, SubtitleStream, VideoMetadata } from "@/types";
 
 export interface DownloadResult {
   videoData: Uint8Array | null;
@@ -91,6 +91,32 @@ async function sendStreamChunksToOffscreen({ videoId, streamType, data, tabId }:
   }
 }
 
+async function fetchSubtitleSrt(track: CaptionTrack): Promise<string> {
+  try {
+    const url = new URL(track.baseUrl);
+    url.searchParams.set("fmt", "srt");
+    const response = await fetch(url.toString());
+    if (!response.ok) {
+      return "";
+    }
+
+    return response.text();
+  } catch {
+    return "";
+  }
+}
+
+async function fetchSubtitleStreams(captionTracks: CaptionTrack[]): Promise<SubtitleStream[]> {
+  const results = await Promise.all(
+    captionTracks.map(async track => ({
+      srtContent: await fetchSubtitleSrt(track),
+      languageCode: track.languageCode,
+      label: track.name.simpleText
+    }))
+  );
+  return results.filter(stream => stream.srtContent);
+}
+
 async function dispatchToOffscreen({ request, result, enrichedMetadata, tabId }: {
   request: DownloadRequest;
   result: DownloadResult;
@@ -137,7 +163,10 @@ async function dispatchToOffscreen({ request, result, enrichedMetadata, tabId }:
     }
   }
 
-  await Promise.all(transferJobs);
+  const [subtitleStreams] = await Promise.all([
+    fetchSubtitleStreams(request.captionTracks ?? []),
+    Promise.all(transferJobs)
+  ]);
 
   const audioTrackLabels = [
     request.primaryAudioLabel ?? "",
@@ -151,6 +180,7 @@ async function dispatchToOffscreen({ request, result, enrichedMetadata, tabId }:
     videoMimeType: resolvedVideoMimeType,
     audioMimeType: resolvedAudioMimeType,
     audioTrackLabels,
+    subtitleStreams,
     tabId,
     playlistId: request.playlistId,
     playlistTitle: request.playlistTitle,

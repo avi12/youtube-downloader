@@ -1,5 +1,5 @@
 import { isVideoDownloadable, isVideoLive, isVideoMusic } from "@/lib/youtube/video-helpers";
-import type { AdaptiveFormatItem, PlayerResponse } from "@/types";
+import type { AdaptiveFormatItem, CaptionTrack, PlayerResponse } from "@/types";
 
 function getUniqueVideoFormats(formats: AdaptiveFormatItem[]) {
   const videoFormats = formats.filter(format => format.mimeType.startsWith("video"));
@@ -54,6 +54,19 @@ function getAudioFormats(formats: AdaptiveFormatItem[], preferredLanguage: strin
   return [...preferred, ...rest];
 }
 
+function getCaptionTracks(playerResponse: PlayerResponse, preferredLanguage: string): CaptionTrack[] {
+  const allTracks = playerResponse.captions?.playerCaptionsTracklistRenderer?.captionTracks ?? [];
+  const manualTracks = allTracks.filter(track => track.kind !== "asr");
+  if (!preferredLanguage || manualTracks.length === 0) {
+    return manualTracks;
+  }
+
+  const langCode = preferredLanguage.toLowerCase().split("-")[0];
+  const preferred = manualTracks.filter(track => track.languageCode.toLowerCase().split("-")[0] === langCode);
+  const rest = manualTracks.filter(track => track.languageCode.toLowerCase().split("-")[0] !== langCode);
+  return [...preferred, ...rest];
+}
+
 function byBitrateDesc(formatA: AdaptiveFormatItem, formatB: AdaptiveFormatItem) {
   return formatB.bitrate - formatA.bitrate;
 }
@@ -79,11 +92,12 @@ function extractSabrConfig({ playerResponse, clientVersion, clientName }: {
   };
 }
 
-export function buildVideoData({ playerResponse, clientVersion, clientName, preferredAudioLanguage = "" }: {
+export function buildVideoData({ playerResponse, clientVersion, clientName, preferredAudioLanguage = "", preferredCaptionLanguage = "" }: {
   playerResponse: PlayerResponse;
   clientVersion: string;
   clientName: number;
   preferredAudioLanguage?: string;
+  preferredCaptionLanguage?: string;
 }) {
   const isDownloadable = isVideoDownloadable(playerResponse);
   const isLive = isVideoLive(playerResponse);
@@ -102,6 +116,7 @@ export function buildVideoData({ playerResponse, clientVersion, clientName, pref
     isLive,
     videoFormats: getUniqueVideoFormats(allFormats),
     audioFormats: getAudioFormats(allFormats, preferredAudioLanguage),
+    captionTracks: getCaptionTracks(playerResponse, preferredCaptionLanguage || preferredAudioLanguage),
     sabrConfig: extractSabrConfig({
       playerResponse,
       clientVersion,

@@ -50,10 +50,12 @@ async function fetchVideoDataViaApi(videoId: string) {
     );
     const playerData: PlayerResponse = await response.json();
     if (playerData?.videoDetails?.videoId) {
+      const uiLanguage = readUiLanguage();
       await buildAndDispatchVideoData({
         playerResponse: playerData,
         cancelActiveDownload,
-        preferredAudioLanguage: readUiLanguage()
+        preferredAudioLanguage: uiLanguage,
+        preferredCaptionLanguage: uiLanguage
       });
       return;
     }
@@ -66,10 +68,12 @@ async function fetchVideoDataViaApi(videoId: string) {
 
   const playerResponse = extractPlayerResponseFromHtml(html);
   if (playerResponse?.videoDetails?.videoId) {
+    const uiLanguage = readUiLanguage();
     await buildAndDispatchVideoData({
       playerResponse,
       cancelActiveDownload,
-      preferredAudioLanguage: readUiLanguage()
+      preferredAudioLanguage: uiLanguage,
+      preferredCaptionLanguage: uiLanguage
     });
   }
 }

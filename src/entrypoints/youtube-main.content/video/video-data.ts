@@ -243,17 +243,26 @@ function readPlayerAudioLanguage() {
   return elPlayer?.getAudioTrack?.()?.language ?? "";
 }
 
-export async function buildAndDispatchVideoData({ playerResponse, cancelActiveDownload, preferredAudioLanguage = "" }: {
+function readPlayerCaptionLanguage() {
+  const elPlayer = document.querySelector<HTMLElement & {
+    getOption?: (module: string, key: string) => { languageCode?: string } | null;
+  }>("#movie_player");
+  return elPlayer?.getOption?.("captions", "track")?.languageCode ?? "";
+}
+
+export async function buildAndDispatchVideoData({ playerResponse, cancelActiveDownload, preferredAudioLanguage = "", preferredCaptionLanguage = "" }: {
   playerResponse: PlayerResponse;
   cancelActiveDownload: (videoId: string) => void;
   preferredAudioLanguage?: string;
+  preferredCaptionLanguage?: string;
 }) {
   const { clientVersion, clientName } = readYtcfg();
   const videoData = buildVideoData({
     playerResponse,
     clientVersion,
     clientName,
-    preferredAudioLanguage
+    preferredAudioLanguage,
+    preferredCaptionLanguage
   });
 
   videoDataCache.set(videoData.videoId, videoData);
@@ -330,7 +339,8 @@ export async function extractAndDispatchVideoData(cancelActiveDownload: (videoId
       await buildAndDispatchVideoData({
         playerResponse,
         cancelActiveDownload,
-        preferredAudioLanguage: readPlayerAudioLanguage()
+        preferredAudioLanguage: readPlayerAudioLanguage(),
+        preferredCaptionLanguage: readPlayerCaptionLanguage()
       });
       return;
     }
