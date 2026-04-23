@@ -26,6 +26,14 @@ function createGridDropdown({ contentId, positionTargetSelector }: {
   const elDropdown = document.createElement("tp-yt-iron-dropdown");
   elDropdown.append(elDropdownContentSlot);
 
+  // ytd-menu-popup-renderer carries role="menu" from YouTube's own element definition.
+  // Our panel is a dialog, not a menu — override to presentation and hide the empty
+  // Polymer listbox from assistive technologies (WCAG 4.1.2, 1.3.1).
+  requestAnimationFrame(() => {
+    elDropdownContentSlot.setAttribute("role", "presentation");
+    elDropdownContentSlot.querySelector("tp-yt-paper-listbox")?.setAttribute("aria-hidden", "true");
+  });
+
   const elPopupContainer = document.querySelector("ytd-popup-container") ?? document.body;
   elPopupContainer.append(elDropdown);
 
