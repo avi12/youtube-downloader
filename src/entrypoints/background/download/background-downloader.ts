@@ -231,7 +231,6 @@ async function attemptSabrDownload({ request, signal, tabId, firstBodyOverride }
       request,
       signal: sabrAbortController.signal,
       tabId,
-      firstBodyOverride,
       onProgress: resetSabrStallTimer
     });
   } finally {

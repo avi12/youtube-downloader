@@ -12,55 +12,7 @@ interface ChallengeResponse {
   };
 }
 
-type MintFn = (input: Uint8Array) => Promise<Uint8Array>;
-
-const MINT_FN_TTL_MS = 30 * 60 * 1000;
-const MINT_FN_ERROR_COOLDOWN_MS = 60 * 1000;
-let cachedMintFn: MintFn | null = null;
-let cachedMintFnExpiresAt = 0;
-let mintFnErrorCooldownUntil = 0;
-let mintFnLastError: unknown = null;
-let pendingMintFn: Promise<MintFn> | null = null;
-
-async function getOrMintBotGuardFn(): Promise<MintFn> {
-  if (cachedMintFn && Date.now() < cachedMintFnExpiresAt) {
-    return cachedMintFn;
-  }
-
-  if (Date.now() < mintFnErrorCooldownUntil) {
-    throw mintFnLastError ?? new Error("PO token minting in cooldown");
-  }
-
-  if (pendingMintFn) {
-    return pendingMintFn;
-  }
-
-  const attempt = mintBotGuardFn();
-  pendingMintFn = attempt;
-  try {
-    cachedMintFn = await attempt;
-    cachedMintFnExpiresAt = Date.now() + MINT_FN_TTL_MS;
-    mintFnLastError = null;
-    return cachedMintFn;
-  } catch (error) {
-    mintFnErrorCooldownUntil = Date.now() + MINT_FN_ERROR_COOLDOWN_MS;
-    mintFnLastError = error;
-    throw error;
-  } finally {
-    pendingMintFn = null;
-  }
-}
-
 export async function generatePoToken(videoId: string) {
-  const mintFunction = await getOrMintBotGuardFn();
-
-  const SABR_PO_TOKEN_BYTES = 30;
-  const tokenBytes = await mintFunction(new TextEncoder().encode(videoId));
-  const sabrTokenBytes = tokenBytes.slice(0, SABR_PO_TOKEN_BYTES);
-  return btoa(String.fromCharCode(...sabrTokenBytes));
-}
-
-async function mintBotGuardFn(): Promise<MintFn> {
   function getYtcfgValue({ key, fallback }: {
     key: string;
     fallback: string;
@@ -191,5 +143,30 @@ async function mintBotGuardFn(): Promise<MintFn> {
     throw new Error("Mint function not available");
   }
 
-  return mintFunction;
+  const tokenBytes = await mintFunction(new TextEncoder().encode(videoId));
+  const SABR_TOKEN_BYTE_LENGTH = 30;
+  const initialToken = btoa(String.fromCharCode(...tokenBytes.slice(0, SABR_TOKEN_BYTE_LENGTH)));
+  cacheMintFunction(videoId, mintFunction);
+  return initialToken;
+}
+
+type MintFunction = (input: Uint8Array) => Promise<Uint8Array>;
+
+const mintFunctionsByVideoId = new Map<string, MintFunction>();
+
+function cacheMintFunction(videoId: string, mintFunction: MintFunction) {
+  mintFunctionsByVideoId.set(videoId, mintFunction);
+}
+
+// YouTube rotates its accepted attestation after a few SABR segments; long
+// downloads call this to re-mint against the cached BotGuard snapshot.
+export async function refreshPoToken(videoId: string) {
+  const mintFunction = mintFunctionsByVideoId.get(videoId);
+  if (!mintFunction) {
+    return null;
+  }
+
+  const tokenBytes = await mintFunction(new TextEncoder().encode(videoId));
+  const SABR_TOKEN_BYTE_LENGTH = 30;
+  return btoa(String.fromCharCode(...tokenBytes.slice(0, SABR_TOKEN_BYTE_LENGTH)));
 }

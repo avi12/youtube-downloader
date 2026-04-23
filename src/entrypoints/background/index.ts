@@ -1,3 +1,4 @@
+import { registerPoTokenRefreshListener } from "./download/sabr-downloader";
 import { registerDownloadHandlers } from "./handlers/download-handlers";
 import { registerPipelineHandlers } from "./handlers/pipeline-handlers";
 import { ensureProcessor } from "./handlers/processor";
@@ -20,91 +21,51 @@ import { clearCapturedSabrData, onSabrBodyCaptured, startSabrRequestCapture } fr
 import { extractPoTokenFromBody, getCapturedSabrData } from "@/lib/youtube/sabr-request-capture";
 
 const SABR_ORIGIN_RULE_ID = 1;
-const YT_SAPISID_ORIGIN = "https://www.youtube.com";
-
-async function sha1Hex(input: string) {
-  const digest = await crypto.subtle.digest("SHA-1", new TextEncoder().encode(input));
-  return Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, "0")).join("");
-}
-
-async function buildSapisidHashHeader(cookies: Browser.cookies.Cookie[]) {
-  const sapisid = cookies.find(c => c.name === "SAPISID")?.value;
-  const sapisid1p = cookies.find(c => c.name === "__Secure-1PAPISID")?.value;
-  const sapisid3p = cookies.find(c => c.name === "__Secure-3PAPISID")?.value;
-  if (!sapisid && !sapisid1p && !sapisid3p) {
-    return null;
-  }
-
-  const timestamp = Math.floor(Date.now() / 1000).toString();
-  const parts: string[] = [];
-  if (sapisid) {
-    const hash = await sha1Hex(`${timestamp} ${sapisid} ${YT_SAPISID_ORIGIN}`);
-    parts.push(`SAPISIDHASH ${timestamp}_${hash}`);
-  }
-
-  if (sapisid1p) {
-    const hash = await sha1Hex(`${timestamp} ${sapisid1p} ${YT_SAPISID_ORIGIN}`);
-    parts.push(`SAPISID1PHASH ${timestamp}_${hash}`);
-  }
-
-  if (sapisid3p) {
-    const hash = await sha1Hex(`${timestamp} ${sapisid3p} ${YT_SAPISID_ORIGIN}`);
-    parts.push(`SAPISID3PHASH ${timestamp}_${hash}`);
-  }
-
-  return parts.join(" ");
-}
+const SABR_URL_PATTERN = "*://*.googlevideo.com/videoplayback*";
 
 async function registerSabrOriginRule() {
-  const baseHeaders: Browser.declarativeNetRequest.ModifyHeaderInfo[] = [
-    {
-      header: "Origin",
-      operation: "set",
-      value: "https://www.youtube.com"
-    },
-    {
-      header: "Referer",
-      operation: "set",
-      value: "https://www.youtube.com/"
-    }
-  ];
-
-  // Sec-Fetch-* headers are browser-managed in Firefox; overriding them aborts requests
-  const chromeOnlyHeaders: Browser.declarativeNetRequest.ModifyHeaderInfo[] = import.meta.env.FIREFOX
-    ? []
-    : [
-      {
-        header: "Sec-Fetch-Site",
-        operation: "set",
-        value: "cross-site"
-      },
-      {
-        header: "Sec-Fetch-Storage-Access",
-        operation: "set",
-        value: "active"
-      }
-    ];
+  if (import.meta.env.FIREFOX) {
+    // Firefox's declarativeNetRequest doesn't apply to extension-initiated
+    // fetches, so googlevideo sees Origin: moz-extension://... and rejects
+    // the request. Blocking webRequest still works from extension context.
+    browser.webRequest.onBeforeSendHeaders.addListener(
+      rewriteSabrHeaders,
+      { urls: [SABR_URL_PATTERN] },
+      ["blocking", "requestHeaders"]
+    );
+    return;
+  }
 
   const rule: Browser.declarativeNetRequest.Rule = {
     id: SABR_ORIGIN_RULE_ID,
     priority: 1,
     action: {
       type: "modifyHeaders",
-      requestHeaders: [...baseHeaders, ...chromeOnlyHeaders]
+      requestHeaders: [
+        { header: "Origin", operation: "set", value: "https://www.youtube.com" },
+        { header: "Referer", operation: "set", value: "https://www.youtube.com/" },
+        { header: "Sec-Fetch-Site", operation: "set", value: "cross-site" },
+        { header: "Sec-Fetch-Storage-Access", operation: "set", value: "active" }
+      ]
     },
-    condition: {
-      urlFilter: "||googlevideo.com/videoplayback",
-      resourceTypes: ["xmlhttprequest", "media"]
-    }
+    condition: { urlFilter: "||googlevideo.com/videoplayback" }
   };
-  // Clear any dynamic rules left by prior installs before registering ours,
-  // in case an earlier (broader) rule id got stranded in the profile — that
-  // shape broke top-level navigations on Firefox.
-  const existing = await browser.declarativeNetRequest.getDynamicRules();
   await browser.declarativeNetRequest.updateDynamicRules({
-    removeRuleIds: existing.map(r => r.id),
+    removeRuleIds: [SABR_ORIGIN_RULE_ID],
     addRules: [rule]
   });
+}
+
+function rewriteSabrHeaders(details: Browser.webRequest.OnBeforeSendHeadersDetails) {
+  const requestHeaders = (details.requestHeaders ?? []).filter(header => {
+    const name = header.name.toLowerCase();
+    return name !== "origin" && name !== "referer";
+  });
+  requestHeaders.push(
+    { name: "Origin", value: "https://www.youtube.com" },
+    { name: "Referer", value: "https://www.youtube.com/" }
+  );
+  return { requestHeaders };
 }
 
 function registerChunkHandlers() {
@@ -218,71 +179,6 @@ function registerTabLifecycleHandlers() {
 
 export default defineBackground(async () => {
   void registerSabrOriginRule();
-
-  // Firefox: log the Cookie header our SW fetch is about to send vs what
-  // youtube.com's real cookies are. Hypothesis: Firefox's cookie
-  // partitioning gives the background SW a different (or empty) cookie jar
-  // than the youtube.com page, so the PO token YT minted for the page's
-  // session doesn't match what the server sees for our SW fetch.
-  // Firefox doesn't automatically attach youtube.com cookies to extension
-  // background-SW cross-origin fetches even with `credentials: "include"` and
-  // `host_permissions` for googlevideo.com. Without a session cookie, YT
-  // can't match the PO token to any session and emits
-  // `streamProtectionStatus=3` (attestation required) on the UMP stream.
-  // Inject the YouTube cookies manually on googlevideo videoplayback
-  // requests originated by our SW (tabId === -1).
-  // Firefox accepts async webRequest listeners (returning a Promise<BlockingResponse>);
-  // the webextension-polyfill types don't model it, so cast the listener shape.
-  if (import.meta.env.FIREFOX) {
-    type AsyncBlockingListener = (
-      details: Browser.webRequest.OnBeforeSendHeadersDetails
-    ) => Promise<Browser.webRequest.BlockingResponse | undefined>;
-
-    const onBeforeSendHeaders = browser.webRequest.onBeforeSendHeaders as typeof browser.webRequest.onBeforeSendHeaders & {
-      addListener(
-        callback: AsyncBlockingListener,
-        filter: Browser.webRequest.RequestFilter,
-        extraInfoSpec: string[]
-      ): void;
-    };
-
-    onBeforeSendHeaders.addListener(
-      async details => {
-        if (details.tabId >= 0) {
-          return undefined;
-        }
-
-        const cookies = await browser.cookies.getAll({ url: "https://www.youtube.com/" });
-        if (cookies.length === 0) {
-          return undefined;
-        }
-
-        const cookieHeader = cookies.map(c => `${c.name}=${c.value}`).join("; ");
-        const headers = (details.requestHeaders ?? []).filter(h => {
-          const name = h.name.toLowerCase();
-          return name !== "cookie" && name !== "authorization";
-        });
-        headers.push({ name: "Cookie", value: cookieHeader });
-
-        // YouTube authenticates API/SABR requests with an Authorization header
-        // derived from the (1P|3P)APISID cookies. The page's JS computes it;
-        // our SW doesn't, so YT sees an authenticated-looking Cookie jar but
-        // no matching Authorization and treats the request as needing fresh
-        // attestation. Compute it the same way the player does.
-        const authHeader = await buildSapisidHashHeader(cookies);
-        if (authHeader) {
-          headers.push({ name: "Authorization", value: authHeader });
-          headers.push({ name: "X-Origin", value: "https://www.youtube.com" });
-          headers.push({ name: "X-Goog-AuthUser", value: "0" });
-        }
-
-        return { requestHeaders: headers };
-      },
-      { urls: ["https://*.googlevideo.com/videoplayback*"] },
-      ["blocking", "requestHeaders"]
-    );
-  }
-
   startSabrRequestCapture();
   onSabrBodyCaptured(tabId => {
     void sendMessage(MessageType.SabrBodyReady, {}, tabId);
@@ -320,6 +216,7 @@ export default defineBackground(async () => {
   registerChunkHandlers();
   registerDownloadHandlers();
   registerPipelineHandlers();
+  registerPoTokenRefreshListener();
   registerRecentDownloadsRetention();
   registerStorageHandlers();
   registerTabLifecycleHandlers();

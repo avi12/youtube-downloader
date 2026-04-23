@@ -72,6 +72,10 @@ function registerCrossWorldHandlers(
     void sendMessage(MessageType.StartBackgroundDownload, data);
   });
 
+  crossWorldMessenger.onMessage(CrossWorldMessage.PoTokenRefreshed, ({ data }) => {
+    void sendMessage(MessageType.PoTokenRefreshed, data);
+  });
+
   crossWorldMessenger.onMessage(CrossWorldMessage.IframePlayerReady, ({ data }) => {
     void sendMessage(MessageType.DownloadIframeReady, { videoId: data.videoId });
   });
@@ -192,9 +196,6 @@ export default defineContentScript({
       ...currentOptions
     });
 
-    onMessage(MessageType.BgDebugLog, ({ data }) => {
-      console.log("[ytdl-trace:bg]", data.msg);
-    });
     registerCrossWorldHandlers(isDownloadIframe, context);
     registerBackgroundMessageHandlers();
     listenForSabrBodyReady();

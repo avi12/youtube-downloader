@@ -31,6 +31,7 @@ export const MessageType = {
   RecentDownloadsChanged: "recentDownloadsChanged",
   TranscodeRecentDownload: "transcodeRecentDownload",
   PipelineZipProgress: "pipelineZipProgress",
+  PoTokenRefreshed: "poTokenRefreshed",
   BgDebugLog: "bgDebugLog"
 } as const;
 
@@ -143,6 +144,10 @@ interface ProtocolMap {
     isFailed?: boolean;
   }): void;
 
+  refreshPoToken(data: {
+    videoId: string;
+  }): string | null;
+
   pipelineProgress(data: Parameters<ProtocolMap["updateDownloadProgress"]>[0] & {
     tabId: number;
   }): void;
@@ -181,6 +186,10 @@ interface ProtocolMap {
     playlistId: string;
     isDone: boolean;
     tabId: number;
+  }): void;
+  poTokenRefreshed(data: {
+    videoId: string;
+    poToken: string;
   }): void;
   bgDebugLog(data: { msg: string }): void;
 }
