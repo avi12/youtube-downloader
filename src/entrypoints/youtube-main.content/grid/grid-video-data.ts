@@ -7,6 +7,11 @@ import type { PlayerResponse } from "@/types";
 
 declare const ytcfg: { get: (key: string) => unknown } | undefined;
 
+function readUiLanguage() {
+  const uiLang = ytcfg?.get("HL");
+  return typeof uiLang === "string" ? uiLang : navigator.language;
+}
+
 const MAX_CONCURRENT_FETCHES = 3;
 const videoDataPending = new Set<string>();
 let activeVideoDataFetches = 0;
@@ -47,7 +52,8 @@ async function fetchVideoDataViaApi(videoId: string) {
     if (playerData?.videoDetails?.videoId) {
       await buildAndDispatchVideoData({
         playerResponse: playerData,
-        cancelActiveDownload
+        cancelActiveDownload,
+        preferredAudioLanguage: readUiLanguage()
       });
       return;
     }
@@ -62,7 +68,8 @@ async function fetchVideoDataViaApi(videoId: string) {
   if (playerResponse?.videoDetails?.videoId) {
     await buildAndDispatchVideoData({
       playerResponse,
-      cancelActiveDownload
+      cancelActiveDownload,
+      preferredAudioLanguage: readUiLanguage()
     });
   }
 }

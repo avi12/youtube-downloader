@@ -236,15 +236,24 @@ export async function generatePoTokenIfNeeded(videoData: VideoData) {
   }
 }
 
-export async function buildAndDispatchVideoData({ playerResponse, cancelActiveDownload }: {
+function readPlayerAudioLanguage() {
+  const elPlayer = document.querySelector<HTMLElement & {
+    getAudioTrack?: () => { language?: string } | null;
+  }>("#movie_player");
+  return elPlayer?.getAudioTrack?.()?.language ?? "";
+}
+
+export async function buildAndDispatchVideoData({ playerResponse, cancelActiveDownload, preferredAudioLanguage = "" }: {
   playerResponse: PlayerResponse;
   cancelActiveDownload: (videoId: string) => void;
+  preferredAudioLanguage?: string;
 }) {
   const { clientVersion, clientName } = readYtcfg();
   const videoData = buildVideoData({
     playerResponse,
     clientVersion,
-    clientName
+    clientName,
+    preferredAudioLanguage
   });
 
   videoDataCache.set(videoData.videoId, videoData);
@@ -320,7 +329,8 @@ export async function extractAndDispatchVideoData(cancelActiveDownload: (videoId
     if (isReady) {
       await buildAndDispatchVideoData({
         playerResponse,
-        cancelActiveDownload
+        cancelActiveDownload,
+        preferredAudioLanguage: readPlayerAudioLanguage()
       });
       return;
     }

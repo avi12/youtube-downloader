@@ -22,12 +22,12 @@ function getUniqueVideoFormats(formats: AdaptiveFormatItem[]) {
   });
 }
 
-function getAudioFormats(formats: AdaptiveFormatItem[]) {
+function getAudioFormats(formats: AdaptiveFormatItem[], preferredLanguage: string) {
   const audioFormats = formats.filter(format => format.mimeType.startsWith("audio"));
   // Dedup by itag + audioTrack.id so different language tracks with the same itag
   // (e.g. original + dubbed) are preserved.
   const seenKeys = new Set<string>();
-  return audioFormats.filter(format => {
+  const deduped = audioFormats.filter(format => {
     const key = `${format.itag}:${format.audioTrack?.id ?? ""}`;
     if (seenKeys.has(key)) {
       return false;
@@ -36,6 +36,22 @@ function getAudioFormats(formats: AdaptiveFormatItem[]) {
     seenKeys.add(key);
     return true;
   });
+  if (!preferredLanguage || deduped.every(format => !format.audioTrack)) {
+    return deduped;
+  }
+
+  // Normalize to bare language code: "en-US" → "en".
+  const langCode = preferredLanguage.toLowerCase().split("-")[0];
+
+  function isPreferredTrack(format: AdaptiveFormatItem) {
+    const trackId = format.audioTrack?.id?.toLowerCase() ?? "";
+    // audioTrack.id may be "es", "und:es", "2:dubbed:Spanish", etc.
+    return trackId === langCode || trackId.split(":").includes(langCode);
+  }
+
+  const preferred = deduped.filter(format => isPreferredTrack(format));
+  const rest = deduped.filter(format => !isPreferredTrack(format));
+  return [...preferred, ...rest];
 }
 
 function byBitrateDesc(formatA: AdaptiveFormatItem, formatB: AdaptiveFormatItem) {
@@ -63,10 +79,11 @@ function extractSabrConfig({ playerResponse, clientVersion, clientName }: {
   };
 }
 
-export function buildVideoData({ playerResponse, clientVersion, clientName }: {
+export function buildVideoData({ playerResponse, clientVersion, clientName, preferredAudioLanguage = "" }: {
   playerResponse: PlayerResponse;
   clientVersion: string;
   clientName: number;
+  preferredAudioLanguage?: string;
 }) {
   const isDownloadable = isVideoDownloadable(playerResponse);
   const isLive = isVideoLive(playerResponse);
@@ -84,7 +101,7 @@ export function buildVideoData({ playerResponse, clientVersion, clientName }: {
     isDownloadable,
     isLive,
     videoFormats: getUniqueVideoFormats(allFormats),
-    audioFormats: getAudioFormats(allFormats),
+    audioFormats: getAudioFormats(allFormats, preferredAudioLanguage),
     sabrConfig: extractSabrConfig({
       playerResponse,
       clientVersion,
