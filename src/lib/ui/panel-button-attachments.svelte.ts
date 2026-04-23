@@ -136,7 +136,7 @@ export function attachDownloadButton({ elButton, getIsDownloadable, getIsFilenam
         title,
         accessibilityText: title,
         style: ButtonStyle.CallToAction,
-        type: ButtonType.Filled,
+        type: ButtonType.Tonal,
         buttonSize: ButtonSize.Default,
         state: isActive ? ButtonState.Active : ButtonState.Disabled,
         isFullWidth: true,
