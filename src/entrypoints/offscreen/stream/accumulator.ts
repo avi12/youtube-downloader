@@ -6,13 +6,38 @@ interface AudioStream {
   totalChunks: number;
 }
 
+export interface SegmentData {
+  videoChunks: Map<number, Uint8Array>;
+  totalVideoChunks: number;
+  audioChunks: Map<number, Uint8Array>;
+  totalAudioChunks: number;
+}
+
 export interface StreamAccumulator {
   videoChunks: Map<number, Uint8Array>;
   totalVideoChunks: number;
   audioStreams: Map<string, AudioStream>;
+  // iframe-scrub multi-segment downloads land here, keyed by segment index.
+  // Each segment is a self-contained fMP4/WebM (init + its own fragments).
+  segments: Map<number, SegmentData>;
 }
 
 export const STREAM_ACCUMULATORS = new Map<string, StreamAccumulator>();
+
+const SEGMENT_STREAM_PATTERN = /^(video|audio)-seg-(\d+)$/;
+
+function ensureSegment(accumulator: StreamAccumulator, index: number) {
+  if (!accumulator.segments.has(index)) {
+    accumulator.segments.set(index, {
+      videoChunks: new Map(),
+      totalVideoChunks: 0,
+      audioChunks: new Map(),
+      totalAudioChunks: 0
+    });
+  }
+
+  return accumulator.segments.get(index);
+}
 
 export function handleProcessStreamChunk(data: {
   videoId: string;
@@ -27,12 +52,50 @@ export function handleProcessStreamChunk(data: {
     STREAM_ACCUMULATORS.set(videoId, {
       videoChunks: new Map(),
       totalVideoChunks: 0,
-      audioStreams: new Map()
+      audioStreams: new Map(),
+      segments: new Map()
     });
   }
 
   const accumulator = STREAM_ACCUMULATORS.get(videoId);
   if (!accumulator) {
+    return;
+  }
+
+  const segMatch = streamType.match(SEGMENT_STREAM_PATTERN);
+  if (segMatch) {
+    const [, kind, indexStr] = segMatch;
+    const segmentIndex = parseInt(indexStr, 10);
+    const segment = ensureSegment(accumulator, segmentIndex);
+    if (!segment) {
+      return;
+    }
+
+    if (iChunk === -1) {
+      if (kind === "video") {
+        segment.totalVideoChunks = totalChunks;
+      } else {
+        segment.totalAudioChunks = totalChunks;
+      }
+
+      return;
+    }
+
+    const decodedSegChunk = base64ToUint8Array(chunkBase64);
+    if (kind === "video") {
+      segment.videoChunks.set(iChunk, decodedSegChunk);
+
+      if (totalChunks > 0) {
+        segment.totalVideoChunks = totalChunks;
+      }
+    } else {
+      segment.audioChunks.set(iChunk, decodedSegChunk);
+
+      if (totalChunks > 0) {
+        segment.totalAudioChunks = totalChunks;
+      }
+    }
+
     return;
   }
 

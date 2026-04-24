@@ -2,7 +2,7 @@ import { STREAM_ACCUMULATORS } from "./accumulator";
 import { assembleStreamChunks } from "./codec";
 import { enqueueStreamData } from "@/lib/download-pipeline";
 import { DownloadType } from "@/types";
-import type { SubtitleStream, VideoMetadata } from "@/types";
+import type { ScrubSegment, SubtitleStream, VideoMetadata } from "@/types";
 
 export function handleProcessStreamEnd(data: {
   videoId: string;
@@ -17,13 +17,44 @@ export function handleProcessStreamEnd(data: {
   playlistTitle?: string;
   playlistTotalCount?: number;
   metadata?: VideoMetadata | null;
+  segmentCount?: number;
 }) {
   const {
     videoId, type, filenameOutput, videoMimeType, audioMimeType, audioTrackLabels,
-    subtitleStreams = [], tabId, playlistId, playlistTitle, playlistTotalCount
+    subtitleStreams = [], tabId, playlistId, playlistTitle, playlistTotalCount, segmentCount
   } = data;
   const accumulator = STREAM_ACCUMULATORS.get(videoId);
   STREAM_ACCUMULATORS.delete(videoId);
+
+  let segments: ScrubSegment[] | undefined;
+  if (segmentCount && accumulator?.segments.size) {
+    const ordered: ScrubSegment[] = [];
+    for (let i = 0; i < segmentCount; i++) {
+      const segmentData = accumulator.segments.get(i);
+      if (!segmentData) {
+        continue;
+      }
+
+      const video = assembleStreamChunks({
+        chunks: segmentData.videoChunks,
+        totalChunks: segmentData.totalVideoChunks
+      });
+      const audio = assembleStreamChunks({
+        chunks: segmentData.audioChunks,
+        totalChunks: segmentData.totalAudioChunks
+      });
+      if (video && audio) {
+        ordered.push({
+          video,
+          audio
+        });
+      }
+    }
+
+    if (ordered.length > 0) {
+      segments = ordered;
+    }
+  }
 
   const primaryAudio = accumulator?.audioStreams.get("audio");
   const [primaryAudioLabel, ...extraTrackLabels] = audioTrackLabels;
@@ -62,6 +93,7 @@ export function handleProcessStreamEnd(data: {
     primaryAudioLabel,
     additionalAudioStreams,
     subtitleStreams,
+    segments,
     tabId,
     playlistId,
     playlistTitle,
