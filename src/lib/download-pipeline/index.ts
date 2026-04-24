@@ -1,4 +1,5 @@
 import { enqueueMuxJob } from "./ffmpeg-instance";
+import { processMultipartSegments } from "./process-multipart-segments";
 import { processSingleMedia } from "./process-single-media";
 import { processVideoAudio } from "./process-video-audio";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
@@ -146,7 +147,12 @@ async function processItem(item: ProcessStreamData) {
   });
 
   try {
-    if (item.type === DownloadType.VideoAndAudio) {
+    if (item.segments && item.segments.length > 0) {
+      await enqueueMuxJob(() => processMultipartSegments({
+        ...item,
+        segments: item.segments!
+      }));
+    } else if (item.type === DownloadType.VideoAndAudio) {
       await enqueueMuxJob(() => processVideoAudio(item));
     } else {
       await processSingleMedia(item);
