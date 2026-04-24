@@ -34,6 +34,10 @@ interface OffscreenProtocolMap {
     playlistTitle?: string;
     playlistTotalCount?: number;
     metadata?: VideoMetadata | null;
+    // iframe-scrub multi-segment marker. When set, end-handler pulls from
+    // accumulator.segments (keyed by 0..segmentCount-1) and assembles via
+    // FFmpeg concat demuxer with MKV intermediate.
+    segmentCount?: number;
   };
   [OffscreenMessageType.CancelProcessing]: {
     videoIds: string[];

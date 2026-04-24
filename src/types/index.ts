@@ -100,6 +100,7 @@ export type DownloadRequest = {
   playlistTitle?: string;
   playlistTotalCount?: number;
   poToken?: string;
+  alternateClientPoToken?: string;
   sabrUrl?: string;
   videoFormat?: AdaptiveFormatItem | null;
   audioFormat?: AdaptiveFormatItem | null;
@@ -110,6 +111,7 @@ export type DownloadRequest = {
   resolvedAudioUrl?: string | null;
   resolvedExtraAudioUrls?: (string | null)[];
   captionTracks?: CaptionTrack[];
+  debugRangedFromSec?: number;
 };
 
 export type DownloadTypePreference = "auto" | DownloadType;
@@ -129,6 +131,11 @@ export type Options = {
   isPlaylistScrollSyncEnabled: boolean;
 };
 
+export type ScrubSegment = {
+  video: Uint8Array;
+  audio: Uint8Array;
+};
+
 export type StreamData = {
   type: DownloadType;
   videoId: string;
@@ -144,6 +151,11 @@ export type StreamData = {
     label: string;
   }[];
   subtitleStreams: SubtitleStream[];
+  // When present, assembled from iframe-scrub captures — each segment is a
+  // self-contained fMP4/WebM. The pipeline uses FFmpeg's concat demuxer with
+  // an MKV intermediate to handle timestamp discontinuities at segment seams,
+  // then transcodes back to the target container via stream-copy.
+  segments?: ScrubSegment[];
 };
 
 export type VideoMetadata = {

@@ -60,6 +60,13 @@ interface PageMessengerSchema {
       mimeType: string;
       label: string;
     }[];
+    // Iframe-scrub multipart payload: each entry is one iframe's self-contained
+    // fMP4/WebM capture. When set, videoData/audioData are ignored and the
+    // downstream pipeline assembles via FFmpeg concat demuxer.
+    segments?: {
+      video: Uint8Array;
+      audio: Uint8Array;
+    }[];
     metadata?: VideoMetadata | null;
   }): void;
   [CrossWorldMessage.DownloadRequest](data: DownloadRequest): void;

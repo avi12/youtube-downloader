@@ -70,6 +70,8 @@ interface ProtocolMap {
     playlistTitle?: string;
     playlistTotalCount?: number;
     metadata?: VideoMetadata | null;
+    // Iframe-scrub marker — N chunks came in on video-seg-0..N-1 / audio-seg-0..N-1.
+    segmentCount?: number;
   }): void;
 
   processStreamError(data: {
