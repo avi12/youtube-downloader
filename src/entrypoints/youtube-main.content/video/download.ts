@@ -1,9 +1,17 @@
-import { capturedPoToken, capturedSabrUrl, setPoTokenCredentials } from "./credentials";
+import { capturedAlternateClientPoToken, capturedPoToken, capturedSabrUrl, setPoTokenCredentials } from "./credentials";
 import { resolveFormatUrl } from "./stream-fetch";
 import { buildVideoMetadata, generatePoTokenIfNeeded, videoDataCache } from "./video-data";
 import { crossWorldMessenger, CrossWorldMessage } from "@/lib/messaging/cross-world-messenger";
 import { sabrCredentials } from "@/lib/ui/synced-stores.svelte";
+import { downloadViaIframeScrub } from "@/lib/youtube/iframe-scrub";
 import { type AdaptiveFormatItem, type DownloadRequest, DownloadType } from "@/types";
+
+// Firefox's background SABR gets LOGIN_REQUIRED / attestation_required for
+// any video long enough to trip YouTube's per-session threshold (somewhere
+// between ~4 and ~10 min). The iframe-scrub path works around it by riding
+// the trust of the iframe's own player session. Keep off for Chrome since
+// Chrome's background SABR still clears the wall more often.
+const IFRAME_SCRUB_MIN_DURATION_SEC = 240;
 
 const activeDownloads = new Map<string, AbortController>();
 
@@ -165,6 +173,44 @@ export async function performDownload({
       });
     const metadata = await buildVideoMetadata(videoId);
 
+    const videoDurationMs = parseInt(videoFormat?.approxDurationMs ?? audioFormat?.approxDurationMs ?? "0", 10);
+    const videoDurationSec = Math.ceil(videoDurationMs / 1000);
+    const useIframeScrub = import.meta.env.FIREFOX
+      && self === top
+      && videoDurationSec >= IFRAME_SCRUB_MIN_DURATION_SEC
+      && !/ytdlKeepPlaying=1/.test(location.search);
+    if (useIframeScrub) {
+      console.log(`[ytdl] iframe-scrub path for ${videoId} (${videoDurationSec}s)`);
+      const scrubbed = await downloadViaIframeScrub({
+        videoId,
+        durationSec: videoDurationSec,
+        signal: abortController.signal
+      });
+      if (scrubbed.segments.length > 0) {
+        void crossWorldMessenger.sendMessage(CrossWorldMessage.StreamData, {
+          downloadType: type,
+          videoId,
+          filenameOutput,
+          videoData: null,
+          audioData: null,
+          segments: scrubbed.segments,
+          videoMimeType: scrubbed.videoMimeType || videoFormat?.mimeType?.split(";")[0] || "video/mp4",
+          audioMimeType: scrubbed.audioMimeType || audioFormat?.mimeType?.split(";")[0] || "audio/mp4",
+          audioLabel: audioFormat?.audioTrack?.displayName ?? "",
+          additionalAudioData: [],
+          metadata
+        });
+        return;
+      }
+
+      console.warn(`[ytdl] iframe-scrub produced no segments for ${videoId}, falling through to SABR`);
+    }
+
+    // YouTube's SPA strips ?query params on watch navigation, so read from the
+    // hash fragment instead. Trigger via e.g. #ytdlDebugRangedFromSec=600
+    const debugRangedMatch = location.hash.match(/ytdlDebugRangedFromSec=(\d+)/);
+    const debugRangedFromSec = debugRangedMatch ? parseInt(debugRangedMatch[1], 10) : undefined;
+
     const enrichedRequest: DownloadRequest = {
       type,
       videoId,
@@ -174,7 +220,9 @@ export async function performDownload({
       isIframeFallback,
       sabrConfig: cachedVideoData.sabrConfig,
       poToken: credentials.poToken,
+      alternateClientPoToken: capturedAlternateClientPoToken,
       sabrUrl: credentials.sabrUrl,
+      debugRangedFromSec,
       videoFormat,
       audioFormat,
       additionalAudioFormats: extraAudioFormats,

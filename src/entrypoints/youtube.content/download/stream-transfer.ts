@@ -57,42 +57,59 @@ export async function handleStreamData(payload: StreamDataPayload) {
   const {
     downloadType, videoId, filenameOutput,
     videoData, audioData, videoMimeType, audioMimeType,
-    audioLabel, additionalAudioData
+    audioLabel, additionalAudioData, segments
   } = payload;
   if (cancelledVideoIds.has(videoId)) {
     return;
   }
 
   const streamTasks: Promise<void>[] = [];
-  if (videoData) {
-    streamTasks.push(
-      sendStreamChunks({
-        videoId,
-        streamType: StreamType.Video,
-        data: videoData
-      })
-    );
-  }
-
-  if (audioData) {
-    streamTasks.push(
-      sendStreamChunks({
-        videoId,
-        streamType: StreamType.Audio,
-        data: audioData
-      })
-    );
-  }
-
-  for (const [i, track] of additionalAudioData.entries()) {
-    if (track.data) {
+  if (segments && segments.length > 0) {
+    for (const [i, segment] of segments.entries()) {
       streamTasks.push(
         sendStreamChunks({
           videoId,
-          streamType: `audio-extra-${i}`,
-          data: track.data
+          streamType: `video-seg-${i}`,
+          data: segment.video
+        }),
+        sendStreamChunks({
+          videoId,
+          streamType: `audio-seg-${i}`,
+          data: segment.audio
         })
       );
+    }
+  } else {
+    if (videoData) {
+      streamTasks.push(
+        sendStreamChunks({
+          videoId,
+          streamType: StreamType.Video,
+          data: videoData
+        })
+      );
+    }
+
+    if (audioData) {
+      streamTasks.push(
+        sendStreamChunks({
+          videoId,
+          streamType: StreamType.Audio,
+          data: audioData
+        })
+      );
+    }
+
+    for (const [i, track] of additionalAudioData.entries()) {
+      if (track.data) {
+        streamTasks.push(
+          sendStreamChunks({
+            videoId,
+            streamType: `audio-extra-${i}`,
+            data: track.data
+          })
+        );
+      }
     }
   }
 
@@ -113,6 +130,7 @@ export async function handleStreamData(payload: StreamDataPayload) {
     videoMimeType,
     audioMimeType,
     audioTrackLabels,
+    segmentCount: segments?.length,
     metadata: payload.metadata,
     ...playlistContext
   });
