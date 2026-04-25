@@ -2,7 +2,6 @@
   position: relative;
   display: flex;
   align-items: center;
-  overflow: hidden;
   margin-left: 8px;
 }
 
@@ -10,14 +9,51 @@
   margin-left: 0 !important;
 }
 
-.ytdl-watch-progress {
+[data-ytdl-download] {
+  position: relative;
+}
+
+.ytdl-watch-progress-ring {
   position: absolute;
-  inset-inline: 0;
-  inset-block-end: 0;
-  z-index: 1;
-  block-size: 2px;
+  inset: 0;
+  block-size: 100%;
+  inline-size: 100%;
+  margin: auto;
   opacity: 0%;
   pointer-events: none;
+  transition: opacity 120ms ease-out;
+}
+
+.ytdl-watch-progress-ring__track {
+  fill: none;
+  stroke: var(--yt-spec-10-percent-layer, rgb(255 255 255 / 10%));
+  stroke-width: 2;
+}
+
+.ytdl-watch-progress-ring__indicator {
+  fill: none;
+  stroke: var(--yt-spec-call-to-action, rgb(62 166 255));
+  stroke-linecap: round;
+  stroke-width: 2;
+  transition: stroke-dashoffset 160ms ease-out;
+  transform: rotate(-90deg);
+  transform-origin: center;
+}
+
+.ytdl-watch-progress-ring--indeterminate .ytdl-watch-progress-ring__indicator {
+  stroke-dasharray: 30 70;
+  transition: none;
+  animation: ytdl-watch-progress-ring-spin 1400ms linear infinite;
+}
+
+@keyframes ytdl-watch-progress-ring-spin {
+  from {
+    transform: rotate(-90deg);
+  }
+
+  to {
+    transform: rotate(270deg);
+  }
 }
 
 .ytdl-native-hidden {

@@ -87,7 +87,7 @@ export async function injectSegmentedDownloadButton(
     elNativeDownload.classList.add("ytdl-native-hidden");
   }
 
-  const { elGroup, elDownloadButton, elChevronButton, elProgressBar } =
+  const { elGroup, elDownloadButton, elChevronButton, progressRing } =
     createButtonGroup({
       elActionsContainer,
       elNativeDownload,
@@ -167,9 +167,9 @@ export async function injectSegmentedDownloadButton(
 
     requestAnimationFrame(applySegmentedClasses);
 
-    elProgressBar.indeterminate = isDownloading && downloadProgressType === "";
-    elProgressBar.value = Math.round(viewState.downloadProgress * 100);
-    elProgressBar.style.opacity = isDownloading ? "1" : "0";
+    progressRing.setIndeterminate(isDownloading && downloadProgressType === "");
+    progressRing.setProgress(viewState.downloadProgress);
+    progressRing.setOpacity(isDownloading ? 1 : 0);
   }
 
   refreshButtons();
