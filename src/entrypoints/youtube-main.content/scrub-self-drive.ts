@@ -77,6 +77,53 @@ function bindCaptureToVideoId(videoId: string) {
   pending.length = 0;
 }
 
+// While the ad is playing, drop appendBuffer chunks before they accumulate as
+// ad media in capturedMedia[videoId]. Snapshot the chunk arrays each tick and
+// roll them back if they grew while .ad-showing was visible. Stops once the
+// player reports the ad has cleared.
+function dropAdChunksUntilCleared(videoId: string) {
+  const captureState = window.__ytdlCapture;
+  if (!captureState) {
+    return;
+  }
+
+  const capture = captureState.capturedMedia.get(videoId);
+  if (!capture) {
+    return;
+  }
+
+  let frozenVideoCount = capture.videoChunks.length;
+  let frozenVideoBytes = capture.videoTotalBytes;
+  let frozenAudioCount = capture.audioChunks.length;
+  let frozenAudioBytes = capture.audioTotalBytes;
+
+  const intervalId = setInterval(() => {
+    const adShowing = document.querySelector(AD_SHOWING_SELECTOR);
+    if (!adShowing) {
+      clearInterval(intervalId);
+      return;
+    }
+
+    if (capture.videoChunks.length > frozenVideoCount) {
+      capture.videoChunks.length = frozenVideoCount;
+      capture.videoTotalBytes = frozenVideoBytes;
+    } else {
+      frozenVideoCount = capture.videoChunks.length;
+      frozenVideoBytes = capture.videoTotalBytes;
+    }
+
+    if (capture.audioChunks.length > frozenAudioCount) {
+      capture.audioChunks.length = frozenAudioCount;
+      capture.audioTotalBytes = frozenAudioBytes;
+    } else {
+      frozenAudioCount = capture.audioChunks.length;
+      frozenAudioBytes = capture.audioTotalBytes;
+    }
+  }, 200);
+
+  setTimeout(() => clearInterval(intervalId), AD_CLEAR_TIMEOUT_MS + 5_000);
+}
+
 async function waitForAdToClear() {
   const deadlineAt = Date.now() + AD_CLEAR_TIMEOUT_MS;
   while (Date.now() < deadlineAt) {
@@ -124,8 +171,6 @@ export async function runScrubSelfDrive() {
     return;
   }
 
-  bindCaptureToVideoId(videoId);
-
   const bufferFillMs = windowSec > 0
     ? windowSec * 1000 + BUFFER_FILL_SLACK_MS
     : DEFAULT_BUFFER_FILL_MS;
@@ -142,6 +187,8 @@ export async function runScrubSelfDrive() {
     return;
   }
 
+  bindCaptureToVideoId(videoId);
+  dropAdChunksUntilCleared(videoId);
   await waitForAdToClear();
   await wait(bufferFillMs);
   player.pauseVideo?.();

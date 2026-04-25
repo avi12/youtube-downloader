@@ -1,12 +1,28 @@
 import { ensureProcessor } from "./processor";
-import { MessageType, onMessage } from "@/lib/messaging/messaging";
+import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
 import { TRANSFER_CHUNK_SIZE, base64ToUint8Array, uint8ToBase64 } from "@/lib/utils/binary";
 import type { DownloadType, VideoMetadata } from "@/types";
 
+function bgLog(msg: string) {
+  console.log(msg);
+  void browser.tabs.query({ url: "*://www.youtube.com/*" }).then(tabs => {
+    for (const tab of tabs) {
+      if (typeof tab.id === "number") {
+        void sendMessage(MessageType.BgDebugLog, { msg }, tab.id);
+      }
+    }
+  });
+}
+
 const MAX_PARALLEL_TABS = 2;
 const MAX_RETRIES_PER_INDEX = 2;
 const MIN_ACCEPTABLE_BYTES_PER_SEC = 30_000;
+// Hard ceiling for a scrub tab: page load + player ready (~15 s) + ad-clear
+// (~10 s) + buffer-fill (windowSec) + reporting slack. If the tab hasn't
+// reported by then it's stuck (autoplay block, content-script crash, etc.)
+// so force-close and retry.
+const TAB_DEADLINE_OVERHEAD_MS = 60_000;
 const SCRUB_WINDOW_WIDTH = 480;
 const SCRUB_WINDOW_HEIGHT = 270;
 
@@ -40,6 +56,8 @@ interface ScrubSession {
 
 const sessionsByVideoId = new Map<string, ScrubSession>();
 const sessionByTabId = new Map<number, string>();
+const tabDeadlineTimers = new Map<number, ReturnType<typeof setTimeout>>();
+const tabIndexByTabId = new Map<number, number>();
 
 async function openScrubTab({ session, scrubIndex, startSec, windowSec }: {
   session: ScrubSession;
@@ -68,14 +86,73 @@ async function openScrubTab({ session, scrubIndex, startSec, windowSec }: {
   }
 
   const newTab = await browser.tabs.create(tabOptions);
-  console.log(`[ytdl:scrub-bg] opened scrub tab id=${newTab.id} index=${scrubIndex} t=${startSec} window=${windowSec}s`);
+  bgLog(`[ytdl:scrub-bg] opened scrub tab id=${newTab.id} index=${scrubIndex} t=${startSec} window=${windowSec}s`);
 
   if (typeof newTab.id === "number") {
     session.inFlightTabIds.add(newTab.id);
     sessionByTabId.set(newTab.id, session.videoId);
+    tabIndexByTabId.set(newTab.id, scrubIndex);
+    armTabDeadline({
+      session,
+      tabId: newTab.id,
+      scrubIndex,
+      windowSec
+    });
   }
 
   return newTab.id;
+}
+
+function armTabDeadline({ session, tabId, scrubIndex, windowSec }: {
+  session: ScrubSession;
+  tabId: number;
+  scrubIndex: number;
+  windowSec: number;
+}) {
+  const deadlineMs = windowSec * 1000 + TAB_DEADLINE_OVERHEAD_MS;
+  const timer = setTimeout(() => {
+    tabDeadlineTimers.delete(tabId);
+
+    if (!session.inFlightTabIds.has(tabId)) {
+      return;
+    }
+
+    bgLog(`[ytdl:scrub-bg] tab ${tabId} (index ${scrubIndex}) hung past ${deadlineMs}ms, force-closing and retrying`);
+    const attempts = session.attemptsByIndex.get(scrubIndex) ?? 0;
+    if (attempts < MAX_RETRIES_PER_INDEX) {
+      session.attemptsByIndex.set(scrubIndex, attempts + 1);
+      session.pendingIndices.push(scrubIndex);
+    } else {
+      bgLog(`[ytdl:scrub-bg] index ${scrubIndex} exhausted retries, accepting empty`);
+      session.receivedSegments.set(scrubIndex, {
+        videoBase64: "",
+        audioBase64: "",
+        videoMimeType: "",
+        audioMimeType: ""
+      });
+    }
+
+    void closeScrubTab({
+      session,
+      tabId
+    }).then(() => {
+      if (session.receivedSegments.size >= session.expectedCount) {
+        void finalizeSession(session);
+        return;
+      }
+
+      void fillTabSlots(session);
+    });
+  }, deadlineMs);
+  tabDeadlineTimers.set(tabId, timer);
+}
+
+function clearTabDeadline(tabId: number) {
+  const timer = tabDeadlineTimers.get(tabId);
+  if (timer !== undefined) {
+    clearTimeout(timer);
+    tabDeadlineTimers.delete(tabId);
+  }
 }
 
 async function fillTabSlots(session: ScrubSession) {
@@ -100,6 +177,8 @@ async function closeScrubTab({ session, tabId }: {
 }) {
   session.inFlightTabIds.delete(tabId);
   sessionByTabId.delete(tabId);
+  tabIndexByTabId.delete(tabId);
+  clearTabDeadline(tabId);
   try {
     await browser.tabs.remove(tabId);
   } catch (_) {
@@ -110,6 +189,8 @@ async function closeScrubTab({ session, tabId }: {
 async function cleanupSession(session: ScrubSession) {
   for (const tabId of session.inFlightTabIds) {
     sessionByTabId.delete(tabId);
+    tabIndexByTabId.delete(tabId);
+    clearTabDeadline(tabId);
     try {
       await browser.tabs.remove(tabId);
     } catch (_) {
@@ -229,11 +310,11 @@ export function registerIframeScrubOrchestrator() {
         }
       }
     } catch (error) {
-      console.warn("[ytdl:scrub-bg] windows.create failed, falling back to user's window:", error);
+      bgLog(`[ytdl:scrub-bg] windows.create failed, falling back to user's window: ${String(error)}`);
     }
 
     if (typeof windowId !== "number") {
-      console.log("[ytdl:scrub-bg] using sender's window for scrub tabs");
+      bgLog("[ytdl:scrub-bg] using sender's window for scrub tabs");
     }
 
     const session: ScrubSession = {
@@ -260,7 +341,7 @@ export function registerIframeScrubOrchestrator() {
     };
     sessionsByVideoId.set(data.videoId, session);
 
-    console.log(`[ytdl:scrub-bg] starting ${expectedCount} scrub tabs for ${data.videoId} in window ${windowId}`);
+    bgLog(`[ytdl:scrub-bg] starting ${expectedCount} scrub tabs for ${data.videoId} in window ${windowId}`);
     await fillTabSlots(session);
   });
 
@@ -284,7 +365,7 @@ export function registerIframeScrubOrchestrator() {
     if (totalBytes < minAcceptableBytes && attempts < MAX_RETRIES_PER_INDEX) {
       session.attemptsByIndex.set(data.scrubIndex, attempts + 1);
       session.pendingIndices.push(data.scrubIndex);
-      console.warn(`[ytdl:scrub-bg] segment ${data.scrubIndex} undersized (${totalBytes}B < ${minAcceptableBytes}B), retrying (attempt ${attempts + 2}/${MAX_RETRIES_PER_INDEX + 1})`);
+      bgLog(`[ytdl:scrub-bg] segment ${data.scrubIndex} undersized (${totalBytes}B < ${minAcceptableBytes}B), retrying (attempt ${attempts + 2}/${MAX_RETRIES_PER_INDEX + 1})`);
       await fillTabSlots(session);
       return;
     }
@@ -296,7 +377,7 @@ export function registerIframeScrubOrchestrator() {
       audioMimeType: data.audioMimeType
     });
 
-    console.log(`[ytdl:scrub-bg] received segment ${data.scrubIndex + 1}/${session.expectedCount} for ${data.videoId} (${totalBytes}B)`);
+    bgLog(`[ytdl:scrub-bg] received segment ${data.scrubIndex + 1}/${session.expectedCount} for ${data.videoId} (${totalBytes}B)`);
 
     if (session.receivedSegments.size >= session.expectedCount) {
       await finalizeSession(session);
