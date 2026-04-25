@@ -34,12 +34,23 @@ export function registerPipelineHandlers() {
   registerRecentDownloadHandlers();
 
   onMessage(MessageType.ProcessStreamError, ({ data, sender }) => {
-    const tabId = sender.tab?.id ?? getTabIdsForVideo(data.videoId)[0];
+    console.error("[ytdl:bg] Stream error for", data.videoId, data.error);
+    const tabId = sender.tab?.id;
+
+    void browser.tabs.query({ url: "*://www.youtube.com/*" }).then(tabs => {
+      for (const tab of tabs) {
+        if (typeof tab.id === "number") {
+          void sendMessage(MessageType.BgDebugLog, {
+            msg: `[ytdl:pipeline-error] ${data.videoId}: ${data.error}`
+          }, tab.id);
+        }
+      }
+    });
+
     if (!tabId) {
       return;
     }
 
-    console.error("[ytdl] Stream error for", data.videoId, data.error);
     void sendMessage(
       MessageType.UpdateDownloadProgress,
       {

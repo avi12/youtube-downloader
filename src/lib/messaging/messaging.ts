@@ -32,7 +32,8 @@ export const MessageType = {
   TranscodeRecentDownload: "transcodeRecentDownload",
   PipelineZipProgress: "pipelineZipProgress",
   StartIframeScrub: "startIframeScrub",
-  IframeScrubSegmentReady: "iframeScrubSegmentReady"
+  IframeScrubSegmentReady: "iframeScrubSegmentReady",
+  BgDebugLog: "bgDebugLog"
 } as const;
 
 interface ProtocolMap {
@@ -218,6 +219,12 @@ interface ProtocolMap {
     audioBase64: string;
     videoMimeType: string;
     audioMimeType: string;
+  }): void;
+
+  // Forwards offscreen / background diagnostic messages to a content script
+  // so they're visible in the user's page console for debugging.
+  bgDebugLog(data: {
+    msg: string;
   }): void;
 }
 

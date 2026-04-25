@@ -158,7 +158,12 @@ async function processItem(item: ProcessStreamData) {
       await processSingleMedia(item);
     }
   } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
     console.error("[ytdl:pipeline] Mux/download failed:", item.videoId, error);
+    await sendMessage(MessageType.ProcessStreamError, {
+      videoId: item.videoId,
+      error: `[mux] ${message}`
+    });
     await reportRemoval({
       videoId: item.videoId,
       tabId: item.tabId

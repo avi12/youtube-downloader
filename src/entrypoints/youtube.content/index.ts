@@ -101,6 +101,10 @@ function registerCrossWorldHandlers(
 }
 
 function registerBackgroundMessageHandlers() {
+  onMessage(MessageType.BgDebugLog, ({ data }) => {
+    console.log(data.msg);
+  });
+
   onMessage(MessageType.ExecuteDownloadItem, ({ data }) => {
     if (location.pathname !== "/watch") {
       return;
