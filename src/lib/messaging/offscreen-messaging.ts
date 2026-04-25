@@ -7,7 +7,9 @@ const OffscreenMessageType = {
   ProcessStreamEnd: "processStreamEnd",
   CancelProcessing: "cancelProcessing",
   PipelineDownload: "pipelineDownload",
-  TranscodeRecentDownload: "transcodeRecentDownload"
+  TranscodeRecentDownload: "transcodeRecentDownload",
+  SpawnIframe: "spawnIframe",
+  RemoveIframe: "removeIframe"
 } as const;
 
 type OffscreenMessageType = (typeof OffscreenMessageType)[keyof typeof OffscreenMessageType];
@@ -50,6 +52,13 @@ interface OffscreenProtocolMap {
     entryId: string;
     targetContainer: string;
   };
+  [OffscreenMessageType.SpawnIframe]: {
+    id: string;
+    url: string;
+  };
+  [OffscreenMessageType.RemoveIframe]: {
+    id: string;
+  };
 }
 
 type OffscreenMessage = {
@@ -81,6 +90,12 @@ function dispatchOffscreenMessage({ handlers, message }: {
       break;
     case OffscreenMessageType.TranscodeRecentDownload:
       handlers[OffscreenMessageType.TranscodeRecentDownload]?.(message.data);
+      break;
+    case OffscreenMessageType.SpawnIframe:
+      handlers[OffscreenMessageType.SpawnIframe]?.(message.data);
+      break;
+    case OffscreenMessageType.RemoveIframe:
+      handlers[OffscreenMessageType.RemoveIframe]?.(message.data);
       break;
   }
 }

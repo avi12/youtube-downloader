@@ -1,15 +1,95 @@
+import { startIframeScrubSession } from "../handlers/iframe-scrub-orchestrator";
 import { ensureProcessor } from "../handlers/processor";
+import { removeHostedIframe, spawnHostedIframe } from "../iframe-host/iframe-host";
 import { removeFromPopupList } from "../queue/popup-list";
 import { signalVideoComplete } from "../queue/sequential-queue";
 import { downloadViaCdn } from "./cdn-downloader";
-import { downloadViaSabr } from "./sabr-downloader";
-import { MessageType, sendMessage } from "@/lib/messaging/messaging";
+import { createProgressFetch } from "./progress-fetch";
+import { downloadViaSabr, downloadViaSabrWithTrustTemplate } from "./sabr-downloader";
+import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
 import { interruptedDownloadsItem, mutateStorageItem } from "@/lib/storage/storage";
-import { TRANSFER_CHUNK_SIZE, uint8ToBase64 } from "@/lib/utils/binary";
+import { TRANSFER_CHUNK_SIZE, base64ToUint8Array, uint8ToBase64 } from "@/lib/utils/binary";
+import { fetchAlternateClientFormats, findFormatUrlByItag } from "@/lib/youtube/alternate-client";
+import { debugRangedSabr } from "@/lib/youtube/sabr-download";
 import { fetchYouTubeMusicMetadata } from "@/lib/youtube/youtube-music-metadata";
 import { ProgressType, StreamType } from "@/types";
 import type { CaptionTrack, DownloadRequest, SubtitleStream, VideoMetadata } from "@/types";
+
+// On Firefox, direct SABR returns attestation_required for videos beyond
+// roughly this duration; falls back to iframe-scrub which fetches via the
+// player's trusted live session.
+const FIREFOX_IFRAME_SCRUB_FALLBACK_MIN_DURATION_SEC = 240;
+
+// Max time we wait for a factory tab to play through ads + capture a non-ad
+// SABR template. Pre-roll ads are typically ~100s; some are skippable.
+const FACTORY_TAB_TIMEOUT_MS = 180_000;
+
+const pendingFactoryTemplates = new Map<string, (template: {
+  url: string;
+  bodyBase64: string;
+  capturedAt: number;
+} | null) => void>();
+
+onMessage(MessageType.SabrTemplateReady, ({ data }) => {
+  const resolver = pendingFactoryTemplates.get(data.videoId);
+  if (resolver) {
+    pendingFactoryTemplates.delete(data.videoId);
+    resolver({
+      url: data.url,
+      bodyBase64: data.bodyBase64,
+      capturedAt: data.capturedAt
+    });
+  }
+});
+
+async function spawnFactoryTabAndAwaitTemplate({ videoId, tabId }: {
+  videoId: string;
+  tabId: number;
+}): Promise<{
+  url: string;
+  bodyBase64: string;
+  capturedAt: number;
+} | null> {
+  // Hidden iframe inside the BG/offscreen page loads the watch page. The
+  // interceptor inside it captures the first post-ad SABR call; ISOLATED
+  // forwards via SabrTemplateReady. No actual browser tab is created.
+  const iframeId = `factory:${videoId}:${Date.now()}`;
+  const url = `https://www.youtube.com/watch?v=${videoId}&ytdl=1&ytdlTrustFactoryMode=1`;
+  try {
+    await spawnHostedIframe({
+      id: iframeId,
+      url
+    });
+  } catch (error) {
+    void sendMessage(MessageType.BgDebugLog, {
+      msg: `[ytdl:bg-trust-template] factory iframe create failed: ${String(error)}`
+    }, tabId);
+    return null;
+  }
+
+  void sendMessage(MessageType.BgDebugLog, {
+    msg: `[ytdl:bg-trust-template] factory iframe id=${iframeId} mounted, awaiting template`
+  }, tabId);
+
+  const template = await new Promise<{
+    url: string;
+    bodyBase64: string;
+    capturedAt: number;
+  } | null>(resolve => {
+    pendingFactoryTemplates.set(videoId, resolve);
+    setTimeout(() => {
+      if (pendingFactoryTemplates.has(videoId)) {
+        pendingFactoryTemplates.delete(videoId);
+        resolve(null);
+      }
+    }, FACTORY_TAB_TIMEOUT_MS);
+  });
+
+  removeHostedIframe(iframeId);
+
+  return template;
+}
 
 export interface DownloadResult {
   videoData: Uint8Array | null;
@@ -241,11 +321,44 @@ export function cancelBackgroundDownload(videoId: string) {
   activeBackgroundDownloads.delete(videoId);
 }
 
-async function attemptSabrDownload({ request, signal, tabId, firstBodyOverride }: {
+// When the watch page's WEB-client formats are SABR-only (null URLs), re-fetch
+// the player response via TVHTML5_SIMPLY_EMBEDDED_PLAYER (yt-dlp's technique):
+// that client returns plain URLs and isn't gated by the attestation wall that
+// blocks SABR on Firefox.
+async function enrichWithAlternateClientUrls(request: DownloadRequest): Promise<DownloadRequest> {
+  const needsVideoUrl = Boolean(request.videoItag) && !request.resolvedVideoUrl;
+  const needsAudioUrl = Boolean(request.audioItag) && !request.resolvedAudioUrl;
+  if (!needsVideoUrl && !needsAudioUrl) {
+    return request;
+  }
+
+  try {
+    // Prefer ANDROID_VR-scoped token (generated with clientName=ANDROID_VR at
+    // att/get time). Fall back to the WEB token if the alternate mint failed.
+    const formats = await fetchAlternateClientFormats({
+      videoId: request.videoId,
+      poToken: request.alternateClientPoToken || request.poToken || ""
+    });
+    const enriched: DownloadRequest = { ...request };
+    if (needsVideoUrl) {
+      enriched.resolvedVideoUrl = findFormatUrlByItag(formats, request.videoItag);
+    }
+
+    if (needsAudioUrl) {
+      enriched.resolvedAudioUrl = findFormatUrlByItag(formats, request.audioItag);
+    }
+
+    return enriched;
+  } catch (error) {
+    console.warn("[ytdl:bg] Alternate-client fallback failed:", error);
+    return request;
+  }
+}
+
+async function attemptSabrDownload({ request, signal, tabId }: {
   request: DownloadRequest;
   signal: AbortSignal;
   tabId: number;
-  firstBodyOverride?: Uint8Array;
 }) {
   const sabrAbortController = new AbortController();
   let sabrStallTimeoutId = setTimeout(() => sabrAbortController.abort(), SABR_STALL_TIMEOUT_MS);
@@ -268,6 +381,68 @@ async function attemptSabrDownload({ request, signal, tabId, firstBodyOverride }
   }
 }
 
+async function attemptTrustTemplateSabrDownload({ request, signal, tabId }: {
+  request: DownloadRequest;
+  signal: AbortSignal;
+  tabId: number;
+}) {
+  // Fast path: ISOLATED already caches the latest template the user's tab
+  // observed via the passive interceptor. Interceptor's ad-skip filter ensures
+  // it's post-ad. No player manipulation — just observation.
+  let template = await sendMessage(MessageType.GetSabrTemplateFromTab, {}, tabId).catch(() => null);
+  if (template) {
+    void sendMessage(MessageType.BgDebugLog, {
+      msg: `[ytdl:bg-trust-template] using user-tab template (age=${Date.now() - template.capturedAt}ms)`
+    }, tabId);
+  } else {
+    void sendMessage(MessageType.BgDebugLog, {
+      msg: `[ytdl:bg-trust-template] no user-tab template; spawning factory tab for ${request.videoId}`
+    }, tabId);
+    template = await spawnFactoryTabAndAwaitTemplate({
+      videoId: request.videoId,
+      tabId
+    });
+  }
+  if (!template) {
+    void sendMessage(MessageType.BgDebugLog, {
+      msg: `[ytdl:bg-trust-template] factory tab timed out without capturing a template`
+    }, tabId);
+    return null;
+  }
+
+  const templateBody = base64ToUint8Array(template.bodyBase64);
+  void sendMessage(MessageType.BgDebugLog, {
+    msg: `[ytdl:bg-trust-template] factory captured (body=${templateBody.byteLength}B age=${Date.now() - template.capturedAt}ms); attempting SabrStream bootstrap`
+  }, tabId);
+
+  const sabrAbortController = new AbortController();
+  let sabrStallTimeoutId = setTimeout(() => sabrAbortController.abort(), SABR_STALL_TIMEOUT_MS);
+  signal.addEventListener("abort", () => sabrAbortController.abort(), { once: true });
+
+  function resetSabrStallTimer() {
+    clearTimeout(sabrStallTimeoutId);
+    sabrStallTimeoutId = setTimeout(() => sabrAbortController.abort(), SABR_STALL_TIMEOUT_MS);
+  }
+
+  try {
+    return await downloadViaSabrWithTrustTemplate({
+      request,
+      signal: sabrAbortController.signal,
+      tabId,
+      onProgress: resetSabrStallTimer,
+      templateUrl: template.url,
+      templateBody,
+      onCallLog(msg) {
+        void sendMessage(MessageType.BgDebugLog, {
+          msg: `[ytdl:bg-trust-template] ${msg}`
+        }, tabId);
+      }
+    });
+  } finally {
+    clearTimeout(sabrStallTimeoutId);
+  }
+}
+
 export async function startBackgroundDownload({ request, tabId }: {
   request: DownloadRequest;
   tabId: number;
@@ -279,53 +454,73 @@ export async function startBackgroundDownload({ request, tabId }: {
   const { signal } = abortController;
 
   try {
-    const enrichedMetadataPromise = enrichMetadataFromYouTubeMusic(metadata);
-
-    let firstBodyOverride: Uint8Array | undefined = undefined;
-    let sabrRequest = request;
-    if (import.meta.env.FIREFOX) {
-      const { getCapturedSabrData, extractPreferredFormatItagsFromBody } = await import("@/lib/youtube/sabr-request-capture");
-      const captured = getCapturedSabrData(tabId);
-      if (captured) {
-        firstBodyOverride = new Uint8Array(captured.body);
-        const itags = extractPreferredFormatItagsFromBody(captured.body);
-        const ytVideoFormat = itags.video[0] !== undefined
-          ? request.sabrConfig?.formats.find(f => f.itag === itags.video[0])
-          : undefined;
-        const ytAudioFormat = itags.audio[0] !== undefined
-          ? request.sabrConfig?.formats.find(f => f.itag === itags.audio[0])
-          : undefined;
-        sabrRequest = {
-          ...request,
-          videoFormat: ytVideoFormat ?? request.videoFormat,
-          audioFormat: ytAudioFormat ?? request.audioFormat
-        };
-      }
+    if (request.debugRangedFromSec !== undefined && request.sabrConfig && request.videoFormat && request.audioFormat) {
+      const fetchFn = createProgressFetch({
+        signal,
+        onBytesReceived() { /* discard bytes — diagnostic only */ }
+      });
+      await debugRangedSabr({
+        sabrConfig: request.sabrConfig,
+        videoFormat: request.videoFormat,
+        audioFormat: request.audioFormat,
+        fetchFn,
+        poToken: request.poToken ?? "",
+        fromMs: request.debugRangedFromSec * 1000,
+        runMs: 30_000
+      }).catch(error => {
+        console.warn("[ytdl:debug-ranged] threw:", error);
+      });
+      reportDownloadFailed({
+        videoId,
+        tabId
+      });
+      return;
     }
 
+    const enrichedMetadataPromise = enrichMetadataFromYouTubeMusic(metadata);
+
     let result = await attemptSabrDownload({
-      request: sabrRequest,
+      request,
       signal,
-      tabId,
-      firstBodyOverride
+      tabId
     }).catch(sabrError => {
       if (signal.aborted) {
         throw sabrError;
       }
 
-      const sabrErrorMsg = sabrError instanceof Error ? `${sabrError.message}\n${sabrError.stack ?? ""}` : String(sabrError);
-      console.warn("[ytdl:bg] SABR failed, trying CDN:", sabrError);
-      void sendMessage(MessageType.BgDebugLog, { msg: `SABR failed: ${sabrErrorMsg}` }, tabId);
+      console.warn("[ytdl:bg] direct SABR failed, will try trust-template SABR + CDN:", sabrError);
       void sendMessage(MessageType.UpdateDownloadProgress, {
         videoId,
         progress: 0,
         progressType: ProgressType.Video
       }, tabId);
       return null;
-    });
-    if (!result?.audioData) {
-      result = await downloadViaCdn({
+    });    if (!result?.audioData) {
+      // Player-signed trust template bootstrap: works around Firefox's stricter
+      // attestation_required check on the lib's constructed body for long videos.
+      result = await attemptTrustTemplateSabrDownload({
         request,
+        signal,
+        tabId
+      }).catch(error => {
+        if (signal.aborted) {
+          throw error;
+        }
+
+        console.warn("[ytdl:bg] trust-template SABR failed, trying CDN:", error);
+        void sendMessage(MessageType.UpdateDownloadProgress, {
+          videoId,
+          progress: 0,
+          progressType: ProgressType.Video
+        }, tabId);
+        return null;
+      });
+    }
+
+    if (!result?.audioData) {
+      const cdnRequest = await enrichWithAlternateClientUrls(request);
+      result = await downloadViaCdn({
+        request: cdnRequest,
         signal,
         videoId,
         tabId
@@ -333,8 +528,27 @@ export async function startBackgroundDownload({ request, tabId }: {
     }
 
     if (!result?.audioData && !result?.videoData) {
+      const durationSec = request.videoDurationSec ?? 0;
+      if (import.meta.env.FIREFOX && durationSec >= FIREFOX_IFRAME_SCRUB_FALLBACK_MIN_DURATION_SEC) {
+        console.log(`[ytdl:bg] direct SABR + CDN both failed; falling back to iframe-scrub for ${videoId} (${durationSec}s)`);
+        await startIframeScrubSession({
+          videoId,
+          durationSec,
+          type: request.type,
+          filenameOutput: request.filenameOutput,
+          videoMimeType: request.videoFormat?.mimeType?.split(";")[0] || "video/mp4",
+          audioMimeType: request.audioFormat?.mimeType?.split(";")[0] || "audio/mp4",
+          audioLabel: request.primaryAudioLabel ?? "",
+          metadata: request.metadata,
+          playlistId: request.playlistId,
+          playlistTitle: request.playlistTitle,
+          playlistTotalCount: request.playlistTotalCount,
+          tabId
+        });
+        return;
+      }
+
       console.warn("[ytdl:bg] No download method succeeded for", videoId);
-      void sendMessage(MessageType.BgDebugLog, { msg: `No download method succeeded for ${videoId}` }, tabId);
       reportDownloadFailed({
         videoId,
         tabId
@@ -363,9 +577,7 @@ export async function startBackgroundDownload({ request, tabId }: {
       return;
     }
 
-    const errorMsg = error instanceof Error ? `${error.message}\n${error.stack ?? ""}` : String(error);
     console.warn("[ytdl:bg] Background download failed:", error);
-    void sendMessage(MessageType.BgDebugLog, { msg: `Background download failed: ${errorMsg}` }, tabId);
     reportDownloadFailed({
       videoId,
       tabId

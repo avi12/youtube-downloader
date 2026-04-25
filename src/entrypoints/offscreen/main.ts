@@ -1,3 +1,4 @@
+import { removeIframe, spawnIframe } from "./iframe-host-receiver";
 import { handleProcessStreamChunk } from "./stream/accumulator";
 import { handleProcessStreamEnd } from "./stream/end-handler";
 import { cancelDownloadsByIds, initFFmpeg } from "@/lib/download-pipeline";
@@ -20,5 +21,7 @@ listenForOffscreenMessages({
   },
   [OffscreenMessageType.TranscodeRecentDownload](data) {
     void transcodeRecentDownload(data);
-  }
+  },
+  [OffscreenMessageType.SpawnIframe]: spawnIframe,
+  [OffscreenMessageType.RemoveIframe]: removeIframe
 });

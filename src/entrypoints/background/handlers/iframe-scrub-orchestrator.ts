@@ -1,8 +1,9 @@
+import { removeHostedIframe, spawnHostedIframe } from "../iframe-host/iframe-host";
 import { ensureProcessor } from "./processor";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
 import { TRANSFER_CHUNK_SIZE, base64ToUint8Array, uint8ToBase64 } from "@/lib/utils/binary";
-import type { DownloadType, VideoMetadata } from "@/types";
+import { type DownloadType, ProgressType, type VideoMetadata } from "@/types";
 
 function bgLog(msg: string) {
   console.log(msg);
@@ -15,31 +16,36 @@ function bgLog(msg: string) {
   });
 }
 
-const MAX_PARALLEL_TABS = 2;
+// Each scrub iframe loads a full YouTube watch page (~250 MB RAM) and holds a
+// SABR session against the user's IP, so cap globally rather than per-session
+// to prevent browser OOM and YouTube per-IP rate-limiting when batch-downloading.
+const MAX_GLOBAL_PARALLEL_IFRAMES = 2;
 const MAX_RETRIES_PER_INDEX = 2;
 const MIN_ACCEPTABLE_BYTES_PER_SEC = 30_000;
-// Hard ceiling for a scrub tab: page load + player ready (~15 s) + ad-clear
-// (~10 s) + buffer-fill (windowSec) + reporting slack. If the tab hasn't
-// reported by then it's stuck (autoplay block, content-script crash, etc.)
-// so force-close and retry.
-const TAB_DEADLINE_OVERHEAD_MS = 60_000;
-const SCRUB_WINDOW_WIDTH = 480;
-const SCRUB_WINDOW_HEIGHT = 270;
+// Hard ceiling for a scrub iframe: page load + player ready (~15 s) + ad-clear
+// (~10 s) + buffer-fill (windowSec) + reporting slack. If the iframe hasn't
+// reported by then it's stuck (autoplay block, content-script crash, etc.) so
+// force-remove and retry.
+const IFRAME_DEADLINE_OVERHEAD_MS = 60_000;
+// 60s matches the server's natural buffer-ahead window: a paused player at
+// &t=N gets ~60s of media in the initial SABR response before it stops sending.
+const DEFAULT_STEP_SEC = 60;
+
+interface ReceivedSegment {
+  videoBase64: string;
+  audioBase64: string;
+  videoMimeType: string;
+  audioMimeType: string;
+}
 
 interface ScrubSession {
   videoId: string;
   expectedCount: number;
   stepSec: number;
-  receivedSegments: Map<number, {
-    videoBase64: string;
-    audioBase64: string;
-    videoMimeType: string;
-    audioMimeType: string;
-  }>;
+  receivedSegments: Map<number, ReceivedSegment>;
   pendingIndices: number[];
   attemptsByIndex: Map<number, number>;
-  inFlightTabIds: Set<number>;
-  windowId?: number;
+  inFlightIframeIds: Set<string>;
   tabId: number;
   filenameOutput: string;
   type: DownloadType;
@@ -55,16 +61,81 @@ interface ScrubSession {
 }
 
 const sessionsByVideoId = new Map<string, ScrubSession>();
-const sessionByTabId = new Map<number, string>();
-const tabDeadlineTimers = new Map<number, ReturnType<typeof setTimeout>>();
-const tabIndexByTabId = new Map<number, number>();
+const sessionByIframeId = new Map<string, string>();
+const iframeDeadlineTimers = new Map<string, ReturnType<typeof setTimeout>>();
+const iframeIndexById = new Map<string, number>();
+const globalInFlightIframeIds = new Set<string>();
+let roundRobinCursor = 0;
 
-async function openScrubTab({ session, scrubIndex, startSec, windowSec }: {
+function makeIframeId(videoId: string, scrubIndex: number, attempt: number) {
+  return `${videoId}:${scrubIndex}:${attempt}`;
+}
+
+function pickNextWorkRoundRobin() {
+  const sessions = Array.from(sessionsByVideoId.values());
+  if (sessions.length === 0) {
+    return null;
+  }
+
+  for (let offset = 0; offset < sessions.length; offset++) {
+    const idx = (roundRobinCursor + offset) % sessions.length;
+    const session = sessions[idx];
+    if (session.pendingIndices.length > 0) {
+      const scrubIndex = session.pendingIndices.shift();
+      if (scrubIndex !== undefined) {
+        roundRobinCursor = (idx + 1) % sessions.length;
+        return {
+          session,
+          scrubIndex
+        };
+      }
+    }
+  }
+
+  return null;
+}
+
+async function fillGlobalSlots() {
+  while (globalInFlightIframeIds.size < MAX_GLOBAL_PARALLEL_IFRAMES) {
+    const work = pickNextWorkRoundRobin();
+    if (!work) {
+      return;
+    }
+
+    await openScrubIframe({
+      session: work.session,
+      scrubIndex: work.scrubIndex,
+      startSec: work.scrubIndex * work.session.stepSec,
+      windowSec: work.session.stepSec
+    });
+  }
+}
+
+function reportFetchProgress(session: ScrubSession) {
+  if (session.expectedCount === 0) {
+    return;
+  }
+
+  const fraction = Math.min(session.receivedSegments.size / session.expectedCount, 1);
+  void sendMessage(
+    MessageType.UpdateDownloadProgress,
+    {
+      videoId: session.videoId,
+      progress: fraction,
+      progressType: ProgressType.Video
+    },
+    session.tabId
+  );
+}
+
+async function openScrubIframe({ session, scrubIndex, startSec, windowSec }: {
   session: ScrubSession;
   scrubIndex: number;
   startSec: number;
   windowSec: number;
 }) {
+  const attempt = session.attemptsByIndex.get(scrubIndex) ?? 0;
+  const iframeId = makeIframeId(session.videoId, scrubIndex, attempt);
   const params = new URLSearchParams({
     v: session.videoId,
     ytdl: "1",
@@ -77,47 +148,39 @@ async function openScrubTab({ session, scrubIndex, startSec, windowSec }: {
   }
 
   const url = `https://www.youtube.com/watch?${params.toString()}`;
-  const tabOptions: Browser.tabs.CreateProperties = {
-    url,
-    active: false
-  };
-  if (typeof session.windowId === "number") {
-    tabOptions.windowId = session.windowId;
-  }
+  await spawnHostedIframe({
+    id: iframeId,
+    url
+  });
+  bgLog(`[ytdl:scrub-bg] opened scrub iframe id=${iframeId} index=${scrubIndex} t=${startSec} window=${windowSec}s`);
 
-  const newTab = await browser.tabs.create(tabOptions);
-  bgLog(`[ytdl:scrub-bg] opened scrub tab id=${newTab.id} index=${scrubIndex} t=${startSec} window=${windowSec}s`);
-
-  if (typeof newTab.id === "number") {
-    session.inFlightTabIds.add(newTab.id);
-    sessionByTabId.set(newTab.id, session.videoId);
-    tabIndexByTabId.set(newTab.id, scrubIndex);
-    armTabDeadline({
-      session,
-      tabId: newTab.id,
-      scrubIndex,
-      windowSec
-    });
-  }
-
-  return newTab.id;
+  session.inFlightIframeIds.add(iframeId);
+  globalInFlightIframeIds.add(iframeId);
+  sessionByIframeId.set(iframeId, session.videoId);
+  iframeIndexById.set(iframeId, scrubIndex);
+  armIframeDeadline({
+    session,
+    iframeId,
+    scrubIndex,
+    windowSec
+  });
 }
 
-function armTabDeadline({ session, tabId, scrubIndex, windowSec }: {
+function armIframeDeadline({ session, iframeId, scrubIndex, windowSec }: {
   session: ScrubSession;
-  tabId: number;
+  iframeId: string;
   scrubIndex: number;
   windowSec: number;
 }) {
-  const deadlineMs = windowSec * 1000 + TAB_DEADLINE_OVERHEAD_MS;
+  const deadlineMs = windowSec * 1000 + IFRAME_DEADLINE_OVERHEAD_MS;
   const timer = setTimeout(() => {
-    tabDeadlineTimers.delete(tabId);
+    iframeDeadlineTimers.delete(iframeId);
 
-    if (!session.inFlightTabIds.has(tabId)) {
+    if (!session.inFlightIframeIds.has(iframeId)) {
       return;
     }
 
-    bgLog(`[ytdl:scrub-bg] tab ${tabId} (index ${scrubIndex}) hung past ${deadlineMs}ms, force-closing and retrying`);
+    bgLog(`[ytdl:scrub-bg] iframe ${iframeId} (index ${scrubIndex}) hung past ${deadlineMs}ms, force-closing and retrying`);
     const attempts = session.attemptsByIndex.get(scrubIndex) ?? 0;
     if (attempts < MAX_RETRIES_PER_INDEX) {
       session.attemptsByIndex.set(scrubIndex, attempts + 1);
@@ -130,83 +193,53 @@ function armTabDeadline({ session, tabId, scrubIndex, windowSec }: {
         videoMimeType: "",
         audioMimeType: ""
       });
+      reportFetchProgress(session);
     }
 
-    void closeScrubTab({
+    closeScrubIframe({
       session,
-      tabId
-    }).then(() => {
-      if (session.receivedSegments.size >= session.expectedCount) {
-        void finalizeSession(session);
-        return;
-      }
-
-      void fillTabSlots(session);
+      iframeId
     });
+
+    if (session.receivedSegments.size >= session.expectedCount) {
+      void finalizeSession(session);
+      return;
+    }
+
+    void fillGlobalSlots();
   }, deadlineMs);
-  tabDeadlineTimers.set(tabId, timer);
+  iframeDeadlineTimers.set(iframeId, timer);
 }
 
-function clearTabDeadline(tabId: number) {
-  const timer = tabDeadlineTimers.get(tabId);
+function clearIframeDeadline(iframeId: string) {
+  const timer = iframeDeadlineTimers.get(iframeId);
   if (timer !== undefined) {
     clearTimeout(timer);
-    tabDeadlineTimers.delete(tabId);
+    iframeDeadlineTimers.delete(iframeId);
   }
 }
 
-async function fillTabSlots(session: ScrubSession) {
-  while (session.inFlightTabIds.size < MAX_PARALLEL_TABS && session.pendingIndices.length > 0) {
-    const scrubIndex = session.pendingIndices.shift();
-    if (scrubIndex === undefined) {
-      break;
-    }
-
-    await openScrubTab({
-      session,
-      scrubIndex,
-      startSec: scrubIndex * session.stepSec,
-      windowSec: session.stepSec
-    });
-  }
-}
-
-async function closeScrubTab({ session, tabId }: {
+function closeScrubIframe({ session, iframeId }: {
   session: ScrubSession;
-  tabId: number;
+  iframeId: string;
 }) {
-  session.inFlightTabIds.delete(tabId);
-  sessionByTabId.delete(tabId);
-  tabIndexByTabId.delete(tabId);
-  clearTabDeadline(tabId);
-  try {
-    await browser.tabs.remove(tabId);
-  } catch (_) {
-    // tab may already be closed
-  }
+  session.inFlightIframeIds.delete(iframeId);
+  globalInFlightIframeIds.delete(iframeId);
+  sessionByIframeId.delete(iframeId);
+  iframeIndexById.delete(iframeId);
+  clearIframeDeadline(iframeId);
+  removeHostedIframe(iframeId);
 }
 
-async function cleanupSession(session: ScrubSession) {
-  for (const tabId of session.inFlightTabIds) {
-    sessionByTabId.delete(tabId);
-    tabIndexByTabId.delete(tabId);
-    clearTabDeadline(tabId);
-    try {
-      await browser.tabs.remove(tabId);
-    } catch (_) {
-      // best-effort
-    }
+function cleanupSession(session: ScrubSession) {
+  for (const iframeId of session.inFlightIframeIds) {
+    globalInFlightIframeIds.delete(iframeId);
+    sessionByIframeId.delete(iframeId);
+    iframeIndexById.delete(iframeId);
+    clearIframeDeadline(iframeId);
+    removeHostedIframe(iframeId);
   }
-  session.inFlightTabIds.clear();
-
-  if (typeof session.windowId === "number") {
-    try {
-      await browser.windows.remove(session.windowId);
-    } catch (_) {
-      // best-effort
-    }
-  }
-
+  session.inFlightIframeIds.clear();
   sessionsByVideoId.delete(session.videoId);
 }
 
@@ -275,7 +308,71 @@ async function finalizeSession(session: ScrubSession) {
     metadata: session.metadata
   });
 
-  await cleanupSession(session);
+  cleanupSession(session);
+}
+
+function findIframeIdForSegment({ videoId, scrubIndex }: {
+  videoId: string;
+  scrubIndex: number;
+}): string | null {
+  for (const [iframeId, sessionVideoId] of sessionByIframeId) {
+    if (sessionVideoId !== videoId) {
+      continue;
+    }
+
+    if (iframeIndexById.get(iframeId) === scrubIndex) {
+      return iframeId;
+    }
+  }
+
+  return null;
+}
+
+export interface StartIframeScrubArgs {
+  videoId: string;
+  durationSec: number;
+  stepSec?: number;
+  type: DownloadType;
+  filenameOutput: string;
+  videoMimeType: string;
+  audioMimeType: string;
+  audioLabel: string;
+  metadata?: VideoMetadata | null;
+  playlistId?: string;
+  playlistTitle?: string;
+  playlistTotalCount?: number;
+  tabId: number;
+}
+
+export async function startIframeScrubSession(data: StartIframeScrubArgs) {
+  const stepSec = data.stepSec || DEFAULT_STEP_SEC;
+  const expectedCount = Math.max(1, Math.ceil(data.durationSec / stepSec));
+
+  const session: ScrubSession = {
+    videoId: data.videoId,
+    expectedCount,
+    stepSec,
+    receivedSegments: new Map(),
+    pendingIndices: Array.from({ length: expectedCount }, (_, index) => index),
+    attemptsByIndex: new Map(),
+    inFlightIframeIds: new Set(),
+    tabId: data.tabId,
+    filenameOutput: data.filenameOutput,
+    type: data.type,
+    videoMimeType: data.videoMimeType,
+    audioMimeType: data.audioMimeType,
+    audioLabel: data.audioLabel,
+    metadata: data.metadata,
+    playlistId: data.playlistId,
+    playlistTitle: data.playlistTitle,
+    playlistTotalCount: data.playlistTotalCount,
+    resolvedVideoMimeType: "",
+    resolvedAudioMimeType: ""
+  };
+  sessionsByVideoId.set(data.videoId, session);
+
+  bgLog(`[ytdl:scrub-bg] starting ${expectedCount} scrub iframes for ${data.videoId}`);
+  await fillGlobalSlots();
 }
 
 export function registerIframeScrubOrchestrator() {
@@ -285,76 +382,26 @@ export function registerIframeScrubOrchestrator() {
       return;
     }
 
-    const stepSec = data.stepSec || 30;
-    const expectedCount = Math.max(1, Math.ceil(data.durationSec / stepSec));
-
-    let windowId: number | undefined;
-    try {
-      const scrubWindow = await browser.windows.create({
-        url: "about:blank",
-        type: "popup",
-        state: "minimized",
-        focused: false,
-        width: SCRUB_WINDOW_WIDTH,
-        height: SCRUB_WINDOW_HEIGHT,
-        left: -10000,
-        top: -10000
-      });
-      windowId = scrubWindow?.id;
-      const blankTabId = scrubWindow?.tabs?.[0]?.id;
-      if (typeof blankTabId === "number") {
-        try {
-          await browser.tabs.remove(blankTabId);
-        } catch (_) {
-          // best-effort blank-tab cleanup
-        }
-      }
-    } catch (error) {
-      bgLog(`[ytdl:scrub-bg] windows.create failed, falling back to user's window: ${String(error)}`);
-    }
-
-    if (typeof windowId !== "number") {
-      bgLog("[ytdl:scrub-bg] using sender's window for scrub tabs");
-    }
-
-    const session: ScrubSession = {
-      videoId: data.videoId,
-      expectedCount,
-      stepSec,
-      receivedSegments: new Map(),
-      pendingIndices: Array.from({ length: expectedCount }, (_, i) => i),
-      attemptsByIndex: new Map(),
-      inFlightTabIds: new Set(),
-      windowId,
-      tabId,
-      filenameOutput: data.filenameOutput,
-      type: data.type,
-      videoMimeType: data.videoMimeType,
-      audioMimeType: data.audioMimeType,
-      audioLabel: data.audioLabel,
-      metadata: data.metadata,
-      playlistId: data.playlistId,
-      playlistTitle: data.playlistTitle,
-      playlistTotalCount: data.playlistTotalCount,
-      resolvedVideoMimeType: "",
-      resolvedAudioMimeType: ""
-    };
-    sessionsByVideoId.set(data.videoId, session);
-
-    bgLog(`[ytdl:scrub-bg] starting ${expectedCount} scrub tabs for ${data.videoId} in window ${windowId}`);
-    await fillTabSlots(session);
+    await startIframeScrubSession({
+      ...data,
+      tabId
+    });
   });
 
-  onMessage(MessageType.IframeScrubSegmentReady, async ({ data, sender }) => {
+  onMessage(MessageType.IframeScrubSegmentReady, async ({ data }) => {
     const session = sessionsByVideoId.get(data.videoId);
     if (!session) {
       return;
     }
 
-    if (typeof sender.tab?.id === "number") {
-      await closeScrubTab({
+    const iframeId = findIframeIdForSegment({
+      videoId: data.videoId,
+      scrubIndex: data.scrubIndex
+    });
+    if (iframeId) {
+      closeScrubIframe({
         session,
-        tabId: sender.tab.id
+        iframeId
       });
     }
 
@@ -366,7 +413,7 @@ export function registerIframeScrubOrchestrator() {
       session.attemptsByIndex.set(data.scrubIndex, attempts + 1);
       session.pendingIndices.push(data.scrubIndex);
       bgLog(`[ytdl:scrub-bg] segment ${data.scrubIndex} undersized (${totalBytes}B < ${minAcceptableBytes}B), retrying (attempt ${attempts + 2}/${MAX_RETRIES_PER_INDEX + 1})`);
-      await fillTabSlots(session);
+      await fillGlobalSlots();
       return;
     }
 
@@ -376,39 +423,23 @@ export function registerIframeScrubOrchestrator() {
       videoMimeType: data.videoMimeType,
       audioMimeType: data.audioMimeType
     });
+    reportFetchProgress(session);
 
     bgLog(`[ytdl:scrub-bg] received segment ${data.scrubIndex + 1}/${session.expectedCount} for ${data.videoId} (${totalBytes}B)`);
 
     if (session.receivedSegments.size >= session.expectedCount) {
       await finalizeSession(session);
+      await fillGlobalSlots();
       return;
     }
 
-    await fillTabSlots(session);
-  });
-
-  browser.tabs.onRemoved.addListener(tabId => {
-    const videoId = sessionByTabId.get(tabId);
-    if (!videoId) {
-      return;
-    }
-
-    const session = sessionsByVideoId.get(videoId);
-    if (!session) {
-      return;
-    }
-
-    if (session.inFlightTabIds.has(tabId)) {
-      session.inFlightTabIds.delete(tabId);
-      sessionByTabId.delete(tabId);
-      void fillTabSlots(session);
-    }
+    await fillGlobalSlots();
   });
 }
 
-export async function cancelIframeScrubSession(videoId: string) {
+export function cancelIframeScrubSession(videoId: string) {
   const session = sessionsByVideoId.get(videoId);
   if (session) {
-    await cleanupSession(session);
+    cleanupSession(session);
   }
 }
