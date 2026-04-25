@@ -5,6 +5,8 @@ import { TRANSFER_CHUNK_SIZE, base64ToUint8Array, uint8ToBase64 } from "@/lib/ut
 import type { DownloadType, VideoMetadata } from "@/types";
 
 const MAX_PARALLEL_TABS = 2;
+const MAX_RETRIES_PER_INDEX = 2;
+const MIN_ACCEPTABLE_TOTAL_BYTES = 200_000;
 const SCRUB_WINDOW_WIDTH = 480;
 const SCRUB_WINDOW_HEIGHT = 270;
 
@@ -18,6 +20,7 @@ interface ScrubSession {
     audioMimeType: string;
   }>;
   pendingIndices: number[];
+  attemptsByIndex: Map<number, number>;
   inFlightTabIds: Set<number>;
   windowId?: number;
   tabId: number;
@@ -63,6 +66,7 @@ async function openScrubTab({ session, scrubIndex, startSec }: {
 
   const newTab = await browser.tabs.create(tabOptions);
   console.log(`[ytdl:scrub-bg] opened scrub tab id=${newTab.id} index=${scrubIndex} t=${startSec}`);
+
   if (typeof newTab.id === "number") {
     session.inFlightTabIds.add(newTab.id);
     sessionByTabId.set(newTab.id, session.videoId);
@@ -233,6 +237,7 @@ export function registerIframeScrubOrchestrator() {
       expectedCount,
       receivedSegments: new Map(),
       pendingIndices: Array.from({ length: expectedCount }, (_, i) => i),
+      attemptsByIndex: new Map(),
       inFlightTabIds: new Set(),
       windowId,
       tabId,
@@ -260,6 +265,24 @@ export function registerIframeScrubOrchestrator() {
       return;
     }
 
+    if (typeof sender.tab?.id === "number") {
+      await closeScrubTab({
+        session,
+        tabId: sender.tab.id
+      });
+    }
+
+    const totalBytes = base64ToUint8Array(data.videoBase64).byteLength
+      + base64ToUint8Array(data.audioBase64).byteLength;
+    const attempts = session.attemptsByIndex.get(data.scrubIndex) ?? 0;
+    if (totalBytes < MIN_ACCEPTABLE_TOTAL_BYTES && attempts < MAX_RETRIES_PER_INDEX) {
+      session.attemptsByIndex.set(data.scrubIndex, attempts + 1);
+      session.pendingIndices.push(data.scrubIndex);
+      console.warn(`[ytdl:scrub-bg] segment ${data.scrubIndex} undersized (${totalBytes}B), retrying (attempt ${attempts + 2}/${MAX_RETRIES_PER_INDEX + 1})`);
+      await fillTabSlots(session);
+      return;
+    }
+
     session.receivedSegments.set(data.scrubIndex, {
       videoBase64: data.videoBase64,
       audioBase64: data.audioBase64,
@@ -267,14 +290,7 @@ export function registerIframeScrubOrchestrator() {
       audioMimeType: data.audioMimeType
     });
 
-    console.log(`[ytdl:scrub-bg] received segment ${data.scrubIndex + 1}/${session.expectedCount} for ${data.videoId}`);
-
-    if (typeof sender.tab?.id === "number") {
-      await closeScrubTab({
-        session,
-        tabId: sender.tab.id
-      });
-    }
+    console.log(`[ytdl:scrub-bg] received segment ${data.scrubIndex + 1}/${session.expectedCount} for ${data.videoId} (${totalBytes}B)`);
 
     if (session.receivedSegments.size >= session.expectedCount) {
       await finalizeSession(session);
