@@ -12,7 +12,8 @@ export default defineContentScript({
       return;
     }
 
-    if (self !== top) {
+    const isTopLevelScrubTab = self === top && /ytdlScrubMode=1/.test(location.search);
+    if (self !== top || isTopLevelScrubTab) {
       const mediaProto = HTMLMediaElement.prototype;
 
       const mutedDescriptor = Object.getOwnPropertyDescriptor(mediaProto, "muted");

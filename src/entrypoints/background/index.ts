@@ -1,5 +1,6 @@
 import { registerPoTokenRefreshListener } from "./download/sabr-downloader";
 import { registerDownloadHandlers } from "./handlers/download-handlers";
+import { registerIframeScrubOrchestrator } from "./handlers/iframe-scrub-orchestrator";
 import { registerPipelineHandlers } from "./handlers/pipeline-handlers";
 import { ensureProcessor } from "./handlers/processor";
 import { getTabIdsForVideo, tabTracker, trackVideoForTab, untrackVideoForTab } from "./queue/tab-tracker";
@@ -21,7 +22,7 @@ import { clearCapturedSabrData, onSabrBodyCaptured, startSabrRequestCapture } fr
 import { extractPoTokenFromBody, getCapturedSabrData } from "@/lib/youtube/sabr-request-capture";
 
 const SABR_ORIGIN_RULE_ID = 1;
-const SABR_URL_PATTERN = "*://*.googlevideo.com/videoplayback*";
+const INNERTUBE_ORIGIN_RULE_ID = 2;
 
 async function registerSabrOriginRule() {
   if (import.meta.env.FIREFOX) {
@@ -36,7 +37,7 @@ async function registerSabrOriginRule() {
     return;
   }
 
-  const rule: Browser.declarativeNetRequest.Rule = {
+  const sabrRule: Browser.declarativeNetRequest.Rule = {
     id: SABR_ORIGIN_RULE_ID,
     priority: 1,
     action: {
@@ -50,9 +51,23 @@ async function registerSabrOriginRule() {
     },
     condition: { urlFilter: "||googlevideo.com/videoplayback" }
   };
+
+  // When the extension calls youtubei/v1/player from the background, Firefox
+  // sends Origin: moz-extension://..., which the innertube endpoint 403s. Rewrite
+  // to youtube.com so the alternate-client fallback is accepted.
+  const innertubeRule: Browser.declarativeNetRequest.Rule = {
+    id: INNERTUBE_ORIGIN_RULE_ID,
+    priority: 1,
+    action: {
+      type: "modifyHeaders",
+      requestHeaders: baseHeaders
+    },
+    condition: { urlFilter: "||youtube.com/youtubei/" }
+  };
+
   await browser.declarativeNetRequest.updateDynamicRules({
-    removeRuleIds: [SABR_ORIGIN_RULE_ID],
-    addRules: [rule]
+    removeRuleIds: [SABR_ORIGIN_RULE_ID, INNERTUBE_ORIGIN_RULE_ID],
+    addRules: [sabrRule, innertubeRule]
   });
 }
 
@@ -215,6 +230,7 @@ export default defineBackground(async () => {
 
   registerChunkHandlers();
   registerDownloadHandlers();
+  registerIframeScrubOrchestrator();
   registerPipelineHandlers();
   registerPoTokenRefreshListener();
   registerRecentDownloadsRetention();

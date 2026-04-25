@@ -3,8 +3,9 @@ import { resolveFormatUrl } from "./stream-fetch";
 import { buildVideoMetadata, generatePoTokenIfNeeded, videoDataCache } from "./video-data";
 import { crossWorldMessenger, CrossWorldMessage } from "@/lib/messaging/cross-world-messenger";
 import { sabrCredentials } from "@/lib/ui/synced-stores.svelte";
-import { downloadViaIframeScrub } from "@/lib/youtube/iframe-scrub";
 import { type AdaptiveFormatItem, type DownloadRequest, DownloadType } from "@/types";
+
+const IFRAME_SCRUB_STEP_SEC = 30;
 
 // Firefox's background SABR gets LOGIN_REQUIRED / attestation_required for
 // any video long enough to trip YouTube's per-session threshold (somewhere
@@ -179,30 +180,22 @@ export async function performDownload({
       && videoDurationSec >= IFRAME_SCRUB_MIN_DURATION_SEC
       && !/ytdlKeepPlaying=1|ytdlScrubMode=1/.test(location.search);
     if (useIframeScrub) {
-      console.log(`[ytdl] iframe-scrub path for ${videoId} (${videoDurationSec}s)`);
-      const scrubbed = await downloadViaIframeScrub({
+      console.log(`[ytdl] iframe-scrub path for ${videoId} (${videoDurationSec}s) — handing off to background`);
+      void crossWorldMessenger.sendMessage(CrossWorldMessage.StartIframeScrub, {
         videoId,
         durationSec: videoDurationSec,
-        signal: abortController.signal
+        stepSec: IFRAME_SCRUB_STEP_SEC,
+        type,
+        filenameOutput,
+        videoMimeType: videoFormat?.mimeType?.split(";")[0] || "video/mp4",
+        audioMimeType: audioFormat?.mimeType?.split(";")[0] || "audio/mp4",
+        audioLabel: audioFormat?.audioTrack?.displayName ?? "",
+        metadata,
+        playlistId,
+        playlistTitle,
+        playlistTotalCount
       });
-      if (scrubbed.segments.length > 0) {
-        void crossWorldMessenger.sendMessage(CrossWorldMessage.StreamData, {
-          downloadType: type,
-          videoId,
-          filenameOutput,
-          videoData: null,
-          audioData: null,
-          segments: scrubbed.segments,
-          videoMimeType: scrubbed.videoMimeType || videoFormat?.mimeType?.split(";")[0] || "video/mp4",
-          audioMimeType: scrubbed.audioMimeType || audioFormat?.mimeType?.split(";")[0] || "audio/mp4",
-          audioLabel: audioFormat?.audioTrack?.displayName ?? "",
-          additionalAudioData: [],
-          metadata
-        });
-        return;
-      }
-
-      console.warn(`[ytdl] iframe-scrub produced no segments for ${videoId}, falling through to SABR`);
+      return;
     }
 
     // YouTube's SPA strips ?query params on watch navigation, so read from the

@@ -16,6 +16,7 @@ import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-wo
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
 import { optionsItem, statusProgressItem } from "@/lib/storage/storage";
 import { downloadProgressStore, initContentOptions } from "@/lib/ui/synced-stores.svelte";
+import { uint8ToBase64 } from "@/lib/utils/binary";
 import { forwardSabrCredentialsWithRetry, listenForSabrBodyReady } from "@/lib/youtube/sabr-credentials";
 import { initialOptions as defaultOptions } from "@/lib/youtube/video-helpers";
 import { ProgressType } from "@/types";
@@ -72,8 +73,8 @@ function registerCrossWorldHandlers(
     void sendMessage(MessageType.StartBackgroundDownload, data);
   });
 
-  crossWorldMessenger.onMessage(CrossWorldMessage.PoTokenRefreshed, ({ data }) => {
-    void sendMessage(MessageType.PoTokenRefreshed, data);
+  crossWorldMessenger.onMessage(CrossWorldMessage.StartIframeScrub, ({ data }) => {
+    void sendMessage(MessageType.StartIframeScrub, data);
   });
 
   crossWorldMessenger.onMessage(CrossWorldMessage.IframePlayerReady, ({ data }) => {
@@ -181,10 +182,28 @@ async function restoreStoredProgress() {
   }
 }
 
+function registerScrubResultForwarder() {
+  crossWorldMessenger.onMessage(CrossWorldMessage.IframeScrubSegment, ({ data }) => {
+    void sendMessage(MessageType.IframeScrubSegmentReady, {
+      videoId: data.videoId,
+      scrubIndex: data.scrubIndex,
+      videoBase64: uint8ToBase64(data.videoBytes),
+      audioBase64: uint8ToBase64(data.audioBytes),
+      videoMimeType: data.videoMimeType,
+      audioMimeType: data.audioMimeType
+    });
+  });
+}
+
 export default defineContentScript({
   matches: ["https://www.youtube.com/*"],
   allFrames: true,
   async main(context) {
+    if (self === top && /ytdlScrubMode=1/.test(location.search)) {
+      registerScrubResultForwarder();
+      return;
+    }
+
     const isDownloadIframe = self !== top && /ytdl=1/.test(location.search);
     if (self !== top && !isDownloadIframe) {
       return;

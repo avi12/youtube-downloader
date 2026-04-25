@@ -30,7 +30,8 @@ export const CrossWorldMessage = {
   DownloadViaIframe: "downloadViaIframe",
   StartBackgroundDownload: "startBackgroundDownload",
   OptionsUpdate: "optionsUpdate",
-  PoTokenRefreshed: "poTokenRefreshed"
+  IframeScrubSegment: "iframeScrubSegment",
+  StartIframeScrub: "startIframeScrub"
 } as const;
 
 interface PageMessengerSchema {
@@ -124,9 +125,27 @@ interface PageMessengerSchema {
   [CrossWorldMessage.OptionsUpdate](data: {
     isShowNativeDownload: boolean;
   }): void;
-  [CrossWorldMessage.PoTokenRefreshed](data: {
+  [CrossWorldMessage.IframeScrubSegment](data: {
     videoId: string;
-    poToken: string;
+    scrubIndex: number;
+    videoBytes: Uint8Array;
+    audioBytes: Uint8Array;
+    videoMimeType: string;
+    audioMimeType: string;
+  }): void;
+  [CrossWorldMessage.StartIframeScrub](data: {
+    videoId: string;
+    durationSec: number;
+    stepSec: number;
+    type: DownloadType;
+    filenameOutput: string;
+    videoMimeType: string;
+    audioMimeType: string;
+    audioLabel: string;
+    metadata?: VideoMetadata | null;
+    playlistId?: string;
+    playlistTitle?: string;
+    playlistTotalCount?: number;
   }): void;
 }
 

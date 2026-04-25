@@ -31,8 +31,8 @@ export const MessageType = {
   RecentDownloadsChanged: "recentDownloadsChanged",
   TranscodeRecentDownload: "transcodeRecentDownload",
   PipelineZipProgress: "pipelineZipProgress",
-  PoTokenRefreshed: "poTokenRefreshed",
-  BgDebugLog: "bgDebugLog"
+  StartIframeScrub: "startIframeScrub",
+  IframeScrubSegmentReady: "iframeScrubSegmentReady"
 } as const;
 
 interface ProtocolMap {
@@ -189,11 +189,36 @@ interface ProtocolMap {
     isDone: boolean;
     tabId: number;
   }): void;
-  poTokenRefreshed(data: {
+
+  // Orchestrates iframe-scrub from the background script using a hidden
+  // off-screen popup window. The page hands off everything the offscreen
+  // pipeline needs once segments are gathered; background fans out N tabs
+  // (one per ytdlScrubIndex), each tab self-drives its capture and sends
+  // an IframeScrubSegmentReady back, then background relays chunks to
+  // offscreen as video-seg-N / audio-seg-N and fires StreamEnd when done.
+  startIframeScrub(data: {
     videoId: string;
-    poToken: string;
+    durationSec: number;
+    stepSec: number;
+    type: DownloadType;
+    filenameOutput: string;
+    videoMimeType: string;
+    audioMimeType: string;
+    audioLabel: string;
+    metadata?: VideoMetadata | null;
+    playlistId?: string;
+    playlistTitle?: string;
+    playlistTotalCount?: number;
   }): void;
-  bgDebugLog(data: { msg: string }): void;
+
+  iframeScrubSegmentReady(data: {
+    videoId: string;
+    scrubIndex: number;
+    videoBase64: string;
+    audioBase64: string;
+    videoMimeType: string;
+    audioMimeType: string;
+  }): void;
 }
 
 export const { sendMessage, onMessage } =

@@ -1,6 +1,7 @@
 import { registerGridDropdownHandlers } from "./grid/grid-dropdown";
 import { registerGridTagger } from "./grid/grid-tagger";
 import { registerGridVideoDataHandler } from "./grid/grid-video-data";
+import { runScrubSelfDrive } from "./scrub-self-drive";
 import { capturedPoToken } from "./video/credentials";
 import { cancelActiveDownload, performDownload } from "./video/download";
 import { extractPlaylistMetadata, handleNavigateSuccess } from "./video/playlist-metadata";
@@ -46,6 +47,13 @@ export default defineContentScript({
   world: "MAIN",
   allFrames: true,
   async main() {
+    // Top-level scrub tabs spawned by the background orchestrator self-drive
+    // their capture + report and skip every other extension behavior.
+    if (self === top && /ytdlScrubMode=1/.test(location.search)) {
+      await runScrubSelfDrive();
+      return;
+    }
+
     if (self !== top && !/ytdl=1/.test(location.search)) {
       return;
     }
