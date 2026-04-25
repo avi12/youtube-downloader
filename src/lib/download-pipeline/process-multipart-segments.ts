@@ -52,6 +52,10 @@ export async function processMultipartSegments(item: ProcessStreamData & { segme
   const audioSegmentFiles: string[] = [];
   const writtenPaths: string[] = [];
 
+  function probeSegmentFile(filename: string) {
+    return ffmpeg.exec("-v", "error", "-i", filename, "-f", "null", "-") === 0;
+  }
+
   try {
     for (const [i, segment] of segments.entries()) {
       const videoName = `${videoId}-v${i}.${videoExt}`;
@@ -63,17 +67,36 @@ export async function processMultipartSegments(item: ProcessStreamData & { segme
       writtenPaths.push(videoName, audioName);
     }
 
+    // Drop segments whose video or audio FFmpeg can't decode — one bad pair
+    // would otherwise abort the concat demuxer and lose the whole file.
+    const passingVideoFiles: string[] = [];
+    const passingAudioFiles: string[] = [];
+    for (let i = 0; i < videoSegmentFiles.length; i++) {
+      if (probeSegmentFile(videoSegmentFiles[i]) && probeSegmentFile(audioSegmentFiles[i])) {
+        passingVideoFiles.push(videoSegmentFiles[i]);
+        passingAudioFiles.push(audioSegmentFiles[i]);
+      } else {
+        console.warn(`[ytdl:pipeline] dropping unmuxable segment ${i} for ${videoId}`);
+      }
+    }
+
+    if (passingVideoFiles.length === 0) {
+      throw new Error("All segments failed the FFmpeg probe; nothing to mux");
+    }
+
+    console.log(`[ytdl:pipeline] muxing ${passingVideoFiles.length}/${segments.length} segments for ${videoId}`);
+
     const videoListName = `${videoId}-video-concat.txt`;
     const audioListName = `${videoId}-audio-concat.txt`;
     const encoder = new TextEncoder();
     ffmpeg.FS.writeFile(
       videoListName, encoder.encode(
-        videoSegmentFiles.map(name => `file '${name}'`).join("\n") + "\n"
+        passingVideoFiles.map(name => `file '${name}'`).join("\n") + "\n"
       )
     );
     ffmpeg.FS.writeFile(
       audioListName, encoder.encode(
-        audioSegmentFiles.map(name => `file '${name}'`).join("\n") + "\n"
+        passingAudioFiles.map(name => `file '${name}'`).join("\n") + "\n"
       )
     );
     writtenPaths.push(videoListName, audioListName);

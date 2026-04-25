@@ -136,9 +136,13 @@ export interface IframeScrubResult {
   audioMimeType: string;
 }
 
+const MAX_ITERATION_RETRIES = 1;
+const MIN_ACCEPTABLE_CAPTURE_BYTES = 200_000;
+
 interface ScrubTask {
   index: number;
   startSec: number;
+  attempt: number;
 }
 
 interface ScrubOutput {
@@ -168,7 +172,8 @@ async function captureOneIframe({ videoId, task, signal }: {
   }
 
   const iframeStartedAt = Date.now();
-  console.log(`[ytdl:iframe-scrub] iter ${task.index + 1} starting at t=${task.startSec}s`);
+  const attemptSuffix = task.attempt > 0 ? ` (retry ${task.attempt})` : "";
+  console.log(`[ytdl:iframe-scrub] iter ${task.index + 1} starting at t=${task.startSec}s${attemptSuffix}`);
   const iframe = injectScrubIframe(videoId, task.startSec);
   try {
     const player = await waitForPlayerReady(iframe);
@@ -216,10 +221,20 @@ export async function downloadViaIframeScrub({ videoId, durationSec, stepSec = D
 
   const queue: ScrubTask[] = Array.from({ length: steps }, (_, index) => ({
     index,
-    startSec: index * stepSec
+    startSec: index * stepSec,
+    attempt: 0
   }));
   const results: (ScrubOutput | null)[] = new Array(steps).fill(null);
   let completed = 0;
+
+  function isAcceptableCapture(output: ScrubOutput | null) {
+    if (!output) {
+      return false;
+    }
+
+    const totalBytes = output.segment.video.byteLength + output.segment.audio.byteLength;
+    return totalBytes >= MIN_ACCEPTABLE_CAPTURE_BYTES;
+  }
 
   function abortHandler() {
     console.log("[ytdl:iframe-scrub] aborted, removing all in-flight iframes");
@@ -244,6 +259,15 @@ export async function downloadViaIframeScrub({ videoId, durationSec, stepSec = D
         task,
         signal
       });
+      if (!isAcceptableCapture(output) && task.attempt < MAX_ITERATION_RETRIES && !signal?.aborted) {
+        console.warn(`[ytdl:iframe-scrub] retrying iter ${task.index + 1} (attempt ${task.attempt + 2})`);
+        queue.push({
+          ...task,
+          attempt: task.attempt + 1
+        });
+        continue;
+      }
+
       results[task.index] = output;
       completed++;
       onProgress?.(Math.min(completed / steps, 1));
