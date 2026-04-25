@@ -43,13 +43,14 @@ async function waitForPlayerReady() {
   return null;
 }
 
-// Background tabs in Firefox block media autoplay regardless of muted state,
-// so the YT player loads but never actually starts. We have to drive it: call
-// player.playVideo() AND .play() on the underlying <video> element, retrying
-// until video.currentTime starts advancing. Once playing, crank playbackRate
-// to 8x so SABR is forced to feed 8x faster than real time.
-async function forcePlayback(player: MoviePlayer) {
+// Background tabs in Firefox throttle requestAnimationFrame and don't update
+// video.currentTime/paused promptly even when SABR is happily fetching, so we
+// can't rely on those flags. Drive playback aggressively (player.playVideo +
+// elVideo.play, repeated through a settle window) and let the caller verify
+// success by watching __ytdlCapture's byte counter actually grow.
+async function forcePlayback(player: MoviePlayer, videoId: string) {
   const deadlineAt = Date.now() + PLAYBACK_START_TIMEOUT_MS;
+  let lastBytes = 0;
   while (Date.now() < deadlineAt) {
     player.playVideo?.();
     const elVideo = document.querySelector<HTMLVideoElement>(VIDEO_ELEMENT_SELECTOR);
@@ -57,15 +58,19 @@ async function forcePlayback(player: MoviePlayer) {
       try {
         await elVideo.play();
       } catch (_) {
-        // .play() may reject in restrictive autoplay policies — retry until it sticks
+        // .play() may reject in restrictive autoplay policies — keep trying
       }
 
-      if (!elVideo.paused && elVideo.currentTime > 0) {
-        elVideo.playbackRate = SCRUB_PLAYBACK_RATE;
-        return true;
-      }
+      elVideo.playbackRate = SCRUB_PLAYBACK_RATE;
     }
 
+    const captured = window.__ytdlCapture?.capturedMedia.get(videoId);
+    const totalBytes = (captured?.videoTotalBytes ?? 0) + (captured?.audioTotalBytes ?? 0);
+    if (totalBytes > lastBytes && totalBytes > 0) {
+      return true;
+    }
+
+    lastBytes = totalBytes;
     await wait(POLL_INTERVAL_MS);
   }
 
@@ -135,7 +140,7 @@ export async function runScrubSelfDrive() {
     return;
   }
 
-  const isPlaying = await forcePlayback(player);
+  const isPlaying = await forcePlayback(player, videoId);
   if (!isPlaying) {
     console.warn(`[ytdl:scrub-tab] playback never started, index=${scrubIndex}`);
     sendEmptyResult({
