@@ -2,18 +2,12 @@ import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-wo
 
 const POLL_INTERVAL_MS = 250;
 const PLAYER_READY_TIMEOUT_MS = 15_000;
-const AD_CLEAR_TIMEOUT_MS = 35_000;
-const PLAYBACK_START_TIMEOUT_MS = 15_000;
-// Drive playback at 8x so the player burns through its buffer 8x faster and
-// SABR is forced to keep up — captures windowSec of media in windowSec/8 wall
-// time instead of windowSec real seconds. 16x sometimes drops the SABR feed.
-const SCRUB_PLAYBACK_RATE = 8;
+const AD_CLEAR_TIMEOUT_MS = 10_000;
 const DEFAULT_BUFFER_FILL_MS = 35_000;
-const BUFFER_FILL_SLACK_MS = 10_000;
+const BUFFER_FILL_SLACK_MS = 5_000;
 const AD_SHOWING_SELECTOR = ".html5-video-player.ad-showing";
 const SKIP_AD_BUTTON_SELECTOR = ".ytp-skip-ad-button, .ytp-ad-skip-button-modern, .ytp-ad-skip-button";
 const MOVIE_PLAYER_SELECTOR = "#movie_player";
-const VIDEO_ELEMENT_SELECTOR = "video";
 
 interface MoviePlayer extends HTMLElement {
   playVideo?: () => void;
@@ -43,38 +37,44 @@ async function waitForPlayerReady() {
   return null;
 }
 
-// Background tabs in Firefox throttle requestAnimationFrame and don't update
-// video.currentTime/paused promptly even when SABR is happily fetching, so we
-// can't rely on those flags. Drive playback aggressively (player.playVideo +
-// elVideo.play, repeated through a settle window) and let the caller verify
-// success by watching __ytdlCapture's byte counter actually grow.
-async function forcePlayback(player: MoviePlayer, videoId: string) {
-  const deadlineAt = Date.now() + PLAYBACK_START_TIMEOUT_MS;
-  let lastBytes = 0;
-  while (Date.now() < deadlineAt) {
-    player.playVideo?.();
-    const elVideo = document.querySelector<HTMLVideoElement>(VIDEO_ELEMENT_SELECTOR);
-    if (elVideo) {
-      try {
-        await elVideo.play();
-      } catch (_) {
-        // .play() may reject in restrictive autoplay policies — keep trying
-      }
-
-      elVideo.playbackRate = SCRUB_PLAYBACK_RATE;
-    }
-
-    const captured = window.__ytdlCapture?.capturedMedia.get(videoId);
-    const totalBytes = (captured?.videoTotalBytes ?? 0) + (captured?.audioTotalBytes ?? 0);
-    if (totalBytes > lastBytes && totalBytes > 0) {
-      return true;
-    }
-
-    lastBytes = totalBytes;
-    await wait(POLL_INTERVAL_MS);
+// sourcebuffer-capture.content.ts hooks appendBuffer but routes chunks to
+// pendingChunks until activeVideoId is set. The watch-page main flow normally
+// does that in video-data.ts after parsing ytInitialPlayerResponse, but scrub
+// tabs short-circuit before that runs, so we wire it up here.
+function bindCaptureToVideoId(videoId: string) {
+  const captureState = window.__ytdlCapture;
+  if (!captureState) {
+    return;
   }
 
-  return false;
+  captureState.activeVideoId = videoId;
+
+  if (!captureState.capturedMedia.has(videoId)) {
+    captureState.capturedMedia.set(videoId, {
+      videoChunks: [],
+      audioChunks: [],
+      videoMimeType: "video/mp4",
+      audioMimeType: "audio/mp4",
+      videoTotalBytes: 0,
+      audioTotalBytes: 0
+    });
+  }
+
+  const capture = captureState.capturedMedia.get(videoId);
+  if (!capture) {
+    return;
+  }
+
+  const pending = captureState.pendingChunks;
+  for (const entry of pending) {
+    captureState.addChunkToCapture({
+      capture,
+      mimeType: entry.mimeType,
+      chunk: entry.data
+    });
+  }
+
+  pending.length = 0;
 }
 
 async function waitForAdToClear() {
@@ -124,8 +124,10 @@ export async function runScrubSelfDrive() {
     return;
   }
 
+  bindCaptureToVideoId(videoId);
+
   const bufferFillMs = windowSec > 0
-    ? Math.ceil(windowSec * 1000 / SCRUB_PLAYBACK_RATE) + BUFFER_FILL_SLACK_MS
+    ? windowSec * 1000 + BUFFER_FILL_SLACK_MS
     : DEFAULT_BUFFER_FILL_MS;
 
   console.log(`[ytdl:scrub-tab] self-drive started, videoId=${videoId} index=${scrubIndex} windowSec=${windowSec} bufferFillMs=${bufferFillMs}`);
@@ -133,16 +135,6 @@ export async function runScrubSelfDrive() {
   const player = await waitForPlayerReady();
   if (!player) {
     console.warn(`[ytdl:scrub-tab] player never ready, index=${scrubIndex}`);
-    sendEmptyResult({
-      videoId,
-      scrubIndex
-    });
-    return;
-  }
-
-  const isPlaying = await forcePlayback(player, videoId);
-  if (!isPlaying) {
-    console.warn(`[ytdl:scrub-tab] playback never started, index=${scrubIndex}`);
     sendEmptyResult({
       videoId,
       scrubIndex
