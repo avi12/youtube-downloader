@@ -1,7 +1,7 @@
-// Hosts hidden iframes inside the extension's background page (Firefox: the BG
-// script's own document; Chrome MV3: the offscreen document, since the SW has
-// no DOM). Replaces `browser.tabs.create` for scrub/factory iframes so the
-// extension never opens a visible tab or popup window for media capture.
+// Hosts hidden iframes inside the extension's background page (Firefox: the
+// BG script's own document; Chrome MV3: the offscreen document, since the SW
+// has no DOM). Replaces `browser.tabs.create` for scrub/factory iframes so
+// the extension never opens a visible tab or popup window for media capture.
 import { ensureProcessor } from "../handlers/processor";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
 

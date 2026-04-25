@@ -2,17 +2,22 @@ import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-wo
 
 const POLL_INTERVAL_MS = 250;
 const PLAYER_READY_TIMEOUT_MS = 15_000;
-const AD_CLEAR_TIMEOUT_MS = 10_000;
-const DEFAULT_BUFFER_FILL_MS = 35_000;
-const BUFFER_FILL_SLACK_MS = 5_000;
+const PLAYBACK_START_TIMEOUT_MS = 15_000;
+const AD_APPEAR_WAIT_MS = 5_000;
+const AD_CLEAR_TIMEOUT_MS = 30_000;
+const STALL_GRACE_MS = 4_000;
+const MIN_AUDIO_BYTES = 200_000;
+const BUFFER_FILL_OVERHEAD_MS = 30_000;
 const AD_SHOWING_SELECTOR = ".html5-video-player.ad-showing";
 const SKIP_AD_BUTTON_SELECTOR = ".ytp-skip-ad-button, .ytp-ad-skip-button-modern, .ytp-ad-skip-button";
 const MOVIE_PLAYER_SELECTOR = "#movie_player";
+const VIDEO_ELEMENT_SELECTOR = "video";
 
 interface MoviePlayer extends HTMLElement {
   playVideo?: () => void;
   pauseVideo?: () => void;
   stopVideo?: () => void;
+  getDuration?: () => number;
 }
 
 function wait(durationMs: number) {
@@ -27,7 +32,7 @@ async function waitForPlayerReady() {
   const deadlineAt = Date.now() + PLAYER_READY_TIMEOUT_MS;
   while (Date.now() < deadlineAt) {
     const player = getMoviePlayer();
-    if (player?.playVideo) {
+    if (player?.playVideo && player.getDuration?.() && player.getDuration() > 0) {
       return player;
     }
 
@@ -37,16 +42,106 @@ async function waitForPlayerReady() {
   return null;
 }
 
-// sourcebuffer-capture.content.ts hooks appendBuffer but routes chunks to
-// pendingChunks until activeVideoId is set. The watch-page main flow normally
-// does that in video-data.ts after parsing ytInitialPlayerResponse, but scrub
-// tabs short-circuit before that runs, so we wire it up here.
-function bindCaptureToVideoId(videoId: string) {
+// player.playVideo() relies on the youtube.com autoplay heuristic; inside a
+// hidden iframe hosted by an extension page Firefox blocks unmuted autoplay
+// even with allow="autoplay". Setting <video>.muted=true unconditionally
+// satisfies the muted-autoplay path and lets play() resolve, after which the
+// player fetches media segments normally (audio bytes are still captured by
+// the SourceBuffer hook regardless of <video> mute state).
+async function forcePlayback(player: MoviePlayer) {
+  const startedAt = Date.now();
+  while (Date.now() - startedAt < PLAYBACK_START_TIMEOUT_MS) {
+    const elVideo = document.querySelector<HTMLVideoElement>(VIDEO_ELEMENT_SELECTOR);
+    if (elVideo) {
+      elVideo.muted = true;
+      try {
+        await elVideo.play();
+      } catch {
+        // first play() may reject before player.playVideo() arms autoplay;
+        // we keep retrying.
+      }
+    }
+
+    player.playVideo?.();
+    await wait(POLL_INTERVAL_MS);
+    if (elVideo && (!elVideo.paused || elVideo.currentTime > 0 || elVideo.readyState >= 2)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+async function waitForAdToClear() {
+  const appearDeadline = Date.now() + AD_APPEAR_WAIT_MS;
+  while (Date.now() < appearDeadline) {
+    if (document.querySelector(AD_SHOWING_SELECTOR)) {
+      break;
+    }
+
+    await wait(POLL_INTERVAL_MS);
+  }
+
+  if (!document.querySelector(AD_SHOWING_SELECTOR)) {
+    return;
+  }
+
+  const clearDeadline = Date.now() + AD_CLEAR_TIMEOUT_MS;
+  while (Date.now() < clearDeadline) {
+    if (!document.querySelector(AD_SHOWING_SELECTOR)) {
+      return;
+    }
+
+    // Crank rate so non-skippable ads finish in seconds rather than ~2 min,
+    // and click skip-ad as soon as it appears.
+    const elVideo = document.querySelector<HTMLVideoElement>(VIDEO_ELEMENT_SELECTOR);
+    if (elVideo) {
+      elVideo.playbackRate = 16;
+    }
+
+    document.querySelector<HTMLButtonElement>(SKIP_AD_BUTTON_SELECTOR)?.click();
+    await wait(POLL_INTERVAL_MS);
+  }
+}
+
+// Drives a hidden BG factory tab: forces playback, accelerates through any
+// pre-roll ad, then idles. The interceptor's ad-skip filter ensures the FIRST
+// captured trust template is post-ad. ISOLATED forwards it to BG via
+// SabrTemplateReady. BG closes the tab once it has the template.
+export async function runTrustFactoryDrive() {
+  console.log("[ytdl:trust-factory-tab] starting");
+
+  const player = await waitForPlayerReady();
+  if (!player) {
+    console.warn("[ytdl:trust-factory-tab] player never ready");
+    return;
+  }
+
+  const isPlaying = await forcePlayback(player);
+  if (!isPlaying) {
+    console.warn("[ytdl:trust-factory-tab] playback never started");
+    return;
+  }
+
+  await waitForAdToClear();
+
+  // Reset rate so the post-ad SABR call is a normal player call (server may
+  // throttle response if it sees rate=16 in clientAbrState).
+  const elVideo = document.querySelector<HTMLVideoElement>(VIDEO_ELEMENT_SELECTOR);
+  if (elVideo) {
+    elVideo.playbackRate = 1;
+  }
+
+  console.log("[ytdl:trust-factory-tab] post-ad; player will emit content SABR call shortly");
+}
+
+function bindCaptureToVideoIdDiscardingPending(videoId: string) {
   const captureState = window.__ytdlCapture;
   if (!captureState) {
     return;
   }
 
+  captureState.pendingChunks.length = 0;
   captureState.activeVideoId = videoId;
 
   if (!captureState.capturedMedia.has(videoId)) {
@@ -58,80 +153,48 @@ function bindCaptureToVideoId(videoId: string) {
       videoTotalBytes: 0,
       audioTotalBytes: 0
     });
-  }
-
-  const capture = captureState.capturedMedia.get(videoId);
-  if (!capture) {
-    return;
-  }
-
-  const pending = captureState.pendingChunks;
-  for (const entry of pending) {
-    captureState.addChunkToCapture({
-      capture,
-      mimeType: entry.mimeType,
-      chunk: entry.data
-    });
-  }
-
-  pending.length = 0;
-}
-
-// While the ad is playing, drop appendBuffer chunks before they accumulate as
-// ad media in capturedMedia[videoId]. Snapshot the chunk arrays each tick and
-// roll them back if they grew while .ad-showing was visible. Stops once the
-// player reports the ad has cleared.
-function dropAdChunksUntilCleared(videoId: string) {
-  const captureState = window.__ytdlCapture;
-  if (!captureState) {
     return;
   }
 
   const capture = captureState.capturedMedia.get(videoId);
-  if (!capture) {
-    return;
+  if (capture) {
+    capture.videoChunks.length = 0;
+    capture.audioChunks.length = 0;
+    capture.videoTotalBytes = 0;
+    capture.audioTotalBytes = 0;
   }
-
-  let frozenVideoCount = capture.videoChunks.length;
-  let frozenVideoBytes = capture.videoTotalBytes;
-  let frozenAudioCount = capture.audioChunks.length;
-  let frozenAudioBytes = capture.audioTotalBytes;
-
-  const intervalId = setInterval(() => {
-    const adShowing = document.querySelector(AD_SHOWING_SELECTOR);
-    if (!adShowing) {
-      clearInterval(intervalId);
-      return;
-    }
-
-    if (capture.videoChunks.length > frozenVideoCount) {
-      capture.videoChunks.length = frozenVideoCount;
-      capture.videoTotalBytes = frozenVideoBytes;
-    } else {
-      frozenVideoCount = capture.videoChunks.length;
-      frozenVideoBytes = capture.videoTotalBytes;
-    }
-
-    if (capture.audioChunks.length > frozenAudioCount) {
-      capture.audioChunks.length = frozenAudioCount;
-      capture.audioTotalBytes = frozenAudioBytes;
-    } else {
-      frozenAudioCount = capture.audioChunks.length;
-      frozenAudioBytes = capture.audioTotalBytes;
-    }
-  }, 200);
-
-  setTimeout(() => clearInterval(intervalId), AD_CLEAR_TIMEOUT_MS + 5_000);
 }
 
-async function waitForAdToClear() {
-  const deadlineAt = Date.now() + AD_CLEAR_TIMEOUT_MS;
-  while (Date.now() < deadlineAt) {
-    if (!document.querySelector(AD_SHOWING_SELECTOR)) {
+async function waitForBufferFill({ videoId, windowSec, player }: {
+  videoId: string;
+  windowSec: number;
+  player: MoviePlayer;
+}) {
+  const hardCapMs = windowSec * 1000 + BUFFER_FILL_OVERHEAD_MS;
+  const startedAt = Date.now();
+  let lastAudioBytes = 0;
+  let lastChangeAt = Date.now();
+
+  while (Date.now() - startedAt < hardCapMs) {
+    const elVideo = document.querySelector<HTMLVideoElement>(VIDEO_ELEMENT_SELECTOR);
+    if (elVideo?.paused) {
+      player.playVideo?.();
+      try {
+        await elVideo.play();
+      } catch (_) {
+        // browser may reject play() under restrictive autoplay; we keep retrying
+      }
+    }
+
+    const captured = window.__ytdlCapture?.capturedMedia.get(videoId);
+    const currentBytes = captured?.audioTotalBytes ?? 0;
+    if (currentBytes !== lastAudioBytes) {
+      lastAudioBytes = currentBytes;
+      lastChangeAt = Date.now();
+    } else if (currentBytes > MIN_AUDIO_BYTES && Date.now() - lastChangeAt > STALL_GRACE_MS) {
       return;
     }
 
-    document.querySelector<HTMLButtonElement>(SKIP_AD_BUTTON_SELECTOR)?.click();
     await wait(POLL_INTERVAL_MS);
   }
 }
@@ -164,18 +227,14 @@ function sendEmptyResult({ videoId, scrubIndex }: {
 export async function runScrubSelfDrive() {
   const params = new URLSearchParams(location.search);
   const scrubIndex = parseInt(params.get("ytdlScrubIndex") ?? "-1", 10);
-  const windowSec = parseInt(params.get("ytdlScrubWindow") ?? "0", 10);
   const videoId = params.get("v") ?? "";
+  const windowSec = parseInt(params.get("ytdlScrubWindow") ?? "30", 10);
   if (scrubIndex < 0 || !videoId) {
     console.warn("[ytdl:scrub-tab] missing scrub index or videoId");
     return;
   }
 
-  const bufferFillMs = windowSec > 0
-    ? windowSec * 1000 + BUFFER_FILL_SLACK_MS
-    : DEFAULT_BUFFER_FILL_MS;
-
-  console.log(`[ytdl:scrub-tab] self-drive started, videoId=${videoId} index=${scrubIndex} windowSec=${windowSec} bufferFillMs=${bufferFillMs}`);
+  console.log(`[ytdl:scrub-tab] scrub start, videoId=${videoId} index=${scrubIndex} window=${windowSec}s`);
 
   const player = await waitForPlayerReady();
   if (!player) {
@@ -187,10 +246,24 @@ export async function runScrubSelfDrive() {
     return;
   }
 
-  bindCaptureToVideoId(videoId);
-  dropAdChunksUntilCleared(videoId);
+  const isPlaying = await forcePlayback(player);
+  if (!isPlaying) {
+    console.warn(`[ytdl:scrub-tab] playback never started, index=${scrubIndex}`);
+    sendEmptyResult({
+      videoId,
+      scrubIndex
+    });
+    return;
+  }
+
   await waitForAdToClear();
-  await wait(bufferFillMs);
+  bindCaptureToVideoIdDiscardingPending(videoId);
+
+  await waitForBufferFill({
+    videoId,
+    windowSec,
+    player
+  });
   player.pauseVideo?.();
 
   const captured = window.__ytdlCapture?.capturedMedia.get(videoId);
