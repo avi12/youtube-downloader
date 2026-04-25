@@ -5,20 +5,16 @@
   margin-left: 8px;
 }
 
-[data-ytdl-chevron] {
+.ytdl-chevron-button {
   margin-left: 0 !important;
-}
-
-[data-ytdl-download] {
-  position: relative;
 }
 
 .ytdl-watch-progress-ring {
   position: absolute;
-  inset: 0;
+  inset-block: 0;
+  inset-inline-start: 0;
   block-size: 100%;
-  inline-size: 100%;
-  margin: auto;
+  inline-size: 40px;
   opacity: 0%;
   pointer-events: none;
   transition: opacity 120ms ease-out;

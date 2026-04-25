@@ -109,18 +109,15 @@ export function createButtonGroup({ elActionsContainer, elNativeDownload, scopin
   elGroup.dataset.ytdlDownloadGroup = "true";
 
   const elDownloadButton = document.createElement("yt-button-view-model");
-  elDownloadButton.classList.add(...scopingClasses);
-  elDownloadButton.dataset.ytdlDownload = "true";
+  elDownloadButton.classList.add(...scopingClasses, "ytdl-download-button");
 
   const elChevronButton = document.createElement("yt-button-view-model");
-  elChevronButton.classList.add(...scopingClasses);
   // Suppresses the automatic margin-left between adjacent yt-button-view-model siblings so the buttons sit flush.
-  elChevronButton.dataset.ytdlChevron = "true";
+  elChevronButton.classList.add(...scopingClasses, "ytdl-chevron-button");
 
   const progressRing = createProgressRing();
-  elDownloadButton.append(progressRing.elRoot);
 
-  elGroup.append(elDownloadButton, elChevronButton);
+  elGroup.append(elDownloadButton, elChevronButton, progressRing.elRoot);
 
   if (elNativeDownload) {
     elNativeDownload.insertAdjacentElement("beforebegin", elGroup);
