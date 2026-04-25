@@ -4,21 +4,19 @@ import { getCompatibleFilename } from "@/lib/utils/containers";
 import { ProgressType } from "@/types";
 import type { ProcessStreamData } from "@/types";
 
-// FFmpeg WASM is 32-bit and capped at 4 GB of total memory. Long-video
-// downloads can easily produce 1-2 GB of segment bytes, and a naive pipeline
-// (write all inputs, run concat, write intermediate, transcode) doubles or
-// triples that. So we pre-mux each (video_i, audio_i) pair into a single
-// segment_i.mkv as soon as it's written and immediately unlink the inputs;
-// the final concat then reads only the small per-segment MKVs.
+// Single ffmpeg pass: concat demuxer reads the per-iframe segment files
+// directly into the user's target container. No intermediate MKV, no
+// per-segment pre-mux. Each segment is its own self-contained fMP4 (init +
+// fragments), which the concat demuxer handles correctly even when
+// consecutive segments have different itags / codec params.
 //
-// Peak FS usage at any one moment:
-//   - 1 video + 1 audio (one segment, ≤ ~30 MB)
-//   - All previously-muxed segment_i.mkv files (~equal to total media bytes)
-//   - Final concat output (~equal to total media bytes)
-// Two segment-equivalents instead of three, well under 4 GB for normal videos.
+// MP4 output uses `-avoid_negative_ts make_zero` because the captured
+// fragments' tfdt timestamps reset across iframe boundaries; MP4's strict
+// decode-time monotonicity would reject those without the flag.
 //
-// A failed pre-mux for a single segment drops it (acts as the probe-and-skip);
-// the final concat still uses the survivors.
+// 4 GB WASM heap budget: the FS holds N segment inputs + 1 output
+// simultaneously (~2× total media bytes). For 1-hour videos at typical
+// bitrate that's well under 4 GB.
 export async function processMultipartSegments(item: ProcessStreamData & { segments: NonNullable<ProcessStreamData["segments"]> }) {
   const { videoId, filenameOutput, videoMimeType, audioMimeType, tabId, segments } = item;
   const ffmpeg = getFFmpeg();
@@ -29,7 +27,6 @@ export async function processMultipartSegments(item: ProcessStreamData & { segme
   const targetExtension = userExtension === "mkv" ? "mkv" : "mp4";
 
   const filenameBase = filenameOutput.replace(/\.[^.]+$/, "");
-  const intermediateFilename = getCompatibleFilename(`${videoId}-intermediate.mkv`);
   const outputFilename = getCompatibleFilename(`${videoId}-${filenameBase}.${targetExtension}`);
 
   function handleFFmpegProgress({ progress }: {
@@ -47,110 +44,65 @@ export async function processMultipartSegments(item: ProcessStreamData & { segme
 
   const writtenPaths: string[] = [];
 
-  function muxSinglePair({ index, segment }: {
-    index: number;
-    segment: ProcessStreamData["segments"] extends infer T ? T extends Array<infer S> ? S : never : never;
-  }) {
-    if (!segment || segment.video.byteLength === 0 || segment.audio.byteLength === 0) {
-      return null;
-    }
-
-    const videoName = `${videoId}-v${index}.${videoExt}`;
-    const audioName = `${videoId}-a${index}.${audioExt}`;
-    const segmentMkv = `${videoId}-seg${index}.mkv`;
-
-    ffmpeg.FS.writeFile(videoName, segment.video);
-    ffmpeg.FS.writeFile(audioName, segment.audio);
-
-    const exitCode = ffmpeg.exec(
-      "-i", videoName, "-i", audioName, "-map", "0:v:0", "-map", "1:a:0", "-c:v", "copy", "-c:a", "copy", segmentMkv
-    );
-
-    tryUnlink({
-      ffmpeg,
-      filename: videoName
-    });
-    tryUnlink({
-      ffmpeg,
-      filename: audioName
-    });
-
-    if (exitCode !== 0) {
-      tryUnlink({
-        ffmpeg,
-        filename: segmentMkv
-      });
-      console.warn(`[ytdl:pipeline] segment ${index} mux failed (exit ${exitCode}), dropping`);
-      return null;
-    }
-
-    return segmentMkv;
-  }
-
   try {
-    const segmentMkvFiles: string[] = [];
-    for (const [index, segment] of segments.entries()) {
-      const muxed = muxSinglePair({
-        index,
-        segment
-      });
-      if (muxed) {
-        segmentMkvFiles.push(muxed);
-        writtenPaths.push(muxed);
+    const videoSegmentFiles: string[] = [];
+    const audioSegmentFiles: string[] = [];
+    for (const [i, segment] of segments.entries()) {
+      if (segment.video.byteLength === 0 || segment.audio.byteLength === 0) {
+        continue;
       }
+
+      const videoName = `${videoId}-v${i}.${videoExt}`;
+      const audioName = `${videoId}-a${i}.${audioExt}`;
+      ffmpeg.FS.writeFile(videoName, segment.video);
+      ffmpeg.FS.writeFile(audioName, segment.audio);
+      videoSegmentFiles.push(videoName);
+      audioSegmentFiles.push(audioName);
+      writtenPaths.push(videoName, audioName);
     }
 
-    if (segmentMkvFiles.length === 0) {
-      throw new Error("All segments failed pre-mux; nothing to concat");
+    if (videoSegmentFiles.length === 0) {
+      throw new Error("No usable segments to mux");
     }
 
-    console.log(`[ytdl:pipeline] concatenating ${segmentMkvFiles.length}/${segments.length} muxed segments for ${videoId}`);
+    console.log(`[ytdl:pipeline] muxing ${videoSegmentFiles.length}/${segments.length} segments for ${videoId} → ${targetExtension}`);
 
-    const concatListName = `${videoId}-concat.txt`;
+    const videoListName = `${videoId}-video-concat.txt`;
+    const audioListName = `${videoId}-audio-concat.txt`;
     const encoder = new TextEncoder();
     ffmpeg.FS.writeFile(
-      concatListName, encoder.encode(
-        segmentMkvFiles.map(name => `file '${name}'`).join("\n") + "\n"
+      videoListName, encoder.encode(
+        videoSegmentFiles.map(name => `file '${name}'`).join("\n") + "\n"
       )
     );
-    writtenPaths.push(concatListName);
-
-    const concatExit = ffmpeg.exec(
-      "-f", "concat", "-safe", "0", "-i", concatListName, "-c", "copy", intermediateFilename
+    ffmpeg.FS.writeFile(
+      audioListName, encoder.encode(
+        audioSegmentFiles.map(name => `file '${name}'`).join("\n") + "\n"
+      )
     );
-    if (concatExit !== 0) {
-      throw new Error(`FFmpeg concat failed with exit code ${concatExit}`);
-    }
+    writtenPaths.push(videoListName, audioListName);
 
-    writtenPaths.push(intermediateFilename);
-
-    for (const segMkv of segmentMkvFiles) {
-      tryUnlink({
-        ffmpeg,
-        filename: segMkv
-      });
-    }
-    tryUnlink({
-      ffmpeg,
-      filename: concatListName
-    });
-    writtenPaths.length = 0;
-    writtenPaths.push(intermediateFilename);
-
-    let finalFilename = intermediateFilename;
+    const muxArgs = [
+      "-f", "concat", "-safe", "0", "-i", videoListName,
+      "-f", "concat", "-safe", "0", "-i", audioListName,
+      "-map", "0:v:0", "-map", "1:a:0",
+      "-c:v", "copy", "-c:a", "copy",
+      "-avoid_negative_ts", "make_zero"
+    ];
     if (targetExtension === "mp4") {
-      const transcodeExit = ffmpeg.exec(
-        "-i", intermediateFilename, "-c:v", "copy", "-c:a", "copy", "-movflags", "+faststart", outputFilename
-      );
-      if (transcodeExit !== 0) {
-        throw new Error(`FFmpeg MKV→MP4 transcode failed with exit code ${transcodeExit}`);
-      }
-
-      finalFilename = outputFilename;
-      writtenPaths.push(outputFilename);
+      muxArgs.push("-movflags", "+faststart");
     }
 
-    const outputBytes = ffmpeg.FS.readFile(finalFilename, { encoding: "binary" });
+    muxArgs.push(outputFilename);
+
+    const muxExit = ffmpeg.exec(...muxArgs);
+    if (muxExit !== 0) {
+      throw new Error(`FFmpeg mux failed with exit code ${muxExit}`);
+    }
+
+    writtenPaths.push(outputFilename);
+
+    const outputBytes = ffmpeg.FS.readFile(outputFilename, { encoding: "binary" });
     if (typeof outputBytes === "string") {
       throw new Error("FFmpeg readFile returned unexpected string output");
     }
