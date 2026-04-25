@@ -6,6 +6,7 @@ import { signalVideoComplete } from "../queue/sequential-queue";
 import { downloadViaCdn } from "./cdn-downloader";
 import { createProgressFetch } from "./progress-fetch";
 import { downloadViaSabr, downloadViaSabrWithTrustTemplate } from "./sabr-downloader";
+import { downloadViaSabrProgressive } from "./sabr-progressive";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
 import { interruptedDownloadsItem, mutateStorageItem } from "@/lib/storage/storage";
@@ -425,6 +426,31 @@ async function attemptTrustTemplateSabrDownload({ request, signal, tabId }: {
   }
 
   try {
+    // First: progressive parallel chunked SABR — phase 1 bootstraps state via
+    // the captured player template, phase 2 fans out N concurrent SabrStream
+    // sessions at offset playerTimeMs values. This bypasses the per-session
+    // media quota wall that caps a single SabrStream at ~80s of media on long
+    // Firefox videos. If it returns 0 bytes (state-jump rejected by server),
+    // fall back to the single-session bootstrap.
+    const progressive = await downloadViaSabrProgressive({
+      request,
+      signal: sabrAbortController.signal,
+      tabId,
+      template
+    });
+    if (progressive) {
+      void sendMessage(MessageType.BgDebugLog, {
+        msg: `[ytdl:bg-trust-template] sabr-progressive returned `
+          + `video=${progressive.videoData?.byteLength ?? 0}B `
+          + `audio=${progressive.audioData?.byteLength ?? 0}B`
+      }, tabId);
+      return progressive;
+    }
+
+    void sendMessage(MessageType.BgDebugLog, {
+      msg: `[ytdl:bg-trust-template] sabr-progressive returned null; falling back to single-session bootstrap`
+    }, tabId);
+
     return await downloadViaSabrWithTrustTemplate({
       request,
       signal: sabrAbortController.signal,
