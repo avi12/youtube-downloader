@@ -176,9 +176,8 @@ export async function performDownload({
     const videoDurationMs = parseInt(videoFormat?.approxDurationMs ?? audioFormat?.approxDurationMs ?? "0", 10);
     const videoDurationSec = Math.ceil(videoDurationMs / 1000);
     const useIframeScrub = import.meta.env.FIREFOX
-      && self === top
       && videoDurationSec >= IFRAME_SCRUB_MIN_DURATION_SEC
-      && !/ytdlKeepPlaying=1/.test(location.search);
+      && !/ytdlKeepPlaying=1|ytdlScrubMode=1/.test(location.search);
     if (useIframeScrub) {
       console.log(`[ytdl] iframe-scrub path for ${videoId} (${videoDurationSec}s)`);
       const scrubbed = await downloadViaIframeScrub({
