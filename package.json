@@ -20,6 +20,7 @@
     "postinstall": "wxt prepare",
     "lint": "eslint --fix",
     "compile": "tsc --noEmit",
+    "compile:scripts": "tsc -p scripts",
     "stylelint": "stylelint \"src/**/*.{css,svelte}\" --fix",
     "svelte:check": "pnpx svelte-check"
   },
@@ -33,10 +34,14 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "tsx": "^4.19.3",
+    "web-ext-run": "^0.2.4",
     "@ffmpeg/core-st": "0.11.1",
     "@material-symbols/svg-400": "^0.44.1",
+    "@modelcontextprotocol/sdk": "^1.29.0",
     "@stylistic/eslint-plugin": "^5.10.0",
     "@stylistic/stylelint-plugin": "^5.1.0",
+    "@types/bun": "^1.3.13",
     "@types/ws": "^8.18.1",
     "@wxt-dev/module-svelte": "^2.0.5",
     "eslint": "^10.1.0",

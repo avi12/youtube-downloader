@@ -24,32 +24,70 @@ import { extractPoTokenFromBody, getCapturedSabrData } from "@/lib/youtube/sabr-
 const SABR_ORIGIN_RULE_ID = 1;
 const INNERTUBE_ORIGIN_RULE_ID = 2;
 
+// Spoof a recent Chrome on Windows. Firefox extensions making BG SW googlevideo
+// POSTs hit YouTube's attestation_required wall on long videos; the lib body is
+// identical between browsers, so the most likely flagging signal is User-Agent
+// (TLS fingerprint differs too but isn't reachable from the extension layer).
+const CHROME_USER_AGENT_SPOOF =
+  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36";
+
 async function registerSabrOriginRule() {
-  if (import.meta.env.FIREFOX) {
-    // Firefox's declarativeNetRequest doesn't apply to extension-initiated
-    // fetches, so googlevideo sees Origin: moz-extension://... and rejects
-    // the request. Blocking webRequest still works from extension context.
-    browser.webRequest.onBeforeSendHeaders.addListener(
-      rewriteSabrHeaders,
-      { urls: [SABR_URL_PATTERN] },
-      ["blocking", "requestHeaders"]
-    );
-    return;
-  }
+  const baseHeaders: Browser.declarativeNetRequest.ModifyHeaderInfo[] = [
+    {
+      header: "Origin",
+      operation: "set",
+      value: "https://www.youtube.com"
+    },
+    {
+      header: "Referer",
+      operation: "set",
+      value: "https://www.youtube.com/"
+    }
+  ];
+
+  // On Firefox, also spoof User-Agent to look like Chrome so YouTube's
+  // attestation_required check (which appears to flag Firefox UA on long
+  // videos) treats us like Chrome — the lib's request body is identical
+  // between browsers anyway.
+  const firefoxOnlyHeaders: Browser.declarativeNetRequest.ModifyHeaderInfo[] = import.meta.env.FIREFOX
+    ? [
+      {
+        header: "User-Agent",
+        operation: "set",
+        value: CHROME_USER_AGENT_SPOOF
+      }
+    ]
+    : [];
+
+  // Sec-Fetch-* headers are browser-managed in Firefox; overriding them aborts requests
+  const chromeOnlyHeaders: Browser.declarativeNetRequest.ModifyHeaderInfo[] = import.meta.env.FIREFOX
+    ? []
+    : [
+      {
+        header: "Sec-Fetch-Site",
+        operation: "set",
+        value: "cross-site"
+      },
+      {
+        header: "Sec-Fetch-Storage-Access",
+        operation: "set",
+        value: "active"
+      }
+    ];
 
   const sabrRule: Browser.declarativeNetRequest.Rule = {
     id: SABR_ORIGIN_RULE_ID,
     priority: 1,
     action: {
       type: "modifyHeaders",
-      requestHeaders: [
-        { header: "Origin", operation: "set", value: "https://www.youtube.com" },
-        { header: "Referer", operation: "set", value: "https://www.youtube.com/" },
-        { header: "Sec-Fetch-Site", operation: "set", value: "cross-site" },
-        { header: "Sec-Fetch-Storage-Access", operation: "set", value: "active" }
-      ]
+      requestHeaders: [...baseHeaders, ...chromeOnlyHeaders, ...firefoxOnlyHeaders]
     },
-    condition: { urlFilter: "||googlevideo.com/videoplayback" }
+    // tabIds: [-1] scopes the rule to extension-initiated requests only, so we
+    // don't overwrite the user's tab player's own outgoing UA.
+    condition: {
+      urlFilter: "||googlevideo.com/videoplayback",
+      tabIds: [-1]
+    }
   };
 
   // When the extension calls youtubei/v1/player from the background, Firefox
