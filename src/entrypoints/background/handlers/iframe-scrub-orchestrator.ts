@@ -323,13 +323,11 @@ export function registerIframeScrubOrchestrator() {
       void fillTabSlots(session);
     }
   });
+}
 
-  onMessage(MessageType.CancelDownload, async ({ data }) => {
-    for (const videoId of data.videoIds) {
-      const session = sessionsByVideoId.get(videoId);
-      if (session) {
-        await cleanupSession(session);
-      }
-    }
-  });
+export async function cancelIframeScrubSession(videoId: string) {
+  const session = sessionsByVideoId.get(videoId);
+  if (session) {
+    await cleanupSession(session);
+  }
 }

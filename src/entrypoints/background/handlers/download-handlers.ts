@@ -2,6 +2,7 @@ import { cancelBackgroundDownload, startBackgroundDownload } from "../download/b
 import { enqueueToPopupList, removeFromPopupList } from "../queue/popup-list";
 import { awaitBytesTransferred, awaitVideoComplete, signalVideoComplete } from "../queue/sequential-queue";
 import { cancelDownloads, getTabIdsForVideo, trackVideoForTab } from "../queue/tab-tracker";
+import { cancelIframeScrubSession } from "./iframe-scrub-orchestrator";
 import { markVideosCancelled } from "./pipeline-handlers";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
 import { uint8ToBase64 } from "@/lib/utils/binary";
@@ -284,6 +285,7 @@ export function registerDownloadHandlers() {
 
     for (const videoId of data.videoIds) {
       cancelBackgroundDownload(videoId);
+      void cancelIframeScrubSession(videoId);
       signalVideoComplete(videoId);
       const trackedTabIds = getTabIdsForVideo(videoId);
       for (const tabId of trackedTabIds) {
