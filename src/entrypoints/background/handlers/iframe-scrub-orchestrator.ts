@@ -6,13 +6,14 @@ import type { DownloadType, VideoMetadata } from "@/types";
 
 const MAX_PARALLEL_TABS = 2;
 const MAX_RETRIES_PER_INDEX = 2;
-const MIN_ACCEPTABLE_TOTAL_BYTES = 200_000;
+const MIN_ACCEPTABLE_BYTES_PER_SEC = 30_000;
 const SCRUB_WINDOW_WIDTH = 480;
 const SCRUB_WINDOW_HEIGHT = 270;
 
 interface ScrubSession {
   videoId: string;
   expectedCount: number;
+  stepSec: number;
   receivedSegments: Map<number, {
     videoBase64: string;
     audioBase64: string;
@@ -40,16 +41,18 @@ interface ScrubSession {
 const sessionsByVideoId = new Map<string, ScrubSession>();
 const sessionByTabId = new Map<number, string>();
 
-async function openScrubTab({ session, scrubIndex, startSec }: {
+async function openScrubTab({ session, scrubIndex, startSec, windowSec }: {
   session: ScrubSession;
   scrubIndex: number;
   startSec: number;
+  windowSec: number;
 }) {
   const params = new URLSearchParams({
     v: session.videoId,
     ytdl: "1",
     ytdlScrubMode: "1",
-    ytdlScrubIndex: String(scrubIndex)
+    ytdlScrubIndex: String(scrubIndex),
+    ytdlScrubWindow: String(windowSec)
   });
   if (startSec > 0) {
     params.set("t", String(startSec));
@@ -65,7 +68,7 @@ async function openScrubTab({ session, scrubIndex, startSec }: {
   }
 
   const newTab = await browser.tabs.create(tabOptions);
-  console.log(`[ytdl:scrub-bg] opened scrub tab id=${newTab.id} index=${scrubIndex} t=${startSec}`);
+  console.log(`[ytdl:scrub-bg] opened scrub tab id=${newTab.id} index=${scrubIndex} t=${startSec} window=${windowSec}s`);
 
   if (typeof newTab.id === "number") {
     session.inFlightTabIds.add(newTab.id);
@@ -85,7 +88,8 @@ async function fillTabSlots(session: ScrubSession) {
     await openScrubTab({
       session,
       scrubIndex,
-      startSec: scrubIndex * 30
+      startSec: scrubIndex * session.stepSec,
+      windowSec: session.stepSec
     });
   }
 }
@@ -235,6 +239,7 @@ export function registerIframeScrubOrchestrator() {
     const session: ScrubSession = {
       videoId: data.videoId,
       expectedCount,
+      stepSec,
       receivedSegments: new Map(),
       pendingIndices: Array.from({ length: expectedCount }, (_, i) => i),
       attemptsByIndex: new Map(),
@@ -275,10 +280,11 @@ export function registerIframeScrubOrchestrator() {
     const totalBytes = base64ToUint8Array(data.videoBase64).byteLength
       + base64ToUint8Array(data.audioBase64).byteLength;
     const attempts = session.attemptsByIndex.get(data.scrubIndex) ?? 0;
-    if (totalBytes < MIN_ACCEPTABLE_TOTAL_BYTES && attempts < MAX_RETRIES_PER_INDEX) {
+    const minAcceptableBytes = MIN_ACCEPTABLE_BYTES_PER_SEC * session.stepSec;
+    if (totalBytes < minAcceptableBytes && attempts < MAX_RETRIES_PER_INDEX) {
       session.attemptsByIndex.set(data.scrubIndex, attempts + 1);
       session.pendingIndices.push(data.scrubIndex);
-      console.warn(`[ytdl:scrub-bg] segment ${data.scrubIndex} undersized (${totalBytes}B), retrying (attempt ${attempts + 2}/${MAX_RETRIES_PER_INDEX + 1})`);
+      console.warn(`[ytdl:scrub-bg] segment ${data.scrubIndex} undersized (${totalBytes}B < ${minAcceptableBytes}B), retrying (attempt ${attempts + 2}/${MAX_RETRIES_PER_INDEX + 1})`);
       await fillTabSlots(session);
       return;
     }

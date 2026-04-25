@@ -5,7 +5,7 @@ import { crossWorldMessenger, CrossWorldMessage } from "@/lib/messaging/cross-wo
 import { sabrCredentials } from "@/lib/ui/synced-stores.svelte";
 import { type AdaptiveFormatItem, type DownloadRequest, DownloadType } from "@/types";
 
-const IFRAME_SCRUB_STEP_SEC = 30;
+const IFRAME_SCRUB_STEP_SEC = 300;
 
 // Firefox's background SABR gets LOGIN_REQUIRED / attestation_required for
 // any video long enough to trip YouTube's per-session threshold (somewhere
