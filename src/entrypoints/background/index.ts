@@ -111,8 +111,12 @@ async function registerSabrOriginRule() {
   };
 
   // When the extension calls youtubei/v1/player from the background, Firefox
-  // sends Origin: moz-extension://..., which the innertube endpoint 403s. Rewrite
-  // to youtube.com so the alternate-client fallback is accepted.
+  // sends Origin: moz-extension://..., which the innertube endpoint 403s.
+  // Rewrite to youtube.com so the alternate-client fallback is accepted.
+  // The pattern covers both www.youtube.com/youtubei/ (web) and
+  // youtubei.googleapis.com/youtubei/ (mobile-app endpoint we use for
+  // ANDROID/IOS/MWEB/TV clients). tabIds:[-1] scopes to BG-initiated requests
+  // only — user-tab YT navigation must keep its own Origin/Referer.
   const innertubeRule: Browser.declarativeNetRequest.Rule = {
     id: INNERTUBE_ORIGIN_RULE_ID,
     priority: 1,
@@ -120,7 +124,10 @@ async function registerSabrOriginRule() {
       type: "modifyHeaders",
       requestHeaders: baseHeaders
     },
-    condition: { urlFilter: "||youtube.com/youtubei/" }
+    condition: {
+      regexFilter: "youtubei/v1/",
+      tabIds: [-1]
+    }
   };
 
   await browser.declarativeNetRequest.updateDynamicRules({
@@ -142,17 +149,30 @@ function registerFactoryIframeHeaderStripper() {
     return;
   }
 
+  async function broadcastStripDiag(msg: string) {
+    console.log(msg);
+    const tabs = await browser.tabs.query({ url: "https://www.youtube.com/*" });
+    for (const tab of tabs) {
+      if (typeof tab.id === "number") {
+        void sendMessage(MessageType.BgDebugLog, { msg }, tab.id);
+      }
+    }
+  }
+
   browser.webRequest.onHeadersReceived.addListener(
     ({ url, responseHeaders }) => {
       const isHostedIframe = url.includes("ytdlTrustFactoryMode=1") || url.includes("ytdlScrubMode=1");
+      void broadcastStripDiag(`[ytdl:bg-strip] onHeadersReceived url=${url.slice(0, 120)} isHostedIframe=${isHostedIframe} headers=${responseHeaders?.length ?? 0}`);
       if (!isHostedIframe || !responseHeaders) {
         return {};
       }
 
+      const before = responseHeaders.length;
       const filtered = responseHeaders.filter(({ name }) => {
         const lower = name.toLowerCase();
         return lower !== "x-frame-options" && lower !== "content-security-policy";
       });
+      void broadcastStripDiag(`[ytdl:bg-strip] stripped ${before}->${filtered.length}`);
       return { responseHeaders: filtered };
     },
     {

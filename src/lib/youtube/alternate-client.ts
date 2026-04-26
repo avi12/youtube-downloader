@@ -134,10 +134,11 @@ async function fetchClient({ client, videoId, poToken }: {
   }
 
   const authorization = await buildSapiSidHash();
+  const userAgent = (client.context as { userAgent?: string }).userAgent;
   // youtubei.googleapis.com is the canonical innertube endpoint; the
-  // www.youtube.com proxy rejects mobile-app client identities (ANDROID,
-  // ANDROID_VR, IOS) with HTTP 400. The googleapis hostname accepts them
-  // when paired with SAPISIDHASH auth.
+  // www.youtube.com proxy rejects mobile-app client identities with HTTP 400.
+  // The googleapis hostname accepts them when paired with SAPISIDHASH auth +
+  // matching User-Agent header.
   const response = await fetch(
     `https://youtubei.googleapis.com/youtubei/v1/player?prettyPrint=false`,
     {
@@ -146,6 +147,7 @@ async function fetchClient({ client, videoId, poToken }: {
         "Content-Type": "application/json",
         "X-Youtube-Client-Name": client.clientNameHeader,
         "X-Youtube-Client-Version": client.clientVersion,
+        ...(userAgent ? { "User-Agent": userAgent } : {}),
         ...(authorization ? { Authorization: authorization } : {})
       },
       body: JSON.stringify(body)
