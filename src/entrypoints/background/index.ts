@@ -23,6 +23,7 @@ import { extractPoTokenFromBody, getCapturedSabrData } from "@/lib/youtube/sabr-
 
 const SABR_ORIGIN_RULE_ID = 1;
 const INNERTUBE_ORIGIN_RULE_ID = 2;
+const CDN_ORIGIN_RULE_ID = 3;
 
 // Spoof a recent Chrome on Windows. Firefox extensions making BG SW googlevideo
 // POSTs hit YouTube's attestation_required wall on long videos; the lib body is
@@ -75,6 +76,8 @@ async function registerSabrOriginRule() {
       }
     ];
 
+  // SABR (POST) needs the full set: Origin/Referer + UA spoof + Sec-Fetch-*.
+  // tabIds: [-1] scopes to extension-initiated requests.
   const sabrRule: Browser.declarativeNetRequest.Rule = {
     id: SABR_ORIGIN_RULE_ID,
     priority: 1,
@@ -82,13 +85,28 @@ async function registerSabrOriginRule() {
       type: "modifyHeaders",
       requestHeaders: [...baseHeaders, ...chromeOnlyHeaders, ...firefoxOnlyHeaders]
     },
-    // tabIds: [-1] scopes to extension-initiated requests, requestMethods: POST
-    // scopes to SABR (POST) only — direct CDN fetches (GET) carry their own
-    // signed auth in the URL and break when we override Origin/Referer/UA.
     condition: {
       urlFilter: "||googlevideo.com/videoplayback",
       tabIds: [-1],
       requestMethods: ["post"]
+    }
+  };
+
+  // CDN GETs (alternate-client signed URLs) only need Origin/Referer rewritten.
+  // Without this, Firefox sends Origin: moz-extension://... and YouTube's CDN
+  // returns 403. Sec-Fetch-* / UA overrides are intentionally omitted here:
+  // overriding them on GET aborted the request in earlier testing.
+  const cdnGetRule: Browser.declarativeNetRequest.Rule = {
+    id: CDN_ORIGIN_RULE_ID,
+    priority: 1,
+    action: {
+      type: "modifyHeaders",
+      requestHeaders: baseHeaders
+    },
+    condition: {
+      urlFilter: "||googlevideo.com/videoplayback",
+      tabIds: [-1],
+      requestMethods: ["get"]
     }
   };
 
@@ -106,8 +124,8 @@ async function registerSabrOriginRule() {
   };
 
   await browser.declarativeNetRequest.updateDynamicRules({
-    removeRuleIds: [SABR_ORIGIN_RULE_ID, INNERTUBE_ORIGIN_RULE_ID],
-    addRules: [sabrRule, innertubeRule]
+    removeRuleIds: [SABR_ORIGIN_RULE_ID, INNERTUBE_ORIGIN_RULE_ID, CDN_ORIGIN_RULE_ID],
+    addRules: [sabrRule, cdnGetRule, innertubeRule]
   });
 }
 
