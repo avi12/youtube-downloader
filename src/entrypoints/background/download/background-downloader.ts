@@ -526,23 +526,54 @@ export async function startBackgroundDownload({ request, tabId }: {
 
     const enrichedMetadataPromise = enrichMetadataFromYouTubeMusic(metadata);
 
-    let result = await attemptSabrDownload({
-      request,
-      signal,
-      tabId
-    }).catch(sabrError => {
-      if (signal.aborted) {
-        throw sabrError;
-      }
-
-      console.warn("[ytdl:bg] direct SABR failed, will try trust-template SABR + CDN:", sabrError);
-      void sendMessage(MessageType.UpdateDownloadProgress, {
-        videoId,
-        progress: 0,
-        progressType: ProgressType.Video
+    // CDN-first orchestration: when player_response (or alternate-client mint)
+    // gives signed direct URLs, skip SABR entirely. CDN is the fastest reliable
+    // path - direct ranged GETs to googlevideo, no attestation_required wall,
+    // no SABR per-template quota, no factory iframes. SABR fallbacks only kick
+    // in when CDN URLs are unavailable.
+    let result: DownloadResult | null = null;
+    const cdnRequest = await enrichWithAlternateClientUrls(request);
+    const haveCdnUrls = Boolean(cdnRequest.resolvedVideoUrl || cdnRequest.resolvedAudioUrl);
+    if (haveCdnUrls) {
+      void sendMessage(MessageType.BgDebugLog, {
+        msg: `[ytdl:bg] CDN-first: video=${Boolean(cdnRequest.resolvedVideoUrl)} audio=${Boolean(cdnRequest.resolvedAudioUrl)}`
       }, tabId);
-      return null;
-    });    if (!result?.audioData) {
+      result = await downloadViaCdn({
+        request: cdnRequest,
+        signal,
+        videoId,
+        tabId
+      }).catch(error => {
+        if (signal.aborted) {
+          throw error;
+        }
+
+        console.warn("[ytdl:bg] CDN-first failed:", error);
+        return null;
+      });
+    }
+
+    if (!result?.audioData) {
+      result = await attemptSabrDownload({
+        request,
+        signal,
+        tabId
+      }).catch(sabrError => {
+        if (signal.aborted) {
+          throw sabrError;
+        }
+
+        console.warn("[ytdl:bg] direct SABR failed, will try trust-template SABR:", sabrError);
+        void sendMessage(MessageType.UpdateDownloadProgress, {
+          videoId,
+          progress: 0,
+          progressType: ProgressType.Video
+        }, tabId);
+        return null;
+      });
+    }
+
+    if (!result?.audioData) {
       // Player-signed trust template bootstrap: works around Firefox's stricter
       // attestation_required check on the lib's constructed body for long videos.
       result = await attemptTrustTemplateSabrDownload({
@@ -554,23 +585,13 @@ export async function startBackgroundDownload({ request, tabId }: {
           throw error;
         }
 
-        console.warn("[ytdl:bg] trust-template SABR failed, trying CDN:", error);
+        console.warn("[ytdl:bg] trust-template SABR failed:", error);
         void sendMessage(MessageType.UpdateDownloadProgress, {
           videoId,
           progress: 0,
           progressType: ProgressType.Video
         }, tabId);
         return null;
-      });
-    }
-
-    if (!result?.audioData) {
-      const cdnRequest = await enrichWithAlternateClientUrls(request);
-      result = await downloadViaCdn({
-        request: cdnRequest,
-        signal,
-        videoId,
-        tabId
       });
     }
 
