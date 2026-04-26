@@ -9,10 +9,10 @@ import { browser } from "#imports";
 
 const FFMPEG_CORE_WASM_URL = "/node_modules/@ffmpeg/core/dist/umd/ffmpeg-core.wasm";
 
-const wasmBinary = await fetch(browser.runtime.getURL(FFMPEG_CORE_WASM_URL)).then(res => res.arrayBuffer());
-const core = await createFFmpegCore({ wasmBinary });
-initFFmpeg(core);
-
+// Register the port listener BEFORE awaiting createFFmpegCore so that the BG
+// orchestrator's first runtime.connect (fired from emitSegmentChunks right
+// after signalFFmpegReady resolves ensureProcessor) hits a registered handler
+// instead of getting silently dropped.
 listenForOffscreenMessages({
   [OffscreenMessageType.ProcessStreamChunk]: handleProcessStreamChunk,
   [OffscreenMessageType.ProcessStreamEnd]: handleProcessStreamEnd,
@@ -25,3 +25,6 @@ listenForOffscreenMessages({
   [OffscreenMessageType.SpawnIframe]: spawnIframe,
   [OffscreenMessageType.RemoveIframe]: removeIframe
 });
+
+const core = await createFFmpegCore({});
+initFFmpeg(core);

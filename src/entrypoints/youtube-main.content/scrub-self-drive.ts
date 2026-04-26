@@ -190,7 +190,6 @@ function bindCaptureToVideoIdDiscardingPending(videoId: string) {
     return;
   }
 
-  captureState.pendingChunks.length = 0;
   captureState.activeVideoId = videoId;
 
   if (!captureState.capturedMedia.has(videoId)) {
@@ -202,16 +201,31 @@ function bindCaptureToVideoIdDiscardingPending(videoId: string) {
       videoTotalBytes: 0,
       audioTotalBytes: 0
     });
-    return;
+  } else {
+    const capture = captureState.capturedMedia.get(videoId);
+    if (capture) {
+      capture.videoChunks.length = 0;
+      capture.audioChunks.length = 0;
+      capture.videoTotalBytes = 0;
+      capture.audioTotalBytes = 0;
+    }
   }
 
+  // Flush pending chunks (init segments captured before activeVideoId was
+  // set) into the active capture instead of discarding — without the init
+  // segment FFmpeg can't decode the fragments and pre-mux fails with exit 1.
   const capture = captureState.capturedMedia.get(videoId);
   if (capture) {
-    capture.videoChunks.length = 0;
-    capture.audioChunks.length = 0;
-    capture.videoTotalBytes = 0;
-    capture.audioTotalBytes = 0;
+    for (const pending of captureState.pendingChunks) {
+      captureState.addChunkToCapture({
+        capture,
+        mimeType: pending.mimeType,
+        chunk: pending.data
+      });
+    }
   }
+
+  captureState.pendingChunks.length = 0;
 }
 
 async function waitForBufferFill({ videoId, windowSec, player }: {
