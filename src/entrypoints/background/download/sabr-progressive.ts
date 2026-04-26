@@ -44,6 +44,7 @@ interface ChunkedTemplate {
 interface SegmentBytes {
   itag: number;
   sequenceNumber: number;
+  segDurationMs: number;
   bytes: Uint8Array;
 }
 
@@ -145,11 +146,56 @@ function decodeResponseBody(body: Uint8Array): DecodedResponse {
     result.segments.push({
       itag: header.itag ?? 0,
       sequenceNumber: header.sequenceNumber ?? 0,
+      segDurationMs: parseInt(header.durationMs ?? "0", 10) || 0,
       bytes: merged
     });
   }
 
   return result;
+}
+
+interface FormatProgress {
+  itag: number;
+  formatId: FormatId;
+  segmentBytes: Uint8Array[];
+  maxSeq: number;
+  totalDurationMs: number;
+  inferredSegDurMs: number;
+}
+
+function newFormatProgress(formatId: FormatId): FormatProgress {
+  return {
+    itag: formatId.itag ?? 0,
+    formatId,
+    segmentBytes: [],
+    maxSeq: 0,
+    totalDurationMs: 0,
+    inferredSegDurMs: 5_000
+  };
+}
+
+function appendSegment(progress: FormatProgress, segment: SegmentBytes) {
+  progress.segmentBytes.push(segment.bytes);
+
+  if (segment.sequenceNumber > progress.maxSeq) {
+    progress.maxSeq = segment.sequenceNumber;
+  }
+
+  if (segment.segDurationMs > 0) {
+    progress.totalDurationMs += segment.segDurationMs;
+    progress.inferredSegDurMs = Math.round(progress.totalDurationMs / Math.max(progress.maxSeq, 1));
+  }
+}
+
+function bufferedRangeFor(progress: FormatProgress, claimedDurationMs: number) {
+  const segDur = progress.inferredSegDurMs > 0 ? progress.inferredSegDurMs : 5_000;
+  return {
+    formatId: progress.formatId,
+    startTimeMs: "0",
+    durationMs: String(claimedDurationMs),
+    startSegmentIndex: 1,
+    endSegmentIndex: Math.max(1, Math.floor(claimedDurationMs / segDur))
+  };
 }
 
 function fetchWithTimeout(url: string, body: Uint8Array, signal: AbortSignal) {
@@ -173,39 +219,27 @@ function urlWithRequestNumber(baseUrl: string, requestNumber: number) {
   return url.toString();
 }
 
-function buildOffsetBody({
-  decodedTemplate, fromMs, audioBufferedDurationMs, videoBufferedDurationMs,
-  audioFormatId, videoFormatId, playbackCookieBytes
+function buildContinuationBody({
+  decodedTemplate, playerTimeMs, audioProgress, videoProgress,
+  audioBufferedDurationMs, videoBufferedDurationMs, playbackCookieBytes
 }: {
   decodedTemplate: VideoPlaybackAbrRequest;
-  fromMs: number;
+  playerTimeMs: number;
+  audioProgress: FormatProgress;
+  videoProgress: FormatProgress;
   audioBufferedDurationMs: number;
   videoBufferedDurationMs: number;
-  audioFormatId: FormatId;
-  videoFormatId: FormatId;
   playbackCookieBytes?: Uint8Array;
 }): Uint8Array {
   const next: VideoPlaybackAbrRequest = {
     ...decodedTemplate,
     clientAbrState: {
       ...(decodedTemplate.clientAbrState ?? {}),
-      playerTimeMs: String(fromMs)
+      playerTimeMs: String(playerTimeMs)
     },
     bufferedRanges: [
-      {
-        formatId: audioFormatId,
-        startTimeMs: "0",
-        durationMs: String(audioBufferedDurationMs),
-        startSegmentIndex: 1,
-        endSegmentIndex: Math.max(1, Math.floor(audioBufferedDurationMs / 5_000))
-      },
-      {
-        formatId: videoFormatId,
-        startTimeMs: "0",
-        durationMs: String(videoBufferedDurationMs),
-        startSegmentIndex: 1,
-        endSegmentIndex: Math.max(1, Math.floor(videoBufferedDurationMs / 5_000))
-      }
+      bufferedRangeFor(audioProgress, audioBufferedDurationMs),
+      bufferedRangeFor(videoProgress, videoBufferedDurationMs)
     ],
     streamerContext: {
       ...(decodedTemplate.streamerContext ?? {
@@ -219,19 +253,9 @@ function buildOffsetBody({
   return VideoPlaybackAbrRequest.encode(next).finish();
 }
 
-interface OffsetState {
-  fromMs: number;
-  audioItag: number;
-  videoItag: number;
-  audioBytes: Uint8Array[];
-  videoBytes: Uint8Array[];
-  audioDurationMs: number;
-  videoDurationMs: number;
-}
-
 async function fetchOffsetWindow({
   decodedTemplate, baseUrl, fromMs, requestNumberSeed, audioFormatId, videoFormatId,
-  startCookie, signal, log
+  startCookie, audioCadenceMs, videoCadenceMs, signal, log
 }: {
   decodedTemplate: VideoPlaybackAbrRequest;
   baseUrl: string;
@@ -240,29 +264,31 @@ async function fetchOffsetWindow({
   audioFormatId: FormatId;
   videoFormatId: FormatId;
   startCookie?: Uint8Array;
+  audioCadenceMs: number;
+  videoCadenceMs: number;
   signal: AbortSignal;
   log: (msg: string) => void;
-}): Promise<OffsetState> {
-  const state: OffsetState = {
-    fromMs,
-    audioItag: audioFormatId.itag ?? 0,
-    videoItag: videoFormatId.itag ?? 0,
-    audioBytes: [],
-    videoBytes: [],
-    audioDurationMs: 0,
-    videoDurationMs: 0
-  };
+}): Promise<{
+  audioBytes: Uint8Array[];
+  videoBytes: Uint8Array[];
+}> {
+  const audioProgress = newFormatProgress(audioFormatId);
+  audioProgress.inferredSegDurMs = audioCadenceMs;
+  const videoProgress = newFormatProgress(videoFormatId);
+  videoProgress.inferredSegDurMs = videoCadenceMs;
   let cookie = startCookie;
   let requestNumber = requestNumberSeed;
 
   for (let attempt = 0; attempt < MAX_FETCHES_PER_OFFSET && !signal.aborted; attempt++) {
-    const body = buildOffsetBody({
+    const claimedAudio = fromMs + audioProgress.totalDurationMs;
+    const claimedVideo = fromMs + videoProgress.totalDurationMs;
+    const body = buildContinuationBody({
       decodedTemplate,
-      fromMs: fromMs + state.audioDurationMs,
-      audioBufferedDurationMs: fromMs + state.audioDurationMs,
-      videoBufferedDurationMs: fromMs + state.videoDurationMs,
-      audioFormatId,
-      videoFormatId,
+      playerTimeMs: claimedAudio,
+      audioProgress,
+      videoProgress,
+      audioBufferedDurationMs: claimedAudio,
+      videoBufferedDurationMs: claimedVideo,
       playbackCookieBytes: cookie
     });
     const url = urlWithRequestNumber(baseUrl, requestNumber++);
@@ -277,7 +303,10 @@ async function fetchOffsetWindow({
     }
 
     const decoded = decodeResponseBody(responseBytes);
-    log(`fromMs=${fromMs} attempt=${attempt} bytes=${responseBytes.byteLength} mediaBytes=${decoded.totalMediaBytes} segments=${decoded.segments.length}`);
+    log(
+      `fromMs=${fromMs} attempt=${attempt} bytes=${responseBytes.byteLength} `
+      + `mediaBytes=${decoded.totalMediaBytes} segments=${decoded.segments.length}`
+    );
 
     if (decoded.hasSabrError || decoded.protectionStatus === 3) {
       break;
@@ -291,31 +320,23 @@ async function fetchOffsetWindow({
       cookie = decoded.playbackCookieBytes;
     }
 
-    const priorAudio = state.audioDurationMs;
-    const priorVideo = state.videoDurationMs;
     for (const segment of decoded.segments) {
-      if (segment.itag === state.audioItag) {
-        state.audioBytes.push(segment.bytes);
-      } else if (segment.itag === state.videoItag) {
-        state.videoBytes.push(segment.bytes);
+      if (segment.itag === audioProgress.itag) {
+        appendSegment(audioProgress, segment);
+      } else if (segment.itag === videoProgress.itag) {
+        appendSegment(videoProgress, segment);
       }
     }
 
-    // Approximate per-segment duration: response covers ~ totalMediaBytes / bitrate seconds.
-    // Use a conservative 5s/segment increment (server's typical fragment cadence).
-    state.audioDurationMs += 5_000;
-    state.videoDurationMs += 5_000;
-
-    if (state.audioDurationMs - priorAudio === 0 && state.videoDurationMs - priorVideo === 0) {
-      break;
-    }
-
-    if (state.audioDurationMs >= OFFSET_STEP_MS && state.videoDurationMs >= OFFSET_STEP_MS) {
+    if (audioProgress.totalDurationMs >= OFFSET_STEP_MS && videoProgress.totalDurationMs >= OFFSET_STEP_MS) {
       break;
     }
   }
 
-  return state;
+  return {
+    audioBytes: audioProgress.segmentBytes,
+    videoBytes: videoProgress.segmentBytes
+  };
 }
 
 function concat(parts: Uint8Array[]): Uint8Array {
@@ -329,21 +350,98 @@ function concat(parts: Uint8Array[]): Uint8Array {
   return out;
 }
 
-async function fetchPhase1({
-  templateUrl, templateBody, signal, log
+interface Phase1Result {
+  audioProgress: FormatProgress;
+  videoProgress: FormatProgress;
+  cookie?: Uint8Array;
+  hadAttestationBlock: boolean;
+}
+
+const PHASE1_MAX_FETCHES = 6;
+
+async function runPhase1({
+  templateUrl, templateBody, decodedTemplate, audioFormatId, videoFormatId, signal, log
 }: {
   templateUrl: string;
   templateBody: Uint8Array;
+  decodedTemplate: VideoPlaybackAbrRequest;
+  audioFormatId: FormatId;
+  videoFormatId: FormatId;
   signal: AbortSignal;
   log: (msg: string) => void;
-}) {
-  const response = await fetchWithTimeout(templateUrl, templateBody, signal);
-  const responseBytes = new Uint8Array(await response.arrayBuffer());
-  const decoded = decodeResponseBody(responseBytes);
-  log(`phase1 bytes=${responseBytes.byteLength} mediaBytes=${decoded.totalMediaBytes} segments=${decoded.segments.length}`);
+}): Promise<Phase1Result> {
+  const audioProgress = newFormatProgress(audioFormatId);
+  const videoProgress = newFormatProgress(videoFormatId);
+  let cookie: Uint8Array | undefined;
+  let requestNumber = 1;
+  let hadAttestationBlock = false;
+
+  for (let attempt = 0; attempt < PHASE1_MAX_FETCHES && !signal.aborted; attempt++) {
+    let body: Uint8Array;
+    let url: string;
+    if (attempt === 0) {
+      body = templateBody;
+      url = templateUrl;
+    } else {
+      body = buildContinuationBody({
+        decodedTemplate,
+        playerTimeMs: audioProgress.totalDurationMs,
+        audioProgress,
+        videoProgress,
+        audioBufferedDurationMs: audioProgress.totalDurationMs,
+        videoBufferedDurationMs: videoProgress.totalDurationMs,
+        playbackCookieBytes: cookie
+      });
+      url = urlWithRequestNumber(templateUrl, requestNumber++);
+    }
+
+    let responseBytes: Uint8Array;
+    try {
+      const response = await fetchWithTimeout(url, body, signal);
+      responseBytes = new Uint8Array(await response.arrayBuffer());
+    } catch (err) {
+      log(`phase1 attempt=${attempt} fetch threw: ${String(err)}`);
+      break;
+    }
+
+    const decoded = decodeResponseBody(responseBytes);
+    log(
+      `phase1 attempt=${attempt} bytes=${responseBytes.byteLength} `
+      + `mediaBytes=${decoded.totalMediaBytes} segments=${decoded.segments.length} `
+      + `audioCadence=${audioProgress.inferredSegDurMs}ms videoCadence=${videoProgress.inferredSegDurMs}ms`
+    );
+
+    if (decoded.hasSabrError || decoded.protectionStatus === 3) {
+      hadAttestationBlock = true;
+      break;
+    }
+
+    if (decoded.totalMediaBytes === 0) {
+      break;
+    }
+
+    if (decoded.playbackCookieBytes) {
+      cookie = decoded.playbackCookieBytes;
+    }
+
+    for (const segment of decoded.segments) {
+      if (segment.itag === audioProgress.itag) {
+        appendSegment(audioProgress, segment);
+      } else if (segment.itag === videoProgress.itag) {
+        appendSegment(videoProgress, segment);
+      }
+    }
+
+    if (audioProgress.totalDurationMs >= OFFSET_STEP_MS && videoProgress.totalDurationMs >= OFFSET_STEP_MS) {
+      break;
+    }
+  }
+
   return {
-    decoded,
-    responseBytes
+    audioProgress,
+    videoProgress,
+    cookie,
+    hadAttestationBlock
   };
 }
 
@@ -379,47 +477,42 @@ export async function downloadViaSabrProgressive({
   const videoFormatId = decodedTemplate.selectedFormatIds[1] ?? { itag: videoFormat.itag };
   log(`audioItag=${audioFormatId.itag} videoItag=${videoFormatId.itag} durationMs=${durationMs}`);
 
-  // Phase 1: replay captured body verbatim, decode response.
-  let phase1Result;
-  try {
-    phase1Result = await fetchPhase1({
-      templateUrl: template.url,
-      templateBody,
-      signal,
-      log
-    });
-  } catch (err) {
-    log(`phase1 fetch threw: ${String(err)}`);
+  void sabrConfig;
+
+  // Phase 1: iterate the trust-template session, harvesting audio + video
+  // segment cadence so phase 2's bufferedRanges reflect real fragment lengths.
+  const phase1 = await runPhase1({
+    templateUrl: template.url,
+    templateBody,
+    decodedTemplate,
+    audioFormatId,
+    videoFormatId,
+    signal,
+    log
+  });
+  if (phase1.hadAttestationBlock) {
+    log("phase1 attestation_required — aborting progressive");
     return null;
   }
 
-  if (phase1Result.decoded.hasSabrError || phase1Result.decoded.protectionStatus === 3) {
-    log("phase1 attestation_required or sabr_error — aborting progressive");
-    return null;
-  }
-
-  const audioPhase1: Uint8Array[] = [];
-  const videoPhase1: Uint8Array[] = [];
-  for (const segment of phase1Result.decoded.segments) {
-    if (segment.itag === audioFormatId.itag) {
-      audioPhase1.push(segment.bytes);
-    } else if (segment.itag === videoFormatId.itag) {
-      videoPhase1.push(segment.bytes);
-    }
-  }
-
-  if (audioPhase1.length === 0 && videoPhase1.length === 0) {
+  if (phase1.audioProgress.segmentBytes.length === 0 && phase1.videoProgress.segmentBytes.length === 0) {
     log("phase1 returned no usable segments");
     return null;
   }
 
-  void sabrConfig;
-  const cookie = phase1Result.decoded.playbackCookieBytes;
-  log(`phase1 audioParts=${audioPhase1.length} videoParts=${videoPhase1.length} cookie=${cookie ? "present" : "missing"}`);
+  const audioCadence = phase1.audioProgress.inferredSegDurMs;
+  const videoCadence = phase1.videoProgress.inferredSegDurMs;
+  log(
+    `phase1 done: audioParts=${phase1.audioProgress.segmentBytes.length} `
+    + `videoParts=${phase1.videoProgress.segmentBytes.length} `
+    + `audioMs=${phase1.audioProgress.totalDurationMs} videoMs=${phase1.videoProgress.totalDurationMs} `
+    + `audioCadence=${audioCadence}ms videoCadence=${videoCadence}ms`
+  );
 
-  // Phase 2: parallel offset fetches for the rest of the video.
+  // Phase 2: parallel offset fetches starting after phase 1's coverage.
+  const phase1AudioMs = phase1.audioProgress.totalDurationMs || OFFSET_STEP_MS;
   const offsets: number[] = [];
-  for (let timeMs = OFFSET_STEP_MS; timeMs < durationMs; timeMs += OFFSET_STEP_MS) {
+  for (let timeMs = phase1AudioMs; timeMs < durationMs; timeMs += OFFSET_STEP_MS) {
     offsets.push(timeMs);
   }
   log(`phase2 offsets=${offsets.length}`);
@@ -433,9 +526,13 @@ export async function downloadViaSabrProgressive({
     tabId
   });
 
-  const results: Array<OffsetState | null> = new Array(offsets.length).fill(null);
+  const results: Array<{
+    audioBytes: Uint8Array[];
+    videoBytes: Uint8Array[];
+  } | null>
+    = new Array(offsets.length).fill(null);
   let cursor = 0;
-  let requestNumberCounter = 1;
+  let requestNumberCounter = PHASE1_MAX_FETCHES + 1;
 
   async function worker() {
     while (cursor < offsets.length && !signal.aborted) {
@@ -451,7 +548,9 @@ export async function downloadViaSabrProgressive({
           requestNumberSeed: seed,
           audioFormatId,
           videoFormatId,
-          startCookie: cookie,
+          startCookie: phase1.cookie,
+          audioCadenceMs: audioCadence,
+          videoCadenceMs: videoCadence,
           signal,
           log
         });
@@ -470,16 +569,15 @@ export async function downloadViaSabrProgressive({
 
   await Promise.all(Array.from({ length: Math.min(MAX_PARALLEL, offsets.length || 1) }, () => worker()));
 
-  // Concat all parts in offset order.
-  const audioParts = [...audioPhase1];
-  const videoParts = [...videoPhase1];
-  for (const offsetState of results) {
-    if (!offsetState) {
+  const audioParts = [...phase1.audioProgress.segmentBytes];
+  const videoParts = [...phase1.videoProgress.segmentBytes];
+  for (const offsetResult of results) {
+    if (!offsetResult) {
       continue;
     }
 
-    audioParts.push(...offsetState.audioBytes);
-    videoParts.push(...offsetState.videoBytes);
+    audioParts.push(...offsetResult.audioBytes);
+    videoParts.push(...offsetResult.videoBytes);
   }
 
   const audioData = concat(audioParts);
