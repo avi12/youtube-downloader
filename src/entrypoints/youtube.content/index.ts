@@ -286,7 +286,15 @@ export default defineContentScript({
   matches: ["https://www.youtube.com/*"],
   allFrames: true,
   async main(context) {
-    if (self === top && /ytdlScrubMode=1/.test(location.search)) {
+    // Scrub iframes are hosted inside the BG (Firefox) or offscreen page
+    // (Chrome). From this content script's perspective `self !== top` because
+    // top is the BG/offscreen document, not the iframe itself. The cross-world
+    // CustomEvent messenger is per-frame, so the forwarder MUST run in this
+    // iframe's ISOLATED world to bridge the MAIN-world driver's
+    // CrossWorldMessage.IframeScrubSegment to BG's
+    // MessageType.IframeScrubSegmentReady. Gate on the URL param only —
+    // `self === top` is not true here even though it's the iframe's own logic.
+    if (/ytdlScrubMode=1/.test(location.search)) {
       registerScrubResultForwarder();
       return;
     }
