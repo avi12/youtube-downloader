@@ -466,7 +466,12 @@ export interface StartIframeScrubArgs {
 
 export async function startIframeScrubSession(data: StartIframeScrubArgs) {
   const stepSec = data.stepSec || DEFAULT_STEP_SEC;
-  const expectedCount = Math.max(1, Math.ceil(data.durationSec / stepSec));
+  // floor instead of ceil — when duration isn't a clean multiple of stepSec
+  // the tail-edge micro-segment (e.g. 1s of media at the very end of a
+  // 24:01 video for stepSec=60) won't ever satisfy the buffer-fill MIN
+  // floor, so 6 minutes of retries timeout for nothing. Skipping it costs
+  // up to stepSec-1 seconds of media at the very end — acceptable.
+  const expectedCount = Math.max(1, Math.floor(data.durationSec / stepSec));
   const session = buildSession(data, stepSec, expectedCount);
 
   sessionsByVideoId.set(data.videoId, session);
