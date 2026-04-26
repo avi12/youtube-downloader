@@ -136,6 +136,8 @@ export async function performDownload({
   const abortController = new AbortController();
   activeDownloads.set(videoId, abortController);
 
+  const tag = `[ytdl:perform ${videoId}]`;
+  console.log(`${tag} start`);
   try {
     const cachedVideoData = videoDataCache.get(videoId);
     if (!cachedVideoData) {
@@ -153,8 +155,13 @@ export async function performDownload({
       audioFormats: cachedVideoData.audioFormats,
       selectedTrackId: audioFormat?.audioTrack?.id
     });
+    console.log(`${tag} formats picked, generating po token`);
+    // BotGuard's synchronous VM briefly blocks the main thread,
+    // so do it at click-time (expected latency) rather than download completion.
     await generatePoTokenIfNeeded(cachedVideoData);
+    console.log(`${tag} po token done, resolving credentials`);
     const credentials = await resolveCredentialsWithRetry();
+    console.log(`${tag} credentials done, pre-resolving cdn urls`);
 
     const [resolvedVideoUrl, resolvedAudioUrl, ...resolvedExtraAudioUrls] =
       await preResolveCdnUrls({
@@ -163,7 +170,9 @@ export async function performDownload({
         audioFormat,
         extraAudioFormats
       });
+    console.log(`${tag} cdn pre-resolve done, building metadata`);
     const metadata = await buildVideoMetadata(videoId);
+    console.log(`${tag} metadata done, sending StartBackgroundDownload`);
 
     const videoDurationMs = parseInt(videoFormat?.approxDurationMs ?? audioFormat?.approxDurationMs ?? "0", 10);
     const videoDurationSec = Math.ceil(videoDurationMs / 1000);
