@@ -82,22 +82,60 @@ export async function processMultipartSegments(item: ProcessStreamData & { segme
     );
     writtenPaths.push(videoListName, audioListName);
 
-    const muxArgs = [
+    // MKV intermediate, then stream-copy to user's target. MKV tolerates the
+    // timestamp re-seats and codec-param differences across iframe segments
+    // that strict MP4 muxing rejects with exit code 1. Single-pass concat
+    // straight to MP4 was failing on segment-to-segment itag changes (player
+    // ABR adapts across iframe loads).
+    const intermediateFilename = `${videoId}-intermediate.mkv`;
+    const intermediateArgs = [
       "-f", "concat", "-safe", "0", "-i", videoListName,
       "-f", "concat", "-safe", "0", "-i", audioListName,
       "-map", "0:v:0", "-map", "1:a:0",
       "-c:v", "copy", "-c:a", "copy",
-      "-avoid_negative_ts", "make_zero"
+      "-fflags", "+genpts+discardcorrupt",
+      "-err_detect", "ignore_err",
+      intermediateFilename
     ];
-    if (targetExtension === "mp4") {
-      muxArgs.push("-movflags", "+faststart");
+
+    const intermediateExit = ffmpeg.exec(...intermediateArgs);
+    if (intermediateExit !== 0) {
+      throw new Error(`FFmpeg MKV mux failed with exit code ${intermediateExit}`);
     }
 
-    muxArgs.push(outputFilename);
+    writtenPaths.push(intermediateFilename);
 
-    const muxExit = ffmpeg.exec(...muxArgs);
-    if (muxExit !== 0) {
-      throw new Error(`FFmpeg mux failed with exit code ${muxExit}`);
+    if (targetExtension === "mkv") {
+      const outputBytes = ffmpeg.FS.readFile(intermediateFilename, { encoding: "binary" });
+      if (typeof outputBytes === "string") {
+        throw new Error("FFmpeg readFile returned unexpected string output");
+      }
+      writtenPaths.push(outputFilename);
+      const recentContextMkv = {
+        videoId,
+        title: item.metadata?.title ?? filenameOutput,
+        channel: item.metadata?.artist ?? "",
+        thumbnailUrl: item.metadata?.thumbnailUrl
+      };
+      await triggerDownload({
+        data: outputBytes,
+        filenameOutput: `${filenameBase}.mkv`,
+        recentContext: recentContextMkv
+      });
+      return;
+    }
+
+    // MKV → MP4 stream-copy (no re-encode; MKV's normalized timestamps make
+    // MP4's strict decode-time monotonicity satisfiable).
+    const targetArgs = [
+      "-i", intermediateFilename,
+      "-c:v", "copy", "-c:a", "copy",
+      "-movflags", "+faststart",
+      outputFilename
+    ];
+    const targetExit = ffmpeg.exec(...targetArgs);
+    if (targetExit !== 0) {
+      throw new Error(`FFmpeg MP4 transcode failed with exit code ${targetExit}`);
     }
 
     writtenPaths.push(outputFilename);
