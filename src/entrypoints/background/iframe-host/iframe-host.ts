@@ -74,7 +74,7 @@ export function setIframeScrubSegmentHandler(
 }
 
 async function broadcastDiagToTabs(msg: string) {
-  if (!import.meta.env.DEV) {
+  if (!import.meta.env.YTDL_DEV) {
     return;
   }
 

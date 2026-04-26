@@ -66,7 +66,7 @@ function makeIframeKey(videoId: string, scrubIndex: number) {
 }
 
 async function broadcastDiag(msg: string) {
-  if (!import.meta.env.DEV) {
+  if (!import.meta.env.YTDL_DEV) {
     return;
   }
 
@@ -82,7 +82,7 @@ async function broadcastDiag(msg: string) {
 }
 
 function diag(msg: string) {
-  if (!import.meta.env.DEV) {
+  if (!import.meta.env.YTDL_DEV) {
     return;
   }
 

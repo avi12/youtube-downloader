@@ -30,7 +30,7 @@ function postToHost(payload: unknown, transferables: Transferable[] = []) {
 }
 
 function scrubLog(msg: string) {
-  if (!import.meta.env.DEV) {
+  if (!import.meta.env.YTDL_DEV) {
     return;
   }
 

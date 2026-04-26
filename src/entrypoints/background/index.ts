@@ -299,7 +299,7 @@ export default defineBackground(async () => {
   // Dev-only relay: forwards diagnostic logs from sub-frame content scripts
   // (factory / scrub iframes) into every youtube.com tab's page console.
   // Stripped from production builds.
-  if (import.meta.env.DEV) {
+  if (import.meta.env.YTDL_DEV) {
     onMessage(MessageType.BgDebugLog, async ({ data }) => {
       const tabs = await browser.tabs.query({ url: "https://www.youtube.com/*" });
       for (const tab of tabs) {

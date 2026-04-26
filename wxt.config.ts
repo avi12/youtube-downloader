@@ -62,7 +62,15 @@ export default defineConfig({
         interval: 500
       }
     },
-    build: { sourcemap: true }
+    build: { sourcemap: true },
+    // The dev server runs `wxt build` (not `wxt dev`) for inline-sourcemap
+    // builds, so import.meta.env.DEV is false. Inject a synthetic flag from
+    // the WXT_INLINE_SOURCEMAPS env var the dev server sets so diagnostic
+    // logs gated on import.meta.env.YTDL_DEV stay live in dev iterations
+    // and dead-code-eliminate in store builds.
+    define: {
+      "import.meta.env.YTDL_DEV": JSON.stringify(process.env.WXT_INLINE_SOURCEMAPS === "1")
+    }
   }),
   hooks: {
     "prepare:publicPaths"(_, paths) {
