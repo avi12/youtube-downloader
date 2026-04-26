@@ -64,6 +64,7 @@ async function forcePlayback(player: MoviePlayer) {
 
     player.playVideo?.();
     await wait(POLL_INTERVAL_MS);
+
     if (elVideo && (!elVideo.paused || elVideo.currentTime > 0 || elVideo.readyState >= 2)) {
       return true;
     }
@@ -104,10 +105,13 @@ async function waitForAdToClear() {
   }
 }
 
-// Drives a hidden BG factory tab: forces playback, accelerates through any
-// pre-roll ad, then idles. The interceptor's ad-skip filter ensures the FIRST
-// captured trust template is post-ad. ISOLATED forwards it to BG via
-// SabrTemplateReady. BG closes the tab once it has the template.
+// Drives a hidden BG factory iframe: best-effort triggers the player to fire
+// its first SABR call (which the interceptor captures with its ad filter
+// disabled in factory mode). We don't insist on playback or ad-clear because
+// hidden BG iframes can't reliably autoplay; the player still issues its
+// initial SABR call to fetch init segments even when paused.
+const FACTORY_FIRST_CALL_WAIT_MS = 15_000;
+
 export async function runTrustFactoryDrive() {
   console.log("[ytdl:trust-factory-tab] starting");
 
@@ -117,22 +121,16 @@ export async function runTrustFactoryDrive() {
     return;
   }
 
-  const isPlaying = await forcePlayback(player);
-  if (!isPlaying) {
-    console.warn("[ytdl:trust-factory-tab] playback never started");
-    return;
-  }
+  // Best-effort kickstart: muted play() may or may not succeed, but even if
+  // blocked the player typically still fires its first SABR call as part of
+  // init/buffering.
+  void forcePlayback(player);
 
-  await waitForAdToClear();
-
-  // Reset rate so the post-ad SABR call is a normal player call (server may
-  // throttle response if it sees rate=16 in clientAbrState).
-  const elVideo = document.querySelector<HTMLVideoElement>(VIDEO_ELEMENT_SELECTOR);
-  if (elVideo) {
-    elVideo.playbackRate = 1;
-  }
-
-  console.log("[ytdl:trust-factory-tab] post-ad; player will emit content SABR call shortly");
+  // Idle and let the interceptor capture whichever SABR call fires first.
+  // BG side awaits SabrTemplateReady; if it doesn't fire within the BG-side
+  // timeout, BG removes this iframe and moves on.
+  await wait(FACTORY_FIRST_CALL_WAIT_MS);
+  console.log("[ytdl:trust-factory-tab] idle window elapsed");
 }
 
 function bindCaptureToVideoIdDiscardingPending(videoId: string) {
