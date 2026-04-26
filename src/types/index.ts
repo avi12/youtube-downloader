@@ -9,7 +9,8 @@ export type {
   TpYtPaperProgressElement,
   YtButtonViewModelElement,
   YtdlCaptureState,
-  YtdlMediaCapture
+  YtdlMediaCapture,
+  YtdlSabrTemplate
 } from "./youtube";
 
 export type { RecentDownloadEntry } from "@/lib/storage/recent-downloads-db";
@@ -112,6 +113,7 @@ export type DownloadRequest = {
   resolvedExtraAudioUrls?: (string | null)[];
   captionTracks?: CaptionTrack[];
   debugRangedFromSec?: number;
+  videoDurationSec?: number;
 };
 
 export type DownloadTypePreference = "auto" | DownloadType;

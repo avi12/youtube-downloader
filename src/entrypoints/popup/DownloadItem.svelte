@@ -65,7 +65,6 @@
     &::-webkit-progress-value {
       border-radius: 2px;
       background: var(--accent);
-      transition: width 300ms cubic-bezier(0.2, 0, 0, 1);
     }
 
     &::-moz-progress-bar {

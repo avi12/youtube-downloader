@@ -145,7 +145,7 @@ const tsStyleRules = {
   "@stylistic/object-property-newline": ["error", { allowAllPropertiesOnSameLine: false }],
   "id-length": ["error", {
     min: 3,
-    exceptions: ["z", "_", "i", "fs", "id", "os", "e", "db", "mi", "ui", "HL", "GL", "js", "q", "to", "dd", "mm", "x", "y", "d"],
+    exceptions: ["z", "_", "i", "fs", "id", "os", "e", "db", "ws", "mi", "ui", "HL", "GL", "js", "q", "to", "dd", "mm", "x", "y", "d"],
     properties: "never"
   }],
   "func-style": ["error", "declaration", { allowArrowFunctions: false }],
@@ -237,7 +237,7 @@ export default [
   eslint.configs.recommended,
   ...tsEslint.configs.recommended,
   ...svelteEslint.configs["flat/recommended"],
-  globalIgnores(["build/**", "node_modules/**", ".output/**", ".wxt/**", "User Data/**", "patches/**"]),
+  globalIgnores(["build/**", "node_modules/**", ".output/**", ".wxt/**", ".opencode/**", "**/user-profiles/**", "patches/**"]),
   {
     files: ["**/*.{ts,js,mjs}"],
     ignores: ["eslint.config.js"],
@@ -282,7 +282,7 @@ export default [
       "arrow-body-style": ["error", "as-needed"],
       "svelte/first-attribute-linebreak": ["error"],
       "svelte/shorthand-attribute": ["error", { prefer: "always" }],
-      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-explicit-any": "error",
       "prefer-const": ["error", { destructuring: "all" }]
     }
   }

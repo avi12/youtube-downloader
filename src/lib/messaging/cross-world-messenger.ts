@@ -149,11 +149,18 @@ interface PageMessengerSchema {
     playlistTitle?: string;
     playlistTotalCount?: number;
   }): void;
+  // Pushed by MAIN-world interceptor to ISOLATED whenever a fresh trust
+  // template is captured. ISOLATED caches it so BG can fetch synchronously
+  // via runtime sendMessage without round-tripping back to MAIN.
   [CrossWorldMessage.SabrTemplateCaptured](data: {
     url: string;
     bodyBase64: string;
     capturedAt: number;
   }): void;
+
+  // ISOLATED → MAIN pull: used when ISOLATED's pushed-cache is empty (push
+  // race) but MAIN's interceptor has actually captured a template. Returns
+  // the current __ytdlSabrTemplate as base64 (clean structured-clone).
   [CrossWorldMessage.PullSabrTemplate](data: Record<string, never>): {
     url: string;
     bodyBase64: string;

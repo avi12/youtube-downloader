@@ -5,15 +5,6 @@ import { crossWorldMessenger, CrossWorldMessage } from "@/lib/messaging/cross-wo
 import { sabrCredentials } from "@/lib/ui/synced-stores.svelte";
 import { type AdaptiveFormatItem, type DownloadRequest, DownloadType } from "@/types";
 
-const IFRAME_SCRUB_STEP_SEC = 30;
-
-// Firefox's background SABR gets LOGIN_REQUIRED / attestation_required for
-// any video long enough to trip YouTube's per-session threshold (somewhere
-// between ~4 and ~10 min). The iframe-scrub path works around it by riding
-// the trust of the iframe's own player session. Keep off for Chrome since
-// Chrome's background SABR still clears the wall more often.
-const IFRAME_SCRUB_MIN_DURATION_SEC = 240;
-
 const activeDownloads = new Map<string, AbortController>();
 
 export function cancelActiveDownload(videoId: string) {
@@ -176,27 +167,6 @@ export async function performDownload({
 
     const videoDurationMs = parseInt(videoFormat?.approxDurationMs ?? audioFormat?.approxDurationMs ?? "0", 10);
     const videoDurationSec = Math.ceil(videoDurationMs / 1000);
-    const useIframeScrub = import.meta.env.FIREFOX
-      && videoDurationSec >= IFRAME_SCRUB_MIN_DURATION_SEC
-      && !/ytdlKeepPlaying=1|ytdlScrubMode=1/.test(location.search);
-    if (useIframeScrub) {
-      console.log(`[ytdl] iframe-scrub path for ${videoId} (${videoDurationSec}s) — handing off to background`);
-      void crossWorldMessenger.sendMessage(CrossWorldMessage.StartIframeScrub, {
-        videoId,
-        durationSec: videoDurationSec,
-        stepSec: IFRAME_SCRUB_STEP_SEC,
-        type,
-        filenameOutput,
-        videoMimeType: videoFormat?.mimeType?.split(";")[0] || "video/mp4",
-        audioMimeType: audioFormat?.mimeType?.split(";")[0] || "audio/mp4",
-        audioLabel: audioFormat?.audioTrack?.displayName ?? "",
-        metadata,
-        playlistId,
-        playlistTitle,
-        playlistTotalCount
-      });
-      return;
-    }
 
     // YouTube's SPA strips ?query params on watch navigation, so read from the
     // hash fragment instead. Trigger via e.g. #ytdlDebugRangedFromSec=600
@@ -226,7 +196,8 @@ export async function performDownload({
       playlistId,
       playlistTitle,
       playlistTotalCount,
-      captionTracks: cachedVideoData.captionTracks
+      captionTracks: cachedVideoData.captionTracks,
+      videoDurationSec
     };
 
     void crossWorldMessenger.sendMessage(CrossWorldMessage.StartBackgroundDownload, enrichedRequest);

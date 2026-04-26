@@ -1,7 +1,11 @@
 import type { DownloadResult } from "./background-downloader";
 import { createProgressFetch } from "./progress-fetch";
 import { sendProgressUpdate } from "./progress-fetch";
-import { fetchAudioViaSabrStream, fetchVideoAndAudioViaSabrStream } from "@/lib/youtube/sabr-download";
+import {
+  fetchAudioViaSabrStream,
+  fetchVideoAudioViaSabrStreamBootstrapped,
+  fetchVideoViaSabrStream
+} from "@/lib/youtube/sabr-download";
 import { DownloadType, ProgressType } from "@/types";
 import type { AdaptiveFormatItem, DownloadRequest, SabrConfig } from "@/types";
 
@@ -100,35 +104,44 @@ async function downloadVideoAudioViaSabr({
   tabId: number;
   onProgress?: () => void;
 }) {
-  const totalExpectedBytes = parseContentLength(videoFormat) + parseContentLength(audioFormat);
+  const videoExpectedBytes = parseContentLength(videoFormat);
+  const audioExpectedBytes = parseContentLength(audioFormat);
+  const totalExpectedBytes = videoExpectedBytes + audioExpectedBytes;
   let totalReceivedBytes = 0;
 
-  // A single SABR session delivers video and audio interleaved; bytes from both tracks
-  // are counted together against the combined expected size.
-  const sabrFetch = createProgressFetch({
-    signal,
-    onBytesReceived(bytes) {
-      totalReceivedBytes += bytes;
-      onProgress?.();
+  function makeProgressFetch() {
+    return createProgressFetch({
+      signal,
+      onBytesReceived(bytes) {
+        totalReceivedBytes += bytes;
+        onProgress?.();
 
-      if (totalExpectedBytes > 0) {
-        void sendProgressUpdate({
-          videoId,
-          progress: Math.min(totalReceivedBytes / totalExpectedBytes, 1),
-          progressType: ProgressType.Video,
-          tabId
-        });
+        if (totalExpectedBytes > 0) {
+          void sendProgressUpdate({
+            videoId,
+            progress: Math.min(totalReceivedBytes / totalExpectedBytes, 1),
+            progressType: ProgressType.Video,
+            tabId
+          });
+        }
       }
-    }
-  });
+    });
+  }
 
-  return fetchVideoAndAudioViaSabrStream({
-    sabrConfig: config,
-    videoFormat,
-    audioFormat,
-    fetchFn: sabrFetch,
-    poToken
-  });
+  return Promise.all([
+    fetchVideoViaSabrStream({
+      sabrConfig: config,
+      videoFormat,
+      fetchFn: makeProgressFetch(),
+      poToken
+    }),
+    fetchAudioViaSabrStream({
+      sabrConfig: config,
+      audioFormat,
+      fetchFn: makeProgressFetch(),
+      poToken
+    })
+  ]);
 }
 
 async function downloadExtraAudioTracksViaSabr({ config, formats, poToken, signal, onProgress }: {
@@ -165,6 +178,103 @@ async function downloadExtraAudioTracksViaSabr({ config, formats, poToken, signa
   }
 
   return tracks;
+}
+
+export async function downloadViaSabrWithTrustTemplate({
+  request, signal, tabId, onProgress, templateUrl, templateBody, onCallLog
+}: {
+  request: DownloadRequest;
+  signal: AbortSignal;
+  tabId: number;
+  onProgress?: () => void;
+  templateUrl: string;
+  templateBody: Uint8Array;
+  onCallLog?: (msg: string) => void;
+}): Promise<DownloadResult | null> {
+  const { videoId, sabrConfig, poToken, sabrUrl, videoFormat, audioFormat } = request;
+  if (!sabrConfig || !videoFormat || !audioFormat) {
+    return null;
+  }
+
+  const effectiveConfig = buildEffectiveSabrConfig({
+    sabrConfig,
+    sabrUrl
+  });
+  const videoExpectedBytes = parseContentLength(videoFormat);
+  const audioExpectedBytes = parseContentLength(audioFormat);
+  const totalExpectedBytes = videoExpectedBytes + audioExpectedBytes;
+  let totalReceivedBytes = 0;
+
+  const sabrFetch = createProgressFetch({
+    signal,
+    onBytesReceived(bytes) {
+      totalReceivedBytes += bytes;
+      onProgress?.();
+
+      if (totalExpectedBytes > 0) {
+        void sendProgressUpdate({
+          videoId,
+          progress: Math.min(totalReceivedBytes / totalExpectedBytes, 1),
+          progressType: ProgressType.Video,
+          tabId
+        });
+      }
+    }
+  });
+
+  // Hard outer timeout: SabrStream sometimes hangs after the server's per-
+  // session media quota kicks in (~80s of media for long Firefox videos) and
+  // its internal stall detection doesn't fire because control-only responses
+  // keep resetting all the stall timers.
+  const HARD_BOOTSTRAP_TIMEOUT_MS = 120_000;
+  const bootstrapPromise = fetchVideoAudioViaSabrStreamBootstrapped({
+    sabrConfig: effectiveConfig,
+    videoFormat,
+    audioFormat,
+    fetchFn: sabrFetch,
+    poToken: poToken ?? "",
+    templateUrl,
+    templateBody,
+    onCallLog
+  });
+  const timeoutPromise = new Promise<{
+    videoBytes: Uint8Array;
+    audioBytes: Uint8Array;
+  }>((_, reject) => {
+    setTimeout(
+      () => reject(new Error(`bootstrap hard-timeout after ${HARD_BOOTSTRAP_TIMEOUT_MS}ms`)),
+      HARD_BOOTSTRAP_TIMEOUT_MS
+    );
+  });
+  let videoBytes: Uint8Array;
+  let audioBytes: Uint8Array;
+  try {
+    ({ videoBytes, audioBytes } = await Promise.race([bootstrapPromise, timeoutPromise]));
+  } catch (error) {
+    onCallLog?.(`bootstrap timed out: ${String(error)}`);
+    return null;
+  }
+
+  onCallLog?.(
+    `bootstrap done: video=${videoBytes.byteLength}/${videoExpectedBytes}B `
+    + `audio=${audioBytes.byteLength}/${audioExpectedBytes}B`
+  );
+
+  // Accept whatever the lib delivered — even if partial. Server's per-session
+  // media quota caps any single SabrStream iteration at ~80-100s of media for
+  // long Firefox videos; rejecting incomplete bytes only triggers iframe-scrub
+  // (which has its own autoplay flakiness). Better to ship a partial file
+  // (user gets the first ~80s of their video) than nothing.
+  if (audioBytes.byteLength === 0 && videoBytes.byteLength === 0) {
+    onCallLog?.("bootstrap returned 0 bytes; falling through");
+    return null;
+  }
+
+  return {
+    videoData: videoBytes,
+    audioData: audioBytes,
+    additionalAudioTracks: []
+  };
 }
 
 export async function downloadViaSabr({ request, signal, tabId, onProgress }: {

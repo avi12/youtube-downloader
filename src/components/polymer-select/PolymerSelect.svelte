@@ -254,8 +254,14 @@
     };
   }
 
-  const scopingClass =
-    document.querySelector("yt-dropdown-menu")?.getAttribute("class") ?? "";
+  // tp-yt-paper-dropdown-menu needs yt-dropdown-menu's ShadyDOM CSS in the document for style-scope matching to work.
+  if (!document.querySelector("yt-dropdown-menu")) {
+    const elYtDropdownMenuInit = document.createElement("yt-dropdown-menu");
+    elYtDropdownMenuInit.hidden = true;
+    document.body.append(elYtDropdownMenuInit);
+  }
+
+  const scopingClass = "style-scope yt-dropdown-menu";
 </script>
 
 <tp-yt-paper-dropdown-menu

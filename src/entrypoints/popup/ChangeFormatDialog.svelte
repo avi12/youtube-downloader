@@ -203,16 +203,16 @@ onkeydown={e => {
     cursor: pointer;
     transition: background-color 150ms;
 
+    &:hover {
+      background: var(--surface);
+    }
+
     &:has(input:checked) {
       border-color: var(--accent);
       background: var(--accent-container);
     }
 
-    &:hover {
-      background: var(--surface);
-    }
-
-    & input[type="radio"] {
+    & [type="radio"] {
       margin: 0;
     }
   }

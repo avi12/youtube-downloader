@@ -219,10 +219,24 @@ export async function generatePoTokenIfNeeded(videoData: VideoData) {
   }
 
   try {
-    const poToken = await generatePoToken(videoData.videoId);
+    // The ANDROID_VR PO token only feeds the alternate-client CDN-fallback, which
+    // never triggers on Chrome (SABR succeeds), so skip the second BotGuard mint
+    // there. Firefox's SABR can fail when YouTube flips into attestation mode,
+    // so we pre-mint the fallback token at click-time.
+    const [poToken, alternateClientPoToken] = await Promise.all([
+      generatePoToken({ videoId: videoData.videoId }),
+      import.meta.env.FIREFOX
+        ? generatePoToken({
+          videoId: videoData.videoId,
+          clientName: "ANDROID_VR",
+          clientVersion: "1.65.10"
+        }).catch(() => "")
+        : Promise.resolve("")
+    ]);
     const { serverAbrStreamingUrl: sabrUrl = "" } = videoData.sabrConfig ?? {};
     setPoTokenCredentials({
       poToken,
+      alternateClientPoToken,
       sabrUrl,
       videoId: videoData.videoId
     });

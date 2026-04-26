@@ -12,7 +12,11 @@ interface ChallengeResponse {
   };
 }
 
-export async function generatePoToken(videoId: string) {
+export async function generatePoToken({ videoId, clientName = "WEB", clientVersion: clientVersionOverride }: {
+  videoId: string;
+  clientName?: string;
+  clientVersion?: string;
+}) {
   function getYtcfgValue({ key, fallback }: {
     key: string;
     fallback: string;
@@ -20,7 +24,7 @@ export async function generatePoToken(videoId: string) {
     return typeof ytcfg !== "undefined" ? String(ytcfg.get(key) ?? fallback) : fallback;
   }
 
-  const clientVersion = getYtcfgValue({
+  const clientVersion = clientVersionOverride ?? getYtcfgValue({
     key: "INNERTUBE_CLIENT_VERSION",
     fallback: "2.20260401.01.00"
   });
@@ -41,7 +45,7 @@ export async function generatePoToken(videoId: string) {
         engagementType: "ENGAGEMENT_TYPE_UNBOUND",
         context: {
           client: {
-            clientName: "WEB",
+            clientName,
             clientVersion
           }
         }

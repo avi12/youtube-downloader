@@ -23,6 +23,7 @@ import { extractPoTokenFromBody, getCapturedSabrData } from "@/lib/youtube/sabr-
 
 const SABR_ORIGIN_RULE_ID = 1;
 const INNERTUBE_ORIGIN_RULE_ID = 2;
+const YOUTUBE_FRAME_OPTIONS_RULE_ID = 3;
 
 // Spoof a recent Chrome on Windows. Firefox extensions making BG SW googlevideo
 // POSTs hit YouTube's attestation_required wall on long videos; the lib body is
@@ -103,9 +104,37 @@ async function registerSabrOriginRule() {
     condition: { urlFilter: "||youtube.com/youtubei/" }
   };
 
+  // YouTube serves /watch with X-Frame-Options: SAMEORIGIN and
+  // Content-Security-Policy: frame-ancestors, which Firefox enforces by
+  // refusing to render the iframe (contentWindow becomes a dead object). Our
+  // BG-hosted factory iframes are on moz-extension://, not youtube.com, so
+  // they're blocked. Strip both response headers for documents loaded into
+  // factory iframes. Tagged via the ytdlTrustFactoryMode URL param.
+  const youtubeFrameOptionsRule: Browser.declarativeNetRequest.Rule = {
+    id: YOUTUBE_FRAME_OPTIONS_RULE_ID,
+    priority: 1,
+    action: {
+      type: "modifyHeaders",
+      responseHeaders: [
+        {
+          header: "x-frame-options",
+          operation: "remove"
+        },
+        {
+          header: "content-security-policy",
+          operation: "remove"
+        }
+      ]
+    },
+    condition: {
+      regexFilter: "^https://www\\.youtube\\.com/.*ytdlTrustFactoryMode=1",
+      resourceTypes: ["sub_frame"]
+    }
+  };
+
   await browser.declarativeNetRequest.updateDynamicRules({
-    removeRuleIds: [SABR_ORIGIN_RULE_ID, INNERTUBE_ORIGIN_RULE_ID],
-    addRules: [sabrRule, innertubeRule]
+    removeRuleIds: [SABR_ORIGIN_RULE_ID, INNERTUBE_ORIGIN_RULE_ID, YOUTUBE_FRAME_OPTIONS_RULE_ID],
+    addRules: [sabrRule, innertubeRule, youtubeFrameOptionsRule]
   });
 }
 

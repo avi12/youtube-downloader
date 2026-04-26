@@ -344,3 +344,13 @@ export interface YtdlCaptureState {
     chunk: Uint8Array;
   }) => void;
 }
+
+// Captured snapshot of the player's googlevideo SABR POST. Replaying with no
+// Content-Type header is a CORS simple-request, server returns ACAO and the
+// response is readable. Authorizes ~60s of media before server-side wall;
+// fresh templates require fresh player SABR calls.
+export interface YtdlSabrTemplate {
+  url: string;
+  body: Uint8Array;
+  capturedAt: number;
+}

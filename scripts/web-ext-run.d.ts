@@ -5,8 +5,10 @@ declare module "web-ext-run" {
     startUrl?: string[];
     keepProfileChanges?: boolean;
     firefoxProfile?: string;
+    firefox?: string;
     chromiumProfile?: string;
     args?: string[];
+    customPrefs?: Record<string, unknown>;
     noReload?: boolean;
     noInput?: boolean;
   }
