@@ -10,7 +10,12 @@
 // emitting fresh SABR calls to extend the trust window). For >60s videos,
 // fall back to iframe-scrub.
 
-import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
+import {
+  CrossWorldMessage,
+  CrossWorldSabrMessage,
+  crossWorldMessenger,
+  crossWorldSabrMessenger
+} from "@/lib/messaging/cross-world-messenger";
 import { base64ToUint8Array, uint8ToBase64 } from "@/lib/utils/binary";
 import type { AdaptiveFormatItem, PlayerResponse, YtdlSabrTemplate } from "@/types";
 import {
@@ -712,7 +717,7 @@ export default defineContentScript({
       };
     });
 
-    crossWorldMessenger.onMessage(CrossWorldMessage.SynthesizeSabrTemplate, ({ data }) => {
+    crossWorldSabrMessenger.onMessage(CrossWorldSabrMessage.SynthesizeSabrTemplate, ({ data }) => {
       const synthesized = buildSyntheticTemplateFromPlayer();
       if (!synthesized) {
         return null;

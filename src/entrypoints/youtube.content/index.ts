@@ -12,7 +12,12 @@ import "./style.css";
 import { handlePageChange, setNativeDownloadVisibility } from "./ui/page-router";
 import { mountPanelUi } from "./ui/panel-ui";
 import { CrossWorldEvent, emitCrossWorldEvent } from "@/lib/messaging/cross-world-events";
-import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
+import {
+  CrossWorldMessage,
+  CrossWorldSabrMessage,
+  crossWorldMessenger,
+  crossWorldSabrMessenger
+} from "@/lib/messaging/cross-world-messenger";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
 import { optionsItem, statusProgressItem } from "@/lib/storage/storage";
 import { downloadProgressStore, initContentOptions } from "@/lib/ui/synced-stores.svelte";
@@ -164,8 +169,8 @@ function registerBackgroundMessageHandlers() {
     return cachedSabrTemplate;
   });
 
-  onMessage(MessageType.SynthesizeSabrTemplateFromTab, ({ data }) => crossWorldMessenger.sendMessage(
-    CrossWorldMessage.SynthesizeSabrTemplate,
+  onMessage(MessageType.SynthesizeSabrTemplateFromTab, ({ data }) => crossWorldSabrMessenger.sendMessage(
+    CrossWorldSabrMessage.SynthesizeSabrTemplate,
     { playerTimeMs: data.playerTimeMs }
   ).catch(() => null));
 

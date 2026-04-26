@@ -33,7 +33,16 @@ export const CrossWorldMessage = {
   IframeScrubSegment: "iframeScrubSegment",
   StartIframeScrub: "startIframeScrub",
   SabrTemplateCaptured: "sabrTemplateCaptured",
-  PullSabrTemplate: "pullSabrTemplate",
+  PullSabrTemplate: "pullSabrTemplate"
+} as const;
+
+// Sabr-template fetches/synthesis live on a separate namespace so they don't
+// race with the main `ytdl` messenger. Both `sabr-fetch-interceptor` (MAIN) and
+// `youtube-main` content scripts instantiate a `ytdl` messenger and dispatch
+// responses on every request — when only one of them has a handler, the other
+// dispatches an `undefined` response synchronously and wins the resolve race.
+// Isolating these channels keeps the "no listener" responder out of the race.
+export const CrossWorldSabrMessage = {
   SynthesizeSabrTemplate: "synthesizeSabrTemplate"
 } as const;
 
@@ -168,12 +177,15 @@ interface PageMessengerSchema {
     capturedAt: number;
   } | null;
 
+}
+
+interface SabrPageMessengerSchema {
   // ISOLATED → MAIN synthesize: BG's chunked-SABR loop uses this to mint a
   // fresh trust template (via buildSyntheticTemplateFromPlayer) with the
   // requested clientAbrState.playerTimeMs already mutated, dodging the factory
   // iframe round-trip entirely. Returns null if synthesis fails (e.g. no
   // playerResponse yet on the user tab).
-  [CrossWorldMessage.SynthesizeSabrTemplate](data: {
+  [CrossWorldSabrMessage.SynthesizeSabrTemplate](data: {
     playerTimeMs: number;
   }): {
     url: string;
@@ -183,6 +195,9 @@ interface PageMessengerSchema {
 }
 
 export const crossWorldMessenger = defineCustomEventMessaging<PageMessengerSchema>({ namespace: "ytdl" });
+
+// Dedicated namespace for SABR template synthesis — see CrossWorldSabrMessage above.
+export const crossWorldSabrMessenger = defineCustomEventMessaging<SabrPageMessengerSchema>({ namespace: "ytdl-sabr" });
 
 export type StreamDataPayload = Parameters<PageMessengerSchema[typeof CrossWorldMessage.StreamData]>[0];
 
