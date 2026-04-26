@@ -211,17 +211,24 @@ function bindCaptureToVideoIdDiscardingPending(videoId: string) {
     }
   }
 
-  // Flush pending chunks (init segments captured before activeVideoId was
-  // set) into the active capture instead of discarding — without the init
-  // segment FFmpeg can't decode the fragments and pre-mux fails with exit 1.
+  // Flush ONLY init-sized chunks from pendingChunks. Init segments (ftyp+moov
+  // for fMP4, EBML+Tracks for WebM) are <50KB and are required for FFmpeg to
+  // decode the fragments. Larger pre-bind chunks are pre-roll ad media or
+  // early content that the player will re-fetch once we resume — including
+  // them here would inflate audioTotalBytes past MIN_AUDIO_BYTES instantly,
+  // tripping waitForBufferFill's stall-grace before any real growth happens
+  // and cutting the captured window short.
+  const PENDING_FLUSH_MAX_BYTES = 50_000;
   const capture = captureState.capturedMedia.get(videoId);
   if (capture) {
     for (const pending of captureState.pendingChunks) {
-      captureState.addChunkToCapture({
-        capture,
-        mimeType: pending.mimeType,
-        chunk: pending.data
-      });
+      if (pending.data.byteLength <= PENDING_FLUSH_MAX_BYTES) {
+        captureState.addChunkToCapture({
+          capture,
+          mimeType: pending.mimeType,
+          chunk: pending.data
+        });
+      }
     }
   }
 
