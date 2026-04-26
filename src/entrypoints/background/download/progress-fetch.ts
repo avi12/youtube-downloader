@@ -93,9 +93,12 @@ export async function fetchWithProgress({ url, signal, onBytesReceived }: {
   let byteOffset = 0;
 
   for (let attempt = 0; attempt <= MAX_CDN_RETRY_ATTEMPTS; attempt++) {
+    // No `credentials: "include"` — googlevideo signed URLs validate against
+    // the URL signature itself, not session cookies. Including credentials
+    // makes Firefox attach moz-extension Origin which signed CDN URLs reject
+    // with HTTP 403.
     const response = await fetch(url, {
       signal,
-      credentials: "include",
       headers: byteOffset > 0 ? { Range: `bytes=${byteOffset}-` } : {}
     });
     if (response.status === HTTP_STATUS_RANGE_NOT_SATISFIABLE) {

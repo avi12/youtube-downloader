@@ -41,6 +41,29 @@ interface ClientSpec {
   context: Record<string, unknown>;
 }
 
+// SAPISIDHASH auth — same scheme YouTube's own pages use. Reads __Secure-3PAPISID
+// from the YouTube cookie jar via the BG cookies API, then signs the request
+// with sha1(timestamp + ' ' + sapiSid + ' ' + origin) as Authorization header.
+// Skips `credentials: "include"` so the request looks identical to logged-in
+// browser traffic without leaking cookies through the extension's request path.
+async function buildSapiSidHash(): Promise<string | null> {
+  const cookie = await browser.cookies.get({
+    url: "https://www.youtube.com",
+    name: "__Secure-3PAPISID"
+  }).catch(() => null);
+  if (!cookie?.value) {
+    return null;
+  }
+
+  const timestamp = Math.floor(Date.now() / 1000);
+  const message = `${timestamp} ${cookie.value} https://www.youtube.com`;
+  const hashBuffer = await crypto.subtle.digest("SHA-1", new TextEncoder().encode(message));
+  const hash = Array.from(new Uint8Array(hashBuffer))
+    .map(byte => byte.toString(16).padStart(2, "0"))
+    .join("");
+  return `SAPISIDHASH ${timestamp}_${hash}`;
+}
+
 const ANDROID_VR_CLIENT: ClientSpec = {
   clientName: "ANDROID_VR",
   clientNameHeader: "28",
@@ -125,6 +148,7 @@ async function fetchClient({ client, videoId, poToken }: {
     body.serviceIntegrityDimensions = { poToken };
   }
 
+  const authorization = await buildSapiSidHash();
   const response = await fetch(
     `https://www.youtube.com/youtubei/v1/player?prettyPrint=false`,
     {
@@ -132,9 +156,9 @@ async function fetchClient({ client, videoId, poToken }: {
       headers: {
         "Content-Type": "application/json",
         "X-Youtube-Client-Name": client.clientNameHeader,
-        "X-Youtube-Client-Version": client.clientVersion
+        "X-Youtube-Client-Version": client.clientVersion,
+        ...(authorization ? { Authorization: authorization } : {})
       },
-      credentials: "include",
       body: JSON.stringify(body)
     }
   );
