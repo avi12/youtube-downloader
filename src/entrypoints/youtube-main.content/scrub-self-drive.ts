@@ -2,6 +2,13 @@ import { buildSyntheticTemplateFromPlayer } from "../sabr-fetch-interceptor.cont
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { uint8ToBase64 } from "@/lib/utils/binary";
 
+function scrubLog(msg: string) {
+  console.log(`[ytdl:scrub-tab] ${msg}`);
+  void crossWorldMessenger.sendMessage(CrossWorldMessage.IframeScrubDebug, {
+    msg: `[ytdl:scrub-tab] ${msg}`
+  });
+}
+
 const POLL_INTERVAL_MS = 250;
 const PLAYER_READY_TIMEOUT_MS = 15_000;
 const PLAYBACK_START_TIMEOUT_MS = 15_000;
@@ -247,25 +254,27 @@ export async function runScrubSelfDrive() {
   const videoId = params.get("v") ?? "";
   const windowSec = parseInt(params.get("ytdlScrubWindow") ?? "30", 10);
   if (scrubIndex < 0 || !videoId) {
-    console.warn("[ytdl:scrub-tab] missing scrub index or videoId");
+    scrubLog("missing scrub index or videoId");
     return;
   }
 
-  console.log(`[ytdl:scrub-tab] scrub start, videoId=${videoId} index=${scrubIndex} window=${windowSec}s`);
+  scrubLog(`scrub start videoId=${videoId} index=${scrubIndex} window=${windowSec}s captureState=${window.__ytdlCapture ? "present" : "missing"}`);
 
   const player = await waitForPlayerReady();
   if (!player) {
-    console.warn(`[ytdl:scrub-tab] player never ready, index=${scrubIndex}`);
+    scrubLog(`player never ready index=${scrubIndex}`);
     sendEmptyResult({
       videoId,
       scrubIndex
     });
     return;
   }
+
+  scrubLog(`player ready index=${scrubIndex} duration=${player.getDuration?.() ?? 0}`);
 
   const isPlaying = await forcePlayback(player);
   if (!isPlaying) {
-    console.warn(`[ytdl:scrub-tab] playback never started, index=${scrubIndex}`);
+    scrubLog(`playback never started index=${scrubIndex}`);
     sendEmptyResult({
       videoId,
       scrubIndex
@@ -273,8 +282,13 @@ export async function runScrubSelfDrive() {
     return;
   }
 
+  scrubLog(`playback started index=${scrubIndex}`);
+
   await waitForAdToClear();
+  scrubLog(`ad cleared index=${scrubIndex}`);
+
   bindCaptureToVideoIdDiscardingPending(videoId);
+  scrubLog(`capture bound index=${scrubIndex} captureState=${window.__ytdlCapture ? "present" : "missing"}`);
 
   await waitForBufferFill({
     videoId,
@@ -284,8 +298,10 @@ export async function runScrubSelfDrive() {
   player.pauseVideo?.();
 
   const captured = window.__ytdlCapture?.capturedMedia.get(videoId);
+  scrubLog(`buffer fill done index=${scrubIndex} audioBytes=${captured?.audioTotalBytes ?? 0} videoBytes=${captured?.videoTotalBytes ?? 0}`);
+
   if (!captured || captured.audioTotalBytes === 0) {
-    console.warn(`[ytdl:scrub-tab] empty capture, index=${scrubIndex}`);
+    scrubLog(`empty capture index=${scrubIndex}`);
     sendEmptyResult({
       videoId,
       scrubIndex
@@ -293,14 +309,18 @@ export async function runScrubSelfDrive() {
     return;
   }
 
-  console.log(`[ytdl:scrub-tab] captured index=${scrubIndex} video=${captured.videoTotalBytes}B audio=${captured.audioTotalBytes}B`);
+  const videoConcat = concatChunks(captured.videoChunks);
+  const audioConcat = concatChunks(captured.audioChunks);
+  scrubLog(`segment posting index=${scrubIndex} videoBytes=${videoConcat.byteLength} audioBytes=${audioConcat.byteLength}`);
 
   void crossWorldMessenger.sendMessage(CrossWorldMessage.IframeScrubSegment, {
     videoId,
     scrubIndex,
-    videoBytes: concatChunks(captured.videoChunks),
-    audioBytes: concatChunks(captured.audioChunks),
+    videoBytes: videoConcat,
+    audioBytes: audioConcat,
     videoMimeType: captured.videoMimeType,
     audioMimeType: captured.audioMimeType
   });
+
+  scrubLog(`segment posted index=${scrubIndex}`);
 }

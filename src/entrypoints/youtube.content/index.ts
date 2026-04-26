@@ -256,7 +256,18 @@ async function restoreStoredProgress() {
 }
 
 function registerScrubResultForwarder() {
+  void sendMessage(MessageType.BgDebugLog, {
+    msg: `[ytdl:scrub-isolated] forwarder registered self===top=${self === top} url=${location.search}`
+  });
+
+  crossWorldMessenger.onMessage(CrossWorldMessage.IframeScrubDebug, ({ data }) => {
+    void sendMessage(MessageType.BgDebugLog, { msg: data.msg });
+  });
+
   crossWorldMessenger.onMessage(CrossWorldMessage.IframeScrubSegment, ({ data }) => {
+    void sendMessage(MessageType.BgDebugLog, {
+      msg: `[ytdl:scrub-isolated] received from MAIN index=${data.scrubIndex} videoBytes=${data.videoBytes.byteLength} audioBytes=${data.audioBytes.byteLength}`
+    });
     void sendMessage(MessageType.IframeScrubSegmentReady, {
       videoId: data.videoId,
       scrubIndex: data.scrubIndex,
@@ -264,6 +275,9 @@ function registerScrubResultForwarder() {
       audioBase64: uint8ToBase64(data.audioBytes),
       videoMimeType: data.videoMimeType,
       audioMimeType: data.audioMimeType
+    });
+    void sendMessage(MessageType.BgDebugLog, {
+      msg: `[ytdl:scrub-isolated] forwarded to BG index=${data.scrubIndex}`
     });
   });
 }

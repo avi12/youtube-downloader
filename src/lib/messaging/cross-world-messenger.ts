@@ -31,6 +31,7 @@ export const CrossWorldMessage = {
   StartBackgroundDownload: "startBackgroundDownload",
   OptionsUpdate: "optionsUpdate",
   IframeScrubSegment: "iframeScrubSegment",
+  IframeScrubDebug: "iframeScrubDebug",
   StartIframeScrub: "startIframeScrub",
   SabrTemplateCaptured: "sabrTemplateCaptured",
   PullSabrTemplate: "pullSabrTemplate"
@@ -144,6 +145,11 @@ interface PageMessengerSchema {
     audioBytes: Uint8Array;
     videoMimeType: string;
     audioMimeType: string;
+  }): void;
+  // Diagnostic relay: MAIN-world scrub driver logs checkpoints via this channel
+  // so ISOLATED can forward them to BG (and from there to YT tabs as BgDebugLog).
+  [CrossWorldMessage.IframeScrubDebug](data: {
+    msg: string;
   }): void;
   [CrossWorldMessage.StartIframeScrub](data: {
     videoId: string;
