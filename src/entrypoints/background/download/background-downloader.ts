@@ -444,17 +444,19 @@ async function attemptTrustTemplateSabrDownload({ request, signal, tabId }: {
 
   try {
     // First: progressive parallel chunked SABR — phase 1 bootstraps state via
-    // the captured player template, phase 2 fans out N concurrent SabrStream
-    // sessions at offset playerTimeMs values. This bypasses the per-session
-    // media quota wall that caps a single SabrStream at ~80s of media on long
-    // Firefox videos. If it returns 0 bytes (state-jump rejected by server),
-    // fall back to the single-session bootstrap.
+    // the captured player template, phase 2 fans out one factory-iframe-per-
+    // offset to escape the server's per-template quota wall. The factory
+    // iframes can each take up to 180s, so the SABR_STALL_TIMEOUT_MS that
+    // gates the bootstrap fallback would falsely abort progressive — pause it
+    // for the progressive call (progressive has its own per-fetch timeouts).
+    clearTimeout(sabrStallTimeoutId);
     const progressive = await downloadViaSabrProgressive({
       request,
       signal: sabrAbortController.signal,
       tabId,
       template
     });
+    sabrStallTimeoutId = setTimeout(() => sabrAbortController.abort(), SABR_STALL_TIMEOUT_MS);
     if (progressive) {
       void sendMessage(MessageType.BgDebugLog, {
         msg: `[ytdl:bg-trust-template] sabr-progressive returned `
