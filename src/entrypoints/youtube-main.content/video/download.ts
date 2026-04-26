@@ -1,3 +1,4 @@
+import { fetchAlternateClientFormatsFromTab, findFormatUrlByItag } from "./alternate-client-tab";
 import { capturedAlternateClientPoToken, capturedPoToken, capturedSabrUrl, setPoTokenCredentials } from "./credentials";
 import { resolveFormatUrl } from "./stream-fetch";
 import { buildVideoMetadata, generatePoTokenIfNeeded, videoDataCache } from "./video-data";
@@ -104,17 +105,45 @@ function selectFormats({ videoData, type, videoItag, audioItag }: {
   };
 }
 
-async function preResolveCdnUrls({ type, videoFormat, audioFormat, extraAudioFormats }: {
+async function preResolveCdnUrls({ type, videoId, videoFormat, audioFormat, extraAudioFormats }: {
   type: DownloadType;
+  videoId: string;
   videoFormat: AdaptiveFormatItem | null;
   audioFormat: AdaptiveFormatItem | null;
   extraAudioFormats: AdaptiveFormatItem[];
 }) {
-  return Promise.all([
+  const urls = await Promise.all([
     type !== DownloadType.Audio ? resolveFormatUrl(videoFormat) : Promise.resolve(null),
     type !== DownloadType.Video ? resolveFormatUrl(audioFormat) : Promise.resolve(null),
     ...extraAudioFormats.map(format => resolveFormatUrl(format))
   ]);
+
+  // If any required URL is missing (SABR-only WEB response), try mobile-app
+  // alternate clients which return plain CDN URLs. SAPISIDHASH auth + the
+  // youtubei.googleapis.com endpoint accept TVHTML5/IOS/MWEB clientNames.
+  const needsVideoFallback = type !== DownloadType.Audio && videoFormat && !urls[0];
+  const needsAudioFallback = type !== DownloadType.Video && audioFormat && !urls[1];
+  const needsExtraFallback = extraAudioFormats.some((format, i) => format && !urls[2 + i]);
+  if (needsVideoFallback || needsAudioFallback || needsExtraFallback) {
+    const altFormats = await fetchAlternateClientFormatsFromTab(videoId);
+    if (altFormats) {
+      if (needsVideoFallback && videoFormat) {
+        urls[0] = findFormatUrlByItag(altFormats, videoFormat.itag);
+      }
+
+      if (needsAudioFallback && audioFormat) {
+        urls[1] = findFormatUrlByItag(altFormats, audioFormat.itag);
+      }
+
+      for (const [i, format] of extraAudioFormats.entries()) {
+        if (format && !urls[2 + i]) {
+          urls[2 + i] = findFormatUrlByItag(altFormats, format.itag);
+        }
+      }
+    }
+  }
+
+  return urls;
 }
 
 export async function performDownload({
@@ -159,6 +188,7 @@ export async function performDownload({
     const [resolvedVideoUrl, resolvedAudioUrl, ...resolvedExtraAudioUrls] =
       await preResolveCdnUrls({
         type,
+        videoId,
         videoFormat,
         audioFormat,
         extraAudioFormats
