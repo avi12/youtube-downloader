@@ -361,10 +361,9 @@ interface Phase1Result {
 const PHASE1_MAX_FETCHES = 6;
 
 async function runPhase1({
-  templateUrl, templateBody, decodedTemplate, audioFormatId, videoFormatId, signal, log
+  templateUrl, decodedTemplate, audioFormatId, videoFormatId, signal, log
 }: {
   templateUrl: string;
-  templateBody: Uint8Array;
   decodedTemplate: VideoPlaybackAbrRequest;
   audioFormatId: FormatId;
   videoFormatId: FormatId;
@@ -378,23 +377,20 @@ async function runPhase1({
   let hadAttestationBlock = false;
 
   for (let attempt = 0; attempt < PHASE1_MAX_FETCHES && !signal.aborted; attempt++) {
-    let body: Uint8Array;
-    let url: string;
-    if (attempt === 0) {
-      body = templateBody;
-      url = templateUrl;
-    } else {
-      body = buildContinuationBody({
-        decodedTemplate,
-        playerTimeMs: audioProgress.totalDurationMs,
-        audioProgress,
-        videoProgress,
-        audioBufferedDurationMs: audioProgress.totalDurationMs,
-        videoBufferedDurationMs: videoProgress.totalDurationMs,
-        playbackCookieBytes: cookie
-      });
-      url = urlWithRequestNumber(templateUrl, requestNumber++);
-    }
+    // Always build our own request body so we don't replay a template the
+    // player already consumed (server dedupes those and returns no media).
+    // The captured body's credentials (ustreamer config, poToken, client
+    // info) are reused via decodedTemplate.
+    const body = buildContinuationBody({
+      decodedTemplate,
+      playerTimeMs: audioProgress.totalDurationMs,
+      audioProgress,
+      videoProgress,
+      audioBufferedDurationMs: audioProgress.totalDurationMs,
+      videoBufferedDurationMs: videoProgress.totalDurationMs,
+      playbackCookieBytes: cookie
+    });
+    const url = attempt === 0 ? templateUrl : urlWithRequestNumber(templateUrl, requestNumber++);
 
     let responseBytes: Uint8Array;
     try {
@@ -486,7 +482,6 @@ export async function downloadViaSabrProgressive({
   // segment cadence so phase 2's bufferedRanges reflect real fragment lengths.
   const phase1 = await runPhase1({
     templateUrl: template.url,
-    templateBody,
     decodedTemplate,
     audioFormatId,
     videoFormatId,
