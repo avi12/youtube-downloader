@@ -537,6 +537,9 @@ export async function downloadViaSabrProgressive({
       const seed = requestNumberCounter;
       requestNumberCounter += MAX_FETCHES_PER_OFFSET;
       try {
+        // Don't pass phase1.cookie — server quota-binds by playbackCookie, so
+        // reusing it would route phase 2 into the same already-walled session.
+        // Without the cookie, each offset starts a fresh logical session.
         results[idx] = await fetchOffsetWindow({
           decodedTemplate,
           baseUrl: template.url,
@@ -544,7 +547,7 @@ export async function downloadViaSabrProgressive({
           requestNumberSeed: seed,
           audioFormatId,
           videoFormatId,
-          startCookie: phase1.cookie,
+          startCookie: undefined,
           audioCadenceMs: audioCadence,
           videoCadenceMs: videoCadence,
           signal,
