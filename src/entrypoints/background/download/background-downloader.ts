@@ -514,6 +514,9 @@ export async function startBackgroundDownload({ request, tabId }: {
   tabId: number;
 }) {
   const { videoId, metadata } = request;
+  void sendMessage(MessageType.BgDebugLog, {
+    msg: `[ytdl:bg] startBackgroundDownload entry videoId=${videoId} tabId=${tabId} hasVideoFmt=${Boolean(request.videoFormat)} hasAudioFmt=${Boolean(request.audioFormat)} hasResolvedVideo=${Boolean(request.resolvedVideoUrl)} hasResolvedAudio=${Boolean(request.resolvedAudioUrl)}`
+  }, tabId);
   cancelBackgroundDownload(videoId);
   const abortController = new AbortController();
   activeBackgroundDownloads.set(videoId, abortController);
