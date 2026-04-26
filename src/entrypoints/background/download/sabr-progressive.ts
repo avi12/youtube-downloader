@@ -592,12 +592,11 @@ export async function downloadViaSabrProgressive({
     }
   }
 
-  // Sequential: pendingFactoryTemplates is videoId-keyed, so only one factory
-  // iframe per video can be in-flight at once. Parallelizing would race for
-  // the same Promise resolver. Each factory iframe takes ~25-35s including
-  // muted-autoplay ad-clear, so a 10-min video resolves in ~5-6 minutes.
-  void MAX_PARALLEL;
-  await worker();
+  // Parallel: pendingFactoryTemplates is now factoryId-keyed (each factory
+  // iframe gets a unique factoryId via ytdlFactoryId URL param), so MAX_PARALLEL
+  // workers can each run their own factory iframe + chunked SABR fetch
+  // concurrently without racing.
+  await Promise.all(Array.from({ length: Math.min(MAX_PARALLEL, offsets.length || 1) }, () => worker()));
 
   const audioParts = [...phase1.audioProgress.segmentBytes];
   const videoParts = [...phase1.videoProgress.segmentBytes];

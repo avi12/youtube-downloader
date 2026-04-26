@@ -105,6 +105,54 @@ function registerBackgroundMessageHandlers() {
     console.log(data.msg);
   });
 
+  let cachedSabrTemplate: {
+    url: string;
+    bodyBase64: string;
+    capturedAt: number;
+  } | null = null;
+
+  const factoryParams = new URLSearchParams(location.search);
+  const isTrustFactoryMode = factoryParams.get("ytdlTrustFactoryMode") === "1";
+  const factoryVideoId = factoryParams.get("v") ?? "";
+  const factoryId = factoryParams.get("ytdlFactoryId") ?? "";
+
+  let factoryTemplateSent = false;
+  crossWorldMessenger.onMessage(CrossWorldMessage.SabrTemplateCaptured, ({ data }) => {
+    cachedSabrTemplate = data;
+
+    // Factory-mode iframes forward the first post-ad template to BG, keyed
+    // by factoryId so multiple parallel factory iframes (one per offset)
+    // don't race the same Promise on the BG side.
+    if (isTrustFactoryMode && !factoryTemplateSent && factoryVideoId) {
+      factoryTemplateSent = true;
+      void sendMessage(MessageType.SabrTemplateReady, {
+        videoId: factoryVideoId,
+        factoryId,
+        url: data.url,
+        bodyBase64: data.bodyBase64,
+        capturedAt: data.capturedAt
+      });
+    }
+  });
+
+  onMessage(MessageType.GetSabrTemplateFromTab, async () => {
+    if (cachedSabrTemplate) {
+      return cachedSabrTemplate;
+    }
+
+    // Cache miss (push from MAIN was lost in a timing race) — pull MAIN's
+    // current template once via cross-world request/response.
+    const pulled = await crossWorldMessenger.sendMessage(
+      CrossWorldMessage.PullSabrTemplate,
+      {}
+    ).catch(() => null);
+    if (pulled) {
+      cachedSabrTemplate = pulled;
+    }
+
+    return cachedSabrTemplate;
+  });
+
   onMessage(MessageType.ExecuteDownloadItem, ({ data }) => {
     if (location.pathname !== "/watch") {
       return;

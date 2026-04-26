@@ -26,6 +26,8 @@ const FIREFOX_IFRAME_SCRUB_FALLBACK_MIN_DURATION_SEC = 240;
 // SABR template. Pre-roll ads are typically ~100s; some are skippable.
 const FACTORY_TAB_TIMEOUT_MS = 180_000;
 
+// Key by factoryId (when set) for parallel offset harvesting; fall back to
+// videoId for the single-factory path.
 const pendingFactoryTemplates = new Map<string, (template: {
   url: string;
   bodyBase64: string;
@@ -33,9 +35,10 @@ const pendingFactoryTemplates = new Map<string, (template: {
 } | null) => void>();
 
 onMessage(MessageType.SabrTemplateReady, ({ data }) => {
-  const resolver = pendingFactoryTemplates.get(data.videoId);
+  const key = data.factoryId || data.videoId;
+  const resolver = pendingFactoryTemplates.get(key);
   if (resolver) {
-    pendingFactoryTemplates.delete(data.videoId);
+    pendingFactoryTemplates.delete(key);
     resolver({
       url: data.url,
       bodyBase64: data.bodyBase64,
@@ -55,13 +58,11 @@ async function spawnFactoryTabAndAwaitTemplate({ videoId, tabId, offsetSec }: {
 } | null> {
   // Hidden iframe inside the BG/offscreen page loads the watch page. The
   // interceptor inside it captures the first post-ad SABR call; ISOLATED
-  // forwards via SabrTemplateReady. No actual browser tab is created.
-  // When offsetSec is set the iframe loads at &t=offsetSec so the player's
-  // first SABR call has playerTimeMs ~= offsetSec — used by sabr-progressive
-  // to harvest a fresh trust template per quota window.
-  const iframeId = `factory:${videoId}:${offsetSec ?? 0}:${Date.now()}`;
+  // forwards via SabrTemplateReady, keyed by factoryId so multiple parallel
+  // factory iframes (one per offset) can race-free coexist.
+  const iframeId = `factory:${videoId}:${offsetSec ?? 0}:${Date.now()}:${Math.random().toString(36).slice(2, 8)}`;
   const tParam = typeof offsetSec === "number" && offsetSec > 0 ? `&t=${offsetSec}` : "";
-  const url = `https://www.youtube.com/watch?v=${videoId}&ytdl=1&ytdlTrustFactoryMode=1${tParam}`;
+  const url = `https://www.youtube.com/watch?v=${videoId}&ytdl=1&ytdlTrustFactoryMode=1&ytdlFactoryId=${encodeURIComponent(iframeId)}${tParam}`;
   try {
     await spawnHostedIframe({
       id: iframeId,
@@ -83,10 +84,10 @@ async function spawnFactoryTabAndAwaitTemplate({ videoId, tabId, offsetSec }: {
     bodyBase64: string;
     capturedAt: number;
   } | null>(resolve => {
-    pendingFactoryTemplates.set(videoId, resolve);
+    pendingFactoryTemplates.set(iframeId, resolve);
     setTimeout(() => {
-      if (pendingFactoryTemplates.has(videoId)) {
-        pendingFactoryTemplates.delete(videoId);
+      if (pendingFactoryTemplates.has(iframeId)) {
+        pendingFactoryTemplates.delete(iframeId);
         resolve(null);
       }
     }, FACTORY_TAB_TIMEOUT_MS);
@@ -457,6 +458,7 @@ async function attemptTrustTemplateSabrDownload({ request, signal, tabId }: {
       template
     });
     sabrStallTimeoutId = setTimeout(() => sabrAbortController.abort(), SABR_STALL_TIMEOUT_MS);
+
     if (progressive) {
       void sendMessage(MessageType.BgDebugLog, {
         msg: `[ytdl:bg-trust-template] sabr-progressive returned `

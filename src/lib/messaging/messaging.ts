@@ -33,7 +33,9 @@ export const MessageType = {
   PipelineZipProgress: "pipelineZipProgress",
   StartIframeScrub: "startIframeScrub",
   IframeScrubSegmentReady: "iframeScrubSegmentReady",
-  BgDebugLog: "bgDebugLog"
+  BgDebugLog: "bgDebugLog",
+  GetSabrTemplateFromTab: "getSabrTemplateFromTab",
+  SabrTemplateReady: "sabrTemplateReady"
 } as const;
 
 interface ProtocolMap {
@@ -225,6 +227,26 @@ interface ProtocolMap {
   // so they're visible in the user's page console for debugging.
   bgDebugLog(data: {
     msg: string;
+  }): void;
+
+  // BG asks a tab's MAIN-world SABR interceptor for the latest captured trust
+  // template. Body is base64-encoded for transport (Uint8Array doesn't survive
+  // CustomEvent structured-clone reliably for some payload sizes).
+  getSabrTemplateFromTab(data: Record<string, never>): {
+    url: string;
+    bodyBase64: string;
+    capturedAt: number;
+  } | null;
+
+  // Factory tab pushes its captured trust template to BG once the player has
+  // started fetching real (non-ad) content. The factory tab is opened by BG
+  // and torn down once the template is received.
+  sabrTemplateReady(data: {
+    videoId: string;
+    factoryId?: string;
+    url: string;
+    bodyBase64: string;
+    capturedAt: number;
   }): void;
 }
 
