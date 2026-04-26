@@ -66,6 +66,10 @@ function makeIframeKey(videoId: string, scrubIndex: number) {
 }
 
 async function broadcastDiag(msg: string) {
+  if (!import.meta.env.DEV) {
+    return;
+  }
+
   console.log(msg);
   const tabs = await browser.tabs.query({ url: "*://www.youtube.com/*" });
   for (const tab of tabs) {
@@ -78,6 +82,10 @@ async function broadcastDiag(msg: string) {
 }
 
 function diag(msg: string) {
+  if (!import.meta.env.DEV) {
+    return;
+  }
+
   void broadcastDiag(`${SCRUB_TAG} ${msg}`);
 }
 

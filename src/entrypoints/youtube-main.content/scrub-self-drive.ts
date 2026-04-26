@@ -24,6 +24,10 @@ function postToHost(payload: unknown, transferables: Transferable[] = []) {
 }
 
 function scrubLog(msg: string) {
+  if (!import.meta.env.DEV) {
+    return;
+  }
+
   console.log(`[ytdl:scrub-tab] ${msg}`);
   void crossWorldMessenger.sendMessage(CrossWorldMessage.IframeScrubDebug, {
     msg: `[ytdl:scrub-tab] ${msg}`

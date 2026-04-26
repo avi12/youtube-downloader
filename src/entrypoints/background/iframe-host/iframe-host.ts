@@ -74,6 +74,10 @@ export function setIframeScrubSegmentHandler(
 }
 
 async function broadcastDiagToTabs(msg: string) {
+  if (!import.meta.env.DEV) {
+    return;
+  }
+
   console.log(msg);
   try {
     const tabs = await browser.tabs.query({ url: "https://www.youtube.com/*" });
@@ -103,21 +107,7 @@ function ensurePostMessageBridge() {
   }
 
   isPostMessageBridgeInstalled = true;
-  void broadcastDiagToTabs("[ytdl:iframe-host] postMessage bridge installed");
-  let messageEventCount = 0;
   addEventListener("message", e => {
-    messageEventCount++;
-
-    if (messageEventCount <= 5) {
-      const dataKind = typeof e.data;
-      const dataType = (e.data && typeof e.data === "object" && "type" in e.data)
-        ? String(e.data.type)
-        : "n/a";
-      void broadcastDiagToTabs(
-        `[ytdl:iframe-host] message event #${messageEventCount} origin=${e.origin} kind=${dataKind} type=${dataType}`
-      );
-    }
-
     if (isScrubDebugMessage(e.data)) {
       void broadcastDiagToTabs(e.data.msg);
       return;
@@ -152,48 +142,6 @@ function appendLocalIframe({ id, url }: {
   elFrame.setAttribute("style", HIDDEN_IFRAME_STYLE);
   document.body.append(elFrame);
   localIframes.set(id, elFrame);
-  const total = document.querySelectorAll("iframe[data-ytdl-iframe-host]").length;
-  void broadcastDiagToTabs(`[ytdl:iframe-host] appended id=${id} bodyChildren=${document.body.children.length} hostedIframes=${total} attached=${document.body.contains(elFrame)}`);
-
-  elFrame.addEventListener("load", () => {
-    let contentLoc = "blocked-cross-origin";
-    try {
-      contentLoc = elFrame.contentWindow?.location.href ?? "n/a";
-    } catch {
-      // expected for cross-origin iframes
-    }
-
-    void broadcastDiagToTabs(`[ytdl:iframe-host] load fired id=${id} contentDocument=${elFrame.contentDocument ? "yes" : "no"} contentLoc=${contentLoc}`);
-  });
-
-  elFrame.addEventListener("error", () => {
-    void broadcastDiagToTabs(`[ytdl:iframe-host] error event id=${id}`);
-  });
-
-  setTimeout(() => {
-    let contentLoc = "blocked-cross-origin";
-    let contentBodyTagCount = -1;
-    let titleProp = "n/a";
-    try {
-      contentLoc = elFrame.contentWindow?.location.href ?? "n/a";
-    } catch {
-      // expected
-    }
-
-    try {
-      contentBodyTagCount = elFrame.contentDocument?.body?.children?.length ?? -1;
-    } catch {
-      // expected for cross-origin
-    }
-
-    try {
-      titleProp = elFrame.contentDocument?.title ?? "n/a";
-    } catch {
-      // expected
-    }
-
-    void broadcastDiagToTabs(`[ytdl:iframe-host] +5s id=${id} stillAttached=${document.body.contains(elFrame)} contentLoc=${contentLoc} contentBodyChildren=${contentBodyTagCount} title=${titleProp}`);
-  }, 5000);
 }
 
 function removeLocalIframe(id: string) {

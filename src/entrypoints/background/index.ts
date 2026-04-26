@@ -295,16 +295,21 @@ function registerTabLifecycleHandlers() {
 export default defineBackground(async () => {
   void registerSabrOriginRule();
   registerFactoryIframeHeaderStripper();
-  // Relay BgDebugLog messages from sub-frame content scripts (factory iframes)
-  // back to all youtube.com tabs so we can see iframe-side diagnostics.
-  onMessage(MessageType.BgDebugLog, async ({ data }) => {
-    const tabs = await browser.tabs.query({ url: "https://www.youtube.com/*" });
-    for (const tab of tabs) {
-      if (typeof tab.id === "number") {
-        void sendMessage(MessageType.BgDebugLog, data, tab.id);
+
+  // Dev-only relay: forwards diagnostic logs from sub-frame content scripts
+  // (factory / scrub iframes) into every youtube.com tab's page console.
+  // Stripped from production builds.
+  if (import.meta.env.DEV) {
+    onMessage(MessageType.BgDebugLog, async ({ data }) => {
+      const tabs = await browser.tabs.query({ url: "https://www.youtube.com/*" });
+      for (const tab of tabs) {
+        if (typeof tab.id === "number") {
+          void sendMessage(MessageType.BgDebugLog, data, tab.id);
+        }
       }
-    }
-  });
+    });
+  }
+
   startSabrRequestCapture();
   onSabrBodyCaptured(tabId => {
     void sendMessage(MessageType.SabrBodyReady, {}, tabId);
