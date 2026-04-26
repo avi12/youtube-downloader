@@ -283,43 +283,44 @@ export async function buildAndDispatchVideoData({ playerResponse, cancelActiveDo
   videoDataStore.set(videoData.videoId, videoData);
   void crossWorldMessenger.sendMessage(CrossWorldMessage.VideoData, videoData);
 
-  captureState.activeVideoId = videoData.videoId;
+  // Bind capture only inside download/scrub iframes (self !== top). On the
+  // user's top-level watch page nothing reads from __ytdlCapture — leaving
+  // activeVideoId unbound prevents every appendBuffer call from copying its
+  // payload via .slice() on the main thread for the entire playback session,
+  // which was the source of the watch-page lag.
+  if (self !== top) {
+    captureState.activeVideoId = videoData.videoId;
 
-  const { capturedMedia, addChunkToCapture } = captureState;
-  if (!capturedMedia.has(captureState.activeVideoId)) {
-    capturedMedia.set(captureState.activeVideoId, {
-      videoChunks: [],
-      audioChunks: [],
-      videoMimeType: "video/mp4",
-      audioMimeType: "audio/mp4",
-      videoTotalBytes: 0,
-      audioTotalBytes: 0
-    });
-  }
-
-  const { pendingChunks } = captureState;
-  if (pendingChunks.length > 0) {
-    const capture = capturedMedia.get(captureState.activeVideoId);
-    if (!capture) {
-      return;
-    }
-
-    for (const pending of pendingChunks) {
-      addChunkToCapture({
-        capture,
-        mimeType: pending.mimeType,
-        chunk: pending.data
+    const { capturedMedia, addChunkToCapture } = captureState;
+    if (!capturedMedia.has(captureState.activeVideoId)) {
+      capturedMedia.set(captureState.activeVideoId, {
+        videoChunks: [],
+        audioChunks: [],
+        videoMimeType: "video/mp4",
+        audioMimeType: "audio/mp4",
+        videoTotalBytes: 0,
+        audioTotalBytes: 0
       });
     }
 
-    console.log(`[ytdl:capture] Flushed ${pendingChunks.length} pending chunks (init segments)`);
-    pendingChunks.length = 0;
-  }
+    const { pendingChunks } = captureState;
+    if (pendingChunks.length > 0) {
+      const capture = capturedMedia.get(captureState.activeVideoId);
+      if (capture) {
+        for (const pending of pendingChunks) {
+          addChunkToCapture({
+            capture,
+            mimeType: pending.mimeType,
+            chunk: pending.data
+          });
+        }
 
-  if (self !== top) {
-    // The iframe player may play an ad before the real video, and its SABR requests would
-    // leak an ad-specific PO token into our capture. Stop the player fully so no ad plays,
-    // then generate a fresh BotGuard PO token that is unambiguously for this video.
+        pendingChunks.length = 0;
+      }
+    }
+
+    // Stop the player before generating the PO token so its SABR session is released
+    // before the background download starts a new one for the same video.
     const elPlayer = document.querySelector<HTMLElement & {
       pauseVideo?: () => void;
       stopVideo?: () => void;
