@@ -16,6 +16,7 @@ import type { DownloadResult } from "./background-downloader";
 // request — the playbackCookie threads them as one logical session from the
 // server's view but the per-fetch quota resets.
 import { sendProgressUpdate } from "./progress-fetch";
+import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import type { AdaptiveFormatItem, DownloadRequest, SabrConfig } from "@/types";
 import { ProgressType } from "@/types";
 import {
@@ -468,7 +469,9 @@ export async function downloadViaSabrProgressive({
   }
 
   function log(msg: string) {
-    console.log(`[ytdl:sabr-progressive] ${msg}`);
+    const formatted = `[ytdl:sabr-progressive] ${msg}`;
+    console.log(formatted);
+    void sendMessage(MessageType.BgDebugLog, { msg: formatted }, tabId);
   }
 
   const templateBody = decodeBase64(template.bodyBase64);
