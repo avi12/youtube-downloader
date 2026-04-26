@@ -370,6 +370,7 @@ async function enrichWithAlternateClientUrls(request: DownloadRequest, tabId?: n
     const availableItags = formats.map(format => format.itag).join(",");
     const msg = `[ytdl:bg] alternate-client returned ${formats.length} formats (itags=${availableItags}); video itag ${request.videoItag} url=${Boolean(enriched.resolvedVideoUrl)}, audio itag ${request.audioItag} url=${Boolean(enriched.resolvedAudioUrl)}`;
     console.log(msg);
+
     if (typeof tabId === "number") {
       void sendMessage(MessageType.BgDebugLog, { msg }, tabId);
     }
@@ -377,6 +378,7 @@ async function enrichWithAlternateClientUrls(request: DownloadRequest, tabId?: n
     return enriched;
   } catch (error) {
     console.warn("[ytdl:bg] Alternate-client fallback failed:", error);
+
     if (typeof tabId === "number") {
       void sendMessage(MessageType.BgDebugLog, {
         msg: `[ytdl:bg] alternate-client threw: ${String(error)}`
@@ -550,6 +552,7 @@ export async function startBackgroundDownload({ request, tabId }: {
     void sendMessage(MessageType.BgDebugLog, {
       msg: `[ytdl:bg] CDN-first check: haveUrls=${haveCdnUrls} video=${Boolean(cdnRequest.resolvedVideoUrl)} audio=${Boolean(cdnRequest.resolvedAudioUrl)}`
     }, tabId);
+
     if (haveCdnUrls) {
       result = await downloadViaCdn({
         request: cdnRequest,
@@ -572,52 +575,17 @@ export async function startBackgroundDownload({ request, tabId }: {
       }, tabId);
     }
 
-    if (!result?.audioData) {
-      result = await attemptSabrDownload({
-        request,
-        signal,
-        tabId
-      }).catch(sabrError => {
-        if (signal.aborted) {
-          throw sabrError;
-        }
-
-        console.warn("[ytdl:bg] direct SABR failed, will try trust-template SABR:", sabrError);
-        void sendMessage(MessageType.UpdateDownloadProgress, {
-          videoId,
-          progress: 0,
-          progressType: ProgressType.Video
-        }, tabId);
-        return null;
-      });
-    }
-
-    if (!result?.audioData) {
-      // Player-signed trust template bootstrap: works around Firefox's stricter
-      // attestation_required check on the lib's constructed body for long videos.
-      result = await attemptTrustTemplateSabrDownload({
-        request,
-        signal,
-        tabId
-      }).catch(error => {
-        if (signal.aborted) {
-          throw error;
-        }
-
-        console.warn("[ytdl:bg] trust-template SABR failed:", error);
-        void sendMessage(MessageType.UpdateDownloadProgress, {
-          videoId,
-          progress: 0,
-          progressType: ProgressType.Video
-        }, tabId);
-        return null;
-      });
-    }
-
+    // iframe-scrub: when CDN URLs are unavailable, use the user-tab player's
+    // own decoded buffer (SourceBuffer hook) as the source. The player has
+    // already passed YouTube's attestation, so this works where SABR doesn't.
+    // Promoted ahead of the broken SABR paths (lib path 403s on long videos,
+    // trust-template path infinite-loops on empty UMP responses).
     if (!result?.audioData && !result?.videoData) {
       const durationSec = request.videoDurationSec ?? 0;
       if (import.meta.env.FIREFOX && durationSec >= FIREFOX_IFRAME_SCRUB_FALLBACK_MIN_DURATION_SEC) {
-        console.log(`[ytdl:bg] direct SABR + CDN both failed; falling back to iframe-scrub for ${videoId} (${durationSec}s)`);
+        void sendMessage(MessageType.BgDebugLog, {
+          msg: `[ytdl:bg] CDN unavailable; using iframe-scrub for ${videoId} (${durationSec}s)`
+        }, tabId);
         await startIframeScrubSession({
           videoId,
           durationSec,
@@ -634,7 +602,29 @@ export async function startBackgroundDownload({ request, tabId }: {
         });
         return;
       }
+    }
 
+    if (!result?.audioData) {
+      result = await attemptSabrDownload({
+        request,
+        signal,
+        tabId
+      }).catch(sabrError => {
+        if (signal.aborted) {
+          throw sabrError;
+        }
+
+        console.warn("[ytdl:bg] direct SABR failed:", sabrError);
+        void sendMessage(MessageType.UpdateDownloadProgress, {
+          videoId,
+          progress: 0,
+          progressType: ProgressType.Video
+        }, tabId);
+        return null;
+      });
+    }
+
+    if (!result?.audioData && !result?.videoData) {
       console.warn("[ytdl:bg] No download method succeeded for", videoId);
       reportDownloadFailed({
         videoId,
