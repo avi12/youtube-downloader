@@ -749,10 +749,7 @@ export default defineContentScript({
     };
 
     crossWorldMessenger.onMessage(CrossWorldMessage.RunProgressiveSabr, async ({ data }) => {
-      console.log("[ytdl:sabr-progressive-main] received RunProgressiveSabr", {
-        videoId: data.videoId,
-        videoDurationSec: data.videoDurationSec
-      });
+      console.log(`[ytdl:sabr-progressive-main] received RunProgressiveSabr videoId=${data.videoId} durationSec=${data.videoDurationSec}`);
       const targetDurationMs = (data.videoDurationSec ?? 0) * 1000;
       try {
         const result = await fetchProgressive({
@@ -761,10 +758,7 @@ export default defineContentScript({
           originalFetch,
           carryState: null
         });
-        console.log("[ytdl:sabr-progressive-main] fetchProgressive returned", {
-          audioBytes: result.audioBytes.byteLength,
-          videoBytes: result.videoBytes.byteLength
-        });
+        console.log(`[ytdl:sabr-progressive-main] fetchProgressive returned audio=${result.audioBytes.byteLength}B video=${result.videoBytes.byteLength}B iter=${result.iterations} stalled=${result.stalled}`);
         const audioMimeType = data.audioFormat?.mimeType?.split(";")[0] ?? "audio/mp4";
         const videoMimeType = data.videoFormat?.mimeType?.split(";")[0] ?? "video/mp4";
         void crossWorldMessenger.sendMessage(CrossWorldMessage.StreamData, {
