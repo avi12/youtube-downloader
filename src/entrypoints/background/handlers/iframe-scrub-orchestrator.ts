@@ -12,8 +12,6 @@ const MIN_ACCEPTABLE_BYTES_PER_SEC = 30_000;
 const IFRAME_DEADLINE_OVERHEAD_MS = 60_000;
 const DEFAULT_STEP_SEC = 60;
 const SCRUB_TAG = "[ytdl:scrub-bg]";
-const YOUTUBE_TAB_FILTER = { url: "*://www.youtube.com/*" };
-const WATCH_PAGE_BASE = "https://www.youtube.com/watch";
 
 interface ReceivedSegment {
   videoBase64: string;
@@ -61,7 +59,7 @@ function makeIframeKey(videoId: string, scrubIndex: number) {
 
 async function broadcastDiag(msg: string) {
   console.log(msg);
-  const tabs = await browser.tabs.query(YOUTUBE_TAB_FILTER);
+  const tabs = await browser.tabs.query({ url: "*://www.youtube.com/*" });
   for (const tab of tabs) {
     if (typeof tab.id !== "number") {
       continue;
@@ -96,7 +94,7 @@ function buildScrubIframeUrl({ videoId, scrubIndex, startSec, windowSec }: {
     params.set("t", String(startSec));
   }
 
-  return `${WATCH_PAGE_BASE}?${params.toString()}`;
+  return `https://www.youtube.com/watch?${params.toString()}`;
 }
 
 function pickNextWorkRoundRobin() {
@@ -200,8 +198,7 @@ async function openScrubIframe({ session, scrubIndex, startSec, windowSec }: {
 
   await spawnHostedIframe({
     id: iframeId,
-    url,
-    tabId: session.tabId
+    url
   });
   diag(`opened scrub iframe id=${iframeId} index=${scrubIndex} t=${startSec} window=${windowSec}s`);
 
