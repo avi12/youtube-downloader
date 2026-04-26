@@ -15,6 +15,7 @@ import type { DownloadResult } from "./background-downloader";
 // session at ~80s of media) by issuing each offset's fetch as a fresh
 // request — the playbackCookie threads them as one logical session from the
 // server's view but the per-fetch quota resets.
+import { harvestFreshTemplate } from "./background-downloader";
 import { sendProgressUpdate } from "./progress-fetch";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import type { AdaptiveFormatItem, DownloadRequest, SabrConfig } from "@/types";
@@ -492,6 +493,7 @@ export async function downloadViaSabrProgressive({
     log("phase1 returned no usable segments");
     return null;
   }
+
   if (phase1.hadAttestationBlock) {
     log("phase1 hit attestation_required but harvested data — proceeding to phase 2 anyway");
   }
@@ -534,15 +536,39 @@ export async function downloadViaSabrProgressive({
     while (cursor < offsets.length && !signal.aborted) {
       const idx = cursor++;
       const fromMs = offsets[idx];
+      const offsetSec = Math.floor(fromMs / 1000);
+
+      // Each window needs its own trust template — the captured one is
+      // single-window-bound by the server (quota survives playbackCookie
+      // changes, so dropping the cookie isn't enough). Spawn a fresh factory
+      // iframe at &t=offsetSec; the player loads at that point and emits a
+      // post-ad SABR call with playerTimeMs≈offsetSec, captured by the
+      // interceptor in that iframe.
+      log(`offset ${offsetSec}s: harvesting fresh template`);
+      const offsetTemplate = await harvestFreshTemplate({
+        videoId,
+        tabId,
+        offsetSec
+      });
+      if (!offsetTemplate) {
+        log(`offset ${offsetSec}s: no template captured — skipping window`);
+        completed++;
+        void sendProgressUpdate({
+          videoId,
+          progress: Math.min(completed / totalSegments, 1),
+          progressType: ProgressType.Video,
+          tabId
+        });
+        continue;
+      }
+
+      const offsetDecoded = VideoPlaybackAbrRequest.decode(decodeBase64(offsetTemplate.bodyBase64));
       const seed = requestNumberCounter;
       requestNumberCounter += MAX_FETCHES_PER_OFFSET;
       try {
-        // Don't pass phase1.cookie — server quota-binds by playbackCookie, so
-        // reusing it would route phase 2 into the same already-walled session.
-        // Without the cookie, each offset starts a fresh logical session.
         results[idx] = await fetchOffsetWindow({
-          decodedTemplate,
-          baseUrl: template.url,
+          decodedTemplate: offsetDecoded,
+          baseUrl: offsetTemplate.url,
           fromMs,
           requestNumberSeed: seed,
           audioFormatId,
@@ -566,7 +592,12 @@ export async function downloadViaSabrProgressive({
     }
   }
 
-  await Promise.all(Array.from({ length: Math.min(MAX_PARALLEL, offsets.length || 1) }, () => worker()));
+  // Sequential: pendingFactoryTemplates is videoId-keyed, so only one factory
+  // iframe per video can be in-flight at once. Parallelizing would race for
+  // the same Promise resolver. Each factory iframe takes ~25-35s including
+  // muted-autoplay ad-clear, so a 10-min video resolves in ~5-6 minutes.
+  void MAX_PARALLEL;
+  await worker();
 
   const audioParts = [...phase1.audioProgress.segmentBytes];
   const videoParts = [...phase1.videoProgress.segmentBytes];

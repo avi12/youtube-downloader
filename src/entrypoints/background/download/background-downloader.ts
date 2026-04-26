@@ -44,9 +44,10 @@ onMessage(MessageType.SabrTemplateReady, ({ data }) => {
   }
 });
 
-async function spawnFactoryTabAndAwaitTemplate({ videoId, tabId }: {
+async function spawnFactoryTabAndAwaitTemplate({ videoId, tabId, offsetSec }: {
   videoId: string;
   tabId: number;
+  offsetSec?: number;
 }): Promise<{
   url: string;
   bodyBase64: string;
@@ -55,8 +56,12 @@ async function spawnFactoryTabAndAwaitTemplate({ videoId, tabId }: {
   // Hidden iframe inside the BG/offscreen page loads the watch page. The
   // interceptor inside it captures the first post-ad SABR call; ISOLATED
   // forwards via SabrTemplateReady. No actual browser tab is created.
-  const iframeId = `factory:${videoId}:${Date.now()}`;
-  const url = `https://www.youtube.com/watch?v=${videoId}&ytdl=1&ytdlTrustFactoryMode=1`;
+  // When offsetSec is set the iframe loads at &t=offsetSec so the player's
+  // first SABR call has playerTimeMs ~= offsetSec — used by sabr-progressive
+  // to harvest a fresh trust template per quota window.
+  const iframeId = `factory:${videoId}:${offsetSec ?? 0}:${Date.now()}`;
+  const tParam = typeof offsetSec === "number" && offsetSec > 0 ? `&t=${offsetSec}` : "";
+  const url = `https://www.youtube.com/watch?v=${videoId}&ytdl=1&ytdlTrustFactoryMode=1${tParam}`;
   try {
     await spawnHostedIframe({
       id: iframeId,
@@ -70,7 +75,7 @@ async function spawnFactoryTabAndAwaitTemplate({ videoId, tabId }: {
   }
 
   void sendMessage(MessageType.BgDebugLog, {
-    msg: `[ytdl:bg-trust-template] factory iframe id=${iframeId} mounted, awaiting template`
+    msg: `[ytdl:bg-trust-template] factory iframe id=${iframeId} mounted (t=${offsetSec ?? 0}s), awaiting template`
   }, tabId);
 
   const template = await new Promise<{
@@ -90,6 +95,18 @@ async function spawnFactoryTabAndAwaitTemplate({ videoId, tabId }: {
   removeHostedIframe(iframeId);
 
   return template;
+}
+
+export async function harvestFreshTemplate({ videoId, tabId, offsetSec }: {
+  videoId: string;
+  tabId: number;
+  offsetSec: number;
+}) {
+  return spawnFactoryTabAndAwaitTemplate({
+    videoId,
+    tabId,
+    offsetSec
+  });
 }
 
 export interface DownloadResult {
