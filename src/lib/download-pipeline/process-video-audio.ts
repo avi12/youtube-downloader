@@ -163,7 +163,18 @@ export async function processVideoAudio(item: ProcessStreamData) {
       ffmpegArgs.push("-map", `${subtitleInputOffset + i}:s:0`);
     }
 
-    ffmpegArgs.push("-c:v", "copy", "-c:a", "copy");
+    // MP4 only carries AAC reliably across consumer players (Windows Media
+    // Player rejects Opus-in-MP4); transcode Opus/WebM audio to AAC when the
+    // user-target is MP4 instead of stream-copying.
+    const isOpusAudio = audioMimeType.includes("webm") || audioMimeType.includes("opus");
+    const needsAacTranscode = outputExtension === "mp4" && isOpusAudio;
+    ffmpegArgs.push("-c:v", "copy");
+
+    if (needsAacTranscode) {
+      ffmpegArgs.push("-c:a", "aac", "-b:a", "192k");
+    } else {
+      ffmpegArgs.push("-c:a", "copy");
+    }
 
     if (subtitleFiles.length > 0) {
       ffmpegArgs.push("-c:s", "srt");

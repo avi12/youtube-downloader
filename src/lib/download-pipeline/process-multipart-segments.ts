@@ -242,8 +242,16 @@ export async function processMultipartSegments(item: ProcessStreamData & { segme
       finalFilename = outputFilename;
       writtenPaths.push(outputFilename);
     } else if (targetExtension === "mp4") {
+      // MP4 only carries AAC reliably across consumer players (Windows Media
+      // Player rejects Opus-in-MP4 outright); when the captured audio was
+      // Opus-in-WebM, transcode it to AAC during this final pass instead of
+      // stream-copying.
+      const isOpusAudio = audioMimeType.includes("webm") || audioMimeType.includes("opus");
+      const audioCodecArgs = isOpusAudio
+        ? ["-c:a", "aac", "-b:a", "192k"]
+        : ["-c:a", "copy"];
       const transcodeExit = ffmpeg.exec(
-        "-i", intermediateFilename, "-c:v", "copy", "-c:a", "copy", "-movflags", "+faststart", outputFilename
+        "-i", intermediateFilename, "-c:v", "copy", ...audioCodecArgs, "-movflags", "+faststart", outputFilename
       );
       if (transcodeExit !== 0) {
         throw new Error(`FFmpeg MKV→MP4 transcode failed with exit code ${transcodeExit}`);
