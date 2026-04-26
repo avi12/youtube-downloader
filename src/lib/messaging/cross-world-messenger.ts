@@ -31,7 +31,9 @@ export const CrossWorldMessage = {
   StartBackgroundDownload: "startBackgroundDownload",
   OptionsUpdate: "optionsUpdate",
   IframeScrubSegment: "iframeScrubSegment",
-  StartIframeScrub: "startIframeScrub"
+  StartIframeScrub: "startIframeScrub",
+  SabrTemplateCaptured: "sabrTemplateCaptured",
+  PullSabrTemplate: "pullSabrTemplate"
 } as const;
 
 interface PageMessengerSchema {
@@ -147,6 +149,16 @@ interface PageMessengerSchema {
     playlistTitle?: string;
     playlistTotalCount?: number;
   }): void;
+  [CrossWorldMessage.SabrTemplateCaptured](data: {
+    url: string;
+    bodyBase64: string;
+    capturedAt: number;
+  }): void;
+  [CrossWorldMessage.PullSabrTemplate](data: Record<string, never>): {
+    url: string;
+    bodyBase64: string;
+    capturedAt: number;
+  } | null;
 }
 
 export const crossWorldMessenger = defineCustomEventMessaging<PageMessengerSchema>({ namespace: "ytdl" });
