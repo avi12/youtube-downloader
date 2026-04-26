@@ -1,4 +1,6 @@
+import { buildSyntheticTemplateFromPlayer } from "../sabr-fetch-interceptor.content";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
+import { uint8ToBase64 } from "@/lib/utils/binary";
 
 const POLL_INTERVAL_MS = 250;
 const PLAYER_READY_TIMEOUT_MS = 15_000;
@@ -121,14 +123,31 @@ export async function runTrustFactoryDrive() {
     return;
   }
 
-  // Best-effort kickstart: muted play() may or may not succeed, but even if
-  // blocked the player typically still fires its first SABR call as part of
-  // init/buffering.
-  void forcePlayback(player);
+  // First try: synthesize the SABR template from MAIN-world player state
+  // immediately. This works without playback and side-steps the case where the
+  // hidden iframe player can't autoplay (so the network interceptor never sees
+  // a real SABR call). We still publish via the same SabrTemplateCaptured
+  // message the network interceptor uses, so the BG forwarding path is
+  // unchanged.
+  const synthetic = buildSyntheticTemplateFromPlayer();
+  if (synthetic) {
+    console.log("[ytdl:trust-factory-tab] synthesized template", {
+      url: synthetic.url,
+      bodyLen: synthetic.body.byteLength
+    });
+    window.__ytdlSabrTemplate = synthetic;
+    void crossWorldMessenger.sendMessage(CrossWorldMessage.SabrTemplateCaptured, {
+      url: synthetic.url,
+      bodyBase64: uint8ToBase64(synthetic.body),
+      capturedAt: synthetic.capturedAt
+    });
+    return;
+  }
 
-  // Idle and let the interceptor capture whichever SABR call fires first.
-  // BG side awaits SabrTemplateReady; if it doesn't fire within the BG-side
-  // timeout, BG removes this iframe and moves on.
+  // Fallback: kick playback (muted) and idle while the network interceptor
+  // captures whichever SABR call fires first.
+  console.log("[ytdl:trust-factory-tab] synthesis failed, falling back to interceptor capture");
+  void forcePlayback(player);
   await wait(FACTORY_FIRST_CALL_WAIT_MS);
   console.log("[ytdl:trust-factory-tab] idle window elapsed");
 }

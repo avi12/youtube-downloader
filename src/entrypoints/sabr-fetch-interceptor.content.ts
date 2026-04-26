@@ -11,8 +11,8 @@
 // fall back to iframe-scrub.
 
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
-import { uint8ToBase64 } from "@/lib/utils/binary";
-import type { YtdlSabrTemplate } from "@/types";
+import { base64ToUint8Array, uint8ToBase64 } from "@/lib/utils/binary";
+import type { AdaptiveFormatItem, PlayerResponse, YtdlSabrTemplate } from "@/types";
 import {
   ClientAbrState,
   MediaHeader,
@@ -50,6 +50,24 @@ interface ProgressiveFetchResult {
   carryState: ProgressiveCarryState;
 }
 
+interface MoviePlayerElement extends HTMLElement {
+  getPlayerResponse?: () => PlayerResponse;
+}
+
+interface YtcfgInnertubeClient {
+  clientName?: string;
+  clientVersion?: string;
+  visitorData?: string;
+}
+
+interface YtcfgRoot {
+  data_?: {
+    INNERTUBE_CONTEXT?: {
+      client?: YtcfgInnertubeClient;
+    };
+  };
+}
+
 declare global {
   interface Window {
     __ytdlSabrTemplate?: YtdlSabrTemplate;
@@ -61,6 +79,9 @@ declare global {
         carryState?: ProgressiveCarryState | null;
       }) => Promise<ProgressiveFetchResult>;
     };
+    ytcfg?: YtcfgRoot;
+    ytInitialPlayerResponse?: PlayerResponse;
+    __ytdlCapturedPoToken?: string;
   }
 }
 
@@ -75,6 +96,212 @@ interface ProgressiveState {
   audio: FormatProgress;
   video: FormatProgress;
   playbackCookieBytes: Uint8Array | null;
+}
+
+const MOVIE_PLAYER_SELECTOR = "#movie_player";
+const VISIBILITY_FOREGROUND = 1;
+const DEFAULT_PLAYBACK_RATE = 1;
+const DEFAULT_CLIENT_NAME = 1;
+const POTOKEN_QUERY_PARAM = "pot";
+
+function getMoviePlayer() {
+  return document.querySelector<MoviePlayerElement>(MOVIE_PLAYER_SELECTOR);
+}
+
+function pickHighestQualityFormats(adaptiveFormats: AdaptiveFormatItem[]) {
+  const audioFormats = adaptiveFormats.filter(format => format.mimeType?.startsWith("audio/"));
+  const videoFormats = adaptiveFormats.filter(format => format.mimeType?.startsWith("video/"));
+  const primaryAudio = audioFormats.find(format => format.audioTrack?.audioIsDefault) ?? audioFormats[0] ?? null;
+  const sortedAudio = primaryAudio
+    ? audioFormats
+      .filter(format => format.audioTrack?.id === primaryAudio.audioTrack?.id || !format.audioTrack)
+      .sort((left, right) => (right.bitrate ?? 0) - (left.bitrate ?? 0))[0]
+    : null;
+  const sortedVideo = videoFormats
+    .sort((left, right) => {
+      const heightDelta = (right.height ?? 0) - (left.height ?? 0);
+      return heightDelta !== 0 ? heightDelta : (right.bitrate ?? 0) - (left.bitrate ?? 0);
+    })[0] ?? null;
+  return {
+    audio: sortedAudio,
+    video: sortedVideo
+  };
+}
+
+function readField(record: unknown, key: string): unknown {
+  if (!record || typeof record !== "object") {
+    return undefined;
+  }
+
+  const entry = Object.entries(record).find(([entryKey]) => entryKey === key);
+  return entry ? entry[1] : undefined;
+}
+
+function getStringField(record: unknown, key: string) {
+  const value = readField(record, key);
+  return typeof value === "string" ? value : "";
+}
+
+function getNumericField(record: unknown, key: string) {
+  const value = readField(record, key);
+  return typeof value === "number" ? value : null;
+}
+
+function readUstreamerConfig(playerResponse: PlayerResponse) {
+  const playerConfigPath = playerResponse.playerConfig?.mediaCommonConfig
+    ?.mediaUstreamerRequestConfig?.videoPlaybackUstreamerConfig;
+  if (typeof playerConfigPath === "string" && playerConfigPath.length > 0) {
+    return playerConfigPath;
+  }
+
+  const streamingDataPath = getStringField(playerResponse.streamingData, "videoPlaybackUstreamerConfig");
+  if (streamingDataPath.length > 0) {
+    return streamingDataPath;
+  }
+
+  return null;
+}
+
+function readClientInfo() {
+  const ytcfgData = window.ytcfg?.data_;
+  const ictx = ytcfgData?.INNERTUBE_CONTEXT?.client ?? {};
+  const numericClientName = getNumericField(ytcfgData, "INNERTUBE_CONTEXT_CLIENT_NAME");
+  return {
+    clientName: numericClientName ?? DEFAULT_CLIENT_NAME,
+    clientVersion: ictx.clientVersion ?? ""
+  };
+}
+
+function readPoTokenFromAdaptiveFormatUrl(formats: AdaptiveFormatItem[] | undefined) {
+  if (!formats) {
+    return "";
+  }
+
+  for (const format of formats) {
+    const url = format.url;
+    if (!url) {
+      continue;
+    }
+
+    try {
+      const params = new URL(url).searchParams;
+      const pot = params.get(POTOKEN_QUERY_PARAM);
+      if (pot) {
+        return pot;
+      }
+    } catch {
+      // ignore malformed URL
+    }
+  }
+
+  return "";
+}
+
+function findPoToken(playerResponse: PlayerResponse) {
+  const stashed = window.__ytdlCapturedPoToken;
+  if (typeof stashed === "string" && stashed.length > 0) {
+    return stashed;
+  }
+
+  const fromCurrent = readPoTokenFromAdaptiveFormatUrl(playerResponse.streamingData?.adaptiveFormats);
+  if (fromCurrent) {
+    return fromCurrent;
+  }
+
+  const fromInitial = readPoTokenFromAdaptiveFormatUrl(window.ytInitialPlayerResponse?.streamingData?.adaptiveFormats);
+  if (fromInitial) {
+    return fromInitial;
+  }
+
+  return "";
+}
+
+function buildFormatId(format: AdaptiveFormatItem) {
+  // YouTube's player_response sometimes calls this `lastModificationTime`;
+  // current shape uses `lastModified` (microsecond timestamp string).
+  const fromLastModified = format.lastModified;
+  const fromLastModificationTime = getStringField(format, "lastModificationTime");
+  const lastModifiedRaw = fromLastModified ?? fromLastModificationTime;
+  return {
+    itag: format.itag,
+    lastModified: lastModifiedRaw ? String(lastModifiedRaw) : undefined,
+    xtags: format.xtags
+  };
+}
+
+// Synthesizes a SABR template body directly from MAIN-world player state, no
+// network round-trip required. The factory iframe's player doesn't always
+// fire its first SABR call before the BG times out the iframe; this builder
+// reads serverAbrStreamingUrl + ustreamer config + selected format IDs +
+// client info straight off the player and assembles the same protobuf body
+// the player would emit.
+export function buildSyntheticTemplateFromPlayer(): YtdlSabrTemplate | null {
+  const player = getMoviePlayer();
+  if (!player?.getPlayerResponse) {
+    return null;
+  }
+
+  const playerResponse = player.getPlayerResponse();
+  const streamingData = playerResponse?.streamingData;
+  const url = streamingData?.serverAbrStreamingUrl;
+  if (!streamingData || !url) {
+    return null;
+  }
+
+  const ustreamerConfig = readUstreamerConfig(playerResponse);
+  if (!ustreamerConfig) {
+    return null;
+  }
+
+  const adaptiveFormats = streamingData.adaptiveFormats ?? [];
+  const { audio, video } = pickHighestQualityFormats(adaptiveFormats);
+  if (!audio || !video) {
+    return null;
+  }
+
+  const audioFormatId = buildFormatId(audio);
+  const videoFormatId = buildFormatId(video);
+  const { clientName, clientVersion } = readClientInfo();
+  const poToken = findPoToken(playerResponse);
+
+  // visitorData is intentionally omitted: googlevideo's StreamerContext.ClientInfo
+  // proto schema doesn't include it (player-side it's threaded through cookies /
+  // URL query, not the SABR body). The serverAbrStreamingUrl already carries the
+  // visitor session.
+  const body = VideoPlaybackAbrRequest.encode({
+    clientAbrState: {
+      playerTimeMs: "0",
+      audioTrackId: audio.audioTrack?.id,
+      playbackRate: DEFAULT_PLAYBACK_RATE,
+      stickyResolution: video.height,
+      drcEnabled: false,
+      clientViewportIsFlexible: false,
+      visibility: VISIBILITY_FOREGROUND,
+      enabledTrackTypesBitfield: 0
+    },
+    selectedFormatIds: [audioFormatId, videoFormatId],
+    bufferedRanges: [],
+    videoPlaybackUstreamerConfig: base64ToUint8Array(ustreamerConfig),
+    preferredAudioFormatIds: [audioFormatId],
+    preferredVideoFormatIds: [videoFormatId],
+    preferredSubtitleFormatIds: [],
+    streamerContext: {
+      sabrContexts: [],
+      unsentSabrContexts: [],
+      clientInfo: {
+        clientName,
+        clientVersion
+      },
+      poToken: poToken ? base64ToUint8Array(poToken) : undefined
+    },
+    field1000: []
+  }).finish();
+
+  return {
+    url,
+    body,
+    capturedAt: Date.now()
+  };
 }
 
 function compositeBufferToUint8(buffer: CompositeBuffer): Uint8Array {
