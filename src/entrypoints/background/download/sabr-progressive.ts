@@ -488,14 +488,12 @@ export async function downloadViaSabrProgressive({
     signal,
     log
   });
-  if (phase1.hadAttestationBlock) {
-    log("phase1 attestation_required — aborting progressive");
-    return null;
-  }
-
   if (phase1.audioProgress.segmentBytes.length === 0 && phase1.videoProgress.segmentBytes.length === 0) {
     log("phase1 returned no usable segments");
     return null;
+  }
+  if (phase1.hadAttestationBlock) {
+    log("phase1 hit attestation_required but harvested data — proceeding to phase 2 anyway");
   }
 
   const audioCadence = phase1.audioProgress.inferredSegDurMs;
