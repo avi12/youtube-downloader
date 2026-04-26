@@ -116,9 +116,21 @@ function registerBackgroundMessageHandlers() {
   const factoryVideoId = factoryParams.get("v") ?? "";
   const factoryId = factoryParams.get("ytdlFactoryId") ?? "";
 
+  if (isTrustFactoryMode) {
+    void sendMessage(MessageType.BgDebugLog, {
+      msg: `[ytdl:factory-isolated] handler registered factoryId=${factoryId} videoId=${factoryVideoId}`
+    });
+  }
+
   let factoryTemplateSent = false;
   crossWorldMessenger.onMessage(CrossWorldMessage.SabrTemplateCaptured, ({ data }) => {
     cachedSabrTemplate = data;
+
+    if (isTrustFactoryMode) {
+      void sendMessage(MessageType.BgDebugLog, {
+        msg: `[ytdl:factory-isolated] received SabrTemplateCaptured factoryId=${factoryId} bodyB64Len=${data.bodyBase64.length} sent=${factoryTemplateSent}`
+      });
+    }
 
     // Factory-mode iframes forward the first post-ad template to BG, keyed
     // by factoryId so multiple parallel factory iframes (one per offset)
