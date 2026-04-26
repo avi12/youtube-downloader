@@ -1,4 +1,4 @@
-import { triggerDownload, reportProgress } from ".";
+import { toUint8Array, triggerDownload, reportProgress } from ".";
 import { getFFmpeg, progressHandlers, tryUnlink } from "./ffmpeg-instance";
 import { getCompatibleFilename } from "@/lib/utils/containers";
 import { ProgressType } from "@/types";
@@ -19,14 +19,36 @@ import type { ProcessStreamData } from "@/types";
 //
 // A failed pre-mux for a single segment drops it (acts as the probe-and-skip);
 // the final concat still uses the survivors.
+function pickMultipartTargetExtension({ hasExtras, userExtension }: {
+  hasExtras: boolean;
+  userExtension: string;
+}) {
+  if (hasExtras) {
+    return "mkv";
+  }
+
+  return userExtension === "mkv" ? "mkv" : "mp4";
+}
+
 export async function processMultipartSegments(item: ProcessStreamData & { segments: NonNullable<ProcessStreamData["segments"]> }) {
-  const { videoId, filenameOutput, videoMimeType, audioMimeType, tabId, segments } = item;
+  const {
+    videoId, filenameOutput, videoMimeType, audioMimeType, tabId, segments,
+    additionalAudioStreams, subtitleStreams, primaryAudioLabel
+  } = item;
   const ffmpeg = getFFmpeg();
 
   const videoExt = videoMimeType.includes("webm") ? "webm" : "mp4";
   const audioExt = audioMimeType.includes("webm") ? "webm" : "m4a";
-  const userExtension = (filenameOutput.split(".").pop() ?? "mp4").toLowerCase();
-  const targetExtension = userExtension === "mkv" ? "mkv" : "mp4";
+  const userExtension = (filenameOutput.split(".").pop() ?? "mkv").toLowerCase();
+  const extraAudioWritten = additionalAudioStreams.filter(stream => Boolean(toUint8Array(stream.data)));
+  const hasExtras = extraAudioWritten.length > 0 || subtitleStreams.length > 0;
+  // MP4 doesn't carry SRT subtitles or arbitrary multi-audio cleanly, so any
+  // extras force MKV — matches processVideoAudio's behavior and gives VLC
+  // independent track selection.
+  const targetExtension = pickMultipartTargetExtension({
+    hasExtras,
+    userExtension
+  });
 
   const filenameBase = filenameOutput.replace(/\.[^.]+$/, "");
   const intermediateFilename = getCompatibleFilename(`${videoId}-intermediate.mkv`);
@@ -138,7 +160,88 @@ export async function processMultipartSegments(item: ProcessStreamData & { segme
     writtenPaths.push(intermediateFilename);
 
     let finalFilename = intermediateFilename;
-    if (targetExtension === "mp4") {
+    if (hasExtras) {
+      const muxArgs: string[] = ["-i", intermediateFilename];
+      const extraAudioInputs: {
+        filename: string;
+        label: string;
+      }[] = [];
+      const subtitleInputs: {
+        filename: string;
+        languageCode: string;
+        label: string;
+      }[] = [];
+
+      for (const [iAudio, stream] of extraAudioWritten.entries()) {
+        const data = toUint8Array(stream.data);
+        if (!data) {
+          continue;
+        }
+
+        const ext = stream.mimeType.includes("webm") ? "webm" : "m4a";
+        const extraName = `${videoId}-extra-audio-${iAudio}.${ext}`;
+        ffmpeg.FS.writeFile(extraName, data);
+        writtenPaths.push(extraName);
+        muxArgs.push("-i", extraName);
+        extraAudioInputs.push({
+          filename: extraName,
+          label: stream.label
+        });
+      }
+
+      for (const [iSub, sub] of subtitleStreams.entries()) {
+        const subName = `${videoId}-sub-${iSub}.srt`;
+        ffmpeg.FS.writeFile(subName, new TextEncoder().encode(sub.srtContent));
+        writtenPaths.push(subName);
+        muxArgs.push("-i", subName);
+        subtitleInputs.push({
+          filename: subName,
+          languageCode: sub.languageCode,
+          label: sub.label
+        });
+      }
+
+      muxArgs.push("-map", "0:v:0", "-map", "0:a:0");
+      for (let i = 0; i < extraAudioInputs.length; i++) {
+        muxArgs.push("-map", `${i + 1}:a:0`);
+      }
+
+      const subtitleOffset = 1 + extraAudioInputs.length;
+      for (let i = 0; i < subtitleInputs.length; i++) {
+        muxArgs.push("-map", `${subtitleOffset + i}:s:0`);
+      }
+
+      muxArgs.push("-c:v", "copy", "-c:a", "copy");
+
+      if (subtitleInputs.length > 0) {
+        muxArgs.push("-c:s", "srt");
+      }
+
+      const audioLabels = [primaryAudioLabel ?? "", ...extraAudioInputs.map(input => input.label)];
+      for (const [i, label] of audioLabels.entries()) {
+        if (label) {
+          muxArgs.push(`-metadata:s:a:${i}`, `title=${label}`);
+        }
+      }
+
+      for (const [i, sub] of subtitleInputs.entries()) {
+        muxArgs.push(`-metadata:s:s:${i}`, `language=${sub.languageCode}`);
+
+        if (sub.label) {
+          muxArgs.push(`-metadata:s:s:${i}`, `title=${sub.label}`);
+        }
+      }
+
+      muxArgs.push(outputFilename);
+
+      const muxExit = ffmpeg.exec(...muxArgs);
+      if (muxExit !== 0) {
+        throw new Error(`FFmpeg multi-track mux failed with exit code ${muxExit}`);
+      }
+
+      finalFilename = outputFilename;
+      writtenPaths.push(outputFilename);
+    } else if (targetExtension === "mp4") {
       const transcodeExit = ffmpeg.exec(
         "-i", intermediateFilename, "-c:v", "copy", "-c:a", "copy", "-movflags", "+faststart", outputFilename
       );

@@ -1,14 +1,19 @@
+import { fetchExtraAudioTracksAndCaptions } from "../download/extra-tracks-fetcher";
 import { removeHostedIframe, setIframeScrubSegmentHandler, spawnHostedIframe } from "../iframe-host/iframe-host";
 import { ensureProcessor } from "./processor";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
 import { ScrubIframeMessageType, listenForScrubIframeMessages } from "@/lib/messaging/scrub-iframe-messaging";
 import { TRANSFER_CHUNK_SIZE, base64ToUint8Array, uint8ToBase64 } from "@/lib/utils/binary";
-import { type DownloadType, ProgressType, type VideoMetadata } from "@/types";
+import { ProgressType } from "@/types";
+import type { AdaptiveFormatItem, CaptionTrack, DownloadType, VideoMetadata } from "@/types";
 
 const MAX_GLOBAL_PARALLEL_IFRAMES = 2;
 const MAX_RETRIES_PER_INDEX = 2;
-const MIN_ACCEPTABLE_BYTES_PER_SEC = 30_000;
+// 8 KB/s — anything above this carries real audio + video at low bitrates
+// (Tim-Urban-style talking-head: ~12 KB/s combined). Anything below is
+// init-only and worth retrying.
+const MIN_ACCEPTABLE_BYTES_PER_SEC = 8_000;
 const IFRAME_DEADLINE_OVERHEAD_MS = 60_000;
 const DEFAULT_STEP_SEC = 60;
 const SCRUB_TAG = "[ytdl:scrub-bg]";
@@ -45,6 +50,9 @@ interface ScrubSession {
   playlistTotalCount?: number;
   resolvedVideoMimeType: string;
   resolvedAudioMimeType: string;
+  additionalAudioFormats: AdaptiveFormatItem[];
+  resolvedExtraAudioUrls: (string | null)[];
+  captionTracks: CaptionTrack[];
 }
 
 const sessionsByVideoId = new Map<string, ScrubSession>();
@@ -319,6 +327,27 @@ function rememberResolvedMimes({ session, segment }: {
   }
 }
 
+function emitExtraAudioChunks({ session, trackIndex, data }: {
+  session: ScrubSession;
+  trackIndex: number;
+  data: Uint8Array;
+}) {
+  const totalChunks = Math.max(1, Math.ceil(data.byteLength / TRANSFER_CHUNK_SIZE));
+  const streamType = `audio-extra-${trackIndex}`;
+  for (let iChunk = 0; iChunk < totalChunks; iChunk++) {
+    const start = iChunk * TRANSFER_CHUNK_SIZE;
+    const slice = data.subarray(start, start + TRANSFER_CHUNK_SIZE);
+    sendToOffscreen(OffscreenMessageType.ProcessStreamChunk, {
+      videoId: session.videoId,
+      streamType,
+      iChunk,
+      totalChunks,
+      chunkBase64: uint8ToBase64(slice),
+      tabId: session.tabId
+    });
+  }
+}
+
 async function finalizeSession(session: ScrubSession) {
   await ensureProcessor();
 
@@ -341,13 +370,33 @@ async function finalizeSession(session: ScrubSession) {
     });
   }
 
+  const { extraAudioTracks, subtitleStreams } = await fetchExtraAudioTracksAndCaptions({
+    additionalAudioFormats: session.additionalAudioFormats,
+    resolvedExtraAudioUrls: session.resolvedExtraAudioUrls,
+    captionTracks: session.captionTracks
+  });
+
+  for (const [trackIndex, track] of extraAudioTracks.entries()) {
+    emitExtraAudioChunks({
+      session,
+      trackIndex,
+      data: track.data
+    });
+  }
+
+  const audioTrackLabels = [
+    session.audioLabel,
+    ...extraAudioTracks.map(track => track.label)
+  ];
+
   sendToOffscreen(OffscreenMessageType.ProcessStreamEnd, {
     type: session.type,
     videoId: session.videoId,
     filenameOutput: session.filenameOutput,
     videoMimeType: session.resolvedVideoMimeType || session.videoMimeType,
     audioMimeType: session.resolvedAudioMimeType || session.audioMimeType,
-    audioTrackLabels: [session.audioLabel],
+    audioTrackLabels,
+    subtitleStreams,
     segmentCount: session.expectedCount,
     tabId: session.tabId,
     playlistId: session.playlistId,
@@ -383,14 +432,22 @@ async function handleSegmentArrival(data: SegmentArrival) {
     return;
   }
 
-  const iframeId = iframeIdByVideoIdAndIndex.get(makeIframeKey(data.videoId, data.scrubIndex));
-  if (iframeId) {
-    untrackIframe({
-      session,
-      iframeId,
-      scrubIndex: data.scrubIndex
-    });
+  // Both the long-lived port and the postMessage bridge fire for the same
+  // segment in succession. The first call untracks the iframe; on the second
+  // call iframeIdByVideoIdAndIndex.get(...) returns undefined, which is our
+  // dedupe signal — drop it so we don't double-count an undersized retry or
+  // double-emit chunks for a fresh segment.
+  const iframeKey = makeIframeKey(data.videoId, data.scrubIndex);
+  const iframeId = iframeIdByVideoIdAndIndex.get(iframeKey);
+  if (!iframeId) {
+    return;
   }
+
+  untrackIframe({
+    session,
+    iframeId,
+    scrubIndex: data.scrubIndex
+  });
 
   const totalBytes = base64ToUint8Array(data.videoBase64).byteLength
     + base64ToUint8Array(data.audioBase64).byteLength;
@@ -444,7 +501,10 @@ function buildSession(data: StartIframeScrubArgs, stepSec: number, expectedCount
     playlistTitle: data.playlistTitle,
     playlistTotalCount: data.playlistTotalCount,
     resolvedVideoMimeType: "",
-    resolvedAudioMimeType: ""
+    resolvedAudioMimeType: "",
+    additionalAudioFormats: data.additionalAudioFormats ?? [],
+    resolvedExtraAudioUrls: data.resolvedExtraAudioUrls ?? [],
+    captionTracks: data.captionTracks ?? []
   };
 }
 
@@ -462,6 +522,9 @@ export interface StartIframeScrubArgs {
   playlistTitle?: string;
   playlistTotalCount?: number;
   tabId: number;
+  additionalAudioFormats?: AdaptiveFormatItem[];
+  resolvedExtraAudioUrls?: (string | null)[];
+  captionTracks?: CaptionTrack[];
 }
 
 export async function startIframeScrubSession(data: StartIframeScrubArgs) {
@@ -475,6 +538,14 @@ export async function startIframeScrubSession(data: StartIframeScrubArgs) {
   const session = buildSession(data, stepSec, expectedCount);
 
   sessionsByVideoId.set(data.videoId, session);
+  // Without a long-running port the MV3 BG event page suspends after ~30s of
+  // idle, dropping setTimeout deadlines and stalling sessions mid-download.
+  void sendMessage(MessageType.StartKeepalive, { videoId: data.videoId }, data.tabId);
+  // Warm up the FFmpeg processor up-front; otherwise the very first call from
+  // finalizeSession races with WASM init and finalize hangs at await ensureProcessor.
+  void ensureProcessor().catch(error => {
+    diag(`ensureProcessor failed: ${String(error)}`);
+  });
   diag(`starting ${expectedCount} scrub iframes for ${data.videoId}`);
   await fillGlobalSlots();
 }

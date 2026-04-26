@@ -605,6 +605,9 @@ export async function startBackgroundDownload({ request, tabId }: {
           playlistId: request.playlistId,
           playlistTitle: request.playlistTitle,
           playlistTotalCount: request.playlistTotalCount,
+          additionalAudioFormats: cdnRequest.additionalAudioFormats,
+          resolvedExtraAudioUrls: cdnRequest.resolvedExtraAudioUrls,
+          captionTracks: cdnRequest.captionTracks,
           tabId
         });
         return;
