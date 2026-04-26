@@ -139,20 +139,34 @@ async function fetchClient({ client, videoId, poToken }: {
   // www.youtube.com proxy rejects mobile-app client identities with HTTP 400.
   // The googleapis hostname accepts them when paired with SAPISIDHASH auth +
   // matching User-Agent header.
-  const response = await fetch(
-    `https://youtubei.googleapis.com/youtubei/v1/player?prettyPrint=false`,
-    {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Youtube-Client-Name": client.clientNameHeader,
-        "X-Youtube-Client-Version": client.clientVersion,
-        ...(userAgent ? { "User-Agent": userAgent } : {}),
-        ...(authorization ? { Authorization: authorization } : {})
-      },
-      body: JSON.stringify(body)
-    }
-  );
+  // Hard 10s timeout: network can hang silently (e.g. when host_permissions
+  // for googleapis.com aren't granted yet) and would otherwise block the
+  // entire download flow before iframe-scrub fallback gets a chance to run.
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 10_000);
+  let response: Response;
+  try {
+    response = await fetch(
+      `https://youtubei.googleapis.com/youtubei/v1/player?prettyPrint=false`,
+      {
+        method: "POST",
+        signal: controller.signal,
+        headers: {
+          "Content-Type": "application/json",
+          "X-Youtube-Client-Name": client.clientNameHeader,
+          "X-Youtube-Client-Version": client.clientVersion,
+          ...(userAgent ? { "User-Agent": userAgent } : {}),
+          ...(authorization ? { Authorization: authorization } : {})
+        },
+        body: JSON.stringify(body)
+      }
+    );
+  } catch (error) {
+    console.log(`[ytdl:alt-client] ${client.clientName} fetch threw: ${String(error)}`);
+    return null;
+  } finally {
+    clearTimeout(timeoutId);
+  }
   if (!response.ok) {
     console.log(`[ytdl:alt-client] ${client.clientName} HTTP ${response.status} (auth=${Boolean(authorization)})`);
     return null;
