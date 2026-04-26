@@ -62,13 +62,27 @@ function appendLocalIframe({ id, url }: {
 
   setTimeout(() => {
     let contentLoc = "blocked-cross-origin";
+    let contentBodyTagCount = -1;
+    let titleProp = "n/a";
     try {
       contentLoc = elFrame.contentWindow?.location.href ?? "n/a";
     } catch {
       // expected
     }
 
-    void broadcastDiagToTabs(`[ytdl:iframe-host] +5s id=${id} stillAttached=${document.body.contains(elFrame)} contentLoc=${contentLoc}`);
+    try {
+      contentBodyTagCount = elFrame.contentDocument?.body?.children?.length ?? -1;
+    } catch {
+      // expected for cross-origin
+    }
+
+    try {
+      titleProp = elFrame.contentDocument?.title ?? "n/a";
+    } catch {
+      // expected
+    }
+
+    void broadcastDiagToTabs(`[ytdl:iframe-host] +5s id=${id} stillAttached=${document.body.contains(elFrame)} contentLoc=${contentLoc} contentBodyChildren=${contentBodyTagCount} title=${titleProp}`);
   }, 5000);
 }
 
