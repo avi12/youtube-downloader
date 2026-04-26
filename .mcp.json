@@ -3,14 +3,16 @@
     "chrome-devtools-mcp": {
       "type": "stdio",
       "command": "cmd",
-      "args": ["/c", "bunx", "chrome-devtools-mcp@latest", "--browser-url=http://localhost:9229"],
+      "args": ["/c", "bunx", "chrome-devtools-mcp@latest", "--browser-url=http://localhost:9222"],
       "env": {}
     },
     "firefox-devtools-mcp": {
       "type": "stdio",
       "command": "cmd",
-      "args": ["/c", "bunx", "firefox-devtools-mcp@latest", "--connect-existing", "--marionette-port", "2828", "--enable-script", "--enable-privileged-context"],
-      "env": {}
+      "args": ["/c", "bunx", "firefox-devtools-mcp@latest", "--connectExisting", "--marionettePort", "2828", "--enableScript", "--enablePrivilegedContext"],
+      "env": {
+        "MOZ_REMOTE_ALLOW_SYSTEM_ACCESS": "1"
+      }
     }
   }
 }

@@ -572,20 +572,18 @@ async function launchBrowser(profileDirectory: string): Promise<[WebExtRunner, (
     // Marionette port is forced via the `marionette.port` pref below since
     // --marionette-port= is ignored on some Firefox builds. 2829 keeps us out
     // of the way of sibling dev-server projects that default to 2828.
-    // FIREFOX_HEADLESS=1 launches Firefox without a visible window; the
-    // firefox-devtools MCP still connects via marionette + remote-debugging,
-    // so all `evaluate_script`, `list_console_messages`, `navigate_page`, etc.
-    // continue to work invisibly. YouTube's player runs headless without DRM;
-    // the SABR + iframe paths the extension uses do not need DRM.
-    const isHeadless = process.env.FIREFOX_HEADLESS === "1";
+    // The firefox-devtools MCP connects via Marionette (port 2828) AND the
+    // Remote Agent's WebDriver BiDi WebSocket (--remote-debugging-port). Both
+    // protocols are programmatic — neither requires the visual F12 toolbox to
+    // be open. The agent gets evaluate_script + navigate_page via Marionette,
+    // and console/network events via BiDi, all without any DevTools UI.
     const firefoxArgs = FIREFOX_NO_MARIONETTE
-      ? [`--lang=${LANG}`, "--allow-downgrade", ...(isHeadless ? ["--headless"] : [])]
+      ? [`--lang=${LANG}`, "--allow-downgrade"]
       : [
         `--lang=${LANG}`,
         "--marionette",
         `--remote-debugging-port=${firefoxRemoteDebugPort}`,
-        "--allow-downgrade",
-        ...(isHeadless ? ["--headless"] : [])
+        "--allow-downgrade"
       ];
     const runner = await webExtRun.cmd.run(
       {
@@ -601,7 +599,15 @@ async function launchBrowser(profileDirectory: string): Promise<[WebExtRunner, (
           "marionette.log.level": "Fatal",
           "marionette.port": FIREFOX_MARIONETTE_PORT,
           "app.update.auto": false,
-          "app.update.enabled": false
+          "app.update.enabled": false,
+          // Suppress visual DevTools restoration on profile reuse — agents access
+          // devtools data via Marionette/BiDi protocols, never the F12 panel.
+          "devtools.everOpened": false,
+          "devtools.toolbox.host": "bottom",
+          "devtools.command-button-tilt.enabled": false,
+          // Enable WebDriver BiDi so console/network events are programmatically
+          // available without opening DevTools.
+          "remote.active-protocols": 3
         },
         noReload: true,
         noInput: true
