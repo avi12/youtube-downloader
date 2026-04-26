@@ -64,20 +64,6 @@ async function buildSapiSidHash(): Promise<string | null> {
   return `SAPISIDHASH ${timestamp}_${hash}`;
 }
 
-const ANDROID_VR_CLIENT: ClientSpec = {
-  clientName: "ANDROID_VR",
-  clientNameHeader: "28",
-  clientVersion: "1.65.10",
-  context: {
-    deviceMake: "Oculus",
-    deviceModel: "Quest 3",
-    osName: "Android",
-    osVersion: "12L",
-    androidSdkVersion: 32,
-    userAgent: "com.google.android.apps.youtube.vr.oculus/1.65.10 (Linux; U; Android 12L; eureka-user Build/SQ3A.220605.009.A1) gzip"
-  }
-};
-
 const TV_EMBED_CLIENT: ClientSpec = {
   clientName: "TVHTML5_SIMPLY_EMBEDDED_PLAYER",
   clientNameHeader: "85",
@@ -116,7 +102,6 @@ const MWEB_CLIENT: ClientSpec = {
 };
 
 const CLIENT_CHAIN: ClientSpec[] = [
-  ANDROID_VR_CLIENT,
   TV_EMBED_CLIENT,
   IOS_CLIENT,
   MWEB_CLIENT
@@ -149,8 +134,12 @@ async function fetchClient({ client, videoId, poToken }: {
   }
 
   const authorization = await buildSapiSidHash();
+  // youtubei.googleapis.com is the canonical innertube endpoint; the
+  // www.youtube.com proxy rejects mobile-app client identities (ANDROID,
+  // ANDROID_VR, IOS) with HTTP 400. The googleapis hostname accepts them
+  // when paired with SAPISIDHASH auth.
   const response = await fetch(
-    `https://www.youtube.com/youtubei/v1/player?prettyPrint=false`,
+    `https://youtubei.googleapis.com/youtubei/v1/player?prettyPrint=false`,
     {
       method: "POST",
       headers: {
@@ -163,12 +152,14 @@ async function fetchClient({ client, videoId, poToken }: {
     }
   );
   if (!response.ok) {
+    console.log(`[ytdl:alt-client] ${client.clientName} HTTP ${response.status} (auth=${Boolean(authorization)})`);
     return null;
   }
 
   const data: PlayerResponse = await response.json();
   const playabilityStatus = data.playabilityStatus?.status;
   if (playabilityStatus && playabilityStatus !== "OK") {
+    console.log(`[ytdl:alt-client] ${client.clientName} playability=${playabilityStatus} reason=${data.playabilityStatus?.reason ?? ""}`);
     return null;
   }
 
@@ -176,11 +167,12 @@ async function fetchClient({ client, videoId, poToken }: {
     ...(data.streamingData?.adaptiveFormats ?? []),
     ...(data.streamingData?.formats ?? [])
   ];
-  // Reject responses without any URL-bearing formats (still SABR-only).
   if (!formats.some(format => format.url)) {
+    console.log(`[ytdl:alt-client] ${client.clientName} returned ${formats.length} formats but all are SABR-only (no url field)`);
     return null;
   }
 
+  console.log(`[ytdl:alt-client] ${client.clientName} OK (${formats.length} formats, auth=${Boolean(authorization)})`);
   return formats;
 }
 

@@ -30,6 +30,7 @@ export default defineConfig({
     host_permissions: [
       "https://*.youtube.com/*",
       "https://*.googlevideo.com/*",
+      "https://*.googleapis.com/*",
       "https://i.ytimg.com/*",
       ...(mode === "development" ? ["http://localhost/*", "https://localhost/*"] : [])
     ],
