@@ -77,6 +77,14 @@ export default defineContentScript({
       return sourceBuffer;
     };
 
+    // Init segments (ftyp+moov for fMP4, EBML+Tracks for WebM) are typically
+    // a few KB; only those need to be retained pre-download so a later capture
+    // bind has the codec headers. Media fragments are 100KB-1MB each and there
+    // are dozens per minute of playback — copying them all into pendingChunks
+    // would balloon memory and stall the main thread on every appendBuffer.
+    const PENDING_INIT_MAX_BYTES = 50_000;
+    const seenInitForBuffer = new WeakSet<SourceBuffer>();
+
     const originalAppendBuffer = SourceBuffer.prototype.appendBuffer;
     SourceBuffer.prototype.appendBuffer = function (data) {
       const mimeType = sourceBufferMimeTypes.get(this);
@@ -85,12 +93,7 @@ export default defineContentScript({
           ? new Uint8Array(data)
           : new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
         const { activeVideoId, capturedMedia, pendingChunks } = captureState;
-        if (!activeVideoId || !capturedMedia.has(activeVideoId)) {
-          pendingChunks.push({
-            mimeType,
-            data: chunk.slice()
-          });
-        } else {
+        if (activeVideoId && capturedMedia.has(activeVideoId)) {
           const capture = capturedMedia.get(activeVideoId);
           if (capture) {
             addChunkToCapture({
@@ -99,6 +102,12 @@ export default defineContentScript({
               chunk
             });
           }
+        } else if (!seenInitForBuffer.has(this) && chunk.byteLength <= PENDING_INIT_MAX_BYTES) {
+          pendingChunks.push({
+            mimeType,
+            data: chunk.slice()
+          });
+          seenInitForBuffer.add(this);
         }
       }
 
