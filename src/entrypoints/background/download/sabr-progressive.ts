@@ -1,30 +1,39 @@
 import type { DownloadResult } from "./background-downloader";
 // Parallel chunked-SABR downloader. Replaces seek-through-iframe scrubbing
-// with direct googlevideo POSTs at offset playerTimeMs values, threaded
-// through SabrStream's state-restore path. Pattern:
+// with raw-protocol googlevideo POSTs at offset playerTimeMs values.
 //
-// 1. Phase 1: bootstrap a SabrStream session with the captured trust template
-//    (player-signed initial body). Read for `phase1RunMs` so the lib populates
-//    initializedFormats + nextRequestPolicy. Capture state.
+// 1. Decode the captured player-signed VideoPlaybackAbrRequest body.
+// 2. Phase 1: replay the captured body verbatim. Decode the UMP response,
+//    extract MEDIA bytes per itag (init segments + first ~60s of media),
+//    harvest nextRequestPolicy.playbackCookie.
+// 3. Phase 2: for each offset (60s, 120s, …), build a fresh request body
+//    with mutated clientAbrState.playerTimeMs, bufferedRanges spanning [0..N],
+//    and the captured playbackCookie. Send in parallel. Decode responses.
+// 4. Concatenate all MEDIA bytes in offset order per itag and return.
 //
-// 2. Phase 2: fan out one SabrStream per remaining offset, each calling
-//    start({ state: { ...captured, playerTimeMs: offset } }). Each session
-//    reads for `phaseRunMs` then closes. Concatenate phase 1 + phase 2 in
-//    offset order.
-//
-// SabrStream's state mechanism makes the server treat each phase-2 session
-// as a continuation of phase 1, bypassing the per-session media quota that
-// caps a single session at ~80s of media.
+// This bypasses SabrStream's per-session media quota (which capped a single
+// session at ~80s of media) by issuing each offset's fetch as a fresh
+// request — the playbackCookie threads them as one logical session from the
+// server's view but the per-fetch quota resets.
 import { sendProgressUpdate } from "./progress-fetch";
 import type { AdaptiveFormatItem, DownloadRequest, SabrConfig } from "@/types";
 import { ProgressType } from "@/types";
-import { SabrStream } from "googlevideo/sabr-stream";
-import { buildSabrFormat } from "googlevideo/utils";
+import {
+  type FormatId,
+  MediaHeader,
+  NextRequestPolicy,
+  PlaybackCookie,
+  SabrError,
+  StreamProtectionStatus,
+  UMPPartId,
+  VideoPlaybackAbrRequest
+} from "googlevideo/protos";
+import { CompositeBuffer, UmpReader } from "googlevideo/ump";
 
-const PHASE_RUN_MS = 25_000;
-const PHASE1_RUN_MS = 20_000;
 const OFFSET_STEP_MS = 60_000;
 const MAX_PARALLEL = 4;
+const PER_FETCH_TIMEOUT_MS = 30_000;
+const MAX_FETCHES_PER_OFFSET = 3;
 
 interface ChunkedTemplate {
   url: string;
@@ -32,86 +41,281 @@ interface ChunkedTemplate {
   capturedAt: number;
 }
 
-function adaptiveToSabrFormat(format: AdaptiveFormatItem) {
-  return buildSabrFormat({
-    itag: format.itag,
-    lastModified: String(format.lastModified),
-    xtags: format.xtags,
-    width: format.width,
-    height: format.height,
-    mimeType: format.mimeType,
-    audioQuality: format.audioQuality,
-    bitrate: format.bitrate,
-    averageBitrate: format.averageBitrate,
-    quality: format.quality,
-    qualityLabel: format.qualityLabel ?? undefined,
-    audioTrackId: format.audioTrack?.id,
-    approxDurationMs: format.approxDurationMs,
-    contentLength: format.contentLength,
-    isDrc: false
-  });
+interface SegmentBytes {
+  itag: number;
+  sequenceNumber: number;
+  bytes: Uint8Array;
 }
 
-function makeTemplateFetch({ originalFetch, templateUrl, templateBody }: {
-  originalFetch: typeof globalThis.fetch;
-  templateUrl: string;
-  templateBody: Uint8Array;
-}): typeof globalThis.fetch {
-  let calls = 0;
-  return async (input: RequestInfo | URL, init?: RequestInit) => {
-    calls++;
+interface DecodedResponse {
+  segments: SegmentBytes[];
+  playbackCookieBytes?: Uint8Array;
+  protectionStatus?: number;
+  hasSabrError: boolean;
+  totalMediaBytes: number;
+}
 
-    if (calls === 1) {
-      const fresh = new Uint8Array(templateBody.byteLength);
-      fresh.set(templateBody);
-      return originalFetch(templateUrl, {
-        method: "POST",
-        body: fresh,
-        mode: "cors",
-        credentials: "include"
-      });
+function compositeBufferToUint8(buffer: CompositeBuffer): Uint8Array {
+  const out = new Uint8Array(buffer.totalLength);
+  let offset = 0;
+  for (const chunk of buffer.chunks) {
+    out.set(chunk, offset);
+    offset += chunk.length;
+  }
+  return out;
+}
+
+function decodeBase64(base64: string): Uint8Array {
+  return Uint8Array.from(atob(base64), char => char.charCodeAt(0));
+}
+
+function decodeResponseBody(body: Uint8Array): DecodedResponse {
+  const result: DecodedResponse = {
+    segments: [],
+    hasSabrError: false,
+    totalMediaBytes: 0
+  };
+  const headerById = new Map<number, MediaHeader>();
+  const mediaBufsById = new Map<number, Uint8Array[]>();
+
+  const reader = new UmpReader(new CompositeBuffer([body]));
+  reader.read((part: {
+    type: number;
+    size: number;
+    data: CompositeBuffer;
+  }) => {
+    const bytes = compositeBufferToUint8(part.data);
+    try {
+      switch (part.type) {
+        case UMPPartId.MEDIA_HEADER: {
+          const header = MediaHeader.decode(bytes);
+          if (typeof header.headerId === "number") {
+            headerById.set(header.headerId, header);
+          }
+
+          break;
+        }
+        case UMPPartId.MEDIA: {
+          if (bytes.length < 2) {
+            break;
+          }
+
+          const headerId = bytes[0];
+          const list = mediaBufsById.get(headerId) ?? [];
+          list.push(bytes.subarray(1));
+          mediaBufsById.set(headerId, list);
+          result.totalMediaBytes += bytes.byteLength - 1;
+          break;
+        }
+        case UMPPartId.NEXT_REQUEST_POLICY: {
+          const policy = NextRequestPolicy.decode(bytes);
+          if (policy.playbackCookie) {
+            result.playbackCookieBytes = PlaybackCookie.encode(policy.playbackCookie).finish();
+          }
+
+          break;
+        }
+        case UMPPartId.SABR_ERROR: {
+          SabrError.decode(bytes);
+          result.hasSabrError = true;
+          break;
+        }
+        case UMPPartId.STREAM_PROTECTION_STATUS:
+          result.protectionStatus = StreamProtectionStatus.decode(bytes).status;
+          break;
+      }
+    } catch {
+      // unknown part — ignore
+    }
+  });
+
+  for (const [headerId, header] of headerById) {
+    const bufs = mediaBufsById.get(headerId);
+    if (!bufs || bufs.length === 0) {
+      continue;
     }
 
-    return originalFetch(input, init);
-  };
+    const total = bufs.reduce((sum, buf) => sum + buf.byteLength, 0);
+    const merged = new Uint8Array(total);
+    let offset = 0;
+    for (const buf of bufs) {
+      merged.set(buf, offset);
+      offset += buf.byteLength;
+    }
+    result.segments.push({
+      itag: header.itag ?? 0,
+      sequenceNumber: header.sequenceNumber ?? 0,
+      bytes: merged
+    });
+  }
+
+  return result;
 }
 
-async function readForDuration({ stream, runMs, signal }: {
-  stream: ReadableStream<Uint8Array>;
-  runMs: number;
+function fetchWithTimeout(url: string, body: Uint8Array, signal: AbortSignal) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), PER_FETCH_TIMEOUT_MS);
+  signal.addEventListener("abort", () => controller.abort(), { once: true });
+
+  const buffer = new ArrayBuffer(body.byteLength);
+  new Uint8Array(buffer).set(body);
+  return fetch(url, {
+    method: "POST",
+    body: buffer,
+    credentials: "include",
+    signal: controller.signal
+  }).finally(() => clearTimeout(timeout));
+}
+
+function urlWithRequestNumber(baseUrl: string, requestNumber: number) {
+  const url = new URL(baseUrl);
+  url.searchParams.set("rn", String(requestNumber));
+  return url.toString();
+}
+
+function buildOffsetBody({
+  decodedTemplate, fromMs, audioBufferedDurationMs, videoBufferedDurationMs,
+  audioFormatId, videoFormatId, playbackCookieBytes
+}: {
+  decodedTemplate: VideoPlaybackAbrRequest;
+  fromMs: number;
+  audioBufferedDurationMs: number;
+  videoBufferedDurationMs: number;
+  audioFormatId: FormatId;
+  videoFormatId: FormatId;
+  playbackCookieBytes?: Uint8Array;
+}): Uint8Array {
+  const next: VideoPlaybackAbrRequest = {
+    ...decodedTemplate,
+    clientAbrState: {
+      ...(decodedTemplate.clientAbrState ?? {}),
+      playerTimeMs: String(fromMs)
+    },
+    bufferedRanges: [
+      {
+        formatId: audioFormatId,
+        startTimeMs: "0",
+        durationMs: String(audioBufferedDurationMs),
+        startSegmentIndex: 1,
+        endSegmentIndex: Math.max(1, Math.floor(audioBufferedDurationMs / 5_000))
+      },
+      {
+        formatId: videoFormatId,
+        startTimeMs: "0",
+        durationMs: String(videoBufferedDurationMs),
+        startSegmentIndex: 1,
+        endSegmentIndex: Math.max(1, Math.floor(videoBufferedDurationMs / 5_000))
+      }
+    ],
+    streamerContext: {
+      ...(decodedTemplate.streamerContext ?? {
+        sabrContexts: [],
+        unsentSabrContexts: [],
+        clientInfo: undefined
+      }),
+      playbackCookie: playbackCookieBytes
+    }
+  };
+  return VideoPlaybackAbrRequest.encode(next).finish();
+}
+
+interface OffsetState {
+  fromMs: number;
+  audioItag: number;
+  videoItag: number;
+  audioBytes: Uint8Array[];
+  videoBytes: Uint8Array[];
+  audioDurationMs: number;
+  videoDurationMs: number;
+}
+
+async function fetchOffsetWindow({
+  decodedTemplate, baseUrl, fromMs, requestNumberSeed, audioFormatId, videoFormatId,
+  startCookie, signal, log
+}: {
+  decodedTemplate: VideoPlaybackAbrRequest;
+  baseUrl: string;
+  fromMs: number;
+  requestNumberSeed: number;
+  audioFormatId: FormatId;
+  videoFormatId: FormatId;
+  startCookie?: Uint8Array;
   signal: AbortSignal;
-}): Promise<Uint8Array> {
-  const reader = stream.getReader();
-  const chunks: Uint8Array[] = [];
-  let totalBytes = 0;
-  const deadline = Date.now() + runMs;
-  while (Date.now() < deadline && !signal.aborted) {
-    const remaining = deadline - Date.now();
-    const result = await Promise.race([
-      reader.read(),
-      new Promise<null>(resolveTimer => setTimeout(() => resolveTimer(null), remaining))
-    ]);
-    if (result === null || result.done) {
+  log: (msg: string) => void;
+}): Promise<OffsetState> {
+  const state: OffsetState = {
+    fromMs,
+    audioItag: audioFormatId.itag ?? 0,
+    videoItag: videoFormatId.itag ?? 0,
+    audioBytes: [],
+    videoBytes: [],
+    audioDurationMs: 0,
+    videoDurationMs: 0
+  };
+  let cookie = startCookie;
+  let requestNumber = requestNumberSeed;
+
+  for (let attempt = 0; attempt < MAX_FETCHES_PER_OFFSET && !signal.aborted; attempt++) {
+    const body = buildOffsetBody({
+      decodedTemplate,
+      fromMs: fromMs + state.audioDurationMs,
+      audioBufferedDurationMs: fromMs + state.audioDurationMs,
+      videoBufferedDurationMs: fromMs + state.videoDurationMs,
+      audioFormatId,
+      videoFormatId,
+      playbackCookieBytes: cookie
+    });
+    const url = urlWithRequestNumber(baseUrl, requestNumber++);
+
+    let responseBytes: Uint8Array;
+    try {
+      const response = await fetchWithTimeout(url, body, signal);
+      responseBytes = new Uint8Array(await response.arrayBuffer());
+    } catch (err) {
+      log(`fromMs=${fromMs} attempt=${attempt} fetch threw: ${String(err)}`);
       break;
     }
 
-    if (result.value) {
-      chunks.push(result.value);
-      totalBytes += result.value.byteLength;
+    const decoded = decodeResponseBody(responseBytes);
+    log(`fromMs=${fromMs} attempt=${attempt} bytes=${responseBytes.byteLength} mediaBytes=${decoded.totalMediaBytes} segments=${decoded.segments.length}`);
+
+    if (decoded.hasSabrError || decoded.protectionStatus === 3) {
+      break;
+    }
+
+    if (decoded.totalMediaBytes === 0) {
+      break;
+    }
+
+    if (decoded.playbackCookieBytes) {
+      cookie = decoded.playbackCookieBytes;
+    }
+
+    const priorAudio = state.audioDurationMs;
+    const priorVideo = state.videoDurationMs;
+    for (const segment of decoded.segments) {
+      if (segment.itag === state.audioItag) {
+        state.audioBytes.push(segment.bytes);
+      } else if (segment.itag === state.videoItag) {
+        state.videoBytes.push(segment.bytes);
+      }
+    }
+
+    // Approximate per-segment duration: response covers ~ totalMediaBytes / bitrate seconds.
+    // Use a conservative 5s/segment increment (server's typical fragment cadence).
+    state.audioDurationMs += 5_000;
+    state.videoDurationMs += 5_000;
+
+    if (state.audioDurationMs - priorAudio === 0 && state.videoDurationMs - priorVideo === 0) {
+      break;
+    }
+
+    if (state.audioDurationMs >= OFFSET_STEP_MS && state.videoDurationMs >= OFFSET_STEP_MS) {
+      break;
     }
   }
-  try {
-    await reader.cancel();
-  } catch {
-    // already cancelled
-  }
-  const out = new Uint8Array(totalBytes);
-  let offset = 0;
-  for (const chunk of chunks) {
-    out.set(chunk, offset);
-    offset += chunk.byteLength;
-  }
-  return out;
+
+  return state;
 }
 
 function concat(parts: Uint8Array[]): Uint8Array {
@@ -125,57 +329,21 @@ function concat(parts: Uint8Array[]): Uint8Array {
   return out;
 }
 
-async function fetchOffsetChunk({
-  fromMs, baseState, sabrConfig, videoFormat, audioFormat, poToken, signal
+async function fetchPhase1({
+  templateUrl, templateBody, signal, log
 }: {
-  fromMs: number;
-  baseState: ReturnType<SabrStream["getState"]>;
-  sabrConfig: SabrConfig;
-  videoFormat: AdaptiveFormatItem;
-  audioFormat: AdaptiveFormatItem;
-  poToken: string;
+  templateUrl: string;
+  templateBody: Uint8Array;
   signal: AbortSignal;
+  log: (msg: string) => void;
 }) {
-  const sabrFormats = sabrConfig.formats.map(adaptiveToSabrFormat);
-  const stream = new SabrStream({
-    fetch: globalThis.fetch.bind(globalThis),
-    serverAbrStreamingUrl: sabrConfig.serverAbrStreamingUrl,
-    videoPlaybackUstreamerConfig: sabrConfig.videoPlaybackUstreamerConfig,
-    poToken: poToken || undefined,
-    clientInfo: {
-      clientName: sabrConfig.clientName,
-      clientVersion: sabrConfig.clientVersion
-    },
-    formats: sabrFormats,
-    durationMs: parseInt(sabrConfig.formats[0]?.approxDurationMs ?? "0", 10)
-  });
-
-  const { videoStream, audioStream } = await stream.start({
-    videoFormat: adaptiveToSabrFormat(videoFormat),
-    audioFormat: adaptiveToSabrFormat(audioFormat),
-    state: {
-      ...baseState,
-      playerTimeMs: fromMs
-    }
-  });
-
-  const [videoBytes, audioBytes] = await Promise.all([
-    readForDuration({
-      stream: videoStream,
-      runMs: PHASE_RUN_MS,
-      signal
-    }),
-    readForDuration({
-      stream: audioStream,
-      runMs: PHASE_RUN_MS,
-      signal
-    })
-  ]);
-  stream.abort();
+  const response = await fetchWithTimeout(templateUrl, templateBody, signal);
+  const responseBytes = new Uint8Array(await response.arrayBuffer());
+  const decoded = decodeResponseBody(responseBytes);
+  log(`phase1 bytes=${responseBytes.byteLength} mediaBytes=${decoded.totalMediaBytes} segments=${decoded.segments.length}`);
   return {
-    fromMs,
-    videoBytes,
-    audioBytes
+    decoded,
+    responseBytes
   };
 }
 
@@ -187,7 +355,7 @@ export async function downloadViaSabrProgressive({
   tabId: number;
   template: ChunkedTemplate;
 }): Promise<DownloadResult | null> {
-  const { videoId, sabrConfig: maybeConfig, videoFormat: maybeVideo, audioFormat: maybeAudio, poToken } = request;
+  const { videoId, sabrConfig: maybeConfig, videoFormat: maybeVideo, audioFormat: maybeAudio } = request;
   if (!maybeConfig || !maybeVideo || !maybeAudio) {
     return null;
   }
@@ -201,116 +369,125 @@ export async function downloadViaSabrProgressive({
     return null;
   }
 
-  const templateBody = Uint8Array.from(atob(template.bodyBase64), char => char.charCodeAt(0));
-
-  // Phase 1: bootstrap with player-signed body, read for ~20s, capture state.
-  const sabrFormats = sabrConfig.formats.map(adaptiveToSabrFormat);
-  const phase1Stream = new SabrStream({
-    fetch: makeTemplateFetch({
-      originalFetch: globalThis.fetch.bind(globalThis),
-      templateUrl: template.url,
-      templateBody
-    }),
-    serverAbrStreamingUrl: sabrConfig.serverAbrStreamingUrl,
-    videoPlaybackUstreamerConfig: sabrConfig.videoPlaybackUstreamerConfig,
-    poToken: (poToken ?? "") || undefined,
-    clientInfo: {
-      clientName: sabrConfig.clientName,
-      clientVersion: sabrConfig.clientVersion
-    },
-    formats: sabrFormats,
-    durationMs
-  });
-
-  const phase1Streams = await phase1Stream.start({
-    videoFormat: adaptiveToSabrFormat(videoFormat),
-    audioFormat: adaptiveToSabrFormat(audioFormat)
-  });
-
-  const [phase1Video, phase1Audio] = await Promise.all([
-    readForDuration({
-      stream: phase1Streams.videoStream,
-      runMs: PHASE1_RUN_MS,
-      signal
-    }),
-    readForDuration({
-      stream: phase1Streams.audioStream,
-      runMs: PHASE1_RUN_MS,
-      signal
-    })
-  ]);
-
-  let baseState: ReturnType<SabrStream["getState"]>;
-  try {
-    baseState = phase1Stream.getState();
-  } catch {
-    phase1Stream.abort();
-    return phase1Video.byteLength === 0 && phase1Audio.byteLength === 0
-      ? null
-      : {
-        videoData: phase1Video,
-        audioData: phase1Audio,
-        additionalAudioTracks: []
-      };
+  function log(msg: string) {
+    console.log(`[ytdl:sabr-progressive] ${msg}`);
   }
-  phase1Stream.abort();
 
-  // Phase 2: parallel offset fetches starting from where phase 1 leaves off.
-  const phase1ApproxMs = OFFSET_STEP_MS;
+  const templateBody = decodeBase64(template.bodyBase64);
+  const decodedTemplate = VideoPlaybackAbrRequest.decode(templateBody);
+  const audioFormatId = decodedTemplate.selectedFormatIds[0] ?? { itag: audioFormat.itag };
+  const videoFormatId = decodedTemplate.selectedFormatIds[1] ?? { itag: videoFormat.itag };
+  log(`audioItag=${audioFormatId.itag} videoItag=${videoFormatId.itag} durationMs=${durationMs}`);
+
+  // Phase 1: replay captured body verbatim, decode response.
+  let phase1Result;
+  try {
+    phase1Result = await fetchPhase1({
+      templateUrl: template.url,
+      templateBody,
+      signal,
+      log
+    });
+  } catch (err) {
+    log(`phase1 fetch threw: ${String(err)}`);
+    return null;
+  }
+
+  if (phase1Result.decoded.hasSabrError || phase1Result.decoded.protectionStatus === 3) {
+    log("phase1 attestation_required or sabr_error — aborting progressive");
+    return null;
+  }
+
+  const audioPhase1: Uint8Array[] = [];
+  const videoPhase1: Uint8Array[] = [];
+  for (const segment of phase1Result.decoded.segments) {
+    if (segment.itag === audioFormatId.itag) {
+      audioPhase1.push(segment.bytes);
+    } else if (segment.itag === videoFormatId.itag) {
+      videoPhase1.push(segment.bytes);
+    }
+  }
+
+  if (audioPhase1.length === 0 && videoPhase1.length === 0) {
+    log("phase1 returned no usable segments");
+    return null;
+  }
+
+  void sabrConfig;
+  const cookie = phase1Result.decoded.playbackCookieBytes;
+  log(`phase1 audioParts=${audioPhase1.length} videoParts=${videoPhase1.length} cookie=${cookie ? "present" : "missing"}`);
+
+  // Phase 2: parallel offset fetches for the rest of the video.
   const offsets: number[] = [];
-  for (let timeMs = phase1ApproxMs; timeMs < durationMs; timeMs += OFFSET_STEP_MS) {
+  for (let timeMs = OFFSET_STEP_MS; timeMs < durationMs; timeMs += OFFSET_STEP_MS) {
     offsets.push(timeMs);
   }
+  log(`phase2 offsets=${offsets.length}`);
 
-  const results: Array<{
-    fromMs: number;
-    videoBytes: Uint8Array;
-    audioBytes: Uint8Array;
-  } | null> = new Array(offsets.length).fill(null);
+  const totalSegments = offsets.length + 1;
+  let completed = 1;
+  void sendProgressUpdate({
+    videoId,
+    progress: completed / totalSegments,
+    progressType: ProgressType.Video,
+    tabId
+  });
+
+  const results: Array<OffsetState | null> = new Array(offsets.length).fill(null);
   let cursor = 0;
-  let completed = 0;
-
-  function reportProgress() {
-    completed++;
-    const totalSegments = offsets.length + 1;
-    const fraction = Math.min(completed / totalSegments, 1);
-    void sendProgressUpdate({
-      videoId,
-      progress: fraction,
-      progressType: ProgressType.Video,
-      tabId
-    });
-  }
+  let requestNumberCounter = 1;
 
   async function worker() {
     while (cursor < offsets.length && !signal.aborted) {
       const idx = cursor++;
       const fromMs = offsets[idx];
+      const seed = requestNumberCounter;
+      requestNumberCounter += MAX_FETCHES_PER_OFFSET;
       try {
-        results[idx] = await fetchOffsetChunk({
+        results[idx] = await fetchOffsetWindow({
+          decodedTemplate,
+          baseUrl: template.url,
           fromMs,
-          baseState,
-          sabrConfig,
-          videoFormat,
-          audioFormat,
-          poToken: poToken ?? "",
-          signal
+          requestNumberSeed: seed,
+          audioFormatId,
+          videoFormatId,
+          startCookie: cookie,
+          signal,
+          log
         });
-      } catch {
-        results[idx] = null;
+      } catch (err) {
+        log(`offset ${fromMs} threw: ${String(err)}`);
       }
-      reportProgress();
+      completed++;
+      void sendProgressUpdate({
+        videoId,
+        progress: Math.min(completed / totalSegments, 1),
+        progressType: ProgressType.Video,
+        tabId
+      });
     }
   }
 
-  reportProgress();
   await Promise.all(Array.from({ length: Math.min(MAX_PARALLEL, offsets.length || 1) }, () => worker()));
 
-  const videoParts = [phase1Video, ...results.map(entry => entry?.videoBytes ?? new Uint8Array())];
-  const audioParts = [phase1Audio, ...results.map(entry => entry?.audioBytes ?? new Uint8Array())];
-  const videoData = concat(videoParts);
+  // Concat all parts in offset order.
+  const audioParts = [...audioPhase1];
+  const videoParts = [...videoPhase1];
+  for (const offsetState of results) {
+    if (!offsetState) {
+      continue;
+    }
+
+    audioParts.push(...offsetState.audioBytes);
+    videoParts.push(...offsetState.videoBytes);
+  }
+
   const audioData = concat(audioParts);
-  if (videoData.byteLength === 0 && audioData.byteLength === 0) {
+  const videoData = concat(videoParts);
+
+  log(`done: video=${videoData.byteLength}B audio=${audioData.byteLength}B`);
+
+  if (audioData.byteLength === 0 && videoData.byteLength === 0) {
     return null;
   }
 
