@@ -286,6 +286,13 @@ export default defineContentScript({
   matches: ["https://www.youtube.com/*"],
   allFrames: true,
   async main(context) {
+    // Diagnostic: verify content script reaches BG-hosted scrub iframes.
+    if (/ytdlScrubMode=1|ytdlTrustFactoryMode=1/.test(location.search)) {
+      void sendMessage(MessageType.BgDebugLog, {
+        msg: `[ytdl:content-isolated] booted self===top=${self === top} url=${location.search.slice(0, 120)}`
+      }).catch(error => console.warn("[ytdl:content-isolated] sendMessage failed:", error));
+    }
+
     // Scrub iframes are hosted inside the BG (Firefox) or offscreen page
     // (Chrome). From this content script's perspective `self !== top` because
     // top is the BG/offscreen document, not the iframe itself. The cross-world
