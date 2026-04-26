@@ -21,6 +21,7 @@ export default defineConfig({
       "unlimitedStorage",
       "tabs",
       "webRequest",
+      "webRequestBlocking",
       "declarativeNetRequest",
       "declarativeNetRequestWithHostAccess",
       ...(browser === "firefox" ? ["webRequestBlocking"] : []),
