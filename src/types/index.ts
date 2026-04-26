@@ -112,7 +112,6 @@ export type DownloadRequest = {
   resolvedAudioUrl?: string | null;
   resolvedExtraAudioUrls?: (string | null)[];
   captionTracks?: CaptionTrack[];
-  debugRangedFromSec?: number;
   videoDurationSec?: number;
 };
 

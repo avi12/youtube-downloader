@@ -177,11 +177,6 @@ export async function performDownload({
     const videoDurationMs = parseInt(videoFormat?.approxDurationMs ?? audioFormat?.approxDurationMs ?? "0", 10);
     const videoDurationSec = Math.ceil(videoDurationMs / 1000);
 
-    // YouTube's SPA strips ?query params on watch navigation, so read from the
-    // hash fragment instead. Trigger via e.g. #ytdlDebugRangedFromSec=600
-    const debugRangedMatch = location.hash.match(/ytdlDebugRangedFromSec=(\d+)/);
-    const debugRangedFromSec = debugRangedMatch ? parseInt(debugRangedMatch[1], 10) : undefined;
-
     const enrichedRequest: DownloadRequest = {
       type,
       videoId,
@@ -193,7 +188,6 @@ export async function performDownload({
       poToken: credentials.poToken,
       alternateClientPoToken: capturedAlternateClientPoToken,
       sabrUrl: credentials.sabrUrl,
-      debugRangedFromSec,
       videoFormat,
       audioFormat,
       additionalAudioFormats: extraAudioFormats,
