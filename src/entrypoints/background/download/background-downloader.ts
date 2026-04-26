@@ -4,7 +4,7 @@ import { removeFromPopupList } from "../queue/popup-list";
 import { signalVideoComplete } from "../queue/sequential-queue";
 import { downloadViaCdn } from "./cdn-downloader";
 import { downloadViaSabr } from "./sabr-downloader";
-import { debugLogToTab } from "@/lib/messaging/debug-log";
+import { broadcastDebugLogToTab } from "@/lib/messaging/debug-log";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, sendBytesToOffscreen, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
 import { interruptedDownloadsItem, mutateStorageItem } from "@/lib/storage/storage";
@@ -249,7 +249,7 @@ async function enrichWithAlternateClientUrls(request: DownloadRequest, tabId?: n
 
     if (typeof tabId === "number") {
       const availableItags = formats.map(format => format.itag).join(",");
-      debugLogToTab(
+      broadcastDebugLogToTab(
         `[ytdl:bg] alternate-client returned ${formats.length} formats (itags=${availableItags}); video itag ${request.videoItag} url=${Boolean(enriched.resolvedVideoUrl)}, audio itag ${request.audioItag} url=${Boolean(enriched.resolvedAudioUrl)}`,
         tabId
       );
@@ -260,7 +260,7 @@ async function enrichWithAlternateClientUrls(request: DownloadRequest, tabId?: n
     console.warn("[ytdl:bg] Alternate-client fallback failed:", error);
 
     if (typeof tabId === "number") {
-      debugLogToTab(`[ytdl:bg] alternate-client threw: ${String(error)}`, tabId);
+      broadcastDebugLogToTab(`[ytdl:bg] alternate-client threw: ${String(error)}`, tabId);
     }
 
     return request;
@@ -298,7 +298,7 @@ export async function startBackgroundDownload({ request, tabId }: {
   tabId: number;
 }) {
   const { videoId, metadata } = request;
-  debugLogToTab(
+  broadcastDebugLogToTab(
     `[ytdl:bg] startBackgroundDownload entry videoId=${videoId} tabId=${tabId} hasVideoFmt=${Boolean(request.videoFormat)} hasAudioFmt=${Boolean(request.audioFormat)} hasResolvedVideo=${Boolean(request.resolvedVideoUrl)} hasResolvedAudio=${Boolean(request.resolvedAudioUrl)}`,
     tabId
   );
@@ -318,7 +318,7 @@ export async function startBackgroundDownload({ request, tabId }: {
     let result: DownloadResult | null = null;
     const cdnRequest = await enrichWithAlternateClientUrls(request, tabId);
     const haveCdnUrls = Boolean(cdnRequest.resolvedVideoUrl || cdnRequest.resolvedAudioUrl);
-    debugLogToTab(
+    broadcastDebugLogToTab(
       `[ytdl:bg] CDN-first check: haveUrls=${haveCdnUrls} video=${Boolean(cdnRequest.resolvedVideoUrl)} audio=${Boolean(cdnRequest.resolvedAudioUrl)}`,
       tabId
     );
@@ -335,10 +335,10 @@ export async function startBackgroundDownload({ request, tabId }: {
         }
 
         console.warn("[ytdl:bg] CDN-first failed:", error);
-        debugLogToTab(`[ytdl:bg] CDN-first threw: ${String(error)}`, tabId);
+        broadcastDebugLogToTab(`[ytdl:bg] CDN-first threw: ${String(error)}`, tabId);
         return null;
       });
-      debugLogToTab(
+      broadcastDebugLogToTab(
         `[ytdl:bg] CDN-first done: video=${result?.videoData?.byteLength ?? 0}B audio=${result?.audioData?.byteLength ?? 0}B`,
         tabId
       );
@@ -353,7 +353,7 @@ export async function startBackgroundDownload({ request, tabId }: {
     if (!result?.audioData && !result?.videoData) {
       const durationSec = request.videoDurationSec ?? 0;
       if (import.meta.env.FIREFOX && durationSec >= FIREFOX_IFRAME_SCRUB_FALLBACK_MIN_DURATION_SEC) {
-        debugLogToTab(`[ytdl:bg] CDN unavailable; using iframe-scrub for ${videoId} (${durationSec}s)`, tabId);
+        broadcastDebugLogToTab(`[ytdl:bg] CDN unavailable; using iframe-scrub for ${videoId} (${durationSec}s)`, tabId);
         await startIframeScrubSession({
           videoId,
           durationSec,

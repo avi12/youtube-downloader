@@ -1,32 +1,31 @@
 import { MessageType, sendMessage } from "./messaging";
 
-// Dev-only diagnostic relay — forwards a message to a single tab's content
-// script, which logs it to the page console. Stripped from production builds
-// via the import.meta.env.YTDL_DEV guard so download hot paths stay quiet.
-export function debugLogToTab(msg: string, tabId: number) {
+// Development-only diagnostic relays. Both helpers gate on
+// import.meta.env.YTDL_DEV so production builds dead-code-eliminate the entire
+// path — no main-thread cost from query, no network message, no console.log.
+
+export function broadcastDebugLogToTab(message: string, tabId: number) {
   if (!import.meta.env.YTDL_DEV) {
     return;
   }
 
-  void sendMessage(MessageType.BgDebugLog, { msg }, tabId);
+  void sendMessage(MessageType.BgDebugLog, { msg: message }, tabId);
 }
 
-// Same idea, but fans the message out to every YouTube tab. Useful for diags
-// originating in the BG iframe-host where there's no single owning tab.
-export async function debugLogToAllYouTubeTabs(msg: string) {
+export async function broadcastDebugLogToYouTubeTabs(message: string) {
   if (!import.meta.env.YTDL_DEV) {
     return;
   }
 
-  console.log(msg);
+  console.log(message);
   try {
     const tabs = await browser.tabs.query({ url: "https://www.youtube.com/*" });
     for (const tab of tabs) {
       if (typeof tab.id === "number") {
-        void sendMessage(MessageType.BgDebugLog, { msg }, tab.id);
+        void sendMessage(MessageType.BgDebugLog, { msg: message }, tab.id);
       }
     }
   } catch {
-    // best-effort — diag is non-load-bearing
+    // best-effort — diagnostics are non-load-bearing
   }
 }

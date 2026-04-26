@@ -1,6 +1,7 @@
 import { fetchExtraAudioTracksAndCaptions } from "../download/extra-tracks-fetcher";
 import { removeHostedIframe, setIframeScrubSegmentHandler, spawnHostedIframe } from "../iframe-host/iframe-host";
 import { ensureProcessor } from "./processor";
+import { broadcastDebugLogToYouTubeTabs } from "@/lib/messaging/debug-log";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, sendBytesToOffscreen, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
 import { ScrubIframeMessageType, listenForScrubIframeMessages } from "@/lib/messaging/scrub-iframe-messaging";
@@ -65,28 +66,8 @@ function makeIframeKey(videoId: string, scrubIndex: number) {
   return `${videoId}:${scrubIndex}`;
 }
 
-async function broadcastDiag(msg: string) {
-  if (!import.meta.env.YTDL_DEV) {
-    return;
-  }
-
-  console.log(msg);
-  const tabs = await browser.tabs.query({ url: "*://www.youtube.com/*" });
-  for (const tab of tabs) {
-    if (typeof tab.id !== "number") {
-      continue;
-    }
-
-    void sendMessage(MessageType.BgDebugLog, { msg }, tab.id);
-  }
-}
-
-function diag(msg: string) {
-  if (!import.meta.env.YTDL_DEV) {
-    return;
-  }
-
-  void broadcastDiag(`${SCRUB_TAG} ${msg}`);
+function logScrubOrchestratorEvent(message: string) {
+  void broadcastDebugLogToYouTubeTabs(`${SCRUB_TAG} ${message}`);
 }
 
 function makeIframeId(videoId: string, scrubIndex: number, attempt: number) {
@@ -229,7 +210,7 @@ async function openScrubIframe({ session, scrubIndex, startSec, windowSec }: {
     url,
     tabId: session.tabId
   });
-  diag(`opened scrub iframe id=${iframeId} index=${scrubIndex} t=${startSec} window=${windowSec}s`);
+  logScrubOrchestratorEvent(`opened scrub iframe id=${iframeId} index=${scrubIndex} t=${startSec} window=${windowSec}s`);
 
   trackIframeForSession({
     session,
@@ -248,7 +229,7 @@ function recordEmptyAfterRetries({ session, scrubIndex }: {
   session: ScrubSession;
   scrubIndex: number;
 }) {
-  diag(`index ${scrubIndex} exhausted retries, accepting empty`);
+  logScrubOrchestratorEvent(`index ${scrubIndex} exhausted retries, accepting empty`);
   session.receivedSegments.set(scrubIndex, {
     videoBase64: "",
     audioBase64: "",
@@ -289,7 +270,7 @@ function armIframeDeadline({ session, iframeId, scrubIndex, windowSec }: {
       return;
     }
 
-    diag(`iframe ${iframeId} (index ${scrubIndex}) hung past ${deadlineMs}ms, force-closing and retrying`);
+    logScrubOrchestratorEvent(`iframe ${iframeId} (index ${scrubIndex}) hung past ${deadlineMs}ms, force-closing and retrying`);
     requeueOrAccept({
       session,
       scrubIndex
@@ -460,7 +441,7 @@ async function handleSegmentArrival(data: SegmentArrival) {
   }) && attempts < MAX_RETRIES_PER_INDEX) {
     session.attemptsByIndex.set(data.scrubIndex, attempts + 1);
     session.pendingIndices.push(data.scrubIndex);
-    diag(`segment ${data.scrubIndex} undersized (${totalBytes}B), retrying ${attempts + 2}/${MAX_RETRIES_PER_INDEX + 1}`);
+    logScrubOrchestratorEvent(`segment ${data.scrubIndex} undersized (${totalBytes}B), retrying ${attempts + 2}/${MAX_RETRIES_PER_INDEX + 1}`);
     await fillGlobalSlots();
     return;
   }
@@ -472,7 +453,7 @@ async function handleSegmentArrival(data: SegmentArrival) {
     audioMimeType: data.audioMimeType
   });
   reportFetchProgress(session);
-  diag(`received segment ${data.scrubIndex + 1}/${session.expectedCount} for ${data.videoId} (${totalBytes}B)`);
+  logScrubOrchestratorEvent(`received segment ${data.scrubIndex + 1}/${session.expectedCount} for ${data.videoId} (${totalBytes}B)`);
 
   if (session.receivedSegments.size >= session.expectedCount) {
     await finalizeSession(session);
@@ -546,9 +527,9 @@ export async function startIframeScrubSession(data: StartIframeScrubArgs) {
   // Warm up the FFmpeg processor up-front; otherwise the very first call from
   // finalizeSession races with WASM init and finalize hangs at await ensureProcessor.
   void ensureProcessor().catch(error => {
-    diag(`ensureProcessor failed: ${String(error)}`);
+    logScrubOrchestratorEvent(`ensureProcessor failed: ${String(error)}`);
   });
-  diag(`starting ${expectedCount} scrub iframes for ${data.videoId}`);
+  logScrubOrchestratorEvent(`starting ${expectedCount} scrub iframes for ${data.videoId}`);
   await fillGlobalSlots();
 }
 
@@ -562,10 +543,10 @@ export function cancelIframeScrubSession(videoId: string) {
 function registerScrubIframePort() {
   listenForScrubIframeMessages({
     [ScrubIframeMessageType.Hello](data) {
-      diag(`iframe port hello videoId=${data.videoId} index=${data.scrubIndex}`);
+      logScrubOrchestratorEvent(`iframe port hello videoId=${data.videoId} index=${data.scrubIndex}`);
     },
     [ScrubIframeMessageType.Debug](data) {
-      void broadcastDiag(data.msg);
+      void broadcastDebugLogToYouTubeTabs(data.msg);
     },
     [ScrubIframeMessageType.Segment](data) {
       void handleSegmentArrival(data);

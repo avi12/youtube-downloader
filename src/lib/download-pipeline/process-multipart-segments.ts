@@ -1,17 +1,12 @@
 import { toUint8Array, triggerDownload, reportProgress } from ".";
 import { getFFmpeg, progressHandlers, tryUnlink } from "./ffmpeg-instance";
-import { MessageType, sendMessage } from "@/lib/messaging/messaging";
+import { broadcastDebugLogToYouTubeTabs } from "@/lib/messaging/debug-log";
 import { getCompatibleFilename } from "@/lib/utils/containers";
 import { ProgressType } from "@/types";
 import type { ProcessStreamData } from "@/types";
 
-function diag(msg: string) {
-  if (!import.meta.env.YTDL_DEV) {
-    return;
-  }
-
-  console.log(msg);
-  void sendMessage(MessageType.BgDebugLog, { msg });
+function logPipelineEvent(message: string) {
+  void broadcastDebugLogToYouTubeTabs(message);
 }
 
 // FFmpeg WASM is 32-bit and capped at 4 GB of total memory. Long-video
@@ -112,7 +107,7 @@ export async function processMultipartSegments(item: ProcessStreamData & { segme
         ffmpeg,
         filename: segmentMkv
       });
-      diag(`[ytdl:pipeline] segment ${index} mux failed (exit ${exitCode}) v=${segment.video.byteLength}B a=${segment.audio.byteLength}B`);
+      logPipelineEvent(`[ytdl:pipeline] segment ${index} mux failed (exit ${exitCode}) v=${segment.video.byteLength}B a=${segment.audio.byteLength}B`);
       return null;
     }
 
@@ -136,7 +131,7 @@ export async function processMultipartSegments(item: ProcessStreamData & { segme
       throw new Error("All segments failed pre-mux; nothing to concat");
     }
 
-    diag(`[ytdl:pipeline] concatenating ${segmentMkvFiles.length}/${segments.length} muxed segments for ${videoId}`);
+    logPipelineEvent(`[ytdl:pipeline] concatenating ${segmentMkvFiles.length}/${segments.length} muxed segments for ${videoId}`);
 
     const concatListName = `${videoId}-concat.txt`;
     const encoder = new TextEncoder();

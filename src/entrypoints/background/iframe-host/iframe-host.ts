@@ -3,6 +3,7 @@
 // has no DOM). Replaces `browser.tabs.create` for scrub/factory iframes so
 // the extension never opens a visible tab or popup window for media capture.
 import { ensureProcessor } from "../handlers/processor";
+import { broadcastDebugLogToYouTubeTabs } from "@/lib/messaging/debug-log";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
 
@@ -73,24 +74,6 @@ export function setIframeScrubSegmentHandler(
   scrubSegmentHandler = handler;
 }
 
-async function broadcastDiagToTabs(msg: string) {
-  if (!import.meta.env.YTDL_DEV) {
-    return;
-  }
-
-  console.log(msg);
-  try {
-    const tabs = await browser.tabs.query({ url: "https://www.youtube.com/*" });
-    for (const tab of tabs) {
-      if (typeof tab.id === "number") {
-        void sendMessage(MessageType.BgDebugLog, { msg }, tab.id);
-      }
-    }
-  } catch {
-    // best-effort
-  }
-}
-
 // position offscreen rather than visibility:hidden — browsers pause media
 // playback (and the SABR fetches that drive it) inside visibility:hidden
 // frames, which would prevent the factory iframe from emitting the trust
@@ -109,7 +92,7 @@ function ensurePostMessageBridge() {
   isPostMessageBridgeInstalled = true;
   addEventListener("message", e => {
     if (isScrubDebugMessage(e.data)) {
-      void broadcastDiagToTabs(e.data.msg);
+      void broadcastDebugLogToYouTubeTabs(e.data.msg);
       return;
     }
 
