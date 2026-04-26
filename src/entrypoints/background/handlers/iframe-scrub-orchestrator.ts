@@ -125,6 +125,14 @@ function pickNextWorkRoundRobin() {
   return null;
 }
 
+// Staggering iframe creation prevents the watch page from stalling on the
+// click handler — appending two iframes synchronously schedules two parallel
+// YouTube watch-page boots inside the user's tab, which freezes its main
+// thread during script parse + player init. A short yield between spawns
+// gives the browser room to lay out the panel UI before the next iframe
+// kicks off its load.
+const IFRAME_SPAWN_STAGGER_MS = 200;
+
 async function fillGlobalSlots() {
   while (globalInFlightIframeIds.size < MAX_GLOBAL_PARALLEL_IFRAMES) {
     const work = pickNextWorkRoundRobin();
@@ -138,6 +146,10 @@ async function fillGlobalSlots() {
       startSec: work.scrubIndex * work.session.stepSec,
       windowSec: work.session.stepSec
     });
+
+    if (globalInFlightIframeIds.size < MAX_GLOBAL_PARALLEL_IFRAMES) {
+      await new Promise(resolve => setTimeout(resolve, IFRAME_SPAWN_STAGGER_MS));
+    }
   }
 }
 

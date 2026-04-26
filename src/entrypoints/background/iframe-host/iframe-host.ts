@@ -208,6 +208,12 @@ function removeLocalIframe(id: string) {
 
 const tabIdByIframeId = new Map<string, number>();
 
+// Chrome uses the offscreen document. Firefox can't inject content scripts
+// into iframes whose top is moz-extension:// (no valid tabId for
+// scripting.executeScript), so we mount inside the user's youtube.com tab —
+// the iframes are positioned far off-screen (left:-99999px) and never
+// painted, so they don't show up in the user's UI even though they're DOM
+// children of the watch page.
 export async function spawnHostedIframe({ id, url, tabId }: {
   id: string;
   url: string;

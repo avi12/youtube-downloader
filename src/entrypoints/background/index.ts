@@ -3,7 +3,6 @@ import { registerDownloadHandlers } from "./handlers/download-handlers";
 import { registerIframeScrubOrchestrator } from "./handlers/iframe-scrub-orchestrator";
 import { registerPipelineHandlers } from "./handlers/pipeline-handlers";
 import { ensureProcessor } from "./handlers/processor";
-import { registerHostedIframeScriptInjection } from "./iframe-host/firefox-script-injection";
 import { tabTracker, trackVideoForTab, untrackVideoForTab } from "./queue/tab-tracker";
 import { registerRecentDownloadsRetention } from "./recent/recent-downloads-retention";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
@@ -296,7 +295,6 @@ function registerTabLifecycleHandlers() {
 export default defineBackground(async () => {
   void registerSabrOriginRule();
   registerFactoryIframeHeaderStripper();
-  registerHostedIframeScriptInjection();
   // Relay BgDebugLog messages from sub-frame content scripts (factory iframes)
   // back to all youtube.com tabs so we can see iframe-side diagnostics.
   onMessage(MessageType.BgDebugLog, async ({ data }) => {
