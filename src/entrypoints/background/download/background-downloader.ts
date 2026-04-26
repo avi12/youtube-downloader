@@ -534,10 +534,10 @@ export async function startBackgroundDownload({ request, tabId }: {
     let result: DownloadResult | null = null;
     const cdnRequest = await enrichWithAlternateClientUrls(request);
     const haveCdnUrls = Boolean(cdnRequest.resolvedVideoUrl || cdnRequest.resolvedAudioUrl);
+    void sendMessage(MessageType.BgDebugLog, {
+      msg: `[ytdl:bg] CDN-first check: haveUrls=${haveCdnUrls} video=${Boolean(cdnRequest.resolvedVideoUrl)} audio=${Boolean(cdnRequest.resolvedAudioUrl)}`
+    }, tabId);
     if (haveCdnUrls) {
-      void sendMessage(MessageType.BgDebugLog, {
-        msg: `[ytdl:bg] CDN-first: video=${Boolean(cdnRequest.resolvedVideoUrl)} audio=${Boolean(cdnRequest.resolvedAudioUrl)}`
-      }, tabId);
       result = await downloadViaCdn({
         request: cdnRequest,
         signal,
@@ -549,8 +549,14 @@ export async function startBackgroundDownload({ request, tabId }: {
         }
 
         console.warn("[ytdl:bg] CDN-first failed:", error);
+        void sendMessage(MessageType.BgDebugLog, {
+          msg: `[ytdl:bg] CDN-first threw: ${String(error)}`
+        }, tabId);
         return null;
       });
+      void sendMessage(MessageType.BgDebugLog, {
+        msg: `[ytdl:bg] CDN-first done: video=${result?.videoData?.byteLength ?? 0}B audio=${result?.audioData?.byteLength ?? 0}B`
+      }, tabId);
     }
 
     if (!result?.audioData) {
