@@ -105,6 +105,14 @@ const DEFAULT_PLAYBACK_RATE = 1;
 const DEFAULT_CLIENT_NAME = 1;
 const POTOKEN_QUERY_PARAM = "pot";
 
+// YouTube serves base64-URL-encoded ustreamer config; the standard base64
+// helper expects + / padding so we normalise here before decoding.
+function base64UrlToUint8Array(value: string) {
+  const standard = value.replace(/-/g, "+").replace(/_/g, "/");
+  const padding = (4 - standard.length % 4) % 4;
+  return base64ToUint8Array(standard + "=".repeat(padding));
+}
+
 function getMoviePlayer() {
   return document.querySelector<MoviePlayerElement>(MOVIE_PLAYER_SELECTOR);
 }
@@ -282,7 +290,7 @@ export function buildSyntheticTemplateFromPlayer(): YtdlSabrTemplate | null {
     },
     selectedFormatIds: [audioFormatId, videoFormatId],
     bufferedRanges: [],
-    videoPlaybackUstreamerConfig: base64ToUint8Array(ustreamerConfig),
+    videoPlaybackUstreamerConfig: base64UrlToUint8Array(ustreamerConfig),
     preferredAudioFormatIds: [audioFormatId],
     preferredVideoFormatIds: [videoFormatId],
     preferredSubtitleFormatIds: [],
@@ -293,7 +301,7 @@ export function buildSyntheticTemplateFromPlayer(): YtdlSabrTemplate | null {
         clientName,
         clientVersion
       },
-      poToken: poToken ? base64ToUint8Array(poToken) : undefined
+      poToken: poToken ? base64UrlToUint8Array(poToken) : undefined
     },
     field1000: []
   }).finish();
