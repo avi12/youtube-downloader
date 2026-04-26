@@ -518,6 +518,16 @@ async function waitForTemplate({ timeoutMs }: {
       return template;
     }
 
+    // The player only emits SABR POSTs while it's actively fetching media —
+    // a paused or just-loaded watch page has none. Synthesize from MAIN-world
+    // player state instead so progressive SABR can run without forcing the
+    // user to start playback.
+    const synthesized = buildSyntheticTemplateFromPlayer();
+    if (synthesized) {
+      window.__ytdlSabrTemplate = synthesized;
+      return synthesized;
+    }
+
     await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL_MS));
   }
   throw new Error("no SABR template captured within timeout");
