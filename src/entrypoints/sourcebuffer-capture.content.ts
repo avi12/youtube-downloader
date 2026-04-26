@@ -77,12 +77,16 @@ export default defineContentScript({
       return sourceBuffer;
     };
 
-    // Init segments (ftyp+moov for fMP4, EBML+Tracks for WebM) are typically
-    // a few KB; only those need to be retained pre-download so a later capture
-    // bind has the codec headers. Media fragments are 100KB-1MB each and there
-    // are dozens per minute of playback — copying them all into pendingChunks
-    // would balloon memory and stall the main thread on every appendBuffer.
+    // On a regular watch page the user might never click Download, so retaining
+    // every appendBuffer chunk balloons memory and stalls the main thread on
+    // every fragment. Init segments (ftyp+moov / EBML+Tracks) are <50KB and
+    // are the only thing a later bind actually needs. Scrub iframes always end
+    // up bound (scrub-self-drive activates capture in document_idle), but a
+    // handful of media fragments may have already arrived between document_
+    // start and that bind — those fragments are real media we want, so the
+    // size cap is bypassed there.
     const PENDING_INIT_MAX_BYTES = 50_000;
+    const isScrubFrame = /ytdlScrubMode=1/.test(location.search);
     const seenInitForBuffer = new WeakSet<SourceBuffer>();
 
     const originalAppendBuffer = SourceBuffer.prototype.appendBuffer;
@@ -102,6 +106,11 @@ export default defineContentScript({
               chunk
             });
           }
+        } else if (isScrubFrame) {
+          pendingChunks.push({
+            mimeType,
+            data: chunk.slice()
+          });
         } else if (!seenInitForBuffer.has(this) && chunk.byteLength <= PENDING_INIT_MAX_BYTES) {
           pendingChunks.push({
             mimeType,
