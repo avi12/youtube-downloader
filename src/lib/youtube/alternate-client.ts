@@ -134,7 +134,8 @@ async function fetchClient({ client, videoId, poToken }: {
   }
 
   const authorization = await buildSapiSidHash();
-  const userAgent = (client.context as { userAgent?: string }).userAgent;
+  const userAgentField = client.context.userAgent;
+  const userAgent = typeof userAgentField === "string" ? userAgentField : undefined;
   // youtubei.googleapis.com is the canonical innertube endpoint; the
   // www.youtube.com proxy rejects mobile-app client identities with HTTP 400.
   // The googleapis hostname accepts them when paired with SAPISIDHASH auth +
@@ -167,6 +168,7 @@ async function fetchClient({ client, videoId, poToken }: {
   } finally {
     clearTimeout(timeoutId);
   }
+
   if (!response.ok) {
     console.log(`[ytdl:alt-client] ${client.clientName} HTTP ${response.status} (auth=${Boolean(authorization)})`);
     return null;
@@ -197,7 +199,11 @@ export async function fetchAlternateClientFormats({ videoId, poToken }: {
   poToken: string;
 }): Promise<AdaptiveFormat[]> {
   for (const client of CLIENT_CHAIN) {
-    const formats = await fetchClient({ client, videoId, poToken }).catch(() => null);
+    const formats = await fetchClient({
+      client,
+      videoId,
+      poToken
+    }).catch(() => null);
     if (formats) {
       console.log(`[ytdl:bg] alternate-client ${client.clientName} succeeded (${formats.length} formats)`);
       return formats;
