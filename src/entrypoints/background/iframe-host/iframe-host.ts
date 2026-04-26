@@ -6,6 +6,63 @@ import { ensureProcessor } from "../handlers/processor";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
 
+const POST_MESSAGE_TYPE_DEBUG = "ytdl:scrub-debug";
+const POST_MESSAGE_TYPE_SEGMENT = "ytdl:scrub-segment";
+
+interface ScrubDebugMessage {
+  type: typeof POST_MESSAGE_TYPE_DEBUG;
+  msg: string;
+}
+
+export interface IframeScrubSegmentPostMessage {
+  videoId: string;
+  scrubIndex: number;
+  videoBytes: Uint8Array;
+  audioBytes: Uint8Array;
+  videoMimeType: string;
+  audioMimeType: string;
+}
+
+interface ScrubSegmentMessage {
+  type: typeof POST_MESSAGE_TYPE_SEGMENT;
+  videoId: string;
+  scrubIndex: number;
+  videoBuffer: ArrayBuffer;
+  audioBuffer: ArrayBuffer;
+  videoMimeType: string;
+  audioMimeType: string;
+}
+
+function isScrubDebugMessage(data: unknown): data is ScrubDebugMessage {
+  return typeof data === "object"
+    && data !== null
+    && (data as { type?: unknown }).type === POST_MESSAGE_TYPE_DEBUG
+    && typeof (data as { msg?: unknown }).msg === "string";
+}
+
+function isScrubSegmentMessage(data: unknown): data is ScrubSegmentMessage {
+  if (typeof data !== "object" || data === null) {
+    return false;
+  }
+
+  const message = data as Record<string, unknown>;
+  return message.type === POST_MESSAGE_TYPE_SEGMENT
+    && typeof message.videoId === "string"
+    && typeof message.scrubIndex === "number"
+    && message.videoBuffer instanceof ArrayBuffer
+    && message.audioBuffer instanceof ArrayBuffer
+    && typeof message.videoMimeType === "string"
+    && typeof message.audioMimeType === "string";
+}
+
+let scrubSegmentHandler: ((segment: IframeScrubSegmentPostMessage) => void) | null = null;
+
+export function setIframeScrubSegmentHandler(
+  handler: (segment: IframeScrubSegmentPostMessage) => void
+) {
+  scrubSegmentHandler = handler;
+}
+
 async function broadcastDiagToTabs(msg: string) {
   console.log(msg);
   try {
@@ -28,10 +85,39 @@ const HIDDEN_IFRAME_STYLE = "position:fixed;left:-99999px;top:-99999px;width:480
 
 const localIframes = new Map<string, HTMLIFrameElement>();
 
+let isPostMessageBridgeInstalled = false;
+
+function ensurePostMessageBridge() {
+  if (isPostMessageBridgeInstalled || !import.meta.env.FIREFOX) {
+    return;
+  }
+
+  isPostMessageBridgeInstalled = true;
+  addEventListener("message", e => {
+    if (isScrubDebugMessage(e.data)) {
+      void broadcastDiagToTabs(e.data.msg);
+      return;
+    }
+
+    if (isScrubSegmentMessage(e.data)) {
+      scrubSegmentHandler?.({
+        videoId: e.data.videoId,
+        scrubIndex: e.data.scrubIndex,
+        videoBytes: new Uint8Array(e.data.videoBuffer),
+        audioBytes: new Uint8Array(e.data.audioBuffer),
+        videoMimeType: e.data.videoMimeType,
+        audioMimeType: e.data.audioMimeType
+      });
+    }
+  });
+}
+
 function appendLocalIframe({ id, url }: {
   id: string;
   url: string;
 }) {
+  ensurePostMessageBridge();
+
   const elFrame = document.createElement("iframe");
   elFrame.dataset.ytdlIframeHost = id;
   elFrame.src = url;

@@ -2,9 +2,34 @@ import { buildSyntheticTemplateFromPlayer } from "../sabr-fetch-interceptor.cont
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { uint8ToBase64 } from "@/lib/utils/binary";
 
+// Direct postMessage channel for BG-hosted iframes. Firefox doesn't inject
+// content scripts into iframes whose top-level document is moz-extension://,
+// so the cross-world → ISOLATED → runtime.sendMessage relay is silently
+// dropped. parent.postMessage works regardless because postMessage is a DOM
+// primitive that crosses any origin; the BG document hosts the iframe and
+// listens for these messages directly.
+const POST_MESSAGE_TYPE_DEBUG = "ytdl:scrub-debug";
+const POST_MESSAGE_TYPE_SEGMENT = "ytdl:scrub-segment";
+
+function postToHost(payload: unknown, transferables: Transferable[] = []) {
+  if (parent === self) {
+    return;
+  }
+
+  try {
+    parent.postMessage(payload, "*", transferables);
+  } catch {
+    // best-effort
+  }
+}
+
 function scrubLog(msg: string) {
   console.log(`[ytdl:scrub-tab] ${msg}`);
   void crossWorldMessenger.sendMessage(CrossWorldMessage.IframeScrubDebug, {
+    msg: `[ytdl:scrub-tab] ${msg}`
+  });
+  postToHost({
+    type: POST_MESSAGE_TYPE_DEBUG,
     msg: `[ytdl:scrub-tab] ${msg}`
   });
 }
@@ -246,6 +271,15 @@ function sendEmptyResult({ videoId, scrubIndex }: {
     videoMimeType: "",
     audioMimeType: ""
   });
+  postToHost({
+    type: POST_MESSAGE_TYPE_SEGMENT,
+    videoId,
+    scrubIndex,
+    videoBuffer: new ArrayBuffer(0),
+    audioBuffer: new ArrayBuffer(0),
+    videoMimeType: "",
+    audioMimeType: ""
+  });
 }
 
 export async function runScrubSelfDrive() {
@@ -321,6 +355,27 @@ export async function runScrubSelfDrive() {
     videoMimeType: captured.videoMimeType,
     audioMimeType: captured.audioMimeType
   });
+
+  // Slice the underlying buffers so we don't transfer the whole pool when
+  // chunks live in shared backing storage; copy is cheap relative to
+  // concat itself.
+  const videoBuffer = videoConcat.buffer.slice(
+    videoConcat.byteOffset,
+    videoConcat.byteOffset + videoConcat.byteLength
+  );
+  const audioBuffer = audioConcat.buffer.slice(
+    audioConcat.byteOffset,
+    audioConcat.byteOffset + audioConcat.byteLength
+  );
+  postToHost({
+    type: POST_MESSAGE_TYPE_SEGMENT,
+    videoId,
+    scrubIndex,
+    videoBuffer,
+    audioBuffer,
+    videoMimeType: captured.videoMimeType,
+    audioMimeType: captured.audioMimeType
+  }, [videoBuffer, audioBuffer]);
 
   scrubLog(`segment posted index=${scrubIndex}`);
 }

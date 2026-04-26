@@ -1,4 +1,4 @@
-import { removeHostedIframe, spawnHostedIframe } from "../iframe-host/iframe-host";
+import { removeHostedIframe, setIframeScrubSegmentHandler, spawnHostedIframe } from "../iframe-host/iframe-host";
 import { ensureProcessor } from "./processor";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
@@ -376,6 +376,22 @@ export async function startIframeScrubSession(data: StartIframeScrubArgs) {
 }
 
 export function registerIframeScrubOrchestrator() {
+  // Direct postMessage handler for BG-hosted iframes on Firefox: content
+  // scripts don't inject into iframes whose top-level document is
+  // moz-extension://, so the runtime.sendMessage relay never fires. The
+  // MAIN-world driver postMessages the segment buffer to the host
+  // document, which forwards it through this hook.
+  setIframeScrubSegmentHandler(segment => {
+    void handleSegmentArrival({
+      videoId: segment.videoId,
+      scrubIndex: segment.scrubIndex,
+      videoBase64: uint8ToBase64(segment.videoBytes),
+      audioBase64: uint8ToBase64(segment.audioBytes),
+      videoMimeType: segment.videoMimeType,
+      audioMimeType: segment.audioMimeType
+    });
+  });
+
   onMessage(MessageType.StartIframeScrub, async ({ data, sender }) => {
     const tabId = sender.tab?.id;
     if (typeof tabId !== "number") {
@@ -389,53 +405,74 @@ export function registerIframeScrubOrchestrator() {
   });
 
   onMessage(MessageType.IframeScrubSegmentReady, async ({ data }) => {
-    const session = sessionsByVideoId.get(data.videoId);
-    if (!session) {
-      return;
-    }
-
-    const iframeId = findIframeIdForSegment({
+    await handleSegmentArrival({
       videoId: data.videoId,
-      scrubIndex: data.scrubIndex
-    });
-    if (iframeId) {
-      closeScrubIframe({
-        session,
-        iframeId
-      });
-    }
-
-    const totalBytes = base64ToUint8Array(data.videoBase64).byteLength
-      + base64ToUint8Array(data.audioBase64).byteLength;
-    const attempts = session.attemptsByIndex.get(data.scrubIndex) ?? 0;
-    const minAcceptableBytes = MIN_ACCEPTABLE_BYTES_PER_SEC * session.stepSec;
-    if (totalBytes < minAcceptableBytes && attempts < MAX_RETRIES_PER_INDEX) {
-      session.attemptsByIndex.set(data.scrubIndex, attempts + 1);
-      session.pendingIndices.push(data.scrubIndex);
-      bgLog(`[ytdl:scrub-bg] segment ${data.scrubIndex} undersized (${totalBytes}B < ${minAcceptableBytes}B), retrying (attempt ${attempts + 2}/${MAX_RETRIES_PER_INDEX + 1})`);
-      await fillGlobalSlots();
-      return;
-    }
-
-    session.receivedSegments.set(data.scrubIndex, {
+      scrubIndex: data.scrubIndex,
       videoBase64: data.videoBase64,
       audioBase64: data.audioBase64,
       videoMimeType: data.videoMimeType,
       audioMimeType: data.audioMimeType
     });
-    reportFetchProgress(session);
-
-    bgLog(`[ytdl:scrub-bg] received segment ${data.scrubIndex + 1}/${session.expectedCount} for ${data.videoId} (${totalBytes}B)`);
-
-    if (session.receivedSegments.size >= session.expectedCount) {
-      await finalizeSession(session);
-      await fillGlobalSlots();
-      return;
-    }
-
-    await fillGlobalSlots();
   });
 }
+
+interface SegmentArrival {
+  videoId: string;
+  scrubIndex: number;
+  videoBase64: string;
+  audioBase64: string;
+  videoMimeType: string;
+  audioMimeType: string;
+}
+
+async function handleSegmentArrival(data: SegmentArrival) {
+  const session = sessionsByVideoId.get(data.videoId);
+  if (!session) {
+    return;
+  }
+
+  const iframeId = findIframeIdForSegment({
+    videoId: data.videoId,
+    scrubIndex: data.scrubIndex
+  });
+  if (iframeId) {
+    closeScrubIframe({
+      session,
+      iframeId
+    });
+  }
+
+  const totalBytes = base64ToUint8Array(data.videoBase64).byteLength
+    + base64ToUint8Array(data.audioBase64).byteLength;
+  const attempts = session.attemptsByIndex.get(data.scrubIndex) ?? 0;
+  const minAcceptableBytes = MIN_ACCEPTABLE_BYTES_PER_SEC * session.stepSec;
+  if (totalBytes < minAcceptableBytes && attempts < MAX_RETRIES_PER_INDEX) {
+    session.attemptsByIndex.set(data.scrubIndex, attempts + 1);
+    session.pendingIndices.push(data.scrubIndex);
+    bgLog(`[ytdl:scrub-bg] segment ${data.scrubIndex} undersized (${totalBytes}B < ${minAcceptableBytes}B), retrying (attempt ${attempts + 2}/${MAX_RETRIES_PER_INDEX + 1})`);
+    await fillGlobalSlots();
+    return;
+  }
+
+  session.receivedSegments.set(data.scrubIndex, {
+    videoBase64: data.videoBase64,
+    audioBase64: data.audioBase64,
+    videoMimeType: data.videoMimeType,
+    audioMimeType: data.audioMimeType
+  });
+  reportFetchProgress(session);
+
+  bgLog(`[ytdl:scrub-bg] received segment ${data.scrubIndex + 1}/${session.expectedCount} for ${data.videoId} (${totalBytes}B)`);
+
+  if (session.receivedSegments.size >= session.expectedCount) {
+    await finalizeSession(session);
+    await fillGlobalSlots();
+    return;
+  }
+
+  await fillGlobalSlots();
+}
+
 
 export function cancelIframeScrubSession(videoId: string) {
   const session = sessionsByVideoId.get(videoId);
