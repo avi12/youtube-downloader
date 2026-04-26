@@ -92,16 +92,20 @@ async function registerSabrOriginRule() {
     }
   };
 
-  // CDN GETs (alternate-client signed URLs) only need Origin/Referer rewritten.
-  // Without this, Firefox sends Origin: moz-extension://... and YouTube's CDN
-  // returns 403. Sec-Fetch-* / UA overrides are intentionally omitted here:
-  // overriding them on GET aborted the request in earlier testing.
+  // CDN GETs (alternate-client signed URLs from IOS/MWEB/TV clients) — STRIP
+  // moz-extension origin entirely instead of rewriting to youtube.com. The
+  // mobile-app URL signatures don't expect any Origin header and reject with
+  // 403 if youtube.com is set. Removing means the request goes out with no
+  // Origin (matches mobile-app behaviour) and the CDN accepts it.
   const cdnGetRule: Browser.declarativeNetRequest.Rule = {
     id: CDN_ORIGIN_RULE_ID,
     priority: 1,
     action: {
       type: "modifyHeaders",
-      requestHeaders: baseHeaders
+      requestHeaders: [
+        { header: "Origin", operation: "remove" },
+        { header: "Referer", operation: "remove" }
+      ]
     },
     condition: {
       urlFilter: "||googlevideo.com/videoplayback",
