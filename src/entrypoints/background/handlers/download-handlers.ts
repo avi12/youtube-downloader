@@ -310,7 +310,10 @@ export function registerDownloadHandlers() {
   });
 
   onMessage(MessageType.StartBackgroundDownload, async ({ data, sender }) => {
-    const tabId = sender.tab?.id ?? getTabIdsForVideo(data.videoId)[0] ?? -1;
+    const tabId = sender.tab?.id ?? -1;
+    void sendMessage(MessageType.BgDebugLog, {
+      msg: `[ytdl:bg-handler] StartBackgroundDownload received videoId=${data.videoId} tabId=${tabId}`
+    }, tabId);
     trackVideoForTab({
       videoId: data.videoId,
       tabId
@@ -320,6 +323,9 @@ export function registerDownloadHandlers() {
       type: data.type,
       filenameOutput: data.filenameOutput
     });
+    void sendMessage(MessageType.BgDebugLog, {
+      msg: `[ytdl:bg-handler] popup list enqueued, calling startBackgroundDownload`
+    }, tabId);
     void startBackgroundDownload({
       request: data,
       tabId
