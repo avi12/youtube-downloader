@@ -3,7 +3,8 @@ import { registerDownloadHandlers } from "./handlers/download-handlers";
 import { registerIframeScrubOrchestrator } from "./handlers/iframe-scrub-orchestrator";
 import { registerPipelineHandlers } from "./handlers/pipeline-handlers";
 import { ensureProcessor } from "./handlers/processor";
-import { getTabIdsForVideo, tabTracker, trackVideoForTab, untrackVideoForTab } from "./queue/tab-tracker";
+import { registerHostedIframeScriptInjection } from "./iframe-host/firefox-script-injection";
+import { tabTracker, trackVideoForTab, untrackVideoForTab } from "./queue/tab-tracker";
 import { registerRecentDownloadsRetention } from "./recent/recent-downloads-retention";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
@@ -103,8 +104,14 @@ async function registerSabrOriginRule() {
     action: {
       type: "modifyHeaders",
       requestHeaders: [
-        { header: "Origin", operation: "remove" },
-        { header: "Referer", operation: "remove" }
+        {
+          header: "Origin",
+          operation: "remove"
+        },
+        {
+          header: "Referer",
+          operation: "remove"
+        }
       ]
     },
     condition: {
@@ -289,6 +296,7 @@ function registerTabLifecycleHandlers() {
 export default defineBackground(async () => {
   void registerSabrOriginRule();
   registerFactoryIframeHeaderStripper();
+  registerHostedIframeScriptInjection();
   // Relay BgDebugLog messages from sub-frame content scripts (factory iframes)
   // back to all youtube.com tabs so we can see iframe-side diagnostics.
   onMessage(MessageType.BgDebugLog, async ({ data }) => {

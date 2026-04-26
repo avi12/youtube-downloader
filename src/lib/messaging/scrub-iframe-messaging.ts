@@ -71,7 +71,10 @@ function sendScrubIframeMessage<T extends ScrubIframeMessageType>(
   type: T,
   data: ScrubIframeProtocolMap[T]
 ) {
-  getScrubIframePort().postMessage({ type, data });
+  getScrubIframePort().postMessage({
+    type,
+    data
+  });
 }
 
 function dispatchScrubIframeMessage({ handlers, message, port }: {
