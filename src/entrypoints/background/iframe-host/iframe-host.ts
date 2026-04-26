@@ -3,7 +3,22 @@
 // has no DOM). Replaces `browser.tabs.create` for scrub/factory iframes so
 // the extension never opens a visible tab or popup window for media capture.
 import { ensureProcessor } from "../handlers/processor";
+import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
+
+async function broadcastDiagToTabs(msg: string) {
+  console.log(msg);
+  try {
+    const tabs = await browser.tabs.query({ url: "https://www.youtube.com/*" });
+    for (const tab of tabs) {
+      if (typeof tab.id === "number") {
+        void sendMessage(MessageType.BgDebugLog, { msg }, tab.id);
+      }
+    }
+  } catch {
+    // best-effort
+  }
+}
 
 // position offscreen rather than visibility:hidden — browsers pause media
 // playback (and the SABR fetches that drive it) inside visibility:hidden
@@ -28,21 +43,32 @@ function appendLocalIframe({ id, url }: {
   document.body.append(elFrame);
   localIframes.set(id, elFrame);
   const total = document.querySelectorAll("iframe[data-ytdl-iframe-host]").length;
-  console.log(`[ytdl:iframe-host] appended id=${id} bodyChildren=${document.body.children.length} hostedIframes=${total} attached=${document.body.contains(elFrame)}`);
+  void broadcastDiagToTabs(`[ytdl:iframe-host] appended id=${id} bodyChildren=${document.body.children.length} hostedIframes=${total} attached=${document.body.contains(elFrame)}`);
 
   elFrame.addEventListener("load", () => {
-    console.log(`[ytdl:iframe-host] load fired id=${id} contentDocument=${elFrame.contentDocument ? "yes" : "no"} contentWindow=${elFrame.contentWindow ? "yes" : "no"}`);
+    let contentLoc = "blocked-cross-origin";
+    try {
+      contentLoc = elFrame.contentWindow?.location.href ?? "n/a";
+    } catch {
+      // expected for cross-origin iframes
+    }
+
+    void broadcastDiagToTabs(`[ytdl:iframe-host] load fired id=${id} contentDocument=${elFrame.contentDocument ? "yes" : "no"} contentLoc=${contentLoc}`);
   });
 
-  elFrame.addEventListener("error", e => {
-    console.warn(`[ytdl:iframe-host] error event id=${id}`, e);
+  elFrame.addEventListener("error", () => {
+    void broadcastDiagToTabs(`[ytdl:iframe-host] error event id=${id}`);
   });
 
   setTimeout(() => {
-    console.log(`[ytdl:iframe-host] +500ms id=${id} stillAttached=${document.body.contains(elFrame)} src=${elFrame.src.slice(0, 80)} contentDocOrigin=${elFrame.contentDocument?.location?.origin ?? "n/a"} contentWinLoc=${(() => { try { return elFrame.contentWindow?.location.href ?? "n/a"; } catch { return "blocked-cross-origin"; } })()}`);
-  }, 500);
-  setTimeout(() => {
-    console.log(`[ytdl:iframe-host] +5s id=${id} stillAttached=${document.body.contains(elFrame)} contentWinLoc=${(() => { try { return elFrame.contentWindow?.location.href ?? "n/a"; } catch { return "blocked-cross-origin"; } })()}`);
+    let contentLoc = "blocked-cross-origin";
+    try {
+      contentLoc = elFrame.contentWindow?.location.href ?? "n/a";
+    } catch {
+      // expected
+    }
+
+    void broadcastDiagToTabs(`[ytdl:iframe-host] +5s id=${id} stillAttached=${document.body.contains(elFrame)} contentLoc=${contentLoc}`);
   }, 5000);
 }
 
