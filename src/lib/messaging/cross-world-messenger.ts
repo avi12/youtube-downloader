@@ -33,7 +33,8 @@ export const CrossWorldMessage = {
   IframeScrubSegment: "iframeScrubSegment",
   StartIframeScrub: "startIframeScrub",
   SabrTemplateCaptured: "sabrTemplateCaptured",
-  PullSabrTemplate: "pullSabrTemplate"
+  PullSabrTemplate: "pullSabrTemplate",
+  SynthesizeSabrTemplate: "synthesizeSabrTemplate"
 } as const;
 
 interface PageMessengerSchema {
@@ -162,6 +163,19 @@ interface PageMessengerSchema {
   // race) but MAIN's interceptor has actually captured a template. Returns
   // the current __ytdlSabrTemplate as base64 (clean structured-clone).
   [CrossWorldMessage.PullSabrTemplate](data: Record<string, never>): {
+    url: string;
+    bodyBase64: string;
+    capturedAt: number;
+  } | null;
+
+  // ISOLATED → MAIN synthesize: BG's chunked-SABR loop uses this to mint a
+  // fresh trust template (via buildSyntheticTemplateFromPlayer) with the
+  // requested clientAbrState.playerTimeMs already mutated, dodging the factory
+  // iframe round-trip entirely. Returns null if synthesis fails (e.g. no
+  // playerResponse yet on the user tab).
+  [CrossWorldMessage.SynthesizeSabrTemplate](data: {
+    playerTimeMs: number;
+  }): {
     url: string;
     bodyBase64: string;
     capturedAt: number;

@@ -115,7 +115,6 @@ function registerBackgroundMessageHandlers() {
   const isTrustFactoryMode = factoryParams.get("ytdlTrustFactoryMode") === "1";
   const factoryVideoId = factoryParams.get("v") ?? "";
   const factoryId = factoryParams.get("ytdlFactoryId") ?? "";
-
   if (isTrustFactoryMode) {
     void sendMessage(MessageType.BgDebugLog, {
       msg: `[ytdl:factory-isolated] handler registered factoryId=${factoryId} videoId=${factoryVideoId}`
@@ -164,6 +163,11 @@ function registerBackgroundMessageHandlers() {
 
     return cachedSabrTemplate;
   });
+
+  onMessage(MessageType.SynthesizeSabrTemplateFromTab, ({ data }) => crossWorldMessenger.sendMessage(
+    CrossWorldMessage.SynthesizeSabrTemplate,
+    { playerTimeMs: data.playerTimeMs }
+  ).catch(() => null));
 
   onMessage(MessageType.ExecuteDownloadItem, ({ data }) => {
     if (location.pathname !== "/watch") {

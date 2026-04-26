@@ -35,7 +35,8 @@ export const MessageType = {
   IframeScrubSegmentReady: "iframeScrubSegmentReady",
   BgDebugLog: "bgDebugLog",
   GetSabrTemplateFromTab: "getSabrTemplateFromTab",
-  SabrTemplateReady: "sabrTemplateReady"
+  SabrTemplateReady: "sabrTemplateReady",
+  SynthesizeSabrTemplateFromTab: "synthesizeSabrTemplateFromTab"
 } as const;
 
 interface ProtocolMap {
@@ -248,6 +249,17 @@ interface ProtocolMap {
     bodyBase64: string;
     capturedAt: number;
   }): void;
+
+  // BG asks the user tab's MAIN-world synthesizer for a fresh trust template
+  // with `clientAbrState.playerTimeMs` mutated to the requested offset. Lets
+  // chunked-SABR fan out without spawning factory iframes per offset.
+  synthesizeSabrTemplateFromTab(data: {
+    playerTimeMs: number;
+  }): {
+    url: string;
+    bodyBase64: string;
+    capturedAt: number;
+  } | null;
 }
 
 export const { sendMessage, onMessage } =

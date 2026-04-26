@@ -473,8 +473,15 @@ export async function downloadViaSabrProgressive({
 
   const templateBody = decodeBase64(template.bodyBase64);
   const decodedTemplate = VideoPlaybackAbrRequest.decode(templateBody);
-  const audioFormatId = decodedTemplate.selectedFormatIds[0] ?? { itag: audioFormat.itag };
-  const videoFormatId = decodedTemplate.selectedFormatIds[1] ?? { itag: videoFormat.itag };
+  // The template's selectedFormatIds order varies by video — sometimes
+  // [audio, video], sometimes [video, audio]. Match by itag against the
+  // request's known audioFormat / videoFormat to bucket bytes correctly.
+  const audioItag = audioFormat.itag;
+  const videoItag = videoFormat.itag;
+  const audioFormatId = decodedTemplate.selectedFormatIds.find(formatId => formatId.itag === audioItag)
+    ?? { itag: audioItag };
+  const videoFormatId = decodedTemplate.selectedFormatIds.find(formatId => formatId.itag === videoItag)
+    ?? { itag: videoItag };
   log(`audioItag=${audioFormatId.itag} videoItag=${videoFormatId.itag} durationMs=${durationMs}`);
 
   void sabrConfig;
@@ -538,18 +545,27 @@ export async function downloadViaSabrProgressive({
       const fromMs = offsets[idx];
       const offsetSec = Math.floor(fromMs / 1000);
 
-      // Each window needs its own trust template — the captured one is
-      // single-window-bound by the server (quota survives playbackCookie
-      // changes, so dropping the cookie isn't enough). Spawn a fresh factory
-      // iframe at &t=offsetSec; the player loads at that point and emits a
-      // post-ad SABR call with playerTimeMs≈offsetSec, captured by the
-      // interceptor in that iframe.
-      log(`offset ${offsetSec}s: harvesting fresh template`);
-      const offsetTemplate = await harvestFreshTemplate({
-        videoId,
-        tabId,
-        offsetSec
-      });
+      // Each window needs its own trust template with playerTimeMs mutated to
+      // the offset. Primary path: ask the user tab's MAIN-world synthesizer to
+      // mint one (no iframe, no XFO, no webRequest, no factoryId routing).
+      // Fallback: spawn a factory iframe at &t=offsetSec — kept in case the
+      // synthesizer isn't loaded (older builds) or returns null.
+      let offsetTemplate: ChunkedTemplate | null = await sendMessage(
+        MessageType.SynthesizeSabrTemplateFromTab,
+        { playerTimeMs: fromMs },
+        tabId
+      ).catch(() => null);
+      if (offsetTemplate) {
+        log(`offset ${offsetSec}s: synthesized template (bodyB64Len=${offsetTemplate.bodyBase64.length})`);
+      } else {
+        log(`offset ${offsetSec}s: synthesis unavailable; harvesting fresh template via factory iframe`);
+        offsetTemplate = await harvestFreshTemplate({
+          videoId,
+          tabId,
+          offsetSec
+        });
+      }
+
       if (!offsetTemplate) {
         log(`offset ${offsetSec}s: no template captured — skipping window`);
         completed++;

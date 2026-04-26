@@ -1,5 +1,5 @@
 // Captures the player's outgoing googlevideo SABR POST Requests at
-// document_start so we have a "trust template" — the protobuf body the player
+// document_start so we have a "trust template" - the protobuf body the player
 // has already signed (PoToken + session signals). Replaying with no
 // Content-Type header is a CORS simple-request, server returns ACAO and the
 // response is readable. Threading playerTimeMs / bufferedRanges /
@@ -206,6 +206,28 @@ function readPoTokenFromAdaptiveFormatUrl(formats: AdaptiveFormatItem[] | undefi
   return "";
 }
 
+function readPoTokenFromCapturedTemplate(): Uint8Array | null {
+  // If the user tab has already fired a real SABR call, the captured trust
+  // template body holds a player-signed poToken. Reuse it across synthesized
+  // templates for the same session — no need to mint our own.
+  const template = window.__ytdlSabrTemplate;
+  if (!template) {
+    return null;
+  }
+
+  try {
+    const decoded = VideoPlaybackAbrRequest.decode(template.body);
+    const poTokenBytes = decoded.streamerContext?.poToken;
+    if (poTokenBytes && poTokenBytes.length > 0) {
+      return poTokenBytes;
+    }
+  } catch {
+    // template was malformed somehow — fall through
+  }
+
+  return null;
+}
+
 function findPoToken(playerResponse: PlayerResponse) {
   const stashed = window.__ytdlCapturedPoToken;
   if (typeof stashed === "string" && stashed.length > 0) {
@@ -271,7 +293,11 @@ export function buildSyntheticTemplateFromPlayer(): YtdlSabrTemplate | null {
   const audioFormatId = buildFormatId(audio);
   const videoFormatId = buildFormatId(video);
   const { clientName, clientVersion } = readClientInfo();
-  const poToken = findPoToken(playerResponse);
+  // Prefer the real captured template's poToken (player-signed, freshly minted
+  // by the YouTube player). Fall back to URL/string-derived poToken paths,
+  // which are stale or empty for modern WEB clients.
+  const poTokenBytes = readPoTokenFromCapturedTemplate();
+  const poTokenString = poTokenBytes ? "" : findPoToken(playerResponse);
 
   // visitorData is intentionally omitted: googlevideo's StreamerContext.ClientInfo
   // proto schema doesn't include it (player-side it's threaded through cookies /
@@ -301,7 +327,7 @@ export function buildSyntheticTemplateFromPlayer(): YtdlSabrTemplate | null {
         clientName,
         clientVersion
       },
-      poToken: poToken ? base64UrlToUint8Array(poToken) : undefined
+      poToken: poTokenBytes ?? (poTokenString ? base64UrlToUint8Array(poTokenString) : undefined)
     },
     field1000: []
   }).finish();
@@ -683,6 +709,27 @@ export default defineContentScript({
         url: template.url,
         bodyBase64: uint8ToBase64(template.body),
         capturedAt: template.capturedAt
+      };
+    });
+
+    crossWorldMessenger.onMessage(CrossWorldMessage.SynthesizeSabrTemplate, ({ data }) => {
+      const synthesized = buildSyntheticTemplateFromPlayer();
+      if (!synthesized) {
+        return null;
+      }
+
+      const decoded = VideoPlaybackAbrRequest.decode(synthesized.body);
+      if (!decoded.clientAbrState) {
+        decoded.clientAbrState = ClientAbrState.decode(new Uint8Array());
+      }
+
+      decoded.clientAbrState.playerTimeMs = String(data.playerTimeMs);
+      decoded.playerTimeMs = String(data.playerTimeMs);
+      const mutatedBody = VideoPlaybackAbrRequest.encode(decoded).finish();
+      return {
+        url: synthesized.url,
+        bodyBase64: uint8ToBase64(mutatedBody),
+        capturedAt: synthesized.capturedAt
       };
     });
 
