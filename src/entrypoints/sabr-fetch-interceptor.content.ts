@@ -17,6 +17,7 @@ import {
   crossWorldSabrMessenger
 } from "@/lib/messaging/cross-world-messenger";
 import { base64ToUint8Array, uint8ToBase64 } from "@/lib/utils/binary";
+import { AD_SHOWING_SELECTOR, MOVIE_PLAYER_SELECTOR } from "@/lib/youtube/player-selectors";
 import type { AdaptiveFormatItem, PlayerResponse, YtdlSabrTemplate } from "@/types";
 import {
   ClientAbrState,
@@ -31,7 +32,6 @@ import { CompositeBuffer, UmpReader } from "googlevideo/ump";
 
 const GOOGLEVIDEO_HOST_FRAGMENT = "googlevideo.com/videoplayback";
 const POLL_INTERVAL_MS = 100;
-const AD_SHOWING_SELECTOR = ".html5-video-player.ad-showing";
 
 interface ProgressiveCarryState {
   audioEndMs: number;
@@ -104,7 +104,6 @@ interface ProgressiveState {
   playbackCookieBytes: Uint8Array | null;
 }
 
-const MOVIE_PLAYER_SELECTOR = "#movie_player";
 const VISIBILITY_FOREGROUND = 1;
 const DEFAULT_PLAYBACK_RATE = 1;
 const DEFAULT_CLIENT_NAME = 1;

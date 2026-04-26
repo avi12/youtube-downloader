@@ -1,6 +1,12 @@
 import { buildSyntheticTemplateFromPlayer } from "../sabr-fetch-interceptor.content";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { uint8ToBase64 } from "@/lib/utils/binary";
+import {
+  AD_SHOWING_SELECTOR,
+  MOVIE_PLAYER_SELECTOR,
+  SKIP_AD_BUTTON_SELECTOR,
+  VIDEO_ELEMENT_SELECTOR
+} from "@/lib/youtube/player-selectors";
 
 // Direct postMessage channel for BG-hosted iframes. Firefox doesn't inject
 // content scripts into iframes whose top-level document is moz-extension://,
@@ -46,10 +52,6 @@ const AD_CLEAR_TIMEOUT_MS = 30_000;
 const STALL_GRACE_MS = 4_000;
 const MIN_AUDIO_BYTES = 200_000;
 const BUFFER_FILL_OVERHEAD_MS = 30_000;
-const AD_SHOWING_SELECTOR = ".html5-video-player.ad-showing";
-const SKIP_AD_BUTTON_SELECTOR = ".ytp-skip-ad-button, .ytp-ad-skip-button-modern, .ytp-ad-skip-button";
-const MOVIE_PLAYER_SELECTOR = "#movie_player";
-const VIDEO_ELEMENT_SELECTOR = "video";
 
 interface MoviePlayer extends HTMLElement {
   playVideo?: () => void;
