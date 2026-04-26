@@ -415,7 +415,11 @@ async function attemptSabrDownload({ request, signal, tabId }: {
   }
 }
 
-async function attemptTrustTemplateSabrDownload({ request, signal, tabId }: {
+// Trust-template SABR fallback. Currently disabled in startBackgroundDownload —
+// kept around because the chunked-SABR phase 2 inside it now uses the user-tab
+// synthesizer (no factory iframes) and may be worth re-enabling if iframe-scrub
+// regresses again on Firefox.
+async function _attemptTrustTemplateSabrDownload({ request, signal, tabId }: {
   request: DownloadRequest;
   signal: AbortSignal;
   tabId: number;
