@@ -5,7 +5,11 @@
 import { ensureProcessor } from "../handlers/processor";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
 
-const HIDDEN_IFRAME_STYLE = "position:fixed;left:-99999px;top:-99999px;width:480px;height:270px;border:0;visibility:hidden";
+// position offscreen rather than visibility:hidden — browsers pause media
+// playback (and the SABR fetches that drive it) inside visibility:hidden
+// frames, which would prevent the factory iframe from emitting the trust
+// template we need to capture.
+const HIDDEN_IFRAME_STYLE = "position:fixed;left:-99999px;top:-99999px;width:480px;height:270px;border:0";
 
 const localIframes = new Map<string, HTMLIFrameElement>();
 

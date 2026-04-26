@@ -1,7 +1,9 @@
 // Hosts iframes inside the Chrome offscreen document on behalf of the SW.
 // Chrome MV3 background workers have no DOM, so the orchestrator delegates
 // iframe creation here via offscreen-messaging port.
-const HIDDEN_IFRAME_STYLE = "position:fixed;left:-99999px;top:-99999px;width:480px;height:270px;border:0;visibility:hidden";
+// Position offscreen, NOT visibility:hidden — browsers pause media activity
+// in visibility:hidden frames.
+const HIDDEN_IFRAME_STYLE = "position:fixed;left:-99999px;top:-99999px;width:480px;height:270px;border:0";
 
 const iframesById = new Map<string, HTMLIFrameElement>();
 
