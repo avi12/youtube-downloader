@@ -78,6 +78,7 @@ declare global {
         maxIterations?: number;
         carryState?: ProgressiveCarryState | null;
       }) => Promise<ProgressiveFetchResult>;
+      synthesize: () => YtdlSabrTemplate | null;
     };
     ytcfg?: YtcfgRoot;
     ytInitialPlayerResponse?: PlayerResponse;
@@ -684,7 +685,8 @@ export default defineContentScript({
         maxIterations,
         originalFetch,
         carryState
-      })
+      }),
+      synthesize: () => buildSyntheticTemplateFromPlayer()
     };
   }
 });
