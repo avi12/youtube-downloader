@@ -9,8 +9,8 @@
   "scripts": {
     "dev:with-profile": "pnpx cross-env CHROME_WITH_PROFILE=1 wxt",
     "dev:stable": "npx tsx scripts/dev-server.ts",
-    "dev:stable-firefox": "npx cross-env FIREFOX_HEADLESS=1 tsx scripts/dev-server.ts --firefox",
-    "dev:stable-firefox-visible": "npx tsx scripts/dev-server.ts --firefox",
+    "dev:stable-firefox": "npx tsx scripts/dev-server.ts --firefox",
+    "dev:stable-firefox-headless": "npx cross-env FIREFOX_HEADLESS=1 tsx scripts/dev-server.ts --firefox",
     "dev:firefox": "wxt -b firefox --mv3",
     "dev:firefox-with-profile": "pnpx cross-env FIREFOX_WITH_PROFILE=1 wxt -b firefox --mv3",
     "build": "wxt build",
