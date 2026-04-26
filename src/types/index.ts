@@ -191,12 +191,3 @@ export type VideoData = {
   sabrConfig: SabrConfig | null;
   captionTracks: CaptionTrack[];
 };
-
-// MAIN-world cache of the player's most recent SABR POST: URL plus the raw
-// protobuf body so we can replay it against googlevideo without rebuilding
-// PoToken/session signals from scratch.
-export type YtdlSabrTemplate = {
-  url: string;
-  body: Uint8Array;
-  capturedAt: number;
-};

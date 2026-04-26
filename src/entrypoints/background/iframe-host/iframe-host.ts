@@ -93,7 +93,20 @@ function ensurePostMessageBridge() {
   }
 
   isPostMessageBridgeInstalled = true;
+  void broadcastDiagToTabs("[ytdl:iframe-host] postMessage bridge installed");
+  let messageEventCount = 0;
   addEventListener("message", e => {
+    messageEventCount++;
+    if (messageEventCount <= 5) {
+      const dataKind = typeof e.data;
+      const dataType = (e.data && typeof e.data === "object" && "type" in e.data)
+        ? String(e.data.type)
+        : "n/a";
+      void broadcastDiagToTabs(
+        `[ytdl:iframe-host] message event #${messageEventCount} origin=${e.origin} kind=${dataKind} type=${dataType}`
+      );
+    }
+
     if (isScrubDebugMessage(e.data)) {
       void broadcastDiagToTabs(e.data.msg);
       return;

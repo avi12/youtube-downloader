@@ -54,6 +54,20 @@ export default defineContentScript({
     // own URL carries) is enough to keep nested YouTube ad/preview iframes
     // out of this branch.
     if (location.search.includes("ytdlScrubMode=1")) {
+      // Boot probe: post directly to parent so we can confirm MAIN-world
+      // injection happened in a BG-hosted iframe even before the player
+      // is ready (independent of the cross-world messenger path).
+      try {
+        if (parent !== self) {
+          parent.postMessage({
+            type: "ytdl:scrub-debug",
+            msg: `[ytdl:scrub-tab] MAIN booted url=${location.search.slice(0, 120)}`
+          }, "*");
+        }
+      } catch {
+        // best-effort
+      }
+
       await runScrubSelfDrive();
       return;
     }
