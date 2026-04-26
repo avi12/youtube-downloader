@@ -135,8 +135,8 @@ async function registerSabrOriginRule() {
 // youtube.com. BG-hosted factory iframes are on moz-extension://, so they're
 // blocked. Firefox's declarativeNetRequest responseHeaders.remove is not
 // reliable across versions; webRequest.onHeadersReceived is. Strip both
-// headers for documents loaded into factory iframes (tagged via the
-// ytdlTrustFactoryMode URL param).
+// headers for documents loaded into factory iframes or scrub iframes (tagged
+// via the ytdlTrustFactoryMode / ytdlScrubMode URL param).
 function registerFactoryIframeHeaderStripper() {
   if (!import.meta.env.FIREFOX) {
     return;
@@ -144,7 +144,8 @@ function registerFactoryIframeHeaderStripper() {
 
   browser.webRequest.onHeadersReceived.addListener(
     ({ url, responseHeaders }) => {
-      if (!url.includes("ytdlTrustFactoryMode=1") || !responseHeaders) {
+      const isHostedIframe = url.includes("ytdlTrustFactoryMode=1") || url.includes("ytdlScrubMode=1");
+      if (!isHostedIframe || !responseHeaders) {
         return {};
       }
 
@@ -155,7 +156,10 @@ function registerFactoryIframeHeaderStripper() {
       return { responseHeaders: filtered };
     },
     {
-      urls: ["https://www.youtube.com/*ytdlTrustFactoryMode=1*"],
+      urls: [
+        "https://www.youtube.com/*ytdlTrustFactoryMode=1*",
+        "https://www.youtube.com/*ytdlScrubMode=1*"
+      ],
       types: ["sub_frame"]
     },
     ["blocking", "responseHeaders"]
