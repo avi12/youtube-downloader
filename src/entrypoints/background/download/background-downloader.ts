@@ -344,7 +344,7 @@ export function cancelBackgroundDownload(videoId: string) {
 // the player response via TVHTML5_SIMPLY_EMBEDDED_PLAYER (yt-dlp's technique):
 // that client returns plain URLs and isn't gated by the attestation wall that
 // blocks SABR on Firefox.
-async function enrichWithAlternateClientUrls(request: DownloadRequest): Promise<DownloadRequest> {
+async function enrichWithAlternateClientUrls(request: DownloadRequest, tabId?: number): Promise<DownloadRequest> {
   const needsVideoUrl = Boolean(request.videoItag) && !request.resolvedVideoUrl;
   const needsAudioUrl = Boolean(request.audioItag) && !request.resolvedAudioUrl;
   if (!needsVideoUrl && !needsAudioUrl) {
@@ -367,9 +367,22 @@ async function enrichWithAlternateClientUrls(request: DownloadRequest): Promise<
       enriched.resolvedAudioUrl = findFormatUrlByItag(formats, request.audioItag);
     }
 
+    const availableItags = formats.map(format => format.itag).join(",");
+    const msg = `[ytdl:bg] alternate-client returned ${formats.length} formats (itags=${availableItags}); video itag ${request.videoItag} url=${Boolean(enriched.resolvedVideoUrl)}, audio itag ${request.audioItag} url=${Boolean(enriched.resolvedAudioUrl)}`;
+    console.log(msg);
+    if (typeof tabId === "number") {
+      void sendMessage(MessageType.BgDebugLog, { msg }, tabId);
+    }
+
     return enriched;
   } catch (error) {
     console.warn("[ytdl:bg] Alternate-client fallback failed:", error);
+    if (typeof tabId === "number") {
+      void sendMessage(MessageType.BgDebugLog, {
+        msg: `[ytdl:bg] alternate-client threw: ${String(error)}`
+      }, tabId);
+    }
+
     return request;
   }
 }
@@ -532,7 +545,7 @@ export async function startBackgroundDownload({ request, tabId }: {
     // no SABR per-template quota, no factory iframes. SABR fallbacks only kick
     // in when CDN URLs are unavailable.
     let result: DownloadResult | null = null;
-    const cdnRequest = await enrichWithAlternateClientUrls(request);
+    const cdnRequest = await enrichWithAlternateClientUrls(request, tabId);
     const haveCdnUrls = Boolean(cdnRequest.resolvedVideoUrl || cdnRequest.resolvedAudioUrl);
     void sendMessage(MessageType.BgDebugLog, {
       msg: `[ytdl:bg] CDN-first check: haveUrls=${haveCdnUrls} video=${Boolean(cdnRequest.resolvedVideoUrl)} audio=${Boolean(cdnRequest.resolvedAudioUrl)}`
