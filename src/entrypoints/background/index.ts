@@ -82,11 +82,13 @@ async function registerSabrOriginRule() {
       type: "modifyHeaders",
       requestHeaders: [...baseHeaders, ...chromeOnlyHeaders, ...firefoxOnlyHeaders]
     },
-    // tabIds: [-1] scopes the rule to extension-initiated requests only, so we
-    // don't overwrite the user's tab player's own outgoing UA.
+    // tabIds: [-1] scopes to extension-initiated requests, requestMethods: POST
+    // scopes to SABR (POST) only — direct CDN fetches (GET) carry their own
+    // signed auth in the URL and break when we override Origin/Referer/UA.
     condition: {
       urlFilter: "||googlevideo.com/videoplayback",
-      tabIds: [-1]
+      tabIds: [-1],
+      requestMethods: ["post"]
     }
   };
 
