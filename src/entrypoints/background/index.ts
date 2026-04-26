@@ -149,30 +149,17 @@ function registerFactoryIframeHeaderStripper() {
     return;
   }
 
-  async function broadcastStripDiag(msg: string) {
-    console.log(msg);
-    const tabs = await browser.tabs.query({ url: "https://www.youtube.com/*" });
-    for (const tab of tabs) {
-      if (typeof tab.id === "number") {
-        void sendMessage(MessageType.BgDebugLog, { msg }, tab.id);
-      }
-    }
-  }
-
   browser.webRequest.onHeadersReceived.addListener(
     ({ url, responseHeaders }) => {
       const isHostedIframe = url.includes("ytdlTrustFactoryMode=1") || url.includes("ytdlScrubMode=1");
-      void broadcastStripDiag(`[ytdl:bg-strip] onHeadersReceived url=${url.slice(0, 120)} isHostedIframe=${isHostedIframe} headers=${responseHeaders?.length ?? 0}`);
       if (!isHostedIframe || !responseHeaders) {
         return {};
       }
 
-      const before = responseHeaders.length;
       const filtered = responseHeaders.filter(({ name }) => {
         const lower = name.toLowerCase();
         return lower !== "x-frame-options" && lower !== "content-security-policy";
       });
-      void broadcastStripDiag(`[ytdl:bg-strip] stripped ${before}->${filtered.length}`);
       return { responseHeaders: filtered };
     },
     {
