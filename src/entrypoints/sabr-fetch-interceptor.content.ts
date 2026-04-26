@@ -595,10 +595,12 @@ async function fetchProgressive({ targetDurationMs, maxIterations, originalFetch
   let playerTimeMs = Math.min(state.audio.endMs, state.video.endMs);
   let stallStreak = 0;
   let iteration = 0;
+  let activeTemplateBody = template.body;
+  let activeTemplateUrl = template.url;
 
   for (; iteration < maxIterations; iteration++) {
     const requestBody = buildRequestBody({
-      templateBody: template.body,
+      templateBody: activeTemplateBody,
       playerTimeMs,
       audio: state.audio,
       video: state.video,
@@ -606,7 +608,7 @@ async function fetchProgressive({ targetDurationMs, maxIterations, originalFetch
     });
 
     const response = await performFetch({
-      url: template.url,
+      url: activeTemplateUrl,
       body: requestBody,
       originalFetch
     });
@@ -635,7 +637,17 @@ async function fetchProgressive({ targetDurationMs, maxIterations, originalFetch
     if (!advanced) {
       stallStreak++;
 
-      if (stallStreak >= 2) {
+      // Server enforces a per-template media quota (~60s of media before it
+      // stops returning new bytes regardless of playerTimeMs). Re-synthesize
+      // a fresh template at the current offset to reset that quota window.
+      const refreshed = buildSyntheticTemplateFromPlayer();
+      if (refreshed) {
+        activeTemplateBody = refreshed.body;
+        activeTemplateUrl = refreshed.url;
+        window.__ytdlSabrTemplate = refreshed;
+      }
+
+      if (stallStreak >= 3) {
         return buildResult({
           state,
           audioItag,
