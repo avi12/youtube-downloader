@@ -345,8 +345,8 @@ export function cancelBackgroundDownload(videoId: string) {
 // that client returns plain URLs and isn't gated by the attestation wall that
 // blocks SABR on Firefox.
 async function enrichWithAlternateClientUrls(request: DownloadRequest, tabId?: number): Promise<DownloadRequest> {
-  const needsVideoUrl = Boolean(request.videoItag) && !request.resolvedVideoUrl;
-  const needsAudioUrl = Boolean(request.audioItag) && !request.resolvedAudioUrl;
+  const needsVideoUrl = !request.resolvedVideoUrl;
+  const needsAudioUrl = !request.resolvedAudioUrl;
   if (!needsVideoUrl && !needsAudioUrl) {
     return request;
   }
