@@ -200,7 +200,8 @@ async function openScrubIframe({ session, scrubIndex, startSec, windowSec }: {
 
   await spawnHostedIframe({
     id: iframeId,
-    url
+    url,
+    tabId: session.tabId
   });
   diag(`opened scrub iframe id=${iframeId} index=${scrubIndex} t=${startSec} window=${windowSec}s`);
 

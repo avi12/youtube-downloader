@@ -33,26 +33,36 @@ interface ScrubSegmentMessage {
   audioMimeType: string;
 }
 
-function isScrubDebugMessage(data: unknown): data is ScrubDebugMessage {
-  return typeof data === "object"
-    && data !== null
-    && (data as { type?: unknown }).type === POST_MESSAGE_TYPE_DEBUG
-    && typeof (data as { msg?: unknown }).msg === "string";
+function asRecord(data: unknown): Record<string, unknown> | null {
+  if (typeof data !== "object" || data === null) {
+    return null;
+  }
+
+  return Object.assign<Record<string, unknown>, object>({}, data);
 }
 
-function isScrubSegmentMessage(data: unknown): data is ScrubSegmentMessage {
-  if (typeof data !== "object" || data === null) {
+function isScrubDebugMessage(data: unknown): data is ScrubDebugMessage {
+  const record = asRecord(data);
+  if (!record) {
     return false;
   }
 
-  const message = data as Record<string, unknown>;
-  return message.type === POST_MESSAGE_TYPE_SEGMENT
-    && typeof message.videoId === "string"
-    && typeof message.scrubIndex === "number"
-    && message.videoBuffer instanceof ArrayBuffer
-    && message.audioBuffer instanceof ArrayBuffer
-    && typeof message.videoMimeType === "string"
-    && typeof message.audioMimeType === "string";
+  return record.type === POST_MESSAGE_TYPE_DEBUG && typeof record.msg === "string";
+}
+
+function isScrubSegmentMessage(data: unknown): data is ScrubSegmentMessage {
+  const record = asRecord(data);
+  if (!record) {
+    return false;
+  }
+
+  return record.type === POST_MESSAGE_TYPE_SEGMENT
+    && typeof record.videoId === "string"
+    && typeof record.scrubIndex === "number"
+    && record.videoBuffer instanceof ArrayBuffer
+    && record.audioBuffer instanceof ArrayBuffer
+    && typeof record.videoMimeType === "string"
+    && typeof record.audioMimeType === "string";
 }
 
 let scrubSegmentHandler: ((segment: IframeScrubSegmentPostMessage) => void) | null = null;
@@ -97,6 +107,7 @@ function ensurePostMessageBridge() {
   let messageEventCount = 0;
   addEventListener("message", e => {
     messageEventCount++;
+
     if (messageEventCount <= 5) {
       const dataKind = typeof e.data;
       const dataType = (e.data && typeof e.data === "object" && "type" in e.data)
@@ -195,11 +206,24 @@ function removeLocalIframe(id: string) {
   localIframes.delete(id);
 }
 
-export async function spawnHostedIframe({ id, url }: {
+const tabIdByIframeId = new Map<string, number>();
+
+export async function spawnHostedIframe({ id, url, tabId }: {
   id: string;
   url: string;
+  tabId?: number;
 }) {
   if (import.meta.env.FIREFOX) {
+    if (typeof tabId === "number") {
+      tabIdByIframeId.set(id, tabId);
+      ensurePostMessageBridge();
+      void sendMessage(MessageType.MountScrubIframeInTab, {
+        id,
+        url
+      }, tabId);
+      return;
+    }
+
     appendLocalIframe({
       id,
       url
@@ -216,6 +240,13 @@ export async function spawnHostedIframe({ id, url }: {
 
 export function removeHostedIframe(id: string) {
   if (import.meta.env.FIREFOX) {
+    const tabId = tabIdByIframeId.get(id);
+    if (typeof tabId === "number") {
+      tabIdByIframeId.delete(id);
+      void sendMessage(MessageType.UnmountScrubIframeInTab, { id }, tabId);
+      return;
+    }
+
     removeLocalIframe(id);
     return;
   }

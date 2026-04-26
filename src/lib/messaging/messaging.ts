@@ -33,6 +33,8 @@ export const MessageType = {
   PipelineZipProgress: "pipelineZipProgress",
   StartIframeScrub: "startIframeScrub",
   IframeScrubSegmentReady: "iframeScrubSegmentReady",
+  MountScrubIframeInTab: "mountScrubIframeInTab",
+  UnmountScrubIframeInTab: "unmountScrubIframeInTab",
   BgDebugLog: "bgDebugLog",
   GetSabrTemplateFromTab: "getSabrTemplateFromTab",
   SabrTemplateReady: "sabrTemplateReady",
@@ -222,6 +224,15 @@ interface ProtocolMap {
     audioBase64: string;
     videoMimeType: string;
     audioMimeType: string;
+  }): void;
+
+  mountScrubIframeInTab(data: {
+    id: string;
+    url: string;
+  }): void;
+
+  unmountScrubIframeInTab(data: {
+    id: string;
   }): void;
 
   // Forwards offscreen / background diagnostic messages to a content script

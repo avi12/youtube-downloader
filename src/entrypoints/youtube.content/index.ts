@@ -106,6 +106,32 @@ function registerCrossWorldHandlers(
   );
 }
 
+const SCRUB_IFRAME_HOST_STYLE = "position:fixed;left:-99999px;top:-99999px;width:480px;height:270px;border:0";
+const SCRUB_IFRAME_HOST_ATTR = "data-ytdl-scrub-iframe";
+
+function findScrubIframeInTab(id: string) {
+  return document.querySelector<HTMLIFrameElement>(`iframe[${SCRUB_IFRAME_HOST_ATTR}="${CSS.escape(id)}"]`);
+}
+
+function registerScrubIframeHostHandlers() {
+  onMessage(MessageType.MountScrubIframeInTab, ({ data }) => {
+    if (findScrubIframeInTab(data.id)) {
+      return;
+    }
+
+    const elFrame = document.createElement("iframe");
+    elFrame.setAttribute(SCRUB_IFRAME_HOST_ATTR, data.id);
+    elFrame.src = data.url;
+    elFrame.setAttribute("allow", "autoplay; encrypted-media; clipboard-read");
+    elFrame.setAttribute("style", SCRUB_IFRAME_HOST_STYLE);
+    document.body.append(elFrame);
+  });
+
+  onMessage(MessageType.UnmountScrubIframeInTab, ({ data }) => {
+    findScrubIframeInTab(data.id)?.remove();
+  });
+}
+
 function registerBackgroundMessageHandlers() {
   onMessage(MessageType.BgDebugLog, ({ data }) => {
     console.log(data.msg);
@@ -336,6 +362,7 @@ export default defineContentScript({
     void forwardSabrCredentialsWithRetry();
 
     if (!isDownloadIframe) {
+      registerScrubIframeHostHandlers();
       listenForInterruptedDownloadEvents();
       listenForKeepalive();
       listenForDownloadIframes(context);
