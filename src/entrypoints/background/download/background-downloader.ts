@@ -6,9 +6,8 @@ import { downloadViaCdn } from "./cdn-downloader";
 import { downloadViaSabr } from "./sabr-downloader";
 import { debugLogToTab } from "@/lib/messaging/debug-log";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
-import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
+import { OffscreenMessageType, sendBytesToOffscreen, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
 import { interruptedDownloadsItem, mutateStorageItem } from "@/lib/storage/storage";
-import { TRANSFER_CHUNK_SIZE, uint8ToBase64 } from "@/lib/utils/binary";
 import { fetchAlternateClientFormats, findFormatUrlByItag } from "@/lib/youtube/alternate-client";
 import { fetchYouTubeMusicMetadata } from "@/lib/youtube/youtube-music-metadata";
 import { ProgressType, StreamType } from "@/types";
@@ -71,34 +70,6 @@ async function clearInterruptedDownload(videoId: string) {
   });
 }
 
-const YIELD_EVERY_N_CHUNKS = 32;
-
-async function sendStreamChunksToOffscreen({ videoId, streamType, data, tabId }: {
-  videoId: string;
-  streamType: string;
-  data: Uint8Array;
-  tabId: number;
-}) {
-  const totalChunks = Math.ceil(data.byteLength / TRANSFER_CHUNK_SIZE);
-
-  for (let iChunk = 0; iChunk < totalChunks; iChunk++) {
-    const start = iChunk * TRANSFER_CHUNK_SIZE;
-    const chunk = data.subarray(start, start + TRANSFER_CHUNK_SIZE);
-    sendToOffscreen(OffscreenMessageType.ProcessStreamChunk, {
-      videoId,
-      streamType,
-      iChunk,
-      totalChunks,
-      chunkBase64: uint8ToBase64(chunk),
-      tabId
-    });
-
-    if ((iChunk + 1) % YIELD_EVERY_N_CHUNKS === 0) {
-      await new Promise(resolve => setTimeout(resolve, 0));
-    }
-  }
-}
-
 async function fetchSubtitleSrt(track: CaptionTrack): Promise<string> {
   try {
     const url = new URL(track.baseUrl);
@@ -138,7 +109,7 @@ async function dispatchToOffscreen({ request, result, enrichedMetadata, tabId }:
   const transferJobs: Promise<void>[] = [];
   if (result.videoData) {
     transferJobs.push(
-      sendStreamChunksToOffscreen({
+      sendBytesToOffscreen({
         videoId: request.videoId,
         streamType: StreamType.Video,
         data: result.videoData,
@@ -149,7 +120,7 @@ async function dispatchToOffscreen({ request, result, enrichedMetadata, tabId }:
 
   if (result.audioData) {
     transferJobs.push(
-      sendStreamChunksToOffscreen({
+      sendBytesToOffscreen({
         videoId: request.videoId,
         streamType: StreamType.Audio,
         data: result.audioData,
@@ -161,7 +132,7 @@ async function dispatchToOffscreen({ request, result, enrichedMetadata, tabId }:
   for (const [i, track] of result.additionalAudioTracks.entries()) {
     if (track.data) {
       transferJobs.push(
-        sendStreamChunksToOffscreen({
+        sendBytesToOffscreen({
           videoId: request.videoId,
           streamType: `audio-extra-${i}`,
           data: track.data,

@@ -1,3 +1,4 @@
+import { TRANSFER_CHUNK_SIZE, uint8ToBase64 } from "@/lib/utils/binary";
 import type { DownloadType, SubtitleStream, VideoMetadata } from "@/types";
 
 const OFFSCREEN_PORT_NAME = "ytdl-offscreen";
@@ -123,6 +124,37 @@ function sendToOffscreen<T extends OffscreenMessageType>(
   });
 }
 
+const YIELD_EVERY_N_CHUNKS = 32;
+
+// Shards a Uint8Array into TRANSFER_CHUNK_SIZE base64 chunks and pushes each
+// one to the offscreen pipeline as a ProcessStreamChunk. Yields back to the
+// event loop every 32 chunks so a multi-MB stream doesn't monopolize the BG
+// main thread (relevant when the orchestrator is also driving keepalive).
+async function sendBytesToOffscreen({ videoId, streamType, data, tabId }: {
+  videoId: string;
+  streamType: string;
+  data: Uint8Array;
+  tabId: number;
+}) {
+  const totalChunks = Math.max(1, Math.ceil(data.byteLength / TRANSFER_CHUNK_SIZE));
+  for (let iChunk = 0; iChunk < totalChunks; iChunk++) {
+    const start = iChunk * TRANSFER_CHUNK_SIZE;
+    const slice = data.subarray(start, start + TRANSFER_CHUNK_SIZE);
+    sendToOffscreen(OffscreenMessageType.ProcessStreamChunk, {
+      videoId,
+      streamType,
+      iChunk,
+      totalChunks,
+      chunkBase64: uint8ToBase64(slice),
+      tabId
+    });
+
+    if ((iChunk + 1) % YIELD_EVERY_N_CHUNKS === 0) {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    }
+  }
+}
+
 function listenForOffscreenMessages(handlers: HandlerMap) {
   browser.runtime.onConnect.addListener(port => {
     if (port.name !== OFFSCREEN_PORT_NAME) {
@@ -138,4 +170,4 @@ function listenForOffscreenMessages(handlers: HandlerMap) {
   });
 }
 
-export { OffscreenMessageType, sendToOffscreen, listenForOffscreenMessages };
+export { OffscreenMessageType, sendBytesToOffscreen, sendToOffscreen, listenForOffscreenMessages };

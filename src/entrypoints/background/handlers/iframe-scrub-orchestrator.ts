@@ -2,9 +2,9 @@ import { fetchExtraAudioTracksAndCaptions } from "../download/extra-tracks-fetch
 import { removeHostedIframe, setIframeScrubSegmentHandler, spawnHostedIframe } from "../iframe-host/iframe-host";
 import { ensureProcessor } from "./processor";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
-import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
+import { OffscreenMessageType, sendBytesToOffscreen, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
 import { ScrubIframeMessageType, listenForScrubIframeMessages } from "@/lib/messaging/scrub-iframe-messaging";
-import { TRANSFER_CHUNK_SIZE, base64ToUint8Array, uint8ToBase64 } from "@/lib/utils/binary";
+import { base64ToUint8Array, uint8ToBase64 } from "@/lib/utils/binary";
 import { ProgressType } from "@/types";
 import type { AdaptiveFormatItem, CaptionTrack, DownloadType, VideoMetadata } from "@/types";
 
@@ -316,22 +316,12 @@ function emitSegmentChunks({ session, scrubIndex, base64, mediaKind }: {
   base64: string;
   mediaKind: "video" | "audio";
 }) {
-  const bytes = base64ToUint8Array(base64);
-  const totalChunks = Math.max(1, Math.ceil(bytes.byteLength / TRANSFER_CHUNK_SIZE));
-  const streamType = `${mediaKind}-seg-${scrubIndex}`;
-
-  for (let iChunk = 0; iChunk < totalChunks; iChunk++) {
-    const start = iChunk * TRANSFER_CHUNK_SIZE;
-    const slice = bytes.subarray(start, start + TRANSFER_CHUNK_SIZE);
-    sendToOffscreen(OffscreenMessageType.ProcessStreamChunk, {
-      videoId: session.videoId,
-      streamType,
-      iChunk,
-      totalChunks,
-      chunkBase64: uint8ToBase64(slice),
-      tabId: session.tabId
-    });
-  }
+  return sendBytesToOffscreen({
+    videoId: session.videoId,
+    streamType: `${mediaKind}-seg-${scrubIndex}`,
+    data: base64ToUint8Array(base64),
+    tabId: session.tabId
+  });
 }
 
 function rememberResolvedMimes({ session, segment }: {
@@ -352,20 +342,12 @@ function emitExtraAudioChunks({ session, trackIndex, data }: {
   trackIndex: number;
   data: Uint8Array;
 }) {
-  const totalChunks = Math.max(1, Math.ceil(data.byteLength / TRANSFER_CHUNK_SIZE));
-  const streamType = `audio-extra-${trackIndex}`;
-  for (let iChunk = 0; iChunk < totalChunks; iChunk++) {
-    const start = iChunk * TRANSFER_CHUNK_SIZE;
-    const slice = data.subarray(start, start + TRANSFER_CHUNK_SIZE);
-    sendToOffscreen(OffscreenMessageType.ProcessStreamChunk, {
-      videoId: session.videoId,
-      streamType,
-      iChunk,
-      totalChunks,
-      chunkBase64: uint8ToBase64(slice),
-      tabId: session.tabId
-    });
-  }
+  return sendBytesToOffscreen({
+    videoId: session.videoId,
+    streamType: `audio-extra-${trackIndex}`,
+    data,
+    tabId: session.tabId
+  });
 }
 
 async function finalizeSession(session: ScrubSession) {
@@ -376,13 +358,13 @@ async function finalizeSession(session: ScrubSession) {
       session,
       segment
     });
-    emitSegmentChunks({
+    await emitSegmentChunks({
       session,
       scrubIndex,
       base64: segment.videoBase64,
       mediaKind: "video"
     });
-    emitSegmentChunks({
+    await emitSegmentChunks({
       session,
       scrubIndex,
       base64: segment.audioBase64,
@@ -397,7 +379,7 @@ async function finalizeSession(session: ScrubSession) {
   });
 
   for (const [trackIndex, track] of extraAudioTracks.entries()) {
-    emitExtraAudioChunks({
+    await emitExtraAudioChunks({
       session,
       trackIndex,
       data: track.data
