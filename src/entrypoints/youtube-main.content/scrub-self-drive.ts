@@ -217,24 +217,20 @@ function bindCaptureToVideoIdDiscardingPending(videoId: string) {
     }
   }
 
-  // Flush ONLY init-sized chunks from pendingChunks. Init segments (ftyp+moov
-  // for fMP4, EBML+Tracks for WebM) are <50KB and are required for FFmpeg to
-  // decode the fragments. Larger pre-bind chunks are pre-roll ad media or
-  // early content that the player will re-fetch once we resume — including
-  // them here would inflate audioTotalBytes past MIN_AUDIO_BYTES instantly,
-  // tripping waitForBufferFill's stall-grace before any real growth happens
-  // and cutting the captured window short.
-  const PENDING_FLUSH_MAX_BYTES = 50_000;
+  // Flush every pre-bind chunk. The init segments (ftyp+moov / EBML+Tracks)
+  // are required for FFmpeg to decode subsequent fragments, and the early
+  // content fragments arriving between document_start and bind are real
+  // media the player won't re-fetch. waitForBufferFill seeds its
+  // initialBytes baseline from this flushed total so stall-grace doesn't
+  // trip before *fresh* growth arrives.
   const capture = captureState.capturedMedia.get(videoId);
   if (capture) {
     for (const pending of captureState.pendingChunks) {
-      if (pending.data.byteLength <= PENDING_FLUSH_MAX_BYTES) {
-        captureState.addChunkToCapture({
-          capture,
-          mimeType: pending.mimeType,
-          chunk: pending.data
-        });
-      }
+      captureState.addChunkToCapture({
+        capture,
+        mimeType: pending.mimeType,
+        chunk: pending.data
+      });
     }
   }
 
@@ -248,8 +244,15 @@ async function waitForBufferFill({ videoId, windowSec, player }: {
 }) {
   const hardCapMs = windowSec * 1000 + BUFFER_FILL_OVERHEAD_MS;
   const startedAt = Date.now();
-  let lastAudioBytes = 0;
+  // Pre-bind ad chunks + early content already in capturedMedia must not count
+  // as the first "byte change" event — stall-grace should only trigger after
+  // the player has emitted *fresh* media past this baseline. Seed both the
+  // baseline and lastAudioBytes from the current count, and require at least
+  // one observed growth past baseline before stall-grace can fire.
+  const initialBytes = window.__ytdlCapture?.capturedMedia.get(videoId)?.audioTotalBytes ?? 0;
+  let lastAudioBytes = initialBytes;
   let lastChangeAt = Date.now();
+  let hasGrownPastBaseline = false;
 
   while (Date.now() - startedAt < hardCapMs) {
     const elVideo = document.querySelector<HTMLVideoElement>(VIDEO_ELEMENT_SELECTOR);
@@ -267,7 +270,15 @@ async function waitForBufferFill({ videoId, windowSec, player }: {
     if (currentBytes !== lastAudioBytes) {
       lastAudioBytes = currentBytes;
       lastChangeAt = Date.now();
-    } else if (currentBytes > MIN_AUDIO_BYTES && Date.now() - lastChangeAt > STALL_GRACE_MS) {
+
+      if (currentBytes > initialBytes) {
+        hasGrownPastBaseline = true;
+      }
+    } else if (
+      hasGrownPastBaseline
+      && currentBytes > MIN_AUDIO_BYTES
+      && Date.now() - lastChangeAt > STALL_GRACE_MS
+    ) {
       return;
     }
 
