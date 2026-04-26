@@ -76,7 +76,11 @@ function registerCrossWorldHandlers(
   });
 
   crossWorldMessenger.onMessage(CrossWorldMessage.StartBackgroundDownload, ({ data }) => {
-    void sendMessage(MessageType.StartBackgroundDownload, data);
+    console.log(`[ytdl:isolated-fwd] StartBackgroundDownload received videoId=${data.videoId}, forwarding to BG`);
+    void sendMessage(MessageType.StartBackgroundDownload, data).then(
+      () => console.log(`[ytdl:isolated-fwd] StartBackgroundDownload BG ack`),
+      err => console.log(`[ytdl:isolated-fwd] StartBackgroundDownload BG err: ${String(err)}`)
+    );
   });
 
   crossWorldMessenger.onMessage(CrossWorldMessage.StartIframeScrub, ({ data }) => {
