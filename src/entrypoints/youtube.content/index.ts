@@ -19,6 +19,7 @@ import {
   crossWorldSabrMessenger
 } from "@/lib/messaging/cross-world-messenger";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
+import { ScrubIframeMessageType, sendScrubIframeMessage } from "@/lib/messaging/scrub-iframe-messaging";
 import { optionsItem, statusProgressItem } from "@/lib/storage/storage";
 import { downloadProgressStore, initContentOptions } from "@/lib/ui/synced-stores.svelte";
 import { uint8ToBase64 } from "@/lib/utils/binary";
@@ -256,19 +257,31 @@ async function restoreStoredProgress() {
 }
 
 function registerScrubResultForwarder() {
-  void sendMessage(MessageType.BgDebugLog, {
-    msg: `[ytdl:scrub-isolated] forwarder registered self===top=${self === top} url=${location.search}`
+  // Open a long-lived port to BG. BG-hosted iframes can't rely on
+  // runtime.sendMessage (sender.tab is undefined and the orchestrator's
+  // matching is brittle); a named port survives the iframe's lifetime and
+  // lets the orchestrator track this iframe's segments by port identity.
+  const params = new URLSearchParams(location.search);
+  const helloVideoId = params.get("v") ?? "";
+  const helloIndex = parseInt(params.get("ytdlScrubIndex") ?? "-1", 10);
+
+  sendScrubIframeMessage(ScrubIframeMessageType.Hello, {
+    videoId: helloVideoId,
+    scrubIndex: helloIndex
+  });
+  sendScrubIframeMessage(ScrubIframeMessageType.Debug, {
+    msg: `[ytdl:scrub-isolated] forwarder registered self===top=${self === top} url=${location.search.slice(0, 120)}`
   });
 
   crossWorldMessenger.onMessage(CrossWorldMessage.IframeScrubDebug, ({ data }) => {
-    void sendMessage(MessageType.BgDebugLog, { msg: data.msg });
+    sendScrubIframeMessage(ScrubIframeMessageType.Debug, { msg: data.msg });
   });
 
   crossWorldMessenger.onMessage(CrossWorldMessage.IframeScrubSegment, ({ data }) => {
-    void sendMessage(MessageType.BgDebugLog, {
+    sendScrubIframeMessage(ScrubIframeMessageType.Debug, {
       msg: `[ytdl:scrub-isolated] received from MAIN index=${data.scrubIndex} videoBytes=${data.videoBytes.byteLength} audioBytes=${data.audioBytes.byteLength}`
     });
-    void sendMessage(MessageType.IframeScrubSegmentReady, {
+    sendScrubIframeMessage(ScrubIframeMessageType.Segment, {
       videoId: data.videoId,
       scrubIndex: data.scrubIndex,
       videoBase64: uint8ToBase64(data.videoBytes),
@@ -276,7 +289,7 @@ function registerScrubResultForwarder() {
       videoMimeType: data.videoMimeType,
       audioMimeType: data.audioMimeType
     });
-    void sendMessage(MessageType.BgDebugLog, {
+    sendScrubIframeMessage(ScrubIframeMessageType.Debug, {
       msg: `[ytdl:scrub-isolated] forwarded to BG index=${data.scrubIndex}`
     });
   });

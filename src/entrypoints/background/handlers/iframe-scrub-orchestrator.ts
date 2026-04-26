@@ -2,6 +2,7 @@ import { removeHostedIframe, setIframeScrubSegmentHandler, spawnHostedIframe } f
 import { ensureProcessor } from "./processor";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
+import { ScrubIframeMessageType, listenForScrubIframeMessages } from "@/lib/messaging/scrub-iframe-messaging";
 import { TRANSFER_CHUNK_SIZE, base64ToUint8Array, uint8ToBase64 } from "@/lib/utils/binary";
 import { type DownloadType, ProgressType, type VideoMetadata } from "@/types";
 
@@ -376,11 +377,33 @@ export async function startIframeScrubSession(data: StartIframeScrubArgs) {
 }
 
 export function registerIframeScrubOrchestrator() {
-  // Direct postMessage handler for BG-hosted iframes on Firefox: content
-  // scripts don't inject into iframes whose top-level document is
-  // moz-extension://, so the runtime.sendMessage relay never fires. The
-  // MAIN-world driver postMessages the segment buffer to the host
-  // document, which forwards it through this hook.
+  // Long-lived port channel from scrub iframes (ISOLATED-world content
+  // script). Survives the iframe lifetime and avoids one-shot sendMessage
+  // races. See scrub-iframe-messaging.ts for protocol.
+  listenForScrubIframeMessages({
+    [ScrubIframeMessageType.Hello]: data => {
+      bgLog(`[ytdl:scrub-bg] iframe port hello videoId=${data.videoId} index=${data.scrubIndex}`);
+    },
+    [ScrubIframeMessageType.Debug]: data => {
+      bgLog(data.msg);
+    },
+    [ScrubIframeMessageType.Segment]: data => {
+      void handleSegmentArrival({
+        videoId: data.videoId,
+        scrubIndex: data.scrubIndex,
+        videoBase64: data.videoBase64,
+        audioBase64: data.audioBase64,
+        videoMimeType: data.videoMimeType,
+        audioMimeType: data.audioMimeType
+      });
+    }
+  });
+
+  // Direct postMessage handler is preserved as a fallback for environments
+  // where content scripts don't inject into BG-hosted iframes (Firefox MV3
+  // appears to skip injection for iframes whose top-level document is
+  // moz-extension://). The MAIN-world driver dual-posts so whichever channel
+  // reaches BG drives the segment pipeline.
   setIframeScrubSegmentHandler(segment => {
     void handleSegmentArrival({
       videoId: segment.videoId,
