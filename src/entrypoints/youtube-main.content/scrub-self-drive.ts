@@ -127,21 +127,32 @@ async function waitForAdToClear() {
     return;
   }
 
-  const clearDeadline = Date.now() + AD_CLEAR_TIMEOUT_MS;
-  while (Date.now() < clearDeadline) {
-    if (!document.querySelector(AD_SHOWING_SELECTOR)) {
-      return;
-    }
+  try {
+    const clearDeadline = Date.now() + AD_CLEAR_TIMEOUT_MS;
+    while (Date.now() < clearDeadline) {
+      if (!document.querySelector(AD_SHOWING_SELECTOR)) {
+        return;
+      }
 
-    // Crank rate so non-skippable ads finish in seconds rather than ~2 min,
-    // and click skip-ad as soon as it appears.
+      // Crank rate so non-skippable ads finish in seconds rather than ~2 min,
+      // and click skip-ad as soon as it appears.
+      const elVideo = document.querySelector<HTMLVideoElement>(VIDEO_ELEMENT_SELECTOR);
+      if (elVideo) {
+        elVideo.playbackRate = 16;
+      }
+
+      document.querySelector<HTMLButtonElement>(SKIP_AD_BUTTON_SELECTOR)?.click();
+      await wait(POLL_INTERVAL_MS);
+    }
+  } finally {
+    // Reset to 1x once the ad clears — otherwise waitForBufferFill keeps the
+    // player at 16x speed and a single iframe blows through ~24 minutes of
+    // media in 90s, capturing the entire rest of the video instead of its
+    // intended 60s window.
     const elVideo = document.querySelector<HTMLVideoElement>(VIDEO_ELEMENT_SELECTOR);
     if (elVideo) {
-      elVideo.playbackRate = 16;
+      elVideo.playbackRate = 1;
     }
-
-    document.querySelector<HTMLButtonElement>(SKIP_AD_BUTTON_SELECTOR)?.click();
-    await wait(POLL_INTERVAL_MS);
   }
 }
 
