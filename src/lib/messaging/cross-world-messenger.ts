@@ -34,7 +34,8 @@ export const CrossWorldMessage = {
   IframeScrubDebug: "iframeScrubDebug",
   StartIframeScrub: "startIframeScrub",
   SabrTemplateCaptured: "sabrTemplateCaptured",
-  PullSabrTemplate: "pullSabrTemplate"
+  PullSabrTemplate: "pullSabrTemplate",
+  RunProgressiveSabr: "runProgressiveSabr"
 } as const;
 
 // Sabr-template fetches/synthesis live on a separate namespace so they don't
@@ -182,6 +183,12 @@ interface PageMessengerSchema {
     bodyBase64: string;
     capturedAt: number;
   } | null;
+
+  // ISOLATED → MAIN: kicks off MAIN's fetchProgressive engine for a download
+  // request. MAIN streams the resulting bytes back via CrossWorldMessage
+  // .StreamData on completion. No ad insertion happens because raw SABR media
+  // bypasses the player layer entirely.
+  [CrossWorldMessage.RunProgressiveSabr](data: DownloadRequest): void;
 
 }
 

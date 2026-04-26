@@ -1,4 +1,3 @@
-import { startIframeScrubSession } from "../handlers/iframe-scrub-orchestrator";
 import { ensureProcessor } from "../handlers/processor";
 import { removeFromPopupList } from "../queue/popup-list";
 import { signalVideoComplete } from "../queue/sequential-queue";
@@ -344,32 +343,17 @@ export async function startBackgroundDownload({ request, tabId }: {
       );
     }
 
-    // iframe-scrub: when CDN URLs are unavailable, use the user-tab player's
-    // own decoded buffer (SourceBuffer hook) as the source. The player has
-    // already passed YouTube's attestation, so this works where SABR doesn't.
-    // Promoted ahead of the broken SABR paths (lib path 403s on long videos,
-    // trust-template path infinite-loops on empty UMP responses).
+    // Progressive SABR via the user-tab synthesizer: the user's already-
+    // attested watch-page issues the chunked POSTs, so the response stream
+    // skips the attestation_required wall AND the player-layer ad insertion.
+    // BG just kicks the request and returns — the tab streams bytes back via
+    // the existing CrossWorldMessage.StreamData → MessageType.StreamChunk →
+    // offscreen pipeline.
     if (!result?.audioData && !result?.videoData) {
       const durationSec = request.videoDurationSec ?? 0;
       if (import.meta.env.FIREFOX && durationSec >= FIREFOX_IFRAME_SCRUB_FALLBACK_MIN_DURATION_SEC) {
-        debugLogToTab(`[ytdl:bg] CDN unavailable; using iframe-scrub for ${videoId} (${durationSec}s)`, tabId);
-        await startIframeScrubSession({
-          videoId,
-          durationSec,
-          type: request.type,
-          filenameOutput: request.filenameOutput,
-          videoMimeType: request.videoFormat?.mimeType?.split(";")[0] || "video/mp4",
-          audioMimeType: request.audioFormat?.mimeType?.split(";")[0] || "audio/mp4",
-          audioLabel: request.primaryAudioLabel ?? "",
-          metadata: request.metadata,
-          playlistId: request.playlistId,
-          playlistTitle: request.playlistTitle,
-          playlistTotalCount: request.playlistTotalCount,
-          additionalAudioFormats: cdnRequest.additionalAudioFormats,
-          resolvedExtraAudioUrls: cdnRequest.resolvedExtraAudioUrls,
-          captionTracks: cdnRequest.captionTracks,
-          tabId
-        });
+        debugLogToTab(`[ytdl:bg] CDN unavailable; running progressive SABR in tab for ${videoId} (${durationSec}s)`, tabId);
+        void sendMessage(MessageType.RunProgressiveSabrInTab, request, tabId);
         return;
       }
     }

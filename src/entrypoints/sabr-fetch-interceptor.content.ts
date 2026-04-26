@@ -747,5 +747,36 @@ export default defineContentScript({
       }),
       synthesize: () => buildSyntheticTemplateFromPlayer()
     };
+
+    crossWorldMessenger.onMessage(CrossWorldMessage.RunProgressiveSabr, async ({ data }) => {
+      const targetDurationMs = (data.videoDurationSec ?? 0) * 1000;
+      try {
+        const result = await fetchProgressive({
+          targetDurationMs,
+          maxIterations: 80,
+          originalFetch,
+          carryState: null
+        });
+        const audioMimeType = data.audioFormat?.mimeType?.split(";")[0] ?? "audio/mp4";
+        const videoMimeType = data.videoFormat?.mimeType?.split(";")[0] ?? "video/mp4";
+        void crossWorldMessenger.sendMessage(CrossWorldMessage.StreamData, {
+          downloadType: data.type,
+          videoId: data.videoId,
+          filenameOutput: data.filenameOutput,
+          videoData: result.videoBytes,
+          audioData: result.audioBytes,
+          videoMimeType,
+          audioMimeType,
+          audioLabel: data.primaryAudioLabel ?? "",
+          additionalAudioData: [],
+          metadata: data.metadata
+        });
+      } catch (error) {
+        void crossWorldMessenger.sendMessage(CrossWorldMessage.StreamError, {
+          videoId: data.videoId,
+          error: error instanceof Error ? error.message : String(error)
+        });
+      }
+    });
   }
 });

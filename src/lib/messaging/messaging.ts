@@ -38,7 +38,8 @@ export const MessageType = {
   BgDebugLog: "bgDebugLog",
   GetSabrTemplateFromTab: "getSabrTemplateFromTab",
   SabrTemplateReady: "sabrTemplateReady",
-  SynthesizeSabrTemplateFromTab: "synthesizeSabrTemplateFromTab"
+  SynthesizeSabrTemplateFromTab: "synthesizeSabrTemplateFromTab",
+  RunProgressiveSabrInTab: "runProgressiveSabrInTab"
 } as const;
 
 interface ProtocolMap {
@@ -271,6 +272,13 @@ interface ProtocolMap {
     bodyBase64: string;
     capturedAt: number;
   } | null;
+
+  // BG asks the user tab's MAIN-world fetchProgressive engine to harvest the
+  // entire video via raw SABR POSTs (no player playback, so no ads, no buffer
+  // races). MAIN reports progress + final bytes back through the existing
+  // CrossWorldMessage.StreamData → handleStreamData → MessageType.StreamChunk
+  // pipeline.
+  runProgressiveSabrInTab(data: DownloadRequest): void;
 }
 
 export const { sendMessage, onMessage } =

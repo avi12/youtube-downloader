@@ -205,6 +205,10 @@ function registerBackgroundMessageHandlers() {
     { playerTimeMs: data.playerTimeMs }
   ).catch(() => null));
 
+  onMessage(MessageType.RunProgressiveSabrInTab, ({ data }) => {
+    void crossWorldMessenger.sendMessage(CrossWorldMessage.RunProgressiveSabr, data);
+  });
+
   onMessage(MessageType.ExecuteDownloadItem, ({ data }) => {
     if (location.pathname !== "/watch") {
       return;
