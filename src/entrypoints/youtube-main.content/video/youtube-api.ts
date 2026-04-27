@@ -57,13 +57,15 @@ function getAudioFormats(formats: AdaptiveFormatItem[], preferredLanguage: strin
 function getCaptionTracks(playerResponse: PlayerResponse, preferredLanguage: string): CaptionTrack[] {
   const allTracks = playerResponse.captions?.playerCaptionsTracklistRenderer?.captionTracks ?? [];
   const manualTracks = allTracks.filter(track => track.kind !== "asr");
-  if (!preferredLanguage || manualTracks.length === 0) {
-    return manualTracks;
+  // Fall back to ASR (auto-generated) tracks when no manual captions exist.
+  const tracks = manualTracks.length > 0 ? manualTracks : allTracks;
+  if (!preferredLanguage || tracks.length === 0) {
+    return tracks;
   }
 
   const langCode = preferredLanguage.toLowerCase().split("-")[0];
-  const preferred = manualTracks.filter(track => track.languageCode.toLowerCase().split("-")[0] === langCode);
-  const rest = manualTracks.filter(track => track.languageCode.toLowerCase().split("-")[0] !== langCode);
+  const preferred = tracks.filter(track => track.languageCode.toLowerCase().split("-")[0] === langCode);
+  const rest = tracks.filter(track => track.languageCode.toLowerCase().split("-")[0] !== langCode);
   return [...preferred, ...rest];
 }
 

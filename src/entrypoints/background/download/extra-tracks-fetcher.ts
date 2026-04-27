@@ -30,15 +30,19 @@ async function fetchUrlBytes(url: string): Promise<Uint8Array | null> {
 
 async function fetchSubtitleSrt(track: CaptionTrack): Promise<string> {
   try {
-    const url = new URL(track.baseUrl);
+    const baseUrl = track.baseUrl.startsWith("//") ? `https:${track.baseUrl}` : track.baseUrl;
+    const url = new URL(baseUrl);
     url.searchParams.set("fmt", "srt");
-    const response = await fetchWithTimeout(url.toString());
+    const srtUrl = url.toString();
+    const response = await fetchWithTimeout(srtUrl);
     if (!response.ok) {
+      console.warn(`[ytdl:bg] subtitle fetch ${response.status} for lang=${track.languageCode} url=${srtUrl.slice(0, 80)}`);
       return "";
     }
 
     return response.text();
-  } catch {
+  } catch (err) {
+    console.warn(`[ytdl:bg] subtitle fetch threw for lang=${track.languageCode}:`, err);
     return "";
   }
 }
