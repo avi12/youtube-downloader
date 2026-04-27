@@ -24,40 +24,33 @@ function logPipelineEvent(message: string) {
 //
 // A failed pre-mux for a single segment drops it (acts as the probe-and-skip);
 // the final concat still uses the survivors.
-function pickMultipartTargetExtension({ hasExtras, userExtension }: {
-  hasExtras: boolean;
-  userExtension: string;
-}) {
-  if (hasExtras) {
-    return "mkv";
-  }
-
-  return userExtension === "mkv" ? "mkv" : "mp4";
-}
+// Multipart segments come straight from the YouTube player's SourceBuffer.
+// VP9 video buffers start at the nearest keyframe before the seek target
+// (videoBufferStartSec <= N*step). FFmpeg's MKV muxer normalizes timestamps
+// so each per-segment file has video PTS starting at 0 and audio PTS starting
+// at prerollSec (= startSec - videoBufferStartSec). The concat list uses
+// inpoint=prerollSec / outpoint=prerollSec+stepSec so the concat demuxer
+// discards the video preroll and each segment contributes exactly stepSec —
+// no re-encode, no duration inflation.
+// MKV preserves the original codecs (Opus audio, VP9 video) without a
+// transcode. MP4 would require Opus→AAC re-encoding which is slow and lossy.
+const MULTIPART_TARGET_EXTENSION = "mkv";
 
 export async function processMultipartSegments(item: ProcessStreamData & { segments: NonNullable<ProcessStreamData["segments"]> }) {
   const {
     videoId, filenameOutput, videoMimeType, audioMimeType, tabId, segments,
-    additionalAudioStreams, subtitleStreams, primaryAudioLabel
+    additionalAudioStreams, subtitleStreams, primaryAudioLabel, segmentDurationSec
   } = item;
   const ffmpeg = getFFmpeg();
 
   const videoExt = videoMimeType.includes("webm") ? "webm" : "mp4";
   const audioExt = audioMimeType.includes("webm") ? "webm" : "m4a";
-  const userExtension = (filenameOutput.split(".").pop() ?? "mkv").toLowerCase();
   const extraAudioWritten = additionalAudioStreams.filter(stream => Boolean(toUint8Array(stream.data)));
   const hasExtras = extraAudioWritten.length > 0 || subtitleStreams.length > 0;
-  // MP4 doesn't carry SRT subtitles or arbitrary multi-audio cleanly, so any
-  // extras force MKV — matches processVideoAudio's behavior and gives VLC
-  // independent track selection.
-  const targetExtension = pickMultipartTargetExtension({
-    hasExtras,
-    userExtension
-  });
 
   const filenameBase = filenameOutput.replace(/\.[^.]+$/, "");
   const intermediateFilename = getCompatibleFilename(`${videoId}-intermediate.mkv`);
-  const outputFilename = getCompatibleFilename(`${videoId}-${filenameBase}.${targetExtension}`);
+  const outputFilename = getCompatibleFilename(`${videoId}-${filenameBase}.${MULTIPART_TARGET_EXTENSION}`);
 
   function handleFFmpegProgress({ progress }: {
     progress: number;
@@ -89,9 +82,32 @@ export async function processMultipartSegments(item: ProcessStreamData & { segme
     ffmpeg.FS.writeFile(videoName, segment.video);
     ffmpeg.FS.writeFile(audioName, segment.audio);
 
-    const exitCode = ffmpeg.exec(
-      "-i", videoName, "-i", audioName, "-map", "0:v:0", "-map", "1:a:0", "-c:v", "copy", "-c:a", "copy", segmentMkv
+    const startSec = index * (segmentDurationSec ?? 0);
+    const rawPreroll = segment.videoBufferStartSec !== undefined && segment.videoBufferStartSec < startSec
+      ? startSec - segment.videoBufferStartSec
+      : 0;
+    // videoBufferStartSec=0 on a non-zero startSec means the capture hook read
+    // the init-segment timestamp before the first media segment arrived. A real
+    // VP9 keyframe preroll is always < segmentDurationSec; anything larger is
+    // corrupt data — treat as no preroll so inpoint/outpoint stay sane.
+    const prerollSec = segmentDurationSec && rawPreroll >= segmentDurationSec ? 0 : rawPreroll;
+    logPipelineEvent(`[ytdl:pipeline] segment ${index} videoBufferStartSec=${segment.videoBufferStartSec ?? "undefined"} startSec=${startSec} prerollSec=${prerollSec}`);
+    // -t caps pre-mux output so the player's buffer-ahead overshoot doesn't
+    // add extra frames. VP9 preroll is stripped later by inpoint/outpoint in
+    // the concat list (PTS-based trim, no re-encode needed).
+    const trimArgs = segmentDurationSec
+      ? ["-t", String(segmentDurationSec + prerollSec)]
+      : [];
+    let exitCode = ffmpeg.exec(
+      "-y", "-i", videoName, "-i", audioName, "-map", "0:v:0", "-map", "1:a:0", "-c:v", "copy", "-c:a", "copy", ...trimArgs, segmentMkv
     );
+    // Retry: drop trim as last resort (segment may be slightly short).
+    if (exitCode !== 0 && trimArgs.length > 0) {
+      logPipelineEvent(`[ytdl:pipeline] segment ${index} mux retry without trim`);
+      exitCode = ffmpeg.exec(
+        "-y", "-i", videoName, "-i", audioName, "-map", "0:v:0", "-map", "1:a:0", "-c:v", "copy", "-c:a", "copy", segmentMkv
+      );
+    }
 
     tryUnlink({
       ffmpeg,
@@ -111,11 +127,17 @@ export async function processMultipartSegments(item: ProcessStreamData & { segme
       return null;
     }
 
-    return segmentMkv;
+    return {
+      filename: segmentMkv,
+      prerollSec
+    };
   }
 
   try {
-    const segmentMkvFiles: string[] = [];
+    const segmentMkvFiles: Array<{
+      filename: string;
+      prerollSec: number;
+    }> = [];
     for (const [index, segment] of segments.entries()) {
       const muxed = muxSinglePair({
         index,
@@ -123,7 +145,7 @@ export async function processMultipartSegments(item: ProcessStreamData & { segme
       });
       if (muxed) {
         segmentMkvFiles.push(muxed);
-        writtenPaths.push(muxed);
+        writtenPaths.push(muxed.filename);
       }
     }
 
@@ -135,10 +157,24 @@ export async function processMultipartSegments(item: ProcessStreamData & { segme
 
     const concatListName = `${videoId}-concat.txt`;
     const encoder = new TextEncoder();
+    // FFmpeg's MKV muxer normalizes timestamps to start from 0 per file.
+    // So each segment's video starts at PTS 0 (not videoBufferStartSec) and
+    // audio starts at PTS prerollSec (= startSec - videoBufferStartSec).
+    // inpoint/outpoint must reference these normalized positions:
+    //   inpoint  = prerollSec  (skip video preroll; audio starts exactly here)
+    //   outpoint = prerollSec + segmentDurationSec
+    // Contribution = segmentDurationSec per segment, total = K*stepSec.
+    const concatLines = segmentMkvFiles.flatMap(({ filename, prerollSec: segPreroll }) => {
+      const lines = [`file '${filename}'`];
+      if (segmentDurationSec) {
+        lines.push(`inpoint ${segPreroll}`);
+        lines.push(`outpoint ${segPreroll + segmentDurationSec}`);
+      }
+
+      return lines;
+    });
     ffmpeg.FS.writeFile(
-      concatListName, encoder.encode(
-        segmentMkvFiles.map(name => `file '${name}'`).join("\n") + "\n"
-      )
+      concatListName, encoder.encode(concatLines.join("\n") + "\n")
     );
     writtenPaths.push(concatListName);
 
@@ -151,7 +187,7 @@ export async function processMultipartSegments(item: ProcessStreamData & { segme
 
     writtenPaths.push(intermediateFilename);
 
-    for (const segMkv of segmentMkvFiles) {
+    for (const { filename: segMkv } of segmentMkvFiles) {
       tryUnlink({
         ffmpeg,
         filename: segMkv
@@ -246,24 +282,6 @@ export async function processMultipartSegments(item: ProcessStreamData & { segme
 
       finalFilename = outputFilename;
       writtenPaths.push(outputFilename);
-    } else if (targetExtension === "mp4") {
-      // MP4 only carries AAC reliably across consumer players (Windows Media
-      // Player rejects Opus-in-MP4 outright); when the captured audio was
-      // Opus-in-WebM, transcode it to AAC during this final pass instead of
-      // stream-copying.
-      const isOpusAudio = audioMimeType.includes("webm") || audioMimeType.includes("opus");
-      const audioCodecArgs = isOpusAudio
-        ? ["-c:a", "aac", "-b:a", "192k"]
-        : ["-c:a", "copy"];
-      const transcodeExit = ffmpeg.exec(
-        "-i", intermediateFilename, "-c:v", "copy", ...audioCodecArgs, "-movflags", "+faststart", outputFilename
-      );
-      if (transcodeExit !== 0) {
-        throw new Error(`FFmpeg MKV→MP4 transcode failed with exit code ${transcodeExit}`);
-      }
-
-      finalFilename = outputFilename;
-      writtenPaths.push(outputFilename);
     }
 
     const outputBytes = ffmpeg.FS.readFile(finalFilename, { encoding: "binary" });
@@ -279,7 +297,7 @@ export async function processMultipartSegments(item: ProcessStreamData & { segme
     };
     await triggerDownload({
       data: outputBytes,
-      filenameOutput: `${filenameBase}.${targetExtension}`,
+      filenameOutput: `${filenameBase}.${MULTIPART_TARGET_EXTENSION}`,
       recentContext
     });
 

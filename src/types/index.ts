@@ -135,6 +135,12 @@ export type Options = {
 export type ScrubSegment = {
   video: Uint8Array;
   audio: Uint8Array;
+  // Actual video buffer start (seconds in original timeline). The VP9 player
+  // snaps to the nearest keyframe before the seek target, so this is typically
+  // a few seconds earlier than the intended segment start. Used by the pipeline
+  // to compute input-side -ss (skip preroll) before the per-segment mux so
+  // video and audio both begin at the same original timeline position.
+  videoBufferStartSec?: number;
 };
 
 export type StreamData = {
@@ -157,6 +163,11 @@ export type StreamData = {
   // an MKV intermediate to handle timestamp discontinuities at segment seams,
   // then transcodes back to the target container via stream-copy.
   segments?: ScrubSegment[];
+  // Per-segment trim duration in seconds. The iframe captures the requested
+  // window plus the player's buffer-ahead (~50s past currentTime), so each
+  // raw segment carries ~110s of media even though it represents 60s of the
+  // source. The pipeline trims to this duration during pre-mux.
+  segmentDurationSec?: number;
 };
 
 export type VideoMetadata = {
