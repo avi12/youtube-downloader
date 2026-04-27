@@ -30,10 +30,6 @@ function postToHost(payload: unknown, transferables: Transferable[] = []) {
 }
 
 function scrubLog(msg: string) {
-  if (!import.meta.env.YTDL_DEV) {
-    return;
-  }
-
   console.log(`[ytdl:scrub-tab] ${msg}`);
   void crossWorldMessenger.sendMessage(CrossWorldMessage.IframeScrubDebug, {
     msg: `[ytdl:scrub-tab] ${msg}`
@@ -49,7 +45,10 @@ const PLAYER_READY_TIMEOUT_MS = 15_000;
 const PLAYBACK_START_TIMEOUT_MS = 15_000;
 const AD_APPEAR_WAIT_MS = 5_000;
 const AD_CLEAR_TIMEOUT_MS = 30_000;
-const STALL_GRACE_MS = 4_000;
+// Long enough that bursty fragment loads with ≤5s inter-burst gaps don't
+// trigger a premature exit before the player has finished the windowSec
+// buffer-ahead.
+const STALL_GRACE_MS = 12_000;
 const MIN_AUDIO_BYTES = 200_000;
 const BUFFER_FILL_OVERHEAD_MS = 30_000;
 
@@ -57,6 +56,7 @@ interface MoviePlayer extends HTMLElement {
   playVideo?: () => void;
   pauseVideo?: () => void;
   stopVideo?: () => void;
+  seekTo?: (seconds: number, allowSeekAhead?: boolean) => void;
   getDuration?: () => number;
 }
 
@@ -124,14 +124,14 @@ async function waitForAdToClear() {
   }
 
   if (!document.querySelector(AD_SHOWING_SELECTOR)) {
-    return;
+    return false;
   }
 
   try {
     const clearDeadline = Date.now() + AD_CLEAR_TIMEOUT_MS;
     while (Date.now() < clearDeadline) {
       if (!document.querySelector(AD_SHOWING_SELECTOR)) {
-        return;
+        return true;
       }
 
       // Crank rate so non-skippable ads finish in seconds rather than ~2 min,
@@ -144,6 +144,8 @@ async function waitForAdToClear() {
       document.querySelector<HTMLButtonElement>(SKIP_AD_BUTTON_SELECTOR)?.click();
       await wait(POLL_INTERVAL_MS);
     }
+
+    return true;
   } finally {
     // Reset to 1x once the ad clears — otherwise waitForBufferFill keeps the
     // player at 16x speed and a single iframe blows through ~24 minutes of
@@ -201,7 +203,7 @@ export async function runTrustFactoryDrive() {
   console.log("[ytdl:trust-factory-tab] idle window elapsed");
 }
 
-function bindCaptureToVideoIdDiscardingPending(videoId: string) {
+function bindCaptureToVideoId(videoId: string) {
   const captureState = window.__ytdlCapture;
   if (!captureState) {
     return;
@@ -228,12 +230,10 @@ function bindCaptureToVideoIdDiscardingPending(videoId: string) {
     }
   }
 
-  // Flush every pre-bind chunk. The init segments (ftyp+moov / EBML+Tracks)
-  // are required for FFmpeg to decode subsequent fragments, and the early
-  // content fragments arriving between document_start and bind are real
-  // media the player won't re-fetch. waitForBufferFill seeds its
-  // initialBytes baseline from this flushed total so stall-grace doesn't
-  // trip before *fresh* growth arrives.
+  // Flush pending pre-bind chunks. The init segments (ftyp+moov / EBML+Tracks)
+  // are required for FFmpeg to decode subsequent fragments; the early content
+  // fragments arriving between document_start and bind are real media the
+  // player won't re-fetch.
   const capture = captureState.capturedMedia.get(videoId);
   if (capture) {
     for (const pending of captureState.pendingChunks) {
@@ -248,18 +248,15 @@ function bindCaptureToVideoIdDiscardingPending(videoId: string) {
   captureState.pendingChunks.length = 0;
 }
 
-async function waitForBufferFill({ videoId, windowSec, player }: {
+async function waitForBufferFill({ videoId, windowSec, startSec, player }: {
   videoId: string;
   windowSec: number;
+  startSec: number;
   player: MoviePlayer;
 }) {
   const hardCapMs = windowSec * 1000 + BUFFER_FILL_OVERHEAD_MS;
   const startedAt = Date.now();
-  // Pre-bind ad chunks + early content already in capturedMedia must not count
-  // as the first "byte change" event — stall-grace should only trigger after
-  // the player has emitted *fresh* media past this baseline. Seed both the
-  // baseline and lastAudioBytes from the current count, and require at least
-  // one observed growth past baseline before stall-grace can fire.
+  const targetCurrentTime = startSec + windowSec;
   const initialBytes = window.__ytdlCapture?.capturedMedia.get(videoId)?.audioTotalBytes ?? 0;
   let lastAudioBytes = initialBytes;
   let lastChangeAt = Date.now();
@@ -274,6 +271,17 @@ async function waitForBufferFill({ videoId, windowSec, player }: {
       } catch (_) {
         // browser may reject play() under restrictive autoplay; we keep retrying
       }
+    }
+
+    // Fast path: if playback has actually advanced through the full window,
+    // the bytes for it landed and we're done — no need to wait out the
+    // stall-grace.
+    if (
+      elVideo
+      && elVideo.currentTime >= targetCurrentTime
+      && (window.__ytdlCapture?.capturedMedia.get(videoId)?.audioTotalBytes ?? 0) > MIN_AUDIO_BYTES
+    ) {
+      return;
     }
 
     const captured = window.__ytdlCapture?.capturedMedia.get(videoId);
@@ -336,6 +344,7 @@ export async function runScrubSelfDrive() {
   const scrubIndex = parseInt(params.get("ytdlScrubIndex") ?? "-1", 10);
   const videoId = params.get("v") ?? "";
   const windowSec = parseInt(params.get("ytdlScrubWindow") ?? "30", 10);
+  const startSec = parseInt(params.get("t") ?? "0", 10);
   if (scrubIndex < 0 || !videoId) {
     scrubLog("missing scrub index or videoId");
     return;
@@ -367,18 +376,34 @@ export async function runScrubSelfDrive() {
 
   scrubLog(`playback started index=${scrubIndex}`);
 
-  await waitForAdToClear();
-  scrubLog(`ad cleared index=${scrubIndex}`);
+  const hadAd = await waitForAdToClear();
+  scrubLog(`ad cleared index=${scrubIndex} hadAd=${hadAd}`);
 
-  bindCaptureToVideoIdDiscardingPending(videoId);
+  bindCaptureToVideoId(videoId);
   scrubLog(`capture bound index=${scrubIndex} captureState=${window.__ytdlCapture ? "present" : "missing"}`);
+
+  // After a pre-roll ad, the player resumes inside the real-video stream and
+  // its already-loaded init segment lives in MSE state but not in our capture
+  // (we just rebuilt it). Seek back to the iframe's intended startSec to
+  // force the player to re-fetch the real-video init + the 60s window from
+  // scratch — both land cleanly in the now-bound capture.
+  if (hadAd) {
+    player.seekTo?.(startSec, true);
+    scrubLog(`post-ad seek to ${startSec}s index=${scrubIndex}`);
+  }
 
   await waitForBufferFill({
     videoId,
     windowSec,
+    startSec,
     player
   });
   player.pauseVideo?.();
+
+  const elVideoAfterFill = document.querySelector<HTMLVideoElement>(VIDEO_ELEMENT_SELECTOR);
+  const videoBufferStartSec = elVideoAfterFill?.buffered.length
+    ? elVideoAfterFill.buffered.start(0)
+    : undefined;
 
   const captured = window.__ytdlCapture?.capturedMedia.get(videoId);
   scrubLog(`buffer fill done index=${scrubIndex} audioBytes=${captured?.audioTotalBytes ?? 0} videoBytes=${captured?.videoTotalBytes ?? 0}`);
@@ -402,7 +427,8 @@ export async function runScrubSelfDrive() {
     videoBytes: videoConcat,
     audioBytes: audioConcat,
     videoMimeType: captured.videoMimeType,
-    audioMimeType: captured.audioMimeType
+    audioMimeType: captured.audioMimeType,
+    videoBufferStartSec
   });
 
   // Slice the underlying buffers so we don't transfer the whole pool when
@@ -423,7 +449,8 @@ export async function runScrubSelfDrive() {
     videoBuffer,
     audioBuffer,
     videoMimeType: captured.videoMimeType,
-    audioMimeType: captured.audioMimeType
+    audioMimeType: captured.audioMimeType,
+    videoBufferStartSec
   }, [videoBuffer, audioBuffer]);
 
   scrubLog(`segment posted index=${scrubIndex}`);

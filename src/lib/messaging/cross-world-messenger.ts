@@ -146,6 +146,7 @@ interface PageMessengerSchema {
     audioBytes: Uint8Array;
     videoMimeType: string;
     audioMimeType: string;
+    videoBufferStartSec?: number;
   }): void;
   // Diagnostic relay: MAIN-world scrub driver logs checkpoints via this channel
   // so ISOLATED can forward them to BG (and from there to YT tabs as BgDebugLog).

@@ -41,6 +41,15 @@ interface OffscreenProtocolMap {
     // accumulator.segments (keyed by 0..segmentCount-1) and assembles via
     // FFmpeg concat demuxer with MKV intermediate.
     segmentCount?: number;
+    // Per-segment trim duration (seconds). Forwarded to the multipart pipeline
+    // so it can `-t {N}` each pre-mux and strip the player's buffer-ahead
+    // overshoot from the captured bytes.
+    segmentDurationSec?: number;
+    // Per-segment actual video buffer start (seconds in original timeline).
+    // The VP9 player snaps to the nearest keyframe before the seek target,
+    // so this is typically a few seconds earlier than `index * segmentDurationSec`.
+    // The pipeline uses it for input-side -ss to align video and audio starts.
+    segmentVideoBufferStartSecs?: (number | undefined)[];
   };
   [OffscreenMessageType.CancelProcessing]: {
     videoIds: string[];

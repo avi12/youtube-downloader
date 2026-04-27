@@ -22,6 +22,7 @@ export interface IframeScrubSegmentPostMessage {
   audioBytes: Uint8Array;
   videoMimeType: string;
   audioMimeType: string;
+  videoBufferStartSec?: number;
 }
 
 interface ScrubSegmentMessage {
@@ -32,6 +33,7 @@ interface ScrubSegmentMessage {
   audioBuffer: ArrayBuffer;
   videoMimeType: string;
   audioMimeType: string;
+  videoBufferStartSec?: number;
 }
 
 function asRecord(data: unknown): Record<string, unknown> | null {
@@ -103,7 +105,8 @@ function ensurePostMessageBridge() {
         videoBytes: new Uint8Array(e.data.videoBuffer),
         audioBytes: new Uint8Array(e.data.audioBuffer),
         videoMimeType: e.data.videoMimeType,
-        audioMimeType: e.data.audioMimeType
+        audioMimeType: e.data.audioMimeType,
+        videoBufferStartSec: e.data.videoBufferStartSec
       });
     }
   });

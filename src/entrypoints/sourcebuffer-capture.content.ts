@@ -67,11 +67,40 @@ export default defineContentScript({
 
     window.__ytdlCapture = captureState;
 
+    // YouTube uses separate SourceBuffers for ad and main-video streams (each
+    // with its own ftyp/moov init). Stacking the ad buffer's bytes in front of
+    // the main-video buffer's bytes produces a stream FFmpeg refuses to mux —
+    // two init blocks, mismatched track ids. When a fresh SourceBuffer of the
+    // same kind (video or audio) is created, the prior one's bytes belong to
+    // an ad and must be dropped. Reset the corresponding side of the active
+    // capture (and any pendingChunks of that kind) at that moment.
     const originalAddSourceBuffer = MediaSource.prototype.addSourceBuffer;
     MediaSource.prototype.addSourceBuffer = function (mimeType) {
       const sourceBuffer = originalAddSourceBuffer.call(this, mimeType);
-      if (mimeType.startsWith("video") || mimeType.startsWith("audio")) {
-        sourceBufferMimeTypes.set(sourceBuffer, mimeType);
+      const kind = mimeType.startsWith("video")
+        ? "video"
+        : mimeType.startsWith("audio") ? "audio" : null;
+      if (!kind) {
+        return sourceBuffer;
+      }
+
+      sourceBufferMimeTypes.set(sourceBuffer, mimeType);
+
+      const { activeVideoId, capturedMedia, pendingChunks } = captureState;
+      const capture = activeVideoId ? capturedMedia.get(activeVideoId) : null;
+      if (capture) {
+        if (kind === "video") {
+          capture.videoChunks.length = 0;
+          capture.videoTotalBytes = 0;
+        } else {
+          capture.audioChunks.length = 0;
+          capture.audioTotalBytes = 0;
+        }
+      }
+      for (let i = pendingChunks.length - 1; i >= 0; i--) {
+        if (pendingChunks[i]!.mimeType.startsWith(kind)) {
+          pendingChunks.splice(i, 1);
+        }
       }
 
       return sourceBuffer;

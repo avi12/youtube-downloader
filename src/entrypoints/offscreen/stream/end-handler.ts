@@ -18,10 +18,13 @@ export function handleProcessStreamEnd(data: {
   playlistTotalCount?: number;
   metadata?: VideoMetadata | null;
   segmentCount?: number;
+  segmentDurationSec?: number;
+  segmentVideoBufferStartSecs?: (number | undefined)[];
 }) {
   const {
     videoId, type, filenameOutput, videoMimeType, audioMimeType, audioTrackLabels,
-    subtitleStreams = [], tabId, playlistId, playlistTitle, playlistTotalCount, segmentCount
+    subtitleStreams = [], tabId, playlistId, playlistTitle, playlistTotalCount,
+    segmentCount, segmentDurationSec, segmentVideoBufferStartSecs
   } = data;
   const accumulator = STREAM_ACCUMULATORS.get(videoId);
   STREAM_ACCUMULATORS.delete(videoId);
@@ -46,7 +49,8 @@ export function handleProcessStreamEnd(data: {
       if (video && audio) {
         ordered.push({
           video,
-          audio
+          audio,
+          videoBufferStartSec: segmentVideoBufferStartSecs?.[i]
         });
       }
     }
@@ -94,6 +98,7 @@ export function handleProcessStreamEnd(data: {
     additionalAudioStreams,
     subtitleStreams,
     segments,
+    segmentDurationSec,
     tabId,
     playlistId,
     playlistTitle,

@@ -24,6 +24,7 @@ interface ReceivedSegment {
   audioBase64: string;
   videoMimeType: string;
   audioMimeType: string;
+  videoBufferStartSec?: number;
 }
 
 interface SegmentArrival extends ReceivedSegment {
@@ -353,11 +354,13 @@ async function finalizeSession(session: ScrubSession) {
     });
   }
 
+  logScrubOrchestratorEvent(`finalizing: captionTracks=${session.captionTracks.length} extraAudioFormats=${session.additionalAudioFormats.length}`);
   const { extraAudioTracks, subtitleStreams } = await fetchExtraAudioTracksAndCaptions({
     additionalAudioFormats: session.additionalAudioFormats,
     resolvedExtraAudioUrls: session.resolvedExtraAudioUrls,
     captionTracks: session.captionTracks
   });
+  logScrubOrchestratorEvent(`extras fetched: extraAudio=${extraAudioTracks.length} subtitles=${subtitleStreams.length}`);
 
   for (const [trackIndex, track] of extraAudioTracks.entries()) {
     await emitExtraAudioChunks({
@@ -372,6 +375,11 @@ async function finalizeSession(session: ScrubSession) {
     ...extraAudioTracks.map(track => track.label)
   ];
 
+  const segmentVideoBufferStartSecs: (number | undefined)[] = Array.from(
+    { length: session.expectedCount },
+    (_, i) => session.receivedSegments.get(i)?.videoBufferStartSec
+  );
+
   sendToOffscreen(OffscreenMessageType.ProcessStreamEnd, {
     type: session.type,
     videoId: session.videoId,
@@ -381,6 +389,8 @@ async function finalizeSession(session: ScrubSession) {
     audioTrackLabels,
     subtitleStreams,
     segmentCount: session.expectedCount,
+    segmentDurationSec: session.stepSec,
+    segmentVideoBufferStartSecs,
     tabId: session.tabId,
     playlistId: session.playlistId,
     playlistTitle: session.playlistTitle,
@@ -450,7 +460,8 @@ async function handleSegmentArrival(data: SegmentArrival) {
     videoBase64: data.videoBase64,
     audioBase64: data.audioBase64,
     videoMimeType: data.videoMimeType,
-    audioMimeType: data.audioMimeType
+    audioMimeType: data.audioMimeType,
+    videoBufferStartSec: data.videoBufferStartSec
   });
   reportFetchProgress(session);
   logScrubOrchestratorEvent(`received segment ${data.scrubIndex + 1}/${session.expectedCount} for ${data.videoId} (${totalBytes}B)`);
@@ -562,7 +573,8 @@ function registerPostMessageFallback() {
       videoBase64: uint8ToBase64(segment.videoBytes),
       audioBase64: uint8ToBase64(segment.audioBytes),
       videoMimeType: segment.videoMimeType,
-      audioMimeType: segment.audioMimeType
+      audioMimeType: segment.audioMimeType,
+      videoBufferStartSec: segment.videoBufferStartSec
     });
   });
 }
