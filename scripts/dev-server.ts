@@ -8,9 +8,6 @@
  * Remote Agent on 9230 exposes WebSocket-only CDP with no /json endpoint.
  * On SIGINT/SIGTERM: web-ext-run kills the browser process.
  *
- * Source maps are gated by env var WXT_INLINE_SOURCEMAPS so `wxt build` for the
- * actual store release stays source-map-free.
- *
  * Must run via tsx (Node), not Bun — web-ext-run spawns Firefox and waits for
  * its randomly-assigned CDP port to start listening, which depends on Node's
  * child_process socket handling. Under Bun the wait resolves ECONNREFUSED
@@ -392,18 +389,31 @@ function setupFirefoxProfile() {
   return FIREFOX_PROFILE_DIR;
 }
 
-// ── Dev-profile browser cleanup ─────────────────────────────────────────────
+// ── Cleanup ─────────────────────────────────────────────────────────────────
 
-function killExistingChromeInstances() {
+// Reap orphaned dev-server.ts node processes from prior sessions. Without
+// this, a Ctrl-C on the npx wrapper can leave the tsx loader's child node
+// process behind; over many restarts these pile up, all polling src/ and
+// contending for .output/, until WXT's build() hangs waiting for a clean
+// write window. Only kills processes that started strictly before this one,
+// which is enough to spare the current process and its parent chain.
+function killExistingDevServers() {
   if (platform() !== "win32") {
     return;
   }
 
   const script = `
-$profile = '${CHROME_PROFILE_DIR.replace(/'/g, "''")}'
-Get-CimInstance Win32_Process -Filter "name='chrome.exe'" |
-  Where-Object { $_.CommandLine -and $_.CommandLine.Contains($profile) } |
-  ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+$selfStart = (Get-Process -Id ${process.pid}).StartTime
+Get-CimInstance Win32_Process -Filter "name='node.exe'" |
+  Where-Object { $_.CommandLine -and $_.CommandLine.Contains('dev-server') } |
+  ForEach-Object {
+    try {
+      $proc = Get-Process -Id $_.ProcessId -ErrorAction Stop
+      if ($proc.StartTime -lt $selfStart) {
+        Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue
+      }
+    } catch {}
+  }
 Start-Sleep -Milliseconds 500
 `;
   spawnSync("powershell", ["-NoProfile", "-NonInteractive", "-Command", "-"], {
@@ -411,15 +421,6 @@ Start-Sleep -Milliseconds 500
     stdio: ["pipe", "ignore", "ignore"],
     timeout: 10_000
   });
-
-  for (const lockFile of ["lockfile", "SingletonLock", "SingletonCookie", "SingletonSocket"]) {
-    const lockPath = join(CHROME_PROFILE_DIR, lockFile);
-    if (existsSync(lockPath)) {
-      try {
-        rmSync(lockPath, { force: true });
-      } catch { /* held by OS, harmless */ }
-    }
-  }
 }
 
 function killExistingFirefoxInstances() {
@@ -454,8 +455,6 @@ Start-Sleep -Milliseconds 500
 // ── Build ───────────────────────────────────────────────────────────────────
 
 async function buildExtension() {
-  // Turns on `sourcemap: "inline"` inside wxt.config.ts's vite callback.
-  process.env.WXT_INLINE_SOURCEMAPS = "1";
   await build({
     root: PROJECT_ROOT,
     browser: IS_FIREFOX ? "firefox" : "chrome",
@@ -643,6 +642,8 @@ async function launchBrowser(profileDirectory: string): Promise<[WebExtRunner, (
 async function main() {
   process.chdir(PROJECT_ROOT);
 
+  killExistingDevServers();
+
   if (IS_FIREFOX) {
     process.env.MOZ_REMOTE_ALLOW_SYSTEM_ACCESS = "1";
     killExistingFirefoxInstances();
@@ -695,14 +696,38 @@ async function main() {
 
   watcher.on("all", (event, filePath) => onFileChange(event, filePath));
 
-  function shutdown() {
-    void watcher.close();
-    void runner.exit();
+  let shuttingDown = false;
+  async function shutdown() {
+    if (shuttingDown) {
+      return;
+    }
+    shuttingDown = true;
+    try {
+      await watcher.close();
+    } catch { /* watcher may already be closed */ }
+    try {
+      await runner.exit();
+    } catch { /* runner may already be exiting */ }
     process.exit(0);
   }
 
-  for (const signal of ["SIGINT", "SIGTERM"] as const) {
-    process.on(signal, shutdown);
+  for (const signal of ["SIGINT", "SIGTERM", "SIGHUP", "SIGBREAK"] as const) {
+    process.on(signal, () => void shutdown());
+  }
+  // The npx wrapper that spawns this tsx process doesn't always relay SIGINT
+  // on Windows, so periodically probe whether our parent is still alive and
+  // shut down if it has died — preventing the orphan accumulation that this
+  // file's killExistingDevServers() exists to clean up after.
+  const parentPid = process.ppid;
+  if (parentPid > 0) {
+    const ORPHAN_PROBE_INTERVAL_MS = 2_000;
+    setInterval(() => {
+      try {
+        process.kill(parentPid, 0);
+      } catch {
+        void shutdown();
+      }
+    }, ORPHAN_PROBE_INTERVAL_MS).unref();
   }
 
   // Keep alive until signal

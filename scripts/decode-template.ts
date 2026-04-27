@@ -1,3 +1,4 @@
+import { VideoPlaybackAbrRequest } from "googlevideo/protos";
 // One-shot decoder. Reads scripts/captured-template.json (the format the
 // SABR replay harness uses) and pretty-prints all VideoPlaybackAbrRequest
 // fields so we can compare a live captured template against
@@ -8,8 +9,6 @@
 //   2. bun scripts/decode-template.ts
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
-
-import { VideoPlaybackAbrRequest } from "googlevideo/protos";
 
 interface CapturedTemplate {
   url: string;
