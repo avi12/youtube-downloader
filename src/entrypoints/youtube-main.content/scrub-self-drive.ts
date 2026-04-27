@@ -293,6 +293,9 @@ async function waitForBufferFill({ videoId, windowSec, startSec, player }: {
       if (currentBytes > initialBytes) {
         hasGrownPastBaseline = true;
       }
+    } else if (hasGrownPastBaseline && elVideo?.ended) {
+      // Tail segment: player reached end of video — we have everything available.
+      return;
     } else if (
       hasGrownPastBaseline
       && currentBytes > MIN_AUDIO_BYTES

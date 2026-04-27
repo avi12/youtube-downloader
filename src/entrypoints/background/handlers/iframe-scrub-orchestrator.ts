@@ -55,6 +55,7 @@ interface ScrubSession {
   additionalAudioFormats: AdaptiveFormatItem[];
   resolvedExtraAudioUrls: (string | null)[];
   captionTracks: CaptionTrack[];
+  durationSec: number;
 }
 
 const sessionsByVideoId = new Map<string, ScrubSession>();
@@ -130,11 +131,13 @@ async function fillGlobalSlots() {
       return;
     }
 
+    const startSec = work.scrubIndex * work.session.stepSec;
+    const windowSec = Math.min(work.session.stepSec, work.session.durationSec - startSec);
     await openScrubIframe({
       session: work.session,
       scrubIndex: work.scrubIndex,
-      startSec: work.scrubIndex * work.session.stepSec,
-      windowSec: work.session.stepSec
+      startSec,
+      windowSec
     });
 
     if (globalInFlightIframeIds.size < MAX_GLOBAL_PARALLEL_IFRAMES) {
@@ -498,7 +501,8 @@ function buildSession(data: StartIframeScrubArgs, stepSec: number, expectedCount
     resolvedAudioMimeType: "",
     additionalAudioFormats: data.additionalAudioFormats ?? [],
     resolvedExtraAudioUrls: data.resolvedExtraAudioUrls ?? [],
-    captionTracks: data.captionTracks ?? []
+    captionTracks: data.captionTracks ?? [],
+    durationSec: data.durationSec
   };
 }
 
@@ -523,12 +527,7 @@ export interface StartIframeScrubArgs {
 
 export async function startIframeScrubSession(data: StartIframeScrubArgs) {
   const stepSec = data.stepSec || DEFAULT_STEP_SEC;
-  // floor instead of ceil — when duration isn't a clean multiple of stepSec
-  // the tail-edge micro-segment (e.g. 1s of media at the very end of a
-  // 24:01 video for stepSec=60) won't ever satisfy the buffer-fill MIN
-  // floor, so 6 minutes of retries timeout for nothing. Skipping it costs
-  // up to stepSec-1 seconds of media at the very end — acceptable.
-  const expectedCount = Math.max(1, Math.floor(data.durationSec / stepSec));
+  const expectedCount = Math.max(1, Math.ceil(data.durationSec / stepSec));
   const session = buildSession(data, stepSec, expectedCount);
 
   sessionsByVideoId.set(data.videoId, session);
