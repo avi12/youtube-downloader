@@ -2,34 +2,16 @@ import { ensureProcessor } from "./processor";
 import { handleSegmentArrival } from "./scrub-segment-handler";
 import { releaseSession } from "./scrub-session-finalizer";
 import { buildSession, sessionsByVideoId } from "./scrub-session-store";
+import type { StartIframeScrubArgs } from "./scrub-session-store";
 import { fillGlobalSlots, logScrubOrchestratorEvent } from "./scrub-slot-filler";
 import { broadcastDebugLogToYouTubeTabs } from "@/lib/messaging/debug-log";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
 import { ScrubIframeMessageType, listenForScrubIframeMessages } from "@/lib/messaging/scrub-iframe-messaging";
-import type { AdaptiveFormatItem, CaptionTrack, DownloadType, VideoMetadata } from "@/types";
 
 export type { SegmentArrival } from "./scrub-segment-handler";
+export type { StartIframeScrubArgs } from "./scrub-session-store";
 
 const DEFAULT_STEP_SEC = 35;
-
-export interface StartIframeScrubArgs {
-  videoId: string;
-  durationSec: number;
-  stepSec?: number;
-  type: DownloadType;
-  filenameOutput: string;
-  videoMimeType: string;
-  audioMimeType: string;
-  audioLabel: string;
-  metadata?: VideoMetadata | null;
-  playlistId?: string;
-  playlistTitle?: string;
-  playlistTotalCount?: number;
-  tabId: number;
-  additionalAudioFormats?: AdaptiveFormatItem[];
-  resolvedExtraAudioUrls?: (string | null)[];
-  captionTracks?: CaptionTrack[];
-}
 
 export async function startIframeScrubSession(data: StartIframeScrubArgs) {
   const stepSec = data.stepSec || DEFAULT_STEP_SEC;

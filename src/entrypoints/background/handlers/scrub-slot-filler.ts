@@ -1,7 +1,7 @@
 import { openScrubIframe } from "./scrub-iframe-lifecycle";
 import { finalizeSession } from "./scrub-session-finalizer";
 import { globalInFlightIframeIds, sessionsByVideoId } from "./scrub-session-store";
-import type { ScrubSession } from "./scrub-session-types";
+import type { ScrubSession } from "./scrub-session-store";
 import { broadcastDebugLogToYouTubeTabs } from "@/lib/messaging/debug-log";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { ProgressType } from "@/types";

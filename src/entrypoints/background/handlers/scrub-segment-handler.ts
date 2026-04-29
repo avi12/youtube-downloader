@@ -1,7 +1,7 @@
-import { untrackIframe } from "./scrub-iframe-tracker";
+import { untrackIframe } from "./scrub-iframe-lifecycle";
 import { finalizeSession } from "./scrub-session-finalizer";
 import { iframeIdByVideoIdAndIndex, makeIframeKey, sessionsByVideoId } from "./scrub-session-store";
-import type { ReceivedSegment, SegmentArrival, ScrubSession } from "./scrub-session-types";
+import type { ReceivedSegment, SegmentArrival, ScrubSession } from "./scrub-session-store";
 import { base64ToUint8Array } from "@/lib/utils/binary";
 
 const MAX_RETRIES_PER_INDEX = 2;

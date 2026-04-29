@@ -2,7 +2,7 @@ import { fetchExtraAudioTracksAndCaptions } from "../download/extra-tracks-fetch
 import { ensureProcessor } from "./processor";
 import { untrackIframe } from "./scrub-iframe-lifecycle";
 import { rememberResolvedMimes, sessionsByVideoId } from "./scrub-session-store";
-import type { ScrubSession } from "./scrub-session-types";
+import type { ScrubSession } from "./scrub-session-store";
 import { OffscreenMessageType, sendBytesToOffscreen, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
 import { base64ToUint8Array } from "@/lib/utils/binary";
 
