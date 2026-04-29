@@ -3,10 +3,10 @@ import type { MoviePlayerElement } from "./types";
 import { base64ToUint8Array } from "@/lib/utils/binary";
 import { MOVIE_PLAYER_SELECTOR } from "@/lib/youtube/player-selectors";
 import type { AdaptiveFormatItem, PlayerResponse } from "@/types";
-
-export { readPoTokenFromCapturedTemplate, findPoToken } from "./po-token-reader";
+import { VideoPlaybackAbrRequest } from "googlevideo/protos";
 
 const DEFAULT_CLIENT_NAME = 1;
+const POTOKEN_QUERY_PARAM = "pot";
 
 export function base64UrlToUint8Array(value: string) {
   const standard = value.replace(/-/g, "+").replace(/_/g, "/");
@@ -91,4 +91,67 @@ export function buildFormatId(format: AdaptiveFormatItem) {
     lastModified: lastModifiedRaw ? String(lastModifiedRaw) : undefined,
     xtags: format.xtags
   };
+}
+
+function readPoTokenFromAdaptiveFormatUrl(formats: AdaptiveFormatItem[] | undefined) {
+  if (!formats) {
+    return "";
+  }
+
+  for (const format of formats) {
+    const url = format.url;
+    if (!url) {
+      continue;
+    }
+
+    try {
+      const params = new URL(url).searchParams;
+      const pot = params.get(POTOKEN_QUERY_PARAM);
+      if (pot) {
+        return pot;
+      }
+    } catch {
+      // ignore malformed URL
+    }
+  }
+
+  return "";
+}
+
+export function readPoTokenFromCapturedTemplate(): Uint8Array | null {
+  const template = window.__ytdlSabrTemplate;
+  if (!template) {
+    return null;
+  }
+
+  try {
+    const decoded = VideoPlaybackAbrRequest.decode(template.body);
+    const poTokenBytes = decoded.streamerContext?.poToken;
+    if (poTokenBytes && poTokenBytes.length > 0) {
+      return poTokenBytes;
+    }
+  } catch {
+    // template was malformed somehow - fall through
+  }
+
+  return null;
+}
+
+export function findPoToken(playerResponse: PlayerResponse) {
+  const stashed = window.__ytdlCapturedPoToken;
+  if (typeof stashed === "string" && stashed.length > 0) {
+    return stashed;
+  }
+
+  const fromCurrent = readPoTokenFromAdaptiveFormatUrl(playerResponse.streamingData?.adaptiveFormats);
+  if (fromCurrent) {
+    return fromCurrent;
+  }
+
+  const fromInitial = readPoTokenFromAdaptiveFormatUrl(window.ytInitialPlayerResponse?.streamingData?.adaptiveFormats);
+  if (fromInitial) {
+    return fromInitial;
+  }
+
+  return "";
 }
