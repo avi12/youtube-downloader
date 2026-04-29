@@ -1,22 +1,20 @@
 import { startIframeScrubSession } from "../handlers/iframe-scrub-orchestrator";
-import { ensureProcessor } from "../handlers/processor";
 import { removeFromPopupList } from "../queue/popup-list";
 import { signalVideoComplete } from "../queue/sequential-queue";
+import { enrichWithAlternateClientUrls } from "./alternate-client-enricher";
 import { downloadViaCdn } from "./cdn-downloader";
+import { clearInterruptedDownload, persistInterruptedDownload, reportDownloadFailed } from "./download-retry";
+import { dispatchToOffscreen, enrichMetadataFromYouTubeMusic } from "./offscreen-dispatcher";
 import { downloadViaSabr } from "./sabr-downloader";
 import { broadcastDebugLogToTab } from "@/lib/messaging/debug-log";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
-import { OffscreenMessageType, sendBytesToOffscreen, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
-import { interruptedDownloadsItem, mutateStorageItem } from "@/lib/storage/storage";
-import { fetchAlternateClientFormats, findFormatUrlByItag } from "@/lib/youtube/alternate-client";
-import { fetchYouTubeMusicMetadata } from "@/lib/youtube/youtube-music-metadata";
-import { ProgressType, StreamType } from "@/types";
-import type { CaptionTrack, DownloadRequest, SubtitleStream, VideoMetadata } from "@/types";
+import { ProgressType } from "@/types";
+import type { DownloadRequest } from "@/types";
 
-// On Firefox, direct SABR returns attestation_required for videos beyond
-// roughly this duration; falls back to iframe-scrub which fetches via the
-// player's trusted live session.
+export { removeFromPopupList, signalVideoComplete };
+
 const FIREFOX_IFRAME_SCRUB_FALLBACK_MIN_DURATION_SEC = 240;
+const SABR_STALL_TIMEOUT_MS = 30_000;
 
 export interface DownloadResult {
   videoData: Uint8Array | null;
@@ -29,12 +27,6 @@ export interface DownloadResult {
 }
 
 const activeBackgroundDownloads = new Map<string, AbortController>();
-
-// How long SABR can go without delivering any bytes before falling back to CDN.
-// A stall (no bytes received) is distinct from a slow connection: slow downloads
-// keep resetting this timer and are never killed, while a frozen SABR session
-// (re-downloading a recently-fetched video) gets detected and CDN is tried.
-const SABR_STALL_TIMEOUT_MS = 30_000;
 const pendingNetworkRetries = new Map<string, {
   request: DownloadRequest;
   tabId: number;
@@ -51,169 +43,6 @@ addEventListener("online", () => {
   }
 });
 
-async function persistInterruptedDownload(request: DownloadRequest) {
-  await mutateStorageItem(interruptedDownloadsItem, current => {
-    current[request.videoId] = {
-      videoId: request.videoId,
-      type: request.type,
-      filenameOutput: request.filenameOutput,
-      videoItag: request.videoItag,
-      audioItag: request.audioItag,
-      timestamp: Date.now()
-    };
-  });
-}
-
-async function clearInterruptedDownload(videoId: string) {
-  await mutateStorageItem(interruptedDownloadsItem, current => {
-    delete current[videoId];
-  });
-}
-
-async function fetchSubtitleSrt(track: CaptionTrack): Promise<string> {
-  try {
-    const baseUrl = track.baseUrl.startsWith("//") ? `https:${track.baseUrl}` : track.baseUrl;
-    const url = new URL(baseUrl);
-    url.searchParams.set("fmt", "srt");
-    const srtUrl = url.toString();
-    const response = await fetch(srtUrl);
-    if (!response.ok) {
-      console.warn(`[ytdl:bg] subtitle fetch ${response.status} for lang=${track.languageCode} url=${srtUrl.slice(0, 80)}`);
-      return "";
-    }
-
-    return response.text();
-  } catch (err) {
-    console.warn(`[ytdl:bg] subtitle fetch threw for lang=${track.languageCode}:`, err);
-    return "";
-  }
-}
-
-async function fetchSubtitleStreams(captionTracks: CaptionTrack[]): Promise<SubtitleStream[]> {
-  const results = await Promise.all(
-    captionTracks.map(async track => ({
-      srtContent: await fetchSubtitleSrt(track),
-      languageCode: track.languageCode,
-      label: track.name.simpleText
-    }))
-  );
-  return results.filter(stream => stream.srtContent);
-}
-
-async function dispatchToOffscreen({ request, result, enrichedMetadata, tabId }: {
-  request: DownloadRequest;
-  result: DownloadResult;
-  enrichedMetadata: VideoMetadata | null | undefined;
-  tabId: number;
-}) {
-  await ensureProcessor();
-
-  const resolvedVideoMimeType = request.videoFormat?.mimeType.split(";")[0] ?? "video/mp4";
-  const resolvedAudioMimeType = request.audioFormat?.mimeType.split(";")[0] ?? "audio/mp4";
-  const transferJobs: Promise<void>[] = [];
-  if (result.videoData) {
-    transferJobs.push(
-      sendBytesToOffscreen({
-        videoId: request.videoId,
-        streamType: StreamType.Video,
-        data: result.videoData,
-        tabId
-      })
-    );
-  }
-
-  if (result.audioData) {
-    transferJobs.push(
-      sendBytesToOffscreen({
-        videoId: request.videoId,
-        streamType: StreamType.Audio,
-        data: result.audioData,
-        tabId
-      })
-    );
-  }
-
-  for (const [i, track] of result.additionalAudioTracks.entries()) {
-    if (track.data) {
-      transferJobs.push(
-        sendBytesToOffscreen({
-          videoId: request.videoId,
-          streamType: `audio-extra-${i}`,
-          data: track.data,
-          tabId
-        })
-      );
-    }
-  }
-
-  const [subtitleStreams] = await Promise.all([
-    fetchSubtitleStreams(request.captionTracks ?? []),
-    Promise.all(transferJobs)
-  ]);
-
-  const audioTrackLabels = [
-    request.primaryAudioLabel ?? "",
-    ...result.additionalAudioTracks.map(track => track.label)
-  ];
-
-  sendToOffscreen(OffscreenMessageType.ProcessStreamEnd, {
-    type: request.type,
-    videoId: request.videoId,
-    filenameOutput: request.filenameOutput,
-    videoMimeType: resolvedVideoMimeType,
-    audioMimeType: resolvedAudioMimeType,
-    audioTrackLabels,
-    subtitleStreams,
-    tabId,
-    playlistId: request.playlistId,
-    playlistTitle: request.playlistTitle,
-    playlistTotalCount: request.playlistTotalCount,
-    metadata: enrichedMetadata
-  });
-}
-
-async function enrichMetadataFromYouTubeMusic(metadata: VideoMetadata | null | undefined) {
-  if (!metadata?.isMusic) {
-    return metadata;
-  }
-
-  const searchQuery = `${metadata.artist} ${metadata.title}`.trim();
-  if (!searchQuery) {
-    return metadata;
-  }
-
-  return fetchYouTubeMusicMetadata({
-    searchQuery,
-    existingMetadata: metadata
-  });
-}
-
-function reportDownloadFailed({ videoId, tabId }: {
-  videoId: string;
-  tabId: number;
-}) {
-  void sendMessage(MessageType.UpdateDownloadProgress, {
-    videoId,
-    progress: 0,
-    progressType: ProgressType.Video,
-    isRemoved: true,
-    isFailed: true
-  }, tabId);
-  void removeFromPopupList(videoId);
-  signalVideoComplete(videoId);
-}
-
-function queueNetworkRetry({ request, tabId }: {
-  request: DownloadRequest;
-  tabId: number;
-}) {
-  pendingNetworkRetries.set(request.videoId, {
-    request,
-    tabId
-  });
-  void persistInterruptedDownload(request);
-}
-
 export function cancelBackgroundDownload(videoId: string) {
   const controller = activeBackgroundDownloads.get(videoId);
   if (!controller) {
@@ -222,53 +51,6 @@ export function cancelBackgroundDownload(videoId: string) {
 
   controller.abort();
   activeBackgroundDownloads.delete(videoId);
-}
-
-// When the watch page's WEB-client formats are SABR-only (null URLs), re-fetch
-// the player response via TVHTML5_SIMPLY_EMBEDDED_PLAYER (yt-dlp's technique):
-// that client returns plain URLs and isn't gated by the attestation wall that
-// blocks SABR on Firefox.
-async function enrichWithAlternateClientUrls(request: DownloadRequest, tabId?: number): Promise<DownloadRequest> {
-  const needsVideoUrl = !request.resolvedVideoUrl;
-  const needsAudioUrl = !request.resolvedAudioUrl;
-  if (!needsVideoUrl && !needsAudioUrl) {
-    return request;
-  }
-
-  try {
-    // Prefer ANDROID_VR-scoped token (generated with clientName=ANDROID_VR at
-    // att/get time). Fall back to the WEB token if the alternate mint failed.
-    const formats = await fetchAlternateClientFormats({
-      videoId: request.videoId,
-      poToken: request.alternateClientPoToken || request.poToken || ""
-    });
-    const enriched: DownloadRequest = { ...request };
-    if (needsVideoUrl) {
-      enriched.resolvedVideoUrl = findFormatUrlByItag(formats, request.videoItag);
-    }
-
-    if (needsAudioUrl) {
-      enriched.resolvedAudioUrl = findFormatUrlByItag(formats, request.audioItag);
-    }
-
-    if (typeof tabId === "number") {
-      const availableItags = formats.map(format => format.itag).join(",");
-      broadcastDebugLogToTab(
-        `[ytdl:bg] alternate-client returned ${formats.length} formats (itags=${availableItags}); video itag ${request.videoItag} url=${Boolean(enriched.resolvedVideoUrl)}, audio itag ${request.audioItag} url=${Boolean(enriched.resolvedAudioUrl)}`,
-        tabId
-      );
-    }
-
-    return enriched;
-  } catch (error) {
-    console.warn("[ytdl:bg] Alternate-client fallback failed:", error);
-
-    if (typeof tabId === "number") {
-      broadcastDebugLogToTab(`[ytdl:bg] alternate-client threw: ${String(error)}`, tabId);
-    }
-
-    return request;
-  }
 }
 
 async function attemptSabrDownload({ request, signal, tabId }: {
@@ -297,6 +79,38 @@ async function attemptSabrDownload({ request, signal, tabId }: {
   }
 }
 
+async function tryIframeScrubFallback({ request, cdnRequest, videoId, tabId }: {
+  request: DownloadRequest;
+  cdnRequest: DownloadRequest;
+  videoId: string;
+  tabId: number;
+}) {
+  const durationSec = request.videoDurationSec ?? 0;
+  if (!import.meta.env.FIREFOX || durationSec < FIREFOX_IFRAME_SCRUB_FALLBACK_MIN_DURATION_SEC) {
+    return false;
+  }
+
+  broadcastDebugLogToTab(`[ytdl:bg] CDN unavailable; using iframe-scrub for ${videoId} (${durationSec}s)`, tabId);
+  await startIframeScrubSession({
+    videoId,
+    durationSec,
+    type: request.type,
+    filenameOutput: request.filenameOutput,
+    videoMimeType: request.videoFormat?.mimeType?.split(";")[0] || "video/mp4",
+    audioMimeType: request.audioFormat?.mimeType?.split(";")[0] || "audio/mp4",
+    audioLabel: request.primaryAudioLabel ?? "",
+    metadata: request.metadata,
+    playlistId: request.playlistId,
+    playlistTitle: request.playlistTitle,
+    playlistTotalCount: request.playlistTotalCount,
+    additionalAudioFormats: cdnRequest.additionalAudioFormats,
+    resolvedExtraAudioUrls: cdnRequest.resolvedExtraAudioUrls,
+    captionTracks: cdnRequest.captionTracks,
+    tabId
+  });
+  return true;
+}
+
 export async function startBackgroundDownload({ request, tabId }: {
   request: DownloadRequest;
   tabId: number;
@@ -314,11 +128,6 @@ export async function startBackgroundDownload({ request, tabId }: {
   try {
     const enrichedMetadataPromise = enrichMetadataFromYouTubeMusic(metadata);
 
-    // CDN-first orchestration: when player_response (or alternate-client mint)
-    // gives signed direct URLs, skip SABR entirely. CDN is the fastest reliable
-    // path - direct ranged GETs to googlevideo, no attestation_required wall,
-    // no SABR per-template quota, no factory iframes. SABR fallbacks only kick
-    // in when CDN URLs are unavailable.
     let result: DownloadResult | null = null;
     const cdnRequest = await enrichWithAlternateClientUrls(request, tabId);
     const haveCdnUrls = Boolean(cdnRequest.resolvedVideoUrl || cdnRequest.resolvedAudioUrl);
@@ -348,33 +157,14 @@ export async function startBackgroundDownload({ request, tabId }: {
       );
     }
 
-    // iframe-scrub: when CDN URLs are unavailable, use the user-tab player's
-    // own decoded buffer (SourceBuffer hook) as the source. The player has
-    // already passed YouTube's attestation, so this works where direct SABR
-    // doesn't (the synthesized template path 403s on long videos because the
-    // server requires the player's runtime crypto signals, which the
-    // synthesizer can't reproduce).
     if (!result?.audioData && !result?.videoData) {
-      const durationSec = request.videoDurationSec ?? 0;
-      if (import.meta.env.FIREFOX && durationSec >= FIREFOX_IFRAME_SCRUB_FALLBACK_MIN_DURATION_SEC) {
-        broadcastDebugLogToTab(`[ytdl:bg] CDN unavailable; using iframe-scrub for ${videoId} (${durationSec}s)`, tabId);
-        await startIframeScrubSession({
-          videoId,
-          durationSec,
-          type: request.type,
-          filenameOutput: request.filenameOutput,
-          videoMimeType: request.videoFormat?.mimeType?.split(";")[0] || "video/mp4",
-          audioMimeType: request.audioFormat?.mimeType?.split(";")[0] || "audio/mp4",
-          audioLabel: request.primaryAudioLabel ?? "",
-          metadata: request.metadata,
-          playlistId: request.playlistId,
-          playlistTitle: request.playlistTitle,
-          playlistTotalCount: request.playlistTotalCount,
-          additionalAudioFormats: cdnRequest.additionalAudioFormats,
-          resolvedExtraAudioUrls: cdnRequest.resolvedExtraAudioUrls,
-          captionTracks: cdnRequest.captionTracks,
-          tabId
-        });
+      const usedFallback = await tryIframeScrubFallback({
+        request,
+        cdnRequest,
+        videoId,
+        tabId
+      });
+      if (usedFallback) {
         return;
       }
     }
@@ -422,13 +212,15 @@ export async function startBackgroundDownload({ request, tabId }: {
     }
 
     if (!navigator.onLine) {
-      queueNetworkRetry({
+      pendingNetworkRetries.set(videoId, {
         request,
         tabId
       });
+      void persistInterruptedDownload(request);
       return;
     }
 
+    broadcastDebugLogToTab(`[ytdl:bg] Background download failed: ${String(error)}`, tabId);
     console.warn("[ytdl:bg] Background download failed:", error);
     reportDownloadFailed({
       videoId,
