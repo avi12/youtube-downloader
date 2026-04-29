@@ -81,10 +81,10 @@ export async function fetchProgressive({ targetDurationMs, maxIterations, origin
       }
     }
 
-    const audioAdvanced = state.audio.endMs > beforeAudioEnd;
-    const videoAdvanced = state.video.endMs > beforeVideoEnd;
-    const advanced = audioAdvanced || videoAdvanced;
-    if (!advanced) {
+    const isAudioAdvanced = state.audio.endMs > beforeAudioEnd;
+    const isVideoAdvanced = state.video.endMs > beforeVideoEnd;
+    const isAdvanced = isAudioAdvanced || isVideoAdvanced;
+    if (!isAdvanced) {
       stallStreak++;
       const refreshed = buildSyntheticTemplateFromPlayer();
       if (refreshed) {
@@ -93,8 +93,7 @@ export async function fetchProgressive({ targetDurationMs, maxIterations, origin
         window.__ytdlSabrTemplate = refreshed;
       }
 
-      const isStallLimitReached = stallStreak >= STALL_LIMIT;
-      if (isStallLimitReached) {
+      if (stallStreak >= STALL_LIMIT) {
         return buildResult({
           state,
           audioItag,
@@ -110,8 +109,8 @@ export async function fetchProgressive({ targetDurationMs, maxIterations, origin
 
     stallStreak = 0;
 
-    const bothTracksComplete = state.audio.endMs >= targetDurationMs && state.video.endMs >= targetDurationMs;
-    if (bothTracksComplete) {
+    const isBothTracksComplete = state.audio.endMs >= targetDurationMs && state.video.endMs >= targetDurationMs;
+    if (isBothTracksComplete) {
       break;
     }
 
