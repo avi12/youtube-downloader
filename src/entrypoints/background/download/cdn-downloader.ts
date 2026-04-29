@@ -5,6 +5,26 @@ import { parseContentLength } from "./sabr-progress";
 import { DownloadType, ProgressType } from "@/types";
 import type { DownloadRequest } from "@/types";
 
+function assembleAdditionalAudioTracks({
+  cdnResults,
+  additionalAudioFormats
+}: {
+  cdnResults: (Uint8Array | null)[];
+  additionalAudioFormats: DownloadRequest["additionalAudioFormats"];
+}): DownloadResult["additionalAudioTracks"] {
+  const tracks: DownloadResult["additionalAudioTracks"] = [];
+  const extraAudioBytes = cdnResults.slice(2);
+  for (const [i, format] of (additionalAudioFormats ?? []).entries()) {
+    tracks.push({
+      data: extraAudioBytes[i] ?? null,
+      mimeType: format.mimeType.split(";")[0] ?? "audio/mp4",
+      label: format.audioTrack?.displayName ?? `Track ${i + 2}`
+    });
+  }
+
+  return tracks;
+}
+
 export async function downloadViaCdn({ request, signal, videoId, tabId }: {
   request: DownloadRequest;
   signal: AbortSignal;
@@ -84,20 +104,12 @@ export async function downloadViaCdn({ request, signal, videoId, tabId }: {
     }))
   ]);
 
-  const additionalAudioTracks: DownloadResult["additionalAudioTracks"] = [];
-  const extraAudioBytes = cdnResults.slice(2);
-  for (const [i, format] of (additionalAudioFormats ?? []).entries()) {
-    additionalAudioTracks.push({
-      data: extraAudioBytes[i] ?? null,
-      mimeType: format.mimeType.split(";")[0] ?? "audio/mp4",
-      label: format.audioTrack?.displayName ?? `Track ${i + 2}`
-    });
-  }
-
-  const [videoData = null, audioData = null] = cdnResults;
   return {
-    videoData,
-    audioData,
-    additionalAudioTracks
+    videoData: cdnResults[0] ?? null,
+    audioData: cdnResults[1] ?? null,
+    additionalAudioTracks: assembleAdditionalAudioTracks({
+      cdnResults,
+      additionalAudioFormats
+    })
   };
 }
