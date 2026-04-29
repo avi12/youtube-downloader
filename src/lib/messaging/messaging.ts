@@ -12,8 +12,6 @@ export const MessageType = {
   GetInterruptedDownload: "getInterruptedDownload",
   RequestPlaylistDownload: "requestPlaylistDownload",
   DownloadViaWatchPage: "downloadViaWatchPage",
-  CreateDownloadIframe: "createDownloadIframe",
-  RemoveDownloadIframe: "removeDownloadIframe",
   DownloadIframeReady: "downloadIframeReady",
   CancelDownload: "cancelDownload",
   StartBackgroundDownload: "startBackgroundDownload",
@@ -33,8 +31,6 @@ export const MessageType = {
   PipelineZipProgress: "pipelineZipProgress",
   StartIframeScrub: "startIframeScrub",
   IframeScrubSegmentReady: "iframeScrubSegmentReady",
-  MountScrubIframeInTab: "mountScrubIframeInTab",
-  UnmountScrubIframeInTab: "unmountScrubIframeInTab",
   BgDebugLog: "bgDebugLog",
   GetSabrTemplateFromTab: "getSabrTemplateFromTab",
   SabrTemplateReady: "sabrTemplateReady",
@@ -108,15 +104,6 @@ interface ProtocolMap {
   }): Parameters<ProtocolMap["persistInterruptedDownload"]>[0] | null;
 
   downloadViaWatchPage(data: DownloadRequest): void;
-
-  createDownloadIframe(data: {
-    videoId: string;
-    watchUrl: string;
-  }): void;
-
-  removeDownloadIframe(data: {
-    videoId: string;
-  }): void;
 
   downloadIframeReady(data: {
     videoId: string;
@@ -227,6 +214,9 @@ interface ProtocolMap {
     audioMimeType: string;
   }): void;
 
+  // BG asks a dedicated hidden scrub host tab to inject a scrub iframe into its DOM.
+  // The iframe at ytdlScrubMode=1 self-drives and reports segments via the
+  // scrub-iframe port. Used only in Firefox (Chrome uses the offscreen document).
   mountScrubIframeInTab(data: {
     id: string;
     url: string;
