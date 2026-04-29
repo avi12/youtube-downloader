@@ -52,6 +52,10 @@
 - No full stops at end of messages
 - Informal tone
 
+# Commits
+- Subject line only - no body unless the why is genuinely non-obvious from the diff
+- Be direct: `extract handleMissingStream` not `refactor to extract handleMissingStream helper function`
+
 # Linting
 After each modification, lint with ESLint, Stylelint, svelte-check, and fallow.
 
