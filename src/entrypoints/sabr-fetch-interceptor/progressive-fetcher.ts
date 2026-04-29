@@ -6,6 +6,9 @@ import type { ProgressiveCarryState, ProgressiveFetchResult, ProgressiveState } 
 import { ingestUmpResponse } from "./ump-ingestion";
 import { NextRequestPolicy, PlaybackCookie, VideoPlaybackAbrRequest } from "googlevideo/protos";
 
+const STALL_LIMIT = 3;
+const STALL_REWIND_MS = 5_000;
+
 export async function fetchProgressive({ targetDurationMs, maxIterations, originalFetch, carryState }: {
   targetDurationMs: number;
   maxIterations: number;
@@ -70,14 +73,17 @@ export async function fetchProgressive({ targetDurationMs, maxIterations, origin
       try {
         const policy = NextRequestPolicy.decode(nextRequestPolicyBytes);
         if (policy.playbackCookie) {
-          state.playbackCookieBytes = PlaybackCookie.encode(policy.playbackCookie).finish();
+          const encodedCookie = PlaybackCookie.encode(policy.playbackCookie).finish();
+          state.playbackCookieBytes = encodedCookie;
         }
       } catch (_) {
         // ignore decode error; keep using prior cookie
       }
     }
 
-    const advanced = state.audio.endMs > beforeAudioEnd || state.video.endMs > beforeVideoEnd;
+    const audioAdvanced = state.audio.endMs > beforeAudioEnd;
+    const videoAdvanced = state.video.endMs > beforeVideoEnd;
+    const advanced = audioAdvanced || videoAdvanced;
     if (!advanced) {
       stallStreak++;
       const refreshed = buildSyntheticTemplateFromPlayer();
@@ -87,7 +93,8 @@ export async function fetchProgressive({ targetDurationMs, maxIterations, origin
         window.__ytdlSabrTemplate = refreshed;
       }
 
-      if (stallStreak >= 3) {
+      const isStallLimitReached = stallStreak >= STALL_LIMIT;
+      if (isStallLimitReached) {
         return buildResult({
           state,
           audioItag,
@@ -97,13 +104,14 @@ export async function fetchProgressive({ targetDurationMs, maxIterations, origin
         });
       }
 
-      playerTimeMs = Math.max(0, playerTimeMs - 5_000);
+      playerTimeMs = Math.max(0, playerTimeMs - STALL_REWIND_MS);
       continue;
     }
 
     stallStreak = 0;
 
-    if (state.audio.endMs >= targetDurationMs && state.video.endMs >= targetDurationMs) {
+    const bothTracksComplete = state.audio.endMs >= targetDurationMs && state.video.endMs >= targetDurationMs;
+    if (bothTracksComplete) {
       break;
     }
 
