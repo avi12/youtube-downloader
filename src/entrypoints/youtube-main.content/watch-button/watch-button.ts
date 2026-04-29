@@ -23,6 +23,60 @@ export function cleanupSegmentedButton() {
   containerSearchAbort = null;
 }
 
+type ButtonElements = ReturnType<typeof buildButtonElements>["elements"];
+type ButtonState = ReturnType<typeof buildButtonState>;
+
+function wireEventsAndObservers({
+  state,
+  videoData,
+  elements,
+  applySegmentedClasses,
+  cancelActiveDownload
+}: {
+  state: ButtonState;
+  videoData: VideoData;
+  elements: ButtonElements;
+  applySegmentedClasses: () => void;
+  cancelActiveDownload: (videoId: string) => void;
+}) {
+  function handleClick(e: Event) {
+    handleClickEvent(e, state, videoData, elements, applySegmentedClasses, cancelActiveDownload);
+  }
+
+  function handleDropdownClosed() {
+    if (!state.isPanelOpen) {
+      return;
+    }
+
+    state.isPanelOpen = false;
+    refreshButtons(state, videoData, elements, applySegmentedClasses);
+    elements.elChevronButton.querySelector<HTMLButtonElement>("button")?.focus();
+  }
+
+  const resizeObserver = new ResizeObserver(() => {
+    if (elements.elDropdown.opened) {
+      elements.elDropdown.refit();
+    }
+  });
+  resizeObserver.observe(elements.elDropdownContentSlot);
+
+  const segmentedObserver = attachSegmentedObserver(elements, applySegmentedClasses);
+  const unsubscribeAll = wireButtonSubscriptions(state, videoData, elements, applySegmentedClasses);
+
+  elements.elGroup.addEventListener("click", handleClick);
+  elements.elDropdown.addEventListener("iron-overlay-closed", handleDropdownClosed);
+
+  return () => {
+    segmentedObserver.disconnect();
+    resizeObserver.disconnect();
+    elements.elGroup.removeEventListener("click", handleClick);
+    unsubscribeAll();
+    elements.elDropdown.removeEventListener("iron-overlay-closed", handleDropdownClosed);
+    elements.elGroup.remove();
+    elements.elDropdown.remove();
+  };
+}
+
 export async function injectSegmentedDownloadButton(
   videoData: VideoData,
   cancelActiveDownload: (videoId: string) => void
@@ -56,43 +110,17 @@ export async function injectSegmentedDownloadButton(
     elements.elChevronButton.querySelector<HTMLButtonElement>("button")?.classList.add("ytSpecButtonShapeNextSegmentedEnd");
   }
 
-  const segmentedObserver = attachSegmentedObserver(elements, applySegmentedClasses);
   refreshButtons(state, videoData, elements, applySegmentedClasses);
-
-  function handleClick(e: Event) {
-    handleClickEvent(e, state, videoData, elements, applySegmentedClasses, cancelActiveDownload);
-  }
-
-  function handleDropdownClosed() {
-    if (!state.isPanelOpen) {
-      return;
-    }
-
-    state.isPanelOpen = false;
-    refreshButtons(state, videoData, elements, applySegmentedClasses);
-    elements.elChevronButton.querySelector<HTMLButtonElement>("button")?.focus();
-  }
-
-  const resizeObserver = new ResizeObserver(() => {
-    if (elements.elDropdown.opened) {
-      elements.elDropdown.refit();
-    }
+  const teardownEvents = wireEventsAndObservers({
+    state,
+    videoData,
+    elements,
+    applySegmentedClasses,
+    cancelActiveDownload
   });
-  resizeObserver.observe(elements.elDropdownContentSlot);
-
-  const unsubscribeAll = wireButtonSubscriptions(state, videoData, elements, applySegmentedClasses);
-
-  elements.elGroup.addEventListener("click", handleClick);
-  elements.elDropdown.addEventListener("iron-overlay-closed", handleDropdownClosed);
 
   cleanupCurrentButton = () => {
-    segmentedObserver.disconnect();
-    resizeObserver.disconnect();
-    elements.elGroup.removeEventListener("click", handleClick);
-    unsubscribeAll();
-    elements.elDropdown.removeEventListener("iron-overlay-closed", handleDropdownClosed);
-    elements.elGroup.remove();
-    elements.elDropdown.remove();
+    teardownEvents();
     elNativeDownload?.classList.remove("ytdl-native-hidden");
     currentNativeDownload = null;
   };
