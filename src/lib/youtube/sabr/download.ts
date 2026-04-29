@@ -25,7 +25,7 @@ export async function fetchVideoViaSabrStream({ sabrConfig, videoFormat, fetchFn
   });
 }
 
-export async function fetchVideoAudioViaSabrStreamBootstrapped({
+async function fetchVideoAudioViaSabrStreamBootstrapped({
   sabrConfig, videoFormat, audioFormat, fetchFn, poToken, templateUrl, templateBody, onCallLog
 }: {
   sabrConfig: SabrConfig;

@@ -12,7 +12,7 @@ import type { ScrubSession } from "./session-store";
 const MAX_RETRIES_PER_INDEX = 2;
 const IFRAME_DEADLINE_OVERHEAD_MS = 120_000;
 
-export function buildScrubIframeUrl({ videoId, scrubIndex, startSec, windowSec }: {
+function buildScrubIframeUrl({ videoId, scrubIndex, startSec, windowSec }: {
   videoId: string;
   scrubIndex: number;
   startSec: number;
@@ -30,7 +30,7 @@ export function buildScrubIframeUrl({ videoId, scrubIndex, startSec, windowSec }
   return `https://www.youtube.com/watch?${params.toString()}`;
 }
 
-export function trackIframeForSession({ session, iframeId, scrubIndex }: {
+function trackIframeForSession({ session, iframeId, scrubIndex }: {
   session: ScrubSession;
   iframeId: string;
   scrubIndex: number;
@@ -61,7 +61,7 @@ export function untrackIframe({ session, iframeId, scrubIndex }: {
   void removeHostedIframe(iframeId);
 }
 
-export function requeueOrAccept({ session, scrubIndex, logFn }: {
+function requeueOrAccept({ session, scrubIndex, logFn }: {
   session: ScrubSession;
   scrubIndex: number;
   logFn: (msg: string) => void;

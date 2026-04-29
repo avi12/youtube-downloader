@@ -14,7 +14,7 @@ export function logScrubOrchestratorEvent(message: string) {
   void broadcastDebugLogToYouTubeTabs(`${SCRUB_TAG} ${message}`);
 }
 
-export function reportFetchProgress(session: ScrubSession) {
+function reportFetchProgress(session: ScrubSession) {
   if (session.expectedCount === 0) {
     return;
   }
