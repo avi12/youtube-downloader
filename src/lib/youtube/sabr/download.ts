@@ -3,7 +3,7 @@ import {
   collectReadableStream,
   createSabrStream,
   makeTrustTemplateFetch
-} from "./sabr-stream-factory";
+} from "./stream-factory";
 import type { AdaptiveFormatItem, SabrConfig } from "@/types";
 
 export async function fetchVideoViaSabrStream({ sabrConfig, videoFormat, fetchFn, poToken }: {

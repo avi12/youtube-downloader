@@ -11,7 +11,7 @@ import { registerProgressHandler } from "./progress-handler";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { downloadProgressStore } from "@/lib/ui/synced-stores.svelte";
-import { forwardSabrCredentialsWithRetry } from "@/lib/youtube/sabr-credentials";
+import { forwardSabrCredentialsWithRetry } from "@/lib/youtube/sabr/credentials";
 
 export function registerCrossWorldHandlers(
   isDownloadIframe: boolean,

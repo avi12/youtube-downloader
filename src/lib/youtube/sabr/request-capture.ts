@@ -1,4 +1,4 @@
-import { extractPoTokenFromBody } from "./sabr-proto-parser";
+import { extractPoTokenFromBody } from "./proto-parser";
 
 export { extractPoTokenFromBody };
 

@@ -1,6 +1,6 @@
 import type { DownloadResult } from "./background-downloader";
 import { createProgressFetch } from "./progress-fetch";
-import { fetchAudioViaSabrStream } from "@/lib/youtube/sabr-download";
+import { fetchAudioViaSabrStream } from "@/lib/youtube/sabr/download";
 import type { AdaptiveFormatItem, SabrConfig } from "@/types";
 
 export async function downloadExtraAudioTracksViaSabr({ config, formats, poToken, signal, onProgress }: {

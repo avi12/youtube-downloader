@@ -17,7 +17,7 @@ import {
   videoOnlyListItem,
   videoQueueItem
 } from "@/lib/storage/storage";
-import { onSabrBodyCaptured, startSabrRequestCapture } from "@/lib/youtube/sabr-request-capture";
+import { onSabrBodyCaptured, startSabrRequestCapture } from "@/lib/youtube/sabr/request-capture";
 
 let bgStartCount = 0;
 export default defineBackground(() => {

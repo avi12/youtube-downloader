@@ -1,5 +1,5 @@
 import { createProgressFetch, sendProgressUpdate } from "./progress-fetch";
-import { fetchAudioViaSabrStream } from "@/lib/youtube/sabr-download";
+import { fetchAudioViaSabrStream } from "@/lib/youtube/sabr/download";
 import { ProgressType } from "@/types";
 import type { AdaptiveFormatItem, SabrConfig } from "@/types";
 

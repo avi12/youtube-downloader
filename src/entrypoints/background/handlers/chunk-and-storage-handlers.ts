@@ -6,7 +6,7 @@ import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen
 import type { OffscreenProtocolMap } from "@/lib/messaging/offscreen-protocol";
 import { interruptedDownloadsItem } from "@/lib/storage/storage";
 import { uint8ToBase64 } from "@/lib/utils/binary";
-import { extractPoTokenFromBody, getCapturedSabrData } from "@/lib/youtube/sabr-request-capture";
+import { extractPoTokenFromBody, getCapturedSabrData } from "@/lib/youtube/sabr/request-capture";
 
 async function forwardChunk(
   tabId: number,

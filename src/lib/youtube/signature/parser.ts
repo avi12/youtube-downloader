@@ -1,4 +1,4 @@
-import { TransformOpType, type TransformOp } from "./signature-transform";
+import { TransformOpType, type TransformOp } from "./transform";
 
 const FUNCTION_NAME_PATTERNS = [
   /\b[cs]\s*&&\s*[adf]\.set\([^,]+\s*,\s*encodeURIComponent\(([a-zA-Z0-9$]+)\(/,

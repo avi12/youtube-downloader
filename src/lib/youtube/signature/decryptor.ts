@@ -1,5 +1,5 @@
-import { extractTransformOperations, findSignatureFunctionName } from "./signature-parser";
-import { applyTransforms, type TransformOp } from "./signature-transform";
+import { extractTransformOperations, findSignatureFunctionName } from "./parser";
+import { applyTransforms, type TransformOp } from "./transform";
 
 interface DecryptorState {
   operations: TransformOp[];
