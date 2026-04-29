@@ -1,5 +1,5 @@
-import { wait, POLL_INTERVAL_MS, type MoviePlayer } from "./scrub-player";
-import { scrubLog } from "./scrub-segment-emit";
+import { wait, POLL_INTERVAL_MS, type MoviePlayer } from "./player";
+import { scrubLog } from "./segment-emit";
 import { VIDEO_ELEMENT_SELECTOR } from "@/lib/youtube/player-selectors";
 
 // Long enough that bursty fragment loads with ≤5s inter-burst gaps don't

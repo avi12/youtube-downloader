@@ -3,7 +3,7 @@ import { registerGridTagger } from "./grid/grid-tagger";
 import { registerGridVideoDataHandler } from "./grid/grid-video-data";
 import { setupIframeVideoSilencing } from "./iframe-setup";
 import { registerMainWorldHandlers } from "./main-world-handlers";
-import { runScrubSelfDrive, runTrustFactoryDrive } from "./scrub-self-drive";
+import { runScrubSelfDrive, runTrustFactoryDrive } from "./scrub/self-drive";
 import { cancelActiveDownload } from "./video/download";
 import { extractPlaylistMetadata, handleNavigateSuccess } from "./video/playlist-metadata";
 import { extractAndDispatchVideoData } from "./video/video-data";

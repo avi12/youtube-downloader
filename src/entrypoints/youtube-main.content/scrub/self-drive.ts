@@ -1,11 +1,11 @@
-import { waitForAdToClear } from "./scrub-ad-handler";
-import { waitForBufferFill } from "./scrub-buffer-fill";
-import { bindCaptureToVideoId } from "./scrub-capture";
-import { waitForPlayerReady, forcePlayback, postAdSeek } from "./scrub-player";
-import { scrubLog, sendEmptyResult, emitCapturedSegment } from "./scrub-segment-emit";
+import { waitForAdToClear } from "./ad-handler";
+import { waitForBufferFill } from "./buffer-fill";
+import { bindCaptureToVideoId } from "./capture";
+import { waitForPlayerReady, forcePlayback, postAdSeek } from "./player";
+import { scrubLog, sendEmptyResult, emitCapturedSegment } from "./segment-emit";
 import { VIDEO_ELEMENT_SELECTOR } from "@/lib/youtube/player-selectors";
 
-export { runTrustFactoryDrive } from "./scrub-trust-factory";
+export { runTrustFactoryDrive } from "./trust-factory";
 
 export async function runScrubSelfDrive() {
   const params = new URLSearchParams(location.search);

@@ -1,4 +1,4 @@
-import { wait, POLL_INTERVAL_MS } from "./scrub-player";
+import { wait, POLL_INTERVAL_MS } from "./player";
 import { AD_SHOWING_SELECTOR, SKIP_AD_BUTTON_SELECTOR, VIDEO_ELEMENT_SELECTOR } from "@/lib/youtube/player-selectors";
 
 const AD_APPEAR_WAIT_MS = 5_000;

@@ -1,4 +1,4 @@
-import { concatChunks } from "./scrub-capture";
+import { concatChunks } from "./capture";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 
 // Direct postMessage channel for BG-hosted iframes. Firefox doesn't inject

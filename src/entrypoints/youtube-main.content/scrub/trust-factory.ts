@@ -1,5 +1,5 @@
-import { buildSyntheticTemplateFromPlayer } from "../sabr-fetch-interceptor/template-builder";
-import { forcePlayback, wait, waitForPlayerReady } from "./scrub-player";
+import { buildSyntheticTemplateFromPlayer } from "../../sabr-fetch-interceptor/template-builder";
+import { forcePlayback, wait, waitForPlayerReady } from "./player";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { uint8ToBase64 } from "@/lib/utils/binary";
 
