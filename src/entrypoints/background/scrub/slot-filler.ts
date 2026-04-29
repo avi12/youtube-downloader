@@ -1,10 +1,7 @@
 import { openScrubIframe } from "./iframe-lifecycle";
 import { finalizeSession } from "./session-finalizer";
 import { globalInFlightIframeIds, sessionsByVideoId } from "./session-store";
-import type { ScrubSession } from "./session-store";
 import { broadcastDebugLogToYouTubeTabs } from "@/lib/messaging/debug-log";
-import { MessageType, sendMessage } from "@/lib/messaging/messaging";
-import { ProgressType } from "@/types";
 
 const MAX_GLOBAL_PARALLEL_IFRAMES = 2;
 const IFRAME_SPAWN_STAGGER_MS = 200;
@@ -12,19 +9,6 @@ const SCRUB_TAG = "[ytdl:scrub-bg]";
 
 export function logScrubOrchestratorEvent(message: string) {
   void broadcastDebugLogToYouTubeTabs(`${SCRUB_TAG} ${message}`);
-}
-
-function reportFetchProgress(session: ScrubSession) {
-  if (session.expectedCount === 0) {
-    return;
-  }
-
-  const fraction = Math.min(session.receivedSegments.size / session.expectedCount, 1);
-  void sendMessage(MessageType.UpdateDownloadProgress, {
-    videoId: session.videoId,
-    progress: fraction,
-    progressType: ProgressType.Video
-  }, session.tabId);
 }
 
 export async function fillGlobalSlots() {

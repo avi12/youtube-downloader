@@ -1,9 +1,4 @@
-import {
-  adaptiveFormatToSabrFormat,
-  collectReadableStream,
-  createSabrStream,
-  makeTrustTemplateFetch
-} from "./stream-factory";
+import { adaptiveFormatToSabrFormat, collectReadableStream, createSabrStream } from "./stream-factory";
 import type { AdaptiveFormatItem, SabrConfig } from "@/types";
 
 export async function fetchVideoViaSabrStream({ sabrConfig, videoFormat, fetchFn, poToken }: {
@@ -25,52 +20,7 @@ export async function fetchVideoViaSabrStream({ sabrConfig, videoFormat, fetchFn
   });
 }
 
-async function fetchVideoAudioViaSabrStreamBootstrapped({
-  sabrConfig, videoFormat, audioFormat, fetchFn, poToken, templateUrl, templateBody, onCallLog
-}: {
-  sabrConfig: SabrConfig;
-  videoFormat: AdaptiveFormatItem;
-  audioFormat: AdaptiveFormatItem;
-  fetchFn: typeof globalThis.fetch;
-  poToken: string;
-  templateUrl: string;
-  templateBody: Uint8Array;
-  onCallLog?: (msg: string) => void;
-}) {
-  const wrappedFetch = makeTrustTemplateFetch({
-    originalFetch: fetchFn,
-    templateUrl,
-    templateBody,
-    onCallLog
-  });
-  const sabrStream = createSabrStream({
-    sabrConfig,
-    fetchFn: wrappedFetch,
-    poToken
-  });
-  const videoTarget = adaptiveFormatToSabrFormat(videoFormat);
-  const audioTarget = adaptiveFormatToSabrFormat(audioFormat);
-  const { videoStream, audioStream } = await sabrStream.start({
-    videoFormat: videoTarget,
-    audioFormat: audioTarget
-  });
-  const [videoBytes, audioBytes] = await Promise.all([
-    collectReadableStream({
-      stream: videoStream,
-      expectedBytes: parseInt(videoFormat.contentLength, 10)
-    }),
-    collectReadableStream({
-      stream: audioStream,
-      expectedBytes: parseInt(audioFormat.contentLength, 10)
-    })
-  ]);
-  return {
-    videoBytes,
-    audioBytes
-  };
-}
-
-export async function fetchAudioViaSabrStream({ sabrConfig, audioFormat, fetchFn, poToken, refreshToken }: {
+export async function fetchAudioViaSabrStream({ sabrConfig, audioFormat, fetchFn, poToken }: {
   sabrConfig: SabrConfig;
   audioFormat: AdaptiveFormatItem;
   fetchFn: typeof globalThis.fetch;
