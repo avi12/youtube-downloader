@@ -1,11 +1,11 @@
 import { registerChunkHandlers, registerStorageHandlers } from "./handlers/chunk-and-storage-handlers";
 import { registerDownloadHandlers } from "./handlers/download-handlers";
-import { registerIframeScrubOrchestrator } from "./scrub/orchestrator";
 import { registerPipelineHandlers } from "./handlers/pipeline-handlers";
 import { ensureProcessor } from "./handlers/processor";
 import { registerTabLifecycleHandlers } from "./handlers/tab-lifecycle";
 import { registerSabrOriginRule, registerFactoryIframeHeaderStripper } from "./network/declarative-net-request";
 import { registerRecentDownloadsRetention } from "./recent/recent-downloads-retention";
+import { registerIframeScrubOrchestrator } from "./scrub/orchestrator";
 import { broadcastDebugLogToYouTubeTabs } from "@/lib/messaging/debug-log";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
 import { OffscreenMessageType } from "@/lib/messaging/offscreen-messaging";
