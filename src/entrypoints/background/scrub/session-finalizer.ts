@@ -54,18 +54,20 @@ export async function finalizeSession(session: ScrubSession, logFn: (msg: string
       session,
       segment
     });
-    await emitSegmentChunks({
-      session,
-      scrubIndex,
-      base64: segment.videoBase64,
-      mediaKind: "video"
-    });
-    await emitSegmentChunks({
-      session,
-      scrubIndex,
-      base64: segment.audioBase64,
-      mediaKind: "audio"
-    });
+    await Promise.all([
+      emitSegmentChunks({
+        session,
+        scrubIndex,
+        base64: segment.videoBase64,
+        mediaKind: "video"
+      }),
+      emitSegmentChunks({
+        session,
+        scrubIndex,
+        base64: segment.audioBase64,
+        mediaKind: "audio"
+      })
+    ]);
   }
 
   logFn(`finalizing: captionTracks=${session.captionTracks.length} extraAudioFormats=${session.additionalAudioFormats.length}`);

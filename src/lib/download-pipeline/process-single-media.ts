@@ -47,37 +47,41 @@ export async function processSingleMedia(item: ProcessStreamData) {
   }
 
   if (item.playlistId) {
-    await addToPlaylistBundle({
-      playlistId: item.playlistId,
-      playlistTitle: item.playlistTitle ?? "Playlist",
-      totalCount: item.playlistTotalCount ?? 1,
-      tabId,
-      filename: filenameOutput,
-      data
-    });
-    await reportProgress({
+    await Promise.all([
+      addToPlaylistBundle({
+        playlistId: item.playlistId,
+        playlistTitle: item.playlistTitle ?? "Playlist",
+        totalCount: item.playlistTotalCount ?? 1,
+        tabId,
+        filename: filenameOutput,
+        data
+      }),
+      reportProgress({
+        videoId,
+        progress: 1,
+        progressType: ProgressType.FFmpeg,
+        tabId
+      })
+    ]);
+    return;
+  }
+
+  await Promise.all([
+    triggerDownload({
+      data,
+      filenameOutput,
+      recentContext: {
+        videoId,
+        title: item.metadata?.title ?? filenameOutput,
+        channel: item.metadata?.artist ?? "",
+        thumbnailUrl: item.metadata?.thumbnailUrl
+      }
+    }),
+    reportProgress({
       videoId,
       progress: 1,
       progressType: ProgressType.FFmpeg,
       tabId
-    });
-    return;
-  }
-
-  await triggerDownload({
-    data,
-    filenameOutput,
-    recentContext: {
-      videoId,
-      title: item.metadata?.title ?? filenameOutput,
-      channel: item.metadata?.artist ?? "",
-      thumbnailUrl: item.metadata?.thumbnailUrl
-    }
-  });
-  await reportProgress({
-    videoId,
-    progress: 1,
-    progressType: ProgressType.FFmpeg,
-    tabId
-  });
+    })
+  ]);
 }

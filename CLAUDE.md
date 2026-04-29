@@ -23,6 +23,7 @@
 - If a callback arrow function has a typed param, don't annotate the type explicitly
 - Avoid nested try/catch - flatten with early returns or extracted functions
 - Apply parallel modifications whenever possible
+- Use `Promise.all` for independent async operations instead of sequential `await`; never await sequentially when the calls have no data dependency on each other
 - Use destructuring whenever it will increase the code readability
 
 # Naming conventions
@@ -51,7 +52,7 @@
 - Informal tone
 
 # Linting
-After each modification, lint with ESLint, Stylelint, svelte-check, and knip.
+After each modification, lint with ESLint, Stylelint, svelte-check, and fallow.
 
 # Dev server
 `scripts/dev-server.ts` auto-rebuilds and reloads the extension and every YouTube page on any file change under `src/` and `wxt.config.ts

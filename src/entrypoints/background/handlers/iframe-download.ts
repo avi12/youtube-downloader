@@ -22,37 +22,41 @@ export async function executeIframeDownload({ data, originTabId, iframeTabId, if
   iframeTabId: number | undefined;
   iframeFrameId: number;
 }) {
+  trackVideoForTab({
+    videoId: data.videoId,
+    tabId: originTabId
+  });
+
   if (iframeTabId !== undefined) {
-    await sendMessage(MessageType.ExecuteDownloadItem, data, {
-      tabId: iframeTabId,
-      frameId: iframeFrameId
-    });
+    await Promise.all([
+      sendMessage(MessageType.ExecuteDownloadItem, data, {
+        tabId: iframeTabId,
+        frameId: iframeFrameId
+      }),
+      sendMessage(MessageType.StartKeepalive, { videoId: data.videoId }, originTabId)
+    ]);
   } else {
     sendToOffscreen(OffscreenMessageType.ForwardToIframe, {
       iframeId: downloadIframeId(data.videoId),
       payload: data
     });
+    await sendMessage(MessageType.StartKeepalive, { videoId: data.videoId }, originTabId);
   }
-
-  trackVideoForTab({
-    videoId: data.videoId,
-    tabId: originTabId
-  });
-  await sendMessage(MessageType.StartKeepalive, { videoId: data.videoId }, originTabId);
 }
 
 export async function downloadViaWatchPage({ data, tabId }: {
   data: DownloadRequest;
   tabId: number;
 }) {
-  await enqueueToPopupList([{
-    videoId: data.videoId,
-    type: data.type,
-    filenameOutput: data.filenameOutput
-  }]);
-
   try {
-    const { iframeTabId, iframeFrameId } = await prepareIframe({ data });
+    const [, { iframeTabId, iframeFrameId }] = await Promise.all([
+      enqueueToPopupList([{
+        videoId: data.videoId,
+        type: data.type,
+        filenameOutput: data.filenameOutput
+      }]),
+      prepareIframe({ data })
+    ]);
     await executeIframeDownload({
       data,
       originTabId: tabId,

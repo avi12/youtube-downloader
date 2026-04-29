@@ -63,16 +63,17 @@ export async function performDownload({
     const credentials = await resolveCredentialsWithRetry();
     console.log(`${tag} credentials done, pre-resolving cdn urls`);
 
-    const [resolvedVideoUrl, resolvedAudioUrl, ...resolvedExtraAudioUrls] =
-      await preResolveCdnUrls({
-        type,
-        videoFormat,
-        audioFormat,
-        extraAudioFormats
-      });
-    console.log(`${tag} cdn pre-resolve done, building metadata`);
-    const metadata = await buildVideoMetadata(videoId);
-    console.log(`${tag} metadata done, sending StartBackgroundDownload`);
+    const [[resolvedVideoUrl, resolvedAudioUrl, ...resolvedExtraAudioUrls], metadata] =
+      await Promise.all([
+        preResolveCdnUrls({
+          type,
+          videoFormat,
+          audioFormat,
+          extraAudioFormats
+        }),
+        buildVideoMetadata(videoId)
+      ]);
+    console.log(`${tag} cdn pre-resolve + metadata done, sending StartBackgroundDownload`);
 
     const videoDurationMs = parseInt(videoFormat?.approxDurationMs ?? audioFormat?.approxDurationMs ?? "0", 10);
     const videoDurationSec = Math.ceil(videoDurationMs / 1000);
