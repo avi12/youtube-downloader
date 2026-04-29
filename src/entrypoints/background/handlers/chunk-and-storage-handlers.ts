@@ -1,8 +1,9 @@
+import { clearInterruptedDownload, persistInterruptedDownload } from "../download/download-retry";
 import { trackVideoForTab } from "../queue/tab-tracker";
 import { ensureProcessor } from "./processor";
 import { MessageType, onMessage } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
-import { interruptedDownloadsItem, mutateStorageItem } from "@/lib/storage/storage";
+import { interruptedDownloadsItem } from "@/lib/storage/storage";
 import { uint8ToBase64 } from "@/lib/utils/binary";
 import { extractPoTokenFromBody, getCapturedSabrData } from "@/lib/youtube/sabr-request-capture";
 
@@ -57,17 +58,9 @@ export function registerStorageHandlers() {
     };
   });
 
-  onMessage(MessageType.PersistInterruptedDownload, async ({ data }) => {
-    await mutateStorageItem(interruptedDownloadsItem, current => {
-      current[data.videoId] = data;
-    });
-  });
+  onMessage(MessageType.PersistInterruptedDownload, ({ data }) => persistInterruptedDownload(data));
 
-  onMessage(MessageType.ClearInterruptedDownload, async ({ data }) => {
-    await mutateStorageItem(interruptedDownloadsItem, current => {
-      delete current[data.videoId];
-    });
-  });
+  onMessage(MessageType.ClearInterruptedDownload, ({ data }) => clearInterruptedDownload(data.videoId));
 
   onMessage(MessageType.GetInterruptedDownload, async ({ data }) => {
     const current = await interruptedDownloadsItem.getValue();
