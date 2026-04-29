@@ -50,7 +50,8 @@ const AD_CLEAR_TIMEOUT_MS = 30_000;
 // buffer-ahead.
 const STALL_GRACE_MS = 12_000;
 const MIN_AUDIO_BYTES = 200_000;
-const BUFFER_FILL_OVERHEAD_MS = 30_000;
+const BUFFER_FILL_OVERHEAD_MS = 60_000;
+const BUFFER_STALL_SEEK_MS = 2_000;
 
 interface MoviePlayer extends HTMLElement {
   playVideo?: () => void;
@@ -94,18 +95,19 @@ async function forcePlayback(player: MoviePlayer) {
     const elVideo = document.querySelector<HTMLVideoElement>(VIDEO_ELEMENT_SELECTOR);
     if (elVideo) {
       elVideo.muted = true;
-      try {
-        await elVideo.play();
-      } catch {
-        // first play() may reject before player.playVideo() arms autoplay;
-        // we keep retrying.
-      }
+      // Fire-and-forget: in Firefox background tabs, play() may return a
+      // Promise that never settles, which would hang the loop if awaited.
+      void elVideo.play().catch(() => {});
     }
 
     player.playVideo?.();
     await wait(POLL_INTERVAL_MS);
 
     if (elVideo && (!elVideo.paused || elVideo.currentTime > 0 || elVideo.readyState >= 2)) {
+      // Unmute now that playback started — YouTube SABR skips audio fetching
+      // when the media element is muted; we only muted above to satisfy
+      // Firefox's background-tab autoplay policy.
+      elVideo.muted = false;
       return true;
     }
   }
@@ -203,7 +205,14 @@ export async function runTrustFactoryDrive() {
   console.log("[ytdl:trust-factory-tab] idle window elapsed");
 }
 
-function bindCaptureToVideoId(videoId: string) {
+// When an ad ran, pendingChunks contain a mix of the ad's own streams and
+// real-video pre-fetches from the wrong time offset. Media fragments (large
+// chunks) at the wrong position would corrupt the capture; init segments
+// (ftyp+moov / EBML+Tracks, always ≤ 50 KB) are still required by FFmpeg.
+// So when skipMediaFragments=true, keep only the init-sized chunks and discard
+// the large media ones; let the post-seekTo fetch supply fresh media.
+const PENDING_INIT_MAX_BYTES = 50_000;
+function bindCaptureToVideoId(videoId: string, skipMediaFragments = false) {
   const captureState = window.__ytdlCapture;
   if (!captureState) {
     return;
@@ -230,13 +239,15 @@ function bindCaptureToVideoId(videoId: string) {
     }
   }
 
-  // Flush pending pre-bind chunks. The init segments (ftyp+moov / EBML+Tracks)
-  // are required for FFmpeg to decode subsequent fragments; the early content
-  // fragments arriving between document_start and bind are real media the
-  // player won't re-fetch.
+  // Flush pending pre-bind chunks. When an ad ran, skip large media fragments
+  // (wrong time position) but keep small init segments (required by FFmpeg).
   const capture = captureState.capturedMedia.get(videoId);
   if (capture) {
     for (const pending of captureState.pendingChunks) {
+      if (skipMediaFragments && pending.data.byteLength > PENDING_INIT_MAX_BYTES) {
+        continue;
+      }
+
       captureState.addChunkToCapture({
         capture,
         mimeType: pending.mimeType,
@@ -248,10 +259,11 @@ function bindCaptureToVideoId(videoId: string) {
   captureState.pendingChunks.length = 0;
 }
 
-async function waitForBufferFill({ videoId, windowSec, startSec, player }: {
+async function waitForBufferFill({ videoId, windowSec, startSec, scrubIndex, player }: {
   videoId: string;
   windowSec: number;
   startSec: number;
+  scrubIndex: number;
   player: MoviePlayer;
 }) {
   const hardCapMs = windowSec * 1000 + BUFFER_FILL_OVERHEAD_MS;
@@ -261,27 +273,58 @@ async function waitForBufferFill({ videoId, windowSec, startSec, player }: {
   let lastAudioBytes = initialBytes;
   let lastChangeAt = Date.now();
   let hasGrownPastBaseline = false;
+  // Short tail windows (< stepSec) produce less audio than a full 60s segment.
+  // Skip the MIN_AUDIO_BYTES gate so we don't loop until the hard cap fires.
+  const isTinyWindow = windowSec <= 10;
+  let lastBufferedEnd = 0;
+  let lastBufferedEndAt = Date.now();
 
   while (Date.now() - startedAt < hardCapMs) {
     const elVideo = document.querySelector<HTMLVideoElement>(VIDEO_ELEMENT_SELECTOR);
     if (elVideo?.paused) {
+      elVideo.muted = true;
       player.playVideo?.();
-      try {
-        await elVideo.play();
-      } catch (_) {
-        // browser may reject play() under restrictive autoplay; we keep retrying
-      }
+      void elVideo.play().catch(() => {});
+      elVideo.muted = false;
     }
 
-    // Fast path: if playback has actually advanced through the full window,
-    // the bytes for it landed and we're done — no need to wait out the
-    // stall-grace.
-    if (
-      elVideo
-      && elVideo.currentTime >= targetCurrentTime
-      && (window.__ytdlCapture?.capturedMedia.get(videoId)?.audioTotalBytes ?? 0) > MIN_AUDIO_BYTES
-    ) {
-      return;
+    let currentBufferedEnd = lastBufferedEnd;
+    if (elVideo && !isTinyWindow) {
+      currentBufferedEnd = elVideo.buffered.length > 0
+        ? elVideo.buffered.end(elVideo.buffered.length - 1)
+        : 0;
+
+      // Fast path: buffer covers the full window — both audio and video are
+      // buffered (video.buffered returns the intersection of all SourceBuffers).
+      if (
+        currentBufferedEnd >= targetCurrentTime - 0.5
+        && (isTinyWindow || (window.__ytdlCapture?.capturedMedia.get(videoId)?.audioTotalBytes ?? 0) > MIN_AUDIO_BYTES)
+      ) {
+        return;
+      }
+
+      // Buffer-edge seek: SABR only fetches the next audio chunk when the player's
+      // currentTime approaches the buffer edge. When pendingChunks pre-populate
+      // the capture with init+early-media (e.g. 37s buffered for a 60s window),
+      // the player's currentTime stays near 0 and SABR never requests 37-60s.
+      // Seeking to buffered.end - 1 pushes currentTime to the edge and triggers
+      // the continuation fetch. Threshold matches isBufferSufficient (-2) so
+      // there is no dead zone where neither seek nor exit fires.
+      if (currentBufferedEnd !== lastBufferedEnd) {
+        lastBufferedEnd = currentBufferedEnd;
+        lastBufferedEndAt = Date.now();
+      } else if (
+        currentBufferedEnd > 0
+        && currentBufferedEnd < targetCurrentTime - 2
+        && Date.now() - lastBufferedEndAt > BUFFER_STALL_SEEK_MS
+      ) {
+        const seekTarget = Math.max(startSec, currentBufferedEnd - 1);
+        scrubLog(`buffer-edge seek index=${scrubIndex} bufferedEnd=${currentBufferedEnd.toFixed(1)} seekTarget=${seekTarget.toFixed(1)}`);
+        player.seekTo?.(seekTarget, true);
+        lastBufferedEndAt = Date.now();
+        // Give the re-fetch time to respond before the stall-grace can fire.
+        lastChangeAt = Date.now();
+      }
     }
 
     const captured = window.__ytdlCapture?.capturedMedia.get(videoId);
@@ -298,10 +341,18 @@ async function waitForBufferFill({ videoId, windowSec, startSec, player }: {
       return;
     } else if (
       hasGrownPastBaseline
-      && currentBytes > MIN_AUDIO_BYTES
+      && (isTinyWindow || currentBytes > MIN_AUDIO_BYTES)
       && Date.now() - lastChangeAt > STALL_GRACE_MS
     ) {
-      return;
+      // Don't exit on byte stall if the buffer hasn't covered the full window
+      // yet — the player is mid-fetch and will grow more. The hard cap provides
+      // the absolute timeout.
+      const isBufferSufficient = isTinyWindow || currentBufferedEnd >= targetCurrentTime - 2;
+      if (!isBufferSufficient) {
+        lastChangeAt = Date.now();
+      } else {
+        return;
+      }
     }
 
     await wait(POLL_INTERVAL_MS);
@@ -382,23 +433,33 @@ export async function runScrubSelfDrive() {
   const hadAd = await waitForAdToClear();
   scrubLog(`ad cleared index=${scrubIndex} hadAd=${hadAd}`);
 
-  bindCaptureToVideoId(videoId);
+  // Never skip media fragments even after an ad: the addSourceBuffer hook
+  // already clears ad bytes from pendingChunks when the main-content
+  // SourceBuffer is created, so pendingChunks only holds valid main-content
+  // data (from t=0 onward). Pre-trimming in the pipeline (-ss startSec)
+  // extracts only the intended window, so we never need to discard media.
+  bindCaptureToVideoId(videoId, false);
   scrubLog(`capture bound index=${scrubIndex} captureState=${window.__ytdlCapture ? "present" : "missing"}`);
 
-  // After a pre-roll ad, the player resumes inside the real-video stream and
-  // its already-loaded init segment lives in MSE state but not in our capture
-  // (we just rebuilt it). Seek back to the iframe's intended startSec to
-  // force the player to re-fetch the real-video init + the 60s window from
-  // scratch — both land cleanly in the now-bound capture.
   if (hadAd) {
     player.seekTo?.(startSec, true);
     scrubLog(`post-ad seek to ${startSec}s index=${scrubIndex}`);
+    // seekTo alone doesn't kick the SABR fetch in background tabs — force play
+    // immediately so the player requests media data starting at startSec.
+    const elVideoPostSeek = document.querySelector<HTMLVideoElement>(VIDEO_ELEMENT_SELECTOR);
+    if (elVideoPostSeek) {
+      elVideoPostSeek.muted = true;
+      player.playVideo?.();
+      void elVideoPostSeek.play().catch(() => {});
+      elVideoPostSeek.muted = false;
+    }
   }
 
   await waitForBufferFill({
     videoId,
     windowSec,
     startSec,
+    scrubIndex,
     player
   });
   player.pauseVideo?.();
