@@ -7,7 +7,7 @@ import {
   IconName
 } from "@/types";
 
-export const ButtonId = {
+const ButtonId = {
   DeselectAll: "playlist-deselect-all-btn",
   Download: "playlist-download-btn",
   DownloadAll: "playlist-download-all-btn"

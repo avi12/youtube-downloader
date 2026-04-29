@@ -1,6 +1,6 @@
 import { CHILD_LIST_SUBTREE } from "@/lib/utils/dom";
 
-export function findPlaylistHeaderMount() {
+function findPlaylistHeaderMount() {
   for (const elFlex of document.querySelectorAll<HTMLElement>("yt-flexible-actions-view-model")) {
     if (elFlex.getBoundingClientRect().height <= 0) {
       continue;

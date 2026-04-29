@@ -1,7 +1,7 @@
 import { persistInterruptedDownload } from "./download-retry";
 import type { DownloadRequest } from "@/types";
 
-export const pendingNetworkRetries = new Map<string, {
+const pendingNetworkRetries = new Map<string, {
   request: DownloadRequest;
   tabId: number;
 }>();

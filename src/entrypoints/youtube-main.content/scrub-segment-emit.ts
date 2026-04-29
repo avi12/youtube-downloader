@@ -10,7 +10,7 @@ import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-wo
 const POST_MESSAGE_TYPE_DEBUG = "ytdl:scrub-debug";
 const POST_MESSAGE_TYPE_SEGMENT = "ytdl:scrub-segment";
 
-export function postToHost(payload: unknown, transferables: Transferable[] = []) {
+function postToHost(payload: unknown, transferables: Transferable[] = []) {
   if (parent === self) {
     return;
   }

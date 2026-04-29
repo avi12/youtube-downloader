@@ -36,7 +36,7 @@ export const supportedExtensions = {
 
 type SupportedExtension = keyof typeof extensionToMimeAll;
 
-export function isSupportedExtension(extension: string): extension is SupportedExtension {
+function isSupportedExtension(extension: string): extension is SupportedExtension {
   return extension in extensionToMimeAll;
 }
 

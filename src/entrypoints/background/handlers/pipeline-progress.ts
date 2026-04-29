@@ -82,7 +82,7 @@ export function registerPipelineProgressHandlers() {
   });
 }
 
-export const cancelledVideoIds = new Set<string>();
+const cancelledVideoIds = new Set<string>();
 
 export function markVideosCancelled(videoIds: string[]) {
   for (const videoId of videoIds) {

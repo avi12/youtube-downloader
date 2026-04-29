@@ -4,7 +4,7 @@ import { base64ToUint8Array } from "@/lib/utils/binary";
 import { MOVIE_PLAYER_SELECTOR } from "@/lib/youtube/player-selectors";
 import type { AdaptiveFormatItem, PlayerResponse } from "@/types";
 
-export { readPoTokenFromAdaptiveFormatUrl, readPoTokenFromCapturedTemplate, findPoToken } from "./po-token-reader";
+export { readPoTokenFromCapturedTemplate, findPoToken } from "./po-token-reader";
 
 const DEFAULT_CLIENT_NAME = 1;
 
@@ -47,7 +47,7 @@ function readField(record: unknown, key: string): unknown {
   return entry ? entry[1] : undefined;
 }
 
-export function getStringField(record: unknown, key: string) {
+function getStringField(record: unknown, key: string) {
   const value = readField(record, key);
   return typeof value === "string" ? value : "";
 }

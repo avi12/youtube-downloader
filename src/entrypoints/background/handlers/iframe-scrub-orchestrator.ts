@@ -2,14 +2,13 @@ import { ensureProcessor } from "./processor";
 import { handleSegmentArrival } from "./scrub-segment-handler";
 import { releaseSession } from "./scrub-session-finalizer";
 import { buildSession, sessionsByVideoId } from "./scrub-session-store";
-import { fillGlobalSlots, logScrubOrchestratorEvent, reportFetchProgress } from "./scrub-slot-filler";
+import { fillGlobalSlots, logScrubOrchestratorEvent } from "./scrub-slot-filler";
 import { broadcastDebugLogToYouTubeTabs } from "@/lib/messaging/debug-log";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
 import { ScrubIframeMessageType, listenForScrubIframeMessages } from "@/lib/messaging/scrub-iframe-messaging";
 import type { AdaptiveFormatItem, CaptionTrack, DownloadType, VideoMetadata } from "@/types";
 
 export type { SegmentArrival } from "./scrub-segment-handler";
-export { reportFetchProgress };
 
 const DEFAULT_STEP_SEC = 35;
 

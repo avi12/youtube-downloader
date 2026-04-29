@@ -7,7 +7,7 @@ export { untrackIframe } from "./scrub-iframe-tracker";
 
 const IFRAME_DEADLINE_OVERHEAD_MS = 120_000;
 
-export function armIframeDeadline({ session, iframeId, scrubIndex, windowSec, logFn, onExpired }: {
+function armIframeDeadline({ session, iframeId, scrubIndex, windowSec, logFn, onExpired }: {
   session: ScrubSession;
   iframeId: string;
   scrubIndex: number;

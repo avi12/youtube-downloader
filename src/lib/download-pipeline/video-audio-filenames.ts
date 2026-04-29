@@ -1,6 +1,6 @@
 import { getCompatibleFilename, getOutputExtension } from "@/lib/utils/containers";
 
-export function determineOutputExtension({ videoMimeType, audioMimeType, isExtraTracksPresent, filenameOutput }: {
+function determineOutputExtension({ videoMimeType, audioMimeType, isExtraTracksPresent, filenameOutput }: {
   videoMimeType: string;
   audioMimeType: string;
   isExtraTracksPresent: boolean;

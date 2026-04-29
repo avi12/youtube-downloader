@@ -2,7 +2,7 @@ import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { TRANSFER_CHUNK_SIZE, uint8ToBase64 } from "@/lib/utils/binary";
 import { StreamType } from "@/types";
 
-export async function sendStreamChunks({ videoId, streamType, data }: {
+async function sendStreamChunks({ videoId, streamType, data }: {
   videoId: string;
   streamType: string;
   data: Uint8Array;

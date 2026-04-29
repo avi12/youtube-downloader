@@ -4,11 +4,6 @@ export const sessionsByVideoId = new Map<string, ScrubSession>();
 export const iframeIdByVideoIdAndIndex = new Map<string, string>();
 export const deadlineTimersByIframeId = new Map<string, ReturnType<typeof setTimeout>>();
 export const globalInFlightIframeIds = new Set<string>();
-export let roundRobinCursor = 0;
-
-export function setRoundRobinCursor(value: number) {
-  roundRobinCursor = value;
-}
 
 export function makeIframeKey(videoId: string, scrubIndex: number) {
   return `${videoId}:${scrubIndex}`;
@@ -44,26 +39,6 @@ export function buildSession(data: StartIframeScrubArgs, stepSec: number, expect
     captionTracks: data.captionTracks ?? [],
     durationSec: data.durationSec
   };
-}
-
-export function pickNextWorkRoundRobin() {
-  const sessions = Array.from(sessionsByVideoId.values());
-  for (let offset = 0; offset < sessions.length; offset++) {
-    const iSession = (roundRobinCursor + offset) % sessions.length;
-    const session = sessions[iSession];
-    const scrubIndex = session.pendingIndices.shift();
-    if (scrubIndex === undefined) {
-      continue;
-    }
-
-    setRoundRobinCursor((iSession + 1) % sessions.length);
-    return {
-      session,
-      scrubIndex
-    };
-  }
-
-  return null;
 }
 
 export function recordEmptyAfterRetries({ session, scrubIndex, logFn }: {

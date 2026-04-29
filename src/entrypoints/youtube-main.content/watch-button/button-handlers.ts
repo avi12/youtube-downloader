@@ -21,7 +21,7 @@ export function mapToBarProgress(progress: number, progressType: ProgressType): 
   return DOWNLOAD_PROGRESS_SHARE + progress * (1 - DOWNLOAD_PROGRESS_SHARE);
 }
 
-export function getViewState(state: ButtonState, videoData: VideoData): ButtonViewState {
+function getViewState(state: ButtonState, videoData: VideoData): ButtonViewState {
   return {
     isDownloading: state.isDownloading,
     isDone: state.isDone,

@@ -8,8 +8,6 @@ import {
 import { DownloadType } from "@/types";
 import type { DownloadRequest } from "@/types";
 
-export { downloadViaSabrWithTrustTemplate } from "./sabr-bootstrapped-download";
-
 export async function downloadViaSabr({ request, signal, tabId, onProgress }: {
   request: DownloadRequest;
   signal: AbortSignal;

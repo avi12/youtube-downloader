@@ -1,0 +1,17 @@
+{
+  "$schema": "https://opencode.ai/tui.json",
+  "keybinds": {
+    "input_start": "home",
+    "input_end": "end",
+    "input_newline": "shift+enter",
+    "messages_first": "ctrl+home",
+    "messages_last": "ctrl+end",
+    "messages_page_up": "pageup",
+    "messages_page_down": "pagedown",
+    "cancel_generation": "ctrl+c",
+    "exit": "ctrl+d",
+    "clear_screen": "ctrl+l",
+    "details": "ctrl+o",
+    "session_compact": "ctrl+alt+c"
+  }
+}

@@ -1,0 +1,31 @@
+diff --git a/dist/src/core/SabrStream.js b/dist/src/core/SabrStream.js
+index 95400db071a6457ceca79604a309f55569df1966..b9dd8754aabeafaf019f14f19473511e7aae9d73 100644
+--- a/dist/src/core/SabrStream.js
++++ b/dist/src/core/SabrStream.js
+@@ -191,8 +191,14 @@ export class SabrStream extends EventEmitterLike {
+             this._errored = false;
+             this._aborted = false;
+             let playerTimeMs = 0;
++            // Patched: track the caller-supplied starting offset so the per-
++            // iteration reset below can advance from it instead of clamping the
++            // session back to getTotalDownloadedDuration (which starts at 0 for
++            // freshly-restored or synthetic state).
++            let initialPlayerTimeMs = 0;
+             if (options.state && this.restoreState(videoFormat, audioFormat, options.state)) {
+                 playerTimeMs = options.state.playerTimeMs || 0;
++                initialPlayerTimeMs = playerTimeMs;
+             }
+             const maxRetries = options.maxRetries !== undefined ? options.maxRetries : DEFAULT_MAX_RETRIES;
+             const enabledTrackTypesBitfield = options.enabledTrackTypes ?? EnabledTrackTypes.VIDEO_AND_AUDIO;
+@@ -223,7 +229,10 @@ export class SabrStream extends EventEmitterLike {
+                     this.initializedFormatsMap.get(FormatKeyUtils.fromFormat(videoFormat) || '');
+                 if (this.mainFormat)
+                     this.validateAndCorrectDuration(this.mainFormat.formatInitializationMetadata);
+-                abrState.playerTimeMs = this.mainFormat ? getTotalDownloadedDuration(this.mainFormat) : 0;
++                // Patched: add the caller-supplied initial offset so seeks to
++                // non-zero playerTimeMs advance from there instead of getting
++                // clamped back to the total downloaded duration on every iter.
++                abrState.playerTimeMs = initialPlayerTimeMs + (this.mainFormat ? getTotalDownloadedDuration(this.mainFormat) : 0);
+                 const { shouldStop } = this.checkForStall({
+                     playerTimeMs: abrState.playerTimeMs,
+                     stallDetectionMs: options.stallDetectionMs

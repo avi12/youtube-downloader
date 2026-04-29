@@ -1,5 +1,3 @@
-import { removeFromPopupList } from "../queue/popup-list";
-import { signalVideoComplete } from "../queue/sequential-queue";
 import { enrichWithAlternateClientUrls } from "./alternate-client-enricher";
 import { resolveDownloadResult } from "./download-resolver";
 import { clearInterruptedDownload, reportDownloadFailed } from "./download-retry";
@@ -7,8 +5,6 @@ import { enqueueNetworkRetry, registerNetworkRetryCallback } from "./network-ret
 import { dispatchToOffscreen, enrichMetadataFromYouTubeMusic } from "./offscreen-dispatcher";
 import { broadcastDebugLogToTab } from "@/lib/messaging/debug-log";
 import type { DownloadRequest } from "@/types";
-
-export { removeFromPopupList, signalVideoComplete };
 
 export interface DownloadResult {
   videoData: Uint8Array | null;

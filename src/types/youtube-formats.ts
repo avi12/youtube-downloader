@@ -17,7 +17,7 @@ export type MediaItem = {
   approxDurationMs: `${number}`;
 };
 
-export const VideoQuality = {
+const VideoQuality = {
   Tiny: "tiny",
   Medium: "medium",
   Large: "large",
@@ -30,7 +30,7 @@ export const VideoQuality = {
 
 export type VideoQuality = (typeof VideoQuality)[keyof typeof VideoQuality];
 
-export const QualityLabel = {
+const QualityLabel = {
   P144: "144p",
   P240: "240p",
   P360: "360p",
@@ -44,7 +44,7 @@ export const QualityLabel = {
 
 export type QualityLabel = (typeof QualityLabel)[keyof typeof QualityLabel];
 
-export const AudioQuality = {
+const AudioQuality = {
   Low: "AUDIO_QUALITY_LOW",
   Medium: "AUDIO_QUALITY_MEDIUM"
 } as const;

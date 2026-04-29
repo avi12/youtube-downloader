@@ -28,7 +28,7 @@ export interface CdpMessage {
   };
 }
 
-export function attachCdpMonitor(wsUrl: string, label: string, enableLog = false) {
+function attachCdpMonitor(wsUrl: string, label: string, enableLog = false) {
   const socket = new WebSocket(wsUrl);
   socket.on("open", () => {
     socket.send(
@@ -66,7 +66,7 @@ export function attachCdpMonitor(wsUrl: string, label: string, enableLog = false
   return socket;
 }
 
-export async function findExtensionTargets(port: number, extId: string) {
+async function findExtensionTargets(port: number, extId: string) {
   const targets = await fetchTargets(port);
   return {
     serviceWorker: targets.find(target => target.type === "service_worker" && (target.url ?? "").includes(extId)),
@@ -75,7 +75,7 @@ export async function findExtensionTargets(port: number, extId: string) {
   };
 }
 
-export function fetchTargets(port: number): Promise<CdpTarget[]> {
+function fetchTargets(port: number): Promise<CdpTarget[]> {
   return new Promise((resolve, reject) => {
     http.get(`http://localhost:${port}/json`, response => {
       let data = "";

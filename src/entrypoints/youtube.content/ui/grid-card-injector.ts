@@ -6,7 +6,7 @@ const VIDEO_CARD_SELECTOR = "yt-lockup-view-model, ytd-rich-item-renderer, ytd-g
 
 export { VIDEO_CARD_SELECTOR };
 
-export function extractVideoId(elCard: Element) {
+function extractVideoId(elCard: Element) {
   const contentIdMatch = elCard.querySelector("[class*='content-id-']")?.className.match(/content-id-(\S+)/);
   if (contentIdMatch) {
     return contentIdMatch[1];

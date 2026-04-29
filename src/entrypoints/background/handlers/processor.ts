@@ -115,10 +115,6 @@ export async function ensureProcessor() {
   return processorReady;
 }
 
-export function getFirefoxProcessorTabId(): number | null {
-  return firefoxProcessorTabId;
-}
-
 export function notifyFirefoxProcessorTabRemoved(tabId: number) {
   if (tabId !== firefoxProcessorTabId) {
     return;

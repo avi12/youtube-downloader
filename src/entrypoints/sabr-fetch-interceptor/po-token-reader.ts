@@ -3,7 +3,7 @@ import { VideoPlaybackAbrRequest } from "googlevideo/protos";
 
 const POTOKEN_QUERY_PARAM = "pot";
 
-export function readPoTokenFromAdaptiveFormatUrl(formats: AdaptiveFormatItem[] | undefined) {
+function readPoTokenFromAdaptiveFormatUrl(formats: AdaptiveFormatItem[] | undefined) {
   if (!formats) {
     return "";
   }

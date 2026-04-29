@@ -18,7 +18,7 @@
     "pack:firefox": "wxt zip -b firefox --mv3",
     "postinstall": "wxt prepare",
     "lint": "eslint --fix",
-    "fallow": "pnpx fallow fix src",
+    "fallow": "pnpx fallow fix --yes",
     "compile": "tsc --noEmit",
     "compile:scripts": "tsc -p scripts",
     "stylelint": "stylelint \"src/**/*.{css,svelte}\" --fix",
