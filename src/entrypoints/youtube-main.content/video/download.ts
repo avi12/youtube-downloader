@@ -1,9 +1,13 @@
-import { capturedAlternateClientPoToken, capturedPoToken, capturedSabrUrl, setPoTokenCredentials } from "./credentials";
-import { resolveFormatUrl } from "./stream-fetch";
+import { capturedAlternateClientPoToken } from "./credentials";
+import {
+  getExtraAudioFormats,
+  preResolveCdnUrls,
+  resolveCredentialsWithRetry,
+  selectFormats
+} from "./download-helpers";
 import { buildVideoMetadata, generatePoTokenIfNeeded, videoDataCache } from "./video-data";
-import { crossWorldMessenger, CrossWorldMessage } from "@/lib/messaging/cross-world-messenger";
-import { sabrCredentials } from "@/lib/ui/synced-stores.svelte";
-import { type AdaptiveFormatItem, type DownloadRequest, DownloadType } from "@/types";
+import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
+import { type DownloadRequest } from "@/types";
 
 const activeDownloads = new Map<string, AbortController>();
 
@@ -13,108 +17,6 @@ export function cancelActiveDownload(videoId: string) {
     controller.abort();
     activeDownloads.delete(videoId);
   }
-}
-
-function getExtraAudioFormats({ audioFormats, selectedTrackId }: {
-  audioFormats: AdaptiveFormatItem[];
-  selectedTrackId: string | undefined;
-}) {
-  if (!selectedTrackId) {
-    return [];
-  }
-
-  const seenTrackIds = new Set([selectedTrackId]);
-  return audioFormats.filter(format => {
-    const trackId = format.audioTrack?.id;
-    if (!trackId || seenTrackIds.has(trackId)) {
-      return false;
-    }
-
-    seenTrackIds.add(trackId);
-    return true;
-  });
-}
-
-function resolveCredentials() {
-  const creds = sabrCredentials.value;
-  const elCredentials = document.getElementById("ytdl-sabr-credentials");
-
-  const currentPoToken =
-    creds?.poToken ||
-    elCredentials?.dataset.poToken ||
-    capturedPoToken;
-
-  const currentSabrUrl =
-    creds?.url ||
-    elCredentials?.dataset.url ||
-    capturedSabrUrl;
-  if (currentPoToken !== capturedPoToken || currentSabrUrl !== capturedSabrUrl) {
-    setPoTokenCredentials({
-      poToken: currentPoToken ?? "",
-      sabrUrl: currentSabrUrl ?? ""
-    });
-  }
-
-  return {
-    poToken: currentPoToken,
-    sabrUrl: currentSabrUrl
-  };
-}
-
-const CREDENTIAL_POLL_INTERVAL_MS = 200;
-const CREDENTIAL_POLL_MAX_WAIT_MS = 5000;
-
-async function resolveCredentialsWithRetry() {
-  const initial = resolveCredentials();
-  if (initial.poToken) {
-    return initial;
-  }
-
-  const deadline = Date.now() + CREDENTIAL_POLL_MAX_WAIT_MS;
-  while (Date.now() < deadline) {
-    await new Promise<void>(resolve => setTimeout(resolve, CREDENTIAL_POLL_INTERVAL_MS));
-    const result = resolveCredentials();
-    if (result.poToken) {
-      return result;
-    }
-  }
-
-  return resolveCredentials();
-}
-
-function selectFormats({ videoData, type, videoItag, audioItag }: {
-  videoData: {
-    videoFormats: AdaptiveFormatItem[];
-    audioFormats: AdaptiveFormatItem[];
-  };
-  type: DownloadType;
-  videoItag: number | undefined;
-  audioItag: number | undefined;
-}) {
-  const videoFormat = type !== DownloadType.Audio
-    ? (videoData.videoFormats.find(format => format.itag === videoItag) ?? videoData.videoFormats[0])
-    : null;
-  const audioFormat = type !== DownloadType.Video
-    ? (videoData.audioFormats.find(format => format.itag === audioItag) ?? videoData.audioFormats[0])
-    : null;
-
-  return {
-    videoFormat,
-    audioFormat
-  };
-}
-
-async function preResolveCdnUrls({ type, videoFormat, audioFormat, extraAudioFormats }: {
-  type: DownloadType;
-  videoFormat: AdaptiveFormatItem | null;
-  audioFormat: AdaptiveFormatItem | null;
-  extraAudioFormats: AdaptiveFormatItem[];
-}) {
-  return Promise.all([
-    type !== DownloadType.Audio ? resolveFormatUrl(videoFormat) : Promise.resolve(null),
-    type !== DownloadType.Video ? resolveFormatUrl(audioFormat) : Promise.resolve(null),
-    ...extraAudioFormats.map(format => resolveFormatUrl(format))
-  ]);
 }
 
 export async function performDownload({
@@ -156,8 +58,6 @@ export async function performDownload({
       selectedTrackId: audioFormat?.audioTrack?.id
     });
     console.log(`${tag} formats picked, generating po token`);
-    // BotGuard's synchronous VM briefly blocks the main thread,
-    // so do it at click-time (expected latency) rather than download completion.
     await generatePoTokenIfNeeded(cachedVideoData);
     console.log(`${tag} po token done, resolving credentials`);
     const credentials = await resolveCredentialsWithRetry();
