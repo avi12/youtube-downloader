@@ -23,11 +23,9 @@ export function buildScrubIframeUrl({ videoId, scrubIndex, startSec, windowSec }
     ytdl: "1",
     ytdlScrubMode: "1",
     ytdlScrubIndex: String(scrubIndex),
-    ytdlScrubWindow: String(windowSec)
+    ytdlScrubWindow: String(windowSec),
+    ...startSec > 0 && { t: String(startSec) }
   });
-  if (startSec > 0) {
-    params.set("t", String(startSec));
-  }
 
   return `https://www.youtube.com/watch?${params.toString()}`;
 }
