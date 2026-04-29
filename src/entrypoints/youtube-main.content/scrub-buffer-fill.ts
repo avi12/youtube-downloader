@@ -44,7 +44,7 @@ export async function waitForBufferFill({ videoId, windowSec, startSec, scrubInd
       currentBufferedEnd = elVideo.buffered.length > 0
         ? elVideo.buffered.end(elVideo.buffered.length - 1)
         : 0;
-      // Fast path: buffer covers the full window — both audio and video are
+      // Fast path: buffer covers the full window - both audio and video are
       // buffered (video.buffered returns the intersection of all SourceBuffers).
       const audioBytes = window.__ytdlCapture?.capturedMedia.get(videoId)?.audioTotalBytes ?? 0;
       if (currentBufferedEnd >= targetCurrentTime - 0.5 && audioBytes > MIN_AUDIO_BYTES) {
@@ -82,12 +82,12 @@ export async function waitForBufferFill({ videoId, windowSec, startSec, scrubInd
       lastChangeAt = Date.now();
       hasGrownPastBaseline = hasGrownPastBaseline || currentBytes > initialBytes;
     } else if (hasGrownPastBaseline && elVideo?.ended) {
-      // Tail segment: player reached end of video — we have everything available.
+      // Tail segment: player reached end of video - we have everything available.
       return;
     } else if (hasGrownPastBaseline && (isTinyWindow || currentBytes > MIN_AUDIO_BYTES)
       && Date.now() - lastChangeAt > STALL_GRACE_MS) {
       // Don't exit on byte stall if the buffer hasn't covered the full window
-      // yet — the player is mid-fetch and will grow more. The hard cap provides
+      // yet - the player is mid-fetch and will grow more. The hard cap provides
       // the absolute timeout.
       if (isTinyWindow || currentBufferedEnd >= targetCurrentTime - 2) {
         return;

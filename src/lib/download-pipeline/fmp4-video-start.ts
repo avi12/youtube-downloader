@@ -53,7 +53,7 @@ export function parseFmp4VideoStartSec(data: Uint8Array): number | undefined {
         if (version === 1) {
           const high = view.getUint32(dataStart + 4);
           const low = view.getUint32(dataStart + 8);
-          // Avoid BigInt for ffmpeg.wasm compat — videos < ~34 years fit in float64.
+          // Avoid BigInt for ffmpeg.wasm compat - videos < ~34 years fit in float64.
           baseMediaDecodeTime = high * 0x1_0000_0000 + low;
         } else {
           baseMediaDecodeTime = view.getUint32(dataStart + 4);

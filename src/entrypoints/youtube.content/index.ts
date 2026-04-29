@@ -58,7 +58,7 @@ export default defineContentScript({
     void forwardSabrCredentialsWithRetry();
 
     if (isDownloadIframe) {
-      window.addEventListener("message", (e: MessageEvent) => {
+      addEventListener("message", e => {
         if (e.data?.ytdlType !== "ytdl-execute-download") {
           return;
         }

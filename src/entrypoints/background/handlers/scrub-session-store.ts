@@ -24,7 +24,7 @@ export function buildSession(data: StartIframeScrubArgs, stepSec: number, expect
     expectedCount,
     stepSec,
     receivedSegments: new Map(),
-    pendingIndices: Array.from({ length: expectedCount }, (_, index) => index),
+    pendingIndices: Array.from({ length: expectedCount }, (_, i) => i),
     attemptsByIndex: new Map(),
     inFlightIframeIds: new Set(),
     tabId: data.tabId,
@@ -49,14 +49,14 @@ export function buildSession(data: StartIframeScrubArgs, stepSec: number, expect
 export function pickNextWorkRoundRobin() {
   const sessions = Array.from(sessionsByVideoId.values());
   for (let offset = 0; offset < sessions.length; offset++) {
-    const idx = (roundRobinCursor + offset) % sessions.length;
-    const session = sessions[idx];
+    const iSession = (roundRobinCursor + offset) % sessions.length;
+    const session = sessions[iSession];
     const scrubIndex = session.pendingIndices.shift();
     if (scrubIndex === undefined) {
       continue;
     }
 
-    setRoundRobinCursor((idx + 1) % sessions.length);
+    setRoundRobinCursor((iSession + 1) % sessions.length);
     return {
       session,
       scrubIndex

@@ -39,7 +39,7 @@ export function registerPipelineHandlers() {
   });
 
   onMessage(MessageType.PipelineFFmpegReady, () => {
-    void broadcastDebugLogToYouTubeTabs("[ytdl:bg] PipelineFFmpegReady received — signaling processor ready");
+    void broadcastDebugLogToYouTubeTabs("[ytdl:bg] PipelineFFmpegReady received - signaling processor ready");
     void isFFmpegReadyItem.setValue(true);
     signalFFmpegReady();
   });

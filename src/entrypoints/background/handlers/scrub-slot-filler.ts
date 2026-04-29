@@ -30,14 +30,14 @@ export function reportFetchProgress(session: ScrubSession) {
 export async function fillGlobalSlots() {
   while (globalInFlightIframeIds.size < MAX_GLOBAL_PARALLEL_IFRAMES) {
     const sessions = Array.from(sessionsByVideoId.values());
-    let found = false;
+    let isFound = false;
     for (const session of sessions) {
       const scrubIndex = session.pendingIndices.shift();
       if (scrubIndex === undefined) {
         continue;
       }
 
-      found = true;
+      isFound = true;
       const startSec = scrubIndex * session.stepSec;
       const windowSec = Math.min(session.stepSec, session.durationSec - startSec);
       await openScrubIframe({
@@ -63,7 +63,7 @@ export async function fillGlobalSlots() {
       break;
     }
 
-    if (!found) {
+    if (!isFound) {
       break;
     }
   }

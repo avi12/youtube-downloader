@@ -15,16 +15,16 @@ export function buildValidSegments(
   logEvent: (msg: string) => void
 ): ValidSegment[] {
   const validSegments: ValidSegment[] = [];
-  for (const [index, segment] of segments.entries()) {
+  for (const [iSegment, segment] of segments.entries()) {
     if (!segment || segment.video.byteLength === 0 || segment.audio.byteLength === 0) {
-      logEvent(`[ytdl:pipeline] segment ${index} skipped (empty)`);
+      logEvent(`[ytdl:pipeline] segment ${iSegment} skipped (empty)`);
       continue;
     }
 
-    const startSec = index * step;
-    logEvent(`[ytdl:pipeline] segment ${index} startSec=${startSec} video=${segment.video.byteLength}B audio=${segment.audio.byteLength}B`);
+    const startSec = iSegment * step;
+    logEvent(`[ytdl:pipeline] segment ${iSegment} startSec=${startSec} video=${segment.video.byteLength}B audio=${segment.audio.byteLength}B`);
     validSegments.push({
-      index,
+      index: iSegment,
       video: segment.video,
       audio: segment.audio,
       startSec
@@ -53,7 +53,7 @@ export function muxValidSegments({
   // Root cause of desync: SABR video snaps to the nearest keyframe before the
   // seek target. The captured video stream therefore starts a few seconds
   // earlier than the audio stream (which starts at exactly startSec).
-  // video.buffered.start(0) is not usable here — per MSE spec it returns the
+  // video.buffered.start(0) is not usable here - per MSE spec it returns the
   // intersection of all SourceBuffers, which equals the audio start (startSec),
   // masking the video preroll entirely.
   //

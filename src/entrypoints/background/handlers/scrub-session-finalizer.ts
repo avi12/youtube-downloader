@@ -20,14 +20,14 @@ function emitSegmentChunks({ session, scrubIndex, base64, mediaKind }: {
   });
 }
 
-function emitExtraAudioChunks({ session, trackIndex, data }: {
+function emitExtraAudioChunks({ session, iTrack, data }: {
   session: ScrubSession;
-  trackIndex: number;
+  iTrack: number;
   data: Uint8Array;
 }) {
   return sendBytesToOffscreen({
     videoId: session.videoId,
-    streamType: `audio-extra-${trackIndex}`,
+    streamType: `audio-extra-${iTrack}`,
     data,
     tabId: session.tabId
   });
@@ -76,10 +76,10 @@ export async function finalizeSession(session: ScrubSession, logFn: (msg: string
   });
   logFn(`extras fetched: extraAudio=${extraAudioTracks.length} subtitles=${subtitleStreams.length}`);
 
-  for (const [trackIndex, track] of extraAudioTracks.entries()) {
+  for (const [iTrack, track] of extraAudioTracks.entries()) {
     await emitExtraAudioChunks({
       session,
-      trackIndex,
+      iTrack,
       data: track.data
     });
   }

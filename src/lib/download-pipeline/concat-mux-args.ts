@@ -32,7 +32,7 @@ export function buildFinalMuxArgs({
     args.push("-map", `${subtitleOffset + i}:s:0`);
   }
 
-  // Primary audio (0:a) is already AAC from per-segment mux — stream-copy it.
+  // Primary audio (0:a) is already AAC from per-segment mux - stream-copy it.
   // Extra audio tracks may still be Opus → transcode to AAC per-track.
   args.push("-c:v", "copy", "-c:a:0", "copy");
   for (let i = 0; i < extraAudioInputs.length; i++) {

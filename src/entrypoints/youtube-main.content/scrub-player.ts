@@ -55,7 +55,7 @@ export async function forcePlayback(player: MoviePlayer) {
     await wait(POLL_INTERVAL_MS);
 
     if (elVideo && (!elVideo.paused || elVideo.currentTime > 0 || elVideo.readyState >= 2)) {
-      // Unmute now that playback started — YouTube SABR skips audio fetching
+      // Unmute now that playback started - YouTube SABR skips audio fetching
       // when the media element is muted; we only muted above to satisfy
       // Firefox's background-tab autoplay policy.
       elVideo.muted = false;
@@ -66,7 +66,7 @@ export async function forcePlayback(player: MoviePlayer) {
   return false;
 }
 
-// seekTo alone doesn't kick the SABR fetch in background tabs — force play
+// seekTo alone doesn't kick the SABR fetch in background tabs - force play
 // immediately so the player requests media data starting at startSec.
 export function postAdSeek(player: MoviePlayer, startSec: number) {
   player.seekTo?.(startSec, true);

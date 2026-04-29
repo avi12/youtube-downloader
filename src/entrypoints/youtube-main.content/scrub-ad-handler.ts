@@ -38,7 +38,7 @@ export async function waitForAdToClear() {
 
     return true;
   } finally {
-    // Reset to 1x once the ad clears — otherwise waitForBufferFill keeps the
+    // Reset to 1x once the ad clears - otherwise waitForBufferFill keeps the
     // player at 16x speed and a single iframe blows through ~24 minutes of
     // media in 90s, capturing the entire rest of the video instead of its
     // intended 60s window.

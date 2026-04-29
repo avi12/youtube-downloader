@@ -49,7 +49,7 @@ async function ensureChromeOffscreenDocument() {
 
 // Firefox MV3 background pages are event-driven and restart every ~60s. We
 // open offscreen.html as a persistent tab so WASM compilation survives restarts.
-// On each restart we query for an existing processor tab instead of killing it —
+// On each restart we query for an existing processor tab instead of killing it -
 // WASM takes >60s to compile, so killing on restart would loop forever.
 async function ensureFirefoxProcessorTab() {
   const processorUrl = browser.runtime.getURL("/offscreen.html");
@@ -59,8 +59,8 @@ async function ensureFirefoxProcessorTab() {
   if (existingTabs.length > 0 && existingTabs[0].id !== undefined) {
     firefoxProcessorTabId = existingTabs[0].id;
 
-    const alreadyReady = await isFFmpegReadyItem.getValue();
-    if (alreadyReady) {
+    const isAlreadyReady = await isFFmpegReadyItem.getValue();
+    if (isAlreadyReady) {
       void broadcastDebugLogToYouTubeTabs(`[ytdl:processor] re-attached to tab ${firefoxProcessorTabId}, FFmpeg already ready`);
       return;
     }
@@ -79,7 +79,7 @@ async function ensureFirefoxProcessorTab() {
       return;
     }
 
-    // Processor tab is alive but stuck — close it and let the next branch create a fresh one.
+    // Processor tab is alive but stuck - close it and let the next branch create a fresh one.
     void broadcastDebugLogToYouTubeTabs(`[ytdl:processor] tab ${firefoxProcessorTabId} timed out, reopening`);
     await browser.tabs.remove(firefoxProcessorTabId).catch(() => {});
     firefoxProcessorTabId = null;
@@ -88,7 +88,7 @@ async function ensureFirefoxProcessorTab() {
     return;
   }
 
-  // No existing tab — create one. Reset the ready flag so stale storage
+  // No existing tab - create one. Reset the ready flag so stale storage
   // from a previous extension load doesn't cause a false-ready signal.
   await isFFmpegReadyItem.setValue(false);
   void broadcastDebugLogToYouTubeTabs("[ytdl:processor] creating new processor tab");

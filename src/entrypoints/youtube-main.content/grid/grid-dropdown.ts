@@ -27,7 +27,7 @@ function createGridDropdown({ contentId, positionTargetSelector }: {
   elDropdown.append(elDropdownContentSlot);
 
   // ytd-menu-popup-renderer carries role="menu" from YouTube's own element definition.
-  // Our panel is a dialog, not a menu — override to presentation and hide the empty
+  // Our panel is a dialog, not a menu - override to presentation and hide the empty
   // Polymer listbox from assistive technologies (WCAG 4.1.2, 1.3.1).
   requestAnimationFrame(() => {
     elDropdownContentSlot.setAttribute("role", "presentation");
