@@ -1,0 +1,90 @@
+import {
+  base64UrlToUint8Array,
+  buildFormatId,
+  findPoToken,
+  getMoviePlayer,
+  pickHighestQualityFormats,
+  readClientInfo,
+  readPoTokenFromCapturedTemplate,
+  readUstreamerConfig
+} from "./player-helpers";
+import { uint8ToBase64 } from "@/lib/utils/binary";
+import type { YtdlSabrTemplate } from "@/types";
+import { VideoPlaybackAbrRequest } from "googlevideo/protos";
+
+const VISIBILITY_FOREGROUND = 1;
+const DEFAULT_PLAYBACK_RATE = 1;
+
+export function buildSyntheticTemplateFromPlayer(): YtdlSabrTemplate | null {
+  const player = getMoviePlayer();
+  if (!player?.getPlayerResponse) {
+    return null;
+  }
+
+  const playerResponse = player.getPlayerResponse();
+  const streamingData = playerResponse?.streamingData;
+  const url = streamingData?.serverAbrStreamingUrl;
+  if (!streamingData || !url) {
+    return null;
+  }
+
+  const ustreamerConfig = readUstreamerConfig(playerResponse);
+  if (!ustreamerConfig) {
+    return null;
+  }
+
+  const adaptiveFormats = streamingData.adaptiveFormats ?? [];
+  const { audio, video } = pickHighestQualityFormats(adaptiveFormats);
+  if (!audio || !video) {
+    return null;
+  }
+
+  const audioFormatId = buildFormatId(audio);
+  const videoFormatId = buildFormatId(video);
+  const { clientName, clientVersion } = readClientInfo();
+  const poTokenBytes = readPoTokenFromCapturedTemplate();
+  const poTokenString = poTokenBytes ? "" : findPoToken(playerResponse);
+
+  const body = VideoPlaybackAbrRequest.encode({
+    clientAbrState: {
+      playerTimeMs: "0",
+      audioTrackId: audio.audioTrack?.id,
+      playbackRate: DEFAULT_PLAYBACK_RATE,
+      stickyResolution: video.height,
+      drcEnabled: false,
+      clientViewportIsFlexible: false,
+      visibility: VISIBILITY_FOREGROUND,
+      enabledTrackTypesBitfield: 0
+    },
+    selectedFormatIds: [audioFormatId, videoFormatId],
+    bufferedRanges: [],
+    videoPlaybackUstreamerConfig: base64UrlToUint8Array(ustreamerConfig),
+    preferredAudioFormatIds: [audioFormatId],
+    preferredVideoFormatIds: [videoFormatId],
+    preferredSubtitleFormatIds: [],
+    streamerContext: {
+      sabrContexts: [],
+      unsentSabrContexts: [],
+      clientInfo: {
+        clientName,
+        clientVersion
+      },
+      poToken: poTokenBytes ?? (poTokenString ? base64UrlToUint8Array(poTokenString) : undefined)
+    },
+    field1000: []
+  }).finish();
+
+  return {
+    url,
+    body,
+    capturedAt: Date.now()
+  };
+}
+
+export function capturedTemplateToBase64(template: YtdlSabrTemplate) {
+  return {
+    url: template.url,
+    bodyBase64: uint8ToBase64(template.body),
+    capturedAt: template.capturedAt
+  };
+}
