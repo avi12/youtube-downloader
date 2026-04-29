@@ -1,58 +1,30 @@
 import { toUint8Array, triggerDownload, reportProgress } from ".";
+import { buildFfmpegArgs } from "./ffmpeg-args-builder";
+import type { AudioTrackFile, SubtitleFile } from "./ffmpeg-args-builder";
 import { getFFmpeg, progressHandlers, tryUnlink } from "./ffmpeg-instance";
 import { addToPlaylistBundle } from "./playlist-bundle";
-import { getCompatibleFilename, getOutputExtension } from "@/lib/utils/containers";
+import { buildVideoAudioFilenames } from "./video-audio-filenames";
 import { ProgressType } from "@/types";
 import type { ProcessStreamData } from "@/types";
 
-function determineOutputExtension({
-  videoMimeType, audioMimeType, isExtraTracksPresent, filenameOutput
-}: {
-  videoMimeType: string;
-  audioMimeType: string;
-  isExtraTracksPresent: boolean;
-  filenameOutput: string;
-}) {
-  if (isExtraTracksPresent) {
-    return "mkv";
-  }
-
-  const userExtension = filenameOutput.split(".").pop() ?? "mp4";
-  return getOutputExtension({
-    videoMimeType,
-    audioMimeType,
-    userExtension
-  });
-}
-
 export async function processVideoAudio(item: ProcessStreamData) {
   const {
-    videoId, filenameOutput, videoMimeType, audioMimeType, tabId, additionalAudioStreams,
-    subtitleStreams
+    videoId, filenameOutput, videoMimeType, audioMimeType, tabId, additionalAudioStreams, subtitleStreams
   } = item;
-
-  const videoExtension = videoMimeType.includes("webm") ? "webm" : "mp4";
-  const audioExtension = audioMimeType.includes("webm") ? "webm" : "m4a";
   const isExtraTracksPresent = Boolean(additionalAudioStreams.length || subtitleStreams.length);
-  const outputExtension = determineOutputExtension({
+  const {
+    videoFilename, primaryAudioFilename, outputFilename, downloadFilename, outputExtension
+  } = buildVideoAudioFilenames({
+    videoId,
+    filenameOutput,
     videoMimeType,
     audioMimeType,
-    isExtraTracksPresent,
-    filenameOutput
+    isExtraTracksPresent
   });
-
-  const filenameBase = filenameOutput.replace(/\.[^.]+$/, "");
-  const downloadFilename = `${filenameBase}.${outputExtension}`;
-  const videoFilename = `${videoId}-video.${videoExtension}`;
-  const primaryAudioFilename = `${videoId}-audio.${audioExtension}`;
-  const outputFilename = getCompatibleFilename(`${videoId}-${downloadFilename}`);
   const ffmpeg = getFFmpeg();
-
   const ffmpegProgressCapBeforeSave = 0.99;
 
-  function handleFFmpegProgress({ progress }: {
-    progress: number;
-  }) {
+  function handleFFmpegProgress({ progress }: { progress: number }) {
     const cappedProgress = Math.min(progress, ffmpegProgressCapBeforeSave);
     void reportProgress({
       videoId,
@@ -64,15 +36,8 @@ export async function processVideoAudio(item: ProcessStreamData) {
 
   progressHandlers.add(handleFFmpegProgress);
 
-  const extraAudioTracks: {
-    filename: string;
-    label: string;
-  }[] = [];
-  const subtitleFiles: {
-    filename: string;
-    languageCode: string;
-    label: string;
-  }[] = [];
+  const extraAudioTracks: AudioTrackFile[] = [];
+  const subtitleFiles: SubtitleFile[] = [];
 
   try {
     {
@@ -105,7 +70,6 @@ export async function processVideoAudio(item: ProcessStreamData) {
           progressType: ProgressType.FFmpeg,
           tabId
         });
-
         return;
       }
 
@@ -144,59 +108,17 @@ export async function processVideoAudio(item: ProcessStreamData) {
       });
     }
 
-    const ffmpegArgs = ["-i", videoFilename, "-i", primaryAudioFilename];
-    for (const { filename } of extraAudioTracks) {
-      ffmpegArgs.push("-i", filename);
-    }
-
-    for (const { filename } of subtitleFiles) {
-      ffmpegArgs.push("-i", filename);
-    }
-
-    ffmpegArgs.push("-map", "0:v:0");
-    for (let i = 0; i <= extraAudioTracks.length; i++) {
-      ffmpegArgs.push("-map", `${i + 1}:a:0`);
-    }
-
-    const subtitleInputOffset = 2 + extraAudioTracks.length;
-    for (let i = 0; i < subtitleFiles.length; i++) {
-      ffmpegArgs.push("-map", `${subtitleInputOffset + i}:s:0`);
-    }
-
-    // MP4 only carries AAC reliably across consumer players (Windows Media
-    // Player rejects Opus-in-MP4); transcode Opus/WebM audio to AAC when the
-    // user-target is MP4 instead of stream-copying.
-    const isOpusAudio = audioMimeType.includes("webm") || audioMimeType.includes("opus");
-    const needsAacTranscode = outputExtension === "mp4" && isOpusAudio;
-    ffmpegArgs.push("-c:v", "copy");
-
-    if (needsAacTranscode) {
-      ffmpegArgs.push("-c:a", "aac", "-b:a", "192k");
-    } else {
-      ffmpegArgs.push("-c:a", "copy");
-    }
-
-    if (subtitleFiles.length > 0) {
-      ffmpegArgs.push("-c:s", "srt");
-    }
-
-    const audioTrackLabels = [item.primaryAudioLabel ?? "", ...extraAudioTracks.map(track => track.label)];
-    for (let i = 0; i < audioTrackLabels.length; i++) {
-      const label = audioTrackLabels[i];
-      if (label) {
-        ffmpegArgs.push(`-metadata:s:a:${i}`, `title=${label}`);
-      }
-    }
-
-    for (const [i, subtitle] of subtitleFiles.entries()) {
-      ffmpegArgs.push(`-metadata:s:s:${i}`, `language=${subtitle.languageCode}`);
-
-      if (subtitle.label) {
-        ffmpegArgs.push(`-metadata:s:s:${i}`, `title=${subtitle.label}`);
-      }
-    }
-
-    ffmpegArgs.push(outputFilename);
+    const ffmpegArgs = buildFfmpegArgs({
+      videoFilename,
+      primaryAudioFilename,
+      extraAudioTracks,
+      subtitleFiles,
+      outputFilename,
+      outputExtension,
+      audioMimeType,
+      primaryAudioLabel: item.primaryAudioLabel ?? "",
+      additionalAudioLabels: extraAudioTracks.map(track => track.label)
+    });
 
     const exitCode = ffmpeg.exec(...ffmpegArgs);
     if (exitCode !== 0) {

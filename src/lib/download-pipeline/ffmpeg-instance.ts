@@ -1,8 +1,23 @@
+import { broadcastDebugLogToYouTubeTabs } from "@/lib/messaging/debug-log";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import type { FFmpegCoreModule, Progress } from "@ffmpeg/types";
 
 let sharedFFmpeg: FFmpegCoreModule | null = null;
 export const progressHandlers = new Set<(progress: Progress) => void>();
+
+const READY_RETRY_INTERVAL_MS = 3_000;
+const READY_MAX_RETRIES = 30;
+
+async function signalReadyWithRetry() {
+  for (let i = 0; i < READY_MAX_RETRIES; i++) {
+    try {
+      await sendMessage(MessageType.PipelineFFmpegReady, {});
+      return;
+    } catch {
+      await new Promise(resolve => setTimeout(resolve, READY_RETRY_INTERVAL_MS));
+    }
+  }
+}
 
 export function initFFmpeg(core: FFmpegCoreModule) {
   sharedFFmpeg = core;
@@ -11,7 +26,25 @@ export function initFFmpeg(core: FFmpegCoreModule) {
       handler(progress);
     }
   });
-  void sendMessage(MessageType.PipelineFFmpegReady, {});
+  core.setLogger(({ type, message }) => {
+    if (type !== "stderr") {
+      return;
+    }
+
+    const trimmed = message.trim();
+    if (!trimmed) {
+      return;
+    }
+
+    // These two warnings are emitted thousands of times per mux and flooding
+    // the extension message bus causes the YouTube tab to become unresponsive.
+    if (trimmed.includes("Non-monotonous DTS") || trimmed.includes("backward in time")) {
+      return;
+    }
+
+    void broadcastDebugLogToYouTubeTabs(`[ytdl:ffmpeg-stderr] ${trimmed}`);
+  });
+  void signalReadyWithRetry();
 }
 
 export function getFFmpeg() {
