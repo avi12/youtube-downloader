@@ -205,6 +205,118 @@ function buildResult({ state, audioItag, videoItag, iterations, stalled }: {
   };
 }
 
+function updatePlaybackCookie(state: ProgressiveState, nextRequestPolicyBytes: Uint8Array | null) {
+  if (!nextRequestPolicyBytes) {
+    return;
+  }
+
+  try {
+    const policy = NextRequestPolicy.decode(nextRequestPolicyBytes);
+    if (policy.playbackCookie) {
+      state.playbackCookieBytes = PlaybackCookie.encode(policy.playbackCookie).finish();
+    }
+  } catch (_) {
+    // ignore decode error; keep using prior cookie
+  }
+}
+
+type IterationContext = {
+  state: ProgressiveState;
+  activeTemplateBody: Uint8Array;
+  activeTemplateUrl: string;
+  playerTimeMs: number;
+  audioItag: number;
+  videoItag: number;
+  originalFetch: typeof globalThis.fetch;
+};
+
+type IterationResult =
+  | {
+    kind: "stall-exit";
+    result: ProgressiveFetchResult;
+  }
+  | { kind: "complete" }
+  | {
+    kind: "advance";
+    nextPlayerTimeMs: number;
+  }
+  | {
+    kind: "stall-retry";
+    nextPlayerTimeMs: number;
+    templateBody: Uint8Array;
+    templateUrl: string;
+  };
+
+async function runFetchIteration(
+  ctx: IterationContext,
+  stallStreak: number,
+  targetDurationMs: number,
+  iteration: number
+): Promise<IterationResult> {
+  const { state, activeTemplateBody, activeTemplateUrl, playerTimeMs, audioItag, videoItag, originalFetch } = ctx;
+
+  const requestBody = buildRequestBody({
+    templateBody: activeTemplateBody,
+    playerTimeMs,
+    audio: state.audio,
+    video: state.video,
+    playbackCookieBytes: state.playbackCookieBytes
+  });
+  const response = await performFetch({
+    url: activeTemplateUrl,
+    body: requestBody,
+    originalFetch
+  });
+
+  const beforeAudioEnd = state.audio.endMs;
+  const beforeVideoEnd = state.video.endMs;
+  const nextRequestPolicyBytes = ingestUmpResponse({
+    response,
+    audio: state.audio,
+    video: state.video,
+    audioItag,
+    videoItag
+  });
+  updatePlaybackCookie(state, nextRequestPolicyBytes);
+
+  const isAdvanced = state.audio.endMs > beforeAudioEnd || state.video.endMs > beforeVideoEnd;
+  if (!isAdvanced) {
+    const refreshed = buildSyntheticTemplateFromPlayer();
+    if (refreshed) {
+      window.__ytdlSabrTemplate = refreshed;
+    }
+
+    if (stallStreak + 1 >= STALL_LIMIT) {
+      return {
+        kind: "stall-exit",
+        result: buildResult({
+          state,
+          audioItag,
+          videoItag,
+          iterations: iteration + 1,
+          stalled: true
+        })
+      };
+    }
+
+    return {
+      kind: "stall-retry",
+      nextPlayerTimeMs: Math.max(0, playerTimeMs - STALL_REWIND_MS),
+      templateBody: refreshed?.body ?? activeTemplateBody,
+      templateUrl: refreshed?.url ?? activeTemplateUrl
+    };
+  }
+
+  if (state.audio.endMs >= targetDurationMs && state.video.endMs >= targetDurationMs) {
+    return { kind: "complete" };
+  }
+
+  return {
+    kind: "advance",
+    nextPlayerTimeMs: Math.min(state.audio.endMs, state.video.endMs)
+  };
+}
+
 export async function fetchProgressive({ targetDurationMs, maxIterations, originalFetch, carryState }: {
   targetDurationMs: number;
   maxIterations: number;
@@ -238,79 +350,43 @@ export async function fetchProgressive({ targetDurationMs, maxIterations, origin
 
   let playerTimeMs = Math.min(state.audio.endMs, state.video.endMs);
   let stallStreak = 0;
-  let iteration = 0;
   let activeTemplateBody = template.body;
   let activeTemplateUrl = template.url;
+  let iteration = 0;
 
   for (; iteration < maxIterations; iteration++) {
-    const requestBody = buildRequestBody({
-      templateBody: activeTemplateBody,
-      playerTimeMs,
-      audio: state.audio,
-      video: state.video,
-      playbackCookieBytes: state.playbackCookieBytes
-    });
-    const response = await performFetch({
-      url: activeTemplateUrl,
-      body: requestBody,
-      originalFetch
-    });
-
-    const beforeAudioEnd = state.audio.endMs;
-    const beforeVideoEnd = state.video.endMs;
-    const nextRequestPolicyBytes = ingestUmpResponse({
-      response,
-      audio: state.audio,
-      video: state.video,
-      audioItag,
-      videoItag
-    });
-    if (nextRequestPolicyBytes) {
-      try {
-        const policy = NextRequestPolicy.decode(nextRequestPolicyBytes);
-        if (policy.playbackCookie) {
-          const encodedCookie = PlaybackCookie.encode(policy.playbackCookie).finish();
-          state.playbackCookieBytes = encodedCookie;
-        }
-      } catch (_) {
-        // ignore decode error; keep using prior cookie
-      }
+    const iterResult = await runFetchIteration(
+      {
+        state,
+        activeTemplateBody,
+        activeTemplateUrl,
+        playerTimeMs,
+        audioItag,
+        videoItag,
+        originalFetch
+      },
+      stallStreak,
+      targetDurationMs,
+      iteration
+    );
+    if (iterResult.kind === "stall-exit") {
+      return iterResult.result;
     }
 
-    const isAudioAdvanced = state.audio.endMs > beforeAudioEnd;
-    const isVideoAdvanced = state.video.endMs > beforeVideoEnd;
-    const isAdvanced = isAudioAdvanced || isVideoAdvanced;
-    if (!isAdvanced) {
+    if (iterResult.kind === "complete") {
+      break;
+    }
+
+    if (iterResult.kind === "stall-retry") {
       stallStreak++;
-      const refreshed = buildSyntheticTemplateFromPlayer();
-      if (refreshed) {
-        activeTemplateBody = refreshed.body;
-        activeTemplateUrl = refreshed.url;
-        window.__ytdlSabrTemplate = refreshed;
-      }
-
-      if (stallStreak >= STALL_LIMIT) {
-        return buildResult({
-          state,
-          audioItag,
-          videoItag,
-          iterations: iteration + 1,
-          stalled: true
-        });
-      }
-
-      playerTimeMs = Math.max(0, playerTimeMs - STALL_REWIND_MS);
+      playerTimeMs = iterResult.nextPlayerTimeMs;
+      activeTemplateBody = iterResult.templateBody;
+      activeTemplateUrl = iterResult.templateUrl;
       continue;
     }
 
     stallStreak = 0;
-
-    const isBothTracksComplete = state.audio.endMs >= targetDurationMs && state.video.endMs >= targetDurationMs;
-    if (isBothTracksComplete) {
-      break;
-    }
-
-    playerTimeMs = Math.min(state.audio.endMs, state.video.endMs);
+    playerTimeMs = iterResult.nextPlayerTimeMs;
   }
 
   return buildResult({
