@@ -5,10 +5,14 @@ import { cancelDownloadsByIds, initFFmpeg } from "@/lib/download-pipeline";
 import { transcodeRecentDownload } from "@/lib/download-pipeline/transcode-recent";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, listenForOffscreenMessages } from "@/lib/messaging/offscreen-messaging";
-import createFFmpegCore from "@ffmpeg/core";
-import { browser } from "#imports";
+import type { FFmpegCoreModule } from "@ffmpeg/types";
 
-const FFMPEG_CORE_WASM_URL = "/node_modules/@ffmpeg/core/dist/umd/ffmpeg-core.wasm";
+// Loaded via <script> tag in index.html; the UMD build sets this global
+// and resolves ffmpeg-core.wasm relative to document.currentScript.src.
+// `wasmBinary` is an Emscripten option not declared in @ffmpeg/types.
+declare const createFFmpegCore: (
+  moduleOverrides?: Partial<FFmpegCoreModule> & { wasmBinary?: ArrayBuffer }
+) => Promise<FFmpegCoreModule>;
 
 // Register the port listener BEFORE awaiting createFFmpegCore so that the BG
 // orchestrator's first runtime.connect (fired from emitSegmentChunks right

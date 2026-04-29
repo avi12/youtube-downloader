@@ -1,7 +1,7 @@
 import type { DownloadResult } from "./background-downloader";
 import { fetchWithProgress } from "./progress-fetch";
 import { sendProgressUpdate } from "./progress-fetch";
-import { parseContentLength } from "./sabr-downloader";
+import { parseContentLength } from "./sabr-progress";
 import { DownloadType, ProgressType } from "@/types";
 import type { DownloadRequest } from "@/types";
 
