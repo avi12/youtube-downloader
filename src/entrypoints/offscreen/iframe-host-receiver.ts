@@ -38,3 +38,16 @@ export function removeIframe({ id }: {
   elFrame.remove();
   iframesById.delete(id);
 }
+
+export function forwardToIframe({ iframeId, payload }: {
+  iframeId: string;
+  payload: unknown;
+}) {
+  iframesById.get(iframeId)?.contentWindow?.postMessage(
+    {
+      ytdlType: "ytdl-execute-download",
+      request: payload
+    },
+    "https://www.youtube.com"
+  );
+}

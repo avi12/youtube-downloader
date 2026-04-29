@@ -1,6 +1,7 @@
 import { STREAM_ACCUMULATORS } from "./accumulator";
 import { assembleStreamChunks } from "./codec";
 import { enqueueStreamData } from "@/lib/download-pipeline";
+import { broadcastDebugLogToYouTubeTabs } from "@/lib/messaging/debug-log";
 import { DownloadType } from "@/types";
 import type { ScrubSegment, SubtitleStream, VideoMetadata } from "@/types";
 
@@ -19,15 +20,20 @@ export function handleProcessStreamEnd(data: {
   metadata?: VideoMetadata | null;
   segmentCount?: number;
   segmentDurationSec?: number;
+  totalDurationSec?: number;
   segmentVideoBufferStartSecs?: (number | undefined)[];
 }) {
   const {
     videoId, type, filenameOutput, videoMimeType, audioMimeType, audioTrackLabels,
     subtitleStreams = [], tabId, playlistId, playlistTitle, playlistTotalCount,
-    segmentCount, segmentDurationSec, segmentVideoBufferStartSecs
+    segmentCount, segmentDurationSec, totalDurationSec, segmentVideoBufferStartSecs
   } = data;
   const accumulator = STREAM_ACCUMULATORS.get(videoId);
   STREAM_ACCUMULATORS.delete(videoId);
+
+  void broadcastDebugLogToYouTubeTabs(
+    `[ytdl:end-handler] videoId=${videoId} segmentCount=${segmentCount} accSegments=${accumulator?.segments.size ?? "no-acc"} accVidChunks=${accumulator?.videoChunks.size ?? 0}`
+  );
 
   let segments: ScrubSegment[] | undefined;
   if (segmentCount && accumulator?.segments.size) {
@@ -76,6 +82,10 @@ export function handleProcessStreamEnd(data: {
     };
   });
 
+  void broadcastDebugLogToYouTubeTabs(
+    `[ytdl:end-handler] segments assembled=${segments?.length ?? 0} type=${type}`
+  );
+
   enqueueStreamData({
     type,
     videoId,
@@ -99,6 +109,7 @@ export function handleProcessStreamEnd(data: {
     subtitleStreams,
     segments,
     segmentDurationSec,
+    totalDurationSec,
     tabId,
     playlistId,
     playlistTitle,

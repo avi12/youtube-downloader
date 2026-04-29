@@ -1,282 +1,18 @@
-import { listenForDownloadIframes } from "./download/download-iframe";
-import { checkInterruptedDownload, listenForInterruptedDownloadEvents } from "./download/interrupted-downloads";
+import { listenForInterruptedDownloadEvents } from "./download/interrupted-downloads";
 import { listenForKeepalive } from "./download/keepalive";
-import {
-  cancelStreamTransfer,
-  handleStreamData,
-  handleStreamError,
-  setPlaylistContext,
-  uncancelStreamTransfer
-} from "./download/stream-transfer";
+import { uncancelStreamTransfer } from "./download/stream-transfer";
+import { registerBackgroundMessageHandlers } from "./handlers/background-message-handlers";
+import { registerCrossWorldHandlers } from "./handlers/cross-world-handlers";
+import { registerScrubResultForwarder } from "./handlers/scrub-result-forwarder";
 import "./style.css";
 import { handlePageChange, setNativeDownloadVisibility } from "./ui/page-router";
-import { mountPanelUi } from "./ui/panel-ui";
-import { CrossWorldEvent, emitCrossWorldEvent } from "@/lib/messaging/cross-world-events";
-import {
-  CrossWorldMessage,
-  CrossWorldSabrMessage,
-  crossWorldMessenger,
-  crossWorldSabrMessenger
-} from "@/lib/messaging/cross-world-messenger";
-import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
-import { ScrubIframeMessageType, sendScrubIframeMessage } from "@/lib/messaging/scrub-iframe-messaging";
+import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
+import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { optionsItem, statusProgressItem } from "@/lib/storage/storage";
 import { downloadProgressStore, initContentOptions } from "@/lib/ui/synced-stores.svelte";
-import { uint8ToBase64 } from "@/lib/utils/binary";
 import { forwardSabrCredentialsWithRetry, listenForSabrBodyReady } from "@/lib/youtube/sabr-credentials";
 import { initialOptions as defaultOptions } from "@/lib/youtube/video-helpers";
-import { ProgressType } from "@/types";
-
-function registerCrossWorldHandlers(
-  isDownloadIframe: boolean,
-  context: InstanceType<typeof ContentScriptContext>
-) {
-  crossWorldMessenger.onMessage(CrossWorldMessage.VideoData, async ({ data }) => {
-    await checkInterruptedDownload(data.videoId);
-  });
-
-  crossWorldMessenger.onMessage(CrossWorldMessage.Navigation, ({ data }) => {
-    if (!isDownloadIframe) {
-      handlePageChange({
-        url: data.url,
-        context
-      });
-    }
-
-    void forwardSabrCredentialsWithRetry();
-  });
-
-  crossWorldMessenger.onMessage(CrossWorldMessage.PanelContentReady, ({ data }) => {
-    mountPanelUi({
-      context,
-      contentId: data.contentId,
-      videoData: data.videoData
-    });
-  });
-
-  crossWorldMessenger.onMessage(CrossWorldMessage.CancelRequest, ({ data }) => {
-    for (const id of data.videoIds) {
-      cancelStreamTransfer(id);
-    }
-
-    void sendMessage(MessageType.CancelDownload, { videoIds: data.videoIds });
-    void crossWorldMessenger.sendMessage(CrossWorldMessage.CancelDownload, { videoIds: data.videoIds });
-  });
-
-  crossWorldMessenger.onMessage(CrossWorldMessage.StreamData, ({ data }) => {
-    void handleStreamData(data);
-  });
-
-  crossWorldMessenger.onMessage(CrossWorldMessage.StreamError, ({ data }) => {
-    handleStreamError(data);
-  });
-
-  crossWorldMessenger.onMessage(CrossWorldMessage.DownloadViaIframe, ({ data }) => {
-    void sendMessage(MessageType.DownloadViaWatchPage, data);
-  });
-
-  crossWorldMessenger.onMessage(CrossWorldMessage.StartBackgroundDownload, ({ data }) => {
-    console.log(`[ytdl:isolated-fwd] StartBackgroundDownload received videoId=${data.videoId}, forwarding to BG`);
-    void sendMessage(MessageType.StartBackgroundDownload, data).then(
-      () => console.log(`[ytdl:isolated-fwd] StartBackgroundDownload BG ack`),
-      err => console.log(`[ytdl:isolated-fwd] StartBackgroundDownload BG err: ${String(err)}`)
-    );
-  });
-
-  crossWorldMessenger.onMessage(CrossWorldMessage.StartIframeScrub, ({ data }) => {
-    void sendMessage(MessageType.StartIframeScrub, data);
-  });
-
-  crossWorldMessenger.onMessage(CrossWorldMessage.IframePlayerReady, ({ data }) => {
-    void sendMessage(MessageType.DownloadIframeReady, { videoId: data.videoId });
-  });
-
-  crossWorldMessenger.onMessage(CrossWorldMessage.DownloadRequest, ({ data }) => {
-    uncancelStreamTransfer(data.videoId);
-  });
-
-  crossWorldMessenger.onMessage(CrossWorldMessage.DownloadProgress, ({ data }) => {
-    downloadProgressStore.setLocal(data.videoId, {
-      isDownloading: true,
-      isDone: false,
-      progress: data.progress,
-      progressType: data.progressType
-    });
-  });
-
-  crossWorldMessenger.onMessage(
-    CrossWorldMessage.ProxyFetch,
-    ({ data }) => sendMessage(MessageType.BackgroundProxyFetch, data)
-  );
-}
-
-const SCRUB_IFRAME_HOST_STYLE = "position:fixed;left:-99999px;top:-99999px;width:480px;height:270px;border:0";
-const SCRUB_IFRAME_HOST_ATTR = "data-ytdl-scrub-iframe";
-
-function findScrubIframeInTab(id: string) {
-  return document.querySelector<HTMLIFrameElement>(`iframe[${SCRUB_IFRAME_HOST_ATTR}="${CSS.escape(id)}"]`);
-}
-
-function registerScrubIframeHostHandlers() {
-  onMessage(MessageType.MountScrubIframeInTab, ({ data }) => {
-    if (findScrubIframeInTab(data.id)) {
-      return;
-    }
-
-    const elFrame = document.createElement("iframe");
-    elFrame.setAttribute(SCRUB_IFRAME_HOST_ATTR, data.id);
-    elFrame.src = data.url;
-    elFrame.setAttribute("allow", "autoplay; encrypted-media; clipboard-read");
-    elFrame.setAttribute("style", SCRUB_IFRAME_HOST_STYLE);
-    document.body.append(elFrame);
-  });
-
-  onMessage(MessageType.UnmountScrubIframeInTab, ({ data }) => {
-    findScrubIframeInTab(data.id)?.remove();
-  });
-}
-
-function registerBackgroundMessageHandlers() {
-  onMessage(MessageType.BgDebugLog, ({ data }) => {
-    console.log(data.msg);
-  });
-
-  let cachedSabrTemplate: {
-    url: string;
-    bodyBase64: string;
-    capturedAt: number;
-  } | null = null;
-
-  const factoryParams = new URLSearchParams(location.search);
-  const isTrustFactoryMode = factoryParams.get("ytdlTrustFactoryMode") === "1";
-  const factoryVideoId = factoryParams.get("v") ?? "";
-  const factoryId = factoryParams.get("ytdlFactoryId") ?? "";
-  if (isTrustFactoryMode) {
-    void sendMessage(MessageType.BgDebugLog, {
-      msg: `[ytdl:factory-isolated] handler registered factoryId=${factoryId} videoId=${factoryVideoId}`
-    });
-  }
-
-  let factoryTemplateSent = false;
-  crossWorldMessenger.onMessage(CrossWorldMessage.SabrTemplateCaptured, ({ data }) => {
-    cachedSabrTemplate = data;
-
-    if (isTrustFactoryMode) {
-      void sendMessage(MessageType.BgDebugLog, {
-        msg: `[ytdl:factory-isolated] received SabrTemplateCaptured factoryId=${factoryId} bodyB64Len=${data.bodyBase64.length} sent=${factoryTemplateSent}`
-      });
-    }
-
-    // Factory-mode iframes forward the first post-ad template to BG, keyed
-    // by factoryId so multiple parallel factory iframes (one per offset)
-    // don't race the same Promise on the BG side.
-    if (isTrustFactoryMode && !factoryTemplateSent && factoryVideoId) {
-      factoryTemplateSent = true;
-      void sendMessage(MessageType.SabrTemplateReady, {
-        videoId: factoryVideoId,
-        factoryId,
-        url: data.url,
-        bodyBase64: data.bodyBase64,
-        capturedAt: data.capturedAt
-      });
-    }
-  });
-
-  onMessage(MessageType.GetSabrTemplateFromTab, async () => {
-    if (cachedSabrTemplate) {
-      return cachedSabrTemplate;
-    }
-
-    // Cache miss (push from MAIN was lost in a timing race) — pull MAIN's
-    // current template once via cross-world request/response.
-    const pulled = await crossWorldMessenger.sendMessage(
-      CrossWorldMessage.PullSabrTemplate,
-      {}
-    ).catch(() => null);
-    if (pulled) {
-      cachedSabrTemplate = pulled;
-    }
-
-    return cachedSabrTemplate;
-  });
-
-  onMessage(MessageType.SynthesizeSabrTemplateFromTab, ({ data }) => crossWorldSabrMessenger.sendMessage(
-    CrossWorldSabrMessage.SynthesizeSabrTemplate,
-    { playerTimeMs: data.playerTimeMs }
-  ).catch(() => null));
-
-  onMessage(MessageType.RunProgressiveSabrInTab, ({ data }) => {
-    void crossWorldMessenger.sendMessage(CrossWorldMessage.RunProgressiveSabr, data);
-  });
-
-  onMessage(MessageType.ExecuteDownloadItem, ({ data }) => {
-    if (location.pathname !== "/watch") {
-      return;
-    }
-
-    if (data.playlistId) {
-      setPlaylistContext({
-        videoId: data.videoId,
-        context: {
-          playlistId: data.playlistId,
-          playlistTitle: data.playlistTitle ?? "Playlist",
-          playlistTotalCount: data.playlistTotalCount ?? 1
-        }
-      });
-    }
-
-    uncancelStreamTransfer(data.videoId);
-    void crossWorldMessenger.sendMessage(CrossWorldMessage.DownloadRequest, data);
-  });
-
-  const lastReportedProgress = new Map<string, number>();
-
-  onMessage(MessageType.UpdateDownloadProgress, ({ data }) => {
-    if (!data.isRemoved) {
-      const last = lastReportedProgress.get(data.videoId);
-      if (last !== undefined && last >= 1 && data.progress >= 1) {
-        return;
-      }
-
-      lastReportedProgress.set(data.videoId, data.progress);
-    } else {
-      lastReportedProgress.delete(data.videoId);
-    }
-
-    if (data.isRemoved) {
-      if (data.isFailed) {
-        downloadProgressStore.setLocal(data.videoId, {
-          isDownloading: false,
-          isDone: false,
-          progress: 0,
-          progressType: data.progressType,
-          isFailed: true
-        });
-      } else {
-        downloadProgressStore.delete(data.videoId);
-      }
-
-      emitCrossWorldEvent({
-        type: CrossWorldEvent.ProgressUpdate,
-        data
-      });
-      return;
-    }
-
-    const isComplete = data.progress >= 1 && data.progressType === ProgressType.FFmpeg;
-    downloadProgressStore.setLocal(data.videoId, {
-      isDownloading: !isComplete,
-      isDone: isComplete,
-      progress: data.progress,
-      progressType: data.progressType
-    });
-
-    emitCrossWorldEvent({
-      type: CrossWorldEvent.ProgressUpdate,
-      data
-    });
-  });
-}
+import type { DownloadRequest } from "@/types";
 
 async function restoreStoredProgress() {
   const storedProgress = await statusProgressItem.getValue();
@@ -290,65 +26,16 @@ async function restoreStoredProgress() {
   }
 }
 
-function registerScrubResultForwarder() {
-  // Open a long-lived port to BG. BG-hosted iframes can't rely on
-  // runtime.sendMessage (sender.tab is undefined and the orchestrator's
-  // matching is brittle); a named port survives the iframe's lifetime and
-  // lets the orchestrator track this iframe's segments by port identity.
-  const params = new URLSearchParams(location.search);
-  const helloVideoId = params.get("v") ?? "";
-  const helloIndex = parseInt(params.get("ytdlScrubIndex") ?? "-1", 10);
-
-  sendScrubIframeMessage(ScrubIframeMessageType.Hello, {
-    videoId: helloVideoId,
-    scrubIndex: helloIndex
-  });
-  sendScrubIframeMessage(ScrubIframeMessageType.Debug, {
-    msg: `[ytdl:scrub-isolated] forwarder registered self===top=${self === top} url=${location.search.slice(0, 120)}`
-  });
-
-  crossWorldMessenger.onMessage(CrossWorldMessage.IframeScrubDebug, ({ data }) => {
-    sendScrubIframeMessage(ScrubIframeMessageType.Debug, { msg: data.msg });
-  });
-
-  crossWorldMessenger.onMessage(CrossWorldMessage.IframeScrubSegment, ({ data }) => {
-    sendScrubIframeMessage(ScrubIframeMessageType.Debug, {
-      msg: `[ytdl:scrub-isolated] received from MAIN index=${data.scrubIndex} videoBytes=${data.videoBytes.byteLength} audioBytes=${data.audioBytes.byteLength}`
-    });
-    sendScrubIframeMessage(ScrubIframeMessageType.Segment, {
-      videoId: data.videoId,
-      scrubIndex: data.scrubIndex,
-      videoBase64: uint8ToBase64(data.videoBytes),
-      audioBase64: uint8ToBase64(data.audioBytes),
-      videoMimeType: data.videoMimeType,
-      audioMimeType: data.audioMimeType,
-      videoBufferStartSec: data.videoBufferStartSec
-    });
-    sendScrubIframeMessage(ScrubIframeMessageType.Debug, {
-      msg: `[ytdl:scrub-isolated] forwarded to BG index=${data.scrubIndex}`
-    });
-  });
-}
-
 export default defineContentScript({
   matches: ["https://www.youtube.com/*"],
   allFrames: true,
   async main(context) {
-    // Diagnostic: verify content script reaches BG-hosted scrub iframes.
     if (/ytdlScrubMode=1|ytdlTrustFactoryMode=1/.test(location.search)) {
       void sendMessage(MessageType.BgDebugLog, {
         msg: `[ytdl:content-isolated] booted self===top=${self === top} url=${location.search.slice(0, 120)}`
       }).catch(error => console.warn("[ytdl:content-isolated] sendMessage failed:", error));
     }
 
-    // Scrub iframes are hosted inside the BG (Firefox) or offscreen page
-    // (Chrome). From this content script's perspective `self !== top` because
-    // top is the BG/offscreen document, not the iframe itself. The cross-world
-    // CustomEvent messenger is per-frame, so the forwarder MUST run in this
-    // iframe's ISOLATED world to bridge the MAIN-world driver's
-    // CrossWorldMessage.IframeScrubSegment to BG's
-    // MessageType.IframeScrubSegmentReady. Gate on the URL param only —
-    // `self === top` is not true here even though it's the iframe's own logic.
     if (/ytdlScrubMode=1/.test(location.search)) {
       registerScrubResultForwarder();
       return;
@@ -370,11 +57,21 @@ export default defineContentScript({
     listenForSabrBodyReady();
     void forwardSabrCredentialsWithRetry();
 
+    if (isDownloadIframe) {
+      window.addEventListener("message", (e: MessageEvent) => {
+        if (e.data?.ytdlType !== "ytdl-execute-download") {
+          return;
+        }
+
+        const request: DownloadRequest = e.data.request;
+        uncancelStreamTransfer(request.videoId);
+        void crossWorldMessenger.sendMessage(CrossWorldMessage.DownloadRequest, request);
+      });
+    }
+
     if (!isDownloadIframe) {
-      registerScrubIframeHostHandlers();
       listenForInterruptedDownloadEvents();
       listenForKeepalive();
-      listenForDownloadIframes(context);
       await restoreStoredProgress();
 
       const unwatchOptions = optionsItem.watch(newOptions => {
