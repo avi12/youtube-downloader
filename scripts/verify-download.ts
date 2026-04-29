@@ -13,16 +13,22 @@ import { findFirefoxRdpPort, isFirefoxTab, isRecord, RDP } from "./firefox-rdp.j
  *   bun scripts/verify-download.ts
  *   bun scripts/verify-download.ts <videoId>   # validate against a specific video
  */
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 
-const DURATION_TOLERANCE_SEC = 3;
+const DURATION_TOLERANCE_SEC = 1;
+const AV_SYNC_TOLERANCE_SEC = 0.1;
+const AV_DURATION_MISMATCH_SEC = 0.5;
 const MIN_FILE_SIZE_BYTES = 500_000;
+const FREEZE_MIN_DURATION_SEC = 2;
+const FREEZE_NOISE_DB = -60;
 
 // ── ffprobe ───────────────────────────────────────────────────────────────────
 
 interface FfprobeStream {
   codec_type: string;
   codec_name: string;
+  start_time?: string;
+  duration?: string;
 }
 
 interface FfprobeOutput {
@@ -32,6 +38,60 @@ interface FfprobeOutput {
     size: string;
     format_name: string;
   };
+}
+
+interface FreezeEvent {
+  start: number;
+  duration: number;
+  end: number;
+}
+
+function detectFreezes(filepath: string): FreezeEvent[] {
+  const result = spawnSync("ffmpeg", [
+    "-i", filepath,
+    "-vf", `freezedetect=n=${FREEZE_NOISE_DB}dB:d=${FREEZE_MIN_DURATION_SEC}`,
+    "-map", "0:v:0",
+    "-f", "null",
+    "-"
+  ], { encoding: "utf8" });
+
+  const output = result.stderr ?? "";
+  const events: FreezeEvent[] = [];
+  const startTimes = new Map<number, number>();
+
+  for (const line of output.split("\n")) {
+    const startMatch = /\[freezedetect\] frozen_start: ([\d.]+)/.exec(line);
+    const durMatch = /\[freezedetect\] frozen_duration: ([\d.]+)/.exec(line);
+    const endMatch = /\[freezedetect\] frozen_end: ([\d.]+)/.exec(line);
+    if (startMatch) {
+      startTimes.set(events.length, parseFloat(startMatch[1]));
+    } else if (durMatch && endMatch) {
+      const startSec = startTimes.get(events.length) ?? 0;
+      events.push({
+        start: startSec,
+        duration: parseFloat(durMatch[1]),
+        end: parseFloat(endMatch[1])
+      });
+    }
+  }
+
+  return events;
+}
+
+const BOUNDARY_SLOP_SEC = 5;
+
+function isBoundaryAligned(freezeStart: number, totalDuration: number, stepSec: number | null): boolean {
+  if (!stepSec) {
+    return false;
+  }
+
+  for (let boundary = stepSec; boundary < totalDuration; boundary += stepSec) {
+    if (Math.abs(freezeStart - boundary) <= BOUNDARY_SLOP_SEC) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 function probeFile(filepath: string): FfprobeOutput {
@@ -149,6 +209,7 @@ function check(label: string, pass: boolean, detail: string) {
 
 async function main() {
   const expectedVideoId = process.argv[2] ?? null;
+  const stepSec = process.argv[3] ? parseInt(process.argv[3], 10) : null;
 
   const port = findFirefoxRdpPort();
   if (!port) {
@@ -198,6 +259,26 @@ async function main() {
     if (isVideoContainer) {
       allPassed = check("video stream", Boolean(videoStream), videoStream?.codec_name ?? "missing") && allPassed;
       allPassed = check("audio stream", Boolean(audioStream), audioStream?.codec_name ?? "missing") && allPassed;
+
+      if (videoStream && audioStream) {
+        const videoStart = parseFloat(videoStream.start_time ?? "0");
+        const audioStart = parseFloat(audioStream.start_time ?? "0");
+        const startDiff = Math.abs(videoStart - audioStart);
+        allPassed = check(
+          "av start sync",
+          startDiff <= AV_SYNC_TOLERANCE_SEC,
+          `video=${videoStart.toFixed(3)}s audio=${audioStart.toFixed(3)}s diff=${startDiff.toFixed(3)}s (max ±${AV_SYNC_TOLERANCE_SEC}s)`
+        ) && allPassed;
+
+        const videoDur = parseFloat(videoStream.duration ?? probe.format.duration);
+        const audioDur = parseFloat(audioStream.duration ?? probe.format.duration);
+        const durDiff = Math.abs(videoDur - audioDur);
+        allPassed = check(
+          "av duration match",
+          durDiff <= AV_DURATION_MISMATCH_SEC,
+          `video=${formatDuration(videoDur)} audio=${formatDuration(audioDur)} diff=${durDiff.toFixed(3)}s (max ${AV_DURATION_MISMATCH_SEC}s)`
+        ) && allPassed;
+      }
     }
 
     allPassed = check(
@@ -211,6 +292,24 @@ async function main() {
       probe.streams.length > 0,
       `${probe.format.format_name} with ${probe.streams.length} stream(s)`
     ) && allPassed;
+
+    if (isVideoContainer && videoStream) {
+      console.log("\n  Running freeze detection (this may take a moment)...");
+      const freezes = detectFreezes(download.path);
+      const suspicious = freezes.filter(
+        freeze => !isBoundaryAligned(freeze.start, actualDuration, stepSec)
+      );
+      const detail = suspicious.length === 0
+        ? `none at segment boundaries${freezes.length > 0 ? ` (${freezes.length} elsewhere — likely intentional still frames)` : ""}`
+        : `${suspicious.length} at segment boundaries: ${suspicious.map(freeze => `${formatDuration(freeze.start)}-${formatDuration(freeze.end)} (${freeze.duration.toFixed(1)}s)`).join(", ")}`;
+      check("frozen chunks", suspicious.length === 0, detail);
+
+      if (suspicious.length > 0) {
+        console.log("    ⚠  Freeze detection cannot distinguish pipeline gaps from intentional still frames.");
+        console.log("    ⚠  Inspect the timestamps above manually to confirm.");
+        allPassed = false;
+      }
+    }
 
     console.log(`\n${allPassed ? "✓ PASS" : "✗ FAIL"}\n`);
   } finally {
