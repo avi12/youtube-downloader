@@ -23,6 +23,7 @@
 - If a callback arrow function has a typed param, don't annotate the type explicitly
 - Avoid nested try/catch - flatten with early returns or extracted functions
 - Apply parallel modifications whenever possible
+- Use destructuring whenever it will increase the code readability
 
 # Naming conventions
 - Variables and functions: `camelCase`, full words (no abbreviations)
@@ -53,4 +54,6 @@
 After each modification, lint with ESLint, Stylelint, svelte-check, and knip.
 
 # Dev server
-`scripts/dev-server.ts` auto-rebuilds and reloads the extension and every YouTube page on any file change under `src/`.
+`scripts/dev-server.ts` auto-rebuilds and reloads the extension and every YouTube page on any file change under `src/` and `wxt.config.ts
+
+The iframes for Chrome MV3 and Firefox MV3 must be injected into an offscreen page (e.g. offscreen document or background page). No hidden tabs and so on.   

@@ -179,7 +179,11 @@ function cloneFile(sourcePath: string, destinationPath: string) {
   }
 
   mkdirSync(dirname(destinationPath), { recursive: true });
-  cpSync(sourcePath, destinationPath);
+  try {
+    cpSync(sourcePath, destinationPath);
+  } catch {
+    // Destination may be locked by a running Firefox instance - skip; existing file is fine
+  }
 }
 
 // Web-ext-run's CDP Extensions.loadUnpacked call requires developer mode to be
