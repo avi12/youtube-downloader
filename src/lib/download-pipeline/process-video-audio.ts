@@ -1,144 +1,74 @@
-import { toUint8Array, triggerDownload, reportProgress } from ".";
-import { buildFfmpegArgs } from "./ffmpeg-args-builder";
-import type { AudioTrackFile, SubtitleFile } from "./ffmpeg-args-builder";
+import { triggerDownload, reportProgress } from ".";
+import { writeExtraAudioFiles, writeSubtitleFiles, writeVideoAudioToFs } from "./ffmpeg-file-setup";
 import { getFFmpeg, progressHandlers, tryUnlink } from "./ffmpeg-instance";
-import { addToPlaylistBundle } from "./playlist-bundle";
+import { runFfmpegMux, saveOutput } from "./ffmpeg-mux-runner";
 import { buildVideoAudioFilenames } from "./video-audio-filenames";
 import { ProgressType } from "@/types";
 import type { ProcessStreamData } from "@/types";
+
+const FFMPEG_PROGRESS_CAP = 0.99;
 
 export async function processVideoAudio(item: ProcessStreamData) {
   const {
     videoId, filenameOutput, videoMimeType, audioMimeType, tabId, additionalAudioStreams, subtitleStreams
   } = item;
   const isExtraTracksPresent = Boolean(additionalAudioStreams.length || subtitleStreams.length);
-  const {
-    videoFilename, primaryAudioFilename, outputFilename, downloadFilename, outputExtension
-  } = buildVideoAudioFilenames({
-    videoId,
-    filenameOutput,
-    videoMimeType,
-    audioMimeType,
-    isExtraTracksPresent
-  });
+  const { videoFilename, primaryAudioFilename, outputFilename, downloadFilename, outputExtension } =
+    buildVideoAudioFilenames({
+      videoId,
+      filenameOutput,
+      videoMimeType,
+      audioMimeType,
+      isExtraTracksPresent
+    });
   const ffmpeg = getFFmpeg();
-  const ffmpegProgressCapBeforeSave = 0.99;
 
   function handleFFmpegProgress({ progress }: { progress: number }) {
-    const cappedProgress = Math.min(progress, ffmpegProgressCapBeforeSave);
     void reportProgress({
       videoId,
-      progress: cappedProgress,
+      progress: Math.min(progress, FFMPEG_PROGRESS_CAP),
       progressType: ProgressType.FFmpeg,
       tabId
     });
   }
 
   progressHandlers.add(handleFFmpegProgress);
-
-  const extraAudioTracks: AudioTrackFile[] = [];
-  const subtitleFiles: SubtitleFile[] = [];
+  const extraAudioTracks = writeExtraAudioFiles({
+    videoId,
+    additionalAudioStreams
+  });
+  const subtitleFiles = writeSubtitleFiles({
+    videoId,
+    subtitleStreams
+  });
 
   try {
-    {
-      const videoData = toUint8Array(item.videoData);
-      const audioData = toUint8Array(item.audioData);
-      if (!videoData || !audioData) {
-        const recentContext = {
-          videoId,
-          title: item.metadata?.title ?? filenameOutput,
-          channel: item.metadata?.artist ?? "",
-          thumbnailUrl: item.metadata?.thumbnailUrl
-        };
-        if (videoData) {
-          await triggerDownload({
-            data: videoData,
-            filenameOutput,
-            recentContext
-          });
-        } else if (audioData) {
-          await triggerDownload({
-            data: audioData,
-            filenameOutput,
-            recentContext
-          });
-        }
-
-        await reportProgress({
-          videoId,
-          progress: 1,
-          progressType: ProgressType.FFmpeg,
-          tabId
-        });
-        return;
-      }
-
-      await reportProgress({
-        videoId,
-        progress: 0,
-        progressType: ProgressType.FFmpeg,
-        tabId
-      });
-      ffmpeg.FS.writeFile(videoFilename, videoData);
-      ffmpeg.FS.writeFile(primaryAudioFilename, audioData);
-    }
-
-    for (const [i, stream] of additionalAudioStreams.entries()) {
-      const extraData = toUint8Array(stream.data);
-      if (!extraData) {
-        continue;
-      }
-
-      const extraExtension = stream.mimeType.includes("webm") ? "webm" : "m4a";
-      const extraFilename = `${videoId}-audio-extra-${i}.${extraExtension}`;
-      ffmpeg.FS.writeFile(extraFilename, extraData);
-      extraAudioTracks.push({
-        filename: extraFilename,
-        label: stream.label
-      });
-    }
-
-    for (const [i, subtitle] of subtitleStreams.entries()) {
-      const subtitleFilename = `${videoId}-subtitle-${i}.srt`;
-      ffmpeg.FS.writeFile(subtitleFilename, new TextEncoder().encode(subtitle.srtContent));
-      subtitleFiles.push({
-        filename: subtitleFilename,
-        languageCode: subtitle.languageCode,
-        label: subtitle.label
-      });
-    }
-
-    const ffmpegArgs = buildFfmpegArgs({
+    const { videoData, audioData } = writeVideoAudioToFs({
       videoFilename,
       primaryAudioFilename,
-      extraAudioTracks,
-      subtitleFiles,
-      outputFilename,
-      outputExtension,
-      audioMimeType,
-      primaryAudioLabel: item.primaryAudioLabel ?? "",
-      additionalAudioLabels: extraAudioTracks.map(track => track.label)
+      item
     });
+    if (!videoData || !audioData) {
+      const recentContext = {
+        videoId,
+        title: item.metadata?.title ?? filenameOutput,
+        channel: item.metadata?.artist ?? "",
+        thumbnailUrl: item.metadata?.thumbnailUrl
+      };
+      if (videoData) {
+        await triggerDownload({
+          data: videoData,
+          filenameOutput,
+          recentContext
+        });
+      } else if (audioData) {
+        await triggerDownload({
+          data: audioData,
+          filenameOutput,
+          recentContext
+        });
+      }
 
-    const exitCode = ffmpeg.exec(...ffmpegArgs);
-    if (exitCode !== 0) {
-      throw new Error(`FFmpeg exited with code ${exitCode}`);
-    }
-
-    const ffmpegOutput = ffmpeg.FS.readFile(outputFilename, { encoding: "binary" });
-    if (typeof ffmpegOutput === "string") {
-      throw new Error("FFmpeg readFile returned unexpected string output");
-    }
-
-    if (item.playlistId) {
-      await addToPlaylistBundle({
-        playlistId: item.playlistId,
-        playlistTitle: item.playlistTitle ?? "Playlist",
-        totalCount: item.playlistTotalCount ?? 1,
-        tabId,
-        filename: downloadFilename,
-        data: ffmpegOutput
-      });
       await reportProgress({
         videoId,
         progress: 1,
@@ -148,44 +78,40 @@ export async function processVideoAudio(item: ProcessStreamData) {
       return;
     }
 
-    await triggerDownload({
-      data: ffmpegOutput,
-      filenameOutput: downloadFilename,
-      recentContext: {
-        videoId,
-        title: item.metadata?.title ?? filenameOutput,
-        channel: item.metadata?.artist ?? "",
-        thumbnailUrl: item.metadata?.thumbnailUrl
-      }
-    });
     await reportProgress({
       videoId,
-      progress: 1,
+      progress: 0,
       progressType: ProgressType.FFmpeg,
       tabId
     });
+    const ffmpegOutput = runFfmpegMux({
+      videoFilename,
+      primaryAudioFilename,
+      extraAudioTracks,
+      subtitleFiles,
+      outputFilename,
+      outputExtension,
+      audioMimeType,
+      item
+    });
+    await saveOutput({
+      item,
+      ffmpegOutput,
+      downloadFilename,
+      filenameOutput,
+      tabId,
+      videoId
+    });
   } finally {
     progressHandlers.delete(handleFFmpegProgress);
-    tryUnlink({
-      ffmpeg,
-      filename: videoFilename
-    });
-    tryUnlink({
-      ffmpeg,
-      filename: primaryAudioFilename
-    });
-    tryUnlink({
-      ffmpeg,
-      filename: outputFilename
-    });
-    for (const { filename } of extraAudioTracks) {
+    for (const filename of [videoFilename, primaryAudioFilename, outputFilename]) {
       tryUnlink({
         ffmpeg,
         filename
       });
     }
 
-    for (const { filename } of subtitleFiles) {
+    for (const { filename } of [...extraAudioTracks, ...subtitleFiles]) {
       tryUnlink({
         ffmpeg,
         filename

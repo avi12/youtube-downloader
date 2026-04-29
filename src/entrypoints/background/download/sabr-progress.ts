@@ -1,6 +1,5 @@
-import type { DownloadResult } from "./background-downloader";
 import { createProgressFetch, sendProgressUpdate } from "./progress-fetch";
-import { fetchAudioViaSabrStream, fetchVideoViaSabrStream } from "@/lib/youtube/sabr-download";
+import { fetchAudioViaSabrStream } from "@/lib/youtube/sabr-download";
 import { ProgressType } from "@/types";
 import type { AdaptiveFormatItem, SabrConfig } from "@/types";
 
@@ -61,90 +60,5 @@ export async function downloadAudioOnlyViaSabr({ config, audioFormat, poToken, s
   });
 }
 
-export async function downloadVideoAudioViaSabr({
-  config, videoFormat, audioFormat, poToken, signal, videoId, tabId, onProgress
-}: {
-  config: SabrConfig;
-  videoFormat: AdaptiveFormatItem;
-  audioFormat: AdaptiveFormatItem;
-  poToken: string;
-  signal: AbortSignal;
-  videoId: string;
-  tabId: number;
-  onProgress?: () => void;
-}) {
-  const videoExpectedBytes = parseContentLength(videoFormat);
-  const audioExpectedBytes = parseContentLength(audioFormat);
-  const totalExpectedBytes = videoExpectedBytes + audioExpectedBytes;
-  let totalReceivedBytes = 0;
-
-  function makeProgressFetch() {
-    return createProgressFetch({
-      signal,
-      onBytesReceived(bytes) {
-        totalReceivedBytes += bytes;
-        onProgress?.();
-
-        if (totalExpectedBytes > 0) {
-          void sendProgressUpdate({
-            videoId,
-            progress: Math.min(totalReceivedBytes / totalExpectedBytes, 1),
-            progressType: ProgressType.Video,
-            tabId
-          });
-        }
-      }
-    });
-  }
-
-  return Promise.all([
-    fetchVideoViaSabrStream({
-      sabrConfig: config,
-      videoFormat,
-      fetchFn: makeProgressFetch(),
-      poToken
-    }),
-    fetchAudioViaSabrStream({
-      sabrConfig: config,
-      audioFormat,
-      fetchFn: makeProgressFetch(),
-      poToken
-    })
-  ]);
-}
-
-export async function downloadExtraAudioTracksViaSabr({ config, formats, poToken, signal, onProgress }: {
-  config: SabrConfig;
-  formats: AdaptiveFormatItem[];
-  poToken: string;
-  signal: AbortSignal;
-  onProgress?: () => void;
-}) {
-  const tracks: DownloadResult["additionalAudioTracks"] = [];
-
-  for (const format of formats) {
-    try {
-      const sabrFetch = createProgressFetch({
-        signal,
-        onBytesReceived() {
-          onProgress?.();
-        }
-      });
-      const data = await fetchAudioViaSabrStream({
-        sabrConfig: config,
-        audioFormat: format,
-        fetchFn: sabrFetch,
-        poToken
-      });
-      tracks.push({
-        data,
-        mimeType: format.mimeType.split(";")[0] ?? "audio/mp4",
-        label: format.audioTrack?.displayName ?? ""
-      });
-    } catch (trackError) {
-      console.warn("[ytdl:bg] Extra audio track failed:", format.audioTrack?.displayName, trackError);
-    }
-  }
-
-  return tracks;
-}
+export { downloadVideoAudioViaSabr } from "./sabr-video-audio-download";
+export { downloadExtraAudioTracksViaSabr } from "./sabr-extra-tracks";

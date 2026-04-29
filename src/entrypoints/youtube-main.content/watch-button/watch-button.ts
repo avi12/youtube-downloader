@@ -1,14 +1,7 @@
 import { attachSegmentedObserver, handleClickEvent, refreshButtons } from "./button-handlers";
-import type { ButtonState } from "./button-state";
 import { wireButtonSubscriptions } from "./button-subscriptions";
 import { findVideoActionsContainer } from "./watch-button-container";
-import {
-  createButtonGroup,
-  createDropdownElement,
-  findNativeDownloadButton,
-  injectWatchButtonStyles
-} from "./watch-button-dom";
-import { buildInitialDownloadState } from "./watch-button-state";
+import { buildButtonElements, buildButtonState, notifyPanelContentReady } from "./watch-button-setup";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { type VideoData } from "@/types";
 
@@ -48,55 +41,15 @@ export async function injectSegmentedDownloadButton(
   }
 
   const { videoId } = videoData;
-  const initialState = buildInitialDownloadState(videoData);
-
-  const state: ButtonState = {
-    isDownloading: false,
-    isDone: false,
-    isInterrupted: initialState.isInterrupted,
-    isPanelOpen: false,
-    downloadProgress: 0,
-    downloadProgressType: "",
-    defaultVideoItag: initialState.videoItag,
-    defaultAudioItag: initialState.audioItag,
-    defaultFilename: initialState.filename,
-    defaultQuality: initialState.quality,
-    defaultDownloadType: initialState.downloadType,
-    lastProgressReported: -1,
-    lastRenderedButtonKey: "",
-    lastRenderedChevronKey: ""
-  };
-
-  const nativeButtons = elActionsContainer.querySelectorAll("yt-button-view-model");
-  const scopingClass = nativeButtons[nativeButtons.length - 1]?.getAttribute("class") ?? "";
-
-  injectWatchButtonStyles();
-
-  const elNativeDownload = findNativeDownloadButton(elActionsContainer);
+  const state = buildButtonState(videoData);
+  const { elements, elNativeDownload } = buildButtonElements({
+    videoId,
+    elActionsContainer,
+    isShowNativeDownload
+  });
   currentNativeDownload = elNativeDownload;
 
-  if (!isShowNativeDownload && elNativeDownload) {
-    elNativeDownload.classList.add("ytdl-native-hidden");
-  }
-
-  const buttonGroup = createButtonGroup({
-    elActionsContainer,
-    elNativeDownload,
-    scopingClass
-  });
-  const dropdownElements = createDropdownElement({
-    videoId,
-    elGroup: buttonGroup.elGroup
-  });
-  const elements = {
-    ...buttonGroup,
-    ...dropdownElements
-  };
-
-  void crossWorldMessenger.sendMessage(CrossWorldMessage.PanelContentReady, {
-    contentId: dropdownElements.panelContentId,
-    videoData
-  });
+  notifyPanelContentReady(videoData, elements.panelContentId);
 
   function applySegmentedClasses() {
     elements.elDownloadButton.querySelector<HTMLButtonElement>("button")?.classList.add("ytSpecButtonShapeNextSegmentedStart");

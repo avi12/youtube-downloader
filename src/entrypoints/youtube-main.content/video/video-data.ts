@@ -1,14 +1,14 @@
 import { injectSegmentedDownloadButton } from "../watch-button/watch-button";
-import { capturedPoToken, capturedPoTokenVideoId, setPoTokenCredentials } from "./credentials";
 import { activateIframeCaptureForVideo } from "./iframe-capture-state";
-import { parseDescriptionMetadata, parseMusicTitle, resolveGenresFromVideo } from "./music-metadata";
+import { generatePoTokenIfNeeded } from "./po-token-manager";
 import { buildVideoData } from "./youtube-api";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
-import { sabrCredentials, videoDataStore } from "@/lib/ui/synced-stores.svelte";
-import { generatePoToken, refreshPoToken } from "@/lib/youtube/po-token-generator";
+import { videoDataStore } from "@/lib/ui/synced-stores.svelte";
 import { type PlayerResponse, type VideoData, type YtdlCaptureState } from "@/types";
 
 export type { YtdlCaptureState };
+export { generatePoTokenIfNeeded };
+export { buildVideoMetadata } from "./video-metadata";
 
 declare const ytcfg: { get: (key: string) => unknown } | undefined;
 
@@ -23,70 +23,6 @@ export function readYtcfg() {
     clientVersion,
     clientName
   };
-}
-
-export async function buildVideoMetadata(videoId: string) {
-  const cached = videoDataCache.get(videoId);
-  if (!cached) {
-    return null;
-  }
-
-  const { playerResponse } = cached;
-  const { videoDetails, microformat } = playerResponse;
-  const thumbnails = videoDetails?.thumbnail?.thumbnails ?? [];
-  const thumbnailUrl = thumbnails.length > 0 ? thumbnails[thumbnails.length - 1].url : undefined;
-  const renderer = microformat?.playerMicroformatRenderer;
-  const description = videoDetails?.shortDescription ?? "";
-  const titleMeta = parseMusicTitle(cached.title);
-  const descriptionMeta = parseDescriptionMetadata(description);
-  const keywords = videoDetails?.keywords ?? [];
-  const genres = await resolveGenresFromVideo({ keywords });
-  const artist = descriptionMeta.artist || titleMeta.fullArtist || videoDetails?.author || "";
-  const albumArtist = descriptionMeta.mainArtist || titleMeta.mainArtist || undefined;
-
-  return {
-    title: descriptionMeta.songTitle || titleMeta.songTitle,
-    artist,
-    albumArtist: albumArtist !== artist ? albumArtist : undefined,
-    album: descriptionMeta.album,
-    genres: genres.length > 0 ? genres : undefined,
-    date: renderer?.publishDate,
-    thumbnailUrl,
-    isMusic: cached.isMusic
-  };
-}
-
-export async function generatePoTokenIfNeeded(videoData: VideoData) {
-  if (capturedPoToken && capturedPoTokenVideoId === videoData.videoId) {
-    return;
-  }
-
-  try {
-    const [poToken, alternateClientPoToken] = await Promise.all([
-      generatePoToken({ videoId: videoData.videoId }),
-      import.meta.env.FIREFOX
-        ? generatePoToken({
-          videoId: videoData.videoId,
-          clientName: "ANDROID_VR",
-          clientVersion: "1.65.10"
-        }).catch(() => "")
-        : Promise.resolve("")
-    ]);
-    const { serverAbrStreamingUrl: sabrUrl = "" } = videoData.sabrConfig ?? {};
-    setPoTokenCredentials({
-      poToken,
-      alternateClientPoToken,
-      sabrUrl,
-      videoId: videoData.videoId
-    });
-    sabrCredentials.value = {
-      url: sabrCredentials.value?.url || sabrUrl,
-      poToken
-    };
-    startPoTokenRefreshBroadcast(videoData.videoId);
-  } catch (error) {
-    console.warn("[ytdl] PO token generation failed:", error);
-  }
 }
 
 function readPlayerAudioLanguage() {

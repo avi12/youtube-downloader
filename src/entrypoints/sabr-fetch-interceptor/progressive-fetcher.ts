@@ -1,57 +1,10 @@
 import { buildRequestBody, performFetch } from "./progressive-request";
+import { buildResult } from "./progressive-result";
+import { waitForTemplate } from "./progressive-template";
 import { buildSyntheticTemplateFromPlayer } from "./template-builder";
 import type { ProgressiveCarryState, ProgressiveFetchResult, ProgressiveState } from "./types";
-import { buildContiguousBytes, ingestUmpResponse } from "./ump-ingestion";
+import { ingestUmpResponse } from "./ump-ingestion";
 import { NextRequestPolicy, PlaybackCookie, VideoPlaybackAbrRequest } from "googlevideo/protos";
-
-const POLL_INTERVAL_MS = 100;
-
-async function waitForTemplate({ timeoutMs }: { timeoutMs: number }) {
-  const deadlineAt = Date.now() + timeoutMs;
-  while (Date.now() < deadlineAt) {
-    const template = window.__ytdlSabrTemplate;
-    if (template) {
-      return template;
-    }
-
-    const synthesized = buildSyntheticTemplateFromPlayer();
-    if (synthesized) {
-      window.__ytdlSabrTemplate = synthesized;
-      return synthesized;
-    }
-
-    await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL_MS));
-  }
-  throw new Error("no SABR template captured within timeout");
-}
-
-function buildResult({ state, audioItag, videoItag, iterations, stalled }: {
-  state: ProgressiveState;
-  audioItag: number;
-  videoItag: number;
-  iterations: number;
-  stalled: boolean;
-}): ProgressiveFetchResult {
-  return {
-    audioBytes: buildContiguousBytes(state.audio),
-    videoBytes: buildContiguousBytes(state.video),
-    audioCoveredMs: state.audio.endMs,
-    videoCoveredMs: state.video.endMs,
-    audioItag,
-    videoItag,
-    iterations,
-    stalled,
-    carryState: {
-      audioEndMs: state.audio.endMs,
-      audioLastSeq: state.audio.lastSeq,
-      videoEndMs: state.video.endMs,
-      videoLastSeq: state.video.lastSeq,
-      audioSegmentBytes: state.audio.segmentBytes,
-      videoSegmentBytes: state.video.segmentBytes,
-      playbackCookieBytes: state.playbackCookieBytes
-    }
-  };
-}
 
 export async function fetchProgressive({ targetDurationMs, maxIterations, originalFetch, carryState }: {
   targetDurationMs: number;
@@ -127,7 +80,6 @@ export async function fetchProgressive({ targetDurationMs, maxIterations, origin
     const advanced = state.audio.endMs > beforeAudioEnd || state.video.endMs > beforeVideoEnd;
     if (!advanced) {
       stallStreak++;
-
       const refreshed = buildSyntheticTemplateFromPlayer();
       if (refreshed) {
         activeTemplateBody = refreshed.body;
