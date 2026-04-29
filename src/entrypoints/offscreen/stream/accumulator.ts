@@ -1,8 +1,24 @@
-import type { SegmentData, StreamAccumulator } from "./accumulator-types";
 import { base64ToUint8Array } from "./codec";
 import { StreamType } from "@/types";
 
-export type { SegmentData, StreamAccumulator } from "./accumulator-types";
+export interface AudioStream {
+  chunks: Map<number, Uint8Array>;
+  totalChunks: number;
+}
+
+export interface SegmentData {
+  videoChunks: Map<number, Uint8Array>;
+  totalVideoChunks: number;
+  audioChunks: Map<number, Uint8Array>;
+  totalAudioChunks: number;
+}
+
+export interface StreamAccumulator {
+  videoChunks: Map<number, Uint8Array>;
+  totalVideoChunks: number;
+  audioStreams: Map<string, AudioStream>;
+  segments: Map<number, SegmentData>;
+}
 
 export const STREAM_ACCUMULATORS = new Map<string, StreamAccumulator>();
 
