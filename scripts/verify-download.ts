@@ -293,7 +293,7 @@ async function main() {
       `${probe.format.format_name} with ${probe.streams.length} stream(s)`
     ) && allPassed;
 
-    if (isVideoContainer && videoStream) {
+    if (isVideoContainer && videoStream && audioStream) {
       console.log("\n  Running freeze detection (this may take a moment)...");
       const freezes = detectFreezes(download.path);
       const suspicious = freezes.filter(
