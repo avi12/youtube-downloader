@@ -1,14 +1,7 @@
-import GridProgressOverlay from "@/components/grid-progress/GridProgressOverlay.svelte";
-import PlaylistVideoItem from "@/components/playlist-downloader/PlaylistVideoItem.svelte";
+import { VIDEO_CARD_SELECTOR, isCardPending, mountGridButton } from "./grid-card-injector";
 import { CHILD_LIST_SUBTREE } from "@/lib/utils/dom";
-import { getVideoIdFromUrl } from "@/lib/youtube/youtube-url";
-import { mount, unmount } from "svelte";
 
-const Selector = {
-  VideoCard: "yt-lockup-view-model, ytd-rich-item-renderer, ytd-grid-video-renderer",
-  PageManager: "ytd-page-manager"
-} as const;
-
+const PAGE_MANAGER_SELECTOR = "ytd-page-manager";
 const VIEWPORT_MARGIN = "200px";
 
 let gridObserver: MutationObserver | null = null;
@@ -29,122 +22,6 @@ export function cleanupGridUi() {
   for (const elItem of document.querySelectorAll("[data-ytdl-grid-item], [data-ytdl-progress]")) {
     elItem.remove();
   }
-}
-
-// Returns the yt-lockup-view-model element and its shadow root (open, so accessible
-// from isolated world) so we can query inside native shadow DOM in Firefox.
-function getLockupRoot(elCard: Element): ShadowRoot | null {
-  const elLockup = elCard.tagName.toLowerCase() === "yt-lockup-view-model"
-    ? elCard
-    : elCard.querySelector("yt-lockup-view-model");
-  return elLockup?.shadowRoot ?? null;
-}
-
-function shadowFirst(elCard: Element, selector: string): Element | null {
-  return getLockupRoot(elCard)?.querySelector(selector) ?? elCard.querySelector(selector);
-}
-
-function extractVideoId(elCard: Element) {
-  // Set by the MAIN world grid-tagger on yt-lockup-view-model (required for Firefox native shadow DOM)
-  const elLockup = elCard.tagName.toLowerCase() === "yt-lockup-view-model"
-    ? elCard
-    : elCard.querySelector("yt-lockup-view-model");
-  const mainWorldId = elCard.getAttribute("data-ytdl-content-id")
-    ?? elLockup?.getAttribute("data-ytdl-content-id");
-  if (mainWorldId) {
-    return mainWorldId;
-  }
-
-  // Chrome: Polymer Shady DOM patches querySelector so inner shadow content is visible
-  const contentIdMatch = shadowFirst(elCard, "[class*='content-id-']")?.className.match(/content-id-(\S+)/);
-  if (contentIdMatch) {
-    return contentIdMatch[1];
-  }
-
-  const elLink = shadowFirst(elCard, "a#video-title-link, a#video-title, a[href*='/watch?v=']");
-  if (!(elLink instanceof HTMLAnchorElement)) {
-    return null;
-  }
-
-  return getVideoIdFromUrl(elLink.href);
-}
-
-function mountGridButton({ context, elCard }: {
-  context: InstanceType<typeof ContentScriptContext>;
-  elCard: Element;
-}) {
-  const videoId = extractVideoId(elCard);
-  if (!videoId) {
-    return;
-  }
-
-  // Duplicate check: injected container may be inside shadow root (Firefox)
-  const isDuplicate = (getLockupRoot(elCard) ?? elCard).querySelector(`[data-ytdl-grid-item="${videoId}"]`);
-  if (isDuplicate) {
-    return;
-  }
-
-  const gridTitle = shadowFirst(elCard, ".ytLockupMetadataViewModelTitle, #video-title-link, #video-title")?.textContent?.trim() ?? "";
-
-  const elItemContainer = document.createElement("div");
-  elItemContainer.dataset.ytdlGridItem = videoId;
-
-  const elHost = shadowFirst(elCard, ".ytLockupMetadataViewModelHost");
-  if (elHost) {
-    elHost.append(elItemContainer);
-  } else {
-    const elDismissible = shadowFirst(elCard, "#dismissible");
-    if (!elDismissible) {
-      return;
-    }
-
-    const elDetails = elDismissible.querySelector("#details");
-    if (elDetails) {
-      elDetails.insertAdjacentElement("afterend", elItemContainer);
-    } else {
-      elDismissible.append(elItemContainer);
-    }
-  }
-
-  const ui = createIntegratedUi(context, {
-    position: "inline",
-    anchor: elItemContainer,
-    onMount(elUiContainer) {
-      mount(PlaylistVideoItem, {
-        target: elUiContainer,
-        props: {
-          videoId,
-          gridTitle
-        }
-      });
-    }
-  });
-
-  ui.mount();
-
-  const elThumbnail = shadowFirst(elCard, ".ytLockupViewModelContentImage, ytd-thumbnail");
-  if (elThumbnail instanceof HTMLElement) {
-    elThumbnail.style.position = "relative";
-    const elProgressContainer = document.createElement("div");
-    elProgressContainer.dataset.ytdlProgress = videoId;
-    elProgressContainer.style.cssText = "position:absolute;inset-block-end:0;inline-size:100%";
-    elThumbnail.append(elProgressContainer);
-    overlayInstances.set(
-      videoId, mount(GridProgressOverlay, {
-        target: elProgressContainer,
-        props: { videoId }
-      })
-    );
-  }
-}
-
-function isCardPending(elCard: Element) {
-  const videoId = extractVideoId(elCard);
-  if (!videoId) {
-    return false;
-  }
-
-  return !(getLockupRoot(elCard) ?? elCard).querySelector(`[data-ytdl-grid-item="${videoId}"]`);
 }
 
 function createVisibilityObserver(context: InstanceType<typeof ContentScriptContext>) {
@@ -171,7 +48,7 @@ function observePendingCards() {
     return;
   }
 
-  for (const elCard of document.querySelectorAll(Selector.VideoCard)) {
+  for (const elCard of document.querySelectorAll(VIDEO_CARD_SELECTOR)) {
     if (isCardPending(elCard)) {
       visibilityObserver.observe(elCard);
     }
@@ -185,12 +62,8 @@ export function injectGridVideoButtons(context: InstanceType<typeof ContentScrip
   gridObserver?.disconnect();
   gridObserver = new MutationObserver(observePendingCards);
 
-  const elPageContent = document.querySelector(Selector.PageManager) ?? document.body;
-  gridObserver.observe(elPageContent, {
-    ...CHILD_LIST_SUBTREE,
-    attributes: true,
-    attributeFilter: ["data-ytdl-content-id"]
-  });
+  const elPageContent = document.querySelector(PAGE_MANAGER_SELECTOR) ?? document.body;
+  gridObserver.observe(elPageContent, CHILD_LIST_SUBTREE);
   context.onInvalidated(() => {
     gridObserver?.disconnect();
     visibilityObserver?.disconnect();

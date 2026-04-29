@@ -1,32 +1,14 @@
+import type { SegmentData, StreamAccumulator } from "./accumulator-types";
 import { base64ToUint8Array } from "./codec";
 import { StreamType } from "@/types";
 
-interface AudioStream {
-  chunks: Map<number, Uint8Array>;
-  totalChunks: number;
-}
-
-export interface SegmentData {
-  videoChunks: Map<number, Uint8Array>;
-  totalVideoChunks: number;
-  audioChunks: Map<number, Uint8Array>;
-  totalAudioChunks: number;
-}
-
-export interface StreamAccumulator {
-  videoChunks: Map<number, Uint8Array>;
-  totalVideoChunks: number;
-  audioStreams: Map<string, AudioStream>;
-  // iframe-scrub multi-segment downloads land here, keyed by segment index.
-  // Each segment is a self-contained fMP4/WebM (init + its own fragments).
-  segments: Map<number, SegmentData>;
-}
+export type { SegmentData, StreamAccumulator } from "./accumulator-types";
 
 export const STREAM_ACCUMULATORS = new Map<string, StreamAccumulator>();
 
 const SEGMENT_STREAM_PATTERN = /^(video|audio)-seg-(\d+)$/;
 
-function ensureSegment(accumulator: StreamAccumulator, index: number) {
+function ensureSegment(accumulator: StreamAccumulator, index: number): SegmentData {
   if (!accumulator.segments.has(index)) {
     accumulator.segments.set(index, {
       videoChunks: new Map(),
@@ -36,7 +18,66 @@ function ensureSegment(accumulator: StreamAccumulator, index: number) {
     });
   }
 
-  return accumulator.segments.get(index);
+  return accumulator.segments.get(index)!;
+}
+
+function handleSegmentChunk(
+  segment: SegmentData,
+  kind: string,
+  iChunk: number,
+  totalChunks: number,
+  chunkBase64: string
+) {
+  if (iChunk === -1) {
+    if (kind === "video") {
+      segment.totalVideoChunks = totalChunks;
+    } else {
+      segment.totalAudioChunks = totalChunks;
+    }
+
+    return;
+  }
+
+  const decoded = base64ToUint8Array(chunkBase64);
+  if (kind === "video") {
+    segment.videoChunks.set(iChunk, decoded);
+
+    if (totalChunks > 0) {
+      segment.totalVideoChunks = totalChunks;
+    }
+  } else {
+    segment.audioChunks.set(iChunk, decoded);
+
+    if (totalChunks > 0) {
+      segment.totalAudioChunks = totalChunks;
+    }
+  }
+}
+
+function handleAudioChunk(
+  accumulator: StreamAccumulator,
+  streamType: string,
+  iChunk: number,
+  totalChunks: number,
+  decoded: Uint8Array
+) {
+  if (!accumulator.audioStreams.has(streamType)) {
+    accumulator.audioStreams.set(streamType, {
+      chunks: new Map(),
+      totalChunks: 0
+    });
+  }
+
+  const audioStream = accumulator.audioStreams.get(streamType);
+  if (!audioStream) {
+    return;
+  }
+
+  audioStream.chunks.set(iChunk, decoded);
+
+  if (totalChunks > 0) {
+    audioStream.totalChunks = totalChunks;
+  }
 }
 
 export function handleProcessStreamChunk(data: {
@@ -57,50 +98,14 @@ export function handleProcessStreamChunk(data: {
     });
   }
 
-  const accumulator = STREAM_ACCUMULATORS.get(videoId);
-  if (!accumulator) {
-    return;
-  }
-
+  const accumulator = STREAM_ACCUMULATORS.get(videoId)!;
   const segMatch = streamType.match(SEGMENT_STREAM_PATTERN);
   if (segMatch) {
     const [, kind, indexStr] = segMatch;
-    const segmentIndex = parseInt(indexStr, 10);
-    const segment = ensureSegment(accumulator, segmentIndex);
-    if (!segment) {
-      return;
-    }
-
-    if (iChunk === -1) {
-      if (kind === "video") {
-        segment.totalVideoChunks = totalChunks;
-      } else {
-        segment.totalAudioChunks = totalChunks;
-      }
-
-      return;
-    }
-
-    const decodedSegChunk = base64ToUint8Array(chunkBase64);
-    if (kind === "video") {
-      segment.videoChunks.set(iChunk, decodedSegChunk);
-
-      if (totalChunks > 0) {
-        segment.totalVideoChunks = totalChunks;
-      }
-    } else {
-      segment.audioChunks.set(iChunk, decodedSegChunk);
-
-      if (totalChunks > 0) {
-        segment.totalAudioChunks = totalChunks;
-      }
-    }
-
+    handleSegmentChunk(ensureSegment(accumulator, parseInt(indexStr, 10)), kind, iChunk, totalChunks, chunkBase64);
     return;
   }
 
-  // iChunk === -1 is a final marker that sets totalChunks for streaming SabrDownload
-  // where total is unknown during transfer.
   if (iChunk === -1) {
     if (streamType === StreamType.Video) {
       accumulator.totalVideoChunks = totalChunks;
@@ -114,30 +119,14 @@ export function handleProcessStreamChunk(data: {
     return;
   }
 
-  const decodedChunk = base64ToUint8Array(chunkBase64);
+  const decoded = base64ToUint8Array(chunkBase64);
   if (streamType === StreamType.Video) {
-    accumulator.videoChunks.set(iChunk, decodedChunk);
+    accumulator.videoChunks.set(iChunk, decoded);
 
     if (totalChunks > 0) {
       accumulator.totalVideoChunks = totalChunks;
     }
   } else {
-    if (!accumulator.audioStreams.has(streamType)) {
-      accumulator.audioStreams.set(streamType, {
-        chunks: new Map(),
-        totalChunks: 0
-      });
-    }
-
-    const audioStream = accumulator.audioStreams.get(streamType);
-    if (!audioStream) {
-      return;
-    }
-
-    audioStream.chunks.set(iChunk, decodedChunk);
-
-    if (totalChunks > 0) {
-      audioStream.totalChunks = totalChunks;
-    }
+    handleAudioChunk(accumulator, streamType, iChunk, totalChunks, decoded);
   }
 }
