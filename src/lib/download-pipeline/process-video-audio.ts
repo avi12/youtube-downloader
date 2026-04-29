@@ -8,6 +8,73 @@ import type { ProcessStreamData } from "@/types";
 
 const FFMPEG_PROGRESS_CAP = 0.99;
 
+async function handleMissingStream({
+  videoData,
+  audioData,
+  filenameOutput,
+  videoId,
+  tabId,
+  metadata
+}: {
+  videoData: Uint8Array | null;
+  audioData: Uint8Array | null;
+  filenameOutput: string;
+  videoId: string;
+  tabId: number;
+  metadata: ProcessStreamData["metadata"];
+}) {
+  const recentContext = {
+    videoId,
+    title: metadata?.title ?? filenameOutput,
+    channel: metadata?.artist ?? "",
+    thumbnailUrl: metadata?.thumbnailUrl
+  };
+  const data = videoData ?? audioData;
+  if (data) {
+    await triggerDownload({
+      data,
+      filenameOutput,
+      recentContext
+    });
+  }
+
+  await reportProgress({
+    videoId,
+    progress: 1,
+    progressType: ProgressType.FFmpeg,
+    tabId
+  });
+}
+
+function cleanupFfmpegFiles({
+  videoFilename,
+  primaryAudioFilename,
+  outputFilename,
+  extraAudioTracks,
+  subtitleFiles
+}: {
+  videoFilename: string;
+  primaryAudioFilename: string;
+  outputFilename: string;
+  extraAudioTracks: Array<{ filename: string }>;
+  subtitleFiles: Array<{ filename: string }>;
+}) {
+  const ffmpeg = getFFmpeg();
+  for (const filename of [videoFilename, primaryAudioFilename, outputFilename]) {
+    tryUnlink({
+      ffmpeg,
+      filename
+    });
+  }
+
+  for (const { filename } of [...extraAudioTracks, ...subtitleFiles]) {
+    tryUnlink({
+      ffmpeg,
+      filename
+    });
+  }
+}
+
 export async function processVideoAudio(item: ProcessStreamData) {
   const {
     videoId, filenameOutput, videoMimeType, audioMimeType, tabId, additionalAudioStreams, subtitleStreams
@@ -21,7 +88,6 @@ export async function processVideoAudio(item: ProcessStreamData) {
       audioMimeType,
       isExtraTracksPresent
     });
-  const ffmpeg = getFFmpeg();
 
   function handleFFmpegProgress({ progress }: { progress: number }) {
     void reportProgress({
@@ -49,31 +115,13 @@ export async function processVideoAudio(item: ProcessStreamData) {
       item
     });
     if (!videoData || !audioData) {
-      const recentContext = {
+      await handleMissingStream({
+        videoData,
+        audioData,
+        filenameOutput,
         videoId,
-        title: item.metadata?.title ?? filenameOutput,
-        channel: item.metadata?.artist ?? "",
-        thumbnailUrl: item.metadata?.thumbnailUrl
-      };
-      if (videoData) {
-        await triggerDownload({
-          data: videoData,
-          filenameOutput,
-          recentContext
-        });
-      } else if (audioData) {
-        await triggerDownload({
-          data: audioData,
-          filenameOutput,
-          recentContext
-        });
-      }
-
-      await reportProgress({
-        videoId,
-        progress: 1,
-        progressType: ProgressType.FFmpeg,
-        tabId
+        tabId,
+        metadata: item.metadata
       });
       return;
     }
@@ -104,18 +152,12 @@ export async function processVideoAudio(item: ProcessStreamData) {
     });
   } finally {
     progressHandlers.delete(handleFFmpegProgress);
-    for (const filename of [videoFilename, primaryAudioFilename, outputFilename]) {
-      tryUnlink({
-        ffmpeg,
-        filename
-      });
-    }
-
-    for (const { filename } of [...extraAudioTracks, ...subtitleFiles]) {
-      tryUnlink({
-        ffmpeg,
-        filename
-      });
-    }
+    cleanupFfmpegFiles({
+      videoFilename,
+      primaryAudioFilename,
+      outputFilename,
+      extraAudioTracks,
+      subtitleFiles
+    });
   }
 }
