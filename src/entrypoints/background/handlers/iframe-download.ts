@@ -45,11 +45,11 @@ export async function downloadViaWatchPage({ data, tabId }: {
   data: DownloadRequest;
   tabId: number;
 }) {
-  await enqueueToPopupList({
+  await enqueueToPopupList([{
     videoId: data.videoId,
     type: data.type,
     filenameOutput: data.filenameOutput
-  });
+  }]);
 
   try {
     const { iframeTabId, iframeFrameId } = await prepareIframe({ data });

@@ -1,34 +1,45 @@
 import { musicListItem, videoDetailsItem, videoOnlyListItem, videoQueueItem } from "@/lib/storage/storage";
 import { DownloadType } from "@/types";
 
-export async function enqueueToPopupList({ videoId, type, filenameOutput }: {
+export async function enqueueToPopupList(items: Array<{
   videoId: string;
   type: DownloadType;
   filenameOutput: string;
-}) {
-  const details = await videoDetailsItem.getValue();
-  details[videoId] = { filenameOutput };
-  await videoDetailsItem.setValue(details);
+}>) {
+  const [details, queue, musicList, videoOnlyList] = await Promise.all([
+    videoDetailsItem.getValue(),
+    videoQueueItem.getValue(),
+    musicListItem.getValue(),
+    videoOnlyListItem.getValue()
+  ]);
 
-  if (type === DownloadType.VideoAndAudio) {
-    const queue = await videoQueueItem.getValue();
-    if (!queue.some(item => item.videoId === videoId)) {
-      queue.push({
-        videoId,
-        filenameOutput
-      });
-      await videoQueueItem.setValue(queue);
+  for (const { videoId, type, filenameOutput } of items) {
+    details[videoId] = { filenameOutput };
+
+    if (type === DownloadType.VideoAndAudio) {
+      if (!queue.some(item => item.videoId === videoId)) {
+        queue.push({
+          videoId,
+          filenameOutput
+        });
+      }
+    } else if (type === DownloadType.Audio) {
+      if (!musicList.includes(videoId)) {
+        musicList.push(videoId);
+      }
+    } else {
+      if (!videoOnlyList.includes(videoId)) {
+        videoOnlyList.push(videoId);
+      }
     }
-
-    return;
   }
 
-  const listItem = type === DownloadType.Audio ? musicListItem : videoOnlyListItem;
-  const list = await listItem.getValue();
-  if (!list.includes(videoId)) {
-    list.push(videoId);
-    await listItem.setValue(list);
-  }
+  await Promise.all([
+    videoDetailsItem.setValue(details),
+    videoQueueItem.setValue(queue),
+    musicListItem.setValue(musicList),
+    videoOnlyListItem.setValue(videoOnlyList)
+  ]);
 }
 
 export async function removeFromPopupList(videoIds: string | string[]) {

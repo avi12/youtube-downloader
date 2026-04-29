@@ -22,11 +22,11 @@ async function updateStatusProgress({ mutate, progressUpdate, tabId }: {
 export function registerPipelineProgressHandlers() {
   onMessage(MessageType.PipelineStart, async ({ data }) => {
     if (!cancelledVideoIds.has(data.videoId)) {
-      await enqueueToPopupList({
+      await enqueueToPopupList([{
         videoId: data.videoId,
         type: data.type,
         filenameOutput: data.filenameOutput
-      });
+      }]);
     }
 
     cancelledVideoIds.delete(data.videoId);

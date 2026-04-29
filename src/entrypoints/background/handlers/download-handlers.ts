@@ -3,6 +3,7 @@ import { removeHostedIframe } from "../iframe-host/iframe-host";
 import { enqueueToPopupList, removeFromPopupList } from "../queue/popup-list";
 import { signalVideoComplete } from "../queue/sequential-queue";
 import { cancelDownloads, getTabIdsForVideo, trackVideoForTab } from "../queue/tab-tracker";
+import { cancelIframeScrubSession } from "../scrub/orchestrator";
 import {
   dispatchParallel,
   dispatchSequentially,
@@ -10,7 +11,6 @@ import {
   downloadViaWatchPage,
   initIframeReadyListener
 } from "./iframe-download";
-import { cancelIframeScrubSession } from "../scrub/orchestrator";
 import { markVideosCancelled } from "./pipeline-handlers";
 import { registerProxyFetchHandler } from "./proxy-fetch-handler";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
@@ -47,13 +47,13 @@ export function registerDownloadHandlers() {
     currentSequenceAbort = null;
     currentSequenceTabId = tabId;
 
-    for (const item of data.items) {
-      await enqueueToPopupList({
+    await enqueueToPopupList(
+      data.items.map(item => ({
         videoId: item.videoId,
         type: item.type,
         filenameOutput: item.filenameOutput
-      });
-    }
+      }))
+    );
 
     currentSequenceAbort = new AbortController();
 
@@ -115,11 +115,11 @@ export function registerDownloadHandlers() {
       videoId: data.videoId,
       tabId
     });
-    await enqueueToPopupList({
+    await enqueueToPopupList([{
       videoId: data.videoId,
       type: data.type,
       filenameOutput: data.filenameOutput
-    });
+    }]);
     void startBackgroundDownload({
       request: data,
       tabId
