@@ -23,6 +23,7 @@
 - If a callback arrow function has a typed param, don't annotate the type explicitly
 - Avoid nested try/catch - flatten with early returns or extracted functions
 - Apply parallel modifications whenever possible
+- Keep functions focused on a single job - extract named helpers when a function does more than one distinct logical task
 - Use `Promise.all` for independent async operations instead of sequential `await`; never await sequentially when the calls have no data dependency on each other
 - Use destructuring whenever it will increase the code readability
 
