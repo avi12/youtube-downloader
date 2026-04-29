@@ -1,6 +1,6 @@
 import { registerChunkHandlers, registerStorageHandlers } from "./handlers/chunk-and-storage-handlers";
 import { registerDownloadHandlers } from "./handlers/download-handlers";
-import { registerIframeScrubOrchestrator } from "./handlers/iframe-scrub-orchestrator";
+import { registerIframeScrubOrchestrator } from "./scrub/orchestrator";
 import { registerPipelineHandlers } from "./handlers/pipeline-handlers";
 import { ensureProcessor } from "./handlers/processor";
 import { registerTabLifecycleHandlers } from "./handlers/tab-lifecycle";

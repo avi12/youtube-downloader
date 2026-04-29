@@ -1,4 +1,4 @@
-import { startIframeScrubSession } from "../handlers/iframe-scrub-orchestrator";
+import { startIframeScrubSession } from "../scrub/orchestrator";
 import { broadcastDebugLogToTab } from "@/lib/messaging/debug-log";
 import type { DownloadRequest } from "@/types";
 

@@ -6,8 +6,8 @@ import {
   makeIframeId,
   makeIframeKey,
   recordEmptyAfterRetries
-} from "./scrub-session-store";
-import type { ScrubSession } from "./scrub-session-store";
+} from "./session-store";
+import type { ScrubSession } from "./session-store";
 
 const MAX_RETRIES_PER_INDEX = 2;
 const IFRAME_DEADLINE_OVERHEAD_MS = 120_000;

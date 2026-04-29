@@ -1,15 +1,15 @@
-import { ensureProcessor } from "./processor";
-import { handleSegmentArrival } from "./scrub-segment-handler";
-import { releaseSession } from "./scrub-session-finalizer";
-import { buildSession, sessionsByVideoId } from "./scrub-session-store";
-import type { StartIframeScrubArgs } from "./scrub-session-store";
-import { fillGlobalSlots, logScrubOrchestratorEvent } from "./scrub-slot-filler";
+import { ensureProcessor } from "../handlers/processor";
+import { handleSegmentArrival } from "./segment-handler";
+import { releaseSession } from "./session-finalizer";
+import { buildSession, sessionsByVideoId } from "./session-store";
+import type { StartIframeScrubArgs } from "./session-store";
+import { fillGlobalSlots, logScrubOrchestratorEvent } from "./slot-filler";
 import { broadcastDebugLogToYouTubeTabs } from "@/lib/messaging/debug-log";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
 import { ScrubIframeMessageType, listenForScrubIframeMessages } from "@/lib/messaging/scrub-iframe-messaging";
 
-export type { SegmentArrival } from "./scrub-segment-handler";
-export type { StartIframeScrubArgs } from "./scrub-session-store";
+export type { SegmentArrival } from "./segment-handler";
+export type { StartIframeScrubArgs } from "./session-store";
 
 const DEFAULT_STEP_SEC = 35;
 

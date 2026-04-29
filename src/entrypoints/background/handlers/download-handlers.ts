@@ -10,7 +10,7 @@ import {
   downloadViaWatchPage,
   initIframeReadyListener
 } from "./iframe-download";
-import { cancelIframeScrubSession } from "./iframe-scrub-orchestrator";
+import { cancelIframeScrubSession } from "../scrub/orchestrator";
 import { markVideosCancelled } from "./pipeline-handlers";
 import { registerProxyFetchHandler } from "./proxy-fetch-handler";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
