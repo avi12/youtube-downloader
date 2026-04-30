@@ -71,4 +71,16 @@ export async function handleNavigateSuccess() {
 
     await new Promise(resolve => setTimeout(resolve, playerDataPollIntervalMs));
   }
+
+  // On full page loads, ytd-watch-flexy.playerData may not be set in time.
+  // Fall back to the initial player response embedded in the page HTML.
+  const initialResponse = window.ytInitialPlayerResponse ?? null;
+  const isFallbackReady = initialResponse?.videoDetails?.videoId === expectedVideoId
+    && initialResponse.playabilityStatus?.status !== "UNPLAYABLE";
+  if (isFallbackReady) {
+    await buildAndDispatchVideoData({
+      playerResponse: initialResponse,
+      cancelActiveDownload
+    });
+  }
 }
