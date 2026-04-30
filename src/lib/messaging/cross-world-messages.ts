@@ -25,9 +25,7 @@ export const CrossWorldMessage = {
   StartIframeScrub: "startIframeScrub",
   SabrTemplateCaptured: "sabrTemplateCaptured",
   PullSabrTemplate: "pullSabrTemplate",
-  RunProgressiveSabr: "runProgressiveSabr"
-} as const;
-
-export const CrossWorldSabrMessage = {
+  RunProgressiveSabr: "runProgressiveSabr",
+  RunScrubSabr: "runScrubSabr",
   SynthesizeSabrTemplate: "synthesizeSabrTemplate"
 } as const;

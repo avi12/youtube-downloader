@@ -1,4 +1,4 @@
-import { CrossWorldMessage, CrossWorldSabrMessage } from "./cross-world-messages";
+import { CrossWorldMessage } from "./cross-world-messages";
 import type {
   ButtonViewModelData,
   DownloadRequest,
@@ -87,6 +87,7 @@ export interface PageMessengerSchema {
     videoMimeType: string;
     audioMimeType: string;
     videoBufferStartSec?: number;
+    videoBufferEndSec?: number;
   }): void;
   [CrossWorldMessage.IframeScrubDebug](data: { msg: string }): void;
   [CrossWorldMessage.StartIframeScrub](data: {
@@ -114,10 +115,13 @@ export interface PageMessengerSchema {
     capturedAt: number;
   } | null;
   [CrossWorldMessage.RunProgressiveSabr](data: DownloadRequest): void;
-}
-
-export interface SabrPageMessengerSchema {
-  [CrossWorldSabrMessage.SynthesizeSabrTemplate](data: { playerTimeMs: number }): {
+  [CrossWorldMessage.RunScrubSabr](data: {
+    videoId: string;
+    scrubIndex: number;
+    startSec: number;
+    windowSec: number;
+  }): void;
+  [CrossWorldMessage.SynthesizeSabrTemplate](data: { playerTimeMs: number }): {
     url: string;
     bodyBase64: string;
     capturedAt: number;

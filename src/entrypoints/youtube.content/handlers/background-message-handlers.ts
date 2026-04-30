@@ -1,10 +1,5 @@
 import { setPlaylistContext, uncancelStreamTransfer } from "../download/stream-transfer";
-import {
-  CrossWorldMessage,
-  CrossWorldSabrMessage,
-  crossWorldMessenger,
-  crossWorldSabrMessenger
-} from "@/lib/messaging/cross-world-messenger";
+import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
 
 export function registerBackgroundMessageHandlers() {
@@ -66,8 +61,8 @@ export function registerBackgroundMessageHandlers() {
     return cachedSabrTemplate;
   });
 
-  onMessage(MessageType.SynthesizeSabrTemplateFromTab, ({ data }) => crossWorldSabrMessenger.sendMessage(
-    CrossWorldSabrMessage.SynthesizeSabrTemplate,
+  onMessage(MessageType.SynthesizeSabrTemplateFromTab, ({ data }) => crossWorldMessenger.sendMessage(
+    CrossWorldMessage.SynthesizeSabrTemplate,
     { playerTimeMs: data.playerTimeMs }
   ).catch(() => null));
 

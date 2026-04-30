@@ -1,2 +1,2 @@
-export { CrossWorldMessage, CrossWorldSabrMessage } from "./cross-world-messages";
-export type { PageMessengerSchema, SabrPageMessengerSchema } from "./cross-world-schema";
+export { CrossWorldMessage } from "./cross-world-messages";
+export type { PageMessengerSchema } from "./cross-world-schema";

@@ -1,13 +1,11 @@
-import { CrossWorldMessage, CrossWorldSabrMessage } from "./cross-world-messages";
-import type { PageMessengerSchema, SabrPageMessengerSchema } from "./cross-world-schema";
+import { CrossWorldMessage } from "./cross-world-messages";
+import type { PageMessengerSchema } from "./cross-world-schema";
 import { defineCustomEventMessaging } from "@webext-core/messaging/page";
 
-export { CrossWorldMessage, CrossWorldSabrMessage };
-export type { PageMessengerSchema, SabrPageMessengerSchema };
+export { CrossWorldMessage };
+export type { PageMessengerSchema };
 
 export const crossWorldMessenger = defineCustomEventMessaging<PageMessengerSchema>({ namespace: "ytdl" });
-
-export const crossWorldSabrMessenger = defineCustomEventMessaging<SabrPageMessengerSchema>({ namespace: "ytdl-sabr" });
 
 export type StreamDataPayload = Parameters<PageMessengerSchema[typeof CrossWorldMessage.StreamData]>[0];
 
