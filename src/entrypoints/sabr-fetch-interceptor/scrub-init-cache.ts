@@ -5,6 +5,13 @@ const cache = new Map<string, {
   audioInit: Uint8Array;
 }>();
 
+function getSourceBufferInits(): {
+  video?: Uint8Array;
+  audio?: Uint8Array;
+} {
+  return window.__ytdlSabrInits ?? {};
+}
+
 export function applyInitCache(
   videoId: string,
   videoBytes: Uint8Array,
@@ -16,17 +23,17 @@ export function applyInitCache(
   audioBytes: Uint8Array;
 } {
   const cached = cache.get(videoId);
+  const sbInits = getSourceBufferInits();
   const newVideoInit = extractInit(videoBytes, videoMimeType);
   const newAudioInit = extractInit(audioBytes, audioMimeType);
-  if (newVideoInit || newAudioInit) {
+  const videoInit = newVideoInit ?? sbInits.video ?? cached?.videoInit;
+  const audioInit = newAudioInit ?? sbInits.audio ?? cached?.audioInit;
+  if (videoInit || audioInit) {
     cache.set(videoId, {
-      videoInit: newVideoInit ?? cached?.videoInit ?? new Uint8Array(),
-      audioInit: newAudioInit ?? cached?.audioInit ?? new Uint8Array()
+      videoInit: videoInit ?? new Uint8Array(),
+      audioInit: audioInit ?? new Uint8Array()
     });
   }
-
-  const videoInit = newVideoInit ?? cached?.videoInit;
-  const audioInit = newAudioInit ?? cached?.audioInit;
 
   return {
     videoBytes: videoInit ? prependInitIfMissing(videoBytes, videoInit, videoMimeType) : videoBytes,

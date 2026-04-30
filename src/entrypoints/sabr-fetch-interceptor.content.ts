@@ -1,9 +1,10 @@
-import { getMoviePlayer, pickHighestQualityFormats } from "./sabr-fetch-interceptor/player-helpers";
+import { getMoviePlayer } from "./sabr-fetch-interceptor/player-helpers";
 import { fetchProgressive } from "./sabr-fetch-interceptor/progressive-fetcher";
 import { applyInitCache } from "./sabr-fetch-interceptor/scrub-init-cache";
 import { buildSyntheticTemplateFromPlayer, capturedTemplateToBase64 } from "./sabr-fetch-interceptor/template-builder";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { uint8ToBase64 } from "@/lib/utils/binary";
+import { extractInit } from "@/lib/utils/media-init";
 import { AD_SHOWING_SELECTOR } from "@/lib/youtube/player-selectors";
 import { ClientAbrState, VideoPlaybackAbrRequest } from "googlevideo/protos";
 
@@ -15,6 +16,49 @@ export default defineContentScript({
   runAt: "document_start",
   allFrames: true,
   main() {
+    // Hook MediaSource.addSourceBuffer + SourceBuffer.appendBuffer to capture init segments
+    // (ftyp+moov / EBML header) from the player's own first appends. The SABR server won't
+    // re-send the init to our synthetic requests (server tracks session state per-session),
+    // so we intercept it here before the player processes the data.
+    const sbMimeTypes = new WeakMap<SourceBuffer, string>();
+    const originalAddSourceBuffer = MediaSource.prototype.addSourceBuffer;
+    MediaSource.prototype.addSourceBuffer = function (mimeType: string) {
+      const sourceBuffer = originalAddSourceBuffer.call(this, mimeType);
+      sbMimeTypes.set(sourceBuffer, mimeType);
+      return sourceBuffer;
+    };
+
+    const originalAppendBuffer = SourceBuffer.prototype.appendBuffer;
+    SourceBuffer.prototype.appendBuffer = function (data: BufferSource) {
+      try {
+        const mime = sbMimeTypes.get(this) ?? "";
+        const isVideo = mime.startsWith("video/");
+        const isAudio = mime.startsWith("audio/");
+        const inits = window.__ytdlSabrInits;
+        if ((isVideo && !inits?.video) || (isAudio && !inits?.audio)) {
+          let bytes: Uint8Array;
+          if (ArrayBuffer.isView(data)) {
+            bytes = new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
+          } else {
+            bytes = new Uint8Array(data);
+          }
+
+          const initBytes = extractInit(bytes, mime);
+          if (initBytes && initBytes.byteLength > 0) {
+            window.__ytdlSabrInits = {
+              ...inits,
+              ...(isVideo ? { video: initBytes } : {}),
+              ...(isAudio ? { audio: initBytes } : {})
+            };
+          }
+        }
+      } catch (_) {
+        // never break the player
+      }
+
+      return originalAppendBuffer.call(this, data);
+    };
+
     const originalFetch = globalThis.fetch.bind(globalThis);
     const isFactoryFrame = location.search.includes("ytdlTrustFactoryMode=1");
 
@@ -108,9 +152,11 @@ export default defineContentScript({
         console.log(`[ytdl:scrub-sabr] index=${scrubIndex} done audio=${result.audioBytes.byteLength}B video=${result.videoBytes.byteLength}B iter=${result.iterations} stalled=${result.stalled} coveredMs=${result.audioCoveredMs}`);
         const playerResponse = getMoviePlayer()?.getPlayerResponse?.();
         const adaptiveFormats = playerResponse?.streamingData?.adaptiveFormats ?? [];
-        const { audio, video } = pickHighestQualityFormats(adaptiveFormats);
-        const videoMimeType = video?.mimeType?.split(";")[0] ?? "";
-        const audioMimeType = audio?.mimeType?.split(";")[0] ?? "";
+        // Look up by the itag that SABR actually fetched, not the highest-quality format
+        const videoFormat = adaptiveFormats.find(format => format.itag === result.videoItag) ?? null;
+        const audioFormat = adaptiveFormats.find(format => format.itag === result.audioItag) ?? null;
+        const videoMimeType = videoFormat?.mimeType?.split(";")[0] ?? "";
+        const audioMimeType = audioFormat?.mimeType?.split(";")[0] ?? "";
         const { videoBytes, audioBytes } = applyInitCache(
           videoId,
           result.videoBytes,

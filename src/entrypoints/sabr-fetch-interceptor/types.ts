@@ -68,5 +68,9 @@ declare global {
     ytcfg?: YtcfgRoot;
     ytInitialPlayerResponse?: PlayerResponse;
     __ytdlCapturedPoToken?: string;
+    __ytdlSabrInits?: {
+      video?: Uint8Array;
+      audio?: Uint8Array;
+    };
   }
 }
