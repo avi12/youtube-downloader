@@ -4,12 +4,11 @@ import {
   patchAddSourceBuffer,
   patchAppendBuffer
 } from "./sourcebuffer-capture/sourcebuffer-patches";
-import { RUN_AT_DOCUMENT_START } from "@/lib/utils/dom";
 
 export default defineContentScript({
   matches: ["https://www.youtube.com/*"],
   world: browser.scripting.ExecutionWorld.MAIN,
-  runAt: RUN_AT_DOCUMENT_START,
+  runAt: "document_start",
   allFrames: true,
   main() {
     if (self !== top && !location.search.includes("ytdl=1")) {
