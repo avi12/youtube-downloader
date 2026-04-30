@@ -12,7 +12,7 @@ const GOOGLEVIDEO_HOST_FRAGMENT = "googlevideo.com/videoplayback";
 
 export default defineContentScript({
   matches: ["https://www.youtube.com/*"],
-  world: browser.scripting.ExecutionWorld.MAIN,
+  world: "MAIN",
   runAt: "document_start",
   allFrames: true,
   main() {

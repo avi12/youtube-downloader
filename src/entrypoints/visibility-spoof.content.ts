@@ -2,7 +2,7 @@
 // spoof visibility/focus/frame so it always streams.
 export default defineContentScript({
   matches: ["https://www.youtube.com/*"],
-  world: browser.scripting.ExecutionWorld.MAIN,
+  world: "MAIN",
   runAt: "document_start",
   allFrames: true,
   main() {

@@ -7,7 +7,7 @@
 // the spoofed value and any [Constant, Cached] webidl cache seats on false.
 export default defineContentScript({
   matches: ["https://www.youtube.com/*"],
-  world: browser.scripting.ExecutionWorld.MAIN,
+  world: "MAIN",
   runAt: "document_start",
   allFrames: true,
   main() {
