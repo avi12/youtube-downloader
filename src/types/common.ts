@@ -8,6 +8,7 @@ export type ScrubSegment = {
   video: Uint8Array;
   audio: Uint8Array;
   videoBufferStartSec?: number;
+  videoBufferEndSec?: number;
 };
 
 export type VideoMetadata = {

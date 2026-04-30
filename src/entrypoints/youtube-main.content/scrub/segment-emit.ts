@@ -18,7 +18,7 @@ function postToHost(payload: unknown, transferables: Transferable[] = []) {
   try {
     parent.postMessage(payload, "*", transferables);
   } catch {
-    // best-effort
+    // cross-origin postMessage may throw in some contexts
   }
 }
 
@@ -56,11 +56,12 @@ export function sendEmptyResult({ videoId, scrubIndex }: {
   });
 }
 
-export function emitCapturedSegment({ videoId, scrubIndex, captured, videoBufferStartSec }: {
+export function emitCapturedSegment({ videoId, scrubIndex, captured, videoBufferStartSec, videoBufferEndSec }: {
   videoId: string;
   scrubIndex: number;
   captured: NonNullable<ReturnType<NonNullable<typeof window.__ytdlCapture>["capturedMedia"]["get"]>>;
   videoBufferStartSec?: number;
+  videoBufferEndSec?: number;
 }) {
   const videoConcat = concatChunks(captured.videoChunks);
   const audioConcat = concatChunks(captured.audioChunks);
@@ -72,7 +73,8 @@ export function emitCapturedSegment({ videoId, scrubIndex, captured, videoBuffer
     audioBytes: audioConcat,
     videoMimeType: captured.videoMimeType,
     audioMimeType: captured.audioMimeType,
-    videoBufferStartSec
+    videoBufferStartSec,
+    videoBufferEndSec
   });
 
   // Slice the underlying buffers so we don't transfer the whole pool when
@@ -94,6 +96,7 @@ export function emitCapturedSegment({ videoId, scrubIndex, captured, videoBuffer
     audioBuffer,
     videoMimeType: captured.videoMimeType,
     audioMimeType: captured.audioMimeType,
-    videoBufferStartSec
+    videoBufferStartSec,
+    videoBufferEndSec
   }, [videoBuffer, audioBuffer]);
 }

@@ -23,16 +23,19 @@ type StreamEndData = {
   segmentDurationSec?: number;
   totalDurationSec?: number;
   segmentVideoBufferStartSecs?: (number | undefined)[];
+  segmentVideoBufferEndSecs?: (number | undefined)[];
 };
 
 function assembleSegments({
   accumulator,
   segmentCount,
-  segmentVideoBufferStartSecs
+  segmentVideoBufferStartSecs,
+  segmentVideoBufferEndSecs
 }: {
   accumulator: StreamAccumulator;
   segmentCount: number;
   segmentVideoBufferStartSecs?: (number | undefined)[];
+  segmentVideoBufferEndSecs?: (number | undefined)[];
 }): ScrubSegment[] | undefined {
   if (!accumulator.segments.size) {
     return undefined;
@@ -57,7 +60,8 @@ function assembleSegments({
       ordered.push({
         video,
         audio,
-        videoBufferStartSec: segmentVideoBufferStartSecs?.[i]
+        videoBufferStartSec: segmentVideoBufferStartSecs?.[i],
+        videoBufferEndSec: segmentVideoBufferEndSecs?.[i]
       });
     }
   }
@@ -93,7 +97,8 @@ export function handleProcessStreamEnd(data: StreamEndData) {
   const {
     videoId, type, filenameOutput, videoMimeType, audioMimeType, audioTrackLabels,
     subtitleStreams = [], tabId, playlistId, playlistTitle, playlistTotalCount,
-    segmentCount, segmentDurationSec, totalDurationSec, segmentVideoBufferStartSecs
+    segmentCount, segmentDurationSec, totalDurationSec, segmentVideoBufferStartSecs,
+    segmentVideoBufferEndSecs
   } = data;
 
   const accumulator = STREAM_ACCUMULATORS.get(videoId);
@@ -107,7 +112,8 @@ export function handleProcessStreamEnd(data: StreamEndData) {
     ? assembleSegments({
       accumulator,
       segmentCount,
-      segmentVideoBufferStartSecs
+      segmentVideoBufferStartSecs,
+      segmentVideoBufferEndSecs
     })
     : undefined;
 

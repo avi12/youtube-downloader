@@ -7,6 +7,7 @@ export type ValidSegment = {
   video: Uint8Array;
   audio: Uint8Array;
   startSec: number;
+  videoBufferEndSec?: number;
 };
 
 export function buildValidSegments(
@@ -22,12 +23,13 @@ export function buildValidSegments(
     }
 
     const startSec = iSegment * step;
-    logEvent(`[ytdl:pipeline] segment ${iSegment} startSec=${startSec} video=${segment.video.byteLength}B audio=${segment.audio.byteLength}B`);
+    logEvent(`[ytdl:pipeline] segment ${iSegment} startSec=${startSec} video=${segment.video.byteLength}B audio=${segment.audio.byteLength}B bufEnd=${segment.videoBufferEndSec?.toFixed(1) ?? "?"}`);
     validSegments.push({
       index: iSegment,
       video: segment.video,
       audio: segment.audio,
-      startSec
+      startSec,
+      videoBufferEndSec: segment.videoBufferEndSec
     });
   }
 

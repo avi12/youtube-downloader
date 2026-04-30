@@ -39,6 +39,7 @@ export interface OffscreenProtocolMap {
     segmentDurationSec?: number;
     totalDurationSec?: number;
     segmentVideoBufferStartSecs?: (number | undefined)[];
+    segmentVideoBufferEndSecs?: (number | undefined)[];
   };
   [OffscreenMessageType.CancelProcessing]: {
     videoIds: string[];

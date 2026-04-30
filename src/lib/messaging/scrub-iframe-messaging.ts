@@ -38,6 +38,7 @@ interface ScrubIframeProtocolMap {
     videoMimeType: string;
     audioMimeType: string;
     videoBufferStartSec?: number;
+    videoBufferEndSec?: number;
   };
 }
 

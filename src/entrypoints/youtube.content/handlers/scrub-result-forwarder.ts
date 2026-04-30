@@ -30,7 +30,8 @@ export function registerScrubResultForwarder() {
       audioBase64: uint8ToBase64(data.audioBytes),
       videoMimeType: data.videoMimeType,
       audioMimeType: data.audioMimeType,
-      videoBufferStartSec: data.videoBufferStartSec
+      videoBufferStartSec: data.videoBufferStartSec,
+      videoBufferEndSec: data.videoBufferEndSec
     });
     sendScrubIframeMessage(ScrubIframeMessageType.Debug, {
       msg: `[ytdl:scrub-isolated] forwarded to BG index=${data.scrubIndex}`

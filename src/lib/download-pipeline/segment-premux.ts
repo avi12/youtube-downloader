@@ -10,6 +10,7 @@ export function muxSingleSegment({
     video: Uint8Array;
     audio: Uint8Array;
     startSec: number;
+    videoBufferEndSec?: number;
   };
   step: number;
   videoExt: string;
@@ -25,6 +26,9 @@ export function muxSingleSegment({
   ffmpeg.FS.writeFile(aFile, seg.audio);
   writtenPaths.push(vFile, aFile);
 
+  const videoHex = Array.from(seg.video.subarray(0, 16)).map(byte => byte.toString(16).padStart(2, "0")).join(" ");
+  const audioHex = Array.from(seg.audio.subarray(0, 16)).map(byte => byte.toString(16).padStart(2, "0")).join(" ");
+  logEvent(`[ytdl:pipeline] seg ${seg.index} video[0..16]=${videoHex} audio[0..16]=${audioHex}`);
   const videoStartSec = parseFmp4VideoStartSec(seg.video);
   const preroll = videoStartSec !== undefined
     ? Math.max(0, seg.startSec - videoStartSec)
@@ -46,10 +50,16 @@ export function muxSingleSegment({
 
   segMuxArgs.push("-avoid_negative_ts", "make_zero");
 
-  // Trim to step duration to strip buffer-ahead overshoot so adjacent
-  // segments don't overlap at the concat boundary.
-  if (step > 0) {
-    segMuxArgs.push("-t", String(step));
+  // Trim to actual captured duration so partial captures don't produce freeze
+  // frames. videoBufferEndSec is the HTMLVideoElement.buffered.end() after fill
+  // completes. When it's available, cap trimDuration to the actual media span
+  // so we never ask FFmpeg to encode silence/freeze beyond real data.
+  const capturedDuration = seg.videoBufferEndSec !== undefined
+    ? seg.videoBufferEndSec - seg.startSec
+    : step;
+  const trimDuration = step > 0 ? Math.min(step, Math.max(capturedDuration, 0)) : 0;
+  if (trimDuration > 0) {
+    segMuxArgs.push("-t", trimDuration.toFixed(3));
   }
 
   // Use the same container as the final output: MP4 for AV1 (avoids
@@ -58,7 +68,7 @@ export function muxSingleSegment({
   const segMuxFile = `tmp_seg_${seg.index}_muxed.${targetExt}`;
   segMuxArgs.push(segMuxFile);
 
-  logEvent(`[ytdl:pipeline] seg ${seg.index} pre-mux videoStart=${videoStartSec?.toFixed(3) ?? "?"} preroll=${preroll.toFixed(3)}s`);
+  logEvent(`[ytdl:pipeline] seg ${seg.index} pre-mux videoStart=${videoStartSec?.toFixed(3) ?? "?"} preroll=${preroll.toFixed(3)}s trim=${trimDuration.toFixed(3)}s bufEnd=${seg.videoBufferEndSec?.toFixed(1) ?? "?"}`);
   const segMuxExit = ffmpeg.exec(...segMuxArgs);
   if (segMuxExit !== 0) {
     logEvent(`[ytdl:pipeline] seg ${seg.index} pre-mux failed (exit ${segMuxExit}); skipping`);
