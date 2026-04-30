@@ -31,6 +31,8 @@ export async function tryIframeScrubFallback({ request, cdnRequest, videoId, tab
     additionalAudioFormats: cdnRequest.additionalAudioFormats,
     resolvedExtraAudioUrls: cdnRequest.resolvedExtraAudioUrls,
     captionTracks: cdnRequest.captionTracks,
+    videoFormat: request.videoFormat,
+    audioFormat: request.audioFormat,
     tabId
   });
   return true;

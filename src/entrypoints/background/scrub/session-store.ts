@@ -6,6 +6,7 @@ export interface ReceivedSegment {
   videoMimeType: string;
   audioMimeType: string;
   videoBufferStartSec?: number;
+  videoBufferEndSec?: number;
 }
 
 export interface SegmentArrival extends ReceivedSegment {
@@ -37,6 +38,8 @@ export interface ScrubSession {
   resolvedExtraAudioUrls: (string | null)[];
   captionTracks: CaptionTrack[];
   durationSec: number;
+  videoFormat?: AdaptiveFormatItem | null;
+  audioFormat?: AdaptiveFormatItem | null;
 }
 
 export interface StartIframeScrubArgs {
@@ -56,6 +59,8 @@ export interface StartIframeScrubArgs {
   additionalAudioFormats?: AdaptiveFormatItem[];
   resolvedExtraAudioUrls?: (string | null)[];
   captionTracks?: CaptionTrack[];
+  videoFormat?: AdaptiveFormatItem | null;
+  audioFormat?: AdaptiveFormatItem | null;
 }
 
 export const sessionsByVideoId = new Map<string, ScrubSession>();
@@ -95,7 +100,9 @@ export function buildSession(data: StartIframeScrubArgs, stepSec: number, expect
     additionalAudioFormats: data.additionalAudioFormats ?? [],
     resolvedExtraAudioUrls: data.resolvedExtraAudioUrls ?? [],
     captionTracks: data.captionTracks ?? [],
-    durationSec: data.durationSec
+    durationSec: data.durationSec,
+    videoFormat: data.videoFormat,
+    audioFormat: data.audioFormat
   };
 }
 
@@ -113,17 +120,4 @@ export function recordEmptyAfterRetries({ session, scrubIndex, logFn }: {
       audioMimeType: ""
     } satisfies ReceivedSegment
   );
-}
-
-export function rememberResolvedMimes({ session, segment }: {
-  session: ScrubSession;
-  segment: ReceivedSegment;
-}) {
-  if (!session.resolvedVideoMimeType && segment.videoMimeType) {
-    session.resolvedVideoMimeType = segment.videoMimeType;
-  }
-
-  if (!session.resolvedAudioMimeType && segment.audioMimeType) {
-    session.resolvedAudioMimeType = segment.audioMimeType;
-  }
 }

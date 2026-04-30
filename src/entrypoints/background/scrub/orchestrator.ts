@@ -8,7 +8,6 @@ import { broadcastDebugLogToYouTubeTabs } from "@/lib/messaging/debug-log";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
 import { ScrubIframeMessageType, listenForScrubIframeMessages } from "@/lib/messaging/scrub-iframe-messaging";
 
-export type { SegmentArrival } from "./segment-handler";
 export type { StartIframeScrubArgs } from "./session-store";
 
 const DEFAULT_STEP_SEC = 35;

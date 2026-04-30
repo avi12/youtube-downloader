@@ -5,8 +5,8 @@ import type { ReceivedSegment, SegmentArrival, ScrubSession } from "./session-st
 import { base64ToUint8Array } from "@/lib/utils/binary";
 
 const MAX_RETRIES_PER_INDEX = 2;
-const MIN_ACCEPTABLE_BYTES_PER_SEC = 8_000;
-const MIN_ACCEPTABLE_AUDIO_BYTES_PER_SEC = 2_000;
+const MIN_ACCEPTABLE_BYTES_PER_SEC = 50_000;
+const MIN_ACCEPTABLE_AUDIO_BYTES_PER_SEC = 16_000;
 
 function isSegmentTooSmall({ session, scrubIndex, videoBytes, audioBytes }: {
   session: ScrubSession;
@@ -19,8 +19,6 @@ function isSegmentTooSmall({ session, scrubIndex, videoBytes, audioBytes }: {
   return totalBytes < MIN_ACCEPTABLE_BYTES_PER_SEC * windowSec
     || audioBytes < MIN_ACCEPTABLE_AUDIO_BYTES_PER_SEC * windowSec;
 }
-
-export type { SegmentArrival };
 
 export async function handleSegmentArrival(
   data: SegmentArrival,
@@ -66,7 +64,8 @@ export async function handleSegmentArrival(
       audioBase64: data.audioBase64,
       videoMimeType: data.videoMimeType,
       audioMimeType: data.audioMimeType,
-      videoBufferStartSec: data.videoBufferStartSec
+      videoBufferStartSec: data.videoBufferStartSec,
+      videoBufferEndSec: data.videoBufferEndSec
     } satisfies ReceivedSegment
   );
 
