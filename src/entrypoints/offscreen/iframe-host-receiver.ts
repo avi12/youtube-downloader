@@ -1,9 +1,14 @@
-// Hosts iframes inside the Chrome offscreen document on behalf of the SW.
-// Chrome MV3 background workers have no DOM, so the orchestrator delegates
-// iframe creation here via offscreen-messaging port.
+// Hosts iframes inside the Chrome offscreen document (or Firefox processor tab)
+// on behalf of the SW. Chrome MV3 background workers have no DOM, so the
+// orchestrator delegates iframe creation here via offscreen-messaging port.
 // Position offscreen, NOT visibility:hidden - browsers pause media activity
 // in visibility:hidden frames.
+import { MessageType, sendMessage } from "@/lib/messaging/messaging";
+import { uint8ToBase64 } from "@/lib/utils/binary";
+
 const HIDDEN_IFRAME_STYLE = "position:fixed;left:-99999px;top:-99999px;width:480px;height:270px;border:0";
+const IFRAME_MSG_DEBUG = "ytdl:scrub-debug";
+const IFRAME_MSG_SEGMENT = "ytdl:scrub-segment";
 
 const iframesById = new Map<string, HTMLIFrameElement>();
 
@@ -50,4 +55,56 @@ export function forwardToIframe({ iframeId, payload }: {
     },
     "https://www.youtube.com"
   );
+}
+
+interface ScrubSegmentMessage {
+  type: typeof IFRAME_MSG_SEGMENT;
+  videoId: string;
+  scrubIndex: number;
+  videoBuffer: ArrayBuffer;
+  audioBuffer: ArrayBuffer;
+  videoMimeType: string;
+  audioMimeType: string;
+  videoBufferStartSec?: number;
+  videoBufferEndSec?: number;
+}
+
+function isScrubSegmentMessage(data: unknown): data is ScrubSegmentMessage {
+  if (typeof data !== "object" || data === null) {
+    return false;
+  }
+
+  return "type" in data && data.type === IFRAME_MSG_SEGMENT;
+}
+
+// Firefox doesn't inject isolated-world content scripts into iframes hosted
+// inside moz-extension:// pages, so the scrub-iframe port relay is unavailable.
+// MAIN-world scripts still run and use parent.postMessage to send segments here;
+// we forward them to the background via runtime messaging.
+export function initScrubIframeRelay() {
+  addEventListener("message", e => {
+    if (typeof e.data === "object" && e.data !== null && e.data.type === IFRAME_MSG_DEBUG) {
+      void sendMessage(MessageType.BgDebugLog, { msg: String(e.data.msg) });
+      return;
+    }
+
+    if (!isScrubSegmentMessage(e.data)) {
+      return;
+    }
+
+    const {
+      videoId, scrubIndex, videoBuffer, audioBuffer,
+      videoMimeType, audioMimeType, videoBufferStartSec, videoBufferEndSec
+    } = e.data;
+    void sendMessage(MessageType.IframeScrubSegmentReady, {
+      videoId,
+      scrubIndex,
+      videoBase64: uint8ToBase64(new Uint8Array(videoBuffer)),
+      audioBase64: uint8ToBase64(new Uint8Array(audioBuffer)),
+      videoMimeType,
+      audioMimeType,
+      videoBufferStartSec,
+      videoBufferEndSec
+    });
+  });
 }

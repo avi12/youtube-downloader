@@ -214,6 +214,8 @@ interface ProtocolMap {
     audioBase64: string;
     videoMimeType: string;
     audioMimeType: string;
+    videoBufferStartSec?: number;
+    videoBufferEndSec?: number;
   }): void;
 
   // BG asks a dedicated hidden scrub host tab to inject a scrub iframe into its DOM.

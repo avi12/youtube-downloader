@@ -1,4 +1,4 @@
-import { forwardToIframe, removeIframe, spawnIframe } from "./iframe-host-receiver";
+import { forwardToIframe, initScrubIframeRelay, removeIframe, spawnIframe } from "./iframe-host-receiver";
 import { handleProcessStreamChunk } from "./stream/accumulator";
 import { handleProcessStreamEnd } from "./stream/end-handler";
 import { cancelDownloadsByIds, initFFmpeg } from "@/lib/download-pipeline";
@@ -18,6 +18,7 @@ declare const createFFmpegCore: (
 // orchestrator's first runtime.connect (fired from emitSegmentChunks right
 // after signalFFmpegReady resolves ensureProcessor) hits a registered handler
 // instead of getting silently dropped.
+initScrubIframeRelay();
 listenForOffscreenMessages({
   [OffscreenMessageType.ProcessStreamChunk]: handleProcessStreamChunk,
   [OffscreenMessageType.ProcessStreamEnd]: handleProcessStreamEnd,

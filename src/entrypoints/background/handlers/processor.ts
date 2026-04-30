@@ -1,3 +1,4 @@
+import { setFirefoxInjectorProcessorTabId } from "../iframe-host/firefox-iframe-injector";
 import { broadcastDebugLogToYouTubeTabs } from "@/lib/messaging/debug-log";
 import { isFFmpegReadyItem } from "@/lib/storage/storage";
 
@@ -57,6 +58,7 @@ async function ensureFirefoxProcessorTab() {
   const existingTabs = await browser.tabs.query({ url: processorUrl });
   if (existingTabs.length > 0 && existingTabs[0].id !== undefined) {
     firefoxProcessorTabId = existingTabs[0].id;
+    setFirefoxInjectorProcessorTabId(firefoxProcessorTabId);
 
     const isAlreadyReady = await isFFmpegReadyItem.getValue();
     if (isAlreadyReady) {
@@ -94,6 +96,7 @@ async function ensureFirefoxProcessorTab() {
     active: false
   });
   firefoxProcessorTabId = tab.id ?? null;
+  setFirefoxInjectorProcessorTabId(firefoxProcessorTabId);
   void broadcastDebugLogToYouTubeTabs(`[ytdl:processor] processor tab created id=${firefoxProcessorTabId}, awaiting FFmpeg ready`);
   await ffmpegReady;
   void broadcastDebugLogToYouTubeTabs("[ytdl:processor] FFmpeg ready");
@@ -117,5 +120,6 @@ export function notifyFirefoxProcessorTabRemoved(tabId: number) {
   }
 
   firefoxProcessorTabId = null;
+  setFirefoxInjectorProcessorTabId(null);
   processorReady = null;
 }
