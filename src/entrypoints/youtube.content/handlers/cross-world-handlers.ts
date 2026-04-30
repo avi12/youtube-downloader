@@ -9,7 +9,7 @@ import { handlePageChange } from "../ui/page-router";
 import { mountPanelUi } from "../ui/panel-ui";
 import { registerProgressHandler } from "./progress-handler";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
-import { MessageType, sendMessage } from "@/lib/messaging/messaging";
+import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
 import { downloadProgressStore } from "@/lib/ui/synced-stores.svelte";
 import { forwardSabrCredentialsWithRetry } from "@/lib/youtube/sabr/credentials";
 
@@ -94,6 +94,23 @@ export function registerCrossWorldHandlers(
     CrossWorldMessage.ProxyFetch,
     ({ data }) => sendMessage(MessageType.BackgroundProxyFetch, data)
   );
+
+  onMessage(MessageType.MountScrubIframeInTab, ({ data }) => {
+    if (document.querySelector(`iframe[data-ytdl-scrub-iframe="${data.id}"]`)) {
+      return;
+    }
+
+    const iframe = document.createElement("iframe");
+    iframe.setAttribute("data-ytdl-scrub-iframe", data.id);
+    iframe.src = data.url;
+    iframe.setAttribute("allow", "autoplay; encrypted-media; clipboard-read");
+    iframe.setAttribute("style", "width:480px;height:270px;border:0;position:fixed;left:-9999px;top:-9999px;visibility:hidden");
+    document.body.append(iframe);
+  });
+
+  onMessage(MessageType.UnmountScrubIframeInTab, ({ data }) => {
+    document.querySelector(`iframe[data-ytdl-scrub-iframe="${data.id}"]`)?.remove();
+  });
 
   registerProgressHandler();
 }

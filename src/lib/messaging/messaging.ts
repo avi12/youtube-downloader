@@ -31,6 +31,8 @@ export const MessageType = {
   PipelineZipProgress: "pipelineZipProgress",
   StartIframeScrub: "startIframeScrub",
   IframeScrubSegmentReady: "iframeScrubSegmentReady",
+  MountScrubIframeInTab: "mountScrubIframeInTab",
+  UnmountScrubIframeInTab: "unmountScrubIframeInTab",
   BgDebugLog: "bgDebugLog",
   GetSabrTemplateFromTab: "getSabrTemplateFromTab",
   SabrTemplateReady: "sabrTemplateReady",
