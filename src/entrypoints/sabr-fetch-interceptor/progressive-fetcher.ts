@@ -50,13 +50,15 @@ function buildRequestBody({ templateBody, playerTimeMs, audio, video, playbackCo
     }
   }
 
-  if (playbackCookieBytes) {
-    if (!decoded.streamerContext) {
-      decoded.streamerContext = StreamerContext.decode(new Uint8Array());
-    }
-
-    decoded.streamerContext.playbackCookie = playbackCookieBytes;
+  // Always manage the playback cookie explicitly. The captured template body
+  // may contain the player's own session cookie (for a different playback
+  // position); including it would cause the server to reject requests that
+  // claim a different position than the cookie implies.
+  if (!decoded.streamerContext) {
+    decoded.streamerContext = StreamerContext.decode(new Uint8Array());
   }
+
+  decoded.streamerContext.playbackCookie = playbackCookieBytes ?? undefined;
 
   return VideoPlaybackAbrRequest.encode(decoded).finish();
 }
@@ -100,7 +102,17 @@ function ingestUmpResponse({ response, audio, video, audioItag, videoItag }: {
   videoItag: number;
 }) {
   const reader = new UmpReader(new CompositeBuffer([response]));
-  let pendingItag = -1;
+  // SABR interleaves MEDIA_HEADERs for audio and video before sending MEDIA
+  // parts. Using pendingItag (the last seen MEDIA_HEADER's itag) to route MEDIA
+  // parts is wrong when two headers arrive before any data - the second header
+  // overwrites pendingItag, misrouting all data from the first header.
+  // Use MediaHeader.headerId (embedded as the first byte of each MEDIA part) to
+  // correctly match each data chunk to its own header regardless of order.
+  type HeaderEntry = {
+    target: FormatProgress;
+    seq: number;
+  };
+  const headerMap = new Map<number, HeaderEntry>();
   let nextRequestPolicyBytes: Uint8Array | null = null;
   reader.read((part: {
     type: number;
@@ -111,10 +123,10 @@ function ingestUmpResponse({ response, audio, video, audioItag, videoItag }: {
     if (part.type === UMPPartId.MEDIA_HEADER) {
       const header = MediaHeader.decode(partBytes);
       const itag = header.itag ?? -1;
-      pendingItag = itag;
       const startMs = parseInt(header.startMs ?? "0", 10);
       const durMs = parseInt(header.durationMs ?? "0", 10);
       const endMs = startMs + durMs;
+      const seq = header.sequenceNumber ?? 0;
       let target: FormatProgress | null = null;
       if (itag === audioItag) {
         target = audio;
@@ -127,21 +139,21 @@ function ingestUmpResponse({ response, audio, video, audioItag, videoItag }: {
           target.endMs = endMs;
         }
 
-        if ((header.sequenceNumber ?? 0) > target.lastSeq) {
-          target.lastSeq = header.sequenceNumber ?? target.lastSeq;
+        if (seq > target.lastSeq) {
+          target.lastSeq = seq;
         }
+
+        headerMap.set(header.headerId ?? 0, {
+          target,
+          seq
+        });
       }
     } else if (part.type === UMPPartId.MEDIA) {
+      const headerId = partBytes[0] ?? 0;
       const payload = partBytes.subarray(1);
-      let target: FormatProgress | null = null;
-      if (pendingItag === audioItag) {
-        target = audio;
-      } else if (pendingItag === videoItag) {
-        target = video;
-      }
-
-      if (target) {
-        const seq = target.lastSeq;
+      const entry = headerMap.get(headerId);
+      if (entry) {
+        const { target, seq } = entry;
         const existing = target.segmentBytes.get(seq);
         if (existing) {
           const merged = new Uint8Array(existing.byteLength + payload.byteLength);
@@ -216,7 +228,7 @@ function updatePlaybackCookie(state: ProgressiveState, nextRequestPolicyBytes: U
       state.playbackCookieBytes = PlaybackCookie.encode(policy.playbackCookie).finish();
     }
   } catch (_) {
-    // ignore decode error; keep using prior cookie
+    // keep using prior cookie
   }
 }
 
@@ -317,11 +329,18 @@ async function runFetchIteration(
   };
 }
 
-export async function fetchProgressive({ targetDurationMs, maxIterations, originalFetch, carryState }: {
+export async function fetchProgressive({
+  targetDurationMs,
+  maxIterations,
+  originalFetch,
+  carryState,
+  initialPlayerTimeMs
+}: {
   targetDurationMs: number;
   maxIterations: number;
   originalFetch: typeof globalThis.fetch;
   carryState: ProgressiveCarryState | null;
+  initialPlayerTimeMs?: number;
 }): Promise<ProgressiveFetchResult> {
   const template = await waitForTemplate({ timeoutMs: 30_000 });
   const initial = VideoPlaybackAbrRequest.decode(template.body);
@@ -348,7 +367,7 @@ export async function fetchProgressive({ targetDurationMs, maxIterations, origin
     playbackCookieBytes: carryState?.playbackCookieBytes ?? null
   };
 
-  let playerTimeMs = Math.min(state.audio.endMs, state.video.endMs);
+  let playerTimeMs = initialPlayerTimeMs ?? Math.min(state.audio.endMs, state.video.endMs);
   let stallStreak = 0;
   let activeTemplateBody = template.body;
   let activeTemplateUrl = template.url;
