@@ -62,7 +62,7 @@ export function tryUnlink({ ffmpeg, filename }: {
   try {
     ffmpeg.FS.unlink(filename);
   } catch {
-    // ffmpeg never wrote file
+    // file was never written
   }
 }
 

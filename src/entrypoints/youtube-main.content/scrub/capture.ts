@@ -33,8 +33,6 @@ export function bindCaptureToVideoId(videoId: string, skipMediaFragments = false
     }
   }
 
-  // Flush pending pre-bind chunks. When an ad ran, skip large media fragments
-  // (wrong time position) but keep small init segments (required by FFmpeg).
   const capture = captureState.capturedMedia.get(videoId);
   if (capture) {
     for (const pending of captureState.pendingChunks) {

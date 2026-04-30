@@ -47,7 +47,7 @@ export default defineContentScript({
           }, "*");
         }
       } catch {
-        // best-effort
+        // best-effort debug log
       }
 
       await runScrubSelfDrive();

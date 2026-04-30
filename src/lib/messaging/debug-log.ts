@@ -14,6 +14,6 @@ export async function broadcastDebugLogToYouTubeTabs(message: string) {
       }
     }
   } catch {
-    // best-effort - diagnostics are non-load-bearing
+    // diagnostics are non-load-bearing
   }
 }

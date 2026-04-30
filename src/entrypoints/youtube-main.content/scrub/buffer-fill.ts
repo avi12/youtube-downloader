@@ -44,14 +44,12 @@ export async function waitForBufferFill({ videoId, windowSec, startSec, scrubInd
       currentBufferedEnd = elVideo.buffered.length > 0
         ? elVideo.buffered.end(elVideo.buffered.length - 1)
         : 0;
-      // Fast path: buffer covers the full window - both audio and video are
-      // buffered (video.buffered returns the intersection of all SourceBuffers).
       const audioBytes = window.__ytdlCapture?.capturedMedia.get(videoId)?.audioTotalBytes ?? 0;
       if (currentBufferedEnd >= targetCurrentTime - 0.5 && audioBytes > MIN_AUDIO_BYTES) {
         return;
       }
 
-      // Buffer-edge seek: SABR only fetches the next audio chunk when the player's
+      // SABR only fetches the next audio chunk when the player's
       // currentTime approaches the buffer edge. When pendingChunks pre-populate
       // the capture with init+early-media (e.g. 37s buffered for a 60s window),
       // the player's currentTime stays near 0 and SABR never requests 37-60s.
@@ -82,7 +80,6 @@ export async function waitForBufferFill({ videoId, windowSec, startSec, scrubInd
       lastChangeAt = Date.now();
       hasGrownPastBaseline = hasGrownPastBaseline || currentBytes > initialBytes;
     } else if (hasGrownPastBaseline && elVideo?.ended) {
-      // Tail segment: player reached end of video - we have everything available.
       return;
     } else if (hasGrownPastBaseline && (isTinyWindow || currentBytes > MIN_AUDIO_BYTES)
       && Date.now() - lastChangeAt > STALL_GRACE_MS) {

@@ -26,7 +26,7 @@ export async function spawnHostedIframe({ id, url }: {
 export function removeHostedIframe(id: string) {
   if (import.meta.env.FIREFOX) {
     void ensureScrubHostTab().then(tabId => {
-      void sendMessage(MessageType.UnmountScrubIframeInTab, { id }, tabId).catch(() => {});
+      void sendMessage(MessageType.UnmountScrubIframeInTab, { id }, tabId);
     });
     return;
   }

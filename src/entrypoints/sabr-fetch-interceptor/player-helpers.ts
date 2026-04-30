@@ -111,7 +111,7 @@ function readPoTokenFromAdaptiveFormatUrl(formats: AdaptiveFormatItem[] | undefi
         return pot;
       }
     } catch {
-      // ignore malformed URL
+      // malformed URL
     }
   }
 
@@ -131,7 +131,7 @@ export function readPoTokenFromCapturedTemplate(): Uint8Array | null {
       return poTokenBytes;
     }
   } catch {
-    // template was malformed somehow - fall through
+    // malformed template
   }
 
   return null;

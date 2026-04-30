@@ -73,7 +73,7 @@ async function persistRecentDownload({ downloadId, data }: {
     try {
       await sendMessage(MessageType.RecentDownloadsChanged, {});
     } catch {
-      // Popup not open - ignore.
+      // popup not open
     }
   } catch (error) {
     console.warn("[ytdl:bg] Persist recent download failed:", error);

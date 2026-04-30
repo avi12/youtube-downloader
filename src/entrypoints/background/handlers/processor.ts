@@ -29,7 +29,7 @@ async function ensureChromeOffscreenDocument() {
     try {
       await browser.offscreen.closeDocument();
     } catch {
-      // Already closed
+      // already closed
     }
   }
 
@@ -54,7 +54,6 @@ async function ensureChromeOffscreenDocument() {
 async function ensureFirefoxProcessorTab() {
   const processorUrl = browser.runtime.getURL("/offscreen.html");
 
-  // Re-attach to an existing processor tab surviving from before this BG restart.
   const existingTabs = await browser.tabs.query({ url: processorUrl });
   if (existingTabs.length > 0 && existingTabs[0].id !== undefined) {
     firefoxProcessorTabId = existingTabs[0].id;
@@ -79,17 +78,14 @@ async function ensureFirefoxProcessorTab() {
       return;
     }
 
-    // Processor tab is alive but stuck - close it and let the next branch create a fresh one.
     void broadcastDebugLogToYouTubeTabs(`[ytdl:processor] tab ${firefoxProcessorTabId} timed out, reopening`);
     await browser.tabs.remove(firefoxProcessorTabId).catch(() => {});
     firefoxProcessorTabId = null;
-    // Fall through to the "no existing tab" path by calling ourselves recursively.
     await ensureFirefoxProcessorTab();
     return;
   }
 
-  // No existing tab - create one. Reset the ready flag so stale storage
-  // from a previous extension load doesn't cause a false-ready signal.
+  // Reset the ready flag so stale storage from a previous extension load doesn't cause a false-ready signal.
   await isFFmpegReadyItem.setValue(false);
   void broadcastDebugLogToYouTubeTabs("[ytdl:processor] creating new processor tab");
   const ffmpegReady = waitForFFmpegReady();
