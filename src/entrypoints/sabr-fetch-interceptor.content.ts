@@ -9,6 +9,22 @@ import { AD_SHOWING_SELECTOR } from "@/lib/youtube/player-selectors";
 import { ClientAbrState, VideoPlaybackAbrRequest } from "googlevideo/protos";
 
 const GOOGLEVIDEO_HOST_FRAGMENT = "googlevideo.com/videoplayback";
+const SCRUB_SEGMENT_MSG = "ytdl:scrub-segment";
+
+function postSegmentToHost(
+  payload: Record<string, unknown>,
+  transferables: Transferable[] = []
+) {
+  if (parent === self) {
+    return;
+  }
+
+  try {
+    parent.postMessage(payload, "*", transferables);
+  } catch {
+    // cross-origin postMessage may throw in some contexts
+  }
+}
 
 export default defineContentScript({
   matches: ["https://www.youtube.com/*"],
@@ -173,6 +189,20 @@ export default defineContentScript({
           audioMimeType,
           videoBufferEndSec: result.videoCoveredMs / 1000
         });
+        const { byteOffset: vOff, byteLength: vLen, buffer: vBuf } = videoBytes;
+        const { byteOffset: aOff, byteLength: aLen, buffer: aBuf } = audioBytes;
+        const videoBuffer = vBuf.slice(vOff, vOff + vLen);
+        const audioBuffer = aBuf.slice(aOff, aOff + aLen);
+        postSegmentToHost({
+          type: SCRUB_SEGMENT_MSG,
+          videoId,
+          scrubIndex,
+          videoBuffer,
+          audioBuffer,
+          videoMimeType,
+          audioMimeType,
+          videoBufferEndSec: result.videoCoveredMs / 1000
+        }, [videoBuffer, audioBuffer]);
       } catch (error) {
         console.error(`[ytdl:scrub-sabr] index=${scrubIndex} failed:`, error);
         const emptyBytes = new Uint8Array();
@@ -181,6 +211,15 @@ export default defineContentScript({
           scrubIndex,
           videoBytes: emptyBytes,
           audioBytes: emptyBytes,
+          videoMimeType: "",
+          audioMimeType: ""
+        });
+        postSegmentToHost({
+          type: SCRUB_SEGMENT_MSG,
+          videoId,
+          scrubIndex,
+          videoBuffer: new ArrayBuffer(0),
+          audioBuffer: new ArrayBuffer(0),
           videoMimeType: "",
           audioMimeType: ""
         });
