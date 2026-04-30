@@ -1,11 +1,8 @@
+import { getMoviePlayer, pickHighestQualityFormats } from "./sabr-fetch-interceptor/player-helpers";
 import { fetchProgressive } from "./sabr-fetch-interceptor/progressive-fetcher";
+import { applyInitCache } from "./sabr-fetch-interceptor/scrub-init-cache";
 import { buildSyntheticTemplateFromPlayer, capturedTemplateToBase64 } from "./sabr-fetch-interceptor/template-builder";
-import {
-  CrossWorldMessage,
-  CrossWorldSabrMessage,
-  crossWorldMessenger,
-  crossWorldSabrMessenger
-} from "@/lib/messaging/cross-world-messenger";
+import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { uint8ToBase64 } from "@/lib/utils/binary";
 import { AD_SHOWING_SELECTOR } from "@/lib/youtube/player-selectors";
 import { ClientAbrState, VideoPlaybackAbrRequest } from "googlevideo/protos";
@@ -46,7 +43,7 @@ export default defineContentScript({
               });
             }
           } catch (_) {
-            // best-effort capture; never break the player
+            // never break the player
           }
         }
       }
@@ -63,7 +60,7 @@ export default defineContentScript({
       return capturedTemplateToBase64(template);
     });
 
-    crossWorldSabrMessenger.onMessage(CrossWorldSabrMessage.SynthesizeSabrTemplate, ({ data }) => {
+    crossWorldMessenger.onMessage(CrossWorldMessage.SynthesizeSabrTemplate, ({ data }) => {
       const synthesized = buildSyntheticTemplateFromPlayer();
       if (!synthesized) {
         return null;
@@ -94,6 +91,55 @@ export default defineContentScript({
       }),
       synthesize: () => buildSyntheticTemplateFromPlayer()
     };
+
+    crossWorldMessenger.onMessage(CrossWorldMessage.RunScrubSabr, async ({ data }) => {
+      const { videoId, scrubIndex, startSec, windowSec } = data;
+      const startMs = startSec * 1000;
+      const targetDurationMs = (startSec + windowSec) * 1000;
+      console.log(`[ytdl:scrub-sabr] index=${scrubIndex} startSec=${startSec} windowSec=${windowSec}`);
+      try {
+        const result = await fetchProgressive({
+          targetDurationMs,
+          maxIterations: 20,
+          originalFetch,
+          carryState: null,
+          initialPlayerTimeMs: startMs > 0 ? startMs : undefined
+        });
+        console.log(`[ytdl:scrub-sabr] index=${scrubIndex} done audio=${result.audioBytes.byteLength}B video=${result.videoBytes.byteLength}B iter=${result.iterations} stalled=${result.stalled} coveredMs=${result.audioCoveredMs}`);
+        const playerResponse = getMoviePlayer()?.getPlayerResponse?.();
+        const adaptiveFormats = playerResponse?.streamingData?.adaptiveFormats ?? [];
+        const { audio, video } = pickHighestQualityFormats(adaptiveFormats);
+        const videoMimeType = video?.mimeType?.split(";")[0] ?? "";
+        const audioMimeType = audio?.mimeType?.split(";")[0] ?? "";
+        const { videoBytes, audioBytes } = applyInitCache(
+          videoId,
+          result.videoBytes,
+          result.audioBytes,
+          videoMimeType,
+          audioMimeType
+        );
+        void crossWorldMessenger.sendMessage(CrossWorldMessage.IframeScrubSegment, {
+          videoId,
+          scrubIndex,
+          videoBytes,
+          audioBytes,
+          videoMimeType,
+          audioMimeType,
+          videoBufferEndSec: result.videoCoveredMs / 1000
+        });
+      } catch (error) {
+        console.error(`[ytdl:scrub-sabr] index=${scrubIndex} failed:`, error);
+        const emptyBytes = new Uint8Array();
+        void crossWorldMessenger.sendMessage(CrossWorldMessage.IframeScrubSegment, {
+          videoId,
+          scrubIndex,
+          videoBytes: emptyBytes,
+          audioBytes: emptyBytes,
+          videoMimeType: "",
+          audioMimeType: ""
+        });
+      }
+    });
 
     crossWorldMessenger.onMessage(CrossWorldMessage.RunProgressiveSabr, async ({ data }) => {
       console.log(`[ytdl:sabr-progressive-main] received RunProgressiveSabr videoId=${data.videoId} durationSec=${data.videoDurationSec}`);

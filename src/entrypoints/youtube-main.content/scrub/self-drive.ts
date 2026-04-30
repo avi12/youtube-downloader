@@ -1,11 +1,18 @@
 import { waitForAdToClear } from "./ad-handler";
-import { waitForBufferFill } from "./buffer-fill";
-import { bindCaptureToVideoId } from "./capture";
-import { waitForPlayerReady, forcePlayback, postAdSeek } from "./player";
-import { scrubLog, sendEmptyResult, emitCapturedSegment } from "./segment-emit";
-import { VIDEO_ELEMENT_SELECTOR } from "@/lib/youtube/player-selectors";
+import { waitForPlayerReady, forcePlayback, postAdSeek, wait } from "./player";
+import { scrubLog, sendEmptyResult } from "./segment-emit";
+import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 
 export { runTrustFactoryDrive } from "./trust-factory";
+
+// Small seeks (< ~140s) don't trigger a new SABR network request - the player
+// serves from its buffer. Each iframe needs a seek large enough (>= 140s) to
+// force a real SABR fetch and capture a session-credentialed template.
+// Using (scrubIndex + offset) * windowSec staggers concurrent iframes so they
+// seek to different positions, preventing server-side deduplication/throttling.
+const SABR_PRIME_MIN_SEC = 140;
+const SABR_PRIME_OFFSET_STEPS = 4;
+const SABR_CAPTURE_WAIT_MS = 2_000;
 
 export async function runScrubSelfDrive() {
   const params = new URLSearchParams(location.search);
@@ -18,7 +25,7 @@ export async function runScrubSelfDrive() {
     return;
   }
 
-  scrubLog(`scrub start videoId=${videoId} index=${scrubIndex} window=${windowSec}s captureState=${window.__ytdlCapture ? "present" : "missing"}`);
+  scrubLog(`scrub start videoId=${videoId} index=${scrubIndex} startSec=${startSec} window=${windowSec}s`);
 
   const player = await waitForPlayerReady();
   if (!player) {
@@ -44,52 +51,27 @@ export async function runScrubSelfDrive() {
 
   scrubLog(`playback started index=${scrubIndex}`);
 
-  const hadAd = await waitForAdToClear();
-  scrubLog(`ad cleared index=${scrubIndex} hadAd=${hadAd}`);
+  await waitForAdToClear();
+  scrubLog(`ad cleared index=${scrubIndex}`);
 
-  // Never skip media fragments even after an ad: the addSourceBuffer hook
-  // already clears ad bytes from pendingChunks when the main-content
-  // SourceBuffer is created, so pendingChunks only holds valid main-content
-  // data (from t=0 onward). Pre-trimming in the pipeline (-ss startSec)
-  // extracts only the intended window, so we never need to discard media.
-  bindCaptureToVideoId(videoId, false);
-  scrubLog(`capture bound index=${scrubIndex} captureState=${window.__ytdlCapture ? "present" : "missing"}`);
+  const duration = player.getDuration?.() ?? 0;
+  const maxSeekSec = Math.max(duration - 10, startSec);
+  const rawPrimeSeekSec = (scrubIndex + SABR_PRIME_OFFSET_STEPS) * windowSec;
+  const primeSeekSec = Math.max(
+    Math.min(rawPrimeSeekSec, maxSeekSec),
+    Math.min(SABR_PRIME_MIN_SEC, maxSeekSec)
+  );
+  postAdSeek(player, primeSeekSec);
+  await wait(SABR_CAPTURE_WAIT_MS);
 
-  if (hadAd) {
-    scrubLog(`post-ad seek to ${startSec}s index=${scrubIndex}`);
-    postAdSeek(player, startSec);
-  }
-
-  await waitForBufferFill({
+  // Delegate the actual byte-fetching to the MAIN world where fetch has
+  // credentials and the SABR template is already captured. Result flows back
+  // via CrossWorldMessage.IframeScrubSegment → scrub-result-forwarder → BG.
+  scrubLog(`handing off to SABR fetch index=${scrubIndex} primeSeek=${primeSeekSec}s`);
+  void crossWorldMessenger.sendMessage(CrossWorldMessage.RunScrubSabr, {
     videoId,
-    windowSec,
+    scrubIndex,
     startSec,
-    scrubIndex,
-    player
+    windowSec
   });
-  player.pauseVideo?.();
-
-  const elVideoAfterFill = document.querySelector<HTMLVideoElement>(VIDEO_ELEMENT_SELECTOR);
-  const videoBufferStartSec = elVideoAfterFill?.buffered.length ? elVideoAfterFill.buffered.start(0) : undefined;
-
-  const captured = window.__ytdlCapture?.capturedMedia.get(videoId);
-  scrubLog(`buffer fill done index=${scrubIndex} audioBytes=${captured?.audioTotalBytes ?? 0} videoBytes=${captured?.videoTotalBytes ?? 0}`);
-
-  if (!captured || captured.audioTotalBytes === 0) {
-    scrubLog(`empty capture index=${scrubIndex}`);
-    sendEmptyResult({
-      videoId,
-      scrubIndex
-    });
-    return;
-  }
-
-  scrubLog(`segment posting index=${scrubIndex} videoBytes=${captured.videoTotalBytes} audioBytes=${captured.audioTotalBytes}`);
-  emitCapturedSegment({
-    videoId,
-    scrubIndex,
-    captured,
-    videoBufferStartSec
-  });
-  scrubLog(`segment posted index=${scrubIndex}`);
 }
