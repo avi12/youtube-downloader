@@ -2,7 +2,7 @@ import { getFFmpeg } from "./ffmpeg-instance";
 import { parseFmp4VideoStartSec } from "./fmp4-video-start";
 
 export function muxSingleSegment({
-  ffmpeg, seg, step, videoExt, targetExt, audioExt, isOpusAudio, writtenPaths, logEvent
+  ffmpeg, seg, step, videoExt, targetExt, audioExt, isOpusAudio, writtenPaths, logEvent, overrideTrimSec
 }: {
   ffmpeg: ReturnType<typeof getFFmpeg>;
   seg: {
@@ -19,6 +19,7 @@ export function muxSingleSegment({
   isOpusAudio: boolean;
   writtenPaths: string[];
   logEvent: (msg: string) => void;
+  overrideTrimSec?: number;
 }): string | null {
   const vFile = `tmp_vseg_${seg.index}.${videoExt}`;
   const aFile = `tmp_aseg_${seg.index}.${audioExt}`;
@@ -34,30 +35,25 @@ export function muxSingleSegment({
     ? Math.max(0, seg.startSec - videoStartSec)
     : 0;
 
-  const segMuxArgs: string[] = ["-y"];
-  if (preroll > 0) {
-    segMuxArgs.push("-itsoffset", preroll.toFixed(3));
-  }
-
-  segMuxArgs.push(
-    "-i", vFile, "-i", aFile, "-map", "0:v:0", "-map", "1:a:0", "-c:v", "copy", "-c:a", isOpusAudio ? "aac" : "copy"
-  );
-
+  const segMuxArgs: string[] = [
+    "-y", "-i", vFile, "-i", aFile, "-map", "0:v:0", "-map", "1:a:0",
+    "-c:v", "copy", "-c:a", isOpusAudio ? "aac" : "copy"
+  ];
   if (isOpusAudio) {
-    // aresample compensates for residual DTS jitter after the timestamp shift.
     segMuxArgs.push("-af", "aresample=async=100000");
   }
 
   segMuxArgs.push("-avoid_negative_ts", "make_zero");
 
-  // Trim to actual captured duration so partial captures don't produce freeze
-  // frames. videoBufferEndSec is the HTMLVideoElement.buffered.end() after fill
-  // completes. When it's available, cap trimDuration to the actual media span
-  // so we never ask FFmpeg to encode silence/freeze beyond real data.
+  // Use keyframe-aligned trim if provided (from muxValidSegments), otherwise
+  // fall back to buffered duration. Trimming each segment to the NEXT segment's
+  // keyframe position prevents the backward-jump artifact at boundaries: the
+  // preroll frames (video earlier than audio start) are no longer duplicated
+  // across segment boundaries in the final concat.
   const capturedDuration = seg.videoBufferEndSec !== undefined
-    ? seg.videoBufferEndSec - seg.startSec
+    ? seg.videoBufferEndSec - (videoStartSec ?? seg.startSec)
     : step;
-  const trimDuration = step > 0 ? Math.min(step, Math.max(capturedDuration, 0)) : 0;
+  const trimDuration = overrideTrimSec ?? (step > 0 ? Math.min(step, Math.max(capturedDuration, 0)) : 0);
   if (trimDuration > 0) {
     segMuxArgs.push("-t", trimDuration.toFixed(3));
   }
@@ -68,7 +64,8 @@ export function muxSingleSegment({
   const segMuxFile = `tmp_seg_${seg.index}_muxed.${targetExt}`;
   segMuxArgs.push(segMuxFile);
 
-  logEvent(`[ytdl:pipeline] seg ${seg.index} pre-mux videoStart=${videoStartSec?.toFixed(3) ?? "?"} preroll=${preroll.toFixed(3)}s trim=${trimDuration.toFixed(3)}s bufEnd=${seg.videoBufferEndSec?.toFixed(1) ?? "?"}`);
+  logEvent(`[ytdl:pipeline] seg ${seg.index} pre-mux videoStart=${videoStartSec?.toFixed(3) ?? "?"} preroll=${preroll.toFixed(3)}s trim=${trimDuration.toFixed(3)}s keyframeAligned=${overrideTrimSec !== undefined} bufEnd=${seg.videoBufferEndSec?.toFixed(1) ?? "?"}`);
+
   const segMuxExit = ffmpeg.exec(...segMuxArgs);
   if (segMuxExit !== 0) {
     logEvent(`[ytdl:pipeline] seg ${seg.index} pre-mux failed (exit ${segMuxExit}); skipping`);

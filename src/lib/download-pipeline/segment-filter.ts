@@ -1,4 +1,5 @@
 import { getFFmpeg } from "./ffmpeg-instance";
+import { parseFmp4VideoStartSec } from "./fmp4-video-start";
 import { muxSingleSegment } from "./segment-premux";
 import type { ProcessStreamData } from "@/types";
 
@@ -49,24 +50,31 @@ export function muxValidSegments({
   writtenPaths: string[];
   logEvent: (msg: string) => void;
 }): string[] {
-  // Per-segment pre-mux: mux each segment's video + audio together before
-  // global concat so A/V timestamps are aligned within every segment.
+  // Pre-compute the true video start time (keyframe position) for every segment.
+  // SABR snaps video to the nearest keyframe before the seek target, so each
+  // segment's video starts a few seconds before startSec. -avoid_negative_ts
+  // make_zero then shifts timestamps so each segment's video/audio start at t=0.
   //
-  // Root cause of desync: SABR video snaps to the nearest keyframe before the
-  // seek target. The captured video stream therefore starts a few seconds
-  // earlier than the audio stream (which starts at exactly startSec).
-  // video.buffered.start(0) is not usable here - per MSE spec it returns the
-  // intersection of all SourceBuffers, which equals the audio start (startSec),
-  // masking the video preroll entirely.
-  //
-  // Fix: parse baseMediaDecodeTime / timescale from the raw fMP4 bytes to get
-  // the true video start. Apply -itsoffset {preroll} to the video input only
-  // (-itsoffset applies to the immediately following -i, not all subsequent
-  // inputs) so video first_pts shifts forward to match audio first_pts.
-  // -avoid_negative_ts make_zero then remaps both to t=0. The global concat
-  // of already-aligned segments produces a clean, in-sync output.
+  // Trim each segment to end exactly at the NEXT segment's keyframe, not at the
+  // step boundary. This eliminates the "backward jump" artifact at boundaries:
+  // without this trim, the concat would play SABR 31.9-35s content twice at the
+  // 35s mark (once from seg0, once as seg1's preroll), while audio continued
+  // forward. The result appeared as a stuck/repeated frame every 35 seconds.
+  const videoStarts = validSegments.map(seg => parseFmp4VideoStartSec(seg.video));
+
+  const keyframeTrimSecs = validSegments.map((seg, i) => {
+    const thisStart = videoStarts[i];
+    const nextStart = videoStarts[i + 1];
+    if (thisStart !== undefined && nextStart !== undefined) {
+      const capturedEnd = seg.videoBufferEndSec ?? (seg.startSec + step);
+      return Math.min(nextStart - thisStart, capturedEnd - thisStart);
+    }
+
+    return undefined;
+  });
+
   const muxedSegFiles: string[] = [];
-  for (const seg of validSegments) {
+  for (const [i, seg] of validSegments.entries()) {
     const muxedFile = muxSingleSegment({
       ffmpeg,
       seg,
@@ -76,7 +84,8 @@ export function muxValidSegments({
       audioExt,
       isOpusAudio,
       writtenPaths,
-      logEvent
+      logEvent,
+      overrideTrimSec: keyframeTrimSecs[i]
     });
     if (muxedFile) {
       muxedSegFiles.push(muxedFile);
