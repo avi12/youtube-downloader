@@ -6,7 +6,6 @@ import type { ReceivedSegment, ScrubSession } from "./session-store";
 import { OffscreenMessageType, sendBytesToOffscreen, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
 import { base64ToUint8Array, uint8ToBase64 } from "@/lib/utils/binary";
 import { extractInit, prependInitIfMissing } from "@/lib/utils/media-init";
-import type { AdaptiveFormatItem } from "@/types";
 
 function emitSegmentChunks({ session, scrubIndex, base64, mediaKind }: {
   session: ScrubSession;
@@ -115,57 +114,16 @@ function ensureInitForAllSegments(
   logFn(`[ensureInit] patched ${videoPatchCount} video segs, ${audioPatchCount} audio segs`);
 }
 
-async function fetchFormatInitBytes(format: AdaptiveFormatItem): Promise<Uint8Array | undefined> {
-  const { url, initRange } = format;
-  if (!url || !initRange) {
-    return undefined;
-  }
-
-  try {
-    const response = await fetch(`${url}&range=${initRange.start}-${initRange.end}`);
-    if (!response.ok) {
-      return undefined;
-    }
-
-    return new Uint8Array(await response.arrayBuffer());
-  } catch {
-    return undefined;
-  }
-}
-
-async function applyFormatFetchedInit(
+function applyPrefetchedInits(
   session: ScrubSession,
   videoMimeType: string,
   audioMimeType: string,
   logFn: (msg: string) => void
 ) {
-  let hasVideoInit = false;
-  let hasAudioInit = false;
+  const videoInit = session.prefetchedVideoInit;
+  const audioInit = session.prefetchedAudioInit;
 
-  for (const segment of session.receivedSegments.values()) {
-    if (!hasVideoInit && segment.videoBase64) {
-      hasVideoInit = extractInit(base64ToUint8Array(segment.videoBase64), videoMimeType) !== undefined;
-    }
-
-    if (!hasAudioInit && segment.audioBase64) {
-      hasAudioInit = extractInit(base64ToUint8Array(segment.audioBase64), audioMimeType) !== undefined;
-    }
-
-    if (hasVideoInit && hasAudioInit) {
-      break;
-    }
-  }
-
-  if (hasVideoInit && hasAudioInit) {
-    return;
-  }
-
-  const [videoInit, audioInit] = await Promise.all([
-    !hasVideoInit && session.videoFormat ? fetchFormatInitBytes(session.videoFormat) : Promise.resolve(undefined),
-    !hasAudioInit && session.audioFormat ? fetchFormatInitBytes(session.audioFormat) : Promise.resolve(undefined)
-  ]);
-
-  logFn(`[applyFormatInit] fetched videoInit=${videoInit?.byteLength ?? "none"} audioInit=${audioInit?.byteLength ?? "none"}`);
+  logFn(`[applyPrefetchedInits] videoInit=${videoInit?.byteLength ?? "none"} audioInit=${audioInit?.byteLength ?? "none"}`);
 
   if (!videoInit && !audioInit) {
     return;
@@ -209,7 +167,7 @@ export async function finalizeSession(session: ScrubSession, logFn: (msg: string
   const videoMime = session.resolvedVideoMimeType || session.videoMimeType;
   const audioMime = session.resolvedAudioMimeType || session.audioMimeType;
   ensureInitForAllSegments(session.receivedSegments, videoMime, audioMime, logFn);
-  await applyFormatFetchedInit(session, videoMime, audioMime, logFn);
+  applyPrefetchedInits(session, videoMime, audioMime, logFn);
 
   for (const [scrubIndex, segment] of session.receivedSegments) {
     await Promise.all([

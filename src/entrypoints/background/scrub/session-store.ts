@@ -40,6 +40,8 @@ export interface ScrubSession {
   durationSec: number;
   videoFormat?: AdaptiveFormatItem | null;
   audioFormat?: AdaptiveFormatItem | null;
+  prefetchedVideoInit?: Uint8Array;
+  prefetchedAudioInit?: Uint8Array;
 }
 
 export interface StartIframeScrubArgs {
@@ -102,7 +104,9 @@ export function buildSession(data: StartIframeScrubArgs, stepSec: number, expect
     captionTracks: data.captionTracks ?? [],
     durationSec: data.durationSec,
     videoFormat: data.videoFormat,
-    audioFormat: data.audioFormat
+    audioFormat: data.audioFormat,
+    prefetchedVideoInit: undefined,
+    prefetchedAudioInit: undefined
   };
 }
 
