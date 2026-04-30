@@ -26,6 +26,7 @@
 - Keep functions focused on a single job - extract named helpers when a function does more than one distinct logical task
 - Use `Promise.all` for independent async operations instead of sequential `await`; never await sequentially when the calls have no data dependency on each other
 - Use destructuring whenever it will increase the code readability
+- Use `.includes()` for string/array membership checks; only use `.test()` or `.match()` when a regex is genuinely more maintainable (e.g. checking multiple patterns in a single expression, or when a capturing group is needed)
 
 # Naming conventions
 - Variables and functions: `camelCase`, full words (no abbreviations)

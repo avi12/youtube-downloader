@@ -1,8 +1,8 @@
 import { CHILD_LIST_SUBTREE } from "@/lib/utils/dom";
 
 export function setupIframeVideoSilencing() {
-  const keepPlaying = /ytdlKeepPlaying=1/.test(location.search);
-  const isScrubMode = /ytdlScrubMode=1/.test(location.search);
+  const keepPlaying = location.search.includes("ytdlKeepPlaying=1");
+  const isScrubMode = location.search.includes("ytdlScrubMode=1");
 
   function silenceIframeVideo() {
     const elVideo = document.querySelector<HTMLVideoElement>("video");

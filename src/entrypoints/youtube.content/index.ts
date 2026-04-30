@@ -36,12 +36,12 @@ export default defineContentScript({
       }).catch(error => console.warn("[ytdl:content-isolated] sendMessage failed:", error));
     }
 
-    if (/ytdlScrubMode=1/.test(location.search)) {
+    if (location.search.includes("ytdlScrubMode=1")) {
       registerScrubResultForwarder();
       return;
     }
 
-    const isDownloadIframe = self !== top && /ytdl=1/.test(location.search);
+    const isDownloadIframe = self !== top && location.search.includes("ytdl=1");
     if (self !== top && !isDownloadIframe) {
       return;
     }

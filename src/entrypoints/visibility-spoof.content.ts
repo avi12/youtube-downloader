@@ -1,11 +1,11 @@
 // YouTube's player pauses streaming in background tabs, unfocused tabs, and iframes;
-// spoof visibility/focus/frame so it always streams. Also hide navigator.webdriver
-// on Firefox dev builds — BotGuard reads it when signing the PO token and YouTube's
-// SABR server rejects tokens that were minted in an automation context.
+// spoof visibility/focus/frame so it always streams.
+import { RUN_AT_DOCUMENT_START } from "@/lib/utils/dom";
+
 export default defineContentScript({
   matches: ["https://www.youtube.com/*"],
-  world: "MAIN",
-  runAt: "document_start",
+  world: browser.scripting.ExecutionWorld.MAIN,
+  runAt: RUN_AT_DOCUMENT_START,
   allFrames: true,
   main() {
     Object.defineProperty(document, "visibilityState", {

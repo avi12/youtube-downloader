@@ -4,18 +4,19 @@ import {
   patchAddSourceBuffer,
   patchAppendBuffer
 } from "./sourcebuffer-capture/sourcebuffer-patches";
+import { RUN_AT_DOCUMENT_START } from "@/lib/utils/dom";
 
 export default defineContentScript({
   matches: ["https://www.youtube.com/*"],
-  world: "MAIN",
-  runAt: "document_start",
+  world: browser.scripting.ExecutionWorld.MAIN,
+  runAt: RUN_AT_DOCUMENT_START,
   allFrames: true,
   main() {
-    if (self !== top && !/ytdl=1/.test(location.search)) {
+    if (self !== top && !location.search.includes("ytdl=1")) {
       return;
     }
 
-    const isScrubFrame = /ytdlScrubMode=1/.test(location.search);
+    const isScrubFrame = location.search.includes("ytdlScrubMode=1");
     const isTopLevelScrubTab = self === top && isScrubFrame;
     if ((self !== top || isTopLevelScrubTab) && !isScrubFrame) {
       patchMediaElementForIframe();

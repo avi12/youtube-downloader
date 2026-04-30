@@ -4,6 +4,7 @@ import { applyInitCache } from "./sabr-fetch-interceptor/scrub-init-cache";
 import { buildSyntheticTemplateFromPlayer, capturedTemplateToBase64 } from "./sabr-fetch-interceptor/template-builder";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { uint8ToBase64 } from "@/lib/utils/binary";
+import { RUN_AT_DOCUMENT_START } from "@/lib/utils/dom";
 import { extractInit } from "@/lib/utils/media-init";
 import { AD_SHOWING_SELECTOR } from "@/lib/youtube/player-selectors";
 import { ClientAbrState, VideoPlaybackAbrRequest } from "googlevideo/protos";
@@ -12,8 +13,8 @@ const GOOGLEVIDEO_HOST_FRAGMENT = "googlevideo.com/videoplayback";
 
 export default defineContentScript({
   matches: ["https://www.youtube.com/*"],
-  world: "MAIN",
-  runAt: "document_start",
+  world: browser.scripting.ExecutionWorld.MAIN,
+  runAt: RUN_AT_DOCUMENT_START,
   allFrames: true,
   main() {
     // Hook MediaSource.addSourceBuffer + SourceBuffer.appendBuffer to capture init segments

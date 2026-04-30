@@ -32,7 +32,7 @@ export function findNativeDownloadButton(elActionsContainer: HTMLElement) {
   const buttons = elActionsContainer.querySelectorAll<YtButtonViewModelElement>("yt-button-view-model");
   for (const button of buttons) {
     const isDownload = button.data?.iconName?.includes(IconName.Download)
-      || /download/i.test(button.querySelector("button")?.getAttribute("aria-label") ?? "");
+      || (button.querySelector("button")?.getAttribute("aria-label") ?? "").toLowerCase().includes("download");
     if (!isDownload) {
       continue;
     }

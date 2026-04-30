@@ -5,10 +5,12 @@
 // Overriding the property at document_start in the MAIN world runs before
 // YouTube's own scripts, so any subsequent read (including BotGuard's) sees
 // the spoofed value and any [Constant, Cached] webidl cache seats on false.
+import { RUN_AT_DOCUMENT_START } from "@/lib/utils/dom";
+
 export default defineContentScript({
   matches: ["https://www.youtube.com/*"],
-  world: "MAIN",
-  runAt: "document_start",
+  world: browser.scripting.ExecutionWorld.MAIN,
+  runAt: RUN_AT_DOCUMENT_START,
   allFrames: true,
   main() {
     Object.defineProperty(Navigator.prototype, "webdriver", {

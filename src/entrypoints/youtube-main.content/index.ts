@@ -35,7 +35,7 @@ declare global {
 
 export default defineContentScript({
   matches: ["https://www.youtube.com/*"],
-  world: "MAIN",
+  world: browser.scripting.ExecutionWorld.MAIN,
   allFrames: true,
   async main() {
     if (location.search.includes("ytdlScrubMode=1")) {
@@ -59,7 +59,7 @@ export default defineContentScript({
       return;
     }
 
-    if (self !== top && !/ytdl=1/.test(location.search)) {
+    if (self !== top && !location.search.includes("ytdl=1")) {
       return;
     }
 
