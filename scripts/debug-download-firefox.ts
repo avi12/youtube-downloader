@@ -21,8 +21,15 @@ const SUBSCRIBE_SETTLE_MS = 500;
 // YTDL button injection is async (polls for the actions container). Wait up to
 // this long for the .ytdl-download-button element to appear before giving up on auto-click.
 const BUTTON_WAIT_POLL_MS = 500;
-const BUTTON_WAIT_MAX_MS = 8_000;
-const listenSeconds = parseInt(process.argv[2] ?? "90", 10) || 90;
+const BUTTON_WAIT_MAX_MS = 20_000;
+const NAV_SETTLE_MS = 12_000;
+const monitorIdx = process.argv.indexOf("--monitor");
+const listenSeconds =
+  monitorIdx >= 0
+    ? parseInt(process.argv[monitorIdx + 1] ?? "90", 10) || 90
+    : parseInt(process.argv[2] ?? "90", 10) || 90;
+const shouldNavigate = process.argv.includes("--navigate");
+const statusOnly = process.argv.includes("--status-only");
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -266,6 +273,39 @@ for (const tab of youtubeTabs) {
 
 await wait(SUBSCRIBE_SETTLE_MS);
 
+// 4. If --navigate: reload the watch tab so fresh content scripts are injected,
+//    then re-discover the console actor for the newly-loaded page.
+const watchTab = (Array.isArray(tabsResponse.tabs) ? tabsResponse.tabs : [])
+  .filter(isFirefoxTab)
+  .find(tab => tab.url?.includes("youtube.com/watch"));
+
+if (shouldNavigate && watchConsoleActor && watchTab) {
+  console.log(`\nNavigating watch tab to reload content scripts...`);
+  // Trigger reload via existing console actor (will be invalid after nav)
+  try {
+    await rdp.evalInTab(watchConsoleActor, `location.reload()`);
+  } catch { /* expected - page navigates away */ }
+  console.log(`Waiting ${NAV_SETTLE_MS / 1000}s for page to load...`);
+  await wait(NAV_SETTLE_MS);
+  // Focus the tab so YouTube's player initializes (background tabs throttle Polymer)
+  try {
+    await rdp.request(watchTab.actor, "focus");
+    console.log(`Focused watch tab`);
+  } catch { /* not all Firefox versions support this */ }
+  // Re-attach to the new console actor for the reloaded page
+  const newTarget = await rdp.request(watchTab.actor, "getTarget");
+  const newFrame = newTarget.frame;
+  if (isRecord(newFrame) && typeof newFrame.consoleActor === "string") {
+    watchConsoleActor = newFrame.consoleActor;
+    await attachConsoleActor(rdp, watchConsoleActor);
+    console.log(`Re-attached console actor after navigation`);
+    // Give window.focus() call in page context another chance
+    try {
+      await rdp.evalInTab(watchConsoleActor, `window.focus()`);
+    } catch { /* best effort */ }
+  }
+}
+
 // 5. Click the download button via consoleActor evaluateJS
 if (!watchConsoleActor) {
   console.log("\nNo watch page found — monitoring only.");
@@ -285,7 +325,7 @@ if (!watchConsoleActor) {
     buttonPollMs += BUTTON_WAIT_POLL_MS;
   }
 
-  // Diagnostic: show what ytdl elements are present regardless
+  // Diagnostic: show what ytdl elements and page state are present regardless
   const ytdlDiag = await rdp.evalInTab(watchConsoleActor,
     `(() => {
       const byClass = document.querySelector('.ytdl-download-button');
@@ -297,13 +337,94 @@ if (!watchConsoleActor) {
       }).join(', ');
       const url = location.href.slice(0, 80);
       const totalEls = document.querySelectorAll('*').length;
-      return JSON.stringify({ url, totalEls, byClass: byClass?.tagName ?? null, byAttr: byAttr?.tagName ?? null, allYtdl: allYtdl || '(none)' });
+      const hasActionsContainer = !!document.querySelector('#top-level-buttons-computed');
+      const playerDataVideoId = document.querySelector('ytd-watch-flexy')?.playerData?.videoDetails?.videoId ?? null;
+      const initialResponseVideoId = window.ytInitialPlayerResponse?.videoDetails?.videoId ?? null;
+      return JSON.stringify({ url, totalEls, byClass: byClass?.tagName ?? null, byAttr: byAttr?.tagName ?? null, allYtdl: allYtdl || '(none)', hasActionsContainer, playerDataVideoId, initialResponseVideoId });
     })()`
   );
   console.log(`[diag] ytdl elements: ${ytdlDiag}`);
 
+  // If button never appeared, wait for #top-level-buttons-computed to exist (may be
+  // delayed by Polymer hydration or be inside shadow DOM), then dispatch yt-navigate-finish.
   if (buttonPollMs >= BUTTON_WAIT_MAX_MS) {
-    console.log("YTDL toolbar button never appeared — monitoring only.");
+    // Deep shadow-DOM search + DOM structure diagnostic
+    const shadowSearch = `(() => {
+      function deepQuery(root, sel) {
+        const r = root.querySelector(sel); if (r) return true;
+        for (const el of root.querySelectorAll('*')) {
+          if (el.shadowRoot && deepQuery(el.shadowRoot, sel)) return true;
+        }
+        return false;
+      }
+      const hasShadow = deepQuery(document, '#top-level-buttons-computed');
+      const ytdWatchShadow = deepQuery(document, 'ytd-watch-flexy');
+      const ytdWatch = !!document.querySelector('ytd-watch-flexy');
+      const ytdApp = !!document.querySelector('ytd-app');
+      const readyState = document.readyState;
+      const bodyChildren = [...document.body.children].map(el => el.tagName.toLowerCase()).slice(0, 10).join(', ');
+      const ytdAppChildren = document.querySelector('ytd-app')?.shadowRoot
+        ? [...document.querySelector('ytd-app').shadowRoot.children].map(el => el.tagName.toLowerCase()).slice(0, 10).join(', ')
+        : 'no-shadow-root';
+      return JSON.stringify({ hasShadow, ytdWatchShadow, ytdWatch, ytdApp, readyState, bodyChildren, ytdAppChildren });
+    })()`;
+
+    console.log("Button not found — waiting up to 60s for ytd-watch-flexy + #top-level-buttons-computed...");
+    let containerWaitMs = 0;
+    let containerFound = false;
+    while (containerWaitMs < 60_000) {
+      const shadowResult = await rdp.evalInTab(watchConsoleActor, shadowSearch);
+      console.log(`[shadow-diag] ${shadowResult} (waited ${containerWaitMs}ms)`);
+      const parsed: Record<string, unknown> = JSON.parse(shadowResult);
+      if (parsed.hasShadow) {
+        containerFound = true;
+        break;
+      }
+
+      // Also check via direct eval in light DOM
+      const lightCheck = await rdp.evalInTab(watchConsoleActor,
+        `!!document.querySelector('#top-level-buttons-computed')`
+      );
+      if (lightCheck === "true") {
+        containerFound = true;
+        break;
+      }
+
+      await wait(2000);
+      containerWaitMs += 2000;
+    }
+
+    if (containerFound) {
+      console.log(`Container found after ${containerWaitMs}ms — polling for button...`);
+    } else {
+      // If ytd-watch-flexy exists, the natural yt-navigate-finish already fired — don't abort
+      // its findVideoActionsContainer observer by dispatching again. Only dispatch if truly stuck.
+      const latestDiag = await rdp.evalInTab(watchConsoleActor, shadowSearch);
+      const latestParsed: Record<string, unknown> = JSON.parse(latestDiag);
+      if (!latestParsed.ytdWatch) {
+        console.log("ytd-watch-flexy never appeared — dispatching yt-navigate-finish...");
+        await rdp.evalInTab(watchConsoleActor, `document.dispatchEvent(new Event('yt-navigate-finish'))`);
+        await wait(6000);
+      } else {
+        console.log("ytd-watch-flexy exists, natural event already fired — just waiting for button...");
+      }
+    }
+
+    let retryMs = 0;
+    while (retryMs < 20_000) {
+      const found = await rdp.evalInTab(watchConsoleActor, `!!document.querySelector('.ytdl-download-button')`);
+      if (found === "true") {
+        buttonPollMs = 0;
+        break;
+      }
+
+      await wait(BUTTON_WAIT_POLL_MS);
+      retryMs += BUTTON_WAIT_POLL_MS;
+    }
+
+    if (retryMs >= 20_000) {
+      console.log("Button still not found — monitoring only.");
+    }
   }
   console.log(`\nChecking download button state (waited ${buttonPollMs}ms)...`);
   // The YTDL toolbar download button has class ytdl-download-button (download segment).
@@ -322,7 +443,9 @@ if (!watchConsoleActor) {
   );
   console.log(`YTDL button state: ${buttonState}`);
 
-  if (buttonState === "Download") {
+  if (statusOnly) {
+    console.log("--status-only: skipping click.");
+  } else if (buttonState === "Download") {
     console.log("Clicking YTDL toolbar download button...");
     const clickResult = await rdp.evalInTab(
       watchConsoleActor,

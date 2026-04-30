@@ -65,4 +65,10 @@ Use `@webext-core/messaging` for one-shot messages and the project's typed long-
 # Dev server
 `scripts/dev-server.ts` auto-rebuilds and reloads the extension and every YouTube page on any file change under `src/` and `wxt.config.ts`
 
-The iframes for Chrome MV3 and Firefox MV3 must be injected into an offscreen page (e.g. offscreen document or background page). No hidden tabs and so on.   
+The iframes for Chrome MV3 and Firefox MV3 must be injected into an offscreen page (e.g. offscreen document or background page). No hidden tabs and so on.
+
+# Interactive tasks (downloads, browser interaction)
+When verifying downloads or any task requiring browser interaction, keep going until the task is fully complete - never stop just because one approach is blocked. Priority order:
+1. Use the relevant browser's MCP tools (Firefox DevTools MCP, etc.)
+2. If MCP is unavailable, fall back to scripts under `scripts/` (e.g. `bun scripts/verify-download.ts`)
+3. Re-check MCP availability every few steps using ToolSearch - it may reconnect mid-task
