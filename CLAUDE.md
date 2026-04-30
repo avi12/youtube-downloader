@@ -18,7 +18,7 @@
 - Use modern browser and CSS features
 - Avoid `window.` prefixes unless it increases readability
 - Avoid `setTimeout` unless absolutely necessary
-- Avoid comments unless absolutely necessary - prefer descriptive names
+- No comments - use descriptive variable and function names instead. Only add a comment when the WHY is genuinely non-obvious (hidden constraint, workaround, subtle invariant). Never describe what the code does
 - Don't use em dashes - use regular hyphens
 - If a callback arrow function has a typed param, don't annotate the type explicitly
 - Avoid nested try/catch - flatten with early returns or extracted functions
@@ -59,7 +59,10 @@
 # Linting
 After each modification, lint with ESLint, Stylelint, svelte-check, and fallow.
 
+# Messaging
+Use `@webext-core/messaging` for one-shot messages and the project's typed long-lived port abstractions (e.g. `scrub-iframe-messaging.ts`) for streaming channels. Never use `window.addEventListener('message')` or raw `browser.runtime.connect` for cross-context messaging.
+
 # Dev server
-`scripts/dev-server.ts` auto-rebuilds and reloads the extension and every YouTube page on any file change under `src/` and `wxt.config.ts
+`scripts/dev-server.ts` auto-rebuilds and reloads the extension and every YouTube page on any file change under `src/` and `wxt.config.ts`
 
 The iframes for Chrome MV3 and Firefox MV3 must be injected into an offscreen page (e.g. offscreen document or background page). No hidden tabs and so on.   
