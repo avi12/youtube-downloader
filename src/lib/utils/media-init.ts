@@ -1,4 +1,4 @@
-export function readFmp4BoxType(bytes: Uint8Array, offset: number): string {
+function readFmp4BoxType(bytes: Uint8Array, offset: number): string {
   return String.fromCharCode(bytes[offset + 4], bytes[offset + 5], bytes[offset + 6], bytes[offset + 7]);
 }
 
@@ -6,7 +6,7 @@ function readFmp4BoxSize(bytes: Uint8Array, offset: number): number {
   return new DataView(bytes.buffer, bytes.byteOffset + offset, 4).getUint32(0, false);
 }
 
-export function findFmp4InitEnd(bytes: Uint8Array): number {
+function findFmp4InitEnd(bytes: Uint8Array): number {
   let offset = 0;
   while (offset + 8 <= bytes.length) {
     const size = readFmp4BoxSize(bytes, offset);
@@ -23,7 +23,7 @@ export function findFmp4InitEnd(bytes: Uint8Array): number {
   return bytes.length;
 }
 
-export function findWebmClusterOffset(bytes: Uint8Array): number {
+function findWebmClusterOffset(bytes: Uint8Array): number {
   for (let i = 0; i + 4 <= bytes.length; i++) {
     if (bytes[i] === 0x1f && bytes[i + 1] === 0x43 && bytes[i + 2] === 0xb6 && bytes[i + 3] === 0x75) {
       return i;
@@ -32,7 +32,7 @@ export function findWebmClusterOffset(bytes: Uint8Array): number {
   return bytes.length;
 }
 
-export function hasFmp4Init(bytes: Uint8Array): boolean {
+function hasFmp4Init(bytes: Uint8Array): boolean {
   if (bytes.length < 8) {
     return false;
   }
@@ -40,11 +40,11 @@ export function hasFmp4Init(bytes: Uint8Array): boolean {
   return readFmp4BoxType(bytes, 0) !== "moof";
 }
 
-export function hasWebmInit(bytes: Uint8Array): boolean {
+function hasWebmInit(bytes: Uint8Array): boolean {
   return bytes.length >= 4 && bytes[0] === 0x1a && bytes[1] === 0x45 && bytes[2] === 0xdf && bytes[3] === 0xa3;
 }
 
-export function concatBytes(head: Uint8Array, tail: Uint8Array): Uint8Array {
+function concatBytes(head: Uint8Array, tail: Uint8Array): Uint8Array {
   const out = new Uint8Array(head.length + tail.length);
   out.set(head);
   out.set(tail, head.length);

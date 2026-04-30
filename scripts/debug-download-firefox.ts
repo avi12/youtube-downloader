@@ -156,9 +156,7 @@ function handleConsoleMessageResources(resourcesArray: unknown[]) {
 }
 
 rdp.onEvent = (packet: Record<string, unknown>) => {
-  const packetType = String(packet.type ?? "(none)");
-
-  // Log each new packet type once so we can see what the RDP server is sending
+  const packetType = String(packet.type ?? "(none)");  // Log each new packet type once so we can see what the RDP server is sending
   if (!seenPacketTypes.has(packetType)) {
     seenPacketTypes.add(packetType);
     const keys = Object.keys(packet).join(", ");
@@ -202,9 +200,13 @@ rdp.onEvent = (packet: Record<string, unknown>) => {
 
   if (packetType === "resources-available-array") {
     // Firefox RDP uses "resources" field; older builds used "array"
-    const resourcesArray = Array.isArray(packet.resources) ? packet.resources
-      : Array.isArray(packet.array) ? packet.array
-      : null;
+    let resourcesArray: unknown[] | null = null;
+    if (Array.isArray(packet.resources)) {
+      resourcesArray = packet.resources;
+    } else if (Array.isArray(packet.array)) {
+      resourcesArray = packet.array;
+    }
+
     if (!resourcesArray) {
       console.error(`[rdp] resources-available-array has no resources/array: keys=[${Object.keys(packet).join(", ")}]`);
       return;
@@ -265,6 +267,7 @@ for (const tab of youtubeTabs) {
     const consoleActor = frame.consoleActor;
     await attachConsoleActor(rdp, consoleActor);
     console.log(`  Console attached: ${tab.url?.slice(0, 70)}`);
+
     if (tab.url?.includes("youtube.com/watch") && !watchConsoleActor) {
       watchConsoleActor = consoleActor;
     }
@@ -277,9 +280,7 @@ await wait(SUBSCRIBE_SETTLE_MS);
 //    then re-discover the console actor for the newly-loaded page.
 const watchTab = (Array.isArray(tabsResponse.tabs) ? tabsResponse.tabs : [])
   .filter(isFirefoxTab)
-  .find(tab => tab.url?.includes("youtube.com/watch"));
-
-if (shouldNavigate && watchConsoleActor && watchTab) {
+  .find(tab => tab.url?.includes("youtube.com/watch"));if (shouldNavigate && watchConsoleActor && watchTab) {
   console.log(`\nNavigating watch tab to reload content scripts...`);
   // Trigger reload via existing console actor (will be invalid after nav)
   try {
@@ -318,15 +319,18 @@ if (!watchConsoleActor) {
   let buttonPollMs = 0;
   while (buttonPollMs < BUTTON_WAIT_MAX_MS) {
     const found = await rdp.evalInTab(watchConsoleActor,
-      `!!document.querySelector('.ytdl-download-button')`
-    );
-    if (found === "true") break;
+      `!!document.querySelector('.ytdl-download-button')`);
+    if (found === "true") {
+      break;
+    }
+
     await wait(BUTTON_WAIT_POLL_MS);
     buttonPollMs += BUTTON_WAIT_POLL_MS;
   }
 
   // Diagnostic: show what ytdl elements and page state are present regardless
-  const ytdlDiag = await rdp.evalInTab(watchConsoleActor,
+  const ytdlDiag = await rdp.evalInTab(
+    watchConsoleActor,
     `(() => {
       const byClass = document.querySelector('.ytdl-download-button');
       // getAttribute('class') works for all elements including SVG; className may be SVGAnimatedString
@@ -383,8 +387,7 @@ if (!watchConsoleActor) {
 
       // Also check via direct eval in light DOM
       const lightCheck = await rdp.evalInTab(watchConsoleActor,
-        `!!document.querySelector('#top-level-buttons-computed')`
-      );
+        `!!document.querySelector('#top-level-buttons-computed')`);
       if (lightCheck === "true") {
         containerFound = true;
         break;
@@ -406,7 +409,9 @@ if (!watchConsoleActor) {
         await rdp.evalInTab(watchConsoleActor, `document.dispatchEvent(new Event('yt-navigate-finish'))`);
         await wait(6000);
       } else {
-        console.log("ytd-watch-flexy exists, natural event already fired — just waiting for button...");
+        console.log("ytd-watch-flexy exists but container not found — dispatching yt-navigate-finish...");
+        await rdp.evalInTab(watchConsoleActor, `document.dispatchEvent(new Event('yt-navigate-finish'))`);
+        await wait(6000);
       }
     }
 
@@ -426,6 +431,7 @@ if (!watchConsoleActor) {
       console.log("Button still not found — monitoring only.");
     }
   }
+
   console.log(`\nChecking download button state (waited ${buttonPollMs}ms)...`);
   // The YTDL toolbar download button has class ytdl-download-button (download segment).
   const buttonState = await rdp.evalInTab(

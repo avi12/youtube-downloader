@@ -54,35 +54,3 @@ export function createSabrStream({ sabrConfig, fetchFn, poToken }: {
     durationMs
   });
 }
-
-export function makeTrustTemplateFetch({ originalFetch, templateUrl, templateBody, onCallLog }: {
-  originalFetch: typeof globalThis.fetch;
-  templateUrl: string;
-  templateBody: Uint8Array;
-  onCallLog?: (msg: string) => void;
-}): typeof globalThis.fetch {
-  let callCount = 0;
-  return async (input: RequestInfo | URL, init?: RequestInit) => {
-    callCount++;
-    const callIdx = callCount;
-    const targetUrl = input instanceof Request ? input.url : String(input);
-    if (callIdx === 1) {
-      const fresh = new Uint8Array(templateBody.byteLength);
-      fresh.set(templateBody);
-      onCallLog?.(`trust-template fetch #1: replaying captured body (${fresh.byteLength}B) to ${templateUrl.slice(0, 80)}`);
-      const response = await originalFetch(templateUrl, {
-        method: "POST",
-        body: fresh,
-        mode: "cors",
-        credentials: "include"
-      });
-      onCallLog?.(`trust-template fetch #1: status=${response.status} contentType=${response.headers.get("content-type") ?? ""}`);
-      return response;
-    }
-
-    onCallLog?.(`trust-template fetch #${callIdx}: lib body to ${targetUrl.slice(0, 80)}`);
-    const response = await originalFetch(input, init);
-    onCallLog?.(`trust-template fetch #${callIdx}: status=${response.status} contentType=${response.headers.get("content-type") ?? ""}`);
-    return response;
-  };
-}

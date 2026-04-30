@@ -1,4 +1,3 @@
-import { concatChunks } from "./capture";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 
 // Direct postMessage channel for BG-hosted iframes. Firefox doesn't inject
@@ -54,49 +53,4 @@ export function sendEmptyResult({ videoId, scrubIndex }: {
     videoMimeType: "",
     audioMimeType: ""
   });
-}
-
-export function emitCapturedSegment({ videoId, scrubIndex, captured, videoBufferStartSec, videoBufferEndSec }: {
-  videoId: string;
-  scrubIndex: number;
-  captured: NonNullable<ReturnType<NonNullable<typeof window.__ytdlCapture>["capturedMedia"]["get"]>>;
-  videoBufferStartSec?: number;
-  videoBufferEndSec?: number;
-}) {
-  const videoConcat = concatChunks(captured.videoChunks);
-  const audioConcat = concatChunks(captured.audioChunks);
-
-  void crossWorldMessenger.sendMessage(CrossWorldMessage.IframeScrubSegment, {
-    videoId,
-    scrubIndex,
-    videoBytes: videoConcat,
-    audioBytes: audioConcat,
-    videoMimeType: captured.videoMimeType,
-    audioMimeType: captured.audioMimeType,
-    videoBufferStartSec,
-    videoBufferEndSec
-  });
-
-  // Slice the underlying buffers so we don't transfer the whole pool when
-  // chunks live in shared backing storage; copy is cheap relative to
-  // concat itself.
-  const videoBuffer = videoConcat.buffer.slice(
-    videoConcat.byteOffset,
-    videoConcat.byteOffset + videoConcat.byteLength
-  );
-  const audioBuffer = audioConcat.buffer.slice(
-    audioConcat.byteOffset,
-    audioConcat.byteOffset + audioConcat.byteLength
-  );
-  postToHost({
-    type: POST_MESSAGE_TYPE_SEGMENT,
-    videoId,
-    scrubIndex,
-    videoBuffer,
-    audioBuffer,
-    videoMimeType: captured.videoMimeType,
-    audioMimeType: captured.audioMimeType,
-    videoBufferStartSec,
-    videoBufferEndSec
-  }, [videoBuffer, audioBuffer]);
 }

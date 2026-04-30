@@ -26,8 +26,11 @@ export function applyInitCache(
   const sbInits = getSourceBufferInits();
   const newVideoInit = extractInit(videoBytes, videoMimeType);
   const newAudioInit = extractInit(audioBytes, audioMimeType);
-  const videoInit = newVideoInit ?? sbInits.video ?? cached?.videoInit;
-  const audioInit = newAudioInit ?? sbInits.audio ?? cached?.audioInit;
+  // cached takes priority over sbInits: the cached init comes from the actual
+  // SABR stream (segment 0), while sbInits comes from the player which may use
+  // a different codec/quality (e.g. AVC when we're fetching AV1).
+  const videoInit = newVideoInit ?? cached?.videoInit ?? sbInits.video;
+  const audioInit = newAudioInit ?? cached?.audioInit ?? sbInits.audio;
   if (videoInit || audioInit) {
     cache.set(videoId, {
       videoInit: videoInit ?? new Uint8Array(),
@@ -39,8 +42,4 @@ export function applyInitCache(
     videoBytes: videoInit ? prependInitIfMissing(videoBytes, videoInit, videoMimeType) : videoBytes,
     audioBytes: audioInit ? prependInitIfMissing(audioBytes, audioInit, audioMimeType) : audioBytes
   };
-}
-
-export function clearInitCache(videoId: string) {
-  cache.delete(videoId);
 }
