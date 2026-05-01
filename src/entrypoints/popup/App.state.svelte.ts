@@ -1,6 +1,6 @@
 import { MessageType, onMessage } from "@/lib/messaging/messaging";
-import { getAllRecentDownloads } from "@/lib/storage/recent-downloads-db";
 import { isFFmpegReadyItem } from "@/lib/storage/ffmpeg-ready";
+import { getAllRecentDownloads } from "@/lib/storage/recent-downloads-db";
 import {
   musicListItem,
   optionsItem,

@@ -6,10 +6,7 @@
  *
  * Usage: pnpx tsx scripts/test-splice-sabr.ts
  */
-import {
-  spliceBodyWithPlaybackCookie,
-  spliceBodyWithState
-} from "@/lib/youtube/firefox-sabr";
+import { spliceBodyWithPlaybackCookie, spliceBodyWithState } from "@/lib/youtube/firefox-sabr";
 
 // ── Proto wire writers (minimal, local to the test) ──────────────────────────
 
@@ -48,6 +45,7 @@ function readVarint(buf: Uint8Array, offset: number): [number, number] {
     const byte = buf[offset];
     offset++;
     value |= (byte & 0x7f) << shift;
+
     if ((byte & 0x80) === 0) {
       return [value >>> 0, offset];
     }
@@ -76,13 +74,22 @@ function parseMessage(buf: Uint8Array): ParsedField[] {
     const fieldNumber = tag >> 3;
     const wireType = tag & 0x7;
     offset = afterTag;
+
     if (wireType === 0) {
       const [v, next] = readVarint(buf, offset);
-      fields.push({ fieldNumber, wireType, value: v });
+      fields.push({
+        fieldNumber,
+        wireType,
+        value: v
+      });
       offset = next;
     } else if (wireType === 2) {
       const [len, afterLen] = readVarint(buf, offset);
-      fields.push({ fieldNumber, wireType, value: buf.subarray(afterLen, afterLen + len) });
+      fields.push({
+        fieldNumber,
+        wireType,
+        value: buf.subarray(afterLen, afterLen + len)
+      });
       offset = afterLen + len;
     } else {
       break;
@@ -168,7 +175,10 @@ function buildBaseBody({ initialPlayerTimeMs, includeRanges }: {
 
 function test_spliceBodyWithState_replacesPlayerTimeMs() {
   console.log("test: spliceBodyWithState replaces playerTimeMs");
-  const body = buildBaseBody({ initialPlayerTimeMs: 0, includeRanges: false });
+  const body = buildBaseBody({
+    initialPlayerTimeMs: 0,
+    includeRanges: false
+  });
   const out = spliceBodyWithState({
     body,
     playerTimeMs: 5000,
@@ -190,7 +200,10 @@ function test_spliceBodyWithState_replacesPlayerTimeMs() {
 
 function test_spliceBodyWithState_stripsExistingRanges() {
   console.log("test: spliceBodyWithState strips existing ranges then appends new ones");
-  const body = buildBaseBody({ initialPlayerTimeMs: 0, includeRanges: true });
+  const body = buildBaseBody({
+    initialPlayerTimeMs: 0,
+    includeRanges: true
+  });
   const out = spliceBodyWithState({
     body,
     playerTimeMs: 3000,
@@ -205,6 +218,7 @@ function test_spliceBodyWithState_stripsExistingRanges() {
   const top = parseMessage(out);
   const ranges = top.filter(f => f.fieldNumber === TOP_BUFFERED_RANGES);
   assertEq("exactly one bufferedRange remains", ranges.length, 1);
+
   if (ranges.length !== 1) {
     return;
   }
@@ -219,6 +233,7 @@ function test_spliceBodyWithState_stripsExistingRanges() {
   assertEq("range.durationMs", dur?.value, 3000);
   assertEq("range.startSegmentIndex", startSeg?.value, 1);
   assertEq("range.endSegmentIndex", endSeg?.value, 2);
+
   if (fmtId && fmtId.value instanceof Uint8Array) {
     const fmtInner = parseMessage(fmtId.value);
     const itag = fmtInner.find(f => f.fieldNumber === 1);
@@ -230,13 +245,28 @@ function test_spliceBodyWithState_stripsExistingRanges() {
 
 function test_spliceBodyWithState_multipleRanges() {
   console.log("test: spliceBodyWithState writes multiple ranges");
-  const body = buildBaseBody({ initialPlayerTimeMs: 0, includeRanges: false });
+  const body = buildBaseBody({
+    initialPlayerTimeMs: 0,
+    includeRanges: false
+  });
   const out = spliceBodyWithState({
     body,
     playerTimeMs: 0,
     ranges: [
-      { itag: 140, startMs: 0, durationMs: 5000, startSegmentIndex: 1, endSegmentIndex: 1 },
-      { itag: 251, startMs: 0, durationMs: 4000, startSegmentIndex: 1, endSegmentIndex: 1 }
+      {
+        itag: 140,
+        startMs: 0,
+        durationMs: 5000,
+        startSegmentIndex: 1,
+        endSegmentIndex: 1
+      },
+      {
+        itag: 251,
+        startMs: 0,
+        durationMs: 4000,
+        startSegmentIndex: 1,
+        endSegmentIndex: 1
+      }
     ]
   });
   const top = parseMessage(out);
@@ -248,7 +278,10 @@ function test_spliceBodyWithState_multipleRanges() {
 
 function test_spliceBodyWithPlaybackCookie_addsIfMissing() {
   console.log("test: spliceBodyWithPlaybackCookie adds cookie when streamerContext has none");
-  const body = buildBaseBody({ initialPlayerTimeMs: 0, includeRanges: false });
+  const body = buildBaseBody({
+    initialPlayerTimeMs: 0,
+    includeRanges: false
+  });
   const cookie = new Uint8Array([0x08, 0x2a]); // arbitrary 2-byte proto
   const out = spliceBodyWithPlaybackCookie(body, cookie);
   const top = parseMessage(out);
@@ -294,6 +327,7 @@ function test_spliceBodyWithPlaybackCookie_replacesIfPresent() {
   const inner = parseMessage(ctx.value);
   const cookies = inner.filter(f => f.fieldNumber === 3);
   assertEq("exactly one playbackCookie remains", cookies.length, 1);
+
   if (cookies.length === 1 && cookies[0].value instanceof Uint8Array) {
     assertEq("cookie bytes replaced",
       Array.from(cookies[0].value),
@@ -313,6 +347,7 @@ test_spliceBodyWithPlaybackCookie_addsIfMissing();
 test_spliceBodyWithPlaybackCookie_replacesIfPresent();
 
 console.log(`\n${testsPassed} passed, ${testsFailed} failed`);
+
 if (testsFailed > 0) {
   process.exit(1);
 }

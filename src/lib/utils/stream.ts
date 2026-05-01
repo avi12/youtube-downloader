@@ -30,14 +30,20 @@ function buildPartialData(
 async function readChunk(reader: ReadableStreamDefaultReader<Uint8Array>) {
   try {
     const chunk = await reader.read();
-    return { chunk, error: null };
+    return {
+      chunk,
+      error: null
+    };
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") {
       throw error;
     }
 
     const detail = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
-    return { chunk: null, error: detail };
+    return {
+      chunk: null,
+      error: detail
+    };
   }
 }
 
@@ -75,6 +81,7 @@ export async function readStreamToBuffer({ reader, expectedBytes, onBytesReceive
       if (result.error) {
         lastReadError = result.error;
       }
+
       if (!result.chunk) {
         if (!isStalled) {
           throw new StreamStallError(buildPartialData(preallocated, chunks, totalBytes, writeOffset), lastReadError);
