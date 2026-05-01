@@ -37,24 +37,20 @@ export function muxSingleSegment({
     ? Math.max(0, seg.startSec - videoStartSec)
     : 0;
 
-  // Anchor both streams to the same source-time origin (videoStart) by
-  // seeking each input to that point. With -c copy and no -copyts, the
-  // input -ss resets each stream's output PTS to start at 0 from the seek
-  // point. Without this, video's PTS [videoStart..] and audio's PTS
-  // [audioStart..] flow into the muxed file with different anchors -
-  // when concat-demuxer offsets each subsequent file by the previous
-  // duration, the per-stream offsets diverge and cause "audio rewind"
-  // at every segment seam.
-  const seekSec = videoStartSec ?? 0;
-  const segMuxArgs: string[] = ["-y"];
-  if (seekSec > 0) {
-    segMuxArgs.push("-ss", seekSec.toFixed(3));
-  }
+  // Skip audio bytes that begin before the video keyframe. SABR delivers
+  // audio in independent ~5-10s fragments, so each segment's captured audio
+  // typically starts a few seconds earlier than its video. Without this
+  // skip, -avoid_negative_ts make_zero anchors the segment's PTS=0 to the
+  // earlier-arriving audio, and at the concat boundary the next segment's
+  // first audio plays earlier source content than the video alongside it,
+  // producing the audible "audio rewind" at every segment seam.
+  const audioSkipSec = videoStartSec !== undefined && audioStartSec !== undefined
+    ? Math.max(0, videoStartSec - audioStartSec)
+    : 0;
 
-  segMuxArgs.push("-i", vFile);
-
-  if (seekSec > 0) {
-    segMuxArgs.push("-ss", seekSec.toFixed(3));
+  const segMuxArgs: string[] = ["-y", "-i", vFile];
+  if (audioSkipSec > 0) {
+    segMuxArgs.push("-ss", audioSkipSec.toFixed(3));
   }
 
   segMuxArgs.push(
@@ -86,7 +82,7 @@ export function muxSingleSegment({
   const segMuxFile = `tmp_seg_${seg.index}_muxed.${targetExt}`;
   segMuxArgs.push(segMuxFile);
 
-  logEvent(`[ytdl:pipeline] seg ${seg.index} pre-mux videoStart=${videoStartSec?.toFixed(3) ?? "?"} audioStart=${audioStartSec?.toFixed(3) ?? "?"} preroll=${preroll.toFixed(3)}s seek=${seekSec.toFixed(3)}s trim=${trimDuration.toFixed(3)}s keyframeAligned=${overrideTrimSec !== undefined} bufEnd=${seg.videoBufferEndSec?.toFixed(1) ?? "?"}`);
+  logEvent(`[ytdl:pipeline] seg ${seg.index} pre-mux videoStart=${videoStartSec?.toFixed(3) ?? "?"} audioStart=${audioStartSec?.toFixed(3) ?? "?"} preroll=${preroll.toFixed(3)}s audioSkip=${audioSkipSec.toFixed(3)}s trim=${trimDuration.toFixed(3)}s keyframeAligned=${overrideTrimSec !== undefined} bufEnd=${seg.videoBufferEndSec?.toFixed(1) ?? "?"}`);
 
   const segMuxExit = ffmpeg.exec(...segMuxArgs);
   if (segMuxExit !== 0) {
