@@ -6,7 +6,8 @@
     "web-ext.config.ts",
     "src/entrypoints/**/{index,main}.ts",
     "src/entrypoints/*.content.ts",
-    "src/entrypoints/*.content/index.ts"
+    "src/entrypoints/*.content/index.ts",
+    "scripts/*.ts"
   ],
   "ignoreDependencies": [
     "@ffmpeg/core",

@@ -1,5 +1,6 @@
 import expandNestedTypeLiteral from "./eslint-rules/expand-nested-type-literal.js";
 import multilineArgParenNewline from "./eslint-rules/multiline-arg-paren-newline.js";
+import multilineSpreadObject from "./eslint-rules/multiline-spread-object.js";
 import noPaddedTag from "./eslint-rules/no-padded-tag.js";
 import eslint from "@eslint/js";
 import stylistic from "@stylistic/eslint-plugin";
@@ -206,6 +207,7 @@ const tsStyleRules = {
   "@stylistic/function-paren-newline": ["error", "consistent"],
   "local/expand-nested-type-literal": "error",
   "local/multiline-arg-paren-newline": "error",
+  "local/multiline-spread-object": "error",
   "local/no-padded-tag": "error",
   "no-nested-ternary": "error",
   "@typescript-eslint/consistent-type-assertions": ["error", { assertionStyle: "never" }],
@@ -221,6 +223,7 @@ const sharedPlugins = {
     rules: {
       "expand-nested-type-literal": expandNestedTypeLiteral,
       "multiline-arg-paren-newline": multilineArgParenNewline,
+      "multiline-spread-object": multilineSpreadObject,
       "no-padded-tag": noPaddedTag
     }
   }
@@ -237,7 +240,7 @@ export default [
   eslint.configs.recommended,
   ...tsEslint.configs.recommended,
   ...svelteEslint.configs["flat/recommended"],
-  globalIgnores(["build/**", "node_modules/**", ".output/**", ".wxt/**", ".opencode/**", "**/user-profiles/**", "patches/**"]),
+  globalIgnores(["build/**", "node_modules/**", ".output/**", ".wxt/**", ".opencode/**", ".claude/**", "**/user-profiles/**", "patches/**"]),
   {
     files: ["**/*.{ts,js,mjs}"],
     ignores: ["eslint.config.js"],
