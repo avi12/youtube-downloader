@@ -92,10 +92,15 @@ export function parseWebmAudioStartSec(data: Uint8Array) {
     }
 
     const dataStart = sizeOffset + size.length;
-    const dataEnd = isUnknownSize(sizeOffset, size.length)
+    // SABR streams pre-declare the full expected Segment size in the header
+    // (e.g. 8MB for a 1MB capture), so an element whose declared size
+    // overruns the buffer is normal for partial fragments. Clamp to parentEnd
+    // and continue scanning the bytes we actually have rather than aborting.
+    const declaredEnd = isUnknownSize(sizeOffset, size.length)
       ? parentEnd
       : dataStart + size.value;
-    if (dataEnd > parentEnd) {
+    const dataEnd = Math.min(declaredEnd, parentEnd);
+    if (dataStart > parentEnd) {
       return null;
     }
 
