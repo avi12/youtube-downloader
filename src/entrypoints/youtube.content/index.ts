@@ -12,6 +12,7 @@ import { optionsItem, statusProgressItem } from "@/lib/storage/storage";
 import { downloadProgressStore, initContentOptions } from "@/lib/ui/synced-stores.svelte";
 import { forwardSabrCredentialsWithRetry, listenForSabrBodyReady } from "@/lib/youtube/sabr/credentials";
 import { initialOptions as defaultOptions } from "@/lib/youtube/video-helpers";
+import { ScrubUrlParam } from "@/lib/youtube/youtube-url";
 import type { DownloadRequest } from "@/types";
 
 async function restoreStoredProgress() {
@@ -30,18 +31,18 @@ export default defineContentScript({
   matches: ["https://www.youtube.com/*"],
   allFrames: true,
   async main(context) {
-    if (/ytdlScrubMode=1|ytdlTrustFactoryMode=1/.test(location.search)) {
+    if (location.search.includes(`${ScrubUrlParam.ScrubMode}=1`) || location.search.includes(`${ScrubUrlParam.TrustFactoryMode}=1`)) {
       void sendMessage(MessageType.BgDebugLog, {
         msg: `[ytdl:content-isolated] booted self===top=${self === top} url=${location.search.slice(0, 120)}`
       }).catch(error => console.warn("[ytdl:content-isolated] sendMessage failed:", error));
     }
 
-    if (location.search.includes("ytdlScrubMode=1")) {
+    if (location.search.includes(`${ScrubUrlParam.ScrubMode}=1`)) {
       registerScrubResultForwarder();
       return;
     }
 
-    const isDownloadIframe = self !== top && location.search.includes("ytdl=1");
+    const isDownloadIframe = self !== top && location.search.includes(`${ScrubUrlParam.Ytdl}=1`);
     if (self !== top && !isDownloadIframe) {
       return;
     }

@@ -8,6 +8,7 @@ import {
   recordEmptyAfterRetries
 } from "./session-store";
 import type { ScrubSession } from "./session-store";
+import { ScrubUrlParam } from "@/lib/youtube/youtube-url";
 
 const MAX_RETRIES_PER_INDEX = 4;
 const IFRAME_DEADLINE_OVERHEAD_MS = 120_000;
@@ -20,10 +21,10 @@ function buildScrubIframeUrl({ videoId, iScrub, startSec, windowSec }: {
 }) {
   const params = new URLSearchParams({
     v: videoId,
-    ytdl: "1",
-    ytdlScrubMode: "1",
-    ytdlScrubIndex: String(iScrub),
-    ytdlScrubWindow: String(windowSec),
+    [ScrubUrlParam.Ytdl]: "1",
+    [ScrubUrlParam.ScrubMode]: "1",
+    [ScrubUrlParam.ScrubIndex]: String(iScrub),
+    [ScrubUrlParam.ScrubWindow]: String(windowSec),
     t: String(startSec)
   });
 

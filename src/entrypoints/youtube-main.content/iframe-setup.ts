@@ -1,8 +1,9 @@
 import { CHILD_LIST_SUBTREE } from "@/lib/utils/dom";
+import { ScrubUrlParam } from "@/lib/youtube/youtube-url";
 
 export function setupIframeVideoSilencing() {
-  const keepPlaying = location.search.includes("ytdlKeepPlaying=1");
-  const isScrubMode = location.search.includes("ytdlScrubMode=1");
+  const keepPlaying = location.search.includes(`${ScrubUrlParam.KeepPlaying}=1`);
+  const isScrubMode = location.search.includes(`${ScrubUrlParam.ScrubMode}=1`);
 
   function silenceIframeVideo() {
     const elVideo = document.querySelector<HTMLVideoElement>("video");

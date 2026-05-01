@@ -1,3 +1,5 @@
+import { ScrubUrlParam } from "@/lib/youtube/youtube-url";
+
 const SABR_ORIGIN_RULE_ID = 1;
 const INNERTUBE_ORIGIN_RULE_ID = 2;
 const CDN_ORIGIN_RULE_ID = 3;
@@ -107,7 +109,7 @@ export function registerFactoryIframeHeaderStripper() {
 
   browser.webRequest.onHeadersReceived.addListener(
     ({ url, responseHeaders }) => {
-      const isHostedIframe = url.includes("ytdlTrustFactoryMode=1") || url.includes("ytdlScrubMode=1");
+      const isHostedIframe = url.includes(`${ScrubUrlParam.TrustFactoryMode}=1`) || url.includes(`${ScrubUrlParam.ScrubMode}=1`);
       if (!isHostedIframe || !responseHeaders) {
         return {};
       }
@@ -120,8 +122,8 @@ export function registerFactoryIframeHeaderStripper() {
     },
     {
       urls: [
-        "https://www.youtube.com/*ytdlTrustFactoryMode=1*",
-        "https://www.youtube.com/*ytdlScrubMode=1*"
+        `https://www.youtube.com/*${ScrubUrlParam.TrustFactoryMode}=1*`,
+        `https://www.youtube.com/*${ScrubUrlParam.ScrubMode}=1*`
       ],
       types: ["sub_frame"]
     },

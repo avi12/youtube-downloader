@@ -1,6 +1,7 @@
 import { setPlaylistContext, uncancelStreamTransfer } from "../download/stream-transfer";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
+import { ScrubUrlParam } from "@/lib/youtube/youtube-url";
 
 export function registerBackgroundMessageHandlers() {
   onMessage(MessageType.BgDebugLog, ({ data }) => {
@@ -14,9 +15,9 @@ export function registerBackgroundMessageHandlers() {
   } | null = null;
 
   const factoryParams = new URLSearchParams(location.search);
-  const isTrustFactoryMode = factoryParams.get("ytdlTrustFactoryMode") === "1";
+  const isTrustFactoryMode = factoryParams.get(ScrubUrlParam.TrustFactoryMode) === "1";
   const factoryVideoId = factoryParams.get("v") ?? "";
-  const factoryId = factoryParams.get("ytdlFactoryId") ?? "";
+  const factoryId = factoryParams.get(ScrubUrlParam.FactoryId) ?? "";
   if (isTrustFactoryMode) {
     void sendMessage(MessageType.BgDebugLog, {
       msg: `[ytdl:factory-isolated] handler registered factoryId=${factoryId} videoId=${factoryVideoId}`

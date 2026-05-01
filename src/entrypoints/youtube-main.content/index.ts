@@ -7,6 +7,7 @@ import { runScrubSelfDrive, runTrustFactoryDrive } from "./scrub/self-drive";
 import { cancelActiveDownload } from "./video/download";
 import { extractPlaylistMetadata, handleNavigateSuccess } from "./video/playlist-metadata";
 import { extractAndDispatchVideoData } from "./video/video-data";
+import { ScrubUrlParam } from "@/lib/youtube/youtube-url";
 import type { PlayerResponse } from "@/types";
 
 declare global {
@@ -38,7 +39,7 @@ export default defineContentScript({
   world: "MAIN",
   allFrames: true,
   async main() {
-    if (location.search.includes("ytdlScrubMode=1")) {
+    if (location.search.includes(`${ScrubUrlParam.ScrubMode}=1`)) {
       try {
         if (parent !== self) {
           parent.postMessage({
@@ -54,12 +55,12 @@ export default defineContentScript({
       return;
     }
 
-    if (location.search.includes("ytdlTrustFactoryMode=1")) {
+    if (location.search.includes(`${ScrubUrlParam.TrustFactoryMode}=1`)) {
       await runTrustFactoryDrive();
       return;
     }
 
-    if (self !== top && !location.search.includes("ytdl=1")) {
+    if (self !== top && !location.search.includes(`${ScrubUrlParam.Ytdl}=1`)) {
       return;
     }
 

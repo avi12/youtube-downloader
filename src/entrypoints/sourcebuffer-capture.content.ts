@@ -4,6 +4,7 @@ import {
   patchAddSourceBuffer,
   patchAppendBuffer
 } from "./sourcebuffer-capture/sourcebuffer-patches";
+import { ScrubUrlParam } from "@/lib/youtube/youtube-url";
 
 export default defineContentScript({
   matches: ["https://www.youtube.com/*"],
@@ -11,11 +12,11 @@ export default defineContentScript({
   runAt: "document_start",
   allFrames: true,
   main() {
-    if (self !== top && !location.search.includes("ytdl=1")) {
+    if (self !== top && !location.search.includes(`${ScrubUrlParam.Ytdl}=1`)) {
       return;
     }
 
-    const isScrubFrame = location.search.includes("ytdlScrubMode=1");
+    const isScrubFrame = location.search.includes(`${ScrubUrlParam.ScrubMode}=1`);
     const isTopLevelScrubTab = self === top && isScrubFrame;
     if ((self !== top || isTopLevelScrubTab) && !isScrubFrame) {
       patchMediaElementForIframe();

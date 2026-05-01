@@ -5,14 +5,15 @@ import { concatChunks } from "./capture";
 import { waitForPlayerReady, forcePlayback, postAdSeek } from "./player";
 import { scrubLog, sendCapturedResult, sendEmptyResult } from "./segment-emit";
 import { VIDEO_ELEMENT_SELECTOR } from "@/lib/youtube/player-selectors";
+import { ScrubUrlParam } from "@/lib/youtube/youtube-url";
 
 export { runTrustFactoryDrive } from "./trust-factory";
 
 export async function runScrubSelfDrive() {
   const params = new URLSearchParams(location.search);
-  const iScrub = parseInt(params.get("ytdlScrubIndex") ?? "-1", 10);
+  const iScrub = parseInt(params.get(ScrubUrlParam.ScrubIndex) ?? "-1", 10);
   const videoId = params.get("v") ?? "";
-  const windowSec = parseInt(params.get("ytdlScrubWindow") ?? "30", 10);
+  const windowSec = parseInt(params.get(ScrubUrlParam.ScrubWindow) ?? "30", 10);
   const startSec = parseInt(params.get("t") ?? "0", 10);
   if (iScrub < 0 || !videoId) {
     scrubLog("missing scrub index or videoId");

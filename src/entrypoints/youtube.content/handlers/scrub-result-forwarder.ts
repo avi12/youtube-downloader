@@ -1,10 +1,11 @@
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { ScrubIframeMessageType, sendScrubIframeMessage } from "@/lib/messaging/scrub-iframe-messaging";
+import { ScrubUrlParam } from "@/lib/youtube/youtube-url";
 
 export function registerScrubResultForwarder() {
   const params = new URLSearchParams(location.search);
   const helloVideoId = params.get("v") ?? "";
-  const helloIndex = parseInt(params.get("ytdlScrubIndex") ?? "-1", 10);
+  const helloIndex = parseInt(params.get(ScrubUrlParam.ScrubIndex) ?? "-1", 10);
 
   sendScrubIframeMessage(ScrubIframeMessageType.Hello, {
     videoId: helloVideoId,
