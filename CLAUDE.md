@@ -13,6 +13,7 @@
 - Use functional programming
 - Use async/await whenever possible
 - Use DRY with separation of concerns, prioritizing readability
+- Only export symbols consumed by other modules; unexported helpers stay private to their file (enables tree shaking)
 - Minimize indentations
 - Use `for-of` instead of `.forEach`
 - Use modern browser and CSS features
