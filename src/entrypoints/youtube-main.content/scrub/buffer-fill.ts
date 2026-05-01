@@ -10,11 +10,11 @@ const MIN_AUDIO_BYTES = 200_000;
 const BUFFER_FILL_OVERHEAD_MS = 60_000;
 const BUFFER_STALL_SEEK_MS = 2_000;
 
-export async function waitForBufferFill({ videoId, windowSec, startSec, scrubIndex, player }: {
+export async function waitForBufferFill({ videoId, windowSec, startSec, iScrub, player }: {
   videoId: string;
   windowSec: number;
   startSec: number;
-  scrubIndex: number;
+  iScrub: number;
   player: MoviePlayer;
 }) {
   const hardCapMs = windowSec * 1000 + BUFFER_FILL_OVERHEAD_MS;
@@ -65,7 +65,7 @@ export async function waitForBufferFill({ videoId, windowSec, startSec, scrubInd
         && Date.now() - lastBufferedEndAt > BUFFER_STALL_SEEK_MS
       ) {
         const seekTarget = Math.max(startSec, currentBufferedEnd - 1);
-        scrubLog(`buffer-edge seek index=${scrubIndex} bufferedEnd=${currentBufferedEnd.toFixed(1)} seekTarget=${seekTarget.toFixed(1)}`);
+        scrubLog(`buffer-edge seek index=${iScrub} bufferedEnd=${currentBufferedEnd.toFixed(1)} seekTarget=${seekTarget.toFixed(1)}`);
         player.seekTo?.(seekTarget, true);
         lastBufferedEndAt = Date.now();
         // Give the re-fetch time to respond before the stall-grace can fire.

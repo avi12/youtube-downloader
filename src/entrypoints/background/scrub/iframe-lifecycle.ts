@@ -12,9 +12,9 @@ import type { ScrubSession } from "./session-store";
 const MAX_RETRIES_PER_INDEX = 4;
 const IFRAME_DEADLINE_OVERHEAD_MS = 120_000;
 
-function buildScrubIframeUrl({ videoId, scrubIndex, startSec, windowSec }: {
+function buildScrubIframeUrl({ videoId, iScrub, startSec, windowSec }: {
   videoId: string;
-  scrubIndex: number;
+  iScrub: number;
   startSec: number;
   windowSec: number;
 }) {
@@ -22,7 +22,7 @@ function buildScrubIframeUrl({ videoId, scrubIndex, startSec, windowSec }: {
     v: videoId,
     ytdl: "1",
     ytdlScrubMode: "1",
-    ytdlScrubIndex: String(scrubIndex),
+    ytdlScrubIndex: String(iScrub),
     ytdlScrubWindow: String(windowSec),
     t: String(startSec)
   });
@@ -30,26 +30,26 @@ function buildScrubIframeUrl({ videoId, scrubIndex, startSec, windowSec }: {
   return `https://www.youtube.com/watch?${params.toString()}`;
 }
 
-function trackIframeForSession({ session, iframeId, scrubIndex }: {
+function trackIframeForSession({ session, iframeId, iScrub }: {
   session: ScrubSession;
   iframeId: string;
-  scrubIndex: number;
+  iScrub: number;
 }) {
   session.inFlightIframeIds.add(iframeId);
   globalInFlightIframeIds.add(iframeId);
-  iframeIdByVideoIdAndIndex.set(makeIframeKey(session.videoId, scrubIndex), iframeId);
+  iframeIdByVideoIdAndIndex.set(makeIframeKey(session.videoId, iScrub), iframeId);
 }
 
-export function untrackIframe({ session, iframeId, scrubIndex }: {
+export function untrackIframe({ session, iframeId, iScrub }: {
   session: ScrubSession;
   iframeId: string;
-  scrubIndex?: number;
+  iScrub?: number;
 }) {
   session.inFlightIframeIds.delete(iframeId);
   globalInFlightIframeIds.delete(iframeId);
 
-  if (scrubIndex !== undefined) {
-    iframeIdByVideoIdAndIndex.delete(makeIframeKey(session.videoId, scrubIndex));
+  if (iScrub !== undefined) {
+    iframeIdByVideoIdAndIndex.delete(makeIframeKey(session.videoId, iScrub));
   }
 
   const timer = deadlineTimersByIframeId.get(iframeId);
@@ -61,29 +61,29 @@ export function untrackIframe({ session, iframeId, scrubIndex }: {
   void removeHostedIframe(iframeId);
 }
 
-function requeueOrAccept({ session, scrubIndex, logFn }: {
+function requeueOrAccept({ session, iScrub, logFn }: {
   session: ScrubSession;
-  scrubIndex: number;
+  iScrub: number;
   logFn: (msg: string) => void;
 }) {
-  const attempts = session.attemptsByIndex.get(scrubIndex) ?? 0;
+  const attempts = session.attemptsByIndex.get(iScrub) ?? 0;
   if (attempts < MAX_RETRIES_PER_INDEX) {
-    session.attemptsByIndex.set(scrubIndex, attempts + 1);
-    session.pendingIndices.push(scrubIndex);
+    session.attemptsByIndex.set(iScrub, attempts + 1);
+    session.pendingIndices.push(iScrub);
     return;
   }
 
   recordEmptyAfterRetries({
     session,
-    scrubIndex,
+    iScrub,
     logFn
   });
 }
 
-function armIframeDeadline({ session, iframeId, scrubIndex, windowSec, logFn, onExpired }: {
+function armIframeDeadline({ session, iframeId, iScrub, windowSec, logFn, onExpired }: {
   session: ScrubSession;
   iframeId: string;
-  scrubIndex: number;
+  iScrub: number;
   windowSec: number;
   logFn: (msg: string) => void;
   onExpired: () => void;
@@ -96,35 +96,35 @@ function armIframeDeadline({ session, iframeId, scrubIndex, windowSec, logFn, on
       return;
     }
 
-    logFn(`iframe ${iframeId} (index ${scrubIndex}) hung past ${deadlineMs}ms, force-closing and retrying`);
+    logFn(`iframe ${iframeId} (index ${iScrub}) hung past ${deadlineMs}ms, force-closing and retrying`);
     requeueOrAccept({
       session,
-      scrubIndex,
+      iScrub,
       logFn
     });
     untrackIframe({
       session,
       iframeId,
-      scrubIndex
+      iScrub
     });
     onExpired();
   }, deadlineMs);
   deadlineTimersByIframeId.set(iframeId, timer);
 }
 
-export async function openScrubIframe({ session, scrubIndex, startSec, windowSec, logFn, onExpired }: {
+export async function openScrubIframe({ session, iScrub, startSec, windowSec, logFn, onExpired }: {
   session: ScrubSession;
-  scrubIndex: number;
+  iScrub: number;
   startSec: number;
   windowSec: number;
   logFn: (msg: string) => void;
   onExpired: () => void;
 }) {
-  const attempt = session.attemptsByIndex.get(scrubIndex) ?? 0;
-  const iframeId = makeIframeId(session.videoId, scrubIndex, attempt);
+  const attempt = session.attemptsByIndex.get(iScrub) ?? 0;
+  const iframeId = makeIframeId(session.videoId, iScrub, attempt);
   const url = buildScrubIframeUrl({
     videoId: session.videoId,
-    scrubIndex,
+    iScrub,
     startSec,
     windowSec
   });
@@ -133,17 +133,17 @@ export async function openScrubIframe({ session, scrubIndex, startSec, windowSec
     id: iframeId,
     url
   });
-  logFn(`opened scrub iframe id=${iframeId} index=${scrubIndex} t=${startSec} window=${windowSec}s`);
+  logFn(`opened scrub iframe id=${iframeId} index=${iScrub} t=${startSec} window=${windowSec}s`);
 
   trackIframeForSession({
     session,
     iframeId,
-    scrubIndex
+    iScrub
   });
   armIframeDeadline({
     session,
     iframeId,
-    scrubIndex,
+    iScrub,
     windowSec,
     logFn,
     onExpired

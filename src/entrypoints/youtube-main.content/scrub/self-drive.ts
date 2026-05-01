@@ -9,59 +9,59 @@ export { runTrustFactoryDrive } from "./trust-factory";
 
 export async function runScrubSelfDrive() {
   const params = new URLSearchParams(location.search);
-  const scrubIndex = parseInt(params.get("ytdlScrubIndex") ?? "-1", 10);
+  const iScrub = parseInt(params.get("ytdlScrubIndex") ?? "-1", 10);
   const videoId = params.get("v") ?? "";
   const windowSec = parseInt(params.get("ytdlScrubWindow") ?? "30", 10);
   const startSec = parseInt(params.get("t") ?? "0", 10);
-  if (scrubIndex < 0 || !videoId) {
+  if (iScrub < 0 || !videoId) {
     scrubLog("missing scrub index or videoId");
     return;
   }
 
-  scrubLog(`scrub start videoId=${videoId} index=${scrubIndex} startSec=${startSec} window=${windowSec}s`);
+  scrubLog(`scrub start videoId=${videoId} index=${iScrub} startSec=${startSec} window=${windowSec}s`);
 
   const player = await waitForPlayerReady();
   if (!player) {
-    scrubLog(`player never ready index=${scrubIndex}`);
+    scrubLog(`player never ready index=${iScrub}`);
     sendEmptyResult({
       videoId,
-      scrubIndex
+      iScrub
     });
     return;
   }
 
-  scrubLog(`player ready index=${scrubIndex} duration=${player.getDuration?.() ?? 0}`);
+  scrubLog(`player ready index=${iScrub} duration=${player.getDuration?.() ?? 0}`);
 
   const isPlaying = await forcePlayback(player);
   if (!isPlaying) {
-    scrubLog(`playback never started index=${scrubIndex}`);
+    scrubLog(`playback never started index=${iScrub}`);
     sendEmptyResult({
       videoId,
-      scrubIndex
+      iScrub
     });
     return;
   }
 
-  scrubLog(`playback started index=${scrubIndex}`);
+  scrubLog(`playback started index=${iScrub}`);
   await waitForAdToClear();
-  scrubLog(`ad cleared index=${scrubIndex}`);
+  scrubLog(`ad cleared index=${iScrub}`);
 
   postAdSeek(player, startSec);
   await waitForBufferFill({
     videoId,
     windowSec,
     startSec,
-    scrubIndex,
+    iScrub,
     player
   });
-  scrubLog(`buffer fill complete index=${scrubIndex}`);
+  scrubLog(`buffer fill complete index=${iScrub}`);
 
   const capture = window.__ytdlCapture?.capturedMedia.get(videoId);
   if (!capture || (capture.videoTotalBytes === 0 && capture.audioTotalBytes === 0)) {
-    scrubLog(`no capture data index=${scrubIndex}`);
+    scrubLog(`no capture data index=${iScrub}`);
     sendEmptyResult({
       videoId,
-      scrubIndex
+      iScrub
     });
     return;
   }
@@ -71,12 +71,12 @@ export async function runScrubSelfDrive() {
     ? elVideo.buffered.end(elVideo.buffered.length - 1)
     : startSec + windowSec;
 
-  scrubLog(`emitting index=${scrubIndex} video=${capture.videoTotalBytes}B audio=${capture.audioTotalBytes}B bufferedEnd=${bufferedEnd.toFixed(1)}s`);
+  scrubLog(`emitting index=${iScrub} video=${capture.videoTotalBytes}B audio=${capture.audioTotalBytes}B bufferedEnd=${bufferedEnd.toFixed(1)}s`);
   sendCapturedResult({
     videoId,
-    scrubIndex,
-    videoBuffer: concatChunks(capture.videoChunks).buffer as ArrayBuffer,
-    audioBuffer: concatChunks(capture.audioChunks).buffer as ArrayBuffer,
+    iScrub,
+    videoBytes: concatChunks(capture.videoChunks),
+    audioBytes: concatChunks(capture.audioChunks),
     videoMimeType: capture.videoMimeType,
     audioMimeType: capture.audioMimeType,
     videoBufferEndSec: bufferedEnd

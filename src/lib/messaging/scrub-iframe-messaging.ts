@@ -25,14 +25,14 @@ type ScrubIframeMessageType = (typeof ScrubIframeMessageType)[keyof typeof Scrub
 interface ScrubIframeProtocolMap {
   [ScrubIframeMessageType.Hello]: {
     videoId: string;
-    scrubIndex: number;
+    iScrub: number;
   };
   [ScrubIframeMessageType.Debug]: {
     msg: string;
   };
   [ScrubIframeMessageType.Segment]: {
     videoId: string;
-    scrubIndex: number;
+    iScrub: number;
     videoBytes: Uint8Array;
     audioBytes: Uint8Array;
     videoMimeType: string;

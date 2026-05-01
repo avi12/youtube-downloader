@@ -81,7 +81,7 @@ export interface PageMessengerSchema {
   [CrossWorldMessage.OptionsUpdate](data: { isShowNativeDownload: boolean }): void;
   [CrossWorldMessage.IframeScrubSegment](data: {
     videoId: string;
-    scrubIndex: number;
+    iScrub: number;
     videoBytes: Uint8Array;
     audioBytes: Uint8Array;
     videoMimeType: string;
@@ -117,7 +117,7 @@ export interface PageMessengerSchema {
   [CrossWorldMessage.RunProgressiveSabr](data: DownloadRequest): void;
   [CrossWorldMessage.RunScrubSabr](data: {
     videoId: string;
-    scrubIndex: number;
+    iScrub: number;
     startSec: number;
     windowSec: number;
   }): void;

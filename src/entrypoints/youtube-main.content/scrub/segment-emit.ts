@@ -32,13 +32,13 @@ export function scrubLog(msg: string) {
   });
 }
 
-export function sendEmptyResult({ videoId, scrubIndex }: {
+export function sendEmptyResult({ videoId, iScrub }: {
   videoId: string;
-  scrubIndex: number;
+  iScrub: number;
 }) {
   void crossWorldMessenger.sendMessage(CrossWorldMessage.IframeScrubSegment, {
     videoId,
-    scrubIndex,
+    iScrub,
     videoBytes: new Uint8Array(),
     audioBytes: new Uint8Array(),
     videoMimeType: "",
@@ -47,7 +47,7 @@ export function sendEmptyResult({ videoId, scrubIndex }: {
   postToHost({
     type: POST_MESSAGE_TYPE_SEGMENT,
     videoId,
-    scrubIndex,
+    iScrub,
     videoBuffer: new ArrayBuffer(0),
     audioBuffer: new ArrayBuffer(0),
     videoMimeType: "",
@@ -56,28 +56,30 @@ export function sendEmptyResult({ videoId, scrubIndex }: {
 }
 
 export function sendCapturedResult({
-  videoId, scrubIndex, videoBuffer, audioBuffer, videoMimeType, audioMimeType, videoBufferEndSec
+  videoId, iScrub, videoBytes, audioBytes, videoMimeType, audioMimeType, videoBufferEndSec
 }: {
   videoId: string;
-  scrubIndex: number;
-  videoBuffer: ArrayBuffer;
-  audioBuffer: ArrayBuffer;
+  iScrub: number;
+  videoBytes: Uint8Array;
+  audioBytes: Uint8Array;
   videoMimeType: string;
   audioMimeType: string;
   videoBufferEndSec: number;
 }) {
+  const videoBuffer = videoBytes.buffer.slice(videoBytes.byteOffset, videoBytes.byteOffset + videoBytes.byteLength);
+  const audioBuffer = audioBytes.buffer.slice(audioBytes.byteOffset, audioBytes.byteOffset + audioBytes.byteLength);
   void crossWorldMessenger.sendMessage(CrossWorldMessage.IframeScrubSegment, {
     videoId,
-    scrubIndex,
-    videoBytes: new Uint8Array(videoBuffer),
-    audioBytes: new Uint8Array(audioBuffer),
+    iScrub,
+    videoBytes,
+    audioBytes,
     videoMimeType,
     audioMimeType
   });
   postToHost({
     type: POST_MESSAGE_TYPE_SEGMENT,
     videoId,
-    scrubIndex,
+    iScrub,
     videoBuffer,
     audioBuffer,
     videoMimeType,

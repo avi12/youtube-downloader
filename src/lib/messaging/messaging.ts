@@ -209,7 +209,7 @@ interface ProtocolMap {
 
   iframeScrubSegmentReady(data: {
     videoId: string;
-    scrubIndex: number;
+    iScrub: number;
     videoBytes: Uint8Array;
     audioBytes: Uint8Array;
     videoMimeType: string;

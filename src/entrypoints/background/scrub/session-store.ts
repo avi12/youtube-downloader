@@ -11,7 +11,7 @@ export interface ReceivedSegment {
 
 export interface SegmentArrival extends ReceivedSegment {
   videoId: string;
-  scrubIndex: number;
+  iScrub: number;
 }
 
 export interface ScrubSession {
@@ -70,12 +70,12 @@ export const iframeIdByVideoIdAndIndex = new Map<string, string>();
 export const deadlineTimersByIframeId = new Map<string, ReturnType<typeof setTimeout>>();
 export const globalInFlightIframeIds = new Set<string>();
 
-export function makeIframeKey(videoId: string, scrubIndex: number) {
-  return `${videoId}:${scrubIndex}`;
+export function makeIframeKey(videoId: string, iScrub: number) {
+  return `${videoId}:${iScrub}`;
 }
 
-export function makeIframeId(videoId: string, scrubIndex: number, attempt: number) {
-  return `${videoId}:${scrubIndex}:${attempt}`;
+export function makeIframeId(videoId: string, iScrub: number, attempt: number) {
+  return `${videoId}:${iScrub}:${attempt}`;
 }
 
 export function buildSession(data: StartIframeScrubArgs, stepSec: number, expectedCount: number): ScrubSession {
@@ -110,14 +110,14 @@ export function buildSession(data: StartIframeScrubArgs, stepSec: number, expect
   };
 }
 
-export function recordEmptyAfterRetries({ session, scrubIndex, logFn }: {
+export function recordEmptyAfterRetries({ session, iScrub, logFn }: {
   session: ScrubSession;
-  scrubIndex: number;
+  iScrub: number;
   logFn: (msg: string) => void;
 }) {
-  logFn(`index ${scrubIndex} exhausted retries, accepting empty`);
+  logFn(`index ${iScrub} exhausted retries, accepting empty`);
   session.receivedSegments.set(
-    scrubIndex, {
+    iScrub, {
       videoBytes: new Uint8Array(0),
       audioBytes: new Uint8Array(0),
       videoMimeType: "",

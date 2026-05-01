@@ -1,9 +1,9 @@
 import { ensureProcessor } from "../handlers/processor";
+import { fillGlobalSlots, logScrubOrchestratorEvent } from "./iframe-scheduler";
 import { handleSegmentArrival } from "./segment-handler";
 import { releaseSession } from "./session-finalizer";
 import { buildSession, sessionsByVideoId } from "./session-store";
 import type { StartIframeScrubArgs, ScrubSession } from "./session-store";
-import { fillGlobalSlots, logScrubOrchestratorEvent } from "./iframe-scheduler";
 import { broadcastDebugLogToYouTubeTabs } from "@/lib/messaging/debug-log";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
 import { ScrubIframeMessageType, listenForScrubIframeMessages } from "@/lib/messaging/scrub-iframe-messaging";
@@ -90,7 +90,7 @@ export function cancelIframeScrubSession(videoId: string) {
 export function registerIframeScrubOrchestrator() {
   listenForScrubIframeMessages({
     [ScrubIframeMessageType.Hello](data) {
-      logScrubOrchestratorEvent(`iframe port hello videoId=${data.videoId} index=${data.scrubIndex}`);
+      logScrubOrchestratorEvent(`iframe port hello videoId=${data.videoId} index=${data.iScrub}`);
     },
     [ScrubIframeMessageType.Debug](data) {
       void broadcastDebugLogToYouTubeTabs(data.msg);

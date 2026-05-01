@@ -8,7 +8,7 @@ export function registerScrubResultForwarder() {
 
   sendScrubIframeMessage(ScrubIframeMessageType.Hello, {
     videoId: helloVideoId,
-    scrubIndex: helloIndex
+    iScrub: helloIndex
   });
   sendScrubIframeMessage(ScrubIframeMessageType.Debug, {
     msg: `[ytdl:scrub-isolated] forwarder registered self===top=${self === top} url=${location.search.slice(0, 120)}`
@@ -20,11 +20,11 @@ export function registerScrubResultForwarder() {
 
   crossWorldMessenger.onMessage(CrossWorldMessage.IframeScrubSegment, ({ data }) => {
     sendScrubIframeMessage(ScrubIframeMessageType.Debug, {
-      msg: `[ytdl:scrub-isolated] received from MAIN index=${data.scrubIndex} videoBytes=${data.videoBytes.byteLength} audioBytes=${data.audioBytes.byteLength}`
+      msg: `[ytdl:scrub-isolated] received from MAIN index=${data.iScrub} videoBytes=${data.videoBytes.byteLength} audioBytes=${data.audioBytes.byteLength}`
     });
     sendScrubIframeMessage(ScrubIframeMessageType.Segment, {
       videoId: data.videoId,
-      scrubIndex: data.scrubIndex,
+      iScrub: data.iScrub,
       videoBytes: data.videoBytes,
       audioBytes: data.audioBytes,
       videoMimeType: data.videoMimeType,
@@ -33,7 +33,7 @@ export function registerScrubResultForwarder() {
       videoBufferEndSec: data.videoBufferEndSec
     });
     sendScrubIframeMessage(ScrubIframeMessageType.Debug, {
-      msg: `[ytdl:scrub-isolated] forwarded to BG index=${data.scrubIndex}`
+      msg: `[ytdl:scrub-isolated] forwarded to BG index=${data.iScrub}`
     });
   });
 }

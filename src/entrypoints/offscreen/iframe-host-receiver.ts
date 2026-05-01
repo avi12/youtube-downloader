@@ -59,7 +59,7 @@ export function forwardToIframe({ iframeId, payload }: {
 interface ScrubSegmentMessage {
   type: typeof IFRAME_MSG_SEGMENT;
   videoId: string;
-  scrubIndex: number;
+  iScrub: number;
   videoBuffer: ArrayBuffer;
   audioBuffer: ArrayBuffer;
   videoMimeType: string;
@@ -92,12 +92,12 @@ export function initScrubIframeRelay() {
     }
 
     const {
-      videoId, scrubIndex, videoBuffer, audioBuffer,
+      videoId, iScrub, videoBuffer, audioBuffer,
       videoMimeType, audioMimeType, videoBufferStartSec, videoBufferEndSec
     } = e.data;
     void sendMessage(MessageType.IframeScrubSegmentReady, {
       videoId,
-      scrubIndex,
+      iScrub,
       videoBytes: new Uint8Array(videoBuffer),
       audioBytes: new Uint8Array(audioBuffer),
       videoMimeType,
