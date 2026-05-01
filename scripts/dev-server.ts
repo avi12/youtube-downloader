@@ -127,25 +127,6 @@ const CHROME_CDP_PORT = 9222;
 const FIREFOX_CDP_PORT = 9230;
 const REBUILD_DEBOUNCE_MS = 800;
 
-async function findFreeTcpPort(startPort: number) {
-  const MAX_PROBES = 50;
-  for (let port = startPort; port < startPort + MAX_PROBES; port++) {
-    const isAvailable = await new Promise<boolean>(resolvePromise => {
-      const server = createServer();
-      server.once("error", () => resolvePromise(false));
-      server.once("listening", () => {
-        server.close(() => resolvePromise(true));
-      });
-      server.listen(port, "127.0.0.1");
-    });
-    if (isAvailable) {
-      return port;
-    }
-  }
-
-  return startPort;
-}
-
 // ── Chrome profile setup ────────────────────────────────────────────────────
 
 const CHROME_PROFILE_SENTINEL = join(CHROME_PROFILE_DIR, "Default", ".seeded");
