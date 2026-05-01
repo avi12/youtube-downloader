@@ -9,12 +9,16 @@ export async function attemptSabrDownload({ request, signal, tabId }: {
   tabId: number;
 }) {
   const sabrAbortController = new AbortController();
-  let sabrStallTimeoutId = setTimeout(() => sabrAbortController.abort(), SABR_STALL_TIMEOUT_MS);
+  function scheduleStallAbort() {
+    return setTimeout(() => sabrAbortController.abort(), SABR_STALL_TIMEOUT_MS);
+  }
+
+  let sabrStallTimeoutId = scheduleStallAbort();
   signal.addEventListener("abort", () => sabrAbortController.abort(), { once: true });
 
   function resetSabrStallTimer() {
     clearTimeout(sabrStallTimeoutId);
-    sabrStallTimeoutId = setTimeout(() => sabrAbortController.abort(), SABR_STALL_TIMEOUT_MS);
+    sabrStallTimeoutId = scheduleStallAbort();
   }
 
   try {
