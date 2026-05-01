@@ -2,6 +2,8 @@ import { untrackIframe } from "./iframe-lifecycle";
 import { finalizeSession } from "./session-finalizer";
 import { iframeIdByVideoIdAndIndex, makeIframeKey, sessionsByVideoId } from "./session-store";
 import type { ReceivedSegment, SegmentArrival, ScrubSession } from "./session-store";
+import { MessageType, sendMessage } from "@/lib/messaging/messaging";
+import { ProgressType } from "@/types";
 
 const MAX_RETRIES_PER_INDEX = 4;
 const RETRY_DELAY_BASE_MS = 1500;
@@ -71,6 +73,16 @@ export async function handleSegmentArrival(
   );
 
   logFn(`received segment ${data.iScrub + 1}/${session.expectedCount} for ${data.videoId} (video=${videoBytes}B audio=${audioBytes}B)`);
+
+  // Drive the watch-page progress ring's capture phase (first 80%) by mapping
+  // segment-arrival count to a 0..1 fraction. The page-side mapToBarProgress
+  // scales Video-typed progress into the 0..0.8 ring share; FFmpeg progress
+  // takes over for the remaining 0.8..1.0 once segments finish capturing.
+  void sendMessage(MessageType.UpdateDownloadProgress, {
+    videoId: data.videoId,
+    progress: session.receivedSegments.size / session.expectedCount,
+    progressType: ProgressType.Video
+  }, session.tabId);
 
   if (session.receivedSegments.size >= session.expectedCount) {
     await finalizeSession(session, logFn);
