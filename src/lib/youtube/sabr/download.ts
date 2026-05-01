@@ -25,26 +25,18 @@ export async function fetchAudioViaSabrStream({ sabrConfig, audioFormat, fetchFn
   audioFormat: AdaptiveFormatItem;
   fetchFn: typeof globalThis.fetch;
   poToken: string;
-  refreshToken?: RefreshPoToken;
 }) {
   const sabrStream = createSabrStream({
     sabrConfig,
     fetchFn,
     poToken
   });
-  const refreshInterval = refreshToken ? startPoTokenRefreshLoop(sabrStream, refreshToken) : null;
-  try {
-    const { audioStream } = await sabrStream.start({
-      audioFormat: adaptiveFormatToSabrFormat(audioFormat),
-      maxRetries: 10
-    });
-    return await collectReadableStream({
-      stream: audioStream,
-      expectedBytes: parseInt(audioFormat.contentLength, 10)
-    });
-  } finally {
-    if (refreshInterval) {
-      clearInterval(refreshInterval);
-    }
-  }
+  const { audioStream } = await sabrStream.start({
+    audioFormat: adaptiveFormatToSabrFormat(audioFormat),
+    maxRetries: 10
+  });
+  return collectReadableStream({
+    stream: audioStream,
+    expectedBytes: parseInt(audioFormat.contentLength, 10)
+  });
 }

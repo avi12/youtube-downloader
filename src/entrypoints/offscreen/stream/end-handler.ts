@@ -128,6 +128,7 @@ export function handleProcessStreamEnd(data: StreamEndData) {
   );
 
   const primaryAudio = accumulator?.audioStreams.get("audio");
+  const primaryAudioLabel = audioTrackLabels[0];
 
   enqueueStreamData({
     type,

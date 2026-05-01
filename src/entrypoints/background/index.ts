@@ -67,7 +67,6 @@ export default defineBackground(() => {
   registerDownloadHandlers();
   registerIframeScrubOrchestrator();
   registerPipelineHandlers();
-  registerPoTokenRefreshListener();
   registerRecentDownloadsRetention();
   registerStorageHandlers();
   registerTabLifecycleHandlers();

@@ -1,5 +1,6 @@
 import { VIDEO_CARD_SELECTOR, isCardPending, mountGridButton } from "./grid-card-injector";
 import { CHILD_LIST_SUBTREE } from "@/lib/utils/dom";
+import { mount, unmount } from "svelte";
 
 const PAGE_MANAGER_SELECTOR = "ytd-page-manager";
 const VIEWPORT_MARGIN = "200px";
