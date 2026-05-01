@@ -6,14 +6,13 @@ import { DownloadType, ProgressType } from "@/types";
 import type { DownloadRequest } from "@/types";
 
 function assembleAdditionalAudioTracks({
-  cdnResults,
+  extraAudioBytes,
   additionalAudioFormats
 }: {
-  cdnResults: (Uint8Array | null)[];
+  extraAudioBytes: (Uint8Array | null)[];
   additionalAudioFormats: DownloadRequest["additionalAudioFormats"];
 }) {
   const tracks: DownloadResult["additionalAudioTracks"] = [];
-  const extraAudioBytes = cdnResults.slice(2);
   for (const [i, format] of (additionalAudioFormats ?? []).entries()) {
     tracks.push({
       data: extraAudioBytes[i] ?? null,
@@ -61,7 +60,7 @@ export async function downloadViaCdn({ request, signal, videoId, tabId }: {
     });
   }
 
-  function fetchStream({ url, onBytes }: {
+  async function fetchStream({ url, onBytes }: {
     url: string | null | undefined;
     onBytes: (bytes: number) => void;
   }) {
@@ -76,39 +75,52 @@ export async function downloadViaCdn({ request, signal, videoId, tabId }: {
     });
   }
 
+  function trackVideoBytes(bytes: number) {
+    videoReceivedBytes += bytes;
+    videoTotalBytes = Math.max(videoTotalBytes, videoReceivedBytes);
+    reportProgress();
+  }
+
+  function trackAudioBytes(bytes: number) {
+    audioReceivedBytes += bytes;
+    audioTotalBytes = Math.max(audioTotalBytes, audioReceivedBytes);
+    reportProgress();
+  }
+
+  const wantsVideo = type !== DownloadType.Audio;
+  const wantsAudio = type !== DownloadType.Video;
   const extraUrls = resolvedExtraAudioUrls ?? [];
-  const cdnResults = await Promise.all([
-    type !== DownloadType.Audio
-      ? fetchStream({
-        url: resolvedVideoUrl,
-        onBytes(bytes) {
-          videoReceivedBytes += bytes;
-          videoTotalBytes = Math.max(videoTotalBytes, videoReceivedBytes);
-          reportProgress();
-        }
-      })
-      : Promise.resolve(null),
-    type !== DownloadType.Video
-      ? fetchStream({
-        url: resolvedAudioUrl,
-        onBytes(bytes) {
-          audioReceivedBytes += bytes;
-          audioTotalBytes = Math.max(audioTotalBytes, audioReceivedBytes);
-          reportProgress();
-        }
-      })
-      : Promise.resolve(null),
-    ...extraUrls.map(url => fetchStream({
-      url,
-      onBytes() {}
-    }))
+
+  const videoPromise = wantsVideo
+    ? fetchStream({
+      url: resolvedVideoUrl,
+      onBytes: trackVideoBytes
+    })
+    : Promise.resolve(null);
+
+  const audioPromise = wantsAudio
+    ? fetchStream({
+      url: resolvedAudioUrl,
+      onBytes: trackAudioBytes
+    })
+    : Promise.resolve(null);
+
+  const extraPromises = extraUrls.map(url => fetchStream({
+    url,
+    onBytes() {}
+  }));
+
+  const [videoData, audioData, ...extraAudioBytes] = await Promise.all([
+    videoPromise,
+    audioPromise,
+    ...extraPromises
   ]);
 
   return {
-    videoData: cdnResults[0] ?? null,
-    audioData: cdnResults[1] ?? null,
+    videoData: videoData ?? null,
+    audioData: audioData ?? null,
     additionalAudioTracks: assembleAdditionalAudioTracks({
-      cdnResults,
+      extraAudioBytes,
       additionalAudioFormats
     })
   };
