@@ -10,13 +10,13 @@ export async function enrichWithAlternateClientUrls(
   request: DownloadRequest,
   tabId?: number
 ) {
-  const needsVideoUrl = !request.resolvedVideoUrl;
-  const needsAudioUrl = !request.resolvedAudioUrl;
+  const isVideoUrlRequired = !request.resolvedVideoUrl;
+  const isAudioUrlRequired = !request.resolvedAudioUrl;
   const extraFormats = request.additionalAudioFormats ?? [];
   const existingExtraUrls = request.resolvedExtraAudioUrls ?? [];
-  const needsExtraAudioUrls = extraFormats.length > 0 &&
+  const isExtraAudioUrlsRequired = extraFormats.length > 0 &&
     extraFormats.some((_, i) => !existingExtraUrls[i]);
-  if (!needsVideoUrl && !needsAudioUrl && !needsExtraAudioUrls) {
+  if (!isVideoUrlRequired && !isAudioUrlRequired && !isExtraAudioUrlsRequired) {
     return request;
   }
 
@@ -26,15 +26,15 @@ export async function enrichWithAlternateClientUrls(
       poToken: request.alternateClientPoToken || request.poToken || ""
     });
     const enriched: DownloadRequest = { ...request };
-    if (needsVideoUrl) {
+    if (isVideoUrlRequired) {
       enriched.resolvedVideoUrl = findFormatUrlByItag(formats, request.videoItag);
     }
 
-    if (needsAudioUrl) {
+    if (isAudioUrlRequired) {
       enriched.resolvedAudioUrl = findFormatUrlByItag(formats, request.audioItag);
     }
 
-    if (needsExtraAudioUrls) {
+    if (isExtraAudioUrlsRequired) {
       enriched.resolvedExtraAudioUrls = extraFormats.map((format, i) =>
         existingExtraUrls[i] ?? findExtraAudioFormatUrl(formats, format.itag, format.audioTrack?.id));
     }

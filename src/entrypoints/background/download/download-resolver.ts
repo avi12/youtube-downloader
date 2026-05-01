@@ -14,14 +14,14 @@ export async function resolveDownloadResult({ request, cdnRequest, signal, video
   videoId: string;
   tabId: number;
 }) {
-  const haveCdnUrls = Boolean(cdnRequest.resolvedVideoUrl || cdnRequest.resolvedAudioUrl);
+  const isAnyCdnUrlPresent = Boolean(cdnRequest.resolvedVideoUrl || cdnRequest.resolvedAudioUrl);
   broadcastDebugLogToTab(
-    `[ytdl:bg] CDN-first check: haveUrls=${haveCdnUrls} video=${Boolean(cdnRequest.resolvedVideoUrl)} audio=${Boolean(cdnRequest.resolvedAudioUrl)}`,
+    `[ytdl:bg] CDN-first check: haveUrls=${isAnyCdnUrlPresent} video=${Boolean(cdnRequest.resolvedVideoUrl)} audio=${Boolean(cdnRequest.resolvedAudioUrl)}`,
     tabId
   );
 
   let result: DownloadResult | null = null;
-  if (haveCdnUrls) {
+  if (isAnyCdnUrlPresent) {
     result = await downloadViaCdn({
       request: cdnRequest,
       signal,
@@ -43,13 +43,13 @@ export async function resolveDownloadResult({ request, cdnRequest, signal, video
   }
 
   if (!result?.audioData && !result?.videoData) {
-    const usedFallback = await tryIframeScrubFallback({
+    const isFallbackUsed = await tryIframeScrubFallback({
       request,
       cdnRequest,
       videoId,
       tabId
     });
-    if (usedFallback) {
+    if (isFallbackUsed) {
       return "iframe-scrub";
     }
   }

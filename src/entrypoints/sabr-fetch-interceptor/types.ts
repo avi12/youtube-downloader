@@ -18,7 +18,7 @@ export interface ProgressiveFetchResult {
   audioItag: number;
   videoItag: number;
   iterations: number;
-  stalled: boolean;
+  isStalled: boolean;
   carryState: ProgressiveCarryState;
 }
 
@@ -57,7 +57,7 @@ declare global {
   interface Window {
     __ytdlSabrTemplate?: YtdlSabrTemplate;
     __ytdlSabr?: {
-      hasTemplate: () => boolean;
+      isTemplatePresent: () => boolean;
       fetchProgressive: (options: {
         targetDurationMs: number;
         maxIterations?: number;

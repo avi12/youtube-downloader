@@ -128,7 +128,7 @@ export default defineContentScript({
     });
 
     window.__ytdlSabr = {
-      hasTemplate: () => Boolean(window.__ytdlSabrTemplate),
+      isTemplatePresent: () => Boolean(window.__ytdlSabrTemplate),
       fetchProgressive: ({ targetDurationMs, maxIterations = 80, carryState = null }) => fetchProgressive({
         targetDurationMs,
         maxIterations,
@@ -148,7 +148,7 @@ export default defineContentScript({
           originalFetch,
           carryState: null
         });
-        console.log(`[ytdl:sabr-progressive-main] fetchProgressive returned audio=${result.audioBytes.byteLength}B video=${result.videoBytes.byteLength}B iter=${result.iterations} stalled=${result.stalled}`);
+        console.log(`[ytdl:sabr-progressive-main] fetchProgressive returned audio=${result.audioBytes.byteLength}B video=${result.videoBytes.byteLength}B iter=${result.iterations} stalled=${result.isStalled}`);
         const audioMimeType = data.audioFormat?.mimeType?.split(";")[0] ?? "audio/mp4";
         const videoMimeType = data.videoFormat?.mimeType?.split(";")[0] ?? "video/mp4";
         void crossWorldMessenger.sendMessage(CrossWorldMessage.StreamData, {

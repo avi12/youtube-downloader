@@ -189,12 +189,12 @@ function buildContiguousBytes(format: FormatProgress) {
   return out;
 }
 
-function buildResult({ state, audioItag, videoItag, iterations, stalled }: {
+function buildResult({ state, audioItag, videoItag, iterations, isStalled }: {
   state: ProgressiveState;
   audioItag: number;
   videoItag: number;
   iterations: number;
-  stalled: boolean;
+  isStalled: boolean;
 }) {
   return {
     audioBytes: buildContiguousBytes(state.audio),
@@ -204,7 +204,7 @@ function buildResult({ state, audioItag, videoItag, iterations, stalled }: {
     audioItag,
     videoItag,
     iterations,
-    stalled,
+    isStalled,
     carryState: {
       audioEndMs: state.audio.endMs,
       audioLastSeq: state.audio.lastSeq,
@@ -306,7 +306,7 @@ async function runFetchIteration(
           audioItag,
           videoItag,
           iterations: iteration + 1,
-          stalled: true
+          isStalled: true
         })
       };
     }
@@ -413,6 +413,6 @@ export async function fetchProgressive({
     audioItag,
     videoItag,
     iterations: iteration + 1,
-    stalled: false
+    isStalled: false
   });
 }

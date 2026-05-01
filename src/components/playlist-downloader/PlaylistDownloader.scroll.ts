@@ -16,7 +16,7 @@ function countRenderedVideos(elContents: Element) {
   return elContents.querySelectorAll(Selector.PlaylistVideo).length;
 }
 
-function hasMoreToLoad(elContents: Element) {
+function isMoreAvailable(elContents: Element) {
   return Boolean(elContents.querySelector(Selector.Continuation));
 }
 
@@ -43,9 +43,9 @@ async function waitForRoundTransition() {
 export async function revealAllPlaylistVideos(
   onProgress: (update: {
     revealedCount: number;
-    hasMore: boolean;
+    isMoreAvailable: boolean;
   }) => void,
-  shouldAbort: () => boolean
+  isAbortRequested: () => boolean
 ) {
   const elContents = queryPlaylistContents();
   if (!elContents) {
@@ -57,15 +57,15 @@ export async function revealAllPlaylistVideos(
   let lastCount = countRenderedVideos(elContents);
   onProgress({
     revealedCount: lastCount,
-    hasMore: hasMoreToLoad(elContents)
+    isMoreAvailable: isMoreAvailable(elContents)
   });
 
   while (Date.now() < deadline) {
-    if (shouldAbort()) {
+    if (isAbortRequested()) {
       return;
     }
 
-    if (!hasMoreToLoad(elContents)) {
+    if (!isMoreAvailable(elContents)) {
       return;
     }
 
@@ -75,7 +75,7 @@ export async function revealAllPlaylistVideos(
     const nextCount = countRenderedVideos(elContents);
     onProgress({
       revealedCount: nextCount,
-      hasMore: hasMoreToLoad(elContents)
+      isMoreAvailable: isMoreAvailable(elContents)
     });
 
     if (nextCount > lastCount) {

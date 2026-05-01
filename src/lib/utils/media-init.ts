@@ -32,7 +32,7 @@ function findWebmClusterOffset(bytes: Uint8Array) {
   return bytes.length;
 }
 
-function hasFmp4Init(bytes: Uint8Array) {
+function isFmp4InitPresent(bytes: Uint8Array) {
   if (bytes.length < 8) {
     return false;
   }
@@ -40,7 +40,7 @@ function hasFmp4Init(bytes: Uint8Array) {
   return readFmp4BoxType(bytes, 0) !== "moof";
 }
 
-function hasWebmInit(bytes: Uint8Array) {
+function isWebmInitPresent(bytes: Uint8Array) {
   return bytes.length >= 4 && bytes[0] === 0x1a && bytes[1] === 0x45 && bytes[2] === 0xdf && bytes[3] === 0xa3;
 }
 
@@ -58,7 +58,7 @@ export function extractInit(bytes: Uint8Array, mimeType: string) {
 
   const isWebm = mimeType.includes("webm") || mimeType.includes("opus");
   if (isWebm) {
-    if (!hasWebmInit(bytes)) {
+    if (!isWebmInitPresent(bytes)) {
       return undefined;
     }
 
@@ -66,7 +66,7 @@ export function extractInit(bytes: Uint8Array, mimeType: string) {
     return end > 0 ? bytes.subarray(0, end) : undefined;
   }
 
-  if (!hasFmp4Init(bytes)) {
+  if (!isFmp4InitPresent(bytes)) {
     return undefined;
   }
 
@@ -80,8 +80,8 @@ export function prependInitIfMissing(bytes: Uint8Array, init: Uint8Array, mimeTy
   }
 
   const isWebm = mimeType.includes("webm") || mimeType.includes("opus");
-  const alreadyHasInit = isWebm ? hasWebmInit(bytes) : hasFmp4Init(bytes);
-  if (alreadyHasInit) {
+  const isInitAlreadyPresent = isWebm ? isWebmInitPresent(bytes) : isFmp4InitPresent(bytes);
+  if (isInitAlreadyPresent) {
     return bytes;
   }
 

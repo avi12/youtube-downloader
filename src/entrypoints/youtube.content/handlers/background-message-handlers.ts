@@ -23,18 +23,18 @@ export function registerBackgroundMessageHandlers() {
     });
   }
 
-  let factoryTemplateSent = false;
+  let isFactoryTemplateSent = false;
   crossWorldMessenger.onMessage(CrossWorldMessage.SabrTemplateCaptured, ({ data }) => {
     cachedSabrTemplate = data;
 
     if (isTrustFactoryMode) {
       void sendMessage(MessageType.BgDebugLog, {
-        msg: `[ytdl:factory-isolated] received SabrTemplateCaptured factoryId=${factoryId} bodyB64Len=${data.bodyBase64.length} sent=${factoryTemplateSent}`
+        msg: `[ytdl:factory-isolated] received SabrTemplateCaptured factoryId=${factoryId} bodyB64Len=${data.bodyBase64.length} sent=${isFactoryTemplateSent}`
       });
     }
 
-    if (isTrustFactoryMode && !factoryTemplateSent && factoryVideoId) {
-      factoryTemplateSent = true;
+    if (isTrustFactoryMode && !isFactoryTemplateSent && factoryVideoId) {
+      isFactoryTemplateSent = true;
       void sendMessage(MessageType.SabrTemplateReady, {
         videoId: factoryVideoId,
         factoryId,

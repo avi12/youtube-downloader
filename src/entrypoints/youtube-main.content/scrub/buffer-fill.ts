@@ -23,7 +23,7 @@ export async function waitForBufferFill({ videoId, windowSec, startSec, iScrub, 
   const initialBytes = window.__ytdlCapture?.capturedMedia.get(videoId)?.audioTotalBytes ?? 0;
   let lastAudioBytes = initialBytes;
   let lastChangeAt = Date.now();
-  let hasGrownPastBaseline = false;
+  let isGrownPastBaseline = false;
   // Short tail windows (< stepSec) produce less audio than a full 60s segment.
   // Skip the MIN_AUDIO_BYTES gate so we don't loop until the hard cap fires.
   const isTinyWindow = windowSec <= 10;
@@ -78,10 +78,10 @@ export async function waitForBufferFill({ videoId, windowSec, startSec, iScrub, 
     if (currentBytes !== lastAudioBytes) {
       lastAudioBytes = currentBytes;
       lastChangeAt = Date.now();
-      hasGrownPastBaseline = hasGrownPastBaseline || currentBytes > initialBytes;
-    } else if (hasGrownPastBaseline && elVideo?.ended) {
+      isGrownPastBaseline = isGrownPastBaseline || currentBytes > initialBytes;
+    } else if (isGrownPastBaseline && elVideo?.ended) {
       return;
-    } else if (hasGrownPastBaseline && (isTinyWindow || currentBytes > MIN_AUDIO_BYTES)
+    } else if (isGrownPastBaseline && (isTinyWindow || currentBytes > MIN_AUDIO_BYTES)
       && Date.now() - lastChangeAt > STALL_GRACE_MS) {
       // Don't exit on byte stall if the buffer hasn't covered the full window
       // yet - the player is mid-fetch and will grow more. The hard cap provides

@@ -51,10 +51,10 @@ export function buildFfmpegArgs({
   }
 
   const isOpusAudio = audioMimeType.includes("webm") || audioMimeType.includes("opus");
-  const needsAacTranscode = outputExtension === "mp4" && isOpusAudio;
+  const isAacTranscodeRequired = outputExtension === "mp4" && isOpusAudio;
   args.push("-c:v", "copy");
 
-  if (needsAacTranscode) {
+  if (isAacTranscodeRequired) {
     args.push("-c:a", "aac", "-b:a", "192k");
   } else {
     args.push("-c:a", "copy");
