@@ -75,18 +75,6 @@ export async function downloadViaCdn({ request, signal, videoId, tabId }: {
     });
   }
 
-  function trackVideoBytes(bytes: number) {
-    videoReceivedBytes += bytes;
-    videoTotalBytes = Math.max(videoTotalBytes, videoReceivedBytes);
-    reportProgress();
-  }
-
-  function trackAudioBytes(bytes: number) {
-    audioReceivedBytes += bytes;
-    audioTotalBytes = Math.max(audioTotalBytes, audioReceivedBytes);
-    reportProgress();
-  }
-
   const wantsVideo = type !== DownloadType.Audio;
   const wantsAudio = type !== DownloadType.Video;
   const extraUrls = resolvedExtraAudioUrls ?? [];
@@ -94,14 +82,22 @@ export async function downloadViaCdn({ request, signal, videoId, tabId }: {
   const videoPromise = wantsVideo
     ? fetchStream({
       url: resolvedVideoUrl,
-      onBytes: trackVideoBytes
+      onBytes(bytes) {
+        videoReceivedBytes += bytes;
+        videoTotalBytes = Math.max(videoTotalBytes, videoReceivedBytes);
+        reportProgress();
+      }
     })
     : Promise.resolve(null);
 
   const audioPromise = wantsAudio
     ? fetchStream({
       url: resolvedAudioUrl,
-      onBytes: trackAudioBytes
+      onBytes(bytes) {
+        audioReceivedBytes += bytes;
+        audioTotalBytes = Math.max(audioTotalBytes, audioReceivedBytes);
+        reportProgress();
+      }
     })
     : Promise.resolve(null);
 
