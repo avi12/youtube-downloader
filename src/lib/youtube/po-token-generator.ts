@@ -109,16 +109,3 @@ const mintFunctionsByVideoId = new Map<string, MintFunction>();
 function cacheMintFunction(videoId: string, mintFunction: MintFunction) {
   mintFunctionsByVideoId.set(videoId, mintFunction);
 }
-
-// YouTube rotates its accepted attestation after a few SABR segments; long
-// downloads call this to re-mint against the cached BotGuard snapshot.
-export async function refreshPoToken(videoId: string) {
-  const mintFunction = mintFunctionsByVideoId.get(videoId);
-  if (!mintFunction) {
-    return null;
-  }
-
-  const tokenBytes = await mintFunction(new TextEncoder().encode(videoId));
-  const SABR_TOKEN_BYTE_LENGTH = 30;
-  return btoa(String.fromCharCode(...tokenBytes.slice(0, SABR_TOKEN_BYTE_LENGTH)));
-}
