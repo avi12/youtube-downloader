@@ -242,18 +242,26 @@ type IterationContext = {
   originalFetch: typeof globalThis.fetch;
 };
 
+const IterationResultKind = {
+  StallExit: "stall-exit",
+  Complete: "complete",
+  Advance: "advance",
+  StallRetry: "stall-retry"
+} as const;
+type IterationResultKind = (typeof IterationResultKind)[keyof typeof IterationResultKind];
+
 type IterationResult =
   | {
-    kind: "stall-exit";
+    kind: typeof IterationResultKind.StallExit;
     result: ProgressiveFetchResult;
   }
-  | { kind: "complete" }
+  | { kind: typeof IterationResultKind.Complete }
   | {
-    kind: "advance";
+    kind: typeof IterationResultKind.Advance;
     nextPlayerTimeMs: number;
   }
   | {
-    kind: "stall-retry";
+    kind: typeof IterationResultKind.StallRetry;
     nextPlayerTimeMs: number;
     templateBody: Uint8Array;
     templateUrl: string;
@@ -300,7 +308,7 @@ async function runFetchIteration(
 
     if (stallStreak + 1 >= STALL_LIMIT) {
       return {
-        kind: "stall-exit",
+        kind: IterationResultKind.StallExit,
         result: buildResult({
           state,
           audioItag,
@@ -312,7 +320,7 @@ async function runFetchIteration(
     }
 
     return {
-      kind: "stall-retry",
+      kind: IterationResultKind.StallRetry,
       nextPlayerTimeMs: Math.max(0, playerTimeMs - STALL_REWIND_MS),
       templateBody: refreshed?.body ?? activeTemplateBody,
       templateUrl: refreshed?.url ?? activeTemplateUrl
@@ -320,11 +328,11 @@ async function runFetchIteration(
   }
 
   if (state.audio.endMs >= targetDurationMs && state.video.endMs >= targetDurationMs) {
-    return { kind: "complete" };
+    return { kind: IterationResultKind.Complete };
   }
 
   return {
-    kind: "advance",
+    kind: IterationResultKind.Advance,
     nextPlayerTimeMs: Math.min(state.audio.endMs, state.video.endMs)
   };
 }
@@ -388,15 +396,15 @@ export async function fetchProgressive({
       targetDurationMs,
       iteration
     );
-    if (iterResult.kind === "stall-exit") {
+    if (iterResult.kind === IterationResultKind.StallExit) {
       return iterResult.result;
     }
 
-    if (iterResult.kind === "complete") {
+    if (iterResult.kind === IterationResultKind.Complete) {
       break;
     }
 
-    if (iterResult.kind === "stall-retry") {
+    if (iterResult.kind === IterationResultKind.StallRetry) {
       stallStreak++;
       playerTimeMs = iterResult.nextPlayerTimeMs;
       activeTemplateBody = iterResult.templateBody;

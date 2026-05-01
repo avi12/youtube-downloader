@@ -7,6 +7,9 @@ import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { ProgressType } from "@/types";
 import type { DownloadRequest } from "@/types";
 
+export const DownloadResolution = { IframeScrub: "iframe-scrub" } as const;
+export type DownloadResolution = (typeof DownloadResolution)[keyof typeof DownloadResolution];
+
 export async function resolveDownloadResult({ request, cdnRequest, signal, videoId, tabId }: {
   request: DownloadRequest;
   cdnRequest: DownloadRequest;
@@ -50,7 +53,7 @@ export async function resolveDownloadResult({ request, cdnRequest, signal, video
       tabId
     });
     if (isFallbackUsed) {
-      return "iframe-scrub";
+      return DownloadResolution.IframeScrub;
     }
   }
 

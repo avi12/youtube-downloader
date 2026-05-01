@@ -1,5 +1,5 @@
 import { enrichWithAlternateClientUrls } from "./alternate-client-enricher";
-import { resolveDownloadResult } from "./download-resolver";
+import { DownloadResolution, resolveDownloadResult } from "./download-resolver";
 import { clearInterruptedDownload, reportDownloadFailed } from "./download-retry";
 import { enqueueNetworkRetry, registerNetworkRetryCallback } from "./network-retry";
 import { dispatchToOffscreen, enrichMetadataFromYouTubeMusic } from "./offscreen-dispatcher";
@@ -59,7 +59,7 @@ export async function startBackgroundDownload({ request, tabId }: {
       videoId,
       tabId
     });
-    if (result === "iframe-scrub") {
+    if (result === DownloadResolution.IframeScrub) {
       return;
     }
 
