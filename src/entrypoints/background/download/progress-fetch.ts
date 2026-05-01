@@ -35,18 +35,17 @@ export async function sendProgressUpdate({ videoId, progress, progressType, tabI
 export function createProgressFetch({ signal, onBytesReceived, firstBodyOverride }: {
   signal: AbortSignal;
   onBytesReceived: (bytes: number) => void;
-  firstBodyOverride?: Uint8Array;
+  firstBodyOverride?: BodyInit;
 }) {
   let fetchCount = 0;
   return async (input: RequestInfo | URL, init?: RequestInit) => {
     fetchCount++;
-    const useOverride = fetchCount === 1 && firstBodyOverride !== undefined;
-    const effectiveInit: RequestInit = useOverride
-      ? { ...init, body: firstBodyOverride as BodyInit }
-      : (init ?? {});
-
+    const isOverrideUsed = fetchCount === 1 && firstBodyOverride !== undefined;
     const response = await fetch(input, {
-      ...effectiveInit,
+      ...(init ?? {}),
+      ...(isOverrideUsed && {
+        body: firstBodyOverride
+      }),
       signal,
       credentials: "include"
     });
