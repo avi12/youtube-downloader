@@ -61,12 +61,29 @@ export function registerCrossWorldHandlers(
     void sendMessage(MessageType.DownloadViaWatchPage, data);
   });
 
-  crossWorldMessenger.onMessage(CrossWorldMessage.StartBackgroundDownload, ({ data }) => {
+  crossWorldMessenger.onMessage(CrossWorldMessage.StartBackgroundDownload, async ({ data }) => {
     console.log(`[ytdl:isolated-fwd] StartBackgroundDownload received videoId=${data.videoId}, forwarding to BG`);
-    void sendMessage(MessageType.StartBackgroundDownload, data).then(
-      () => console.log(`[ytdl:isolated-fwd] StartBackgroundDownload BG ack`),
-      err => console.log(`[ytdl:isolated-fwd] StartBackgroundDownload BG err: ${String(err)}`)
-    );
+    // Firefox MV3 event-page wakes the BG service worker on the first message
+    // but webext-core/messaging doesn't retry if the receiver isn't yet
+    // registered, so the very first send racing the BG startup gets dropped
+    // with "Could not establish connection". Retry a few times with a small
+    // backoff to bridge that window.
+    const SEND_RETRY_DELAY_MS = 200;
+    const MAX_SEND_RETRIES = 10;
+    for (let attempt = 0; attempt < MAX_SEND_RETRIES; attempt++) {
+      try {
+        await sendMessage(MessageType.StartBackgroundDownload, data);
+        console.log(`[ytdl:isolated-fwd] StartBackgroundDownload BG ack`);
+        return;
+      } catch (error) {
+        if (attempt === MAX_SEND_RETRIES - 1) {
+          console.log(`[ytdl:isolated-fwd] StartBackgroundDownload BG err: ${String(error)}`);
+          return;
+        }
+
+        await new Promise(resolve => setTimeout(resolve, SEND_RETRY_DELAY_MS));
+      }
+    }
   });
 
   crossWorldMessenger.onMessage(CrossWorldMessage.StartIframeScrub, ({ data }) => {
