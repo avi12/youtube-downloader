@@ -54,3 +54,34 @@ export function sendEmptyResult({ videoId, scrubIndex }: {
     audioMimeType: ""
   });
 }
+
+export function sendCapturedResult({
+  videoId, scrubIndex, videoBuffer, audioBuffer, videoMimeType, audioMimeType, videoBufferEndSec
+}: {
+  videoId: string;
+  scrubIndex: number;
+  videoBuffer: ArrayBuffer;
+  audioBuffer: ArrayBuffer;
+  videoMimeType: string;
+  audioMimeType: string;
+  videoBufferEndSec: number;
+}) {
+  void crossWorldMessenger.sendMessage(CrossWorldMessage.IframeScrubSegment, {
+    videoId,
+    scrubIndex,
+    videoBytes: new Uint8Array(videoBuffer),
+    audioBytes: new Uint8Array(audioBuffer),
+    videoMimeType,
+    audioMimeType
+  });
+  postToHost({
+    type: POST_MESSAGE_TYPE_SEGMENT,
+    videoId,
+    scrubIndex,
+    videoBuffer,
+    audioBuffer,
+    videoMimeType,
+    audioMimeType,
+    videoBufferEndSec
+  }, [videoBuffer, audioBuffer]);
+}

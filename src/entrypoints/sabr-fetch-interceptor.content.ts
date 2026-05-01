@@ -1,6 +1,4 @@
-import { getMoviePlayer } from "./sabr-fetch-interceptor/player-helpers";
 import { fetchProgressive } from "./sabr-fetch-interceptor/progressive-fetcher";
-import { applyInitCache } from "./sabr-fetch-interceptor/scrub-init-cache";
 import { buildSyntheticTemplateFromPlayer, capturedTemplateToBase64 } from "./sabr-fetch-interceptor/template-builder";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { uint8ToBase64 } from "@/lib/utils/binary";
@@ -9,22 +7,6 @@ import { AD_SHOWING_SELECTOR } from "@/lib/youtube/player-selectors";
 import { ClientAbrState, VideoPlaybackAbrRequest } from "googlevideo/protos";
 
 const GOOGLEVIDEO_HOST_FRAGMENT = "googlevideo.com/videoplayback";
-const SCRUB_SEGMENT_MSG = "ytdl:scrub-segment";
-
-function postSegmentToHost(
-  payload: Record<string, unknown>,
-  transferables: Transferable[] = []
-) {
-  if (parent === self) {
-    return;
-  }
-
-  try {
-    parent.postMessage(payload, "*", transferables);
-  } catch {
-    // cross-origin postMessage may throw in some contexts
-  }
-}
 
 export default defineContentScript({
   matches: ["https://www.youtube.com/*"],
@@ -151,80 +133,6 @@ export default defineContentScript({
       }),
       synthesize: () => buildSyntheticTemplateFromPlayer()
     };
-
-    crossWorldMessenger.onMessage(CrossWorldMessage.RunScrubSabr, async ({ data }) => {
-      const { videoId, scrubIndex, startSec, windowSec } = data;
-      const startMs = startSec * 1000;
-      const targetDurationMs = (startSec + windowSec) * 1000;
-      console.log(`[ytdl:scrub-sabr] index=${scrubIndex} startSec=${startSec} windowSec=${windowSec}`);
-      try {
-        const result = await fetchProgressive({
-          targetDurationMs,
-          maxIterations: 20,
-          originalFetch,
-          carryState: null,
-          initialPlayerTimeMs: startMs > 0 ? startMs : undefined
-        });
-        console.log(`[ytdl:scrub-sabr] index=${scrubIndex} done audio=${result.audioBytes.byteLength}B video=${result.videoBytes.byteLength}B iter=${result.iterations} stalled=${result.stalled} coveredMs=${result.audioCoveredMs}`);
-        const playerResponse = getMoviePlayer()?.getPlayerResponse?.();
-        const adaptiveFormats = playerResponse?.streamingData?.adaptiveFormats ?? [];
-        // Look up by the itag that SABR actually fetched, not the highest-quality format
-        const videoFormat = adaptiveFormats.find(format => format.itag === result.videoItag) ?? null;
-        const audioFormat = adaptiveFormats.find(format => format.itag === result.audioItag) ?? null;
-        const videoMimeType = videoFormat?.mimeType?.split(";")[0] ?? "";
-        const audioMimeType = audioFormat?.mimeType?.split(";")[0] ?? "";
-        const { videoBytes, audioBytes } = applyInitCache(
-          videoId,
-          result.videoBytes,
-          result.audioBytes,
-          videoMimeType,
-          audioMimeType
-        );
-        void crossWorldMessenger.sendMessage(CrossWorldMessage.IframeScrubSegment, {
-          videoId,
-          scrubIndex,
-          videoBytes,
-          audioBytes,
-          videoMimeType,
-          audioMimeType,
-          videoBufferEndSec: result.videoCoveredMs / 1000
-        });
-        const { byteOffset: vOff, byteLength: vLen, buffer: vBuf } = videoBytes;
-        const { byteOffset: aOff, byteLength: aLen, buffer: aBuf } = audioBytes;
-        const videoBuffer = vBuf.slice(vOff, vOff + vLen);
-        const audioBuffer = aBuf.slice(aOff, aOff + aLen);
-        postSegmentToHost({
-          type: SCRUB_SEGMENT_MSG,
-          videoId,
-          scrubIndex,
-          videoBuffer,
-          audioBuffer,
-          videoMimeType,
-          audioMimeType,
-          videoBufferEndSec: result.videoCoveredMs / 1000
-        }, [videoBuffer, audioBuffer]);
-      } catch (error) {
-        console.error(`[ytdl:scrub-sabr] index=${scrubIndex} failed:`, error);
-        const emptyBytes = new Uint8Array();
-        void crossWorldMessenger.sendMessage(CrossWorldMessage.IframeScrubSegment, {
-          videoId,
-          scrubIndex,
-          videoBytes: emptyBytes,
-          audioBytes: emptyBytes,
-          videoMimeType: "",
-          audioMimeType: ""
-        });
-        postSegmentToHost({
-          type: SCRUB_SEGMENT_MSG,
-          videoId,
-          scrubIndex,
-          videoBuffer: new ArrayBuffer(0),
-          audioBuffer: new ArrayBuffer(0),
-          videoMimeType: "",
-          audioMimeType: ""
-        });
-      }
-    });
 
     crossWorldMessenger.onMessage(CrossWorldMessage.RunProgressiveSabr, async ({ data }) => {
       console.log(`[ytdl:sabr-progressive-main] received RunProgressiveSabr videoId=${data.videoId} durationSec=${data.videoDurationSec}`);

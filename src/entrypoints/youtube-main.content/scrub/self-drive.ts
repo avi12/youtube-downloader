@@ -1,18 +1,11 @@
 import { waitForAdToClear } from "./ad-handler";
-import { waitForPlayerReady, forcePlayback, postAdSeek, wait } from "./player";
-import { scrubLog, sendEmptyResult } from "./segment-emit";
-import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
+import { waitForBufferFill } from "./buffer-fill";
+import { concatChunks } from "./capture";
+import { waitForPlayerReady, forcePlayback, postAdSeek } from "./player";
+import { scrubLog, sendCapturedResult, sendEmptyResult } from "./segment-emit";
+import { VIDEO_ELEMENT_SELECTOR } from "@/lib/youtube/player-selectors";
 
 export { runTrustFactoryDrive } from "./trust-factory";
-
-// Small seeks (< ~140s) don't trigger a new SABR network request - the player
-// serves from its buffer. Each iframe needs a seek large enough (>= 140s) to
-// force a real SABR fetch and capture a session-credentialed template.
-// Using (scrubIndex + offset) * windowSec staggers concurrent iframes so they
-// seek to different positions, preventing server-side deduplication/throttling.
-const SABR_PRIME_MIN_SEC = 140;
-const SABR_PRIME_OFFSET_STEPS = 4;
-const SABR_CAPTURE_WAIT_MS = 2_000;
 
 export async function runScrubSelfDrive() {
   const params = new URLSearchParams(location.search);
@@ -50,28 +43,42 @@ export async function runScrubSelfDrive() {
   }
 
   scrubLog(`playback started index=${scrubIndex}`);
-
   await waitForAdToClear();
   scrubLog(`ad cleared index=${scrubIndex}`);
 
-  const duration = player.getDuration?.() ?? 0;
-  const maxSeekSec = Math.max(duration - 10, startSec);
-  const rawPrimeSeekSec = (scrubIndex + SABR_PRIME_OFFSET_STEPS) * windowSec;
-  const primeSeekSec = Math.max(
-    Math.min(rawPrimeSeekSec, maxSeekSec),
-    Math.min(SABR_PRIME_MIN_SEC, maxSeekSec)
-  );
-  postAdSeek(player, primeSeekSec);
-  await wait(SABR_CAPTURE_WAIT_MS);
+  postAdSeek(player, startSec);
+  await waitForBufferFill({
+    videoId,
+    windowSec,
+    startSec,
+    scrubIndex,
+    player
+  });
+  scrubLog(`buffer fill complete index=${scrubIndex}`);
 
-  // Delegate the actual byte-fetching to the MAIN world where fetch has
-  // credentials and the SABR template is already captured. Result flows back
-  // via CrossWorldMessage.IframeScrubSegment → scrub-result-forwarder → BG.
-  scrubLog(`handing off to SABR fetch index=${scrubIndex} primeSeek=${primeSeekSec}s`);
-  void crossWorldMessenger.sendMessage(CrossWorldMessage.RunScrubSabr, {
+  const capture = window.__ytdlCapture?.capturedMedia.get(videoId);
+  if (!capture || (capture.videoTotalBytes === 0 && capture.audioTotalBytes === 0)) {
+    scrubLog(`no capture data index=${scrubIndex}`);
+    sendEmptyResult({
+      videoId,
+      scrubIndex
+    });
+    return;
+  }
+
+  const elVideo = document.querySelector<HTMLVideoElement>(VIDEO_ELEMENT_SELECTOR);
+  const bufferedEnd = elVideo && elVideo.buffered.length > 0
+    ? elVideo.buffered.end(elVideo.buffered.length - 1)
+    : startSec + windowSec;
+
+  scrubLog(`emitting index=${scrubIndex} video=${capture.videoTotalBytes}B audio=${capture.audioTotalBytes}B bufferedEnd=${bufferedEnd.toFixed(1)}s`);
+  sendCapturedResult({
     videoId,
     scrubIndex,
-    startSec,
-    windowSec
+    videoBuffer: concatChunks(capture.videoChunks).buffer as ArrayBuffer,
+    audioBuffer: concatChunks(capture.audioChunks).buffer as ArrayBuffer,
+    videoMimeType: capture.videoMimeType,
+    audioMimeType: capture.audioMimeType,
+    videoBufferEndSec: bufferedEnd
   });
 }
