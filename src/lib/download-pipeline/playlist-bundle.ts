@@ -67,7 +67,7 @@ export async function addToPlaylistBundle({
   }
 
   const zipEntries: AsyncZippable = {};
-  for (const [, file] of bundle.files) {
+  for (const file of bundle.files.values()) {
     zipEntries[file.filename] = [file.data, { level: 0 }];
   }
 

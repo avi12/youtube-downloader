@@ -6,15 +6,15 @@ import type { ReceivedSegment, ScrubSession } from "./session-store";
 import { OffscreenMessageType, sendBytesToOffscreen, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
 import { extractInit, prependInitIfMissing } from "@/lib/utils/media-init";
 
-function emitSegmentChunks({ session, scrubIndex, bytes, mediaKind }: {
+function emitSegmentChunks({ session, iScrub, bytes, mediaKind }: {
   session: ScrubSession;
-  scrubIndex: number;
+  iScrub: number;
   bytes: Uint8Array;
   mediaKind: "video" | "audio";
 }) {
   return sendBytesToOffscreen({
     videoId: session.videoId,
-    streamType: `${mediaKind}-seg-${scrubIndex}`,
+    streamType: `${mediaKind}-seg-${iScrub}`,
     data: bytes,
     tabId: session.tabId
   });
@@ -53,7 +53,7 @@ function ensureInitForAllSegments(
   let videoInit: Uint8Array | undefined;
   let audioInit: Uint8Array | undefined;
 
-  for (const [, segment] of segments) {
+  for (const segment of segments.values()) {
     if (segment.videoBytes.byteLength > 0) {
       const init = extractInit(segment.videoBytes, videoMimeType);
       if (init) {
@@ -82,32 +82,21 @@ function ensureInitForAllSegments(
   let videoPatchCount = 0;
   let audioPatchCount = 0;
 
-  for (const [index, segment] of segments) {
-    let updated = segment;
+  for (const segment of segments.values()) {
     if (videoInit && segment.videoBytes.byteLength > 0) {
       const patched = prependInitIfMissing(segment.videoBytes, videoInit, videoMimeType);
       if (patched !== segment.videoBytes) {
         videoPatchCount++;
-        updated = {
-          ...updated,
-          videoBytes: patched
-        };
+        segment.videoBytes = patched;
       }
     }
 
     if (audioInit && segment.audioBytes.byteLength > 0) {
-      const patched = prependInitIfMissing(updated.audioBytes, audioInit, audioMimeType);
-      if (patched !== updated.audioBytes) {
+      const patched = prependInitIfMissing(segment.audioBytes, audioInit, audioMimeType);
+      if (patched !== segment.audioBytes) {
         audioPatchCount++;
-        updated = {
-          ...updated,
-          audioBytes: patched
-        };
+        segment.audioBytes = patched;
       }
-    }
-
-    if (updated !== segment) {
-      segments.set(index, updated);
     }
   }
 
@@ -129,30 +118,19 @@ function applyPrefetchedInits(
     return;
   }
 
-  for (const [index, segment] of session.receivedSegments) {
-    let updated = segment;
+  for (const segment of session.receivedSegments.values()) {
     if (videoInit && segment.videoBytes.byteLength > 0) {
       const patched = prependInitIfMissing(segment.videoBytes, videoInit, videoMimeType);
       if (patched !== segment.videoBytes) {
-        updated = {
-          ...updated,
-          videoBytes: patched
-        };
+        segment.videoBytes = patched;
       }
     }
 
     if (audioInit && segment.audioBytes.byteLength > 0) {
-      const patched = prependInitIfMissing(updated.audioBytes, audioInit, audioMimeType);
-      if (patched !== updated.audioBytes) {
-        updated = {
-          ...updated,
-          audioBytes: patched
-        };
+      const patched = prependInitIfMissing(segment.audioBytes, audioInit, audioMimeType);
+      if (patched !== segment.audioBytes) {
+        segment.audioBytes = patched;
       }
-    }
-
-    if (updated !== segment) {
-      session.receivedSegments.set(index, updated);
     }
   }
 }
@@ -167,17 +145,17 @@ export async function finalizeSession(session: ScrubSession, logFn: (msg: string
   ensureInitForAllSegments(session.receivedSegments, videoMime, audioMime, logFn);
   applyPrefetchedInits(session, videoMime, audioMime, logFn);
 
-  for (const [scrubIndex, segment] of session.receivedSegments) {
+  for (const [i, segment] of session.receivedSegments) {
     await Promise.all([
       emitSegmentChunks({
         session,
-        scrubIndex,
+        iScrub: i,
         bytes: segment.videoBytes,
         mediaKind: "video"
       }),
       emitSegmentChunks({
         session,
-        scrubIndex,
+        iScrub: i,
         bytes: segment.audioBytes,
         mediaKind: "audio"
       })

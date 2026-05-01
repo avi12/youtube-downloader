@@ -47,8 +47,8 @@ export function writeExtraInputs({
     });
   }
 
-  for (const [iSub, sub] of subtitleStreams.entries()) {
-    const subName = `tmp_sub_${iSub}.srt`;
+  for (const [iSubtitle, sub] of subtitleStreams.entries()) {
+    const subName = `tmp_sub_${iSubtitle}.srt`;
     ffmpeg.FS.writeFile(subName, new TextEncoder().encode(sub.srtContent));
     writtenPaths.push(subName);
     subtitleInputs.push({
