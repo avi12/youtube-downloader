@@ -78,66 +78,6 @@ export function clearCapturedSabrData(tabId: number) {
 const PREFERRED_AUDIO_FORMAT_IDS_FIELD = 16;
 const PREFERRED_VIDEO_FORMAT_IDS_FIELD = 17;
 
-export function dumpFieldBytes(body: number[], targetField: number, maxEntries = 3) {
-  const buf = new Uint8Array(body);
-  let offset = 0;
-  const hits: string[] = [];
-
-  while (offset < buf.byteLength && hits.length < maxEntries) {
-    let value = 0;
-    let shift = 0;
-    while (offset < buf.byteLength) {
-      const byte = buf[offset];
-      offset++;
-      value |= (byte & 0x7f) << shift;
-      if ((byte & 0x80) === 0) {
-        break;
-      }
-
-      shift += 7;
-    }
-
-    const fieldNumber = value >>> 3;
-    const wireType = value & 0x7;
-
-    if (wireType === 0) {
-      while (offset < buf.byteLength && (buf[offset] & 0x80) !== 0) {
-        offset++;
-      }
-
-      offset++;
-    } else if (wireType === 1) {
-      offset += 8;
-    } else if (wireType === 5) {
-      offset += 4;
-    } else if (wireType === 2) {
-      let len = 0;
-      let lshift = 0;
-      while (offset < buf.byteLength) {
-        const byte = buf[offset];
-        offset++;
-        len |= (byte & 0x7f) << lshift;
-        if ((byte & 0x80) === 0) {
-          break;
-        }
-
-        lshift += 7;
-      }
-
-      if (fieldNumber === targetField) {
-        hits.push(Array.from(buf.subarray(offset, offset + Math.min(len, 32)))
-          .map(b => b.toString(16).padStart(2, "0")).join(" "));
-      }
-
-      offset += len;
-    } else {
-      break;
-    }
-  }
-
-  return hits;
-}
-
 export function inspectTopLevelFields(body: number[]) {
   const buf = new Uint8Array(body);
   let offset = 0;
@@ -150,6 +90,7 @@ export function inspectTopLevelFields(body: number[]) {
       const byte = buf[offset];
       offset++;
       value |= (byte & 0x7f) << shift;
+
       if ((byte & 0x80) === 0) {
         break;
       }
@@ -178,6 +119,7 @@ export function inspectTopLevelFields(body: number[]) {
         const byte = buf[offset];
         offset++;
         len |= (byte & 0x7f) << lshift;
+
         if ((byte & 0x80) === 0) {
           break;
         }
@@ -201,6 +143,7 @@ function readVarintFromBuffer(buf: Uint8Array, off: number) {
     const byte = buf[off];
     off++;
     value |= (byte & 0x7f) << shift;
+
     if ((byte & 0x80) === 0) {
       break;
     }
@@ -288,5 +231,8 @@ export function extractPreferredFormatItagsFromBody(body: number[]) {
     offset += len.value;
   }
 
-  return { video, audio };
+  return {
+    video,
+    audio
+  };
 }
