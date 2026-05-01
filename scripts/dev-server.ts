@@ -21,7 +21,6 @@
 import { findFirefoxRdpPort, isFirefoxTab, isRecord, RDP } from "./firefox-rdp.js";
 import chokidar from "chokidar";
 import { execSync, spawnSync } from "node:child_process";
-import { createServer } from "node:net";
 import {
   existsSync,
   cpSync,
