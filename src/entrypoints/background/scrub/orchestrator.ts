@@ -3,7 +3,7 @@ import { handleSegmentArrival } from "./segment-handler";
 import { releaseSession } from "./session-finalizer";
 import { buildSession, sessionsByVideoId } from "./session-store";
 import type { StartIframeScrubArgs, ScrubSession } from "./session-store";
-import { fillGlobalSlots, logScrubOrchestratorEvent } from "./slot-filler";
+import { fillGlobalSlots, logScrubOrchestratorEvent } from "./iframe-scheduler";
 import { broadcastDebugLogToYouTubeTabs } from "@/lib/messaging/debug-log";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
 import { ScrubIframeMessageType, listenForScrubIframeMessages } from "@/lib/messaging/scrub-iframe-messaging";
