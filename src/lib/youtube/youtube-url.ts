@@ -1,3 +1,10 @@
+export const YouTubePath = {
+  Watch: "/watch",
+  Playlist: "/playlist"
+} as const;
+
+export type YouTubePath = (typeof YouTubePath)[keyof typeof YouTubePath];
+
 export const ScrubUrlParam = {
   Ytdl: "ytdl",
   ScrubMode: "ytdlScrubMode",

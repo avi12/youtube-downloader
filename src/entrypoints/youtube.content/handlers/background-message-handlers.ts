@@ -1,7 +1,7 @@
 import { setPlaylistContext, uncancelStreamTransfer } from "../download/stream-transfer";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
-import { ScrubUrlParam } from "@/lib/youtube/youtube-url";
+import { ScrubUrlParam, YouTubePath } from "@/lib/youtube/youtube-url";
 
 export function registerBackgroundMessageHandlers() {
   onMessage(MessageType.BgDebugLog, ({ data }) => {
@@ -75,7 +75,7 @@ export function registerBackgroundMessageHandlers() {
   });
 
   onMessage(MessageType.ExecuteDownloadItem, ({ data }) => {
-    if (location.pathname !== "/watch") {
+    if (location.pathname !== YouTubePath.Watch) {
       return;
     }
 
