@@ -21,16 +21,16 @@ async function main() {
     }
 
     console.log(`addonsActor=${addonsActor}`);
-    const list = await rdp.request("root", "listAddons") as Record<string, unknown>;
+    const list = await rdp.request("root", "listAddons");
     const addons = Array.isArray(list.addons) ? list.addons : [];
-    const addon = addons.filter(isRecord).find(a => a.id === ADDON_ID);
+    const addon = addons.filter(isRecord).find(item => item.id === ADDON_ID);
     if (!addon) {
-      throw new Error(`addon not found; installed: ${addons.map(a => isRecord(a) ? a.id : "?").join(", ")}`);
+      throw new Error(`addon not found; installed: ${addons.map(item => isRecord(item) ? item.id : "?").join(", ")}`);
     }
 
     console.log(`addon: id=${addon.id} actor=${addon.actor} debuggable=${addon.debuggable}`);
 
-    const actor = isRecord(addon) && typeof addon.actor === "string" ? addon.actor : "";
+    const actor = typeof addon.actor === "string" ? addon.actor : "";
     if (!actor) {
       throw new Error("no addon actor");
     }

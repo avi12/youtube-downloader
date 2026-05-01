@@ -1,7 +1,7 @@
 // Quick diagnostic — connects to running Firefox via RDP, polls page state +
 // recent console messages so we can see scrub-bg segment progression without
 // needing the firefox-devtools MCP.
-import { findFirefoxRdpPort, isFirefoxTab, isRecord, RDP } from "./firefox-rdp.js";
+import { findFirefoxRdpPort, RDP } from "./firefox-rdp.js";
 
 async function main() {
   const port = findFirefoxRdpPort();
@@ -14,45 +14,39 @@ async function main() {
   await rdp.connect();
 
   try {
-    const tabsResponse = await rdp.request("root", "listTabs");
-    const tabs: unknown[] = Array.isArray(tabsResponse.tabs) ? tabsResponse.tabs : [];
+    const tabs = await rdp.listTabs();
     console.log(`tabs: ${tabs.length}`);
     for (const tab of tabs) {
-      if (!isFirefoxTab(tab)) {
-        continue;
-      }
-
       console.log(`- url=${tab.url ?? "(no url)"}`);
     }
 
-    const youtubeTab = tabs.filter(isFirefoxTab).find(tab => tab.url?.includes("youtube.com"));
+    const youtubeTab = tabs.find(tab => tab.url?.includes("youtube.com"));
     if (!youtubeTab) {
       throw new Error("no YouTube tab");
     }
 
-    const targetResponse = await rdp.request(youtubeTab.actor, "getTarget");
-    const frame = targetResponse.frame;
-    if (!isRecord(frame) || typeof frame.consoleActor !== "string") {
+    const consoleActor = await rdp.getConsoleActor(youtubeTab.actor);
+    if (!consoleActor) {
       throw new Error("could not get console actor");
     }
 
     const buttonAria = await rdp.evalInTab(
-      frame.consoleActor, `(() => {
+      consoleActor, `(() => {
       const btn = document.querySelector('[data-ytdl-download-group] yt-button-view-model:first-child button');
       return btn?.getAttribute('aria-label') ?? '(no btn)';
     })()`
     );
     console.log(`button aria: ${buttonAria}`);
 
-    const iframeCount = await rdp.evalInTab(frame.consoleActor, `(() => document.querySelectorAll('iframe').length)()`);
+    const iframeCount = await rdp.evalInTab(consoleActor, `(() => document.querySelectorAll('iframe').length)()`);
     console.log(`iframes in tab: ${iframeCount}`);
 
-    const scrubIframeCount = await rdp.evalInTab(frame.consoleActor, `(() => document.querySelectorAll('iframe[src*="ytdlScrubMode"]').length)()`);
+    const scrubIframeCount = await rdp.evalInTab(consoleActor, `(() => document.querySelectorAll('iframe[src*="ytdlScrubMode"]').length)()`);
     console.log(`scrub iframes: ${scrubIframeCount}`);
 
     // Install a one-shot console.log capture, wait briefly, then read what was captured.
     await rdp.evalInTab(
-      frame.consoleActor, `(() => {
+      consoleActor, `(() => {
       if (!window.__ytdlConsoleCapture) {
         window.__ytdlConsoleCapture = [];
         const origLog = console.log.bind(console);
@@ -74,9 +68,9 @@ async function main() {
     })()`
     );
 
-    await new Promise(r => setTimeout(r, 25_000));
+    await new Promise(resolve => setTimeout(resolve, 25_000));
 
-    const recent = await rdp.evalInTab(frame.consoleActor, `JSON.stringify((window.__ytdlConsoleCapture ?? []).slice(-40))`);
+    const recent = await rdp.evalInTab(consoleActor, `JSON.stringify((window.__ytdlConsoleCapture ?? []).slice(-40))`);
     const lines: string[] = JSON.parse(recent);
     console.log(`recent ytdl: ${lines.length} messages`);
     for (const line of lines) {
@@ -84,7 +78,7 @@ async function main() {
     }
 
     const probe = await rdp.evalInTab(
-      frame.consoleActor, `JSON.stringify({
+      consoleActor, `JSON.stringify({
       hasYtdlSabr: typeof window.__ytdlSabr !== 'undefined',
       hasCapture: typeof window.__ytdlCapture !== 'undefined',
       hasTemplate: !!window.__ytdlSabrTemplate,

@@ -1,5 +1,5 @@
 // Single-shot poll: dump button state, scrub iframes, and recent capture entries.
-import { findFirefoxRdpPort, isFirefoxTab, isRecord, RDP } from "./firefox-rdp.js";
+import { findFirefoxRdpPort, RDP } from "./firefox-rdp.js";
 
 async function main() {
   const port = findFirefoxRdpPort();
@@ -10,19 +10,16 @@ async function main() {
   const rdp = new RDP(port);
   await rdp.connect();
   try {
-    const tabs: unknown[] = (await rdp.request("root", "listTabs")).tabs as unknown[];
-    const yt = tabs.filter(isFirefoxTab).find(t => t.url?.includes("watch?v="));
-    if (!yt) {
+    const tabs = await rdp.listTabs();
+    const youtubeTab = tabs.find(tab => tab.url?.includes("watch?v="));
+    if (!youtubeTab) {
       throw new Error("no yt watch tab");
     }
 
-    const target = await rdp.request(yt.actor, "getTarget");
-    const frame = target.frame as Record<string, unknown>;
-    if (!isRecord(frame) || typeof frame.consoleActor !== "string") {
+    const consoleActor = await rdp.getConsoleActor(youtubeTab.actor);
+    if (!consoleActor) {
       throw new Error("no actor");
     }
-
-    const consoleActor = frame.consoleActor;
 
     const state = await rdp.evalInTab(
       consoleActor, `JSON.stringify({
@@ -39,8 +36,8 @@ async function main() {
 
     const parsed = JSON.parse(state);
     console.log(`btn="${parsed.btn}" scrub=${parsed.scrubFrames} capLen=${parsed.captureLen}`);
-    for (const m of parsed.recent ?? []) {
-      console.log(`  ${m.slice(0, 280)}`);
+    for (const message of parsed.recent ?? []) {
+      console.log(`  ${message.slice(0, 280)}`);
     }
   } finally {
     rdp.destroy();

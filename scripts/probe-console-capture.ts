@@ -1,5 +1,5 @@
 // Probe whether the console.log interceptor is capturing user-tab logs.
-import { findFirefoxRdpPort, isFirefoxTab, isRecord, RDP } from "./firefox-rdp.js";
+import { findFirefoxRdpPort, RDP } from "./firefox-rdp.js";
 
 async function main() {
   const port = findFirefoxRdpPort();
@@ -10,21 +10,20 @@ async function main() {
   const rdp = new RDP(port);
   await rdp.connect();
   try {
-    const tabs: unknown[] = (await rdp.request("root", "listTabs")).tabs as unknown[];
-    const yt = tabs.filter(isFirefoxTab).find(t => t.url?.includes("youtube.com"));
-    if (!yt) {
+    const tabs = await rdp.listTabs();
+    const youtubeTab = tabs.find(tab => tab.url?.includes("youtube.com"));
+    if (!youtubeTab) {
       throw new Error("no yt tab");
     }
 
-    const target = await rdp.request(yt.actor, "getTarget");
-    const frame = (target.frame as Record<string, unknown>);
-    if (!isRecord(frame) || typeof frame.consoleActor !== "string") {
+    const consoleActor = await rdp.getConsoleActor(youtubeTab.actor);
+    if (!consoleActor) {
       throw new Error("no actor");
     }
 
     // Install interceptor
     await rdp.evalInTab(
-      frame.consoleActor, `(() => {
+      consoleActor, `(() => {
       window.__probeBuffer = [];
       const orig = console.log;
       console.log = function(...args) {
@@ -40,9 +39,9 @@ async function main() {
     );
 
     // Wait
-    await new Promise(r => setTimeout(r, 10_000));
+    await new Promise(resolve => setTimeout(resolve, 10_000));
 
-    const out = await rdp.evalInTab(frame.consoleActor, `JSON.stringify(window.__probeBuffer)`);
+    const out = await rdp.evalInTab(consoleActor, `JSON.stringify(window.__probeBuffer)`);
     const lines: string[] = JSON.parse(out);
     console.log(`captured ${lines.length} console.log calls in 10s window:`);
     for (const line of lines) {

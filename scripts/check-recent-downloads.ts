@@ -1,5 +1,5 @@
 // Use Downloads API to read history rather than the visible richlistitem list.
-import { findFirefoxRdpPort, isFirefoxTab, isRecord, RDP } from "./firefox-rdp.js";
+import { findFirefoxRdpPort, RDP } from "./firefox-rdp.js";
 
 async function main() {
   const port = findFirefoxRdpPort();
@@ -10,21 +10,20 @@ async function main() {
   const rdp = new RDP(port);
   await rdp.connect();
   try {
-    const tabs: unknown[] = (await rdp.request("root", "listTabs")).tabs as unknown[];
-    const dl = tabs.filter(isFirefoxTab).find(t => t.url === "about:downloads");
-    if (!dl) {
+    const tabs = await rdp.listTabs();
+    const downloadsTab = tabs.find(tab => tab.url === "about:downloads");
+    if (!downloadsTab) {
       console.log("no about:downloads tab");
       return;
     }
 
-    const target = await rdp.request(dl.actor, "getTarget");
-    const frame = target.frame as Record<string, unknown>;
-    if (!isRecord(frame) || typeof frame.consoleActor !== "string") {
+    const consoleActor = await rdp.getConsoleActor(downloadsTab.actor);
+    if (!consoleActor) {
       throw new Error("no actor");
     }
 
     const result = await rdp.evalInTab(
-      frame.consoleActor, `(async () => {
+      consoleActor, `(async () => {
       try {
         const { Downloads } = ChromeUtils.importESModule('resource://gre/modules/Downloads.sys.mjs');
         const list = await Downloads.getList(Downloads.ALL);

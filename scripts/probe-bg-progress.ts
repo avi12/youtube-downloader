@@ -13,15 +13,15 @@ async function main() {
   await rdp.connect();
   try {
     const addonsResp = await rdp.request("root", "listAddons");
-    const addons: unknown[] = Array.isArray(addonsResp.addons) ? addonsResp.addons : [];
-    const ytdl = addons.find(a => isRecord(a) && typeof a.name === "string" && a.name.includes("YouTube"));
+    const addons = Array.isArray(addonsResp.addons) ? addonsResp.addons : [];
+    const ytdl = addons.find(addon => isRecord(addon) && typeof addon.name === "string" && addon.name.includes("YouTube"));
     if (!isRecord(ytdl) || typeof ytdl.actor !== "string") {
-      console.log("no ytdl addon, listing all:", addons.map(a => isRecord(a) ? a.name : "?").join(", "));
+      console.log("no ytdl addon, listing all:", addons.map(addon => isRecord(addon) ? addon.name : "?").join(", "));
       return;
     }
 
     console.log(`addon: ${ytdl.name} actor=${ytdl.actor}`);
-    const target = await rdp.request(ytdl.actor as string, "getTarget");
+    const target = await rdp.request(ytdl.actor, "getTarget");
     if (!isRecord(target)) {
       console.log("no target");
       return;
@@ -41,7 +41,7 @@ async function main() {
         }
 
         const args = Array.isArray(msg.arguments) ? msg.arguments : [];
-        const txt = args.map(a => typeof a === "string" ? a : JSON.stringify(a).slice(0, 200)).join(" ");
+        const txt = args.map(arg => typeof arg === "string" ? arg : JSON.stringify(arg).slice(0, 200)).join(" ");
         if (txt.includes("ytdl") || txt.includes("ffmpeg") || txt.includes("pipeline")) {
           console.log(`  [${msg.level}] ${txt.slice(0, 250)}`);
         }

@@ -10,21 +10,26 @@ async function main() {
   const rdp = new RDP(port);
   await rdp.connect();
   try {
-    const addons: unknown[] = (await rdp.request("root", "listAddons")).addons as unknown[];
-    const ytdl = addons.find(a => isRecord(a) && typeof a.name === "string" && a.name.includes("YouTube"));
+    const addonsResp = await rdp.request("root", "listAddons");
+    const addons = Array.isArray(addonsResp.addons) ? addonsResp.addons : [];
+    const ytdl = addons.find(addon => isRecord(addon) && typeof addon.name === "string" && addon.name.includes("YouTube"));
     if (!isRecord(ytdl) || typeof ytdl.actor !== "string") {
       throw new Error("no addon");
     }
 
-    const watcherResp = await rdp.request(ytdl.actor as string, "getWatcher");
-    const watcherActor = watcherResp.actor as string;
+    const watcherResp = await rdp.request(ytdl.actor, "getWatcher");
+    if (typeof watcherResp.actor !== "string") {
+      throw new Error("no watcher actor");
+    }
+
+    const watcherActor = watcherResp.actor;
 
     let extProcessTag: string | null = null;
     rdp.onEvent = packet => {
       if (packet.type === "target-available-form" && isRecord(packet.target)) {
-        const t = packet.target;
-        if (t.remoteType === "extension" && typeof t.processID === "number") {
-          extProcessTag = `process${t.processID}`;
+        const target = packet.target;
+        if (target.remoteType === "extension" && typeof target.processID === "number") {
+          extProcessTag = `process${target.processID}`;
           console.log(`[ext-target] tag=${extProcessTag}`);
         }
       }
@@ -47,7 +52,7 @@ async function main() {
             }
 
             const args = Array.isArray(res.arguments) ? res.arguments : [];
-            const txt = args.map(a => typeof a === "string" ? a : JSON.stringify(a).slice(0, 200)).join(" ");
+            const txt = args.map(arg => typeof arg === "string" ? arg : JSON.stringify(arg).slice(0, 200)).join(" ");
             const err = typeof res.errorMessage === "string" ? res.errorMessage : "";
             const level = res.level ?? res.type ?? "?";
             const out = txt || err;
@@ -69,7 +74,7 @@ async function main() {
     await rdp.request(watcherActor, "watchResources", { resourceTypes: ["console-message", "error-message"] });
 
     console.log("subscribed; waiting 60s for console messages...");
-    await new Promise(r => setTimeout(r, 60_000));
+    await new Promise(resolve => setTimeout(resolve, 60_000));
   } finally {
     rdp.destroy();
   }

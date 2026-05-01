@@ -705,6 +705,7 @@ async function main() {
     if (shuttingDown) {
       return;
     }
+
     shuttingDown = true;
     try {
       await watcher.close();

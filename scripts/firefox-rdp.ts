@@ -133,6 +133,24 @@ export class RDP {
     });
   }
 
+  async listTabs(): Promise<FirefoxTab[]> {
+    const result = await this.request("root", "listTabs");
+    if (!Array.isArray(result.tabs)) {
+      return [];
+    }
+
+    return result.tabs.filter(isFirefoxTab);
+  }
+
+  async getConsoleActor(tabActor: string): Promise<string | null> {
+    const result = await this.request(tabActor, "getTarget");
+    if (!isRecord(result.frame) || typeof result.frame.consoleActor !== "string") {
+      return null;
+    }
+
+    return result.frame.consoleActor;
+  }
+
   // Firefox RDP protocol: evaluateJSAsync → ACK, then evaluationResult event
   // asynchronously. Firefox generates its own resultID and may dispatch the
   // result from a different conn id, so match only on `packet.type`.

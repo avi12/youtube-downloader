@@ -9,14 +9,19 @@ async function main() {
   const rdp = new RDP(port);
   await rdp.connect();
   try {
-    const addons: unknown[] = (await rdp.request("root", "listAddons")).addons as unknown[];
-    const ytdl = addons.find(a => isRecord(a) && typeof a.name === "string" && a.name.includes("YouTube"));
+    const addonsResp = await rdp.request("root", "listAddons");
+    const addons = Array.isArray(addonsResp.addons) ? addonsResp.addons : [];
+    const ytdl = addons.find(addon => isRecord(addon) && typeof addon.name === "string" && addon.name.includes("YouTube"));
     if (!isRecord(ytdl) || typeof ytdl.actor !== "string") {
       throw new Error("no addon");
     }
 
-    const watcherResp = await rdp.request(ytdl.actor as string, "getWatcher");
-    const watcherActor = watcherResp.actor as string;
+    const watcherResp = await rdp.request(ytdl.actor, "getWatcher");
+    if (typeof watcherResp.actor !== "string") {
+      throw new Error("no watcher actor");
+    }
+
+    const watcherActor = watcherResp.actor;
 
     // Listen for events on the watcher; targetAvailable carries the target form.
     const targets: unknown[] = [];
@@ -27,13 +32,13 @@ async function main() {
     };
 
     await rdp.request(watcherActor, "watchTargets", { targetType: "frame" });
-    await new Promise(r => setTimeout(r, 1500));
+    await new Promise(resolve => setTimeout(resolve, 1500));
     await rdp.request(watcherActor, "watchTargets", { targetType: "process" });
-    await new Promise(r => setTimeout(r, 1500));
+    await new Promise(resolve => setTimeout(resolve, 1500));
 
     console.log(`captured ${targets.length} target events`);
-    for (const t of targets) {
-      console.log(JSON.stringify(t).slice(0, 400));
+    for (const target of targets) {
+      console.log(JSON.stringify(target).slice(0, 400));
     }
   } finally {
     rdp.destroy();

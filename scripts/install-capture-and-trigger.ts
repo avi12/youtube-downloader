@@ -1,5 +1,5 @@
 // Installs console capture, then clicks download, then dumps captures over time.
-import { findFirefoxRdpPort, isFirefoxTab, isRecord, RDP } from "./firefox-rdp.js";
+import { findFirefoxRdpPort, RDP } from "./firefox-rdp.js";
 
 async function main() {
   const port = findFirefoxRdpPort();
@@ -10,19 +10,16 @@ async function main() {
   const rdp = new RDP(port);
   await rdp.connect();
   try {
-    const tabs: unknown[] = (await rdp.request("root", "listTabs")).tabs as unknown[];
-    const yt = tabs.filter(isFirefoxTab).find(t => t.url?.includes("watch?v="));
-    if (!yt) {
+    const tabs = await rdp.listTabs();
+    const youtubeTab = tabs.find(tab => tab.url?.includes("watch?v="));
+    if (!youtubeTab) {
       throw new Error("no yt watch tab");
     }
 
-    const target = await rdp.request(yt.actor, "getTarget");
-    const frame = target.frame as Record<string, unknown>;
-    if (!isRecord(frame) || typeof frame.consoleActor !== "string") {
+    const consoleActor = await rdp.getConsoleActor(youtubeTab.actor);
+    if (!consoleActor) {
       throw new Error("no actor");
     }
-
-    const consoleActor = frame.consoleActor;
 
     await rdp.evalInTab(
       consoleActor, `(() => {
@@ -55,7 +52,7 @@ async function main() {
 
     // Poll every 30s for up to 8 minutes.
     for (let iPoll = 0; iPoll < 16; iPoll++) {
-      await new Promise(r => setTimeout(r, 30_000));
+      await new Promise(resolve => setTimeout(resolve, 30_000));
       const state = await rdp.evalInTab(
         consoleActor, `JSON.stringify({
         btn: document.querySelector('[data-ytdl-download-group] yt-button-view-model:first-child button')?.getAttribute('aria-label'),
@@ -65,8 +62,8 @@ async function main() {
       );
       const parsed = JSON.parse(state);
       console.log(`[poll ${iPoll}] btn="${parsed.btn}" scrub=${parsed.scrubFrames}`);
-      for (const m of parsed.recent ?? []) {
-        console.log(`  ${m.slice(0, 280)}`);
+      for (const message of parsed.recent ?? []) {
+        console.log(`  ${message.slice(0, 280)}`);
       }
 
       if (parsed.btn === "Download" && parsed.scrubFrames === 0 && iPoll > 0) {

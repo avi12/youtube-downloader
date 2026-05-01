@@ -1,35 +1,36 @@
-import { findFirefoxRdpPort, isFirefoxTab, isRecord, RDP } from "./firefox-rdp.js";
+import { findFirefoxRdpPort, RDP } from "./firefox-rdp.js";
 
 async function main() {
   const port = findFirefoxRdpPort();
-  if (!port) throw new Error("no port");
+  if (!port) {
+    throw new Error("no port");
+  }
 
   const rdp = new RDP(port);
   await rdp.connect();
   try {
-    const tabs: unknown[] = (await rdp.request("root", "listTabs")).tabs as unknown[];
-    const firefoxTabs = tabs.filter(isFirefoxTab);
+    const tabs = await rdp.listTabs();
 
-    const errorTab = firefoxTabs.find(t => t.url?.startsWith("about:neterror"));
+    const errorTab = tabs.find(tab => tab.url?.startsWith("about:neterror"));
     if (errorTab) {
       await rdp.request(errorTab.actor, "navigateTo", { url: "about:downloads" });
-      await new Promise(r => setTimeout(r, 2500));
+      await new Promise(resolve => setTimeout(resolve, 2500));
     }
 
-    const tabs2: unknown[] = (await rdp.request("root", "listTabs")).tabs as unknown[];
-    const dlTab = tabs2.filter(isFirefoxTab).find(t => t.url === "about:downloads");
-    if (!dlTab) {
+    const tabsAfter = await rdp.listTabs();
+    const downloadsTab = tabsAfter.find(tab => tab.url === "about:downloads");
+    if (!downloadsTab) {
       console.log("still no about:downloads tab");
       return;
     }
 
-    const target = await rdp.request(dlTab.actor, "getTarget");
-    const frame = target.frame as Record<string, unknown>;
-    if (!isRecord(frame) || typeof frame.consoleActor !== "string") {
+    const consoleActor = await rdp.getConsoleActor(downloadsTab.actor);
+    if (!consoleActor) {
       throw new Error("no actor");
     }
 
-    const result = await rdp.evalInTab(frame.consoleActor, `(async () => {
+    const result = await rdp.evalInTab(
+      consoleActor, `(async () => {
       try {
         const { Downloads } = ChromeUtils.importESModule('resource://gre/modules/Downloads.sys.mjs');
         const list = await Downloads.getList(Downloads.ALL);
@@ -41,11 +42,14 @@ async function main() {
           startTime: d.startTime?.toISOString?.() ?? null
         })));
       } catch(e) { return 'err: ' + (e?.message ?? String(e)); }
-    })()`);
+    })()`
+    );
     console.log(result);
   } finally {
     rdp.destroy();
   }
 }
 
-main().catch(err => { console.error(err); process.exit(1); });
+main().catch(err => {
+  console.error(err); process.exit(1);
+});

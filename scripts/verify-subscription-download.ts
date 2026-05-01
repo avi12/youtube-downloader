@@ -6,34 +6,31 @@
 // Usage:
 //   1. Start Firefox via `pnpm dev:stable-firefox` (RDP enabled automatically).
 //   2. Run: bun scripts/verify-subscription-download.ts
-import { findFirefoxRdpPort, isFirefoxTab, isRecord, RDP } from "./firefox-rdp.js";
+import { findFirefoxRdpPort, RDP } from "./firefox-rdp.js";
 
 const POLL_INTERVAL_MS = 5_000;
 const COMPLETION_TIMEOUT_MS = 600_000;
 const NAV_DELAY_MS = 12_000;
 
-function wait(ms: number) {
-  return new Promise(resolve => setTimeout(resolve, ms));
+function wait(milliseconds: number) {
+  return new Promise(resolve => setTimeout(resolve, milliseconds));
 }
 
 async function findYouTubeTab(rdp: RDP) {
-  const tabsResponse = await rdp.request("root", "listTabs");
-  const tabs: unknown[] = Array.isArray(tabsResponse.tabs) ? tabsResponse.tabs : [];
-  const youtubeTab = tabs.filter(isFirefoxTab).find(tab => tab.url?.includes("youtube.com"))
-    ?? tabs.filter(isFirefoxTab)[0];
+  const tabs = await rdp.listTabs();
+  const youtubeTab = tabs.find(tab => tab.url?.includes("youtube.com")) ?? tabs[0];
   if (!youtubeTab) {
     throw new Error("no tabs in Firefox; open one and retry");
   }
 
-  const targetResponse = await rdp.request(youtubeTab.actor, "getTarget");
-  const frame = targetResponse.frame;
-  if (!isRecord(frame) || typeof frame.consoleActor !== "string") {
+  const consoleActor = await rdp.getConsoleActor(youtubeTab.actor);
+  if (!consoleActor) {
     throw new Error("could not get console actor for tab");
   }
 
   return {
     tabActor: youtubeTab.actor,
-    consoleActor: frame.consoleActor,
+    consoleActor,
     url: youtubeTab.url
   };
 }
@@ -97,6 +94,16 @@ const READ_DOWNLOADS_EXPRESSION = `JSON.stringify((() => {
   }));
 })())`;
 
+interface PickedVideo {
+  link?: string;
+  durationText?: string;
+  totalSec?: number;
+}
+
+function isPickedVideo(value: unknown): value is PickedVideo {
+  return typeof value === "object" && value !== null;
+}
+
 async function main() {
   const port = findFirefoxRdpPort();
   if (!port) {
@@ -117,17 +124,13 @@ async function main() {
 
     const pickJson = await rdp.evalInTab(tab.consoleActor, PICK_WATCH_URL_EXPRESSION);
     console.log(`[verify] picked: ${pickJson.slice(0, 200)}`);
-    const picked = JSON.parse(pickJson) as {
-      link?: string;
-      durationText?: string;
-      totalSec?: number;
-    };
-    if (!picked.link) {
-      throw new Error("no 10–30 min video found on subscriptions page");
+    const parsedPick: unknown = JSON.parse(pickJson);
+    if (!isPickedVideo(parsedPick) || !parsedPick.link) {
+      throw new Error("no 10-30 min video found on subscriptions page");
     }
 
-    console.log(`[verify] navigating to watch: ${picked.link} (${picked.durationText})`);
-    await navigateTab(rdp, tab.consoleActor, picked.link);
+    console.log(`[verify] navigating to watch: ${parsedPick.link} (${parsedPick.durationText})`);
+    await navigateTab(rdp, tab.consoleActor, parsedPick.link);
     // Re-attach to fresh consoleActor after navigation
     const fresh = await findYouTubeTab(rdp);
 

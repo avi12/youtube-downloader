@@ -6,8 +6,8 @@ import { serve } from "bun";
 
 const PORT = 9876;
 
-function nowStamp(ts?: number) {
-  return new Date(ts ?? Date.now()).toLocaleTimeString();
+function nowStamp(timestamp?: number) {
+  return new Date(timestamp ?? Date.now()).toLocaleTimeString();
 }
 
 serve({

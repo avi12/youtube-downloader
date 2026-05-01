@@ -1,5 +1,17 @@
 // Dumps cached console messages from the YouTube tab's console actor.
-import { findFirefoxRdpPort, isFirefoxTab, isRecord, RDP } from "./firefox-rdp.js";
+import { findFirefoxRdpPort, isRecord, RDP } from "./firefox-rdp.js";
+
+function formatArg(arg: unknown) {
+  if (typeof arg === "string") {
+    return arg;
+  }
+
+  if (isRecord(arg) && typeof arg.preview === "object") {
+    return JSON.stringify(arg).slice(0, 150);
+  }
+
+  return String(arg);
+}
 
 async function main() {
   const port = findFirefoxRdpPort();
@@ -11,19 +23,16 @@ async function main() {
   const rdp = new RDP(port);
   await rdp.connect();
   try {
-    const tabs: unknown[] = (await rdp.request("root", "listTabs")).tabs as unknown[];
-    const yt = tabs.filter(isFirefoxTab).find(t => t.url?.includes("youtube.com"));
-    if (!yt) {
+    const tabs = await rdp.listTabs();
+    const youtubeTab = tabs.find(tab => tab.url?.includes("youtube.com"));
+    if (!youtubeTab) {
       throw new Error("no yt tab");
     }
 
-    const target = await rdp.request(yt.actor, "getTarget");
-    const frame = target.frame as Record<string, unknown>;
-    if (!isRecord(frame) || typeof frame.consoleActor !== "string") {
+    const consoleActor = await rdp.getConsoleActor(youtubeTab.actor);
+    if (!consoleActor) {
       throw new Error("no actor");
     }
-
-    const consoleActor = frame.consoleActor;
 
     const cached = await rdp.request(consoleActor, "getCachedMessages", { messageTypes: ["ConsoleAPI", "PageError"] });
     const list = Array.isArray(cached.messages) ? cached.messages : [];
@@ -35,7 +44,7 @@ async function main() {
       }
 
       const args = Array.isArray(msg.arguments) ? msg.arguments : [];
-      const txt = args.map(a => typeof a === "string" ? a : (isRecord(a) && typeof a.preview === "object" ? JSON.stringify(a).slice(0, 150) : String(a))).join(" ");
+      const txt = args.map(formatArg).join(" ");
       const errStr = typeof msg.errorMessage === "string" ? msg.errorMessage : "";
       const finalTxt = txt || errStr;
       if (finalTxt.includes("ytdl") || finalTxt.includes("ffmpeg") || finalTxt.includes("pipeline") || finalTxt.includes("error") || finalTxt.includes("Error")) {

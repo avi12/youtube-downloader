@@ -1,5 +1,5 @@
 // Trigger download + watch BG console + page console concurrently.
-import { findFirefoxRdpPort, isFirefoxTab, isRecord, RDP } from "./firefox-rdp.js";
+import { findFirefoxRdpPort, isRecord, RDP } from "./firefox-rdp.js";
 
 async function main() {
   const port = findFirefoxRdpPort();
@@ -10,36 +10,38 @@ async function main() {
   const rdp = new RDP(port);
   await rdp.connect();
   try {
-    const tabs: unknown[] = (await rdp.request("root", "listTabs")).tabs as unknown[];
-    const yt = tabs.filter(isFirefoxTab).find(t => t.url?.includes("watch?v="));
-    if (!yt) {
+    const tabs = await rdp.listTabs();
+    const youtubeTab = tabs.find(tab => tab.url?.includes("watch?v="));
+    if (!youtubeTab) {
       throw new Error("no yt watch tab");
     }
 
-    const target = await rdp.request(yt.actor, "getTarget");
-    const frame = target.frame as Record<string, unknown>;
-    if (!isRecord(frame) || typeof frame.consoleActor !== "string") {
+    const consoleActor = await rdp.getConsoleActor(youtubeTab.actor);
+    if (!consoleActor) {
       throw new Error("no actor");
     }
 
-    const consoleActor = frame.consoleActor;
-
     // Set up BG watcher.
-    const addons: unknown[] = (await rdp.request("root", "listAddons")).addons as unknown[];
-    const ytdl = addons.find(a => isRecord(a) && typeof a.name === "string" && a.name.includes("YouTube"));
+    const addonsResp = await rdp.request("root", "listAddons");
+    const addons = Array.isArray(addonsResp.addons) ? addonsResp.addons : [];
+    const ytdl = addons.find(addon => isRecord(addon) && typeof addon.name === "string" && addon.name.includes("YouTube"));
     if (!isRecord(ytdl) || typeof ytdl.actor !== "string") {
       throw new Error("no addon");
     }
 
-    const watcherResp = await rdp.request(ytdl.actor as string, "getWatcher");
-    const watcherActor = watcherResp.actor as string;
+    const watcherResp = await rdp.request(ytdl.actor, "getWatcher");
+    if (typeof watcherResp.actor !== "string") {
+      throw new Error("no watcher actor");
+    }
+
+    const watcherActor = watcherResp.actor;
 
     let extTag: string | null = null;
     rdp.onEvent = packet => {
       if (packet.type === "target-available-form" && isRecord(packet.target)) {
-        const t = packet.target;
-        if (t.remoteType === "extension" && typeof t.processID === "number") {
-          extTag = `process${t.processID}`;
+        const target = packet.target;
+        if (target.remoteType === "extension" && typeof target.processID === "number") {
+          extTag = `process${target.processID}`;
           console.log(`[ext-target] ${extTag}`);
         }
       }
@@ -62,7 +64,7 @@ async function main() {
             }
 
             const args = Array.isArray(res.arguments) ? res.arguments : [];
-            const txt = args.map(a => typeof a === "string" ? a : JSON.stringify(a).slice(0, 200)).join(" ");
+            const txt = args.map(arg => typeof arg === "string" ? arg : JSON.stringify(arg).slice(0, 200)).join(" ");
             const err = typeof res.errorMessage === "string" ? res.errorMessage : "";
             const level = res.level ?? res.type ?? "?";
             const out = txt || err;
@@ -93,7 +95,7 @@ async function main() {
     );
 
     // Watch for ~7 minutes.
-    await new Promise(r => setTimeout(r, 420_000));
+    await new Promise(resolve => setTimeout(resolve, 420_000));
   } finally {
     rdp.destroy();
   }

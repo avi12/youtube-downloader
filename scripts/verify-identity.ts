@@ -1,3 +1,4 @@
+import { findFirefoxRdpPort, RDP } from "./firefox-rdp.js";
 /**
  * Runs the 3-phase identity verification protocol against a downloaded video.
  *
@@ -18,11 +19,10 @@
  * Reference images must be cropped to the video area only (the script prints
  * the exact FFmpeg crop command to use on the raw browser screenshot).
  */
-import { execFileSync, spawnSync, execSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { findFirefoxRdpPort, isFirefoxTab, isRecord, RDP } from "./firefox-rdp.js";
 
 const DURATION_TOLERANCE_SEC = 1;
 const AV_SYNC_TOLERANCE_SEC = 0.1;
@@ -45,7 +45,11 @@ interface FfprobeStream {
 
 interface FfprobeOutput {
   streams: FfprobeStream[];
-  format: { duration: string; size: string; format_name: string };
+  format: {
+    duration: string;
+    size: string;
+    format_name: string;
+  };
 }
 
 interface DownloadInfo {
@@ -65,7 +69,8 @@ function probeFile(filepath: string): FfprobeOutput {
     "-show_streams", "-show_format",
     filepath
   ], { encoding: "utf8" });
-  return JSON.parse(raw) as FfprobeOutput;
+  const parsed: FfprobeOutput = JSON.parse(raw);
+  return parsed;
 }
 
 function check(label: string, pass: boolean, detail: string): boolean {
@@ -74,58 +79,70 @@ function check(label: string, pass: boolean, detail: string): boolean {
 }
 
 function formatDuration(totalSec: number): string {
-  const h = Math.floor(totalSec / 3600);
-  const m = Math.floor((totalSec % 3600) / 60);
-  const s = Math.floor(totalSec % 60);
-  return h > 0
-    ? `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`
-    : `${m}:${String(s).padStart(2, "0")}`;
-}
-
-function toFirefoxTabs(value: unknown) {
-  return (Array.isArray(value) ? value : []).filter(isFirefoxTab);
+  const hours = Math.floor(totalSec / 3600);
+  const minutes = Math.floor((totalSec % 3600) / 60);
+  const seconds = Math.floor(totalSec % 60);
+  return hours > 0
+    ? `${hours}:${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`
+    : `${minutes}:${String(seconds).padStart(2, "0")}`;
 }
 
 async function getMostRecentDownload(rdp: RDP): Promise<DownloadInfo | null> {
-  const listResp = await rdp.request("root", "listTabs");
-  const dlTab = toFirefoxTabs(listResp.tabs).find(t => t.url === "about:downloads");
-  if (!dlTab) return null;
+  const tabs = await rdp.listTabs();
+  const downloadsTab = tabs.find(tab => tab.url === "about:downloads");
+  if (!downloadsTab) {
+    return null;
+  }
 
-  const target = await rdp.request(dlTab.actor, "getTarget");
-  const frame = target.frame;
-  if (!isRecord(frame) || typeof frame.consoleActor !== "string") return null;
+  const consoleActor = await rdp.getConsoleActor(downloadsTab.actor);
+  if (!consoleActor) {
+    return null;
+  }
 
-  const result = await rdp.evalInTab(frame.consoleActor, `(async () => {
+  const result = await rdp.evalInTab(
+    consoleActor, `(async () => {
     const { Downloads } = ChromeUtils.importESModule('resource://gre/modules/Downloads.sys.mjs');
     const list = await Downloads.getList(Downloads.ALL);
     const all = await list.getAll();
-    const succeeded = all.filter(dl => dl.succeeded)
-      .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime());
-    const dl = succeeded[0];
-    return dl ? JSON.stringify({ path: dl.target.path, size: dl.totalBytes }) : null;
-  })()`);
+    const succeeded = all.filter(download => download.succeeded)
+      .sort((first, second) => new Date(second.startTime).getTime() - new Date(first.startTime).getTime());
+    const latest = succeeded[0];
+    return latest ? JSON.stringify({ path: latest.target.path, size: latest.totalBytes }) : null;
+  })()`
+  );
+  if (typeof result !== "string" || result === "null") {
+    return null;
+  }
 
-  if (typeof result !== "string" || result === "null") return null;
-  return JSON.parse(result) as DownloadInfo;
+  const parsed: DownloadInfo = JSON.parse(result);
+  return parsed;
 }
 
 async function getYouTubeVideoInfo(rdp: RDP): Promise<YouTubeVideoInfo | null> {
-  const listResp = await rdp.request("root", "listTabs");
-  const ytTab = toFirefoxTabs(listResp.tabs).find(t => t.url?.includes("youtube.com/watch"));
-  if (!ytTab) return null;
+  const tabs = await rdp.listTabs();
+  const youtubeTab = tabs.find(tab => tab.url?.includes("youtube.com/watch"));
+  if (!youtubeTab) {
+    return null;
+  }
 
-  const target = await rdp.request(ytTab.actor, "getTarget");
-  const frame = target.frame;
-  if (!isRecord(frame) || typeof frame.consoleActor !== "string") return null;
+  const consoleActor = await rdp.getConsoleActor(youtubeTab.actor);
+  if (!consoleActor) {
+    return null;
+  }
 
-  const result = await rdp.evalInTab(frame.consoleActor, `JSON.stringify({
+  const result = await rdp.evalInTab(
+    consoleActor, `JSON.stringify({
     videoId: ytInitialData?.videoDetails?.videoId ?? new URLSearchParams(location.search).get('v'),
     durationSec: parseInt(ytInitialData?.videoDetails?.lengthSeconds ?? '0', 10),
     title: ytInitialData?.videoDetails?.title ?? document.title
-  })`);
+  })`
+  );
+  if (typeof result !== "string") {
+    return null;
+  }
 
-  if (typeof result !== "string") return null;
-  return JSON.parse(result) as YouTubeVideoInfo;
+  const parsed: YouTubeVideoInfo = JSON.parse(result);
+  return parsed;
 }
 
 // ── Phase 1: structural probe ─────────────────────────────────────────────────
@@ -133,33 +150,25 @@ async function getYouTubeVideoInfo(rdp: RDP): Promise<YouTubeVideoInfo | null> {
 function runPhase1(probe: FfprobeOutput, download: DownloadInfo, expectedDurationSec: number): boolean {
   const actualDuration = parseFloat(probe.format.duration);
   const diff = Math.abs(actualDuration - expectedDurationSec);
-  const videoStream = probe.streams.find(s => s.codec_type === "video");
-  const audioStream = probe.streams.find(s => s.codec_type === "audio");
+  const videoStream = probe.streams.find(stream => stream.codec_type === "video");
+  const audioStream = probe.streams.find(stream => stream.codec_type === "audio");
 
   console.log("\n── Phase 1: Structural probe ────────────────────────────────");
   let pass = true;
 
   pass = check("duration",
     diff <= DURATION_TOLERANCE_SEC,
-    `${formatDuration(actualDuration)} vs ${formatDuration(expectedDurationSec)} expected (diff=${diff.toFixed(1)}s)`
-  ) && pass;
+    `${formatDuration(actualDuration)} vs ${formatDuration(expectedDurationSec)} expected (diff=${diff.toFixed(1)}s)`) && pass;
 
-  pass = check("streams", probe.streams.length >= 2,
-    `${probe.streams.length} stream(s) in ${probe.format.format_name}`
-  ) && pass;
+  pass = check("streams", probe.streams.length >= 2, `${probe.streams.length} stream(s) in ${probe.format.format_name}`) && pass;
 
-  pass = check("video stream", Boolean(videoStream),
-    videoStream ? `${videoStream.codec_name} ${videoStream.width}x${videoStream.height}` : "missing"
-  ) && pass;
+  pass = check("video stream", Boolean(videoStream), videoStream ? `${videoStream.codec_name} ${videoStream.width}x${videoStream.height}` : "missing") && pass;
 
-  pass = check("audio stream", Boolean(audioStream),
-    audioStream ? `${audioStream.codec_name} ${audioStream.sample_rate}Hz ${audioStream.channels}ch` : "missing"
-  ) && pass;
+  pass = check("audio stream", Boolean(audioStream), audioStream ? `${audioStream.codec_name} ${audioStream.sample_rate}Hz ${audioStream.channels}ch` : "missing") && pass;
 
   pass = check("file size",
     download.size >= MIN_FILE_SIZE_BYTES,
-    `${(download.size / 1_000_000).toFixed(1)} MB`
-  ) && pass;
+    `${(download.size / 1_000_000).toFixed(1)} MB`) && pass;
 
   return pass;
 }
@@ -167,8 +176,8 @@ function runPhase1(probe: FfprobeOutput, download: DownloadInfo, expectedDuratio
 // ── Phase 3: AV sync ──────────────────────────────────────────────────────────
 
 function runPhase3(probe: FfprobeOutput): boolean {
-  const videoStream = probe.streams.find(s => s.codec_type === "video");
-  const audioStream = probe.streams.find(s => s.codec_type === "audio");
+  const videoStream = probe.streams.find(stream => stream.codec_type === "video");
+  const audioStream = probe.streams.find(stream => stream.codec_type === "audio");
 
   console.log("\n── Phase 3: AV sync ─────────────────────────────────────────");
 
@@ -184,8 +193,7 @@ function runPhase3(probe: FfprobeOutput): boolean {
 
   pass = check("av start sync",
     startDiff <= AV_SYNC_TOLERANCE_SEC,
-    `video=${videoStart.toFixed(3)}s audio=${audioStart.toFixed(3)}s diff=${startDiff.toFixed(3)}s`
-  ) && pass;
+    `video=${videoStart.toFixed(3)}s audio=${audioStart.toFixed(3)}s diff=${startDiff.toFixed(3)}s`) && pass;
 
   const videoDur = parseFloat(videoStream.duration ?? probe.format.duration);
   const audioDur = parseFloat(audioStream.duration ?? probe.format.duration);
@@ -193,8 +201,7 @@ function runPhase3(probe: FfprobeOutput): boolean {
 
   pass = check("av duration match",
     durDiff <= AV_DURATION_MISMATCH_SEC,
-    `video=${formatDuration(videoDur)} audio=${formatDuration(audioDur)} diff=${durDiff.toFixed(3)}s`
-  ) && pass;
+    `video=${formatDuration(videoDur)} audio=${formatDuration(audioDur)} diff=${durDiff.toFixed(3)}s`) && pass;
 
   return pass;
 }
@@ -228,17 +235,18 @@ function runPhase2(filePath: string, durationSec: number, videoId: string): void
   mkdirSync(TEMP_DIR, { recursive: true });
 
   const timestamps = SAMPLE_OFFSETS.map(offset => Math.round(offset * durationSec));
-  const localFrames = timestamps.map((t, i) => join(TEMP_DIR, `frame_${i}_local.png`));
+  const localFrames = timestamps.map((_timestamp, i) => join(TEMP_DIR, `frame_${i}_local.png`));
 
   console.log("\n── Phase 2: Frame identity (SSIM) ───────────────────────────");
   console.log(`  Extracting ${timestamps.length} frames from downloaded file...`);
 
-  for (const [i, t] of timestamps.entries()) {
-    extractLocalFrame(filePath, t, localFrames[i]);
-    console.log(`  frame ${i + 1}: t=${formatDuration(t)} → ${localFrames[i]}`);
+  for (const [i, timestamp] of timestamps.entries()) {
+    extractLocalFrame(filePath, timestamp, localFrames[i]);
+    console.log(`  frame ${i + 1}: t=${formatDuration(timestamp)} → ${localFrames[i]}`);
   }
 
-  console.log(`
+  console.log(
+    `
   To capture reference frames from YouTube, for each timestamp below:
     1. Navigate Firefox to: https://www.youtube.com/watch?v=${videoId}
     2. Run in browser console: document.querySelector('#movie_player').seekTo(<t>, true)
@@ -246,11 +254,12 @@ function runPhase2(filePath: string, durationSec: number, videoId: string): void
     4. Take a page screenshot and crop to the video element bounds using:
        ffmpeg -i screenshot.png -vf "crop=<w>:<h>:<x>:<y>" <ref_frame_path>
 
-  Timestamps and expected reference frame paths:`);
+  Timestamps and expected reference frame paths:`
+  );
 
-  for (const [i, t] of timestamps.entries()) {
+  for (const [i, timestamp] of timestamps.entries()) {
     const refPath = join(TEMP_DIR, `frame_${i}_ref.png`);
-    console.log(`    t=${formatDuration(t)} (${t}s) → ${refPath}`);
+    console.log(`    t=${formatDuration(timestamp)} (${timestamp}s) → ${refPath}`);
   }
 
   console.log(`\n  Checking for reference frames...`);
@@ -258,21 +267,21 @@ function runPhase2(filePath: string, durationSec: number, videoId: string): void
   let allSsimPass = true;
   let anyRefFound = false;
 
-  for (const [i, t] of timestamps.entries()) {
+  for (const [i, timestamp] of timestamps.entries()) {
     const refPath = join(TEMP_DIR, `frame_${i}_ref.png`);
     if (!existsSync(refPath)) {
-      console.log(`  frame ${i + 1} (t=${formatDuration(t)}): ref not found — skipping`);
+      console.log(`  frame ${i + 1} (t=${formatDuration(timestamp)}): ref not found — skipping`);
       continue;
     }
 
     anyRefFound = true;
     const ssim = computeSsim(localFrames[i], refPath);
     if (ssim === null) {
-      console.log(`  ✗  frame ${i + 1} (t=${formatDuration(t)}): SSIM computation failed`);
+      console.log(`  ✗  frame ${i + 1} (t=${formatDuration(timestamp)}): SSIM computation failed`);
       allSsimPass = false;
     } else {
       const pass = ssim >= SSIM_PASS_THRESHOLD;
-      console.log(`  ${pass ? "✓" : "✗"}  frame ${i + 1} (t=${formatDuration(t)}): SSIM=${ssim.toFixed(4)} ${pass ? "≥" : "<"} ${SSIM_PASS_THRESHOLD} → ${pass ? "IDENTICAL" : "MISMATCH"}`);
+      console.log(`  ${pass ? "✓" : "✗"}  frame ${i + 1} (t=${formatDuration(timestamp)}): SSIM=${ssim.toFixed(4)} ${pass ? "≥" : "<"} ${SSIM_PASS_THRESHOLD} → ${pass ? "IDENTICAL" : "MISMATCH"}`);
       allSsimPass = allSsimPass && pass;
     }
   }
@@ -280,7 +289,12 @@ function runPhase2(filePath: string, durationSec: number, videoId: string): void
   if (!anyRefFound) {
     console.log(`  (no reference frames supplied — Phase 2 skipped)`);
     console.log(`  Place reference images in ${TEMP_DIR} and re-run to complete Phase 2.`);
-    writeFileSync(join(TEMP_DIR, "timestamps.json"), JSON.stringify({ videoId, timestamps }, null, 2));
+    writeFileSync(
+      join(TEMP_DIR, "timestamps.json"), JSON.stringify({
+        videoId,
+        timestamps
+      }, null, 2)
+    );
   } else if (allSsimPass) {
     console.log("\n  ✓ Phase 2: all sampled frames are IDENTICAL");
   } else {
@@ -292,10 +306,11 @@ function runPhase2(filePath: string, durationSec: number, videoId: string): void
 
 async function main() {
   const argVideoId = process.argv[2] ?? null;
-  const argStepSec = process.argv[3] ? parseInt(process.argv[3], 10) : null;
 
   const port = findFirefoxRdpPort();
-  if (!port) throw new Error("Firefox RDP port not found");
+  if (!port) {
+    throw new Error("Firefox RDP port not found");
+  }
 
   const rdp = new RDP(port);
   await rdp.connect();
@@ -305,8 +320,9 @@ async function main() {
       getYouTubeVideoInfo(rdp).catch(() => null),
       getMostRecentDownload(rdp)
     ]);
-
-    if (!download) throw new Error("no completed download found in about:downloads");
+    if (!download) {
+      throw new Error("no completed download found in about:downloads");
+    }
 
     const videoId = argVideoId ?? ytInfo?.videoId ?? "unknown";
     const expectedDurationSec = ytInfo?.durationSec ?? 0;
@@ -320,19 +336,23 @@ async function main() {
     const probe = probeFile(download.path);
     const actualDuration = parseFloat(probe.format.duration);
 
-    const p1 = runPhase1(probe, download, expectedDurationSec);
-    const p3 = runPhase3(probe);
+    const phase1Pass = runPhase1(probe, download, expectedDurationSec);
+    const phase3Pass = runPhase3(probe);
     runPhase2(download.path, actualDuration, videoId);
 
     console.log("\n── Summary ──────────────────────────────────────────────────");
-    console.log(`  Phase 1 (structural): ${p1 ? "✓ PASS" : "✗ FAIL"}`);
-    console.log(`  Phase 3 (AV sync):    ${p3 ? "✓ PASS" : "✗ FAIL"}`);
+    console.log(`  Phase 1 (structural): ${phase1Pass ? "✓ PASS" : "✗ FAIL"}`);
+    console.log(`  Phase 3 (AV sync):    ${phase3Pass ? "✓ PASS" : "✗ FAIL"}`);
     console.log(`  Phase 2 (SSIM):       run with reference frames in ${TEMP_DIR}`);
 
-    if (!p1 || !p3) process.exit(1);
+    if (!phase1Pass || !phase3Pass) {
+      process.exit(1);
+    }
   } finally {
     rdp.destroy();
   }
 }
 
-main().catch(err => { console.error(err); process.exit(1); });
+main().catch(err => {
+  console.error(err); process.exit(1);
+});
