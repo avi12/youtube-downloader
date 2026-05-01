@@ -38,7 +38,9 @@ export default defineConfig({
     ],
     ...(browser === "firefox" && {
       browser_specific_settings: {
-        gecko: { id: "youtube-downloader@avi12.com" }
+        gecko: {
+          id: "youtube-downloader@avi12.com"
+        }
       }
     }),
     content_security_policy: {

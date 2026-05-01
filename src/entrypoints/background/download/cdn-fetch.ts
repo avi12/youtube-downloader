@@ -1,6 +1,6 @@
 import { StreamStallError, readStreamToBuffer } from "@/lib/utils/stream";
 
-const MAX_CDN_RETRY_ATTEMPTS = 3;
+const MAX_RETRY_ATTEMPTS = 3;
 const RETRY_BASE_DELAY_MS = 1_000;
 const HTTP_STATUS_RANGE_NOT_SATISFIABLE = 416;
 const HTTP_STATUS_OK = 200;
@@ -20,10 +20,14 @@ export async function fetchWithProgress({ url, signal, onBytesReceived }: {
   let partialData: Uint8Array | null = null;
   let byteOffset = 0;
 
-  for (let attempt = 0; attempt <= MAX_CDN_RETRY_ATTEMPTS; attempt++) {
+  for (let attempt = 0; attempt <= MAX_RETRY_ATTEMPTS; attempt++) {
     const response = await fetch(url, {
       signal,
-      headers: byteOffset > 0 ? { Range: `bytes=${byteOffset}-` } : {}
+      ...(byteOffset > 0 && {
+        headers: {
+          Range: `bytes=${byteOffset}-`
+        }
+      })
     });
     if (response.status === HTTP_STATUS_RANGE_NOT_SATISFIABLE) {
       if (partialData) {
@@ -64,12 +68,12 @@ export async function fetchWithProgress({ url, signal, onBytesReceived }: {
 
       return partialData ? mergeUint8Arrays(partialData, newData) : newData;
     } catch (error) {
-      if (!(error instanceof StreamStallError) || attempt === MAX_CDN_RETRY_ATTEMPTS) {
+      if (!(error instanceof StreamStallError) || attempt === MAX_RETRY_ATTEMPTS) {
         throw error;
       }
 
       partialData = partialData ? mergeUint8Arrays(partialData, error.partialData) : error.partialData;
-      console.warn(`[ytdl:bg] CDN stream interrupted at byte ${byteOffset}, retrying (${attempt + 1}/${MAX_CDN_RETRY_ATTEMPTS})`);
+      console.warn(`[ytdl:bg] CDN stream interrupted at byte ${byteOffset}, retrying (${attempt + 1}/${MAX_RETRY_ATTEMPTS})`);
       await new Promise<void>(resolve => setTimeout(resolve, RETRY_BASE_DELAY_MS * (2 ** attempt)));
     }
   }

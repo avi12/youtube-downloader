@@ -45,8 +45,12 @@ export default defineContentScript({
           if (initBytes && initBytes.byteLength > 0) {
             window.__ytdlSabrInits = {
               ...inits,
-              ...(isVideo ? { video: initBytes } : {}),
-              ...(isAudio ? { audio: initBytes } : {})
+              ...(isVideo && {
+                video: initBytes
+              }),
+              ...(isAudio && {
+                audio: initBytes
+              })
             };
           }
         }

@@ -54,8 +54,12 @@ async function fetchClient({ client, videoId, poToken }: {
           "Content-Type": "application/json",
           "X-Youtube-Client-Name": client.clientNameHeader,
           "X-Youtube-Client-Version": client.clientVersion,
-          ...(userAgent ? { "User-Agent": userAgent } : {}),
-          ...(authorization ? { Authorization: authorization } : {})
+          ...(userAgent && {
+            "User-Agent": userAgent
+          }),
+          ...(authorization && {
+            Authorization: authorization
+          })
         },
         body: JSON.stringify(body)
       }

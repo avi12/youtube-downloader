@@ -12,12 +12,13 @@ const WIRE_32_BIT_BYTE_SIZE = 4;
 const FIELD_STREAMER_CONTEXT = 19;
 const FIELD_PO_TOKEN = 2;
 
-function readVarint(buf: Uint8Array, off: number) {
+function readVarint(bytes: Uint8Array, offsetIn: number) {
   let value = 0;
   let shift = 0;
-  while (off < buf.byteLength) {
-    const byte = buf[off];
-    off++;
+  let offset = offsetIn;
+  while (offset < bytes.byteLength) {
+    const byte = bytes[offset];
+    offset++;
     value |= (byte & VARINT_DATA_BITS_MASK) << shift;
 
     if ((byte & VARINT_CONTINUATION_BIT) === 0) {
@@ -28,51 +29,51 @@ function readVarint(buf: Uint8Array, off: number) {
   }
   return {
     value: value >>> 0,
-    offset: off
+    offset
   };
 }
 
-function parseStreamerContext(ctxData: Uint8Array) {
-  let ctxOffset = 0;
-  while (ctxOffset < ctxData.byteLength) {
-    const ctxTag = readVarint(ctxData, ctxOffset);
-    ctxOffset = ctxTag.offset;
-    const ctxField = ctxTag.value >> PROTO_FIELD_NUMBER_SHIFT;
-    const ctxWire = ctxTag.value & PROTO_WIRE_TYPE_MASK;
-    if (ctxWire === WIRE_TYPE_VARINT) {
-      ctxOffset = readVarint(ctxData, ctxOffset).offset;
+function parseStreamerContext(contextData: Uint8Array) {
+  let contextOffset = 0;
+  while (contextOffset < contextData.byteLength) {
+    const contextTag = readVarint(contextData, contextOffset);
+    contextOffset = contextTag.offset;
+    const contextField = contextTag.value >> PROTO_FIELD_NUMBER_SHIFT;
+    const contextWire = contextTag.value & PROTO_WIRE_TYPE_MASK;
+    if (contextWire === WIRE_TYPE_VARINT) {
+      contextOffset = readVarint(contextData, contextOffset).offset;
       continue;
     }
 
-    if (ctxWire !== WIRE_TYPE_LENGTH_DELIMITED) {
+    if (contextWire !== WIRE_TYPE_LENGTH_DELIMITED) {
       break;
     }
 
-    const ctxLen = readVarint(ctxData, ctxOffset);
-    ctxOffset = ctxLen.offset;
+    const contextLength = readVarint(contextData, contextOffset);
+    contextOffset = contextLength.offset;
 
-    if (ctxField === FIELD_PO_TOKEN && ctxLen.value > 0) {
-      const poTokenBytes = ctxData.subarray(ctxOffset, ctxOffset + ctxLen.value);
+    if (contextField === FIELD_PO_TOKEN && contextLength.value > 0) {
+      const poTokenBytes = contextData.subarray(contextOffset, contextOffset + contextLength.value);
       return btoa(String.fromCharCode(...poTokenBytes));
     }
 
-    ctxOffset += ctxLen.value;
+    contextOffset += contextLength.value;
   }
 
   return null;
 }
 
 export function extractPoTokenFromBody(body: number[]) {
-  const buf = new Uint8Array(body);
+  const bytes = new Uint8Array(body);
   let offset = 0;
 
-  while (offset < buf.byteLength) {
-    const tag = readVarint(buf, offset);
+  while (offset < bytes.byteLength) {
+    const tag = readVarint(bytes, offset);
     offset = tag.offset;
     const fieldNumber = tag.value >> PROTO_FIELD_NUMBER_SHIFT;
     const wireType = tag.value & PROTO_WIRE_TYPE_MASK;
     if (wireType === WIRE_TYPE_VARINT) {
-      offset = readVarint(buf, offset).offset;
+      offset = readVarint(bytes, offset).offset;
       continue;
     }
 
@@ -90,17 +91,17 @@ export function extractPoTokenFromBody(body: number[]) {
       break;
     }
 
-    const len = readVarint(buf, offset);
-    offset = len.offset;
+    const length = readVarint(bytes, offset);
+    offset = length.offset;
 
     if (fieldNumber === FIELD_STREAMER_CONTEXT) {
-      const poToken = parseStreamerContext(buf.subarray(offset, offset + len.value));
+      const poToken = parseStreamerContext(bytes.subarray(offset, offset + length.value));
       if (poToken) {
         return poToken;
       }
     }
 
-    offset += len.value;
+    offset += length.value;
   }
 
   return null;

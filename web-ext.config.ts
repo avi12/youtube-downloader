@@ -89,9 +89,13 @@ export default defineWebExtConfig({
   },
   startUrls: ["https://www.youtube.com/feed/subscriptions "],
   keepProfileChanges: true,
-  ...process.env.CHROME_WITH_PROFILE === "1" && { chromiumProfile: setupChromeProfile() },
+  ...process.env.CHROME_WITH_PROFILE === "1" && {
+    chromiumProfile: setupChromeProfile()
+  },
   firefoxArgs: ["-marionette", "-marionette-port", "2828", "--remote-debugging-port", "9225"],
-  ...process.env.FIREFOX_WITH_PROFILE === "1" && { firefoxProfile: findDefaultFirefoxProfile() },
+  ...process.env.FIREFOX_WITH_PROFILE === "1" && {
+    firefoxProfile: findDefaultFirefoxProfile()
+  },
   chromiumArgs: [
     `--lang=${LANG}`,
     "--remote-debugging-port=9229",
