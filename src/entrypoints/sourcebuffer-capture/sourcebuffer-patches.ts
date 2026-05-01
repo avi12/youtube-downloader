@@ -1,3 +1,4 @@
+import { StreamType } from "@/types";
 import type { YtdlCaptureState, YtdlMediaCapture } from "@/types";
 
 const PENDING_INIT_MAX_BYTES = 50_000;
@@ -8,7 +9,7 @@ export function createCaptureState(sourceBufferMimeTypes: WeakMap<SourceBuffer, 
     mimeType: string;
     chunk: Uint8Array;
   }) {
-    if (mimeType.startsWith("video")) {
+    if (mimeType.startsWith(StreamType.Video)) {
       capture.videoChunks.push(chunk.slice());
       capture.videoTotalBytes += chunk.byteLength;
       capture.videoMimeType = mimeType.split(";")[0];
@@ -35,11 +36,11 @@ export function patchAddSourceBuffer(
   const originalAddSourceBuffer = MediaSource.prototype.addSourceBuffer;
   MediaSource.prototype.addSourceBuffer = function (mimeType) {
     const sourceBuffer = originalAddSourceBuffer.call(this, mimeType);
-    let kind: "video" | "audio" | null = null;
-    if (mimeType.startsWith("video")) {
-      kind = "video";
-    } else if (mimeType.startsWith("audio")) {
-      kind = "audio";
+    let kind: StreamType | null = null;
+    if (mimeType.startsWith(StreamType.Video)) {
+      kind = StreamType.Video;
+    } else if (mimeType.startsWith(StreamType.Audio)) {
+      kind = StreamType.Audio;
     }
 
     if (!kind) {
@@ -51,7 +52,7 @@ export function patchAddSourceBuffer(
     const { activeVideoId, capturedMedia, pendingChunks } = captureState;
     const capture = activeVideoId ? capturedMedia.get(activeVideoId) : null;
     if (capture) {
-      if (kind === "video") {
+      if (kind === StreamType.Video) {
         capture.videoChunks.length = 0;
         capture.videoTotalBytes = 0;
       } else {

@@ -5,12 +5,13 @@ import { sessionsByVideoId } from "./session-store";
 import type { ReceivedSegment, ScrubSession } from "./session-store";
 import { OffscreenMessageType, sendBytesToOffscreen, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
 import { extractInit, prependInitIfMissing } from "@/lib/utils/media-init";
+import { StreamType } from "@/types";
 
 async function emitSegmentChunks({ session, iScrub, bytes, mediaKind }: {
   session: ScrubSession;
   iScrub: number;
   bytes: Uint8Array;
-  mediaKind: "video" | "audio";
+  mediaKind: StreamType;
 }) {
   return sendBytesToOffscreen({
     videoId: session.videoId,
@@ -151,13 +152,13 @@ export async function finalizeSession(session: ScrubSession, logFn: (msg: string
         session,
         iScrub: i,
         bytes: segment.videoBytes,
-        mediaKind: "video"
+        mediaKind: StreamType.Video
       }),
       emitSegmentChunks({
         session,
         iScrub: i,
         bytes: segment.audioBytes,
-        mediaKind: "audio"
+        mediaKind: StreamType.Audio
       })
     ]);
   }

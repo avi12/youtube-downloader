@@ -44,7 +44,7 @@ function handleSegmentChunk(
   chunkBytes: Uint8Array
 ) {
   if (iChunk === -1) {
-    if (kind === "video") {
+    if (kind === StreamType.Video) {
       segment.totalVideoChunks = totalChunks;
     } else {
       segment.totalAudioChunks = totalChunks;
@@ -53,7 +53,7 @@ function handleSegmentChunk(
     return;
   }
 
-  if (kind === "video") {
+  if (kind === StreamType.Video) {
     segment.videoChunks.set(iChunk, chunkBytes);
 
     if (totalChunks > 0) {
