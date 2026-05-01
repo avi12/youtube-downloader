@@ -4,19 +4,18 @@ import { untrackIframe } from "./iframe-lifecycle";
 import { sessionsByVideoId } from "./session-store";
 import type { ReceivedSegment, ScrubSession } from "./session-store";
 import { OffscreenMessageType, sendBytesToOffscreen, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
-import { base64ToUint8Array, uint8ToBase64 } from "@/lib/utils/binary";
 import { extractInit, prependInitIfMissing } from "@/lib/utils/media-init";
 
-function emitSegmentChunks({ session, scrubIndex, base64, mediaKind }: {
+function emitSegmentChunks({ session, scrubIndex, bytes, mediaKind }: {
   session: ScrubSession;
   scrubIndex: number;
-  base64: string;
+  bytes: Uint8Array;
   mediaKind: "video" | "audio";
 }) {
   return sendBytesToOffscreen({
     videoId: session.videoId,
     streamType: `${mediaKind}-seg-${scrubIndex}`,
-    data: base64ToUint8Array(base64),
+    data: bytes,
     tabId: session.tabId
   });
 }
@@ -55,17 +54,15 @@ function ensureInitForAllSegments(
   let audioInit: Uint8Array | undefined;
 
   for (const [, segment] of segments) {
-    if (segment.videoBase64) {
-      const videoBytes = base64ToUint8Array(segment.videoBase64);
-      const init = extractInit(videoBytes, videoMimeType);
+    if (segment.videoBytes.byteLength > 0) {
+      const init = extractInit(segment.videoBytes, videoMimeType);
       if (init) {
         videoInit = init;
       }
     }
 
-    if (segment.audioBase64) {
-      const audioBytes = base64ToUint8Array(segment.audioBase64);
-      const init = extractInit(audioBytes, audioMimeType);
+    if (segment.audioBytes.byteLength > 0) {
+      const init = extractInit(segment.audioBytes, audioMimeType);
       if (init) {
         audioInit = init;
       }
@@ -86,28 +83,31 @@ function ensureInitForAllSegments(
   let audioPatchCount = 0;
 
   for (const [index, segment] of segments) {
-    if (videoInit && segment.videoBase64) {
-      const videoBytes = base64ToUint8Array(segment.videoBase64);
-      const patched = prependInitIfMissing(videoBytes, videoInit, videoMimeType);
-      if (patched !== videoBytes) {
+    let updated = segment;
+    if (videoInit && segment.videoBytes.byteLength > 0) {
+      const patched = prependInitIfMissing(segment.videoBytes, videoInit, videoMimeType);
+      if (patched !== segment.videoBytes) {
         videoPatchCount++;
-        segments.set(index, {
-          ...segment,
-          videoBase64: uint8ToBase64(patched)
-        });
+        updated = {
+          ...updated,
+          videoBytes: patched
+        };
       }
     }
 
-    if (audioInit && segment.audioBase64) {
-      const audioBytes = base64ToUint8Array(segment.audioBase64);
-      const patched = prependInitIfMissing(audioBytes, audioInit, audioMimeType);
-      if (patched !== audioBytes) {
+    if (audioInit && segment.audioBytes.byteLength > 0) {
+      const patched = prependInitIfMissing(updated.audioBytes, audioInit, audioMimeType);
+      if (patched !== updated.audioBytes) {
         audioPatchCount++;
-        segments.set(index, {
-          ...segments.get(index)!,
-          audioBase64: uint8ToBase64(patched)
-        });
+        updated = {
+          ...updated,
+          audioBytes: patched
+        };
       }
+    }
+
+    if (updated !== segment) {
+      segments.set(index, updated);
     }
   }
 
@@ -131,24 +131,22 @@ function applyPrefetchedInits(
 
   for (const [index, segment] of session.receivedSegments) {
     let updated = segment;
-    if (videoInit && segment.videoBase64) {
-      const videoBytes = base64ToUint8Array(segment.videoBase64);
-      const patched = prependInitIfMissing(videoBytes, videoInit, videoMimeType);
-      if (patched !== videoBytes) {
+    if (videoInit && segment.videoBytes.byteLength > 0) {
+      const patched = prependInitIfMissing(segment.videoBytes, videoInit, videoMimeType);
+      if (patched !== segment.videoBytes) {
         updated = {
           ...updated,
-          videoBase64: uint8ToBase64(patched)
+          videoBytes: patched
         };
       }
     }
 
-    if (audioInit && segment.audioBase64) {
-      const audioBytes = base64ToUint8Array(segment.audioBase64);
-      const patched = prependInitIfMissing(audioBytes, audioInit, audioMimeType);
-      if (patched !== audioBytes) {
+    if (audioInit && segment.audioBytes.byteLength > 0) {
+      const patched = prependInitIfMissing(updated.audioBytes, audioInit, audioMimeType);
+      if (patched !== updated.audioBytes) {
         updated = {
           ...updated,
-          audioBase64: uint8ToBase64(patched)
+          audioBytes: patched
         };
       }
     }
@@ -174,13 +172,13 @@ export async function finalizeSession(session: ScrubSession, logFn: (msg: string
       emitSegmentChunks({
         session,
         scrubIndex,
-        base64: segment.videoBase64,
+        bytes: segment.videoBytes,
         mediaKind: "video"
       }),
       emitSegmentChunks({
         session,
         scrubIndex,
-        base64: segment.audioBase64,
+        bytes: segment.audioBytes,
         mediaKind: "audio"
       })
     ]);

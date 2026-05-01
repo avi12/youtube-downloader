@@ -1,13 +1,8 @@
 import { tabTracker, untrackVideoForTab } from "../queue/tab-tracker";
-import { notifyFirefoxProcessorTabRemoved } from "./processor";
 import { clearCapturedSabrData } from "@/lib/youtube/sabr/request-capture";
 
 export function registerTabLifecycleHandlers() {
   browser.tabs.onRemoved.addListener(tabId => {
-    if (import.meta.env.FIREFOX) {
-      notifyFirefoxProcessorTabRemoved(tabId);
-    }
-
     const tabState = tabTracker[tabId];
     if (!tabState) {
       return;

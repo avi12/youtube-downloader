@@ -1,4 +1,3 @@
-import { base64ToUint8Array } from "./codec";
 import { StreamType } from "@/types";
 
 export interface AudioStream {
@@ -42,7 +41,7 @@ function handleSegmentChunk(
   kind: string,
   iChunk: number,
   totalChunks: number,
-  chunkBase64: string
+  chunkBytes: Uint8Array
 ) {
   if (iChunk === -1) {
     if (kind === "video") {
@@ -54,15 +53,14 @@ function handleSegmentChunk(
     return;
   }
 
-  const decoded = base64ToUint8Array(chunkBase64);
   if (kind === "video") {
-    segment.videoChunks.set(iChunk, decoded);
+    segment.videoChunks.set(iChunk, chunkBytes);
 
     if (totalChunks > 0) {
       segment.totalVideoChunks = totalChunks;
     }
   } else {
-    segment.audioChunks.set(iChunk, decoded);
+    segment.audioChunks.set(iChunk, chunkBytes);
 
     if (totalChunks > 0) {
       segment.totalAudioChunks = totalChunks;
@@ -75,7 +73,7 @@ function handleAudioChunk(
   streamType: string,
   iChunk: number,
   totalChunks: number,
-  decoded: Uint8Array
+  chunkBytes: Uint8Array
 ) {
   if (!accumulator.audioStreams.has(streamType)) {
     accumulator.audioStreams.set(streamType, {
@@ -89,7 +87,7 @@ function handleAudioChunk(
     return;
   }
 
-  audioStream.chunks.set(iChunk, decoded);
+  audioStream.chunks.set(iChunk, chunkBytes);
 
   if (totalChunks > 0) {
     audioStream.totalChunks = totalChunks;
@@ -101,10 +99,10 @@ export function handleProcessStreamChunk(data: {
   streamType: string;
   iChunk: number;
   totalChunks: number;
-  chunkBase64: string;
+  chunkBytes: Uint8Array;
   tabId: number;
 }) {
-  const { videoId, streamType, iChunk, totalChunks, chunkBase64 } = data;
+  const { videoId, streamType, iChunk, totalChunks, chunkBytes } = data;
   if (!STREAM_ACCUMULATORS.has(videoId)) {
     STREAM_ACCUMULATORS.set(videoId, {
       videoChunks: new Map(),
@@ -118,7 +116,7 @@ export function handleProcessStreamChunk(data: {
   const segMatch = streamType.match(SEGMENT_STREAM_PATTERN);
   if (segMatch) {
     const [, kind, indexStr] = segMatch;
-    handleSegmentChunk(ensureSegment(accumulator, parseInt(indexStr, 10)), kind, iChunk, totalChunks, chunkBase64);
+    handleSegmentChunk(ensureSegment(accumulator, parseInt(indexStr, 10)), kind, iChunk, totalChunks, chunkBytes);
     return;
   }
 
@@ -135,14 +133,13 @@ export function handleProcessStreamChunk(data: {
     return;
   }
 
-  const decoded = base64ToUint8Array(chunkBase64);
   if (streamType === StreamType.Video) {
-    accumulator.videoChunks.set(iChunk, decoded);
+    accumulator.videoChunks.set(iChunk, chunkBytes);
 
     if (totalChunks > 0) {
       accumulator.totalVideoChunks = totalChunks;
     }
   } else {
-    handleAudioChunk(accumulator, streamType, iChunk, totalChunks, decoded);
+    handleAudioChunk(accumulator, streamType, iChunk, totalChunks, chunkBytes);
   }
 }

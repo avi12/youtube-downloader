@@ -1,10 +1,8 @@
-import { Browser } from "#imports";
-
 // YouTube's player pauses streaming in background tabs, unfocused tabs, and iframes;
 // spoof visibility/focus/frame so it always streams.
 export default defineContentScript({
   matches: ["https://www.youtube.com/*"],
-  world: Browser.scripting.ExecutionWorld.MAIN,
+  world: "MAIN",
   runAt: "document_start",
   allFrames: true,
   main() {

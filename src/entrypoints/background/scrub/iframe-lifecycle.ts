@@ -24,7 +24,7 @@ function buildScrubIframeUrl({ videoId, scrubIndex, startSec, windowSec }: {
     ytdlScrubMode: "1",
     ytdlScrubIndex: String(scrubIndex),
     ytdlScrubWindow: String(windowSec),
-    ...startSec > 0 && { t: String(startSec) }
+    t: String(startSec)
   });
 
   return `https://www.youtube.com/watch?${params.toString()}`;

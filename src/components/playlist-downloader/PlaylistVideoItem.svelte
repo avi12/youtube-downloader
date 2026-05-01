@@ -69,6 +69,9 @@
       : Math.round(itemState.displayProgress)
   );
 
+  const CIRCULAR_PROGRESS_RADIUS = 17;
+  const CIRCULAR_PROGRESS_CIRCUMFERENCE = 2 * Math.PI * CIRCULAR_PROGRESS_RADIUS;
+
   const downloadButtonId = $derived(`btn-${videoId}-download`);
   const chevronButtonId = $derived(`btn-${videoId}-chevron`);
 
@@ -293,20 +296,31 @@
           }}
         ></tp-yt-paper-checkbox>
       {/if}
-      <yt-button-view-model {@attach attachDownloadButton}
-      ></yt-button-view-model>
+      <div class="ytdl-download-btn-wrapper">
+        <yt-button-view-model {@attach attachDownloadButton}
+        ></yt-button-view-model>
+        {#if isProgressBarVisible}
+          <svg
+            class="ytdl-circular-progress"
+            aria-label={itemState.buttonTooltip}
+            viewBox="0 0 40 40"
+          >
+            <circle class="ytdl-circular-progress__track" cx="20" cy="20" r={CIRCULAR_PROGRESS_RADIUS} />
+            <circle
+              style={isProgressBarIndeterminate
+                ? undefined
+                : `stroke-dashoffset: ${CIRCULAR_PROGRESS_CIRCUMFERENCE * (1 - progressBarValue / 100)}`}
+              class="ytdl-circular-progress__fill"
+              class:ytdl-circular-progress__fill--indeterminate={isProgressBarIndeterminate}
+              cx="20"
+              cy="20"
+              r={CIRCULAR_PROGRESS_RADIUS}
+            />
+          </svg>
+        {/if}
+      </div>
       <yt-button-view-model {@attach attachChevronButton}
       ></yt-button-view-model>
-      {#if isProgressBarVisible}
-        <div class="ytdl-progress-container">
-          <tp-yt-paper-progress
-            class="ytdl-progress-bar"
-            aria-label={itemState.buttonTooltip}
-            indeterminate={isProgressBarIndeterminate || undefined}
-            value={progressBarValue}
-          ></tp-yt-paper-progress>
-        </div>
-      {/if}
     </div>
   {:else if !itemState.videoData && !itemState.isLoadFailed}
     <div class="ytdl-spinner-container" aria-busy="true" aria-label="Loading video info">
@@ -337,21 +351,45 @@
       );
   }
 
-  .ytdl-progress-container {
-    position: absolute;
-    inset-block-end: 0;
-    inset-inline-start: 0;
-    overflow: hidden;
-    block-size: 3px;
-    inline-size: 100%;
+  .ytdl-download-btn-wrapper {
+    position: relative;
+    display: inline-flex;
   }
 
-  .ytdl-progress-bar {
-    --paper-progress-active-color: var(--yt-spec-brand-link-text, #3ea6ff);
-    --paper-progress-container-color: var(--yt-spec-10-percent-layer, rgb(255 255 255 / 10%));
+  .ytdl-circular-progress {
+    position: absolute;
+    inset: 0;
+    overflow: visible;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    transform: rotate(-90deg);
+  }
 
-    block-size: 100%;
-    inline-size: 100%;
+  .ytdl-circular-progress__track {
+    fill: none;
+    stroke: var(--yt-spec-10-percent-overlay, rgb(0 0 0 / 10%));
+    stroke-width: 2.5;
+  }
+
+  .ytdl-circular-progress__fill {
+    fill: none;
+    stroke: var(--yt-spec-brand-button-background, #ff0000);
+    stroke-dasharray: 106.81;
+    stroke-linecap: round;
+    stroke-width: 2.5;
+    transition: stroke-dashoffset 300ms ease;
+  }
+
+  .ytdl-circular-progress__fill--indeterminate {
+    stroke-dasharray: 40 66.81;
+    animation: ytdl-circular-spin 1000ms linear infinite;
+  }
+
+  @keyframes ytdl-circular-spin {
+    to {
+      stroke-dashoffset: -106.81;
+    }
   }
 
   .ytdl-spinner-container {

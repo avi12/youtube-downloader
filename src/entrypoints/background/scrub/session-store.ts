@@ -1,8 +1,8 @@
 import type { AdaptiveFormatItem, CaptionTrack, DownloadType, VideoMetadata } from "@/types";
 
 export interface ReceivedSegment {
-  videoBase64: string;
-  audioBase64: string;
+  videoBytes: Uint8Array;
+  audioBytes: Uint8Array;
   videoMimeType: string;
   audioMimeType: string;
   videoBufferStartSec?: number;
@@ -118,8 +118,8 @@ export function recordEmptyAfterRetries({ session, scrubIndex, logFn }: {
   logFn(`index ${scrubIndex} exhausted retries, accepting empty`);
   session.receivedSegments.set(
     scrubIndex, {
-      videoBase64: "",
-      audioBase64: "",
+      videoBytes: new Uint8Array(0),
+      audioBytes: new Uint8Array(0),
       videoMimeType: "",
       audioMimeType: ""
     } satisfies ReceivedSegment

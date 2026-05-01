@@ -4,7 +4,6 @@
 // Position offscreen, NOT visibility:hidden - browsers pause media activity
 // in visibility:hidden frames.
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
-import { uint8ToBase64 } from "@/lib/utils/binary";
 
 const HIDDEN_IFRAME_STYLE = "position:fixed;left:-99999px;top:-99999px;width:480px;height:270px;border:0";
 const IFRAME_MSG_DEBUG = "ytdl:scrub-debug";
@@ -99,8 +98,8 @@ export function initScrubIframeRelay() {
     void sendMessage(MessageType.IframeScrubSegmentReady, {
       videoId,
       scrubIndex,
-      videoBase64: uint8ToBase64(new Uint8Array(videoBuffer)),
-      audioBase64: uint8ToBase64(new Uint8Array(audioBuffer)),
+      videoBytes: new Uint8Array(videoBuffer),
+      audioBytes: new Uint8Array(audioBuffer),
       videoMimeType,
       audioMimeType,
       videoBufferStartSec,

@@ -3,7 +3,7 @@ import { finalizeSession } from "./session-finalizer";
 import { globalInFlightIframeIds, sessionsByVideoId } from "./session-store";
 import { broadcastDebugLogToYouTubeTabs } from "@/lib/messaging/debug-log";
 
-const MAX_GLOBAL_PARALLEL_IFRAMES = 2;
+const MAX_GLOBAL_PARALLEL_IFRAMES = 1;
 const IFRAME_SPAWN_STAGGER_MS = 200;
 const SCRUB_TAG = "[ytdl:scrub-bg]";
 

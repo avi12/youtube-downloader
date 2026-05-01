@@ -29,7 +29,7 @@ export async function processMultipartSegments(item: ProcessStreamData & { segme
   const audioExt = audioMimeType.includes("webm") ? "webm" : "m4a";
   // Opus audio in an MP4 container is not supported by most decoders (Windows
   // Media Player, QuickTime, etc.) - transcode to AAC in each per-segment mux.
-  const isOpusAudio = audioExt === "webm";
+  const isOpusAudio = audioExt === "webm" && targetExt === "mp4";
   logPipelineEvent(`[ytdl:pipeline] mimeTypes: video=${videoMimeType} audio=${audioMimeType} videoExt=${videoExt} audioExt=${audioExt}`);
 
   function handleFFmpegProgress({ progress }: { progress: number }) {

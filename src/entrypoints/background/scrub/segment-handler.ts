@@ -2,7 +2,6 @@ import { untrackIframe } from "./iframe-lifecycle";
 import { finalizeSession } from "./session-finalizer";
 import { iframeIdByVideoIdAndIndex, makeIframeKey, sessionsByVideoId } from "./session-store";
 import type { ReceivedSegment, SegmentArrival, ScrubSession } from "./session-store";
-import { base64ToUint8Array } from "@/lib/utils/binary";
 
 const MAX_RETRIES_PER_INDEX = 2;
 const MIN_ACCEPTABLE_BYTES_PER_SEC = 50_000;
@@ -42,8 +41,8 @@ export async function handleSegmentArrival(
     scrubIndex: data.scrubIndex
   });
 
-  const videoBytes = base64ToUint8Array(data.videoBase64).byteLength;
-  const audioBytes = base64ToUint8Array(data.audioBase64).byteLength;
+  const videoBytes = data.videoBytes.byteLength;
+  const audioBytes = data.audioBytes.byteLength;
   const attempts = session.attemptsByIndex.get(data.scrubIndex) ?? 0;
   if (isSegmentTooSmall({
     session,
@@ -60,8 +59,8 @@ export async function handleSegmentArrival(
 
   session.receivedSegments.set(
     data.scrubIndex, {
-      videoBase64: data.videoBase64,
-      audioBase64: data.audioBase64,
+      videoBytes: data.videoBytes,
+      audioBytes: data.audioBytes,
       videoMimeType: data.videoMimeType,
       audioMimeType: data.audioMimeType,
       videoBufferStartSec: data.videoBufferStartSec,

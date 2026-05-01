@@ -1,6 +1,5 @@
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { ScrubIframeMessageType, sendScrubIframeMessage } from "@/lib/messaging/scrub-iframe-messaging";
-import { uint8ToBase64 } from "@/lib/utils/binary";
 
 export function registerScrubResultForwarder() {
   const params = new URLSearchParams(location.search);
@@ -26,8 +25,8 @@ export function registerScrubResultForwarder() {
     sendScrubIframeMessage(ScrubIframeMessageType.Segment, {
       videoId: data.videoId,
       scrubIndex: data.scrubIndex,
-      videoBase64: uint8ToBase64(data.videoBytes),
-      audioBase64: uint8ToBase64(data.audioBytes),
+      videoBytes: data.videoBytes,
+      audioBytes: data.audioBytes,
       videoMimeType: data.videoMimeType,
       audioMimeType: data.audioMimeType,
       videoBufferStartSec: data.videoBufferStartSec,
