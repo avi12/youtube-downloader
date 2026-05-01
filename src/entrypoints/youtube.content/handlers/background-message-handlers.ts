@@ -61,10 +61,13 @@ export function registerBackgroundMessageHandlers() {
     return cachedSabrTemplate;
   });
 
-  onMessage(MessageType.SynthesizeSabrTemplateFromTab, ({ data }) => crossWorldMessenger.sendMessage(
-    CrossWorldMessage.SynthesizeSabrTemplate,
-    { playerTimeMs: data.playerTimeMs }
-  ).catch(() => null));
+  // eslint-disable-next-line arrow-body-style
+  onMessage(MessageType.SynthesizeSabrTemplateFromTab, ({ data }) => {
+    return crossWorldMessenger.sendMessage(
+      CrossWorldMessage.SynthesizeSabrTemplate,
+      { playerTimeMs: data.playerTimeMs }
+    ).catch(() => null);
+  });
 
   onMessage(MessageType.RunProgressiveSabrInTab, ({ data }) => {
     void crossWorldMessenger.sendMessage(CrossWorldMessage.RunProgressiveSabr, data);

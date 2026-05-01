@@ -83,8 +83,14 @@ export function registerStorageHandlers() {
     return buildCapturedSabrBody(tabId);
   });
 
-  onMessage(MessageType.PersistInterruptedDownload, ({ data }) => persistInterruptedDownload(data));
-  onMessage(MessageType.ClearInterruptedDownload, ({ data }) => clearInterruptedDownload(data.videoId));
+  // eslint-disable-next-line arrow-body-style
+  onMessage(MessageType.PersistInterruptedDownload, ({ data }) => {
+    return persistInterruptedDownload(data);
+  });
+  // eslint-disable-next-line arrow-body-style
+  onMessage(MessageType.ClearInterruptedDownload, ({ data }) => {
+    return clearInterruptedDownload(data.videoId);
+  });
   onMessage(MessageType.GetInterruptedDownload, async ({ data }) => {
     const current = await interruptedDownloadsItem.getValue();
     return current[data.videoId] ?? null;
