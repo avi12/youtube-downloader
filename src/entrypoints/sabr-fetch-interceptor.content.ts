@@ -2,6 +2,7 @@ import { getMoviePlayer } from "./sabr-fetch-interceptor/player-helpers";
 import { fetchProgressive } from "./sabr-fetch-interceptor/progressive-fetcher";
 import { applyInitCache } from "./sabr-fetch-interceptor/scrub-init-cache";
 import { buildSyntheticTemplateFromPlayer, capturedTemplateToBase64 } from "./sabr-fetch-interceptor/template-builder";
+import { Browser } from "#imports";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { uint8ToBase64 } from "@/lib/utils/binary";
 import { extractInit } from "@/lib/utils/media-init";
@@ -28,7 +29,7 @@ function postSegmentToHost(
 
 export default defineContentScript({
   matches: ["https://www.youtube.com/*"],
-  world: "MAIN",
+  world: Browser.scripting.ExecutionWorld.MAIN,
   runAt: "document_start",
   allFrames: true,
   main() {

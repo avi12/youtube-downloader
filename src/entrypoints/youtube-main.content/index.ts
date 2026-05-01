@@ -7,6 +7,7 @@ import { runScrubSelfDrive, runTrustFactoryDrive } from "./scrub/self-drive";
 import { cancelActiveDownload } from "./video/download";
 import { extractPlaylistMetadata, handleNavigateSuccess } from "./video/playlist-metadata";
 import { extractAndDispatchVideoData } from "./video/video-data";
+import { Browser } from "#imports";
 import type { PlayerResponse } from "@/types";
 
 declare global {
@@ -35,7 +36,7 @@ declare global {
 
 export default defineContentScript({
   matches: ["https://www.youtube.com/*"],
-  world: "MAIN",
+  world: Browser.scripting.ExecutionWorld.MAIN,
   allFrames: true,
   async main() {
     if (location.search.includes("ytdlScrubMode=1")) {

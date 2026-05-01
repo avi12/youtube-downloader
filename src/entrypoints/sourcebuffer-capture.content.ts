@@ -4,10 +4,11 @@ import {
   patchAddSourceBuffer,
   patchAppendBuffer
 } from "./sourcebuffer-capture/sourcebuffer-patches";
+import { Browser } from "#imports";
 
 export default defineContentScript({
   matches: ["https://www.youtube.com/*"],
-  world: "MAIN",
+  world: Browser.scripting.ExecutionWorld.MAIN,
   runAt: "document_start",
   allFrames: true,
   main() {

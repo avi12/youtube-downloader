@@ -1,3 +1,5 @@
+import { Browser } from "#imports";
+
 // Hide navigator.webdriver from YouTube's BotGuard. The dev-server launches
 // Firefox with --marionette (needed for web-ext-run sideload + MCP), which
 // flips Navigator::Webdriver() to true at the Gecko level via nsIMarionette.
@@ -7,7 +9,7 @@
 // the spoofed value and any [Constant, Cached] webidl cache seats on false.
 export default defineContentScript({
   matches: ["https://www.youtube.com/*"],
-  world: "MAIN",
+  world: Browser.scripting.ExecutionWorld.MAIN,
   runAt: "document_start",
   allFrames: true,
   main() {
