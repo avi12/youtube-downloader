@@ -1,7 +1,8 @@
+import { StreamType } from "@/types";
 import type { AdaptiveFormatItem, PlayerResponse } from "@/types";
 
 export function getUniqueVideoFormats(formats: AdaptiveFormatItem[]) {
-  const videoFormats = formats.filter(format => format.mimeType.startsWith("video"));
+  const videoFormats = formats.filter(format => format.mimeType.startsWith(StreamType.Video));
   const seen = new Set<string>();
 
   return videoFormats.filter(format => {
@@ -21,7 +22,7 @@ export function getUniqueVideoFormats(formats: AdaptiveFormatItem[]) {
 }
 
 export function getAudioFormats(formats: AdaptiveFormatItem[], preferredLanguage: string) {
-  const audioFormats = formats.filter(format => format.mimeType.startsWith("audio"));
+  const audioFormats = formats.filter(format => format.mimeType.startsWith(StreamType.Audio));
   const seenKeys = new Set<string>();
   const deduped = audioFormats.filter(format => {
     const key = `${format.itag}:${format.audioTrack?.id ?? ""}`;
