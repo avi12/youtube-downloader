@@ -57,13 +57,26 @@ export function parseWebmAudioStartSec(data: Uint8Array) {
   let timecodeScale = DEFAULT_TIMECODE_SCALE_NS;
   let firstClusterTimecode: number | undefined;
 
-  function isUnknownSize(rawSize: number, length: number) {
+  function isUnknownSize(sizeOffset: number, length: number) {
     // EBML "unknown size" marker: all-1s in the value bits of the size vint.
     // Used by fragmented WebM where the Segment element grows as Clusters
-    // are appended. Maximum representable size for a length-N vint with
-    // leading bit stripped is (2^(7N) - 1).
-    const bits = 7 * length;
-    return bits < 53 && rawSize === (2 ** bits - 1);
+    // are appended. Length-8 unknown-size value (2^56 - 1) exceeds the safe
+    // integer range, so check the byte pattern directly. The leading byte
+    // has the length-marker bit set with all subsequent value bits = 1, and
+    // every byte after it is 0xFF.
+    const leadingMarkerBit = 0x80 >> (length - 1);
+    const expectedFirstByte = leadingMarkerBit | (leadingMarkerBit - 1);
+    if (data[sizeOffset] !== expectedFirstByte) {
+      return false;
+    }
+
+    for (let i = 1; i < length; i++) {
+      if (data[sizeOffset + i] !== 0xFF) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   function readChild(parentEnd: number, position: number) {
@@ -79,7 +92,7 @@ export function parseWebmAudioStartSec(data: Uint8Array) {
     }
 
     const dataStart = sizeOffset + size.length;
-    const dataEnd = isUnknownSize(size.value, size.length)
+    const dataEnd = isUnknownSize(sizeOffset, size.length)
       ? parentEnd
       : dataStart + size.value;
     if (dataEnd > parentEnd) {
