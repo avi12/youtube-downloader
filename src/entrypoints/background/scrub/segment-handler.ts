@@ -3,7 +3,8 @@ import { finalizeSession } from "./session-finalizer";
 import { iframeIdByVideoIdAndIndex, makeIframeKey, sessionsByVideoId } from "./session-store";
 import type { ReceivedSegment, SegmentArrival, ScrubSession } from "./session-store";
 
-const MAX_RETRIES_PER_INDEX = 2;
+const MAX_RETRIES_PER_INDEX = 4;
+const RETRY_DELAY_BASE_MS = 1500;
 const MIN_ACCEPTABLE_BYTES_PER_SEC = 50_000;
 const MIN_ACCEPTABLE_AUDIO_BYTES_PER_SEC = 16_000;
 
@@ -53,6 +54,7 @@ export async function handleSegmentArrival(
     session.attemptsByIndex.set(data.scrubIndex, attempts + 1);
     session.pendingIndices.push(data.scrubIndex);
     logFn(`segment ${data.scrubIndex} undersized (video=${videoBytes}B audio=${audioBytes}B), retrying ${attempts + 2}/${MAX_RETRIES_PER_INDEX + 1}`);
+    await new Promise(resolve => setTimeout(resolve, (attempts + 1) * RETRY_DELAY_BASE_MS));
     await fillGlobalSlots();
     return;
   }

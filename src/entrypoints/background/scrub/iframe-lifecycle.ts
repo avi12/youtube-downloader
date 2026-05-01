@@ -9,7 +9,7 @@ import {
 } from "./session-store";
 import type { ScrubSession } from "./session-store";
 
-const MAX_RETRIES_PER_INDEX = 2;
+const MAX_RETRIES_PER_INDEX = 4;
 const IFRAME_DEADLINE_OVERHEAD_MS = 120_000;
 
 function buildScrubIframeUrl({ videoId, scrubIndex, startSec, windowSec }: {
