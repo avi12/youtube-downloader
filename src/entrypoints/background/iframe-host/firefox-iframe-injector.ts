@@ -75,7 +75,7 @@ async function injectScrubScripts(tabId: number, frameId: number) {
   }
 }
 
-export function initFirefoxIframeInjector() {
+function initFirefoxIframeInjector() {
   // Use onDOMContentLoaded: onCommitted fires before the frame transitions from
   // about:blank to the actual YouTube document, so scripts injected there run in
   // about:blank and see no ytdlScrubMode=1 query parameter.
