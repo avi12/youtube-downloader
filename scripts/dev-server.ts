@@ -20,7 +20,7 @@
 
 import { findFirefoxRdpPort, isFirefoxTab, isRecord, RDP } from "./firefox-rdp.js";
 import chokidar from "chokidar";
-import { execSync, spawnSync } from "node:child_process";
+import { spawnSync } from "node:child_process";
 import {
   existsSync,
   cpSync,
@@ -631,8 +631,6 @@ async function main() {
   if (IS_FIREFOX) {
     process.env.MOZ_REMOTE_ALLOW_SYSTEM_ACCESS = "1";
     killExistingFirefoxInstances();
-  } else {
-    killExistingChromeInstances();
   }
 
   const profileDirectory = IS_FIREFOX ? setupFirefoxProfile() : setupChromeProfile();
@@ -693,6 +691,15 @@ async function main() {
     try {
       await runner.exit();
     } catch { /* runner may already be exiting */ }
+
+    // web-ext-run's runner.exit() doesn't always close Firefox cleanly when
+    // the parent tsx process gets killed, so kill any Firefox process still
+    // bound to our profile directory as a fallback. Filtered by profile so
+    // we never touch the user's other Firefox windows.
+    if (IS_FIREFOX) {
+      killExistingFirefoxInstances();
+    }
+
     process.exit(0);
   }
 
