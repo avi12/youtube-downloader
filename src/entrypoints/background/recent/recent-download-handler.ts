@@ -2,7 +2,7 @@ import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
 import { addRecentDownload } from "@/lib/storage/recent-downloads-db";
 import type { RecentDownloadEntry } from "@/types";
 
-function persistOnDownloadComplete({ targetDownloadId, data }: {
+async function persistOnDownloadComplete({ targetDownloadId, data }: {
   targetDownloadId: number;
   data: {
     blobUrl: string;

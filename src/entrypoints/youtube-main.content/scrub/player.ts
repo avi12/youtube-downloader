@@ -12,7 +12,7 @@ export interface MoviePlayer extends HTMLElement {
   getDuration?: () => number;
 }
 
-export function wait(durationMs: number) {
+export async function wait(durationMs: number) {
   return new Promise(resolve => setTimeout(resolve, durationMs));
 }
 

@@ -23,7 +23,7 @@ function findPlaylistHeaderMount() {
   return null;
 }
 
-export function waitForPlaylistHeaderMount(signal: AbortSignal) {
+export async function waitForPlaylistHeaderMount(signal: AbortSignal) {
   return new Promise<HTMLElement | null>(resolve => {
     const initial = findPlaylistHeaderMount();
     if (initial) {

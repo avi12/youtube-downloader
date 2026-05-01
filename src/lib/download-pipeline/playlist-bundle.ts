@@ -14,7 +14,7 @@ const playlistBundles = new Map<string, {
   tabId: number;
 }>();
 
-function zipToBuffer(entries: AsyncZippable) {
+async function zipToBuffer(entries: AsyncZippable) {
   return new Promise<Uint8Array>((resolve, reject) => {
     zip(entries, (error, data) => {
       if (error) {

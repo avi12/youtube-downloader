@@ -6,7 +6,7 @@ import type { ReceivedSegment, ScrubSession } from "./session-store";
 import { OffscreenMessageType, sendBytesToOffscreen, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
 import { extractInit, prependInitIfMissing } from "@/lib/utils/media-init";
 
-function emitSegmentChunks({ session, iScrub, bytes, mediaKind }: {
+async function emitSegmentChunks({ session, iScrub, bytes, mediaKind }: {
   session: ScrubSession;
   iScrub: number;
   bytes: Uint8Array;
@@ -20,7 +20,7 @@ function emitSegmentChunks({ session, iScrub, bytes, mediaKind }: {
   });
 }
 
-function emitExtraAudioChunks({ session, iTrack, data }: {
+async function emitExtraAudioChunks({ session, iTrack, data }: {
   session: ScrubSession;
   iTrack: number;
   data: Uint8Array;

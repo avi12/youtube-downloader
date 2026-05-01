@@ -8,7 +8,7 @@ interface ExtraAudioTrack {
   label: string;
 }
 
-function fetchWithTimeout(url: string) {
+async function fetchWithTimeout(url: string) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   return fetch(url, { signal: controller.signal }).finally(() => clearTimeout(timeout));

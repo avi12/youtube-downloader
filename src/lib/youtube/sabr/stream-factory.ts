@@ -23,7 +23,7 @@ export function adaptiveFormatToSabrFormat(format: AdaptiveFormatItem) {
   });
 }
 
-export function collectReadableStream({ stream, expectedBytes }: {
+export async function collectReadableStream({ stream, expectedBytes }: {
   stream: ReadableStream<Uint8Array>;
   expectedBytes: number;
 }) {

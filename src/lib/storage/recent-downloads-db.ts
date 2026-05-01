@@ -7,7 +7,7 @@ const Store = {
 
 let dbConnection: IDBDatabase | null = null;
 
-function openDatabase() {
+async function openDatabase() {
   return new Promise<IDBDatabase>((resolve, reject) => {
     const openRequest = indexedDB.open(DB_NAME, DB_VERSION);
     openRequest.onupgradeneeded = () => {
@@ -38,14 +38,14 @@ async function getDatabase() {
   return dbConnection;
 }
 
-function awaitRequest<T>(request: IDBRequest<T>) {
+async function awaitRequest<T>(request: IDBRequest<T>) {
   return new Promise<T>((resolve, reject) => {
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
   });
 }
 
-function awaitTransaction(transaction: IDBTransaction) {
+async function awaitTransaction(transaction: IDBTransaction) {
   return new Promise<void>((resolve, reject) => {
     transaction.oncomplete = () => resolve();
     transaction.onerror = () => reject(transaction.error);

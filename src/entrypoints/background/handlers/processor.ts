@@ -10,7 +10,7 @@ export function signalFFmpegReady() {
   resolveFFmpegReady = null;
 }
 
-function waitForFFmpegReady() {
+async function waitForFFmpegReady() {
   return new Promise<void>(resolve => {
     resolveFFmpegReady = resolve;
   });
