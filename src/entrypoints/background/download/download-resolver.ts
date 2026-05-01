@@ -13,7 +13,7 @@ export async function resolveDownloadResult({ request, cdnRequest, signal, video
   signal: AbortSignal;
   videoId: string;
   tabId: number;
-}): Promise<DownloadResult | "iframe-scrub" | null> {
+}) {
   const haveCdnUrls = Boolean(cdnRequest.resolvedVideoUrl || cdnRequest.resolvedAudioUrl);
   broadcastDebugLogToTab(
     `[ytdl:bg] CDN-first check: haveUrls=${haveCdnUrls} video=${Boolean(cdnRequest.resolvedVideoUrl)} audio=${Boolean(cdnRequest.resolvedAudioUrl)}`,

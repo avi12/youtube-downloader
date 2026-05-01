@@ -20,7 +20,7 @@ function buildRequestBody({ templateBody, playerTimeMs, audio, video, playbackCo
   audio: FormatProgress;
   video: FormatProgress;
   playbackCookieBytes: Uint8Array | null;
-}): Uint8Array {
+}) {
   const decoded = VideoPlaybackAbrRequest.decode(templateBody);
   decoded.playerTimeMs = String(playerTimeMs);
 
@@ -67,7 +67,7 @@ async function performFetch({ url, body, originalFetch }: {
   url: string;
   body: Uint8Array;
   originalFetch: typeof globalThis.fetch;
-}): Promise<Uint8Array> {
+}) {
   const fresh = new Uint8Array(body.byteLength);
   fresh.set(body);
   const response = await originalFetch(url, {
@@ -84,7 +84,7 @@ async function performFetch({ url, body, originalFetch }: {
   return new Uint8Array(arrayBuffer);
 }
 
-function compositeBufferToUint8(buffer: CompositeBuffer): Uint8Array {
+function compositeBufferToUint8(buffer: CompositeBuffer) {
   const out = new Uint8Array(buffer.totalLength);
   let offset = 0;
   for (const chunk of buffer.chunks) {
@@ -171,7 +171,7 @@ function ingestUmpResponse({ response, audio, video, audioItag, videoItag }: {
   return nextRequestPolicyBytes;
 }
 
-function buildContiguousBytes(format: FormatProgress): Uint8Array {
+function buildContiguousBytes(format: FormatProgress) {
   const sortedSeqs = [...format.segmentBytes.keys()].sort((seqA, seqB) => seqA - seqB);
   const total = sortedSeqs.reduce(
     (sum, seq) => sum + (format.segmentBytes.get(seq)?.byteLength ?? 0),
@@ -195,7 +195,7 @@ function buildResult({ state, audioItag, videoItag, iterations, stalled }: {
   videoItag: number;
   iterations: number;
   stalled: boolean;
-}): ProgressiveFetchResult {
+}) {
   return {
     audioBytes: buildContiguousBytes(state.audio),
     videoBytes: buildContiguousBytes(state.video),
@@ -341,7 +341,7 @@ export async function fetchProgressive({
   originalFetch: typeof globalThis.fetch;
   carryState: ProgressiveCarryState | null;
   initialPlayerTimeMs?: number;
-}): Promise<ProgressiveFetchResult> {
+}) {
   const template = await waitForTemplate({ timeoutMs: 30_000 });
   const initial = VideoPlaybackAbrRequest.decode(template.body);
   if (initial.selectedFormatIds.length < 2) {

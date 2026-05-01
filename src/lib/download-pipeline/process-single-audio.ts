@@ -23,7 +23,7 @@ export async function processAudioWithFfmpeg({
   sourceExtension: string;
   metadata?: VideoMetadata | null;
   isFlacTarget: boolean;
-}): Promise<Uint8Array> {
+}) {
   function handleProgress({ progress }: { progress: number }) {
     void reportProgress({
       videoId,

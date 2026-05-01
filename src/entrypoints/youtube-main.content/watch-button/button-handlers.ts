@@ -1,6 +1,5 @@
 import type { ButtonState } from "./button-state";
 import type { ButtonGroupElements, DropdownElements } from "./watch-button-dom";
-import type { ButtonViewState } from "./watch-button-view-model";
 import { buildChevronData, buildDownloadData } from "./watch-button-view-model";
 import { CHILD_LIST_SUBTREE } from "@/lib/utils/dom";
 import { ProgressType, type VideoData } from "@/types";
@@ -13,7 +12,7 @@ export { handleProgressEvent } from "./button-progress-handler";
 
 const DOWNLOAD_PROGRESS_SHARE = 0.8;
 
-export function mapToBarProgress(progress: number, progressType: ProgressType): number {
+export function mapToBarProgress(progress: number, progressType: ProgressType) {
   if (progressType === ProgressType.Video || progressType === ProgressType.Audio) {
     return progress * DOWNLOAD_PROGRESS_SHARE;
   }
@@ -21,7 +20,7 @@ export function mapToBarProgress(progress: number, progressType: ProgressType): 
   return DOWNLOAD_PROGRESS_SHARE + progress * (1 - DOWNLOAD_PROGRESS_SHARE);
 }
 
-function getViewState(state: ButtonState, videoData: VideoData): ButtonViewState {
+function getViewState(state: ButtonState, videoData: VideoData) {
   return {
     isDownloading: state.isDownloading,
     isDone: state.isDone,

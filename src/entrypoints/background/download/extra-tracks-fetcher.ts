@@ -1,4 +1,4 @@
-import type { AdaptiveFormatItem, CaptionTrack, SubtitleStream } from "@/types";
+import type { AdaptiveFormatItem, CaptionTrack } from "@/types";
 
 const FETCH_TIMEOUT_MS = 30_000;
 
@@ -14,7 +14,7 @@ function fetchWithTimeout(url: string) {
   return fetch(url, { signal: controller.signal }).finally(() => clearTimeout(timeout));
 }
 
-async function fetchUrlBytes(url: string): Promise<Uint8Array | null> {
+async function fetchUrlBytes(url: string) {
   try {
     const response = await fetchWithTimeout(url);
     if (!response.ok) {
@@ -28,7 +28,7 @@ async function fetchUrlBytes(url: string): Promise<Uint8Array | null> {
   }
 }
 
-async function fetchSubtitleSrt(track: CaptionTrack): Promise<string> {
+async function fetchSubtitleSrt(track: CaptionTrack) {
   try {
     const baseUrl = track.baseUrl.startsWith("//") ? `https:${track.baseUrl}` : track.baseUrl;
     const url = new URL(baseUrl);
@@ -76,10 +76,7 @@ export async function fetchExtraAudioTracksAndCaptions({
   additionalAudioFormats: AdaptiveFormatItem[];
   resolvedExtraAudioUrls: (string | null)[];
   captionTracks: CaptionTrack[];
-}): Promise<{
-  extraAudioTracks: ExtraAudioTrack[];
-  subtitleStreams: SubtitleStream[];
-}> {
+}) {
   const extraAudioPromises = additionalAudioFormats.map(
     (format, fallbackIndex) => fetchExtraAudioTrack({
       url: resolvedExtraAudioUrls[fallbackIndex],

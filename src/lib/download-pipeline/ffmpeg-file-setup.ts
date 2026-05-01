@@ -28,7 +28,7 @@ export function writeVideoAudioToFs({ videoFilename, primaryAudioFilename, item 
 export function writeExtraAudioFiles({ videoId, additionalAudioStreams }: {
   videoId: string;
   additionalAudioStreams: ProcessStreamData["additionalAudioStreams"];
-}): AudioTrackFile[] {
+}) {
   const ffmpeg = getFFmpeg();
   const extraAudioTracks: AudioTrackFile[] = [];
 
@@ -53,7 +53,7 @@ export function writeExtraAudioFiles({ videoId, additionalAudioStreams }: {
 export function writeSubtitleFiles({ videoId, subtitleStreams }: {
   videoId: string;
   subtitleStreams: ProcessStreamData["subtitleStreams"];
-}): SubtitleFile[] {
+}) {
   const ffmpeg = getFFmpeg();
   const subtitleFiles: SubtitleFile[] = [];
 

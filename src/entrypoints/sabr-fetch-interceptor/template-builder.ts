@@ -16,7 +16,7 @@ const VISIBILITY_FOREGROUND = 1;
 const DEFAULT_PLAYBACK_RATE = 1;
 const POLL_INTERVAL_MS = 100;
 
-export function buildSyntheticTemplateFromPlayer(): YtdlSabrTemplate | null {
+export function buildSyntheticTemplateFromPlayer() {
   const player = getMoviePlayer();
   if (!player?.getPlayerResponse) {
     return null;

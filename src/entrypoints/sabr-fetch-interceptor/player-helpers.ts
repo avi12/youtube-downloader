@@ -38,7 +38,7 @@ export function pickHighestQualityFormats(adaptiveFormats: AdaptiveFormatItem[])
   };
 }
 
-function readField(record: unknown, key: string): unknown {
+function readField(record: unknown, key: string) {
   if (!record || typeof record !== "object") {
     return undefined;
   }
@@ -118,7 +118,7 @@ function readPoTokenFromAdaptiveFormatUrl(formats: AdaptiveFormatItem[] | undefi
   return "";
 }
 
-export function readPoTokenFromCapturedTemplate(): Uint8Array | null {
+export function readPoTokenFromCapturedTemplate() {
   const template = window.__ytdlSabrTemplate;
   if (!template) {
     return null;

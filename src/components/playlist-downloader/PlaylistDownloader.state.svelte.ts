@@ -75,7 +75,7 @@ function buildDownloadRequest(
   playlistTitle: string,
   playlistTotalCount: number,
   isZipBundle: boolean
-): DownloadRequest {
+) {
   let downloadType: DownloadType = data.isMusic ? DownloadType.Audio : DownloadType.VideoAndAudio;
   if (options.defaultDownloadType !== "auto") {
     downloadType = options.defaultDownloadType;

@@ -16,7 +16,7 @@ async function fetchClient({ client, videoId, poToken }: {
   client: ClientSpec;
   videoId: string;
   poToken: string;
-}): Promise<AdaptiveFormatItem[] | null> {
+}) {
   const body: Record<string, unknown> = {
     context: {
       client: {
@@ -99,7 +99,7 @@ async function fetchClient({ client, videoId, poToken }: {
 export async function fetchAlternateClientFormats({ videoId, poToken }: {
   videoId: string;
   poToken: string;
-}): Promise<AdaptiveFormatItem[]> {
+}) {
   for (const client of CLIENT_CHAIN) {
     const formats = await fetchClient({
       client,

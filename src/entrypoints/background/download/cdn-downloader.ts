@@ -11,7 +11,7 @@ function assembleAdditionalAudioTracks({
 }: {
   cdnResults: (Uint8Array | null)[];
   additionalAudioFormats: DownloadRequest["additionalAudioFormats"];
-}): DownloadResult["additionalAudioTracks"] {
+}) {
   const tracks: DownloadResult["additionalAudioTracks"] = [];
   const extraAudioBytes = cdnResults.slice(2);
   for (const [i, format] of (additionalAudioFormats ?? []).entries()) {
@@ -30,7 +30,7 @@ export async function downloadViaCdn({ request, signal, videoId, tabId }: {
   signal: AbortSignal;
   videoId: string;
   tabId: number;
-}): Promise<DownloadResult | null> {
+}) {
   const {
     type, videoFormat, audioFormat, resolvedVideoUrl,
     resolvedAudioUrl, resolvedExtraAudioUrls, additionalAudioFormats

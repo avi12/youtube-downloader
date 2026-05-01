@@ -48,7 +48,7 @@ export const CLIENT_CHAIN: ClientSpec[] = [
   MWEB_CLIENT
 ];
 
-export async function buildSapiSidHash(): Promise<string | null> {
+export async function buildSapiSidHash() {
   const cookie = await browser.cookies.get({
     url: "https://www.youtube.com",
     name: "__Secure-3PAPISID"

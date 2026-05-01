@@ -36,7 +36,7 @@ function assembleSegments({
   segmentCount: number;
   segmentVideoBufferStartSecs?: (number | undefined)[];
   segmentVideoBufferEndSecs?: (number | undefined)[];
-}): ScrubSegment[] | undefined {
+}) {
   if (!accumulator.segments.size) {
     return undefined;
   }

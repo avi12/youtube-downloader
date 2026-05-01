@@ -52,7 +52,7 @@ export function createButtonGroup({ elActionsContainer, elNativeDownload, scopin
   elActionsContainer: HTMLElement;
   elNativeDownload: HTMLElement | null;
   scopingClass: string;
-}): ButtonGroupElements {
+}) {
   const scopingClasses = scopingClass.match(/\S+/g) ?? [];
 
   const elGroup = document.createElement("div");
@@ -85,7 +85,7 @@ export function createButtonGroup({ elActionsContainer, elNativeDownload, scopin
 export function createDropdownElement({ videoId, elGroup }: {
   videoId: string;
   elGroup: HTMLElement;
-}): DropdownElements {
+}) {
   const panelContentId = `ytdl-panel-content-${videoId}`;
 
   const elDropdown = document.createElement("tp-yt-iron-dropdown");

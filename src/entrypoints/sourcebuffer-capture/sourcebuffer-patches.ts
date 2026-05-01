@@ -2,7 +2,7 @@ import type { YtdlCaptureState, YtdlMediaCapture } from "@/types";
 
 const PENDING_INIT_MAX_BYTES = 50_000;
 
-export function createCaptureState(sourceBufferMimeTypes: WeakMap<SourceBuffer, string>): YtdlCaptureState {
+export function createCaptureState(sourceBufferMimeTypes: WeakMap<SourceBuffer, string>) {
   function addChunkToCapture({ capture, mimeType, chunk }: {
     capture: YtdlMediaCapture;
     mimeType: string;

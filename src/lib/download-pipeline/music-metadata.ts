@@ -8,7 +8,7 @@ function sanitizeForFFmpeg(value: string) {
   return value.replaceAll(/[\n\r"\\]/g, " ").trim();
 }
 
-function buildMetadataArgs(metadata: VideoMetadata): string[] {
+function buildMetadataArgs(metadata: VideoMetadata) {
   const args: string[] = ["-metadata", `title=${sanitizeForFFmpeg(metadata.title)}`, "-metadata", `artist=${sanitizeForFFmpeg(metadata.artist)}`];
   if (metadata.albumArtist) {
     args.push("-metadata", `album_artist=${sanitizeForFFmpeg(metadata.albumArtist)}`);

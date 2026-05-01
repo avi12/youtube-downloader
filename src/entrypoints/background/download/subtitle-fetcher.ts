@@ -1,6 +1,6 @@
-import type { CaptionTrack, SubtitleStream } from "@/types";
+import type { CaptionTrack } from "@/types";
 
-async function fetchSubtitleSrt(track: CaptionTrack): Promise<string> {
+async function fetchSubtitleSrt(track: CaptionTrack) {
   try {
     const baseUrl = track.baseUrl.startsWith("//") ? `https:${track.baseUrl}` : track.baseUrl;
     const url = new URL(baseUrl);
@@ -19,7 +19,7 @@ async function fetchSubtitleSrt(track: CaptionTrack): Promise<string> {
   }
 }
 
-export async function fetchSubtitleStreams(captionTracks: CaptionTrack[]): Promise<SubtitleStream[]> {
+export async function fetchSubtitleStreams(captionTracks: CaptionTrack[]) {
   const results = await Promise.all(
     captionTracks.map(async track => ({
       srtContent: await fetchSubtitleSrt(track),

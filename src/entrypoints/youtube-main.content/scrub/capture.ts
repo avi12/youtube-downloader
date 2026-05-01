@@ -1,4 +1,4 @@
-export function concatChunks(chunks: Uint8Array[]): Uint8Array {
+export function concatChunks(chunks: Uint8Array[]) {
   const total = chunks.reduce((sum, chunk) => sum + chunk.byteLength, 0);
   const out = new Uint8Array(total);
   let offset = 0;

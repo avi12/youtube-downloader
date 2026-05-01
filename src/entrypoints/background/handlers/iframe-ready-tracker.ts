@@ -21,10 +21,7 @@ export function initIframeReadyListener() {
 
 export async function prepareIframe({ data }: {
   data: DownloadRequest;
-}): Promise<{
-  iframeTabId: number | undefined;
-  iframeFrameId: number;
-}> {
+}) {
   const watchParams = new URLSearchParams({
     v: data.videoId,
     ytdl: "1",

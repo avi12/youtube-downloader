@@ -9,7 +9,7 @@ import type { DownloadRequest } from "@/types";
 export async function enrichWithAlternateClientUrls(
   request: DownloadRequest,
   tabId?: number
-): Promise<DownloadRequest> {
+) {
   const needsVideoUrl = !request.resolvedVideoUrl;
   const needsAudioUrl = !request.resolvedAudioUrl;
   const extraFormats = request.additionalAudioFormats ?? [];

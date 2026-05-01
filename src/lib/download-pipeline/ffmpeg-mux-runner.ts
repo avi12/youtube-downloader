@@ -62,7 +62,7 @@ export function runFfmpegMux({
   outputExtension: string;
   audioMimeType: string;
   item: ProcessStreamData;
-}): Uint8Array {
+}) {
   const ffmpeg = getFFmpeg();
   const ffmpegArgs = buildFfmpegArgs({
     videoFilename,

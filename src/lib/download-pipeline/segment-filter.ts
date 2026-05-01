@@ -15,7 +15,7 @@ export function buildValidSegments(
   segments: NonNullable<ProcessStreamData["segments"]>,
   step: number,
   logEvent: (msg: string) => void
-): ValidSegment[] {
+) {
   const validSegments: ValidSegment[] = [];
   for (const [iSegment, segment] of segments.entries()) {
     if (!segment || segment.video.byteLength === 0 || segment.audio.byteLength === 0) {
@@ -49,7 +49,7 @@ export function muxValidSegments({
   isOpusAudio: boolean;
   writtenPaths: string[];
   logEvent: (msg: string) => void;
-}): string[] {
+}) {
   // Pre-compute the true video start time (keyframe position) for every segment.
   // SABR snaps video to the nearest keyframe before the seek target, so each
   // segment's video starts a few seconds before startSec. -avoid_negative_ts

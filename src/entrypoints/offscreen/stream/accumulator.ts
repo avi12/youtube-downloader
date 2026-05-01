@@ -23,7 +23,7 @@ export const STREAM_ACCUMULATORS = new Map<string, StreamAccumulator>();
 
 const SEGMENT_STREAM_PATTERN = /^(video|audio)-seg-(\d+)$/;
 
-function ensureSegment(accumulator: StreamAccumulator, index: number): SegmentData {
+function ensureSegment(accumulator: StreamAccumulator, index: number) {
   if (!accumulator.segments.has(index)) {
     accumulator.segments.set(index, {
       videoChunks: new Map(),

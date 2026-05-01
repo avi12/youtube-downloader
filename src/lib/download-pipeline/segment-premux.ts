@@ -20,7 +20,7 @@ export function muxSingleSegment({
   writtenPaths: string[];
   logEvent: (msg: string) => void;
   overrideTrimSec?: number;
-}): string | null {
+}) {
   const vFile = `tmp_vseg_${seg.index}.${videoExt}`;
   const aFile = `tmp_aseg_${seg.index}.${audioExt}`;
   ffmpeg.FS.writeFile(vFile, seg.video);

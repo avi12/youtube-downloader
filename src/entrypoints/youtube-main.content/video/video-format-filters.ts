@@ -1,4 +1,4 @@
-import type { AdaptiveFormatItem, CaptionTrack, PlayerResponse } from "@/types";
+import type { AdaptiveFormatItem, PlayerResponse } from "@/types";
 
 export function getUniqueVideoFormats(formats: AdaptiveFormatItem[]) {
   const videoFormats = formats.filter(format => format.mimeType.startsWith("video"));
@@ -46,7 +46,7 @@ export function getAudioFormats(formats: AdaptiveFormatItem[], preferredLanguage
   return [...deduped.filter(isPreferredTrack), ...deduped.filter(format => !isPreferredTrack(format))];
 }
 
-export function getCaptionTracks(playerResponse: PlayerResponse, preferredLanguage: string): CaptionTrack[] {
+export function getCaptionTracks(playerResponse: PlayerResponse, preferredLanguage: string) {
   const allTracks = playerResponse.captions?.playerCaptionsTracklistRenderer?.captionTracks ?? [];
   const manualTracks = allTracks.filter(track => track.kind !== "asr");
   const tracks = manualTracks.length > 0 ? manualTracks : allTracks;

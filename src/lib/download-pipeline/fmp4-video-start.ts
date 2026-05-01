@@ -5,7 +5,7 @@
 // video keyframe-snapped start. Parsing the raw fMP4 bytes gives the real
 // value without the intersection bias.
 // Returns undefined for non-fMP4 containers (e.g. WebM) or on parse failure.
-export function parseFmp4VideoStartSec(data: Uint8Array): number | undefined {
+export function parseFmp4VideoStartSec(data: Uint8Array) {
   if (data.byteLength < 8) {
     return undefined;
   }

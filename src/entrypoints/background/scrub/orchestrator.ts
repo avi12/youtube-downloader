@@ -16,7 +16,7 @@ const DEFAULT_STEP_SEC = 35;
 async function fetchInitBytesFromFormat(
   format: AdaptiveFormatItem | null | undefined,
   label: string
-): Promise<Uint8Array | undefined> {
+) {
   if (!format) {
     logScrubOrchestratorEvent(`fetchInit[${label}] no format`);
     return undefined;

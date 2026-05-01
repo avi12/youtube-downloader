@@ -5,10 +5,7 @@ const cache = new Map<string, {
   audioInit: Uint8Array;
 }>();
 
-function getSourceBufferInits(): {
-  video?: Uint8Array;
-  audio?: Uint8Array;
-} {
+function getSourceBufferInits() {
   return window.__ytdlSabrInits ?? {};
 }
 
@@ -18,10 +15,7 @@ export function applyInitCache(
   audioBytes: Uint8Array,
   videoMimeType: string,
   audioMimeType: string
-): {
-  videoBytes: Uint8Array;
-  audioBytes: Uint8Array;
-} {
+) {
   const cached = cache.get(videoId);
   const sbInits = getSourceBufferInits();
   const newVideoInit = extractInit(videoBytes, videoMimeType);

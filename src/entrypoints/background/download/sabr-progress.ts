@@ -6,7 +6,7 @@ import type { AdaptiveFormatItem, SabrConfig } from "@/types";
 export function buildEffectiveSabrConfig({ sabrConfig, sabrUrl }: {
   sabrConfig: SabrConfig;
   sabrUrl: string | undefined;
-}): SabrConfig {
+}) {
   if (sabrUrl && sabrUrl !== sabrConfig.serverAbrStreamingUrl) {
     return {
       ...sabrConfig,

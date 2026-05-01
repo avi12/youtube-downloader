@@ -1,4 +1,3 @@
-import type { DownloadResult } from "./background-downloader";
 import { downloadViaSabr } from "./sabr-downloader";
 import type { DownloadRequest } from "@/types";
 
@@ -8,7 +7,7 @@ export async function attemptSabrDownload({ request, signal, tabId }: {
   request: DownloadRequest;
   signal: AbortSignal;
   tabId: number;
-}): Promise<DownloadResult | null> {
+}) {
   const sabrAbortController = new AbortController();
   let sabrStallTimeoutId = setTimeout(() => sabrAbortController.abort(), SABR_STALL_TIMEOUT_MS);
   signal.addEventListener("abort", () => sabrAbortController.abort(), { once: true });

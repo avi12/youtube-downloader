@@ -37,7 +37,7 @@ export function buildStreamTasks({ videoId, videoData, audioData, additionalAudi
     video: Uint8Array;
     audio: Uint8Array;
   }[];
-}): Promise<void>[] {
+}) {
   const tasks: Promise<void>[] = [];
   if (segments && segments.length > 0) {
     for (const [i, segment] of segments.entries()) {

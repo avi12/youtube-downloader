@@ -11,7 +11,7 @@ export interface ProgressRing {
   setIndeterminate(isIndeterminate: boolean): void;
 }
 
-export function createProgressRing(): ProgressRing {
+export function createProgressRing() {
   const elRoot = document.createElementNS(PROGRESS_RING_NS, "svg");
   elRoot.classList.add("ytdl-watch-progress-ring");
   elRoot.setAttribute("viewBox", `0 0 ${PROGRESS_RING_SVG_SIZE} ${PROGRESS_RING_SVG_SIZE}`);

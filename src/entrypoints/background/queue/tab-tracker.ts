@@ -36,7 +36,7 @@ export function untrackVideoForTab({ videoId, tabId }: {
   }
 }
 
-export function getTabIdsForVideo(videoId: string): number[] {
+export function getTabIdsForVideo(videoId: string) {
   return videoIdToTabIds[videoId] ?? [];
 }
 

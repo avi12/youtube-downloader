@@ -23,7 +23,7 @@ export interface ButtonViewState {
   isDownloadable: boolean;
 }
 
-export function buildDownloadData(state: ButtonViewState): ButtonViewModelData {
+export function buildDownloadData(state: ButtonViewState) {
   let iconName: IconName = IconName.Download;
   if (state.isDone) {
     iconName = IconName.CheckCircleThick;
@@ -74,7 +74,7 @@ export function buildDownloadData(state: ButtonViewState): ButtonViewModelData {
   } satisfies ButtonViewModelData;
 }
 
-export function buildChevronData(state: ButtonViewState): ButtonViewModelData {
+export function buildChevronData(state: ButtonViewState) {
   const isDisabled = (state.isDownloading && !state.isDone) || !state.isDownloadable;
 
   return {

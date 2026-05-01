@@ -23,10 +23,7 @@ export function writeExtraInputs({
   extraAudioStreams: ExtraAudioStream[];
   subtitleStreams: SubtitleStream[];
   writtenPaths: string[];
-}): {
-  extraAudioInputs: ExtraAudioInput[];
-  subtitleInputs: SubtitleInput[];
-} {
+}) {
   const extraAudioInputs: ExtraAudioInput[] = [];
   const subtitleInputs: SubtitleInput[] = [];
 

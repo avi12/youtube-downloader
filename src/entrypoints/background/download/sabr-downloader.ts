@@ -1,4 +1,3 @@
-import type { DownloadResult } from "./background-downloader";
 import {
   buildEffectiveSabrConfig,
   downloadAudioOnlyViaSabr,
@@ -13,7 +12,7 @@ export async function downloadViaSabr({ request, signal, tabId, onProgress }: {
   signal: AbortSignal;
   tabId: number;
   onProgress?: () => void;
-}): Promise<DownloadResult | null> {
+}) {
   const { videoId, type, sabrConfig, poToken, sabrUrl, videoFormat, audioFormat, additionalAudioFormats } = request;
   const isAudioOnly = type === DownloadType.Audio;
 
