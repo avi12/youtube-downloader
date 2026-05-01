@@ -11,12 +11,12 @@ export async function registerSabrOriginRule() {
   const baseHeaders: Browser.declarativeNetRequest.ModifyHeaderInfo[] = [
     {
       header: "Origin",
-      operation: browser.declarativeNetRequest.HeaderOperation.SET,
+      operation: "set",
       value: "https://www.youtube.com"
     },
     {
       header: "Referer",
-      operation: browser.declarativeNetRequest.HeaderOperation.SET,
+      operation: "set",
       value: "https://www.youtube.com/"
     }
   ];
@@ -25,7 +25,7 @@ export async function registerSabrOriginRule() {
     ? [
       {
         header: "User-Agent",
-        operation: browser.declarativeNetRequest.HeaderOperation.SET,
+        operation: "set",
         value: CHROME_USER_AGENT_SPOOF
       }
     ]
@@ -36,12 +36,12 @@ export async function registerSabrOriginRule() {
     : [
       {
         header: "Sec-Fetch-Site",
-        operation: browser.declarativeNetRequest.HeaderOperation.SET,
+        operation: "set",
         value: "cross-site"
       },
       {
         header: "Sec-Fetch-Storage-Access",
-        operation: browser.declarativeNetRequest.HeaderOperation.SET,
+        operation: "set",
         value: "active"
       }
     ];
@@ -50,13 +50,13 @@ export async function registerSabrOriginRule() {
     id: SABR_ORIGIN_RULE_ID,
     priority: 1,
     action: {
-      type: browser.declarativeNetRequest.RuleActionType.MODIFY_HEADERS,
+      type: "modifyHeaders",
       requestHeaders: [...baseHeaders, ...chromeOnlyHeaders, ...firefoxOnlyHeaders]
     },
     condition: {
       urlFilter: "||googlevideo.com/videoplayback",
       tabIds: [-1],
-      requestMethods: [browser.declarativeNetRequest.RequestMethod.POST]
+      requestMethods: ["post"]
     }
   };
 
@@ -64,22 +64,22 @@ export async function registerSabrOriginRule() {
     id: CDN_ORIGIN_RULE_ID,
     priority: 1,
     action: {
-      type: browser.declarativeNetRequest.RuleActionType.MODIFY_HEADERS,
+      type: "modifyHeaders",
       requestHeaders: [
         {
           header: "Origin",
-          operation: browser.declarativeNetRequest.HeaderOperation.REMOVE
+          operation: "remove"
         },
         {
           header: "Referer",
-          operation: browser.declarativeNetRequest.HeaderOperation.REMOVE
+          operation: "remove"
         }
       ]
     },
     condition: {
       urlFilter: "||googlevideo.com/videoplayback",
       tabIds: [-1],
-      requestMethods: [browser.declarativeNetRequest.RequestMethod.GET]
+      requestMethods: ["get"]
     }
   };
 
@@ -87,7 +87,7 @@ export async function registerSabrOriginRule() {
     id: INNERTUBE_ORIGIN_RULE_ID,
     priority: 1,
     action: {
-      type: browser.declarativeNetRequest.RuleActionType.MODIFY_HEADERS,
+      type: "modifyHeaders",
       requestHeaders: baseHeaders
     },
     condition: {
@@ -125,8 +125,8 @@ export function registerFactoryIframeHeaderStripper() {
         `https://www.youtube.com/*${ScrubUrlParam.TrustFactoryMode}=1*`,
         `https://www.youtube.com/*${ScrubUrlParam.ScrubMode}=1*`
       ],
-      types: [browser.webRequest.ResourceType.SUB_FRAME]
+      types: ["sub_frame"]
     },
-    [browser.webRequest.OnHeadersReceivedOptions.BLOCKING, browser.webRequest.OnHeadersReceivedOptions.RESPONSE_HEADERS]
+    ["blocking", "responseHeaders"]
   );
 }

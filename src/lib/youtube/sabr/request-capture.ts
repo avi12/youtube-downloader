@@ -50,7 +50,7 @@ export function startSabrRequestCapture() {
   browser.webRequest.onBeforeRequest.addListener(
     handleSabrRequest,
     { urls: ["https://*.googlevideo.com/videoplayback*"] },
-    [browser.webRequest.OnBeforeRequestOptions.REQUEST_BODY]
+    ["requestBody"]
   );
   browser.tabs.onRemoved.addListener(tabId => capturedByTab.delete(tabId));
 }
