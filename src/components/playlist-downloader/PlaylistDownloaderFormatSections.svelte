@@ -46,18 +46,6 @@
   const isVideoExtDisabled = $derived(isVideoTypeDisabled || playlist.isDownloading);
   const isAudioExtDisabled = $derived(isAudioExtTypeDisabled || playlist.isDownloading);
   const isQualityDisabled = $derived(isVideoTypeDisabled || playlist.isDownloading);
-
-  function handleVideoExtChange(value: string) {
-    playlist.effectiveVideoExt = value;
-  }
-
-  function handleAudioExtChange(value: string) {
-    playlist.effectiveAudioExt = value;
-  }
-
-  function handleQualityChange(value: string) {
-    playlist.effectiveQuality = value;
-  }
 </script>
 
 <section class="ytdl-section ytdl-section-select" class:is-disabled={isVideoTypeDisabled}>
@@ -65,7 +53,7 @@
     id="playlist-video-quality"
     disabled={isQualityDisabled}
     label="Video quality"
-    onchange={handleQualityChange}
+    onchange={value => (playlist.effectiveQuality = value)}
     options={qualityOptions}
     value={playlist.effectiveQuality}
   />
@@ -82,7 +70,7 @@
     id="playlist-video-ext"
     disabled={isVideoExtDisabled}
     label="Video format"
-    onchange={handleVideoExtChange}
+    onchange={value => (playlist.effectiveVideoExt = value)}
     options={videoExtOptions}
     value={playlist.effectiveVideoExt}
   />
@@ -99,7 +87,7 @@
     id="playlist-audio-ext"
     disabled={isAudioExtDisabled}
     label="Audio format"
-    onchange={handleAudioExtChange}
+    onchange={value => (playlist.effectiveAudioExt = value)}
     options={audioExtOptions}
     value={playlist.effectiveAudioExt}
   />
