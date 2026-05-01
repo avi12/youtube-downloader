@@ -64,13 +64,17 @@ export function muxValidSegments({
 
   const keyframeTrimSecs = validSegments.map((seg, i) => {
     const thisStart = videoStarts[i];
+    if (thisStart === undefined) {
+      return undefined;
+    }
+
+    const capturedEnd = seg.videoBufferEndSec ?? (seg.startSec + step);
     const nextStart = videoStarts[i + 1];
-    if (thisStart !== undefined && nextStart !== undefined) {
-      const capturedEnd = seg.videoBufferEndSec ?? (seg.startSec + step);
+    if (nextStart !== undefined) {
       return Math.min(nextStart - thisStart, capturedEnd - thisStart);
     }
 
-    return undefined;
+    return capturedEnd - thisStart;
   });
 
   const muxedSegFiles: string[] = [];
