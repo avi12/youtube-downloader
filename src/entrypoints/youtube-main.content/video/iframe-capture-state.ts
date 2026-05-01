@@ -9,12 +9,12 @@ const captureState: YtdlCaptureState = window.__ytdlCapture ?? {
   addChunkToCapture() {}
 };
 
-export function activateIframeCaptureForVideo(videoData: VideoData) {
-  captureState.activeVideoId = videoData.videoId;
+export function activateCaptureForVideoId(videoId: string) {
+  captureState.activeVideoId = videoId;
 
   const { capturedMedia, addChunkToCapture } = captureState;
-  if (!capturedMedia.has(captureState.activeVideoId)) {
-    capturedMedia.set(captureState.activeVideoId, {
+  if (!capturedMedia.has(videoId)) {
+    capturedMedia.set(videoId, {
       videoChunks: [],
       audioChunks: [],
       videoMimeType: "video/mp4",
@@ -25,20 +25,28 @@ export function activateIframeCaptureForVideo(videoData: VideoData) {
   }
 
   const { pendingChunks } = captureState;
-  if (pendingChunks.length > 0) {
-    const capture = capturedMedia.get(captureState.activeVideoId);
-    if (capture) {
-      for (const pending of pendingChunks) {
-        addChunkToCapture({
-          capture,
-          mimeType: pending.mimeType,
-          chunk: pending.data
-        });
-      }
-
-      pendingChunks.length = 0;
-    }
+  if (pendingChunks.length === 0) {
+    return;
   }
+
+  const capture = capturedMedia.get(videoId);
+  if (!capture) {
+    return;
+  }
+
+  for (const pending of pendingChunks) {
+    addChunkToCapture({
+      capture,
+      mimeType: pending.mimeType,
+      chunk: pending.data
+    });
+  }
+
+  pendingChunks.length = 0;
+}
+
+export function activateIframeCaptureForVideo(videoData: VideoData) {
+  activateCaptureForVideoId(videoData.videoId);
 
   const elPlayer = document.querySelector<HTMLElement & { stopVideo?: () => void }>("#movie_player");
   elPlayer?.stopVideo?.();

@@ -1,3 +1,4 @@
+import { activateCaptureForVideoId } from "../video/iframe-capture-state";
 import { waitForAdToClear } from "./ad-handler";
 import { waitForBufferFill } from "./buffer-fill";
 import { concatChunks } from "./capture";
@@ -17,6 +18,8 @@ export async function runScrubSelfDrive() {
     scrubLog("missing scrub index or videoId");
     return;
   }
+
+  activateCaptureForVideoId(videoId);
 
   scrubLog(`scrub start videoId=${videoId} index=${iScrub} startSec=${startSec} window=${windowSec}s`);
 
