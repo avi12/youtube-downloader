@@ -22,7 +22,12 @@ export async function fillGlobalSlots() {
       }
 
       isFound = true;
-      const startSec = scrubIndex * session.stepSec;
+      const baseStart = scrubIndex * session.stepSec;
+      const tailRemaining = session.durationSec - baseStart;
+      const isTailSegment = scrubIndex === session.expectedCount - 1 && tailRemaining < session.stepSec;
+      const startSec = isTailSegment
+        ? Math.max(0, session.durationSec - session.stepSec)
+        : baseStart;
       const windowSec = Math.min(session.stepSec, session.durationSec - startSec);
       await openScrubIframe({
         session,
