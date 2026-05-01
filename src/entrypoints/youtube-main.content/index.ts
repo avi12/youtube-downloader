@@ -7,6 +7,7 @@ import { runScrubSelfDrive, runTrustFactoryDrive } from "./scrub/self-drive";
 import { cancelActiveDownload } from "./video/download";
 import { extractPlaylistMetadata, handleNavigateSuccess } from "./video/playlist-metadata";
 import { extractAndDispatchVideoData } from "./video/video-data";
+import { IframeHostMessageType } from "@/lib/messaging/iframe-host-postmessage";
 import { ScrubUrlParam } from "@/lib/youtube/youtube-url";
 import type { PlayerResponse } from "@/types";
 
@@ -43,7 +44,7 @@ export default defineContentScript({
       try {
         if (parent !== self) {
           parent.postMessage({
-            type: "ytdl:scrub-debug",
+            type: IframeHostMessageType.ScrubDebug,
             msg: `[ytdl:scrub-tab] MAIN booted url=${location.search.slice(0, 120)}`
           }, "*");
         }

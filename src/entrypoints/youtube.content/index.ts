@@ -7,6 +7,7 @@ import { registerScrubResultForwarder } from "./handlers/scrub-result-forwarder"
 import "./style.css";
 import { handlePageChange, setNativeDownloadVisibility } from "./ui/page-router";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
+import { IframeHostMessageType } from "@/lib/messaging/iframe-host-postmessage";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { optionsItem, statusProgressItem } from "@/lib/storage/storage";
 import { downloadProgressStore, initContentOptions } from "@/lib/ui/synced-stores.svelte";
@@ -60,7 +61,7 @@ export default defineContentScript({
 
     if (isDownloadIframe) {
       addEventListener("message", e => {
-        if (e.data?.ytdlType !== "ytdl-execute-download") {
+        if (e.data?.ytdlType !== IframeHostMessageType.ExecuteDownload) {
           return;
         }
 

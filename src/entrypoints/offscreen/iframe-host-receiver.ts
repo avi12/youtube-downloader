@@ -3,11 +3,10 @@
 // orchestrator delegates iframe creation here via offscreen-messaging port.
 // Position offscreen, NOT visibility:hidden - browsers pause media activity
 // in visibility:hidden frames.
+import { IframeHostMessageType } from "@/lib/messaging/iframe-host-postmessage";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 
 const HIDDEN_IFRAME_STYLE = "position:fixed;left:-99999px;top:-99999px;width:480px;height:270px;border:0";
-const IFRAME_MSG_DEBUG = "ytdl:scrub-debug";
-const IFRAME_MSG_SEGMENT = "ytdl:scrub-segment";
 
 const iframesById = new Map<string, HTMLIFrameElement>();
 
@@ -49,7 +48,7 @@ export function forwardToIframe({ iframeId, payload }: {
 }) {
   iframesById.get(iframeId)?.contentWindow?.postMessage(
     {
-      ytdlType: "ytdl-execute-download",
+      ytdlType: IframeHostMessageType.ExecuteDownload,
       request: payload
     },
     "https://www.youtube.com"
@@ -57,7 +56,7 @@ export function forwardToIframe({ iframeId, payload }: {
 }
 
 interface ScrubSegmentMessage {
-  type: typeof IFRAME_MSG_SEGMENT;
+  type: typeof IframeHostMessageType.ScrubSegment;
   videoId: string;
   iScrub: number;
   videoBuffer: ArrayBuffer;
@@ -73,7 +72,7 @@ function isScrubSegmentMessage(data: unknown): data is ScrubSegmentMessage {
     return false;
   }
 
-  return "type" in data && data.type === IFRAME_MSG_SEGMENT;
+  return "type" in data && data.type === IframeHostMessageType.ScrubSegment;
 }
 
 // Firefox doesn't inject isolated-world content scripts into iframes hosted
@@ -82,7 +81,7 @@ function isScrubSegmentMessage(data: unknown): data is ScrubSegmentMessage {
 // we forward them to the background via runtime messaging.
 export function initScrubIframeRelay() {
   addEventListener("message", e => {
-    if (typeof e.data === "object" && e.data !== null && e.data.type === IFRAME_MSG_DEBUG) {
+    if (typeof e.data === "object" && e.data !== null && e.data.type === IframeHostMessageType.ScrubDebug) {
       void sendMessage(MessageType.BgDebugLog, { msg: String(e.data.msg) });
       return;
     }

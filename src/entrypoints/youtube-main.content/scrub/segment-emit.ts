@@ -1,4 +1,5 @@
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
+import { IframeHostMessageType } from "@/lib/messaging/iframe-host-postmessage";
 
 // Direct postMessage channel for BG-hosted iframes. Firefox doesn't inject
 // content scripts into iframes whose top-level document is moz-extension://,
@@ -6,8 +7,6 @@ import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-wo
 // dropped. parent.postMessage works regardless because postMessage is a DOM
 // primitive that crosses any origin; the BG document hosts the iframe and
 // listens for these messages directly.
-const POST_MESSAGE_TYPE_DEBUG = "ytdl:scrub-debug";
-const POST_MESSAGE_TYPE_SEGMENT = "ytdl:scrub-segment";
 
 function postToHost(payload: unknown, transferables: Transferable[] = []) {
   if (parent === self) {
@@ -27,7 +26,7 @@ export function scrubLog(msg: string) {
     msg: `[ytdl:scrub-tab] ${msg}`
   });
   postToHost({
-    type: POST_MESSAGE_TYPE_DEBUG,
+    type: IframeHostMessageType.ScrubDebug,
     msg: `[ytdl:scrub-tab] ${msg}`
   });
 }
@@ -45,7 +44,7 @@ export function sendEmptyResult({ videoId, iScrub }: {
     audioMimeType: ""
   });
   postToHost({
-    type: POST_MESSAGE_TYPE_SEGMENT,
+    type: IframeHostMessageType.ScrubSegment,
     videoId,
     iScrub,
     videoBuffer: new ArrayBuffer(0),
@@ -77,7 +76,7 @@ export function sendCapturedResult({
     audioMimeType
   });
   postToHost({
-    type: POST_MESSAGE_TYPE_SEGMENT,
+    type: IframeHostMessageType.ScrubSegment,
     videoId,
     iScrub,
     videoBuffer,
