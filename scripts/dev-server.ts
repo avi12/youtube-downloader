@@ -407,6 +407,37 @@ Start-Sleep -Milliseconds 500
   });
 }
 
+// Kill only Chromium instances launched against our cloned dev profile —
+// match by --user-data-dir=<profile> in the command line so the user's
+// regular Chrome windows are never touched.
+function killExistingChromeInstances() {
+  if (platform() !== "win32") {
+    return;
+  }
+
+  const script = `
+$profile = '${CHROME_PROFILE_DIR.replace(/'/g, "''")}'
+Get-CimInstance Win32_Process -Filter "name='chrome.exe'" |
+  Where-Object { $_.CommandLine -and $_.CommandLine.Contains($profile) } |
+  ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
+Start-Sleep -Milliseconds 500
+`;
+  spawnSync("powershell", ["-NoProfile", "-NonInteractive", "-Command", "-"], {
+    input: script,
+    stdio: ["pipe", "ignore", "ignore"],
+    timeout: 10_000
+  });
+
+  for (const lockFile of ["SingletonLock", "SingletonCookie", "SingletonSocket"]) {
+    const lockPath = join(CHROME_PROFILE_DIR, lockFile);
+    if (existsSync(lockPath)) {
+      try {
+        rmSync(lockPath, { force: true });
+      } catch { /* lock might be briefly held */ }
+    }
+  }
+}
+
 function killExistingFirefoxInstances() {
   if (platform() !== "win32") {
     return;
@@ -631,6 +662,8 @@ async function main() {
   if (IS_FIREFOX) {
     process.env.MOZ_REMOTE_ALLOW_SYSTEM_ACCESS = "1";
     killExistingFirefoxInstances();
+  } else {
+    killExistingChromeInstances();
   }
 
   const profileDirectory = IS_FIREFOX ? setupFirefoxProfile() : setupChromeProfile();
@@ -692,12 +725,14 @@ async function main() {
       await runner.exit();
     } catch { /* runner may already be exiting */ }
 
-    // web-ext-run's runner.exit() doesn't always close Firefox cleanly when
-    // the parent tsx process gets killed, so kill any Firefox process still
+    // web-ext-run's runner.exit() doesn't always close the browser cleanly
+    // when the parent tsx process gets killed, so kill any process still
     // bound to our profile directory as a fallback. Filtered by profile so
-    // we never touch the user's other Firefox windows.
+    // we never touch the user's everyday browser windows.
     if (IS_FIREFOX) {
       killExistingFirefoxInstances();
+    } else {
+      killExistingChromeInstances();
     }
 
     process.exit(0);
