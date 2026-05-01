@@ -16,17 +16,15 @@ export async function attemptSabrDownload({ request, signal, tabId }: {
   let sabrStallTimeoutId = scheduleStallAbort();
   signal.addEventListener("abort", () => sabrAbortController.abort(), { once: true });
 
-  function resetSabrStallTimer() {
-    clearTimeout(sabrStallTimeoutId);
-    sabrStallTimeoutId = scheduleStallAbort();
-  }
-
   try {
     return await downloadViaSabr({
       request,
       signal: sabrAbortController.signal,
       tabId,
-      onProgress: resetSabrStallTimer
+      onProgress() {
+        clearTimeout(sabrStallTimeoutId);
+        sabrStallTimeoutId = scheduleStallAbort();
+      }
     });
   } finally {
     clearTimeout(sabrStallTimeoutId);
