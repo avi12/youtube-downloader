@@ -16,15 +16,7 @@ export async function processMultipartSegments(item: ProcessStreamData & { segme
   const { videoId, videoMimeType, audioMimeType, tabId, segments, segmentDurationSec } = item;
   const ffmpeg = getFFmpeg();
 
-  function getVideoExt() {
-    if (videoMimeType.includes("av01")) {
-      return "mp4";
-    }
-
-    return videoMimeType.includes("webm") ? "webm" : "mp4";
-  }
-
-  const videoExt = getVideoExt();
+  const videoExt = videoMimeType.includes("av01") || !videoMimeType.includes("webm") ? "mp4" : "webm";
   const targetExt = videoExt === "mp4" ? "mp4" : DEFAULT_MULTIPART_EXT;
   const audioExt = audioMimeType.includes("webm") ? "webm" : "m4a";
   // Opus audio in an MP4 container is not supported by most decoders (Windows
