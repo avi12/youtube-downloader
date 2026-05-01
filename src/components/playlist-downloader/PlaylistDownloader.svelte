@@ -18,14 +18,12 @@
       return;
     }
 
-    function handleCheckedChanged() {
+    elCheckbox.addEventListener("checked-changed", () => {
       const isChecked = elCheckbox.hasAttribute("checked");
       if (isChecked !== playlist.isScrollSyncEnabled) {
         playlist.isScrollSyncEnabled = isChecked;
       }
-    }
-
-    elCheckbox.addEventListener("checked-changed", handleCheckedChanged);
+    });
   }
 
   $effect.pre(() => {
