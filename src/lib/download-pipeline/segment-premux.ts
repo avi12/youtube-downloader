@@ -31,7 +31,7 @@ export function muxSingleSegment({
   const videoHex = Array.from(seg.video.subarray(0, 16)).map(byte => byte.toString(16).padStart(2, "0")).join(" ");
   const audioHex = Array.from(seg.audio.subarray(0, 16)).map(byte => byte.toString(16).padStart(2, "0")).join(" ");
   logEvent(`[ytdl:pipeline] seg ${seg.index} video[0..16]=${videoHex} audio[0..16]=${audioHex}`);
-  const videoStartSec = parseFmp4VideoStartSec(seg.video);
+  const videoStartSec = parseFmp4VideoStartSec(seg.video) ?? parseWebmAudioStartSec(seg.video);
   const audioStartSec = parseWebmAudioStartSec(seg.audio);
   const preroll = videoStartSec !== undefined
     ? Math.max(0, seg.startSec - videoStartSec)

@@ -1,6 +1,7 @@
 import { getFFmpeg } from "./ffmpeg-instance";
 import { parseFmp4VideoStartSec } from "./fmp4-video-start";
 import { muxSingleSegment } from "./segment-premux";
+import { parseWebmAudioStartSec } from "./webm-audio-start";
 import type { ProcessStreamData } from "@/types";
 
 export type ValidSegment = {
@@ -60,7 +61,7 @@ export function muxValidSegments({
   // without this trim, the concat would play SABR 31.9-35s content twice at the
   // 35s mark (once from seg0, once as seg1's preroll), while audio continued
   // forward. The result appeared as a stuck/repeated frame every 35 seconds.
-  const videoStarts = validSegments.map(seg => parseFmp4VideoStartSec(seg.video));
+  const videoStarts = validSegments.map(seg => parseFmp4VideoStartSec(seg.video) ?? parseWebmAudioStartSec(seg.video));
 
   const keyframeTrimSecs = validSegments.map((seg, i) => {
     const thisStart = videoStarts[i];
