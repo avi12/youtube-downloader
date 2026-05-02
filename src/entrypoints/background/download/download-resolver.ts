@@ -4,10 +4,14 @@ import { tryIframeScrubFallback } from "./iframe-scrub-fallback";
 import { attemptSabrDownload } from "./sabr-stall-guard";
 import { broadcastDebugLogToTab } from "@/lib/messaging/debug-log";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
+import { getCapturedSabrData } from "@/lib/youtube/sabr/request-capture";
 import { ProgressType } from "@/types";
 import type { DownloadRequest } from "@/types";
 
-export const DownloadResolution = { IframeScrub: "iframe-scrub" } as const;
+export const DownloadResolution = {
+  IframeScrub: "iframe-scrub",
+  ProgressiveSabr: "progressive-sabr"
+} as const;
 
 export async function resolveDownloadResult({ request, cdnRequest, signal, videoId, tabId }: {
   request: DownloadRequest;
@@ -57,6 +61,23 @@ export async function resolveDownloadResult({ request, cdnRequest, signal, video
   }
 
   if (!result?.audioData) {
+    if (!import.meta.env.FIREFOX) {
+      broadcastDebugLogToTab(`[ytdl:bg] Chrome: using RunProgressiveSabrInTab for ${videoId}`, tabId);
+      const capturedSabrUrl = getCapturedSabrData(tabId)?.url;
+      const progressiveRequest = capturedSabrUrl && request.sabrConfig
+        ? {
+          ...request,
+          sabrConfig: {
+            ...request.sabrConfig,
+            serverAbrStreamingUrl: capturedSabrUrl
+          }
+        }
+        : request;
+      void sendMessage(MessageType.RunProgressiveSabrInTab, progressiveRequest, tabId);
+      return DownloadResolution.ProgressiveSabr;
+    }
+
+    broadcastDebugLogToTab(`[ytdl:bg] attempting direct SABR hasSabrConfig=${Boolean(request.sabrConfig)} hasAudioFmt=${Boolean(request.audioFormat)} configUrl=${request.sabrConfig?.serverAbrStreamingUrl?.slice(0, 80)} sabrUrl=${request.sabrUrl?.slice(0, 80)} configLen=${request.sabrConfig?.videoPlaybackUstreamerConfig?.length}`, tabId);
     result = await attemptSabrDownload({
       request,
       signal,
@@ -66,6 +87,7 @@ export async function resolveDownloadResult({ request, cdnRequest, signal, video
         throw sabrError;
       }
 
+      broadcastDebugLogToTab(`[ytdl:bg] direct SABR failed: ${String(sabrError)}`, tabId);
       console.warn("[ytdl:bg] direct SABR failed:", sabrError);
       void sendMessage(MessageType.UpdateDownloadProgress, {
         videoId,

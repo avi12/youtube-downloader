@@ -23,7 +23,7 @@ let bgStartCount = 0;
 export default defineBackground(() => {
   bgStartCount++;
   void broadcastDebugLogToYouTubeTabs(`[ytdl:bg] background started (count=${bgStartCount})`);
-  void registerSabrOriginRule();
+  registerSabrOriginRule().catch(error => console.error("[ytdl:bg] registerSabrOriginRule failed:", error));
   registerFactoryIframeHeaderStripper();
 
   onMessage(MessageType.BgDebugLog, async ({ data }) => {
@@ -35,7 +35,7 @@ export default defineBackground(() => {
     }
   });
 
-  startSabrRequestCapture();
+  void startSabrRequestCapture();
   onSabrBodyCaptured(tabId => {
     void sendMessage(MessageType.SabrBodyReady, {}, tabId);
   });

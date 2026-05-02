@@ -55,7 +55,6 @@ export async function registerSabrOriginRule() {
     },
     condition: {
       urlFilter: "||googlevideo.com/videoplayback",
-      tabIds: [-1],
       requestMethods: ["post"]
     }
   };
@@ -78,7 +77,6 @@ export async function registerSabrOriginRule() {
     },
     condition: {
       urlFilter: "||googlevideo.com/videoplayback",
-      tabIds: [-1],
       requestMethods: ["get"]
     }
   };
@@ -91,12 +89,11 @@ export async function registerSabrOriginRule() {
       requestHeaders: baseHeaders
     },
     condition: {
-      regexFilter: "youtubei/v1/",
-      tabIds: [-1]
+      regexFilter: "youtubei/v1/"
     }
   };
 
-  await browser.declarativeNetRequest.updateDynamicRules({
+  await browser.declarativeNetRequest.updateSessionRules({
     removeRuleIds: [SABR_ORIGIN_RULE_ID, INNERTUBE_ORIGIN_RULE_ID, CDN_ORIGIN_RULE_ID],
     addRules: [sabrRule, cdnGetRule, innertubeRule]
   });

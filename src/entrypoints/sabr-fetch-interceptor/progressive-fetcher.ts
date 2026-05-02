@@ -1,7 +1,10 @@
+import { buildFormatId } from "./player-helpers";
 import { buildSyntheticTemplateFromPlayer, waitForTemplate } from "./template-builder";
 import type { FormatProgress, ProgressiveCarryState, ProgressiveFetchResult, ProgressiveState } from "./types";
+import type { AdaptiveFormatItem } from "@/types";
 import {
   ClientAbrState,
+  FormatId,
   MediaHeader,
   NextRequestPolicy,
   PlaybackCookie,
@@ -14,12 +17,16 @@ import { CompositeBuffer, UmpReader } from "googlevideo/ump";
 const STALL_LIMIT = 3;
 const STALL_REWIND_MS = 5_000;
 
-function buildRequestBody({ templateBody, playerTimeMs, audio, video, playbackCookieBytes }: {
+function buildRequestBody({
+  templateBody, playerTimeMs, audio, video, playbackCookieBytes, audioFormatId, videoFormatId
+}: {
   templateBody: Uint8Array;
   playerTimeMs: number;
   audio: FormatProgress;
   video: FormatProgress;
   playbackCookieBytes: Uint8Array | null;
+  audioFormatId: FormatId | undefined;
+  videoFormatId: FormatId | undefined;
 }) {
   const decoded = VideoPlaybackAbrRequest.decode(templateBody);
   decoded.playerTimeMs = String(playerTimeMs);
@@ -29,6 +36,13 @@ function buildRequestBody({ templateBody, playerTimeMs, audio, video, playbackCo
   }
 
   decoded.clientAbrState.playerTimeMs = String(playerTimeMs);
+
+  if (audioFormatId && videoFormatId) {
+    decoded.selectedFormatIds = [audioFormatId, videoFormatId];
+    decoded.preferredAudioFormatIds = [audioFormatId];
+    decoded.preferredVideoFormatIds = [videoFormatId];
+  }
+
   decoded.bufferedRanges = [];
 
   for (const formatId of decoded.selectedFormatIds) {
@@ -239,7 +253,10 @@ type IterationContext = {
   playerTimeMs: number;
   audioItag: number;
   videoItag: number;
+  audioFormatId: FormatId | undefined;
+  videoFormatId: FormatId | undefined;
   originalFetch: typeof globalThis.fetch;
+  urlOverride?: string;
 };
 
 const IterationResultKind = {
@@ -273,14 +290,19 @@ async function runFetchIteration(
   targetDurationMs: number,
   iteration: number
 ): Promise<IterationResult> {
-  const { state, activeTemplateBody, activeTemplateUrl, playerTimeMs, audioItag, videoItag, originalFetch } = ctx;
+  const {
+    state, activeTemplateBody, activeTemplateUrl, playerTimeMs,
+    audioItag, videoItag, audioFormatId, videoFormatId, originalFetch
+  } = ctx;
 
   const requestBody = buildRequestBody({
     templateBody: activeTemplateBody,
     playerTimeMs,
     audio: state.audio,
     video: state.video,
-    playbackCookieBytes: state.playbackCookieBytes
+    playbackCookieBytes: state.playbackCookieBytes,
+    audioFormatId,
+    videoFormatId
   });
   const response = await performFetch({
     url: activeTemplateUrl,
@@ -302,8 +324,14 @@ async function runFetchIteration(
   const isAdvanced = state.audio.endMs > beforeAudioEnd || state.video.endMs > beforeVideoEnd;
   if (!isAdvanced) {
     const refreshed = buildSyntheticTemplateFromPlayer();
-    if (refreshed) {
-      window.__ytdlSabrTemplate = refreshed;
+    const refreshedWithUrl = refreshed && ctx.urlOverride
+      ? {
+        ...refreshed,
+        url: ctx.urlOverride
+      }
+      : refreshed;
+    if (refreshedWithUrl) {
+      window.__ytdlSabrTemplate = refreshedWithUrl;
     }
 
     if (stallStreak + 1 >= STALL_LIMIT) {
@@ -322,8 +350,8 @@ async function runFetchIteration(
     return {
       kind: IterationResultKind.StallRetry,
       nextPlayerTimeMs: Math.max(0, playerTimeMs - STALL_REWIND_MS),
-      templateBody: refreshed?.body ?? activeTemplateBody,
-      templateUrl: refreshed?.url ?? activeTemplateUrl
+      templateBody: refreshedWithUrl?.body ?? activeTemplateBody,
+      templateUrl: refreshedWithUrl?.url ?? activeTemplateUrl
     };
   }
 
@@ -342,22 +370,42 @@ export async function fetchProgressive({
   maxIterations,
   originalFetch,
   carryState,
-  initialPlayerTimeMs
+  initialPlayerTimeMs,
+  urlOverride,
+  audioFormat,
+  videoFormat
 }: {
   targetDurationMs: number;
   maxIterations: number;
   originalFetch: typeof globalThis.fetch;
   carryState: ProgressiveCarryState | null;
   initialPlayerTimeMs?: number;
+  urlOverride?: string;
+  audioFormat?: AdaptiveFormatItem | null;
+  videoFormat?: AdaptiveFormatItem | null;
 }) {
-  const template = await waitForTemplate({ timeoutMs: 30_000 });
+  const template = await waitForTemplate({
+    timeoutMs: 30_000,
+    urlOverride
+  });
   const initial = VideoPlaybackAbrRequest.decode(template.body);
   if (initial.selectedFormatIds.length < 2) {
     throw new Error(`SABR template needs audio + video formats; got ${initial.selectedFormatIds.length}`);
   }
 
-  const audioItag = initial.selectedFormatIds[0]?.itag ?? -1;
-  const videoItag = initial.selectedFormatIds[1]?.itag ?? -1;
+  let audioItag: number;
+  let videoItag: number;
+  let audioFormatId: FormatId | undefined;
+  let videoFormatId: FormatId | undefined;
+  if (audioFormat?.itag && videoFormat?.itag) {
+    audioItag = audioFormat.itag;
+    videoItag = videoFormat.itag;
+    audioFormatId = buildFormatId(audioFormat);
+    videoFormatId = buildFormatId(videoFormat);
+  } else {
+    audioItag = initial.preferredAudioFormatIds[0]?.itag ?? initial.selectedFormatIds[0]?.itag ?? -1;
+    videoItag = initial.preferredVideoFormatIds[0]?.itag ?? initial.selectedFormatIds[1]?.itag ?? -1;
+  }
 
   const state: ProgressiveState = {
     audio: {
@@ -390,7 +438,10 @@ export async function fetchProgressive({
         playerTimeMs,
         audioItag,
         videoItag,
-        originalFetch
+        audioFormatId,
+        videoFormatId,
+        originalFetch,
+        urlOverride
       },
       stallStreak,
       targetDurationMs,

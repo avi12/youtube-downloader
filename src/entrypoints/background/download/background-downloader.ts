@@ -59,11 +59,12 @@ export async function startBackgroundDownload({ request, tabId }: {
       videoId,
       tabId
     });
-    if (result === DownloadResolution.IframeScrub) {
+    if (result === DownloadResolution.IframeScrub || result === DownloadResolution.ProgressiveSabr) {
       return;
     }
 
     if (!result?.audioData && !result?.videoData) {
+      broadcastDebugLogToTab(`[ytdl:bg] No download method succeeded for ${videoId}`, tabId);
       console.warn("[ytdl:bg] No download method succeeded for", videoId);
       reportDownloadFailed({
         videoId,

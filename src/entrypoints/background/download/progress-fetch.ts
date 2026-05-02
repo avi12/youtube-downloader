@@ -35,7 +35,7 @@ export async function sendProgressUpdate({ videoId, progress, progressType, tabI
 export function createProgressFetch({ signal, onBytesReceived, firstBodyOverride }: {
   signal: AbortSignal;
   onBytesReceived: (bytes: number) => void;
-  firstBodyOverride?: BodyInit;
+  firstBodyOverride?: Uint8Array;
 }) {
   let fetchCount = 0;
   return async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -43,12 +43,25 @@ export function createProgressFetch({ signal, onBytesReceived, firstBodyOverride
     const isOverrideUsed = fetchCount === 1 && firstBodyOverride !== undefined;
     const response = await fetch(input, {
       ...(init ?? {}),
-      ...(isOverrideUsed && {
-        body: firstBodyOverride
-      }),
+      body: isOverrideUsed && firstBodyOverride != null ? firstBodyOverride.slice() : init?.body,
       signal,
       credentials: "include"
     });
+    const contentType = response.headers.get("content-type");
+    if (!response.ok && contentType === "application/vnd.yt-ump" && response.body) {
+      return new Response(response.body.pipeThrough(
+        new TransformStream<Uint8Array, Uint8Array>({
+          transform(chunk, controller) {
+            onBytesReceived(chunk.byteLength);
+            controller.enqueue(chunk);
+          }
+        })
+      ), {
+        status: 200,
+        headers: response.headers
+      });
+    }
+
     if (!response.body) {
       const buffer = await response.arrayBuffer();
       onBytesReceived(buffer.byteLength);

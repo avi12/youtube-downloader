@@ -90,18 +90,28 @@ export function capturedTemplateToBase64(template: YtdlSabrTemplate) {
   };
 }
 
-export async function waitForTemplate({ timeoutMs }: { timeoutMs: number }) {
+export async function waitForTemplate({ timeoutMs, urlOverride }: {
+  timeoutMs: number;
+  urlOverride?: string;
+}) {
   const deadlineAt = Date.now() + timeoutMs;
   while (Date.now() < deadlineAt) {
     const template = window.__ytdlSabrTemplate;
     if (template) {
-      return template;
+      return urlOverride ? {
+        ...template,
+        url: urlOverride
+      } : template;
     }
 
     const synthesized = buildSyntheticTemplateFromPlayer();
     if (synthesized) {
-      window.__ytdlSabrTemplate = synthesized;
-      return synthesized;
+      const resolved = urlOverride ? {
+        ...synthesized,
+        url: urlOverride
+      } : synthesized;
+      window.__ytdlSabrTemplate = resolved;
+      return resolved;
     }
 
     await new Promise(resolve => setTimeout(resolve, POLL_INTERVAL_MS));

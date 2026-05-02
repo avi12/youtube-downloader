@@ -5,7 +5,7 @@ import { ProgressType } from "@/types";
 import type { AdaptiveFormatItem, SabrConfig } from "@/types";
 
 export async function downloadVideoAudioViaSabr({
-  config, videoFormat, audioFormat, poToken, signal, videoId, tabId, onProgress
+  config, videoFormat, audioFormat, poToken, signal, videoId, tabId, onProgress, firstBodyOverride
 }: {
   config: SabrConfig;
   videoFormat: AdaptiveFormatItem;
@@ -15,15 +15,17 @@ export async function downloadVideoAudioViaSabr({
   videoId: string;
   tabId: number;
   onProgress?: () => void;
+  firstBodyOverride?: Uint8Array;
 }) {
   const videoExpectedBytes = parseContentLength(videoFormat);
   const audioExpectedBytes = parseContentLength(audioFormat);
   const totalExpectedBytes = videoExpectedBytes + audioExpectedBytes;
   let totalReceivedBytes = 0;
 
-  function makeProgressFetch() {
+  function makeProgressFetch(bodyOverride?: Uint8Array) {
     return createProgressFetch({
       signal,
+      firstBodyOverride: bodyOverride,
       onBytesReceived(bytes) {
         totalReceivedBytes += bytes;
         onProgress?.();
@@ -44,13 +46,13 @@ export async function downloadVideoAudioViaSabr({
     fetchVideoViaSabrStream({
       sabrConfig: config,
       videoFormat,
-      fetchFn: makeProgressFetch(),
+      fetchFn: makeProgressFetch(firstBodyOverride),
       poToken
     }),
     fetchAudioViaSabrStream({
       sabrConfig: config,
       audioFormat,
-      fetchFn: makeProgressFetch(),
+      fetchFn: makeProgressFetch(firstBodyOverride),
       poToken
     })
   ]);

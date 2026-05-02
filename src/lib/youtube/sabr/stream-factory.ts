@@ -1,7 +1,13 @@
 import { readStreamToBuffer } from "@/lib/utils/stream";
 import type { AdaptiveFormatItem, SabrConfig } from "@/types";
 import { SabrStream } from "googlevideo/sabr-stream";
-import { buildSabrFormat } from "googlevideo/utils";
+import { Logger, LogLevel, buildSabrFormat } from "googlevideo/utils";
+
+const sabrLogger = Logger.getInstance();
+sabrLogger.setLogLevels(LogLevel.WARN, LogLevel.ERROR, LogLevel.INFO);
+sabrLogger.warn = (tag: string, ...messages: unknown[]) => {
+  console.error(`[WARN] [${tag}]`, ...messages);
+};
 
 export function adaptiveFormatToSabrFormat(format: AdaptiveFormatItem) {
   return buildSabrFormat({

@@ -1,4 +1,4 @@
-import type { PlayerResponse, YtdlSabrTemplate } from "@/types";
+import type { AdaptiveFormatItem, PlayerResponse, YtdlSabrTemplate } from "@/types";
 
 export interface ProgressiveCarryState {
   audioEndMs: number;
@@ -62,6 +62,9 @@ declare global {
         targetDurationMs: number;
         maxIterations?: number;
         carryState?: ProgressiveCarryState | null;
+        urlOverride?: string;
+        audioFormat?: AdaptiveFormatItem | null;
+        videoFormat?: AdaptiveFormatItem | null;
       }) => Promise<ProgressiveFetchResult>;
       synthesize: () => YtdlSabrTemplate | null;
     };

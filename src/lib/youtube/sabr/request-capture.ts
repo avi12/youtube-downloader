@@ -2,17 +2,60 @@ import { extractPoTokenFromBody } from "./proto-parser";
 
 export { extractPoTokenFromBody };
 
-const capturedByTab = new Map<number, {
+const SESSION_STORAGE_KEY = "sabrCaptures";
+
+type CapturedEntry = {
   body: number[];
   url: string;
   tabId: number;
   timestamp: number;
-}>();
+};
+
+const capturedByTab = new Map<number, CapturedEntry>();
 
 let onCaptureCallback: ((tabId: number) => void) | null = null;
 
 export function onSabrBodyCaptured(callback: (tabId: number) => void) {
   onCaptureCallback = callback;
+}
+
+function persistCaptures() {
+  const entries = Object.fromEntries(capturedByTab);
+  void browser.storage.session.set({ [SESSION_STORAGE_KEY]: entries });
+}
+
+function isCapturedEntry(value: unknown): value is CapturedEntry {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  if (!("tabId" in value) || typeof value.tabId !== "number") {
+    return false;
+  }
+
+  if (!("url" in value) || typeof value.url !== "string") {
+    return false;
+  }
+
+  if (!("timestamp" in value) || typeof value.timestamp !== "number") {
+    return false;
+  }
+
+  return "body" in value && Array.isArray(value.body);
+}
+
+async function loadPersistedCaptures() {
+  const result = await browser.storage.session.get(SESSION_STORAGE_KEY);
+  const raw = result[SESSION_STORAGE_KEY];
+  if (!raw || typeof raw !== "object") {
+    return;
+  }
+
+  for (const value of Object.values(raw)) {
+    if (isCapturedEntry(value)) {
+      capturedByTab.set(value.tabId, value);
+    }
+  }
 }
 
 function handleSabrRequest(details: Browser.webRequest.OnBeforeRequestDetails) {
@@ -34,6 +77,7 @@ function handleSabrRequest(details: Browser.webRequest.OnBeforeRequestDetails) {
     tabId: details.tabId,
     timestamp: Date.now()
   });
+  persistCaptures();
 
   const isPreviousPoToken = previousData
     ? Boolean(extractPoTokenFromBody(previousData.body))
@@ -46,13 +90,17 @@ function handleSabrRequest(details: Browser.webRequest.OnBeforeRequestDetails) {
   }
 }
 
-export function startSabrRequestCapture() {
+export async function startSabrRequestCapture() {
+  await loadPersistedCaptures();
   browser.webRequest.onBeforeRequest.addListener(
     handleSabrRequest,
     { urls: ["https://*.googlevideo.com/videoplayback*"] },
     ["requestBody"]
   );
-  browser.tabs.onRemoved.addListener(tabId => capturedByTab.delete(tabId));
+  browser.tabs.onRemoved.addListener(tabId => {
+    capturedByTab.delete(tabId);
+    persistCaptures();
+  });
 }
 
 export function getCapturedSabrData(tabId: number) {
@@ -60,7 +108,7 @@ export function getCapturedSabrData(tabId: number) {
 }
 
 function getLatestCapturedSabrData() {
-  let latest: ReturnType<typeof capturedByTab.get>;
+  let latest: CapturedEntry | undefined;
 
   for (const entry of capturedByTab.values()) {
     if (!latest || entry.timestamp > latest.timestamp) {
@@ -73,4 +121,5 @@ function getLatestCapturedSabrData() {
 
 export function clearCapturedSabrData(tabId: number) {
   capturedByTab.delete(tabId);
+  persistCaptures();
 }

@@ -3,18 +3,25 @@ import { fetchAudioViaSabrStream } from "@/lib/youtube/sabr/download";
 import { ProgressType } from "@/types";
 import type { AdaptiveFormatItem, SabrConfig } from "@/types";
 
-export function buildEffectiveSabrConfig({ sabrConfig, sabrUrl }: {
+function buildEffectiveSabrConfig({ sabrConfig, sabrUrl, videoPlaybackUstreamerConfig }: {
   sabrConfig: SabrConfig;
   sabrUrl: string | undefined;
+  videoPlaybackUstreamerConfig?: string;
 }) {
-  if (sabrUrl && sabrUrl !== sabrConfig.serverAbrStreamingUrl) {
-    return {
-      ...sabrConfig,
-      serverAbrStreamingUrl: sabrUrl
-    };
+  const urlChanged = sabrUrl && sabrUrl !== sabrConfig.serverAbrStreamingUrl;
+  const configChanged = videoPlaybackUstreamerConfig
+    && videoPlaybackUstreamerConfig !== sabrConfig.videoPlaybackUstreamerConfig;
+  if (!urlChanged && !configChanged) {
+    return sabrConfig;
   }
 
-  return sabrConfig;
+  return {
+    ...sabrConfig,
+    ...(urlChanged && {
+      serverAbrStreamingUrl: sabrUrl
+    }),
+    ...(configChanged && { videoPlaybackUstreamerConfig })
+  };
 }
 
 export function parseContentLength(format: AdaptiveFormatItem | null) {
@@ -25,7 +32,7 @@ export function parseContentLength(format: AdaptiveFormatItem | null) {
   return parseInt(format.contentLength, 10);
 }
 
-export async function downloadAudioOnlyViaSabr({ config, audioFormat, poToken, signal, videoId, tabId, onProgress }: {
+export async function downloadAudioOnlyViaSabr({ config, audioFormat, poToken, signal, videoId, tabId, onProgress, firstBodyOverride }: {
   config: SabrConfig;
   audioFormat: AdaptiveFormatItem;
   poToken: string;
@@ -33,12 +40,14 @@ export async function downloadAudioOnlyViaSabr({ config, audioFormat, poToken, s
   videoId: string;
   tabId: number;
   onProgress?: () => void;
+  firstBodyOverride?: Uint8Array;
 }) {
   const audioExpectedBytes = parseContentLength(audioFormat);
   let audioReceivedBytes = 0;
 
   const sabrFetch = createProgressFetch({
     signal,
+    firstBodyOverride,
     onBytesReceived(bytes) {
       audioReceivedBytes += bytes;
       onProgress?.();

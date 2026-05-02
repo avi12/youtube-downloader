@@ -129,26 +129,33 @@ export default defineContentScript({
 
     window.__ytdlSabr = {
       isTemplatePresent: () => Boolean(window.__ytdlSabrTemplate),
-      fetchProgressive: ({ targetDurationMs, maxIterations = 80, carryState = null }) => fetchProgressive({
+      fetchProgressive: ({
+        targetDurationMs, maxIterations = 80, carryState = null, urlOverride, audioFormat, videoFormat
+      }) => fetchProgressive({
         targetDurationMs,
         maxIterations,
         originalFetch,
-        carryState
+        carryState,
+        urlOverride,
+        audioFormat,
+        videoFormat
       }),
       synthesize: () => buildSyntheticTemplateFromPlayer()
     };
 
     crossWorldMessenger.onMessage(CrossWorldMessage.RunProgressiveSabr, async ({ data }) => {
-      console.log(`[ytdl:sabr-progressive-main] received RunProgressiveSabr videoId=${data.videoId} durationSec=${data.videoDurationSec}`);
       const targetDurationMs = (data.videoDurationSec ?? 0) * 1000;
+      const urlOverride = data.sabrConfig?.serverAbrStreamingUrl;
       try {
         const result = await fetchProgressive({
           targetDurationMs,
           maxIterations: 80,
           originalFetch,
-          carryState: null
+          carryState: null,
+          urlOverride,
+          audioFormat: data.audioFormat,
+          videoFormat: data.videoFormat
         });
-        console.log(`[ytdl:sabr-progressive-main] fetchProgressive returned audio=${result.audioBytes.byteLength}B video=${result.videoBytes.byteLength}B iter=${result.iterations} stalled=${result.isStalled}`);
         const audioMimeType = data.audioFormat?.mimeType?.split(";")[0] ?? "audio/mp4";
         const videoMimeType = data.videoFormat?.mimeType?.split(";")[0] ?? "video/mp4";
         void crossWorldMessenger.sendMessage(CrossWorldMessage.StreamData, {
