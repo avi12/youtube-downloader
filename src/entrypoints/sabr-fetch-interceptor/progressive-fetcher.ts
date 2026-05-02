@@ -1,4 +1,4 @@
-import { buildFormatId } from "./player-helpers";
+import { buildFormatId, getMoviePlayer } from "./player-helpers";
 import { buildSyntheticTemplateFromPlayer, waitForTemplate } from "./template-builder";
 import type { FormatProgress, ProgressiveCarryState, ProgressiveFetchResult, ProgressiveState } from "./types";
 import type { AdaptiveFormatItem } from "@/types";
@@ -398,10 +398,41 @@ export async function fetchProgressive({
   let audioFormatId: FormatId | undefined;
   let videoFormatId: FormatId | undefined;
   if (audioFormat?.itag && videoFormat?.itag) {
-    audioItag = audioFormat.itag;
-    videoItag = videoFormat.itag;
-    audioFormatId = buildFormatId(audioFormat);
-    videoFormatId = buildFormatId(videoFormat);
+    const player = getMoviePlayer();
+    const playerResponse = player?.getPlayerResponse ? player.getPlayerResponse() : null;
+    const playerFormats = playerResponse?.streamingData?.adaptiveFormats ?? [];
+
+    // The template's video itag tells us which codec family this SABR session uses.
+    // Switching codec families mid-session (e.g. VP9 session → H.264 format) causes
+    // sabr.malformed_config, so find a player-native format in the same codec at the
+    // requested height instead of using the alternate-client itag directly.
+    const templateVideoItag = initial.preferredVideoFormatIds[0]?.itag ?? -1;
+    const templateVideoMime = playerFormats.find(fmt => fmt.itag === templateVideoItag)?.mimeType ?? "";
+    const isVp9Session = templateVideoMime.includes("vp9");
+    const requestedHeight = videoFormat.height ?? 0;
+
+    const playerVideoFormat = playerFormats
+      .filter(fmt => fmt.mimeType?.startsWith("video/"))
+      .filter(fmt => isVp9Session ? fmt.mimeType?.includes("vp9") : !fmt.mimeType?.includes("vp9"))
+      .sort((fmtA, fmtB) =>
+        Math.abs((fmtA.height ?? 0) - requestedHeight) - Math.abs((fmtB.height ?? 0) - requestedHeight))[0];
+
+    // Alternate-client audio may carry wrong xtags (e.g. a dubbed track). Use the
+    // player's own format entry for the same itag, preferring the default audio track.
+    const requestedAudioItag = audioFormat.itag;
+    const playerAudioFormat = playerFormats.find(
+      fmt => fmt.itag === requestedAudioItag && fmt.audioTrack?.audioIsDefault
+    ) ?? playerFormats.find(fmt => fmt.itag === requestedAudioItag && !fmt.audioTrack)
+      ?? playerFormats.find(fmt => fmt.itag === requestedAudioItag);
+    if (playerVideoFormat && playerAudioFormat) {
+      audioItag = playerAudioFormat.itag ?? requestedAudioItag;
+      videoItag = playerVideoFormat.itag ?? videoFormat.itag;
+      audioFormatId = buildFormatId(playerAudioFormat);
+      videoFormatId = buildFormatId(playerVideoFormat);
+    } else {
+      audioItag = initial.preferredAudioFormatIds[0]?.itag ?? initial.selectedFormatIds[0]?.itag ?? -1;
+      videoItag = initial.preferredVideoFormatIds[0]?.itag ?? initial.selectedFormatIds[1]?.itag ?? -1;
+    }
   } else {
     audioItag = initial.preferredAudioFormatIds[0]?.itag ?? initial.selectedFormatIds[0]?.itag ?? -1;
     videoItag = initial.preferredVideoFormatIds[0]?.itag ?? initial.selectedFormatIds[1]?.itag ?? -1;
