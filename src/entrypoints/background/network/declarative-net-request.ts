@@ -93,10 +93,15 @@ export async function registerSabrOriginRule() {
     }
   };
 
-  await browser.declarativeNetRequest.updateSessionRules({
-    removeRuleIds: [SABR_ORIGIN_RULE_ID, INNERTUBE_ORIGIN_RULE_ID, CDN_ORIGIN_RULE_ID],
-    addRules: [sabrRule, cdnGetRule, innertubeRule]
-  });
+  await Promise.all([
+    browser.declarativeNetRequest.updateDynamicRules({
+      removeRuleIds: [SABR_ORIGIN_RULE_ID, INNERTUBE_ORIGIN_RULE_ID, CDN_ORIGIN_RULE_ID]
+    }),
+    browser.declarativeNetRequest.updateSessionRules({
+      removeRuleIds: [SABR_ORIGIN_RULE_ID, INNERTUBE_ORIGIN_RULE_ID, CDN_ORIGIN_RULE_ID],
+      addRules: [sabrRule, cdnGetRule, innertubeRule]
+    })
+  ]);
 }
 
 export function registerFactoryIframeHeaderStripper() {
