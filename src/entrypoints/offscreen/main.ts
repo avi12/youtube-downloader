@@ -1,4 +1,3 @@
-import createFFmpegCore from "@ffmpeg/core";
 import { forwardToIframe, initScrubIframeRelay, removeIframe, spawnIframe } from "./iframe-host-receiver";
 import { handleProcessStreamChunk } from "./stream/accumulator";
 import { handleProcessStreamEnd } from "./stream/end-handler";
@@ -6,6 +5,7 @@ import { cancelDownloadsByIds, initFFmpeg } from "@/lib/download-pipeline";
 import { transcodeRecentDownload } from "@/lib/download-pipeline/transcode-recent";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, listenForOffscreenMessages } from "@/lib/messaging/offscreen-messaging";
+import createFFmpegCore from "@ffmpeg/core";
 
 // Register the port listener BEFORE awaiting createFFmpegCore so that the BG
 // orchestrator's first runtime.connect (fired from emitSegmentChunks right
