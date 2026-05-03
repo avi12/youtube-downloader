@@ -216,12 +216,21 @@ export function stripWebmDtxClusters(data: Uint8Array): Uint8Array {
 
   for (let clusterIdx = 0; clusterIdx < clusters.length; clusterIdx++) {
     const cluster = clusters[clusterIdx]!;
+    const clusterBlocks = blocksByCluster[clusterIdx] ?? [];
+    // Clusters whose Timestamp element was not found cannot have their
+    // timestamps adjusted — but DTX blocks inside them must still be stripped
+    // to prevent lone DTX frames surviving at the tail of the audio stream.
     if (cluster.timestampLength === 0) {
+      for (const block of clusterBlocks) {
+        if (block.payloadSize <= OPUS_DTX_MAX_PAYLOAD_BYTES) {
+          deletedRanges.push([block.elementStart, block.elementEnd]);
+          accumulatedMs += OPUS_FRAME_DURATION_MS;
+        }
+      }
       continue;
     }
 
     const clusterStartMs = accumulatedMs;
-    const clusterBlocks = blocksByCluster[clusterIdx] ?? [];
     let dtxBytesInCluster = 0;
     let intraClusterMs = 0;
 
