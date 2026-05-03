@@ -171,29 +171,40 @@ export function stripWebmDtxClusters(data: Uint8Array): Uint8Array {
     }
   }
 
-  function scanSegment(start: number, end: number) {
-    let position = start;
-    while (position < end) {
-      const child = readChild(end, position);
-      if (!child) {
-        break;
-      }
+  function scanSegment(initialStart: number, initialEnd: number) {
+    // SABR audio is concatenated WebM fragments: [EBML][Segment(unk-size)][Clusters]
+    // repeated N times. Because each Segment declares unknown size (extends to
+    // buf.byteLength), the top-level loop exits after the first Segment and never
+    // reaches subsequent fragments. Use a work queue so nested SEGMENT elements
+    // found inside an unknown-size Segment are processed without recursion.
+    const queue: Array<[number, number]> = [[initialStart, initialEnd]];
+    while (queue.length > 0) {
+      const [start, end] = queue.shift()!;
+      let position = start;
+      while (position < end) {
+        const child = readChild(end, position);
+        if (!child) {
+          break;
+        }
 
-      if (child.id === CLUSTER_ID) {
-        const clusterIdx = clusters.length;
-        clusters.push({
-          timestampOffset: 0,
-          timestampLength: 0,
-          timestampMs: 0,
-          sizeOffset: child.sizeOffset,
-          sizeLength: child.sizeLength,
-          declaredSize: child.declaredSize,
-          isUnknownSize: child.isUnkSize
-        });
-        scanCluster(clusterIdx, child.dataStart, child.dataEnd);
-      }
+        if (child.id === CLUSTER_ID) {
+          const clusterIdx = clusters.length;
+          clusters.push({
+            timestampOffset: 0,
+            timestampLength: 0,
+            timestampMs: 0,
+            sizeOffset: child.sizeOffset,
+            sizeLength: child.sizeLength,
+            declaredSize: child.declaredSize,
+            isUnknownSize: child.isUnkSize
+          });
+          scanCluster(clusterIdx, child.dataStart, child.dataEnd);
+        } else if (child.id === SEGMENT_ID) {
+          queue.push([child.dataStart, child.dataEnd]);
+        }
 
-      position = child.dataEnd;
+        position = child.dataEnd;
+      }
     }
   }
 
