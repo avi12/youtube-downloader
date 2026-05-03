@@ -1,4 +1,3 @@
-import { getFFmpeg } from "./ffmpeg-instance";
 import { parseFmp4VideoStartSec } from "./fmp4-video-start";
 import { muxSingleSegment } from "./segment-premux";
 import { parseWebmAudioStartSec } from "./webm-audio-start";
@@ -25,6 +24,15 @@ export function buildValidSegments(
     }
 
     const startSec = iSegment * step;
+    // A segment whose buffer ended before its target start was captured from the
+    // wrong position (SABR iframe loaded from t=0 instead of the seek target).
+    // Including it would insert content from early in the video at the wrong
+    // timeline position, producing a gap + wrong-content block in the output.
+    if (startSec > 0 && segment.videoBufferEndSec !== undefined && segment.videoBufferEndSec < startSec) {
+      logEvent(`[ytdl:pipeline] segment ${iSegment} skipped (wrong position: bufEnd=${segment.videoBufferEndSec.toFixed(1)} < startSec=${startSec})`);
+      continue;
+    }
+
     logEvent(`[ytdl:pipeline] segment ${iSegment} startSec=${startSec} video=${segment.video.byteLength}B audio=${segment.audio.byteLength}B bufEnd=${segment.videoBufferEndSec?.toFixed(1) ?? "?"}`);
     validSegments.push({
       index: iSegment,
@@ -38,10 +46,9 @@ export function buildValidSegments(
   return validSegments;
 }
 
-export function muxValidSegments({
-  ffmpeg, validSegments, step, videoExt, targetExt, audioExt, isOpusAudio, writtenPaths, logEvent
+export async function muxValidSegments({
+  validSegments, step, videoExt, targetExt, audioExt, isOpusAudio, writtenPaths, logEvent
 }: {
-  ffmpeg: ReturnType<typeof getFFmpeg>;
   validSegments: ValidSegment[];
   step: number;
   videoExt: string;
@@ -71,7 +78,7 @@ export function muxValidSegments({
 
     const capturedEnd = seg.videoBufferEndSec ?? (seg.startSec + step);
     const nextStart = videoStarts[i + 1];
-    if (nextStart !== undefined) {
+    if (nextStart !== undefined && nextStart > thisStart) {
       return Math.min(nextStart - thisStart, capturedEnd - thisStart);
     }
 
@@ -80,8 +87,7 @@ export function muxValidSegments({
 
   const muxedSegFiles: string[] = [];
   for (const [i, seg] of validSegments.entries()) {
-    const muxedFile = muxSingleSegment({
-      ffmpeg,
+    const muxedFile = await muxSingleSegment({
       seg,
       step,
       videoExt,
