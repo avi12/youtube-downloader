@@ -1,11 +1,11 @@
 import { getFFmpeg } from "./ffmpeg-instance";
 import { parseFmp4VideoStartSec } from "./fmp4-video-start";
 import { parseWebmAudioStartSec } from "./webm-audio-start";
+import { stripWebmDtxClusters } from "./webm-strip-dtx";
 
-export function muxSingleSegment({
-  ffmpeg, seg, step, videoExt, targetExt, audioExt, isOpusAudio, writtenPaths, logEvent, overrideTrimSec
+export async function muxSingleSegment({
+  seg, step, videoExt, targetExt, audioExt, isOpusAudio, writtenPaths, logEvent, overrideTrimSec
 }: {
-  ffmpeg: ReturnType<typeof getFFmpeg>;
   seg: {
     index: number;
     video: Uint8Array;
@@ -22,10 +22,13 @@ export function muxSingleSegment({
   logEvent: (msg: string) => void;
   overrideTrimSec?: number;
 }) {
+  const ffmpeg = getFFmpeg();
   const vFile = `tmp_vseg_${seg.index}.${videoExt}`;
   const aFile = `tmp_aseg_${seg.index}.${audioExt}`;
-  ffmpeg.FS.writeFile(vFile, seg.video);
-  ffmpeg.FS.writeFile(aFile, seg.audio);
+  await Promise.all([
+    ffmpeg.FS.writeFile(vFile, seg.video),
+    ffmpeg.FS.writeFile(aFile, stripWebmDtxClusters(seg.audio))
+  ]);
   writtenPaths.push(vFile, aFile);
 
   const videoHex = Array.from(seg.video.subarray(0, 16)).map(byte => byte.toString(16).padStart(2, "0")).join(" ");
@@ -76,15 +79,12 @@ export function muxSingleSegment({
     segMuxArgs.push("-t", trimDuration.toFixed(3));
   }
 
-  // Use the same container as the final output: MP4 for AV1 (avoids
-  // AV1-in-MKV codec-config transfer edge cases in older ffmpeg.wasm),
-  // MKV for VP9/WebM.
   const segMuxFile = `tmp_seg_${seg.index}_muxed.${targetExt}`;
   segMuxArgs.push(segMuxFile);
 
   logEvent(`[ytdl:pipeline] seg ${seg.index} pre-mux videoStart=${videoStartSec?.toFixed(3) ?? "?"} audioStart=${audioStartSec?.toFixed(3) ?? "?"} preroll=${preroll.toFixed(3)}s audioSkip=${audioSkipSec.toFixed(3)}s trim=${trimDuration.toFixed(3)}s keyframeAligned=${overrideTrimSec !== undefined} bufEnd=${seg.videoBufferEndSec?.toFixed(1) ?? "?"}`);
 
-  const segMuxExit = ffmpeg.exec(...segMuxArgs);
+  const segMuxExit = await ffmpeg.exec(...segMuxArgs);
   if (segMuxExit !== 0) {
     logEvent(`[ytdl:pipeline] seg ${seg.index} pre-mux failed (exit ${segMuxExit}); skipping`);
     return null;
