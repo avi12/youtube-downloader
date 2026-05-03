@@ -73,7 +73,8 @@ export function sendCapturedResult({
     videoBytes,
     audioBytes,
     videoMimeType,
-    audioMimeType
+    audioMimeType,
+    videoBufferEndSec
   });
   postToHost({
     type: IframeHostMessageType.ScrubSegment,
