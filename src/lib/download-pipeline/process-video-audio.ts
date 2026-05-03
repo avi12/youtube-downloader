@@ -1,6 +1,6 @@
 import { triggerDownload, reportProgress } from ".";
 import { writeExtraAudioFiles, writeSubtitleFiles, writeVideoAudioToFs } from "./ffmpeg-file-setup";
-import { getFFmpeg, progressHandlers, tryUnlink } from "./ffmpeg-instance";
+import { progressHandlers, tryUnlink } from "./ffmpeg-instance";
 import { runFfmpegMux, saveOutput } from "./ffmpeg-mux-runner";
 import { buildVideoAudioFilenames } from "./video-audio-filenames";
 import { ProgressType } from "@/types";
@@ -59,19 +59,12 @@ function cleanupFfmpegFiles({
   extraAudioTracks: Array<{ filename: string }>;
   subtitleFiles: Array<{ filename: string }>;
 }) {
-  const ffmpeg = getFFmpeg();
   for (const filename of [videoFilename, primaryAudioFilename, outputFilename]) {
-    tryUnlink({
-      ffmpeg,
-      filename
-    });
+    tryUnlink(filename);
   }
 
   for (const { filename } of [...extraAudioTracks, ...subtitleFiles]) {
-    tryUnlink({
-      ffmpeg,
-      filename
-    });
+    tryUnlink(filename);
   }
 }
 
@@ -99,22 +92,24 @@ export async function processVideoAudio(item: ProcessStreamData) {
   }
 
   progressHandlers.add(handleFFmpegProgress);
-  const extraAudioTracks = writeExtraAudioFiles({
-    videoId,
-    additionalAudioStreams
-  });
-  const subtitleFiles = writeSubtitleFiles({
-    videoId,
-    subtitleStreams
-  });
+  const [extraAudioTracks, subtitleFiles] = await Promise.all([
+    writeExtraAudioFiles({
+      videoId,
+      additionalAudioStreams
+    }),
+    writeSubtitleFiles({
+      videoId,
+      subtitleStreams
+    })
+  ]);
 
   try {
-    const { videoData, audioData } = writeVideoAudioToFs({
+    const { videoData, audioData } = await writeVideoAudioToFs({
       videoFilename,
       primaryAudioFilename,
       item
     });
-    if (!videoData || !audioData) {
+    if (!videoData?.byteLength || !audioData?.byteLength) {
       await handleMissingStream({
         videoData,
         audioData,
@@ -132,7 +127,7 @@ export async function processVideoAudio(item: ProcessStreamData) {
       progressType: ProgressType.FFmpeg,
       tabId
     });
-    const ffmpegOutput = runFfmpegMux({
+    const ffmpegOutput = await runFfmpegMux({
       videoFilename,
       primaryAudioFilename,
       extraAudioTracks,

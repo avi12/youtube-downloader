@@ -135,6 +135,28 @@ export function buildTemplateFromSabrConfig({
   };
 }
 
+export function readScrubFormats() {
+  const player = getMoviePlayer();
+  if (!player?.getPlayerResponse) {
+    return null;
+  }
+
+  const adaptiveFormats = player.getPlayerResponse()?.streamingData?.adaptiveFormats;
+  if (!adaptiveFormats) {
+    return null;
+  }
+
+  const { audio, video } = pickHighestQualityFormats(adaptiveFormats);
+  if (!audio || !video) {
+    return null;
+  }
+
+  return {
+    audio,
+    video
+  };
+}
+
 export function capturedTemplateToBase64(template: YtdlSabrTemplate) {
   return {
     url: template.url,

@@ -34,12 +34,8 @@ export async function waitForPlayerReady() {
   return null;
 }
 
-// player.playVideo() relies on the youtube.com autoplay heuristic; inside a
-// hidden iframe hosted by an extension page Firefox blocks unmuted autoplay
-// even with allow="autoplay". Setting <video>.muted=true unconditionally
-// satisfies the muted-autoplay path and lets play() resolve, after which the
-// player fetches media segments normally (audio bytes are still captured by
-// the SourceBuffer hook regardless of <video> mute state).
+// Firefox blocks unmuted autoplay in hidden iframes even with allow="autoplay".
+// Keeping the video muted satisfies the muted-autoplay path so play() resolves.
 export async function forcePlayback(player: MoviePlayer) {
   const startedAt = Date.now();
   while (Date.now() - startedAt < PLAYBACK_START_TIMEOUT_MS) {
@@ -55,26 +51,9 @@ export async function forcePlayback(player: MoviePlayer) {
     await wait(POLL_INTERVAL_MS);
 
     if (elVideo && (!elVideo.paused || elVideo.currentTime > 0 || elVideo.readyState >= 2)) {
-      // Unmute now that playback started - YouTube SABR skips audio fetching
-      // when the media element is muted; we only muted above to satisfy
-      // Firefox's background-tab autoplay policy.
-      elVideo.muted = false;
       return true;
     }
   }
 
   return false;
-}
-
-// seekTo alone doesn't kick the SABR fetch in background tabs - force play
-// immediately so the player requests media data starting at startSec.
-export function postAdSeek(player: MoviePlayer, startSec: number) {
-  player.seekTo?.(startSec, true);
-  const elVideo = document.querySelector<HTMLVideoElement>(VIDEO_ELEMENT_SELECTOR);
-  if (elVideo) {
-    elVideo.muted = true;
-    player.playVideo?.();
-    void elVideo.play().catch(() => {});
-    elVideo.muted = false;
-  }
 }

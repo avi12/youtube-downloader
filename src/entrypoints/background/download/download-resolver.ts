@@ -49,7 +49,7 @@ export async function resolveDownloadResult({ request, cdnRequest, signal, video
     );
   }
 
-  if (!result?.audioData && !result?.videoData) {
+  if (!result?.audioData?.byteLength && !result?.videoData?.byteLength) {
     const isFallbackUsed = await tryIframeScrubFallback({
       request,
       cdnRequest,
@@ -65,7 +65,7 @@ export async function resolveDownloadResult({ request, cdnRequest, signal, video
     url: string;
     bodyBase64: string;
   } | null = null;
-  if (!result?.audioData) {
+  if (!result?.audioData?.byteLength) {
     broadcastDebugLogToTab(`[ytdl:bg] attempting direct SABR hasSabrConfig=${Boolean(request.sabrConfig)} hasAudioFmt=${Boolean(request.audioFormat)} configUrl=${request.sabrConfig?.serverAbrStreamingUrl?.slice(0, 80)} sabrUrl=${request.sabrUrl?.slice(0, 80)} configLen=${request.sabrConfig?.videoPlaybackUstreamerConfig?.length}`, tabId);
 
     if (!import.meta.env.FIREFOX && !hasCapturedSabrDataForTab(tabId)) {
@@ -94,7 +94,7 @@ export async function resolveDownloadResult({ request, cdnRequest, signal, video
     });
   }
 
-  if (!result?.audioData && !import.meta.env.FIREFOX) {
+  if (!result?.audioData?.byteLength && !import.meta.env.FIREFOX) {
     broadcastDebugLogToTab(`[ytdl:bg] Chrome: SABR stalled, falling back to RunProgressiveSabrInTab for ${videoId}`, tabId);
     const progressiveRequest = primerResult?.url && request.sabrConfig
       ? {

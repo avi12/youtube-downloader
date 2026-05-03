@@ -1,10 +1,7 @@
-import { activateCaptureForVideoId } from "../video/iframe-capture-state";
-import { waitForAdToClear } from "./ad-handler";
-import { waitForBufferFill } from "./buffer-fill";
-import { concatChunks } from "./capture";
-import { waitForPlayerReady, forcePlayback, postAdSeek } from "./player";
+import { fetchProgressive } from "../../sabr-fetch-interceptor/progressive-fetcher";
+import { buildSyntheticTemplateFromPlayer, readScrubFormats } from "../../sabr-fetch-interceptor/template-builder";
+import { waitForPlayerReady } from "./player";
 import { scrubLog, sendCapturedResult, sendEmptyResult } from "./segment-emit";
-import { VIDEO_ELEMENT_SELECTOR } from "@/lib/youtube/player-selectors";
 import { ScrubUrlParam } from "@/lib/youtube/youtube-url";
 
 export { runTrustFactoryDrive } from "./trust-factory";
@@ -20,8 +17,6 @@ export async function runScrubSelfDrive() {
     return;
   }
 
-  activateCaptureForVideoId(videoId);
-
   scrubLog(`scrub start videoId=${videoId} index=${iScrub} startSec=${startSec} window=${windowSec}s`);
 
   const player = await waitForPlayerReady();
@@ -34,11 +29,10 @@ export async function runScrubSelfDrive() {
     return;
   }
 
-  scrubLog(`player ready index=${iScrub} duration=${player.getDuration?.() ?? 0}`);
-
-  const isPlaying = await forcePlayback(player);
-  if (!isPlaying) {
-    scrubLog(`playback never started index=${iScrub}`);
+  const formats = readScrubFormats();
+  const template = buildSyntheticTemplateFromPlayer();
+  if (!formats || !template) {
+    scrubLog(`could not synthesize SABR template index=${iScrub}`);
     sendEmptyResult({
       videoId,
       iScrub
@@ -46,23 +40,20 @@ export async function runScrubSelfDrive() {
     return;
   }
 
-  scrubLog(`playback started index=${iScrub}`);
-  await waitForAdToClear();
-  scrubLog(`ad cleared index=${iScrub}`);
+  window.__ytdlSabrTemplate = template;
+  scrubLog(`template ready index=${iScrub}, fetching startSec=${startSec} window=${windowSec}s`);
 
-  postAdSeek(player, startSec);
-  await waitForBufferFill({
-    videoId,
-    windowSec,
-    startSec,
-    iScrub,
-    player
+  const result = await fetchProgressive({
+    targetDurationMs: (startSec + windowSec) * 1000,
+    maxIterations: 80,
+    carryState: null,
+    initialPlayerTimeMs: startSec * 1000
+  }).catch(error => {
+    scrubLog(`fetchProgressive failed index=${iScrub}: ${String(error)}`);
+    return null;
   });
-  scrubLog(`buffer fill complete index=${iScrub}`);
-
-  const capture = window.__ytdlCapture?.capturedMedia.get(videoId);
-  if (!capture || (capture.videoTotalBytes === 0 && capture.audioTotalBytes === 0)) {
-    scrubLog(`no capture data index=${iScrub}`);
+  if (!result?.videoBytes.byteLength && !result?.audioBytes.byteLength) {
+    scrubLog(`no bytes from fetchProgressive index=${iScrub}`);
     sendEmptyResult({
       videoId,
       iScrub
@@ -70,19 +61,14 @@ export async function runScrubSelfDrive() {
     return;
   }
 
-  const elVideo = document.querySelector<HTMLVideoElement>(VIDEO_ELEMENT_SELECTOR);
-  const bufferedEnd = elVideo && elVideo.buffered.length > 0
-    ? elVideo.buffered.end(elVideo.buffered.length - 1)
-    : startSec + windowSec;
-
-  scrubLog(`emitting index=${iScrub} video=${capture.videoTotalBytes}B audio=${capture.audioTotalBytes}B bufferedEnd=${bufferedEnd.toFixed(1)}s`);
+  scrubLog(`emitting index=${iScrub} video=${result.videoBytes.byteLength}B audio=${result.audioBytes.byteLength}B end=${(result.videoCoveredMs / 1000).toFixed(1)}s`);
   sendCapturedResult({
     videoId,
     iScrub,
-    videoBytes: concatChunks(capture.videoChunks),
-    audioBytes: concatChunks(capture.audioChunks),
-    videoMimeType: capture.videoMimeType,
-    audioMimeType: capture.audioMimeType,
-    videoBufferEndSec: bufferedEnd
+    videoBytes: result.videoBytes,
+    audioBytes: result.audioBytes,
+    videoMimeType: formats.video.mimeType?.split(";")[0] ?? "video/mp4",
+    audioMimeType: formats.audio.mimeType?.split(";")[0] ?? "audio/mp4",
+    videoBufferEndSec: result.videoCoveredMs / 1000
   });
 }

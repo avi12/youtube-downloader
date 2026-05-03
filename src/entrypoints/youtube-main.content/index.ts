@@ -52,11 +52,13 @@ export default defineContentScript({
         // best-effort debug log
       }
 
+      setupIframeVideoSilencing();
       await runScrubSelfDrive();
       return;
     }
 
     if (location.search.includes(`${ScrubUrlParam.TrustFactoryMode}=1`)) {
+      setupIframeVideoSilencing();
       await runTrustFactoryDrive();
       return;
     }

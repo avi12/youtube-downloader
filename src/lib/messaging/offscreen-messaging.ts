@@ -73,7 +73,11 @@ export async function sendBytesToOffscreen({ videoId, streamType, data, tabId }:
   data: Uint8Array;
   tabId: number;
 }) {
-  const totalChunks = Math.max(1, Math.ceil(data.byteLength / TRANSFER_CHUNK_SIZE));
+  const totalChunks = Math.ceil(data.byteLength / TRANSFER_CHUNK_SIZE);
+  if (totalChunks === 0) {
+    return;
+  }
+
   for (let iChunk = 0; iChunk < totalChunks; iChunk++) {
     const start = iChunk * TRANSFER_CHUNK_SIZE;
     const slice = data.subarray(start, start + TRANSFER_CHUNK_SIZE);
