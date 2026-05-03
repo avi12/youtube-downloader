@@ -1,3 +1,4 @@
+import { base64ToUint8Array } from "@/lib/utils/binary";
 import { StreamType } from "@/types";
 
 export interface AudioStream {
@@ -99,10 +100,11 @@ export function handleProcessStreamChunk(data: {
   streamType: string;
   iChunk: number;
   totalChunks: number;
-  chunkBytes: Uint8Array;
+  chunkBase64: string;
   tabId: number;
 }) {
-  const { videoId, streamType, iChunk, totalChunks, chunkBytes } = data;
+  const { videoId, streamType, iChunk, totalChunks } = data;
+  const chunkBytes = base64ToUint8Array(data.chunkBase64);
   if (!STREAM_ACCUMULATORS.has(videoId)) {
     STREAM_ACCUMULATORS.set(videoId, {
       videoChunks: new Map(),

@@ -5,7 +5,7 @@ import { MessageType, onMessage } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
 import type { OffscreenProtocolMap } from "@/lib/messaging/offscreen-protocol";
 import { interruptedDownloadsItem } from "@/lib/storage/storage";
-import { base64ToUint8Array, uint8ToBase64 } from "@/lib/utils/binary";
+import { uint8ToBase64 } from "@/lib/utils/binary";
 import { extractPoTokenFromBody, getCapturedSabrData } from "@/lib/youtube/sabr/request-capture";
 
 async function forwardChunk(
@@ -55,7 +55,7 @@ export function registerChunkHandlers() {
       streamType: data.streamType,
       iChunk: data.iChunk,
       totalChunks: data.totalChunks,
-      chunkBytes: base64ToUint8Array(data.chunkBase64)
+      chunkBase64: data.chunkBase64
     });
   });
 

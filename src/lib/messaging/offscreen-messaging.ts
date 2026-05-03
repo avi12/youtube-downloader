@@ -4,7 +4,7 @@ import {
   OffscreenMessageType,
   type OffscreenProtocolMap
 } from "./offscreen-protocol";
-import { TRANSFER_CHUNK_SIZE } from "@/lib/utils/binary";
+import { TRANSFER_CHUNK_SIZE, uint8ToBase64 } from "@/lib/utils/binary";
 
 export { OffscreenMessageType };
 export type { HandlerMap };
@@ -86,7 +86,7 @@ export async function sendBytesToOffscreen({ videoId, streamType, data, tabId }:
       streamType,
       iChunk,
       totalChunks,
-      chunkBytes: slice,
+      chunkBase64: uint8ToBase64(slice),
       tabId
     });
 
