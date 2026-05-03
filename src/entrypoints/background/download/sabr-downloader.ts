@@ -1,6 +1,6 @@
 import { downloadAudioOnlyViaSabr, downloadExtraAudioTracksViaSabr, downloadVideoAudioViaSabr } from "./sabr-progress";
 import { extractUstreamerConfigFromBody } from "@/lib/youtube/sabr/proto-parser";
-import { getCapturedSabrData } from "@/lib/youtube/sabr/request-capture";
+import { extractPoTokenFromBody, getCapturedSabrData } from "@/lib/youtube/sabr/request-capture";
 import { DownloadType } from "@/types";
 import type { DownloadRequest } from "@/types";
 
@@ -22,8 +22,9 @@ export async function downloadViaSabr({ request, signal, tabId, onProgress }: {
     return null;
   }
 
-  const resolvedPoToken = poToken ?? "";
   const capturedData = getCapturedSabrData(tabId);
+  const capturedPoToken = capturedData ? extractPoTokenFromBody(capturedData.body) : null;
+  const resolvedPoToken = poToken || capturedPoToken || "";
   const capturedBody = capturedData ? new Uint8Array(capturedData.body) : undefined;
   const capturedUrl = capturedData?.url;
   const capturedUstreamerConfig = capturedData ? extractUstreamerConfigFromBody(capturedData.body) : null;

@@ -9,7 +9,7 @@ import {
   readUstreamerConfig
 } from "./player-helpers";
 import { uint8ToBase64 } from "@/lib/utils/binary";
-import type { YtdlSabrTemplate } from "@/types";
+import type { AdaptiveFormatItem, SabrConfig, YtdlSabrTemplate } from "@/types";
 import { VideoPlaybackAbrRequest } from "googlevideo/protos";
 
 const VISIBILITY_FOREGROUND = 1;
@@ -77,6 +77,59 @@ export function buildSyntheticTemplateFromPlayer() {
 
   return {
     url,
+    body,
+    capturedAt: Date.now()
+  };
+}
+
+export function buildTemplateFromSabrConfig({
+  sabrConfig,
+  audioFormat,
+  videoFormat,
+  poToken
+}: {
+  sabrConfig: SabrConfig;
+  audioFormat: AdaptiveFormatItem;
+  videoFormat: AdaptiveFormatItem;
+  poToken?: string;
+}): YtdlSabrTemplate {
+  const audioFormatId = buildFormatId(audioFormat);
+  const videoFormatId = buildFormatId(videoFormat);
+  const capturedPoTokenBytes = readPoTokenFromCapturedTemplate();
+  const poTokenFromArg = poToken ? base64UrlToUint8Array(poToken) : undefined;
+  const resolvedPoToken = capturedPoTokenBytes ?? poTokenFromArg;
+
+  const body = VideoPlaybackAbrRequest.encode({
+    clientAbrState: {
+      playerTimeMs: "0",
+      audioTrackId: audioFormat.audioTrack?.id,
+      playbackRate: DEFAULT_PLAYBACK_RATE,
+      stickyResolution: videoFormat.height,
+      drcEnabled: false,
+      clientViewportIsFlexible: false,
+      visibility: VISIBILITY_FOREGROUND,
+      enabledTrackTypesBitfield: 0
+    },
+    selectedFormatIds: [audioFormatId, videoFormatId],
+    bufferedRanges: [],
+    videoPlaybackUstreamerConfig: base64UrlToUint8Array(sabrConfig.videoPlaybackUstreamerConfig),
+    preferredAudioFormatIds: [audioFormatId],
+    preferredVideoFormatIds: [videoFormatId],
+    preferredSubtitleFormatIds: [],
+    streamerContext: {
+      sabrContexts: [],
+      unsentSabrContexts: [],
+      clientInfo: {
+        clientName: sabrConfig.clientName,
+        clientVersion: sabrConfig.clientVersion
+      },
+      poToken: resolvedPoToken
+    },
+    field1000: []
+  }).finish();
+
+  return {
+    url: sabrConfig.serverAbrStreamingUrl,
     body,
     capturedAt: Date.now()
   };
