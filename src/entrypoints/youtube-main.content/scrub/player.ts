@@ -57,3 +57,18 @@ export async function forcePlayback(player: MoviePlayer) {
 
   return false;
 }
+
+// Seek and kick playback at the new position. Mutes for the play() call to
+// satisfy autoplay policy, then unmutes so the player requests audio SABR
+// tracks. Audio output is silenced via the AudioContext set up in
+// setupIframeVideoSilencing(), so no sound reaches the speakers.
+export function postAdSeek(player: MoviePlayer, startSec: number) {
+  player.seekTo?.(startSec, true);
+  const elVideo = document.querySelector<HTMLVideoElement>(VIDEO_ELEMENT_SELECTOR);
+  if (elVideo) {
+    elVideo.muted = true;
+    player.playVideo?.();
+    void elVideo.play().catch(() => {});
+    elVideo.muted = false;
+  }
+}

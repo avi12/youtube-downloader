@@ -11,13 +11,33 @@ export function setupIframeVideoSilencing() {
       return false;
     }
 
+    if (isScrubMode) {
+      // Route audio through a gain=0 AudioContext so the player fetches audio
+      // SABR tracks when video.muted is set to false by the scrub driver, but
+      // no audio actually reaches the speakers. Fallback to muting if the API
+      // is unavailable.
+      try {
+        const audioCtx = new AudioContext();
+        void audioCtx.resume();
+        const src = audioCtx.createMediaElementSource(elVideo);
+        const gain = audioCtx.createGain();
+        gain.gain.value = 0;
+        src.connect(gain);
+        gain.connect(audioCtx.destination);
+      } catch {
+        elVideo.muted = true;
+        elVideo.volume = 0;
+      }
+      return true;
+    }
+
     elVideo.muted = true;
     elVideo.volume = 0;
     elVideo.addEventListener("play", () => {
       elVideo.muted = true;
       elVideo.volume = 0;
 
-      if (keepPlaying && !isScrubMode) {
+      if (keepPlaying) {
         elVideo.pause();
       }
     });
@@ -25,12 +45,7 @@ export function setupIframeVideoSilencing() {
     const elPlayer = document.querySelector<HTMLElement & {
       pauseVideo?: () => void;
       stopVideo?: () => void;
-    }>("#movie_player");
-    if (isScrubMode) {
-      return true;
-    }
-
-    if (keepPlaying) {
+    }>("#movie_player");    if (keepPlaying) {
       elPlayer?.pauseVideo?.();
     } else {
       elPlayer?.stopVideo?.();
