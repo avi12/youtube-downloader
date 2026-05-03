@@ -13,6 +13,9 @@ type CapturedEntry = {
 
 const capturedByTab = new Map<number, CapturedEntry>();
 
+let offscreenCapture: CapturedEntry | null = null;
+const offscreenCaptureResolvers = new Set<(capture: CapturedEntry) => void>();
+
 let onCaptureCallback: ((tabId: number) => void) | null = null;
 
 export function onSabrBodyCaptured(callback: (tabId: number) => void) {
@@ -59,15 +62,26 @@ async function loadPersistedCaptures() {
 }
 
 function handleSabrRequest(details: Browser.webRequest.OnBeforeRequestDetails) {
-  if (details.tabId < 0) {
-    return undefined;
-  }
-
   if (!details.requestBody?.raw?.[0]?.bytes) {
     return undefined;
   }
 
   const bodyBytes = new Uint8Array(details.requestBody.raw[0].bytes);
+  if (details.tabId < 0) {
+    const entry: CapturedEntry = {
+      body: Array.from(bodyBytes),
+      url: details.url,
+      tabId: -1,
+      timestamp: Date.now()
+    };
+    offscreenCapture = entry;
+    for (const resolve of offscreenCaptureResolvers) {
+      resolve(entry);
+    }
+    offscreenCaptureResolvers.clear();
+    return undefined;
+  }
+
   const previousData = capturedByTab.get(details.tabId);
   const isFirstCapture = !previousData;
 
@@ -104,7 +118,7 @@ export async function startSabrRequestCapture() {
 }
 
 export function getCapturedSabrData(tabId: number) {
-  return capturedByTab.get(tabId) ?? getLatestCapturedSabrData();
+  return capturedByTab.get(tabId) ?? offscreenCapture ?? getLatestCapturedSabrData();
 }
 
 function getLatestCapturedSabrData() {
@@ -122,4 +136,39 @@ function getLatestCapturedSabrData() {
 export function clearCapturedSabrData(tabId: number) {
   capturedByTab.delete(tabId);
   persistCaptures();
+}
+
+export function hasCapturedSabrDataForTab(tabId: number): boolean {
+  return capturedByTab.has(tabId);
+}
+
+function waitForOffscreenSabrCapture(timeoutMs: number): Promise<CapturedEntry | null> {
+  if (offscreenCapture) {
+    return Promise.resolve(offscreenCapture);
+  }
+
+  return new Promise(resolve => {
+    function onCapture(capture: CapturedEntry) {
+      clearTimeout(timer);
+      resolve(capture);
+    }
+    const timer = setTimeout(() => {
+      offscreenCaptureResolvers.delete(onCapture);
+      resolve(null);
+    }, timeoutMs);
+    offscreenCaptureResolvers.add(onCapture);
+  });
+}
+
+function clearOffscreenCapture() {
+  offscreenCapture = null;
+}
+
+export function setOffscreenCapture(body: number[], url: string) {
+  offscreenCapture = {
+    body,
+    url,
+    tabId: -1,
+    timestamp: Date.now()
+  };
 }
