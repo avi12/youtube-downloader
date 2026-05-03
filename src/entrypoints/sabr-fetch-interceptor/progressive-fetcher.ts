@@ -77,18 +77,22 @@ function buildRequestBody({
   return VideoPlaybackAbrRequest.encode(decoded).finish();
 }
 
-async function performFetch({ url, body, originalFetch }: {
+async function performFetch({ url, body, requestNumber }: {
   url: string;
   body: Uint8Array;
-  originalFetch: typeof globalThis.fetch;
+  requestNumber: number;
 }) {
   const fresh = new Uint8Array(body.byteLength);
   fresh.set(body);
-  const response = await originalFetch(url, {
+  const sabrUrl = new URL(url);
+  sabrUrl.searchParams.set("rn", String(requestNumber));
+  sabrUrl.searchParams.set("alr", "yes");
+  const response = await globalThis.fetch(sabrUrl.toString(), {
     method: "POST",
     body: fresh,
     mode: "cors",
-    credentials: "include"
+    credentials: "omit",
+    signal: AbortSignal.timeout(30_000)
   });
   if (!response.ok) {
     throw new Error(`SABR fetch returned status ${response.status}`);
@@ -255,7 +259,6 @@ type IterationContext = {
   videoItag: number;
   audioFormatId: FormatId | undefined;
   videoFormatId: FormatId | undefined;
-  originalFetch: typeof globalThis.fetch;
   urlOverride?: string;
 };
 
@@ -292,7 +295,7 @@ async function runFetchIteration(
 ): Promise<IterationResult> {
   const {
     state, activeTemplateBody, activeTemplateUrl, playerTimeMs,
-    audioItag, videoItag, audioFormatId, videoFormatId, originalFetch
+    audioItag, videoItag, audioFormatId, videoFormatId
   } = ctx;
 
   const requestBody = buildRequestBody({
@@ -307,7 +310,7 @@ async function runFetchIteration(
   const response = await performFetch({
     url: activeTemplateUrl,
     body: requestBody,
-    originalFetch
+    requestNumber: iteration + 1
   });
 
   const beforeAudioEnd = state.audio.endMs;
@@ -368,7 +371,6 @@ async function runFetchIteration(
 export async function fetchProgressive({
   targetDurationMs,
   maxIterations,
-  originalFetch,
   carryState,
   initialPlayerTimeMs,
   urlOverride,
@@ -377,7 +379,6 @@ export async function fetchProgressive({
 }: {
   targetDurationMs: number;
   maxIterations: number;
-  originalFetch: typeof globalThis.fetch;
   carryState: ProgressiveCarryState | null;
   initialPlayerTimeMs?: number;
   urlOverride?: string;
@@ -471,7 +472,6 @@ export async function fetchProgressive({
         videoItag,
         audioFormatId,
         videoFormatId,
-        originalFetch,
         urlOverride
       },
       stallStreak,
