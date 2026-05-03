@@ -1,14 +1,22 @@
 import { buildSyntheticTemplateFromPlayer } from "../../sabr-fetch-interceptor/template-builder";
-import { forcePlayback, wait, waitForPlayerReady } from "./player";
+import { forcePlayback, POLL_INTERVAL_MS, wait, waitForPlayerReady } from "./player";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { uint8ToBase64 } from "@/lib/utils/binary";
 
-// Drives a hidden BG factory iframe: best-effort triggers the player to fire
-// its first SABR call (which the interceptor captures with its ad filter
-// disabled in factory mode). We don't insist on playback or ad-clear because
-// hidden BG iframes can't reliably autoplay; the player still issues its
-// initial SABR call to fetch init segments even when paused.
 const FACTORY_FIRST_CALL_WAIT_MS = 15_000;
+
+function emitTemplate(template: {
+  url: string;
+  body: Uint8Array;
+  capturedAt: number;
+}) {
+  window.__ytdlSabrTemplate = template;
+  void crossWorldMessenger.sendMessage(CrossWorldMessage.SabrTemplateCaptured, {
+    url: template.url,
+    bodyBase64: uint8ToBase64(template.body),
+    capturedAt: template.capturedAt
+  });
+}
 
 export async function runTrustFactoryDrive() {
   console.log("[ytdl:trust-factory-tab] starting");
@@ -19,31 +27,32 @@ export async function runTrustFactoryDrive() {
     return;
   }
 
-  // First try: synthesize the SABR template from MAIN-world player state
-  // immediately. This works without playback and side-steps the case where the
-  // hidden iframe player can't autoplay (so the network interceptor never sees
-  // a real SABR call). We still publish via the same SabrTemplateCaptured
-  // message the network interceptor uses, so the BG forwarding path is
-  // unchanged.
-  const synthetic = buildSyntheticTemplateFromPlayer();
-  if (synthetic) {
-    console.log("[ytdl:trust-factory-tab] synthesized template", {
-      url: synthetic.url,
-      bodyLen: synthetic.body.byteLength
+  const immediate = buildSyntheticTemplateFromPlayer();
+  if (immediate) {
+    console.log("[ytdl:trust-factory-tab] synthesized template immediately", {
+      url: immediate.url,
+      bodyLen: immediate.body.byteLength
     });
-    window.__ytdlSabrTemplate = synthetic;
-    void crossWorldMessenger.sendMessage(CrossWorldMessage.SabrTemplateCaptured, {
-      url: synthetic.url,
-      bodyBase64: uint8ToBase64(synthetic.body),
-      capturedAt: synthetic.capturedAt
-    });
+    emitTemplate(immediate);
     return;
   }
 
-  // Fallback: kick playback (muted) and idle while the network interceptor
-  // captures whichever SABR call fires first.
-  console.log("[ytdl:trust-factory-tab] synthesis failed, falling back to interceptor capture");
+  console.log("[ytdl:trust-factory-tab] synthesis failed, forcing playback");
   void forcePlayback(player);
-  await wait(FACTORY_FIRST_CALL_WAIT_MS);
-  console.log("[ytdl:trust-factory-tab] idle window elapsed");
+
+  const deadline = Date.now() + FACTORY_FIRST_CALL_WAIT_MS;
+  while (Date.now() < deadline) {
+    await wait(POLL_INTERVAL_MS);
+    const polled = buildSyntheticTemplateFromPlayer();
+    if (polled) {
+      console.log("[ytdl:trust-factory-tab] synthesized template after forcePlayback", {
+        url: polled.url,
+        bodyLen: polled.body.byteLength
+      });
+      emitTemplate(polled);
+      return;
+    }
+  }
+
+  console.warn("[ytdl:trust-factory-tab] template never available after forcePlayback");
 }

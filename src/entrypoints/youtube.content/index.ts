@@ -43,6 +43,11 @@ export default defineContentScript({
       return;
     }
 
+    if (location.search.includes(`${ScrubUrlParam.TrustFactoryMode}=1`)) {
+      registerBackgroundMessageHandlers();
+      return;
+    }
+
     const isDownloadIframe = self !== top && location.search.includes(`${ScrubUrlParam.Ytdl}=1`);
     if (self !== top && !isDownloadIframe) {
       return;
