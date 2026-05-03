@@ -6,11 +6,11 @@ function determineOutputExtension({ videoMimeType, audioMimeType, isExtraTracksP
   isExtraTracksPresent: boolean;
   filenameOutput: string;
 }) {
+  const userExtension = filenameOutput.split(".").pop() ?? "mp4";
   if (isExtraTracksPresent) {
-    return "mkv";
+    return userExtension;
   }
 
-  const userExtension = filenameOutput.split(".").pop() ?? "mp4";
   return getOutputExtension({
     videoMimeType,
     audioMimeType,

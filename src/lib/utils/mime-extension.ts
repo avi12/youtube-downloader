@@ -83,5 +83,5 @@ export function getOutputExtension({ videoMimeType, audioMimeType, userExtension
     return userExtension;
   }
 
-  return "mkv";
+  return userExtension;
 }
