@@ -1,10 +1,11 @@
 import type { DownloadResult } from "./background-downloader";
 import { downloadViaCdn } from "./cdn-downloader";
 import { tryIframeScrubFallback } from "./iframe-scrub-fallback";
+import { primeViaSabrOffscreen } from "./offscreen-sabr-primer";
 import { attemptSabrDownload } from "./sabr-stall-guard";
 import { broadcastDebugLogToTab } from "@/lib/messaging/debug-log";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
-import { getCapturedSabrData } from "@/lib/youtube/sabr/request-capture";
+import { hasCapturedSabrDataForTab } from "@/lib/youtube/sabr/request-capture";
 import { ProgressType } from "@/types";
 import type { DownloadRequest } from "@/types";
 
@@ -60,24 +61,19 @@ export async function resolveDownloadResult({ request, cdnRequest, signal, video
     }
   }
 
+  let primerResult: {
+    url: string;
+    bodyBase64: string;
+  } | null = null;
   if (!result?.audioData) {
-    if (!import.meta.env.FIREFOX) {
-      broadcastDebugLogToTab(`[ytdl:bg] Chrome: using RunProgressiveSabrInTab for ${videoId}`, tabId);
-      const capturedSabrUrl = getCapturedSabrData(tabId)?.url;
-      const progressiveRequest = capturedSabrUrl && request.sabrConfig
-        ? {
-          ...request,
-          sabrConfig: {
-            ...request.sabrConfig,
-            serverAbrStreamingUrl: capturedSabrUrl
-          }
-        }
-        : request;
-      void sendMessage(MessageType.RunProgressiveSabrInTab, progressiveRequest, tabId);
-      return DownloadResolution.ProgressiveSabr;
+    broadcastDebugLogToTab(`[ytdl:bg] attempting direct SABR hasSabrConfig=${Boolean(request.sabrConfig)} hasAudioFmt=${Boolean(request.audioFormat)} configUrl=${request.sabrConfig?.serverAbrStreamingUrl?.slice(0, 80)} sabrUrl=${request.sabrUrl?.slice(0, 80)} configLen=${request.sabrConfig?.videoPlaybackUstreamerConfig?.length}`, tabId);
+
+    if (!import.meta.env.FIREFOX && !hasCapturedSabrDataForTab(tabId)) {
+      broadcastDebugLogToTab(`[ytdl:bg] no tab SABR capture, priming via offscreen iframe for ${videoId}`, tabId);
+      primerResult = await primeViaSabrOffscreen(videoId);
+      broadcastDebugLogToTab(`[ytdl:bg] offscreen SABR primer result: ${Boolean(primerResult)}`, tabId);
     }
 
-    broadcastDebugLogToTab(`[ytdl:bg] attempting direct SABR hasSabrConfig=${Boolean(request.sabrConfig)} hasAudioFmt=${Boolean(request.audioFormat)} configUrl=${request.sabrConfig?.serverAbrStreamingUrl?.slice(0, 80)} sabrUrl=${request.sabrUrl?.slice(0, 80)} configLen=${request.sabrConfig?.videoPlaybackUstreamerConfig?.length}`, tabId);
     result = await attemptSabrDownload({
       request,
       signal,
@@ -96,6 +92,22 @@ export async function resolveDownloadResult({ request, cdnRequest, signal, video
       }, tabId);
       return null;
     });
+  }
+
+  if (!result?.audioData && !import.meta.env.FIREFOX) {
+    broadcastDebugLogToTab(`[ytdl:bg] Chrome: SABR stalled, falling back to RunProgressiveSabrInTab for ${videoId}`, tabId);
+    const progressiveRequest = primerResult?.url && request.sabrConfig
+      ? {
+        ...request,
+        sabrConfig: {
+          ...request.sabrConfig,
+          serverAbrStreamingUrl: primerResult.url
+        },
+        primerBodyBase64: primerResult.bodyBase64
+      }
+      : request;
+    void sendMessage(MessageType.RunProgressiveSabrInTab, progressiveRequest, tabId);
+    return DownloadResolution.ProgressiveSabr;
   }
 
   return result;

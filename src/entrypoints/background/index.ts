@@ -1,3 +1,4 @@
+import { resolvePrimerCapture } from "./download/primer-capture";
 import { registerChunkHandlers, registerStorageHandlers } from "./handlers/chunk-and-storage-handlers";
 import { registerDownloadHandlers } from "./handlers/download-handlers";
 import { registerPipelineHandlers } from "./handlers/pipeline-handlers";
@@ -38,6 +39,12 @@ export default defineBackground(() => {
   void startSabrRequestCapture();
   onSabrBodyCaptured(tabId => {
     void sendMessage(MessageType.SabrBodyReady, {}, tabId);
+  });
+
+  onMessage(MessageType.SabrTemplateReady, ({ data }) => {
+    if (data.factoryId?.startsWith("sabr-primer-")) {
+      resolvePrimerCapture(data.factoryId, data.url, data.bodyBase64);
+    }
   });
 
   void statusProgressItem.setValue({});
