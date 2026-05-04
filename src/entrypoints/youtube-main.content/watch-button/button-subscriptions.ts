@@ -24,6 +24,11 @@ export function wireButtonSubscriptions(
       return;
     }
 
+    if (!state.isDownloading) {
+      state.isDownloading = true;
+      state.isDone = false;
+    }
+
     state.downloadProgress = mapToBarProgress(data.progress, data.progressType);
     state.downloadProgressType = data.progressType;
     refreshButtons(state, videoData, elements, applySegmentedClasses);

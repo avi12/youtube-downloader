@@ -209,6 +209,7 @@ export function createPanelState(getVideoData: () => VideoData) {
   function handleDownloadTypeChange(newType: DownloadType) {
     const options = contentOptions.value;
     isDownloading = false;
+    isDone = false;
     progress = 0;
     downloadType = newType;
     const extPref = newType === DownloadType.Audio ? options.ext.audio : options.ext.video;
@@ -295,12 +296,14 @@ export function createPanelState(getVideoData: () => VideoData) {
     },
     set filename(value: string) {
       filename = value;
+      isDone = false;
     },
     get extension() {
       return extension;
     },
     set extension(value: string) {
       extension = value;
+      isDone = false;
     },
     get actualExtension() {
       return actualExtension;
@@ -325,9 +328,11 @@ export function createPanelState(getVideoData: () => VideoData) {
     },
     set selectedVideoFormat(value: AdaptiveFormatItem | null) {
       selectedVideoFormat = value;
+      isDone = false;
     },
     set selectedAudioFormat(value: AdaptiveFormatItem | null) {
       selectedAudioFormat = value;
+      isDone = false;
     },
     handleDownloadTypeChange,
     startDownload,
