@@ -7,7 +7,7 @@ import {
 } from "../download/stream-transfer";
 import { handlePageChange } from "../ui/page-router";
 import { mountPanelUi } from "../ui/panel-ui";
-import { registerProgressHandler } from "./progress-handler";
+import { clearRemovedVideoId, registerProgressHandler } from "./progress-handler";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
 import { downloadProgressStore } from "@/lib/ui/synced-stores.svelte";
@@ -96,6 +96,7 @@ export function registerCrossWorldHandlers(
 
   crossWorldMessenger.onMessage(CrossWorldMessage.DownloadRequest, ({ data }) => {
     uncancelStreamTransfer(data.videoId);
+    clearRemovedVideoId(data.videoId);
   });
 
   crossWorldMessenger.onMessage(CrossWorldMessage.DownloadProgress, ({ data }) => {

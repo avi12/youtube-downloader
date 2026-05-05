@@ -3,11 +3,21 @@ import { MessageType, onMessage } from "@/lib/messaging/messaging";
 import { downloadProgressStore } from "@/lib/ui/synced-stores.svelte";
 import { ProgressType } from "@/types";
 
+const removedVideoIds = new Set<string>();
+
+export function clearRemovedVideoId(videoId: string) {
+  removedVideoIds.delete(videoId);
+}
+
 export function registerProgressHandler() {
   const lastReportedProgress = new Map<string, number>();
 
   onMessage(MessageType.UpdateDownloadProgress, ({ data }) => {
     if (!data.isRemoved) {
+      if (removedVideoIds.has(data.videoId)) {
+        return;
+      }
+
       const last = lastReportedProgress.get(data.videoId);
       if (last !== undefined && last >= 1 && data.progress >= 1) {
         return;
@@ -16,6 +26,7 @@ export function registerProgressHandler() {
       lastReportedProgress.set(data.videoId, data.progress);
     } else {
       lastReportedProgress.delete(data.videoId);
+      removedVideoIds.add(data.videoId);
     }
 
     if (data.isRemoved) {

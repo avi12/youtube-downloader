@@ -14,6 +14,10 @@ export function handleProgressEvent(
     return;
   }
 
+  if (state.isDone) {
+    return;
+  }
+
   if (!data.isRemoved && data.progress === state.lastProgressReported) {
     return;
   }
@@ -36,6 +40,8 @@ export function handleProgressEvent(
     state.isDownloading = false;
     state.downloadProgress = 0;
     state.downloadProgressType = "";
+  } else {
+    state.isDownloading = true;
   }
 
   refreshButtons(state, videoData, elements, applySegmentedClasses);
