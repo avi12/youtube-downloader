@@ -1,15 +1,12 @@
 import { crossWorldMessenger, CrossWorldMessage } from "@/lib/messaging/cross-world-messenger";
-import type { VideoData, YtdlCaptureState } from "@/types";
-
-const captureState: YtdlCaptureState = window.__ytdlCapture ?? {
-  activeVideoId: "",
-  pendingChunks: [],
-  capturedMedia: new Map(),
-  sourceBufferMimeTypes: new WeakMap(),
-  addChunkToCapture() {}
-};
+import type { VideoData } from "@/types";
 
 export function activateCaptureForVideoId(videoId: string) {
+  const captureState = window.__ytdlCapture;
+  if (!captureState) {
+    return;
+  }
+
   captureState.activeVideoId = videoId;
 
   const { capturedMedia, addChunkToCapture } = captureState;
