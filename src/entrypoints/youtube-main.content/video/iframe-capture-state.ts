@@ -1,6 +1,3 @@
-import { crossWorldMessenger, CrossWorldMessage } from "@/lib/messaging/cross-world-messenger";
-import type { VideoData } from "@/types";
-
 export function activateCaptureForVideoId(videoId: string) {
   const captureState = window.__ytdlCapture;
   if (!captureState) {
@@ -40,12 +37,4 @@ export function activateCaptureForVideoId(videoId: string) {
   }
 
   pendingChunks.length = 0;
-}
-
-export function activateIframeCaptureForVideo(videoData: VideoData) {
-  activateCaptureForVideoId(videoData.videoId);
-
-  const elPlayer = document.querySelector<HTMLElement & { stopVideo?: () => void }>("#movie_player");
-  elPlayer?.stopVideo?.();
-  void crossWorldMessenger.sendMessage(CrossWorldMessage.IframePlayerReady, { videoId: videoData.videoId });
 }

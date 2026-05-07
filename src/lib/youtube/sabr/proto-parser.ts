@@ -11,7 +11,6 @@ const WIRE_64_BIT_BYTE_SIZE = 8;
 const WIRE_32_BIT_BYTE_SIZE = 4;
 const FIELD_STREAMER_CONTEXT = 19;
 const FIELD_PO_TOKEN = 2;
-const FIELD_USTREAMER_CONFIG = 5;
 
 function readVarint(bytes: Uint8Array, offsetIn: number) {
   let value = 0;
@@ -61,46 +60,6 @@ function parseStreamerContext(contextData: Uint8Array) {
     contextOffset += contextLength.value;
   }
 
-  return null;
-}
-
-export function extractUstreamerConfigFromBody(body: number[]): string | null {
-  const bytes = new Uint8Array(body);
-  let offset = 0;
-  while (offset < bytes.byteLength) {
-    const tag = readVarint(bytes, offset);
-    offset = tag.offset;
-    const fieldNumber = tag.value >> PROTO_FIELD_NUMBER_SHIFT;
-    const wireType = tag.value & PROTO_WIRE_TYPE_MASK;
-    if (wireType === WIRE_TYPE_VARINT) {
-      offset = readVarint(bytes, offset).offset;
-      continue;
-    }
-
-    if (wireType === WIRE_TYPE_64_BIT) {
-      offset += WIRE_64_BIT_BYTE_SIZE;
-      continue;
-    }
-
-    if (wireType === WIRE_TYPE_32_BIT) {
-      offset += WIRE_32_BIT_BYTE_SIZE;
-      continue;
-    }
-
-    if (wireType !== WIRE_TYPE_LENGTH_DELIMITED) {
-      break;
-    }
-
-    const length = readVarint(bytes, offset);
-    offset = length.offset;
-
-    if (fieldNumber === FIELD_USTREAMER_CONFIG && length.value > 0) {
-      const configBytes = bytes.subarray(offset, offset + length.value);
-      return btoa(String.fromCharCode(...configBytes));
-    }
-
-    offset += length.value;
-  }
   return null;
 }
 
