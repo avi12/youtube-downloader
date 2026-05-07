@@ -16,8 +16,8 @@ import {
   videoQueueItem
 } from "@/lib/storage/storage";
 import { uint8ToBase64 } from "@/lib/utils/binary";
-import { clearCapturedSabrData, onSabrBodyCaptured, startSabrRequestCapture } from "@/lib/youtube/sabr-request-capture";
-import { extractPoTokenFromBody, getCapturedSabrData } from "@/lib/youtube/sabr-request-capture";
+import { clearCapturedSabrData, onSabrBodyCaptured, startSabrRequestCapture } from "@/lib/youtube/sabr/request-capture";
+import { extractPoTokenFromBody, getCapturedSabrData } from "@/lib/youtube/sabr/request-capture";
 
 const SABR_ORIGIN_RULE_ID = 1;
 
