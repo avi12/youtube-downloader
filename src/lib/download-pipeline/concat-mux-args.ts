@@ -11,7 +11,7 @@ export function buildFinalMuxArgs({
   primaryAudioLabel: string | null | undefined;
   totalDurationSec: number | null | undefined;
   outputFfmpegName: string;
-}): string[] {
+}) {
   const args: string[] = ["-y", "-f", "concat", "-safe", "0", "-i", concatListName];
 
   for (const input of extraAudioInputs) {

@@ -78,3 +78,73 @@ export function parseFmp4VideoStartSec(data: Uint8Array) {
 
   return baseMediaDecodeTime / timescale;
 }
+
+// Returns the start time (seconds) of the first fmp4 fragment whose baseMediaDecodeTime
+// is at or after targetSec. Each fmp4 fragment starts with a keyframe (IDR), so this
+// is the earliest keyframe position that can be reached via a container-level seek
+// without including the video preroll before targetSec.
+// Returns undefined for non-fMP4 containers or if no fragment at/after targetSec exists.
+export function parseFmp4KeyframeAtOrAfterSec(data: Uint8Array, targetSec: number): number | undefined {
+  if (data.byteLength < 8) {
+    return undefined;
+  }
+
+  const view = new DataView(data.buffer, data.byteOffset, data.byteLength);
+  const CONTAINER_BOXES = new Set(["moov", "trak", "mdia", "moof", "traf"]);
+
+  function readBoxName(offset: number) {
+    return String.fromCharCode(data[offset]!, data[offset + 1]!, data[offset + 2]!, data[offset + 3]!);
+  }
+
+  let timescale: number | undefined;
+  const fragmentStartUnits: number[] = [];
+
+  function scanBoxes(start: number, end: number) {
+    let offset = start;
+    while (offset + 8 <= end) {
+      const boxSize = view.getUint32(offset);
+      if (boxSize < 8 || offset + boxSize > end) {
+        break;
+      }
+
+      const boxName = readBoxName(offset + 4);
+      const dataStart = offset + 8;      if (boxName === "mdhd" && timescale === undefined) {
+        const version = data[dataStart];
+        timescale = version === 1
+          ? view.getUint32(dataStart + 20)
+          : view.getUint32(dataStart + 12);
+      } else if (boxName === "tfdt") {
+        const version = data[dataStart];
+        let pts: number;
+        if (version === 1) {
+          const high = view.getUint32(dataStart + 4);
+          const low = view.getUint32(dataStart + 8);
+          pts = high * 0x1_0000_0000 + low;
+        } else {
+          pts = view.getUint32(dataStart + 4);
+        }
+
+        fragmentStartUnits.push(pts);
+      } else if (CONTAINER_BOXES.has(boxName)) {
+        scanBoxes(dataStart, offset + boxSize);
+      }
+
+      offset += boxSize;
+    }
+  }
+
+  scanBoxes(0, data.byteLength);
+
+  if (timescale === undefined || timescale === 0 || fragmentStartUnits.length === 0) {
+    return undefined;
+  }
+
+  const targetUnits = targetSec * timescale;
+  for (const pts of fragmentStartUnits) {
+    if (pts >= targetUnits) {
+      return pts / timescale;
+    }
+  }
+
+  return undefined;
+}

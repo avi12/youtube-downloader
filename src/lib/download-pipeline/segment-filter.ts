@@ -1,4 +1,4 @@
-import { parseFmp4VideoStartSec } from "./fmp4-video-start";
+import { parseFmp4VideoStartSec, parseFmp4KeyframeAtOrAfterSec } from "./fmp4-video-start";
 import { muxSingleSegment } from "./segment-premux";
 import { parseWebmAudioStartSec } from "./webm-audio-start";
 import type { ProcessStreamData } from "@/types";
@@ -63,12 +63,33 @@ export async function muxValidSegments({
   // segment's video starts a few seconds before startSec. -avoid_negative_ts
   // make_zero then shifts timestamps so each segment's video/audio start at t=0.
   //
-  // Trim each segment to end exactly at the NEXT segment's keyframe, not at the
-  // step boundary. This eliminates the "backward jump" artifact at boundaries:
-  // without this trim, the concat would play SABR 31.9-35s content twice at the
-  // 35s mark (once from seg0, once as seg1's preroll), while audio continued
-  // forward. The result appeared as a stuck/repeated frame every 35 seconds.
+  // Trim each segment to end exactly at the NEXT segment's effective content
+  // start, not at the step boundary. This eliminates the "backward jump" artifact
+  // at boundaries: without this trim, the concat would play SABR 31.9-35s content
+  // twice at the 35s mark (once from seg0, once as seg1's preroll), while audio
+  // continued forward. The result appeared as a stuck/repeated frame every 35s.
+  //
+  // When the next segment's audio starts AFTER its video keyframe (SABR always
+  // starts at 10s boundaries), segment-premux applies an input-side -ss seek on
+  // the video to align both streams to aStart. Use aStart as the trim boundary
+  // for the current segment so it covers the gap, avoiding a content hole at the
+  // concat boundary.
   const videoStarts = validSegments.map(seg => parseFmp4VideoStartSec(seg.video) ?? parseWebmAudioStartSec(seg.video));
+  const audioStarts = validSegments.map(seg => parseWebmAudioStartSec(seg.audio) ?? parseFmp4VideoStartSec(seg.audio));
+
+  // For segments where aStart > vStart, the premux seeks the video input to the
+  // first keyframe at or after aStart, then trims audio by (seekKeyframe - aStart)
+  // so both streams start at the same content position. The previous segment must
+  // extend its trim to seekKeyframe (not just vStart) to cover that range.
+  const effectiveSeekKeyframes = validSegments.map((seg, i) => {
+    const vStart = videoStarts[i];
+    const aStart = audioStarts[i];
+    if (vStart === undefined || aStart === undefined || aStart <= vStart) {
+      return undefined;
+    }
+
+    return parseFmp4KeyframeAtOrAfterSec(seg.video, aStart);
+  });
 
   const keyframeTrimSecs = validSegments.map((seg, i) => {
     const thisStart = videoStarts[i];
@@ -77,9 +98,12 @@ export async function muxValidSegments({
     }
 
     const capturedEnd = seg.videoBufferEndSec ?? (seg.startSec + step);
-    const nextStart = videoStarts[i + 1];
-    if (nextStart !== undefined && nextStart > thisStart) {
-      return Math.min(nextStart - thisStart, capturedEnd - thisStart);
+    // Use the next segment's seek keyframe as the trim boundary when it exists.
+    // This ensures the current segment covers the content up to where the next
+    // segment will begin after its input-side seek, leaving no gap.
+    const nextEffectiveStart = effectiveSeekKeyframes[i + 1] ?? videoStarts[i + 1];
+    if (nextEffectiveStart !== undefined && nextEffectiveStart > thisStart) {
+      return Math.min(nextEffectiveStart - thisStart, capturedEnd - thisStart);
     }
 
     return capturedEnd - thisStart;

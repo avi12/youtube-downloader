@@ -11,15 +11,15 @@ type ConcatInput = Pick<
 >;
 
 export async function concatSegments({
-  ffmpeg, muxedSegFiles, targetExt, writtenPaths, logEvent, item
+  muxedSegFiles, targetExt, writtenPaths, logEvent, item
 }: {
-  ffmpeg: ReturnType<typeof getFFmpeg>;
   muxedSegFiles: string[];
   targetExt: string;
   writtenPaths: string[];
   logEvent: (msg: string) => void;
   item: ConcatInput;
 }) {
+  const ffmpeg = getFFmpeg();
   const {
     videoId, filenameOutput, tabId, additionalAudioStreams, subtitleStreams, primaryAudioLabel, totalDurationSec
   } = item;
@@ -28,15 +28,14 @@ export async function concatSegments({
   const outputFfmpegName = `tmp_out.${targetExt}`;
   const concatListName = "tmp_mux_concat.txt";
 
-  ffmpeg.FS.writeFile(
+  await ffmpeg.FS.writeFile(
     concatListName,
     new TextEncoder().encode(muxedSegFiles.map(filename => `file '${filename}'`).join("\n"))
   );
   writtenPaths.push(concatListName);
 
   const extraAudioStreams = additionalAudioStreams.filter(stream => Boolean(stream.data));
-  const { extraAudioInputs, subtitleInputs } = writeExtraInputs({
-    ffmpeg,
+  const { extraAudioInputs, subtitleInputs } = await writeExtraInputs({
     extraAudioStreams,
     subtitleStreams,
     writtenPaths
@@ -53,17 +52,14 @@ export async function concatSegments({
 
   logEvent(`[ytdl:pipeline] final mux: ${muxedSegFiles.length} seg(s) ${1 + extraAudioInputs.length} audio track(s) ${subtitleInputs.length} subtitle(s) duration=${totalDurationSec ?? "unbounded"}s`);
 
-  const muxExit = ffmpeg.exec(...finalMuxArgs);
+  const muxExit = await ffmpeg.exec(...finalMuxArgs);
   if (muxExit !== 0) {
     throw new Error(`FFmpeg final mux failed (exit ${muxExit})`);
   }
 
   writtenPaths.push(outputFfmpegName);
 
-  const outputBytes = ffmpeg.FS.readFile(outputFfmpegName, { encoding: "binary" });
-  if (typeof outputBytes === "string") {
-    throw new Error("FFmpeg readFile returned unexpected string output");
-  }
+  const outputBytes = await ffmpeg.FS.readFile(outputFfmpegName);
 
   const recentContext = {
     videoId,

@@ -1,9 +1,9 @@
+import { FFmpegWorkerClient } from "./ffmpeg-worker-client";
 import { broadcastDebugLogToYouTubeTabs } from "@/lib/messaging/debug-log";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
-import type { FFmpegCoreModule, Progress } from "@ffmpeg/types";
 
-let sharedFFmpeg: FFmpegCoreModule | null = null;
-export const progressHandlers = new Set<(progress: Progress) => void>();
+let workerClient: FFmpegWorkerClient | null = null;
+export const progressHandlers = new Set<(progress: { progress: number }) => void>();
 
 const READY_RETRY_INTERVAL_MS = 3_000;
 const READY_MAX_RETRIES = 30;
@@ -19,14 +19,14 @@ async function signalReadyWithRetry() {
   }
 }
 
-export function initFFmpeg(core: FFmpegCoreModule) {
-  sharedFFmpeg = core;
-  core.setProgress(progress => {
+export function initFFmpeg(client: FFmpegWorkerClient) {
+  workerClient = client;
+  client.onProgress(progress => {
     for (const handler of progressHandlers) {
       handler(progress);
     }
   });
-  core.setLogger(({ type, message }) => {
+  client.onLog(({ type, message }) => {
     if (type !== "stderr") {
       return;
     }
@@ -36,8 +36,7 @@ export function initFFmpeg(core: FFmpegCoreModule) {
       return;
     }
 
-    // These two warnings are emitted thousands of times per mux and flooding
-    // the extension message bus causes the YouTube tab to become unresponsive.
+    // These two warnings flood thousands of times per mux and make the YouTube tab unresponsive.
     if (trimmed.includes("Non-monotonous DTS") || trimmed.includes("backward in time")) {
       return;
     }
@@ -48,22 +47,15 @@ export function initFFmpeg(core: FFmpegCoreModule) {
 }
 
 export function getFFmpeg() {
-  if (!sharedFFmpeg) {
-    throw new Error("initFFmpeg() must be called before processing video+audio downloads");
+  if (!workerClient) {
+    throw new Error("initFFmpeg() must be called before processing downloads");
   }
 
-  return sharedFFmpeg;
+  return workerClient;
 }
 
-export function tryUnlink({ ffmpeg, filename }: {
-  ffmpeg: FFmpegCoreModule;
-  filename: string;
-}) {
-  try {
-    ffmpeg.FS.unlink(filename);
-  } catch {
-    // file was never written
-  }
+export function tryUnlink(filename: string) {
+  getFFmpeg().FS.unlink(filename);
 }
 
 const muxQueue: (() => Promise<void>)[] = [];

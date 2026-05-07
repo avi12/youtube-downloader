@@ -1,5 +1,5 @@
 import { reportProgress } from ".";
-import { getFFmpeg, progressHandlers, tryUnlink } from "./ffmpeg-instance";
+import { progressHandlers, tryUnlink } from "./ffmpeg-instance";
 import { concatSegments } from "./segment-concat";
 import { buildValidSegments, muxValidSegments } from "./segment-filter";
 import { broadcastDebugLogToYouTubeTabs } from "@/lib/messaging/debug-log";
@@ -14,7 +14,6 @@ const DEFAULT_MULTIPART_EXT = "mkv";
 
 export async function processMultipartSegments(item: ProcessStreamData & { segments: NonNullable<ProcessStreamData["segments"]> }) {
   const { videoId, videoMimeType, audioMimeType, tabId, segments, segmentDurationSec } = item;
-  const ffmpeg = getFFmpeg();
 
   const videoExt = videoMimeType.includes("av01") || !videoMimeType.includes("webm") ? "mp4" : "webm";
   const targetExt = videoExt === "mp4" ? "mp4" : DEFAULT_MULTIPART_EXT;
@@ -43,8 +42,7 @@ export async function processMultipartSegments(item: ProcessStreamData & { segme
       throw new Error("All segments empty; nothing to concat");
     }
 
-    const muxedSegFiles = muxValidSegments({
-      ffmpeg,
+    const muxedSegFiles = await muxValidSegments({
       validSegments,
       step,
       videoExt,
@@ -59,7 +57,6 @@ export async function processMultipartSegments(item: ProcessStreamData & { segme
     }
 
     await concatSegments({
-      ffmpeg,
       muxedSegFiles,
       targetExt,
       writtenPaths,
@@ -69,10 +66,7 @@ export async function processMultipartSegments(item: ProcessStreamData & { segme
   } finally {
     progressHandlers.delete(handleFFmpegProgress);
     for (const path of writtenPaths) {
-      tryUnlink({
-        ffmpeg,
-        filename: path
-      });
+      tryUnlink(path);
     }
   }
 }

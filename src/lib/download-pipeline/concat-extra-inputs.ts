@@ -16,14 +16,14 @@ export type SubtitleInput = {
   label: string;
 };
 
-export function writeExtraInputs({
-  ffmpeg, extraAudioStreams, subtitleStreams, writtenPaths
+export async function writeExtraInputs({
+  extraAudioStreams, subtitleStreams, writtenPaths
 }: {
-  ffmpeg: ReturnType<typeof getFFmpeg>;
   extraAudioStreams: ExtraAudioStream[];
   subtitleStreams: SubtitleStream[];
   writtenPaths: string[];
 }) {
+  const ffmpeg = getFFmpeg();
   const extraAudioInputs: ExtraAudioInput[] = [];
   const subtitleInputs: SubtitleInput[] = [];
 
@@ -35,7 +35,7 @@ export function writeExtraInputs({
 
     const ext = stream.mimeType.includes("webm") ? "webm" : "m4a";
     const extraName = `tmp_extra_${iAudio}.${ext}`;
-    ffmpeg.FS.writeFile(extraName, data);
+    await ffmpeg.FS.writeFile(extraName, data);
     writtenPaths.push(extraName);
     extraAudioInputs.push({
       filename: extraName,
@@ -46,7 +46,7 @@ export function writeExtraInputs({
 
   for (const [iSubtitle, sub] of subtitleStreams.entries()) {
     const subName = `tmp_sub_${iSubtitle}.srt`;
-    ffmpeg.FS.writeFile(subName, new TextEncoder().encode(sub.srtContent));
+    await ffmpeg.FS.writeFile(subName, new TextEncoder().encode(sub.srtContent));
     writtenPaths.push(subName);
     subtitleInputs.push({
       filename: subName,

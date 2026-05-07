@@ -1,5 +1,5 @@
 import { reportProgress } from ".";
-import { enqueueMuxJob, getFFmpeg, progressHandlers } from "./ffmpeg-instance";
+import { enqueueMuxJob, progressHandlers } from "./ffmpeg-instance";
 import { embedMusicMetadata } from "./music-metadata";
 import { transcodeAudio } from "./transcode-audio";
 import { ProgressType } from "@/types";
@@ -37,13 +37,11 @@ export async function processAudioWithFfmpeg({
     progressHandlers.add(handleProgress);
     try {
       await enqueueMuxJob(async () => {
-        const ffmpeg = getFFmpeg();
         data = await embedMusicMetadata({
           audioData: data,
           filenameOutput,
           sourceExtension,
-          metadata,
-          ffmpeg
+          metadata
         });
       });
     } finally {
@@ -57,12 +55,10 @@ export async function processAudioWithFfmpeg({
     progressHandlers.add(handleProgress);
     try {
       await enqueueMuxJob(async () => {
-        const ffmpeg = getFFmpeg();
         data = await transcodeAudio({
           audioData: data,
           sourceExtension,
-          filenameOutput,
-          ffmpeg
+          filenameOutput
         });
       });
     } finally {

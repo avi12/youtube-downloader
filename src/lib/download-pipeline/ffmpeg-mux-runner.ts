@@ -50,7 +50,7 @@ export async function saveOutput({ item, ffmpegOutput, downloadFilename, filenam
   });
 }
 
-export function runFfmpegMux({
+export async function runFfmpegMux({
   videoFilename, primaryAudioFilename, extraAudioTracks, subtitleFiles,
   outputFilename, outputExtension, audioMimeType, item
 }: {
@@ -76,15 +76,10 @@ export function runFfmpegMux({
     additionalAudioLabels: extraAudioTracks.map(track => track.label)
   });
 
-  const exitCode = ffmpeg.exec(...ffmpegArgs);
+  const exitCode = await ffmpeg.exec(...ffmpegArgs);
   if (exitCode !== 0) {
     throw new Error(`FFmpeg exited with code ${exitCode}`);
   }
 
-  const output = ffmpeg.FS.readFile(outputFilename, { encoding: "binary" });
-  if (typeof output === "string") {
-    throw new Error("FFmpeg readFile returned unexpected string output");
-  }
-
-  return output;
+  return ffmpeg.FS.readFile(outputFilename);
 }

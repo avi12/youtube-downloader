@@ -27,7 +27,21 @@ interface BlockRecord {
 // SABR encoder injects at audio-fragment boundaries (~every 7s within a captured
 // segment). With -c:a copy these become exact digital-zero gaps in the output;
 // removing them and compressing the surrounding timestamps closes the gap.
-export function stripWebmDtxClusters(data: Uint8Array): Uint8Array {
+//
+// skipBeforeAbsMs: absolute WebM cluster timestamp (ms) before which DTX blocks
+// are NOT stripped. Pass videoStartSec * 1000 so that preroll clusters (those
+// before the -ss audioSkipSec seek target) keep their original timestamps. If
+// preroll DTX were stripped, the resulting timestamp shift would cause -ss to land
+// too far ahead in source content, making segment audio lead the video by the
+// total DTX duration removed from the preroll.
+export function stripWebmDtxClusters(
+  data: Uint8Array,
+  skipBeforeAbsMs?: number,
+  trimAbsMs?: number
+): {
+  data: Uint8Array;
+  strippedBeforeTrimMs: number;
+} {
   const buf = new Uint8Array(data);
 
   function readVint(offset: number, keepLeadingBit: boolean) {
@@ -223,23 +237,40 @@ export function stripWebmDtxClusters(data: Uint8Array): Uint8Array {
   }
 
   let accumulatedMs = 0;
+  let strippedBeforeTrimMs = 0;
   const deletedRanges: Array<[number, number]> = [];
+  // Becomes true once we've seen the first timestamped cluster at/past skipBeforeAbsMs.
+  // Timestamp-less clusters before that point cannot be located relative to the seek
+  // target, so we leave them intact. Once past the preroll we can safely strip them.
+  let isPastPreroll = skipBeforeAbsMs === undefined;
 
   for (let clusterIdx = 0; clusterIdx < clusters.length; clusterIdx++) {
     const cluster = clusters[clusterIdx]!;
     const clusterBlocks = blocksByCluster[clusterIdx] ?? [];
-    // Clusters whose Timestamp element was not found cannot have their
-    // timestamps adjusted — but DTX blocks inside them must still be stripped
-    // to prevent lone DTX frames surviving at the tail of the audio stream.
+    // Clusters whose Timestamp element was not found cannot have their timestamps
+    // adjusted. If still in preroll, skip entirely. If past preroll, strip DTX normally.
     if (cluster.timestampLength === 0) {
+      if (!isPastPreroll) {
+        continue;
+      }
+
       for (const block of clusterBlocks) {
         if (block.payloadSize <= OPUS_DTX_MAX_PAYLOAD_BYTES) {
           deletedRanges.push([block.elementStart, block.elementEnd]);
           accumulatedMs += OPUS_FRAME_DURATION_MS;
+          strippedBeforeTrimMs += OPUS_FRAME_DURATION_MS;
         }
       }
       continue;
     }
+
+    // Leave preroll clusters intact: stripping DTX before the seek target would
+    // shift timestamps and cause -ss audioSkipSec to land past the intended position.
+    if (skipBeforeAbsMs !== undefined && cluster.timestampMs < skipBeforeAbsMs) {
+      continue;
+    }
+
+    isPastPreroll = true;
 
     const clusterStartMs = accumulatedMs;
     let dtxBytesInCluster = 0;
@@ -251,6 +282,10 @@ export function stripWebmDtxClusters(data: Uint8Array): Uint8Array {
         dtxBytesInCluster += block.elementEnd - block.elementStart;
         accumulatedMs += OPUS_FRAME_DURATION_MS;
         intraClusterMs += OPUS_FRAME_DURATION_MS;
+
+        if (trimAbsMs === undefined || cluster.timestampMs < trimAbsMs) {
+          strippedBeforeTrimMs += OPUS_FRAME_DURATION_MS;
+        }
       } else if (intraClusterMs > 0) {
         const off = block.relTimecodeOffset;
         const raw = ((buf[off]! << 8) | buf[off + 1]!) & 0xFFFF;
@@ -271,7 +306,10 @@ export function stripWebmDtxClusters(data: Uint8Array): Uint8Array {
   }
 
   if (accumulatedMs === 0) {
-    return data;
+    return {
+      data,
+      strippedBeforeTrimMs: 0
+    };
   }
 
   const totalDeleted = deletedRanges.reduce((sum, [start, end]) => sum + end - start, 0);
@@ -293,5 +331,8 @@ export function stripWebmDtxClusters(data: Uint8Array): Uint8Array {
     output.set(buf.subarray(inPos), outPos);
   }
 
-  return output;
+  return {
+    data: output,
+    strippedBeforeTrimMs
+  };
 }
