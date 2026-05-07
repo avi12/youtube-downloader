@@ -20,12 +20,13 @@ export const CrossWorldMessage = {
   DownloadViaIframe: "downloadViaIframe",
   StartBackgroundDownload: "startBackgroundDownload",
   OptionsUpdate: "optionsUpdate",
-  IframeScrubSegment: "iframeScrubSegment",
-  IframeScrubDebug: "iframeScrubDebug",
-  StartIframeScrub: "startIframeScrub",
   SabrTemplateCaptured: "sabrTemplateCaptured",
   PullSabrTemplate: "pullSabrTemplate",
   RunProgressiveSabr: "runProgressiveSabr",
-  RunScrubSabr: "runScrubSabr",
-  SynthesizeSabrTemplate: "synthesizeSabrTemplate"
+  SynthesizeSabrTemplate: "synthesizeSabrTemplate",
+  FetchAndDownloadCdn: "fetchAndDownloadCdn",
+  IframeScrubDebug: "iframeScrubDebug",
+  IframeScrubSegment: "iframeScrubSegment",
+  RequestFreshSabrPrimer: "requestFreshSabrPrimer",
+  FreshSabrPrimerReady: "freshSabrPrimerReady"
 } as const;

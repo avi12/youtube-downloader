@@ -25,19 +25,20 @@ export const MessageType = {
   PipelineQueueRemove: "pipelineQueueRemove",
   PipelineFFmpegReady: "pipelineFFmpegReady",
   PipelineStart: "pipelineStart",
-  PipelineDownload: "pipelineDownload",
   RecentDownloadsChanged: "recentDownloadsChanged",
   TranscodeRecentDownload: "transcodeRecentDownload",
   PipelineZipProgress: "pipelineZipProgress",
-  StartIframeScrub: "startIframeScrub",
-  IframeScrubSegmentReady: "iframeScrubSegmentReady",
-  MountScrubIframeInTab: "mountScrubIframeInTab",
-  UnmountScrubIframeInTab: "unmountScrubIframeInTab",
   BgDebugLog: "bgDebugLog",
   GetSabrTemplateFromTab: "getSabrTemplateFromTab",
   SabrTemplateReady: "sabrTemplateReady",
   SynthesizeSabrTemplateFromTab: "synthesizeSabrTemplateFromTab",
-  RunProgressiveSabrInTab: "runProgressiveSabrInTab"
+  RunProgressiveSabrInTab: "runProgressiveSabrInTab",
+  RunCdnFetchInTab: "runCdnFetchInTab",
+  PipelineTriggerDownload: "pipelineTriggerDownload",
+  RequestFreshSabrPrimer: "requestFreshSabrPrimer",
+  IframeScrubSegmentReady: "iframeScrubSegmentReady",
+  SpawnScrubIframe: "spawnScrubIframe",
+  RemoveScrubIframe: "removeScrubIframe"
 } as const;
 
 interface ProtocolMap {
@@ -75,8 +76,6 @@ interface ProtocolMap {
     playlistTitle?: string;
     playlistTotalCount?: number;
     metadata?: VideoMetadata | null;
-    // Iframe-scrub marker - N chunks came in on video-seg-0..N-1 / audio-seg-0..N-1.
-    segmentCount?: number;
   }): void;
 
   processStreamError(data: {
@@ -164,17 +163,6 @@ interface ProtocolMap {
     filenameOutput: string;
     tabId: number;
   }): void;
-  pipelineDownload(data: {
-    blobUrl: string;
-    mimeType: string;
-    filename: string;
-    recentContext?: {
-      videoId: string;
-      title: string;
-      channel: string;
-      thumbnailUrl?: string;
-    };
-  }): void;
   recentDownloadsChanged(data: Record<string, never>): void;
   transcodeRecentDownload(data: {
     entryId: string;
@@ -184,50 +172,6 @@ interface ProtocolMap {
     playlistId: string;
     isDone: boolean;
     tabId: number;
-  }): void;
-
-  // Orchestrates iframe-scrub from the background script using a hidden
-  // off-screen popup window. The page hands off everything the offscreen
-  // pipeline needs once segments are gathered; background fans out N tabs
-  // (one per ytdlScrubIndex), each tab self-drives its capture and sends
-  // an IframeScrubSegmentReady back, then background relays chunks to
-  // offscreen as video-seg-N / audio-seg-N and fires StreamEnd when done.
-  startIframeScrub(data: {
-    videoId: string;
-    durationSec: number;
-    stepSec: number;
-    type: DownloadType;
-    filenameOutput: string;
-    videoMimeType: string;
-    audioMimeType: string;
-    audioLabel: string;
-    metadata?: VideoMetadata | null;
-    playlistId?: string;
-    playlistTitle?: string;
-    playlistTotalCount?: number;
-  }): void;
-
-  iframeScrubSegmentReady(data: {
-    videoId: string;
-    iScrub: number;
-    videoBytes: Uint8Array;
-    audioBytes: Uint8Array;
-    videoMimeType: string;
-    audioMimeType: string;
-    videoBufferStartSec?: number;
-    videoBufferEndSec?: number;
-  }): void;
-
-  // BG asks a dedicated hidden scrub host tab to inject a scrub iframe into its DOM.
-  // The iframe at ytdlScrubMode=1 self-drives and reports segments via the
-  // scrub-iframe port. Used only in Firefox (Chrome uses the offscreen document).
-  mountScrubIframeInTab(data: {
-    id: string;
-    url: string;
-  }): void;
-
-  unmountScrubIframeInTab(data: {
-    id: string;
   }): void;
 
   // Forwards offscreen / background diagnostic messages to a content script
@@ -273,6 +217,62 @@ interface ProtocolMap {
   // CrossWorldMessage.StreamData → handleStreamData → MessageType.StreamChunk
   // pipeline.
   runProgressiveSabrInTab(data: DownloadRequest): void;
+
+  // Firefox: BG asks the tab's MAIN world to call the player API with page
+  // session cookies and fetch the resulting CDN URLs - avoids the 403 that
+  // the background SW gets due to Firefox network-context isolation.
+  runCdnFetchInTab(data: DownloadRequest): void;
+
+  pipelineTriggerDownload(data: {
+    pendingBlobKey: string;
+    blobUrl: string;
+    filename: string;
+    mimeType: string;
+    recentContext?: {
+      videoId: string;
+      title: string;
+      channel: string;
+      thumbnailUrl?: string;
+    };
+  }): boolean;
+
+  // MAIN world requests a fresh offscreen SABR primer from BG after sps=3
+  // blocks the current expire= token, so the next session gets a new quota.
+  requestFreshSabrPrimer(data: {
+    videoId: string;
+  }): {
+    url: string;
+    bodyBase64: string;
+  } | null;
+
+  // Firefox: BG asks the YouTube tab's isolated content script to inject a
+  // scrub iframe into the page DOM. Real tab context means DNR strips XFO.
+  spawnScrubIframe(data: {
+    id: string;
+    url: string;
+  }): void;
+
+  // Firefox: BG asks the YouTube tab's isolated content script to remove a
+  // previously-injected scrub iframe.
+  removeScrubIframe(data: {
+    id: string;
+  }): void;
+
+  // Offscreen page relays a scrub segment captured by a hosted iframe's MAIN
+  // world script. Firefox doesn't inject isolated content scripts into
+  // moz-extension:// hosted iframes, so the port relay is unavailable; the
+  // offscreen page catches the parent.postMessage and forwards it here.
+  iframeScrubSegmentReady(data: {
+    videoId: string;
+    iScrub: number;
+    videoBytes: Uint8Array;
+    audioBytes: Uint8Array;
+    videoMimeType: string;
+    audioMimeType: string;
+    videoBufferStartSec?: number;
+    videoBufferEndSec?: number;
+  }): void;
+
 }
 
 export const { sendMessage, onMessage } =

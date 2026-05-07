@@ -1,5 +1,6 @@
 import { setPlaylistContext, uncancelStreamTransfer } from "../download/stream-transfer";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
+import { IframeHostMessageType } from "@/lib/messaging/iframe-host-postmessage";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
 import { ScrubUrlParam, YouTubePath } from "@/lib/youtube/youtube-url";
 
@@ -74,6 +75,19 @@ export function registerBackgroundMessageHandlers() {
     void crossWorldMessenger.sendMessage(CrossWorldMessage.RunProgressiveSabr, data);
   });
 
+  onMessage(MessageType.RunCdnFetchInTab, ({ data }) => {
+    const hasCdnUrls = Boolean(data.resolvedVideoUrl || data.resolvedAudioUrl);
+    if (hasCdnUrls) {
+      void crossWorldMessenger.sendMessage(CrossWorldMessage.FetchAndDownloadCdn, data);
+      return;
+    }
+
+    // No CDN URLs: on Chrome, progressive SABR from the MAIN world is CORS-blocked
+    // so route through the isolated sabr-fetch-interceptor CS (host_permissions bypass).
+    // On Firefox, RunProgressiveSabr dispatches to the MAIN world handler which has CORS support.
+    void crossWorldMessenger.sendMessage(CrossWorldMessage.RunProgressiveSabr, data);
+  });
+
   onMessage(MessageType.ExecuteDownloadItem, ({ data }) => {
     if (location.pathname !== YouTubePath.Watch) {
       return;
@@ -92,5 +106,61 @@ export function registerBackgroundMessageHandlers() {
 
     uncancelStreamTransfer(data.videoId);
     void crossWorldMessenger.sendMessage(CrossWorldMessage.DownloadRequest, data);
+  });
+
+  if (!import.meta.env.FIREFOX || self !== top) {
+    return;
+  }
+
+  const SCRUB_IFRAME_STYLE = "position:fixed;left:-99999px;top:-99999px;width:480px;height:270px;border:0";
+  const scrubIframesById = new Map<string, HTMLIFrameElement>();
+
+  onMessage(MessageType.SpawnScrubIframe, ({ data }) => {
+    if (scrubIframesById.has(data.id)) {
+      return;
+    }
+
+    const elFrame = document.createElement("iframe");
+    elFrame.dataset.ytdlScrubHost = data.id;
+    elFrame.src = data.url;
+    elFrame.setAttribute("allow", "autoplay; encrypted-media; clipboard-read");
+    elFrame.setAttribute("style", SCRUB_IFRAME_STYLE);
+    document.body.append(elFrame);
+    scrubIframesById.set(data.id, elFrame);
+  });
+
+  onMessage(MessageType.RemoveScrubIframe, ({ data }) => {
+    scrubIframesById.get(data.id)?.remove();
+    scrubIframesById.delete(data.id);
+  });
+
+  window.addEventListener("message", e => {
+    if (e.origin !== "https://www.youtube.com" || typeof e.data !== "object" || !e.data) {
+      return;
+    }
+
+    if (e.data.type === IframeHostMessageType.ScrubDebug) {
+      void sendMessage(MessageType.BgDebugLog, { msg: String(e.data.msg) });
+      return;
+    }
+
+    if (e.data.type !== IframeHostMessageType.ScrubSegment) {
+      return;
+    }
+
+    const {
+      videoId, iScrub, videoBuffer, audioBuffer,
+      videoMimeType, audioMimeType, videoBufferStartSec, videoBufferEndSec
+    } = e.data;
+    void sendMessage(MessageType.IframeScrubSegmentReady, {
+      videoId,
+      iScrub,
+      videoBytes: new Uint8Array(videoBuffer),
+      audioBytes: new Uint8Array(audioBuffer),
+      videoMimeType,
+      audioMimeType,
+      videoBufferStartSec,
+      videoBufferEndSec
+    });
   });
 }

@@ -55,7 +55,6 @@ export async function handleStreamData(payload: StreamDataPayload) {
     videoMimeType,
     audioMimeType,
     audioTrackLabels,
-    segmentCount: segments?.length,
     metadata: payload.metadata,
     ...playlistContext
   });

@@ -3,7 +3,6 @@ import { listenForKeepalive } from "./download/keepalive";
 import { uncancelStreamTransfer } from "./download/stream-transfer";
 import { registerBackgroundMessageHandlers } from "./handlers/background-message-handlers";
 import { registerCrossWorldHandlers } from "./handlers/cross-world-handlers";
-import { registerScrubResultForwarder } from "./handlers/scrub-result-forwarder";
 import "./style.css";
 import { handlePageChange, setNativeDownloadVisibility } from "./ui/page-router";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
@@ -32,15 +31,10 @@ export default defineContentScript({
   matches: ["https://www.youtube.com/*"],
   allFrames: true,
   async main(context) {
-    if (location.search.includes(`${ScrubUrlParam.ScrubMode}=1`) || location.search.includes(`${ScrubUrlParam.TrustFactoryMode}=1`)) {
+    if (location.search.includes(`${ScrubUrlParam.TrustFactoryMode}=1`)) {
       void sendMessage(MessageType.BgDebugLog, {
         msg: `[ytdl:content-isolated] booted self===top=${self === top} url=${location.search.slice(0, 120)}`
       }).catch(error => console.warn("[ytdl:content-isolated] sendMessage failed:", error));
-    }
-
-    if (location.search.includes(`${ScrubUrlParam.ScrubMode}=1`)) {
-      registerScrubResultForwarder();
-      return;
     }
 
     if (location.search.includes(`${ScrubUrlParam.TrustFactoryMode}=1`)) {

@@ -79,31 +79,6 @@ export interface PageMessengerSchema {
   [CrossWorldMessage.DownloadViaIframe](data: DownloadRequest): void;
   [CrossWorldMessage.StartBackgroundDownload](data: DownloadRequest): void;
   [CrossWorldMessage.OptionsUpdate](data: { isShowNativeDownload: boolean }): void;
-  [CrossWorldMessage.IframeScrubSegment](data: {
-    videoId: string;
-    iScrub: number;
-    videoBytes: Uint8Array;
-    audioBytes: Uint8Array;
-    videoMimeType: string;
-    audioMimeType: string;
-    videoBufferStartSec?: number;
-    videoBufferEndSec?: number;
-  }): void;
-  [CrossWorldMessage.IframeScrubDebug](data: { msg: string }): void;
-  [CrossWorldMessage.StartIframeScrub](data: {
-    videoId: string;
-    durationSec: number;
-    stepSec: number;
-    type: DownloadType;
-    filenameOutput: string;
-    videoMimeType: string;
-    audioMimeType: string;
-    audioLabel: string;
-    metadata?: VideoMetadata | null;
-    playlistId?: string;
-    playlistTitle?: string;
-    playlistTotalCount?: number;
-  }): void;
   [CrossWorldMessage.SabrTemplateCaptured](data: {
     url: string;
     bodyBase64: string;
@@ -115,15 +90,30 @@ export interface PageMessengerSchema {
     capturedAt: number;
   } | null;
   [CrossWorldMessage.RunProgressiveSabr](data: DownloadRequest): void;
-  [CrossWorldMessage.RunScrubSabr](data: {
-    videoId: string;
-    iScrub: number;
-    startSec: number;
-    windowSec: number;
-  }): void;
   [CrossWorldMessage.SynthesizeSabrTemplate](data: { playerTimeMs: number }): {
     url: string;
     bodyBase64: string;
     capturedAt: number;
   } | null;
+  [CrossWorldMessage.FetchAndDownloadCdn](data: DownloadRequest): void;
+  [CrossWorldMessage.IframeScrubDebug](data: { msg: string }): void;
+  [CrossWorldMessage.IframeScrubSegment](data: {
+    videoId: string;
+    iScrub: number;
+    videoBytes: Uint8Array;
+    audioBytes: Uint8Array;
+    videoMimeType: string;
+    audioMimeType: string;
+    videoBufferStartSec?: number;
+    videoBufferEndSec?: number;
+  }): void;
+  [CrossWorldMessage.RequestFreshSabrPrimer](data: {
+    videoId: string;
+  }): void;
+  [CrossWorldMessage.FreshSabrPrimerReady](data: {
+    result: {
+      url: string;
+      bodyBase64: string;
+    } | null;
+  }): void;
 }
