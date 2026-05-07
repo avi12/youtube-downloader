@@ -92,10 +92,7 @@
       <div class="ytdl-toast-body">
         {#if isDone}
           <yt-button-view-model class={scopingClass} {@attach attachDoneIcon}></yt-button-view-model>
-          <div class="ytdl-toast-text">
-            <span class="ytdl-toast-title">Download complete</span>
-            <span class="ytdl-toast-filename">{interruptedState?.filenameOutput ?? progressState?.progressType ?? ""}</span>
-          </div>
+          <span class="ytdl-toast-title">Download complete</span>
         {:else if isFailed}
           <yt-button-view-model
             class={scopingClass}
@@ -166,24 +163,9 @@
     align-items: center;
   }
 
-  .ytdl-toast-text {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-
   .ytdl-toast-title {
     font-weight: 500;
     font-size: 1.4rem;
-  }
-
-  .ytdl-toast-filename {
-    overflow: hidden;
-    max-width: 200px;
-    font-size: 1.2rem;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    opacity: 70%;
   }
 
   .ytdl-toast-actions {

@@ -10,16 +10,6 @@ import {
   type ButtonViewModelData
 } from "@/types";
 
-function dispatchButtonData({ elButton, data }: {
-  elButton: Element;
-  data: ButtonViewModelData;
-}) {
-  sendButtonData({
-    elButton,
-    data
-  });
-}
-
 export function attachCloseButton(elTarget: Element) {
   const closeData: ButtonViewModelData = {
     iconName: IconName.Close,
@@ -34,7 +24,7 @@ export function attachCloseButton(elTarget: Element) {
     tooltip: ""
   };
 
-  dispatchButtonData({
+  sendButtonData({
     elButton: elTarget,
     data: closeData
   });
@@ -47,7 +37,7 @@ export function attachCloseButton(elTarget: Element) {
         return;
       }
 
-      dispatchButtonData({
+      sendButtonData({
         elButton: elTarget,
         data: {
           ...closeData,
@@ -57,7 +47,7 @@ export function attachCloseButton(elTarget: Element) {
     });
 
     elButton.addEventListener("blur", () => {
-      dispatchButtonData({
+      sendButtonData({
         elButton: elTarget,
         data: closeData
       });
@@ -84,7 +74,7 @@ export function attachCloseButton(elTarget: Element) {
 }
 
 export function attachDoneIcon(elButton: Element) {
-  dispatchButtonData({
+  sendButtonData({
     elButton,
     data: {
       iconName: IconName.CheckCircleThick,
@@ -102,7 +92,7 @@ export function attachDoneIcon(elButton: Element) {
 }
 
 export function attachCancelButton(elButton: Element) {
-  dispatchButtonData({
+  sendButtonData({
     elButton,
     data: {
       iconName: "",
@@ -129,7 +119,7 @@ export function attachDownloadButton({ elButton, getIsDownloadable, getIsFilenam
     const isActive = getIsDownloadable() && getIsFilenameValid();
     const isDone = getIsDone();
     const title = isDone ? "Download again" : "Download";
-    dispatchButtonData({
+    sendButtonData({
       elButton,
       data: {
         iconName: IconName.Download,
@@ -160,7 +150,7 @@ export function attachPanelProgress(elProgress: Element) {
 
 export function attachGhostButton(title: string) {
   return (elButton: Element) => {
-    dispatchButtonData({
+    sendButtonData({
       elButton,
       data: {
         iconName: "",
@@ -179,7 +169,7 @@ export function attachGhostButton(title: string) {
 }
 
 export function attachResumeButton(elButton: Element) {
-  dispatchButtonData({
+  sendButtonData({
     elButton,
     data: {
       iconName: IconName.Download,
