@@ -27,7 +27,10 @@ export function pickHighestQualityFormats(adaptiveFormats: AdaptiveFormatItem[])
       .filter(format => format.audioTrack?.id === primaryAudio.audioTrack?.id || !format.audioTrack)
       .sort((left, right) => (right.bitrate ?? 0) - (left.bitrate ?? 0))[0]
     : null;
-  const sortedVideo = videoFormats
+  // WASM FFmpeg lacks AV1 support; prefer VP9 or h264 over AV1.
+  const nonAv1VideoFormats = videoFormats.filter(format => !format.mimeType?.includes("av01"));
+  const preferredVideoFormats = nonAv1VideoFormats.length > 0 ? nonAv1VideoFormats : videoFormats;
+  const sortedVideo = preferredVideoFormats
     .sort((left, right) => {
       const heightDelta = (right.height ?? 0) - (left.height ?? 0);
       return heightDelta !== 0 ? heightDelta : (right.bitrate ?? 0) - (left.bitrate ?? 0);

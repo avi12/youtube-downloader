@@ -1,6 +1,12 @@
 import { buildFormatId, getMoviePlayer } from "./player-helpers";
-import { buildSyntheticTemplateFromPlayer, waitForTemplate } from "./template-builder";
-import type { FormatProgress, ProgressiveCarryState, ProgressiveFetchResult, ProgressiveState } from "./types";
+import { waitForTemplate } from "./template-builder";
+import type {
+  FormatProgress,
+  ProgressiveCarryState,
+  ProgressiveFetchResult,
+  ProgressiveState,
+  SabrContextEntry
+} from "./types";
 import type { AdaptiveFormatItem } from "@/types";
 import {
   ClientAbrState,
@@ -8,17 +14,23 @@ import {
   MediaHeader,
   NextRequestPolicy,
   PlaybackCookie,
+  SabrContextUpdate,
+  SabrContextWritePolicy,
+  SabrError,
+  SabrRedirect,
   StreamerContext,
+  StreamProtectionStatus,
   UMPPartId,
   VideoPlaybackAbrRequest
 } from "googlevideo/protos";
 import { CompositeBuffer, UmpReader } from "googlevideo/ump";
 
-const STALL_LIMIT = 3;
-const STALL_REWIND_MS = 5_000;
+const STALL_LIMIT = 50;
+const SPS3_REFRESH_AFTER = 2;
 
 function buildRequestBody({
-  templateBody, playerTimeMs, audio, video, playbackCookieBytes, audioFormatId, videoFormatId
+  templateBody, playerTimeMs, audio, video, playbackCookieBytes,
+  audioFormatId, videoFormatId, sabrContexts, activeSabrContextTypes
 }: {
   templateBody: Uint8Array;
   playerTimeMs: number;
@@ -27,6 +39,8 @@ function buildRequestBody({
   playbackCookieBytes: Uint8Array | null;
   audioFormatId: FormatId | undefined;
   videoFormatId: FormatId | undefined;
+  sabrContexts: Map<number, SabrContextEntry>;
+  activeSabrContextTypes: Set<number>;
 }) {
   const decoded = VideoPlaybackAbrRequest.decode(templateBody);
   decoded.playerTimeMs = String(playerTimeMs);
@@ -54,33 +68,41 @@ function buildRequestBody({
     }
 
     if (target && target.endMs > 0) {
+      const segDurationMs = target.lastSegDurationMs > 0 ? target.lastSegDurationMs : target.endMs;
+      (window.__ytdlDebugLog ??= []).push("buffered-range itag=" + formatId.itag + " segDur=" + segDurationMs + " lastSeq=" + target.lastSeq + " endMs=" + target.endMs);
       decoded.bufferedRanges.push({
         formatId,
         startTimeMs: "0",
-        durationMs: String(target.endMs),
-        startSegmentIndex: 1,
+        durationMs: String(segDurationMs),
+        startSegmentIndex: target.lastSeq,
         endSegmentIndex: target.lastSeq
       });
     }
   }
 
-  // Always manage the playback cookie explicitly. The captured template body
-  // may contain the player's own session cookie (for a different playback
-  // position); including it would cause the server to reject requests that
-  // claim a different position than the cookie implies.
   if (!decoded.streamerContext) {
     decoded.streamerContext = StreamerContext.decode(new Uint8Array());
   }
 
   decoded.streamerContext.playbackCookie = playbackCookieBytes ?? undefined;
 
+  decoded.streamerContext.sabrContexts = [...sabrContexts.entries()]
+    .filter(([type]) => activeSabrContextTypes.has(type))
+    .map(([, ctx]) => ({
+      type: ctx.type,
+      value: ctx.value
+    }));
+  decoded.streamerContext.unsentSabrContexts = [...sabrContexts.keys()]
+    .filter(type => !activeSabrContextTypes.has(type));
+
   return VideoPlaybackAbrRequest.encode(decoded).finish();
 }
 
-async function performFetch({ url, body, requestNumber }: {
+async function performFetch({ url, body, requestNumber, authorization }: {
   url: string;
   body: Uint8Array;
   requestNumber: number;
+  authorization?: string;
 }) {
   const fresh = new Uint8Array(body.byteLength);
   fresh.set(body);
@@ -91,10 +113,21 @@ async function performFetch({ url, body, requestNumber }: {
     method: "POST",
     body: fresh,
     mode: "cors",
-    credentials: "omit",
-    signal: AbortSignal.timeout(30_000)
+    credentials: "include",
+    signal: AbortSignal.timeout(30_000),
+    ...(authorization && {
+      headers: {
+        Authorization: authorization
+      }
+    })
   });
   if (!response.ok) {
+    console.error("[ytdl:progressive] fetch-url=" + sabrUrl.toString().slice(0, 300) + " status=" + response.status);
+
+    if (response.status === 403) {
+      return null;
+    }
+
     throw new Error(`SABR fetch returned status ${response.status}`);
   }
 
@@ -112,13 +145,19 @@ function compositeBufferToUint8(buffer: CompositeBuffer) {
   return out;
 }
 
-function ingestUmpResponse({ response, audio, video, audioItag, videoItag }: {
+function ingestUmpResponse({ response, audio, video, audioItag, videoItag, state }: {
   response: Uint8Array;
   audio: FormatProgress;
   video: FormatProgress;
   audioItag: number;
   videoItag: number;
-}) {
+  state: ProgressiveState;
+}): {
+  nextRequestPolicyBytes: Uint8Array | null;
+  redirectUrl: string | null;
+  streamProtectionStatus: number;
+  receivedReloadPlayerResponse: boolean;
+} {
   const reader = new UmpReader(new CompositeBuffer([response]));
   // SABR interleaves MEDIA_HEADERs for audio and video before sending MEDIA
   // parts. Using pendingItag (the last seen MEDIA_HEADER's itag) to route MEDIA
@@ -132,12 +171,17 @@ function ingestUmpResponse({ response, audio, video, audioItag, videoItag }: {
   };
   const headerMap = new Map<number, HeaderEntry>();
   let nextRequestPolicyBytes: Uint8Array | null = null;
+  let redirectUrl: string | null = null;
+  let streamProtectionStatus = 0;
+  let receivedReloadPlayerResponse = false;
   reader.read((part: {
     type: number;
     size: number;
     data: CompositeBuffer;
   }) => {
     const partBytes = compositeBufferToUint8(part.data);
+    (window.__ytdlDebugLog ??= []).push("ump-part type=" + part.type + " size=" + part.size);
+
     if (part.type === UMPPartId.MEDIA_HEADER) {
       const header = MediaHeader.decode(partBytes);
       const itag = header.itag ?? -1;
@@ -145,6 +189,7 @@ function ingestUmpResponse({ response, audio, video, audioItag, videoItag }: {
       const durMs = parseInt(header.durationMs ?? "0", 10);
       const endMs = startMs + durMs;
       const seq = header.sequenceNumber ?? 0;
+      (window.__ytdlDebugLog ??= []).push("media-hdr itag=" + itag + " seq=" + seq + " start=" + startMs + " end=" + endMs + " hid=" + (header.headerId ?? 0));
       let target: FormatProgress | null = null;
       if (itag === audioItag) {
         target = audio;
@@ -159,6 +204,7 @@ function ingestUmpResponse({ response, audio, video, audioItag, videoItag }: {
 
         if (seq > target.lastSeq) {
           target.lastSeq = seq;
+          target.lastSegDurationMs = durMs;
         }
 
         headerMap.set(header.headerId ?? 0, {
@@ -182,11 +228,71 @@ function ingestUmpResponse({ response, audio, video, audioItag, videoItag }: {
           target.segmentBytes.set(seq, payload);
         }
       }
+    } else if (part.type === UMPPartId.SABR_CONTEXT_UPDATE) {
+      try {
+        const update = SabrContextUpdate.decode(partBytes);
+        (window.__ytdlDebugLog ??= []).push("sabr-ctx-update type=" + update.type + " sendByDefault=" + update.sendByDefault + " scope=" + update.scope + " writePolicy=" + update.writePolicy + " valLen=" + (update.value?.length ?? 0));
+
+        if (update.type !== undefined && update.type !== 0 && update.value?.length) {
+          const isNew = !state.sabrContexts.has(update.type);
+          const shouldOverwrite = update.writePolicy !== SabrContextWritePolicy.KEEP_EXISTING;
+          if (isNew || shouldOverwrite) {
+            state.sabrContexts.set(update.type, {
+              type: update.type,
+              value: update.value,
+              sendByDefault: update.sendByDefault ?? false
+            });
+          }
+
+          if (update.sendByDefault) {
+            state.activeSabrContextTypes.add(update.type);
+          }
+        }
+      } catch (ctxErr) {
+        (window.__ytdlDebugLog ??= []).push("sabr-ctx-ERR b0=" + partBytes[0] + " len=" + partBytes.byteLength + " err=" + String(ctxErr).slice(0, 60));
+      }
     } else if (part.type === UMPPartId.NEXT_REQUEST_POLICY) {
       nextRequestPolicyBytes = partBytes;
+    } else if (part.type === UMPPartId.SABR_REDIRECT) {
+      try {
+        const redirect = SabrRedirect.decode(partBytes);
+        if (redirect.url) {
+          redirectUrl = redirect.url;
+          (window.__ytdlDebugLog ??= []).push("sabr-redirect url=" + redirect.url.slice(0, 200));
+        }
+      } catch {
+        // ignore malformed redirect
+      }
+    } else if (part.type === UMPPartId.SABR_ERROR) {
+      try {
+        const error = SabrError.decode(partBytes);
+        console.error("[ytdl:progressive] sabr-error type=" + error.type + " code=" + error.code);
+        (window.__ytdlDebugLog ??= []).push("sabr-error type=" + error.type + " code=" + error.code);
+      } catch {
+        (window.__ytdlDebugLog ??= []).push("sabr-error (unparseable len=" + partBytes.byteLength + ")");
+      }
+    } else if (part.type === UMPPartId.STREAM_PROTECTION_STATUS) {
+      try {
+        const sps = StreamProtectionStatus.decode(partBytes);
+        streamProtectionStatus = sps.status ?? 0;
+        (window.__ytdlDebugLog ??= []).push("stream-protection status=" + streamProtectionStatus + " maxRetries=" + (sps.maxRetries ?? 0));
+      } catch {
+        (window.__ytdlDebugLog ??= []).push("stream-protection (unparseable)");
+      }
+    } else if (part.type === UMPPartId.RELOAD_PLAYER_RESPONSE) {
+      receivedReloadPlayerResponse = true;
+      (window.__ytdlDebugLog ??= []).push("reload-player-response len=" + partBytes.byteLength);
+    } else if (part.type === UMPPartId.SNACKBAR_MESSAGE) {
+      console.error("[ytdl:progressive] sabr-snackbar len=" + partBytes.byteLength + " bytes=" + Array.from(partBytes).join(","));
+      (window.__ytdlDebugLog ??= []).push("sabr-snackbar len=" + partBytes.byteLength);
     }
   });
-  return nextRequestPolicyBytes;
+  return {
+    nextRequestPolicyBytes,
+    redirectUrl,
+    streamProtectionStatus,
+    receivedReloadPlayerResponse
+  };
 }
 
 function buildContiguousBytes(format: FormatProgress) {
@@ -207,12 +313,13 @@ function buildContiguousBytes(format: FormatProgress) {
   return out;
 }
 
-function buildResult({ state, audioItag, videoItag, iterations, isStalled }: {
+function buildResult({ state, audioItag, videoItag, iterations, isStalled, needsTemplateRefresh = false }: {
   state: ProgressiveState;
   audioItag: number;
   videoItag: number;
   iterations: number;
   isStalled: boolean;
+  needsTemplateRefresh?: boolean;
 }) {
   return {
     audioBytes: buildContiguousBytes(state.audio),
@@ -223,30 +330,39 @@ function buildResult({ state, audioItag, videoItag, iterations, isStalled }: {
     videoItag,
     iterations,
     isStalled,
+    needsTemplateRefresh,
     carryState: {
       audioEndMs: state.audio.endMs,
       audioLastSeq: state.audio.lastSeq,
+      audioLastSegDurationMs: state.audio.lastSegDurationMs,
       videoEndMs: state.video.endMs,
       videoLastSeq: state.video.lastSeq,
+      videoLastSegDurationMs: state.video.lastSegDurationMs,
       audioSegmentBytes: state.audio.segmentBytes,
       videoSegmentBytes: state.video.segmentBytes,
-      playbackCookieBytes: state.playbackCookieBytes
+      playbackCookieBytes: state.playbackCookieBytes,
+      sabrContexts: state.sabrContexts,
+      activeSabrContextTypes: state.activeSabrContextTypes
     }
   };
 }
 
-function updatePlaybackCookie(state: ProgressiveState, nextRequestPolicyBytes: Uint8Array | null) {
+function updatePlaybackCookie(state: ProgressiveState, nextRequestPolicyBytes: Uint8Array | null): number {
   if (!nextRequestPolicyBytes) {
-    return;
+    return 0;
   }
 
   try {
     const policy = NextRequestPolicy.decode(nextRequestPolicyBytes);
+    (window.__ytdlDebugLog ??= []).push("nrp backoffMs=" + (policy.backoffTimeMs ?? 0) + " maxTimeSinceLastReqMs=" + (policy.maxTimeSinceLastRequestMs ?? 0) + " targetAudioReadaheadMs=" + (policy.targetAudioReadaheadMs ?? 0));
+
     if (policy.playbackCookie) {
       state.playbackCookieBytes = PlaybackCookie.encode(policy.playbackCookie).finish();
     }
+
+    return policy.backoffTimeMs ?? 0;
   } catch (_) {
-    // keep using prior cookie
+    return 0;
   }
 }
 
@@ -259,6 +375,7 @@ type IterationContext = {
   videoItag: number;
   audioFormatId: FormatId | undefined;
   videoFormatId: FormatId | undefined;
+  authorization?: string;
   urlOverride?: string;
 };
 
@@ -266,7 +383,8 @@ const IterationResultKind = {
   StallExit: "stall-exit",
   Complete: "complete",
   Advance: "advance",
-  StallRetry: "stall-retry"
+  StallRetry: "stall-retry",
+  TemplateRefreshNeeded: "template-refresh-needed"
 } as const;
 type IterationResultKind = (typeof IterationResultKind)[keyof typeof IterationResultKind];
 
@@ -279,6 +397,11 @@ type IterationResult =
   | {
     kind: typeof IterationResultKind.Advance;
     nextPlayerTimeMs: number;
+    templateUrl: string;
+  }
+  | {
+    kind: typeof IterationResultKind.TemplateRefreshNeeded;
+    result: ProgressiveFetchResult;
   }
   | {
     kind: typeof IterationResultKind.StallRetry;
@@ -295,7 +418,7 @@ async function runFetchIteration(
 ): Promise<IterationResult> {
   const {
     state, activeTemplateBody, activeTemplateUrl, playerTimeMs,
-    audioItag, videoItag, audioFormatId, videoFormatId
+    audioItag, videoItag, audioFormatId, videoFormatId, authorization
   } = ctx;
 
   const requestBody = buildRequestBody({
@@ -305,36 +428,86 @@ async function runFetchIteration(
     video: state.video,
     playbackCookieBytes: state.playbackCookieBytes,
     audioFormatId,
-    videoFormatId
-  });
-  const response = await performFetch({
-    url: activeTemplateUrl,
-    body: requestBody,
-    requestNumber: iteration + 1
+    videoFormatId,
+    sabrContexts: state.sabrContexts,
+    activeSabrContextTypes: state.activeSabrContextTypes
   });
 
+  const fetchResult = await performFetch({
+    url: activeTemplateUrl,
+    body: requestBody,
+    requestNumber: iteration + 1,
+    authorization
+  });
+  if (fetchResult === null) {
+    return {
+      kind: IterationResultKind.TemplateRefreshNeeded,
+      result: buildResult({
+        state,
+        audioItag,
+        videoItag,
+        iterations: iteration + 1,
+        isStalled: false,
+        needsTemplateRefresh: true
+      })
+    };
+  }
+
+  const response = fetchResult;
+  console.error("[ytdl:progressive] iter=" + iteration + " rn=" + (iteration + 1) + " resLen=" + response.byteLength + " audioItag=" + audioItag + " videoItag=" + videoItag);
+  (window.__ytdlDebugLog ??= []).push("iter=" + iteration + " rn=" + (iteration + 1) + " resLen=" + response.byteLength + " t=" + Date.now());
   const beforeAudioEnd = state.audio.endMs;
   const beforeVideoEnd = state.video.endMs;
-  const nextRequestPolicyBytes = ingestUmpResponse({
+  const {
+    nextRequestPolicyBytes, redirectUrl, streamProtectionStatus, receivedReloadPlayerResponse
+  } = ingestUmpResponse({
     response,
     audio: state.audio,
     video: state.video,
     audioItag,
-    videoItag
+    videoItag,
+    state
   });
-  updatePlaybackCookie(state, nextRequestPolicyBytes);
+  const backoffTimeMs = updatePlaybackCookie(state, nextRequestPolicyBytes);
+  if (backoffTimeMs > 0) {
+    await new Promise<void>(resolve => setTimeout(resolve, backoffTimeMs));
+  }
 
   const isAdvanced = state.audio.endMs > beforeAudioEnd || state.video.endMs > beforeVideoEnd;
+  console.error("[ytdl:progressive] iter=" + iteration + " audioEnd=" + state.audio.endMs + " videoEnd=" + state.video.endMs + " adv=" + isAdvanced + " sps=" + streamProtectionStatus + " debugLog=" + JSON.stringify(window.__ytdlDebugLog?.slice(-6) ?? []));
+  (window.__ytdlDebugLog ??= []).push("iter=" + iteration + " audioEnd=" + state.audio.endMs + " videoEnd=" + state.video.endMs + " adv=" + isAdvanced);
+
+  const resolvedTemplateUrl = redirectUrl ?? activeTemplateUrl;
   if (!isAdvanced) {
-    const refreshed = buildSyntheticTemplateFromPlayer();
-    const refreshedWithUrl = refreshed && ctx.urlOverride
-      ? {
-        ...refreshed,
-        url: ctx.urlOverride
-      }
-      : refreshed;
-    if (refreshedWithUrl) {
-      window.__ytdlSabrTemplate = refreshedWithUrl;
+    if (receivedReloadPlayerResponse) {
+      return {
+        kind: IterationResultKind.TemplateRefreshNeeded,
+        result: buildResult({
+          state,
+          audioItag,
+          videoItag,
+          iterations: iteration + 1,
+          isStalled: false,
+          needsTemplateRefresh: true
+        })
+      };
+    }
+
+    // sps=3 permanently blocks the session URL after ~70s. After a couple of
+    // StallRetry attempts (respecting the server backoff), escalate to
+    // TemplateRefreshNeeded so the outer loop can capture a fresh player URL.
+    if (streamProtectionStatus === 3 && stallStreak >= SPS3_REFRESH_AFTER) {
+      return {
+        kind: IterationResultKind.TemplateRefreshNeeded,
+        result: buildResult({
+          state,
+          audioItag,
+          videoItag,
+          iterations: iteration + 1,
+          isStalled: false,
+          needsTemplateRefresh: true
+        })
+      };
     }
 
     if (stallStreak + 1 >= STALL_LIMIT) {
@@ -352,9 +525,9 @@ async function runFetchIteration(
 
     return {
       kind: IterationResultKind.StallRetry,
-      nextPlayerTimeMs: Math.max(0, playerTimeMs - STALL_REWIND_MS),
-      templateBody: refreshedWithUrl?.body ?? activeTemplateBody,
-      templateUrl: refreshedWithUrl?.url ?? activeTemplateUrl
+      nextPlayerTimeMs: Math.min(state.audio.endMs, state.video.endMs),
+      templateBody: activeTemplateBody,
+      templateUrl: resolvedTemplateUrl
     };
   }
 
@@ -364,7 +537,8 @@ async function runFetchIteration(
 
   return {
     kind: IterationResultKind.Advance,
-    nextPlayerTimeMs: Math.min(state.audio.endMs, state.video.endMs)
+    nextPlayerTimeMs: Math.min(state.audio.endMs, state.video.endMs),
+    templateUrl: resolvedTemplateUrl
   };
 }
 
@@ -375,7 +549,8 @@ export async function fetchProgressive({
   initialPlayerTimeMs,
   urlOverride,
   audioFormat,
-  videoFormat
+  videoFormat,
+  authorization
 }: {
   targetDurationMs: number;
   maxIterations: number;
@@ -384,6 +559,7 @@ export async function fetchProgressive({
   urlOverride?: string;
   audioFormat?: AdaptiveFormatItem | null;
   videoFormat?: AdaptiveFormatItem | null;
+  authorization?: string;
 }) {
   const template = await waitForTemplate({
     timeoutMs: 30_000,
@@ -414,7 +590,14 @@ export async function fetchProgressive({
 
     const playerVideoFormat = playerFormats
       .filter(fmt => fmt.mimeType?.startsWith("video/"))
-      .filter(fmt => isVp9Session ? fmt.mimeType?.includes("vp9") : !fmt.mimeType?.includes("vp9"))
+      .filter(fmt => {
+        // WASM FFmpeg lacks AV1 support; exclude AV1 from all sessions.
+        if (fmt.mimeType?.includes("av01")) {
+          return false;
+        }
+
+        return isVp9Session ? fmt.mimeType?.includes("vp9") : true;
+      })
       .sort((fmtA, fmtB) =>
         Math.abs((fmtA.height ?? 0) - requestedHeight) - Math.abs((fmtB.height ?? 0) - requestedHeight))[0];
 
@@ -444,15 +627,19 @@ export async function fetchProgressive({
       itag: audioItag,
       endMs: carryState?.audioEndMs ?? 0,
       lastSeq: carryState?.audioLastSeq ?? 0,
+      lastSegDurationMs: carryState?.audioLastSegDurationMs ?? 0,
       segmentBytes: new Map(carryState?.audioSegmentBytes ?? [])
     },
     video: {
       itag: videoItag,
       endMs: carryState?.videoEndMs ?? 0,
       lastSeq: carryState?.videoLastSeq ?? 0,
+      lastSegDurationMs: carryState?.videoLastSegDurationMs ?? 0,
       segmentBytes: new Map(carryState?.videoSegmentBytes ?? [])
     },
-    playbackCookieBytes: carryState?.playbackCookieBytes ?? null
+    playbackCookieBytes: carryState?.playbackCookieBytes ?? null,
+    sabrContexts: new Map(carryState?.sabrContexts ?? []),
+    activeSabrContextTypes: new Set(carryState?.activeSabrContextTypes ?? [])
   };
 
   let playerTimeMs = initialPlayerTimeMs ?? Math.min(state.audio.endMs, state.video.endMs);
@@ -472,7 +659,8 @@ export async function fetchProgressive({
         videoItag,
         audioFormatId,
         videoFormatId,
-        urlOverride
+        urlOverride,
+        authorization
       },
       stallStreak,
       targetDurationMs,
@@ -488,14 +676,19 @@ export async function fetchProgressive({
 
     if (iterResult.kind === IterationResultKind.StallRetry) {
       stallStreak++;
-      playerTimeMs = iterResult.nextPlayerTimeMs;
+      playerTimeMs = Math.max(iterResult.nextPlayerTimeMs, initialPlayerTimeMs ?? 0);
       activeTemplateBody = iterResult.templateBody;
       activeTemplateUrl = iterResult.templateUrl;
       continue;
     }
 
+    if (iterResult.kind === IterationResultKind.TemplateRefreshNeeded) {
+      return iterResult.result;
+    }
+
     stallStreak = 0;
-    playerTimeMs = iterResult.nextPlayerTimeMs;
+    playerTimeMs = Math.max(iterResult.nextPlayerTimeMs, initialPlayerTimeMs ?? 0);
+    activeTemplateUrl = iterResult.templateUrl;
   }
 
   return buildResult({
