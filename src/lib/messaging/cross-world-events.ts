@@ -1,9 +1,6 @@
 /**
  * Lightweight fire-and-forget cross-world event bus using postMessage.
- *
- * postMessage serializes data via structured clone, making it safe to pass
- * between MAIN world and isolated world in Firefox (no Xray realm issues).
- * Unlike crossWorldMessenger, this is one-way with no response.
+ * One-way, no response. Use crossWorldMessenger for request/response patterns.
  */
 
 import type { ProgressUpdate } from "@/types";

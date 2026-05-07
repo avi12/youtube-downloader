@@ -31,8 +31,8 @@ export function cleanupGridUi() {
   }
 }
 
-// Returns the yt-lockup-view-model element and its shadow root (open, so accessible
-// from isolated world) so we can query inside native shadow DOM in Firefox.
+// Returns the yt-lockup-view-model element's shadow root if present, so callers
+// can query inside it when native shadow DOM is in use.
 function getLockupRoot(elCard: Element): ShadowRoot | null {
   const elLockup = elCard.tagName.toLowerCase() === "yt-lockup-view-model"
     ? elCard
@@ -45,7 +45,7 @@ function shadowFirst(elCard: Element, selector: string): Element | null {
 }
 
 function extractVideoId(elCard: Element) {
-  // Set by the MAIN world grid-tagger on yt-lockup-view-model (required for Firefox native shadow DOM)
+  // Set by the MAIN world grid-tagger on yt-lockup-view-model so isolated world can read it through shadow DOM
   const elLockup = elCard.tagName.toLowerCase() === "yt-lockup-view-model"
     ? elCard
     : elCard.querySelector("yt-lockup-view-model");
@@ -55,7 +55,7 @@ function extractVideoId(elCard: Element) {
     return mainWorldId;
   }
 
-  // Chrome: Polymer Shady DOM patches querySelector so inner shadow content is visible
+  // Polymer Shady DOM patches querySelector so inner shadow content is visible to plain selectors
   const contentIdMatch = shadowFirst(elCard, "[class*='content-id-']")?.className.match(/content-id-(\S+)/);
   if (contentIdMatch) {
     return contentIdMatch[1];
@@ -78,7 +78,7 @@ function mountGridButton({ context, elCard }: {
     return;
   }
 
-  // Duplicate check: injected container may be inside shadow root (Firefox)
+  // Duplicate check: injected container may be inside shadow root
   const isDuplicate = (getLockupRoot(elCard) ?? elCard).querySelector(`[data-ytdl-grid-item="${videoId}"]`);
   if (isDuplicate) {
     return;
