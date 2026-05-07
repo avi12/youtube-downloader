@@ -21,8 +21,8 @@ import { findFirefoxRdpPort, RDP } from "./firefox-rdp.js";
  */
 import { execFileSync, spawnSync } from "node:child_process";
 import { existsSync, mkdirSync, writeFileSync } from "node:fs";
-import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { FFPROBE, FFMPEG, TEMP_DIR } from "./script-config";
 
 const DURATION_TOLERANCE_SEC = 1;
 const AV_SYNC_TOLERANCE_SEC = 0.1;
@@ -30,7 +30,6 @@ const AV_DURATION_MISMATCH_SEC = 0.5;
 const MIN_FILE_SIZE_BYTES = 500_000;
 const SSIM_PASS_THRESHOLD = 0.95;
 const SAMPLE_OFFSETS = [0.10, 0.25, 0.50, 0.75, 0.90];
-const TEMP_DIR = join(tmpdir(), "ytdl-verify");
 
 interface FfprobeStream {
   codec_type: string;
@@ -64,7 +63,7 @@ interface YouTubeVideoInfo {
 }
 
 function probeFile(filepath: string): FfprobeOutput {
-  const raw = execFileSync("ffprobe", [
+  const raw = execFileSync(FFPROBE, [
     "-v", "error", "-of", "json",
     "-show_streams", "-show_format",
     filepath
@@ -209,7 +208,7 @@ function runPhase3(probe: FfprobeOutput): boolean {
 // ── Phase 2: frame identity (SSIM) ───────────────────────────────────────────
 
 function extractLocalFrame(filePath: string, timestampSec: number, outPath: string) {
-  spawnSync("ffmpeg", [
+  spawnSync(FFMPEG, [
     "-y",
     "-ss", String(timestampSec),
     "-i", filePath,
@@ -220,7 +219,7 @@ function extractLocalFrame(filePath: string, timestampSec: number, outPath: stri
 }
 
 function computeSsim(localFrame: string, refFrame: string): number | null {
-  const result = spawnSync("ffmpeg", [
+  const result = spawnSync(FFMPEG, [
     "-i", localFrame,
     "-i", refFrame,
     "-lavfi", "[0:v]scale=320:180[a];[1:v]scale=320:180[b];[a][b]ssim=stats_file=-",

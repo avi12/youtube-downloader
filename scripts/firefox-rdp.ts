@@ -186,7 +186,16 @@ export class RDP {
         }
 
         if (isRecord(resultValue) && resultValue.type === "longString") {
-          resolve(String(resultValue.initial ?? "")); return;
+          const actor = String(resultValue.actor ?? "");
+          const length = Number(resultValue.length ?? 0);
+          if (actor && length > 0) {
+            this.request(actor, "substring", { start: 0, end: length })
+              .then(sub => resolve(String(sub.substring ?? sub.initial ?? resultValue.initial ?? "")))
+              .catch(() => resolve(String(resultValue.initial ?? "")));
+          } else {
+            resolve(String(resultValue.initial ?? ""));
+          }
+          return;
         }
 
         if (isRecord(resultValue) && resultValue.type === "null") {

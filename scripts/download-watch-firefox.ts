@@ -16,7 +16,7 @@ const FIREFOX_NON_RDP_PORTS = new Set([2828, 9230]);
 const FIREFOX_RDP_PORT_FALLBACK = 6000;
 const CONNECT_SETTLE_MS = 500;
 const POLL_INTERVAL_MS = 5_000;
-const MAX_POLLS = 36;
+const MAX_POLLS = 120;
 
 function findFirefoxRdpPort() {
   try {

@@ -1,6 +1,8 @@
 import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { DOWNLOADS } from "./script-config";
 
-const MKV_PATH = process.argv[2] ?? "C:/Users/Avi/Downloads/Nintendo is going to sue  - Anbernic RG DS(1).mkv";
+const MKV_PATH = process.argv[2] ?? join(DOWNLOADS, "Nintendo is going to sue  - Anbernic RG DS(1).mkv");
 
 const EBML_ID_INFO = 0x1549a966;
 const EBML_ID_TRACKS = 0x1654ae6b;

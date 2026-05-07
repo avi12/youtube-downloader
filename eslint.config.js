@@ -146,7 +146,7 @@ const tsStyleRules = {
   "@stylistic/object-property-newline": ["error", { allowAllPropertiesOnSameLine: false }],
   "id-length": ["error", {
     min: 3,
-    exceptions: ["z", "_", "i", "fs", "id", "os", "e", "db", "ws", "mi", "ui", "HL", "GL", "js", "q", "to", "dd", "mm", "x", "y", "d"],
+    exceptions: ["z", "_", "i", "FS", "fs", "id", "os", "e", "db", "ws", "mi", "ui", "HL", "GL", "js", "q", "to", "dd", "mm", "x", "y", "d"],
     properties: "never"
   }],
   "func-style": ["error", "declaration", { allowArrowFunctions: false }],

@@ -21,6 +21,8 @@ const AV_DURATION_MISMATCH_SEC = 0.5;
 const MIN_FILE_SIZE_BYTES = 500_000;
 const FREEZE_MIN_DURATION_SEC = 2;
 const FREEZE_NOISE_DB = -60;
+const SILENCE_NOISE_DB = -50;
+const SILENCE_MIN_DURATION_SEC = 0.3;
 
 // ── ffprobe ───────────────────────────────────────────────────────────────────
 
@@ -104,6 +106,42 @@ function probeFile(filepath: string): FfprobeOutput {
   ], { encoding: "utf8" });
   const parsed: FfprobeOutput = JSON.parse(raw);
   return parsed;
+}
+
+interface SilenceEvent {
+  start: number;
+  duration: number;
+  end: number;
+}
+
+function detectSilences(filepath: string): SilenceEvent[] {
+  const result = spawnSync("ffmpeg", [
+    "-i", filepath,
+    "-vn",
+    "-af", `silencedetect=n=${SILENCE_NOISE_DB}dB:d=${SILENCE_MIN_DURATION_SEC}`,
+    "-f", "null",
+    "-"
+  ], { encoding: "utf8" });
+
+  const output = result.stderr ?? "";
+  const events: SilenceEvent[] = [];
+  const startTimes: number[] = [];
+
+  for (const line of output.split("\n")) {
+    const startMatch = /silence_start: ([\d.]+)/.exec(line);
+    const endMatch = /silence_end: ([\d.]+) \| silence_duration: ([\d.]+)/.exec(line);
+    if (startMatch) {
+      startTimes.push(parseFloat(startMatch[1]));
+    } else if (endMatch && startTimes.length > 0) {
+      events.push({
+        start: startTimes[startTimes.length - 1]!,
+        end: parseFloat(endMatch[1]),
+        duration: parseFloat(endMatch[2])
+      });
+    }
+  }
+
+  return events;
 }
 
 // ── Firefox RDP helpers ───────────────────────────────────────────────────────
@@ -294,20 +332,42 @@ async function main() {
     ) && allPassed;
 
     if (isVideoContainer && videoStream && audioStream) {
-      console.log("\n  Running freeze detection (this may take a moment)...");
-      const freezes = detectFreezes(download.path);
-      const suspicious = freezes.filter(
+      console.log("\n  Running freeze + silence detection (this may take a moment)...");
+      const [freezes, silences] = await Promise.all([
+        Promise.resolve(detectFreezes(download.path)),
+        Promise.resolve(detectSilences(download.path))
+      ]);
+
+      const suspiciousFreezes = freezes.filter(
         freeze => !isBoundaryAligned(freeze.start, actualDuration, stepSec)
       );
-      const detail = suspicious.length === 0
+      const freezeDetail = suspiciousFreezes.length === 0
         ? `none at segment boundaries${freezes.length > 0 ? ` (${freezes.length} elsewhere — likely intentional still frames)` : ""}`
-        : `${suspicious.length} at segment boundaries: ${suspicious.map(freeze => `${formatDuration(freeze.start)}-${formatDuration(freeze.end)} (${freeze.duration.toFixed(1)}s)`).join(", ")}`;
-      check("frozen chunks", suspicious.length === 0, detail);
+        : `${suspiciousFreezes.length} at segment boundaries: ${suspiciousFreezes.map(freeze => `${formatDuration(freeze.start)}-${formatDuration(freeze.end)} (${freeze.duration.toFixed(1)}s)`).join(", ")}`;
+      check("frozen chunks", suspiciousFreezes.length === 0, freezeDetail);
 
-      if (suspicious.length > 0) {
+      if (suspiciousFreezes.length > 0) {
         console.log("    ⚠  Freeze detection cannot distinguish pipeline gaps from intentional still frames.");
         console.log("    ⚠  Inspect the timestamps above manually to confirm.");
         allPassed = false;
+      }
+
+      // Flag artificial silences at segment boundaries (pipeline artifact vs natural content pause).
+      const suspiciousSilences = silences.filter(
+        sil => isBoundaryAligned(sil.start, actualDuration, stepSec) && sil.duration >= SILENCE_MIN_DURATION_SEC
+      );
+      if (stepSec) {
+        const silenceDetail = suspiciousSilences.length === 0
+          ? `none at segment boundaries${silences.length > 0 ? ` (${silences.length} elsewhere — likely natural pauses)` : ""}`
+          : `${suspiciousSilences.length} at boundaries: ${suspiciousSilences.map(sil => `${formatDuration(sil.start)} (${sil.duration.toFixed(2)}s)`).join(", ")}`;
+        check("no boundary silences", suspiciousSilences.length === 0, silenceDetail);
+
+        if (suspiciousSilences.length > 0) {
+          allPassed = false;
+        }
+      } else if (silences.length > 0) {
+        console.log(`  ℹ  ${silences.length} silence(s) — pass step size (arg 2) to check for boundary artifacts`);
+        console.log(`     ${silences.map(sil => `${formatDuration(sil.start)} (${sil.duration.toFixed(2)}s)`).join(", ")}`);
       }
     }
 
