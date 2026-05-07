@@ -34,6 +34,7 @@ export function handleClickEvent(
 
     state.isDone = false;
     state.isInterrupted = false;
+    state.isError = false;
     state.isDownloading = true;
     state.downloadProgress = 0;
     refreshButtons(state, videoData, elements, applySegmentedClasses);

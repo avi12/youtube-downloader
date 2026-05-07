@@ -25,6 +25,7 @@ function getViewState(state: ButtonState, videoData: VideoData) {
     isDownloading: state.isDownloading,
     isDone: state.isDone,
     isInterrupted: state.isInterrupted,
+    isError: state.isError,
     isPanelOpen: state.isPanelOpen,
     downloadProgress: state.isDownloading ? state.downloadProgress : 0,
     filename: state.defaultFilename,
@@ -41,7 +42,7 @@ export function refreshButtons(
 ) {
   const viewState = getViewState(state, videoData);
 
-  const downloadButtonKey = [viewState.isDownloading, viewState.isDone, viewState.isInterrupted, viewState.isDownloadable, Math.round(viewState.downloadProgress * 100), state.downloadProgressType, viewState.filename, viewState.quality].join("|");
+  const downloadButtonKey = [viewState.isDownloading, viewState.isDone, viewState.isInterrupted, viewState.isError, viewState.isDownloadable, Math.round(viewState.downloadProgress * 100), state.downloadProgressType, viewState.filename, viewState.quality].join("|");
   if (downloadButtonKey !== state.lastRenderedButtonKey) {
     state.lastRenderedButtonKey = downloadButtonKey;
     elements.elDownloadButton.data = buildDownloadData(viewState);

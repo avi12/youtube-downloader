@@ -4,6 +4,7 @@ export interface ButtonState {
   isDownloading: boolean;
   isDone: boolean;
   isInterrupted: boolean;
+  isError: boolean;
   isPanelOpen: boolean;
   downloadProgress: number;
   downloadProgressType: ProgressType | "";

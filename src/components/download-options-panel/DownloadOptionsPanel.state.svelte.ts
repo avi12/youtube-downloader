@@ -1,6 +1,7 @@
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
+import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { statusProgressItem, videoQueueItem } from "@/lib/storage/storage";
-import { contentOptions, downloadProgressStore } from "@/lib/ui/synced-stores.svelte";
+import { contentOptions, downloadProgressStore, interruptedDownloadStore } from "@/lib/ui/synced-stores.svelte";
 import { getCompatibleFilename, getOutputExtension, resolveAutoExtension } from "@/lib/utils/containers";
 import {
   calculateWeightedProgress,
@@ -84,6 +85,8 @@ export function createPanelState(getVideoData: () => VideoData) {
   });
 
   const isDownloadable = $derived(getVideoData().isDownloadable);
+  const isInterrupted = $derived(!!interruptedDownloadStore.get(getVideoData().videoId));
+  const isFailed = $derived(downloadProgressStore.get(getVideoData().videoId)?.isFailed === true);
   const displayProgress = $derived(
     calculateWeightedProgress({
       isDownloading,
@@ -270,6 +273,17 @@ export function createPanelState(getVideoData: () => VideoData) {
     await statusProgressItem.setValue(currentProgress);
   }
 
+  function resumeDownload() {
+    startDownload();
+  }
+
+  async function discardInterrupted() {
+    const { videoId } = getVideoData();
+    interruptedDownloadStore.delete(videoId);
+    downloadProgressStore.delete(videoId);
+    await sendMessage(MessageType.ClearInterruptedDownload, { videoId });
+  }
+
   return {
     get isDownloading() {
       return isDownloading;
@@ -312,6 +326,12 @@ export function createPanelState(getVideoData: () => VideoData) {
     get isDownloadable() {
       return isDownloadable;
     },
+    get isInterrupted() {
+      return isInterrupted;
+    },
+    get isFailed() {
+      return isFailed;
+    },
     get displayProgress() {
       return displayProgress;
     },
@@ -337,6 +357,8 @@ export function createPanelState(getVideoData: () => VideoData) {
     },
     handleDownloadTypeChange,
     startDownload,
-    cancelDownload
+    cancelDownload,
+    resumeDownload,
+    discardInterrupted
   };
 }

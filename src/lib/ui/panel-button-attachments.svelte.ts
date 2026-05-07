@@ -157,3 +157,41 @@ export function attachPanelProgress(elProgress: Element) {
     "--paper-progress-container-color": "transparent"
   });
 }
+
+export function attachGhostButton(title: string) {
+  return (elButton: Element) => {
+    dispatchButtonData({
+      elButton,
+      data: {
+        iconName: "",
+        title,
+        accessibilityText: title,
+        style: ButtonStyle.Mono,
+        type: ButtonType.Text,
+        buttonSize: ButtonSize.Default,
+        state: ButtonState.Active,
+        isFullWidth: false,
+        isDisabled: false,
+        tooltip: ""
+      }
+    });
+  };
+}
+
+export function attachResumeButton(elButton: Element) {
+  dispatchButtonData({
+    elButton,
+    data: {
+      iconName: IconName.Download,
+      title: "Resume now",
+      accessibilityText: "Resume now",
+      style: ButtonStyle.CallToAction,
+      type: ButtonType.Tonal,
+      buttonSize: ButtonSize.Default,
+      state: ButtonState.Active,
+      isFullWidth: true,
+      isDisabled: false,
+      tooltip: ""
+    }
+  });
+}

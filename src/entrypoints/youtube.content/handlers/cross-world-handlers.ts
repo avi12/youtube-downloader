@@ -7,6 +7,7 @@ import {
 } from "../download/stream-transfer";
 import { handlePageChange } from "../ui/page-router";
 import { mountPanelUi } from "../ui/panel-ui";
+import { mountToastUi } from "../ui/toast-ui";
 import { clearRemovedVideoId, registerProgressHandler } from "./progress-handler";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
@@ -38,6 +39,7 @@ export function registerCrossWorldHandlers(
       contentId: data.contentId,
       videoData: data.videoData
     });
+    mountToastUi({ videoData: data.videoData });
   });
 
   crossWorldMessenger.onMessage(CrossWorldMessage.CancelRequest, ({ data }) => {

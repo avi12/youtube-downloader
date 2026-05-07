@@ -16,6 +16,7 @@ export interface ButtonViewState {
   isDownloading: boolean;
   isDone: boolean;
   isInterrupted: boolean;
+  isError: boolean;
   isPanelOpen: boolean;
   downloadProgress: number;
   filename: string;
@@ -29,6 +30,8 @@ export function buildDownloadData(state: ButtonViewState) {
     iconName = IconName.CheckCircleThick;
   } else if (state.isDownloading) {
     iconName = IconName.Close;
+  } else if (state.isError) {
+    iconName = IconName.Info;
   }
 
   let title = "Download";
@@ -45,6 +48,9 @@ export function buildDownloadData(state: ButtonViewState) {
   } else if (state.isInterrupted) {
     title = "Resume";
     accessibilityText = "Resume download";
+  } else if (state.isError) {
+    title = "Retry";
+    accessibilityText = "Retry download";
   }
 
   const isDisabled = !state.isDownloadable;

@@ -8,7 +8,9 @@
     attachCloseButton,
     attachDoneIcon,
     attachDownloadButton,
-    attachPanelProgress
+    attachGhostButton,
+    attachPanelProgress,
+    attachResumeButton
   } from "@/lib/ui/panel-button-attachments.svelte";
   import { ProgressType, type VideoData } from "@/types";
 
@@ -31,8 +33,12 @@
   const focusManager = createFocusManager();
 
   const closeButtonId = "ytdl-panel-close";
+  const closeFooterButtonId = "ytdl-panel-close-footer";
   const downloadButtonId = "ytdl-panel-download";
   const cancelButtonId = "ytdl-panel-cancel";
+  const hideButtonId = "ytdl-panel-hide";
+  const resumeButtonId = "ytdl-panel-resume";
+  const discardButtonId = "ytdl-panel-discard";
 
   function closePanel() {
     focusManager.release();
@@ -41,12 +47,16 @@
   }
 
   $effect(() => onButtonClick(buttonId => {
-    if (buttonId === closeButtonId) {
+    if (buttonId === closeButtonId || buttonId === closeFooterButtonId || buttonId === hideButtonId) {
       closePanel();
     } else if (buttonId === downloadButtonId) {
       panel.startDownload();
     } else if (buttonId === cancelButtonId) {
       void panel.cancelDownload();
+    } else if (buttonId === resumeButtonId) {
+      panel.resumeDownload();
+    } else if (buttonId === discardButtonId) {
+      void panel.discardInterrupted();
     }
   }));
 
@@ -120,52 +130,75 @@
           {@attach attachPanelProgress}
           value={Math.round(panel.displayProgress)}
         ></tp-yt-paper-progress>
-        <div class="ytdl-progress-row">
-          <span class="ytdl-progress-label" aria-live="polite">
-            {percentFormatter.format(panel.displayProgress / 100)} - {panel.progressType === ProgressType.FFmpeg ? "Processing" : "Downloading"}
-          </span>
-          <yt-button-view-model
-            class={scopingClass}
-            {@attach attachCancelButton}
-            data-ytdl-button-id="ytdl-panel-cancel"
-            onclick={panel.cancelDownload}
-            onkeydown={handleActivationKeydown(panel.cancelDownload)}
-            role="button"
-            tabindex="0"
-          ></yt-button-view-model>
-        </div>
+        <span class="ytdl-progress-label" aria-live="polite">
+          {percentFormatter.format(panel.displayProgress / 100)} - {panel.progressType === ProgressType.FFmpeg ? "Processing" : "Downloading"}
+        </span>
+      </div>
+      <div class="ytdl-footer-buttons">
+        <yt-button-view-model
+          class={scopingClass}
+          {@attach attachGhostButton("Hide")}
+          data-ytdl-button-id={hideButtonId}
+          onkeydown={handleActivationKeydown(closePanel)}
+          role="button"
+          tabindex="0"
+        ></yt-button-view-model>
+        <yt-button-view-model
+          class={scopingClass}
+          {@attach attachCancelButton}
+          data-ytdl-button-id={cancelButtonId}
+          onkeydown={handleActivationKeydown(panel.cancelDownload)}
+          role="button"
+          tabindex="0"
+        ></yt-button-view-model>
+      </div>
+    {:else if panel.isInterrupted}
+      <div class="ytdl-footer-buttons">
+        <yt-button-view-model
+          class={scopingClass}
+          {@attach attachGhostButton("Discard")}
+          data-ytdl-button-id={discardButtonId}
+          onkeydown={handleActivationKeydown(panel.discardInterrupted)}
+          role="button"
+          tabindex="0"
+        ></yt-button-view-model>
+        <yt-button-view-model
+          class={scopingClass}
+          {@attach attachResumeButton}
+          data-ytdl-button-id={resumeButtonId}
+          onkeydown={handleActivationKeydown(panel.resumeDownload)}
+          role="button"
+          tabindex="0"
+        ></yt-button-view-model>
       </div>
     {:else}
       {#if panel.isDone}
-        <div class="ytdl-done-row">
-          <div class="ytdl-done-status" role="status">
-            <yt-button-view-model
-              class={scopingClass}
-              {@attach attachDoneIcon}
-            ></yt-button-view-model>
-            <span>Downloaded</span>
-          </div>
+        <div class="ytdl-done-status" role="status">
           <yt-button-view-model
             class={scopingClass}
-            {@attach attachDownloadBtn}
-            data-ytdl-button-id="ytdl-panel-download"
-            onclick={panel.startDownload}
-            onkeydown={handleActivationKeydown(panel.startDownload)}
-            role="button"
-            tabindex="0"
+            {@attach attachDoneIcon}
           ></yt-button-view-model>
+          <span>Downloaded</span>
         </div>
-      {:else}
+      {/if}
+      <div class="ytdl-footer-buttons">
+        <yt-button-view-model
+          class={scopingClass}
+          {@attach attachGhostButton("Close")}
+          data-ytdl-button-id={closeFooterButtonId}
+          onkeydown={handleActivationKeydown(closePanel)}
+          role="button"
+          tabindex="0"
+        ></yt-button-view-model>
         <yt-button-view-model
           class={scopingClass}
           {@attach attachDownloadBtn}
-          data-ytdl-button-id="ytdl-panel-download"
-          onclick={panel.startDownload}
+          data-ytdl-button-id={downloadButtonId}
           onkeydown={handleActivationKeydown(panel.startDownload)}
           role="button"
           tabindex="0"
         ></yt-button-view-model>
-      {/if}
+      </div>
     {/if}
   </div>
 </div>
@@ -197,7 +230,9 @@
   }
 
   .ytdl-panel-footer {
-    min-height: 52px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
     padding-block: 16px 20px;
     padding-inline: 24px;
   }
@@ -205,22 +240,17 @@
   .ytdl-progress-section {
     display: flex;
     flex-direction: column;
-    gap: 6px;
-  }
-
-  .ytdl-progress-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
+    gap: 4px;
   }
 
   .ytdl-progress-label {
     font-size: 1.3rem;
   }
 
-  .ytdl-done-row {
+  .ytdl-footer-buttons {
     display: flex;
-    justify-content: space-between;
+    gap: 8px;
+    justify-content: flex-end;
     align-items: center;
   }
 

@@ -15,6 +15,7 @@ export function buildButtonState(videoData: VideoData): ButtonState {
     isDownloading: false,
     isDone: false,
     isInterrupted: initialState.isInterrupted,
+    isError: false,
     isPanelOpen: false,
     downloadProgress: 0,
     downloadProgressType: "",

@@ -28,6 +28,11 @@ export function handleProgressEvent(
     state.isDownloading = false;
     state.downloadProgress = 0;
     state.downloadProgressType = "";
+
+    if (data.isFailed) {
+      state.isError = true;
+    }
+
     refreshButtons(state, videoData, elements, applySegmentedClasses);
     return;
   }
