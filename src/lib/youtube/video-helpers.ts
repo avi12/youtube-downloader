@@ -11,7 +11,7 @@ const DEFAULT_VIDEO_QUALITY = 1080;
 export const initialOptions: Options = {
   ext: {
     audio: AUTO_EXTENSION,
-    video: "mkv"
+    video: AUTO_EXTENSION
   },
   defaultDownloadType: "auto",
   videoQualityMode: VideoQualityMode.Best,
