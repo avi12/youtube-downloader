@@ -11,7 +11,7 @@
     },
     "condition": {
       "urlFilter": "*youtube.com/watch*",
-      "resourceTypes": ["sub_frame"]
+      "resourceTypes": ["main_frame", "sub_frame"]
     }
   }
 ]
