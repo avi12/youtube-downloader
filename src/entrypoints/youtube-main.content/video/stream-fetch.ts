@@ -1,4 +1,4 @@
-import { decryptSignatureCipher } from "@/lib/youtube/signature/decryptor";
+import { decryptSignatureCipher } from "@/lib/youtube/signature-decryptor";
 import { type AdaptiveFormatItem } from "@/types";
 
 export async function resolveFormatUrl(format: AdaptiveFormatItem | null) {

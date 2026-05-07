@@ -20,15 +20,6 @@ export default defineContentScript({
     });
     document.hasFocus = () => true;
 
-    if (navigator.webdriver) {
-      Object.defineProperty(navigator, "webdriver", {
-        get() {
-          return false;
-        },
-        configurable: true
-      });
-    }
-
     if (self !== top) {
       Object.defineProperty(window, "frameElement", {
         get() {

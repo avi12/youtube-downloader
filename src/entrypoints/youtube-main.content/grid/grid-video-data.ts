@@ -3,15 +3,9 @@ import { buildAndDispatchVideoData, videoDataCache, readYtcfg } from "../video/v
 import { extractPlayerResponseFromHtml } from "../video/youtube-api";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { videoDataFailedStore, videoDataStore } from "@/lib/ui/synced-stores.svelte";
-import { YouTubePath } from "@/lib/youtube/youtube-url";
 import type { PlayerResponse } from "@/types";
 
 declare const ytcfg: { get: (key: string) => unknown } | undefined;
-
-function readUiLanguage() {
-  const uiLang = ytcfg?.get("HL");
-  return typeof uiLang === "string" ? uiLang : navigator.language;
-}
 
 const MAX_CONCURRENT_FETCHES = 3;
 const videoDataPending = new Set<string>();
@@ -20,7 +14,7 @@ let activeVideoDataFetches = 0;
 async function fetchVideoDataViaApi(videoId: string) {
   // /player returns UNPLAYABLE on non-watch pages, so fall back to scraping
   // ytInitialPlayerResponse from watch page HTML.
-  const isWatchPage = location.pathname === YouTubePath.Watch;
+  const isWatchPage = location.pathname === "/watch";
   if (isWatchPage) {
     const { clientVersion, clientName } = readYtcfg();
     const visitorData = ytcfg?.get("VISITOR_DATA") ?? "";
@@ -51,12 +45,9 @@ async function fetchVideoDataViaApi(videoId: string) {
     );
     const playerData: PlayerResponse = await response.json();
     if (playerData?.videoDetails?.videoId) {
-      const uiLanguage = readUiLanguage();
       await buildAndDispatchVideoData({
         playerResponse: playerData,
-        cancelActiveDownload,
-        preferredAudioLanguage: uiLanguage,
-        preferredCaptionLanguage: uiLanguage
+        cancelActiveDownload
       });
       return;
     }
@@ -69,12 +60,9 @@ async function fetchVideoDataViaApi(videoId: string) {
 
   const playerResponse = extractPlayerResponseFromHtml(html);
   if (playerResponse?.videoDetails?.videoId) {
-    const uiLanguage = readUiLanguage();
     await buildAndDispatchVideoData({
       playerResponse,
-      cancelActiveDownload,
-      preferredAudioLanguage: uiLanguage,
-      preferredCaptionLanguage: uiLanguage
+      cancelActiveDownload
     });
   }
 }

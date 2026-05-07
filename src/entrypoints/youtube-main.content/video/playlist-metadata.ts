@@ -3,7 +3,6 @@ import { cancelActiveDownload } from "./download";
 import { buildAndDispatchVideoData } from "./video-data";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { playlistMetadataSignal } from "@/lib/ui/synced-stores.svelte";
-import { YouTubePath } from "@/lib/youtube/youtube-url";
 import { type PlayerResponse } from "@/types";
 
 declare global {
@@ -48,7 +47,7 @@ function handleNavigation() {
 export async function handleNavigateSuccess() {
   handleNavigation();
 
-  if (location.pathname !== YouTubePath.Watch) {
+  if (location.pathname !== "/watch") {
     return;
   }
 
@@ -71,17 +70,5 @@ export async function handleNavigateSuccess() {
     }
 
     await new Promise(resolve => setTimeout(resolve, playerDataPollIntervalMs));
-  }
-
-  // On full page loads, ytd-watch-flexy.playerData may not be set in time.
-  // Fall back to the initial player response embedded in the page HTML.
-  const initialResponse = window.ytInitialPlayerResponse ?? null;
-  const isFallbackReady = initialResponse?.videoDetails?.videoId === expectedVideoId
-    && initialResponse.playabilityStatus?.status !== "UNPLAYABLE";
-  if (isFallbackReady) {
-    await buildAndDispatchVideoData({
-      playerResponse: initialResponse,
-      cancelActiveDownload
-    });
   }
 }

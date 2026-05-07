@@ -1,6 +1,7 @@
-import { buildStreamTasks } from "./stream-chunks";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { downloadProgressStore } from "@/lib/ui/synced-stores.svelte";
+import { TRANSFER_CHUNK_SIZE, uint8ToBase64 } from "@/lib/utils/binary";
+import { StreamType } from "@/types";
 import type { StreamDataPayload } from "@/types";
 
 const cancelledVideoIds = new Set<string>();
@@ -11,6 +12,32 @@ export function cancelStreamTransfer(videoId: string) {
 
 export function uncancelStreamTransfer(videoId: string) {
   cancelledVideoIds.delete(videoId);
+}
+
+async function sendStreamChunks({ videoId, streamType, data }: {
+  videoId: string;
+  streamType: string;
+  data: Uint8Array;
+}) {
+  if (cancelledVideoIds.has(videoId)) {
+    return;
+  }
+
+  const totalChunks = Math.ceil(data.byteLength / TRANSFER_CHUNK_SIZE);
+
+  await Promise.all(
+    Array.from({ length: totalChunks }, (_, iChunk) => {
+      const start = iChunk * TRANSFER_CHUNK_SIZE;
+      const chunk = data.subarray(start, start + TRANSFER_CHUNK_SIZE);
+      return sendMessage(MessageType.StreamChunk, {
+        videoId,
+        streamType,
+        iChunk,
+        totalChunks,
+        chunkBase64: uint8ToBase64(chunk)
+      });
+    })
+  );
 }
 
 const playlistContextByVideoId = new Map<string, {
@@ -28,22 +55,54 @@ export function setPlaylistContext({ videoId, context }: {
 
 export async function handleStreamData(payload: StreamDataPayload) {
   const {
-    downloadType, videoId, filenameOutput, videoData, audioData,
-    videoMimeType, audioMimeType, audioLabel, additionalAudioData
+    downloadType, videoId, filenameOutput,
+    videoData, audioData, videoMimeType, audioMimeType,
+    audioLabel, additionalAudioData
   } = payload;
   if (cancelledVideoIds.has(videoId)) {
     return;
   }
 
-  const streamTasks = buildStreamTasks({
-    videoId,
-    videoData,
-    audioData,
-    additionalAudioData
-  });
+  const streamTasks: Promise<void>[] = [];
+  if (videoData) {
+    streamTasks.push(
+      sendStreamChunks({
+        videoId,
+        streamType: StreamType.Video,
+        data: videoData
+      })
+    );
+  }
+
+  if (audioData) {
+    streamTasks.push(
+      sendStreamChunks({
+        videoId,
+        streamType: StreamType.Audio,
+        data: audioData
+      })
+    );
+  }
+
+  for (const [i, track] of additionalAudioData.entries()) {
+    if (track.data) {
+      streamTasks.push(
+        sendStreamChunks({
+          videoId,
+          streamType: `audio-extra-${i}`,
+          data: track.data
+        })
+      );
+    }
+  }
+
   await Promise.all(streamTasks);
 
-  const audioTrackLabels = [audioLabel ?? "", ...additionalAudioData.map(track => track.label)];
+  const audioTrackLabels = [
+    audioLabel ?? "",
+    ...additionalAudioData.map(track => track.label)
+  ];
+
   const playlistContext = playlistContextByVideoId.get(videoId);
   playlistContextByVideoId.delete(videoId);
 
@@ -64,7 +123,9 @@ export function handleStreamError({ videoId, error }: {
   error: string;
 }) {
   console.error("[ytdl] Stream error for", videoId, error);
+
   downloadProgressStore.delete(videoId);
+
   void sendMessage(MessageType.ProcessStreamError, {
     videoId,
     error

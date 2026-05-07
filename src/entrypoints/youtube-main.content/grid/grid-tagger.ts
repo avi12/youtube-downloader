@@ -4,7 +4,7 @@ const CONTENT_ID_ATTR = "data-ytdl-content-id";
 const LOCKUP_SELECTOR = "yt-lockup-view-model";
 const MAX_RETRIES = 3;
 
-function extractContentId(elCard: Element) {
+function extractContentId(elCard: Element): string | null {
   const shadowMatch = elCard.shadowRoot
     ?.querySelector("[class*='content-id-']")
     ?.className.match(/content-id-(\S+)/);
