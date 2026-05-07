@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "@ffmpeg/core": "0.12.10",
-    "@ffmpeg/ffmpeg": "^0.12.15",
+    "@ffmpeg/types": "^0.12.4",
     "@ffmpeg/util": "^0.12.2",
     "@webext-core/messaging": "^2.3.0",
     "fflate": "^0.8.2",
@@ -28,10 +28,8 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@ffmpeg/core-st": "0.11.1",
-    "@material-symbols/svg-400": "^0.44.1",
     "@stylistic/eslint-plugin": "^5.10.0",
     "@stylistic/stylelint-plugin": "^5.1.0",
-    "@types/ws": "^8.18.1",
     "@wxt-dev/module-svelte": "^2.0.5",
     "eslint": "^10.1.0",
     "eslint-plugin-import": "^2.32.0",
