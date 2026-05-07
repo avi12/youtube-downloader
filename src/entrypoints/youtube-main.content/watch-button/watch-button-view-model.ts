@@ -41,7 +41,7 @@ export function buildDownloadData(state: ButtonViewState) {
     title = "Not downloadable";
     accessibilityText = "Not downloadable";
   } else if (state.isDone) {
-    title = "Downloaded";
+    title = "Download again";
     accessibilityText = "Download again";
   } else if (state.isDownloading) {
     title = "Cancel";
@@ -58,10 +58,18 @@ export function buildDownloadData(state: ButtonViewState) {
 
   let tooltip = "";
   if (state.isDownloadable) {
-    if (state.isDownloading && state.downloadProgress === 0) {
-      tooltip = "Preparing";
+    if (state.isDone) {
+      tooltip = state.quality ? `Download again - ${state.quality}` : "Download again";
+    } else if (state.isError) {
+      tooltip = "Retry download";
+    } else if (state.isInterrupted) {
+      tooltip = state.downloadProgress > 0
+        ? `Paused at ${percentFormatter.format(state.downloadProgress)} - click to resume`
+        : "Click to resume";
+    } else if (state.isDownloading && state.downloadProgress === 0) {
+      tooltip = "Preparing - click to view progress";
     } else if (state.isDownloading) {
-      tooltip = percentFormatter.format(state.downloadProgress);
+      tooltip = `${percentFormatter.format(state.downloadProgress)} - click to view progress`;
     } else {
       tooltip = state.quality ? `${state.filename} - ${state.quality}` : state.filename;
     }
