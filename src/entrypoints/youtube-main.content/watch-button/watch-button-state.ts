@@ -1,6 +1,24 @@
 import { interruptedDownloadStore } from "@/lib/ui/synced-stores.svelte";
 import { getCompatibleFilename, getOutputExtension } from "@/lib/utils/containers";
-import { DownloadType, type VideoData } from "@/types";
+import { DownloadType, ProgressType, type VideoData } from "@/types";
+
+export interface ButtonState {
+  isDownloading: boolean;
+  isDone: boolean;
+  isInterrupted: boolean;
+  isError: boolean;
+  isPanelOpen: boolean;
+  downloadProgress: number;
+  downloadProgressType: ProgressType | "";
+  defaultVideoItag: number;
+  defaultAudioItag: number;
+  defaultFilename: string;
+  defaultQuality: string;
+  defaultDownloadType: DownloadType;
+  lastProgressReported: number;
+  lastRenderedButtonKey: string;
+  lastRenderedChevronKey: string;
+}
 
 export function buildInitialDownloadState(videoData: VideoData) {
   let videoItag = videoData.videoFormats[0]?.itag ?? 0;
