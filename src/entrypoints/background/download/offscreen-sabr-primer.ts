@@ -4,10 +4,7 @@ import { ScrubUrlParam } from "@/lib/youtube/youtube-url";
 
 const PRIMER_TIMEOUT_MS = 30_000;
 
-export async function primeViaSabrOffscreen(videoId: string): Promise<{
-  url: string;
-  bodyBase64: string;
-} | null> {
+export async function primeViaSabrOffscreen(videoId: string) {
   const factoryId = `sabr-primer-${videoId}`;
   await spawnHostedIframe({
     id: factoryId,

@@ -1,9 +1,9 @@
 import { cancelBackgroundDownload, startBackgroundDownload } from "../download/background-downloader";
+import { primeViaSabrOffscreen } from "../download/offscreen-sabr-primer";
 import { removeHostedIframe } from "../iframe-host/iframe-host";
 import { enqueueToPopupList, removeFromPopupList } from "../queue/popup-list";
 import { signalVideoComplete } from "../queue/sequential-queue";
 import { cancelDownloads, getTabIdsForVideo, trackVideoForTab } from "../queue/tab-tracker";
-import { cancelIframeScrubSession } from "../scrub/orchestrator";
 import {
   dispatchParallel,
   dispatchSequentially,
@@ -85,7 +85,6 @@ export function registerDownloadHandlers() {
 
     for (const videoId of data.videoIds) {
       cancelBackgroundDownload(videoId);
-      void cancelIframeScrubSession(videoId);
       signalVideoComplete(videoId);
       removeHostedIframe(downloadIframeId(videoId));
       const trackedTabIds = getTabIdsForVideo(videoId);
@@ -125,5 +124,12 @@ export function registerDownloadHandlers() {
       tabId
     });
     await sendMessage(MessageType.StartKeepalive, { videoId: data.videoId }, tabId);
+  });
+
+  onMessage(MessageType.RequestFreshSabrPrimer, async ({ data }) => {
+    console.log(`[ytdl:bg] RequestFreshSabrPrimer start videoId=${data.videoId}`);
+    const result = await primeViaSabrOffscreen(data.videoId);
+    console.log(`[ytdl:bg] RequestFreshSabrPrimer done videoId=${data.videoId} hasResult=${Boolean(result)}`);
+    return result;
   });
 }

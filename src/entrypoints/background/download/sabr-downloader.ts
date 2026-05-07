@@ -1,5 +1,4 @@
 import { downloadAudioOnlyViaSabr, downloadExtraAudioTracksViaSabr, downloadVideoAudioViaSabr } from "./sabr-progress";
-import { extractUstreamerConfigFromBody } from "@/lib/youtube/sabr/proto-parser";
 import { extractPoTokenFromBody, getCapturedSabrData } from "@/lib/youtube/sabr/request-capture";
 import { DownloadType } from "@/types";
 import type { DownloadRequest } from "@/types";
@@ -25,21 +24,15 @@ export async function downloadViaSabr({ request, signal, tabId, onProgress }: {
   const capturedData = getCapturedSabrData(tabId);
   const capturedPoToken = capturedData ? extractPoTokenFromBody(capturedData.body) : null;
   const resolvedPoToken = poToken || capturedPoToken || "";
-  const capturedBody = capturedData ? new Uint8Array(capturedData.body) : undefined;
   const capturedUrl = capturedData?.url;
-  const capturedUstreamerConfig = capturedData ? extractUstreamerConfigFromBody(capturedData.body) : null;
+  // Only adopt the captured URL (fresh spc) — never the captured ustreamer config or body,
+  // which may encode an AV1 session from Firefox's own player and cause AV1 data to be served
+  // regardless of the VP9 format IDs we request.
   const urlChanged = capturedUrl && capturedUrl !== effectiveConfig.serverAbrStreamingUrl;
-  const configChanged = capturedUstreamerConfig
-    && capturedUstreamerConfig !== effectiveConfig.videoPlaybackUstreamerConfig;
-  const configWithCapturedUrl = (urlChanged || configChanged)
+  const configWithCapturedUrl = urlChanged
     ? {
       ...effectiveConfig,
-      ...(urlChanged && {
-        serverAbrStreamingUrl: capturedUrl
-      }),
-      ...(configChanged && {
-        videoPlaybackUstreamerConfig: capturedUstreamerConfig
-      })
+      serverAbrStreamingUrl: capturedUrl
     }
     : effectiveConfig;
   if (isAudioOnly) {
@@ -50,8 +43,7 @@ export async function downloadViaSabr({ request, signal, tabId, onProgress }: {
       signal,
       videoId,
       tabId,
-      onProgress,
-      firstBodyOverride: capturedBody
+      onProgress
     });
     return {
       videoData: null,
@@ -72,8 +64,7 @@ export async function downloadViaSabr({ request, signal, tabId, onProgress }: {
     signal,
     videoId,
     tabId,
-    onProgress,
-    firstBodyOverride: capturedBody
+    onProgress
   });
   const additionalAudioTracks = await downloadExtraAudioTracksViaSabr({
     config: effectiveConfig,

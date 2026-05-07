@@ -1,4 +1,3 @@
-import { enrichWithAlternateClientUrls } from "./alternate-client-enricher";
 import { DownloadResolution, resolveDownloadResult } from "./download-resolver";
 import { clearInterruptedDownload, reportDownloadFailed } from "./download-retry";
 import { enqueueNetworkRetry, registerNetworkRetryCallback } from "./network-retry";
@@ -51,15 +50,14 @@ export async function startBackgroundDownload({ request, tabId }: {
 
   try {
     const enrichedMetadataPromise = enrichMetadataFromYouTubeMusic(metadata);
-    const cdnRequest = await enrichWithAlternateClientUrls(request, tabId);
     const result = await resolveDownloadResult({
       request,
-      cdnRequest,
+      cdnRequest: request,
       signal,
       videoId,
       tabId
     });
-    if (result === DownloadResolution.IframeScrub || result === DownloadResolution.ProgressiveSabr) {
+    if (result === DownloadResolution.ProgressiveSabr) {
       return;
     }
 

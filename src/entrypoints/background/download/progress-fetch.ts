@@ -1,4 +1,5 @@
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
+import { buildSapiSidHash } from "@/lib/youtube/alternate-client-specs";
 import { ProgressType } from "@/types";
 
 export { fetchWithProgress } from "./cdn-fetch";
@@ -38,14 +39,22 @@ export function createProgressFetch({ signal, onBytesReceived, firstBodyOverride
   firstBodyOverride?: Uint8Array;
 }) {
   let fetchCount = 0;
+  const authPromise = buildSapiSidHash();
   return async (input: RequestInfo | URL, init?: RequestInit) => {
     fetchCount++;
     const isOverrideUsed = fetchCount === 1 && firstBodyOverride !== undefined;
+    const authorization = await authPromise;
     const response = await fetch(input, {
       ...(init ?? {}),
       body: isOverrideUsed && firstBodyOverride != null ? firstBodyOverride.slice() : init?.body,
       signal,
-      credentials: "include"
+      credentials: "include",
+      headers: {
+        ...(init?.headers ?? {}),
+        ...(authorization && {
+          Authorization: authorization
+        })
+      }
     });
     const contentType = response.headers.get("content-type");
     if (!response.ok && contentType === "application/vnd.yt-ump" && response.body) {

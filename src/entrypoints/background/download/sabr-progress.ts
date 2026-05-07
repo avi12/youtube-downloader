@@ -3,27 +3,6 @@ import { fetchAudioViaSabrStream } from "@/lib/youtube/sabr/download";
 import { ProgressType } from "@/types";
 import type { AdaptiveFormatItem, SabrConfig } from "@/types";
 
-function buildEffectiveSabrConfig({ sabrConfig, sabrUrl, videoPlaybackUstreamerConfig }: {
-  sabrConfig: SabrConfig;
-  sabrUrl: string | undefined;
-  videoPlaybackUstreamerConfig?: string;
-}) {
-  const urlChanged = sabrUrl && sabrUrl !== sabrConfig.serverAbrStreamingUrl;
-  const configChanged = videoPlaybackUstreamerConfig
-    && videoPlaybackUstreamerConfig !== sabrConfig.videoPlaybackUstreamerConfig;
-  if (!urlChanged && !configChanged) {
-    return sabrConfig;
-  }
-
-  return {
-    ...sabrConfig,
-    ...(urlChanged && {
-      serverAbrStreamingUrl: sabrUrl
-    }),
-    ...(configChanged && { videoPlaybackUstreamerConfig })
-  };
-}
-
 export function parseContentLength(format: AdaptiveFormatItem | null) {
   if (!format?.contentLength) {
     return 0;
@@ -32,7 +11,9 @@ export function parseContentLength(format: AdaptiveFormatItem | null) {
   return parseInt(format.contentLength, 10);
 }
 
-export async function downloadAudioOnlyViaSabr({ config, audioFormat, poToken, signal, videoId, tabId, onProgress, firstBodyOverride }: {
+export async function downloadAudioOnlyViaSabr({
+  config, audioFormat, poToken, signal, videoId, tabId, onProgress, firstBodyOverride
+}: {
   config: SabrConfig;
   audioFormat: AdaptiveFormatItem;
   poToken: string;

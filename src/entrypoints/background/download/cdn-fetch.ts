@@ -1,3 +1,4 @@
+import { broadcastDebugLogToYouTubeTabs } from "@/lib/messaging/debug-log";
 import { StreamStallError, readStreamToBuffer } from "@/lib/utils/stream";
 
 const MAX_RETRY_ATTEMPTS = 3;
@@ -20,14 +21,16 @@ export async function fetchWithProgress({ url, signal, onBytesReceived }: {
   let partialData: Uint8Array | null = null;
   let byteOffset = 0;
 
+  void broadcastDebugLogToYouTubeTabs(`[ytdl:cdn] fetching url=${url.slice(0, 600)}`);
   for (let attempt = 0; attempt <= MAX_RETRY_ATTEMPTS; attempt++) {
     const response = await fetch(url, {
       signal,
-      ...(byteOffset > 0 && {
-        headers: {
+      credentials: "omit",
+      headers: {
+        ...(byteOffset > 0 && {
           Range: `bytes=${byteOffset}-`
-        }
-      })
+        })
+      }
     });
     if (response.status === HTTP_STATUS_RANGE_NOT_SATISFIABLE) {
       if (partialData) {
@@ -38,6 +41,8 @@ export async function fetchWithProgress({ url, signal, onBytesReceived }: {
     }
 
     if (!response.ok) {
+      const body = await response.text().catch(() => "");
+      void broadcastDebugLogToYouTubeTabs(`[ytdl:cdn] HTTP ${response.status} body=${body.slice(0, 200)}`);
       throw new Error(`HTTP ${response.status} fetching stream`);
     }
 
