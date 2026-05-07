@@ -7,7 +7,7 @@ const Store = {
 
 let dbConnection: IDBDatabase | null = null;
 
-async function openDatabase() {
+function openDatabase() {
   return new Promise<IDBDatabase>((resolve, reject) => {
     const openRequest = indexedDB.open(DB_NAME, DB_VERSION);
     openRequest.onupgradeneeded = () => {
@@ -38,14 +38,14 @@ async function getDatabase() {
   return dbConnection;
 }
 
-async function awaitRequest<T>(request: IDBRequest<T>) {
+function awaitRequest<T>(request: IDBRequest<T>) {
   return new Promise<T>((resolve, reject) => {
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
   });
 }
 
-async function awaitTransaction(transaction: IDBTransaction) {
+function awaitTransaction(transaction: IDBTransaction) {
   return new Promise<void>((resolve, reject) => {
     transaction.oncomplete = () => resolve();
     transaction.onerror = () => reject(transaction.error);
@@ -100,22 +100,6 @@ export async function deleteRecentDownload(id: string) {
   transaction.objectStore(Store.Entries).delete(id);
   transaction.objectStore(Store.Blobs).delete(id);
   await awaitTransaction(transaction);
-}
-
-export async function storePendingBlob(key: string, blob: Blob) {
-  const db = await getDatabase();
-  const transaction = db.transaction(Store.Blobs, "readwrite");
-  transaction.objectStore(Store.Blobs).put(blob, key);
-  await awaitTransaction(transaction);
-}
-
-export async function takePendingBlob(key: string) {
-  const db = await getDatabase();
-  const transaction = db.transaction(Store.Blobs, "readwrite");
-  const blob = await awaitRequest<Blob | undefined>(transaction.objectStore(Store.Blobs).get(key));
-  transaction.objectStore(Store.Blobs).delete(key);
-  await awaitTransaction(transaction);
-  return blob instanceof Blob ? blob : null;
 }
 
 export async function pruneRecentDownloads({ olderThanTimestamp, protectedIds }: {

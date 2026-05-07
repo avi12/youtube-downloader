@@ -1,16 +1,61 @@
-import {
-  type HandlerMap,
-  type OffscreenMessage,
-  OffscreenMessageType,
-  type OffscreenProtocolMap
-} from "./offscreen-protocol";
-import { TRANSFER_CHUNK_SIZE, uint8ToBase64 } from "@/lib/utils/binary";
-
-export { OffscreenMessageType };
-export type { HandlerMap };
+import type { DownloadType, VideoMetadata } from "@/types";
 
 const OFFSCREEN_PORT_NAME = "ytdl-offscreen";
-const YIELD_EVERY_N_CHUNKS = 32;
+
+const OffscreenMessageType = {
+  ProcessStreamChunk: "processStreamChunk",
+  ProcessStreamEnd: "processStreamEnd",
+  CancelProcessing: "cancelProcessing",
+  PipelineDownload: "pipelineDownload",
+  TranscodeRecentDownload: "transcodeRecentDownload"
+} as const;
+
+type OffscreenMessageType = (typeof OffscreenMessageType)[keyof typeof OffscreenMessageType];
+
+interface OffscreenProtocolMap {
+  [OffscreenMessageType.ProcessStreamChunk]: {
+    videoId: string;
+    streamType: string;
+    iChunk: number;
+    totalChunks: number;
+    chunkBase64: string;
+    tabId: number;
+  };
+  [OffscreenMessageType.ProcessStreamEnd]: {
+    type: DownloadType;
+    videoId: string;
+    filenameOutput: string;
+    videoMimeType: string;
+    audioMimeType: string;
+    audioTrackLabels: string[];
+    tabId: number;
+    playlistId?: string;
+    playlistTitle?: string;
+    playlistTotalCount?: number;
+    metadata?: VideoMetadata | null;
+  };
+  [OffscreenMessageType.CancelProcessing]: {
+    videoIds: string[];
+  };
+  [OffscreenMessageType.PipelineDownload]: {
+    dataUrl: string;
+    filename: string;
+  };
+  [OffscreenMessageType.TranscodeRecentDownload]: {
+    entryId: string;
+    targetContainer: string;
+  };
+}
+
+type OffscreenMessage = {
+  [T in OffscreenMessageType]: {
+    type: T;
+    data: OffscreenProtocolMap[T];
+  };
+}[OffscreenMessageType];
+
+type OffscreenHandler<T extends OffscreenMessageType> = (data: OffscreenProtocolMap[T]) => void;
+type HandlerMap = { [T in OffscreenMessageType]?: OffscreenHandler<T> };
 
 function dispatchOffscreenMessage({ handlers, message }: {
   handlers: Partial<HandlerMap>;
@@ -32,15 +77,6 @@ function dispatchOffscreenMessage({ handlers, message }: {
     case OffscreenMessageType.TranscodeRecentDownload:
       handlers[OffscreenMessageType.TranscodeRecentDownload]?.(message.data);
       break;
-    case OffscreenMessageType.SpawnIframe:
-      handlers[OffscreenMessageType.SpawnIframe]?.(message.data);
-      break;
-    case OffscreenMessageType.RemoveIframe:
-      handlers[OffscreenMessageType.RemoveIframe]?.(message.data);
-      break;
-    case OffscreenMessageType.ForwardToIframe:
-      handlers[OffscreenMessageType.ForwardToIframe]?.(message.data);
-      break;
   }
 }
 
@@ -57,7 +93,7 @@ function getOffscreenPort() {
   return offscreenPort;
 }
 
-export function sendToOffscreen<T extends OffscreenMessageType>(
+function sendToOffscreen<T extends OffscreenMessageType>(
   type: T,
   data: OffscreenProtocolMap[T]
 ) {
@@ -67,36 +103,7 @@ export function sendToOffscreen<T extends OffscreenMessageType>(
   });
 }
 
-export async function sendBytesToOffscreen({ videoId, streamType, data, tabId }: {
-  videoId: string;
-  streamType: string;
-  data: Uint8Array;
-  tabId: number;
-}) {
-  const totalChunks = Math.ceil(data.byteLength / TRANSFER_CHUNK_SIZE);
-  if (totalChunks === 0) {
-    return;
-  }
-
-  for (let iChunk = 0; iChunk < totalChunks; iChunk++) {
-    const start = iChunk * TRANSFER_CHUNK_SIZE;
-    const slice = data.subarray(start, start + TRANSFER_CHUNK_SIZE);
-    sendToOffscreen(OffscreenMessageType.ProcessStreamChunk, {
-      videoId,
-      streamType,
-      iChunk,
-      totalChunks,
-      chunkBase64: uint8ToBase64(slice),
-      tabId
-    });
-
-    if ((iChunk + 1) % YIELD_EVERY_N_CHUNKS === 0) {
-      await new Promise(resolve => setTimeout(resolve, 0));
-    }
-  }
-}
-
-export function listenForOffscreenMessages(handlers: HandlerMap) {
+function listenForOffscreenMessages(handlers: HandlerMap) {
   browser.runtime.onConnect.addListener(port => {
     if (port.name !== OFFSCREEN_PORT_NAME) {
       return;
@@ -110,3 +117,5 @@ export function listenForOffscreenMessages(handlers: HandlerMap) {
     });
   });
 }
+
+export { OffscreenMessageType, sendToOffscreen, listenForOffscreenMessages };

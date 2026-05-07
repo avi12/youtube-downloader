@@ -2,8 +2,8 @@ const STREAM_STALL_TIMEOUT_MS = 30_000;
 const STALL_CHECK_INTERVAL_MS = 1_000;
 
 export class StreamStallError extends Error {
-  constructor(public readonly partialData: Uint8Array, public readonly underlyingError?: string) {
-    super(underlyingError ? `Stream stalled (${underlyingError})` : "Stream stalled");
+  constructor(public readonly partialData: Uint8Array) {
+    super("Stream stalled");
     this.name = "StreamStallError";
   }
 }
@@ -29,21 +29,13 @@ function buildPartialData(
 
 async function readChunk(reader: ReadableStreamDefaultReader<Uint8Array>) {
   try {
-    const chunk = await reader.read();
-    return {
-      chunk,
-      error: null
-    };
+    return await reader.read();
   } catch (error) {
     if (error instanceof DOMException && error.name === "AbortError") {
       throw error;
     }
 
-    const detail = error instanceof Error ? `${error.name}: ${error.message}` : String(error);
-    return {
-      chunk: null,
-      error: detail
-    };
+    return null;
   }
 }
 
@@ -74,23 +66,18 @@ export async function readStreamToBuffer({ reader, expectedBytes, onBytesReceive
   let writeOffset = 0;
   let totalBytes = 0;
 
-  let lastReadError: string | undefined = undefined;
   try {
     while (true) {
-      const result = await readChunk(reader);
-      if (result.error) {
-        lastReadError = result.error;
-      }
-
-      if (!result.chunk) {
+      const chunk = await readChunk(reader);
+      if (!chunk) {
         if (!isStalled) {
-          throw new StreamStallError(buildPartialData(preallocated, chunks, totalBytes, writeOffset), lastReadError);
+          throw new StreamStallError(buildPartialData(preallocated, chunks, totalBytes, writeOffset));
         }
 
         break;
       }
 
-      const { done, value } = result.chunk;
+      const { done, value } = chunk;
       if (done) {
         break;
       }
@@ -111,7 +98,7 @@ export async function readStreamToBuffer({ reader, expectedBytes, onBytesReceive
   }
 
   if (isStalled) {
-    throw new StreamStallError(buildPartialData(preallocated, chunks, totalBytes, writeOffset), lastReadError);
+    throw new StreamStallError(buildPartialData(preallocated, chunks, totalBytes, writeOffset));
   }
 
   if (preallocated) {

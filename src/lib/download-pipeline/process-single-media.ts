@@ -1,7 +1,9 @@
 import { toUint8Array, triggerDownload } from ".";
 import { reportProgress } from ".";
+import { enqueueMuxJob, getFFmpeg, progressHandlers } from "./ffmpeg-instance";
+import { embedMusicMetadata } from "./music-metadata";
 import { addToPlaylistBundle } from "./playlist-bundle";
-import { processAudioWithFfmpeg } from "./process-single-audio";
+import { transcodeAudio } from "./transcode-audio";
 import { getFileExtension } from "@/lib/utils/containers";
 import { DownloadType, ProgressType } from "@/types";
 import type { ProcessStreamData } from "@/types";
@@ -28,60 +30,111 @@ export async function processSingleMedia(item: ProcessStreamData) {
   const isAudio = type === DownloadType.Audio;
   const sourceExtension = isAudio ? sourceAudioExtension(item.audioMimeType) : "";
   const outputExtension = getFileExtension(filenameOutput);
-  if (isAudio) {
+  const isFlacTarget = isAudio && outputExtension === "flac";
+
+  const ffmpegProgressCap = 0.99;
+  function handleFfmpegProgress({ progress }: {
+    progress: number;
+  }) {
+    void reportProgress({
+      videoId,
+      progress: Math.min(progress, ffmpegProgressCap),
+      progressType: ProgressType.FFmpeg,
+      tabId
+    });
+  }
+
+  if (isAudio && item.metadata?.isMusic) {
+    const metadata = item.metadata;
     await reportProgress({
       videoId,
       progress: 0,
       progressType: ProgressType.FFmpeg,
       tabId
     });
-    data = await processAudioWithFfmpeg({
+
+    progressHandlers.add(handleFfmpegProgress);
+    try {
+      await enqueueMuxJob(async () => {
+        const ffmpeg = getFFmpeg();
+        const audioData = data;
+        if (!audioData) {
+          return;
+        }
+
+        data = await embedMusicMetadata({
+          audioData,
+          filenameOutput,
+          sourceExtension,
+          metadata,
+          ffmpeg
+        });
+      });
+    } finally {
+      progressHandlers.delete(handleFfmpegProgress);
+    }
+  } else if (isFlacTarget) {
+    // FLAC can't hold AAC/Opus, so re-encode even without music metadata to embed.
+    await reportProgress({
       videoId,
-      tabId,
-      data,
-      filenameOutput,
-      sourceExtension,
-      metadata: item.metadata,
-      isFlacTarget: outputExtension === "flac"
+      progress: 0,
+      progressType: ProgressType.FFmpeg,
+      tabId
     });
+
+    progressHandlers.add(handleFfmpegProgress);
+    try {
+      await enqueueMuxJob(async () => {
+        const ffmpeg = getFFmpeg();
+        const audioData = data;
+        if (!audioData) {
+          return;
+        }
+
+        data = await transcodeAudio({
+          audioData,
+          sourceExtension,
+          filenameOutput,
+          ffmpeg
+        });
+      });
+    } finally {
+      progressHandlers.delete(handleFfmpegProgress);
+    }
   }
 
   if (item.playlistId) {
-    await Promise.all([
-      addToPlaylistBundle({
-        playlistId: item.playlistId,
-        playlistTitle: item.playlistTitle ?? "Playlist",
-        totalCount: item.playlistTotalCount ?? 1,
-        tabId,
-        filename: filenameOutput,
-        data
-      }),
-      reportProgress({
-        videoId,
-        progress: 1,
-        progressType: ProgressType.FFmpeg,
-        tabId
-      })
-    ]);
-    return;
-  }
-
-  await Promise.all([
-    triggerDownload({
-      data,
-      filenameOutput,
-      recentContext: {
-        videoId,
-        title: item.metadata?.title ?? filenameOutput,
-        channel: item.metadata?.artist ?? "",
-        thumbnailUrl: item.metadata?.thumbnailUrl
-      }
-    }),
-    reportProgress({
+    await addToPlaylistBundle({
+      playlistId: item.playlistId,
+      playlistTitle: item.playlistTitle ?? "Playlist",
+      totalCount: item.playlistTotalCount ?? 1,
+      tabId,
+      filename: filenameOutput,
+      data
+    });
+    await reportProgress({
       videoId,
       progress: 1,
       progressType: ProgressType.FFmpeg,
       tabId
-    })
-  ]);
+    });
+    return;
+  }
+
+  await triggerDownload({
+    data,
+    filenameOutput,
+    recentContext: {
+      videoId,
+      title: item.metadata?.title ?? filenameOutput,
+      channel: item.metadata?.artist ?? "",
+      thumbnailUrl: item.metadata?.thumbnailUrl
+    }
+  });
+  await reportProgress({
+    videoId,
+    progress: 1,
+    progressType: ProgressType.FFmpeg,
+    tabId
+  });
 }

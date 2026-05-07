@@ -12,6 +12,8 @@ export const MessageType = {
   GetInterruptedDownload: "getInterruptedDownload",
   RequestPlaylistDownload: "requestPlaylistDownload",
   DownloadViaWatchPage: "downloadViaWatchPage",
+  CreateDownloadIframe: "createDownloadIframe",
+  RemoveDownloadIframe: "removeDownloadIframe",
   DownloadIframeReady: "downloadIframeReady",
   CancelDownload: "cancelDownload",
   StartBackgroundDownload: "startBackgroundDownload",
@@ -25,17 +27,10 @@ export const MessageType = {
   PipelineQueueRemove: "pipelineQueueRemove",
   PipelineFFmpegReady: "pipelineFFmpegReady",
   PipelineStart: "pipelineStart",
+  PipelineDownload: "pipelineDownload",
   RecentDownloadsChanged: "recentDownloadsChanged",
   TranscodeRecentDownload: "transcodeRecentDownload",
-  PipelineZipProgress: "pipelineZipProgress",
-  BgDebugLog: "bgDebugLog",
-  GetSabrTemplateFromTab: "getSabrTemplateFromTab",
-  SabrTemplateReady: "sabrTemplateReady",
-  SynthesizeSabrTemplateFromTab: "synthesizeSabrTemplateFromTab",
-  RunProgressiveSabrInTab: "runProgressiveSabrInTab",
-  RunCdnFetchInTab: "runCdnFetchInTab",
-  PipelineTriggerDownload: "pipelineTriggerDownload",
-  RequestFreshSabrPrimer: "requestFreshSabrPrimer"
+  PipelineZipProgress: "pipelineZipProgress"
 } as const;
 
 interface ProtocolMap {
@@ -103,6 +98,15 @@ interface ProtocolMap {
 
   downloadViaWatchPage(data: DownloadRequest): void;
 
+  createDownloadIframe(data: {
+    videoId: string;
+    watchUrl: string;
+  }): void;
+
+  removeDownloadIframe(data: {
+    videoId: string;
+  }): void;
+
   downloadIframeReady(data: {
     videoId: string;
   }): void;
@@ -160,6 +164,17 @@ interface ProtocolMap {
     filenameOutput: string;
     tabId: number;
   }): void;
+  pipelineDownload(data: {
+    blobUrl: string;
+    mimeType: string;
+    filename: string;
+    recentContext?: {
+      videoId: string;
+      title: string;
+      channel: string;
+      thumbnailUrl?: string;
+    };
+  }): void;
   recentDownloadsChanged(data: Record<string, never>): void;
   transcodeRecentDownload(data: {
     entryId: string;
@@ -170,78 +185,6 @@ interface ProtocolMap {
     isDone: boolean;
     tabId: number;
   }): void;
-
-  // Forwards offscreen / background diagnostic messages to a content script
-  // so they're visible in the user's page console for debugging.
-  bgDebugLog(data: {
-    msg: string;
-  }): void;
-
-  // BG asks a tab's MAIN-world SABR interceptor for the latest captured trust
-  // template. Body is base64-encoded for transport (Uint8Array doesn't survive
-  // CustomEvent structured-clone reliably for some payload sizes).
-  getSabrTemplateFromTab(data: Record<string, never>): {
-    url: string;
-    bodyBase64: string;
-    capturedAt: number;
-  } | null;
-
-  // Factory tab pushes its captured trust template to BG once the player has
-  // started fetching real (non-ad) content. The factory tab is opened by BG
-  // and torn down once the template is received.
-  sabrTemplateReady(data: {
-    videoId: string;
-    factoryId?: string;
-    url: string;
-    bodyBase64: string;
-    capturedAt: number;
-  }): void;
-
-  // BG asks the user tab's MAIN-world synthesizer for a fresh trust template
-  // with `clientAbrState.playerTimeMs` mutated to the requested offset. Lets
-  // chunked-SABR fan out without spawning factory iframes per offset.
-  synthesizeSabrTemplateFromTab(data: {
-    playerTimeMs: number;
-  }): {
-    url: string;
-    bodyBase64: string;
-    capturedAt: number;
-  } | null;
-
-  // BG asks the user tab's MAIN-world fetchProgressive engine to harvest the
-  // entire video via raw SABR POSTs (no player playback, so no ads, no buffer
-  // races). MAIN reports progress + final bytes back through the existing
-  // CrossWorldMessage.StreamData → handleStreamData → MessageType.StreamChunk
-  // pipeline.
-  runProgressiveSabrInTab(data: DownloadRequest): void;
-
-  // Firefox: BG asks the tab's MAIN world to call the player API with page
-  // session cookies and fetch the resulting CDN URLs - avoids the 403 that
-  // the background SW gets due to Firefox network-context isolation.
-  runCdnFetchInTab(data: DownloadRequest): void;
-
-  pipelineTriggerDownload(data: {
-    pendingBlobKey: string;
-    blobUrl: string;
-    filename: string;
-    mimeType: string;
-    recentContext?: {
-      videoId: string;
-      title: string;
-      channel: string;
-      thumbnailUrl?: string;
-    };
-  }): boolean;
-
-  // MAIN world requests a fresh offscreen SABR primer from BG after sps=3
-  // blocks the current expire= token, so the next session gets a new quota.
-  requestFreshSabrPrimer(data: {
-    videoId: string;
-  }): {
-    url: string;
-    bodyBase64: string;
-  } | null;
-
 }
 
 export const { sendMessage, onMessage } =

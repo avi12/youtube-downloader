@@ -2,12 +2,11 @@ import { enqueueMuxJob } from "./ffmpeg-instance";
 import { processSingleMedia } from "./process-single-media";
 import { processVideoAudio } from "./process-video-audio";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
-import { DownloadType } from "@/types";
+import { getCompatibleFilename, getMimeType } from "@/lib/utils/containers";
+import { DownloadType, ProgressType } from "@/types";
 import type { ProcessStreamData } from "@/types";
 
 export { initFFmpeg } from "./ffmpeg-instance";
-export { triggerDownload } from "./trigger-download";
-export { reportProgress } from "./report-progress";
 
 export function toUint8Array(data: Uint8Array | Record<string, number> | null) {
   if (!data) {
@@ -21,12 +20,90 @@ export function toUint8Array(data: Uint8Array | Record<string, number> | null) {
   return new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
 }
 
-interface ActiveJob {
-  videoId: string;
-  tabId: number;
+const blobUrlsPendingRevocation = new Map<string, Blob>();
+const BLOB_REVOCATION_DELAY_MS = 60_000;
+
+export async function triggerDownload({ data, filenameOutput, recentContext }: {
+  data: Uint8Array;
+  filenameOutput: string;
+  recentContext?: {
+    videoId: string;
+    title: string;
+    channel: string;
+    thumbnailUrl?: string;
+  };
+}) {
+  const mimeType = getMimeType(filenameOutput) || "application/octet-stream";
+  const filename = getCompatibleFilename(filenameOutput);
+  const blob = new Blob([new Uint8Array(data)], { type: mimeType });
+  const blobUrl = URL.createObjectURL(blob);
+  blobUrlsPendingRevocation.set(blobUrl, blob);
+
+  await sendMessage(MessageType.PipelineDownload, {
+    blobUrl,
+    mimeType,
+    filename,
+    recentContext
+  });
+
+  setTimeout(() => {
+    URL.revokeObjectURL(blobUrl);
+    blobUrlsPendingRevocation.delete(blobUrl);
+  }, BLOB_REVOCATION_DELAY_MS);
 }
 
-const activeJobs = new Map<string, ActiveJob>();
+// FFmpeg fires progress events per frame/packet including thousands of redundant progress=1 events,
+// so throttle to avoid flooding Polymer button re-renders.
+const PROGRESS_THROTTLE_INTERVAL_MS = 200;
+const lastProgressTimestamps = new Map<string, number>();
+const completedVideoIds = new Set<string>();
+
+export async function reportProgress({
+  videoId, progress, progressType, tabId
+}: {
+  videoId: string;
+  progress: number;
+  progressType: ProgressType;
+  tabId: number;
+}) {
+  if (progress < 1) {
+    completedVideoIds.delete(videoId);
+  }
+
+  if (progress === 0) {
+    lastProgressTimestamps.delete(videoId);
+  }
+
+  if (progress >= 1) {
+    if (completedVideoIds.has(videoId)) {
+      return;
+    }
+
+    completedVideoIds.add(videoId);
+    lastProgressTimestamps.delete(videoId);
+    await sendMessage(MessageType.PipelineProgress, {
+      videoId,
+      progress,
+      progressType,
+      tabId
+    });
+    return;
+  }
+
+  const now = Date.now();
+  const lastSent = lastProgressTimestamps.get(videoId) ?? 0;
+  if (now - lastSent < PROGRESS_THROTTLE_INTERVAL_MS) {
+    return;
+  }
+
+  lastProgressTimestamps.set(videoId, now);
+  await sendMessage(MessageType.PipelineProgress, {
+    videoId,
+    progress,
+    progressType,
+    tabId
+  });
+}
 
 async function reportRemoval({ videoId, tabId }: {
   videoId: string;
@@ -48,6 +125,13 @@ async function removeFromStorageQueue({ videoId, type }: {
   });
 }
 
+interface ActiveJob {
+  videoId: string;
+  tabId: number;
+}
+
+const activeJobs = new Map<string, ActiveJob>();
+
 async function processItem(item: ProcessStreamData) {
   activeJobs.set(item.videoId, {
     videoId: item.videoId,
@@ -68,12 +152,7 @@ async function processItem(item: ProcessStreamData) {
       await processSingleMedia(item);
     }
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error);
     console.error("[ytdl:pipeline] Mux/download failed:", item.videoId, error);
-    await sendMessage(MessageType.ProcessStreamError, {
-      videoId: item.videoId,
-      error: `[mux] ${message}`
-    });
     await reportRemoval({
       videoId: item.videoId,
       tabId: item.tabId
