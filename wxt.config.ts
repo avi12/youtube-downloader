@@ -10,20 +10,17 @@ export default defineConfig({
   publicDir: "src/public",
   modules: ["@wxt-dev/module-svelte"],
   manifestVersion: 3,
-  manifest: ({ browser, mode }) => ({
+  manifest: ({ mode }) => ({
     name: "YouTube Downloader",
     description: "Download YouTube videos and audio directly from the page",
     permissions: [
       "alarms",
-      "cookies",
       "downloads",
+      "offscreen",
       "storage",
-      "unlimitedStorage",
       "tabs",
       "webRequest",
-      "declarativeNetRequest",
-      "declarativeNetRequestWithHostAccess",
-      ...(browser === "chrome" ? ["offscreen"] : [])
+      "declarativeNetRequestWithHostAccess"
     ],
     host_permissions: [
       "https://*.youtube.com/*",
@@ -31,20 +28,13 @@ export default defineConfig({
       "https://i.ytimg.com/*",
       ...(mode === "development" ? ["http://localhost/*", "https://localhost/*"] : [])
     ],
-    ...(browser === "firefox" && {
-      browser_specific_settings: {
-        gecko: { id: "youtube-downloader@avi12.com" }
-      }
-    }),
     content_security_policy: {
       extension_pages:
         "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
     },
     web_accessible_resources: [
       {
-        resources: [
-          ...(browser === "chrome" ? ["offscreen.html"] : [])
-        ],
+        resources: ["offscreen.html"],
         matches: ["<all_urls>"]
       }
     ]
