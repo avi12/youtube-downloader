@@ -12,9 +12,10 @@ Made by [Avi](https://avi12.com)
   <img src="https://user-images.githubusercontent.com/6422804/135838702-e852bb47-8c0d-4275-baf1-8adc1c50a3c1.png" width="30" alt="Microsoft Edge">
   <img src="https://user-images.githubusercontent.com/6422804/135838972-113f73a3-6a04-48a9-ae04-754f25bc6eb0.png" width="30" alt="Opera">
   <img src="https://user-images.githubusercontent.com/6422804/135838972-113f73a3-6a04-48a9-ae04-754f25bc6eb0.png" width="30" alt="Opera GX">
+  <img src="https://upload.wikimedia.org/wikipedia/commons/a/a0/Firefox_logo%2C_2019.svg" width="30" alt="Firefox">
 </p>
 
-Chrome, Edge, Opera, and Opera GX (Chromium MV3).
+Chrome, Edge, Opera, Opera GX, and Firefox (all MV3).
 
 ## Features
 
@@ -61,33 +62,6 @@ Chrome, Edge, Opera, and Opera GX (Chromium MV3).
 - Default video quality (highest available or a specific resolution)
 - Toggle removal of YouTube's native download button
 
-## How downloads work
-
-YouTube serves video and audio as separate SABR streams (Scalable Adaptive Bit Rate - an internal Google protocol
-where the client sends a protobuf request and receives a UMP-encoded response containing media chunks). The extension
-downloads both streams and muxes them locally using FFmpeg WASM.
-
-### Download resolution (`background/download/download-resolver.ts`)
-
-Every download attempt walks the same priority ladder:
-
-1. **CDN-first** - if the video has a pre-signed CDN URL, fetch it directly (`cdn-downloader.ts`). This is the fast path and avoids SABR entirely.
-2. **Direct SABR** - send a synthetic `VideoPlaybackAbrRequest` from the background service worker (`sabr-downloader.ts`). The request is built from a captured copy of the player's own SABR POST body (`lib/youtube/sabr/request-capture.ts`), which carries the session tokens and PO token the server requires. A stall guard wraps each attempt and retries up to 3 times on a 30 s silence (`sabr-stall-guard.ts`).
-3. **Progressive SABR in-tab** - if the background has no captured SABR data, it first primes the capture by spawning a hidden iframe in the offscreen document (`offscreen-sabr-primer.ts`). If direct SABR still stalls, the background sends `RunProgressiveSabrInTab` to the YouTube tab. The `sabr-fetch-interceptor` content script (`entrypoints/sabr-fetch-interceptor/`) takes over: it builds a SABR template from its own intercepted fetch, drives successive requests through the player's network stack, and streams the resulting bytes back to the background.
-
-### Muxing (`entrypoints/offscreen/` + `lib/download-pipeline/`)
-
-Once all raw bytes are collected they go to an FFmpeg WASM instance running inside a dedicated offscreen document
-(`browser.offscreen.createDocument`). The mux strategy depends on what arrived:
-
-| Input | Handler |
-|---|---|
-| Separate video + audio streams | `process-video-audio.ts` |
-| Single stream (audio-only) | `process-single-media.ts` |
-
-FFmpeg progress events feed back to the watch-page progress ring via `PipelineProgress` messages. When FFmpeg
-finishes, the output buffer is handed to `browser.downloads.download` (or appended to a ZIP for batch downloads).
-
 ## Development
 
 ### Requirements
@@ -101,22 +75,32 @@ finishes, the output buffer is handed to `browser.downloads.download` (or append
 pnpm i
 ```
 
-### Dev server (auto-reload on file save)
+### Dev server (Chrome, auto-reload on file save)
 
 ```bash
 pnpm dev:stable
 ```
 
-The dev server builds for production (with source maps), launches Chrome with the extension sideloaded, and reloads
+### Dev server (Firefox)
+
+```bash
+pnpm dev:stable-firefox
+```
+
+The dev server builds for production (with source maps), launches a browser with the extension sideloaded, and reloads
 both the extension and any open YouTube tabs on every file change under `src/`.
 
 ### Other dev commands
 
 ```bash
-pnpm dev              # WXT dev mode
-pnpm build            # Production build
-pnpm svelte:check     # Svelte type-check
-pnpm lint             # ESLint + Stylelint
+pnpm dev                  # WXT dev mode (Chrome)
+pnpm dev:with-profile     # WXT dev mode with your Chrome profile
+pnpm dev:firefox          # WXT dev mode (Firefox)
+pnpm build                # Production build (Chrome)
+pnpm build:firefox        # Production build (Firefox)
+pnpm svelte:check         # Svelte type-check
+pnpm lint                 # ESLint + Stylelint
+pnpm knip                 # Dead code detection
 ```
 
 ## Tech stack

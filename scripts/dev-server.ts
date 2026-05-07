@@ -1,13 +1,14 @@
 /**
- * Dev server: WXT production builds (with inline source maps), sideloaded in
- * Chrome via web-ext-run, hot-reloaded on src/ changes.
+ * Dev server: production builds (with source maps) + browser with sideloaded extension.
+ * On file changes: rebuilds for production and reloads extension + YouTube tabs.
  *
- * On file change: rebuild → extension reload → YouTube tabs reloaded.
- * Chrome uses CDP (Page.reload over the debug-port WebSocket).
- * On SIGINT/SIGTERM: web-ext-run kills the browser process.
+ * Chrome 126+ requires Extensions.loadUnpacked via CDP debug pipes.
+ * web-ext-run (used by WXT internally) handles this via chrome-launcher.
+ * Must run under Node (not Bun) because pipe fd mapping requires Node's spawn.
  *
  * Usage:
- *   tsx scripts/dev-server.ts
+ *   npx tsx scripts/dev-server.ts           - Chrome
+ *   npx tsx scripts/dev-server.ts --firefox - Firefox
  */
 
 import chokidar from "chokidar";
@@ -17,101 +18,31 @@ import {
   cpSync,
   mkdirSync,
   readFileSync,
-  rmSync,
   writeFileSync
 } from "node:fs";
-import { createServer } from "node:net";
 import { homedir, platform } from "node:os";
 import { resolve, join, dirname } from "node:path";
+import { debounce } from "perfect-debounce";
 import webExtRun from "web-ext-run";
 import { consoleStream as webExtConsoleStream } from "web-ext-run/util/logger";
 import { build } from "wxt";
 
-function debounce<TArgs extends unknown[]>(callback: (...args: TArgs) => Promise<void> | void, wait: number) {
-  let timeoutId: NodeJS.Timeout | undefined;
-  return (...args: TArgs) => {
-    clearTimeout(timeoutId);
-    timeoutId = setTimeout(() => void callback(...args), wait);
-  };
-}
-
-async function findFreeTcpPort(startPort: number) {
-  const MAX_PROBES = 50;
-  for (let port = startPort; port < startPort + MAX_PROBES; port++) {
-    const isAvailable = await new Promise<boolean>(resolvePromise => {
-      const server = createServer();
-      server.once("error", () => resolvePromise(false));
-      server.once("listening", () => {
-        server.close(() => resolvePromise(true));
-      });
-      server.listen(port, "127.0.0.1");
-    });
-    if (isAvailable) {
-      return port;
-    }
-  }
-
-  return startPort;
-}
-
+const IS_FIREFOX = process.argv.includes("--firefox");
 const PROJECT_ROOT = resolve(import.meta.dirname, "..");
-const OUTPUT_DIR = resolve(PROJECT_ROOT, ".output/chrome-mv3");
+const OUTPUT_DIR = resolve(PROJECT_ROOT, IS_FIREFOX ? ".output/firefox-mv3" : ".output/chrome-mv3");
 const USER_PROFILES_DIR = resolve(PROJECT_ROOT, "user-profiles");
 const CHROME_PROFILE_DIR = join(USER_PROFILES_DIR, "chrome");
 const { LANG = "en" } = process.env;
 const START_URL = "https://www.youtube.com/feed/subscriptions";
-const CHROME_CDP_START_PORT = 9222;
+const CDP_PORT = 9229;
 const REBUILD_DEBOUNCE_MS = 800;
 
 // ── Chrome profile setup ────────────────────────────────────────────────────
 
 const CHROME_PROFILE_SENTINEL = join(CHROME_PROFILE_DIR, "Default", ".seeded");
 
-const CHROME_USERDATA_FILES = ["Local State"];
-const CHROME_DEFAULT_FILES = [
-  "Preferences",
-  "Secure Preferences",
-  "Bookmarks",
-  "Login Data",
-  "Login Data For Account",
-  "History",
-  "Favicons",
-  "Web Data",
-  "Top Sites"
-];
-const CHROME_DEFAULT_NETWORK_FILES = ["Cookies", "Network Persistent State", "TransportSecurity"];
-
-function cloneFile(sourcePath: string, destinationPath: string) {
-  if (!existsSync(sourcePath)) {
-    return;
-  }
-
-  mkdirSync(dirname(destinationPath), { recursive: true });
-  try {
-    cpSync(sourcePath, destinationPath);
-  } catch {
-    // Destination may be locked — skip; existing file is fine
-  }
-}
-
-function ensureChromeDeveloperMode() {
-  const preferencesPath = join(CHROME_PROFILE_DIR, "Default", "Preferences");
-  mkdirSync(dirname(preferencesPath), { recursive: true });
-  const preferences = existsSync(preferencesPath) ? JSON.parse(readFileSync(preferencesPath, "utf-8")) : {};
-  preferences.extensions = {
-    ...preferences.extensions,
-    ui: {
-      ...preferences.extensions?.ui,
-      developer_mode: true
-    }
-  };
-  delete preferences.protection;
-  writeFileSync(preferencesPath, JSON.stringify(preferences));
-}
-
 function setupChromeProfile() {
   if (existsSync(CHROME_PROFILE_SENTINEL)) {
-    ensureChromeDeveloperMode();
     return CHROME_PROFILE_DIR;
   }
 
@@ -123,88 +54,152 @@ function setupChromeProfile() {
     linux: join(home, ".config", "google-chrome")
   };
   const source = sourceUserData[platform()];
-  const sourceDefault = source && join(source, "Default");
-  if (!sourceDefault || !existsSync(sourceDefault)) {
-    mkdirSync(join(CHROME_PROFILE_DIR, "Default"), { recursive: true });
-    writeFileSync(CHROME_PROFILE_SENTINEL, "");
+  if (!source || !existsSync(source)) {
+    mkdirSync(CHROME_PROFILE_DIR, { recursive: true });
     return CHROME_PROFILE_DIR;
   }
 
-  console.log(`Cloning Chrome Default profile from ${sourceDefault}...`);
+  console.log(`Setting up Chrome profile from ${source}...`);
+  for (const directory of ["Default", "Profile 1"]) {
+    const bookmarksPath = join(source, directory, "Bookmarks");
+    if (!existsSync(bookmarksPath)) {
+      continue;
+    }
 
-  for (const file of CHROME_USERDATA_FILES) {
-    cloneFile(join(source, file), join(CHROME_PROFILE_DIR, file));
+    const destinationPath = join(CHROME_PROFILE_DIR, directory, "Bookmarks");
+    mkdirSync(dirname(destinationPath), { recursive: true });
+    cpSync(bookmarksPath, destinationPath);
   }
-
-  const destinationDefault = join(CHROME_PROFILE_DIR, "Default");
-  for (const file of CHROME_DEFAULT_FILES) {
-    cloneFile(join(sourceDefault, file), join(destinationDefault, file));
-  }
-
-  for (const file of CHROME_DEFAULT_NETWORK_FILES) {
-    cloneFile(join(sourceDefault, "Network", file), join(destinationDefault, "Network", file));
-  }
-
-  ensureChromeDeveloperMode();
   console.log("Profile setup complete.");
 
   writeFileSync(CHROME_PROFILE_SENTINEL, "");
   return CHROME_PROFILE_DIR;
 }
 
-// ── Cleanup ─────────────────────────────────────────────────────────────────
+const FIREFOX_SESSION_FILES = [
+  "cookies.sqlite",
+  "key4.db",
+  "logins.json",
+  "cert9.db",
+  "permissions.sqlite",
+  "places.sqlite",
+  "favicons.sqlite"
+];
 
-function killExistingDevServers() {
+function findDefaultFirefoxProfilePath() {
+  const home = homedir();
+  const { APPDATA = "" } = process.env;
+  const firefoxDataPaths: Record<string, string> = {
+    win32: join(APPDATA, "Mozilla", "Firefox"),
+    darwin: join(home, "Library", "Application Support", "Firefox"),
+    linux: join(home, ".mozilla", "firefox")
+  };
+  const firefoxDataPath = firefoxDataPaths[platform()];
+  const profilesIniPath = firefoxDataPath && join(firefoxDataPath, "profiles.ini");
+  if (!profilesIniPath || !existsSync(profilesIniPath)) {
+    return null;
+  }
+
+  const ini = readFileSync(profilesIniPath, "utf-8");
+  const sections = ini.split(/(?=^\[Profile\d)/m);
+  const defaultSection = sections.find(section => /^Default=1$/m.test(section));
+  const pathMatch = defaultSection?.match(/^Path=(.+)$/m);
+  const isRelative = /^IsRelative=1$/m.test(defaultSection ?? "");
+  if (!pathMatch) {
+    return null;
+  }
+
+  const profilePath = pathMatch[1].trim();
+  return isRelative ? join(firefoxDataPath, profilePath) : profilePath;
+}
+
+const FIREFOX_PROFILE_DIR = join(USER_PROFILES_DIR, "firefox");
+const FIREFOX_PROFILE_SENTINEL = join(FIREFOX_PROFILE_DIR, ".seeded");
+
+function setupFirefoxProfile() {
+  if (existsSync(FIREFOX_PROFILE_SENTINEL)) {
+    return FIREFOX_PROFILE_DIR;
+  }
+
+  mkdirSync(FIREFOX_PROFILE_DIR, { recursive: true });
+
+  const source = findDefaultFirefoxProfilePath();
+  if (source && existsSync(source)) {
+    console.log(`Setting up Firefox profile from ${source}...`);
+    for (const file of FIREFOX_SESSION_FILES) {
+      const sourcePath = join(source, file);
+      if (!existsSync(sourcePath)) {
+        continue;
+      }
+
+      cpSync(sourcePath, join(FIREFOX_PROFILE_DIR, file));
+    }
+    console.log("Profile setup complete.");
+  }
+
+  writeFileSync(FIREFOX_PROFILE_SENTINEL, "");
+  return FIREFOX_PROFILE_DIR;
+}
+
+// ── Firefox cleanup ─────────────────────────────────────────────────────────
+
+function killExistingFirefoxInstances() {
   if (platform() !== "win32") {
     return;
   }
 
   const script = `
-$selfStart = (Get-Process -Id ${process.pid}).StartTime
-Get-CimInstance Win32_Process -Filter "name='node.exe'" |
-  Where-Object { $_.CommandLine -and $_.CommandLine.Contains('dev-server') } |
-  ForEach-Object {
-    try {
-      $proc = Get-Process -Id $_.ProcessId -ErrorAction Stop
-      if ($proc.StartTime -lt $selfStart) {
-        Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue
-      }
-    } catch {}
-  }
-Start-Sleep -Milliseconds 500
+$profile = '${FIREFOX_PROFILE_DIR.replace(/'/g, "''")}'
+Get-CimInstance Win32_Process -Filter "name='firefox.exe'" |
+  Where-Object { $_.CommandLine -and $_.CommandLine.Contains($profile) } |
+  ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
 `;
   spawnSync("powershell", ["-NoProfile", "-NonInteractive", "-Command", "-"], {
     input: script,
     stdio: ["pipe", "ignore", "ignore"],
-    timeout: 10_000
+    timeout: 5000
   });
 }
 
-function killExistingChromeInstances() {
-  if (platform() !== "win32") {
-    return;
-  }
+// ── Tab reload via HTTP CDP ─────────────────────────────────────────────────
 
-  const script = `
-$profile = '${CHROME_PROFILE_DIR.replace(/'/g, "''")}'
-Get-CimInstance Win32_Process -Filter "name='chrome.exe'" |
-  Where-Object { $_.CommandLine -and $_.CommandLine.Contains($profile) } |
-  ForEach-Object { Stop-Process -Id $_.ProcessId -Force -ErrorAction SilentlyContinue }
-Start-Sleep -Milliseconds 500
-`;
-  spawnSync("powershell", ["-NoProfile", "-NonInteractive", "-Command", "-"], {
-    input: script,
-    stdio: ["pipe", "ignore", "ignore"],
-    timeout: 10_000
-  });
+async function reloadYouTubeTabs() {
+  try {
+    const pagesResponse = await fetch(`http://localhost:${CDP_PORT}/json`);
+    const pages: Array<{
+      url: string;
+      webSocketDebuggerUrl?: string;
+    }> =
+      await pagesResponse.json();
 
-  for (const lockFile of ["SingletonLock", "SingletonCookie", "SingletonSocket"]) {
-    const lockPath = join(CHROME_PROFILE_DIR, lockFile);
-    if (existsSync(lockPath)) {
-      try {
-        rmSync(lockPath, { force: true });
-      } catch { /* lock might be briefly held */ }
+    for (const page of pages) {
+      if (!page.url?.includes("youtube.com") || !page.webSocketDebuggerUrl) {
+        continue;
+      }
+
+      const websocket = new WebSocket(page.webSocketDebuggerUrl);
+      await new Promise<void>(resolve => {
+        websocket.onopen = () => {
+          websocket.send(
+            JSON.stringify({
+              id: 1,
+              method: "Page.reload",
+              params: {}
+            })
+          );
+        };
+        websocket.onmessage = e => {
+          const data: { id?: number } = JSON.parse(String(e.data));
+          if (data.id === 1) {
+            websocket.close();
+            resolve();
+          }
+        };
+        websocket.onerror = () => resolve();
+      });
     }
+  } catch {
+    // CDP HTTP endpoint is not available
   }
 }
 
@@ -213,103 +208,68 @@ Start-Sleep -Milliseconds 500
 async function buildExtension() {
   await build({
     root: PROJECT_ROOT,
-    browser: "chrome",
+    browser: IS_FIREFOX ? "firefox" : "chrome",
     manifestVersion: 3
   });
 }
 
-async function reloadChromeYouTubeTabs(cdpPort: number) {
-  let tabs: Array<{
-    url?: string;
-    webSocketDebuggerUrl?: string;
-  }>;
-  try {
-    const response = await fetch(`http://localhost:${cdpPort}/json`);
-    tabs = await response.json();
-  } catch {
-    return;
-  }
-
-  const youtubeTabs = tabs.filter(tab => tab.url?.includes("youtube.com") && tab.webSocketDebuggerUrl);
-  await Promise.all(
-    youtubeTabs.map(tab => new Promise<void>(resolve => {
-      const ws = new WebSocket(tab.webSocketDebuggerUrl!);
-      function done() {
-        ws.close();
-        resolve();
-      }
-      ws.addEventListener("open", () => ws.send(
-        JSON.stringify({
-          id: 1,
-          method: "Page.reload"
-        })
-      ));
-      ws.addEventListener("message", done);
-      ws.addEventListener("error", done);
-      setTimeout(done, 3000);
-    }))
-  );
-}
-
 // ── Main ────────────────────────────────────────────────────────────────────
 
-type WebExtRunner = Awaited<ReturnType<typeof webExtRun.cmd.run>>;
+async function main() {
+  process.chdir(PROJECT_ROOT);
 
-interface LogEntry {
-  level: number;
-  msg: string;
-}
+  if (IS_FIREFOX) {
+    killExistingFirefoxInstances();
+  }
 
-async function launchBrowser(profileDirectory: string): Promise<[WebExtRunner, () => Promise<void>]> {
+  const profileDirectory = IS_FIREFOX ? setupFirefoxProfile() : setupChromeProfile();
+
+  console.log(`Building extension for ${IS_FIREFOX ? "Firefox" : "Chrome"} (production + source maps)...`);
+  await buildExtension();
+  console.log("Build complete.\n");
+
+  // Suppress noisy web-ext-run logs
   const WARN_LOG_LEVEL = 40;
-  webExtConsoleStream.write = ({ level, msg: message }: LogEntry) => {
+  webExtConsoleStream.write = ({ level, msg: message }) => {
     if (level >= WARN_LOG_LEVEL) {
       console.warn(message);
     }
   };
 
-  const cdpPort = await findFreeTcpPort(CHROME_CDP_START_PORT);
-  if (cdpPort !== CHROME_CDP_START_PORT) {
-    console.log(`Chrome CDP port ${CHROME_CDP_START_PORT} busy; using ${cdpPort} instead`);
-  }
-
-  const runner = await webExtRun.cmd.run(
-    {
-      target: "chromium",
+  const runOptions = IS_FIREFOX
+    ? {
+      target: "firefox-desktop" as const,
+      sourceDir: OUTPUT_DIR,
+      startUrl: [START_URL],
+      keepProfileChanges: true,
+      firefoxProfile: profileDirectory,
+      args: [`--lang=${LANG}`, "--marionette", "--remote-debugging-port=9230"],
+      noReload: true,
+      noInput: true
+    }
+    : {
+      target: "chromium" as const,
       sourceDir: OUTPUT_DIR,
       startUrl: [START_URL],
       keepProfileChanges: true,
       chromiumProfile: profileDirectory,
       args: [
         `--lang=${LANG}`,
-        `--remote-debugging-port=${cdpPort}`,
+        `--remote-debugging-port=${CDP_PORT}`,
         "--disable-blink-features=AutomationControlled"
       ],
       noReload: true,
       noInput: true
-    },
-    { shouldExitProgram: false }
-  );
-  return [runner, () => reloadChromeYouTubeTabs(cdpPort)];
-}
+    };
 
-async function main() {
-  process.chdir(PROJECT_ROOT);
+  const runner = await webExtRun.cmd.run(runOptions, {
+    shouldExitProgram: false
+  });
 
-  killExistingDevServers();
-  killExistingChromeInstances();
-
-  const profileDirectory = setupChromeProfile();
-
-  console.log("Building extension for Chrome (production + inline source maps)...");
-  await buildExtension();
-  console.log("Build complete.\n");
-
-  const [runner, reloadYouTubeTabs] = await launchBrowser(profileDirectory);
-  console.log("Chrome launched with extension sideloaded.");
+  console.log(`${IS_FIREFOX ? "Firefox" : "Chrome"} launched with extension sideloaded.`);
   console.log("Watching for file changes...\n");
 
-  const watcher = chokidar.watch(["src", "wxt.config.ts"], {
+  const watcher = chokidar.watch("src", {
     cwd: PROJECT_ROOT,
     ignoreInitial: true,
     usePolling: true,
@@ -322,7 +282,10 @@ async function main() {
     try {
       await buildExtension();
       await runner.reloadAllExtensions();
-      await reloadYouTubeTabs();
+
+      if (!IS_FIREFOX) {
+        await reloadYouTubeTabs();
+      }
 
       console.log(`Reloaded at ${new Date().toLocaleTimeString()}`);
     } catch (error) {
@@ -332,40 +295,15 @@ async function main() {
 
   watcher.on("all", (event, filePath) => onFileChange(event, filePath));
 
-  let shuttingDown = false;
-  async function shutdown() {
-    if (shuttingDown) {
-      return;
-    }
-
-    shuttingDown = true;
-    try {
-      await watcher.close();
-    } catch { /* watcher may already be closed */ }
-    try {
-      await runner.exit();
-    } catch { /* runner may already be exiting */ }
-
-    killExistingChromeInstances();
-    process.exit(0);
+  for (const signal of ["SIGINT", "SIGTERM"] as const) {
+    process.on(signal, () => {
+      void watcher.close();
+      void runner.exit();
+      process.exit(0);
+    });
   }
 
-  for (const signal of ["SIGINT", "SIGTERM", "SIGHUP", "SIGBREAK"] as const) {
-    process.on(signal, () => void shutdown());
-  }
-
-  const parentPid = process.ppid;
-  if (parentPid > 0) {
-    const ORPHAN_PROBE_INTERVAL_MS = 2_000;
-    setInterval(() => {
-      try {
-        process.kill(parentPid, 0);
-      } catch {
-        void shutdown();
-      }
-    }, ORPHAN_PROBE_INTERVAL_MS).unref();
-  }
-
+  // Keep process alive until signal
   await new Promise(() => {});
 }
 

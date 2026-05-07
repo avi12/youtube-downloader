@@ -1,6 +1,5 @@
 import expandNestedTypeLiteral from "./eslint-rules/expand-nested-type-literal.js";
 import multilineArgParenNewline from "./eslint-rules/multiline-arg-paren-newline.js";
-import multilineSpreadObject from "./eslint-rules/multiline-spread-object.js";
 import noPaddedTag from "./eslint-rules/no-padded-tag.js";
 import eslint from "@eslint/js";
 import stylistic from "@stylistic/eslint-plugin";
@@ -146,7 +145,7 @@ const tsStyleRules = {
   "@stylistic/object-property-newline": ["error", { allowAllPropertiesOnSameLine: false }],
   "id-length": ["error", {
     min: 3,
-    exceptions: ["z", "_", "i", "FS", "fs", "id", "os", "e", "db", "ws", "mi", "ui", "HL", "GL", "js", "q", "to", "dd", "mm", "x", "y", "d"],
+    exceptions: ["z", "_", "i", "fs", "id", "os", "e", "db", "mi", "ui", "HL", "GL", "js", "q", "to", "dd", "mm", "x", "y", "d"],
     properties: "never"
   }],
   "func-style": ["error", "declaration", { allowArrowFunctions: false }],
@@ -207,7 +206,6 @@ const tsStyleRules = {
   "@stylistic/function-paren-newline": ["error", "consistent"],
   "local/expand-nested-type-literal": "error",
   "local/multiline-arg-paren-newline": "error",
-  "local/multiline-spread-object": "error",
   "local/no-padded-tag": "error",
   "no-nested-ternary": "error",
   "@typescript-eslint/consistent-type-assertions": ["error", { assertionStyle: "never" }],
@@ -223,7 +221,6 @@ const sharedPlugins = {
     rules: {
       "expand-nested-type-literal": expandNestedTypeLiteral,
       "multiline-arg-paren-newline": multilineArgParenNewline,
-      "multiline-spread-object": multilineSpreadObject,
       "no-padded-tag": noPaddedTag
     }
   }
@@ -240,7 +237,7 @@ export default [
   eslint.configs.recommended,
   ...tsEslint.configs.recommended,
   ...svelteEslint.configs["flat/recommended"],
-  globalIgnores(["build/**", "node_modules/**", ".output/**", ".wxt/**", ".opencode/**", ".claude/**", "**/user-profiles/**", "patches/**"]),
+  globalIgnores(["build/**", "node_modules/**", ".output/**", ".wxt/**", "User Data/**", "patches/**"]),
   {
     files: ["**/*.{ts,js,mjs}"],
     ignores: ["eslint.config.js"],
@@ -285,7 +282,7 @@ export default [
       "arrow-body-style": ["error", "as-needed"],
       "svelte/first-attribute-linebreak": ["error"],
       "svelte/shorthand-attribute": ["error", { prefer: "always" }],
-      "@typescript-eslint/no-explicit-any": "error",
+      "@typescript-eslint/no-explicit-any": "off",
       "prefer-const": ["error", { destructuring: "all" }]
     }
   }

@@ -1,35 +1,38 @@
 declare module "web-ext-run" {
   interface RunOptions {
-    target?: string;
-    sourceDir?: string;
+    target: "firefox-desktop" | "chromium";
+    sourceDir: string;
     startUrl?: string[];
     keepProfileChanges?: boolean;
-    chromiumProfile?: string;
     firefoxProfile?: string;
-    firefox?: string;
+    chromiumProfile?: string;
     args?: string[];
-    customPrefs?: Record<string, unknown>;
     noReload?: boolean;
     noInput?: boolean;
   }
 
-  interface Runner {
+  interface RunResult {
     reloadAllExtensions(): Promise<void>;
     exit(): Promise<void>;
   }
 
-  const cmd: {
-    run(options: RunOptions, meta?: { shouldExitProgram?: boolean }): Promise<Runner>;
+  const webExt: {
+    cmd: {
+      run(options: RunOptions, meta: { shouldExitProgram: boolean }): Promise<RunResult>;
+    };
   };
 
-  export default { cmd };
+  export default webExt;
 }
 
 declare module "web-ext-run/util/logger" {
+  interface LogEntry {
+    level: number;
+    msg: string;
+    name: string;
+  }
+
   export const consoleStream: {
-    write: (entry: {
-      level: number;
-      msg: string;
-    }) => void;
+    write: (entry: LogEntry) => void;
   };
 }
