@@ -1,9 +1,6 @@
 import { CHILD_LIST_SUBTREE } from "@/lib/utils/dom";
-import { ScrubUrlParam } from "@/lib/youtube/youtube-url";
 
 export function setupIframeVideoSilencing() {
-  const keepPlaying = location.search.includes(`${ScrubUrlParam.KeepPlaying}=1`);
-
   function silenceIframeVideo() {
     const elVideo = document.querySelector<HTMLVideoElement>("video");
     if (!elVideo) {
@@ -15,22 +12,12 @@ export function setupIframeVideoSilencing() {
     elVideo.addEventListener("play", () => {
       elVideo.muted = true;
       elVideo.volume = 0;
-
-      if (keepPlaying) {
-        elVideo.pause();
-      }
     });
 
     const elPlayer = document.querySelector<HTMLElement & {
-      pauseVideo?: () => void;
       stopVideo?: () => void;
     }>("#movie_player");
-    if (keepPlaying) {
-      elPlayer?.pauseVideo?.();
-    } else {
-      elPlayer?.stopVideo?.();
-      elPlayer?.pauseVideo?.();
-    }
+    elPlayer?.stopVideo?.();
 
     return true;
   }

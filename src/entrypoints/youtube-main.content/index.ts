@@ -3,12 +3,9 @@ import { registerGridTagger } from "./grid/grid-tagger";
 import { registerGridVideoDataHandler } from "./grid/grid-video-data";
 import { setupIframeVideoSilencing } from "./iframe-setup";
 import { registerMainWorldHandlers } from "./main-world-handlers";
-import { runScrubSelfDrive, runTrustFactoryDrive } from "./scrub/self-drive";
 import { cancelActiveDownload } from "./video/download";
 import { extractPlaylistMetadata, handleNavigateSuccess } from "./video/playlist-metadata";
 import { extractAndDispatchVideoData } from "./video/video-data";
-import { IframeHostMessageType } from "@/lib/messaging/iframe-host-postmessage";
-import { ScrubUrlParam } from "@/lib/youtube/youtube-url";
 import type { PlayerResponse } from "@/types";
 
 declare global {
@@ -40,35 +37,9 @@ export default defineContentScript({
   world: "MAIN",
   allFrames: true,
   async main() {
-    if (location.search.includes(`${ScrubUrlParam.ScrubMode}=1`)) {
-      try {
-        if (parent !== self) {
-          parent.postMessage({
-            type: IframeHostMessageType.ScrubDebug,
-            msg: `[ytdl:scrub-tab] MAIN booted url=${location.search.slice(0, 120)}`
-          }, "*");
-        }
-      } catch {
-        // best-effort debug log
-      }
-
-      setupIframeVideoSilencing();
-      await runScrubSelfDrive();
-      return;
-    }
-
-    if (location.search.includes(`${ScrubUrlParam.TrustFactoryMode}=1`)) {
-      setupIframeVideoSilencing();
-      await runTrustFactoryDrive();
-      return;
-    }
-
-    if (self !== top && !location.search.includes(`${ScrubUrlParam.Ytdl}=1`)) {
-      return;
-    }
-
     if (self !== top) {
       setupIframeVideoSilencing();
+      return;
     }
 
     registerMainWorldHandlers();

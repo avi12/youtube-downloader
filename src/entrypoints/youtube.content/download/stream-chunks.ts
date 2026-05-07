@@ -24,7 +24,7 @@ async function sendStreamChunks({ videoId, streamType, data }: {
   );
 }
 
-export function buildStreamTasks({ videoId, videoData, audioData, additionalAudioData, segments }: {
+export function buildStreamTasks({ videoId, videoData, audioData, additionalAudioData }: {
   videoId: string;
   videoData: Uint8Array | null | undefined;
   audioData: Uint8Array | null | undefined;
@@ -33,31 +33,8 @@ export function buildStreamTasks({ videoId, videoData, audioData, additionalAudi
     mimeType: string;
     label: string;
   }[];
-  segments?: {
-    video: Uint8Array;
-    audio: Uint8Array;
-  }[];
 }) {
   const tasks: Promise<void>[] = [];
-  if (segments && segments.length > 0) {
-    for (const [i, segment] of segments.entries()) {
-      tasks.push(
-        sendStreamChunks({
-          videoId,
-          streamType: `video-seg-${i}`,
-          data: segment.video
-        }),
-        sendStreamChunks({
-          videoId,
-          streamType: `audio-seg-${i}`,
-          data: segment.audio
-        })
-      );
-    }
-
-    return tasks;
-  }
-
   if (videoData) {
     tasks.push(
       sendStreamChunks({

@@ -4,13 +4,6 @@ export type SubtitleStream = {
   label: string;
 };
 
-export type ScrubSegment = {
-  video: Uint8Array;
-  audio: Uint8Array;
-  videoBufferStartSec?: number;
-  videoBufferEndSec?: number;
-};
-
 export type VideoMetadata = {
   title: string;
   artist: string;

@@ -1,12 +1,9 @@
-import { ScrubUrlParam } from "@/lib/youtube/youtube-url";
+import { FactoryUrlParam } from "@/lib/youtube/youtube-url";
 
 const SABR_ORIGIN_RULE_ID = 1;
 const INNERTUBE_ORIGIN_RULE_ID = 2;
 const CDN_ORIGIN_RULE_ID = 3;
 const FACTORY_IFRAME_RULE_ID = 4;
-
-const CHROME_USER_AGENT_SPOOF =
-  "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/132.0.0.0 Safari/537.36";
 
 export async function registerSabrOriginRule() {
   const baseHeaders: Browser.declarativeNetRequest.ModifyHeaderInfo[] = [
@@ -22,37 +19,25 @@ export async function registerSabrOriginRule() {
     }
   ];
 
-  const firefoxOnlyHeaders: Browser.declarativeNetRequest.ModifyHeaderInfo[] = import.meta.env.FIREFOX
-    ? [
-      {
-        header: "User-Agent",
-        operation: "set",
-        value: CHROME_USER_AGENT_SPOOF
-      }
-    ]
-    : [];
-
-  const chromeOnlyHeaders: Browser.declarativeNetRequest.ModifyHeaderInfo[] = import.meta.env.FIREFOX
-    ? []
-    : [
-      {
-        header: "Sec-Fetch-Site",
-        operation: "set",
-        value: "cross-site"
-      },
-      {
-        header: "Sec-Fetch-Storage-Access",
-        operation: "set",
-        value: "active"
-      }
-    ];
+  const chromeOnlyHeaders: Browser.declarativeNetRequest.ModifyHeaderInfo[] = [
+    {
+      header: "Sec-Fetch-Site",
+      operation: "set",
+      value: "cross-site"
+    },
+    {
+      header: "Sec-Fetch-Storage-Access",
+      operation: "set",
+      value: "active"
+    }
+  ];
 
   const sabrRule: Browser.declarativeNetRequest.Rule = {
     id: SABR_ORIGIN_RULE_ID,
     priority: 1,
     action: {
       type: "modifyHeaders",
-      requestHeaders: [...baseHeaders, ...chromeOnlyHeaders, ...firefoxOnlyHeaders]
+      requestHeaders: [...baseHeaders, ...chromeOnlyHeaders]
     },
     condition: {
       urlFilter: "||googlevideo.com/videoplayback",
@@ -60,30 +45,21 @@ export async function registerSabrOriginRule() {
     }
   };
 
-  const cdnGetRequestHeaders: Browser.declarativeNetRequest.ModifyHeaderInfo[] = [
-    {
-      header: "Origin",
-      operation: "remove"
-    },
-    {
-      header: "Referer",
-      operation: "remove"
-    },
-    ...import.meta.env.FIREFOX
-      ? [{
-        header: "User-Agent",
-        operation: "set" as const,
-        value: CHROME_USER_AGENT_SPOOF
-      }]
-      : []
-  ];
-
   const cdnGetRule: Browser.declarativeNetRequest.Rule = {
     id: CDN_ORIGIN_RULE_ID,
     priority: 1,
     action: {
       type: "modifyHeaders",
-      requestHeaders: cdnGetRequestHeaders
+      requestHeaders: [
+        {
+          header: "Origin",
+          operation: "remove"
+        },
+        {
+          header: "Referer",
+          operation: "remove"
+        }
+      ]
     },
     condition: {
       urlFilter: "||googlevideo.com/videoplayback",
@@ -103,31 +79,27 @@ export async function registerSabrOriginRule() {
     }
   };
 
-  const chromeFactoryIframeRules: Browser.declarativeNetRequest.Rule[] = import.meta.env.FIREFOX
-    ? []
-    : [
-      {
-        id: FACTORY_IFRAME_RULE_ID,
-        priority: 1,
-        action: {
-          type: "modifyHeaders",
-          responseHeaders: [
-            {
-              header: "X-Frame-Options",
-              operation: "remove"
-            },
-            {
-              header: "Content-Security-Policy",
-              operation: "remove"
-            }
-          ]
+  const factoryIframeRule: Browser.declarativeNetRequest.Rule = {
+    id: FACTORY_IFRAME_RULE_ID,
+    priority: 1,
+    action: {
+      type: "modifyHeaders",
+      responseHeaders: [
+        {
+          header: "X-Frame-Options",
+          operation: "remove"
         },
-        condition: {
-          regexFilter: `${ScrubUrlParam.TrustFactoryMode}=1`,
-          resourceTypes: ["sub_frame"]
+        {
+          header: "Content-Security-Policy",
+          operation: "remove"
         }
-      }
-    ];
+      ]
+    },
+    condition: {
+      regexFilter: `${FactoryUrlParam.TrustFactoryMode}=1`,
+      resourceTypes: ["sub_frame"]
+    }
+  };
 
   await Promise.all([
     browser.declarativeNetRequest.updateDynamicRules({
@@ -135,36 +107,7 @@ export async function registerSabrOriginRule() {
     }),
     browser.declarativeNetRequest.updateSessionRules({
       removeRuleIds: [SABR_ORIGIN_RULE_ID, INNERTUBE_ORIGIN_RULE_ID, CDN_ORIGIN_RULE_ID, FACTORY_IFRAME_RULE_ID],
-      addRules: [sabrRule, cdnGetRule, innertubeRule, ...chromeFactoryIframeRules]
+      addRules: [sabrRule, cdnGetRule, innertubeRule, factoryIframeRule]
     })
   ]);
-}
-
-export function registerFactoryIframeHeaderStripper() {
-  if (!import.meta.env.FIREFOX) {
-    return;
-  }
-
-  browser.webRequest.onHeadersReceived.addListener(
-    ({ url, responseHeaders }) => {
-      const isHostedIframe = url.includes(`${ScrubUrlParam.TrustFactoryMode}=1`) || url.includes(`${ScrubUrlParam.ScrubMode}=1`);
-      if (!isHostedIframe || !responseHeaders) {
-        return {};
-      }
-
-      const filtered = responseHeaders.filter(({ name }) => {
-        const lower = name.toLowerCase();
-        return lower !== "x-frame-options" && lower !== "content-security-policy";
-      });
-      return { responseHeaders: filtered };
-    },
-    {
-      urls: [
-        `https://www.youtube.com/*${ScrubUrlParam.TrustFactoryMode}=1*`,
-        `https://www.youtube.com/*${ScrubUrlParam.ScrubMode}=1*`
-      ],
-      types: ["main_frame", "sub_frame"]
-    },
-    ["blocking", "responseHeaders"]
-  );
 }

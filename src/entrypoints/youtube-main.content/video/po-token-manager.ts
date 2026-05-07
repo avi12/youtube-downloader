@@ -11,13 +11,7 @@ export async function generatePoTokenIfNeeded(videoData: VideoData) {
   try {
     const [poToken, alternateClientPoToken] = await Promise.all([
       generatePoToken({ videoId: videoData.videoId }),
-      import.meta.env.FIREFOX
-        ? generatePoToken({
-          videoId: videoData.videoId,
-          clientName: "ANDROID_VR",
-          clientVersion: "1.65.10"
-        }).catch(() => "")
-        : Promise.resolve("")
+      Promise.resolve("")
     ]);
     const { serverAbrStreamingUrl: sabrUrl = "" } = videoData.sabrConfig ?? {};
     setPoTokenCredentials({

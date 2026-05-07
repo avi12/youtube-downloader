@@ -5,17 +5,10 @@ export const YouTubePath = {
 
 export type YouTubePath = (typeof YouTubePath)[keyof typeof YouTubePath];
 
-export const ScrubUrlParam = {
-  Ytdl: "ytdl",
-  KeepPlaying: "ytdlKeepPlaying",
+export const FactoryUrlParam = {
   TrustFactoryMode: "ytdlTrustFactoryMode",
-  FactoryId: "ytdlFactoryId",
-  ScrubMode: "ytdlScrubMode",
-  ScrubIndex: "ytdlScrubIndex",
-  ScrubWindow: "ytdlScrubWindow"
+  FactoryId: "ytdlFactoryId"
 } as const;
-
-export type ScrubUrlParam = (typeof ScrubUrlParam)[keyof typeof ScrubUrlParam];
 
 export function getVideoIdFromUrl(url: string) {
   try {

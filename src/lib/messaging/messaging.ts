@@ -35,10 +35,7 @@ export const MessageType = {
   RunProgressiveSabrInTab: "runProgressiveSabrInTab",
   RunCdnFetchInTab: "runCdnFetchInTab",
   PipelineTriggerDownload: "pipelineTriggerDownload",
-  RequestFreshSabrPrimer: "requestFreshSabrPrimer",
-  IframeScrubSegmentReady: "iframeScrubSegmentReady",
-  SpawnScrubIframe: "spawnScrubIframe",
-  RemoveScrubIframe: "removeScrubIframe"
+  RequestFreshSabrPrimer: "requestFreshSabrPrimer"
 } as const;
 
 interface ProtocolMap {
@@ -244,34 +241,6 @@ interface ProtocolMap {
     url: string;
     bodyBase64: string;
   } | null;
-
-  // Firefox: BG asks the YouTube tab's isolated content script to inject a
-  // scrub iframe into the page DOM. Real tab context means DNR strips XFO.
-  spawnScrubIframe(data: {
-    id: string;
-    url: string;
-  }): void;
-
-  // Firefox: BG asks the YouTube tab's isolated content script to remove a
-  // previously-injected scrub iframe.
-  removeScrubIframe(data: {
-    id: string;
-  }): void;
-
-  // Offscreen page relays a scrub segment captured by a hosted iframe's MAIN
-  // world script. Firefox doesn't inject isolated content scripts into
-  // moz-extension:// hosted iframes, so the port relay is unavailable; the
-  // offscreen page catches the parent.postMessage and forwards it here.
-  iframeScrubSegmentReady(data: {
-    videoId: string;
-    iScrub: number;
-    videoBytes: Uint8Array;
-    audioBytes: Uint8Array;
-    videoMimeType: string;
-    audioMimeType: string;
-    videoBufferStartSec?: number;
-    videoBufferEndSec?: number;
-  }): void;
 
 }
 

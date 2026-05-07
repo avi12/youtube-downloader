@@ -33,10 +33,6 @@ export interface PageMessengerSchema {
       mimeType: string;
       label: string;
     }[];
-    segments?: {
-      video: Uint8Array;
-      audio: Uint8Array;
-    }[];
     metadata?: VideoMetadata | null;
   }): void;
   [CrossWorldMessage.DownloadRequest](data: DownloadRequest): void;
@@ -96,17 +92,6 @@ export interface PageMessengerSchema {
     capturedAt: number;
   } | null;
   [CrossWorldMessage.FetchAndDownloadCdn](data: DownloadRequest): void;
-  [CrossWorldMessage.IframeScrubDebug](data: { msg: string }): void;
-  [CrossWorldMessage.IframeScrubSegment](data: {
-    videoId: string;
-    iScrub: number;
-    videoBytes: Uint8Array;
-    audioBytes: Uint8Array;
-    videoMimeType: string;
-    audioMimeType: string;
-    videoBufferStartSec?: number;
-    videoBufferEndSec?: number;
-  }): void;
   [CrossWorldMessage.RequestFreshSabrPrimer](data: {
     videoId: string;
   }): void;

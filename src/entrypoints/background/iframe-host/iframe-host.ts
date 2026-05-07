@@ -1,20 +1,10 @@
 import { ensureProcessor } from "../handlers/processor";
-import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
 
-export async function spawnHostedIframe({ id, url, tabId }: {
+export async function spawnHostedIframe({ id, url }: {
   id: string;
   url: string;
-  tabId?: number;
 }) {
-  if (import.meta.env.FIREFOX && tabId !== undefined) {
-    void sendMessage(MessageType.SpawnScrubIframe, {
-      id,
-      url
-    }, tabId);
-    return;
-  }
-
   await ensureProcessor();
   sendToOffscreen(OffscreenMessageType.SpawnIframe, {
     id,
@@ -22,11 +12,6 @@ export async function spawnHostedIframe({ id, url, tabId }: {
   });
 }
 
-export function removeHostedIframe(id: string, tabId?: number) {
-  if (import.meta.env.FIREFOX && tabId !== undefined) {
-    void sendMessage(MessageType.RemoveScrubIframe, { id }, tabId);
-    return;
-  }
-
+export function removeHostedIframe(id: string) {
   sendToOffscreen(OffscreenMessageType.RemoveIframe, { id });
 }

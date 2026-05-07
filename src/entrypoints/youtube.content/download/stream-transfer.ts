@@ -29,7 +29,7 @@ export function setPlaylistContext({ videoId, context }: {
 export async function handleStreamData(payload: StreamDataPayload) {
   const {
     downloadType, videoId, filenameOutput, videoData, audioData,
-    videoMimeType, audioMimeType, audioLabel, additionalAudioData, segments
+    videoMimeType, audioMimeType, audioLabel, additionalAudioData
   } = payload;
   if (cancelledVideoIds.has(videoId)) {
     return;
@@ -39,8 +39,7 @@ export async function handleStreamData(payload: StreamDataPayload) {
     videoId,
     videoData,
     audioData,
-    additionalAudioData,
-    segments
+    additionalAudioData
   });
   await Promise.all(streamTasks);
 

@@ -10,24 +10,24 @@ export default defineConfig({
   publicDir: "src/public",
   modules: ["@wxt-dev/module-svelte"],
   manifestVersion: 3,
-  manifest: ({ browser, mode }) => ({
+  manifest: ({ mode }) => ({
     name: "YouTube Downloader",
     description: "Download YouTube videos and audio directly from the page",
     permissions: [
       "alarms",
       "cookies",
       "downloads",
+      "offscreen",
       "scripting",
       "storage",
       "unlimitedStorage",
       "tabs",
       "webNavigation",
       "webRequest",
+      "webRequestBody",
       "webRequestBlocking",
       "declarativeNetRequest",
-      "declarativeNetRequestWithHostAccess",
-      ...(browser === "firefox" ? ["webRequestBlocking"] : []),
-      ...(browser === "chrome" ? ["offscreen", "webRequestBody"] : [])
+      "declarativeNetRequestWithHostAccess"
     ],
     host_permissions: [
       "https://*.youtube.com/*",
@@ -36,13 +36,6 @@ export default defineConfig({
       "https://i.ytimg.com/*",
       ...(mode === "development" ? ["http://localhost/*", "https://localhost/*"] : [])
     ],
-    ...(browser === "firefox" && {
-      browser_specific_settings: {
-        gecko: {
-          id: "youtube-downloader@avi12.com"
-        }
-      }
-    }),
     content_security_policy: {
       extension_pages:
         "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
@@ -56,9 +49,7 @@ export default defineConfig({
     },
     web_accessible_resources: [
       {
-        resources: [
-          ...(browser === "chrome" ? ["offscreen.html"] : [])
-        ],
+        resources: ["offscreen.html"],
         matches: ["<all_urls>"]
       }
     ]
@@ -66,8 +57,6 @@ export default defineConfig({
   vite: () => ({
     server: {
       strictPort: false,
-      // Native fs events are unreliable on Windows; polling ensures file
-      // changes are always detected by WXT's dev server watcher
       watch: {
         usePolling: true,
         interval: 500

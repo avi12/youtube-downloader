@@ -35,11 +35,6 @@ export interface OffscreenProtocolMap {
     playlistTitle?: string;
     playlistTotalCount?: number;
     metadata?: VideoMetadata | null;
-    segmentCount?: number;
-    segmentDurationSec?: number;
-    totalDurationSec?: number;
-    segmentVideoBufferStartSecs?: (number | undefined)[];
-    segmentVideoBufferEndSecs?: (number | undefined)[];
   };
   [OffscreenMessageType.CancelProcessing]: {
     videoIds: string[];

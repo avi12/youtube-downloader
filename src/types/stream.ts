@@ -1,4 +1,4 @@
-import type { ScrubSegment, SubtitleStream, VideoMetadata } from "./common";
+import type { SubtitleStream, VideoMetadata } from "./common";
 import type { DownloadType } from "./download";
 
 export const StreamType = {
@@ -23,9 +23,6 @@ export type StreamData = {
     label: string;
   }[];
   subtitleStreams: SubtitleStream[];
-  segments?: ScrubSegment[];
-  segmentDurationSec?: number;
-  totalDurationSec?: number;
 };
 
 export type ProcessStreamData = StreamData & {
@@ -36,4 +33,4 @@ export type ProcessStreamData = StreamData & {
   metadata?: VideoMetadata | null;
 };
 
-export type { VideoMetadata, ScrubSegment, SubtitleStream };
+export type { VideoMetadata, SubtitleStream };
