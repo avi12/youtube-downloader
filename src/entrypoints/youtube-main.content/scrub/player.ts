@@ -10,6 +10,9 @@ export interface MoviePlayer extends HTMLElement {
   stopVideo?: () => void;
   seekTo?: (seconds: number, allowSeekAhead?: boolean) => void;
   getDuration?: () => number;
+  getPlayerResponse?: () => unknown;
+  setPlaybackQuality?: (quality: string) => void;
+  setPlaybackQualityRange?: (suggestedQuality: string, maximumQuality: string) => void;
 }
 
 export async function wait(durationMs: number) {
@@ -25,6 +28,20 @@ export async function waitForPlayerReady() {
   while (Date.now() < deadlineAt) {
     const player = getMoviePlayer();
     if (player?.playVideo && player.getDuration?.() && player.getDuration() > 0) {
+      return player;
+    }
+
+    await wait(POLL_INTERVAL_MS);
+  }
+
+  return null;
+}
+
+export async function waitForPlayerElement() {
+  const deadlineAt = Date.now() + PLAYER_READY_TIMEOUT_MS;
+  while (Date.now() < deadlineAt) {
+    const player = getMoviePlayer();
+    if (player?.getPlayerResponse) {
       return player;
     }
 

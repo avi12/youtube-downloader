@@ -4,32 +4,22 @@ import {
   buildTemplateFromSabrConfig,
   capturedTemplateToBase64
 } from "./sabr-fetch-interceptor/template-builder";
-import {
-  patchIntersectionObserverForScrubFrame,
-  patchMediaElementForIframe,
-  patchMediaElementForScrubFrame,
-  patchVisibilityForScrubFrame
-} from "./sourcebuffer-capture/media-patches";
-import {
-  createCaptureState,
-  patchAddSourceBuffer,
-  patchAppendBuffer
-} from "./sourcebuffer-capture/sourcebuffer-patches";
+import type { ProgressiveCarryState, ProgressiveFetchResult } from "./sabr-fetch-interceptor/types";
+import { patchMediaElementForIframe } from "./sourcebuffer-capture/media-patches";
 import { registerGridDropdownHandlers } from "./youtube-main.content/grid/grid-dropdown";
 import { registerGridTagger } from "./youtube-main.content/grid/grid-tagger";
 import { registerGridVideoDataHandler } from "./youtube-main.content/grid/grid-video-data";
 import { setupIframeVideoSilencing } from "./youtube-main.content/iframe-setup";
 import { registerMainWorldHandlers } from "./youtube-main.content/main-world-handlers";
-import { runScrubSelfDrive, runTrustFactoryDrive } from "./youtube-main.content/scrub/self-drive";
+import { runTrustFactoryDrive } from "./youtube-main.content/scrub/trust-factory";
 import { cancelActiveDownload } from "./youtube-main.content/video/download";
 import { extractPlaylistMetadata, handleNavigateSuccess } from "./youtube-main.content/video/playlist-metadata";
 import { extractAndDispatchVideoData } from "./youtube-main.content/video/video-data";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
-import { IframeHostMessageType } from "@/lib/messaging/iframe-host-postmessage";
 import { base64ToUint8Array, uint8ToBase64 } from "@/lib/utils/binary";
 import { extractInit } from "@/lib/utils/media-init";
 import { ScrubUrlParam } from "@/lib/youtube/youtube-url";
-import type { PlayerResponse } from "@/types";
+import type { DownloadRequest, PlayerResponse } from "@/types";
 import { ClientAbrState, VideoPlaybackAbrRequest } from "googlevideo/protos";
 
 declare global {
@@ -85,12 +75,23 @@ export default defineContentScript({
   runAt: "document_start",
   allFrames: true,
   async main() {
-    Object.defineProperty(Navigator.prototype, "webdriver", {
-      get() {
-        return false;
-      },
-      configurable: true
+    Object.defineProperty(navigator, "webdriver", {
+      value: false,
+      configurable: false,
+      enumerable: true,
+      writable: false
     });
+
+    if (import.meta.env.FIREFOX) {
+      const originalIsTypeSupported = MediaSource.isTypeSupported.bind(MediaSource);
+      MediaSource.isTypeSupported = (type: string) => {
+        if (type.includes("av01") || type.includes("av1.")) {
+          return false;
+        }
+
+        return originalIsTypeSupported(type);
+      };
+    }
 
     Object.defineProperty(document, "visibilityState", {
       get() {
@@ -115,24 +116,8 @@ export default defineContentScript({
       });
     }
 
-    if (self === top || location.search.includes(`${ScrubUrlParam.Ytdl}=1`)) {
-      const isScrubFrame = location.search.includes(`${ScrubUrlParam.ScrubMode}=1`);
-      const isTopLevelScrubTab = self === top && isScrubFrame;
-      if (isScrubFrame) {
-        patchMediaElementForScrubFrame();
-        patchVisibilityForScrubFrame();
-        patchIntersectionObserverForScrubFrame();
-      } else if (self !== top || isTopLevelScrubTab) {
-        patchMediaElementForIframe();
-      }
-
-      const sourceBufferMimeTypes = new WeakMap<SourceBuffer, string>();
-      const captureState = createCaptureState(sourceBufferMimeTypes);
-
-      window.__ytdlCapture = captureState;
-
-      patchAddSourceBuffer(captureState, sourceBufferMimeTypes);
-      patchAppendBuffer(captureState, sourceBufferMimeTypes, isScrubFrame);
+    if (self !== top && location.search.includes(`${ScrubUrlParam.Ytdl}=1`)) {
+      patchMediaElementForIframe();
     }
 
     const sbMimeTypes = new WeakMap<SourceBuffer, string>();
@@ -243,20 +228,22 @@ export default defineContentScript({
     window.__ytdlSabr = {
       isTemplatePresent: () => Boolean(window.__ytdlSabrTemplate),
       fetchProgressive: ({
-        targetDurationMs, maxIterations = 80, carryState = null, urlOverride, audioFormat, videoFormat
+        targetDurationMs, maxIterations = 80, carryState = null, urlOverride, audioFormat, videoFormat, authorization
       }) => fetchProgressive({
         targetDurationMs,
         maxIterations,
         carryState,
         urlOverride,
         audioFormat,
-        videoFormat
+        videoFormat,
+        authorization
       }),
       synthesize: () => buildSyntheticTemplateFromPlayer()
     };
 
+    const STALE_THRESHOLD_MS = 60_000;
+
     async function refreshStaleTemplate() {
-      const STALE_THRESHOLD_MS = 60_000;
       const SEEK_TIMEOUT_MS = 5_000;
       const template = window.__ytdlSabrTemplate;
       const isStale = !template || Date.now() - template.capturedAt > STALE_THRESHOLD_MS;
@@ -314,8 +301,21 @@ export default defineContentScript({
         return false;
       }
 
+      if (Date.now() - template.capturedAt > STALE_THRESHOLD_MS) {
+        return false;
+      }
+
       try {
-        return VideoPlaybackAbrRequest.decode(template.body).selectedFormatIds.length >= 2;
+        const decoded = VideoPlaybackAbrRequest.decode(template.body);
+        if (decoded.selectedFormatIds.length < 2) {
+          return false;
+        }
+
+        const playerFormats = window.ytInitialPlayerResponse?.streamingData?.adaptiveFormats ?? [];
+        const templateVideoItag = decoded.preferredVideoFormatIds[0]?.itag ?? decoded.selectedFormatIds[1]?.itag;
+        const templateVideoMime = playerFormats.find(fmt => fmt.itag === templateVideoItag)?.mimeType ?? "";
+        const isAv1Session = templateVideoMime.includes("av01");
+        return !isAv1Session;
       } catch {
         return false;
       }
@@ -323,24 +323,68 @@ export default defineContentScript({
 
     const SABR_SEEK_CAPTURE_TIMEOUT_MS = 8_000;
 
-    async function captureRealSabrTemplate(video: HTMLVideoElement) {
+    async function captureRealSabrTemplate(video: HTMLVideoElement, seekTargetSec?: number, staleUrl?: string) {
       const capturedAtBefore = window.__ytdlSabrTemplate?.capturedAt ?? 0;
-      const seekTarget = video.duration > 20 ? video.duration - 10 : 0;
+      const seekTarget = seekTargetSec ?? (video.duration > 20 ? video.duration - 10 : 0);
       video.currentTime = seekTarget;
-      const deadline = Date.now() + SABR_SEEK_CAPTURE_TIMEOUT_MS;
+      // Must play briefly so the player issues a real SABR POST at the seeked
+      // position — a paused player never generates new requests.
+      video.play().catch(() => {});
+      // When waiting for a URL rotation (staleUrl provided), the player must first
+      // hit its own sps=3 then call YouTube's API for new credentials — allow 20s.
+      const timeoutMs = staleUrl ? 20_000 : SABR_SEEK_CAPTURE_TIMEOUT_MS;
+      const deadline = Date.now() + timeoutMs;
       while (Date.now() < deadline) {
         const current = window.__ytdlSabrTemplate;
         if (current && current.capturedAt > capturedAtBefore) {
+          if (staleUrl && current.url === staleUrl) {
+            // Player issued a POST with the stale rate-limited URL; wait for
+            // it to refresh credentials and issue a POST with a fresh URL.
+            await new Promise(resolve => setTimeout(resolve, 100));
+            continue;
+          }
+
+          video.pause();
           return true;
         }
 
         await new Promise(resolve => setTimeout(resolve, 100));
       }
 
+      video.pause();
       return false;
     }
 
-    crossWorldMessenger.onMessage(CrossWorldMessage.RunProgressiveSabr, async ({ data }) => {
+    const IFRAME_TEMPLATE_TIMEOUT_MS = 25_000;
+
+    async function captureFreshTemplateViaIframe(videoId: string, seekSeconds?: number): Promise<boolean> {
+      const iframe = document.createElement("iframe");
+      iframe.allow = "autoplay";
+      iframe.style.cssText = "position:fixed;bottom:0;right:0;width:1px;height:1px;opacity:0.01;pointer-events:none;z-index:-1;";
+      const seekParam = seekSeconds && seekSeconds > 0 ? `&t=${Math.floor(seekSeconds)}` : "";
+      iframe.src = `https://www.youtube.com/watch?v=${videoId}&${ScrubUrlParam.Ytdl}=1&autoplay=1${seekParam}`;
+      document.body.appendChild(iframe);
+      const deadline = Date.now() + IFRAME_TEMPLATE_TIMEOUT_MS;
+      try {
+        while (Date.now() < deadline) {
+          await new Promise(resolve => setTimeout(resolve, 300));
+          try {
+            const iframeTemplate = iframe.contentWindow?.__ytdlSabrTemplate;
+            if (iframeTemplate) {
+              window.__ytdlSabrTemplate = iframeTemplate;
+              return true;
+            }
+          } catch (_) {
+            // Not yet accessible — still loading
+          }
+        }
+        return false;
+      } finally {
+        iframe.remove();
+      }
+    }
+
+    async function runProgressiveSabrDownload(data: DownloadRequest) {
       const targetDurationMs = (data.videoDurationSec ?? 0) * 1000;
       if (data.poToken && !window.__ytdlCapturedPoToken) {
         window.__ytdlCapturedPoToken = data.poToken;
@@ -350,20 +394,19 @@ export default defineContentScript({
       const wasPlaying = video ? !video.paused : false;
       video?.pause();
 
-      if (data.primerBodyBase64 && data.sabrConfig) {
-        window.__ytdlSabrTemplate = {
+      if (data.primerBodyBase64 && data.sabrConfig && !isUsableTemplate()) {
+        // Prefer main-page synthesis: its URL is the one the page-load player already
+        // validated, avoiding 403s from primer URLs whose ustreamer session was never
+        // established. Fall back to the primer only when synthesis is unavailable (e.g.
+        // on non-watch pages without a live player).
+        const mainSynthesized = buildSyntheticTemplateFromPlayer();
+        window.__ytdlSabrTemplate = mainSynthesized ?? {
           url: data.sabrConfig.serverAbrStreamingUrl,
           body: base64ToUint8Array(data.primerBodyBase64),
           capturedAt: Date.now()
         };
       } else if (video && isFinite(video.duration) && video.duration > 0) {
-        // Only seek to capture a fresh SABR template when no usable one exists.
-        // Seeking overwrites the original page-load template (which covers 0ms+)
-        // with a seek-position template; if the original is already usable, skip
-        // the seek entirely so fetchProgressive downloads the full video from 0.
-        if (!isUsableTemplate()) {
-          await captureRealSabrTemplate(video);
-        }
+        await captureRealSabrTemplate(video, Math.min(10, video.duration / 4));
 
         if (!isUsableTemplate()) {
           const synthesized = buildSyntheticTemplateFromPlayer();
@@ -398,14 +441,70 @@ export default defineContentScript({
         }
       }
 
+      const MAX_PROGRESSIVE_RETRIES = 20;
       try {
-        const result = await fetchProgressive({
-          targetDurationMs,
-          maxIterations: 80,
-          carryState: null,
-          audioFormat: data.audioFormat,
-          videoFormat: data.videoFormat
-        });
+        let carryState: ProgressiveCarryState | null = null;
+        let initialPlayerTimeMs: number | undefined;
+        let result: ProgressiveFetchResult;
+        let isIncomplete = false;
+        let progressiveRetries = 0;
+        do {
+          result = await fetchProgressive({
+            targetDurationMs,
+            maxIterations: 200,
+            carryState,
+            initialPlayerTimeMs,
+            audioFormat: data.audioFormat,
+            videoFormat: data.videoFormat,
+            authorization: data.authorization
+          });
+
+          isIncomplete = result.audioCoveredMs < targetDurationMs || result.videoCoveredMs < targetDurationMs;
+
+          if (result.needsTemplateRefresh && isIncomplete) {
+            if (progressiveRetries >= MAX_PROGRESSIVE_RETRIES) {
+              break;
+            }
+
+            progressiveRetries++;
+            const coveredMs = Math.min(result.audioCoveredMs, result.videoCoveredMs);
+            // Use an iframe starting at coveredMs (via &t=) so the iframe player
+            // issues a fresh SABR session (new id=) positioned at coveredMs. The server
+            // then delivers from coveredMs onward. captureRealSabrTemplate is skipped
+            // here because seeking the main player often captures a rate-limited template.
+            const capturedViaIframe = await captureFreshTemplateViaIframe(
+              data.videoId,
+              coveredMs > 0 ? coveredMs / 1000 : undefined
+            );
+            if (!capturedViaIframe) {
+              const freshSynthesized = buildSyntheticTemplateFromPlayer();
+              if (freshSynthesized) {
+                window.__ytdlSabrTemplate = freshSynthesized;
+              }
+            }
+
+            initialPlayerTimeMs = coveredMs;
+            // Reset position tracking so the fresh session sends no bufferedRanges.
+            // With empty bufferedRanges + playerTimeMs=coveredMs the server delivers
+            // from ~coveredMs without hitting its ~70s readahead cap, mirroring how
+            // the player behaves after a seek. Carry only segmentBytes so bytes
+            // already downloaded are not re-fetched.
+            carryState = {
+              audioEndMs: 0,
+              audioLastSeq: 0,
+              audioLastSegDurationMs: 0,
+              videoEndMs: 0,
+              videoLastSeq: 0,
+              videoLastSegDurationMs: 0,
+              audioSegmentBytes: result.carryState.audioSegmentBytes,
+              videoSegmentBytes: result.carryState.videoSegmentBytes,
+              playbackCookieBytes: null,
+              sabrContexts: new Map(),
+              activeSabrContextTypes: new Set()
+            };
+          }
+        } while (result.needsTemplateRefresh && isIncomplete);
+
         if (result.isStalled && !result.audioBytes.byteLength && !result.videoBytes.byteLength) {
           throw new Error("SABR progressive fetch stalled with no data");
         }
@@ -437,24 +536,59 @@ export default defineContentScript({
           void video?.play();
         }
       }
-    });
+    }
 
-    if (location.search.includes(`${ScrubUrlParam.ScrubMode}=1`)) {
-      try {
-        if (parent !== self) {
-          parent.postMessage({
-            type: IframeHostMessageType.ScrubDebug,
-            msg: `[ytdl:scrub-tab] MAIN booted url=${location.search.slice(0, 120)}`
-          }, "*");
-        }
-      } catch {
-        // best-effort debug log
+    crossWorldMessenger.onMessage(CrossWorldMessage.RunProgressiveSabr, ({ data }) => {
+      if (!import.meta.env.FIREFOX) {
+        // On Chrome, cross-origin SABR POST from the MAIN world is CORS-blocked.
+        // The sabr-fetch-interceptor isolated CS handles RunProgressiveSabr via host_permissions.
+        return;
       }
 
-      setupIframeVideoSilencing();
-      await runScrubSelfDrive();
-      return;
-    }
+      void runProgressiveSabrDownload(data);
+    });
+
+    crossWorldMessenger.onMessage(CrossWorldMessage.FetchAndDownloadCdn, async ({ data }) => {
+      const { resolvedVideoUrl: videoUrl, resolvedAudioUrl: audioUrl } = data;
+      if (!videoUrl || !audioUrl) {
+        if (import.meta.env.FIREFOX) {
+          void runProgressiveSabrDownload(data);
+        }
+
+        return;
+      }
+
+      try {
+        const [videoResponse, audioResponse] = await Promise.all([
+          originalFetch(videoUrl, { credentials: "include" }),
+          originalFetch(audioUrl, { credentials: "include" })
+        ]);
+        if (!videoResponse.ok || !audioResponse.ok) {
+          throw new Error(`CDN fetch failed: video=${videoResponse.status} audio=${audioResponse.status}`);
+        }
+
+        const [videoBuffer, audioBuffer] = await Promise.all([
+          videoResponse.arrayBuffer(),
+          audioResponse.arrayBuffer()
+        ]);
+
+        void crossWorldMessenger.sendMessage(CrossWorldMessage.StreamData, {
+          downloadType: data.type,
+          videoId: data.videoId,
+          filenameOutput: data.filenameOutput,
+          videoData: new Uint8Array(videoBuffer),
+          audioData: new Uint8Array(audioBuffer),
+          videoMimeType: data.videoFormat?.mimeType?.split(";")[0] ?? "video/mp4",
+          audioMimeType: data.audioFormat?.mimeType?.split(";")[0] ?? "audio/mp4",
+          audioLabel: data.primaryAudioLabel ?? "",
+          additionalAudioData: [],
+          metadata: data.metadata
+        });
+      } catch (error) {
+        console.error("[ytdl:cdn-tab] CDN fetch failed, falling back to progressive SABR:", String(error));
+        void runProgressiveSabrDownload(data);
+      }
+    });
 
     if (location.search.includes(`${ScrubUrlParam.TrustFactoryMode}=1`)) {
       setupIframeVideoSilencing();

@@ -2,7 +2,7 @@ import { activateCaptureForVideoId } from "../video/iframe-capture-state";
 import { waitForAdToClear } from "./ad-handler";
 import { waitForBufferFill } from "./buffer-fill";
 import { concatChunks } from "./capture";
-import { forcePlayback, postAdSeek, waitForPlayerReady } from "./player";
+import { forcePlayback, postAdSeek, waitForPlayerElement } from "./player";
 import { scrubLog, sendCapturedResult, sendEmptyResult } from "./segment-emit";
 import { VIDEO_ELEMENT_SELECTOR } from "@/lib/youtube/player-selectors";
 import { ScrubUrlParam } from "@/lib/youtube/youtube-url";
@@ -24,7 +24,7 @@ export async function runScrubSelfDrive() {
 
   scrubLog(`scrub start videoId=${videoId} index=${iScrub} startSec=${startSec} window=${windowSec}s`);
 
-  const player = await waitForPlayerReady();
+  const player = await waitForPlayerElement();
   if (!player) {
     scrubLog(`player never ready index=${iScrub}`);
     sendEmptyResult({
@@ -34,7 +34,7 @@ export async function runScrubSelfDrive() {
     return;
   }
 
-  scrubLog(`player ready index=${iScrub} duration=${player.getDuration?.() ?? 0}`);
+  scrubLog(`player element ready index=${iScrub}`);
 
   const isPlaying = await forcePlayback(player);
   if (!isPlaying) {
