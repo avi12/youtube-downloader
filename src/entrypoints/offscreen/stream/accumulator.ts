@@ -1,7 +1,7 @@
-import { base64ToUint8Array } from "@/lib/utils/binary";
+import { base64ToUint8Array } from "./codec";
 import { StreamType } from "@/types";
 
-export interface AudioStream {
+interface AudioStream {
   chunks: Map<number, Uint8Array>;
   totalChunks: number;
 }
@@ -14,32 +14,6 @@ export interface StreamAccumulator {
 
 export const STREAM_ACCUMULATORS = new Map<string, StreamAccumulator>();
 
-function handleAudioChunk(
-  accumulator: StreamAccumulator,
-  streamType: string,
-  iChunk: number,
-  totalChunks: number,
-  chunkBytes: Uint8Array
-) {
-  if (!accumulator.audioStreams.has(streamType)) {
-    accumulator.audioStreams.set(streamType, {
-      chunks: new Map(),
-      totalChunks: 0
-    });
-  }
-
-  const audioStream = accumulator.audioStreams.get(streamType);
-  if (!audioStream) {
-    return;
-  }
-
-  audioStream.chunks.set(iChunk, chunkBytes);
-
-  if (totalChunks > 0) {
-    audioStream.totalChunks = totalChunks;
-  }
-}
-
 export function handleProcessStreamChunk(data: {
   videoId: string;
   streamType: string;
@@ -48,8 +22,7 @@ export function handleProcessStreamChunk(data: {
   chunkBase64: string;
   tabId: number;
 }) {
-  const { videoId, streamType, iChunk, totalChunks } = data;
-  const chunkBytes = base64ToUint8Array(data.chunkBase64);
+  const { videoId, streamType, iChunk, totalChunks, chunkBase64 } = data;
   if (!STREAM_ACCUMULATORS.has(videoId)) {
     STREAM_ACCUMULATORS.set(videoId, {
       videoChunks: new Map(),
@@ -58,7 +31,13 @@ export function handleProcessStreamChunk(data: {
     });
   }
 
-  const accumulator = STREAM_ACCUMULATORS.get(videoId)!;
+  const accumulator = STREAM_ACCUMULATORS.get(videoId);
+  if (!accumulator) {
+    return;
+  }
+
+  // iChunk === -1 is a final marker that sets totalChunks for streaming SabrDownload
+  // where total is unknown during transfer.
   if (iChunk === -1) {
     if (streamType === StreamType.Video) {
       accumulator.totalVideoChunks = totalChunks;
@@ -72,13 +51,30 @@ export function handleProcessStreamChunk(data: {
     return;
   }
 
+  const decodedChunk = base64ToUint8Array(chunkBase64);
   if (streamType === StreamType.Video) {
-    accumulator.videoChunks.set(iChunk, chunkBytes);
+    accumulator.videoChunks.set(iChunk, decodedChunk);
 
     if (totalChunks > 0) {
       accumulator.totalVideoChunks = totalChunks;
     }
   } else {
-    handleAudioChunk(accumulator, streamType, iChunk, totalChunks, chunkBytes);
+    if (!accumulator.audioStreams.has(streamType)) {
+      accumulator.audioStreams.set(streamType, {
+        chunks: new Map(),
+        totalChunks: 0
+      });
+    }
+
+    const audioStream = accumulator.audioStreams.get(streamType);
+    if (!audioStream) {
+      return;
+    }
+
+    audioStream.chunks.set(iChunk, decodedChunk);
+
+    if (totalChunks > 0) {
+      audioStream.totalChunks = totalChunks;
+    }
   }
 }

@@ -2,33 +2,31 @@ import { STREAM_ACCUMULATORS } from "./accumulator";
 import { assembleStreamChunks } from "./codec";
 import { enqueueStreamData } from "@/lib/download-pipeline";
 import { DownloadType } from "@/types";
-import type { SubtitleStream, VideoMetadata } from "@/types";
+import type { VideoMetadata } from "@/types";
 
-type StreamEndData = {
+export function handleProcessStreamEnd(data: {
   videoId: string;
   type: DownloadType;
   filenameOutput: string;
   videoMimeType: string;
   audioMimeType: string;
   audioTrackLabels: string[];
-  subtitleStreams?: SubtitleStream[];
   tabId: number;
   playlistId?: string;
   playlistTitle?: string;
   playlistTotalCount?: number;
   metadata?: VideoMetadata | null;
-};
-
-function assembleAdditionalAudioStreams({
-  accumulator,
-  audioTrackLabels,
-  audioMimeType
-}: {
-  accumulator: ReturnType<typeof STREAM_ACCUMULATORS.get>;
-  audioTrackLabels: string[];
-  audioMimeType: string;
 }) {
-  return audioTrackLabels.slice(1).map((label, iTrack) => {
+  const {
+    videoId, type, filenameOutput, videoMimeType, audioMimeType, audioTrackLabels, tabId,
+    playlistId, playlistTitle, playlistTotalCount
+  } = data;
+  const accumulator = STREAM_ACCUMULATORS.get(videoId);
+  STREAM_ACCUMULATORS.delete(videoId);
+
+  const primaryAudio = accumulator?.audioStreams.get("audio");
+  const [primaryAudioLabel, ...extraTrackLabels] = audioTrackLabels;
+  const additionalAudioStreams = extraTrackLabels.map((label, iTrack) => {
     const audioStream = accumulator?.audioStreams.get(`audio-extra-${iTrack}`);
     return {
       data: audioStream
@@ -41,25 +39,6 @@ function assembleAdditionalAudioStreams({
       label
     };
   });
-}
-
-export function handleProcessStreamEnd(data: StreamEndData) {
-  const {
-    videoId, type, filenameOutput, videoMimeType, audioMimeType, audioTrackLabels,
-    subtitleStreams = [], tabId, playlistId, playlistTitle, playlistTotalCount
-  } = data;
-
-  const accumulator = STREAM_ACCUMULATORS.get(videoId);
-  STREAM_ACCUMULATORS.delete(videoId);
-
-  const additionalAudioStreams = assembleAdditionalAudioStreams({
-    accumulator,
-    audioTrackLabels,
-    audioMimeType
-  });
-
-  const primaryAudio = accumulator?.audioStreams.get("audio");
-  const primaryAudioLabel = audioTrackLabels[0];
 
   enqueueStreamData({
     type,
@@ -81,7 +60,6 @@ export function handleProcessStreamEnd(data: StreamEndData) {
     audioMimeType,
     primaryAudioLabel,
     additionalAudioStreams,
-    subtitleStreams,
     tabId,
     playlistId,
     playlistTitle,
