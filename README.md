@@ -12,10 +12,9 @@ Made by [Avi](https://avi12.com)
   <img src="https://user-images.githubusercontent.com/6422804/135838702-e852bb47-8c0d-4275-baf1-8adc1c50a3c1.png" width="30" alt="Microsoft Edge">
   <img src="https://user-images.githubusercontent.com/6422804/135838972-113f73a3-6a04-48a9-ae04-754f25bc6eb0.png" width="30" alt="Opera">
   <img src="https://user-images.githubusercontent.com/6422804/135838972-113f73a3-6a04-48a9-ae04-754f25bc6eb0.png" width="30" alt="Opera GX">
-  <img src="https://upload.wikimedia.org/wikipedia/commons/a/a0/Firefox_logo%2C_2019.svg" width="30" alt="Firefox">
 </p>
 
-Chrome, Edge, Opera, Opera GX, and Firefox (all MV3).
+Chrome, Edge, Opera, and Opera GX (all MV3).
 
 ## Features
 
@@ -81,23 +80,15 @@ pnpm i
 pnpm dev:stable
 ```
 
-### Dev server (Firefox)
-
-```bash
-pnpm dev:stable-firefox
-```
-
-The dev server builds for production (with source maps), launches a browser with the extension sideloaded, and reloads
+The dev server builds for production (with source maps), launches Chrome with the extension sideloaded, and reloads
 both the extension and any open YouTube tabs on every file change under `src/`.
 
 ### Other dev commands
 
 ```bash
-pnpm dev                  # WXT dev mode (Chrome)
+pnpm dev                  # WXT dev mode
 pnpm dev:with-profile     # WXT dev mode with your Chrome profile
-pnpm dev:firefox          # WXT dev mode (Firefox)
-pnpm build                # Production build (Chrome)
-pnpm build:firefox        # Production build (Firefox)
+pnpm build                # Production build
 pnpm svelte:check         # Svelte type-check
 pnpm lint                 # ESLint + Stylelint
 pnpm knip                 # Dead code detection

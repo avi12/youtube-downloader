@@ -5,7 +5,7 @@
 - TypeScript (100% type safety, let TypeScript infer return types)
 - @ffmpeg/ffmpeg for video/audio processing
 - @webext-core/messaging for message passing
-- Chromium (Chrome, Edge, Opera) and Firefox MV3
+- Chromium (Chrome, Edge, Opera) MV3
 
 # Code style
 - Use the `browser` namespace

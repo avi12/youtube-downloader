@@ -9,13 +9,8 @@
   "scripts": {
     "dev:with-profile": "pnpx cross-env CHROME_WITH_PROFILE=1 wxt",
     "dev:stable": "npx tsx scripts/dev-server.ts",
-    "dev:stable-firefox": "npx tsx scripts/dev-server.ts --firefox",
-    "dev:firefox": "wxt -b firefox --mv3",
-    "dev:firefox-with-profile": "pnpx cross-env FIREFOX_WITH_PROFILE=1 wxt -b firefox --mv3",
     "build": "wxt build",
-    "build:firefox": "wxt build -b firefox --mv3",
     "pack": "wxt zip",
-    "pack:firefox": "wxt zip -b firefox --mv3",
     "postinstall": "wxt prepare",
     "lint": "eslint --fix",
     "compile": "tsc --noEmit",
