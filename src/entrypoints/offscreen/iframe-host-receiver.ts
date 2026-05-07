@@ -6,6 +6,23 @@
 import { IframeHostMessageType } from "@/lib/messaging/iframe-host-postmessage";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 
+interface TemplateReadyMessage {
+  type: typeof IframeHostMessageType.TemplateReady;
+  factoryId: string;
+  videoId: string;
+  url: string;
+  bodyBase64: string;
+  capturedAt: number;
+}
+
+function isTemplateReadyMessage(data: unknown): data is TemplateReadyMessage {
+  if (typeof data !== "object" || data === null || !("type" in data)) {
+    return false;
+  }
+
+  return data.type === IframeHostMessageType.TemplateReady;
+}
+
 const HIDDEN_IFRAME_STYLE = "position:fixed;left:-99999px;top:-99999px;width:480px;height:270px;border:0";
 
 const iframesById = new Map<string, HTMLIFrameElement>();
@@ -68,41 +85,48 @@ interface ScrubSegmentMessage {
 }
 
 function isScrubSegmentMessage(data: unknown): data is ScrubSegmentMessage {
-  if (typeof data !== "object" || data === null) {
-    return false;
-  }
-
-  return "type" in data && data.type === IframeHostMessageType.ScrubSegment;
+  return typeof data === "object" && data !== null &&
+    "type" in data && data.type === IframeHostMessageType.ScrubSegment;
 }
 
-// Firefox doesn't inject isolated-world content scripts into iframes hosted
-// inside moz-extension:// pages, so the scrub-iframe port relay is unavailable.
-// MAIN-world scripts still run and use parent.postMessage to send segments here;
-// we forward them to the background via runtime messaging.
-export function initScrubIframeRelay() {
+// Relays postMessage events from hosted iframes to the background service worker.
+// Firefox doesn't inject isolated content scripts into moz-extension:// hosted
+// iframes, so the MAIN-world script uses parent.postMessage as the only relay path.
+export function initIframeMessageRelay() {
   addEventListener("message", e => {
     if (typeof e.data === "object" && e.data !== null && e.data.type === IframeHostMessageType.ScrubDebug) {
       void sendMessage(MessageType.BgDebugLog, { msg: String(e.data.msg) });
       return;
     }
 
-    if (!isScrubSegmentMessage(e.data)) {
+    if (isScrubSegmentMessage(e.data)) {
+      const {
+        videoId, iScrub, videoBuffer, audioBuffer,
+        videoMimeType, audioMimeType, videoBufferStartSec, videoBufferEndSec
+      } = e.data;
+      void sendMessage(MessageType.IframeScrubSegmentReady, {
+        videoId,
+        iScrub,
+        videoBytes: new Uint8Array(videoBuffer),
+        audioBytes: new Uint8Array(audioBuffer),
+        videoMimeType,
+        audioMimeType,
+        videoBufferStartSec,
+        videoBufferEndSec
+      });
       return;
     }
 
-    const {
-      videoId, iScrub, videoBuffer, audioBuffer,
-      videoMimeType, audioMimeType, videoBufferStartSec, videoBufferEndSec
-    } = e.data;
-    void sendMessage(MessageType.IframeScrubSegmentReady, {
-      videoId,
-      iScrub,
-      videoBytes: new Uint8Array(videoBuffer),
-      audioBytes: new Uint8Array(audioBuffer),
-      videoMimeType,
-      audioMimeType,
-      videoBufferStartSec,
-      videoBufferEndSec
+    if (!isTemplateReadyMessage(e.data)) {
+      return;
+    }
+
+    void sendMessage(MessageType.SabrTemplateReady, {
+      videoId: e.data.videoId,
+      factoryId: e.data.factoryId,
+      url: e.data.url,
+      bodyBase64: e.data.bodyBase64,
+      capturedAt: e.data.capturedAt
     });
   });
 }
