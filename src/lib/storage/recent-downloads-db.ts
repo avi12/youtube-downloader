@@ -102,6 +102,22 @@ export async function deleteRecentDownload(id: string) {
   await awaitTransaction(transaction);
 }
 
+export async function storePendingBlob(key: string, blob: Blob) {
+  const db = await getDatabase();
+  const transaction = db.transaction(Store.Blobs, "readwrite");
+  transaction.objectStore(Store.Blobs).put(blob, key);
+  await awaitTransaction(transaction);
+}
+
+export async function takePendingBlob(key: string) {
+  const db = await getDatabase();
+  const transaction = db.transaction(Store.Blobs, "readwrite");
+  const blob = await awaitRequest<Blob | undefined>(transaction.objectStore(Store.Blobs).get(key));
+  transaction.objectStore(Store.Blobs).delete(key);
+  await awaitTransaction(transaction);
+  return blob instanceof Blob ? blob : null;
+}
+
 export async function pruneRecentDownloads({ olderThanTimestamp, protectedIds }: {
   olderThanTimestamp: number;
   protectedIds: ReadonlySet<string>;

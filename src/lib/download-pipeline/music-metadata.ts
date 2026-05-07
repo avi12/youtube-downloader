@@ -1,8 +1,7 @@
-import { tryUnlink } from "./ffmpeg-instance";
+import { getFFmpeg, tryUnlink } from "./ffmpeg-instance";
 import { fetchThumbnail } from "./thumbnail-fetcher";
 import { getFileExtension, getCompatibleFilename } from "@/lib/utils/containers";
 import type { VideoMetadata } from "@/types";
-import type { FFmpegCoreModule } from "@ffmpeg/types";
 
 function sanitizeForFFmpeg(value: string) {
   return value.replaceAll(/[\n\r"\\]/g, " ").trim();
@@ -29,18 +28,18 @@ function buildMetadataArgs(metadata: VideoMetadata) {
   return args;
 }
 
-export async function embedMusicMetadata({ audioData, filenameOutput, sourceExtension, metadata, ffmpeg }: {
+export async function embedMusicMetadata({ audioData, filenameOutput, sourceExtension, metadata }: {
   audioData: Uint8Array;
   filenameOutput: string;
   sourceExtension: string;
   metadata: VideoMetadata;
-  ffmpeg: FFmpegCoreModule;
 }) {
+  const ffmpeg = getFFmpeg();
   const outputExtension = getFileExtension(filenameOutput) || sourceExtension;
   const inputFilename = `input.${sourceExtension}`;
   const outputFilename = getCompatibleFilename(filenameOutput);
 
-  ffmpeg.FS.writeFile(inputFilename, audioData);
+  await ffmpeg.FS.writeFile(inputFilename, audioData);
 
   const ffmpegArgs = ["-i", inputFilename];
 
@@ -52,7 +51,7 @@ export async function embedMusicMetadata({ audioData, filenameOutput, sourceExte
     const thumbnail = await fetchThumbnail(metadata.thumbnailUrl);
     if (thumbnail) {
       coverFilename = `cover.${thumbnail.extension}`;
-      ffmpeg.FS.writeFile(coverFilename, thumbnail.data);
+      await ffmpeg.FS.writeFile(coverFilename, thumbnail.data);
       ffmpegArgs.push("-i", coverFilename);
       isCoverArtPresent = true;
     }
@@ -73,32 +72,23 @@ export async function embedMusicMetadata({ audioData, filenameOutput, sourceExte
   ffmpegArgs.push(outputFilename);
 
   try {
-    const exitCode = ffmpeg.exec(...ffmpegArgs);
+    const exitCode = await ffmpeg.exec(...ffmpegArgs);
     if (exitCode !== 0) {
       return audioData;
     }
 
-    const taggedOutput = ffmpeg.FS.readFile(outputFilename, { encoding: "binary" });
-    if (typeof taggedOutput === "string" || taggedOutput.byteLength === 0) {
+    const taggedOutput = await ffmpeg.FS.readFile(outputFilename);
+    if (taggedOutput.byteLength === 0) {
       return audioData;
     }
 
     return taggedOutput;
   } finally {
-    tryUnlink({
-      ffmpeg,
-      filename: inputFilename
-    });
-    tryUnlink({
-      ffmpeg,
-      filename: outputFilename
-    });
+    tryUnlink(inputFilename);
+    tryUnlink(outputFilename);
 
     if (isCoverArtPresent) {
-      tryUnlink({
-        ffmpeg,
-        filename: coverFilename
-      });
+      tryUnlink(coverFilename);
     }
   }
 }

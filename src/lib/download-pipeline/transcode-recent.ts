@@ -55,9 +55,9 @@ export async function transcodeRecentDownload({ entryId, targetContainer }: {
     const ffmpeg = getFFmpeg();
 
     try {
-      ffmpeg.FS.writeFile(sourceFilename, inputBytes);
+      await ffmpeg.FS.writeFile(sourceFilename, inputBytes);
 
-      const exitCode = ffmpeg.exec(
+      const exitCode = await ffmpeg.exec(
         ...buildFfmpegArgs({
           sourceFilename,
           outputFilename,
@@ -68,10 +68,7 @@ export async function transcodeRecentDownload({ entryId, targetContainer }: {
         throw new Error(`FFmpeg exited with code ${exitCode}`);
       }
 
-      const output = ffmpeg.FS.readFile(outputFilename, { encoding: "binary" });
-      if (typeof output === "string") {
-        throw new Error("FFmpeg readFile returned unexpected string output");
-      }
+      const output = await ffmpeg.FS.readFile(outputFilename);
 
       await triggerDownload({
         data: output,
@@ -84,14 +81,8 @@ export async function transcodeRecentDownload({ entryId, targetContainer }: {
         }
       });
     } finally {
-      tryUnlink({
-        ffmpeg,
-        filename: sourceFilename
-      });
-      tryUnlink({
-        ffmpeg,
-        filename: outputFilename
-      });
+      tryUnlink(sourceFilename);
+      tryUnlink(outputFilename);
     }
   });
 }
