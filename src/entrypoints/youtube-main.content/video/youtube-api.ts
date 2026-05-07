@@ -45,7 +45,7 @@ export function buildVideoData({
     isMusic,
     isDownloadable,
     isLive,
-    videoFormats: getUniqueVideoFormats(allFormats),
+    videoFormats: getUniqueVideoFormats(allFormats, import.meta.env.FIREFOX),
     audioFormats: getAudioFormats(allFormats, preferredAudioLanguage),
     captionTracks: getCaptionTracks(playerResponse, preferredCaptionLanguage || preferredAudioLanguage),
     sabrConfig: extractSabrConfig({

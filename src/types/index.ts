@@ -9,3 +9,4 @@ export * from "./options";
 export * from "./stream";
 export * from "./video-data";
 export * from "./youtube";
+export * from "./youtube-capture";

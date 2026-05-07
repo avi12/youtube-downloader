@@ -138,30 +138,11 @@ export function clearCapturedSabrData(tabId: number) {
   persistCaptures();
 }
 
-export function hasCapturedSabrDataForTab(tabId: number): boolean {
-  return capturedByTab.has(tabId);
-}
+const SABR_CAPTURE_FRESH_MS = 60_000;
 
-function waitForOffscreenSabrCapture(timeoutMs: number): Promise<CapturedEntry | null> {
-  if (offscreenCapture) {
-    return Promise.resolve(offscreenCapture);
-  }
-
-  return new Promise(resolve => {
-    function onCapture(capture: CapturedEntry) {
-      clearTimeout(timer);
-      resolve(capture);
-    }
-    const timer = setTimeout(() => {
-      offscreenCaptureResolvers.delete(onCapture);
-      resolve(null);
-    }, timeoutMs);
-    offscreenCaptureResolvers.add(onCapture);
-  });
-}
-
-function clearOffscreenCapture() {
-  offscreenCapture = null;
+export function hasFreshCapturedSabrDataForTab(tabId: number) {
+  const entry = capturedByTab.get(tabId);
+  return entry ? Date.now() - entry.timestamp < SABR_CAPTURE_FRESH_MS : false;
 }
 
 export function setOffscreenCapture(body: number[], url: string) {

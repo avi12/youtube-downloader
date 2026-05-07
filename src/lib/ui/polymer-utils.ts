@@ -14,12 +14,6 @@ export const PAPER_PROGRESS_THEME = {
   "--paper-progress-container-color": "transparent"
 };
 
-export const PAPER_INPUT_THEME = {
-  "--paper-input-container-color": "var(--yt-spec-text-secondary, #aaa)",
-  "--paper-input-container-focus-color": "var(--yt-spec-call-to-action, rgb(62 166 255))",
-  "--paper-input-container-input-color": "var(--yt-spec-text-primary, #f1f1f1)"
-};
-
 export function applyPolymerCustomStyles({ element, styles }: {
   element: Element;
   styles: Record<string, string>;

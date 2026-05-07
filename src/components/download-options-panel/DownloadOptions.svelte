@@ -1,6 +1,5 @@
 <script lang="ts">
   import PolymerSelect from "../polymer-select/PolymerSelect.svelte";
-  import { applyPolymerCustomStyles, PAPER_INPUT_THEME } from "@/lib/ui/polymer-utils";
   import { splitFilenameAndExtension, supportedExtensions } from "@/lib/utils/containers";
   import { formatAudioCodecLabel, formatVideoQualityLabel } from "@/lib/youtube/video-helpers";
   import { DownloadType } from "@/types";
@@ -123,10 +122,6 @@
   );
 
   function applyPolymerTheme(elTarget: Element) {
-    applyPolymerCustomStyles({
-      element: elTarget,
-      styles: PAPER_INPUT_THEME
-    });
     const elInput = elTarget.querySelector("input");
     if (elInput) {
       elInput.dir = "auto";

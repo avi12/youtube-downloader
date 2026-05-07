@@ -1,6 +1,5 @@
 <script lang="ts">
   import selectDropdownStyles from "./select-dropdown.css?inline";
-  import { applyPolymerCustomStyles, PAPER_INPUT_THEME } from "@/lib/ui/polymer-utils";
 
   type Props = {
     id?: string;
@@ -19,11 +18,6 @@
   }: Props = $props();
 
   function attachDropdown(elTarget: Element) {
-    applyPolymerCustomStyles({
-      element: elTarget,
-      styles: PAPER_INPUT_THEME
-    });
-
     let elMovedDropdown: Element | null = null;
     let elChevronInput: HTMLElement | null = null;
     let isOverlayOpen = false;

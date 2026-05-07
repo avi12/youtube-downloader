@@ -7,12 +7,12 @@ export type YouTubePath = (typeof YouTubePath)[keyof typeof YouTubePath];
 
 export const ScrubUrlParam = {
   Ytdl: "ytdl",
-  ScrubMode: "ytdlScrubMode",
-  ScrubIndex: "ytdlScrubIndex",
-  ScrubWindow: "ytdlScrubWindow",
   KeepPlaying: "ytdlKeepPlaying",
   TrustFactoryMode: "ytdlTrustFactoryMode",
-  FactoryId: "ytdlFactoryId"
+  FactoryId: "ytdlFactoryId",
+  ScrubMode: "ytdlScrubMode",
+  ScrubIndex: "ytdlScrubIndex",
+  ScrubWindow: "ytdlScrubWindow"
 } as const;
 
 export type ScrubUrlParam = (typeof ScrubUrlParam)[keyof typeof ScrubUrlParam];

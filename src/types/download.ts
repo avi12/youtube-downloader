@@ -52,6 +52,7 @@ export type DownloadRequest = {
   captionTracks?: CaptionTrack[];
   videoDurationSec?: number;
   primerBodyBase64?: string;
+  authorization?: string;
 };
 
 export type DownloadTypePreference = "auto" | DownloadType;

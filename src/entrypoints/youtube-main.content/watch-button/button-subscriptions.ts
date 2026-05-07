@@ -1,5 +1,5 @@
 import type { ButtonElements } from "./button-handlers";
-import { mapToBarProgress, refreshButtons } from "./button-handlers";
+import { refreshButtons } from "./button-handlers";
 import { handleProgressEvent } from "./button-handlers";
 import type { ButtonState } from "./button-state";
 import { CrossWorldEvent, onCrossWorldEvent } from "@/lib/messaging/cross-world-events";
@@ -12,26 +12,9 @@ export function wireButtonSubscriptions(
   elements: ButtonElements,
   applySegmentedClasses: () => void
 ): () => void {
-  const { videoId } = videoData;
-
   const unsubscribeProgress = onCrossWorldEvent({
     type: CrossWorldEvent.ProgressUpdate,
     handler: data => handleProgressEvent({ data }, state, videoData, elements, applySegmentedClasses)
-  });
-
-  const unsubscribeDownloadProgress = crossWorldMessenger.onMessage(CrossWorldMessage.DownloadProgress, ({ data }) => {
-    if (data.videoId !== videoId) {
-      return;
-    }
-
-    if (!state.isDownloading) {
-      state.isDownloading = true;
-      state.isDone = false;
-    }
-
-    state.downloadProgress = mapToBarProgress(data.progress, data.progressType);
-    state.downloadProgressType = data.progressType;
-    refreshButtons(state, videoData, elements, applySegmentedClasses);
   });
 
   const unsubscribePanelClosed = crossWorldMessenger.onMessage(CrossWorldMessage.PanelClosed, () => {
@@ -61,7 +44,6 @@ export function wireButtonSubscriptions(
 
   return () => {
     unsubscribeProgress();
-    unsubscribeDownloadProgress();
     unsubscribePanelClosed();
     unsubscribeFilenameChanged();
   };

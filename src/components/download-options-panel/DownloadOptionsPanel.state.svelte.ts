@@ -170,10 +170,11 @@ export function createPanelState(getVideoData: () => VideoData) {
         return;
       }
 
+      const isActiveInStore = downloadProgressStore.get(videoId)?.isDownloading === true;
       applyDownloadState({
         progress: existing.progress,
         progressType: existing.progressType,
-        isDownloading: existing.progress > 0 && existing.progress < 1,
+        isDownloading: isActiveInStore,
         isDone: existing.progress >= 1
       });
     }

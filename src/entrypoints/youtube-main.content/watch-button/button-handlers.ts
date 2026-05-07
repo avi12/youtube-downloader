@@ -54,7 +54,7 @@ export function refreshButtons(
   }
 
   requestAnimationFrame(applySegmentedClasses);
-  elements.progressRing.setIndeterminate(state.isDownloading && state.downloadProgressType === "");
+  elements.progressRing.setIndeterminate(state.isDownloading && viewState.downloadProgress === 0);
   elements.progressRing.setProgress(viewState.downloadProgress);
   elements.progressRing.setOpacity(state.isDownloading ? 1 : 0);
 }

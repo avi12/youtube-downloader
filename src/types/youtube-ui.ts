@@ -1,4 +1,3 @@
-import type { YtdlCaptureState } from "./youtube-capture";
 import type { ButtonViewModelData } from "@/lib/ui/polymer-utils";
 
 export type { ButtonViewModelData };
@@ -49,7 +48,4 @@ declare global {
     "tp-yt-paper-item": HTMLElement;
   }
 
-  interface Window {
-    __ytdlCapture: YtdlCaptureState;
-  }
 }

@@ -1,13 +1,11 @@
 import { injectSegmentedDownloadButton } from "../watch-button/watch-button";
-import { activateIframeCaptureForVideo } from "./iframe-capture-state";
 import { generatePoTokenIfNeeded } from "./po-token-manager";
 import { buildVideoData } from "./youtube-api";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { videoDataStore } from "@/lib/ui/synced-stores.svelte";
 import { YouTubePath } from "@/lib/youtube/youtube-url";
-import { type PlayerResponse, type VideoData, type YtdlCaptureState } from "@/types";
+import { type PlayerResponse, type VideoData } from "@/types";
 
-export type { YtdlCaptureState };
 export { generatePoTokenIfNeeded };
 export { buildVideoMetadata } from "./video-metadata";
 
@@ -60,7 +58,6 @@ export async function buildAndDispatchVideoData({ playerResponse, cancelActiveDo
   void crossWorldMessenger.sendMessage(CrossWorldMessage.VideoData, videoData);
 
   if (self !== top) {
-    activateIframeCaptureForVideo(videoData);
     await generatePoTokenIfNeeded(videoData);
     return;
   }

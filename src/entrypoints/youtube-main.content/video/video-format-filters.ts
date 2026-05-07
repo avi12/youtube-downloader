@@ -1,8 +1,20 @@
 import { StreamType } from "@/types";
 import type { AdaptiveFormatItem, PlayerResponse } from "@/types";
 
-export function getUniqueVideoFormats(formats: AdaptiveFormatItem[]) {
-  const videoFormats = formats.filter(format => format.mimeType.startsWith(StreamType.Video));
+export function getUniqueVideoFormats(formats: AdaptiveFormatItem[], preferMp4 = false) {
+  const videoFormats = formats
+    .filter(format => format.mimeType.startsWith(StreamType.Video))
+    .toSorted((formatA, formatB) => {
+      if (preferMp4) {
+        const isAAvc1 = formatA.mimeType.includes("avc1");
+        const isBAvc1 = formatB.mimeType.includes("avc1");
+        if (isAAvc1 !== isBAvc1) {
+          return isAAvc1 ? -1 : 1;
+        }
+      }
+
+      return byBitrateDesc(formatA, formatB);
+    });
   const seen = new Set<string>();
 
   return videoFormats.filter(format => {
