@@ -26,6 +26,7 @@ function getViewState(state: ButtonState, videoData: VideoData) {
     isInterrupted: state.isInterrupted,
     isError: state.isError,
     isPanelOpen: state.isPanelOpen,
+    isPanelBelow: state.isPanelBelow,
     downloadProgress: state.isDownloading ? state.downloadProgress : 0,
     filename: state.defaultFilename,
     quality: state.defaultQuality,
@@ -47,7 +48,7 @@ export function refreshButtons(
     elements.elDownloadButton.data = buildDownloadData(viewState);
   }
 
-  const chevronKey = [viewState.isPanelOpen, viewState.isDownloading && !viewState.isDone, viewState.isDownloadable].join("|");
+  const chevronKey = [viewState.isPanelOpen, viewState.isPanelBelow, viewState.isDownloading && !viewState.isDone, viewState.isDownloadable].join("|");
   if (chevronKey !== state.lastRenderedChevronKey) {
     state.lastRenderedChevronKey = chevronKey;
     elements.elChevronButton.data = buildChevronData(viewState);

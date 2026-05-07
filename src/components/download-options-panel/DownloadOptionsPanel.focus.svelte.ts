@@ -25,17 +25,18 @@ export function createFocusManager() {
       elDropdownMenu.querySelector("tp-yt-paper-input")?.removeAttribute("focused");
     }
 
-    const elInitialFocus = elPanel.querySelector<HTMLElement>("tp-yt-paper-input:not([disabled])");
-    elInitialFocus?.focus();
-
-    // Polymer's receivedFocusFromKeyboard may not be initialized yet at mount time, so set the attribute directly.
-    elInitialFocus?.closest("tp-yt-paper-dropdown-menu")?.setAttribute("keyboard-focused", "");
-
     // Applying the inert trap before open() interferes with Polymer's overlay mechanics.
     const elDropdownRoot = elPanel.closest<HTMLElement>("tp-yt-iron-dropdown") ?? elPanel;
 
     elDropdownRoot.addEventListener("iron-overlay-opened", () => {
       removeInert = applyInertTrap(elDropdownRoot);
+
+      // Focus the first input after the overlay opens so it's visible and focusable.
+      const elInitialFocus = elPanel.querySelector<HTMLElement>("tp-yt-paper-input:not([disabled])");
+      elInitialFocus?.focus();
+
+      // Polymer's receivedFocusFromKeyboard may not be initialized yet at open time, so set the attribute directly.
+      elInitialFocus?.closest("tp-yt-paper-dropdown-menu")?.setAttribute("keyboard-focused", "");
 
       // Release the inert trap when Polymer closes the overlay externally
       // (click-outside or Escape) since closePanel() only handles explicit close.

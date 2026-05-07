@@ -18,6 +18,7 @@ export interface ButtonViewState {
   isInterrupted: boolean;
   isError: boolean;
   isPanelOpen: boolean;
+  isPanelBelow: boolean;
   downloadProgress: number;
   filename: string;
   quality: string;
@@ -83,8 +84,11 @@ export function buildDownloadData(state: ButtonViewState) {
 export function buildChevronData(state: ButtonViewState) {
   const isDisabled = (state.isDownloading && !state.isDone) || !state.isDownloadable;
 
+  const panelOpenIcon = state.isPanelBelow ? IconName.ExpandMore : IconName.ExpandLess;
+  const panelClosedIcon = state.isPanelBelow ? IconName.ExpandLess : IconName.ExpandMore;
+
   return {
-    iconName: state.isPanelOpen ? IconName.ExpandLess : IconName.ExpandMore,
+    iconName: state.isPanelOpen ? panelOpenIcon : panelClosedIcon,
     title: "",
     accessibilityText: state.isPanelOpen ? "Close download options" : "Open download options",
     style: ButtonStyle.Mono,

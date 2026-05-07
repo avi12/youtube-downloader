@@ -67,6 +67,7 @@ function buildButtonState(videoData: VideoData): ButtonState {
     isInterrupted: initialState.isInterrupted,
     isError: false,
     isPanelOpen: false,
+    isPanelBelow: true,
     downloadProgress: 0,
     downloadProgressType: "",
     defaultVideoItag: initialState.videoItag,
@@ -134,6 +135,16 @@ crossWorldMessenger.onMessage(CrossWorldMessage.OptionsUpdate, ({ data }) => {
   currentNativeDownload?.classList.toggle("ytdl-native-hidden", !isShowNativeDownload);
 });
 
+function evictOrphanedGroups() {
+  for (const elGroup of document.querySelectorAll("[data-ytdl-download-group]")) {
+    elGroup.remove();
+  }
+
+  for (const elContent of document.querySelectorAll("[id^='ytdl-panel-content']")) {
+    elContent.closest("tp-yt-iron-dropdown")?.remove();
+  }
+}
+
 export function cleanupSegmentedButton() {
   cleanupCurrentButton?.();
   cleanupCurrentButton = null;
@@ -175,16 +186,25 @@ function wireEventsAndObservers({
   });
   resizeObserver.observe(elements.elDropdownContentSlot);
 
+  function handleDropdownOpened() {
+    const groupRect = elements.elGroup.getBoundingClientRect();
+    const dropdownRect = elements.elDropdown.getBoundingClientRect();
+    state.isPanelBelow = dropdownRect.top >= groupRect.bottom;
+    refreshButtons(state, videoData, elements, applySegmentedClasses);
+  }
+
   const segmentedObserver = attachSegmentedObserver(elements, applySegmentedClasses);
   const unsubscribeAll = wireButtonSubscriptions(state, videoData, elements, applySegmentedClasses);
 
   elements.elGroup.addEventListener("click", handleClick);
+  elements.elDropdown.addEventListener("iron-overlay-opened", handleDropdownOpened);
   elements.elDropdown.addEventListener("iron-overlay-closed", handleDropdownClosed);
 
   return () => {
     segmentedObserver.disconnect();
     resizeObserver.disconnect();
     elements.elGroup.removeEventListener("click", handleClick);
+    elements.elDropdown.removeEventListener("iron-overlay-opened", handleDropdownOpened);
     unsubscribeAll();
     elements.elDropdown.removeEventListener("iron-overlay-closed", handleDropdownClosed);
     elements.elGroup.remove();
@@ -197,6 +217,7 @@ export async function injectSegmentedDownloadButton(
   cancelActiveDownload: (videoId: string) => void
 ) {
   cleanupSegmentedButton();
+  evictOrphanedGroups();
 
   if (!videoData.isDownloadable) {
     return;

@@ -8,6 +8,7 @@ export interface ButtonState {
   isInterrupted: boolean;
   isError: boolean;
   isPanelOpen: boolean;
+  isPanelBelow: boolean;
   downloadProgress: number;
   downloadProgressType: ProgressType | "";
   defaultVideoItag: number;
