@@ -35,28 +35,25 @@ async function registerSabrOriginRule() {
     }
   ];
 
-  // Sec-Fetch-* headers are browser-managed in Firefox; overriding them aborts requests
-  const chromeOnlyHeaders: Browser.declarativeNetRequest.ModifyHeaderInfo[] = import.meta.env.FIREFOX
-    ? []
-    : [
-      {
-        header: "Sec-Fetch-Site",
-        operation: "set",
-        value: "cross-site"
-      },
-      {
-        header: "Sec-Fetch-Storage-Access",
-        operation: "set",
-        value: "active"
-      }
-    ];
+  const secFetchHeaders: Browser.declarativeNetRequest.ModifyHeaderInfo[] = [
+    {
+      header: "Sec-Fetch-Site",
+      operation: "set",
+      value: "cross-site"
+    },
+    {
+      header: "Sec-Fetch-Storage-Access",
+      operation: "set",
+      value: "active"
+    }
+  ];
 
   const rule: Browser.declarativeNetRequest.Rule = {
     id: SABR_ORIGIN_RULE_ID,
     priority: 1,
     action: {
       type: "modifyHeaders",
-      requestHeaders: [...baseHeaders, ...chromeOnlyHeaders]
+      requestHeaders: [...baseHeaders, ...secFetchHeaders]
     },
     condition: { urlFilter: "||googlevideo.com/videoplayback" }
   };
@@ -187,12 +184,6 @@ export default defineBackground(async () => {
   void musicListItem.setValue([]);
   void videoOnlyListItem.setValue([]);
   void videoDetailsItem.setValue({});
-
-  if (import.meta.env.FIREFOX) {
-    const processorUrl = browser.runtime.getURL("/offscreen.html");
-    const tabs = await browser.tabs.query({ url: processorUrl });
-    await Promise.all(tabs.map(tab => tab.id !== undefined ? browser.tabs.remove(tab.id) : Promise.resolve()));
-  }
 
   void ensureProcessor();
 

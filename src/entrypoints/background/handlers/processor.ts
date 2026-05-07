@@ -1,6 +1,5 @@
 let processorReady: Promise<void> | null = null;
 let resolveFFmpegReady: (() => void) | null = null;
-let firefoxProcessorFrame: HTMLIFrameElement | null = null;
 
 export function signalFFmpegReady() {
   resolveFFmpegReady?.();
@@ -11,7 +10,7 @@ async function waitForFFmpegReady() {
   return new Promise<void>(resolve => resolveFFmpegReady = resolve);
 }
 
-async function ensureChromeOffscreenDocument() {
+async function ensureOffscreenDocument() {
   let existingContexts: Browser.runtime.ExtensionContext[] = [];
 
   try {
@@ -43,33 +42,11 @@ async function ensureChromeOffscreenDocument() {
   await ffmpegReady;
 }
 
-async function ensureFirefoxProcessorFrame() {
-  if (firefoxProcessorFrame !== null && document.body.contains(firefoxProcessorFrame)) {
-    return;
-  }
-
-  firefoxProcessorFrame?.remove();
-  firefoxProcessorFrame = null;
-
-  const ffmpegReady = waitForFFmpegReady();
-
-  const elFrame = document.createElement("iframe");
-  elFrame.src = browser.runtime.getURL("/offscreen.html");
-  elFrame.style.display = "none";
-  document.body.appendChild(elFrame);
-  firefoxProcessorFrame = elFrame;
-
-  await ffmpegReady;
-}
-
 export async function ensureProcessor() {
   if (processorReady) {
     return processorReady;
   }
 
-  processorReady = import.meta.env.FIREFOX
-    ? ensureFirefoxProcessorFrame()
-    : ensureChromeOffscreenDocument();
-
+  processorReady = ensureOffscreenDocument();
   return processorReady;
 }
