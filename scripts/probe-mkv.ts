@@ -1,6 +1,6 @@
+import { DOWNLOADS } from "./script-config.js";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { DOWNLOADS } from "./script-config.js";
 
 const MKV_PATH = process.argv[2] ?? join(DOWNLOADS, "Nintendo is going to sue  - Anbernic RG DS(1).mkv");
 

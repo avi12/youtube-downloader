@@ -27,6 +27,9 @@ declare module "web-ext-run" {
 
 declare module "web-ext-run/util/logger" {
   export const consoleStream: {
-    write: (entry: { level: number; msg: string }) => void;
+    write: (entry: {
+      level: number;
+      msg: string;
+    }) => void;
   };
 }
