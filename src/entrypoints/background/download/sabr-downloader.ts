@@ -1,18 +1,180 @@
-import { downloadAudioOnlyViaSabr, downloadExtraAudioTracksViaSabr, downloadVideoAudioViaSabr } from "./sabr-progress";
-import { extractPoTokenFromBody, getCapturedSabrData } from "@/lib/youtube/sabr/request-capture";
-import { DownloadType } from "@/types";
-import type { DownloadRequest } from "@/types";
+import type { DownloadResult } from "./background-downloader";
+import { createProgressFetch } from "./progress-fetch";
+import { sendProgressUpdate } from "./progress-fetch";
+import { fetchAudioViaSabrStream, fetchVideoViaSabrStream } from "@/lib/youtube/sabr-download";
+import { DownloadType, ProgressType } from "@/types";
+import type { AdaptiveFormatItem, DownloadRequest, SabrConfig } from "@/types";
+
+export function buildEffectiveSabrConfig({ sabrConfig, sabrUrl }: {
+  sabrConfig: SabrConfig;
+  sabrUrl: string | undefined;
+}): SabrConfig {
+  if (sabrUrl && sabrUrl !== sabrConfig.serverAbrStreamingUrl) {
+    return {
+      ...sabrConfig,
+      serverAbrStreamingUrl: sabrUrl
+    };
+  }
+
+  return sabrConfig;
+}
+
+export function parseContentLength(format: AdaptiveFormatItem | null) {
+  if (!format?.contentLength) {
+    return 0;
+  }
+
+  return parseInt(format.contentLength, 10);
+}
+
+async function downloadAudioOnlyViaSabr({ config, audioFormat, poToken, signal, videoId, tabId, onProgress }: {
+  config: SabrConfig;
+  audioFormat: AdaptiveFormatItem;
+  poToken: string;
+  signal: AbortSignal;
+  videoId: string;
+  tabId: number;
+  onProgress?: () => void;
+}) {
+  const audioExpectedBytes = parseContentLength(audioFormat);
+  let audioReceivedBytes = 0;
+
+  const sabrFetch = createProgressFetch({
+    signal,
+    onBytesReceived(bytes) {
+      audioReceivedBytes += bytes;
+      onProgress?.();
+      const totalBytes = audioExpectedBytes || audioReceivedBytes;
+      void sendProgressUpdate({
+        videoId,
+        progress: Math.min(audioReceivedBytes / totalBytes, 1),
+        progressType: ProgressType.Video,
+        tabId
+      });
+    }
+  });
+
+  return fetchAudioViaSabrStream({
+    sabrConfig: config,
+    audioFormat,
+    fetchFn: sabrFetch,
+    poToken
+  });
+}
+
+async function downloadVideoAudioViaSabr({
+  config, videoFormat, audioFormat, poToken, signal, videoId, tabId, onProgress
+}: {
+  config: SabrConfig;
+  videoFormat: AdaptiveFormatItem;
+  audioFormat: AdaptiveFormatItem;
+  poToken: string;
+  signal: AbortSignal;
+  videoId: string;
+  tabId: number;
+  onProgress?: () => void;
+}) {
+  const totalExpectedBytes = parseContentLength(videoFormat) + parseContentLength(audioFormat);
+  let videoReceivedBytes = 0;
+  let audioReceivedBytes = 0;
+
+  function reportProgress() {
+    if (totalExpectedBytes === 0) {
+      return;
+    }
+
+    const totalReceived = videoReceivedBytes + audioReceivedBytes;
+
+    void sendProgressUpdate({
+      videoId,
+      progress: Math.min(totalReceived / totalExpectedBytes, 1),
+      progressType: ProgressType.Video,
+      tabId
+    });
+  }
+
+  const videoFetch = createProgressFetch({
+    signal,
+    onBytesReceived(bytes) {
+      videoReceivedBytes += bytes;
+      onProgress?.();
+      reportProgress();
+    }
+  });
+  const audioFetch = createProgressFetch({
+    signal,
+    onBytesReceived(bytes) {
+      audioReceivedBytes += bytes;
+      onProgress?.();
+      reportProgress();
+    }
+  });
+
+  return Promise.all([
+    fetchVideoViaSabrStream({
+      sabrConfig: config,
+      videoFormat,
+      fetchFn: videoFetch,
+      poToken
+    }),
+    fetchAudioViaSabrStream({
+      sabrConfig: config,
+      audioFormat,
+      fetchFn: audioFetch,
+      poToken
+    })
+  ]);
+}
+
+async function downloadExtraAudioTracksViaSabr({ config, formats, poToken, signal, onProgress }: {
+  config: SabrConfig;
+  formats: AdaptiveFormatItem[];
+  poToken: string;
+  signal: AbortSignal;
+  onProgress?: () => void;
+}) {
+  const tracks: DownloadResult["additionalAudioTracks"] = [];
+
+  for (const format of formats) {
+    try {
+      const sabrFetch = createProgressFetch({
+        signal,
+        onBytesReceived() {
+          onProgress?.();
+        }
+      });
+      const data = await fetchAudioViaSabrStream({
+        sabrConfig: config,
+        audioFormat: format,
+        fetchFn: sabrFetch,
+        poToken
+      });
+      tracks.push({
+        data,
+        mimeType: format.mimeType.split(";")[0] ?? "audio/mp4",
+        label: format.audioTrack?.displayName ?? ""
+      });
+    } catch (trackError) {
+      console.warn("[ytdl:bg] Extra audio track failed:", format.audioTrack?.displayName, trackError);
+    }
+  }
+
+  return tracks;
+}
 
 export async function downloadViaSabr({ request, signal, tabId, onProgress }: {
   request: DownloadRequest;
   signal: AbortSignal;
   tabId: number;
   onProgress?: () => void;
-}) {
-  const { videoId, type, sabrConfig, poToken, videoFormat, audioFormat, additionalAudioFormats } = request;
+}): Promise<DownloadResult | null> {
+  const { videoId, type, sabrConfig, poToken, sabrUrl, videoFormat, audioFormat, additionalAudioFormats } = request;
   const isAudioOnly = type === DownloadType.Audio;
 
-  const effectiveConfig = sabrConfig ?? null;
+  const effectiveConfig = sabrConfig ? buildEffectiveSabrConfig({
+    sabrConfig,
+    sabrUrl
+  }) : null;
   if (!effectiveConfig || !audioFormat) {
     return null;
   }
@@ -21,23 +183,10 @@ export async function downloadViaSabr({ request, signal, tabId, onProgress }: {
     return null;
   }
 
-  const capturedData = getCapturedSabrData(tabId);
-  const capturedPoToken = capturedData ? extractPoTokenFromBody(capturedData.body) : null;
-  const resolvedPoToken = poToken || capturedPoToken || "";
-  const capturedUrl = capturedData?.url;
-  // Only adopt the captured URL (fresh spc) — never the captured ustreamer config or body,
-  // which may encode an AV1 session from Firefox's own player and cause AV1 data to be served
-  // regardless of the VP9 format IDs we request.
-  const urlChanged = capturedUrl && capturedUrl !== effectiveConfig.serverAbrStreamingUrl;
-  const configWithCapturedUrl = urlChanged
-    ? {
-      ...effectiveConfig,
-      serverAbrStreamingUrl: capturedUrl
-    }
-    : effectiveConfig;
+  const resolvedPoToken = poToken ?? "";
   if (isAudioOnly) {
     const audioData = await downloadAudioOnlyViaSabr({
-      config: configWithCapturedUrl,
+      config: effectiveConfig,
       audioFormat,
       poToken: resolvedPoToken,
       signal,
@@ -57,7 +206,7 @@ export async function downloadViaSabr({ request, signal, tabId, onProgress }: {
   }
 
   const [videoData, audioData] = await downloadVideoAudioViaSabr({
-    config: configWithCapturedUrl,
+    config: effectiveConfig,
     videoFormat,
     audioFormat,
     poToken: resolvedPoToken,

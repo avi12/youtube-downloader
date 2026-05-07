@@ -24,7 +24,7 @@ export function signalVideoComplete(videoId: string) {
   callback?.();
 }
 
-export async function awaitBytesTransferred(videoId: string) {
+export function awaitBytesTransferred(videoId: string) {
   return new Promise<void>(resolve => {
     bytesTransferredCallbacks.set(videoId, resolve);
   });

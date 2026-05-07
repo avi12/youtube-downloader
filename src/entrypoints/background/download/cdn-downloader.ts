@@ -1,35 +1,16 @@
 import type { DownloadResult } from "./background-downloader";
 import { fetchWithProgress } from "./progress-fetch";
 import { sendProgressUpdate } from "./progress-fetch";
-import { parseContentLength } from "./sabr-progress";
+import { parseContentLength } from "./sabr-downloader";
 import { DownloadType, ProgressType } from "@/types";
 import type { DownloadRequest } from "@/types";
-
-function assembleAdditionalAudioTracks({
-  extraAudioBytes,
-  additionalAudioFormats
-}: {
-  extraAudioBytes: (Uint8Array | null)[];
-  additionalAudioFormats: DownloadRequest["additionalAudioFormats"];
-}) {
-  const tracks: DownloadResult["additionalAudioTracks"] = [];
-  for (const [i, format] of (additionalAudioFormats ?? []).entries()) {
-    tracks.push({
-      data: extraAudioBytes[i] ?? null,
-      mimeType: format.mimeType.split(";")[0] ?? "audio/mp4",
-      label: format.audioTrack?.displayName ?? `Track ${i + 2}`
-    });
-  }
-
-  return tracks;
-}
 
 export async function downloadViaCdn({ request, signal, videoId, tabId }: {
   request: DownloadRequest;
   signal: AbortSignal;
   videoId: string;
   tabId: number;
-}) {
+}): Promise<DownloadResult | null> {
   const {
     type, videoFormat, audioFormat, resolvedVideoUrl,
     resolvedAudioUrl, resolvedExtraAudioUrls, additionalAudioFormats
@@ -60,7 +41,7 @@ export async function downloadViaCdn({ request, signal, videoId, tabId }: {
     });
   }
 
-  async function fetchStream({ url, onBytes }: {
+  function fetchStream({ url, onBytes }: {
     url: string | null | undefined;
     onBytes: (bytes: number) => void;
   }) {
@@ -75,49 +56,48 @@ export async function downloadViaCdn({ request, signal, videoId, tabId }: {
     });
   }
 
-  const wantsVideo = type !== DownloadType.Audio;
-  const wantsAudio = type !== DownloadType.Video;
   const extraUrls = resolvedExtraAudioUrls ?? [];
-
-  const videoPromise = wantsVideo
-    ? fetchStream({
-      url: resolvedVideoUrl,
-      onBytes(bytes) {
-        videoReceivedBytes += bytes;
-        videoTotalBytes = Math.max(videoTotalBytes, videoReceivedBytes);
-        reportProgress();
-      }
-    })
-    : Promise.resolve(null);
-
-  const audioPromise = wantsAudio
-    ? fetchStream({
-      url: resolvedAudioUrl,
-      onBytes(bytes) {
-        audioReceivedBytes += bytes;
-        audioTotalBytes = Math.max(audioTotalBytes, audioReceivedBytes);
-        reportProgress();
-      }
-    })
-    : Promise.resolve(null);
-
-  const extraPromises = extraUrls.map(url => fetchStream({
-    url,
-    onBytes() {}
-  }));
-
-  const [videoData, audioData, ...extraAudioBytes] = await Promise.all([
-    videoPromise,
-    audioPromise,
-    ...extraPromises
+  const cdnResults = await Promise.all([
+    type !== DownloadType.Audio
+      ? fetchStream({
+        url: resolvedVideoUrl,
+        onBytes(bytes) {
+          videoReceivedBytes += bytes;
+          videoTotalBytes = Math.max(videoTotalBytes, videoReceivedBytes);
+          reportProgress();
+        }
+      })
+      : Promise.resolve(null),
+    type !== DownloadType.Video
+      ? fetchStream({
+        url: resolvedAudioUrl,
+        onBytes(bytes) {
+          audioReceivedBytes += bytes;
+          audioTotalBytes = Math.max(audioTotalBytes, audioReceivedBytes);
+          reportProgress();
+        }
+      })
+      : Promise.resolve(null),
+    ...extraUrls.map(url => fetchStream({
+      url,
+      onBytes() {}
+    }))
   ]);
 
+  const additionalAudioTracks: DownloadResult["additionalAudioTracks"] = [];
+  const extraAudioBytes = cdnResults.slice(2);
+  for (const [i, format] of (additionalAudioFormats ?? []).entries()) {
+    additionalAudioTracks.push({
+      data: extraAudioBytes[i] ?? null,
+      mimeType: format.mimeType.split(";")[0] ?? "audio/mp4",
+      label: format.audioTrack?.displayName ?? `Track ${i + 2}`
+    });
+  }
+
+  const [videoData = null, audioData = null] = cdnResults;
   return {
-    videoData: videoData ?? null,
-    audioData: audioData ?? null,
-    additionalAudioTracks: assembleAdditionalAudioTracks({
-      extraAudioBytes,
-      additionalAudioFormats
-    })
+    videoData,
+    audioData,
+    additionalAudioTracks
   };
 }

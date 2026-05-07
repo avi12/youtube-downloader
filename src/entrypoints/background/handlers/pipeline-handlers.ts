@@ -1,166 +1,133 @@
-import { removeHostedIframe } from "../iframe-host/iframe-host";
-import { markVideosCancelled, registerPipelineProgressHandlers } from "./pipeline-progress";
+import { enqueueToPopupList, removeFromPopupList } from "../queue/popup-list";
+import { signalBytesTransferred, signalVideoComplete } from "../queue/sequential-queue";
+import { getTabIdsForVideo } from "../queue/tab-tracker";
+import { registerRecentDownloadHandlers } from "../recent/recent-download-handler";
 import { signalFFmpegReady } from "./processor";
-import { broadcastDebugLogToYouTubeTabs } from "@/lib/messaging/debug-log";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
-import { addRecentDownload, takePendingBlob } from "@/lib/storage/recent-downloads-db";
-import { isFFmpegReadyItem } from "@/lib/storage/storage";
+import { isFFmpegReadyItem, mutateStorageItem, statusProgressItem } from "@/lib/storage/storage";
 import { ProgressType } from "@/types";
+import type { ProgressUpdate } from "@/types";
 
-const DOWNLOAD_RETRY_INTERVAL_MS = 3_000;
-const DOWNLOAD_MAX_RETRIES = 20;
+type StatusProgressMap = Awaited<ReturnType<typeof statusProgressItem.getValue>>;
 
-type RecentContext = NonNullable<Parameters<Parameters<typeof onMessage<"pipelineTriggerDownload">>[1]>[0]["data"]["recentContext"]>;
+const cancelledVideoIds = new Set<string>();
 
-function waitForDownload(downloadId: number) {
-  return new Promise<boolean>(resolve => {
-    function handleChanged(delta: Browser.downloads.DownloadDelta) {
-      if (delta.id !== downloadId || !delta.state?.current) {
-        return;
-      }
-
-      browser.downloads.onChanged.removeListener(handleChanged);
-      resolve(delta.state.current === browser.downloads.State.COMPLETE);
-    }
-    browser.downloads.onChanged.addListener(handleChanged);
-  });
+export function markVideosCancelled(videoIds: string[]) {
+  for (const videoId of videoIds) {
+    cancelledVideoIds.add(videoId);
+  }
 }
 
-function extractContainer(filename: string) {
-  const iDot = filename.lastIndexOf(".");
-  return iDot === -1 ? "" : filename.slice(iDot + 1).toLowerCase();
-}
-
-async function persistRecentDownload({ downloadId, pendingBlobKey, mimeType, filename, recentContext }: {
-  downloadId: number;
-  pendingBlobKey: string;
-  mimeType: string;
-  filename: string;
-  recentContext: RecentContext;
+async function updateStatusProgress({ mutate, progressUpdate, tabId }: {
+  mutate: (current: StatusProgressMap) => void;
+  progressUpdate: ProgressUpdate;
+  tabId: number;
 }) {
-  const isComplete = await waitForDownload(downloadId);
-  if (!isComplete) {
-    return;
-  }
-
-  try {
-    const blob = await takePendingBlob(pendingBlobKey);
-    if (!blob) {
-      return;
-    }
-
-    await addRecentDownload({
-      entry: {
-        id: crypto.randomUUID(),
-        downloadId,
-        videoId: recentContext.videoId,
-        title: recentContext.title,
-        channel: recentContext.channel,
-        filename,
-        container: extractContainer(filename),
-        mimeType,
-        size: blob.size,
-        thumbnailUrl: recentContext.thumbnailUrl,
-        completedAt: Date.now()
-      },
-      blob
-    });
-    try {
-      await sendMessage(MessageType.RecentDownloadsChanged, {});
-    } catch {
-      // popup not open
-    }
-  } catch (error) {
-    console.warn("[ytdl:bg] Persist recent download failed:", error);
-  }
+  await Promise.allSettled([
+    sendMessage(MessageType.UpdateDownloadProgress, progressUpdate, tabId),
+    mutateStorageItem(statusProgressItem, mutate)
+  ]);
 }
-
-export { markVideosCancelled };
 
 export function registerPipelineHandlers() {
-  registerPipelineProgressHandlers();
+  registerRecentDownloadHandlers();
 
   onMessage(MessageType.ProcessStreamError, ({ data, sender }) => {
-    console.error("[ytdl:bg] Stream error for", data.videoId, data.error);
-    const tabId = sender.tab?.id;
-
-    void browser.tabs.query({ url: "*://www.youtube.com/*" }).then(tabs => {
-      for (const tab of tabs) {
-        if (typeof tab.id !== "number") {
-          continue;
-        }
-
-        void sendMessage(MessageType.BgDebugLog, { msg: `[ytdl:pipeline-error] ${data.videoId}: ${data.error}` }, tab.id);
-
-        if (!tabId) {
-          void sendMessage(MessageType.UpdateDownloadProgress, {
-            videoId: data.videoId,
-            progress: 0,
-            progressType: ProgressType.Video,
-            isRemoved: true
-          }, tab.id);
-        }
-      }
-    });
-
+    const tabId = sender.tab?.id ?? getTabIdsForVideo(data.videoId)[0];
     if (!tabId) {
       return;
     }
 
-    void sendMessage(MessageType.UpdateDownloadProgress, {
-      videoId: data.videoId,
-      progress: 0,
-      progressType: ProgressType.Video,
-      isRemoved: true
-    }, tabId);
-    removeHostedIframe(`dl-${data.videoId}`);
+    console.error("[ytdl] Stream error for", data.videoId, data.error);
+    void sendMessage(
+      MessageType.UpdateDownloadProgress,
+      {
+        videoId: data.videoId,
+        progress: 0,
+        progressType: ProgressType.Video,
+        isRemoved: true
+      },
+      tabId
+    );
+    void sendMessage(MessageType.RemoveDownloadIframe, { videoId: data.videoId }, tabId);
+  });
+
+  onMessage(MessageType.PipelineStart, async ({ data }) => {
+    if (!cancelledVideoIds.has(data.videoId)) {
+      await enqueueToPopupList({
+        videoId: data.videoId,
+        type: data.type,
+        filenameOutput: data.filenameOutput
+      });
+    }
+
+    cancelledVideoIds.delete(data.videoId);
+    signalBytesTransferred(data.videoId);
+  });
+
+  onMessage(MessageType.PipelineProgress, async ({ data }) => {
+    const { videoId, progress, progressType, tabId } = data;
+    await updateStatusProgress({
+      mutate(current) {
+        current[videoId] = {
+          progress,
+          progressType
+        };
+      },
+      progressUpdate: {
+        videoId,
+        progress,
+        progressType
+      },
+      tabId
+    });
+  });
+
+  onMessage(MessageType.PipelineRemoval, async ({ data }) => {
+    const { videoId, tabId } = data;
+    await updateStatusProgress({
+      mutate(current) {
+        delete current[videoId];
+      },
+      progressUpdate: {
+        videoId,
+        progress: 0,
+        progressType: ProgressType.Video,
+        isRemoved: true,
+        isFailed: true
+      },
+      tabId
+    });
+    await removeFromPopupList(videoId);
+    void sendMessage(MessageType.RemoveDownloadIframe, { videoId }, tabId);
+  });
+
+  onMessage(MessageType.PipelineQueueRemove, async ({ data }) => {
+    const { videoId } = data;
+    await Promise.all([
+      mutateStorageItem(statusProgressItem, current => {
+        delete current[videoId];
+      }),
+      removeFromPopupList(videoId)
+    ]);
+    signalVideoComplete(videoId);
   });
 
   onMessage(MessageType.PipelineFFmpegReady, () => {
-    void broadcastDebugLogToYouTubeTabs("[ytdl:bg] PipelineFFmpegReady received - signaling processor ready");
     void isFFmpegReadyItem.setValue(true);
     signalFFmpegReady();
   });
 
   onMessage(MessageType.PipelineZipProgress, ({ data }) => {
     const { playlistId, isDone, tabId } = data;
-    void sendMessage(MessageType.UpdateDownloadProgress, {
-      videoId: `zip:${playlistId}`,
-      progress: isDone ? 1 : 0,
-      progressType: ProgressType.Zip
-    }, tabId);
-  });
-
-  onMessage(MessageType.PipelineTriggerDownload, async ({ data }) => {
-    let downloadId: number | undefined;
-    for (let i = 0; i < DOWNLOAD_MAX_RETRIES; i++) {
-      try {
-        downloadId = await browser.downloads.download({
-          url: data.blobUrl,
-          filename: data.filename
-        });
-        break;
-      } catch (error) {
-        console.warn("[ytdl:bg] downloads.download failed attempt", i + 1, String(error), "filename:", data.filename);
-        await new Promise(resolve => setTimeout(resolve, DOWNLOAD_RETRY_INTERVAL_MS));
-      }
-    }
-
-    if (downloadId === undefined) {
-      console.error("[ytdl:bg] PipelineTriggerDownload: all retries exhausted for", data.filename);
-      return false;
-    }
-
-    if (data.recentContext) {
-      void persistRecentDownload({
-        downloadId,
-        pendingBlobKey: data.pendingBlobKey,
-        mimeType: data.mimeType,
-        filename: data.filename,
-        recentContext: data.recentContext
-      });
-    }
-
-    return true;
+    void sendMessage(
+      MessageType.UpdateDownloadProgress,
+      {
+        videoId: `zip:${playlistId}`,
+        progress: isDone ? 1 : 0,
+        progressType: ProgressType.Zip
+      },
+      tabId
+    );
   });
 }

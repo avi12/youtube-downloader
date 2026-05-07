@@ -1,18 +1,14 @@
-import { broadcastDebugLogToYouTubeTabs } from "@/lib/messaging/debug-log";
-
 let processorReady: Promise<void> | null = null;
 let resolveFFmpegReady: (() => void) | null = null;
+let firefoxProcessorFrame: HTMLIFrameElement | null = null;
 
 export function signalFFmpegReady() {
-  void broadcastDebugLogToYouTubeTabs("[ytdl:processor] signalFFmpegReady called");
   resolveFFmpegReady?.();
   resolveFFmpegReady = null;
 }
 
 async function waitForFFmpegReady() {
-  return new Promise<void>(resolve => {
-    resolveFFmpegReady = resolve;
-  });
+  return new Promise<void>(resolve => resolveFFmpegReady = resolve);
 }
 
 async function ensureChromeOffscreenDocument() {
@@ -29,7 +25,7 @@ async function ensureChromeOffscreenDocument() {
     try {
       await browser.offscreen.closeDocument();
     } catch {
-      // already closed
+      // Already closed
     }
   }
 
@@ -42,6 +38,27 @@ async function ensureChromeOffscreenDocument() {
     justification: "FFmpeg WASM processing requires a Worker context"
   });
 
+  // Offscreen's onMessage handlers aren't registered until createFFmpegCore({}) resolves,
+  // so waiting here avoids chunks being dropped right after createDocument().
+  await ffmpegReady;
+}
+
+async function ensureFirefoxProcessorFrame() {
+  if (firefoxProcessorFrame !== null && document.body.contains(firefoxProcessorFrame)) {
+    return;
+  }
+
+  firefoxProcessorFrame?.remove();
+  firefoxProcessorFrame = null;
+
+  const ffmpegReady = waitForFFmpegReady();
+
+  const elFrame = document.createElement("iframe");
+  elFrame.src = browser.runtime.getURL("/offscreen.html");
+  elFrame.style.display = "none";
+  document.body.appendChild(elFrame);
+  firefoxProcessorFrame = elFrame;
+
   await ffmpegReady;
 }
 
@@ -50,6 +67,9 @@ export async function ensureProcessor() {
     return processorReady;
   }
 
-  processorReady = ensureChromeOffscreenDocument();
+  processorReady = import.meta.env.FIREFOX
+    ? ensureFirefoxProcessorFrame()
+    : ensureChromeOffscreenDocument();
+
   return processorReady;
 }
