@@ -60,21 +60,21 @@ async function findVideoActionsContainer(signal: AbortSignal) {
 }
 
 function buildButtonState(videoData: VideoData): ButtonState {
-  const initialState = buildInitialDownloadState(videoData);
+  const { isInterrupted, videoItag, audioItag, filename, quality, downloadType } = buildInitialDownloadState(videoData);
   return {
     isDownloading: false,
     isDone: false,
-    isInterrupted: initialState.isInterrupted,
+    isInterrupted,
     isError: false,
     isPanelOpen: false,
     isPanelBelow: true,
     downloadProgress: 0,
     downloadProgressType: "",
-    defaultVideoItag: initialState.videoItag,
-    defaultAudioItag: initialState.audioItag,
-    defaultFilename: initialState.filename,
-    defaultQuality: initialState.quality,
-    defaultDownloadType: initialState.downloadType,
+    defaultVideoItag: videoItag,
+    defaultAudioItag: audioItag,
+    defaultFilename: filename,
+    defaultQuality: quality,
+    defaultDownloadType: downloadType,
     lastProgressReported: -1,
     lastRenderedButtonKey: "",
     lastRenderedChevronKey: ""

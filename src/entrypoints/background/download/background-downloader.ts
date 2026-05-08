@@ -107,36 +107,42 @@ async function dispatchToOffscreen({ request, result, enrichedMetadata, tabId }:
 }) {
   await ensureProcessor();
 
-  const resolvedVideoMimeType = request.videoFormat?.mimeType.split(";")[0] ?? "video/mp4";
-  const resolvedAudioMimeType = request.audioFormat?.mimeType.split(";")[0] ?? "audio/mp4";
+  const {
+    videoId, type, filenameOutput, videoFormat, audioFormat,
+    primaryAudioLabel, playlistId, playlistTitle, playlistTotalCount
+  } = request;
+  const { videoData, audioData, additionalAudioTracks } = result;
+
+  const resolvedVideoMimeType = videoFormat?.mimeType.split(";")[0] ?? "video/mp4";
+  const resolvedAudioMimeType = audioFormat?.mimeType.split(";")[0] ?? "audio/mp4";
   const transferJobs: Promise<void>[] = [];
-  if (result.videoData) {
+  if (videoData) {
     transferJobs.push(
       sendStreamChunksToOffscreen({
-        videoId: request.videoId,
+        videoId,
         streamType: StreamType.Video,
-        data: result.videoData,
+        data: videoData,
         tabId
       })
     );
   }
 
-  if (result.audioData) {
+  if (audioData) {
     transferJobs.push(
       sendStreamChunksToOffscreen({
-        videoId: request.videoId,
+        videoId,
         streamType: StreamType.Audio,
-        data: result.audioData,
+        data: audioData,
         tabId
       })
     );
   }
 
-  for (const [i, track] of result.additionalAudioTracks.entries()) {
+  for (const [i, track] of additionalAudioTracks.entries()) {
     if (track.data) {
       transferJobs.push(
         sendStreamChunksToOffscreen({
-          videoId: request.videoId,
+          videoId,
           streamType: `audio-extra-${i}`,
           data: track.data,
           tabId
@@ -148,21 +154,21 @@ async function dispatchToOffscreen({ request, result, enrichedMetadata, tabId }:
   await Promise.all(transferJobs);
 
   const audioTrackLabels = [
-    request.primaryAudioLabel ?? "",
-    ...result.additionalAudioTracks.map(track => track.label)
+    primaryAudioLabel ?? "",
+    ...additionalAudioTracks.map(track => track.label)
   ];
 
   sendToOffscreen(OffscreenMessageType.ProcessStreamEnd, {
-    type: request.type,
-    videoId: request.videoId,
-    filenameOutput: request.filenameOutput,
+    type,
+    videoId,
+    filenameOutput,
     videoMimeType: resolvedVideoMimeType,
     audioMimeType: resolvedAudioMimeType,
     audioTrackLabels,
     tabId,
-    playlistId: request.playlistId,
-    playlistTitle: request.playlistTitle,
-    playlistTotalCount: request.playlistTotalCount,
+    playlistId,
+    playlistTitle,
+    playlistTotalCount,
     metadata: enrichedMetadata
   });
 }

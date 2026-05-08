@@ -26,53 +26,58 @@ export interface ButtonViewState {
 }
 
 export function buildDownloadData(state: ButtonViewState) {
+  const {
+    isDone, isDownloading, isError, isInterrupted, isDownloadable,
+    downloadProgress, filename, quality
+  } = state;
+
   let iconName: IconName = IconName.Download;
-  if (state.isDone) {
+  if (isDone) {
     iconName = IconName.CheckCircleThick;
-  } else if (state.isDownloading) {
+  } else if (isDownloading) {
     // No icon during download: the progress ring overlay carries the visual cue,
     // matching the design's "ring + percentage label" approach.
     iconName = IconName.None;
-  } else if (state.isError) {
+  } else if (isError) {
     iconName = IconName.Info;
   }
 
   let title = "Download";
   let accessibilityText = "Download";
-  if (!state.isDownloadable) {
+  if (!isDownloadable) {
     title = "Not downloadable";
     accessibilityText = "Not downloadable";
-  } else if (state.isDone) {
+  } else if (isDone) {
     title = "Download again";
     accessibilityText = "Download again";
-  } else if (state.isDownloading) {
-    title = percentFormatter.format(state.downloadProgress);
+  } else if (isDownloading) {
+    title = percentFormatter.format(downloadProgress);
     accessibilityText = `${title} - click to view progress`;
-  } else if (state.isInterrupted) {
+  } else if (isInterrupted) {
     title = "Resume";
     accessibilityText = "Resume download";
-  } else if (state.isError) {
+  } else if (isError) {
     title = "Retry";
     accessibilityText = "Retry download";
   }
 
-  const isDisabled = !state.isDownloadable;
+  const isDisabled = !isDownloadable;
 
   let tooltip = "";
-  if (state.isDownloadable) {
-    const base = state.quality ? `${state.filename} - ${state.quality}` : state.filename;
-    if (state.isDone) {
+  if (isDownloadable) {
+    const base = quality ? `${filename} - ${quality}` : filename;
+    if (isDone) {
       tooltip = base;
-    } else if (state.isError) {
+    } else if (isError) {
       tooltip = `${base} - retry`;
-    } else if (state.isInterrupted) {
-      tooltip = state.downloadProgress > 0
-        ? `${base} - paused at ${percentFormatter.format(state.downloadProgress)}, click to resume`
+    } else if (isInterrupted) {
+      tooltip = downloadProgress > 0
+        ? `${base} - paused at ${percentFormatter.format(downloadProgress)}, click to resume`
         : `${base} - click to resume`;
-    } else if (state.isDownloading && state.downloadProgress === 0) {
+    } else if (isDownloading && downloadProgress === 0) {
       tooltip = `${base} - preparing, click to view progress`;
-    } else if (state.isDownloading) {
-      tooltip = `${base} - ${percentFormatter.format(state.downloadProgress)}, click to view progress`;
+    } else if (isDownloading) {
+      tooltip = `${base} - ${percentFormatter.format(downloadProgress)}, click to view progress`;
     } else {
       tooltip = base;
     }
@@ -93,14 +98,15 @@ export function buildDownloadData(state: ButtonViewState) {
 }
 
 export function buildChevronData(state: ButtonViewState) {
-  const isDisabled = (state.isDownloading && !state.isDone) || !state.isDownloadable;
+  const { isDownloading, isDone, isDownloadable, isPanelBelow, isPanelOpen } = state;
+  const isDisabled = (isDownloading && !isDone) || !isDownloadable;
 
-  const panelOpenIcon = state.isPanelBelow ? IconName.ExpandMore : IconName.ExpandLess;
+  const panelOpenIcon = isPanelBelow ? IconName.ExpandMore : IconName.ExpandLess;
 
   return {
-    iconName: state.isPanelOpen ? panelOpenIcon : IconName.ExpandMore,
+    iconName: isPanelOpen ? panelOpenIcon : IconName.ExpandMore,
     title: "",
-    accessibilityText: state.isPanelOpen ? "Close download options" : "Open download options",
+    accessibilityText: isPanelOpen ? "Close download options" : "Open download options",
     style: ButtonStyle.Mono,
     type: ButtonType.Tonal,
     buttonSize: ButtonSize.Default,
