@@ -14,20 +14,20 @@
    text/icon color. Falls back to the design handoff hex when YouTube's spec
    variables aren't available (older Polymer skins, embedded contexts). */
 
-.ytdl-watch-state-downloading .ytdl-download-button,
-.ytdl-watch-state-resuming .ytdl-download-button {
+.ytdl-watch-state-downloading,
+.ytdl-watch-state-resuming {
   --ytdl-state-color: var(--yt-spec-call-to-action, #3ea6ff);
 }
 
-.ytdl-watch-state-done .ytdl-download-button {
+.ytdl-watch-state-done {
   --ytdl-state-color: var(--yt-spec-text-success, var(--yt-spec-themed-green, #1e8e3e));
 }
 
-.ytdl-watch-state-error .ytdl-download-button {
+.ytdl-watch-state-error {
   --ytdl-state-color: var(--yt-spec-text-error, var(--yt-spec-error-message, #d93025));
 }
 
-.ytdl-watch-state-interrupted .ytdl-download-button {
+.ytdl-watch-state-interrupted {
   --ytdl-state-color: var(--yt-spec-text-warning, #b56500);
 }
 
