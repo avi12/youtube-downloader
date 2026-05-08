@@ -2,8 +2,8 @@ import { cancelBackgroundDownload, dropPendingRetry, startBackgroundDownload } f
 import { enqueueToPopupList, removeFromPopupList } from "../queue/popup-list";
 import { awaitBytesTransferred, awaitVideoComplete, signalVideoComplete } from "../queue/sequential-queue";
 import { cancelDownloads, getTabIdsForVideo, trackVideoForTab } from "../queue/tab-tracker";
-import { ensureProcessor } from "./processor";
 import { markVideosCancelled } from "./pipeline-handlers";
+import { ensureProcessor } from "./processor";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
 import { uint8ToBase64 } from "@/lib/utils/binary";
@@ -178,7 +178,9 @@ export function registerDownloadHandlers() {
     try {
       const response = await fetch(url, {
         method,
-        body: bodyBytes.length > 0 ? bodyBytes : undefined,
+        ...bodyBytes.length > 0 && {
+          body: bodyBytes
+        },
         headers,
         credentials: "include"
       });

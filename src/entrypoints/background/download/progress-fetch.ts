@@ -88,7 +88,11 @@ export async function fetchWithProgress({ url, signal, onBytesReceived }: {
     const response = await fetch(url, {
       signal,
       credentials: "include",
-      headers: byteOffset > 0 ? { Range: `bytes=${byteOffset}-` } : {}
+      ...byteOffset > 0 && {
+        headers: {
+          Range: `bytes=${byteOffset}-`
+        }
+      }
     });
     if (response.status === HTTP_STATUS_RANGE_NOT_SATISFIABLE) {
       if (partialData) {
