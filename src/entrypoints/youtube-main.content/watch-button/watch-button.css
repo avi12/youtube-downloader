@@ -31,21 +31,21 @@
   --ytdl-state-color: var(--yt-spec-text-warning, #b56500);
 }
 
-.ytdl-watch-state-downloading .ytdl-download-button,
-.ytdl-watch-state-resuming .ytdl-download-button,
-.ytdl-watch-state-done .ytdl-download-button,
-.ytdl-watch-state-error .ytdl-download-button,
-.ytdl-watch-state-interrupted .ytdl-download-button {
-  --yt-sys-color-baseline--tonal-background: color-mix(in oklab, var(--ytdl-state-color) 18%, transparent);
-  --yt-sys-color-baseline--mono-tonal-hover: color-mix(in oklab, var(--ytdl-state-color) 26%, transparent);
-}
-
 .ytdl-watch-state-downloading .ytdl-download-button button,
 .ytdl-watch-state-resuming .ytdl-download-button button,
 .ytdl-watch-state-done .ytdl-download-button button,
 .ytdl-watch-state-error .ytdl-download-button button,
 .ytdl-watch-state-interrupted .ytdl-download-button button {
+  background-color: color-mix(in oklab, var(--ytdl-state-color) 18%, transparent);
   color: var(--ytdl-state-color);
+}
+
+.ytdl-watch-state-downloading .ytdl-download-button button:hover,
+.ytdl-watch-state-resuming .ytdl-download-button button:hover,
+.ytdl-watch-state-done .ytdl-download-button button:hover,
+.ytdl-watch-state-error .ytdl-download-button button:hover,
+.ytdl-watch-state-interrupted .ytdl-download-button button:hover {
+  background-color: color-mix(in oklab, var(--ytdl-state-color) 26%, transparent);
 }
 
 .ytdl-watch-state-downloading .ytdl-watch-progress-ring__indicator,
