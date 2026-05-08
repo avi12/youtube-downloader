@@ -222,7 +222,12 @@
     font-weight: 500;
     font-size: 1.6rem;
     line-height: 1.375;
-    color: var(--yt-spec-text-primary, inherit);
+    color: var(--yt-spec-text-primary, var(--yt-spec-static-text-primary, rgb(15 15 15)));
+  }
+
+  :global(html[dark]) .ytdl-panel-title,
+  :global(html[darker-dark-theme]) .ytdl-panel-title {
+    color: var(--yt-spec-text-primary, rgba(255, 255, 255, 88%));
   }
 
   .ytdl-panel-body {
