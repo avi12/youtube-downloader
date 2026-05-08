@@ -1,7 +1,10 @@
 /**
  * Requires multi-line formatting for object expressions ({ ... }) when:
  * - The object has 2 or more properties, OR
- * - Any property's value is itself an object expression (direct nesting)
+ * - Any property's value is itself an object expression (direct nesting), OR
+ * - The object sits inside an `&&` / `||` logical expression (typically a
+ *   conditional spread like `...cond && { ... }`); these read better fully
+ *   expanded so the spread block is visually self-contained.
  *
  * Single-property leaf objects with primitive/identifier values may stay on one line:
  *   { signatureTimestamp }                              // OK — leaf
@@ -11,14 +14,43 @@
  *   {
  *     contentPlaybackContext: { signatureTimestamp }    // parent expands; deepest stays inline
  *   }
+ *
+ * Expanded due to `&&` ancestor (every nested object also expands):
+ *   ...byteOffset > 0 && {
+ *     headers: {
+ *       Range: ...
+ *     }
+ *   }
  */
 
 function propertyHasDirectObjectExpression(property) {
   return property.type === "Property" && property.value?.type === "ObjectExpression";
 }
 
+function isInsideLogicalExpression(node) {
+  let current = node.parent;
+  while (current) {
+    if (current.type === "LogicalExpression" && (current.operator === "&&" || current.operator === "||")) {
+      return true;
+    }
+
+    if (current.type === "FunctionDeclaration"
+      || current.type === "FunctionExpression"
+      || current.type === "ArrowFunctionExpression"
+      || current.type === "Program") {
+      return false;
+    }
+
+    current = current.parent;
+  }
+
+  return false;
+}
+
 function requiresMultiline(node) {
-  return node.properties.length >= 2 || node.properties.some(propertyHasDirectObjectExpression);
+  return node.properties.length >= 2
+    || node.properties.some(propertyHasDirectObjectExpression)
+    || isInsideLogicalExpression(node);
 }
 
 function getLineIndentCount(sourceCode, token) {
