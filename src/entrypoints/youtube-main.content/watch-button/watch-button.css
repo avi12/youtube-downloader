@@ -33,13 +33,13 @@
 
 [class*="ytdl-watch-state-"] .ytdl-download-button button,
 [class*="ytdl-watch-state-"] .ytdl-chevron-button button {
-  background-color: color-mix(in oklab, var(--ytdl-state-color) 18%, transparent) !important;
+  background-color: color-mix(in oklab, var(--ytdl-state-color) 24%, var(--yt-spec-base-background, #0f0f0f)) !important;
   color: var(--ytdl-state-color) !important;
 }
 
 [class*="ytdl-watch-state-"] .ytdl-download-button button:hover,
 [class*="ytdl-watch-state-"] .ytdl-chevron-button button:hover {
-  background-color: color-mix(in oklab, var(--ytdl-state-color) 26%, transparent) !important;
+  background-color: color-mix(in oklab, var(--ytdl-state-color) 32%, var(--yt-spec-base-background, #0f0f0f)) !important;
 }
 
 .ytdl-watch-state-downloading .ytdl-watch-progress-ring__indicator,
@@ -62,7 +62,7 @@
 .ytdl-watch-progress-ring {
   position: absolute;
   inset-block: 0;
-  inset-inline-start: 12px;
+  inset-inline-start: 10px;
   block-size: 24px;
   inline-size: 24px;
   margin-block: auto;
