@@ -1,3 +1,4 @@
+import { listenForDownloadIframes } from "./download/download-iframe";
 import { checkInterruptedDownload, listenForInterruptedDownloadEvents } from "./download/interrupted-downloads";
 import { listenForKeepalive } from "./download/keepalive";
 import {
@@ -100,14 +101,6 @@ function registerBackgroundMessageHandlers() {
       return;
     }
 
-    // Only the offscreen download iframe should respond. Regular user-facing
-    // YouTube watch tabs lack ?ytdl=1 and must ignore the broadcast so they
-    // don't accidentally re-trigger a foreign download.
-    const params = new URLSearchParams(location.search);
-    if (params.get("ytdl") !== "1" || params.get("v") !== data.videoId) {
-      return;
-    }
-
     if (data.playlistId) {
       setPlaylistContext({
         videoId: data.videoId,
@@ -207,6 +200,7 @@ export default defineContentScript({
     if (!isDownloadIframe) {
       listenForInterruptedDownloadEvents();
       listenForKeepalive();
+      listenForDownloadIframes(context);
       await restoreStoredProgress();
 
       const unwatchOptions = optionsItem.watch(newOptions => {

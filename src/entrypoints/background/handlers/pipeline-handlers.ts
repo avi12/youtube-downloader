@@ -4,7 +4,6 @@ import { getTabIdsForVideo } from "../queue/tab-tracker";
 import { registerRecentDownloadHandlers } from "../recent/recent-download-handler";
 import { signalFFmpegReady } from "./processor";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
-import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
 import { isFFmpegReadyItem, mutateStorageItem, statusProgressItem } from "@/lib/storage/storage";
 import { ProgressType } from "@/types";
 import type { ProgressUpdate } from "@/types";
@@ -50,7 +49,7 @@ export function registerPipelineHandlers() {
       },
       tabId
     );
-    sendToOffscreen(OffscreenMessageType.RemoveDownloadIframe, { videoId: data.videoId });
+    void sendMessage(MessageType.RemoveDownloadIframe, { videoId: data.videoId }, tabId);
   });
 
   onMessage(MessageType.PipelineStart, async ({ data }) => {
@@ -100,7 +99,7 @@ export function registerPipelineHandlers() {
       tabId
     });
     await removeFromPopupList(videoId);
-    sendToOffscreen(OffscreenMessageType.RemoveDownloadIframe, { videoId });
+    void sendMessage(MessageType.RemoveDownloadIframe, { videoId }, tabId);
   });
 
   onMessage(MessageType.PipelineQueueRemove, async ({ data }) => {

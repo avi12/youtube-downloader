@@ -1,4 +1,3 @@
-import { createDownloadIframe, removeDownloadIframe } from "./iframe-host";
 import { handleProcessStreamChunk } from "./stream/accumulator";
 import { handleProcessStreamEnd } from "./stream/end-handler";
 import { cancelDownloadsByIds, initFFmpeg } from "@/lib/download-pipeline";
@@ -21,17 +20,8 @@ listenForOffscreenMessages({
   [OffscreenMessageType.ProcessStreamEnd]: handleProcessStreamEnd,
   [OffscreenMessageType.CancelProcessing](data) {
     void cancelDownloadsByIds(data.videoIds);
-    for (const videoId of data.videoIds) {
-      removeDownloadIframe(videoId);
-    }
   },
   [OffscreenMessageType.TranscodeRecentDownload](data) {
     void transcodeRecentDownload(data);
-  },
-  [OffscreenMessageType.CreateDownloadIframe](data) {
-    createDownloadIframe(data);
-  },
-  [OffscreenMessageType.RemoveDownloadIframe](data) {
-    removeDownloadIframe(data.videoId);
   }
 });
