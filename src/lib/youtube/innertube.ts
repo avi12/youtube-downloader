@@ -63,7 +63,7 @@ type BrowseId =
  * `/youtubei/v1/browse` request body.
  *
  * @see https://github.com/LuanRT/YouTube.js — community-maintained TypeScript bindings for InnerTube
- * @see https://github.com/yt-dlp/yt-dlp/blob/master/yt_dlp/extractor/youtube/_base.py — yt-dlp's InnerTube extractor
+ * @see https://github.com/yt-dlp/yt-dlp — yt-dlp source for cross-referencing field semantics
  */
 export interface InnertubeBrowseRequest {
   browseId: BrowseId;
