@@ -31,12 +31,14 @@
     "@stylistic/eslint-plugin": "^5.10.0",
     "@stylistic/stylelint-plugin": "^5.1.0",
     "@wxt-dev/module-svelte": "^2.0.5",
+    "chokidar": "^4.0.3",
     "eslint": "^10.1.0",
     "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-import-newlines": "^2.0.0",
     "eslint-plugin-perfectionist": "^5.7.0",
     "eslint-plugin-svelte": "^3.16.0",
     "globals": "^17.4.0",
+    "perfect-debounce": "^2.1.0",
     "postcss-html": "^1.8.1",
     "stylelint": "^17.6.0",
     "stylelint-config-ccb": "^3.31.1",
@@ -44,6 +46,7 @@
     "svelte-eslint-parser": "^1.6.0",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.57.2",
+    "web-ext-run": "^0.2.4",
     "ws": "^8.20.0",
     "wxt": "^0.20.20"
   }
