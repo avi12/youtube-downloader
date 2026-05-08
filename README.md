@@ -108,13 +108,13 @@ pnpm knip                 # Dead code detection
 
 The extension is split across four MV3 runtimes (each lives under `src/entrypoints/`):
 
-| Runtime                | Folder                  | Job                                                                                                  |
-|------------------------|-------------------------|------------------------------------------------------------------------------------------------------|
-| Service worker         | `background/`           | Owns downloads, SABR/CDN fetches, declarativeNetRequest header rewrites, tab tracking, persistence.  |
+| Runtime                   | Folder                  | Job                                                                                                  |
+|---------------------------|-------------------------|------------------------------------------------------------------------------------------------------|
+| Service worker            | `background/`           | Owns downloads, SABR/CDN fetches, declarativeNetRequest header rewrites, tab tracking, persistence.  |
 | MAIN-world content script | `youtube-main.content/` | Reads YouTube's Polymer state (player config, video metadata) and injects the download button.       |
-| Isolated content script | `youtube.content/`      | Bridge between MAIN world and the SW; mounts Svelte UI (toasts, grid overlays, playlist downloader). |
-| Offscreen document     | `offscreen/`            | Runs FFmpeg WASM to mux video + audio (the SW can't host WASM streams reliably).                     |
-| Popup                  | `popup/`                | Download manager UI (active progress + recent history + settings).                                   |
+| Isolated content script   | `youtube.content/`      | Bridge between MAIN world and the SW; mounts Svelte UI (toasts, grid overlays, playlist downloader). |
+| Offscreen document        | `offscreen/`            | Runs FFmpeg WASM to mux video + audio (the SW can't host WASM streams reliably).                     |
+| Popup                     | `popup/`                | Download manager UI (active progress + recent history + settings).                                   |
 
 Shared modules live under `src/lib/`: `download-pipeline/` (FFmpeg orchestration), `youtube/` (PO token, SABR, signature, metadata), `messaging/`, `storage/`, `ui/`, `utils/`. Reusable Svelte components live under `src/components/` and use only YouTube's Polymer CSS variables (`--yt-spec-*`) so light/dark theme works automatically.
 
