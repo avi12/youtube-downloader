@@ -45,42 +45,90 @@ export interface InnertubePlayerRequest {
   startTimeSecs?: number;
 }
 
+// Known YouTube InnerTube client names. The `(string & {})` tail keeps the
+// known values as autocomplete suggestions while leaving the field open to
+// new clients YouTube may roll out without forcing a type bump.
+type InnertubeClientName =
+  | "WEB"
+  | "WEB_EMBEDDED_PLAYER"
+  | "WEB_REMIX"
+  | "WEB_KIDS"
+  | "MWEB"
+  | "ANDROID"
+  | "ANDROID_EMBEDDED_PLAYER"
+  | "ANDROID_MUSIC"
+  | "ANDROID_KIDS"
+  | "IOS"
+  | "IOS_MUSIC"
+  | "IOS_KIDS"
+  | "TVHTML5"
+  | "TVHTML5_SIMPLY_EMBEDDED_PLAYER"
+  | (string & {});
+
+type InnertubeOsName = "Windows" | "Macintosh" | "X11" | "Android" | "iPhone" | "iPad" | (string & {});
+
+type InnertubeClientFormFactor =
+  | "UNKNOWN_FORM_FACTOR"
+  | "SMALL_FORM_FACTOR"
+  | "LARGE_FORM_FACTOR"
+  | "AUTOMOTIVE_FORM_FACTOR"
+  | "WEARABLE_FORM_FACTOR"
+  | (string & {});
+
+type InnertubeWebDisplayMode =
+  | "WEB_DISPLAY_MODE_BROWSER"
+  | "WEB_DISPLAY_MODE_FULLSCREEN"
+  | "WEB_DISPLAY_MODE_MINIMAL_UI"
+  | "WEB_DISPLAY_MODE_STANDALONE";
+
+// IETF BCP 47 language tag (e.g. "en", "en-GB"). Open by design.
+type LanguageTag = `${string}` & (string & {});
+
+// ISO 3166-1 alpha-2 country code (e.g. "US", "GB"). Open by design.
+type CountryCode = `${string}` & (string & {});
+
+// IANA tz database identifier (e.g. "America/New_York").
+type TimeZoneId = `${string}/${string}` | "UTC" | (string & {});
+
+// Stringified integer (YouTube serializes some int64-shaped fields as strings).
+type StringNumber = `${number}`;
+
 export interface InnertubeClientContext {
-  clientName: string;
+  clientName: InnertubeClientName;
   clientVersion: string;
-  hl?: string;
-  gl?: string;
+  hl?: LanguageTag;
+  gl?: CountryCode;
   userAgent?: string;
-  osName?: string;
+  osName?: InnertubeOsName;
   osVersion?: string;
   platform?: "DESKTOP" | "MOBILE" | "TV";
-  clientFormFactor?: string;
+  clientFormFactor?: InnertubeClientFormFactor;
   deviceMake?: string;
   deviceModel?: string;
   visitorData?: string;
   androidSdkVersion?: number;
   iosVersion?: string;
-  timeZone?: string;
+  timeZone?: TimeZoneId;
   utcOffsetMinutes?: number;
   screenDensityFloat?: number;
   screenWidthPoints?: number;
   screenHeightPoints?: number;
-  originalUrl?: string;
+  originalUrl?: `https://${string}`;
   mainAppWebInfo?: {
-    graftUrl?: string;
-    webDisplayMode?: string;
+    graftUrl?: `/${string}`;
+    webDisplayMode?: InnertubeWebDisplayMode;
     isWebNativeShareAvailable?: boolean;
   };
 }
 
 export interface InnertubeContentPlaybackContext {
   signatureTimestamp?: number;
-  currentUrl?: string;
-  referer?: string;
+  currentUrl?: `https://${string}` | `/${string}`;
+  referer?: `https://${string}`;
   signatureCipher?: string;
   vis?: number;
   splay?: boolean;
-  lactMilliseconds?: string;
+  lactMilliseconds?: StringNumber;
   playerWidthPixels?: number;
   playerHeightPixels?: number;
   html5Preference?: "HTML5_PREF_WANTS" | "HTML5_PREF_OK";
