@@ -35,9 +35,10 @@ export function buildDownloadData(state: ButtonViewState) {
   if (isDone) {
     iconName = IconName.CheckCircleThick;
   } else if (isDownloading) {
-    // No icon during download: the progress ring overlay carries the visual cue,
-    // matching the design's "ring + percentage label" approach.
-    iconName = IconName.None;
+    // Close (X) is the closest native Polymer match to the design's square stop
+    // glyph. The progress ring is overlaid in the icon slot; percentage label
+    // stays in the text slot to the right.
+    iconName = IconName.Close;
   } else if (isError) {
     iconName = IconName.Info;
   }
@@ -98,8 +99,8 @@ export function buildDownloadData(state: ButtonViewState) {
 }
 
 export function buildChevronData(state: ButtonViewState) {
-  const { isDownloading, isDone, isDownloadable, isPanelBelow, isPanelOpen } = state;
-  const isDisabled = (isDownloading && !isDone) || !isDownloadable;
+  const { isDownloadable, isPanelBelow, isPanelOpen } = state;
+  const isDisabled = !isDownloadable;
 
   const panelOpenIcon = isPanelBelow ? IconName.ExpandMore : IconName.ExpandLess;
 
