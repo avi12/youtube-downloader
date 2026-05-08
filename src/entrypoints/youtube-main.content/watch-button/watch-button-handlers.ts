@@ -152,17 +152,6 @@ export function handleClickEvent(
       return;
     }
 
-    // Match the main button: clicking the chevron mid-download also stops the
-    // download. Both halves of the split pill share the same Stop action.
-    if (state.isDownloading || state.isInterrupted) {
-      state.isDownloading = false;
-      state.isInterrupted = false;
-      refreshButtons(state, videoData, elements, applySegmentedClasses);
-      cancelActiveDownload(videoData.videoId);
-      void crossWorldMessenger.sendMessage(CrossWorldMessage.CancelRequest, { videoIds: [videoData.videoId] });
-      return;
-    }
-
     state.isPanelOpen = !state.isPanelOpen;
     refreshButtons(state, videoData, elements, applySegmentedClasses);
 
