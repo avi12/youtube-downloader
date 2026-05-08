@@ -116,8 +116,6 @@ The extension is split across four MV3 runtimes (each lives under `src/entrypoin
 | Offscreen document        | `offscreen/`            | Runs FFmpeg WASM to mux video + audio (the SW can't host WASM streams reliably).                     |
 | Popup                     | `popup/`                | Download manager UI (active progress + recent history + settings).                                   |
 
-Shared modules live under `src/lib/`: `download-pipeline/` (FFmpeg orchestration), `youtube/` (PO token, SABR, signature, metadata), `messaging/`, `storage/`, `ui/`, `utils/`. Reusable Svelte components live under `src/components/` and use only YouTube's Polymer CSS variables (`--yt-spec-*`) so light/dark theme works automatically.
-
 ### Download flow (single watch-page video)
 
 1. Click the injected button → `youtube-main.content/watch-button/watch-button.ts` calls `performDownload(...)`.
