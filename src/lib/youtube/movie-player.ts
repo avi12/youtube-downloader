@@ -1,6 +1,8 @@
 // YouTube exposes its main player as a DOM element with `id="movie_player"`
 // that has the IFrame Player API methods grafted onto it. Methods are optional
 // because they're absent on a partially-loaded player.
+//
+// API reference: https://developers.google.com/youtube/iframe_api_reference
 
 export interface MoviePlayerElement extends HTMLElement {
   // Playback control
