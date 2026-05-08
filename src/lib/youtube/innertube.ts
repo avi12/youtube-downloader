@@ -59,6 +59,12 @@ type BrowseId =
   | `MPRE${string}`
   | (string & {});
 
+/**
+ * `/youtubei/v1/browse` request body.
+ *
+ * @see https://github.com/LuanRT/YouTube.js — community-maintained TypeScript bindings for InnerTube
+ * @see https://github.com/yt-dlp/yt-dlp/blob/master/yt_dlp/extractor/youtube/_base.py — yt-dlp's InnerTube extractor
+ */
 export interface InnertubeBrowseRequest {
   browseId: BrowseId;
   context: InnertubeContext;
