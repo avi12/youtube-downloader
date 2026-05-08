@@ -36,10 +36,16 @@
 .ytdl-watch-state-done .ytdl-download-button,
 .ytdl-watch-state-error .ytdl-download-button,
 .ytdl-watch-state-interrupted .ytdl-download-button {
-  --yt-button-shape-tonal-color: color-mix(in oklab, var(--ytdl-state-color) 18%, transparent);
-  --yt-button-shape-tonal-text-color: var(--ytdl-state-color);
-  --yt-button-shape-tonal-icon-color: var(--ytdl-state-color);
-  --yt-button-shape-tonal-hover-color: color-mix(in oklab, var(--ytdl-state-color) 26%, transparent);
+  --yt-sys-color-baseline--tonal-background: color-mix(in oklab, var(--ytdl-state-color) 18%, transparent);
+  --yt-sys-color-baseline--mono-tonal-hover: color-mix(in oklab, var(--ytdl-state-color) 26%, transparent);
+}
+
+.ytdl-watch-state-downloading .ytdl-download-button button,
+.ytdl-watch-state-resuming .ytdl-download-button button,
+.ytdl-watch-state-done .ytdl-download-button button,
+.ytdl-watch-state-error .ytdl-download-button button,
+.ytdl-watch-state-interrupted .ytdl-download-button button {
+  color: var(--ytdl-state-color);
 }
 
 .ytdl-watch-state-downloading .ytdl-watch-progress-ring__indicator,
