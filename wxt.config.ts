@@ -32,6 +32,13 @@ export default defineConfig({
       extension_pages:
         "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
     },
+    declarative_net_request: {
+      rule_resources: [{
+        id: "strip-youtube-frame-headers",
+        enabled: true,
+        path: "rules/strip-youtube-frame-headers.json"
+      }]
+    },
     web_accessible_resources: [
       {
         resources: ["offscreen.html"],

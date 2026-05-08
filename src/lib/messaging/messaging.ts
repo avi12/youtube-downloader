@@ -12,8 +12,6 @@ export const MessageType = {
   GetInterruptedDownload: "getInterruptedDownload",
   RequestPlaylistDownload: "requestPlaylistDownload",
   DownloadViaWatchPage: "downloadViaWatchPage",
-  CreateDownloadIframe: "createDownloadIframe",
-  RemoveDownloadIframe: "removeDownloadIframe",
   DownloadIframeReady: "downloadIframeReady",
   CancelDownload: "cancelDownload",
   StartBackgroundDownload: "startBackgroundDownload",
@@ -97,15 +95,6 @@ interface ProtocolMap {
   }): Parameters<ProtocolMap["persistInterruptedDownload"]>[0] | null;
 
   downloadViaWatchPage(data: DownloadRequest): void;
-
-  createDownloadIframe(data: {
-    videoId: string;
-    watchUrl: string;
-  }): void;
-
-  removeDownloadIframe(data: {
-    videoId: string;
-  }): void;
 
   downloadIframeReady(data: {
     videoId: string;

@@ -2,33 +2,31 @@ import { cancelBackgroundDownload, dropPendingRetry, startBackgroundDownload } f
 import { enqueueToPopupList, removeFromPopupList } from "../queue/popup-list";
 import { awaitBytesTransferred, awaitVideoComplete, signalVideoComplete } from "../queue/sequential-queue";
 import { cancelDownloads, getTabIdsForVideo, trackVideoForTab } from "../queue/tab-tracker";
+import { ensureProcessor } from "./processor";
 import { markVideosCancelled } from "./pipeline-handlers";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
+import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
 import { uint8ToBase64 } from "@/lib/utils/binary";
 import { ProgressType } from "@/types";
 import type { DownloadRequest } from "@/types";
 
 const IFRAME_READY_TIMEOUT_MS = 30_000;
 
-// One persistent listener dispatches to per-videoId resolve functions.
-// @webext-core/messaging allows only one listener per type per context,
-// so registering inside downloadViaWatchPage would throw on the 2nd parallel call.
-// Stores the frameId alongside the resolve callback so ExecuteDownloadItem
-// can be sent directly to the correct iframe instead of all frames in the tab.
-const pendingIframeReady = new Map<string, (frameId: number) => void>();
+// Per-videoId resolve callbacks waiting for the offscreen iframe to finish booting.
+// @webext-core/messaging allows only one listener per type per context, so this
+// registers once and dispatches to the right resolver.
+const pendingIframeReady = new Map<string, () => void>();
 
 function initIframeReadyListener() {
-  onMessage(MessageType.DownloadIframeReady, ({ data, sender }) => {
-    pendingIframeReady.get(data.videoId)?.(sender.frameId ?? 0);
+  onMessage(MessageType.DownloadIframeReady, ({ data }) => {
+    pendingIframeReady.get(data.videoId)?.();
     pendingIframeReady.delete(data.videoId);
   });
 }
 
-// Returns the frameId of the ready iframe, or 0 if timed out.
-async function prepareIframe({ data, tabId }: {
-  data: DownloadRequest;
-  tabId: number;
-}): Promise<number> {
+async function prepareIframe(data: DownloadRequest) {
+  await ensureProcessor();
+
   const watchParams = new URLSearchParams({
     v: data.videoId,
     ytdl: "1",
@@ -36,12 +34,10 @@ async function prepareIframe({ data, tabId }: {
   });
   const watchUrl = `https://www.youtube.com/watch?${watchParams.toString()}`;
 
-  await sendMessage(MessageType.CreateDownloadIframe, {
+  sendToOffscreen(OffscreenMessageType.CreateDownloadIframe, {
     videoId: data.videoId,
     watchUrl
-  }, tabId);
-
-  let iframeFrameId = 0;
+  });
 
   await new Promise<void>(resolve => {
     const timeoutId = setTimeout(() => {
@@ -49,25 +45,19 @@ async function prepareIframe({ data, tabId }: {
       resolve();
     }, IFRAME_READY_TIMEOUT_MS);
 
-    pendingIframeReady.set(data.videoId, frameId => {
-      iframeFrameId = frameId;
+    pendingIframeReady.set(data.videoId, () => {
       clearTimeout(timeoutId);
       resolve();
     });
   });
-
-  return iframeFrameId;
 }
 
-async function executeIframeDownload({ data, tabId, iframeFrameId }: {
+async function executeIframeDownload({ data, tabId }: {
   data: DownloadRequest;
   tabId: number;
-  iframeFrameId: number;
 }) {
-  await sendMessage(MessageType.ExecuteDownloadItem, data, {
-    tabId,
-    frameId: iframeFrameId
-  });
+  // Broadcast: the offscreen iframe filters by ?ytdl=1 + matching videoId in its content script.
+  await sendMessage(MessageType.ExecuteDownloadItem, data);
   trackVideoForTab({
     videoId: data.videoId,
     tabId
@@ -86,20 +76,16 @@ async function downloadViaWatchPage({ data, tabId }: {
   });
 
   try {
-    const iframeFrameId = await prepareIframe({
-      data,
-      tabId
-    });
+    await prepareIframe(data);
     await executeIframeDownload({
       data,
-      tabId,
-      iframeFrameId
+      tabId
     });
   } catch (error) {
     console.error("[ytdl:bg] DownloadViaWatchPage failed:", data.videoId, error);
     pendingIframeReady.delete(data.videoId);
     void removeFromPopupList(data.videoId);
-    void sendMessage(MessageType.RemoveDownloadIframe, { videoId: data.videoId }, tabId);
+    sendToOffscreen(OffscreenMessageType.RemoveDownloadIframe, { videoId: data.videoId });
     void sendMessage(MessageType.UpdateDownloadProgress, {
       videoId: data.videoId,
       progress: 0,
@@ -124,7 +110,7 @@ async function dispatchSequentially({ items, tabId, signal }: {
       tabId
     });
     await awaitVideoComplete(item.videoId);
-    await sendMessage(MessageType.RemoveDownloadIframe, { videoId: item.videoId }, tabId);
+    sendToOffscreen(OffscreenMessageType.RemoveDownloadIframe, { videoId: item.videoId });
   }
 }
 
@@ -140,16 +126,12 @@ async function dispatchParallel({ items, tabId, signal }: {
       break;
     }
 
-    const iframeFrameId = await prepareIframe({
-      data: item,
-      tabId
-    }).catch(() => 0);
+    await prepareIframe(item).catch(() => undefined);
 
     try {
       await executeIframeDownload({
         data: item,
-        tabId,
-        iframeFrameId
+        tabId
       });
     } catch (error) {
       console.error("[ytdl:bg] executeIframeDownload failed:", item.videoId, error);
@@ -164,9 +146,7 @@ async function dispatchParallel({ items, tabId, signal }: {
 
     completionPromises.push(
       awaitVideoComplete(item.videoId).then(() =>
-        sendMessage(MessageType.RemoveDownloadIframe, {
-          videoId: item.videoId
-        }, tabId))
+        sendToOffscreen(OffscreenMessageType.RemoveDownloadIframe, { videoId: item.videoId }))
     );
 
     // Wait only until bytes are in the offscreen doc before starting
@@ -287,8 +267,8 @@ export function registerDownloadHandlers() {
       dropPendingRetry(videoId);
       signalVideoComplete(videoId);
       const trackedTabIds = getTabIdsForVideo(videoId);
+      sendToOffscreen(OffscreenMessageType.RemoveDownloadIframe, { videoId });
       for (const tabId of trackedTabIds) {
-        void sendMessage(MessageType.RemoveDownloadIframe, { videoId }, tabId);
         void sendMessage(MessageType.UpdateDownloadProgress, {
           videoId,
           ...progressRemoval

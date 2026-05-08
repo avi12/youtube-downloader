@@ -33,8 +33,8 @@ async function ensureOffscreenDocument() {
   const ffmpegReady = waitForFFmpegReady();
   await browser.offscreen.createDocument({
     url: "/offscreen.html",
-    reasons: [browser.offscreen.Reason.WORKERS],
-    justification: "FFmpeg WASM processing requires a Worker context"
+    reasons: [browser.offscreen.Reason.WORKERS, browser.offscreen.Reason.IFRAME_SCRIPTING],
+    justification: "FFmpeg WASM mux + hidden YouTube watch iframe for grid-page downloads"
   });
 
   // Offscreen's onMessage handlers aren't registered until createFFmpegCore({}) resolves,
