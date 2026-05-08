@@ -3,8 +3,9 @@ import { buildAndDispatchVideoData, videoDataCache, readYtcfg } from "../video/v
 import { extractPlayerResponseFromHtml } from "../video/youtube-api";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { videoDataFailedStore, videoDataStore } from "@/lib/ui/synced-stores.svelte";
-import { getYtcfg } from "@/lib/youtube/ytcfg";
+import type { InnertubePlayerRequest } from "@/lib/youtube/innertube";
 import { YouTubePath } from "@/lib/youtube/youtube-url";
+import { getYtcfg } from "@/lib/youtube/ytcfg";
 import type { PlayerResponse } from "@/types";
 
 const MAX_CONCURRENT_FETCHES = 3;
@@ -37,10 +38,12 @@ async function fetchVideoDataViaApi(videoId: string) {
               clientVersion: String(clientVersion)
             }
           },
-          playbackContext: { contentPlaybackContext: { signatureTimestamp } },
+          playbackContext: {
+            contentPlaybackContext: { signatureTimestamp }
+          },
           contentCheckOk: true,
           racyCheckOk: true
-        })
+        } satisfies InnertubePlayerRequest)
       }
     );
     const playerData: PlayerResponse = await response.json();

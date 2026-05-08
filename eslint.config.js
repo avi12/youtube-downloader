@@ -1,3 +1,4 @@
+import expandNestedObjectExpression from "./eslint-rules/expand-nested-object-expression.js";
 import expandNestedTypeLiteral from "./eslint-rules/expand-nested-type-literal.js";
 import multilineArgParenNewline from "./eslint-rules/multiline-arg-paren-newline.js";
 import noPaddedTag from "./eslint-rules/no-padded-tag.js";
@@ -204,6 +205,7 @@ const tsStyleRules = {
   "arrow-body-style": ["error", "as-needed"],
   "@stylistic/function-call-argument-newline": ["error", "consistent"],
   "@stylistic/function-paren-newline": ["error", "consistent"],
+  "local/expand-nested-object-expression": "error",
   "local/expand-nested-type-literal": "error",
   "local/multiline-arg-paren-newline": "error",
   "local/no-padded-tag": "error",
@@ -219,6 +221,7 @@ const sharedPlugins = {
   perfectionist,
   local: {
     rules: {
+      "expand-nested-object-expression": expandNestedObjectExpression,
       "expand-nested-type-literal": expandNestedTypeLiteral,
       "multiline-arg-paren-newline": multilineArgParenNewline,
       "no-padded-tag": noPaddedTag
