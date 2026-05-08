@@ -39,6 +39,10 @@
   --ytdl-state-mix: 22%;
 }
 
+[class*="ytdl-watch-state-"] {
+  color: var(--ytdl-state-color);
+}
+
 [class*="ytdl-watch-state-"] .ytdl-download-button button,
 [class*="ytdl-watch-state-"] .ytdl-chevron-button button {
   background-color: color-mix(in oklab, var(--ytdl-state-color) var(--ytdl-state-mix), var(--yt-spec-additive-background, var(--yt-spec-base-background, light-dark(#fff, #1f1f1f)))) !important;
@@ -81,19 +85,21 @@
 
 .ytdl-watch-progress-ring__track {
   fill: none;
-  stroke: var(--yt-spec-10-percent-layer, rgb(255 255 255 / 10%));
-  stroke-width: 2;
+  stroke: currentColor;
+  stroke-opacity: 0.25;
+  stroke-width: 2.4;
 }
 
 .ytdl-watch-progress-ring__indicator {
   fill: none;
-  stroke: var(--yt-spec-call-to-action, rgb(62 166 255));
+  stroke: currentColor;
   stroke-linecap: round;
-  stroke-width: 2;
+  stroke-width: 2.4;
   transition: stroke-dashoffset 160ms ease-out;
   transform: rotate(-90deg);
   transform-origin: center;
 }
+
 
 .ytdl-watch-progress-ring--indeterminate .ytdl-watch-progress-ring__indicator {
   stroke-dasharray: 30 70;
