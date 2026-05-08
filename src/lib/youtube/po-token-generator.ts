@@ -36,8 +36,7 @@ export async function generatePoToken(videoId: string) {
   );
 
   const challengeData: ChallengeResponse = await challengeResponse.json();
-  const program = challengeData.bgChallenge?.program;
-  const globalName = challengeData.bgChallenge?.globalName;
+  const { program, globalName, interpreterUrl: interpreterUrlRaw } = challengeData.bgChallenge ?? {};
   if (!program || !globalName) {
     throw new Error("No BotGuard challenge data received");
   }
@@ -50,7 +49,6 @@ export async function generatePoToken(videoId: string) {
   }
 
   if (!getBotGuardVm(globalName)) {
-    const interpreterUrlRaw = challengeData.bgChallenge?.interpreterUrl;
     const interpreterUrl =
       typeof interpreterUrlRaw === "string"
         ? interpreterUrlRaw
