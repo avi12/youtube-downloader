@@ -10,6 +10,7 @@ import {
 import "./style.css";
 import { handlePageChange, setNativeDownloadVisibility } from "./ui/page-router";
 import { mountPanelUi } from "./ui/panel-ui";
+import { mountWatchToast } from "./ui/watch-toast";
 import { CrossWorldEvent, emitCrossWorldEvent } from "@/lib/messaging/cross-world-events";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
@@ -208,6 +209,7 @@ export default defineContentScript({
     if (!isDownloadIframe) {
       listenForInterruptedDownloadEvents();
       listenForKeepalive();
+      mountWatchToast(context);
       await restoreStoredProgress();
 
       const unwatchOptions = optionsItem.watch(newOptions => {

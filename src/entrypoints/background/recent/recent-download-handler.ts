@@ -1,3 +1,4 @@
+import { getTabIdsForVideo } from "../queue/tab-tracker";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
 import { addRecentDownload } from "@/lib/storage/recent-downloads-db";
 import type { RecentDownloadEntry } from "@/types";
@@ -24,6 +25,16 @@ function persistOnDownloadComplete({ targetDownloadId, data }: {
 
       if (delta.state.current === browser.downloads.State.COMPLETE) {
         browser.downloads.onChanged.removeListener(handleChanged);
+        if (data.recentContext?.videoId) {
+          for (const tabId of getTabIdsForVideo(data.recentContext.videoId)) {
+            void sendMessage(MessageType.WatchDownloadCompleted, {
+              videoId: data.recentContext.videoId,
+              downloadId: targetDownloadId,
+              filename: data.filename
+            }, tabId);
+          }
+        }
+
         void persistRecentDownload({
           downloadId: targetDownloadId,
           data
@@ -97,5 +108,9 @@ export function registerRecentDownloadHandlers() {
         data
       });
     }
+  });
+
+  onMessage(MessageType.RevealDownloadFile, ({ data }) => {
+    browser.downloads.show(data.downloadId);
   });
 }
