@@ -1,33 +1,37 @@
 /**
- * Request body shape for YouTube's internal `/youtubei/v1/player` InnerTube endpoint.
+ * Request body shapes for YouTube's internal InnerTube endpoints
+ * (`/youtubei/v1/player`, `/youtubei/v1/browse`, ...).
  *
- * The endpoint accepts many more fields than what this project currently sends;
- * the optional members below cover the commonly-recognized parameters from the
- * web client so callers can opt into them without re-typing the schema. Required
+ * The endpoints accept many more fields than what this project currently sends;
+ * optional members below cover commonly-recognized parameters from the web
+ * client so callers can opt into them without re-typing the schema. Required
  * members reflect what YouTube actually validates server-side.
  *
  * Reference: not officially documented by YouTube. Field names mirror the names
  * used by youtubei.js / yt-dlp / Innertube reverse-engineering communities.
  */
+
+export interface InnertubeContext {
+  client: InnertubeClientContext;
+  user?: {
+    lockedSafetyMode?: boolean;
+    onBehalfOfUser?: string;
+  };
+  request?: {
+    useSsl?: boolean;
+    internalExperimentFlags?: unknown[];
+  };
+  clickTracking?: {
+    clickTrackingParams?: string;
+  };
+  adSignalsInfo?: {
+    params?: Array<{ key: string; value: string }>;
+  };
+}
+
 export interface InnertubePlayerRequest {
   videoId: string;
-  context: {
-    client: InnertubeClientContext;
-    user?: {
-      lockedSafetyMode?: boolean;
-      onBehalfOfUser?: string;
-    };
-    request?: {
-      useSsl?: boolean;
-      internalExperimentFlags?: unknown[];
-    };
-    clickTracking?: {
-      clickTrackingParams?: string;
-    };
-    adSignalsInfo?: {
-      params?: Array<{ key: string; value: string }>;
-    };
-  };
+  context: InnertubeContext;
   playbackContext?: {
     contentPlaybackContext: InnertubeContentPlaybackContext;
   };
@@ -43,6 +47,28 @@ export interface InnertubePlayerRequest {
   params?: string;
   playlistId?: string;
   startTimeSecs?: number;
+}
+
+// Known browseId prefixes. `FE*` are feature pages, `UC*` channels,
+// `VL*` playlists, `MPLA*` music playlists, `MPRE*` music releases.
+type BrowseId =
+  | `FE${string}`
+  | `UC${string}`
+  | `VL${string}`
+  | `MPLA${string}`
+  | `MPRE${string}`
+  | (string & {});
+
+export interface InnertubeBrowseRequest {
+  browseId: BrowseId;
+  context: InnertubeContext;
+  params?: string;
+  continuation?: string;
+  query?: string;
+  formData?: {
+    selectedValues?: string[];
+  };
+  inlineSettingsMenu?: boolean;
 }
 
 // Known YouTube InnerTube client names. The `(string & {})` tail keeps the
