@@ -1,49 +1,83 @@
-// YouTube exposes its main player as a DOM element with `id="movie_player"`
-// that has the IFrame Player API methods grafted onto it. Methods are optional
-// because they're absent on a partially-loaded player.
-//
-// API reference: https://developers.google.com/youtube/iframe_api_reference
-
+/**
+ * YouTube exposes its main player as a DOM element with `id="movie_player"`
+ * that has the IFrame Player API methods grafted onto it. Methods are optional
+ * because they're absent on a partially-loaded player.
+ *
+ * @see https://developers.google.com/youtube/iframe_api_reference
+ */
 export interface MoviePlayerElement extends HTMLElement {
-  // Playback control
+  /** Plays the currently cued/loaded video. */
   playVideo?: () => void;
+  /** Pauses the currently playing video. */
   pauseVideo?: () => void;
+  /** Stops and cancels loading of the current video. */
   stopVideo?: () => void;
+  /**
+   * Seeks to a specified time in the video.
+   * @param allowSeekAhead Whether the request may trigger a new server request when seeking past buffered data.
+   */
   seekTo?: (seconds: number, allowSeekAhead?: boolean) => void;
+  /** Sets the suggested playback rate. */
   setPlaybackRate?: (rate: number) => void;
-  // State queries
+
+  /**
+   * Returns the player state.
+   * -1 unstarted, 0 ended, 1 playing, 2 paused, 3 buffering, 5 video cued.
+   */
   getPlayerState?: () => number;
+  /** Returns the elapsed time in seconds since the video started playing. */
   getCurrentTime?: () => number;
+  /** Returns the duration in seconds of the currently playing video. */
   getDuration?: () => number;
+  /** Returns a number between 0 and 1 indicating how much of the video has buffered. */
   getVideoLoadedFraction?: () => number;
+  /** Returns the current playback quality (e.g. `"hd1080"`, `"large"`, `"medium"`). */
   getPlaybackQuality?: () => string;
+  /** Returns the quality formats currently available for the video. */
   getAvailableQualityLevels?: () => string[];
-  // Video metadata
+
+  /** Returns YouTube-internal metadata about the currently loaded video. */
   getVideoData?: () => {
     video_id: string;
     title: string;
     author: string;
     isLive?: boolean;
   };
+  /** Returns the YouTube.com URL for the currently loaded/playing video. */
   getVideoUrl?: () => string;
+  /** Returns the embed code for the currently loaded/playing video. */
   getVideoEmbedCode?: () => string;
-  // Volume
+
+  /** Mutes the player. */
   mute?: () => void;
+  /** Unmutes the player. */
   unMute?: () => void;
+  /** Returns whether the player is currently muted. */
   isMuted?: () => boolean;
+  /** Sets the volume on a 0-100 scale. */
   setVolume?: (volume: number) => void;
+  /** Returns the current volume on a 0-100 scale. */
   getVolume?: () => number;
-  // Loading new content
+
+  /** Loads and plays the specified video. */
   loadVideoById?: (videoId: string, startSeconds?: number) => void;
+  /** Loads and cues (does not play) the specified video. */
   cueVideoById?: (videoId: string, startSeconds?: number) => void;
-  // Playlists
+
+  /** Loads and plays the next video in the playlist. */
   nextVideo?: () => void;
+  /** Loads and plays the previous video in the playlist. */
   previousVideo?: () => void;
+  /** Loads and plays the playlist video at the given zero-based index. */
   playVideoAt?: (index: number) => void;
+  /** Returns an array of the video IDs in the current playlist. */
   getPlaylist?: () => string[];
+  /** Returns the index of the currently playing playlist video. */
   getPlaylistIndex?: () => number;
-  // Sizing + lifecycle
+
+  /** Sets the player size in pixels. */
   setSize?: (width: number, height: number) => void;
+  /** Removes the iframe element used by the player and frees resources. */
   destroy?: () => void;
 }
 
