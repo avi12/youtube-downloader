@@ -4,6 +4,7 @@ import { buildAndDispatchVideoData } from "./video-data";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { playlistMetadataSignal } from "@/lib/ui/synced-stores.svelte";
 import { type PlayerResponse } from "@/types";
+import { PlayabilityStatus } from "@/types/youtube";
 
 declare global {
   interface HTMLElementTagNameMap {
@@ -60,7 +61,7 @@ export async function handleNavigateSuccess() {
   for (let attempt = 0; attempt < playerDataPollAttempts; attempt++) {
     const playerResponse = document.querySelector("ytd-watch-flexy")?.playerData ?? null;
     const isReady = playerResponse?.videoDetails?.videoId === expectedVideoId
-      && playerResponse.playabilityStatus?.status !== "UNPLAYABLE";
+      && playerResponse.playabilityStatus?.status !== PlayabilityStatus.Unplayable;
     if (isReady) {
       await buildAndDispatchVideoData({
         playerResponse,
