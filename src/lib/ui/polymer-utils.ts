@@ -9,6 +9,11 @@ import type {
   TooltipStyle
 } from "@/types";
 
+// Click-target attribute for buttons inside the download panel / playlist UI.
+// The panel container reads this attribute on the click event's target to dispatch
+// to the right handler without per-button addEventListener bookkeeping.
+export const DATA_BUTTON_ID_ATTR = "data-ytdl-button-id";
+
 export const PAPER_PROGRESS_THEME = {
   "--paper-progress-active-color": "var(--yt-spec-call-to-action, rgb(62 166 255))",
   "--paper-progress-container-color": "transparent"
@@ -65,7 +70,7 @@ export function sendButtonData({ elButton, data }: {
   };
 }) {
   void crossWorldMessenger.sendMessage(CrossWorldMessage.SetButtonData, {
-    selector: `[data-ytdl-button-id="${elButton.getAttribute("data-ytdl-button-id")}"]`,
+    selector: `[${DATA_BUTTON_ID_ATTR}="${elButton.getAttribute(DATA_BUTTON_ID_ATTR)}"]`,
     data
   });
 }

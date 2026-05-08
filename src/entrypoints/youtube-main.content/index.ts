@@ -5,6 +5,7 @@ import { cancelActiveDownload, performDownload } from "./video/download";
 import { extractPlaylistMetadata, handleNavigateSuccess } from "./video/playlist-metadata";
 import { extractAndDispatchVideoData } from "./video/video-data";
 import { CrossWorldMessage, crossWorldMessenger, dispatchButtonClick } from "@/lib/messaging/cross-world-messenger";
+import { DATA_BUTTON_ID_ATTR } from "@/lib/ui/polymer-utils";
 import { CHILD_LIST_SUBTREE } from "@/lib/utils/dom";
 import { getMoviePlayer } from "@/lib/youtube/movie-player";
 import { type PlayerResponse } from "@/types";
@@ -95,7 +96,7 @@ export default defineContentScript({
       }
 
       // Polymer's render cycle strips non-registered attributes, so capture buttonId before setting .data.
-      const buttonId = elButton.getAttribute("data-ytdl-button-id");
+      const buttonId = elButton.getAttribute(DATA_BUTTON_ID_ATTR);
       if (buttonId) {
         buttonIdByElement.set(elButton, buttonId);
       }

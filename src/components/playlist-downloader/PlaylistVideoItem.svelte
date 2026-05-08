@@ -8,7 +8,7 @@
   import { createPlaylistVideoItemState } from "./PlaylistVideoItem.state.svelte";
   import { onButtonClick } from "@/lib/messaging/cross-world-messenger";
   import { checkedPlaylistVideos } from "@/lib/ui/playlist-selection.svelte";
-  import { sendButtonData } from "@/lib/ui/polymer-utils";
+  import { DATA_BUTTON_ID_ATTR, sendButtonData } from "@/lib/ui/polymer-utils";
   import {
     ButtonSize,
     ButtonState,
@@ -108,8 +108,8 @@
     elButton: Element;
     id: string;
   }) {
-    if (elButton.getAttribute("data-ytdl-button-id") !== id) {
-      elButton.setAttribute("data-ytdl-button-id", id);
+    if (elButton.getAttribute(DATA_BUTTON_ID_ATTR) !== id) {
+      elButton.setAttribute(DATA_BUTTON_ID_ATTR, id);
     }
   }
 

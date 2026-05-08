@@ -1,4 +1,4 @@
-import { sendButtonData } from "@/lib/ui/polymer-utils";
+import { DATA_BUTTON_ID_ATTR, sendButtonData } from "@/lib/ui/polymer-utils";
 import {
   ButtonSize,
   ButtonState,
@@ -114,8 +114,8 @@ export function createPlaylistToggleButtons(state: {
       return;
     }
 
-    if (!elButton.hasAttribute("data-ytdl-button-id")) {
-      elButton.setAttribute("data-ytdl-button-id", config.id);
+    if (!elButton.hasAttribute(DATA_BUTTON_ID_ATTR)) {
+      elButton.setAttribute(DATA_BUTTON_ID_ATTR, config.id);
     }
 
     sendButtonData({

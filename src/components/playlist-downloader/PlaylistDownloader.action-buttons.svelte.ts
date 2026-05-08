@@ -1,4 +1,4 @@
-import { sendButtonData } from "@/lib/ui/polymer-utils";
+import { DATA_BUTTON_ID_ATTR, sendButtonData } from "@/lib/ui/polymer-utils";
 import {
   ButtonSize,
   ButtonState,
@@ -36,7 +36,7 @@ export function createPlaylistActionButtons(state: {
       return;
     }
 
-    elDeselectAll.setAttribute("data-ytdl-button-id", ButtonId.DeselectAll);
+    elDeselectAll.setAttribute(DATA_BUTTON_ID_ATTR, ButtonId.DeselectAll);
     const isDisabled = state.selectedDownloadableVideos.length === 0 || state.isDownloading;
     sendButtonData({
       elButton: elDeselectAll,
@@ -60,7 +60,7 @@ export function createPlaylistActionButtons(state: {
       return;
     }
 
-    elDownload.setAttribute("data-ytdl-button-id", ButtonId.Download);
+    elDownload.setAttribute(DATA_BUTTON_ID_ATTR, ButtonId.Download);
     const isDisabled = state.selectedDownloadableVideos.length === 0 && !state.isDownloading;
     sendButtonData({
       elButton: elDownload,
@@ -84,7 +84,7 @@ export function createPlaylistActionButtons(state: {
       return;
     }
 
-    elDownloadAll.setAttribute("data-ytdl-button-id", ButtonId.DownloadAll);
+    elDownloadAll.setAttribute(DATA_BUTTON_ID_ATTR, ButtonId.DownloadAll);
     const isBusy = state.isRevealingAll || state.isDownloading || state.activeIndividualDownloadCount > 0;
     const label = state.isRevealingAll
       ? `Revealing hidden videos (${state.revealedVideoCount})`
@@ -115,7 +115,7 @@ export function createPlaylistActionButtons(state: {
       return;
     }
 
-    elButton.setAttribute("data-ytdl-button-id", ButtonId.DeselectAll);
+    elButton.setAttribute(DATA_BUTTON_ID_ATTR, ButtonId.DeselectAll);
     elDeselectAll = elButton;
   }
 
@@ -124,7 +124,7 @@ export function createPlaylistActionButtons(state: {
       return;
     }
 
-    elButton.setAttribute("data-ytdl-button-id", ButtonId.Download);
+    elButton.setAttribute(DATA_BUTTON_ID_ATTR, ButtonId.Download);
     elDownload = elButton;
   }
 
@@ -133,7 +133,7 @@ export function createPlaylistActionButtons(state: {
       return;
     }
 
-    elButton.setAttribute("data-ytdl-button-id", ButtonId.DownloadAll);
+    elButton.setAttribute(DATA_BUTTON_ID_ATTR, ButtonId.DownloadAll);
     elDownloadAll = elButton;
   }
 
