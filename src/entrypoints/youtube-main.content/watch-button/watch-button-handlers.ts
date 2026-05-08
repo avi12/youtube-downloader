@@ -11,6 +11,34 @@ export type ButtonElements = ButtonGroupElements & DropdownElements;
 
 const DOWNLOAD_PROGRESS_SHARE = 0.8;
 
+const WATCH_STATE_CLASSES = [
+  "ytdl-watch-state-done",
+  "ytdl-watch-state-error",
+  "ytdl-watch-state-interrupted",
+  "ytdl-watch-state-downloading",
+  "ytdl-watch-state-resuming"
+] as const;
+
+function pickStateClass(state: ButtonState) {
+  if (state.isDone) {
+    return "ytdl-watch-state-done";
+  }
+
+  if (state.isError) {
+    return "ytdl-watch-state-error";
+  }
+
+  if (state.isInterrupted) {
+    return "ytdl-watch-state-interrupted";
+  }
+
+  if (state.isDownloading) {
+    return "ytdl-watch-state-downloading";
+  }
+
+  return "";
+}
+
 function mapToBarProgress(progress: number, progressType: ProgressType) {
   if (progressType === ProgressType.Video || progressType === ProgressType.Audio) {
     return progress * DOWNLOAD_PROGRESS_SHARE;
@@ -58,6 +86,11 @@ export function refreshButtons(
   elements.progressRing.setIndeterminate(state.isDownloading && viewState.downloadProgress === 0);
   elements.progressRing.setProgress(viewState.downloadProgress);
   elements.progressRing.setOpacity(state.isDownloading ? 1 : 0);
+
+  const stateClass = pickStateClass(state);
+  for (const className of WATCH_STATE_CLASSES) {
+    elements.elGroup.classList.toggle(className, className === stateClass);
+  }
 }
 
 export function attachSegmentedObserver(elements: Pick<ButtonElements, "elDownloadButton" | "elChevronButton">, applySegmentedClasses: () => void) {
