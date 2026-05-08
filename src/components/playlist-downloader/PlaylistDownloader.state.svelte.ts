@@ -235,7 +235,8 @@ export function createPlaylistDownloaderState() {
       }
 
       const entry = downloadProgressStore.get(request.videoId);
-      if (!entry || entry.isDone || entry.isFailed) {
+      const isEntryFinished = !entry || entry.isDone || entry.isFailed;
+      if (isEntryFinished) {
         batchDoneIds.add(request.videoId);
       }
     }
@@ -259,7 +260,8 @@ export function createPlaylistDownloaderState() {
   });
 
   $effect(() => {
-    if (!isDownloading || totalCount === 0 || downloadedCount < totalCount) {
+    const isBatchIncomplete = !isDownloading || totalCount === 0 || downloadedCount < totalCount;
+    if (isBatchIncomplete) {
       return;
     }
 
@@ -286,7 +288,8 @@ export function createPlaylistDownloaderState() {
 
       downloadProgressStore.unsuppress(request.videoId);
       const entry = downloadProgressStore.get(request.videoId);
-      if (entry && !entry.isDone && !entry.isFailed) {
+      const isEntryStillActive = entry && !entry.isDone && !entry.isFailed;
+      if (isEntryStillActive) {
         downloadProgressStore.setLocal(request.videoId, {
           isDownloading: false,
           isDone: true,
