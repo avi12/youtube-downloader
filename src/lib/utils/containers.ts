@@ -97,6 +97,8 @@ export function getMimeType(filename: string) {
 }
 
 // Mixing WebM and MP4 codecs forces MKV as the output container.
+// (We tested falling through to the video's container here; FFmpeg's stream-copy
+// mux fails because webm can't carry AAC and mp4 can't carry Opus/AV1 reliably.)
 export function getOutputExtension({ videoMimeType, audioMimeType, userExtension }: {
   videoMimeType: string;
   audioMimeType: string;
