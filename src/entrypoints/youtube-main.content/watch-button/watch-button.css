@@ -31,20 +31,14 @@
   --ytdl-state-color: var(--yt-spec-text-warning, #b56500);
 }
 
-.ytdl-watch-state-downloading .ytdl-download-button button,
-.ytdl-watch-state-resuming .ytdl-download-button button,
-.ytdl-watch-state-done .ytdl-download-button button,
-.ytdl-watch-state-error .ytdl-download-button button,
-.ytdl-watch-state-interrupted .ytdl-download-button button {
+[class*="ytdl-watch-state-"] .ytdl-download-button button,
+[class*="ytdl-watch-state-"] .ytdl-chevron-button button {
   background-color: color-mix(in oklab, var(--ytdl-state-color) 18%, transparent);
   color: var(--ytdl-state-color);
 }
 
-.ytdl-watch-state-downloading .ytdl-download-button button:hover,
-.ytdl-watch-state-resuming .ytdl-download-button button:hover,
-.ytdl-watch-state-done .ytdl-download-button button:hover,
-.ytdl-watch-state-error .ytdl-download-button button:hover,
-.ytdl-watch-state-interrupted .ytdl-download-button button:hover {
+[class*="ytdl-watch-state-"] .ytdl-download-button button:hover,
+[class*="ytdl-watch-state-"] .ytdl-chevron-button button:hover {
   background-color: color-mix(in oklab, var(--ytdl-state-color) 26%, transparent);
 }
 
