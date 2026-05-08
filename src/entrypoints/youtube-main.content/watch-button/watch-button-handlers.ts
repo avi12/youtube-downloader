@@ -74,7 +74,7 @@ export function handleClickEvent(
   videoData: VideoData,
   elements: ButtonElements,
   applySegmentedClasses: () => void,
-  cancelActiveDownload: (videoId: string) => void
+  _cancelActiveDownload: (videoId: string) => void
 ) {
   const { target } = e;
   if (!(target instanceof Node)) {
@@ -87,11 +87,17 @@ export function handleClickEvent(
       return;
     }
 
+    // Per the design: clicking the pill mid-download opens the panel so the user
+    // can see progress and cancel from the popover footer. Cancel is not bound
+    // to the action-row click anymore.
     if (state.isDownloading) {
-      state.isDownloading = false;
-      refreshButtons(state, videoData, elements, applySegmentedClasses);
-      cancelActiveDownload(videoData.videoId);
-      void crossWorldMessenger.sendMessage(CrossWorldMessage.CancelRequest, { videoIds: [videoData.videoId] });
+      if (!state.isPanelOpen) {
+        state.isPanelOpen = true;
+        refreshButtons(state, videoData, elements, applySegmentedClasses);
+        e.stopPropagation();
+        elDropdown.open();
+      }
+
       return;
     }
 

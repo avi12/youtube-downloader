@@ -30,7 +30,9 @@ export function buildDownloadData(state: ButtonViewState) {
   if (state.isDone) {
     iconName = IconName.CheckCircleThick;
   } else if (state.isDownloading) {
-    iconName = IconName.Close;
+    // No icon during download: the progress ring overlay carries the visual cue,
+    // matching the design's "ring + percentage label" approach.
+    iconName = IconName.None;
   } else if (state.isError) {
     iconName = IconName.Info;
   }
@@ -44,8 +46,8 @@ export function buildDownloadData(state: ButtonViewState) {
     title = "Download again";
     accessibilityText = "Download again";
   } else if (state.isDownloading) {
-    title = "Cancel";
-    accessibilityText = "Cancel download";
+    title = percentFormatter.format(state.downloadProgress);
+    accessibilityText = `${title} - click to view progress`;
   } else if (state.isInterrupted) {
     title = "Resume";
     accessibilityText = "Resume download";
