@@ -51,47 +51,50 @@ export async function transcodeRecentDownload({ entryId, targetContainer }: {
   });
   const inputBytes = new Uint8Array(await blob.arrayBuffer());
 
-  await enqueueMuxJob(async () => {
-    const ffmpeg = getFFmpeg();
+  await enqueueMuxJob({
+    videoId: `transcode:${entryId}`,
+    job: async () => {
+      const ffmpeg = getFFmpeg();
 
-    try {
-      ffmpeg.FS.writeFile(sourceFilename, inputBytes);
+      try {
+        ffmpeg.FS.writeFile(sourceFilename, inputBytes);
 
-      const exitCode = ffmpeg.exec(
-        ...buildFfmpegArgs({
-          sourceFilename,
-          outputFilename,
-          targetContainer
-        })
-      );
-      if (exitCode !== 0) {
-        throw new Error(`FFmpeg exited with code ${exitCode}`);
-      }
-
-      const output = ffmpeg.FS.readFile(outputFilename, { encoding: "binary" });
-      if (typeof output === "string") {
-        throw new Error("FFmpeg readFile returned unexpected string output");
-      }
-
-      await triggerDownload({
-        data: output,
-        filenameOutput: downloadFilename,
-        recentContext: {
-          videoId: entry.videoId,
-          title: entry.title,
-          channel: entry.channel,
-          thumbnailUrl: entry.thumbnailUrl
+        const exitCode = ffmpeg.exec(
+          ...buildFfmpegArgs({
+            sourceFilename,
+            outputFilename,
+            targetContainer
+          })
+        );
+        if (exitCode !== 0) {
+          throw new Error(`FFmpeg exited with code ${exitCode}`);
         }
-      });
-    } finally {
-      tryUnlink({
-        ffmpeg,
-        filename: sourceFilename
-      });
-      tryUnlink({
-        ffmpeg,
-        filename: outputFilename
-      });
+
+        const output = ffmpeg.FS.readFile(outputFilename, { encoding: "binary" });
+        if (typeof output === "string") {
+          throw new Error("FFmpeg readFile returned unexpected string output");
+        }
+
+        await triggerDownload({
+          data: output,
+          filenameOutput: downloadFilename,
+          recentContext: {
+            videoId: entry.videoId,
+            title: entry.title,
+            channel: entry.channel,
+            thumbnailUrl: entry.thumbnailUrl
+          }
+        });
+      } finally {
+        tryUnlink({
+          ffmpeg,
+          filename: sourceFilename
+        });
+        tryUnlink({
+          ffmpeg,
+          filename: outputFilename
+        });
+      }
     }
   });
 }

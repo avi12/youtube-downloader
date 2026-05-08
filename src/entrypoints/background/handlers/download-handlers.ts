@@ -1,4 +1,4 @@
-import { cancelBackgroundDownload, startBackgroundDownload } from "../download/background-downloader";
+import { cancelBackgroundDownload, dropPendingRetry, startBackgroundDownload } from "../download/background-downloader";
 import { enqueueToPopupList, removeFromPopupList } from "../queue/popup-list";
 import { awaitBytesTransferred, awaitVideoComplete, signalVideoComplete } from "../queue/sequential-queue";
 import { cancelDownloads, getTabIdsForVideo, trackVideoForTab } from "../queue/tab-tracker";
@@ -284,6 +284,7 @@ export function registerDownloadHandlers() {
 
     for (const videoId of data.videoIds) {
       cancelBackgroundDownload(videoId);
+      dropPendingRetry(videoId);
       signalVideoComplete(videoId);
       const trackedTabIds = getTabIdsForVideo(videoId);
       for (const tabId of trackedTabIds) {

@@ -63,6 +63,14 @@ async function clearInterruptedDownload(videoId: string) {
   });
 }
 
+// Drop a pending auto-retry and any persisted interrupted state for this video.
+// Used by CancelDownload so a manual cancel never gets resurrected by the next
+// `online` event or page-load.
+export function dropPendingRetry(videoId: string) {
+  pendingNetworkRetries.delete(videoId);
+  void clearInterruptedDownload(videoId);
+}
+
 const YIELD_EVERY_N_CHUNKS = 32;
 
 async function sendStreamChunksToOffscreen({ videoId, streamType, data, tabId }: {

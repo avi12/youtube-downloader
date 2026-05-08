@@ -1,4 +1,4 @@
-import { enqueueMuxJob } from "./ffmpeg-instance";
+import { cancelMuxJobs, enqueueMuxJob } from "./ffmpeg-instance";
 import { processSingleMedia } from "./process-single-media";
 import { processVideoAudio } from "./process-video-audio";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
@@ -147,11 +147,18 @@ async function processItem(item: ProcessStreamData) {
 
   try {
     if (item.type === DownloadType.VideoAndAudio) {
-      await enqueueMuxJob(() => processVideoAudio(item));
+      await enqueueMuxJob({
+        videoId: item.videoId,
+        job: () => processVideoAudio(item)
+      });
     } else {
       await processSingleMedia(item);
     }
   } catch (error) {
+    if ((error as Error)?.message === "muxJobCancelled") {
+      return;
+    }
+
     console.error("[ytdl:pipeline] Mux/download failed:", item.videoId, error);
     await reportRemoval({
       videoId: item.videoId,
@@ -175,6 +182,7 @@ export function enqueueStreamData(data: ProcessStreamData) {
 }
 
 export async function cancelDownloadsByIds(videoIds: string[]) {
+  cancelMuxJobs(videoIds);
   await Promise.all(
     videoIds.map(async videoId => {
       const activeJob = activeJobs.get(videoId);

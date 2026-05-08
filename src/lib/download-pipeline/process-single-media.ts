@@ -55,7 +55,7 @@ export async function processSingleMedia(item: ProcessStreamData) {
 
     progressHandlers.add(handleFfmpegProgress);
     try {
-      await enqueueMuxJob(async () => {
+      await enqueueMuxJob({ videoId, job: async () => {
         const ffmpeg = getFFmpeg();
         const audioData = data;
         if (!audioData) {
@@ -69,7 +69,7 @@ export async function processSingleMedia(item: ProcessStreamData) {
           metadata,
           ffmpeg
         });
-      });
+      } });
     } finally {
       progressHandlers.delete(handleFfmpegProgress);
     }
@@ -84,7 +84,7 @@ export async function processSingleMedia(item: ProcessStreamData) {
 
     progressHandlers.add(handleFfmpegProgress);
     try {
-      await enqueueMuxJob(async () => {
+      await enqueueMuxJob({ videoId, job: async () => {
         const ffmpeg = getFFmpeg();
         const audioData = data;
         if (!audioData) {
@@ -97,7 +97,7 @@ export async function processSingleMedia(item: ProcessStreamData) {
           filenameOutput,
           ffmpeg
         });
-      });
+      } });
     } finally {
       progressHandlers.delete(handleFfmpegProgress);
     }

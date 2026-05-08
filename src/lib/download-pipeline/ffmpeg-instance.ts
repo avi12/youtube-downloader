@@ -33,7 +33,14 @@ export function tryUnlink({ ffmpeg, filename }: {
   }
 }
 
-const muxQueue: (() => Promise<void>)[] = [];
+interface MuxQueueEntry {
+  videoId: string;
+  run: () => Promise<void>;
+  reject: (reason: Error) => void;
+}
+
+const muxQueue: MuxQueueEntry[] = [];
+const cancelledMuxJobs = new Set<string>();
 let isMuxing = false;
 
 async function processMuxQueue() {
@@ -44,27 +51,59 @@ async function processMuxQueue() {
   isMuxing = true;
 
   while (muxQueue.length > 0) {
-    const job = muxQueue.shift();
-    if (!job) {
+    const entry = muxQueue.shift();
+    if (!entry) {
       break;
     }
 
-    await job();
+    if (cancelledMuxJobs.has(entry.videoId)) {
+      cancelledMuxJobs.delete(entry.videoId);
+      entry.reject(new Error("muxJobCancelled"));
+      continue;
+    }
+
+    await entry.run();
   }
 
   isMuxing = false;
 }
 
-export async function enqueueMuxJob(job: () => Promise<void>) {
+export async function enqueueMuxJob({ videoId, job }: {
+  videoId: string;
+  job: () => Promise<void>;
+}) {
   return new Promise<void>((resolve, reject) => {
-    muxQueue.push(async () => {
-      try {
-        await job();
-        resolve();
-      } catch (error) {
-        reject(error);
+    muxQueue.push({
+      videoId,
+      reject,
+      async run() {
+        try {
+          await job();
+          resolve();
+        } catch (error) {
+          reject(error as Error);
+        }
       }
     });
     void processMuxQueue();
   });
+}
+
+// Drop pending jobs for these videoIds. Currently-running jobs cannot be
+// interrupted (ffmpeg.exec is synchronous), but in practice cancel typically
+// fires while SABR is still fetching — long before the mux phase begins.
+export function cancelMuxJobs(videoIds: string[]) {
+  const idsSet = new Set(videoIds);
+  for (const videoId of videoIds) {
+    cancelledMuxJobs.add(videoId);
+  }
+
+  for (let iEntry = muxQueue.length - 1; iEntry >= 0; iEntry--) {
+    const entry = muxQueue[iEntry];
+    if (idsSet.has(entry.videoId)) {
+      muxQueue.splice(iEntry, 1);
+      cancelledMuxJobs.delete(entry.videoId);
+      entry.reject(new Error("muxJobCancelled"));
+    }
+  }
 }
