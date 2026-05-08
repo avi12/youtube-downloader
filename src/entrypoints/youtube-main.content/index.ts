@@ -6,6 +6,7 @@ import { extractPlaylistMetadata, handleNavigateSuccess } from "./video/playlist
 import { extractAndDispatchVideoData } from "./video/video-data";
 import { CrossWorldMessage, crossWorldMessenger, dispatchButtonClick } from "@/lib/messaging/cross-world-messenger";
 import { CHILD_LIST_SUBTREE } from "@/lib/utils/dom";
+import { getMoviePlayer } from "@/lib/youtube/movie-player";
 import { type PlayerResponse } from "@/types";
 
 declare global {
@@ -56,10 +57,7 @@ export default defineContentScript({
           elVideo.volume = 0;
         });
 
-        const elPlayer = document.querySelector<HTMLElement & {
-          pauseVideo?: () => void;
-          stopVideo?: () => void;
-        }>("#movie_player");
+        const elPlayer = getMoviePlayer();
         elPlayer?.stopVideo?.();
         elPlayer?.pauseVideo?.();
         return true;

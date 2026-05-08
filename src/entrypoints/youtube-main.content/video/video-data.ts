@@ -3,6 +3,7 @@ import { capturedPoToken, capturedPoTokenVideoId, setPoTokenCredentials } from "
 import { buildVideoData } from "./youtube-api";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { sabrCredentials, videoDataStore } from "@/lib/ui/synced-stores.svelte";
+import { getMoviePlayer } from "@/lib/youtube/movie-player";
 import { generatePoToken } from "@/lib/youtube/po-token-generator";
 import { type PlayerResponse, type VideoData, type YtdlCaptureState } from "@/types";
 
@@ -261,10 +262,7 @@ export async function buildAndDispatchVideoData({ playerResponse, cancelActiveDo
   if (self !== top) {
     // Stop the player before generating the PO token so its SABR session is released
     // before the background download starts a new one for the same video.
-    const elPlayer = document.querySelector<HTMLElement & {
-      stopVideo?: () => void;
-    }>("#movie_player");
-    elPlayer?.stopVideo?.();
+    getMoviePlayer()?.stopVideo?.();
 
     await generatePoTokenIfNeeded(videoData);
     void crossWorldMessenger.sendMessage(CrossWorldMessage.IframePlayerReady, { videoId: videoData.videoId });
