@@ -207,7 +207,6 @@
   .ytdl-panel {
     overflow: hidden;
     width: 380px;
-    color: var(--yt-spec-text-primary, inherit);
   }
 
   .ytdl-panel-header {
@@ -220,9 +219,10 @@
 
   .ytdl-panel-title {
     margin: 0;
-    font-weight: 400;
+    font-weight: 500;
     font-size: 1.6rem;
     line-height: 1.375;
+    color: var(--yt-spec-text-primary, inherit);
   }
 
   .ytdl-panel-body {
