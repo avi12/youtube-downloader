@@ -1,7 +1,6 @@
 import { InnertubeClientName, type InnertubeSearchRequest } from "./innertube";
 import type { VideoMetadata } from "@/types";
 
-const YOUTUBE_MUSIC_SEARCH_URL = "https://music.youtube.com/youtubei/v1/search?prettyPrint=false";
 const SONG_FILTER_PARAMS = "EgWKAQIIAWoKEAkQAxAEEAoQBQ%3D%3D";
 
 interface ThumbnailEntry {
@@ -106,7 +105,7 @@ export async function fetchYouTubeMusicMetadata({ searchQuery, existingMetadata 
   existingMetadata: VideoMetadata;
 }) {
   try {
-    const response = await fetch(YOUTUBE_MUSIC_SEARCH_URL, {
+    const response = await fetch("https://music.youtube.com/youtubei/v1/search?prettyPrint=false", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({

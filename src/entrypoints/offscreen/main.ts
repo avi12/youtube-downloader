@@ -9,10 +9,10 @@ import createFFmpegCoreUntyped from "@ffmpeg/core";
 import type { FFmpegCoreModule, FFmpegCoreModuleFactory } from "@ffmpeg/types";
 import { browser } from "#imports";
 
-const FFMPEG_CORE_WASM_URL = "/node_modules/@ffmpeg/core/dist/umd/ffmpeg-core.wasm";
-
 const createFFmpegCore: FFmpegCoreModuleFactory = createFFmpegCoreUntyped;
-const wasmBinary = await fetch(browser.runtime.getURL(FFMPEG_CORE_WASM_URL)).then(res => res.arrayBuffer());
+const wasmBinary = await fetch(
+  browser.runtime.getURL("/node_modules/@ffmpeg/core/dist/umd/ffmpeg-core.wasm")
+).then(res => res.arrayBuffer());
 const core = await createFFmpegCore({ wasmBinary } as Partial<FFmpegCoreModule>);
 initFFmpeg(core);
 
