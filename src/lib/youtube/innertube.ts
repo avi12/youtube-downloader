@@ -152,7 +152,11 @@ export interface InnertubeContentPlaybackContext {
   signatureCipher?: string;
   vis?: number;
   splay?: boolean;
-  // Stringified integer (YouTube serializes some int64-shaped fields as strings).
+  /**
+   * "Last activity time" in milliseconds (YouTube's `lact` abbreviation).
+   * Stringified int64 per the underlying proto: `lact_milliseconds = 5`.
+   * Conventionally `'-1'` when the client has no prior activity to report.
+   */
   lactMilliseconds?: `${number}`;
   playerWidthPixels?: number;
   playerHeightPixels?: number;
