@@ -1,4 +1,4 @@
-import { getYtcfg } from "./ytcfg";
+import { getYtcfg, YtcfgKey } from "./ytcfg";
 
 interface ChallengeResponse {
   bgChallenge?: {
@@ -11,8 +11,8 @@ interface ChallengeResponse {
 }
 
 export async function generatePoToken(videoId: string) {
-  const clientVersion = getYtcfg("INNERTUBE_CLIENT_VERSION") ?? "2.20260401.01.00";
-  const requestKey = getYtcfg("BOTGUARD_EXPERIMENT_ID") ?? "O43z0dpjhgX20SCx4KAo";
+  const clientVersion = getYtcfg(YtcfgKey.ClientVersion) ?? "2.20260401.01.00";
+  const requestKey = getYtcfg(YtcfgKey.BotguardExperimentId) ?? "O43z0dpjhgX20SCx4KAo";
   // INNERTUBE_API_KEY from ytcfg doesn't have Web Anti-Abuse API enabled;
   // this hardcoded YouTube web key is what YouTube's own BotGuard uses.
   const waaApiKey = "AIzaSyDyT5W0Jh49F30Pqqtyfdf7pDLFKLJoAnw";

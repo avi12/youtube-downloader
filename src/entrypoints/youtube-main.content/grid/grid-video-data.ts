@@ -5,7 +5,7 @@ import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-wo
 import { videoDataFailedStore, videoDataStore } from "@/lib/ui/synced-stores.svelte";
 import type { InnertubePlayerRequest } from "@/lib/youtube/innertube";
 import { YouTubePath } from "@/lib/youtube/youtube-url";
-import { getYtcfg } from "@/lib/youtube/ytcfg";
+import { getYtcfg, YtcfgKey } from "@/lib/youtube/ytcfg";
 import type { PlayerResponse } from "@/types";
 
 const MAX_CONCURRENT_FETCHES = 3;
@@ -18,8 +18,8 @@ async function fetchVideoDataViaApi(videoId: string) {
   const isWatchPage = location.pathname === YouTubePath.Watch;
   if (isWatchPage) {
     const { clientVersion, clientName } = readYtcfg();
-    const visitorData = getYtcfg("VISITOR_DATA") ?? "";
-    const signatureTimestamp = getYtcfg("STS");
+    const visitorData = getYtcfg(YtcfgKey.VisitorData) ?? "";
+    const signatureTimestamp = getYtcfg(YtcfgKey.Sts);
 
     const response = await fetch(
       "https://www.youtube.com/youtubei/v1/player?prettyPrint=false",

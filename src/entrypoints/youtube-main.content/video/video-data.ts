@@ -7,7 +7,7 @@ import { getMoviePlayer } from "@/lib/youtube/movie-player";
 import { generatePoToken } from "@/lib/youtube/po-token-generator";
 import { YouTubePath } from "@/lib/youtube/youtube-url";
 import { type PlayerResponse, type VideoData, type YtdlCaptureState } from "@/types";
-import { getYtcfg } from "@/lib/youtube/ytcfg";
+import { getYtcfg, YtcfgKey } from "@/lib/youtube/ytcfg";
 
 export const videoDataCache = new Map<string, VideoData>();
 
@@ -22,8 +22,8 @@ const captureState: YtdlCaptureState = window.__ytdlCapture ?? {
 
 export function readYtcfg() {
   return {
-    clientVersion: getYtcfg("INNERTUBE_CLIENT_VERSION") ?? "",
-    clientName: getYtcfg("INNERTUBE_CONTEXT_CLIENT_NAME") ?? 1
+    clientVersion: getYtcfg(YtcfgKey.ClientVersion) ?? "",
+    clientName: getYtcfg(YtcfgKey.ClientName) ?? 1
   };
 }
 
