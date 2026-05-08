@@ -11,7 +11,7 @@ Made by [Avi](https://avi12.com)
   <img src="https://user-images.githubusercontent.com/6422804/135838451-1c3ac8f1-409f-4aec-972f-1d077c05f1ea.png" width="30" alt="Google Chrome">
   <img src="https://user-images.githubusercontent.com/6422804/135838702-e852bb47-8c0d-4275-baf1-8adc1c50a3c1.png" width="30" alt="Microsoft Edge">
   <img src="https://user-images.githubusercontent.com/6422804/135838972-113f73a3-6a04-48a9-ae04-754f25bc6eb0.png" width="30" alt="Opera">
-  <img src="https://user-images.githubusercontent.com/6422804/135838972-113f73a3-6a04-48a9-ae04-754f25bc6eb0.png" width="30" alt="Opera GX">
+  <img src="https://upload.wikimedia.org/wikipedia/commons/e/e7/Opera_GX_Icon.svg?utm_source=commons.wikimedia.org&utm_campaign=index&utm_content=original" width="30" alt="Opera GX">
 </p>
 
 Chrome, Edge, Opera, and Opera GX (all MV3).
@@ -103,3 +103,33 @@ pnpm knip                 # Dead code detection
 | Video/audio muxing  | [@ffmpeg/ffmpeg](https://github.com/ffmpegwasm/ffmpeg.wasm) |
 | Messaging           | [@webext-core/messaging](https://webext-core.aklinker1.io)  |
 | Streaming           | SABR (YouTube's Scalable Adaptive Bit Rate protocol)        |
+
+## How it works
+
+The extension is split across four MV3 runtimes (each lives under `src/entrypoints/`):
+
+| Runtime                | Folder                  | Job                                                                                                  |
+|------------------------|-------------------------|------------------------------------------------------------------------------------------------------|
+| Service worker         | `background/`           | Owns downloads, SABR/CDN fetches, declarativeNetRequest header rewrites, tab tracking, persistence.  |
+| MAIN-world content script | `youtube-main.content/` | Reads YouTube's Polymer state (player config, video metadata) and injects the download button.       |
+| Isolated content script | `youtube.content/`      | Bridge between MAIN world and the SW; mounts Svelte UI (toasts, grid overlays, playlist downloader). |
+| Offscreen document     | `offscreen/`            | Runs FFmpeg WASM to mux video + audio (the SW can't host WASM streams reliably).                     |
+| Popup                  | `popup/`                | Download manager UI (active progress + recent history + settings).                                   |
+
+Shared modules live under `src/lib/`: `download-pipeline/` (FFmpeg orchestration), `youtube/` (PO token, SABR, signature, metadata), `messaging/`, `storage/`, `ui/`, `utils/`. Reusable Svelte components live under `src/components/` and use only YouTube's Polymer CSS variables (`--yt-spec-*`) so light/dark theme works automatically.
+
+### Download flow (single watch-page video)
+
+1. Click the injected button → `youtube-main.content/watch-button/watch-button.ts` calls `performDownload(...)`.
+2. `youtube-main.content/video/download.ts` builds a `DownloadRequest` and posts it cross-world via `crossWorldMessenger`.
+3. `youtube.content/index.ts` forwards it to the SW as `StartBackgroundDownload`.
+4. `background/handlers/download-handlers.ts` enqueues the video and calls `startBackgroundDownload(...)`.
+5. `background/download/background-downloader.ts` tries SABR first (`googlevideo` library), falls back to CDN if SABR fails.
+6. Bytes stream to the offscreen doc via `dispatchToOffscreen(...)`.
+7. `lib/download-pipeline/index.ts` runs the FFmpeg mux and produces the final muxed file.
+8. The pipeline posts a blob URL back to the SW, which calls `browser.downloads.download(...)` to save it to disk.
+
+### Resilience
+
+- If the connection drops mid-fetch, the SW persists the request and re-fires it on the next `online` event.
+- If the user clicks cancel, both the in-flight SABR fetch and any pending FFmpeg mux are killed, and the persisted retry is dropped — so a manual cancel never gets resurrected.
