@@ -3,7 +3,6 @@ import { cancelActiveDownload } from "./download";
 import { buildAndDispatchVideoData } from "./video-data";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { playlistMetadataSignal } from "@/lib/ui/synced-stores.svelte";
-import { YouTubePath } from "@/lib/youtube/youtube-url";
 import { type PlayerResponse } from "@/types";
 
 declare global {
@@ -48,7 +47,7 @@ function handleNavigation() {
 export async function handleNavigateSuccess() {
   handleNavigation();
 
-  if (location.pathname !== YouTubePath.Watch) {
+  if (location.pathname !== "/watch") {
     return;
   }
 

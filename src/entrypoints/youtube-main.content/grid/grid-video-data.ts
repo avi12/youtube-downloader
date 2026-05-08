@@ -4,7 +4,6 @@ import { extractPlayerResponseFromHtml } from "../video/youtube-api";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { videoDataFailedStore, videoDataStore } from "@/lib/ui/synced-stores.svelte";
 import type { InnertubePlayerRequest } from "@/lib/youtube/innertube";
-import { YouTubePath } from "@/lib/youtube/youtube-url";
 import { getYtcfg, YtcfgKey } from "@/lib/youtube/ytcfg";
 import type { PlayerResponse } from "@/types";
 
@@ -15,7 +14,7 @@ let activeVideoDataFetches = 0;
 async function fetchVideoDataViaApi(videoId: string) {
   // /player returns UNPLAYABLE on non-watch pages, so fall back to scraping
   // ytInitialPlayerResponse from watch page HTML.
-  const isWatchPage = location.pathname === YouTubePath.Watch;
+  const isWatchPage = location.pathname === "/watch";
   if (isWatchPage) {
     const { clientVersion, clientName } = readYtcfg();
     const visitorData = getYtcfg(YtcfgKey.VisitorData) ?? "";

@@ -5,7 +5,6 @@ import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-wo
 import { sabrCredentials, videoDataStore } from "@/lib/ui/synced-stores.svelte";
 import { getMoviePlayer } from "@/lib/youtube/movie-player";
 import { generatePoToken } from "@/lib/youtube/po-token-generator";
-import { YouTubePath } from "@/lib/youtube/youtube-url";
 import { type PlayerResponse, type VideoData, type YtdlCaptureState } from "@/types";
 import { getYtcfg, YtcfgKey } from "@/lib/youtube/ytcfg";
 
@@ -125,7 +124,7 @@ function extractGenresFromKeywords({ keywords, genreSet }: {
   return [...matched];
 }
 
-const videoTitleSuffixPattern = /\s*[[(](?:official\s+(?:music\s+)?video|(?:official\s+)?lyric(?:s)?\s*(?:video)?|(?:official\s+)?audio|4k\s*remaster(?:ed)?|remaster(?:ed)?|hd|hq|visualizer|clip\s+officiel|video\s*oficial)[)\]]\s*/gi;
+const videoTitleSuffixPattern = /\s*[[(](?:official\s+(?:music\s+)?video|(?:official\s+)?lyrics?\s*(?:video)?|(?:official\s+)?audio|4k\s*remaster(?:ed)?|remaster(?:ed)?|hd|hq|visualizer|clip\s+officiel|video\s*oficial)[)\]]\s*/gi;
 
 const featuringPattern = /\s+(?:ft\.?|feat\.?|featuring)\s+(.+)$/i;
 
@@ -263,7 +262,7 @@ export async function buildAndDispatchVideoData({ playerResponse, cancelActiveDo
     return;
   }
 
-  if (location.pathname === YouTubePath.Watch) {
+  if (location.pathname === "/watch") {
     await injectSegmentedDownloadButton(videoData, cancelActiveDownload);
   }
 }
@@ -272,7 +271,7 @@ const PLAYER_RESPONSE_POLL_ATTEMPTS = 20;
 const PLAYER_RESPONSE_POLL_INTERVAL_MS = 250;
 
 export async function extractAndDispatchVideoData(cancelActiveDownload: (videoId: string) => void) {
-  if (!location.pathname.startsWith(YouTubePath.Watch)) {
+  if (!location.pathname.startsWith("/watch")) {
     return;
   }
 
