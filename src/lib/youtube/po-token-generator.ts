@@ -1,3 +1,4 @@
+import { InnertubeClientName } from "./innertube";
 import { getYtcfg, YtcfgKey } from "./ytcfg";
 
 interface ChallengeResponse {
@@ -26,7 +27,7 @@ export async function generatePoToken(videoId: string) {
         engagementType: "ENGAGEMENT_TYPE_UNBOUND",
         context: {
           client: {
-            clientName: "WEB",
+            clientName: InnertubeClientName.Web,
             clientVersion
           }
         }

@@ -11,6 +11,28 @@
  * used by youtubei.js / yt-dlp / Innertube reverse-engineering communities.
  */
 
+// Known YouTube InnerTube client names. The `(string & {})` tail keeps the
+// known values as autocomplete suggestions while leaving the field open to
+// new clients YouTube may roll out without forcing a type bump.
+export const InnertubeClientName = {
+  Web: "WEB",
+  WebEmbeddedPlayer: "WEB_EMBEDDED_PLAYER",
+  WebRemix: "WEB_REMIX",
+  WebKids: "WEB_KIDS",
+  Mweb: "MWEB",
+  Android: "ANDROID",
+  AndroidEmbeddedPlayer: "ANDROID_EMBEDDED_PLAYER",
+  AndroidMusic: "ANDROID_MUSIC",
+  AndroidKids: "ANDROID_KIDS",
+  Ios: "IOS",
+  IosMusic: "IOS_MUSIC",
+  IosKids: "IOS_KIDS",
+  TvHtml5: "TVHTML5",
+  TvHtml5SimplyEmbeddedPlayer: "TVHTML5_SIMPLY_EMBEDDED_PLAYER"
+} as const;
+
+export type InnertubeClientName = (typeof InnertubeClientName)[keyof typeof InnertubeClientName] | (string & {});
+
 export interface InnertubeContext {
   client: InnertubeClientContext;
   user?: {
@@ -49,16 +71,6 @@ export interface InnertubePlayerRequest {
   startTimeSecs?: number;
 }
 
-// Known browseId prefixes. `FE*` are feature pages, `UC*` channels,
-// `VL*` playlists, `MPLA*` music playlists, `MPRE*` music releases.
-type BrowseId =
-  | `FE${string}`
-  | `UC${string}`
-  | `VL${string}`
-  | `MPLA${string}`
-  | `MPRE${string}`
-  | (string & {});
-
 /**
  * `/youtubei/v1/browse` request body.
  *
@@ -66,7 +78,9 @@ type BrowseId =
  * @see https://github.com/yt-dlp/yt-dlp — yt-dlp source for cross-referencing field semantics
  */
 export interface InnertubeBrowseRequest {
-  browseId: BrowseId;
+  // Known browseId prefixes: `FE*` features, `UC*` channels, `VL*` playlists,
+  // `MPLA*` music playlists, `MPRE*` music releases.
+  browseId: `FE${string}` | `UC${string}` | `VL${string}` | `MPLA${string}` | `MPRE${string}` | (string & {});
   context: InnertubeContext;
   params?: string;
   continuation?: string;
@@ -77,70 +91,31 @@ export interface InnertubeBrowseRequest {
   inlineSettingsMenu?: boolean;
 }
 
-// Known YouTube InnerTube client names. The `(string & {})` tail keeps the
-// known values as autocomplete suggestions while leaving the field open to
-// new clients YouTube may roll out without forcing a type bump.
-type InnertubeClientName =
-  | "WEB"
-  | "WEB_EMBEDDED_PLAYER"
-  | "WEB_REMIX"
-  | "WEB_KIDS"
-  | "MWEB"
-  | "ANDROID"
-  | "ANDROID_EMBEDDED_PLAYER"
-  | "ANDROID_MUSIC"
-  | "ANDROID_KIDS"
-  | "IOS"
-  | "IOS_MUSIC"
-  | "IOS_KIDS"
-  | "TVHTML5"
-  | "TVHTML5_SIMPLY_EMBEDDED_PLAYER"
-  | (string & {});
-
-type InnertubeOsName = "Windows" | "Macintosh" | "X11" | "Android" | "iPhone" | "iPad" | (string & {});
-
-type InnertubeClientFormFactor =
-  | "UNKNOWN_FORM_FACTOR"
-  | "SMALL_FORM_FACTOR"
-  | "LARGE_FORM_FACTOR"
-  | "AUTOMOTIVE_FORM_FACTOR"
-  | "WEARABLE_FORM_FACTOR"
-  | (string & {});
-
-type InnertubeWebDisplayMode =
-  | "WEB_DISPLAY_MODE_BROWSER"
-  | "WEB_DISPLAY_MODE_FULLSCREEN"
-  | "WEB_DISPLAY_MODE_MINIMAL_UI"
-  | "WEB_DISPLAY_MODE_STANDALONE";
-
-// IETF BCP 47 language tag (e.g. "en", "en-GB"). Open by design.
-type LanguageTag = `${string}` & (string & {});
-
-// ISO 3166-1 alpha-2 country code (e.g. "US", "GB"). Open by design.
-type CountryCode = `${string}` & (string & {});
-
-// IANA tz database identifier (e.g. "America/New_York").
-type TimeZoneId = `${string}/${string}` | "UTC" | (string & {});
-
-// Stringified integer (YouTube serializes some int64-shaped fields as strings).
-type StringNumber = `${number}`;
-
 export interface InnertubeClientContext {
   clientName: InnertubeClientName;
   clientVersion: string;
-  hl?: LanguageTag;
-  gl?: CountryCode;
+  // IETF BCP 47 language tag (e.g. "en", "en-GB").
+  hl?: string;
+  // ISO 3166-1 alpha-2 country code (e.g. "US", "GB").
+  gl?: string;
   userAgent?: string;
-  osName?: InnertubeOsName;
+  osName?: "Windows" | "Macintosh" | "X11" | "Android" | "iPhone" | "iPad" | (string & {});
   osVersion?: string;
   platform?: "DESKTOP" | "MOBILE" | "TV";
-  clientFormFactor?: InnertubeClientFormFactor;
+  clientFormFactor?:
+    | "UNKNOWN_FORM_FACTOR"
+    | "SMALL_FORM_FACTOR"
+    | "LARGE_FORM_FACTOR"
+    | "AUTOMOTIVE_FORM_FACTOR"
+    | "WEARABLE_FORM_FACTOR"
+    | (string & {});
   deviceMake?: string;
   deviceModel?: string;
   visitorData?: string;
   androidSdkVersion?: number;
   iosVersion?: string;
-  timeZone?: TimeZoneId;
+  // IANA tz database identifier (e.g. "America/New_York").
+  timeZone?: string;
   utcOffsetMinutes?: number;
   screenDensityFloat?: number;
   screenWidthPoints?: number;
@@ -148,7 +123,11 @@ export interface InnertubeClientContext {
   originalUrl?: `https://${string}`;
   mainAppWebInfo?: {
     graftUrl?: `/${string}`;
-    webDisplayMode?: InnertubeWebDisplayMode;
+    webDisplayMode?:
+      | "WEB_DISPLAY_MODE_BROWSER"
+      | "WEB_DISPLAY_MODE_FULLSCREEN"
+      | "WEB_DISPLAY_MODE_MINIMAL_UI"
+      | "WEB_DISPLAY_MODE_STANDALONE";
     isWebNativeShareAvailable?: boolean;
   };
 }
@@ -160,7 +139,8 @@ export interface InnertubeContentPlaybackContext {
   signatureCipher?: string;
   vis?: number;
   splay?: boolean;
-  lactMilliseconds?: StringNumber;
+  // Stringified integer (YouTube serializes some int64-shaped fields as strings).
+  lactMilliseconds?: `${number}`;
   playerWidthPixels?: number;
   playerHeightPixels?: number;
   html5Preference?: "HTML5_PREF_WANTS" | "HTML5_PREF_OK";

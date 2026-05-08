@@ -1,3 +1,4 @@
+import { InnertubeClientName } from "./innertube";
 import type { VideoMetadata } from "@/types";
 
 const YOUTUBE_MUSIC_SEARCH_URL = "https://music.youtube.com/youtubei/v1/search?prettyPrint=false";
@@ -113,7 +114,7 @@ export async function fetchYouTubeMusicMetadata({ searchQuery, existingMetadata 
         params: SONG_FILTER_PARAMS,
         context: {
           client: {
-            clientName: "WEB_REMIX",
+            clientName: InnertubeClientName.WebRemix,
             clientVersion: "1.20260408.01.00"
           }
         }

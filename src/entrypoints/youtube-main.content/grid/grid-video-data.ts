@@ -3,7 +3,7 @@ import { buildAndDispatchVideoData, videoDataCache, readYtcfg } from "../video/v
 import { extractPlayerResponseFromHtml } from "../video/youtube-api";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { videoDataFailedStore, videoDataStore } from "@/lib/ui/synced-stores.svelte";
-import type { InnertubePlayerRequest } from "@/lib/youtube/innertube";
+import { InnertubeClientName, type InnertubePlayerRequest } from "@/lib/youtube/innertube";
 import { getYtcfg, YtcfgKey } from "@/lib/youtube/ytcfg";
 import type { PlayerResponse } from "@/types";
 
@@ -33,7 +33,7 @@ async function fetchVideoDataViaApi(videoId: string) {
           videoId,
           context: {
             client: {
-              clientName: clientName === 1 ? "WEB" : String(clientName),
+              clientName: clientName === 1 ? InnertubeClientName.Web : String(clientName),
               clientVersion: String(clientVersion)
             }
           },

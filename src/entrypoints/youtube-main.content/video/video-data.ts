@@ -3,7 +3,7 @@ import { capturedPoToken, capturedPoTokenVideoId, setPoTokenCredentials } from "
 import { buildVideoData } from "./youtube-api";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { sabrCredentials, videoDataStore } from "@/lib/ui/synced-stores.svelte";
-import type { InnertubeBrowseRequest } from "@/lib/youtube/innertube";
+import { InnertubeClientName, type InnertubeBrowseRequest } from "@/lib/youtube/innertube";
 import { getMoviePlayer } from "@/lib/youtube/movie-player";
 import { generatePoToken } from "@/lib/youtube/po-token-generator";
 import { type PlayerResponse, type VideoData, type YtdlCaptureState } from "@/types";
@@ -82,7 +82,7 @@ async function fetchYouTubeMusicGenres() {
         browseId: "FEmusic_moods_and_genres",
         context: {
           client: {
-            clientName: "WEB_REMIX",
+            clientName: InnertubeClientName.WebRemix,
             clientVersion: "1.20260408.01.00"
           }
         }
