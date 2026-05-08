@@ -43,15 +43,19 @@
   color: var(--ytdl-state-color);
 }
 
+/* Mix the state color against an elevated-surface base (matches the design's
+   --bg-elev). Alpha-only overlay (transparent base) reads too dim on YouTube's
+   actual page bg #0f0f0f because the design mocked against a slightly lighter
+   #1d1d1d-ish surface. light-dark() flips with the document's color-scheme. */
 [class*="ytdl-watch-state-"] .ytdl-download-button button,
 [class*="ytdl-watch-state-"] .ytdl-chevron-button button {
-  background-color: color-mix(in oklab, var(--ytdl-state-color) var(--ytdl-state-mix), transparent) !important;
+  background-color: color-mix(in oklab, var(--ytdl-state-color) var(--ytdl-state-mix), light-dark(rgb(245 245 245), rgb(35 35 35))) !important;
   color: var(--ytdl-state-color) !important;
 }
 
 [class*="ytdl-watch-state-"] .ytdl-download-button button:hover,
 [class*="ytdl-watch-state-"] .ytdl-chevron-button button:hover {
-  background-color: color-mix(in oklab, var(--ytdl-state-color) calc(var(--ytdl-state-mix) + 8%), transparent) !important;
+  background-color: color-mix(in oklab, var(--ytdl-state-color) calc(var(--ytdl-state-mix) + 8%), light-dark(rgb(245 245 245), rgb(35 35 35))) !important;
 }
 
 .ytdl-watch-state-downloading .ytdl-watch-progress-ring__indicator,
