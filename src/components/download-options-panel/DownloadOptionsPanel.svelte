@@ -222,11 +222,10 @@
     font-weight: 500;
     font-size: 1.6rem;
     line-height: 1.375;
-    color: var(--yt-spec-text-primary, var(--yt-spec-static-text-primary, rgb(15 15 15)));
-  }
-
-  :global(html[dark]) .ytdl-panel-title {
-    color: var(--yt-spec-text-primary, rgba(255, 255, 255, 88%));
+    /* light-dark() flips with the document's color-scheme - YouTube sets that
+       per active theme, so no [dark] selector needed. yt-spec-text-primary is
+       preferred when defined; the literal pair matches YouTube's actual values. */
+    color: var(--yt-spec-text-primary, light-dark(rgb(15 15 15), rgba(255 255 255 / 88%)));
   }
 
   .ytdl-panel-body {
