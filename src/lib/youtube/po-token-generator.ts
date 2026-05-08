@@ -44,8 +44,8 @@ export async function generatePoToken(videoId: string) {
 
   // On non-watch pages (subscriptions, homepage) BotGuard isn't pre-loaded, so load the interpreter ourselves.
   function getBotGuardVm(name: string) {
-    const entry = Object.getOwnPropertyDescriptor(globalThis, name)?.value;
-    return entry !== null && typeof entry === "object" && "a" in entry ? entry : null;
+    const entry = (globalThis as Record<string, unknown>)[name];
+    return typeof entry === "object" && entry !== null && "a" in entry ? entry : null;
   }
 
   if (!getBotGuardVm(globalName)) {
