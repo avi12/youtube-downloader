@@ -1,4 +1,4 @@
-import { InnertubeClientName } from "./innertube";
+import { InnertubeClientName, type InnertubeSearchRequest } from "./innertube";
 import type { VideoMetadata } from "@/types";
 
 const YOUTUBE_MUSIC_SEARCH_URL = "https://music.youtube.com/youtubei/v1/search?prettyPrint=false";
@@ -118,7 +118,7 @@ export async function fetchYouTubeMusicMetadata({ searchQuery, existingMetadata 
             clientVersion: "1.20260408.01.00"
           }
         }
-      })
+      } satisfies InnertubeSearchRequest)
     });
     if (!response.ok) {
       return existingMetadata;

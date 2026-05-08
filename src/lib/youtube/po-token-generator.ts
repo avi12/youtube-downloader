@@ -1,4 +1,4 @@
-import { InnertubeClientName, type InnertubeAttGetRequest } from "./innertube";
+import { InnertubeClientName, type InnertubeAttGetRequest, type InnertubeGenerateItRequest } from "./innertube";
 import { getYtcfg, YtcfgKey } from "./ytcfg";
 
 interface ChallengeResponse {
@@ -108,7 +108,7 @@ export async function generatePoToken(videoId: string) {
         "content-type": "application/json+protobuf",
         "x-goog-api-key": waaApiKey
       },
-      body: JSON.stringify([requestKey, snapshotResponse])
+      body: JSON.stringify([requestKey, snapshotResponse] satisfies InnertubeGenerateItRequest)
     }
   );
 

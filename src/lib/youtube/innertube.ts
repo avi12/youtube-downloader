@@ -102,6 +102,29 @@ export interface InnertubeAttGetRequest {
 }
 
 /**
+ * `/youtubei/v1/search` request body — text + filter-params search.
+ *
+ * @see https://github.com/LuanRT/YouTube.js
+ * @see https://github.com/yt-dlp/yt-dlp
+ */
+export interface InnertubeSearchRequest {
+  query: string;
+  context: InnertubeContext;
+  // Base64-encoded protobuf filter params (e.g. song-only, channel-only).
+  params?: string;
+  continuation?: string;
+}
+
+/**
+ * `/api/jnn/v1/GenerateIT` request body — BotGuard integrity-token mint.
+ * Uses positional protobuf-over-JSON tuple encoding (Content-Type:
+ * application/json+protobuf), not the InnerTube envelope shape.
+ *
+ * @see https://github.com/LuanRT/BgUtils
+ */
+export type InnertubeGenerateItRequest = readonly [requestKey: string, snapshotResponse: string];
+
+/**
  * `/youtubei/v1/browse` request body.
  *
  * @see https://github.com/LuanRT/YouTube.js — community-maintained TypeScript bindings for InnerTube
