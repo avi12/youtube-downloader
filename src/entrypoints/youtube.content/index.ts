@@ -17,6 +17,7 @@ import { optionsItem, statusProgressItem } from "@/lib/storage/storage";
 import { downloadProgressStore, initContentOptions } from "@/lib/ui/synced-stores.svelte";
 import { forwardSabrCredentialsWithRetry, listenForSabrBodyReady } from "@/lib/youtube/sabr/credentials";
 import { initialOptions as defaultOptions } from "@/lib/youtube/video-helpers";
+import { YouTubePath } from "@/lib/youtube/youtube-url";
 import { ProgressType } from "@/types";
 
 function registerCrossWorldHandlers(
@@ -96,7 +97,7 @@ function registerCrossWorldHandlers(
 
 function registerBackgroundMessageHandlers() {
   onMessage(MessageType.ExecuteDownloadItem, ({ data }) => {
-    if (location.pathname !== "/watch") {
+    if (location.pathname !== YouTubePath.Watch) {
       return;
     }
 

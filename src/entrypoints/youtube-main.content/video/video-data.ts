@@ -5,6 +5,7 @@ import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-wo
 import { sabrCredentials, videoDataStore } from "@/lib/ui/synced-stores.svelte";
 import { getMoviePlayer } from "@/lib/youtube/movie-player";
 import { generatePoToken } from "@/lib/youtube/po-token-generator";
+import { YouTubePath } from "@/lib/youtube/youtube-url";
 import { type PlayerResponse, type VideoData, type YtdlCaptureState } from "@/types";
 
 declare const ytcfg: {
@@ -269,7 +270,7 @@ export async function buildAndDispatchVideoData({ playerResponse, cancelActiveDo
     return;
   }
 
-  if (location.pathname === "/watch") {
+  if (location.pathname === YouTubePath.Watch) {
     await injectSegmentedDownloadButton(videoData, cancelActiveDownload);
   }
 }
@@ -278,7 +279,7 @@ const PLAYER_RESPONSE_POLL_ATTEMPTS = 20;
 const PLAYER_RESPONSE_POLL_INTERVAL_MS = 250;
 
 export async function extractAndDispatchVideoData(cancelActiveDownload: (videoId: string) => void) {
-  if (!location.pathname.startsWith("/watch")) {
+  if (!location.pathname.startsWith(YouTubePath.Watch)) {
     return;
   }
 
