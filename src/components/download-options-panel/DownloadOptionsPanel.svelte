@@ -225,8 +225,7 @@
     color: var(--yt-spec-text-primary, var(--yt-spec-static-text-primary, rgb(15 15 15)));
   }
 
-  :global(html[dark]) .ytdl-panel-title,
-  :global(html[darker-dark-theme]) .ytdl-panel-title {
+  :global(html[dark]) .ytdl-panel-title {
     color: var(--yt-spec-text-primary, rgba(255, 255, 255, 88%));
   }
 
