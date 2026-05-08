@@ -11,9 +11,13 @@
  * used by youtubei.js / yt-dlp / Innertube reverse-engineering communities.
  */
 
-// Known YouTube InnerTube client names. The `(string & {})` tail keeps the
-// known values as autocomplete suggestions while leaving the field open to
-// new clients YouTube may roll out without forcing a type bump.
+/**
+ * Known YouTube InnerTube client names. The `(string & {})` tail on the type
+ * keeps the known values as autocomplete suggestions while leaving the field
+ * open to new clients YouTube may roll out without forcing a type bump.
+ *
+ * @see https://github.com/zerodytrash/YouTube-Internal-Clients — community-maintained list of known client IDs and versions
+ */
 export const InnertubeClientName = {
   Web: "WEB",
   WebEmbeddedPlayer: "WEB_EMBEDDED_PLAYER",
@@ -94,9 +98,15 @@ export interface InnertubeBrowseRequest {
 export interface InnertubeClientContext {
   clientName: InnertubeClientName;
   clientVersion: string;
-  // IETF BCP 47 language tag (e.g. "en", "en-GB").
+  /**
+   * IETF BCP 47 language tag (e.g. "en", "en-GB").
+   * @see https://www.rfc-editor.org/rfc/bcp/bcp47.txt
+   */
   hl?: string;
-  // ISO 3166-1 alpha-2 country code (e.g. "US", "GB").
+  /**
+   * ISO 3166-1 alpha-2 country code (e.g. "US", "GB").
+   * @see https://www.iso.org/iso-3166-country-codes.html
+   */
   gl?: string;
   userAgent?: string;
   osName?: "Windows" | "Macintosh" | "X11" | "Android" | "iPhone" | "iPad" | (string & {});
@@ -114,7 +124,10 @@ export interface InnertubeClientContext {
   visitorData?: string;
   androidSdkVersion?: number;
   iosVersion?: string;
-  // IANA tz database identifier (e.g. "America/New_York").
+  /**
+   * IANA tz database identifier (e.g. "America/New_York").
+   * @see https://www.iana.org/time-zones
+   */
   timeZone?: string;
   utcOffsetMinutes?: number;
   screenDensityFloat?: number;
