@@ -43,13 +43,6 @@ export interface MoviePlayerElement extends HTMLElement {
   // Sizing + lifecycle
   setSize?: (width: number, height: number) => void;
   destroy?: () => void;
-  // Event subscription
-  addEventListener: HTMLElement["addEventListener"] & {
-    (event: string, listener: (...args: unknown[]) => void): void;
-  };
-  removeEventListener: HTMLElement["removeEventListener"] & {
-    (event: string, listener: (...args: unknown[]) => void): void;
-  };
 }
 
 export function getMoviePlayer() {
