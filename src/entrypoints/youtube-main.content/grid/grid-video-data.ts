@@ -3,10 +3,9 @@ import { buildAndDispatchVideoData, videoDataCache, readYtcfg } from "../video/v
 import { extractPlayerResponseFromHtml } from "../video/youtube-api";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { videoDataFailedStore, videoDataStore } from "@/lib/ui/synced-stores.svelte";
+import { getYtcfg } from "@/lib/youtube/ytcfg";
 import { YouTubePath } from "@/lib/youtube/youtube-url";
 import type { PlayerResponse } from "@/types";
-
-declare const ytcfg: { get: (key: string) => unknown } | undefined;
 
 const MAX_CONCURRENT_FETCHES = 3;
 const videoDataPending = new Set<string>();
@@ -18,8 +17,8 @@ async function fetchVideoDataViaApi(videoId: string) {
   const isWatchPage = location.pathname === YouTubePath.Watch;
   if (isWatchPage) {
     const { clientVersion, clientName } = readYtcfg();
-    const visitorData = ytcfg?.get("VISITOR_DATA") ?? "";
-    const signatureTimestamp = ytcfg?.get("STS");
+    const visitorData = getYtcfg("VISITOR_DATA") ?? "";
+    const signatureTimestamp = getYtcfg("STS");
 
     const response = await globalThis.fetch(
       "https://www.youtube.com/youtubei/v1/player?prettyPrint=false",

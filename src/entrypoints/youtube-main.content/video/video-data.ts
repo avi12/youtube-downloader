@@ -7,10 +7,7 @@ import { getMoviePlayer } from "@/lib/youtube/movie-player";
 import { generatePoToken } from "@/lib/youtube/po-token-generator";
 import { YouTubePath } from "@/lib/youtube/youtube-url";
 import { type PlayerResponse, type VideoData, type YtdlCaptureState } from "@/types";
-
-declare const ytcfg: {
-  get: (key: string) => unknown;
-} | undefined;
+import { getYtcfg } from "@/lib/youtube/ytcfg";
 
 export const videoDataCache = new Map<string, VideoData>();
 
@@ -24,13 +21,9 @@ const captureState: YtdlCaptureState = window.__ytdlCapture ?? {
 };
 
 export function readYtcfg() {
-  const clientVersionRaw = ytcfg?.get("INNERTUBE_CLIENT_VERSION");
-  const clientVersion = typeof clientVersionRaw === "string" ? clientVersionRaw : "";
-  const clientNameRaw = ytcfg?.get("INNERTUBE_CONTEXT_CLIENT_NAME");
-  const clientName = typeof clientNameRaw === "number" ? clientNameRaw : 1;
   return {
-    clientVersion,
-    clientName
+    clientVersion: getYtcfg("INNERTUBE_CLIENT_VERSION") ?? "",
+    clientName: getYtcfg("INNERTUBE_CONTEXT_CLIENT_NAME") ?? 1
   };
 }
 
