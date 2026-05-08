@@ -76,6 +76,29 @@ export interface InnertubePlayerRequest {
 }
 
 /**
+ * `/youtubei/v1/att/get` request body — fetches a BotGuard challenge program.
+ * The response is consumed by `po-token-generator.ts` to build a snapshot
+ * function and ultimately mint the WebPO token.
+ */
+export interface InnertubeAttGetRequest {
+  engagementType:
+    | "ENGAGEMENT_TYPE_UNBOUND"
+    | "ENGAGEMENT_TYPE_PLAYBACK"
+    | "ENGAGEMENT_TYPE_VIDEO_FRAME"
+    | "ENGAGEMENT_TYPE_AD"
+    | (string & {});
+  context: InnertubeContext;
+  // Outputs requested from the BotGuard VM. Empty/omitted produces just the
+  // standard challenge; populating it requests additional signal channels.
+  webPoSignalOutput?: string[];
+  // Chained-request payload for follow-up calls; not used on the initial fetch.
+  botguardData?: {
+    interpreterHash?: string;
+    botguardResponse?: string;
+  };
+}
+
+/**
  * `/youtubei/v1/browse` request body.
  *
  * @see https://github.com/LuanRT/YouTube.js — community-maintained TypeScript bindings for InnerTube

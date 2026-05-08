@@ -1,4 +1,4 @@
-import { InnertubeClientName } from "./innertube";
+import { InnertubeClientName, type InnertubeAttGetRequest } from "./innertube";
 import { getYtcfg, YtcfgKey } from "./ytcfg";
 
 interface ChallengeResponse {
@@ -31,7 +31,7 @@ export async function generatePoToken(videoId: string) {
             clientVersion
           }
         }
-      })
+      } satisfies InnertubeAttGetRequest)
     }
   );
 
