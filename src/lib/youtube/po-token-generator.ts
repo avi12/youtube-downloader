@@ -43,10 +43,8 @@ export async function generatePoToken(videoId: string) {
   }
 
   // On non-watch pages (subscriptions, homepage) BotGuard isn't pre-loaded, so load the interpreter ourselves.
-  // Object.getOwnPropertyDescriptor reads a dynamic globalThis property without a type assertion
-  // (consistent-type-assertions ESLint rule forbids `as`); Reflect is also forbidden by repo policy.
   function getBotGuardVm(name: string) {
-    const entry = Object.getOwnPropertyDescriptor(globalThis, name)?.value;
+    const entry = Object.entries(globalThis).find(([key]) => key === name)?.[1];
     return typeof entry === "object" && entry !== null && "a" in entry ? entry : null;
   }
 
