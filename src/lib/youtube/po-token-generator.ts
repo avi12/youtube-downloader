@@ -66,12 +66,14 @@ export async function generatePoToken(videoId: string) {
     }
   }
 
-  for (let attempt = 0; attempt < 60; attempt++) {
+  const VM_POLL_INTERVAL_MS = 500;
+  const VM_POLL_MAX_ATTEMPTS = 60;
+  for (let attempt = 0; attempt < VM_POLL_MAX_ATTEMPTS; attempt++) {
     if (getBotGuardVm(globalName)) {
       break;
     }
 
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => setTimeout(resolve, VM_POLL_INTERVAL_MS));
   }
 
   const botGuardVm = getBotGuardVm(globalName);

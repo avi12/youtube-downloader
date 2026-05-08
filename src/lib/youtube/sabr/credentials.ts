@@ -38,17 +38,20 @@ async function forwardSabrCredentials() {
   elCredentials.dataset.poToken = poToken;
 }
 
+const FORWARD_RETRY_INTERVAL_MS = 500;
+const FORWARD_RETRY_MAX_ATTEMPTS = 30;
+
 export async function forwardSabrCredentialsWithRetry() {
   isCredentialsForwarded = false;
 
-  for (let attempt = 0; attempt < 30; attempt++) {
+  for (let attempt = 0; attempt < FORWARD_RETRY_MAX_ATTEMPTS; attempt++) {
     await forwardSabrCredentials();
 
     if (isCredentialsForwarded) {
       return;
     }
 
-    await new Promise(resolve => setTimeout(resolve, 500));
+    await new Promise(resolve => setTimeout(resolve, FORWARD_RETRY_INTERVAL_MS));
   }
 }
 
