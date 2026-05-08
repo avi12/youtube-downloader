@@ -79,6 +79,9 @@ export interface InnertubePlayerRequest {
  * `/youtubei/v1/att/get` request body — fetches a BotGuard challenge program.
  * The response is consumed by `po-token-generator.ts` to build a snapshot
  * function and ultimately mint the WebPO token.
+ *
+ * @see https://github.com/LuanRT/BgUtils — community-maintained BotGuard helper, including /att/get usage
+ * @see https://github.com/zerodytrash/YouTube-Internal-Clients — context.client values that pair with this endpoint
  */
 export interface InnertubeAttGetRequest {
   engagementType:
