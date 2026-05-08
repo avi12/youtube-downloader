@@ -125,6 +125,13 @@ export interface InnertubeSearchRequest {
 export type InnertubeGenerateItRequest = readonly [requestKey: string, snapshotResponse: string];
 
 /**
+ * `/api/jnn/v1/GenerateIT` response — same protobuf-over-JSON tuple encoding.
+ * The first element is the integrity token (base64); subsequent elements are
+ * server-controlled bookkeeping that callers don't read.
+ */
+export type InnertubeGenerateItResponse = readonly [integrityToken: string, ...rest: unknown[]];
+
+/**
  * `/youtubei/v1/browse` request body.
  *
  * @see https://github.com/LuanRT/YouTube.js — community-maintained TypeScript bindings for InnerTube

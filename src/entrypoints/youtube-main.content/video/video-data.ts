@@ -67,6 +67,32 @@ export async function buildVideoMetadata(videoId: string) {
   };
 }
 
+interface MoodsAndGenresResponse {
+  contents?: {
+    singleColumnBrowseResultsRenderer?: {
+      tabs?: Array<{
+        tabRenderer?: {
+          content?: {
+            sectionListRenderer?: {
+              contents?: Array<{
+                gridRenderer?: {
+                  items?: Array<{
+                    musicNavigationButtonRenderer?: {
+                      buttonText?: {
+                        runs?: Array<{ text: string }>;
+                      };
+                    };
+                  }>;
+                };
+              }>;
+            };
+          };
+        };
+      }>;
+    };
+  };
+}
+
 let cachedYouTubeMusicGenres: Set<string> | null = null;
 
 async function fetchYouTubeMusicGenres() {
@@ -89,7 +115,7 @@ async function fetchYouTubeMusicGenres() {
       } satisfies InnertubeBrowseRequest)
     });
 
-    const data = await response.json();
+    const data: MoodsAndGenresResponse = await response.json();
     const sections = data.contents?.singleColumnBrowseResultsRenderer?.tabs?.[0]
       ?.tabRenderer?.content?.sectionListRenderer?.contents ?? [];
 

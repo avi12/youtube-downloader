@@ -45,6 +45,26 @@ interface SearchItem {
   };
 }
 
+interface MusicSearchResponse {
+  contents?: {
+    tabbedSearchResultsRenderer?: {
+      tabs?: Array<{
+        tabRenderer?: {
+          content?: {
+            sectionListRenderer?: {
+              contents?: Array<{
+                musicShelfRenderer?: {
+                  contents?: SearchItem[];
+                };
+              }>;
+            };
+          };
+        };
+      }>;
+    };
+  };
+}
+
 function extractPageType(run: SearchRun) {
   return run.navigationEndpoint?.browseEndpoint
     ?.browseEndpointContextSupportedConfigs
@@ -123,18 +143,11 @@ export async function fetchYouTubeMusicMetadata({ searchQuery, existingMetadata 
       return existingMetadata;
     }
 
-    const data = await response.json();
+    const data: MusicSearchResponse = await response.json();
     const contents = data.contents?.tabbedSearchResultsRenderer
       ?.tabs?.[0]?.tabRenderer?.content?.sectionListRenderer?.contents;
 
-    const songShelf = contents?.find(
-      (section: {
-        musicShelfRenderer?: {
-          contents?: SearchItem[];
-        };
-      }) =>
-        section.musicShelfRenderer?.contents
-    );
+    const songShelf = contents?.find(section => section.musicShelfRenderer?.contents);
     const firstItem = songShelf?.musicShelfRenderer?.contents?.[0];
     if (!firstItem) {
       return existingMetadata;

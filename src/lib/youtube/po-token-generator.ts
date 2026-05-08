@@ -1,4 +1,9 @@
-import { InnertubeClientName, type InnertubeAttGetRequest, type InnertubeGenerateItRequest } from "./innertube";
+import {
+  InnertubeClientName,
+  type InnertubeAttGetRequest,
+  type InnertubeGenerateItRequest,
+  type InnertubeGenerateItResponse
+} from "./innertube";
 import { getYtcfg, YtcfgKey } from "./ytcfg";
 
 interface ChallengeResponse {
@@ -112,7 +117,7 @@ export async function generatePoToken(videoId: string) {
     }
   );
 
-  const integrityData = await integrityResponse.json();
+  const integrityData: InnertubeGenerateItResponse = await integrityResponse.json();
   if (!integrityData[0]) {
     throw new Error("No integrity token received");
   }
