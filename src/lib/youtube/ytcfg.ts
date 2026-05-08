@@ -1,6 +1,6 @@
-// Typed wrapper around YouTube's window-level `ytcfg` config object.
-// `ytcfg` is injected by the YouTube page itself; only available inside
-// MAIN-world content scripts running on a YouTube document.
+// Typed wrapper around YouTube's window-level `ytcfg` config object,
+// injected by the YouTube page itself. Only available inside MAIN-world
+// content scripts running on a YouTube document.
 
 export const YtcfgKey = {
   ClientVersion: "INNERTUBE_CLIENT_VERSION",
