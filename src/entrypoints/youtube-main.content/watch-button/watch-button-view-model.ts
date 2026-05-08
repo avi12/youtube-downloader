@@ -58,20 +58,21 @@ export function buildDownloadData(state: ButtonViewState) {
 
   let tooltip = "";
   if (state.isDownloadable) {
+    const base = state.quality ? `${state.filename} - ${state.quality}` : state.filename;
     if (state.isDone) {
-      tooltip = state.quality ? `Download again - ${state.quality}` : "Download again";
+      tooltip = base;
     } else if (state.isError) {
-      tooltip = "Retry download";
+      tooltip = `${base} - retry`;
     } else if (state.isInterrupted) {
       tooltip = state.downloadProgress > 0
-        ? `Paused at ${percentFormatter.format(state.downloadProgress)} - click to resume`
-        : "Click to resume";
+        ? `${base} - paused at ${percentFormatter.format(state.downloadProgress)}, click to resume`
+        : `${base} - click to resume`;
     } else if (state.isDownloading && state.downloadProgress === 0) {
-      tooltip = "Preparing - click to view progress";
+      tooltip = `${base} - preparing, click to view progress`;
     } else if (state.isDownloading) {
-      tooltip = `${percentFormatter.format(state.downloadProgress)} - click to view progress`;
+      tooltip = `${base} - ${percentFormatter.format(state.downloadProgress)}, click to view progress`;
     } else {
-      tooltip = state.quality ? `${state.filename} - ${state.quality}` : state.filename;
+      tooltip = base;
     }
   }
 
