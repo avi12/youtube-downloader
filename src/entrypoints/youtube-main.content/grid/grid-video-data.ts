@@ -21,7 +21,7 @@ async function fetchVideoDataViaApi(videoId: string) {
     const visitorData = getYtcfg("VISITOR_DATA") ?? "";
     const signatureTimestamp = getYtcfg("STS");
 
-    const response = await globalThis.fetch(
+    const response = await fetch(
       "https://www.youtube.com/youtubei/v1/player?prettyPrint=false",
       {
         method: "POST",
@@ -56,7 +56,7 @@ async function fetchVideoDataViaApi(videoId: string) {
     }
   }
 
-  const html = await (await globalThis.fetch(
+  const html = await (await fetch(
     `https://www.youtube.com/watch?v=${videoId}`,
     { credentials: "include" }
   )).text();
