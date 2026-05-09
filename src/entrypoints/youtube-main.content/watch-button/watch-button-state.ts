@@ -10,8 +10,9 @@ function getActiveAudioTrackLanguage() {
   }
 
   for (let i = 0; i < audioTracks.length; i++) {
-    if (audioTracks[i].enabled) {
-      return audioTracks[i].language || undefined;
+    const { enabled, language } = audioTracks[i];
+    if (enabled) {
+      return language || undefined;
     }
   }
 
