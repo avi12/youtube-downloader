@@ -1,99 +1,19 @@
 import { cancelBackgroundDownload, dropPendingRetry, startBackgroundDownload } from "../download/background-downloader";
+import {
+  downloadViaWatchPage,
+  executeIframeDownload,
+  initIframeReadyListener,
+  prepareIframe
+} from "../download/iframe-downloader";
 import { enqueueToPopupList, removeFromPopupList } from "../queue/popup-list";
 import { awaitBytesTransferred, awaitVideoComplete, signalVideoComplete } from "../queue/sequential-queue";
 import { cancelDownloads, getTabIdsForVideo, trackVideoForTab } from "../queue/tab-tracker";
 import { markVideosCancelled } from "./pipeline-handlers";
-import { ensureProcessor } from "./processor";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
 import { uint8ToBase64 } from "@/lib/utils/binary";
 import { ProgressType } from "@/types";
 import type { DownloadRequest } from "@/types";
-
-const IFRAME_READY_TIMEOUT_MS = 30_000;
-
-// Per-videoId resolve callbacks waiting for the offscreen iframe to finish booting.
-// @webext-core/messaging allows only one listener per type per context, so this
-// registers once and dispatches to the right resolver.
-const pendingIframeReady = new Map<string, () => void>();
-
-function initIframeReadyListener() {
-  onMessage(MessageType.DownloadIframeReady, ({ data }) => {
-    pendingIframeReady.get(data.videoId)?.();
-    pendingIframeReady.delete(data.videoId);
-  });
-}
-
-async function prepareIframe(data: DownloadRequest) {
-  await ensureProcessor();
-
-  const watchParams = new URLSearchParams({
-    v: data.videoId,
-    ytdl: "1",
-    mute: "1"
-  });
-  const watchUrl = `https://www.youtube.com/watch?${watchParams.toString()}`;
-
-  sendToOffscreen(OffscreenMessageType.CreateDownloadIframe, {
-    videoId: data.videoId,
-    watchUrl
-  });
-
-  await new Promise<void>(resolve => {
-    const timeoutId = setTimeout(() => {
-      pendingIframeReady.delete(data.videoId);
-      resolve();
-    }, IFRAME_READY_TIMEOUT_MS);
-
-    pendingIframeReady.set(data.videoId, () => {
-      clearTimeout(timeoutId);
-      resolve();
-    });
-  });
-}
-
-async function executeIframeDownload({ data, tabId }: {
-  data: DownloadRequest;
-  tabId: number;
-}) {
-  // Broadcast: the offscreen iframe filters by ?ytdl=1 + matching videoId in its content script.
-  await sendMessage(MessageType.ExecuteDownloadItem, data);
-  trackVideoForTab({
-    videoId: data.videoId,
-    tabId
-  });
-  await sendMessage(MessageType.StartKeepalive, { videoId: data.videoId }, tabId);
-}
-
-async function downloadViaWatchPage({ data, tabId }: {
-  data: DownloadRequest;
-  tabId: number;
-}) {
-  await enqueueToPopupList({
-    videoId: data.videoId,
-    type: data.type,
-    filenameOutput: data.filenameOutput
-  });
-
-  try {
-    await prepareIframe(data);
-    await executeIframeDownload({
-      data,
-      tabId
-    });
-  } catch (error) {
-    console.error("[ytdl:bg] DownloadViaWatchPage failed:", data.videoId, error);
-    pendingIframeReady.delete(data.videoId);
-    void removeFromPopupList(data.videoId);
-    sendToOffscreen(OffscreenMessageType.RemoveDownloadIframe, { videoId: data.videoId });
-    void sendMessage(MessageType.UpdateDownloadProgress, {
-      videoId: data.videoId,
-      progress: 0,
-      progressType: ProgressType.Video,
-      isRemoved: true
-    }, tabId);
-  }
-}
 
 async function dispatchSequentially({ items, tabId, signal }: {
   items: DownloadRequest[];
@@ -109,8 +29,6 @@ async function dispatchSequentially({ items, tabId, signal }: {
       data: item,
       tabId
     });
-    await awaitVideoComplete(item.videoId);
-    sendToOffscreen(OffscreenMessageType.RemoveDownloadIframe, { videoId: item.videoId });
   }
 }
 
