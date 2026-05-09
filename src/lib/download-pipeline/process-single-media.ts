@@ -1,5 +1,4 @@
-import { toUint8Array, triggerDownload } from ".";
-import { reportProgress } from ".";
+import { toUint8Array, triggerDownload, reportProgress, FFMPEG_PROGRESS_CAP } from ".";
 import { enqueueMuxJob, getFFmpeg, progressHandlers } from "./ffmpeg-instance";
 import { embedMusicMetadata } from "./music-metadata";
 import { addToPlaylistBundle } from "./playlist-bundle";
@@ -22,7 +21,7 @@ export async function processSingleMedia(item: ProcessStreamData, isCancelled: (
 
   await reportProgress({
     videoId,
-    progress: 0.99,
+    progress: FFMPEG_PROGRESS_CAP,
     progressType: type === DownloadType.Audio ? ProgressType.Audio : ProgressType.Video,
     tabId
   });
@@ -32,13 +31,12 @@ export async function processSingleMedia(item: ProcessStreamData, isCancelled: (
   const outputExtension = getFileExtension(filenameOutput);
   const isFlacTarget = isAudio && outputExtension === "flac";
 
-  const ffmpegProgressCap = 0.99;
   function handleFfmpegProgress({ progress }: {
     progress: number;
   }) {
     void reportProgress({
       videoId,
-      progress: Math.min(progress, ffmpegProgressCap),
+      progress: Math.min(progress, FFMPEG_PROGRESS_CAP),
       progressType: ProgressType.FFmpeg,
       tabId
     });

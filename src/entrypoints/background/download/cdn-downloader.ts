@@ -2,6 +2,7 @@ import type { DownloadResult } from "./background-downloader";
 import { fetchWithProgress } from "./progress-fetch";
 import { sendProgressUpdate } from "./progress-fetch";
 import { parseContentLength } from "./sabr-downloader";
+import { stripMimeParams } from "@/lib/utils/containers";
 import { DownloadType, ProgressType } from "@/types";
 import type { DownloadRequest } from "@/types";
 
@@ -89,7 +90,7 @@ export async function downloadViaCdn({ request, signal, videoId, tabId }: {
   for (const [i, format] of (additionalAudioFormats ?? []).entries()) {
     additionalAudioTracks.push({
       data: extraAudioBytes[i] ?? null,
-      mimeType: format.mimeType.split(";")[0] ?? "audio/mp4",
+      mimeType: stripMimeParams(format.mimeType),
       label: format.audioTrack?.displayName ?? `Track ${i + 2}`
     });
   }

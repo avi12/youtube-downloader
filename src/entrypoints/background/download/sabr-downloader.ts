@@ -1,6 +1,7 @@
 import type { DownloadResult } from "./background-downloader";
 import { createProgressFetch } from "./progress-fetch";
 import { sendProgressUpdate } from "./progress-fetch";
+import { stripMimeParams } from "@/lib/utils/containers";
 import { fetchAudioViaSabrStream, fetchVideoViaSabrStream } from "@/lib/youtube/sabr/download";
 import { DownloadType, ProgressType } from "@/types";
 import type { AdaptiveFormatItem, DownloadRequest, SabrConfig } from "@/types";
@@ -155,7 +156,7 @@ async function downloadExtraAudioTracksViaSabr({ config, formats, poToken, signa
       });
       tracks.push({
         data,
-        mimeType: format.mimeType.split(";")[0] ?? "audio/mp4",
+        mimeType: stripMimeParams(format.mimeType),
         label: format.audioTrack?.displayName ?? ""
       });
     } catch (trackError) {
