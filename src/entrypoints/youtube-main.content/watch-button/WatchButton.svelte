@@ -34,6 +34,7 @@
   let isPanelOpen = $state(false);
   let isPanelBelow = $state(true);
   let downloadProgress = $state(0);
+  let downloadProgressType = $state<ProgressType | "">("");
   let defaultVideoItag = $state(initial.videoItag);
   let defaultAudioItag = $state(initial.audioItag);
   let defaultFilename = $state(initial.filename);
@@ -55,6 +56,7 @@
     isPanelOpen,
     isPanelBelow,
     downloadProgress: effectiveProgress,
+    progressType: downloadProgressType,
     filename: defaultFilename,
     quality: defaultQuality,
     isDownloadable: videoData.isDownloadable
@@ -83,7 +85,8 @@
     return "";
   });
 
-  const isIndeterminate = $derived(isDownloading && downloadProgress === 0);
+  const isFFmpegPhase = $derived(downloadProgressType === ProgressType.FFmpeg);
+  const isIndeterminate = $derived(isDownloading && (downloadProgress === 0 || isFFmpegPhase));
 
   function applySegmentedClasses() {
     elDownloadButton?.querySelector<HTMLButtonElement>("button")?.classList.add("ytSpecButtonShapeNextSegmentedStart");
@@ -218,6 +221,7 @@
       if (data.isRemoved) {
         isDownloading = false;
         downloadProgress = 0;
+        downloadProgressType = "";
 
         if (data.isFailed) {
           isError = true;
@@ -231,11 +235,13 @@
         progress: data.progress,
         progressType: data.progressType
       }) / 100;
+      downloadProgressType = data.progressType;
 
       if (data.progress >= 1 && data.progressType === ProgressType.FFmpeg) {
         isDone = true;
         isDownloading = false;
         downloadProgress = 0;
+        downloadProgressType = "";
       } else {
         isDownloading = true;
       }
@@ -288,6 +294,7 @@
       isError = false;
       isDownloading = true;
       downloadProgress = 0;
+      downloadProgressType = "";
       void performDownload({
         type: defaultDownloadType,
         videoId: videoData.videoId,

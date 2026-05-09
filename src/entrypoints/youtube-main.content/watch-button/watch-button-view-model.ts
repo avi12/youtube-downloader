@@ -4,7 +4,8 @@ import {
   ButtonStyle,
   ButtonType,
   type ButtonViewModelData,
-  IconName
+  IconName,
+  ProgressType
 } from "@/types";
 
 const percentFormatter = new Intl.NumberFormat(document.documentElement.lang, {
@@ -20,6 +21,7 @@ export interface ButtonViewState {
   isPanelOpen: boolean;
   isPanelBelow: boolean;
   downloadProgress: number;
+  progressType: ProgressType | "";
   filename: string;
   quality: string;
   isDownloadable: boolean;
@@ -28,16 +30,15 @@ export interface ButtonViewState {
 export function buildDownloadData(state: ButtonViewState) {
   const {
     isDone, isDownloading, isError, isInterrupted, isDownloadable,
-    downloadProgress, filename, quality
+    downloadProgress, progressType, filename, quality
   } = state;
+
+  const isProcessing = isDownloading && progressType === ProgressType.FFmpeg;
 
   let iconName: IconName = IconName.Download;
   if (isDone) {
     iconName = IconName.CheckCircleThick;
   } else if (isDownloading) {
-    // Close (X) is the closest native Polymer match to the design's square stop
-    // glyph. The progress ring is overlaid in the icon slot; percentage label
-    // stays in the text slot to the right.
     iconName = IconName.Close;
   } else if (isError) {
     iconName = IconName.Info;
@@ -51,6 +52,9 @@ export function buildDownloadData(state: ButtonViewState) {
   } else if (isDone) {
     title = "Download again";
     accessibilityText = "Download again";
+  } else if (isProcessing) {
+    title = "Processing";
+    accessibilityText = "Processing - click to cancel";
   } else if (isDownloading) {
     title = `Stop ${percentFormatter.format(downloadProgress)}`;
     accessibilityText = `Stop download - ${percentFormatter.format(downloadProgress)} downloaded`;
@@ -75,6 +79,8 @@ export function buildDownloadData(state: ButtonViewState) {
       tooltip = downloadProgress > 0
         ? `${base} - stop, paused at ${percentFormatter.format(downloadProgress)}`
         : `${base} - stop`;
+    } else if (isProcessing) {
+      tooltip = `${base} - processing, click to cancel`;
     } else if (isDownloading && downloadProgress === 0) {
       tooltip = `${base} - stop, preparing`;
     } else if (isDownloading) {
