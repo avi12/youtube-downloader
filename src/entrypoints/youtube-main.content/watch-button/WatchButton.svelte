@@ -230,6 +230,8 @@
         return;
       }
 
+      isError = false;
+      isInterrupted = false;
       downloadProgress = calculateWeightedProgress({
         isDownloading: true,
         progress: data.progress,
