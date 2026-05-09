@@ -188,21 +188,6 @@ export default defineBackground(async () => {
 
   void ensureProcessor();
 
-  browser.runtime.onMessage.addListener((message: {
-    type?: string;
-    dataUrl?: string;
-    filename?: string;
-  }) => {
-    if (message.type !== OffscreenMessageType.PipelineDownload || !message.dataUrl || !message.filename) {
-      return;
-    }
-
-    void browser.downloads.download({
-      url: message.dataUrl,
-      filename: message.filename
-    });
-  });
-
   registerChunkHandlers();
   registerDownloadHandlers();
   registerPipelineHandlers();

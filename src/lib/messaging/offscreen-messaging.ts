@@ -6,7 +6,6 @@ const OffscreenMessageType = {
   ProcessStreamChunk: "processStreamChunk",
   ProcessStreamEnd: "processStreamEnd",
   CancelProcessing: "cancelProcessing",
-  PipelineDownload: "pipelineDownload",
   TranscodeRecentDownload: "transcodeRecentDownload",
   CreateDownloadIframe: "createDownloadIframe",
   RemoveDownloadIframe: "removeDownloadIframe"
@@ -44,10 +43,6 @@ interface OffscreenProtocolMap {
   [OffscreenMessageType.CancelProcessing]: {
     videoIds: string[];
   };
-  [OffscreenMessageType.PipelineDownload]: {
-    dataUrl: string;
-    filename: string;
-  };
   [OffscreenMessageType.TranscodeRecentDownload]: {
     entryId: string;
     targetContainer: string;
@@ -84,9 +79,6 @@ function dispatchOffscreenMessage({ handlers, message }: {
       break;
     case OffscreenMessageType.CancelProcessing:
       handlers[OffscreenMessageType.CancelProcessing]?.(message.data);
-      break;
-    case OffscreenMessageType.PipelineDownload:
-      handlers[OffscreenMessageType.PipelineDownload]?.(message.data);
       break;
     case OffscreenMessageType.TranscodeRecentDownload:
       handlers[OffscreenMessageType.TranscodeRecentDownload]?.(message.data);
