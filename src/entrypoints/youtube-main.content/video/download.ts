@@ -1,9 +1,10 @@
 import { capturedPoToken, capturedSabrUrl, setPoTokenCredentials } from "./credentials";
 import { resolveFormatUrl } from "./stream-fetch";
 import { buildVideoMetadata, generatePoTokenIfNeeded, videoDataCache } from "./video-data";
+import { CrossWorldEvent, emitCrossWorldEvent } from "@/lib/messaging/cross-world-events";
 import { crossWorldMessenger, CrossWorldMessage } from "@/lib/messaging/cross-world-messenger";
 import { sabrCredentials } from "@/lib/ui/synced-stores.svelte";
-import { type AdaptiveFormatItem, type DownloadRequest, DownloadType } from "@/types";
+import { type AdaptiveFormatItem, type DownloadRequest, DownloadType, ProgressType } from "@/types";
 
 const activeDownloads = new Map<string, AbortController>();
 
@@ -136,6 +137,16 @@ export async function performDownload({
   const abortController = new AbortController();
   activeDownloads.set(videoId, abortController);
 
+  emitCrossWorldEvent({
+    type: CrossWorldEvent.ProgressUpdate,
+    data: {
+      videoId,
+      progress: 0,
+      progressType: ProgressType.Video,
+      isRemoved: false
+    }
+  });
+
   try {
     const cachedVideoData = videoDataCache.get(videoId);
     if (!cachedVideoData) {
@@ -186,7 +197,9 @@ export async function performDownload({
       playlistId,
       playlistTitle,
       playlistTotalCount
-    };
+    };    if (abortController.signal.aborted) {
+      return;
+    }
 
     void crossWorldMessenger.sendMessage(CrossWorldMessage.StartBackgroundDownload, enrichedRequest);
   } catch (error) {

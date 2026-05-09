@@ -23,12 +23,20 @@ function adaptiveFormatToSabrFormat(format: AdaptiveFormatItem) {
   });
 }
 
-function collectReadableStream({ stream, expectedBytes }: {
+function collectReadableStream({ stream, expectedBytes, signal }: {
   stream: ReadableStream<Uint8Array>;
   expectedBytes: number;
+  signal?: AbortSignal;
 }) {
+  const reader = stream.getReader();
+  if (signal?.aborted) {
+    void reader.cancel();
+  } else {
+    signal?.addEventListener("abort", () => void reader.cancel(), { once: true });
+  }
+
   return readStreamToBuffer({
-    reader: stream.getReader(),
+    reader,
     expectedBytes
   });
 }
@@ -55,11 +63,12 @@ function createSabrStream({ sabrConfig, fetchFn, poToken }: {
   });
 }
 
-export async function fetchVideoViaSabrStream({ sabrConfig, videoFormat, fetchFn, poToken }: {
+export async function fetchVideoViaSabrStream({ sabrConfig, videoFormat, fetchFn, poToken, signal }: {
   sabrConfig: SabrConfig;
   videoFormat: AdaptiveFormatItem;
   fetchFn: typeof globalThis.fetch;
   poToken: string;
+  signal?: AbortSignal;
 }) {
   const sabrStream = createSabrStream({
     sabrConfig,
@@ -73,15 +82,17 @@ export async function fetchVideoViaSabrStream({ sabrConfig, videoFormat, fetchFn
   });
   return collectReadableStream({
     stream: videoStream,
-    expectedBytes: parseInt(videoFormat.contentLength, 10)
+    expectedBytes: parseInt(videoFormat.contentLength, 10),
+    signal
   });
 }
 
-export async function fetchAudioViaSabrStream({ sabrConfig, audioFormat, fetchFn, poToken }: {
+export async function fetchAudioViaSabrStream({ sabrConfig, audioFormat, fetchFn, poToken, signal }: {
   sabrConfig: SabrConfig;
   audioFormat: AdaptiveFormatItem;
   fetchFn: typeof globalThis.fetch;
   poToken: string;
+  signal?: AbortSignal;
 }) {
   const sabrStream = createSabrStream({
     sabrConfig,
@@ -95,6 +106,7 @@ export async function fetchAudioViaSabrStream({ sabrConfig, audioFormat, fetchFn
   });
   return collectReadableStream({
     stream: audioStream,
-    expectedBytes: parseInt(audioFormat.contentLength, 10)
+    expectedBytes: parseInt(audioFormat.contentLength, 10),
+    signal
   });
 }

@@ -12,7 +12,7 @@ function sourceAudioExtension(audioMimeType: string) {
   return audioMimeType.includes("webm") ? "weba" : "m4a";
 }
 
-export async function processSingleMedia(item: ProcessStreamData) {
+export async function processSingleMedia(item: ProcessStreamData, isCancelled: () => boolean) {
   const { videoId, type, filenameOutput, videoData, audioData, tabId } = item;
   const rawData = type === DownloadType.Audio ? audioData : videoData;
   let data = toUint8Array(rawData);
@@ -55,21 +55,24 @@ export async function processSingleMedia(item: ProcessStreamData) {
 
     progressHandlers.add(handleFfmpegProgress);
     try {
-      await enqueueMuxJob({ videoId, job: async () => {
-        const ffmpeg = getFFmpeg();
-        const audioData = data;
-        if (!audioData) {
-          return;
-        }
+      await enqueueMuxJob({
+        videoId,
+        async job() {
+          const ffmpeg = getFFmpeg();
+          const audioData = data;
+          if (!audioData) {
+            return;
+          }
 
-        data = await embedMusicMetadata({
-          audioData,
-          filenameOutput,
-          sourceExtension,
-          metadata,
-          ffmpeg
-        });
-      } });
+          data = await embedMusicMetadata({
+            audioData,
+            filenameOutput,
+            sourceExtension,
+            metadata,
+            ffmpeg
+          });
+        }
+      });
     } finally {
       progressHandlers.delete(handleFfmpegProgress);
     }
@@ -84,23 +87,30 @@ export async function processSingleMedia(item: ProcessStreamData) {
 
     progressHandlers.add(handleFfmpegProgress);
     try {
-      await enqueueMuxJob({ videoId, job: async () => {
-        const ffmpeg = getFFmpeg();
-        const audioData = data;
-        if (!audioData) {
-          return;
-        }
+      await enqueueMuxJob({
+        videoId,
+        async job() {
+          const ffmpeg = getFFmpeg();
+          const audioData = data;
+          if (!audioData) {
+            return;
+          }
 
-        data = await transcodeAudio({
-          audioData,
-          sourceExtension,
-          filenameOutput,
-          ffmpeg
-        });
-      } });
+          data = await transcodeAudio({
+            audioData,
+            sourceExtension,
+            filenameOutput,
+            ffmpeg
+          });
+        }
+      });
     } finally {
       progressHandlers.delete(handleFfmpegProgress);
     }
+  }
+
+  if (isCancelled()) {
+    return;
   }
 
   if (item.playlistId) {

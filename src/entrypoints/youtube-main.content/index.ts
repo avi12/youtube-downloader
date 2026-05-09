@@ -4,11 +4,12 @@ import { registerGridVideoDataHandler } from "./grid/grid-video-data";
 import { cancelActiveDownload, performDownload } from "./video/download";
 import { extractPlaylistMetadata, handleNavigateSuccess } from "./video/playlist-metadata";
 import { extractAndDispatchVideoData } from "./video/video-data";
+import { CrossWorldEvent, emitCrossWorldEvent } from "@/lib/messaging/cross-world-events";
 import { CrossWorldMessage, crossWorldMessenger, dispatchButtonClick } from "@/lib/messaging/cross-world-messenger";
 import { DATA_BUTTON_ID_ATTR } from "@/lib/ui/polymer-utils";
 import { CHILD_LIST_SUBTREE } from "@/lib/utils/dom";
 import { getMoviePlayer } from "@/lib/youtube/movie-player";
-import { type PlayerResponse } from "@/types";
+import { ProgressType, type PlayerResponse } from "@/types";
 
 declare global {
   interface Window {
@@ -82,6 +83,15 @@ export default defineContentScript({
     crossWorldMessenger.onMessage(CrossWorldMessage.CancelDownload, ({ data }) => {
       for (const videoId of data.videoIds) {
         cancelActiveDownload(videoId);
+        emitCrossWorldEvent({
+          type: CrossWorldEvent.ProgressUpdate,
+          data: {
+            videoId,
+            progress: 0,
+            progressType: ProgressType.Video,
+            isRemoved: true
+          }
+        });
       }
     });
 
@@ -102,6 +112,14 @@ export default defineContentScript({
       }
 
       elButton.data = buttonData;
+
+      // Polymer just stripped the attribute as part of its render. Restore it
+      // so subsequent SetButtonData lookups (e.g. when the primary button
+      // morphs from Download → Cancel) can still find this element by selector.
+      const cachedId = buttonIdByElement.get(elButton);
+      if (cachedId && elButton.getAttribute(DATA_BUTTON_ID_ATTR) !== cachedId) {
+        elButton.setAttribute(DATA_BUTTON_ID_ATTR, cachedId);
+      }
 
       if (elButton.hasAttribute("data-ytdl-click-bound")) {
         return;

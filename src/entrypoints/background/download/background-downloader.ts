@@ -282,6 +282,10 @@ export async function startBackgroundDownload({ request, tabId }: {
       }, tabId);
       return null;
     });
+    if (signal.aborted) {
+      return;
+    }
+
     if (!result?.audioData) {
       result = await downloadViaCdn({
         request,
@@ -289,6 +293,10 @@ export async function startBackgroundDownload({ request, tabId }: {
         videoId,
         tabId
       });
+    }
+
+    if (signal.aborted) {
+      return;
     }
 
     if (!result?.audioData && !result?.videoData) {

@@ -81,7 +81,7 @@ export async function enqueueMuxJob({ videoId, job }: {
           await job();
           resolve();
         } catch (error) {
-          reject(error as Error);
+          reject(error);
         }
       }
     });

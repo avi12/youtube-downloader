@@ -15,6 +15,7 @@ import { CrossWorldEvent, emitCrossWorldEvent } from "@/lib/messaging/cross-worl
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
 import { optionsItem, statusProgressItem } from "@/lib/storage/storage";
+import { initCompletedDownloadsStore } from "@/lib/ui/completed-downloads-store.svelte";
 import { downloadProgressStore, initContentOptions } from "@/lib/ui/synced-stores.svelte";
 import { forwardSabrCredentialsWithRetry, listenForSabrBodyReady } from "@/lib/youtube/sabr/credentials";
 import { initialOptions as defaultOptions } from "@/lib/youtube/video-helpers";
@@ -69,6 +70,12 @@ function registerCrossWorldHandlers(
   });
 
   crossWorldMessenger.onMessage(CrossWorldMessage.StartBackgroundDownload, ({ data }) => {
+    downloadProgressStore.setLocal(data.videoId, {
+      isDownloading: true,
+      isDone: false,
+      progress: 0,
+      progressType: ""
+    });
     void sendMessage(MessageType.StartBackgroundDownload, data);
   });
 
@@ -124,17 +131,19 @@ function registerBackgroundMessageHandlers() {
     void crossWorldMessenger.sendMessage(CrossWorldMessage.DownloadRequest, data);
   });
 
-  const lastReportedProgress = new Map<string, number>();
+  const lastReportedProgress = new Map<string, string>();
 
   onMessage(MessageType.UpdateDownloadProgress, ({ data }) => {
     if (!data.isRemoved) {
-      const last = lastReportedProgress.get(data.videoId);
-      const isDuplicateCompletion = last !== undefined && last >= 1 && data.progress >= 1;
-      if (isDuplicateCompletion) {
+      // Dedupe by progress AND progressType so the FFmpeg phase's final
+      // progress=1 event isn't dropped just because the video phase already
+      // reached progress=1 (different phases share the same progress scale).
+      const reportedKey = `${data.progress}|${data.progressType}`;
+      if (lastReportedProgress.get(data.videoId) === reportedKey) {
         return;
       }
 
-      lastReportedProgress.set(data.videoId, data.progress);
+      lastReportedProgress.set(data.videoId, reportedKey);
     } else {
       lastReportedProgress.delete(data.videoId);
     }
@@ -209,6 +218,7 @@ export default defineContentScript({
     if (!isDownloadIframe) {
       listenForInterruptedDownloadEvents();
       listenForKeepalive();
+      initCompletedDownloadsStore();
       mountWatchToast(context);
       await restoreStoredProgress();
 

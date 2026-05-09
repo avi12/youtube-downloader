@@ -264,12 +264,13 @@ export function registerDownloadHandlers() {
       isRemoved: true
     } as const;
 
+    sendToOffscreen(OffscreenMessageType.CancelProcessing, { videoIds: data.videoIds });
+
     for (const videoId of data.videoIds) {
       cancelBackgroundDownload(videoId);
       dropPendingRetry(videoId);
       signalVideoComplete(videoId);
       const trackedTabIds = getTabIdsForVideo(videoId);
-      sendToOffscreen(OffscreenMessageType.RemoveDownloadIframe, { videoId });
       for (const tabId of trackedTabIds) {
         void sendMessage(MessageType.UpdateDownloadProgress, {
           videoId,

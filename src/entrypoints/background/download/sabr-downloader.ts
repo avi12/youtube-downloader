@@ -58,7 +58,8 @@ async function downloadAudioOnlyViaSabr({ config, audioFormat, poToken, signal, 
     sabrConfig: config,
     audioFormat,
     fetchFn: sabrFetch,
-    poToken
+    poToken,
+    signal
   });
 }
 
@@ -115,13 +116,15 @@ async function downloadVideoAudioViaSabr({
       sabrConfig: config,
       videoFormat,
       fetchFn: videoFetch,
-      poToken
+      poToken,
+      signal
     }),
     fetchAudioViaSabrStream({
       sabrConfig: config,
       audioFormat,
       fetchFn: audioFetch,
-      poToken
+      poToken,
+      signal
     })
   ]);
 }
@@ -147,7 +150,8 @@ async function downloadExtraAudioTracksViaSabr({ config, formats, poToken, signa
         sabrConfig: config,
         audioFormat: format,
         fetchFn: sabrFetch,
-        poToken
+        poToken,
+        signal
       });
       tracks.push({
         data,

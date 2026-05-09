@@ -282,7 +282,7 @@ export interface TpYtPaperProgressElement extends HTMLElement {
 
 export interface TpYtIronDropdownElement extends HTMLElement {
   positionTarget: Element | null;
-  horizontalAlign: "left" | "right";
+  horizontalAlign: "left" | "right" | "center";
   verticalAlign: "top" | "bottom";
   noOverlap: boolean;
   dynamicAlign: boolean;

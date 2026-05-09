@@ -25,7 +25,7 @@ function determineOutputExtension({
   });
 }
 
-export async function processVideoAudio(item: ProcessStreamData) {
+export async function processVideoAudio(item: ProcessStreamData, isCancelled: () => boolean) {
   const {
     videoId, filenameOutput, videoMimeType, audioMimeType, tabId, additionalAudioStreams
   } = item;
@@ -153,6 +153,10 @@ export async function processVideoAudio(item: ProcessStreamData) {
     const exitCode = ffmpeg.exec(...ffmpegArgs);
     if (exitCode !== 0) {
       throw new Error(`FFmpeg exited with code ${exitCode}`);
+    }
+
+    if (isCancelled()) {
+      return;
     }
 
     const ffmpegOutput = ffmpeg.FS.readFile(outputFilename, { encoding: "binary" });

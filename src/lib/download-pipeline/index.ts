@@ -145,17 +145,21 @@ async function processItem(item: ProcessStreamData) {
     tabId: item.tabId
   });
 
+  function isCancelled() {
+    return !activeJobs.has(item.videoId);
+  }
+
   try {
     if (item.type === DownloadType.VideoAndAudio) {
       await enqueueMuxJob({
         videoId: item.videoId,
-        job: () => processVideoAudio(item)
+        job: () => processVideoAudio(item, isCancelled)
       });
     } else {
-      await processSingleMedia(item);
+      await processSingleMedia(item, isCancelled);
     }
   } catch (error) {
-    if ((error as Error)?.message === "muxJobCancelled") {
+    if ((error instanceof Error) && error.message === "muxJobCancelled") {
       return;
     }
 
