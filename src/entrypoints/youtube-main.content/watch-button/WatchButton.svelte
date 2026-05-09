@@ -85,8 +85,7 @@
     return "";
   });
 
-  const isFFmpegPhase = $derived(downloadProgressType === ProgressType.FFmpeg);
-  const isIndeterminate = $derived(isDownloading && (downloadProgress === 0 || isFFmpegPhase));
+  const isIndeterminate = $derived(isDownloading && downloadProgress === 0);
 
   function applySegmentedClasses() {
     elDownloadButton?.querySelector<HTMLButtonElement>("button")?.classList.add("ytSpecButtonShapeNextSegmentedStart");

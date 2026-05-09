@@ -80,6 +80,12 @@ async function downloadVideoAudioViaSabr({
   let videoReceivedBytes = 0;
   let audioReceivedBytes = 0;
 
+  // Never report progress = 1 from inside the stream callbacks — the Promise.all
+  // may still be pending (e.g. audio has no contentLength so its bytes aren't counted
+  // in totalExpectedBytes). The FFmpeg dispatch sends the real "100% of download phase"
+  // signal once both streams have resolved.
+  const DOWNLOAD_PROGRESS_CAP = 0.99;
+
   function reportProgress() {
     if (totalExpectedBytes === 0) {
       return;
@@ -89,7 +95,7 @@ async function downloadVideoAudioViaSabr({
 
     void sendProgressUpdate({
       videoId,
-      progress: Math.min(totalReceived / totalExpectedBytes, 1),
+      progress: Math.min(totalReceived / totalExpectedBytes, DOWNLOAD_PROGRESS_CAP),
       progressType: ProgressType.Video,
       tabId
     });

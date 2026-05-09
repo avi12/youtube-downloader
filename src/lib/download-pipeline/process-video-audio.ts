@@ -57,6 +57,10 @@ export async function processVideoAudio(item: ProcessStreamData, isCancelled: ()
   let progressScale = useIntermediateMkv ? 0.5 : 1;
 
   function handleFFmpegProgress({ progress }: { progress: number }) {
+    if (progress < 0) {
+      return;
+    }
+
     const scaled = progressOffset + progress * progressScale;
     const cappedProgress = Math.min(scaled, FFMPEG_PROGRESS_CAP);
     void reportProgress({
