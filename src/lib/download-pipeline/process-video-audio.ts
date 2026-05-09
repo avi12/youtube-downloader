@@ -5,6 +5,16 @@ import { getCompatibleFilename } from "@/lib/utils/containers";
 import { ProgressType } from "@/types";
 import type { ProcessStreamData } from "@/types";
 
+// H.264+Opus → MP4 requires Opus→AAC transcode (FFmpeg's built-in aac encoder).
+// Every other container/codec pairing is handled by stream copy.
+function resolveAudioCodec(audioMimeType: string, targetExtension: string) {
+  if (targetExtension === "mp4" && audioMimeType.includes("webm")) {
+    return "aac";
+  }
+
+  return "copy";
+}
+
 export async function processVideoAudio(item: ProcessStreamData, isCancelled: () => boolean) {
   const {
     videoId, filenameOutput, videoMimeType, audioMimeType, tabId, additionalAudioStreams
@@ -137,7 +147,8 @@ export async function processVideoAudio(item: ProcessStreamData, isCancelled: ()
     if (needsTranscode) {
       progressOffset = 0.5;
       progressScale = 0.5;
-      const transcodeExitCode = ffmpeg.exec("-i", muxFilename, "-c:v", "copy", "-c:a", "copy", outputFilename);
+      const audioCodec = resolveAudioCodec(audioMimeType, targetExtension);
+      const transcodeExitCode = ffmpeg.exec("-i", muxFilename, "-c:v", "copy", "-c:a", audioCodec, outputFilename);
       if (transcodeExitCode !== 0) {
         throw new Error(`FFmpeg exited with code ${transcodeExitCode}`);
       }

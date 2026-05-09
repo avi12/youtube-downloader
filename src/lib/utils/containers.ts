@@ -96,12 +96,16 @@ export function getOutputExtension({ videoMimeType, audioMimeType, userExtension
   audioMimeType: string;
   userExtension: string;
 }) {
-  if (videoMimeType.includes("webm")) {
-    return audioMimeType.includes("webm") ? "webm" : "mkv";
+  const videoIsWebm = videoMimeType.includes("webm");
+  const audioIsWebm = audioMimeType.includes("webm");
+  if (userExtension === "webm") {
+    // WebM requires both codecs to be webm-native (VP9/AV1 + Opus)
+    return videoIsWebm && audioIsWebm ? "webm" : "mkv";
   }
 
-  if (!audioMimeType.includes("webm")) {
-    return userExtension;
+  if (userExtension === "mp4") {
+    // YouTube's webm video streams (VP9/AV1) cannot be remuxed into MP4
+    return videoIsWebm ? "mkv" : "mp4";
   }
 
   return "mkv";
