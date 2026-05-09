@@ -1,9 +1,53 @@
-.dropdown-content {
-  scrollbar-width: none;
+/* Themed values plumbed through Polymer's own CSS custom properties so we
+   theme without overriding any of paper-menu-button / iron-dropdown's rules.
+   --paper-menu-button-dropdown-background controls the wrapper's bg via
+   Polymer's mixin pipeline. */
+.ytdl-select-wrapper {
+  --paper-menu-button-dropdown-background: rgb(255 255 255);
+  --ytdl-menu-text: rgb(15 15 15);
+  --ytdl-menu-hover: rgb(0 0 0 / 6%);
 }
 
-tp-yt-paper-item:focus {
-  background-color: color-mix(in sRGB, var(--yt-spec-text-primary, currentColor) 10%, transparent);
+[dark] .ytdl-select-wrapper {
+  --paper-menu-button-dropdown-background: rgb(39 39 39);
+  --ytdl-menu-text: rgb(241 241 241);
+  --ytdl-menu-hover: rgb(255 255 255 / 8%);
+}
+
+.ytdl-select-menu {
+  padding: 4px;
+  background: transparent;
+}
+
+/* When iron-fit clamps height and the vertical scrollbar consumes a sliver of
+   width, the wrapper picks up a phantom horizontal scrollbar too. Polymer's
+   `#contentWrapper.tp-yt-iron-dropdown > * { overflow: auto }` rule has
+   ID-level specificity, so include #contentWrapper in our selector to win. */
+.ytdl-select-wrapper [id="contentWrapper"] > .dropdown-content {
+  overflow-x: hidden;
+}
+
+.ytdl-select-menu tp-yt-paper-item {
+  display: flex;
+  align-items: center;
+  min-height: 0;
+  padding: 8px 10px;
+  border-radius: 6px;
+  color: var(--ytdl-menu-text);
+  font-size: 1.4rem;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.ytdl-select-menu tp-yt-paper-item:hover {
+  background-color: var(--ytdl-menu-hover);
+}
+
+.ytdl-select-menu [aria-selected="true"] {
+  font-weight: 500;
+}
+
+.ytdl-select-menu tp-yt-paper-item:focus {
   outline: 2px solid var(--yt-spec-call-to-action, rgb(6 95 212));
   outline-offset: -2px;
 }
