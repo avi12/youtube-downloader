@@ -137,14 +137,96 @@ export function attachDownloadButton({ elButton, getIsDownloadable, getIsFilenam
   });
 }
 
+export type PrimaryButtonState = "idle" | "downloading" | "interrupted" | "done";
+
+export function attachPrimaryButton({ elButton, getState, getIsDownloadable, getIsFilenameValid }: {
+  elButton: Element;
+  getState: () => PrimaryButtonState;
+  getIsDownloadable: () => boolean;
+  getIsFilenameValid: () => boolean;
+}) {
+  $effect(() => {
+    const state = getState();
+    const isActive = state !== "idle" || (getIsDownloadable() && getIsFilenameValid());
+
+    const data: ButtonViewModelData = (() => {
+      if (state === "downloading") {
+        return {
+          iconName: "",
+          title: "Cancel",
+          accessibilityText: "Cancel",
+          style: ButtonStyle.Mono,
+          type: ButtonType.Outline,
+          buttonSize: ButtonSize.Default,
+          state: ButtonState.Active,
+          isFullWidth: true,
+          isDisabled: false,
+          tooltip: ""
+        };
+      }
+
+      if (state === "interrupted") {
+        return {
+          iconName: IconName.Download,
+          title: "Resume now",
+          accessibilityText: "Resume now",
+          style: ButtonStyle.CallToAction,
+          type: ButtonType.Tonal,
+          buttonSize: ButtonSize.Default,
+          state: ButtonState.Active,
+          isFullWidth: true,
+          isDisabled: false,
+          tooltip: ""
+        };
+      }
+
+      const title = state === "done" ? "Download again" : "Download";
+      return {
+        iconName: IconName.Download,
+        title,
+        accessibilityText: title,
+        style: ButtonStyle.Mono,
+        type: ButtonType.Filled,
+        buttonSize: ButtonSize.Default,
+        state: isActive ? ButtonState.Active : ButtonState.Disabled,
+        isFullWidth: true,
+        isDisabled: !isActive,
+        tooltip: ""
+      };
+    })();
+
+    sendButtonData({
+      elButton,
+      data
+    });
+  });
+}
+
+const PROGRESS_TRACK_DARK = "rgb(255 255 255 / 10%)";
+const ACCENT_DARK = "#3ea6ff";
+const SUCCESS_DARK = "#6cd16c";
+
 export function attachPanelProgress(elProgress: Element) {
   if (!isPolymerProgressElement(elProgress)) {
     return;
   }
 
   elProgress.updateStyles({
-    "--paper-progress-active-color": "var(--yt-spec-call-to-action, rgb(62 166 255))",
-    "--paper-progress-container-color": "transparent"
+    "--paper-progress-active-color": `var(--yt-spec-call-to-action, ${ACCENT_DARK})`,
+    "--paper-progress-container-color": PROGRESS_TRACK_DARK,
+    "--paper-progress-height": "4px"
+  });
+}
+
+export function attachPanelProgressDone(elProgress: Element) {
+  if (!isPolymerProgressElement(elProgress)) {
+    return;
+  }
+
+  elProgress.updateStyles({
+    "--paper-progress-active-color": `var(--yt-spec-text-success, ${SUCCESS_DARK})`,
+    "--paper-progress-container-color": PROGRESS_TRACK_DARK,
+    "--paper-progress-height": "4px"
   });
 }
 

@@ -28,20 +28,35 @@ export function createFocusManager() {
     // Applying the inert trap before open() interferes with Polymer's overlay mechanics.
     const elDropdownRoot = elPanel.closest<HTMLElement>("tp-yt-iron-dropdown") ?? elPanel;
 
-    elDropdownRoot.addEventListener("iron-overlay-opened", () => {
+    elDropdownRoot.addEventListener("iron-overlay-opened", e => {
+      // Inner paper-menu-button overlays bubble iron-overlay-opened up to here.
+      // Only respond when the panel's own dropdown opens, otherwise the saved
+      // removeInert gets overwritten and the first trap never releases - leaving
+      // the rest of the page permanently inert.
+      if (e.target !== elDropdownRoot) {
+        return;
+      }
+
       removeInert = applyInertTrap(elDropdownRoot);
 
-      // Focus the first input after the overlay opens so it's visible and focusable.
-      const elInitialFocus = elPanel.querySelector<HTMLElement>("tp-yt-paper-input:not([disabled])");
-      elInitialFocus?.focus();
-
-      // Polymer's receivedFocusFromKeyboard may not be initialized yet at open time, so set the attribute directly.
-      elInitialFocus?.closest("tp-yt-paper-dropdown-menu")?.setAttribute("keyboard-focused", "");
+      // Focus the first form control so Tab from here moves forward through
+      // the controls, not to the close button which is earlier in DOM order.
+      const elFirstControl = elPanel.querySelector<HTMLElement>(".ytdl-panel-body .ytdl-select-trigger");
+      (elFirstControl ?? elPanel).focus();
 
       // Release the inert trap when Polymer closes the overlay externally
       // (click-outside or Escape) since closePanel() only handles explicit close.
-      elDropdownRoot.addEventListener("iron-overlay-closed", release, { once: true });
+      elDropdownRoot.addEventListener("iron-overlay-closed", handleOverlayClosed);
     });
+
+    function handleOverlayClosed(e: Event) {
+      if (e.target !== elDropdownRoot) {
+        return;
+      }
+
+      elDropdownRoot.removeEventListener("iron-overlay-closed", handleOverlayClosed);
+      release();
+    }
 
     // Polymer's IronFocusedBehavior doesn't always clear the focused attribute
     // from sibling dropdowns when Tab moves between them.

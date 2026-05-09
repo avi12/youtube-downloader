@@ -1,6 +1,8 @@
+import { cancelStreamTransfer } from "@/entrypoints/youtube.content/download/stream-transfer";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { statusProgressItem, videoQueueItem } from "@/lib/storage/storage";
+import { completedDownloadsStore } from "@/lib/ui/completed-downloads-store.svelte";
 import { contentOptions, downloadProgressStore, interruptedDownloadStore } from "@/lib/ui/synced-stores.svelte";
 import { getCompatibleFilename, getOutputExtension, resolveAutoExtension } from "@/lib/utils/containers";
 import {
@@ -9,13 +11,7 @@ import {
   formatVideoQualityLabel,
   waitForVideoElement
 } from "@/lib/youtube/video-helpers";
-import {
-  DownloadType,
-  ProgressType,
-  VideoQualityMode,
-  type AdaptiveFormatItem,
-  type VideoData
-} from "@/types";
+import { DownloadType, VideoQualityMode, type AdaptiveFormatItem, type VideoData } from "@/types";
 import { untrack } from "svelte";
 
 // Prefer M4A (AAC) over WebM/Opus for music because M4A supports MJPEG cover art embedding.
@@ -24,10 +20,16 @@ function getPreferredMusicAudioFormat(audioFormats: AdaptiveFormatItem[]) {
 }
 
 export function createPanelState(getVideoData: () => VideoData) {
-  let isDownloading = $state(false);
-  let isDone = $state(false);
-  let progress = $state(0);
-  let progressType = $state<ProgressType | "">("");
+  // Download/progress state is derived directly from the shared store so the
+  // panel is always in sync with the watch button and background without a
+  // local mirror that can drift.
+  const storeEntry = $derived(downloadProgressStore.get(getVideoData().videoId));
+  const isDownloading = $derived(storeEntry?.isDownloading ?? false);
+  const isDone = $derived(storeEntry?.isDone ?? false);
+  const progress = $derived(storeEntry?.progress ?? 0);
+  const progressType = $derived(storeEntry?.progressType ?? "");
+
+  let downloadId = $state<number | null>(null);
 
   let downloadType = $state<DownloadType>(
     untrack(() => {
@@ -86,7 +88,7 @@ export function createPanelState(getVideoData: () => VideoData) {
 
   const isDownloadable = $derived(getVideoData().isDownloadable);
   const isInterrupted = $derived(!!interruptedDownloadStore.get(getVideoData().videoId));
-  const isFailed = $derived(downloadProgressStore.get(getVideoData().videoId)?.isFailed === true);
+  const isFailed = $derived(storeEntry?.isFailed === true);
   const displayProgress = $derived(
     calculateWeightedProgress({
       isDownloading,
@@ -156,47 +158,24 @@ export function createPanelState(getVideoData: () => VideoData) {
       null;
   });
 
-  function applyDownloadState(state: Parameters<typeof downloadProgressStore.set>[1]) {
-    isDownloading = state.isDownloading;
-    isDone = state.isDone;
-    progress = state.progress;
-    progressType = state.progressType;
-  }
-
   $effect(() => {
     const { videoId } = getVideoData();
+    const existing = completedDownloadsStore.get(videoId);
+    if (existing) {
+      downloadId = existing.downloadId;
+    }
 
-    async function restoreProgress() {
-      const currentProgress = await statusProgressItem.getValue();
-      const existing = currentProgress[videoId];
-      if (!existing) {
+    return completedDownloadsStore.subscribe((completedVideoId, completed) => {
+      if (completedVideoId !== videoId) {
         return;
       }
 
-      const isActiveInStore = downloadProgressStore.get(videoId)?.isDownloading === true;
-      applyDownloadState({
-        progress: existing.progress,
-        progressType: existing.progressType,
-        isDownloading: isActiveInStore,
-        isDone: existing.progress >= 1
-      });
-    }
-
-    void restoreProgress();
+      downloadId = completed.downloadId;
+    });
   });
 
-  $effect(() => {
-    const { videoId } = getVideoData();
-    applyDownloadState(
-      downloadProgressStore.get(videoId) ?? {
-        isDownloading: false,
-        isDone: false,
-        progress: 0,
-        progressType: ""
-      }
-    );
-  });
-
+  // When a queued download (re)starts for this video, reset its progress
+  // display locally so the panel shows 0% rather than stale prior progress.
   $effect(() => {
     const { videoId } = getVideoData();
     return videoQueueItem.watch(queue => {
@@ -205,16 +184,39 @@ export function createPanelState(getVideoData: () => VideoData) {
         return;
       }
 
-      progress = 0;
-      progressType = "";
+      downloadProgressStore.setLocal(videoId, {
+        isDownloading: true,
+        isDone: false,
+        progress: 0,
+        progressType: ""
+      });
     });
   });
 
+  function resetDoneState() {
+    const { videoId } = getVideoData();
+    const entry = storeEntry;
+    if (!entry?.isDone) {
+      return;
+    }
+
+    downloadProgressStore.setLocal(videoId, {
+      ...entry,
+      isDone: false
+    });
+  }
+
   function handleDownloadTypeChange(newType: DownloadType) {
     const options = contentOptions.value;
-    isDownloading = false;
-    isDone = false;
-    progress = 0;
+    const { videoId } = getVideoData();
+    // Clear progress display locally when the user picks a different type
+    // so the panel shows idle rather than carrying over a stale done/in-progress state.
+    downloadProgressStore.setLocal(videoId, {
+      isDownloading: false,
+      isDone: false,
+      progress: 0,
+      progressType: ""
+    });
     downloadType = newType;
     const extPref = newType === DownloadType.Audio ? options.ext.audio : options.ext.video;
     const format = newType === DownloadType.Audio ? selectedAudioFormat : selectedVideoFormat;
@@ -236,14 +238,6 @@ export function createPanelState(getVideoData: () => VideoData) {
 
     const { videoId, sabrConfig } = getVideoData();
 
-    isDownloading = true;
-    isDone = false;
-    progress = 0;
-
-    if (downloadType === DownloadType.VideoAndAudio) {
-      progressType = "";
-    }
-
     downloadProgressStore.unsuppress(videoId);
     downloadProgressStore.set(videoId, {
       isDownloading: true,
@@ -264,10 +258,10 @@ export function createPanelState(getVideoData: () => VideoData) {
 
   async function cancelDownload() {
     const { videoId } = getVideoData();
-    isDownloading = false;
-    progress = 0;
     downloadProgressStore.delete(videoId);
-    void crossWorldMessenger.sendMessage(CrossWorldMessage.CancelRequest, { videoIds: [videoId] });
+    cancelStreamTransfer(videoId);
+    void sendMessage(MessageType.CancelDownload, { videoIds: [videoId] });
+    void crossWorldMessenger.sendMessage(CrossWorldMessage.CancelDownload, { videoIds: [videoId] });
     const currentProgress = await statusProgressItem.getValue();
     delete currentProgress[videoId];
     await statusProgressItem.setValue(currentProgress);
@@ -282,6 +276,14 @@ export function createPanelState(getVideoData: () => VideoData) {
     interruptedDownloadStore.delete(videoId);
     downloadProgressStore.delete(videoId);
     await sendMessage(MessageType.ClearInterruptedDownload, { videoId });
+  }
+
+  function revealDownload() {
+    if (downloadId === null) {
+      return;
+    }
+
+    void sendMessage(MessageType.RevealDownloadFile, { downloadId });
   }
 
   return {
@@ -311,14 +313,14 @@ export function createPanelState(getVideoData: () => VideoData) {
     },
     set filename(value: string) {
       filename = value;
-      isDone = false;
+      resetDoneState();
     },
     get extension() {
       return extension;
     },
     set extension(value: string) {
       extension = value;
-      isDone = false;
+      resetDoneState();
     },
     get actualExtension() {
       return actualExtension;
@@ -349,16 +351,20 @@ export function createPanelState(getVideoData: () => VideoData) {
     },
     set selectedVideoFormat(value: AdaptiveFormatItem | null) {
       selectedVideoFormat = value;
-      isDone = false;
+      resetDoneState();
     },
     set selectedAudioFormat(value: AdaptiveFormatItem | null) {
       selectedAudioFormat = value;
-      isDone = false;
+      resetDoneState();
+    },
+    get downloadId() {
+      return downloadId;
     },
     handleDownloadTypeChange,
     startDownload,
     cancelDownload,
     resumeDownload,
-    discardInterrupted
+    discardInterrupted,
+    revealDownload
   };
 }

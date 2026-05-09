@@ -4,13 +4,12 @@
   import { createPanelState } from "./DownloadOptionsPanel.state.svelte.ts";
   import { CrossWorldMessage, crossWorldMessenger, onButtonClick } from "@/lib/messaging/cross-world-messenger";
   import {
-    attachCancelButton,
     attachCloseButton,
-    attachDoneIcon,
-    attachDownloadButton,
     attachGhostButton,
     attachPanelProgress,
-    attachResumeButton
+    attachPanelProgressDone,
+    attachPrimaryButton,
+    type PrimaryButtonState
   } from "@/lib/ui/panel-button-attachments.svelte";
   import { ProgressType, type VideoData } from "@/types";
 
@@ -33,12 +32,25 @@
   const focusManager = createFocusManager();
 
   const closeButtonId = "ytdl-panel-close";
-  const closeFooterButtonId = "ytdl-panel-close-footer";
-  const downloadButtonId = "ytdl-panel-download";
-  const cancelButtonId = "ytdl-panel-cancel";
-  const hideButtonId = "ytdl-panel-hide";
-  const resumeButtonId = "ytdl-panel-resume";
+  const primaryButtonId = "ytdl-panel-primary";
   const discardButtonId = "ytdl-panel-discard";
+  const viewButtonId = "ytdl-panel-view";
+
+  const primaryState = $derived.by<PrimaryButtonState>(() => {
+    if (panel.isDownloading) {
+      return "downloading";
+    }
+
+    if (panel.isInterrupted) {
+      return "interrupted";
+    }
+
+    if (panel.isDone) {
+      return "done";
+    }
+
+    return "idle";
+  });
 
   function closePanel() {
     focusManager.release();
@@ -47,33 +59,29 @@
   }
 
   $effect(() => onButtonClick(buttonId => {
-    if (buttonId === closeButtonId || buttonId === closeFooterButtonId || buttonId === hideButtonId) {
+    if (buttonId === closeButtonId) {
       closePanel();
-    } else if (buttonId === downloadButtonId) {
-      panel.startDownload();
-    } else if (buttonId === cancelButtonId) {
-      void panel.cancelDownload();
-    } else if (buttonId === resumeButtonId) {
-      panel.resumeDownload();
+    } else if (buttonId === primaryButtonId) {
+      if (primaryState === "downloading") {
+        void panel.cancelDownload();
+      } else if (primaryState === "interrupted") {
+        panel.resumeDownload();
+      } else {
+        panel.startDownload();
+      }
     } else if (buttonId === discardButtonId) {
       void panel.discardInterrupted();
+    } else if (buttonId === viewButtonId) {
+      panel.revealDownload();
     }
   }));
 
-  function handleActivationKeydown(callback: () => void) {
-    return (e: KeyboardEvent) => {
-      if (e.key === "Enter" || e.key === " ") {
-        callback();
-      }
-    };
-  }
-
-  function attachDownloadBtn(elButton: Element) {
-    attachDownloadButton({
+  function attachPrimaryBtn(elButton: Element) {
+    attachPrimaryButton({
       elButton,
+      getState: () => primaryState,
       getIsDownloadable: () => panel.isDownloadable,
-      getIsFilenameValid: () => panel.isFilenameValid,
-      getIsDone: () => panel.isDone
+      getIsFilenameValid: () => panel.isFilenameValid
     });
   }
 </script>
@@ -87,6 +95,14 @@
     if (e.key === "Escape") {
       closePanel();
     }
+
+    // YouTube's video player listens for global Space (play/pause) and arrow
+    // keys (seek/volume). Stop these from bubbling out of the panel so they
+    // only act on the focused control inside.
+    if (e.key === " " || e.key === "ArrowUp" || e.key === "ArrowDown"
+      || e.key === "ArrowLeft" || e.key === "ArrowRight") {
+      e.stopPropagation();
+    }
   }}
   role="dialog"
   tabindex="-1"
@@ -98,7 +114,6 @@
       {@attach attachCloseButton}
       aria-label="Close"
       data-ytdl-button-id={closeButtonId}
-      onkeydown={handleActivationKeydown(closePanel)}
       role="button"
       tabindex="0"
     ></yt-button-view-model>
@@ -124,9 +139,38 @@
   </div>
 
   <div class="ytdl-panel-footer">
-    {#if panel.isDownloading}
-      <div class="ytdl-progress-section">
+    <div class="ytdl-footer-buttons">
+      {#if primaryState === "interrupted"}
+        <yt-button-view-model
+          class={scopingClass}
+          {@attach attachGhostButton("Discard")}
+          data-ytdl-button-id={discardButtonId}
+          role="button"
+          tabindex="0"
+        ></yt-button-view-model>
+      {/if}
+      {#if primaryState === "done" && panel.downloadId !== null}
+        <yt-button-view-model
+          class={scopingClass}
+          {@attach attachGhostButton("View")}
+          data-ytdl-button-id={viewButtonId}
+          role="button"
+          tabindex="0"
+        ></yt-button-view-model>
+      {/if}
+      <yt-button-view-model
+        class="{scopingClass} {primaryState === "downloading" ? "ytdl-cancel-state" : ""}"
+        {@attach attachPrimaryBtn}
+        data-ytdl-button-id={primaryButtonId}
+        role="button"
+        tabindex="0"
+      ></yt-button-view-model>
+    </div>
+
+    {#if primaryState === "downloading"}
+      <div class="ytdl-progress-block">
         <tp-yt-paper-progress
+          class="ytdl-progress-track"
           {@attach attachPanelProgress}
           value={Math.round(panel.displayProgress)}
         ></tp-yt-paper-progress>
@@ -134,79 +178,80 @@
           {percentFormatter.format(panel.displayProgress / 100)} - {panel.progressType === ProgressType.FFmpeg ? "Processing" : "Downloading"}
         </span>
       </div>
-      <div class="ytdl-footer-buttons">
-        <yt-button-view-model
-          class={scopingClass}
-          {@attach attachGhostButton("Hide")}
-          data-ytdl-button-id={hideButtonId}
-          onkeydown={handleActivationKeydown(closePanel)}
-          role="button"
-          tabindex="0"
-        ></yt-button-view-model>
-        <yt-button-view-model
-          class={scopingClass}
-          {@attach attachCancelButton}
-          data-ytdl-button-id={cancelButtonId}
-          onkeydown={handleActivationKeydown(panel.cancelDownload)}
-          role="button"
-          tabindex="0"
-        ></yt-button-view-model>
-      </div>
-    {:else if panel.isInterrupted}
-      <div class="ytdl-footer-buttons">
-        <yt-button-view-model
-          class={scopingClass}
-          {@attach attachGhostButton("Discard")}
-          data-ytdl-button-id={discardButtonId}
-          onkeydown={handleActivationKeydown(panel.discardInterrupted)}
-          role="button"
-          tabindex="0"
-        ></yt-button-view-model>
-        <yt-button-view-model
-          class={scopingClass}
-          {@attach attachResumeButton}
-          data-ytdl-button-id={resumeButtonId}
-          onkeydown={handleActivationKeydown(panel.resumeDownload)}
-          role="button"
-          tabindex="0"
-        ></yt-button-view-model>
-      </div>
-    {:else}
-      {#if panel.isDone}
-        <div class="ytdl-done-status" role="status">
-          <yt-button-view-model
-            class={scopingClass}
-            {@attach attachDoneIcon}
-          ></yt-button-view-model>
-          <span>Downloaded</span>
-        </div>
-      {/if}
-      <div class="ytdl-footer-buttons">
-        <yt-button-view-model
-          class={scopingClass}
-          {@attach attachGhostButton("Close")}
-          data-ytdl-button-id={closeFooterButtonId}
-          onkeydown={handleActivationKeydown(closePanel)}
-          role="button"
-          tabindex="0"
-        ></yt-button-view-model>
-        <yt-button-view-model
-          class={scopingClass}
-          {@attach attachDownloadBtn}
-          data-ytdl-button-id={downloadButtonId}
-          onkeydown={handleActivationKeydown(panel.startDownload)}
-          role="button"
-          tabindex="0"
-        ></yt-button-view-model>
+    {:else if primaryState === "done"}
+      <div class="ytdl-progress-block ytdl-progress-block--done">
+        <tp-yt-paper-progress
+          class="ytdl-progress-track"
+          {@attach attachPanelProgressDone}
+          value={100}
+        ></tp-yt-paper-progress>
+        <span class="ytdl-progress-label" role="status">Downloaded</span>
       </div>
     {/if}
   </div>
 </div>
 
 <style>
+  /* YouTube doesn't expose --yt-spec-text-primary at the document root or via
+     any reachable Polymer scope, so define it ourselves keyed on the [dark]
+     attribute YouTube already toggles. Other rules can then use the spec name. */
   .ytdl-panel {
-    overflow: hidden;
+    --yt-spec-text-primary: rgb(15 15 15);
+    --yt-spec-text-secondary: rgb(96 96 96);
+    --ytdl-border: rgb(0 0 0 / 9%);
+    --ytdl-border-strong: rgb(0 0 0 / 16%);
+    --ytdl-bg-elev-2: rgb(255 255 255);
+    --ytdl-bg-hover: rgb(0 0 0 / 6%);
+    --ytdl-danger: #d93025;
+    --ytdl-primary-bg: #0f0f0f;
+    --ytdl-primary-text: #ffffff;
+
     width: 380px;
+    border: 1px solid var(--ytdl-border);
+    border-radius: 12px;
+    background: var(--ytdl-bg-elev-2);
+    color: var(--yt-spec-text-primary);
+    box-shadow: 0 8px 32px rgb(0 0 0 / 32%), 0 2px 8px rgb(0 0 0 / 16%);
+  }
+
+  :global(html[dark]) .ytdl-panel {
+    --yt-spec-text-primary: rgb(241 241 241);
+    --yt-spec-text-secondary: rgb(170 170 170);
+    --ytdl-border: rgb(255 255 255 / 12%);
+    --ytdl-border-strong: rgb(255 255 255 / 20%);
+    --ytdl-bg-elev-2: rgb(39 39 39);
+    --ytdl-bg-hover: rgb(255 255 255 / 8%);
+    --ytdl-danger: #ff6b6b;
+    --ytdl-primary-bg: #f1f1f1;
+    --ytdl-primary-text: #0f0f0f;
+  }
+
+  /* YouTube's focus CSS sets background:unset on .ytSpecButtonShapeNextMono.ytSpecButtonShapeNextFocused,
+     which strips the fill from the Download/Download-again button when Tab-focused.
+     Restore it by re-applying the same Polymer CSS variables at higher specificity. */
+  .ytdl-panel :global(.ytSpecButtonShapeNextMono.ytSpecButtonShapeNextFilled.ytSpecButtonShapeNextFocused) {
+    border-color: transparent;
+    background: var(--tffc2fd3a644f6275);
+    color: var(--t6216186c28b3834b);
+  }
+
+  /* Focus ring for keyboard navigation. YouTube removes outlines globally; restore them
+     inside the panel so keyboard users can see which button is focused. */
+  .ytdl-panel :global(button:focus-visible) {
+    outline: 2px solid var(--yt-spec-call-to-action, #065fd4) !important;
+    outline-offset: 3px;
+  }
+
+  /* Cancel state mirrors the design's .dl-btn-danger: red text + red border,
+     transparent bg, subtle red tint on hover. */
+  .ytdl-panel :global(.ytdl-cancel-state button) {
+    border-color: var(--ytdl-danger) !important;
+    background: transparent !important;
+    color: var(--ytdl-danger) !important;
+  }
+
+  .ytdl-panel :global(.ytdl-cancel-state button:hover) {
+    background: color-mix(in oklab, var(--ytdl-danger) 12%, transparent) !important;
   }
 
   .ytdl-panel-header {
@@ -219,13 +264,10 @@
 
   .ytdl-panel-title {
     margin: 0;
+    color: var(--yt-spec-text-primary);
     font-weight: 500;
     font-size: 1.6rem;
     line-height: 1.375;
-    /* light-dark() flips with the document's color-scheme - YouTube sets that
-       per active theme, so no [dark] selector needed. yt-spec-text-primary is
-       preferred when defined; the literal pair matches YouTube's actual values. */
-    color: var(--yt-spec-text-primary, light-dark(rgb(15 15 15), rgba(255 255 255 / 88%)));
   }
 
   .ytdl-panel-body {
@@ -240,14 +282,28 @@
     padding-inline: 24px;
   }
 
-  .ytdl-progress-section {
+  .ytdl-progress-block {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 6px;
+    padding-block-start: 4px;
+  }
+
+  .ytdl-progress-track {
+    display: block;
+    overflow: hidden;
+    width: 100%;
+    border-radius: 4px;
   }
 
   .ytdl-progress-label {
-    font-size: 1.3rem;
+    color: var(--yt-spec-text-secondary);
+    font-size: 1.2rem;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .ytdl-progress-block--done .ytdl-progress-label {
+    color: var(--yt-spec-text-success, #6cd16c);
   }
 
   .ytdl-footer-buttons {

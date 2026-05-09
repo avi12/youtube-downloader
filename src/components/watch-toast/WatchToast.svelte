@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
+  import { MessageType, sendMessage } from "@/lib/messaging/messaging";
+  import { completedDownloadsStore } from "@/lib/ui/completed-downloads-store.svelte";
 
   const TOAST_DURATION_MS = 4500;
 
@@ -12,18 +13,15 @@
   let elToast = $state<PaperToastElement | null>(null);
   let downloadId = $state<number | null>(null);
 
-  $effect(() => {
-    const unsubscribe = onMessage(MessageType.WatchDownloadCompleted, ({ data }) => {
-      if (!elToast) {
-        return;
-      }
+  $effect(() => completedDownloadsStore.subscribe((_videoId, completed) => {
+    if (!elToast) {
+      return;
+    }
 
-      elToast.text = `Downloaded ${data.filename}`;
-      downloadId = data.downloadId;
-      elToast.open();
-    });
-    return unsubscribe;
-  });
+    elToast.text = `Downloaded ${completed.filename}`;
+    downloadId = completed.downloadId;
+    elToast.open();
+  }));
 
   function reveal() {
     if (downloadId === null) {
@@ -51,20 +49,20 @@
 <tp-yt-paper-toast
   bind:this={elToast}
   class="ytdl-watch-toast"
-  duration={TOAST_DURATION_MS}
   {@attach attachToBody}
+  duration={TOAST_DURATION_MS}
 >
   <yt-button-view-model
     class="ytdl-watch-toast__action"
-    onclick={reveal}
     aria-label="View file"
+    onclick={reveal}
     role="button"
     tabindex="0"
   >View</yt-button-view-model>
   <yt-button-view-model
     class="ytdl-watch-toast__action"
-    onclick={dismiss}
     aria-label="Dismiss"
+    onclick={dismiss}
     role="button"
     tabindex="0"
   >Dismiss</yt-button-view-model>
