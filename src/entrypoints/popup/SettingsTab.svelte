@@ -279,6 +279,46 @@
   </fieldset>
 
   <fieldset class="settings-group">
+    <legend class="settings-legend">When download completes</legend>
+    <div class="settings-row">
+      <span class="settings-label">Notify when window is idle</span>
+      <label class="settings-switch" aria-label="Notify when window is idle">
+        <input
+          checked={options.isNotifyOnIdle}
+          onchange={e => {
+            if (e.target instanceof HTMLInputElement) {
+              void setOption("isNotifyOnIdle", e.target.checked);
+            }
+          }}
+          role="switch"
+          type="checkbox"
+        />
+        <span class="settings-switch-track">
+          <span class="settings-switch-thumb"></span>
+        </span>
+      </label>
+    </div>
+    <div class="settings-row">
+      <span class="settings-label">Reveal file in folder</span>
+      <label class="settings-switch" aria-label="Reveal file in folder">
+        <input
+          checked={options.isRevealOnComplete}
+          onchange={e => {
+            if (e.target instanceof HTMLInputElement) {
+              void setOption("isRevealOnComplete", e.target.checked);
+            }
+          }}
+          role="switch"
+          type="checkbox"
+        />
+        <span class="settings-switch-track">
+          <span class="settings-switch-thumb"></span>
+        </span>
+      </label>
+    </div>
+  </fieldset>
+
+  <fieldset class="settings-group">
     <legend class="settings-legend">YouTube integration</legend>
     <div class="settings-row">
       <span class="settings-label">Show native download button on watch page</span>

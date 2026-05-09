@@ -7,7 +7,13 @@ import {
   ProgressType,
   VideoQualityMode
 } from "@/types";
-import type { AdaptiveFormatItem, CaptionTrack, Options, PlayerResponse } from "@/types";
+import type {
+  AdaptiveFormatItem,
+  CaptionTrack,
+  Options,
+  PlayerResponse,
+  SabrConfig
+} from "@/types";
 import { PlayabilityStatus } from "@/types/youtube";
 
 export const videoQualities = [4320, 2160, 1440, 1080, 720, 480, 360, 240, 144];
@@ -23,6 +29,8 @@ export const initialOptions: Options = {
   videoQualityMode: VideoQualityMode.Best,
   videoQuality: DEFAULT_VIDEO_QUALITY,
   isShowNativeDownload: false,
+  isNotifyOnIdle: false,
+  isRevealOnComplete: false,
   playlistDownloadMode: PlaylistDownloadMode.Fast,
   playlistOutputMode: PlaylistOutputMode.Individual,
   playlistAudioOutputMode: PlaylistOutputMode.Zip,
@@ -171,6 +179,29 @@ export function orderCaptionsByPreference({
   const preferred = captionTracks.filter(track => normalizeLanguageCode(track.languageCode) === lang);
   const rest = captionTracks.filter(track => normalizeLanguageCode(track.languageCode) !== lang);
   return [...preferred, ...rest];
+}
+
+function isUrlExpired(url: string) {
+  try {
+    const expire = new URL(url).searchParams.get("expire");
+    return expire ? Date.now() / 1000 > Number(expire) : false;
+  } catch {
+    return false;
+  }
+}
+
+export function isVideoDataExpired(videoData: {
+  sabrConfig: SabrConfig | null;
+  videoFormats: AdaptiveFormatItem[];
+  audioFormats: AdaptiveFormatItem[];
+}) {
+  const sabrUrl = videoData.sabrConfig?.serverAbrStreamingUrl;
+  if (sabrUrl && isUrlExpired(sabrUrl)) {
+    return true;
+  }
+
+  const formats = [...videoData.videoFormats, ...videoData.audioFormats];
+  return formats.slice(0, 3).some(format => format.url && isUrlExpired(format.url));
 }
 
 const DOWNLOAD_PHASE_WEIGHT = 70;

@@ -16,6 +16,7 @@ export default defineConfig({
     permissions: [
       "alarms",
       "downloads",
+      "notifications",
       "offscreen",
       "storage",
       "tabs",

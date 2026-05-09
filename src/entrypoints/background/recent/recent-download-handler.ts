@@ -1,7 +1,22 @@
 import { getTabIdsForVideo } from "../queue/tab-tracker";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
 import { addRecentDownload } from "@/lib/storage/recent-downloads-db";
+import { optionsItem } from "@/lib/storage/storage";
 import type { RecentDownloadEntry } from "@/types";
+
+async function isTabIdle(tabId: number) {
+  try {
+    const tab = await browser.tabs.get(tabId);
+    if (!tab.active) {
+      return true;
+    }
+
+    const win = await browser.windows.get(tab.windowId);
+    return !win.focused;
+  } catch {
+    return true;
+  }
+}
 
 function persistOnDownloadComplete({ targetDownloadId, data }: {
   targetDownloadId: number;
@@ -18,7 +33,7 @@ function persistOnDownloadComplete({ targetDownloadId, data }: {
   };
 }) {
   return new Promise<void>(resolve => {
-    function handleChanged(delta: Browser.downloads.DownloadDelta) {
+    async function handleChanged(delta: Browser.downloads.DownloadDelta) {
       if (delta.id !== targetDownloadId || !delta.state?.current) {
         return;
       }
@@ -26,13 +41,33 @@ function persistOnDownloadComplete({ targetDownloadId, data }: {
       if (delta.state.current === browser.downloads.State.COMPLETE) {
         browser.downloads.onChanged.removeListener(handleChanged);
 
-        if (data.recentContext?.videoId) {
-          for (const tabId of getTabIdsForVideo(data.recentContext.videoId)) {
-            void sendMessage(MessageType.WatchDownloadCompleted, {
-              videoId: data.recentContext.videoId,
-              downloadId: targetDownloadId,
-              filename: data.filename
-            }, tabId);
+        const tabIds = data.recentContext?.videoId
+          ? getTabIdsForVideo(data.recentContext.videoId)
+          : [];
+
+        for (const tabId of tabIds) {
+          void sendMessage(MessageType.WatchDownloadCompleted, {
+            videoId: data.recentContext!.videoId,
+            downloadId: targetDownloadId,
+            filename: data.filename
+          }, tabId);
+        }
+
+        const options = await optionsItem.getValue();
+        if (options.isRevealOnComplete) {
+          browser.downloads.show(targetDownloadId);
+        }
+
+        if (options.isNotifyOnIdle) {
+          const tabId = tabIds[0];
+          const idle = tabId === undefined || await isTabIdle(tabId);
+          if (idle) {
+            void browser.notifications.create({
+              type: "basic",
+              iconUrl: browser.runtime.getURL("/icons/128.png"),
+              title: "Download complete",
+              message: data.filename
+            });
           }
         }
 

@@ -132,6 +132,8 @@ export type Options = {
   videoQualityMode: VideoQualityMode;
   videoQuality: number;
   isShowNativeDownload: boolean;
+  isNotifyOnIdle: boolean;
+  isRevealOnComplete: boolean;
   playlistDownloadMode: PlaylistDownloadMode;
   playlistOutputMode: PlaylistOutputMode;
   playlistAudioOutputMode: PlaylistOutputMode;
