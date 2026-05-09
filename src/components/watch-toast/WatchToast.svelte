@@ -56,6 +56,7 @@
     class="ytdl-watch-toast__action"
     aria-label="View file"
     onclick={reveal}
+    onkeydown={e => (e.key === "Enter" || e.key === " ") && reveal()}
     role="button"
     tabindex="0"
   >View</yt-button-view-model>
@@ -63,6 +64,7 @@
     class="ytdl-watch-toast__action"
     aria-label="Dismiss"
     onclick={dismiss}
+    onkeydown={e => (e.key === "Enter" || e.key === " ") && dismiss()}
     role="button"
     tabindex="0"
   >Dismiss</yt-button-view-model>
