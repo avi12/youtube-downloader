@@ -16,6 +16,15 @@ export function cancelActiveDownload(videoId: string) {
   }
 }
 
+export function cancelAllActiveDownloads() {
+  const videoIds = [...activeDownloads.keys()];
+  for (const controller of activeDownloads.values()) {
+    controller.abort();
+  }
+  activeDownloads.clear();
+  return videoIds;
+}
+
 function getExtraAudioFormats({ audioFormats, selectedTrackId }: {
   audioFormats: AdaptiveFormatItem[];
   selectedTrackId: string | undefined;

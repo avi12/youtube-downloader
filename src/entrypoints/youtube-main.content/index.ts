@@ -1,7 +1,7 @@
 import { registerGridDropdownHandlers } from "./grid/grid-dropdown";
 import { registerGridTagger } from "./grid/grid-tagger";
 import { registerGridVideoDataHandler } from "./grid/grid-video-data";
-import { cancelActiveDownload, performDownload } from "./video/download";
+import { cancelActiveDownload, cancelAllActiveDownloads, performDownload } from "./video/download";
 import { extractPlaylistMetadata, handleNavigateSuccess } from "./video/playlist-metadata";
 import { extractAndDispatchVideoData } from "./video/video-data";
 import { CrossWorldEvent, emitCrossWorldEvent } from "@/lib/messaging/cross-world-events";
@@ -140,6 +140,18 @@ export default defineContentScript({
     registerGridVideoDataHandler();
 
     document.addEventListener("yt-navigate-finish", handleNavigateSuccess);
+
+    if (self === top) {
+      function cancelAllAndNotify() {
+        const videoIds = cancelAllActiveDownloads();
+        if (videoIds.length > 0) {
+          void crossWorldMessenger.sendMessage(CrossWorldMessage.CancelRequest, { videoIds });
+        }
+      }
+
+      document.addEventListener("yt-navigate-start", cancelAllAndNotify);
+      addEventListener("pagehide", cancelAllAndNotify);
+    }
 
     if (document.readyState === "complete") {
       await extractAndDispatchVideoData(cancelActiveDownload);
