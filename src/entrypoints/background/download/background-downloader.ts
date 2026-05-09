@@ -2,6 +2,7 @@ import { ensureProcessor } from "../handlers/processor";
 import { removeFromPopupList } from "../queue/popup-list";
 import { signalVideoComplete } from "../queue/sequential-queue";
 import { downloadViaCdn } from "./cdn-downloader";
+import { downloadViaWatchPage } from "./iframe-downloader";
 import { downloadViaSabr } from "./sabr-downloader";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
@@ -124,6 +125,11 @@ async function dispatchToOffscreen({ request, result, enrichedMetadata, tabId }:
   enrichedMetadata: VideoMetadata | null | undefined;
   tabId: number;
 }) {
+  void sendMessage(MessageType.UpdateDownloadProgress, {
+    videoId: request.videoId,
+    progress: 0,
+    progressType: ProgressType.FFmpeg
+  }, tabId);
   await ensureProcessor();
 
   const {
@@ -340,11 +346,25 @@ export async function startBackgroundDownload({ request, tabId }: {
     }
 
     if (!result?.audioData && !result?.videoData) {
-      console.warn("[ytdl:bg] No download method succeeded for", videoId);
-      reportDownloadFailed({
-        videoId,
-        tabId
-      });
+      if (!request.isIframeFallback) {
+        console.warn("[ytdl:bg] SABR+CDN failed, trying offscreen iframe fallback for", videoId);
+        void sendMessage(MessageType.UpdateDownloadProgress, {
+          videoId,
+          progress: 0,
+          progressType: ProgressType.Video
+        }, tabId);
+        await downloadViaWatchPage({
+          data: request,
+          tabId
+        });
+      } else {
+        console.warn("[ytdl:bg] All download methods (including iframe) failed for", videoId);
+        reportDownloadFailed({
+          videoId,
+          tabId
+        });
+      }
+
       return;
     }
 
