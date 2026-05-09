@@ -1,7 +1,12 @@
 import { toUint8Array, triggerDownload, reportProgress } from ".";
 import { getFFmpeg, progressHandlers, tryUnlink } from "./ffmpeg-instance";
 import { addToPlaylistBundle } from "./playlist-bundle";
-import { CONTAINER_SPECS, extractBaseCodec, getCompatibleFilename } from "@/lib/utils/containers";
+import {
+  CONTAINER_SPECS,
+  extractBaseCodec,
+  getCompatibleFilename,
+  isVideoNativeForContainer
+} from "@/lib/utils/containers";
 import { ProgressType } from "@/types";
 import type { ProcessStreamData } from "@/types";
 
@@ -25,19 +30,25 @@ export async function processVideoAudio(item: ProcessStreamData, isCancelled: ()
   const isExtraTracksPresent = Boolean(additionalAudioStreams.length);
   const filenameBase = filenameOutput.replace(/\.[^.]+$/, "");
   const targetExtension = isExtraTracksPresent ? "mkv" : (filenameOutput.split(".").pop() ?? "mkv");
-  const needsTranscode = targetExtension !== "mkv";
   const downloadFilename = `${filenameBase}.${targetExtension}`;
   const videoFilename = `${videoId}-video.${videoExtension}`;
   const primaryAudioFilename = `${videoId}-audio.${audioExtension}`;
   const muxFilename = getCompatibleFilename(`${videoId}-mux.mkv`);
-  const outputFilename = needsTranscode
+  const outputFilename = targetExtension !== "mkv"
     ? getCompatibleFilename(`${videoId}-${downloadFilename}`)
     : muxFilename;
   const ffmpeg = getFFmpeg();
 
+  // When target isn't MKV and the video codec is natively supported by that container,
+  // mux directly to the target format in one pass (no intermediate MKV needed).
+  // Otherwise use a two-phase pipeline: stream-copy everything to a temp MKV first,
+  // then remux/transcode to the target format.
+  const isNativeToTarget = targetExtension === "mkv" || isVideoNativeForContainer(videoMimeType, targetExtension);
+  const useIntermediateMkv = targetExtension !== "mkv" && !isNativeToTarget;
+
   const ffmpegProgressCapBeforeSave = 0.99;
   let progressOffset = 0;
-  let progressScale = needsTranscode ? 0.5 : 1;
+  let progressScale = useIntermediateMkv ? 0.5 : 1;
 
   function handleFFmpegProgress({ progress }: { progress: number }) {
     const scaled = progressOffset + progress * progressScale;
@@ -127,7 +138,10 @@ export async function processVideoAudio(item: ProcessStreamData, isCancelled: ()
       ffmpegArgs.push("-map", `${i + 1}:a:0`);
     }
 
-    ffmpegArgs.push("-c:v", "copy", "-c:a", "copy");
+    // When going directly to the target format, apply the audio codec in this pass.
+    // When using an intermediate MKV, stream-copy everything — the second pass handles transcoding.
+    const phase1AudioCodec = useIntermediateMkv ? "copy" : resolveAudioCodec(audioMimeType, targetExtension);
+    ffmpegArgs.push("-c:v", "copy", "-c:a", phase1AudioCodec);
 
     const audioTrackLabels = [item.primaryAudioLabel ?? "", ...extraAudioTracks.map(track => track.label)];
     for (let i = 0; i < audioTrackLabels.length; i++) {
@@ -137,14 +151,15 @@ export async function processVideoAudio(item: ProcessStreamData, isCancelled: ()
       }
     }
 
-    ffmpegArgs.push(muxFilename);
+    const phase1Output = useIntermediateMkv ? muxFilename : outputFilename;
+    ffmpegArgs.push(phase1Output);
 
     const muxExitCode = ffmpeg.exec(...ffmpegArgs);
     if (muxExitCode !== 0) {
       throw new Error(`FFmpeg exited with code ${muxExitCode}`);
     }
 
-    if (needsTranscode) {
+    if (useIntermediateMkv) {
       progressOffset = 0.5;
       progressScale = 0.5;
       const audioCodec = resolveAudioCodec(audioMimeType, targetExtension);
@@ -207,12 +222,15 @@ export async function processVideoAudio(item: ProcessStreamData, isCancelled: ()
       ffmpeg,
       filename: primaryAudioFilename
     });
-    tryUnlink({
-      ffmpeg,
-      filename: muxFilename
-    });
 
-    if (needsTranscode) {
+    if (useIntermediateMkv) {
+      tryUnlink({
+        ffmpeg,
+        filename: muxFilename
+      });
+    }
+
+    if (targetExtension !== "mkv") {
       tryUnlink({
         ffmpeg,
         filename: outputFilename

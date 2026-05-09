@@ -88,11 +88,15 @@ export function getMimeType(filename: string) {
 }
 
 interface ContainerSpec {
+  // Video codecs that can be stream-copied natively into this container.
   videoCodecs: Set<string>;
   audioCodecs: Set<string>;
   // FFmpeg codec name to transcode audio to when it isn't natively supported.
   // Absent means no audio transcode path exists; the container falls back to MKV.
   fallbackAudioCodec?: string;
+  // When true, non-native video can still be stream-copied into the container
+  // (non-standard but functional — e.g. VP9 in MP4). Falls back to MKV otherwise.
+  allowNonNativeVideo?: boolean;
 }
 
 // Codec compatibility per container. To add a new container, add one entry here.
@@ -106,7 +110,8 @@ export const CONTAINER_SPECS: Record<string, ContainerSpec> = {
   mp4: {
     videoCodecs: new Set(["avc1", "hvc1", "hev1", "av01", "mp4v"]),
     audioCodecs: new Set(["mp4a", "ac-3", "ec-3", "flac"]),
-    fallbackAudioCodec: "aac"
+    fallbackAudioCodec: "aac",
+    allowNonNativeVideo: true
   }
 };
 
@@ -129,10 +134,21 @@ export function getOutputExtension({ videoMimeType, audioMimeType, userExtension
 
   const videoCodec = extractBaseCodec(videoMimeType);
   const audioCodec = extractBaseCodec(audioMimeType);
-  const videoOk = spec.videoCodecs.has(videoCodec);
+  const videoOk = spec.videoCodecs.has(videoCodec) || spec.allowNonNativeVideo === true;
   const audioOk = spec.audioCodecs.has(audioCodec) || spec.fallbackAudioCodec !== undefined;
 
   return videoOk && audioOk ? userExtension : "mkv";
+}
+
+// Returns true when the video can be stream-copied into the target container
+// without the two-phase MKV intermediate (i.e. it is natively supported).
+export function isVideoNativeForContainer(videoMimeType: string, targetExtension: string): boolean {
+  const spec = CONTAINER_SPECS[targetExtension];
+  if (!spec) {
+    return true;
+  } // MKV and unrestricted containers accept anything natively
+
+  return spec.videoCodecs.has(extractBaseCodec(videoMimeType));
 }
 
 export function resolveVideoFilename({ videoData, options, titleOverride }: {
