@@ -8,8 +8,9 @@
     attachGhostButton,
     attachPanelProgress,
     attachPanelProgressDone,
+    attachPanelProgressFailed,
     attachPrimaryButton,
-    type PrimaryButtonState
+    PrimaryButtonState
   } from "@/lib/ui/panel-button-attachments.svelte";
   import { ProgressType, type VideoData } from "@/types";
 
@@ -38,18 +39,22 @@
 
   const primaryState = $derived.by<PrimaryButtonState>(() => {
     if (panel.isDownloading) {
-      return "downloading";
+      return PrimaryButtonState.Downloading;
+    }
+
+    if (panel.isFailed) {
+      return PrimaryButtonState.Failed;
     }
 
     if (panel.isInterrupted) {
-      return "interrupted";
+      return PrimaryButtonState.Interrupted;
     }
 
     if (panel.isDone) {
-      return "done";
+      return PrimaryButtonState.Done;
     }
 
-    return "idle";
+    return PrimaryButtonState.Idle;
   });
 
   function closePanel() {
@@ -62,9 +67,9 @@
     if (buttonId === closeButtonId) {
       closePanel();
     } else if (buttonId === primaryButtonId) {
-      if (primaryState === "downloading") {
+      if (primaryState === PrimaryButtonState.Downloading) {
         void panel.cancelDownload();
-      } else if (primaryState === "interrupted") {
+      } else if (primaryState === PrimaryButtonState.Interrupted) {
         panel.resumeDownload();
       } else {
         panel.startDownload();
@@ -140,7 +145,7 @@
 
   <div class="ytdl-panel-footer">
     <div class="ytdl-footer-buttons">
-      {#if primaryState === "interrupted"}
+      {#if primaryState === PrimaryButtonState.Interrupted}
         <yt-button-view-model
           class={scopingClass}
           {@attach attachGhostButton("Discard")}
@@ -149,7 +154,7 @@
           tabindex="0"
         ></yt-button-view-model>
       {/if}
-      {#if primaryState === "done" && panel.downloadId !== null}
+      {#if primaryState === PrimaryButtonState.Done && panel.downloadId !== null}
         <yt-button-view-model
           class={scopingClass}
           {@attach attachGhostButton("View")}
@@ -159,7 +164,7 @@
         ></yt-button-view-model>
       {/if}
       <yt-button-view-model
-        class="{scopingClass} {primaryState === "downloading" ? "ytdl-cancel-state" : ""}"
+        class="{scopingClass} {primaryState === PrimaryButtonState.Downloading ? "ytdl-cancel-state" : ""}"
         {@attach attachPrimaryBtn}
         data-ytdl-button-id={primaryButtonId}
         role="button"
@@ -167,18 +172,19 @@
       ></yt-button-view-model>
     </div>
 
-    {#if primaryState === "downloading"}
+    {#if primaryState === PrimaryButtonState.Downloading}
       <div class="ytdl-progress-block">
         <tp-yt-paper-progress
           class="ytdl-progress-track"
           {@attach attachPanelProgress}
+          indeterminate={panel.displayProgress === 0 || undefined}
           value={Math.round(panel.displayProgress)}
         ></tp-yt-paper-progress>
         <span class="ytdl-progress-label" aria-live="polite">
-          {percentFormatter.format(panel.displayProgress / 100)} - {panel.progressType === ProgressType.FFmpeg ? "Processing" : "Downloading"}
+          {`${percentFormatter.format(panel.displayProgress / 100)} - ${panel.progressType === ProgressType.FFmpeg ? "Processing" : "Downloading"}`}
         </span>
       </div>
-    {:else if primaryState === "done"}
+    {:else if primaryState === PrimaryButtonState.Done}
       <div class="ytdl-progress-block ytdl-progress-block--done">
         <tp-yt-paper-progress
           class="ytdl-progress-track"
@@ -186,6 +192,15 @@
           value={100}
         ></tp-yt-paper-progress>
         <span class="ytdl-progress-label" role="status">Downloaded</span>
+      </div>
+    {:else if primaryState === PrimaryButtonState.Failed}
+      <div class="ytdl-progress-block ytdl-progress-block--failed">
+        <tp-yt-paper-progress
+          class="ytdl-progress-track"
+          {@attach attachPanelProgressFailed}
+          value={Math.round(panel.displayProgress) || 100}
+        ></tp-yt-paper-progress>
+        <span class="ytdl-progress-label" role="alert">Download failed</span>
       </div>
     {/if}
   </div>
@@ -202,7 +217,9 @@
     --ytdl-border-strong: rgb(0 0 0 / 16%);
     --ytdl-bg-elev-2: rgb(255 255 255);
     --ytdl-bg-hover: rgb(0 0 0 / 6%);
+    --ytdl-cta: #065fd4;
     --ytdl-danger: #d93025;
+    --ytdl-success: #1e8e3e;
     --ytdl-primary-bg: #0f0f0f;
     --ytdl-primary-text: #ffffff;
 
@@ -221,7 +238,9 @@
     --ytdl-border-strong: rgb(255 255 255 / 20%);
     --ytdl-bg-elev-2: rgb(39 39 39);
     --ytdl-bg-hover: rgb(255 255 255 / 8%);
+    --ytdl-cta: #3ea6ff;
     --ytdl-danger: #ff6b6b;
+    --ytdl-success: #6cd16c;
     --ytdl-primary-bg: #f1f1f1;
     --ytdl-primary-text: #0f0f0f;
   }
@@ -238,20 +257,20 @@
   /* Focus ring for keyboard navigation. YouTube removes outlines globally; restore them
      inside the panel so keyboard users can see which button is focused. */
   .ytdl-panel :global(button:focus-visible) {
-    outline: 2px solid var(--yt-spec-call-to-action, #065fd4) !important;
+    outline: 2px solid var(--yt-spec-call-to-action, var(--ytdl-cta)) !important;
     outline-offset: 3px;
   }
 
   /* Cancel state mirrors the design's .dl-btn-danger: red text + red border,
      transparent bg, subtle red tint on hover. */
   .ytdl-panel :global(.ytdl-cancel-state button) {
-    border-color: var(--ytdl-danger) !important;
+    border-color: var(--yt-spec-text-error, var(--ytdl-danger)) !important;
     background: transparent !important;
-    color: var(--ytdl-danger) !important;
+    color: var(--yt-spec-text-error, var(--ytdl-danger)) !important;
   }
 
   .ytdl-panel :global(.ytdl-cancel-state button:hover) {
-    background: color-mix(in oklab, var(--ytdl-danger) 12%, transparent) !important;
+    background: color-mix(in oklab, var(--yt-spec-text-error, var(--ytdl-danger)) 12%, transparent) !important;
   }
 
   .ytdl-panel-header {
@@ -303,7 +322,11 @@
   }
 
   .ytdl-progress-block--done .ytdl-progress-label {
-    color: var(--yt-spec-text-success, #6cd16c);
+    color: var(--yt-spec-text-success, var(--ytdl-success));
+  }
+
+  .ytdl-progress-block--failed .ytdl-progress-label {
+    color: var(--yt-spec-text-error, var(--ytdl-danger));
   }
 
   .ytdl-footer-buttons {
@@ -317,7 +340,7 @@
     display: flex;
     gap: 8px;
     align-items: center;
-    color: var(--yt-spec-call-to-action, #3ea6ff);
+    color: var(--yt-spec-call-to-action, var(--ytdl-cta));
     font-size: 1.3rem;
   }
 </style>

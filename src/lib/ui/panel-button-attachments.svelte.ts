@@ -137,7 +137,13 @@ export function attachDownloadButton({ elButton, getIsDownloadable, getIsFilenam
   });
 }
 
-export type PrimaryButtonState = "idle" | "downloading" | "interrupted" | "done";
+export enum PrimaryButtonState {
+  Idle = "idle",
+  Downloading = "downloading",
+  Interrupted = "interrupted",
+  Done = "done",
+  Failed = "failed"
+}
 
 export function attachPrimaryButton({ elButton, getState, getIsDownloadable, getIsFilenameValid }: {
   elButton: Element;
@@ -147,10 +153,10 @@ export function attachPrimaryButton({ elButton, getState, getIsDownloadable, get
 }) {
   $effect(() => {
     const state = getState();
-    const isActive = state !== "idle" || (getIsDownloadable() && getIsFilenameValid());
+    const isActive = state !== PrimaryButtonState.Idle || (getIsDownloadable() && getIsFilenameValid());
 
     const data: ButtonViewModelData = (() => {
-      if (state === "downloading") {
+      if (state === PrimaryButtonState.Downloading) {
         return {
           iconName: "",
           title: "Cancel",
@@ -165,7 +171,7 @@ export function attachPrimaryButton({ elButton, getState, getIsDownloadable, get
         };
       }
 
-      if (state === "interrupted") {
+      if (state === PrimaryButtonState.Interrupted) {
         return {
           iconName: IconName.Download,
           title: "Resume now",
@@ -180,7 +186,22 @@ export function attachPrimaryButton({ elButton, getState, getIsDownloadable, get
         };
       }
 
-      const title = state === "done" ? "Download again" : "Download";
+      if (state === PrimaryButtonState.Failed) {
+        return {
+          iconName: IconName.Download,
+          title: "Retry download",
+          accessibilityText: "Retry download",
+          style: ButtonStyle.CallToAction,
+          type: ButtonType.Tonal,
+          buttonSize: ButtonSize.Default,
+          state: ButtonState.Active,
+          isFullWidth: true,
+          isDisabled: false,
+          tooltip: ""
+        };
+      }
+
+      const title = state === PrimaryButtonState.Done ? "Download again" : "Download";
       return {
         iconName: IconName.Download,
         title,
@@ -225,6 +246,20 @@ export function attachPanelProgressDone(elProgress: Element) {
 
   elProgress.updateStyles({
     "--paper-progress-active-color": `var(--yt-spec-text-success, ${SUCCESS_DARK})`,
+    "--paper-progress-container-color": PROGRESS_TRACK_DARK,
+    "--paper-progress-height": "4px"
+  });
+}
+
+const ERROR_DARK = "#ff6b6b";
+
+export function attachPanelProgressFailed(elProgress: Element) {
+  if (!isPolymerProgressElement(elProgress)) {
+    return;
+  }
+
+  elProgress.updateStyles({
+    "--paper-progress-active-color": `var(--yt-spec-text-error, ${ERROR_DARK})`,
     "--paper-progress-container-color": PROGRESS_TRACK_DARK,
     "--paper-progress-height": "4px"
   });
