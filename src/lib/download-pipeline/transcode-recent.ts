@@ -53,7 +53,7 @@ export async function transcodeRecentDownload({ entryId, targetContainer }: {
 
   await enqueueMuxJob({
     videoId: `transcode:${entryId}`,
-    job: async () => {
+    async job() {
       const ffmpeg = getFFmpeg();
 
       try {

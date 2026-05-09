@@ -25,6 +25,7 @@ function persistOnDownloadComplete({ targetDownloadId, data }: {
 
       if (delta.state.current === browser.downloads.State.COMPLETE) {
         browser.downloads.onChanged.removeListener(handleChanged);
+
         if (data.recentContext?.videoId) {
           for (const tabId of getTabIdsForVideo(data.recentContext.videoId)) {
             void sendMessage(MessageType.WatchDownloadCompleted, {

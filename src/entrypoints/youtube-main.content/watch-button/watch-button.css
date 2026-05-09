@@ -39,34 +39,30 @@
   --ytdl-state-mix: 22%;
 }
 
-html[dark] .ytdl-watch-state-downloading,
-html[dark] .ytdl-watch-state-resuming {
+[dark] .ytdl-watch-state-downloading,
+[dark] .ytdl-watch-state-resuming {
   --ytdl-state-color: #3ea6ff;
 }
 
-html[dark] .ytdl-watch-state-done {
+[dark] .ytdl-watch-state-done {
   --ytdl-state-color: #6cd16c;
 }
 
-html[dark] .ytdl-watch-state-error {
+[dark] .ytdl-watch-state-error {
   --ytdl-state-color: #ff6b6b;
 }
 
-html[dark] .ytdl-watch-state-interrupted {
+[dark] .ytdl-watch-state-interrupted {
   --ytdl-state-color: #f5b94a;
 }
 
 [class*="ytdl-watch-state-"] {
+  --ytdl-state-bg-base: rgb(245 245 245);
+
   color: var(--ytdl-state-color);
 }
 
-/* Mix the state color against an elevated-surface base (matches the design's
-   --bg-elev). Light theme defaults; html[dark] flips it. */
-[class*="ytdl-watch-state-"] {
-  --ytdl-state-bg-base: rgb(245 245 245);
-}
-
-html[dark] [class*="ytdl-watch-state-"] {
+[dark] [class*="ytdl-watch-state-"] {
   --ytdl-state-bg-base: rgb(35 35 35);
 }
 
@@ -79,6 +75,35 @@ html[dark] [class*="ytdl-watch-state-"] {
 [class*="ytdl-watch-state-"] .ytdl-download-button button:hover,
 [class*="ytdl-watch-state-"] .ytdl-chevron-button button:hover {
   background-color: color-mix(in oklab, var(--ytdl-state-color) calc(var(--ytdl-state-mix) + 8%), var(--ytdl-state-bg-base)) !important;
+}
+
+.ytdl-watch-progress-ring {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 10px;
+  block-size: 24px;
+  inline-size: 24px;
+  margin-block: auto;
+  opacity: 0%;
+  pointer-events: none;
+  transition: opacity 120ms ease-out;
+}
+
+.ytdl-watch-progress-ring__track {
+  fill: none;
+  stroke: currentColor;
+  stroke-opacity: 25%;
+  stroke-width: 2.4;
+}
+
+.ytdl-watch-progress-ring__indicator {
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-width: 2.4;
+  transition: stroke-dashoffset 160ms ease-out;
+  transform: rotate(-90deg);
+  transform-origin: center;
 }
 
 .ytdl-watch-state-downloading .ytdl-watch-progress-ring__indicator,
@@ -98,36 +123,6 @@ html[dark] [class*="ytdl-watch-state-"] {
   stroke: var(--yt-spec-text-warning, #b56500);
 }
 
-.ytdl-watch-progress-ring {
-  position: absolute;
-  inset-block: 0;
-  inset-inline-start: 10px;
-  block-size: 24px;
-  inline-size: 24px;
-  margin-block: auto;
-  opacity: 0%;
-  pointer-events: none;
-  transition: opacity 120ms ease-out;
-}
-
-.ytdl-watch-progress-ring__track {
-  fill: none;
-  stroke: currentColor;
-  stroke-opacity: 0.25;
-  stroke-width: 2.4;
-}
-
-.ytdl-watch-progress-ring__indicator {
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-width: 2.4;
-  transition: stroke-dashoffset 160ms ease-out;
-  transform: rotate(-90deg);
-  transform-origin: center;
-}
-
-
 .ytdl-watch-progress-ring--indeterminate .ytdl-watch-progress-ring__indicator {
   stroke-dasharray: 30 70;
   transition: none;
@@ -146,4 +141,14 @@ html[dark] [class*="ytdl-watch-state-"] {
 
 .ytdl-native-hidden {
   display: none;
+}
+
+/* tp-yt-iron-dropdown sets max-height inline (defaults to 240px on YT),
+   which clips the panel and forces inner scrollbars. Override only for the
+   watch-button's outer dropdown and its panel slot - not nested dropdowns
+   inside the panel (those need their own max-height for scrolling). */
+[data-ytdl-watch-dropdown],
+[data-ytdl-panel-slot="true"] {
+  overflow: visible !important;
+  max-height: none !important;
 }
