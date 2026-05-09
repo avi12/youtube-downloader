@@ -76,6 +76,7 @@ export function buildVideoData({ playerResponse, clientVersion, clientName }: {
     ?.toSorted(byBitrateDesc) ?? [];
 
   const { videoDetails } = playerResponse;
+  const allCaptionTracks = playerResponse.captions?.playerCaptionsTracklistRenderer?.captionTracks ?? [];
   return {
     playerResponse,
     videoId: videoDetails?.videoId ?? "",
@@ -85,6 +86,7 @@ export function buildVideoData({ playerResponse, clientVersion, clientName }: {
     isLive,
     videoFormats: getUniqueVideoFormats(allFormats),
     audioFormats: getAudioFormats(allFormats),
+    captionTracks: allCaptionTracks.filter(track => track.kind !== "asr"),
     sabrConfig: extractSabrConfig({
       playerResponse,
       clientVersion,

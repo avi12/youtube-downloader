@@ -3,7 +3,8 @@ import { resolveFormatUrl } from "./stream-fetch";
 import { buildVideoMetadata, generatePoTokenIfNeeded, videoDataCache } from "./video-data";
 import { CrossWorldEvent, emitCrossWorldEvent } from "@/lib/messaging/cross-world-events";
 import { crossWorldMessenger, CrossWorldMessage } from "@/lib/messaging/cross-world-messenger";
-import { sabrCredentials } from "@/lib/ui/synced-stores.svelte";
+import { contentOptions, sabrCredentials } from "@/lib/ui/synced-stores.svelte";
+import { orderCaptionsByPreference } from "@/lib/youtube/video-helpers";
 import { type AdaptiveFormatItem, type DownloadRequest, DownloadType, ProgressType } from "@/types";
 
 const activeDownloads = new Map<string, AbortController>();
@@ -184,6 +185,12 @@ export async function performDownload({
         extraAudioFormats
       });
     const metadata = await buildVideoMetadata(videoId);
+    const options = contentOptions.value;
+    const orderedCaptionTracks = orderCaptionsByPreference({
+      captionTracks: cachedVideoData.captionTracks,
+      languageMode: options.audioTrackLanguageMode,
+      locale: document.documentElement.lang
+    });
 
     const enrichedRequest: DownloadRequest = {
       type,
@@ -199,6 +206,7 @@ export async function performDownload({
       audioFormat,
       additionalAudioFormats: extraAudioFormats,
       primaryAudioLabel: audioFormat?.audioTrack?.displayName ?? "",
+      captionTracks: orderedCaptionTracks,
       metadata,
       resolvedVideoUrl,
       resolvedAudioUrl,

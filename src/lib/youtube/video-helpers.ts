@@ -1,7 +1,13 @@
 import { AUTO_EXTENSION } from "@/lib/utils/containers";
 import { CHILD_LIST_SUBTREE } from "@/lib/utils/dom";
-import { PlaylistDownloadMode, PlaylistOutputMode, ProgressType, VideoQualityMode } from "@/types";
-import type { AdaptiveFormatItem, Options, PlayerResponse } from "@/types";
+import {
+  AudioTrackLanguageMode,
+  PlaylistDownloadMode,
+  PlaylistOutputMode,
+  ProgressType,
+  VideoQualityMode
+} from "@/types";
+import type { AdaptiveFormatItem, CaptionTrack, Options, PlayerResponse } from "@/types";
 import { PlayabilityStatus } from "@/types/youtube";
 
 export const videoQualities = [4320, 2160, 1440, 1080, 720, 480, 360, 240, 144];
@@ -20,7 +26,8 @@ export const initialOptions: Options = {
   playlistDownloadMode: PlaylistDownloadMode.Fast,
   playlistOutputMode: PlaylistOutputMode.Individual,
   playlistAudioOutputMode: PlaylistOutputMode.Zip,
-  isPlaylistScrollSyncEnabled: false
+  isPlaylistScrollSyncEnabled: false,
+  audioTrackLanguageMode: AudioTrackLanguageMode.MatchYouTube
 };
 
 export function isVideoLive(playerResponse: PlayerResponse) {
@@ -95,6 +102,75 @@ export function formatAudioCodecLabel(mimeType: string) {
   }
 
   return codec || (mimeType.split(";")[0].split("/")[1] ?? "");
+}
+
+function normalizeLanguageCode(lang: string) {
+  return lang.split("-")[0].toLowerCase();
+}
+
+function matchAudioFormatToLanguage(audioFormats: AdaptiveFormatItem[], langCode: string) {
+  return audioFormats.find(format => normalizeLanguageCode(format.audioTrack?.id ?? "") === langCode);
+}
+
+export function selectPreferredAudioFormat({
+  audioFormats,
+  videoMimeType,
+  languageMode,
+  locale,
+  activeLanguage
+}: {
+  audioFormats: AdaptiveFormatItem[];
+  videoMimeType: string;
+  languageMode: AudioTrackLanguageMode;
+  locale: string;
+  activeLanguage?: string;
+}) {
+  if (!audioFormats.length) {
+    return null;
+  }
+
+  const isWebm = videoMimeType.includes("webm");
+
+  let candidates: AdaptiveFormatItem[] = [];
+  if (languageMode === AudioTrackLanguageMode.MatchYouTube) {
+    const lang = normalizeLanguageCode(activeLanguage ?? locale);
+    const match = matchAudioFormatToLanguage(audioFormats, lang);
+    if (match) {
+      candidates = [match, ...audioFormats.filter(format => format !== match)];
+    }
+  }
+
+  if (!candidates.length) {
+    const defaultTrack = audioFormats.find(format => format.audioTrack?.audioIsDefault);
+    candidates = defaultTrack
+      ? [defaultTrack, ...audioFormats.filter(format => format !== defaultTrack)]
+      : audioFormats;
+  }
+
+  if (isWebm) {
+    return candidates.find(format => format.mimeType.includes("webm")) ?? candidates[0] ?? null;
+  }
+
+  return candidates[0] ?? null;
+}
+
+export function orderCaptionsByPreference({
+  captionTracks,
+  languageMode,
+  locale
+}: {
+  captionTracks: CaptionTrack[];
+  languageMode: AudioTrackLanguageMode;
+  locale: string;
+}) {
+  if (languageMode === AudioTrackLanguageMode.OriginalLanguage || captionTracks.length <= 1) {
+    return captionTracks;
+  }
+
+  const lang = normalizeLanguageCode(locale);
+  const preferred = captionTracks.filter(track => normalizeLanguageCode(track.languageCode) === lang);
+  const rest = captionTracks.filter(track => normalizeLanguageCode(track.languageCode) !== lang);
+  return [...preferred, ...rest];
 }
 
 const DOWNLOAD_PHASE_WEIGHT = 70;

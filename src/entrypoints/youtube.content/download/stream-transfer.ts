@@ -1,7 +1,7 @@
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { downloadProgressStore } from "@/lib/ui/synced-stores.svelte";
 import { TRANSFER_CHUNK_SIZE, uint8ToBase64 } from "@/lib/utils/binary";
-import { StreamType } from "@/types";
+import { AUDIO_EXTRA_STREAM_PREFIX, StreamType } from "@/types";
 import type { StreamDataPayload } from "@/types";
 
 const cancelledVideoIds = new Set<string>();
@@ -89,7 +89,7 @@ export async function handleStreamData(payload: StreamDataPayload) {
       streamTasks.push(
         sendStreamChunks({
           videoId,
-          streamType: `audio-extra-${i}`,
+          streamType: `${AUDIO_EXTRA_STREAM_PREFIX}-${i}`,
           data: track.data
         })
       );

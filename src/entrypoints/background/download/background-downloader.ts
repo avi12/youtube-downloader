@@ -7,9 +7,10 @@ import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
 import { interruptedDownloadsItem, mutateStorageItem } from "@/lib/storage/storage";
 import { TRANSFER_CHUNK_SIZE, uint8ToBase64 } from "@/lib/utils/binary";
+import { stripMimeParams } from "@/lib/utils/containers";
 import { fetchYouTubeMusicMetadata } from "@/lib/youtube/youtube-music-metadata";
-import { ProgressType, StreamType } from "@/types";
-import type { DownloadRequest, VideoMetadata } from "@/types";
+import { AUDIO_EXTRA_STREAM_PREFIX, ProgressType, StreamType } from "@/types";
+import type { CaptionTrack, DownloadRequest, VideoMetadata } from "@/types";
 
 export interface DownloadResult {
   videoData: Uint8Array | null;
@@ -99,6 +100,24 @@ async function sendStreamChunksToOffscreen({ videoId, streamType, data, tabId }:
   }
 }
 
+async function fetchCaptionVttData(captionTracks: CaptionTrack[]) {
+  return Promise.all(
+    captionTracks.map(async track => {
+      try {
+        const response = await fetch(`${track.baseUrl}&fmt=vtt`);
+        if (!response.ok) {
+          return null;
+        }
+
+        const buffer = await response.arrayBuffer();
+        return uint8ToBase64(new Uint8Array(buffer));
+      } catch {
+        return null;
+      }
+    })
+  );
+}
+
 async function dispatchToOffscreen({ request, result, enrichedMetadata, tabId }: {
   request: DownloadRequest;
   result: DownloadResult;
@@ -109,12 +128,12 @@ async function dispatchToOffscreen({ request, result, enrichedMetadata, tabId }:
 
   const {
     videoId, type, filenameOutput, videoFormat, audioFormat,
-    primaryAudioLabel, playlistId, playlistTitle, playlistTotalCount
+    primaryAudioLabel, captionTracks, playlistId, playlistTitle, playlistTotalCount
   } = request;
   const { videoData, audioData, additionalAudioTracks } = result;
 
-  const resolvedVideoMimeType = videoFormat?.mimeType.split(";")[0] ?? "video/mp4";
-  const resolvedAudioMimeType = audioFormat?.mimeType.split(";")[0] ?? "audio/mp4";
+  const resolvedVideoMimeType = videoFormat ? stripMimeParams(videoFormat.mimeType) : "video/mp4";
+  const resolvedAudioMimeType = audioFormat ? stripMimeParams(audioFormat.mimeType) : "audio/mp4";
   const transferJobs: Promise<void>[] = [];
   if (videoData) {
     transferJobs.push(
@@ -143,7 +162,7 @@ async function dispatchToOffscreen({ request, result, enrichedMetadata, tabId }:
       transferJobs.push(
         sendStreamChunksToOffscreen({
           videoId,
-          streamType: `audio-extra-${i}`,
+          streamType: `${AUDIO_EXTRA_STREAM_PREFIX}-${i}`,
           data: track.data,
           tabId
         })
@@ -158,6 +177,26 @@ async function dispatchToOffscreen({ request, result, enrichedMetadata, tabId }:
     ...additionalAudioTracks.map(track => track.label)
   ];
 
+  const fetchedCaptionData = captionTracks?.length
+    ? await fetchCaptionVttData(captionTracks)
+    : [];
+
+  const subtitleTracks: {
+    dataBase64: string;
+    label: string;
+    languageCode: string;
+  }[] = [];
+  for (const [i, track] of (captionTracks ?? []).entries()) {
+    const dataBase64 = fetchedCaptionData[i];
+    if (dataBase64) {
+      subtitleTracks.push({
+        dataBase64,
+        label: track.name.simpleText,
+        languageCode: track.languageCode
+      });
+    }
+  }
+
   sendToOffscreen(OffscreenMessageType.ProcessStreamEnd, {
     type,
     videoId,
@@ -165,6 +204,7 @@ async function dispatchToOffscreen({ request, result, enrichedMetadata, tabId }:
     videoMimeType: resolvedVideoMimeType,
     audioMimeType: resolvedAudioMimeType,
     audioTrackLabels,
+    subtitleTracks,
     tabId,
     playlistId,
     playlistTitle,

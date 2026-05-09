@@ -1,14 +1,20 @@
-import { toUint8Array, triggerDownload, reportProgress } from ".";
+import { toUint8Array, triggerDownload, reportProgress, FFMPEG_PROGRESS_CAP } from ".";
 import { getFFmpeg, progressHandlers, tryUnlink } from "./ffmpeg-instance";
 import { addToPlaylistBundle } from "./playlist-bundle";
 import {
   CONTAINER_SPECS,
   extractBaseCodec,
+  getAudioTempExtension,
   getCompatibleFilename,
+  getVideoTempExtension,
   isVideoNativeForContainer
 } from "@/lib/utils/containers";
-import { ProgressType } from "@/types";
+import { AUDIO_EXTRA_STREAM_PREFIX, ProgressType } from "@/types";
 import type { ProcessStreamData } from "@/types";
+
+function resolveSubtitleCodec(targetExtension: string) {
+  return CONTAINER_SPECS[targetExtension]?.subtitleCodec ?? "webvtt";
+}
 
 function resolveAudioCodec(audioMimeType: string, targetExtension: string) {
   const spec = CONTAINER_SPECS[targetExtension];
@@ -22,11 +28,12 @@ function resolveAudioCodec(audioMimeType: string, targetExtension: string) {
 
 export async function processVideoAudio(item: ProcessStreamData, isCancelled: () => boolean) {
   const {
-    videoId, filenameOutput, videoMimeType, audioMimeType, tabId, additionalAudioStreams
+    videoId, filenameOutput, videoMimeType, audioMimeType, tabId, additionalAudioStreams,
+    subtitleTracks
   } = item;
 
-  const videoExtension = videoMimeType.includes("webm") ? "webm" : "mp4";
-  const audioExtension = audioMimeType.includes("webm") ? "webm" : "m4a";
+  const videoExtension = getVideoTempExtension(videoMimeType);
+  const audioExtension = getAudioTempExtension(audioMimeType);
   const isExtraTracksPresent = Boolean(additionalAudioStreams.length);
   const filenameBase = filenameOutput.replace(/\.[^.]+$/, "");
   const targetExtension = isExtraTracksPresent ? "mkv" : (filenameOutput.split(".").pop() ?? "mkv");
@@ -46,13 +53,12 @@ export async function processVideoAudio(item: ProcessStreamData, isCancelled: ()
   const isNativeToTarget = targetExtension === "mkv" || isVideoNativeForContainer(videoMimeType, targetExtension);
   const useIntermediateMkv = targetExtension !== "mkv" && !isNativeToTarget;
 
-  const ffmpegProgressCapBeforeSave = 0.99;
   let progressOffset = 0;
   let progressScale = useIntermediateMkv ? 0.5 : 1;
 
   function handleFFmpegProgress({ progress }: { progress: number }) {
     const scaled = progressOffset + progress * progressScale;
-    const cappedProgress = Math.min(scaled, ffmpegProgressCapBeforeSave);
+    const cappedProgress = Math.min(scaled, FFMPEG_PROGRESS_CAP);
     void reportProgress({
       videoId,
       progress: cappedProgress,
@@ -66,6 +72,11 @@ export async function processVideoAudio(item: ProcessStreamData, isCancelled: ()
   const extraAudioTracks: {
     filename: string;
     label: string;
+  }[] = [];
+  const subtitleFiles: {
+    filename: string;
+    label: string;
+    languageCode: string;
   }[] = [];
 
   try {
@@ -119,8 +130,8 @@ export async function processVideoAudio(item: ProcessStreamData, isCancelled: ()
         continue;
       }
 
-      const extraExtension = stream.mimeType.includes("webm") ? "webm" : "m4a";
-      const extraFilename = `${videoId}-audio-extra-${i}.${extraExtension}`;
+      const extraExtension = getAudioTempExtension(stream.mimeType);
+      const extraFilename = `${videoId}-${AUDIO_EXTRA_STREAM_PREFIX}-${i}.${extraExtension}`;
       ffmpeg.FS.writeFile(extraFilename, extraData);
       extraAudioTracks.push({
         filename: extraFilename,
@@ -128,8 +139,25 @@ export async function processVideoAudio(item: ProcessStreamData, isCancelled: ()
       });
     }
 
+    for (const [i, track] of (subtitleTracks ?? []).entries()) {
+      if (!track.data) {
+        continue;
+      }
+
+      const subFilename = `${videoId}-sub-${i}.vtt`;
+      ffmpeg.FS.writeFile(subFilename, track.data);
+      subtitleFiles.push({
+        filename: subFilename,
+        label: track.label,
+        languageCode: track.languageCode
+      });
+    }
+
     const ffmpegArgs = ["-i", videoFilename, "-i", primaryAudioFilename];
     for (const { filename } of extraAudioTracks) {
+      ffmpegArgs.push("-i", filename);
+    }
+    for (const { filename } of subtitleFiles) {
       ffmpegArgs.push("-i", filename);
     }
 
@@ -137,17 +165,36 @@ export async function processVideoAudio(item: ProcessStreamData, isCancelled: ()
     for (let i = 0; i <= extraAudioTracks.length; i++) {
       ffmpegArgs.push("-map", `${i + 1}:a:0`);
     }
+    const subtitleInputOffset = 2 + extraAudioTracks.length;
+    for (let i = 0; i < subtitleFiles.length; i++) {
+      ffmpegArgs.push("-map", `${subtitleInputOffset + i}:s:0`);
+    }
 
-    // When going directly to the target format, apply the audio codec in this pass.
+    // When going directly to the target format, apply the audio/subtitle codecs in this pass.
     // When using an intermediate MKV, stream-copy everything — the second pass handles transcoding.
     const phase1AudioCodec = useIntermediateMkv ? "copy" : resolveAudioCodec(audioMimeType, targetExtension);
+    const phase1SubtitleCodec = useIntermediateMkv ? "webvtt" : resolveSubtitleCodec(targetExtension);
     ffmpegArgs.push("-c:v", "copy", "-c:a", phase1AudioCodec);
+
+    if (subtitleFiles.length > 0) {
+      ffmpegArgs.push("-c:s", phase1SubtitleCodec);
+    }
 
     const audioTrackLabels = [item.primaryAudioLabel ?? "", ...extraAudioTracks.map(track => track.label)];
     for (let i = 0; i < audioTrackLabels.length; i++) {
       const label = audioTrackLabels[i];
       if (label) {
         ffmpegArgs.push(`-metadata:s:a:${i}`, `title=${label}`);
+      }
+    }
+    for (let i = 0; i < subtitleFiles.length; i++) {
+      const { label, languageCode } = subtitleFiles[i];
+      if (label) {
+        ffmpegArgs.push(`-metadata:s:s:${i}`, `title=${label}`);
+      }
+
+      if (languageCode) {
+        ffmpegArgs.push(`-metadata:s:s:${i}`, `language=${languageCode}`);
       }
     }
 
@@ -163,7 +210,14 @@ export async function processVideoAudio(item: ProcessStreamData, isCancelled: ()
       progressOffset = 0.5;
       progressScale = 0.5;
       const audioCodec = resolveAudioCodec(audioMimeType, targetExtension);
-      const transcodeExitCode = ffmpeg.exec("-i", muxFilename, "-c:v", "copy", "-c:a", audioCodec, outputFilename);
+      const subtitleCodec = resolveSubtitleCodec(targetExtension);
+      const phase2Args = ["-i", muxFilename, "-c:v", "copy", "-c:a", audioCodec];
+      if (subtitleFiles.length > 0) {
+        phase2Args.push("-c:s", subtitleCodec);
+      }
+
+      phase2Args.push(outputFilename);
+      const transcodeExitCode = ffmpeg.exec(...phase2Args);
       if (transcodeExitCode !== 0) {
         throw new Error(`FFmpeg exited with code ${transcodeExitCode}`);
       }
@@ -238,6 +292,13 @@ export async function processVideoAudio(item: ProcessStreamData, isCancelled: ()
     }
 
     for (const { filename } of extraAudioTracks) {
+      tryUnlink({
+        ffmpeg,
+        filename
+      });
+    }
+
+    for (const { filename } of subtitleFiles) {
       tryUnlink({
         ffmpeg,
         filename

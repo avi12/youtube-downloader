@@ -1,8 +1,9 @@
-import type { AdaptiveFormatItem, PlayerResponse } from "./youtube";
+import type { AdaptiveFormatItem, CaptionTrack, PlayerResponse } from "./youtube";
 
 export type {
   AdaptiveFormatItem,
   ButtonViewModelData,
+  CaptionTrack,
   PlayerResponse,
   TpYtIronDropdownElement,
   TpYtPaperProgressElement,
@@ -66,10 +67,19 @@ export const PlaylistOutputMode = {
 
 export type PlaylistOutputMode = (typeof PlaylistOutputMode)[keyof typeof PlaylistOutputMode];
 
+export const AudioTrackLanguageMode = {
+  MatchYouTube: "match-youtube",
+  OriginalLanguage: "original"
+} as const;
+
+export type AudioTrackLanguageMode = (typeof AudioTrackLanguageMode)[keyof typeof AudioTrackLanguageMode];
+
 export const StreamType = {
   Video: "video",
   Audio: "audio"
 } as const;
+
+export const AUDIO_EXTRA_STREAM_PREFIX = "audio-extra";
 
 export type StreamType = (typeof StreamType)[keyof typeof StreamType];
 
@@ -79,6 +89,12 @@ export type SabrConfig = {
   clientName: number;
   clientVersion: string;
   formats: AdaptiveFormatItem[];
+};
+
+export type SubtitleTrack = {
+  data: Uint8Array | null;
+  label: string;
+  languageCode: string;
 };
 
 export type DownloadRequest = {
@@ -98,6 +114,7 @@ export type DownloadRequest = {
   audioFormat?: AdaptiveFormatItem | null;
   additionalAudioFormats?: AdaptiveFormatItem[];
   primaryAudioLabel?: string;
+  captionTracks?: CaptionTrack[];
   metadata?: VideoMetadata | null;
   resolvedVideoUrl?: string | null;
   resolvedAudioUrl?: string | null;
@@ -119,6 +136,7 @@ export type Options = {
   playlistOutputMode: PlaylistOutputMode;
   playlistAudioOutputMode: PlaylistOutputMode;
   isPlaylistScrollSyncEnabled: boolean;
+  audioTrackLanguageMode: AudioTrackLanguageMode;
 };
 
 export type StreamData = {
@@ -135,6 +153,7 @@ export type StreamData = {
     mimeType: string;
     label: string;
   }[];
+  subtitleTracks: SubtitleTrack[];
 };
 
 export type VideoMetadata = {
@@ -165,5 +184,6 @@ export type VideoData = {
   isLive: boolean;
   videoFormats: AdaptiveFormatItem[];
   audioFormats: AdaptiveFormatItem[];
+  captionTracks: CaptionTrack[];
   sabrConfig: SabrConfig | null;
 };

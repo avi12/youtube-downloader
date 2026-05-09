@@ -3,7 +3,13 @@
   import { setOption } from "@/lib/storage/storage";
   import { supportedExtensions } from "@/lib/utils/containers";
   import { videoQualities } from "@/lib/youtube/video-helpers";
-  import { DownloadType, PlaylistDownloadMode, PlaylistOutputMode, VideoQualityMode } from "@/types";
+  import {
+    AudioTrackLanguageMode,
+    DownloadType,
+    PlaylistDownloadMode,
+    PlaylistOutputMode,
+    VideoQualityMode
+  } from "@/types";
   import type { DownloadTypePreference, Options } from "@/types";
   import { slide } from "svelte/transition";
 
@@ -72,6 +78,20 @@
     {
       value: PlaylistOutputMode.Zip,
       label: "Single ZIP"
+    }
+  ];
+
+  const languageModeOptions: Array<{
+    value: AudioTrackLanguageMode;
+    label: string;
+  }> = [
+    {
+      value: AudioTrackLanguageMode.MatchYouTube,
+      label: "Match YouTube language"
+    },
+    {
+      value: AudioTrackLanguageMode.OriginalLanguage,
+      label: "Original language"
     }
   ];
 </script>
@@ -236,6 +256,26 @@
         </label>
       </div>
     </div>
+  </fieldset>
+
+  <fieldset class="settings-group">
+    <legend class="settings-legend">Audio &amp; subtitles</legend>
+    <span class="settings-sub-legend">Language priority for audio tracks and subtitles</span>
+    <p class="settings-hint">Applies to videos with multiple languages when no track is actively selected</p>
+    {#each languageModeOptions as { value, label } (value)}
+      <div class="settings-row">
+        <label class="settings-label settings-radio-label">
+          <input
+            name="language-mode"
+            checked={options.audioTrackLanguageMode === value}
+            onchange={() => void setOption("audioTrackLanguageMode", value)}
+            type="radio"
+            {value}
+          />
+          {label}
+        </label>
+      </div>
+    {/each}
   </fieldset>
 
   <fieldset class="settings-group">

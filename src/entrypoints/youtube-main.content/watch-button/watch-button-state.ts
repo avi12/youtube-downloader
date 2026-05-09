@@ -1,14 +1,33 @@
 import { contentOptions, interruptedDownloadStore } from "@/lib/ui/synced-stores.svelte";
 import { getCompatibleFilename, getOutputExtension, resolveAutoExtension } from "@/lib/utils/containers";
+import { selectPreferredAudioFormat } from "@/lib/youtube/video-helpers";
 import { DownloadType, type VideoData } from "@/types";
 
-function getPreferredAudioFormat(videoData: VideoData) {
-  const videoMime = videoData.videoFormats[0]?.mimeType ?? "";
-  if (videoMime.includes("webm")) {
-    return videoData.audioFormats.find(format => format.mimeType.includes("webm")) ?? videoData.audioFormats[0] ?? null;
+function getActiveAudioTrackLanguage() {
+  const audioTracks = document.querySelector("video")?.audioTracks;
+  if (!audioTracks) {
+    return undefined;
   }
 
-  return videoData.audioFormats[0] ?? null;
+  for (let i = 0; i < audioTracks.length; i++) {
+    if (audioTracks[i].enabled) {
+      return audioTracks[i].language || undefined;
+    }
+  }
+
+  return undefined;
+}
+
+function getPreferredAudioFormat(videoData: VideoData) {
+  const options = contentOptions.value;
+  const videoMime = videoData.videoFormats[0]?.mimeType ?? "";
+  return selectPreferredAudioFormat({
+    audioFormats: videoData.audioFormats,
+    videoMimeType: videoMime,
+    languageMode: options.audioTrackLanguageMode,
+    locale: document.documentElement.lang,
+    activeLanguage: getActiveAudioTrackLanguage()
+  });
 }
 
 export function buildInitialDownloadState(videoData: VideoData) {

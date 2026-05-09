@@ -109,6 +109,15 @@ export type AdaptiveFormatItem = MediaItem & {
   xtags?: string;
 };
 
+export type CaptionTrack = {
+  baseUrl: string;
+  name: { simpleText: string };
+  vssId: string;
+  languageCode: string;
+  kind?: string;
+  isTranslatable: boolean;
+};
+
 export type PlayerResponse = {
   playabilityStatus: {
     status: `${PlayabilityStatus}`;
@@ -163,6 +172,11 @@ export type PlayerResponse = {
       };
     };
     [key: string]: unknown;
+  };
+  captions?: {
+    playerCaptionsTracklistRenderer: {
+      captionTracks: CaptionTrack[];
+    };
   };
 };
 
@@ -295,6 +309,18 @@ export interface TpYtIronDropdownElement extends HTMLElement {
 }
 
 declare global {
+  interface HTMLVideoElement {
+    // audioTracks is supported in all modern browsers but absent from some TS lib versions
+    audioTracks?: {
+      readonly length: number;
+      [index: number]: {
+        enabled: boolean;
+        language: string;
+        id: string;
+      };
+    };
+  }
+
   interface HTMLElementTagNameMap {
     "yt-button-view-model": YtButtonViewModelElement;
     "tp-yt-paper-dropdown-menu": TpYtPaperDropdownMenuElement;

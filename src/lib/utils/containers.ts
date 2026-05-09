@@ -97,6 +97,8 @@ interface ContainerSpec {
   // When true, non-native video can still be stream-copied into the container
   // (non-standard but functional — e.g. VP9 in MP4). Falls back to MKV otherwise.
   allowNonNativeVideo?: boolean;
+  // FFmpeg subtitle codec for this container. Defaults to "webvtt" when absent.
+  subtitleCodec?: string;
 }
 
 // Codec compatibility per container. To add a new container, add one entry here.
@@ -104,14 +106,16 @@ interface ContainerSpec {
 export const CONTAINER_SPECS: Record<string, ContainerSpec> = {
   webm: {
     videoCodecs: new Set(["vp8", "vp9", "av01"]),
-    audioCodecs: new Set(["opus", "vorbis"])
+    audioCodecs: new Set(["opus", "vorbis"]),
     // libopus encoder absent from @ffmpeg/core — no audio transcode available
+    subtitleCodec: "webvtt"
   },
   mp4: {
     videoCodecs: new Set(["avc1", "hvc1", "hev1", "av01", "mp4v"]),
     audioCodecs: new Set(["mp4a", "ac-3", "ec-3", "flac"]),
     fallbackAudioCodec: "aac",
-    allowNonNativeVideo: true
+    allowNonNativeVideo: true,
+    subtitleCodec: "mov_text"
   }
 };
 
@@ -140,9 +144,21 @@ export function getOutputExtension({ videoMimeType, audioMimeType, userExtension
   return videoOk && audioOk ? userExtension : "mkv";
 }
 
+export function stripMimeParams(mimeType: string) {
+  return mimeType.split(";")[0];
+}
+
+export function getVideoTempExtension(mimeType: string) {
+  return mimeType.includes("webm") ? "webm" : "mp4";
+}
+
+export function getAudioTempExtension(mimeType: string) {
+  return mimeType.includes("webm") ? "webm" : "m4a";
+}
+
 // Returns true when the video can be stream-copied into the target container
 // without the two-phase MKV intermediate (i.e. it is natively supported).
-export function isVideoNativeForContainer(videoMimeType: string, targetExtension: string): boolean {
+export function isVideoNativeForContainer(videoMimeType: string, targetExtension: string) {
   const spec = CONTAINER_SPECS[targetExtension];
   if (!spec) {
     return true;

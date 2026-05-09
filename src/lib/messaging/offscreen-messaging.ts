@@ -30,6 +30,11 @@ interface OffscreenProtocolMap {
     videoMimeType: string;
     audioMimeType: string;
     audioTrackLabels: string[];
+    subtitleTracks?: {
+      dataBase64: string;
+      label: string;
+      languageCode: string;
+    }[];
     tabId: number;
     playlistId?: string;
     playlistTitle?: string;

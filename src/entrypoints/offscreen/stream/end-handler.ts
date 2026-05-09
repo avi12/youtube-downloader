@@ -1,7 +1,8 @@
 import { STREAM_ACCUMULATORS } from "./accumulator";
 import { assembleStreamChunks } from "./codec";
 import { enqueueStreamData } from "@/lib/download-pipeline";
-import { DownloadType } from "@/types";
+import { base64ToUint8Array } from "@/lib/utils/binary";
+import { AUDIO_EXTRA_STREAM_PREFIX, DownloadType } from "@/types";
 import type { VideoMetadata } from "@/types";
 
 export function handleProcessStreamEnd(data: {
@@ -11,6 +12,11 @@ export function handleProcessStreamEnd(data: {
   videoMimeType: string;
   audioMimeType: string;
   audioTrackLabels: string[];
+  subtitleTracks?: {
+    dataBase64: string;
+    label: string;
+    languageCode: string;
+  }[];
   tabId: number;
   playlistId?: string;
   playlistTitle?: string;
@@ -18,7 +24,7 @@ export function handleProcessStreamEnd(data: {
   metadata?: VideoMetadata | null;
 }) {
   const {
-    videoId, type, filenameOutput, videoMimeType, audioMimeType, audioTrackLabels, tabId,
+    videoId, type, filenameOutput, videoMimeType, audioMimeType, audioTrackLabels, subtitleTracks, tabId,
     playlistId, playlistTitle, playlistTotalCount
   } = data;
   const accumulator = STREAM_ACCUMULATORS.get(videoId);
@@ -27,7 +33,7 @@ export function handleProcessStreamEnd(data: {
   const primaryAudio = accumulator?.audioStreams.get("audio");
   const [primaryAudioLabel, ...extraTrackLabels] = audioTrackLabels;
   const additionalAudioStreams = extraTrackLabels.map((label, iTrack) => {
-    const audioStream = accumulator?.audioStreams.get(`audio-extra-${iTrack}`);
+    const audioStream = accumulator?.audioStreams.get(`${AUDIO_EXTRA_STREAM_PREFIX}-${iTrack}`);
     return {
       data: audioStream
         ? assembleStreamChunks({
@@ -39,6 +45,12 @@ export function handleProcessStreamEnd(data: {
       label
     };
   });
+
+  const decodedSubtitleTracks = (subtitleTracks ?? []).map(({ dataBase64, label, languageCode }) => ({
+    data: base64ToUint8Array(dataBase64),
+    label,
+    languageCode
+  }));
 
   enqueueStreamData({
     type,
@@ -60,6 +72,7 @@ export function handleProcessStreamEnd(data: {
     audioMimeType,
     primaryAudioLabel,
     additionalAudioStreams,
+    subtitleTracks: decodedSubtitleTracks,
     tabId,
     playlistId,
     playlistTitle,

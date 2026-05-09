@@ -8,6 +8,8 @@ import type { ProcessStreamData } from "@/types";
 
 export { initFFmpeg } from "./ffmpeg-instance";
 
+export const FFMPEG_PROGRESS_CAP = 0.99;
+
 export function toUint8Array(data: Uint8Array | Record<string, number> | null) {
   if (!data) {
     return null;

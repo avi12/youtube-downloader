@@ -9,6 +9,7 @@ import {
   calculateWeightedProgress,
   formatAudioCodecLabel,
   formatVideoQualityLabel,
+  selectPreferredAudioFormat,
   waitForVideoElement
 } from "@/lib/youtube/video-helpers";
 import { DownloadType, VideoQualityMode, type AdaptiveFormatItem, type VideoData } from "@/types";
@@ -17,16 +18,6 @@ import { untrack } from "svelte";
 // Prefer M4A (AAC) over WebM/Opus for music because M4A supports MJPEG cover art embedding.
 function getPreferredMusicAudioFormat(audioFormats: AdaptiveFormatItem[]) {
   return audioFormats.find(format => format.mimeType.includes("mp4")) ?? audioFormats[0] ?? null;
-}
-
-// For VP9/webm video, prefer webm/Opus audio so the output stays webm with no transcode.
-// @ffmpeg/core doesn't ship libopus so AAC→Opus transcoding is unavailable.
-function getPreferredVideoAudioFormat(videoMimeType: string, audioFormats: AdaptiveFormatItem[]) {
-  if (videoMimeType.includes("webm")) {
-    return audioFormats.find(format => format.mimeType.includes("webm")) ?? audioFormats[0] ?? null;
-  }
-
-  return audioFormats[0] ?? null;
 }
 
 export function createPanelState(getVideoData: () => VideoData) {
@@ -57,9 +48,17 @@ export function createPanelState(getVideoData: () => VideoData) {
   let selectedAudioFormat = $state<AdaptiveFormatItem | null>(
     untrack(() => {
       const videoData = getVideoData();
-      return videoData.isMusic
-        ? getPreferredMusicAudioFormat(videoData.audioFormats)
-        : getPreferredVideoAudioFormat(videoData.videoFormats[0]?.mimeType ?? "", videoData.audioFormats);
+      if (videoData.isMusic) {
+        return getPreferredMusicAudioFormat(videoData.audioFormats);
+      }
+
+      const options = contentOptions.value;
+      return selectPreferredAudioFormat({
+        audioFormats: videoData.audioFormats,
+        videoMimeType: videoData.videoFormats[0]?.mimeType ?? "",
+        languageMode: options.audioTrackLanguageMode,
+        locale: document.documentElement.lang
+      });
     })
   );
   let filename = $state(untrack(() => getCompatibleFilename(getVideoData().title || getVideoData().videoId)));
