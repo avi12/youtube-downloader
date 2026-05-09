@@ -19,6 +19,16 @@ function getPreferredMusicAudioFormat(audioFormats: AdaptiveFormatItem[]) {
   return audioFormats.find(format => format.mimeType.includes("mp4")) ?? audioFormats[0] ?? null;
 }
 
+// For VP9/webm video, prefer webm/Opus audio so the output stays webm with no transcode.
+// @ffmpeg/core doesn't ship libopus so AAC→Opus transcoding is unavailable.
+function getPreferredVideoAudioFormat(videoMimeType: string, audioFormats: AdaptiveFormatItem[]) {
+  if (videoMimeType.includes("webm")) {
+    return audioFormats.find(format => format.mimeType.includes("webm")) ?? audioFormats[0] ?? null;
+  }
+
+  return audioFormats[0] ?? null;
+}
+
 export function createPanelState(getVideoData: () => VideoData) {
   // Download/progress state is derived directly from the shared store so the
   // panel is always in sync with the watch button and background without a
@@ -49,7 +59,7 @@ export function createPanelState(getVideoData: () => VideoData) {
       const videoData = getVideoData();
       return videoData.isMusic
         ? getPreferredMusicAudioFormat(videoData.audioFormats)
-        : videoData.audioFormats[0] ?? null;
+        : getPreferredVideoAudioFormat(videoData.videoFormats[0]?.mimeType ?? "", videoData.audioFormats);
     })
   );
   let filename = $state(untrack(() => getCompatibleFilename(getVideoData().title || getVideoData().videoId)));

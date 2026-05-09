@@ -2,11 +2,21 @@ import { contentOptions, interruptedDownloadStore } from "@/lib/ui/synced-stores
 import { getCompatibleFilename, getOutputExtension, resolveAutoExtension } from "@/lib/utils/containers";
 import { DownloadType, type VideoData } from "@/types";
 
+function getPreferredAudioFormat(videoData: VideoData) {
+  const videoMime = videoData.videoFormats[0]?.mimeType ?? "";
+  if (videoMime.includes("webm")) {
+    return videoData.audioFormats.find(format => format.mimeType.includes("webm")) ?? videoData.audioFormats[0] ?? null;
+  }
+
+  return videoData.audioFormats[0] ?? null;
+}
+
 export function buildInitialDownloadState(videoData: VideoData) {
   let videoItag = videoData.videoFormats[0]?.itag ?? 0;
-  let audioItag = videoData.audioFormats[0]?.itag ?? 0;
+  const preferredAudio = getPreferredAudioFormat(videoData);
+  let audioItag = preferredAudio?.itag ?? 0;
   const videoMime = videoData.videoFormats[0]?.mimeType ?? "video/mp4";
-  const audioMime = videoData.audioFormats[0]?.mimeType ?? "audio/mp4";
+  const audioMime = preferredAudio?.mimeType ?? "audio/mp4";
 
   const options = contentOptions.value;
   let extension: string;

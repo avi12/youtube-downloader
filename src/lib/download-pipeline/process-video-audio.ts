@@ -137,7 +137,7 @@ export async function processVideoAudio(item: ProcessStreamData, isCancelled: ()
     if (needsTranscode) {
       progressOffset = 0.5;
       progressScale = 0.5;
-      const transcodeExitCode = ffmpeg.exec("-i", muxFilename, "-c", "copy", outputFilename);
+      const transcodeExitCode = ffmpeg.exec("-i", muxFilename, "-c:v", "copy", "-c:a", "copy", outputFilename);
       if (transcodeExitCode !== 0) {
         throw new Error(`FFmpeg exited with code ${transcodeExitCode}`);
       }
