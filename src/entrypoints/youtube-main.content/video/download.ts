@@ -4,7 +4,7 @@ import { buildVideoMetadata, generatePoTokenIfNeeded, videoDataCache } from "./v
 import { CrossWorldEvent, emitCrossWorldEvent } from "@/lib/messaging/cross-world-events";
 import { crossWorldMessenger, CrossWorldMessage } from "@/lib/messaging/cross-world-messenger";
 import { contentOptions, sabrCredentials } from "@/lib/ui/synced-stores.svelte";
-import { orderCaptionsByPreference } from "@/lib/youtube/video-helpers";
+import { isVideoDataExpired, orderCaptionsByPreference } from "@/lib/youtube/video-helpers";
 import { type AdaptiveFormatItem, type DownloadRequest, DownloadType, ProgressType } from "@/types";
 
 const activeDownloads = new Map<string, AbortController>();
@@ -161,6 +161,21 @@ export async function performDownload({
     const cachedVideoData = videoDataCache.get(videoId);
     if (!cachedVideoData) {
       console.error("[ytdl] No video data cached for", videoId);
+      return;
+    }
+
+    if (self === top && isVideoDataExpired(cachedVideoData)) {
+      void crossWorldMessenger.sendMessage(CrossWorldMessage.DownloadViaIframe, {
+        type,
+        videoId,
+        videoItag,
+        audioItag,
+        filenameOutput,
+        isIframeFallback: true,
+        playlistId,
+        playlistTitle,
+        playlistTotalCount
+      });
       return;
     }
 
