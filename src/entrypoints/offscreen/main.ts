@@ -7,11 +7,8 @@ import { transcodeRecentDownload } from "@/lib/download-pipeline/transcode-recen
 import { OffscreenMessageType, listenForOffscreenMessages } from "@/lib/messaging/offscreen-messaging";
 import { browser } from "#imports";
 
-const wasmBinary = await fetch(
-  browser.runtime.getURL("/node_modules/@ffmpeg/core/dist/umd/ffmpeg-core.wasm")
-).then(res => res.arrayBuffer());
-await initMuxWorker(wasmBinary);
-
+// Connect to the SW before FFmpeg init so the port is ready when
+// PipelineFFmpegReady fires and the SW starts sending chunks.
 listenForOffscreenMessages({
   [OffscreenMessageType.ProcessStreamChunk]: handleProcessStreamChunk,
   [OffscreenMessageType.ProcessStreamEnd]: handleProcessStreamEnd,
@@ -31,3 +28,8 @@ listenForOffscreenMessages({
     removeDownloadIframe(data.videoId);
   }
 });
+
+const wasmBinary = await fetch(
+  browser.runtime.getURL("/node_modules/@ffmpeg/core/dist/umd/ffmpeg-core.wasm")
+).then(res => res.arrayBuffer());
+await initMuxWorker(wasmBinary);

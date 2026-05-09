@@ -4,7 +4,7 @@ import { ensureProcessor } from "./handlers/processor";
 import { getTabIdsForVideo, tabTracker, trackVideoForTab, untrackVideoForTab } from "./queue/tab-tracker";
 import { registerRecentDownloadsRetention } from "./recent/recent-downloads-retention";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
-import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
+import { OffscreenMessageType, sendToOffscreen, initOffscreenPortListener } from "@/lib/messaging/offscreen-messaging";
 import {
   clearLocalStorage,
   interruptedDownloadsItem,
@@ -173,6 +173,7 @@ function registerTabLifecycleHandlers() {
 }
 
 export default defineBackground(async () => {
+  initOffscreenPortListener();
   void registerSabrOriginRule();
   startSabrRequestCapture();
   onSabrBodyCaptured(tabId => {

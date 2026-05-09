@@ -100,42 +100,46 @@ function dispatchOffscreenMessage({ handlers, message }: {
   }
 }
 
-let offscreenPort: Browser.runtime.Port | null = null;
+let swSidePort: Browser.runtime.Port | null = null;
 
-function getOffscreenPort() {
-  if (!offscreenPort) {
-    offscreenPort = browser.runtime.connect({ name: OFFSCREEN_PORT_NAME });
-    offscreenPort.onDisconnect.addListener(() => {
-      offscreenPort = null;
+function initOffscreenPortListener() {
+  browser.runtime.onConnect.addListener(port => {
+    if (port.name !== OFFSCREEN_PORT_NAME) {
+      return;
+    }
+
+    swSidePort = port;
+    port.onDisconnect.addListener(() => {
+      swSidePort = null;
     });
-  }
-
-  return offscreenPort;
+  });
 }
 
 function sendToOffscreen<T extends OffscreenMessageType>(
   type: T,
   data: OffscreenProtocolMap[T]
 ) {
-  getOffscreenPort().postMessage({
+  swSidePort?.postMessage({
     type,
     data
   });
 }
 
 function listenForOffscreenMessages(handlers: HandlerMap) {
-  browser.runtime.onConnect.addListener(port => {
-    if (port.name !== OFFSCREEN_PORT_NAME) {
-      return;
-    }
-
+  function connect() {
+    const port = browser.runtime.connect({ name: OFFSCREEN_PORT_NAME });
+    port.onDisconnect.addListener(() => {
+      connect();
+    });
     port.onMessage.addListener((message: OffscreenMessage) => {
       dispatchOffscreenMessage({
         handlers,
         message
       });
     });
-  });
+  }
+
+  connect();
 }
 
-export { OffscreenMessageType, sendToOffscreen, listenForOffscreenMessages };
+export { OffscreenMessageType, sendToOffscreen, listenForOffscreenMessages, initOffscreenPortListener };
