@@ -38,8 +38,9 @@ function getAudioFormats(formats: AdaptiveFormatItem[]) {
   });
 }
 
-function byBitrateDesc(formatA: AdaptiveFormatItem, formatB: AdaptiveFormatItem) {
-  return formatB.bitrate - formatA.bitrate;
+function byQualityDesc(formatA: AdaptiveFormatItem, formatB: AdaptiveFormatItem) {
+  const heightDiff = (formatB.height ?? 0) - (formatA.height ?? 0);
+  return heightDiff !== 0 ? heightDiff : formatB.bitrate - formatA.bitrate;
 }
 
 function extractSabrConfig({ playerResponse, clientVersion, clientName }: {
@@ -73,7 +74,7 @@ export function buildVideoData({ playerResponse, clientVersion, clientName }: {
   const isMusic = isVideoMusic(playerResponse);
 
   const allFormats = (isDownloadable ? playerResponse.streamingData?.adaptiveFormats : null)
-    ?.toSorted(byBitrateDesc) ?? [];
+    ?.toSorted(byQualityDesc) ?? [];
 
   const { videoDetails } = playerResponse;
   const allCaptionTracks = playerResponse.captions?.playerCaptionsTracklistRenderer?.captionTracks ?? [];
