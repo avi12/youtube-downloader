@@ -1,18 +1,18 @@
 import { toUint8Array, triggerDownload, reportProgress } from ".";
 import { getFFmpeg, progressHandlers, tryUnlink } from "./ffmpeg-instance";
 import { addToPlaylistBundle } from "./playlist-bundle";
-import { getCompatibleFilename } from "@/lib/utils/containers";
+import { CONTAINER_SPECS, extractBaseCodec, getCompatibleFilename } from "@/lib/utils/containers";
 import { ProgressType } from "@/types";
 import type { ProcessStreamData } from "@/types";
 
-// H.264+Opus → MP4 requires Opus→AAC transcode (FFmpeg's built-in aac encoder).
-// Every other container/codec pairing is handled by stream copy.
 function resolveAudioCodec(audioMimeType: string, targetExtension: string) {
-  if (targetExtension === "mp4" && audioMimeType.includes("webm")) {
-    return "aac";
+  const spec = CONTAINER_SPECS[targetExtension];
+  if (!spec) {
+    return "copy";
   }
 
-  return "copy";
+  const audioCodec = extractBaseCodec(audioMimeType);
+  return spec.audioCodecs.has(audioCodec) ? "copy" : (spec.fallbackAudioCodec ?? "copy");
 }
 
 export async function processVideoAudio(item: ProcessStreamData, isCancelled: () => boolean) {

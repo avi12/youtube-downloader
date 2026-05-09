@@ -69,11 +69,7 @@ export function resolveAutoExtension({ extension, mimeType }: {
     return extension;
   }
 
-  if (mimeType.includes("webm")) {
-    return "webm";
-  }
-
-  return "mp4";
+  return mimeType.includes("webm") ? "webm" : "mp4";
 }
 
 type SupportedExtension = keyof typeof extensionToMimeAll;
@@ -91,24 +87,52 @@ export function getMimeType(filename: string) {
   return extensionToMimeAll[extension];
 }
 
+interface ContainerSpec {
+  videoCodecs: Set<string>;
+  audioCodecs: Set<string>;
+  // FFmpeg codec name to transcode audio to when it isn't natively supported.
+  // Absent means no audio transcode path exists; the container falls back to MKV.
+  fallbackAudioCodec?: string;
+}
+
+// Codec compatibility per container. To add a new container, add one entry here.
+// Containers absent from this map (e.g. MKV) impose no codec restrictions.
+export const CONTAINER_SPECS: Record<string, ContainerSpec> = {
+  webm: {
+    videoCodecs: new Set(["vp8", "vp9", "av01"]),
+    audioCodecs: new Set(["opus", "vorbis"])
+    // libopus encoder absent from @ffmpeg/core — no audio transcode available
+  },
+  mp4: {
+    videoCodecs: new Set(["avc1", "hvc1", "hev1", "av01", "mp4v"]),
+    audioCodecs: new Set(["mp4a", "ac-3", "ec-3", "flac"]),
+    fallbackAudioCodec: "aac"
+  }
+};
+
+// Extracts the base codec identifier from a MIME type string.
+// "video/webm; codecs=\"av01.0.05M.08\"" → "av01"
+// "audio/mp4; codecs=\"mp4a.40.2\""      → "mp4a"
+export function extractBaseCodec(mimeType: string) {
+  return mimeType.match(/codecs="?([^",.;]+)/i)?.[1]?.toLowerCase() ?? "";
+}
+
 export function getOutputExtension({ videoMimeType, audioMimeType, userExtension }: {
   videoMimeType: string;
   audioMimeType: string;
   userExtension: string;
 }) {
-  const videoIsWebm = videoMimeType.includes("webm");
-  const audioIsWebm = audioMimeType.includes("webm");
-  if (userExtension === "webm") {
-    // WebM requires both codecs to be webm-native (VP9/AV1 + Opus)
-    return videoIsWebm && audioIsWebm ? "webm" : "mkv";
+  const spec: ContainerSpec | undefined = CONTAINER_SPECS[userExtension];
+  if (!spec) {
+    return userExtension; // MKV and other unrestricted containers accept any codec
   }
 
-  if (userExtension === "mp4") {
-    // YouTube's webm video streams (VP9/AV1) cannot be remuxed into MP4
-    return videoIsWebm ? "mkv" : "mp4";
-  }
+  const videoCodec = extractBaseCodec(videoMimeType);
+  const audioCodec = extractBaseCodec(audioMimeType);
+  const videoOk = spec.videoCodecs.has(videoCodec);
+  const audioOk = spec.audioCodecs.has(audioCodec) || spec.fallbackAudioCodec !== undefined;
 
-  return "mkv";
+  return videoOk && audioOk ? userExtension : "mkv";
 }
 
 export function resolveVideoFilename({ videoData, options, titleOverride }: {
