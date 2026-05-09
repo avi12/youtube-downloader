@@ -28,15 +28,17 @@ export async function generatePoToken(videoId: string) {
     {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        engagementType: "ENGAGEMENT_TYPE_UNBOUND",
-        context: {
-          client: {
-            clientName: InnertubeClientName.Web,
-            clientVersion
-          }
-        }
-      } satisfies InnertubeAttGetRequest)
+      body: JSON.stringify(
+              {
+                engagementType: "ENGAGEMENT_TYPE_UNBOUND",
+                context: {
+                  client: {
+                    clientName: InnertubeClientName.Web,
+                    clientVersion
+                  }
+                }
+              } satisfies InnertubeAttGetRequest
+      )
     }
   );
 

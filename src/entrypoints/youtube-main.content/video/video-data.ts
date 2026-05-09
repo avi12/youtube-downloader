@@ -6,8 +6,8 @@ import { sabrCredentials, videoDataStore } from "@/lib/ui/synced-stores.svelte";
 import { InnertubeClientName, type InnertubeBrowseRequest } from "@/lib/youtube/innertube";
 import { getMoviePlayer } from "@/lib/youtube/movie-player";
 import { generatePoToken } from "@/lib/youtube/po-token-generator";
-import { type PlayerResponse, type VideoData, type YtdlCaptureState } from "@/types";
 import { getYtcfg, YtcfgKey } from "@/lib/youtube/ytcfg";
+import { type PlayerResponse, type VideoData, type YtdlCaptureState } from "@/types";
 
 export const videoDataCache = new Map<string, VideoData>();
 
@@ -104,15 +104,17 @@ async function fetchYouTubeMusicGenres() {
     const response = await fetch("https://music.youtube.com/youtubei/v1/browse?prettyPrint=false", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        browseId: "FEmusic_moods_and_genres",
-        context: {
-          client: {
-            clientName: InnertubeClientName.WebRemix,
-            clientVersion: "1.20260408.01.00"
-          }
-        }
-      } satisfies InnertubeBrowseRequest)
+      body: JSON.stringify(
+              {
+                browseId: "FEmusic_moods_and_genres",
+                context: {
+                  client: {
+                    clientName: InnertubeClientName.WebRemix,
+                    clientVersion: "1.20260408.01.00"
+                  }
+                }
+              } satisfies InnertubeBrowseRequest
+      )
     });
 
     const data: MoodsAndGenresResponse = await response.json();

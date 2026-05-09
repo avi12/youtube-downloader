@@ -51,7 +51,10 @@ export interface InnertubeContext {
     clickTrackingParams?: string;
   };
   adSignalsInfo?: {
-    params?: Array<{ key: string; value: string }>;
+    params?: Array<{
+      key: string;
+      value: string;
+    }>;
   };
 }
 
