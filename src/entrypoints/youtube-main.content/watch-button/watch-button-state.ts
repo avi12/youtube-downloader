@@ -1,5 +1,5 @@
-import { interruptedDownloadStore } from "@/lib/ui/synced-stores.svelte";
-import { getCompatibleFilename, getOutputExtension } from "@/lib/utils/containers";
+import { contentOptions, interruptedDownloadStore } from "@/lib/ui/synced-stores.svelte";
+import { getCompatibleFilename, getOutputExtension, resolveAutoExtension } from "@/lib/utils/containers";
 import { DownloadType, type VideoData } from "@/types";
 
 export function buildInitialDownloadState(videoData: VideoData) {
@@ -8,14 +8,24 @@ export function buildInitialDownloadState(videoData: VideoData) {
   const videoMime = videoData.videoFormats[0]?.mimeType ?? "video/mp4";
   const audioMime = videoData.audioFormats[0]?.mimeType ?? "audio/mp4";
 
+  const options = contentOptions.value;
   let extension: string;
   if (videoData.isMusic) {
-    extension = audioMime.includes("webm") ? "webm" : "m4a";
+    extension = resolveAutoExtension({
+      extension: options.ext.audio,
+      mimeType: audioMime,
+      type: DownloadType.Audio
+    });
   } else {
+    const resolvedVideoExtension = resolveAutoExtension({
+      extension: options.ext.video,
+      mimeType: videoMime,
+      type: DownloadType.Video
+    });
     extension = getOutputExtension({
       videoMimeType: videoMime,
       audioMimeType: audioMime,
-      userExtension: "mp4"
+      userExtension: resolvedVideoExtension
     });
   }
 
