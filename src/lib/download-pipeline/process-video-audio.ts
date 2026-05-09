@@ -1,29 +1,9 @@
 import { toUint8Array, triggerDownload, reportProgress } from ".";
 import { getFFmpeg, progressHandlers, tryUnlink } from "./ffmpeg-instance";
 import { addToPlaylistBundle } from "./playlist-bundle";
-import { getCompatibleFilename, getOutputExtension } from "@/lib/utils/containers";
+import { getCompatibleFilename } from "@/lib/utils/containers";
 import { ProgressType } from "@/types";
 import type { ProcessStreamData } from "@/types";
-
-function determineOutputExtension({
-  videoMimeType, audioMimeType, isExtraTracksPresent, filenameOutput
-}: {
-  videoMimeType: string;
-  audioMimeType: string;
-  isExtraTracksPresent: boolean;
-  filenameOutput: string;
-}) {
-  if (isExtraTracksPresent) {
-    return "mkv";
-  }
-
-  const userExtension = filenameOutput.split(".").pop() ?? "mp4";
-  return getOutputExtension({
-    videoMimeType,
-    audioMimeType,
-    userExtension
-  });
-}
 
 export async function processVideoAudio(item: ProcessStreamData, isCancelled: () => boolean) {
   const {
@@ -33,26 +13,25 @@ export async function processVideoAudio(item: ProcessStreamData, isCancelled: ()
   const videoExtension = videoMimeType.includes("webm") ? "webm" : "mp4";
   const audioExtension = audioMimeType.includes("webm") ? "webm" : "m4a";
   const isExtraTracksPresent = Boolean(additionalAudioStreams.length);
-  const outputExtension = determineOutputExtension({
-    videoMimeType,
-    audioMimeType,
-    isExtraTracksPresent,
-    filenameOutput
-  });
-
   const filenameBase = filenameOutput.replace(/\.[^.]+$/, "");
-  const downloadFilename = `${filenameBase}.${outputExtension}`;
+  const targetExtension = isExtraTracksPresent ? "mkv" : (filenameOutput.split(".").pop() ?? "mkv");
+  const needsTranscode = targetExtension !== "mkv";
+  const downloadFilename = `${filenameBase}.${targetExtension}`;
   const videoFilename = `${videoId}-video.${videoExtension}`;
   const primaryAudioFilename = `${videoId}-audio.${audioExtension}`;
-  const outputFilename = getCompatibleFilename(`${videoId}-${downloadFilename}`);
+  const muxFilename = getCompatibleFilename(`${videoId}-mux.mkv`);
+  const outputFilename = needsTranscode
+    ? getCompatibleFilename(`${videoId}-${downloadFilename}`)
+    : muxFilename;
   const ffmpeg = getFFmpeg();
 
   const ffmpegProgressCapBeforeSave = 0.99;
+  let progressOffset = 0;
+  let progressScale = needsTranscode ? 0.5 : 1;
 
-  function handleFFmpegProgress({ progress }: {
-    progress: number;
-  }) {
-    const cappedProgress = Math.min(progress, ffmpegProgressCapBeforeSave);
+  function handleFFmpegProgress({ progress }: { progress: number }) {
+    const scaled = progressOffset + progress * progressScale;
+    const cappedProgress = Math.min(scaled, ffmpegProgressCapBeforeSave);
     void reportProgress({
       videoId,
       progress: cappedProgress,
@@ -148,11 +127,20 @@ export async function processVideoAudio(item: ProcessStreamData, isCancelled: ()
       }
     }
 
-    ffmpegArgs.push(outputFilename);
+    ffmpegArgs.push(muxFilename);
 
-    const exitCode = ffmpeg.exec(...ffmpegArgs);
-    if (exitCode !== 0) {
-      throw new Error(`FFmpeg exited with code ${exitCode}`);
+    const muxExitCode = ffmpeg.exec(...ffmpegArgs);
+    if (muxExitCode !== 0) {
+      throw new Error(`FFmpeg exited with code ${muxExitCode}`);
+    }
+
+    if (needsTranscode) {
+      progressOffset = 0.5;
+      progressScale = 0.5;
+      const transcodeExitCode = ffmpeg.exec("-i", muxFilename, "-c", "copy", outputFilename);
+      if (transcodeExitCode !== 0) {
+        throw new Error(`FFmpeg exited with code ${transcodeExitCode}`);
+      }
     }
 
     if (isCancelled()) {
@@ -210,8 +198,16 @@ export async function processVideoAudio(item: ProcessStreamData, isCancelled: ()
     });
     tryUnlink({
       ffmpeg,
-      filename: outputFilename
+      filename: muxFilename
     });
+
+    if (needsTranscode) {
+      tryUnlink({
+        ffmpeg,
+        filename: outputFilename
+      });
+    }
+
     for (const { filename } of extraAudioTracks) {
       tryUnlink({
         ffmpeg,
