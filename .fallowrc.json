@@ -1,0 +1,12 @@
+{
+  "$schema": "https://raw.githubusercontent.com/getfallow/fallow/main/schema/fallowrc.json",
+  "ignoreDependencies": [
+    "@ffmpeg/core",
+    "@ffmpeg/core-st",
+    "@ffmpeg/util",
+    "@stylistic/stylelint-plugin",
+    "@wxt-dev/module-svelte",
+    "postcss-html",
+    "ws"
+  ]
+}

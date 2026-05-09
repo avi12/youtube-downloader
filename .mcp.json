@@ -3,7 +3,7 @@
     "chrome-devtools-mcp": {
       "type": "stdio",
       "command": "cmd",
-      "args": ["/c", "bunx", "chrome-devtools-mcp@latest", "--browser-url=http://localhost:9229"],
+      "args": ["/c", "bunx", "chrome-devtools-mcp@latest", "--browserUrl", "http://localhost:9229"],
       "env": {}
     },
     "firefox-devtools-mcp": {

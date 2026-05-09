@@ -50,7 +50,7 @@
 - Informal tone
 
 # Linting
-After each modification, lint with ESLint, Stylelint, svelte-check, and knip.
+After each modification, lint with ESLint, Stylelint, svelte-check, and `npx fallow audit`.
 
 # Dev server
 `scripts/dev-server.ts` auto-rebuilds and reloads the extension and every YouTube page on any file change under `src/`.
