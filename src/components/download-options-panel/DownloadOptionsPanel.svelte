@@ -177,11 +177,11 @@
         <tp-yt-paper-progress
           class="ytdl-progress-track"
           {@attach attachPanelProgress}
-          indeterminate={panel.displayProgress === 0 || undefined}
+          indeterminate={panel.displayProgress === 0 || panel.progressType === ProgressType.FFmpeg || undefined}
           value={Math.round(panel.displayProgress)}
         ></tp-yt-paper-progress>
         <span class="ytdl-progress-label" aria-live="polite">
-          {`${percentFormatter.format(panel.displayProgress / 100)} - ${panel.progressType === ProgressType.FFmpeg ? "Processing" : "Downloading"}`}
+          {panel.progressType === ProgressType.FFmpeg ? "Processing" : `${percentFormatter.format(panel.displayProgress / 100)} - Downloading`}
         </span>
       </div>
     {:else if primaryState === PrimaryButtonState.Done}
