@@ -117,8 +117,7 @@ export function createPlaylistVideoItemState({ videoId, gridTitle, activeDownloa
     const [primaryAudioFormat] = videoData.audioFormats;
     const resolvedContainerExtension = resolveAutoExtension({
       extension: currentOptions.ext.video,
-      mimeType: primaryVideoFormat?.mimeType ?? "",
-      type: DownloadType.Video
+      mimeType: primaryVideoFormat?.mimeType ?? ""
     });
     const containerExtension = primaryVideoFormat && primaryAudioFormat
       ? getOutputExtension({

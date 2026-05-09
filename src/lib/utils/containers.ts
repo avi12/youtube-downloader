@@ -1,4 +1,3 @@
-import { DownloadType } from "@/types";
 import type { Options, VideoData } from "@/types";
 
 export function getCompatibleFilename(filename: string) {
@@ -37,7 +36,6 @@ const extensionToMimeAll: Record<string, string> = {
   mp4: "video/mp4",
   ogg: "audio/ogg",
   opus: "audio/opus",
-  weba: "audio/webm",
   webm: "video/webm"
 };
 
@@ -45,9 +43,11 @@ function filterExtensionsByPrefix(prefix: string) {
   return Object.fromEntries(Object.entries(extensionToMimeAll).filter(([, mime]) => mime.startsWith(prefix)));
 }
 
+const videoExtensions = filterExtensionsByPrefix("video");
+
 const extensionToMime = {
-  video: filterExtensionsByPrefix("video"),
-  audio: filterExtensionsByPrefix("audio")
+  video: videoExtensions,
+  audio: videoExtensions
 };
 
 export const AUTO_EXTENSION = "auto";
@@ -61,24 +61,19 @@ export const supportedExtensions = {
   audio: [AUTO_EXTENSION, ...audioContainers]
 };
 
-export function resolveAutoExtension({ extension, mimeType, type }: {
+export function resolveAutoExtension({ extension, mimeType }: {
   extension: string;
   mimeType: string;
-  type: typeof DownloadType.Video | typeof DownloadType.Audio;
 }) {
   if (extension !== AUTO_EXTENSION) {
     return extension;
   }
 
   if (mimeType.includes("webm")) {
-    return type === DownloadType.Audio ? "weba" : "webm";
+    return "webm";
   }
 
-  if (mimeType.includes("ogg")) {
-    return "ogg";
-  }
-
-  return type === DownloadType.Audio ? "m4a" : "mp4";
+  return "mp4";
 }
 
 type SupportedExtension = keyof typeof extensionToMimeAll;
@@ -128,8 +123,7 @@ export function resolveVideoFilename({ videoData, options, titleOverride }: {
   const defaultFormat = videoData.isMusic ? audioFormat : videoFormat;
   const resolvedExtension = resolveAutoExtension({
     extension: extPref,
-    mimeType: defaultFormat?.mimeType ?? "",
-    type: videoData.isMusic ? DownloadType.Audio : DownloadType.Video
+    mimeType: defaultFormat?.mimeType ?? ""
   });
   const outputExtension = videoFormat && audioFormat && !videoData.isMusic
     ? getOutputExtension({

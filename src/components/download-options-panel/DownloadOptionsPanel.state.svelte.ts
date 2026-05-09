@@ -52,7 +52,7 @@ export function createPanelState(getVideoData: () => VideoData) {
         : videoData.audioFormats[0] ?? null;
     })
   );
-  let filename = $state(untrack(() => getCompatibleFilename(getVideoData().title)));
+  let filename = $state(untrack(() => getCompatibleFilename(getVideoData().title || getVideoData().videoId)));
   let extension = $state(
     untrack(() => {
       const videoData = getVideoData();
@@ -63,8 +63,7 @@ export function createPanelState(getVideoData: () => VideoData) {
         : videoData.videoFormats[0];
       return resolveAutoExtension({
         extension: extPref,
-        mimeType: defaultFormat?.mimeType ?? "",
-        type: videoData.isMusic ? DownloadType.Audio : DownloadType.Video
+        mimeType: defaultFormat?.mimeType ?? ""
       });
     })
   );
@@ -222,8 +221,7 @@ export function createPanelState(getVideoData: () => VideoData) {
     const format = newType === DownloadType.Audio ? selectedAudioFormat : selectedVideoFormat;
     extension = resolveAutoExtension({
       extension: extPref,
-      mimeType: format?.mimeType ?? "",
-      type: newType === DownloadType.Audio ? DownloadType.Audio : DownloadType.Video
+      mimeType: format?.mimeType ?? ""
     });
   }
 

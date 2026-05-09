@@ -13,14 +13,12 @@ export function buildInitialDownloadState(videoData: VideoData) {
   if (videoData.isMusic) {
     extension = resolveAutoExtension({
       extension: options.ext.audio,
-      mimeType: audioMime,
-      type: DownloadType.Audio
+      mimeType: audioMime
     });
   } else {
     const resolvedVideoExtension = resolveAutoExtension({
       extension: options.ext.video,
-      mimeType: videoMime,
-      type: DownloadType.Video
+      mimeType: videoMime
     });
     extension = getOutputExtension({
       videoMimeType: videoMime,
@@ -29,7 +27,7 @@ export function buildInitialDownloadState(videoData: VideoData) {
     });
   }
 
-  const filename = getCompatibleFilename(`${videoData.title}.${extension}`);
+  const filename = getCompatibleFilename(`${videoData.title || videoData.videoId}.${extension}`);
   const downloadType = videoData.isMusic ? DownloadType.Audio : DownloadType.VideoAndAudio;
 
   let isInterrupted = false;
