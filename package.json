@@ -8,7 +8,7 @@
   "type": "module",
   "scripts": {
     "dev:with-profile": "pnpx cross-env CHROME_WITH_PROFILE=1 wxt",
-    "dev:stable": "npx tsx scripts/dev-server.ts",
+    "dev:stable": "bun scripts/dev-server.ts",
     "build": "wxt build",
     "pack": "wxt zip",
     "postinstall": "wxt prepare",
