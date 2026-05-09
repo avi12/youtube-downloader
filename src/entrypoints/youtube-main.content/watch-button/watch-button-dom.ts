@@ -1,68 +1,10 @@
 import watchButtonStyles from "./watch-button.css?inline";
-import { IconName, type TpYtIronDropdownElement, type YtButtonViewModelElement } from "@/types";
-
-const PROGRESS_RING_RADIUS = 16;
-const PROGRESS_RING_SVG_SIZE = 40;
-const PROGRESS_RING_CIRCUMFERENCE = 2 * Math.PI * PROGRESS_RING_RADIUS;
-const PROGRESS_RING_NS = "http://www.w3.org/2000/svg";
-
-export interface ProgressRing {
-  elRoot: SVGSVGElement;
-  elIndicator: SVGCircleElement;
-  setOpacity(value: number): void;
-  setProgress(progress: number): void;
-  setIndeterminate(isIndeterminate: boolean): void;
-}
-
-export interface ButtonGroupElements {
-  elGroup: HTMLDivElement;
-  elDownloadButton: YtButtonViewModelElement;
-  elChevronButton: YtButtonViewModelElement;
-  progressRing: ProgressRing;
-}
+import { type TpYtIronDropdownElement } from "@/types";
 
 export interface DropdownElements {
   elDropdown: TpYtIronDropdownElement;
   elDropdownContentSlot: HTMLElement;
   panelContentId: string;
-}
-
-function createProgressRing(): ProgressRing {
-  const elRoot = document.createElementNS(PROGRESS_RING_NS, "svg");
-  elRoot.classList.add("ytdl-watch-progress-ring");
-  elRoot.setAttribute("viewBox", `0 0 ${PROGRESS_RING_SVG_SIZE} ${PROGRESS_RING_SVG_SIZE}`);
-  elRoot.setAttribute("aria-hidden", "true");
-
-  const elTrack = document.createElementNS(PROGRESS_RING_NS, "circle");
-  elTrack.classList.add("ytdl-watch-progress-ring__track");
-  elTrack.setAttribute("cx", String(PROGRESS_RING_SVG_SIZE / 2));
-  elTrack.setAttribute("cy", String(PROGRESS_RING_SVG_SIZE / 2));
-  elTrack.setAttribute("r", String(PROGRESS_RING_RADIUS));
-
-  const elIndicator = document.createElementNS(PROGRESS_RING_NS, "circle");
-  elIndicator.classList.add("ytdl-watch-progress-ring__indicator");
-  elIndicator.setAttribute("cx", String(PROGRESS_RING_SVG_SIZE / 2));
-  elIndicator.setAttribute("cy", String(PROGRESS_RING_SVG_SIZE / 2));
-  elIndicator.setAttribute("r", String(PROGRESS_RING_RADIUS));
-  elIndicator.setAttribute("stroke-dasharray", String(PROGRESS_RING_CIRCUMFERENCE));
-  elIndicator.setAttribute("stroke-dashoffset", String(PROGRESS_RING_CIRCUMFERENCE));
-
-  elRoot.append(elTrack, elIndicator);
-
-  return {
-    elRoot,
-    elIndicator,
-    setOpacity(value: number) {
-      elRoot.style.opacity = String(value);
-    },
-    setProgress(progress: number) {
-      const clamped = Math.max(0, Math.min(1, progress));
-      elIndicator.setAttribute("stroke-dashoffset", String(PROGRESS_RING_CIRCUMFERENCE * (1 - clamped)));
-    },
-    setIndeterminate(isIndeterminate: boolean) {
-      elRoot.classList.toggle("ytdl-watch-progress-ring--indeterminate", isIndeterminate);
-    }
-  };
 }
 
 export function injectWatchButtonStyles() {
@@ -77,9 +19,9 @@ export function injectWatchButtonStyles() {
 }
 
 export function findNativeDownloadButton(elActionsContainer: HTMLElement) {
-  const buttons = elActionsContainer.querySelectorAll<YtButtonViewModelElement>("yt-button-view-model");
+  const buttons = elActionsContainer.querySelectorAll<import("@/types").YtButtonViewModelElement>("yt-button-view-model");
   for (const button of buttons) {
-    const isDownload = button.data?.iconName?.includes(IconName.Download)
+    const isDownload = button.data?.iconName?.includes("DOWNLOAD")
       || (button.querySelector("button")?.getAttribute("aria-label") ?? "").toLowerCase().includes("download");
     if (!isDownload) {
       continue;
@@ -96,63 +38,22 @@ export function findNativeDownloadButton(elActionsContainer: HTMLElement) {
   return null;
 }
 
-export function createButtonGroup({ elActionsContainer, elNativeDownload, scopingClass }: {
-  elActionsContainer: HTMLElement;
-  elNativeDownload: HTMLElement | null;
-  scopingClass: string;
-}) {
-  const scopingClasses = scopingClass.match(/\S+/g) ?? [];
-
-  const elGroup = document.createElement("div");
-  elGroup.dataset.ytdlDownloadGroup = "true";
-
-  const elDownloadButton = document.createElement("yt-button-view-model");
-  elDownloadButton.classList.add(...scopingClasses, "ytdl-download-button");
-
-  const elChevronButton = document.createElement("yt-button-view-model");
-  elChevronButton.classList.add(...scopingClasses, "ytdl-chevron-button");
-
-  const progressRing = createProgressRing();
-
-  elGroup.append(elDownloadButton, elChevronButton, progressRing.elRoot);
-
-  if (elNativeDownload) {
-    elNativeDownload.insertAdjacentElement("beforebegin", elGroup);
-  } else {
-    elActionsContainer.append(elGroup);
-  }
-
-  return {
-    elGroup,
-    elDownloadButton,
-    elChevronButton,
-    progressRing
-  };
-}
-
-export function createDropdownElement({ videoId, elGroup }: {
-  videoId: string;
-  elGroup: HTMLElement;
-}) {
+export function createDropdownElement({ videoId }: { videoId: string }): DropdownElements {
   const panelContentId = `ytdl-panel-content-${videoId}`;
 
   const elDropdown = document.createElement("tp-yt-iron-dropdown");
+  elDropdown.dataset.ytdlWatchDropdown = "true";
 
-  const elDropdownContentSlot = document.createElement("ytd-menu-popup-renderer");
+  const elDropdownContentSlot = document.createElement("div");
   elDropdownContentSlot.slot = "dropdown-content";
   elDropdownContentSlot.id = panelContentId;
+  elDropdownContentSlot.dataset.ytdlPanelSlot = "true";
+  elDropdownContentSlot.setAttribute("role", "presentation");
   elDropdown.append(elDropdownContentSlot);
 
-  requestAnimationFrame(() => {
-    elDropdownContentSlot.setAttribute("role", "presentation");
-    elDropdownContentSlot.querySelector("tp-yt-paper-listbox")?.setAttribute("aria-hidden", "true");
-  });
+  document.body.append(elDropdown);
 
-  const elPopupContainer = document.querySelector("ytd-popup-container") ?? document.body;
-  elPopupContainer.append(elDropdown);
-
-  elDropdown.positionTarget = elGroup;
-  elDropdown.horizontalAlign = "left";
+  elDropdown.horizontalAlign = "center";
   elDropdown.verticalAlign = "top";
   elDropdown.noOverlap = true;
   elDropdown.dynamicAlign = true;
