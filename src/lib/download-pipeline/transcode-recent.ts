@@ -1,7 +1,6 @@
 import { triggerDownload } from ".";
-import { enqueueMuxJob, getFFmpeg, tryUnlink } from "./ffmpeg-instance";
+import { runTranscodeFile } from "./ffmpeg-instance";
 import { getRecentDownloadBlob, getAllRecentDownloads } from "@/lib/storage/recent-downloads-db";
-import { videoContainers } from "@/lib/utils/containers";
 
 function swapFileExtension({ filename, extension }: {
   filename: string;
@@ -10,20 +9,6 @@ function swapFileExtension({ filename, extension }: {
   const iDot = filename.lastIndexOf(".");
   const base = iDot === -1 ? filename : filename.slice(0, iDot);
   return `${base}.${extension}`;
-}
-
-function buildFfmpegArgs({ sourceFilename, outputFilename, targetContainer }: {
-  sourceFilename: string;
-  outputFilename: string;
-  targetContainer: string;
-}) {
-  const args = ["-i", sourceFilename];
-  if (videoContainers.includes(targetContainer)) {
-    args.push("-c:v", "copy", "-c:a", "copy");
-  }
-
-  args.push(outputFilename);
-  return args;
 }
 
 export async function transcodeRecentDownload({ entryId, targetContainer }: {
@@ -43,58 +28,29 @@ export async function transcodeRecentDownload({ entryId, targetContainer }: {
     return;
   }
 
-  const sourceFilename = `source.${entry.container}`;
-  const outputFilename = `output.${targetContainer}`;
   const downloadFilename = swapFileExtension({
     filename: entry.filename,
     extension: targetContainer
   });
-  const inputBytes = new Uint8Array(await blob.arrayBuffer());
+  const inputBytes = await blob.arrayBuffer();
 
-  await enqueueMuxJob({
-    videoId: `transcode:${entryId}`,
-    async job() {
-      const ffmpeg = getFFmpeg();
+  const output = await runTranscodeFile(`transcode:${entryId}`, {
+    data: inputBytes,
+    sourceExtension: entry.container,
+    targetContainer
+  });
+  if (!output) {
+    throw new Error("FFmpeg returned no data for recent download transcode");
+  }
 
-      try {
-        ffmpeg.FS.writeFile(sourceFilename, inputBytes);
-
-        const exitCode = ffmpeg.exec(
-          ...buildFfmpegArgs({
-            sourceFilename,
-            outputFilename,
-            targetContainer
-          })
-        );
-        if (exitCode !== 0) {
-          throw new Error(`FFmpeg exited with code ${exitCode}`);
-        }
-
-        const output = ffmpeg.FS.readFile(outputFilename, { encoding: "binary" });
-        if (typeof output === "string") {
-          throw new Error("FFmpeg readFile returned unexpected string output");
-        }
-
-        await triggerDownload({
-          data: output,
-          filenameOutput: downloadFilename,
-          recentContext: {
-            videoId: entry.videoId,
-            title: entry.title,
-            channel: entry.channel,
-            thumbnailUrl: entry.thumbnailUrl
-          }
-        });
-      } finally {
-        tryUnlink({
-          ffmpeg,
-          filename: sourceFilename
-        });
-        tryUnlink({
-          ffmpeg,
-          filename: outputFilename
-        });
-      }
+  await triggerDownload({
+    data: output,
+    filenameOutput: downloadFilename,
+    recentContext: {
+      videoId: entry.videoId,
+      title: entry.title,
+      channel: entry.channel,
+      thumbnailUrl: entry.thumbnailUrl
     }
   });
 }

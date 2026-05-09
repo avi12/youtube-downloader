@@ -1,28 +1,16 @@
 import { createDownloadIframe, removeDownloadIframe } from "./iframe-host";
 import { handleProcessStreamChunk } from "./stream/accumulator";
 import { handleProcessStreamEnd } from "./stream/end-handler";
-import { cancelDownloadsByIds, initFFmpeg } from "@/lib/download-pipeline";
+import { cancelDownloadsByIds } from "@/lib/download-pipeline";
+import { initMuxWorker } from "@/lib/download-pipeline/ffmpeg-instance";
 import { transcodeRecentDownload } from "@/lib/download-pipeline/transcode-recent";
 import { OffscreenMessageType, listenForOffscreenMessages } from "@/lib/messaging/offscreen-messaging";
-// @ts-expect-error @ffmpeg/core ships no .d.ts; we type it via @ffmpeg/types below
-import createFFmpegCoreUntyped from "@ffmpeg/core";
-import type { FFmpegCoreModuleFactory } from "@ffmpeg/types";
 import { browser } from "#imports";
 
-// `wasmBinary` is a valid Emscripten Module option but absent from @ffmpeg/types;
-// augment FFmpegCoreModule so we can pass it without a type assertion.
-declare module "@ffmpeg/types" {
-  interface FFmpegCoreModule {
-    wasmBinary?: ArrayBuffer;
-  }
-}
-
-const createFFmpegCore: FFmpegCoreModuleFactory = createFFmpegCoreUntyped;
 const wasmBinary = await fetch(
   browser.runtime.getURL("/node_modules/@ffmpeg/core/dist/umd/ffmpeg-core.wasm")
 ).then(res => res.arrayBuffer());
-const core = await createFFmpegCore({ wasmBinary });
-initFFmpeg(core);
+await initMuxWorker(wasmBinary);
 
 listenForOffscreenMessages({
   [OffscreenMessageType.ProcessStreamChunk]: handleProcessStreamChunk,

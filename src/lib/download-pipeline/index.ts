@@ -1,4 +1,4 @@
-import { cancelMuxJobs, enqueueMuxJob } from "./ffmpeg-instance";
+import { cancelMuxJobs } from "./ffmpeg-instance";
 import { processSingleMedia } from "./process-single-media";
 import { processVideoAudio } from "./process-video-audio";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
@@ -6,9 +6,17 @@ import { getCompatibleFilename, getMimeType } from "@/lib/utils/containers";
 import { DownloadType, ProgressType } from "@/types";
 import type { ProcessStreamData } from "@/types";
 
-export { initFFmpeg } from "./ffmpeg-instance";
+export { initMuxWorker } from "./ffmpeg-instance";
 
 export const FFMPEG_PROGRESS_CAP = 0.99;
+
+export function toOwnedArrayBuffer(view: ArrayBufferView): ArrayBuffer {
+  if (!(view.buffer instanceof ArrayBuffer)) {
+    throw new Error("SharedArrayBuffer is not supported");
+  }
+
+  return view.buffer.slice(view.byteOffset, view.byteOffset + view.byteLength);
+}
 
 export function toUint8Array(data: Uint8Array | Record<string, number> | null) {
   if (!data) {
@@ -153,10 +161,7 @@ async function processItem(item: ProcessStreamData) {
 
   try {
     if (item.type === DownloadType.VideoAndAudio) {
-      await enqueueMuxJob({
-        videoId: item.videoId,
-        job: () => processVideoAudio(item, isCancelled)
-      });
+      await processVideoAudio(item, isCancelled);
     } else {
       await processSingleMedia(item, isCancelled);
     }
