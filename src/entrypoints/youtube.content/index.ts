@@ -183,16 +183,33 @@ function registerBackgroundMessageHandlers() {
   });
 }
 
-async function restoreStoredProgress() {
-  const storedProgress = await statusProgressItem.getValue();
+function syncStoredProgressToStore(storedProgress: Awaited<ReturnType<typeof statusProgressItem.getValue>>) {
   for (const [videoId, { progress, progressType }] of Object.entries(storedProgress)) {
+    const isComplete = progress >= 1 && progressType === ProgressType.FFmpeg;
     downloadProgressStore.set(videoId, {
-      isDownloading: true,
-      isDone: false,
+      isDownloading: !isComplete,
+      isDone: isComplete,
       progress,
       progressType
     });
   }
+
+  // A video that was downloading but is no longer in storage has finished
+  for (const videoId of [...downloadProgressStore.keys()]) {
+    if (!storedProgress[videoId] && downloadProgressStore.get(videoId)?.isDownloading) {
+      downloadProgressStore.set(videoId, {
+        isDownloading: false,
+        isDone: true,
+        progress: 1,
+        progressType: ProgressType.FFmpeg
+      });
+    }
+  }
+}
+
+async function restoreStoredProgress() {
+  const storedProgress = await statusProgressItem.getValue();
+  syncStoredProgressToStore(storedProgress);
 }
 
 export default defineContentScript({
@@ -221,6 +238,11 @@ export default defineContentScript({
       initCompletedDownloadsStore();
       mountWatchToast(context);
       await restoreStoredProgress();
+
+      const unwatchStatusProgress = statusProgressItem.watch(stored => {
+        syncStoredProgressToStore(stored ?? {});
+      });
+      context.onInvalidated(unwatchStatusProgress);
 
       const unwatchOptions = optionsItem.watch(newOptions => {
         if (!newOptions) {
