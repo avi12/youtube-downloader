@@ -142,6 +142,11 @@ export function createPanelState(getVideoData: () => VideoData) {
     const videoData = getVideoData();
     try {
       const elVideo = await waitForVideoElement(signal);
+      if (document.getElementById("movie_player")?.classList.contains("ytp-ad-playing")) {
+        selectedVideoFormat = videoData.videoFormats[0] ?? null;
+        return;
+      }
+
       const currentQuality = Math.min(elVideo.videoHeight, elVideo.videoWidth);
       selectedVideoFormat = videoData.videoFormats.find(
         format => Math.min(format.height ?? 0, format.width ?? 0) === currentQuality
