@@ -6,14 +6,18 @@
     progress: number | null;
     progressLabel: string;
     statusLabel?: string | null;
+    quality?: string;
     oncancel: () => void;
   };
 
-  const { filename, progress, progressLabel, statusLabel, oncancel }: Props = $props();
+  const { filename, progress, progressLabel, statusLabel, quality, oncancel }: Props = $props();
 </script>
 
 <div class="download-item-content">
   <span class="download-filename" title={filename}>{filename}</span>
+  {#if quality}
+    <span class="download-quality">{quality}</span>
+  {/if}
   {#if progress !== null}
     <progress
       class="download-progress"
@@ -71,6 +75,11 @@
       border-radius: 2px;
       background: var(--accent);
     }
+  }
+
+  .download-quality {
+    color: var(--fg-subtle);
+    font-size: 0.6875rem;
   }
 
   .download-progress-label,

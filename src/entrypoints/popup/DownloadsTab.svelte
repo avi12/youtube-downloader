@@ -16,6 +16,7 @@
     videoOnlyList: string[];
     videoDetails: Record<string, {
       filenameOutput: string;
+      quality?: string;
     }>;
     statusProgress: Record<string, {
       progress: number;
@@ -86,6 +87,10 @@
     return videoDetails[videoId]?.filenameOutput ?? videoId;
   }
 
+  function getQuality(videoId: string) {
+    return videoDetails[videoId]?.quality ?? "";
+  }
+
   function getVideoStatusLabel(i: number) {
     if (i === 0) {
       return isFFmpegReady ? "Processing…" : "Waiting for FFmpeg…";
@@ -116,6 +121,7 @@
         {#snippet renderItem(videoId, i)}
           <li
             class="download-item"
+            class:download-item--active={i === 0}
             aria-label={getFilename(videoId)}
             role="listitem"
           >
@@ -124,6 +130,7 @@
               oncancel={() => cancelDownload([videoId])}
               progress={getProgress(videoId)}
               progressLabel={getProgressLabel(videoId)}
+              quality={getQuality(videoId)}
               statusLabel={getProgress(videoId) === null ? getVideoStatusLabel(i) : null}
             />
           </li>
@@ -233,6 +240,11 @@
     border-radius: 16px;
     background: var(--surface);
     transition: background-color 200ms;
+  }
+
+  .download-item--active {
+    padding-left: 9px;
+    border-left: 3px solid var(--accent);
   }
 
   .recent-section {

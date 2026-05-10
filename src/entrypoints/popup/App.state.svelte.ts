@@ -30,6 +30,7 @@ export function createAppState(props: {
   initialVideoOnlyList: string[];
   initialVideoDetails: Record<string, {
     filenameOutput: string;
+    quality?: string;
   }>;
   initialStatusProgress: Record<string, {
     progress: number;

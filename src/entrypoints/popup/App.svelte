@@ -15,6 +15,7 @@
     initialVideoOnlyList: string[];
     initialVideoDetails: Record<string, {
       filenameOutput: string;
+      quality?: string;
     }>;
     initialStatusProgress: Record<string, {
       progress: number;
@@ -132,6 +133,7 @@
       --accent-hover: var(--md-sys-color-secondary-container);
       --danger: var(--md-sys-color-error);
       --danger-hover: var(--md-sys-color-error-container);
+      --on-danger: oklch(100% 0 0deg);
       --surface: var(--md-sys-color-surface-container);
       --surface-high: var(--md-sys-color-surface-container-high);
 
@@ -159,6 +161,7 @@
         --md-sys-color-error: oklch(83.4% 0.0677 22deg);
         --md-sys-color-error-container: oklch(42% 0.1473 28.1deg);
         --md-sys-color-on-error-container: oklch(92.2% 0.0301 22.8deg);
+        --on-danger: oklch(25.4% 0.0794 27.6deg);
       }
     }
   }

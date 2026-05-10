@@ -109,7 +109,7 @@
     padding: 0 5px;
     border-radius: 9px;
     background: var(--danger);
-    color: rgb(255 255 255);
+    color: var(--on-danger);
     font-weight: 600;
     font-size: 0.6875rem;
   }

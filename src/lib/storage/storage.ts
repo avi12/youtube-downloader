@@ -25,6 +25,7 @@ export const videoOnlyListItem = storage.defineItem<string[]>("local:videoOnlyLi
 
 export const videoDetailsItem = storage.defineItem<Record<string, {
   filenameOutput: string;
+  quality?: string;
 }>>("local:videoDetails", {
   fallback: {}
 });

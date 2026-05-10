@@ -150,7 +150,8 @@ export function registerDownloadHandlers() {
       await enqueueToPopupList({
         videoId: item.videoId,
         type: item.type,
-        filenameOutput: item.filenameOutput
+        filenameOutput: item.filenameOutput,
+        quality: item.videoFormat?.height ? `${item.videoFormat.height}p` : undefined
       });
     }
 
@@ -218,7 +219,8 @@ export function registerDownloadHandlers() {
     await enqueueToPopupList({
       videoId: data.videoId,
       type: data.type,
-      filenameOutput: data.filenameOutput
+      filenameOutput: data.filenameOutput,
+      quality: data.videoFormat?.height ? `${data.videoFormat.height}p` : undefined
     });
     void startBackgroundDownload({
       request: data,

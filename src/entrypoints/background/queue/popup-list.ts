@@ -1,13 +1,17 @@
 import { musicListItem, videoDetailsItem, videoOnlyListItem, videoQueueItem } from "@/lib/storage/storage";
 import { DownloadType } from "@/types";
 
-export async function enqueueToPopupList({ videoId, type, filenameOutput }: {
+export async function enqueueToPopupList({ videoId, type, filenameOutput, quality }: {
   videoId: string;
   type: DownloadType;
   filenameOutput: string;
+  quality?: string;
 }) {
   const details = await videoDetailsItem.getValue();
-  details[videoId] = { filenameOutput };
+  details[videoId] = {
+    filenameOutput,
+    quality
+  };
   await videoDetailsItem.setValue(details);
 
   if (type === DownloadType.VideoAndAudio) {
