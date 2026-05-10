@@ -5,11 +5,14 @@ import { CrossWorldEvent, emitCrossWorldEvent } from "@/lib/messaging/cross-worl
 import { crossWorldMessenger, CrossWorldMessage } from "@/lib/messaging/cross-world-messenger";
 import { contentOptions, sabrCredentials } from "@/lib/ui/synced-stores.svelte";
 import { uint8ToBase64 } from "@/lib/utils/binary";
+import { InnertubeClientName, type InnertubePlayerRequest } from "@/lib/youtube/innertube";
 import { isVideoDataExpired, orderCaptionsByPreference } from "@/lib/youtube/video-helpers";
+import { getYtcfg, YtcfgKey } from "@/lib/youtube/ytcfg";
 import {
   type AdaptiveFormatItem,
   type CaptionTrack,
   type DownloadRequest,
+  type PlayerResponse,
   DownloadType,
   ProgressType
 } from "@/types";
@@ -34,6 +37,127 @@ export function cancelAllActiveDownloads() {
 }
 
 const MAX_ADDITIONAL_AUDIO_TRACKS = 16;
+const CAPTION_FETCH_TIMEOUT_MS = 10_000;
+
+function formatVttTimestamp(seconds: number): string {
+  const hours = Math.floor(seconds / 3600);
+  const mins = Math.floor((seconds % 3600) / 60);
+  const secs = Math.floor(seconds % 60);
+  const millis = Math.round((seconds % 1) * 1000);
+  return `${String(hours).padStart(2, "0")}:${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}.${String(millis).padStart(3, "0")}`;
+}
+
+function cuesToVtt(cues: TextTrackCueList): string {
+  const lines = ["WEBVTT", ""];
+  for (const cue of cues) {
+    if (!(cue instanceof VTTCue)) {
+      continue;
+    }
+
+    lines.push(`${formatVttTimestamp(cue.startTime)} --> ${formatVttTimestamp(cue.endTime)}`);
+    lines.push(cue.text);
+    lines.push("");
+  }
+  return lines.join("\n");
+}
+
+async function fetchVttViaTrackElement(url: string): Promise<string | null> {
+  const videoEl = document.querySelector<HTMLVideoElement>("video.html5-main-video");
+  if (!videoEl) {
+    return null;
+  }
+
+  return new Promise<string | null>(resolve => {
+    const trackEl = document.createElement("track");
+    trackEl.kind = "metadata";
+    trackEl.src = url;
+
+    function finish(result: string | null) {
+      clearTimeout(timeoutId);
+      trackEl.remove();
+      resolve(result);
+    }
+
+    const timeoutId = setTimeout(() => finish(null), CAPTION_FETCH_TIMEOUT_MS);
+
+    trackEl.addEventListener("load", () => {
+      const cues = trackEl.track?.cues;
+      finish(cues?.length ? uint8ToBase64(new TextEncoder().encode(cuesToVtt(cues))) : null);
+    }, { once: true });
+
+    trackEl.addEventListener("error", () => finish(null), { once: true });
+
+    videoEl.appendChild(trackEl);
+    trackEl.track.mode = "hidden";
+  });
+}
+
+async function fetchFreshCaptionUrls(videoId: string): Promise<Map<string, string>> {
+  const apiKey = getYtcfg(YtcfgKey.InnertubeApiKey);
+  if (!apiKey) {
+    return new Map();
+  }
+
+  const visitorData = getYtcfg(YtcfgKey.VisitorData);
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    "X-Goog-Api-Key": apiKey
+  };
+  if (visitorData) {
+    headers["X-Goog-Visitor-Id"] = visitorData;
+  }
+
+  try {
+    const resp = await fetch("/youtubei/v1/player?prettyPrint=false", {
+      method: "POST",
+      credentials: "include",
+      headers,
+      body: JSON.stringify(
+              {
+                videoId,
+                playbackContext: {
+                  contentPlaybackContext: { signatureTimestamp: getYtcfg(YtcfgKey.Sts) }
+                },
+                context: {
+                  client: {
+                    clientName: InnertubeClientName.Web,
+                    clientVersion: getYtcfg(YtcfgKey.ClientVersion) ?? "",
+                    hl: getYtcfg(YtcfgKey.Hl) ?? "en",
+                    gl: getYtcfg(YtcfgKey.Gl) ?? "US",
+                    visitorData: visitorData ?? ""
+                  }
+                }
+              } satisfies InnertubePlayerRequest
+      )
+    });
+    if (!resp.ok) {
+      return new Map();
+    }
+
+    const data: PlayerResponse = await resp.json();
+    const freshTracks = data.captions?.playerCaptionsTracklistRenderer?.captionTracks ?? [];
+    return new Map(freshTracks.map(track => [track.vssId, track.baseUrl]));
+  } catch {
+    return new Map();
+  }
+}
+
+async function fetchCaptionVttData(captionTracks: CaptionTrack[], videoId: string): Promise<(string | null)[]> {
+  if (captionTracks.length === 0) {
+    return [];
+  }
+
+  const freshUrls = await fetchFreshCaptionUrls(videoId);
+
+  return Promise.all(
+    captionTracks.map(track => {
+      const baseUrl = freshUrls.get(track.vssId) ?? track.baseUrl;
+      const url = new URL(baseUrl);
+      url.searchParams.set("fmt", "vtt");
+      return fetchVttViaTrackElement(url.toString());
+    })
+  );
+}
 
 function getExtraAudioFormats({ audioFormats, selectedTrackId, selectedFormat }: {
   audioFormats: AdaptiveFormatItem[];
@@ -123,29 +247,6 @@ async function resolveCredentialsWithRetry() {
   }
 
   return resolveCredentials();
-}
-
-async function fetchCaptionVttData(captionTracks: CaptionTrack[], poToken: string | undefined) {
-  return Promise.all(
-    captionTracks.map(async track => {
-      try {
-        const potParam = poToken ? `&potc=1&pot=${encodeURIComponent(poToken)}` : "";
-        const response = await fetch(`${track.baseUrl}&fmt=vtt${potParam}`);
-        if (!response.ok) {
-          return null;
-        }
-
-        const buffer = await response.arrayBuffer();
-        if (buffer.byteLength === 0) {
-          return null;
-        }
-
-        return uint8ToBase64(new Uint8Array(buffer));
-      } catch {
-        return null;
-      }
-    })
-  );
 }
 
 function selectFormats({ videoData, type, videoItag, audioItag, audioTrackId }: {
@@ -246,6 +347,15 @@ export async function performDownload({
       return;
     }
 
+    const options = contentOptions.value;
+    const orderedCaptionTracks = orderCaptionsByPreference({
+      captionTracks: cachedVideoData.captionTracks,
+      languageMode: options.audioTrackLanguageMode,
+      locale: document.documentElement.lang,
+      browserLanguage: navigator.language
+    });
+    const captionVttDataPromise = fetchCaptionVttData(orderedCaptionTracks, videoId);
+
     const { videoFormat, audioFormat } = selectFormats({
       videoData: cachedVideoData,
       type,
@@ -269,14 +379,6 @@ export async function performDownload({
         extraAudioFormats
       });
     const metadata = await buildVideoMetadata(videoId);
-    const options = contentOptions.value;
-    const orderedCaptionTracks = orderCaptionsByPreference({
-      captionTracks: cachedVideoData.captionTracks,
-      languageMode: options.audioTrackLanguageMode,
-      locale: document.documentElement.lang,
-      browserLanguage: navigator.language
-    });
-    const captionVttData = await fetchCaptionVttData(orderedCaptionTracks, credentials.poToken);
 
     const enrichedRequest: DownloadRequest = {
       type,
@@ -294,7 +396,7 @@ export async function performDownload({
       primaryAudioLabel: (audioFormat?.audioTrack?.displayName ?? "").replace(/ [-–—] \[.*?\]$/, "").trim(),
       primaryAudioLanguageCode: audioFormat?.audioTrack?.id?.split(".")[0] ?? "",
       captionTracks: orderedCaptionTracks,
-      captionVttData,
+      captionVttData: await captionVttDataPromise,
       metadata,
       resolvedVideoUrl,
       resolvedAudioUrl,
@@ -302,7 +404,8 @@ export async function performDownload({
       playlistId,
       playlistTitle,
       playlistTotalCount
-    };    if (abortController.signal.aborted) {
+    };
+    if (abortController.signal.aborted) {
       return;
     }
 

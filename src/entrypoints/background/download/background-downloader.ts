@@ -118,7 +118,7 @@ async function dispatchToOffscreen({ request, result, enrichedMetadata, tabId }:
 
   const {
     videoId, type, filenameOutput, videoFormat, audioFormat,
-    primaryAudioLabel, captionTracks, captionVttData, playlistId, playlistTitle, playlistTotalCount
+    primaryAudioLabel, captionTracks, playlistId, playlistTitle, playlistTotalCount
   } = request;
   const { videoData, audioData, additionalAudioTracks } = result;
 
@@ -173,13 +173,14 @@ async function dispatchToOffscreen({ request, result, enrichedMetadata, tabId }:
 
   const defaultAudioTrackIndex = 0;
 
+  const captionVttData = request.captionVttData ?? [];
   const subtitleTracks: {
     dataBase64: string;
     label: string;
     languageCode: string;
   }[] = [];
   for (const [i, track] of (captionTracks ?? []).entries()) {
-    const dataBase64 = captionVttData?.[i];
+    const dataBase64 = captionVttData[i];
     if (dataBase64) {
       subtitleTracks.push({
         dataBase64,
