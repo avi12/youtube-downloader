@@ -192,7 +192,7 @@ export function attachPrimaryButton({ elButton, getState, getIsDownloadable, get
           title: "Retry download",
           accessibilityText: "Retry download",
           style: ButtonStyle.CallToAction,
-          type: ButtonType.Tonal,
+          type: ButtonType.Filled,
           buttonSize: ButtonSize.Default,
           state: ButtonState.Active,
           isFullWidth: true,
@@ -227,42 +227,32 @@ const PROGRESS_TRACK_DARK = "rgb(255 255 255 / 10%)";
 const ACCENT_DARK = "#3ea6ff";
 const SUCCESS_DARK = "#6cd16c";
 
-export function attachPanelProgress(elProgress: Element) {
-  if (!isPolymerProgressElement(elProgress)) {
-    return;
-  }
+function applyProgressStyles(elProgress: Element, activeColor: string) {
+  requestAnimationFrame(() => {
+    if (!isPolymerProgressElement(elProgress)) {
+      return;
+    }
 
-  elProgress.updateStyles({
-    "--paper-progress-active-color": `var(--yt-spec-call-to-action, ${ACCENT_DARK})`,
-    "--paper-progress-container-color": PROGRESS_TRACK_DARK,
-    "--paper-progress-height": "4px"
+    elProgress.updateStyles({
+      "--paper-progress-active-color": activeColor,
+      "--paper-progress-container-color": PROGRESS_TRACK_DARK,
+      "--paper-progress-height": "4px"
+    });
   });
 }
 
-export function attachPanelProgressDone(elProgress: Element) {
-  if (!isPolymerProgressElement(elProgress)) {
-    return;
-  }
+export function attachPanelProgress(elProgress: Element) {
+  applyProgressStyles(elProgress, `var(--yt-spec-call-to-action, ${ACCENT_DARK})`);
+}
 
-  elProgress.updateStyles({
-    "--paper-progress-active-color": `var(--yt-spec-text-success, ${SUCCESS_DARK})`,
-    "--paper-progress-container-color": PROGRESS_TRACK_DARK,
-    "--paper-progress-height": "4px"
-  });
+export function attachPanelProgressDone(elProgress: Element) {
+  applyProgressStyles(elProgress, `var(--yt-spec-text-success, ${SUCCESS_DARK})`);
 }
 
 const ERROR_DARK = "#ff6b6b";
 
 export function attachPanelProgressFailed(elProgress: Element) {
-  if (!isPolymerProgressElement(elProgress)) {
-    return;
-  }
-
-  elProgress.updateStyles({
-    "--paper-progress-active-color": `var(--yt-spec-text-error, ${ERROR_DARK})`,
-    "--paper-progress-container-color": PROGRESS_TRACK_DARK,
-    "--paper-progress-height": "4px"
-  });
+  applyProgressStyles(elProgress, `var(--yt-spec-text-error, ${ERROR_DARK})`);
 }
 
 export function attachGhostButton(title: string) {

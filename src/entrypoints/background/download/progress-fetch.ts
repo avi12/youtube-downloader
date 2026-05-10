@@ -2,7 +2,7 @@ import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { StreamStallError, readStreamToBuffer } from "@/lib/utils/stream";
 import { ProgressType } from "@/types";
 
-const PROGRESS_THROTTLE_INTERVAL_MS = 5000;
+const PROGRESS_THROTTLE_INTERVAL_MS = 1000;
 const lastProgressTimestamps = new Map<string, number>();
 
 const MAX_CDN_RETRY_ATTEMPTS = 3;
