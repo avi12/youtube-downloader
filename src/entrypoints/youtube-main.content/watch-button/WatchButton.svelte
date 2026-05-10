@@ -139,7 +139,8 @@
 
   function syncPanelBelowState() {
     const dropdownRect = elDropdown.getBoundingClientRect();
-    if (dropdownRect.width === 0 && dropdownRect.height === 0) {
+    const isDropdownHidden = dropdownRect.width === 0 && dropdownRect.height === 0;
+    if (isDropdownHidden) {
       return;
     }
 
@@ -218,7 +219,8 @@
       }
 
       const reportedKey = data.isRemoved ? "" : `${data.progress}|${data.progressType}`;
-      if (!data.isRemoved && reportedKey === lastProgressReported) {
+      const isDuplicateProgress = !data.isRemoved && reportedKey === lastProgressReported;
+      if (isDuplicateProgress) {
         return;
       }
 
@@ -245,7 +247,8 @@
       }) / 100;
       downloadProgressType = data.progressType;
 
-      if (data.progress >= 1 && data.progressType === ProgressType.FFmpeg) {
+      const isProcessingComplete = data.progress >= 1 && data.progressType === ProgressType.FFmpeg;
+      if (isProcessingComplete) {
         isDone = true;
         isDownloading = false;
         downloadProgress = 0;
@@ -293,7 +296,8 @@
         return;
       }
 
-      if (isDownloading || isInterrupted) {
+      const isDownloadActive = isDownloading || isInterrupted;
+      if (isDownloadActive) {
         isDownloading = false;
         isInterrupted = false;
         cancelActiveDownload(videoData.videoId);
@@ -352,7 +356,6 @@
     class={[...scopingClasses, "ytdl-chevron-button"].join(" ")}
   ></yt-button-view-model>
   <svg
-    style:opacity={isDownloading || isError ? 1 : 0}
     class={["ytdl-watch-progress-ring", isIndeterminate ? "ytdl-watch-progress-ring--indeterminate" : "", isError ? "ytdl-watch-progress-ring--error" : ""].join(" ")}
     aria-hidden="true"
     viewBox="0 0 {PROGRESS_RING_SVG_SIZE} {PROGRESS_RING_SVG_SIZE}"

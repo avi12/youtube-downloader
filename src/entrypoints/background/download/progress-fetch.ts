@@ -106,7 +106,8 @@ export async function fetchWithProgress({ url, signal, onBytesReceived }: {
       throw new Error(`HTTP ${response.status} fetching stream`);
     }
 
-    if (byteOffset > 0 && response.status === HTTP_STATUS_OK) {
+    const isRangeRequestIgnored = byteOffset > 0 && response.status === HTTP_STATUS_OK;
+    if (isRangeRequestIgnored) {
       onBytesReceived(-byteOffset);
       byteOffset = 0;
       partialData = null;
@@ -133,7 +134,8 @@ export async function fetchWithProgress({ url, signal, onBytesReceived }: {
 
       return partialData ? mergeUint8Arrays(partialData, newData) : newData;
     } catch (error) {
-      if (!(error instanceof StreamStallError) || attempt === MAX_CDN_RETRY_ATTEMPTS) {
+      const isUnrecoverableError = !(error instanceof StreamStallError) || attempt === MAX_CDN_RETRY_ATTEMPTS;
+      if (isUnrecoverableError) {
         throw error;
       }
 

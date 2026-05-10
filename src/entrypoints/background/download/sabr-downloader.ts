@@ -15,8 +15,9 @@ const DOWNLOAD_PROGRESS_CAP = 0.99;
 export function buildEffectiveSabrConfig({ sabrConfig, sabrUrl }: {
   sabrConfig: SabrConfig;
   sabrUrl: string | undefined;
-}): SabrConfig {
-  if (sabrUrl && sabrUrl !== sabrConfig.serverAbrStreamingUrl) {
+}) {
+  const isCustomSabrUrl = sabrUrl && sabrUrl !== sabrConfig.serverAbrStreamingUrl;
+  if (isCustomSabrUrl) {
     return {
       ...sabrConfig,
       serverAbrStreamingUrl: sabrUrl
@@ -151,11 +152,13 @@ export async function downloadViaSabr({ request, signal, tabId, onProgress }: {
     sabrConfig,
     sabrUrl
   }) : null;
-  if (!effectiveConfig || !audioFormat) {
+  const isMissingRequiredConfig = !effectiveConfig || !audioFormat;
+  if (isMissingRequiredConfig) {
     return null;
   }
 
-  if (!isAudioOnly && !videoFormat) {
+  const isMissingVideoFormat = !isAudioOnly && !videoFormat;
+  if (isMissingVideoFormat) {
     return null;
   }
 

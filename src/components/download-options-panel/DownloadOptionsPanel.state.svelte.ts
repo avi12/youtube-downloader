@@ -84,17 +84,18 @@ export function createPanelState(getVideoData: () => VideoData) {
       return extension;
     }
 
-    if (!selectedVideoFormat || !selectedAudioFormat) {
+    const isMissingFormats = !selectedVideoFormat || !selectedAudioFormat;
+    if (isMissingFormats) {
       return extension;
     }
 
     const baseExtension = getOutputExtension({
-      videoMimeType: selectedVideoFormat.mimeType,
-      audioMimeType: selectedAudioFormat.mimeType,
+      videoMimeType: selectedVideoFormat!.mimeType,
+      audioMimeType: selectedAudioFormat!.mimeType,
       userExtension: extension
     });
 
-    const selectedTrackId = selectedAudioFormat.audioTrack?.id;
+    const selectedTrackId = selectedAudioFormat!.audioTrack?.id;
     if (selectedTrackId) {
       const hasExtraAudioTracks = getVideoData().audioFormats.some(
         format => format.audioTrack?.id && format.audioTrack.id !== selectedTrackId
@@ -254,7 +255,8 @@ export function createPanelState(getVideoData: () => VideoData) {
   }
 
   function startDownload() {
-    if (isDownloading || !isDownloadable || !isFilenameValid || !selectedAudioFormat) {
+    const cannotStartDownload = isDownloading || !isDownloadable || !isFilenameValid || !selectedAudioFormat;
+    if (cannotStartDownload) {
       return;
     }
 
@@ -275,8 +277,8 @@ export function createPanelState(getVideoData: () => VideoData) {
       type: downloadType,
       videoId,
       videoItag: selectedVideoFormat?.itag ?? 0,
-      audioItag: selectedAudioFormat.itag,
-      audioTrackId: selectedAudioFormat.audioTrack?.id,
+      audioItag: selectedAudioFormat!.itag,
+      audioTrackId: selectedAudioFormat!.audioTrack?.id,
       filenameOutput: fullFilename,
       sabrConfig
     });

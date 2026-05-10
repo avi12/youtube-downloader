@@ -16,7 +16,8 @@ export async function downloadViaCdn({ request, signal, videoId, tabId }: {
     type, videoFormat, audioFormat, resolvedVideoUrl,
     resolvedAudioUrl, resolvedExtraAudioUrls, additionalAudioFormats
   } = request;
-  if (!resolvedVideoUrl && !resolvedAudioUrl) {
+  const hasNoResolvedUrls = !resolvedVideoUrl && !resolvedAudioUrl;
+  if (hasNoResolvedUrls) {
     return null;
   }
 

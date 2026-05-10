@@ -6,7 +6,13 @@ import { crossWorldMessenger, CrossWorldMessage } from "@/lib/messaging/cross-wo
 import { contentOptions, sabrCredentials } from "@/lib/ui/synced-stores.svelte";
 import { uint8ToBase64 } from "@/lib/utils/binary";
 import { isVideoDataExpired, orderCaptionsByPreference } from "@/lib/youtube/video-helpers";
-import { type AdaptiveFormatItem, type CaptionTrack, type DownloadRequest, DownloadType, ProgressType } from "@/types";
+import {
+  type AdaptiveFormatItem,
+  type CaptionTrack,
+  type DownloadRequest,
+  DownloadType,
+  ProgressType
+} from "@/types";
 
 const activeDownloads = new Map<string, AbortController>();
 
@@ -84,7 +90,8 @@ function resolveCredentials() {
     creds?.url ||
     elCredentials?.dataset.url ||
     capturedSabrUrl;
-  if (currentPoToken !== capturedPoToken || currentSabrUrl !== capturedSabrUrl) {
+  const credentialsChanged = currentPoToken !== capturedPoToken || currentSabrUrl !== capturedSabrUrl;
+  if (credentialsChanged) {
     setPoTokenCredentials({
       poToken: currentPoToken ?? "",
       sabrUrl: currentSabrUrl ?? ""
@@ -127,10 +134,12 @@ async function fetchCaptionVttData(captionTracks: CaptionTrack[], poToken: strin
         if (!response.ok) {
           return null;
         }
+
         const buffer = await response.arrayBuffer();
         if (buffer.byteLength === 0) {
           return null;
         }
+
         return uint8ToBase64(new Uint8Array(buffer));
       } catch {
         return null;
@@ -194,7 +203,8 @@ export async function performDownload({
   playlistTitle,
   playlistTotalCount
 }: Pick<DownloadRequest, "type" | "videoId" | "videoItag" | "audioItag" | "audioTrackId" | "filenameOutput" | "isIframeFallback" | "playlistId" | "playlistTitle" | "playlistTotalCount">) {
-  if (isIframeFallback && self === top) {
+  const isInvalidIframeFallback = isIframeFallback && self === top;
+  if (isInvalidIframeFallback) {
     return;
   }
 
@@ -219,7 +229,8 @@ export async function performDownload({
       return;
     }
 
-    if (self === top && isVideoDataExpired(cachedVideoData)) {
+    const shouldFetchViaIframe = self === top && isVideoDataExpired(cachedVideoData);
+    if (shouldFetchViaIframe) {
       void crossWorldMessenger.sendMessage(CrossWorldMessage.DownloadViaIframe, {
         type,
         videoId,
