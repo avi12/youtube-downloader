@@ -11,6 +11,7 @@ import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-wo
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { downloadProgressStore } from "@/lib/ui/synced-stores.svelte";
 import { forwardSabrCredentialsWithRetry } from "@/lib/youtube/sabr/credentials";
+import type { VideoData } from "@/types";
 
 export function registerCrossWorldHandlers(
   isDownloadIframe: boolean,
@@ -32,10 +33,11 @@ export function registerCrossWorldHandlers(
   });
 
   crossWorldMessenger.onMessage(CrossWorldMessage.PanelContentReady, ({ data }) => {
+    const videoData: VideoData = JSON.parse(data.videoDataJson);
     mountPanelUi({
       context,
       contentId: data.contentId,
-      videoData: data.videoData
+      videoData
     });
   });
 

@@ -101,12 +101,19 @@
 
   const isAudio = $derived(downloadType === DownloadType.Audio);
 
+  const hasMultipleAudioTracks = $derived(audioFormats.some(format => !!format.audioTrack));
+
   const qualityOptions = $derived.by(() => {
     if (isAudio) {
-      return audioFormats.map(format => ({
-        value: format.itag.toString(),
-        label: `${Math.floor(format.bitrate / 1000)} kbps (${formatAudioCodecLabel(format.mimeType)})`
-      }));
+      return audioFormats.map(format => {
+        const bitrateLabel = `${Math.floor(format.bitrate / 1000)} kbps (${formatAudioCodecLabel(format.mimeType)})`;
+        return {
+          value: `${format.itag}:${format.audioTrack?.id ?? ""}`,
+          label: hasMultipleAudioTracks && format.audioTrack
+            ? `${format.audioTrack.displayName} - ${bitrateLabel}`
+            : bitrateLabel
+        };
+      });
     }
 
     return videoFormats.map(format => ({
@@ -117,7 +124,7 @@
 
   const qualityValue = $derived(
     isAudio
-      ? (selectedAudioFormat?.itag.toString() ?? "")
+      ? `${selectedAudioFormat?.itag ?? ""}:${selectedAudioFormat?.audioTrack?.id ?? ""}`
       : (selectedVideoFormat?.itag.toString() ?? "")
   );
 
@@ -153,18 +160,23 @@
       id="quality-select"
       disabled={isDownloading}
       label="Quality"
-      onchange={itagString => {
-        const formats = isAudio ? audioFormats : videoFormats;
-        const itag = parseInt(itagString, 10);
-        const format = formats.find(format => format.itag === itag);
-        if (!format) {
-          return;
-        }
-
+      onchange={valueString => {
         if (isAudio) {
-          onaudioformatchange(format);
+          const colonIndex = valueString.indexOf(":");
+          const itag = parseInt(valueString.slice(0, colonIndex), 10);
+          const trackId = valueString.slice(colonIndex + 1) || undefined;
+          const format = audioFormats.find(
+            audioFormat => audioFormat.itag === itag && audioFormat.audioTrack?.id === trackId
+          );
+          if (format) {
+            onaudioformatchange(format);
+          }
         } else {
-          onvideoformatchange(format);
+          const itag = parseInt(valueString, 10);
+          const format = videoFormats.find(videoFormat => videoFormat.itag === itag);
+          if (format) {
+            onvideoformatchange(format);
+          }
         }
       }}
       options={qualityOptions}

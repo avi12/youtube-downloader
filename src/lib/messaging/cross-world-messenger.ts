@@ -39,7 +39,7 @@ interface PageMessengerSchema {
   }): void;
   [CrossWorldMessage.PanelContentReady](data: {
     contentId: string;
-    videoData: VideoData;
+    videoDataJson: string;
   }): void;
   [CrossWorldMessage.StreamError](data: {
     videoId: string;
@@ -68,6 +68,7 @@ interface PageMessengerSchema {
     quality?: string;
     videoItag?: number;
     audioItag?: number;
+    audioTrackId?: string;
   }): void;
   [CrossWorldMessage.RequestVideoData](data: {
     videoId: string;

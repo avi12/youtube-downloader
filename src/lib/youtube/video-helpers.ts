@@ -113,7 +113,7 @@ export function formatAudioCodecLabel(mimeType: string) {
 }
 
 function normalizeLanguageCode(lang: string) {
-  return lang.split("-")[0].toLowerCase();
+  return lang.split("-")[0].split(".")[0].toLowerCase();
 }
 
 function matchAudioFormatToLanguage(audioFormats: AdaptiveFormatItem[], langCode: string) {
@@ -125,33 +125,38 @@ export function selectPreferredAudioFormat({
   videoMimeType,
   languageMode,
   locale,
-  activeLanguage
+  browserLanguage
 }: {
   audioFormats: AdaptiveFormatItem[];
   videoMimeType: string;
   languageMode: AudioTrackLanguageMode;
   locale: string;
-  activeLanguage?: string;
+  browserLanguage?: string;
 }) {
   if (!audioFormats.length) {
     return null;
   }
 
   const isWebm = videoMimeType.includes("webm");
+  const originalTrack = audioFormats.find(format => !format.audioTrack);
 
   let candidates: AdaptiveFormatItem[] = [];
   if (languageMode === AudioTrackLanguageMode.MatchYouTube) {
-    const lang = normalizeLanguageCode(activeLanguage ?? locale);
-    const match = matchAudioFormatToLanguage(audioFormats, lang);
-    if (match) {
-      candidates = [match, ...audioFormats.filter(format => format !== match)];
+    const langPriority = [locale, browserLanguage, "en"]
+      .filter((lang): lang is string => !!lang);
+    for (const lang of langPriority) {
+      const match = matchAudioFormatToLanguage(audioFormats, normalizeLanguageCode(lang));
+      if (match) {
+        candidates = [match, ...audioFormats.filter(format => format !== match)];
+        break;
+      }
     }
   }
 
   if (!candidates.length) {
-    const defaultTrack = audioFormats.find(format => format.audioTrack?.audioIsDefault);
-    candidates = defaultTrack
-      ? [defaultTrack, ...audioFormats.filter(format => format !== defaultTrack)]
+    const fallback = originalTrack ?? audioFormats.find(format => format.audioTrack?.audioIsDefault) ?? null;
+    candidates = fallback
+      ? [fallback, ...audioFormats.filter(format => format !== fallback)]
       : audioFormats;
   }
 
@@ -165,20 +170,30 @@ export function selectPreferredAudioFormat({
 export function orderCaptionsByPreference({
   captionTracks,
   languageMode,
-  locale
+  locale,
+  browserLanguage
 }: {
   captionTracks: CaptionTrack[];
   languageMode: AudioTrackLanguageMode;
   locale: string;
+  browserLanguage?: string;
 }) {
   if (languageMode === AudioTrackLanguageMode.OriginalLanguage || captionTracks.length <= 1) {
     return captionTracks;
   }
 
-  const lang = normalizeLanguageCode(locale);
-  const preferred = captionTracks.filter(track => normalizeLanguageCode(track.languageCode) === lang);
-  const rest = captionTracks.filter(track => normalizeLanguageCode(track.languageCode) !== lang);
-  return [...preferred, ...rest];
+  const langPriority = [locale, browserLanguage, "en"]
+    .filter((lang): lang is string => !!lang);
+  for (const lang of langPriority) {
+    const normalized = normalizeLanguageCode(lang);
+    const preferred = captionTracks.filter(track => normalizeLanguageCode(track.languageCode) === normalized);
+    if (preferred.length) {
+      const rest = captionTracks.filter(track => normalizeLanguageCode(track.languageCode) !== normalized);
+      return [...preferred, ...rest];
+    }
+  }
+
+  return captionTracks;
 }
 
 function isUrlExpired(url: string) {

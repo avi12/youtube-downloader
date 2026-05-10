@@ -122,9 +122,10 @@ export async function injectSegmentedDownloadButton(
 
   elDropdownContentSlot.id = panelContentId;
 
+  const { playerResponse: _pr, ...videoDataForPanel } = videoData;
   void crossWorldMessenger.sendMessage(CrossWorldMessage.PanelContentReady, {
     contentId: panelContentId,
-    videoData
+    videoDataJson: JSON.stringify(videoDataForPanel)
   });
 
   currentNativeDownload = elNativeDownload;
