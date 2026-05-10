@@ -40,7 +40,7 @@
   let defaultAudioTrackId = $state(initial.audioTrackId);
   let defaultFilename = $state(initial.filename);
   let defaultQuality = $state(initial.quality);
-  const defaultDownloadType = $state(initial.downloadType);
+  const defaultDownloadType = initial.downloadType;
   let lastProgressReported = $state("");
 
   let elGroup = $state<HTMLDivElement | null>(null);
