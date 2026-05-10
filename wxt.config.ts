@@ -10,7 +10,7 @@ export default defineConfig({
   publicDir: "src/public",
   modules: ["@wxt-dev/module-svelte"],
   manifestVersion: 3,
-  manifest: ({ mode }) => ({
+  manifest: () => ({
     name: "YouTube Downloader",
     description: "Download YouTube videos and audio directly from the page",
     permissions: [
@@ -26,8 +26,7 @@ export default defineConfig({
     host_permissions: [
       "https://*.youtube.com/*",
       "https://*.googlevideo.com/*",
-      "https://i.ytimg.com/*",
-      ...(mode === "development" ? ["http://localhost/*", "https://localhost/*"] : [])
+      "https://i.ytimg.com/*"
     ],
     content_security_policy: {
       extension_pages:

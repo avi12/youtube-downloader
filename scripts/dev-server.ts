@@ -269,8 +269,8 @@ async function main() {
   console.log(`${IS_FIREFOX ? "Firefox" : "Chrome"} launched with extension sideloaded.`);
   console.log("Watching for file changes...\n");
 
-  const watcher = chokidar.watch("src", {
-    cwd: PROJECT_ROOT,
+  const watcher = chokidar.watch(["src", "wxt.config.ts"], {
+    cwd: PROJECT_ROOT.replaceAll("\\", "/"),
     ignoreInitial: true,
     usePolling: true,
     interval: 500
