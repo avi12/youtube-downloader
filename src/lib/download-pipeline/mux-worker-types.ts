@@ -18,6 +18,7 @@ export type MuxVideoAudioJob = {
   extraAudioTracks: {
     data: ArrayBuffer;
     label: string;
+    languageCode: string;
   }[];
   subtitleTracks: {
     data: Uint8Array;
@@ -29,6 +30,8 @@ export type MuxVideoAudioJob = {
   videoId: string;
   tabId: number;
   primaryAudioLabel: string;
+  primaryAudioLanguageCode: string;
+  defaultAudioTrackIndex: number;
   filenameOutput: string;
 };
 

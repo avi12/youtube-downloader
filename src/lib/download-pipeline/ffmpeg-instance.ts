@@ -27,11 +27,16 @@ export function initMuxWorker(wasmBinary: ArrayBuffer) {
 
     const worker = new Worker(browser.runtime.getURL("/mux-worker.js"), { type: "module" });
     worker.onerror = e => {
+      const error = new Error(`Worker crashed: ${e.message}`);
       const rejectJob = pendingJobReject;
       pendingJobReject = null;
-      rejectJob?.(new Error(`Worker crashed: ${e.message}`));
+
+      if (rejectJob) {
+        rejectJob(error);
+      } else {
+        reject(error);
+      }
     };
-    worker.addEventListener("error", reject, { once: true });
     worker.postMessage({
       type: WorkerMessageType.Init,
       wasmBinary,

@@ -12,6 +12,8 @@ export function handleProcessStreamEnd(data: {
   videoMimeType: string;
   audioMimeType: string;
   audioTrackLabels: string[];
+  audioTrackLanguages?: string[];
+  defaultAudioTrackIndex?: number;
   subtitleTracks?: {
     dataBase64: string;
     label: string;
@@ -24,7 +26,8 @@ export function handleProcessStreamEnd(data: {
   metadata?: VideoMetadata | null;
 }) {
   const {
-    videoId, type, filenameOutput, videoMimeType, audioMimeType, audioTrackLabels, subtitleTracks, tabId,
+    videoId, type, filenameOutput, videoMimeType, audioMimeType,
+    audioTrackLabels, audioTrackLanguages, defaultAudioTrackIndex, subtitleTracks, tabId,
     playlistId, playlistTitle, playlistTotalCount
   } = data;
   const accumulator = STREAM_ACCUMULATORS.get(videoId);
@@ -32,6 +35,7 @@ export function handleProcessStreamEnd(data: {
 
   const primaryAudio = accumulator?.audioStreams.get("audio");
   const [primaryAudioLabel, ...extraTrackLabels] = audioTrackLabels;
+  const [primaryAudioLanguageCode, ...extraTrackLanguages] = audioTrackLanguages ?? [];
   const additionalAudioStreams = extraTrackLabels.map((label, iTrack) => {
     const audioStream = accumulator?.audioStreams.get(`${AUDIO_EXTRA_STREAM_PREFIX}-${iTrack}`);
     return {
@@ -42,7 +46,8 @@ export function handleProcessStreamEnd(data: {
         })
         : null,
       mimeType: audioMimeType,
-      label
+      label,
+      languageCode: extraTrackLanguages[iTrack] ?? ""
     };
   });
 
@@ -56,6 +61,7 @@ export function handleProcessStreamEnd(data: {
     type,
     videoId,
     filenameOutput,
+    primaryAudioLanguageCode,
     videoData: accumulator
       ? assembleStreamChunks({
         chunks: accumulator.videoChunks,
@@ -73,6 +79,7 @@ export function handleProcessStreamEnd(data: {
     primaryAudioLabel,
     additionalAudioStreams,
     subtitleTracks: decodedSubtitleTracks,
+    defaultAudioTrackIndex,
     tabId,
     playlistId,
     playlistTitle,

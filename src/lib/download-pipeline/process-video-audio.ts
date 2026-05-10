@@ -7,7 +7,7 @@ import type { ProcessStreamData } from "@/types";
 export async function processVideoAudio(item: ProcessStreamData, isCancelled: () => boolean) {
   const {
     videoId, filenameOutput, videoMimeType, audioMimeType, tabId,
-    additionalAudioStreams, subtitleTracks
+    additionalAudioStreams, subtitleTracks, primaryAudioLanguageCode, defaultAudioTrackIndex
   } = item;
 
   const videoData = toUint8Array(item.videoData);
@@ -63,12 +63,14 @@ export async function processVideoAudio(item: ProcessStreamData, isCancelled: ()
 
       return {
         data: toOwnedArrayBuffer(data),
-        label: stream.label
+        label: stream.label,
+        languageCode: stream.languageCode ?? ""
       };
     })
     .filter((track): track is {
       data: ArrayBuffer;
       label: string;
+      languageCode: string;
     } => track !== null);
 
   const subtitleFiles = subtitleTracks
@@ -94,6 +96,8 @@ export async function processVideoAudio(item: ProcessStreamData, isCancelled: ()
       videoId,
       tabId,
       primaryAudioLabel: item.primaryAudioLabel ?? "",
+      primaryAudioLanguageCode: primaryAudioLanguageCode ?? "",
+      defaultAudioTrackIndex: defaultAudioTrackIndex ?? 0,
       filenameOutput
     }
   );

@@ -154,7 +154,8 @@ function sanitizeForFFmpeg(value: string) {
 function handleMuxVideoAudio(job: MuxVideoAudioJob) {
   const {
     videoData, audioData, extraAudioTracks, subtitleTracks,
-    videoMimeType, audioMimeType, videoId, tabId, primaryAudioLabel, filenameOutput
+    videoMimeType, audioMimeType, videoId, tabId,
+    primaryAudioLabel, primaryAudioLanguageCode, defaultAudioTrackIndex, filenameOutput
   } = job;
   currentVideoId = videoId;
   currentTabId = tabId;
@@ -187,7 +188,7 @@ function handleMuxVideoAudio(job: MuxVideoAudioJob) {
     ffmpeg!.FS.writeFile(primaryAudioFilename, new Uint8Array(audioData));
 
     for (const [i, track] of extraAudioTracks.entries()) {
-      const extraExtension = getAudioTempExtension("audio/mp4");
+      const extraExtension = getAudioTempExtension(audioMimeType);
       const extraFilename = `${videoId}-${AUDIO_EXTRA_PREFIX}-${i}.${extraExtension}`;
       ffmpeg!.FS.writeFile(extraFilename, new Uint8Array(track.data));
       extraFilenames.push(extraFilename);
@@ -226,10 +227,23 @@ function handleMuxVideoAudio(job: MuxVideoAudioJob) {
       ffmpegArgs.push("-c:s", phase1SubtitleCodec);
     }
 
-    const audioTrackLabels = [primaryAudioLabel, ...extraAudioTracks.map(track => track.label)];
-    for (const [i, label] of audioTrackLabels.entries()) {
+    const audioTrackMeta = [
+      {
+        label: primaryAudioLabel,
+        languageCode: primaryAudioLanguageCode
+      },
+      ...extraAudioTracks.map(track => ({
+        label: track.label,
+        languageCode: track.languageCode
+      }))
+    ];
+    for (const [i, { label, languageCode }] of audioTrackMeta.entries()) {
       if (label) {
         ffmpegArgs.push(`-metadata:s:a:${i}`, `title=${label}`);
+      }
+
+      if (languageCode) {
+        ffmpegArgs.push(`-metadata:s:a:${i}`, `language=${languageCode}`);
       }
     }
 
@@ -240,6 +254,13 @@ function handleMuxVideoAudio(job: MuxVideoAudioJob) {
 
       if (track.languageCode) {
         ffmpegArgs.push(`-metadata:s:s:${i}`, `language=${track.languageCode}`);
+      }
+    }
+
+    if (isExtraTracksPresent) {
+      const totalAudioStreams = 1 + extraAudioTracks.length;
+      for (let i = 0; i < totalAudioStreams; i++) {
+        ffmpegArgs.push(`-disposition:a:${i}`, i === defaultAudioTrackIndex ? "default" : "0");
       }
     }
 

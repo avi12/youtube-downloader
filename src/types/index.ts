@@ -114,6 +114,8 @@ export type DownloadRequest = {
   audioFormat?: AdaptiveFormatItem | null;
   additionalAudioFormats?: AdaptiveFormatItem[];
   primaryAudioLabel?: string;
+  primaryAudioLanguageCode?: string;
+  primaryAudioIsDefault?: boolean;
   captionTracks?: CaptionTrack[];
   metadata?: VideoMetadata | null;
   resolvedVideoUrl?: string | null;
@@ -150,10 +152,12 @@ export type StreamData = {
   videoMimeType: string;
   audioMimeType: string;
   primaryAudioLabel?: string;
+  primaryAudioLanguageCode?: string;
   additionalAudioStreams: {
     data: Uint8Array | null;
     mimeType: string;
     label: string;
+    languageCode?: string;
   }[];
   subtitleTracks: SubtitleTrack[];
 };
@@ -174,6 +178,7 @@ export type ProcessStreamData = StreamData & {
   playlistId?: string;
   playlistTitle?: string;
   playlistTotalCount?: number;
+  defaultAudioTrackIndex?: number;
   metadata?: VideoMetadata | null;
 };
 
