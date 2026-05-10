@@ -6,6 +6,12 @@ import { fetchAudioViaSabrStream, fetchVideoViaSabrStream } from "@/lib/youtube/
 import { DownloadType, ProgressType } from "@/types";
 import type { AdaptiveFormatItem, DownloadRequest, SabrConfig } from "@/types";
 
+// Never report progress = 1 from inside the stream callbacks — the Promise.all
+// may still be pending (e.g. audio has no contentLength so its bytes aren't counted
+// in totalExpectedBytes). The FFmpeg dispatch sends the real "100% of download phase"
+// signal once both streams have resolved.
+const DOWNLOAD_PROGRESS_CAP = 0.99;
+
 export function buildEffectiveSabrConfig({ sabrConfig, sabrUrl }: {
   sabrConfig: SabrConfig;
   sabrUrl: string | undefined;
@@ -28,30 +34,17 @@ export function parseContentLength(format: AdaptiveFormatItem | null) {
   return parseInt(format.contentLength, 10);
 }
 
-async function downloadAudioOnlyViaSabr({ config, audioFormat, poToken, signal, videoId, tabId, onProgress }: {
+async function downloadAudioOnlyViaSabr({ config, audioFormat, poToken, signal, onBytesReceived }: {
   config: SabrConfig;
   audioFormat: AdaptiveFormatItem;
   poToken: string;
   signal: AbortSignal;
-  videoId: string;
-  tabId: number;
-  onProgress?: () => void;
+  onBytesReceived?: (bytes: number) => void;
 }) {
-  const audioExpectedBytes = parseContentLength(audioFormat);
-  let audioReceivedBytes = 0;
-
   const sabrFetch = createProgressFetch({
     signal,
     onBytesReceived(bytes) {
-      audioReceivedBytes += bytes;
-      onProgress?.();
-      const totalBytes = audioExpectedBytes || audioReceivedBytes;
-      void sendProgressUpdate({
-        videoId,
-        progress: Math.min(audioReceivedBytes / totalBytes, 1),
-        progressType: ProgressType.Video,
-        tabId
-      });
+      onBytesReceived?.(bytes);
     }
   });
 
@@ -65,56 +58,25 @@ async function downloadAudioOnlyViaSabr({ config, audioFormat, poToken, signal, 
 }
 
 async function downloadVideoAudioViaSabr({
-  config, videoFormat, audioFormat, poToken, signal, videoId, tabId, onProgress
+  config, videoFormat, audioFormat, poToken, signal, onBytesReceived
 }: {
   config: SabrConfig;
   videoFormat: AdaptiveFormatItem;
   audioFormat: AdaptiveFormatItem;
   poToken: string;
   signal: AbortSignal;
-  videoId: string;
-  tabId: number;
-  onProgress?: () => void;
+  onBytesReceived?: (bytes: number) => void;
 }) {
-  const totalExpectedBytes = parseContentLength(videoFormat) + parseContentLength(audioFormat);
-  let videoReceivedBytes = 0;
-  let audioReceivedBytes = 0;
-
-  // Never report progress = 1 from inside the stream callbacks — the Promise.all
-  // may still be pending (e.g. audio has no contentLength so its bytes aren't counted
-  // in totalExpectedBytes). The FFmpeg dispatch sends the real "100% of download phase"
-  // signal once both streams have resolved.
-  const DOWNLOAD_PROGRESS_CAP = 0.99;
-
-  function reportProgress() {
-    if (totalExpectedBytes === 0) {
-      return;
-    }
-
-    const totalReceived = videoReceivedBytes + audioReceivedBytes;
-
-    void sendProgressUpdate({
-      videoId,
-      progress: Math.min(totalReceived / totalExpectedBytes, DOWNLOAD_PROGRESS_CAP),
-      progressType: ProgressType.Video,
-      tabId
-    });
-  }
-
   const videoFetch = createProgressFetch({
     signal,
     onBytesReceived(bytes) {
-      videoReceivedBytes += bytes;
-      onProgress?.();
-      reportProgress();
+      onBytesReceived?.(bytes);
     }
   });
   const audioFetch = createProgressFetch({
     signal,
     onBytesReceived(bytes) {
-      audioReceivedBytes += bytes;
-      onProgress?.();
-      reportProgress();
+      onBytesReceived?.(bytes);
     }
   });
 
@@ -136,12 +98,12 @@ async function downloadVideoAudioViaSabr({
   ]);
 }
 
-async function downloadExtraAudioTracksViaSabr({ config, formats, poToken, signal, onProgress }: {
+async function downloadExtraAudioTracksViaSabr({ config, formats, poToken, signal, onBytesReceived }: {
   config: SabrConfig;
   formats: AdaptiveFormatItem[];
   poToken: string;
   signal: AbortSignal;
-  onProgress?: () => void;
+  onBytesReceived?: (bytes: number) => void;
 }) {
   const tracks: DownloadResult["additionalAudioTracks"] = [];
 
@@ -149,8 +111,8 @@ async function downloadExtraAudioTracksViaSabr({ config, formats, poToken, signa
     try {
       const sabrFetch = createProgressFetch({
         signal,
-        onBytesReceived() {
-          onProgress?.();
+        onBytesReceived(bytes) {
+          onBytesReceived?.(bytes);
         }
       });
       const data = await fetchAudioViaSabrStream({
@@ -163,7 +125,9 @@ async function downloadExtraAudioTracksViaSabr({ config, formats, poToken, signa
       tracks.push({
         data,
         mimeType: stripMimeParams(format.mimeType),
-        label: format.audioTrack?.displayName ?? ""
+        label: (format.audioTrack?.displayName ?? "").replace(/ - \[.*?\]$/, ""),
+        languageCode: format.audioTrack?.id?.split(".")[0] ?? "",
+        isDefault: format.audioTrack?.audioIsDefault ?? false
       });
     } catch (trackError) {
       console.warn("[ytdl:bg] Extra audio track failed:", format.audioTrack?.displayName, trackError);
@@ -194,6 +158,28 @@ export async function downloadViaSabr({ request, signal, tabId, onProgress }: {
     return null;
   }
 
+  const videoPartBytes = isAudioOnly ? 0 : parseContentLength(videoFormat ?? null);
+  const mainExpectedBytes = videoPartBytes + parseContentLength(audioFormat);
+  const extraExpectedBytes = (additionalAudioFormats ?? [])
+    .reduce((sum, format) => sum + parseContentLength(format), 0);
+  const totalExpectedBytes = mainExpectedBytes + extraExpectedBytes;
+
+  let totalReceivedBytes = 0;
+
+  function onBytesReceived(bytes: number) {
+    totalReceivedBytes += bytes;
+    onProgress?.();
+    const hasExpectedSize = totalExpectedBytes > 0;
+    if (hasExpectedSize) {
+      void sendProgressUpdate({
+        videoId,
+        progress: Math.min(totalReceivedBytes / totalExpectedBytes, DOWNLOAD_PROGRESS_CAP),
+        progressType: ProgressType.Video,
+        tabId
+      });
+    }
+  }
+
   const resolvedPoToken = poToken ?? "";
   if (isAudioOnly) {
     const audioData = await downloadAudioOnlyViaSabr({
@@ -201,9 +187,7 @@ export async function downloadViaSabr({ request, signal, tabId, onProgress }: {
       audioFormat,
       poToken: resolvedPoToken,
       signal,
-      videoId,
-      tabId,
-      onProgress
+      onBytesReceived
     });
     return {
       videoData: null,
@@ -222,16 +206,14 @@ export async function downloadViaSabr({ request, signal, tabId, onProgress }: {
     audioFormat,
     poToken: resolvedPoToken,
     signal,
-    videoId,
-    tabId,
-    onProgress
+    onBytesReceived
   });
   const additionalAudioTracks = await downloadExtraAudioTracksViaSabr({
     config: effectiveConfig,
     formats: additionalAudioFormats ?? [],
     poToken: resolvedPoToken,
     signal,
-    onProgress
+    onBytesReceived
   });
 
   return {

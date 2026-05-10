@@ -20,6 +20,8 @@ export interface DownloadResult {
     data: Uint8Array | null;
     mimeType: string;
     label: string;
+    languageCode: string;
+    isDefault: boolean;
   }>;
 }
 
@@ -182,6 +184,24 @@ async function dispatchToOffscreen({ request, result, enrichedMetadata, tabId }:
     primaryAudioLabel ?? "",
     ...additionalAudioTracks.map(track => track.label)
   ];
+  const audioTrackLanguages = [
+    request.primaryAudioLanguageCode ?? "",
+    ...additionalAudioTracks.map(track => track.languageCode)
+  ];
+
+  const isPrimaryEnglish = (request.primaryAudioLanguageCode ?? "") === "en";
+  let defaultAudioTrackIndex: number;
+  if (isPrimaryEnglish) {
+    defaultAudioTrackIndex = 0;
+  } else {
+    const defaultExtraIndex = additionalAudioTracks.findIndex(track => track.isDefault);
+    if (defaultExtraIndex !== -1) {
+      defaultAudioTrackIndex = defaultExtraIndex + 1;
+    } else {
+      const englishExtraIndex = additionalAudioTracks.findIndex(track => track.languageCode === "en");
+      defaultAudioTrackIndex = englishExtraIndex !== -1 ? englishExtraIndex + 1 : 0;
+    }
+  }
 
   const fetchedCaptionData = captionTracks?.length
     ? await fetchCaptionVttData(captionTracks)
@@ -210,6 +230,8 @@ async function dispatchToOffscreen({ request, result, enrichedMetadata, tabId }:
     videoMimeType: resolvedVideoMimeType,
     audioMimeType: resolvedAudioMimeType,
     audioTrackLabels,
+    audioTrackLanguages,
+    defaultAudioTrackIndex,
     subtitleTracks,
     tabId,
     playlistId,
