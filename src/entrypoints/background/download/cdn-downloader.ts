@@ -97,7 +97,7 @@ export async function downloadViaCdn({ request, signal, videoId, tabId }: {
     additionalAudioTracks.push({
       data: extraAudioBytes[i] ?? null,
       mimeType: stripMimeParams(format.mimeType),
-      label: (format.audioTrack?.displayName ?? `Track ${i + 2}`).replace(/ - \[.*?\]$/, ""),
+      label: (format.audioTrack?.displayName ?? `Track ${i + 2}`).replace(/ [-–—] \[.*?\]$/, "").trim(),
       languageCode: format.audioTrack?.id?.split(".")[0] ?? "",
       isDefault: format.audioTrack?.audioIsDefault ?? false
     });

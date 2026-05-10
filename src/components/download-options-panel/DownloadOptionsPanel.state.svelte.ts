@@ -53,24 +53,12 @@ export function createPanelState(getVideoData: () => VideoData) {
       }
 
       const options = contentOptions.value;
-      const audioTracks = document.querySelector("video")?.audioTracks;
-      let activeLanguage: string | undefined;
-      if (audioTracks) {
-        for (let i = 0; i < audioTracks.length; i++) {
-          const { enabled, language } = audioTracks[i];
-          if (enabled) {
-            activeLanguage = language || undefined;
-            break;
-          }
-        }
-      }
-
       return selectPreferredAudioFormat({
         audioFormats: videoData.audioFormats,
         videoMimeType: videoData.videoFormats[0]?.mimeType ?? "",
         languageMode: options.audioTrackLanguageMode,
         locale: document.documentElement.lang,
-        activeLanguage
+        browserLanguage: navigator.language
       });
     })
   );
@@ -146,7 +134,8 @@ export function createPanelState(getVideoData: () => VideoData) {
       filename: fullFilename,
       quality: qualityLabel,
       videoItag: selectedVideoFormat?.itag,
-      audioItag: selectedAudioFormat?.itag
+      audioItag: selectedAudioFormat?.itag,
+      audioTrackId: selectedAudioFormat?.audioTrack?.id
     });
   });
 
@@ -274,7 +263,6 @@ export function createPanelState(getVideoData: () => VideoData) {
     }
 
     const { videoId, sabrConfig } = getVideoData();
-
     downloadProgressStore.unsuppress(videoId);
     downloadProgressStore.set(videoId, {
       isDownloading: true,
@@ -288,6 +276,7 @@ export function createPanelState(getVideoData: () => VideoData) {
       videoId,
       videoItag: selectedVideoFormat?.itag ?? 0,
       audioItag: selectedAudioFormat.itag,
+      audioTrackId: selectedAudioFormat.audioTrack?.id,
       filenameOutput: fullFilename,
       sabrConfig
     });

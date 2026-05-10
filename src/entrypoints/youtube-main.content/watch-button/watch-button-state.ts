@@ -3,22 +3,6 @@ import { getCompatibleFilename, getOutputExtension, resolveAutoExtension } from 
 import { selectPreferredAudioFormat } from "@/lib/youtube/video-helpers";
 import { DownloadType, type VideoData } from "@/types";
 
-function getActiveAudioTrackLanguage() {
-  const audioTracks = document.querySelector("video")?.audioTracks;
-  if (!audioTracks) {
-    return undefined;
-  }
-
-  for (let i = 0; i < audioTracks.length; i++) {
-    const { enabled, language } = audioTracks[i];
-    if (enabled) {
-      return language || undefined;
-    }
-  }
-
-  return undefined;
-}
-
 function getPreferredAudioFormat(videoData: VideoData) {
   const options = contentOptions.value;
   const videoMime = videoData.videoFormats[0]?.mimeType ?? "";
@@ -27,7 +11,7 @@ function getPreferredAudioFormat(videoData: VideoData) {
     videoMimeType: videoMime,
     languageMode: options.audioTrackLanguageMode,
     locale: document.documentElement.lang,
-    activeLanguage: getActiveAudioTrackLanguage()
+    browserLanguage: navigator.language
   });
 }
 
@@ -78,6 +62,7 @@ export function buildInitialDownloadState(videoData: VideoData) {
   return {
     videoItag,
     audioItag,
+    audioTrackId: preferredAudio?.audioTrack?.id,
     filename,
     quality: "",
     downloadType,

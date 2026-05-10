@@ -11,7 +11,7 @@ import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-wo
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { downloadProgressStore } from "@/lib/ui/synced-stores.svelte";
 import { forwardSabrCredentialsWithRetry } from "@/lib/youtube/sabr/credentials";
-import type { VideoData } from "@/types";
+import type { DownloadRequest, VideoData } from "@/types";
 
 export function registerCrossWorldHandlers(
   isDownloadIframe: boolean,
@@ -63,13 +63,14 @@ export function registerCrossWorldHandlers(
   });
 
   crossWorldMessenger.onMessage(CrossWorldMessage.StartBackgroundDownload, ({ data }) => {
-    downloadProgressStore.setLocal(data.videoId, {
+    const request: DownloadRequest = JSON.parse(data.requestJson);
+    downloadProgressStore.setLocal(request.videoId, {
       isDownloading: true,
       isDone: false,
       progress: 0,
       progressType: ""
     });
-    void sendMessage(MessageType.StartBackgroundDownload, data);
+    void sendMessage(MessageType.StartBackgroundDownload, request);
   });
 
   crossWorldMessenger.onMessage(CrossWorldMessage.IframePlayerReady, ({ data }) => {

@@ -105,36 +105,37 @@ async function downloadExtraAudioTracksViaSabr({ config, formats, poToken, signa
   signal: AbortSignal;
   onBytesReceived?: (bytes: number) => void;
 }) {
-  const tracks: DownloadResult["additionalAudioTracks"] = [];
+  const results = await Promise.all(
+    formats.map(async format => {
+      try {
+        const sabrFetch = createProgressFetch({
+          signal,
+          onBytesReceived(bytes) {
+            onBytesReceived?.(bytes);
+          }
+        });
+        const data = await fetchAudioViaSabrStream({
+          sabrConfig: config,
+          audioFormat: format,
+          fetchFn: sabrFetch,
+          poToken,
+          signal
+        });
+        return {
+          data,
+          mimeType: stripMimeParams(format.mimeType),
+          label: (format.audioTrack?.displayName ?? "").replace(/ [-–—] \[.*?]$/, "").trim(),
+          languageCode: format.audioTrack?.id?.split(".")[0] ?? "",
+          isDefault: format.audioTrack?.audioIsDefault ?? false
+        };
+      } catch (trackError) {
+        console.warn("[ytdl:bg] Extra audio track failed:", format.audioTrack?.displayName, trackError);
+        return null;
+      }
+    })
+  );
 
-  for (const format of formats) {
-    try {
-      const sabrFetch = createProgressFetch({
-        signal,
-        onBytesReceived(bytes) {
-          onBytesReceived?.(bytes);
-        }
-      });
-      const data = await fetchAudioViaSabrStream({
-        sabrConfig: config,
-        audioFormat: format,
-        fetchFn: sabrFetch,
-        poToken,
-        signal
-      });
-      tracks.push({
-        data,
-        mimeType: stripMimeParams(format.mimeType),
-        label: (format.audioTrack?.displayName ?? "").replace(/ - \[.*?\]$/, ""),
-        languageCode: format.audioTrack?.id?.split(".")[0] ?? "",
-        isDefault: format.audioTrack?.audioIsDefault ?? false
-      });
-    } catch (trackError) {
-      console.warn("[ytdl:bg] Extra audio track failed:", format.audioTrack?.displayName, trackError);
-    }
-  }
-
-  return tracks;
+  return results.filter((track): track is NonNullable<typeof track> => track !== null);
 }
 
 export async function downloadViaSabr({ request, signal, tabId, onProgress }: {

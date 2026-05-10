@@ -4,8 +4,9 @@ import { buildVideoMetadata, generatePoTokenIfNeeded, videoDataCache } from "./v
 import { CrossWorldEvent, emitCrossWorldEvent } from "@/lib/messaging/cross-world-events";
 import { crossWorldMessenger, CrossWorldMessage } from "@/lib/messaging/cross-world-messenger";
 import { contentOptions, sabrCredentials } from "@/lib/ui/synced-stores.svelte";
+import { uint8ToBase64 } from "@/lib/utils/binary";
 import { isVideoDataExpired, orderCaptionsByPreference } from "@/lib/youtube/video-helpers";
-import { type AdaptiveFormatItem, type DownloadRequest, DownloadType, ProgressType } from "@/types";
+import { type AdaptiveFormatItem, type CaptionTrack, type DownloadRequest, DownloadType, ProgressType } from "@/types";
 
 const activeDownloads = new Map<string, AbortController>();
 
@@ -26,24 +27,48 @@ export function cancelAllActiveDownloads() {
   return videoIds;
 }
 
-function getExtraAudioFormats({ audioFormats, selectedTrackId }: {
+const MAX_ADDITIONAL_AUDIO_TRACKS = 16;
+
+function getExtraAudioFormats({ audioFormats, selectedTrackId, selectedFormat }: {
   audioFormats: AdaptiveFormatItem[];
   selectedTrackId: string | undefined;
+  selectedFormat: AdaptiveFormatItem | null;
 }) {
-  if (!selectedTrackId) {
-    return [];
-  }
+  const seenTrackIds = new Set(selectedTrackId ? [selectedTrackId] : []);
+  // If the primary is untagged (original language), mark it as already represented
+  // so we skip other untagged formats. If the primary is a dubbed track, we still
+  // want to include the original untagged track as an extra.
+  let hasUntaggedExtra = !selectedTrackId;
+  const result: AdaptiveFormatItem[] = [];
+  for (const format of audioFormats) {
+    if (result.length >= MAX_ADDITIONAL_AUDIO_TRACKS) {
+      break;
+    }
 
-  const seenTrackIds = new Set([selectedTrackId]);
-  return audioFormats.filter(format => {
+    if (format === selectedFormat) {
+      continue;
+    }
+
     const trackId = format.audioTrack?.id;
-    if (!trackId || seenTrackIds.has(trackId)) {
-      return false;
+    if (!trackId) {
+      if (hasUntaggedExtra) {
+        continue;
+      }
+
+      hasUntaggedExtra = true;
+      result.push(format);
+      continue;
+    }
+
+    if (seenTrackIds.has(trackId)) {
+      continue;
     }
 
     seenTrackIds.add(trackId);
-    return true;
-  });
+    result.push(format);
+  }
+
+  return result;
 }
 
 function resolveCredentials() {
@@ -93,7 +118,28 @@ async function resolveCredentialsWithRetry() {
   return resolveCredentials();
 }
 
-function selectFormats({ videoData, type, videoItag, audioItag }: {
+async function fetchCaptionVttData(captionTracks: CaptionTrack[], poToken: string | undefined) {
+  return Promise.all(
+    captionTracks.map(async track => {
+      try {
+        const potParam = poToken ? `&potc=1&pot=${encodeURIComponent(poToken)}` : "";
+        const response = await fetch(`${track.baseUrl}&fmt=vtt${potParam}`);
+        if (!response.ok) {
+          return null;
+        }
+        const buffer = await response.arrayBuffer();
+        if (buffer.byteLength === 0) {
+          return null;
+        }
+        return uint8ToBase64(new Uint8Array(buffer));
+      } catch {
+        return null;
+      }
+    })
+  );
+}
+
+function selectFormats({ videoData, type, videoItag, audioItag, audioTrackId }: {
   videoData: {
     videoFormats: AdaptiveFormatItem[];
     audioFormats: AdaptiveFormatItem[];
@@ -101,13 +147,21 @@ function selectFormats({ videoData, type, videoItag, audioItag }: {
   type: DownloadType;
   videoItag: number | undefined;
   audioItag: number | undefined;
+  audioTrackId: string | undefined;
 }) {
   const videoFormat = type !== DownloadType.Audio
     ? (videoData.videoFormats.find(format => format.itag === videoItag) ?? videoData.videoFormats[0])
     : null;
-  const audioFormat = type !== DownloadType.Video
-    ? (videoData.audioFormats.find(format => format.itag === audioItag) ?? videoData.audioFormats[0])
-    : null;
+
+  let audioFormat: AdaptiveFormatItem | null = null;
+  if (type !== DownloadType.Video) {
+    const byItag = videoData.audioFormats.filter(format => format.itag === audioItag);
+    audioFormat = (audioTrackId
+      ? byItag.find(format => format.audioTrack?.id === audioTrackId)
+      : null)
+      ?? byItag[0]
+      ?? videoData.audioFormats[0];
+  }
 
   return {
     videoFormat,
@@ -133,12 +187,13 @@ export async function performDownload({
   videoId,
   videoItag,
   audioItag,
+  audioTrackId,
   filenameOutput,
   isIframeFallback,
   playlistId,
   playlistTitle,
   playlistTotalCount
-}: Pick<DownloadRequest, "type" | "videoId" | "videoItag" | "audioItag" | "filenameOutput" | "isIframeFallback" | "playlistId" | "playlistTitle" | "playlistTotalCount">) {
+}: Pick<DownloadRequest, "type" | "videoId" | "videoItag" | "audioItag" | "audioTrackId" | "filenameOutput" | "isIframeFallback" | "playlistId" | "playlistTitle" | "playlistTotalCount">) {
   if (isIframeFallback && self === top) {
     return;
   }
@@ -170,6 +225,7 @@ export async function performDownload({
         videoId,
         videoItag,
         audioItag,
+        audioTrackId,
         filenameOutput,
         isIframeFallback: true,
         playlistId,
@@ -183,11 +239,13 @@ export async function performDownload({
       videoData: cachedVideoData,
       type,
       videoItag,
-      audioItag
+      audioItag,
+      audioTrackId
     });
     const extraAudioFormats = getExtraAudioFormats({
       audioFormats: cachedVideoData.audioFormats,
-      selectedTrackId: audioFormat?.audioTrack?.id
+      selectedTrackId: audioFormat?.audioTrack?.id,
+      selectedFormat: audioFormat
     });
     await generatePoTokenIfNeeded(cachedVideoData);
     const credentials = await resolveCredentialsWithRetry();
@@ -204,8 +262,10 @@ export async function performDownload({
     const orderedCaptionTracks = orderCaptionsByPreference({
       captionTracks: cachedVideoData.captionTracks,
       languageMode: options.audioTrackLanguageMode,
-      locale: document.documentElement.lang
+      locale: document.documentElement.lang,
+      browserLanguage: navigator.language
     });
+    const captionVttData = await fetchCaptionVttData(orderedCaptionTracks, credentials.poToken);
 
     const enrichedRequest: DownloadRequest = {
       type,
@@ -220,10 +280,10 @@ export async function performDownload({
       videoFormat,
       audioFormat,
       additionalAudioFormats: extraAudioFormats,
-      primaryAudioLabel: (audioFormat?.audioTrack?.displayName ?? "").replace(/ - \[.*?\]$/, ""),
+      primaryAudioLabel: (audioFormat?.audioTrack?.displayName ?? "").replace(/ [-–—] \[.*?\]$/, "").trim(),
       primaryAudioLanguageCode: audioFormat?.audioTrack?.id?.split(".")[0] ?? "",
-      primaryAudioIsDefault: audioFormat?.audioTrack?.audioIsDefault ?? false,
       captionTracks: orderedCaptionTracks,
+      captionVttData,
       metadata,
       resolvedVideoUrl,
       resolvedAudioUrl,
@@ -235,7 +295,9 @@ export async function performDownload({
       return;
     }
 
-    void crossWorldMessenger.sendMessage(CrossWorldMessage.StartBackgroundDownload, enrichedRequest);
+    void crossWorldMessenger.sendMessage(CrossWorldMessage.StartBackgroundDownload, {
+      requestJson: JSON.stringify(enrichedRequest)
+    });
   } catch (error) {
     if (abortController.signal.aborted) {
       return;

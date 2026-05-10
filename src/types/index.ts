@@ -102,6 +102,7 @@ export type DownloadRequest = {
   videoId: string;
   videoItag: number;
   audioItag: number;
+  audioTrackId?: string;
   filenameOutput: string;
   sabrConfig?: SabrConfig | null;
   isIframeFallback?: boolean;
@@ -115,8 +116,8 @@ export type DownloadRequest = {
   additionalAudioFormats?: AdaptiveFormatItem[];
   primaryAudioLabel?: string;
   primaryAudioLanguageCode?: string;
-  primaryAudioIsDefault?: boolean;
   captionTracks?: CaptionTrack[];
+  captionVttData?: (string | null)[];
   metadata?: VideoMetadata | null;
   resolvedVideoUrl?: string | null;
   resolvedAudioUrl?: string | null;

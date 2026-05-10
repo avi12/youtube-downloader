@@ -11,7 +11,7 @@ import { TRANSFER_CHUNK_SIZE, uint8ToBase64 } from "@/lib/utils/binary";
 import { stripMimeParams } from "@/lib/utils/containers";
 import { fetchYouTubeMusicMetadata } from "@/lib/youtube/youtube-music-metadata";
 import { AUDIO_EXTRA_STREAM_PREFIX, ProgressType, StreamType } from "@/types";
-import type { CaptionTrack, DownloadRequest, VideoMetadata } from "@/types";
+import type { DownloadRequest, VideoMetadata } from "@/types";
 
 export interface DownloadResult {
   videoData: Uint8Array | null;
@@ -103,24 +103,6 @@ async function sendStreamChunksToOffscreen({ videoId, streamType, data, tabId }:
   }
 }
 
-async function fetchCaptionVttData(captionTracks: CaptionTrack[]) {
-  return Promise.all(
-    captionTracks.map(async track => {
-      try {
-        const response = await fetch(`${track.baseUrl}&fmt=vtt`);
-        if (!response.ok) {
-          return null;
-        }
-
-        const buffer = await response.arrayBuffer();
-        return uint8ToBase64(new Uint8Array(buffer));
-      } catch {
-        return null;
-      }
-    })
-  );
-}
-
 async function dispatchToOffscreen({ request, result, enrichedMetadata, tabId }: {
   request: DownloadRequest;
   result: DownloadResult;
@@ -136,7 +118,7 @@ async function dispatchToOffscreen({ request, result, enrichedMetadata, tabId }:
 
   const {
     videoId, type, filenameOutput, videoFormat, audioFormat,
-    primaryAudioLabel, captionTracks, playlistId, playlistTitle, playlistTotalCount
+    primaryAudioLabel, captionTracks, captionVttData, playlistId, playlistTitle, playlistTotalCount
   } = request;
   const { videoData, audioData, additionalAudioTracks } = result;
 
@@ -189,23 +171,7 @@ async function dispatchToOffscreen({ request, result, enrichedMetadata, tabId }:
     ...additionalAudioTracks.map(track => track.languageCode)
   ];
 
-  const isPrimaryEnglish = (request.primaryAudioLanguageCode ?? "") === "en";
-  let defaultAudioTrackIndex: number;
-  if (isPrimaryEnglish) {
-    defaultAudioTrackIndex = 0;
-  } else {
-    const defaultExtraIndex = additionalAudioTracks.findIndex(track => track.isDefault);
-    if (defaultExtraIndex !== -1) {
-      defaultAudioTrackIndex = defaultExtraIndex + 1;
-    } else {
-      const englishExtraIndex = additionalAudioTracks.findIndex(track => track.languageCode === "en");
-      defaultAudioTrackIndex = englishExtraIndex !== -1 ? englishExtraIndex + 1 : 0;
-    }
-  }
-
-  const fetchedCaptionData = captionTracks?.length
-    ? await fetchCaptionVttData(captionTracks)
-    : [];
+  const defaultAudioTrackIndex = 0;
 
   const subtitleTracks: {
     dataBase64: string;
@@ -213,7 +179,7 @@ async function dispatchToOffscreen({ request, result, enrichedMetadata, tabId }:
     languageCode: string;
   }[] = [];
   for (const [i, track] of (captionTracks ?? []).entries()) {
-    const dataBase64 = fetchedCaptionData[i];
+    const dataBase64 = captionVttData?.[i];
     if (dataBase64) {
       subtitleTracks.push({
         dataBase64,

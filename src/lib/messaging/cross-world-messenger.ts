@@ -113,7 +113,7 @@ interface PageMessengerSchema {
     progressType: ProgressType;
   }): void;
   [CrossWorldMessage.DownloadViaIframe](data: DownloadRequest): void;
-  [CrossWorldMessage.StartBackgroundDownload](data: DownloadRequest): void;
+  [CrossWorldMessage.StartBackgroundDownload](data: { requestJson: string }): void;
   [CrossWorldMessage.OptionsUpdate](data: {
     isShowNativeDownload: boolean;
   }): void;
