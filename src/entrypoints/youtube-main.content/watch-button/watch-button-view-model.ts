@@ -58,10 +58,10 @@ export function buildDownloadData(state: ButtonViewState) {
     title = percentFormatter.format(downloadProgress);
     accessibilityText = `${percentFormatter.format(downloadProgress)} processed - click to cancel`;
   } else if (isDownloading) {
-    title = `Stop ${percentFormatter.format(downloadProgress)}`;
+    title = percentFormatter.format(downloadProgress);
     accessibilityText = `Stop download - ${percentFormatter.format(downloadProgress)} downloaded`;
   } else if (isInterrupted) {
-    title = `Stop ${percentFormatter.format(downloadProgress)}`;
+    title = percentFormatter.format(downloadProgress);
     accessibilityText = `Stop - paused at ${percentFormatter.format(downloadProgress)}`;
   } else if (isError) {
     title = "Retry";
@@ -79,14 +79,14 @@ export function buildDownloadData(state: ButtonViewState) {
       tooltip = `${base} - retry`;
     } else if (isInterrupted) {
       tooltip = downloadProgress > 0
-        ? `${base} - stop, paused at ${percentFormatter.format(downloadProgress)}`
-        : `${base} - stop`;
+        ? `${base} - paused at ${percentFormatter.format(downloadProgress)}`
+        : base;
     } else if (isProcessing) {
       tooltip = `${base} - ${percentFormatter.format(downloadProgress)} (processing), click to cancel`;
     } else if (isPreparingDownload) {
-      tooltip = `${base} - stop, preparing`;
+      tooltip = `${base} - preparing`;
     } else if (isActivelyDownloading) {
-      tooltip = `${base} - stop, ${percentFormatter.format(downloadProgress)} downloaded`;
+      tooltip = `${base} - ${percentFormatter.format(downloadProgress)} downloaded`;
     } else {
       tooltip = base;
     }

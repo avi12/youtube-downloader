@@ -89,6 +89,11 @@
   transition: opacity 120ms ease-out;
 }
 
+.ytdl-watch-state-downloading .ytdl-watch-progress-ring,
+.ytdl-watch-state-error .ytdl-watch-progress-ring {
+  opacity: 100%;
+}
+
 .ytdl-watch-progress-ring__track {
   fill: none;
   stroke: currentColor;
@@ -117,6 +122,7 @@
 
 .ytdl-watch-state-error .ytdl-watch-progress-ring__indicator {
   stroke: var(--yt-spec-text-error, var(--yt-spec-error-message, #d93025));
+  stroke-dashoffset: 0;
 }
 
 .ytdl-watch-state-interrupted .ytdl-watch-progress-ring__indicator {

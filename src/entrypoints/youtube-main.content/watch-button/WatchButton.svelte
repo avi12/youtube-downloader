@@ -37,6 +37,7 @@
   let downloadProgressType = $state<ProgressType | "">("");
   let defaultVideoItag = $state(initial.videoItag);
   let defaultAudioItag = $state(initial.audioItag);
+  let defaultAudioTrackId = $state(initial.audioTrackId);
   let defaultFilename = $state(initial.filename);
   let defaultQuality = $state(initial.quality);
   const defaultDownloadType = $state(initial.downloadType);
@@ -46,7 +47,13 @@
   let elDownloadButton = $state<YtButtonViewModelElement | null>(null);
   let elChevronButton = $state<YtButtonViewModelElement | null>(null);
 
-  const effectiveProgress = $derived(isDownloading ? downloadProgress : 0);
+  const effectiveProgress = $derived.by(() => {
+    if (isDownloading) {
+      return downloadProgress;
+    }
+
+    return isError ? 1 : 0;
+  });
 
   const viewState = $derived({
     isDownloading,
@@ -202,7 +209,7 @@
       }
 
       if (isDone) {
-        if (data.isRemoved) {
+        if (!data.isRemoved) {
           return;
         }
 
@@ -269,6 +276,10 @@
     if (data.audioItag !== undefined) {
       defaultAudioItag = data.audioItag;
     }
+
+    if (data.audioTrackId !== undefined) {
+      defaultAudioTrackId = data.audioTrackId;
+    }
   }));
 
   function handleClick(e: Event) {
@@ -301,6 +312,7 @@
         videoId: videoData.videoId,
         videoItag: defaultVideoItag,
         audioItag: defaultAudioItag,
+        audioTrackId: defaultAudioTrackId,
         filenameOutput: defaultFilename
       });
       return;
@@ -340,8 +352,8 @@
     class={[...scopingClasses, "ytdl-chevron-button"].join(" ")}
   ></yt-button-view-model>
   <svg
-    style:opacity={isDownloading ? 1 : 0}
-    class={["ytdl-watch-progress-ring", isIndeterminate ? "ytdl-watch-progress-ring--indeterminate" : ""].join(" ")}
+    style:opacity={isDownloading || isError ? 1 : 0}
+    class={["ytdl-watch-progress-ring", isIndeterminate ? "ytdl-watch-progress-ring--indeterminate" : "", isError ? "ytdl-watch-progress-ring--error" : ""].join(" ")}
     aria-hidden="true"
     viewBox="0 0 {PROGRESS_RING_SVG_SIZE} {PROGRESS_RING_SVG_SIZE}"
   >
