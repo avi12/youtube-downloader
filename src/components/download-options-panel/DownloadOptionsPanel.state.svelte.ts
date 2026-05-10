@@ -100,11 +100,23 @@ export function createPanelState(getVideoData: () => VideoData) {
       return extension;
     }
 
-    return getOutputExtension({
+    const baseExtension = getOutputExtension({
       videoMimeType: selectedVideoFormat.mimeType,
       audioMimeType: selectedAudioFormat.mimeType,
       userExtension: extension
     });
+
+    const selectedTrackId = selectedAudioFormat.audioTrack?.id;
+    if (selectedTrackId) {
+      const hasExtraAudioTracks = getVideoData().audioFormats.some(
+        format => format.audioTrack?.id && format.audioTrack.id !== selectedTrackId
+      );
+      if (hasExtraAudioTracks) {
+        return "mkv";
+      }
+    }
+
+    return baseExtension;
   });
 
   const isDownloadable = $derived(getVideoData().isDownloadable);

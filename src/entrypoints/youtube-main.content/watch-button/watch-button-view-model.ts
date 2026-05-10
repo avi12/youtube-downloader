@@ -34,6 +34,8 @@ export function buildDownloadData(state: ButtonViewState) {
   } = state;
 
   const isProcessing = isDownloading && progressType === ProgressType.FFmpeg;
+  const isPreparingDownload = isDownloading && downloadProgress === 0;
+  const isActivelyDownloading = isDownloading && downloadProgress > 0;
 
   let iconName: IconName = IconName.Download;
   if (isDone) {
@@ -53,8 +55,8 @@ export function buildDownloadData(state: ButtonViewState) {
     title = "Download again";
     accessibilityText = "Download again";
   } else if (isProcessing) {
-    title = "Processing";
-    accessibilityText = "Processing - click to cancel";
+    title = percentFormatter.format(downloadProgress);
+    accessibilityText = `${percentFormatter.format(downloadProgress)} processed - click to cancel`;
   } else if (isDownloading) {
     title = `Stop ${percentFormatter.format(downloadProgress)}`;
     accessibilityText = `Stop download - ${percentFormatter.format(downloadProgress)} downloaded`;
@@ -80,10 +82,10 @@ export function buildDownloadData(state: ButtonViewState) {
         ? `${base} - stop, paused at ${percentFormatter.format(downloadProgress)}`
         : `${base} - stop`;
     } else if (isProcessing) {
-      tooltip = `${base} - processing, click to cancel`;
-    } else if (isDownloading && downloadProgress === 0) {
+      tooltip = `${base} - ${percentFormatter.format(downloadProgress)} (processing), click to cancel`;
+    } else if (isPreparingDownload) {
       tooltip = `${base} - stop, preparing`;
-    } else if (isDownloading) {
+    } else if (isActivelyDownloading) {
       tooltip = `${base} - stop, ${percentFormatter.format(downloadProgress)} downloaded`;
     } else {
       tooltip = base;

@@ -55,6 +55,13 @@ export function buildInitialDownloadState(videoData: VideoData) {
       audioMimeType: audioMime,
       userExtension: resolvedVideoExtension
     });
+
+    const selectedTrackId = preferredAudio?.audioTrack?.id;
+    const hasExtraAudioTracks = !!selectedTrackId &&
+      videoData.audioFormats.some(format => format.audioTrack?.id && format.audioTrack.id !== selectedTrackId);
+    if (hasExtraAudioTracks) {
+      extension = "mkv";
+    }
   }
 
   const filename = getCompatibleFilename(`${videoData.title || videoData.videoId}.${extension}`);
