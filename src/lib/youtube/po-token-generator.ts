@@ -1,5 +1,6 @@
 import {
   InnertubeClientName,
+  InnertubeEngagementType,
   type InnertubeAttGetRequest,
   type InnertubeGenerateItRequest,
   type InnertubeGenerateItResponse
@@ -23,22 +24,21 @@ export async function generatePoToken(videoId: string) {
   // this hardcoded YouTube web key is what YouTube's own BotGuard uses.
   const waaApiKey = "AIzaSyDyT5W0Jh49F30Pqqtyfdf7pDLFKLJoAnw";
 
-  const challengeResponse = await fetch(
-    "https://www.youtube.com/youtubei/v1/att/get?prettyPrint=false",
-    {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        engagementType: "ENGAGEMENT_TYPE_UNBOUND",
-        context: {
-          client: {
-            clientName: InnertubeClientName.Web,
-            clientVersion
-          }
+  const challengeResponse = await fetch("https://www.youtube.com/youtubei/v1/att/get?prettyPrint=false", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({
+      engagementType: InnertubeEngagementType.Unbound,
+      context: {
+        client: {
+          clientName: InnertubeClientName.Web,
+          clientVersion
         }
-      } satisfies InnertubeAttGetRequest)
-    }
-  );
+      }
+    } satisfies InnertubeAttGetRequest)
+  });
 
   const challengeData: ChallengeResponse = await challengeResponse.json();
   const { program, globalName, interpreterUrl: interpreterUrlRaw } = challengeData.bgChallenge ?? {};

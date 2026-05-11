@@ -86,13 +86,19 @@ export interface InnertubePlayerRequest {
  * @see https://github.com/LuanRT/BgUtils — community-maintained BotGuard helper, including /att/get usage
  * @see https://github.com/zerodytrash/YouTube-Internal-Clients — context.client values that pair with this endpoint
  */
+export const InnertubeEngagementType = {
+  Unbound: "ENGAGEMENT_TYPE_UNBOUND",
+  Playback: "ENGAGEMENT_TYPE_PLAYBACK",
+  VideoFrame: "ENGAGEMENT_TYPE_VIDEO_FRAME",
+  Ad: "ENGAGEMENT_TYPE_AD"
+} as const;
+
+export type InnertubeEngagementType =
+  | (typeof InnertubeEngagementType)[keyof typeof InnertubeEngagementType]
+  | (string & {});
+
 export interface InnertubeAttGetRequest {
-  engagementType:
-    | "ENGAGEMENT_TYPE_UNBOUND"
-    | "ENGAGEMENT_TYPE_PLAYBACK"
-    | "ENGAGEMENT_TYPE_VIDEO_FRAME"
-    | "ENGAGEMENT_TYPE_AD"
-    | (string & {});
+  engagementType: InnertubeEngagementType;
   context: InnertubeContext;
   // Outputs requested from the BotGuard VM. Empty/omitted produces just the
   // standard challenge; populating it requests additional signal channels.
