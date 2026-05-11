@@ -2,7 +2,7 @@
   import PolymerSelect from "../polymer-select/PolymerSelect.svelte";
   import { splitFilenameAndExtension, supportedExtensions } from "@/lib/utils/containers";
   import { formatAudioCodecLabel, formatVideoQualityLabel } from "@/lib/youtube/video-helpers";
-  import { DownloadType, isPolymerInputElement } from "@/types";
+  import { DownloadType } from "@/types";
   import type { AdaptiveFormatItem } from "@/types";
 
   interface Props {
@@ -133,31 +133,6 @@
     if (elInput) {
       elInput.dir = "auto";
     }
-
-    function applyLabelColor() {
-      if (!isPolymerInputElement(elTarget)) {
-        return;
-      }
-
-      const isDark = document.documentElement.hasAttribute("dark");
-      elTarget.updateStyles({
-        "--paper-input-container-color": isDark
-          ? "var(--yt-spec-text-secondary, #aaaaaa)"
-          : "var(--yt-spec-text-secondary, #606060)"
-      });
-    }
-
-    // Apply immediately, then again after Polymer's own init rAF resets the value.
-    applyLabelColor();
-    requestAnimationFrame(applyLabelColor);
-
-    const observer = new MutationObserver(applyLabelColor);
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["dark"]
-    });
-
-    return () => observer.disconnect();
   }
 </script>
 
@@ -241,11 +216,24 @@
     flex-direction: column;
     gap: 14px;
     padding-bottom: 4px;
+
+    :global(tp-yt-paper-input) {
+      margin-block-start: -10px;
+    }
   }
 
   .ytdl-options-field {
     display: flex;
     flex-direction: column;
     gap: 6px;
+  }
+
+  /* ShadyDOM blocks updateStyles/setProperty from the isolated world; CSS rule is the only fix. */
+  :global(tp-yt-paper-input#filename-input label) {
+    color: var(--yt-spec-text-secondary, #606060) !important;
+
+    :global(html[dark]) & {
+      color: var(--yt-spec-text-secondary, #aaaaaa) !important;
+    }
   }
 </style>
