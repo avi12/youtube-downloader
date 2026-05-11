@@ -17,7 +17,8 @@ export function syncStoredProgressToStore(
 
   // A video that was downloading but is no longer in storage has finished
   for (const videoId of downloadProgressStore.keys()) {
-    if (!storedProgress[videoId] && downloadProgressStore.get(videoId)?.isDownloading) {
+    const isOrphanedDownload = !storedProgress[videoId] && downloadProgressStore.get(videoId)?.isDownloading;
+    if (isOrphanedDownload) {
       downloadProgressStore.set(videoId, {
         isDownloading: false,
         isDone: true,

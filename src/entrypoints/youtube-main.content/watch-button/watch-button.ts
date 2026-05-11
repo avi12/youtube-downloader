@@ -14,7 +14,8 @@ const VIDEO_ACTION_BUTTON_SELECTORS = [
 function findFirstVisibleActionsContainer() {
   for (const selector of VIDEO_ACTION_BUTTON_SELECTORS) {
     for (const elButton of document.querySelectorAll<HTMLElement>(selector)) {
-      if (elButton.offsetWidth > 0 && elButton.offsetHeight > 0) {
+      const isVisible = elButton.offsetWidth > 0 && elButton.offsetHeight > 0;
+      if (isVisible) {
         return elButton;
       }
     }

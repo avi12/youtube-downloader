@@ -117,7 +117,8 @@ export default defineContentScript({
       // so subsequent SetButtonData lookups (e.g. when the primary button
       // morphs from Download → Cancel) can still find this element by selector.
       const cachedId = buttonIdByElement.get(elButton);
-      if (cachedId && elButton.getAttribute(DATA_BUTTON_ID_ATTR) !== cachedId) {
+      const isButtonIdStale = cachedId && elButton.getAttribute(DATA_BUTTON_ID_ATTR) !== cachedId;
+      if (isButtonIdStale) {
         elButton.setAttribute(DATA_BUTTON_ID_ATTR, cachedId);
       }
 

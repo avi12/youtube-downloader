@@ -60,7 +60,8 @@
     }
 
     const { target } = e;
-    if (target instanceof Node && (elMenu?.contains(target) || elTrigger?.contains(target))) {
+    const isClickInsideMenu = target instanceof Node && (elMenu?.contains(target) || elTrigger?.contains(target));
+    if (isClickInsideMenu) {
       return;
     }
 

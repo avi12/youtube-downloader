@@ -100,7 +100,8 @@ export function createPlaylistVideoItemState({ videoId, gridTitle, activeDownloa
     }
 
     if (isDownloading) {
-      if (downloadState.progress <= 0 && downloadState.progressType !== ProgressType.FFmpeg) {
+      const isProgressUnknown = downloadState.progress <= 0 && downloadState.progressType !== ProgressType.FFmpeg;
+      if (isProgressUnknown) {
         return buttonLabel;
       }
 

@@ -339,7 +339,8 @@ async function handleEmbedMetadata(job: EmbedMetadataJob) {
 
   const isWebmSource = sourceExtension === "weba" || sourceExtension === "webm";
   const isWebmOutput = outputExtension === "weba" || outputExtension === "webm";
-  if (thumbnailUrl && !isWebmSource && !isWebmOutput) {
+  const isEmbeddableFormat = !isWebmSource && !isWebmOutput;
+  if (thumbnailUrl && isEmbeddableFormat) {
     const thumbnail = await fetchThumbnail(thumbnailUrl);
     if (thumbnail) {
       coverFilename = `cover.${thumbnail.extension}`;

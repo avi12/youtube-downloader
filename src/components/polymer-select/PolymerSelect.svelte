@@ -38,7 +38,8 @@
         return;
       }
 
-      if (e.key === "ArrowDown" || e.key === "Enter" || e.key === " ") {
+      const isActivationKey = e.key === "ArrowDown" || e.key === "Enter" || e.key === " ";
+      if (isActivationKey) {
         e.preventDefault();
         isOpen = true;
       }
