@@ -126,65 +126,37 @@
 
 <style>
   .ytdl-panel {
-    --yt-spec-text-primary: rgb(15 15 15);
-    --yt-spec-text-secondary: rgb(96 96 96);
-    --ytdl-border: rgb(0 0 0 / 9%);
-    --ytdl-border-strong: rgb(0 0 0 / 16%);
-    --ytdl-bg-elev-2: rgb(255 255 255);
-    --ytdl-bg-hover: rgb(0 0 0 / 6%);
-    --ytdl-cta: #065fd4;
-    --ytdl-danger: #d93025;
-    --ytdl-success: #1e8e3e;
-    --ytdl-primary-bg: #0f0f0f;
-    --ytdl-primary-text: #ffffff;
-    --ytdl-progress-track: rgb(0 0 0 / 10%);
-
     width: 380px;
-    border: 1px solid var(--ytdl-border);
+    border: 1px solid var(--yt-spec-10-percent-layer, rgb(0 0 0 / 10%));
     border-radius: 12px;
-    background: var(--ytdl-bg-elev-2);
+    background: var(--yt-spec-raised-background, var(--yt-spec-base-background, #ffffff));
     color: var(--yt-spec-text-primary);
     box-shadow: 0 8px 32px rgb(0 0 0 / 32%), 0 2px 8px rgb(0 0 0 / 16%);
   }
 
-  :global(html[dark]) .ytdl-panel {
-    --yt-spec-text-primary: rgb(241 241 241);
-    --yt-spec-text-secondary: rgb(170 170 170);
-    --ytdl-border: rgb(255 255 255 / 12%);
-    --ytdl-border-strong: rgb(255 255 255 / 20%);
-    --ytdl-bg-elev-2: rgb(39 39 39);
-    --ytdl-bg-hover: rgb(255 255 255 / 8%);
-    --ytdl-cta: #3ea6ff;
-    --ytdl-danger: #ff6b6b;
-    --ytdl-success: #6cd16c;
-    --ytdl-primary-bg: #f1f1f1;
-    --ytdl-primary-text: #0f0f0f;
-    --ytdl-progress-track: rgb(255 255 255 / 10%);
-  }
-
   .ytdl-panel :global(.ytSpecButtonShapeNextMono.ytSpecButtonShapeNextFilled.ytSpecButtonShapeNextFocused) {
     border-color: transparent;
-    background: var(--tffc2fd3a644f6275);
-    color: var(--t6216186c28b3834b);
+    background: var(--yt-spec-text-primary, #0f0f0f);
+    color: var(--yt-spec-base-background, #ffffff);
   }
 
   /* Focus ring for keyboard navigation. YouTube removes outlines globally; restore them
      inside the panel so keyboard users can see which button is focused. */
   .ytdl-panel :global(button:focus-visible) {
-    outline: 2px solid var(--yt-spec-call-to-action, var(--ytdl-cta)) !important;
+    outline: 2px solid var(--yt-spec-call-to-action, #065fd4) !important;
     outline-offset: 3px;
   }
 
   /* Cancel state mirrors the design's .dl-btn-danger: red text + red border,
      transparent bg, subtle red tint on hover. */
   .ytdl-panel :global(.ytdl-cancel-state button) {
-    border-color: var(--yt-spec-text-error, var(--ytdl-danger)) !important;
+    border-color: var(--yt-spec-text-error, #d93025) !important;
     background: transparent !important;
-    color: var(--yt-spec-text-error, var(--ytdl-danger)) !important;
+    color: var(--yt-spec-text-error, #d93025) !important;
   }
 
   .ytdl-panel :global(.ytdl-cancel-state button:hover) {
-    background: color-mix(in oklab, var(--yt-spec-text-error, var(--ytdl-danger)) 12%, transparent) !important;
+    background: color-mix(in oklab, var(--yt-spec-text-error, #d93025) 12%, transparent) !important;
   }
 
   .ytdl-panel-header {

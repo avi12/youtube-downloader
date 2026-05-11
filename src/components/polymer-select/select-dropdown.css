@@ -3,15 +3,7 @@
    --paper-menu-button-dropdown-background controls the wrapper's bg via
    Polymer's mixin pipeline. */
 .ytdl-select-wrapper {
-  --paper-menu-button-dropdown-background: rgb(255 255 255);
-  --ytdl-menu-text: rgb(15 15 15);
-  --ytdl-menu-hover: rgb(0 0 0 / 6%);
-}
-
-[dark] .ytdl-select-wrapper {
-  --paper-menu-button-dropdown-background: rgb(39 39 39);
-  --ytdl-menu-text: rgb(241 241 241);
-  --ytdl-menu-hover: rgb(255 255 255 / 8%);
+  --paper-menu-button-dropdown-background: var(--yt-spec-raised-background, var(--yt-spec-base-background, #ffffff));
 }
 
 .ytdl-select-menu {
@@ -33,14 +25,14 @@
   min-height: 0;
   padding: 8px 10px;
   border-radius: 6px;
-  color: var(--ytdl-menu-text);
+  color: var(--yt-spec-text-primary);
   font-size: 1.4rem;
   white-space: nowrap;
   cursor: pointer;
 }
 
 .ytdl-select-menu tp-yt-paper-item:hover {
-  background-color: var(--ytdl-menu-hover);
+  background-color: var(--yt-spec-10-percent-layer, rgb(0 0 0 / 6%));
 }
 
 .ytdl-select-menu [aria-selected="true"] {

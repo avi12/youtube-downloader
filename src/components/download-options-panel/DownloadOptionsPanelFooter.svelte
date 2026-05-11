@@ -166,10 +166,10 @@
   }
 
   .ytdl-progress-block--done .ytdl-progress-label {
-    color: var(--yt-spec-text-success, var(--ytdl-success));
+    color: var(--yt-spec-text-success, #1e8e3e);
   }
 
   .ytdl-progress-block--failed .ytdl-progress-label {
-    color: var(--yt-spec-text-error, var(--ytdl-danger));
+    color: var(--yt-spec-text-error, #d93025);
   }
 </style>

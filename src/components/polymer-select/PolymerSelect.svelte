@@ -259,7 +259,7 @@
     margin: 0;
     padding-block: 0;
     padding-inline: 14px 12px;
-    border: 1px solid var(--ytdl-border-strong);
+    border: 1px solid var(--yt-spec-10-percent-layer, rgb(0 0 0 / 16%));
     border-radius: 8px;
     background: transparent;
     color: var(--yt-spec-text-primary);
@@ -307,9 +307,9 @@
     z-index: 10;
     overflow-y: auto;
     padding: 4px;
-    border: 1px solid var(--ytdl-border);
+    border: 1px solid var(--yt-spec-10-percent-layer, rgb(0 0 0 / 10%));
     border-radius: 8px;
-    background: var(--ytdl-bg-elev-2);
+    background: var(--yt-spec-raised-background, var(--yt-spec-base-background, #ffffff));
     scrollbar-width: thin;
     box-shadow: 0 8px 32px rgb(0 0 0 / 32%), 0 2px 8px rgb(0 0 0 / 16%);
   }
@@ -327,7 +327,7 @@
   }
 
   .ytdl-select-menu :global(tp-yt-paper-item:hover) {
-    background-color: var(--ytdl-bg-hover);
+    background-color: var(--yt-spec-10-percent-layer, rgb(0 0 0 / 6%));
   }
 
   .ytdl-select-menu :global(tp-yt-paper-item[aria-selected="true"]) {

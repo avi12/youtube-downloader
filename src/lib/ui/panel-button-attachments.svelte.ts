@@ -234,7 +234,7 @@ function applyProgressStyles(elProgress: Element, activeColor: string) {
 
     elProgress.updateStyles({
       "--paper-progress-active-color": activeColor,
-      "--paper-progress-container-color": "var(--ytdl-progress-track)",
+      "--paper-progress-container-color": "var(--yt-spec-10-percent-layer, rgb(0 0 0 / 10%))",
       "--paper-progress-height": "4px"
     });
   });

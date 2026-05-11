@@ -1,7 +1,7 @@
 # YouTube Downloader
 
 A browser extension for downloading YouTube videos with full format control, batch playlist downloads, and a built-in
-download manager.
+download manager
 
 Made by [Avi](https://avi12.com) with supervised [Claude Code](https://claude.com/product/claude-code)
 
@@ -88,30 +88,30 @@ both the extension and any open YouTube tabs on every file change under `src/`.
 pnpm build         # Production build
 pnpm svelte:check  # Svelte type-check
 pnpm lint          # ESLint + Stylelint
-pnpm knip          # Dead code detection
+pnpx fallow audit  # Dead code detection
 ```
 
 ## Tech stack
 
-| Layer | Package |
-| --- | --- |
-| Extension framework | [WXT](https://wxt.dev) |
-| UI | [Svelte 5](https://svelte.dev) |
-| Streaming | SABR (YouTube's Scalable Adaptive Bit Rate protocol) via [`googlevideo`](https://npm.im/googlevideo) |
-| Muxing | [`@ffmpeg/ffmpeg`](https://npm.im/@ffmpeg/ffmpeg) (WASM build, runs in an offscreen document) |
-| Messaging | [`@webext-core/messaging`](https://npm.im/@webext-core/messaging) |
+| Layer               | Package                                                                                              |
+| ------------------- | ---------------------------------------------------------------------------------------------------- |
+| Extension framework | [WXT](https://wxt.dev)                                                                               |
+| UI                  | [Svelte 5](https://svelte.dev)                                                                       |
+| Streaming           | SABR (YouTube's Scalable Adaptive Bit Rate protocol) via [`googlevideo`](https://npm.im/googlevideo) |
+| Muxing              | [`@ffmpeg/ffmpeg`](https://npm.im/@ffmpeg/ffmpeg) (WASM build, runs in an offscreen document)        |
+| Messaging           | [`@webext-core/messaging`](https://npm.im/@webext-core/messaging)                                    |
 
 ## How it works
 
 The extension is split across five MV3 runtimes (each lives under `src/entrypoints/`):
 
-| Runtime | Folder | Job |
-| --- | --- | --- |
-| Service worker | `background/` | Owns downloads, SABR/CDN fetches, declarativeNetRequest header rewrites, tab tracking, persistence |
-| MAIN-world content script | `youtube-main.content/` | Reads YouTube's Polymer state (player config, video metadata) and injects the download button |
-| Isolated content script | `youtube.content/` | Bridge between MAIN world and the service worker; mounts Svelte UI (toasts, grid overlays, playlist downloader) |
-| Offscreen document | `offscreen/` | Runs [`@ffmpeg/ffmpeg`](https://npm.im/@ffmpeg/ffmpeg) WASM to mux video + audio streams |
-| Popup | `popup/` | Download manager UI (active progress + recent history + settings) |
+| Runtime                   | Folder                  | Job                                                                                                             |
+| ------------------------- | ----------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Service worker            | `background/`           | Owns downloads, SABR/CDN fetches, declarativeNetRequest header rewrites, tab tracking, persistence              |
+| MAIN-world content script | `youtube-main.content/` | Reads YouTube's Polymer state (player config, video metadata) and injects the download button                   |
+| Isolated content script   | `youtube.content/`      | Bridge between MAIN world and the service worker; mounts Svelte UI (toasts, grid overlays, playlist downloader) |
+| Offscreen document        | `offscreen/`            | Runs [`@ffmpeg/ffmpeg`](https://npm.im/@ffmpeg/ffmpeg) WASM to mux video + audio streams                        |
+| Popup                     | `popup/`                | Download manager UI (active progress + recent history + settings)                                               |
 
 ### Fetching streams from YouTube
 
@@ -175,10 +175,10 @@ The offscreen document exists because the service worker can't host the large WA
 
 Chrome content scripts run in an **isolated world** - same DOM as the page, but a separate JavaScript scope. Two message buses connect the runtimes:
 
-| Bus | File | Scope |
-| --- | --- | --- |
+| Bus                   | File                                         | Scope                                   |
+| --------------------- | -------------------------------------------- | --------------------------------------- |
 | `crossWorldMessenger` | `src/lib/messaging/cross-world-messenger.ts` | MAIN world to isolated world (same tab) |
-| `sendMessage` | `src/lib/messaging/messaging.ts` | Content scripts to service worker |
+| `sendMessage`         | `src/lib/messaging/messaging.ts`             | Content scripts to service worker       |
 
 Both are built on [`@webext-core/messaging`](https://npm.im/@webext-core/messaging). To add a new message type, extend the relevant `enum`/`const` map and register a handler with `onMessage`.
 
@@ -207,14 +207,14 @@ Svelte 5's `{@attach fn}` directive is used for one-time Polymer element setup. 
 
 ### Good first issues
 
-| Area | Where to start |
-| --- | --- |
-| SABR streaming | `src/lib/youtube/sabr/` |
-| Download orchestration | `src/entrypoints/background/download/` |
-| FFmpeg muxing pipeline | `src/entrypoints/offscreen/` |
-| Download panel | `src/components/download-options-panel/` |
-| Watch-page button | `src/entrypoints/youtube-main.content/watch-button/` |
-| Playlist downloader | `src/components/playlist-downloader/` |
-| Shared types | `src/types/index.ts` |
+| Area                   | Where to start                                       |
+| ---------------------- | ---------------------------------------------------- |
+| SABR streaming         | `src/lib/youtube/sabr/`                              |
+| Download orchestration | `src/entrypoints/background/download/`               |
+| FFmpeg muxing pipeline | `src/entrypoints/offscreen/`                         |
+| Download panel         | `src/components/download-options-panel/`             |
+| Watch-page button      | `src/entrypoints/youtube-main.content/watch-button/` |
+| Playlist downloader    | `src/components/playlist-downloader/`                |
+| Shared types           | `src/types/index.ts`                                 |
 
-After any change under `src/`, the dev server (`pnpm dev`) auto-rebuilds and reloads the extension and YouTube tabs. Run `pnpm lint`, `pnpm svelte:check`, and `pnpx fallow audit` before committing.
+After any change under `src/`, the dev server (`pnpm run dev`) auto-rebuilds and reloads the extension and YouTube tabs. Run `pnpm run lint`, `pnpm run svelte:check`, and `pnpx fallow audit` before committing.
