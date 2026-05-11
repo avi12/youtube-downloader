@@ -29,6 +29,7 @@ export {
 } from "./youtube";
 
 export const DownloadType = {
+  Auto: "auto",
   VideoAndAudio: "video+audio",
   Video: "video",
   Audio: "audio"
@@ -124,7 +125,7 @@ export type DownloadRequest = {
   resolvedExtraAudioUrls?: (string | null)[];
 };
 
-export type DownloadTypePreference = "auto" | DownloadType;
+export type DownloadTypePreference = DownloadType;
 
 export type Options = {
   ext: {

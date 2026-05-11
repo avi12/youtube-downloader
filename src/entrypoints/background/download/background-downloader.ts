@@ -9,6 +9,7 @@ import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen
 import { interruptedDownloadsItem, mutateStorageItem } from "@/lib/storage/storage";
 import { TRANSFER_CHUNK_SIZE, uint8ToBase64 } from "@/lib/utils/binary";
 import { stripMimeParams } from "@/lib/utils/containers";
+import { stripTrackLangSuffix } from "@/lib/youtube/video-helpers";
 import { fetchYouTubeMusicMetadata } from "@/lib/youtube/youtube-music-metadata";
 import { AUDIO_EXTRA_STREAM_PREFIX, ProgressType, StreamType } from "@/types";
 import type { DownloadRequest, VideoMetadata } from "@/types";
@@ -184,7 +185,7 @@ async function dispatchToOffscreen({ request, result, enrichedMetadata, tabId }:
     if (dataBase64) {
       subtitleTracks.push({
         dataBase64,
-        label: track.name.simpleText,
+        label: stripTrackLangSuffix(track.name.simpleText),
         languageCode: track.languageCode
       });
     }

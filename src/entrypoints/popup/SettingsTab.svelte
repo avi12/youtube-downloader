@@ -24,7 +24,7 @@
     label: string;
   }> = [
     {
-      value: "auto",
+      value: DownloadType.Auto,
       label: "Auto (video for videos, audio for music)"
     },
     {

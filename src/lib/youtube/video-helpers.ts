@@ -2,6 +2,7 @@ import { AUTO_EXTENSION } from "@/lib/utils/containers";
 import { CHILD_LIST_SUBTREE } from "@/lib/utils/dom";
 import {
   AudioTrackLanguageMode,
+  DownloadType,
   PlaylistDownloadMode,
   PlaylistOutputMode,
   ProgressType,
@@ -18,6 +19,14 @@ import { PlayabilityStatus } from "@/types/youtube";
 
 export const VIDEO_QUALITIES = [4320, 2160, 1440, 1080, 720, 480, 360, 240, 144];
 
+// YouTube appends " - [lang]" to track display names (e.g. "English - [en]").
+// Strip it so the muxed track title is just the human-readable name.
+const TRACK_LANG_SUFFIX_PATTERN = / [-–—] \[.*?\]$/;
+
+export function stripTrackLangSuffix(label: string) {
+  return label.replace(TRACK_LANG_SUFFIX_PATTERN, "").trim();
+}
+
 const DEFAULT_VIDEO_QUALITY = 1080;
 
 export const INITIAL_OPTIONS: Options = {
@@ -25,7 +34,7 @@ export const INITIAL_OPTIONS: Options = {
     audio: AUTO_EXTENSION,
     video: "mkv"
   },
-  defaultDownloadType: "auto",
+  defaultDownloadType: DownloadType.Auto,
   videoQualityMode: VideoQualityMode.Best,
   videoQuality: DEFAULT_VIDEO_QUALITY,
   isShowNativeDownload: false,

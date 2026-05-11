@@ -64,9 +64,9 @@ export function createPlaylistToggleButtons(state: {
         id: "playlist-type-auto",
         label: "Auto",
         tooltip: "Auto: audio for music, video+audio for rest",
-        isActive: () => state.effectiveDownloadType === "auto",
+        isActive: () => state.effectiveDownloadType === DownloadType.Auto,
         onClick() {
-          state.effectiveDownloadType = "auto";
+          state.effectiveDownloadType = DownloadType.Auto;
         }
       },
       {

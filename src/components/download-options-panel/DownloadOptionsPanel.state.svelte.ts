@@ -36,7 +36,7 @@ export function createPanelState(getVideoData: () => VideoData) {
     untrack(() => {
       const options = CONTENT_OPTIONS.value;
       const videoData = getVideoData();
-      if (options.defaultDownloadType !== "auto") {
+      if (options.defaultDownloadType !== DownloadType.Auto) {
         return options.defaultDownloadType;
       }
 

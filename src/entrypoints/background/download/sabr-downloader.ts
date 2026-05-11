@@ -2,6 +2,7 @@ import type { DownloadResult } from "./background-downloader";
 import { createProgressFetch, sendProgressUpdate } from "./progress-fetch";
 import { stripMimeParams } from "@/lib/utils/containers";
 import { fetchAudioViaSabrStream, fetchVideoViaSabrStream } from "@/lib/youtube/sabr/download";
+import { stripTrackLangSuffix } from "@/lib/youtube/video-helpers";
 import { DownloadType, ProgressType } from "@/types";
 import type { AdaptiveFormatItem, DownloadRequest, SabrConfig } from "@/types";
 
@@ -135,7 +136,7 @@ async function downloadExtraAudioTracksViaSabr({ config, formats, poToken, signa
       results.push({
         data,
         mimeType: stripMimeParams(format.mimeType),
-        label: (format.audioTrack?.displayName ?? "").replace(/ [-–—] \[.*?]$/, "").trim(),
+        label: stripTrackLangSuffix(format.audioTrack?.displayName ?? ""),
         languageCode: format.audioTrack?.id?.split(".")[0] ?? "",
         isDefault: format.audioTrack?.audioIsDefault ?? false
       });
