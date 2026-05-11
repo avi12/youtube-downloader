@@ -129,6 +129,28 @@ If a video has multiple audio tracks (dubbed versions), SABR downloads them sequ
 
 **2. CDN fallback** - If SABR fails (e.g. for very old or live-clipped videos), the extension falls back to direct CDN URLs from the player response (`background/download/cdn-downloader.ts`). These are plain HTTPS fetches with byte-range support for retrying interrupted transfers.
 
+### YouTube authentication mechanisms
+
+**PO token (Proof of Origin)** - YouTube requires a cryptographic proof that requests come from a real browser session, not a bot. The extension generates this token by running YouTube's own **BotGuard** anti-bot JavaScript:
+
+1. Fetches a challenge from YouTube's InnerTube `att/get` endpoint.
+2. Loads (or reuses) the BotGuard interpreter script in the MAIN world.
+3. Runs the interpreter to get a "snapshot" of the browser environment.
+4. Submits the snapshot to `api/jnn/v1/GenerateIT` to receive an integrity token.
+5. Uses the integrity token to mint a per-video PO token.
+
+The full process is in `src/lib/youtube/po-token-generator.ts`. The token is attached to every SABR request. Without a valid token, YouTube returns a `403 Forbidden`.
+
+On the watch page the player already runs BotGuard and the extension captures the resulting SABR URL and PO token directly from the player's own requests (via `src/lib/youtube/sabr/request-capture.ts`). On grid/subscription pages where the player is absent, the extension generates a fresh token using the process above.
+
+**Signature cipher** - CDN stream URLs are sometimes protected by an obfuscated JavaScript transform that must be applied to decrypt the `sig` parameter before the URL is usable. The extension:
+
+1. Downloads the player's `player.js`.
+2. Extracts the transform function and its operations (swap, reverse, splice) by pattern-matching against known obfuscation patterns.
+3. Replays the operations locally to produce the decrypted signature.
+
+This is implemented in `src/lib/youtube/signature-decryptor.ts` and is called by `src/entrypoints/youtube-main.content/video/stream-fetch.ts` when a format has a `signatureCipher` field instead of a plain URL.
+
 ### Muxing
 
 Raw video and audio are separate `.webm`/`.mp4` streams. After all bytes are downloaded, the service worker ships them to an **offscreen document** (`offscreen/`) which runs [`@ffmpeg/ffmpeg`](https://npm.im/@ffmpeg/ffmpeg) (a WASM build). FFmpeg merges the streams, re-encodes if needed (e.g. WebM audio into an MP4 container), and emits the final file.
