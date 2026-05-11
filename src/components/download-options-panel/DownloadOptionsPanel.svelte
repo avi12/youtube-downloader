@@ -42,32 +42,12 @@
       return "Preparing";
     }
 
-    const pct = percentFormatter.format(panel.displayProgress / 100);
+    const formattedPercentage = percentFormatter.format(panel.displayProgress / 100);
     if (panel.progressType === ProgressType.FFmpeg) {
-      return `${pct} - Processing`;
+      return `${formattedPercentage} - Processing`;
     }
 
-    return `${pct} - Downloading`;
-  });
-
-  const primaryState = $derived.by<PrimaryButtonState>(() => {
-    if (panel.isDownloading) {
-      return PrimaryButtonState.Downloading;
-    }
-
-    if (panel.isFailed) {
-      return PrimaryButtonState.Failed;
-    }
-
-    if (panel.isInterrupted) {
-      return PrimaryButtonState.Interrupted;
-    }
-
-    if (panel.isDone) {
-      return PrimaryButtonState.Done;
-    }
-
-    return PrimaryButtonState.Idle;
+    return `${formattedPercentage} - Downloading`;
   });
 
   function closePanel() {
@@ -80,9 +60,9 @@
     if (buttonId === closeButtonId) {
       closePanel();
     } else if (buttonId === primaryButtonId) {
-      if (primaryState === PrimaryButtonState.Downloading) {
+      if (panel.primaryState === PrimaryButtonState.Downloading) {
         void panel.cancelDownload();
-      } else if (primaryState === PrimaryButtonState.Interrupted) {
+      } else if (panel.primaryState === PrimaryButtonState.Interrupted) {
         panel.resumeDownload();
       } else {
         panel.startDownload();
@@ -95,13 +75,13 @@
   }));
 
   const primaryButtonClass = $derived(
-    `${scopingClass} ${primaryState === PrimaryButtonState.Downloading ? "ytdl-cancel-state" : ""}`
+    `${scopingClass} ${panel.primaryState === PrimaryButtonState.Downloading ? "ytdl-cancel-state" : ""}`
   );
 
   function attachPrimaryBtn(elButton: Element) {
     attachPrimaryButton({
       elButton,
-      getState: () => primaryState,
+      getState: () => panel.primaryState,
       getIsDownloadable: () => panel.isDownloadable,
       getIsFilenameValid: () => panel.isFilenameValid
     });
@@ -160,7 +140,7 @@
 
   <div class="ytdl-panel-footer">
     <div class="ytdl-footer-buttons">
-      {#if primaryState === PrimaryButtonState.Interrupted}
+      {#if panel.primaryState === PrimaryButtonState.Interrupted}
         <yt-button-view-model
           class={scopingClass}
           {@attach attachGhostButton("Discard")}
@@ -169,7 +149,7 @@
           tabindex="0"
         ></yt-button-view-model>
       {/if}
-      {#if primaryState === PrimaryButtonState.Done && panel.downloadId !== null}
+      {#if panel.primaryState === PrimaryButtonState.Done && panel.downloadId !== null}
         <yt-button-view-model
           class={scopingClass}
           {@attach attachGhostButton("View")}
@@ -187,7 +167,7 @@
       ></yt-button-view-model>
     </div>
 
-    {#if primaryState === PrimaryButtonState.Downloading}
+    {#if panel.primaryState === PrimaryButtonState.Downloading}
       <div class="ytdl-progress-block">
         <tp-yt-paper-progress
           class="ytdl-progress-track"
@@ -199,7 +179,7 @@
           {downloadingLabel}
         </span>
       </div>
-    {:else if primaryState === PrimaryButtonState.Done}
+    {:else if panel.primaryState === PrimaryButtonState.Done}
       <div class="ytdl-progress-block ytdl-progress-block--done">
         <tp-yt-paper-progress
           class="ytdl-progress-track"
@@ -208,7 +188,7 @@
         ></tp-yt-paper-progress>
         <span class="ytdl-progress-label" role="status">Downloaded</span>
       </div>
-    {:else if primaryState === PrimaryButtonState.Failed}
+    {:else if panel.primaryState === PrimaryButtonState.Failed}
       <div class="ytdl-progress-block ytdl-progress-block--failed">
         <tp-yt-paper-progress
           class="ytdl-progress-track"
@@ -256,6 +236,7 @@
     --ytdl-success: #6cd16c;
     --ytdl-primary-bg: #f1f1f1;
     --ytdl-primary-text: #0f0f0f;
+    --paper-input-container-color: var(--yt-spec-text-secondary);
   }
 
   .ytdl-panel :global(.ytSpecButtonShapeNextMono.ytSpecButtonShapeNextFilled.ytSpecButtonShapeNextFocused) {
@@ -344,13 +325,5 @@
     gap: 8px;
     justify-content: flex-end;
     align-items: center;
-  }
-
-  .ytdl-done-status {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    color: var(--yt-spec-call-to-action, var(--ytdl-cta));
-    font-size: 1.3rem;
   }
 </style>

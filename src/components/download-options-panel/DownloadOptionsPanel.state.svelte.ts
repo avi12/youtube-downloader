@@ -3,6 +3,7 @@ import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-wo
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { statusProgressItem, videoQueueItem } from "@/lib/storage/storage";
 import { completedDownloadsStore } from "@/lib/ui/completed-downloads-store.svelte";
+import { PrimaryButtonState } from "@/lib/ui/panel-button-attachments.svelte";
 import { CONTENT_OPTIONS, downloadProgressStore, interruptedDownloadStore } from "@/lib/ui/synced-stores.svelte";
 import { getCompatibleFilename, getOutputExtension, resolveAutoExtension } from "@/lib/utils/containers";
 import {
@@ -111,6 +112,25 @@ export function createPanelState(getVideoData: () => VideoData) {
   const isDownloadable = $derived(getVideoData().isDownloadable);
   const isInterrupted = $derived(!!interruptedDownloadStore.get(getVideoData().videoId));
   const isFailed = $derived(storeEntry?.isFailed === true);
+  const primaryState = $derived.by<PrimaryButtonState>(() => {
+    if (isDownloading) {
+      return PrimaryButtonState.Downloading;
+    }
+
+    if (isFailed) {
+      return PrimaryButtonState.Failed;
+    }
+
+    if (isInterrupted) {
+      return PrimaryButtonState.Interrupted;
+    }
+
+    if (isDone) {
+      return PrimaryButtonState.Done;
+    }
+
+    return PrimaryButtonState.Idle;
+  });
   const displayProgress = $derived(
     calculateWeightedProgress({
       isDownloading,
@@ -362,6 +382,9 @@ export function createPanelState(getVideoData: () => VideoData) {
     },
     get isFailed() {
       return isFailed;
+    },
+    get primaryState() {
+      return primaryState;
     },
     get displayProgress() {
       return displayProgress;
