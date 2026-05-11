@@ -78,10 +78,9 @@ function extractTransformOperations({ playerSource, functionName }: {
 
   const methodTypes = new Map<string, (typeof TransformOpType)[keyof typeof TransformOpType]>();
 
-  const methodPattern = /([a-zA-Z0-9$]+)\s*:\s*function\s*\([^)]*\)\s*\{([^}]+)\}/g;
-  let methodMatch;
+  const methodPattern = /([a-zA-Z0-9$]+)\s*:\s*function\s*\([^)]*\)\s*\{([^}]+)}/g;
 
-  while ((methodMatch = methodPattern.exec(helperBody)) !== null) {
+  for (const methodMatch of helperBody.matchAll(methodPattern)) {
     const methodName = methodMatch[1];
     const methodBody = methodMatch[2];
     if (methodBody.includes("reverse")) {
