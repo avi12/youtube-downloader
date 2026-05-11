@@ -279,6 +279,10 @@ export function isPolymerProgressElement(element: Element): element is TpYtPaper
   return "updateStyles" in element && "value" in element;
 }
 
+export function isPolymerInputElement(element: Element): element is TpYtPaperInputElement {
+  return "updateStyles" in element && !("value" in element);
+}
+
 export interface YtButtonViewModelElement extends HTMLElement {
   data: ButtonViewModelData;
 }
@@ -291,6 +295,10 @@ export interface TpYtPaperProgressElement extends HTMLElement {
   value: number;
   max: number;
   indeterminate: boolean;
+  updateStyles(styles: Record<string, string>): void;
+}
+
+export interface TpYtPaperInputElement extends HTMLElement {
   updateStyles(styles: Record<string, string>): void;
 }
 
@@ -325,6 +333,7 @@ declare global {
     "yt-button-view-model": YtButtonViewModelElement;
     "tp-yt-paper-dropdown-menu": TpYtPaperDropdownMenuElement;
     "tp-yt-paper-progress": TpYtPaperProgressElement;
+    "tp-yt-paper-input": TpYtPaperInputElement;
     "tp-yt-iron-dropdown": TpYtIronDropdownElement;
     "tp-yt-paper-listbox": HTMLElement;
     "tp-yt-paper-item": HTMLElement;

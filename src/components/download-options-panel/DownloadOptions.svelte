@@ -2,7 +2,7 @@
   import PolymerSelect from "../polymer-select/PolymerSelect.svelte";
   import { splitFilenameAndExtension, supportedExtensions } from "@/lib/utils/containers";
   import { formatAudioCodecLabel, formatVideoQualityLabel, stripTrackLangSuffix } from "@/lib/youtube/video-helpers";
-  import { DownloadType } from "@/types";
+  import { DownloadType, isPolymerInputElement } from "@/types";
   import type { AdaptiveFormatItem } from "@/types";
 
   interface Props {
@@ -133,6 +133,16 @@
     if (elInput) {
       elInput.dir = "auto";
     }
+
+    requestAnimationFrame(() => {
+      if (!isPolymerInputElement(elTarget)) {
+        return;
+      }
+
+      elTarget.updateStyles({
+        "--paper-input-container-color": "var(--yt-spec-text-secondary)"
+      });
+    });
   }
 </script>
 

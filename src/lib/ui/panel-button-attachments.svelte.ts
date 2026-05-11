@@ -223,7 +223,6 @@ export function attachPrimaryButton({ elButton, getState, getIsDownloadable, get
   });
 }
 
-const PROGRESS_TRACK_DARK = "rgb(255 255 255 / 10%)";
 const ACCENT_DARK = "#3ea6ff";
 const SUCCESS_DARK = "#6cd16c";
 
@@ -235,7 +234,7 @@ function applyProgressStyles(elProgress: Element, activeColor: string) {
 
     elProgress.updateStyles({
       "--paper-progress-active-color": activeColor,
-      "--paper-progress-container-color": PROGRESS_TRACK_DARK,
+      "--paper-progress-container-color": "var(--ytdl-progress-track)",
       "--paper-progress-height": "4px"
     });
   });

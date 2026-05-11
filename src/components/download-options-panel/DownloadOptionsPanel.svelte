@@ -2,22 +2,10 @@
   import DownloadOptions from "./DownloadOptions.svelte";
   import { createFocusManager } from "./DownloadOptionsPanel.focus.svelte";
   import { createPanelState } from "./DownloadOptionsPanel.state.svelte.ts";
+  import DownloadOptionsPanelFooter from "./DownloadOptionsPanelFooter.svelte";
   import { CrossWorldMessage, crossWorldMessenger, onButtonClick } from "@/lib/messaging/cross-world-messenger";
-  import {
-    attachCloseButton,
-    attachGhostButton,
-    attachPanelProgress,
-    attachPanelProgressDone,
-    attachPanelProgressFailed,
-    attachPrimaryButton,
-    PrimaryButtonState
-  } from "@/lib/ui/panel-button-attachments.svelte";
-  import { ProgressType, type VideoData } from "@/types";
-
-  const percentFormatter = new Intl.NumberFormat(document.documentElement.lang || undefined, {
-    style: "percent",
-    maximumFractionDigits: 0
-  });
+  import { attachCloseButton, PrimaryButtonState } from "@/lib/ui/panel-button-attachments.svelte";
+  import type { VideoData } from "@/types";
 
   const scopingClass =
     document.querySelector("[data-ytdl-download-group] yt-button-view-model, yt-button-view-model")?.getAttribute("class") ??
@@ -37,19 +25,6 @@
   const discardButtonId = "ytdl-panel-discard";
   const viewButtonId = "ytdl-panel-view";
 
-  const downloadingLabel = $derived.by(() => {
-    if (panel.displayProgress === 0) {
-      return "Preparing";
-    }
-
-    const formattedPercentage = percentFormatter.format(panel.displayProgress / 100);
-    if (panel.progressType === ProgressType.FFmpeg) {
-      return `${formattedPercentage} - Processing`;
-    }
-
-    return `${formattedPercentage} - Downloading`;
-  });
-
   function closePanel() {
     focusManager.release();
     void crossWorldMessenger.sendMessage(CrossWorldMessage.PanelClosed, {});
@@ -59,7 +34,10 @@
   $effect(() => onButtonClick(buttonId => {
     if (buttonId === closeButtonId) {
       closePanel();
-    } else if (buttonId === primaryButtonId) {
+      return;
+    }
+
+    if (buttonId === primaryButtonId) {
       if (panel.primaryState === PrimaryButtonState.Downloading) {
         void panel.cancelDownload();
       } else if (panel.primaryState === PrimaryButtonState.Interrupted) {
@@ -67,25 +45,19 @@
       } else {
         panel.startDownload();
       }
-    } else if (buttonId === discardButtonId) {
+
+      return;
+    }
+
+    if (buttonId === discardButtonId) {
       void panel.discardInterrupted();
-    } else if (buttonId === viewButtonId) {
+      return;
+    }
+
+    if (buttonId === viewButtonId) {
       panel.revealDownload();
     }
   }));
-
-  const primaryButtonClass = $derived(
-    `${scopingClass} ${panel.primaryState === PrimaryButtonState.Downloading ? "ytdl-cancel-state" : ""}`
-  );
-
-  function attachPrimaryBtn(elButton: Element) {
-    attachPrimaryButton({
-      elButton,
-      getState: () => panel.primaryState,
-      getIsDownloadable: () => panel.isDownloadable,
-      getIsFilenameValid: () => panel.isFilenameValid
-    });
-  }
 </script>
 
 <div
@@ -138,67 +110,18 @@
     />
   </div>
 
-  <div class="ytdl-panel-footer">
-    <div class="ytdl-footer-buttons">
-      {#if panel.primaryState === PrimaryButtonState.Interrupted}
-        <yt-button-view-model
-          class={scopingClass}
-          {@attach attachGhostButton("Discard")}
-          data-ytdl-button-id={discardButtonId}
-          role="button"
-          tabindex="0"
-        ></yt-button-view-model>
-      {/if}
-      {#if panel.primaryState === PrimaryButtonState.Done && panel.downloadId !== null}
-        <yt-button-view-model
-          class={scopingClass}
-          {@attach attachGhostButton("View")}
-          data-ytdl-button-id={viewButtonId}
-          role="button"
-          tabindex="0"
-        ></yt-button-view-model>
-      {/if}
-      <yt-button-view-model
-        class={primaryButtonClass}
-        {@attach attachPrimaryBtn}
-        data-ytdl-button-id={primaryButtonId}
-        role="button"
-        tabindex="0"
-      ></yt-button-view-model>
-    </div>
-
-    {#if panel.primaryState === PrimaryButtonState.Downloading}
-      <div class="ytdl-progress-block">
-        <tp-yt-paper-progress
-          class="ytdl-progress-track"
-          {@attach attachPanelProgress}
-          indeterminate={panel.displayProgress === 0 || undefined}
-          value={Math.round(panel.displayProgress)}
-        ></tp-yt-paper-progress>
-        <span class="ytdl-progress-label" aria-live="polite">
-          {downloadingLabel}
-        </span>
-      </div>
-    {:else if panel.primaryState === PrimaryButtonState.Done}
-      <div class="ytdl-progress-block ytdl-progress-block--done">
-        <tp-yt-paper-progress
-          class="ytdl-progress-track"
-          {@attach attachPanelProgressDone}
-          value={100}
-        ></tp-yt-paper-progress>
-        <span class="ytdl-progress-label" role="status">Downloaded</span>
-      </div>
-    {:else if panel.primaryState === PrimaryButtonState.Failed}
-      <div class="ytdl-progress-block ytdl-progress-block--failed">
-        <tp-yt-paper-progress
-          class="ytdl-progress-track"
-          {@attach attachPanelProgressFailed}
-          value={Math.round(panel.displayProgress) || 100}
-        ></tp-yt-paper-progress>
-        <span class="ytdl-progress-label" role="alert">Download failed</span>
-      </div>
-    {/if}
-  </div>
+  <DownloadOptionsPanelFooter
+    {discardButtonId}
+    displayProgress={panel.displayProgress}
+    downloadId={panel.downloadId}
+    getIsDownloadable={() => panel.isDownloadable}
+    getIsFilenameValid={() => panel.isFilenameValid}
+    {primaryButtonId}
+    primaryState={panel.primaryState}
+    progressType={panel.progressType}
+    {scopingClass}
+    {viewButtonId}
+  />
 </div>
 
 <style>
@@ -214,7 +137,7 @@
     --ytdl-success: #1e8e3e;
     --ytdl-primary-bg: #0f0f0f;
     --ytdl-primary-text: #ffffff;
-    --paper-input-container-color: var(--yt-spec-text-secondary);
+    --ytdl-progress-track: rgb(0 0 0 / 10%);
 
     width: 380px;
     border: 1px solid var(--ytdl-border);
@@ -236,7 +159,7 @@
     --ytdl-success: #6cd16c;
     --ytdl-primary-bg: #f1f1f1;
     --ytdl-primary-text: #0f0f0f;
-    --paper-input-container-color: var(--yt-spec-text-secondary);
+    --ytdl-progress-track: rgb(255 255 255 / 10%);
   }
 
   .ytdl-panel :global(.ytSpecButtonShapeNextMono.ytSpecButtonShapeNextFilled.ytSpecButtonShapeNextFocused) {
@@ -282,48 +205,5 @@
 
   .ytdl-panel-body {
     padding: 0 24px;
-  }
-
-  .ytdl-panel-footer {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    padding-block: 16px 20px;
-    padding-inline: 24px;
-  }
-
-  .ytdl-progress-block {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    padding-block-start: 4px;
-  }
-
-  .ytdl-progress-track {
-    display: block;
-    overflow: hidden;
-    width: 100%;
-    border-radius: 4px;
-  }
-
-  .ytdl-progress-label {
-    color: var(--yt-spec-text-secondary);
-    font-size: 1.2rem;
-    font-variant-numeric: tabular-nums;
-  }
-
-  .ytdl-progress-block--done .ytdl-progress-label {
-    color: var(--yt-spec-text-success, var(--ytdl-success));
-  }
-
-  .ytdl-progress-block--failed .ytdl-progress-label {
-    color: var(--yt-spec-text-error, var(--ytdl-danger));
-  }
-
-  .ytdl-footer-buttons {
-    display: flex;
-    gap: 8px;
-    justify-content: flex-end;
-    align-items: center;
   }
 </style>

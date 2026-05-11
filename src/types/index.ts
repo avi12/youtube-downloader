@@ -6,6 +6,7 @@ export type {
   CaptionTrack,
   PlayerResponse,
   TpYtIronDropdownElement,
+  TpYtPaperInputElement,
   TpYtPaperProgressElement,
   YtButtonViewModelElement,
   YtdlCaptureState,
@@ -25,6 +26,7 @@ export {
   IconName,
   TooltipPlacement,
   TooltipStyle,
+  isPolymerInputElement,
   isPolymerProgressElement
 } from "./youtube";
 
