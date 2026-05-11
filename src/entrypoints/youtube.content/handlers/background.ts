@@ -61,6 +61,7 @@ export function registerBackgroundMessageHandlers() {
 
     if (data.isRemoved) {
       if (data.isFailed) {
+        downloadProgressStore.unsuppress(data.videoId);
         downloadProgressStore.setLocal(data.videoId, {
           isDownloading: false,
           isDone: false,
