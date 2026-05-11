@@ -26,12 +26,16 @@ export function createPanelManager(
     // data-ytdl-item. Match either so iron-dropdown can anchor on both pages.
     const positionTargetSelector = `[data-ytdl-grid-item="${videoId}"] .ytdl-button-group, [data-ytdl-item="${videoId}"] .ytdl-button-group`;
 
+    // The iron-dropdown lives in the MAIN world; we can't create it directly from
+    // this isolated content script. SendMessage asks the MAIN world bridge to
+    // construct it, then DropdownReady fires once the slot element is in the DOM.
     void crossWorldMessenger.sendMessage(CrossWorldMessage.CreateDropdown, {
       contentId: panelContentId,
       positionTargetSelector
     });
 
     unsubscribeDropdownReady = crossWorldMessenger.onMessage(CrossWorldMessage.DropdownReady, ({ data }) => {
+      // DropdownReady broadcasts for every dropdown on the page - skip others.
       if (data.contentId !== panelContentId) {
         return;
       }
@@ -76,6 +80,9 @@ export function createPanelManager(
         document.removeEventListener("ytdl:panel-closed", handleOverlayClose);
       }
 
+      // iron-overlay-closed fires when the dropdown is dismissed externally
+      // (e.g. clicking outside). ytdl:panel-closed fires when the user clicks
+      // the close button inside the panel itself. Both paths must clean up.
       elDropdown?.addEventListener("iron-overlay-closed", handleOverlayClose);
       document.addEventListener("ytdl:panel-closed", handleOverlayClose);
     });
