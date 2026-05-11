@@ -280,7 +280,7 @@ export function isPolymerProgressElement(element: Element): element is TpYtPaper
 }
 
 export function isPolymerInputElement(element: Element): element is TpYtPaperInputElement {
-  return "updateStyles" in element && !("max" in element);
+  return "updateStyles" in element && "label" in element;
 }
 
 export interface YtButtonViewModelElement extends HTMLElement {
