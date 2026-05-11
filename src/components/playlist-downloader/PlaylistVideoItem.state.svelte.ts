@@ -1,4 +1,5 @@
 import { batchCanceledIds, batchDownloadStatus, batchVideoIds } from "./PlaylistDownloader.state.svelte";
+import { cancelStreamTransfer } from "@/entrypoints/youtube.content/download/stream-transfer";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { checkedPlaylistVideos } from "@/lib/ui/playlist-selection.svelte";
@@ -195,7 +196,8 @@ export function createPlaylistVideoItemState({ videoId, gridTitle, activeDownloa
 
     if (isDownloading) {
       downloadProgressStore.delete(videoId);
-      void crossWorldMessenger.sendMessage(CrossWorldMessage.CancelRequest, { videoIds: [videoId] });
+      cancelStreamTransfer(videoId);
+      void sendMessage(MessageType.CancelDownload, { videoIds: [videoId] });
 
       if (batchDownloadStatus.isRunning && batchVideoIds.has(videoId)) {
         batchCanceledIds.add(videoId);
