@@ -36,7 +36,8 @@ export const INITIAL_OPTIONS: Options = {
   playlistOutputMode: PlaylistOutputMode.Individual,
   playlistAudioOutputMode: PlaylistOutputMode.Zip,
   isPlaylistScrollSyncEnabled: false,
-  audioTrackLanguageMode: AudioTrackLanguageMode.MatchYouTube
+  audioTrackLanguageMode: AudioTrackLanguageMode.MatchYouTube,
+  downloadExtras: true
 };
 
 export function isVideoLive(playerResponse: PlayerResponse) {

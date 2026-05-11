@@ -260,6 +260,24 @@
 
   <fieldset class="settings-group">
     <legend class="settings-legend">Audio &amp; subtitles</legend>
+    <div class="settings-row">
+      <span class="settings-label">Download additional audio tracks and captions</span>
+      <label class="settings-switch" aria-label="Download additional audio tracks and captions">
+        <input
+          checked={options.downloadExtras}
+          onchange={e => {
+            if (e.target instanceof HTMLInputElement) {
+              void setOption("downloadExtras", e.target.checked);
+            }
+          }}
+          role="switch"
+          type="checkbox"
+        />
+        <span class="settings-switch-track">
+          <span class="settings-switch-thumb"></span>
+        </span>
+      </label>
+    </div>
     <span class="settings-sub-legend">Language priority for audio tracks and subtitles</span>
     <p class="settings-hint">Applies to videos with multiple languages when no track is actively selected</p>
     {#each languageModeOptions as { value, label } (value)}

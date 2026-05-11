@@ -348,12 +348,13 @@ export async function performDownload({
     }
 
     const options = CONTENT_OPTIONS.value;
-    const orderedCaptionTracks = orderCaptionsByPreference({
+    const allCaptionTracks = orderCaptionsByPreference({
       captionTracks: cachedVideoData.captionTracks,
       languageMode: options.audioTrackLanguageMode,
       locale: document.documentElement.lang,
       browserLanguage: navigator.language
     });
+    const orderedCaptionTracks = options.downloadExtras ? allCaptionTracks : allCaptionTracks.slice(0, 1);
     const captionVttDataPromise = fetchCaptionVttData(orderedCaptionTracks, videoId);
 
     const { videoFormat, audioFormat } = selectFormats({
@@ -363,11 +364,13 @@ export async function performDownload({
       audioItag,
       audioTrackId
     });
-    const extraAudioFormats = getExtraAudioFormats({
-      audioFormats: cachedVideoData.audioFormats,
-      selectedTrackId: audioFormat?.audioTrack?.id,
-      selectedFormat: audioFormat
-    });
+    const extraAudioFormats = options.downloadExtras
+      ? getExtraAudioFormats({
+        audioFormats: cachedVideoData.audioFormats,
+        selectedTrackId: audioFormat?.audioTrack?.id,
+        selectedFormat: audioFormat
+      })
+      : [];
     await generatePoTokenIfNeeded(cachedVideoData);
     const credentials = await resolveCredentialsWithRetry();
 

@@ -145,6 +145,7 @@ export type Options = {
   playlistAudioOutputMode: PlaylistOutputMode;
   isPlaylistScrollSyncEnabled: boolean;
   audioTrackLanguageMode: AudioTrackLanguageMode;
+  downloadExtras: boolean;
 };
 
 export type StreamData = {

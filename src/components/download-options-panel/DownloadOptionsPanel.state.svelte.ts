@@ -97,7 +97,7 @@ export function createPanelState(getVideoData: () => VideoData) {
     });
 
     const selectedTrackId = selectedAudioFormat!.audioTrack?.id;
-    if (selectedTrackId) {
+    if (selectedTrackId && CONTENT_OPTIONS.value.downloadExtras) {
       const hasExtraAudioTracks = getVideoData().audioFormats.some(
         format => format.audioTrack?.id && format.audioTrack.id !== selectedTrackId
       );
