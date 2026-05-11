@@ -36,7 +36,8 @@ export const INITIAL_OPTIONS: Options = {
   playlistOutputMode: PlaylistOutputMode.Individual,
   playlistAudioOutputMode: PlaylistOutputMode.Zip,
   isPlaylistScrollSyncEnabled: false,
-  audioTrackLanguageMode: AudioTrackLanguageMode.MatchYouTube,
+  audioTrackLanguageMode: AudioTrackLanguageMode.MatchVideo,
+  customLanguage: "en",
   downloadExtras: true
 };
 
@@ -113,8 +114,24 @@ export function formatAudioCodecLabel(mimeType: string) {
   return codec || (mimeType.split(";")[0].split("/")[1] ?? "");
 }
 
-function normalizeLanguageCode(lang: string) {
+export function normalizeLanguageCode(lang: string) {
   return lang.split("-")[0].split(".")[0].toLowerCase();
+}
+
+export function getCurrentVideoAudioLanguage(): string | null {
+  const elVideo = document.querySelector<HTMLVideoElement>("video.html5-main-video");
+  const tracks = elVideo?.audioTracks;
+  if (!tracks?.length) {
+    return null;
+  }
+
+  for (const track of tracks) {
+    if (track.enabled) {
+      return normalizeLanguageCode(track.language);
+    }
+  }
+
+  return null;
 }
 
 function matchAudioFormatToLanguage(audioFormats: AdaptiveFormatItem[], langCode: string) {
@@ -126,13 +143,15 @@ export function selectPreferredAudioFormat({
   videoMimeType,
   languageMode,
   locale,
-  browserLanguage
+  browserLanguage,
+  customLanguage
 }: {
   audioFormats: AdaptiveFormatItem[];
   videoMimeType: string;
   languageMode: AudioTrackLanguageMode;
   locale: string;
   browserLanguage?: string;
+  customLanguage?: string;
 }) {
   if (!audioFormats.length) {
     return null;
@@ -142,7 +161,17 @@ export function selectPreferredAudioFormat({
   const originalTrack = audioFormats.find(format => !format.audioTrack);
 
   let candidates: AdaptiveFormatItem[] = [];
-  if (languageMode === AudioTrackLanguageMode.MatchYouTube) {
+  if (languageMode === AudioTrackLanguageMode.Custom && customLanguage) {
+    const langCode = normalizeLanguageCode(customLanguage);
+    const match = matchAudioFormatToLanguage(audioFormats, langCode)
+      ?? matchAudioFormatToLanguage(audioFormats, "en");
+    if (match) {
+      candidates = [match, ...audioFormats.filter(format => format !== match)];
+    }
+  } else if (
+    languageMode === AudioTrackLanguageMode.MatchYouTube
+    || languageMode === AudioTrackLanguageMode.MatchVideo
+  ) {
     const langPriority = [locale, browserLanguage, "en"]
       .filter((lang): lang is string => !!lang);
     for (const lang of langPriority) {
@@ -172,19 +201,25 @@ export function orderCaptionsByPreference({
   captionTracks,
   languageMode,
   locale,
-  browserLanguage
+  browserLanguage,
+  customLanguage
 }: {
   captionTracks: CaptionTrack[];
   languageMode: AudioTrackLanguageMode;
   locale: string;
   browserLanguage?: string;
+  customLanguage?: string;
 }) {
-  if (languageMode === AudioTrackLanguageMode.OriginalLanguage || captionTracks.length <= 1) {
+  if (captionTracks.length <= 1) {
     return captionTracks;
   }
 
-  const langPriority = [locale, browserLanguage, "en"]
+  const firstLang = languageMode === AudioTrackLanguageMode.Custom && customLanguage
+    ? normalizeLanguageCode(customLanguage)
+    : null;
+  const langPriority = [firstLang, locale, browserLanguage, "en"]
     .filter((lang): lang is string => !!lang);
+
   for (const lang of langPriority) {
     const normalized = normalizeLanguageCode(lang);
     const preferred = captionTracks.filter(track => normalizeLanguageCode(track.languageCode) === normalized);

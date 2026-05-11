@@ -71,8 +71,9 @@ export const PlaylistOutputMode = {
 export type PlaylistOutputMode = (typeof PlaylistOutputMode)[keyof typeof PlaylistOutputMode];
 
 export const AudioTrackLanguageMode = {
+  MatchVideo: "match-video",
   MatchYouTube: "match-youtube",
-  OriginalLanguage: "original"
+  Custom: "custom"
 } as const;
 
 export type AudioTrackLanguageMode = (typeof AudioTrackLanguageMode)[keyof typeof AudioTrackLanguageMode];
@@ -106,6 +107,7 @@ export type DownloadRequest = {
   videoItag: number;
   audioItag: number;
   audioTrackId?: string;
+  selectedCaptionVssId?: string;
   filenameOutput: string;
   sabrConfig?: SabrConfig | null;
   isIframeFallback?: boolean;
@@ -145,6 +147,7 @@ export type Options = {
   playlistAudioOutputMode: PlaylistOutputMode;
   isPlaylistScrollSyncEnabled: boolean;
   audioTrackLanguageMode: AudioTrackLanguageMode;
+  customLanguage: string;
   downloadExtras: boolean;
 };
 

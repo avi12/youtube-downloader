@@ -298,12 +298,13 @@ export async function performDownload({
   videoItag,
   audioItag,
   audioTrackId,
+  selectedCaptionVssId,
   filenameOutput,
   isIframeFallback,
   playlistId,
   playlistTitle,
   playlistTotalCount
-}: Pick<DownloadRequest, "type" | "videoId" | "videoItag" | "audioItag" | "audioTrackId" | "filenameOutput" | "isIframeFallback" | "playlistId" | "playlistTitle" | "playlistTotalCount">) {
+}: Pick<DownloadRequest, "type" | "videoId" | "videoItag" | "audioItag" | "audioTrackId" | "selectedCaptionVssId" | "filenameOutput" | "isIframeFallback" | "playlistId" | "playlistTitle" | "playlistTotalCount">) {
   const isInvalidIframeFallback = isIframeFallback && self === top;
   if (isInvalidIframeFallback) {
     return;
@@ -352,9 +353,19 @@ export async function performDownload({
       captionTracks: cachedVideoData.captionTracks,
       languageMode: options.audioTrackLanguageMode,
       locale: document.documentElement.lang,
-      browserLanguage: navigator.language
+      browserLanguage: navigator.language,
+      customLanguage: options.customLanguage
     });
-    const orderedCaptionTracks = options.downloadExtras ? allCaptionTracks : allCaptionTracks.slice(0, 1);
+    const primaryCaptionTrack = selectedCaptionVssId
+      ? (allCaptionTracks.find(track => track.vssId === selectedCaptionVssId) ?? allCaptionTracks[0])
+      : allCaptionTracks[0];
+    let orderedCaptionTracks: typeof allCaptionTracks;
+    if (options.downloadExtras) {
+      orderedCaptionTracks = allCaptionTracks;
+    } else {
+      orderedCaptionTracks = primaryCaptionTrack ? [primaryCaptionTrack] : [];
+    }
+
     const captionVttDataPromise = fetchCaptionVttData(orderedCaptionTracks, videoId);
 
     const { videoFormat, audioFormat } = selectFormats({

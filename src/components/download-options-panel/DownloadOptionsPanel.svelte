@@ -94,17 +94,23 @@
   <div class="ytdl-panel-body">
     <DownloadOptions
       audioFormats={props.videoData.audioFormats}
+      captionTracks={props.videoData.captionTracks}
       downloadType={panel.downloadType}
       extension={panel.actualExtension}
       filename={panel.filename}
       isDownloading={panel.isDownloading}
+      isWatchPage={panel.isWatchPage}
       onaudioformatchange={format => (panel.selectedAudioFormat = format)}
+      oncaptionchange={panel.handleCaptionChange}
       ondownloadtypechange={panel.handleDownloadTypeChange}
       onextensionchange={newExtension => (panel.extension = newExtension)}
       onfilenamechange={newFilename => (panel.filename = newFilename)}
+      onlanguagemodechange={panel.handlePanelLanguageModeChange}
       onvalidationchange={isValid => (panel.isFilenameValid = isValid)}
       onvideoformatchange={format => (panel.selectedVideoFormat = format)}
+      panelLanguageMode={panel.panelLanguageMode}
       selectedAudioFormat={panel.selectedAudioFormat}
+      selectedCaptionTrack={panel.selectedCaptionTrack}
       selectedVideoFormat={panel.selectedVideoFormat}
       videoFormats={props.videoData.videoFormats}
     />

@@ -1,22 +1,29 @@
 <script lang="ts">
   import PolymerSelect from "../polymer-select/PolymerSelect.svelte";
   import { splitFilenameAndExtension, supportedExtensions } from "@/lib/utils/containers";
-  import { formatAudioCodecLabel, formatVideoQualityLabel } from "@/lib/youtube/video-helpers";
+  import { formatAudioCodecLabel, formatVideoQualityLabel, normalizeLanguageCode } from "@/lib/youtube/video-helpers";
   import { DownloadType } from "@/types";
-  import type { AdaptiveFormatItem } from "@/types";
+  import type { AdaptiveFormatItem, CaptionTrack } from "@/types";
+  import { SvelteSet } from "svelte/reactivity";
 
   interface Props {
     downloadType: DownloadType;
     videoFormats: AdaptiveFormatItem[];
     audioFormats: AdaptiveFormatItem[];
+    captionTracks: CaptionTrack[];
     selectedVideoFormat: AdaptiveFormatItem | null;
     selectedAudioFormat: AdaptiveFormatItem | null;
+    selectedCaptionTrack: CaptionTrack | null;
+    panelLanguageMode: string;
+    isWatchPage: boolean;
     filename: string;
     extension: string;
     isDownloading: boolean;
     ondownloadtypechange: (type: DownloadType) => void;
     onvideoformatchange: (format: AdaptiveFormatItem) => void;
     onaudioformatchange: (format: AdaptiveFormatItem) => void;
+    onlanguagemodechange: (mode: string) => void;
+    oncaptionchange: (track: CaptionTrack | null) => void;
     onfilenamechange: (filename: string) => void;
     onextensionchange: (extension: string) => void;
     onvalidationchange: (isValid: boolean) => void;
@@ -26,14 +33,20 @@
     downloadType,
     videoFormats,
     audioFormats,
+    captionTracks,
     selectedVideoFormat,
     selectedAudioFormat,
+    selectedCaptionTrack,
+    panelLanguageMode,
+    isWatchPage,
     filename,
     extension,
     isDownloading,
     ondownloadtypechange,
     onvideoformatchange,
     onaudioformatchange,
+    onlanguagemodechange,
+    oncaptionchange,
     onfilenamechange,
     onextensionchange,
     onvalidationchange
@@ -102,6 +115,51 @@
   const isAudio = $derived(downloadType === DownloadType.Audio);
 
   const hasMultipleAudioTracks = $derived(audioFormats.some(format => !!format.audioTrack));
+
+  const uniqueAudioLanguages = $derived.by(() => {
+    const seen = new SvelteSet<string>();
+    const result: {
+      value: string;
+      label: string;
+    }[] = [];
+    for (const format of audioFormats) {
+      if (!format.audioTrack) {
+        continue;
+      }
+
+      const langCode = normalizeLanguageCode(format.audioTrack.id);
+      if (seen.has(langCode)) {
+        continue;
+      }
+
+      seen.add(langCode);
+      result.push({
+        value: langCode,
+        label: format.audioTrack.displayName
+      });
+    }
+
+    return result;
+  });
+
+  const languageOptions = $derived([
+    {
+      value: "auto",
+      label: isWatchPage ? "Match video language" : "Match YouTube language"
+    },
+    ...uniqueAudioLanguages
+  ]);
+
+  const captionOptions = $derived([
+    {
+      value: "",
+      label: "None"
+    },
+    ...captionTracks.map(track => ({
+      value: track.vssId,
+      label: track.name.simpleText
+    }))
+  ]);
 
   const qualityOptions = $derived.by(() => {
     if (isAudio) {
@@ -183,6 +241,34 @@
       value={qualityValue}
     />
   </div>
+
+  <!-- Language -->
+  {#if uniqueAudioLanguages.length > 0}
+    <div class="ytdl-options-field">
+      <PolymerSelect
+        id="language-select"
+        disabled={isDownloading}
+        label="Language"
+        onchange={onlanguagemodechange}
+        options={languageOptions}
+        value={panelLanguageMode}
+      />
+    </div>
+  {/if}
+
+  <!-- Captions -->
+  {#if captionTracks.length > 0}
+    <div class="ytdl-options-field">
+      <PolymerSelect
+        id="caption-select"
+        disabled={isDownloading}
+        label="Captions"
+        onchange={value => oncaptionchange(captionTracks.find(track => track.vssId === value) ?? null)}
+        options={captionOptions}
+        value={selectedCaptionTrack?.vssId ?? ""}
+      />
+    </div>
+  {/if}
 
   <!-- Filename -->
   <tp-yt-paper-input

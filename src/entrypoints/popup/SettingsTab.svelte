@@ -84,14 +84,22 @@
   const languageModeOptions: Array<{
     value: AudioTrackLanguageMode;
     label: string;
+    description: string;
   }> = [
     {
-      value: AudioTrackLanguageMode.MatchYouTube,
-      label: "Match YouTube language"
+      value: AudioTrackLanguageMode.MatchVideo,
+      label: "Match selected track",
+      description: "Uses the video's current audio track on watch pages, or YouTube's language elsewhere"
     },
     {
-      value: AudioTrackLanguageMode.OriginalLanguage,
-      label: "Original language"
+      value: AudioTrackLanguageMode.MatchYouTube,
+      label: "Match YouTube language",
+      description: "Always uses the YouTube interface language"
+    },
+    {
+      value: AudioTrackLanguageMode.Custom,
+      label: "Custom language",
+      description: "Falls back to English if the language is unavailable"
     }
   ];
 </script>
@@ -278,9 +286,8 @@
         </span>
       </label>
     </div>
-    <span class="settings-sub-legend">Language priority for audio tracks and subtitles</span>
-    <p class="settings-hint">Applies to videos with multiple languages when no track is actively selected</p>
-    {#each languageModeOptions as { value, label } (value)}
+    <span class="settings-sub-legend">Default language for audio track and captions</span>
+    {#each languageModeOptions as { value, label, description } (value)}
       <div class="settings-row">
         <label class="settings-label settings-radio-label">
           <input
@@ -290,9 +297,31 @@
             type="radio"
             {value}
           />
-          {label}
+          <span>
+            {label}
+            <span class="settings-option-description">{description}</span>
+          </span>
         </label>
       </div>
+      {#if value === AudioTrackLanguageMode.Custom && options.audioTrackLanguageMode === AudioTrackLanguageMode.Custom}
+        <div class="settings-sub-row" transition:slide={{ duration: 200 }}>
+          <label class="settings-label" for="custom-language-input">Language code</label>
+          <input
+            id="custom-language-input"
+            class="settings-text-input"
+            maxlength="10"
+            oninput={e => {
+              if (e.target instanceof HTMLInputElement) {
+                void setOption("customLanguage", e.target.value.trim().toLowerCase());
+              }
+            }}
+            placeholder="e.g. it, fr, de"
+            spellcheck={false}
+            type="text"
+            value={options.customLanguage}
+          />
+        </div>
+      {/if}
     {/each}
   </fieldset>
 
@@ -460,6 +489,29 @@
     margin-top: 8px;
     color: var(--fg-subtle);
     font-size: 0.6875rem;
+  }
+
+  .settings-option-description {
+    display: block;
+    color: var(--fg-muted);
+    font-weight: 400;
+    font-size: 0.6875rem;
+  }
+
+  .settings-text-input {
+    width: 100px;
+    padding: 5px 8px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    background: var(--bg, transparent);
+    color: inherit;
+    font-family: inherit;
+    font-size: 0.8125rem;
+
+    &:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
   }
 
   .settings-switch {

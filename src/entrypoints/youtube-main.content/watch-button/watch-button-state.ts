@@ -12,7 +12,8 @@ function getPreferredAudioFormat(videoData: VideoData) {
     videoMimeType: videoMime,
     languageMode: options.audioTrackLanguageMode,
     locale: document.documentElement.lang,
-    browserLanguage: navigator.language
+    browserLanguage: navigator.language,
+    customLanguage: options.customLanguage
   });
 }
 

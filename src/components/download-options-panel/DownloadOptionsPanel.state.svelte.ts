@@ -10,11 +10,23 @@ import {
   calculateWeightedProgress,
   formatAudioCodecLabel,
   formatVideoQualityLabel,
+  getCurrentVideoAudioLanguage,
+  normalizeLanguageCode,
+  orderCaptionsByPreference,
   selectPreferredAudioFormat,
   waitForVideoElement
 } from "@/lib/youtube/video-helpers";
-import { DownloadType, VideoQualityMode, type AdaptiveFormatItem, type VideoData } from "@/types";
+import {
+  AudioTrackLanguageMode,
+  DownloadType,
+  VideoQualityMode,
+  type AdaptiveFormatItem,
+  type CaptionTrack,
+  type VideoData
+} from "@/types";
 import { untrack } from "svelte";
+
+const IS_WATCH_PAGE = location.pathname === "/watch";
 
 // Prefer M4A (AAC) over WebM/Opus for music because M4A supports MJPEG cover art embedding.
 function getPreferredMusicAudioFormat(audioFormats: AdaptiveFormatItem[]) {
@@ -54,13 +66,77 @@ export function createPanelState(getVideoData: () => VideoData) {
       }
 
       const options = CONTENT_OPTIONS.value;
+      if (options.audioTrackLanguageMode === AudioTrackLanguageMode.MatchVideo && IS_WATCH_PAGE) {
+        const currentLang = getCurrentVideoAudioLanguage();
+        if (currentLang) {
+          const matching = videoData.audioFormats.filter(
+            format => format.audioTrack && normalizeLanguageCode(format.audioTrack.id) === currentLang
+          );
+          if (matching.length) {
+            return matching.reduce((best, format) => format.bitrate > best.bitrate ? format : best);
+          }
+        }
+      }
+
       return selectPreferredAudioFormat({
         audioFormats: videoData.audioFormats,
         videoMimeType: videoData.videoFormats[0]?.mimeType ?? "",
         languageMode: options.audioTrackLanguageMode,
         locale: document.documentElement.lang,
-        browserLanguage: navigator.language
+        browserLanguage: navigator.language,
+        customLanguage: options.customLanguage
       });
+    })
+  );
+
+  let panelLanguageMode = $state<string>(
+    untrack(() => {
+      const options = CONTENT_OPTIONS.value;
+      if (options.audioTrackLanguageMode === AudioTrackLanguageMode.Custom && options.customLanguage) {
+        const langCode = normalizeLanguageCode(options.customLanguage);
+        const videoData = getVideoData();
+        const hasMatch = videoData.audioFormats.some(
+          format => format.audioTrack && normalizeLanguageCode(format.audioTrack.id) === langCode
+        );
+        if (hasMatch) {
+          return langCode;
+        }
+      }
+
+      return "auto";
+    })
+  );
+
+  let selectedCaptionTrack = $state<CaptionTrack | null>(
+    untrack(() => {
+      const videoData = getVideoData();
+      if (!videoData.captionTracks.length) {
+        return null;
+      }
+
+      const options = CONTENT_OPTIONS.value;
+      if (options.audioTrackLanguageMode === AudioTrackLanguageMode.Custom && options.customLanguage) {
+        const langCode = normalizeLanguageCode(options.customLanguage);
+        const match = videoData.captionTracks.find(track => normalizeLanguageCode(track.languageCode) === langCode);
+        if (match) {
+          return match;
+        }
+      }
+
+      if (selectedAudioFormat?.audioTrack) {
+        const langCode = normalizeLanguageCode(selectedAudioFormat.audioTrack.id);
+        const match = videoData.captionTracks.find(track => normalizeLanguageCode(track.languageCode) === langCode);
+        if (match) {
+          return match;
+        }
+      }
+
+      return orderCaptionsByPreference({
+        captionTracks: videoData.captionTracks,
+        languageMode: AudioTrackLanguageMode.MatchYouTube,
+        locale: document.documentElement.lang,
+        browserLanguage: navigator.language
+      })[0] ?? null;
     })
   );
   let filename = $state(untrack(() => getCompatibleFilename(getVideoData().title || getVideoData().videoId)));
@@ -275,6 +351,37 @@ export function createPanelState(getVideoData: () => VideoData) {
     });
   }
 
+  function resolveAutoLanguageCode(): string {
+    if (IS_WATCH_PAGE) {
+      const lang = getCurrentVideoAudioLanguage();
+      if (lang) {
+        return lang;
+      }
+    }
+
+    return normalizeLanguageCode(document.documentElement.lang);
+  }
+
+  function handlePanelLanguageModeChange(mode: string) {
+    panelLanguageMode = mode;
+    const { audioFormats, captionTracks } = getVideoData();
+    const langCode = mode === "auto" ? resolveAutoLanguageCode() : mode;
+
+    const matching = audioFormats.filter(
+      format => format.audioTrack && normalizeLanguageCode(format.audioTrack.id) === langCode
+    );
+    if (matching.length) {
+      selectedAudioFormat = matching.reduce((best, format) => format.bitrate > best.bitrate ? format : best);
+      resetDoneState();
+    }
+
+    selectedCaptionTrack = captionTracks.find(track => normalizeLanguageCode(track.languageCode) === langCode) ?? null;
+  }
+
+  function handleCaptionChange(track: CaptionTrack | null) {
+    selectedCaptionTrack = track;
+  }
+
   function startDownload() {
     const cannotStartDownload = isDownloading || !isDownloadable || !isFilenameValid || !selectedAudioFormat;
     if (cannotStartDownload) {
@@ -300,6 +407,7 @@ export function createPanelState(getVideoData: () => VideoData) {
       videoItag: selectedVideoFormat?.itag ?? 0,
       audioItag: selectedAudioFormat!.itag,
       audioTrackId: selectedAudioFormat!.audioTrack?.id,
+      selectedCaptionVssId: selectedCaptionTrack?.vssId,
       filenameOutput: fullFilename,
       sabrConfig
     });
@@ -412,7 +520,18 @@ export function createPanelState(getVideoData: () => VideoData) {
     get downloadId() {
       return downloadId;
     },
+    get panelLanguageMode() {
+      return panelLanguageMode;
+    },
+    get selectedCaptionTrack() {
+      return selectedCaptionTrack;
+    },
+    get isWatchPage() {
+      return IS_WATCH_PAGE;
+    },
     handleDownloadTypeChange,
+    handlePanelLanguageModeChange,
+    handleCaptionChange,
     startDownload,
     cancelDownload,
     resumeDownload,

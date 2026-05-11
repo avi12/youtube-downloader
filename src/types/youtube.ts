@@ -326,6 +326,11 @@ declare global {
         language: string;
         id: string;
       };
+      [Symbol.iterator](): IterableIterator<{
+        enabled: boolean;
+        language: string;
+        id: string;
+      }>;
     };
   }
 
