@@ -84,7 +84,8 @@ function parseSearchResult(item: SearchItem) {
     return null;
   }
 
-  const songTitle = titleRuns[0]?.text;
+  const [firstTitleRun] = titleRuns;
+  const songTitle = firstTitleRun?.text;
   const artists: string[] = [];
   let album: string | undefined;
   let mainArtist: string | undefined;

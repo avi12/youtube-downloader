@@ -59,7 +59,7 @@ function persistOnDownloadComplete({ targetDownloadId, data }: {
         }
 
         if (options.isNotifyOnIdle) {
-          const tabId = tabIds[0];
+          const [tabId] = tabIds;
           const idle = tabId === undefined || await isTabIdle(tabId);
           if (idle) {
             void browser.notifications.create({

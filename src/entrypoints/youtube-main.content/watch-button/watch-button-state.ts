@@ -5,7 +5,8 @@ import { DownloadType, type VideoData } from "@/types";
 
 function getPreferredAudioFormat(videoData: VideoData) {
   const options = contentOptions.value;
-  const videoMime = videoData.videoFormats[0]?.mimeType ?? "";
+  const [firstVideoFormat] = videoData.videoFormats;
+  const videoMime = firstVideoFormat?.mimeType ?? "";
   return selectPreferredAudioFormat({
     audioFormats: videoData.audioFormats,
     videoMimeType: videoMime,
@@ -16,10 +17,11 @@ function getPreferredAudioFormat(videoData: VideoData) {
 }
 
 export function buildInitialDownloadState(videoData: VideoData) {
-  let videoItag = videoData.videoFormats[0]?.itag ?? 0;
+  const [firstFormat] = videoData.videoFormats;
+  let videoItag = firstFormat?.itag ?? 0;
   const preferredAudio = getPreferredAudioFormat(videoData);
   let audioItag = preferredAudio?.itag ?? 0;
-  const videoMime = videoData.videoFormats[0]?.mimeType ?? "video/mp4";
+  const videoMime = firstFormat?.mimeType ?? "video/mp4";
   const audioMime = preferredAudio?.mimeType ?? "audio/mp4";
 
   const options = contentOptions.value;

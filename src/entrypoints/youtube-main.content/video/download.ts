@@ -149,14 +149,14 @@ async function fetchCaptionVttData(captionTracks: CaptionTrack[], videoId: strin
 
   const freshUrls = await fetchFreshCaptionUrls(videoId);
 
-  return Promise.all(
-    captionTracks.map(track => {
-      const baseUrl = freshUrls.get(track.vssId) ?? track.baseUrl;
-      const url = new URL(baseUrl);
-      url.searchParams.set("fmt", "vtt");
-      return fetchVttViaTrackElement(url.toString());
-    })
-  );
+  const results: (string | null)[] = [];
+  for (const track of captionTracks) {
+    const baseUrl = freshUrls.get(track.vssId) ?? track.baseUrl;
+    const url = new URL(baseUrl);
+    url.searchParams.set("fmt", "vtt");
+    results.push(await fetchVttViaTrackElement(url.toString()));
+  }
+  return results;
 }
 
 function getExtraAudioFormats({ audioFormats, selectedTrackId, selectedFormat }: {

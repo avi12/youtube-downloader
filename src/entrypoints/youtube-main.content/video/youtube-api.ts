@@ -88,8 +88,10 @@ export function buildVideoData({ playerResponse, clientVersion, clientName }: {
     videoFormats: getUniqueVideoFormats(allFormats),
     audioFormats: getAudioFormats(allFormats),
     captionTracks: (() => {
-      const manual = allCaptionTracks.filter(track => track.kind !== "asr");
-      return manual.length > 0 ? manual : allCaptionTracks;
+      const manualLanguageCodes = new Set(
+        allCaptionTracks.filter(track => track.kind !== "asr").map(track => track.languageCode)
+      );
+      return allCaptionTracks.filter(track => track.kind !== "asr" || !manualLanguageCodes.has(track.languageCode));
     })(),
     sabrConfig: extractSabrConfig({
       playerResponse,
