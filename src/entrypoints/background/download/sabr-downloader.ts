@@ -6,9 +6,6 @@ import { stripTrackLangSuffix } from "@/lib/youtube/video-helpers";
 import { DownloadType, ProgressType } from "@/types";
 import type { AdaptiveFormatItem, DownloadRequest, SabrConfig } from "@/types";
 
-// Extra audio tracks without contentLength aren't counted in totalExpectedBytes, so
-// the ratio can reach 1.0 before they finish. That's fine: the display caps at 70%
-// (download phase weight) and only advances once FFmpeg progress starts.
 const DOWNLOAD_PROGRESS_CAP = 1;
 
 export function buildEffectiveSabrConfig({ sabrConfig, sabrUrl }: {
@@ -98,31 +95,21 @@ async function downloadVideoAudioViaSabr({
   ]);
 }
 
-async function downloadExtraAudioTracksViaSabr({ config, formats, poToken, signal, onProgress, onExtraProgress }: {
+async function downloadExtraAudioTracksViaSabr({ config, formats, poToken, signal, onBytesReceived }: {
   config: SabrConfig;
   formats: AdaptiveFormatItem[];
   poToken: string;
   signal: AbortSignal;
-  onProgress?: () => void;
-  onExtraProgress?: (completedExpectedBytes: number) => void;
+  onBytesReceived?: (bytes: number) => void;
 }) {
   const results = [];
-  let completedExpectedBytes = 0;
 
   for (const format of formats) {
-    const trackExpectedBytes = parseContentLength(format);
-    let trackReceivedBytes = 0;
-
     try {
       const sabrFetch = createProgressFetch({
         signal,
         onBytesReceived(bytes) {
-          trackReceivedBytes += bytes;
-          onProgress?.();
-
-          if (trackExpectedBytes > 0) {
-            onExtraProgress?.(completedExpectedBytes + Math.min(trackReceivedBytes, trackExpectedBytes));
-          }
+          onBytesReceived?.(bytes);
         }
       });
       const data = await fetchAudioViaSabrStream({
@@ -142,12 +129,20 @@ async function downloadExtraAudioTracksViaSabr({ config, formats, poToken, signa
     } catch (trackError) {
       console.warn("[ytdl:bg] Extra audio track failed:", format.audioTrack?.displayName, trackError);
     }
-
-    completedExpectedBytes += trackExpectedBytes;
-    onExtraProgress?.(completedExpectedBytes);
   }
 
   return results;
+}
+
+function estimateFormatBytes(format: AdaptiveFormatItem, referenceFormat: AdaptiveFormatItem): number {
+  const referenceBytes = parseContentLength(referenceFormat);
+  if (!referenceBytes) {
+    return 0;
+  }
+
+  const referenceBitrate = referenceFormat.bitrate || 1;
+  const formatBitrate = format.bitrate || referenceBitrate;
+  return Math.round(referenceBytes * formatBitrate / referenceBitrate);
 }
 
 export async function downloadViaSabr({ request, signal, tabId, onProgress }: {
@@ -175,8 +170,11 @@ export async function downloadViaSabr({ request, signal, tabId, onProgress }: {
 
   const videoPartBytes = isAudioOnly ? 0 : parseContentLength(videoFormat ?? null);
   const mainExpectedBytes = videoPartBytes + parseContentLength(audioFormat);
-  const extraExpectedBytes = (additionalAudioFormats ?? [])
-    .reduce((sum, format) => sum + parseContentLength(format), 0);
+  const additionalFormats = additionalAudioFormats ?? [];
+  const extraExpectedBytes = additionalFormats.reduce((sum, format) => {
+    const known = parseContentLength(format);
+    return sum + (known > 0 ? known : estimateFormatBytes(format, audioFormat));
+  }, 0);
   const totalExpectedBytes = mainExpectedBytes + extraExpectedBytes;
 
   let totalReceivedBytes = 0;
@@ -184,8 +182,8 @@ export async function downloadViaSabr({ request, signal, tabId, onProgress }: {
   function onBytesReceived(bytes: number) {
     totalReceivedBytes += bytes;
     onProgress?.();
-    const hasExpectedSize = totalExpectedBytes > 0;
-    if (hasExpectedSize) {
+
+    if (totalExpectedBytes > 0) {
       void sendProgressUpdate({
         videoId,
         progress: Math.min(totalReceivedBytes / totalExpectedBytes, DOWNLOAD_PROGRESS_CAP),
@@ -225,18 +223,10 @@ export async function downloadViaSabr({ request, signal, tabId, onProgress }: {
   });
   const additionalAudioTracks = await downloadExtraAudioTracksViaSabr({
     config: effectiveConfig,
-    formats: additionalAudioFormats ?? [],
+    formats: additionalFormats,
     poToken: resolvedPoToken,
     signal,
-    onProgress,
-    onExtraProgress: totalExpectedBytes > 0 ? completedExtraBytes => {
-      void sendProgressUpdate({
-        videoId,
-        progress: Math.min((mainExpectedBytes + completedExtraBytes) / totalExpectedBytes, DOWNLOAD_PROGRESS_CAP),
-        progressType: ProgressType.Video,
-        tabId
-      });
-    } : undefined
+    onBytesReceived
   });
 
   return {
