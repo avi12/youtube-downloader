@@ -102,32 +102,101 @@ pnpm knip                 # Dead code detection
 | UI                  | [Svelte 5](https://svelte.dev)                              |
 | Video/audio muxing  | [@ffmpeg/ffmpeg](https://github.com/ffmpegwasm/ffmpeg.wasm) |
 | Messaging           | [@webext-core/messaging](https://webext-core.aklinker1.io)  |
-| Streaming           | SABR (YouTube's Scalable Adaptive Bit Rate protocol)        |
+| Streaming           | SABR (YouTube's Scalable Adaptive Bit Rate protocol) via [`googlevideo`](https://npm.im/googlevideo) |
+| Muxing              | [`@ffmpeg/ffmpeg`](https://npm.im/@ffmpeg/ffmpeg) (WASM build, runs in an offscreen document) |
 
 ## How it works
 
-The extension is split across four MV3 runtimes (each lives under `src/entrypoints/`):
+The extension is split across five MV3 runtimes (each lives under `src/entrypoints/`):
 
 | Runtime                   | Folder                  | Job                                                                                                  |
 |---------------------------|-------------------------|------------------------------------------------------------------------------------------------------|
 | Service worker            | `background/`           | Owns downloads, SABR/CDN fetches, declarativeNetRequest header rewrites, tab tracking, persistence.  |
 | MAIN-world content script | `youtube-main.content/` | Reads YouTube's Polymer state (player config, video metadata) and injects the download button.       |
-| Isolated content script   | `youtube.content/`      | Bridge between MAIN world and the SW; mounts Svelte UI (toasts, grid overlays, playlist downloader). |
-| Offscreen document        | `offscreen/`            | Runs FFmpeg WASM to mux video + audio (the SW can't host WASM streams reliably).                     |
+| Isolated content script   | `youtube.content/`      | Bridge between MAIN world and the service worker; mounts Svelte UI (toasts, grid overlays, playlist downloader). |
+| Offscreen document        | `offscreen/`            | Runs [`@ffmpeg/ffmpeg`](https://npm.im/@ffmpeg/ffmpeg) WASM to mux video + audio streams.            |
 | Popup                     | `popup/`                | Download manager UI (active progress + recent history + settings).                                   |
+
+### Fetching streams from YouTube
+
+YouTube serves adaptive video and audio as separate streams. The extension tries two methods in order:
+
+**1. SABR (Scalable Adaptive Bit Rate)** - YouTube's internal streaming protocol for the player. The extension uses [`googlevideo`](https://npm.im/googlevideo) to speak this protocol, making requests look like a real player session. SABR gives the best compatibility and avoids CDN rate limits.
+
+The SABR session lives in the background service worker (`background/download/sabr-downloader.ts`). Because the service worker cannot directly reach `googlevideo.com` (CORS), a `declarativeNetRequest` rule rewrites the `Origin` header on outgoing requests so YouTube accepts them.
+
+If a video has multiple audio tracks (dubbed versions), SABR downloads them sequentially after the main stream.
+
+**2. CDN fallback** - If SABR fails (e.g. for very old or live-clipped videos), the extension falls back to direct CDN URLs from the player response (`background/download/cdn-downloader.ts`). These are plain HTTPS fetches with byte-range support for retrying interrupted transfers.
+
+### Muxing
+
+Raw video and audio are separate `.webm`/`.mp4` streams. After all bytes are downloaded, the service worker ships them to an **offscreen document** (`offscreen/`) which runs [`@ffmpeg/ffmpeg`](https://npm.im/@ffmpeg/ffmpeg) (a WASM build). FFmpeg merges the streams, re-encodes if needed (e.g. WebM audio into an MP4 container), and emits the final file.
+
+The offscreen document is used because the service worker cannot host the large WASM binary or stream data reliably; the offscreen document has a stable lifetime and full Blob/ArrayBuffer support.
 
 ### Download flow (single watch-page video)
 
-1. Click the injected button → `youtube-main.content/watch-button/watch-button.ts` calls `performDownload(...)`.
+1. User clicks the injected button - `youtube-main.content/watch-button/watch-button.ts` calls `performDownload(...)`.
 2. `youtube-main.content/video/download.ts` builds a `DownloadRequest` and posts it cross-world via `crossWorldMessenger`.
-3. `youtube.content/index.ts` forwards it to the SW as `StartBackgroundDownload`.
+3. `youtube.content/index.ts` forwards it to the service worker as `StartBackgroundDownload`.
 4. `background/handlers/download-handlers.ts` enqueues the video and calls `startBackgroundDownload(...)`.
-5. `background/download/background-downloader.ts` tries SABR first (`googlevideo` library), falls back to CDN if SABR fails.
-6. Bytes stream to the offscreen doc via `dispatchToOffscreen(...)`.
-7. `lib/download-pipeline/index.ts` runs the FFmpeg mux and produces the final muxed file.
-8. The pipeline posts a blob URL back to the SW, which calls `browser.downloads.download(...)` to save it to disk.
+5. `background/download/background-downloader.ts` tries SABR first (via [`googlevideo`](https://npm.im/googlevideo)), falls back to CDN if SABR fails.
+6. Bytes stream to the offscreen document via `dispatchToOffscreen(...)`.
+7. [`@ffmpeg/ffmpeg`](https://npm.im/@ffmpeg/ffmpeg) muxes the streams and produces the final file.
+8. The pipeline posts a blob URL back to the service worker, which calls `browser.downloads.download(...)` to save it to disk.
 
 ### Resilience
 
-- If the connection drops mid-fetch, the SW persists the request and re-fires it on the next `online` event.
-- If the user clicks cancel, both the in-flight SABR fetch and any pending FFmpeg mux are killed, and the persisted retry is dropped — so a manual cancel never gets resurrected.
+- If the connection drops mid-fetch, the service worker persists the request and re-fires it on the next `online` event.
+- If the user clicks cancel, both the in-flight SABR fetch and any pending FFmpeg mux are killed, and the persisted retry is dropped - so a manual cancel never gets resurrected.
+
+## Contributor guide
+
+### Runtimes and messaging
+
+Chrome content scripts run in an **isolated world** - same DOM as the page, but a separate JavaScript scope. Two message buses connect the runtimes:
+
+| Bus | File | Scope |
+|-----|------|-------|
+| `crossWorldMessenger` | `src/lib/messaging/cross-world-messenger.ts` | MAIN world ↔ isolated world (same tab) |
+| `sendMessage` | `src/lib/messaging/messaging.ts` | Content scripts ↔ service worker |
+
+Both are built on [`@webext-core/messaging`](https://npm.im/@webext-core/messaging). To add a new message type, extend the relevant `enum`/`const` map and register a handler with `onMessage`.
+
+### Backend: adding or changing download logic
+
+The core download path lives entirely in `src/entrypoints/background/`:
+
+- `download/background-downloader.ts` - orchestrates the SABR/CDN/iframe fallback chain.
+- `download/sabr-downloader.ts` - constructs and sends SABR requests via [`googlevideo`](https://npm.im/googlevideo). Extra audio tracks (dubbed versions) are fetched here sequentially and their byte counts contribute to the unified progress counter.
+- `download/cdn-downloader.ts` - direct CDN fetch with byte-range retry for flaky connections.
+- `download/progress-fetch.ts` - wraps `fetch` to count received bytes and throttle progress updates.
+
+SABR requests must include a valid `Origin: https://www.youtube.com` header. The service worker cannot set this directly (Chrome strips it), so `wxt.config.ts` registers a `declarativeNetRequest` rule that rewrites the header on outgoing requests to `googlevideo.com`.
+
+The offscreen mux pipeline starts in `src/entrypoints/offscreen/` and uses [`@ffmpeg/ffmpeg`](https://npm.im/@ffmpeg/ffmpeg). `src/lib/download-pipeline/index.ts` is the entry point that receives raw streams and drives FFmpeg to produce the final file.
+
+### UI: working with Polymer elements
+
+The download button and panel are injected into YouTube's Polymer-based UI. YouTube's custom elements (`yt-button-view-model`, `tp-yt-paper-progress`, `tp-yt-paper-input`) have JavaScript property setters defined in the MAIN world. The panel runs in the isolated world, so:
+
+- **Button configuration** must go through `sendButtonData()` in `src/lib/ui/polymer-utils.ts`, which sends the data via `crossWorldMessenger` to the MAIN world where the setter is actually invoked.
+- **CSS custom properties** on Polymer elements must be set via `element.updateStyles({ "--var": "value" })`, not via inline styles, so Polymer's Shady DOM picks them up.
+- `WatchButton.svelte` is the exception - it runs in `youtube-main.content` (MAIN world) and can set `.data` directly.
+
+Svelte 5's `{@attach fn}` directive is used for one-time Polymer element setup. The `fn(element)` callback runs after insertion and can return a cleanup function. See `src/lib/ui/panel-button-attachments.svelte.ts` for examples.
+
+### Good first issues
+
+| Area | Where to start |
+|------|----------------|
+| SABR streaming | `src/lib/youtube/sabr/` |
+| Download orchestration | `src/entrypoints/background/download/` |
+| FFmpeg muxing pipeline | `src/entrypoints/offscreen/` |
+| Download panel | `src/components/download-options-panel/` |
+| Watch-page button | `src/entrypoints/youtube-main.content/watch-button/` |
+| Playlist downloader | `src/components/playlist-downloader/` |
+| Shared types | `src/types/index.ts` |
+
+After any change under `src/`, the dev server (`pnpm dev:stable`) auto-rebuilds and reloads the extension and YouTube tabs. Run `pnpm lint`, `pnpm svelte:check`, and `pnpx fallow audit` before committing.
