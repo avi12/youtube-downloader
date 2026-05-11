@@ -3,10 +3,10 @@
   import { audioContainers, videoContainers } from "@/lib/utils/containers";
   import type { RecentDownloadEntry } from "@/types";
 
-  type Props = {
+  interface Props {
     entry: RecentDownloadEntry;
     onClose: () => void;
-  };
+  }
 
   const { entry, onClose }: Props = $props();
 

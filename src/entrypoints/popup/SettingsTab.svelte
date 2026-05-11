@@ -13,9 +13,9 @@
   import type { DownloadTypePreference, Options } from "@/types";
   import { slide } from "svelte/transition";
 
-  type Props = {
+  interface Props {
     options: Options;
-  };
+  }
 
   const { options }: Props = $props();
 

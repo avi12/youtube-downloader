@@ -9,7 +9,7 @@
   import type { RecentDownloadEntry, VideoQueueItem } from "@/types";
   import { browser } from "#imports";
 
-  type Props = {
+  interface Props {
     isFFmpegReady: boolean;
     videoDownloads: VideoQueueItem[];
     musicList: string[];
@@ -27,7 +27,7 @@
     now: number;
     onChangeFormat: (entry: RecentDownloadEntry) => void;
     onRecentChanged: () => void;
-  };
+  }
 
   const {
     isFFmpegReady,

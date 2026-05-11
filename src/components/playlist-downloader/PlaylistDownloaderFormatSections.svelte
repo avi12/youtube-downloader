@@ -4,9 +4,9 @@
   import { AUTO_EXTENSION, AUTO_EXTENSION_LABEL, supportedExtensions } from "@/lib/utils/containers";
   import { DownloadType, VideoQualityMode } from "@/types";
 
-  type Props = {
+  interface Props {
     playlist: ReturnType<typeof createPlaylistDownloaderState>;
-  };
+  }
 
   const { playlist }: Props = $props();
 

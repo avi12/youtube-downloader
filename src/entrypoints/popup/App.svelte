@@ -8,7 +8,7 @@
   import type { Options, VideoQueueItem } from "@/types";
   import { untrack } from "svelte";
 
-  type Props = {
+  interface Props {
     initialIsFFmpegReady: boolean;
     initialVideoQueue: VideoQueueItem[];
     initialMusicList: string[];
@@ -22,7 +22,7 @@
       progressType: ProgressType;
     }>;
     initialOptions: Options;
-  };
+  }
 
   const {
     initialIsFFmpegReady,

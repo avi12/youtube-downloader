@@ -1,14 +1,14 @@
 <script lang="ts">
   import closeIcon from "./icons/close.svg?raw";
 
-  type Props = {
+  interface Props {
     filename: string;
     progress: number | null;
     progressLabel: string;
     statusLabel?: string | null;
     quality?: string;
     oncancel: () => void;
-  };
+  }
 
   const { filename, progress, progressLabel, statusLabel, quality, oncancel }: Props = $props();
 </script>

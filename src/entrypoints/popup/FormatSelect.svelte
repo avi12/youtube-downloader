@@ -1,12 +1,12 @@
 <script lang="ts">
   import { AUTO_EXTENSION, AUTO_EXTENSION_LABEL } from "@/lib/utils/containers";
 
-  type Props = {
+  interface Props {
     label?: string;
     options: string[];
     value: string;
     onchange: (value: string) => void;
-  };
+  }
 
   const { label, options, value, onchange }: Props = $props();
   const id = $props.id();

@@ -1,5 +1,5 @@
 <script lang="ts">
-  type Props = {
+  interface Props {
     id?: string;
     label: string;
     options: {
@@ -9,7 +9,7 @@
     value: string;
     disabled?: boolean;
     onchange: (value: string) => void;
-  };
+  }
 
   const {
     id, label, options, value, disabled = false, onchange

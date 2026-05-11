@@ -18,11 +18,11 @@
   } from "@/types";
   import { untrack } from "svelte";
 
-  type Props = {
+  interface Props {
     videoId: string;
     gridTitle?: string;
     isPlaylistItem?: boolean;
-  };
+  }
 
   const { videoId, gridTitle, isPlaylistItem = false }: Props = $props();
 

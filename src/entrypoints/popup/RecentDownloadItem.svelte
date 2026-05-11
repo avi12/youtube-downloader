@@ -2,13 +2,13 @@
   import moreActionsIcon from "./icons/more-actions.svg?raw";
   import type { RecentDownloadEntry } from "@/types";
 
-  type Props = {
+  interface Props {
     entry: RecentDownloadEntry;
     now: number;
     onShowInFolder: () => void;
     onChangeFormat: () => void;
     onRemove: () => void;
-  };
+  }
 
   const { entry, now, onShowInFolder, onChangeFormat, onRemove }: Props = $props();
 

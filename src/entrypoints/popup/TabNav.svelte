@@ -1,5 +1,5 @@
 <script generics="T extends string" lang="ts">
-  type Props = {
+  interface Props {
     tabs: {
       id: T;
       label: string;
@@ -7,7 +7,7 @@
     }[];
     activeTab: T;
     onChange(id: T): void;
-  };
+  }
 
   const { tabs, activeTab, onChange }: Props = $props();
 

@@ -3,10 +3,10 @@
   import type { createPlaylistDownloaderState } from "./PlaylistDownloader.state.svelte";
   import { applyPolymerCustomStyles, PAPER_PROGRESS_THEME } from "@/lib/ui/polymer-utils";
 
-  type Props = {
+  interface Props {
     playlist: ReturnType<typeof createPlaylistDownloaderState>;
     actionButtons: ReturnType<typeof createPlaylistActionButtons>;
-  };
+  }
 
   const { playlist, actionButtons }: Props = $props();
 

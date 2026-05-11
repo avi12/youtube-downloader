@@ -23,9 +23,9 @@
     document.querySelector("[data-ytdl-download-group] yt-button-view-model, yt-button-view-model")?.getAttribute("class") ??
     "";
 
-  type Props = {
+  interface Props {
     videoData: VideoData;
-  };
+  }
 
   const props: Props = $props();
 

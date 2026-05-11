@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { Snippet } from "svelte";
 
-  type Props = {
+  interface Props {
     title: string;
     sectionId: string;
     listAriaLabel: string;
@@ -10,7 +10,7 @@
     videoIds: string[];
     onCancelAll(): void;
     renderItem: Snippet<[string, number]>;
-  };
+  }
 
   const {
     title,

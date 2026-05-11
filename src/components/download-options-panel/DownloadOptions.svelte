@@ -5,7 +5,7 @@
   import { DownloadType } from "@/types";
   import type { AdaptiveFormatItem } from "@/types";
 
-  type Props = {
+  interface Props {
     downloadType: DownloadType;
     videoFormats: AdaptiveFormatItem[];
     audioFormats: AdaptiveFormatItem[];
@@ -20,7 +20,7 @@
     onfilenamechange: (filename: string) => void;
     onextensionchange: (extension: string) => void;
     onvalidationchange: (isValid: boolean) => void;
-  };
+  }
 
   const {
     downloadType,
