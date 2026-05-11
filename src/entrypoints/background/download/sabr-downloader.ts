@@ -98,20 +98,31 @@ async function downloadVideoAudioViaSabr({
   ]);
 }
 
-async function downloadExtraAudioTracksViaSabr({ config, formats, poToken, signal, onBytesReceived }: {
+async function downloadExtraAudioTracksViaSabr({ config, formats, poToken, signal, onProgress, onExtraProgress }: {
   config: SabrConfig;
   formats: AdaptiveFormatItem[];
   poToken: string;
   signal: AbortSignal;
-  onBytesReceived?: (bytes: number) => void;
+  onProgress?: () => void;
+  onExtraProgress?: (completedExpectedBytes: number) => void;
 }) {
   const results = [];
+  let completedExpectedBytes = 0;
+
   for (const format of formats) {
+    const trackExpectedBytes = parseContentLength(format);
+    let trackReceivedBytes = 0;
+
     try {
       const sabrFetch = createProgressFetch({
         signal,
         onBytesReceived(bytes) {
-          onBytesReceived?.(bytes);
+          trackReceivedBytes += bytes;
+          onProgress?.();
+
+          if (trackExpectedBytes > 0) {
+            onExtraProgress?.(completedExpectedBytes + Math.min(trackReceivedBytes, trackExpectedBytes));
+          }
         }
       });
       const data = await fetchAudioViaSabrStream({
@@ -131,7 +142,11 @@ async function downloadExtraAudioTracksViaSabr({ config, formats, poToken, signa
     } catch (trackError) {
       console.warn("[ytdl:bg] Extra audio track failed:", format.audioTrack?.displayName, trackError);
     }
+
+    completedExpectedBytes += trackExpectedBytes;
+    onExtraProgress?.(completedExpectedBytes);
   }
+
   return results;
 }
 
@@ -213,7 +228,15 @@ export async function downloadViaSabr({ request, signal, tabId, onProgress }: {
     formats: additionalAudioFormats ?? [],
     poToken: resolvedPoToken,
     signal,
-    onBytesReceived
+    onProgress,
+    onExtraProgress: totalExpectedBytes > 0 ? completedExtraBytes => {
+      void sendProgressUpdate({
+        videoId,
+        progress: Math.min((mainExpectedBytes + completedExtraBytes) / totalExpectedBytes, DOWNLOAD_PROGRESS_CAP),
+        progressType: ProgressType.Video,
+        tabId
+      });
+    } : undefined
   });
 
   return {
