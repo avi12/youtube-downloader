@@ -58,7 +58,9 @@ export function createPanelManager(
       // so create the dropdown via the MAIN world bridge.
       panelInstance = mount(DownloadOptionsPanel, {
         target: elContent,
-        props: { videoData }
+        props: {
+          videoData
+        }
       });
 
       // iron-dropdown only finishes positioning on iron-overlay-opened - that's

@@ -34,7 +34,9 @@ export async function registerSabrOriginRule() {
       type: "modifyHeaders",
       requestHeaders: [...baseHeaders, ...secFetchHeaders]
     },
-    condition: { urlFilter: "||googlevideo.com/videoplayback" }
+    condition: {
+      urlFilter: "||googlevideo.com/videoplayback"
+    }
   };
   await browser.declarativeNetRequest.updateDynamicRules({
     removeRuleIds: [SABR_ORIGIN_RULE_ID],

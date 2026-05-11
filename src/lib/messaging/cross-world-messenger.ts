@@ -132,7 +132,9 @@ function isButtonClickEvent(e: Event): e is CustomEvent<{ buttonId: string }> {
 export function dispatchButtonClick(buttonId: string) {
   dispatchEvent(
     new CustomEvent<{ buttonId: string }>(BUTTON_CLICK_EVENT_NAME, {
-      detail: { buttonId }
+      detail: {
+        buttonId
+      }
     })
   );
 }

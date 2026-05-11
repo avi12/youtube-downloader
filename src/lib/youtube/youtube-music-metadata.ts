@@ -128,19 +128,19 @@ export async function fetchYouTubeMusicMetadata({ searchQuery, existingMetadata 
   try {
     const response = await fetch("https://music.youtube.com/youtubei/v1/search?prettyPrint=false", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(
-              {
-                query: searchQuery,
-                params: SONG_FILTER_PARAMS,
-                context: {
-                  client: {
-                    clientName: InnertubeClientName.WebRemix,
-                    clientVersion: "1.20260408.01.00"
-                  }
-                }
-              } satisfies InnertubeSearchRequest
-      )
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        query: searchQuery,
+        params: SONG_FILTER_PARAMS,
+        context: {
+          client: {
+            clientName: InnertubeClientName.WebRemix,
+            clientVersion: "1.20260408.01.00"
+          }
+        }
+      } satisfies InnertubeSearchRequest)
     });
     if (!response.ok) {
       return existingMetadata;

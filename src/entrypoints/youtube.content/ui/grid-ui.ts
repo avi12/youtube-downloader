@@ -132,7 +132,9 @@ function mountGridButton({ context, elCard }: {
     overlayInstances.set(
       videoId, mount(GridProgressOverlay, {
         target: elProgressContainer,
-        props: { videoId }
+        props: {
+          videoId
+        }
       })
     );
   }

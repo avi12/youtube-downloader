@@ -33,7 +33,9 @@ export function mountPanelUi({
     onMount(elUiContainer) {
       currentInstance = mount(DownloadOptionsPanel, {
         target: elUiContainer,
-        props: { videoData }
+        props: {
+          videoData
+        }
       });
     }
   });

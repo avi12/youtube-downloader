@@ -29,22 +29,22 @@ async function fetchVideoDataViaApi(videoId: string) {
           "Content-Type": "application/json",
           "X-Goog-Visitor-Id": String(visitorData)
         },
-        body: JSON.stringify(
-                {
-                  videoId,
-                  context: {
-                    client: {
-                      clientName: clientName === 1 ? InnertubeClientName.Web : String(clientName),
-                      clientVersion: String(clientVersion)
-                    }
-                  },
-                  playbackContext: {
-                    contentPlaybackContext: { signatureTimestamp }
-                  },
-                  contentCheckOk: true,
-                  racyCheckOk: true
-                } satisfies InnertubePlayerRequest
-        )
+        body: JSON.stringify({
+          videoId,
+          context: {
+            client: {
+              clientName: clientName === 1 ? InnertubeClientName.Web : String(clientName),
+              clientVersion: String(clientVersion)
+            }
+          },
+          playbackContext: {
+            contentPlaybackContext: {
+              signatureTimestamp
+            }
+          },
+          contentCheckOk: true,
+          racyCheckOk: true
+        } satisfies InnertubePlayerRequest)
       }
     );
     const playerData: PlayerResponse = await response.json();

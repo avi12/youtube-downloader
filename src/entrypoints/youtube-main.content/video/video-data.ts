@@ -103,18 +103,18 @@ async function fetchYouTubeMusicGenres() {
   try {
     const response = await fetch("https://music.youtube.com/youtubei/v1/browse?prettyPrint=false", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(
-              {
-                browseId: "FEmusic_moods_and_genres",
-                context: {
-                  client: {
-                    clientName: InnertubeClientName.WebRemix,
-                    clientVersion: "1.20260408.01.00"
-                  }
-                }
-              } satisfies InnertubeBrowseRequest
-      )
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        browseId: "FEmusic_moods_and_genres",
+        context: {
+          client: {
+            clientName: InnertubeClientName.WebRemix,
+            clientVersion: "1.20260408.01.00"
+          }
+        }
+      } satisfies InnertubeBrowseRequest)
     });
 
     const data: MoodsAndGenresResponse = await response.json();
