@@ -1,7 +1,7 @@
 <script lang="ts">
   import PolymerSelect from "../polymer-select/PolymerSelect.svelte";
   import { splitFilenameAndExtension, supportedExtensions } from "@/lib/utils/containers";
-  import { formatAudioCodecLabel, formatVideoQualityLabel } from "@/lib/youtube/video-helpers";
+  import { formatAudioCodecLabel, formatVideoQualityLabel, stripTrackLangSuffix } from "@/lib/youtube/video-helpers";
   import { DownloadType } from "@/types";
   import type { AdaptiveFormatItem } from "@/types";
 
@@ -110,7 +110,7 @@
         return {
           value: `${format.itag}:${format.audioTrack?.id ?? ""}`,
           label: hasMultipleAudioTracks && format.audioTrack
-            ? `${format.audioTrack.displayName} - ${bitrateLabel}`
+            ? `${stripTrackLangSuffix(format.audioTrack.displayName)} - ${bitrateLabel}`
             : bitrateLabel
         };
       });
