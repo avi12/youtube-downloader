@@ -125,6 +125,51 @@ If a video has multiple audio tracks (dubbed versions), SABR downloads them sequ
 
 **2. CDN fallback** - If SABR fails (e.g. for very old or live-clipped videos), the extension falls back to direct CDN URLs from the player response (`background/download/cdn-downloader.ts`). These are plain HTTPS fetches with byte-range support for retrying interrupted transfers.
 
+### Additional audio tracks
+
+When a video has multiple dubbed or language variants, the extension downloads all of them automatically.
+
+`getExtraAudioFormats()` in `youtube-main.content/video/download.ts` collects every audio track whose `audioTrack.id` differs from the user's chosen primary track (up to 16 extras). These are passed in the `DownloadRequest` as `additionalAudioFormats`.
+
+In the background:
+
+- **SABR** - `downloadExtraAudioTracksViaSabr()` fetches each extra track sequentially (one SABR session per track). Sequential ordering avoids overloading the session slot limit.
+- **CDN** - `resolvedExtraAudioUrls` are fetched in parallel alongside the main video and audio.
+
+After downloading, each extra track is passed to the offscreen document with its `label`, `languageCode`, and `isDefault` flag. FFmpeg maps them as separate audio streams in the output file (MKV only; MP4 and WebM carry a single audio track).
+
+### Closed captions
+
+Caption tracks are fetched in the content script **before** the background download starts, concurrently with format resolution.
+
+`fetchCaptionVttData()` in `youtube-main.content/video/download.ts`:
+
+1. Calls `fetchFreshCaptionUrls(videoId)` - sends an InnerTube `player` request to get non-expired `baseUrl` values for each caption track (the URLs baked into the player config expire quickly)
+2. For each ordered track, appends `?fmt=vtt` and fetches the raw VTT text
+3. Returns the VTT strings as base64-encoded data alongside their `vssId`, language code, and display name
+
+`orderCaptionsByPreference()` sorts tracks according to the user's language setting so the default subtitle stream in the output file matches the UI language.
+
+The caption data travels in `captionVttData` inside `DownloadRequest`. Because captions are fully downloaded before the background service worker starts, they count as pre-completed stages in the proportional progress calculation - the download bar starts already past the caption share.
+
+FFmpeg receives each VTT string as a virtual input file and muxes it as a subtitle stream (`-c:s copy` for MKV; captions are skipped for MP4/WebM since those containers don't embed WebVTT streams reliably).
+
+### Thumbnail and YouTube Music ID3 metadata
+
+**Thumbnail source** - `buildVideoMetadata()` in `youtube-main.content/video/video-data.ts` takes the highest-resolution thumbnail URL from the player's `videoDetails.thumbnail.thumbnails` array and stores it in `metadata.thumbnailUrl`.
+
+**YouTube Music enrichment** - For videos where `metadata.isMusic` is true (YouTube Music tracks), `enrichMetadataFromYouTubeMusic()` in `background/download/background-downloader.ts` queries `music.youtube.com/youtubei/v1/search` using the `WebRemix` InnerTube client with a Songs filter. It reads the first `musicResponsiveListItemRenderer` result:
+
+- Column 1 → song title
+- Column 2 runs → artist names (runs whose `pageType` is `MUSIC_PAGE_TYPE_ARTIST`) and album (`MUSIC_PAGE_TYPE_ALBUM`)
+- Thumbnail → last entry in the thumbnail list, resized to 544×544 via URL rewriting (`=w544-h544`)
+
+This overrides whatever title/artist/album the standard player response provided, giving ID3 tags that match the YouTube Music catalogue entry.
+
+**Thumbnail embedding** - In the mux worker, `fetchThumbnail()` fetches the thumbnail URL after rewriting WebP paths to JPEG (`/vi_webp/` → `/vi/`, `.webp` → `.jpg`). The actual image format is then confirmed by magic bytes (`FF D8 FF` = JPEG, `89 50 4E 47` = PNG, RIFF+WEBP = WebP) so the correct file extension is set regardless of the URL. The image is written as a virtual FFmpeg input and embedded as an attached picture. Thumbnail embedding is only applied to MP3 and M4A outputs; WebM/MKV containers don't receive it since those formats don't have a standardised cover art field.
+
+FFmpeg also writes the full ID3/metadata block: title, artist, album\_artist, album, genre, date, and track number.
+
 ### YouTube authentication
 
 **PO token (Proof of Origin)** - YouTube requires a cryptographic proof that requests come from a real browser session, not a bot. The extension generates this by running YouTube's own **BotGuard** anti-bot JavaScript:
