@@ -47,10 +47,20 @@ function isInsideLogicalExpression(node) {
   return false;
 }
 
+function isPropertyValueInMultilineObject(node) {
+  if (node.parent?.type !== "Property") {
+    return false;
+  }
+
+  const parentObject = node.parent.parent;
+  return parentObject?.type === "ObjectExpression" && requiresMultiline(parentObject);
+}
+
 function requiresMultiline(node) {
   return node.properties.length >= 2
     || node.properties.some(propertyHasDirectObjectExpression)
-    || isInsideLogicalExpression(node);
+    || isInsideLogicalExpression(node)
+    || isPropertyValueInMultilineObject(node);
 }
 
 function getLineIndentCount(sourceCode, token) {
