@@ -80,9 +80,7 @@ function extractTransformOperations({ playerSource, functionName }: {
 
   const methodPattern = /([a-zA-Z0-9$]+)\s*:\s*function\s*\([^)]*\)\s*\{([^}]+)}/g;
 
-  for (const methodMatch of helperBody.matchAll(methodPattern)) {
-    const methodName = methodMatch[1];
-    const methodBody = methodMatch[2];
+  for (const [, methodName, methodBody] of helperBody.matchAll(methodPattern)) {
     if (methodBody.includes("reverse")) {
       methodTypes.set(methodName, TransformOpType.Reverse);
     } else if (methodBody.includes("splice")) {
@@ -98,9 +96,8 @@ function extractTransformOperations({ playerSource, functionName }: {
   );
   const operations: TransformOp[] = [];
 
-  for (const callMatch of functionBody.matchAll(callPattern)) {
-    const methodName = callMatch[1];
-    const argument = Number.parseInt(callMatch[2], 10);
+  for (const [, methodName, rawArgument] of functionBody.matchAll(callPattern)) {
+    const argument = Number.parseInt(rawArgument, 10);
     const opType = methodTypes.get(methodName);
     if (!opType) {
       continue;
