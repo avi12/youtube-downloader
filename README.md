@@ -168,7 +168,7 @@ This overrides whatever title/artist/album the standard player response provided
 
 **Thumbnail embedding** - In the mux worker, `fetchThumbnail()` fetches the thumbnail URL after rewriting WebP paths to JPEG (`/vi_webp/` → `/vi/`, `.webp` → `.jpg`). The actual image format is then confirmed by magic bytes (`FF D8 FF` = JPEG, `89 50 4E 47` = PNG, RIFF+WEBP = WebP) so the correct file extension is set regardless of the URL. The image is written as a virtual FFmpeg input and embedded as an attached picture. Thumbnail embedding is only applied to MP3 and M4A outputs; WebM/MKV containers don't receive it since those formats don't have a standardised cover art field.
 
-FFmpeg also writes the full ID3/metadata block: title, artist, album\_artist, album, genre, date, and track number.
+FFmpeg also writes the full ID3/metadata block: title, artist, album_artist, album, genre, date, and track number.
 
 ### YouTube authentication
 
