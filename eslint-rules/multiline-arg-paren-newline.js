@@ -24,6 +24,14 @@ const inlineArgumentTypes = new Set([
   "FunctionExpression"
 ]);
 
+function getEffectiveType(arg) {
+  if (arg.type === "TSSatisfiesExpression" || arg.type === "TSAsExpression") {
+    return arg.expression.type;
+  }
+
+  return arg.type;
+}
+
 /** @type {import("eslint").Rule.RuleModule} */
 export default {
   meta: {
@@ -45,7 +53,7 @@ export default {
         }
 
         const hasMultilineNonLiteralArgument = node.arguments.some(
-          arg => !inlineArgumentTypes.has(arg.type) && arg.loc.start.line !== arg.loc.end.line
+          arg => !inlineArgumentTypes.has(getEffectiveType(arg)) && arg.loc.start.line !== arg.loc.end.line
         );
         if (!hasMultilineNonLiteralArgument) {
           return;
