@@ -2,10 +2,6 @@
  * Dev server: production builds (with source maps) + browser with sideloaded extension.
  * On file changes: rebuilds for production and reloads extension + YouTube tabs.
  *
- * Chrome 126+ requires Extensions.loadUnpacked via CDP debug pipes.
- * web-ext-run (used by WXT internally) handles this via chrome-launcher.
- * Must run under Node (not Bun) because pipe fd mapping requires Node's spawn.
- *
  * Usage:
  *   npx tsx scripts/dev-server.ts           - Chrome
  *   npx tsx scripts/dev-server.ts --firefox - Firefox
