@@ -46,6 +46,14 @@ export function registerBackgroundMessageHandlers() {
         return;
       }
 
+      // Prevent backwards progress within the same phase — the download may
+      // emit slightly out-of-order reports but the display must only advance.
+      const currentEntry = downloadProgressStore.get(data.videoId);
+      const isSamePhase = currentEntry?.progressType === data.progressType;
+      if (isSamePhase && data.progress < (currentEntry?.progress ?? 0)) {
+        return;
+      }
+
       lastReportedProgress.set(data.videoId, reportedKey);
     } else {
       lastReportedProgress.delete(data.videoId);

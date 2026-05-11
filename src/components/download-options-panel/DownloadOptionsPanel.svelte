@@ -38,9 +38,13 @@
   const viewButtonId = "ytdl-panel-view";
 
   const downloadingLabel = $derived.by(() => {
+    if (panel.displayProgress === 0) {
+      return "Preparing";
+    }
+
     const pct = percentFormatter.format(panel.displayProgress / 100);
     if (panel.progressType === ProgressType.FFmpeg) {
-      return panel.displayProgress > 0 ? `${pct} - Processing` : "Processing";
+      return `${pct} - Processing`;
     }
 
     return `${pct} - Downloading`;
@@ -231,6 +235,7 @@
     --ytdl-success: #1e8e3e;
     --ytdl-primary-bg: #0f0f0f;
     --ytdl-primary-text: #ffffff;
+    --paper-input-container-color: var(--yt-spec-text-secondary);
 
     width: 380px;
     border: 1px solid var(--ytdl-border);
