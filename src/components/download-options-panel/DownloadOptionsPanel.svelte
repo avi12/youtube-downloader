@@ -94,6 +94,10 @@
     }
   }));
 
+  const primaryButtonClass = $derived(
+    `${scopingClass} ${primaryState === PrimaryButtonState.Downloading ? "ytdl-cancel-state" : ""}`
+  );
+
   function attachPrimaryBtn(elButton: Element) {
     attachPrimaryButton({
       elButton,
@@ -114,11 +118,9 @@
       closePanel();
     }
 
-    // YouTube's video player listens for global Space (play/pause) and arrow
-    // keys (seek/volume). Stop these from bubbling out of the panel so they
-    // only act on the focused control inside.
-    if (e.key === " " || e.key === "ArrowUp" || e.key === "ArrowDown"
-      || e.key === "ArrowLeft" || e.key === "ArrowRight") {
+    const isYouTubePlayerKey = e.key === " " || e.key === "ArrowUp" || e.key === "ArrowDown"
+      || e.key === "ArrowLeft" || e.key === "ArrowRight";
+    if (isYouTubePlayerKey) {
       e.stopPropagation();
     }
   }}
@@ -177,7 +179,7 @@
         ></yt-button-view-model>
       {/if}
       <yt-button-view-model
-        class="{scopingClass} {primaryState === PrimaryButtonState.Downloading ? "ytdl-cancel-state" : ""}"
+        class={primaryButtonClass}
         {@attach attachPrimaryBtn}
         data-ytdl-button-id={primaryButtonId}
         role="button"
@@ -220,9 +222,6 @@
 </div>
 
 <style>
-  /* YouTube doesn't expose --yt-spec-text-primary at the document root or via
-     any reachable Polymer scope, so define it ourselves keyed on the [dark]
-     attribute YouTube already toggles. Other rules can then use the spec name. */
   .ytdl-panel {
     --yt-spec-text-primary: rgb(15 15 15);
     --yt-spec-text-secondary: rgb(96 96 96);
@@ -259,9 +258,6 @@
     --ytdl-primary-text: #0f0f0f;
   }
 
-  /* YouTube's focus CSS sets background:unset on .ytSpecButtonShapeNextMono.ytSpecButtonShapeNextFocused,
-     which strips the fill from the Download/Download-again button when Tab-focused.
-     Restore it by re-applying the same Polymer CSS variables at higher specificity. */
   .ytdl-panel :global(.ytSpecButtonShapeNextMono.ytSpecButtonShapeNextFilled.ytSpecButtonShapeNextFocused) {
     border-color: transparent;
     background: var(--tffc2fd3a644f6275);
