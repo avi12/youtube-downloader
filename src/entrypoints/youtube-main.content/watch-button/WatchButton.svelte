@@ -311,6 +311,11 @@
       isDownloading = true;
       downloadProgress = 0;
       downloadProgressType = "";
+      void crossWorldMessenger.sendMessage(CrossWorldMessage.DownloadProgress, {
+        videoId: videoData.videoId,
+        progress: 0,
+        progressType: ProgressType.Video
+      });
       void performDownload({
         type: defaultDownloadType,
         videoId: videoData.videoId,
