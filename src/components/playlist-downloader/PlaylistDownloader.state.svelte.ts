@@ -174,19 +174,19 @@ export function createPlaylistDownloaderState() {
     isScrollSyncEnabled = CONTENT_OPTIONS.value.isPlaylistScrollSyncEnabled;
   });
 
-  // Highest resolution found across all videos - drives which quality options are shown.
+  // Distinct heights seen across all loaded videos, sorted descending - drives quality dropdown.
   // Kept separate from guaranteedQuality so it can be evaluated independently during reveal.
-  const maxAvailableQuality = $derived.by(() => {
-    let max = 0;
+  const availableQualities = $derived.by(() => {
+    const allHeights: number[] = [];
     for (const data of videoDataMap.values()) {
       for (const format of data.videoFormats) {
-        const height = format.height ?? 0;
-        if (height > max) {
-          max = height;
+        if (format.height) {
+          allHeights.push(format.height);
         }
       }
     }
-    return max;
+    allHeights.sort((heightA, heightB) => heightB - heightA);
+    return allHeights.filter((height, iHeight) => iHeight === 0 || height !== allHeights[iHeight - 1]);
   });
 
   // Lowest of each video's personal best - drives "Up to" label qualifier.
@@ -555,8 +555,8 @@ export function createPlaylistDownloaderState() {
     get downloadButtonLabel() {
       return downloadButtonLabel;
     },
-    get maxAvailableQuality() {
-      return maxAvailableQuality;
+    get availableQualities() {
+      return availableQualities;
     },
     get guaranteedQuality() {
       return guaranteedQuality;

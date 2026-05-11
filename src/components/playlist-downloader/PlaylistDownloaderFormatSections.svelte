@@ -2,7 +2,6 @@
   import PolymerSelect from "../polymer-select/PolymerSelect.svelte";
   import type { createPlaylistDownloaderState } from "./PlaylistDownloader.state.svelte";
   import { AUTO_EXTENSION, AUTO_EXTENSION_LABEL, supportedExtensions } from "@/lib/utils/containers";
-  import { VIDEO_QUALITIES } from "@/lib/youtube/video-helpers";
   import { DownloadType, VideoQualityMode } from "@/types";
 
   type Props = {
@@ -33,8 +32,7 @@
       value: VideoQualityMode.Best,
       label: "Best quality"
     },
-    ...VIDEO_QUALITIES
-      .filter(height => !playlist.maxAvailableQuality || height <= playlist.maxAvailableQuality)
+    ...playlist.availableQualities
       .map(height => ({
         value: String(height),
         label: !playlist.isRevealingAll && height <= playlist.guaranteedQuality ? `${height}p` : `Up to ${height}p`
