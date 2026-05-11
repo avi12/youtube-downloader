@@ -39,7 +39,7 @@ export function cancelAllActiveDownloads() {
 const MAX_ADDITIONAL_AUDIO_TRACKS = 16;
 const CAPTION_FETCH_TIMEOUT_MS = 10_000;
 
-function formatVttTimestamp(seconds: number): string {
+function formatVttTimestamp(seconds: number) {
   const hours = Math.floor(seconds / 3600);
   const mins = Math.floor((seconds % 3600) / 60);
   const secs = Math.floor(seconds % 60);
@@ -47,7 +47,7 @@ function formatVttTimestamp(seconds: number): string {
   return `${String(hours).padStart(2, "0")}:${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}.${String(millis).padStart(3, "0")}`;
 }
 
-function cuesToVtt(cues: TextTrackCueList): string {
+function cuesToVtt(cues: TextTrackCueList) {
   const lines = ["WEBVTT", ""];
   for (const cue of cues) {
     if (!(cue instanceof VTTCue)) {
@@ -61,7 +61,7 @@ function cuesToVtt(cues: TextTrackCueList): string {
   return lines.join("\n");
 }
 
-async function fetchVttViaTrackElement(url: string): Promise<string | null> {
+async function fetchVttViaTrackElement(url: string) {
   const elVideo = document.querySelector<HTMLVideoElement>("video.html5-main-video");
   if (!elVideo) {
     return null;
@@ -92,7 +92,7 @@ async function fetchVttViaTrackElement(url: string): Promise<string | null> {
   });
 }
 
-async function fetchFreshCaptionUrls(videoId: string): Promise<Map<string, string>> {
+async function fetchFreshCaptionUrls(videoId: string) {
   const apiKey = getYtcfg(YtcfgKey.InnertubeApiKey);
   if (!apiKey) {
     return new Map();
@@ -142,7 +142,7 @@ async function fetchFreshCaptionUrls(videoId: string): Promise<Map<string, strin
   }
 }
 
-async function fetchCaptionVttData(captionTracks: CaptionTrack[], videoId: string): Promise<(string | null)[]> {
+async function fetchCaptionVttData(captionTracks: CaptionTrack[], videoId: string) {
   if (captionTracks.length === 0) {
     return [];
   }

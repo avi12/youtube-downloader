@@ -86,7 +86,7 @@ async function processMuxQueue() {
   isMuxing = false;
 }
 
-function enqueueMuxJob<T>(videoId: string, run: () => Promise<T>): Promise<T> {
+function enqueueMuxJob<T>(videoId: string, run: () => Promise<T>) {
   return new Promise<T>((resolve, reject) => {
     muxQueue.push({
       videoId,
@@ -129,7 +129,7 @@ export function cancelMuxJobs(videoIds: string[]) {
 function runWorkerJob<T>(
   send: (port: HostWorkerPort) => void,
   transform: (data: ArrayBuffer | null) => T
-): Promise<T> {
+) {
   return new Promise<T>((resolve, reject) => {
     if (!workerPort) {
       reject(new Error("Mux worker not initialized"));
@@ -168,7 +168,7 @@ function runWorkerJob<T>(
 export function runMuxVideoAudio(
   videoId: string,
   job: MuxVideoAudioJob
-): Promise<Uint8Array> {
+) {
   const transferables: Transferable[] = [job.videoData, job.audioData];
   for (const track of job.extraAudioTracks) {
     transferables.push(track.data);
@@ -190,7 +190,7 @@ export function runMuxVideoAudio(
 export function runEmbedMetadata(
   videoId: string,
   job: EmbedMetadataJob
-): Promise<Uint8Array> {
+) {
   return enqueueMuxJob(videoId, () =>
     runWorkerJob<Uint8Array>(
       port => port.send(WorkerMessageType.EmbedMetadata, { job }, [job.audioData]),
@@ -201,7 +201,7 @@ export function runEmbedMetadata(
 export function runTranscodeAudio(
   videoId: string,
   job: TranscodeAudioJob
-): Promise<Uint8Array> {
+) {
   return enqueueMuxJob(videoId, () =>
     runWorkerJob<Uint8Array>(
       port => port.send(WorkerMessageType.TranscodeAudio, { job }, [job.audioData]),
@@ -218,7 +218,7 @@ export function runTranscodeAudio(
 export function runTranscodeFile(
   videoId: string,
   job: TranscodeFileJob
-): Promise<Uint8Array | null> {
+) {
   return enqueueMuxJob(videoId, () =>
     runWorkerJob<Uint8Array | null>(
       port => port.send(WorkerMessageType.TranscodeFile, { job }, [job.data]),

@@ -38,7 +38,7 @@ export function findNativeDownloadButton(elActionsContainer: HTMLElement) {
   return null;
 }
 
-export function createDropdownElement({ videoId }: { videoId: string }): DropdownElements {
+export function createDropdownElement({ videoId }: { videoId: string }) {
   const panelContentId = `ytdl-panel-content-${videoId}`;
 
   const elDropdown = document.createElement("tp-yt-iron-dropdown");

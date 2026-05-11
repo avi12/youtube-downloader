@@ -79,7 +79,7 @@ export default defineContentScript({
     // YouTube adds "ytp-ad-playing" to #movie_player for all ad types (pre-roll,
     // mid-roll, skippable). Checking the class is reliable across all page types
     // and doesn't require knowing the ad's video ID.
-    function isAdPlaying(): boolean {
+    function isAdPlaying() {
       return document.getElementById("movie_player")?.classList.contains("ytp-ad-playing") ?? false;
     }
 

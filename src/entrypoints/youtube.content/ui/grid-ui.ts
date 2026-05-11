@@ -33,14 +33,14 @@ export function cleanupGridUi() {
 
 // Returns the yt-lockup-view-model element's shadow root if present, so callers
 // can query inside it when native shadow DOM is in use.
-function getLockupRoot(elCard: Element): ShadowRoot | null {
+function getLockupRoot(elCard: Element) {
   const elLockup = elCard.tagName.toLowerCase() === "yt-lockup-view-model"
     ? elCard
     : elCard.querySelector("yt-lockup-view-model");
   return elLockup?.shadowRoot ?? null;
 }
 
-function shadowFirst(elCard: Element, selector: string): Element | null {
+function shadowFirst(elCard: Element, selector: string) {
   return getLockupRoot(elCard)?.querySelector(selector) ?? elCard.querySelector(selector);
 }
 

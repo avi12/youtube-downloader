@@ -56,7 +56,7 @@ export type HostWorkerPort = {
   port: MessagePort;
 };
 
-export function createHostWorkerPort(): HostWorkerPort {
+export function createHostWorkerPort() {
   const { port1, port2 } = new MessageChannel();
   port1.start();
 
@@ -112,7 +112,7 @@ export type WorkerPortReceiver = {
   onMessage(handlers: CommandHandlerMap): void;
 };
 
-export function createWorkerPortReceiver(port: MessagePort): WorkerPortReceiver {
+export function createWorkerPortReceiver(port: MessagePort) {
   port.start();
 
   let commandHandlers: CommandHandlerMap = {};

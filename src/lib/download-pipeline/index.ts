@@ -10,7 +10,7 @@ export { initMuxWorker } from "./ffmpeg-instance";
 
 export const FFMPEG_PROGRESS_CAP = 0.99;
 
-export function toOwnedArrayBuffer(view: ArrayBufferView): ArrayBuffer {
+export function toOwnedArrayBuffer(view: ArrayBufferView) {
   if (!(view.buffer instanceof ArrayBuffer)) {
     throw new Error("SharedArrayBuffer is not supported");
   }
