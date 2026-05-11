@@ -1,7 +1,7 @@
 <script lang="ts">
   import PolymerSelect from "../polymer-select/PolymerSelect.svelte";
   import { splitFilenameAndExtension, supportedExtensions } from "@/lib/utils/containers";
-  import { formatAudioCodecLabel, formatVideoQualityLabel, stripTrackLangSuffix } from "@/lib/youtube/video-helpers";
+  import { formatAudioCodecLabel, formatVideoQualityLabel } from "@/lib/youtube/video-helpers";
   import { DownloadType, isPolymerInputElement } from "@/types";
   import type { AdaptiveFormatItem } from "@/types";
 
@@ -110,7 +110,7 @@
         return {
           value: `${format.itag}:${format.audioTrack?.id ?? ""}`,
           label: hasMultipleAudioTracks && format.audioTrack
-            ? `${stripTrackLangSuffix(format.audioTrack.displayName)} - ${bitrateLabel}`
+            ? `${format.audioTrack.displayName} - ${bitrateLabel}`
             : bitrateLabel
         };
       });
@@ -134,15 +134,30 @@
       elInput.dir = "auto";
     }
 
-    requestAnimationFrame(() => {
-      if (!isPolymerInputElement(elTarget)) {
-        return;
-      }
+    function applyLabelColor() {
+      requestAnimationFrame(() => {
+        if (!isPolymerInputElement(elTarget)) {
+          return;
+        }
 
-      elTarget.updateStyles({
-        "--paper-input-container-color": "var(--yt-spec-text-secondary)"
+        const isDark = document.documentElement.hasAttribute("dark");
+        elTarget.updateStyles({
+          "--paper-input-container-color": isDark
+            ? "var(--yt-spec-text-secondary, #aaaaaa)"
+            : "var(--yt-spec-text-secondary, #606060)"
+        });
       });
+    }
+
+    applyLabelColor();
+
+    const observer = new MutationObserver(applyLabelColor);
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["dark"]
     });
+
+    return () => observer.disconnect();
   }
 </script>
 

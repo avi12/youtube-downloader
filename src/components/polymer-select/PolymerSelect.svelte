@@ -245,9 +245,13 @@
   .ytdl-select-label {
     display: block;
     margin-block-end: 6px;
-    color: var(--yt-spec-text-secondary);
+    color: var(--yt-spec-text-secondary, #606060);
     font-weight: 500;
     font-size: 1.2rem;
+  }
+
+  :global(html[dark]) .ytdl-select-label {
+    color: var(--yt-spec-text-secondary, #aaaaaa);
   }
 
   .ytdl-select-trigger {
@@ -262,7 +266,7 @@
     border: 1px solid var(--yt-spec-10-percent-layer, rgb(0 0 0 / 16%));
     border-radius: 8px;
     background: transparent;
-    color: var(--yt-spec-text-primary);
+    color: var(--yt-spec-text-primary, #0f0f0f);
     font: inherit;
     font-size: 1.4rem;
     text-align: start;
@@ -270,16 +274,29 @@
   }
 
   .ytdl-select-trigger:hover {
-    border-color: var(--yt-spec-text-secondary);
+    border-color: var(--yt-spec-text-secondary, #606060);
   }
 
   .ytdl-select-trigger--open {
-    border-color: var(--yt-spec-call-to-action, #3ea6ff);
+    border-color: var(--yt-spec-call-to-action, #065fd4);
   }
 
   .ytdl-select-trigger:disabled {
     opacity: 50%;
     cursor: default;
+  }
+
+  :global(html[dark]) .ytdl-select-trigger {
+    border-color: var(--yt-spec-10-percent-layer, rgb(255 255 255 / 16%));
+    color: var(--yt-spec-text-primary, #f1f1f1);
+  }
+
+  :global(html[dark]) .ytdl-select-trigger:hover {
+    border-color: var(--yt-spec-text-secondary, #aaaaaa);
+  }
+
+  :global(html[dark]) .ytdl-select-trigger--open {
+    border-color: var(--yt-spec-call-to-action, #3ea6ff);
   }
 
   .ytdl-select-trigger__value {
@@ -292,8 +309,12 @@
   .ytdl-select-trigger__chevron {
     flex-shrink: 0;
     margin-inline-start: 8px;
-    color: var(--yt-spec-text-secondary);
+    color: var(--yt-spec-text-secondary, #606060);
     transition: transform 120ms ease-out;
+  }
+
+  :global(html[dark]) .ytdl-select-trigger__chevron {
+    color: var(--yt-spec-text-secondary, #aaaaaa);
   }
 
   .ytdl-select-trigger__chevron--open {
@@ -314,20 +335,33 @@
     box-shadow: 0 8px 32px rgb(0 0 0 / 32%), 0 2px 8px rgb(0 0 0 / 16%);
   }
 
+  :global(html[dark]) .ytdl-select-menu {
+    border-color: var(--yt-spec-10-percent-layer, rgb(255 255 255 / 10%));
+    background: var(--yt-spec-raised-background, #212121);
+  }
+
   .ytdl-select-menu :global(tp-yt-paper-item) {
     display: flex;
     align-items: center;
     min-height: 0;
     padding: 8px 10px;
     border-radius: 6px;
-    color: var(--yt-spec-text-primary);
+    color: var(--yt-spec-text-primary, #0f0f0f);
     font-size: 1.4rem;
     white-space: nowrap;
     cursor: pointer;
   }
 
+  :global(html[dark]) .ytdl-select-menu :global(tp-yt-paper-item) {
+    color: var(--yt-spec-text-primary, #f1f1f1);
+  }
+
   .ytdl-select-menu :global(tp-yt-paper-item:hover) {
     background-color: var(--yt-spec-10-percent-layer, rgb(0 0 0 / 6%));
+  }
+
+  :global(html[dark]) .ytdl-select-menu :global(tp-yt-paper-item:hover) {
+    background-color: var(--yt-spec-10-percent-layer, rgb(255 255 255 / 6%));
   }
 
   .ytdl-select-menu :global(tp-yt-paper-item[aria-selected="true"]) {

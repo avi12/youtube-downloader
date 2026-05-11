@@ -160,7 +160,7 @@
   }
 
   .ytdl-progress-label {
-    color: var(--yt-spec-text-secondary);
+    color: var(--yt-spec-text-secondary, #606060);
     font-size: 1.2rem;
     font-variant-numeric: tabular-nums;
   }
@@ -171,5 +171,17 @@
 
   .ytdl-progress-block--failed .ytdl-progress-label {
     color: var(--yt-spec-text-error, #d93025);
+  }
+
+  :global(html[dark]) .ytdl-progress-label {
+    color: var(--yt-spec-text-secondary, #aaaaaa);
+  }
+
+  :global(html[dark]) .ytdl-progress-block--done .ytdl-progress-label {
+    color: var(--yt-spec-text-success, #6cd16c);
+  }
+
+  :global(html[dark]) .ytdl-progress-block--failed .ytdl-progress-label {
+    color: var(--yt-spec-text-error, #ff6b6b);
   }
 </style>

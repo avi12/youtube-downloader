@@ -2,7 +2,6 @@ import type { DownloadResult } from "./background-downloader";
 import { fetchWithProgress, sendProgressUpdate } from "./progress-fetch";
 import { parseContentLength } from "./sabr-downloader";
 import { stripMimeParams } from "@/lib/utils/containers";
-import { stripTrackLangSuffix } from "@/lib/youtube/video-helpers";
 import { DownloadType, ProgressType } from "@/types";
 import type { DownloadRequest } from "@/types";
 
@@ -98,7 +97,7 @@ export async function downloadViaCdn({ request, signal, videoId, tabId }: {
     additionalAudioTracks.push({
       data: extraAudioBytes[i] ?? null,
       mimeType: stripMimeParams(format.mimeType),
-      label: stripTrackLangSuffix(format.audioTrack?.displayName ?? `Track ${i + 2}`),
+      label: format.audioTrack?.displayName ?? `Track ${i + 2}`,
       languageCode: format.audioTrack?.id?.split(".")[0] ?? "",
       isDefault: format.audioTrack?.audioIsDefault ?? false
     });

@@ -6,7 +6,7 @@ import { crossWorldMessenger, CrossWorldMessage } from "@/lib/messaging/cross-wo
 import { CONTENT_OPTIONS, sabrCredentials } from "@/lib/ui/synced-stores.svelte";
 import { uint8ToBase64 } from "@/lib/utils/binary";
 import { InnertubeClientName, type InnertubePlayerRequest } from "@/lib/youtube/innertube";
-import { isVideoDataExpired, orderCaptionsByPreference, stripTrackLangSuffix } from "@/lib/youtube/video-helpers";
+import { isVideoDataExpired, orderCaptionsByPreference } from "@/lib/youtube/video-helpers";
 import { getYtcfg, YtcfgKey } from "@/lib/youtube/ytcfg";
 import {
   type AdaptiveFormatItem,
@@ -393,7 +393,7 @@ export async function performDownload({
       videoFormat,
       audioFormat,
       additionalAudioFormats: extraAudioFormats,
-      primaryAudioLabel: stripTrackLangSuffix(audioFormat?.audioTrack?.displayName ?? ""),
+      primaryAudioLabel: audioFormat?.audioTrack?.displayName ?? "",
       primaryAudioLanguageCode: audioFormat?.audioTrack?.id?.split(".")[0] ?? "",
       captionTracks: orderedCaptionTracks,
       captionVttData: await captionVttDataPromise,
