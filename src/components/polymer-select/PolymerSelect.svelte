@@ -279,7 +279,7 @@
 
   .ytdl-select-trigger:disabled {
     opacity: 50%;
-    cursor: not-allowed;
+    cursor: default;
   }
 
   .ytdl-select-trigger__value {
