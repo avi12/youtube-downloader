@@ -37,6 +37,15 @@
   const discardButtonId = "ytdl-panel-discard";
   const viewButtonId = "ytdl-panel-view";
 
+  const downloadingLabel = $derived.by(() => {
+    const pct = percentFormatter.format(panel.displayProgress / 100);
+    if (panel.progressType === ProgressType.FFmpeg) {
+      return panel.displayProgress > 0 ? `${pct} - Processing` : "Processing";
+    }
+
+    return `${pct} - Downloading`;
+  });
+
   const primaryState = $derived.by<PrimaryButtonState>(() => {
     if (panel.isDownloading) {
       return PrimaryButtonState.Downloading;
@@ -177,11 +186,11 @@
         <tp-yt-paper-progress
           class="ytdl-progress-track"
           {@attach attachPanelProgress}
-          indeterminate={panel.displayProgress === 0 || panel.progressType === ProgressType.FFmpeg || undefined}
+          indeterminate={panel.displayProgress === 0 || undefined}
           value={Math.round(panel.displayProgress)}
         ></tp-yt-paper-progress>
         <span class="ytdl-progress-label" aria-live="polite">
-          {panel.progressType === ProgressType.FFmpeg ? "Processing" : `${percentFormatter.format(panel.displayProgress / 100)} - Downloading`}
+          {downloadingLabel}
         </span>
       </div>
     {:else if primaryState === PrimaryButtonState.Done}
