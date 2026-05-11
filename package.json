@@ -7,8 +7,7 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
-    "dev:with-profile": "pnpx cross-env CHROME_WITH_PROFILE=1 wxt",
-    "dev:stable": "pnpx tsx scripts/dev-server.ts",
+    "dev": "pnpx tsx scripts/dev-server.ts",
     "build": "wxt build",
     "pack": "wxt zip",
     "postinstall": "wxt prepare",
