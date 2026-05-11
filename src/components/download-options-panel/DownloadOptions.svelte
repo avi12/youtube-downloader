@@ -135,21 +135,21 @@
     }
 
     function applyLabelColor() {
-      requestAnimationFrame(() => {
-        if (!isPolymerInputElement(elTarget)) {
-          return;
-        }
+      if (!isPolymerInputElement(elTarget)) {
+        return;
+      }
 
-        const isDark = document.documentElement.hasAttribute("dark");
-        elTarget.updateStyles({
-          "--paper-input-container-color": isDark
-            ? "var(--yt-spec-text-secondary, #aaaaaa)"
-            : "var(--yt-spec-text-secondary, #606060)"
-        });
+      const isDark = document.documentElement.hasAttribute("dark");
+      elTarget.updateStyles({
+        "--paper-input-container-color": isDark
+          ? "var(--yt-spec-text-secondary, #aaaaaa)"
+          : "var(--yt-spec-text-secondary, #606060)"
       });
     }
 
+    // Apply immediately, then again after Polymer's own init rAF resets the value.
     applyLabelColor();
+    requestAnimationFrame(applyLabelColor);
 
     const observer = new MutationObserver(applyLabelColor);
     observer.observe(document.documentElement, {
