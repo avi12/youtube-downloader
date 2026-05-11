@@ -107,14 +107,14 @@ function enqueueMuxJob<T>(videoId: string, run: () => Promise<T>): Promise<T> {
 // interrupted (ffmpeg.exec is synchronous inside the worker), but in practice
 // cancel typically fires while SABR is still fetching — long before the mux phase begins.
 export function cancelMuxJobs(videoIds: string[]) {
-  const idsSet = new Set(videoIds);
+  const videoIdSet = new Set(videoIds);
   for (const videoId of videoIds) {
     cancelledMuxJobs.add(videoId);
   }
 
   for (let iEntry = muxQueue.length - 1; iEntry >= 0; iEntry--) {
     const entry = muxQueue[iEntry];
-    if (idsSet.has(entry.videoId)) {
+    if (videoIdSet.has(entry.videoId)) {
       muxQueue.splice(iEntry, 1);
       cancelledMuxJobs.delete(entry.videoId);
       entry.reject(new Error("muxJobCancelled"));

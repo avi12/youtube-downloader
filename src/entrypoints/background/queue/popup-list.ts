@@ -36,7 +36,7 @@ export async function enqueueToPopupList({ videoId, type, filenameOutput, qualit
 }
 
 export async function removeFromPopupList(videoIds: string | string[]) {
-  const toRemove = new Set(typeof videoIds === "string" ? [videoIds] : videoIds);
+  const videoIdsToRemove = new Set(typeof videoIds === "string" ? [videoIds] : videoIds);
 
   const [queue, musicList, videoOnlyList, details] = await Promise.all([
     videoQueueItem.getValue(),
@@ -45,9 +45,9 @@ export async function removeFromPopupList(videoIds: string | string[]) {
     videoDetailsItem.getValue()
   ]);
 
-  const filteredQueue = queue.filter(item => !toRemove.has(item.videoId));
-  const filteredMusic = musicList.filter(id => !toRemove.has(id));
-  const filteredVideoOnly = videoOnlyList.filter(id => !toRemove.has(id));
+  const filteredQueue = queue.filter(item => !videoIdsToRemove.has(item.videoId));
+  const filteredMusic = musicList.filter(id => !videoIdsToRemove.has(id));
+  const filteredVideoOnly = videoOnlyList.filter(id => !videoIdsToRemove.has(id));
 
   const writes: Promise<void>[] = [];
   if (filteredQueue.length !== queue.length) {
@@ -62,7 +62,7 @@ export async function removeFromPopupList(videoIds: string | string[]) {
     writes.push(videoOnlyListItem.setValue(filteredVideoOnly));
   }
 
-  const removedDetails = [...toRemove].filter(id => id in details);
+  const removedDetails = [...videoIdsToRemove].filter(id => id in details);
   if (removedDetails.length > 0) {
     for (const id of removedDetails) {
       delete details[id];
