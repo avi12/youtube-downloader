@@ -21,7 +21,7 @@ export const VIDEO_QUALITIES = [4320, 2160, 1440, 1080, 720, 480, 360, 240, 144]
 
 // YouTube appends " - [lang]" to track display names (e.g. "English - [en]").
 // Strip it so the muxed track title is just the human-readable name.
-const TRACK_LANG_SUFFIX_PATTERN = / [-–—] \[.*?\]$/;
+const TRACK_LANG_SUFFIX_PATTERN = / [-–—] \[.*?]$/;
 
 export function stripTrackLangSuffix(label: string) {
   return label.replace(TRACK_LANG_SUFFIX_PATTERN, "").trim();
