@@ -336,25 +336,25 @@ export async function startBackgroundDownload({ request, tabId }: {
     }
 
     if (!result?.audioData && !result?.videoData) {
-      if (!request.isIframeFallback) {
-        console.warn("[ytdl:bg] SABR+CDN failed, trying offscreen iframe fallback for", videoId);
-        void sendMessage(MessageType.UpdateDownloadProgress, {
-          videoId,
-          progress: 0,
-          progressType: ProgressType.Video
-        }, tabId);
-        await downloadViaWatchPage({
-          data: request,
-          tabId
-        });
-      } else {
+      if (request.isIframeFallback) {
         console.warn("[ytdl:bg] All download methods (including iframe) failed for", videoId);
         reportDownloadFailed({
           videoId,
           tabId
         });
+        return;
       }
 
+      console.warn("[ytdl:bg] SABR+CDN failed, trying offscreen iframe fallback for", videoId);
+      void sendMessage(MessageType.UpdateDownloadProgress, {
+        videoId,
+        progress: 0,
+        progressType: ProgressType.Video
+      }, tabId);
+      await downloadViaWatchPage({
+        data: request,
+        tabId
+      });
       return;
     }
 

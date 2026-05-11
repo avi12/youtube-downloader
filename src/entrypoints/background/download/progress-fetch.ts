@@ -24,7 +24,9 @@ export async function sendProgressUpdate({ videoId, progress, progressType, tabI
   tabId: number;
 }) {
   const isComplete = progress >= 1;
-  if (!isComplete) {
+  if (isComplete) {
+    lastProgressTimestamps.delete(videoId);
+  } else {
     const now = Date.now();
     const lastSent = lastProgressTimestamps.get(videoId) ?? 0;
     if (now - lastSent < PROGRESS_THROTTLE_INTERVAL_MS) {
@@ -32,8 +34,6 @@ export async function sendProgressUpdate({ videoId, progress, progressType, tabI
     }
 
     lastProgressTimestamps.set(videoId, now);
-  } else {
-    lastProgressTimestamps.delete(videoId);
   }
 
   await sendMessage(MessageType.UpdateDownloadProgress, {

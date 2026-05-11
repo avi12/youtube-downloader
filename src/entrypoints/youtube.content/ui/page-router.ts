@@ -19,12 +19,11 @@ export function handlePageChange({ url, context }: {
   cleanupPlaylistUi();
   cleanupGridUi();
 
+  setNativeDownloadVisibility(CONTENT_OPTIONS.value.isShowNativeDownload);
+
   if (pathname === "/watch") {
-    setNativeDownloadVisibility(CONTENT_OPTIONS.value.isShowNativeDownload);
     return;
   }
-
-  setNativeDownloadVisibility(CONTENT_OPTIONS.value.isShowNativeDownload);
 
   if (pathname === "/playlist") {
     void injectPlaylistDownloaderUi(context);
