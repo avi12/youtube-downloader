@@ -103,8 +103,8 @@ export function buildVideoData({ playerResponse, clientVersion, clientName }: {
 
 export function extractPlayerResponseFromHtml(html: string) {
   try {
-    const match = html.match(/var ytInitialPlayerResponse\s*=\s*(.+?);\s*(?:var\s|<\/script>)/s);
-    const parsed: PlayerResponse = JSON.parse(match?.[1] ?? "");
+    const [, playerJson = ""] = html.match(/var ytInitialPlayerResponse\s*=\s*(.+?);\s*(?:var\s|<\/script>)/s) ?? [];
+    const parsed: PlayerResponse = JSON.parse(playerJson);
     return parsed;
   } catch {
     return null;

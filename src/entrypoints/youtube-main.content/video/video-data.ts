@@ -172,10 +172,10 @@ function parseMusicTitle(title: string) {
   const mainArtist = cleaned.slice(0, iSeparator).trim();
   const afterSeparator = cleaned.slice(iSeparator + 3).trim();
 
-  const featMatch = afterSeparator.match(FEATURING_PATTERN);
+  const [, featuring] = afterSeparator.match(FEATURING_PATTERN) ?? [];
   const songTitle = afterSeparator.replace(FEATURING_PATTERN, "").trim();
-  const fullArtist = featMatch
-    ? `${mainArtist} feat. ${featMatch[1].trim()}`
+  const fullArtist = featuring
+    ? `${mainArtist} feat. ${featuring.trim()}`
     : mainArtist;
 
   return {

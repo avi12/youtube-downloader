@@ -5,11 +5,11 @@ const LOCKUP_SELECTOR = "yt-lockup-view-model";
 const MAX_RETRIES = 3;
 
 function extractContentId(elCard: Element) {
-  const shadowMatch = elCard.shadowRoot
+  const [, contentId] = elCard.shadowRoot
     ?.querySelector("[class*='content-id-']")
-    ?.className.match(/content-id-(\S+)/);
-  if (shadowMatch) {
-    return shadowMatch[1];
+    ?.className.match(/content-id-(\S+)/) ?? [];
+  if (contentId) {
+    return contentId;
   }
 
   if (!("data" in elCard) || !elCard.data || typeof elCard.data !== "object") {

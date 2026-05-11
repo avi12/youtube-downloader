@@ -104,8 +104,7 @@ export function formatVideoQualityLabel(format: Pick<AdaptiveFormatItem, "height
 }
 
 export function formatAudioCodecLabel(mimeType: string) {
-  const codecMatch = mimeType.match(/codecs="([^"]+)"/);
-  const codec = codecMatch?.[1] ?? "";
+  const [, codec = ""] = mimeType.match(/codecs="([^"]+)"/) ?? [];
   if (codec.startsWith("mp4a")) {
     return "AAC";
   }

@@ -56,9 +56,9 @@ function extractVideoId(elCard: Element) {
   }
 
   // Polymer Shady DOM patches querySelector so inner shadow content is visible to plain selectors
-  const contentIdMatch = shadowFirst(elCard, "[class*='content-id-']")?.className.match(/content-id-(\S+)/);
-  if (contentIdMatch) {
-    return contentIdMatch[1];
+  const [, contentId] = shadowFirst(elCard, "[class*='content-id-']")?.className.match(/content-id-(\S+)/) ?? [];
+  if (contentId) {
+    return contentId;
   }
 
   const elLink = shadowFirst(elCard, "a#video-title-link, a#video-title, a[href*='/watch?v=']");

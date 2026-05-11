@@ -38,9 +38,9 @@ function escapeRegExp(text: string) {
 
 function findSignatureFunctionName(playerSource: string) {
   for (const pattern of FUNCTION_NAME_PATTERNS) {
-    const match = playerSource.match(pattern);
-    if (match?.[1]) {
-      return match[1];
+    const [, functionName] = playerSource.match(pattern) ?? [];
+    if (functionName) {
+      return functionName;
     }
   }
 
@@ -53,28 +53,22 @@ function extractTransformOperations({ playerSource, functionName }: {
 }) {
   const escapedName = escapeRegExp(functionName);
   const functionPattern = new RegExp(`(?:var\\s+${escapedName}|${escapedName}\\s*=\\s*function)\\s*=?\\s*function\\s*\\(([a-zA-Z])\\)\\s*\\{([^}]+)\\}`);
-  const functionMatch = playerSource.match(functionPattern);
-  if (!functionMatch) {
+  const [, , functionBody] = playerSource.match(functionPattern) ?? [];
+  if (!functionBody) {
     return null;
   }
 
-  const functionBody = functionMatch[2];
-
-  const helperMatch = functionBody.match(/([a-zA-Z0-9$]+)\.[a-zA-Z0-9$]+\(/);
-  if (!helperMatch) {
+  const [, helperName] = functionBody.match(/([a-zA-Z0-9$]+)\.[a-zA-Z0-9$]+\(/) ?? [];
+  if (!helperName) {
     return null;
   }
-
-  const helperName = helperMatch[1];
 
   const escapedHelper = escapeRegExp(helperName);
   const helperPattern = new RegExp(`var\\s+${escapedHelper}\\s*=\\s*\\{([\\s\\S]*?)\\};`);
-  const helperObjMatch = playerSource.match(helperPattern);
-  if (!helperObjMatch) {
+  const [, helperBody] = playerSource.match(helperPattern) ?? [];
+  if (!helperBody) {
     return null;
   }
-
-  const helperBody = helperObjMatch[1];
 
   const methodTypes = new Map<string, (typeof TransformOpType)[keyof typeof TransformOpType]>();
 
@@ -157,9 +151,9 @@ function getPlayerJsUrl() {
   }
 
   const pageSource = document.documentElement.innerHTML;
-  const playerMatch = pageSource.match(/"(\/s\/player\/[^"]+\/base\.js)"/);
-  if (playerMatch) {
-    return `https://www.youtube.com${playerMatch[1]}`;
+  const [, playerPath] = pageSource.match(/"(\/s\/player\/[^"]+\/base\.js)"/) ?? [];
+  if (playerPath) {
+    return `https://www.youtube.com${playerPath}`;
   }
 
   return null;
