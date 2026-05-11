@@ -453,13 +453,13 @@ function handleTranscodeFile(job: TranscodeFileJob) {
   ffmpeg!.FS.writeFile(sourceFilename, new Uint8Array(data));
 
   try {
-    const args = ["-i", sourceFilename];
+    const ffmpegArguments = ["-i", sourceFilename];
     if (videoContainers.includes(targetContainer)) {
-      args.push("-c:v", "copy", "-c:a", "copy");
+      ffmpegArguments.push("-c:v", "copy", "-c:a", "copy");
     }
 
-    args.push(outputFilename);
-    const exitCode = ffmpeg!.exec(...args);
+    ffmpegArguments.push(outputFilename);
+    const exitCode = ffmpeg!.exec(...ffmpegArguments);
     if (exitCode !== 0) {
       postError(`FFmpeg exited with code ${exitCode}`);
       return;

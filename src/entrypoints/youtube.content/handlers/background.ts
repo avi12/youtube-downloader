@@ -14,8 +14,8 @@ export function registerBackgroundMessageHandlers() {
     // Only the offscreen download iframe should respond. Regular user-facing
     // YouTube watch tabs lack ?ytdl=1 and must ignore the broadcast so they
     // don't accidentally re-trigger a foreign download.
-    const params = new URLSearchParams(location.search);
-    if (params.get("ytdl") !== "1" || params.get("v") !== data.videoId) {
+    const searchParameters = new URLSearchParams(location.search);
+    if (searchParameters.get("ytdl") !== "1" || searchParameters.get("v") !== data.videoId) {
       return;
     }
 

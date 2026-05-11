@@ -67,12 +67,12 @@ export function createPanelState(getVideoData: () => VideoData) {
     untrack(() => {
       const videoData = getVideoData();
       const options = CONTENT_OPTIONS.value;
-      const extPref = videoData.isMusic ? options.ext.audio : options.ext.video;
+      const extensionPreference = videoData.isMusic ? options.ext.audio : options.ext.video;
       const defaultFormat = videoData.isMusic
         ? getPreferredMusicAudioFormat(videoData.audioFormats)
         : videoData.videoFormats[0];
       return resolveAutoExtension({
-        extension: extPref,
+        extension: extensionPreference,
         mimeType: defaultFormat?.mimeType ?? ""
       });
     })
@@ -150,9 +150,10 @@ export function createPanelState(getVideoData: () => VideoData) {
       }
 
       const currentQuality = Math.min(elVideo.videoHeight, elVideo.videoWidth);
-      selectedVideoFormat = videoData.videoFormats.find(
-        format => Math.min(format.height ?? 0, format.width ?? 0) === currentQuality
-      ) ?? videoData.videoFormats[0] ?? null;
+      selectedVideoFormat =
+        videoData.videoFormats.find(format => Math.min(format.height ?? 0, format.width ?? 0) === currentQuality)
+        ?? videoData.videoFormats[0]
+        ?? null;
     } catch {
       selectedVideoFormat = videoData.videoFormats[0] ?? null;
     }
@@ -246,10 +247,10 @@ export function createPanelState(getVideoData: () => VideoData) {
       progressType: ""
     });
     downloadType = newType;
-    const extPref = newType === DownloadType.Audio ? options.ext.audio : options.ext.video;
+    const extensionPreference = newType === DownloadType.Audio ? options.ext.audio : options.ext.video;
     const format = newType === DownloadType.Audio ? selectedAudioFormat : selectedVideoFormat;
     extension = resolveAutoExtension({
-      extension: extPref,
+      extension: extensionPreference,
       mimeType: format?.mimeType ?? ""
     });
   }

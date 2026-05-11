@@ -19,15 +19,15 @@ export function injectWatchButtonStyles() {
 }
 
 export function findNativeDownloadButton(elActionsContainer: HTMLElement) {
-  const buttons = elActionsContainer.querySelectorAll<import("@/types").YtButtonViewModelElement>("yt-button-view-model");
-  for (const button of buttons) {
-    const isDownload = button.data?.iconName?.includes("DOWNLOAD")
-      || (button.querySelector("button")?.getAttribute("aria-label") ?? "").toLowerCase().includes("download");
+  const elButtons = elActionsContainer.querySelectorAll<import("@/types").YtButtonViewModelElement>("yt-button-view-model");
+  for (const elButton of elButtons) {
+    const isDownload = elButton.data?.iconName?.includes("DOWNLOAD")
+      || (elButton.querySelector("button")?.getAttribute("aria-label") ?? "").toLowerCase().includes("download");
     if (!isDownload) {
       continue;
     }
 
-    let elCurrent: HTMLElement = button;
+    let elCurrent: HTMLElement = elButton;
     while (elCurrent.parentElement && elCurrent.parentElement !== elActionsContainer) {
       elCurrent = elCurrent.parentElement;
     }

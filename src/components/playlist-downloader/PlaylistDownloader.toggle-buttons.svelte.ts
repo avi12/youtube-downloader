@@ -108,47 +108,47 @@ export function createPlaylistToggleButtons(state: {
   const allButtons = [...groups.speed, ...groups.output, ...groups.type];
   const elements = new SvelteMap<string, HTMLElement>();
 
-  function refresh(config: (typeof allButtons)[number]) {
-    const elButton = elements.get(config.id);
+  function refresh(buttonDefinition: (typeof allButtons)[number]) {
+    const elButton = elements.get(buttonDefinition.id);
     if (!elButton) {
       return;
     }
 
     if (!elButton.hasAttribute(DATA_BUTTON_ID_ATTR)) {
-      elButton.setAttribute(DATA_BUTTON_ID_ATTR, config.id);
+      elButton.setAttribute(DATA_BUTTON_ID_ATTR, buttonDefinition.id);
     }
 
     sendButtonData({
       elButton,
       data: {
         iconName: IconName.None,
-        title: config.label,
-        accessibilityText: config.label,
+        title: buttonDefinition.label,
+        accessibilityText: buttonDefinition.label,
         style: ButtonStyle.Mono,
-        type: config.isActive() ? ButtonType.Tonal : ButtonType.Outline,
+        type: buttonDefinition.isActive() ? ButtonType.Tonal : ButtonType.Outline,
         buttonSize: ButtonSize.Default,
         state: state.isDownloading ? ButtonState.Disabled : ButtonState.Active,
         isFullWidth: false,
         isDisabled: state.isDownloading,
-        tooltip: config.tooltip
+        tooltip: buttonDefinition.tooltip
       }
     });
   }
 
   function refreshAll() {
-    for (const config of allButtons) {
-      refresh(config);
+    for (const buttonDefinition of allButtons) {
+      refresh(buttonDefinition);
     }
   }
 
-  function createAttacher(config: (typeof allButtons)[number]) {
+  function createAttacher(buttonDefinition: (typeof allButtons)[number]) {
     return (elButton: Element) => {
       if (!(elButton instanceof HTMLElement)) {
         return;
       }
 
-      elements.set(config.id, elButton);
-      refresh(config);
+      elements.set(buttonDefinition.id, elButton);
+      refresh(buttonDefinition);
     };
   }
 

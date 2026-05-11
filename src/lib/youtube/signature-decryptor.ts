@@ -142,11 +142,11 @@ function applyTransforms({ signature, operations }: {
 }
 
 function getPlayerJsUrl() {
-  const scripts = document.querySelectorAll<HTMLScriptElement>("script[src*='/player/']");
+  const elScripts = document.querySelectorAll<HTMLScriptElement>("script[src*='/player/']");
 
-  for (const script of scripts) {
-    if (/player_ias|base\.js/.test(script.src)) {
-      return script.src;
+  for (const elScript of elScripts) {
+    if (/player_ias|base\.js/.test(elScript.src)) {
+      return elScript.src;
     }
   }
 
@@ -193,10 +193,10 @@ async function initDecryptor() {
 }
 
 export async function decryptSignatureCipher(signatureCipher: string) {
-  const params = new URLSearchParams(signatureCipher);
-  const encryptedSig = params.get("s");
-  const sigParam = params.get("sp") ?? "sig";
-  const url = params.get("url");
+  const cipherParameters = new URLSearchParams(signatureCipher);
+  const encryptedSig = cipherParameters.get("s");
+  const sigParam = cipherParameters.get("sp") ?? "sig";
+  const url = cipherParameters.get("url");
   if (!encryptedSig || !url) {
     throw new Error("Invalid signatureCipher format");
   }

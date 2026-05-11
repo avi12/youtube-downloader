@@ -60,8 +60,8 @@ function persistOnDownloadComplete({ targetDownloadId, data }: {
 
         if (options.isNotifyOnIdle) {
           const [tabId] = tabIds;
-          const idle = tabId === undefined || await isTabIdle(tabId);
-          if (idle) {
+          const isIdle = tabId === undefined || await isTabIdle(tabId);
+          if (isIdle) {
             void browser.notifications.create({
               type: "basic",
               iconUrl: browser.runtime.getURL("/icons/128.png"),

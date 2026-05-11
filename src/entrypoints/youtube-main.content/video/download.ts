@@ -68,27 +68,27 @@ async function fetchVttViaTrackElement(url: string) {
   }
 
   return new Promise<string | null>(resolve => {
-    const trackEl = document.createElement("track");
-    trackEl.kind = "metadata";
-    trackEl.src = url;
+    const elTrack = document.createElement("track");
+    elTrack.kind = "metadata";
+    elTrack.src = url;
 
     function finish(result: string | null) {
       clearTimeout(timeoutId);
-      trackEl.remove();
+      elTrack.remove();
       resolve(result);
     }
 
     const timeoutId = setTimeout(() => finish(null), CAPTION_FETCH_TIMEOUT_MS);
 
-    trackEl.addEventListener("load", () => {
-      const cues = trackEl.track?.cues;
+    elTrack.addEventListener("load", () => {
+      const cues = elTrack.track?.cues;
       finish(cues?.length ? uint8ToBase64(new TextEncoder().encode(cuesToVtt(cues))) : null);
     }, { once: true });
 
-    trackEl.addEventListener("error", () => finish(null), { once: true });
+    elTrack.addEventListener("error", () => finish(null), { once: true });
 
-    elVideo.appendChild(trackEl);
-    trackEl.track.mode = "hidden";
+    elVideo.appendChild(elTrack);
+    elTrack.track.mode = "hidden";
   });
 }
 
@@ -112,23 +112,23 @@ async function fetchFreshCaptionUrls(videoId: string) {
       method: "POST",
       credentials: "include",
       headers,
-      body: JSON.stringify(
-              {
-                videoId,
-                playbackContext: {
-                  contentPlaybackContext: { signatureTimestamp: getYtcfg(YtcfgKey.Sts) }
-                },
-                context: {
-                  client: {
-                    clientName: InnertubeClientName.Web,
-                    clientVersion: getYtcfg(YtcfgKey.ClientVersion) ?? "",
-                    hl: getYtcfg(YtcfgKey.Hl) ?? "en",
-                    gl: getYtcfg(YtcfgKey.Gl) ?? "US",
-                    visitorData: visitorData ?? ""
-                  }
-                }
-              } satisfies InnertubePlayerRequest
-      )
+      body: JSON.stringify({
+        videoId,
+        playbackContext: {
+          contentPlaybackContext: {
+            signatureTimestamp: getYtcfg(YtcfgKey.Sts)
+          }
+        },
+        context: {
+          client: {
+            clientName: InnertubeClientName.Web,
+            clientVersion: getYtcfg(YtcfgKey.ClientVersion) ?? "",
+            hl: getYtcfg(YtcfgKey.Hl) ?? "en",
+            gl: getYtcfg(YtcfgKey.Gl) ?? "US",
+            visitorData: visitorData ?? ""
+          }
+        }
+      } satisfies InnertubePlayerRequest)
     });
     if (!resp.ok) {
       return new Map();
@@ -214,8 +214,8 @@ function resolveCredentials() {
     creds?.url ||
     elCredentials?.dataset.url ||
     capturedSabrUrl;
-  const credentialsChanged = currentPoToken !== capturedPoToken || currentSabrUrl !== capturedSabrUrl;
-  if (credentialsChanged) {
+  const haveCredentialsChanged = currentPoToken !== capturedPoToken || currentSabrUrl !== capturedSabrUrl;
+  if (haveCredentialsChanged) {
     setPoTokenCredentials({
       poToken: currentPoToken ?? "",
       sabrUrl: currentSabrUrl ?? ""
