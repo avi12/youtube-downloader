@@ -352,7 +352,17 @@ export function createPanelState(getVideoData: () => VideoData) {
   }
 
   function resolveAutoLanguageCode(): string {
-    if (IS_WATCH_PAGE) {
+    const mode = CONTENT_OPTIONS.value.audioTrackLanguageMode;
+    if (mode === AudioTrackLanguageMode.OriginalLanguage) {
+      const { audioFormats } = getVideoData();
+      const original = audioFormats.find(format => !format.audioTrack)
+        ?? audioFormats.find(format => format.audioTrack?.audioIsDefault);
+      if (original?.audioTrack) {
+        return normalizeLanguageCode(original.audioTrack.id);
+      }
+    }
+
+    if (IS_WATCH_PAGE && mode !== AudioTrackLanguageMode.MatchYouTube) {
       const lang = getCurrentVideoAudioLanguage();
       if (lang) {
         return lang;

@@ -71,6 +71,7 @@ export const PlaylistOutputMode = {
 export type PlaylistOutputMode = (typeof PlaylistOutputMode)[keyof typeof PlaylistOutputMode];
 
 export const AudioTrackLanguageMode = {
+  OriginalLanguage: "original",
   MatchVideo: "match-video",
   MatchYouTube: "match-youtube",
   Custom: "custom"

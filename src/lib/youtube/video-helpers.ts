@@ -36,7 +36,7 @@ export const INITIAL_OPTIONS: Options = {
   playlistOutputMode: PlaylistOutputMode.Individual,
   playlistAudioOutputMode: PlaylistOutputMode.Zip,
   isPlaylistScrollSyncEnabled: false,
-  audioTrackLanguageMode: AudioTrackLanguageMode.MatchVideo,
+  audioTrackLanguageMode: AudioTrackLanguageMode.OriginalLanguage,
   customLanguage: "en",
   downloadExtras: true
 };
@@ -168,10 +168,14 @@ export function selectPreferredAudioFormat({
     if (match) {
       candidates = [match, ...audioFormats.filter(format => format !== match)];
     }
-  } else if (
-    languageMode === AudioTrackLanguageMode.MatchYouTube
-    || languageMode === AudioTrackLanguageMode.MatchVideo
-  ) {
+  } else if (languageMode === AudioTrackLanguageMode.OriginalLanguage) {
+    const original = originalTrack ?? audioFormats.find(format => format.audioTrack?.audioIsDefault) ?? null;
+    if (original) {
+      candidates = [original, ...audioFormats.filter(format => format !== original)];
+    }
+  }
+
+  if (!candidates.length) {
     const langPriority = [locale, browserLanguage, "en"]
       .filter((lang): lang is string => !!lang);
     for (const lang of langPriority) {
@@ -184,9 +188,8 @@ export function selectPreferredAudioFormat({
   }
 
   if (!candidates.length) {
-    const fallback = originalTrack ?? audioFormats.find(format => format.audioTrack?.audioIsDefault) ?? null;
-    candidates = fallback
-      ? [fallback, ...audioFormats.filter(format => format !== fallback)]
+    candidates = originalTrack
+      ? [originalTrack, ...audioFormats.filter(format => format !== originalTrack)]
       : audioFormats;
   }
 
@@ -210,7 +213,7 @@ export function orderCaptionsByPreference({
   browserLanguage?: string;
   customLanguage?: string;
 }) {
-  if (captionTracks.length <= 1) {
+  if (captionTracks.length <= 1 || languageMode === AudioTrackLanguageMode.OriginalLanguage) {
     return captionTracks;
   }
 

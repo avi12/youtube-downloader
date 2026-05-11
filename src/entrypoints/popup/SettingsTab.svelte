@@ -87,6 +87,11 @@
     description: string;
   }> = [
     {
+      value: AudioTrackLanguageMode.OriginalLanguage,
+      label: "Original language",
+      description: "Uses the video's native/untagged audio track; falls back to video language then YouTube's language"
+    },
+    {
       value: AudioTrackLanguageMode.MatchVideo,
       label: "Match selected track",
       description: "Uses the video's current audio track on watch pages, or YouTube's language elsewhere"
