@@ -273,7 +273,7 @@
 
 <div class="ytdl-button-group" {@attach attachButtonGroup}>
   {#if itemState.videoData?.isDownloadable}
-    <div class="ytdl-button-row" class:ytdl-button-row--has-checkbox={isPlaylistItem}>
+    <div class="ytdl-button-row" class:has-checkbox={isPlaylistItem}>
       {#if isPlaylistItem}
         <tp-yt-paper-checkbox
           {@attach attachCheckbox}
@@ -305,13 +305,13 @@
             aria-label={itemState.buttonTooltip}
             viewBox="0 0 40 40"
           >
-            <circle class="ytdl-circular-progress__track" cx="20" cy="20" r={CIRCULAR_PROGRESS_RADIUS} />
+            <circle class="track" cx="20" cy="20" r={CIRCULAR_PROGRESS_RADIUS} />
             <circle
               style={isProgressBarIndeterminate
                 ? undefined
                 : `stroke-dashoffset: ${CIRCULAR_PROGRESS_CIRCUMFERENCE * (1 - progressBarValue / 100)}`}
-              class="ytdl-circular-progress__fill"
-              class:ytdl-circular-progress__fill--indeterminate={isProgressBarIndeterminate}
+              class="fill"
+              class:indeterminate={isProgressBarIndeterminate}
               cx="20"
               cy="20"
               r={CIRCULAR_PROGRESS_RADIUS}
@@ -342,13 +342,13 @@
     flex-shrink: 0;
     gap: 4px;
     align-items: center;
-  }
 
-  .ytdl-button-row--has-checkbox {
-    padding:
-      calc(
-        (var(--paper-checkbox-ink-size, 48px) - var(--paper-checkbox-size, 18px)) / 2
-      );
+    &.has-checkbox {
+      padding:
+        calc(
+          (var(--paper-checkbox-ink-size, 48px) - var(--paper-checkbox-size, 18px)) / 2
+        );
+    }
   }
 
   .ytdl-download-btn-wrapper {
@@ -363,27 +363,27 @@
     width: 100%;
     height: 100%;
     pointer-events: none;
-    transform: rotate(-90deg);
-  }
+    rotate: -90deg;
 
-  .ytdl-circular-progress__track {
-    fill: none;
-    stroke: var(--yt-spec-10-percent-overlay, rgb(0 0 0 / 10%));
-    stroke-width: 2.5;
-  }
+    .track {
+      fill: none;
+      stroke: var(--yt-spec-10-percent-overlay, rgb(0 0 0 / 10%));
+      stroke-width: 2.5;
+    }
 
-  .ytdl-circular-progress__fill {
-    fill: none;
-    stroke: var(--yt-spec-brand-button-background, #ff0000);
-    stroke-dasharray: 106.81;
-    stroke-linecap: round;
-    stroke-width: 2.5;
-    transition: stroke-dashoffset 300ms ease;
-  }
+    .fill {
+      fill: none;
+      stroke: var(--yt-spec-brand-button-background, #ff0000);
+      stroke-dasharray: 106.81;
+      stroke-linecap: round;
+      stroke-width: 2.5;
+      transition: stroke-dashoffset 300ms ease;
 
-  .ytdl-circular-progress__fill--indeterminate {
-    stroke-dasharray: 40 66.81;
-    animation: ytdl-circular-spin 1000ms linear infinite;
+      &.indeterminate {
+        stroke-dasharray: 40 66.81;
+        animation: ytdl-circular-spin 1000ms linear infinite;
+      }
+    }
   }
 
   @keyframes ytdl-circular-spin {

@@ -109,7 +109,7 @@
       </span>
     </div>
   {:else if primaryState === PrimaryButtonState.Done}
-    <div class="ytdl-progress-block ytdl-progress-block--done">
+    <div class="ytdl-progress-block done">
       <tp-yt-paper-progress
         class="ytdl-progress-track"
         {@attach attachPanelProgressDone}
@@ -118,7 +118,7 @@
       <span class="ytdl-progress-label" role="status">Downloaded</span>
     </div>
   {:else if primaryState === PrimaryButtonState.Failed}
-    <div class="ytdl-progress-block ytdl-progress-block--failed">
+    <div class="ytdl-progress-block failed">
       <tp-yt-paper-progress
         class="ytdl-progress-track"
         {@attach attachPanelProgressFailed}
@@ -163,25 +163,25 @@
     color: var(--yt-spec-text-secondary, #606060);
     font-size: 1.2rem;
     font-variant-numeric: tabular-nums;
-  }
 
-  .ytdl-progress-block--done .ytdl-progress-label {
-    color: var(--yt-spec-text-success, #1e8e3e);
-  }
+    :global(html[dark]) & {
+      color: var(--yt-spec-text-secondary, #aaaaaa);
+    }
 
-  .ytdl-progress-block--failed .ytdl-progress-label {
-    color: var(--yt-spec-text-error, #d93025);
-  }
+    .ytdl-progress-block.done & {
+      color: var(--yt-spec-text-success, #1e8e3e);
+    }
 
-  :global(html[dark]) .ytdl-progress-label {
-    color: var(--yt-spec-text-secondary, #aaaaaa);
-  }
+    .ytdl-progress-block.failed & {
+      color: var(--yt-spec-text-error, #d93025);
+    }
 
-  :global(html[dark]) .ytdl-progress-block--done .ytdl-progress-label {
-    color: var(--yt-spec-text-success, #6cd16c);
-  }
+    :global(html[dark]) .ytdl-progress-block.done & {
+      color: var(--yt-spec-text-success, #6cd16c);
+    }
 
-  :global(html[dark]) .ytdl-progress-block--failed .ytdl-progress-label {
-    color: var(--yt-spec-text-error, #ff6b6b);
+    :global(html[dark]) .ytdl-progress-block.failed & {
+      color: var(--yt-spec-text-error, #ff6b6b);
+    }
   }
 </style>

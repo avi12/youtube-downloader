@@ -153,10 +153,10 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
-  }
 
-  .ytdl-playlist-actions :global(tp-yt-paper-progress) {
-    width: 100%;
+    & :global(tp-yt-paper-progress) {
+      width: 100%;
+    }
   }
 
   .ytdl-select-row {
@@ -187,14 +187,14 @@
     font-size: 1.1rem;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-  }
 
-  .ytdl-or-divider::before,
-  .ytdl-or-divider::after {
-    content: "";
-    flex: 1;
-    height: 1px;
-    background: var(--yt-spec-10-percent-layer, rgb(255 255 255 / 10%));
+    &::before,
+    &::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: var(--yt-spec-10-percent-layer, rgb(255 255 255 / 10%));
+    }
   }
 
   .ytdl-restriction-notice {
