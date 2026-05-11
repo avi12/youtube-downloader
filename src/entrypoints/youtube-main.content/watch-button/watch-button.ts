@@ -52,11 +52,11 @@ let cleanupCurrentButton: (() => void) | null = null;
 let injectionGeneration = 0;
 let containerSearchAbort: AbortController | null = null;
 let isShowNativeDownload = false;
-let currentNativeDownload: HTMLElement | null = null;
+let elCurrentNativeDownload: HTMLElement | null = null;
 
 crossWorldMessenger.onMessage(CrossWorldMessage.OptionsUpdate, ({ data }) => {
   isShowNativeDownload = data.isShowNativeDownload;
-  currentNativeDownload?.classList.toggle("ytdl-native-hidden", !isShowNativeDownload);
+  elCurrentNativeDownload?.classList.toggle("ytdl-native-hidden", !isShowNativeDownload);
 });
 
 function evictOrphanedGroups() {
@@ -96,8 +96,8 @@ export async function injectSegmentedDownloadButton(
 
   const { videoId } = videoData;
 
-  const nativeButtons = elActionsContainer.querySelectorAll("yt-button-view-model");
-  const scopingClass = nativeButtons[nativeButtons.length - 1]?.getAttribute("class") ?? "";
+  const elNativeButtons = elActionsContainer.querySelectorAll("yt-button-view-model");
+  const scopingClass = elNativeButtons[elNativeButtons.length - 1]?.getAttribute("class") ?? "";
   const scopingClasses = scopingClass.match(/\S+/g) ?? [];
 
   injectWatchButtonStyles();
@@ -128,12 +128,12 @@ export async function injectSegmentedDownloadButton(
     videoDataJson: JSON.stringify(videoDataForPanel)
   });
 
-  currentNativeDownload = elNativeDownload;
+  elCurrentNativeDownload = elNativeDownload;
 
   cleanupCurrentButton = () => {
     void unmount(component);
     elDropdown.remove();
     elNativeDownload?.classList.remove("ytdl-native-hidden");
-    currentNativeDownload = null;
+    elCurrentNativeDownload = null;
   };
 }

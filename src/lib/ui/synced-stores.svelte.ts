@@ -4,12 +4,12 @@ import {
   createSyncedMap,
   createSyncedSignal
 } from "@/lib/ui/synced-signal.svelte";
-import { initialOptions } from "@/lib/youtube/video-helpers";
+import { INITIAL_OPTIONS } from "@/lib/youtube/video-helpers";
 import type { InterruptedDownload, Options, ProgressType, VideoData } from "@/types";
 
-let optionsState = $state<Options>(initialOptions);
+let optionsState = $state<Options>(INITIAL_OPTIONS);
 
-export const contentOptions = {
+export const CONTENT_OPTIONS = {
   get value() {
     return optionsState;
   }

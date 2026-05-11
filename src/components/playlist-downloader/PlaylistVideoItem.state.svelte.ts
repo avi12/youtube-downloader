@@ -3,7 +3,7 @@ import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-wo
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { checkedPlaylistVideos } from "@/lib/ui/playlist-selection.svelte";
 import {
-  contentOptions,
+  CONTENT_OPTIONS,
   downloadProgressStore,
   type DownloadProgressState,
   videoDataFailedStore,
@@ -112,7 +112,7 @@ export function createPlaylistVideoItemState({ videoId, gridTitle, activeDownloa
       return buttonLabel;
     }
 
-    const currentOptions = contentOptions.value;
+    const currentOptions = CONTENT_OPTIONS.value;
     const [primaryVideoFormat] = videoData.videoFormats;
     const [primaryAudioFormat] = videoData.audioFormats;
     const resolvedContainerExtension = resolveAutoExtension({
@@ -155,7 +155,7 @@ export function createPlaylistVideoItemState({ videoId, gridTitle, activeDownloa
       return;
     }
 
-    const options = contentOptions.value;
+    const options = CONTENT_OPTIONS.value;
     let downloadType: DownloadType = videoData.isMusic ? DownloadType.Audio : DownloadType.VideoAndAudio;
     if (options.defaultDownloadType && options.defaultDownloadType !== "auto") {
       downloadType = options.defaultDownloadType;

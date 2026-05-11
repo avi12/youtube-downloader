@@ -92,14 +92,14 @@ export function extractPoTokenFromBody(body: number[]) {
   const FIELD_STREAMER_CONTEXT = 19;
   const FIELD_PO_TOKEN = 2;
 
-  const buf = new Uint8Array(body);
+  const buffer = new Uint8Array(body);
   let offset = 0;
 
   function readVarint(off: number) {
     let value = 0;
     let shift = 0;
-    while (off < buf.byteLength) {
-      const byte = buf[off];
+    while (off < buffer.byteLength) {
+      const byte = buffer[off];
       off++;
       value |= (byte & VARINT_DATA_BITS_MASK) << shift;
 
@@ -131,20 +131,20 @@ export function extractPoTokenFromBody(body: number[]) {
         break;
       }
 
-      const ctxLen = readVarint(ctxOffset);
-      ctxOffset = ctxLen.offset;
+      const ctxFieldLength = readVarint(ctxOffset);
+      ctxOffset = ctxFieldLength.offset;
 
-      if (ctxField === FIELD_PO_TOKEN && ctxLen.value > 0) {
-        const poTokenBytes = ctxData.subarray(ctxOffset, ctxOffset + ctxLen.value);
+      if (ctxField === FIELD_PO_TOKEN && ctxFieldLength.value > 0) {
+        const poTokenBytes = ctxData.subarray(ctxOffset, ctxOffset + ctxFieldLength.value);
         return btoa(String.fromCharCode(...poTokenBytes));
       }
 
-      ctxOffset += ctxLen.value;
+      ctxOffset += ctxFieldLength.value;
     }
     return null;
   }
 
-  while (offset < buf.byteLength) {
+  while (offset < buffer.byteLength) {
     const tag = readVarint(offset);
     offset = tag.offset;
     const fieldNumber = tag.value >> PROTO_FIELD_NUMBER_SHIFT;
@@ -168,17 +168,17 @@ export function extractPoTokenFromBody(body: number[]) {
       break;
     }
 
-    const len = readVarint(offset);
-    offset = len.offset;
+    const fieldLength = readVarint(offset);
+    offset = fieldLength.offset;
 
     if (fieldNumber === FIELD_STREAMER_CONTEXT) {
-      const poToken = parseStreamerContext(buf.subarray(offset, offset + len.value));
+      const poToken = parseStreamerContext(buffer.subarray(offset, offset + fieldLength.value));
       if (poToken) {
         return poToken;
       }
     }
 
-    offset += len.value;
+    offset += fieldLength.value;
   }
 
   return null;

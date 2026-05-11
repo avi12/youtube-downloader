@@ -12,7 +12,7 @@ import { optionsItem, statusProgressItem } from "@/lib/storage/storage";
 import { initCompletedDownloadsStore } from "@/lib/ui/completed-downloads-store.svelte";
 import { initContentOptions } from "@/lib/ui/synced-stores.svelte";
 import { forwardSabrCredentialsWithRetry, listenForSabrBodyReady } from "@/lib/youtube/sabr/credentials";
-import { initialOptions as defaultOptions } from "@/lib/youtube/video-helpers";
+import { INITIAL_OPTIONS as defaultOptions } from "@/lib/youtube/video-helpers";
 
 export default defineContentScript({
   matches: ["https://www.youtube.com/*"],

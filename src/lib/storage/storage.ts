@@ -1,4 +1,4 @@
-import { initialOptions } from "@/lib/youtube/video-helpers";
+import { INITIAL_OPTIONS } from "@/lib/youtube/video-helpers";
 import type { InterruptedDownload, Options, ProgressType } from "@/types";
 
 interface StorageItem<T> {
@@ -43,7 +43,7 @@ export const interruptedDownloadsItem = storage.defineItem<Record<string, Interr
   fallback: {}
 });
 
-export const optionsItem = storage.defineItem<Options>("sync:options", { fallback: initialOptions });
+export const optionsItem = storage.defineItem<Options>("sync:options", { fallback: INITIAL_OPTIONS });
 
 export async function setOption<Key extends keyof Options>(key: Key, value: Options[Key]) {
   await mutateStorageItem(optionsItem, current => {

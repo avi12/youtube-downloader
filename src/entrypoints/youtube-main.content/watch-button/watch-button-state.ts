@@ -1,10 +1,10 @@
-import { contentOptions, interruptedDownloadStore } from "@/lib/ui/synced-stores.svelte";
+import { CONTENT_OPTIONS, interruptedDownloadStore } from "@/lib/ui/synced-stores.svelte";
 import { getCompatibleFilename, getOutputExtension, resolveAutoExtension } from "@/lib/utils/containers";
 import { selectPreferredAudioFormat } from "@/lib/youtube/video-helpers";
 import { DownloadType, type VideoData } from "@/types";
 
 function getPreferredAudioFormat(videoData: VideoData) {
-  const options = contentOptions.value;
+  const options = CONTENT_OPTIONS.value;
   const [firstVideoFormat] = videoData.videoFormats;
   const videoMime = firstVideoFormat?.mimeType ?? "";
   return selectPreferredAudioFormat({
@@ -24,7 +24,7 @@ export function buildInitialDownloadState(videoData: VideoData) {
   const videoMime = firstFormat?.mimeType ?? "video/mp4";
   const audioMime = preferredAudio?.mimeType ?? "audio/mp4";
 
-  const options = contentOptions.value;
+  const options = CONTENT_OPTIONS.value;
   let extension: string;
   if (videoData.isMusic) {
     extension = resolveAutoExtension({

@@ -16,11 +16,11 @@ import type {
 } from "@/types";
 import { PlayabilityStatus } from "@/types/youtube";
 
-export const videoQualities = [4320, 2160, 1440, 1080, 720, 480, 360, 240, 144];
+export const VIDEO_QUALITIES = [4320, 2160, 1440, 1080, 720, 480, 360, 240, 144];
 
 const DEFAULT_VIDEO_QUALITY = 1080;
 
-export const initialOptions: Options = {
+export const INITIAL_OPTIONS: Options = {
   ext: {
     audio: AUTO_EXTENSION,
     video: "mkv"

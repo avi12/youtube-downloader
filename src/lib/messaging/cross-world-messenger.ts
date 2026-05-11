@@ -123,7 +123,7 @@ export const crossWorldMessenger = defineCustomEventMessaging<PageMessengerSchem
 
 export type StreamDataPayload = Parameters<PageMessengerSchema[typeof CrossWorldMessage.StreamData]>[0];
 
-const buttonClickEventName = "ytdl-btn-click";
+const BUTTON_CLICK_EVENT_NAME = "ytdl-btn-click";
 
 function isButtonClickEvent(e: Event): e is CustomEvent<{ buttonId: string }> {
   return e instanceof CustomEvent && typeof e.detail?.buttonId === "string";
@@ -131,7 +131,7 @@ function isButtonClickEvent(e: Event): e is CustomEvent<{ buttonId: string }> {
 
 export function dispatchButtonClick(buttonId: string) {
   dispatchEvent(
-    new CustomEvent<{ buttonId: string }>(buttonClickEventName, {
+    new CustomEvent<{ buttonId: string }>(BUTTON_CLICK_EVENT_NAME, {
       detail: { buttonId }
     })
   );
@@ -144,6 +144,6 @@ export function onButtonClick(handler: (buttonId: string) => void) {
     }
   }
 
-  addEventListener(buttonClickEventName, listener);
-  return () => removeEventListener(buttonClickEventName, listener);
+  addEventListener(BUTTON_CLICK_EVENT_NAME, listener);
+  return () => removeEventListener(BUTTON_CLICK_EVENT_NAME, listener);
 }

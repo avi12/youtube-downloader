@@ -3,7 +3,7 @@ import { resolveFormatUrl } from "./stream-fetch";
 import { buildVideoMetadata, generatePoTokenIfNeeded, videoDataCache } from "./video-data";
 import { CrossWorldEvent, emitCrossWorldEvent } from "@/lib/messaging/cross-world-events";
 import { crossWorldMessenger, CrossWorldMessage } from "@/lib/messaging/cross-world-messenger";
-import { contentOptions, sabrCredentials } from "@/lib/ui/synced-stores.svelte";
+import { CONTENT_OPTIONS, sabrCredentials } from "@/lib/ui/synced-stores.svelte";
 import { uint8ToBase64 } from "@/lib/utils/binary";
 import { InnertubeClientName, type InnertubePlayerRequest } from "@/lib/youtube/innertube";
 import { isVideoDataExpired, orderCaptionsByPreference } from "@/lib/youtube/video-helpers";
@@ -62,8 +62,8 @@ function cuesToVtt(cues: TextTrackCueList): string {
 }
 
 async function fetchVttViaTrackElement(url: string): Promise<string | null> {
-  const videoEl = document.querySelector<HTMLVideoElement>("video.html5-main-video");
-  if (!videoEl) {
+  const elVideo = document.querySelector<HTMLVideoElement>("video.html5-main-video");
+  if (!elVideo) {
     return null;
   }
 
@@ -87,7 +87,7 @@ async function fetchVttViaTrackElement(url: string): Promise<string | null> {
 
     trackEl.addEventListener("error", () => finish(null), { once: true });
 
-    videoEl.appendChild(trackEl);
+    elVideo.appendChild(trackEl);
     trackEl.track.mode = "hidden";
   });
 }
@@ -347,7 +347,7 @@ export async function performDownload({
       return;
     }
 
-    const options = contentOptions.value;
+    const options = CONTENT_OPTIONS.value;
     const orderedCaptionTracks = orderCaptionsByPreference({
       captionTracks: cachedVideoData.captionTracks,
       languageMode: options.audioTrackLanguageMode,

@@ -63,23 +63,23 @@ export function createHostWorkerPort(): HostWorkerPort {
   let responseHandlers: ResponseHandlerMap = {};
 
   port1.onmessage = function onPortMessage(e: MessageEvent<WorkerResponse>) {
-    const msg = e.data;
-    switch (msg.type) {
+    const message = e.data;
+    switch (message.type) {
       case WorkerMessageType.Ready:
         responseHandlers[WorkerMessageType.Ready]?.({});
         break;
       case WorkerMessageType.Result:
-        responseHandlers[WorkerMessageType.Result]?.({ data: msg.data });
+        responseHandlers[WorkerMessageType.Result]?.({ data: message.data });
         break;
       case WorkerMessageType.Error:
-        responseHandlers[WorkerMessageType.Error]?.({ message: msg.message });
+        responseHandlers[WorkerMessageType.Error]?.({ message: message.message });
         break;
       case WorkerMessageType.Progress:
         responseHandlers[WorkerMessageType.Progress]?.({
-          videoId: msg.videoId,
-          progress: msg.progress,
-          progressType: msg.progressType,
-          tabId: msg.tabId
+          videoId: message.videoId,
+          progress: message.progress,
+          progressType: message.progressType,
+          tabId: message.tabId
         });
         break;
     }
@@ -118,19 +118,19 @@ export function createWorkerPortReceiver(port: MessagePort): WorkerPortReceiver 
   let commandHandlers: CommandHandlerMap = {};
 
   port.onmessage = function onPortMessage(e: MessageEvent<WorkerCommand>) {
-    const msg = e.data;
-    switch (msg.type) {
+    const message = e.data;
+    switch (message.type) {
       case WorkerMessageType.MuxVideoAudio:
-        commandHandlers[WorkerMessageType.MuxVideoAudio]?.({ job: msg.job });
+        commandHandlers[WorkerMessageType.MuxVideoAudio]?.({ job: message.job });
         break;
       case WorkerMessageType.EmbedMetadata:
-        commandHandlers[WorkerMessageType.EmbedMetadata]?.({ job: msg.job });
+        commandHandlers[WorkerMessageType.EmbedMetadata]?.({ job: message.job });
         break;
       case WorkerMessageType.TranscodeAudio:
-        commandHandlers[WorkerMessageType.TranscodeAudio]?.({ job: msg.job });
+        commandHandlers[WorkerMessageType.TranscodeAudio]?.({ job: message.job });
         break;
       case WorkerMessageType.TranscodeFile:
-        commandHandlers[WorkerMessageType.TranscodeFile]?.({ job: msg.job });
+        commandHandlers[WorkerMessageType.TranscodeFile]?.({ job: message.job });
         break;
     }
   };

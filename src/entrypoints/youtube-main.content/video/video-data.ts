@@ -153,12 +153,12 @@ function extractGenresFromKeywords({ keywords, genreSet }: {
   return [...matched];
 }
 
-const videoTitleSuffixPattern = /\s*[[(](?:official\s+(?:music\s+)?video|(?:official\s+)?lyrics?\s*(?:video)?|(?:official\s+)?audio|4k\s*remaster(?:ed)?|remaster(?:ed)?|hd|hq|visualizer|clip\s+officiel|video\s*oficial)[)\]]\s*/gi;
+const VIDEO_TITLE_SUFFIX_PATTERN = /\s*[[(](?:official\s+(?:music\s+)?video|(?:official\s+)?lyrics?\s*(?:video)?|(?:official\s+)?audio|4k\s*remaster(?:ed)?|remaster(?:ed)?|hd|hq|visualizer|clip\s+officiel|video\s*oficial)[)\]]\s*/gi;
 
-const featuringPattern = /\s+(?:ft\.?|feat\.?|featuring)\s+(.+)$/i;
+const FEATURING_PATTERN = /\s+(?:ft\.?|feat\.?|featuring)\s+(.+)$/i;
 
 function parseMusicTitle(title: string) {
-  const cleaned = title.replaceAll(videoTitleSuffixPattern, "").trim();
+  const cleaned = title.replaceAll(VIDEO_TITLE_SUFFIX_PATTERN, "").trim();
 
   const iSeparator = cleaned.search(/\s[-–]\s/);
   if (iSeparator === -1) {
@@ -172,8 +172,8 @@ function parseMusicTitle(title: string) {
   const mainArtist = cleaned.slice(0, iSeparator).trim();
   const afterSeparator = cleaned.slice(iSeparator + 3).trim();
 
-  const featMatch = afterSeparator.match(featuringPattern);
-  const songTitle = afterSeparator.replace(featuringPattern, "").trim();
+  const featMatch = afterSeparator.match(FEATURING_PATTERN);
+  const songTitle = afterSeparator.replace(FEATURING_PATTERN, "").trim();
   const fullArtist = featMatch
     ? `${mainArtist} feat. ${featMatch[1].trim()}`
     : mainArtist;

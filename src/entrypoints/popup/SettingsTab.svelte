@@ -2,7 +2,7 @@
   import FormatSelect from "./FormatSelect.svelte";
   import { setOption } from "@/lib/storage/storage";
   import { supportedExtensions } from "@/lib/utils/containers";
-  import { videoQualities } from "@/lib/youtube/video-helpers";
+  import { VIDEO_QUALITIES } from "@/lib/youtube/video-helpers";
   import {
     AudioTrackLanguageMode,
     DownloadType,
@@ -170,7 +170,7 @@
             }}
             value={options.videoQuality}
           >
-            {#each videoQualities as quality (quality)}
+            {#each VIDEO_QUALITIES as quality (quality)}
               <option
                 selected={quality === options.videoQuality}
                 value={quality}

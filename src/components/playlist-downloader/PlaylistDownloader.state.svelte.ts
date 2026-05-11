@@ -4,7 +4,7 @@ import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { setOption } from "@/lib/storage/storage";
 import { checkedPlaylistVideos } from "@/lib/ui/playlist-selection.svelte";
 import {
-  contentOptions,
+  CONTENT_OPTIONS,
   downloadProgressStore,
   playlistMetadataSignal,
   videoDataStore
@@ -35,9 +35,9 @@ export const batchCanceledIds = new SvelteSet<string>();
 // User-facing preferences live at module scope so they survive any re-mount
 // of the panel (e.g. when YouTube rebuilds the header subtree on theme
 // transitions and our mount container gets re-created).
-let downloadMode = $state<PlaylistDownloadMode>(contentOptions.value.playlistDownloadMode);
-let outputMode = $state(contentOptions.value.playlistOutputMode);
-let isScrollSyncEnabled = $state(contentOptions.value.isPlaylistScrollSyncEnabled);
+let downloadMode = $state<PlaylistDownloadMode>(CONTENT_OPTIONS.value.playlistDownloadMode);
+let outputMode = $state(CONTENT_OPTIONS.value.playlistOutputMode);
+let isScrollSyncEnabled = $state(CONTENT_OPTIONS.value.isPlaylistScrollSyncEnabled);
 let downloadTypeOverride = $state<DownloadTypePreference | null>(null);
 let videoExtOverride = $state<string | null>(null);
 let audioExtOverride = $state<string | null>(null);
@@ -110,11 +110,11 @@ export function createPlaylistDownloaderState() {
   let error = $state("");
 
   const effectiveDownloadType = $derived<DownloadTypePreference>(
-    downloadTypeOverride ?? contentOptions.value.defaultDownloadType
+    downloadTypeOverride ?? CONTENT_OPTIONS.value.defaultDownloadType
   );
-  const effectiveVideoExt = $derived(videoExtOverride ?? contentOptions.value.ext.video);
-  const effectiveAudioExt = $derived(audioExtOverride ?? contentOptions.value.ext.audio);
-  const effectiveQuality = $derived(videoQualityOverride ?? optionsToQualityValue(contentOptions.value));
+  const effectiveVideoExt = $derived(videoExtOverride ?? CONTENT_OPTIONS.value.ext.video);
+  const effectiveAudioExt = $derived(audioExtOverride ?? CONTENT_OPTIONS.value.ext.audio);
+  const effectiveQuality = $derived(videoQualityOverride ?? optionsToQualityValue(CONTENT_OPTIONS.value));
   const effectiveZipName = $derived(zipNameOverride ?? resolveDefaultZipName());
   const isAnyOverrideActive = $derived(
     downloadTypeOverride !== null
@@ -125,7 +125,7 @@ export function createPlaylistDownloaderState() {
   );
 
   function buildEffectiveOptions() {
-    const base = contentOptions.value;
+    const base = CONTENT_OPTIONS.value;
     const qualityValue = effectiveQuality;
     return {
       ...base,
@@ -167,11 +167,11 @@ export function createPlaylistDownloaderState() {
   );
 
   $effect.pre(() => {
-    downloadMode = contentOptions.value.playlistDownloadMode;
+    downloadMode = CONTENT_OPTIONS.value.playlistDownloadMode;
     outputMode = isAllMusicPlaylist
-      ? contentOptions.value.playlistAudioOutputMode
-      : contentOptions.value.playlistOutputMode;
-    isScrollSyncEnabled = contentOptions.value.isPlaylistScrollSyncEnabled;
+      ? CONTENT_OPTIONS.value.playlistAudioOutputMode
+      : CONTENT_OPTIONS.value.playlistOutputMode;
+    isScrollSyncEnabled = CONTENT_OPTIONS.value.isPlaylistScrollSyncEnabled;
   });
 
   // Highest resolution found across all videos - drives which quality options are shown.
@@ -578,25 +578,25 @@ export function createPlaylistDownloaderState() {
       return effectiveDownloadType;
     },
     set effectiveDownloadType(value) {
-      downloadTypeOverride = value === contentOptions.value.defaultDownloadType ? null : value;
+      downloadTypeOverride = value === CONTENT_OPTIONS.value.defaultDownloadType ? null : value;
     },
     get effectiveVideoExt() {
       return effectiveVideoExt;
     },
     set effectiveVideoExt(value) {
-      videoExtOverride = value === contentOptions.value.ext.video ? null : value;
+      videoExtOverride = value === CONTENT_OPTIONS.value.ext.video ? null : value;
     },
     get effectiveAudioExt() {
       return effectiveAudioExt;
     },
     set effectiveAudioExt(value) {
-      audioExtOverride = value === contentOptions.value.ext.audio ? null : value;
+      audioExtOverride = value === CONTENT_OPTIONS.value.ext.audio ? null : value;
     },
     get effectiveQuality() {
       return effectiveQuality;
     },
     set effectiveQuality(value) {
-      videoQualityOverride = value === optionsToQualityValue(contentOptions.value) ? null : value;
+      videoQualityOverride = value === optionsToQualityValue(CONTENT_OPTIONS.value) ? null : value;
     },
     get isAnyOverrideActive() {
       return isAnyOverrideActive;

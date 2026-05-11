@@ -9,7 +9,7 @@ import {
   videoOnlyListItem,
   videoQueueItem
 } from "@/lib/storage/storage";
-import { initialOptions as defaultOptions } from "@/lib/youtube/video-helpers";
+import { INITIAL_OPTIONS as defaultOptions } from "@/lib/youtube/video-helpers";
 import { ProgressType } from "@/types";
 import type { Options, RecentDownloadEntry, VideoQueueItem } from "@/types";
 
