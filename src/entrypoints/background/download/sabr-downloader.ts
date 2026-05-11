@@ -6,11 +6,10 @@ import { stripTrackLangSuffix } from "@/lib/youtube/video-helpers";
 import { DownloadType, ProgressType } from "@/types";
 import type { AdaptiveFormatItem, DownloadRequest, SabrConfig } from "@/types";
 
-// Never report progress = 1 from inside the stream callbacks — the Promise.all
-// may still be pending (e.g. audio has no contentLength so its bytes aren't counted
-// in totalExpectedBytes). The FFmpeg dispatch sends the real "100% of download phase"
-// signal once both streams have resolved.
-const DOWNLOAD_PROGRESS_CAP = 0.99;
+// Extra audio tracks without contentLength aren't counted in totalExpectedBytes, so
+// the ratio can reach 1.0 before they finish. That's fine: the display caps at 70%
+// (download phase weight) and only advances once FFmpeg progress starts.
+const DOWNLOAD_PROGRESS_CAP = 1;
 
 export function buildEffectiveSabrConfig({ sabrConfig, sabrUrl }: {
   sabrConfig: SabrConfig;
