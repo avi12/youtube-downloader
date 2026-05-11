@@ -20,26 +20,53 @@ export async function downloadViaCdn({ request, signal, videoId, tabId }: {
     return null;
   }
 
+  const captionCount = request.captionTracks?.length ?? 0;
+  const extraUrls = resolvedExtraAudioUrls ?? [];
+  const hasVideo = type !== DownloadType.Audio;
+  const hasAudio = type !== DownloadType.Video;
+  const totalStages = captionCount + (hasVideo ? 1 : 0) + (hasAudio ? 1 : 0) + extraUrls.length;
+
   const videoExpectedBytes = parseContentLength(videoFormat ?? null);
   const audioExpectedBytes = parseContentLength(audioFormat ?? null);
-  const extraExpectedBytes = (additionalAudioFormats ?? [])
-    .reduce((sum, format) => sum + parseContentLength(format), 0);
+  const extraExpectedBytesArr = (additionalAudioFormats ?? []).map(format => parseContentLength(format));
+
   let videoReceivedBytes = 0;
   let audioReceivedBytes = 0;
-  let extraReceivedBytes = 0;
+  const extraReceivedBytesArr = extraUrls.map(() => 0);
   let videoTotalBytes = videoExpectedBytes;
   let audioTotalBytes = audioExpectedBytes;
 
   function reportProgress() {
-    const totalReceived = videoReceivedBytes + audioReceivedBytes + extraReceivedBytes;
-    const totalExpected = (videoTotalBytes + audioTotalBytes + extraExpectedBytes) || totalReceived;
-    if (totalExpected === 0) {
+    if (totalStages === 0) {
       return;
+    }
+
+    // Captions are pre-fetched in the content script - count as completed stages
+    let completed = captionCount;
+    if (hasVideo) {
+      const expected = videoTotalBytes || videoReceivedBytes;
+      if (expected > 0) {
+        completed += Math.min(videoReceivedBytes / expected, 1);
+      }
+    }
+
+    if (hasAudio) {
+      const expected = audioTotalBytes || audioReceivedBytes;
+      if (expected > 0) {
+        completed += Math.min(audioReceivedBytes / expected, 1);
+      }
+    }
+
+    for (const [i, expected] of extraExpectedBytesArr.entries()) {
+      const effectiveExpected = expected || extraReceivedBytesArr[i];
+      if (effectiveExpected > 0) {
+        completed += Math.min(extraReceivedBytesArr[i] / effectiveExpected, 1);
+      }
     }
 
     void sendProgressUpdate({
       videoId,
-      progress: Math.min(totalReceived / totalExpected, 1),
+      progress: Math.min(completed / totalStages, 1),
       progressType: ProgressType.Video,
       tabId
     });
@@ -60,9 +87,8 @@ export async function downloadViaCdn({ request, signal, videoId, tabId }: {
     });
   }
 
-  const extraUrls = resolvedExtraAudioUrls ?? [];
   const cdnResults = await Promise.all([
-    type !== DownloadType.Audio
+    hasVideo
       ? fetchStream({
         url: resolvedVideoUrl,
         onBytes(bytes) {
@@ -72,7 +98,7 @@ export async function downloadViaCdn({ request, signal, videoId, tabId }: {
         }
       })
       : Promise.resolve(null),
-    type !== DownloadType.Video
+    hasAudio
       ? fetchStream({
         url: resolvedAudioUrl,
         onBytes(bytes) {
@@ -82,10 +108,10 @@ export async function downloadViaCdn({ request, signal, videoId, tabId }: {
         }
       })
       : Promise.resolve(null),
-    ...extraUrls.map(url => fetchStream({
+    ...extraUrls.map((url, i) => fetchStream({
       url,
       onBytes(bytes) {
-        extraReceivedBytes += bytes;
+        extraReceivedBytesArr[i] += bytes;
         reportProgress();
       }
     }))

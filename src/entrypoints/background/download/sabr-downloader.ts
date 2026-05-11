@@ -54,25 +54,26 @@ async function downloadAudioOnlyViaSabr({ config, audioFormat, poToken, signal, 
 }
 
 async function downloadVideoAudioViaSabr({
-  config, videoFormat, audioFormat, poToken, signal, onBytesReceived
+  config, videoFormat, audioFormat, poToken, signal, onVideoBytesReceived, onAudioBytesReceived
 }: {
   config: SabrConfig;
   videoFormat: AdaptiveFormatItem;
   audioFormat: AdaptiveFormatItem;
   poToken: string;
   signal: AbortSignal;
-  onBytesReceived?: (bytes: number) => void;
+  onVideoBytesReceived?: (bytes: number) => void;
+  onAudioBytesReceived?: (bytes: number) => void;
 }) {
   const videoFetch = createProgressFetch({
     signal,
     onBytesReceived(bytes) {
-      onBytesReceived?.(bytes);
+      onVideoBytesReceived?.(bytes);
     }
   });
   const audioFetch = createProgressFetch({
     signal,
     onBytesReceived(bytes) {
-      onBytesReceived?.(bytes);
+      onAudioBytesReceived?.(bytes);
     }
   });
 
@@ -94,21 +95,21 @@ async function downloadVideoAudioViaSabr({
   ]);
 }
 
-async function downloadExtraAudioTracksViaSabr({ config, formats, poToken, signal, onBytesReceived }: {
+async function downloadExtraAudioTracksViaSabr({ config, formats, poToken, signal, onTrackBytesReceived }: {
   config: SabrConfig;
   formats: AdaptiveFormatItem[];
   poToken: string;
   signal: AbortSignal;
-  onBytesReceived?: (bytes: number) => void;
+  onTrackBytesReceived?: (trackIndex: number, bytes: number) => void;
 }) {
   const results = [];
 
-  for (const format of formats) {
+  for (const [i, format] of formats.entries()) {
     try {
       const sabrFetch = createProgressFetch({
         signal,
         onBytesReceived(bytes) {
-          onBytesReceived?.(bytes);
+          onTrackBytesReceived?.(i, bytes);
         }
       });
       const data = await fetchAudioViaSabrStream({
@@ -167,29 +168,55 @@ export async function downloadViaSabr({ request, signal, tabId, onProgress }: {
     return null;
   }
 
-  const videoPartBytes = isAudioOnly ? 0 : parseContentLength(videoFormat ?? null);
-  const mainExpectedBytes = videoPartBytes + parseContentLength(audioFormat);
+  const captionCount = request.captionTracks?.length ?? 0;
   const additionalFormats = additionalAudioFormats ?? [];
-  const extraExpectedBytes = additionalFormats.reduce((sum, format) => {
+
+  const videoPartBytes = isAudioOnly ? 0 : parseContentLength(videoFormat ?? null);
+  const audioPartBytes = parseContentLength(audioFormat);
+  const extraExpectedBytesArr = additionalFormats.map(format => {
     const known = parseContentLength(format);
-    return sum + (known > 0 ? known : estimateFormatBytes(format, audioFormat));
-  }, 0);
-  const totalExpectedBytes = mainExpectedBytes + extraExpectedBytes;
+    return known > 0 ? known : estimateFormatBytes(format, audioFormat);
+  });
 
-  let totalReceivedBytes = 0;
+  const downloadStages = (!isAudioOnly && videoFormat ? 1 : 0) + 1 + additionalFormats.length;
+  const totalStages = captionCount + downloadStages;
 
-  function onBytesReceived(bytes: number) {
-    totalReceivedBytes += bytes;
-    onProgress?.();
+  let videoReceivedBytes = 0;
+  let audioReceivedBytes = 0;
+  const extraReceivedBytesArr = additionalFormats.map(() => 0);
 
-    if (totalExpectedBytes > 0) {
-      void sendProgressUpdate({
-        videoId,
-        progress: Math.min(totalReceivedBytes / totalExpectedBytes, DOWNLOAD_PROGRESS_CAP),
-        progressType: ProgressType.Video,
-        tabId
-      });
+  function computeProgress() {
+    if (totalStages === 0) {
+      return 0;
     }
+
+    // Captions are pre-fetched in the content script - count as completed stages
+    let completed = captionCount;
+    if (!isAudioOnly && videoPartBytes > 0) {
+      completed += Math.min(videoReceivedBytes / videoPartBytes, 1);
+    }
+
+    if (audioPartBytes > 0) {
+      completed += Math.min(audioReceivedBytes / audioPartBytes, 1);
+    }
+
+    for (const [i, expected] of extraExpectedBytesArr.entries()) {
+      if (expected > 0) {
+        completed += Math.min(extraReceivedBytesArr[i] / expected, 1);
+      }
+    }
+
+    return Math.min(completed / totalStages, DOWNLOAD_PROGRESS_CAP);
+  }
+
+  function sendUpdate() {
+    onProgress?.();
+    void sendProgressUpdate({
+      videoId,
+      progress: computeProgress(),
+      progressType: ProgressType.Video,
+      tabId
+    });
   }
 
   const resolvedPoToken = poToken ?? "";
@@ -199,7 +226,10 @@ export async function downloadViaSabr({ request, signal, tabId, onProgress }: {
       audioFormat,
       poToken: resolvedPoToken,
       signal,
-      onBytesReceived
+      onBytesReceived(bytes) {
+        audioReceivedBytes += bytes;
+        sendUpdate();
+      }
     });
     return {
       videoData: null,
@@ -218,14 +248,24 @@ export async function downloadViaSabr({ request, signal, tabId, onProgress }: {
     audioFormat,
     poToken: resolvedPoToken,
     signal,
-    onBytesReceived
+    onVideoBytesReceived(bytes) {
+      videoReceivedBytes += bytes;
+      sendUpdate();
+    },
+    onAudioBytesReceived(bytes) {
+      audioReceivedBytes += bytes;
+      sendUpdate();
+    }
   });
   const additionalAudioTracks = await downloadExtraAudioTracksViaSabr({
     config: effectiveConfig,
     formats: additionalFormats,
     poToken: resolvedPoToken,
     signal,
-    onBytesReceived
+    onTrackBytesReceived(trackIndex, bytes) {
+      extraReceivedBytesArr[trackIndex] += bytes;
+      sendUpdate();
+    }
   });
 
   return {
