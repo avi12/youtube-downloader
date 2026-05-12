@@ -21,7 +21,7 @@ export type MediaItem = {
   approxDurationMs: `${number}`;
 };
 
-/** @see https://github.com/LuanRT/YouTube.js/blob/main/src/parser/classes/misc/Format.ts */
+/** YouTube InnerTube API — values reverse-engineered from `adaptiveFormats[].quality` in player responses. */
 export const VideoQuality = {
   Tiny: "tiny",
   Medium: "medium",
@@ -35,6 +35,7 @@ export const VideoQuality = {
 
 export type VideoQuality = (typeof VideoQuality)[keyof typeof VideoQuality];
 
+/** YouTube InnerTube API — values reverse-engineered from `adaptiveFormats[].qualityLabel` in player responses. */
 export const QualityLabel = {
   P144: "144p",
   P240: "240p",
@@ -49,7 +50,7 @@ export const QualityLabel = {
 
 export type QualityLabel = (typeof QualityLabel)[keyof typeof QualityLabel];
 
-/** @see https://github.com/LuanRT/YouTube.js/blob/main/src/parser/classes/misc/Format.ts */
+/** YouTube InnerTube API — values reverse-engineered from `adaptiveFormats[].audioQuality` in player responses. */
 export const AudioQuality = {
   Low: "AUDIO_QUALITY_LOW",
   Medium: "AUDIO_QUALITY_MEDIUM"

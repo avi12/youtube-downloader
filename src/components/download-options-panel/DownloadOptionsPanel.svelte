@@ -89,6 +89,7 @@
     <DownloadOptions
       audioFormats={props.videoData.audioFormats}
       captionTracks={props.videoData.captionTracks}
+      downloadExtras={panel.downloadExtras}
       downloadType={panel.downloadType}
       extension={panel.actualExtension}
       filename={panel.filename}

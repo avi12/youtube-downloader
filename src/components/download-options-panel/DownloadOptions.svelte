@@ -26,6 +26,7 @@
     filename: string;
     extension: string;
     isDownloading: boolean;
+    downloadExtras: boolean;
     ondownloadtypechange: (type: DownloadType) => void;
     onvideoformatchange: (format: AdaptiveFormatItem) => void;
     onaudioformatchange: (format: AdaptiveFormatItem) => void;
@@ -52,6 +53,7 @@
     filename,
     extension,
     isDownloading,
+    downloadExtras,
     ondownloadtypechange,
     onvideoformatchange,
     onaudioformatchange,
@@ -275,6 +277,9 @@
         originalLabel={audioOriginalLabel}
         playerLabel={audioPlayerLabel}
       />
+      {#if downloadExtras && uniqueAudioLanguages.length > 1}
+        <p class="ytdl-extras-note">Selected track is the default — all others are bundled as extras</p>
+      {/if}
       <TrackChoice
         customOptions={captionCustomOptions}
         customValue={selectedCaptionTrack?.vssId ?? ""}
@@ -343,6 +348,16 @@
 
     :global(html[dark]) & {
       border-bottom-color: var(--yt-spec-10-percent-layer, rgb(255 255 255 / 10%));
+      color: var(--yt-spec-text-secondary, #aaaaaa);
+    }
+  }
+
+  .ytdl-extras-note {
+    margin: 0;
+    color: var(--yt-spec-text-secondary, #606060);
+    font-size: 1.2rem;
+
+    :global(html[dark]) & {
       color: var(--yt-spec-text-secondary, #aaaaaa);
     }
   }

@@ -722,6 +722,9 @@ export function createPanelState(getVideoData: () => VideoData) {
     get isWatchPage() {
       return IS_WATCH_PAGE;
     },
+    get downloadExtras() {
+      return CONTENT_OPTIONS.value.downloadExtras;
+    },
     handleDownloadTypeChange,
     handlePanelAudioModeChange,
     handlePanelAudioCustomChange,
