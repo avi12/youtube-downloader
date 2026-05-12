@@ -11,6 +11,8 @@ import { CHILD_LIST_SUBTREE } from "@/lib/utils/dom";
 import { getMoviePlayer } from "@/lib/youtube/movie-player";
 import { ProgressType, type PlayerResponse } from "@/types";
 
+const WATCHED_VIDEO_ELEMENTS = new WeakSet<HTMLVideoElement>();
+
 declare global {
   interface Window {
     ytInitialPlayerResponse?: PlayerResponse;
@@ -158,8 +160,31 @@ export default defineContentScript({
       };
     }
 
+    function setupCaptionTrackWatcher() {
+      const elVideo = document.querySelector<HTMLVideoElement>("video");
+      if (!elVideo || WATCHED_VIDEO_ELEMENTS.has(elVideo)) {
+        return;
+      }
+
+      WATCHED_VIDEO_ELEMENTS.add(elVideo);
+      elVideo.textTracks.addEventListener("change", () => {
+        const showingTrack = Array.from(elVideo.textTracks).find(
+          track =>
+            track.mode === "showing"
+            && (track.kind === "subtitles" || track.kind === "captions")
+            && track.language
+        );
+        if (showingTrack) {
+          void crossWorldMessenger.sendMessage(CrossWorldMessage.CaptionTrackChanged, {
+            languageCode: showingTrack.language
+          });
+        }
+      });
+    }
+
     document.addEventListener("yt-navigate-finish", handleNavigateSuccess);
     document.addEventListener("yt-navigate-finish", setupAudioTrackWatcher);
+    document.addEventListener("yt-navigate-finish", setupCaptionTrackWatcher);
 
     if (self === top) {
       function cancelAllAndNotify() {
@@ -177,11 +202,13 @@ export default defineContentScript({
       await extractAndDispatchVideoData(cancelActiveDownload);
       extractPlaylistMetadata();
       setupAudioTrackWatcher();
+      setupCaptionTrackWatcher();
     } else {
       addEventListener("load", () => {
         void extractAndDispatchVideoData(cancelActiveDownload);
         extractPlaylistMetadata();
         setupAudioTrackWatcher();
+        setupCaptionTrackWatcher();
       }, { once: true });
     }
   }

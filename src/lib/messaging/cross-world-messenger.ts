@@ -30,7 +30,8 @@ export const CrossWorldMessage = {
   DownloadViaIframe: "downloadViaIframe",
   StartBackgroundDownload: "startBackgroundDownload",
   OptionsUpdate: "optionsUpdate",
-  AudioTrackChanged: "audioTrackChanged"
+  AudioTrackChanged: "audioTrackChanged",
+  CaptionTrackChanged: "captionTrackChanged"
 } as const;
 
 interface PageMessengerSchema {
@@ -120,6 +121,9 @@ interface PageMessengerSchema {
   }): void;
   [CrossWorldMessage.AudioTrackChanged](data: {
     trackId: string;
+  }): void;
+  [CrossWorldMessage.CaptionTrackChanged](data: {
+    languageCode: string;
   }): void;
 }
 

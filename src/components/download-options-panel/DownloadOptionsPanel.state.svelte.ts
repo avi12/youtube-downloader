@@ -360,8 +360,23 @@ export function createPanelState(getVideoData: () => VideoData) {
     }
 
     selectedAudioFormat = matching.reduce((best, format) => format.bitrate > best.bitrate ? format : best);
-    selectedCaptionTrack =
-      captionTracks.find(track => normalizeLanguageCode(track.languageCode) === langCode) ?? null;
+
+    if (panelCaptionMode === PanelTrackMode.MatchVideo) {
+      selectedCaptionTrack =
+        captionTracks.find(track => normalizeLanguageCode(track.languageCode) === langCode) ?? null;
+    }
+  }));
+
+  $effect(() => crossWorldMessenger.onMessage(CrossWorldMessage.CaptionTrackChanged, ({ data }) => {
+    const { captionTracks } = getVideoData();
+    const langCode = normalizeLanguageCode(data.languageCode);
+    const match = captionTracks.find(track => normalizeLanguageCode(track.languageCode) === langCode);
+    if (!match) {
+      return;
+    }
+
+    panelCaptionMode = PanelTrackMode.Custom;
+    selectedCaptionTrack = match;
   }));
 
   // When a queued download (re)starts for this video, reset its progress

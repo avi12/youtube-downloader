@@ -21,7 +21,7 @@ export type MediaItem = {
   approxDurationMs: `${number}`;
 };
 
-/** @see https://github.com/LuanRT/YouTube.js/blob/main/src/parser/misc.ts */
+/** @see https://github.com/LuanRT/YouTube.js/blob/main/src/parser/classes/misc/Format.ts */
 export const VideoQuality = {
   Tiny: "tiny",
   Medium: "medium",
@@ -49,7 +49,7 @@ export const QualityLabel = {
 
 export type QualityLabel = (typeof QualityLabel)[keyof typeof QualityLabel];
 
-/** @see https://github.com/LuanRT/YouTube.js/blob/main/src/parser/misc.ts */
+/** @see https://github.com/LuanRT/YouTube.js/blob/main/src/parser/classes/misc/Format.ts */
 export const AudioQuality = {
   Low: "AUDIO_QUALITY_LOW",
   Medium: "AUDIO_QUALITY_MEDIUM"
@@ -57,7 +57,7 @@ export const AudioQuality = {
 
 export type AudioQuality = (typeof AudioQuality)[keyof typeof AudioQuality];
 
-/** @see https://github.com/LuanRT/YouTube.js/blob/main/src/parser/classes/PlayerResponse.ts */
+/** @see https://github.com/LuanRT/YouTube.js/blob/main/src/parser/types/ParsedResponse.ts */
 export const PlayabilityStatus = {
   Ok: "OK",
   Unplayable: "UNPLAYABLE",
@@ -122,7 +122,7 @@ export type CaptionTrack = {
   isTranslatable: boolean;
 };
 
-/** @see https://github.com/LuanRT/YouTube.js/blob/main/src/parser/classes/PlayerResponse.ts */
+/** @see https://github.com/LuanRT/YouTube.js/blob/main/src/parser/types/ParsedResponse.ts */
 export type PlayerResponse = {
   playabilityStatus: {
     status: `${PlayabilityStatus}`;
@@ -185,7 +185,7 @@ export type PlayerResponse = {
   };
 };
 
-/** @see https://github.com/LuanRT/YouTube.js/blob/main/src/parser/classes/ButtonViewModel.ts */
+/** YouTube-internal Polymer view model — values reverse-engineered from YouTube's runtime. */
 export const ButtonSize = {
   Default: "BUTTON_VIEW_MODEL_SIZE_DEFAULT",
   Large: "BUTTON_VIEW_MODEL_SIZE_LARGE",
@@ -195,7 +195,7 @@ export const ButtonSize = {
 
 export type ButtonSize = (typeof ButtonSize)[keyof typeof ButtonSize];
 
-/** @see https://github.com/LuanRT/YouTube.js/blob/main/src/parser/classes/ButtonViewModel.ts */
+/** YouTube-internal Polymer view model — values reverse-engineered from YouTube's runtime. */
 export const ButtonStyle = {
   CallToAction: "BUTTON_VIEW_MODEL_STYLE_CALL_TO_ACTION",
   Custom: "BUTTON_VIEW_MODEL_STYLE_CUSTOM",
@@ -205,7 +205,7 @@ export const ButtonStyle = {
 
 export type ButtonStyle = (typeof ButtonStyle)[keyof typeof ButtonStyle];
 
-/** @see https://github.com/LuanRT/YouTube.js/blob/main/src/parser/classes/ButtonViewModel.ts */
+/** YouTube-internal Polymer view model — values reverse-engineered from YouTube's runtime. */
 export const ButtonType = {
   Filled: "BUTTON_VIEW_MODEL_TYPE_FILLED",
   Outline: "BUTTON_VIEW_MODEL_TYPE_OUTLINE",
@@ -215,7 +215,7 @@ export const ButtonType = {
 
 export type ButtonType = (typeof ButtonType)[keyof typeof ButtonType];
 
-/** @see https://github.com/LuanRT/YouTube.js/blob/main/src/parser/classes/ButtonViewModel.ts */
+/** YouTube-internal Polymer view model — values reverse-engineered from YouTube's runtime. */
 export const ButtonState = {
   Active: "BUTTON_VIEW_MODEL_STATE_ACTIVE",
   Disabled: "BUTTON_VIEW_MODEL_STATE_DISABLED"
@@ -223,7 +223,7 @@ export const ButtonState = {
 
 export type ButtonState = (typeof ButtonState)[keyof typeof ButtonState];
 
-/** @see https://github.com/LuanRT/YouTube.js/blob/main/src/parser/classes/ButtonViewModel.ts */
+/** YouTube-internal Polymer view model — values reverse-engineered from YouTube's runtime. */
 export const IconName = {
   None: "",
   AccessTime: "ACCESS_TIME",
@@ -296,7 +296,7 @@ export const YtIconName = {
 
 export type YtIconName = (typeof YtIconName)[keyof typeof YtIconName];
 
-/** @see https://github.com/LuanRT/YouTube.js/blob/main/src/parser/classes/TooltipViewModel.ts */
+/** YouTube-internal Polymer view model — values reverse-engineered from YouTube's runtime. */
 export const TooltipPlacement = {
   Top: "TOOLTIP_VIEW_MODEL_PLACEMENT_TOP",
   Bottom: "TOOLTIP_VIEW_MODEL_PLACEMENT_BOTTOM",
@@ -306,7 +306,7 @@ export const TooltipPlacement = {
 
 export type TooltipPlacement = (typeof TooltipPlacement)[keyof typeof TooltipPlacement];
 
-/** @see https://github.com/LuanRT/YouTube.js/blob/main/src/parser/classes/TooltipViewModel.ts */
+/** YouTube-internal Polymer view model — values reverse-engineered from YouTube's runtime. */
 export const TooltipStyle = {
   Default: "TOOLTIP_VIEW_MODEL_STYLE_DEFAULT",
   Player: "TOOLTIP_VIEW_MODEL_STYLE_PLAYER"
@@ -324,7 +324,7 @@ export function isPolymerInputElement(element: Element): element is TpYtPaperInp
   return "updateStyles" in element && "label" in element;
 }
 
-/** @see https://github.com/LuanRT/YouTube.js/blob/main/src/parser/classes/ButtonViewModel.ts */
+/** YouTube-internal Polymer view model — values reverse-engineered from YouTube's runtime. */
 export interface YtButtonViewModelElement extends HTMLElement {
   data: ButtonViewModelData;
 }

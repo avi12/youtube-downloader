@@ -83,6 +83,18 @@ export interface MoviePlayerElement extends HTMLElement {
   /** Internal flag set by ytdl to prevent double-patching setAudioTrack. */
   __ytdlAudioWatched?: boolean;
 
+  /**
+   * Gets a player module option value.
+   * @see https://developers.google.com/youtube/iframe_api_reference
+   */
+  getOption?: (module: string, option: string) => unknown;
+  /**
+   * Sets a player module option value. Used internally by YouTube for captions,
+   * playback speed, and other module-scoped settings.
+   * @see https://developers.google.com/youtube/iframe_api_reference
+   */
+  setOption?: (module: string, option: string, value: unknown) => void;
+
   getAudioTrack?: () => {
     gw?: {
       id?: string;
