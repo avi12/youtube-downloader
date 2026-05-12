@@ -2,9 +2,11 @@
   import FormatSelect from "./FormatSelect.svelte";
   import { setOption } from "@/lib/storage/storage";
   import { supportedExtensions } from "@/lib/utils/containers";
+  import { LANGUAGES } from "@/lib/utils/languages";
   import { VIDEO_QUALITIES } from "@/lib/youtube/video-helpers";
   import {
     AudioTrackLanguageMode,
+    CaptionLanguageMode,
     DownloadType,
     PlaylistDownloadMode,
     PlaylistOutputMode,
@@ -97,14 +99,36 @@
       description: "Uses the video's current audio track on watch pages, or YouTube's language elsewhere"
     },
     {
-      value: AudioTrackLanguageMode.MatchYouTube,
-      label: "Match YouTube language",
-      description: "Always uses the YouTube interface language"
-    },
-    {
       value: AudioTrackLanguageMode.Custom,
       label: "Custom language",
       description: "Falls back to English if the language is unavailable"
+    }
+  ];
+
+  const captionLanguageModeOptions: Array<{
+    value: CaptionLanguageMode;
+    label: string;
+    description: string;
+  }> = [
+    {
+      value: CaptionLanguageMode.SameAsAudio,
+      label: "Same as audio",
+      description: "Follows the audio language setting above"
+    },
+    {
+      value: CaptionLanguageMode.OriginalLanguage,
+      label: "Original language",
+      description: "Prefers the video's native language captions"
+    },
+    {
+      value: CaptionLanguageMode.MatchVideo,
+      label: "Match selected track",
+      description: "Uses the watch page audio track language, or YouTube's language elsewhere"
+    },
+    {
+      value: CaptionLanguageMode.Custom,
+      label: "Custom language",
+      description: "Uses the same custom language set for audio above"
     }
   ];
 </script>
@@ -187,7 +211,7 @@
               <option
                 selected={quality === options.videoQuality}
                 value={quality}
-                >{quality}p</option
+              >{quality}p</option
               >
             {/each}
           </select>
@@ -250,9 +274,9 @@
       {/each}
     </div>
     <div class="settings-format-section">
-      <div class="settings-row">
+      <label class="settings-row">
         <span class="settings-label">Scroll to each video while downloading</span>
-        <label class="settings-switch" aria-label="Scroll to each video while downloading">
+        <span class="settings-switch" aria-label="Scroll to each video while downloading">
           <input
             checked={options.isPlaylistScrollSyncEnabled}
             onchange={e => {
@@ -266,16 +290,16 @@
           <span class="settings-switch-track">
             <span class="settings-switch-thumb"></span>
           </span>
-        </label>
-      </div>
+        </span>
+      </label>
     </div>
   </fieldset>
 
   <fieldset class="settings-group">
     <legend class="settings-legend">Audio &amp; subtitles</legend>
-    <div class="settings-row">
+    <label class="settings-row">
       <span class="settings-label">Download additional audio tracks and captions</span>
-      <label class="settings-switch" aria-label="Download additional audio tracks and captions">
+      <span class="settings-switch" aria-label="Download additional audio tracks and captions">
         <input
           checked={options.downloadExtras}
           onchange={e => {
@@ -289,52 +313,75 @@
         <span class="settings-switch-track">
           <span class="settings-switch-thumb"></span>
         </span>
-      </label>
-    </div>
-    <span class="settings-sub-legend">Default language for audio track and captions</span>
-    {#each languageModeOptions as { value, label, description } (value)}
-      <div class="settings-row">
-        <label class="settings-label settings-radio-label">
-          <input
-            name="language-mode"
-            checked={options.audioTrackLanguageMode === value}
-            onchange={() => void setOption("audioTrackLanguageMode", value)}
-            type="radio"
-            {value}
-          />
-          <span>
-            {label}
-            <span class="settings-option-description">{description}</span>
-          </span>
-        </label>
-      </div>
-      {#if value === AudioTrackLanguageMode.Custom && options.audioTrackLanguageMode === AudioTrackLanguageMode.Custom}
-        <div class="settings-sub-row" transition:slide={{ duration: 200 }}>
-          <label class="settings-label" for="custom-language-input">Language code</label>
-          <input
-            id="custom-language-input"
-            class="settings-text-input"
-            maxlength="10"
-            oninput={e => {
-              if (e.target instanceof HTMLInputElement) {
-                void setOption("customLanguage", e.target.value.trim().toLowerCase());
-              }
-            }}
-            placeholder="e.g. it, fr, de"
-            spellcheck={false}
-            type="text"
-            value={options.customLanguage}
-          />
+      </span>
+    </label>
+    <div class="settings-format-section">
+      <span class="settings-sub-legend">Audio track language</span>
+      {#each languageModeOptions as { value, label, description } (value)}
+        <div class="settings-row">
+          <label class="settings-label settings-radio-label">
+            <input
+              name="language-mode"
+              checked={options.audioTrackLanguageMode === value}
+              onchange={() => void setOption("audioTrackLanguageMode", value)}
+              type="radio"
+              {value}
+            />
+            <span>
+              {label}
+              <span class="settings-option-description">{description}</span>
+            </span>
+          </label>
         </div>
-      {/if}
-    {/each}
+        {#if value === AudioTrackLanguageMode.Custom
+          && options.audioTrackLanguageMode === AudioTrackLanguageMode.Custom}
+          <div class="settings-sub-row" transition:slide={{ duration: 200 }}>
+            <label class="settings-label" for="custom-language-select">Language</label>
+            <select
+              id="custom-language-select"
+              class="settings-select"
+              onchange={e => {
+                if (e.target instanceof HTMLSelectElement) {
+                  void setOption("customLanguage", e.target.value);
+                }
+              }}
+              value={options.customLanguage}
+            >
+              {#each LANGUAGES as [name, code] (code)}
+                <option selected={options.customLanguage === code} value={code}>{name}</option>
+              {/each}
+            </select>
+          </div>
+        {/if}
+      {/each}
+    </div>
+    <div class="settings-format-section">
+      <span class="settings-sub-legend">Closed captions language</span>
+      {#each captionLanguageModeOptions as { value, label, description } (value)}
+        <div class="settings-row">
+          <label class="settings-label settings-radio-label">
+            <input
+              name="caption-language-mode"
+              checked={options.captionLanguageMode === value}
+              onchange={() => void setOption("captionLanguageMode", value)}
+              type="radio"
+              {value}
+            />
+            <span>
+              {label}
+              <span class="settings-option-description">{description}</span>
+            </span>
+          </label>
+        </div>
+      {/each}
+    </div>
   </fieldset>
 
   <fieldset class="settings-group">
     <legend class="settings-legend">When download completes</legend>
-    <div class="settings-row">
+    <label class="settings-row">
       <span class="settings-label">Notify when window is idle</span>
-      <label class="settings-switch" aria-label="Notify when window is idle">
+      <span class="settings-switch" aria-label="Notify when window is idle">
         <input
           checked={options.isNotifyOnIdle}
           onchange={e => {
@@ -348,11 +395,11 @@
         <span class="settings-switch-track">
           <span class="settings-switch-thumb"></span>
         </span>
-      </label>
-    </div>
-    <div class="settings-row">
+      </span>
+    </label>
+    <label class="settings-row">
       <span class="settings-label">Reveal file in folder</span>
-      <label class="settings-switch" aria-label="Reveal file in folder">
+      <span class="settings-switch" aria-label="Reveal file in folder">
         <input
           checked={options.isRevealOnComplete}
           onchange={e => {
@@ -366,15 +413,15 @@
         <span class="settings-switch-track">
           <span class="settings-switch-thumb"></span>
         </span>
-      </label>
-    </div>
+      </span>
+    </label>
   </fieldset>
 
   <fieldset class="settings-group">
     <legend class="settings-legend">YouTube integration</legend>
-    <div class="settings-row">
+    <label class="settings-row">
       <span class="settings-label">Show native download button on watch page</span>
-      <label class="settings-switch" aria-label="Show native download button on watch page">
+      <span class="settings-switch" aria-label="Show native download button on watch page">
         <input
           checked={options.isShowNativeDownload}
           onchange={e => {
@@ -388,8 +435,8 @@
         <span class="settings-switch-track">
           <span class="settings-switch-thumb"></span>
         </span>
-      </label>
-    </div>
+      </span>
+    </label>
   </fieldset>
 </div>
 
@@ -439,6 +486,10 @@
     gap: 10px;
     align-items: center;
     padding: 10px 0;
+
+    &:is(label) {
+      cursor: pointer;
+    }
   }
 
   .settings-sub-row {
@@ -501,22 +552,6 @@
     color: var(--fg-muted);
     font-weight: 400;
     font-size: 0.6875rem;
-  }
-
-  .settings-text-input {
-    width: 100px;
-    padding: 5px 8px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    background: var(--bg, transparent);
-    color: inherit;
-    font-family: inherit;
-    font-size: 0.8125rem;
-
-    &:focus-visible {
-      outline: 2px solid var(--accent);
-      outline-offset: 2px;
-    }
   }
 
   .settings-switch {

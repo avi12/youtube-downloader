@@ -71,6 +71,12 @@
 </tp-yt-paper-toast>
 
 <style>
+  :global(tp-yt-paper-toast.ytdl-watch-toast) {
+    right: auto !important;
+    bottom: 24px !important;
+    left: 24px !important;
+  }
+
   .ytdl-watch-toast :global(.ytdl-watch-toast__action) {
     margin-inline-start: 8px;
   }
