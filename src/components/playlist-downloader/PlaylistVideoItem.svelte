@@ -56,7 +56,7 @@
   const isInProgressInZipBatch = $derived(isZipBatchActive && !itemState.isDownloading);
 
   const isProgressBarVisible = $derived(
-    isPlaylistItem && (itemState.isDownloading || itemState.isDone || itemState.isLocallyDone || isInProgressInZipBatch)
+    itemState.isDownloading || itemState.isDone || itemState.isLocallyDone || (isPlaylistItem && isInProgressInZipBatch)
   );
 
   const isProgressBarIndeterminate = $derived(

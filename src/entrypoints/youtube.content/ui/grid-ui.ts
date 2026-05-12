@@ -1,8 +1,7 @@
-import GridProgressOverlay from "@/components/grid-progress/GridProgressOverlay.svelte";
 import PlaylistVideoItem from "@/components/playlist-downloader/PlaylistVideoItem.svelte";
 import { CHILD_LIST_SUBTREE } from "@/lib/utils/dom";
 import { getVideoIdFromUrl } from "@/lib/youtube/youtube-url";
-import { mount, unmount } from "svelte";
+import { mount } from "svelte";
 
 const Selector = {
   VideoCard: "yt-lockup-view-model, ytd-rich-item-renderer, ytd-grid-video-renderer",
@@ -13,7 +12,6 @@ const VIEWPORT_MARGIN = "200px";
 
 let gridObserver: MutationObserver | null = null;
 let visibilityObserver: IntersectionObserver | null = null;
-const overlayInstances = new Map<string, ReturnType<typeof mount>>();
 
 export function cleanupGridUi() {
   gridObserver?.disconnect();
@@ -21,12 +19,7 @@ export function cleanupGridUi() {
   visibilityObserver?.disconnect();
   visibilityObserver = null;
 
-  for (const instance of overlayInstances.values()) {
-    void unmount(instance);
-  }
-  overlayInstances.clear();
-
-  for (const elItem of document.querySelectorAll("[data-ytdl-grid-item], [data-ytdl-progress]")) {
+  for (const elItem of document.querySelectorAll("[data-ytdl-grid-item]")) {
     elItem.remove();
   }
 }
@@ -121,23 +114,6 @@ function mountGridButton({ context, elCard }: {
   });
 
   ui.mount();
-
-  const elThumbnail = shadowFirst(elCard, ".ytLockupViewModelContentImage, ytd-thumbnail");
-  if (elThumbnail instanceof HTMLElement) {
-    elThumbnail.style.position = "relative";
-    const elProgressContainer = document.createElement("div");
-    elProgressContainer.dataset.ytdlProgress = videoId;
-    elProgressContainer.style.cssText = "position:absolute;inset-block-end:0;inline-size:100%";
-    elThumbnail.append(elProgressContainer);
-    overlayInstances.set(
-      videoId, mount(GridProgressOverlay, {
-        target: elProgressContainer,
-        props: {
-          videoId
-        }
-      })
-    );
-  }
 }
 
 function isCardPending(elCard: Element) {
