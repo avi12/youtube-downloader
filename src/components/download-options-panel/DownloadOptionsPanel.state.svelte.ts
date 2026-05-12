@@ -6,6 +6,8 @@ import { completedDownloadsStore } from "@/lib/ui/completed-downloads-store.svel
 import { PrimaryButtonState } from "@/lib/ui/panel-button-attachments.svelte";
 import { CONTENT_OPTIONS, downloadProgressStore, interruptedDownloadStore } from "@/lib/ui/synced-stores.svelte";
 import { getCompatibleFilename, getOutputExtension, resolveAutoExtension } from "@/lib/utils/containers";
+import { ACTIVE_CAPTION_ATTR, isPlayerCaptionTrackData } from "@/lib/youtube/movie-player";
+import type { MoviePlayerElement } from "@/lib/youtube/movie-player";
 import {
   calculateWeightedProgress,
   findOriginalAudioFormat,
@@ -131,26 +133,26 @@ export function createPanelState(getVideoData: () => VideoData) {
     })
   );
 
-  function getActivePlayerCaptionLanguage() {
-    const elVideo = document.querySelector<HTMLVideoElement>("video.html5-main-video");
-    if (!elVideo) {
+  function getActivePlayerCaptionTrack() {
+    const elPlayer = document.querySelector<MoviePlayerElement>("#movie_player");
+    const stored = elPlayer?.getAttribute(ACTIVE_CAPTION_ATTR);
+    if (!stored) {
       return null;
     }
 
-    const activeTrack = Array.from(elVideo.textTracks).find(
-      track =>
-        track.mode !== "disabled"
-        && (track.kind === "subtitles" || track.kind === "captions")
-        && track.language
-    );
-    return activeTrack?.language ?? null;
+    try {
+      const data: unknown = JSON.parse(stored);
+      return isPlayerCaptionTrackData(data) ? data : null;
+    } catch {
+      return null;
+    }
   }
 
   let panelCaptionMode = $state<PanelTrackMode>(
     untrack(() => {
-      const activeLang = getActivePlayerCaptionLanguage();
-      if (activeLang) {
-        const captionLang = normalizeLanguageCode(activeLang);
+      const activeCaption = getActivePlayerCaptionTrack();
+      if (activeCaption?.languageCode) {
+        const captionLang = normalizeLanguageCode(activeCaption.languageCode);
         const audioLang = selectedAudioFormat?.audioTrack
           ? normalizeLanguageCode(selectedAudioFormat.audioTrack.id)
           : null;
@@ -186,10 +188,12 @@ export function createPanelState(getVideoData: () => VideoData) {
         return null;
       }
 
-      const activeLang = getActivePlayerCaptionLanguage();
-      if (activeLang) {
-        const langCode = normalizeLanguageCode(activeLang);
-        const match = videoData.captionTracks.find(track => normalizeLanguageCode(track.languageCode) === langCode);
+      const activeCaption = getActivePlayerCaptionTrack();
+      if (activeCaption) {
+        const match = videoData.captionTracks.find(track => track.vssId === activeCaption.vss_id)
+          ?? videoData.captionTracks.find(
+            track => normalizeLanguageCode(track.languageCode) === normalizeLanguageCode(activeCaption.languageCode)
+          );
         if (match) {
           return match;
         }
@@ -399,8 +403,10 @@ export function createPanelState(getVideoData: () => VideoData) {
 
   $effect(() => crossWorldMessenger.onMessage(CrossWorldMessage.CaptionTrackChanged, ({ data }) => {
     const { captionTracks } = getVideoData();
-    const langCode = normalizeLanguageCode(data.languageCode);
-    const match = captionTracks.find(track => normalizeLanguageCode(track.languageCode) === langCode);
+    const match = captionTracks.find(track => track.vssId === data.vssId)
+      ?? captionTracks.find(
+        track => normalizeLanguageCode(track.languageCode) === normalizeLanguageCode(data.languageCode)
+      );
     if (!match) {
       return;
     }
@@ -524,10 +530,13 @@ export function createPanelState(getVideoData: () => VideoData) {
     panelCaptionMode = newMode;
     const { captionTracks } = getVideoData();
     if (newMode === PanelTrackMode.MatchVideo) {
-      const activeLang = getActivePlayerCaptionLanguage();
-      const normalizedActiveLang = activeLang ? normalizeLanguageCode(activeLang) : null;
-      selectedCaptionTrack = normalizedActiveLang
-        ? captionTracks.find(track => normalizeLanguageCode(track.languageCode) === normalizedActiveLang) ?? null
+      const activeCaption = getActivePlayerCaptionTrack();
+      selectedCaptionTrack = activeCaption
+        ? captionTracks.find(track => track.vssId === activeCaption.vss_id)
+          ?? captionTracks.find(
+            track => normalizeLanguageCode(track.languageCode) === normalizeLanguageCode(activeCaption.languageCode)
+          )
+          ?? null
         : null;
       return;
     }

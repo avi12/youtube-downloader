@@ -82,6 +82,8 @@ export interface MoviePlayerElement extends HTMLElement {
 
   /** Internal flag set by ytdl to prevent double-patching setAudioTrack. */
   __ytdlAudioWatched?: boolean;
+  /** Internal flag set by ytdl to prevent double-patching setOption. */
+  __ytdlCaptionWatched?: boolean;
 
   /**
    * Gets a player module option value.
@@ -118,3 +120,20 @@ export interface MoviePlayerElement extends HTMLElement {
 export function getMoviePlayer() {
   return document.querySelector<MoviePlayerElement>("#movie_player");
 }
+
+export type PlayerCaptionTrackData = {
+  languageCode: string;
+  displayName: string;
+  vss_id: string;
+};
+
+export function isPlayerCaptionTrackData(value: unknown): value is PlayerCaptionTrackData {
+  return (
+    typeof value === "object"
+    && value !== null
+    && "languageCode" in value
+    && "vss_id" in value
+  );
+}
+
+export const ACTIVE_CAPTION_ATTR = "data-ytdl-caption";

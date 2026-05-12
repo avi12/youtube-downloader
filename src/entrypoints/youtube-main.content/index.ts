@@ -8,10 +8,8 @@ import { CrossWorldEvent, emitCrossWorldEvent } from "@/lib/messaging/cross-worl
 import { CrossWorldMessage, crossWorldMessenger, dispatchButtonClick } from "@/lib/messaging/cross-world-messenger";
 import { DATA_BUTTON_ID_ATTR } from "@/lib/ui/polymer-utils";
 import { CHILD_LIST_SUBTREE } from "@/lib/utils/dom";
-import { getMoviePlayer } from "@/lib/youtube/movie-player";
+import { ACTIVE_CAPTION_ATTR, getMoviePlayer, isPlayerCaptionTrackData } from "@/lib/youtube/movie-player";
 import { ProgressType, type PlayerResponse } from "@/types";
-
-const WATCHED_VIDEO_ELEMENTS = new WeakSet<HTMLVideoElement>();
 
 declare global {
   interface Window {
@@ -150,7 +148,7 @@ export default defineContentScript({
 
       player.__ytdlAudioWatched = true;
       const orig = player.setAudioTrack.bind(player);
-      player.setAudioTrack = function (track) {
+      player.setAudioTrack = track => {
         const trackId = track?.gw?.id;
         if (trackId) {
           void crossWorldMessenger.sendMessage(CrossWorldMessage.AudioTrackChanged, { trackId });
@@ -160,26 +158,57 @@ export default defineContentScript({
       };
     }
 
+    function writeCaptionAttr(languageCode: string, vssId: string) {
+      getMoviePlayer()?.setAttribute(
+        ACTIVE_CAPTION_ATTR, JSON.stringify({
+          languageCode,
+          vss_id: vssId
+        })
+      );
+    }
+
+    function clearCaptionAttr() {
+      getMoviePlayer()?.removeAttribute(ACTIVE_CAPTION_ATTR);
+    }
+
     function setupCaptionTrackWatcher() {
-      const elVideo = document.querySelector<HTMLVideoElement>("video");
-      if (!elVideo || WATCHED_VIDEO_ELEMENTS.has(elVideo)) {
+      const player = getMoviePlayer();
+      if (!player?.setOption || player.__ytdlCaptionWatched) {
         return;
       }
 
-      WATCHED_VIDEO_ELEMENTS.add(elVideo);
-      elVideo.textTracks.addEventListener("change", () => {
-        const activeTrack = Array.from(elVideo.textTracks).find(
-          track =>
-            track.mode !== "disabled"
-            && (track.kind === "subtitles" || track.kind === "captions")
-            && track.language
-        );
-        if (activeTrack) {
-          void crossWorldMessenger.sendMessage(CrossWorldMessage.CaptionTrackChanged, {
-            languageCode: activeTrack.language
-          });
+      player.__ytdlCaptionWatched = true;
+
+      const currentTrack = player.getOption?.("captions", "track");
+      if (isPlayerCaptionTrackData(currentTrack)) {
+        writeCaptionAttr(currentTrack.languageCode, currentTrack.vss_id);
+      }
+
+      // On initial page load YouTube restores the saved caption without calling
+      // setOption, so read getOption on first playback start as a fallback.
+      document.querySelector("video")?.addEventListener("playing", () => {
+        const track = player.getOption?.("captions", "track");
+        if (isPlayerCaptionTrackData(track)) {
+          writeCaptionAttr(track.languageCode, track.vss_id);
         }
-      });
+      }, { once: true });
+
+      const orig = player.setOption.bind(player);
+      player.setOption = (module, option, value) => {
+        if (module === "captions" && option === "track") {
+          if (isPlayerCaptionTrackData(value)) {
+            writeCaptionAttr(value.languageCode, value.vss_id);
+            void crossWorldMessenger.sendMessage(CrossWorldMessage.CaptionTrackChanged, {
+              languageCode: value.languageCode,
+              vssId: value.vss_id
+            });
+          } else {
+            clearCaptionAttr();
+          }
+        }
+
+        return orig(module, option, value);
+      };
     }
 
     document.addEventListener("yt-navigate-finish", handleNavigateSuccess);
