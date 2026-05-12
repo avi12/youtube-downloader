@@ -376,4 +376,12 @@
       color: var(--yt-spec-text-secondary, #aaaaaa) !important;
     }
   }
+
+  :global(tp-yt-paper-input#filename-input[focused] label) {
+    color: var(--yt-spec-call-to-action, #065fd4) !important;
+
+    :global(html[dark]) & {
+      color: var(--yt-spec-call-to-action, #3ea6ff) !important;
+    }
+  }
 </style>
