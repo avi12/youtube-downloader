@@ -77,10 +77,7 @@ export function cleanupSegmentedButton() {
   containerSearchAbort = null;
 }
 
-export async function injectSegmentedDownloadButton(
-  videoData: VideoData,
-  cancelActiveDownload: (videoId: string) => void
-) {
+export async function injectSegmentedDownloadButton(videoData: VideoData) {
   cleanupSegmentedButton();
   evictOrphanedGroups();
 
@@ -116,8 +113,7 @@ export async function injectSegmentedDownloadButton(
     props: {
       videoData,
       elDropdown,
-      scopingClasses,
-      cancelActiveDownload
+      scopingClasses
     }
   });
 

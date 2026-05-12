@@ -1,5 +1,4 @@
 import { cleanupSegmentedButton } from "../watch-button/watch-button";
-import { cancelActiveDownload } from "./download";
 import { buildAndDispatchVideoData } from "./video-data";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { playlistMetadataSignal } from "@/lib/ui/synced-stores.svelte";
@@ -63,10 +62,7 @@ export async function handleNavigateSuccess() {
     const isReady = playerResponse?.videoDetails?.videoId === expectedVideoId
       && playerResponse.playabilityStatus?.status !== PlayabilityStatus.Unplayable;
     if (isReady) {
-      await buildAndDispatchVideoData({
-        playerResponse,
-        cancelActiveDownload
-      });
+      await buildAndDispatchVideoData({ playerResponse });
       return;
     }
 

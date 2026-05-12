@@ -21,7 +21,6 @@ export const CrossWorldMessage = {
   CancelDownload: "cancelDownload",
   ProxyFetch: "proxyFetch",
   IframePlayerReady: "iframePlayerReady",
-  CancelRequest: "cancelRequest",
   SetButtonData: "setButtonData",
   CreateDropdown: "createDropdown",
   DropdownReady: "dropdownReady",
@@ -90,9 +89,6 @@ interface PageMessengerSchema {
     videoId: string;
   }): void;
   [CrossWorldMessage.CancelDownload](data: {
-    videoIds: string[];
-  }): void;
-  [CrossWorldMessage.CancelRequest](data: {
     videoIds: string[];
   }): void;
   [CrossWorldMessage.SetButtonData](data: {

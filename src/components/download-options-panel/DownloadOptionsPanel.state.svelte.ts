@@ -1,7 +1,6 @@
-﻿import { cancelStreamTransfer } from "@/entrypoints/youtube.content/download/stream-transfer";
-import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
+﻿import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
-import { statusProgressItem, videoQueueItem } from "@/lib/storage/storage";
+import { videoQueueItem } from "@/lib/storage/storage";
 import { completedDownloadsStore } from "@/lib/ui/completed-downloads-store.svelte";
 import { PrimaryButtonState } from "@/lib/ui/panel-button-attachments.svelte";
 import { CONTENT_OPTIONS, downloadProgressStore, interruptedDownloadStore } from "@/lib/ui/synced-stores.svelte";
@@ -150,17 +149,6 @@ export function createPanelState(getVideoData: () => VideoData) {
 
   let panelCaptionMode = $state<PanelTrackMode>(
     untrack(() => {
-      const activeCaption = getActivePlayerCaptionTrack();
-      if (activeCaption?.languageCode) {
-        const captionLang = normalizeLanguageCode(activeCaption.languageCode);
-        const audioLang = selectedAudioFormat?.audioTrack
-          ? normalizeLanguageCode(selectedAudioFormat.audioTrack.id)
-          : null;
-        if (captionLang !== audioLang) {
-          return PanelTrackMode.Custom;
-        }
-      }
-
       const options = CONTENT_OPTIONS.value;
       const resolvedMode = resolveCaptionLanguageMode(options.captionLanguageMode, options.audioTrackLanguageMode);
       if (resolvedMode === AudioTrackLanguageMode.OriginalLanguage) {
@@ -188,29 +176,35 @@ export function createPanelState(getVideoData: () => VideoData) {
         return null;
       }
 
+      if (panelCaptionMode === PanelTrackMode.Custom) {
+        const langCode = normalizeLanguageCode(CONTENT_OPTIONS.value.customLanguage ?? "");
+        return videoData.captionTracks.find(track => normalizeLanguageCode(track.languageCode) === langCode)
+          ?? videoData.captionTracks[0]
+          ?? null;
+      }
+
+      if (panelCaptionMode === PanelTrackMode.Original) {
+        const originalLangId = findOriginalAudioFormat(videoData.audioFormats)?.audioTrack?.id;
+        if (originalLangId) {
+          const langCode = normalizeLanguageCode(originalLangId);
+          const match = videoData.captionTracks.find(
+            track => normalizeLanguageCode(track.languageCode) === langCode && !track.kind
+          ) ?? videoData.captionTracks.find(track => normalizeLanguageCode(track.languageCode) === langCode);
+          if (match) {
+            return match;
+          }
+        }
+
+        return videoData.captionTracks.find(track => !track.kind) ?? videoData.captionTracks[0] ?? null;
+      }
+
+      // MatchVideo: use active player caption
       const activeCaption = getActivePlayerCaptionTrack();
       if (activeCaption) {
         const match = videoData.captionTracks.find(track => track.vssId === activeCaption.vss_id)
           ?? videoData.captionTracks.find(
             track => normalizeLanguageCode(track.languageCode) === normalizeLanguageCode(activeCaption.languageCode)
           );
-        if (match) {
-          return match;
-        }
-      }
-
-      const options = CONTENT_OPTIONS.value;
-      if (options.audioTrackLanguageMode === AudioTrackLanguageMode.Custom && options.customLanguage) {
-        const langCode = normalizeLanguageCode(options.customLanguage);
-        const match = videoData.captionTracks.find(track => normalizeLanguageCode(track.languageCode) === langCode);
-        if (match) {
-          return match;
-        }
-      }
-
-      if (selectedAudioFormat?.audioTrack) {
-        const langCode = normalizeLanguageCode(selectedAudioFormat.audioTrack.id);
-        const match = videoData.captionTracks.find(track => normalizeLanguageCode(track.languageCode) === langCode);
         if (match) {
           return match;
         }
@@ -402,6 +396,10 @@ export function createPanelState(getVideoData: () => VideoData) {
   }));
 
   $effect(() => crossWorldMessenger.onMessage(CrossWorldMessage.CaptionTrackChanged, ({ data }) => {
+    if (panelCaptionMode !== PanelTrackMode.MatchVideo) {
+      return;
+    }
+
     const { captionTracks } = getVideoData();
     const match = captionTracks.find(track => track.vssId === data.vssId)
       ?? captionTracks.find(
@@ -409,12 +407,6 @@ export function createPanelState(getVideoData: () => VideoData) {
       );
     if (!match) {
       return;
-    }
-
-    // MatchVideo means "follow the player's caption selection" — stay in that mode and update.
-    // Any other mode means the user had an explicit choice; treat the player change as an override.
-    if (panelCaptionMode !== PanelTrackMode.MatchVideo) {
-      panelCaptionMode = PanelTrackMode.Custom;
     }
 
     selectedCaptionTrack = match;
@@ -575,14 +567,6 @@ export function createPanelState(getVideoData: () => VideoData) {
     }
 
     const { videoId, sabrConfig } = getVideoData();
-    downloadProgressStore.unsuppress(videoId);
-    downloadProgressStore.set(videoId, {
-      isDownloading: true,
-      isDone: false,
-      progress: 0,
-      progressType: ""
-    });
-
     void crossWorldMessenger.sendMessage(CrossWorldMessage.DownloadRequest, {
       type: downloadType,
       videoId,
@@ -595,15 +579,9 @@ export function createPanelState(getVideoData: () => VideoData) {
     });
   }
 
-  async function cancelDownload() {
+  function cancelDownload() {
     const { videoId } = getVideoData();
-    downloadProgressStore.delete(videoId);
-    cancelStreamTransfer(videoId);
-    void sendMessage(MessageType.CancelDownload, { videoIds: [videoId] });
     void crossWorldMessenger.sendMessage(CrossWorldMessage.CancelDownload, { videoIds: [videoId] });
-    const currentProgress = await statusProgressItem.getValue();
-    delete currentProgress[videoId];
-    await statusProgressItem.setValue(currentProgress);
   }
 
   function resumeDownload() {

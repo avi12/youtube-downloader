@@ -16,13 +16,11 @@
   const {
     videoData,
     elDropdown,
-    scopingClasses = [],
-    cancelActiveDownload
+    scopingClasses = []
   }: {
     videoData: VideoData;
     elDropdown: import("@/types").TpYtIronDropdownElement;
     scopingClasses?: string[];
-    cancelActiveDownload: (videoId: string) => void;
   } = $props();
 
   const initial = untrack(() => buildInitialDownloadState(videoData));
@@ -300,22 +298,13 @@
       if (isDownloadActive) {
         isDownloading = false;
         isInterrupted = false;
-        cancelActiveDownload(videoData.videoId);
-        void crossWorldMessenger.sendMessage(CrossWorldMessage.CancelRequest, { videoIds: [videoData.videoId] });
+        void crossWorldMessenger.sendMessage(CrossWorldMessage.CancelDownload, { videoIds: [videoData.videoId] });
         return;
       }
 
       isDone = false;
       isInterrupted = false;
       isError = false;
-      isDownloading = true;
-      downloadProgress = 0;
-      downloadProgressType = "";
-      void crossWorldMessenger.sendMessage(CrossWorldMessage.DownloadProgress, {
-        videoId: videoData.videoId,
-        progress: 0,
-        progressType: ProgressType.Video
-      });
       void performDownload({
         type: defaultDownloadType,
         videoId: videoData.videoId,

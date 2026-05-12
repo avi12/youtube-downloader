@@ -1,4 +1,3 @@
-import { cancelActiveDownload } from "../video/download";
 import { buildAndDispatchVideoData, videoDataCache, readYtcfg } from "../video/video-data";
 import { extractPlayerResponseFromHtml } from "../video/youtube-api";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
@@ -49,10 +48,7 @@ async function fetchVideoDataViaApi(videoId: string) {
     );
     const playerData: PlayerResponse = await response.json();
     if (playerData?.videoDetails?.videoId) {
-      await buildAndDispatchVideoData({
-        playerResponse: playerData,
-        cancelActiveDownload
-      });
+      await buildAndDispatchVideoData({ playerResponse: playerData });
       return;
     }
   }
@@ -64,10 +60,7 @@ async function fetchVideoDataViaApi(videoId: string) {
 
   const playerResponse = extractPlayerResponseFromHtml(html);
   if (playerResponse?.videoDetails?.videoId) {
-    await buildAndDispatchVideoData({
-      playerResponse,
-      cancelActiveDownload
-    });
+    await buildAndDispatchVideoData({ playerResponse });
   }
 }
 

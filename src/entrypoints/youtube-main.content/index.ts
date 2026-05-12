@@ -221,7 +221,7 @@ export default defineContentScript({
       function cancelAllAndNotify() {
         const videoIds = cancelAllActiveDownloads();
         if (videoIds.length > 0) {
-          void crossWorldMessenger.sendMessage(CrossWorldMessage.CancelRequest, { videoIds });
+          void crossWorldMessenger.sendMessage(CrossWorldMessage.CancelDownload, { videoIds });
         }
       }
 
@@ -230,13 +230,13 @@ export default defineContentScript({
     }
 
     if (document.readyState === "complete") {
-      await extractAndDispatchVideoData(cancelActiveDownload);
+      await extractAndDispatchVideoData();
       extractPlaylistMetadata();
       setupAudioTrackWatcher();
       setupCaptionTrackWatcher();
     } else {
       addEventListener("load", () => {
-        void extractAndDispatchVideoData(cancelActiveDownload);
+        void extractAndDispatchVideoData();
         extractPlaylistMetadata();
         setupAudioTrackWatcher();
         setupCaptionTrackWatcher();

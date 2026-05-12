@@ -233,9 +233,8 @@ export async function generatePoTokenIfNeeded(videoData: VideoData) {
   }
 }
 
-export async function buildAndDispatchVideoData({ playerResponse, cancelActiveDownload }: {
+export async function buildAndDispatchVideoData({ playerResponse }: {
   playerResponse: PlayerResponse;
-  cancelActiveDownload: (videoId: string) => void;
 }) {
   const { clientVersion, clientName } = readYtcfg();
   const videoData = buildVideoData({
@@ -292,14 +291,14 @@ export async function buildAndDispatchVideoData({ playerResponse, cancelActiveDo
   }
 
   if (location.pathname === "/watch") {
-    await injectSegmentedDownloadButton(videoData, cancelActiveDownload);
+    await injectSegmentedDownloadButton(videoData);
   }
 }
 
 const PLAYER_RESPONSE_POLL_ATTEMPTS = 20;
 const PLAYER_RESPONSE_POLL_INTERVAL_MS = 250;
 
-export async function extractAndDispatchVideoData(cancelActiveDownload: (videoId: string) => void) {
+export async function extractAndDispatchVideoData() {
   if (!location.pathname.startsWith("/watch")) {
     return;
   }
@@ -309,10 +308,7 @@ export async function extractAndDispatchVideoData(cancelActiveDownload: (videoId
     const isReady = playerResponse?.videoDetails?.videoId
       && playerResponse.playabilityStatus?.status !== "UNPLAYABLE";
     if (isReady) {
-      await buildAndDispatchVideoData({
-        playerResponse,
-        cancelActiveDownload
-      });
+      await buildAndDispatchVideoData({ playerResponse });
       return;
     }
 

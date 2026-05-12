@@ -9,7 +9,8 @@ import { handlePageChange } from "../ui/page-router";
 import { mountPanelUi } from "../ui/panel-ui";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
-import { downloadProgressStore } from "@/lib/ui/synced-stores.svelte";
+import { statusProgressItem } from "@/lib/storage/storage";
+import { downloadProgressStore, interruptedDownloadStore } from "@/lib/ui/synced-stores.svelte";
 import { forwardSabrCredentialsWithRetry } from "@/lib/youtube/sabr/credentials";
 import type { DownloadRequest, VideoData } from "@/types";
 
@@ -41,13 +42,22 @@ export function registerCrossWorldHandlers(
     });
   });
 
-  crossWorldMessenger.onMessage(CrossWorldMessage.CancelRequest, ({ data }) => {
+  crossWorldMessenger.onMessage(CrossWorldMessage.CancelDownload, async ({ data }) => {
     for (const id of data.videoIds) {
+      downloadProgressStore.delete(id);
+      interruptedDownloadStore.delete(id);
       cancelStreamTransfer(id);
     }
 
     void sendMessage(MessageType.CancelDownload, { videoIds: data.videoIds });
-    void crossWorldMessenger.sendMessage(CrossWorldMessage.CancelDownload, { videoIds: data.videoIds });
+    const currentProgress = await statusProgressItem.getValue();
+    for (const id of data.videoIds) {
+      if (!downloadProgressStore.get(id)?.isDownloading) {
+        delete currentProgress[id];
+      }
+    }
+
+    await statusProgressItem.setValue(currentProgress);
   });
 
   crossWorldMessenger.onMessage(CrossWorldMessage.StreamData, ({ data }) => {
@@ -78,6 +88,13 @@ export function registerCrossWorldHandlers(
   });
 
   crossWorldMessenger.onMessage(CrossWorldMessage.DownloadRequest, ({ data }) => {
+    downloadProgressStore.unsuppress(data.videoId);
+    downloadProgressStore.setLocal(data.videoId, {
+      isDownloading: true,
+      isDone: false,
+      progress: 0,
+      progressType: ""
+    });
     uncancelStreamTransfer(data.videoId);
   });
 
