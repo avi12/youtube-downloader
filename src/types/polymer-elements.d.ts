@@ -67,6 +67,13 @@ declare module "svelte/elements" {
       "aria-label"?: string;
       onchange?: (e: Event) => void;
     };
+    "yt-chip-cloud-chip-renderer": HTMLAttributes<HTMLElement> & {
+      "chip-style"?: string;
+      selected?: "" | undefined;
+      role?: string;
+      "aria-checked"?: boolean | string;
+      onclick?: (e: MouseEvent) => void;
+    };
     "ytd-popup-container": HTMLAttributes<HTMLElement>;
     "yt-dynamic-text-view-model": HTMLAttributes<HTMLElement>;
     "yt-formatted-string": HTMLAttributes<HTMLElement> & {

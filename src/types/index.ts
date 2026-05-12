@@ -79,6 +79,61 @@ export const AudioTrackLanguageMode = {
 
 export type AudioTrackLanguageMode = (typeof AudioTrackLanguageMode)[keyof typeof AudioTrackLanguageMode];
 
+export const CaptionLanguageMode = {
+  SameAsAudio: "same-as-audio",
+  OriginalLanguage: "original",
+  MatchVideo: "match-video",
+  MatchYouTube: "match-youtube",
+  Custom: "custom"
+} as const;
+
+export type CaptionLanguageMode = (typeof CaptionLanguageMode)[keyof typeof CaptionLanguageMode];
+
+export const ChipStyle = {
+  Default: "STYLE_DEFAULT",
+  AiCustomizedFeedChip: "STYLE_AI_CUSTOMIZED_FEED_CHIP",
+  ExploreLauncherChip: "STYLE_EXPLORE_LAUNCHER_CHIP"
+} as const;
+
+// https://github.com/LuanRT/YouTube.js/blob/main/src/parser/classes/ChipCloudChip.ts
+export type ChipData = {
+  text: {
+    simpleText: string;
+  };
+  style: {
+    styleType: (typeof ChipStyle)[keyof typeof ChipStyle];
+  };
+  isSelected: boolean;
+  navigationEndpoint?: {
+    clickTrackingParams?: string;
+    browseEndpoint?: {
+      browseId: string;
+      params?: string;
+    };
+  };
+  trackingParams?: string;
+  accessibilityData?: {
+    accessibilityData: {
+      label: string;
+    };
+  };
+};
+
+export const TrackKind = {
+  Audio: "audio",
+  Captions: "captions"
+} as const;
+
+export type TrackKind = (typeof TrackKind)[keyof typeof TrackKind];
+
+export const PanelTrackMode = {
+  MatchVideo: "follow",
+  Original: "original",
+  Custom: "custom"
+} as const;
+
+export type PanelTrackMode = (typeof PanelTrackMode)[keyof typeof PanelTrackMode];
+
 export const StreamType = {
   Video: "video",
   Audio: "audio"
@@ -148,6 +203,7 @@ export type Options = {
   playlistAudioOutputMode: PlaylistOutputMode;
   isPlaylistScrollSyncEnabled: boolean;
   audioTrackLanguageMode: AudioTrackLanguageMode;
+  captionLanguageMode: CaptionLanguageMode;
   customLanguage: string;
   downloadExtras: boolean;
 };

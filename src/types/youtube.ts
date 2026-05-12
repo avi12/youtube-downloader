@@ -252,6 +252,7 @@ export const IconName = {
   Share: "SHARE",
   Sort: "SORT",
   Spark: "SPARK",
+  Stop: "STOP",
   Visibility: "VISIBILITY",
   VisibilityOff: "VISIBILITY_OFF",
   WatchLater: "WATCH_LATER",

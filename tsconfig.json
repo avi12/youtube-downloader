@@ -4,5 +4,5 @@
     "types": ["svelte"],
     "allowImportingTsExtensions": true
   },
-  "exclude": ["scripts/**", "node_modules/**"]
+  "exclude": ["scripts/**", "node_modules/**", "user-profiles/**"]
 }

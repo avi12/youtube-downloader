@@ -246,7 +246,11 @@ export default [
     ignores: ["eslint.config.js"],
     languageOptions: {
       parser: tsEslint.parser,
-      parserOptions: { projectService: { allowDefaultProject: ["eslint-rules/*.js"] } },
+      parserOptions: {
+        projectService: {
+          allowDefaultProject: ["eslint-rules/*.js"]
+        }
+      },
       globals: sharedGlobals
     },
     plugins: sharedPlugins,
@@ -280,6 +284,7 @@ export default [
     rules: {
       ...tsStyleRules,
       "svelte/no-at-html-tags": "off",
+      "svelte/indent": ["error", { indent: 2 }],
       "svelte/sort-attributes": "error",
       "svelte/shorthand-directive": "error",
       "arrow-body-style": ["error", "as-needed"],
