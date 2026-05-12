@@ -13,6 +13,10 @@ export async function processVideoAudio(item: ProcessStreamData, isCancelled: ()
   const videoData = toUint8Array(item.videoData);
   const audioData = toUint8Array(item.audioData);
   if (!videoData || !audioData) {
+    if (!videoData && !audioData) {
+      throw new Error("No stream data accumulated");
+    }
+
     const recentContext = {
       videoId,
       title: item.metadata?.title ?? filenameOutput,

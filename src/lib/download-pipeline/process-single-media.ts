@@ -20,7 +20,7 @@ export async function processSingleMedia(item: ProcessStreamData, isCancelled: (
   const rawData = type === DownloadType.Audio ? audioData : videoData;
   let data = toUint8Array(rawData);
   if (!data) {
-    return;
+    throw new Error("No stream data accumulated");
   }
 
   await reportProgress({
