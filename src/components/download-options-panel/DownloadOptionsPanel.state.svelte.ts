@@ -14,6 +14,7 @@ import {
   getCurrentVideoAudioLanguage,
   normalizeLanguageCode,
   orderCaptionsByPreference,
+  resolveCaptionLanguageMode,
   selectPreferredAudioFormat,
   waitForVideoElement
 } from "@/lib/youtube/video-helpers";
@@ -130,7 +131,27 @@ export function createPanelState(getVideoData: () => VideoData) {
     })
   );
 
-  let panelCaptionMode = $state<PanelTrackMode>(PanelTrackMode.MatchVideo);
+  let panelCaptionMode = $state<PanelTrackMode>(
+    untrack(() => {
+      const options = CONTENT_OPTIONS.value;
+      const resolvedMode = resolveCaptionLanguageMode(options.captionLanguageMode, options.audioTrackLanguageMode);
+      if (resolvedMode === AudioTrackLanguageMode.OriginalLanguage) {
+        return PanelTrackMode.Original;
+      }
+
+      if (resolvedMode === AudioTrackLanguageMode.Custom && options.customLanguage) {
+        const langCode = normalizeLanguageCode(options.customLanguage);
+        const hasMatch = getVideoData().captionTracks.some(
+          track => normalizeLanguageCode(track.languageCode) === langCode
+        );
+        if (hasMatch) {
+          return PanelTrackMode.Custom;
+        }
+      }
+
+      return PanelTrackMode.MatchVideo;
+    })
+  );
 
   let selectedCaptionTrack = $state<CaptionTrack | null>(
     untrack(() => {
@@ -376,15 +397,11 @@ export function createPanelState(getVideoData: () => VideoData) {
     });
   }
 
-  function resolveAutoLanguageCode(): string {
-    if (IS_WATCH_PAGE) {
-      const lang = getCurrentVideoAudioLanguage();
-      if (lang) {
-        return lang;
-      }
-    }
-
-    return normalizeLanguageCode(document.documentElement.lang);
+  function findMatchVideoAudioFormat(audioFormats: AdaptiveFormatItem[]) {
+    return audioFormats.find(format => !format.audioTrack)
+      ?? audioFormats.find(format => format.audioTrack?.audioIsDefault)
+      ?? audioFormats[0]
+      ?? null;
   }
 
   function applyAudioByLangCode(langCode: string) {
@@ -428,7 +445,19 @@ export function createPanelState(getVideoData: () => VideoData) {
       return;
     }
 
-    applyAudioByLangCode(resolveAutoLanguageCode());
+    // MatchVideo: select whichever track YouTube chose for this session (audioIsDefault)
+    const { audioFormats: matchAudioFormats, captionTracks: matchCaptionTracks } = getVideoData();
+    const matchDefault = findMatchVideoAudioFormat(matchAudioFormats);
+    if (matchDefault) {
+      selectedAudioFormat = matchDefault;
+      resetDoneState();
+
+      if (matchDefault.audioTrack) {
+        const langCode = normalizeLanguageCode(matchDefault.audioTrack.id);
+        selectedCaptionTrack =
+          matchCaptionTracks.find(track => normalizeLanguageCode(track.languageCode) === langCode) ?? null;
+      }
+    }
   }
 
   function handlePanelAudioCustomChange(langCode: string) {
