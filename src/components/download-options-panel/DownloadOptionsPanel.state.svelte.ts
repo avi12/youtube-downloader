@@ -131,8 +131,34 @@ export function createPanelState(getVideoData: () => VideoData) {
     })
   );
 
+  function getActivePlayerCaptionLanguage() {
+    const elVideo = document.querySelector<HTMLVideoElement>("video");
+    if (!elVideo) {
+      return null;
+    }
+
+    const showingTrack = Array.from(elVideo.textTracks).find(
+      track =>
+        track.mode === "showing"
+        && (track.kind === "subtitles" || track.kind === "captions")
+        && track.language
+    );
+    return showingTrack?.language ?? null;
+  }
+
   let panelCaptionMode = $state<PanelTrackMode>(
     untrack(() => {
+      const activeLang = getActivePlayerCaptionLanguage();
+      if (activeLang) {
+        const captionLang = normalizeLanguageCode(activeLang);
+        const audioLang = selectedAudioFormat?.audioTrack
+          ? normalizeLanguageCode(selectedAudioFormat.audioTrack.id)
+          : null;
+        if (captionLang !== audioLang) {
+          return PanelTrackMode.Custom;
+        }
+      }
+
       const options = CONTENT_OPTIONS.value;
       const resolvedMode = resolveCaptionLanguageMode(options.captionLanguageMode, options.audioTrackLanguageMode);
       if (resolvedMode === AudioTrackLanguageMode.OriginalLanguage) {
@@ -158,6 +184,15 @@ export function createPanelState(getVideoData: () => VideoData) {
       const videoData = getVideoData();
       if (!videoData.captionTracks.length) {
         return null;
+      }
+
+      const activeLang = getActivePlayerCaptionLanguage();
+      if (activeLang) {
+        const langCode = normalizeLanguageCode(activeLang);
+        const match = videoData.captionTracks.find(track => normalizeLanguageCode(track.languageCode) === langCode);
+        if (match) {
+          return match;
+        }
       }
 
       const options = CONTENT_OPTIONS.value;
