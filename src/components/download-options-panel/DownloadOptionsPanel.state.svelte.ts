@@ -8,6 +8,7 @@ import { CONTENT_OPTIONS, downloadProgressStore, interruptedDownloadStore } from
 import { getCompatibleFilename, getOutputExtension, resolveAutoExtension } from "@/lib/utils/containers";
 import {
   calculateWeightedProgress,
+  findOriginalAudioFormat,
   formatAudioCodecLabel,
   formatVideoQualityLabel,
   getCurrentVideoAudioLanguage,
@@ -19,6 +20,7 @@ import {
 import {
   AudioTrackLanguageMode,
   DownloadType,
+  PanelTrackMode,
   VideoQualityMode,
   type AdaptiveFormatItem,
   type CaptionTrack,
@@ -89,13 +91,33 @@ export function createPanelState(getVideoData: () => VideoData) {
     })
   );
 
-  let panelLanguageMode = $state<string>(
+  let panelAudioMode = $state<PanelTrackMode>(
+    untrack(() => {
+      const options = CONTENT_OPTIONS.value;
+      if (options.audioTrackLanguageMode === AudioTrackLanguageMode.OriginalLanguage) {
+        return PanelTrackMode.Original;
+      }
+
+      if (options.audioTrackLanguageMode === AudioTrackLanguageMode.Custom && options.customLanguage) {
+        const langCode = normalizeLanguageCode(options.customLanguage);
+        const hasMatch = getVideoData().audioFormats.some(
+          format => format.audioTrack && normalizeLanguageCode(format.audioTrack.id) === langCode
+        );
+        if (hasMatch) {
+          return PanelTrackMode.Custom;
+        }
+      }
+
+      return PanelTrackMode.MatchVideo;
+    })
+  );
+
+  let panelAudioCustomLanguage = $state(
     untrack(() => {
       const options = CONTENT_OPTIONS.value;
       if (options.audioTrackLanguageMode === AudioTrackLanguageMode.Custom && options.customLanguage) {
         const langCode = normalizeLanguageCode(options.customLanguage);
-        const videoData = getVideoData();
-        const hasMatch = videoData.audioFormats.some(
+        const hasMatch = getVideoData().audioFormats.some(
           format => format.audioTrack && normalizeLanguageCode(format.audioTrack.id) === langCode
         );
         if (hasMatch) {
@@ -103,9 +125,12 @@ export function createPanelState(getVideoData: () => VideoData) {
         }
       }
 
-      return "auto";
+      const firstTrack = getVideoData().audioFormats.find(format => format.audioTrack);
+      return firstTrack?.audioTrack ? normalizeLanguageCode(firstTrack.audioTrack.id) : "";
     })
   );
+
+  let panelCaptionMode = $state<PanelTrackMode>(PanelTrackMode.MatchVideo);
 
   let selectedCaptionTrack = $state<CaptionTrack | null>(
     untrack(() => {
@@ -355,8 +380,7 @@ export function createPanelState(getVideoData: () => VideoData) {
     const mode = CONTENT_OPTIONS.value.audioTrackLanguageMode;
     if (mode === AudioTrackLanguageMode.OriginalLanguage) {
       const { audioFormats } = getVideoData();
-      const original = audioFormats.find(format => !format.audioTrack)
-        ?? audioFormats.find(format => format.audioTrack?.audioIsDefault);
+      const original = findOriginalAudioFormat(audioFormats);
       if (original?.audioTrack) {
         return normalizeLanguageCode(original.audioTrack.id);
       }
@@ -372,11 +396,8 @@ export function createPanelState(getVideoData: () => VideoData) {
     return normalizeLanguageCode(document.documentElement.lang);
   }
 
-  function handlePanelLanguageModeChange(mode: string) {
-    panelLanguageMode = mode;
+  function applyAudioByLangCode(langCode: string) {
     const { audioFormats, captionTracks } = getVideoData();
-    const langCode = mode === "auto" ? resolveAutoLanguageCode() : mode;
-
     const matching = audioFormats.filter(
       format => format.audioTrack && normalizeLanguageCode(format.audioTrack.id) === langCode
     );
@@ -386,6 +407,73 @@ export function createPanelState(getVideoData: () => VideoData) {
     }
 
     selectedCaptionTrack = captionTracks.find(track => normalizeLanguageCode(track.languageCode) === langCode) ?? null;
+  }
+
+  function handlePanelAudioModeChange(newMode: PanelTrackMode) {
+    panelAudioMode = newMode;
+
+    if (newMode === PanelTrackMode.Original) {
+      const { audioFormats, captionTracks } = getVideoData();
+      const original = findOriginalAudioFormat(audioFormats);
+      if (original) {
+        selectedAudioFormat = original;
+        resetDoneState();
+      }
+
+      if (original?.audioTrack) {
+        const langCode = normalizeLanguageCode(original.audioTrack.id);
+        selectedCaptionTrack =
+          captionTracks.find(track => normalizeLanguageCode(track.languageCode) === langCode) ?? null;
+      }
+
+      return;
+    }
+
+    if (newMode === PanelTrackMode.Custom) {
+      if (panelAudioCustomLanguage) {
+        applyAudioByLangCode(panelAudioCustomLanguage);
+      }
+
+      return;
+    }
+
+    applyAudioByLangCode(resolveAutoLanguageCode());
+  }
+
+  function handlePanelAudioCustomChange(langCode: string) {
+    panelAudioCustomLanguage = langCode;
+    applyAudioByLangCode(langCode);
+  }
+
+  function handlePanelCaptionModeChange(newMode: PanelTrackMode) {
+    panelCaptionMode = newMode;
+    const { captionTracks } = getVideoData();    if (newMode === PanelTrackMode.MatchVideo) {
+      if (selectedAudioFormat?.audioTrack) {
+        const langCode = normalizeLanguageCode(selectedAudioFormat.audioTrack.id);
+        selectedCaptionTrack =
+          captionTracks.find(track => normalizeLanguageCode(track.languageCode) === langCode) ?? null;
+      }
+
+      return;
+    }
+
+    if (newMode === PanelTrackMode.Original) {
+      const { audioFormats } = getVideoData();
+      const originalAudio = findOriginalAudioFormat(audioFormats);
+      if (originalAudio?.audioTrack) {
+        const langCode = normalizeLanguageCode(originalAudio.audioTrack.id);
+        selectedCaptionTrack =
+          captionTracks.find(track => normalizeLanguageCode(track.languageCode) === langCode) ?? null;
+      } else {
+        selectedCaptionTrack = captionTracks[0] ?? null;
+      }
+
+      return;
+    }
+
+    if (!selectedCaptionTrack && captionTracks.length > 0) {
+      selectedCaptionTrack = captionTracks[0];
+    }
   }
 
   function handleCaptionChange(track: CaptionTrack | null) {
@@ -530,8 +618,14 @@ export function createPanelState(getVideoData: () => VideoData) {
     get downloadId() {
       return downloadId;
     },
-    get panelLanguageMode() {
-      return panelLanguageMode;
+    get panelAudioMode() {
+      return panelAudioMode;
+    },
+    get panelAudioCustomLanguage() {
+      return panelAudioCustomLanguage;
+    },
+    get panelCaptionMode() {
+      return panelCaptionMode;
     },
     get selectedCaptionTrack() {
       return selectedCaptionTrack;
@@ -540,7 +634,9 @@ export function createPanelState(getVideoData: () => VideoData) {
       return IS_WATCH_PAGE;
     },
     handleDownloadTypeChange,
-    handlePanelLanguageModeChange,
+    handlePanelAudioModeChange,
+    handlePanelAudioCustomChange,
+    handlePanelCaptionModeChange,
     handleCaptionChange,
     startDownload,
     cancelDownload,

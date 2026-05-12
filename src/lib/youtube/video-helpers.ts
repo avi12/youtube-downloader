@@ -2,6 +2,7 @@ import { AUTO_EXTENSION } from "@/lib/utils/containers";
 import { CHILD_LIST_SUBTREE } from "@/lib/utils/dom";
 import {
   AudioTrackLanguageMode,
+  CaptionLanguageMode,
   DownloadType,
   PlaylistDownloadMode,
   PlaylistOutputMode,
@@ -37,9 +38,21 @@ export const INITIAL_OPTIONS: Options = {
   playlistAudioOutputMode: PlaylistOutputMode.Zip,
   isPlaylistScrollSyncEnabled: false,
   audioTrackLanguageMode: AudioTrackLanguageMode.OriginalLanguage,
+  captionLanguageMode: CaptionLanguageMode.SameAsAudio,
   customLanguage: "en",
   downloadExtras: true
 };
+
+const CAPTION_TO_AUDIO_MODE: Partial<Record<CaptionLanguageMode, AudioTrackLanguageMode>> = {
+  [CaptionLanguageMode.OriginalLanguage]: AudioTrackLanguageMode.OriginalLanguage,
+  [CaptionLanguageMode.MatchVideo]: AudioTrackLanguageMode.MatchVideo,
+  [CaptionLanguageMode.MatchYouTube]: AudioTrackLanguageMode.MatchYouTube,
+  [CaptionLanguageMode.Custom]: AudioTrackLanguageMode.Custom
+};
+
+export function resolveCaptionLanguageMode(captionMode: CaptionLanguageMode, audioMode: AudioTrackLanguageMode) {
+  return CAPTION_TO_AUDIO_MODE[captionMode] ?? audioMode;
+}
 
 export function isVideoLive(playerResponse: PlayerResponse) {
   // isLiveContent also matches past-live VODs (which are downloadable), so don't read it here.
@@ -138,6 +151,23 @@ function matchAudioFormatToLanguage(audioFormats: AdaptiveFormatItem[], langCode
   return audioFormats.find(format => normalizeLanguageCode(format.audioTrack?.id ?? "") === langCode);
 }
 
+export function findOriginalAudioFormat(audioFormats: AdaptiveFormatItem[]) {
+  // Formats without audioTrack are single baked-in tracks
+  const noTrack = audioFormats.find(format => !format.audioTrack);
+  if (noTrack) {
+    return noTrack;
+  }
+
+  // YouTube's InnerTube API marks the creator's original track with a ".4" id suffix
+  // (AUDIO_TRACK_TYPE_ORIGINAL); dubbed tracks use ".3". This is locale-independent,
+  // unlike displayName which is localized and audioIsDefault which reflects the
+  // player's current language selection rather than the creator's original.
+  return audioFormats.find(format => format.audioTrack?.id.endsWith(".4"))
+    ?? audioFormats.find(format => format.audioTrack?.displayName.includes("(original)"))
+    ?? audioFormats.find(format => format.audioTrack?.audioIsDefault)
+    ?? null;
+}
+
 export function selectPreferredAudioFormat({
   audioFormats,
   videoMimeType,
@@ -158,7 +188,7 @@ export function selectPreferredAudioFormat({
   }
 
   const isWebm = videoMimeType.includes("webm");
-  const originalTrack = audioFormats.find(format => !format.audioTrack);
+  const originalTrack = findOriginalAudioFormat(audioFormats);
 
   let candidates: AdaptiveFormatItem[] = [];
   if (languageMode === AudioTrackLanguageMode.Custom && customLanguage) {
@@ -169,9 +199,8 @@ export function selectPreferredAudioFormat({
       candidates = [match, ...audioFormats.filter(format => format !== match)];
     }
   } else if (languageMode === AudioTrackLanguageMode.OriginalLanguage) {
-    const original = originalTrack ?? audioFormats.find(format => format.audioTrack?.audioIsDefault) ?? null;
-    if (original) {
-      candidates = [original, ...audioFormats.filter(format => format !== original)];
+    if (originalTrack) {
+      candidates = [originalTrack, ...audioFormats.filter(format => format !== originalTrack)];
     }
   }
 
