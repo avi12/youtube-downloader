@@ -112,7 +112,7 @@ async function downloadExtraAudioTracksViaSabr({ config, formats, poToken, signa
           onTrackBytesReceived?.(i, bytes);
         }
       });
-      const data = await fetchAudioViaSabrStream({
+      const { data } = await fetchAudioViaSabrStream({
         sabrConfig: config,
         audioFormat: format,
         fetchFn: sabrFetch,
@@ -221,7 +221,7 @@ export async function downloadViaSabr({ request, signal, tabId, onProgress }: {
 
   const resolvedPoToken = poToken ?? "";
   if (isAudioOnly) {
-    const audioData = await downloadAudioOnlyViaSabr({
+    const audioResult = await downloadAudioOnlyViaSabr({
       config: effectiveConfig,
       audioFormat,
       poToken: resolvedPoToken,
@@ -233,8 +233,9 @@ export async function downloadViaSabr({ request, signal, tabId, onProgress }: {
     });
     return {
       videoData: null,
-      audioData,
-      additionalAudioTracks: []
+      audioData: audioResult.data,
+      additionalAudioTracks: [],
+      isPartialAudio: !audioResult.isComplete
     };
   }
 
@@ -242,7 +243,7 @@ export async function downloadViaSabr({ request, signal, tabId, onProgress }: {
     return null;
   }
 
-  const [videoData, audioData] = await downloadVideoAudioViaSabr({
+  const [videoResult, audioResult] = await downloadVideoAudioViaSabr({
     config: effectiveConfig,
     videoFormat,
     audioFormat,
@@ -269,8 +270,10 @@ export async function downloadViaSabr({ request, signal, tabId, onProgress }: {
   });
 
   return {
-    videoData,
-    audioData,
-    additionalAudioTracks
+    videoData: videoResult.data,
+    audioData: audioResult.data,
+    additionalAudioTracks,
+    isPartialVideo: !videoResult.isComplete,
+    isPartialAudio: !audioResult.isComplete
   };
 }

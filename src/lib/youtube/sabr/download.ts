@@ -1,7 +1,12 @@
-import { readStreamToBuffer } from "@/lib/utils/stream";
+import { StreamStallError, readStreamToBuffer } from "@/lib/utils/stream";
 import { type AdaptiveFormatItem, type SabrConfig } from "@/types";
 import { SabrStream } from "googlevideo/sabr-stream";
 import { buildSabrFormat } from "googlevideo/utils";
+
+export type SabrStreamResult = {
+  data: Uint8Array;
+  isComplete: boolean;
+};
 
 function adaptiveFormatToSabrFormat(format: AdaptiveFormatItem) {
   return buildSabrFormat({
@@ -27,7 +32,7 @@ function collectReadableStream({ stream, expectedBytes, signal }: {
   stream: ReadableStream<Uint8Array>;
   expectedBytes: number;
   signal?: AbortSignal;
-}) {
+}): Promise<SabrStreamResult> {
   const reader = stream.getReader();
   if (signal?.aborted) {
     void reader.cancel();
@@ -38,7 +43,22 @@ function collectReadableStream({ stream, expectedBytes, signal }: {
   return readStreamToBuffer({
     reader,
     expectedBytes
-  });
+  }).then(
+    data => ({
+      data,
+      isComplete: true
+    }),
+    error => {
+      if (error instanceof StreamStallError) {
+        return {
+          data: error.partialData,
+          isComplete: false
+        };
+      }
+
+      throw error;
+    }
+  );
 }
 
 function createSabrStream({ sabrConfig, fetchFn, poToken }: {
@@ -69,7 +89,7 @@ export async function fetchVideoViaSabrStream({ sabrConfig, videoFormat, fetchFn
   fetchFn: typeof globalThis.fetch;
   poToken: string;
   signal?: AbortSignal;
-}) {
+}): Promise<SabrStreamResult> {
   const sabrStream = createSabrStream({
     sabrConfig,
     fetchFn,
@@ -93,7 +113,7 @@ export async function fetchAudioViaSabrStream({ sabrConfig, audioFormat, fetchFn
   fetchFn: typeof globalThis.fetch;
   poToken: string;
   signal?: AbortSignal;
-}) {
+}): Promise<SabrStreamResult> {
   const sabrStream = createSabrStream({
     sabrConfig,
     fetchFn,
