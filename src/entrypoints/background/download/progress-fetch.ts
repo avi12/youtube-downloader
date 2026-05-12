@@ -5,8 +5,9 @@ import { ProgressType } from "@/types";
 const PROGRESS_THROTTLE_INTERVAL_MS = 1000;
 const lastProgressTimestamps = new Map<string, number>();
 
-const MAX_CDN_RETRY_ATTEMPTS = 3;
+const MAX_CDN_RETRY_ATTEMPTS = 10;
 const RETRY_BASE_DELAY_MS = 1_000;
+const RETRY_MAX_DELAY_MS = 30_000;
 const HTTP_STATUS_RANGE_NOT_SATISFIABLE = 416;
 const HTTP_STATUS_OK = 200;
 
@@ -76,13 +77,17 @@ export function createProgressFetch({ signal, onBytesReceived }: {
   };
 }
 
-export async function fetchWithProgress({ url, signal, onBytesReceived }: {
+export async function fetchWithProgress({ url, signal, onBytesReceived, initialData }: {
   url: string;
   signal: AbortSignal;
   onBytesReceived: (bytes: number) => void;
+  initialData?: Uint8Array;
 }) {
-  let partialData: Uint8Array | null = null;
-  let byteOffset = 0;
+  let partialData: Uint8Array | null = initialData ?? null;
+  let byteOffset = initialData?.byteLength ?? 0;  // Pre-seed progress counter with already-downloaded bytes from SABR
+  if (byteOffset > 0) {
+    onBytesReceived(byteOffset);
+  }
 
   for (let attempt = 0; attempt <= MAX_CDN_RETRY_ATTEMPTS; attempt++) {
     const response = await fetch(url, {
@@ -142,8 +147,9 @@ export async function fetchWithProgress({ url, signal, onBytesReceived }: {
       partialData = partialData
         ? mergeUint8Arrays(partialData, error.partialData)
         : error.partialData;
+      const delay = Math.min(RETRY_BASE_DELAY_MS * (2 ** attempt), RETRY_MAX_DELAY_MS);
       console.warn(`[ytdl:bg] CDN stream interrupted at byte ${byteOffset}, retrying (${attempt + 1}/${MAX_CDN_RETRY_ATTEMPTS})`);
-      await new Promise<void>(resolve => setTimeout(resolve, RETRY_BASE_DELAY_MS * (2 ** attempt)));
+      await new Promise<void>(resolve => setTimeout(resolve, delay));
     }
   }
 

@@ -23,6 +23,8 @@ export interface DownloadResult {
     languageCode: string;
     isDefault: boolean;
   }>;
+  isPartialVideo?: boolean;
+  isPartialAudio?: boolean;
 }
 
 const activeBackgroundDownloads = new Map<string, AbortController>();
@@ -333,12 +335,16 @@ export async function startBackgroundDownload({ request, tabId }: {
       return;
     }
 
-    if (!result?.audioData) {
+    const needsCdn = !result?.audioData || result.isPartialVideo || result.isPartialAudio;
+    if (needsCdn) {
+      // Pass SABR partial bytes so CDN resumes from the stall point via Range request
       result = await downloadViaCdn({
         request,
         signal,
         videoId,
-        tabId
+        tabId,
+        partialVideoData: result?.isPartialVideo ? (result.videoData ?? undefined) : undefined,
+        partialAudioData: result?.isPartialAudio ? (result.audioData ?? undefined) : undefined
       });
     }
 

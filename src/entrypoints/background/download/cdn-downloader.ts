@@ -5,11 +5,13 @@ import { stripMimeParams } from "@/lib/utils/containers";
 import { DownloadType, ProgressType } from "@/types";
 import type { DownloadRequest } from "@/types";
 
-export async function downloadViaCdn({ request, signal, videoId, tabId }: {
+export async function downloadViaCdn({ request, signal, videoId, tabId, partialVideoData, partialAudioData }: {
   request: DownloadRequest;
   signal: AbortSignal;
   videoId: string;
   tabId: number;
+  partialVideoData?: Uint8Array;
+  partialAudioData?: Uint8Array;
 }): Promise<DownloadResult | null> {
   const {
     type, videoFormat, audioFormat, resolvedVideoUrl,
@@ -30,8 +32,9 @@ export async function downloadViaCdn({ request, signal, videoId, tabId }: {
   const audioExpectedBytes = parseContentLength(audioFormat ?? null);
   const extraExpectedBytesArr = (additionalAudioFormats ?? []).map(format => parseContentLength(format));
 
-  let videoReceivedBytes = 0;
-  let audioReceivedBytes = 0;
+  // Pre-seed with bytes already fetched by SABR before it stalled
+  let videoReceivedBytes = partialVideoData?.byteLength ?? 0;
+  let audioReceivedBytes = partialAudioData?.byteLength ?? 0;
   const extraReceivedBytesArr = extraUrls.map(() => 0);
   let videoTotalBytes = videoExpectedBytes;
   let audioTotalBytes = audioExpectedBytes;
@@ -72,9 +75,10 @@ export async function downloadViaCdn({ request, signal, videoId, tabId }: {
     });
   }
 
-  function fetchStream({ url, onBytes }: {
+  function fetchStream({ url, onBytes, initialData }: {
     url: string | null | undefined;
     onBytes: (bytes: number) => void;
+    initialData?: Uint8Array;
   }) {
     if (!url) {
       return Promise.resolve(null);
@@ -83,7 +87,8 @@ export async function downloadViaCdn({ request, signal, videoId, tabId }: {
     return fetchWithProgress({
       url,
       signal,
-      onBytesReceived: onBytes
+      onBytesReceived: onBytes,
+      initialData
     });
   }
 
@@ -91,6 +96,7 @@ export async function downloadViaCdn({ request, signal, videoId, tabId }: {
     hasVideo
       ? fetchStream({
         url: resolvedVideoUrl,
+        initialData: partialVideoData,
         onBytes(bytes) {
           videoReceivedBytes += bytes;
           videoTotalBytes = Math.max(videoTotalBytes, videoReceivedBytes);
@@ -101,6 +107,7 @@ export async function downloadViaCdn({ request, signal, videoId, tabId }: {
     hasAudio
       ? fetchStream({
         url: resolvedAudioUrl,
+        initialData: partialAudioData,
         onBytes(bytes) {
           audioReceivedBytes += bytes;
           audioTotalBytes = Math.max(audioTotalBytes, audioReceivedBytes);
