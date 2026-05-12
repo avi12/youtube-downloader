@@ -323,6 +323,11 @@ export async function performDownload({
       isRemoved: false
     }
   });
+  void crossWorldMessenger.sendMessage(CrossWorldMessage.DownloadProgress, {
+    videoId,
+    progress: 0,
+    progressType: ProgressType.Video
+  });
 
   try {
     const cachedVideoData = videoDataCache.get(videoId);

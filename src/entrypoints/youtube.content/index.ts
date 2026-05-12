@@ -1,4 +1,3 @@
-import { listenForInterruptedDownloadEvents } from "./download/interrupted-downloads";
 import { listenForKeepalive } from "./download/keepalive";
 import { registerBackgroundMessageHandlers } from "./handlers/background";
 import { registerCrossWorldHandlers } from "./handlers/cross-world";
@@ -35,7 +34,6 @@ export default defineContentScript({
     void forwardSabrCredentialsWithRetry();
 
     if (!isDownloadIframe) {
-      listenForInterruptedDownloadEvents();
       listenForKeepalive();
       initCompletedDownloadsStore();
       mountWatchToast(context);

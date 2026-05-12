@@ -22,12 +22,6 @@ export function registerStorageHandlers() {
     };
   });
 
-  onMessage(MessageType.PersistInterruptedDownload, async ({ data }) => {
-    await mutateStorageItem(interruptedDownloadsItem, current => {
-      current[data.videoId] = data;
-    });
-  });
-
   onMessage(MessageType.ClearInterruptedDownload, async ({ data }) => {
     await mutateStorageItem(interruptedDownloadsItem, current => {
       delete current[data.videoId];
