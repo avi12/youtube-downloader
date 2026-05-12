@@ -8,7 +8,12 @@ import { CrossWorldEvent, emitCrossWorldEvent } from "@/lib/messaging/cross-worl
 import { CrossWorldMessage, crossWorldMessenger, dispatchButtonClick } from "@/lib/messaging/cross-world-messenger";
 import { DATA_BUTTON_ID_ATTR } from "@/lib/ui/polymer-utils";
 import { CHILD_LIST_SUBTREE } from "@/lib/utils/dom";
-import { ACTIVE_CAPTION_ATTR, getMoviePlayer, isPlayerCaptionTrackData } from "@/lib/youtube/movie-player";
+import {
+  ACTIVE_CAPTION_ATTR,
+  capturePlayerCaptionBus,
+  getMoviePlayer,
+  isPlayerCaptionTrackData
+} from "@/lib/youtube/movie-player";
 import { ProgressType, type PlayerResponse } from "@/types";
 
 declare global {
@@ -140,22 +145,36 @@ export default defineContentScript({
     registerGridTagger();
     registerGridVideoDataHandler();
 
+    function isEventTarget(value: unknown): value is EventTarget {
+      return typeof value === "object" && value !== null && "addEventListener" in value;
+    }
+
     function setupAudioTrackWatcher() {
       const player = getMoviePlayer();
-      if (!player?.setAudioTrack || player.__ytdlAudioWatched) {
+      if (!player || player.__ytdlAudioWatched) {
+        return;
+      }
+
+      const audioTracks = document.querySelector<HTMLVideoElement>("video.html5-main-video")?.audioTracks;
+      if (!audioTracks?.length || !isEventTarget(audioTracks)) {
         return;
       }
 
       player.__ytdlAudioWatched = true;
-      const orig = player.setAudioTrack.bind(player);
-      player.setAudioTrack = track => {
-        const trackId = track?.gw?.id;
-        if (trackId) {
-          void crossWorldMessenger.sendMessage(CrossWorldMessage.AudioTrackChanged, { trackId });
-        }
 
-        return orig(track);
-      };
+      audioTracks.addEventListener("change", () => {
+        for (const track of audioTracks) {
+          if (!track.enabled) {
+            continue;
+          }
+
+          if (track.language) {
+            void crossWorldMessenger.sendMessage(CrossWorldMessage.AudioTrackChanged, { trackId: track.language });
+          }
+
+          break;
+        }
+      });
     }
 
     function writeCaptionAttr(languageCode: string, vssId: string) {
@@ -167,48 +186,43 @@ export default defineContentScript({
       );
     }
 
-    function clearCaptionAttr() {
-      getMoviePlayer()?.removeAttribute(ACTIVE_CAPTION_ATTR);
-    }
-
     function setupCaptionTrackWatcher() {
       const player = getMoviePlayer();
-      if (!player?.setOption || player.__ytdlCaptionWatched) {
+      if (!player?.getOption || player.__ytdlCaptionWatched) {
         return;
       }
 
       player.__ytdlCaptionWatched = true;
 
-      const currentTrack = player.getOption?.("captions", "track");
-      if (isPlayerCaptionTrackData(currentTrack)) {
-        writeCaptionAttr(currentTrack.languageCode, currentTrack.vss_id);
+      function onCaptionTrack(languageCode: string, vssId: string) {
+        writeCaptionAttr(languageCode, vssId);
+        void crossWorldMessenger.sendMessage(CrossWorldMessage.CaptionTrackChanged, {
+          languageCode,
+          vssId
+        });
       }
 
-      // On initial page load YouTube restores the saved caption without calling
-      // setOption, so read getOption on first playback start as a fallback.
-      document.querySelector("video")?.addEventListener("playing", () => {
-        const track = player.getOption?.("captions", "track");
+      function syncCaptionFromPlayer() {
+        const track = player?.getOption?.("captions", "track");
         if (isPlayerCaptionTrackData(track)) {
-          writeCaptionAttr(track.languageCode, track.vss_id);
+          onCaptionTrack(track.languageCode, track.vss_id);
         }
-      }, { once: true });
+      }
 
-      const orig = player.setOption.bind(player);
-      player.setOption = (module, option, value) => {
-        if (module === "captions" && option === "track") {
-          if (isPlayerCaptionTrackData(value)) {
-            writeCaptionAttr(value.languageCode, value.vss_id);
-            void crossWorldMessenger.sendMessage(CrossWorldMessage.CaptionTrackChanged, {
-              languageCode: value.languageCode,
-              vssId: value.vss_id
-            });
-          } else {
-            clearCaptionAttr();
-          }
+      syncCaptionFromPlayer();
+      // YouTube restores the saved caption on initial load before any bus events fire.
+      document.querySelector("video")?.addEventListener("playing", syncCaptionFromPlayer, { once: true });
+
+      const bus = capturePlayerCaptionBus(player);
+      if (!bus) {
+        return;
+      }
+
+      bus.subscribe("captionschanged", (trackData: unknown) => {
+        if (isPlayerCaptionTrackData(trackData)) {
+          onCaptionTrack(trackData.languageCode, trackData.vss_id);
         }
-
-        return orig(module, option, value);
-      };
+      });
     }
 
     document.addEventListener("yt-navigate-finish", handleNavigateSuccess);
