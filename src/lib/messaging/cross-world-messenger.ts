@@ -124,6 +124,7 @@ interface PageMessengerSchema {
   }): void;
   [CrossWorldMessage.CaptionTrackChanged](data: {
     languageCode: string;
+    vssId: string;
   }): void;
 }
 

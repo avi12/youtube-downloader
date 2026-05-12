@@ -80,7 +80,7 @@ export interface MoviePlayerElement extends HTMLElement {
   /** Removes the iframe element used by the player and frees resources. */
   destroy?: () => void;
 
-  /** Internal flag set by ytdl to prevent double-patching setAudioTrack. */
+  /** Internal flag set by ytdl to prevent double-registering the audioTracks change listener. */
   __ytdlAudioWatched?: boolean;
   /** Internal flag set by ytdl to prevent double-patching setOption. */
   __ytdlCaptionWatched?: boolean;
@@ -137,3 +137,79 @@ export function isPlayerCaptionTrackData(value: unknown): value is PlayerCaption
 }
 
 export const ACTIVE_CAPTION_ATTR = "data-ytdl-caption";
+
+export type CaptionEventBus = {
+  subscribe: (topic: string, handler: (data: unknown) => void) => void;
+};
+
+type CaptionBusContext = {
+  state?: {
+    L?: CaptionEventBus;
+  };
+};
+
+function isGetOptionFn(value: unknown): value is (module: string, option: string) => unknown {
+  return typeof value === "function";
+}
+
+function isCaptionBusContext(value: unknown): value is CaptionBusContext {
+  return typeof value === "object" && value !== null;
+}
+
+function getPrototype(obj: object): object | null {
+  return Object.getPrototypeOf(obj);
+}
+
+// YouTube's internal caption module uses a closure `(...V) => h.apply(R, V)` for getOption.
+// Intercepting Function.prototype.apply while calling it lets us capture R, whose state.L
+// is the pub/sub bus that emits "captionschanged" on every track switch.
+export function capturePlayerCaptionBus(player: MoviePlayerElement): CaptionEventBus | null {
+  let proto: object | null = player;
+  let rawGetOption: ((module: string, option: string) => unknown) | null = null;
+
+  while (proto) {
+    const desc = Object.getOwnPropertyDescriptor(proto, "getOption");
+    if (isGetOptionFn(desc?.value)) {
+      rawGetOption = desc.value;
+      break;
+    }
+
+    proto = getPrototype(proto);
+  }
+
+  if (!rawGetOption) {
+    return null;
+  }
+
+  const origApply = Function.prototype.apply;
+  let internalCtx: unknown = null;
+
+  type AnyFn = (...args: unknown[]) => unknown;
+
+  function captureApply(this: AnyFn, thisArg: unknown, args: unknown[]) {
+    if (!internalCtx && Array.isArray(args) && args[0] === "captions") {
+      internalCtx = thisArg;
+    }
+
+    return origApply.call(this, thisArg, args);
+  }
+
+  try {
+    Object.defineProperty(Function.prototype, "apply", {
+      value: captureApply,
+      configurable: true
+    });
+    rawGetOption.call(player, "captions", "track");
+  } finally {
+    Object.defineProperty(Function.prototype, "apply", {
+      value: origApply,
+      configurable: true
+    });
+  }
+
+  if (!isCaptionBusContext(internalCtx)) {
+    return null;
+  }
+
+  return internalCtx.state?.L ?? null;
+}
