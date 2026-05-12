@@ -1,8 +1,9 @@
+import { checkInterruptedDownload } from "../download/interrupted-downloads";
 import { setPlaylistContext, uncancelStreamTransfer } from "../download/stream-transfer";
 import { CrossWorldEvent, emitCrossWorldEvent } from "@/lib/messaging/cross-world-events";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { MessageType, onMessage } from "@/lib/messaging/messaging";
-import { downloadProgressStore } from "@/lib/ui/synced-stores.svelte";
+import { downloadProgressStore, interruptedDownloadStore } from "@/lib/ui/synced-stores.svelte";
 import { ProgressType } from "@/types";
 
 export function registerBackgroundMessageHandlers() {
@@ -69,7 +70,25 @@ export function registerBackgroundMessageHandlers() {
           progressType: data.progressType,
           isFailed: true
         });
+      } else if (data.isInterrupted) {
+        // Network went offline: clear the running state and sync the interrupted
+        // entry from storage (written by the background before sending this message).
+        downloadProgressStore.unsuppress(data.videoId);
+        downloadProgressStore.setLocal(data.videoId, {
+          isDownloading: false,
+          isDone: false,
+          progress: 0,
+          progressType: data.progressType
+        });
+        void checkInterruptedDownload(data.videoId);
       } else {
+        // Guard against the cancel-then-restart race: the background's cancel
+        // response can arrive after the user has already restarted the download.
+        // If a new download is running, this isRemoved is stale — drop it.
+        if (downloadProgressStore.get(data.videoId)?.isDownloading) {
+          return;
+        }
+
         downloadProgressStore.delete(data.videoId);
       }
 
@@ -87,6 +106,10 @@ export function registerBackgroundMessageHandlers() {
       progress: data.progress,
       progressType: data.progressType
     });
+
+    if (isComplete) {
+      interruptedDownloadStore.delete(data.videoId);
+    }
 
     emitCrossWorldEvent({
       type: CrossWorldEvent.ProgressUpdate,

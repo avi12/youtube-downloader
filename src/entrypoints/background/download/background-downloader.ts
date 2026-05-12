@@ -41,6 +41,11 @@ addEventListener("online", () => {
   const retries = [...pendingNetworkRetries.values()];
   pendingNetworkRetries.clear();
   for (const { request, tabId } of retries) {
+    void sendMessage(MessageType.UpdateDownloadProgress, {
+      videoId: request.videoId,
+      progress: 0,
+      progressType: ProgressType.Video
+    }, tabId);
     void startBackgroundDownload({
       request,
       tabId
@@ -239,7 +244,7 @@ function reportDownloadFailed({ videoId, tabId }: {
   signalVideoComplete(videoId);
 }
 
-function queueNetworkRetry({ request, tabId }: {
+async function queueNetworkRetry({ request, tabId }: {
   request: DownloadRequest;
   tabId: number;
 }) {
@@ -247,7 +252,14 @@ function queueNetworkRetry({ request, tabId }: {
     request,
     tabId
   });
-  void persistInterruptedDownload(request);
+  await persistInterruptedDownload(request);
+  void sendMessage(MessageType.UpdateDownloadProgress, {
+    videoId: request.videoId,
+    progress: 0,
+    progressType: ProgressType.Video,
+    isRemoved: true,
+    isInterrupted: true
+  }, tabId);
 }
 
 export function cancelBackgroundDownload(videoId: string) {
@@ -371,7 +383,7 @@ export async function startBackgroundDownload({ request, tabId }: {
     }
 
     if (!navigator.onLine) {
-      queueNetworkRetry({
+      await queueNetworkRetry({
         request,
         tabId
       });

@@ -1,13 +1,21 @@
 import type { DownloadRequest, DownloadType, ProgressType, VideoMetadata } from "@/types";
 import { defineExtensionMessaging } from "@webext-core/messaging";
 
+export type InterruptedDownload = {
+  videoId: string;
+  type: DownloadType;
+  filenameOutput: string;
+  videoItag: number;
+  audioItag: number;
+  timestamp: number;
+};
+
 export const MessageType = {
   BackgroundProxyFetch: "backgroundProxyFetch",
   StreamChunk: "streamChunk",
   StreamEnd: "streamEnd",
   ProcessStreamError: "processStreamError",
   GetCapturedSabrBody: "getCapturedSabrBody",
-  PersistInterruptedDownload: "persistInterruptedDownload",
   ClearInterruptedDownload: "clearInterruptedDownload",
   GetInterruptedDownload: "getInterruptedDownload",
   RequestPlaylistDownload: "requestPlaylistDownload",
@@ -81,20 +89,12 @@ interface ProtocolMap {
     poToken: string;
   } | null;
 
-  persistInterruptedDownload(data: {
-    videoId: string;
-    type: DownloadType;
-    filenameOutput: string;
-    videoItag: number;
-    audioItag: number;
-    timestamp: number;
-  }): void;
   clearInterruptedDownload(data: {
     videoId: string;
   }): void;
   getInterruptedDownload(data: {
     videoId: string;
-  }): Parameters<ProtocolMap["persistInterruptedDownload"]>[0] | null;
+  }): InterruptedDownload | null;
 
   downloadViaWatchPage(data: DownloadRequest): void;
 
@@ -131,6 +131,7 @@ interface ProtocolMap {
     progressType: ProgressType;
     isRemoved?: boolean;
     isFailed?: boolean;
+    isInterrupted?: boolean;
   }): void;
 
   refreshPoToken(data: {
@@ -192,5 +193,4 @@ export const { sendMessage, onMessage } =
     breakError: true
   });
 
-export type InterruptedDownload = Parameters<ProtocolMap["persistInterruptedDownload"]>[0];
 export type ProgressUpdate = Parameters<ProtocolMap["updateDownloadProgress"]>[0];
