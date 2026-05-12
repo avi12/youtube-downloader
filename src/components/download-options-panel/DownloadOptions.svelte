@@ -158,7 +158,21 @@
 
   const captionPlayerLabel = $derived(selectedCaptionTrack?.name.simpleText ?? null);
 
-  const captionOriginalLabel = $derived(captionTracks[0]?.name.simpleText ?? null);
+  const captionOriginalLabel = $derived.by(() => {
+    const originalLangId = findOriginalAudioFormat(audioFormats)?.audioTrack?.id;
+    if (originalLangId) {
+      const langCode = normalizeLanguageCode(originalLangId);
+      const match = captionTracks.find(track => normalizeLanguageCode(track.languageCode) === langCode && !track.kind)
+        ?? captionTracks.find(track => normalizeLanguageCode(track.languageCode) === langCode);
+      if (match) {
+        return match.name.simpleText;
+      }
+    }
+
+    return captionTracks.find(track => !track.kind)?.name.simpleText
+      ?? captionTracks[0]?.name.simpleText
+      ?? null;
+  });
 
   const captionCustomOptions = $derived(
     captionTracks.map(track => ({
