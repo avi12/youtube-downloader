@@ -145,34 +145,22 @@ export default defineContentScript({
     registerGridTagger();
     registerGridVideoDataHandler();
 
-    function isEventTarget(value: unknown): value is EventTarget {
-      return typeof value === "object" && value !== null && "addEventListener" in value;
-    }
-
     function setupAudioTrackWatcher() {
       const player = getMoviePlayer();
-      if (!player || player.__ytdlAudioWatched) {
+      if (!player?.getOption || player.__ytdlAudioWatched) {
         return;
       }
 
-      const audioTracks = document.querySelector<HTMLVideoElement>("video.html5-main-video")?.audioTracks;
-      if (!audioTracks?.length || !isEventTarget(audioTracks)) {
+      const bus = capturePlayerCaptionBus(player);
+      if (!bus) {
         return;
       }
 
       player.__ytdlAudioWatched = true;
 
-      audioTracks.addEventListener("change", () => {
-        for (const track of audioTracks) {
-          if (!track.enabled) {
-            continue;
-          }
-
-          if (track.language) {
-            void crossWorldMessenger.sendMessage(CrossWorldMessage.AudioTrackChanged, { trackId: track.language });
-          }
-
-          break;
+      bus.subscribe("internalaudioformatchange", (trackId: unknown) => {
+        if (typeof trackId === "string" && trackId) {
+          void crossWorldMessenger.sendMessage(CrossWorldMessage.AudioTrackChanged, { trackId });
         }
       });
     }

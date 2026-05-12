@@ -80,9 +80,9 @@ export interface MoviePlayerElement extends HTMLElement {
   /** Removes the iframe element used by the player and frees resources. */
   destroy?: () => void;
 
-  /** Internal flag set by ytdl to prevent double-registering the audioTracks change listener. */
+  /** Internal flag set by ytdl to prevent double-subscribing to internalaudioformatchange on the player bus. */
   __ytdlAudioWatched?: boolean;
-  /** Internal flag set by ytdl to prevent double-patching setOption. */
+  /** Internal flag set by ytdl to prevent double-subscribing to captionschanged on the player bus. */
   __ytdlCaptionWatched?: boolean;
 
   /**
