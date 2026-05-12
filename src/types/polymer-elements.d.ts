@@ -1,7 +1,18 @@
+import type { YtIconName } from "./youtube";
 import type { HTMLAttributes } from "svelte/elements";
 
 declare module "svelte/elements" {
   interface SvelteHTMLElements {
+    "yt-icon": HTMLAttributes<HTMLElement> & {
+      /** The icon to display, in `"iconset:name"` format (e.g. `YtIconName.Autorenew`). */
+      icon?: YtIconName | (string & {});
+      /** Fallback image URL when the icon cannot be found in the iconset. */
+      src?: string;
+      /** The theme to apply from the iconset's theme map. */
+      theme?: string;
+      /** Accessible label for the icon (maps to `aria-label` on the inner SVG). */
+      alt?: string;
+    };
     "yt-button-view-model": HTMLAttributes<HTMLElement> & {
       class?: string;
       "aria-label"?: string;

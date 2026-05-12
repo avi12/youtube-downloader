@@ -79,6 +79,28 @@ export interface MoviePlayerElement extends HTMLElement {
   setSize?: (width: number, height: number) => void;
   /** Removes the iframe element used by the player and frees resources. */
   destroy?: () => void;
+
+  /** Internal flag set by ytdl to prevent double-patching setAudioTrack. */
+  __ytdlAudioWatched?: boolean;
+
+  getAudioTrack?: () => {
+    gw?: {
+      id?: string;
+      name?: string;
+    };
+  } | null;
+  getAvailableAudioTracks?: () => Array<{
+    gw?: {
+      id?: string;
+      name?: string;
+    };
+  }>;
+  setAudioTrack?: (track: {
+    gw?: {
+      id?: string;
+      name?: string;
+    };
+  }) => void;
 }
 
 export function getMoviePlayer() {

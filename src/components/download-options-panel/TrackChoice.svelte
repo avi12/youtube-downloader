@@ -9,7 +9,8 @@
     ButtonType,
     IconName,
     PanelTrackMode,
-    TrackKind
+    TrackKind,
+    YtIconName
   } from "@/types";
   import { untrack } from "svelte";
   import { SvelteMap } from "svelte/reactivity";
@@ -140,20 +141,7 @@
     <div class="track-follow">
       <div class="track-follow-icon" aria-hidden="true">
         <span class="sync-pulse"></span>
-        <svg
-          aria-hidden="true"
-          fill="none"
-          height="13"
-          stroke="currentColor"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          stroke-width="2"
-          viewBox="0 0 24 24"
-          width="13"
-        >
-          <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07L11.76 5.17" />
-          <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07L12.24 18.83" />
-        </svg>
+        <yt-icon class="sync-icon" icon={YtIconName.Autorenew}></yt-icon>
       </div>
       <div class="track-follow-body">
         <div class="track-follow-value">{playerLabel ?? "—"}</div>
@@ -278,6 +266,11 @@
     border-radius: 999px;
     background: var(--ytdl-tficon-bg);
     color: var(--ytdl-tficon-color);
+  }
+
+  .sync-icon {
+    width: 14px;
+    height: 14px;
   }
 
   .sync-pulse {

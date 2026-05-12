@@ -140,7 +140,26 @@ export default defineContentScript({
     registerGridTagger();
     registerGridVideoDataHandler();
 
+    function setupAudioTrackWatcher() {
+      const player = getMoviePlayer();
+      if (!player?.setAudioTrack || player.__ytdlAudioWatched) {
+        return;
+      }
+
+      player.__ytdlAudioWatched = true;
+      const orig = player.setAudioTrack.bind(player);
+      player.setAudioTrack = function (track) {
+        const trackId = track?.gw?.id;
+        if (trackId) {
+          void crossWorldMessenger.sendMessage(CrossWorldMessage.AudioTrackChanged, { trackId });
+        }
+
+        return orig(track);
+      };
+    }
+
     document.addEventListener("yt-navigate-finish", handleNavigateSuccess);
+    document.addEventListener("yt-navigate-finish", setupAudioTrackWatcher);
 
     if (self === top) {
       function cancelAllAndNotify() {
@@ -157,10 +176,12 @@ export default defineContentScript({
     if (document.readyState === "complete") {
       await extractAndDispatchVideoData(cancelActiveDownload);
       extractPlaylistMetadata();
+      setupAudioTrackWatcher();
     } else {
       addEventListener("load", () => {
         void extractAndDispatchVideoData(cancelActiveDownload);
         extractPlaylistMetadata();
+        setupAudioTrackWatcher();
       }, { once: true });
     }
   }

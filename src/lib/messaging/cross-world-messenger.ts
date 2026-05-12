@@ -29,7 +29,8 @@ export const CrossWorldMessage = {
   DownloadProgress: "downloadProgress",
   DownloadViaIframe: "downloadViaIframe",
   StartBackgroundDownload: "startBackgroundDownload",
-  OptionsUpdate: "optionsUpdate"
+  OptionsUpdate: "optionsUpdate",
+  AudioTrackChanged: "audioTrackChanged"
 } as const;
 
 interface PageMessengerSchema {
@@ -116,6 +117,9 @@ interface PageMessengerSchema {
   [CrossWorldMessage.StartBackgroundDownload](data: { requestJson: string }): void;
   [CrossWorldMessage.OptionsUpdate](data: {
     isShowNativeDownload: boolean;
+  }): void;
+  [CrossWorldMessage.AudioTrackChanged](data: {
+    trackId: string;
   }): void;
 }
 

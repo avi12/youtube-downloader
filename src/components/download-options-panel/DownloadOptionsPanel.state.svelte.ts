@@ -345,6 +345,25 @@ export function createPanelState(getVideoData: () => VideoData) {
     });
   });
 
+  $effect(() => crossWorldMessenger.onMessage(CrossWorldMessage.AudioTrackChanged, ({ data }) => {
+    if (panelAudioMode !== PanelTrackMode.MatchVideo) {
+      return;
+    }
+
+    const { audioFormats, captionTracks } = getVideoData();
+    const langCode = normalizeLanguageCode(data.trackId.split(".")[0]);
+    const matching = audioFormats.filter(
+      format => format.audioTrack && normalizeLanguageCode(format.audioTrack.id) === langCode
+    );
+    if (!matching.length) {
+      return;
+    }
+
+    selectedAudioFormat = matching.reduce((best, format) => format.bitrate > best.bitrate ? format : best);
+    selectedCaptionTrack =
+      captionTracks.find(track => normalizeLanguageCode(track.languageCode) === langCode) ?? null;
+  }));
+
   // When a queued download (re)starts for this video, reset its progress
   // display locally so the panel shows 0% rather than stale prior progress.
   $effect(() => {

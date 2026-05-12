@@ -26,6 +26,7 @@ export {
   IconName,
   TooltipPlacement,
   TooltipStyle,
+  YtIconName,
   isPolymerInputElement,
   isPolymerProgressElement
 } from "./youtube";

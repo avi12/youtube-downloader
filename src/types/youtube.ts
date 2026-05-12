@@ -21,6 +21,7 @@ export type MediaItem = {
   approxDurationMs: `${number}`;
 };
 
+/** @see https://github.com/LuanRT/YouTube.js/blob/main/src/parser/misc.ts */
 export const VideoQuality = {
   Tiny: "tiny",
   Medium: "medium",
@@ -48,6 +49,7 @@ export const QualityLabel = {
 
 export type QualityLabel = (typeof QualityLabel)[keyof typeof QualityLabel];
 
+/** @see https://github.com/LuanRT/YouTube.js/blob/main/src/parser/misc.ts */
 export const AudioQuality = {
   Low: "AUDIO_QUALITY_LOW",
   Medium: "AUDIO_QUALITY_MEDIUM"
@@ -55,6 +57,7 @@ export const AudioQuality = {
 
 export type AudioQuality = (typeof AudioQuality)[keyof typeof AudioQuality];
 
+/** @see https://github.com/LuanRT/YouTube.js/blob/main/src/parser/classes/PlayerResponse.ts */
 export const PlayabilityStatus = {
   Ok: "OK",
   Unplayable: "UNPLAYABLE",
@@ -109,6 +112,7 @@ export type AdaptiveFormatItem = MediaItem & {
   xtags?: string;
 };
 
+/** @see https://github.com/LuanRT/YouTube.js/blob/main/src/parser/classes/PlayerCaptionsTracklist.ts */
 export type CaptionTrack = {
   baseUrl: string;
   name: { simpleText: string };
@@ -118,6 +122,7 @@ export type CaptionTrack = {
   isTranslatable: boolean;
 };
 
+/** @see https://github.com/LuanRT/YouTube.js/blob/main/src/parser/classes/PlayerResponse.ts */
 export type PlayerResponse = {
   playabilityStatus: {
     status: `${PlayabilityStatus}`;
@@ -180,6 +185,7 @@ export type PlayerResponse = {
   };
 };
 
+/** @see https://github.com/LuanRT/YouTube.js/blob/main/src/parser/classes/ButtonViewModel.ts */
 export const ButtonSize = {
   Default: "BUTTON_VIEW_MODEL_SIZE_DEFAULT",
   Large: "BUTTON_VIEW_MODEL_SIZE_LARGE",
@@ -189,6 +195,7 @@ export const ButtonSize = {
 
 export type ButtonSize = (typeof ButtonSize)[keyof typeof ButtonSize];
 
+/** @see https://github.com/LuanRT/YouTube.js/blob/main/src/parser/classes/ButtonViewModel.ts */
 export const ButtonStyle = {
   CallToAction: "BUTTON_VIEW_MODEL_STYLE_CALL_TO_ACTION",
   Custom: "BUTTON_VIEW_MODEL_STYLE_CUSTOM",
@@ -198,6 +205,7 @@ export const ButtonStyle = {
 
 export type ButtonStyle = (typeof ButtonStyle)[keyof typeof ButtonStyle];
 
+/** @see https://github.com/LuanRT/YouTube.js/blob/main/src/parser/classes/ButtonViewModel.ts */
 export const ButtonType = {
   Filled: "BUTTON_VIEW_MODEL_TYPE_FILLED",
   Outline: "BUTTON_VIEW_MODEL_TYPE_OUTLINE",
@@ -207,6 +215,7 @@ export const ButtonType = {
 
 export type ButtonType = (typeof ButtonType)[keyof typeof ButtonType];
 
+/** @see https://github.com/LuanRT/YouTube.js/blob/main/src/parser/classes/ButtonViewModel.ts */
 export const ButtonState = {
   Active: "BUTTON_VIEW_MODEL_STATE_ACTIVE",
   Disabled: "BUTTON_VIEW_MODEL_STATE_DISABLED"
@@ -214,6 +223,7 @@ export const ButtonState = {
 
 export type ButtonState = (typeof ButtonState)[keyof typeof ButtonState];
 
+/** @see https://github.com/LuanRT/YouTube.js/blob/main/src/parser/classes/ButtonViewModel.ts */
 export const IconName = {
   None: "",
   AccessTime: "ACCESS_TIME",
@@ -262,13 +272,43 @@ export const IconName = {
 
 export type IconName = (typeof IconName)[keyof typeof IconName];
 
+/**
+ * Icon names for the `icon` attribute on `<yt-icon>` (iron-iconset-svg `icons:` set).
+ * @see https://github.com/PolymerElements/iron-icons
+ */
+export const YtIconName = {
+  Autorenew: "icons:autorenew",
+  Check: "icons:check",
+  CheckCircle: "icons:check-circle",
+  Close: "icons:close",
+  ErrorOutline: "icons:error-outline",
+  Info: "icons:info",
+  InfoOutline: "icons:info-outline",
+  Language: "icons:language",
+  Lock: "icons:lock",
+  MicOff: "icons:mic-off",
+  MoreVert: "icons:more-vert",
+  Settings: "icons:settings",
+  SubtitlesOutline: "icons:subtitles",
+  Translate: "icons:translate",
+  Warning: "icons:warning"
+} as const;
+
+export type YtIconName = (typeof YtIconName)[keyof typeof YtIconName];
+
+/** @see https://github.com/LuanRT/YouTube.js/blob/main/src/parser/classes/TooltipViewModel.ts */
 export const TooltipPlacement = {
-  Top: "TOOLTIP_VIEW_MODEL_PLACEMENT_TOP"
+  Top: "TOOLTIP_VIEW_MODEL_PLACEMENT_TOP",
+  Bottom: "TOOLTIP_VIEW_MODEL_PLACEMENT_BOTTOM",
+  Left: "TOOLTIP_VIEW_MODEL_PLACEMENT_LEFT",
+  Right: "TOOLTIP_VIEW_MODEL_PLACEMENT_RIGHT"
 } as const;
 
 export type TooltipPlacement = (typeof TooltipPlacement)[keyof typeof TooltipPlacement];
 
+/** @see https://github.com/LuanRT/YouTube.js/blob/main/src/parser/classes/TooltipViewModel.ts */
 export const TooltipStyle = {
+  Default: "TOOLTIP_VIEW_MODEL_STYLE_DEFAULT",
   Player: "TOOLTIP_VIEW_MODEL_STYLE_PLAYER"
 } as const;
 
@@ -284,14 +324,17 @@ export function isPolymerInputElement(element: Element): element is TpYtPaperInp
   return "updateStyles" in element && "label" in element;
 }
 
+/** @see https://github.com/LuanRT/YouTube.js/blob/main/src/parser/classes/ButtonViewModel.ts */
 export interface YtButtonViewModelElement extends HTMLElement {
   data: ButtonViewModelData;
 }
 
+/** @see https://github.com/PolymerElements/paper-dropdown-menu */
 interface TpYtPaperDropdownMenuElement extends HTMLElement {
   receivedFocusFromKeyboard: boolean;
 }
 
+/** @see https://github.com/PolymerElements/paper-progress */
 export interface TpYtPaperProgressElement extends HTMLElement {
   value: number;
   max: number;
@@ -299,10 +342,12 @@ export interface TpYtPaperProgressElement extends HTMLElement {
   updateStyles(styles: Record<string, string>): void;
 }
 
+/** @see https://github.com/PolymerElements/paper-input */
 export interface TpYtPaperInputElement extends HTMLElement {
   updateStyles(styles: Record<string, string>): void;
 }
 
+/** @see https://github.com/PolymerElements/iron-dropdown */
 export interface TpYtIronDropdownElement extends HTMLElement {
   positionTarget: Element | null;
   horizontalAlign: "left" | "right" | "center";
