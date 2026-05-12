@@ -9,7 +9,7 @@
 
   const scopingClass =
     document.querySelector("[data-ytdl-download-group] yt-button-view-model, yt-button-view-model")?.getAttribute("class") ??
-    "";
+      "";
 
   interface Props {
     videoData: VideoData;
@@ -20,9 +20,8 @@
   const panel = createPanelState(() => props.videoData);
   const focusManager = createFocusManager();
 
-  const closeButtonId = "ytdl-panel-close";
+  const headerCloseButtonId = "ytdl-panel-header-close";
   const primaryButtonId = "ytdl-panel-primary";
-  const discardButtonId = "ytdl-panel-discard";
   const viewButtonId = "ytdl-panel-view";
 
   function closePanel() {
@@ -32,7 +31,7 @@
   }
 
   $effect(() => onButtonClick(buttonId => {
-    if (buttonId === closeButtonId) {
+    if (buttonId === headerCloseButtonId) {
       closePanel();
       return;
     }
@@ -46,11 +45,6 @@
         panel.startDownload();
       }
 
-      return;
-    }
-
-    if (buttonId === discardButtonId) {
-      void panel.discardInterrupted();
       return;
     }
 
@@ -85,7 +79,7 @@
       class={scopingClass}
       {@attach attachCloseButton}
       aria-label="Close"
-      data-ytdl-button-id={closeButtonId}
+      data-ytdl-button-id={headerCloseButtonId}
       role="button"
       tabindex="0"
     ></yt-button-view-model>
@@ -99,16 +93,19 @@
       extension={panel.actualExtension}
       filename={panel.filename}
       isDownloading={panel.isDownloading}
-      isWatchPage={panel.isWatchPage}
+      onaudiocustomchange={panel.handlePanelAudioCustomChange}
       onaudioformatchange={format => (panel.selectedAudioFormat = format)}
+      onaudiomodechange={panel.handlePanelAudioModeChange}
       oncaptionchange={panel.handleCaptionChange}
+      oncaptionmodechange={panel.handlePanelCaptionModeChange}
       ondownloadtypechange={panel.handleDownloadTypeChange}
       onextensionchange={newExtension => (panel.extension = newExtension)}
       onfilenamechange={newFilename => (panel.filename = newFilename)}
-      onlanguagemodechange={panel.handlePanelLanguageModeChange}
       onvalidationchange={isValid => (panel.isFilenameValid = isValid)}
       onvideoformatchange={format => (panel.selectedVideoFormat = format)}
-      panelLanguageMode={panel.panelLanguageMode}
+      panelAudioCustomLanguage={panel.panelAudioCustomLanguage}
+      panelAudioMode={panel.panelAudioMode}
+      panelCaptionMode={panel.panelCaptionMode}
       selectedAudioFormat={panel.selectedAudioFormat}
       selectedCaptionTrack={panel.selectedCaptionTrack}
       selectedVideoFormat={panel.selectedVideoFormat}
@@ -117,9 +114,7 @@
   </div>
 
   <DownloadOptionsPanelFooter
-    {discardButtonId}
     displayProgress={panel.displayProgress}
-    downloadId={panel.downloadId}
     getIsDownloadable={() => panel.isDownloadable}
     getIsFilenameValid={() => panel.isFilenameValid}
     {primaryButtonId}
@@ -132,7 +127,7 @@
 
 <style>
   .ytdl-panel {
-    width: 380px;
+    width: 420px;
     border: 1px solid var(--yt-spec-10-percent-layer, rgb(0 0 0 / 10%));
     border-radius: 12px;
     background: var(--yt-spec-raised-background, var(--yt-spec-base-background, #ffffff));
@@ -194,7 +189,7 @@
 
   .ytdl-panel-title {
     margin: 0;
-    font-weight: 500;
+    font-weight: 600;
     font-size: 1.6rem;
     line-height: 1.375;
   }

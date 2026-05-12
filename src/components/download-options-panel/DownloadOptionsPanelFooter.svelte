@@ -1,10 +1,10 @@
 <script lang="ts">
   import {
-    attachGhostButton,
     attachPanelProgress,
     attachPanelProgressDone,
     attachPanelProgressFailed,
     attachPrimaryButton,
+    attachViewButton,
     PrimaryButtonState
   } from "@/lib/ui/panel-button-attachments.svelte";
   import { ProgressType } from "@/types";
@@ -13,10 +13,8 @@
     primaryState: PrimaryButtonState;
     displayProgress: number;
     progressType: string;
-    downloadId: number | null;
     scopingClass: string;
     primaryButtonId: string;
-    discardButtonId: string;
     viewButtonId: string;
     getIsDownloadable: () => boolean;
     getIsFilenameValid: () => boolean;
@@ -26,10 +24,8 @@
     primaryState,
     displayProgress,
     progressType,
-    downloadId,
     scopingClass,
     primaryButtonId,
-    discardButtonId,
     viewButtonId,
     getIsDownloadable,
     getIsFilenameValid
@@ -68,33 +64,13 @@
 </script>
 
 <div class="ytdl-panel-footer">
-  <div class="ytdl-footer-buttons">
-    {#if primaryState === PrimaryButtonState.Interrupted}
-      <yt-button-view-model
-        class={scopingClass}
-        {@attach attachGhostButton("Discard")}
-        data-ytdl-button-id={discardButtonId}
-        role="button"
-        tabindex="0"
-      ></yt-button-view-model>
-    {/if}
-    {#if primaryState === PrimaryButtonState.Done && downloadId !== null}
-      <yt-button-view-model
-        class={scopingClass}
-        {@attach attachGhostButton("View")}
-        data-ytdl-button-id={viewButtonId}
-        role="button"
-        tabindex="0"
-      ></yt-button-view-model>
-    {/if}
-    <yt-button-view-model
-      class={primaryButtonClass}
-      {@attach attachPrimaryBtn}
-      data-ytdl-button-id={primaryButtonId}
-      role="button"
-      tabindex="0"
-    ></yt-button-view-model>
-  </div>
+  <yt-button-view-model
+    class={primaryButtonClass}
+    {@attach attachPrimaryBtn}
+    data-ytdl-button-id={primaryButtonId}
+    role="button"
+    tabindex="0"
+  ></yt-button-view-model>
 
   {#if primaryState === PrimaryButtonState.Downloading}
     <div class="ytdl-progress-block">
@@ -115,7 +91,16 @@
         {@attach attachPanelProgressDone}
         value={100}
       ></tp-yt-paper-progress>
-      <span class="ytdl-progress-label" role="status">Downloaded</span>
+      <div class="ytdl-done-row">
+        <span class="ytdl-progress-label" role="status">Downloaded</span>
+        <yt-button-view-model
+          class={scopingClass}
+          {@attach attachViewButton}
+          data-ytdl-button-id={viewButtonId}
+          role="button"
+          tabindex="0"
+        ></yt-button-view-model>
+      </div>
     </div>
   {:else if primaryState === PrimaryButtonState.Failed}
     <div class="ytdl-progress-block failed">
@@ -138,18 +123,17 @@
     padding-inline: 24px;
   }
 
-  .ytdl-footer-buttons {
-    display: flex;
-    gap: 8px;
-    justify-content: flex-end;
-    align-items: center;
-  }
-
   .ytdl-progress-block {
     display: flex;
     flex-direction: column;
     gap: 6px;
     padding-block-start: 4px;
+  }
+
+  .ytdl-done-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
   }
 
   .ytdl-progress-track {

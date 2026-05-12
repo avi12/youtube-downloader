@@ -73,42 +73,6 @@ export function attachCloseButton(elTarget: Element) {
   observer.observe(elTarget, CHILD_LIST_SUBTREE);
 }
 
-export function attachDoneIcon(elButton: Element) {
-  sendButtonData({
-    elButton,
-    data: {
-      iconName: IconName.CheckCircleThick,
-      title: "",
-      accessibilityText: "",
-      style: ButtonStyle.CallToAction,
-      type: ButtonType.Text,
-      buttonSize: ButtonSize.Small,
-      state: ButtonState.Disabled,
-      isFullWidth: false,
-      isDisabled: true,
-      tooltip: ""
-    }
-  });
-}
-
-export function attachCancelButton(elButton: Element) {
-  sendButtonData({
-    elButton,
-    data: {
-      iconName: "",
-      title: "Cancel",
-      accessibilityText: "Cancel",
-      style: ButtonStyle.Mono,
-      type: ButtonType.Tonal,
-      buttonSize: ButtonSize.Small,
-      state: ButtonState.Active,
-      isFullWidth: false,
-      isDisabled: false,
-      tooltip: ""
-    }
-  });
-}
-
 export function attachDownloadButton({ elButton, getIsDownloadable, getIsFilenameValid, getIsDone }: {
   elButton: Element;
   getIsDownloadable: () => boolean;
@@ -254,40 +218,20 @@ export function attachPanelProgressFailed(elProgress: Element) {
   applyProgressStyles(elProgress, `var(--yt-spec-text-error, ${ERROR_DARK})`);
 }
 
-export function attachGhostButton(title: string) {
-  return (elButton: Element) => {
-    sendButtonData({
-      elButton,
-      data: {
-        iconName: "",
-        title,
-        accessibilityText: title,
-        style: ButtonStyle.Mono,
-        type: ButtonType.Text,
-        buttonSize: ButtonSize.Default,
-        state: ButtonState.Active,
-        isFullWidth: false,
-        isDisabled: false,
-        tooltip: ""
-      }
-    });
-  };
-}
-
-export function attachResumeButton(elButton: Element) {
+export function attachViewButton(elButton: Element) {
   sendButtonData({
     elButton,
     data: {
-      iconName: IconName.Download,
-      title: "Resume now",
-      accessibilityText: "Resume now",
+      iconName: IconName.Visibility,
+      title: "View",
+      accessibilityText: "View in folder",
       style: ButtonStyle.CallToAction,
-      type: ButtonType.Tonal,
-      buttonSize: ButtonSize.Default,
+      type: ButtonType.Text,
+      buttonSize: ButtonSize.XSmall,
       state: ButtonState.Active,
-      isFullWidth: true,
+      isFullWidth: false,
       isDisabled: false,
-      tooltip: ""
+      tooltip: "View in folder"
     }
   });
 }
