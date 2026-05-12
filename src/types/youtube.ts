@@ -58,7 +58,7 @@ export const AudioQuality = {
 
 export type AudioQuality = (typeof AudioQuality)[keyof typeof AudioQuality];
 
-/** @see https://github.com/LuanRT/YouTube.js/blob/main/src/parser/types/ParsedResponse.ts */
+/** YouTube InnerTube API — values reverse-engineered from `playabilityStatus.status` in player responses. */
 export const PlayabilityStatus = {
   Ok: "OK",
   Unplayable: "UNPLAYABLE",
@@ -70,10 +70,15 @@ export const PlayabilityStatus = {
 
 export type PlayabilityStatus = (typeof PlayabilityStatus)[keyof typeof PlayabilityStatus];
 
+/** YouTube InnerTube API — values reverse-engineered from `streamingData.formats[]` in player responses. @see https://github.com/LuanRT/YouTube.js/blob/main/src/parser/classes/misc/Format.ts */
 export type FormatItem = MediaItem & {
   width: number;
   height: number;
-  quality: typeof VideoQuality.Tiny | typeof VideoQuality.Medium | typeof VideoQuality.Hd720;
+  quality:
+    | typeof VideoQuality.Tiny
+    | typeof VideoQuality.Medium
+    | typeof VideoQuality.Large
+    | typeof VideoQuality.Hd720;
   fps: 30;
   qualityLabel:
     | typeof QualityLabel.P144
@@ -81,11 +86,13 @@ export type FormatItem = MediaItem & {
     | typeof QualityLabel.P480
     | typeof QualityLabel.P720;
   audioQuality: AudioQuality;
+  audioBitrate?: number;
   projectionType: "RECTANGULAR";
   audioSampleRate: `${number}`;
   audioChannels: number;
 };
 
+/** YouTube InnerTube API — values reverse-engineered from `streamingData.adaptiveFormats[]` in player responses. @see https://github.com/LuanRT/YouTube.js/blob/main/src/parser/classes/misc/Format.ts */
 export type AdaptiveFormatItem = MediaItem & {
   width?: number;
   height?: number;
@@ -96,8 +103,14 @@ export type AdaptiveFormatItem = MediaItem & {
   audioQuality?: AudioQuality;
   colorInfo?: {
     primaries: "COLOR_PRIMARIES_BT709" | "COLOR_PRIMARIES_BT2020" | (string & {});
-    transferCharacteristics: "COLOR_TRANSFER_CHARACTERISTICS_BT709" | "COLOR_TRANSFER_CHARACTERISTICS_SMPTEST2084" | (string & {});
-    matrixCoefficients: "COLOR_MATRIX_COEFFICIENTS_BT709" | "COLOR_MATRIX_COEFFICIENTS_BT2020_NCL" | (string & {});
+    transferCharacteristics:
+      | "COLOR_TRANSFER_CHARACTERISTICS_BT709"
+      | "COLOR_TRANSFER_CHARACTERISTICS_SMPTEST2084"
+      | (string & {});
+    matrixCoefficients:
+      | "COLOR_MATRIX_COEFFICIENTS_BT709"
+      | "COLOR_MATRIX_COEFFICIENTS_BT2020_NCL"
+      | (string & {});
   };
   audioTrack?: {
     id: string;
@@ -106,10 +119,20 @@ export type AdaptiveFormatItem = MediaItem & {
   };
   signatureCipher?: string;
   projectionType?: "RECTANGULAR" | "MESH";
+  stereoLayout?: "STEREO_LAYOUT_LEFT_RIGHT" | "STEREO_LAYOUT_TOP_BOTTOM" | (string & {});
+  spatialAudioType?: "SPATIAL_AUDIO_TYPE_AMBISONICS_5_1" | "SPATIAL_AUDIO_TYPE_AMBISONICS_QUAD" | "SPATIAL_AUDIO_TYPE_FOA_WITH_NON_DIEGETIC" | (string & {});
   highReplication?: boolean;
   audioSampleRate?: `${number}`;
   loudnessDb?: number;
+  trackAbsoluteLoudnessLkfs?: number;
   audioChannels?: number;
+  targetDurationSec?: number;
+  maxDvrDurationSec?: number;
+  type?: "FORMAT_STREAM_TYPE_OTF" | (string & {});
+  drmFamilies?: string[];
+  drmTrackType?: string;
+  fairPlayKeyUri?: string;
+  distinctParams?: string;
   xtags?: string;
 };
 

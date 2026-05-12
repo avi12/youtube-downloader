@@ -1,4 +1,4 @@
-import { cancelStreamTransfer } from "@/entrypoints/youtube.content/download/stream-transfer";
+﻿import { cancelStreamTransfer } from "@/entrypoints/youtube.content/download/stream-transfer";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { statusProgressItem, videoQueueItem } from "@/lib/storage/storage";
@@ -132,7 +132,7 @@ export function createPanelState(getVideoData: () => VideoData) {
   );
 
   function getActivePlayerCaptionLanguage() {
-    const elVideo = document.querySelector<HTMLVideoElement>("video");
+    const elVideo = document.querySelector<HTMLVideoElement>("video.html5-main-video");
     if (!elVideo) {
       return null;
     }
@@ -385,7 +385,7 @@ export function createPanelState(getVideoData: () => VideoData) {
       return;
     }
 
-    const { audioFormats, captionTracks } = getVideoData();
+    const { audioFormats } = getVideoData();
     const langCode = normalizeLanguageCode(data.trackId.split(".")[0]);
     const matching = audioFormats.filter(
       format => format.audioTrack && normalizeLanguageCode(format.audioTrack.id) === langCode
@@ -395,11 +395,6 @@ export function createPanelState(getVideoData: () => VideoData) {
     }
 
     selectedAudioFormat = matching.reduce((best, format) => format.bitrate > best.bitrate ? format : best);
-
-    if (panelCaptionMode === PanelTrackMode.MatchVideo) {
-      selectedCaptionTrack =
-        captionTracks.find(track => normalizeLanguageCode(track.languageCode) === langCode) ?? null;
-    }
   }));
 
   $effect(() => crossWorldMessenger.onMessage(CrossWorldMessage.CaptionTrackChanged, ({ data }) => {
@@ -410,7 +405,12 @@ export function createPanelState(getVideoData: () => VideoData) {
       return;
     }
 
-    panelCaptionMode = PanelTrackMode.Custom;
+    // MatchVideo means "follow the player's caption selection" — stay in that mode and update.
+    // Any other mode means the user had an explicit choice; treat the player change as an override.
+    if (panelCaptionMode !== PanelTrackMode.MatchVideo) {
+      panelCaptionMode = PanelTrackMode.Custom;
+    }
+
     selectedCaptionTrack = match;
   }));
 
@@ -474,7 +474,7 @@ export function createPanelState(getVideoData: () => VideoData) {
   }
 
   function applyAudioByLangCode(langCode: string) {
-    const { audioFormats, captionTracks } = getVideoData();
+    const { audioFormats } = getVideoData();
     const matching = audioFormats.filter(
       format => format.audioTrack && normalizeLanguageCode(format.audioTrack.id) === langCode
     );
@@ -482,25 +482,17 @@ export function createPanelState(getVideoData: () => VideoData) {
       selectedAudioFormat = matching.reduce((best, format) => format.bitrate > best.bitrate ? format : best);
       resetDoneState();
     }
-
-    selectedCaptionTrack = captionTracks.find(track => normalizeLanguageCode(track.languageCode) === langCode) ?? null;
   }
 
   function handlePanelAudioModeChange(newMode: PanelTrackMode) {
     panelAudioMode = newMode;
 
     if (newMode === PanelTrackMode.Original) {
-      const { audioFormats, captionTracks } = getVideoData();
+      const { audioFormats } = getVideoData();
       const original = findOriginalAudioFormat(audioFormats);
       if (original) {
         selectedAudioFormat = original;
         resetDoneState();
-      }
-
-      if (original?.audioTrack) {
-        const langCode = normalizeLanguageCode(original.audioTrack.id);
-        selectedCaptionTrack =
-          captionTracks.find(track => normalizeLanguageCode(track.languageCode) === langCode) ?? null;
       }
 
       return;
@@ -515,17 +507,11 @@ export function createPanelState(getVideoData: () => VideoData) {
     }
 
     // MatchVideo: select whichever track YouTube chose for this session (audioIsDefault)
-    const { audioFormats: matchAudioFormats, captionTracks: matchCaptionTracks } = getVideoData();
+    const { audioFormats: matchAudioFormats } = getVideoData();
     const matchDefault = findMatchVideoAudioFormat(matchAudioFormats);
     if (matchDefault) {
       selectedAudioFormat = matchDefault;
       resetDoneState();
-
-      if (matchDefault.audioTrack) {
-        const langCode = normalizeLanguageCode(matchDefault.audioTrack.id);
-        selectedCaptionTrack =
-          matchCaptionTracks.find(track => normalizeLanguageCode(track.languageCode) === langCode) ?? null;
-      }
     }
   }
 
@@ -536,13 +522,13 @@ export function createPanelState(getVideoData: () => VideoData) {
 
   function handlePanelCaptionModeChange(newMode: PanelTrackMode) {
     panelCaptionMode = newMode;
-    const { captionTracks } = getVideoData();    if (newMode === PanelTrackMode.MatchVideo) {
-      if (selectedAudioFormat?.audioTrack) {
-        const langCode = normalizeLanguageCode(selectedAudioFormat.audioTrack.id);
-        selectedCaptionTrack =
-          captionTracks.find(track => normalizeLanguageCode(track.languageCode) === langCode) ?? null;
-      }
-
+    const { captionTracks } = getVideoData();
+    if (newMode === PanelTrackMode.MatchVideo) {
+      const activeLang = getActivePlayerCaptionLanguage();
+      const normalizedActiveLang = activeLang ? normalizeLanguageCode(activeLang) : null;
+      selectedCaptionTrack = normalizedActiveLang
+        ? captionTracks.find(track => normalizeLanguageCode(track.languageCode) === normalizedActiveLang) ?? null
+        : null;
       return;
     }
 
