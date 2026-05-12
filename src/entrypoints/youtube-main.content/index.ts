@@ -168,15 +168,15 @@ export default defineContentScript({
 
       WATCHED_VIDEO_ELEMENTS.add(elVideo);
       elVideo.textTracks.addEventListener("change", () => {
-        const showingTrack = Array.from(elVideo.textTracks).find(
+        const activeTrack = Array.from(elVideo.textTracks).find(
           track =>
-            track.mode === "showing"
+            track.mode !== "disabled"
             && (track.kind === "subtitles" || track.kind === "captions")
             && track.language
         );
-        if (showingTrack) {
+        if (activeTrack) {
           void crossWorldMessenger.sendMessage(CrossWorldMessage.CaptionTrackChanged, {
-            languageCode: showingTrack.language
+            languageCode: activeTrack.language
           });
         }
       });

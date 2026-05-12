@@ -264,32 +264,28 @@
   {#if uniqueAudioLanguages.length > 0 || captionTracks.length > 0}
     <div class="ytdl-section">
       <div class="ytdl-section-label">Tracks</div>
-      {#if uniqueAudioLanguages.length > 0}
-        <TrackChoice
-          customOptions={uniqueAudioLanguages}
-          customValue={panelAudioCustomLanguage}
-          disabled={isDownloading}
-          kind={TrackKind.Audio}
-          mode={panelAudioMode}
-          oncustomchange={onaudiocustomchange}
-          onmodechange={onaudiomodechange}
-          originalLabel={audioOriginalLabel}
-          playerLabel={audioPlayerLabel}
-        />
-      {/if}
-      {#if captionTracks.length > 0}
-        <TrackChoice
-          customOptions={captionCustomOptions}
-          customValue={selectedCaptionTrack?.vssId ?? ""}
-          disabled={isDownloading}
-          kind={TrackKind.Captions}
-          mode={panelCaptionMode}
-          oncustomchange={vssId => oncaptionchange(captionTracks.find(track => track.vssId === vssId) ?? null)}
-          onmodechange={oncaptionmodechange}
-          originalLabel={captionOriginalLabel}
-          playerLabel={captionPlayerLabel}
-        />
-      {/if}
+      <TrackChoice
+        customOptions={uniqueAudioLanguages}
+        customValue={panelAudioCustomLanguage}
+        disabled={isDownloading || uniqueAudioLanguages.length === 0}
+        kind={TrackKind.Audio}
+        mode={panelAudioMode}
+        oncustomchange={onaudiocustomchange}
+        onmodechange={onaudiomodechange}
+        originalLabel={audioOriginalLabel}
+        playerLabel={audioPlayerLabel}
+      />
+      <TrackChoice
+        customOptions={captionCustomOptions}
+        customValue={selectedCaptionTrack?.vssId ?? ""}
+        disabled={isDownloading || captionTracks.length === 0}
+        kind={TrackKind.Captions}
+        mode={panelCaptionMode}
+        oncustomchange={vssId => oncaptionchange(captionTracks.find(track => track.vssId === vssId) ?? null)}
+        onmodechange={oncaptionmodechange}
+        originalLabel={captionOriginalLabel}
+        playerLabel={captionPlayerLabel}
+      />
     </div>
   {/if}
 

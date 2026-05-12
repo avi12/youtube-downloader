@@ -137,13 +137,13 @@ export function createPanelState(getVideoData: () => VideoData) {
       return null;
     }
 
-    const showingTrack = Array.from(elVideo.textTracks).find(
+    const activeTrack = Array.from(elVideo.textTracks).find(
       track =>
-        track.mode === "showing"
+        track.mode !== "disabled"
         && (track.kind === "subtitles" || track.kind === "captions")
         && track.language
     );
-    return showingTrack?.language ?? null;
+    return activeTrack?.language ?? null;
   }
 
   let panelCaptionMode = $state<PanelTrackMode>(
