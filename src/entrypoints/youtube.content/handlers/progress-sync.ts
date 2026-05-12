@@ -1,3 +1,4 @@
+import { CrossWorldEvent, emitCrossWorldEvent } from "@/lib/messaging/cross-world-events";
 import { statusProgressItem } from "@/lib/storage/storage";
 import { downloadProgressStore } from "@/lib/ui/synced-stores.svelte";
 import { ProgressType } from "@/types";
@@ -13,6 +14,14 @@ export function syncStoredProgressToStore(
       progress,
       progressType
     });
+    emitCrossWorldEvent({
+      type: CrossWorldEvent.ProgressUpdate,
+      data: {
+        videoId,
+        progress,
+        progressType
+      }
+    });
   }
 
   // A video that was downloading but is no longer in storage has finished
@@ -24,6 +33,14 @@ export function syncStoredProgressToStore(
         isDone: true,
         progress: 1,
         progressType: ProgressType.FFmpeg
+      });
+      emitCrossWorldEvent({
+        type: CrossWorldEvent.ProgressUpdate,
+        data: {
+          videoId,
+          progress: 1,
+          progressType: ProgressType.FFmpeg
+        }
       });
     }
   }
