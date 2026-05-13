@@ -16,7 +16,7 @@
     filename = completed.filename;
     isOpen = true;
     clearTimeout(dismissTimer ?? undefined);
-    void crossWorldMessenger.sendMessage(CrossWorldMessage.OpenSnackbar, {});
+    void crossWorldMessenger.sendMessage(CrossWorldMessage.OpenSnackbar);
     dismissTimer = setTimeout(() => {
       isOpen = false;
     }, SNACKBAR_DURATION_MS);
