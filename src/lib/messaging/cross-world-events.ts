@@ -23,7 +23,7 @@ interface CrossWorldEventEnvelope<T extends CrossWorldEvent> {
   data: CrossWorldEventMap[T];
 }
 
-function hasEventTypeKey(value: unknown): value is { [EVENT_TYPE_KEY]: unknown } {
+function hasEventTypeKey(value: unknown): value is { [EVENT_TYPE_KEY]: CrossWorldEvent } {
   return typeof value === "object" && value !== null && EVENT_TYPE_KEY in value;
 }
 
