@@ -12,7 +12,7 @@ function markCommitted(videoId: string) {
   committedToStorageIds.add(videoId);
 }
 
-function isOrphaned(videoId: string, storedProgress: Record<string, unknown>) {
+function isOrphaned(videoId: string, storedProgress: Awaited<ReturnType<typeof statusProgressItem.getValue>>) {
   return committedToStorageIds.has(videoId)
     && !storedProgress[videoId]
     && downloadProgressStore.get(videoId)?.isDownloading;
