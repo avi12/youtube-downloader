@@ -17,7 +17,7 @@ import {
   isVideoNativeForContainer,
   videoContainers
 } from "@/lib/utils/containers";
-import { ProgressType } from "@/types";
+import { AUDIO_EXTRA_STREAM_PREFIX, ProgressType } from "@/types";
 import type { FFmpegCoreModule } from "@ffmpeg/types";
 
 type InitMessage = {
@@ -181,7 +181,6 @@ function handleMuxVideoAudio(job: MuxVideoAudioJob) {
   currentVideoId = videoId;
   currentTabId = tabId;
 
-  const AUDIO_EXTRA_PREFIX = "audio-extra";
   const videoExtension = getVideoTempExtension(videoMimeType);
   const audioExtension = getAudioTempExtension(audioMimeType);
   const isExtraTracksPresent = extraAudioTracks.length > 0;
@@ -210,7 +209,7 @@ function handleMuxVideoAudio(job: MuxVideoAudioJob) {
 
     for (const [i, track] of extraAudioTracks.entries()) {
       const extraExtension = getAudioTempExtension(audioMimeType);
-      const extraFilename = `${videoId}-${AUDIO_EXTRA_PREFIX}-${i}.${extraExtension}`;
+      const extraFilename = `${videoId}-${AUDIO_EXTRA_STREAM_PREFIX}-${i}.${extraExtension}`;
       ffmpeg!.FS.writeFile(extraFilename, new Uint8Array(track.data));
       extraFilenames.push(extraFilename);
     }
