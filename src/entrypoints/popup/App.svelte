@@ -169,7 +169,7 @@
   .popup-container {
     display: flex;
     flex-direction: column;
-    max-height: 600px;
+    height: 600px;
   }
 
   .popup-header {
