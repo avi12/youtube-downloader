@@ -1,6 +1,7 @@
 <script lang="ts">
   import PolymerSelect from "../polymer-select/PolymerSelect.svelte";
   import TrackChoice from "./TrackChoice.svelte";
+  import { attachFmtStr } from "@/lib/ui/polymer-utils";
   import { splitFilenameAndExtension, supportedExtensions } from "@/lib/utils/containers";
   import {
     findOriginalAudioFormat,
@@ -224,7 +225,7 @@
 <div class="ytdl-options-container">
   <!-- Media -->
   <div class="ytdl-section">
-    <div class="ytdl-section-label">Media</div>
+    <yt-formatted-string class="ytdl-section-label" {@attach attachFmtStr} data-ytdl-text="Media"></yt-formatted-string>
     <div class="ytdl-media-grid">
       <PolymerSelect
         id="type-select"
@@ -271,7 +272,8 @@
   <!-- Tracks -->
   {#if uniqueAudioLanguages.length > 0 || captionTracks.length > 0}
     <div class="ytdl-section">
-      <div class="ytdl-section-label">Tracks</div>
+      <yt-formatted-string class="ytdl-section-label" {@attach attachFmtStr} data-ytdl-text="Tracks"
+      ></yt-formatted-string>
       <TrackChoice
         customOptions={uniqueAudioLanguages}
         customValue={panelAudioCustomLanguage}
@@ -284,7 +286,11 @@
         playerLabel={audioPlayerLabel}
       />
       {#if downloadExtras && uniqueAudioLanguages.length > 1}
-        <p class="ytdl-extras-note">Selected track is the default — all others are bundled as extras</p>
+        <yt-formatted-string
+          class="ytdl-extras-note"
+          {@attach attachFmtStr}
+          data-ytdl-text="Selected track is the default — all others are bundled as extras"
+        ></yt-formatted-string>
       {/if}
       <TrackChoice
         customOptions={captionCustomOptions}
@@ -302,7 +308,8 @@
 
   <!-- Output -->
   <div class="ytdl-section">
-    <div class="ytdl-section-label">Output</div>
+    <yt-formatted-string class="ytdl-section-label" {@attach attachFmtStr} data-ytdl-text="Output"
+    ></yt-formatted-string>
     <tp-yt-paper-input
       id="filename-input"
       {@attach applyPolymerTheme}
@@ -344,28 +351,20 @@
   }
 
   .ytdl-section-label {
+    display: block;
     padding-bottom: 4px;
-    border-bottom: 1px solid var(--yt-spec-10-percent-layer, rgb(0 0 0 / 10%));
-    color: var(--yt-spec-text-secondary, #606060);
+    border-bottom: 1px solid var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 10%));
+    color: var(--yt-sys-color-baseline--text-secondary, #606060);
     font-weight: 700;
     font-size: 1rem;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-
-    :global(html[dark]) & {
-      border-bottom-color: var(--yt-spec-10-percent-layer, rgb(255 255 255 / 10%));
-      color: var(--yt-spec-text-secondary, #aaaaaa);
-    }
   }
 
   .ytdl-extras-note {
-    margin: 0;
-    color: var(--yt-spec-text-secondary, #606060);
+    display: block;
+    color: var(--yt-sys-color-baseline--text-secondary, #606060);
     font-size: 1.2rem;
-
-    :global(html[dark]) & {
-      color: var(--yt-spec-text-secondary, #aaaaaa);
-    }
   }
 
   .ytdl-media-grid {
@@ -376,18 +375,10 @@
 
   /* ShadyDOM blocks updateStyles/setProperty from the isolated world; CSS rule is the only fix. */
   :global(tp-yt-paper-input#filename-input label) {
-    color: var(--yt-spec-text-secondary, #606060) !important;
-
-    :global(html[dark]) & {
-      color: var(--yt-spec-text-secondary, #aaaaaa) !important;
-    }
+    color: var(--yt-sys-color-baseline--text-secondary, #606060) !important;
   }
 
   :global(tp-yt-paper-input#filename-input[focused] label) {
-    color: var(--yt-spec-call-to-action, #065fd4) !important;
-
-    :global(html[dark]) & {
-      color: var(--yt-spec-call-to-action, #3ea6ff) !important;
-    }
+    color: var(--yt-sys-color-baseline--call-to-action, #065fd4) !important;
   }
 </style>
