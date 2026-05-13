@@ -102,9 +102,6 @@ export function registerDownloadHandlers() {
         credentials: "include"
       });
 
-      const responseBuffer = await response.arrayBuffer();
-      const responseBytes = new Uint8Array(responseBuffer);
-
       const responseHeaders: Record<string, string> = {};
       for (const [key, value] of response.headers) {
         responseHeaders[key] = value;
@@ -112,7 +109,7 @@ export function registerDownloadHandlers() {
 
       return {
         status: response.status,
-        bodyBase64: uint8ToBase64(responseBytes),
+        bodyBase64: uint8ToBase64(new Uint8Array(await response.arrayBuffer())),
         responseHeaders
       };
     } catch (fetchError) {

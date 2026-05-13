@@ -66,9 +66,6 @@ function createSabrStream({ sabrConfig, fetchFn, poToken }: {
   fetchFn: typeof globalThis.fetch;
   poToken: string;
 }) {
-  const sabrFormats = sabrConfig.formats.map(adaptiveFormatToSabrFormat);
-  const durationMs = parseInt(sabrConfig.formats[0]?.approxDurationMs ?? "0", 10);
-
   return new SabrStream({
     fetch: fetchFn,
     serverAbrStreamingUrl: sabrConfig.serverAbrStreamingUrl,
@@ -78,8 +75,8 @@ function createSabrStream({ sabrConfig, fetchFn, poToken }: {
       clientName: sabrConfig.clientName,
       clientVersion: sabrConfig.clientVersion
     },
-    formats: sabrFormats,
-    durationMs
+    formats: sabrConfig.formats.map(adaptiveFormatToSabrFormat),
+    durationMs: parseInt(sabrConfig.formats[0]?.approxDurationMs ?? "0", 10)
   });
 }
 
@@ -95,9 +92,8 @@ export async function fetchVideoViaSabrStream({ sabrConfig, videoFormat, fetchFn
     fetchFn,
     poToken
   });
-  const targetFormat = adaptiveFormatToSabrFormat(videoFormat);
   const { videoStream } = await sabrStream.start({
-    videoFormat: targetFormat,
+    videoFormat: adaptiveFormatToSabrFormat(videoFormat),
     maxRetries: 2
   });
   return collectReadableStream({
@@ -119,9 +115,8 @@ export async function fetchAudioViaSabrStream({ sabrConfig, audioFormat, fetchFn
     fetchFn,
     poToken
   });
-  const targetFormat = adaptiveFormatToSabrFormat(audioFormat);
   const { audioStream } = await sabrStream.start({
-    audioFormat: targetFormat,
+    audioFormat: adaptiveFormatToSabrFormat(audioFormat),
     maxRetries: 2
   });
   return collectReadableStream({

@@ -178,8 +178,6 @@ async function dispatchToOffscreen({ request, result, enrichedMetadata, tabId }:
     ...additionalAudioTracks.map(track => track.languageCode)
   ];
 
-  const defaultAudioTrackIndex = 0;
-
   const captionVttData = request.captionVttData ?? [];
   const subtitleTracks: {
     dataBase64: string;
@@ -205,7 +203,7 @@ async function dispatchToOffscreen({ request, result, enrichedMetadata, tabId }:
     audioMimeType: resolvedAudioMimeType,
     audioTrackLabels,
     audioTrackLanguages,
-    defaultAudioTrackIndex,
+    defaultAudioTrackIndex: 0,
     subtitleTracks,
     tabId,
     playlistId,
@@ -376,11 +374,10 @@ export async function startBackgroundDownload({ request, tabId }: {
       return;
     }
 
-    const enrichedMetadata = await enrichedMetadataPromise;
     await dispatchToOffscreen({
       request,
       result,
-      enrichedMetadata,
+      enrichedMetadata: await enrichedMetadataPromise,
       tabId
     });
     void clearInterruptedDownload(videoId);

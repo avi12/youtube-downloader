@@ -158,13 +158,11 @@ export async function downloadViaSabr({ request, signal, tabId, onProgress }: {
     sabrConfig,
     sabrUrl
   }) : null;
-  const isMissingRequiredConfig = !effectiveConfig || !audioFormat;
-  if (isMissingRequiredConfig) {
+  if (!effectiveConfig || !audioFormat) {
     return null;
   }
 
-  const isMissingVideoFormat = !isAudioOnly && !videoFormat;
-  if (isMissingVideoFormat) {
+  if (!isAudioOnly && !videoFormat) {
     return null;
   }
 
@@ -178,8 +176,7 @@ export async function downloadViaSabr({ request, signal, tabId, onProgress }: {
     return known > 0 ? known : estimateFormatBytes(format, audioFormat);
   });
 
-  const downloadStages = (!isAudioOnly && videoFormat ? 1 : 0) + 1 + additionalFormats.length;
-  const totalStages = captionCount + downloadStages;
+  const totalStages = captionCount + (!isAudioOnly && videoFormat ? 1 : 0) + 1 + additionalFormats.length;
 
   let videoReceivedBytes = 0;
   let audioReceivedBytes = 0;
