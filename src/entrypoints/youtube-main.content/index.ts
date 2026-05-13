@@ -92,11 +92,11 @@ export default defineContentScript({
       void performDownload(data);
     });
 
-    const TOAST_VIEW_BUTTON_ID = "ytdl-toast-view";
+    const SNACKBAR_VIEW_BUTTON_ID = "ytdl-snackbar-view";
 
-    crossWorldMessenger.onMessage(CrossWorldMessage.OpenToast, () => {
+    crossWorldMessenger.onMessage(CrossWorldMessage.OpenSnackbar, () => {
       requestAnimationFrame(() => {
-        const elViewBtn = document.querySelector<HTMLElement>(`[${DATA_BUTTON_ID_ATTR}="${TOAST_VIEW_BUTTON_ID}"]`);
+        const elViewBtn = document.querySelector<HTMLElement>(`[${DATA_BUTTON_ID_ATTR}="${SNACKBAR_VIEW_BUTTON_ID}"]`);
         if (!elViewBtn || !("data" in elViewBtn)) {
           return;
         }
@@ -104,7 +104,7 @@ export default defineContentScript({
         elViewBtn.data = {
           title: "View",
           accessibilityText: "View in folder",
-          style: ButtonStyle.Overlay,
+          style: ButtonStyle.CallToAction,
           type: ButtonType.Text,
           buttonSize: ButtonSize.XSmall,
           state: ButtonState.Active,
@@ -113,7 +113,16 @@ export default defineContentScript({
           tooltip: ""
         };
 
-        elViewBtn.addEventListener("click", () => dispatchButtonClick(TOAST_VIEW_BUTTON_ID));
+        // Polymer maps CallToAction to ytSpecButtonShapeNextMono; swap to the
+        // inverse variant so YouTube's snackbar CSS applies the correct blue.
+        queueMicrotask(() => {
+          const elInner = elViewBtn.querySelector("button");
+          if (elInner) {
+            elInner.classList.replace("ytSpecButtonShapeNextMono", "ytSpecButtonShapeNextCallToActionInverse");
+          }
+        });
+
+        elViewBtn.addEventListener("click", () => dispatchButtonClick(SNACKBAR_VIEW_BUTTON_ID));
       });
     });
 

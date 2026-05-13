@@ -31,7 +31,7 @@ export const CrossWorldMessage = {
   OptionsUpdate: "optionsUpdate",
   AudioTrackChanged: "audioTrackChanged",
   CaptionTrackChanged: "captionTrackChanged",
-  OpenToast: "openToast"
+  OpenSnackbar: "openSnackbar"
 } as const;
 
 interface PageMessengerSchema {
@@ -128,7 +128,7 @@ interface PageMessengerSchema {
     languageCode: string;
     vssId: string;
   }): void;
-  [CrossWorldMessage.OpenToast](data: Record<string, never>): void;
+  [CrossWorldMessage.OpenSnackbar](data: Record<string, never>): void;
 }
 
 export const crossWorldMessenger = defineCustomEventMessaging<PageMessengerSchema>({ namespace: "ytdl" });
