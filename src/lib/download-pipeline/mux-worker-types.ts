@@ -12,7 +12,13 @@ export enum WorkerMessageType {
   Progress = "progress"
 }
 
-export type MuxVideoAudioJob = {
+type BaseWorkerJob = {
+  videoId: string;
+  tabId: number;
+  filenameOutput: string;
+};
+
+export type MuxVideoAudioJob = BaseWorkerJob & {
   videoData: ArrayBuffer;
   audioData: ArrayBuffer;
   extraAudioTracks: {
@@ -27,30 +33,21 @@ export type MuxVideoAudioJob = {
   }[];
   videoMimeType: string;
   audioMimeType: string;
-  videoId: string;
-  tabId: number;
   primaryAudioLabel: string;
   primaryAudioLanguageCode: string;
   defaultAudioTrackIndex: number;
-  filenameOutput: string;
 };
 
-export type EmbedMetadataJob = {
+export type EmbedMetadataJob = BaseWorkerJob & {
   audioData: ArrayBuffer;
-  filenameOutput: string;
   sourceExtension: string;
   metadata: VideoMetadata;
   thumbnailUrl?: string;
-  videoId: string;
-  tabId: number;
 };
 
-export type TranscodeAudioJob = {
+export type TranscodeAudioJob = BaseWorkerJob & {
   audioData: ArrayBuffer;
   sourceExtension: string;
-  filenameOutput: string;
-  videoId: string;
-  tabId: number;
 };
 
 export type TranscodeFileJob = {
