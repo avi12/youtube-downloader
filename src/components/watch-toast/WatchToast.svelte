@@ -1,83 +1,62 @@
 <script lang="ts">
+  import { crossWorldMessenger, CrossWorldMessage, onButtonClick } from "@/lib/messaging/cross-world-messenger";
   import { MessageType, sendMessage } from "@/lib/messaging/messaging";
   import { completedDownloadsStore } from "@/lib/ui/completed-downloads-store.svelte";
 
-  const TOAST_DURATION_MS = 4500;
+  const TOAST_DURATION_MS = 10000;
+  const VIEW_BUTTON_ID = "ytdl-toast-view";
 
-  interface PaperToastElement extends HTMLElement {
-    open: () => void;
-    close: () => void;
-    text: string;
-  }
-
-  let elToast = $state<PaperToastElement | null>(null);
   let downloadId = $state<number | null>(null);
+  let filename = $state("");
+  let isOpen = $state(false);
+  let dismissTimer: ReturnType<typeof setTimeout> | null = null;
 
   $effect(() => completedDownloadsStore.subscribe((_videoId, completed) => {
-    if (!elToast) {
-      return;
-    }
-
-    elToast.text = `Downloaded ${completed.filename}`;
     downloadId = completed.downloadId;
-    elToast.open();
+    filename = completed.filename;
+    isOpen = true;
+    clearTimeout(dismissTimer ?? undefined);
+    void crossWorldMessenger.sendMessage(CrossWorldMessage.OpenToast, {});
+    dismissTimer = setTimeout(() => {
+      isOpen = false;
+    }, TOAST_DURATION_MS);
   }));
 
-  function reveal() {
-    if (downloadId === null) {
-      return;
+  $effect(() => onButtonClick(buttonId => {
+    if (buttonId === VIEW_BUTTON_ID && downloadId !== null) {
+      void sendMessage(MessageType.RevealDownloadFile, { downloadId });
+      isOpen = false;
     }
+  }));
 
-    void sendMessage(MessageType.RevealDownloadFile, { downloadId });
-    elToast?.close();
-  }
-
-  function dismiss() {
-    elToast?.close();
-  }
-
-  function attachToBody(node: HTMLElement) {
-    document.body.append(node);
-    return {
-      destroy() {
-        node.remove();
-      }
-    };
+  function attachToSnackbar(node: HTMLElement) {
+    document.querySelector("snackbar-container")?.append(node);
+    return () => node.remove();
   }
 </script>
 
-<tp-yt-paper-toast
-  bind:this={elToast}
-  class="ytdl-watch-toast"
-  {@attach attachToBody}
-  duration={TOAST_DURATION_MS}
->
-  <yt-button-view-model
-    class="ytdl-watch-toast__action"
-    aria-label="View file"
-    onclick={reveal}
-    onkeydown={e => (e.key === "Enter" || e.key === " ") && reveal()}
-    role="button"
-    tabindex="0"
-  >View</yt-button-view-model>
-  <yt-button-view-model
-    class="ytdl-watch-toast__action"
-    aria-label="Dismiss"
-    onclick={dismiss}
-    onkeydown={e => (e.key === "Enter" || e.key === " ") && dismiss()}
-    role="button"
-    tabindex="0"
-  >Dismiss</yt-button-view-model>
-</tp-yt-paper-toast>
-
-<style>
-  :global(tp-yt-paper-toast.ytdl-watch-toast) {
-    right: auto !important;
-    bottom: 24px !important;
-    left: 24px !important;
-  }
-
-  .ytdl-watch-toast :global(.ytdl-watch-toast__action) {
-    margin-inline-start: 8px;
-  }
-</style>
+{#if isOpen}
+  <div class="ytSnackbarContainerSnackbarContainer ytSnackbarContainerOpened" {@attach attachToSnackbar}>
+    <snackbar-view-model class="snackbarViewModelHost">
+      <div class="snackbarViewModelEngagementBarWrapper">
+        <yt-icon class="snackbarViewModelAvatarContainer" icon="icons:check-circle"></yt-icon>
+        <div class="snackbarViewModelTitleSubtextWrapper">
+          <div class="snackbarViewModelTitle snackbarViewModelTitleWithSubtext">
+            <!-- svelte-ignore a11y_unknown_role -->
+            <span
+              class="ytAttributedStringHost ytAttributedStringWhiteSpacePreWrap"
+              role="text"
+            >Download complete</span>
+          </div>
+          <div class="snackbarViewModelSubtext">
+            <!-- svelte-ignore a11y_unknown_role -->
+            <span class="ytAttributedStringHost" role="text">{filename}</span>
+          </div>
+        </div>
+        <div class="snackbarViewModelButtonClassWrapper">
+          <yt-button-view-model data-ytdl-button-id={VIEW_BUTTON_ID}></yt-button-view-model>
+        </div>
+      </div>
+    </snackbar-view-model>
+  </div>
+{/if}

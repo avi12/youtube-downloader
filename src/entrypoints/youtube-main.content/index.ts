@@ -14,7 +14,14 @@ import {
   getMoviePlayer,
   isPlayerCaptionTrackData
 } from "@/lib/youtube/movie-player";
-import { ProgressType, type PlayerResponse } from "@/types";
+import {
+  ButtonSize,
+  ButtonState,
+  ButtonStyle,
+  ButtonType,
+  ProgressType,
+  type PlayerResponse
+} from "@/types";
 
 declare global {
   interface Window {
@@ -83,6 +90,31 @@ export default defineContentScript({
     // Handle download requests from Svelte panel components (via isolated world)
     crossWorldMessenger.onMessage(CrossWorldMessage.DownloadRequest, ({ data }) => {
       void performDownload(data);
+    });
+
+    const TOAST_VIEW_BUTTON_ID = "ytdl-toast-view";
+
+    crossWorldMessenger.onMessage(CrossWorldMessage.OpenToast, () => {
+      requestAnimationFrame(() => {
+        const elViewBtn = document.querySelector<HTMLElement>(`[${DATA_BUTTON_ID_ATTR}="${TOAST_VIEW_BUTTON_ID}"]`);
+        if (!elViewBtn || !("data" in elViewBtn)) {
+          return;
+        }
+
+        elViewBtn.data = {
+          title: "View",
+          accessibilityText: "View in folder",
+          style: ButtonStyle.Overlay,
+          type: ButtonType.Text,
+          buttonSize: ButtonSize.XSmall,
+          state: ButtonState.Active,
+          isFullWidth: false,
+          isDisabled: false,
+          tooltip: ""
+        };
+
+        elViewBtn.addEventListener("click", () => dispatchButtonClick(TOAST_VIEW_BUTTON_ID));
+      });
     });
 
     crossWorldMessenger.onMessage(CrossWorldMessage.CancelDownload, ({ data }) => {
