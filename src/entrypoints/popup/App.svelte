@@ -86,14 +86,14 @@
       <SettingsTab options={appState.options} />
     {/if}
   </div>
-
-  {#if appState.pendingFormatChangeEntry}
-    <ChangeFormatDialog
-      entry={appState.pendingFormatChangeEntry}
-      onClose={appState.handleCloseDialog}
-    />
-  {/if}
 </div>
+
+{#if appState.pendingFormatChangeEntry}
+  <ChangeFormatDialog
+    entry={appState.pendingFormatChangeEntry}
+    onClose={appState.handleCloseDialog}
+  />
+{/if}
 
 <style>
   :global {
