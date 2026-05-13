@@ -1,0 +1,157 @@
+.settings-container {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.settings-group {
+  display: grid;
+  padding: 16px;
+  border: none;
+  border-radius: 16px;
+  background: var(--surface);
+}
+
+.settings-legend {
+  margin-bottom: 8px;
+  padding: 0;
+  color: var(--accent);
+  font-weight: 500;
+  font-size: 0.875rem;
+  letter-spacing: 0.02em;
+}
+
+.settings-format-section {
+  display: grid;
+
+  & + & {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+  }
+}
+
+.settings-sub-legend {
+  margin-bottom: 4px;
+  color: var(--fg-muted);
+  font-weight: 500;
+  font-size: 0.75rem;
+}
+
+.settings-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 0;
+
+  &:is(label) {
+    cursor: pointer;
+  }
+}
+
+.settings-sub-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 4px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: var(--surface-high);
+}
+
+.settings-label {
+  flex: 1;
+  font-size: 0.8125rem;
+}
+
+.settings-radio-label {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.settings-select {
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg, transparent);
+  color: inherit;
+  font-family: inherit;
+  font-size: 0.8125rem;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+}
+
+[type="radio"],
+[type="checkbox"] {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  margin-top: 1px;
+  accent-color: var(--accent);
+  cursor: pointer;
+}
+
+.settings-hint {
+  margin-top: 8px;
+  color: var(--fg-subtle);
+  font-size: 0.6875rem;
+}
+
+.settings-option-description {
+  display: block;
+  color: var(--fg-muted);
+  font-weight: 400;
+  font-size: 0.6875rem;
+}
+
+.settings-switch {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.settings-switch input {
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0%;
+}
+
+.settings-switch-track {
+  display: flex;
+  align-items: center;
+  width: 40px;
+  height: 24px;
+  border-radius: 12px;
+  background: var(--border);
+}
+
+.settings-switch input:checked + .settings-switch-track {
+  background: var(--accent);
+}
+
+.settings-switch input:focus-visible + .settings-switch-track {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.settings-switch-thumb {
+  width: 14px;
+  height: 14px;
+  margin-left: 4px;
+  border-radius: 50%;
+  background: rgb(255 255 255);
+  transition: transform 200ms;
+}
+
+.settings-switch input:checked + .settings-switch-track .settings-switch-thumb {
+  transform: translateX(16px) scale(1.25);
+}
