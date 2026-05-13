@@ -89,7 +89,7 @@
   });
 </script>
 
-<article class="recent-item">
+<article class="recent-item" class:menu-open={isMenuOpen}>
   {#if entry.thumbnailUrl}
     <img
       class="recent-thumb"
@@ -196,7 +196,8 @@
     background: var(--surface);
     transition: background-color 200ms;
 
-    &:hover {
+    &:hover,
+    &.menu-open {
       background: var(--surface-high);
     }
   }
