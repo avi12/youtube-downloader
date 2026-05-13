@@ -124,16 +124,16 @@
     >
       <span class="recent-filename-text">{entry.title}</span>
     </button>
-    <p class="recent-meta" dir="auto">
-      {#if entry.channel}<span>{entry.channel}</span> · {/if}
-      <span>{sizeLabel}</span> ·
-      <span>{relativeAgeLabel}</span>
-    </p>
+    {#if entry.channel}
+      <p class="recent-meta recent-channel" dir="auto">{entry.channel}</p>
+    {/if}
+    <p class="recent-meta">{sizeLabel} · {relativeAgeLabel}</p>
   </div>
 
   <div class="recent-menu-wrap">
     <button
       bind:this={elTrigger}
+      style="anchor-name: --menu-{entry.id};"
       class="recent-menu-trigger"
       aria-expanded={isMenuOpen}
       aria-haspopup="menu"
@@ -149,6 +149,7 @@
     {#if isMenuOpen}
       <div
         bind:this={elMenu}
+        style="position-anchor: --menu-{entry.id};"
         class="recent-menu"
         role="menu"
       >
@@ -294,6 +295,10 @@
     font-size: 0.6875rem;
     text-overflow: ellipsis;
     white-space: nowrap;
+
+    &.recent-channel {
+      margin-top: 0;
+    }
   }
 
   .recent-menu-wrap {
@@ -313,7 +318,6 @@
     color: var(--fg-muted);
     cursor: pointer;
     transition: background-color 150ms;
-    anchor-name: --recent-menu-trigger;
 
     &:hover {
       background: var(--surface-high);
@@ -339,7 +343,6 @@
     box-shadow: 0 4px 16px rgb(0 0 0 / 15%);
     animation: menu-in 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
     position-try-fallbacks: flip-block;
-    position-anchor: --recent-menu-trigger;
   }
 
   @keyframes menu-in {
