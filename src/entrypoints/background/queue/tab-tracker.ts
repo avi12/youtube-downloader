@@ -35,6 +35,12 @@ export function getTabIdsForVideo(videoId: string) {
   return videoIdToTabIds[videoId] ?? [];
 }
 
+export function resolveTabId(sender: {
+  tab?: { id?: number };
+}, videoId: string) {
+  return sender.tab?.id ?? getTabIdsForVideo(videoId)[0];
+}
+
 export async function cancelDownloads(videoIds: string[]) {
   sendToOffscreen(OffscreenMessageType.CancelProcessing, { videoIds });
 }

@@ -8,21 +8,17 @@ function silenceIframeAudio(elIframe: HTMLIFrameElement) {
     return;
   }
 
+  function lockProperty(target: object, prop: string, value: unknown) {
+    Object.defineProperty(target, prop, {
+      get: () => value,
+      set() {},
+      configurable: true
+    });
+  }
+
   function applyToVideo(elVideo: HTMLVideoElement) {
-    Object.defineProperty(elVideo, "muted", {
-      get() {
-        return true;
-      },
-      set() {},
-      configurable: true
-    });
-    Object.defineProperty(elVideo, "volume", {
-      get() {
-        return 0;
-      },
-      set() {},
-      configurable: true
-    });
+    lockProperty(elVideo, "muted", true);
+    lockProperty(elVideo, "volume", 0);
   }
 
   const elVideo = contentDocument.querySelector<HTMLVideoElement>("video");

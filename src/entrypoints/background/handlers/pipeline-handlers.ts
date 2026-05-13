@@ -1,6 +1,6 @@
 import { enqueueToPopupList, removeFromPopupList } from "../queue/popup-list";
 import { signalBytesTransferred, signalVideoComplete } from "../queue/sequential-queue";
-import { getTabIdsForVideo } from "../queue/tab-tracker";
+import { resolveTabId } from "../queue/tab-tracker";
 import { registerRecentDownloadHandlers } from "../recent/recent-download-handler";
 import { signalFFmpegReady } from "./processor";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
@@ -34,7 +34,7 @@ export function registerPipelineHandlers() {
   registerRecentDownloadHandlers();
 
   onMessage(MessageType.ProcessStreamError, ({ data, sender }) => {
-    const tabId = sender.tab?.id ?? getTabIdsForVideo(data.videoId)[0];
+    const tabId = resolveTabId(sender, data.videoId);
     if (!tabId) {
       return;
     }

@@ -1,11 +1,11 @@
-import { getTabIdsForVideo, trackVideoForTab } from "../queue/tab-tracker";
+import { resolveTabId, trackVideoForTab } from "../queue/tab-tracker";
 import { ensureProcessor } from "./processor";
 import { MessageType, onMessage } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
 
 export function registerChunkHandlers() {
   onMessage(MessageType.StreamChunk, async ({ data, sender }) => {
-    const tabId = sender.tab?.id ?? getTabIdsForVideo(data.videoId)[0];
+    const tabId = resolveTabId(sender, data.videoId);
     if (!tabId) {
       return;
     }
@@ -18,7 +18,7 @@ export function registerChunkHandlers() {
   });
 
   onMessage(MessageType.StreamEnd, async ({ data, sender }) => {
-    const tabId = sender.tab?.id ?? getTabIdsForVideo(data.videoId)[0];
+    const tabId = resolveTabId(sender, data.videoId);
     if (!tabId) {
       return;
     }
