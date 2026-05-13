@@ -26,7 +26,7 @@
 
   function closePanel() {
     focusManager.release();
-    void crossWorldMessenger.sendMessage(CrossWorldMessage.PanelClosed, {});
+    void crossWorldMessenger.sendMessage(CrossWorldMessage.PanelClosed);
     document.dispatchEvent(new CustomEvent("ytdl:panel-closed"));
   }
 

@@ -64,7 +64,7 @@ interface PageMessengerSchema {
     metadata?: VideoMetadata | null;
   }): void;
   [CrossWorldMessage.DownloadRequest](data: DownloadRequest): void;
-  [CrossWorldMessage.PanelClosed](data: Record<string, never>): void;
+  [CrossWorldMessage.PanelClosed](): void;
   [CrossWorldMessage.FilenameChanged](data: {
     filename: string;
     quality?: string;
