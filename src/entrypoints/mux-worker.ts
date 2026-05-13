@@ -92,6 +92,27 @@ function resolveSubtitleCodec(targetExtension: string) {
   return CONTAINER_SPECS[targetExtension]?.subtitleCodec ?? "webvtt";
 }
 
+function buildRemuxArgs({
+  inputFilename,
+  outputFilename,
+  targetExtension,
+  audioMimeType
+}: {
+  inputFilename: string;
+  outputFilename: string;
+  targetExtension: string;
+  audioMimeType: string | undefined;
+}) {
+  const audioCodec = resolveAudioCodec(audioMimeType ?? "", targetExtension);
+  const args = ["-i", inputFilename, "-map", "0", "-c:v", "copy", "-c:a", audioCodec];
+  if (videoContainers.includes(targetExtension)) {
+    args.push("-c:s", resolveSubtitleCodec(targetExtension));
+  }
+
+  args.push(outputFilename);
+  return args;
+}
+
 // ---------------------------------------------------------------------------
 // Music metadata helpers (inlined from music-metadata.ts)
 // ---------------------------------------------------------------------------
@@ -276,15 +297,14 @@ function handleMuxVideoAudio(job: MuxVideoAudioJob) {
     if (useIntermediateMkv) {
       progressOffset = 0.5;
       progressScale = 0.5;
-      const audioCodec = resolveAudioCodec(audioMimeType, targetExtension);
-      const subtitleCodec = resolveSubtitleCodec(targetExtension);
-      const phase2Args = ["-i", muxFilename, "-c:v", "copy", "-c:a", audioCodec];
-      if (subtitleFilenames.length > 0) {
-        phase2Args.push("-c:s", subtitleCodec);
-      }
-
-      phase2Args.push(outputFilename);
-      const phase2Code = ffmpeg!.exec(...phase2Args);
+      const phase2Code = ffmpeg!.exec(
+        ...buildRemuxArgs({
+          inputFilename: muxFilename,
+          outputFilename,
+          targetExtension,
+          audioMimeType
+        })
+      );
       if (phase2Code !== 0) {
         postError(`FFmpeg phase 2 exited with code ${phase2Code}`);
         return;
@@ -443,7 +463,7 @@ function handleTranscodeAudio(job: TranscodeAudioJob) {
 }
 
 function handleTranscodeFile(job: TranscodeFileJob) {
-  const { data, sourceExtension, targetContainer } = job;
+  const { data, sourceExtension, targetContainer, audioMimeType } = job;
   const sourceFilename = `source.${sourceExtension}`;
   const outputFilename = `output.${targetContainer}`;
 
@@ -453,14 +473,14 @@ function handleTranscodeFile(job: TranscodeFileJob) {
   ffmpeg!.FS.writeFile(sourceFilename, new Uint8Array(data));
 
   try {
-    const ffmpegArguments = ["-i", sourceFilename, "-map", "0"];
-    if (videoContainers.includes(targetContainer)) {
-      const subtitleCodec = resolveSubtitleCodec(targetContainer);
-      ffmpegArguments.push("-c:v", "copy", "-c:a", "copy", "-c:s", subtitleCodec);
-    }
-
-    ffmpegArguments.push(outputFilename);
-    const exitCode = ffmpeg!.exec(...ffmpegArguments);
+    const exitCode = ffmpeg!.exec(
+      ...buildRemuxArgs({
+        inputFilename: sourceFilename,
+        outputFilename,
+        targetExtension: targetContainer,
+        audioMimeType
+      })
+    );
     if (exitCode !== 0) {
       postError(`FFmpeg exited with code ${exitCode}`);
       return;

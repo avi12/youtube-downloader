@@ -41,6 +41,7 @@ export async function triggerDownload({ data, filenameOutput, recentContext }: {
     title: string;
     channel: string;
     thumbnailUrl?: string;
+    audioMimeType?: string;
   };
 }) {
   const mimeType = getMimeType(filenameOutput) || "application/octet-stream";

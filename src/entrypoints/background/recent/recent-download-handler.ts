@@ -29,6 +29,7 @@ function persistOnDownloadComplete({ targetDownloadId, data }: {
       title: string;
       channel: string;
       thumbnailUrl?: string;
+      audioMimeType?: string;
     };
   };
 }) {
@@ -109,6 +110,7 @@ async function persistRecentDownload({ downloadId, data }: {
       filename: data.filename,
       container: extractContainer(data.filename),
       mimeType: data.mimeType,
+      audioMimeType: context.audioMimeType,
       size: blob.size,
       thumbnailUrl: context.thumbnailUrl,
       completedAt: Date.now()

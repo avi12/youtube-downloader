@@ -57,4 +57,5 @@ export type TranscodeFileJob = {
   data: ArrayBuffer;
   sourceExtension: string;
   targetContainer: string;
+  audioMimeType?: string;
 };

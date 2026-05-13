@@ -103,7 +103,8 @@ export async function processSingleMedia(item: ProcessStreamData, isCancelled: (
       videoId,
       title: item.metadata?.title ?? filenameOutput,
       channel: item.metadata?.artist ?? "",
-      thumbnailUrl: item.metadata?.thumbnailUrl
+      thumbnailUrl: item.metadata?.thumbnailUrl,
+      audioMimeType: item.audioMimeType
     }
   });
   await reportProgress({

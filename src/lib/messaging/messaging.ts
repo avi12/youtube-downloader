@@ -165,6 +165,7 @@ interface ProtocolMap {
       title: string;
       channel: string;
       thumbnailUrl?: string;
+      audioMimeType?: string;
     };
   }): void;
   recentDownloadsChanged(data: Record<string, never>): void;
