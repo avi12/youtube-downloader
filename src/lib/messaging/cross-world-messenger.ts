@@ -128,7 +128,7 @@ interface PageMessengerSchema {
     languageCode: string;
     vssId: string;
   }): void;
-  [CrossWorldMessage.OpenSnackbar](data: Record<string, never>): void;
+  [CrossWorldMessage.OpenSnackbar](data: Record<never, never>): void;
 }
 
 export const crossWorldMessenger = defineCustomEventMessaging<PageMessengerSchema>({ namespace: "ytdl" });
