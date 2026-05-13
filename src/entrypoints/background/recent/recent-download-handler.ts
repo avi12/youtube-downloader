@@ -4,7 +4,6 @@ import type { PipelineDownloadMessage } from "@/lib/messaging/messaging";
 import { addRecentDownload } from "@/lib/storage/recent-downloads-db";
 import { optionsItem } from "@/lib/storage/storage";
 import { getFileExtension } from "@/lib/utils/containers";
-import type { RecentDownloadEntry } from "@/types";
 
 async function isTabIdle(tabId: number) {
   try {
@@ -92,22 +91,21 @@ async function persistRecentDownload({ downloadId, data }: {
   try {
     const response = await fetch(data.blobUrl);
     const blob = await response.blob();
-    const entry: RecentDownloadEntry = {
-      id: crypto.randomUUID(),
-      downloadId,
-      videoId: context.videoId,
-      title: context.title,
-      channel: context.channel,
-      filename: data.filename,
-      container: getFileExtension(data.filename),
-      mimeType: data.mimeType,
-      audioMimeType: context.audioMimeType,
-      size: blob.size,
-      thumbnailUrl: context.thumbnailUrl,
-      completedAt: Date.now()
-    };
     await addRecentDownload({
-      entry,
+      entry: {
+        id: crypto.randomUUID(),
+        downloadId,
+        videoId: context.videoId,
+        title: context.title,
+        channel: context.channel,
+        filename: data.filename,
+        container: getFileExtension(data.filename),
+        mimeType: data.mimeType,
+        audioMimeType: context.audioMimeType,
+        size: blob.size,
+        thumbnailUrl: context.thumbnailUrl,
+        completedAt: Date.now()
+      },
       blob
     });
     try {
