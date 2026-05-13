@@ -1,5 +1,6 @@
 import { getTabIdsForVideo } from "../queue/tab-tracker";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
+import type { PipelineDownloadMessage } from "@/lib/messaging/messaging";
 import { addRecentDownload } from "@/lib/storage/recent-downloads-db";
 import { optionsItem } from "@/lib/storage/storage";
 import type { RecentDownloadEntry } from "@/types";
@@ -20,18 +21,7 @@ async function isTabIdle(tabId: number) {
 
 function persistOnDownloadComplete({ targetDownloadId, data }: {
   targetDownloadId: number;
-  data: {
-    blobUrl: string;
-    mimeType: string;
-    filename: string;
-    recentContext?: {
-      videoId: string;
-      title: string;
-      channel: string;
-      thumbnailUrl?: string;
-      audioMimeType?: string;
-    };
-  };
+  data: PipelineDownloadMessage;
 }) {
   return new Promise<void>(resolve => {
     async function handleChanged(delta: Browser.downloads.DownloadDelta) {

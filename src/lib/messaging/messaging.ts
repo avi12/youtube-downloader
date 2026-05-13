@@ -1,6 +1,21 @@
 import type { DownloadRequest, DownloadType, ProgressType, VideoMetadata } from "@/types";
 import { defineExtensionMessaging } from "@webext-core/messaging";
 
+export type RecentDownloadContext = {
+  videoId: string;
+  title: string;
+  channel: string;
+  thumbnailUrl?: string;
+  audioMimeType?: string;
+};
+
+export type PipelineDownloadMessage = {
+  blobUrl: string;
+  mimeType: string;
+  filename: string;
+  recentContext?: RecentDownloadContext;
+};
+
 export type InterruptedDownload = {
   videoId: string;
   type: DownloadType;
@@ -156,18 +171,7 @@ interface ProtocolMap {
     filenameOutput: string;
     tabId: number;
   }): void;
-  pipelineDownload(data: {
-    blobUrl: string;
-    mimeType: string;
-    filename: string;
-    recentContext?: {
-      videoId: string;
-      title: string;
-      channel: string;
-      thumbnailUrl?: string;
-      audioMimeType?: string;
-    };
-  }): void;
+  pipelineDownload(data: PipelineDownloadMessage): void;
   recentDownloadsChanged(data: Record<string, never>): void;
   transcodeRecentDownload(data: {
     entryId: string;
