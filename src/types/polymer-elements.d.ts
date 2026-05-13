@@ -92,6 +92,11 @@ declare module "svelte/elements" {
       "split-lines"?: boolean;
       "force-default-style"?: boolean;
       dir?: string;
+      "data-ytdl-text"?: string;
     };
   }
+}
+
+export interface YtFormattedStringElement extends HTMLElement {
+  text: { runs: { text: string }[] };
 }

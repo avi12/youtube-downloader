@@ -6,7 +6,7 @@ import { extractPlaylistMetadata, handleNavigateSuccess } from "./video/playlist
 import { extractAndDispatchVideoData } from "./video/video-data";
 import { CrossWorldEvent, emitCrossWorldEvent } from "@/lib/messaging/cross-world-events";
 import { CrossWorldMessage, crossWorldMessenger, dispatchButtonClick } from "@/lib/messaging/cross-world-messenger";
-import { DATA_BUTTON_ID_ATTR } from "@/lib/ui/polymer-utils";
+import { DATA_BUTTON_ID_ATTR, isYtFormattedString, setFormattedStringText } from "@/lib/ui/polymer-utils";
 import { CHILD_LIST_SUBTREE } from "@/lib/utils/dom";
 import {
   ACTIVE_CAPTION_ATTR,
@@ -193,6 +193,15 @@ export default defineContentScript({
           dispatchButtonClick(currentButtonId);
         }
       });
+    });
+
+    crossWorldMessenger.onMessage(CrossWorldMessage.SetFormattedStringText, ({ data: { selector, text } }) => {
+      const elFmtStr = document.querySelector(selector);
+      if (!elFmtStr || !isYtFormattedString(elFmtStr)) {
+        return;
+      }
+
+      setFormattedStringText(elFmtStr, text);
     });
 
     registerGridDropdownHandlers();

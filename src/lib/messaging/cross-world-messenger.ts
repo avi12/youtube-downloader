@@ -22,6 +22,7 @@ export const CrossWorldMessage = {
   ProxyFetch: "proxyFetch",
   IframePlayerReady: "iframePlayerReady",
   SetButtonData: "setButtonData",
+  SetFormattedStringText: "setFormattedStringText",
   CreateDropdown: "createDropdown",
   DropdownReady: "dropdownReady",
   CloseDropdown: "closeDropdown",
@@ -100,6 +101,10 @@ interface PageMessengerSchema {
       role: string;
       ariaChecked: string;
     };
+  }): void;
+  [CrossWorldMessage.SetFormattedStringText](data: {
+    selector: string;
+    text: string;
   }): void;
   [CrossWorldMessage.CreateDropdown](data: {
     contentId: string;
