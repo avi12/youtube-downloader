@@ -1,5 +1,5 @@
 import { cleanupSegmentedButton } from "../watch-button/watch-button";
-import { buildAndDispatchVideoData } from "./video-data";
+import { buildAndDispatchVideoData } from "./capture-dispatch";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { playlistMetadataSignal } from "@/lib/ui/synced-stores.svelte";
 import { type PlayerResponse } from "@/types";

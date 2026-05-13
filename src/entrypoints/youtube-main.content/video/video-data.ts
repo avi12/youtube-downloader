@@ -1,24 +1,18 @@
-import { injectSegmentedDownloadButton } from "../watch-button/watch-button";
 import { capturedPoToken, capturedPoTokenVideoId, setPoTokenCredentials } from "./credentials";
-import { buildVideoData } from "./youtube-api";
-import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
-import { sabrCredentials, videoDataStore } from "@/lib/ui/synced-stores.svelte";
-import { InnertubeClientName, type InnertubeBrowseRequest } from "@/lib/youtube/innertube";
-import { getMoviePlayer } from "@/lib/youtube/movie-player";
+import {
+  extractGenresFromKeywords,
+  fetchYouTubeMusicGenres,
+  parseDescriptionMetadata,
+  parseMusicTitle
+} from "./music-metadata";
+import { sabrCredentials } from "@/lib/ui/synced-stores.svelte";
 import { generatePoToken } from "@/lib/youtube/po-token-generator";
 import { getYtcfg, YtcfgKey } from "@/lib/youtube/ytcfg";
-import { type PlayerResponse, type VideoData, type YtdlCaptureState } from "@/types";
+import { type VideoData } from "@/types";
+
+export { buildAndDispatchVideoData } from "./capture-dispatch";
 
 export const videoDataCache = new Map<string, VideoData>();
-
-// Fallback no-op stub for pages where sourcebuffer-capture.content.ts didn't initialize.
-const captureState: YtdlCaptureState = window.__ytdlCapture ?? {
-  activeVideoId: "",
-  pendingChunks: [],
-  capturedMedia: new Map(),
-  sourceBufferMimeTypes: new WeakMap(),
-  addChunkToCapture() {}
-};
 
 export function readYtcfg() {
   return {
@@ -35,11 +29,8 @@ export async function buildVideoMetadata(videoId: string) {
 
   const { playerResponse } = cached;
   const { videoDetails, microformat } = playerResponse;
-  const { thumbnail } = videoDetails ?? {};
-  const thumbnails = thumbnail?.thumbnails ?? [];
-  const thumbnailUrl = thumbnails.length > 0
-    ? thumbnails[thumbnails.length - 1].url
-    : undefined;
+  const thumbnails = videoDetails?.thumbnail?.thumbnails ?? [];
+  const thumbnailUrl = thumbnails.length > 0 ? thumbnails[thumbnails.length - 1].url : undefined;
 
   const renderer = microformat?.playerMicroformatRenderer;
   const description = videoDetails?.shortDescription ?? "";
@@ -67,150 +58,6 @@ export async function buildVideoMetadata(videoId: string) {
   };
 }
 
-interface MoodsAndGenresResponse {
-  contents?: {
-    singleColumnBrowseResultsRenderer?: {
-      tabs?: Array<{
-        tabRenderer?: {
-          content?: {
-            sectionListRenderer?: {
-              contents?: Array<{
-                gridRenderer?: {
-                  items?: Array<{
-                    musicNavigationButtonRenderer?: {
-                      buttonText?: {
-                        runs?: Array<{ text: string }>;
-                      };
-                    };
-                  }>;
-                };
-              }>;
-            };
-          };
-        };
-      }>;
-    };
-  };
-}
-
-let cachedYouTubeMusicGenres: Set<string> | null = null;
-
-async function fetchYouTubeMusicGenres() {
-  if (cachedYouTubeMusicGenres) {
-    return cachedYouTubeMusicGenres;
-  }
-
-  try {
-    const response = await fetch("https://music.youtube.com/youtubei/v1/browse?prettyPrint=false", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        browseId: "FEmusic_moods_and_genres",
-        context: {
-          client: {
-            clientName: InnertubeClientName.WebRemix,
-            clientVersion: "1.20260408.01.00"
-          }
-        }
-      } satisfies InnertubeBrowseRequest)
-    });
-
-    const data: MoodsAndGenresResponse = await response.json();
-    const sections = data.contents?.singleColumnBrowseResultsRenderer?.tabs?.[0]
-      ?.tabRenderer?.content?.sectionListRenderer?.contents ?? [];
-
-    const genres = new Set<string>();
-    for (const section of sections) {
-      for (const item of section.gridRenderer?.items ?? []) {
-        const title = item.musicNavigationButtonRenderer?.buttonText?.runs?.[0]?.text;
-        if (title) {
-          genres.add(title.toLowerCase());
-        }
-      }
-    }
-
-    cachedYouTubeMusicGenres = genres;
-    return genres;
-  } catch {
-    return new Set<string>();
-  }
-}
-
-function extractGenresFromKeywords({ keywords, genreSet }: {
-  keywords: string[];
-  genreSet: Set<string>;
-}) {
-  const matched = new Set<string>();
-  for (const keyword of keywords) {
-    const normalized = keyword.toLowerCase().trim();
-    if (genreSet.has(normalized)) {
-      matched.add(keyword.trim());
-    }
-  }
-
-  return [...matched];
-}
-
-const VIDEO_TITLE_SUFFIX_PATTERN = /\s*[[(](?:official\s+(?:music\s+)?video|(?:official\s+)?lyrics?\s*(?:video)?|(?:official\s+)?audio|4k\s*remaster(?:ed)?|remaster(?:ed)?|hd|hq|visualizer|clip\s+officiel|video\s*oficial)[)\]]\s*/gi;
-
-const FEATURING_PATTERN = /\s+(?:ft\.?|feat\.?|featuring)\s+(.+)$/i;
-
-function parseMusicTitle(title: string) {
-  const cleaned = title.replaceAll(VIDEO_TITLE_SUFFIX_PATTERN, "").trim();
-
-  const iSeparator = cleaned.search(/\s[-–]\s/);
-  if (iSeparator === -1) {
-    return {
-      mainArtist: "",
-      fullArtist: "",
-      songTitle: cleaned
-    };
-  }
-
-  const mainArtist = cleaned.slice(0, iSeparator).trim();
-  const afterSeparator = cleaned.slice(iSeparator + 3).trim();
-
-  const [, featuring] = afterSeparator.match(FEATURING_PATTERN) ?? [];
-  const songTitle = afterSeparator.replace(FEATURING_PATTERN, "").trim();
-  const fullArtist = featuring
-    ? `${mainArtist} feat. ${featuring.trim()}`
-    : mainArtist;
-
-  return {
-    mainArtist,
-    fullArtist,
-    songTitle
-  };
-}
-
-function parseDescriptionMetadata(description: string) {
-  if (!description.startsWith("Provided to YouTube")) {
-    return {
-      songTitle: undefined,
-      artist: undefined,
-      mainArtist: undefined,
-      album: undefined
-    };
-  }
-
-  const lines = description.split("\n").filter(line => line.trim());
-  const titleArtistLine = lines[1] ?? "";
-  const [rawTitle, ...artists] = titleArtistLine.split(" · ");
-  const songTitle = rawTitle?.trim() || undefined;
-  const mainArtist = artists[0]?.trim() || undefined;
-  const artist = artists.join(", ") || undefined;
-  const album = lines[2]?.trim() || undefined;
-
-  return {
-    songTitle,
-    artist,
-    mainArtist,
-    album
-  };
-}
-
 export async function generatePoTokenIfNeeded(videoData: VideoData) {
   if (capturedPoToken && capturedPoTokenVideoId === videoData.videoId) {
     return;
@@ -233,85 +80,4 @@ export async function generatePoTokenIfNeeded(videoData: VideoData) {
   }
 }
 
-export async function buildAndDispatchVideoData({ playerResponse }: {
-  playerResponse: PlayerResponse;
-}) {
-  const { clientVersion, clientName } = readYtcfg();
-  const videoData = buildVideoData({
-    playerResponse,
-    clientVersion,
-    clientName
-  });
-
-  videoDataCache.set(videoData.videoId, videoData);
-  videoDataStore.set(videoData.videoId, videoData);
-  void crossWorldMessenger.sendMessage(CrossWorldMessage.VideoData, videoData);
-
-  captureState.activeVideoId = videoData.videoId;
-
-  const { capturedMedia, addChunkToCapture } = captureState;
-  if (!capturedMedia.has(captureState.activeVideoId)) {
-    capturedMedia.set(captureState.activeVideoId, {
-      videoChunks: [],
-      audioChunks: [],
-      videoMimeType: "video/mp4",
-      audioMimeType: "audio/mp4",
-      videoTotalBytes: 0,
-      audioTotalBytes: 0
-    });
-  }
-
-  const { pendingChunks } = captureState;
-  if (pendingChunks.length > 0) {
-    const capture = capturedMedia.get(captureState.activeVideoId);
-    if (!capture) {
-      return;
-    }
-
-    for (const pending of pendingChunks) {
-      addChunkToCapture({
-        capture,
-        mimeType: pending.mimeType,
-        chunk: pending.data
-      });
-    }
-
-    console.log(`[ytdl:capture] Flushed ${pendingChunks.length} pending chunks (init segments)`);
-    pendingChunks.length = 0;
-  }
-
-  if (self !== top) {
-    // Stop the player before generating the PO token so its SABR session is released
-    // before the background download starts a new one for the same video.
-    getMoviePlayer()?.stopVideo?.();
-
-    await generatePoTokenIfNeeded(videoData);
-    void crossWorldMessenger.sendMessage(CrossWorldMessage.IframePlayerReady, { videoId: videoData.videoId });
-    return;
-  }
-
-  if (location.pathname === "/watch") {
-    await injectSegmentedDownloadButton(videoData);
-  }
-}
-
-const PLAYER_RESPONSE_POLL_ATTEMPTS = 20;
-const PLAYER_RESPONSE_POLL_INTERVAL_MS = 250;
-
-export async function extractAndDispatchVideoData() {
-  if (!location.pathname.startsWith("/watch")) {
-    return;
-  }
-
-  for (let attempt = 0; attempt < PLAYER_RESPONSE_POLL_ATTEMPTS; attempt++) {
-    const playerResponse = window.ytInitialPlayerResponse ?? null;
-    const isReady = playerResponse?.videoDetails?.videoId
-      && playerResponse.playabilityStatus?.status !== "UNPLAYABLE";
-    if (isReady) {
-      await buildAndDispatchVideoData({ playerResponse });
-      return;
-    }
-
-    await new Promise(resolve => setTimeout(resolve, PLAYER_RESPONSE_POLL_INTERVAL_MS));
-  }
-}
+export { extractAndDispatchVideoData } from "./capture-dispatch";
