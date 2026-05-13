@@ -33,7 +33,7 @@ export function createPlaylistVideoItemState({ videoId, gridTitle, activeDownloa
   const downloadState = $derived(downloadProgressStore.get(videoId) ?? defaultProgressState);
   const isDownloading = $derived(downloadState.isDownloading);
   const isDone = $derived(downloadState.isDone);
-  const isDownloadFailed = $derived(downloadState.isFailed === true);
+  const isDownloadFailed = $derived(!!downloadState.isFailed);
 
   $effect(() => {
     const storeEntry = downloadProgressStore.get(videoId);

@@ -266,7 +266,7 @@ export function createPanelState(getVideoData: () => VideoData) {
 
   const isDownloadable = $derived(getVideoData().isDownloadable);
   const isInterrupted = $derived(!!interruptedDownloadStore.get(getVideoData().videoId));
-  const isFailed = $derived(storeEntry?.isFailed === true);
+  const isFailed = $derived(!!storeEntry?.isFailed);
   const primaryState = $derived.by<PrimaryButtonState>(() => {
     if (isDownloading) {
       return PrimaryButtonState.Downloading;
