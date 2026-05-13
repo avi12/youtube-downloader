@@ -8,7 +8,7 @@ function silenceIframeAudio(elIframe: HTMLIFrameElement) {
     return;
   }
 
-  function lockProperty(target: object, prop: string, value: unknown) {
+  function lockProperty(target: HTMLVideoElement, prop: string, value: unknown) {
     Object.defineProperty(target, prop, {
       get: () => value,
       set() {},

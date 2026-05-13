@@ -156,15 +156,11 @@ function isCaptionBusContext(value: unknown): value is CaptionBusContext {
   return typeof value === "object" && value !== null;
 }
 
-function getPrototype(obj: object): object | null {
-  return Object.getPrototypeOf(obj);
-}
-
 // YouTube's internal caption module uses a closure `(...V) => h.apply(R, V)` for getOption.
 // Intercepting Function.prototype.apply while calling it lets us capture R, whose state.L
 // is the pub/sub bus that emits "captionschanged" on every track switch.
 export function capturePlayerCaptionBus(player: MoviePlayerElement): CaptionEventBus | null {
-  let proto: object | null = player;
+  let proto: MoviePlayerElement | null = player;
   let rawGetOption: ((module: string, option: string) => unknown) | null = null;
 
   while (proto) {
@@ -174,7 +170,7 @@ export function capturePlayerCaptionBus(player: MoviePlayerElement): CaptionEven
       break;
     }
 
-    proto = getPrototype(proto);
+    proto = Object.getPrototypeOf(proto);
   }
 
   if (!rawGetOption) {
