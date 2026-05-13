@@ -15,8 +15,8 @@
   import type { DownloadTypePreference, Options } from "@/types";
   import { slide } from "svelte/transition";
 
-  const reducedMotionMql = window.matchMedia("(prefers-reduced-motion: reduce)");
-  let prefersReducedMotion = $state(reducedMotionMql.matches);
+  const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+  let prefersReducedMotion = $state(reducedMotionQuery.matches);
   const slideDuration = $derived(prefersReducedMotion ? 0 : 200);
 
   $effect(() => {
@@ -24,8 +24,8 @@
       prefersReducedMotion = e.matches;
     }
 
-    reducedMotionMql.addEventListener("change", handleChange);
-    return () => reducedMotionMql.removeEventListener("change", handleChange);
+    reducedMotionQuery.addEventListener("change", handleChange);
+    return () => reducedMotionQuery.removeEventListener("change", handleChange);
   });
 
   interface Props {
