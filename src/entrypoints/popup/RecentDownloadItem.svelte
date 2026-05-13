@@ -337,6 +337,7 @@
     background: var(--surface-high);
     box-shadow: 0 4px 16px rgb(0 0 0 / 15%);
     animation: menu-in 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    position-try-fallbacks: flip-block;
     position-anchor: --recent-menu-trigger;
   }
 
