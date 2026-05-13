@@ -453,9 +453,10 @@ function handleTranscodeFile(job: TranscodeFileJob) {
   ffmpeg!.FS.writeFile(sourceFilename, new Uint8Array(data));
 
   try {
-    const ffmpegArguments = ["-i", sourceFilename];
+    const ffmpegArguments = ["-i", sourceFilename, "-map", "0"];
     if (videoContainers.includes(targetContainer)) {
-      ffmpegArguments.push("-c:v", "copy", "-c:a", "copy");
+      const subtitleCodec = resolveSubtitleCodec(targetContainer);
+      ffmpegArguments.push("-c:v", "copy", "-c:a", "copy", "-c:s", subtitleCodec);
     }
 
     ffmpegArguments.push(outputFilename);
