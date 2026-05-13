@@ -55,9 +55,8 @@ export async function processVideoAudio(item: ProcessStreamData, isCancelled: ()
   });
 
   const isExtraTracksPresent = additionalAudioStreams.length > 0;
-  const filenameBase = filenameOutput.replace(/\.[^.]+$/, "");
   const targetExtension = isExtraTracksPresent ? "mkv" : (filenameOutput.split(".").pop() ?? "mkv");
-  const downloadFilename = `${filenameBase}.${targetExtension}`;
+  const downloadFilename = `${filenameOutput.replace(/\.[^.]+$/, "")}.${targetExtension}`;
 
   const extraAudioTracks = additionalAudioStreams
     .map(stream => {
@@ -86,14 +85,11 @@ export async function processVideoAudio(item: ProcessStreamData, isCancelled: ()
       languageCode: track.languageCode
     }));
 
-  const videoBuffer = toOwnedArrayBuffer(videoData);
-  const audioBuffer = toOwnedArrayBuffer(audioData);
-
   const output = await runMuxVideoAudio(
     videoId,
     {
-      videoData: videoBuffer,
-      audioData: audioBuffer,
+      videoData: toOwnedArrayBuffer(videoData),
+      audioData: toOwnedArrayBuffer(audioData),
       extraAudioTracks,
       subtitleTracks: subtitleFiles,
       videoMimeType,

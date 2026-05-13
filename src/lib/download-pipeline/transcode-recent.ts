@@ -20,12 +20,10 @@ export async function transcodeRecentDownload({ entryId, targetContainer }: {
     return;
   }
 
-  const { name: filenameBase } = splitFilenameAndExtension(entry.filename);
-  const downloadFilename = `${filenameBase}.${targetContainer}`;
-  const inputBytes = await blob.arrayBuffer();
+  const downloadFilename = `${splitFilenameAndExtension(entry.filename).name}.${targetContainer}`;
 
   const output = await runTranscodeFile(`transcode:${entryId}`, {
-    data: inputBytes,
+    data: await blob.arrayBuffer(),
     sourceExtension: entry.container,
     targetContainer,
     audioMimeType: entry.audioMimeType

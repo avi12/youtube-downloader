@@ -42,11 +42,10 @@ export async function processSingleMedia(item: ProcessStreamData, isCancelled: (
       progressType: ProgressType.FFmpeg,
       tabId
     });
-    const audioBuffer = toOwnedArrayBuffer(data);
     data = await runEmbedMetadata(
       videoId,
       {
-        audioData: audioBuffer,
+        audioData: toOwnedArrayBuffer(data),
         filenameOutput,
         sourceExtension,
         metadata: item.metadata,
@@ -62,11 +61,10 @@ export async function processSingleMedia(item: ProcessStreamData, isCancelled: (
       progressType: ProgressType.FFmpeg,
       tabId
     });
-    const audioBuffer = toOwnedArrayBuffer(data);
     data = await runTranscodeAudio(
       videoId,
       {
-        audioData: audioBuffer,
+        audioData: toOwnedArrayBuffer(data),
         sourceExtension,
         filenameOutput,
         videoId,
