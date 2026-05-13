@@ -13,8 +13,7 @@ type WorkerCommandMap = {
   [WorkerMessageType.TranscodeFile]: { job: TranscodeFileJob };
 };
 
-type WorkerResponseMap = {
-  [WorkerMessageType.Ready]: Record<string, never>;
+type WorkerDataResponseMap = {
   [WorkerMessageType.Result]: { data: ArrayBuffer | null };
   [WorkerMessageType.Error]: { message: string };
   [WorkerMessageType.Progress]: {
@@ -26,18 +25,20 @@ type WorkerResponseMap = {
 };
 
 type WorkerCommandType = keyof WorkerCommandMap;
-type WorkerResponseType = keyof WorkerResponseMap;
+type WorkerDataResponseType = keyof WorkerDataResponseMap;
 
 type WorkerCommand = {
   [T in WorkerCommandType]: { type: T } & WorkerCommandMap[T];
 }[WorkerCommandType];
 
-type WorkerResponse = {
-  [T in WorkerResponseType]: { type: T } & WorkerResponseMap[T];
-}[WorkerResponseType];
+type WorkerResponse =
+  | { type: WorkerMessageType.Ready }
+  | { [T in WorkerDataResponseType]: { type: T } & WorkerDataResponseMap[T]; }[WorkerDataResponseType];
 
-type ResponseHandler<T extends WorkerResponseType> = (data: WorkerResponseMap[T]) => void;
-type ResponseHandlerMap = { [T in WorkerResponseType]?: ResponseHandler<T> };
+type ResponseHandler<T extends WorkerDataResponseType> = (data: WorkerDataResponseMap[T]) => void;
+type ResponseHandlerMap = {
+  [WorkerMessageType.Ready]?: () => void;
+} & { [T in WorkerDataResponseType]?: ResponseHandler<T> };
 
 type CommandHandler<T extends WorkerCommandType> = (data: WorkerCommandMap[T]) => void;
 type CommandHandlerMap = { [T in WorkerCommandType]?: CommandHandler<T> };
@@ -66,7 +67,7 @@ export function createHostWorkerPort() {
     const message = e.data;
     switch (message.type) {
       case WorkerMessageType.Ready:
-        responseHandlers[WorkerMessageType.Ready]?.({});
+        responseHandlers[WorkerMessageType.Ready]?.();
         break;
       case WorkerMessageType.Result:
         responseHandlers[WorkerMessageType.Result]?.({ data: message.data });
@@ -104,9 +105,10 @@ export function createHostWorkerPort() {
 // ---------------------------------------------------------------------------
 
 export type WorkerPortReceiver = {
-  send<T extends WorkerResponseType>(
+  sendReady(): void;
+  send<T extends WorkerDataResponseType>(
     type: T,
-    data: WorkerResponseMap[T],
+    data: WorkerDataResponseMap[T],
     transfer?: Transferable[]
   ): void;
   onMessage(handlers: CommandHandlerMap): void;
@@ -136,7 +138,10 @@ export function createWorkerPortReceiver(port: MessagePort) {
   };
 
   return {
-    send<T extends WorkerResponseType>(type: T, data: WorkerResponseMap[T], transfer: Transferable[] = []) {
+    sendReady() {
+      port.postMessage({ type: WorkerMessageType.Ready });
+    },
+    send<T extends WorkerDataResponseType>(type: T, data: WorkerDataResponseMap[T], transfer: Transferable[] = []) {
       port.postMessage({
         type,
         ...data

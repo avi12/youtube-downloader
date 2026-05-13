@@ -553,7 +553,7 @@ async function onInitMessage(e: MessageEvent<InitMessage>) {
     }
   });
 
-  portReceiver.send(WorkerMessageType.Ready, {});
+  portReceiver.sendReady();
 }
 
 export default defineUnlistedScript(() => {
