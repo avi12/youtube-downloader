@@ -36,11 +36,16 @@ function persistOnDownloadComplete({ downloadId, data }: {
           ? getTabIdsForVideo(data.recentContext.videoId)
           : [];
 
+        const [downloadItem] = await browser.downloads.search({ id: downloadId });
+        const actualFilename = downloadItem?.filename
+          ? downloadItem.filename.split(/[/\\]/).pop()!
+          : data.filename;
+
         for (const tabId of tabIds) {
           void sendMessage(MessageType.WatchDownloadCompleted, {
             videoId: data.recentContext!.videoId,
             downloadId,
-            filename: data.filename
+            filename: actualFilename
           }, tabId);
         }
 
