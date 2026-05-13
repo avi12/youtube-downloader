@@ -144,6 +144,11 @@ export const AUDIO_EXTRA_STREAM_PREFIX = "audio-extra";
 
 export type StreamType = (typeof StreamType)[keyof typeof StreamType];
 
+export type VideoTabParams = {
+  videoId: string;
+  tabId: number;
+};
+
 export type SabrConfig = {
   serverAbrStreamingUrl: string;
   videoPlaybackUstreamerConfig: string;

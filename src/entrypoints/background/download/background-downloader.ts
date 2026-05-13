@@ -11,7 +11,7 @@ import { TRANSFER_CHUNK_SIZE, uint8ToBase64 } from "@/lib/utils/binary";
 import { stripMimeParams } from "@/lib/utils/containers";
 import { fetchYouTubeMusicMetadata } from "@/lib/youtube/youtube-music-metadata";
 import { AUDIO_EXTRA_STREAM_PREFIX, ProgressType, StreamType } from "@/types";
-import type { DownloadRequest, VideoMetadata } from "@/types";
+import type { DownloadRequest, VideoMetadata, VideoTabParams } from "@/types";
 
 export interface DownloadResult {
   videoData: Uint8Array | null;
@@ -229,10 +229,7 @@ async function enrichMetadataFromYouTubeMusic(metadata: VideoMetadata | null | u
   });
 }
 
-function reportDownloadFailed({ videoId, tabId }: {
-  videoId: string;
-  tabId: number;
-}) {
+function reportDownloadFailed({ videoId, tabId }: VideoTabParams) {
   void sendMessage(MessageType.UpdateDownloadProgress, {
     videoId,
     progress: 0,

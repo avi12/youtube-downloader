@@ -1,14 +1,12 @@
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
+import type { VideoTabParams } from "@/types";
 
 const videoIdToTabIds: Record<string, number[]> = {};
 export const tabTracker: Record<number, {
   videoIdsAvailable: string[];
 }> = {};
 
-export function trackVideoForTab({ videoId, tabId }: {
-  videoId: string;
-  tabId: number;
-}) {
+export function trackVideoForTab({ videoId, tabId }: VideoTabParams) {
   videoIdToTabIds[videoId] ??= [];
 
   if (!videoIdToTabIds[videoId].includes(tabId)) {
@@ -22,10 +20,7 @@ export function trackVideoForTab({ videoId, tabId }: {
   }
 }
 
-export function untrackVideoForTab({ videoId, tabId }: {
-  videoId: string;
-  tabId: number;
-}) {
+export function untrackVideoForTab({ videoId, tabId }: VideoTabParams) {
   if (!videoIdToTabIds[videoId]) {
     return;
   }

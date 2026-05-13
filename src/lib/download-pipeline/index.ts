@@ -5,7 +5,7 @@ import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import type { RecentDownloadContext } from "@/lib/messaging/messaging";
 import { getCompatibleFilename, getMimeType } from "@/lib/utils/containers";
 import { DownloadType, ProgressType } from "@/types";
-import type { ProcessStreamData } from "@/types";
+import type { ProcessStreamData, VideoTabParams } from "@/types";
 
 export { initMuxWorker } from "./ffmpeg-instance";
 
@@ -124,10 +124,7 @@ export async function reportProgress({
   });
 }
 
-async function reportRemoval({ videoId, tabId }: {
-  videoId: string;
-  tabId: number;
-}) {
+async function reportRemoval({ videoId, tabId }: VideoTabParams) {
   await sendMessage(MessageType.PipelineRemoval, {
     videoId,
     tabId
@@ -144,10 +141,7 @@ async function removeFromStorageQueue({ videoId, type }: {
   });
 }
 
-interface ActiveJob {
-  videoId: string;
-  tabId: number;
-}
+type ActiveJob = VideoTabParams;
 
 const activeJobs = new Map<string, ActiveJob>();
 
