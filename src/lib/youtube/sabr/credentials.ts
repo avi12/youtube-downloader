@@ -4,7 +4,7 @@ import { sabrCredentials } from "@/lib/ui/synced-stores.svelte";
 let isCredentialsForwarded = false;
 
 async function forwardSabrCredentials() {
-  let captured;
+  let captured: Awaited<ReturnType<typeof sendMessage<typeof MessageType.GetCapturedSabrBody>>>;
   try {
     captured = await sendMessage(MessageType.GetCapturedSabrBody, {});
   } catch {
