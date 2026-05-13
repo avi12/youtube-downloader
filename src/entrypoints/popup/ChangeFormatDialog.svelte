@@ -24,6 +24,7 @@
     }
   });
   let isSubmitting = $state(false);
+  let isClosing = $state(false);
 
   const estimatedSecondsLabel = $derived(describeEstimatedTime(entry.size));
 
@@ -38,6 +39,10 @@
     return `~${minutes} min`;
   }
 
+  function startClose() {
+    isClosing = true;
+  }
+
   async function handleConfirm() {
     if (!selectedTarget || isSubmitting) {
       return;
@@ -49,7 +54,7 @@
         entryId: entry.id,
         targetContainer: selectedTarget
       });
-      onClose();
+      startClose();
     } catch (error) {
       console.warn("[ytdl:popup] Transcode request failed:", error);
       isSubmitting = false;
@@ -58,20 +63,21 @@
 
   function handleBackdropClick(e: MouseEvent) {
     if (e.target === e.currentTarget) {
-      onClose();
+      startClose();
     }
   }
 </script>
 
 <svelte:window
-onkeydown={e => {
-  if (e.key === "Escape") {
-    onClose();
-  }
-}} />
+  onkeydown={e => {
+    if (e.key === "Escape") {
+      startClose();
+    }
+  }} />
 
 <div
   class="dialog-backdrop"
+  class:closing={isClosing}
   onclick={handleBackdropClick}
   role="presentation"
 >
@@ -79,6 +85,11 @@ onkeydown={e => {
     class="dialog"
     aria-labelledby="change-format-title"
     aria-modal="true"
+    onanimationend={() => {
+      if (isClosing) {
+        onClose();
+      }
+    }}
     role="dialog"
   >
     <h2 id="change-format-title" class="dialog-title">Change format</h2>
@@ -111,7 +122,7 @@ onkeydown={e => {
     <div class="dialog-actions">
       <button
         class="dialog-button dialog-button-secondary"
-        onclick={onClose}
+        onclick={startClose}
         type="button"
       >
         Cancel
@@ -268,6 +279,14 @@ onkeydown={e => {
     }
   }
 
+  .dialog-backdrop.closing {
+    animation: backdrop-out 200ms ease-in forwards;
+  }
+
+  .dialog-backdrop.closing .dialog {
+    animation: dialog-out 240ms cubic-bezier(0.36, 0, 0.66, -0.56) forwards;
+  }
+
   @keyframes backdrop-in {
     from {
       opacity: 0%;
@@ -275,6 +294,16 @@ onkeydown={e => {
 
     to {
       opacity: 100%;
+    }
+  }
+
+  @keyframes backdrop-out {
+    from {
+      opacity: 100%;
+    }
+
+    to {
+      opacity: 0%;
     }
   }
 
@@ -287,6 +316,18 @@ onkeydown={e => {
     to {
       opacity: 100%;
       transform: scale(1) translateY(0);
+    }
+  }
+
+  @keyframes dialog-out {
+    from {
+      opacity: 100%;
+      transform: scale(1) translateY(0);
+    }
+
+    to {
+      opacity: 0%;
+      transform: scale(0.92) translateY(8px);
     }
   }
 </style>
