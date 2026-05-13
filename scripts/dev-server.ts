@@ -252,7 +252,8 @@ async function main() {
       args: [
         `--lang=${LANG}`,
         `--remote-debugging-port=${CDP_PORT}`,
-        "--disable-blink-features=AutomationControlled"
+        "--disable-blink-features=AutomationControlled",
+        "--profile-directory=Profile 1"
       ],
       noReload: true,
       noInput: true

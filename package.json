@@ -14,7 +14,7 @@
     "lint": "eslint --fix",
     "compile": "tsc --noEmit",
     "stylelint": "stylelint \"src/**/*.{css,svelte}\" --fix",
-    "svelte:check": "pnpx svelte-check"
+    "svelte-check": "pnpx svelte-check"
   },
   "dependencies": {
     "@ffmpeg/core": "0.12.10",
