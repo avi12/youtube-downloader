@@ -5,7 +5,7 @@ import { restoreStoredProgress, syncStoredProgressToStore } from "./handlers/pro
 import "./style.css";
 import { setNativeDownloadVisibility } from "./ui/page-router";
 import { handlePageChange } from "./ui/page-router";
-import { mountWatchToast } from "./ui/watch-toast";
+import { mountWatchSnackbar } from "./ui/watch-snackbar";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { optionsItem, statusProgressItem } from "@/lib/storage/storage";
 import { initCompletedDownloadsStore } from "@/lib/ui/completed-downloads-store.svelte";
@@ -36,7 +36,7 @@ export default defineContentScript({
     if (!isDownloadIframe) {
       listenForKeepalive();
       initCompletedDownloadsStore();
-      mountWatchToast(context);
+      mountWatchSnackbar(context);
       await restoreStoredProgress();
 
       const unwatchStatusProgress = statusProgressItem.watch(stored => {

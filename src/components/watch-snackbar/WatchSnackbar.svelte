@@ -3,8 +3,8 @@
   import { MessageType, sendMessage } from "@/lib/messaging/messaging";
   import { completedDownloadsStore } from "@/lib/ui/completed-downloads-store.svelte";
 
-  const TOAST_DURATION_MS = 10000;
-  const VIEW_BUTTON_ID = "ytdl-toast-view";
+  const SNACKBAR_DURATION_MS = 10_000;
+  const VIEW_BUTTON_ID = "ytdl-snackbar-view";
 
   let downloadId = $state<number | null>(null);
   let filename = $state("");
@@ -16,10 +16,10 @@
     filename = completed.filename;
     isOpen = true;
     clearTimeout(dismissTimer ?? undefined);
-    void crossWorldMessenger.sendMessage(CrossWorldMessage.OpenToast, {});
+    void crossWorldMessenger.sendMessage(CrossWorldMessage.OpenSnackbar, {});
     dismissTimer = setTimeout(() => {
       isOpen = false;
-    }, TOAST_DURATION_MS);
+    }, SNACKBAR_DURATION_MS);
   }));
 
   $effect(() => onButtonClick(buttonId => {
@@ -39,7 +39,9 @@
   <div class="ytSnackbarContainerSnackbarContainer ytSnackbarContainerOpened" {@attach attachToSnackbar}>
     <snackbar-view-model class="snackbarViewModelHost">
       <div class="snackbarViewModelEngagementBarWrapper">
-        <yt-icon class="snackbarViewModelAvatarContainer" icon="icons:check-circle"></yt-icon>
+        <div class="snackbarViewModelAvatarContainer">
+          <yt-icon class="snackbarViewModelTitle" icon="icons:check-circle"></yt-icon>
+        </div>
         <div class="snackbarViewModelTitleSubtextWrapper">
           <div class="snackbarViewModelTitle snackbarViewModelTitleWithSubtext">
             <!-- svelte-ignore a11y_unknown_role -->
