@@ -74,6 +74,7 @@
       return;
     }
 
+    const isSelected = mode === button.mode;
     sendButtonData({
       elButton,
       data: {
@@ -81,12 +82,17 @@
         title: button.label,
         accessibilityText: button.label,
         style: ButtonStyle.Mono,
-        type: mode === button.mode ? ButtonType.Filled : ButtonType.Text,
+        type: isSelected ? ButtonType.Filled : ButtonType.Text,
         buttonSize: ButtonSize.XSmall,
         state: disabled ? ButtonState.Disabled : ButtonState.Active,
         isFullWidth: false,
         isDisabled: disabled,
         tooltip: ""
+      },
+      a11y: {
+        tabIndex: isSelected ? 0 : -1,
+        role: "radio",
+        ariaChecked: String(isSelected)
       }
     });
   }
@@ -122,12 +128,27 @@
       }
     });
   }));
+
+  function handleSegKeydown(e: KeyboardEvent) {
+    if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") {
+      return;
+    }
+
+    e.preventDefault();
+    const currentIndex = buttons.findIndex(btn => btn.mode === mode);
+    const delta = e.key === "ArrowRight" ? 1 : -1;
+    const nextIndex = (currentIndex + delta + buttons.length) % buttons.length;
+    const nextButton = buttons[nextIndex];
+    onmodechange(nextButton.mode);
+    const elNext = elements.get(nextButton.id);
+    queueMicrotask(() => elNext?.querySelector("button")?.focus());
+  }
 </script>
 
 <div class="track-choice" class:is-disabled={disabled}>
   <div class="track-choice-head">
     <span class="track-label">{kindLabel}</span>
-    <div class="track-seg" aria-label="{kindLabel} source" role="radiogroup">
+    <div class="track-seg" aria-label="{kindLabel} source" onkeydown={handleSegKeydown} role="radiogroup" tabindex="-1">
       {#each buttons as button (button.id)}
         <yt-button-view-model
           {@attach createAttacher(button)}
