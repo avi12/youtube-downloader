@@ -38,7 +38,7 @@ export function emitCrossWorldEvent<T extends CrossWorldEvent>({ type, data }: {
   type: T;
   data: CrossWorldEventMap[T];
 }) {
-  window.postMessage({
+  postMessage({
     [EVENT_TYPE_KEY]: type,
     data
   }, EVENT_ORIGIN);
@@ -56,6 +56,6 @@ export function onCrossWorldEvent<T extends CrossWorldEvent>({ type, handler }: 
     handler(e.data.data);
   }
 
-  window.addEventListener("message", listener);
-  return () => window.removeEventListener("message", listener);
+  addEventListener("message", listener);
+  return () => removeEventListener("message", listener);
 }
