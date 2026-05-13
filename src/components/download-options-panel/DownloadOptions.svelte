@@ -12,6 +12,10 @@
   import type { AdaptiveFormatItem, CaptionTrack } from "@/types";
   import { SvelteSet } from "svelte/reactivity";
 
+  function byLabel(optA: { label: string }, optB: { label: string }) {
+    return optA.label.localeCompare(optB.label);
+  }
+
   interface Props {
     downloadType: DownloadType;
     videoFormats: AdaptiveFormatItem[];
@@ -151,7 +155,7 @@
       });
     }
 
-    return result.toSorted((optA, optB) => optA.label.localeCompare(optB.label));
+    return result.toSorted(byLabel);
   });
 
   const audioPlayerLabel = $derived(selectedAudioFormat?.audioTrack?.displayName ?? null);
@@ -177,10 +181,12 @@
   });
 
   const captionCustomOptions = $derived(
-    captionTracks.map(track => ({
-      value: track.vssId,
-      label: track.name.simpleText
-    }))
+    captionTracks
+      .map(track => ({
+        value: track.vssId,
+        label: track.name.simpleText
+      }))
+      .toSorted(byLabel)
   );
 
   const qualityOptions = $derived.by(() => {

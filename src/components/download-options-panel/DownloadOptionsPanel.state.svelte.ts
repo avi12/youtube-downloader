@@ -17,6 +17,7 @@ import {
   orderCaptionsByPreference,
   resolveCaptionLanguageMode,
   selectPreferredAudioFormat,
+  sortAudioFormatsByDisplayName,
   waitForVideoElement
 } from "@/lib/youtube/video-helpers";
 import {
@@ -127,7 +128,7 @@ export function createPanelState(getVideoData: () => VideoData) {
         }
       }
 
-      const firstTrack = getVideoData().audioFormats.find(format => format.audioTrack);
+      const firstTrack = sortAudioFormatsByDisplayName(getVideoData().audioFormats)[0];
       return firstTrack?.audioTrack ? normalizeLanguageCode(firstTrack.audioTrack.id) : "";
     })
   );

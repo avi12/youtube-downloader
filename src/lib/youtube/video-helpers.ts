@@ -151,6 +151,13 @@ function matchAudioFormatToLanguage(audioFormats: AdaptiveFormatItem[], langCode
   return audioFormats.find(format => normalizeLanguageCode(format.audioTrack?.id ?? "") === langCode);
 }
 
+export function sortAudioFormatsByDisplayName(audioFormats: AdaptiveFormatItem[]) {
+  return audioFormats
+    .filter(format => format.audioTrack)
+    .toSorted((formatA, formatB) =>
+      formatA.audioTrack!.displayName.localeCompare(formatB.audioTrack!.displayName));
+}
+
 export function findOriginalAudioFormat(audioFormats: AdaptiveFormatItem[]) {
   // Formats without audioTrack are single baked-in tracks
   const noTrack = audioFormats.find(format => !format.audioTrack);
