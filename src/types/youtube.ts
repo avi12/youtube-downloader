@@ -340,12 +340,17 @@ export type TooltipStyle = (typeof TooltipStyle)[keyof typeof TooltipStyle];
 
 // Zod can't be used in content scripts because YouTube's Trusted Types CSP blocks it.
 
-export function isPolymerProgressElement(element: Element): element is TpYtPaperProgressElement {
-  return "updateStyles" in element && "value" in element;
-}
-
 export function isPolymerInputElement(element: Element): element is TpYtPaperInputElement {
   return "updateStyles" in element && "label" in element;
+}
+
+interface TpYtPaperToastElement extends HTMLElement {
+  open: () => void;
+  text: string;
+}
+
+export function isPaperToastElement(element: Element): element is TpYtPaperToastElement {
+  return "open" in element && "text" in element;
 }
 
 /** YouTube-internal Polymer view model — values reverse-engineered from YouTube's runtime. */

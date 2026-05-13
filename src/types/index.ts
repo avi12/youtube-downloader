@@ -7,7 +7,6 @@ export type {
   PlayerResponse,
   TpYtIronDropdownElement,
   TpYtPaperInputElement,
-  TpYtPaperProgressElement,
   YtButtonViewModelElement,
   YtdlCaptureState,
   YtdlMediaCapture
@@ -27,8 +26,8 @@ export {
   TooltipPlacement,
   TooltipStyle,
   YtIconName,
-  isPolymerInputElement,
-  isPolymerProgressElement
+  isPaperToastElement,
+  isPolymerInputElement
 } from "./youtube";
 
 export const DownloadType = {

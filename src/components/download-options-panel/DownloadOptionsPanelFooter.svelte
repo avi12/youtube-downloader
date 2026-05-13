@@ -1,12 +1,5 @@
 <script lang="ts">
-  import {
-    attachPanelProgress,
-    attachPanelProgressDone,
-    attachPanelProgressFailed,
-    attachPrimaryButton,
-    attachViewButton,
-    PrimaryButtonState
-  } from "@/lib/ui/panel-button-attachments.svelte";
+  import { attachPrimaryButton, attachViewButton, PrimaryButtonState } from "@/lib/ui/panel-button-attachments.svelte";
   import { ProgressType } from "@/types";
 
   interface Props {
@@ -49,10 +42,6 @@
     return `${formattedPercentage} - Downloading`;
   });
 
-  const primaryButtonClass = $derived(
-    `${scopingClass} ${primaryState === PrimaryButtonState.Downloading ? "ytdl-cancel-state" : ""}`
-  );
-
   function attachPrimaryBtn(elButton: Element) {
     attachPrimaryButton({
       elButton,
@@ -65,7 +54,7 @@
 
 <div class="ytdl-panel-footer">
   <yt-button-view-model
-    class={primaryButtonClass}
+    class={scopingClass}
     {@attach attachPrimaryBtn}
     data-ytdl-button-id={primaryButtonId}
     role="button"
@@ -76,7 +65,6 @@
     <div class="ytdl-progress-block">
       <tp-yt-paper-progress
         class="ytdl-progress-track"
-        {@attach attachPanelProgress}
         indeterminate={displayProgress === 0 || undefined}
         value={Math.round(displayProgress)}
       ></tp-yt-paper-progress>
@@ -88,7 +76,6 @@
     <div class="ytdl-progress-block done">
       <tp-yt-paper-progress
         class="ytdl-progress-track"
-        {@attach attachPanelProgressDone}
         value={100}
       ></tp-yt-paper-progress>
       <div class="ytdl-done-row">
@@ -106,7 +93,6 @@
     <div class="ytdl-progress-block failed">
       <tp-yt-paper-progress
         class="ytdl-progress-track"
-        {@attach attachPanelProgressFailed}
         value={Math.round(displayProgress) || 100}
       ></tp-yt-paper-progress>
       <span class="ytdl-progress-label" role="alert">Download failed</span>
@@ -124,10 +110,36 @@
   }
 
   .ytdl-progress-block {
+    /* CSS custom properties cascade into tp-yt-paper-progress so ShadyCSS reads
+       the correct color from getComputedStyle on every rebase cycle. */
+    --paper-progress-active-color: var(--yt-spec-call-to-action, #065fd4);
+    --paper-progress-container-color: var(--yt-spec-10-percent-layer, rgb(0 0 0 / 10%));
+    --paper-progress-height: 4px;
+
     display: flex;
     flex-direction: column;
     gap: 6px;
     padding-block-start: 4px;
+
+    :global(html[dark]) & {
+      --paper-progress-active-color: var(--yt-spec-call-to-action, #3ea6ff);
+    }
+
+    &.done {
+      --paper-progress-active-color: var(--yt-spec-text-success, #1e8e3e);
+    }
+
+    :global(html[dark]) &.done {
+      --paper-progress-active-color: var(--yt-spec-text-success, #6cd16c);
+    }
+
+    &.failed {
+      --paper-progress-active-color: var(--yt-spec-text-error, #d93025);
+    }
+
+    :global(html[dark]) &.failed {
+      --paper-progress-active-color: var(--yt-spec-text-error, #ff6b6b);
+    }
   }
 
   .ytdl-done-row {

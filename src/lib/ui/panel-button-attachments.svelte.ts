@@ -6,7 +6,6 @@ import {
   ButtonStyle,
   ButtonType,
   IconName,
-  isPolymerProgressElement,
   type ButtonViewModelData
 } from "@/types";
 
@@ -118,6 +117,9 @@ export function attachPrimaryButton({ elButton, getState, getIsDownloadable, get
   $effect(() => {
     const state = getState();
     const isActive = state !== PrimaryButtonState.Idle || (getIsDownloadable() && getIsFilenameValid());
+    if (elButton instanceof HTMLElement) {
+      elButton.classList.toggle("ytdl-cancel-state", state === PrimaryButtonState.Downloading);
+    }
 
     const data: ButtonViewModelData = (() => {
       if (state === PrimaryButtonState.Downloading) {
@@ -185,37 +187,6 @@ export function attachPrimaryButton({ elButton, getState, getIsDownloadable, get
       data
     });
   });
-}
-
-const ACCENT_DARK = "#3ea6ff";
-const SUCCESS_DARK = "#6cd16c";
-
-function applyProgressStyles(elProgress: Element, activeColor: string) {
-  requestAnimationFrame(() => {
-    if (!isPolymerProgressElement(elProgress)) {
-      return;
-    }
-
-    elProgress.updateStyles({
-      "--paper-progress-active-color": activeColor,
-      "--paper-progress-container-color": "var(--yt-spec-10-percent-layer, rgb(0 0 0 / 10%))",
-      "--paper-progress-height": "4px"
-    });
-  });
-}
-
-export function attachPanelProgress(elProgress: Element) {
-  applyProgressStyles(elProgress, `var(--yt-spec-call-to-action, ${ACCENT_DARK})`);
-}
-
-export function attachPanelProgressDone(elProgress: Element) {
-  applyProgressStyles(elProgress, `var(--yt-spec-text-success, ${SUCCESS_DARK})`);
-}
-
-const ERROR_DARK = "#ff6b6b";
-
-export function attachPanelProgressFailed(elProgress: Element) {
-  applyProgressStyles(elProgress, `var(--yt-spec-text-error, ${ERROR_DARK})`);
 }
 
 export function attachViewButton(elButton: Element) {
