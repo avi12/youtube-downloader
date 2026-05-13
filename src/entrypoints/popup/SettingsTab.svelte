@@ -15,6 +15,8 @@
   import type { DownloadTypePreference, Options } from "@/types";
   import { slide } from "svelte/transition";
 
+  const SLIDE_DURATION = window.matchMedia("(prefers-reduced-motion: reduce)").matches ? 0 : 200;
+
   interface Props {
     options: Options;
   }
@@ -195,7 +197,7 @@
         </label>
       </div>
       {#if value === VideoQualityMode.Custom && options.videoQualityMode === VideoQualityMode.Custom}
-        <div class="settings-sub-row" transition:slide={{ duration: 200 }}>
+        <div class="settings-sub-row" transition:slide={{ duration: SLIDE_DURATION }}>
           <label class="settings-label" for="custom-quality-select">Quality</label>
           <select
             id="custom-quality-select"
@@ -335,7 +337,7 @@
         </div>
         {#if value === AudioTrackLanguageMode.Custom
           && options.audioTrackLanguageMode === AudioTrackLanguageMode.Custom}
-          <div class="settings-sub-row" transition:slide={{ duration: 200 }}>
+          <div class="settings-sub-row" transition:slide={{ duration: SLIDE_DURATION }}>
             <label class="settings-label" for="custom-language-select">Language</label>
             <select
               id="custom-language-select"

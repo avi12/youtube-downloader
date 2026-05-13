@@ -97,6 +97,16 @@
 
 <style>
   :global {
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+      }
+    }
+
     html {
       font-size: max(1rem, 16px);
     }
