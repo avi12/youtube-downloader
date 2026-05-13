@@ -1,10 +1,5 @@
 import { cancelBackgroundDownload, dropPendingRetry, startBackgroundDownload } from "../download/background-downloader";
-import {
-  downloadViaWatchPage,
-  executeIframeDownload,
-  initIframeReadyListener,
-  prepareIframe
-} from "../download/iframe-downloader";
+import { downloadViaWatchPage, initIframeReadyListener, prepareIframe } from "../download/iframe-downloader";
 import { enqueueToPopupList, removeFromPopupList } from "../queue/popup-list";
 import { awaitBytesTransferred, awaitVideoComplete, signalVideoComplete } from "../queue/sequential-queue";
 import { cancelDownloads, getTabIdsForVideo, trackVideoForTab } from "../queue/tab-tracker";
@@ -44,15 +39,19 @@ async function dispatchParallel({ items, tabId, signal }: {
       break;
     }
 
-    await prepareIframe(item).catch(() => undefined);
+    trackVideoForTab({
+      videoId: item.videoId,
+      tabId
+    });
 
     try {
-      await executeIframeDownload({
-        data: item,
-        tabId
+      await prepareIframe({
+        ...item,
+        isIframeFallback: true
       });
+      void sendMessage(MessageType.StartKeepalive, { videoId: item.videoId }, tabId);
     } catch (error) {
-      console.error("[ytdl:bg] executeIframeDownload failed:", item.videoId, error);
+      console.error("[ytdl:bg] prepareIframe failed:", item.videoId, error);
       void removeFromPopupList(item.videoId);
       void sendMessage(MessageType.UpdateDownloadProgress, {
         videoId: item.videoId,

@@ -1,40 +1,10 @@
 import { checkInterruptedDownload } from "../download/interrupted-downloads";
-import { setPlaylistContext, uncancelStreamTransfer } from "../download/stream-transfer";
 import { CrossWorldEvent, emitCrossWorldEvent } from "@/lib/messaging/cross-world-events";
-import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { MessageType, onMessage } from "@/lib/messaging/messaging";
 import { downloadProgressStore, interruptedDownloadStore } from "@/lib/ui/synced-stores.svelte";
 import { ProgressType } from "@/types";
 
 export function registerBackgroundMessageHandlers() {
-  onMessage(MessageType.ExecuteDownloadItem, ({ data }) => {
-    if (location.pathname !== "/watch") {
-      return;
-    }
-
-    // Only the offscreen download iframe should respond. Regular user-facing
-    // YouTube watch tabs lack ?ytdl=1 and must ignore the broadcast so they
-    // don't accidentally re-trigger a foreign download.
-    const searchParameters = new URLSearchParams(location.search);
-    if (searchParameters.get("ytdl") !== "1" || searchParameters.get("v") !== data.videoId) {
-      return;
-    }
-
-    if (data.playlistId) {
-      setPlaylistContext({
-        videoId: data.videoId,
-        context: {
-          playlistId: data.playlistId,
-          playlistTitle: data.playlistTitle ?? "Playlist",
-          playlistTotalCount: data.playlistTotalCount ?? 1
-        }
-      });
-    }
-
-    uncancelStreamTransfer(data.videoId);
-    void crossWorldMessenger.sendMessage(CrossWorldMessage.DownloadRequest, data);
-  });
-
   const lastReportedProgress = new Map<string, string>();
 
   onMessage(MessageType.UpdateDownloadProgress, ({ data }) => {

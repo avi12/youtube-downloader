@@ -83,8 +83,11 @@ export function registerCrossWorldHandlers(
     void sendMessage(MessageType.StartBackgroundDownload, request);
   });
 
-  crossWorldMessenger.onMessage(CrossWorldMessage.IframePlayerReady, ({ data }) => {
-    void sendMessage(MessageType.DownloadIframeReady, { videoId: data.videoId });
+  crossWorldMessenger.onMessage(CrossWorldMessage.IframePlayerReady, async ({ data }) => {
+    const request = await sendMessage(MessageType.DownloadIframeReady, { videoId: data.videoId });
+    if (request) {
+      void crossWorldMessenger.sendMessage(CrossWorldMessage.DownloadRequest, request);
+    }
   });
 
   crossWorldMessenger.onMessage(CrossWorldMessage.DownloadRequest, ({ data }) => {

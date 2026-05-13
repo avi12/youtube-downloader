@@ -9,12 +9,21 @@ import type { DownloadRequest } from "@/types";
 
 const IFRAME_READY_TIMEOUT_MS = 30_000;
 
-const pendingIframeReady = new Map<string, () => void>();
+const pendingIframeReady = new Map<string, {
+  resolve: () => void;
+  request: DownloadRequest;
+}>();
 
 export function initIframeReadyListener() {
   onMessage(MessageType.DownloadIframeReady, ({ data }) => {
-    pendingIframeReady.get(data.videoId)?.();
+    const pending = pendingIframeReady.get(data.videoId);
+    if (!pending) {
+      return null;
+    }
+
+    pending.resolve();
     pendingIframeReady.delete(data.videoId);
+    return pending.request;
   });
 }
 
@@ -39,23 +48,14 @@ export async function prepareIframe(data: DownloadRequest) {
       resolve();
     }, IFRAME_READY_TIMEOUT_MS);
 
-    pendingIframeReady.set(data.videoId, () => {
-      clearTimeout(timeoutId);
-      resolve();
+    pendingIframeReady.set(data.videoId, {
+      resolve() {
+        clearTimeout(timeoutId);
+        resolve();
+      },
+      request: data
     });
   });
-}
-
-export async function executeIframeDownload({ data, tabId }: {
-  data: DownloadRequest;
-  tabId: number;
-}) {
-  await sendMessage(MessageType.ExecuteDownloadItem, data);
-  trackVideoForTab({
-    videoId: data.videoId,
-    tabId
-  });
-  await sendMessage(MessageType.StartKeepalive, { videoId: data.videoId }, tabId);
 }
 
 export async function downloadViaWatchPage({ data, tabId }: {
@@ -67,13 +67,17 @@ export async function downloadViaWatchPage({ data, tabId }: {
     type: data.type,
     filenameOutput: data.filenameOutput
   });
+  trackVideoForTab({
+    videoId: data.videoId,
+    tabId
+  });
 
   try {
-    await prepareIframe(data);
-    await executeIframeDownload({
-      data,
-      tabId
+    await prepareIframe({
+      ...data,
+      isIframeFallback: true
     });
+    await sendMessage(MessageType.StartKeepalive, { videoId: data.videoId }, tabId);
     await awaitVideoComplete(data.videoId);
     sendToOffscreen(OffscreenMessageType.RemoveDownloadIframe, { videoId: data.videoId });
   } catch (error) {

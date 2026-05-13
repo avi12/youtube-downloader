@@ -100,7 +100,7 @@ interface ProtocolMap {
 
   downloadIframeReady(data: {
     videoId: string;
-  }): void;
+  }): DownloadRequest | null;
 
   requestPlaylistDownload(data: {
     items: DownloadRequest[];
