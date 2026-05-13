@@ -336,7 +336,8 @@ export async function startBackgroundDownload({ request, tabId }: {
     }
 
     const needsCdn = !result?.audioData || result.isPartialVideo || result.isPartialAudio;
-    if (needsCdn) {
+    const hasCdnUrls = !!(request.resolvedVideoUrl || request.resolvedAudioUrl);
+    if (needsCdn && hasCdnUrls) {
       // Pass SABR partial bytes so CDN resumes from the stall point via Range request
       result = await downloadViaCdn({
         request,
