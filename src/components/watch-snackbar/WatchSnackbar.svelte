@@ -25,6 +25,8 @@
   $effect(() => onButtonClick(buttonId => {
     if (buttonId === VIEW_BUTTON_ID && downloadId !== null) {
       void sendMessage(MessageType.RevealDownloadFile, { downloadId });
+      clearTimeout(dismissTimer ?? undefined);
+      dismissTimer = null;
       isOpen = false;
     }
   }));
