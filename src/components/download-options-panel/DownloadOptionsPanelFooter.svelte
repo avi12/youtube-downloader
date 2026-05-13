@@ -112,8 +112,8 @@
   .ytdl-progress-block {
     /* CSS custom properties cascade into tp-yt-paper-progress so ShadyCSS reads
        the correct color from getComputedStyle on every rebase cycle. */
-    --paper-progress-active-color: var(--yt-spec-call-to-action, #065fd4);
-    --paper-progress-container-color: var(--yt-spec-10-percent-layer, rgb(0 0 0 / 10%));
+    --paper-progress-active-color: var(--yt-sys-color-baseline--call-to-action, #065fd4);
+    --paper-progress-container-color: var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 10%));
     --paper-progress-height: 4px;
 
     display: flex;
@@ -121,24 +121,12 @@
     gap: 6px;
     padding-block-start: 4px;
 
-    :global(html[dark]) & {
-      --paper-progress-active-color: var(--yt-spec-call-to-action, #3ea6ff);
-    }
-
     &.done {
-      --paper-progress-active-color: var(--yt-spec-text-success, #1e8e3e);
-    }
-
-    :global(html[dark]) &.done {
-      --paper-progress-active-color: var(--yt-spec-text-success, #6cd16c);
+      --paper-progress-active-color: var(--yt-sys-color-baseline--text-complete, #1e8e3e);
     }
 
     &.failed {
-      --paper-progress-active-color: var(--yt-spec-text-error, #d93025);
-    }
-
-    :global(html[dark]) &.failed {
-      --paper-progress-active-color: var(--yt-spec-text-error, #ff6b6b);
+      --paper-progress-active-color: var(--yt-sys-color-baseline--text-error, #d93025);
     }
   }
 
@@ -156,28 +144,16 @@
   }
 
   .ytdl-progress-label {
-    color: var(--yt-spec-text-secondary, #606060);
+    color: var(--yt-sys-color-baseline--text-secondary, #606060);
     font-size: 1.2rem;
     font-variant-numeric: tabular-nums;
 
-    :global(html[dark]) & {
-      color: var(--yt-spec-text-secondary, #aaaaaa);
-    }
-
     .ytdl-progress-block.done & {
-      color: var(--yt-spec-text-success, #1e8e3e);
+      color: var(--yt-sys-color-baseline--text-complete, #1e8e3e);
     }
 
     .ytdl-progress-block.failed & {
-      color: var(--yt-spec-text-error, #d93025);
-    }
-
-    :global(html[dark]) .ytdl-progress-block.done & {
-      color: var(--yt-spec-text-success, #6cd16c);
-    }
-
-    :global(html[dark]) .ytdl-progress-block.failed & {
-      color: var(--yt-spec-text-error, #ff6b6b);
+      color: var(--yt-sys-color-baseline--text-error, #d93025);
     }
   }
 </style>

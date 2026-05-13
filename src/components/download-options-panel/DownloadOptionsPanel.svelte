@@ -129,54 +129,35 @@
 <style>
   .ytdl-panel {
     width: 420px;
-    border: 1px solid var(--yt-spec-10-percent-layer, rgb(0 0 0 / 10%));
+    border: 1px solid var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 10%));
     border-radius: 12px;
-    background: var(--yt-spec-raised-background, var(--yt-spec-base-background, #ffffff));
-    color: var(--yt-spec-text-primary, #0f0f0f);
+    background: var(--yt-sys-color-baseline--raised-background, var(--yt-sys-color-baseline--base-background, #ffffff));
+    color: var(--yt-sys-color-baseline--text-primary, #0f0f0f);
     box-shadow: 0 8px 32px rgb(0 0 0 / 32%), 0 2px 8px rgb(0 0 0 / 16%);
 
     &:focus {
       outline: none;
     }
 
-    :global(html[dark]) & {
-      border-color: var(--yt-spec-10-percent-layer, rgb(255 255 255 / 10%));
-      background: var(--yt-spec-raised-background, #212121);
-      color: var(--yt-spec-text-primary, #f1f1f1);
-    }
-
     & :global(.ytSpecButtonShapeNextMono.ytSpecButtonShapeNextFilled.ytSpecButtonShapeNextFocused) {
       border-color: transparent;
-      background: var(--yt-spec-text-primary, #0f0f0f);
-      color: var(--yt-spec-base-background, #ffffff);
+      background: var(--yt-sys-color-baseline--text-primary, #0f0f0f);
+      color: var(--yt-sys-color-baseline--base-background, #ffffff);
     }
 
     & :global(button:focus-visible) {
-      outline: 2px solid var(--yt-spec-call-to-action, #065fd4);
+      outline: 2px solid var(--yt-sys-color-baseline--call-to-action, #065fd4);
       outline-offset: 3px;
-
-      :global(html[dark]) & {
-        outline-color: var(--yt-spec-call-to-action, #3ea6ff);
-      }
     }
 
     & :global(.ytdl-cancel-state button) {
-      border-color: var(--yt-spec-text-error, #d93025);
+      border-color: var(--yt-sys-color-baseline--text-error, #d93025);
       background: transparent;
-      color: var(--yt-spec-text-error, #d93025);
-
-      :global(html[dark]) & {
-        border-color: var(--yt-spec-text-error, #ff6b6b);
-        color: var(--yt-spec-text-error, #ff6b6b);
-      }
+      color: var(--yt-sys-color-baseline--text-error, #d93025);
     }
 
     & :global(.ytdl-cancel-state button:hover) {
-      background: color-mix(in oklab, var(--yt-spec-text-error, #d93025) 12%, transparent);
-
-      :global(html[dark]) & {
-        background: color-mix(in oklab, var(--yt-spec-text-error, #ff6b6b) 12%, transparent);
-      }
+      background: color-mix(in oklab, var(--yt-sys-color-baseline--text-error, #d93025) 12%, transparent);
     }
   }
 

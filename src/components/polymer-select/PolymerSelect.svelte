@@ -249,13 +249,9 @@
   .ytdl-select-label {
     display: block;
     margin-block-end: 6px;
-    color: var(--yt-spec-text-secondary, #606060);
+    color: var(--yt-sys-color-baseline--text-secondary, #606060);
     font-weight: 500;
     font-size: 1.2rem;
-
-    :global(html[dark]) & {
-      color: var(--yt-spec-text-secondary, #aaaaaa);
-    }
   }
 
   .ytdl-select-trigger {
@@ -267,38 +263,25 @@
     margin: 0;
     padding-block: 0;
     padding-inline: 14px 12px;
-    border: 1px solid var(--yt-spec-10-percent-layer, rgb(0 0 0 / 16%));
+    border: 1px solid var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 16%));
     border-radius: 8px;
     background: transparent;
-    color: var(--yt-spec-text-primary, #0f0f0f);
+    color: var(--yt-sys-color-baseline--text-primary, #0f0f0f);
     font: inherit;
     font-size: 1.4rem;
     text-align: start;
     cursor: pointer;
 
     &:hover {
-      border-color: var(--yt-spec-text-secondary, #606060);
+      border-color: var(--yt-sys-color-baseline--text-secondary, #606060);
     }
 
     &.open {
-      border-color: var(--yt-spec-call-to-action, #065fd4);
-
-      :global(html[dark]) & {
-        border-color: var(--yt-spec-call-to-action, #3ea6ff);
-      }
+      border-color: var(--yt-sys-color-baseline--call-to-action, #065fd4);
     }
 
     &:disabled {
       cursor: default;
-    }
-
-    :global(html[dark]) & {
-      border-color: var(--yt-spec-10-percent-layer, rgb(255 255 255 / 16%));
-      color: var(--yt-spec-text-primary, #f1f1f1);
-
-      &:hover {
-        border-color: var(--yt-spec-text-secondary, #aaaaaa);
-      }
     }
 
     .value {
@@ -311,12 +294,8 @@
     .chevron {
       flex-shrink: 0;
       margin-inline-start: 8px;
-      color: var(--yt-spec-text-secondary, #606060);
+      color: var(--yt-sys-color-baseline--text-secondary, #606060);
       transition: rotate 120ms ease-out;
-
-      :global(html[dark]) & {
-        color: var(--yt-spec-text-secondary, #aaaaaa);
-      }
 
       &.open {
         rotate: 180deg;
@@ -331,16 +310,11 @@
     z-index: 10;
     overflow-y: auto;
     padding: 4px;
-    border: 1px solid var(--yt-spec-10-percent-layer, rgb(0 0 0 / 10%));
+    border: 1px solid var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 10%));
     border-radius: 8px;
-    background: var(--yt-spec-raised-background, var(--yt-spec-base-background, #ffffff));
+    background: var(--yt-sys-color-baseline--raised-background, var(--yt-sys-color-baseline--base-background, #ffffff));
     scrollbar-width: thin;
     box-shadow: 0 8px 32px rgb(0 0 0 / 32%), 0 2px 8px rgb(0 0 0 / 16%);
-
-    :global(html[dark]) & {
-      border-color: var(--yt-spec-10-percent-layer, rgb(255 255 255 / 10%));
-      background: var(--yt-spec-raised-background, #212121);
-    }
 
     & :global(tp-yt-paper-item) {
       display: flex;
@@ -348,22 +322,14 @@
       min-height: 0;
       padding: 8px 10px;
       border-radius: 6px;
-      color: var(--yt-spec-text-primary, #0f0f0f);
+      color: var(--yt-sys-color-baseline--text-primary, #0f0f0f);
       font-size: 1.4rem;
       white-space: nowrap;
       cursor: pointer;
-
-      :global(html[dark]) & {
-        color: var(--yt-spec-text-primary, #f1f1f1);
-      }
     }
 
     & :global(tp-yt-paper-item:hover) {
-      background-color: var(--yt-spec-10-percent-layer, rgb(0 0 0 / 6%));
-
-      :global(html[dark]) & {
-        background-color: var(--yt-spec-10-percent-layer, rgb(255 255 255 / 6%));
-      }
+      background-color: var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 6%));
     }
 
     & :global(tp-yt-paper-item[aria-selected="true"]) {

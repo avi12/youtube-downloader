@@ -1,9 +1,5 @@
 [keyboard-focused] tp-yt-paper-input {
   border-radius: 2px;
-  outline: 2px solid var(--yt-spec-call-to-action, #065fd4);
+  outline: 2px solid var(--yt-sys-color-baseline--call-to-action, #065fd4);
   outline-offset: 2px;
-}
-
-[dark] [keyboard-focused] tp-yt-paper-input {
-  outline-color: var(--yt-spec-call-to-action, #3ea6ff);
 }

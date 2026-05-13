@@ -113,20 +113,20 @@
 
 .ytdl-watch-state-downloading .ytdl-watch-progress-ring__indicator,
 .ytdl-watch-state-resuming .ytdl-watch-progress-ring__indicator {
-  stroke: var(--yt-spec-call-to-action, #3ea6ff);
+  stroke: var(--yt-sys-color-baseline--call-to-action, #3ea6ff);
 }
 
 .ytdl-watch-state-done .ytdl-watch-progress-ring__indicator {
-  stroke: var(--yt-spec-text-success, var(--yt-spec-themed-green, #1e8e3e));
+  stroke: var(--yt-sys-color-baseline--text-complete, var(--yt-sys-color-baseline--themed-green, #1e8e3e));
 }
 
 .ytdl-watch-state-error .ytdl-watch-progress-ring__indicator {
-  stroke: var(--yt-spec-text-error, var(--yt-spec-error-message, #d93025));
+  stroke: var(--yt-sys-color-baseline--text-error, var(--yt-sys-color-baseline--error-indicator, #d93025));
   stroke-dashoffset: 0;
 }
 
 .ytdl-watch-state-interrupted .ytdl-watch-progress-ring__indicator {
-  stroke: var(--yt-spec-text-warning, #b56500);
+  stroke: var(--yt-sys-color-baseline--text-warning, #b56500);
 }
 
 .ytdl-watch-progress-ring--indeterminate .ytdl-watch-progress-ring__indicator {

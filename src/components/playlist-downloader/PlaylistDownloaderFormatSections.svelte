@@ -129,7 +129,7 @@
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: var(--yt-spec-call-to-action, #3ea6ff);
+    background: var(--yt-sys-color-baseline--call-to-action, #3ea6ff);
   }
 
   .ytdl-visually-hidden {
@@ -149,7 +149,7 @@
     padding: 0;
     border: 0;
     background: transparent;
-    color: var(--yt-spec-call-to-action, #3ea6ff);
+    color: var(--yt-sys-color-baseline--call-to-action, #3ea6ff);
     font-family: inherit;
     font-size: 1.2rem;
     cursor: pointer;

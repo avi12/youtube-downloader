@@ -367,13 +367,13 @@
 
     .track {
       fill: none;
-      stroke: var(--yt-spec-10-percent-overlay, rgb(0 0 0 / 10%));
+      stroke: var(--yt-sys-color-baseline--additive-background, rgb(0 0 0 / 10%));
       stroke-width: 2.5;
     }
 
     .fill {
       fill: none;
-      stroke: var(--yt-spec-brand-button-background, #ff0000);
+      stroke: var(--yt-sys-color-baseline--inverted-background, #ff0000);
       stroke-dasharray: 106.81;
       stroke-linecap: round;
       stroke-width: 2.5;
