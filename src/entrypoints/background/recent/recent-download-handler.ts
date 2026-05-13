@@ -3,6 +3,7 @@ import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
 import type { PipelineDownloadMessage } from "@/lib/messaging/messaging";
 import { addRecentDownload } from "@/lib/storage/recent-downloads-db";
 import { optionsItem } from "@/lib/storage/storage";
+import { getFileExtension } from "@/lib/utils/containers";
 import type { RecentDownloadEntry } from "@/types";
 
 async function isTabIdle(tabId: number) {
@@ -98,7 +99,7 @@ async function persistRecentDownload({ downloadId, data }: {
       title: context.title,
       channel: context.channel,
       filename: data.filename,
-      container: extractContainer(data.filename),
+      container: getFileExtension(data.filename),
       mimeType: data.mimeType,
       audioMimeType: context.audioMimeType,
       size: blob.size,
@@ -117,11 +118,6 @@ async function persistRecentDownload({ downloadId, data }: {
   } catch (error) {
     console.warn("[ytdl:bg] Persist recent download failed:", error);
   }
-}
-
-function extractContainer(filename: string) {
-  const iDot = filename.lastIndexOf(".");
-  return iDot === -1 ? "" : filename.slice(iDot + 1).toLowerCase();
 }
 
 export function registerRecentDownloadHandlers() {

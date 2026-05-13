@@ -1,15 +1,7 @@
 import { triggerDownload } from ".";
 import { runTranscodeFile } from "./ffmpeg-instance";
 import { getRecentDownloadBlob, getAllRecentDownloads } from "@/lib/storage/recent-downloads-db";
-
-function swapFileExtension({ filename, extension }: {
-  filename: string;
-  extension: string;
-}) {
-  const iDot = filename.lastIndexOf(".");
-  const base = iDot === -1 ? filename : filename.slice(0, iDot);
-  return `${base}.${extension}`;
-}
+import { splitFilenameAndExtension } from "@/lib/utils/containers";
 
 export async function transcodeRecentDownload({ entryId, targetContainer }: {
   entryId: string;
@@ -28,10 +20,8 @@ export async function transcodeRecentDownload({ entryId, targetContainer }: {
     return;
   }
 
-  const downloadFilename = swapFileExtension({
-    filename: entry.filename,
-    extension: targetContainer
-  });
+  const { name: filenameBase } = splitFilenameAndExtension(entry.filename);
+  const downloadFilename = `${filenameBase}.${targetContainer}`;
   const inputBytes = await blob.arrayBuffer();
 
   const output = await runTranscodeFile(`transcode:${entryId}`, {
