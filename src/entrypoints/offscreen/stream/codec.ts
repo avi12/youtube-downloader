@@ -1,8 +1,3 @@
-export function base64ToUint8Array(base64: string) {
-  const binaryString = atob(base64);
-  return Uint8Array.from(binaryString, character => character.charCodeAt(0));
-}
-
 export function assembleStreamChunks({ chunks, totalChunks }: {
   chunks: Map<number, Uint8Array>;
   totalChunks: number;

@@ -1,4 +1,5 @@
-import { base64ToUint8Array } from "./codec";
+import type { ProcessStreamChunkData } from "@/lib/messaging/offscreen-messaging";
+import { base64ToUint8Array } from "@/lib/utils/binary";
 import { StreamType } from "@/types";
 
 interface AudioStream {
@@ -14,14 +15,7 @@ export interface StreamAccumulator {
 
 export const STREAM_ACCUMULATORS = new Map<string, StreamAccumulator>();
 
-export function handleProcessStreamChunk(data: {
-  videoId: string;
-  streamType: string;
-  iChunk: number;
-  totalChunks: number;
-  chunkBase64: string;
-  tabId: number;
-}) {
+export function handleProcessStreamChunk(data: ProcessStreamChunkData) {
   const { videoId, streamType, iChunk, totalChunks, chunkBase64 } = data;
   if (!STREAM_ACCUMULATORS.has(videoId)) {
     STREAM_ACCUMULATORS.set(videoId, {

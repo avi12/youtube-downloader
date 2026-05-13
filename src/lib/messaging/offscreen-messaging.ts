@@ -136,5 +136,6 @@ function listenForOffscreenMessages(handlers: HandlerMap) {
   connect();
 }
 
-export type { OffscreenProtocolMap };
+export type ProcessStreamChunkData = OffscreenProtocolMap[typeof OffscreenMessageType.ProcessStreamChunk];
+export type ProcessStreamEndData = OffscreenProtocolMap[typeof OffscreenMessageType.ProcessStreamEnd];
 export { OffscreenMessageType, sendToOffscreen, listenForOffscreenMessages, initOffscreenPortListener };

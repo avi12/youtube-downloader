@@ -6,7 +6,7 @@ import { cancelDownloads, getTabIdsForVideo, trackVideoForTab } from "../queue/t
 import { markVideosCancelled } from "./pipeline-handlers";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
-import { uint8ToBase64 } from "@/lib/utils/binary";
+import { base64ToUint8Array, uint8ToBase64 } from "@/lib/utils/binary";
 import { ProgressType } from "@/types";
 import type { DownloadRequest } from "@/types";
 
@@ -86,11 +86,7 @@ export function registerDownloadHandlers() {
   onMessage(MessageType.BackgroundProxyFetch, async ({ data }) => {
     const { url, method, bodyBase64, headers } = data;
 
-    const bodyBinary = atob(bodyBase64);
-    const bodyBytes = new Uint8Array(bodyBinary.length);
-    for (let i = 0; i < bodyBinary.length; i++) {
-      bodyBytes[i] = bodyBinary.charCodeAt(i);
-    }
+    const bodyBytes = base64ToUint8Array(bodyBase64);
 
     try {
       const response = await fetch(url, {

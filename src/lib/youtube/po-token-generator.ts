@@ -6,6 +6,7 @@ import {
   type InnertubeGenerateItResponse
 } from "./innertube";
 import { getYtcfg, YtcfgKey } from "./ytcfg";
+import { base64ToUint8Array } from "@/lib/utils/binary";
 
 interface ChallengeResponse {
   bgChallenge?: {
@@ -123,7 +124,7 @@ export async function generatePoToken(videoId: string) {
   }
 
   // TextEncoder would give UTF-8 bytes of the base64 string, not the actual token bytes.
-  const integrityTokenBytes = Uint8Array.from(atob(integrityData[0]), char => char.charCodeAt(0));
+  const integrityTokenBytes = base64ToUint8Array(integrityData[0]);
 
   const [signalFunction] = webPoSignalOutput;
   if (typeof signalFunction !== "function") {
