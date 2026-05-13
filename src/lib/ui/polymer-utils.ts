@@ -33,8 +33,13 @@ export function applyPolymerCustomStyles({ element, styles }: {
 }
 
 // The element must already have a data-ytdl-button-id attribute set.
-export function sendButtonData({ elButton, data }: {
+export function sendButtonData({ elButton, data, a11y }: {
   elButton: Element;
+  a11y?: {
+    tabIndex: number;
+    role: string;
+    ariaChecked: string;
+  };
   data: {
     accessibilityText: string;
     buttonSize: ButtonSize;
@@ -71,7 +76,8 @@ export function sendButtonData({ elButton, data }: {
 }) {
   void crossWorldMessenger.sendMessage(CrossWorldMessage.SetButtonData, {
     selector: `[${DATA_BUTTON_ID_ATTR}="${elButton.getAttribute(DATA_BUTTON_ID_ATTR)}"]`,
-    data
+    data,
+    a11y
   });
 }
 

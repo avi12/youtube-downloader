@@ -104,7 +104,7 @@ export default defineContentScript({
     // even after Polymer strips the data attribute.
     const buttonIdByElement = new WeakMap<HTMLElement, string>();
 
-    crossWorldMessenger.onMessage(CrossWorldMessage.SetButtonData, ({ data: { selector, data: buttonData } }) => {
+    crossWorldMessenger.onMessage(CrossWorldMessage.SetButtonData, ({ data: { selector, data: buttonData, a11y } }) => {
       const elButton = document.querySelector<HTMLElement>(selector);
       if (!elButton || !("data" in elButton)) {
         return;
@@ -125,6 +125,19 @@ export default defineContentScript({
       const isButtonIdStale = cachedId && elButton.getAttribute(DATA_BUTTON_ID_ATTR) !== cachedId;
       if (isButtonIdStale) {
         elButton.setAttribute(DATA_BUTTON_ID_ATTR, cachedId);
+      }
+
+      if (a11y) {
+        queueMicrotask(() => {
+          const elInner = elButton.querySelector("button");
+          if (!elInner) {
+            return;
+          }
+
+          elInner.tabIndex = a11y.tabIndex;
+          elInner.setAttribute("role", a11y.role);
+          elInner.setAttribute("aria-checked", a11y.ariaChecked);
+        });
       }
 
       if (elButton.hasAttribute("data-ytdl-click-bound")) {

@@ -94,6 +94,11 @@ interface PageMessengerSchema {
   [CrossWorldMessage.SetButtonData](data: {
     selector: string;
     data: ButtonViewModelData;
+    a11y?: {
+      tabIndex: number;
+      role: string;
+      ariaChecked: string;
+    };
   }): void;
   [CrossWorldMessage.CreateDropdown](data: {
     contentId: string;
