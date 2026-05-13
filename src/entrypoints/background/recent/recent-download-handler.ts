@@ -19,13 +19,13 @@ async function isTabIdle(tabId: number) {
   }
 }
 
-function persistOnDownloadComplete({ targetDownloadId, data }: {
-  targetDownloadId: number;
+function persistOnDownloadComplete({ downloadId, data }: {
+  downloadId: number;
   data: PipelineDownloadMessage;
 }) {
   return new Promise<void>(resolve => {
     async function handleChanged(delta: Browser.downloads.DownloadDelta) {
-      if (delta.id !== targetDownloadId || !delta.state?.current) {
+      if (delta.id !== downloadId || !delta.state?.current) {
         return;
       }
 
@@ -39,14 +39,14 @@ function persistOnDownloadComplete({ targetDownloadId, data }: {
         for (const tabId of tabIds) {
           void sendMessage(MessageType.WatchDownloadCompleted, {
             videoId: data.recentContext!.videoId,
-            downloadId: targetDownloadId,
+            downloadId,
             filename: data.filename
           }, tabId);
         }
 
         const options = await optionsItem.getValue();
         if (options.isRevealOnComplete) {
-          browser.downloads.show(targetDownloadId);
+          browser.downloads.show(downloadId);
         }
 
         if (options.isNotifyOnIdle) {
@@ -63,7 +63,7 @@ function persistOnDownloadComplete({ targetDownloadId, data }: {
         }
 
         void persistRecentDownload({
-          downloadId: targetDownloadId,
+          downloadId,
           data
         }).finally(resolve);
         return;
@@ -120,13 +120,13 @@ async function persistRecentDownload({ downloadId, data }: {
 
 export function registerRecentDownloadHandlers() {
   onMessage(MessageType.PipelineDownload, async ({ data }) => {
-    const targetDownloadId = await browser.downloads.download({
+    const downloadId = await browser.downloads.download({
       url: data.blobUrl,
       filename: data.filename
     });
     if (data.recentContext) {
       void persistOnDownloadComplete({
-        targetDownloadId,
+        downloadId,
         data
       });
     }
