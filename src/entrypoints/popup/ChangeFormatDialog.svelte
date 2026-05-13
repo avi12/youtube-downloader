@@ -1,6 +1,11 @@
 <script lang="ts">
   import { MessageType, sendMessage } from "@/lib/messaging/messaging";
-  import { audioContainers, videoContainers } from "@/lib/utils/containers";
+  import {
+    audioContainers,
+    isCompatibleForRemux,
+    splitFilenameAndExtension,
+    videoContainers
+  } from "@/lib/utils/containers";
   import type { RecentDownloadEntry } from "@/types";
 
   interface Props {
@@ -14,6 +19,7 @@
   const availableTargets = $derived(
     (isVideoContainer ? videoContainers : audioContainers)
       .filter(target => target !== entry.container)
+      .filter(target => !isVideoContainer || !entry.videoMimeType || isCompatibleForRemux(entry.videoMimeType, entry.audioMimeType ?? "", target))
   );
 
   let selectedTarget = $state("");
@@ -50,9 +56,11 @@
 
     isSubmitting = true;
     try {
+      const filenameOutput = `${splitFilenameAndExtension(entry.filename).name}.${selectedTarget}`;
       await sendMessage(MessageType.TranscodeRecentDownload, {
         entryId: entry.id,
-        targetContainer: selectedTarget
+        targetContainer: selectedTarget,
+        filenameOutput
       });
       startClose();
     } catch (error) {

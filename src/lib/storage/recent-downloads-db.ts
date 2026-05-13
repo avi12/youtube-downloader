@@ -63,6 +63,7 @@ export async function addRecentDownload({ entry, blob }: {
     filename: string;
     container: string;
     mimeType: string;
+    videoMimeType?: string;
     audioMimeType?: string;
     size: number;
     thumbnailUrl?: string;

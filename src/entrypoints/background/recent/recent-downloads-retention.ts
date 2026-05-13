@@ -1,7 +1,9 @@
 import { ensureProcessor } from "../handlers/processor";
+import { enqueueToPopupList } from "../queue/popup-list";
 import { MessageType, onMessage } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
 import { pruneRecentDownloads } from "@/lib/storage/recent-downloads-db";
+import { DownloadType } from "@/types";
 
 const RETENTION_ALARM_NAME = "ytdl-prune-recent-downloads";
 const RETENTION_DURATION_MS = 10 * 60 * 1000;
@@ -44,6 +46,11 @@ export function registerRecentDownloadsRetention() {
 
   onMessage(MessageType.TranscodeRecentDownload, async ({ data }) => {
     await ensureProcessor();
+    await enqueueToPopupList({
+      videoId: `transcode:${data.entryId}`,
+      type: DownloadType.VideoAndAudio,
+      filenameOutput: data.filenameOutput
+    });
     sendToOffscreen(OffscreenMessageType.TranscodeRecentDownload, data);
   });
 }

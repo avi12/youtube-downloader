@@ -138,7 +138,7 @@ export function getOutputExtension({ videoMimeType, audioMimeType, userExtension
 
   const videoCodec = extractBaseCodec(videoMimeType);
   const audioCodec = extractBaseCodec(audioMimeType);
-  const videoOk = spec.videoCodecs.has(videoCodec) || spec.allowNonNativeVideo === true;
+  const videoOk = spec.videoCodecs.has(videoCodec) || !!spec.allowNonNativeVideo;
   const audioOk = spec.audioCodecs.has(audioCodec) || spec.fallbackAudioCodec !== undefined;
 
   return videoOk && audioOk ? userExtension : "mkv";
@@ -165,6 +165,19 @@ export function isVideoNativeForContainer(videoMimeType: string, targetExtension
   } // MKV and unrestricted containers accept anything natively
 
   return spec.videoCodecs.has(extractBaseCodec(videoMimeType));
+}
+
+// Returns true when the video+audio codecs can be remuxed into targetExtension
+// without re-encoding (stream copy or known fallback codec).
+export function isCompatibleForRemux(videoMimeType: string, audioMimeType: string, targetExtension: string) {
+  const spec = CONTAINER_SPECS[targetExtension];
+  if (!spec) {
+    return true;
+  }
+
+  const videoOk = spec.videoCodecs.has(extractBaseCodec(videoMimeType)) || !!spec.allowNonNativeVideo;
+  const audioOk = spec.audioCodecs.has(extractBaseCodec(audioMimeType)) || spec.fallbackAudioCodec !== undefined;
+  return videoOk && audioOk;
 }
 
 export function resolveVideoFilename({ videoData, options, titleOverride }: {

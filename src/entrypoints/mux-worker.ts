@@ -462,7 +462,9 @@ function handleTranscodeAudio(job: TranscodeAudioJob) {
 }
 
 function handleTranscodeFile(job: TranscodeFileJob) {
-  const { data, sourceExtension, targetContainer, audioMimeType } = job;
+  const { videoId, tabId, data, sourceExtension, targetContainer, audioMimeType } = job;
+  currentVideoId = videoId;
+  currentTabId = tabId;
   const sourceFilename = `source.${sourceExtension}`;
   const outputFilename = `output.${targetContainer}`;
 

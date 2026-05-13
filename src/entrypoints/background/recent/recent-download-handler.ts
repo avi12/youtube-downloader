@@ -101,6 +101,7 @@ async function persistRecentDownload({ downloadId, data }: {
         filename: data.filename,
         container: getFileExtension(data.filename),
         mimeType: data.mimeType,
+        videoMimeType: context.videoMimeType,
         audioMimeType: context.audioMimeType,
         size: blob.size,
         thumbnailUrl: context.thumbnailUrl,

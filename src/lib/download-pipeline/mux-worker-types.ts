@@ -51,6 +51,8 @@ export type TranscodeAudioJob = BaseWorkerJob & {
 };
 
 export type TranscodeFileJob = {
+  videoId: string;
+  tabId: number;
   data: ArrayBuffer;
   sourceExtension: string;
   targetContainer: string;

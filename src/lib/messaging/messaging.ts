@@ -6,6 +6,7 @@ export type RecentDownloadContext = {
   title: string;
   channel: string;
   thumbnailUrl?: string;
+  videoMimeType?: string;
   audioMimeType?: string;
 };
 
@@ -176,6 +177,7 @@ interface ProtocolMap {
   transcodeRecentDownload(data: {
     entryId: string;
     targetContainer: string;
+    filenameOutput: string;
   }): void;
   pipelineZipProgress(data: {
     playlistId: string;
