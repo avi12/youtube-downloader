@@ -6,7 +6,7 @@ let isCredentialsForwarded = false;
 async function forwardSabrCredentials() {
   let captured: Awaited<ReturnType<typeof sendMessage<typeof MessageType.GetCapturedSabrBody>>>;
   try {
-    captured = await sendMessage(MessageType.GetCapturedSabrBody, {});
+    captured = await sendMessage(MessageType.GetCapturedSabrBody);
   } catch {
     // SW is not ready yet; will retry via forwardSabrCredentialsWithRetry.
     return;

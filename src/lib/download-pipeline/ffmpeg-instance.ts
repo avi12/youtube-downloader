@@ -43,7 +43,7 @@ export function initMuxWorker(wasmBinary: ArrayBuffer) {
       port: hostPort.port
     }, [wasmBinary, hostPort.port]);
   }).then(() => {
-    void sendMessage(MessageType.PipelineFFmpegReady, {});
+    void sendMessage(MessageType.PipelineFFmpegReady);
   });
 }
 

@@ -115,7 +115,7 @@ async function persistRecentDownload({ downloadId, data }: {
       blob
     });
     try {
-      await sendMessage(MessageType.RecentDownloadsChanged, {});
+      await sendMessage(MessageType.RecentDownloadsChanged);
     } catch {
       // Popup not open - ignore.
     }

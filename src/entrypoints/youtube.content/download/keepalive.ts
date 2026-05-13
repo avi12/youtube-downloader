@@ -7,7 +7,7 @@ export function listenForKeepalive() {
   onMessage(MessageType.StartKeepalive, () => {
     const keepaliveInterval = setInterval(async () => {
       try {
-        await sendMessage(MessageType.Keepalive, {});
+        await sendMessage(MessageType.Keepalive);
       } catch {
         clearInterval(keepaliveInterval);
       }

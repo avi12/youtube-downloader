@@ -23,7 +23,7 @@ export default defineBackground(async () => {
   void registerSabrOriginRule();
   startSabrRequestCapture();
   onSabrBodyCaptured(tabId => {
-    void sendMessage(MessageType.SabrBodyReady, {}, tabId);
+    void sendMessage(MessageType.SabrBodyReady, undefined, tabId);
   });
 
   void statusProgressItem.setValue({});

@@ -99,7 +99,7 @@ interface ProtocolMap {
     error: string;
   }): void;
 
-  getCapturedSabrBody(data: Record<string, never>): {
+  getCapturedSabrBody(): {
     body: string;
     url: string;
     poToken: string;
@@ -135,11 +135,11 @@ interface ProtocolMap {
     videoId: string;
   }): void;
 
-  keepalive(data: Record<string, never>): void;
+  keepalive(): void;
 
   executeDownloadItem(data: DownloadRequest): void;
 
-  sabrBodyReady(data: Record<string, never>): void;
+  sabrBodyReady(): void;
 
   updateDownloadProgress(data: {
     videoId: string;
@@ -165,7 +165,7 @@ interface ProtocolMap {
     videoId: string;
     type: DownloadType;
   }): void;
-  pipelineFFmpegReady(data: Record<string, never>): void;
+  pipelineFFmpegReady(): void;
   pipelineStart(data: {
     videoId: string;
     type: DownloadType;
@@ -173,7 +173,7 @@ interface ProtocolMap {
     tabId: number;
   }): void;
   pipelineDownload(data: PipelineDownloadMessage): void;
-  recentDownloadsChanged(data: Record<string, never>): void;
+  recentDownloadsChanged(): void;
   transcodeRecentDownload(data: {
     entryId: string;
     targetContainer: string;
