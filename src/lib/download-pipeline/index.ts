@@ -11,6 +11,19 @@ export { initMuxWorker } from "./ffmpeg-instance";
 
 export const FFMPEG_PROGRESS_CAP = 0.99;
 
+export function buildRecentContext(
+  item: Pick<ProcessStreamData, "videoId" | "filenameOutput" | "metadata">,
+  extras?: Partial<RecentDownloadContext>
+): RecentDownloadContext {
+  return {
+    videoId: item.videoId,
+    title: item.metadata?.title ?? item.filenameOutput,
+    channel: item.metadata?.artist ?? "",
+    thumbnailUrl: item.metadata?.thumbnailUrl,
+    ...extras
+  };
+}
+
 export function toOwnedArrayBuffer(view: ArrayBufferView) {
   if (!(view.buffer instanceof ArrayBuffer)) {
     throw new Error("SharedArrayBuffer is not supported");

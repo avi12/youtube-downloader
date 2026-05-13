@@ -1,4 +1,10 @@
-import { toUint8Array, triggerDownload, reportProgress, toOwnedArrayBuffer } from ".";
+import {
+  toUint8Array,
+  triggerDownload,
+  reportProgress,
+  toOwnedArrayBuffer,
+  buildRecentContext
+} from ".";
 import { runMuxVideoAudio } from "./ffmpeg-instance";
 import { addToPlaylistBundle } from "./playlist-bundle";
 import { ProgressType } from "@/types";
@@ -17,12 +23,7 @@ export async function processVideoAudio(item: ProcessStreamData, isCancelled: ()
       throw new Error("No stream data accumulated");
     }
 
-    const recentContext = {
-      videoId,
-      title: item.metadata?.title ?? filenameOutput,
-      channel: item.metadata?.artist ?? "",
-      thumbnailUrl: item.metadata?.thumbnailUrl
-    };
+    const recentContext = buildRecentContext(item);
     if (videoData) {
       await triggerDownload({
         data: videoData,
@@ -130,13 +131,7 @@ export async function processVideoAudio(item: ProcessStreamData, isCancelled: ()
   await triggerDownload({
     data: output,
     filenameOutput: downloadFilename,
-    recentContext: {
-      videoId,
-      title: item.metadata?.title ?? filenameOutput,
-      channel: item.metadata?.artist ?? "",
-      thumbnailUrl: item.metadata?.thumbnailUrl,
-      audioMimeType
-    }
+    recentContext: buildRecentContext(item, { audioMimeType })
   });
   await reportProgress({
     videoId,

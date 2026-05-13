@@ -3,7 +3,8 @@ import {
   triggerDownload,
   reportProgress,
   FFMPEG_PROGRESS_CAP,
-  toOwnedArrayBuffer
+  toOwnedArrayBuffer,
+  buildRecentContext
 } from ".";
 import { runEmbedMetadata, runTranscodeAudio } from "./ffmpeg-instance";
 import { addToPlaylistBundle } from "./playlist-bundle";
@@ -99,13 +100,7 @@ export async function processSingleMedia(item: ProcessStreamData, isCancelled: (
   await triggerDownload({
     data,
     filenameOutput,
-    recentContext: {
-      videoId,
-      title: item.metadata?.title ?? filenameOutput,
-      channel: item.metadata?.artist ?? "",
-      thumbnailUrl: item.metadata?.thumbnailUrl,
-      audioMimeType: item.audioMimeType
-    }
+    recentContext: buildRecentContext(item, { audioMimeType: item.audioMimeType })
   });
   await reportProgress({
     videoId,
