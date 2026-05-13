@@ -10,7 +10,8 @@ import {
 const ButtonId = {
   DeselectAll: "playlist-deselect-all-btn",
   Download: "playlist-download-btn",
-  DownloadAll: "playlist-download-all-btn"
+  DownloadAll: "playlist-download-all-btn",
+  StopAll: "playlist-stop-all-btn"
 } as const;
 
 export function createPlaylistActionButtons(state: {
@@ -30,6 +31,7 @@ export function createPlaylistActionButtons(state: {
   let elDeselectAll = $state<HTMLElement | null>(null);
   let elDownload = $state<HTMLElement | null>(null);
   let elDownloadAll = $state<HTMLElement | null>(null);
+  let elStopAll = $state<HTMLElement | null>(null);
 
   function refreshDeselectAll() {
     if (!elDeselectAll) {
@@ -41,16 +43,16 @@ export function createPlaylistActionButtons(state: {
     sendButtonData({
       elButton: elDeselectAll,
       data: {
-        iconName: IconName.None,
-        title: "Deselect all",
-        accessibilityText: "Deselect all",
+        iconName: IconName.Close,
+        title: "Clear",
+        accessibilityText: "Clear selection",
         style: ButtonStyle.Mono,
-        type: ButtonType.Outline,
-        buttonSize: ButtonSize.Default,
+        type: ButtonType.Text,
+        buttonSize: ButtonSize.XSmall,
         state: isDisabled ? ButtonState.Disabled : ButtonState.Active,
         isFullWidth: false,
         isDisabled,
-        tooltip: "Deselect all"
+        tooltip: "Clear selection"
       }
     });
   }
@@ -88,7 +90,7 @@ export function createPlaylistActionButtons(state: {
     const isBusy = state.isRevealingAll || state.isDownloading || state.activeIndividualDownloadCount > 0;
     const label = state.isRevealingAll
       ? `Revealing hidden videos (${state.revealedVideoCount})`
-      : "Grab the whole playlist";
+      : "Download whole playlist";
     const tooltip = state.isRevealingAll
       ? "Stop revealing"
       : "Reveal all videos and download";
@@ -96,7 +98,7 @@ export function createPlaylistActionButtons(state: {
     sendButtonData({
       elButton: elDownloadAll,
       data: {
-        iconName: state.isRevealingAll ? IconName.Close : IconName.PlaylistAdd,
+        iconName: state.isRevealingAll ? IconName.Close : IconName.Download,
         title: label,
         accessibilityText: label,
         style: ButtonStyle.Mono,
@@ -108,6 +110,38 @@ export function createPlaylistActionButtons(state: {
         tooltip
       }
     });
+  }
+
+  function refreshStopAll() {
+    if (!elStopAll) {
+      return;
+    }
+
+    elStopAll.setAttribute(DATA_BUTTON_ID_ATTR, ButtonId.StopAll);
+    sendButtonData({
+      elButton: elStopAll,
+      data: {
+        iconName: IconName.Stop,
+        title: "Stop all",
+        accessibilityText: "Stop all downloads",
+        style: ButtonStyle.Mono,
+        type: ButtonType.Text,
+        buttonSize: ButtonSize.Default,
+        state: ButtonState.Active,
+        isFullWidth: false,
+        isDisabled: false,
+        tooltip: "Stop all downloads"
+      }
+    });
+  }
+
+  function attachStopAll(elButton: Element) {
+    if (!(elButton instanceof HTMLElement)) {
+      return;
+    }
+
+    elButton.setAttribute(DATA_BUTTON_ID_ATTR, ButtonId.StopAll);
+    elStopAll = elButton;
   }
 
   function attachDeselectAll(elButton: Element) {
@@ -148,6 +182,11 @@ export function createPlaylistActionButtons(state: {
       return true;
     }
 
+    if (buttonId === ButtonId.StopAll) {
+      state.toggleSelectedDownload();
+      return true;
+    }
+
     if (buttonId === ButtonId.DownloadAll) {
       if (state.isRevealingAll) {
         state.cancelReveal();
@@ -165,9 +204,11 @@ export function createPlaylistActionButtons(state: {
     attachDeselectAll,
     attachDownload,
     attachDownloadAll,
+    attachStopAll,
     refreshDeselectAll,
     refreshDownload,
     refreshDownloadAll,
+    refreshStopAll,
     handleClick
   };
 }
