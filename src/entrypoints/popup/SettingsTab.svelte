@@ -15,7 +15,7 @@
   import type { DownloadTypePreference, Options } from "@/types";
   import { slide } from "svelte/transition";
 
-  const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+  const reducedMotionQuery = matchMedia("(prefers-reduced-motion: reduce)");
   let prefersReducedMotion = $state(reducedMotionQuery.matches);
   const slideDuration = $derived(prefersReducedMotion ? 0 : 200);
 
