@@ -151,7 +151,7 @@
       });
     }
 
-    return result;
+    return result.toSorted((optA, optB) => optA.label.localeCompare(optB.label));
   });
 
   const audioPlayerLabel = $derived(selectedAudioFormat?.audioTrack?.displayName ?? null);
