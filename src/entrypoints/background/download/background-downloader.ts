@@ -39,6 +39,9 @@ const pendingNetworkRetries = new Map<string, {
   tabId: number;
 }>();
 
+const MAX_IFRAME_AUTO_RETRIES = 2;
+const iframeAutoRetries = new Map<string, number>();
+
 addEventListener("online", () => {
   const retries = [...pendingNetworkRetries.values()];
   pendingNetworkRetries.clear();
@@ -267,6 +270,7 @@ export function cancelBackgroundDownload(videoId: string) {
 
   controller.abort();
   activeBackgroundDownloads.delete(videoId);
+  iframeAutoRetries.delete(videoId);
 }
 
 async function attemptSabrDownload({ request, signal, tabId }: {
@@ -341,6 +345,13 @@ export async function startBackgroundDownload({ request, tabId }: {
         tabId,
         partialVideoData: result?.isPartialVideo ? (result.videoData ?? undefined) : undefined,
         partialAudioData: result?.isPartialAudio ? (result.audioData ?? undefined) : undefined
+      }).catch(cdnError => {
+        if (signal.aborted) {
+          throw cdnError;
+        }
+
+        console.warn("[ytdl:bg] CDN failed, trying iframe fallback:", cdnError);
+        return null;
       });
     }
 
@@ -348,29 +359,41 @@ export async function startBackgroundDownload({ request, tabId }: {
       return;
     }
 
-    if (!result?.audioData && !result?.videoData) {
+    if (!(result?.videoData?.byteLength) && !(result?.audioData?.byteLength)) {
       if (request.isIframeFallback) {
-        console.warn("[ytdl:bg] All download methods (including iframe) failed for", videoId);
-        reportDownloadFailed({
-          videoId,
-          tabId
-        });
-        return;
+        const retries = iframeAutoRetries.get(videoId) ?? 0;
+        if (retries >= MAX_IFRAME_AUTO_RETRIES) {
+          iframeAutoRetries.delete(videoId);
+          console.warn("[ytdl:bg] All download methods exhausted for", videoId);
+          reportDownloadFailed({
+            videoId,
+            tabId
+          });
+          return;
+        }
+
+        iframeAutoRetries.set(videoId, retries + 1);
+        console.warn("[ytdl:bg] Iframe fallback failed, auto-retrying via fresh iframe (attempt", retries + 1, ") for", videoId);
+      } else {
+        console.warn("[ytdl:bg] SABR+CDN failed, trying offscreen iframe fallback for", videoId);
       }
 
-      console.warn("[ytdl:bg] SABR+CDN failed, trying offscreen iframe fallback for", videoId);
       void sendMessage(MessageType.UpdateDownloadProgress, {
         videoId,
         progress: 0,
         progressType: ProgressType.Video
       }, tabId);
       await downloadViaWatchPage({
-        data: request,
+        data: {
+          ...request,
+          isIframeFallback: false
+        },
         tabId
       });
       return;
     }
 
+    iframeAutoRetries.delete(videoId);
     await dispatchToOffscreen({
       request,
       result,
