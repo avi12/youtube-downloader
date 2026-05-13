@@ -1,30 +1,12 @@
 import { STREAM_ACCUMULATORS } from "./accumulator";
 import { assembleStreamChunks } from "./codec";
 import { enqueueStreamData } from "@/lib/download-pipeline";
+import { OffscreenMessageType } from "@/lib/messaging/offscreen-messaging";
+import type { OffscreenProtocolMap } from "@/lib/messaging/offscreen-messaging";
 import { base64ToUint8Array } from "@/lib/utils/binary";
-import { AUDIO_EXTRA_STREAM_PREFIX, DownloadType } from "@/types";
-import type { VideoMetadata } from "@/types";
+import { AUDIO_EXTRA_STREAM_PREFIX } from "@/types";
 
-export function handleProcessStreamEnd(data: {
-  videoId: string;
-  type: DownloadType;
-  filenameOutput: string;
-  videoMimeType: string;
-  audioMimeType: string;
-  audioTrackLabels: string[];
-  audioTrackLanguages?: string[];
-  defaultAudioTrackIndex?: number;
-  subtitleTracks?: {
-    dataBase64: string;
-    label: string;
-    languageCode: string;
-  }[];
-  tabId: number;
-  playlistId?: string;
-  playlistTitle?: string;
-  playlistTotalCount?: number;
-  metadata?: VideoMetadata | null;
-}) {
+export function handleProcessStreamEnd(data: OffscreenProtocolMap[typeof OffscreenMessageType.ProcessStreamEnd]) {
   const {
     videoId, type, filenameOutput, videoMimeType, audioMimeType,
     audioTrackLabels, audioTrackLanguages, defaultAudioTrackIndex, subtitleTracks, tabId,

@@ -136,4 +136,5 @@ function listenForOffscreenMessages(handlers: HandlerMap) {
   connect();
 }
 
+export type { OffscreenProtocolMap };
 export { OffscreenMessageType, sendToOffscreen, listenForOffscreenMessages, initOffscreenPortListener };
