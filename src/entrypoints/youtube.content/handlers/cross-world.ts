@@ -14,6 +14,13 @@ import { downloadProgressStore, interruptedDownloadStore } from "@/lib/ui/synced
 import { forwardSabrCredentialsWithRetry } from "@/lib/youtube/sabr/credentials";
 import type { DownloadRequest, VideoData } from "@/types";
 
+const INITIAL_DOWNLOAD_PROGRESS = {
+  isDownloading: true,
+  isDone: false,
+  progress: 0,
+  progressType: ""
+} as const;
+
 export function registerCrossWorldHandlers(
   isDownloadIframe: boolean,
   context: InstanceType<typeof ContentScriptContext>
@@ -74,12 +81,7 @@ export function registerCrossWorldHandlers(
 
   crossWorldMessenger.onMessage(CrossWorldMessage.StartBackgroundDownload, ({ data }) => {
     const request: DownloadRequest = JSON.parse(data.requestJson);
-    downloadProgressStore.setLocal(request.videoId, {
-      isDownloading: true,
-      isDone: false,
-      progress: 0,
-      progressType: ""
-    });
+    downloadProgressStore.setLocal(request.videoId, INITIAL_DOWNLOAD_PROGRESS);
     void sendMessage(MessageType.StartBackgroundDownload, request);
   });
 

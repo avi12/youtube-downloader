@@ -229,18 +229,17 @@ export default defineContentScript({
       addEventListener("pagehide", cancelAllAndNotify);
     }
 
-    if (document.readyState === "complete") {
+    async function initializeOnLoad() {
       await extractAndDispatchVideoData();
       extractPlaylistMetadata();
       setupAudioTrackWatcher();
       setupCaptionTrackWatcher();
+    }
+
+    if (document.readyState === "complete") {
+      void initializeOnLoad();
     } else {
-      addEventListener("load", () => {
-        void extractAndDispatchVideoData();
-        extractPlaylistMetadata();
-        setupAudioTrackWatcher();
-        setupCaptionTrackWatcher();
-      }, { once: true });
+      addEventListener("load", () => void initializeOnLoad(), { once: true });
     }
   }
 });

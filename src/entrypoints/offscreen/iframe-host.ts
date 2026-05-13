@@ -1,3 +1,5 @@
+import { CHILD_LIST_SUBTREE } from "@/lib/utils/dom";
+
 const downloadIframes = new Map<string, HTMLIFrameElement>();
 
 function silenceIframeAudio(elIframe: HTMLIFrameElement) {
@@ -36,10 +38,7 @@ function silenceIframeAudio(elIframe: HTMLIFrameElement) {
       applyToVideo(elFound);
     }
   });
-  observer.observe(contentDocument.documentElement, {
-    childList: true,
-    subtree: true
-  });
+  observer.observe(contentDocument.documentElement, CHILD_LIST_SUBTREE);
 }
 
 export function createDownloadIframe({ videoId, watchUrl }: {
