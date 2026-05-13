@@ -1,10 +1,10 @@
 import { ensureProcessor } from "../handlers/processor";
-import { enqueueToPopupList, removeFromPopupList } from "../queue/popup-list";
+import { enqueueToPopupList } from "../queue/popup-list";
 import { awaitVideoComplete } from "../queue/sequential-queue";
 import { trackVideoForTab } from "../queue/tab-tracker";
+import { reportDownloadFailed } from "./background-downloader";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
-import { ProgressType } from "@/types";
 import type { DownloadRequest } from "@/types";
 
 const IFRAME_READY_TIMEOUT_MS = 30_000;
@@ -83,13 +83,10 @@ export async function downloadViaWatchPage({ data, tabId }: {
   } catch (error) {
     console.error("[ytdl:bg] DownloadViaWatchPage failed:", data.videoId, error);
     pendingIframeReady.delete(data.videoId);
-    void removeFromPopupList(data.videoId);
     sendToOffscreen(OffscreenMessageType.RemoveDownloadIframe, { videoId: data.videoId });
-    void sendMessage(MessageType.UpdateDownloadProgress, {
+    reportDownloadFailed({
       videoId: data.videoId,
-      progress: 0,
-      progressType: ProgressType.Video,
-      isRemoved: true
-    }, tabId);
+      tabId
+    });
   }
 }

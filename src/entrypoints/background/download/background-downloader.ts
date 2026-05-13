@@ -229,7 +229,7 @@ async function enrichMetadataFromYouTubeMusic(metadata: VideoMetadata | null | u
   });
 }
 
-function reportDownloadFailed({ videoId, tabId }: VideoTabParams) {
+export function reportDownloadFailed({ videoId, tabId }: VideoTabParams) {
   void sendMessage(MessageType.UpdateDownloadProgress, {
     videoId,
     progress: 0,

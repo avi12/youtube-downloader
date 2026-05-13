@@ -1,4 +1,9 @@
-import { cancelBackgroundDownload, dropPendingRetry, startBackgroundDownload } from "../download/background-downloader";
+import {
+  cancelBackgroundDownload,
+  dropPendingRetry,
+  reportDownloadFailed,
+  startBackgroundDownload
+} from "../download/background-downloader";
 import { downloadViaWatchPage, initIframeReadyListener, prepareIframe } from "../download/iframe-downloader";
 import { enqueueToPopupList, removeFromPopupList } from "../queue/popup-list";
 import { awaitBytesTransferred, awaitVideoComplete, signalVideoComplete } from "../queue/sequential-queue";
@@ -52,13 +57,10 @@ async function dispatchParallel({ items, tabId, signal }: {
       void sendMessage(MessageType.StartKeepalive, { videoId: item.videoId }, tabId);
     } catch (error) {
       console.error("[ytdl:bg] prepareIframe failed:", item.videoId, error);
-      void removeFromPopupList(item.videoId);
-      void sendMessage(MessageType.UpdateDownloadProgress, {
+      reportDownloadFailed({
         videoId: item.videoId,
-        progress: 0,
-        progressType: ProgressType.Video,
-        isRemoved: true
-      }, tabId);
+        tabId
+      });
     }
 
     completionPromises.push(
