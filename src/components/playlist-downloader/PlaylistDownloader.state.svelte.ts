@@ -1,3 +1,5 @@
+import { buildDownloadRequest, optionsToQualityValue, resolveDefaultZipName } from "./playlist-download-builder";
+import { calculateBatchProgress, resolveCurrentPhaseLabel } from "./playlist-progress-helpers";
 import { createRevealState } from "./PlaylistDownloader.reveal.svelte";
 import { scrollVideoItemIntoView } from "./PlaylistDownloader.scroll";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
@@ -9,17 +11,13 @@ import {
   playlistMetadataSignal,
   videoDataStore
 } from "@/lib/ui/synced-stores.svelte";
-import { resolveVideoFilename } from "@/lib/utils/containers";
-import { calculateWeightedProgress } from "@/lib/youtube/video-helpers";
 import {
-  DownloadType,
   PlaylistDownloadMode,
   PlaylistOutputMode,
   ProgressType,
   VideoQualityMode,
   type DownloadRequest,
   type DownloadTypePreference,
-  type Options,
   type VideoData
 } from "@/types";
 import { untrack } from "svelte";
@@ -32,9 +30,6 @@ export const batchDownloadStatus = $state({
 export const batchVideoIds = new SvelteSet<string>();
 export const batchCanceledIds = new SvelteSet<string>();
 
-// User-facing preferences live at module scope so they survive any re-mount
-// of the panel (e.g. when YouTube rebuilds the header subtree on theme
-// transitions and our mount container gets re-created).
 let downloadMode = $state<PlaylistDownloadMode>(CONTENT_OPTIONS.value.playlistDownloadMode);
 let outputMode = $state(CONTENT_OPTIONS.value.playlistOutputMode);
 let isScrollSyncEnabled = $state(CONTENT_OPTIONS.value.isPlaylistScrollSyncEnabled);
@@ -44,64 +39,6 @@ let audioExtOverride = $state<string | null>(null);
 let videoQualityOverride = $state<string | null>(null);
 let zipNameOverride = $state<string | null>(null);
 let currentZipBundleId = $state<string | null>(null);
-
-function resolveDefaultZipName() {
-  const metadata = playlistMetadataSignal.value;
-  if (metadata?.playlistTitle) {
-    return metadata.playlistTitle;
-  }
-
-  if (metadata?.playlistOwner) {
-    return `${metadata.playlistOwner}'s playlist`;
-  }
-
-  return "Playlist";
-}
-
-// Maps popup quality settings to a single PolymerSelect-compatible value.
-// "best" means always pick the highest bitrate; a numeric string (e.g. "1080")
-// means pick that resolution and fall back to best if unavailable.
-// CurrentQuality is watch-page-only, so it maps to "best" in playlist context.
-function optionsToQualityValue(options: Options) {
-  return options.videoQualityMode === VideoQualityMode.Custom
-    ? String(options.videoQuality)
-    : VideoQualityMode.Best;
-}
-
-function buildDownloadRequest(
-  data: VideoData,
-  options: Options,
-  playlistId: string,
-  playlistTitle: string,
-  playlistTotalCount: number,
-  isZipBundle: boolean
-) {
-  let downloadType: DownloadType = data.isMusic ? DownloadType.Audio : DownloadType.VideoAndAudio;
-  if (options.defaultDownloadType !== DownloadType.Auto) {
-    downloadType = options.defaultDownloadType;
-  }
-
-  const videoFormat = options.videoQualityMode === VideoQualityMode.Best
-    ? data.videoFormats[0]
-    : (data.videoFormats.find(format => format.height === options.videoQuality) ?? data.videoFormats[0]);
-
-  return {
-    type: downloadType,
-    videoId: data.videoId,
-    videoItag: videoFormat?.itag ?? 0,
-    audioItag: data.audioFormats[0]?.itag ?? 0,
-    filenameOutput: resolveVideoFilename({
-      videoData: data,
-      options
-    }),
-    sabrConfig: data.sabrConfig,
-    ...(isZipBundle && {
-      playlistId,
-      playlistTitle,
-      playlistTotalCount
-    })
-  };
-}
 
 export function createPlaylistDownloaderState() {
   const videoDataMap = new SvelteMap<string, VideoData>();
@@ -115,7 +52,7 @@ export function createPlaylistDownloaderState() {
   const effectiveVideoExt = $derived(videoExtOverride ?? CONTENT_OPTIONS.value.ext.video);
   const effectiveAudioExt = $derived(audioExtOverride ?? CONTENT_OPTIONS.value.ext.audio);
   const effectiveQuality = $derived(videoQualityOverride ?? optionsToQualityValue(CONTENT_OPTIONS.value));
-  const effectiveZipName = $derived(zipNameOverride ?? resolveDefaultZipName());
+  const effectiveZipName = $derived(zipNameOverride ?? resolveDefaultZipName(playlistMetadataSignal.value));
   const isAnyOverrideActive = $derived(
     downloadTypeOverride !== null
     || videoExtOverride !== null
@@ -174,8 +111,6 @@ export function createPlaylistDownloaderState() {
     isScrollSyncEnabled = CONTENT_OPTIONS.value.isPlaylistScrollSyncEnabled;
   });
 
-  // Distinct heights seen across all loaded videos, sorted descending - drives quality dropdown.
-  // Kept separate from guaranteedQuality so it can be evaluated independently during reveal.
   const availableQualities = $derived.by(() => {
     const allHeights: number[] = [];
     for (const data of videoDataMap.values()) {
@@ -189,9 +124,6 @@ export function createPlaylistDownloaderState() {
     return allHeights.filter((height, iHeight) => iHeight === 0 || height !== allHeights[iHeight - 1]);
   });
 
-  // Lowest of each video's personal best - drives "Up to" label qualifier.
-  // Kept as a separate lazy derived so it is never evaluated during reveal:
-  // PlaylistDownloaderFormatSections short-circuits it with isRevealingAll.
   const guaranteedQuality = $derived.by(() => {
     if (videoDataMap.size === 0) {
       return 0;
@@ -223,9 +155,6 @@ export function createPlaylistDownloaderState() {
   let activeDownloadRequests = $state<DownloadRequest[]>([]);
   let completedBatchProgress = $state(0);
 
-  // Sticky set: once a batch video is done (completed or cancelled), it stays
-  // done even if the user re-downloads it individually during the same batch.
-  // This prevents individually-restarted videos from extending the batch.
   const batchDoneIds = new SvelteSet<string>();
 
   $effect(() => {
@@ -265,7 +194,6 @@ export function createPlaylistDownloaderState() {
       return;
     }
 
-    // For zip batches, hold here until the packaging step signals completion.
     if (currentZipBundleId) {
       const zipEntry = downloadProgressStore.get(`zip:${currentZipBundleId}`);
       if (!zipEntry?.isDone) {
@@ -317,9 +245,6 @@ export function createPlaylistDownloaderState() {
     totalCount = videos.length;
     batchDoneIds.clear();
 
-    // Use setLocal to batch-initialise progress without firing a cross-world
-    // sync message per video - prevents N separate reactive cycles across all
-    // PlaylistVideoItem components when starting a large playlist download.
     for (const video of videos) {
       batchVideoIds.add(video.videoId);
       downloadProgressStore.deleteLocal(video.videoId);
@@ -420,52 +345,18 @@ export function createPlaylistDownloaderState() {
     return count;
   });
 
-  const totalProgress = $derived.by(() => {
-    if (isDownloading && totalCount > 0) {
-      let sum = 0;
-      for (const request of activeDownloadRequests) {
-        const entry = downloadProgressStore.get(request.videoId);
-        if (!entry || !entry.isDownloading) {
-          sum += 100;
-          continue;
-        }
-
-        sum += calculateWeightedProgress({
-          isDownloading: entry.isDownloading,
-          progress: entry.progress,
-          progressType: entry.progressType
-        });
-      }
-
-      // Zip packaging is an extra step after all downloads complete.
-      // Treat it as one additional slot so the bar only reaches 100 when
-      // the zip is actually ready to download.
-      if (currentZipBundleId) {
-        const zipEntry = downloadProgressStore.get(`zip:${currentZipBundleId}`);
-        sum += zipEntry?.isDone ? 100 : 0;
-        return sum / (totalCount + 1);
-      }
-
-      return sum / totalCount;
-    }
-
-    if (activeIndividualDownloadCount > 0) {
-      let sum = 0;
-      for (const videoId of videoDataMap.keys()) {
-        const entry = downloadProgressStore.get(videoId);
-        if (entry?.isDownloading) {
-          sum += calculateWeightedProgress({
-            isDownloading: entry.isDownloading,
-            progress: entry.progress,
-            progressType: entry.progressType
-          });
-        }
-      }
-      return sum / activeIndividualDownloadCount;
-    }
-
-    return completedBatchProgress;
-  });
+  const totalProgress = $derived(
+    calculateBatchProgress(
+      isDownloading,
+      activeDownloadRequests,
+      videoId => downloadProgressStore.get(videoId),
+      totalCount,
+      currentZipBundleId,
+      activeIndividualDownloadCount,
+      videoDataMap.keys(),
+      completedBatchProgress
+    )
+  );
 
   const activeDownloadVideoId = $derived.by(() => {
     if (!isDownloading) {
@@ -482,28 +373,18 @@ export function createPlaylistDownloaderState() {
     return null;
   });
 
-  const currentPhaseLabel = $derived.by(() => {
-    if (!isDownloading) {
-      return "";
-    }
-
-    if (currentZipBundleId && downloadedCount >= totalCount) {
-      return "Building ZIP";
-    }
-
-    if (!activeDownloadVideoId) {
-      return "";
-    }
-
-    const entry = downloadProgressStore.get(activeDownloadVideoId);
-    const data = videoDataMap.get(activeDownloadVideoId);
-    const iVideo = activeDownloadRequests.findIndex(request => request.videoId === activeDownloadVideoId) + 1;
-    const videoLabel = data?.title ?? `Video ${iVideo}`;
-
-    return entry?.progressType === ProgressType.FFmpeg
-      ? `Processing ${videoLabel}`
-      : `Downloading ${videoLabel}`;
-  });
+  const currentPhaseLabel = $derived(
+    resolveCurrentPhaseLabel(
+      isDownloading,
+      currentZipBundleId,
+      downloadedCount,
+      totalCount,
+      activeDownloadVideoId,
+      activeDownloadRequests,
+      videoId => downloadProgressStore.get(videoId),
+      videoId => videoDataMap.get(videoId)
+    )
+  );
 
   $effect(() => {
     if (!isScrollSyncEnabled || !activeDownloadVideoId) {
@@ -630,7 +511,7 @@ export function createPlaylistDownloaderState() {
     },
     set effectiveZipName(value) {
       const trimmed = value.trim();
-      zipNameOverride = !trimmed || trimmed === resolveDefaultZipName() ? null : trimmed;
+      zipNameOverride = !trimmed || trimmed === resolveDefaultZipName(playlistMetadataSignal.value) ? null : trimmed;
     },
     get isZipNameOverridden() {
       return zipNameOverride !== null;
