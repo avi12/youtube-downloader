@@ -1,5 +1,6 @@
 import { CrossWorldMessage, crossWorldMessenger, dispatchButtonClick } from "@/lib/messaging/cross-world-messenger";
 import { DATA_BUTTON_ID_ATTR } from "@/lib/ui/polymer-utils";
+import { ButtonStyle } from "@/types";
 
 const buttonIdByElement = new WeakMap<HTMLElement, string>();
 
@@ -16,6 +17,7 @@ export function registerButtonDataHandler() {
     }
 
     elButton.data = buttonData;
+    elButton.toggleAttribute("data-ytdl-cta", buttonData.style === ButtonStyle.CallToAction);
 
     const cachedId = buttonIdByElement.get(elButton);
     const isButtonIdStale = cachedId && elButton.getAttribute(DATA_BUTTON_ID_ATTR) !== cachedId;
@@ -23,18 +25,18 @@ export function registerButtonDataHandler() {
       elButton.setAttribute(DATA_BUTTON_ID_ATTR, cachedId);
     }
 
-    if (a11y) {
-      queueMicrotask(() => {
-        const elInner = elButton.querySelector("button");
-        if (!elInner) {
-          return;
-        }
+    queueMicrotask(() => {
+      const elInner = elButton.querySelector("button");
+      if (!elInner) {
+        return;
+      }
 
+      if (a11y) {
         elInner.tabIndex = a11y.tabIndex;
         elInner.setAttribute("role", a11y.role);
         elInner.setAttribute("aria-checked", a11y.ariaChecked);
-      });
-    }
+      }
+    });
 
     if (elButton.hasAttribute("data-ytdl-click-bound")) {
       return;

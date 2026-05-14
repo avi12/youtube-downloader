@@ -1,4 +1,5 @@
 import { registerButtonDataHandler } from "./button-data-handler";
+import ctaButtonStyles from "./cta-button.css?inline";
 import { cancelActiveDownload, performDownload } from "./video/download";
 import { CrossWorldEvent, emitCrossWorldEvent } from "@/lib/messaging/cross-world-events";
 import { CrossWorldMessage, crossWorldMessenger, dispatchButtonClick } from "@/lib/messaging/cross-world-messenger";
@@ -19,7 +20,19 @@ import {
 
 const SNACKBAR_VIEW_BUTTON_ID = "ytdl-snackbar-view";
 
+function injectCtaButtonStyles() {
+  if (document.getElementById("ytdl-cta-styles")) {
+    return;
+  }
+
+  const elStyle = document.createElement("style");
+  elStyle.id = "ytdl-cta-styles";
+  elStyle.textContent = ctaButtonStyles;
+  document.head.append(elStyle);
+}
+
 export function registerCrossWorldHandlers() {
+  injectCtaButtonStyles();
   crossWorldMessenger.onMessage(CrossWorldMessage.DownloadRequest, ({ data }) => {
     void performDownload(data);
   });
@@ -42,13 +55,7 @@ export function registerCrossWorldHandlers() {
         isDisabled: false,
         tooltip: ""
       };
-
-      queueMicrotask(() => {
-        const elInner = elViewButton.querySelector("button");
-        if (elInner) {
-          elInner.classList.replace("ytSpecButtonShapeNextMono", "ytSpecButtonShapeNextCallToActionInverse");
-        }
-      });
+      elViewButton.setAttribute("data-ytdl-cta", "");
 
       elViewButton.addEventListener("click", () => dispatchButtonClick(SNACKBAR_VIEW_BUTTON_ID));
     });
