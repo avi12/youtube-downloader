@@ -83,6 +83,8 @@
       isOpen = e.newState === "open";
 
       if (e.newState === "open") {
+        const triggerBottom = elTrigger?.getBoundingClientRect().bottom ?? 0;
+        elPopover?.style.setProperty("--ytdl-popup-max-height", `${innerHeight - triggerBottom - 12}px`);
         requestAnimationFrame(() => elMenu?.focus());
       } else {
         focusTrigger();
@@ -194,25 +196,23 @@
     {@attach attachPopover}
     popover="auto"
   >
-    <div class="ytdl-select-content">
-      <tp-yt-paper-listbox
-        class="ytdl-select-menu"
-        {@attach attachMenu}
-        aria-label={label}
-        attr-for-selected="data-value"
-        role="listbox"
-        selected={value}
-      >
-        {#each options as option (option.value)}
-          <tp-yt-paper-item
-            aria-selected={option.value === value}
-            data-value={option.value}
-            role="option"
-            tabindex={option.value === value ? 0 : -1}
-          >{option.label}</tp-yt-paper-item>
-        {/each}
-      </tp-yt-paper-listbox>
-    </div>
+    <tp-yt-paper-listbox
+      class="ytdl-select-menu"
+      {@attach attachMenu}
+      aria-label={label}
+      attr-for-selected="data-value"
+      role="listbox"
+      selected={value}
+    >
+      {#each options as option (option.value)}
+        <tp-yt-paper-item
+          aria-selected={option.value === value}
+          data-value={option.value}
+          role="option"
+          tabindex={option.value === value ? 0 : -1}
+        >{option.label}</tp-yt-paper-item>
+      {/each}
+    </tp-yt-paper-listbox>
   </div>
 </div>
 
@@ -285,28 +285,17 @@
   .ytdl-select-popup {
     position: fixed;
     top: anchor(bottom);
-    bottom: 8px;
     left: anchor(left);
-    overflow: visible;
-    min-width: anchor-size(width);
-    height: auto;
-    margin-block-start: 4px;
-    padding: 0;
-    border: none;
-    background: transparent;
-    pointer-events: none;
-  }
-
-  .ytdl-select-content {
     overflow-y: auto;
-    max-height: 100%;
+    min-width: anchor-size(width);
+    max-height: var(--ytdl-popup-max-height, 60dvh);
+    margin-block-start: 4px;
     padding: 4px;
     border: 1px solid var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 10%));
     border-radius: 8px;
     background: var(--yt-sys-color-baseline--raised-background, var(--yt-sys-color-baseline--base-background, #ffffff));
     scrollbar-width: thin;
     box-shadow: 0 8px 32px rgb(0 0 0 / 32%), 0 2px 8px rgb(0 0 0 / 16%);
-    pointer-events: auto;
   }
 
   :global(.ytdl-select-menu tp-yt-paper-item) {
