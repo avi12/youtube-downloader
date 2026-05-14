@@ -1,19 +1,7 @@
 <script lang="ts">
   import PolymerSelect from "../polymer-select/PolymerSelect.svelte";
-  import { onButtonClick } from "@/lib/messaging/cross-world-messenger";
-  import { attachFmtStr, sendButtonData } from "@/lib/ui/polymer-utils";
-  import {
-    ButtonSize,
-    ButtonState,
-    ButtonStyle,
-    ButtonType,
-    IconName,
-    PanelTrackMode,
-    TrackKind,
-    YtIconName
-  } from "@/types";
-  import { untrack } from "svelte";
-  import { SvelteMap } from "svelte/reactivity";
+  import { attachFmtStr, createTrackChoiceState } from "./TrackChoice.svelte.ts";
+  import { PanelTrackMode, TrackKind, YtIconName } from "@/types";
 
   interface Props {
     kind: TrackKind;
@@ -48,110 +36,35 @@
   );
   const accessibleLabel = $derived(kind === TrackKind.Audio ? "Audio language" : "Caption language");
 
-  const buttons = $derived([
-    {
-      id: `track-match-video-${kind}`,
-      label: "Match video",
-      mode: PanelTrackMode.MatchVideo
+  const state = createTrackChoiceState({
+    get kind() {
+      return kind;
     },
-    {
-      id: `track-original-${kind}`,
-      label: "Original",
-      mode: PanelTrackMode.Original
+    get mode() {
+      return mode;
     },
-    {
-      id: `track-custom-${kind}`,
-      label: "Custom",
-      mode: PanelTrackMode.Custom
+    get disabled() {
+      return disabled;
+    },
+    get onmodechange() {
+      return onmodechange;
     }
-  ]);
-
-  const elements = new SvelteMap<string, HTMLElement>();
-
-  function refresh(button: (typeof buttons)[number]) {
-    const elButton = elements.get(button.id);
-    if (!elButton) {
-      return;
-    }
-
-    const isSelected = mode === button.mode;
-    sendButtonData({
-      elButton,
-      data: {
-        iconName: IconName.None,
-        title: button.label,
-        accessibilityText: button.label,
-        style: ButtonStyle.Mono,
-        type: isSelected ? ButtonType.Filled : ButtonType.Text,
-        buttonSize: ButtonSize.XSmall,
-        state: disabled ? ButtonState.Disabled : ButtonState.Active,
-        isFullWidth: false,
-        isDisabled: disabled,
-        tooltip: ""
-      },
-      a11y: {
-        tabIndex: isSelected ? 0 : -1,
-        role: "radio",
-        ariaChecked: String(isSelected)
-      }
-    });
-  }
-
-  function refreshAll() {
-    for (const button of buttons) {
-      refresh(button);
-    }
-  }
-
-  function createAttacher(button: (typeof buttons)[number]) {
-    return (elTarget: Element) => {
-      if (!(elTarget instanceof HTMLElement)) {
-        return;
-      }
-
-      elements.set(button.id, elTarget);
-      refresh(button);
-    };
-  }
-
-  $effect.pre(() => {
-    void mode;
-    void disabled;
-    refreshAll();
   });
-
-  $effect(() => onButtonClick(buttonId => {
-    untrack(() => {
-      const match = buttons.find(button => button.id === buttonId);
-      if (match) {
-        onmodechange(match.mode);
-      }
-    });
-  }));
-
-  function handleSegKeydown(e: KeyboardEvent) {
-    if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") {
-      return;
-    }
-
-    e.preventDefault();
-    const currentIndex = buttons.findIndex(btn => btn.mode === mode);
-    const delta = e.key === "ArrowRight" ? 1 : -1;
-    const nextIndex = (currentIndex + delta + buttons.length) % buttons.length;
-    const nextButton = buttons[nextIndex];
-    onmodechange(nextButton.mode);
-    const elNext = elements.get(nextButton.id);
-    queueMicrotask(() => elNext?.querySelector("button")?.focus());
-  }
 </script>
 
 <div class="track-choice" class:is-disabled={disabled}>
   <div class="track-choice-head">
     <yt-formatted-string class="track-label" {@attach attachFmtStr} data-ytdl-text={kindLabel}></yt-formatted-string>
-    <div class="track-seg" aria-label="{kindLabel} source" onkeydown={handleSegKeydown} role="radiogroup" tabindex="-1">
-      {#each buttons as button (button.id)}
+    <div
+      class="track-seg"
+      aria-label="{kindLabel} source"
+      onkeydown={state.handleSegKeydown}
+      role="radiogroup"
+      tabindex="-1"
+    >
+      {#each state.buttons as button (button.id)}
         <yt-button-view-model
-          {@attach createAttacher(button)}
+          {@attach state.createAttacher(button)}
           data-ytdl-button-id={button.id}
         ></yt-button-view-model>
       {/each}

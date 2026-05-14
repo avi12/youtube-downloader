@@ -1,18 +1,15 @@
-import { batchCanceledIds, batchDownloadStatus, batchVideoIds } from "./PlaylistDownloader.state.svelte";
-import { cancelStreamTransfer } from "@/entrypoints/youtube.content/download/stream-transfer";
+import { resolveButtonLabel, resolveDownloadIconName } from "./PlaylistVideoItem.display";
+import { cancelDownload, executeDownload } from "./PlaylistVideoItem.download";
+import { buildButtonTooltip } from "./PlaylistVideoItem.helpers";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
-import { MessageType, sendMessage } from "@/lib/messaging/messaging";
-import { checkedPlaylistVideos } from "@/lib/ui/playlist-selection.svelte";
 import {
-  CONTENT_OPTIONS,
   downloadProgressStore,
   type DownloadProgressState,
   videoDataFailedStore,
   videoDataStore
 } from "@/lib/ui/synced-stores.svelte";
-import { getOutputExtension, resolveAutoExtension, resolveVideoFilename } from "@/lib/utils/containers";
-import { calculateWeightedProgress, formatVideoQualityLabel } from "@/lib/youtube/video-helpers";
-import { DownloadType, IconName, ProgressType, type VideoData } from "@/types";
+import { calculateWeightedProgress } from "@/lib/youtube/video-helpers";
+import { type VideoData } from "@/types";
 
 const defaultProgressState: DownloadProgressState = {
   isDownloading: false,
@@ -36,14 +33,12 @@ export function createPlaylistVideoItemState({ videoId, gridTitle, activeDownloa
   const isDownloadFailed = $derived(!!downloadState.isFailed);
 
   $effect(() => {
-    const storeEntry = downloadProgressStore.get(videoId);
-    if (storeEntry?.isDone) {
-      isLocallyDone = true;
-      return;
+    const entry = downloadProgressStore.get(videoId);
+    if (entry?.isDone) {
+      isLocallyDone = true; return;
     }
 
-    const isStorePendingOrFailed = storeEntry === undefined || storeEntry.isFailed || storeEntry.isDownloading;
-    if (isStorePendingOrFailed) {
+    if (!entry || entry.isFailed || entry.isDownloading) {
       isLocallyDone = false;
     }
   });
@@ -51,38 +46,17 @@ export function createPlaylistVideoItemState({ videoId, gridTitle, activeDownloa
   $effect(() => {
     const storeData = videoDataStore.get(videoId);
     if (storeData) {
-      videoData = storeData;
-      return;
+      videoData = storeData; return;
     }
 
     if (videoDataFailedStore.get(videoId)) {
-      isLoadFailed = true;
-      return;
+      isLoadFailed = true; return;
     }
 
     void crossWorldMessenger.sendMessage(CrossWorldMessage.RequestVideoData, { videoId });
   });
 
-  const buttonLabel = $derived.by(() => {
-    if (!videoData?.isDownloadable) {
-      return "N/A";
-    }
-
-    if (isLocallyDone || isDone) {
-      return "Downloaded";
-    }
-
-    if (isDownloading) {
-      return "Cancel";
-    }
-
-    if (isDownloadFailed) {
-      return "Retry";
-    }
-
-    return "Download";
-  });
-
+  const buttonLabel = $derived(resolveButtonLabel(videoData, isLocallyDone, isDone, isDownloading, isDownloadFailed));
   const displayProgress = $derived(
     calculateWeightedProgress({
       isDownloading,
@@ -90,104 +64,19 @@ export function createPlaylistVideoItemState({ videoId, gridTitle, activeDownloa
       progressType: downloadState.progressType
     })
   );
-
-  const buttonTooltip = $derived.by(() => {
-    if (isLocallyDone || isDone) {
-      return "Download again";
-    }
-
-    if (isDownloadFailed) {
-      return "Download failed - click to retry";
-    }
-
-    if (isDownloading) {
-      const isProgressUnknown = downloadState.progress <= 0 && downloadState.progressType !== ProgressType.FFmpeg;
-      if (isProgressUnknown) {
-        return buttonLabel;
-      }
-
-      const activePhaseLabel = downloadState.progressType === ProgressType.FFmpeg ? "Processing" : "Downloading";
-      return `${Math.round(displayProgress)}% - ${activePhaseLabel}`;
-    }
-
-    if (!videoData?.isDownloadable) {
-      return buttonLabel;
-    }
-
-    const currentOptions = CONTENT_OPTIONS.value;
-    const [primaryVideoFormat] = videoData.videoFormats;
-    const [primaryAudioFormat] = videoData.audioFormats;
-    const resolvedContainerExtension = resolveAutoExtension({
-      extension: currentOptions.ext.video,
-      mimeType: primaryVideoFormat?.mimeType ?? ""
-    });
-    const containerExtension = primaryVideoFormat && primaryAudioFormat
-      ? getOutputExtension({
-        videoMimeType: primaryVideoFormat.mimeType,
-        audioMimeType: primaryAudioFormat.mimeType,
-        userExtension: resolvedContainerExtension
-      })
-      : resolvedContainerExtension;
-    const qualityLabel = primaryVideoFormat ? formatVideoQualityLabel(primaryVideoFormat) : "";
-    if (!qualityLabel) {
-      return `${videoData.title}.${containerExtension}`;
-    }
-
-    return `${videoData.title}.${containerExtension} - ${qualityLabel}`;
-  });
-
-  const downloadIconName = $derived.by(() => {
-    if (isLocallyDone || isDone) {
-      return IconName.CheckCircleThick;
-    }
-
-    if (isDownloading) {
-      return IconName.Close;
-    }
-
-    if (isDownloadFailed) {
-      return IconName.Info;
-    }
-
-    return IconName.Download;
-  });
-
-  async function startDownload() {
-    if (!videoData?.isDownloadable) {
-      return;
-    }
-
-    const options = CONTENT_OPTIONS.value;
-    let downloadType: DownloadType = videoData.isMusic ? DownloadType.Audio : DownloadType.VideoAndAudio;
-    if (options.defaultDownloadType && options.defaultDownloadType !== DownloadType.Auto) {
-      downloadType = options.defaultDownloadType;
-    }
-
-    const filenameOutput = resolveVideoFilename({
-      videoData,
-      options,
-      titleOverride: gridTitle
-    });
-
-    isLocallyDone = false;
-    downloadProgressStore.unsuppress(videoId);
-    downloadProgressStore.set(videoId, {
-      isDownloading: true,
-      isDone: false,
-      progress: 0,
-      progressType: ""
-    });
-
-    // Chrome strips Origin from extension SW fetch, causing googlevideo 403.
-    // Open a background watch tab where YouTube's SW handles CORS natively.
-    await sendMessage(MessageType.DownloadViaWatchPage, {
-      type: downloadType,
-      videoId,
-      videoItag: videoData.videoFormats[0]?.itag ?? 0,
-      audioItag: videoData.audioFormats[0]?.itag ?? 0,
-      filenameOutput
-    });
-  }
+  const buttonTooltip = $derived(
+    buildButtonTooltip({
+      isLocallyDone,
+      isDone,
+      isDownloadFailed,
+      isDownloading,
+      downloadState,
+      displayProgress,
+      buttonLabel,
+      videoData
+    })
+  );
+  const downloadIconName = $derived(resolveDownloadIconName(isLocallyDone, isDone, isDownloading, isDownloadFailed));
 
   async function handleDownloadClick() {
     if (!videoData?.isDownloadable || activeDownloadClicks.has(videoId)) {
@@ -195,21 +84,14 @@ export function createPlaylistVideoItemState({ videoId, gridTitle, activeDownloa
     }
 
     if (isDownloading) {
-      downloadProgressStore.delete(videoId);
-      cancelStreamTransfer(videoId);
-      void sendMessage(MessageType.CancelDownload, { videoIds: [videoId] });
-
-      if (batchDownloadStatus.isRunning && batchVideoIds.has(videoId)) {
-        batchCanceledIds.add(videoId);
-        checkedPlaylistVideos.delete(videoId);
-      }
-
-      return;
+      cancelDownload(videoId); return;
     }
 
     activeDownloadClicks.add(videoId);
     try {
-      await startDownload();
+      await executeDownload(videoData, videoId, gridTitle, value => {
+        isLocallyDone = value;
+      });
     } finally {
       activeDownloadClicks.delete(videoId);
     }
@@ -236,9 +118,6 @@ export function createPlaylistVideoItemState({ videoId, gridTitle, activeDownloa
     },
     get isLocallyDone() {
       return isLocallyDone;
-    },
-    get buttonLabel() {
-      return buttonLabel;
     },
     get displayProgress() {
       return displayProgress;

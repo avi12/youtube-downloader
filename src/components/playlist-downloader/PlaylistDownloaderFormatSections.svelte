@@ -1,7 +1,9 @@
 <script lang="ts">
   import PolymerSelect from "../polymer-select/PolymerSelect.svelte";
   import type { createPlaylistDownloaderState } from "./PlaylistDownloader.state.svelte";
-  import { AUTO_EXTENSION, AUTO_EXTENSION_LABEL, supportedExtensions } from "@/lib/utils/containers";
+  import { formatExtensionLabel } from "./PlaylistDownloaderFormatSections.helpers";
+  import PlaylistOverrideBadge from "./PlaylistOverrideBadge.svelte";
+  import { supportedExtensions } from "@/lib/utils/containers";
   import { DownloadType, VideoQualityMode } from "@/types";
 
   interface Props {
@@ -10,33 +12,27 @@
 
   const { playlist }: Props = $props();
 
-  function formatExtensionLabel(extension: string) {
-    return extension === AUTO_EXTENSION ? AUTO_EXTENSION_LABEL : extension.toUpperCase();
-  }
-
   const videoExtOptions = $derived(
-    supportedExtensions.video.map(extension => ({
-      value: extension,
-      label: formatExtensionLabel(extension)
+    supportedExtensions.video.map(ext => ({
+      value: ext,
+      label: formatExtensionLabel(ext)
     }))
   );
   const audioExtOptions = $derived(
-    supportedExtensions.audio.map(extension => ({
-      value: extension,
-      label: formatExtensionLabel(extension)
+    supportedExtensions.audio.map(ext => ({
+      value: ext,
+      label: formatExtensionLabel(ext)
     }))
   );
-
   const qualityOptions = $derived([
     {
       value: VideoQualityMode.Best,
       label: "Best quality"
     },
-    ...playlist.availableQualities
-      .map(height => ({
-        value: String(height),
-        label: !playlist.isRevealingAll && height <= playlist.guaranteedQuality ? `${height}p` : `Up to ${height}p`
-      }))
+    ...playlist.availableQualities.map(height => ({
+      value: String(height),
+      label: !playlist.isRevealingAll && height <= playlist.guaranteedQuality ? `${height}p` : `Up to ${height}p`
+    }))
   ]);
 
   const isVideoTypeDisabled = $derived(playlist.effectiveDownloadType === DownloadType.Audio);
@@ -55,12 +51,7 @@
     options={qualityOptions}
     value={playlist.effectiveQuality}
   />
-  {#if playlist.isQualityOverridden}
-    <span class="ytdl-override-badge ytdl-override-badge-floating" role="status">
-      <span class="ytdl-override-dot" aria-hidden="true"></span>
-      <span class="ytdl-visually-hidden">customized</span>
-    </span>
-  {/if}
+  {#if playlist.isQualityOverridden}<PlaylistOverrideBadge />{/if}
 </section>
 
 <section class="ytdl-section ytdl-section-select" class:is-disabled={isVideoTypeDisabled}>
@@ -72,12 +63,7 @@
     options={videoExtOptions}
     value={playlist.effectiveVideoExt}
   />
-  {#if playlist.isVideoExtOverridden}
-    <span class="ytdl-override-badge ytdl-override-badge-floating" role="status">
-      <span class="ytdl-override-dot" aria-hidden="true"></span>
-      <span class="ytdl-visually-hidden">customized</span>
-    </span>
-  {/if}
+  {#if playlist.isVideoExtOverridden}<PlaylistOverrideBadge />{/if}
 </section>
 
 <section class="ytdl-section ytdl-section-select" class:is-disabled={isAudioExtTypeDisabled}>
@@ -89,12 +75,7 @@
     options={audioExtOptions}
     value={playlist.effectiveAudioExt}
   />
-  {#if playlist.isAudioExtOverridden}
-    <span class="ytdl-override-badge ytdl-override-badge-floating" role="status">
-      <span class="ytdl-override-dot" aria-hidden="true"></span>
-      <span class="ytdl-visually-hidden">customized</span>
-    </span>
-  {/if}
+  {#if playlist.isAudioExtOverridden}<PlaylistOverrideBadge />{/if}
 </section>
 
 {#if playlist.isAnyOverrideActive}
@@ -113,35 +94,10 @@
     pointer-events: none;
   }
 
-  .ytdl-override-badge {
-    display: inline-flex;
-    align-items: center;
-  }
-
-  .ytdl-override-badge-floating {
+  :global(.ytdl-section-select .ytdl-override-badge) {
     position: absolute;
     top: 14px;
     right: -12px;
-  }
-
-  .ytdl-override-dot {
-    display: inline-block;
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--yt-sys-color-baseline--call-to-action, #3ea6ff);
-  }
-
-  .ytdl-visually-hidden {
-    position: absolute;
-    overflow: hidden;
-    width: 1px;
-    height: 1px;
-    margin: -1px;
-    padding: 0;
-    border: 0;
-    clip-path: inset(50%);
-    white-space: nowrap;
   }
 
   .ytdl-reset-link {

@@ -2,9 +2,16 @@
   import DownloadOptions from "./DownloadOptions.svelte";
   import { createFocusManager } from "./DownloadOptionsPanel.focus.svelte";
   import { createPanelState } from "./DownloadOptionsPanel.state.svelte.ts";
+  import {
+    handlePanelKeydown,
+    HEADER_CLOSE_BUTTON_ID,
+    PRIMARY_BUTTON_ID,
+    sendPanelClosed,
+    setupPanelButtonHandler,
+    VIEW_BUTTON_ID
+  } from "./DownloadOptionsPanel.svelte.ts";
   import DownloadOptionsPanelFooter from "./DownloadOptionsPanelFooter.svelte";
-  import { CrossWorldMessage, crossWorldMessenger, onButtonClick } from "@/lib/messaging/cross-world-messenger";
-  import { attachCloseButton, PrimaryButtonState } from "@/lib/ui/panel-button-attachments.svelte";
+  import { attachCloseButton } from "@/lib/ui/panel-button-attachments.svelte";
   import type { VideoData } from "@/types";
 
   const scopingClass =
@@ -20,38 +27,14 @@
   const panel = createPanelState(() => props.videoData);
   const focusManager = createFocusManager();
 
-  const headerCloseButtonId = "ytdl-panel-header-close";
-  const primaryButtonId = "ytdl-panel-primary";
-  const viewButtonId = "ytdl-panel-view";
-
   function closePanel() {
     focusManager.release();
-    void crossWorldMessenger.sendMessage(CrossWorldMessage.PanelClosed);
-    document.dispatchEvent(new CustomEvent("ytdl:panel-closed"));
+    sendPanelClosed();
   }
 
-  $effect(() => onButtonClick(buttonId => {
-    if (buttonId === headerCloseButtonId) {
-      closePanel();
-      return;
-    }
+  const onPanelKeydown = handlePanelKeydown(closePanel);
 
-    if (buttonId === primaryButtonId) {
-      if (panel.primaryState === PrimaryButtonState.Downloading) {
-        void panel.cancelDownload();
-      } else if (panel.primaryState === PrimaryButtonState.Interrupted) {
-        panel.resumeDownload();
-      } else {
-        panel.startDownload();
-      }
-
-      return;
-    }
-
-    if (buttonId === viewButtonId) {
-      panel.revealDownload();
-    }
-  }));
+  $effect(() => setupPanelButtonHandler(panel, closePanel));
 </script>
 
 <div
@@ -59,17 +42,7 @@
   {@attach focusManager.attach}
   aria-labelledby="ytdl-panel-title"
   aria-modal="true"
-  onkeydown={e => {
-    if (e.key === "Escape") {
-      closePanel();
-    }
-
-    const isYouTubePlayerKey = e.key === " " || e.key === "ArrowUp" || e.key === "ArrowDown"
-      || e.key === "ArrowLeft" || e.key === "ArrowRight";
-    if (isYouTubePlayerKey) {
-      e.stopPropagation();
-    }
-  }}
+  onkeydown={onPanelKeydown}
   role="dialog"
   tabindex="-1"
 >
@@ -79,7 +52,7 @@
       class={scopingClass}
       {@attach attachCloseButton}
       aria-label="Close"
-      data-ytdl-button-id={headerCloseButtonId}
+      data-ytdl-button-id={HEADER_CLOSE_BUTTON_ID}
       role="button"
       tabindex="0"
     ></yt-button-view-model>
@@ -118,11 +91,11 @@
     displayProgress={panel.displayProgress}
     getIsDownloadable={() => panel.isDownloadable}
     getIsFilenameValid={() => panel.isFilenameValid}
-    {primaryButtonId}
+    primaryButtonId={PRIMARY_BUTTON_ID}
     primaryState={panel.primaryState}
     progressType={panel.progressType}
     {scopingClass}
-    {viewButtonId}
+    viewButtonId={VIEW_BUTTON_ID}
   />
 </div>
 

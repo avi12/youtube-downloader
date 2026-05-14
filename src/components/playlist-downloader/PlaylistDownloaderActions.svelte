@@ -1,7 +1,8 @@
 <script lang="ts">
   import type { createPlaylistActionButtons } from "./PlaylistDownloader.action-buttons.svelte";
   import type { createPlaylistDownloaderState } from "./PlaylistDownloader.state.svelte";
-  import { applyPolymerCustomStyles, attachFmtStr, PAPER_PROGRESS_THEME } from "@/lib/ui/polymer-utils";
+  import PlaylistDownloaderSelectRow from "./PlaylistDownloaderSelectRow.svelte";
+  import { applyPolymerCustomStyles, PAPER_PROGRESS_THEME } from "@/lib/ui/polymer-utils";
 
   interface Props {
     playlist: ReturnType<typeof createPlaylistDownloaderState>;
@@ -9,35 +10,6 @@
   }
 
   const { playlist, actionButtons }: Props = $props();
-
-  const isIndeterminate = $derived(
-    playlist.selectedDownloadableVideos.length > 0 && !playlist.isAllSelected
-  );
-  const selectAllLabel = $derived(playlist.isAllSelected ? "Deselect all" : "Select all loaded");
-  const isSelectAllDisabled = $derived(playlist.downloadableVideos.length === 0 || playlist.isDownloading);
-
-  let elSelectAllCheckbox = $state<HTMLElement | null>(null);
-
-  function attachSelectAllCheckbox(elCheckbox: Element) {
-    if (elCheckbox instanceof HTMLElement) {
-      elSelectAllCheckbox = elCheckbox;
-    }
-  }
-
-  $effect(() => {
-    if (!elSelectAllCheckbox) {
-      return;
-    }
-
-    if (isIndeterminate) {
-      elSelectAllCheckbox.setAttribute("indeterminate", "");
-      elSelectAllCheckbox.setAttribute("aria-checked", "mixed");
-      return;
-    }
-
-    elSelectAllCheckbox.removeAttribute("indeterminate");
-    elSelectAllCheckbox.setAttribute("aria-checked", playlist.isAllSelected ? "true" : "false");
-  });
 
   function attachProgressBar(elProgress: Element) {
     applyPolymerCustomStyles({
@@ -71,6 +43,13 @@
     const count = playlist.activeIndividualDownloadCount;
     return `${count} video${count === 1 ? "" : "s"} in progress`;
   });
+
+  const isProgressVisible = $derived(
+    playlist.isRevealingAll
+    || (playlist.isDownloading && playlist.totalCount > 0)
+    || playlist.activeIndividualDownloadCount > 0
+    || playlist.completedBatchProgress > 0
+  );
 </script>
 
 {#if playlist.error}
@@ -79,72 +58,10 @@
 
 <div class="ytdl-playlist-actions">
   {#if !playlist.isDownloading}
-    <div class="ytdl-select-row">
-      <tp-yt-paper-checkbox
-        {@attach attachSelectAllCheckbox}
-        aria-label={selectAllLabel}
-        checked={(playlist.isAllSelected || isIndeterminate) ? "" : undefined}
-        disabled={isSelectAllDisabled ? "" : undefined}
-        onchange={e => {
-          if (!(e.target instanceof HTMLElement)) {
-            return;
-          }
-
-          const isNowChecked = e.target.hasAttribute("checked");
-          if (isNowChecked) {
-            playlist.selectAll();
-          } else {
-            playlist.clearSelection();
-          }
-        }}
-      >
-        {selectAllLabel}
-      </tp-yt-paper-checkbox>
-      <yt-button-view-model {@attach actionButtons.attachDeselectAll}></yt-button-view-model>
-    </div>
-
-    <span class="ytdl-selection-count" aria-live="polite">
-      {playlist.selectedDownloadableVideos.length} of {playlist.downloadableVideos.length}
-      video{playlist.downloadableVideos.length === 1 ? "" : "s"} selected
-    </span>
-
-    <yt-button-view-model {@attach actionButtons.attachDownload}></yt-button-view-model>
-
-    <div class="ytdl-or-divider" aria-hidden="true">
-      <span>or</span>
-    </div>
-
-    <yt-button-view-model {@attach actionButtons.attachDownloadAll}></yt-button-view-model>
-
-    <div class="ytdl-scroll-sync-opt" class:is-on={playlist.isScrollSyncEnabled}>
-      <tp-yt-paper-checkbox
-        checked={playlist.isScrollSyncEnabled ? "" : undefined}
-        onchange={e => {
-          if (!(e.target instanceof HTMLElement)) {
-            return;
-          }
-
-          playlist.isScrollSyncEnabled = e.target.hasAttribute("checked");
-        }}
-      >
-        <yt-formatted-string
-          class="ytdl-scroll-sync-label"
-          {@attach attachFmtStr}
-          data-ytdl-text="Auto-scroll the playlist as videos download"
-        ></yt-formatted-string>
-        <yt-formatted-string
-          class="ytdl-scroll-sync-sub"
-          {@attach attachFmtStr}
-          data-ytdl-text="Applies to both selected and whole-playlist downloads"
-        ></yt-formatted-string>
-      </tp-yt-paper-checkbox>
-    </div>
+    <PlaylistDownloaderSelectRow {actionButtons} {playlist} />
   {/if}
 
-  {#if playlist.isRevealingAll
-    || (playlist.isDownloading && playlist.totalCount > 0)
-    || playlist.activeIndividualDownloadCount > 0
-    || playlist.completedBatchProgress > 0}
+  {#if isProgressVisible}
     {#if playlist.currentPhaseLabel}
       <span class="ytdl-phase-label" aria-live="polite">{playlist.currentPhaseLabel}</span>
     {/if}
@@ -185,77 +102,12 @@
     }
   }
 
-  .ytdl-select-row {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-  }
-
-  .ytdl-selection-count {
-    color: var(--yt-sys-color-baseline--text-secondary, #aaaaaa);
-    font-size: 1.2rem;
-  }
-
   .ytdl-phase-label {
     overflow: hidden;
     color: var(--yt-sys-color-baseline--text-secondary, #aaaaaa);
     font-size: 1.2rem;
     text-overflow: ellipsis;
     white-space: nowrap;
-  }
-
-  .ytdl-or-divider {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    margin: 4px 0;
-    color: var(--yt-sys-color-baseline--text-secondary, #aaaaaa);
-    font-size: 1.1rem;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-
-    &::before,
-    &::after {
-      content: "";
-      flex: 1;
-      height: 1px;
-      background: var(--yt-sys-color-baseline--tonal-rim, rgb(255 255 255 / 10%));
-    }
-  }
-
-  .ytdl-scroll-sync-opt {
-    display: flex;
-    gap: 10px;
-    align-items: flex-start;
-    padding: 10px 12px;
-    border: 1px dashed var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 28%));
-    border-radius: 10px;
-    background: color-mix(in oklab, var(--yt-sys-color-baseline--text-primary, #0f0f0f) 4%, transparent);
-    cursor: pointer;
-    transition: border-color 120ms ease;
-
-    &:hover {
-      border-color: var(--yt-sys-color-baseline--text-secondary, #606060);
-    }
-
-    &.is-on {
-      border-color: color-mix(in oklab, var(--yt-sys-color-baseline--call-to-action, #065fd4) 50%, transparent);
-      border-style: solid;
-      background: color-mix(in oklab, var(--yt-sys-color-baseline--call-to-action, #065fd4) 10%, transparent);
-    }
-  }
-
-  .ytdl-scroll-sync-label {
-    display: block;
-    color: var(--yt-sys-color-baseline--text-primary, #0f0f0f);
-    font-weight: 500;
-    font-size: 1.4rem;
-  }
-
-  .ytdl-scroll-sync-sub {
-    color: var(--yt-sys-color-baseline--text-secondary, #606060);
-    font-size: 1.1rem;
-    line-height: 1.35;
   }
 
   .ytdl-restriction-notice {

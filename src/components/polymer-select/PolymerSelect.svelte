@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { createPolymerSelectState } from "./PolymerSelect.svelte.ts";
+
   interface Props {
     id?: string;
     label: string;
@@ -11,177 +13,17 @@
     onchange: (value: string) => void;
   }
 
-  const {
-    id, label, options, value, disabled = false, onchange
-  }: Props = $props();
-
-  let isOpen = $state(false);
-  let elTrigger = $state<HTMLElement | null>(null);
-  let elMenu = $state<HTMLElement | null>(null);
+  const { id, label, options, value, disabled = false, onchange }: Props = $props();
 
   const selectedLabel = $derived(options.find(option => option.value === value)?.label ?? "");
 
-  function attachTrigger(elTarget: Element) {
-    if (!(elTarget instanceof HTMLElement)) {
-      return;
+  const state = createPolymerSelectState({
+    get value() {
+      return value;
+    },
+    get onchange() {
+      return onchange;
     }
-
-    elTrigger = elTarget;
-
-    function handleClick(e: Event) {
-      e.stopPropagation();
-      isOpen = !isOpen;
-    }
-
-    function handleKeydown(e: Event) {
-      if (!(e instanceof KeyboardEvent)) {
-        return;
-      }
-
-      const isActivationKey = e.key === "ArrowDown" || e.key === "Enter" || e.key === " ";
-      if (isActivationKey) {
-        e.preventDefault();
-        isOpen = true;
-      }
-    }
-
-    elTarget.addEventListener("click", handleClick);
-    elTarget.addEventListener("keydown", handleKeydown);
-
-    return () => {
-      elTarget.removeEventListener("click", handleClick);
-      elTarget.removeEventListener("keydown", handleKeydown);
-    };
-  }
-
-  function attachMenu(elTarget: Element) {
-    if (!(elTarget instanceof HTMLElement)) {
-      return;
-    }
-
-    elMenu = elTarget;
-
-    function handleSelectedChanged(e: Event) {
-      if (!(e instanceof CustomEvent)) {
-        return;
-      }
-
-      const dataValue: string = e.detail?.value;
-      if (!dataValue) {
-        return;
-      }
-
-      if (dataValue !== value) {
-        onchange(dataValue);
-      }
-
-      isOpen = false;
-      // Return focus to the trigger so Tab moves to the next form control.
-      elTrigger?.focus();
-    }
-
-    function handleKeydown(e: Event) {
-      if (!(e instanceof KeyboardEvent)) {
-        return;
-      }
-
-      if (e.key === "Escape") {
-        e.preventDefault();
-        isOpen = false;
-        elTrigger?.focus();
-        return;
-      }
-
-      if (e.key === "Tab") {
-        // Close + move focus to the trigger so the browser's Tab default
-        // moves from the trigger to the next form control.
-        isOpen = false;
-        elTrigger?.focus();
-        return;
-      }
-
-      // tp-yt-paper-listbox doesn't fire selected-changed when Enter lands
-      // on the already-selected item; close + restore focus manually so the
-      // dropdown doesn't stay open with the user's keyboard "consumed".
-      if (e.key === "Enter" || e.key === " ") {
-        const elActive = document.activeElement;
-        if (elActive instanceof HTMLElement && elActive.matches("tp-yt-paper-item")) {
-          const dataValue = elActive.getAttribute("data-value");
-          if (dataValue === value) {
-            e.preventDefault();
-            isOpen = false;
-            elTrigger?.focus();
-          }
-        }
-      }
-    }
-
-    elTarget.addEventListener("selected-changed", handleSelectedChanged);
-    elTarget.addEventListener("keydown", handleKeydown);
-
-    return () => {
-      elTarget.removeEventListener("selected-changed", handleSelectedChanged);
-      elTarget.removeEventListener("keydown", handleKeydown);
-    };
-  }
-
-  function focusListbox(elListbox: HTMLElement) {
-    // Focus the listbox container so IronMenuBehavior's _focusedItem gets set
-    // to the selected item via its own _shiftTabPressed/_focusFirstItem flow.
-    // Manually focusing an item bypasses that and leaves arrow nav broken.
-    elListbox.focus();
-  }
-
-  function syncMenuMaxHeight() {
-    if (!elTrigger || !elMenu) {
-      return;
-    }
-
-    const triggerBottom = elTrigger.getBoundingClientRect().bottom;
-    // Account for the gap below the trigger, the menu's own border + padding
-    // (1px + 4px on each side), and a viewport-edge breathing margin.
-    const GAP = 4;
-    const MENU_CHROME = 10;
-    const VIEWPORT_MARGIN = 8;
-    const available = innerHeight - triggerBottom - GAP - MENU_CHROME - VIEWPORT_MARGIN;
-    elMenu.style.maxHeight = `${Math.max(available, 120)}px`;
-  }
-
-  $effect(() => {
-    if (!isOpen || !elMenu) {
-      return;
-    }
-
-    const elMenuEl = elMenu;
-    syncMenuMaxHeight();
-    requestAnimationFrame(() => focusListbox(elMenuEl));
-
-    function handleOutsideClick(e: MouseEvent) {
-      if (!(e.target instanceof Node)) {
-        return;
-      }
-
-      if (elTrigger?.contains(e.target) || elMenu?.contains(e.target)) {
-        return;
-      }
-
-      isOpen = false;
-    }
-
-    // Resize fires before iron-fit re-anchors the parent panel (which shifts
-    // the trigger), so a same-tick measurement reads stale trigger.bottom.
-    // Defer to rAF so the layout settles before computing available space.
-    function handleViewportResize() {
-      requestAnimationFrame(syncMenuMaxHeight);
-    }
-
-    document.addEventListener("mousedown", handleOutsideClick, true);
-    addEventListener("resize", handleViewportResize);
-
-    return () => {
-      document.removeEventListener("mousedown", handleOutsideClick, true);
-      removeEventListener("resize", handleViewportResize);
-    };
   });
 </script>
 
@@ -190,9 +32,9 @@
   <button
     {id}
     class="ytdl-select-trigger"
-    class:open={isOpen}
-    {@attach attachTrigger}
-    aria-expanded={isOpen}
+    class:open={state.isOpen}
+    {@attach state.attachTrigger}
+    aria-expanded={state.isOpen}
     aria-haspopup="listbox"
     aria-label={label}
     disabled={disabled || undefined}
@@ -201,7 +43,7 @@
     <span class="value">{selectedLabel}</span>
     <svg
       class="chevron"
-      class:open={isOpen}
+      class:open={state.isOpen}
       aria-hidden="true"
       fill="none"
       height="18"
@@ -216,10 +58,10 @@
     </svg>
   </button>
 
-  {#if isOpen}
+  {#if state.isOpen}
     <tp-yt-paper-listbox
       class="ytdl-select-menu"
-      {@attach attachMenu}
+      {@attach state.attachMenu}
       aria-label={label}
       attr-for-selected="data-value"
       role="listbox"
