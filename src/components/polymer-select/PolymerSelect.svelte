@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { createPolymerSelectState } from "./PolymerSelect.svelte.ts";
-  import type { LabeledOption } from "@/types";
+  import { createMenuKeydownHandler, createMenuSelectedHandler } from "./PolymerSelect.menu-events";
+  import type { LabeledOption, TpYtIronDropdownElement } from "@/types";
 
   interface Props {
     id?: string;
@@ -15,12 +15,106 @@
 
   const selectedLabel = $derived(options.find(option => option.value === value)?.label ?? "");
 
-  const state = createPolymerSelectState({
-    get value() {
-      return value;
-    },
-    get onchange() {
-      return onchange;
+  function isTpYtIronDropdown(elTarget: Element): elTarget is TpYtIronDropdownElement {
+    return elTarget instanceof HTMLElement && "open" in elTarget && "positionTarget" in elTarget;
+  }
+
+  let isOpen = $state(false);
+  let elTrigger = $state<HTMLElement | null>(null);
+  let elDropdown = $state<TpYtIronDropdownElement | null>(null);
+  let elMenu = $state<HTMLElement | null>(null);
+
+  function focusTrigger() {
+    elTrigger?.focus();
+  }
+
+  function setIsOpen(newValue: boolean) {
+    isOpen = newValue;
+  }
+
+  function attachTrigger(elTarget: Element) {
+    if (!(elTarget instanceof HTMLElement)) {
+      return;
+    }
+
+    elTrigger = elTarget;
+
+    function handleClick(e: Event) {
+      e.stopPropagation();
+      isOpen = !isOpen;
+    }
+
+    function handleKeydown(e: Event) {
+      if (!(e instanceof KeyboardEvent)) {
+        return;
+      }
+
+      const isActivationKey = e.key === "ArrowDown" || e.key === "Enter" || e.key === " ";
+      if (isActivationKey) {
+        e.preventDefault();
+        isOpen = true;
+      }
+    }
+
+    elTarget.addEventListener("click", handleClick);
+    elTarget.addEventListener("keydown", handleKeydown);
+    return () => {
+      elTarget.removeEventListener("click", handleClick);
+      elTarget.removeEventListener("keydown", handleKeydown);
+    };
+  }
+
+  function attachDropdown(elTarget: Element) {
+    if (!isTpYtIronDropdown(elTarget)) {
+      return;
+    }
+
+    elDropdown = elTarget;
+    elTarget.positionTarget = elTrigger;
+    elTarget.fitInto = window;
+    elTarget.dynamicAlign = true;
+
+    function handleOverlayClosed() {
+      isOpen = false;
+      focusTrigger();
+    }
+
+    elTarget.addEventListener("iron-overlay-closed", handleOverlayClosed);
+    return () => elTarget.removeEventListener("iron-overlay-closed", handleOverlayClosed);
+  }
+
+  function attachMenu(elTarget: Element) {
+    if (!(elTarget instanceof HTMLElement)) {
+      return;
+    }
+
+    elMenu = elTarget;
+    const menuHandlerParams = {
+      getValue: () => value,
+      onchange,
+      setIsOpen,
+      focusTrigger
+    };
+    const handleSelectedChanged = createMenuSelectedHandler(menuHandlerParams);
+    const handleKeydown = createMenuKeydownHandler(menuHandlerParams);
+    elTarget.addEventListener("selected-changed", handleSelectedChanged);
+    elTarget.addEventListener("keydown", handleKeydown);
+    return () => {
+      elTarget.removeEventListener("selected-changed", handleSelectedChanged);
+      elTarget.removeEventListener("keydown", handleKeydown);
+    };
+  }
+
+  $effect(() => {
+    if (!elDropdown) {
+      return;
+    }
+
+    if (isOpen) {
+      elDropdown.open();
+      requestAnimationFrame(() => elMenu?.focus());
+    } else {
+      elDropdown.close();
     }
   });
 </script>
@@ -30,9 +124,9 @@
   <button
     {id}
     class="ytdl-select-trigger"
-    class:open={state.isOpen}
-    {@attach state.attachTrigger}
-    aria-expanded={state.isOpen}
+    class:open={isOpen}
+    {@attach attachTrigger}
+    aria-expanded={isOpen}
     aria-haspopup="listbox"
     aria-label={label}
     disabled={disabled || undefined}
@@ -41,7 +135,7 @@
     <span class="value">{selectedLabel}</span>
     <svg
       class="chevron"
-      class:open={state.isOpen}
+      class:open={isOpen}
       aria-hidden="true"
       fill="none"
       height="18"
@@ -57,13 +151,13 @@
   </button>
 
   <tp-yt-iron-dropdown
-    {@attach state.attachDropdown}
+    {@attach attachDropdown}
     no-cancel-on-esc-key
   >
     <tp-yt-paper-listbox
       slot="dropdown-content"
       class="ytdl-select-menu"
-      {@attach state.attachMenu}
+      {@attach attachMenu}
       aria-label={label}
       attr-for-selected="data-value"
       role="listbox"
