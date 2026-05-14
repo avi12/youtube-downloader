@@ -83,7 +83,15 @@
 
   <div class="popup-content">
     {#if appState.activePanel === PopupPanel.Downloads}
-      <div id="panel-downloads" class="panel-wrapper" role="tabpanel" transition:slide={{ duration: slideDuration }}>
+      <div
+        id="panel-downloads"
+        class="panel-wrapper"
+        role="tabpanel"
+        transition:slide={{
+          axis: "x",
+          duration: slideDuration
+        }}
+      >
         <DownloadsTab
           isFFmpegReady={appState.isFFmpegReady}
           musicList={appState.musicList}
@@ -99,7 +107,15 @@
         />
       </div>
     {:else}
-      <div id="panel-settings" class="panel-wrapper" role="tabpanel" transition:slide={{ duration: slideDuration }}>
+      <div
+        id="panel-settings"
+        class="panel-wrapper"
+        role="tabpanel"
+        transition:slide={{
+          axis: "x",
+          duration: slideDuration
+        }}
+      >
         <SettingsTab options={appState.options} />
       </div>
     {/if}

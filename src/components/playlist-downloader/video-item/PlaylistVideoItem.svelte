@@ -9,7 +9,6 @@
   import { createButtonManager } from "./PlaylistVideoItem.buttons.svelte";
   import { createPanelManager } from "./PlaylistVideoItem.panel.svelte";
   import { createPlaylistVideoItemState } from "./PlaylistVideoItem.state.svelte";
-  import { onButtonClick } from "@/lib/messaging/cross-world-messenger";
   import { checkedPlaylistVideos } from "@/lib/ui/playlist-selection.svelte";
   import { untrack } from "svelte";
 
@@ -69,16 +68,6 @@
     void batch.isZipBatchActive;
     buttons.scheduleRefresh();
   });
-
-  $effect(() => onButtonClick(buttonId => {
-    if (buttonId === buttons.downloadButtonId && !batch.isInProgressInZipBatch) {
-      queueMicrotask(() => void itemState.handleDownloadClick());
-    } else if (buttonId === buttons.chevronButtonId) {
-      queueMicrotask(() => {
-        panel.toggle(); buttons.refreshChevronButton();
-      });
-    }
-  }));
 </script>
 
 <div class="ytdl-button-group" {@attach buttons.attachButtonGroup}>
