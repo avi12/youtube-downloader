@@ -1,120 +1,24 @@
-import {
-  cancelBackgroundDownload,
-  dropPendingRetry,
-  reportDownloadFailed,
-  startBackgroundDownload
-} from "../download/background-downloader";
-import { downloadViaWatchPage, initIframeReadyListener, prepareIframe } from "../download/iframe-downloader";
+import { cancelBackgroundDownload, dropPendingRetry, startBackgroundDownload } from "../download/background-downloader";
+import { downloadViaWatchPage, initIframeReadyListener } from "../download/iframe-downloader";
 import { enqueueToPopupList, removeFromPopupList } from "../queue/popup-list";
-import { awaitBytesTransferred, awaitVideoComplete, signalVideoComplete } from "../queue/sequential-queue";
+import { signalVideoComplete } from "../queue/sequential-queue";
 import { cancelDownloads, getTabIdsForVideo, trackVideoForTab } from "../queue/tab-tracker";
 import { markVideosCancelled } from "./pipeline-handlers";
+import {
+  abortCurrentSequence,
+  clearCurrentSequenceTabId,
+  getCurrentSequenceTabId,
+  registerPlaylistDownloadHandler
+} from "./playlist-download-handler";
+import { registerProxyFetchHandler } from "./proxy-fetch-handler";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
-import { base64ToUint8Array, uint8ToBase64 } from "@/lib/utils/binary";
 import { ProgressType } from "@/types";
-import type { DownloadRequest } from "@/types";
-
-async function dispatchSequentially({ items, tabId, signal }: {
-  items: DownloadRequest[];
-  tabId: number;
-  signal: AbortSignal;
-}) {
-  for (const item of items) {
-    if (signal.aborted) {
-      break;
-    }
-
-    await downloadViaWatchPage({
-      data: item,
-      tabId
-    });
-  }
-}
-
-async function dispatchParallel({ items, tabId, signal }: {
-  items: DownloadRequest[];
-  tabId: number;
-  signal: AbortSignal;
-}) {
-  const completionPromises: Promise<void>[] = [];
-
-  for (const item of items) {
-    if (signal.aborted) {
-      break;
-    }
-
-    trackVideoForTab({
-      videoId: item.videoId,
-      tabId
-    });
-
-    try {
-      await prepareIframe({
-        ...item,
-        isIframeFallback: true
-      });
-      void sendMessage(MessageType.StartKeepalive, { videoId: item.videoId }, tabId);
-    } catch (error) {
-      console.error("[ytdl:bg] prepareIframe failed:", item.videoId, error);
-      reportDownloadFailed({
-        videoId: item.videoId,
-        tabId
-      });
-    }
-
-    completionPromises.push(
-      awaitVideoComplete(item.videoId).then(() =>
-        sendToOffscreen(OffscreenMessageType.RemoveDownloadIframe, { videoId: item.videoId }))
-    );
-
-    // Wait only until bytes are in the offscreen doc before starting
-    // the next download - allows muxing phases to overlap while still
-    // preventing concurrent SABR sessions.
-    await awaitBytesTransferred(item.videoId);
-  }
-
-  await Promise.all(completionPromises);
-}
-
-let currentSequenceAbort: AbortController | null = null;
-let currentSequenceTabId: number | null = null;
 
 export function registerDownloadHandlers() {
   initIframeReadyListener();
-
-  // Background SW has host_permissions for googlevideo.com and bypasses CORS preflight;
-  // credentials: 'include' attaches any existing googlevideo cookies.
-  onMessage(MessageType.BackgroundProxyFetch, async ({ data }) => {
-    const { url, method, bodyBase64, headers } = data;
-
-    const bodyBytes = base64ToUint8Array(bodyBase64);
-
-    try {
-      const response = await fetch(url, {
-        method,
-        ...bodyBytes.length > 0 && {
-          body: bodyBytes
-        },
-        headers,
-        credentials: "include"
-      });
-
-      const responseHeaders: Record<string, string> = {};
-      for (const [key, value] of response.headers) {
-        responseHeaders[key] = value;
-      }
-
-      return {
-        status: response.status,
-        bodyBase64: uint8ToBase64(new Uint8Array(await response.arrayBuffer())),
-        responseHeaders
-      };
-    } catch (fetchError) {
-      console.error("[ytdl] BackgroundProxyFetch error:", fetchError);
-      return null;
-    }
-  });
+  registerProxyFetchHandler();
+  registerPlaylistDownloadHandler();
 
   onMessage(MessageType.DownloadViaWatchPage, ({ data, sender }) => {
     const originTabId = sender.tab?.id;
@@ -130,45 +34,8 @@ export function registerDownloadHandlers() {
 
   onMessage(MessageType.Keepalive, () => {});
 
-  onMessage(MessageType.RequestPlaylistDownload, async ({ data, sender }) => {
-    const tabId = sender.tab?.id;
-    if (!tabId) {
-      return;
-    }
-
-    currentSequenceAbort?.abort();
-    currentSequenceAbort = null;
-    currentSequenceTabId = tabId;
-
-    for (const item of data.items) {
-      await enqueueToPopupList({
-        videoId: item.videoId,
-        type: item.type,
-        filenameOutput: item.filenameOutput,
-        quality: item.videoFormat?.height ? `${item.videoFormat.height}p` : undefined
-      });
-    }
-
-    currentSequenceAbort = new AbortController();
-
-    if (data.isSequential) {
-      void dispatchSequentially({
-        items: data.items,
-        tabId,
-        signal: currentSequenceAbort.signal
-      });
-    } else {
-      void dispatchParallel({
-        items: data.items,
-        tabId,
-        signal: currentSequenceAbort.signal
-      });
-    }
-  });
-
   onMessage(MessageType.CancelDownload, ({ data }) => {
-    currentSequenceAbort?.abort();
-    currentSequenceAbort = null;
+    abortCurrentSequence();
     markVideosCancelled(data.videoIds);
 
     const progressRemoval = {
@@ -179,6 +46,7 @@ export function registerDownloadHandlers() {
 
     sendToOffscreen(OffscreenMessageType.CancelProcessing, { videoIds: data.videoIds });
 
+    const sequenceTabId = getCurrentSequenceTabId();
     for (const videoId of data.videoIds) {
       cancelBackgroundDownload(videoId);
       dropPendingRetry(videoId);
@@ -191,15 +59,15 @@ export function registerDownloadHandlers() {
         }, tabId);
       }
 
-      if (currentSequenceTabId && !trackedTabIds.includes(currentSequenceTabId)) {
+      if (sequenceTabId && !trackedTabIds.includes(sequenceTabId)) {
         void sendMessage(MessageType.UpdateDownloadProgress, {
           videoId,
           ...progressRemoval
-        }, currentSequenceTabId);
+        }, sequenceTabId);
       }
     }
 
-    currentSequenceTabId = null;
+    clearCurrentSequenceTabId();
     void removeFromPopupList(data.videoIds);
     void cancelDownloads(data.videoIds);
   });
