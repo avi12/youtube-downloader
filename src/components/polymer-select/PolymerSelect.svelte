@@ -89,8 +89,11 @@
       isOpen = e.newState === "open";
 
       if (e.newState === "open") {
+        const triggerBottom = elTrigger?.getBoundingClientRect().bottom ?? 0;
+        elTarget.style.maxHeight = `${innerHeight - triggerBottom - 12}px`;
         requestAnimationFrame(() => elMenu?.focus());
       } else {
+        elTarget.style.maxHeight = "";
         focusTrigger();
       }
     }
@@ -273,7 +276,6 @@
   .ytdl-select-popup {
     position: fixed;
     top: anchor(bottom);
-    bottom: 8px;
     left: anchor(left);
     overflow-y: auto;
     min-width: anchor-size(width);
