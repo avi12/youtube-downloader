@@ -1,5 +1,5 @@
 import { findOriginalAudioFormat, normalizeLanguageCode } from "@/lib/youtube/video-helpers";
-import type { AdaptiveFormatItem, CaptionTrack } from "@/types";
+import type { AdaptiveFormatItem, CaptionTrack, LabeledOption } from "@/types";
 
 export function byLabel(optA: { label: string }, optB: { label: string }) {
   return optA.label.localeCompare(optB.label);
@@ -7,10 +7,7 @@ export function byLabel(optA: { label: string }, optB: { label: string }) {
 
 export function buildUniqueAudioLanguages(audioFormats: AdaptiveFormatItem[]) {
   const seen = new Set<string>();
-  const result: {
-    value: string;
-    label: string;
-  }[] = [];
+  const result: LabeledOption[] = [];
   for (const format of audioFormats) {
     if (!format.audioTrack) {
       continue;

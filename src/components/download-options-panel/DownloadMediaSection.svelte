@@ -3,15 +3,12 @@
   import { DOWNLOAD_TYPES, handleQualityChange } from "./download-options-helpers";
   import { attachFormattedString } from "@/lib/ui/polymer-utils";
   import { DownloadType } from "@/types";
-  import type { AdaptiveFormatItem } from "@/types";
+  import type { AdaptiveFormatItem, LabeledOption } from "@/types";
 
   interface Props {
     downloadType: DownloadType;
     isDownloading: boolean;
-    qualityOptions: {
-      value: string;
-      label: string;
-    }[];
+    qualityOptions: LabeledOption[];
     qualityValue: string;
     audioFormats: AdaptiveFormatItem[];
     videoFormats: AdaptiveFormatItem[];

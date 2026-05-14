@@ -1,13 +1,9 @@
 <script lang="ts">
+  import type { SettingsProps } from "./settings-types";
   import SettingsGroup from "./SettingsGroup.svelte";
   import { setOption } from "@/lib/storage/storage";
-  import type { Options } from "@/types";
 
-  interface Props {
-    options: Options;
-  }
-
-  const { options }: Props = $props();
+  const { options }: SettingsProps = $props();
 </script>
 
 <SettingsGroup title="When download completes">

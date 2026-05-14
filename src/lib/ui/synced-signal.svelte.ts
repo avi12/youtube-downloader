@@ -72,12 +72,13 @@ export function createSyncedMap<T>(messenger: MapMessenger<T>) {
         });
       }
     },
-    setLocal(mapKey: string, value: T) {
+    setLocal(mapKey: string, value: T): boolean {
       if (suppressed.has(mapKey)) {
-        return;
+        return false;
       }
 
       map.set(mapKey, value);
+      return true;
     },
     deleteLocal(mapKey: string) {
       map.delete(mapKey);

@@ -70,15 +70,13 @@ export function registerBackgroundMessageHandlers() {
     }
 
     const isComplete = data.progress >= 1 && data.progressType === ProgressType.FFmpeg;
-    downloadProgressStore.setLocal(data.videoId, {
+    const wasSet = downloadProgressStore.setLocal(data.videoId, {
       isDownloading: !isComplete,
       isDone: isComplete,
       progress: data.progress,
       progressType: data.progressType
     });
-
-    // Suppressed (cancelled) entry: setLocal was a no-op, don't forward to main world.
-    if (!downloadProgressStore.get(data.videoId)) {
+    if (!wasSet) {
       return;
     }
 

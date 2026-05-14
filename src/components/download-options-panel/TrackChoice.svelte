@@ -2,16 +2,13 @@
   import PolymerSelect from "../polymer-select/PolymerSelect.svelte";
   import { attachFormattedString, createTrackChoiceState } from "./TrackChoice.svelte.ts";
   import { PanelTrackMode, YtIconName } from "@/types";
-  import type { TrackKind } from "@/types";
+  import type { LabeledOption, TrackKind } from "@/types";
 
   interface Props {
     kind: TrackKind;
     playerLabel: string | null;
     originalLabel: string | null;
-    customOptions: {
-      value: string;
-      label: string;
-    }[];
+    customOptions: LabeledOption[];
     customValue: string;
     mode: PanelTrackMode;
     disabled?: boolean;

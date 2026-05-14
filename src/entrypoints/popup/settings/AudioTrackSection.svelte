@@ -1,22 +1,13 @@
 <script lang="ts">
+  import type { SlidingSettingsProps } from "./settings-types";
   import { setOption } from "@/lib/storage/storage";
   import { LANGUAGES } from "@/lib/utils/languages";
   import { AudioTrackLanguageMode } from "@/types";
-  import type { Options } from "@/types";
   import { slide } from "svelte/transition";
 
-  interface Props {
-    options: Options;
-    slideDuration: number;
-  }
+  const { options, slideDuration }: SlidingSettingsProps = $props();
 
-  const { options, slideDuration }: Props = $props();
-
-  const languageModeOptions: Array<{
-    value: AudioTrackLanguageMode;
-    label: string;
-    description: string;
-  }> = [
+  const languageModeOptions = [
     {
       value: AudioTrackLanguageMode.OriginalLanguage,
       label: "Original language",
@@ -32,7 +23,7 @@
       label: "Custom language",
       description: "Falls back to English if the language is unavailable"
     }
-  ];
+  ] as const;
 </script>
 
 <div class="settings-format-section">

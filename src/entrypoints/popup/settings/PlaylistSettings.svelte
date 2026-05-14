@@ -1,20 +1,13 @@
 <script lang="ts">
   import PlaylistRadioGroup from "./PlaylistRadioGroup.svelte";
+  import type { SettingsProps } from "./settings-types";
   import SettingsGroup from "./SettingsGroup.svelte";
   import { setOption } from "@/lib/storage/storage";
   import { PlaylistDownloadMode, PlaylistOutputMode } from "@/types";
-  import type { Options } from "@/types";
 
-  interface Props {
-    options: Options;
-  }
+  const { options }: SettingsProps = $props();
 
-  const { options }: Props = $props();
-
-  const downloadModeOptions: Array<{
-    value: PlaylistDownloadMode;
-    label: string;
-  }> = [
+  const downloadModeOptions = [
     {
       value: PlaylistDownloadMode.Fast,
       label: "In parallel"
@@ -23,12 +16,9 @@
       value: PlaylistDownloadMode.DataSaver,
       label: "One at a time"
     }
-  ];
+  ] as const;
 
-  const outputModeOptions: Array<{
-    value: PlaylistOutputMode;
-    label: string;
-  }> = [
+  const outputModeOptions = [
     {
       value: PlaylistOutputMode.Individual,
       label: "Separate files"
@@ -37,7 +27,7 @@
       value: PlaylistOutputMode.Zip,
       label: "Single ZIP"
     }
-  ];
+  ] as const;
 
   function resolveDownloadMode(value: string) {
     return downloadModeOptions.find(opt => opt.value === value)?.value ?? PlaylistDownloadMode.Fast;

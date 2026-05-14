@@ -1,19 +1,11 @@
 <script lang="ts">
+  import type { SettingsProps } from "./settings-types";
   import SettingsGroup from "./SettingsGroup.svelte";
   import { setOption } from "@/lib/storage/storage";
   import { DownloadType } from "@/types";
-  import type { DownloadTypePreference, Options } from "@/types";
+  const { options }: SettingsProps = $props();
 
-  interface Props {
-    options: Options;
-  }
-
-  const { options }: Props = $props();
-
-  const downloadTypeOptions: Array<{
-    value: DownloadTypePreference;
-    label: string;
-  }> = [
+  const downloadTypeOptions = [
     {
       value: DownloadType.Auto,
       label: "Auto (video for videos, audio for music)"
@@ -30,7 +22,7 @@
       value: DownloadType.Audio,
       label: "Always audio only"
     }
-  ];
+  ] as const;
 </script>
 
 <SettingsGroup title="Download type">

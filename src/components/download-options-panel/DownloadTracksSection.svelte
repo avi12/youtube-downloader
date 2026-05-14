@@ -2,13 +2,10 @@
   import TrackChoice from "./TrackChoice.svelte";
   import { attachFormattedString } from "@/lib/ui/polymer-utils";
   import { PanelTrackMode, TrackKind } from "@/types";
-  import type { CaptionTrack } from "@/types";
+  import type { CaptionTrack, LabeledOption } from "@/types";
 
   interface Props {
-    uniqueAudioLanguages: {
-      value: string;
-      label: string;
-    }[];
+    uniqueAudioLanguages: LabeledOption[];
     captionTracks: CaptionTrack[];
     isDownloading: boolean;
     downloadExtras: boolean;
@@ -17,10 +14,7 @@
     audioPlayerLabel: string | null;
     audioOriginalLabel: string | null;
     panelCaptionMode: PanelTrackMode;
-    captionCustomOptions: {
-      value: string;
-      label: string;
-    }[];
+    captionCustomOptions: LabeledOption[];
     selectedCaptionVssId: string;
     captionPlayerLabel: string | null;
     captionOriginalLabel: string | null;

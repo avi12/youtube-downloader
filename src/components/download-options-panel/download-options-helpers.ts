@@ -4,10 +4,7 @@ import { DownloadType } from "@/types";
 export { buildQualityOptions, handleQualityChange } from "./helpers/quality-change-handler";
 export { buildUniqueAudioLanguages, byLabel, resolveCaptionOriginalLabel } from "./helpers/audio-language-helpers";
 
-export const DOWNLOAD_TYPES: {
-  value: DownloadType;
-  label: string;
-}[] = [
+export const DOWNLOAD_TYPES = [
   {
     value: DownloadType.VideoAndAudio,
     label: "Video + Audio"
@@ -20,7 +17,7 @@ export const DOWNLOAD_TYPES: {
     value: DownloadType.Audio,
     label: "Audio only"
   }
-];
+] as const;
 
 export function getFilenameError({
   value,

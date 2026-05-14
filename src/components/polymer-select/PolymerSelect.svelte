@@ -1,13 +1,11 @@
 <script lang="ts">
   import { createPolymerSelectState } from "./PolymerSelect.svelte.ts";
+  import type { LabeledOption } from "@/types";
 
   interface Props {
     id?: string;
     label: string;
-    options: {
-      value: string;
-      label: string;
-    }[];
+    options: ReadonlyArray<LabeledOption>;
     value: string;
     disabled?: boolean;
     onchange: (value: string) => void;

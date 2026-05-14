@@ -1,16 +1,11 @@
 <script lang="ts">
   import AudioTrackSection from "./AudioTrackSection.svelte";
   import CaptionLanguageSection from "./CaptionLanguageSection.svelte";
+  import type { SlidingSettingsProps } from "./settings-types";
   import SettingsGroup from "./SettingsGroup.svelte";
   import { setOption } from "@/lib/storage/storage";
-  import type { Options } from "@/types";
 
-  interface Props {
-    options: Options;
-    slideDuration: number;
-  }
-
-  const { options, slideDuration }: Props = $props();
+  const { options, slideDuration }: SlidingSettingsProps = $props();
 </script>
 
 <SettingsGroup title="Audio &amp; subtitles">

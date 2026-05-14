@@ -1,3 +1,8 @@
+export type LabeledOption<V = string> = {
+  value: V;
+  label: string;
+};
+
 export const TrackKind = {
   Audio: "audio",
   Captions: "captions"

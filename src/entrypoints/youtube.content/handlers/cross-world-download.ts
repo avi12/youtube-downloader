@@ -33,9 +33,7 @@ export function registerDownloadProgressHandlers() {
 
   crossWorldMessenger.onMessage(CrossWorldMessage.StartBackgroundDownload, ({ data }) => {
     const request: DownloadRequest = JSON.parse(data.requestJson);
-    downloadProgressStore.setLocal(request.videoId, INITIAL_DOWNLOAD_PROGRESS);
-
-    if (!downloadProgressStore.get(request.videoId)) {
+    if (!downloadProgressStore.setLocal(request.videoId, INITIAL_DOWNLOAD_PROGRESS)) {
       return;
     }
 

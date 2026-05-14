@@ -1,17 +1,12 @@
 <script lang="ts">
+  import type { SlidingSettingsProps } from "./settings-types";
   import SettingsGroup from "./SettingsGroup.svelte";
   import { setOption } from "@/lib/storage/storage";
   import { VIDEO_QUALITIES } from "@/lib/youtube/video-helpers";
   import { VideoQualityMode } from "@/types";
-  import type { Options } from "@/types";
   import { slide } from "svelte/transition";
 
-  interface Props {
-    options: Options;
-    slideDuration: number;
-  }
-
-  const { options, slideDuration }: Props = $props();
+  const { options, slideDuration }: SlidingSettingsProps = $props();
 
   const qualityModeOptions = [
     {

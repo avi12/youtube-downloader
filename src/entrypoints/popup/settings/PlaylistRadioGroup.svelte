@@ -1,11 +1,10 @@
 <script lang="ts">
+  import type { LabeledOption } from "@/types";
+
   interface Props {
     legend: string;
     name: string;
-    options: Array<{
-      value: string;
-      label: string;
-    }>;
+    options: ReadonlyArray<LabeledOption>;
     selected: string;
     onchange: (value: string) => void;
   }

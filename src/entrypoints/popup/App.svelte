@@ -53,33 +53,28 @@
     }))
   );
 
-  const reducedMotionQuery = matchMedia("(prefers-reduced-motion: reduce)");
-  let prefersReducedMotion = $state(reducedMotionQuery.matches);
-  const slideDuration = $derived(prefersReducedMotion ? 0 : 200);
-
-  $effect(() => {
-    function handleChange(e: MediaQueryListEvent) {
-      prefersReducedMotion = e.matches;
-    }
-
-    reducedMotionQuery.addEventListener("change", handleChange);
-    return () => reducedMotionQuery.removeEventListener("change", handleChange);
-  });
-
+  const SLIDE_DURATION = 200;
   const PANEL_ORDER = [PopupPanel.Downloads, PopupPanel.Settings] as const;
   let slideDirection = $state(1);
   const flyIn = $derived({
     x: slideDirection * 50,
-    duration: slideDuration,
+    duration: SLIDE_DURATION,
     opacity: 0,
     easing: cubicOut
   });
   const flyOut = $derived({
     x: -slideDirection * 50,
-    duration: slideDuration,
+    duration: SLIDE_DURATION,
     opacity: 0,
     easing: cubicOut
   });
+
+  function handleTabChange(id: PopupPanel) {
+    const prevIndex = PANEL_ORDER.indexOf(appState.activePanel);
+    const nextIndex = PANEL_ORDER.indexOf(id);
+    slideDirection = nextIndex > prevIndex ? 1 : -1;
+    appState.activePanel = id;
+  }
 </script>
 
 <div class="popup-container">
@@ -90,13 +85,7 @@
         by <a href="https://avi12.com" target="_blank">Avi</a>
       </span>
     </div>
-    <TabNav
-      activeTab={appState.activePanel} onChange={id => {
-        const prevIndex = PANEL_ORDER.indexOf(appState.activePanel);
-        const nextIndex = PANEL_ORDER.indexOf(id);
-        slideDirection = nextIndex > prevIndex ? 1 : -1;
-        appState.activePanel = id;
-      }} tabs={appState.tabs} />
+    <TabNav activeTab={appState.activePanel} onChange={handleTabChange} tabs={appState.tabs} />
   </header>
 
   <div class="popup-content">

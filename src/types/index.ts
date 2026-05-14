@@ -46,7 +46,7 @@ export {
   TrackKind
 } from "./panel-types";
 
-export type { ChipData } from "./panel-types";
+export type { ChipData, LabeledOption } from "./panel-types";
 
 export type {
   DownloadTypePreference,

@@ -1,15 +1,11 @@
 <script lang="ts">
   import FormatSelect from "./FormatSelect.svelte";
+  import type { SettingsProps } from "./settings-types";
   import SettingsGroup from "./SettingsGroup.svelte";
   import { setOption } from "@/lib/storage/storage";
   import { supportedExtensions } from "@/lib/utils/containers";
-  import type { Options } from "@/types";
 
-  interface Props {
-    options: Options;
-  }
-
-  const { options }: Props = $props();
+  const { options }: SettingsProps = $props();
 </script>
 
 <SettingsGroup title="Format">

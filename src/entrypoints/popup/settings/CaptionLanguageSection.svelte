@@ -1,19 +1,11 @@
 <script lang="ts">
+  import type { SettingsProps } from "./settings-types";
   import { setOption } from "@/lib/storage/storage";
   import { CaptionLanguageMode } from "@/types";
-  import type { Options } from "@/types";
 
-  interface Props {
-    options: Options;
-  }
+  const { options }: SettingsProps = $props();
 
-  const { options }: Props = $props();
-
-  const captionLanguageModeOptions: Array<{
-    value: CaptionLanguageMode;
-    label: string;
-    description: string;
-  }> = [
+  const captionLanguageModeOptions = [
     {
       value: CaptionLanguageMode.SameAsAudio,
       label: "Same as audio",
@@ -34,7 +26,7 @@
       label: "Custom language",
       description: "Uses the same custom language set for audio above"
     }
-  ];
+  ] as const;
 </script>
 
 <div class="settings-format-section">

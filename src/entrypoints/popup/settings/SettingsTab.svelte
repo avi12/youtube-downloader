@@ -14,26 +14,15 @@
 
   const { options }: Props = $props();
 
-  const reducedMotionQuery = matchMedia("(prefers-reduced-motion: reduce)");
-  let prefersReducedMotion = $state(reducedMotionQuery.matches);
-  const slideDuration = $derived(prefersReducedMotion ? 0 : 200);
-
-  $effect(() => {
-    function handleChange(e: MediaQueryListEvent) {
-      prefersReducedMotion = e.matches;
-    }
-
-    reducedMotionQuery.addEventListener("change", handleChange);
-    return () => reducedMotionQuery.removeEventListener("change", handleChange);
-  });
+  const SLIDE_DURATION = 200;
 </script>
 
 <div class="settings-container">
   <FormatSettings {options} />
   <DownloadTypeSettings {options} />
-  <VideoQualitySettings {options} {slideDuration} />
+  <VideoQualitySettings {options} slideDuration={SLIDE_DURATION} />
   <PlaylistSettings {options} />
-  <AudioSubtitleSettings {options} {slideDuration} />
+  <AudioSubtitleSettings {options} slideDuration={SLIDE_DURATION} />
   <CompletionSettings {options} />
 </div>
 
