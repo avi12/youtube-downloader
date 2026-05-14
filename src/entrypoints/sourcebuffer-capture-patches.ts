@@ -1,0 +1,73 @@
+import type { YtdlCaptureState } from "@/types";
+
+export function patchIframeMediaVolume() {
+  const mediaProto = HTMLMediaElement.prototype;
+
+  const mutedDescriptor = Object.getOwnPropertyDescriptor(mediaProto, "muted");
+  if (mutedDescriptor?.set) {
+    const originalMutedSet = mutedDescriptor.set;
+    Object.defineProperty(mediaProto, "muted", {
+      ...mutedDescriptor,
+      set(this: HTMLMediaElement) {
+        originalMutedSet.call(this, true);
+      }
+    });
+  }
+
+  const volumeDescriptor = Object.getOwnPropertyDescriptor(mediaProto, "volume");
+  if (volumeDescriptor?.set) {
+    const originalVolumeSet = volumeDescriptor.set;
+    Object.defineProperty(mediaProto, "volume", {
+      ...volumeDescriptor,
+      set(this: HTMLMediaElement) {
+        originalVolumeSet.call(this, 0);
+      }
+    });
+  }
+}
+
+export function patchSourceBuffer(captureState: YtdlCaptureState) {
+  const { sourceBufferMimeTypes, capturedMedia, pendingChunks, addChunkToCapture } = captureState;
+
+  const originalAddSourceBuffer = MediaSource.prototype.addSourceBuffer;
+  MediaSource.prototype.addSourceBuffer = function (mimeType) {
+    const sourceBuffer = originalAddSourceBuffer.call(this, mimeType);
+    if (mimeType.startsWith("video") || mimeType.startsWith("audio")) {
+      sourceBufferMimeTypes.set(sourceBuffer, mimeType);
+    }
+
+    return sourceBuffer;
+  };
+
+  function isAdPlaying() {
+    return document.getElementById("movie_player")?.classList.contains("ytp-ad-playing") ?? false;
+  }
+
+  const originalAppendBuffer = SourceBuffer.prototype.appendBuffer;
+  SourceBuffer.prototype.appendBuffer = function (data) {
+    const mimeType = sourceBufferMimeTypes.get(this);
+    if (mimeType && !isAdPlaying()) {
+      const chunk = data instanceof ArrayBuffer
+        ? new Uint8Array(data)
+        : new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
+      const { activeVideoId } = captureState;
+      if (!activeVideoId || !capturedMedia.has(activeVideoId)) {
+        pendingChunks.push({
+          mimeType,
+          data: chunk.slice()
+        });
+      } else {
+        const capture = capturedMedia.get(activeVideoId);
+        if (capture) {
+          addChunkToCapture({
+            capture,
+            mimeType,
+            chunk
+          });
+        }
+      }
+    }
+
+    return originalAppendBuffer.call(this, data);
+  };
+}

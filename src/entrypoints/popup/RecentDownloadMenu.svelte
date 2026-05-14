@@ -1,5 +1,6 @@
 <script lang="ts">
   import moreActionsIcon from "./icons/more-actions.svg?raw";
+  import RecentMenuItems from "./RecentMenuItems.svelte";
 
   interface Props {
     entryId: string;
@@ -87,35 +88,12 @@
       class="recent-menu"
       role="menu"
     >
-      <button
-        class="recent-menu-item"
-        dir="auto"
-        onclick={() => handleMenuAction(onShowInFolder)}
-        role="menuitem"
-        type="button"
-      >
-        Show in folder
-      </button>
-      {#if !isZip}
-        <button
-          class="recent-menu-item"
-          dir="auto"
-          onclick={() => handleMenuAction(onChangeFormat)}
-          role="menuitem"
-          type="button"
-        >
-          Change format…
-        </button>
-      {/if}
-      <button
-        class="recent-menu-item recent-menu-item-danger"
-        dir="auto"
-        onclick={() => handleMenuAction(onRemove)}
-        role="menuitem"
-        type="button"
-      >
-        Remove
-      </button>
+      <RecentMenuItems
+        {isZip}
+        onChangeFormat={() => handleMenuAction(onChangeFormat)}
+        onRemove={() => handleMenuAction(onRemove)}
+        onShowInFolder={() => handleMenuAction(onShowInFolder)}
+      />
     </div>
   {/if}
 </div>

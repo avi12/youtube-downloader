@@ -1,57 +1,13 @@
-const STREAM_STALL_TIMEOUT_MS = 30_000;
-const STALL_CHECK_INTERVAL_MS = 1_000;
+import { createStallChecker, mergeChunks, readChunk, StreamStallError } from "./stream-stall";
 
-export class StreamStallError extends Error {
-  constructor(public readonly partialData: Uint8Array) {
-    super("Stream stalled");
-    this.name = "StreamStallError";
-  }
-}
-
-function buildPartialData(
-  preallocated: Uint8Array | null,
-  chunks: Uint8Array[],
-  totalBytes: number,
-  writeOffset: number
-) {
-  if (preallocated) {
-    return preallocated.subarray(0, writeOffset);
-  }
-
-  const result = new Uint8Array(totalBytes);
-  let offset = 0;
-  for (const chunk of chunks) {
-    result.set(chunk, offset);
-    offset += chunk.byteLength;
-  }
-  return result;
-}
-
-async function readChunk(reader: ReadableStreamDefaultReader<Uint8Array>) {
-  try {
-    return await reader.read();
-  } catch (error) {
-    if (error instanceof DOMException && error.name === "AbortError") {
-      throw error;
-    }
-
-    return null;
-  }
-}
+export { StreamStallError } from "./stream-stall";
 
 export async function readStreamToBuffer({ reader, expectedBytes, onBytesReceived }: {
   reader: ReadableStreamDefaultReader<Uint8Array>;
   expectedBytes: number;
   onBytesReceived?: (bytes: number) => void;
 }) {
-  let lastActivityAt = Date.now();
-  let isStalled = false;
-  const stallChecker = setInterval(() => {
-    if (Date.now() - lastActivityAt > STREAM_STALL_TIMEOUT_MS) {
-      isStalled = true;
-      void reader.cancel();
-    }
-  }, STALL_CHECK_INTERVAL_MS);
+  const stall = createStallChecker(() => void reader.cancel());
 
   let preallocated: Uint8Array | null = null;
   if (expectedBytes > 0) {
@@ -66,12 +22,18 @@ export async function readStreamToBuffer({ reader, expectedBytes, onBytesReceive
   let writeOffset = 0;
   let totalBytes = 0;
 
+  function buildPartial() {
+    return preallocated
+      ? preallocated.subarray(0, writeOffset)
+      : mergeChunks(chunks, totalBytes);
+  }
+
   try {
     while (true) {
       const chunk = await readChunk(reader);
       if (!chunk) {
-        if (!isStalled) {
-          throw new StreamStallError(buildPartialData(preallocated, chunks, totalBytes, writeOffset));
+        if (!stall.isStalled) {
+          throw new StreamStallError(buildPartial());
         }
 
         break;
@@ -90,26 +52,16 @@ export async function readStreamToBuffer({ reader, expectedBytes, onBytesReceive
         totalBytes += value!.byteLength;
       }
 
-      lastActivityAt = Date.now();
+      stall.touch();
       onBytesReceived?.(value!.byteLength);
     }
   } finally {
-    clearInterval(stallChecker);
+    stall.clear();
   }
 
-  if (isStalled) {
-    throw new StreamStallError(buildPartialData(preallocated, chunks, totalBytes, writeOffset));
+  if (stall.isStalled) {
+    throw new StreamStallError(buildPartial());
   }
 
-  if (preallocated) {
-    return preallocated;
-  }
-
-  const result = new Uint8Array(totalBytes);
-  let mergeOffset = 0;
-  for (const chunk of chunks) {
-    result.set(chunk, mergeOffset);
-    mergeOffset += chunk.byteLength;
-  }
-  return result;
+  return preallocated ?? mergeChunks(chunks, totalBytes);
 }

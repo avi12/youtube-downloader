@@ -1,4 +1,5 @@
 <script lang="ts">
+  import PlaylistRadioGroup from "./PlaylistRadioGroup.svelte";
   import { setOption } from "@/lib/storage/storage";
   import { PlaylistDownloadMode, PlaylistOutputMode } from "@/types";
   import type { Options } from "@/types";
@@ -9,7 +10,10 @@
 
   const { options }: Props = $props();
 
-  const playlistDownloadModeOptions = [
+  const downloadModeOptions: Array<{
+    value: PlaylistDownloadMode;
+    label: string;
+  }> = [
     {
       value: PlaylistDownloadMode.Fast,
       label: "In parallel"
@@ -20,7 +24,7 @@
     }
   ];
 
-  const playlistOutputModeOptions: Array<{
+  const outputModeOptions: Array<{
     value: PlaylistOutputMode;
     label: string;
   }> = [
@@ -33,61 +37,39 @@
       label: "Single ZIP"
     }
   ];
+
+  function resolveDownloadMode(value: string) {
+    return downloadModeOptions.find(opt => opt.value === value)?.value ?? PlaylistDownloadMode.Fast;
+  }
+
+  function resolveOutputMode(value: string) {
+    return outputModeOptions.find(opt => opt.value === value)?.value ?? PlaylistOutputMode.Individual;
+  }
 </script>
 
 <fieldset class="settings-group">
   <legend class="settings-legend">Playlist</legend>
-  <div class="settings-format-section">
-    <span class="settings-sub-legend">Download speed</span>
-    {#each playlistDownloadModeOptions as { value, label } (value)}
-      <div class="settings-row">
-        <label class="settings-label settings-radio-label">
-          <input
-            name="playlist-download-mode"
-            checked={options.playlistDownloadMode === value}
-            onchange={() => void setOption("playlistDownloadMode", value)}
-            type="radio"
-            {value}
-          />
-          {label}
-        </label>
-      </div>
-    {/each}
-  </div>
-  <div class="settings-format-section">
-    <span class="settings-sub-legend">Output - video playlists</span>
-    {#each playlistOutputModeOptions as { value, label } (value)}
-      <div class="settings-row">
-        <label class="settings-label settings-radio-label">
-          <input
-            name="playlist-output-mode"
-            checked={options.playlistOutputMode === value}
-            onchange={() => void setOption("playlistOutputMode", value)}
-            type="radio"
-            {value}
-          />
-          {label}
-        </label>
-      </div>
-    {/each}
-  </div>
-  <div class="settings-format-section">
-    <span class="settings-sub-legend">Output - audio playlists</span>
-    {#each playlistOutputModeOptions as { value, label } (value)}
-      <div class="settings-row">
-        <label class="settings-label settings-radio-label">
-          <input
-            name="playlist-audio-output-mode"
-            checked={options.playlistAudioOutputMode === value}
-            onchange={() => void setOption("playlistAudioOutputMode", value)}
-            type="radio"
-            {value}
-          />
-          {label}
-        </label>
-      </div>
-    {/each}
-  </div>
+  <PlaylistRadioGroup
+    name="playlist-download-mode"
+    legend="Download speed"
+    onchange={value => void setOption("playlistDownloadMode", resolveDownloadMode(value))}
+    options={downloadModeOptions}
+    selected={options.playlistDownloadMode}
+  />
+  <PlaylistRadioGroup
+    name="playlist-output-mode"
+    legend="Output - video playlists"
+    onchange={value => void setOption("playlistOutputMode", resolveOutputMode(value))}
+    options={outputModeOptions}
+    selected={options.playlistOutputMode}
+  />
+  <PlaylistRadioGroup
+    name="playlist-audio-output-mode"
+    legend="Output - audio playlists"
+    onchange={value => void setOption("playlistAudioOutputMode", resolveOutputMode(value))}
+    options={outputModeOptions}
+    selected={options.playlistAudioOutputMode}
+  />
   <div class="settings-format-section">
     <label class="settings-row">
       <span class="settings-label">Scroll to each video while downloading</span>
