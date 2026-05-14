@@ -38,7 +38,9 @@
     class={[...scopingClasses, "ytdl-chevron-button"].join(" ")}
   ></yt-button-view-model>
   <svg
-    class={["ytdl-watch-progress-ring", state.isIndeterminate ? "ytdl-watch-progress-ring--indeterminate" : "", state.isError ? "ytdl-watch-progress-ring--error" : ""].join(" ")}
+    class="ytdl-watch-progress-ring"
+    class:ytdl-watch-progress-ring--error={state.isError}
+    class:ytdl-watch-progress-ring--indeterminate={state.isIndeterminate}
     aria-hidden="true"
     viewBox="0 0 {state.PROGRESS_RING_SVG_SIZE} {state.PROGRESS_RING_SVG_SIZE}"
   >
