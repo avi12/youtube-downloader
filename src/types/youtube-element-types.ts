@@ -36,6 +36,15 @@ export interface TpYtPaperInputElement extends HTMLElement {
   updateStyles(styles: Record<string, string>): void;
 }
 
+/** @see https://github.com/PolymerElements/iron-icon */
+export interface YtIconElement extends HTMLElement {
+  icon: string;
+}
+
+export function isYtIconElement(element: Element): element is YtIconElement {
+  return element instanceof HTMLElement && "icon" in element;
+}
+
 /** @see https://github.com/PolymerElements/iron-dropdown */
 export interface TpYtIronDropdownElement extends HTMLElement {
   positionTarget: Element | null;
@@ -71,6 +80,7 @@ declare global {
   }
 
   interface HTMLElementTagNameMap {
+    "yt-icon": YtIconElement;
     "yt-button-view-model": YtButtonViewModelElement;
     "tp-yt-paper-dropdown-menu": TpYtPaperDropdownMenuElement;
     "tp-yt-paper-progress": TpYtPaperProgressElement;

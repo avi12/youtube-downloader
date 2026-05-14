@@ -5,6 +5,7 @@
 export const YtIconName = {
   Autorenew: "icons:autorenew",
   Check: "icons:check",
+  ExpandMore: "icons:expand-more",
   CheckCircle: "icons:check-circle",
   Close: "icons:close",
   ErrorOutline: "icons:error-outline",
