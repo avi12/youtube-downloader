@@ -3,11 +3,10 @@ import {
   triggerDownload,
   reportProgress,
   FFMPEG_PROGRESS_CAP,
-  toOwnedArrayBuffer,
   buildRecentContext
 } from ".";
-import { runEmbedMetadata, runTranscodeAudio } from "./ffmpeg-instance";
 import { addToPlaylistBundle } from "./playlist-bundle";
+import { applyAudioFfmpeg } from "./process-single-media-ffmpeg";
 import { getFileExtension } from "@/lib/utils/containers";
 import { DownloadType, ProgressType } from "@/types";
 import type { ProcessStreamData } from "@/types";
@@ -32,45 +31,18 @@ export async function processSingleMedia(item: ProcessStreamData, isCancelled: (
   });
 
   const isAudio = type === DownloadType.Audio;
-  const sourceExtension = isAudio ? sourceAudioExtension(item.audioMimeType) : "";
-  const outputExtension = getFileExtension(filenameOutput);
-  const isFlacTarget = isAudio && outputExtension === "flac";
-  if (isAudio && item.metadata?.isMusic) {
-    await reportProgress({
+  if (isAudio) {
+    const sourceExtension = sourceAudioExtension(item.audioMimeType);
+    const outputExtension = getFileExtension(filenameOutput);
+    data = await applyAudioFfmpeg({
       videoId,
-      progress: 0,
-      progressType: ProgressType.FFmpeg,
-      tabId
+      tabId,
+      data,
+      sourceExtension,
+      filenameOutput,
+      outputExtension,
+      metadata: item.metadata
     });
-    data = await runEmbedMetadata(
-      videoId,
-      {
-        audioData: toOwnedArrayBuffer(data),
-        filenameOutput,
-        sourceExtension,
-        metadata: item.metadata,
-        thumbnailUrl: item.metadata.thumbnailUrl,
-        videoId,
-        tabId
-      }
-    );
-  } else if (isFlacTarget) {
-    await reportProgress({
-      videoId,
-      progress: 0,
-      progressType: ProgressType.FFmpeg,
-      tabId
-    });
-    data = await runTranscodeAudio(
-      videoId,
-      {
-        audioData: toOwnedArrayBuffer(data),
-        sourceExtension,
-        filenameOutput,
-        videoId,
-        tabId
-      }
-    );
   }
 
   if (isCancelled()) {

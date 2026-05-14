@@ -1,3 +1,4 @@
+import { registerDropdownFocusHandlers } from "./grid-dropdown-focus";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import type { TpYtIronDropdownElement } from "@/types";
 
@@ -61,40 +62,6 @@ function closeGridDropdown(videoId: string) {
   }
 }
 
-// Polymer's IronFocusedBehavior doesn't reflect keyboard vs pointer focus to an attribute;
-// bridge it to [keyboard-focused] so CSS can gate the focus ring (WCAG 2.4.7).
-function handleDropdownFocusIn(e: FocusEvent) {
-  if (!(e.target instanceof Element)) {
-    return;
-  }
-
-  const elDropdown = e.target.closest("tp-yt-paper-dropdown-menu");
-  if (!elDropdown) {
-    return;
-  }
-
-  if (elDropdown.receivedFocusFromKeyboard) {
-    elDropdown.setAttribute("keyboard-focused", "");
-  }
-}
-
-function handleDropdownFocusOut(e: FocusEvent) {
-  if (!(e.target instanceof Element)) {
-    return;
-  }
-
-  const elDropdown = e.target.closest("tp-yt-paper-dropdown-menu");
-  if (!elDropdown) {
-    return;
-  }
-
-  requestAnimationFrame(() => {
-    if (!elDropdown.contains(document.activeElement)) {
-      elDropdown.removeAttribute("keyboard-focused");
-    }
-  });
-}
-
 export function registerGridDropdownHandlers() {
   crossWorldMessenger.onMessage(CrossWorldMessage.CreateDropdown, ({ data }) => {
     createGridDropdown({
@@ -105,6 +72,5 @@ export function registerGridDropdownHandlers() {
   crossWorldMessenger.onMessage(CrossWorldMessage.CloseDropdown, ({ data }) => {
     closeGridDropdown(data.videoId);
   });
-  document.addEventListener("focusin", handleDropdownFocusIn);
-  document.addEventListener("focusout", handleDropdownFocusOut);
+  registerDropdownFocusHandlers();
 }
