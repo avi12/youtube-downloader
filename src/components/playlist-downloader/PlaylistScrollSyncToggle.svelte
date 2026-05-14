@@ -1,6 +1,4 @@
 <script lang="ts">
-  import { attachFormattedString } from "@/lib/ui/polymer-utils";
-
   interface Props {
     isEnabled: boolean;
     ontoggle: (isEnabled: boolean) => void;
@@ -18,14 +16,8 @@
       }
     }}
   >
-    <yt-formatted-string
-      class="ytdl-scroll-sync-label"
-      {@attach attachFormattedString("Auto-scroll the playlist as videos download")}
-    ></yt-formatted-string>
-    <yt-formatted-string
-      class="ytdl-scroll-sync-sub"
-      {@attach attachFormattedString("Applies to both selected and whole-playlist downloads")}
-    ></yt-formatted-string>
+    <span class="ytdl-scroll-sync-label">Auto-scroll the playlist as videos download</span>
+    <span class="ytdl-scroll-sync-sub">Applies to both selected and whole-playlist downloads</span>
   </tp-yt-paper-checkbox>
 </div>
 

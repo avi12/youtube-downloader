@@ -2,7 +2,7 @@
   import { crossWorldMessenger, CrossWorldMessage, onButtonClick } from "@/lib/messaging/cross-world-messenger";
   import { MessageType, sendMessage } from "@/lib/messaging/messaging";
   import { completedDownloadsStore } from "@/lib/ui/completed-downloads-store.svelte";
-  import { attachFormattedString, attachIcon } from "@/lib/ui/polymer-utils";
+  import { attachIcon } from "@/lib/ui/polymer-utils";
   import { YtIconName } from "@/types";
 
   const SNACKBAR_DURATION_MS = 10_000;
@@ -48,16 +48,10 @@
         </div>
         <div class="snackbarViewModelTitleSubtextWrapper">
           <div class="snackbarViewModelTitle snackbarViewModelTitleWithSubtext">
-            <yt-formatted-string
-              class="ytAttributedStringHost ytAttributedStringWhiteSpacePreWrap"
-              {@attach attachFormattedString("Download complete")}
-            ></yt-formatted-string>
+            <span class="ytAttributedStringHost ytAttributedStringWhiteSpacePreWrap">Download complete</span>
           </div>
           <div class="snackbarViewModelSubtext">
-            <yt-formatted-string
-              class="ytAttributedStringHost"
-              {@attach attachFormattedString(filename)}
-            ></yt-formatted-string>
+            <span class="ytAttributedStringHost">{filename}</span>
           </div>
         </div>
         <div class="snackbarViewModelButtonClassWrapper">

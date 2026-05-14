@@ -1,6 +1,5 @@
 <script lang="ts">
   import TrackChoice from "./TrackChoice.svelte";
-  import { attachFormattedString } from "@/lib/ui/polymer-utils";
   import { PanelTrackMode, TrackKind } from "@/types";
   import type { CaptionTrack, LabeledOption } from "@/types";
 
@@ -47,7 +46,7 @@
 
 {#if uniqueAudioLanguages.length > 0 || captionTracks.length > 0}
   <div class="ytdl-section">
-    <yt-formatted-string class="ytdl-section-label" {@attach attachFormattedString("Tracks")}></yt-formatted-string>
+    <span class="ytdl-section-label">Tracks</span>
     <TrackChoice
       customOptions={uniqueAudioLanguages}
       customValue={panelAudioCustomLanguage}
@@ -60,10 +59,7 @@
       playerLabel={audioPlayerLabel}
     />
     {#if downloadExtras && uniqueAudioLanguages.length > 1}
-      <yt-formatted-string
-        class="ytdl-extras-note"
-        {@attach attachFormattedString("Selected track is the default — all others are bundled as extras")}
-      ></yt-formatted-string>
+      <span class="ytdl-extras-note">Selected track is the default — all others are bundled as extras</span>
     {/if}
     <TrackChoice
       customOptions={captionCustomOptions}

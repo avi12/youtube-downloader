@@ -1,6 +1,5 @@
 <script lang="ts">
   import { getFilenameError } from "./download-options-helpers";
-  import { attachFormattedString } from "@/lib/ui/polymer-utils";
   import { splitFilenameAndExtension } from "@/lib/utils/containers";
   import { DownloadType } from "@/types";
 
@@ -54,7 +53,7 @@
 </script>
 
 <div class="ytdl-section">
-  <yt-formatted-string class="ytdl-section-label" {@attach attachFormattedString("Output")}></yt-formatted-string>
+  <span class="ytdl-section-label">Output</span>
   <tp-yt-paper-input
     id="filename-input"
     {@attach applyPolymerTheme}

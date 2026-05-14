@@ -1,6 +1,6 @@
 <script lang="ts">
   import PolymerSelect from "../polymer-select/PolymerSelect.svelte";
-  import { attachFormattedString, createTrackChoiceState } from "./TrackChoice.svelte.ts";
+  import { createTrackChoiceState } from "./TrackChoice.svelte.ts";
   import { attachIcon } from "@/lib/ui/polymer-utils";
   import { PanelTrackMode, YtIconName } from "@/types";
   import type { LabeledOption, TrackKind } from "@/types";
@@ -40,10 +40,7 @@
 
 <div class="track-choice" class:is-disabled={disabled}>
   <div class="track-choice-head">
-    <yt-formatted-string
-      class="track-label"
-      {@attach attachFormattedString(state.kindLabel)}
-    ></yt-formatted-string>
+    <span class="track-label">{state.kindLabel}</span>
     <div
       class="track-seg"
       aria-label="{state.kindLabel} source"
@@ -67,25 +64,16 @@
         <yt-icon class="sync-icon" {@attach attachIcon(YtIconName.Autorenew)}></yt-icon>
       </div>
       <div class="track-follow-body">
-        <yt-formatted-string class="track-follow-value" {@attach attachFormattedString(playerLabel ?? "—")}></yt-formatted-string>
-        <yt-formatted-string
-          class="track-follow-sub"
-          {@attach attachFormattedString("Synced with player · changes as you switch tracks")}
-        ></yt-formatted-string>
+        <span class="track-follow-value">{playerLabel ?? "—"}</span>
+        <span class="track-follow-sub">Synced with player · changes as you switch tracks</span>
       </div>
     </div>
   {:else if mode === PanelTrackMode.Original}
     <div class="track-follow track-original">
       <div class="track-original-badge" aria-hidden="true">ORIG</div>
       <div class="track-follow-body">
-        <yt-formatted-string
-          class="track-follow-value"
-          {@attach attachFormattedString(originalLabel ?? "Original")}
-        ></yt-formatted-string>
-        <yt-formatted-string
-          class="track-follow-sub"
-          {@attach attachFormattedString(state.originalSubLabel)}
-        ></yt-formatted-string>
+        <span class="track-follow-value">{originalLabel ?? "Original"}</span>
+        <span class="track-follow-sub">{state.originalSubLabel}</span>
       </div>
     </div>
   {:else}
