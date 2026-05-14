@@ -1,7 +1,7 @@
 <script lang="ts">
   import ActiveDownloadsSections from "./ActiveDownloadsSections.svelte";
   import downloadIcon from "./icons/download.svg?raw";
-  import RecentDownloadItem from "./RecentDownloadItem.svelte";
+  import RecentDownloadsSection from "./RecentDownloadsSection.svelte";
   import { MessageType, sendMessage } from "@/lib/messaging/messaging";
   import { deleteRecentDownload } from "@/lib/storage/recent-downloads-db";
   import { ProgressType } from "@/types";
@@ -29,21 +29,17 @@
   }
 
   const {
-    isFFmpegReady,
-    videoDownloads,
-    musicList,
-    videoOnlyList,
-    videoDetails,
-    statusProgress,
-    percentFormatter,
-    recentDownloads,
-    now,
-    onChangeFormat,
-    onRecentChanged
+    isFFmpegReady, videoDownloads, musicList, videoOnlyList, videoDetails,
+    statusProgress, percentFormatter, recentDownloads, now, onChangeFormat, onRecentChanged
   }: Props = $props();
 
   const totalActiveDownloads = $derived(videoDownloads.length + musicList.length + videoOnlyList.length);
   const isAnyContentAvailable = $derived(totalActiveDownloads > 0 || recentDownloads.length > 0);
+
+  async function handleRemove(entry: RecentDownloadEntry) {
+    await deleteRecentDownload(entry.id);
+    onRecentChanged();
+  }
 
   function handleShowInFolder(entry: RecentDownloadEntry) {
     try {
@@ -51,11 +47,6 @@
     } catch (error) {
       console.warn("[ytdl:popup] Show in folder failed:", error);
     }
-  }
-
-  async function handleRemove(entry: RecentDownloadEntry) {
-    await deleteRecentDownload(entry.id);
-    onRecentChanged();
   }
 
   function cancelDownload(videoIds: string[]) {
@@ -83,24 +74,12 @@
         {videoOnlyList}
       />
     {/if}
-
-    {#if recentDownloads.length > 0}
-      <section class="recent-section" aria-labelledby="recent-section-heading">
-        <h2 id="recent-section-heading" class="recent-section-heading">Recent</h2>
-        <ul class="recent-list" role="list">
-          {#each recentDownloads as entry (entry.id)}
-            <li role="listitem">
-              <RecentDownloadItem
-                {entry}
-                {now}
-                onChangeFormat={() => onChangeFormat(entry)}
-                onRemove={() => handleRemove(entry)}
-                onShowInFolder={() => handleShowInFolder(entry)}
-              />
-            </li>
-          {/each}
-        </ul>
-      </section>
-    {/if}
+    <RecentDownloadsSection
+      {now}
+      onChangeFormat={entry => onChangeFormat(entry)}
+      onRemove={handleRemove}
+      onShowInFolder={handleShowInFolder}
+      {recentDownloads}
+    />
   </div>
 {/if}
