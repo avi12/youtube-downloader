@@ -15,18 +15,36 @@
 
 <section class="ytdl-section" aria-labelledby="ytdl-speed-label">
   <h3 id="ytdl-speed-label" class="ytdl-section-title">Speed</h3>
-  <div class="ytdl-chip-row" aria-labelledby="ytdl-speed-label" role="group">
+  <div
+    class="ytdl-seg"
+    aria-label="Speed"
+    onkeydown={toggleButtons.speedKeydown}
+    role="radiogroup"
+    tabindex="-1"
+  >
     {#each toggleButtons.groups.speed as button (button.id)}
-      <yt-button-view-model {@attach toggleButtons.createAttacher(button)}></yt-button-view-model>
+      <yt-button-view-model
+        {@attach toggleButtons.createAttacher(button)}
+        data-ytdl-button-id={button.id}
+      ></yt-button-view-model>
     {/each}
   </div>
 </section>
 
 <section class="ytdl-section" aria-labelledby="ytdl-output-label">
   <h3 id="ytdl-output-label" class="ytdl-section-title">Output</h3>
-  <div class="ytdl-chip-row" aria-labelledby="ytdl-output-label" role="group">
+  <div
+    class="ytdl-seg"
+    aria-label="Output"
+    onkeydown={toggleButtons.outputKeydown}
+    role="radiogroup"
+    tabindex="-1"
+  >
     {#each toggleButtons.groups.output as button (button.id)}
-      <yt-button-view-model {@attach toggleButtons.createAttacher(button)}></yt-button-view-model>
+      <yt-button-view-model
+        {@attach toggleButtons.createAttacher(button)}
+        data-ytdl-button-id={button.id}
+      ></yt-button-view-model>
     {/each}
   </div>
   {#if playlist.outputMode === PlaylistOutputMode.Zip}
@@ -62,6 +80,17 @@
     font-weight: 500;
     font-size: 1.4rem;
     line-height: 1.2;
+  }
+
+  .ytdl-seg {
+    display: inline-flex;
+    flex-shrink: 0;
+    gap: 2px;
+    align-items: center;
+    padding: 2px;
+    border: 1px solid var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 10%));
+    border-radius: 999px;
+    background: var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 8%));
   }
 
   .ytdl-chip-row {

@@ -1,4 +1,4 @@
-import { ALL_TOGGLE_BUTTONS, TOGGLE_BUTTON_GROUPS } from "./playlist-toggle-button-groups";
+import { ALL_TOGGLE_BUTTONS, TOGGLE_BUTTON_GROUPS, type ToggleButtonGroup } from "./playlist-toggle-button-groups";
 import { DATA_BUTTON_ID_ATTR, sendButtonData } from "@/lib/ui/polymer-utils";
 import {
   ButtonSize,
@@ -11,6 +11,19 @@ import {
   type DownloadTypePreference
 } from "@/types";
 import { SvelteMap } from "svelte/reactivity";
+
+const SEGMENTED_IDS = new Set([
+  ...TOGGLE_BUTTON_GROUPS.speed.map(btn => btn.id),
+  ...TOGGLE_BUTTON_GROUPS.output.map(btn => btn.id)
+]);
+
+function resolveButtonType(isActive: boolean, isSegmented: boolean) {
+  if (isSegmented) {
+    return isActive ? ButtonType.Filled : ButtonType.Text;
+  }
+
+  return isActive ? ButtonType.Tonal : ButtonType.Outline;
+}
 
 export function createPlaylistToggleButtons(state: {
   downloadMode: PlaylistDownloadMode;
@@ -31,9 +44,10 @@ export function createPlaylistToggleButtons(state: {
       return;
     }
 
-    if (!elButton.hasAttribute(DATA_BUTTON_ID_ATTR)) {
-      elButton.setAttribute(DATA_BUTTON_ID_ATTR, buttonId);
-    }
+    elButton.setAttribute(DATA_BUTTON_ID_ATTR, buttonId);
+
+    const isActive = buttonDefinition.isActive(state);
+    const isSegmented = SEGMENTED_IDS.has(buttonId);
 
     sendButtonData({
       elButton,
@@ -42,13 +56,20 @@ export function createPlaylistToggleButtons(state: {
         title: buttonDefinition.label,
         accessibilityText: buttonDefinition.label,
         style: ButtonStyle.Mono,
-        type: buttonDefinition.isActive(state) ? ButtonType.Tonal : ButtonType.Outline,
-        buttonSize: ButtonSize.Default,
+        type: resolveButtonType(isActive, isSegmented),
+        buttonSize: isSegmented ? ButtonSize.XSmall : ButtonSize.Default,
         state: state.isDownloading ? ButtonState.Disabled : ButtonState.Active,
         isFullWidth: false,
         isDisabled: state.isDownloading,
         tooltip: buttonDefinition.tooltip
-      }
+      },
+      ...(isSegmented && {
+        a11y: {
+          tabIndex: isActive ? 0 : -1,
+          role: "radio",
+          ariaChecked: String(isActive)
+        }
+      })
     });
   }
 
@@ -69,6 +90,23 @@ export function createPlaylistToggleButtons(state: {
     };
   }
 
+  function makeSegKeydown(group: ToggleButtonGroup[]) {
+    return (e: KeyboardEvent) => {
+      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") {
+        return;
+      }
+
+      e.preventDefault();
+      const currentIndex = group.findIndex(btn => btn.isActive(state));
+      const delta = e.key === "ArrowRight" ? 1 : -1;
+      const nextIndex = (currentIndex + delta + group.length) % group.length;
+      const nextButton = group[nextIndex];
+      nextButton.onClick(state);
+      const elNext = elements.get(nextButton.id);
+      queueMicrotask(() => elNext?.querySelector<HTMLButtonElement>("button")?.focus());
+    };
+  }
+
   function handleClick(buttonId: string) {
     const match = ALL_TOGGLE_BUTTONS.find(button => button.id === buttonId);
     match?.onClick(state);
@@ -79,6 +117,8 @@ export function createPlaylistToggleButtons(state: {
     groups: TOGGLE_BUTTON_GROUPS,
     createAttacher,
     refreshAll,
-    handleClick
+    handleClick,
+    speedKeydown: makeSegKeydown(TOGGLE_BUTTON_GROUPS.speed),
+    outputKeydown: makeSegKeydown(TOGGLE_BUTTON_GROUPS.output)
   };
 }
