@@ -1,7 +1,12 @@
+<script lang="ts" module>
+  let selectInstanceCounter = 0;
+</script>
+
 <script lang="ts">
   import { attachIcon } from "@/lib/ui/polymer-utils";
-  import type { LabeledOption, TpYtIronDropdownElement } from "@/types";
+  import type { LabeledOption } from "@/types";
   import { YtIconName } from "@/types";
+  import { untrack } from "svelte";
 
   interface Props {
     id?: string;
@@ -14,16 +19,19 @@
 
   const { id, label, options, value, disabled = false, onchange }: Props = $props();
 
+  const anchorName = untrack(() => {
+    if (!id) {
+      selectInstanceCounter++;
+    }
+
+    return `--ytdl-select-${id ?? selectInstanceCounter}`;
+  });
   const selectedLabel = $derived(options.find(option => option.value === value)?.label ?? "");
 
-  function isTpYtIronDropdown(elTarget: Element): elTarget is TpYtIronDropdownElement {
-    return elTarget instanceof HTMLElement && "open" in elTarget && "positionTarget" in elTarget;
-  }
-
   let isOpen = $state(false);
-  let elTrigger = $state<HTMLElement | null>(null);
-  let elDropdown = $state<TpYtIronDropdownElement | null>(null);
-  let elMenu = $state<HTMLElement | null>(null);
+  let elTrigger: HTMLElement | null = null;
+  let elPopover: HTMLElement | null = null;
+  let elMenu: HTMLElement | null = null;
 
   function focusTrigger() {
     elTrigger?.focus();
@@ -38,7 +46,12 @@
 
     function handleClick(e: Event) {
       e.stopPropagation();
-      isOpen = !isOpen;
+
+      if (elPopover?.matches(":popover-open")) {
+        elPopover.hidePopover();
+      } else {
+        elPopover?.showPopover();
+      }
     }
 
     function handleKeydown(e: Event) {
@@ -49,7 +62,7 @@
       const isActivationKey = e.key === "ArrowDown" || e.key === "Enter" || e.key === " ";
       if (isActivationKey) {
         e.preventDefault();
-        isOpen = true;
+        elPopover?.showPopover();
       }
     }
 
@@ -61,23 +74,29 @@
     };
   }
 
-  function attachDropdown(elTarget: Element) {
-    if (!isTpYtIronDropdown(elTarget)) {
+  function attachPopover(elTarget: Element) {
+    if (!(elTarget instanceof HTMLElement)) {
       return;
     }
 
-    elDropdown = elTarget;
-    elTarget.positionTarget = elTrigger;
-    elTarget.fitInto = window;
-    elTarget.dynamicAlign = true;
+    elPopover = elTarget;
 
-    function handleOverlayClosed() {
-      isOpen = false;
-      focusTrigger();
+    function handleToggle(e: Event) {
+      if (!(e instanceof ToggleEvent)) {
+        return;
+      }
+
+      isOpen = e.newState === "open";
+
+      if (e.newState === "open") {
+        requestAnimationFrame(() => elMenu?.focus());
+      } else {
+        focusTrigger();
+      }
     }
 
-    elTarget.addEventListener("iron-overlay-closed", handleOverlayClosed);
-    return () => elTarget.removeEventListener("iron-overlay-closed", handleOverlayClosed);
+    elTarget.addEventListener("toggle", handleToggle);
+    return () => elTarget.removeEventListener("toggle", handleToggle);
   }
 
   function attachMenu(elTarget: Element) {
@@ -101,8 +120,7 @@
         onchange(dataValue);
       }
 
-      isOpen = false;
-      focusTrigger();
+      elPopover?.hidePopover();
     }
 
     function handleKeydown(e: Event) {
@@ -110,13 +128,14 @@
         return;
       }
 
-      if (e.key === "Escape" || e.key === "Tab") {
-        if (e.key === "Escape") {
-          e.preventDefault();
-        }
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        return;
+      }
 
-        isOpen = false;
-        focusTrigger();
+      if (e.key === "Tab") {
+        e.preventDefault();
+        elPopover?.hidePopover();
         return;
       }
 
@@ -126,8 +145,7 @@
           const dataValue = elActive.getAttribute("data-value");
           if (dataValue === value) {
             e.preventDefault();
-            isOpen = false;
-            focusTrigger();
+            elPopover?.hidePopover();
           }
         }
       }
@@ -140,25 +158,13 @@
       elTarget.removeEventListener("keydown", handleKeydown);
     };
   }
-
-  $effect(() => {
-    if (!elDropdown) {
-      return;
-    }
-
-    if (isOpen) {
-      elDropdown.open();
-      requestAnimationFrame(() => elMenu?.focus());
-    } else {
-      elDropdown.close();
-    }
-  });
 </script>
 
 <div class="ytdl-select-field">
   <label class="ytdl-select-label" for={id}>{label}</label>
   <button
     {id}
+    style="anchor-name: {anchorName};"
     class="ytdl-select-trigger"
     class:open={isOpen}
     {@attach attachTrigger}
@@ -172,12 +178,13 @@
     <yt-icon class="chevron" class:open={isOpen} {@attach attachIcon(YtIconName.ExpandMore)}></yt-icon>
   </button>
 
-  <tp-yt-iron-dropdown
-    {@attach attachDropdown}
-    no-cancel-on-esc-key
+  <div
+    style="position-anchor: {anchorName};"
+    class="ytdl-select-popup"
+    {@attach attachPopover}
+    popover="auto"
   >
     <tp-yt-paper-listbox
-      slot="dropdown-content"
       class="ytdl-select-menu"
       {@attach attachMenu}
       aria-label={label}
@@ -194,13 +201,11 @@
         >{option.label}</tp-yt-paper-item>
       {/each}
     </tp-yt-paper-listbox>
-  </tp-yt-iron-dropdown>
+  </div>
 </div>
 
 <style>
   .ytdl-select-field {
-    position: relative;
-
     &:has(.ytdl-select-trigger:disabled) {
       opacity: var(--paper-dropdown-menu-disabled-opacity, 33%);
     }
@@ -265,8 +270,22 @@
     }
   }
 
+  .ytdl-select-popup {
+    position: fixed;
+    top: anchor(bottom);
+    bottom: 8px;
+    left: anchor(left);
+    overflow: hidden;
+    min-width: anchor-size(width);
+    margin-block-start: 4px;
+    padding: 0;
+    border: none;
+    background: transparent;
+  }
+
   :global(.ytdl-select-menu) {
     overflow-y: auto;
+    height: 100%;
     padding: 4px;
     border: 1px solid var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 10%));
     border-radius: 8px;
