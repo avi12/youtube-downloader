@@ -1,3 +1,7 @@
+import { extractPoTokenFromBody } from "./po-token-extractor";
+
+export { extractPoTokenFromBody } from "./po-token-extractor";
+
 const capturedByTab = new Map<number, {
   body: number[];
   url: string;
@@ -33,7 +37,6 @@ function handleSabrRequest(details: Browser.webRequest.OnBeforeRequestDetails) {
   const previousData = capturedByTab.get(details.tabId);
   const isFirstCapture = !previousData;
 
-  // The PO token evolves during the session, so the latest body has the most valid token.
   capturedByTab.set(details.tabId, {
     body: Array.from(bodyBytes),
     url: details.url,
@@ -41,8 +44,6 @@ function handleSabrRequest(details: Browser.webRequest.OnBeforeRequestDetails) {
     timestamp: Date.now()
   });
 
-  // The initial SABR handshake has no PO token; it only appears once the player starts streaming,
-  // so also notify on first-seen PO token.
   const isPreviousPoToken = previousData
     ? Boolean(extractPoTokenFromBody(previousData.body))
     : false;
@@ -54,8 +55,6 @@ function handleSabrRequest(details: Browser.webRequest.OnBeforeRequestDetails) {
   }
 }
 
-// Falls back to the most recent capture from any tab when the requesting tab has no data
-// (e.g., channel pages with no player).
 export function getCapturedSabrData(tabId: number) {
   return capturedByTab.get(tabId) ?? getLatestCapturedSabrData();
 }
@@ -70,118 +69,6 @@ function getLatestCapturedSabrData() {
   }
 
   return latest ?? null;
-}
-
-/**
- * Extracts just the PO token (base64) from a captured SABR request body.
- * The PO token is at: VideoPlaybackAbrRequest.streamerContext.poToken
- * In protobuf wire format: field 19 (StreamerContext) > field 2 (poToken)
- */
-export function extractPoTokenFromBody(body: number[]) {
-  const VARINT_DATA_BITS_MASK = 0x7f;
-  const VARINT_CONTINUATION_BIT = 0x80;
-  const VARINT_BITS_PER_BYTE = 7;
-  const PROTO_FIELD_NUMBER_SHIFT = 3;
-  const PROTO_WIRE_TYPE_MASK = 0x7;
-  const WIRE_TYPE_VARINT = 0;
-  const WIRE_TYPE_64_BIT = 1;
-  const WIRE_TYPE_LENGTH_DELIMITED = 2;
-  const WIRE_TYPE_32_BIT = 5;
-  const WIRE_64_BIT_BYTE_SIZE = 8;
-  const WIRE_32_BIT_BYTE_SIZE = 4;
-  const FIELD_STREAMER_CONTEXT = 19;
-  const FIELD_PO_TOKEN = 2;
-
-  const buffer = new Uint8Array(body);
-  let offset = 0;
-
-  function readVarint(off: number) {
-    let value = 0;
-    let shift = 0;
-    while (off < buffer.byteLength) {
-      const byte = buffer[off];
-      off++;
-      value |= (byte & VARINT_DATA_BITS_MASK) << shift;
-
-      if ((byte & VARINT_CONTINUATION_BIT) === 0) {
-        break;
-      }
-
-      shift += VARINT_BITS_PER_BYTE;
-    }
-    return {
-      value: value >>> 0,
-      offset: off
-    };
-  }
-
-  function parseStreamerContext(ctxData: Uint8Array) {
-    let ctxOffset = 0;
-    while (ctxOffset < ctxData.byteLength) {
-      const ctxTag = readVarint(ctxOffset);
-      ctxOffset = ctxTag.offset;
-      const ctxField = ctxTag.value >> PROTO_FIELD_NUMBER_SHIFT;
-      const ctxWire = ctxTag.value & PROTO_WIRE_TYPE_MASK;
-      if (ctxWire === WIRE_TYPE_VARINT) {
-        ctxOffset = readVarint(ctxOffset).offset;
-        continue;
-      }
-
-      if (ctxWire !== WIRE_TYPE_LENGTH_DELIMITED) {
-        break;
-      }
-
-      const ctxFieldLength = readVarint(ctxOffset);
-      ctxOffset = ctxFieldLength.offset;
-
-      if (ctxField === FIELD_PO_TOKEN && ctxFieldLength.value > 0) {
-        const poTokenBytes = ctxData.subarray(ctxOffset, ctxOffset + ctxFieldLength.value);
-        return btoa(String.fromCharCode(...poTokenBytes));
-      }
-
-      ctxOffset += ctxFieldLength.value;
-    }
-    return null;
-  }
-
-  while (offset < buffer.byteLength) {
-    const tag = readVarint(offset);
-    offset = tag.offset;
-    const fieldNumber = tag.value >> PROTO_FIELD_NUMBER_SHIFT;
-    const wireType = tag.value & PROTO_WIRE_TYPE_MASK;
-    if (wireType === WIRE_TYPE_VARINT) {
-      offset = readVarint(offset).offset;
-      continue;
-    }
-
-    if (wireType === WIRE_TYPE_64_BIT) {
-      offset += WIRE_64_BIT_BYTE_SIZE;
-      continue;
-    }
-
-    if (wireType === WIRE_TYPE_32_BIT) {
-      offset += WIRE_32_BIT_BYTE_SIZE;
-      continue;
-    }
-
-    if (wireType !== WIRE_TYPE_LENGTH_DELIMITED) {
-      break;
-    }
-
-    const fieldLength = readVarint(offset);
-    offset = fieldLength.offset;
-
-    if (fieldNumber === FIELD_STREAMER_CONTEXT) {
-      const poToken = parseStreamerContext(buffer.subarray(offset, offset + fieldLength.value));
-      if (poToken) {
-        return poToken;
-      }
-    }
-
-    offset += fieldLength.value;
-  }
-
-  return null;
 }
 
 export function clearCapturedSabrData(tabId: number) {

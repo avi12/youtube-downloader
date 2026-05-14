@@ -1,3 +1,5 @@
+import { ensureBotGuardVm, getBotGuardVm, initBotGuardVm } from "./botguard-vm";
+import type { SignalFn } from "./botguard-vm";
 import {
   InnertubeClientName,
   InnertubeEngagementType,
@@ -18,12 +20,11 @@ interface ChallengeResponse {
   };
 }
 
+const WAA_API_KEY = "AIzaSyDyT5W0Jh49F30Pqqtyfdf7pDLFKLJoAnw";
+
 export async function generatePoToken(videoId: string) {
   const clientVersion = getYtcfg(YtcfgKey.ClientVersion) ?? "2.20260401.01.00";
   const requestKey = getYtcfg(YtcfgKey.BotguardExperimentId) ?? "O43z0dpjhgX20SCx4KAo";
-  // INNERTUBE_API_KEY from ytcfg doesn't have Web Anti-Abuse API enabled;
-  // this hardcoded YouTube web key is what YouTube's own BotGuard uses.
-  const waaApiKey = "AIzaSyDyT5W0Jh49F30Pqqtyfdf7pDLFKLJoAnw";
 
   const challengeResponse = await fetch("https://www.youtube.com/youtubei/v1/att/get?prettyPrint=false", {
     method: "POST",
@@ -47,83 +48,30 @@ export async function generatePoToken(videoId: string) {
     throw new Error("No BotGuard challenge data received");
   }
 
-  // On non-watch pages (subscriptions, homepage) BotGuard isn't pre-loaded, so load the interpreter ourselves.
-  function getBotGuardVm(name: string) {
-    const globals: Record<string, unknown> = globalThis;
-    const { [name]: entry } = globals;
-    return typeof entry === "object" && entry !== null && "a" in entry ? entry : null;
-  }
-
-  if (!getBotGuardVm(globalName)) {
-    const interpreterUrl =
-      typeof interpreterUrlRaw === "string"
-        ? interpreterUrlRaw
-        : interpreterUrlRaw?.privateDoNotAccessOrElseTrustedResourceUrlWrappedValue;
-    if (interpreterUrl) {
-      await new Promise<void>((resolve, reject) => {
-        const elScript = document.createElement("script");
-        elScript.src = new URL(interpreterUrl, location.href).href;
-        elScript.onload = () => resolve();
-        elScript.onerror = () => reject(new Error("Failed to load BotGuard interpreter"));
-        document.head.append(elScript);
-      });
-    }
-  }
-
-  const VM_POLL_INTERVAL_MS = 500;
-  const VM_POLL_MAX_ATTEMPTS = 60;
-  for (let attempt = 0; attempt < VM_POLL_MAX_ATTEMPTS; attempt++) {
-    if (getBotGuardVm(globalName)) {
-      break;
-    }
-
-    await new Promise(resolve => setTimeout(resolve, VM_POLL_INTERVAL_MS));
-  }
+  await ensureBotGuardVm(globalName, interpreterUrlRaw);
 
   const botGuardVm = getBotGuardVm(globalName);
-  if (!botGuardVm || typeof botGuardVm.a !== "function") {
+  if (!botGuardVm) {
     throw new Error(`BotGuard VM not found at window.${globalName}`);
   }
 
-  type SnapshotFn = (inputs: unknown[]) => string | null;
-  type BotGuardResult = [SnapshotFn?];
-  type SignalFn = (input: Uint8Array) => Promise<(input: Uint8Array) => Promise<Uint8Array>>;
-
   const webPoSignalOutput: SignalFn[] = [];
+  const snapshotResponse = initBotGuardVm(botGuardVm, program, webPoSignalOutput);
 
-  type BotGuardInitResult = BotGuardResult | null | undefined;
-  const initResult: BotGuardInitResult = botGuardVm.a(
-    program, () => {}, true, undefined, () => {}, [[], []]
-  );
-  const snapshotFn = initResult?.[0];
-  if (typeof snapshotFn !== "function") {
-    throw new Error("BotGuard snapshot function not available");
-  }
-
-  const snapshotResponse = snapshotFn.call(null, [undefined, undefined, webPoSignalOutput, undefined]);
-  if (!snapshotResponse) {
-    throw new Error("Empty snapshot response");
-  }
-
-  // Direct jnn-pa.googleapis.com returns 403 from content script context; the youtube.com proxy endpoint succeeds.
-  const integrityResponse = await fetch(
-    "https://www.youtube.com/api/jnn/v1/GenerateIT",
-    {
-      method: "POST",
-      headers: {
-        "content-type": "application/json+protobuf",
-        "x-goog-api-key": waaApiKey
-      },
-      body: JSON.stringify([requestKey, snapshotResponse] satisfies InnertubeGenerateItRequest)
-    }
-  );
+  const integrityResponse = await fetch("https://www.youtube.com/api/jnn/v1/GenerateIT", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json+protobuf",
+      "x-goog-api-key": WAA_API_KEY
+    },
+    body: JSON.stringify([requestKey, snapshotResponse] satisfies InnertubeGenerateItRequest)
+  });
 
   const integrityData: InnertubeGenerateItResponse = await integrityResponse.json();
   if (!integrityData[0]) {
     throw new Error("No integrity token received");
   }
 
-  // TextEncoder would give UTF-8 bytes of the base64 string, not the actual token bytes.
   const integrityTokenBytes = base64ToUint8Array(integrityData[0]);
 
   const [signalFunction] = webPoSignalOutput;
