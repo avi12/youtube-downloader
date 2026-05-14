@@ -39,6 +39,7 @@ export interface TpYtPaperInputElement extends HTMLElement {
 /** @see https://github.com/PolymerElements/iron-dropdown */
 export interface TpYtIronDropdownElement extends HTMLElement {
   positionTarget: Element | null;
+  fitInto: Element | Window;
   horizontalAlign: "left" | "right" | "center";
   verticalAlign: "top" | "bottom";
   noOverlap: boolean;

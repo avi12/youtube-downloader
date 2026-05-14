@@ -1,37 +1,28 @@
 import { createMenuKeydownHandler, createMenuSelectedHandler } from "./PolymerSelect.menu-events";
-import { attachOpenMenuListeners } from "./PolymerSelect.open-effect";
 import { attachSelectTrigger } from "./PolymerSelect.trigger-events";
+import type { TpYtIronDropdownElement } from "@/types";
 
 export interface PolymerSelectParams {
   readonly value: string;
   readonly onchange: (value: string) => void;
 }
 
-const MENU_HEIGHT_GAP = 4;
-const MENU_HEIGHT_CHROME = 10;
-const MENU_HEIGHT_MARGIN = 8;
+function isTpYtIronDropdown(elTarget: Element): elTarget is TpYtIronDropdownElement {
+  return elTarget instanceof HTMLElement && "open" in elTarget && "positionTarget" in elTarget;
+}
 
 export function createPolymerSelectState(params: PolymerSelectParams) {
   let isOpen = $state(false);
   let elTrigger = $state<HTMLElement | null>(null);
+  let elDropdown = $state<TpYtIronDropdownElement | null>(null);
   let elMenu = $state<HTMLElement | null>(null);
 
   function focusTrigger() {
     elTrigger?.focus();
   }
 
-  function setIsOpen(isOpenValue: boolean) {
-    isOpen = isOpenValue;
-  }
-
-  function syncMenuMaxHeight() {
-    if (!elTrigger || !elMenu) {
-      return;
-    }
-
-    const available = innerHeight - elTrigger.getBoundingClientRect().bottom
-      - MENU_HEIGHT_GAP - MENU_HEIGHT_CHROME - MENU_HEIGHT_MARGIN;
-    elMenu.style.maxHeight = `${Math.max(available, 120)}px`;
+  function setIsOpen(value: boolean) {
+    isOpen = value;
   }
 
   function attachTrigger(elTarget: Element) {
@@ -45,6 +36,30 @@ export function createPolymerSelectState(params: PolymerSelectParams) {
     }, () => {
       isOpen = true;
     });
+  }
+
+  function attachDropdown(elTarget: Element) {
+    if (!isTpYtIronDropdown(elTarget)) {
+      return;
+    }
+
+    elDropdown = elTarget;
+    elTarget.positionTarget = elTrigger;
+    elTarget.fitInto = window;
+    elTarget.dynamicAlign = true;
+
+    requestAnimationFrame(() => document.body.appendChild(elTarget));
+
+    function handleOverlayClosed() {
+      isOpen = false;
+      focusTrigger();
+    }
+
+    elTarget.addEventListener("iron-overlay-closed", handleOverlayClosed);
+    return () => {
+      elTarget.removeEventListener("iron-overlay-closed", handleOverlayClosed);
+      elTarget.remove();
+    };
   }
 
   function attachMenu(elTarget: Element) {
@@ -70,17 +85,16 @@ export function createPolymerSelectState(params: PolymerSelectParams) {
   }
 
   $effect(() => {
-    if (!isOpen || !elMenu) {
+    if (!elDropdown) {
       return;
     }
 
-    return attachOpenMenuListeners({
-      elMenu,
-      getElTrigger: () => elTrigger,
-      getElMenu: () => elMenu,
-      setIsOpen,
-      syncMenuMaxHeight
-    });
+    if (isOpen) {
+      elDropdown.open();
+      requestAnimationFrame(() => elMenu?.focus());
+    } else {
+      elDropdown.close();
+    }
   });
 
   return {
@@ -88,6 +102,7 @@ export function createPolymerSelectState(params: PolymerSelectParams) {
       return isOpen;
     },
     attachTrigger,
+    attachDropdown,
     attachMenu
   };
 }

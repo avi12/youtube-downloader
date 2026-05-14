@@ -56,8 +56,12 @@
     </svg>
   </button>
 
-  {#if state.isOpen}
+  <tp-yt-iron-dropdown
+    {@attach state.attachDropdown}
+    no-cancel-on-esc-key
+  >
     <tp-yt-paper-listbox
+      slot="dropdown-content"
       class="ytdl-select-menu"
       {@attach state.attachMenu}
       aria-label={label}
@@ -74,7 +78,7 @@
         >{option.label}</tp-yt-paper-item>
       {/each}
     </tp-yt-paper-listbox>
-  {/if}
+  </tp-yt-iron-dropdown>
 </div>
 
 <style>
@@ -143,11 +147,7 @@
     }
   }
 
-  .ytdl-select-menu {
-    position: absolute;
-    inset-inline: 0;
-    inset-block-start: calc(100% + 4px);
-    z-index: 10;
+  :global(.ytdl-select-menu) {
     overflow-y: auto;
     padding: 4px;
     border: 1px solid var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 10%));
@@ -155,25 +155,25 @@
     background: var(--yt-sys-color-baseline--raised-background, var(--yt-sys-color-baseline--base-background, #ffffff));
     scrollbar-width: thin;
     box-shadow: 0 8px 32px rgb(0 0 0 / 32%), 0 2px 8px rgb(0 0 0 / 16%);
+  }
 
-    & :global(tp-yt-paper-item) {
-      display: flex;
-      align-items: center;
-      min-height: 0;
-      padding: 8px 10px;
-      border-radius: 6px;
-      color: var(--yt-sys-color-baseline--text-primary, #0f0f0f);
-      font-size: 1.4rem;
-      white-space: nowrap;
-      cursor: pointer;
-    }
+  :global(.ytdl-select-menu tp-yt-paper-item) {
+    display: flex;
+    align-items: center;
+    min-height: 0;
+    padding: 8px 10px;
+    border-radius: 6px;
+    color: var(--yt-sys-color-baseline--text-primary, #0f0f0f);
+    font-size: 1.4rem;
+    white-space: nowrap;
+    cursor: pointer;
+  }
 
-    & :global(tp-yt-paper-item:hover) {
-      background-color: var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 6%));
-    }
+  :global(.ytdl-select-menu tp-yt-paper-item:hover) {
+    background-color: var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 6%));
+  }
 
-    & :global(tp-yt-paper-item[aria-selected="true"]) {
-      font-weight: 500;
-    }
+  :global(.ytdl-select-menu tp-yt-paper-item[aria-selected="true"]) {
+    font-weight: 500;
   }
 </style>

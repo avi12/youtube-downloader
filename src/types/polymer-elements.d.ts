@@ -53,7 +53,9 @@ declare module "svelte/elements" {
       "keyboard-focused"?: string;
     };
     "tp-yt-paper-menu-button": HTMLAttributes<HTMLElement>;
-    "tp-yt-iron-dropdown": HTMLAttributes<HTMLElement>;
+    "tp-yt-iron-dropdown": HTMLAttributes<HTMLElement> & {
+      "no-cancel-on-esc-key"?: boolean;
+    };
     "ytd-menu-popup-renderer": HTMLAttributes<HTMLElement> & {
       slot?: string;
       id?: string;
