@@ -31,3 +31,43 @@
     Transcoding takes {estimatedTimeLabel}. The download will restart with the new format.
   </p>
 {/if}
+
+<style>
+  .target-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .target-option {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+    padding: 6px 12px;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--fg);
+    font-size: 0.8125rem;
+    cursor: pointer;
+    transition: background-color 150ms;
+
+    &:hover {
+      background: var(--surface);
+    }
+
+    &:has(input:checked) {
+      border-color: var(--accent);
+      background: var(--accent-container);
+    }
+
+    & [type="radio"] {
+      margin: 0;
+    }
+  }
+
+  .dialog-note {
+    margin: 0;
+    color: var(--fg-subtle);
+    font-size: 0.75rem;
+  }
+</style>

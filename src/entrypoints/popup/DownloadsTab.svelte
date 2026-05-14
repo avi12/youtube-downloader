@@ -83,3 +83,36 @@
     />
   </div>
 {/if}
+
+<style>
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: center;
+    padding: 32px 0;
+    text-align: center;
+  }
+
+  .empty-state-icon {
+    display: contents;
+    color: var(--border);
+  }
+
+  .empty-state-text {
+    color: var(--fg-muted);
+    font-weight: 500;
+    font-size: 0.875rem;
+  }
+
+  .empty-state-hint {
+    color: var(--fg-subtle);
+    font-size: 0.75rem;
+  }
+
+  .download-sections {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+</style>

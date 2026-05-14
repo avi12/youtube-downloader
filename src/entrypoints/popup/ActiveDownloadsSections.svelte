@@ -98,3 +98,21 @@
     </li>
   {/snippet}
 </DownloadSection>
+
+<style>
+  .download-item {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 10px 12px;
+    border: none;
+    border-radius: 16px;
+    background: var(--surface);
+    transition: background-color 200ms;
+  }
+
+  .download-item--active {
+    padding-left: 9px;
+    border-left: 3px solid var(--accent);
+  }
+</style>

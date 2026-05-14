@@ -97,3 +97,61 @@
     </div>
   {/if}
 </div>
+
+<style>
+  .recent-menu-wrap {
+    flex-shrink: 0;
+  }
+
+  .recent-menu-trigger {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--fg-muted);
+    cursor: pointer;
+    transition: background-color 150ms;
+
+    &:hover {
+      background: var(--surface-high);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+  }
+
+  .recent-menu {
+    position: fixed;
+    top: anchor(bottom);
+    right: anchor(right);
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    min-width: 160px;
+    padding: 4px;
+    border-radius: 12px;
+    background: var(--surface-high);
+    box-shadow: 0 4px 16px rgb(0 0 0 / 15%);
+    animation: menu-in 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    position-try-fallbacks: flip-block;
+  }
+
+  @keyframes menu-in {
+    from {
+      opacity: 0%;
+      transform: scale(0.92) translateY(-4px);
+    }
+
+    to {
+      opacity: 100%;
+      transform: scale(1) translateY(0);
+    }
+  }
+</style>

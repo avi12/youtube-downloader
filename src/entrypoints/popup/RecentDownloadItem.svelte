@@ -93,3 +93,118 @@
     {onShowInFolder}
   />
 </article>
+
+<style>
+  .recent-item {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: var(--surface);
+    transition: background-color 200ms;
+
+    &:hover,
+    &.menu-open {
+      background: var(--surface-high);
+    }
+  }
+
+  .recent-thumb {
+    flex-shrink: 0;
+    object-fit: cover;
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    background: var(--surface-high);
+  }
+
+  .recent-thumb-placeholder {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: linear-gradient(135deg, var(--surface-high), var(--border));
+  }
+
+  .recent-thumb-container {
+    color: var(--fg-muted);
+    font-weight: 700;
+    font-size: 0.625rem;
+    letter-spacing: 0.04em;
+  }
+
+  .recent-body {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .recent-filename {
+    position: relative;
+    display: block;
+    width: 100%;
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--fg);
+    font-family: inherit;
+    font-weight: 500;
+    font-size: 0.8125rem;
+    text-align: left;
+    cursor: pointer;
+
+    &:focus-visible {
+      border-radius: 4px;
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    &::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: calc(100% + 4px);
+      left: 0;
+      z-index: 10;
+      max-width: 280px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      background: var(--fg);
+      color: var(--bg);
+      font-weight: 400;
+      font-size: 0.6875rem;
+      word-break: break-all;
+      opacity: 0%;
+      pointer-events: none;
+      transition: opacity 150ms;
+    }
+
+    &:hover::after,
+    &:focus-visible::after {
+      opacity: 100%;
+    }
+  }
+
+  .recent-filename-text {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    .recent-filename:hover &,
+    .recent-filename:focus-visible & {
+      text-decoration: underline;
+    }
+  }
+
+  .recent-meta {
+    overflow: hidden;
+    margin-top: 2px;
+    color: var(--fg-muted);
+    font-size: 0.6875rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    &.recent-channel {
+      margin-top: 0;
+    }
+  }
+</style>

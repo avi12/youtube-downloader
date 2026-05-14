@@ -49,3 +49,56 @@
     </ul>
   </section>
 {/if}
+
+<style>
+  .download-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+
+  .download-section-title {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    color: var(--fg);
+    font-weight: 500;
+    font-size: 0.8125rem;
+  }
+
+  .download-section-loading-badge {
+    color: var(--fg-subtle);
+    font-weight: 400;
+    font-size: 0.6875rem;
+  }
+
+  .download-section-cancel-all {
+    padding: 4px 12px;
+    border: none;
+    border-radius: 16px;
+    background: transparent;
+    color: var(--danger);
+    font-family: inherit;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: background-color 200ms;
+
+    &:hover {
+      background: var(--danger-hover);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--danger);
+      outline-offset: 2px;
+    }
+  }
+
+  .download-section-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 0;
+    list-style: none;
+  }
+</style>
