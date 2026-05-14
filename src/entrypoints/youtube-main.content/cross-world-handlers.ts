@@ -117,7 +117,7 @@ export function registerCrossWorldHandlers() {
 
     const elOptions = elRenderer.querySelector("#options") ?? elRenderer;
     while (elPlaceholder.firstChild) {
-      elOptions.appendChild(elPlaceholder.firstChild);
+      elOptions.append(elPlaceholder.firstChild);
     }
 
     elPlaceholder.remove();

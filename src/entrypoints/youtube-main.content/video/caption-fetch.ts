@@ -54,7 +54,7 @@ async function fetchWebVttViaTrackElement(url: string) {
 
     elTrack.addEventListener("error", () => finish(null), { once: true });
 
-    elVideo.appendChild(elTrack);
+    elVideo.append(elTrack);
     elTrack.track.mode = "hidden";
   });
 }
