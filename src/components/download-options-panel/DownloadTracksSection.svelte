@@ -44,22 +44,24 @@
   }: Props = $props();
 </script>
 
-{#if uniqueAudioLanguages.length > 0 || captionTracks.length > 0}
+{#if uniqueAudioLanguages.length > 1 || captionTracks.length > 0}
   <div class="ytdl-section">
     <span class="ytdl-section-label">Tracks</span>
-    <TrackChoice
-      customOptions={uniqueAudioLanguages}
-      customValue={panelAudioCustomLanguage}
-      disabled={isDownloading || uniqueAudioLanguages.length === 0}
-      kind={TrackKind.Audio}
-      mode={panelAudioMode}
-      oncustomchange={onaudiocustomchange}
-      onmodechange={onaudiomodechange}
-      originalLabel={audioOriginalLabel}
-      playerLabel={audioPlayerLabel}
-    />
-    {#if downloadExtras && uniqueAudioLanguages.length > 1}
-      <span class="ytdl-extras-note">Selected track is the default — all others are bundled as extras</span>
+    {#if uniqueAudioLanguages.length > 1}
+      <TrackChoice
+        customOptions={uniqueAudioLanguages}
+        customValue={panelAudioCustomLanguage}
+        disabled={isDownloading}
+        kind={TrackKind.Audio}
+        mode={panelAudioMode}
+        oncustomchange={onaudiocustomchange}
+        onmodechange={onaudiomodechange}
+        originalLabel={audioOriginalLabel}
+        playerLabel={audioPlayerLabel}
+      />
+      {#if downloadExtras}
+        <span class="ytdl-extras-note">Selected track is the default — all others are bundled as extras</span>
+      {/if}
     {/if}
     <TrackChoice
       customOptions={captionCustomOptions}

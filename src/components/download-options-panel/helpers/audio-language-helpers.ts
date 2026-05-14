@@ -9,7 +9,7 @@ export function buildUniqueAudioLanguages(audioFormats: AdaptiveFormatItem[]) {
   const seen = new Set<string>();
   const result: LabeledOption[] = [];
   for (const format of audioFormats) {
-    if (!format.audioTrack) {
+    if (!format.audioTrack || format.audioTrack.id.endsWith(".10")) {
       continue;
     }
 
