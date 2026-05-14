@@ -26,7 +26,7 @@
       value: VideoQualityMode.Custom,
       label: "Custom quality"
     }
-  ];
+  ] as const;
 </script>
 
 <SettingsGroup title="Video quality">
@@ -54,7 +54,6 @@
               void setOption("videoQuality", Number(e.target.value));
             }
           }}
-          value={options.videoQuality}
         >
           {#each VIDEO_QUALITIES as quality (quality)}
             <option selected={quality === options.videoQuality} value={quality}>{quality}p</option>
