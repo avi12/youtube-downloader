@@ -106,6 +106,10 @@
     :global(.ytdl-select-label) {
       display: none;
     }
+
+    :global(.ytdl-select-trigger) {
+      height: 44px;
+    }
   }
 
   .track-choice-head {

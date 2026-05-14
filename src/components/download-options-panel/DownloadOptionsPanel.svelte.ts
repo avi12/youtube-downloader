@@ -47,7 +47,7 @@ const YT_PLAYER_KEYS = new Set([" ", "ArrowUp", "ArrowDown", "ArrowLeft", "Arrow
 
 export function handlePanelKeydown(onClose: () => void) {
   return (e: KeyboardEvent) => {
-    if (e.key === "Escape") {
+    if (e.key === "Escape" && !document.querySelector(":popover-open")) {
       onClose();
     }
 

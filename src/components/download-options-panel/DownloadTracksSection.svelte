@@ -46,7 +46,7 @@
 </script>
 
 {#if uniqueAudioLanguages.length > 1 || captionTracks.length > 0}
-  <div class="ytdl-section" transition:slide>
+  <div class="ytdl-section ytdl-tracks-section" transition:slide>
     <span class="ytdl-section-label">Tracks</span>
     {#if uniqueAudioLanguages.length > 1}
       <div class="ytdl-audio-track-section" transition:slide>
@@ -81,11 +81,18 @@
 {/if}
 
 <style>
+  .ytdl-tracks-section {
+    gap: 0;
+  }
+
+  .ytdl-tracks-section > :global(*:not(:first-child)) {
+    margin-top: 8px;
+  }
+
   .ytdl-audio-track-section {
     display: flex;
     flex-direction: column;
     gap: 8px;
-    overflow: hidden;
   }
 
   .ytdl-extras-note {

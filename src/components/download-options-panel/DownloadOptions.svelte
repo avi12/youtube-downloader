@@ -95,7 +95,10 @@
   .ytdl-options-container {
     display: flex;
     flex-direction: column;
-    gap: 16px;
     padding-bottom: 4px;
+  }
+
+  .ytdl-options-container > :global(*:not(:first-child)) {
+    margin-top: 16px;
   }
 </style>
