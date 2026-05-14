@@ -18,6 +18,10 @@
     primaryButtonId, viewButtonId, getIsDownloadable, getIsFilenameValid
   }: Props = $props();
 
+  const isDone = $derived(primaryState === PrimaryButtonState.Done);
+  const isFailed = $derived(primaryState === PrimaryButtonState.Failed);
+  const isActive = $derived(primaryState === PrimaryButtonState.Downloading || isDone || isFailed);
+
   const footer = createFooterState({
     get primaryState() {
       return primaryState;
@@ -46,23 +50,18 @@
     tabindex="0"
   ></yt-button-view-model>
 
-  {#if primaryState === PrimaryButtonState.Downloading}
-    <div class="ytdl-progress-block">
-      <tp-yt-paper-progress
-        class="ytdl-progress-track"
-        indeterminate={displayProgress === 0 || undefined}
-        value={Math.round(displayProgress)}
-      ></tp-yt-paper-progress>
-      <span class="ytdl-progress-label" aria-live="polite">
-        {footer.downloadingLabel}
-      </span>
-    </div>
-  {:else if primaryState === PrimaryButtonState.Done}
-    <div class="ytdl-progress-block done">
-      <tp-yt-paper-progress
-        class="ytdl-progress-track"
-        value={100}
-      ></tp-yt-paper-progress>
+  <div
+    style:visibility={isActive ? null : "hidden"}
+    class="ytdl-progress-block"
+    class:done={isDone}
+    class:failed={isFailed}
+  >
+    <tp-yt-paper-progress
+      class="ytdl-progress-track"
+      indeterminate={!isDone && !isFailed && displayProgress === 0 || undefined}
+      value={isDone ? 100 : Math.round(displayProgress) || (isFailed ? 100 : 0)}
+    ></tp-yt-paper-progress>
+    {#if isDone}
       <div class="ytdl-done-row">
         <span class="ytdl-progress-label" role="status">Downloaded</span>
         <yt-button-view-model
@@ -73,16 +72,12 @@
           tabindex="0"
         ></yt-button-view-model>
       </div>
-    </div>
-  {:else if primaryState === PrimaryButtonState.Failed}
-    <div class="ytdl-progress-block failed">
-      <tp-yt-paper-progress
-        class="ytdl-progress-track"
-        value={Math.round(displayProgress) || 100}
-      ></tp-yt-paper-progress>
+    {:else if isFailed}
       <span class="ytdl-progress-label" role="alert">Download failed</span>
-    </div>
-  {/if}
+    {:else}
+      <span class="ytdl-progress-label" aria-live="polite">{footer.downloadingLabel}</span>
+    {/if}
+  </div>
 </div>
 
 <style>
