@@ -12,7 +12,6 @@ export const CrossWorldMessage = {
   ProxyFetch: "proxyFetch",
   IframePlayerReady: "iframePlayerReady",
   SetButtonData: "setButtonData",
-  SetFormattedStringText: "setFormattedStringText",
   CreateDropdown: "createDropdown",
   DropdownReady: "dropdownReady",
   CloseDropdown: "closeDropdown",

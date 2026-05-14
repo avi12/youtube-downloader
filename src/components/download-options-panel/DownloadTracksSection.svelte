@@ -47,8 +47,7 @@
 
 {#if uniqueAudioLanguages.length > 0 || captionTracks.length > 0}
   <div class="ytdl-section">
-    <yt-formatted-string class="ytdl-section-label" {@attach attachFormattedString} data-ytdl-text="Tracks"
-    ></yt-formatted-string>
+    <yt-formatted-string class="ytdl-section-label" {@attach attachFormattedString("Tracks")}></yt-formatted-string>
     <TrackChoice
       customOptions={uniqueAudioLanguages}
       customValue={panelAudioCustomLanguage}
@@ -63,8 +62,7 @@
     {#if downloadExtras && uniqueAudioLanguages.length > 1}
       <yt-formatted-string
         class="ytdl-extras-note"
-        {@attach attachFormattedString}
-        data-ytdl-text="Selected track is the default — all others are bundled as extras"
+        {@attach attachFormattedString("Selected track is the default — all others are bundled as extras")}
       ></yt-formatted-string>
     {/if}
     <TrackChoice

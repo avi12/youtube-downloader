@@ -68,10 +68,6 @@ export interface PageMessengerSchema {
       ariaChecked: string;
     };
   }): void;
-  [CrossWorldMessage.SetFormattedStringText](data: {
-    selector: string;
-    text: string;
-  }): void;
   [CrossWorldMessage.CreateDropdown](data: {
     contentId: string;
     positionTargetSelector: string;

@@ -11,7 +11,7 @@ import type {
 } from "@/types";
 import { isYtIconElement } from "@/types";
 
-export { DATA_FORMATTED_STRING_ID_ATTR, attachFormattedString, isYtFormattedString, sendFormattedStringText, setFormattedStringText } from "./polymer-fmt-string";
+export { attachFormattedString } from "./polymer-fmt-string";
 export { DATA_SETTINGS_OPTIONS_ID_ATTR, attachSettingsOptions, isYtdSettingsOptionsRenderer } from "./polymer-settings-options";
 
 export function attachIcon(icon: YtIconName) {

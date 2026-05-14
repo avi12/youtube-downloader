@@ -94,7 +94,6 @@ declare module "svelte/elements" {
       "split-lines"?: boolean;
       "force-default-style"?: boolean;
       dir?: string;
-      "data-ytdl-text"?: string;
     };
     "ytd-settings-options-renderer": HTMLAttributes<HTMLElement>;
   }

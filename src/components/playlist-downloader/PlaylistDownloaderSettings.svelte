@@ -58,7 +58,7 @@
 
 <div class="ytdl-section">
   <div id="ytdl-type-label" class="ytdl-section-title">
-    <yt-formatted-string {@attach attachFormattedString} data-ytdl-text="Type"></yt-formatted-string>
+    <yt-formatted-string {@attach attachFormattedString("Type")}></yt-formatted-string>
     {#if playlist.isDownloadTypeOverridden}
       <PlaylistOverrideBadge />
     {/if}

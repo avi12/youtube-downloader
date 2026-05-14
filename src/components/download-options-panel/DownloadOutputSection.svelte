@@ -54,8 +54,7 @@
 </script>
 
 <div class="ytdl-section">
-  <yt-formatted-string class="ytdl-section-label" {@attach attachFormattedString} data-ytdl-text="Output"
-  ></yt-formatted-string>
+  <yt-formatted-string class="ytdl-section-label" {@attach attachFormattedString("Output")}></yt-formatted-string>
   <tp-yt-paper-input
     id="filename-input"
     {@attach applyPolymerTheme}

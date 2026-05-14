@@ -42,8 +42,7 @@
   <div class="track-choice-head">
     <yt-formatted-string
       class="track-label"
-      {@attach attachFormattedString}
-      data-ytdl-text={state.kindLabel}
+      {@attach attachFormattedString(state.kindLabel)}
     ></yt-formatted-string>
     <div
       class="track-seg"
@@ -68,12 +67,10 @@
         <yt-icon class="sync-icon" {@attach attachIcon(YtIconName.Autorenew)}></yt-icon>
       </div>
       <div class="track-follow-body">
-        <yt-formatted-string class="track-follow-value" {@attach attachFormattedString} data-ytdl-text={playerLabel ?? "—"}
-        ></yt-formatted-string>
+        <yt-formatted-string class="track-follow-value" {@attach attachFormattedString(playerLabel ?? "—")}></yt-formatted-string>
         <yt-formatted-string
           class="track-follow-sub"
-          {@attach attachFormattedString}
-          data-ytdl-text="Synced with player · changes as you switch tracks"
+          {@attach attachFormattedString("Synced with player · changes as you switch tracks")}
         ></yt-formatted-string>
       </div>
     </div>
@@ -83,13 +80,11 @@
       <div class="track-follow-body">
         <yt-formatted-string
           class="track-follow-value"
-          {@attach attachFormattedString}
-          data-ytdl-text={originalLabel ?? "Original"}
+          {@attach attachFormattedString(originalLabel ?? "Original")}
         ></yt-formatted-string>
         <yt-formatted-string
           class="track-follow-sub"
-          {@attach attachFormattedString}
-          data-ytdl-text={state.originalSubLabel}
+          {@attach attachFormattedString(state.originalSubLabel)}
         ></yt-formatted-string>
       </div>
     </div>

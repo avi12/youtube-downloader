@@ -20,13 +20,11 @@
   >
     <yt-formatted-string
       class="ytdl-scroll-sync-label"
-      {@attach attachFormattedString}
-      data-ytdl-text="Auto-scroll the playlist as videos download"
+      {@attach attachFormattedString("Auto-scroll the playlist as videos download")}
     ></yt-formatted-string>
     <yt-formatted-string
       class="ytdl-scroll-sync-sub"
-      {@attach attachFormattedString}
-      data-ytdl-text="Applies to both selected and whole-playlist downloads"
+      {@attach attachFormattedString("Applies to both selected and whole-playlist downloads")}
     ></yt-formatted-string>
   </tp-yt-paper-checkbox>
 </div>

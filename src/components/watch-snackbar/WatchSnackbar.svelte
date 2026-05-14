@@ -50,15 +50,13 @@
           <div class="snackbarViewModelTitle snackbarViewModelTitleWithSubtext">
             <yt-formatted-string
               class="ytAttributedStringHost ytAttributedStringWhiteSpacePreWrap"
-              {@attach attachFormattedString}
-              data-ytdl-text="Download complete"
+              {@attach attachFormattedString("Download complete")}
             ></yt-formatted-string>
           </div>
           <div class="snackbarViewModelSubtext">
             <yt-formatted-string
               class="ytAttributedStringHost"
-              {@attach attachFormattedString}
-              data-ytdl-text={filename}
+              {@attach attachFormattedString(filename)}
             ></yt-formatted-string>
           </div>
         </div>

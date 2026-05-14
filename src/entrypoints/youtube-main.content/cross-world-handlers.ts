@@ -6,9 +6,7 @@ import { CrossWorldMessage, crossWorldMessenger, dispatchButtonClick } from "@/l
 import {
   DATA_BUTTON_ID_ATTR,
   DATA_SETTINGS_OPTIONS_ID_ATTR,
-  isYtFormattedString,
-  isYtdSettingsOptionsRenderer,
-  setFormattedStringText
+  isYtdSettingsOptionsRenderer
 } from "@/lib/ui/polymer-utils";
 import {
   ButtonSize,
@@ -77,15 +75,6 @@ export function registerCrossWorldHandlers() {
   });
 
   registerButtonDataHandler();
-
-  crossWorldMessenger.onMessage(CrossWorldMessage.SetFormattedStringText, ({ data: { selector, text } }) => {
-    const elFormattedString = document.querySelector(selector);
-    if (!elFormattedString || !isYtFormattedString(elFormattedString)) {
-      return;
-    }
-
-    setFormattedStringText(elFormattedString, text);
-  });
 
   crossWorldMessenger.onMessage(CrossWorldMessage.SetSettingsOptionsData, ({ data: { selector, title } }) => {
     const elPlaceholder = document.querySelector(selector);

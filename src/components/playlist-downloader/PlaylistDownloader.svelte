@@ -18,7 +18,7 @@
 <div class="ytdl-playlist-container">
   <div class="ytdl-section">
     <div class="ytdl-section-title">
-      <yt-formatted-string {@attach attachFormattedString} data-ytdl-text="Download playlist"></yt-formatted-string>
+      <yt-formatted-string {@attach attachFormattedString("Download playlist")}></yt-formatted-string>
       {#if playlist.isDownloading}
         <yt-button-view-model {@attach actionButtons.attachStopAll}></yt-button-view-model>
       {/if}

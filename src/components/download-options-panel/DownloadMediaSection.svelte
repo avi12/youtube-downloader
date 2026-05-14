@@ -35,8 +35,7 @@
 <div class="ytdl-section">
   <yt-formatted-string
     class="ytdl-section-label"
-    {@attach attachFormattedString}
-    data-ytdl-text="Media"
+    {@attach attachFormattedString("Media")}
   ></yt-formatted-string>
   <div class="ytdl-media-grid">
     <PolymerSelect
