@@ -4,8 +4,8 @@ import {
   buildDownloadAllData,
   buildDownloadData,
   buildStopAllData
-} from "./playlist-action-button-data";
-import { attachButton, handleActionButtonClick } from "./playlist-action-button-handlers";
+} from "./helpers/playlist-action-button-data";
+import { attachButton, handleActionButtonClick } from "./helpers/playlist-action-button-handlers";
 import { DATA_BUTTON_ID_ATTR, sendButtonData } from "@/lib/ui/polymer-utils";
 
 export function createPlaylistActionButtons(state: {

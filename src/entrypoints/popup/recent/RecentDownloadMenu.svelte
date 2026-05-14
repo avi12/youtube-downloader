@@ -1,5 +1,5 @@
 <script lang="ts">
-  import moreActionsIcon from "./icons/more-actions.svg?raw";
+  import moreActionsIcon from "../icons/more-actions.svg?raw";
   import RecentMenuItems from "./RecentMenuItems.svelte";
 
   interface Props {

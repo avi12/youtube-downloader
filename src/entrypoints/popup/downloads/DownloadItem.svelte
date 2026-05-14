@@ -1,5 +1,5 @@
 <script lang="ts">
-  import closeIcon from "./icons/close.svg?raw";
+  import closeIcon from "../icons/close.svg?raw";
 
   interface Props {
     filename: string;

@@ -1,4 +1,4 @@
-import { getActivePlayerCaption } from "./panel-init-caption";
+import { getActivePlayerCaption } from "./helpers/panel-init-caption";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { findOriginalAudioFormat, normalizeLanguageCode } from "@/lib/youtube/video-helpers";
 import { PanelTrackMode, type CaptionTrack, type VideoData } from "@/types";

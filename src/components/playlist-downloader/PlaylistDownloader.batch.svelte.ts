@@ -4,7 +4,7 @@ import {
   finalizeBatchVideoProgress,
   initBatchVideoProgress,
   sendBatchDownloadMessage
-} from "./playlist-batch-ops";
+} from "./helpers/playlist-batch-ops";
 import { downloadProgressStore } from "@/lib/ui/synced-stores.svelte";
 import {
   PlaylistDownloadMode,

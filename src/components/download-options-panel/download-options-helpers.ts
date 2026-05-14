@@ -1,8 +1,8 @@
 import { splitFilenameAndExtension, supportedExtensions } from "@/lib/utils/containers";
 import { DownloadType } from "@/types";
 
-export { buildQualityOptions, handleQualityChange } from "./quality-change-handler";
-export { buildUniqueAudioLanguages, byLabel, resolveCaptionOriginalLabel } from "./audio-language-helpers";
+export { buildQualityOptions, handleQualityChange } from "./helpers/quality-change-handler";
+export { buildUniqueAudioLanguages, byLabel, resolveCaptionOriginalLabel } from "./helpers/audio-language-helpers";
 
 export const DOWNLOAD_TYPES: {
   value: DownloadType;

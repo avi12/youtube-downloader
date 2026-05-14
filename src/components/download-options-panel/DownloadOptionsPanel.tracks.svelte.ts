@@ -7,7 +7,7 @@ import {
   resolveInitialAudioMode,
   resolveInitialCaptionMode,
   resolveInitialCaptionTrack
-} from "./panel-init";
+} from "./helpers/panel-init";
 import { CONTENT_OPTIONS } from "@/lib/ui/synced-stores.svelte";
 import type { AdaptiveFormatItem, VideoData } from "@/types";
 import { untrack } from "svelte";

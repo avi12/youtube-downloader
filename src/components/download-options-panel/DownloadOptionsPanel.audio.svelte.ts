@@ -1,4 +1,4 @@
-import { findMatchVideoAudioFormat } from "./panel-audio-actions";
+import { findMatchVideoAudioFormat } from "./helpers/panel-audio-actions";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { findOriginalAudioFormat, normalizeLanguageCode } from "@/lib/youtube/video-helpers";
 import { PanelTrackMode, type AdaptiveFormatItem, type VideoData } from "@/types";

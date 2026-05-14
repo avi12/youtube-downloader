@@ -1,4 +1,4 @@
-import { batchCanceledIds, batchDownloadStatus, batchVideoIds } from "./PlaylistDownloader.batch.svelte";
+import { batchCanceledIds, batchDownloadStatus, batchVideoIds } from "../PlaylistDownloader.batch.svelte";
 import { cancelStreamTransfer } from "@/entrypoints/youtube.content/download/stream-transfer";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { checkedPlaylistVideos } from "@/lib/ui/playlist-selection.svelte";

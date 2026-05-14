@@ -1,8 +1,8 @@
 <script lang="ts">
   import { createAppState, PopupPanel } from "./App.state.svelte";
-  import ChangeFormatDialog from "./ChangeFormatDialog.svelte";
-  import DownloadsTab from "./DownloadsTab.svelte";
-  import SettingsTab from "./SettingsTab.svelte";
+  import DownloadsTab from "./downloads/DownloadsTab.svelte";
+  import ChangeFormatDialog from "./format-dialog/ChangeFormatDialog.svelte";
+  import SettingsTab from "./settings/SettingsTab.svelte";
   import TabNav from "./TabNav.svelte";
   import { ProgressType } from "@/types";
   import type { Options, VideoQueueItem } from "@/types";

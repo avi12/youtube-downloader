@@ -2,7 +2,7 @@ import {
   mountPanelInContent,
   registerDropdownCloseListeners,
   requestDropdownCreation
-} from "./playlist-dropdown-lifecycle";
+} from "../helpers/playlist-dropdown-lifecycle";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import type { VideoData } from "@/types";
 import { mount, unmount } from "svelte";

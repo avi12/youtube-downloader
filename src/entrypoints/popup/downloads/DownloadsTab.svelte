@@ -1,7 +1,7 @@
 <script lang="ts">
+  import downloadIcon from "../icons/download.svg?raw";
+  import RecentDownloadsSection from "../recent/RecentDownloadsSection.svelte";
   import ActiveDownloadsSections from "./ActiveDownloadsSections.svelte";
-  import downloadIcon from "./icons/download.svg?raw";
-  import RecentDownloadsSection from "./RecentDownloadsSection.svelte";
   import { MessageType, sendMessage } from "@/lib/messaging/messaging";
   import { deleteRecentDownload } from "@/lib/storage/recent-downloads-db";
   import { ProgressType } from "@/types";

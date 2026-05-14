@@ -83,9 +83,15 @@
     <div class="track-follow track-original">
       <div class="track-original-badge" aria-hidden="true">ORIG</div>
       <div class="track-follow-body">
-        <yt-formatted-string class="track-follow-value" {@attach attachFormattedString} data-ytdl-text={originalLabel ?? "Original"}
+        <yt-formatted-string
+          class="track-follow-value"
+          {@attach attachFormattedString}
+          data-ytdl-text={originalLabel ?? "Original"}
         ></yt-formatted-string>
-        <yt-formatted-string class="track-follow-sub" {@attach attachFormattedString} data-ytdl-text={state.originalSubLabel}
+        <yt-formatted-string
+          class="track-follow-sub"
+          {@attach attachFormattedString}
+          data-ytdl-text={state.originalSubLabel}
         ></yt-formatted-string>
       </div>
     </div>

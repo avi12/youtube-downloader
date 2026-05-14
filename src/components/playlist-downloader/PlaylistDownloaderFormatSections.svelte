@@ -1,7 +1,7 @@
 <script lang="ts">
   import PolymerSelect from "../polymer-select/PolymerSelect.svelte";
+  import { formatExtensionLabel } from "./helpers/PlaylistDownloaderFormatSections.helpers";
   import type { createPlaylistDownloaderState } from "./PlaylistDownloader.state.svelte";
-  import { formatExtensionLabel } from "./PlaylistDownloaderFormatSections.helpers";
   import PlaylistOverrideBadge from "./PlaylistOverrideBadge.svelte";
   import { supportedExtensions } from "@/lib/utils/containers";
   import { DownloadType, VideoQualityMode } from "@/types";

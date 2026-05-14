@@ -1,4 +1,4 @@
-import panelFocusStyles from "./panel-focus.css?inline";
+import panelFocusStyles from "./helpers/panel-focus.css?inline";
 import { applyInertTrap } from "@/lib/ui/inert-trap";
 
 export function createFocusManager() {

@@ -1,5 +1,5 @@
 import { extractVideoId, getLockupRoot, shadowFirst } from "./grid-video-id";
-import PlaylistVideoItem from "@/components/playlist-downloader/PlaylistVideoItem.svelte";
+import PlaylistVideoItem from "@/components/playlist-downloader/video-item/PlaylistVideoItem.svelte";
 import { mount } from "svelte";
 
 export { extractVideoId, shadowFirst } from "./grid-video-id";

@@ -1,4 +1,4 @@
-import { batchCanceledIds, batchDownloadStatus, batchVideoIds } from "./PlaylistDownloader.batch.svelte";
+import { batchCanceledIds, batchDownloadStatus, batchVideoIds } from "../PlaylistDownloader.batch.svelte";
 import type { createPlaylistVideoItemState } from "./PlaylistVideoItem.state.svelte";
 
 export function createBatchState(params: {

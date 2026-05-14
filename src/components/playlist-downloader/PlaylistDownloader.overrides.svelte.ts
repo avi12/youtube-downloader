@@ -1,4 +1,4 @@
-import { optionsToQualityValue } from "./playlist-download-builder";
+import { optionsToQualityValue } from "./helpers/playlist-download-builder";
 import { CONTENT_OPTIONS } from "@/lib/ui/synced-stores.svelte";
 import type { DownloadTypePreference } from "@/types";
 

@@ -1,4 +1,4 @@
-import { resolveDefaultZipName } from "./playlist-download-builder";
+import { resolveDefaultZipName } from "./helpers/playlist-download-builder";
 import { createBatchDownloadState } from "./PlaylistDownloader.batch.svelte";
 import { createOverrideState } from "./PlaylistDownloader.overrides.svelte";
 import { createProgressState } from "./PlaylistDownloader.progress.svelte";

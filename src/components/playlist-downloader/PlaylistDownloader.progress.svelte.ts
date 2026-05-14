@@ -1,4 +1,4 @@
-import { calculateBatchProgress, resolveCurrentPhaseLabel } from "./playlist-progress-helpers";
+import { calculateBatchProgress, resolveCurrentPhaseLabel } from "./helpers/playlist-progress-helpers";
 import type { createBatchDownloadState } from "./PlaylistDownloader.batch.svelte";
 import { scrollVideoItemIntoView } from "./PlaylistDownloader.scroll";
 import type { createVideoDataState } from "./PlaylistDownloader.video-data.svelte";

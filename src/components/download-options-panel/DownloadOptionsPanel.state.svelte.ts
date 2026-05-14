@@ -6,15 +6,15 @@ import {
   sendDiscardInterrupted,
   sendRevealDownload,
   sendStartDownload
-} from "./panel-download-actions";
+} from "./helpers/panel-download-actions";
 import {
   IS_WATCH_PAGE,
   resolveInitialAudioFormat,
   resolveInitialDownloadType,
   resolveInitialExtension,
   resolveInitialFilename
-} from "./panel-init";
-import { resolveActualExtension, resolvePrimaryState, resolveQualityLabel } from "./panel-state-derived";
+} from "./helpers/panel-init";
+import { resolveActualExtension, resolvePrimaryState, resolveQualityLabel } from "./helpers/panel-state-derived";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { CONTENT_OPTIONS, interruptedDownloadStore } from "@/lib/ui/synced-stores.svelte";
 import { getCompatibleFilename } from "@/lib/utils/containers";
