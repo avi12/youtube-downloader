@@ -5,11 +5,11 @@ export function byLabel(optA: { label: string }, optB: { label: string }) {
   return optA.label.localeCompare(optB.label);
 }
 
-export function buildUniqueAudioLanguages(audioFormats: AdaptiveFormatItem[]) {
+export function buildUniqueAudioLanguages(audioFormats: AdaptiveFormatItem[], includeAutoDubbing = false) {
   const seen = new Set<string>();
   const result: LabeledOption[] = [];
   for (const format of audioFormats) {
-    if (!format.audioTrack || format.audioTrack.id.endsWith(".10")) {
+    if (!format.audioTrack || (!includeAutoDubbing && format.audioTrack.id.endsWith(".10"))) {
       continue;
     }
 

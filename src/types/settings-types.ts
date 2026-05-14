@@ -59,4 +59,6 @@ export type Options = {
   captionLanguageMode: CaptionLanguageMode;
   customLanguage: string;
   downloadExtras: boolean;
+  includeAutoDubbing: boolean;
+  includeAiCaptions: boolean;
 };

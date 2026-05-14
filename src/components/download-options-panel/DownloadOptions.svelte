@@ -66,12 +66,13 @@
     captionCustomOptions={derived.captionCustomOptions}
     captionOriginalLabel={derived.captionOriginalLabel}
     captionPlayerLabel={derived.captionPlayerLabel}
-    {captionTracks}
+    captionTracks={derived.filteredCaptionTracks}
     {downloadExtras}
     {isDownloading}
     {onaudiocustomchange}
     {onaudiomodechange}
-    oncaptionchange={vssId => oncaptionchange(captionTracks.find(track => track.vssId === vssId) ?? null)}
+    oncaptionchange={vssId =>
+      oncaptionchange(derived.filteredCaptionTracks.find(track => track.vssId === vssId) ?? null)}
     {oncaptionmodechange}
     {panelAudioCustomLanguage}
     {panelAudioMode}

@@ -27,6 +27,42 @@
       </span>
     </span>
   </label>
+  <label class="settings-row">
+    <span class="settings-label">Include auto-dubbed audio tracks</span>
+    <span class="settings-switch" aria-label="Include auto-dubbed audio tracks">
+      <input
+        checked={options.includeAutoDubbing}
+        onchange={e => {
+          if (e.target instanceof HTMLInputElement) {
+            void setOption("includeAutoDubbing", e.target.checked);
+          }
+        }}
+        role="switch"
+        type="checkbox"
+      />
+      <span class="settings-switch-track">
+        <span class="settings-switch-thumb"></span>
+      </span>
+    </span>
+  </label>
+  <label class="settings-row">
+    <span class="settings-label">Include AI-generated captions</span>
+    <span class="settings-switch" aria-label="Include AI-generated captions">
+      <input
+        checked={options.includeAiCaptions}
+        onchange={e => {
+          if (e.target instanceof HTMLInputElement) {
+            void setOption("includeAiCaptions", e.target.checked);
+          }
+        }}
+        role="switch"
+        type="checkbox"
+      />
+      <span class="settings-switch-track">
+        <span class="settings-switch-thumb"></span>
+      </span>
+    </span>
+  </label>
   <AudioTrackSection {options} {slideDuration} />
   <CaptionLanguageSection {options} />
 </SettingsGroup>

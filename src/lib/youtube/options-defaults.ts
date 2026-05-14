@@ -31,5 +31,7 @@ export const INITIAL_OPTIONS: Options = {
   audioTrackLanguageMode: AudioTrackLanguageMode.OriginalLanguage,
   captionLanguageMode: CaptionLanguageMode.SameAsAudio,
   customLanguage: "en",
-  downloadExtras: true
+  downloadExtras: true,
+  includeAutoDubbing: false,
+  includeAiCaptions: false
 };

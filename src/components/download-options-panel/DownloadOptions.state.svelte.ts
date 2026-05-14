@@ -4,6 +4,7 @@ import {
   byLabel,
   resolveCaptionOriginalLabel
 } from "./download-options-helpers";
+import { CONTENT_OPTIONS } from "@/lib/ui/synced-stores.svelte";
 import { findOriginalAudioFormat } from "@/lib/youtube/video-helpers";
 import { DownloadType } from "@/types";
 import type { AdaptiveFormatItem, CaptionTrack } from "@/types";
@@ -21,7 +22,15 @@ export interface DownloadOptionsProps {
 export function createDownloadOptionsState(props: () => DownloadOptionsProps) {
   const isAudio = $derived(props().downloadType === DownloadType.Audio);
 
-  const uniqueAudioLanguages = $derived(buildUniqueAudioLanguages(props().audioFormats));
+  const uniqueAudioLanguages = $derived(
+    buildUniqueAudioLanguages(props().audioFormats, CONTENT_OPTIONS.value.includeAutoDubbing)
+  );
+
+  const filteredCaptionTracks = $derived(
+    CONTENT_OPTIONS.value.includeAiCaptions
+      ? props().captionTracks
+      : props().captionTracks.filter(track => track.kind !== "asr")
+  );
 
   const qualityOptions = $derived(
     buildQualityOptions(
@@ -40,13 +49,13 @@ export function createDownloadOptionsState(props: () => DownloadOptionsProps) {
   );
 
   const captionCustomOptions = $derived(
-    props().captionTracks.map(track => ({
+    filteredCaptionTracks.map(track => ({
       value: track.vssId,
       label: track.name.simpleText
     })).toSorted(byLabel)
   );
 
-  const captionOriginalLabel = $derived(resolveCaptionOriginalLabel(props().audioFormats, props().captionTracks));
+  const captionOriginalLabel = $derived(resolveCaptionOriginalLabel(props().audioFormats, filteredCaptionTracks));
   const audioPlayerLabel = $derived(props().selectedAudioFormat?.audioTrack?.displayName ?? null);
   const audioOriginalLabel = $derived(findOriginalAudioFormat(props().audioFormats)?.audioTrack?.displayName ?? null);
   const captionPlayerLabel = $derived(props().selectedCaptionTrack?.name.simpleText ?? null);
@@ -58,6 +67,9 @@ export function createDownloadOptionsState(props: () => DownloadOptionsProps) {
     },
     get uniqueAudioLanguages() {
       return uniqueAudioLanguages;
+    },
+    get filteredCaptionTracks() {
+      return filteredCaptionTracks;
     },
     get qualityOptions() {
       return qualityOptions;

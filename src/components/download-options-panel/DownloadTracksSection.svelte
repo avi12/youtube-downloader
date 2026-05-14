@@ -2,6 +2,7 @@
   import TrackChoice from "./TrackChoice.svelte";
   import { PanelTrackMode, TrackKind } from "@/types";
   import type { CaptionTrack, LabeledOption } from "@/types";
+  import { slide } from "svelte/transition";
 
   interface Props {
     uniqueAudioLanguages: LabeledOption[];
@@ -45,23 +46,25 @@
 </script>
 
 {#if uniqueAudioLanguages.length > 1 || captionTracks.length > 0}
-  <div class="ytdl-section">
+  <div class="ytdl-section" transition:slide>
     <span class="ytdl-section-label">Tracks</span>
     {#if uniqueAudioLanguages.length > 1}
-      <TrackChoice
-        customOptions={uniqueAudioLanguages}
-        customValue={panelAudioCustomLanguage}
-        disabled={isDownloading}
-        kind={TrackKind.Audio}
-        mode={panelAudioMode}
-        oncustomchange={onaudiocustomchange}
-        onmodechange={onaudiomodechange}
-        originalLabel={audioOriginalLabel}
-        playerLabel={audioPlayerLabel}
-      />
-      {#if downloadExtras}
-        <span class="ytdl-extras-note">Selected track is the default — all others are bundled as extras</span>
-      {/if}
+      <div class="ytdl-audio-track-section" transition:slide>
+        <TrackChoice
+          customOptions={uniqueAudioLanguages}
+          customValue={panelAudioCustomLanguage}
+          disabled={isDownloading}
+          kind={TrackKind.Audio}
+          mode={panelAudioMode}
+          oncustomchange={onaudiocustomchange}
+          onmodechange={onaudiomodechange}
+          originalLabel={audioOriginalLabel}
+          playerLabel={audioPlayerLabel}
+        />
+        {#if downloadExtras}
+          <span class="ytdl-extras-note">Selected track is the default — all others are bundled as extras</span>
+        {/if}
+      </div>
     {/if}
     <TrackChoice
       customOptions={captionCustomOptions}
@@ -78,6 +81,13 @@
 {/if}
 
 <style>
+  .ytdl-audio-track-section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    overflow: hidden;
+  }
+
   .ytdl-extras-note {
     display: block;
     color: var(--yt-sys-color-baseline--text-secondary, #606060);
