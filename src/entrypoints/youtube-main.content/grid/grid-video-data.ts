@@ -1,4 +1,5 @@
-import { buildAndDispatchVideoData, videoDataCache, readYtcfg } from "../video/video-data";
+import { buildAndDispatchVideoData } from "../video/capture-dispatch";
+import { videoDataCache, readYtcfg } from "../video/video-data";
 import { extractPlayerResponseFromHtml } from "../video/youtube-api";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { videoDataFailedStore, videoDataStore } from "@/lib/ui/synced-stores.svelte";

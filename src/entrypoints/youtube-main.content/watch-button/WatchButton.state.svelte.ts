@@ -291,7 +291,8 @@ export function createWatchButtonState(params: {
       if (isDownloadActive) {
         isDownloading = false;
         isInterrupted = false;
-        void crossWorldMessenger.sendMessage(CrossWorldMessage.CancelDownload, { videoIds: [params.videoData.videoId] });
+        const videoId = params.videoData.videoId;
+        void crossWorldMessenger.sendMessage(CrossWorldMessage.CancelDownload, { videoIds: [videoId] });
         return;
       }
 

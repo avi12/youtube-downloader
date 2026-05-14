@@ -13,8 +13,12 @@
   } = $props();
 
   const state = createWatchButtonState({
-    get videoData() { return videoData; },
-    get elDropdown() { return elDropdown; }
+    get videoData() {
+      return videoData;
+    },
+    get elDropdown() {
+      return elDropdown;
+    }
   });
 </script>
 
