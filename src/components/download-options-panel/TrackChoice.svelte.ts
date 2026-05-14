@@ -17,6 +17,11 @@ export { attachFmtStr };
 export function createTrackChoiceState(params: TrackChoiceParams) {
   const buttons = $derived(buildTrackButtons(params.kind));
 
+  const isAudio = $derived(params.kind === TrackKind.Audio);
+  const kindLabel = $derived(isAudio ? "Audio language" : "Captions");
+  const originalSubLabel = $derived(isAudio ? "The creator's baked-in audio track" : "The video's original caption track");
+  const accessibleLabel = $derived(isAudio ? "Audio language" : "Caption language");
+
   const elements = new SvelteMap<string, HTMLElement>();
 
   function refresh(button: (typeof buttons)[number]) {
@@ -79,6 +84,15 @@ export function createTrackChoiceState(params: TrackChoiceParams) {
   return {
     get buttons() {
       return buttons;
+    },
+    get kindLabel() {
+      return kindLabel;
+    },
+    get originalSubLabel() {
+      return originalSubLabel;
+    },
+    get accessibleLabel() {
+      return accessibleLabel;
     },
     createAttacher,
     handleSegKeydown

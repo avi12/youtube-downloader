@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { attachPrimaryButton, attachViewButton, PrimaryButtonState } from "@/lib/ui/panel-button-attachments.svelte";
-  import { ProgressType } from "@/types";
+  import { createFooterState, PrimaryButtonState } from "./DownloadOptionsPanelFooter.svelte.ts";
+  import { attachViewButton } from "@/lib/ui/panel-button-attachments.svelte";
 
   interface Props {
     primaryState: PrimaryButtonState;
@@ -14,48 +14,33 @@
   }
 
   const {
-    primaryState,
-    displayProgress,
-    progressType,
-    scopingClass,
-    primaryButtonId,
-    viewButtonId,
-    getIsDownloadable,
-    getIsFilenameValid
+    primaryState, displayProgress, progressType, scopingClass,
+    primaryButtonId, viewButtonId, getIsDownloadable, getIsFilenameValid
   }: Props = $props();
 
-  const percentFormatter = new Intl.NumberFormat(document.documentElement.lang || undefined, {
-    style: "percent",
-    maximumFractionDigits: 0
-  });
-
-  const downloadingLabel = $derived.by(() => {
-    if (displayProgress === 0) {
-      return "Preparing";
+  const footer = createFooterState({
+    get primaryState() {
+      return primaryState;
+    },
+    get displayProgress() {
+      return displayProgress;
+    },
+    get progressType() {
+      return progressType;
+    },
+    get getIsDownloadable() {
+      return getIsDownloadable;
+    },
+    get getIsFilenameValid() {
+      return getIsFilenameValid;
     }
-
-    const formattedPercentage = percentFormatter.format(displayProgress / 100);
-    if (progressType === ProgressType.FFmpeg) {
-      return `${formattedPercentage} - Processing`;
-    }
-
-    return `${formattedPercentage} - Downloading`;
   });
-
-  function attachPrimaryBtn(elButton: Element) {
-    attachPrimaryButton({
-      elButton,
-      getState: () => primaryState,
-      getIsDownloadable,
-      getIsFilenameValid
-    });
-  }
 </script>
 
 <div class="ytdl-panel-footer">
   <yt-button-view-model
     class={scopingClass}
-    {@attach attachPrimaryBtn}
+    {@attach footer.attachPrimaryBtn}
     data-ytdl-button-id={primaryButtonId}
     role="button"
     tabindex="0"
@@ -69,7 +54,7 @@
         value={Math.round(displayProgress)}
       ></tp-yt-paper-progress>
       <span class="ytdl-progress-label" aria-live="polite">
-        {downloadingLabel}
+        {footer.downloadingLabel}
       </span>
     </div>
   {:else if primaryState === PrimaryButtonState.Done}

@@ -1,7 +1,8 @@
 <script lang="ts">
   import PolymerSelect from "../polymer-select/PolymerSelect.svelte";
   import { attachFmtStr, createTrackChoiceState } from "./TrackChoice.svelte.ts";
-  import { PanelTrackMode, TrackKind, YtIconName } from "@/types";
+  import { PanelTrackMode, YtIconName } from "@/types";
+  import type { TrackKind } from "@/types";
 
   interface Props {
     kind: TrackKind;
@@ -19,22 +20,9 @@
   }
 
   const {
-    kind,
-    playerLabel,
-    originalLabel,
-    customOptions,
-    customValue,
-    mode,
-    disabled = false,
-    onmodechange,
-    oncustomchange
+    kind, playerLabel, originalLabel, customOptions,
+    customValue, mode, disabled = false, onmodechange, oncustomchange
   }: Props = $props();
-
-  const kindLabel = $derived(kind === TrackKind.Audio ? "Audio language" : "Captions");
-  const originalSubLabel = $derived(
-    kind === TrackKind.Audio ? "The creator's baked-in audio track" : "The video's original caption track"
-  );
-  const accessibleLabel = $derived(kind === TrackKind.Audio ? "Audio language" : "Caption language");
 
   const state = createTrackChoiceState({
     get kind() {
@@ -54,10 +42,14 @@
 
 <div class="track-choice" class:is-disabled={disabled}>
   <div class="track-choice-head">
-    <yt-formatted-string class="track-label" {@attach attachFmtStr} data-ytdl-text={kindLabel}></yt-formatted-string>
+    <yt-formatted-string
+      class="track-label"
+      {@attach attachFmtStr}
+      data-ytdl-text={state.kindLabel}
+    ></yt-formatted-string>
     <div
       class="track-seg"
-      aria-label="{kindLabel} source"
+      aria-label="{state.kindLabel} source"
       onkeydown={state.handleSegKeydown}
       role="radiogroup"
       tabindex="-1"
@@ -93,7 +85,7 @@
       <div class="track-follow-body">
         <yt-formatted-string class="track-follow-value" {@attach attachFmtStr} data-ytdl-text={originalLabel ?? "Original"}
         ></yt-formatted-string>
-        <yt-formatted-string class="track-follow-sub" {@attach attachFmtStr} data-ytdl-text={originalSubLabel}
+        <yt-formatted-string class="track-follow-sub" {@attach attachFmtStr} data-ytdl-text={state.originalSubLabel}
         ></yt-formatted-string>
       </div>
     </div>
@@ -101,7 +93,7 @@
     <PolymerSelect
       id="track-custom-{kind}"
       {disabled}
-      label={accessibleLabel}
+      label={state.accessibleLabel}
       onchange={oncustomchange}
       options={customOptions}
       value={customValue}

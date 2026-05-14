@@ -14,9 +14,7 @@
   import { attachCloseButton } from "@/lib/ui/panel-button-attachments.svelte";
   import type { VideoData } from "@/types";
 
-  const scopingClass =
-    document.querySelector("[data-ytdl-download-group] yt-button-view-model, yt-button-view-model")?.getAttribute("class") ??
-      "";
+  const scopingClass = document.querySelector("[data-ytdl-download-group] yt-button-view-model, yt-button-view-model")?.getAttribute("class") ?? "";
 
   interface Props {
     videoData: VideoData;
@@ -67,21 +65,21 @@
       extension={panel.actualExtension}
       filename={panel.filename}
       isDownloading={panel.isDownloading}
-      onaudiocustomchange={panel.handlePanelAudioCustomChange}
+      onaudiocustomchange={panel.audio.handlePanelAudioCustomChange}
       onaudioformatchange={format => (panel.selectedAudioFormat = format)}
-      onaudiomodechange={panel.handlePanelAudioModeChange}
-      oncaptionchange={panel.handleCaptionChange}
-      oncaptionmodechange={panel.handlePanelCaptionModeChange}
+      onaudiomodechange={panel.audio.handlePanelAudioModeChange}
+      oncaptionchange={panel.caption.handleCaptionChange}
+      oncaptionmodechange={panel.caption.handlePanelCaptionModeChange}
       ondownloadtypechange={panel.handleDownloadTypeChange}
       onextensionchange={newExtension => (panel.extension = newExtension)}
       onfilenamechange={newFilename => (panel.filename = newFilename)}
       onvalidationchange={isValid => (panel.isFilenameValid = isValid)}
       onvideoformatchange={format => (panel.selectedVideoFormat = format)}
-      panelAudioCustomLanguage={panel.panelAudioCustomLanguage}
-      panelAudioMode={panel.panelAudioMode}
-      panelCaptionMode={panel.panelCaptionMode}
+      panelAudioCustomLanguage={panel.audio.panelAudioCustomLanguage}
+      panelAudioMode={panel.audio.panelAudioMode}
+      panelCaptionMode={panel.caption.panelCaptionMode}
       selectedAudioFormat={panel.selectedAudioFormat}
-      selectedCaptionTrack={panel.selectedCaptionTrack}
+      selectedCaptionTrack={panel.caption.selectedCaptionTrack}
       selectedVideoFormat={panel.selectedVideoFormat}
       videoFormats={props.videoData.videoFormats}
     />
