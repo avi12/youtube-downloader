@@ -44,27 +44,28 @@ export async function fetchFreshCaptionUrls(videoId: string) {
   }
 
   try {
+    const playerRequest: InnertubePlayerRequest = {
+      videoId,
+      playbackContext: {
+        contentPlaybackContext: {
+          signatureTimestamp: getYtcfg(YtcfgKey.Sts)
+        }
+      },
+      context: {
+        client: {
+          clientName: InnertubeClientName.Web,
+          clientVersion: getYtcfg(YtcfgKey.ClientVersion) ?? "",
+          hl: getYtcfg(YtcfgKey.Hl) ?? "en",
+          gl: getYtcfg(YtcfgKey.Gl) ?? "US",
+          visitorData: visitorData ?? ""
+        }
+      }
+    };
     const resp = await fetch("/youtubei/v1/player?prettyPrint=false", {
       method: "POST",
       credentials: "include",
       headers,
-      body: JSON.stringify({
-        videoId,
-        playbackContext: {
-          contentPlaybackContext: {
-            signatureTimestamp: getYtcfg(YtcfgKey.Sts)
-          }
-        },
-        context: {
-          client: {
-            clientName: InnertubeClientName.Web,
-            clientVersion: getYtcfg(YtcfgKey.ClientVersion) ?? "",
-            hl: getYtcfg(YtcfgKey.Hl) ?? "en",
-            gl: getYtcfg(YtcfgKey.Gl) ?? "US",
-            visitorData: visitorData ?? ""
-          }
-        }
-      } satisfies InnertubePlayerRequest)
+      body: JSON.stringify(playerRequest)
     });
     if (!resp.ok) {
       return new Map<string, string>();

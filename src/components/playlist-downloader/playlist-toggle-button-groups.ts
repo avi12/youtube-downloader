@@ -14,7 +14,7 @@ export type ToggleButtonGroup = {
   onClick(state: ToggleButtonState): void;
 };
 
-export const TOGGLE_BUTTON_GROUPS = {
+export const TOGGLE_BUTTON_GROUPS: Record<string, ToggleButtonGroup[]> = {
   speed: [
     {
       id: "playlist-mode-fast",
@@ -93,7 +93,7 @@ export const TOGGLE_BUTTON_GROUPS = {
       }
     }
   ]
-} satisfies Record<string, ToggleButtonGroup[]>;
+};
 
 export const ALL_TOGGLE_BUTTONS = [
   ...TOGGLE_BUTTON_GROUPS.speed,

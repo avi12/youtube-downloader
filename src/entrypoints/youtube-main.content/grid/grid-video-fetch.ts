@@ -12,6 +12,22 @@ export async function fetchVideoDataViaApi(videoId: string) {
     const visitorData = getYtcfg(YtcfgKey.VisitorData) ?? "";
     const signatureTimestamp = getYtcfg(YtcfgKey.Sts);
 
+    const playerRequest: InnertubePlayerRequest = {
+      videoId,
+      context: {
+        client: {
+          clientName: clientName === 1 ? InnertubeClientName.Web : String(clientName),
+          clientVersion: String(clientVersion)
+        }
+      },
+      playbackContext: {
+        contentPlaybackContext: {
+          signatureTimestamp
+        }
+      },
+      contentCheckOk: true,
+      racyCheckOk: true
+    };
     const response = await fetch(
       "https://www.youtube.com/youtubei/v1/player?prettyPrint=false",
       {
@@ -21,22 +37,7 @@ export async function fetchVideoDataViaApi(videoId: string) {
           "Content-Type": "application/json",
           "X-Goog-Visitor-Id": String(visitorData)
         },
-        body: JSON.stringify({
-          videoId,
-          context: {
-            client: {
-              clientName: clientName === 1 ? InnertubeClientName.Web : String(clientName),
-              clientVersion: String(clientVersion)
-            }
-          },
-          playbackContext: {
-            contentPlaybackContext: {
-              signatureTimestamp
-            }
-          },
-          contentCheckOk: true,
-          racyCheckOk: true
-        } satisfies InnertubePlayerRequest)
+        body: JSON.stringify(playerRequest)
       }
     );
     const playerData: PlayerResponse = await response.json();

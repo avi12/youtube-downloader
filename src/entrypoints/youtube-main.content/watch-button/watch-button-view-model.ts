@@ -26,7 +26,7 @@ export function buildDownloadData(state: ButtonViewState) {
   const isDisabled = !isDownloadable;
   const tooltip = buildDownloadTooltip(state);
 
-  return {
+  const data: ButtonViewModelData = {
     iconName,
     title,
     accessibilityText,
@@ -37,7 +37,8 @@ export function buildDownloadData(state: ButtonViewState) {
     isFullWidth: false,
     isDisabled,
     tooltip
-  } satisfies ButtonViewModelData;
+  };
+  return data;
 }
 
 export function buildChevronData(state: ButtonViewState) {
@@ -46,7 +47,7 @@ export function buildChevronData(state: ButtonViewState) {
 
   const panelOpenIcon = isPanelBelow ? IconName.ExpandMore : IconName.ExpandLess;
 
-  return {
+  const data: ButtonViewModelData = {
     iconName: isPanelOpen ? panelOpenIcon : IconName.ExpandMore,
     title: "",
     accessibilityText: isPanelOpen ? "Close download options" : "Open download options",
@@ -57,5 +58,6 @@ export function buildChevronData(state: ButtonViewState) {
     isFullWidth: false,
     isDisabled,
     tooltip: state.isPanelOpen ? "Close download options" : "Download options"
-  } satisfies ButtonViewModelData;
+  };
+  return data;
 }

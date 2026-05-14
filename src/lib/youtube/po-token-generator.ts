@@ -1,5 +1,5 @@
 import { ensureBotGuardVm, getBotGuardVm, initBotGuardVm } from "./botguard-vm";
-import type { SignalFn } from "./botguard-vm";
+import type { SignalFunction } from "./botguard-vm";
 import {
   InnertubeClientName,
   InnertubeEngagementType,
@@ -26,20 +26,21 @@ export async function generatePoToken(videoId: string) {
   const clientVersion = getYtcfg(YtcfgKey.ClientVersion) ?? "2.20260401.01.00";
   const requestKey = getYtcfg(YtcfgKey.BotguardExperimentId) ?? "O43z0dpjhgX20SCx4KAo";
 
+  const attGetRequest: InnertubeAttGetRequest = {
+    engagementType: InnertubeEngagementType.Unbound,
+    context: {
+      client: {
+        clientName: InnertubeClientName.Web,
+        clientVersion
+      }
+    }
+  };
   const challengeResponse = await fetch("https://www.youtube.com/youtubei/v1/att/get?prettyPrint=false", {
     method: "POST",
     headers: {
       "Content-Type": "application/json"
     },
-    body: JSON.stringify({
-      engagementType: InnertubeEngagementType.Unbound,
-      context: {
-        client: {
-          clientName: InnertubeClientName.Web,
-          clientVersion
-        }
-      }
-    } satisfies InnertubeAttGetRequest)
+    body: JSON.stringify(attGetRequest)
   });
 
   const challengeData: ChallengeResponse = await challengeResponse.json();
@@ -55,16 +56,17 @@ export async function generatePoToken(videoId: string) {
     throw new Error(`BotGuard VM not found at window.${globalName}`);
   }
 
-  const webPoSignalOutput: SignalFn[] = [];
+  const webPoSignalOutput: SignalFunction[] = [];
   const snapshotResponse = initBotGuardVm(botGuardVm, program, webPoSignalOutput);
 
+  const generateItRequest: InnertubeGenerateItRequest = [requestKey, snapshotResponse];
   const integrityResponse = await fetch("https://www.youtube.com/api/jnn/v1/GenerateIT", {
     method: "POST",
     headers: {
       "content-type": "application/json+protobuf",
       "x-goog-api-key": WAA_API_KEY
     },
-    body: JSON.stringify([requestKey, snapshotResponse] satisfies InnertubeGenerateItRequest)
+    body: JSON.stringify(generateItRequest)
   });
 
   const integrityData: InnertubeGenerateItResponse = await integrityResponse.json();
