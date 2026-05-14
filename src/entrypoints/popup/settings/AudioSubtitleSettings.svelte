@@ -1,6 +1,7 @@
 <script lang="ts">
   import AudioTrackSection from "./AudioTrackSection.svelte";
   import CaptionLanguageSection from "./CaptionLanguageSection.svelte";
+  import SettingsGroup from "./SettingsGroup.svelte";
   import { setOption } from "@/lib/storage/storage";
   import type { Options } from "@/types";
 
@@ -12,8 +13,7 @@
   const { options, slideDuration }: Props = $props();
 </script>
 
-<fieldset class="settings-group">
-  <legend class="settings-legend">Audio &amp; subtitles</legend>
+<SettingsGroup title="Audio &amp; subtitles">
   <label class="settings-row">
     <span class="settings-label">Download additional audio tracks and captions</span>
     <span class="settings-switch" aria-label="Download additional audio tracks and captions">
@@ -34,4 +34,4 @@
   </label>
   <AudioTrackSection {options} {slideDuration} />
   <CaptionLanguageSection {options} />
-</fieldset>
+</SettingsGroup>

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import SettingsGroup from "./SettingsGroup.svelte";
   import { setOption } from "@/lib/storage/storage";
   import { VIDEO_QUALITIES } from "@/lib/youtube/video-helpers";
   import { VideoQualityMode } from "@/types";
@@ -28,8 +29,7 @@
   ];
 </script>
 
-<fieldset class="settings-group">
-  <legend class="settings-legend">Video quality</legend>
+<SettingsGroup title="Video quality">
   {#each qualityModeOptions as { value, label } (value)}
     <div class="settings-row">
       <label class="settings-label settings-radio-label">
@@ -63,4 +63,4 @@
       </div>
     {/if}
   {/each}
-</fieldset>
+</SettingsGroup>

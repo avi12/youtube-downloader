@@ -1,5 +1,6 @@
 <script lang="ts">
   import PlaylistRadioGroup from "./PlaylistRadioGroup.svelte";
+  import SettingsGroup from "./SettingsGroup.svelte";
   import { setOption } from "@/lib/storage/storage";
   import { PlaylistDownloadMode, PlaylistOutputMode } from "@/types";
   import type { Options } from "@/types";
@@ -47,8 +48,7 @@
   }
 </script>
 
-<fieldset class="settings-group">
-  <legend class="settings-legend">Playlist</legend>
+<SettingsGroup title="Playlist">
   <PlaylistRadioGroup
     name="playlist-download-mode"
     legend="Download speed"
@@ -90,4 +90,4 @@
       </span>
     </label>
   </div>
-</fieldset>
+</SettingsGroup>

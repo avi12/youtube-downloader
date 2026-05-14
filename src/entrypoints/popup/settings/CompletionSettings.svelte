@@ -1,4 +1,5 @@
 <script lang="ts">
+  import SettingsGroup from "./SettingsGroup.svelte";
   import { setOption } from "@/lib/storage/storage";
   import type { Options } from "@/types";
 
@@ -9,8 +10,7 @@
   const { options }: Props = $props();
 </script>
 
-<fieldset class="settings-group">
-  <legend class="settings-legend">When download completes</legend>
+<SettingsGroup title="When download completes">
   <label class="settings-row">
     <span class="settings-label">Notify when window is idle</span>
     <span class="settings-switch" aria-label="Notify when window is idle">
@@ -47,10 +47,9 @@
       </span>
     </span>
   </label>
-</fieldset>
+</SettingsGroup>
 
-<fieldset class="settings-group">
-  <legend class="settings-legend">YouTube integration</legend>
+<SettingsGroup title="YouTube integration">
   <label class="settings-row">
     <span class="settings-label">Show native download button on watch page</span>
     <span class="settings-switch" aria-label="Show native download button on watch page">
@@ -69,4 +68,4 @@
       </span>
     </span>
   </label>
-</fieldset>
+</SettingsGroup>

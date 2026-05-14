@@ -1,4 +1,5 @@
 <script lang="ts">
+  import SettingsGroup from "./SettingsGroup.svelte";
   import { setOption } from "@/lib/storage/storage";
   import { DownloadType } from "@/types";
   import type { DownloadTypePreference, Options } from "@/types";
@@ -32,8 +33,7 @@
   ];
 </script>
 
-<fieldset class="settings-group">
-  <legend class="settings-legend">Download type</legend>
+<SettingsGroup title="Download type">
   {#each downloadTypeOptions as { value, label } (value)}
     <div class="settings-row">
       <label class="settings-label settings-radio-label">
@@ -48,4 +48,4 @@
       </label>
     </div>
   {/each}
-</fieldset>
+</SettingsGroup>
