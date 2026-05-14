@@ -14,12 +14,6 @@ html {
   font-size: max(1rem, 16px);
 }
 
-*,
-*::before,
-*::after {
-  box-sizing: border-box;
-}
-
 body {
   --md-sys-color-surface: oklch(98.4% 0.0128 321.9deg);
   --md-sys-color-surface-container: oklch(95.4% 0.0147 312.2deg);
