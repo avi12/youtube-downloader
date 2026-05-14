@@ -103,7 +103,10 @@
   }
 
   .ytdl-panel {
+    display: flex;
+    flex-direction: column;
     width: 420px;
+    max-height: inherit;
     border: 1px solid var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 10%));
     border-radius: 12px;
     background: var(--yt-sys-color-baseline--raised-background, var(--yt-sys-color-baseline--base-background, #ffffff));
@@ -152,6 +155,9 @@
   }
 
   .ytdl-panel-body {
+    flex: 1;
+    overflow-y: auto;
+    min-height: 0;
     padding: 0 24px;
   }
 </style>

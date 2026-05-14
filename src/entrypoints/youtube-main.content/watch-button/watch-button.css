@@ -149,12 +149,11 @@
   display: none;
 }
 
-/* tp-yt-iron-dropdown sets max-height inline (defaults to 240px on YT),
-   which clips the panel and forces inner scrollbars. Override only for the
-   watch-button's outer dropdown and its panel slot - not nested dropdowns
-   inside the panel (those need their own max-height for scrolling). */
 [data-ytdl-watch-dropdown],
 [data-ytdl-panel-slot="true"] {
   overflow: visible !important;
-  max-height: none !important;
+}
+
+[data-ytdl-panel-slot="true"] > * {
+  max-height: inherit;
 }
