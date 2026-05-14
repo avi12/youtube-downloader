@@ -86,6 +86,9 @@ export async function executeDownload(params: DownloadParams, abortSignal: Abort
     resolvedAudioUrl,
     resolvedExtraAudioUrls
   });
+  if (abortSignal.aborted) {
+    return;
+  }
 
   void crossWorldMessenger.sendMessage(CrossWorldMessage.StartBackgroundDownload, {
     requestJson: JSON.stringify(enrichedRequest)

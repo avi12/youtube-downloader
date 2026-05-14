@@ -77,6 +77,11 @@ export function registerBackgroundMessageHandlers() {
       progressType: data.progressType
     });
 
+    // Suppressed (cancelled) entry: setLocal was a no-op, don't forward to main world.
+    if (!downloadProgressStore.get(data.videoId)) {
+      return;
+    }
+
     if (isComplete) {
       interruptedDownloadStore.delete(data.videoId);
     }
