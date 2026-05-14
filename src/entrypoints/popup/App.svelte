@@ -7,6 +7,8 @@
   import { ProgressType } from "@/types";
   import type { Options, VideoQueueItem } from "@/types";
   import { untrack } from "svelte";
+  import { cubicOut } from "svelte/easing";
+  import { fly } from "svelte/transition";
 
   interface Props {
     initialIsFFmpegReady: boolean;
@@ -50,6 +52,16 @@
       initialOptions
     }))
   );
+
+  const PANEL_ORDER = [PopupPanel.Downloads, PopupPanel.Settings] as const;
+  let slideX = $state(50);
+
+  function handleTabChange(id: PopupPanel) {
+    const prevIndex = PANEL_ORDER.indexOf(appState.activePanel);
+    const nextIndex = PANEL_ORDER.indexOf(id);
+    slideX = nextIndex > prevIndex ? 50 : -50;
+    appState.activePanel = id;
+  }
 </script>
 
 <div class="popup-container">
@@ -60,31 +72,47 @@
         by <a href="https://avi12.com" target="_blank">Avi</a>
       </span>
     </div>
-    <TabNav activeTab={appState.activePanel} onChange={id => (appState.activePanel = id)} tabs={appState.tabs} />
+    <TabNav activeTab={appState.activePanel} onChange={handleTabChange} tabs={appState.tabs} />
   </header>
 
-  <div
-    id="panel-{appState.activePanel}"
-    class="popup-content"
-    role="tabpanel"
-  >
-    {#if appState.activePanel === PopupPanel.Downloads}
-      <DownloadsTab
-        isFFmpegReady={appState.isFFmpegReady}
-        musicList={appState.musicList}
-        now={appState.now}
-        onChangeFormat={appState.handleChangeFormat}
-        onRecentChanged={appState.refreshRecentDownloads}
-        {percentFormatter}
-        recentDownloads={appState.recentDownloads}
-        statusProgress={appState.statusProgress}
-        videoDetails={appState.videoDetails}
-        videoDownloads={appState.videoDownloads}
-        videoOnlyList={appState.videoOnlyList}
-      />
-    {:else}
-      <SettingsTab options={appState.options} />
-    {/if}
+  <div class="popup-content">
+    {#key appState.activePanel}
+      <div
+        id="panel-{appState.activePanel}"
+        class="panel-wrapper"
+        role="tabpanel"
+        in:fly={{
+          x: slideX,
+          duration: 200,
+          opacity: 0,
+          easing: cubicOut
+        }}
+        out:fly={{
+          x: -slideX,
+          duration: 200,
+          opacity: 0,
+          easing: cubicOut
+        }}
+      >
+        {#if appState.activePanel === PopupPanel.Downloads}
+          <DownloadsTab
+            isFFmpegReady={appState.isFFmpegReady}
+            musicList={appState.musicList}
+            now={appState.now}
+            onChangeFormat={appState.handleChangeFormat}
+            onRecentChanged={appState.refreshRecentDownloads}
+            {percentFormatter}
+            recentDownloads={appState.recentDownloads}
+            statusProgress={appState.statusProgress}
+            videoDetails={appState.videoDetails}
+            videoDownloads={appState.videoDownloads}
+            videoOnlyList={appState.videoOnlyList}
+          />
+        {:else}
+          <SettingsTab options={appState.options} />
+        {/if}
+      </div>
+    {/key}
   </div>
 </div>
 
@@ -212,9 +240,16 @@
   }
 
   .popup-content {
+    position: relative;
     flex: 1;
-    overflow-y: auto;
+    overflow: hidden;
     min-height: 120px;
+  }
+
+  .panel-wrapper {
+    position: absolute;
+    inset: 0;
+    overflow-y: auto;
     padding: 16px;
   }
 </style>
