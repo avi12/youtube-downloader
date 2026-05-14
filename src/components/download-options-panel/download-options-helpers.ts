@@ -1,6 +1,12 @@
 import { splitFilenameAndExtension, supportedExtensions } from "@/lib/utils/containers";
+import {
+  findOriginalAudioFormat,
+  formatAudioCodecLabel,
+  formatVideoQualityLabel,
+  normalizeLanguageCode
+} from "@/lib/youtube/video-helpers";
 import { DownloadType } from "@/types";
-import type { AdaptiveFormatItem } from "@/types";
+import type { AdaptiveFormatItem, CaptionTrack } from "@/types";
 
 export const DOWNLOAD_TYPES: {
   value: DownloadType;
@@ -52,6 +58,76 @@ export function getFilenameError({
   }
 
   return "";
+}
+
+export function buildUniqueAudioLanguages(audioFormats: AdaptiveFormatItem[]) {
+  const seen = new Set<string>();
+  const result: {
+    value: string;
+    label: string;
+  }[] = [];
+  for (const format of audioFormats) {
+    if (!format.audioTrack) {
+      continue;
+    }
+
+    const langCode = normalizeLanguageCode(format.audioTrack.id);
+    if (seen.has(langCode)) {
+      continue;
+    }
+
+    seen.add(langCode);
+    result.push({
+      value: langCode,
+      label: format.audioTrack.displayName
+    });
+  }
+
+  return result.toSorted(byLabel);
+}
+
+export function buildQualityOptions(
+  isAudio: boolean,
+  audioFormats: AdaptiveFormatItem[],
+  videoFormats: AdaptiveFormatItem[],
+  selectedAudioTrackId: string | null | undefined,
+  uniqueAudioLanguagesCount: number
+) {
+  if (isAudio) {
+    const trackId = selectedAudioTrackId ?? null;
+    const formats = uniqueAudioLanguagesCount > 0
+      ? audioFormats.filter(format => (format.audioTrack?.id ?? null) === trackId)
+      : audioFormats;
+    return formats.map(format => ({
+      value: `${format.itag}:${format.audioTrack?.id ?? ""}`,
+      label: `${Math.floor(format.bitrate / 1000)} kbps (${formatAudioCodecLabel(format.mimeType)})`
+    }));
+  }
+
+  return videoFormats.map(format => ({
+    value: format.itag.toString(),
+    label: formatVideoQualityLabel(format)
+  }));
+}
+
+export function resolveCaptionOriginalLabel(
+  audioFormats: AdaptiveFormatItem[],
+  captionTracks: CaptionTrack[]
+): string | null {
+  const originalLangId = findOriginalAudioFormat(audioFormats)?.audioTrack?.id;
+  if (originalLangId) {
+    const langCode = normalizeLanguageCode(originalLangId);
+    const match =
+      captionTracks.find(track => normalizeLanguageCode(track.languageCode) === langCode && !track.kind)
+      ?? captionTracks.find(track => normalizeLanguageCode(track.languageCode) === langCode);
+    if (match) {
+      return match.name.simpleText;
+    }
+  }
+
+  return captionTracks.find(track => !track.kind)?.name.simpleText
+    ?? captionTracks[0]?.name.simpleText
+    ?? null;
 }
 
 export function handleQualityChange({

@@ -1,37 +1,18 @@
 import { enqueueToPopupList, removeFromPopupList } from "../queue/popup-list";
-import { signalBytesTransferred, signalVideoComplete } from "../queue/sequential-queue";
+import { signalBytesTransferred } from "../queue/sequential-queue";
 import { resolveTabId } from "../queue/tab-tracker";
 import { registerRecentDownloadHandlers } from "../recent/recent-download-handler";
-import { signalFFmpegReady } from "./processor";
+import { registerPipelineQueueHandlers } from "./pipeline-queue-handlers";
+import { clearCancelledVideo, isVideoCancelled, updateStatusProgress } from "./pipeline-state";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
-import { isFFmpegReadyItem, mutateStorageItem, statusProgressItem } from "@/lib/storage/storage";
 import { ProgressType } from "@/types";
-import type { ProgressUpdate } from "@/types";
 
-type StatusProgressMap = Awaited<ReturnType<typeof statusProgressItem.getValue>>;
-
-const cancelledVideoIds = new Set<string>();
-
-export function markVideosCancelled(videoIds: string[]) {
-  for (const videoId of videoIds) {
-    cancelledVideoIds.add(videoId);
-  }
-}
-
-async function updateStatusProgress({ mutate, progressUpdate, tabId }: {
-  mutate: (current: StatusProgressMap) => void;
-  progressUpdate: ProgressUpdate;
-  tabId: number;
-}) {
-  await Promise.allSettled([
-    sendMessage(MessageType.UpdateDownloadProgress, progressUpdate, tabId),
-    mutateStorageItem(statusProgressItem, mutate)
-  ]);
-}
+export { markVideosCancelled } from "./pipeline-state";
 
 export function registerPipelineHandlers() {
   registerRecentDownloadHandlers();
+  registerPipelineQueueHandlers();
 
   onMessage(MessageType.ProcessStreamError, ({ data, sender }) => {
     const tabId = resolveTabId(sender, data.videoId);
@@ -55,7 +36,7 @@ export function registerPipelineHandlers() {
   });
 
   onMessage(MessageType.PipelineStart, async ({ data }) => {
-    if (!cancelledVideoIds.has(data.videoId)) {
+    if (!isVideoCancelled(data.videoId)) {
       await enqueueToPopupList({
         videoId: data.videoId,
         type: data.type,
@@ -63,7 +44,7 @@ export function registerPipelineHandlers() {
       });
     }
 
-    cancelledVideoIds.delete(data.videoId);
+    clearCancelledVideo(data.videoId);
     signalBytesTransferred(data.videoId);
   });
 
@@ -102,34 +83,5 @@ export function registerPipelineHandlers() {
     });
     await removeFromPopupList(videoId);
     sendToOffscreen(OffscreenMessageType.RemoveDownloadIframe, { videoId });
-  });
-
-  onMessage(MessageType.PipelineQueueRemove, async ({ data }) => {
-    const { videoId } = data;
-    await Promise.all([
-      mutateStorageItem(statusProgressItem, current => {
-        delete current[videoId];
-      }),
-      removeFromPopupList(videoId)
-    ]);
-    signalVideoComplete(videoId);
-  });
-
-  onMessage(MessageType.PipelineFFmpegReady, () => {
-    void isFFmpegReadyItem.setValue(true);
-    signalFFmpegReady();
-  });
-
-  onMessage(MessageType.PipelineZipProgress, ({ data }) => {
-    const { playlistId, isDone, tabId } = data;
-    void sendMessage(
-      MessageType.UpdateDownloadProgress,
-      {
-        videoId: `zip:${playlistId}`,
-        progress: isDone ? 1 : 0,
-        progressType: ProgressType.Zip
-      },
-      tabId
-    );
   });
 }

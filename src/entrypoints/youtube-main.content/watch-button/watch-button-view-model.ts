@@ -1,41 +1,17 @@
+import { buildDownloadTitle, buildDownloadTooltip, type ButtonViewState } from "./watch-button-format";
 import {
   ButtonSize,
   ButtonState,
   ButtonStyle,
   ButtonType,
   type ButtonViewModelData,
-  IconName,
-  ProgressType
+  IconName
 } from "@/types";
 
-const percentFormatter = new Intl.NumberFormat(document.documentElement.lang, {
-  style: "percent",
-  maximumFractionDigits: 0
-});
-
-export interface ButtonViewState {
-  isDownloading: boolean;
-  isDone: boolean;
-  isInterrupted: boolean;
-  isError: boolean;
-  isPanelOpen: boolean;
-  isPanelBelow: boolean;
-  downloadProgress: number;
-  progressType: ProgressType | "";
-  filename: string;
-  quality: string;
-  isDownloadable: boolean;
-}
+export type { ButtonViewState } from "./watch-button-format";
 
 export function buildDownloadData(state: ButtonViewState) {
-  const {
-    isDone, isDownloading, isError, isInterrupted, isDownloadable,
-    downloadProgress, progressType, filename, quality
-  } = state;
-
-  const isProcessing = isDownloading && progressType === ProgressType.FFmpeg;
-  const isPreparingDownload = isDownloading && downloadProgress === 0;
-  const isActivelyDownloading = isDownloading && downloadProgress > 0;
+  const { isDone, isDownloading, isError, isDownloadable } = state;
 
   let iconName: IconName = IconName.Download;
   if (isDone) {
@@ -46,51 +22,9 @@ export function buildDownloadData(state: ButtonViewState) {
     iconName = IconName.Info;
   }
 
-  let title = "Download";
-  let accessibilityText = "Download";
-  if (!isDownloadable) {
-    title = "Not downloadable";
-    accessibilityText = "Not downloadable";
-  } else if (isDone) {
-    title = "Download again";
-    accessibilityText = "Download again";
-  } else if (isProcessing) {
-    title = percentFormatter.format(downloadProgress);
-    accessibilityText = `${percentFormatter.format(downloadProgress)} processed - click to cancel`;
-  } else if (isDownloading) {
-    title = percentFormatter.format(downloadProgress);
-    accessibilityText = `Stop download - ${percentFormatter.format(downloadProgress)} downloaded`;
-  } else if (isInterrupted) {
-    title = percentFormatter.format(downloadProgress);
-    accessibilityText = `Stop - paused at ${percentFormatter.format(downloadProgress)}`;
-  } else if (isError) {
-    title = "Retry";
-    accessibilityText = "Retry download";
-  }
-
+  const { title, accessibilityText } = buildDownloadTitle(state);
   const isDisabled = !isDownloadable;
-
-  let tooltip = "";
-  if (isDownloadable) {
-    const base = quality ? `${filename} - ${quality}` : filename;
-    if (isDone) {
-      tooltip = base;
-    } else if (isError) {
-      tooltip = `${base} - retry`;
-    } else if (isInterrupted) {
-      tooltip = downloadProgress > 0
-        ? `${base} - paused at ${percentFormatter.format(downloadProgress)}`
-        : base;
-    } else if (isProcessing) {
-      tooltip = `${base} - ${percentFormatter.format(downloadProgress)} (processing), click to cancel`;
-    } else if (isPreparingDownload) {
-      tooltip = `${base} - preparing`;
-    } else if (isActivelyDownloading) {
-      tooltip = `${base} - ${percentFormatter.format(downloadProgress)} downloaded`;
-    } else {
-      tooltip = base;
-    }
-  }
+  const tooltip = buildDownloadTooltip(state);
 
   return {
     iconName,

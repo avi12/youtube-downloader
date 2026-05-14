@@ -1,18 +1,10 @@
-import { defineCustomEventMessaging } from "@webext-core/messaging/page";
+import type { MapMessenger, SignalMessenger } from "./synced-signal-types";
 import { SvelteMap, SvelteSet } from "svelte/reactivity";
 
-const SYNC_NAMESPACE = "ytdl-sync";
-
-type SignalSchema<T> = {
-  value: (data: T) => void;
-};
-type SignalMessenger<T> = ReturnType<typeof defineCustomEventMessaging<SignalSchema<T>>>;
-
-export function createSignalMessenger<T>(key: string) {
-  return defineCustomEventMessaging<SignalSchema<T>>({
-    namespace: `${SYNC_NAMESPACE}-${key}`
-  });
-}
+export {
+  createMapMessenger,
+  createSignalMessenger
+} from "./synced-signal-types";
 
 export function createSyncedSignal<T>(messenger: SignalMessenger<T>, initial: NoInfer<T>) {
   let current = $state(initial);
@@ -36,21 +28,6 @@ export function createSyncedSignal<T>(messenger: SignalMessenger<T>, initial: No
       }
     }
   };
-}
-
-type MapEntryPayload<T> = {
-  mapKey: string;
-  mapValue: T | undefined;
-};
-type MapSchema<T> = {
-  entry: (data: MapEntryPayload<T>) => void;
-};
-type MapMessenger<T> = ReturnType<typeof defineCustomEventMessaging<MapSchema<T>>>;
-
-export function createMapMessenger<T>(key: string) {
-  return defineCustomEventMessaging<MapSchema<T>>({
-    namespace: `${SYNC_NAMESPACE}-${key}`
-  });
 }
 
 export function createSyncedMap<T>(messenger: MapMessenger<T>) {

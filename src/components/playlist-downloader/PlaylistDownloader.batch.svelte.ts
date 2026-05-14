@@ -1,10 +1,14 @@
-import { buildDownloadRequest } from "./playlist-download-builder";
-import { MessageType, sendMessage } from "@/lib/messaging/messaging";
-import { downloadProgressStore, playlistMetadataSignal } from "@/lib/ui/synced-stores.svelte";
+import {
+  buildBatchDownloadRequests,
+  cancelActiveDownloads,
+  finalizeBatchVideoProgress,
+  initBatchVideoProgress,
+  sendBatchDownloadMessage
+} from "./playlist-batch-ops";
+import { downloadProgressStore } from "@/lib/ui/synced-stores.svelte";
 import {
   PlaylistDownloadMode,
   PlaylistOutputMode,
-  ProgressType,
   type DownloadRequest,
   type Options,
   type VideoData
@@ -71,22 +75,7 @@ export function createBatchDownloadState(
     batchDownloadStatus.isRunning = false;
     batchDownloadStatus.isZipBatch = false;
 
-    for (const request of activeDownloadRequests) {
-      if (batchCanceledIds.has(request.videoId)) {
-        continue;
-      }
-
-      downloadProgressStore.unsuppress(request.videoId);
-      const entry = downloadProgressStore.get(request.videoId);
-      if (entry && !entry.isDone && !entry.isFailed) {
-        downloadProgressStore.setLocal(request.videoId, {
-          isDownloading: false,
-          isDone: true,
-          progress: 1,
-          progressType: entry.progressType ?? ProgressType.FFmpeg
-        });
-      }
-    }
+    finalizeBatchVideoProgress(activeDownloadRequests, batchCanceledIds);
 
     batchVideoIds.clear();
     batchCanceledIds.clear();
@@ -108,34 +97,23 @@ export function createBatchDownloadState(
 
     for (const video of videos) {
       batchVideoIds.add(video.videoId);
-      downloadProgressStore.deleteLocal(video.videoId);
-      downloadProgressStore.unsuppress(video.videoId);
-      downloadProgressStore.setLocal(video.videoId, {
-        isDownloading: true,
-        isDone: false,
-        progress: 0,
-        progressType: ""
-      });
     }
 
-    const metadata = playlistMetadataSignal.value;
-    const playlistId = metadata?.playlistId || `playlist-${Date.now()}`;
-    const isZipBundle = getOutputMode() === PlaylistOutputMode.Zip;
+    initBatchVideoProgress(videos);
+
+    const { playlistId, isZipBundle, zipName, downloadRequests } = buildBatchDownloadRequests(
+      videos, buildEffectiveOptions(), getOutputMode, getEffectiveZipName
+    );
     batchDownloadStatus.isZipBatch = isZipBundle;
     currentZipBundleId = isZipBundle ? playlistId : null;
-
-    const resolvedOptions = buildEffectiveOptions();
-    const zipName = getEffectiveZipName();
-    const downloadRequests = videos.map(data =>
-      buildDownloadRequest(data, resolvedOptions, playlistId, zipName, videos.length, isZipBundle));
     activeDownloadRequests = downloadRequests;
 
     try {
-      await sendMessage(MessageType.RequestPlaylistDownload, {
-        items: downloadRequests,
-        playlistTitle: zipName,
+      await sendBatchDownloadMessage({
+        downloadRequests,
+        zipName,
         isZipBundle,
-        isSequential: getDownloadMode() === PlaylistDownloadMode.DataSaver
+        getDownloadMode
       });
     } catch {
       error = "Failed to start downloads - please try again";
@@ -144,12 +122,7 @@ export function createBatchDownloadState(
   }
 
   async function cancelDownload() {
-    const activeVideoIds = activeDownloadRequests
-      .filter(request => downloadProgressStore.get(request.videoId)?.isDownloading)
-      .map(request => request.videoId);
-    if (activeVideoIds.length > 0) {
-      await sendMessage(MessageType.CancelDownload, { videoIds: activeVideoIds });
-    }
+    await cancelActiveDownloads(activeDownloadRequests);
 
     completedBatchProgress = 0;
     isDownloading = false;
@@ -161,10 +134,6 @@ export function createBatchDownloadState(
     if (currentZipBundleId) {
       downloadProgressStore.deleteLocal(`zip:${currentZipBundleId}`);
       currentZipBundleId = null;
-    }
-
-    for (const request of activeDownloadRequests) {
-      downloadProgressStore.delete(request.videoId);
     }
   }
 

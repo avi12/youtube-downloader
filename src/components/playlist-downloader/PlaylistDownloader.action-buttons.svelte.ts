@@ -5,6 +5,7 @@ import {
   buildDownloadData,
   buildStopAllData
 } from "./playlist-action-button-data";
+import { attachButton, handleActionButtonClick } from "./playlist-action-button-handlers";
 import { DATA_BUTTON_ID_ATTR, sendButtonData } from "@/lib/ui/polymer-utils";
 
 export function createPlaylistActionButtons(state: {
@@ -77,41 +78,6 @@ export function createPlaylistActionButtons(state: {
     });
   }
 
-  function attachButton(buttonId: string, setter: (el: HTMLElement) => void) {
-    return (elButton: Element) => {
-      if (!(elButton instanceof HTMLElement)) {
-        return;
-      }
-
-      elButton.setAttribute(DATA_BUTTON_ID_ATTR, buttonId);
-      setter(elButton);
-    };
-  }
-
-  function handleClick(buttonId: string) {
-    if (buttonId === ACTION_BUTTON_IDS.DeselectAll) {
-      state.clearSelection();
-      return true;
-    }
-
-    if (buttonId === ACTION_BUTTON_IDS.Download || buttonId === ACTION_BUTTON_IDS.StopAll) {
-      state.toggleSelectedDownload();
-      return true;
-    }
-
-    if (buttonId === ACTION_BUTTON_IDS.DownloadAll) {
-      if (state.isRevealingAll) {
-        state.cancelReveal();
-      } else {
-        void state.revealAndDownloadAll();
-      }
-
-      return true;
-    }
-
-    return false;
-  }
-
   return {
     attachDeselectAll: attachButton(ACTION_BUTTON_IDS.DeselectAll, element => {
       elDeselectAll = element;
@@ -129,6 +95,6 @@ export function createPlaylistActionButtons(state: {
     refreshDownload,
     refreshDownloadAll,
     refreshStopAll,
-    handleClick
+    handleClick: (buttonId: string) => handleActionButtonClick(buttonId, state)
   };
 }

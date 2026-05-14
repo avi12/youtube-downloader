@@ -1,8 +1,10 @@
+import { popPlaylistContext, sendStreamChunks } from "./stream-chunks";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { downloadProgressStore } from "@/lib/ui/synced-stores.svelte";
-import { TRANSFER_CHUNK_SIZE, uint8ToBase64 } from "@/lib/utils/binary";
 import { AUDIO_EXTRA_STREAM_PREFIX, StreamType } from "@/types";
 import type { StreamDataPayload } from "@/types";
+
+export { setPlaylistContext } from "./stream-chunks";
 
 const cancelledVideoIds = new Set<string>();
 
@@ -12,45 +14,6 @@ export function cancelStreamTransfer(videoId: string) {
 
 export function uncancelStreamTransfer(videoId: string) {
   cancelledVideoIds.delete(videoId);
-}
-
-async function sendStreamChunks({ videoId, streamType, data }: {
-  videoId: string;
-  streamType: string;
-  data: Uint8Array;
-}) {
-  if (cancelledVideoIds.has(videoId)) {
-    return;
-  }
-
-  const totalChunks = Math.ceil(data.byteLength / TRANSFER_CHUNK_SIZE);
-
-  await Promise.all(
-    Array.from({ length: totalChunks }, (_, iChunk) => {
-      const start = iChunk * TRANSFER_CHUNK_SIZE;
-      const chunk = data.subarray(start, start + TRANSFER_CHUNK_SIZE);
-      return sendMessage(MessageType.StreamChunk, {
-        videoId,
-        streamType,
-        iChunk,
-        totalChunks,
-        chunkBase64: uint8ToBase64(chunk)
-      });
-    })
-  );
-}
-
-const playlistContextByVideoId = new Map<string, {
-  playlistId: string;
-  playlistTitle: string;
-  playlistTotalCount: number;
-}>();
-
-export function setPlaylistContext({ videoId, context }: {
-  videoId: string;
-  context: Parameters<typeof playlistContextByVideoId.set>[1];
-}) {
-  playlistContextByVideoId.set(videoId, context);
 }
 
 export async function handleStreamData(payload: StreamDataPayload) {
@@ -103,8 +66,7 @@ export async function handleStreamData(payload: StreamDataPayload) {
     ...additionalAudioData.map(track => track.label)
   ];
 
-  const playlistContext = playlistContextByVideoId.get(videoId);
-  playlistContextByVideoId.delete(videoId);
+  const playlistContext = popPlaylistContext(videoId);
 
   void sendMessage(MessageType.StreamEnd, {
     type: downloadType,

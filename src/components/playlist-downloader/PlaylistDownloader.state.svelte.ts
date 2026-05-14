@@ -1,94 +1,28 @@
 import { resolveDefaultZipName } from "./playlist-download-builder";
-import { calculateBatchProgress, resolveCurrentPhaseLabel } from "./playlist-progress-helpers";
 import { createBatchDownloadState } from "./PlaylistDownloader.batch.svelte";
 import { createOverrideState } from "./PlaylistDownloader.overrides.svelte";
+import { createProgressState } from "./PlaylistDownloader.progress.svelte";
 import { createRevealState } from "./PlaylistDownloader.reveal.svelte";
-import { scrollVideoItemIntoView } from "./PlaylistDownloader.scroll";
+import { createVideoDataState } from "./PlaylistDownloader.video-data.svelte";
 import { setOption } from "@/lib/storage/storage";
 import { checkedPlaylistVideos } from "@/lib/ui/playlist-selection.svelte";
-import {
-  CONTENT_OPTIONS,
-  downloadProgressStore,
-  playlistMetadataSignal,
-  videoDataStore
-} from "@/lib/ui/synced-stores.svelte";
-import { PlaylistDownloadMode, VideoQualityMode, type VideoData } from "@/types";
-import { untrack } from "svelte";
-import { SvelteMap } from "svelte/reactivity";
+import { CONTENT_OPTIONS, playlistMetadataSignal } from "@/lib/ui/synced-stores.svelte";
+import { VideoQualityMode } from "@/types";
 
-let downloadMode = $state<PlaylistDownloadMode>(CONTENT_OPTIONS.value.playlistDownloadMode);
+let downloadMode = $state(CONTENT_OPTIONS.value.playlistDownloadMode);
 let outputMode = $state(CONTENT_OPTIONS.value.playlistOutputMode);
 let isScrollSyncEnabled = $state(CONTENT_OPTIONS.value.isPlaylistScrollSyncEnabled);
 
 export function createPlaylistDownloaderState() {
-  const videoDataMap = new SvelteMap<string, VideoData>();
-
-  $effect(() => {
-    for (const videoId of videoDataStore.keys()) {
-      const data = videoDataStore.get(videoId);
-      if (data) {
-        untrack(() => {
-          videoDataMap.set(videoId, data);
-        });
-      }
-    }
-  });
-
-  const downloadableVideos = $derived([...videoDataMap.values()].filter(data => data.isDownloadable));
-  const nonDownloadableCount = $derived(videoDataMap.size - downloadableVideos.length);
-  const isAllMusicPlaylist = $derived(
-    downloadableVideos.length > 0 && downloadableVideos.every(video => video.isMusic)
-  );
+  const videoData = createVideoDataState();
 
   $effect.pre(() => {
     downloadMode = CONTENT_OPTIONS.value.playlistDownloadMode;
-    outputMode = isAllMusicPlaylist
+    outputMode = videoData.isAllMusicPlaylist
       ? CONTENT_OPTIONS.value.playlistAudioOutputMode
       : CONTENT_OPTIONS.value.playlistOutputMode;
     isScrollSyncEnabled = CONTENT_OPTIONS.value.isPlaylistScrollSyncEnabled;
   });
-
-  const availableQualities = $derived.by(() => {
-    const allHeights: number[] = [];
-    for (const data of videoDataMap.values()) {
-      for (const format of data.videoFormats) {
-        if (format.height) {
-          allHeights.push(format.height);
-        }
-      }
-    }
-    allHeights.sort((heightA, heightB) => heightB - heightA);
-    return allHeights.filter((height, iHeight) => iHeight === 0 || height !== allHeights[iHeight - 1]);
-  });
-
-  const guaranteedQuality = $derived.by(() => {
-    if (videoDataMap.size === 0) {
-      return 0;
-    }
-
-    let min = Infinity;
-    for (const data of videoDataMap.values()) {
-      let videoMax = 0;
-      for (const format of data.videoFormats) {
-        const height = format.height ?? 0;
-        if (height > videoMax) {
-          videoMax = height;
-        }
-      }
-
-      if (videoMax < min) {
-        min = videoMax;
-      }
-    }
-    return min === Infinity ? 0 : min;
-  });
-
-  const selectedDownloadableVideos = $derived(
-    downloadableVideos.filter(data => checkedPlaylistVideos.has(data.videoId))
-  );
-  const isAllSelected = $derived(
-    downloadableVideos.length > 0 && selectedDownloadableVideos.length === downloadableVideos.length
-  );
 
   const overrides = createOverrideState(() => resolveDefaultZipName(playlistMetadataSignal.value));
 
@@ -114,82 +48,13 @@ export function createPlaylistDownloaderState() {
     () => overrides.effectiveZipName
   );
 
-  const downloadButtonLabel = $derived.by(() => {
-    if (batch.isDownloading) {
-      return `Downloading ${batch.downloadedCount} of ${batch.totalCount}`;
-    }
-
-    const count = selectedDownloadableVideos.length;
-    return count === 0 ? "Download selected" : `Download ${count} video${count === 1 ? "" : "s"}`;
-  });
-
   const reveal = createRevealState(
-    () => videoDataMap.size,
-    () => downloadableVideos,
+    () => videoData.videoDataMap.size,
+    () => videoData.downloadableVideos,
     batch.startDownload
   );
 
-  const activeIndividualDownloadCount = $derived.by(() => {
-    if (batch.isDownloading) {
-      return 0;
-    }
-
-    let count = 0;
-    for (const videoId of videoDataMap.keys()) {
-      if (downloadProgressStore.get(videoId)?.isDownloading) {
-        count++;
-      }
-    }
-    return count;
-  });
-
-  const totalProgress = $derived(
-    calculateBatchProgress(
-      batch.isDownloading,
-      batch.activeDownloadRequests,
-      videoId => downloadProgressStore.get(videoId),
-      batch.totalCount,
-      batch.currentZipBundleId,
-      activeIndividualDownloadCount,
-      videoDataMap.keys(),
-      batch.completedBatchProgress
-    )
-  );
-
-  const activeDownloadVideoId = $derived.by(() => {
-    if (!batch.isDownloading) {
-      return null;
-    }
-
-    for (const request of batch.activeDownloadRequests) {
-      if (downloadProgressStore.get(request.videoId)?.isDownloading) {
-        return request.videoId;
-      }
-    }
-
-    return null;
-  });
-
-  const currentPhaseLabel = $derived(
-    resolveCurrentPhaseLabel(
-      batch.isDownloading,
-      batch.currentZipBundleId,
-      batch.downloadedCount,
-      batch.totalCount,
-      activeDownloadVideoId,
-      batch.activeDownloadRequests,
-      videoId => downloadProgressStore.get(videoId),
-      videoId => videoDataMap.get(videoId)
-    )
-  );
-
-  $effect(() => {
-    if (!isScrollSyncEnabled || !activeDownloadVideoId) {
-      return;
-    }
-
-    scrollVideoItemIntoView(activeDownloadVideoId);
-  });
+  const progress = createProgressState(batch, videoData, () => isScrollSyncEnabled);
 
   return {
     get isDownloading() {
@@ -215,28 +80,28 @@ export function createPlaylistDownloaderState() {
     },
     set outputMode(value) {
       outputMode = value;
-      void setOption(isAllMusicPlaylist ? "playlistAudioOutputMode" : "playlistOutputMode", value);
+      void setOption(videoData.isAllMusicPlaylist ? "playlistAudioOutputMode" : "playlistOutputMode", value);
     },
     get downloadableVideos() {
-      return downloadableVideos;
+      return videoData.downloadableVideos;
     },
     get nonDownloadableCount() {
-      return nonDownloadableCount;
+      return videoData.nonDownloadableCount;
     },
     get selectedDownloadableVideos() {
-      return selectedDownloadableVideos;
+      return videoData.selectedDownloadableVideos;
     },
     get isAllSelected() {
-      return isAllSelected;
+      return videoData.isAllSelected;
     },
     get downloadButtonLabel() {
-      return downloadButtonLabel;
+      return progress.downloadButtonLabel;
     },
     get availableQualities() {
-      return availableQualities;
+      return videoData.availableQualities;
     },
     get guaranteedQuality() {
-      return guaranteedQuality;
+      return videoData.guaranteedQuality;
     },
     get isRevealingAll() {
       return reveal.isRevealingAll;
@@ -278,16 +143,16 @@ export function createPlaylistDownloaderState() {
       return overrides.isAnyOverrideActive;
     },
     get activeIndividualDownloadCount() {
-      return activeIndividualDownloadCount;
+      return progress.activeIndividualDownloadCount;
     },
     get totalProgress() {
-      return totalProgress;
+      return progress.totalProgress;
     },
     get completedBatchProgress() {
       return batch.completedBatchProgress;
     },
     get currentPhaseLabel() {
-      return currentPhaseLabel;
+      return progress.currentPhaseLabel;
     },
     get isDownloadTypeOverridden() {
       return overrides.isDownloadTypeOverridden;
@@ -313,11 +178,11 @@ export function createPlaylistDownloaderState() {
     resetOverrides: overrides.resetOverrides,
     toggleSelectedDownload: () => batch.isDownloading
       ? void batch.cancelDownload()
-      : void batch.startDownload(selectedDownloadableVideos),
+      : void batch.startDownload(videoData.selectedDownloadableVideos),
     revealAndDownloadAll: reveal.revealAndDownloadAll,
     cancelReveal: reveal.cancelReveal,
     selectAll() {
-      for (const video of downloadableVideos) {
+      for (const video of videoData.downloadableVideos) {
         checkedPlaylistVideos.add(video.videoId);
       }
     },

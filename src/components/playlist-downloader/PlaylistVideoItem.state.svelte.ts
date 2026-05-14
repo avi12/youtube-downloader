@@ -1,13 +1,8 @@
 import { resolveButtonLabel, resolveDownloadIconName } from "./PlaylistVideoItem.display";
 import { cancelDownload, executeDownload } from "./PlaylistVideoItem.download";
+import { createVideoItemEffects } from "./PlaylistVideoItem.effects.svelte";
 import { buildButtonTooltip } from "./PlaylistVideoItem.helpers";
-import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
-import {
-  downloadProgressStore,
-  type DownloadProgressState,
-  videoDataFailedStore,
-  videoDataStore
-} from "@/lib/ui/synced-stores.svelte";
+import { downloadProgressStore, type DownloadProgressState } from "@/lib/ui/synced-stores.svelte";
 import { calculateWeightedProgress } from "@/lib/youtube/video-helpers";
 import { type VideoData } from "@/types";
 
@@ -32,29 +27,18 @@ export function createPlaylistVideoItemState({ videoId, gridTitle, activeDownloa
   const isDone = $derived(downloadState.isDone);
   const isDownloadFailed = $derived(!!downloadState.isFailed);
 
-  $effect(() => {
-    const entry = downloadProgressStore.get(videoId);
-    if (entry?.isDone) {
-      isLocallyDone = true; return;
+  createVideoItemEffects(
+    videoId,
+    value => {
+      videoData = value;
+    },
+    value => {
+      isLoadFailed = value;
+    },
+    value => {
+      isLocallyDone = value;
     }
-
-    if (!entry || entry.isFailed || entry.isDownloading) {
-      isLocallyDone = false;
-    }
-  });
-
-  $effect(() => {
-    const storeData = videoDataStore.get(videoId);
-    if (storeData) {
-      videoData = storeData; return;
-    }
-
-    if (videoDataFailedStore.get(videoId)) {
-      isLoadFailed = true; return;
-    }
-
-    void crossWorldMessenger.sendMessage(CrossWorldMessage.RequestVideoData, { videoId });
-  });
+  );
 
   const buttonLabel = $derived(resolveButtonLabel(videoData, isLocallyDone, isDone, isDownloading, isDownloadFailed));
   const displayProgress = $derived(

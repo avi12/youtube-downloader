@@ -1,8 +1,7 @@
-import { createAudioTrackState } from "./DownloadOptionsPanel.audio.svelte";
-import { createCaptionTrackState } from "./DownloadOptionsPanel.caption.svelte";
-import { createDownloadProgressTracker } from "./DownloadOptionsPanel.progress.svelte";
-import { createVideoFormatTracker } from "./DownloadOptionsPanel.video-format.svelte";
+import { createDownloadStoreState } from "./DownloadOptionsPanel.download-state.svelte";
+import { createTrackStates } from "./DownloadOptionsPanel.tracks.svelte";
 import {
+  applyDownloadTypeChange,
   sendCancelDownload,
   sendDiscardInterrupted,
   sendRevealDownload,
@@ -10,29 +9,21 @@ import {
 } from "./panel-download-actions";
 import {
   IS_WATCH_PAGE,
-  resolveInitialAudioCustomLanguage,
   resolveInitialAudioFormat,
-  resolveInitialAudioMode,
-  resolveInitialCaptionMode,
-  resolveInitialCaptionTrack,
   resolveInitialDownloadType,
   resolveInitialExtension,
   resolveInitialFilename
 } from "./panel-init";
 import { resolveActualExtension, resolvePrimaryState, resolveQualityLabel } from "./panel-state-derived";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
-import { CONTENT_OPTIONS, downloadProgressStore, interruptedDownloadStore } from "@/lib/ui/synced-stores.svelte";
-import { getCompatibleFilename, resolveAutoExtension } from "@/lib/utils/containers";
+import { CONTENT_OPTIONS, interruptedDownloadStore } from "@/lib/ui/synced-stores.svelte";
+import { getCompatibleFilename } from "@/lib/utils/containers";
 import { calculateWeightedProgress } from "@/lib/youtube/video-helpers";
 import { DownloadType, type AdaptiveFormatItem, type VideoData } from "@/types";
 import { untrack } from "svelte";
 
 export function createPanelState(getVideoData: () => VideoData) {
-  const storeEntry = $derived(downloadProgressStore.get(getVideoData().videoId));
-  const isDownloading = $derived(storeEntry?.isDownloading ?? false);
-  const isDone = $derived(storeEntry?.isDone ?? false);
-  const progress = $derived(storeEntry?.progress ?? 0);
-  const progressType = $derived(storeEntry?.progressType ?? "");
+  const store = createDownloadStoreState(getVideoData);
 
   let downloadId = $state<number | null>(null);
   let downloadType = $state<DownloadType>(
@@ -53,62 +44,30 @@ export function createPanelState(getVideoData: () => VideoData) {
   );
   const isDownloadable = $derived(getVideoData().isDownloadable);
   const isInterrupted = $derived(!!interruptedDownloadStore.get(getVideoData().videoId));
-  const isFailed = $derived(!!storeEntry?.isFailed);
-  const primaryState = $derived(resolvePrimaryState(isDownloading, isFailed, isInterrupted, isDone));
+  const primaryState = $derived(resolvePrimaryState(store.isDownloading, store.isFailed, isInterrupted, store.isDone));
   const displayProgress = $derived(
     calculateWeightedProgress({
-      isDownloading,
-      progress,
-      progressType
+      isDownloading: store.isDownloading,
+      progress: store.progress,
+      progressType: store.progressType
     })
   );
   const fullFilename = $derived(getCompatibleFilename(`${filename}.${actualExtension}`));
   const qualityLabel = $derived(resolveQualityLabel(downloadType, selectedVideoFormat, selectedAudioFormat));
 
-  function resetDoneState() {
-    const { videoId } = getVideoData();
-    const entry = storeEntry;
-    if (!entry?.isDone) {
-      return;
+  const { audio, caption } = createTrackStates(
+    getVideoData,
+    value => {
+      selectedAudioFormat = value;
+    },
+    value => {
+      selectedVideoFormat = value;
+    },
+    store.resetDoneState,
+    value => {
+      downloadId = value;
     }
-
-    downloadProgressStore.setLocal(videoId, {
-      ...entry,
-      isDone: false
-    });
-  }
-
-  const audio = untrack(() => {
-    const options = CONTENT_OPTIONS.value;
-    const videoData = getVideoData();
-    return createAudioTrackState(
-      getVideoData,
-      value => {
-        selectedAudioFormat = value;
-      },
-      resetDoneState,
-      resolveInitialAudioMode(options, videoData),
-      resolveInitialAudioCustomLanguage(options, videoData)
-    );
-  });
-
-  const caption = untrack(() => {
-    const options = CONTENT_OPTIONS.value;
-    const videoData = getVideoData();
-    const initialMode = resolveInitialCaptionMode(options, videoData);
-    return createCaptionTrackState(
-      getVideoData,
-      initialMode,
-      resolveInitialCaptionTrack(initialMode, options, videoData)
-    );
-  });
-
-  createVideoFormatTracker(getVideoData, value => {
-    selectedVideoFormat = value;
-  });
-  createDownloadProgressTracker(getVideoData, value => {
-    downloadId = value;
-  });
+  );
 
   $effect(() => {
     void crossWorldMessenger.sendMessage(CrossWorldMessage.FilenameChanged, {
@@ -121,31 +80,18 @@ export function createPanelState(getVideoData: () => VideoData) {
   });
 
   function handleDownloadTypeChange(newType: DownloadType) {
-    const options = CONTENT_OPTIONS.value;
-    const { videoId } = getVideoData();
-    downloadProgressStore.setLocal(videoId, {
-      isDownloading: false,
-      isDone: false,
-      progress: 0,
-      progressType: ""
-    });
-    downloadType = newType;
-    const extensionPreference = newType === DownloadType.Audio ? options.ext.audio : options.ext.video;
-    const format = newType === DownloadType.Audio ? selectedAudioFormat : selectedVideoFormat;
-    extension = resolveAutoExtension({
-      extension: extensionPreference,
-      mimeType: format?.mimeType ?? ""
-    });
+    const result = applyDownloadTypeChange(newType, selectedVideoFormat, selectedAudioFormat, getVideoData().videoId);
+    downloadType = result.downloadType;
+    extension = result.extension;
   }
 
   function startDownload() {
-    const { selectedCaptionTrack } = caption;
     sendStartDownload(
       downloadType,
       selectedVideoFormat,
       selectedAudioFormat,
-      selectedCaptionTrack,
-      isDownloading,
+      caption.selectedCaptionTrack,
+      store.isDownloading,
       isDownloadable,
       isFilenameValid,
       fullFilename,
@@ -155,16 +101,16 @@ export function createPanelState(getVideoData: () => VideoData) {
 
   return {
     get isDownloading() {
-      return isDownloading;
+      return store.isDownloading;
     },
     get isDone() {
-      return isDone;
+      return store.isDone;
     },
     get progress() {
-      return progress;
+      return store.progress;
     },
     get progressType() {
-      return progressType;
+      return store.progressType;
     },
     get downloadType() {
       return downloadType;
@@ -173,25 +119,25 @@ export function createPanelState(getVideoData: () => VideoData) {
       return selectedVideoFormat;
     },
     set selectedVideoFormat(value: AdaptiveFormatItem | null) {
-      selectedVideoFormat = value; resetDoneState();
+      selectedVideoFormat = value; store.resetDoneState();
     },
     get selectedAudioFormat() {
       return selectedAudioFormat;
     },
     set selectedAudioFormat(value: AdaptiveFormatItem | null) {
-      selectedAudioFormat = value; resetDoneState();
+      selectedAudioFormat = value; store.resetDoneState();
     },
     get filename() {
       return filename;
     },
     set filename(value: string) {
-      filename = value; resetDoneState();
+      filename = value; store.resetDoneState();
     },
     get extension() {
       return extension;
     },
     set extension(value: string) {
-      extension = value; resetDoneState();
+      extension = value; store.resetDoneState();
     },
     get actualExtension() {
       return actualExtension;
@@ -203,7 +149,7 @@ export function createPanelState(getVideoData: () => VideoData) {
       return isInterrupted;
     },
     get isFailed() {
-      return isFailed;
+      return store.isFailed;
     },
     get primaryState() {
       return primaryState;

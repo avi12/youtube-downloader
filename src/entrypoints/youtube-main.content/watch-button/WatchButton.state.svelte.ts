@@ -1,16 +1,12 @@
-import { performDownload } from "../video/download";
+import { buildClickHandler } from "./watch-button-click";
+import { PROGRESS_RING_CIRCUMFERENCE, PROGRESS_RING_RADIUS, PROGRESS_RING_SVG_SIZE } from "./watch-button-progress";
 import { buildInitialDownloadState } from "./watch-button-state";
 import { buildChevronData, buildDownloadData } from "./watch-button-view-model";
 import { createButtonElementEffects } from "./WatchButton.button-effects.svelte";
 import { createMessageEffects } from "./WatchButton.message-effects.svelte";
 import { createPanelEffects } from "./WatchButton.panel-effects.svelte";
-import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { ProgressType, type VideoData, type YtButtonViewModelElement } from "@/types";
 import { untrack } from "svelte";
-
-const PROGRESS_RING_RADIUS = 16;
-const PROGRESS_RING_SVG_SIZE = 40;
-const PROGRESS_RING_CIRCUMFERENCE = 2 * Math.PI * PROGRESS_RING_RADIUS;
 
 export function createWatchButtonState(params: {
   readonly videoData: VideoData;
@@ -138,74 +134,53 @@ export function createWatchButtonState(params: {
     value => {
       isPanelOpen = value;
     },
-    value => {
-      defaultFilename = value;
-    },
-    value => {
-      defaultQuality = value;
-    },
-    value => {
-      defaultVideoItag = value;
-    },
-    value => {
-      defaultAudioItag = value;
-    },
-    value => {
-      defaultAudioTrackId = value;
+    {
+      setDefaultFilename(value) {
+        defaultFilename = value;
+      },
+      setDefaultQuality(value) {
+        defaultQuality = value;
+      },
+      setDefaultVideoItag(value) {
+        defaultVideoItag = value;
+      },
+      setDefaultAudioItag(value) {
+        defaultAudioItag = value;
+      },
+      setDefaultAudioTrackId(value) {
+        defaultAudioTrackId = value;
+      }
     },
     () => params.elDropdown
   );
 
-  function handleClick(e: Event) {
-    const { target } = e;
-    if (!(target instanceof Node)) {
-      return;
+  const handleClick = buildClickHandler(params.videoData, params.elDropdown, {
+    getIsDownloading: () => isDownloading,
+    getIsInterrupted: () => isInterrupted,
+    getIsPanelOpen: () => isPanelOpen,
+    getDefaultDownloadType: () => defaultDownloadType,
+    getDefaultVideoItag: () => defaultVideoItag,
+    getDefaultAudioItag: () => defaultAudioItag,
+    getDefaultAudioTrackId: () => defaultAudioTrackId,
+    getDefaultFilename: () => defaultFilename,
+    getElDownloadButton: () => elDownloadButton,
+    getElChevronButton: () => elChevronButton,
+    setIsDownloading(value) {
+      isDownloading = value;
+    },
+    setIsInterrupted(value) {
+      isInterrupted = value;
+    },
+    setIsDone(value) {
+      isDone = value;
+    },
+    setIsError(value) {
+      isError = value;
+    },
+    setIsPanelOpen(value) {
+      isPanelOpen = value;
     }
-
-    if (elDownloadButton?.contains(target)) {
-      if (!params.videoData.isDownloadable) {
-        return;
-      }
-
-      if (isDownloading || isInterrupted) {
-        isDownloading = false;
-        isInterrupted = false;
-        void crossWorldMessenger.sendMessage(CrossWorldMessage.CancelDownload, {
-          videoIds: [params.videoData.videoId]
-        });
-        return;
-      }
-
-      isDone = false;
-      isInterrupted = false;
-      isError = false;
-      void performDownload({
-        type: defaultDownloadType,
-        videoId: params.videoData.videoId,
-        videoItag: defaultVideoItag,
-        audioItag: defaultAudioItag,
-        audioTrackId: defaultAudioTrackId,
-        filenameOutput: defaultFilename
-      });
-      return;
-    }
-
-    if (elChevronButton?.contains(target)) {
-      if (!params.videoData.isDownloadable) {
-        return;
-      }
-
-      isPanelOpen = !isPanelOpen;
-
-      if (isPanelOpen) {
-        e.stopPropagation();
-        params.elDropdown.open();
-        elChevronButton.querySelector<HTMLButtonElement>("button")?.blur();
-      } else {
-        params.elDropdown.close();
-      }
-    }
-  }
+  });
 
   return {
     get elGroup() {
