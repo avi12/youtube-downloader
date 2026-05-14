@@ -1,10 +1,16 @@
 import {
   toUint8Array,
-  triggerDownload,
   reportProgress,
   toOwnedArrayBuffer,
-  buildRecentContext
+  buildRecentContext,
+  triggerDownload
 } from ".";
+import {
+  buildExtraAudioTracks,
+  buildSubtitleFiles,
+  handleSingleStream,
+  resolveDownloadFilename
+} from "./build-mux-job";
 import { runMuxVideoAudio } from "./ffmpeg-instance";
 import { addToPlaylistBundle } from "./playlist-bundle";
 import { ProgressType } from "@/types";
@@ -19,31 +25,7 @@ export async function processVideoAudio(item: ProcessStreamData, isCancelled: ()
   const videoData = toUint8Array(item.videoData);
   const audioData = toUint8Array(item.audioData);
   if (!videoData || !audioData) {
-    if (!videoData && !audioData) {
-      throw new Error("No stream data accumulated");
-    }
-
-    const recentContext = buildRecentContext(item);
-    if (videoData) {
-      await triggerDownload({
-        data: videoData,
-        filenameOutput,
-        recentContext
-      });
-    } else if (audioData) {
-      await triggerDownload({
-        data: audioData,
-        filenameOutput,
-        recentContext
-      });
-    }
-
-    await reportProgress({
-      videoId,
-      progress: 1,
-      progressType: ProgressType.FFmpeg,
-      tabId
-    });
+    await handleSingleStream(item, videoData, audioData);
     return;
   }
 
@@ -54,54 +36,22 @@ export async function processVideoAudio(item: ProcessStreamData, isCancelled: ()
     tabId
   });
 
-  const isExtraTracksPresent = additionalAudioStreams.length > 0;
-  const targetExtension = isExtraTracksPresent ? "mkv" : (filenameOutput.split(".").pop() ?? "mkv");
-  const downloadFilename = `${filenameOutput.replace(/\.[^.]+$/, "")}.${targetExtension}`;
+  const downloadFilename = resolveDownloadFilename(filenameOutput, additionalAudioStreams.length > 0);
 
-  const extraAudioTracks = additionalAudioStreams
-    .map(stream => {
-      const data = toUint8Array(stream.data);
-      if (!data) {
-        return null;
-      }
-
-      return {
-        data: toOwnedArrayBuffer(data),
-        label: stream.label,
-        languageCode: stream.languageCode ?? ""
-      };
-    })
-    .filter((track): track is {
-      data: ArrayBuffer;
-      label: string;
-      languageCode: string;
-    } => track !== null);
-
-  const subtitleFiles = subtitleTracks
-    .filter(track => track.data !== null)
-    .map(track => ({
-      data: track.data!,
-      label: track.label,
-      languageCode: track.languageCode
-    }));
-
-  const output = await runMuxVideoAudio(
+  const output = await runMuxVideoAudio(videoId, {
+    videoData: toOwnedArrayBuffer(videoData),
+    audioData: toOwnedArrayBuffer(audioData),
+    extraAudioTracks: buildExtraAudioTracks(additionalAudioStreams),
+    subtitleTracks: buildSubtitleFiles(subtitleTracks),
+    videoMimeType,
+    audioMimeType,
     videoId,
-    {
-      videoData: toOwnedArrayBuffer(videoData),
-      audioData: toOwnedArrayBuffer(audioData),
-      extraAudioTracks,
-      subtitleTracks: subtitleFiles,
-      videoMimeType,
-      audioMimeType,
-      videoId,
-      tabId,
-      primaryAudioLabel: item.primaryAudioLabel ?? "",
-      primaryAudioLanguageCode: primaryAudioLanguageCode ?? "",
-      defaultAudioTrackIndex: defaultAudioTrackIndex ?? 0,
-      filenameOutput
-    }
-  );
+    tabId,
+    primaryAudioLabel: item.primaryAudioLabel ?? "",
+    primaryAudioLanguageCode: primaryAudioLanguageCode ?? "",
+    defaultAudioTrackIndex: defaultAudioTrackIndex ?? 0,
+    filenameOutput
+  });
   if (isCancelled()) {
     return;
   }

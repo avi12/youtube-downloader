@@ -1,38 +1,22 @@
-import { removeFromPopupList } from "../queue/popup-list";
-import { signalVideoComplete } from "../queue/sequential-queue";
-import { downloadViaCdn } from "./cdn-downloader";
+import { reportDownloadFailed } from "./download-failure-reporter";
+import { trySabr, tryCdn } from "./download-fallback-chain";
+import { enrichMetadataFromYouTubeMusic } from "./metadata-enrichment";
 import {
   clearInterruptedDownload,
   dropPendingRetry,
   queueNetworkRetry,
   registerOnlineRetryListener
 } from "./network-retry";
-import { attemptSabrDownload, clearIframeAutoRetry, handleIframeFallback } from "./sabr-attempt";
+import { clearIframeAutoRetry, handleIframeFallback } from "./sabr-attempt";
 import { dispatchToOffscreen } from "./stream-dispatch";
-import { MessageType, sendMessage } from "@/lib/messaging/messaging";
-import { fetchYouTubeMusicMetadata } from "@/lib/youtube/youtube-music-metadata";
-import { ProgressType } from "@/types";
-import type { DownloadRequest, VideoMetadata, VideoTabParams } from "@/types";
+import type { DownloadRequest } from "@/types";
 
 export type { DownloadResult } from "./download-result-types";
+export { dropPendingRetry, reportDownloadFailed };
 
 const activeBackgroundDownloads = new Map<string, AbortController>();
 
-export { dropPendingRetry };
-
 registerOnlineRetryListener(startBackgroundDownload);
-
-export function reportDownloadFailed({ videoId, tabId }: VideoTabParams) {
-  void sendMessage(MessageType.UpdateDownloadProgress, {
-    videoId,
-    progress: 0,
-    progressType: ProgressType.Video,
-    isRemoved: true,
-    isFailed: true
-  }, tabId);
-  void removeFromPopupList(videoId);
-  signalVideoComplete(videoId);
-}
 
 export function cancelBackgroundDownload(videoId: string) {
   const controller = activeBackgroundDownloads.get(videoId);
@@ -43,22 +27,6 @@ export function cancelBackgroundDownload(videoId: string) {
   controller.abort();
   activeBackgroundDownloads.delete(videoId);
   clearIframeAutoRetry(videoId);
-}
-
-async function enrichMetadataFromYouTubeMusic(metadata: VideoMetadata | null | undefined) {
-  if (!metadata?.isMusic) {
-    return metadata;
-  }
-
-  const searchQuery = `${metadata.artist} ${metadata.title}`.trim();
-  if (!searchQuery) {
-    return metadata;
-  }
-
-  return fetchYouTubeMusicMetadata({
-    searchQuery,
-    existingMetadata: metadata
-  });
 }
 
 export async function startBackgroundDownload({ request, tabId }: {
@@ -73,24 +41,7 @@ export async function startBackgroundDownload({ request, tabId }: {
 
   try {
     const enrichedMetadataPromise = enrichMetadataFromYouTubeMusic(metadata);
-
-    let result = await attemptSabrDownload({
-      request,
-      signal,
-      tabId
-    }).catch(sabrError => {
-      if (signal.aborted) {
-        throw sabrError;
-      }
-
-      console.warn("[ytdl:bg] SABR failed, trying CDN:", sabrError);
-      void sendMessage(MessageType.UpdateDownloadProgress, {
-        videoId,
-        progress: 0,
-        progressType: ProgressType.Video
-      }, tabId);
-      return null;
-    });
+    let result = await trySabr(request, signal, tabId);
     if (signal.aborted) {
       return;
     }
@@ -98,21 +49,9 @@ export async function startBackgroundDownload({ request, tabId }: {
     const needsCdn = !result?.audioData || result.isPartialVideo || result.isPartialAudio;
     const hasCdnUrls = !!(request.resolvedVideoUrl || request.resolvedAudioUrl);
     if (needsCdn && hasCdnUrls) {
-      result = await downloadViaCdn({
-        request,
-        signal,
-        videoId,
-        tabId,
-        partialVideoData: result?.isPartialVideo ? (result.videoData ?? undefined) : undefined,
-        partialAudioData: result?.isPartialAudio ? (result.audioData ?? undefined) : undefined
-      }).catch(cdnError => {
-        if (signal.aborted) {
-          throw cdnError;
-        }
-
-        console.warn("[ytdl:bg] CDN failed, trying iframe fallback:", cdnError);
-        return null;
-      });
+      const partialVideoData = result?.isPartialVideo ? (result.videoData ?? undefined) : undefined;
+      const partialAudioData = result?.isPartialAudio ? (result.audioData ?? undefined) : undefined;
+      result = await tryCdn(request, signal, videoId, tabId, partialVideoData, partialAudioData);
     }
 
     if (signal.aborted) {

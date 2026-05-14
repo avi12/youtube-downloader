@@ -1,72 +1,14 @@
-import type { DownloadType, VideoMetadata } from "@/types";
+import {
+  OffscreenMessageType,
+  type HandlerMap,
+  type OffscreenMessage,
+  type OffscreenProtocolMap
+} from "./offscreen-protocol";
+
+export type { ProcessStreamChunkData, ProcessStreamEndData } from "./offscreen-protocol";
+export { OffscreenMessageType };
 
 const OFFSCREEN_PORT_NAME = "ytdl-offscreen";
-
-const OffscreenMessageType = {
-  ProcessStreamChunk: "processStreamChunk",
-  ProcessStreamEnd: "processStreamEnd",
-  CancelProcessing: "cancelProcessing",
-  TranscodeRecentDownload: "transcodeRecentDownload",
-  CreateDownloadIframe: "createDownloadIframe",
-  RemoveDownloadIframe: "removeDownloadIframe"
-} as const;
-
-type OffscreenMessageType = (typeof OffscreenMessageType)[keyof typeof OffscreenMessageType];
-
-interface OffscreenProtocolMap {
-  [OffscreenMessageType.ProcessStreamChunk]: {
-    videoId: string;
-    streamType: string;
-    iChunk: number;
-    totalChunks: number;
-    chunkBase64: string;
-    tabId: number;
-  };
-  [OffscreenMessageType.ProcessStreamEnd]: {
-    type: DownloadType;
-    videoId: string;
-    filenameOutput: string;
-    videoMimeType: string;
-    audioMimeType: string;
-    audioTrackLabels: string[];
-    audioTrackLanguages?: string[];
-    defaultAudioTrackIndex?: number;
-    subtitleTracks?: {
-      dataBase64: string;
-      label: string;
-      languageCode: string;
-    }[];
-    tabId: number;
-    playlistId?: string;
-    playlistTitle?: string;
-    playlistTotalCount?: number;
-    metadata?: VideoMetadata | null;
-  };
-  [OffscreenMessageType.CancelProcessing]: {
-    videoIds: string[];
-  };
-  [OffscreenMessageType.TranscodeRecentDownload]: {
-    entryId: string;
-    targetContainer: string;
-  };
-  [OffscreenMessageType.CreateDownloadIframe]: {
-    videoId: string;
-    watchUrl: string;
-  };
-  [OffscreenMessageType.RemoveDownloadIframe]: {
-    videoId: string;
-  };
-}
-
-type OffscreenMessage = {
-  [T in OffscreenMessageType]: {
-    type: T;
-    data: OffscreenProtocolMap[T];
-  };
-}[OffscreenMessageType];
-
-type OffscreenHandler<T extends OffscreenMessageType> = (data: OffscreenProtocolMap[T]) => void;
-type HandlerMap = { [T in OffscreenMessageType]?: OffscreenHandler<T> };
 
 function dispatchOffscreenMessage({ handlers, message }: {
   handlers: Partial<HandlerMap>;
@@ -96,7 +38,7 @@ function dispatchOffscreenMessage({ handlers, message }: {
 
 let swSidePort: Browser.runtime.Port | null = null;
 
-function initOffscreenPortListener() {
+export function initOffscreenPortListener() {
   browser.runtime.onConnect.addListener(port => {
     if (port.name !== OFFSCREEN_PORT_NAME) {
       return;
@@ -109,7 +51,7 @@ function initOffscreenPortListener() {
   });
 }
 
-function sendToOffscreen<T extends OffscreenMessageType>(
+export function sendToOffscreen<T extends OffscreenMessageType>(
   type: T,
   data: OffscreenProtocolMap[T]
 ) {
@@ -119,7 +61,7 @@ function sendToOffscreen<T extends OffscreenMessageType>(
   });
 }
 
-function listenForOffscreenMessages(handlers: HandlerMap) {
+export function listenForOffscreenMessages(handlers: HandlerMap) {
   function connect() {
     const port = browser.runtime.connect({ name: OFFSCREEN_PORT_NAME });
     port.onDisconnect.addListener(() => {
@@ -135,7 +77,3 @@ function listenForOffscreenMessages(handlers: HandlerMap) {
 
   connect();
 }
-
-export type ProcessStreamChunkData = OffscreenProtocolMap[typeof OffscreenMessageType.ProcessStreamChunk];
-export type ProcessStreamEndData = OffscreenProtocolMap[typeof OffscreenMessageType.ProcessStreamEnd];
-export { OffscreenMessageType, sendToOffscreen, listenForOffscreenMessages, initOffscreenPortListener };

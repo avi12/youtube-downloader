@@ -1,9 +1,25 @@
 import type { DownloadResult } from "./background-downloader";
-import { fetchWithProgress, sendProgressUpdate } from "./progress-fetch";
-import { parseContentLength } from "./sabr-downloader";
+import { fetchWithProgress } from "./cdn-fetch";
+import { createCdnProgressTracker } from "./cdn-progress";
+import { parseContentLength } from "./sabr-utils";
 import { stripMimeParams } from "@/lib/utils/containers";
-import { DownloadType, ProgressType } from "@/types";
+import { DownloadType } from "@/types";
 import type { DownloadRequest } from "@/types";
+
+function fetchStream(
+  url: string | null | undefined, signal: AbortSignal, onBytes: (n: number) => void, initialData?: Uint8Array
+) {
+  if (!url) {
+    return Promise.resolve(null);
+  }
+
+  return fetchWithProgress({
+    url,
+    signal,
+    onBytesReceived: onBytes,
+    initialData
+  });
+}
 
 export async function downloadViaCdn({ request, signal, videoId, tabId, partialVideoData, partialAudioData }: {
   request: DownloadRequest;
@@ -14,11 +30,10 @@ export async function downloadViaCdn({ request, signal, videoId, tabId, partialV
   partialAudioData?: Uint8Array;
 }): Promise<DownloadResult | null> {
   const {
-    type, videoFormat, audioFormat, resolvedVideoUrl,
-    resolvedAudioUrl, resolvedExtraAudioUrls, additionalAudioFormats
+    type, videoFormat, audioFormat,
+    resolvedVideoUrl, resolvedAudioUrl, resolvedExtraAudioUrls, additionalAudioFormats
   } = request;
-  const hasNoResolvedUrls = !resolvedVideoUrl && !resolvedAudioUrl;
-  if (hasNoResolvedUrls) {
+  if (!resolvedVideoUrl && !resolvedAudioUrl) {
     return null;
   }
 
@@ -28,100 +43,25 @@ export async function downloadViaCdn({ request, signal, videoId, tabId, partialV
   const hasAudio = type !== DownloadType.Video;
   const totalStages = captionCount + (hasVideo ? 1 : 0) + (hasAudio ? 1 : 0) + extraUrls.length;
 
-  const videoExpectedBytes = parseContentLength(videoFormat ?? null);
-  const audioExpectedBytes = parseContentLength(audioFormat ?? null);
-  const extraExpectedBytesArr = (additionalAudioFormats ?? []).map(format => parseContentLength(format));
-
-  // Pre-seed with bytes already fetched by SABR before it stalled
-  let videoReceivedBytes = partialVideoData?.byteLength ?? 0;
-  let audioReceivedBytes = partialAudioData?.byteLength ?? 0;
-  const extraReceivedBytesArr = extraUrls.map(() => 0);
-  let videoTotalBytes = videoExpectedBytes;
-  let audioTotalBytes = audioExpectedBytes;
-
-  function reportProgress() {
-    if (totalStages === 0) {
-      return;
-    }
-
-    // Captions are pre-fetched in the content script - count as completed stages
-    let completed = captionCount;
-    if (hasVideo) {
-      const expected = videoTotalBytes || videoReceivedBytes;
-      if (expected > 0) {
-        completed += Math.min(videoReceivedBytes / expected, 1);
-      }
-    }
-
-    if (hasAudio) {
-      const expected = audioTotalBytes || audioReceivedBytes;
-      if (expected > 0) {
-        completed += Math.min(audioReceivedBytes / expected, 1);
-      }
-    }
-
-    for (const [i, expected] of extraExpectedBytesArr.entries()) {
-      const effectiveExpected = expected || extraReceivedBytesArr[i];
-      if (effectiveExpected > 0) {
-        completed += Math.min(extraReceivedBytesArr[i] / effectiveExpected, 1);
-      }
-    }
-
-    void sendProgressUpdate({
-      videoId,
-      progress: Math.min(completed / totalStages, 1),
-      progressType: ProgressType.Video,
-      tabId
-    });
-  }
-
-  function fetchStream({ url, onBytes, initialData }: {
-    url: string | null | undefined;
-    onBytes: (bytes: number) => void;
-    initialData?: Uint8Array;
-  }) {
-    if (!url) {
-      return Promise.resolve(null);
-    }
-
-    return fetchWithProgress({
-      url,
-      signal,
-      onBytesReceived: onBytes,
-      initialData
-    });
-  }
+  const tracker = createCdnProgressTracker({
+    videoId,
+    tabId,
+    totalStages,
+    captionCount,
+    hasVideo,
+    hasAudio,
+    extraCount: extraUrls.length,
+    videoExpectedBytes: parseContentLength(videoFormat ?? null),
+    audioExpectedBytes: parseContentLength(audioFormat ?? null),
+    extraExpectedBytesArr: (additionalAudioFormats ?? []).map(format => parseContentLength(format)),
+    initialVideoBytes: partialVideoData?.byteLength ?? 0,
+    initialAudioBytes: partialAudioData?.byteLength ?? 0
+  });
 
   const cdnResults = await Promise.all([
-    hasVideo
-      ? fetchStream({
-        url: resolvedVideoUrl,
-        initialData: partialVideoData,
-        onBytes(bytes) {
-          videoReceivedBytes += bytes;
-          videoTotalBytes = Math.max(videoTotalBytes, videoReceivedBytes);
-          reportProgress();
-        }
-      })
-      : Promise.resolve(null),
-    hasAudio
-      ? fetchStream({
-        url: resolvedAudioUrl,
-        initialData: partialAudioData,
-        onBytes(bytes) {
-          audioReceivedBytes += bytes;
-          audioTotalBytes = Math.max(audioTotalBytes, audioReceivedBytes);
-          reportProgress();
-        }
-      })
-      : Promise.resolve(null),
-    ...extraUrls.map((url, i) => fetchStream({
-      url,
-      onBytes(bytes) {
-        extraReceivedBytesArr[i] += bytes;
-        reportProgress();
-      }
-    }))
+    hasVideo ? fetchStream(resolvedVideoUrl, signal, tracker.onVideoBytes, partialVideoData) : Promise.resolve(null),
+    hasAudio ? fetchStream(resolvedAudioUrl, signal, tracker.onAudioBytes, partialAudioData) : Promise.resolve(null),
+    ...extraUrls.map((url, i) => fetchStream(url, signal, bytes => tracker.onExtraBytes(i, bytes)))
   ]);
 
   const additionalAudioTracks: DownloadResult["additionalAudioTracks"] = [];
