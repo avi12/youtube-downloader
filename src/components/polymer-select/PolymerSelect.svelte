@@ -19,13 +19,16 @@
 
   const { id, label, options, value, disabled = false, onchange }: Props = $props();
 
-  const anchorName = untrack(() => {
-    if (!id) {
-      selectInstanceCounter++;
+  const suffix = untrack(() => {
+    if (id) {
+      return id;
     }
 
-    return `--ytdl-select-${id ?? selectInstanceCounter}`;
+    return String(++selectInstanceCounter);
   });
+  const anchorName = `--ytdl-select-${suffix}`;
+  const popoverId = `ytdl-select-popup-${suffix}`;
+
   const selectedLabel = $derived(options.find(option => option.value === value)?.label ?? "");
 
   let isOpen = $state(false);
@@ -46,24 +49,15 @@
 
     function handleClick(e: Event) {
       e.stopPropagation();
-
-      if (elPopover?.matches(":popover-open")) {
-        elPopover.hidePopover();
-      } else {
-        elPopover?.showPopover();
-      }
     }
 
     function handleKeydown(e: Event) {
-      if (!(e instanceof KeyboardEvent)) {
+      if (!(e instanceof KeyboardEvent) || e.key !== "ArrowDown") {
         return;
       }
 
-      const isActivationKey = e.key === "ArrowDown" || e.key === "Enter" || e.key === " ";
-      if (isActivationKey) {
-        e.preventDefault();
-        elPopover?.showPopover();
-      }
+      e.preventDefault();
+      elPopover?.showPopover();
     }
 
     elTarget.addEventListener("click", handleClick);
@@ -185,6 +179,8 @@
     aria-haspopup="listbox"
     aria-label={label}
     disabled={disabled || undefined}
+    popovertarget={popoverId}
+    popovertargetaction="toggle"
     type="button"
   >
     <span class="value">{selectedLabel}</span>
@@ -192,28 +188,31 @@
   </button>
 
   <div
+    id={popoverId}
     style="position-anchor: {anchorName};"
     class="ytdl-select-popup"
     {@attach attachPopover}
     popover="auto"
   >
-    <tp-yt-paper-listbox
-      class="ytdl-select-menu"
-      {@attach attachMenu}
-      aria-label={label}
-      attr-for-selected="data-value"
-      role="listbox"
-      selected={value}
-    >
-      {#each options as option (option.value)}
-        <tp-yt-paper-item
-          aria-selected={option.value === value}
-          data-value={option.value}
-          role="option"
-          tabindex={option.value === value ? 0 : -1}
-        >{option.label}</tp-yt-paper-item>
-      {/each}
-    </tp-yt-paper-listbox>
+    <div class="ytdl-select-content">
+      <tp-yt-paper-listbox
+        class="ytdl-select-menu"
+        {@attach attachMenu}
+        aria-label={label}
+        attr-for-selected="data-value"
+        role="listbox"
+        selected={value}
+      >
+        {#each options as option (option.value)}
+          <tp-yt-paper-item
+            aria-selected={option.value === value}
+            data-value={option.value}
+            role="option"
+            tabindex={option.value === value ? 0 : -1}
+          >{option.label}</tp-yt-paper-item>
+        {/each}
+      </tp-yt-paper-listbox>
+    </div>
   </div>
 </div>
 
@@ -288,9 +287,18 @@
     top: anchor(bottom);
     bottom: 8px;
     left: anchor(left);
-    overflow-y: auto;
+    overflow: visible;
     min-width: anchor-size(width);
+    height: auto;
     margin-block-start: 4px;
+    padding: 0;
+    border: none;
+    background: transparent;
+  }
+
+  .ytdl-select-content {
+    overflow-y: auto;
+    max-height: 100%;
     padding: 4px;
     border: 1px solid var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 10%));
     border-radius: 8px;
