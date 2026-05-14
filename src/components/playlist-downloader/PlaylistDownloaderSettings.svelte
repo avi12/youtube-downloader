@@ -87,6 +87,7 @@
     flex-shrink: 0;
     gap: 2px;
     align-items: center;
+    align-self: flex-start;
     padding: 2px;
     border: 1px solid var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 10%));
     border-radius: 999px;
