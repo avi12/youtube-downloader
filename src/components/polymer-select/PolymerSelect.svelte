@@ -280,13 +280,17 @@
     }
   }
 
+  @position-try --ytdl-popup-fits-viewport {
+    bottom: 8px;
+    height: auto;
+  }
+
   .ytdl-select-popup {
     position: fixed;
     top: anchor(bottom);
     left: anchor(left);
     overflow-y: auto;
     min-width: anchor-size(width);
-    max-height: 60dvh;
     margin-block-start: 4px;
     padding: 4px;
     border: 1px solid var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 10%));
@@ -294,6 +298,7 @@
     background: var(--yt-sys-color-baseline--raised-background, var(--yt-sys-color-baseline--base-background, #ffffff));
     scrollbar-width: thin;
     box-shadow: 0 8px 32px rgb(0 0 0 / 32%), 0 2px 8px rgb(0 0 0 / 16%);
+    position-try-fallbacks: --ytdl-popup-fits-viewport;
   }
 
   :global(.ytdl-select-menu tp-yt-paper-item) {
