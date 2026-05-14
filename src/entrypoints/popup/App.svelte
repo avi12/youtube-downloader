@@ -68,6 +68,18 @@
 
   const PANEL_ORDER = [PopupPanel.Downloads, PopupPanel.Settings] as const;
   let slideDirection = $state(1);
+  const flyIn = $derived({
+    x: slideDirection * 50,
+    duration: slideDuration,
+    opacity: 0,
+    easing: cubicOut
+  });
+  const flyOut = $derived({
+    x: -slideDirection * 50,
+    duration: slideDuration,
+    opacity: 0,
+    easing: cubicOut
+  });
 
   function handleTabChange(id: PopupPanel) {
     const prevIndex = PANEL_ORDER.indexOf(appState.activePanel);
@@ -94,18 +106,8 @@
         id="panel-downloads"
         class="panel-wrapper"
         role="tabpanel"
-        in:fly={{
-          x: slideDirection * 50,
-          duration: slideDuration,
-          opacity: 0,
-          easing: cubicOut
-        }}
-        out:fly={{
-          x: -slideDirection * 50,
-          duration: slideDuration,
-          opacity: 0,
-          easing: cubicOut
-        }}
+        in:fly={flyIn}
+        out:fly={flyOut}
       >
         <DownloadsTab
           isFFmpegReady={appState.isFFmpegReady}
@@ -126,18 +128,8 @@
         id="panel-settings"
         class="panel-wrapper"
         role="tabpanel"
-        in:fly={{
-          x: slideDirection * 50,
-          duration: slideDuration,
-          opacity: 0,
-          easing: cubicOut
-        }}
-        out:fly={{
-          x: -slideDirection * 50,
-          duration: slideDuration,
-          opacity: 0,
-          easing: cubicOut
-        }}
+        in:fly={flyIn}
+        out:fly={flyOut}
       >
         <SettingsTab options={appState.options} />
       </div>
