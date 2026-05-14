@@ -6,6 +6,10 @@ export function getCompatibleFilename(filename: string) {
   return filename.replaceAll(/[<>:"\\/|?*`]/g, "");
 }
 
+export function hasVisibleContent(filename: string) {
+  return /[\p{L}\p{N}\p{P}\p{S}]/u.test(filename);
+}
+
 export function getFileExtension(filename: string) {
   const iDot = filename.lastIndexOf(".");
   if (iDot === -1) {
@@ -51,6 +55,7 @@ export function resolveVideoFilename({ videoData, options, titleOverride }: {
     })
     : resolvedExtension;
   const rawTitle = titleOverride || videoData.title;
-  const title = getCompatibleFilename(rawTitle).trim() || videoData.videoId;
+  const sanitized = getCompatibleFilename(rawTitle).trim();
+  const title = hasVisibleContent(sanitized) ? sanitized : videoData.videoId;
   return `${title}.${outputExtension}`;
 }
