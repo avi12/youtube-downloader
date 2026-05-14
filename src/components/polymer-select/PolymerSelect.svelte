@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { createMenuKeydownHandler, createMenuSelectedHandler } from "./PolymerSelect.menu-events";
   import type { LabeledOption, TpYtIronDropdownElement } from "@/types";
+  import { YtIconName, isYtIconElement } from "@/types";
 
   interface Props {
     id?: string;
@@ -26,10 +26,6 @@
 
   function focusTrigger() {
     elTrigger?.focus();
-  }
-
-  function setIsOpen(newValue: boolean) {
-    isOpen = newValue;
   }
 
   function attachTrigger(elTarget: Element) {
@@ -89,19 +85,68 @@
     }
 
     elMenu = elTarget;
-    const menuHandlerParams = {
-      getValue: () => value,
-      onchange,
-      setIsOpen,
-      focusTrigger
-    };
-    const handleSelectedChanged = createMenuSelectedHandler(menuHandlerParams);
-    const handleKeydown = createMenuKeydownHandler(menuHandlerParams);
+
+    function handleSelectedChanged(e: Event) {
+      if (!(e instanceof CustomEvent)) {
+        return;
+      }
+
+      const dataValue: string = e.detail?.value;
+      if (!dataValue) {
+        return;
+      }
+
+      if (dataValue !== value) {
+        onchange(dataValue);
+      }
+
+      isOpen = false;
+      focusTrigger();
+    }
+
+    function handleKeydown(e: Event) {
+      if (!(e instanceof KeyboardEvent)) {
+        return;
+      }
+
+      if (e.key === "Escape" || e.key === "Tab") {
+        if (e.key === "Escape") {
+          e.preventDefault();
+        }
+
+        isOpen = false;
+        focusTrigger();
+        return;
+      }
+
+      if (e.key === "Enter" || e.key === " ") {
+        const elActive = document.activeElement;
+        if (elActive instanceof HTMLElement && elActive.matches("tp-yt-paper-item")) {
+          const dataValue = elActive.getAttribute("data-value");
+          if (dataValue === value) {
+            e.preventDefault();
+            isOpen = false;
+            focusTrigger();
+          }
+        }
+      }
+    }
+
     elTarget.addEventListener("selected-changed", handleSelectedChanged);
     elTarget.addEventListener("keydown", handleKeydown);
     return () => {
       elTarget.removeEventListener("selected-changed", handleSelectedChanged);
       elTarget.removeEventListener("keydown", handleKeydown);
+    };
+  }
+
+  function attachIcon(icon: YtIconName) {
+    return (elTarget: Element) => {
+      if (!isYtIconElement(elTarget)) {
+        return;
+      }
+
+      elTarget.icon = icon;
     };
   }
 
@@ -133,21 +178,7 @@
     type="button"
   >
     <span class="value">{selectedLabel}</span>
-    <svg
-      class="chevron"
-      class:open={isOpen}
-      aria-hidden="true"
-      fill="none"
-      height="18"
-      stroke="currentColor"
-      stroke-linecap="round"
-      stroke-linejoin="round"
-      stroke-width="2"
-      viewBox="0 0 24 24"
-      width="18"
-    >
-      <polyline points="6 9 12 15 18 9"></polyline>
-    </svg>
+    <yt-icon class="chevron" class:open={isOpen} {@attach attachIcon(YtIconName.ExpandMore)}></yt-icon>
   </button>
 
   <tp-yt-iron-dropdown
@@ -231,6 +262,8 @@
 
     .chevron {
       flex-shrink: 0;
+      width: 18px;
+      height: 18px;
       margin-inline-start: 8px;
       color: var(--yt-sys-color-baseline--text-secondary, #606060);
       transition: rotate 120ms ease-out;
