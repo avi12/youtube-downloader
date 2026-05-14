@@ -7,7 +7,8 @@
   import { ProgressType } from "@/types";
   import type { Options, VideoQueueItem } from "@/types";
   import { untrack } from "svelte";
-  import { slide } from "svelte/transition";
+  import { cubicOut } from "svelte/easing";
+  import { fly } from "svelte/transition";
 
   interface Props {
     initialIsFFmpegReady: boolean;
@@ -65,7 +66,13 @@
     return () => reducedMotionQuery.removeEventListener("change", handleChange);
   });
 
+  const PANEL_ORDER = [PopupPanel.Downloads, PopupPanel.Settings] as const;
+  let slideDirection = $state(1);
+
   function handleTabChange(id: PopupPanel) {
+    const prevIndex = PANEL_ORDER.indexOf(appState.activePanel);
+    const nextIndex = PANEL_ORDER.indexOf(id);
+    slideDirection = nextIndex > prevIndex ? 1 : -1;
     appState.activePanel = id;
   }
 </script>
@@ -87,9 +94,17 @@
         id="panel-downloads"
         class="panel-wrapper"
         role="tabpanel"
-        transition:slide={{
-          axis: "x",
-          duration: slideDuration
+        in:fly={{
+          x: slideDirection * 50,
+          duration: slideDuration,
+          opacity: 0,
+          easing: cubicOut
+        }}
+        out:fly={{
+          x: -slideDirection * 50,
+          duration: slideDuration,
+          opacity: 0,
+          easing: cubicOut
         }}
       >
         <DownloadsTab
@@ -111,9 +126,17 @@
         id="panel-settings"
         class="panel-wrapper"
         role="tabpanel"
-        transition:slide={{
-          axis: "x",
-          duration: slideDuration
+        in:fly={{
+          x: slideDirection * 50,
+          duration: slideDuration,
+          opacity: 0,
+          easing: cubicOut
+        }}
+        out:fly={{
+          x: -slideDirection * 50,
+          duration: slideDuration,
+          opacity: 0,
+          easing: cubicOut
         }}
       >
         <SettingsTab options={appState.options} />
@@ -246,12 +269,15 @@
   }
 
   .popup-content {
+    position: relative;
     flex: 1;
     overflow: hidden;
     min-height: 120px;
   }
 
   .panel-wrapper {
+    position: absolute;
+    inset: 0;
     overflow-y: auto;
     padding: 16px;
   }

@@ -104,7 +104,7 @@
     border-radius: 12px;
     background: var(--yt-sys-color-baseline--raised-background, var(--yt-sys-color-baseline--base-background, #ffffff));
     color: var(--yt-sys-color-baseline--text-primary, #0f0f0f);
-    box-shadow: 0 8px 32px rgb(0 0 0 / 32%), 0 2px 8px rgb(0 0 0 / 16%);
+    filter: drop-shadow(0 4px 24px rgb(0 0 0 / 15%));
 
     &:focus {
       outline: none;
