@@ -294,6 +294,7 @@
     padding: 0;
     border: none;
     background: transparent;
+    pointer-events: none;
   }
 
   .ytdl-select-content {
@@ -305,6 +306,7 @@
     background: var(--yt-sys-color-baseline--raised-background, var(--yt-sys-color-baseline--base-background, #ffffff));
     scrollbar-width: thin;
     box-shadow: 0 8px 32px rgb(0 0 0 / 32%), 0 2px 8px rgb(0 0 0 / 16%);
+    pointer-events: auto;
   }
 
   :global(.ytdl-select-menu tp-yt-paper-item) {
