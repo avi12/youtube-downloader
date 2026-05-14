@@ -275,17 +275,9 @@
     top: anchor(bottom);
     bottom: 8px;
     left: anchor(left);
-    overflow: hidden;
+    overflow-y: auto;
     min-width: anchor-size(width);
     margin-block-start: 4px;
-    padding: 0;
-    border: none;
-    background: transparent;
-  }
-
-  :global(.ytdl-select-menu) {
-    overflow-y: auto;
-    height: 100%;
     padding: 4px;
     border: 1px solid var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 10%));
     border-radius: 8px;

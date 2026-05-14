@@ -21,7 +21,6 @@ import { resolve, join, dirname } from "node:path";
 import { debounce } from "perfect-debounce";
 import webExtRun from "web-ext-run";
 import { consoleStream as webExtConsoleStream } from "web-ext-run/util/logger";
-import { build } from "wxt";
 
 const IS_FIREFOX = process.argv.includes("--firefox");
 const PROJECT_ROOT = resolve(import.meta.dirname, "..");
@@ -201,12 +200,15 @@ async function reloadYouTubeTabs() {
 
 // ── Build ───────────────────────────────────────────────────────────────────
 
-async function buildExtension() {
-  await build({
-    root: PROJECT_ROOT,
-    browser: IS_FIREFOX ? "firefox" : "chrome",
-    manifestVersion: 3
+function buildExtension() {
+  const result = spawnSync("pnpm", ["wxt", "build", ...(IS_FIREFOX ? ["--browser", "firefox"] : [])], {
+    cwd: PROJECT_ROOT,
+    stdio: "inherit",
+    shell: true
   });
+  if (result.status !== 0) {
+    throw new Error("Build failed");
+  }
 }
 
 // ── Main ────────────────────────────────────────────────────────────────────
