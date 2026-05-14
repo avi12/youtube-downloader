@@ -106,12 +106,17 @@
 
     elMenu = elTarget;
 
-    function handleSelectedChanged(e: Event) {
-      if (!(e instanceof CustomEvent)) {
+    function handleClick(e: Event) {
+      if (!(e.target instanceof Element)) {
         return;
       }
 
-      const dataValue: string = e.detail?.value;
+      const elItem = e.target.closest("tp-yt-paper-item");
+      if (!elItem) {
+        return;
+      }
+
+      const dataValue = elItem.getAttribute("data-value");
       if (!dataValue) {
         return;
       }
@@ -141,20 +146,28 @@
 
       if (e.key === "Enter" || e.key === " ") {
         const elActive = document.activeElement;
-        if (elActive instanceof HTMLElement && elActive.matches("tp-yt-paper-item")) {
-          const dataValue = elActive.getAttribute("data-value");
-          if (dataValue === value) {
-            e.preventDefault();
-            elPopover?.hidePopover();
-          }
+        if (!(elActive instanceof HTMLElement) || !elActive.matches("tp-yt-paper-item")) {
+          return;
         }
+
+        e.preventDefault();
+        const dataValue = elActive.getAttribute("data-value");
+        if (!dataValue) {
+          return;
+        }
+
+        if (dataValue !== value) {
+          onchange(dataValue);
+        }
+
+        elPopover?.hidePopover();
       }
     }
 
-    elTarget.addEventListener("selected-changed", handleSelectedChanged);
+    elTarget.addEventListener("click", handleClick);
     elTarget.addEventListener("keydown", handleKeydown);
     return () => {
-      elTarget.removeEventListener("selected-changed", handleSelectedChanged);
+      elTarget.removeEventListener("click", handleClick);
       elTarget.removeEventListener("keydown", handleKeydown);
     };
   }
@@ -277,7 +290,6 @@
     left: anchor(left);
     overflow-y: auto;
     min-width: anchor-size(width);
-    height: auto;
     margin-block-start: 4px;
     padding: 4px;
     border: 1px solid var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 10%));
