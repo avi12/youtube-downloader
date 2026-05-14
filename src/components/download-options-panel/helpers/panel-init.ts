@@ -35,5 +35,5 @@ export function resolveInitialExtension(options: Options, videoData: VideoData) 
 }
 
 export function resolveInitialFilename(videoData: VideoData) {
-  return getCompatibleFilename(videoData.title || videoData.videoId);
+  return getCompatibleFilename(videoData.title).trim() || videoData.videoId;
 }

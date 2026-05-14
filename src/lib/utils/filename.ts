@@ -50,6 +50,7 @@ export function resolveVideoFilename({ videoData, options, titleOverride }: {
       userExtension: resolvedExtension
     })
     : resolvedExtension;
-  const title = titleOverride ?? videoData.title;
-  return getCompatibleFilename(`${title}.${outputExtension}`);
+  const rawTitle = titleOverride || videoData.title;
+  const title = getCompatibleFilename(rawTitle).trim() || videoData.videoId;
+  return `${title}.${outputExtension}`;
 }

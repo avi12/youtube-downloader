@@ -83,8 +83,6 @@
       isOpen = e.newState === "open";
 
       if (e.newState === "open") {
-        const triggerBottom = elTrigger?.getBoundingClientRect().bottom ?? 0;
-        elPopover?.style.setProperty("--ytdl-popup-max-height", `${innerHeight - triggerBottom - 12}px`);
         requestAnimationFrame(() => elMenu?.focus());
       } else {
         focusTrigger();
@@ -288,7 +286,7 @@
     left: anchor(left);
     overflow-y: auto;
     min-width: anchor-size(width);
-    max-height: var(--ytdl-popup-max-height, 60dvh);
+    max-height: 60dvh;
     margin-block-start: 4px;
     padding: 4px;
     border: 1px solid var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 10%));
