@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { bindDownloadAccessors, getVideoStatusLabel } from "./active-downloads-helpers";
   import DownloadItem from "./DownloadItem.svelte";
   import DownloadSection from "./DownloadSection.svelte";
   import { ProgressType } from "@/types";
@@ -22,51 +23,12 @@
   }
 
   const {
-    isFFmpegReady,
-    videoDownloads,
-    musicList,
-    videoOnlyList,
-    videoDetails,
-    statusProgress,
-    percentFormatter,
-    onCancel
+    isFFmpegReady, videoDownloads, musicList, videoOnlyList,
+    videoDetails, statusProgress, percentFormatter, onCancel
   }: Props = $props();
 
   const videoDownloadIds = $derived(videoDownloads.map(item => item.videoId));
-
-  function getProgressLabel(videoId: string) {
-    const prog = statusProgress[videoId];
-    if (!prog) {
-      return "";
-    }
-
-    const percentage = percentFormatter.format(prog.progress);
-    if (prog.progressType === ProgressType.FFmpeg) {
-      return `${percentage} stitching`;
-    }
-
-    return `${percentage} (${prog.progressType})`;
-  }
-
-  function getProgress(videoId: string) {
-    return statusProgress[videoId]?.progress ?? null;
-  }
-
-  function getFilename(videoId: string) {
-    return videoDetails[videoId]?.filenameOutput ?? videoId;
-  }
-
-  function getQuality(videoId: string) {
-    return videoDetails[videoId]?.quality ?? "";
-  }
-
-  function getVideoStatusLabel(i: number) {
-    if (i === 0) {
-      return isFFmpegReady ? "Processing…" : "Waiting for FFmpeg…";
-    }
-
-    return "Downloading";
-  }
+  const accessors = $derived(bindDownloadAccessors(statusProgress, videoDetails, percentFormatter));
 </script>
 
 <DownloadSection
@@ -82,16 +44,16 @@
     <li
       class="download-item"
       class:download-item--active={i === 0}
-      aria-label={getFilename(videoId)}
+      aria-label={accessors.filename(videoId)}
       role="listitem"
     >
       <DownloadItem
-        filename={getFilename(videoId)}
+        filename={accessors.filename(videoId)}
         oncancel={() => onCancel([videoId])}
-        progress={getProgress(videoId)}
-        progressLabel={getProgressLabel(videoId)}
-        quality={getQuality(videoId)}
-        statusLabel={getProgress(videoId) === null ? getVideoStatusLabel(i) : null}
+        progress={accessors.progress(videoId)}
+        progressLabel={accessors.label(videoId)}
+        quality={accessors.quality(videoId)}
+        statusLabel={accessors.progress(videoId) === null ? getVideoStatusLabel(i, isFFmpegReady) : null}
       />
     </li>
   {/snippet}
@@ -108,10 +70,10 @@
   {#snippet renderItem(videoId)}
     <li class="download-item" role="listitem">
       <DownloadItem
-        filename={getFilename(videoId)}
+        filename={accessors.filename(videoId)}
         oncancel={() => onCancel([videoId])}
-        progress={getProgress(videoId)}
-        progressLabel={getProgressLabel(videoId)}
+        progress={accessors.progress(videoId)}
+        progressLabel={accessors.label(videoId)}
       />
     </li>
   {/snippet}
@@ -128,10 +90,10 @@
   {#snippet renderItem(videoId)}
     <li class="download-item" role="listitem">
       <DownloadItem
-        filename={getFilename(videoId)}
+        filename={accessors.filename(videoId)}
         oncancel={() => onCancel([videoId])}
-        progress={getProgress(videoId)}
-        progressLabel={getProgressLabel(videoId)}
+        progress={accessors.progress(videoId)}
+        progressLabel={accessors.label(videoId)}
       />
     </li>
   {/snippet}
