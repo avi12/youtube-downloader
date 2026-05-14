@@ -10,7 +10,7 @@ export default defineConfig({
   publicDir: "src/public",
   modules: ["@wxt-dev/module-svelte"],
   manifestVersion: 3,
-  manifest: () => ({
+  manifest: {
     name: "YouTube Downloader",
     description: "Download YouTube videos and audio directly from the page",
     permissions: [
@@ -45,19 +45,7 @@ export default defineConfig({
         matches: ["<all_urls>"]
       }
     ]
-  }),
-  vite: () => ({
-    server: {
-      strictPort: false,
-      // Native fs events are unreliable on Windows; polling ensures file
-      // changes are always detected by WXT's dev server watcher
-      watch: {
-        usePolling: true,
-        interval: 500
-      }
-    },
-    build: { sourcemap: true }
-  }),
+  },
   hooks: {
     "prepare:publicPaths"(_, paths) {
       paths.push(...ffmpegAssetPaths);
