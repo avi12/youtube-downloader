@@ -1,8 +1,9 @@
-import { buildDownloadRequest, optionsToQualityValue, resolveDefaultZipName } from "./playlist-download-builder";
+import { resolveDefaultZipName } from "./playlist-download-builder";
 import { calculateBatchProgress, resolveCurrentPhaseLabel } from "./playlist-progress-helpers";
+import { createBatchDownloadState } from "./PlaylistDownloader.batch.svelte";
+import { createOverrideState } from "./PlaylistDownloader.overrides.svelte";
 import { createRevealState } from "./PlaylistDownloader.reveal.svelte";
 import { scrollVideoItemIntoView } from "./PlaylistDownloader.scroll";
-import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { setOption } from "@/lib/storage/storage";
 import { checkedPlaylistVideos } from "@/lib/ui/playlist-selection.svelte";
 import {
@@ -11,80 +12,16 @@ import {
   playlistMetadataSignal,
   videoDataStore
 } from "@/lib/ui/synced-stores.svelte";
-import {
-  PlaylistDownloadMode,
-  PlaylistOutputMode,
-  ProgressType,
-  VideoQualityMode,
-  type DownloadRequest,
-  type DownloadTypePreference,
-  type VideoData
-} from "@/types";
+import { PlaylistDownloadMode, VideoQualityMode, type VideoData } from "@/types";
 import { untrack } from "svelte";
-import { SvelteMap, SvelteSet } from "svelte/reactivity";
-
-export const batchDownloadStatus = $state({
-  isRunning: false,
-  isZipBatch: false
-});
-export const batchVideoIds = new SvelteSet<string>();
-export const batchCanceledIds = new SvelteSet<string>();
+import { SvelteMap } from "svelte/reactivity";
 
 let downloadMode = $state<PlaylistDownloadMode>(CONTENT_OPTIONS.value.playlistDownloadMode);
 let outputMode = $state(CONTENT_OPTIONS.value.playlistOutputMode);
 let isScrollSyncEnabled = $state(CONTENT_OPTIONS.value.isPlaylistScrollSyncEnabled);
-let downloadTypeOverride = $state<DownloadTypePreference | null>(null);
-let videoExtOverride = $state<string | null>(null);
-let audioExtOverride = $state<string | null>(null);
-let videoQualityOverride = $state<string | null>(null);
-let zipNameOverride = $state<string | null>(null);
-let currentZipBundleId = $state<string | null>(null);
 
 export function createPlaylistDownloaderState() {
   const videoDataMap = new SvelteMap<string, VideoData>();
-  let isDownloading = $state(false);
-  let totalCount = $state(0);
-  let error = $state("");
-
-  const effectiveDownloadType = $derived<DownloadTypePreference>(
-    downloadTypeOverride ?? CONTENT_OPTIONS.value.defaultDownloadType
-  );
-  const effectiveVideoExt = $derived(videoExtOverride ?? CONTENT_OPTIONS.value.ext.video);
-  const effectiveAudioExt = $derived(audioExtOverride ?? CONTENT_OPTIONS.value.ext.audio);
-  const effectiveQuality = $derived(videoQualityOverride ?? optionsToQualityValue(CONTENT_OPTIONS.value));
-  const effectiveZipName = $derived(zipNameOverride ?? resolveDefaultZipName(playlistMetadataSignal.value));
-  const isAnyOverrideActive = $derived(
-    downloadTypeOverride !== null
-    || videoExtOverride !== null
-    || audioExtOverride !== null
-    || videoQualityOverride !== null
-    || zipNameOverride !== null
-  );
-
-  function buildEffectiveOptions() {
-    const base = CONTENT_OPTIONS.value;
-    const qualityValue = effectiveQuality;
-    return {
-      ...base,
-      defaultDownloadType: effectiveDownloadType,
-      ext: {
-        video: effectiveVideoExt,
-        audio: effectiveAudioExt
-      },
-      videoQualityMode: qualityValue === VideoQualityMode.Best
-        ? VideoQualityMode.Best
-        : VideoQualityMode.Custom,
-      videoQuality: qualityValue === VideoQualityMode.Best ? base.videoQuality : Number(qualityValue)
-    };
-  }
-
-  function resetOverrides() {
-    downloadTypeOverride = null;
-    videoExtOverride = null;
-    audioExtOverride = null;
-    videoQualityOverride = null;
-    zipNameOverride = null;
-  }
 
   $effect(() => {
     for (const videoId of videoDataStore.keys()) {
@@ -145,6 +82,7 @@ export function createPlaylistDownloaderState() {
     }
     return min === Infinity ? 0 : min;
   });
+
   const selectedDownloadableVideos = $derived(
     downloadableVideos.filter(data => checkedPlaylistVideos.has(data.videoId))
   );
@@ -152,187 +90,47 @@ export function createPlaylistDownloaderState() {
     downloadableVideos.length > 0 && selectedDownloadableVideos.length === downloadableVideos.length
   );
 
-  let activeDownloadRequests = $state<DownloadRequest[]>([]);
-  let completedBatchProgress = $state(0);
+  const overrides = createOverrideState(() => resolveDefaultZipName(playlistMetadataSignal.value));
 
-  const batchDoneIds = new SvelteSet<string>();
+  function buildEffectiveOptions() {
+    const base = CONTENT_OPTIONS.value;
+    const qualityValue = overrides.effectiveQuality;
+    return {
+      ...base,
+      defaultDownloadType: overrides.effectiveDownloadType,
+      ext: {
+        video: overrides.effectiveVideoExt,
+        audio: overrides.effectiveAudioExt
+      },
+      videoQualityMode: qualityValue === VideoQualityMode.Best ? VideoQualityMode.Best : VideoQualityMode.Custom,
+      videoQuality: qualityValue === VideoQualityMode.Best ? base.videoQuality : Number(qualityValue)
+    };
+  }
 
-  $effect(() => {
-    for (const request of activeDownloadRequests) {
-      if (batchDoneIds.has(request.videoId)) {
-        continue;
-      }
-
-      const entry = downloadProgressStore.get(request.videoId);
-      const isEntryFinished = !entry || entry.isDone || entry.isFailed;
-      if (isEntryFinished) {
-        batchDoneIds.add(request.videoId);
-      }
-    }
-  });
-
-  const downloadedCount = $derived(
-    activeDownloadRequests.filter(request => batchDoneIds.has(request.videoId)).length
+  const batch = createBatchDownloadState(
+    () => outputMode,
+    () => downloadMode,
+    buildEffectiveOptions,
+    () => overrides.effectiveZipName
   );
 
   const downloadButtonLabel = $derived.by(() => {
-    if (isDownloading) {
-      return `Downloading ${downloadedCount} of ${totalCount}`;
+    if (batch.isDownloading) {
+      return `Downloading ${batch.downloadedCount} of ${batch.totalCount}`;
     }
 
     const count = selectedDownloadableVideos.length;
-    if (count === 0) {
-      return "Download selected";
-    }
-
-    return `Download ${count} video${count === 1 ? "" : "s"}`;
+    return count === 0 ? "Download selected" : `Download ${count} video${count === 1 ? "" : "s"}`;
   });
-
-  $effect(() => {
-    const isBatchIncomplete = !isDownloading || totalCount === 0 || downloadedCount < totalCount;
-    if (isBatchIncomplete) {
-      return;
-    }
-
-    if (currentZipBundleId) {
-      const zipEntry = downloadProgressStore.get(`zip:${currentZipBundleId}`);
-      if (!zipEntry?.isDone) {
-        return;
-      }
-
-      downloadProgressStore.deleteLocal(`zip:${currentZipBundleId}`);
-      currentZipBundleId = null;
-    }
-
-    completedBatchProgress = 100;
-    isDownloading = false;
-    batchDownloadStatus.isRunning = false;
-    batchDownloadStatus.isZipBatch = false;
-
-    for (const request of activeDownloadRequests) {
-      if (batchCanceledIds.has(request.videoId)) {
-        continue;
-      }
-
-      downloadProgressStore.unsuppress(request.videoId);
-      const entry = downloadProgressStore.get(request.videoId);
-      const isEntryStillActive = entry && !entry.isDone && !entry.isFailed;
-      if (isEntryStillActive) {
-        downloadProgressStore.setLocal(request.videoId, {
-          isDownloading: false,
-          isDone: true,
-          progress: 1,
-          progressType: entry?.progressType ?? ProgressType.FFmpeg
-        });
-      }
-    }
-
-    batchVideoIds.clear();
-    batchCanceledIds.clear();
-  });
-
-  async function startDownload(videos: readonly VideoData[]) {
-    if (videos.length === 0) {
-      return;
-    }
-
-    completedBatchProgress = 0;
-    error = "";
-    isDownloading = true;
-    batchDownloadStatus.isRunning = true;
-    batchVideoIds.clear();
-    batchCanceledIds.clear();
-    totalCount = videos.length;
-    batchDoneIds.clear();
-
-    for (const video of videos) {
-      batchVideoIds.add(video.videoId);
-      downloadProgressStore.deleteLocal(video.videoId);
-      downloadProgressStore.unsuppress(video.videoId);
-      downloadProgressStore.setLocal(video.videoId, {
-        isDownloading: true,
-        isDone: false,
-        progress: 0,
-        progressType: ""
-      });
-    }
-
-    const metadata = playlistMetadataSignal.value;
-    const playlistId = metadata?.playlistId || `playlist-${Date.now()}`;
-    const isZipBundle = outputMode === PlaylistOutputMode.Zip;
-    batchDownloadStatus.isZipBatch = isZipBundle;
-    currentZipBundleId = isZipBundle ? playlistId : null;
-
-    const resolvedOptions = buildEffectiveOptions();
-    const downloadRequests = videos.map(data =>
-      buildDownloadRequest(data, resolvedOptions, playlistId, effectiveZipName, videos.length, isZipBundle));
-    activeDownloadRequests = downloadRequests;
-
-    try {
-      await sendMessage(MessageType.RequestPlaylistDownload, {
-        items: downloadRequests,
-        playlistTitle: effectiveZipName,
-        isZipBundle,
-        isSequential: downloadMode === PlaylistDownloadMode.DataSaver
-      });
-    } catch {
-      error = "Failed to start downloads - please try again";
-      isDownloading = false;
-      return;
-    }
-  }
-
-  async function cancelDownload() {
-    const activeVideoIds = activeDownloadRequests
-      .filter(request => downloadProgressStore.get(request.videoId)?.isDownloading)
-      .map(request => request.videoId);
-    if (activeVideoIds.length > 0) {
-      await sendMessage(MessageType.CancelDownload, { videoIds: activeVideoIds });
-    }
-
-    completedBatchProgress = 0;
-    isDownloading = false;
-    batchDownloadStatus.isRunning = false;
-    batchDownloadStatus.isZipBatch = false;
-    batchVideoIds.clear();
-    batchCanceledIds.clear();
-
-    if (currentZipBundleId) {
-      downloadProgressStore.deleteLocal(`zip:${currentZipBundleId}`);
-      currentZipBundleId = null;
-    }
-
-    for (const request of activeDownloadRequests) {
-      downloadProgressStore.delete(request.videoId);
-    }
-  }
-
-  function toggleSelectedDownload() {
-    if (isDownloading) {
-      void cancelDownload();
-    } else {
-      void startDownload(selectedDownloadableVideos);
-    }
-  }
-
-  function selectAll() {
-    for (const video of downloadableVideos) {
-      checkedPlaylistVideos.add(video.videoId);
-    }
-  }
-
-  function clearSelection() {
-    checkedPlaylistVideos.clear();
-  }
 
   const reveal = createRevealState(
     () => videoDataMap.size,
     () => downloadableVideos,
-    startDownload
+    batch.startDownload
   );
 
   const activeIndividualDownloadCount = $derived.by(() => {
-    if (isDownloading) {
+    if (batch.isDownloading) {
       return 0;
     }
 
@@ -347,25 +145,24 @@ export function createPlaylistDownloaderState() {
 
   const totalProgress = $derived(
     calculateBatchProgress(
-      isDownloading,
-      activeDownloadRequests,
+      batch.isDownloading,
+      batch.activeDownloadRequests,
       videoId => downloadProgressStore.get(videoId),
-      totalCount,
-      currentZipBundleId,
+      batch.totalCount,
+      batch.currentZipBundleId,
       activeIndividualDownloadCount,
       videoDataMap.keys(),
-      completedBatchProgress
+      batch.completedBatchProgress
     )
   );
 
   const activeDownloadVideoId = $derived.by(() => {
-    if (!isDownloading) {
+    if (!batch.isDownloading) {
       return null;
     }
 
-    for (const request of activeDownloadRequests) {
-      const progressEntry = downloadProgressStore.get(request.videoId);
-      if (progressEntry?.isDownloading) {
+    for (const request of batch.activeDownloadRequests) {
+      if (downloadProgressStore.get(request.videoId)?.isDownloading) {
         return request.videoId;
       }
     }
@@ -375,12 +172,12 @@ export function createPlaylistDownloaderState() {
 
   const currentPhaseLabel = $derived(
     resolveCurrentPhaseLabel(
-      isDownloading,
-      currentZipBundleId,
-      downloadedCount,
-      totalCount,
+      batch.isDownloading,
+      batch.currentZipBundleId,
+      batch.downloadedCount,
+      batch.totalCount,
       activeDownloadVideoId,
-      activeDownloadRequests,
+      batch.activeDownloadRequests,
       videoId => downloadProgressStore.get(videoId),
       videoId => videoDataMap.get(videoId)
     )
@@ -396,23 +193,22 @@ export function createPlaylistDownloaderState() {
 
   return {
     get isDownloading() {
-      return isDownloading;
+      return batch.isDownloading;
     },
     get downloadedCount() {
-      return downloadedCount;
+      return batch.downloadedCount;
     },
     get totalCount() {
-      return totalCount;
+      return batch.totalCount;
     },
     get error() {
-      return error;
+      return batch.error;
     },
     get downloadMode() {
       return downloadMode;
     },
     set downloadMode(value) {
-      downloadMode = value;
-      void setOption("playlistDownloadMode", value);
+      downloadMode = value; void setOption("playlistDownloadMode", value);
     },
     get outputMode() {
       return outputMode;
@@ -452,35 +248,34 @@ export function createPlaylistDownloaderState() {
       return isScrollSyncEnabled;
     },
     set isScrollSyncEnabled(value) {
-      isScrollSyncEnabled = value;
-      void setOption("isPlaylistScrollSyncEnabled", value);
+      isScrollSyncEnabled = value; void setOption("isPlaylistScrollSyncEnabled", value);
     },
     get effectiveDownloadType() {
-      return effectiveDownloadType;
+      return overrides.effectiveDownloadType;
     },
     set effectiveDownloadType(value) {
-      downloadTypeOverride = value === CONTENT_OPTIONS.value.defaultDownloadType ? null : value;
+      overrides.effectiveDownloadType = value;
     },
     get effectiveVideoExt() {
-      return effectiveVideoExt;
+      return overrides.effectiveVideoExt;
     },
     set effectiveVideoExt(value) {
-      videoExtOverride = value === CONTENT_OPTIONS.value.ext.video ? null : value;
+      overrides.effectiveVideoExt = value;
     },
     get effectiveAudioExt() {
-      return effectiveAudioExt;
+      return overrides.effectiveAudioExt;
     },
     set effectiveAudioExt(value) {
-      audioExtOverride = value === CONTENT_OPTIONS.value.ext.audio ? null : value;
+      overrides.effectiveAudioExt = value;
     },
     get effectiveQuality() {
-      return effectiveQuality;
+      return overrides.effectiveQuality;
     },
     set effectiveQuality(value) {
-      videoQualityOverride = value === optionsToQualityValue(CONTENT_OPTIONS.value) ? null : value;
+      overrides.effectiveQuality = value;
     },
     get isAnyOverrideActive() {
-      return isAnyOverrideActive;
+      return overrides.isAnyOverrideActive;
     },
     get activeIndividualDownloadCount() {
       return activeIndividualDownloadCount;
@@ -489,38 +284,43 @@ export function createPlaylistDownloaderState() {
       return totalProgress;
     },
     get completedBatchProgress() {
-      return completedBatchProgress;
+      return batch.completedBatchProgress;
     },
     get currentPhaseLabel() {
       return currentPhaseLabel;
     },
     get isDownloadTypeOverridden() {
-      return downloadTypeOverride !== null;
+      return overrides.isDownloadTypeOverridden;
     },
     get isVideoExtOverridden() {
-      return videoExtOverride !== null;
+      return overrides.isVideoExtOverridden;
     },
     get isAudioExtOverridden() {
-      return audioExtOverride !== null;
+      return overrides.isAudioExtOverridden;
     },
     get isQualityOverridden() {
-      return videoQualityOverride !== null;
+      return overrides.isQualityOverridden;
     },
     get effectiveZipName() {
-      return effectiveZipName;
+      return overrides.effectiveZipName;
     },
     set effectiveZipName(value) {
-      const trimmed = value.trim();
-      zipNameOverride = !trimmed || trimmed === resolveDefaultZipName(playlistMetadataSignal.value) ? null : trimmed;
+      overrides.effectiveZipName = value;
     },
     get isZipNameOverridden() {
-      return zipNameOverride !== null;
+      return overrides.isZipNameOverridden;
     },
-    resetOverrides,
-    toggleSelectedDownload,
+    resetOverrides: overrides.resetOverrides,
+    toggleSelectedDownload: () => batch.isDownloading
+      ? void batch.cancelDownload()
+      : void batch.startDownload(selectedDownloadableVideos),
     revealAndDownloadAll: reveal.revealAndDownloadAll,
     cancelReveal: reveal.cancelReveal,
-    selectAll,
-    clearSelection
+    selectAll() {
+      for (const video of downloadableVideos) {
+        checkedPlaylistVideos.add(video.videoId);
+      }
+    },
+    clearSelection: () => checkedPlaylistVideos.clear()
   };
 }
