@@ -1,6 +1,7 @@
 <script lang="ts">
   import PolymerSelect from "../polymer-select/PolymerSelect.svelte";
   import { attachFormattedString, createTrackChoiceState } from "./TrackChoice.svelte.ts";
+  import { attachIcon } from "@/lib/ui/polymer-utils";
   import { PanelTrackMode, YtIconName } from "@/types";
   import type { LabeledOption, TrackKind } from "@/types";
 
@@ -64,7 +65,7 @@
     <div class="track-follow">
       <div class="track-follow-icon" aria-hidden="true">
         <span class="sync-pulse"></span>
-        <yt-icon class="sync-icon" icon={YtIconName.Autorenew}></yt-icon>
+        <yt-icon class="sync-icon" {@attach attachIcon(YtIconName.Autorenew)}></yt-icon>
       </div>
       <div class="track-follow-body">
         <yt-formatted-string class="track-follow-value" {@attach attachFormattedString} data-ytdl-text={playerLabel ?? "—"}

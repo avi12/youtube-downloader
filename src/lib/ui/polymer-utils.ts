@@ -6,11 +6,23 @@ import type {
   ButtonType,
   IconName,
   TooltipPlacement,
-  TooltipStyle
+  TooltipStyle,
+  YtIconName
 } from "@/types";
+import { isYtIconElement } from "@/types";
 
 export { DATA_FORMATTED_STRING_ID_ATTR, attachFormattedString, isYtFormattedString, sendFormattedStringText, setFormattedStringText } from "./polymer-fmt-string";
 export { DATA_SETTINGS_OPTIONS_ID_ATTR, attachSettingsOptions, isYtdSettingsOptionsRenderer } from "./polymer-settings-options";
+
+export function attachIcon(icon: YtIconName) {
+  return (elTarget: Element) => {
+    if (!isYtIconElement(elTarget)) {
+      return;
+    }
+
+    elTarget.icon = icon;
+  };
+}
 
 export const DATA_BUTTON_ID_ATTR = "data-ytdl-button-id";
 

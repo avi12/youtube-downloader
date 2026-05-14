@@ -1,6 +1,7 @@
 <script lang="ts">
+  import { attachIcon } from "@/lib/ui/polymer-utils";
   import type { LabeledOption, TpYtIronDropdownElement } from "@/types";
-  import { YtIconName, isYtIconElement } from "@/types";
+  import { YtIconName } from "@/types";
 
   interface Props {
     id?: string;
@@ -137,16 +138,6 @@
     return () => {
       elTarget.removeEventListener("selected-changed", handleSelectedChanged);
       elTarget.removeEventListener("keydown", handleKeydown);
-    };
-  }
-
-  function attachIcon(icon: YtIconName) {
-    return (elTarget: Element) => {
-      if (!isYtIconElement(elTarget)) {
-        return;
-      }
-
-      elTarget.icon = icon;
     };
   }
 
