@@ -3,6 +3,7 @@
   import type { createPlaylistToggleButtons } from "./PlaylistDownloader.toggle-buttons.svelte";
   import PlaylistOverrideBadge from "./PlaylistOverrideBadge.svelte";
   import PlaylistZipNameInput from "./PlaylistZipNameInput.svelte";
+  import { attachFmtStr, attachSettingsOptions } from "@/lib/ui/polymer-utils";
   import { PlaylistOutputMode } from "@/types";
 
   interface Props {
@@ -13,8 +14,7 @@
   const { playlist, toggleButtons }: Props = $props();
 </script>
 
-<section class="ytdl-section" aria-labelledby="ytdl-speed-label">
-  <h3 id="ytdl-speed-label" class="ytdl-section-title">Speed</h3>
+<ytd-settings-options-renderer class="ytdl-section" {@attach attachSettingsOptions("Speed")}>
   <div
     class="ytdl-seg"
     aria-label="Speed"
@@ -29,10 +29,9 @@
       ></yt-button-view-model>
     {/each}
   </div>
-</section>
+</ytd-settings-options-renderer>
 
-<section class="ytdl-section" aria-labelledby="ytdl-output-label">
-  <h3 id="ytdl-output-label" class="ytdl-section-title">Output</h3>
+<ytd-settings-options-renderer class="ytdl-section" {@attach attachSettingsOptions("Output")}>
   <div
     class="ytdl-seg"
     aria-label="Output"
@@ -55,28 +54,27 @@
       value={playlist.effectiveZipName}
     />
   {/if}
-</section>
+</ytd-settings-options-renderer>
 
-<section class="ytdl-section" aria-labelledby="ytdl-type-label">
-  <h3 id="ytdl-type-label" class="ytdl-section-title">
-    Type
+<div class="ytdl-section">
+  <div id="ytdl-type-label" class="ytdl-section-title">
+    <yt-formatted-string {@attach attachFmtStr} data-ytdl-text="Type"></yt-formatted-string>
     {#if playlist.isDownloadTypeOverridden}
       <PlaylistOverrideBadge />
     {/if}
-  </h3>
+  </div>
   <div class="ytdl-chip-row ytdl-chip-row-wrap" aria-labelledby="ytdl-type-label" role="group">
     {#each toggleButtons.groups.type as button (button.id)}
       <yt-button-view-model {@attach toggleButtons.createAttacher(button)}></yt-button-view-model>
     {/each}
   </div>
-</section>
+</div>
 
 <style>
   .ytdl-section-title {
     display: inline-flex;
     gap: 6px;
     align-items: center;
-    margin: 0;
     font-weight: 500;
     font-size: 1.4rem;
     line-height: 1.2;

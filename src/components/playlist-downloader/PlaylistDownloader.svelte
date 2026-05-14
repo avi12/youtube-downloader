@@ -6,6 +6,7 @@
   import PlaylistDownloaderActions from "./PlaylistDownloaderActions.svelte";
   import PlaylistDownloaderFormatSections from "./PlaylistDownloaderFormatSections.svelte";
   import PlaylistDownloaderSettings from "./PlaylistDownloaderSettings.svelte";
+  import { attachFmtStr } from "@/lib/ui/polymer-utils";
 
   const playlist = createPlaylistDownloaderState();
   const toggleButtons = createPlaylistToggleButtons(playlist);
@@ -14,20 +15,20 @@
   setupPlaylistEffects(playlist, toggleButtons, actionButtons);
 </script>
 
-<section class="ytdl-playlist-container" aria-label="Playlist Downloader">
-  <section class="ytdl-section">
-    <h3 class="ytdl-section-title">
-      Download playlist
+<div class="ytdl-playlist-container">
+  <div class="ytdl-section">
+    <div class="ytdl-section-title">
+      <yt-formatted-string {@attach attachFmtStr} data-ytdl-text="Download playlist"></yt-formatted-string>
       {#if playlist.isDownloading}
         <yt-button-view-model {@attach actionButtons.attachStopAll}></yt-button-view-model>
       {/if}
-    </h3>
+    </div>
     {#if playlist.isDownloading}
       <span class="ytdl-scroll-sync-hint" aria-live="polite">
         {playlist.downloadedCount} of {playlist.totalCount} videos saved
       </span>
     {/if}
-  </section>
+  </div>
 
   {#if !playlist.isDownloading}
     <PlaylistDownloaderSettings {playlist} {toggleButtons} />
@@ -35,7 +36,7 @@
   {/if}
 
   <PlaylistDownloaderActions {actionButtons} {playlist} />
-</section>
+</div>
 
 <style>
   .ytdl-playlist-container {
@@ -65,6 +66,12 @@
     .ytdl-playlist-container tp-yt-paper-checkbox {
       font-size: 1.4rem;
     }
+
+    .ytdl-playlist-container ytd-settings-options-renderer #section {
+      flex-direction: column !important;
+      gap: 8px !important;
+      padding: 0 !important;
+    }
   }
 
   .ytdl-scroll-sync-hint {
@@ -76,7 +83,6 @@
     display: inline-flex;
     gap: 6px;
     align-items: center;
-    margin: 0;
     font-weight: 500;
     font-size: 1.4rem;
     line-height: 1.2;

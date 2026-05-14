@@ -42,7 +42,7 @@
   const isQualityDisabled = $derived(isVideoTypeDisabled || playlist.isDownloading);
 </script>
 
-<section class="ytdl-section ytdl-section-select" class:is-disabled={isVideoTypeDisabled}>
+<div class="ytdl-section ytdl-section-select" class:is-disabled={isVideoTypeDisabled}>
   <PolymerSelect
     id="playlist-video-quality"
     disabled={isQualityDisabled}
@@ -52,9 +52,9 @@
     value={playlist.effectiveQuality}
   />
   {#if playlist.isQualityOverridden}<PlaylistOverrideBadge />{/if}
-</section>
+</div>
 
-<section class="ytdl-section ytdl-section-select" class:is-disabled={isVideoTypeDisabled}>
+<div class="ytdl-section ytdl-section-select" class:is-disabled={isVideoTypeDisabled}>
   <PolymerSelect
     id="playlist-video-ext"
     disabled={isVideoExtDisabled}
@@ -64,9 +64,9 @@
     value={playlist.effectiveVideoExt}
   />
   {#if playlist.isVideoExtOverridden}<PlaylistOverrideBadge />{/if}
-</section>
+</div>
 
-<section class="ytdl-section ytdl-section-select" class:is-disabled={isAudioExtTypeDisabled}>
+<div class="ytdl-section ytdl-section-select" class:is-disabled={isAudioExtTypeDisabled}>
   <PolymerSelect
     id="playlist-audio-ext"
     disabled={isAudioExtDisabled}
@@ -76,7 +76,7 @@
     value={playlist.effectiveAudioExt}
   />
   {#if playlist.isAudioExtOverridden}<PlaylistOverrideBadge />{/if}
-</section>
+</div>
 
 {#if playlist.isAnyOverrideActive}
   <button class="ytdl-reset-link" disabled={playlist.isDownloading} onclick={playlist.resetOverrides} type="button">
