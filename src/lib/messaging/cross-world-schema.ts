@@ -92,6 +92,10 @@ export interface PageMessengerSchema {
     vssId: string;
   }): void;
   [CrossWorldMessage.OpenSnackbar](): void;
+  [CrossWorldMessage.SetSettingsOptionsData](data: {
+    selector: string;
+    title: string;
+  }): void;
 }
 
 export type StreamDataPayload = Parameters<PageMessengerSchema[typeof CrossWorldMessage.StreamData]>[0];

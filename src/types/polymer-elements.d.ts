@@ -94,9 +94,18 @@ declare module "svelte/elements" {
       dir?: string;
       "data-ytdl-text"?: string;
     };
+    "ytd-settings-options-renderer": HTMLAttributes<HTMLElement>;
   }
 }
 
 export interface YtFormattedStringElement extends HTMLElement {
   text: { runs: { text: string }[] };
+}
+
+export interface YtdSettingsOptionsElement extends HTMLElement {
+  data: {
+    title: { runs: { text: string }[] };
+    options: unknown[];
+  };
+  set(path: string, value: unknown): void;
 }

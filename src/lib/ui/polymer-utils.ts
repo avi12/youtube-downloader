@@ -10,6 +10,7 @@ import type {
 } from "@/types";
 
 export { DATA_FMT_STRING_ID_ATTR, attachFmtStr, isYtFormattedString, sendFormattedStringText, setFormattedStringText } from "./polymer-fmt-string";
+export { DATA_SETTINGS_OPTIONS_ID_ATTR, attachSettingsOptions, isYtdSettingsOptionsRenderer } from "./polymer-settings-options";
 
 export const DATA_BUTTON_ID_ATTR = "data-ytdl-button-id";
 

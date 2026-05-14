@@ -22,5 +22,6 @@ export const CrossWorldMessage = {
   OptionsUpdate: "optionsUpdate",
   AudioTrackChanged: "audioTrackChanged",
   CaptionTrackChanged: "captionTrackChanged",
-  OpenSnackbar: "openSnackbar"
+  OpenSnackbar: "openSnackbar",
+  SetSettingsOptionsData: "setSettingsOptionsData"
 } as const;

@@ -2,7 +2,13 @@ import { registerButtonDataHandler } from "./button-data-handler";
 import { cancelActiveDownload, performDownload } from "./video/download";
 import { CrossWorldEvent, emitCrossWorldEvent } from "@/lib/messaging/cross-world-events";
 import { CrossWorldMessage, crossWorldMessenger, dispatchButtonClick } from "@/lib/messaging/cross-world-messenger";
-import { DATA_BUTTON_ID_ATTR, isYtFormattedString, setFormattedStringText } from "@/lib/ui/polymer-utils";
+import {
+  DATA_BUTTON_ID_ATTR,
+  DATA_SETTINGS_OPTIONS_ID_ATTR,
+  isYtFormattedString,
+  isYtdSettingsOptionsRenderer,
+  setFormattedStringText
+} from "@/lib/ui/polymer-utils";
 import {
   ButtonSize,
   ButtonState,
@@ -72,5 +78,41 @@ export function registerCrossWorldHandlers() {
     }
 
     setFormattedStringText(elFmtStr, text);
+  });
+
+  crossWorldMessenger.onMessage(CrossWorldMessage.SetSettingsOptionsData, ({ data: { selector, title } }) => {
+    const elPlaceholder = document.querySelector(selector);
+    if (!elPlaceholder) {
+      return;
+    }
+
+    const elRenderer = document.createElement("ytd-settings-options-renderer");
+    const settingsId = elPlaceholder.getAttribute(DATA_SETTINGS_OPTIONS_ID_ATTR);
+    if (settingsId) {
+      elRenderer.setAttribute(DATA_SETTINGS_OPTIONS_ID_ATTR, settingsId);
+    }
+
+    for (const className of elPlaceholder.classList) {
+      elRenderer.classList.add(className);
+    }
+
+    if (!isYtdSettingsOptionsRenderer(elRenderer)) {
+      return;
+    }
+
+    elRenderer.set("data", {
+      title: {
+        runs: [{ text: title }]
+      },
+      options: []
+    });
+    elPlaceholder.parentNode?.insertBefore(elRenderer, elPlaceholder);
+
+    const elOptions = elRenderer.querySelector("#options") ?? elRenderer;
+    while (elPlaceholder.firstChild) {
+      elOptions.appendChild(elPlaceholder.firstChild);
+    }
+
+    elPlaceholder.remove();
   });
 }
