@@ -1,4 +1,4 @@
-import { fetchCaptionVttData } from "./caption-fetch";
+import { fetchCaptionWebVttData } from "./caption-fetch";
 import type { DownloadParams } from "./download-execute";
 import { buildVideoMetadata } from "./video-data";
 import type { CaptionTrack, DownloadRequest, AdaptiveFormatItem } from "@/types";
@@ -56,4 +56,4 @@ export async function buildEnrichedRequest(
   };
 }
 
-export { fetchCaptionVttData };
+export { fetchCaptionWebVttData };

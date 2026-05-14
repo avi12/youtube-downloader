@@ -1,4 +1,7 @@
-import { attachPrimaryButton, PrimaryButtonState } from "@/lib/ui/panel-button-attachments.svelte";
+import {
+  attachPrimaryButton as attachPrimaryButtonElement,
+  PrimaryButtonState
+} from "@/lib/ui/panel-button-attachments.svelte";
 import { ProgressType } from "@/types";
 
 export { PrimaryButtonState };
@@ -30,8 +33,8 @@ export function createFooterState(params: FooterParams) {
     return `${formattedPercentage} - Downloading`;
   });
 
-  function attachPrimaryBtn(elButton: Element) {
-    attachPrimaryButton({
+  function attachPrimaryButton(elButton: Element) {
+    attachPrimaryButtonElement({
       elButton,
       getState: () => params.primaryState,
       getIsDownloadable: params.getIsDownloadable,
@@ -43,6 +46,6 @@ export function createFooterState(params: FooterParams) {
     get downloadingLabel() {
       return downloadingLabel;
     },
-    attachPrimaryBtn
+    attachPrimaryButton
   };
 }

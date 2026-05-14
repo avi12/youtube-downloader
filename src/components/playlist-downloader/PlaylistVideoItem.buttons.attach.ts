@@ -2,13 +2,13 @@ export function attachDownloadButton(
   elButton: Element,
   onClickDownload: () => void,
   refreshDownload: () => void,
-  setElDownloadBtn: (el: Element) => void
+  setDownloadButtonElement: (el: Element) => void
 ) {
   if (!(elButton instanceof HTMLElement)) {
     return;
   }
 
-  setElDownloadBtn(elButton);
+  setDownloadButtonElement(elButton);
   elButton.addEventListener("click", onClickDownload);
   refreshDownload();
   return () => elButton.removeEventListener("click", onClickDownload);
@@ -18,13 +18,13 @@ export function attachChevronButton(
   elButton: Element,
   onClickChevron: () => void,
   refreshChevron: () => void,
-  setElChevronBtn: (el: Element) => void
+  setChevronButtonElement: (el: Element) => void
 ) {
   if (!(elButton instanceof HTMLElement)) {
     return;
   }
 
-  setElChevronBtn(elButton);
+  setChevronButtonElement(elButton);
   elButton.addEventListener("click", onClickChevron);
   refreshChevron();
   elButton.setAttribute("style", "margin-left: 0 !important");

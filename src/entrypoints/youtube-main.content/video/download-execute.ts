@@ -5,7 +5,7 @@ import {
   resolveCredentialsWithRetry,
   selectFormats
 } from "./download-formats";
-import { buildEnrichedRequest, fetchCaptionVttData } from "./download-request-builder";
+import { buildEnrichedRequest, fetchCaptionWebVttData } from "./download-request-builder";
 import { generatePoTokenIfNeeded, videoDataCache } from "./video-data";
 import { crossWorldMessenger, CrossWorldMessage } from "@/lib/messaging/cross-world-messenger";
 import { CONTENT_OPTIONS } from "@/lib/ui/synced-stores.svelte";
@@ -44,7 +44,7 @@ export async function executeDownload(params: DownloadParams, abortSignal: Abort
   const orderedCaptionTracks = resolveOrderedCaptionTracks(
     cachedVideoData.captionTracks, selectedCaptionVssId, options.downloadExtras
   );
-  const captionVttDataPromise = fetchCaptionVttData(orderedCaptionTracks, videoId);
+  const captionVttDataPromise = fetchCaptionWebVttData(orderedCaptionTracks, videoId);
   const { videoFormat, audioFormat } = selectFormats({
     videoData: cachedVideoData,
     type,

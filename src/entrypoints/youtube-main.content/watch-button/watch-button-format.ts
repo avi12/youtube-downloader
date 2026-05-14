@@ -21,26 +21,26 @@ export function buildDownloadTitle(state: ButtonViewState) {
   }
 
   if (isProcessing) {
-    const pct = percentFormatter.format(downloadProgress);
+    const percentage = percentFormatter.format(downloadProgress);
     return {
-      title: pct,
-      accessibilityText: `${pct} processed - click to cancel`
+      title: percentage,
+      accessibilityText: `${percentage} processed - click to cancel`
     };
   }
 
   if (isDownloading) {
-    const pct = percentFormatter.format(downloadProgress);
+    const percentage = percentFormatter.format(downloadProgress);
     return {
-      title: pct,
-      accessibilityText: `Stop download - ${pct} downloaded`
+      title: percentage,
+      accessibilityText: `Stop download - ${percentage} downloaded`
     };
   }
 
   if (isInterrupted) {
-    const pct = percentFormatter.format(downloadProgress);
+    const percentage = percentFormatter.format(downloadProgress);
     return {
-      title: pct,
-      accessibilityText: `Stop - paused at ${pct}`
+      title: percentage,
+      accessibilityText: `Stop - paused at ${percentage}`
     };
   }
 

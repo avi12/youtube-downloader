@@ -3,7 +3,7 @@
   import type { createPlaylistToggleButtons } from "./PlaylistDownloader.toggle-buttons.svelte";
   import PlaylistOverrideBadge from "./PlaylistOverrideBadge.svelte";
   import PlaylistZipNameInput from "./PlaylistZipNameInput.svelte";
-  import { attachFmtStr, attachSettingsOptions } from "@/lib/ui/polymer-utils";
+  import { attachFormattedString, attachSettingsOptions } from "@/lib/ui/polymer-utils";
   import { PlaylistOutputMode } from "@/types";
 
   interface Props {
@@ -58,7 +58,7 @@
 
 <div class="ytdl-section">
   <div id="ytdl-type-label" class="ytdl-section-title">
-    <yt-formatted-string {@attach attachFmtStr} data-ytdl-text="Type"></yt-formatted-string>
+    <yt-formatted-string {@attach attachFormattedString} data-ytdl-text="Type"></yt-formatted-string>
     {#if playlist.isDownloadTypeOverridden}
       <PlaylistOverrideBadge />
     {/if}

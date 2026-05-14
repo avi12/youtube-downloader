@@ -26,7 +26,7 @@ export function setupAudioTrackWatcher() {
   });
 }
 
-function writeCaptionAttr(languageCode: string, vssId: string) {
+function writeCaptionAttribute(languageCode: string, vssId: string) {
   getMoviePlayer()?.setAttribute(
     ACTIVE_CAPTION_ATTR, JSON.stringify({
       languageCode,
@@ -44,7 +44,7 @@ export function setupCaptionTrackWatcher() {
   player.__ytdlCaptionWatched = true;
 
   function onCaptionTrack(languageCode: string, vssId: string) {
-    writeCaptionAttr(languageCode, vssId);
+    writeCaptionAttribute(languageCode, vssId);
     void crossWorldMessenger.sendMessage(CrossWorldMessage.CaptionTrackChanged, {
       languageCode,
       vssId

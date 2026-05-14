@@ -53,7 +53,7 @@ export async function downloadViaCdn({ request, signal, videoId, tabId, partialV
     extraCount: extraUrls.length,
     videoExpectedBytes: parseContentLength(videoFormat ?? null),
     audioExpectedBytes: parseContentLength(audioFormat ?? null),
-    extraExpectedBytesArr: (additionalAudioFormats ?? []).map(format => parseContentLength(format)),
+    extraExpectedBytesArray: (additionalAudioFormats ?? []).map(format => parseContentLength(format)),
     initialVideoBytes: partialVideoData?.byteLength ?? 0,
     initialAudioBytes: partialAudioData?.byteLength ?? 0
   });

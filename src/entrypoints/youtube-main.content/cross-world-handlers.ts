@@ -26,12 +26,12 @@ export function registerCrossWorldHandlers() {
 
   crossWorldMessenger.onMessage(CrossWorldMessage.OpenSnackbar, () => {
     requestAnimationFrame(() => {
-      const elViewBtn = document.querySelector<HTMLElement>(`[${DATA_BUTTON_ID_ATTR}="${SNACKBAR_VIEW_BUTTON_ID}"]`);
-      if (!elViewBtn || !("data" in elViewBtn)) {
+      const elViewButton = document.querySelector<HTMLElement>(`[${DATA_BUTTON_ID_ATTR}="${SNACKBAR_VIEW_BUTTON_ID}"]`);
+      if (!elViewButton || !("data" in elViewButton)) {
         return;
       }
 
-      elViewBtn.data = {
+      elViewButton.data = {
         title: "View",
         accessibilityText: "View in folder",
         style: ButtonStyle.CallToAction,
@@ -44,13 +44,13 @@ export function registerCrossWorldHandlers() {
       };
 
       queueMicrotask(() => {
-        const elInner = elViewBtn.querySelector("button");
+        const elInner = elViewButton.querySelector("button");
         if (elInner) {
           elInner.classList.replace("ytSpecButtonShapeNextMono", "ytSpecButtonShapeNextCallToActionInverse");
         }
       });
 
-      elViewBtn.addEventListener("click", () => dispatchButtonClick(SNACKBAR_VIEW_BUTTON_ID));
+      elViewButton.addEventListener("click", () => dispatchButtonClick(SNACKBAR_VIEW_BUTTON_ID));
     });
   });
 
@@ -72,12 +72,12 @@ export function registerCrossWorldHandlers() {
   registerButtonDataHandler();
 
   crossWorldMessenger.onMessage(CrossWorldMessage.SetFormattedStringText, ({ data: { selector, text } }) => {
-    const elFmtStr = document.querySelector(selector);
-    if (!elFmtStr || !isYtFormattedString(elFmtStr)) {
+    const elFormattedString = document.querySelector(selector);
+    if (!elFormattedString || !isYtFormattedString(elFormattedString)) {
       return;
     }
 
-    setFormattedStringText(elFmtStr, text);
+    setFormattedStringText(elFormattedString, text);
   });
 
   crossWorldMessenger.onMessage(CrossWorldMessage.SetSettingsOptionsData, ({ data: { selector, title } }) => {

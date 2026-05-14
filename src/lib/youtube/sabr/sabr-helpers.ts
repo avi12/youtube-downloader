@@ -61,13 +61,13 @@ export function collectReadableStream({ stream, expectedBytes, signal }: {
   );
 }
 
-export function createSabrStream({ sabrConfig, fetchFn, poToken }: {
+export function createSabrStream({ sabrConfig, fetchFunction, poToken }: {
   sabrConfig: SabrConfig;
-  fetchFn: typeof globalThis.fetch;
+  fetchFunction: typeof globalThis.fetch;
   poToken: string;
 }) {
   return new SabrStream({
-    fetch: fetchFn,
+    fetch: fetchFunction,
     serverAbrStreamingUrl: sabrConfig.serverAbrStreamingUrl,
     videoPlaybackUstreamerConfig: sabrConfig.videoPlaybackUstreamerConfig,
     poToken: poToken || undefined,

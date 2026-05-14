@@ -6,7 +6,7 @@
   import PlaylistDownloaderActions from "./PlaylistDownloaderActions.svelte";
   import PlaylistDownloaderFormatSections from "./PlaylistDownloaderFormatSections.svelte";
   import PlaylistDownloaderSettings from "./PlaylistDownloaderSettings.svelte";
-  import { attachFmtStr } from "@/lib/ui/polymer-utils";
+  import { attachFormattedString } from "@/lib/ui/polymer-utils";
 
   const playlist = createPlaylistDownloaderState();
   const toggleButtons = createPlaylistToggleButtons(playlist);
@@ -18,7 +18,7 @@
 <div class="ytdl-playlist-container">
   <div class="ytdl-section">
     <div class="ytdl-section-title">
-      <yt-formatted-string {@attach attachFmtStr} data-ytdl-text="Download playlist"></yt-formatted-string>
+      <yt-formatted-string {@attach attachFormattedString} data-ytdl-text="Download playlist"></yt-formatted-string>
       {#if playlist.isDownloading}
         <yt-button-view-model {@attach actionButtons.attachStopAll}></yt-button-view-model>
       {/if}

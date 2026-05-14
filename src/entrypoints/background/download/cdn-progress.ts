@@ -3,7 +3,7 @@ import { ProgressType } from "@/types";
 
 export function createCdnProgressTracker({
   videoId, tabId, totalStages, captionCount, hasVideo, hasAudio, extraCount,
-  videoExpectedBytes, audioExpectedBytes, extraExpectedBytesArr, initialVideoBytes, initialAudioBytes
+  videoExpectedBytes, audioExpectedBytes, extraExpectedBytesArray, initialVideoBytes, initialAudioBytes
 }: {
   videoId: string;
   tabId: number;
@@ -14,7 +14,7 @@ export function createCdnProgressTracker({
   extraCount: number;
   videoExpectedBytes: number;
   audioExpectedBytes: number;
-  extraExpectedBytesArr: number[];
+  extraExpectedBytesArray: number[];
   initialVideoBytes: number;
   initialAudioBytes: number;
 }) {
@@ -22,7 +22,7 @@ export function createCdnProgressTracker({
   let audioReceivedBytes = initialAudioBytes;
   let videoTotalBytes = videoExpectedBytes;
   let audioTotalBytes = audioExpectedBytes;
-  const extraReceivedBytesArr = Array.from({ length: extraCount }, () => 0);
+  const extraReceivedBytesArray = Array.from({ length: extraCount }, () => 0);
 
   function reportProgress() {
     if (totalStages === 0) {
@@ -44,10 +44,10 @@ export function createCdnProgressTracker({
       }
     }
 
-    for (const [i, expected] of extraExpectedBytesArr.entries()) {
-      const effectiveExpected = expected || extraReceivedBytesArr[i];
+    for (const [i, expected] of extraExpectedBytesArray.entries()) {
+      const effectiveExpected = expected || extraReceivedBytesArray[i];
       if (effectiveExpected > 0) {
-        completed += Math.min(extraReceivedBytesArr[i] / effectiveExpected, 1);
+        completed += Math.min(extraReceivedBytesArray[i] / effectiveExpected, 1);
       }
     }
 
@@ -71,7 +71,7 @@ export function createCdnProgressTracker({
       reportProgress();
     },
     onExtraBytes(i: number, bytes: number) {
-      extraReceivedBytesArr[i] += bytes;
+      extraReceivedBytesArray[i] += bytes;
       reportProgress();
     }
   };

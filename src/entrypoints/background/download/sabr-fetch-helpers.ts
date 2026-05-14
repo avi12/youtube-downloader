@@ -22,7 +22,7 @@ export async function downloadAudioOnlyViaSabr({ config, audioFormat, poToken, s
   return fetchAudioViaSabrStream({
     sabrConfig: config,
     audioFormat,
-    fetchFn: makeFetch(signal, onBytesReceived),
+    fetchFunction: makeFetch(signal, onBytesReceived),
     poToken,
     signal
   });
@@ -43,14 +43,14 @@ export async function downloadVideoAudioViaSabr({
     fetchVideoViaSabrStream({
       sabrConfig: config,
       videoFormat,
-      fetchFn: makeFetch(signal, onVideoBytesReceived),
+      fetchFunction: makeFetch(signal, onVideoBytesReceived),
       poToken,
       signal
     }),
     fetchAudioViaSabrStream({
       sabrConfig: config,
       audioFormat,
-      fetchFn: makeFetch(signal, onAudioBytesReceived),
+      fetchFunction: makeFetch(signal, onAudioBytesReceived),
       poToken,
       signal
     })
@@ -71,7 +71,7 @@ export async function downloadExtraAudioTracksViaSabr({ config, formats, poToken
       const { data } = await fetchAudioViaSabrStream({
         sabrConfig: config,
         audioFormat: format,
-        fetchFn: makeFetch(signal, bytes => onTrackBytesReceived?.(i, bytes)),
+        fetchFunction: makeFetch(signal, bytes => onTrackBytesReceived?.(i, bytes)),
         poToken,
         signal
       });

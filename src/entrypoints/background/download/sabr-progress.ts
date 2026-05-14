@@ -19,7 +19,7 @@ export function createProgressAccumulator({
 }) {
   const videoPartBytes = isAudioOnly ? 0 : parseContentLength(videoFormat);
   const audioPartBytes = parseContentLength(audioFormat);
-  const extraExpectedBytesArr = additionalFormats.map(format => {
+  const extraExpectedBytesArray = additionalFormats.map(format => {
     const known = parseContentLength(format);
     return known > 0 ? known : estimateFormatBytes(format, audioFormat);
   });
@@ -27,7 +27,7 @@ export function createProgressAccumulator({
 
   let videoReceivedBytes = 0;
   let audioReceivedBytes = 0;
-  const extraReceivedBytesArr = additionalFormats.map(() => 0);
+  const extraReceivedBytesArray = additionalFormats.map(() => 0);
 
   function computeProgress() {
     if (totalStages === 0) {
@@ -43,9 +43,9 @@ export function createProgressAccumulator({
       completed += Math.min(audioReceivedBytes / audioPartBytes, 1);
     }
 
-    for (const [i, expected] of extraExpectedBytesArr.entries()) {
+    for (const [i, expected] of extraExpectedBytesArray.entries()) {
       if (expected > 0) {
-        completed += Math.min(extraReceivedBytesArr[i] / expected, 1);
+        completed += Math.min(extraReceivedBytesArray[i] / expected, 1);
       }
     }
 
@@ -70,7 +70,7 @@ export function createProgressAccumulator({
       audioReceivedBytes += bytes; sendUpdate();
     },
     onExtraTrackBytes(trackIndex: number, bytes: number) {
-      extraReceivedBytesArr[trackIndex] += bytes;
+      extraReceivedBytesArray[trackIndex] += bytes;
       sendUpdate();
     }
   };

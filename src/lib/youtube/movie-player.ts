@@ -26,7 +26,7 @@ type CaptionBusContext = {
   };
 };
 
-function isGetOptionFn(value: unknown): value is (module: string, option: string) => unknown {
+function isGetOptionFunction(value: unknown): value is (module: string, option: string) => unknown {
   return typeof value === "function";
 }
 
@@ -40,7 +40,7 @@ export function capturePlayerCaptionBus(player: MoviePlayerElement): CaptionEven
 
   while (proto) {
     const desc = Object.getOwnPropertyDescriptor(proto, "getOption");
-    if (isGetOptionFn(desc?.value)) {
+    if (isGetOptionFunction(desc?.value)) {
       rawGetOption = desc.value;
       break;
     }
@@ -55,9 +55,9 @@ export function capturePlayerCaptionBus(player: MoviePlayerElement): CaptionEven
   const origApply = Function.prototype.apply;
   let internalCtx: unknown = null;
 
-  type AnyFn = (...args: unknown[]) => unknown;
+  type AnyFunction = (...args: unknown[]) => unknown;
 
-  function captureApply(this: AnyFn, thisArg: unknown, args: unknown[]) {
+  function captureApply(this: AnyFunction, thisArg: unknown, args: unknown[]) {
     if (!internalCtx && Array.isArray(args) && args[0] === "captions") {
       internalCtx = thisArg;
     }

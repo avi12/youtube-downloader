@@ -14,35 +14,38 @@ export function createButtonManager(params: {
   readonly isInProgressInZipBatch: boolean;
 }) {
   let elButtonGroup: HTMLElement | null = null;
-  let elDownloadBtn: Element | null = null;
-  let elChevronBtn: Element | null = null;
+  let elDownloadButton: Element | null = null;
+  let elChevronButton: Element | null = null;
   let buttonRefreshTimer: ReturnType<typeof setTimeout> | null = null;
 
   const downloadButtonId = $derived(`btn-${params.videoId}-download`);
   const chevronButtonId = $derived(`btn-${params.videoId}-chevron`);
 
   function refreshDownloadButton() {
-    if (!elDownloadBtn) {
+    if (!elDownloadButton) {
       return;
     }
 
     const tooltip = params.itemState.buttonTooltip;
     const isDisabled = !params.itemState.videoData?.isDownloadable || params.isInProgressInZipBatch;
     const iconName = params.isInProgressInZipBatch ? IconName.CheckCircleThick : params.itemState.downloadIconName;
-    sendDownloadButtonData(elDownloadBtn, downloadButtonId, tooltip, params.itemState.videoData, iconName, isDisabled);
+    sendDownloadButtonData(
+      elDownloadButton, downloadButtonId, tooltip, params.itemState.videoData, iconName, isDisabled
+    );
   }
 
   function refreshChevronButton() {
-    if (!elChevronBtn) {
+    if (!elChevronButton) {
       return;
     }
 
     const elDropdown = params.panel.elDropdown;
     const isPanelAbove = params.panel.isOpen && !!elDropdown
-      && elDropdown.getBoundingClientRect().bottom <= elChevronBtn.getBoundingClientRect().top + PANEL_ABOVE_OVERLAP_PX;
+      && elDropdown.getBoundingClientRect().bottom
+        <= elChevronButton.getBoundingClientRect().top + PANEL_ABOVE_OVERLAP_PX;
     const isDisabled = !params.itemState.videoData?.isDownloadable;
     const iconName = isPanelAbove ? IconName.ExpandLess : IconName.ExpandMore;
-    sendChevronButtonData(elChevronBtn, chevronButtonId, iconName, isDisabled);
+    sendChevronButtonData(elChevronButton, chevronButtonId, iconName, isDisabled);
   }
 
   function scheduleRefresh() {
@@ -76,11 +79,11 @@ export function createButtonManager(params: {
     });
   }
 
-  function setElDownloadBtn(elBtn: Element) {
-    elDownloadBtn = elBtn;
+  function setDownloadButtonElement(elBtn: Element) {
+    elDownloadButton = elBtn;
   }
-  function setElChevronBtn(elBtn: Element) {
-    elChevronBtn = elBtn;
+  function setChevronButtonElement(elBtn: Element) {
+    elChevronButton = elBtn;
   }
 
   return {
@@ -97,8 +100,8 @@ export function createButtonManager(params: {
     refreshChevronButton,
     scheduleRefresh,
     attachDownloadButton: (elButton: Element) =>
-      attachDownloadButton(elButton, onDownloadClick, refreshDownloadButton, setElDownloadBtn),
+      attachDownloadButton(elButton, onDownloadClick, refreshDownloadButton, setDownloadButtonElement),
     attachChevronButton: (elButton: Element) =>
-      attachChevronButton(elButton, onChevronClick, refreshChevronButton, setElChevronBtn)
+      attachChevronButton(elButton, onChevronClick, refreshChevronButton, setChevronButtonElement)
   };
 }

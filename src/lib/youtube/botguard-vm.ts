@@ -54,16 +54,16 @@ export async function ensureBotGuardVm(globalName: string, interpreterUrlRaw: st
   }
 }
 
-export type SignalFn = (input: Uint8Array) => Promise<(input: Uint8Array) => Promise<Uint8Array>>;
+export type SignalFunction = (input: Uint8Array) => Promise<(input: Uint8Array) => Promise<Uint8Array>>;
 
-export function initBotGuardVm(botGuardEntry: BotGuardVmEntry, program: string, webPoSignalOutput: SignalFn[]) {
+export function initBotGuardVm(botGuardEntry: BotGuardVmEntry, program: string, webPoSignalOutput: SignalFunction[]) {
   const initResult = botGuardEntry.a(program, () => {}, true, undefined, () => {}, [[], []]);
-  const snapshotFn = initResult?.[0];
-  if (typeof snapshotFn !== "function") {
+  const snapshotFunction = initResult?.[0];
+  if (typeof snapshotFunction !== "function") {
     throw new Error("BotGuard snapshot function not available");
   }
 
-  const snapshotResponse = snapshotFn.call(null, [undefined, undefined, webPoSignalOutput, undefined]);
+  const snapshotResponse = snapshotFunction.call(null, [undefined, undefined, webPoSignalOutput, undefined]);
   if (!snapshotResponse) {
     throw new Error("Empty snapshot response");
   }

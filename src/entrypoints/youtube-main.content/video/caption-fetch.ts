@@ -6,7 +6,7 @@ export { resolveOrderedCaptionTracks } from "./caption-urls";
 
 const CAPTION_FETCH_TIMEOUT_MS = 10_000;
 
-function formatVttTimestamp(seconds: number) {
+function formatWebVttTimestamp(seconds: number) {
   const hours = Math.floor(seconds / 3600);
   const mins = Math.floor((seconds % 3600) / 60);
   const secs = Math.floor(seconds % 60);
@@ -14,21 +14,21 @@ function formatVttTimestamp(seconds: number) {
   return `${String(hours).padStart(2, "0")}:${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}.${String(millis).padStart(3, "0")}`;
 }
 
-function cuesToVtt(cues: TextTrackCueList) {
+function cuesToWebVtt(cues: TextTrackCueList) {
   const lines = ["WEBVTT", ""];
   for (const cue of cues) {
     if (!(cue instanceof VTTCue)) {
       continue;
     }
 
-    lines.push(`${formatVttTimestamp(cue.startTime)} --> ${formatVttTimestamp(cue.endTime)}`);
+    lines.push(`${formatWebVttTimestamp(cue.startTime)} --> ${formatWebVttTimestamp(cue.endTime)}`);
     lines.push(cue.text);
     lines.push("");
   }
   return lines.join("\n");
 }
 
-async function fetchVttViaTrackElement(url: string) {
+async function fetchWebVttViaTrackElement(url: string) {
   const elVideo = document.querySelector<HTMLVideoElement>("video.html5-main-video");
   if (!elVideo) {
     return null;
@@ -49,7 +49,7 @@ async function fetchVttViaTrackElement(url: string) {
 
     elTrack.addEventListener("load", () => {
       const cues = elTrack.track?.cues;
-      finish(cues?.length ? uint8ToBase64(new TextEncoder().encode(cuesToVtt(cues))) : null);
+      finish(cues?.length ? uint8ToBase64(new TextEncoder().encode(cuesToWebVtt(cues))) : null);
     }, { once: true });
 
     elTrack.addEventListener("error", () => finish(null), { once: true });
@@ -59,7 +59,7 @@ async function fetchVttViaTrackElement(url: string) {
   });
 }
 
-export async function fetchCaptionVttData(captionTracks: CaptionTrack[], videoId: string) {
+export async function fetchCaptionWebVttData(captionTracks: CaptionTrack[], videoId: string) {
   if (captionTracks.length === 0) {
     return [];
   }
@@ -71,7 +71,7 @@ export async function fetchCaptionVttData(captionTracks: CaptionTrack[], videoId
     const baseUrl = freshUrls.get(track.vssId) ?? track.baseUrl;
     const url = new URL(baseUrl);
     url.searchParams.set("fmt", "vtt");
-    results.push(await fetchVttViaTrackElement(url.toString()));
+    results.push(await fetchWebVttViaTrackElement(url.toString()));
   }
   return results;
 }

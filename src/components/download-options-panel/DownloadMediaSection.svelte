@@ -1,7 +1,7 @@
 <script lang="ts">
   import PolymerSelect from "../polymer-select/PolymerSelect.svelte";
   import { DOWNLOAD_TYPES, handleQualityChange } from "./download-options-helpers";
-  import { attachFmtStr } from "@/lib/ui/polymer-utils";
+  import { attachFormattedString } from "@/lib/ui/polymer-utils";
   import { DownloadType } from "@/types";
   import type { AdaptiveFormatItem } from "@/types";
 
@@ -36,7 +36,7 @@
 </script>
 
 <div class="ytdl-section">
-  <yt-formatted-string class="ytdl-section-label" {@attach attachFmtStr} data-ytdl-text="Media"></yt-formatted-string>
+  <yt-formatted-string class="ytdl-section-label" {@attach attachFormattedString} data-ytdl-text="Media"></yt-formatted-string>
   <div class="ytdl-media-grid">
     <PolymerSelect
       id="type-select"

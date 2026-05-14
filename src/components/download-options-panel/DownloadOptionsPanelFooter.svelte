@@ -40,7 +40,7 @@
 <div class="ytdl-panel-footer">
   <yt-button-view-model
     class={scopingClass}
-    {@attach footer.attachPrimaryBtn}
+    {@attach footer.attachPrimaryButton}
     data-ytdl-button-id={primaryButtonId}
     role="button"
     tabindex="0"

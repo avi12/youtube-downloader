@@ -3,16 +3,16 @@ import type { AdaptiveFormatItem, SabrConfig } from "@/types";
 
 export type { SabrStreamResult } from "./sabr-helpers";
 
-export async function fetchVideoViaSabrStream({ sabrConfig, videoFormat, fetchFn, poToken, signal }: {
+export async function fetchVideoViaSabrStream({ sabrConfig, videoFormat, fetchFunction, poToken, signal }: {
   sabrConfig: SabrConfig;
   videoFormat: AdaptiveFormatItem;
-  fetchFn: typeof globalThis.fetch;
+  fetchFunction: typeof globalThis.fetch;
   poToken: string;
   signal?: AbortSignal;
 }) {
   const sabrStream = createSabrStream({
     sabrConfig,
-    fetchFn,
+    fetchFunction,
     poToken
   });
   const { videoStream } = await sabrStream.start({
@@ -26,16 +26,16 @@ export async function fetchVideoViaSabrStream({ sabrConfig, videoFormat, fetchFn
   });
 }
 
-export async function fetchAudioViaSabrStream({ sabrConfig, audioFormat, fetchFn, poToken, signal }: {
+export async function fetchAudioViaSabrStream({ sabrConfig, audioFormat, fetchFunction, poToken, signal }: {
   sabrConfig: SabrConfig;
   audioFormat: AdaptiveFormatItem;
-  fetchFn: typeof globalThis.fetch;
+  fetchFunction: typeof globalThis.fetch;
   poToken: string;
   signal?: AbortSignal;
 }) {
   const sabrStream = createSabrStream({
     sabrConfig,
-    fetchFn,
+    fetchFunction,
     poToken
   });
   const { audioStream } = await sabrStream.start({

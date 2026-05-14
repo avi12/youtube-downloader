@@ -1,6 +1,6 @@
 <script lang="ts">
   import PolymerSelect from "../polymer-select/PolymerSelect.svelte";
-  import { attachFmtStr, createTrackChoiceState } from "./TrackChoice.svelte.ts";
+  import { attachFormattedString, createTrackChoiceState } from "./TrackChoice.svelte.ts";
   import { PanelTrackMode, YtIconName } from "@/types";
   import type { TrackKind } from "@/types";
 
@@ -44,13 +44,13 @@
   <div class="track-choice-head">
     <yt-formatted-string
       class="track-label"
-      {@attach attachFmtStr}
+      {@attach attachFormattedString}
       data-ytdl-text={state.kindLabel}
     ></yt-formatted-string>
     <div
       class="track-seg"
       aria-label="{state.kindLabel} source"
-      onkeydown={state.handleSegKeydown}
+      onkeydown={state.handleSegmentedKeydown}
       role="radiogroup"
       tabindex="-1"
     >
@@ -70,11 +70,11 @@
         <yt-icon class="sync-icon" icon={YtIconName.Autorenew}></yt-icon>
       </div>
       <div class="track-follow-body">
-        <yt-formatted-string class="track-follow-value" {@attach attachFmtStr} data-ytdl-text={playerLabel ?? "—"}
+        <yt-formatted-string class="track-follow-value" {@attach attachFormattedString} data-ytdl-text={playerLabel ?? "—"}
         ></yt-formatted-string>
         <yt-formatted-string
           class="track-follow-sub"
-          {@attach attachFmtStr}
+          {@attach attachFormattedString}
           data-ytdl-text="Synced with player · changes as you switch tracks"
         ></yt-formatted-string>
       </div>
@@ -83,9 +83,9 @@
     <div class="track-follow track-original">
       <div class="track-original-badge" aria-hidden="true">ORIG</div>
       <div class="track-follow-body">
-        <yt-formatted-string class="track-follow-value" {@attach attachFmtStr} data-ytdl-text={originalLabel ?? "Original"}
+        <yt-formatted-string class="track-follow-value" {@attach attachFormattedString} data-ytdl-text={originalLabel ?? "Original"}
         ></yt-formatted-string>
-        <yt-formatted-string class="track-follow-sub" {@attach attachFmtStr} data-ytdl-text={state.originalSubLabel}
+        <yt-formatted-string class="track-follow-sub" {@attach attachFormattedString} data-ytdl-text={state.originalSubLabel}
         ></yt-formatted-string>
       </div>
     </div>

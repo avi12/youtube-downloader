@@ -1,6 +1,6 @@
 import { buildTrackButtons, refreshButton } from "./TrackChoice.button-data";
 import { onButtonClick } from "@/lib/messaging/cross-world-messenger";
-import { attachFmtStr } from "@/lib/ui/polymer-utils";
+import { attachFormattedString } from "@/lib/ui/polymer-utils";
 import { PanelTrackMode, TrackKind } from "@/types";
 import { untrack } from "svelte";
 import { SvelteMap } from "svelte/reactivity";
@@ -12,7 +12,7 @@ export interface TrackChoiceParams {
   readonly onmodechange: (mode: PanelTrackMode) => void;
 }
 
-export { attachFmtStr };
+export { attachFormattedString };
 
 export function createTrackChoiceState(params: TrackChoiceParams) {
   const buttons = $derived(buildTrackButtons(params.kind));
@@ -66,7 +66,7 @@ export function createTrackChoiceState(params: TrackChoiceParams) {
     });
   }));
 
-  function handleSegKeydown(e: KeyboardEvent) {
+  function handleSegmentedKeydown(e: KeyboardEvent) {
     if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") {
       return;
     }
@@ -95,6 +95,6 @@ export function createTrackChoiceState(params: TrackChoiceParams) {
       return accessibleLabel;
     },
     createAttacher,
-    handleSegKeydown
+    handleSegmentedKeydown
   };
 }
