@@ -15,10 +15,10 @@ export const ACTION_BUTTON_IDS = {
 
 export function buildDeselectAllData(isDisabled: boolean) {
   return {
-    iconName: IconName.Close,
+    iconName: IconName.None,
     title: "Clear",
     accessibilityText: "Clear selection",
-    style: ButtonStyle.Mono,
+    style: ButtonStyle.CallToAction,
     type: ButtonType.Text,
     buttonSize: ButtonSize.XSmall,
     state: isDisabled ? ButtonState.Disabled : ButtonState.Active,
