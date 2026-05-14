@@ -18,7 +18,7 @@ import {
 } from "@/lib/storage/storage";
 import { onSabrBodyCaptured, startSabrRequestCapture } from "@/lib/youtube/sabr/request-capture";
 
-export default defineBackground(async () => {
+export default defineBackground(() => {
   initOffscreenPortListener();
   void registerSabrOriginRule();
   startSabrRequestCapture();

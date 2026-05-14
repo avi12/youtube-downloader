@@ -20,7 +20,7 @@ function createGridDropdown({ contentId, positionTargetSelector }: {
     gridDropdowns.delete(contentId);
   }
 
-  const elDropdownContentSlot = document.createElement("ytd-menu-popup-renderer");
+  const elDropdownContentSlot = document.createElement("div");
   elDropdownContentSlot.slot = "dropdown-content";
   elDropdownContentSlot.id = contentId;
 
