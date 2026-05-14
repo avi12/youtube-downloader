@@ -1,4 +1,5 @@
 <script lang="ts">
+  import "./app.css";
   import { createAppState, PopupPanel } from "./App.state.svelte";
   import ChangeFormatDialog from "./ChangeFormatDialog.svelte";
   import DownloadsTab from "./DownloadsTab.svelte";
@@ -94,7 +95,3 @@
     onClose={appState.handleCloseDialog}
   />
 {/if}
-
-<style>
-  @import url("./app.css");
-</style>
