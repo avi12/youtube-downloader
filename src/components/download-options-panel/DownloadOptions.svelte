@@ -68,6 +68,7 @@
     captionPlayerLabel={derived.captionPlayerLabel}
     captionTracks={derived.filteredCaptionTracks}
     {downloadExtras}
+    includeAiCaptions={derived.includeAiCaptions}
     {isDownloading}
     {onaudiocustomchange}
     {onaudiomodechange}
@@ -100,5 +101,9 @@
 
   .ytdl-options-container > :global(*:not(:first-child)) {
     margin-top: 16px;
+  }
+
+  .ytdl-options-container > :global(.ytdl-tracks-section-host) {
+    margin-top: 0;
   }
 </style>

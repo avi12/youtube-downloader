@@ -68,11 +68,15 @@ export function resolveInitialCaptionTrack({
     return null;
   }
 
+  const candidateTracks = options.includeAiCaptions
+    ? videoData.captionTracks
+    : videoData.captionTracks.filter(track => track.kind !== "asr");
+
   const isCustomMode = captionMode === PanelTrackMode.Custom;
   if (isCustomMode) {
     const langCode = normalizeLanguageCode(options.customLanguage ?? "");
-    return videoData.captionTracks.find(track => normalizeLanguageCode(track.languageCode) === langCode)
-      ?? videoData.captionTracks[0]
+    return candidateTracks.find(track => normalizeLanguageCode(track.languageCode) === langCode)
+      ?? candidateTracks[0]
       ?? null;
   }
 
@@ -81,17 +85,22 @@ export function resolveInitialCaptionTrack({
     const originalLangId = findOriginalAudioFormat(videoData.audioFormats)?.audioTrack?.id;
     if (originalLangId) {
       const langCode = normalizeLanguageCode(originalLangId);
-      const match = videoData.captionTracks.find(
+      const manualMatch = candidateTracks.find(
         track => normalizeLanguageCode(track.languageCode) === langCode && !track.kind
-      ) ?? videoData.captionTracks.find(track => normalizeLanguageCode(track.languageCode) === langCode);
+      );
+      const match = manualMatch
+        ?? candidateTracks.find(track => normalizeLanguageCode(track.languageCode) === langCode);
       if (match) {
         return match;
       }
     }
 
-    return videoData.captionTracks.find(track => !track.kind) ?? videoData.captionTracks[0] ?? null;
+    return candidateTracks.find(track => !track.kind) ?? candidateTracks[0] ?? null;
   }
 
+  // MatchVideo / default: only preserve the player's active caption (even if
+  // ASR); fall back to filtered candidates so an absent player caption doesn't
+  // auto-pick an ASR default and falsely surface the captions section.
   const activeCaption = getActivePlayerCaption();
   if (activeCaption) {
     const match = videoData.captionTracks.find(track => track.vssId === activeCaption.vss_id)
@@ -104,7 +113,7 @@ export function resolveInitialCaptionTrack({
   }
 
   return orderCaptionsByPreference({
-    captionTracks: videoData.captionTracks,
+    captionTracks: candidateTracks,
     languageMode: AudioTrackLanguageMode.MatchYouTube,
     locale: document.documentElement.lang,
     browserLanguage: navigator.language

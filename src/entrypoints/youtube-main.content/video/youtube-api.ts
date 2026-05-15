@@ -46,7 +46,7 @@ export function buildVideoData({ playerResponse, clientVersion, clientName }: {
     isLive,
     videoFormats: getUniqueVideoFormats(allFormats),
     audioFormats: getAudioFormats(allFormats),
-    captionTracks: allCaptionTracks.filter(track => track.kind !== "asr"),
+    captionTracks: allCaptionTracks,
     sabrConfig: extractSabrConfig({
       playerResponse,
       clientVersion,

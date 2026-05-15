@@ -1,5 +1,5 @@
 import { getActivePlayerCaption } from "./helpers/panel-init-caption";
-import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
+import { PLAYER_ACTIVE_CAPTION } from "./helpers/player-caption-store.svelte";
 import { findOriginalAudioFormat, normalizeLanguageCode } from "@/lib/youtube/video-helpers";
 import { PanelTrackMode, type CaptionTrack, type VideoData } from "@/types";
 
@@ -56,23 +56,29 @@ export function createCaptionTrackState({
     selectedCaptionTrack = track;
   }
 
-  $effect(() => crossWorldMessenger.onMessage(CrossWorldMessage.CaptionTrackChanged, ({ data }) => {
-    const isNotMatchVideo = panelCaptionMode !== PanelTrackMode.MatchVideo;
-    if (isNotMatchVideo) {
+  $effect(() => {
+    const { vssId, languageCode } = PLAYER_ACTIVE_CAPTION;
+    if (!vssId && !languageCode) {
       return;
     }
 
     const { captionTracks } = getVideoData();
-    const match = captionTracks.find(track => track.vssId === data.vssId)
-      ?? captionTracks.find(
-        track => normalizeLanguageCode(track.languageCode) === normalizeLanguageCode(data.languageCode)
-      );
+    const match = captionTracks.find(track => track.vssId === vssId)
+      ?? (languageCode
+        ? captionTracks.find(track => normalizeLanguageCode(track.languageCode) === normalizeLanguageCode(languageCode))
+        : undefined);
     if (!match) {
       return;
     }
 
+    const isMatchVideo = panelCaptionMode === PanelTrackMode.MatchVideo;
+    const isOnlyAsrAvailable = captionTracks.every(track => track.kind === "asr");
+    if (!isMatchVideo && !isOnlyAsrAvailable) {
+      return;
+    }
+
     selectedCaptionTrack = match;
-  }));
+  });
 
   return {
     get panelCaptionMode() {

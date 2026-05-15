@@ -4,10 +4,23 @@ import {
   byLabel,
   resolveCaptionOriginalLabel
 } from "./download-options-helpers";
+import { PLAYER_ACTIVE_CAPTION } from "./helpers/player-caption-store.svelte";
+import { optionsItem } from "@/lib/storage/storage";
 import { CONTENT_OPTIONS } from "@/lib/ui/synced-stores.svelte";
-import { findOriginalAudioFormat } from "@/lib/youtube/video-helpers";
+import { findOriginalAudioFormat, INITIAL_OPTIONS } from "@/lib/youtube/video-helpers";
 import { DownloadType } from "@/types";
 import type { AdaptiveFormatItem, CaptionTrack } from "@/types";
+
+const AUTO_GENERATED_SUFFIX = "(auto-generated)";
+
+function formatCaptionLabel(track: CaptionTrack) {
+  const name = track.name.simpleText;
+  if (track.kind !== "asr") {
+    return name;
+  }
+
+  return name.includes(AUTO_GENERATED_SUFFIX) ? name : `${name} ${AUTO_GENERATED_SUFFIX}`;
+}
 
 export interface DownloadOptionsProps {
   downloadType: DownloadType;
@@ -19,20 +32,35 @@ export interface DownloadOptionsProps {
   selectedCaptionTrack: CaptionTrack | null;
 }
 
+const PANEL_OPTIONS = $state({
+  includeAiCaptions: CONTENT_OPTIONS.includeAiCaptions,
+  includeAutoDubbing: CONTENT_OPTIONS.includeAutoDubbing
+});
+
+optionsItem.watch(next => {
+  if (!next) {
+    return;
+  }
+
+  PANEL_OPTIONS.includeAiCaptions = next.includeAiCaptions ?? INITIAL_OPTIONS.includeAiCaptions;
+  PANEL_OPTIONS.includeAutoDubbing = next.includeAutoDubbing ?? INITIAL_OPTIONS.includeAutoDubbing;
+});
+
 export function createDownloadOptionsState(props: () => DownloadOptionsProps) {
   const isAudio = $derived(props().downloadType === DownloadType.Audio);
 
   const uniqueAudioLanguages = $derived(
     buildUniqueAudioLanguages({
       audioFormats: props().audioFormats,
-      includeAutoDubbing: CONTENT_OPTIONS.value.includeAutoDubbing
+      includeAutoDubbing: PANEL_OPTIONS.includeAutoDubbing
     })
   );
 
   const filteredCaptionTracks = $derived(
-    CONTENT_OPTIONS.value.includeAiCaptions
+    PANEL_OPTIONS.includeAiCaptions
       ? props().captionTracks
-      : props().captionTracks.filter(track => track.kind !== "asr")
+      : props().captionTracks.filter(track =>
+        track.kind !== "asr" || track.vssId === PLAYER_ACTIVE_CAPTION.vssId)
   );
 
   const qualityOptions = $derived(
@@ -52,10 +80,14 @@ export function createDownloadOptionsState(props: () => DownloadOptionsProps) {
   );
 
   const captionCustomOptions = $derived(
-    filteredCaptionTracks.map(track => ({
-      value: track.vssId,
-      label: track.kind === "asr" ? `${track.name.simpleText} (auto-generated)` : track.name.simpleText
-    })).toSorted(byLabel)
+    (PANEL_OPTIONS.includeAiCaptions
+      ? props().captionTracks
+      : props().captionTracks.filter(track => track.kind !== "asr"))
+      .map(track => ({
+        value: track.vssId,
+        label: formatCaptionLabel(track)
+      }))
+      .toSorted(byLabel)
   );
 
   const captionOriginalLabel = $derived(
@@ -66,10 +98,16 @@ export function createDownloadOptionsState(props: () => DownloadOptionsProps) {
   );
   const audioPlayerLabel = $derived(props().selectedAudioFormat?.audioTrack?.displayName ?? null);
   const audioOriginalLabel = $derived(findOriginalAudioFormat(props().audioFormats)?.audioTrack?.displayName ?? null);
-  const captionPlayerLabel = $derived(props().selectedCaptionTrack?.name.simpleText ?? null);
+  const captionPlayerLabel = $derived.by(() => {
+    const track = props().selectedCaptionTrack;
+    return track ? formatCaptionLabel(track) : null;
+  });
   const selectedCaptionVssId = $derived(props().selectedCaptionTrack?.vssId ?? "");
 
   return {
+    get includeAiCaptions() {
+      return PANEL_OPTIONS.includeAiCaptions;
+    },
     get isAudio() {
       return isAudio;
     },
