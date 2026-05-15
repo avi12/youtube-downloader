@@ -20,7 +20,8 @@ async function ensureOffscreenDocument() {
     // getContexts not available in all environments
   }
 
-  if (existingContexts.length > 0) {
+  const hasExistingContext = existingContexts.length > 0;
+  if (hasExistingContext) {
     try {
       await browser.offscreen.closeDocument();
     } catch {

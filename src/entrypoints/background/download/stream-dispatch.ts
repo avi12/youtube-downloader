@@ -28,7 +28,15 @@ export async function dispatchToOffscreen({ request, result, enrichedMetadata, t
 
   const resolvedVideoMimeType = videoFormat ? stripMimeParams(videoFormat.mimeType) : "video/mp4";
   const resolvedAudioMimeType = audioFormat ? stripMimeParams(audioFormat.mimeType) : "audio/mp4";
-  await Promise.all(buildTransferJobs(videoData, audioData, additionalAudioTracks, videoId, tabId));
+  await Promise.all(
+    buildTransferJobs({
+      videoData,
+      audioData,
+      additionalAudioTracks,
+      videoId,
+      tabId
+    })
+  );
 
   const audioTrackLabels = [primaryAudioLabel ?? "", ...additionalAudioTracks.map(track => track.label)];
   const audioTrackLanguages = [
@@ -36,22 +44,28 @@ export async function dispatchToOffscreen({ request, result, enrichedMetadata, t
     ...additionalAudioTracks.map(track => track.languageCode)
   ];
 
-  const subtitleTracks = buildSubtitleTracks(captionTracks, request.captionVttData ?? []);
+  const subtitleTracks = buildSubtitleTracks({
+    captionTracks,
+    captionVttData: request.captionVttData ?? []
+  });
 
-  sendToOffscreen(OffscreenMessageType.ProcessStreamEnd, {
-    type,
-    videoId,
-    filenameOutput,
-    videoMimeType: resolvedVideoMimeType,
-    audioMimeType: resolvedAudioMimeType,
-    audioTrackLabels,
-    audioTrackLanguages,
-    defaultAudioTrackIndex: 0,
-    subtitleTracks,
-    tabId,
-    playlistId,
-    playlistTitle,
-    playlistTotalCount,
-    metadata: enrichedMetadata
+  sendToOffscreen({
+    type: OffscreenMessageType.ProcessStreamEnd,
+    data: {
+      type,
+      videoId,
+      filenameOutput,
+      videoMimeType: resolvedVideoMimeType,
+      audioMimeType: resolvedAudioMimeType,
+      audioTrackLabels,
+      audioTrackLanguages,
+      defaultAudioTrackIndex: 0,
+      subtitleTracks,
+      tabId,
+      playlistId,
+      playlistTitle,
+      playlistTotalCount,
+      metadata: enrichedMetadata
+    }
   });
 }

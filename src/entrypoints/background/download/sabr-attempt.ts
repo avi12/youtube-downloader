@@ -48,7 +48,8 @@ export async function handleIframeFallback({
 }) {
   if (request.isIframeFallback) {
     const retries = iframeAutoRetries.get(videoId) ?? 0;
-    if (retries >= MAX_IFRAME_AUTO_RETRIES) {
+    const hasExhaustedRetries = retries >= MAX_IFRAME_AUTO_RETRIES;
+    if (hasExhaustedRetries) {
       iframeAutoRetries.delete(videoId);
       console.warn("[ytdl:bg] All download methods exhausted for", videoId);
       reportDownloadFailed({

@@ -35,7 +35,8 @@ export async function fetchWithProgress({ url, signal, onBytesReceived, initialD
         }
       }
     });
-    if (response.status === HTTP_STATUS_RANGE_NOT_SATISFIABLE) {
+    const isRangeNotSatisfiable = response.status === HTTP_STATUS_RANGE_NOT_SATISFIABLE;
+    if (isRangeNotSatisfiable) {
       if (partialData) {
         return partialData;
       }
@@ -43,7 +44,8 @@ export async function fetchWithProgress({ url, signal, onBytesReceived, initialD
       throw new Error(`HTTP ${HTTP_STATUS_RANGE_NOT_SATISFIABLE} Range Not Satisfiable`);
     }
 
-    if (!response.ok) {
+    const isResponseError = !response.ok;
+    if (isResponseError) {
       throw new Error(`HTTP ${response.status} fetching stream`);
     }
 

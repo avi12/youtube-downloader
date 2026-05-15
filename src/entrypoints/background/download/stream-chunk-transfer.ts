@@ -16,13 +16,16 @@ export async function sendStreamChunksToOffscreen({ videoId, streamType, data, t
   for (let iChunk = 0; iChunk < totalChunks; iChunk++) {
     const start = iChunk * TRANSFER_CHUNK_SIZE;
     const chunk = data.subarray(start, start + TRANSFER_CHUNK_SIZE);
-    sendToOffscreen(OffscreenMessageType.ProcessStreamChunk, {
-      videoId,
-      streamType,
-      iChunk,
-      totalChunks,
-      chunkBase64: uint8ToBase64(chunk),
-      tabId
+    sendToOffscreen({
+      type: OffscreenMessageType.ProcessStreamChunk,
+      data: {
+        videoId,
+        streamType,
+        iChunk,
+        totalChunks,
+        chunkBase64: uint8ToBase64(chunk),
+        tabId
+      }
     });
 
     if ((iChunk + 1) % YIELD_EVERY_N_CHUNKS === 0) {
@@ -31,13 +34,13 @@ export async function sendStreamChunksToOffscreen({ videoId, streamType, data, t
   }
 }
 
-export function buildTransferJobs(
-  videoData: Uint8Array | null,
-  audioData: Uint8Array | null,
-  additionalAudioTracks: { data: Uint8Array | null }[],
-  videoId: string,
-  tabId: number
-) {
+export function buildTransferJobs({ videoData, audioData, additionalAudioTracks, videoId, tabId }: {
+  videoData: Uint8Array | null;
+  audioData: Uint8Array | null;
+  additionalAudioTracks: { data: Uint8Array | null }[];
+  videoId: string;
+  tabId: number;
+}) {
   const jobs: Promise<void>[] = [];
   if (videoData) {
     jobs.push(
@@ -77,7 +80,10 @@ export function buildTransferJobs(
   return jobs;
 }
 
-export function buildSubtitleTracks(captionTracks: CaptionTrack[] | undefined, captionVttData: (string | null)[]) {
+export function buildSubtitleTracks({ captionTracks, captionVttData }: {
+  captionTracks: CaptionTrack[] | undefined;
+  captionVttData: (string | null)[];
+}) {
   const subtitleTracks: {
     dataBase64: string;
     label: string;

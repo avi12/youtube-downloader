@@ -27,6 +27,9 @@ export async function updateStatusProgress({ mutate, progressUpdate, tabId }: {
 }) {
   await Promise.allSettled([
     sendMessage(MessageType.UpdateDownloadProgress, progressUpdate, tabId),
-    mutateStorageItem(statusProgressItem, mutate)
+    mutateStorageItem({
+      item: statusProgressItem,
+      mutator: mutate
+    })
   ]);
 }

@@ -6,9 +6,12 @@ import { stripMimeParams } from "@/lib/utils/containers";
 import { DownloadType } from "@/types";
 import type { DownloadRequest } from "@/types";
 
-function fetchStream(
-  url: string | null | undefined, signal: AbortSignal, onBytes: (n: number) => void, initialData?: Uint8Array
-) {
+function fetchStream({ url, signal, onBytes, initialData }: {
+  url: string | null | undefined;
+  signal: AbortSignal;
+  onBytes: (n: number) => void;
+  initialData?: Uint8Array;
+}) {
   if (!url) {
     return Promise.resolve(null);
   }
@@ -33,7 +36,8 @@ export async function downloadViaCdn({ request, signal, videoId, tabId, partialV
     type, videoFormat, audioFormat,
     resolvedVideoUrl, resolvedAudioUrl, resolvedExtraAudioUrls, additionalAudioFormats
   } = request;
-  if (!resolvedVideoUrl && !resolvedAudioUrl) {
+  const hasNoUrls = !resolvedVideoUrl && !resolvedAudioUrl;
+  if (hasNoUrls) {
     return null;
   }
 
@@ -59,9 +63,23 @@ export async function downloadViaCdn({ request, signal, videoId, tabId, partialV
   });
 
   const cdnResults = await Promise.all([
-    hasVideo ? fetchStream(resolvedVideoUrl, signal, tracker.onVideoBytes, partialVideoData) : Promise.resolve(null),
-    hasAudio ? fetchStream(resolvedAudioUrl, signal, tracker.onAudioBytes, partialAudioData) : Promise.resolve(null),
-    ...extraUrls.map((url, i) => fetchStream(url, signal, bytes => tracker.onExtraBytes(i, bytes)))
+    hasVideo ? fetchStream({
+      url: resolvedVideoUrl,
+      signal,
+      onBytes: tracker.onVideoBytes,
+      initialData: partialVideoData
+    }) : Promise.resolve(null),
+    hasAudio ? fetchStream({
+      url: resolvedAudioUrl,
+      signal,
+      onBytes: tracker.onAudioBytes,
+      initialData: partialAudioData
+    }) : Promise.resolve(null),
+    ...extraUrls.map((url, i) => fetchStream({
+      url,
+      signal,
+      onBytes: bytes => tracker.onExtraBytes(i, bytes)
+    }))
   ]);
 
   const additionalAudioTracks: DownloadResult["additionalAudioTracks"] = [];

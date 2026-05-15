@@ -18,10 +18,14 @@ async function isTabIdle(tabId: number) {
   }
 }
 
-async function notifyOnIdleIfNeeded(data: PipelineDownloadMessage, tabIds: number[]) {
+async function notifyOnIdleIfNeeded({ data, tabIds }: {
+  data: PipelineDownloadMessage;
+  tabIds: number[];
+}) {
   const [tabId] = tabIds;
   const isIdle = tabId === undefined || await isTabIdle(tabId);
-  if (!isIdle) {
+  const isNotIdle = !isIdle;
+  if (isNotIdle) {
     return;
   }
 
@@ -39,14 +43,17 @@ export function persistOnDownloadComplete({ downloadId, data }: {
 }) {
   return new Promise<void>(resolve => {
     async function handleChanged(delta: Browser.downloads.DownloadDelta) {
-      if (delta.id !== downloadId || !delta.state?.current) {
+      const isUnrelatedOrIncomplete = delta.id !== downloadId || !delta.state?.current;
+      if (isUnrelatedOrIncomplete) {
         return;
       }
 
-      if (delta.state.current === browser.downloads.State.COMPLETE) {
+      if (delta.state!.current === browser.downloads.State.COMPLETE) {
         browser.downloads.onChanged.removeListener(handleChanged);
 
-        const tabIds = data.recentContext?.videoId ? getTabIdsForVideo(data.recentContext.videoId) : [];
+        const tabIds = data.recentContext?.videoId
+          ? getTabIdsForVideo(data.recentContext.videoId)
+          : [];
         const [downloadItem] = await browser.downloads.search({ id: downloadId });
         const actualFilename = downloadItem?.filename
           ? downloadItem.filename.split(/[/\\]/).pop()!
@@ -66,7 +73,10 @@ export function persistOnDownloadComplete({ downloadId, data }: {
         }
 
         if (options.isNotifyOnIdle) {
-          await notifyOnIdleIfNeeded(data, tabIds);
+          await notifyOnIdleIfNeeded({
+            data,
+            tabIds
+          });
         }
 
         void persistRecentDownload({
@@ -76,7 +86,7 @@ export function persistOnDownloadComplete({ downloadId, data }: {
         return;
       }
 
-      if (delta.state.current === browser.downloads.State.INTERRUPTED) {
+      if (delta.state!.current === browser.downloads.State.INTERRUPTED) {
         browser.downloads.onChanged.removeListener(handleChanged);
         resolve();
       }

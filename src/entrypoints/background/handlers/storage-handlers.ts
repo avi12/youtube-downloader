@@ -23,8 +23,11 @@ export function registerStorageHandlers() {
   });
 
   onMessage(MessageType.ClearInterruptedDownload, async ({ data }) => {
-    await mutateStorageItem(interruptedDownloadsItem, current => {
-      delete current[data.videoId];
+    await mutateStorageItem({
+      item: interruptedDownloadsItem,
+      mutator(current) {
+        delete current[data.videoId];
+      }
     });
   });
 

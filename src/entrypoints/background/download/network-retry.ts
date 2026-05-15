@@ -9,21 +9,27 @@ export const pendingNetworkRetries = new Map<string, {
 }>();
 
 async function persistInterruptedDownload(request: DownloadRequest) {
-  await mutateStorageItem(interruptedDownloadsItem, current => {
-    current[request.videoId] = {
-      videoId: request.videoId,
-      type: request.type,
-      filenameOutput: request.filenameOutput,
-      videoItag: request.videoItag,
-      audioItag: request.audioItag,
-      timestamp: Date.now()
-    };
+  await mutateStorageItem({
+    item: interruptedDownloadsItem,
+    mutator(current) {
+      current[request.videoId] = {
+        videoId: request.videoId,
+        type: request.type,
+        filenameOutput: request.filenameOutput,
+        videoItag: request.videoItag,
+        audioItag: request.audioItag,
+        timestamp: Date.now()
+      };
+    }
   });
 }
 
 export async function clearInterruptedDownload(videoId: string) {
-  await mutateStorageItem(interruptedDownloadsItem, current => {
-    delete current[videoId];
+  await mutateStorageItem({
+    item: interruptedDownloadsItem,
+    mutator(current) {
+      delete current[videoId];
+    }
   });
 }
 

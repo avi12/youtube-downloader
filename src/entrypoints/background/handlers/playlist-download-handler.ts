@@ -27,18 +27,15 @@ export function registerPlaylistDownloadHandler() {
 
     currentSequenceAbort = new AbortController();
 
+    const dispatchArgs = {
+      items: data.items,
+      tabId,
+      signal: currentSequenceAbort.signal
+    };
     if (data.isSequential) {
-      void dispatchSequentially({
-        items: data.items,
-        tabId,
-        signal: currentSequenceAbort.signal
-      });
+      void dispatchSequentially(dispatchArgs);
     } else {
-      void dispatchParallel({
-        items: data.items,
-        tabId,
-        signal: currentSequenceAbort.signal
-      });
+      void dispatchParallel(dispatchArgs);
     }
   });
 }

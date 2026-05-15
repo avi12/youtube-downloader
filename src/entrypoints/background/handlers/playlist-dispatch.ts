@@ -56,7 +56,12 @@ export async function dispatchParallel({ items, tabId, signal }: {
 
     completionPromises.push(
       awaitVideoComplete(item.videoId).then(() =>
-        sendToOffscreen(OffscreenMessageType.RemoveDownloadIframe, { videoId: item.videoId }))
+        sendToOffscreen({
+          type: OffscreenMessageType.RemoveDownloadIframe,
+          data: {
+            videoId: item.videoId
+          }
+        }))
     );
 
     await awaitBytesTransferred(item.videoId);

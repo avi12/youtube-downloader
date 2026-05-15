@@ -9,8 +9,11 @@ export function registerPipelineQueueHandlers() {
   onMessage(MessageType.PipelineQueueRemove, async ({ data }) => {
     const { videoId } = data;
     await Promise.all([
-      mutateStorageItem(statusProgressItem, current => {
-        delete current[videoId];
+      mutateStorageItem({
+        item: statusProgressItem,
+        mutator(current) {
+          delete current[videoId];
+        }
       }),
       removeFromPopupList(videoId)
     ]);

@@ -37,7 +37,9 @@ export function registerRecentDownloadsRetention() {
 
   void browser.alarms.create(RETENTION_ALARM_NAME, { periodInMinutes: 1 });
   browser.alarms.onAlarm.addListener(alarm => {
-    if (alarm.name !== RETENTION_ALARM_NAME || openPopupCount > 0) {
+    const isNotRetentionAlarm = alarm.name !== RETENTION_ALARM_NAME;
+    const isPopupOpen = openPopupCount > 0;
+    if (isNotRetentionAlarm || isPopupOpen) {
       return;
     }
 
@@ -51,6 +53,9 @@ export function registerRecentDownloadsRetention() {
       type: DownloadType.VideoAndAudio,
       filenameOutput: data.filenameOutput
     });
-    sendToOffscreen(OffscreenMessageType.TranscodeRecentDownload, data);
+    sendToOffscreen({
+      type: OffscreenMessageType.TranscodeRecentDownload,
+      data
+    });
   });
 }

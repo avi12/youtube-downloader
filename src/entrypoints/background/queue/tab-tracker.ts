@@ -9,13 +9,15 @@ export const tabTracker: Record<number, {
 export function trackVideoForTab({ videoId, tabId }: VideoTabParams) {
   videoIdToTabIds[videoId] ??= [];
 
-  if (!videoIdToTabIds[videoId].includes(tabId)) {
+  const isTabNotTracked = !videoIdToTabIds[videoId].includes(tabId);
+  if (isTabNotTracked) {
     videoIdToTabIds[videoId].push(tabId);
   }
 
   tabTracker[tabId] ??= { videoIdsAvailable: [] };
 
-  if (!tabTracker[tabId].videoIdsAvailable.includes(videoId)) {
+  const isVideoNotTracked = !tabTracker[tabId].videoIdsAvailable.includes(videoId);
+  if (isVideoNotTracked) {
     tabTracker[tabId].videoIdsAvailable.push(videoId);
   }
 }
@@ -35,12 +37,20 @@ export function getTabIdsForVideo(videoId: string) {
   return videoIdToTabIds[videoId] ?? [];
 }
 
-export function resolveTabId(sender: {
-  tab?: { id?: number };
-}, videoId: string) {
+export function resolveTabId({ sender, videoId }: {
+  sender: {
+    tab?: { id?: number };
+  };
+  videoId: string;
+}) {
   return sender.tab?.id ?? getTabIdsForVideo(videoId)[0];
 }
 
 export async function cancelDownloads(videoIds: string[]) {
-  sendToOffscreen(OffscreenMessageType.CancelProcessing, { videoIds });
+  sendToOffscreen({
+    type: OffscreenMessageType.CancelProcessing,
+    data: {
+      videoIds
+    }
+  });
 }

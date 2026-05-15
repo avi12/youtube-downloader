@@ -41,24 +41,37 @@ export async function startBackgroundDownload({ request, tabId }: {
 
   try {
     const enrichedMetadataPromise = enrichMetadataFromYouTubeMusic(metadata);
-    let result = await trySabr(request, signal, tabId);
+    let result = await trySabr({
+      request,
+      signal,
+      tabId
+    });
     if (signal.aborted) {
       return;
     }
 
     const needsCdn = !result?.audioData || result.isPartialVideo || result.isPartialAudio;
     const hasCdnUrls = !!(request.resolvedVideoUrl || request.resolvedAudioUrl);
-    if (needsCdn && hasCdnUrls) {
+    const shouldFallToCdn = needsCdn && hasCdnUrls;
+    if (shouldFallToCdn) {
       const partialVideoData = result?.isPartialVideo ? (result.videoData ?? undefined) : undefined;
       const partialAudioData = result?.isPartialAudio ? (result.audioData ?? undefined) : undefined;
-      result = await tryCdn(request, signal, videoId, tabId, partialVideoData, partialAudioData);
+      result = await tryCdn({
+        request,
+        signal,
+        videoId,
+        tabId,
+        partialVideoData,
+        partialAudioData
+      });
     }
 
     if (signal.aborted) {
       return;
     }
 
-    if (!(result?.videoData?.byteLength) && !(result?.audioData?.byteLength)) {
+    const hasNoData = !result || (!(result.videoData?.byteLength) && !(result.audioData?.byteLength));
+    if (hasNoData) {
       await handleIframeFallback({
         request,
         tabId,
@@ -71,7 +84,7 @@ export async function startBackgroundDownload({ request, tabId }: {
     clearIframeAutoRetry(videoId);
     await dispatchToOffscreen({
       request,
-      result,
+      result: result!,
       enrichedMetadata: await enrichedMetadataPromise,
       tabId
     });
@@ -81,7 +94,8 @@ export async function startBackgroundDownload({ request, tabId }: {
       return;
     }
 
-    if (!navigator.onLine) {
+    const isOffline = !navigator.onLine;
+    if (isOffline) {
       await queueNetworkRetry({
         request,
         tabId

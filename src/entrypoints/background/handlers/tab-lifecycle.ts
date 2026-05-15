@@ -20,7 +20,9 @@ export function registerTabLifecycleHandlers() {
   });
 
   browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-    if (changeInfo.status !== browser.tabs.TabStatus.LOADING || !(tab.url ?? "").includes("youtube.com")) {
+    const isNotLoading = changeInfo.status !== browser.tabs.TabStatus.LOADING;
+    const isNotYouTube = !(tab.url ?? "").includes("youtube.com");
+    if (isNotLoading || isNotYouTube) {
       return;
     }
 

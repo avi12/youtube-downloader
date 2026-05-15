@@ -21,7 +21,10 @@ export function createProgressAccumulator({
   const audioPartBytes = parseContentLength(audioFormat);
   const extraExpectedBytesArray = additionalFormats.map(format => {
     const known = parseContentLength(format);
-    return known > 0 ? known : estimateFormatBytes(format, audioFormat);
+    return known > 0 ? known : estimateFormatBytes({
+      format,
+      referenceFormat: audioFormat
+    });
   });
   const totalStages = captionCount + (!isAudioOnly && videoFormat ? 1 : 0) + 1 + additionalFormats.length;
 

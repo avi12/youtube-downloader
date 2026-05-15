@@ -5,7 +5,10 @@ import type { AdaptiveFormatItem, SabrConfig } from "@/types";
 
 function noop() {}
 
-function makeFetch(signal: AbortSignal, onBytesReceived?: (bytes: number) => void) {
+function makeFetch({ signal, onBytesReceived }: {
+  signal: AbortSignal;
+  onBytesReceived?: (bytes: number) => void;
+}) {
   return createProgressFetch({
     signal,
     onBytesReceived: onBytesReceived ?? noop
@@ -22,7 +25,10 @@ export async function downloadAudioOnlyViaSabr({ config, audioFormat, poToken, s
   return fetchAudioViaSabrStream({
     sabrConfig: config,
     audioFormat,
-    fetchFunction: makeFetch(signal, onBytesReceived),
+    fetchFunction: makeFetch({
+      signal,
+      onBytesReceived
+    }),
     poToken,
     signal
   });
@@ -43,14 +49,20 @@ export async function downloadVideoAudioViaSabr({
     fetchVideoViaSabrStream({
       sabrConfig: config,
       videoFormat,
-      fetchFunction: makeFetch(signal, onVideoBytesReceived),
+      fetchFunction: makeFetch({
+        signal,
+        onBytesReceived: onVideoBytesReceived
+      }),
       poToken,
       signal
     }),
     fetchAudioViaSabrStream({
       sabrConfig: config,
       audioFormat,
-      fetchFunction: makeFetch(signal, onAudioBytesReceived),
+      fetchFunction: makeFetch({
+        signal,
+        onBytesReceived: onAudioBytesReceived
+      }),
       poToken,
       signal
     })
@@ -71,7 +83,10 @@ export async function downloadExtraAudioTracksViaSabr({ config, formats, poToken
       const { data } = await fetchAudioViaSabrStream({
         sabrConfig: config,
         audioFormat: format,
-        fetchFunction: makeFetch(signal, bytes => onTrackBytesReceived?.(i, bytes)),
+        fetchFunction: makeFetch({
+          signal,
+          onBytesReceived: bytes => onTrackBytesReceived?.(i, bytes)
+        }),
         poToken,
         signal
       });

@@ -4,7 +4,11 @@ import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { ProgressType } from "@/types";
 import type { DownloadRequest } from "@/types";
 
-export async function trySabr(request: DownloadRequest, signal: AbortSignal, tabId: number) {
+export async function trySabr({ request, signal, tabId }: {
+  request: DownloadRequest;
+  signal: AbortSignal;
+  tabId: number;
+}) {
   return attemptSabrDownload({
     request,
     signal,
@@ -24,14 +28,14 @@ export async function trySabr(request: DownloadRequest, signal: AbortSignal, tab
   });
 }
 
-export async function tryCdn(
-  request: DownloadRequest,
-  signal: AbortSignal,
-  videoId: string,
-  tabId: number,
-  partialVideoData?: Uint8Array,
-  partialAudioData?: Uint8Array
-) {
+export async function tryCdn({ request, signal, videoId, tabId, partialVideoData, partialAudioData }: {
+  request: DownloadRequest;
+  signal: AbortSignal;
+  videoId: string;
+  tabId: number;
+  partialVideoData?: Uint8Array;
+  partialAudioData?: Uint8Array;
+}) {
   return downloadViaCdn({
     request,
     signal,

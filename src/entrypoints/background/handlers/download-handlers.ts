@@ -44,7 +44,12 @@ export function registerDownloadHandlers() {
       isRemoved: true
     } as const;
 
-    sendToOffscreen(OffscreenMessageType.CancelProcessing, { videoIds: data.videoIds });
+    sendToOffscreen({
+      type: OffscreenMessageType.CancelProcessing,
+      data: {
+        videoIds: data.videoIds
+      }
+    });
 
     const sequenceTabId = getCurrentSequenceTabId();
     for (const videoId of data.videoIds) {
@@ -59,7 +64,8 @@ export function registerDownloadHandlers() {
         }, tabId);
       }
 
-      if (sequenceTabId && !trackedTabIds.includes(sequenceTabId)) {
+      const isSequenceTabUntouched = sequenceTabId && !trackedTabIds.includes(sequenceTabId);
+      if (isSequenceTabUntouched) {
         void sendMessage(MessageType.UpdateDownloadProgress, {
           videoId,
           ...progressRemoval

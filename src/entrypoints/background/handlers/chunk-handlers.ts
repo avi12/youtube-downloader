@@ -5,20 +5,29 @@ import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen
 
 export function registerChunkHandlers() {
   onMessage(MessageType.StreamChunk, async ({ data, sender }) => {
-    const tabId = resolveTabId(sender, data.videoId);
+    const tabId = resolveTabId({
+      sender,
+      videoId: data.videoId
+    });
     if (!tabId) {
       return;
     }
 
     await ensureProcessor();
-    sendToOffscreen(OffscreenMessageType.ProcessStreamChunk, {
-      ...data,
-      tabId
+    sendToOffscreen({
+      type: OffscreenMessageType.ProcessStreamChunk,
+      data: {
+        ...data,
+        tabId
+      }
     });
   });
 
   onMessage(MessageType.StreamEnd, async ({ data, sender }) => {
-    const tabId = resolveTabId(sender, data.videoId);
+    const tabId = resolveTabId({
+      sender,
+      videoId: data.videoId
+    });
     if (!tabId) {
       return;
     }
@@ -28,9 +37,12 @@ export function registerChunkHandlers() {
       tabId
     });
     await ensureProcessor();
-    sendToOffscreen(OffscreenMessageType.ProcessStreamEnd, {
-      ...data,
-      tabId
+    sendToOffscreen({
+      type: OffscreenMessageType.ProcessStreamEnd,
+      data: {
+        ...data,
+        tabId
+      }
     });
   });
 }

@@ -15,7 +15,10 @@ export function registerPipelineHandlers() {
   registerPipelineQueueHandlers();
 
   onMessage(MessageType.ProcessStreamError, ({ data, sender }) => {
-    const tabId = resolveTabId(sender, data.videoId);
+    const tabId = resolveTabId({
+      sender,
+      videoId: data.videoId
+    });
     if (!tabId) {
       return;
     }
@@ -32,11 +35,17 @@ export function registerPipelineHandlers() {
       },
       tabId
     );
-    sendToOffscreen(OffscreenMessageType.RemoveDownloadIframe, { videoId: data.videoId });
+    sendToOffscreen({
+      type: OffscreenMessageType.RemoveDownloadIframe,
+      data: {
+        videoId: data.videoId
+      }
+    });
   });
 
   onMessage(MessageType.PipelineStart, async ({ data }) => {
-    if (!isVideoCancelled(data.videoId)) {
+    const isNotCancelled = !isVideoCancelled(data.videoId);
+    if (isNotCancelled) {
       await enqueueToPopupList({
         videoId: data.videoId,
         type: data.type,
@@ -82,6 +91,11 @@ export function registerPipelineHandlers() {
       tabId
     });
     await removeFromPopupList(videoId);
-    sendToOffscreen(OffscreenMessageType.RemoveDownloadIframe, { videoId });
+    sendToOffscreen({
+      type: OffscreenMessageType.RemoveDownloadIframe,
+      data: {
+        videoId
+      }
+    });
   });
 }

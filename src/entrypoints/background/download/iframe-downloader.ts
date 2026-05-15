@@ -37,9 +37,12 @@ export async function prepareIframe(data: DownloadRequest) {
   });
   const watchUrl = `https://www.youtube.com/watch?${watchParams.toString()}`;
 
-  sendToOffscreen(OffscreenMessageType.CreateDownloadIframe, {
-    videoId: data.videoId,
-    watchUrl
+  sendToOffscreen({
+    type: OffscreenMessageType.CreateDownloadIframe,
+    data: {
+      videoId: data.videoId,
+      watchUrl
+    }
   });
 
   await new Promise<void>(resolve => {
@@ -79,11 +82,21 @@ export async function downloadViaWatchPage({ data, tabId }: {
     });
     await sendMessage(MessageType.StartKeepalive, { videoId: data.videoId }, tabId);
     await awaitVideoComplete(data.videoId);
-    sendToOffscreen(OffscreenMessageType.RemoveDownloadIframe, { videoId: data.videoId });
+    sendToOffscreen({
+      type: OffscreenMessageType.RemoveDownloadIframe,
+      data: {
+        videoId: data.videoId
+      }
+    });
   } catch (error) {
     console.error("[ytdl:bg] DownloadViaWatchPage failed:", data.videoId, error);
     pendingIframeReady.delete(data.videoId);
-    sendToOffscreen(OffscreenMessageType.RemoveDownloadIframe, { videoId: data.videoId });
+    sendToOffscreen({
+      type: OffscreenMessageType.RemoveDownloadIframe,
+      data: {
+        videoId: data.videoId
+      }
+    });
     reportDownloadFailed({
       videoId: data.videoId,
       tabId
