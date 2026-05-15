@@ -57,7 +57,7 @@ export function resolveInitialCaptionTrack({
   captionMode: PanelTrackMode;
   options: Options;
   videoData: VideoData;
-}): CaptionTrack | null {
+}) {
   const hasNoCaptionTracks = !videoData.captionTracks.length;
   if (hasNoCaptionTracks) {
     return null;

@@ -4,7 +4,7 @@ export function normalizeLanguageCode(lang: string) {
   return lang.split("-")[0].split(".")[0].toLowerCase();
 }
 
-export function getCurrentVideoAudioLanguage(): string | null {
+export function getCurrentVideoAudioLanguage() {
   const elVideo = document.querySelector<HTMLVideoElement>("video.html5-main-video");
   const tracks = elVideo?.audioTracks;
   const hasNoTracks = !tracks?.length;

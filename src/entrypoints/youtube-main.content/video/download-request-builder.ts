@@ -20,7 +20,7 @@ export type ResolvedDownloadData = {
 export async function buildEnrichedRequest({ params, resolved }: {
   params: DownloadParams;
   resolved: ResolvedDownloadData;
-}): Promise<DownloadRequest> {
+}) {
   const { type, videoId, videoItag, audioItag, filenameOutput, isIframeFallback } = params;
   const { playlistId, playlistTitle, playlistTotalCount } = params;
   const {

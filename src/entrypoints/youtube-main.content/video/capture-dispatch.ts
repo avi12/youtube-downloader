@@ -37,7 +37,7 @@ function flushPendingChunks() {
   pendingChunks.length = 0;
 }
 
-function readInitialDataTitle(videoId: string): string {
+function readInitialDataTitle(videoId: string) {
   const data = window.ytInitialData;
   if (data?.currentVideoEndpoint?.watchEndpoint?.videoId !== videoId) {
     return "";

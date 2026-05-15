@@ -33,7 +33,7 @@ export function buildDownloadRequest({
   playlistTitle: string;
   playlistTotalCount: number;
   isZipBundle: boolean;
-}): DownloadRequest {
+}) {
   let downloadType: DownloadType = data.isMusic ? DownloadType.Audio : DownloadType.VideoAndAudio;
   const isExplicitType = options.defaultDownloadType !== DownloadType.Auto;
   if (isExplicitType) {

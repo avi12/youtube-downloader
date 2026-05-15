@@ -41,7 +41,7 @@ function isCaptionEventBus(value: unknown): value is CaptionEventBus {
   return hasSubscribe(value) && typeof value.subscribe === "function";
 }
 
-export function capturePlayerCaptionBuses(player: MoviePlayerElement): CaptionEventBus[] {
+export function capturePlayerCaptionBuses(player: MoviePlayerElement) {
   let proto: MoviePlayerElement | null = player;
   let rawGetOption: ((module: string, option: string) => unknown) | null = null;
 
@@ -104,6 +104,6 @@ export function capturePlayerCaptionBuses(player: MoviePlayerElement): CaptionEv
   return buses;
 }
 
-export function capturePlayerCaptionBus(player: MoviePlayerElement): CaptionEventBus | null {
+export function capturePlayerCaptionBus(player: MoviePlayerElement) {
   return capturePlayerCaptionBuses(player)[0] ?? null;
 }

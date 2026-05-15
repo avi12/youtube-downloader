@@ -28,7 +28,7 @@ function hasTrackDescriptorShape(value: unknown): value is {
   return typeof value === "object" && value !== null && "id" in value && "isAutoDubbed" in value;
 }
 
-function readActiveAudioTrackId(player: MoviePlayerElement | null): string | null {
+function readActiveAudioTrackId(player: MoviePlayerElement | null) {
   const track = player?.getAudioTrack?.();
   if (!track) {
     return null;

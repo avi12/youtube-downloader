@@ -32,7 +32,7 @@ export function collectReadableStream({ stream, expectedBytes, signal }: {
   stream: ReadableStream<Uint8Array>;
   expectedBytes: number;
   signal?: AbortSignal;
-}): Promise<SabrStreamResult> {
+}) {
   const reader = stream.getReader();
   const isAborted = signal?.aborted;
   if (isAborted) {

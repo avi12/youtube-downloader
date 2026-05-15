@@ -31,7 +31,7 @@ export async function downloadViaCdn({ request, signal, videoId, tabId, partialV
   tabId: number;
   partialVideoData?: Uint8Array;
   partialAudioData?: Uint8Array;
-}): Promise<DownloadResult | null> {
+}) {
   const {
     type, videoFormat, audioFormat,
     resolvedVideoUrl, resolvedAudioUrl, resolvedExtraAudioUrls, additionalAudioFormats

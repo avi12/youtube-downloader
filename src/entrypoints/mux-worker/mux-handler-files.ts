@@ -22,7 +22,7 @@ type WriteMuxInputFilesParams = {
   subtitleTracks: SubtitleTracks;
 };
 
-export function writeMuxInputFiles(params: WriteMuxInputFilesParams): MuxInputFiles {
+export function writeMuxInputFiles(params: WriteMuxInputFilesParams) {
   const { videoId, videoFilename, videoData, primaryAudioFilename, audioData, audioMimeType } = params;
   const { extraAudioTracks, subtitleTracks } = params;
   state.ffmpeg!.FS.writeFile(videoFilename, new Uint8Array(videoData));

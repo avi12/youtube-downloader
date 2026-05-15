@@ -7,7 +7,7 @@ import { postError, postResult, state } from "./mux-state";
 // after a successful mux (e.g. WebVTT-in-MKV demuxer teardown). The output
 // file is fully written before cleanup runs, so a non-zero exit code alone
 // doesn't mean the mux failed — we check whether the file was actually written.
-function tryReadOutput(filename: string): Uint8Array | null {
+function tryReadOutput(filename: string) {
   try {
     const result = state.ffmpeg!.FS.readFile(filename, { encoding: "binary" });
     return result instanceof Uint8Array && result.byteLength > 0 ? result : null;
@@ -16,7 +16,7 @@ function tryReadOutput(filename: string): Uint8Array | null {
   }
 }
 
-export function executeMuxPhases(params: MuxFfmpegParams): boolean {
+export function executeMuxPhases(params: MuxFfmpegParams) {
   const { useIntermediateMkv, muxFilename, outputFilename, targetExtension, audioMimeType } = params;
 
   const phase1Code = state.ffmpeg!.exec(...buildMuxFfmpegArgs(params));

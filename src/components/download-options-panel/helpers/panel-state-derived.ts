@@ -52,7 +52,7 @@ export function resolvePrimaryState({
   isFailed: boolean;
   isInterrupted: boolean;
   isDone: boolean;
-}): PrimaryButtonState {
+}) {
   if (isDownloading) {
     return PrimaryButtonState.Downloading;
   }

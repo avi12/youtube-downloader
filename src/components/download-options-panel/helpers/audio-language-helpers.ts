@@ -52,7 +52,7 @@ export function resolveCaptionOriginalLabel({
 }: {
   audioFormats: AdaptiveFormatItem[];
   captionTracks: CaptionTrack[];
-}): string | null {
+}) {
   const originalLangId = findOriginalAudioFormat(audioFormats)?.audioTrack?.id;
   if (originalLangId) {
     const langCode = normalizeLanguageCode(originalLangId);

@@ -26,7 +26,7 @@ export function parseContentLength(format: AdaptiveFormatItem | null) {
 export function estimateFormatBytes({ format, referenceFormat }: {
   format: AdaptiveFormatItem;
   referenceFormat: AdaptiveFormatItem;
-}): number {
+}) {
   const referenceBytes = parseContentLength(referenceFormat);
   if (!referenceBytes) {
     return 0;
