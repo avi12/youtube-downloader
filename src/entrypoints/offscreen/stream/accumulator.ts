@@ -17,7 +17,8 @@ export const STREAM_ACCUMULATORS = new Map<string, StreamAccumulator>();
 
 export function handleProcessStreamChunk(data: ProcessStreamChunkData) {
   const { videoId, streamType, iChunk, totalChunks, chunkBase64 } = data;
-  if (!STREAM_ACCUMULATORS.has(videoId)) {
+  const isAccumulatorMissing = !STREAM_ACCUMULATORS.has(videoId);
+  if (isAccumulatorMissing) {
     STREAM_ACCUMULATORS.set(videoId, {
       videoChunks: new Map(),
       totalVideoChunks: 0,

@@ -1,6 +1,9 @@
 import { CONTAINER_SPECS, extractBaseCodec, videoContainers } from "@/lib/utils/containers";
 
-export function resolveAudioCodec(audioMimeType: string, targetExtension: string) {
+export function resolveAudioCodec({ audioMimeType, targetExtension }: {
+  audioMimeType: string;
+  targetExtension: string;
+}) {
   const spec = CONTAINER_SPECS[targetExtension];
   if (!spec) {
     return "copy";
@@ -25,7 +28,10 @@ export function buildRemuxArgs({
   targetExtension: string;
   audioMimeType: string | undefined;
 }) {
-  const audioCodec = resolveAudioCodec(audioMimeType ?? "", targetExtension);
+  const audioCodec = resolveAudioCodec({
+    audioMimeType: audioMimeType ?? "",
+    targetExtension
+  });
   const args = ["-i", inputFilename, "-map", "0", "-c:v", "copy", "-c:a", audioCodec];
   if (videoContainers.includes(targetExtension)) {
     args.push("-c:s", resolveSubtitleCodec(targetExtension));

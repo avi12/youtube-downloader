@@ -80,7 +80,12 @@ export function buildMuxFfmpegArgs(params: MuxFfmpegParams) {
     args.push("-map", `${subtitleInputOffset + i}:s:0`);
   }
 
-  args.push("-c:v", "copy", "-c:a", useIntermediateMkv ? "copy" : resolveAudioCodec(audioMimeType, targetExtension));
+  args.push(
+    "-c:v", "copy", "-c:a", useIntermediateMkv ? "copy" : resolveAudioCodec({
+      audioMimeType,
+      targetExtension
+    })
+  );
 
   if (subtitleFilenames.length > 0) {
     args.push("-c:s", useIntermediateMkv ? "webvtt" : resolveSubtitleCodec(targetExtension));

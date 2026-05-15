@@ -24,7 +24,8 @@ export async function handleEmbedMetadata(job: EmbedMetadataJob) {
   const ffmpegArgs = ["-i", inputFilename];
   const isWebmSource = sourceExtension === "weba" || sourceExtension === "webm";
   const isWebmOutput = outputExtension === "weba" || outputExtension === "webm";
-  if (thumbnailUrl && !isWebmSource && !isWebmOutput) {
+  const isEmbeddableThumbnail = thumbnailUrl && !isWebmSource && !isWebmOutput;
+  if (isEmbeddableThumbnail) {
     const thumbnail = await fetchThumbnail(thumbnailUrl);
     if (thumbnail) {
       coverFilename = `cover.${thumbnail.extension}`;
@@ -72,7 +73,8 @@ export async function handleEmbedMetadata(job: EmbedMetadataJob) {
     }
 
     const output = state.ffmpeg!.FS.readFile(outputFilename, { encoding: "binary" });
-    if (typeof output === "string" || output.byteLength === 0) {
+    const isEmptyOutput = typeof output === "string" || output.byteLength === 0;
+    if (isEmptyOutput) {
       postResult(new Uint8Array(audioData));
       return;
     }

@@ -4,20 +4,38 @@ const RIFF_MAGIC_BYTES = [0x52, 0x49, 0x46, 0x46];
 const WEBP_MAGIC_BYTES = [0x57, 0x45, 0x42, 0x50];
 const WEBP_MAGIC_OFFSET = 8;
 
-function matchesMagicBytes(data: Uint8Array, bytes: number[], offset = 0) {
+function matchesMagicBytes({ data, bytes, offset = 0 }: {
+  data: Uint8Array;
+  bytes: number[];
+  offset?: number;
+}) {
   return bytes.every((byte, i) => data[offset + i] === byte);
 }
 
 function detectImageExtension(data: Uint8Array) {
-  if (matchesMagicBytes(data, JPEG_MAGIC_BYTES)) {
+  if (matchesMagicBytes({
+    data,
+    bytes: JPEG_MAGIC_BYTES
+  })) {
     return "jpg";
   }
 
-  if (matchesMagicBytes(data, PNG_MAGIC_BYTES)) {
+  if (matchesMagicBytes({
+    data,
+    bytes: PNG_MAGIC_BYTES
+  })) {
     return "png";
   }
 
-  if (matchesMagicBytes(data, RIFF_MAGIC_BYTES) && matchesMagicBytes(data, WEBP_MAGIC_BYTES, WEBP_MAGIC_OFFSET)) {
+  const isWebp = matchesMagicBytes({
+    data,
+    bytes: RIFF_MAGIC_BYTES
+  }) && matchesMagicBytes({
+    data,
+    bytes: WEBP_MAGIC_BYTES,
+    offset: WEBP_MAGIC_OFFSET
+  });
+  if (isWebp) {
     return "webp";
   }
 

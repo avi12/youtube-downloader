@@ -27,7 +27,8 @@ export function handleTranscodeAudio(job: TranscodeAudioJob) {
     }
 
     const output = state.ffmpeg!.FS.readFile(outputFilename, { encoding: "binary" });
-    if (typeof output === "string" || output.byteLength === 0) {
+    const isEmptyOutput = typeof output === "string" || output.byteLength === 0;
+    if (isEmptyOutput) {
       postError("FFmpeg transcode produced empty output");
       return;
     }
