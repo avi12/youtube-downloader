@@ -37,6 +37,11 @@ export function createPanelEffects({
   }
 
   $effect(() => {
+    const elSlot = getElDropdown().querySelector<HTMLElement>("[data-ytdl-panel-slot]");
+    elSlot?.style.setProperty("--ytdl-panel-origin", getIsPanelBelow() ? "top" : "bottom");
+  });
+
+  $effect(() => {
     const elDropdown = getElDropdown();
     let resizeObserver: ResizeObserver | null = null;
 

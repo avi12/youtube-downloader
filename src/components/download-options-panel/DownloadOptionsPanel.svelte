@@ -110,6 +110,7 @@
     flex-direction: column;
     width: 420px;
     max-height: inherit;
+    transform-origin: var(--ytdl-panel-origin, bottom) center;
     border: 1px solid var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 10%));
     border-radius: 12px;
     background: var(--yt-sys-color-baseline--raised-background, var(--yt-sys-color-baseline--base-background, #ffffff));
