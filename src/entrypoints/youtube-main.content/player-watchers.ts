@@ -1,10 +1,47 @@
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import {
+  ACTIVE_AUDIO_ATTR,
   ACTIVE_CAPTION_ATTR,
   capturePlayerCaptionBuses,
   getMoviePlayer,
   isPlayerCaptionTrackData
 } from "@/lib/youtube/movie-player";
+import type { MoviePlayerElement } from "@/lib/youtube/movie-player";
+
+const AD_PLAYER_CLASSES = ["ad-showing", "ad-interrupting"];
+const AUDIO_TRACK_ID_PATTERN = /^[a-z]{2,3}(-[A-Za-z0-9]+)?\.\d+$/;
+
+function isAdPlaying(player: MoviePlayerElement | null) {
+  return !!player && AD_PLAYER_CLASSES.some(adClass => player.classList.contains(adClass));
+}
+
+// A real YouTube audio track id looks like "en-US.4" or "hi.10"; the player
+// also exposes opaque ids ("251;ChQK...") and "und" that must be ignored.
+function isAudioTrackId(value: string) {
+  return AUDIO_TRACK_ID_PATTERN.test(value);
+}
+
+function hasTrackDescriptorShape(value: unknown): value is {
+  id: unknown;
+  isAutoDubbed: unknown;
+} {
+  return typeof value === "object" && value !== null && "id" in value && "isAutoDubbed" in value;
+}
+
+function readActiveAudioTrackId(player: MoviePlayerElement | null): string | null {
+  const track = player?.getAudioTrack?.();
+  if (!track) {
+    return null;
+  }
+
+  for (const value of Object.values(track)) {
+    if (hasTrackDescriptorShape(value) && typeof value.id === "string") {
+      return value.id;
+    }
+  }
+
+  return null;
+}
 
 export function setupAudioTrackWatcher() {
   const player = getMoviePlayer();
@@ -21,15 +58,43 @@ export function setupAudioTrackWatcher() {
   player.__ytdlAudioWatched = true;
 
   let lastTrackId: string | null = null;
+  function reportTrack(trackId: string) {
+    const isNewValidTrack = isAudioTrackId(trackId) && trackId !== lastTrackId;
+    // The player exposes the upcoming content track even while an ad runs, but
+    // the user has no access to the tracks yet - so hold off until the ad ends.
+    if (!isNewValidTrack || isAdPlaying(player)) {
+      return;
+    }
+
+    lastTrackId = trackId;
+    player?.setAttribute(ACTIVE_AUDIO_ATTR, trackId);
+    void crossWorldMessenger.sendMessage(CrossWorldMessage.AudioTrackChanged, { trackId });
+  }
+
   for (const bus of buses) {
     bus.subscribe("internalaudioformatchange", (trackId: unknown) => {
-      const isValidTrackId = typeof trackId === "string" && trackId && trackId !== lastTrackId;
-      if (isValidTrackId) {
-        lastTrackId = trackId;
-        void crossWorldMessenger.sendMessage(CrossWorldMessage.AudioTrackChanged, { trackId });
+      if (typeof trackId === "string") {
+        reportTrack(trackId);
       }
     });
   }
+
+  // internalaudioformatchange never fires for the first content playback, so
+  // read the active track straight from the player whenever playback starts
+  // and whenever the player's class changes (which is how ads end).
+  function syncAudioFromPlayer() {
+    const trackId = readActiveAudioTrackId(player);
+    if (trackId) {
+      reportTrack(trackId);
+    }
+  }
+
+  syncAudioFromPlayer();
+  document.querySelector("video")?.addEventListener("playing", syncAudioFromPlayer);
+  new MutationObserver(syncAudioFromPlayer).observe(player, {
+    attributes: true,
+    attributeFilter: ["class"]
+  });
 }
 
 function writeCaptionAttribute({ languageCode, vssId }: {

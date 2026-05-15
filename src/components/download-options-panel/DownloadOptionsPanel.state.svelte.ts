@@ -15,6 +15,7 @@ import {
   resolveInitialFilename
 } from "./helpers/panel-init";
 import { resolveActualExtension, resolvePrimaryState, resolveQualityLabel } from "./helpers/panel-state-derived";
+import { syncAudioFromFormat } from "./helpers/player-active-tracks.svelte";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { CONTENT_OPTIONS, interruptedDownloadStore } from "@/lib/ui/synced-stores.svelte";
 import { getCompatibleFilename } from "@/lib/utils/containers";
@@ -35,12 +36,12 @@ export function createPanelState(getVideoData: () => VideoData) {
   let selectedVideoFormat = $state<AdaptiveFormatItem | null>(
     untrack(() => getVideoData().videoFormats[0] ?? null)
   );
-  let selectedAudioFormat = $state<AdaptiveFormatItem | null>(
-    untrack(() => resolveInitialAudioFormat({
-      options: CONTENT_OPTIONS,
-      videoData: getVideoData()
-    }))
-  );
+  const initialAudioFormat = untrack(() => resolveInitialAudioFormat({
+    options: CONTENT_OPTIONS,
+    videoData: getVideoData()
+  }));
+  untrack(() => syncAudioFromFormat(initialAudioFormat));
+  let selectedAudioFormat = $state<AdaptiveFormatItem | null>(initialAudioFormat);
   let filename = $state(untrack(() => resolveInitialFilename(getVideoData())));
   let extension = $state(
     untrack(() => resolveInitialExtension({

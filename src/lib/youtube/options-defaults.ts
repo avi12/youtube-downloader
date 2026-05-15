@@ -28,7 +28,7 @@ export const INITIAL_OPTIONS: Options = {
   playlistOutputMode: PlaylistOutputMode.Individual,
   playlistAudioOutputMode: PlaylistOutputMode.Zip,
   isPlaylistScrollSyncEnabled: false,
-  audioTrackLanguageMode: AudioTrackLanguageMode.OriginalLanguage,
+  audioTrackLanguageMode: AudioTrackLanguageMode.MatchVideo,
   captionLanguageMode: CaptionLanguageMode.SameAsAudio,
   customLanguage: "en",
   downloadExtras: true,

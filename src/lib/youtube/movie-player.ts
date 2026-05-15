@@ -4,7 +4,8 @@ export {
   type MoviePlayerElement,
   type PlayerCaptionTrackData,
   type CaptionEventBus,
-  ACTIVE_CAPTION_ATTR
+  ACTIVE_CAPTION_ATTR,
+  ACTIVE_AUDIO_ATTR
 } from "./movie-player-types";
 
 export function getMoviePlayer() {

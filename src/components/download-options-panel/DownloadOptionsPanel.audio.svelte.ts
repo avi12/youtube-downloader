@@ -1,4 +1,4 @@
-import { findMatchVideoAudioFormat } from "./helpers/panel-audio-actions";
+import { findAudioFormatForPlayerTrack, findMatchVideoAudioFormat } from "./helpers/panel-audio-actions";
 import { PLAYER_ACTIVE_AUDIO } from "./helpers/player-active-tracks.svelte";
 import { findOriginalAudioFormat, normalizeLanguageCode } from "@/lib/youtube/video-helpers";
 import { PanelTrackMode, type AdaptiveFormatItem, type VideoData } from "@/types";
@@ -68,21 +68,20 @@ export function createAudioTrackState({
   }
 
   $effect(() => {
-    const playerLangCode = PLAYER_ACTIVE_AUDIO.langCode;
+    const { trackId: playerTrackId, langCode: playerLangCode } = PLAYER_ACTIVE_AUDIO;
     const isNotMatchVideo = panelAudioMode !== PanelTrackMode.MatchVideo;
     if (isNotMatchVideo || !playerLangCode) {
       return;
     }
 
-    const { audioFormats } = getVideoData();
-    const matching = audioFormats.filter(
-      format => format.audioTrack && normalizeLanguageCode(format.audioTrack.id) === playerLangCode
-    );
-    if (!matching.length) {
-      return;
+    const match = findAudioFormatForPlayerTrack({
+      audioFormats: getVideoData().audioFormats,
+      trackId: playerTrackId,
+      langCode: playerLangCode
+    });
+    if (match) {
+      setSelectedAudioFormat(match);
     }
-
-    setSelectedAudioFormat(matching.reduce((best, format) => format.bitrate > best.bitrate ? format : best));
   });
 
   return {

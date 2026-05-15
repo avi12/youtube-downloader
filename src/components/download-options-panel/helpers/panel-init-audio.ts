@@ -1,5 +1,7 @@
+import { findAudioFormatForPlayerTrack } from "./panel-audio-actions";
+import { PLAYER_ACTIVE_AUDIO } from "./player-active-tracks.svelte";
 import {
-  getCurrentVideoAudioLanguage,
+  findOriginalAudioFormat,
   normalizeLanguageCode,
   selectPreferredAudioFormat,
   sortAudioFormatsByDisplayName
@@ -29,14 +31,24 @@ export function resolveInitialAudioFormat({ options, videoData }: {
   }
 
   if (IS_WATCH_PAGE) {
-    const currentLang = getCurrentVideoAudioLanguage();
-    if (currentLang) {
-      const matching = videoData.audioFormats.filter(
-        format => format.audioTrack && normalizeLanguageCode(format.audioTrack.id) === currentLang
-      );
-      if (matching.length) {
-        return matching.reduce((best, format) => format.bitrate > best.bitrate ? format : best);
+    const playerTrackId = PLAYER_ACTIVE_AUDIO.trackId;
+    if (playerTrackId) {
+      const match = findAudioFormatForPlayerTrack({
+        audioFormats: videoData.audioFormats,
+        trackId: playerTrackId,
+        langCode: normalizeLanguageCode(playerTrackId)
+      });
+      if (match) {
+        return match;
       }
+    }
+
+    // Video not loaded yet (e.g. an ad is playing): the user can't see the real
+    // audio tracks, so default to the original one. The match-video effect
+    // re-selects once the player reports its active track.
+    const original = findOriginalAudioFormat(videoData.audioFormats);
+    if (original) {
+      return original;
     }
   }
 

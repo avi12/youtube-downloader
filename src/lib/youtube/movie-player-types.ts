@@ -50,12 +50,7 @@ export interface MoviePlayerElement extends HTMLElement {
   toggleSubtitlesOn?: (on?: boolean) => void;
   loadModule?: (module: string) => void;
 
-  getAudioTrack?: () => {
-    gw?: {
-      id?: string;
-      name?: string;
-    };
-  } | null;
+  getAudioTrack?: () => Record<string, unknown> | null;
   getAvailableAudioTracks?: () => Array<{
     gw?: {
       id?: string;
@@ -81,3 +76,4 @@ export type CaptionEventBus = {
 };
 
 export const ACTIVE_CAPTION_ATTR = "data-ytdl-caption";
+export const ACTIVE_AUDIO_ATTR = "data-ytdl-audio";
