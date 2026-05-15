@@ -40,6 +40,16 @@
   }
 </script>
 
+<style>
+  /* The snackbar uses a light surface even when YouTube is in dark mode, so the
+     check icon's currentColor (inherited from the dark-theme text token) ends up
+     near-white on a near-white background. Pin it to the inverse text token so
+     it reads as dark against the snackbar. */
+  :global([dark] snackbar-container .snackbarViewModelAvatarContainer yt-icon) {
+    color: var(--yt-sys-color-baseline--text-primary-inverse, #0f0f0f);
+  }
+</style>
+
 {#if isOpen}
   <div class="ytSnackbarContainerSnackbarContainer ytSnackbarContainerOpened" {@attach attachToSnackbar}>
     <snackbar-view-model class="snackbarViewModelHost">
