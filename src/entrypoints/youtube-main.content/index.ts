@@ -14,6 +14,22 @@ declare global {
   interface Window {
     ytInitialPlayerResponse?: PlayerResponse;
     ytInitialData?: {
+      currentVideoEndpoint?: {
+        watchEndpoint?: { videoId?: string };
+      };
+      contents?: {
+        twoColumnWatchNextResults?: {
+          results?: {
+            results?: {
+              contents?: Array<{
+                videoPrimaryInfoRenderer?: {
+                  title?: { runs?: Array<{ text?: string }> };
+                };
+              }>;
+            };
+          };
+        };
+      };
       header?: {
         playlistHeaderRenderer?: {
           title?: { simpleText?: string };

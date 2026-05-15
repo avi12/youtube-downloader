@@ -37,6 +37,17 @@ function flushPendingChunks() {
   pendingChunks.length = 0;
 }
 
+function readInitialDataTitle(videoId: string): string {
+  const data = window.ytInitialData;
+  if (data?.currentVideoEndpoint?.watchEndpoint?.videoId !== videoId) {
+    return "";
+  }
+
+  return data.contents
+    ?.twoColumnWatchNextResults?.results?.results?.contents?.[0]
+    ?.videoPrimaryInfoRenderer?.title?.runs?.[0]?.text ?? "";
+}
+
 export async function buildAndDispatchVideoData({ playerResponse }: {
   playerResponse: PlayerResponse;
 }) {
@@ -45,7 +56,12 @@ export async function buildAndDispatchVideoData({ playerResponse }: {
     playerResponse,
     clientVersion,
     clientName
-  });
+  });  if (self === top && location.pathname === "/watch") {
+    const initialDataTitle = readInitialDataTitle(videoData.videoId);
+    if (initialDataTitle) {
+      videoData.title = initialDataTitle;
+    }
+  }
 
   videoDataCache.set(videoData.videoId, videoData);
   videoDataStore.set(videoData.videoId, videoData);
