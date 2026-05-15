@@ -28,8 +28,7 @@ export function resolveInitialAudioFormat({ options, videoData }: {
     return getPreferredMusicAudioFormat(videoData.audioFormats);
   }
 
-  const isMatchVideoOnWatchPage = options.audioTrackLanguageMode === AudioTrackLanguageMode.MatchVideo && IS_WATCH_PAGE;
-  if (isMatchVideoOnWatchPage) {
+  if (IS_WATCH_PAGE) {
     const currentLang = getCurrentVideoAudioLanguage();
     if (currentLang) {
       const matching = videoData.audioFormats.filter(
@@ -55,11 +54,6 @@ export function resolveInitialAudioMode({ options, videoData }: {
   options: Options;
   videoData: VideoData;
 }) {
-  const isOriginalLanguage = options.audioTrackLanguageMode === AudioTrackLanguageMode.OriginalLanguage;
-  if (isOriginalLanguage) {
-    return PanelTrackMode.Original;
-  }
-
   const isCustomMode = options.audioTrackLanguageMode === AudioTrackLanguageMode.Custom;
   const isCustomWithLanguage = isCustomMode && options.customLanguage;
   if (isCustomWithLanguage) {

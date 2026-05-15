@@ -37,11 +37,6 @@ export function resolveInitialCaptionMode({ options, videoData }: {
     captionMode: options.captionLanguageMode,
     audioMode: options.audioTrackLanguageMode
   });
-  const isOriginalLanguage = resolvedMode === AudioTrackLanguageMode.OriginalLanguage;
-  if (isOriginalLanguage) {
-    return PanelTrackMode.Original;
-  }
-
   const isCustomWithLanguage = resolvedMode === AudioTrackLanguageMode.Custom && options.customLanguage;
   if (isCustomWithLanguage) {
     const langCode = normalizeLanguageCode(options.customLanguage);
