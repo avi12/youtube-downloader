@@ -14,7 +14,10 @@
         checked={options.isNotifyOnIdle}
         onchange={e => {
           if (e.target instanceof HTMLInputElement) {
-            void setOption("isNotifyOnIdle", e.target.checked);
+            void setOption({
+              key: "isNotifyOnIdle",
+              value: e.target.checked
+            });
           }
         }}
         role="switch"
@@ -32,7 +35,10 @@
         checked={options.isRevealOnComplete}
         onchange={e => {
           if (e.target instanceof HTMLInputElement) {
-            void setOption("isRevealOnComplete", e.target.checked);
+            void setOption({
+              key: "isRevealOnComplete",
+              value: e.target.checked
+            });
           }
         }}
         role="switch"
@@ -53,7 +59,10 @@
         checked={options.isShowNativeDownload}
         onchange={e => {
           if (e.target instanceof HTMLInputElement) {
-            void setOption("isShowNativeDownload", e.target.checked);
+            void setOption({
+              key: "isShowNativeDownload",
+              value: e.target.checked
+            });
           }
         }}
         role="switch"

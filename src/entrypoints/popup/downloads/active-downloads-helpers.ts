@@ -1,13 +1,13 @@
 import { ProgressType } from "@/types";
 
-export function getProgressLabel(
-  videoId: string,
+export function getProgressLabel({ videoId, statusProgress, percentFormatter }: {
+  videoId: string;
   statusProgress: Record<string, {
     progress: number;
     progressType: ProgressType;
-  }>,
-  percentFormatter: Intl.NumberFormat
-) {
+  }>;
+  percentFormatter: Intl.NumberFormat;
+}) {
   const prog = statusProgress[videoId];
   if (!prog) {
     return "";
@@ -21,37 +21,40 @@ export function getProgressLabel(
   return `${percentage} (${prog.progressType})`;
 }
 
-export function getProgress(
-  videoId: string,
+export function getProgress({ videoId, statusProgress }: {
+  videoId: string;
   statusProgress: Record<string, {
     progress: number;
     progressType: ProgressType;
-  }>
-) {
+  }>;
+}) {
   return statusProgress[videoId]?.progress ?? null;
 }
 
-export function getFilename(
-  videoId: string,
+export function getFilename({ videoId, videoDetails }: {
+  videoId: string;
   videoDetails: Record<string, {
     filenameOutput: string;
     quality?: string;
-  }>
-) {
+  }>;
+}) {
   return videoDetails[videoId]?.filenameOutput ?? videoId;
 }
 
-export function getQuality(
-  videoId: string,
+export function getQuality({ videoId, videoDetails }: {
+  videoId: string;
   videoDetails: Record<string, {
     filenameOutput: string;
     quality?: string;
-  }>
-) {
+  }>;
+}) {
   return videoDetails[videoId]?.quality ?? "";
 }
 
-export function getVideoStatusLabel(i: number, isFFmpegReady: boolean) {
+export function getVideoStatusLabel({ i, isFFmpegReady }: {
+  i: number;
+  isFFmpegReady: boolean;
+}) {
   if (i === 0) {
     return isFFmpegReady ? "Processing…" : "Waiting for FFmpeg…";
   }
@@ -68,15 +71,28 @@ type VideoDetails = Record<string, {
   quality?: string;
 }>;
 
-export function bindDownloadAccessors(
-  statusProgress: StatusProgress,
-  videoDetails: VideoDetails,
-  percentFormatter: Intl.NumberFormat
-) {
+export function bindDownloadAccessors({ statusProgress, videoDetails, percentFormatter }: {
+  statusProgress: StatusProgress;
+  videoDetails: VideoDetails;
+  percentFormatter: Intl.NumberFormat;
+}) {
   return {
-    label: (id: string) => getProgressLabel(id, statusProgress, percentFormatter),
-    progress: (id: string) => getProgress(id, statusProgress),
-    filename: (id: string) => getFilename(id, videoDetails),
-    quality: (id: string) => getQuality(id, videoDetails)
+    label: (id: string) => getProgressLabel({
+      videoId: id,
+      statusProgress,
+      percentFormatter
+    }),
+    progress: (id: string) => getProgress({
+      videoId: id,
+      statusProgress
+    }),
+    filename: (id: string) => getFilename({
+      videoId: id,
+      videoDetails
+    }),
+    quality: (id: string) => getQuality({
+      videoId: id,
+      videoDetails
+    })
   };
 }

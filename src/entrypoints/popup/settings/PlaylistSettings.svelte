@@ -42,21 +42,30 @@
   <PlaylistRadioGroup
     name="playlist-download-mode"
     legend="Download speed"
-    onchange={value => void setOption("playlistDownloadMode", resolveDownloadMode(value))}
+    onchange={value => void setOption({
+      key: "playlistDownloadMode",
+      value: resolveDownloadMode(value)
+    })}
     options={downloadModeOptions}
     selected={options.playlistDownloadMode}
   />
   <PlaylistRadioGroup
     name="playlist-output-mode"
     legend="Output - video playlists"
-    onchange={value => void setOption("playlistOutputMode", resolveOutputMode(value))}
+    onchange={value => void setOption({
+      key: "playlistOutputMode",
+      value: resolveOutputMode(value)
+    })}
     options={outputModeOptions}
     selected={options.playlistOutputMode}
   />
   <PlaylistRadioGroup
     name="playlist-audio-output-mode"
     legend="Output - audio playlists"
-    onchange={value => void setOption("playlistAudioOutputMode", resolveOutputMode(value))}
+    onchange={value => void setOption({
+      key: "playlistAudioOutputMode",
+      value: resolveOutputMode(value)
+    })}
     options={outputModeOptions}
     selected={options.playlistAudioOutputMode}
   />
@@ -68,7 +77,10 @@
           checked={options.isPlaylistScrollSyncEnabled}
           onchange={e => {
             if (e.target instanceof HTMLInputElement) {
-              void setOption("isPlaylistScrollSyncEnabled", e.target.checked);
+              void setOption({
+                key: "isPlaylistScrollSyncEnabled",
+                value: e.target.checked
+              });
             }
           }}
           role="switch"

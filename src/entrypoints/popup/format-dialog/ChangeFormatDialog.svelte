@@ -13,7 +13,12 @@
   const { entry, onClose }: Props = $props();
 
   const isVideoContainer = $derived(videoContainers.includes(entry.container));
-  const availableTargets = $derived(buildAvailableTargets(entry, isVideoContainer));
+  const availableTargets = $derived(
+    buildAvailableTargets({
+      entry,
+      isVideoContainer
+    })
+  );
 
   let selectedTarget = $state("");
   let isSubmitting = $state(false);
@@ -49,7 +54,8 @@
   }
 
   function handleBackdropClick(e: MouseEvent) {
-    if (e.target === e.currentTarget) {
+    const isBackdropClick = e.target === e.currentTarget;
+    if (isBackdropClick) {
       startClose();
     }
   }

@@ -28,7 +28,13 @@
   }: Props = $props();
 
   const videoDownloadIds = $derived(videoDownloads.map(item => item.videoId));
-  const accessors = $derived(bindDownloadAccessors(statusProgress, videoDetails, percentFormatter));
+  const accessors = $derived(
+    bindDownloadAccessors({
+      statusProgress,
+      videoDetails,
+      percentFormatter
+    })
+  );
 </script>
 
 <DownloadSection
@@ -53,7 +59,10 @@
         progress={accessors.progress(videoId)}
         progressLabel={accessors.label(videoId)}
         quality={accessors.quality(videoId)}
-        statusLabel={accessors.progress(videoId) === null ? getVideoStatusLabel(i, isFFmpegReady) : null}
+        statusLabel={accessors.progress(videoId) === null ? getVideoStatusLabel({
+          i,
+          isFFmpegReady
+        }) : null}
       />
     </li>
   {/snippet}

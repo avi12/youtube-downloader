@@ -14,7 +14,10 @@ export function buildEstimatedTimeLabel(sizeBytes: number) {
   return seconds < 60 ? `~${seconds}s` : `~${Math.round(seconds / 60)} min`;
 }
 
-export function buildAvailableTargets(entry: RecentDownloadEntry, isVideoContainer: boolean) {
+export function buildAvailableTargets({ entry, isVideoContainer }: {
+  entry: RecentDownloadEntry;
+  isVideoContainer: boolean;
+}) {
   return (isVideoContainer ? videoContainers : audioContainers)
     .filter(target => target !== entry.container)
     .filter(target => !isVideoContainer || !entry.videoMimeType || isCompatibleForRemux(entry.videoMimeType, entry.audioMimeType ?? "", target));

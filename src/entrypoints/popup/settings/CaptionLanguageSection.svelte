@@ -37,7 +37,10 @@
         <input
           name="caption-language-mode"
           checked={options.captionLanguageMode === value}
-          onchange={() => void setOption("captionLanguageMode", value)}
+          onchange={() => void setOption({
+            key: "captionLanguageMode",
+            value
+          })}
           type="radio"
           {value}
         />

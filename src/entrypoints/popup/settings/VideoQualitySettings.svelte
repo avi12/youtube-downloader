@@ -31,7 +31,10 @@
         <input
           name="quality-mode"
           checked={options.videoQualityMode === value}
-          onchange={() => void setOption("videoQualityMode", value)}
+          onchange={() => void setOption({
+            key: "videoQualityMode",
+            value
+          })}
           type="radio"
           {value}
         />
@@ -46,7 +49,10 @@
           class="settings-select"
           onchange={e => {
             if (e.target instanceof HTMLSelectElement) {
-              void setOption("videoQuality", Number(e.target.value));
+              void setOption({
+                key: "videoQuality",
+                value: Number(e.target.value)
+              });
             }
           }}
         >

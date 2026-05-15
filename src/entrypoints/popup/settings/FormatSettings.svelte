@@ -12,9 +12,12 @@
   <div class="settings-format-section">
     <span class="settings-sub-legend">Video container</span>
     <FormatSelect
-      onchange={extension => void setOption("ext", {
-        ...options.ext,
-        video: extension
+      onchange={extension => void setOption({
+        key: "ext",
+        value: {
+          ...options.ext,
+          video: extension
+        }
       })}
       options={supportedExtensions.video}
       value={options.ext.video}
@@ -23,9 +26,12 @@
   <div class="settings-format-section">
     <span class="settings-sub-legend">Audio container</span>
     <FormatSelect
-      onchange={extension => void setOption("ext", {
-        ...options.ext,
-        audio: extension
+      onchange={extension => void setOption({
+        key: "ext",
+        value: {
+          ...options.ext,
+          audio: extension
+        }
       })}
       options={supportedExtensions.audio}
       value={options.ext.audio}

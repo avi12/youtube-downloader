@@ -34,7 +34,10 @@
         <input
           name="language-mode"
           checked={options.audioTrackLanguageMode === value}
-          onchange={() => void setOption("audioTrackLanguageMode", value)}
+          onchange={() => void setOption({
+            key: "audioTrackLanguageMode",
+            value
+          })}
           type="radio"
           {value}
         />
@@ -52,7 +55,10 @@
           class="settings-select"
           onchange={e => {
             if (e.target instanceof HTMLSelectElement) {
-              void setOption("customLanguage", e.target.value);
+              void setOption({
+                key: "customLanguage",
+                value: e.target.value
+              });
             }
           }}
           value={options.customLanguage}

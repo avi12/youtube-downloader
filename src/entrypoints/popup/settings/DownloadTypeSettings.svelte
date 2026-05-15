@@ -32,7 +32,10 @@
         <input
           name="download-type"
           checked={options.defaultDownloadType === value}
-          onchange={() => void setOption("defaultDownloadType", value)}
+          onchange={() => void setOption({
+            key: "defaultDownloadType",
+            value
+          })}
           type="radio"
           {value}
         />

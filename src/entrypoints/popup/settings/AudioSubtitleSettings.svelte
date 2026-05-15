@@ -16,7 +16,10 @@
         checked={options.downloadExtras}
         onchange={e => {
           if (e.target instanceof HTMLInputElement) {
-            void setOption("downloadExtras", e.target.checked);
+            void setOption({
+              key: "downloadExtras",
+              value: e.target.checked
+            });
           }
         }}
         role="switch"
@@ -34,7 +37,10 @@
         checked={options.includeAutoDubbing}
         onchange={e => {
           if (e.target instanceof HTMLInputElement) {
-            void setOption("includeAutoDubbing", e.target.checked);
+            void setOption({
+              key: "includeAutoDubbing",
+              value: e.target.checked
+            });
           }
         }}
         role="switch"
@@ -52,7 +58,10 @@
         checked={options.includeAiCaptions}
         onchange={e => {
           if (e.target instanceof HTMLInputElement) {
-            void setOption("includeAiCaptions", e.target.checked);
+            void setOption({
+              key: "includeAiCaptions",
+              value: e.target.checked
+            });
           }
         }}
         role="switch"
