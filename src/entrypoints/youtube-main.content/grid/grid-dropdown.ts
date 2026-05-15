@@ -31,7 +31,7 @@ function createGridDropdown({ contentId, positionTargetSelector }: {
   elPopupContainer.append(elDropdown);
 
   elDropdown.positionTarget = elPositionTarget;
-  elDropdown.horizontalAlign = "left";
+  elDropdown.horizontalAlign = "center";
   elDropdown.verticalAlign = "top";
   elDropdown.noOverlap = true;
   elDropdown.dynamicAlign = true;

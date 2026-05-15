@@ -8,7 +8,7 @@ export function buildPanelContentId(videoId: string) {
 }
 
 function buildPositionTargetSelector(videoId: string) {
-  return `[data-ytdl-grid-item="${videoId}"] .ytdl-button-group, [data-ytdl-item="${videoId}"] .ytdl-button-group`;
+  return `[data-ytdl-button-id="btn-${videoId}-chevron"]`;
 }
 
 export function requestDropdownCreation(videoId: string) {

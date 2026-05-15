@@ -43,6 +43,7 @@
   const panel = createPanelManager({
     videoId: untrack(() => videoId),
     getVideoData: () => itemState.videoData,
+    getElChevronButton: () => buttons.elChevronButton,
     getElButtonGroup: () => buttons.elButtonGroup,
     onChevronRefresh: () => buttons.refreshChevronButton()
   });

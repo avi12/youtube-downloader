@@ -7,21 +7,55 @@ import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-wo
 import type { VideoData } from "@/types";
 import { mount, unmount } from "svelte";
 
+const PANEL_ABOVE_OVERLAP_PX = 4;
+
 export function createPanelManager({
   videoId,
   getVideoData,
+  getElChevronButton,
   getElButtonGroup,
   onChevronRefresh
 }: {
   videoId: string;
   getVideoData: () => VideoData | null;
+  getElChevronButton: () => Element | null;
   getElButtonGroup: () => HTMLElement | null;
   onChevronRefresh: () => void;
 }) {
   let isOpen = $state(false);
+  let isPanelBelow = $state(true);
   let elDropdown = $state<HTMLElement | null>(null);
   let panelInstance: ReturnType<typeof mount> | null = null;
   let unsubscribeDropdownReady: (() => void) | null = null;
+
+  function predictPanelBelow() {
+    const elChevron = getElChevronButton();
+    if (!elChevron) {
+      return true;
+    }
+
+    const chevronRect = elChevron.getBoundingClientRect();
+    const spaceAbove = chevronRect.top;
+    const spaceBelow = innerHeight - chevronRect.bottom;
+    return spaceBelow >= spaceAbove;
+  }
+
+  function reconcilePanelPosition() {
+    const elChevron = getElChevronButton();
+    if (!elDropdown || !elChevron) {
+      return;
+    }
+
+    const dropdownRect = elDropdown.getBoundingClientRect();
+    const isDropdownEmpty = dropdownRect.width === 0 && dropdownRect.height === 0;
+    if (isDropdownEmpty) {
+      return;
+    }
+
+    const isAbove = dropdownRect.bottom <= elChevron.getBoundingClientRect().top + PANEL_ABOVE_OVERLAP_PX;
+    isPanelBelow = !isAbove;
+    onChevronRefresh();
+  }
 
   function open() {
     const videoData = getVideoData();
@@ -57,8 +91,10 @@ export function createPanelManager({
       elDropdown = mounted.elDropdown;
       panelInstance = mounted.panelInstance;
 
-      elDropdown?.addEventListener("iron-overlay-opened", () => onChevronRefresh(), { once: true });
-      addEventListener("resize", onChevronRefresh);
+      elDropdown?.addEventListener("iron-overlay-opened", () => {
+        requestAnimationFrame(reconcilePanelPosition);
+      }, { once: true });
+      addEventListener("resize", reconcilePanelPosition);
 
       registerDropdownCloseListeners({
         elDropdown,
@@ -73,7 +109,7 @@ export function createPanelManager({
   }
 
   function close() {
-    removeEventListener("resize", onChevronRefresh);
+    removeEventListener("resize", reconcilePanelPosition);
 
     if (unsubscribeDropdownReady) {
       unsubscribeDropdownReady();
@@ -95,6 +131,7 @@ export function createPanelManager({
     isOpen = !isOpen;
 
     if (isOpen) {
+      isPanelBelow = predictPanelBelow();
       open();
     } else {
       close();
@@ -104,6 +141,9 @@ export function createPanelManager({
   return {
     get isOpen() {
       return isOpen;
+    },
+    get isPanelBelow() {
+      return isPanelBelow;
     },
     get elDropdown() {
       return elDropdown;

@@ -5,7 +5,6 @@ import type { createPlaylistVideoItemState } from "./PlaylistVideoItem.state.sve
 import { IconName } from "@/types";
 
 const BUTTON_REFRESH_INTERVAL_MS = 250;
-const PANEL_ABOVE_OVERLAP_PX = 4;
 
 export function createButtonManager(params: {
   readonly videoId: string;
@@ -44,12 +43,10 @@ export function createButtonManager(params: {
       return;
     }
 
-    const elDropdown = params.panel.elDropdown;
-    const isPanelAbove = params.panel.isOpen && !!elDropdown
-      && elDropdown.getBoundingClientRect().bottom
-        <= elChevronButton.getBoundingClientRect().top + PANEL_ABOVE_OVERLAP_PX;
     const isDisabled = !params.itemState.videoData?.isDownloadable;
-    const iconName = isPanelAbove ? IconName.ExpandLess : IconName.ExpandMore;
+    const iconName = params.panel.isOpen && !params.panel.isPanelBelow
+      ? IconName.ExpandLess
+      : IconName.ExpandMore;
     sendChevronButtonData({
       elButton: elChevronButton,
       buttonId: chevronButtonId,
@@ -106,6 +103,9 @@ export function createButtonManager(params: {
     },
     get elButtonGroup() {
       return elButtonGroup;
+    },
+    get elChevronButton() {
+      return elChevronButton;
     },
     attachButtonGroup,
     refreshChevronButton,
