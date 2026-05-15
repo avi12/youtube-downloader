@@ -32,6 +32,11 @@ async function onInitMessage(e: MessageEvent<InitMessage>) {
   const { default: createFFmpegCoreUntyped } = await import("@ffmpeg/core");
   const createFFmpegCore: FFmpegFactory = createFFmpegCoreUntyped;
   initFfmpeg(await createFFmpegCore({ wasmBinary: e.data.wasmBinary }));
+  state.ffmpeg!.setLogger(({ type, message }) => {
+    if (type === "stderr") {
+      console.error("[ytdl:ffmpeg]", message);
+    }
+  });
   state.ffmpeg!.setProgress(({ progress }) => {
     if (progress < 0) {
       return;
