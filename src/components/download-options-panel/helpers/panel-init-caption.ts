@@ -9,6 +9,7 @@ import {
 import {
   AudioTrackLanguageMode,
   PanelTrackMode,
+  type AdaptiveFormatItem,
   type CaptionTrack,
   type Options,
   type VideoData
@@ -49,57 +50,36 @@ export function resolveInitialCaptionMode({ options, videoData }: {
   return PanelTrackMode.MatchVideo;
 }
 
-export function resolveInitialCaptionTrack({
-  captionMode,
-  options,
-  videoData
-}: {
-  captionMode: PanelTrackMode;
-  options: Options;
-  videoData: VideoData;
-}) {
-  const hasNoCaptionTracks = !videoData.captionTracks.length;
-  if (hasNoCaptionTracks) {
-    return null;
-  }
+function resolveCustomCaption(candidateTracks: CaptionTrack[], langCode: string) {
+  return candidateTracks.find(track => normalizeLanguageCode(track.languageCode) === langCode)
+    ?? candidateTracks[0]
+    ?? null;
+}
 
-  const candidateTracks = options.includeAiCaptions
-    ? videoData.captionTracks
-    : videoData.captionTracks.filter(track => track.kind !== "asr");
-
-  const isCustomMode = captionMode === PanelTrackMode.Custom;
-  if (isCustomMode) {
-    const langCode = normalizeLanguageCode(options.customLanguage ?? "");
-    return candidateTracks.find(track => normalizeLanguageCode(track.languageCode) === langCode)
-      ?? candidateTracks[0]
-      ?? null;
-  }
-
-  const isOriginalMode = captionMode === PanelTrackMode.Original;
-  if (isOriginalMode) {
-    const originalLangId = findOriginalAudioFormat(videoData.audioFormats)?.audioTrack?.id;
-    if (originalLangId) {
-      const langCode = normalizeLanguageCode(originalLangId);
-      const manualMatch = candidateTracks.find(
-        track => normalizeLanguageCode(track.languageCode) === langCode && !track.kind
-      );
-      const match = manualMatch
-        ?? candidateTracks.find(track => normalizeLanguageCode(track.languageCode) === langCode);
-      if (match) {
-        return match;
-      }
+function resolveOriginalCaption(candidateTracks: CaptionTrack[], audioFormats: AdaptiveFormatItem[]) {
+  const originalLangId = findOriginalAudioFormat(audioFormats)?.audioTrack?.id;
+  if (originalLangId) {
+    const langCode = normalizeLanguageCode(originalLangId);
+    const manualMatch = candidateTracks.find(
+      track => normalizeLanguageCode(track.languageCode) === langCode && !track.kind
+    );
+    const match = manualMatch
+      ?? candidateTracks.find(track => normalizeLanguageCode(track.languageCode) === langCode);
+    if (match) {
+      return match;
     }
-
-    return candidateTracks.find(track => !track.kind) ?? candidateTracks[0] ?? null;
   }
 
-  // MatchVideo / default: only preserve the player's active caption (even if
-  // ASR); fall back to filtered candidates so an absent player caption doesn't
-  // auto-pick an ASR default and falsely surface the captions section.
+  return candidateTracks.find(track => !track.kind) ?? candidateTracks[0] ?? null;
+}
+
+// Only preserve the player's active caption (even if ASR); fall back to filtered
+// candidates so an absent player caption doesn't auto-pick an ASR default.
+function resolveMatchVideoCaption(allTracks: CaptionTrack[], candidateTracks: CaptionTrack[]) {
   const activeCaption = getActivePlayerCaption();
   if (activeCaption) {
-    const match = videoData.captionTracks.find(track => track.vssId === activeCaption.vss_id)
-      ?? videoData.captionTracks.find(
+    const match = allTracks.find(track => track.vssId === activeCaption.vss_id)
+      ?? allTracks.find(
         track => normalizeLanguageCode(track.languageCode) === normalizeLanguageCode(activeCaption.languageCode)
       );
     if (match) {
@@ -113,4 +93,31 @@ export function resolveInitialCaptionTrack({
     locale: document.documentElement.lang,
     browserLanguage: navigator.language
   })[0] ?? null;
+}
+
+export function resolveInitialCaptionTrack({
+  captionMode,
+  options,
+  videoData
+}: {
+  captionMode: PanelTrackMode;
+  options: Options;
+  videoData: VideoData;
+}) {
+  if (!videoData.captionTracks.length) {
+    return null;
+  }
+
+  const candidateTracks = options.includeAiCaptions
+    ? videoData.captionTracks
+    : videoData.captionTracks.filter(track => track.kind !== "asr");
+  if (captionMode === PanelTrackMode.Custom) {
+    return resolveCustomCaption(candidateTracks, normalizeLanguageCode(options.customLanguage ?? ""));
+  }
+
+  if (captionMode === PanelTrackMode.Original) {
+    return resolveOriginalCaption(candidateTracks, videoData.audioFormats);
+  }
+
+  return resolveMatchVideoCaption(videoData.captionTracks, candidateTracks);
 }

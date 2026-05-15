@@ -2,8 +2,15 @@ import { normalizeLanguageCode, findOriginalAudioFormat } from "./audio-format-h
 import { AudioTrackLanguageMode } from "@/types";
 import type { AdaptiveFormatItem } from "@/types";
 
-function matchAudioFormatToLanguage({ audioFormats, langCode }: { audioFormats: AdaptiveFormatItem[]; langCode: string }) {
+function matchAudioFormatToLanguage({ audioFormats, langCode }: {
+  audioFormats: AdaptiveFormatItem[];
+  langCode: string;
+}) {
   return audioFormats.find(format => normalizeLanguageCode(format.audioTrack?.id ?? "") === langCode);
+}
+
+function prependMatch(audioFormats: AdaptiveFormatItem[], match: AdaptiveFormatItem | undefined | null) {
+  return match ? [match, ...audioFormats.filter(fmt => fmt !== match)] : [];
 }
 
 export function selectPreferredAudioFormat({
@@ -33,15 +40,17 @@ export function selectPreferredAudioFormat({
   const isCustomWithLanguage = languageMode === AudioTrackLanguageMode.Custom && customLanguage;
   if (isCustomWithLanguage) {
     const langCode = normalizeLanguageCode(customLanguage);
-    const match = matchAudioFormatToLanguage({ audioFormats, langCode })
-      ?? matchAudioFormatToLanguage({ audioFormats, langCode: "en" });
-    if (match) {
-      candidates = [match, ...audioFormats.filter(format => format !== match)];
-    }
+    const match = matchAudioFormatToLanguage({
+      audioFormats,
+      langCode
+    })
+      ?? matchAudioFormatToLanguage({
+        audioFormats,
+        langCode: "en"
+      });
+    candidates = prependMatch(audioFormats, match);
   } else if (languageMode === AudioTrackLanguageMode.OriginalLanguage) {
-    if (originalTrack) {
-      candidates = [originalTrack, ...audioFormats.filter(format => format !== originalTrack)];
-    }
+    candidates = prependMatch(audioFormats, originalTrack);
   }
 
   const hasNoCandidates = !candidates.length;
@@ -49,19 +58,19 @@ export function selectPreferredAudioFormat({
     const langPriority = [locale, browserLanguage, "en"]
       .filter((lang): lang is string => !!lang);
     for (const lang of langPriority) {
-      const match = matchAudioFormatToLanguage({ audioFormats, langCode: normalizeLanguageCode(lang) });
+      const match = matchAudioFormatToLanguage({
+        audioFormats,
+        langCode: normalizeLanguageCode(lang)
+      });
       if (match) {
-        candidates = [match, ...audioFormats.filter(format => format !== match)];
+        candidates = prependMatch(audioFormats, match);
         break;
       }
     }
   }
 
-  const isStillNoCandidates = !candidates.length;
-  if (isStillNoCandidates) {
-    candidates = originalTrack
-      ? [originalTrack, ...audioFormats.filter(format => format !== originalTrack)]
-      : audioFormats;
+  if (!candidates.length) {
+    candidates = originalTrack ? prependMatch(audioFormats, originalTrack) : audioFormats;
   }
 
   if (isWebm) {

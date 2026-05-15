@@ -62,39 +62,43 @@ export function resolveInitialAudioFormat({ options, videoData }: {
   });
 }
 
+function findMatchedCustomLangCode({ options, audioFormats }: {
+  options: Options;
+  audioFormats: AdaptiveFormatItem[];
+}) {
+  const isCustomMode = options.audioTrackLanguageMode === AudioTrackLanguageMode.Custom;
+  if (!isCustomMode || !options.customLanguage) {
+    return null;
+  }
+
+  const langCode = normalizeLanguageCode(options.customLanguage);
+  const hasMatch = audioFormats.some(
+    format => format.audioTrack && normalizeLanguageCode(format.audioTrack.id) === langCode
+  );
+  return hasMatch ? langCode : null;
+}
+
 export function resolveInitialAudioMode({ options, videoData }: {
   options: Options;
   videoData: VideoData;
 }) {
-  const isCustomMode = options.audioTrackLanguageMode === AudioTrackLanguageMode.Custom;
-  const isCustomWithLanguage = isCustomMode && options.customLanguage;
-  if (isCustomWithLanguage) {
-    const langCode = normalizeLanguageCode(options.customLanguage);
-    const hasMatch = videoData.audioFormats.some(
-      format => format.audioTrack && normalizeLanguageCode(format.audioTrack.id) === langCode
-    );
-    if (hasMatch) {
-      return PanelTrackMode.Custom;
-    }
-  }
-
-  return PanelTrackMode.MatchVideo;
+  const customLangCode = findMatchedCustomLangCode({
+    options,
+    audioFormats: videoData.audioFormats
+  });
+  return customLangCode ? PanelTrackMode.Custom : PanelTrackMode.MatchVideo;
 }
 
 export function resolveInitialAudioCustomLanguage({ options, videoData }: {
   options: Options;
   videoData: VideoData;
 }) {
-  const isCustomMode = options.audioTrackLanguageMode === AudioTrackLanguageMode.Custom;
-  const isCustomWithLanguage = isCustomMode && options.customLanguage;
-  if (isCustomWithLanguage) {
-    const langCode = normalizeLanguageCode(options.customLanguage);
-    const hasMatch = videoData.audioFormats.some(
-      format => format.audioTrack && normalizeLanguageCode(format.audioTrack.id) === langCode
-    );
-    if (hasMatch) {
-      return langCode;
-    }
+  const customLangCode = findMatchedCustomLangCode({
+    options,
+    audioFormats: videoData.audioFormats
+  });
+  if (customLangCode) {
+    return customLangCode;
   }
 
   const firstTrack = sortAudioFormatsByDisplayName(videoData.audioFormats)[0];
