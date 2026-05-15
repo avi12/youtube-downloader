@@ -4,11 +4,11 @@
 
 <script lang="ts">
   import PlaylistDownloadCheckbox from "./PlaylistDownloadCheckbox.svelte";
-  import PlaylistProgressRing from "./PlaylistProgressRing.svelte";
   import { createBatchState } from "./PlaylistVideoItem.batch.svelte";
   import { createButtonManager } from "./PlaylistVideoItem.buttons.svelte";
   import { createPanelManager } from "./PlaylistVideoItem.panel.svelte";
   import { createPlaylistVideoItemState } from "./PlaylistVideoItem.state.svelte";
+  import DownloadProgressRing from "@/components/download-button/DownloadProgressRing.svelte";
   import { checkedPlaylistVideos } from "@/lib/ui/playlist-selection.svelte";
   import { untrack } from "svelte";
 
@@ -72,7 +72,11 @@
 
 <div class="ytdl-button-group" {@attach buttons.attachButtonGroup}>
   {#if itemState.videoData?.isDownloadable}
-    <div class="ytdl-button-row" class:has-checkbox={isPlaylistItem}>
+    <div
+      class="ytdl-button-row"
+      class:has-checkbox={isPlaylistItem}
+      data-ytdl-download-state={itemState.downloadStateClass}
+    >
       {#if isPlaylistItem}
         <PlaylistDownloadCheckbox
           {isChecked}
@@ -83,13 +87,14 @@
       {/if}
       <div class="ytdl-download-btn-wrapper">
         <yt-button-view-model {@attach buttons.attachDownloadButton}></yt-button-view-model>
-        {#if batch.isProgressBarVisible}
-          <PlaylistProgressRing
+        <div class="ytdl-playlist-ring-slot" class:is-visible={itemState.isProgressRingVisible}>
+          <DownloadProgressRing
             ariaLabel={itemState.buttonTooltip}
-            isIndeterminate={batch.isProgressBarIndeterminate}
-            value={batch.progressBarValue}
+            isError={itemState.isDownloadFailed}
+            isIndeterminate={itemState.isIndeterminate}
+            progress={itemState.effectiveProgress}
           />
-        {/if}
+        </div>
       </div>
       <yt-button-view-model {@attach buttons.attachChevronButton}></yt-button-view-model>
     </div>
@@ -125,6 +130,18 @@
   .ytdl-download-btn-wrapper {
     position: relative;
     display: inline-flex;
+  }
+
+  .ytdl-playlist-ring-slot {
+    position: absolute;
+    inset: 0;
+    opacity: 0%;
+    pointer-events: none;
+    transition: opacity 120ms ease-out;
+
+    &.is-visible {
+      opacity: 100%;
+    }
   }
 
   .ytdl-spinner-container {

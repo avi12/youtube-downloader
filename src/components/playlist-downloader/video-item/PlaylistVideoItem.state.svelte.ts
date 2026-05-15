@@ -2,7 +2,11 @@ import { resolveButtonLabel, resolveDownloadIconName } from "./PlaylistVideoItem
 import { cancelDownload, executeDownload } from "./PlaylistVideoItem.download";
 import { createVideoItemEffects } from "./PlaylistVideoItem.effects.svelte";
 import { buildButtonTooltip } from "./PlaylistVideoItem.helpers";
-import { downloadProgressStore, type DownloadProgressState } from "@/lib/ui/synced-stores.svelte";
+import {
+  downloadProgressStore,
+  interruptedDownloadStore,
+  type DownloadProgressState
+} from "@/lib/ui/synced-stores.svelte";
 import { calculateWeightedProgress } from "@/lib/youtube/video-helpers";
 import { type VideoData } from "@/types";
 
@@ -26,6 +30,12 @@ export function createPlaylistVideoItemState({ videoId, gridTitle, activeDownloa
   const isDownloading = $derived(downloadState.isDownloading);
   const isDone = $derived(downloadState.isDone);
   const isDownloadFailed = $derived(!!downloadState.isFailed);
+  const isInterrupted = $derived(
+    !!interruptedDownloadStore.get(videoId)
+    && !isDownloading
+    && !isDone
+    && !isDownloadFailed
+  );
 
   createVideoItemEffects({
     videoId,
@@ -76,6 +86,34 @@ export function createPlaylistVideoItemState({ videoId, gridTitle, activeDownloa
       isDownloadFailed
     })
   );
+  const downloadStateClass = $derived.by(() => {
+    if (isDone || isLocallyDone) {
+      return "done";
+    }
+
+    if (isDownloadFailed) {
+      return "error";
+    }
+
+    if (isInterrupted) {
+      return "interrupted";
+    }
+
+    if (isDownloading) {
+      return "downloading";
+    }
+
+    return "";
+  });
+  const isIndeterminate = $derived(isDownloading && displayProgress === 0);
+  const isProgressRingVisible = $derived(isDownloading || isDownloadFailed);
+  const effectiveProgress = $derived.by(() => {
+    if (isDownloadFailed) {
+      return 1;
+    }
+
+    return isDownloading ? displayProgress / 100 : 0;
+  });
 
   async function handleDownloadClick() {
     const isNotReadyToDownload = !videoData?.isDownloadable || activeDownloadClicks.has(videoId);
@@ -116,11 +154,26 @@ export function createPlaylistVideoItemState({ videoId, gridTitle, activeDownloa
     get isDownloadFailed() {
       return isDownloadFailed;
     },
+    get isInterrupted() {
+      return isInterrupted;
+    },
     get isLocallyDone() {
       return isLocallyDone;
     },
     get displayProgress() {
       return displayProgress;
+    },
+    get effectiveProgress() {
+      return effectiveProgress;
+    },
+    get isIndeterminate() {
+      return isIndeterminate;
+    },
+    get isProgressRingVisible() {
+      return isProgressRingVisible;
+    },
+    get downloadStateClass() {
+      return downloadStateClass;
     },
     get buttonTooltip() {
       return buttonTooltip;
