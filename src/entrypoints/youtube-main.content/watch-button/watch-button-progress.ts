@@ -1,10 +1,6 @@
 import { calculateWeightedProgress } from "@/lib/youtube/video-helpers";
 import { ProgressType } from "@/types";
 
-export const PROGRESS_RING_RADIUS = 16;
-export const PROGRESS_RING_SVG_SIZE = 40;
-export const PROGRESS_RING_CIRCUMFERENCE = 2 * Math.PI * PROGRESS_RING_RADIUS;
-
 export interface ProgressUpdateHandlers {
   setIsDownloading(value: boolean): void;
   setIsDone(value: boolean): void;

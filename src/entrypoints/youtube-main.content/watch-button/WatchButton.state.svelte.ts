@@ -1,5 +1,4 @@
 import { buildClickHandler } from "./watch-button-click";
-import { PROGRESS_RING_CIRCUMFERENCE, PROGRESS_RING_RADIUS, PROGRESS_RING_SVG_SIZE } from "./watch-button-progress";
 import { buildInitialDownloadState } from "./watch-button-state";
 import { buildChevronData, buildDownloadData } from "./watch-button-view-model";
 import { createButtonElementEffects } from "./WatchButton.button-effects.svelte";
@@ -59,27 +58,28 @@ export function createWatchButtonState(params: {
   const downloadData = $derived(buildDownloadData(viewState));
   const chevronData = $derived(buildChevronData(viewState));
 
-  const stateClass = $derived.by(() => {
+  const downloadState = $derived.by(() => {
     if (isDone) {
-      return "ytdl-watch-state-done";
+      return "done";
     }
 
     if (isError) {
-      return "ytdl-watch-state-error";
+      return "error";
     }
 
     if (isInterrupted) {
-      return "ytdl-watch-state-interrupted";
+      return "interrupted";
     }
 
     if (isDownloading) {
-      return "ytdl-watch-state-downloading";
+      return "downloading";
     }
 
     return "";
   });
 
   const isIndeterminate = $derived(isDownloading && downloadProgress === 0);
+  const isProgressRingVisible = $derived(isDownloading || isError);
 
   createButtonElementEffects({
     getElDownloadButton: () => elDownloadButton,
@@ -204,8 +204,8 @@ export function createWatchButtonState(params: {
     set elChevronButton(value) {
       elChevronButton = value;
     },
-    get stateClass() {
-      return stateClass;
+    get downloadState() {
+      return downloadState;
     },
     get isIndeterminate() {
       return isIndeterminate;
@@ -213,12 +213,12 @@ export function createWatchButtonState(params: {
     get isError() {
       return isError;
     },
+    get isProgressRingVisible() {
+      return isProgressRingVisible;
+    },
     get effectiveProgress() {
       return effectiveProgress;
     },
-    PROGRESS_RING_RADIUS,
-    PROGRESS_RING_SVG_SIZE,
-    PROGRESS_RING_CIRCUMFERENCE,
     handleClick
   };
 }

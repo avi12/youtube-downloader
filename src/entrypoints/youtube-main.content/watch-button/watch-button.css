@@ -1,3 +1,5 @@
+@import url("@/components/download-button/download-button-state.css");
+
 [data-ytdl-download-group] {
   position: relative;
   display: flex;
@@ -9,75 +11,7 @@
   margin-left: 0 !important;
 }
 
-/* State tints. Each state remaps Polymer's --yt-button-shape-tonal-* custom
-   properties; YouTube's tonal button reads these to drive its background +
-   text/icon color. Falls back to the design handoff hex when YouTube's spec
-   variables aren't available (older Polymer skins, embedded contexts). */
-
-/* Colors and mix percentages mirror the design file's `download-pill.*` rules.
-   Light-theme defaults; html[dark] overrides for the YouTube dark theme.
-   YouTube doesn't set `color-scheme` on its document, so light-dark() can't
-   be used here - the [dark] attribute selector is the reliable signal. */
-.ytdl-watch-state-downloading,
-.ytdl-watch-state-resuming {
-  --ytdl-state-color: #065fd4;
-  --ytdl-state-mix: 12%;
-}
-
-.ytdl-watch-state-done {
-  --ytdl-state-color: #1e8e3e;
-  --ytdl-state-mix: 18%;
-}
-
-.ytdl-watch-state-error {
-  --ytdl-state-color: #d93025;
-  --ytdl-state-mix: 18%;
-}
-
-.ytdl-watch-state-interrupted {
-  --ytdl-state-color: #b56500;
-  --ytdl-state-mix: 22%;
-}
-
-[dark] .ytdl-watch-state-downloading,
-[dark] .ytdl-watch-state-resuming {
-  --ytdl-state-color: #3ea6ff;
-}
-
-[dark] .ytdl-watch-state-done {
-  --ytdl-state-color: #6cd16c;
-}
-
-[dark] .ytdl-watch-state-error {
-  --ytdl-state-color: #ff6b6b;
-}
-
-[dark] .ytdl-watch-state-interrupted {
-  --ytdl-state-color: #f5b94a;
-}
-
-[class*="ytdl-watch-state-"] {
-  --ytdl-state-bg-base: rgb(245 245 245);
-
-  color: var(--ytdl-state-color);
-}
-
-[dark] [class*="ytdl-watch-state-"] {
-  --ytdl-state-bg-base: rgb(35 35 35);
-}
-
-[class*="ytdl-watch-state-"] .ytdl-download-button button,
-[class*="ytdl-watch-state-"] .ytdl-chevron-button button {
-  background-color: color-mix(in oklab, var(--ytdl-state-color) var(--ytdl-state-mix), var(--ytdl-state-bg-base)) !important;
-  color: var(--ytdl-state-color) !important;
-}
-
-[class*="ytdl-watch-state-"] .ytdl-download-button button:hover,
-[class*="ytdl-watch-state-"] .ytdl-chevron-button button:hover {
-  background-color: color-mix(in oklab, var(--ytdl-state-color) calc(var(--ytdl-state-mix) + 8%), var(--ytdl-state-bg-base)) !important;
-}
-
-.ytdl-watch-progress-ring {
+.ytdl-watch-ring-slot {
   position: absolute;
   inset-block: 0;
   inset-inline-start: 10px;
@@ -87,61 +21,9 @@
   opacity: 0%;
   pointer-events: none;
   transition: opacity 120ms ease-out;
-}
 
-.ytdl-watch-state-downloading .ytdl-watch-progress-ring,
-.ytdl-watch-state-error .ytdl-watch-progress-ring {
-  opacity: 100%;
-}
-
-.ytdl-watch-progress-ring__track {
-  fill: none;
-  stroke: currentColor;
-  stroke-opacity: 25%;
-  stroke-width: 2.4;
-}
-
-.ytdl-watch-progress-ring__indicator {
-  fill: none;
-  stroke: currentColor;
-  stroke-linecap: round;
-  stroke-width: 2.4;
-  transition: stroke-dashoffset 160ms ease-out;
-  transform: rotate(-90deg);
-  transform-origin: center;
-}
-
-.ytdl-watch-state-downloading .ytdl-watch-progress-ring__indicator,
-.ytdl-watch-state-resuming .ytdl-watch-progress-ring__indicator {
-  stroke: var(--yt-sys-color-baseline--call-to-action, #3ea6ff);
-}
-
-.ytdl-watch-state-done .ytdl-watch-progress-ring__indicator {
-  stroke: var(--yt-sys-color-baseline--text-complete, var(--yt-sys-color-baseline--themed-green, #1e8e3e));
-}
-
-.ytdl-watch-state-error .ytdl-watch-progress-ring__indicator {
-  stroke: var(--yt-sys-color-baseline--text-error, var(--yt-sys-color-baseline--error-indicator, #d93025));
-  stroke-dashoffset: 0;
-}
-
-.ytdl-watch-state-interrupted .ytdl-watch-progress-ring__indicator {
-  stroke: var(--yt-sys-color-baseline--text-warning, #b56500);
-}
-
-.ytdl-watch-progress-ring--indeterminate .ytdl-watch-progress-ring__indicator {
-  stroke-dasharray: 30 70;
-  transition: none;
-  animation: ytdl-watch-progress-ring-spin 1400ms linear infinite;
-}
-
-@keyframes ytdl-watch-progress-ring-spin {
-  from {
-    transform: rotate(-90deg);
-  }
-
-  to {
-    transform: rotate(270deg);
+  &.is-visible {
+    opacity: 100%;
   }
 }
 

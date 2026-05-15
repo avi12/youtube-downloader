@@ -1,5 +1,6 @@
 <script lang="ts">
   import { createWatchButtonState } from "./WatchButton.state.svelte";
+  import DownloadProgressRing from "@/components/download-button/DownloadProgressRing.svelte";
   import type { TpYtIronDropdownElement, VideoData } from "@/types";
 
   const {
@@ -24,8 +25,9 @@
 
 <div
   bind:this={state.elGroup}
-  class={state.stateClass}
+  class="ytdl-watch-group"
   data-ytdl-download-group="true"
+  data-ytdl-download-state={state.downloadState}
   onclick={state.handleClick}
   role="none"
 >
@@ -37,26 +39,11 @@
     bind:this={state.elChevronButton}
     class={[...scopingClasses, "ytdl-chevron-button"].join(" ")}
   ></yt-button-view-model>
-  <svg
-    class="ytdl-watch-progress-ring"
-    class:ytdl-watch-progress-ring--error={state.isError}
-    class:ytdl-watch-progress-ring--indeterminate={state.isIndeterminate}
-    aria-hidden="true"
-    viewBox="0 0 {state.PROGRESS_RING_SVG_SIZE} {state.PROGRESS_RING_SVG_SIZE}"
-  >
-    <circle
-      class="ytdl-watch-progress-ring__track"
-      cx={state.PROGRESS_RING_SVG_SIZE / 2}
-      cy={state.PROGRESS_RING_SVG_SIZE / 2}
-      r={state.PROGRESS_RING_RADIUS}
+  <div class="ytdl-watch-ring-slot" class:is-visible={state.isProgressRingVisible}>
+    <DownloadProgressRing
+      isError={state.isError}
+      isIndeterminate={state.isIndeterminate}
+      progress={state.effectiveProgress}
     />
-    <circle
-      class="ytdl-watch-progress-ring__indicator"
-      cx={state.PROGRESS_RING_SVG_SIZE / 2}
-      cy={state.PROGRESS_RING_SVG_SIZE / 2}
-      r={state.PROGRESS_RING_RADIUS}
-      stroke-dasharray={state.PROGRESS_RING_CIRCUMFERENCE}
-      stroke-dashoffset={state.PROGRESS_RING_CIRCUMFERENCE * (1 - state.effectiveProgress)}
-    />
-  </svg>
+  </div>
 </div>

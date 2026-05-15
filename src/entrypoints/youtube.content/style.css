@@ -1,3 +1,5 @@
+@import url("@/components/download-button/download-button-state.css");
+
 .ytdl-hide-native-download ytd-download-button-renderer {
   display: none;
 }
