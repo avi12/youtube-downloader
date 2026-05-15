@@ -90,7 +90,6 @@ export function createWatchButtonState(params: {
   });
 
   createPanelEffects({
-    getElGroup: () => elGroup,
     getElChevronButton: () => elChevronButton,
     getElDropdown: () => params.elDropdown,
     getIsPanelOpen: () => isPanelOpen,

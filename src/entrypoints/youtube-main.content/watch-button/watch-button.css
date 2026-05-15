@@ -154,6 +154,20 @@
   overflow: visible !important;
 }
 
+[data-ytdl-panel-slot="true"] {
+  max-height: var(--ytdl-panel-max-height, none) !important;
+}
+
 [data-ytdl-panel-slot="true"] > * {
   max-height: inherit;
+}
+
+[data-ytdl-watch-dropdown][data-ytdl-panel-position="above"] {
+  top: auto !important;
+  bottom: var(--ytdl-panel-bottom-distance) !important;
+}
+
+[data-ytdl-watch-dropdown][data-ytdl-panel-position="below"] {
+  top: var(--ytdl-panel-top-distance) !important;
+  bottom: auto !important;
 }

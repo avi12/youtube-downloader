@@ -1,7 +1,8 @@
 import type { TpYtIronDropdownElement, YtButtonViewModelElement } from "@/types";
 
+const PANEL_VIEWPORT_MARGIN = 16;
+
 export function createPanelEffects({
-  getElGroup,
   getElChevronButton,
   getElDropdown,
   getIsPanelOpen,
@@ -9,7 +10,6 @@ export function createPanelEffects({
   setIsPanelOpen,
   setIsPanelBelow
 }: {
-  getElGroup: () => HTMLDivElement | null;
   getElChevronButton: () => YtButtonViewModelElement | null;
   getElDropdown: () => TpYtIronDropdownElement;
   getIsPanelOpen: () => boolean;
@@ -17,23 +17,29 @@ export function createPanelEffects({
   setIsPanelOpen: (value: boolean) => void;
   setIsPanelBelow: (value: boolean) => void;
 }) {
-  function syncPanelBelowState() {
-    const dropdownRect = getElDropdown().getBoundingClientRect();
-    const isDropdownHidden = dropdownRect.width === 0 && dropdownRect.height === 0;
-    if (isDropdownHidden) {
+  function applyPanelPositioning() {
+    const elDropdown = getElDropdown();
+    const chevronRect = getElChevronButton()?.getBoundingClientRect();
+    if (!chevronRect) {
       return;
     }
 
-    const groupRect = getElGroup()?.getBoundingClientRect();
-    if (!groupRect) {
-      return;
+    const spaceAbove = chevronRect.top;
+    const spaceBelow = innerHeight - chevronRect.bottom;
+    const isPanelBelow = spaceBelow >= spaceAbove;
+    if (isPanelBelow) {
+      elDropdown.setAttribute("data-ytdl-panel-position", "below");
+      elDropdown.style.setProperty("--ytdl-panel-top-distance", `${chevronRect.bottom}px`);
+      elDropdown.style.setProperty("--ytdl-panel-max-height", `${spaceBelow - PANEL_VIEWPORT_MARGIN}px`);
+      elDropdown.style.removeProperty("--ytdl-panel-bottom-distance");
+    } else {
+      elDropdown.setAttribute("data-ytdl-panel-position", "above");
+      elDropdown.style.setProperty("--ytdl-panel-bottom-distance", `${innerHeight - chevronRect.top}px`);
+      elDropdown.style.setProperty("--ytdl-panel-max-height", `${spaceAbove - PANEL_VIEWPORT_MARGIN}px`);
+      elDropdown.style.removeProperty("--ytdl-panel-top-distance");
     }
 
-    const newIsPanelBelow = dropdownRect.top >= groupRect.bottom - 1;
-    const hasPanelBelowChanged = newIsPanelBelow !== getIsPanelBelow();
-    if (hasPanelBelowChanged) {
-      setIsPanelBelow(newIsPanelBelow);
-    }
+    setIsPanelBelow(isPanelBelow);
   }
 
   $effect(() => {
@@ -43,7 +49,6 @@ export function createPanelEffects({
 
   $effect(() => {
     const elDropdown = getElDropdown();
-    let resizeObserver: ResizeObserver | null = null;
 
     function handleDropdownOpened(e: Event) {
       const isOtherTarget = e.target !== elDropdown;
@@ -51,23 +56,10 @@ export function createPanelEffects({
         return;
       }
 
-      const groupRect = getElGroup()?.getBoundingClientRect();
-      const dropdownRect = elDropdown.getBoundingClientRect();
-      const isGroupMissing = !groupRect;
-      if (isGroupMissing) {
-        return;
-      }
-
-      setIsPanelBelow(dropdownRect.top >= groupRect.bottom - 1);
-
-      resizeObserver = new ResizeObserver(() => elDropdown.refit());
-      resizeObserver.observe(elDropdown);
+      applyPanelPositioning();
     }
 
     function handleDropdownClosed() {
-      resizeObserver?.disconnect();
-      resizeObserver = null;
-
       const isPanelClosed = !getIsPanelOpen();
       if (isPanelClosed) {
         return;
@@ -78,25 +70,16 @@ export function createPanelEffects({
     }
 
     function handleWindowResize() {
-      elDropdown.dispatchEvent(
-        new CustomEvent("iron-resize", {
-          bubbles: false,
-          composed: false
-        })
-      );
-      requestAnimationFrame(syncPanelBelowState);
+      applyPanelPositioning();
     }
 
     elDropdown.addEventListener("iron-overlay-opened", handleDropdownOpened);
     elDropdown.addEventListener("iron-overlay-closed", handleDropdownClosed);
-    elDropdown.addEventListener("iron-resize", syncPanelBelowState);
     addEventListener("resize", handleWindowResize);
 
     return () => {
-      resizeObserver?.disconnect();
       elDropdown.removeEventListener("iron-overlay-opened", handleDropdownOpened);
       elDropdown.removeEventListener("iron-overlay-closed", handleDropdownClosed);
-      elDropdown.removeEventListener("iron-resize", syncPanelBelowState);
       removeEventListener("resize", handleWindowResize);
     };
   });
