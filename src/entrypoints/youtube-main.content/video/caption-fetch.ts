@@ -59,7 +59,10 @@ async function fetchWebVttViaTrackElement(url: string) {
   });
 }
 
-export async function fetchCaptionWebVttData(captionTracks: CaptionTrack[], videoId: string) {
+export async function fetchCaptionWebVttData({ captionTracks, videoId }: {
+  captionTracks: CaptionTrack[];
+  videoId: string;
+}) {
   if (captionTracks.length === 0) {
     return [];
   }

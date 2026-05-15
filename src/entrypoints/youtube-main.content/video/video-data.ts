@@ -59,7 +59,8 @@ export async function buildVideoMetadata(videoId: string) {
 }
 
 export async function generatePoTokenIfNeeded(videoData: VideoData) {
-  if (capturedPoToken && capturedPoTokenVideoId === videoData.videoId) {
+  const hasCurrentPoToken = capturedPoToken && capturedPoTokenVideoId === videoData.videoId;
+  if (hasCurrentPoToken) {
     return;
   }
 

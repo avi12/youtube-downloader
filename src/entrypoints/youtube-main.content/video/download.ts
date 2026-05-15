@@ -27,7 +27,8 @@ export async function performDownload(params: Pick<DownloadRequest,
   "selectedCaptionVssId" | "filenameOutput" | "isIframeFallback" |
   "playlistId" | "playlistTitle" | "playlistTotalCount"
 >) {
-  if (params.isIframeFallback && self === top) {
+  const isIframeFallbackOnTop = params.isIframeFallback && self === top;
+  if (isIframeFallbackOnTop) {
     return;
   }
 
@@ -51,7 +52,10 @@ export async function performDownload(params: Pick<DownloadRequest,
   });
 
   try {
-    await executeDownload(params, abortController.signal);
+    await executeDownload({
+      params,
+      abortSignal: abortController.signal
+    });
   } catch (error) {
     if (abortController.signal.aborted) {
       return;

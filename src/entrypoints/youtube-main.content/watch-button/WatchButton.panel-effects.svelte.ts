@@ -1,14 +1,22 @@
 import type { TpYtIronDropdownElement, YtButtonViewModelElement } from "@/types";
 
-export function createPanelEffects(
-  getElGroup: () => HTMLDivElement | null,
-  getElChevronButton: () => YtButtonViewModelElement | null,
-  getElDropdown: () => TpYtIronDropdownElement,
-  getIsPanelOpen: () => boolean,
-  getIsPanelBelow: () => boolean,
-  setIsPanelOpen: (value: boolean) => void,
-  setIsPanelBelow: (value: boolean) => void
-) {
+export function createPanelEffects({
+  getElGroup,
+  getElChevronButton,
+  getElDropdown,
+  getIsPanelOpen,
+  getIsPanelBelow,
+  setIsPanelOpen,
+  setIsPanelBelow
+}: {
+  getElGroup: () => HTMLDivElement | null;
+  getElChevronButton: () => YtButtonViewModelElement | null;
+  getElDropdown: () => TpYtIronDropdownElement;
+  getIsPanelOpen: () => boolean;
+  getIsPanelBelow: () => boolean;
+  setIsPanelOpen: (value: boolean) => void;
+  setIsPanelBelow: (value: boolean) => void;
+}) {
   function syncPanelBelowState() {
     const dropdownRect = getElDropdown().getBoundingClientRect();
     const isDropdownHidden = dropdownRect.width === 0 && dropdownRect.height === 0;
@@ -22,30 +30,41 @@ export function createPanelEffects(
     }
 
     const newIsPanelBelow = dropdownRect.top >= groupRect.bottom - 1;
-    if (newIsPanelBelow !== getIsPanelBelow()) {
+    const hasPanelBelowChanged = newIsPanelBelow !== getIsPanelBelow();
+    if (hasPanelBelowChanged) {
       setIsPanelBelow(newIsPanelBelow);
     }
   }
 
   $effect(() => {
     const elDropdown = getElDropdown();
+    let resizeObserver: ResizeObserver | null = null;
 
     function handleDropdownOpened(e: Event) {
-      if (e.target !== elDropdown) {
+      const isOtherTarget = e.target !== elDropdown;
+      if (isOtherTarget) {
         return;
       }
 
       const groupRect = getElGroup()?.getBoundingClientRect();
       const dropdownRect = elDropdown.getBoundingClientRect();
-      if (!groupRect) {
+      const isGroupMissing = !groupRect;
+      if (isGroupMissing) {
         return;
       }
 
       setIsPanelBelow(dropdownRect.top >= groupRect.bottom - 1);
+
+      resizeObserver = new ResizeObserver(() => elDropdown.refit());
+      resizeObserver.observe(elDropdown);
     }
 
     function handleDropdownClosed() {
-      if (!getIsPanelOpen()) {
+      resizeObserver?.disconnect();
+      resizeObserver = null;
+
+      const isPanelClosed = !getIsPanelOpen();
+      if (isPanelClosed) {
         return;
       }
 
@@ -69,6 +88,7 @@ export function createPanelEffects(
     addEventListener("resize", handleWindowResize);
 
     return () => {
+      resizeObserver?.disconnect();
       elDropdown.removeEventListener("iron-overlay-opened", handleDropdownOpened);
       elDropdown.removeEventListener("iron-overlay-closed", handleDropdownClosed);
       elDropdown.removeEventListener("iron-resize", syncPanelBelowState);

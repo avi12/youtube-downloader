@@ -81,31 +81,31 @@ export function createWatchButtonState(params: {
 
   const isIndeterminate = $derived(isDownloading && downloadProgress === 0);
 
-  createButtonElementEffects(
-    () => elDownloadButton,
-    () => elChevronButton,
-    () => downloadData,
-    () => chevronData,
-    () => params.elDropdown
-  );
+  createButtonElementEffects({
+    getElDownloadButton: () => elDownloadButton,
+    getElChevronButton: () => elChevronButton,
+    getDownloadData: () => downloadData,
+    getChevronData: () => chevronData,
+    getElDropdown: () => params.elDropdown
+  });
 
-  createPanelEffects(
-    () => elGroup,
-    () => elChevronButton,
-    () => params.elDropdown,
-    () => isPanelOpen,
-    () => isPanelBelow,
-    value => {
+  createPanelEffects({
+    getElGroup: () => elGroup,
+    getElChevronButton: () => elChevronButton,
+    getElDropdown: () => params.elDropdown,
+    getIsPanelOpen: () => isPanelOpen,
+    getIsPanelBelow: () => isPanelBelow,
+    setIsPanelOpen(value) {
       isPanelOpen = value;
     },
-    value => {
+    setIsPanelBelow(value) {
       isPanelBelow = value;
     }
-  );
+  });
 
-  createMessageEffects(
-    params.videoData.videoId,
-    {
+  createMessageEffects({
+    videoId: params.videoData.videoId,
+    handlers: {
       setIsDownloading(value) {
         isDownloading = value;
       },
@@ -130,11 +130,11 @@ export function createWatchButtonState(params: {
       getIsDone: () => isDone,
       getLastProgressReported: () => lastProgressReported
     },
-    () => isPanelOpen,
-    value => {
+    getIsPanelOpen: () => isPanelOpen,
+    setIsPanelOpen(value) {
       isPanelOpen = value;
     },
-    {
+    setters: {
       setDefaultFilename(value) {
         defaultFilename = value;
       },
@@ -151,34 +151,38 @@ export function createWatchButtonState(params: {
         defaultAudioTrackId = value;
       }
     },
-    () => params.elDropdown
-  );
+    getElDropdown: () => params.elDropdown
+  });
 
-  const handleClick = buildClickHandler(params.videoData, params.elDropdown, {
-    getIsDownloading: () => isDownloading,
-    getIsInterrupted: () => isInterrupted,
-    getIsPanelOpen: () => isPanelOpen,
-    getDefaultDownloadType: () => defaultDownloadType,
-    getDefaultVideoItag: () => defaultVideoItag,
-    getDefaultAudioItag: () => defaultAudioItag,
-    getDefaultAudioTrackId: () => defaultAudioTrackId,
-    getDefaultFilename: () => defaultFilename,
-    getElDownloadButton: () => elDownloadButton,
-    getElChevronButton: () => elChevronButton,
-    setIsDownloading(value) {
-      isDownloading = value;
-    },
-    setIsInterrupted(value) {
-      isInterrupted = value;
-    },
-    setIsDone(value) {
-      isDone = value;
-    },
-    setIsError(value) {
-      isError = value;
-    },
-    setIsPanelOpen(value) {
-      isPanelOpen = value;
+  const handleClick = buildClickHandler({
+    videoData: params.videoData,
+    elDropdown: params.elDropdown,
+    state: {
+      getIsDownloading: () => isDownloading,
+      getIsInterrupted: () => isInterrupted,
+      getIsPanelOpen: () => isPanelOpen,
+      getDefaultDownloadType: () => defaultDownloadType,
+      getDefaultVideoItag: () => defaultVideoItag,
+      getDefaultAudioItag: () => defaultAudioItag,
+      getDefaultAudioTrackId: () => defaultAudioTrackId,
+      getDefaultFilename: () => defaultFilename,
+      getElDownloadButton: () => elDownloadButton,
+      getElChevronButton: () => elChevronButton,
+      setIsDownloading(value) {
+        isDownloading = value;
+      },
+      setIsInterrupted(value) {
+        isInterrupted = value;
+      },
+      setIsDone(value) {
+        isDone = value;
+      },
+      setIsError(value) {
+        isError = value;
+      },
+      setIsPanelOpen(value) {
+        isPanelOpen = value;
+      }
     }
   });
 

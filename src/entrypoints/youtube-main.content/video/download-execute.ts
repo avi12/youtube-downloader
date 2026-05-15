@@ -18,7 +18,10 @@ export type DownloadParams = Pick<DownloadRequest,
   "playlistId" | "playlistTitle" | "playlistTotalCount"
 >;
 
-export async function executeDownload(params: DownloadParams, abortSignal: AbortSignal) {
+export async function executeDownload({ params, abortSignal }: {
+  params: DownloadParams;
+  abortSignal: AbortSignal;
+}) {
   const {
     type, videoId, videoItag, audioItag, audioTrackId, selectedCaptionVssId
   } = params;
@@ -29,7 +32,8 @@ export async function executeDownload(params: DownloadParams, abortSignal: Abort
     return;
   }
 
-  if (self === top && isVideoDataExpired(cachedVideoData)) {
+  const isExpiredOnTopFrame = self === top && isVideoDataExpired(cachedVideoData);
+  if (isExpiredOnTopFrame) {
     void crossWorldMessenger.sendMessage(
       CrossWorldMessage.DownloadViaIframe,
       {
@@ -44,7 +48,10 @@ export async function executeDownload(params: DownloadParams, abortSignal: Abort
   const orderedCaptionTracks = resolveOrderedCaptionTracks(
     cachedVideoData.captionTracks, selectedCaptionVssId, options.downloadExtras
   );
-  const captionVttDataPromise = fetchCaptionWebVttData(orderedCaptionTracks, videoId);
+  const captionVttDataPromise = fetchCaptionWebVttData({
+    captionTracks: orderedCaptionTracks,
+    videoId
+  });
   const { videoFormat, audioFormat } = selectFormats({
     videoData: cachedVideoData,
     type,
@@ -73,18 +80,21 @@ export async function executeDownload(params: DownloadParams, abortSignal: Abort
     return;
   }
 
-  const enrichedRequest = await buildEnrichedRequest(params, {
-    sabrConfig: cachedVideoData.sabrConfig,
-    poToken: credentials.poToken,
-    sabrUrl: credentials.sabrUrl,
-    videoFormat,
-    audioFormat,
-    extraAudioFormats,
-    orderedCaptionTracks,
-    captionVttDataPromise,
-    resolvedVideoUrl,
-    resolvedAudioUrl,
-    resolvedExtraAudioUrls
+  const enrichedRequest = await buildEnrichedRequest({
+    params,
+    resolved: {
+      sabrConfig: cachedVideoData.sabrConfig,
+      poToken: credentials.poToken,
+      sabrUrl: credentials.sabrUrl,
+      videoFormat,
+      audioFormat,
+      extraAudioFormats,
+      orderedCaptionTracks,
+      captionVttDataPromise,
+      resolvedVideoUrl,
+      resolvedAudioUrl,
+      resolvedExtraAudioUrls
+    }
   });
   if (abortSignal.aborted) {
     return;

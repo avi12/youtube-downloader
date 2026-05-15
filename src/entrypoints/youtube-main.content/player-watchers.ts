@@ -8,7 +8,8 @@ import {
 
 export function setupAudioTrackWatcher() {
   const player = getMoviePlayer();
-  if (!player?.getOption || player.__ytdlAudioWatched) {
+  const isPlayerUnavailableOrWatched = !player?.getOption || player.__ytdlAudioWatched;
+  if (isPlayerUnavailableOrWatched) {
     return;
   }
 
@@ -20,13 +21,17 @@ export function setupAudioTrackWatcher() {
   player.__ytdlAudioWatched = true;
 
   bus.subscribe("internalaudioformatchange", (trackId: unknown) => {
-    if (typeof trackId === "string" && trackId) {
+    const isValidTrackId = typeof trackId === "string" && trackId;
+    if (isValidTrackId) {
       void crossWorldMessenger.sendMessage(CrossWorldMessage.AudioTrackChanged, { trackId });
     }
   });
 }
 
-function writeCaptionAttribute(languageCode: string, vssId: string) {
+function writeCaptionAttribute({ languageCode, vssId }: {
+  languageCode: string;
+  vssId: string;
+}) {
   getMoviePlayer()?.setAttribute(
     ACTIVE_CAPTION_ATTR, JSON.stringify({
       languageCode,
@@ -37,14 +42,21 @@ function writeCaptionAttribute(languageCode: string, vssId: string) {
 
 export function setupCaptionTrackWatcher() {
   const player = getMoviePlayer();
-  if (!player?.getOption || player.__ytdlCaptionWatched) {
+  const isPlayerUnavailableOrWatched = !player?.getOption || player.__ytdlCaptionWatched;
+  if (isPlayerUnavailableOrWatched) {
     return;
   }
 
   player.__ytdlCaptionWatched = true;
 
-  function onCaptionTrack(languageCode: string, vssId: string) {
-    writeCaptionAttribute(languageCode, vssId);
+  function onCaptionTrack({ languageCode, vssId }: {
+    languageCode: string;
+    vssId: string;
+  }) {
+    writeCaptionAttribute({
+      languageCode,
+      vssId
+    });
     void crossWorldMessenger.sendMessage(CrossWorldMessage.CaptionTrackChanged, {
       languageCode,
       vssId
@@ -54,7 +66,10 @@ export function setupCaptionTrackWatcher() {
   function syncCaptionFromPlayer() {
     const track = player?.getOption?.("captions", "track");
     if (isPlayerCaptionTrackData(track)) {
-      onCaptionTrack(track.languageCode, track.vss_id);
+      onCaptionTrack({
+        languageCode: track.languageCode,
+        vssId: track.vss_id
+      });
     }
   }
 
@@ -68,7 +83,10 @@ export function setupCaptionTrackWatcher() {
 
   bus.subscribe("captionschanged", (trackData: unknown) => {
     if (isPlayerCaptionTrackData(trackData)) {
-      onCaptionTrack(trackData.languageCode, trackData.vss_id);
+      onCaptionTrack({
+        languageCode: trackData.languageCode,
+        vssId: trackData.vss_id
+      });
     }
   });
 }

@@ -17,18 +17,19 @@ export interface ProgressUpdateHandlers {
   getLastProgressReported(): string;
 }
 
-export function handleProgressUpdate(
+export function handleProgressUpdate({ data, videoId, handlers }: {
   data: {
     videoId: string;
     isRemoved?: boolean;
     isFailed?: boolean;
     progress: number;
     progressType: ProgressType | "";
-  },
-  videoId: string,
-  handlers: ProgressUpdateHandlers
-) {
-  if (data.videoId !== videoId) {
+  };
+  videoId: string;
+  handlers: ProgressUpdateHandlers;
+}) {
+  const isForOtherVideo = data.videoId !== videoId;
+  if (isForOtherVideo) {
     return;
   }
 

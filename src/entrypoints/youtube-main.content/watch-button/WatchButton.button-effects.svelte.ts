@@ -1,13 +1,19 @@
 import { CHILD_LIST_SUBTREE } from "@/lib/utils/dom";
 import type { YtButtonViewModelElement } from "@/types";
 
-export function createButtonElementEffects(
-  getElDownloadButton: () => YtButtonViewModelElement | null,
-  getElChevronButton: () => YtButtonViewModelElement | null,
-  getDownloadData: () => ReturnType<typeof import("./watch-button-view-model").buildDownloadData>,
-  getChevronData: () => ReturnType<typeof import("./watch-button-view-model").buildChevronData>,
-  getElDropdown: () => import("@/types").TpYtIronDropdownElement
-) {
+export function createButtonElementEffects({
+  getElDownloadButton,
+  getElChevronButton,
+  getDownloadData,
+  getChevronData,
+  getElDropdown
+}: {
+  getElDownloadButton: () => YtButtonViewModelElement | null;
+  getElChevronButton: () => YtButtonViewModelElement | null;
+  getDownloadData: () => ReturnType<typeof import("./watch-button-view-model").buildDownloadData>;
+  getChevronData: () => ReturnType<typeof import("./watch-button-view-model").buildChevronData>;
+  getElDropdown: () => import("@/types").TpYtIronDropdownElement;
+}) {
   function applySegmentedClasses() {
     getElDownloadButton()
       ?.querySelector<HTMLButtonElement>("button")
@@ -40,7 +46,8 @@ export function createButtonElementEffects(
   $effect(() => {
     const elDownloadButton = getElDownloadButton();
     const elChevronButton = getElChevronButton();
-    if (!elDownloadButton || !elChevronButton) {
+    const areBothButtonsMissing = !elDownloadButton || !elChevronButton;
+    if (areBothButtonsMissing) {
       return;
     }
 

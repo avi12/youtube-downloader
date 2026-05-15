@@ -27,7 +27,8 @@ export function mountGridButton({ context, elCard }: {
     return;
   }
 
-  if ((getLockupRoot(elCard) ?? elCard).querySelector(`[data-ytdl-grid-item="${videoId}"]`)) {
+  const isAlreadyMounted = !!(getLockupRoot(elCard) ?? elCard).querySelector(`[data-ytdl-grid-item="${videoId}"]`);
+  if (isAlreadyMounted) {
     return;
   }
 

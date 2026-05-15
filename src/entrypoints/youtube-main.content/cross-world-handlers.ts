@@ -38,7 +38,8 @@ export function registerCrossWorldHandlers() {
   crossWorldMessenger.onMessage(CrossWorldMessage.OpenSnackbar, () => {
     requestAnimationFrame(() => {
       const elViewButton = document.querySelector<HTMLElement>(`[${DATA_BUTTON_ID_ATTR}="${SNACKBAR_VIEW_BUTTON_ID}"]`);
-      if (!elViewButton || !("data" in elViewButton)) {
+      const isViewButtonUnavailable = !elViewButton || !("data" in elViewButton);
+      if (isViewButtonUnavailable) {
         return;
       }
 

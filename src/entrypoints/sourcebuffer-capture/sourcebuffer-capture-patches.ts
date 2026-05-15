@@ -32,7 +32,8 @@ export function patchSourceBuffer(captureState: YtdlCaptureState) {
   const originalAddSourceBuffer = MediaSource.prototype.addSourceBuffer;
   MediaSource.prototype.addSourceBuffer = function (mimeType) {
     const sourceBuffer = originalAddSourceBuffer.call(this, mimeType);
-    if (mimeType.startsWith("video") || mimeType.startsWith("audio")) {
+    const isMediaMimeType = mimeType.startsWith("video") || mimeType.startsWith("audio");
+    if (isMediaMimeType) {
       sourceBufferMimeTypes.set(sourceBuffer, mimeType);
     }
 
@@ -51,7 +52,8 @@ export function patchSourceBuffer(captureState: YtdlCaptureState) {
         ? new Uint8Array(data)
         : new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
       const { activeVideoId } = captureState;
-      if (!activeVideoId || !capturedMedia.has(activeVideoId)) {
+      const isCaptureMissing = !activeVideoId || !capturedMedia.has(activeVideoId);
+      if (isCaptureMissing) {
         pendingChunks.push({
           mimeType,
           data: chunk.slice()

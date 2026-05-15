@@ -45,10 +45,8 @@ export function buildChevronData(state: ButtonViewState) {
   const { isDownloadable, isPanelBelow, isPanelOpen } = state;
   const isDisabled = !isDownloadable;
 
-  const panelOpenIcon = isPanelBelow ? IconName.ExpandMore : IconName.ExpandLess;
-
-  const data: ButtonViewModelData = {
-    iconName: isPanelOpen ? panelOpenIcon : IconName.ExpandMore,
+  return {
+    iconName: isPanelOpen && !isPanelBelow ? IconName.ExpandLess : IconName.ExpandMore,
     title: "",
     accessibilityText: isPanelOpen ? "Close download options" : "Open download options",
     style: ButtonStyle.Mono,
@@ -57,7 +55,6 @@ export function buildChevronData(state: ButtonViewState) {
     state: isDisabled ? ButtonState.Disabled : ButtonState.Active,
     isFullWidth: false,
     isDisabled,
-    tooltip: state.isPanelOpen ? "Close download options" : "Download options"
-  };
-  return data;
+    tooltip: isPanelOpen ? "Close download options" : "Download options"
+  } satisfies ButtonViewModelData;
 }

@@ -56,7 +56,7 @@ export function createDropdownElement({ videoId }: { videoId: string }) {
   elDropdown.horizontalAlign = "center";
   elDropdown.verticalAlign = "top";
   elDropdown.noOverlap = true;
-  elDropdown.dynamicAlign = true;
+  elDropdown.dynamicAlign = false;
   elDropdown.allowOutsideScroll = false;
   elDropdown.restoreFocusOnClose = false;
 

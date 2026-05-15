@@ -53,7 +53,8 @@ export async function buildAndDispatchVideoData({ playerResponse }: {
 
   captureState.activeVideoId = videoData.videoId;
 
-  if (!captureState.capturedMedia.has(captureState.activeVideoId)) {
+  const isCaptureMapMissing = !captureState.capturedMedia.has(captureState.activeVideoId);
+  if (isCaptureMapMissing) {
     captureState.capturedMedia.set(captureState.activeVideoId, {
       videoChunks: [],
       audioChunks: [],

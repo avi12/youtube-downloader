@@ -20,24 +20,27 @@ export interface ClickHandlerState {
   setIsPanelOpen(value: boolean): void;
 }
 
-export function buildClickHandler(
-  videoData: VideoData,
-  elDropdown: TpYtIronDropdownElement,
-  state: ClickHandlerState
-) {
+export function buildClickHandler({ videoData, elDropdown, state }: {
+  videoData: VideoData;
+  elDropdown: TpYtIronDropdownElement;
+  state: ClickHandlerState;
+}) {
   return function handleClick(e: Event) {
     const { target } = e;
-    if (!(target instanceof Node)) {
+    const isNotNode = !(target instanceof Node);
+    if (isNotNode) {
       return;
     }
 
     const elDownloadButton = state.getElDownloadButton();
     if (elDownloadButton?.contains(target)) {
-      if (!videoData.isDownloadable) {
+      const isNotDownloadable = !videoData.isDownloadable;
+      if (isNotDownloadable) {
         return;
       }
 
-      if (state.getIsDownloading() || state.getIsInterrupted()) {
+      const isActiveDownload = state.getIsDownloading() || state.getIsInterrupted();
+      if (isActiveDownload) {
         state.setIsDownloading(false);
         state.setIsInterrupted(false);
         void crossWorldMessenger.sendMessage(CrossWorldMessage.CancelDownload, {
@@ -62,7 +65,8 @@ export function buildClickHandler(
 
     const elChevronButton = state.getElChevronButton();
     if (elChevronButton?.contains(target)) {
-      if (!videoData.isDownloadable) {
+      const isNotDownloadable = !videoData.isDownloadable;
+      if (isNotDownloadable) {
         return;
       }
 

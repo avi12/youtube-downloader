@@ -18,7 +18,8 @@ export default defineContentScript({
   allFrames: true,
   async main(context) {
     const isDownloadIframe = self !== top && /ytdl=1/.test(location.search);
-    if (self !== top && !isDownloadIframe) {
+    const isUnrelatedIframe = self !== top && !isDownloadIframe;
+    if (isUnrelatedIframe) {
       return;
     }
 
@@ -28,7 +29,10 @@ export default defineContentScript({
       ...currentOptions
     });
 
-    registerCrossWorldHandlers(isDownloadIframe, context);
+    registerCrossWorldHandlers({
+      isDownloadIframe,
+      context
+    });
     registerBackgroundMessageHandlers();
     listenForSabrBodyReady();
     void forwardSabrCredentialsWithRetry();

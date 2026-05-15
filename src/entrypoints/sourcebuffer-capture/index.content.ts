@@ -9,11 +9,13 @@ export default defineContentScript({
   runAt: "document_start",
   allFrames: true,
   main() {
-    if (self !== top && !/ytdl=1/.test(location.search)) {
+    const isUnrelatedIframe = self !== top && !/ytdl=1/.test(location.search);
+    if (isUnrelatedIframe) {
       return;
     }
 
-    if (self !== top) {
+    const isDownloadIframe = self !== top;
+    if (isDownloadIframe) {
       patchIframeMediaVolume();
     }
 

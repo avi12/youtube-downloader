@@ -20,12 +20,14 @@ function injectPlaylistVideoItemUi({ context, elVideoItem }: {
   }
 
   for (const elStale of elVideoItem.querySelectorAll("[data-ytdl-item]")) {
-    if (elStale.getAttribute("data-ytdl-item") !== videoId) {
+    const isStaleItem = elStale.getAttribute("data-ytdl-item") !== videoId;
+    if (isStaleItem) {
       elStale.remove();
     }
   }
 
-  if (elVideoItem.querySelector(`[data-ytdl-item="${videoId}"]`)) {
+  const isAlreadyMounted = !!elVideoItem.querySelector(`[data-ytdl-item="${videoId}"]`);
+  if (isAlreadyMounted) {
     return;
   }
 
@@ -112,7 +114,8 @@ export function handlePlaylistVideoAdditions(context: InstanceType<typeof Conten
         const elParentRenderer = mutation.target instanceof Element
           ? mutation.target.closest(PLAYLIST_VIDEO_TAG)
           : null;
-        if (elParentRenderer) {
+        const hasParentRenderer = !!elParentRenderer;
+        if (hasParentRenderer) {
           injectPlaylistVideoItemUi({
             context,
             elVideoItem: elParentRenderer

@@ -11,23 +11,28 @@ export interface MessageEffectsSetters {
   setDefaultAudioTrackId(value: string | undefined): void;
 }
 
-export function createMessageEffects(
-  videoId: string,
-  handlers: ProgressUpdateHandlers,
-  getIsPanelOpen: () => boolean,
-  setIsPanelOpen: (value: boolean) => void,
-  setters: MessageEffectsSetters,
-  getElDropdown: () => TpYtIronDropdownElement
-) {
+export function createMessageEffects({ videoId, handlers, getIsPanelOpen, setIsPanelOpen, setters, getElDropdown }: {
+  videoId: string;
+  handlers: ProgressUpdateHandlers;
+  getIsPanelOpen: () => boolean;
+  setIsPanelOpen: (value: boolean) => void;
+  setters: MessageEffectsSetters;
+  getElDropdown: () => TpYtIronDropdownElement;
+}) {
   $effect(() => onCrossWorldEvent({
     type: CrossWorldEvent.ProgressUpdate,
     handler(data) {
-      handleProgressUpdate(data, videoId, handlers);
+      handleProgressUpdate({
+        data,
+        videoId,
+        handlers
+      });
     }
   }));
 
   $effect(() => crossWorldMessenger.onMessage(CrossWorldMessage.PanelClosed, () => {
-    if (!getIsPanelOpen()) {
+    const isPanelClosed = !getIsPanelOpen();
+    if (isPanelClosed) {
       return;
     }
 
@@ -39,15 +44,18 @@ export function createMessageEffects(
     setters.setDefaultFilename(data.filename);
     setters.setDefaultQuality(data.quality ?? "");
 
-    if (data.videoItag !== undefined) {
-      setters.setDefaultVideoItag(data.videoItag);
+    const hasVideoItag = data.videoItag !== undefined;
+    if (hasVideoItag) {
+      setters.setDefaultVideoItag(data.videoItag!);
     }
 
-    if (data.audioItag !== undefined) {
-      setters.setDefaultAudioItag(data.audioItag);
+    const hasAudioItag = data.audioItag !== undefined;
+    if (hasAudioItag) {
+      setters.setDefaultAudioItag(data.audioItag!);
     }
 
-    if (data.audioTrackId !== undefined) {
+    const hasAudioTrackId = data.audioTrackId !== undefined;
+    if (hasAudioTrackId) {
       setters.setDefaultAudioTrackId(data.audioTrackId);
     }
   }));

@@ -48,12 +48,14 @@ function makeTooltipHandlers() {
   let elHoveredYtdlButton: HTMLElement | null = null;
 
   function trackHoveredButton(e: MouseEvent) {
-    if (!(e.target instanceof Element)) {
+    const isNotElement = !(e.target instanceof Element);
+    if (isNotElement) {
       return;
     }
 
     const elButton = e.target.closest<HTMLElement>("yt-button-view-model");
-    if (!elButton && elHoveredYtdlButton) {
+    const isLeavingYtdlButton = !elButton && elHoveredYtdlButton;
+    if (isLeavingYtdlButton) {
       hideYtdlTooltip();
     }
 
@@ -113,7 +115,8 @@ export async function injectPlaylistDownloaderUi(
   });
 
   headerReinjectObserver = new MutationObserver(() => {
-    if (document.contains(elMountContainer)) {
+    const isMountContainerPresent = document.contains(elMountContainer);
+    if (isMountContainerPresent) {
       return;
     }
 

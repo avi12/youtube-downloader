@@ -8,7 +8,9 @@ const videoDataPending = new Set<string>();
 let activeVideoDataFetches = 0;
 
 async function processNextVideoData() {
-  if (activeVideoDataFetches >= MAX_CONCURRENT_FETCHES || videoDataPending.size === 0) {
+  const isAtCapacity = activeVideoDataFetches >= MAX_CONCURRENT_FETCHES;
+  const hasNoPending = videoDataPending.size === 0;
+  if (isAtCapacity || hasNoPending) {
     return;
   }
 
@@ -42,7 +44,8 @@ function requestVideoData(videoId: string) {
     return;
   }
 
-  if (!videoDataPending.has(videoId)) {
+  const isVideoNotPending = !videoDataPending.has(videoId);
+  if (isVideoNotPending) {
     videoDataPending.add(videoId);
     void processNextVideoData();
   }

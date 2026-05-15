@@ -10,7 +10,10 @@ export function resolveOrderedCaptionTracks(
   downloadExtras: boolean
 ) {
   const options = CONTENT_OPTIONS.value;
-  const captionMode = resolveCaptionLanguageMode(options.captionLanguageMode, options.audioTrackLanguageMode);
+  const captionMode = resolveCaptionLanguageMode({
+    captionMode: options.captionLanguageMode,
+    audioMode: options.audioTrackLanguageMode
+  });
   const allCaptionTracks = orderCaptionsByPreference({
     captionTracks,
     languageMode: captionMode,

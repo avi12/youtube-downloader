@@ -8,16 +8,17 @@ import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { forwardSabrCredentialsWithRetry } from "@/lib/youtube/sabr/credentials";
 import type { VideoData } from "@/types";
 
-export function registerCrossWorldHandlers(
-  isDownloadIframe: boolean,
-  context: InstanceType<typeof ContentScriptContext>
-) {
+export function registerCrossWorldHandlers({ isDownloadIframe, context }: {
+  isDownloadIframe: boolean;
+  context: InstanceType<typeof ContentScriptContext>;
+}) {
   crossWorldMessenger.onMessage(CrossWorldMessage.VideoData, async ({ data }) => {
     await checkInterruptedDownload(data.videoId);
   });
 
   crossWorldMessenger.onMessage(CrossWorldMessage.Navigation, ({ data }) => {
-    if (!isDownloadIframe) {
+    const isMainFrame = !isDownloadIframe;
+    if (isMainFrame) {
       handlePageChange({
         url: data.url,
         context

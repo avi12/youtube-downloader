@@ -38,7 +38,10 @@ function extractContentId(elCard: Element) {
   return null;
 }
 
-function tagCard(elCard: Element, retriesLeft = MAX_RETRIES) {
+function tagCard({ elCard, retriesLeft = MAX_RETRIES }: {
+  elCard: Element;
+  retriesLeft?: number;
+}) {
   if (elCard.hasAttribute(CONTENT_ID_ATTR)) {
     return;
   }
@@ -50,13 +53,16 @@ function tagCard(elCard: Element, retriesLeft = MAX_RETRIES) {
   }
 
   if (retriesLeft > 0) {
-    requestAnimationFrame(() => tagCard(elCard, retriesLeft - 1));
+    requestAnimationFrame(() => tagCard({
+      elCard,
+      retriesLeft: retriesLeft - 1
+    }));
   }
 }
 
 function tagAllCards() {
   for (const elCard of document.querySelectorAll(`${LOCKUP_SELECTOR}:not([${CONTENT_ID_ATTR}])`)) {
-    tagCard(elCard);
+    tagCard({ elCard });
   }
 }
 
@@ -71,11 +77,11 @@ export function registerGridTagger() {
         }
 
         if (elNode.matches(LOCKUP_SELECTOR)) {
-          tagCard(elNode);
+          tagCard({ elCard: elNode });
         }
 
         for (const elCard of elNode.querySelectorAll(LOCKUP_SELECTOR)) {
-          tagCard(elCard);
+          tagCard({ elCard });
         }
       }
     }

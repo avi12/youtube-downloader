@@ -21,7 +21,8 @@ export function registerBackgroundMessageHandlers() {
       // emit slightly out-of-order reports but the display must only advance.
       const currentEntry = downloadProgressStore.get(data.videoId);
       const isSamePhase = currentEntry?.progressType === data.progressType;
-      if (isSamePhase && data.progress < (currentEntry?.progress ?? 0)) {
+      const isProgressBackwards = data.progress < (currentEntry?.progress ?? 0);
+      if (isSamePhase && isProgressBackwards) {
         return;
       }
 
@@ -55,7 +56,8 @@ export function registerBackgroundMessageHandlers() {
         // Guard against the cancel-then-restart race: the background's cancel
         // response can arrive after the user has already restarted the download.
         // If a new download is running, this isRemoved is stale — drop it.
-        if (downloadProgressStore.get(data.videoId)?.isDownloading) {
+        const isStillDownloading = downloadProgressStore.get(data.videoId)?.isDownloading;
+        if (isStillDownloading) {
           return;
         }
 
