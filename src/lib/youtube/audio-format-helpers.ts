@@ -7,7 +7,8 @@ export function normalizeLanguageCode(lang: string) {
 export function getCurrentVideoAudioLanguage(): string | null {
   const elVideo = document.querySelector<HTMLVideoElement>("video.html5-main-video");
   const tracks = elVideo?.audioTracks;
-  if (!tracks?.length) {
+  const hasNoTracks = !tracks?.length;
+  if (hasNoTracks) {
     return null;
   }
 

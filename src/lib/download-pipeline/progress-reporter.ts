@@ -13,16 +13,20 @@ export async function reportProgress({
   progressType: ProgressType;
   tabId: number;
 }) {
-  if (progress < 1) {
+  const isNotComplete = progress < 1;
+  if (isNotComplete) {
     completedVideoIds.delete(videoId);
   }
 
-  if (progress === 0) {
+  const isReset = progress === 0;
+  if (isReset) {
     lastProgressTimestamps.delete(videoId);
   }
 
-  if (progress >= 1) {
-    if (completedVideoIds.has(videoId)) {
+  const isComplete = progress >= 1;
+  if (isComplete) {
+    const isAlreadyCompleted = completedVideoIds.has(videoId);
+    if (isAlreadyCompleted) {
       return;
     }
 
@@ -39,7 +43,8 @@ export async function reportProgress({
 
   const now = Date.now();
   const lastSent = lastProgressTimestamps.get(videoId) ?? 0;
-  if (now - lastSent < PROGRESS_THROTTLE_INTERVAL_MS) {
+  const isThrottled = now - lastSent < PROGRESS_THROTTLE_INTERVAL_MS;
+  if (isThrottled) {
     return;
   }
 

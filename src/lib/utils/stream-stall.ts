@@ -13,7 +13,8 @@ export function createStallChecker(onStall: () => void) {
   let isStalled = false;
 
   const timer = setInterval(() => {
-    if (Date.now() - lastActivityAt > STREAM_STALL_TIMEOUT_MS) {
+    const isTimedOut = Date.now() - lastActivityAt > STREAM_STALL_TIMEOUT_MS;
+    if (isTimedOut) {
       isStalled = true;
       onStall();
     }
@@ -36,7 +37,8 @@ export async function readChunk(reader: ReadableStreamDefaultReader<Uint8Array>)
   try {
     return await reader.read();
   } catch (error) {
-    if (error instanceof DOMException && error.name === "AbortError") {
+    const isAbortError = error instanceof DOMException && error.name === "AbortError";
+    if (isAbortError) {
       throw error;
     }
 
@@ -44,7 +46,10 @@ export async function readChunk(reader: ReadableStreamDefaultReader<Uint8Array>)
   }
 }
 
-export function mergeChunks(chunks: Uint8Array[], totalBytes: number) {
+export function mergeChunks({ chunks, totalBytes }: {
+  chunks: Uint8Array[];
+  totalBytes: number;
+}) {
   const result = new Uint8Array(totalBytes);
   let offset = 0;
   for (const chunk of chunks) {

@@ -27,18 +27,21 @@ export async function fetchYouTubeMusicMetadata({ searchQuery, existingMetadata 
       },
       body: JSON.stringify(searchRequest)
     });
-    if (!response.ok) {
+    const isResponseError = !response.ok;
+    if (isResponseError) {
       return existingMetadata;
     }
 
     const data: MusicSearchResponse = await response.json();
     const firstItem = extractFirstSearchItem(data);
-    if (!firstItem) {
+    const isFirstItemMissing = !firstItem;
+    if (isFirstItemMissing) {
       return existingMetadata;
     }
 
     const parsed = parseSearchResult(firstItem);
-    if (!parsed) {
+    const isParsedMissing = !parsed;
+    if (isParsedMissing) {
       return existingMetadata;
     }
 

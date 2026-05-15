@@ -21,7 +21,8 @@ export function selectPreferredAudioFormat({
   browserLanguage?: string;
   customLanguage?: string;
 }) {
-  if (!audioFormats.length) {
+  const hasNoFormats = !audioFormats.length;
+  if (hasNoFormats) {
     return null;
   }
 
@@ -29,7 +30,8 @@ export function selectPreferredAudioFormat({
   const originalTrack = findOriginalAudioFormat(audioFormats);
 
   let candidates: AdaptiveFormatItem[] = [];
-  if (languageMode === AudioTrackLanguageMode.Custom && customLanguage) {
+  const isCustomWithLanguage = languageMode === AudioTrackLanguageMode.Custom && customLanguage;
+  if (isCustomWithLanguage) {
     const langCode = normalizeLanguageCode(customLanguage);
     const match = matchAudioFormatToLanguage(audioFormats, langCode)
       ?? matchAudioFormatToLanguage(audioFormats, "en");
@@ -42,7 +44,8 @@ export function selectPreferredAudioFormat({
     }
   }
 
-  if (!candidates.length) {
+  const hasNoCandidates = !candidates.length;
+  if (hasNoCandidates) {
     const langPriority = [locale, browserLanguage, "en"]
       .filter((lang): lang is string => !!lang);
     for (const lang of langPriority) {
@@ -54,7 +57,8 @@ export function selectPreferredAudioFormat({
     }
   }
 
-  if (!candidates.length) {
+  const isStillNoCandidates = !candidates.length;
+  if (isStillNoCandidates) {
     candidates = originalTrack
       ? [originalTrack, ...audioFormats.filter(format => format !== originalTrack)]
       : audioFormats;

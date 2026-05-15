@@ -12,7 +12,8 @@ export function calculateWeightedProgress({ isDownloading, progress, progressTyp
     return 0;
   }
 
-  if (progressType === ProgressType.FFmpeg) {
+  const isMuxProgress = progressType === ProgressType.FFmpeg;
+  if (isMuxProgress) {
     return DOWNLOAD_PHASE_WEIGHT + progress * MUX_PHASE_WEIGHT;
   }
 

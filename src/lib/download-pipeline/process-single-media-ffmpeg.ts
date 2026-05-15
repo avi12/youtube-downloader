@@ -20,37 +20,45 @@ export async function applyAudioFfmpeg({
   outputExtension: string;
   metadata?: VideoMetadata | null;
 }) {
-  if (metadata?.isMusic) {
+  const isMusicMetadata = metadata?.isMusic;
+  if (isMusicMetadata) {
     await reportProgress({
       videoId,
       progress: 0,
       progressType: ProgressType.FFmpeg,
       tabId
     });
-    return runEmbedMetadata(videoId, {
-      audioData: toOwnedArrayBuffer(data),
-      filenameOutput,
-      sourceExtension,
-      metadata,
-      thumbnailUrl: metadata.thumbnailUrl,
+    return runEmbedMetadata({
       videoId,
-      tabId
+      job: {
+        audioData: toOwnedArrayBuffer(data),
+        filenameOutput,
+        sourceExtension,
+        metadata,
+        thumbnailUrl: metadata.thumbnailUrl,
+        videoId,
+        tabId
+      }
     });
   }
 
-  if (outputExtension === "flac") {
+  const isFlacOutput = outputExtension === "flac";
+  if (isFlacOutput) {
     await reportProgress({
       videoId,
       progress: 0,
       progressType: ProgressType.FFmpeg,
       tabId
     });
-    return runTranscodeAudio(videoId, {
-      audioData: toOwnedArrayBuffer(data),
-      sourceExtension,
-      filenameOutput,
+    return runTranscodeAudio({
       videoId,
-      tabId
+      job: {
+        audioData: toOwnedArrayBuffer(data),
+        sourceExtension,
+        filenameOutput,
+        videoId,
+        tabId
+      }
     });
   }
 

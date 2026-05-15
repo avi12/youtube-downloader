@@ -44,13 +44,21 @@ async function processItem(item: ProcessStreamData) {
   }
 
   try {
-    if (item.type === DownloadType.VideoAndAudio) {
-      await processVideoAudio(item, isCancelled);
+    const isVideoAndAudio = item.type === DownloadType.VideoAndAudio;
+    if (isVideoAndAudio) {
+      await processVideoAudio({
+        item,
+        isCancelled
+      });
     } else {
-      await processSingleMedia(item, isCancelled);
+      await processSingleMedia({
+        item,
+        isCancelled
+      });
     }
   } catch (error) {
-    if ((error instanceof Error) && error.message === "muxJobCancelled") {
+    const isMuxCancellation = (error instanceof Error) && error.message === "muxJobCancelled";
+    if (isMuxCancellation) {
       return;
     }
 
@@ -69,7 +77,8 @@ async function processItem(item: ProcessStreamData) {
 }
 
 export function enqueueStreamData(data: ProcessStreamData) {
-  if (activeJobs.has(data.videoId)) {
+  const isAlreadyActive = activeJobs.has(data.videoId);
+  if (isAlreadyActive) {
     return;
   }
 

@@ -6,17 +6,20 @@ export function isVideoLive(playerResponse: PlayerResponse) {
 }
 
 export function isVideoDownloadable(playerResponse: PlayerResponse) {
-  if (isVideoLive(playerResponse)) {
+  const isLive = isVideoLive(playerResponse);
+  if (isLive) {
     return false;
   }
 
   const { status } = playerResponse.playabilityStatus;
-  if (status === PlayabilityStatus.LoginRequired || status === PlayabilityStatus.Error) {
+  const isNotPlayable = status === PlayabilityStatus.LoginRequired || status === PlayabilityStatus.Error;
+  if (isNotPlayable) {
     return false;
   }
 
   const { streamingData } = playerResponse;
-  if (!streamingData) {
+  const isStreamingDataMissing = !streamingData;
+  if (isStreamingDataMissing) {
     return false;
   }
 

@@ -30,7 +30,8 @@ export function attachCloseButton(elTarget: Element) {
 
   function onButtonAvailable(elButton: HTMLButtonElement) {
     elButton.addEventListener("focus", () => {
-      if (!elButton.matches(":focus-visible")) {
+      const isFocusVisible = elButton.matches(":focus-visible");
+      if (!isFocusVisible) {
         return;
       }
 

@@ -10,7 +10,8 @@ export async function readStreamToBuffer({ reader, expectedBytes, onBytesReceive
   const stall = createStallChecker(() => void reader.cancel());
 
   let preallocated: Uint8Array | null = null;
-  if (expectedBytes > 0) {
+  const hasExpectedBytes = expectedBytes > 0;
+  if (hasExpectedBytes) {
     try {
       preallocated = new Uint8Array(expectedBytes);
     } catch {
@@ -25,7 +26,10 @@ export async function readStreamToBuffer({ reader, expectedBytes, onBytesReceive
   function buildPartial() {
     return preallocated
       ? preallocated.subarray(0, writeOffset)
-      : mergeChunks(chunks, totalBytes);
+      : mergeChunks({
+        chunks,
+        totalBytes
+      });
   }
 
   try {
@@ -63,5 +67,8 @@ export async function readStreamToBuffer({ reader, expectedBytes, onBytesReceive
     throw new StreamStallError(buildPartial());
   }
 
-  return preallocated ?? mergeChunks(chunks, totalBytes);
+  return preallocated ?? mergeChunks({
+    chunks,
+    totalBytes
+  });
 }

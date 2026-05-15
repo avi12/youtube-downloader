@@ -39,17 +39,21 @@ export function buildSubtitleFiles(subtitleTracks: ProcessStreamData["subtitleTr
     }));
 }
 
-export function resolveDownloadFilename(filenameOutput: string, hasExtraTracks: boolean) {
+export function resolveDownloadFilename({ filenameOutput, hasExtraTracks }: {
+  filenameOutput: string;
+  hasExtraTracks: boolean;
+}) {
   const targetExtension = hasExtraTracks ? "mkv" : (filenameOutput.split(".").pop() ?? "mkv");
   return `${filenameOutput.replace(/\.[^.]+$/, "")}.${targetExtension}`;
 }
 
-export async function handleSingleStream(
-  item: ProcessStreamData,
-  videoData: Uint8Array | null,
-  audioData: Uint8Array | null
-) {
-  if (!videoData && !audioData) {
+export async function handleSingleStream({ item, videoData, audioData }: {
+  item: ProcessStreamData;
+  videoData: Uint8Array | null;
+  audioData: Uint8Array | null;
+}) {
+  const hasNoData = !videoData && !audioData;
+  if (hasNoData) {
     throw new Error("No stream data accumulated");
   }
 

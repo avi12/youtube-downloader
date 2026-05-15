@@ -8,15 +8,18 @@ export function formatVideoQualityLabel(format: Pick<AdaptiveFormatItem, "height
 
 export function formatAudioCodecLabel(mimeType: string) {
   const [, codec = ""] = mimeType.match(/codecs="([^"]+)"/) ?? [];
-  if (codec.startsWith("mp4a")) {
+  const isAac = codec.startsWith("mp4a");
+  if (isAac) {
     return "AAC";
   }
 
-  if (codec === "opus") {
+  const isOpus = codec === "opus";
+  if (isOpus) {
     return "Opus";
   }
 
-  if (codec.startsWith("ec-3")) {
+  const isEc3 = codec.startsWith("ec-3");
+  if (isEc3) {
     return "EC-3";
   }
 

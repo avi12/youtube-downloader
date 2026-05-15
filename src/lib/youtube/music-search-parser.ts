@@ -10,14 +10,16 @@ function extractPageType(run: SearchRun) {
 
 export function parseSearchResult(item: SearchItem) {
   const columns = item.musicResponsiveListItemRenderer?.flexColumns;
-  if (!columns || columns.length < 2) {
+  const isColumnsMissing = !columns || columns.length < 2;
+  if (isColumnsMissing) {
     return null;
   }
 
   const [firstColumn, secondColumn] = columns;
   const titleRuns = firstColumn.musicResponsiveListItemFlexColumnRenderer?.text?.runs;
   const metadataRuns = secondColumn.musicResponsiveListItemFlexColumnRenderer?.text?.runs;
-  if (!titleRuns || !metadataRuns) {
+  const isRunsMissing = !titleRuns || !metadataRuns;
+  if (isRunsMissing) {
     return null;
   }
 
@@ -29,18 +31,21 @@ export function parseSearchResult(item: SearchItem) {
 
   for (const run of metadataRuns) {
     const pageType = extractPageType(run);
-    if (pageType === "MUSIC_PAGE_TYPE_ARTIST") {
+    const isArtistPage = pageType === "MUSIC_PAGE_TYPE_ARTIST";
+    const isAlbumPage = pageType === "MUSIC_PAGE_TYPE_ALBUM";
+    if (isArtistPage) {
       artists.push(run.text);
 
       if (!mainArtist) {
         mainArtist = run.text;
       }
-    } else if (pageType === "MUSIC_PAGE_TYPE_ALBUM") {
+    } else if (isAlbumPage) {
       album = run.text;
     }
   }
 
-  if (!songTitle || artists.length === 0) {
+  const isResultInvalid = !songTitle || artists.length === 0;
+  if (isResultInvalid) {
     return null;
   }
 

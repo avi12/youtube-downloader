@@ -25,15 +25,17 @@ export function onSabrBodyCaptured(callback: (tabId: number) => void) {
 }
 
 function handleSabrRequest(details: Browser.webRequest.OnBeforeRequestDetails) {
-  if (details.tabId < 0) {
+  const isBackgroundRequest = details.tabId < 0;
+  if (isBackgroundRequest) {
     return undefined;
   }
 
-  if (!details.requestBody?.raw?.[0]?.bytes) {
+  const hasNoBody = !details.requestBody?.raw?.[0]?.bytes;
+  if (hasNoBody) {
     return undefined;
   }
 
-  const bodyBytes = new Uint8Array(details.requestBody.raw[0].bytes);
+  const bodyBytes = new Uint8Array(details.requestBody!.raw![0].bytes!);
   const previousData = capturedByTab.get(details.tabId);
   const isFirstCapture = !previousData;
 
@@ -63,7 +65,8 @@ function getLatestCapturedSabrData() {
   let latest: ReturnType<typeof capturedByTab.get>;
 
   for (const entry of capturedByTab.values()) {
-    if (!latest || entry.timestamp > latest.timestamp) {
+    const isNewerEntry = !latest || entry.timestamp > latest.timestamp;
+    if (isNewerEntry) {
       latest = entry;
     }
   }

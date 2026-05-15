@@ -15,7 +15,10 @@ function sourceAudioExtension(audioMimeType: string) {
   return audioMimeType.includes("webm") ? "weba" : "m4a";
 }
 
-export async function processSingleMedia(item: ProcessStreamData, isCancelled: () => boolean) {
+export async function processSingleMedia({ item, isCancelled }: {
+  item: ProcessStreamData;
+  isCancelled: () => boolean;
+}) {
   const { videoId, type, filenameOutput, videoData, audioData, tabId } = item;
   const rawData = type === DownloadType.Audio ? audioData : videoData;
   let data = toUint8Array(rawData);
@@ -45,13 +48,15 @@ export async function processSingleMedia(item: ProcessStreamData, isCancelled: (
     });
   }
 
-  if (isCancelled()) {
+  const isDownloadCancelled = isCancelled();
+  if (isDownloadCancelled) {
     return;
   }
 
-  if (item.playlistId) {
+  const isPlaylistItem = Boolean(item.playlistId);
+  if (isPlaylistItem) {
     await addToPlaylistBundle({
-      playlistId: item.playlistId,
+      playlistId: item.playlistId!,
       playlistTitle: item.playlistTitle ?? "Playlist",
       totalCount: item.playlistTotalCount ?? 1,
       tabId,

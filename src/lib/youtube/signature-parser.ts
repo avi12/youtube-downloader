@@ -27,23 +27,29 @@ function findSignatureFunctionName(playerSource: string) {
   return null;
 }
 
-function extractTransformOperations(playerSource: string, functionName: string) {
+function extractTransformOperations({ playerSource, functionName }: {
+  playerSource: string;
+  functionName: string;
+}) {
   const escapedName = escapeRegExp(functionName);
   const functionPattern = new RegExp(`(?:var\\s+${escapedName}|${escapedName}\\s*=\\s*function)\\s*=?\\s*function\\s*\\(([a-zA-Z])\\)\\s*\\{([^}]+)\\}`);
   const [, , functionBody] = playerSource.match(functionPattern) ?? [];
-  if (!functionBody) {
+  const isFunctionBodyMissing = !functionBody;
+  if (isFunctionBodyMissing) {
     return null;
   }
 
   const [, helperName] = functionBody.match(/([a-zA-Z0-9$]+)\.[a-zA-Z0-9$]+\(/) ?? [];
-  if (!helperName) {
+  const isHelperNameMissing = !helperName;
+  if (isHelperNameMissing) {
     return null;
   }
 
   const escapedHelper = escapeRegExp(helperName);
   const helperPattern = new RegExp(`var\\s+${escapedHelper}\\s*=\\s*\\{([\\s\\S]*?)\\};`);
   const [, helperBody] = playerSource.match(helperPattern) ?? [];
-  if (!helperBody) {
+  const isHelperBodyMissing = !helperBody;
+  if (isHelperBodyMissing) {
     return null;
   }
 
@@ -51,9 +57,11 @@ function extractTransformOperations(playerSource: string, functionName: string) 
   const methodPattern = /([a-zA-Z0-9$]+)\s*:\s*function\s*\([^)]*\)\s*\{([^}]+)}/g;
 
   for (const [, methodName, methodBody] of helperBody.matchAll(methodPattern)) {
-    if (methodBody.includes("reverse")) {
+    const isReverse = methodBody.includes("reverse");
+    const isSplice = methodBody.includes("splice");
+    if (isReverse) {
       methodTypes.set(methodName, TransformOpType.Reverse);
-    } else if (methodBody.includes("splice")) {
+    } else if (isSplice) {
       methodTypes.set(methodName, TransformOpType.Splice);
     } else {
       methodTypes.set(methodName, TransformOpType.Swap);
@@ -69,11 +77,13 @@ function extractTransformOperations(playerSource: string, functionName: string) 
   for (const [, methodName, rawArgument] of functionBody.matchAll(callPattern)) {
     const argument = Number.parseInt(rawArgument, 10);
     const opType = methodTypes.get(methodName);
-    if (!opType) {
+    const isOpTypeMissing = !opType;
+    if (isOpTypeMissing) {
       continue;
     }
 
-    if (opType === TransformOpType.Reverse) {
+    const isReverseOp = opType === TransformOpType.Reverse;
+    if (isReverseOp) {
       operations.push({ type: TransformOpType.Reverse });
     } else {
       operations.push({
@@ -88,9 +98,13 @@ function extractTransformOperations(playerSource: string, functionName: string) 
 
 export function findAndExtractOperations(playerSource: string) {
   const functionName = findSignatureFunctionName(playerSource);
-  if (!functionName) {
+  const isFunctionNameMissing = !functionName;
+  if (isFunctionNameMissing) {
     return null;
   }
 
-  return extractTransformOperations(playerSource, functionName);
+  return extractTransformOperations({
+    playerSource,
+    functionName
+  });
 }

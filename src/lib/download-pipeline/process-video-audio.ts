@@ -16,7 +16,10 @@ import { addToPlaylistBundle } from "./playlist-bundle";
 import { ProgressType } from "@/types";
 import type { ProcessStreamData } from "@/types";
 
-export async function processVideoAudio(item: ProcessStreamData, isCancelled: () => boolean) {
+export async function processVideoAudio({ item, isCancelled }: {
+  item: ProcessStreamData;
+  isCancelled: () => boolean;
+}) {
   const {
     videoId, filenameOutput, videoMimeType, audioMimeType, tabId,
     additionalAudioStreams, subtitleTracks, primaryAudioLanguageCode, defaultAudioTrackIndex
@@ -24,8 +27,13 @@ export async function processVideoAudio(item: ProcessStreamData, isCancelled: ()
 
   const videoData = toUint8Array(item.videoData);
   const audioData = toUint8Array(item.audioData);
-  if (!videoData || !audioData) {
-    await handleSingleStream(item, videoData, audioData);
+  const isMissingStream = !videoData || !audioData;
+  if (isMissingStream) {
+    await handleSingleStream({
+      item,
+      videoData,
+      audioData
+    });
     return;
   }
 
@@ -36,29 +44,37 @@ export async function processVideoAudio(item: ProcessStreamData, isCancelled: ()
     tabId
   });
 
-  const downloadFilename = resolveDownloadFilename(filenameOutput, additionalAudioStreams.length > 0);
-
-  const output = await runMuxVideoAudio(videoId, {
-    videoData: toOwnedArrayBuffer(videoData),
-    audioData: toOwnedArrayBuffer(audioData),
-    extraAudioTracks: buildExtraAudioTracks(additionalAudioStreams),
-    subtitleTracks: buildSubtitleFiles(subtitleTracks),
-    videoMimeType,
-    audioMimeType,
-    videoId,
-    tabId,
-    primaryAudioLabel: item.primaryAudioLabel ?? "",
-    primaryAudioLanguageCode: primaryAudioLanguageCode ?? "",
-    defaultAudioTrackIndex: defaultAudioTrackIndex ?? 0,
-    filenameOutput
+  const downloadFilename = resolveDownloadFilename({
+    filenameOutput,
+    hasExtraTracks: additionalAudioStreams.length > 0
   });
-  if (isCancelled()) {
+
+  const output = await runMuxVideoAudio({
+    videoId,
+    job: {
+      videoData: toOwnedArrayBuffer(videoData),
+      audioData: toOwnedArrayBuffer(audioData),
+      extraAudioTracks: buildExtraAudioTracks(additionalAudioStreams),
+      subtitleTracks: buildSubtitleFiles(subtitleTracks),
+      videoMimeType,
+      audioMimeType,
+      videoId,
+      tabId,
+      primaryAudioLabel: item.primaryAudioLabel ?? "",
+      primaryAudioLanguageCode: primaryAudioLanguageCode ?? "",
+      defaultAudioTrackIndex: defaultAudioTrackIndex ?? 0,
+      filenameOutput
+    }
+  });
+  const isDownloadCancelled = isCancelled();
+  if (isDownloadCancelled) {
     return;
   }
 
-  if (item.playlistId) {
+  const isPlaylistItem = Boolean(item.playlistId);
+  if (isPlaylistItem) {
     await addToPlaylistBundle({
-      playlistId: item.playlistId,
+      playlistId: item.playlistId!,
       playlistTitle: item.playlistTitle ?? "Playlist",
       totalCount: item.playlistTotalCount ?? 1,
       tabId,

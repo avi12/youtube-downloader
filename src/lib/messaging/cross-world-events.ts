@@ -49,7 +49,8 @@ export function onCrossWorldEvent<T extends CrossWorldEvent>({ type, handler }: 
   handler: (data: CrossWorldEventMap[T]) => void;
 }) {
   function listener(e: MessageEvent) {
-    if (!isCrossWorldEnvelope(e.data, type)) {
+    const isMatchingEnvelope = isCrossWorldEnvelope(e.data, type);
+    if (!isMatchingEnvelope) {
       return;
     }
 

@@ -40,7 +40,8 @@ let swSidePort: Browser.runtime.Port | null = null;
 
 export function initOffscreenPortListener() {
   browser.runtime.onConnect.addListener(port => {
-    if (port.name !== OFFSCREEN_PORT_NAME) {
+    const isNotOffscreenPort = port.name !== OFFSCREEN_PORT_NAME;
+    if (isNotOffscreenPort) {
       return;
     }
 
@@ -51,10 +52,10 @@ export function initOffscreenPortListener() {
   });
 }
 
-export function sendToOffscreen<T extends OffscreenMessageType>(
-  type: T,
-  data: OffscreenProtocolMap[T]
-) {
+export function sendToOffscreen<T extends OffscreenMessageType>({ type, data }: {
+  type: T;
+  data: OffscreenProtocolMap[T];
+}) {
   swSidePort?.postMessage({
     type,
     data

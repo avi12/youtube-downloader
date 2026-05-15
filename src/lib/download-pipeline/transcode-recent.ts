@@ -27,13 +27,16 @@ export async function transcodeRecentDownload({ entryId, targetContainer }: {
 
     const downloadFilename = `${splitFilenameAndExtension(entry.filename).name}.${targetContainer}`;
 
-    const output = await runTranscodeFile(transcodeVideoId, {
+    const output = await runTranscodeFile({
       videoId: transcodeVideoId,
-      tabId: 0,
-      data: await blob.arrayBuffer(),
-      sourceExtension: entry.container,
-      targetContainer,
-      audioMimeType: entry.audioMimeType
+      job: {
+        videoId: transcodeVideoId,
+        tabId: 0,
+        data: await blob.arrayBuffer(),
+        sourceExtension: entry.container,
+        targetContainer,
+        audioMimeType: entry.audioMimeType
+      }
     });
     if (!output) {
       throw new Error("FFmpeg returned no data for recent download transcode");

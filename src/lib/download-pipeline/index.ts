@@ -22,7 +22,8 @@ export function buildRecentContext(
 }
 
 export function toOwnedArrayBuffer(view: ArrayBufferView) {
-  if (!(view.buffer instanceof ArrayBuffer)) {
+  const isSharedBuffer = !(view.buffer instanceof ArrayBuffer);
+  if (isSharedBuffer) {
     throw new Error("SharedArrayBuffer is not supported");
   }
 
@@ -34,7 +35,8 @@ export function toUint8Array(data: Uint8Array | Record<string, number> | null) {
     return null;
   }
 
-  if (!ArrayBuffer.isView(data)) {
+  const isNotArrayBufferView = !ArrayBuffer.isView(data);
+  if (isNotArrayBufferView) {
     return new Uint8Array(Object.values(data));
   }
 

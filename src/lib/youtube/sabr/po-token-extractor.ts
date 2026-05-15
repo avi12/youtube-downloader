@@ -20,19 +20,22 @@ function parseStreamerContext(ctxData: Uint8Array) {
     ctxOffset = ctxTag.offset;
     const ctxField = ctxTag.value >> PROTO_FIELD_NUMBER_SHIFT;
     const ctxWire = ctxTag.value & PROTO_WIRE_TYPE_MASK;
-    if (ctxWire === WIRE_TYPE_VARINT) {
+    const isVarintCtx = ctxWire === WIRE_TYPE_VARINT;
+    if (isVarintCtx) {
       ctxOffset = readVarint(ctxData, ctxOffset).offset;
       continue;
     }
 
-    if (ctxWire !== WIRE_TYPE_LENGTH_DELIMITED) {
+    const isNotLengthDelimitedCtx = ctxWire !== WIRE_TYPE_LENGTH_DELIMITED;
+    if (isNotLengthDelimitedCtx) {
       break;
     }
 
     const ctxFieldLength = readVarint(ctxData, ctxOffset);
     ctxOffset = ctxFieldLength.offset;
 
-    if (ctxField === FIELD_PO_TOKEN && ctxFieldLength.value > 0) {
+    const isPoTokenField = ctxField === FIELD_PO_TOKEN && ctxFieldLength.value > 0;
+    if (isPoTokenField) {
       const poTokenBytes = ctxData.subarray(ctxOffset, ctxOffset + ctxFieldLength.value);
       return btoa(String.fromCharCode(...poTokenBytes));
     }
@@ -51,29 +54,34 @@ export function extractPoTokenFromBody(body: number[]) {
     offset = tag.offset;
     const fieldNumber = tag.value >> PROTO_FIELD_NUMBER_SHIFT;
     const wireType = tag.value & PROTO_WIRE_TYPE_MASK;
-    if (wireType === WIRE_TYPE_VARINT) {
+    const isVarint = wireType === WIRE_TYPE_VARINT;
+    if (isVarint) {
       offset = readVarint(buffer, offset).offset;
       continue;
     }
 
-    if (wireType === WIRE_TYPE_64_BIT) {
+    const is64Bit = wireType === WIRE_TYPE_64_BIT;
+    if (is64Bit) {
       offset += WIRE_64_BIT_BYTE_SIZE;
       continue;
     }
 
-    if (wireType === WIRE_TYPE_32_BIT) {
+    const is32Bit = wireType === WIRE_TYPE_32_BIT;
+    if (is32Bit) {
       offset += WIRE_32_BIT_BYTE_SIZE;
       continue;
     }
 
-    if (wireType !== WIRE_TYPE_LENGTH_DELIMITED) {
+    const isNotLengthDelimited = wireType !== WIRE_TYPE_LENGTH_DELIMITED;
+    if (isNotLengthDelimited) {
       break;
     }
 
     const fieldLength = readVarint(buffer, offset);
     offset = fieldLength.offset;
 
-    if (fieldNumber === FIELD_STREAMER_CONTEXT) {
+    const isStreamerContextField = fieldNumber === FIELD_STREAMER_CONTEXT;
+    if (isStreamerContextField) {
       const poToken = parseStreamerContext(buffer.subarray(offset, offset + fieldLength.value));
       if (poToken) {
         return poToken;

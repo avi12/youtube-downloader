@@ -21,7 +21,8 @@ async function processMuxQueue() {
       break;
     }
 
-    if (cancelledMuxJobs.has(entry.videoId)) {
+    const isJobCancelled = cancelledMuxJobs.has(entry.videoId);
+    if (isJobCancelled) {
       cancelledMuxJobs.delete(entry.videoId);
       entry.reject(new Error("muxJobCancelled"));
       continue;
@@ -33,7 +34,10 @@ async function processMuxQueue() {
   isMuxing = false;
 }
 
-export function enqueueMuxJob<T>(videoId: string, run: () => Promise<T>) {
+export function enqueueMuxJob<T>({ videoId, run }: {
+  videoId: string;
+  run: () => Promise<T>;
+}) {
   return new Promise<T>((resolve, reject) => {
     muxQueue.push({
       videoId,
@@ -58,7 +62,8 @@ export function cancelMuxJobs(videoIds: string[]) {
 
   for (let iEntry = muxQueue.length - 1; iEntry >= 0; iEntry--) {
     const entry = muxQueue[iEntry];
-    if (videoIdSet.has(entry.videoId)) {
+    const isEntryInSet = videoIdSet.has(entry.videoId);
+    if (isEntryInSet) {
       muxQueue.splice(iEntry, 1);
       cancelledMuxJobs.delete(entry.videoId);
       entry.reject(new Error("muxJobCancelled"));

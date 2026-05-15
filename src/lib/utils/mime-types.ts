@@ -30,7 +30,8 @@ function isSupportedExtension(extension: string): extension is SupportedExtensio
 
 export function getMimeType(filename: string) {
   const extension = getFileExtension(filename);
-  if (!isSupportedExtension(extension)) {
+  const isUnsupported = !isSupportedExtension(extension);
+  if (isUnsupported) {
     return null;
   }
 
@@ -64,7 +65,8 @@ export function resolveAutoExtension({ extension, mimeType }: {
   extension: string;
   mimeType: string;
 }) {
-  if (extension !== AUTO_EXTENSION) {
+  const isNotAuto = extension !== AUTO_EXTENSION;
+  if (isNotAuto) {
     return extension;
   }
 

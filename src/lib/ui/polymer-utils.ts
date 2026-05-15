@@ -15,7 +15,8 @@ export { DATA_SETTINGS_OPTIONS_ID_ATTR, attachSettingsOptions, isYtdSettingsOpti
 
 export function attachIcon(icon: YtIconName) {
   return (elTarget: Element) => {
-    if (!isYtIconElement(elTarget)) {
+    const isNotYtIcon = !isYtIconElement(elTarget);
+    if (isNotYtIcon) {
       return;
     }
 
@@ -34,7 +35,8 @@ export function applyPolymerCustomStyles({ element, styles }: {
   element: Element;
   styles: Record<string, string>;
 }) {
-  if (!(element instanceof HTMLElement)) {
+  const isNotHtmlElement = !(element instanceof HTMLElement);
+  if (isNotHtmlElement) {
     return;
   }
 

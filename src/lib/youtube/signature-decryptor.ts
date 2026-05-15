@@ -12,7 +12,8 @@ function getPlayerJsUrl() {
   const elScripts = document.querySelectorAll<HTMLScriptElement>("script[src*='/player/']");
 
   for (const elScript of elScripts) {
-    if (/player_ias|base\.js/.test(elScript.src)) {
+    const isPlayerScript = /player_ias|base\.js/.test(elScript.src);
+    if (isPlayerScript) {
       return elScript.src;
     }
   }
@@ -28,19 +29,22 @@ function getPlayerJsUrl() {
 
 async function initDecryptor() {
   const playerJsUrl = getPlayerJsUrl();
-  if (!playerJsUrl) {
+  const isPlayerJsMissing = !playerJsUrl;
+  if (isPlayerJsMissing) {
     throw new Error("Could not find player.js URL");
   }
 
-  if (cachedState?.playerJsUrl === playerJsUrl) {
-    return cachedState;
+  const isCacheValid = cachedState?.playerJsUrl === playerJsUrl;
+  if (isCacheValid) {
+    return cachedState!;
   }
 
   const response = await fetch(playerJsUrl);
   const playerSource = await response.text();
 
   const operations = findAndExtractOperations(playerSource);
-  if (!operations) {
+  const isOperationsMissing = !operations;
+  if (isOperationsMissing) {
     throw new Error("Could not extract transform operations from player.js");
   }
 
@@ -56,7 +60,8 @@ export async function decryptSignatureCipher(signatureCipher: string) {
   const encryptedSig = cipherParameters.get("s");
   const sigParam = cipherParameters.get("sp") ?? "sig";
   const url = cipherParameters.get("url");
-  if (!encryptedSig || !url) {
+  const isCipherInvalid = !encryptedSig || !url;
+  if (isCipherInvalid) {
     throw new Error("Invalid signatureCipher format");
   }
 

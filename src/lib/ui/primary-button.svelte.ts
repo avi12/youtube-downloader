@@ -25,12 +25,14 @@ export function attachPrimaryButton({ elButton, getState, getIsDownloadable, get
   $effect(() => {
     const state = getState();
     const isActive = state !== PrimaryButtonState.Idle || (getIsDownloadable() && getIsFilenameValid());
-    if (elButton instanceof HTMLElement) {
+    const isHtmlElement = elButton instanceof HTMLElement;
+    if (isHtmlElement) {
       elButton.classList.toggle("ytdl-cancel-state", state === PrimaryButtonState.Downloading);
     }
 
     const data: ButtonViewModelData = (() => {
-      if (state === PrimaryButtonState.Downloading) {
+      const isDownloading = state === PrimaryButtonState.Downloading;
+      if (isDownloading) {
         return {
           iconName: "",
           title: "Cancel",
@@ -45,7 +47,8 @@ export function attachPrimaryButton({ elButton, getState, getIsDownloadable, get
         };
       }
 
-      if (state === PrimaryButtonState.Interrupted) {
+      const isInterrupted = state === PrimaryButtonState.Interrupted;
+      if (isInterrupted) {
         return {
           iconName: IconName.Download,
           title: "Resume now",
@@ -60,7 +63,8 @@ export function attachPrimaryButton({ elButton, getState, getIsDownloadable, get
         };
       }
 
-      if (state === PrimaryButtonState.Failed) {
+      const isFailed = state === PrimaryButtonState.Failed;
+      if (isFailed) {
         return {
           iconName: IconName.Download,
           title: "Retry download",

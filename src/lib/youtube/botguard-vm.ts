@@ -30,10 +30,14 @@ async function loadInterpreterScript(interpreterUrl: string) {
   });
 }
 
-export async function ensureBotGuardVm(globalName: string, interpreterUrlRaw: string | {
-  privateDoNotAccessOrElseTrustedResourceUrlWrappedValue: string;
-} | undefined) {
-  if (getBotGuardVm(globalName)) {
+export async function ensureBotGuardVm({ globalName, interpreterUrlRaw }: {
+  globalName: string;
+  interpreterUrlRaw: string | {
+    privateDoNotAccessOrElseTrustedResourceUrlWrappedValue: string;
+  } | undefined;
+}) {
+  const isVmAlreadyLoaded = Boolean(getBotGuardVm(globalName));
+  if (isVmAlreadyLoaded) {
     return;
   }
 
@@ -46,7 +50,8 @@ export async function ensureBotGuardVm(globalName: string, interpreterUrlRaw: st
   }
 
   for (let attempt = 0; attempt < VM_POLL_MAX_ATTEMPTS; attempt++) {
-    if (getBotGuardVm(globalName)) {
+    const isVmLoaded = Boolean(getBotGuardVm(globalName));
+    if (isVmLoaded) {
       return;
     }
 
@@ -56,15 +61,21 @@ export async function ensureBotGuardVm(globalName: string, interpreterUrlRaw: st
 
 export type SignalFunction = (input: Uint8Array) => Promise<(input: Uint8Array) => Promise<Uint8Array>>;
 
-export function initBotGuardVm(botGuardEntry: BotGuardVmEntry, program: string, webPoSignalOutput: SignalFunction[]) {
+export function initBotGuardVm({ botGuardEntry, program, webPoSignalOutput }: {
+  botGuardEntry: BotGuardVmEntry;
+  program: string;
+  webPoSignalOutput: SignalFunction[];
+}) {
   const initResult = botGuardEntry.a(program, () => {}, true, undefined, () => {}, [[], []]);
   const snapshotFunction = initResult?.[0];
-  if (typeof snapshotFunction !== "function") {
+  const isSnapshotMissing = typeof snapshotFunction !== "function";
+  if (isSnapshotMissing) {
     throw new Error("BotGuard snapshot function not available");
   }
 
   const snapshotResponse = snapshotFunction.call(null, [undefined, undefined, webPoSignalOutput, undefined]);
-  if (!snapshotResponse) {
+  const isResponseEmpty = !snapshotResponse;
+  if (isResponseEmpty) {
     throw new Error("Empty snapshot response");
   }
 

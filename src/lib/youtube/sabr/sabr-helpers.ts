@@ -34,7 +34,8 @@ export function collectReadableStream({ stream, expectedBytes, signal }: {
   signal?: AbortSignal;
 }): Promise<SabrStreamResult> {
   const reader = stream.getReader();
-  if (signal?.aborted) {
+  const isAborted = signal?.aborted;
+  if (isAborted) {
     void reader.cancel();
   } else {
     signal?.addEventListener("abort", () => void reader.cancel(), { once: true });
@@ -49,7 +50,8 @@ export function collectReadableStream({ stream, expectedBytes, signal }: {
       isComplete: true
     }),
     error => {
-      if (error instanceof StreamStallError) {
+      const isStallError = error instanceof StreamStallError;
+      if (isStallError) {
         return {
           data: error.partialData,
           isComplete: false

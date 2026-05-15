@@ -45,11 +45,15 @@ export async function generatePoToken(videoId: string) {
 
   const challengeData: ChallengeResponse = await challengeResponse.json();
   const { program, globalName, interpreterUrl: interpreterUrlRaw } = challengeData.bgChallenge ?? {};
-  if (!program || !globalName) {
+  const isChallengeDataMissing = !program || !globalName;
+  if (isChallengeDataMissing) {
     throw new Error("No BotGuard challenge data received");
   }
 
-  await ensureBotGuardVm(globalName, interpreterUrlRaw);
+  await ensureBotGuardVm({
+    globalName,
+    interpreterUrlRaw
+  });
 
   const botGuardVm = getBotGuardVm(globalName);
   if (!botGuardVm) {
@@ -57,7 +61,11 @@ export async function generatePoToken(videoId: string) {
   }
 
   const webPoSignalOutput: SignalFunction[] = [];
-  const snapshotResponse = initBotGuardVm(botGuardVm, program, webPoSignalOutput);
+  const snapshotResponse = initBotGuardVm({
+    botGuardEntry: botGuardVm,
+    program,
+    webPoSignalOutput
+  });
 
   const generateItRequest: InnertubeGenerateItRequest = [requestKey, snapshotResponse];
   const integrityResponse = await fetch("https://www.youtube.com/api/jnn/v1/GenerateIT", {
@@ -70,19 +78,22 @@ export async function generatePoToken(videoId: string) {
   });
 
   const integrityData: InnertubeGenerateItResponse = await integrityResponse.json();
-  if (!integrityData[0]) {
+  const isIntegrityTokenMissing = !integrityData[0];
+  if (isIntegrityTokenMissing) {
     throw new Error("No integrity token received");
   }
 
   const integrityTokenBytes = base64ToUint8Array(integrityData[0]);
 
   const [signalFunction] = webPoSignalOutput;
-  if (typeof signalFunction !== "function") {
+  const isSignalFunctionMissing = typeof signalFunction !== "function";
+  if (isSignalFunctionMissing) {
     throw new Error("WebPo signal function not available");
   }
 
   const mintFunction = await signalFunction(integrityTokenBytes);
-  if (typeof mintFunction !== "function") {
+  const isMintFunctionMissing = typeof mintFunction !== "function";
+  if (isMintFunctionMissing) {
     throw new Error("Mint function not available");
   }
 

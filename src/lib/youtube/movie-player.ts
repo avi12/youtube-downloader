@@ -40,7 +40,8 @@ export function capturePlayerCaptionBus(player: MoviePlayerElement): CaptionEven
 
   while (proto) {
     const desc = Object.getOwnPropertyDescriptor(proto, "getOption");
-    if (isGetOptionFunction(desc?.value)) {
+    const isGetOption = isGetOptionFunction(desc?.value);
+    if (isGetOption) {
       rawGetOption = desc.value;
       break;
     }
@@ -48,7 +49,8 @@ export function capturePlayerCaptionBus(player: MoviePlayerElement): CaptionEven
     proto = Object.getPrototypeOf(proto);
   }
 
-  if (!rawGetOption) {
+  const isGetOptionMissing = !rawGetOption;
+  if (isGetOptionMissing) {
     return null;
   }
 
@@ -58,7 +60,8 @@ export function capturePlayerCaptionBus(player: MoviePlayerElement): CaptionEven
   type AnyFunction = (...args: unknown[]) => unknown;
 
   function captureApply(this: AnyFunction, thisArg: unknown, args: unknown[]) {
-    if (!internalCtx && Array.isArray(args) && args[0] === "captions") {
+    const isCaptionsCall = !internalCtx && Array.isArray(args) && args[0] === "captions";
+    if (isCaptionsCall) {
       internalCtx = thisArg;
     }
 
@@ -70,7 +73,7 @@ export function capturePlayerCaptionBus(player: MoviePlayerElement): CaptionEven
       value: captureApply,
       configurable: true
     });
-    rawGetOption.call(player, "captions", "track");
+    rawGetOption!.call(player, "captions", "track");
   } finally {
     Object.defineProperty(Function.prototype, "apply", {
       value: origApply,

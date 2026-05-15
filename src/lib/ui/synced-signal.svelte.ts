@@ -36,13 +36,15 @@ export function createSyncedMap<T>(messenger: MapMessenger<T>) {
   let isSyncing = false;
 
   messenger.onMessage("entry", ({ data: { mapKey, mapValue } }) => {
-    if (suppressed.has(mapKey)) {
+    const isKeySuppressed = suppressed.has(mapKey);
+    if (isKeySuppressed) {
       return;
     }
 
     isSyncing = true;
 
-    if (mapValue === undefined) {
+    const isDeleted = mapValue === undefined;
+    if (isDeleted) {
       map.delete(mapKey);
     } else {
       map.set(mapKey, mapValue);
@@ -59,7 +61,8 @@ export function createSyncedMap<T>(messenger: MapMessenger<T>) {
       return map.keys();
     },
     set(mapKey: string, value: T) {
-      if (suppressed.has(mapKey)) {
+      const isSetKeySuppressed = suppressed.has(mapKey);
+      if (isSetKeySuppressed) {
         return;
       }
 
@@ -73,7 +76,8 @@ export function createSyncedMap<T>(messenger: MapMessenger<T>) {
       }
     },
     setLocal(mapKey: string, value: T): boolean {
-      if (suppressed.has(mapKey)) {
+      const isLocalKeySuppressed = suppressed.has(mapKey);
+      if (isLocalKeySuppressed) {
         return false;
       }
 

@@ -6,7 +6,10 @@ interface StorageItem<T> {
   setValue(value: T): Promise<void>;
 }
 
-export async function mutateStorageItem<T>(item: StorageItem<T>, mutator: (current: T) => void) {
+export async function mutateStorageItem<T>({ item, mutator }: {
+  item: StorageItem<T>;
+  mutator: (current: T) => void;
+}) {
   const current = await item.getValue();
   mutator(current);
   await item.setValue(current);
@@ -45,9 +48,15 @@ export const interruptedDownloadsItem = storage.defineItem<Record<string, Interr
 
 export const optionsItem = storage.defineItem<Options>("sync:options", { fallback: INITIAL_OPTIONS });
 
-export async function setOption<Key extends keyof Options>(key: Key, value: Options[Key]) {
-  await mutateStorageItem(optionsItem, current => {
-    current[key] = value;
+export async function setOption<Key extends keyof Options>({ key, value }: {
+  key: Key;
+  value: Options[Key];
+}) {
+  await mutateStorageItem({
+    item: optionsItem,
+    mutator(current) {
+      current[key] = value;
+    }
   });
 }
 

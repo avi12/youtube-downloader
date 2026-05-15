@@ -24,7 +24,8 @@ export function dispatchButtonClick(buttonId: string) {
 
 export function onButtonClick(handler: (buttonId: string) => void) {
   function listener(e: Event) {
-    if (isButtonClickEvent(e)) {
+    const isClickEvent = isButtonClickEvent(e);
+    if (isClickEvent) {
       handler(e.detail.buttonId);
     }
   }

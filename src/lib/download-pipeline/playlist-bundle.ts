@@ -36,7 +36,8 @@ export async function addToPlaylistBundle({
   filename: string;
   data: Uint8Array;
 }) {
-  if (!playlistBundles.has(playlistId)) {
+  const isBundleNew = !playlistBundles.has(playlistId);
+  if (isBundleNew) {
     playlistBundles.set(playlistId, {
       playlistTitle,
       totalCount,
@@ -50,7 +51,8 @@ export async function addToPlaylistBundle({
     return;
   }
 
-  if (bundle.totalCount !== totalCount) {
+  const isBundleStale = bundle.totalCount !== totalCount;
+  if (isBundleStale) {
     bundle.files.clear();
     bundle.totalCount = totalCount;
     bundle.playlistTitle = playlistTitle;
@@ -62,7 +64,8 @@ export async function addToPlaylistBundle({
     data
   });
 
-  if (bundle.files.size < bundle.totalCount) {
+  const isBundleIncomplete = bundle.files.size < bundle.totalCount;
+  if (isBundleIncomplete) {
     return;
   }
 
