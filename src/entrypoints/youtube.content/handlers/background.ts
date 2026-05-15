@@ -44,11 +44,18 @@ export function registerBackgroundMessageHandlers() {
 
       // Prevent backwards progress within the same phase — the download may
       // emit slightly out-of-order reports but the display must only advance.
+      // Exception: an explicit reset (progress=0) comes from the fallback chain
+      // (SABR → CDN → iframe) and must always pass through so the UI resets.
+      const isExplicitReset = data.progress === 0;
       const currentEntry = downloadProgressStore.get(data.videoId);
       const isSamePhase = currentEntry?.progressType === data.progressType;
       const isProgressBackwards = data.progress < (currentEntry?.progress ?? 0);
-      if (isSamePhase && isProgressBackwards) {
+      if (!isExplicitReset && isSamePhase && isProgressBackwards) {
         return;
+      }
+
+      if (isExplicitReset) {
+        lastReportedProgress.delete(data.videoId);
       }
 
       lastReportedProgress.set(data.videoId, reportedKey);
