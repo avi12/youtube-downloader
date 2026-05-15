@@ -49,7 +49,11 @@ export function createPlaylistActionButtons(state: {
     const isDisabled = state.selectedDownloadableVideos.length === 0 && !state.isDownloading;
     sendButtonData({
       elButton: elDownload,
-      data: buildDownloadData(isDisabled, state.isDownloading, state.downloadButtonLabel)
+      data: buildDownloadData({
+        isDisabled,
+        isDownloading: state.isDownloading,
+        downloadButtonLabel: state.downloadButtonLabel
+      })
     });
   }
 
@@ -62,7 +66,11 @@ export function createPlaylistActionButtons(state: {
     const isBusy = state.isRevealingAll || state.isDownloading || state.activeIndividualDownloadCount > 0;
     sendButtonData({
       elButton: elDownloadAll,
-      data: buildDownloadAllData(isBusy, state.isRevealingAll, state.revealedVideoCount)
+      data: buildDownloadAllData({
+        isBusy,
+        isRevealingAll: state.isRevealingAll,
+        revealedVideoCount: state.revealedVideoCount
+      })
     });
   }
 
@@ -79,22 +87,37 @@ export function createPlaylistActionButtons(state: {
   }
 
   return {
-    attachDeselectAll: attachButton(ACTION_BUTTON_IDS.DeselectAll, element => {
-      elDeselectAll = element;
+    attachDeselectAll: attachButton({
+      buttonId: ACTION_BUTTON_IDS.DeselectAll,
+      setter(element) {
+        elDeselectAll = element;
+      }
     }),
-    attachDownload: attachButton(ACTION_BUTTON_IDS.Download, element => {
-      elDownload = element;
+    attachDownload: attachButton({
+      buttonId: ACTION_BUTTON_IDS.Download,
+      setter(element) {
+        elDownload = element;
+      }
     }),
-    attachDownloadAll: attachButton(ACTION_BUTTON_IDS.DownloadAll, element => {
-      elDownloadAll = element;
+    attachDownloadAll: attachButton({
+      buttonId: ACTION_BUTTON_IDS.DownloadAll,
+      setter(element) {
+        elDownloadAll = element;
+      }
     }),
-    attachStopAll: attachButton(ACTION_BUTTON_IDS.StopAll, element => {
-      elStopAll = element;
+    attachStopAll: attachButton({
+      buttonId: ACTION_BUTTON_IDS.StopAll,
+      setter(element) {
+        elStopAll = element;
+      }
     }),
     refreshDeselectAll,
     refreshDownload,
     refreshDownloadAll,
     refreshStopAll,
-    handleClick: (buttonId: string) => handleActionButtonClick(buttonId, state)
+    handleClick: (buttonId: string) => handleActionButtonClick({
+      buttonId,
+      state
+    })
   };
 }

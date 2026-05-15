@@ -1,10 +1,16 @@
-export function attachDownloadButton(
-  elButton: Element,
-  onClickDownload: () => void,
-  refreshDownload: () => void,
-  setDownloadButtonElement: (el: Element) => void
-) {
-  if (!(elButton instanceof HTMLElement)) {
+export function attachDownloadButton({
+  elButton,
+  onClickDownload,
+  refreshDownload,
+  setDownloadButtonElement
+}: {
+  elButton: Element;
+  onClickDownload: () => void;
+  refreshDownload: () => void;
+  setDownloadButtonElement: (el: Element) => void;
+}) {
+  const isNotHtmlElement = !(elButton instanceof HTMLElement);
+  if (isNotHtmlElement) {
     return;
   }
 
@@ -14,13 +20,19 @@ export function attachDownloadButton(
   return () => elButton.removeEventListener("click", onClickDownload);
 }
 
-export function attachChevronButton(
-  elButton: Element,
-  onClickChevron: () => void,
-  refreshChevron: () => void,
-  setChevronButtonElement: (el: Element) => void
-) {
-  if (!(elButton instanceof HTMLElement)) {
+export function attachChevronButton({
+  elButton,
+  onClickChevron,
+  refreshChevron,
+  setChevronButtonElement
+}: {
+  elButton: Element;
+  onClickChevron: () => void;
+  refreshChevron: () => void;
+  setChevronButtonElement: (el: Element) => void;
+}) {
+  const isNotHtmlElement = !(elButton instanceof HTMLElement);
+  if (isNotHtmlElement) {
     return;
   }
 

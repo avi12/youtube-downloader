@@ -10,7 +10,11 @@
   const toggleButtons = createPlaylistToggleButtons(playlist);
   const actionButtons = createPlaylistActionButtons(playlist);
 
-  setupPlaylistEffects(playlist, toggleButtons, actionButtons);
+  setupPlaylistEffects({
+    playlist,
+    toggleButtons,
+    actionButtons
+  });
 </script>
 
 <div class="ytdl-playlist-container">

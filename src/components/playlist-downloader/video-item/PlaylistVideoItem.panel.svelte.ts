@@ -7,12 +7,17 @@ import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-wo
 import type { VideoData } from "@/types";
 import { mount, unmount } from "svelte";
 
-export function createPanelManager(
-  videoId: string,
-  getVideoData: () => VideoData | null,
-  getElButtonGroup: () => HTMLElement | null,
-  onChevronRefresh: () => void
-) {
+export function createPanelManager({
+  videoId,
+  getVideoData,
+  getElButtonGroup,
+  onChevronRefresh
+}: {
+  videoId: string;
+  getVideoData: () => VideoData | null;
+  getElButtonGroup: () => HTMLElement | null;
+  onChevronRefresh: () => void;
+}) {
   let isOpen = $state(false);
   let elDropdown = $state<HTMLElement | null>(null);
   let panelInstance: ReturnType<typeof mount> | null = null;
@@ -21,14 +26,16 @@ export function createPanelManager(
   function open() {
     const videoData = getVideoData();
     const elButtonGroup = getElButtonGroup();
-    if (!videoData || !elButtonGroup || elDropdown) {
+    const isMissingRequirements = !videoData || !elButtonGroup || elDropdown;
+    if (isMissingRequirements) {
       return;
     }
 
     const panelContentId = requestDropdownCreation(videoId);
 
     unsubscribeDropdownReady = crossWorldMessenger.onMessage(CrossWorldMessage.DropdownReady, ({ data }) => {
-      if (data.contentId !== panelContentId) {
+      const isNotThisPanel = data.contentId !== panelContentId;
+      if (isNotThisPanel) {
         return;
       }
 
@@ -39,7 +46,10 @@ export function createPanelManager(
         return;
       }
 
-      const mounted = mountPanelInContent(panelContentId, videoData);
+      const mounted = mountPanelInContent({
+        contentId: panelContentId,
+        videoData
+      });
       if (!mounted) {
         return;
       }
@@ -50,10 +60,13 @@ export function createPanelManager(
       elDropdown?.addEventListener("iron-overlay-opened", () => onChevronRefresh(), { once: true });
       addEventListener("resize", onChevronRefresh);
 
-      registerDropdownCloseListeners(elDropdown, () => {
-        if (isOpen) {
-          isOpen = false;
-          close();
+      registerDropdownCloseListeners({
+        elDropdown,
+        onClose() {
+          if (isOpen) {
+            isOpen = false;
+            close();
+          }
         }
       });
     });

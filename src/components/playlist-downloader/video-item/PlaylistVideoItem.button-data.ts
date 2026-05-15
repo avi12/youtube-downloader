@@ -14,14 +14,21 @@ function assignButtonId(elButton: Element, buttonId: string) {
   }
 }
 
-export function sendDownloadButtonData(
-  elButton: Element,
-  buttonId: string,
-  tooltip: string,
-  videoData: VideoData | null,
-  downloadIconName: IconName,
-  isDisabled: boolean
-) {
+export function sendDownloadButtonData({
+  elButton,
+  buttonId,
+  tooltip,
+  videoData,
+  downloadIconName,
+  isDisabled
+}: {
+  elButton: Element;
+  buttonId: string;
+  tooltip: string;
+  videoData: VideoData | null;
+  downloadIconName: IconName;
+  isDisabled: boolean;
+}) {
   assignButtonId(elButton, buttonId);
   sendButtonData({
     elButton,
@@ -40,12 +47,17 @@ export function sendDownloadButtonData(
   });
 }
 
-export function sendChevronButtonData(
-  elButton: Element,
-  buttonId: string,
-  iconName: IconName,
-  isDisabled: boolean
-) {
+export function sendChevronButtonData({
+  elButton,
+  buttonId,
+  iconName,
+  isDisabled
+}: {
+  elButton: Element;
+  buttonId: string;
+  iconName: IconName;
+  isDisabled: boolean;
+}) {
   assignButtonId(elButton, buttonId);
   sendButtonData({
     elButton,

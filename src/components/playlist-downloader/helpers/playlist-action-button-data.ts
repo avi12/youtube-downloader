@@ -28,7 +28,15 @@ export function buildDeselectAllData(isDisabled: boolean) {
   };
 }
 
-export function buildDownloadData(isDisabled: boolean, isDownloading: boolean, downloadButtonLabel: string) {
+export function buildDownloadData({
+  isDisabled,
+  isDownloading,
+  downloadButtonLabel
+}: {
+  isDisabled: boolean;
+  isDownloading: boolean;
+  downloadButtonLabel: string;
+}) {
   return {
     iconName: isDownloading ? IconName.Close : IconName.Download,
     title: downloadButtonLabel,
@@ -43,7 +51,15 @@ export function buildDownloadData(isDisabled: boolean, isDownloading: boolean, d
   };
 }
 
-export function buildDownloadAllData(isBusy: boolean, isRevealingAll: boolean, revealedVideoCount: number) {
+export function buildDownloadAllData({
+  isBusy,
+  isRevealingAll,
+  revealedVideoCount
+}: {
+  isBusy: boolean;
+  isRevealingAll: boolean;
+  revealedVideoCount: number;
+}) {
   const label = isRevealingAll
     ? `Revealing hidden videos (${revealedVideoCount})`
     : "Download whole playlist";

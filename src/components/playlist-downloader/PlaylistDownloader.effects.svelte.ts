@@ -4,11 +4,15 @@ import type { createPlaylistToggleButtons } from "./PlaylistDownloader.toggle-bu
 import { onButtonClick } from "@/lib/messaging/cross-world-messenger";
 import { untrack } from "svelte";
 
-export function setupPlaylistEffects(
-  playlist: ReturnType<typeof createPlaylistDownloaderState>,
-  toggleButtons: ReturnType<typeof createPlaylistToggleButtons>,
-  actionButtons: ReturnType<typeof createPlaylistActionButtons>
-) {
+export function setupPlaylistEffects({
+  playlist,
+  toggleButtons,
+  actionButtons
+}: {
+  playlist: ReturnType<typeof createPlaylistDownloaderState>;
+  toggleButtons: ReturnType<typeof createPlaylistToggleButtons>;
+  actionButtons: ReturnType<typeof createPlaylistActionButtons>;
+}) {
   $effect.pre(() => {
     void playlist.downloadMode;
     void playlist.outputMode;

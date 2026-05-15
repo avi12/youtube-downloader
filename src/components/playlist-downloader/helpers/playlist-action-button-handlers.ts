@@ -1,9 +1,13 @@
 import { ACTION_BUTTON_IDS } from "./playlist-action-button-data";
 import { DATA_BUTTON_ID_ATTR } from "@/lib/ui/polymer-utils";
 
-export function attachButton(buttonId: string, setter: (el: HTMLElement) => void) {
+export function attachButton({ buttonId, setter }: {
+  buttonId: string;
+  setter: (el: HTMLElement) => void;
+}) {
   return (elButton: Element) => {
-    if (!(elButton instanceof HTMLElement)) {
+    const isHtmlElement = elButton instanceof HTMLElement;
+    if (!isHtmlElement) {
       return;
     }
 
@@ -12,24 +16,30 @@ export function attachButton(buttonId: string, setter: (el: HTMLElement) => void
   };
 }
 
-export function handleActionButtonClick(buttonId: string, state: {
-  isRevealingAll: boolean;
-  clearSelection(): void;
-  toggleSelectedDownload(): void;
-  revealAndDownloadAll(): Promise<void> | void;
-  cancelReveal(): void;
+export function handleActionButtonClick({ buttonId, state }: {
+  buttonId: string;
+  state: {
+    isRevealingAll: boolean;
+    clearSelection(): void;
+    toggleSelectedDownload(): void;
+    revealAndDownloadAll(): Promise<void> | void;
+    cancelReveal(): void;
+  };
 }) {
-  if (buttonId === ACTION_BUTTON_IDS.DeselectAll) {
+  const isDeselectAll = buttonId === ACTION_BUTTON_IDS.DeselectAll;
+  if (isDeselectAll) {
     state.clearSelection();
     return true;
   }
 
-  if (buttonId === ACTION_BUTTON_IDS.Download || buttonId === ACTION_BUTTON_IDS.StopAll) {
+  const isDownloadOrStop = buttonId === ACTION_BUTTON_IDS.Download || buttonId === ACTION_BUTTON_IDS.StopAll;
+  if (isDownloadOrStop) {
     state.toggleSelectedDownload();
     return true;
   }
 
-  if (buttonId === ACTION_BUTTON_IDS.DownloadAll) {
+  const isDownloadAll = buttonId === ACTION_BUTTON_IDS.DownloadAll;
+  if (isDownloadAll) {
     if (state.isRevealingAll) {
       state.cancelReveal();
     } else {

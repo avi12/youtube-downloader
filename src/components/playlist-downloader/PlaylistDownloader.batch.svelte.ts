@@ -22,12 +22,17 @@ export const batchDownloadStatus = $state({
 export const batchVideoIds = new SvelteSet<string>();
 export const batchCanceledIds = new SvelteSet<string>();
 
-export function createBatchDownloadState(
-  getOutputMode: () => PlaylistOutputMode,
-  getDownloadMode: () => PlaylistDownloadMode,
-  buildEffectiveOptions: () => Options,
-  getEffectiveZipName: () => string
-) {
+export function createBatchDownloadState({
+  getOutputMode,
+  getDownloadMode,
+  buildEffectiveOptions,
+  getEffectiveZipName
+}: {
+  getOutputMode: () => PlaylistOutputMode;
+  getDownloadMode: () => PlaylistDownloadMode;
+  buildEffectiveOptions: () => Options;
+  getEffectiveZipName: () => string;
+}) {
   let isDownloading = $state(false);
   let totalCount = $state(0);
   let error = $state("");
@@ -39,12 +44,14 @@ export function createBatchDownloadState(
 
   $effect(() => {
     for (const request of activeDownloadRequests) {
-      if (batchDoneIds.has(request.videoId)) {
+      const isAlreadyDone = batchDoneIds.has(request.videoId);
+      if (isAlreadyDone) {
         continue;
       }
 
       const entry = downloadProgressStore.get(request.videoId);
-      if (!entry || entry.isDone || entry.isFailed) {
+      const isTerminal = !entry || entry.isDone || entry.isFailed;
+      if (isTerminal) {
         batchDoneIds.add(request.videoId);
       }
     }
@@ -60,9 +67,11 @@ export function createBatchDownloadState(
       return;
     }
 
-    if (currentZipBundleId) {
+    const isWaitingForZip = currentZipBundleId;
+    if (isWaitingForZip) {
       const zipEntry = downloadProgressStore.get(`zip:${currentZipBundleId}`);
-      if (!zipEntry?.isDone) {
+      const isZipNotDone = !zipEntry?.isDone;
+      if (isZipNotDone) {
         return;
       }
 
@@ -75,7 +84,10 @@ export function createBatchDownloadState(
     batchDownloadStatus.isRunning = false;
     batchDownloadStatus.isZipBatch = false;
 
-    finalizeBatchVideoProgress(activeDownloadRequests, batchCanceledIds);
+    finalizeBatchVideoProgress({
+      activeDownloadRequests,
+      canceledIds: batchCanceledIds
+    });
 
     batchVideoIds.clear();
     batchCanceledIds.clear();
@@ -101,9 +113,12 @@ export function createBatchDownloadState(
 
     initBatchVideoProgress(videos);
 
-    const { playlistId, isZipBundle, zipName, downloadRequests } = buildBatchDownloadRequests(
-      videos, buildEffectiveOptions(), getOutputMode, getEffectiveZipName
-    );
+    const { playlistId, isZipBundle, zipName, downloadRequests } = buildBatchDownloadRequests({
+      videos,
+      resolvedOptions: buildEffectiveOptions(),
+      getOutputMode,
+      getEffectiveZipName
+    });
     batchDownloadStatus.isZipBatch = isZipBundle;
     currentZipBundleId = isZipBundle ? playlistId : null;
     activeDownloadRequests = downloadRequests;

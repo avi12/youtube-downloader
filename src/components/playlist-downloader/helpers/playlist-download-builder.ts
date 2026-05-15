@@ -19,16 +19,24 @@ export function optionsToQualityValue(options: Options) {
     : VideoQualityMode.Best;
 }
 
-export function buildDownloadRequest(
-  data: VideoData,
-  options: Options,
-  playlistId: string,
-  playlistTitle: string,
-  playlistTotalCount: number,
-  isZipBundle: boolean
-): DownloadRequest {
+export function buildDownloadRequest({
+  data,
+  options,
+  playlistId,
+  playlistTitle,
+  playlistTotalCount,
+  isZipBundle
+}: {
+  data: VideoData;
+  options: Options;
+  playlistId: string;
+  playlistTitle: string;
+  playlistTotalCount: number;
+  isZipBundle: boolean;
+}): DownloadRequest {
   let downloadType: DownloadType = data.isMusic ? DownloadType.Audio : DownloadType.VideoAndAudio;
-  if (options.defaultDownloadType !== DownloadType.Auto) {
+  const isExplicitType = options.defaultDownloadType !== DownloadType.Auto;
+  if (isExplicitType) {
     downloadType = options.defaultDownloadType;
   }
 

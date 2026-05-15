@@ -96,7 +96,8 @@ export function createPlaylistToggleButtons(state: {
 
   function makeSegKeydown(group: ToggleButtonGroup[]) {
     return (e: KeyboardEvent) => {
-      if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") {
+      const isNotArrowKey = e.key !== "ArrowLeft" && e.key !== "ArrowRight";
+      if (isNotArrowKey) {
         return;
       }
 

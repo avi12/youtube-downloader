@@ -1,17 +1,25 @@
 import { IconName, type VideoData } from "@/types";
 
-export function resolveButtonLabel(
-  videoData: VideoData | null,
-  isLocallyDone: boolean,
-  isDone: boolean,
-  isDownloading: boolean,
-  isDownloadFailed: boolean
-) {
-  if (!videoData?.isDownloadable) {
+export function resolveButtonLabel({
+  videoData,
+  isLocallyDone,
+  isDone,
+  isDownloading,
+  isDownloadFailed
+}: {
+  videoData: VideoData | null;
+  isLocallyDone: boolean;
+  isDone: boolean;
+  isDownloading: boolean;
+  isDownloadFailed: boolean;
+}) {
+  const isNotDownloadable = !videoData?.isDownloadable;
+  if (isNotDownloadable) {
     return "N/A";
   }
 
-  if (isLocallyDone || isDone) {
+  const isComplete = isLocallyDone || isDone;
+  if (isComplete) {
     return "Downloaded";
   }
 
@@ -26,13 +34,19 @@ export function resolveButtonLabel(
   return "Download";
 }
 
-export function resolveDownloadIconName(
-  isLocallyDone: boolean,
-  isDone: boolean,
-  isDownloading: boolean,
-  isDownloadFailed: boolean
-) {
-  if (isLocallyDone || isDone) {
+export function resolveDownloadIconName({
+  isLocallyDone,
+  isDone,
+  isDownloading,
+  isDownloadFailed
+}: {
+  isLocallyDone: boolean;
+  isDone: boolean;
+  isDownloading: boolean;
+  isDownloadFailed: boolean;
+}) {
+  const isComplete = isLocallyDone || isDone;
+  if (isComplete) {
     return IconName.CheckCircleThick;
   }
 

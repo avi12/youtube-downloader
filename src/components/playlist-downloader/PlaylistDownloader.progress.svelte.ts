@@ -7,11 +7,15 @@ import { downloadProgressStore } from "@/lib/ui/synced-stores.svelte";
 type BatchState = ReturnType<typeof createBatchDownloadState>;
 type VideoDataState = ReturnType<typeof createVideoDataState>;
 
-export function createProgressState(
-  batch: BatchState,
-  videoData: VideoDataState,
-  getIsScrollSyncEnabled: () => boolean
-) {
+export function createProgressState({
+  batch,
+  videoData,
+  getIsScrollSyncEnabled
+}: {
+  batch: BatchState;
+  videoData: VideoDataState;
+  getIsScrollSyncEnabled: () => boolean;
+}) {
   const activeIndividualDownloadCount = $derived.by(() => {
     if (batch.isDownloading) {
       return 0;
@@ -27,16 +31,16 @@ export function createProgressState(
   });
 
   const totalProgress = $derived(
-    calculateBatchProgress(
-      batch.isDownloading,
-      batch.activeDownloadRequests,
-      videoId => downloadProgressStore.get(videoId),
-      batch.totalCount,
-      batch.currentZipBundleId,
+    calculateBatchProgress({
+      isDownloading: batch.isDownloading,
+      activeDownloadRequests: batch.activeDownloadRequests,
+      getProgressEntry: videoId => downloadProgressStore.get(videoId),
+      totalCount: batch.totalCount,
+      currentZipBundleId: batch.currentZipBundleId,
       activeIndividualDownloadCount,
-      videoData.videoDataMap.keys(),
-      batch.completedBatchProgress
-    )
+      videoDataMapKeys: videoData.videoDataMap.keys(),
+      completedBatchProgress: batch.completedBatchProgress
+    })
   );
 
   const activeDownloadVideoId = $derived.by(() => {
@@ -54,16 +58,16 @@ export function createProgressState(
   });
 
   const currentPhaseLabel = $derived(
-    resolveCurrentPhaseLabel(
-      batch.isDownloading,
-      batch.currentZipBundleId,
-      batch.downloadedCount,
-      batch.totalCount,
+    resolveCurrentPhaseLabel({
+      isDownloading: batch.isDownloading,
+      currentZipBundleId: batch.currentZipBundleId,
+      downloadedCount: batch.downloadedCount,
+      totalCount: batch.totalCount,
       activeDownloadVideoId,
-      batch.activeDownloadRequests,
-      videoId => downloadProgressStore.get(videoId),
-      videoId => videoData.videoDataMap.get(videoId)
-    )
+      activeDownloadRequests: batch.activeDownloadRequests,
+      getProgressEntry: videoId => downloadProgressStore.get(videoId),
+      getVideoData: videoId => videoData.videoDataMap.get(videoId)
+    })
   );
 
   const downloadButtonLabel = $derived.by(() => {

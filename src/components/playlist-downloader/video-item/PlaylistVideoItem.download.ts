@@ -14,7 +14,8 @@ export async function executeDownload(
 ) {
   const options = CONTENT_OPTIONS.value;
   let downloadType: DownloadType = videoData.isMusic ? DownloadType.Audio : DownloadType.VideoAndAudio;
-  if (options.defaultDownloadType && options.defaultDownloadType !== DownloadType.Auto) {
+  const isExplicitType = options.defaultDownloadType && options.defaultDownloadType !== DownloadType.Auto;
+  if (isExplicitType) {
     downloadType = options.defaultDownloadType;
   }
 

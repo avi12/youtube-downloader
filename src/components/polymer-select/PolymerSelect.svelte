@@ -41,7 +41,8 @@
   }
 
   function attachTrigger(elTarget: Element) {
-    if (!(elTarget instanceof HTMLElement)) {
+    const isNotHtmlElement = !(elTarget instanceof HTMLElement);
+    if (isNotHtmlElement) {
       return;
     }
 
@@ -52,7 +53,8 @@
     }
 
     function handleKeydown(e: Event) {
-      if (!(e instanceof KeyboardEvent) || e.key !== "ArrowDown") {
+      const isNotArrowDown = !(e instanceof KeyboardEvent) || e.key !== "ArrowDown";
+      if (isNotArrowDown) {
         return;
       }
 
@@ -69,22 +71,35 @@
   }
 
   function attachPopover(elTarget: Element) {
-    if (!(elTarget instanceof HTMLElement)) {
+    const isNotHtmlElement = !(elTarget instanceof HTMLElement);
+    if (isNotHtmlElement) {
       return;
     }
 
     elPopover = elTarget;
 
+    const elIronDropdown = elTarget.closest<HTMLElement & { noCancelOnEscKey?: boolean }>("tp-yt-iron-dropdown");
+
     function handleToggle(e: Event) {
-      if (!(e instanceof ToggleEvent)) {
+      const isNotToggleEvent = !(e instanceof ToggleEvent);
+      if (isNotToggleEvent) {
         return;
       }
 
       isOpen = e.newState === "open";
 
-      if (e.newState === "open") {
+      const isOpening = e.newState === "open";
+      if (isOpening) {
+        if (elIronDropdown) {
+          elIronDropdown.noCancelOnEscKey = true;
+        }
+
         requestAnimationFrame(() => elMenu?.focus());
       } else {
+        if (elIronDropdown) {
+          elIronDropdown.noCancelOnEscKey = false;
+        }
+
         focusTrigger();
       }
     }
@@ -94,14 +109,16 @@
   }
 
   function attachMenu(elTarget: Element) {
-    if (!(elTarget instanceof HTMLElement)) {
+    const isNotHtmlElement = !(elTarget instanceof HTMLElement);
+    if (isNotHtmlElement) {
       return;
     }
 
     elMenu = elTarget;
 
     function handleClick(e: Event) {
-      if (!(e.target instanceof Element)) {
+      const isNotElement = !(e.target instanceof Element);
+      if (isNotElement) {
         return;
       }
 
@@ -115,7 +132,8 @@
         return;
       }
 
-      if (dataValue !== value) {
+      const isNewValue = dataValue !== value;
+      if (isNewValue) {
         onchange(dataValue);
       }
 
@@ -123,24 +141,29 @@
     }
 
     function handleKeydown(e: Event) {
-      if (!(e instanceof KeyboardEvent)) {
+      const isNotKeyboardEvent = !(e instanceof KeyboardEvent);
+      if (isNotKeyboardEvent) {
         return;
       }
 
-      if (e.key === "Escape") {
+      const isEscape = e.key === "Escape";
+      if (isEscape) {
         e.stopPropagation();
         return;
       }
 
-      if (e.key === "Tab") {
+      const isTab = e.key === "Tab";
+      if (isTab) {
         e.preventDefault();
         elPopover?.hidePopover();
         return;
       }
 
-      if (e.key === "Enter" || e.key === " ") {
+      const isConfirm = e.key === "Enter" || e.key === " ";
+      if (isConfirm) {
         const elActive = document.activeElement;
-        if (!(elActive instanceof HTMLElement) || !elActive.matches("tp-yt-paper-item")) {
+        const isNotPaperItem = !(elActive instanceof HTMLElement) || !elActive.matches("tp-yt-paper-item");
+        if (isNotPaperItem) {
           return;
         }
 
@@ -150,7 +173,8 @@
           return;
         }
 
-        if (dataValue !== value) {
+        const isNewValue = dataValue !== value;
+        if (isNewValue) {
           onchange(dataValue);
         }
 
@@ -234,7 +258,7 @@
     justify-content: space-between;
     align-items: center;
     width: 100%;
-    height: 40px;
+    height: 47px;
     margin: 0;
     padding-block: 0;
     padding-inline: 14px 12px;

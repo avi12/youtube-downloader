@@ -2,19 +2,25 @@ import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-wo
 import { downloadProgressStore, videoDataFailedStore, videoDataStore } from "@/lib/ui/synced-stores.svelte";
 import type { VideoData } from "@/types";
 
-export function createVideoItemEffects(
-  videoId: string,
-  setVideoData: (value: VideoData) => void,
-  setIsLoadFailed: (value: boolean) => void,
-  setIsLocallyDone: (value: boolean) => void
-) {
+export function createVideoItemEffects({
+  videoId,
+  setVideoData,
+  setIsLoadFailed,
+  setIsLocallyDone
+}: {
+  videoId: string;
+  setVideoData: (value: VideoData) => void;
+  setIsLoadFailed: (value: boolean) => void;
+  setIsLocallyDone: (value: boolean) => void;
+}) {
   $effect(() => {
     const entry = downloadProgressStore.get(videoId);
     if (entry?.isDone) {
       setIsLocallyDone(true); return;
     }
 
-    if (!entry || entry.isFailed || entry.isDownloading) {
+    const isClearState = !entry || entry.isFailed || entry.isDownloading;
+    if (isClearState) {
       setIsLocallyDone(false);
     }
   });
@@ -25,7 +31,8 @@ export function createVideoItemEffects(
       setVideoData(storeData); return;
     }
 
-    if (videoDataFailedStore.get(videoId)) {
+    const isLoadFailed = videoDataFailedStore.get(videoId);
+    if (isLoadFailed) {
       setIsLoadFailed(true); return;
     }
 

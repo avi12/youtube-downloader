@@ -1,11 +1,15 @@
 import { revealAllPlaylistVideos } from "./PlaylistDownloader.scroll";
 import type { VideoData } from "@/types";
 
-export function createRevealState(
-  getVideoDataMapSize: () => number,
-  getDownloadableVideos: () => readonly VideoData[],
-  startDownload: (videos: readonly VideoData[]) => Promise<void>
-) {
+export function createRevealState({
+  getVideoDataMapSize,
+  getDownloadableVideos,
+  startDownload
+}: {
+  getVideoDataMapSize: () => number;
+  getDownloadableVideos: () => readonly VideoData[];
+  startDownload: (videos: readonly VideoData[]) => Promise<void>;
+}) {
   let isRevealingAll = $state(false);
   let revealedVideoCount = $state(0);
   let isDownloadPendingReveal = false;

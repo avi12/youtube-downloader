@@ -17,18 +17,23 @@ export function initBatchVideoProgress(videos: readonly VideoData[]) {
   }
 }
 
-export function finalizeBatchVideoProgress(
-  activeDownloadRequests: DownloadRequest[],
-  canceledIds: ReadonlySet<string>
-) {
+export function finalizeBatchVideoProgress({
+  activeDownloadRequests,
+  canceledIds
+}: {
+  activeDownloadRequests: DownloadRequest[];
+  canceledIds: ReadonlySet<string>;
+}) {
   for (const request of activeDownloadRequests) {
-    if (canceledIds.has(request.videoId)) {
+    const isCanceled = canceledIds.has(request.videoId);
+    if (isCanceled) {
       continue;
     }
 
     downloadProgressStore.unsuppress(request.videoId);
     const entry = downloadProgressStore.get(request.videoId);
-    if (entry && !entry.isDone && !entry.isFailed) {
+    const isIncompleteEntry = entry && !entry.isDone && !entry.isFailed;
+    if (isIncompleteEntry) {
       downloadProgressStore.setLocal(request.videoId, {
         isDownloading: false,
         isDone: true,
@@ -43,7 +48,8 @@ export async function cancelActiveDownloads(activeDownloadRequests: DownloadRequ
   const activeVideoIds = activeDownloadRequests
     .filter(request => downloadProgressStore.get(request.videoId)?.isDownloading)
     .map(request => request.videoId);
-  if (activeVideoIds.length > 0) {
+  const hasActiveDownloads = activeVideoIds.length > 0;
+  if (hasActiveDownloads) {
     await sendMessage(MessageType.CancelDownload, { videoIds: activeVideoIds });
   }
 
@@ -52,18 +58,30 @@ export async function cancelActiveDownloads(activeDownloadRequests: DownloadRequ
   }
 }
 
-export function buildBatchDownloadRequests(
-  videos: readonly VideoData[],
-  resolvedOptions: Options,
-  getOutputMode: () => PlaylistOutputMode,
-  getEffectiveZipName: () => string
-) {
+export function buildBatchDownloadRequests({
+  videos,
+  resolvedOptions,
+  getOutputMode,
+  getEffectiveZipName
+}: {
+  videos: readonly VideoData[];
+  resolvedOptions: Options;
+  getOutputMode: () => PlaylistOutputMode;
+  getEffectiveZipName: () => string;
+}) {
   const metadata = playlistMetadataSignal.value;
   const playlistId = metadata?.playlistId || `playlist-${Date.now()}`;
   const isZipBundle = getOutputMode() === PlaylistOutputMode.Zip;
   const zipName = getEffectiveZipName();
   const downloadRequests = videos.map(data =>
-    buildDownloadRequest(data, resolvedOptions, playlistId, zipName, videos.length, isZipBundle));
+    buildDownloadRequest({
+      data,
+      options: resolvedOptions,
+      playlistId,
+      playlistTitle: zipName,
+      playlistTotalCount: videos.length,
+      isZipBundle
+    }));
   return {
     playlistId,
     isZipBundle,

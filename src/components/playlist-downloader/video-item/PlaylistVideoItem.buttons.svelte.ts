@@ -29,9 +29,14 @@ export function createButtonManager(params: {
     const tooltip = params.itemState.buttonTooltip;
     const isDisabled = !params.itemState.videoData?.isDownloadable || params.isInProgressInZipBatch;
     const iconName = params.isInProgressInZipBatch ? IconName.CheckCircleThick : params.itemState.downloadIconName;
-    sendDownloadButtonData(
-      elDownloadButton, downloadButtonId, tooltip, params.itemState.videoData, iconName, isDisabled
-    );
+    sendDownloadButtonData({
+      elButton: elDownloadButton,
+      buttonId: downloadButtonId,
+      tooltip,
+      videoData: params.itemState.videoData,
+      downloadIconName: iconName,
+      isDisabled
+    });
   }
 
   function refreshChevronButton() {
@@ -45,7 +50,12 @@ export function createButtonManager(params: {
         <= elChevronButton.getBoundingClientRect().top + PANEL_ABOVE_OVERLAP_PX;
     const isDisabled = !params.itemState.videoData?.isDownloadable;
     const iconName = isPanelAbove ? IconName.ExpandLess : IconName.ExpandMore;
-    sendChevronButtonData(elChevronButton, chevronButtonId, iconName, isDisabled);
+    sendChevronButtonData({
+      elButton: elChevronButton,
+      buttonId: chevronButtonId,
+      iconName,
+      isDisabled
+    });
   }
 
   function scheduleRefresh() {
@@ -62,7 +72,8 @@ export function createButtonManager(params: {
   }
 
   function attachButtonGroup(elTarget: Element) {
-    if (elTarget instanceof HTMLElement) {
+    const isHtmlElement = elTarget instanceof HTMLElement;
+    if (isHtmlElement) {
       elButtonGroup = elTarget;
     }
   }
@@ -100,8 +111,18 @@ export function createButtonManager(params: {
     refreshChevronButton,
     scheduleRefresh,
     attachDownloadButton: (elButton: Element) =>
-      attachDownloadButton(elButton, onDownloadClick, refreshDownloadButton, setDownloadButtonElement),
+      attachDownloadButton({
+        elButton,
+        onClickDownload: onDownloadClick,
+        refreshDownload: refreshDownloadButton,
+        setDownloadButtonElement
+      }),
     attachChevronButton: (elButton: Element) =>
-      attachChevronButton(elButton, onChevronClick, refreshChevronButton, setChevronButtonElement)
+      attachChevronButton({
+        elButton,
+        onClickChevron: onChevronClick,
+        refreshChevron: refreshChevronButton,
+        setChevronButtonElement
+      })
   };
 }

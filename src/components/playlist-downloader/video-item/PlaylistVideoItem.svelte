@@ -40,12 +40,12 @@
     }
   });
 
-  const panel = createPanelManager(
-    untrack(() => videoId),
-    () => itemState.videoData,
-    () => buttons.elButtonGroup,
-    () => buttons.refreshChevronButton()
-  );
+  const panel = createPanelManager({
+    videoId: untrack(() => videoId),
+    getVideoData: () => itemState.videoData,
+    getElButtonGroup: () => buttons.elButtonGroup,
+    onChevronRefresh: () => buttons.refreshChevronButton()
+  });
 
   const buttons = createButtonManager({
     get videoId() {

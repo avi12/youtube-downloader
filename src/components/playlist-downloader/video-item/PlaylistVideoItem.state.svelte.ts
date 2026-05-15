@@ -27,20 +27,28 @@ export function createPlaylistVideoItemState({ videoId, gridTitle, activeDownloa
   const isDone = $derived(downloadState.isDone);
   const isDownloadFailed = $derived(!!downloadState.isFailed);
 
-  createVideoItemEffects(
+  createVideoItemEffects({
     videoId,
-    value => {
+    setVideoData(value) {
       videoData = value;
     },
-    value => {
+    setIsLoadFailed(value) {
       isLoadFailed = value;
     },
-    value => {
+    setIsLocallyDone(value) {
       isLocallyDone = value;
     }
-  );
+  });
 
-  const buttonLabel = $derived(resolveButtonLabel(videoData, isLocallyDone, isDone, isDownloading, isDownloadFailed));
+  const buttonLabel = $derived(
+    resolveButtonLabel({
+      videoData,
+      isLocallyDone,
+      isDone,
+      isDownloading,
+      isDownloadFailed
+    })
+  );
   const displayProgress = $derived(
     calculateWeightedProgress({
       isDownloading,
@@ -60,10 +68,18 @@ export function createPlaylistVideoItemState({ videoId, gridTitle, activeDownloa
       videoData
     })
   );
-  const downloadIconName = $derived(resolveDownloadIconName(isLocallyDone, isDone, isDownloading, isDownloadFailed));
+  const downloadIconName = $derived(
+    resolveDownloadIconName({
+      isLocallyDone,
+      isDone,
+      isDownloading,
+      isDownloadFailed
+    })
+  );
 
   async function handleDownloadClick() {
-    if (!videoData?.isDownloadable || activeDownloadClicks.has(videoId)) {
+    const isNotReadyToDownload = !videoData?.isDownloadable || activeDownloadClicks.has(videoId);
+    if (isNotReadyToDownload) {
       return;
     }
 
@@ -73,7 +89,7 @@ export function createPlaylistVideoItemState({ videoId, gridTitle, activeDownloa
 
     activeDownloadClicks.add(videoId);
     try {
-      await executeDownload(videoData, videoId, gridTitle, value => {
+      await executeDownload(videoData!, videoId, gridTitle, value => {
         isLocallyDone = value;
       });
     } finally {

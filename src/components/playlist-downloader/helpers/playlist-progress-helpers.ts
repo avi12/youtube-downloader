@@ -2,21 +2,32 @@ import type { DownloadProgressState } from "@/lib/ui/synced-stores.svelte";
 import { calculateWeightedProgress } from "@/lib/youtube/video-helpers";
 import { ProgressType, type DownloadRequest, type VideoData } from "@/types";
 
-export function calculateBatchProgress(
-  isDownloading: boolean,
-  activeDownloadRequests: DownloadRequest[],
-  getProgressEntry: (videoId: string) => DownloadProgressState | undefined,
-  totalCount: number,
-  currentZipBundleId: string | null,
-  activeIndividualDownloadCount: number,
-  videoDataMapKeys: Iterable<string>,
-  completedBatchProgress: number
-) {
-  if (isDownloading && totalCount > 0) {
+export function calculateBatchProgress({
+  isDownloading,
+  activeDownloadRequests,
+  getProgressEntry,
+  totalCount,
+  currentZipBundleId,
+  activeIndividualDownloadCount,
+  videoDataMapKeys,
+  completedBatchProgress
+}: {
+  isDownloading: boolean;
+  activeDownloadRequests: DownloadRequest[];
+  getProgressEntry: (videoId: string) => DownloadProgressState | undefined;
+  totalCount: number;
+  currentZipBundleId: string | null;
+  activeIndividualDownloadCount: number;
+  videoDataMapKeys: Iterable<string>;
+  completedBatchProgress: number;
+}) {
+  const isActiveBatch = isDownloading && totalCount > 0;
+  if (isActiveBatch) {
     let sum = 0;
     for (const request of activeDownloadRequests) {
       const entry = getProgressEntry(request.videoId);
-      if (!entry || !entry.isDownloading) {
+      const isNotActiveDownload = !entry || !entry.isDownloading;
+      if (isNotActiveDownload) {
         sum += 100;
         continue;
       }
@@ -28,7 +39,8 @@ export function calculateBatchProgress(
       });
     }
 
-    if (currentZipBundleId) {
+    const isZipBundle = currentZipBundleId;
+    if (isZipBundle) {
       const zipEntry = getProgressEntry(`zip:${currentZipBundleId}`);
       sum += zipEntry?.isDone ? 100 : 0;
       return sum / (totalCount + 1);
@@ -37,7 +49,8 @@ export function calculateBatchProgress(
     return sum / totalCount;
   }
 
-  if (activeIndividualDownloadCount > 0) {
+  const hasActiveIndividualDownloads = activeIndividualDownloadCount > 0;
+  if (hasActiveIndividualDownloads) {
     let sum = 0;
     for (const videoId of videoDataMapKeys) {
       const entry = getProgressEntry(videoId);
@@ -55,21 +68,31 @@ export function calculateBatchProgress(
   return completedBatchProgress;
 }
 
-export function resolveCurrentPhaseLabel(
-  isDownloading: boolean,
-  currentZipBundleId: string | null,
-  downloadedCount: number,
-  totalCount: number,
-  activeDownloadVideoId: string | null,
-  activeDownloadRequests: DownloadRequest[],
-  getProgressEntry: (videoId: string) => DownloadProgressState | undefined,
-  getVideoData: (videoId: string) => VideoData | undefined
-) {
+export function resolveCurrentPhaseLabel({
+  isDownloading,
+  currentZipBundleId,
+  downloadedCount,
+  totalCount,
+  activeDownloadVideoId,
+  activeDownloadRequests,
+  getProgressEntry,
+  getVideoData
+}: {
+  isDownloading: boolean;
+  currentZipBundleId: string | null;
+  downloadedCount: number;
+  totalCount: number;
+  activeDownloadVideoId: string | null;
+  activeDownloadRequests: DownloadRequest[];
+  getProgressEntry: (videoId: string) => DownloadProgressState | undefined;
+  getVideoData: (videoId: string) => VideoData | undefined;
+}) {
   if (!isDownloading) {
     return "";
   }
 
-  if (currentZipBundleId && downloadedCount >= totalCount) {
+  const isZipBuildPhase = currentZipBundleId && downloadedCount >= totalCount;
+  if (isZipBuildPhase) {
     return "Building ZIP";
   }
 

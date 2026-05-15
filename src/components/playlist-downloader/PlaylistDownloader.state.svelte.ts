@@ -41,20 +41,24 @@ export function createPlaylistDownloaderState() {
     };
   }
 
-  const batch = createBatchDownloadState(
-    () => outputMode,
-    () => downloadMode,
+  const batch = createBatchDownloadState({
+    getOutputMode: () => outputMode,
+    getDownloadMode: () => downloadMode,
     buildEffectiveOptions,
-    () => overrides.effectiveZipName
-  );
+    getEffectiveZipName: () => overrides.effectiveZipName
+  });
 
-  const reveal = createRevealState(
-    () => videoData.videoDataMap.size,
-    () => videoData.downloadableVideos,
-    batch.startDownload
-  );
+  const reveal = createRevealState({
+    getVideoDataMapSize: () => videoData.videoDataMap.size,
+    getDownloadableVideos: () => videoData.downloadableVideos,
+    startDownload: batch.startDownload
+  });
 
-  const progress = createProgressState(batch, videoData, () => isScrollSyncEnabled);
+  const progress = createProgressState({
+    batch,
+    videoData,
+    getIsScrollSyncEnabled: () => isScrollSyncEnabled
+  });
 
   return {
     get isDownloading() {
@@ -73,14 +77,20 @@ export function createPlaylistDownloaderState() {
       return downloadMode;
     },
     set downloadMode(value) {
-      downloadMode = value; void setOption("playlistDownloadMode", value);
+      downloadMode = value; void setOption({
+        key: "playlistDownloadMode",
+        value
+      });
     },
     get outputMode() {
       return outputMode;
     },
     set outputMode(value) {
       outputMode = value;
-      void setOption(videoData.isAllMusicPlaylist ? "playlistAudioOutputMode" : "playlistOutputMode", value);
+      void setOption({
+        key: videoData.isAllMusicPlaylist ? "playlistAudioOutputMode" : "playlistOutputMode",
+        value
+      });
     },
     get downloadableVideos() {
       return videoData.downloadableVideos;
@@ -113,7 +123,10 @@ export function createPlaylistDownloaderState() {
       return isScrollSyncEnabled;
     },
     set isScrollSyncEnabled(value) {
-      isScrollSyncEnabled = value; void setOption("isPlaylistScrollSyncEnabled", value);
+      isScrollSyncEnabled = value; void setOption({
+        key: "isPlaylistScrollSyncEnabled",
+        value
+      });
     },
     get effectiveDownloadType() {
       return overrides.effectiveDownloadType;
