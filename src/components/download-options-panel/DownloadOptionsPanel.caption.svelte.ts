@@ -1,5 +1,5 @@
 import { getActivePlayerCaption } from "./helpers/panel-init-caption";
-import { PLAYER_ACTIVE_CAPTION } from "./helpers/player-caption-store.svelte";
+import { PLAYER_ACTIVE_CAPTION } from "./helpers/player-active-tracks.svelte";
 import { findOriginalAudioFormat, normalizeLanguageCode } from "@/lib/youtube/video-helpers";
 import { PanelTrackMode, type CaptionTrack, type VideoData } from "@/types";
 

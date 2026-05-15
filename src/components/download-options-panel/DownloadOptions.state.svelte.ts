@@ -4,7 +4,8 @@ import {
   byLabel,
   resolveCaptionOriginalLabel
 } from "./download-options-helpers";
-import { PLAYER_ACTIVE_CAPTION } from "./helpers/player-caption-store.svelte";
+import { PLAYER_ACTIVE_CAPTION } from "./helpers/player-active-tracks.svelte";
+import { preserveAutoVariant } from "./helpers/preserve-auto-variant";
 import { optionsItem } from "@/lib/storage/storage";
 import { CONTENT_OPTIONS } from "@/lib/ui/synced-stores.svelte";
 import { findOriginalAudioFormat, INITIAL_OPTIONS } from "@/lib/youtube/video-helpers";
@@ -57,10 +58,12 @@ export function createDownloadOptionsState(props: () => DownloadOptionsProps) {
   );
 
   const filteredCaptionTracks = $derived(
-    PANEL_OPTIONS.includeAiCaptions
-      ? props().captionTracks
-      : props().captionTracks.filter(track =>
-        track.kind !== "asr" || track.vssId === PLAYER_ACTIVE_CAPTION.vssId)
+    props().captionTracks.filter(track => preserveAutoVariant({
+      item: track,
+      isAuto: track => track.kind === "asr",
+      matchesPlayer: track => track.vssId === PLAYER_ACTIVE_CAPTION.vssId,
+      globalIncludes: PANEL_OPTIONS.includeAiCaptions
+    }))
   );
 
   const qualityOptions = $derived(
@@ -80,9 +83,13 @@ export function createDownloadOptionsState(props: () => DownloadOptionsProps) {
   );
 
   const captionCustomOptions = $derived(
-    (PANEL_OPTIONS.includeAiCaptions
-      ? props().captionTracks
-      : props().captionTracks.filter(track => track.kind !== "asr"))
+    props().captionTracks
+      .filter(track => preserveAutoVariant({
+        item: track,
+        isAuto: candidate => candidate.kind === "asr",
+        matchesPlayer: () => false,
+        globalIncludes: PANEL_OPTIONS.includeAiCaptions
+      }))
       .map(track => ({
         value: track.vssId,
         label: formatCaptionLabel(track)
