@@ -32,7 +32,10 @@
 
   const onPanelKeydown = handlePanelKeydown(closePanel);
 
-  $effect(() => setupPanelButtonHandler(panel, closePanel));
+  $effect(() => setupPanelButtonHandler({
+    panel,
+    onClose: closePanel
+  }));
 </script>
 
 <div

@@ -3,10 +3,13 @@ import { completedDownloadsStore } from "@/lib/ui/completed-downloads-store.svel
 import { downloadProgressStore } from "@/lib/ui/synced-stores.svelte";
 import type { VideoData } from "@/types";
 
-export function createDownloadProgressTracker(
-  getVideoData: () => VideoData,
-  setDownloadId: (value: number | null) => void
-) {
+export function createDownloadProgressTracker({
+  getVideoData,
+  setDownloadId
+}: {
+  getVideoData: () => VideoData;
+  setDownloadId: (value: number | null) => void;
+}) {
   $effect(() => {
     const { videoId } = getVideoData();
     const existing = completedDownloadsStore.get(videoId);

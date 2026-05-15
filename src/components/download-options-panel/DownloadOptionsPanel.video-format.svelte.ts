@@ -2,10 +2,13 @@ import { CONTENT_OPTIONS } from "@/lib/ui/synced-stores.svelte";
 import { waitForVideoElement } from "@/lib/youtube/video-helpers";
 import { VideoQualityMode, type AdaptiveFormatItem, type VideoData } from "@/types";
 
-export function createVideoFormatTracker(
-  getVideoData: () => VideoData,
-  setSelectedVideoFormat: (value: AdaptiveFormatItem | null) => void
-) {
+export function createVideoFormatTracker({
+  getVideoData,
+  setSelectedVideoFormat
+}: {
+  getVideoData: () => VideoData;
+  setSelectedVideoFormat: (value: AdaptiveFormatItem | null) => void;
+}) {
   async function matchToCurrentQuality(signal: AbortSignal) {
     const videoData = getVideoData();
     try {
@@ -29,7 +32,8 @@ export function createVideoFormatTracker(
   $effect(() => {
     const options = CONTENT_OPTIONS.value;
     const videoData = getVideoData();
-    if (options.videoQualityMode === VideoQualityMode.CurrentQuality) {
+    const isCurrentQualityMode = options.videoQualityMode === VideoQualityMode.CurrentQuality;
+    if (isCurrentQualityMode) {
       const abortController = new AbortController();
       void matchToCurrentQuality(abortController.signal);
       const elVideo = document.querySelector("video");
@@ -43,7 +47,8 @@ export function createVideoFormatTracker(
       };
     }
 
-    if (options.videoQualityMode === VideoQualityMode.Best) {
+    const isBestQualityMode = options.videoQualityMode === VideoQualityMode.Best;
+    if (isBestQualityMode) {
       setSelectedVideoFormat(videoData.videoFormats[0] ?? null);
       return;
     }

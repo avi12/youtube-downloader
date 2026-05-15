@@ -96,7 +96,12 @@
     padding: 10px;
     border: 1px solid var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 10%));
     border-radius: 10px;
-    background: var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 4%));
+    background:
+      color-mix(
+        in oklch,
+        var(--yt-sys-color-baseline--text-primary, #0f0f0f) 4%,
+        var(--yt-sys-color-baseline--raised-background, var(--yt-sys-color-baseline--base-background, #ffffff))
+      );
 
     &.is-disabled {
       opacity: 50%;
@@ -105,10 +110,6 @@
 
     :global(.ytdl-select-label) {
       display: none;
-    }
-
-    :global(.ytdl-select-trigger) {
-      height: 44px;
     }
   }
 

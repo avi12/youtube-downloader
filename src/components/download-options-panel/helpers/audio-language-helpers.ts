@@ -5,7 +5,10 @@ export function byLabel(optA: { label: string }, optB: { label: string }) {
   return optA.label.localeCompare(optB.label);
 }
 
-export function buildUniqueAudioLanguages(audioFormats: AdaptiveFormatItem[], includeAutoDubbing = false) {
+export function buildUniqueAudioLanguages({ audioFormats, includeAutoDubbing = false }: {
+  audioFormats: AdaptiveFormatItem[];
+  includeAutoDubbing?: boolean;
+}) {
   const seen = new Set<string>();
   const result: LabeledOption[] = [];
   for (const format of audioFormats) {
@@ -19,19 +22,23 @@ export function buildUniqueAudioLanguages(audioFormats: AdaptiveFormatItem[], in
     }
 
     seen.add(langCode);
+    const isAutoDubbed = format.audioTrack.id.endsWith(".10");
     result.push({
       value: langCode,
-      label: format.audioTrack.displayName
+      label: isAutoDubbed ? `${format.audioTrack.displayName} (auto-dubbed)` : format.audioTrack.displayName
     });
   }
 
   return result.toSorted(byLabel);
 }
 
-export function resolveCaptionOriginalLabel(
-  audioFormats: AdaptiveFormatItem[],
-  captionTracks: CaptionTrack[]
-): string | null {
+export function resolveCaptionOriginalLabel({
+  audioFormats,
+  captionTracks
+}: {
+  audioFormats: AdaptiveFormatItem[];
+  captionTracks: CaptionTrack[];
+}): string | null {
   const originalLangId = findOriginalAudioFormat(audioFormats)?.audioTrack?.id;
   if (originalLangId) {
     const langCode = normalizeLanguageCode(originalLangId);

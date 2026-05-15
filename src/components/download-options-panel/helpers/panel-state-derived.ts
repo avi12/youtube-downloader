@@ -4,14 +4,21 @@ import { getOutputExtension } from "@/lib/utils/containers";
 import { formatAudioCodecLabel, formatVideoQualityLabel } from "@/lib/youtube/video-helpers";
 import { DownloadType, type AdaptiveFormatItem, type VideoData } from "@/types";
 
-export function resolveActualExtension(
-  downloadType: DownloadType,
-  selectedVideoFormat: AdaptiveFormatItem | null,
-  selectedAudioFormat: AdaptiveFormatItem | null,
-  extension: string,
-  getVideoData: () => VideoData
-) {
-  if (downloadType === DownloadType.Audio || !selectedVideoFormat || !selectedAudioFormat) {
+export function resolveActualExtension({
+  downloadType,
+  selectedVideoFormat,
+  selectedAudioFormat,
+  extension,
+  getVideoData
+}: {
+  downloadType: DownloadType;
+  selectedVideoFormat: AdaptiveFormatItem | null;
+  selectedAudioFormat: AdaptiveFormatItem | null;
+  extension: string;
+  getVideoData: () => VideoData;
+}) {
+  const isAudioOrMissingFormat = downloadType === DownloadType.Audio || !selectedVideoFormat || !selectedAudioFormat;
+  if (isAudioOrMissingFormat) {
     return extension;
   }
 
@@ -22,7 +29,8 @@ export function resolveActualExtension(
   });
 
   const selectedTrackId = selectedAudioFormat.audioTrack?.id;
-  if (selectedTrackId && CONTENT_OPTIONS.value.downloadExtras) {
+  const isTrackWithExtras = selectedTrackId && CONTENT_OPTIONS.value.downloadExtras;
+  if (isTrackWithExtras) {
     const hasExtraAudioTracks = getVideoData().audioFormats.some(
       format => format.audioTrack?.id && format.audioTrack.id !== selectedTrackId
     );
@@ -34,12 +42,17 @@ export function resolveActualExtension(
   return baseExtension;
 }
 
-export function resolvePrimaryState(
-  isDownloading: boolean,
-  isFailed: boolean,
-  isInterrupted: boolean,
-  isDone: boolean
-): PrimaryButtonState {
+export function resolvePrimaryState({
+  isDownloading,
+  isFailed,
+  isInterrupted,
+  isDone
+}: {
+  isDownloading: boolean;
+  isFailed: boolean;
+  isInterrupted: boolean;
+  isDone: boolean;
+}): PrimaryButtonState {
   if (isDownloading) {
     return PrimaryButtonState.Downloading;
   }
@@ -59,12 +72,17 @@ export function resolvePrimaryState(
   return PrimaryButtonState.Idle;
 }
 
-export function resolveQualityLabel(
-  downloadType: DownloadType,
-  selectedVideoFormat: AdaptiveFormatItem | null,
-  selectedAudioFormat: AdaptiveFormatItem | null
-) {
-  if (downloadType === DownloadType.Audio) {
+export function resolveQualityLabel({
+  downloadType,
+  selectedVideoFormat,
+  selectedAudioFormat
+}: {
+  downloadType: DownloadType;
+  selectedVideoFormat: AdaptiveFormatItem | null;
+  selectedAudioFormat: AdaptiveFormatItem | null;
+}) {
+  const isAudioType = downloadType === DownloadType.Audio;
+  if (isAudioType) {
     return selectedAudioFormat
       ? `${Math.floor(selectedAudioFormat.bitrate / 1000)} kbps (${formatAudioCodecLabel(selectedAudioFormat.mimeType)})`
       : "";

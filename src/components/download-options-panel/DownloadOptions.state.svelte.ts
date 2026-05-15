@@ -23,7 +23,10 @@ export function createDownloadOptionsState(props: () => DownloadOptionsProps) {
   const isAudio = $derived(props().downloadType === DownloadType.Audio);
 
   const uniqueAudioLanguages = $derived(
-    buildUniqueAudioLanguages(props().audioFormats, CONTENT_OPTIONS.value.includeAutoDubbing)
+    buildUniqueAudioLanguages({
+      audioFormats: props().audioFormats,
+      includeAutoDubbing: CONTENT_OPTIONS.value.includeAutoDubbing
+    })
   );
 
   const filteredCaptionTracks = $derived(
@@ -33,13 +36,13 @@ export function createDownloadOptionsState(props: () => DownloadOptionsProps) {
   );
 
   const qualityOptions = $derived(
-    buildQualityOptions(
+    buildQualityOptions({
       isAudio,
-      props().audioFormats,
-      props().videoFormats,
-      props().selectedAudioFormat?.audioTrack?.id,
-      uniqueAudioLanguages.length
-    )
+      audioFormats: props().audioFormats,
+      videoFormats: props().videoFormats,
+      selectedAudioTrackId: props().selectedAudioFormat?.audioTrack?.id,
+      uniqueAudioLanguagesCount: uniqueAudioLanguages.length
+    })
   );
 
   const qualityValue = $derived(
@@ -51,11 +54,16 @@ export function createDownloadOptionsState(props: () => DownloadOptionsProps) {
   const captionCustomOptions = $derived(
     filteredCaptionTracks.map(track => ({
       value: track.vssId,
-      label: track.name.simpleText
+      label: track.kind === "asr" ? `${track.name.simpleText} (auto-generated)` : track.name.simpleText
     })).toSorted(byLabel)
   );
 
-  const captionOriginalLabel = $derived(resolveCaptionOriginalLabel(props().audioFormats, filteredCaptionTracks));
+  const captionOriginalLabel = $derived(
+    resolveCaptionOriginalLabel({
+      audioFormats: props().audioFormats,
+      captionTracks: filteredCaptionTracks
+    })
+  );
   const audioPlayerLabel = $derived(props().selectedAudioFormat?.audioTrack?.displayName ?? null);
   const audioOriginalLabel = $derived(findOriginalAudioFormat(props().audioFormats)?.audioTrack?.displayName ?? null);
   const captionPlayerLabel = $derived(props().selectedCaptionTrack?.name.simpleText ?? null);

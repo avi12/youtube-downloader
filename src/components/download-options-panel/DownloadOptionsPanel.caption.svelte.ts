@@ -3,18 +3,23 @@ import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-wo
 import { findOriginalAudioFormat, normalizeLanguageCode } from "@/lib/youtube/video-helpers";
 import { PanelTrackMode, type CaptionTrack, type VideoData } from "@/types";
 
-export function createCaptionTrackState(
-  getVideoData: () => VideoData,
-  initialMode: PanelTrackMode,
-  initialTrack: CaptionTrack | null
-) {
+export function createCaptionTrackState({
+  getVideoData,
+  initialMode,
+  initialTrack
+}: {
+  getVideoData: () => VideoData;
+  initialMode: PanelTrackMode;
+  initialTrack: CaptionTrack | null;
+}) {
   let panelCaptionMode = $state<PanelTrackMode>(initialMode);
   let selectedCaptionTrack = $state<CaptionTrack | null>(initialTrack);
 
   function handlePanelCaptionModeChange(newMode: PanelTrackMode) {
     panelCaptionMode = newMode;
     const { captionTracks } = getVideoData();
-    if (newMode === PanelTrackMode.MatchVideo) {
+    const isMatchVideoMode = newMode === PanelTrackMode.MatchVideo;
+    if (isMatchVideoMode) {
       const activeCaption = getActivePlayerCaption();
       selectedCaptionTrack = activeCaption
         ? captionTracks.find(track => track.vssId === activeCaption.vss_id)
@@ -26,7 +31,8 @@ export function createCaptionTrackState(
       return;
     }
 
-    if (newMode === PanelTrackMode.Original) {
+    const isOriginalMode = newMode === PanelTrackMode.Original;
+    if (isOriginalMode) {
       const { audioFormats } = getVideoData();
       const originalAudio = findOriginalAudioFormat(audioFormats);
       if (originalAudio?.audioTrack) {
@@ -40,7 +46,8 @@ export function createCaptionTrackState(
       return;
     }
 
-    if (!selectedCaptionTrack && captionTracks.length > 0) {
+    const isCustomModeWithNoTrack = !selectedCaptionTrack && captionTracks.length > 0;
+    if (isCustomModeWithNoTrack) {
       selectedCaptionTrack = captionTracks[0];
     }
   }
@@ -50,7 +57,8 @@ export function createCaptionTrackState(
   }
 
   $effect(() => crossWorldMessenger.onMessage(CrossWorldMessage.CaptionTrackChanged, ({ data }) => {
-    if (panelCaptionMode !== PanelTrackMode.MatchVideo) {
+    const isNotMatchVideo = panelCaptionMode !== PanelTrackMode.MatchVideo;
+    if (isNotMatchVideo) {
       return;
     }
 

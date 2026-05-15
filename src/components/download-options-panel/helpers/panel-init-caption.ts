@@ -29,13 +29,21 @@ export function getActivePlayerCaption() {
   }
 }
 
-export function resolveInitialCaptionMode(options: Options, videoData: VideoData) {
-  const resolvedMode = resolveCaptionLanguageMode(options.captionLanguageMode, options.audioTrackLanguageMode);
-  if (resolvedMode === AudioTrackLanguageMode.OriginalLanguage) {
+export function resolveInitialCaptionMode({ options, videoData }: {
+  options: Options;
+  videoData: VideoData;
+}) {
+  const resolvedMode = resolveCaptionLanguageMode({
+    captionMode: options.captionLanguageMode,
+    audioMode: options.audioTrackLanguageMode
+  });
+  const isOriginalLanguage = resolvedMode === AudioTrackLanguageMode.OriginalLanguage;
+  if (isOriginalLanguage) {
     return PanelTrackMode.Original;
   }
 
-  if (resolvedMode === AudioTrackLanguageMode.Custom && options.customLanguage) {
+  const isCustomWithLanguage = resolvedMode === AudioTrackLanguageMode.Custom && options.customLanguage;
+  if (isCustomWithLanguage) {
     const langCode = normalizeLanguageCode(options.customLanguage);
     const hasMatch = videoData.captionTracks.some(track => normalizeLanguageCode(track.languageCode) === langCode);
     if (hasMatch) {
@@ -46,23 +54,30 @@ export function resolveInitialCaptionMode(options: Options, videoData: VideoData
   return PanelTrackMode.MatchVideo;
 }
 
-export function resolveInitialCaptionTrack(
-  captionMode: PanelTrackMode,
-  options: Options,
-  videoData: VideoData
-): CaptionTrack | null {
-  if (!videoData.captionTracks.length) {
+export function resolveInitialCaptionTrack({
+  captionMode,
+  options,
+  videoData
+}: {
+  captionMode: PanelTrackMode;
+  options: Options;
+  videoData: VideoData;
+}): CaptionTrack | null {
+  const hasNoCaptionTracks = !videoData.captionTracks.length;
+  if (hasNoCaptionTracks) {
     return null;
   }
 
-  if (captionMode === PanelTrackMode.Custom) {
+  const isCustomMode = captionMode === PanelTrackMode.Custom;
+  if (isCustomMode) {
     const langCode = normalizeLanguageCode(options.customLanguage ?? "");
     return videoData.captionTracks.find(track => normalizeLanguageCode(track.languageCode) === langCode)
       ?? videoData.captionTracks[0]
       ?? null;
   }
 
-  if (captionMode === PanelTrackMode.Original) {
+  const isOriginalMode = captionMode === PanelTrackMode.Original;
+  if (isOriginalMode) {
     const originalLangId = findOriginalAudioFormat(videoData.audioFormats)?.audioTrack?.id;
     if (originalLangId) {
       const langCode = normalizeLanguageCode(originalLangId);

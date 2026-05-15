@@ -38,28 +38,18 @@ export function buildStartDownloadParams(params: {
   };
 }
 
-export function sendStartDownload(
-  downloadType: DownloadType,
-  selectedVideoFormat: AdaptiveFormatItem | null,
-  selectedAudioFormat: AdaptiveFormatItem | null,
-  selectedCaptionTrack: CaptionTrack | null,
-  isDownloading: boolean,
-  isDownloadable: boolean,
-  isFilenameValid: boolean,
-  fullFilename: string,
-  videoData: VideoData
-) {
-  const payload = buildStartDownloadParams({
-    downloadType,
-    selectedVideoFormat,
-    selectedAudioFormat,
-    selectedCaptionTrack,
-    isDownloading,
-    isDownloadable,
-    isFilenameValid,
-    fullFilename,
-    videoData
-  });
+export function sendStartDownload(params: {
+  downloadType: DownloadType;
+  selectedVideoFormat: AdaptiveFormatItem | null;
+  selectedAudioFormat: AdaptiveFormatItem | null;
+  selectedCaptionTrack: CaptionTrack | null;
+  isDownloading: boolean;
+  isDownloadable: boolean;
+  isFilenameValid: boolean;
+  fullFilename: string;
+  videoData: VideoData;
+}) {
+  const payload = buildStartDownloadParams(params);
   if (!payload) {
     return;
   }

@@ -10,7 +10,8 @@ export function createFocusManager() {
   }
 
   function attach(elPanel: Element) {
-    if (!(elPanel instanceof HTMLElement)) {
+    const isNotHtmlElement = !(elPanel instanceof HTMLElement);
+    if (isNotHtmlElement) {
       return;
     }
 
@@ -33,7 +34,8 @@ export function createFocusManager() {
       // Only respond when the panel's own dropdown opens, otherwise the saved
       // removeInert gets overwritten and the first trap never releases - leaving
       // the rest of the page permanently inert.
-      if (e.target !== elDropdownRoot) {
+      const isInnerOverlay = e.target !== elDropdownRoot;
+      if (isInnerOverlay) {
         return;
       }
 
@@ -50,7 +52,8 @@ export function createFocusManager() {
     });
 
     function handleOverlayClosed(e: Event) {
-      if (e.target !== elDropdownRoot) {
+      const isInnerOverlay = e.target !== elDropdownRoot;
+      if (isInnerOverlay) {
         return;
       }
 

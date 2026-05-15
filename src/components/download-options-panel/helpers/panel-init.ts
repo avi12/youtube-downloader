@@ -15,15 +15,22 @@ export {
   resolveInitialCaptionTrack
 } from "./panel-init-caption";
 
-export function resolveInitialDownloadType(options: Options, videoData: VideoData) {
-  if (options.defaultDownloadType !== DownloadType.Auto) {
+export function resolveInitialDownloadType({ options, videoData }: {
+  options: Options;
+  videoData: VideoData;
+}) {
+  const isExplicitType = options.defaultDownloadType !== DownloadType.Auto;
+  if (isExplicitType) {
     return options.defaultDownloadType;
   }
 
   return videoData.isMusic ? DownloadType.Audio : DownloadType.VideoAndAudio;
 }
 
-export function resolveInitialExtension(options: Options, videoData: VideoData) {
+export function resolveInitialExtension({ options, videoData }: {
+  options: Options;
+  videoData: VideoData;
+}) {
   const extensionPreference = videoData.isMusic ? options.ext.audio : options.ext.video;
   const defaultFormat = videoData.isMusic
     ? getPreferredMusicAudioFormat(videoData.audioFormats)

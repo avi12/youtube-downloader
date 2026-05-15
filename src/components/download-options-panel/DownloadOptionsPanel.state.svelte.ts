@@ -27,24 +27,48 @@ export function createPanelState(getVideoData: () => VideoData) {
 
   let downloadId = $state<number | null>(null);
   let downloadType = $state<DownloadType>(
-    untrack(() => resolveInitialDownloadType(CONTENT_OPTIONS.value, getVideoData()))
+    untrack(() => resolveInitialDownloadType({
+      options: CONTENT_OPTIONS.value,
+      videoData: getVideoData()
+    }))
   );
   let selectedVideoFormat = $state<AdaptiveFormatItem | null>(
     untrack(() => getVideoData().videoFormats[0] ?? null)
   );
   let selectedAudioFormat = $state<AdaptiveFormatItem | null>(
-    untrack(() => resolveInitialAudioFormat(CONTENT_OPTIONS.value, getVideoData()))
+    untrack(() => resolveInitialAudioFormat({
+      options: CONTENT_OPTIONS.value,
+      videoData: getVideoData()
+    }))
   );
   let filename = $state(untrack(() => resolveInitialFilename(getVideoData())));
-  let extension = $state(untrack(() => resolveInitialExtension(CONTENT_OPTIONS.value, getVideoData())));
+  let extension = $state(
+    untrack(() => resolveInitialExtension({
+      options: CONTENT_OPTIONS.value,
+      videoData: getVideoData()
+    }))
+  );
   let isFilenameValid = $state(true);
 
   const actualExtension = $derived(
-    resolveActualExtension(downloadType, selectedVideoFormat, selectedAudioFormat, extension, getVideoData)
+    resolveActualExtension({
+      downloadType,
+      selectedVideoFormat,
+      selectedAudioFormat,
+      extension,
+      getVideoData
+    })
   );
   const isDownloadable = $derived(getVideoData().isDownloadable);
   const isInterrupted = $derived(!!interruptedDownloadStore.get(getVideoData().videoId));
-  const primaryState = $derived(resolvePrimaryState(store.isDownloading, store.isFailed, isInterrupted, store.isDone));
+  const primaryState = $derived(
+    resolvePrimaryState({
+      isDownloading: store.isDownloading,
+      isFailed: store.isFailed,
+      isInterrupted,
+      isDone: store.isDone
+    })
+  );
   const displayProgress = $derived(
     calculateWeightedProgress({
       isDownloading: store.isDownloading,
@@ -53,21 +77,27 @@ export function createPanelState(getVideoData: () => VideoData) {
     })
   );
   const fullFilename = $derived(getCompatibleFilename(`${filename}.${actualExtension}`));
-  const qualityLabel = $derived(resolveQualityLabel(downloadType, selectedVideoFormat, selectedAudioFormat));
+  const qualityLabel = $derived(
+    resolveQualityLabel({
+      downloadType,
+      selectedVideoFormat,
+      selectedAudioFormat
+    })
+  );
 
-  const { audio, caption } = createTrackStates(
+  const { audio, caption } = createTrackStates({
     getVideoData,
-    value => {
+    setSelectedAudioFormat(value) {
       selectedAudioFormat = value;
     },
-    value => {
+    setSelectedVideoFormat(value) {
       selectedVideoFormat = value;
     },
-    store.resetDoneState,
-    value => {
+    resetDoneState: store.resetDoneState,
+    setDownloadId(value) {
       downloadId = value;
     }
-  );
+  });
 
   $effect(() => {
     void crossWorldMessenger.sendMessage(CrossWorldMessage.FilenameChanged, {
@@ -80,23 +110,28 @@ export function createPanelState(getVideoData: () => VideoData) {
   });
 
   function handleDownloadTypeChange(newType: DownloadType) {
-    const result = applyDownloadTypeChange(newType, selectedVideoFormat, selectedAudioFormat, getVideoData().videoId);
+    const result = applyDownloadTypeChange({
+      newType,
+      selectedVideoFormat,
+      selectedAudioFormat,
+      videoId: getVideoData().videoId
+    });
     downloadType = result.downloadType;
     extension = result.extension;
   }
 
   function startDownload() {
-    sendStartDownload(
+    sendStartDownload({
       downloadType,
       selectedVideoFormat,
       selectedAudioFormat,
-      caption.selectedCaptionTrack,
-      store.isDownloading,
+      selectedCaptionTrack: caption.selectedCaptionTrack,
+      isDownloading: store.isDownloading,
       isDownloadable,
       isFilenameValid,
       fullFilename,
-      getVideoData()
-    );
+      videoData: getVideoData()
+    });
   }
 
   return {

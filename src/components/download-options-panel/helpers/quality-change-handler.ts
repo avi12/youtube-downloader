@@ -1,13 +1,19 @@
 import { formatAudioCodecLabel, formatVideoQualityLabel } from "@/lib/youtube/video-helpers";
 import type { AdaptiveFormatItem } from "@/types";
 
-export function buildQualityOptions(
-  isAudio: boolean,
-  audioFormats: AdaptiveFormatItem[],
-  videoFormats: AdaptiveFormatItem[],
-  selectedAudioTrackId: string | null | undefined,
-  uniqueAudioLanguagesCount: number
-) {
+export function buildQualityOptions({
+  isAudio,
+  audioFormats,
+  videoFormats,
+  selectedAudioTrackId,
+  uniqueAudioLanguagesCount
+}: {
+  isAudio: boolean;
+  audioFormats: AdaptiveFormatItem[];
+  videoFormats: AdaptiveFormatItem[];
+  selectedAudioTrackId: string | null | undefined;
+  uniqueAudioLanguagesCount: number;
+}) {
   if (isAudio) {
     const trackId = selectedAudioTrackId ?? null;
     const formats = uniqueAudioLanguagesCount > 0

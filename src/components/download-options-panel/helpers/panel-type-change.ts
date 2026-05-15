@@ -2,12 +2,17 @@ import { CONTENT_OPTIONS, downloadProgressStore } from "@/lib/ui/synced-stores.s
 import { resolveAutoExtension } from "@/lib/utils/containers";
 import { DownloadType, type AdaptiveFormatItem } from "@/types";
 
-export function applyDownloadTypeChange(
-  newType: DownloadType,
-  selectedVideoFormat: AdaptiveFormatItem | null,
-  selectedAudioFormat: AdaptiveFormatItem | null,
-  videoId: string
-): {
+export function applyDownloadTypeChange({
+  newType,
+  selectedVideoFormat,
+  selectedAudioFormat,
+  videoId
+}: {
+  newType: DownloadType;
+  selectedVideoFormat: AdaptiveFormatItem | null;
+  selectedAudioFormat: AdaptiveFormatItem | null;
+  videoId: string;
+}): {
   downloadType: DownloadType;
   extension: string;
 } {

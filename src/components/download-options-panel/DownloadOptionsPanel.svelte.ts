@@ -13,14 +13,19 @@ export interface PanelActions {
   revealDownload(): void;
 }
 
-export function setupPanelButtonHandler(panel: PanelActions, onClose: () => void) {
+export function setupPanelButtonHandler({ panel, onClose }: {
+  panel: PanelActions;
+  onClose: () => void;
+}) {
   return onButtonClick(buttonId => {
-    if (buttonId === HEADER_CLOSE_BUTTON_ID) {
+    const isCloseButton = buttonId === HEADER_CLOSE_BUTTON_ID;
+    if (isCloseButton) {
       onClose();
       return;
     }
 
-    if (buttonId === PRIMARY_BUTTON_ID) {
+    const isPrimaryButton = buttonId === PRIMARY_BUTTON_ID;
+    if (isPrimaryButton) {
       if (panel.primaryState === PrimaryButtonState.Downloading) {
         panel.cancelDownload();
       } else if (panel.primaryState === PrimaryButtonState.Interrupted) {
@@ -32,7 +37,8 @@ export function setupPanelButtonHandler(panel: PanelActions, onClose: () => void
       return;
     }
 
-    if (buttonId === VIEW_BUTTON_ID) {
+    const isViewButton = buttonId === VIEW_BUTTON_ID;
+    if (isViewButton) {
       panel.revealDownload();
     }
   });
@@ -47,11 +53,13 @@ const YT_PLAYER_KEYS = new Set([" ", "ArrowUp", "ArrowDown", "ArrowLeft", "Arrow
 
 export function handlePanelKeydown(onClose: () => void) {
   return (e: KeyboardEvent) => {
-    if (e.key === "Escape" && !document.querySelector(":popover-open")) {
+    const isEscapeWithNoPopover = e.key === "Escape" && !document.querySelector(":popover-open");
+    if (isEscapeWithNoPopover) {
       onClose();
     }
 
-    if (YT_PLAYER_KEYS.has(e.key)) {
+    const isYtPlayerKey = YT_PLAYER_KEYS.has(e.key);
+    if (isYtPlayerKey) {
       e.stopPropagation();
     }
   };

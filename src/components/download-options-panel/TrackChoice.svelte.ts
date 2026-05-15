@@ -64,7 +64,8 @@ export function createTrackChoiceState(params: TrackChoiceParams) {
   }));
 
   function handleSegmentedKeydown(e: KeyboardEvent) {
-    if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") {
+    const isNotArrowKey = e.key !== "ArrowLeft" && e.key !== "ArrowRight";
+    if (isNotArrowKey) {
       return;
     }
 

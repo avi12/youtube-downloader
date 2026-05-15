@@ -3,13 +3,19 @@ import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-wo
 import { findOriginalAudioFormat, normalizeLanguageCode } from "@/lib/youtube/video-helpers";
 import { PanelTrackMode, type AdaptiveFormatItem, type VideoData } from "@/types";
 
-export function createAudioTrackState(
-  getVideoData: () => VideoData,
-  setSelectedAudioFormat: (value: AdaptiveFormatItem | null) => void,
-  resetDoneState: () => void,
-  initialMode: PanelTrackMode,
-  initialCustomLanguage: string
-) {
+export function createAudioTrackState({
+  getVideoData,
+  setSelectedAudioFormat,
+  resetDoneState,
+  initialMode,
+  initialCustomLanguage
+}: {
+  getVideoData: () => VideoData;
+  setSelectedAudioFormat: (value: AdaptiveFormatItem | null) => void;
+  resetDoneState: () => void;
+  initialMode: PanelTrackMode;
+  initialCustomLanguage: string;
+}) {
   let panelAudioMode = $state<PanelTrackMode>(initialMode);
   let panelAudioCustomLanguage = $state(initialCustomLanguage);
 
@@ -27,7 +33,8 @@ export function createAudioTrackState(
   function handlePanelAudioModeChange(newMode: PanelTrackMode) {
     panelAudioMode = newMode;
 
-    if (newMode === PanelTrackMode.Original) {
+    const isOriginalMode = newMode === PanelTrackMode.Original;
+    if (isOriginalMode) {
       const { audioFormats } = getVideoData();
       const original = findOriginalAudioFormat(audioFormats);
       if (original) {
@@ -38,7 +45,8 @@ export function createAudioTrackState(
       return;
     }
 
-    if (newMode === PanelTrackMode.Custom) {
+    const isCustomMode = newMode === PanelTrackMode.Custom;
+    if (isCustomMode) {
       if (panelAudioCustomLanguage) {
         applyAudioByLangCode(panelAudioCustomLanguage);
       }
@@ -60,7 +68,8 @@ export function createAudioTrackState(
   }
 
   $effect(() => crossWorldMessenger.onMessage(CrossWorldMessage.AudioTrackChanged, ({ data }) => {
-    if (panelAudioMode !== PanelTrackMode.MatchVideo) {
+    const isNotMatchVideo = panelAudioMode !== PanelTrackMode.MatchVideo;
+    if (isNotMatchVideo) {
       return;
     }
 

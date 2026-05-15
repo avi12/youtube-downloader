@@ -20,12 +20,16 @@ export function getPreferredMusicAudioFormat(audioFormats: AdaptiveFormatItem[])
   return audioFormats.find(format => format.mimeType.includes("mp4")) ?? audioFormats[0] ?? null;
 }
 
-export function resolveInitialAudioFormat(options: Options, videoData: VideoData) {
+export function resolveInitialAudioFormat({ options, videoData }: {
+  options: Options;
+  videoData: VideoData;
+}) {
   if (videoData.isMusic) {
     return getPreferredMusicAudioFormat(videoData.audioFormats);
   }
 
-  if (options.audioTrackLanguageMode === AudioTrackLanguageMode.MatchVideo && IS_WATCH_PAGE) {
+  const isMatchVideoOnWatchPage = options.audioTrackLanguageMode === AudioTrackLanguageMode.MatchVideo && IS_WATCH_PAGE;
+  if (isMatchVideoOnWatchPage) {
     const currentLang = getCurrentVideoAudioLanguage();
     if (currentLang) {
       const matching = videoData.audioFormats.filter(
@@ -47,12 +51,18 @@ export function resolveInitialAudioFormat(options: Options, videoData: VideoData
   });
 }
 
-export function resolveInitialAudioMode(options: Options, videoData: VideoData) {
-  if (options.audioTrackLanguageMode === AudioTrackLanguageMode.OriginalLanguage) {
+export function resolveInitialAudioMode({ options, videoData }: {
+  options: Options;
+  videoData: VideoData;
+}) {
+  const isOriginalLanguage = options.audioTrackLanguageMode === AudioTrackLanguageMode.OriginalLanguage;
+  if (isOriginalLanguage) {
     return PanelTrackMode.Original;
   }
 
-  if (options.audioTrackLanguageMode === AudioTrackLanguageMode.Custom && options.customLanguage) {
+  const isCustomMode = options.audioTrackLanguageMode === AudioTrackLanguageMode.Custom;
+  const isCustomWithLanguage = isCustomMode && options.customLanguage;
+  if (isCustomWithLanguage) {
     const langCode = normalizeLanguageCode(options.customLanguage);
     const hasMatch = videoData.audioFormats.some(
       format => format.audioTrack && normalizeLanguageCode(format.audioTrack.id) === langCode
@@ -65,8 +75,13 @@ export function resolveInitialAudioMode(options: Options, videoData: VideoData) 
   return PanelTrackMode.MatchVideo;
 }
 
-export function resolveInitialAudioCustomLanguage(options: Options, videoData: VideoData) {
-  if (options.audioTrackLanguageMode === AudioTrackLanguageMode.Custom && options.customLanguage) {
+export function resolveInitialAudioCustomLanguage({ options, videoData }: {
+  options: Options;
+  videoData: VideoData;
+}) {
+  const isCustomMode = options.audioTrackLanguageMode === AudioTrackLanguageMode.Custom;
+  const isCustomWithLanguage = isCustomMode && options.customLanguage;
+  if (isCustomWithLanguage) {
     const langCode = normalizeLanguageCode(options.customLanguage);
     const hasMatch = videoData.audioFormats.some(
       format => format.audioTrack && normalizeLanguageCode(format.audioTrack.id) === langCode
