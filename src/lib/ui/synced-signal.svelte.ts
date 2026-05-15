@@ -6,7 +6,10 @@ export {
   createSignalMessenger
 } from "./synced-signal-types";
 
-export function createSyncedSignal<T>(messenger: SignalMessenger<T>, initial: NoInfer<T>) {
+export function createSyncedSignal<T>({ messenger, initial }: {
+  messenger: SignalMessenger<T>;
+  initial: NoInfer<T>;
+}) {
   let current = $state(initial);
   let isSyncing = false;
 
@@ -75,7 +78,7 @@ export function createSyncedMap<T>(messenger: MapMessenger<T>) {
         });
       }
     },
-    setLocal(mapKey: string, value: T): boolean {
+    setLocal(mapKey: string, value: T) {
       const isLocalKeySuppressed = suppressed.has(mapKey);
       if (isLocalKeySuppressed) {
         return false;

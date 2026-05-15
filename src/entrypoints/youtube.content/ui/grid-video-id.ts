@@ -7,7 +7,7 @@ export function getLockupRoot(elCard: Element) {
   return elLockup?.shadowRoot ?? null;
 }
 
-export function shadowFirst(elCard: Element, selector: string) {
+export function shadowFirst({ elCard, selector }: { elCard: Element; selector: string }) {
   return getLockupRoot(elCard)?.querySelector(selector) ?? elCard.querySelector(selector);
 }
 
@@ -21,12 +21,12 @@ export function extractVideoId(elCard: Element) {
     return mainWorldId;
   }
 
-  const [, contentId] = shadowFirst(elCard, "[class*='content-id-']")?.className.match(/content-id-(\S+)/) ?? [];
+  const [, contentId] = shadowFirst({ elCard, selector: "[class*='content-id-']" })?.className.match(/content-id-(\S+)/) ?? [];
   if (contentId) {
     return contentId;
   }
 
-  const elLink = shadowFirst(elCard, "a#video-title-link, a#video-title, a[href*='/watch?v=']");
+  const elLink = shadowFirst({ elCard, selector: "a#video-title-link, a#video-title, a[href*='/watch?v=']" });
   if (!(elLink instanceof HTMLAnchorElement)) {
     return null;
   }

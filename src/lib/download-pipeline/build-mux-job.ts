@@ -12,7 +12,7 @@ import type { ProcessStreamData } from "@/types";
 type ExtraAudioTrack = MuxVideoAudioJob["extraAudioTracks"][number];
 type SubtitleFile = MuxVideoAudioJob["subtitleTracks"][number];
 
-export function buildExtraAudioTracks(additionalAudioStreams: ProcessStreamData["additionalAudioStreams"]): ExtraAudioTrack[] {
+export function buildExtraAudioTracks(additionalAudioStreams: ProcessStreamData["additionalAudioStreams"]) {
   return additionalAudioStreams
     .map(stream => {
       const data = toUint8Array(stream.data);
@@ -29,7 +29,7 @@ export function buildExtraAudioTracks(additionalAudioStreams: ProcessStreamData[
     .filter((track): track is ExtraAudioTrack => track !== null);
 }
 
-export function buildSubtitleFiles(subtitleTracks: ProcessStreamData["subtitleTracks"]): SubtitleFile[] {
+export function buildSubtitleFiles(subtitleTracks: ProcessStreamData["subtitleTracks"]) {
   return subtitleTracks
     .filter(track => track.data !== null)
     .map(track => ({
@@ -57,7 +57,7 @@ export async function handleSingleStream({ item, videoData, audioData }: {
     throw new Error("No stream data accumulated");
   }
 
-  const recentContext = buildRecentContext(item);
+  const recentContext = buildRecentContext({ item });
   const data = (videoData ?? audioData)!;
   await triggerDownload({
     data,

@@ -2,7 +2,7 @@ import { normalizeLanguageCode, findOriginalAudioFormat } from "./audio-format-h
 import { AudioTrackLanguageMode } from "@/types";
 import type { AdaptiveFormatItem } from "@/types";
 
-function matchAudioFormatToLanguage(audioFormats: AdaptiveFormatItem[], langCode: string) {
+function matchAudioFormatToLanguage({ audioFormats, langCode }: { audioFormats: AdaptiveFormatItem[]; langCode: string }) {
   return audioFormats.find(format => normalizeLanguageCode(format.audioTrack?.id ?? "") === langCode);
 }
 
@@ -33,8 +33,8 @@ export function selectPreferredAudioFormat({
   const isCustomWithLanguage = languageMode === AudioTrackLanguageMode.Custom && customLanguage;
   if (isCustomWithLanguage) {
     const langCode = normalizeLanguageCode(customLanguage);
-    const match = matchAudioFormatToLanguage(audioFormats, langCode)
-      ?? matchAudioFormatToLanguage(audioFormats, "en");
+    const match = matchAudioFormatToLanguage({ audioFormats, langCode })
+      ?? matchAudioFormatToLanguage({ audioFormats, langCode: "en" });
     if (match) {
       candidates = [match, ...audioFormats.filter(format => format !== match)];
     }
@@ -49,7 +49,7 @@ export function selectPreferredAudioFormat({
     const langPriority = [locale, browserLanguage, "en"]
       .filter((lang): lang is string => !!lang);
     for (const lang of langPriority) {
-      const match = matchAudioFormatToLanguage(audioFormats, normalizeLanguageCode(lang));
+      const match = matchAudioFormatToLanguage({ audioFormats, langCode: normalizeLanguageCode(lang) });
       if (match) {
         candidates = [match, ...audioFormats.filter(format => format !== match)];
         break;

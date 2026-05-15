@@ -27,7 +27,10 @@ export function handleMuxVideoAudio(job: MuxVideoAudioJob) {
   const outputFilename = targetExtension !== "mkv"
     ? getCompatibleFilename(`${videoId}-${filenameBase}.${targetExtension}`)
     : muxFilename;
-  const useIntermediateMkv = targetExtension !== "mkv" && !isVideoNativeForContainer(videoMimeType, targetExtension);
+  const useIntermediateMkv = targetExtension !== "mkv" && !isVideoNativeForContainer({
+    videoMimeType,
+    targetExtension
+  });
 
   state.progressOffset = 0;
   state.progressScale = useIntermediateMkv ? 0.5 : 1;

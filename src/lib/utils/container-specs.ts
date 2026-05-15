@@ -43,7 +43,10 @@ export function getOutputExtension({ videoMimeType, audioMimeType, userExtension
   return videoOk && audioOk ? userExtension : "mkv";
 }
 
-export function isVideoNativeForContainer(videoMimeType: string, targetExtension: string) {
+export function isVideoNativeForContainer({ videoMimeType, targetExtension }: {
+  videoMimeType: string;
+  targetExtension: string;
+}) {
   const spec = CONTAINER_SPECS[targetExtension];
   if (!spec) {
     return true;
@@ -52,7 +55,11 @@ export function isVideoNativeForContainer(videoMimeType: string, targetExtension
   return spec.videoCodecs.has(extractBaseCodec(videoMimeType));
 }
 
-export function isCompatibleForRemux(videoMimeType: string, audioMimeType: string, targetExtension: string) {
+export function isCompatibleForRemux({ videoMimeType, audioMimeType, targetExtension }: {
+  videoMimeType: string;
+  audioMimeType: string;
+  targetExtension: string;
+}) {
   const spec = CONTAINER_SPECS[targetExtension];
   if (!spec) {
     return true;

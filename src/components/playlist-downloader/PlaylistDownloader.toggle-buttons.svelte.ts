@@ -21,11 +21,7 @@ const SEGMENTED_IDS = new Set([
   ...TOGGLE_BUTTON_GROUPS.output.map(btn => btn.id)
 ]);
 
-function resolveButtonType(isActive: boolean, isSegmented: boolean) {
-  if (isSegmented) {
-    return isActive ? ButtonType.Filled : ButtonType.Outline;
-  }
-
+function resolveButtonType({ isActive }: { isActive: boolean; isSegmented: boolean }) {
   return isActive ? ButtonType.Filled : ButtonType.Outline;
 }
 
@@ -60,7 +56,7 @@ export function createPlaylistToggleButtons(state: {
         title: buttonDefinition.label,
         accessibilityText: buttonDefinition.label,
         style: isSegmented && isActive ? ButtonStyle.Overlay : ButtonStyle.Mono,
-        type: resolveButtonType(isActive, isSegmented),
+        type: resolveButtonType({ isActive, isSegmented }),
         buttonSize: isSegmented ? ButtonSize.XSmall : ButtonSize.Default,
         state: state.isDownloading ? ButtonState.Disabled : ButtonState.Active,
         isFullWidth: false,

@@ -93,9 +93,12 @@ export async function processVideoAudio({ item, isCancelled }: {
   await triggerDownload({
     data: output,
     filenameOutput: downloadFilename,
-    recentContext: buildRecentContext(item, {
-      videoMimeType,
-      audioMimeType
+    recentContext: buildRecentContext({
+      item,
+      extras: {
+        videoMimeType,
+        audioMimeType
+      }
     })
   });
   await reportProgress({

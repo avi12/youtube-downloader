@@ -75,7 +75,12 @@ export async function processSingleMedia({ item, isCancelled }: {
   await triggerDownload({
     data,
     filenameOutput,
-    recentContext: buildRecentContext(item, { audioMimeType: item.audioMimeType })
+    recentContext: buildRecentContext({
+      item,
+      extras: {
+        audioMimeType: item.audioMimeType
+      }
+    })
   });
   await reportProgress({
     videoId,

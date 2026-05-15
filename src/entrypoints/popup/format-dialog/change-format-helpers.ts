@@ -20,7 +20,11 @@ export function buildAvailableTargets({ entry, isVideoContainer }: {
 }) {
   return (isVideoContainer ? videoContainers : audioContainers)
     .filter(target => target !== entry.container)
-    .filter(target => !isVideoContainer || !entry.videoMimeType || isCompatibleForRemux(entry.videoMimeType, entry.audioMimeType ?? "", target));
+    .filter(target => !isVideoContainer || !entry.videoMimeType || isCompatibleForRemux({
+      videoMimeType: entry.videoMimeType,
+      audioMimeType: entry.audioMimeType ?? "",
+      targetExtension: target
+    }));
 }
 
 export async function submitTranscode({
@@ -31,7 +35,7 @@ export async function submitTranscode({
   entry: RecentDownloadEntry;
   selectedTarget: string;
   isSubmitting: boolean;
-}): Promise<boolean> {
+}) {
   if (!selectedTarget || isSubmitting) {
     return false;
   }

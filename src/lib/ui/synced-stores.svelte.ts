@@ -13,13 +13,13 @@ export function initContentOptions(options: Options) {
   Object.assign(CONTENT_OPTIONS, options);
 }
 
-export const sabrCredentials = createSyncedSignal(
-  createSignalMessenger<{
+export const sabrCredentials = createSyncedSignal({
+  messenger: createSignalMessenger<{
     url: string;
     poToken: string;
   } | null>("sabr-credentials"),
-  null
-);
+  initial: null
+});
 
 export const videoDataStore = createSyncedMap(createMapMessenger<VideoData>("video-data"));
 export const videoDataFailedStore = createSyncedMap(createMapMessenger<boolean>("video-data-failed"));
@@ -36,13 +36,13 @@ export const downloadProgressStore = createSyncedMap(
 
 export type DownloadProgressState = Parameters<(typeof downloadProgressStore)["set"]>[1];
 
-export const playlistMetadataSignal = createSyncedSignal(
-  createSignalMessenger<{
+export const playlistMetadataSignal = createSyncedSignal({
+  messenger: createSignalMessenger<{
     playlistId: string;
     playlistTitle: string;
     playlistOwner: string;
   } | null>("playlist-metadata"),
-  null
-);
+  initial: null
+});
 
 export const interruptedDownloadStore = createSyncedMap(createMapMessenger<InterruptedDownload>("interrupted-download"));
