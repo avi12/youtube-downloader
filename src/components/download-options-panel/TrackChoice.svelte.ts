@@ -8,6 +8,7 @@ export interface TrackChoiceParams {
   readonly kind: TrackKind;
   readonly mode: PanelTrackMode;
   readonly disabled: boolean;
+  readonly disabledModes: readonly PanelTrackMode[];
   readonly onmodechange: (mode: PanelTrackMode) => void;
 }
 
@@ -18,6 +19,7 @@ export function createTrackChoiceState(params: TrackChoiceParams) {
   const kindLabel = $derived(isAudio ? "Audio language" : "Captions");
   const originalSubLabel = $derived(isAudio ? "The creator's baked-in audio track" : "The video's original caption track");
   const accessibleLabel = $derived(isAudio ? "Audio language" : "Caption language");
+  const hasNoAlternativeMode = $derived(buttons.length > 0 && params.disabledModes.length >= buttons.length - 1);
 
   const elements = new SvelteMap<string, HTMLElement>();
 
@@ -27,11 +29,12 @@ export function createTrackChoiceState(params: TrackChoiceParams) {
       return;
     }
 
+    const isModeDisabled = params.disabledModes.includes(button.mode);
     refreshButton({
       elButton,
       label: button.label,
       isSelected: params.mode === button.mode,
-      isDisabled: params.disabled
+      isDisabled: params.disabled || isModeDisabled
     });
   }
 
@@ -49,6 +52,7 @@ export function createTrackChoiceState(params: TrackChoiceParams) {
   $effect.pre(() => {
     void params.mode;
     void params.disabled;
+    void params.disabledModes;
     for (const button of buttons) {
       refresh(button);
     }
@@ -72,7 +76,21 @@ export function createTrackChoiceState(params: TrackChoiceParams) {
     e.preventDefault();
     const currentIndex = buttons.findIndex(btn => btn.mode === params.mode);
     const delta = e.key === "ArrowRight" ? 1 : -1;
-    const nextIndex = (currentIndex + delta + buttons.length) % buttons.length;
+
+    let nextIndex = currentIndex;
+    for (let i = 0; i < buttons.length; i++) {
+      nextIndex = (nextIndex + delta + buttons.length) % buttons.length;
+      const isCandidateEnabled = !params.disabledModes.includes(buttons[nextIndex].mode);
+      if (isCandidateEnabled) {
+        break;
+      }
+    }
+
+    const hasNoEnabledTarget = nextIndex === currentIndex;
+    if (hasNoEnabledTarget) {
+      return;
+    }
+
     const nextButton = buttons[nextIndex];
     params.onmodechange(nextButton.mode);
     const elNext = elements.get(nextButton.id);
@@ -91,6 +109,9 @@ export function createTrackChoiceState(params: TrackChoiceParams) {
     },
     get accessibleLabel() {
       return accessibleLabel;
+    },
+    get hasNoAlternativeMode() {
+      return hasNoAlternativeMode;
     },
     createAttacher,
     handleSegmentedKeydown

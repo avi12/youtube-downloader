@@ -13,13 +13,14 @@
     customValue: string;
     mode: PanelTrackMode;
     disabled?: boolean;
+    disabledModes?: readonly PanelTrackMode[];
     onmodechange: (mode: PanelTrackMode) => void;
     oncustomchange: (value: string) => void;
   }
 
   const {
     kind, playerLabel, originalLabel, customOptions,
-    customValue, mode, disabled = false, onmodechange, oncustomchange
+    customValue, mode, disabled = false, disabledModes = [], onmodechange, oncustomchange
   }: Props = $props();
 
   const state = createTrackChoiceState({
@@ -32,6 +33,9 @@
     get disabled() {
       return disabled;
     },
+    get disabledModes() {
+      return disabledModes;
+    },
     get onmodechange() {
       return onmodechange;
     }
@@ -43,6 +47,7 @@
     <span class="track-label">{state.kindLabel}</span>
     <div
       class="track-seg"
+      class:is-inert={state.hasNoAlternativeMode}
       aria-label="{state.kindLabel} source"
       onkeydown={state.handleSegmentedKeydown}
       role="radiogroup"
@@ -137,6 +142,11 @@
     border: 1px solid var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 10%));
     border-radius: 999px;
     background: var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 8%));
+
+    &.is-inert {
+      cursor: default;
+      pointer-events: none;
+    }
   }
 
   .track-follow {
