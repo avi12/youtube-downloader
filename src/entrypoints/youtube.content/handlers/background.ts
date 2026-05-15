@@ -1,11 +1,36 @@
 import { checkInterruptedDownload } from "../download/interrupted-downloads";
 import { CrossWorldEvent, emitCrossWorldEvent } from "@/lib/messaging/cross-world-events";
 import { MessageType, onMessage } from "@/lib/messaging/messaging";
+import { completedDownloadsStore } from "@/lib/ui/completed-downloads-store.svelte";
 import { downloadProgressStore, interruptedDownloadStore } from "@/lib/ui/synced-stores.svelte";
 import { ProgressType } from "@/types";
 
 export function registerBackgroundMessageHandlers() {
   const lastReportedProgress = new Map<string, string>();
+
+  // FFmpeg-phase completion arrives ~1s before `browser.downloads.download`
+  // resolves and the file is actually on disk. We hold the UI at "downloading
+  // 100%" until the save-complete notification fans out via this store, then
+  // flip to `isDone`.
+  completedDownloadsStore.subscribe(videoId => {
+    downloadProgressStore.unsuppress(videoId);
+    downloadProgressStore.setLocal(videoId, {
+      isDownloading: false,
+      isDone: true,
+      progress: 1,
+      progressType: ProgressType.FFmpeg
+    });
+    interruptedDownloadStore.delete(videoId);
+    emitCrossWorldEvent({
+      type: CrossWorldEvent.ProgressUpdate,
+      data: {
+        videoId,
+        progress: 1,
+        progressType: ProgressType.FFmpeg,
+        isSaved: true
+      }
+    });
+  });
 
   onMessage(MessageType.UpdateDownloadProgress, ({ data }) => {
     if (!data.isRemoved) {
@@ -71,19 +96,18 @@ export function registerBackgroundMessageHandlers() {
       return;
     }
 
-    const isComplete = data.progress >= 1 && data.progressType === ProgressType.FFmpeg;
+    // Don't transition to `isDone` here even when FFmpeg phase hits 1 — the
+    // file isn't actually on disk yet. `completedDownloadsStore.subscribe`
+    // above flips us to done once `browser.downloads.download` resolves and
+    // chrome.downloads reports state=complete.
     const wasSet = downloadProgressStore.setLocal(data.videoId, {
-      isDownloading: !isComplete,
-      isDone: isComplete,
+      isDownloading: true,
+      isDone: false,
       progress: data.progress,
       progressType: data.progressType
     });
     if (!wasSet) {
       return;
-    }
-
-    if (isComplete) {
-      interruptedDownloadStore.delete(data.videoId);
     }
 
     emitCrossWorldEvent({
