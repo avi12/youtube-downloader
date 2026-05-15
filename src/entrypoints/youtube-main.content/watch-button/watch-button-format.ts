@@ -1,4 +1,4 @@
-import { percentFormatter, type ButtonViewState } from "./watch-button-types";
+import type { ButtonViewState } from "./watch-button-types";
 import { ProgressType } from "@/types";
 
 export type { ButtonViewState } from "./watch-button-types";
@@ -21,26 +21,23 @@ export function buildDownloadTitle(state: ButtonViewState) {
   }
 
   if (isProcessing) {
-    const percentage = percentFormatter.format(downloadProgress);
     return {
-      title: percentage,
-      accessibilityText: `${percentage} processed - click to cancel`
+      title: downloadProgress,
+      accessibilityText: `${downloadProgress} processed - click to cancel`
     };
   }
 
   if (isDownloading) {
-    const percentage = percentFormatter.format(downloadProgress);
     return {
-      title: percentage,
-      accessibilityText: `Stop download - ${percentage} downloaded`
+      title: downloadProgress,
+      accessibilityText: `Stop download - ${downloadProgress} downloaded`
     };
   }
 
   if (isInterrupted) {
-    const percentage = percentFormatter.format(downloadProgress);
     return {
-      title: percentage,
-      accessibilityText: `Stop - paused at ${percentage}`
+      title: downloadProgress,
+      accessibilityText: `Stop - paused at ${downloadProgress}`
     };
   }
 
@@ -66,9 +63,10 @@ export function buildDownloadTooltip(state: ButtonViewState) {
     return "";
   }
 
+  const { isProgressNonZero } = state;
   const isProcessing = isDownloading && progressType === ProgressType.FFmpeg;
-  const isPreparingDownload = isDownloading && downloadProgress === 0;
-  const isActivelyDownloading = isDownloading && downloadProgress > 0;
+  const isPreparingDownload = isDownloading && !isProgressNonZero;
+  const isActivelyDownloading = isDownloading && isProgressNonZero;
   const base = quality ? `${filename} - ${quality}` : filename;
   if (isDone) {
     return base;
@@ -79,13 +77,13 @@ export function buildDownloadTooltip(state: ButtonViewState) {
   }
 
   if (isInterrupted) {
-    return downloadProgress > 0
-      ? `${base} - paused at ${percentFormatter.format(downloadProgress)}`
+    return downloadProgress !== "0%"
+      ? `${base} - paused at ${downloadProgress}`
       : base;
   }
 
   if (isProcessing) {
-    return `${base} - ${percentFormatter.format(downloadProgress)} (processing), click to cancel`;
+    return `${base} - ${downloadProgress} (processing), click to cancel`;
   }
 
   if (isPreparingDownload) {
@@ -93,7 +91,7 @@ export function buildDownloadTooltip(state: ButtonViewState) {
   }
 
   if (isActivelyDownloading) {
-    return `${base} - ${percentFormatter.format(downloadProgress)} downloaded`;
+    return `${base} - ${downloadProgress} downloaded`;
   }
 
   return base;

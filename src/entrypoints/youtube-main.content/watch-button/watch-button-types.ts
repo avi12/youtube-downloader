@@ -7,7 +7,8 @@ export interface ButtonViewState {
   isError: boolean;
   isPanelOpen: boolean;
   isPanelBelow: boolean;
-  downloadProgress: number;
+  downloadProgress: string;
+  isProgressNonZero: boolean;
   progressType: ProgressType | "";
   filename: string;
   quality: string;

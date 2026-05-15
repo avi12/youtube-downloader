@@ -1,5 +1,6 @@
 import { buildClickHandler } from "./watch-button-click";
 import { buildInitialDownloadState } from "./watch-button-state";
+import { percentFormatter } from "./watch-button-types";
 import { buildChevronData, buildDownloadData } from "./watch-button-view-model";
 import { createButtonElementEffects } from "./WatchButton.button-effects.svelte";
 import { createMessageEffects } from "./WatchButton.message-effects.svelte";
@@ -41,6 +42,9 @@ export function createWatchButtonState(params: {
     return isError ? 1 : 0;
   });
 
+  const formattedProgress = $derived(percentFormatter.format(effectiveProgress));
+  const isProgressNonZero = $derived(effectiveProgress > 0);
+
   const viewState = $derived({
     isDownloading,
     isDone,
@@ -48,7 +52,8 @@ export function createWatchButtonState(params: {
     isError,
     isPanelOpen,
     isPanelBelow,
-    downloadProgress: effectiveProgress,
+    downloadProgress: formattedProgress,
+    isProgressNonZero,
     progressType: downloadProgressType,
     filename: defaultFilename,
     quality: defaultQuality,
