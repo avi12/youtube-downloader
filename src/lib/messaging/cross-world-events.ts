@@ -1,62 +1,46 @@
 /**
- * Lightweight fire-and-forget cross-world event bus using postMessage.
- * One-way, no response. Use crossWorldMessenger for request/response patterns.
+ * Multi-subscriber fanout for one-way cross-world events. Funnels through
+ * `crossWorldMessenger` but distributes to every subscribed handler so the
+ * messenger's per-type single-listener constraint doesn't apply. Same-context
+ * emissions are dispatched locally too because the messenger filters out its
+ * own instanceId.
  */
 
+import { CrossWorldMessage, crossWorldMessenger } from "./cross-world-messenger";
 import type { ProgressUpdate } from "@/types";
-
-const EVENT_TYPE_KEY = "__ytdl_event";
-const EVENT_ORIGIN = location.origin;
 
 export const CrossWorldEvent = {
   ProgressUpdate: "progressUpdate"
 } as const;
 
-type CrossWorldEvent = (typeof CrossWorldEvent)[keyof typeof CrossWorldEvent];
+const progressHandlers = new Set<(data: ProgressUpdate) => void>();
 
-interface CrossWorldEventMap {
-  [CrossWorldEvent.ProgressUpdate]: ProgressUpdate;
-}
-
-interface CrossWorldEventEnvelope<T extends CrossWorldEvent> {
-  [EVENT_TYPE_KEY]: T;
-  data: CrossWorldEventMap[T];
-}
-
-function hasEventTypeKey(value: unknown): value is { [EVENT_TYPE_KEY]: CrossWorldEvent } {
-  return typeof value === "object" && value !== null && EVENT_TYPE_KEY in value;
-}
-
-function isCrossWorldEnvelope<T extends CrossWorldEvent>(
-  value: unknown,
-  type: T
-): value is CrossWorldEventEnvelope<T> {
-  return hasEventTypeKey(value) && value[EVENT_TYPE_KEY] === type;
-}
-
-export function emitCrossWorldEvent<T extends CrossWorldEvent>({ type, data }: {
-  type: T;
-  data: CrossWorldEventMap[T];
-}) {
-  postMessage({
-    [EVENT_TYPE_KEY]: type,
-    data
-  }, EVENT_ORIGIN);
-}
-
-export function onCrossWorldEvent<T extends CrossWorldEvent>({ type, handler }: {
-  type: T;
-  handler: (data: CrossWorldEventMap[T]) => void;
-}) {
-  function listener(e: MessageEvent) {
-    const isMatchingEnvelope = isCrossWorldEnvelope(e.data, type);
-    if (!isMatchingEnvelope) {
-      return;
-    }
-
-    handler(e.data.data);
+function fanoutProgress(data: ProgressUpdate) {
+  for (const handler of progressHandlers) {
+    handler(data);
   }
+}
 
-  addEventListener("message", listener);
-  return () => removeEventListener("message", listener);
+crossWorldMessenger.onMessage(CrossWorldMessage.ProgressUpdate, ({ data }) => {
+  fanoutProgress(data);
+});
+
+export function emitCrossWorldEvent({ type, data }: {
+  type: typeof CrossWorldEvent.ProgressUpdate;
+  data: ProgressUpdate;
+}) {
+  void type;
+  void crossWorldMessenger.sendMessage(CrossWorldMessage.ProgressUpdate, data);
+  fanoutProgress(data);
+}
+
+export function onCrossWorldEvent({ type, handler }: {
+  type: typeof CrossWorldEvent.ProgressUpdate;
+  handler: (data: ProgressUpdate) => void;
+}) {
+  void type;
+  progressHandlers.add(handler);
+  return () => {
+    progressHandlers.delete(handler);
+  };
 }

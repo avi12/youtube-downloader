@@ -3,6 +3,7 @@ import type {
   ButtonViewModelData,
   DownloadRequest,
   DownloadType,
+  ProgressUpdate,
   VideoData,
   VideoMetadata
 } from "@/types";
@@ -92,6 +93,8 @@ export interface PageMessengerSchema {
     selector: string;
     title: string;
   }): void;
+  [CrossWorldMessage.ButtonClick](data: { buttonId: string }): void;
+  [CrossWorldMessage.ProgressUpdate](data: ProgressUpdate): void;
 }
 
 export type StreamDataPayload = Parameters<PageMessengerSchema[typeof CrossWorldMessage.StreamData]>[0];
