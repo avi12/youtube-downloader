@@ -41,10 +41,6 @@ export interface YtIconElement extends HTMLElement {
   icon: string;
 }
 
-export function isYtIconElement(element: Element): element is YtIconElement {
-  return element instanceof HTMLElement && "icon" in element;
-}
-
 /** @see https://github.com/PolymerElements/iron-dropdown */
 export interface TpYtIronDropdownElement extends HTMLElement {
   positionTarget: Element | null;

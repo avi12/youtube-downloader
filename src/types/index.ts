@@ -25,8 +25,7 @@ export {
   TooltipStyle,
   YtIconName,
   isPaperToastElement,
-  isPolymerInputElement,
-  isYtIconElement
+  isPolymerInputElement
 } from "./youtube";
 
 export {

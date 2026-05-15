@@ -9,18 +9,22 @@ import type {
   TooltipStyle,
   YtIconName
 } from "@/types";
-import { isYtIconElement } from "@/types";
 
 export { DATA_SETTINGS_OPTIONS_ID_ATTR, attachSettingsOptions, isYtdSettingsOptionsRenderer } from "./polymer-settings-options";
 
 export function attachIcon(icon: YtIconName) {
   return (elTarget: Element) => {
-    const isNotYtIcon = !isYtIconElement(elTarget);
-    if (isNotYtIcon) {
+    if (!(elTarget instanceof HTMLElement)) {
       return;
     }
 
-    elTarget.icon = icon;
+    // Deferred: the @attach hook fires before Polymer upgrades the yt-icon,
+    // so setting the attribute synchronously gets overwritten on upgrade.
+    requestAnimationFrame(() => {
+      if (elTarget.isConnected) {
+        elTarget.setAttribute("icon", icon);
+      }
+    });
   };
 }
 
