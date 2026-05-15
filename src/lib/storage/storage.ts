@@ -46,7 +46,7 @@ export const interruptedDownloadsItem = storage.defineItem<Record<string, Interr
   fallback: {}
 });
 
-export const optionsItem = storage.defineItem<Options>("sync:options", { fallback: INITIAL_OPTIONS });
+export const optionsItem = storage.defineItem<Options>("local:options", { fallback: INITIAL_OPTIONS });
 
 export async function setOption<Key extends keyof Options>({ key, value }: {
   key: Key;
