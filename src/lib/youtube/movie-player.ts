@@ -21,9 +21,7 @@ export function isPlayerCaptionTrackData(value: unknown): value is PlayerCaption
 }
 
 type CaptionBusContext = {
-  state?: {
-    L?: CaptionEventBus;
-  };
+  state?: Record<string, unknown>;
 };
 
 function isGetOptionFunction(value: unknown): value is (module: string, option: string) => unknown {
@@ -34,7 +32,15 @@ function isCaptionBusContext(value: unknown): value is CaptionBusContext {
   return typeof value === "object" && value !== null;
 }
 
-export function capturePlayerCaptionBus(player: MoviePlayerElement): CaptionEventBus | null {
+function hasSubscribe(value: unknown): value is { subscribe: unknown } {
+  return typeof value === "object" && value !== null && "subscribe" in value;
+}
+
+function isCaptionEventBus(value: unknown): value is CaptionEventBus {
+  return hasSubscribe(value) && typeof value.subscribe === "function";
+}
+
+export function capturePlayerCaptionBuses(player: MoviePlayerElement): CaptionEventBus[] {
   let proto: MoviePlayerElement | null = player;
   let rawGetOption: ((module: string, option: string) => unknown) | null = null;
 
@@ -51,7 +57,7 @@ export function capturePlayerCaptionBus(player: MoviePlayerElement): CaptionEven
 
   const isGetOptionMissing = !rawGetOption;
   if (isGetOptionMissing) {
-    return null;
+    return [];
   }
 
   const origApply = Function.prototype.apply;
@@ -82,8 +88,21 @@ export function capturePlayerCaptionBus(player: MoviePlayerElement): CaptionEven
   }
 
   if (!isCaptionBusContext(internalCtx)) {
-    return null;
+    return [];
   }
 
-  return internalCtx.state?.L ?? null;
+  const buses: CaptionEventBus[] = [];
+  const state = internalCtx.state ?? {};
+  for (const key in state) {
+    const value = state[key];
+    if (isCaptionEventBus(value)) {
+      buses.push(value);
+    }
+  }
+
+  return buses;
+}
+
+export function capturePlayerCaptionBus(player: MoviePlayerElement): CaptionEventBus | null {
+  return capturePlayerCaptionBuses(player)[0] ?? null;
 }

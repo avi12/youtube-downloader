@@ -46,6 +46,9 @@ export interface MoviePlayerElement extends HTMLElement {
 
   getOption?: (module: string, option: string) => unknown;
   setOption?: (module: string, option: string, value: unknown) => void;
+  isSubtitlesOn?: () => boolean;
+  toggleSubtitlesOn?: (on?: boolean) => void;
+  loadModule?: (module: string) => void;
 
   getAudioTrack?: () => {
     gw?: {
