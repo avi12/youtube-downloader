@@ -28,7 +28,7 @@ export function createPanelState(getVideoData: () => VideoData) {
   let downloadId = $state<number | null>(null);
   let downloadType = $state<DownloadType>(
     untrack(() => resolveInitialDownloadType({
-      options: CONTENT_OPTIONS.value,
+      options: CONTENT_OPTIONS,
       videoData: getVideoData()
     }))
   );
@@ -37,14 +37,14 @@ export function createPanelState(getVideoData: () => VideoData) {
   );
   let selectedAudioFormat = $state<AdaptiveFormatItem | null>(
     untrack(() => resolveInitialAudioFormat({
-      options: CONTENT_OPTIONS.value,
+      options: CONTENT_OPTIONS,
       videoData: getVideoData()
     }))
   );
   let filename = $state(untrack(() => resolveInitialFilename(getVideoData())));
   let extension = $state(
     untrack(() => resolveInitialExtension({
-      options: CONTENT_OPTIONS.value,
+      options: CONTENT_OPTIONS,
       videoData: getVideoData()
     }))
   );
@@ -211,7 +211,7 @@ export function createPanelState(getVideoData: () => VideoData) {
       return IS_WATCH_PAGE;
     },
     get downloadExtras() {
-      return CONTENT_OPTIONS.value.downloadExtras;
+      return CONTENT_OPTIONS.downloadExtras;
     },
     audio,
     caption,

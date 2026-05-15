@@ -10,11 +10,11 @@ let zipNameOverride = $state<string | null>(null);
 
 export function createOverrideState(getDefaultZipName: () => string) {
   const effectiveDownloadType = $derived<DownloadTypePreference>(
-    downloadTypeOverride ?? CONTENT_OPTIONS.value.defaultDownloadType
+    downloadTypeOverride ?? CONTENT_OPTIONS.defaultDownloadType
   );
-  const effectiveVideoExt = $derived(videoExtOverride ?? CONTENT_OPTIONS.value.ext.video);
-  const effectiveAudioExt = $derived(audioExtOverride ?? CONTENT_OPTIONS.value.ext.audio);
-  const effectiveQuality = $derived(videoQualityOverride ?? optionsToQualityValue(CONTENT_OPTIONS.value));
+  const effectiveVideoExt = $derived(videoExtOverride ?? CONTENT_OPTIONS.ext.video);
+  const effectiveAudioExt = $derived(audioExtOverride ?? CONTENT_OPTIONS.ext.audio);
+  const effectiveQuality = $derived(videoQualityOverride ?? optionsToQualityValue(CONTENT_OPTIONS));
   const effectiveZipName = $derived(zipNameOverride ?? getDefaultZipName());
   const isAnyOverrideActive = $derived(
     downloadTypeOverride !== null
@@ -37,25 +37,25 @@ export function createOverrideState(getDefaultZipName: () => string) {
       return effectiveDownloadType;
     },
     set effectiveDownloadType(value) {
-      downloadTypeOverride = value === CONTENT_OPTIONS.value.defaultDownloadType ? null : value;
+      downloadTypeOverride = value === CONTENT_OPTIONS.defaultDownloadType ? null : value;
     },
     get effectiveVideoExt() {
       return effectiveVideoExt;
     },
     set effectiveVideoExt(value) {
-      videoExtOverride = value === CONTENT_OPTIONS.value.ext.video ? null : value;
+      videoExtOverride = value === CONTENT_OPTIONS.ext.video ? null : value;
     },
     get effectiveAudioExt() {
       return effectiveAudioExt;
     },
     set effectiveAudioExt(value) {
-      audioExtOverride = value === CONTENT_OPTIONS.value.ext.audio ? null : value;
+      audioExtOverride = value === CONTENT_OPTIONS.ext.audio ? null : value;
     },
     get effectiveQuality() {
       return effectiveQuality;
     },
     set effectiveQuality(value) {
-      videoQualityOverride = value === optionsToQualityValue(CONTENT_OPTIONS.value) ? null : value;
+      videoQualityOverride = value === optionsToQualityValue(CONTENT_OPTIONS) ? null : value;
     },
     get effectiveZipName() {
       return effectiveZipName;

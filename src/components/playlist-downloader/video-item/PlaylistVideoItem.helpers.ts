@@ -46,7 +46,7 @@ export function buildButtonTooltip({
     return buttonLabel;
   }
 
-  const currentOptions = CONTENT_OPTIONS.value;
+  const currentOptions = CONTENT_OPTIONS;
   const [primaryVideoFormat] = videoData.videoFormats;
   const [primaryAudioFormat] = videoData.audioFormats;
   const resolvedContainerExtension = resolveAutoExtension({

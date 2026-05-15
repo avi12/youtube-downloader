@@ -9,25 +9,25 @@ import { checkedPlaylistVideos } from "@/lib/ui/playlist-selection.svelte";
 import { CONTENT_OPTIONS, playlistMetadataSignal } from "@/lib/ui/synced-stores.svelte";
 import { VideoQualityMode } from "@/types";
 
-let downloadMode = $state(CONTENT_OPTIONS.value.playlistDownloadMode);
-let outputMode = $state(CONTENT_OPTIONS.value.playlistOutputMode);
-let isScrollSyncEnabled = $state(CONTENT_OPTIONS.value.isPlaylistScrollSyncEnabled);
+let downloadMode = $state(CONTENT_OPTIONS.playlistDownloadMode);
+let outputMode = $state(CONTENT_OPTIONS.playlistOutputMode);
+let isScrollSyncEnabled = $state(CONTENT_OPTIONS.isPlaylistScrollSyncEnabled);
 
 export function createPlaylistDownloaderState() {
   const videoData = createVideoDataState();
 
   $effect.pre(() => {
-    downloadMode = CONTENT_OPTIONS.value.playlistDownloadMode;
+    downloadMode = CONTENT_OPTIONS.playlistDownloadMode;
     outputMode = videoData.isAllMusicPlaylist
-      ? CONTENT_OPTIONS.value.playlistAudioOutputMode
-      : CONTENT_OPTIONS.value.playlistOutputMode;
-    isScrollSyncEnabled = CONTENT_OPTIONS.value.isPlaylistScrollSyncEnabled;
+      ? CONTENT_OPTIONS.playlistAudioOutputMode
+      : CONTENT_OPTIONS.playlistOutputMode;
+    isScrollSyncEnabled = CONTENT_OPTIONS.isPlaylistScrollSyncEnabled;
   });
 
   const overrides = createOverrideState(() => resolveDefaultZipName(playlistMetadataSignal.value));
 
   function buildEffectiveOptions() {
-    const base = CONTENT_OPTIONS.value;
+    const base = CONTENT_OPTIONS;
     const qualityValue = overrides.effectiveQuality;
     return {
       ...base,

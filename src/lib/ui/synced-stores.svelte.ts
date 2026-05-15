@@ -7,16 +7,10 @@ import {
 import { INITIAL_OPTIONS } from "@/lib/youtube/video-helpers";
 import type { InterruptedDownload, Options, ProgressType, VideoData } from "@/types";
 
-let optionsState = $state<Options>(INITIAL_OPTIONS);
-
-export const CONTENT_OPTIONS = {
-  get value() {
-    return optionsState;
-  }
-};
+export const CONTENT_OPTIONS = $state<Options>(INITIAL_OPTIONS);
 
 export function initContentOptions(options: Options) {
-  optionsState = options;
+  Object.assign(CONTENT_OPTIONS, options);
 }
 
 export const sabrCredentials = createSyncedSignal(

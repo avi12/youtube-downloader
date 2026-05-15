@@ -30,7 +30,7 @@ export function createVideoFormatTracker({
   }
 
   $effect(() => {
-    const options = CONTENT_OPTIONS.value;
+    const options = CONTENT_OPTIONS;
     const videoData = getVideoData();
     const isCurrentQualityMode = options.videoQualityMode === VideoQualityMode.CurrentQuality;
     if (isCurrentQualityMode) {

@@ -26,7 +26,7 @@ export function createTrackStates({
   setDownloadId: (value: number | null) => void;
 }) {
   const audio = untrack(() => {
-    const options = CONTENT_OPTIONS.value;
+    const options = CONTENT_OPTIONS;
     const videoData = getVideoData();
     return createAudioTrackState({
       getVideoData,
@@ -44,7 +44,7 @@ export function createTrackStates({
   });
 
   const caption = untrack(() => {
-    const options = CONTENT_OPTIONS.value;
+    const options = CONTENT_OPTIONS;
     const videoData = getVideoData();
     const initialMode = resolveInitialCaptionMode({
       options,

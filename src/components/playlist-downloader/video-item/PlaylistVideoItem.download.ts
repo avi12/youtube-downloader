@@ -12,7 +12,7 @@ export async function executeDownload(
   gridTitle: string | undefined,
   setLocallyDone: (value: boolean) => void
 ) {
-  const options = CONTENT_OPTIONS.value;
+  const options = CONTENT_OPTIONS;
   let downloadType: DownloadType = videoData.isMusic ? DownloadType.Audio : DownloadType.VideoAndAudio;
   const isExplicitType = options.defaultDownloadType && options.defaultDownloadType !== DownloadType.Auto;
   if (isExplicitType) {

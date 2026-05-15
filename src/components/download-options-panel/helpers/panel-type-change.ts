@@ -16,7 +16,7 @@ export function applyDownloadTypeChange({
   downloadType: DownloadType;
   extension: string;
 } {
-  const options = CONTENT_OPTIONS.value;
+  const options = CONTENT_OPTIONS;
   downloadProgressStore.setLocal(videoId, {
     isDownloading: false,
     isDone: false,

@@ -44,7 +44,7 @@ export async function executeDownload({ params, abortSignal }: {
     return;
   }
 
-  const options = CONTENT_OPTIONS.value;
+  const options = CONTENT_OPTIONS;
   const orderedCaptionTracks = resolveOrderedCaptionTracks(
     cachedVideoData.captionTracks, selectedCaptionVssId, options.downloadExtras
   );

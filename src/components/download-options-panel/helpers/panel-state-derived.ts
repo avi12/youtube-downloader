@@ -29,7 +29,7 @@ export function resolveActualExtension({
   });
 
   const selectedTrackId = selectedAudioFormat.audioTrack?.id;
-  const isTrackWithExtras = selectedTrackId && CONTENT_OPTIONS.value.downloadExtras;
+  const isTrackWithExtras = selectedTrackId && CONTENT_OPTIONS.downloadExtras;
   if (isTrackWithExtras) {
     const hasExtraAudioTracks = getVideoData().audioFormats.some(
       format => format.audioTrack?.id && format.audioTrack.id !== selectedTrackId

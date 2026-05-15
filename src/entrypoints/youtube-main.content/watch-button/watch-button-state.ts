@@ -4,7 +4,7 @@ import { selectPreferredAudioFormat } from "@/lib/youtube/video-helpers";
 import { DownloadType, type VideoData } from "@/types";
 
 function getPreferredAudioFormat(videoData: VideoData) {
-  const options = CONTENT_OPTIONS.value;
+  const options = CONTENT_OPTIONS;
   const [firstVideoFormat] = videoData.videoFormats;
   const videoMime = firstVideoFormat?.mimeType ?? "";
   return selectPreferredAudioFormat({
@@ -25,7 +25,7 @@ export function buildInitialDownloadState(videoData: VideoData) {
   const videoMime = firstFormat?.mimeType ?? "video/mp4";
   const audioMime = preferredAudio?.mimeType ?? "audio/mp4";
 
-  const options = CONTENT_OPTIONS.value;
+  const options = CONTENT_OPTIONS;
   let extension: string;
   if (videoData.isMusic) {
     extension = resolveAutoExtension({

@@ -9,7 +9,7 @@ export function resolveOrderedCaptionTracks(
   selectedCaptionVssId: string | undefined,
   downloadExtras: boolean
 ) {
-  const options = CONTENT_OPTIONS.value;
+  const options = CONTENT_OPTIONS;
   const captionMode = resolveCaptionLanguageMode({
     captionMode: options.captionLanguageMode,
     audioMode: options.audioTrackLanguageMode
