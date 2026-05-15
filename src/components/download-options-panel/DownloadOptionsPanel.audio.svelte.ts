@@ -1,5 +1,5 @@
 import { findMatchVideoAudioFormat } from "./helpers/panel-audio-actions";
-import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
+import { PLAYER_ACTIVE_AUDIO } from "./helpers/player-active-tracks.svelte";
 import { findOriginalAudioFormat, normalizeLanguageCode } from "@/lib/youtube/video-helpers";
 import { PanelTrackMode, type AdaptiveFormatItem, type VideoData } from "@/types";
 
@@ -67,23 +67,23 @@ export function createAudioTrackState({
     applyAudioByLangCode(langCode);
   }
 
-  $effect(() => crossWorldMessenger.onMessage(CrossWorldMessage.AudioTrackChanged, ({ data }) => {
+  $effect(() => {
+    const playerLangCode = PLAYER_ACTIVE_AUDIO.langCode;
     const isNotMatchVideo = panelAudioMode !== PanelTrackMode.MatchVideo;
-    if (isNotMatchVideo) {
+    if (isNotMatchVideo || !playerLangCode) {
       return;
     }
 
     const { audioFormats } = getVideoData();
-    const langCode = normalizeLanguageCode(data.trackId.split(".")[0]);
     const matching = audioFormats.filter(
-      format => format.audioTrack && normalizeLanguageCode(format.audioTrack.id) === langCode
+      format => format.audioTrack && normalizeLanguageCode(format.audioTrack.id) === playerLangCode
     );
     if (!matching.length) {
       return;
     }
 
     setSelectedAudioFormat(matching.reduce((best, format) => format.bitrate > best.bitrate ? format : best));
-  }));
+  });
 
   return {
     get panelAudioMode() {
