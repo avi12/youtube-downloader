@@ -4,7 +4,12 @@ import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { ProgressType } from "@/types";
 import type { DownloadRequest, VideoTabParams } from "@/types";
 
-const SABR_STALL_TIMEOUT_MS = 30_000;
+// Once the first byte arrives, SABR usually streams in bursts of a few seconds
+// per chunk; a 10s gap without progress reliably means the segment fetch is
+// dead. Before any bytes have arrived we use a tighter 5s budget so we fall
+// through to CDN quickly when YouTube has already blackholed the session.
+const SABR_STALL_TIMEOUT_MS = 10_000;
+const SABR_FIRST_BYTE_TIMEOUT_MS = 5_000;
 const MAX_IFRAME_AUTO_RETRIES = 2;
 const iframeAutoRetries = new Map<string, number>();
 
@@ -18,7 +23,7 @@ export async function attemptSabrDownload({ request, signal, tabId }: {
   tabId: number;
 }) {
   const sabrAbortController = new AbortController();
-  let sabrStallTimeoutId = setTimeout(() => sabrAbortController.abort(), SABR_STALL_TIMEOUT_MS);
+  let sabrStallTimeoutId = setTimeout(() => sabrAbortController.abort(), SABR_FIRST_BYTE_TIMEOUT_MS);
   signal.addEventListener("abort", () => sabrAbortController.abort(), { once: true });
 
   function resetSabrStallTimer() {
