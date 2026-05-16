@@ -68,6 +68,7 @@
     captionPlayerLabel={derived.captionPlayerLabel}
     captionTracks={derived.filteredCaptionTracks}
     {downloadExtras}
+    hasExtrasToBundle={derived.hasExtrasToBundle}
     includeAiCaptions={derived.includeAiCaptions}
     {isDownloading}
     {onaudiocustomchange}

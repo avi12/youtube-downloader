@@ -13,6 +13,7 @@ import { DownloadType } from "@/types";
 import type { AdaptiveFormatItem, CaptionTrack } from "@/types";
 
 const AUTO_GENERATED_SUFFIX = "(auto-generated)";
+const AUTO_DUB_TRACK_SUFFIX = ".10";
 
 function formatCaptionLabel(track: CaptionTrack) {
   const name = track.name.simpleText;
@@ -109,7 +110,28 @@ export function createDownloadOptionsState(props: () => DownloadOptionsProps) {
       captionTracks: filteredCaptionTracks
     })
   );
-  const audioPlayerLabel = $derived(props().selectedAudioFormat?.audioTrack?.displayName ?? null);
+  const audioPlayerLabel = $derived.by(() => {
+    const format = props().selectedAudioFormat;
+    if (!format?.audioTrack) {
+      return null;
+    }
+
+    const isAutoDubbed = format.audioTrack.id.endsWith(AUTO_DUB_TRACK_SUFFIX);
+    return isAutoDubbed ? `${format.audioTrack.displayName} (auto-dubbed)` : format.audioTrack.displayName;
+  });
+  const hasExtrasToBundle = $derived.by(() => {
+    const selectedTrackId = props().selectedAudioFormat?.audioTrack?.id;
+    if (!selectedTrackId) {
+      return false;
+    }
+
+    return props().audioFormats.some(format => {
+      const trackId = format.audioTrack?.id;
+      return !!trackId
+        && trackId !== selectedTrackId
+        && (PANEL_OPTIONS.includeAutoDubbing || !trackId.endsWith(AUTO_DUB_TRACK_SUFFIX));
+    });
+  });
   const audioOriginalLabel = $derived(findOriginalAudioFormat(props().audioFormats)?.audioTrack?.displayName ?? null);
   const captionPlayerLabel = $derived.by(() => {
     const track = props().selectedCaptionTrack;
@@ -144,6 +166,9 @@ export function createDownloadOptionsState(props: () => DownloadOptionsProps) {
     },
     get audioPlayerLabel() {
       return audioPlayerLabel;
+    },
+    get hasExtrasToBundle() {
+      return hasExtrasToBundle;
     },
     get audioOriginalLabel() {
       return audioOriginalLabel;
