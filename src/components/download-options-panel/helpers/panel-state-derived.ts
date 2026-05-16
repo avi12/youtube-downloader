@@ -33,12 +33,14 @@ export function resolveActualExtension({
   const selectedTrackId = selectedAudioFormat.audioTrack?.id;
   const isTrackWithExtras = selectedTrackId && CONTENT_OPTIONS.downloadExtras;
   if (isTrackWithExtras) {
-    const hasExtraAudioTracks = getVideoData().audioFormats.some(format => {
-      const trackId = format.audioTrack?.id;
-      return trackId
-        && trackId !== selectedTrackId
-        && (CONTENT_OPTIONS.includeAutoDubbing || !trackId.endsWith(AUTO_DUB_TRACK_SUFFIX));
-    });
+    const isSelectedAutoDubbed = selectedTrackId.endsWith(AUTO_DUB_TRACK_SUFFIX);
+    const hasExtraAudioTracks = !(!CONTENT_OPTIONS.includeAutoDubbing && isSelectedAutoDubbed)
+      && getVideoData().audioFormats.some(format => {
+        const trackId = format.audioTrack?.id;
+        return trackId
+          && trackId !== selectedTrackId
+          && (CONTENT_OPTIONS.includeAutoDubbing || !trackId.endsWith(AUTO_DUB_TRACK_SUFFIX));
+      });
     if (hasExtraAudioTracks) {
       return "mkv";
     }

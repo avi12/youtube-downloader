@@ -125,6 +125,10 @@ export function createDownloadOptionsState(props: () => DownloadOptionsProps) {
       return false;
     }
 
+    if (!PANEL_OPTIONS.includeAutoDubbing && selectedTrackId.endsWith(AUTO_DUB_TRACK_SUFFIX)) {
+      return false;
+    }
+
     return props().audioFormats.some(format => {
       const trackId = format.audioTrack?.id;
       return !!trackId

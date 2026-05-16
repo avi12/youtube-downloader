@@ -12,6 +12,10 @@ export function getExtraAudioFormats({ audioFormats, selectedTrackId, selectedFo
   selectedFormat: AdaptiveFormatItem | null;
   includeAutoDubbing: boolean;
 }) {
+  if (!includeAutoDubbing && selectedTrackId?.endsWith(AUTO_DUB_TRACK_SUFFIX)) {
+    return [];
+  }
+
   const seenTrackIds = new Set(selectedTrackId ? [selectedTrackId] : []);
   let hasUntaggedExtra = !selectedTrackId;
   const result: AdaptiveFormatItem[] = [];
