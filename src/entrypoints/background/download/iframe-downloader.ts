@@ -45,10 +45,10 @@ export async function prepareIframe(data: DownloadRequest) {
     }
   });
 
-  await new Promise<void>(resolve => {
+  await new Promise<void>((resolve, reject) => {
     const timeoutId = setTimeout(() => {
       pendingIframeReady.delete(data.videoId);
-      resolve();
+      reject(new Error(`Iframe ready timeout: ${data.videoId}`));
     }, IFRAME_READY_TIMEOUT_MS);
 
     pendingIframeReady.set(data.videoId, {

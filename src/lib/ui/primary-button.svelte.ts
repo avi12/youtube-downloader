@@ -69,7 +69,7 @@ export function attachPrimaryButton({ elButton, getState, getIsDownloadable, get
           iconName: IconName.Download,
           title: "Retry download",
           accessibilityText: "Retry download",
-          style: ButtonStyle.CallToAction,
+          style: ButtonStyle.Mono,
           type: ButtonType.Filled,
           buttonSize: ButtonSize.Default,
           state: ButtonState.Active,
