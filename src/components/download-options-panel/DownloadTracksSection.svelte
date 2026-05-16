@@ -101,11 +101,13 @@
           originalLabel={audioOriginalLabel}
           playerLabel={audioPlayerLabel}
         />
-        {#if downloadExtras}
-          <span class="ytdl-extras-note">
-            Selected track is the default - all others are bundled as extras
-          </span>
-        {/if}
+      </div>
+    </div>
+    <div class="ytdl-collapse-row" class:is-open={uniqueAudioLanguages.length > 1 && downloadExtras}>
+      <div class="ytdl-collapse-row-inner">
+        <span class="ytdl-extras-note">
+          Selected track is the default - all others are bundled as extras
+        </span>
       </div>
     </div>
     <div class="ytdl-collapse-row" class:is-open={captionTracks.length > 0}>
