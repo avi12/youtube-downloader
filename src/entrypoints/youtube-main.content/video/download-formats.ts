@@ -4,11 +4,13 @@ import { type AdaptiveFormatItem, DownloadType } from "@/types";
 export { resolveCredentialsWithRetry } from "./download-credentials";
 
 const MAX_ADDITIONAL_AUDIO_TRACKS = 16;
+const AUTO_DUB_TRACK_SUFFIX = ".10";
 
-export function getExtraAudioFormats({ audioFormats, selectedTrackId, selectedFormat }: {
+export function getExtraAudioFormats({ audioFormats, selectedTrackId, selectedFormat, includeAutoDubbing }: {
   audioFormats: AdaptiveFormatItem[];
   selectedTrackId: string | undefined;
   selectedFormat: AdaptiveFormatItem | null;
+  includeAutoDubbing: boolean;
 }) {
   const seenTrackIds = new Set(selectedTrackId ? [selectedTrackId] : []);
   let hasUntaggedExtra = !selectedTrackId;
@@ -30,6 +32,10 @@ export function getExtraAudioFormats({ audioFormats, selectedTrackId, selectedFo
 
       hasUntaggedExtra = true;
       result.push(format);
+      continue;
+    }
+
+    if (!includeAutoDubbing && trackId.endsWith(AUTO_DUB_TRACK_SUFFIX)) {
       continue;
     }
 

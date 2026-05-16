@@ -4,6 +4,8 @@ import { getOutputExtension } from "@/lib/utils/containers";
 import { formatAudioCodecLabel, formatVideoQualityLabel } from "@/lib/youtube/video-helpers";
 import { DownloadType, type AdaptiveFormatItem, type VideoData } from "@/types";
 
+const AUTO_DUB_TRACK_SUFFIX = ".10";
+
 export function resolveActualExtension({
   downloadType,
   selectedVideoFormat,
@@ -31,9 +33,12 @@ export function resolveActualExtension({
   const selectedTrackId = selectedAudioFormat.audioTrack?.id;
   const isTrackWithExtras = selectedTrackId && CONTENT_OPTIONS.downloadExtras;
   if (isTrackWithExtras) {
-    const hasExtraAudioTracks = getVideoData().audioFormats.some(
-      format => format.audioTrack?.id && format.audioTrack.id !== selectedTrackId
-    );
+    const hasExtraAudioTracks = getVideoData().audioFormats.some(format => {
+      const trackId = format.audioTrack?.id;
+      return trackId
+        && trackId !== selectedTrackId
+        && (CONTENT_OPTIONS.includeAutoDubbing || !trackId.endsWith(AUTO_DUB_TRACK_SUFFIX));
+    });
     if (hasExtraAudioTracks) {
       return "mkv";
     }

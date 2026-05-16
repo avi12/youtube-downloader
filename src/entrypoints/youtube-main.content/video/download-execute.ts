@@ -63,7 +63,8 @@ export async function executeDownload({ params, abortSignal }: {
     ? getExtraAudioFormats({
       audioFormats: cachedVideoData.audioFormats,
       selectedTrackId: audioFormat?.audioTrack?.id,
-      selectedFormat: audioFormat
+      selectedFormat: audioFormat,
+      includeAutoDubbing: options.includeAutoDubbing
     })
     : [];
 
