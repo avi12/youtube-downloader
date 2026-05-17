@@ -3,7 +3,6 @@ import type { RecentDownloadContext } from "@/lib/messaging/messaging";
 import { getCompatibleFilename, getMimeType } from "@/lib/utils/containers";
 
 const blobUrlsPendingRevocation = new Map<string, Blob>();
-const BLOB_REVOCATION_DELAY_MS = 60_000;
 
 export async function triggerDownload({ data, filenameOutput, recentContext }: {
   data: Uint8Array;
@@ -22,9 +21,9 @@ export async function triggerDownload({ data, filenameOutput, recentContext }: {
     filename,
     recentContext
   });
+}
 
-  setTimeout(() => {
-    URL.revokeObjectURL(blobUrl);
-    blobUrlsPendingRevocation.delete(blobUrl);
-  }, BLOB_REVOCATION_DELAY_MS);
+export function revokePendingBlobUrl(blobUrl: string) {
+  URL.revokeObjectURL(blobUrl);
+  blobUrlsPendingRevocation.delete(blobUrl);
 }
