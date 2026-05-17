@@ -33,6 +33,12 @@ function dispatchOffscreenMessage({ handlers, message }: {
     case OffscreenMessageType.RemoveDownloadIframe:
       handlers[OffscreenMessageType.RemoveDownloadIframe]?.(message.data);
       break;
+    case OffscreenMessageType.RevokeBlobUrl:
+      handlers[OffscreenMessageType.RevokeBlobUrl]?.(message.data);
+      break;
+    case OffscreenMessageType.DownloadAudioViaSabr:
+      handlers[OffscreenMessageType.DownloadAudioViaSabr]?.(message.data);
+      break;
   }
 }
 

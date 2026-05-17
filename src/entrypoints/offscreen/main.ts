@@ -1,7 +1,9 @@
 import { createDownloadIframe, removeDownloadIframe } from "./iframe-host";
+import { handleOffscreenAudioDownload } from "./sabr-audio-download";
 import { handleProcessStreamChunk } from "./stream/accumulator";
 import { handleProcessStreamEnd } from "./stream/end-handler";
 import { cancelDownloadsByIds } from "@/lib/download-pipeline";
+import { revokePendingBlobUrl } from "@/lib/download-pipeline/blob-download";
 import { initMuxWorker } from "@/lib/download-pipeline/ffmpeg-instance";
 import { transcodeRecentDownload } from "@/lib/download-pipeline/transcode-recent";
 import { OffscreenMessageType, listenForOffscreenMessages } from "@/lib/messaging/offscreen-messaging";
@@ -26,6 +28,12 @@ listenForOffscreenMessages({
   },
   [OffscreenMessageType.RemoveDownloadIframe](data) {
     removeDownloadIframe(data.videoId);
+  },
+  [OffscreenMessageType.RevokeBlobUrl](data) {
+    revokePendingBlobUrl(data.blobUrl);
+  },
+  [OffscreenMessageType.DownloadAudioViaSabr](data) {
+    void handleOffscreenAudioDownload(data);
   }
 });
 

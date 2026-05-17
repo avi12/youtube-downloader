@@ -1,4 +1,4 @@
-import type { DownloadType, VideoMetadata } from "@/types";
+import type { AdaptiveFormatItem, DownloadType, SabrConfig, VideoMetadata } from "@/types";
 
 export const OffscreenMessageType = {
   ProcessStreamChunk: "processStreamChunk",
@@ -6,7 +6,9 @@ export const OffscreenMessageType = {
   CancelProcessing: "cancelProcessing",
   TranscodeRecentDownload: "transcodeRecentDownload",
   CreateDownloadIframe: "createDownloadIframe",
-  RemoveDownloadIframe: "removeDownloadIframe"
+  RemoveDownloadIframe: "removeDownloadIframe",
+  RevokeBlobUrl: "revokeBlobUrl",
+  DownloadAudioViaSabr: "downloadAudioViaSabr"
 } as const;
 
 export type OffscreenMessageType = (typeof OffscreenMessageType)[keyof typeof OffscreenMessageType];
@@ -53,6 +55,30 @@ export interface OffscreenProtocolMap {
   };
   [OffscreenMessageType.RemoveDownloadIframe]: {
     videoId: string;
+  };
+  [OffscreenMessageType.RevokeBlobUrl]: {
+    blobUrl: string;
+  };
+  [OffscreenMessageType.DownloadAudioViaSabr]: {
+    videoId: string;
+    tabId: number;
+    sabrConfig: SabrConfig;
+    audioFormat: AdaptiveFormatItem;
+    poToken: string;
+    type: DownloadType;
+    filenameOutput: string;
+    audioMimeType: string;
+    audioTrackLabels: string[];
+    audioTrackLanguages: string[];
+    subtitleTracks: {
+      dataBase64: string;
+      label: string;
+      languageCode: string;
+    }[];
+    playlistId?: string;
+    playlistTitle?: string;
+    playlistTotalCount?: number;
+    enrichedMetadata?: VideoMetadata | null;
   };
 }
 
