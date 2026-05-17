@@ -3,6 +3,45 @@ import { TRANSFER_CHUNK_SIZE, uint8ToBase64 } from "@/lib/utils/binary";
 import { AUDIO_EXTRA_STREAM_PREFIX, StreamType } from "@/types";
 import type { CaptionTrack } from "@/types";
 
+export function sendNetworkChunkToOffscreen({ videoId, streamType, iChunk, chunk, tabId }: {
+  videoId: string;
+  streamType: string;
+  iChunk: number;
+  chunk: Uint8Array;
+  tabId: number;
+}) {
+  sendToOffscreen({
+    type: OffscreenMessageType.ProcessStreamChunk,
+    data: {
+      videoId,
+      streamType,
+      iChunk,
+      totalChunks: 0,
+      chunkBase64: uint8ToBase64(chunk),
+      tabId
+    }
+  });
+}
+
+export function sendStreamFinishedMarker({ videoId, streamType, totalChunks, tabId }: {
+  videoId: string;
+  streamType: string;
+  totalChunks: number;
+  tabId: number;
+}) {
+  sendToOffscreen({
+    type: OffscreenMessageType.ProcessStreamChunk,
+    data: {
+      videoId,
+      streamType,
+      iChunk: -1,
+      totalChunks,
+      chunkBase64: "",
+      tabId
+    }
+  });
+}
+
 const YIELD_EVERY_N_CHUNKS = 32;
 
 export async function sendStreamChunksToOffscreen({ videoId, streamType, data, tabId }: {

@@ -10,4 +10,5 @@ export interface DownloadResult {
   }>;
   isPartialVideo?: boolean;
   isPartialAudio?: boolean;
+  streamedToOffscreen?: boolean;
 }

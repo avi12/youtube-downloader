@@ -1,4 +1,3 @@
-import type { DownloadResult } from "./background-downloader";
 import {
   downloadAudioOnlyViaSabr,
   downloadVideoAudioViaSabr,
@@ -6,7 +5,8 @@ import {
 } from "./sabr-fetch-helpers";
 import { createProgressAccumulator } from "./sabr-progress";
 import { buildEffectiveSabrConfig } from "./sabr-utils";
-import { DownloadType } from "@/types";
+import { sendNetworkChunkToOffscreen, sendStreamFinishedMarker } from "./stream-chunk-transfer";
+import { DownloadType, StreamType } from "@/types";
 import type { DownloadRequest } from "@/types";
 
 export { parseContentLength, buildEffectiveSabrConfig } from "./sabr-utils";
@@ -47,18 +47,35 @@ export async function downloadViaSabr({ request, signal, tabId, onProgress }: {
     onProgress
   });
   if (isAudioOnly) {
+    let iChunk = 0;
     const audioResult = await downloadAudioOnlyViaSabr({
       config: effectiveConfig,
       audioFormat,
       poToken: resolvedPoToken,
       signal,
-      onBytesReceived: onAudioBytes
+      onBytesReceived: onAudioBytes,
+      onChunk(chunk) {
+        sendNetworkChunkToOffscreen({
+          videoId,
+          streamType: StreamType.Audio,
+          iChunk: iChunk++,
+          chunk,
+          tabId
+        });
+      }
+    });
+    sendStreamFinishedMarker({
+      videoId,
+      streamType: StreamType.Audio,
+      totalChunks: iChunk,
+      tabId
     });
     return {
       videoData: null,
-      audioData: audioResult.data,
+      audioData: null,
       additionalAudioTracks: [],
-      isPartialAudio: !audioResult.isComplete
+      isPartialAudio: !audioResult.isComplete,
+      streamedToOffscreen: true
     };
   }
 

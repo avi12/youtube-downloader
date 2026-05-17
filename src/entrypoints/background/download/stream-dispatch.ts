@@ -7,11 +7,12 @@ import { stripMimeParams } from "@/lib/utils/containers";
 import { ProgressType } from "@/types";
 import type { DownloadRequest, VideoMetadata } from "@/types";
 
-export async function dispatchToOffscreen({ request, result, enrichedMetadata, tabId }: {
+export async function dispatchToOffscreen({ request, result, enrichedMetadata, tabId, skipChunkTransfer }: {
   request: DownloadRequest;
   result: DownloadResult;
   enrichedMetadata: VideoMetadata | null | undefined;
   tabId: number;
+  skipChunkTransfer?: boolean;
 }) {
   void sendMessage(MessageType.UpdateDownloadProgress, {
     videoId: request.videoId,
@@ -28,15 +29,17 @@ export async function dispatchToOffscreen({ request, result, enrichedMetadata, t
 
   const resolvedVideoMimeType = videoFormat ? stripMimeParams(videoFormat.mimeType) : "video/mp4";
   const resolvedAudioMimeType = audioFormat ? stripMimeParams(audioFormat.mimeType) : "audio/mp4";
-  await Promise.all(
-    buildTransferJobs({
-      videoData,
-      audioData,
-      additionalAudioTracks,
-      videoId,
-      tabId
-    })
-  );
+  if (!skipChunkTransfer) {
+    await Promise.all(
+      buildTransferJobs({
+        videoData,
+        audioData,
+        additionalAudioTracks,
+        videoId,
+        tabId
+      })
+    );
+  }
 
   const audioTrackLabels = [primaryAudioLabel ?? "", ...additionalAudioTracks.map(track => track.label)];
   const audioTrackLanguages = [
