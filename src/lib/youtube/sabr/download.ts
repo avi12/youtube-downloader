@@ -26,12 +26,13 @@ export async function fetchVideoViaSabrStream({ sabrConfig, videoFormat, fetchFu
   });
 }
 
-export async function fetchAudioViaSabrStream({ sabrConfig, audioFormat, fetchFunction, poToken, signal }: {
+export async function fetchAudioViaSabrStream({ sabrConfig, audioFormat, fetchFunction, poToken, signal, onChunk }: {
   sabrConfig: SabrConfig;
   audioFormat: AdaptiveFormatItem;
   fetchFunction: typeof globalThis.fetch;
   poToken: string;
   signal?: AbortSignal;
+  onChunk?: (chunk: Uint8Array) => void;
 }) {
   const sabrStream = createSabrStream({
     sabrConfig,
@@ -45,6 +46,7 @@ export async function fetchAudioViaSabrStream({ sabrConfig, audioFormat, fetchFu
   return collectReadableStream({
     stream: audioStream,
     expectedBytes: parseInt(audioFormat.contentLength, 10),
-    signal
+    signal,
+    onChunk
   });
 }

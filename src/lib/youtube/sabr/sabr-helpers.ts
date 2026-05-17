@@ -28,10 +28,11 @@ export function adaptiveFormatToSabrFormat(format: AdaptiveFormatItem) {
   });
 }
 
-export function collectReadableStream({ stream, expectedBytes, signal }: {
+export function collectReadableStream({ stream, expectedBytes, signal, onChunk }: {
   stream: ReadableStream<Uint8Array>;
   expectedBytes: number;
   signal?: AbortSignal;
+  onChunk?: (chunk: Uint8Array) => void;
 }) {
   const reader = stream.getReader();
   const isAborted = signal?.aborted;
@@ -43,7 +44,8 @@ export function collectReadableStream({ stream, expectedBytes, signal }: {
 
   return readStreamToBuffer({
     reader,
-    expectedBytes
+    expectedBytes,
+    onChunk
   }).then(
     data => ({
       data,

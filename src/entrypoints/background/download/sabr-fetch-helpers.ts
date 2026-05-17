@@ -15,12 +15,13 @@ function makeFetch({ signal, onBytesReceived }: {
   });
 }
 
-export async function downloadAudioOnlyViaSabr({ config, audioFormat, poToken, signal, onBytesReceived }: {
+export async function downloadAudioOnlyViaSabr({ config, audioFormat, poToken, signal, onBytesReceived, onChunk }: {
   config: SabrConfig;
   audioFormat: AdaptiveFormatItem;
   poToken: string;
   signal: AbortSignal;
   onBytesReceived?: (bytes: number) => void;
+  onChunk?: (chunk: Uint8Array) => void;
 }) {
   return fetchAudioViaSabrStream({
     sabrConfig: config,
@@ -30,7 +31,8 @@ export async function downloadAudioOnlyViaSabr({ config, audioFormat, poToken, s
       onBytesReceived
     }),
     poToken,
-    signal
+    signal,
+    onChunk
   });
 }
 

@@ -2,15 +2,17 @@ import { createStallChecker, mergeChunks, readChunk, StreamStallError } from "./
 
 export { StreamStallError } from "./stream-stall";
 
-export async function readStreamToBuffer({ reader, expectedBytes, onBytesReceived }: {
+export async function readStreamToBuffer({ reader, expectedBytes, onBytesReceived, onChunk }: {
   reader: ReadableStreamDefaultReader<Uint8Array>;
   expectedBytes: number;
   onBytesReceived?: (bytes: number) => void;
+  onChunk?: (chunk: Uint8Array) => void;
 }) {
   const stall = createStallChecker(() => void reader.cancel());
 
+  const isStreamingMode = !!onChunk;
   let preallocated: Uint8Array | null = null;
-  const hasExpectedBytes = expectedBytes > 0;
+  const hasExpectedBytes = !isStreamingMode && expectedBytes > 0;
   if (hasExpectedBytes) {
     try {
       preallocated = new Uint8Array(expectedBytes);
@@ -24,6 +26,10 @@ export async function readStreamToBuffer({ reader, expectedBytes, onBytesReceive
   let totalBytes = 0;
 
   function buildPartial() {
+    if (isStreamingMode) {
+      return new Uint8Array(0);
+    }
+
     return preallocated
       ? preallocated.subarray(0, writeOffset)
       : mergeChunks({
@@ -48,7 +54,9 @@ export async function readStreamToBuffer({ reader, expectedBytes, onBytesReceive
         break;
       }
 
-      if (preallocated) {
+      if (isStreamingMode) {
+        onChunk!(value!);
+      } else if (preallocated) {
         preallocated.set(value!, writeOffset);
         writeOffset += value!.byteLength;
       } else {
@@ -65,6 +73,10 @@ export async function readStreamToBuffer({ reader, expectedBytes, onBytesReceive
 
   if (stall.isStalled) {
     throw new StreamStallError(buildPartial());
+  }
+
+  if (isStreamingMode) {
+    return new Uint8Array(0);
   }
 
   return preallocated ?? mergeChunks({
