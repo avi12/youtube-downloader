@@ -85,8 +85,8 @@ export async function buildAndDispatchVideoData({ playerResponse }: {
 
   if (self !== top) {
     getMoviePlayer()?.stopVideo?.();
-    await generatePoTokenIfNeeded(videoData);
     void crossWorldMessenger.sendMessage(CrossWorldMessage.IframePlayerReady, { videoId: videoData.videoId });
+    await generatePoTokenIfNeeded(videoData);
     return;
   }
 
