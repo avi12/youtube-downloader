@@ -1,11 +1,5 @@
 import { resolveVideoFilename } from "@/lib/utils/containers";
-import {
-  DownloadType,
-  VideoQualityMode,
-  type DownloadRequest,
-  type Options,
-  type VideoData
-} from "@/types";
+import { DownloadType, VideoQualityMode, type Options, type VideoData } from "@/types";
 
 type PlaylistMetadata = {
   playlistId: string;

@@ -8,7 +8,10 @@ import {
   type VideoData
 } from "@/types";
 
-function assignButtonId({ elButton, buttonId }: { elButton: Element; buttonId: string }) {
+function assignButtonId({ elButton, buttonId }: {
+  elButton: Element;
+  buttonId: string;
+}) {
   if (elButton.getAttribute(DATA_BUTTON_ID_ATTR) !== buttonId) {
     elButton.setAttribute(DATA_BUTTON_ID_ATTR, buttonId);
   }
@@ -29,7 +32,10 @@ export function sendDownloadButtonData({
   downloadIconName: IconName;
   isDisabled: boolean;
 }) {
-  assignButtonId({ elButton, buttonId });
+  assignButtonId({
+    elButton,
+    buttonId
+  });
   sendButtonData({
     elButton,
     data: {
@@ -58,7 +64,10 @@ export function sendChevronButtonData({
   iconName: IconName;
   isDisabled: boolean;
 }) {
-  assignButtonId({ elButton, buttonId });
+  assignButtonId({
+    elButton,
+    buttonId
+  });
   sendButtonData({
     elButton,
     data: {

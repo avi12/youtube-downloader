@@ -32,15 +32,24 @@ export function mountGridButton({ context, elCard }: {
     return;
   }
 
-  const gridTitle = shadowFirst({ elCard, selector: ".ytLockupMetadataViewModelTitle, #video-title-link, #video-title" })?.textContent?.trim() ?? "";
+  const gridTitle = shadowFirst({
+    elCard,
+    selector: ".ytLockupMetadataViewModelTitle, #video-title-link, #video-title"
+  })?.textContent?.trim() ?? "";
   const elItemContainer = document.createElement("div");
   elItemContainer.dataset.ytdlGridItem = videoId;
 
-  const elHost = shadowFirst({ elCard, selector: ".ytLockupMetadataViewModelHost" });
+  const elHost = shadowFirst({
+    elCard,
+    selector: ".ytLockupMetadataViewModelHost"
+  });
   if (elHost) {
     elHost.append(elItemContainer);
   } else {
-    const elDismissible = shadowFirst({ elCard, selector: "#dismissible" });
+    const elDismissible = shadowFirst({
+      elCard,
+      selector: "#dismissible"
+    });
     if (!elDismissible) {
       return;
     }

@@ -10,7 +10,6 @@ import { ProgressType } from "@/types";
 import type { ProcessStreamData } from "@/types";
 
 type ExtraAudioTrack = MuxVideoAudioJob["extraAudioTracks"][number];
-type SubtitleFile = MuxVideoAudioJob["subtitleTracks"][number];
 
 export function buildExtraAudioTracks(additionalAudioStreams: ProcessStreamData["additionalAudioStreams"]) {
   return additionalAudioStreams

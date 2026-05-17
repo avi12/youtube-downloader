@@ -22,7 +22,10 @@ export type MuxFfmpegParams = {
   isExtraTracksPresent: boolean;
 };
 
-function appendTrackMetadata({ args, params }: { args: string[]; params: MuxFfmpegParams }) {
+function appendTrackMetadata({ args, params }: {
+  args: string[];
+  params: MuxFfmpegParams;
+}) {
   const audioTrackMeta = [
     {
       label: params.primaryAudioLabel,
@@ -91,7 +94,10 @@ export function buildMuxFfmpegArgs(params: MuxFfmpegParams) {
     args.push("-c:s", useIntermediateMkv ? "webvtt" : resolveSubtitleCodec(targetExtension));
   }
 
-  appendTrackMetadata({ args, params });
+  appendTrackMetadata({
+    args,
+    params
+  });
   args.push(useIntermediateMkv ? muxFilename : outputFilename);
   return args;
 }

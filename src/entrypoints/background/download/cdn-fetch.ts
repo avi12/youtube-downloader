@@ -6,7 +6,10 @@ const RETRY_MAX_DELAY_MS = 30_000;
 const HTTP_STATUS_RANGE_NOT_SATISFIABLE = 416;
 const HTTP_STATUS_OK = 200;
 
-function mergeUint8Arrays({ first, second }: { first: Uint8Array; second: Uint8Array }) {
+function mergeUint8Arrays({ first, second }: {
+  first: Uint8Array;
+  second: Uint8Array;
+}) {
   const merged = new Uint8Array(first.byteLength + second.byteLength);
   merged.set(first, 0);
   merged.set(second, first.byteLength);
@@ -75,7 +78,10 @@ export async function fetchWithProgress({ url, signal, onBytesReceived, initialD
         });
       }
 
-      return partialData ? mergeUint8Arrays({ first: partialData, second: newData }) : newData;
+      return partialData ? mergeUint8Arrays({
+        first: partialData,
+        second: newData
+      }) : newData;
     } catch (error) {
       const isUnrecoverableError = !(error instanceof StreamStallError) || attempt === MAX_CDN_RETRY_ATTEMPTS;
       if (isUnrecoverableError) {
@@ -83,7 +89,10 @@ export async function fetchWithProgress({ url, signal, onBytesReceived, initialD
       }
 
       partialData = partialData
-        ? mergeUint8Arrays({ first: partialData, second: error.partialData })
+        ? mergeUint8Arrays({
+          first: partialData,
+          second: error.partialData
+        })
         : error.partialData;
       const delay = Math.min(RETRY_BASE_DELAY_MS * (2 ** attempt), RETRY_MAX_DELAY_MS);
       console.warn(`[ytdl:bg] CDN stream interrupted at byte ${byteOffset}, retrying (${attempt + 1}/${MAX_CDN_RETRY_ATTEMPTS})`);
