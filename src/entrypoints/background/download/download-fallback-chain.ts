@@ -1,7 +1,8 @@
 import { downloadViaCdn } from "./cdn-downloader";
 import { attemptSabrDownload } from "./sabr-attempt";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
-import { ProgressType } from "@/types";
+import { getCompatibleFilename } from "@/lib/utils/filename";
+import { DownloadType, ProgressType } from "@/types";
 import type { DownloadRequest } from "@/types";
 
 export async function trySabr({ request, signal, tabId }: {
@@ -51,4 +52,27 @@ export async function tryCdn({ request, signal, videoId, tabId, partialVideoData
     console.warn("[ytdl:bg] CDN failed, trying iframe fallback:", error);
     return null;
   });
+}
+
+export async function tryDirectUrlDownload({ request }: {
+  request: DownloadRequest;
+}) {
+  const { type, resolvedAudioUrl, filenameOutput } = request;
+  const isAudioOnly = type === DownloadType.Audio;
+  if (!isAudioOnly || !resolvedAudioUrl) {
+    return null;
+  }
+
+  try {
+    const filename = getCompatibleFilename(filenameOutput);
+    const downloadId = await browser.downloads.download({
+      url: resolvedAudioUrl,
+      filename
+    });
+    console.warn("[ytdl:bg] Direct URL download started, id:", downloadId);
+    return downloadId;
+  } catch (error) {
+    console.warn("[ytdl:bg] Direct URL download failed:", error);
+    return null;
+  }
 }

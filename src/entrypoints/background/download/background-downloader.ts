@@ -1,5 +1,9 @@
+import { ensureProcessor } from "../handlers/processor";
+import { removeFromPopupList } from "../queue/popup-list";
+import { signalVideoComplete } from "../queue/sequential-queue";
 import { reportDownloadFailed } from "./download-failure-reporter";
-import { trySabr, tryCdn } from "./download-fallback-chain";
+import { trySabr, tryCdn, tryDirectUrlDownload } from "./download-fallback-chain";
+import type { DownloadResult } from "./download-result-types";
 import { enrichMetadataFromYouTubeMusic } from "./metadata-enrichment";
 import {
   clearInterruptedDownload,
@@ -8,7 +12,13 @@ import {
   registerOnlineRetryListener
 } from "./network-retry";
 import { clearIframeAutoRetry, handleIframeFallback } from "./sabr-attempt";
+import { buildEffectiveSabrConfig } from "./sabr-utils";
+import { buildSubtitleTracks } from "./stream-chunk-transfer";
 import { dispatchToOffscreen } from "./stream-dispatch";
+import { MessageType, sendMessage } from "@/lib/messaging/messaging";
+import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
+import { stripMimeParams } from "@/lib/utils/containers";
+import { DownloadType, ProgressType } from "@/types";
 import type { DownloadRequest } from "@/types";
 
 export type { DownloadResult } from "./download-result-types";
@@ -41,7 +51,47 @@ export async function startBackgroundDownload({ request, tabId }: {
 
   try {
     const enrichedMetadataPromise = enrichMetadataFromYouTubeMusic(metadata);
-    let result = await trySabr({
+    const isAudioOnly = request.type === DownloadType.Audio;
+    const hasSabrConfig = !!(request.sabrConfig && request.audioFormat);
+    if (isAudioOnly && hasSabrConfig) {
+      await ensureProcessor();
+      const effectiveSabrConfig = buildEffectiveSabrConfig({
+        sabrConfig: request.sabrConfig!,
+        sabrUrl: request.sabrUrl
+      });
+      const subtitleTracks = buildSubtitleTracks({
+        captionTracks: request.captionTracks,
+        captionVttData: request.captionVttData ?? []
+      });
+      sendToOffscreen({
+        type: OffscreenMessageType.DownloadAudioViaSabr,
+        data: {
+          videoId,
+          tabId,
+          sabrConfig: effectiveSabrConfig,
+          audioFormat: request.audioFormat!,
+          poToken: request.poToken ?? "",
+          type: request.type,
+          filenameOutput: request.filenameOutput,
+          audioMimeType: stripMimeParams(request.audioFormat!.mimeType),
+          audioTrackLabels: [request.primaryAudioLabel ?? ""],
+          audioTrackLanguages: [request.primaryAudioLanguageCode ?? ""],
+          subtitleTracks,
+          playlistId: request.playlistId,
+          playlistTitle: request.playlistTitle,
+          playlistTotalCount: request.playlistTotalCount,
+          enrichedMetadata: await enrichedMetadataPromise
+        }
+      });
+      await clearInterruptedDownload(videoId);
+      return;
+    }
+
+    if (isAudioOnly) {
+      await ensureProcessor();
+    }
+
+    let result: DownloadResult | null = await trySabr({
       request,
       signal,
       tabId
@@ -50,7 +100,8 @@ export async function startBackgroundDownload({ request, tabId }: {
       return;
     }
 
-    const needsCdn = !result?.audioData || result.isPartialVideo || result.isPartialAudio;
+    const hasStreamed = result?.streamedToOffscreen;
+    const needsCdn = (!result?.audioData && !hasStreamed) || result?.isPartialVideo || result?.isPartialAudio;
     const hasCdnUrls = !!(request.resolvedVideoUrl || request.resolvedAudioUrl);
     const shouldFallToCdn = needsCdn && hasCdnUrls;
     if (shouldFallToCdn) {
@@ -70,8 +121,23 @@ export async function startBackgroundDownload({ request, tabId }: {
       return;
     }
 
-    const hasNoData = !result || (!(result.videoData?.byteLength) && !(result.audioData?.byteLength));
+    const hasNoData = !result
+      || (!(result.videoData?.byteLength) && !(result.audioData?.byteLength) && !hasStreamed);
     if (hasNoData) {
+      const directDownloadId = await tryDirectUrlDownload({ request });
+      if (directDownloadId !== null) {
+        clearIframeAutoRetry(videoId);
+        await sendMessage(MessageType.UpdateDownloadProgress, {
+          videoId,
+          progress: 0,
+          progressType: ProgressType.Video,
+          isRemoved: true
+        }, tabId);
+        await removeFromPopupList(videoId);
+        signalVideoComplete(videoId);
+        return;
+      }
+
       await handleIframeFallback({
         request,
         tabId,
@@ -86,9 +152,10 @@ export async function startBackgroundDownload({ request, tabId }: {
       request,
       result: result!,
       enrichedMetadata: await enrichedMetadataPromise,
-      tabId
+      tabId,
+      skipChunkTransfer: hasStreamed
     });
-    void clearInterruptedDownload(videoId);
+    await clearInterruptedDownload(videoId);
   } catch (error) {
     if (signal.aborted) {
       return;
