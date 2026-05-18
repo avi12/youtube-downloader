@@ -1,10 +1,5 @@
-import {
-  toUint8Array,
-  reportProgress,
-  toOwnedArrayBuffer,
-  buildRecentContext,
-  triggerDownload
-} from ".";
+import { toUint8Array, reportProgress, toOwnedArrayBuffer, buildRecentContext } from ".";
+import { triggerDownloadFromFile } from "./blob-download";
 import {
   buildExtraAudioTracks,
   buildSubtitleFiles,
@@ -13,6 +8,7 @@ import {
 } from "./build-mux-job";
 import { runMuxVideoAudio } from "./ffmpeg-instance";
 import { addToPlaylistBundle } from "./playlist-bundle";
+import { OPFS_MUX_OUTPUT_SUFFIX } from "@/entrypoints/mux-worker/opfs-output-fs";
 import { ProgressType } from "@/types";
 import type { ProcessStreamData } from "@/types";
 
@@ -25,9 +21,9 @@ export async function processVideoAudio({ item, isCancelled }: {
     additionalAudioStreams, subtitleTracks, primaryAudioLanguageCode, defaultAudioTrackIndex
   } = item;
 
-  const videoData = toUint8Array(item.videoData);
+  const videoData = item.videoFile ? null : toUint8Array(item.videoData);
   const audioData = toUint8Array(item.audioData);
-  const isMissingStream = !videoData || !audioData;
+  const isMissingStream = (!videoData && !item.videoFile) || !audioData;
   if (isMissingStream) {
     await handleSingleStream({
       item,
@@ -49,11 +45,12 @@ export async function processVideoAudio({ item, isCancelled }: {
     hasExtraTracks: additionalAudioStreams.length > 0
   });
 
-  const output = await runMuxVideoAudio({
+  const outputFile = await runMuxVideoAudio({
     videoId,
     job: {
-      videoData: toOwnedArrayBuffer(videoData),
-      audioData: toOwnedArrayBuffer(audioData),
+      videoData: item.videoFile ? null : toOwnedArrayBuffer(videoData!),
+      videoFile: item.videoFile,
+      audioData: toOwnedArrayBuffer(audioData!),
       extraAudioTracks: buildExtraAudioTracks(additionalAudioStreams),
       subtitleTracks: buildSubtitleFiles(subtitleTracks),
       videoMimeType,
@@ -66,20 +63,30 @@ export async function processVideoAudio({ item, isCancelled }: {
       filenameOutput
     }
   });
+  if (item.videoFile) {
+    const root = await navigator.storage.getDirectory();
+    await root.removeEntry(item.videoFile.name).catch(() => {});
+  }
+
   const isDownloadCancelled = isCancelled();
   if (isDownloadCancelled) {
+    const root = await navigator.storage.getDirectory();
+    await root.removeEntry(videoId + OPFS_MUX_OUTPUT_SUFFIX).catch(() => {});
     return;
   }
 
   const isPlaylistItem = Boolean(item.playlistId);
   if (isPlaylistItem) {
+    const data = new Uint8Array(await outputFile.arrayBuffer());
+    const root = await navigator.storage.getDirectory();
+    await root.removeEntry(videoId + OPFS_MUX_OUTPUT_SUFFIX).catch(() => {});
     await addToPlaylistBundle({
       playlistId: item.playlistId!,
       playlistTitle: item.playlistTitle ?? "Playlist",
       totalCount: item.playlistTotalCount ?? 1,
       tabId,
       filename: downloadFilename,
-      data: output
+      data
     });
     await reportProgress({
       videoId,
@@ -90,8 +97,8 @@ export async function processVideoAudio({ item, isCancelled }: {
     return;
   }
 
-  await triggerDownload({
-    data: output,
+  await triggerDownloadFromFile({
+    file: outputFile,
     filenameOutput: downloadFilename,
     recentContext: buildRecentContext({
       item,
@@ -99,7 +106,11 @@ export async function processVideoAudio({ item, isCancelled }: {
         videoMimeType,
         audioMimeType
       }
-    })
+    }),
+    onRevoke() {
+      void navigator.storage.getDirectory().then(root =>
+        root.removeEntry(videoId + OPFS_MUX_OUTPUT_SUFFIX).catch(() => {}));
+    }
   });
   await reportProgress({
     videoId,

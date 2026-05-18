@@ -2,7 +2,7 @@ import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import type { RecentDownloadContext } from "@/lib/messaging/messaging";
 import { getCompatibleFilename, getMimeType } from "@/lib/utils/containers";
 
-const blobUrlsPendingRevocation = new Map<string, Blob>();
+const blobUrlsPendingRevocation = new Map<string, (() => void) | null>();
 
 export async function triggerDownload({ data, filenameOutput, recentContext }: {
   data: Uint8Array;
@@ -13,7 +13,27 @@ export async function triggerDownload({ data, filenameOutput, recentContext }: {
   const filename = getCompatibleFilename(filenameOutput);
   const blob = new Blob([new Uint8Array(data)], { type: mimeType });
   const blobUrl = URL.createObjectURL(blob);
-  blobUrlsPendingRevocation.set(blobUrl, blob);
+  blobUrlsPendingRevocation.set(blobUrl, null);
+
+  await sendMessage(MessageType.PipelineDownload, {
+    blobUrl,
+    mimeType,
+    filename,
+    recentContext
+  });
+}
+
+export async function triggerDownloadFromFile({ file, filenameOutput, recentContext, onRevoke }: {
+  file: File;
+  filenameOutput: string;
+  recentContext?: RecentDownloadContext;
+  onRevoke?: () => void;
+}) {
+  const mimeType = getMimeType(filenameOutput) || "application/octet-stream";
+  const filename = getCompatibleFilename(filenameOutput);
+  const blob = new Blob([file], { type: mimeType });
+  const blobUrl = URL.createObjectURL(blob);
+  blobUrlsPendingRevocation.set(blobUrl, onRevoke ?? null);
 
   await sendMessage(MessageType.PipelineDownload, {
     blobUrl,
@@ -25,5 +45,7 @@ export async function triggerDownload({ data, filenameOutput, recentContext }: {
 
 export function revokePendingBlobUrl(blobUrl: string) {
   URL.revokeObjectURL(blobUrl);
+  const cleanup = blobUrlsPendingRevocation.get(blobUrl);
   blobUrlsPendingRevocation.delete(blobUrl);
+  cleanup?.();
 }

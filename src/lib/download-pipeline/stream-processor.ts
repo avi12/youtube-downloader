@@ -62,7 +62,6 @@ async function processItem(item: ProcessStreamData) {
       return;
     }
 
-    console.error("[ytdl:pipeline] Mux/download failed:", item.videoId, error);
     await reportRemoval({
       videoId: item.videoId,
       tabId: item.tabId
