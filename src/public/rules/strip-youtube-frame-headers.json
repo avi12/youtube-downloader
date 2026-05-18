@@ -13,5 +13,19 @@
       "urlFilter": "*youtube.com/watch*",
       "resourceTypes": ["sub_frame"]
     }
+  },
+  {
+    "id": 2,
+    "priority": 2,
+    "action": {
+      "type": "modifyHeaders",
+      "requestHeaders": [
+        { "header": "Origin", "operation": "set", "value": "https://www.youtube.com" },
+        { "header": "Referer", "operation": "set", "value": "https://www.youtube.com/" }
+      ]
+    },
+    "condition": {
+      "urlFilter": "*.googlevideo.com/videoplayback*"
+    }
   }
 ]

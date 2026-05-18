@@ -2,6 +2,11 @@ import { extractPoTokenFromBody } from "./po-token-extractor";
 
 export { extractPoTokenFromBody } from "./po-token-extractor";
 
+// Requests from offscreen iframes (youtube.com, tabId < 0) use this sentinel key.
+// These must be captured separately because tabId < 0 normally means "extension request"
+// and is skipped — but offscreen iframe player requests also arrive with tabId < 0.
+export const OFFSCREEN_PLAYER_TAB_ID = -2;
+
 const capturedByTab = new Map<number, {
   body: number[];
   url: string;
@@ -25,10 +30,16 @@ export function onSabrBodyCaptured(callback: (tabId: number) => void) {
 }
 
 function handleSabrRequest(details: Browser.webRequest.OnBeforeRequestDetails) {
-  const isBackgroundRequest = details.tabId < 0;
-  if (isBackgroundRequest) {
+  // Background requests with youtube.com initiator come from offscreen iframe players.
+  // Capture them so playlist iframes get the player's actual (n-param-decoded) URL.
+  const isOffscreenPlayer = details.tabId < 0
+    && details.initiator === "https://www.youtube.com";
+  const isExtensionRequest = details.tabId < 0 && !isOffscreenPlayer;
+  if (isExtensionRequest) {
     return undefined;
   }
+
+  const captureTabId = isOffscreenPlayer ? OFFSCREEN_PLAYER_TAB_ID : details.tabId;
 
   const hasNoBody = !details.requestBody?.raw?.[0]?.bytes;
   if (hasNoBody) {
@@ -36,13 +47,13 @@ function handleSabrRequest(details: Browser.webRequest.OnBeforeRequestDetails) {
   }
 
   const bodyBytes = new Uint8Array(details.requestBody!.raw![0].bytes!);
-  const previousData = capturedByTab.get(details.tabId);
+  const previousData = capturedByTab.get(captureTabId);
   const isFirstCapture = !previousData;
 
-  capturedByTab.set(details.tabId, {
+  capturedByTab.set(captureTabId, {
     body: Array.from(bodyBytes),
     url: details.url,
-    tabId: details.tabId,
+    tabId: captureTabId,
     timestamp: Date.now()
   });
 
@@ -53,7 +64,7 @@ function handleSabrRequest(details: Browser.webRequest.OnBeforeRequestDetails) {
   const isPoTokenPresent = Boolean(extractPoTokenFromBody(Array.from(bodyBytes)));
   const isNewPoToken = isPoTokenPresent && !isPreviousPoToken;
   if (isFirstCapture || isNewPoToken) {
-    onCaptureCallback?.(details.tabId);
+    onCaptureCallback?.(captureTabId);
   }
 }
 

@@ -106,14 +106,8 @@ export function createPlaylistVideoItemState({ videoId, gridTitle, activeDownloa
     return "";
   });
   const isIndeterminate = $derived(isDownloading && displayProgress === 0);
-  const isProgressRingVisible = $derived(isDownloading || isDownloadFailed);
-  const effectiveProgress = $derived.by(() => {
-    if (isDownloadFailed) {
-      return 1;
-    }
-
-    return isDownloading ? displayProgress / 100 : 0;
-  });
+  const isProgressRingVisible = $derived(isDownloading);
+  const effectiveProgress = $derived(isDownloading ? displayProgress / 100 : 0);
 
   async function handleDownloadClick() {
     const isNotReadyToDownload = !videoData?.isDownloadable || activeDownloadClicks.has(videoId);

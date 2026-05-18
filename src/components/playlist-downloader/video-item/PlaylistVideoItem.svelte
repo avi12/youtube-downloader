@@ -66,13 +66,14 @@
   $effect(() => {
     void itemState.downloadState;
     void itemState.isDownloadFailed;
+    void itemState.isLoadFailed;
     void batch.isZipBatchActive;
     buttons.scheduleRefresh();
   });
 </script>
 
 <div class="ytdl-button-group" {@attach buttons.attachButtonGroup}>
-  {#if itemState.videoData?.isDownloadable}
+  {#if itemState.videoData?.isDownloadable || itemState.isLoadFailed}
     <div
       class="ytdl-button-row"
       class:has-checkbox={isPlaylistItem}

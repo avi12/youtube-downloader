@@ -1,14 +1,16 @@
 import { MessageType, onMessage } from "@/lib/messaging/messaging";
 import { interruptedDownloadsItem, mutateStorageItem } from "@/lib/storage/storage";
 import { uint8ToBase64 } from "@/lib/utils/binary";
-import { extractPoTokenFromBody, getCapturedSabrData } from "@/lib/youtube/sabr/request-capture";
+import {
+  extractPoTokenFromBody,
+  getCapturedSabrData,
+  OFFSCREEN_PLAYER_TAB_ID
+} from "@/lib/youtube/sabr/request-capture";
 
 export function registerStorageHandlers() {
   onMessage(MessageType.GetCapturedSabrBody, ({ sender }) => {
-    const tabId = sender.tab?.id;
-    if (typeof tabId !== "number") {
-      return null;
-    }
+    // Offscreen iframes have no tab ID — use the sentinel key for player captures.
+    const tabId = sender.tab?.id ?? OFFSCREEN_PLAYER_TAB_ID;
 
     const captured = getCapturedSabrData(tabId);
     if (!captured) {

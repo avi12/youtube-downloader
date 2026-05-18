@@ -33,7 +33,8 @@ export async function prepareIframe(data: DownloadRequest) {
   const watchParams = new URLSearchParams({
     v: data.videoId,
     ytdl: "1",
-    mute: "1"
+    mute: "1",
+    autoplay: "1"
   });
   const watchUrl = `https://www.youtube.com/watch?${watchParams.toString()}`;
 
