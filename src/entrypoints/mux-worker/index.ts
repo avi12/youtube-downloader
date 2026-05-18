@@ -47,11 +47,9 @@ async function onInitMessage(e: MessageEvent<InitMessage>) {
 
   state.portReceiver!.onMessage({
     [WorkerMessageType.MuxVideoAudio]({ job }) {
-      try {
-        handleMuxVideoAudio(job);
-      } catch (error) {
+      void handleMuxVideoAudio(job).catch(error => {
         postError(error instanceof Error ? error.message : String(error));
-      }
+      });
     },
     [WorkerMessageType.EmbedMetadata]({ job }) {
       void handleEmbedMetadata(job).catch(error => {

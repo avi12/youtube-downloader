@@ -60,8 +60,16 @@ export function postResult(data: Uint8Array | null) {
     return;
   }
 
-  const copy = data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength);
-  state.portReceiver!.send(WorkerMessageType.Result, { data: copy }, [copy]);
+  // FS.readFile returns an exactly-sized buffer (byteOffset=0, byteLength=buffer.byteLength),
+  // so transfer it directly without a copy. The slice fallback handles any over-allocated edge cases.
+  const { buffer } = data;
+  const isExact = data.byteOffset === 0 && data.byteLength === buffer.byteLength;
+  const exact = isExact ? buffer : buffer.slice(data.byteOffset, data.byteOffset + data.byteLength);
+  state.portReceiver!.send(WorkerMessageType.Result, { data: exact }, [exact]);
+}
+
+export function postFileResult(file: File) {
+  state.portReceiver!.send(WorkerMessageType.ResultFile, { data: file });
 }
 
 export function postError(message: string) {

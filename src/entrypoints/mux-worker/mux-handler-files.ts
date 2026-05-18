@@ -15,6 +15,7 @@ type WriteMuxInputFilesParams = {
   videoId: string;
   videoFilename: string;
   videoData: ArrayBuffer;
+  skipVideoWrite?: boolean;
   primaryAudioFilename: string;
   audioData: ArrayBuffer;
   audioMimeType: string;
@@ -23,9 +24,12 @@ type WriteMuxInputFilesParams = {
 };
 
 export function writeMuxInputFiles(params: WriteMuxInputFilesParams) {
-  const { videoId, videoFilename, videoData, primaryAudioFilename, audioData, audioMimeType } = params;
+  const { videoId, videoFilename, videoData, skipVideoWrite, primaryAudioFilename, audioData, audioMimeType } = params;
   const { extraAudioTracks, subtitleTracks } = params;
-  state.ffmpeg!.FS.writeFile(videoFilename, new Uint8Array(videoData));
+  if (!skipVideoWrite) {
+    state.ffmpeg!.FS.writeFile(videoFilename, new Uint8Array(videoData));
+  }
+
   state.ffmpeg!.FS.writeFile(primaryAudioFilename, new Uint8Array(audioData));
 
   const extraFilenames: string[] = [];
