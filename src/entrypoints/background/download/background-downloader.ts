@@ -15,6 +15,7 @@ import { clearIframeAutoRetry, handleIframeFallback } from "./sabr-attempt";
 import { buildEffectiveSabrConfig } from "./sabr-utils";
 import { buildSubtitleTracks } from "./stream-chunk-transfer";
 import { dispatchToOffscreen } from "./stream-dispatch";
+import { notifyPlaylistBundleFailure } from "@/lib/download-pipeline/playlist-bundle";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
 import { stripMimeParams } from "@/lib/utils/containers";
@@ -36,7 +37,6 @@ export function cancelBackgroundDownload(videoId: string) {
 
   controller.abort();
   activeBackgroundDownloads.delete(videoId);
-  clearIframeAutoRetry(videoId);
 }
 
 export async function startBackgroundDownload({ request, tabId }: {
@@ -45,6 +45,11 @@ export async function startBackgroundDownload({ request, tabId }: {
 }) {
   const { videoId, metadata } = request;
   cancelBackgroundDownload(videoId);
+
+  if (!request.isIframeFallback) {
+    clearIframeAutoRetry(videoId);
+  }
+
   const abortController = new AbortController();
   activeBackgroundDownloads.set(videoId, abortController);
   const { signal } = abortController;
@@ -100,9 +105,10 @@ export async function startBackgroundDownload({ request, tabId }: {
       return;
     }
 
-    const hasNoAudioData = !result?.audioData && !result?.streamedToOffscreen;
+    const hasNoAudioData = !(result?.audioData?.byteLength) && !result?.streamedToOffscreen;
     const needsCdn = hasNoAudioData || result?.isPartialVideo || result?.isPartialAudio;
-    const hasCdnUrls = !!(request.resolvedVideoUrl || request.resolvedAudioUrl);
+    const { resolvedVideoUrl, resolvedAudioUrl } = request;
+    const hasCdnUrls = !!(resolvedVideoUrl || resolvedAudioUrl);
     const shouldFallToCdn = needsCdn && hasCdnUrls;
     if (shouldFallToCdn) {
       // Never resume partial video data from SABR in non-streaming CDN mode.
@@ -177,6 +183,11 @@ export async function startBackgroundDownload({ request, tabId }: {
     }
 
     console.warn("[ytdl:bg] Background download failed:", error);
+
+    if (request.playlistId) {
+      notifyPlaylistBundleFailure(request.playlistId);
+    }
+
     reportDownloadFailed({
       videoId,
       tabId

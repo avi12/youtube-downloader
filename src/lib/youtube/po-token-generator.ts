@@ -98,5 +98,6 @@ export async function generatePoToken(videoId: string) {
   }
 
   const tokenBytes = await mintFunction(new TextEncoder().encode(videoId));
-  return btoa(String.fromCharCode(...tokenBytes));
+  const SABR_PO_TOKEN_BYTES = 30;
+  return btoa(String.fromCharCode(...tokenBytes.slice(0, SABR_PO_TOKEN_BYTES)));
 }
