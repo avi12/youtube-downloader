@@ -13,7 +13,9 @@ import { browser } from "#imports";
 // PipelineFFmpegReady fires and the SW starts sending chunks.
 listenForOffscreenMessages({
   [OffscreenMessageType.ProcessStreamChunk]: handleProcessStreamChunk,
-  [OffscreenMessageType.ProcessStreamEnd]: handleProcessStreamEnd,
+  [OffscreenMessageType.ProcessStreamEnd](data) {
+    void handleProcessStreamEnd(data);
+  },
   [OffscreenMessageType.CancelProcessing](data) {
     void cancelDownloadsByIds(data.videoIds);
     for (const videoId of data.videoIds) {

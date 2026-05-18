@@ -1,3 +1,4 @@
+import { OPFSVideoWriter } from "./opfs-video-writer";
 import type { ProcessStreamChunkData } from "@/lib/messaging/offscreen-messaging";
 import { base64ToUint8Array } from "@/lib/utils/binary";
 import { StreamType } from "@/types";
@@ -8,7 +9,7 @@ interface AudioStream {
 }
 
 export interface StreamAccumulator {
-  videoChunks: Map<number, Uint8Array>;
+  videoWriter: OPFSVideoWriter | null;
   totalVideoChunks: number;
   audioStreams: Map<string, AudioStream>;
 }
@@ -20,7 +21,7 @@ export function handleProcessStreamChunk(data: ProcessStreamChunkData) {
   const isAccumulatorMissing = !STREAM_ACCUMULATORS.has(videoId);
   if (isAccumulatorMissing) {
     STREAM_ACCUMULATORS.set(videoId, {
-      videoChunks: new Map(),
+      videoWriter: null,
       totalVideoChunks: 0,
       audioStreams: new Map()
     });
@@ -46,30 +47,36 @@ export function handleProcessStreamChunk(data: ProcessStreamChunkData) {
     return;
   }
 
-  const decodedChunk = base64ToUint8Array(chunkBase64);
   if (streamType === StreamType.Video) {
-    accumulator.videoChunks.set(iChunk, decodedChunk);
+    if (!accumulator.videoWriter) {
+      accumulator.videoWriter = new OPFSVideoWriter(videoId);
+    }
+
+    accumulator.videoWriter.enqueueChunk(base64ToUint8Array(chunkBase64));
 
     if (totalChunks > 0) {
       accumulator.totalVideoChunks = totalChunks;
     }
-  } else {
-    if (!accumulator.audioStreams.has(streamType)) {
-      accumulator.audioStreams.set(streamType, {
-        chunks: new Map(),
-        totalChunks: 0
-      });
-    }
 
-    const audioStream = accumulator.audioStreams.get(streamType);
-    if (!audioStream) {
-      return;
-    }
+    return;
+  }
 
-    audioStream.chunks.set(iChunk, decodedChunk);
+  const decodedChunk = base64ToUint8Array(chunkBase64);
+  if (!accumulator.audioStreams.has(streamType)) {
+    accumulator.audioStreams.set(streamType, {
+      chunks: new Map(),
+      totalChunks: 0
+    });
+  }
 
-    if (totalChunks > 0) {
-      audioStream.totalChunks = totalChunks;
-    }
+  const audioStream = accumulator.audioStreams.get(streamType);
+  if (!audioStream) {
+    return;
+  }
+
+  audioStream.chunks.set(iChunk, decodedChunk);
+
+  if (totalChunks > 0) {
+    audioStream.totalChunks = totalChunks;
   }
 }

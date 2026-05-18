@@ -35,6 +35,7 @@ export type StreamData = {
   videoId: string;
   filenameOutput: string;
   videoData: Uint8Array | null;
+  videoFile?: File;
   audioData: Uint8Array | null;
   videoMimeType: string;
   audioMimeType: string;

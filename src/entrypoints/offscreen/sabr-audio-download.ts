@@ -57,7 +57,7 @@ export async function handleOffscreenAudioDownload(data: AudioSabrData) {
       console.warn("[ytdl:offscreen] Audio SABR download incomplete for", videoId);
     }
 
-    handleProcessStreamEnd({
+    void handleProcessStreamEnd({
       type,
       videoId,
       filenameOutput,

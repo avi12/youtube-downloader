@@ -5,7 +5,7 @@ import type { ProcessStreamEndData } from "@/lib/messaging/offscreen-messaging";
 import { base64ToUint8Array } from "@/lib/utils/binary";
 import { AUDIO_EXTRA_STREAM_PREFIX } from "@/types";
 
-export function handleProcessStreamEnd(data: ProcessStreamEndData) {
+export async function handleProcessStreamEnd(data: ProcessStreamEndData) {
   const {
     videoId, type, filenameOutput, videoMimeType, audioMimeType,
     audioTrackLabels, audioTrackLanguages, defaultAudioTrackIndex, subtitleTracks, tabId,
@@ -13,6 +13,11 @@ export function handleProcessStreamEnd(data: ProcessStreamEndData) {
   } = data;
   const accumulator = STREAM_ACCUMULATORS.get(videoId);
   STREAM_ACCUMULATORS.delete(videoId);
+
+  const videoFileHandle = accumulator?.videoWriter
+    ? await accumulator.videoWriter.close()
+    : null;
+  const videoFile = videoFileHandle ? await videoFileHandle.getFile() : null;
 
   const primaryAudio = accumulator?.audioStreams.get("audio");
   const [primaryAudioLabel, ...extraTrackLabels] = audioTrackLabels;
@@ -43,12 +48,8 @@ export function handleProcessStreamEnd(data: ProcessStreamEndData) {
     videoId,
     filenameOutput,
     primaryAudioLanguageCode,
-    videoData: accumulator
-      ? assembleStreamChunks({
-        chunks: accumulator.videoChunks,
-        totalChunks: accumulator.totalVideoChunks
-      })
-      : null,
+    videoData: null,
+    videoFile: videoFile ?? undefined,
     audioData: primaryAudio
       ? assembleStreamChunks({
         chunks: primaryAudio.chunks,
