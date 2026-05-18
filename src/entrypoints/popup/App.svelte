@@ -72,7 +72,7 @@
     easing: cubicOut
   });
 
-  function handleTabChange(id: PopupPanel) {
+  function handleTabChange(id: PopupPanel): void {
     const prevIndex = PANEL_ORDER.indexOf(appState.activePanel);
     const nextIndex = PANEL_ORDER.indexOf(id);
     slideDirection = nextIndex > prevIndex ? 1 : -1;

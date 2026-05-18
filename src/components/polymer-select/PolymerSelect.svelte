@@ -36,11 +36,11 @@
   let elPopover: HTMLElement | null = null;
   let elMenu: HTMLElement | null = null;
 
-  function focusTrigger() {
+  function focusTrigger(): void {
     elTrigger?.focus();
   }
 
-  function attachTrigger(elTarget: Element) {
+  function attachTrigger(elTarget: Element): (() => void) | void {
     const isNotHtmlElement = !(elTarget instanceof HTMLElement);
     if (isNotHtmlElement) {
       return;
@@ -48,11 +48,11 @@
 
     elTrigger = elTarget;
 
-    function handleClick(e: Event) {
+    function handleClick(e: Event): void {
       e.stopPropagation();
     }
 
-    function handleKeydown(e: Event) {
+    function handleKeydown(e: Event): void {
       const isNotArrowDown = !(e instanceof KeyboardEvent) || e.key !== "ArrowDown";
       if (isNotArrowDown) {
         return;
@@ -70,7 +70,7 @@
     };
   }
 
-  function attachPopover(elTarget: Element) {
+  function attachPopover(elTarget: Element): (() => void) | void {
     const isNotHtmlElement = !(elTarget instanceof HTMLElement);
     if (isNotHtmlElement) {
       return;
@@ -80,7 +80,7 @@
 
     const elIronDropdown = elTarget.closest<HTMLElement & { noCancelOnEscKey?: boolean }>("tp-yt-iron-dropdown");
 
-    function handleToggle(e: Event) {
+    function handleToggle(e: Event): void {
       const isNotToggleEvent = !(e instanceof ToggleEvent);
       if (isNotToggleEvent) {
         return;
@@ -108,7 +108,7 @@
     return () => elTarget.removeEventListener("toggle", handleToggle);
   }
 
-  function attachMenu(elTarget: Element) {
+  function attachMenu(elTarget: Element): (() => void) | void {
     const isNotHtmlElement = !(elTarget instanceof HTMLElement);
     if (isNotHtmlElement) {
       return;
@@ -116,7 +116,7 @@
 
     elMenu = elTarget;
 
-    function handleClick(e: Event) {
+    function handleClick(e: Event): void {
       const isNotElement = !(e.target instanceof Element);
       if (isNotElement) {
         return;
@@ -140,7 +140,7 @@
       elPopover?.hidePopover();
     }
 
-    function handleKeydown(e: Event) {
+    function handleKeydown(e: Event): void {
       const isNotKeyboardEvent = !(e instanceof KeyboardEvent);
       if (isNotKeyboardEvent) {
         return;

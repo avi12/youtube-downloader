@@ -12,7 +12,7 @@
 
   let elCheckbox = $state<HTMLElement | null>(null);
 
-  function attachCheckbox(elTarget: Element) {
+  function attachCheckbox(elTarget: Element): void {
     if (elTarget instanceof HTMLElement) {
       elCheckbox = elTarget;
     }

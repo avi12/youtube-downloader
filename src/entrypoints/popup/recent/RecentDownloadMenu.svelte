@@ -17,22 +17,22 @@
   let elMenu = $state<HTMLDivElement | null>(null);
   let elTrigger = $state<HTMLButtonElement | null>(null);
 
-  function setMenuOpen(value: boolean) {
+  function setMenuOpen(value: boolean): void {
     isMenuOpen = value;
     onMenuOpenChange?.(value);
   }
 
-  function closeMenu() {
+  function closeMenu(): void {
     setMenuOpen(false);
     elTrigger?.focus();
   }
 
-  function handleMenuAction(action: () => void) {
+  function handleMenuAction(action: () => void): void {
     action();
     closeMenu();
   }
 
-  function handleDocumentClick(e: MouseEvent) {
+  function handleDocumentClick(e: MouseEvent): void {
     if (!isMenuOpen) {
       return;
     }
@@ -46,7 +46,7 @@
     closeMenu();
   }
 
-  function handleKeydown(e: KeyboardEvent) {
+  function handleKeydown(e: KeyboardEvent): void {
     if (isMenuOpen && e.key === "Escape") {
       e.preventDefault();
       closeMenu();

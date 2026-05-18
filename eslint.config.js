@@ -291,7 +291,11 @@ export default [
       "svelte/first-attribute-linebreak": ["error"],
       "svelte/shorthand-attribute": ["error", { prefer: "always" }],
       "@typescript-eslint/no-explicit-any": "off",
-      "prefer-const": ["error", { destructuring: "all" }]
+      "prefer-const": ["error", { destructuring: "all" }],
+      "@typescript-eslint/explicit-function-return-type": ["error", {
+        allowExpressions: true,
+        allowHigherOrderFunctions: true
+      }]
     }
   }
 ];

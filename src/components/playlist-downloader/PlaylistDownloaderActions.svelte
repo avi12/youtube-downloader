@@ -11,7 +11,7 @@
 
   const { playlist, actionButtons }: Props = $props();
 
-  function attachProgressBar(elProgress: Element) {
+  function attachProgressBar(elProgress: Element): void {
     applyPolymerCustomStyles({
       element: elProgress,
       styles: PAPER_PROGRESS_THEME

@@ -26,13 +26,13 @@
   const relativeAgeLabel = $derived(formatRelativeAge(now - entry.completedAt));
   const sizeLabel = $derived(formatBytes(entry.size));
 
-  function formatRelativeAge(deltaMs: number) {
+  function formatRelativeAge(deltaMs: number): string {
     const totalSeconds = Math.floor(deltaMs / 1000);
     const [, unit, divisor] = AGE_THRESHOLDS.find(([threshold]) => totalSeconds < threshold)!;
     return RTF.format(-Math.floor(totalSeconds / divisor), unit);
   }
 
-  function formatBytes(bytes: number) {
+  function formatBytes(bytes: number): string {
     if (bytes === 0) {
       return "0 B";
     }

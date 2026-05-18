@@ -18,7 +18,7 @@
 
   let elSelectAllCheckbox = $state<HTMLElement | null>(null);
 
-  function attachSelectAllCheckbox(elCheckbox: Element) {
+  function attachSelectAllCheckbox(elCheckbox: Element): void {
     if (elCheckbox instanceof HTMLElement) {
       elSelectAllCheckbox = elCheckbox;
     }

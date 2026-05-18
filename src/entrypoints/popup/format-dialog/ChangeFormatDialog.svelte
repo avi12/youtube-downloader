@@ -32,11 +32,11 @@
 
   const estimatedTimeLabel = $derived(buildEstimatedTimeLabel(entry.size));
 
-  function startClose() {
+  function startClose(): void {
     isClosing = true;
   }
 
-  async function handleConfirm() {
+  async function handleConfirm(): Promise<void> {
     isSubmitting = true;
     try {
       const done = await submitTranscode({
@@ -53,7 +53,7 @@
     }
   }
 
-  function handleBackdropClick(e: MouseEvent) {
+  function handleBackdropClick(e: MouseEvent): void {
     const isBackdropClick = e.target === e.currentTarget;
     if (isBackdropClick) {
       startClose();

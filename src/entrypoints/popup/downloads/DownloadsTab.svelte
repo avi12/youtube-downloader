@@ -40,12 +40,12 @@
   const totalActiveDownloads = $derived(videoDownloads.length + musicList.length + videoOnlyList.length);
   const isAnyContentAvailable = $derived(totalActiveDownloads > 0 || recentDownloads.length > 0);
 
-  async function handleRemove(entry: RecentDownloadEntry) {
+  async function handleRemove(entry: RecentDownloadEntry): Promise<void> {
     await deleteRecentDownload(entry.id);
     onRecentChanged();
   }
 
-  function handleShowInFolder(entry: RecentDownloadEntry) {
+  function handleShowInFolder(entry: RecentDownloadEntry): void {
     try {
       browser.downloads.show(entry.downloadId);
     } catch (error) {
@@ -53,7 +53,7 @@
     }
   }
 
-  function cancelDownload(videoIds: string[]) {
+  function cancelDownload(videoIds: string[]): void {
     void sendMessage(MessageType.CancelDownload, { videoIds });
   }
 </script>
