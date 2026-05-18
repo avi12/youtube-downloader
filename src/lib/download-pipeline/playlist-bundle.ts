@@ -26,6 +26,10 @@ function zipToBuffer(entries: AsyncZippable) {
   });
 }
 
+export function notifyPlaylistBundleFailure(playlistId: string) {
+  playlistBundles.delete(playlistId);
+}
+
 export async function addToPlaylistBundle({
   playlistId, playlistTitle, totalCount, tabId, filename, data
 }: {
