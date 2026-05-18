@@ -23,6 +23,24 @@ export default defineContentScript({
       return;
     }
 
+    if (isDownloadIframe) {
+      // Register handlers before any await: MAIN world fires IframePlayerReady synchronously
+      // at document_idle and we must not miss it with an async storage read in the way
+      registerCrossWorldHandlers({
+        isDownloadIframe,
+        context
+      });
+      registerBackgroundMessageHandlers();
+      listenForSabrBodyReady();
+      void forwardSabrCredentialsWithRetry();
+      const currentOptions = await optionsItem.getValue();
+      initContentOptions({
+        ...defaultOptions,
+        ...currentOptions
+      });
+      return;
+    }
+
     const currentOptions = await optionsItem.getValue();
     initContentOptions({
       ...defaultOptions,
@@ -37,37 +55,35 @@ export default defineContentScript({
     listenForSabrBodyReady();
     void forwardSabrCredentialsWithRetry();
 
-    if (!isDownloadIframe) {
-      listenForKeepalive();
-      initCompletedDownloadsStore();
-      mountWatchSnackbar(context);
-      await restoreStoredProgress();
+    listenForKeepalive();
+    initCompletedDownloadsStore();
+    mountWatchSnackbar(context);
+    await restoreStoredProgress();
 
-      const unwatchStatusProgress = statusProgressItem.watch(stored => {
-        syncStoredProgressToStore(stored ?? {});
+    const unwatchStatusProgress = statusProgressItem.watch(stored => {
+      syncStoredProgressToStore(stored ?? {});
+    });
+    context.onInvalidated(unwatchStatusProgress);
+
+    const unwatchOptions = optionsItem.watch(newOptions => {
+      if (!newOptions) {
+        return;
+      }
+
+      initContentOptions({
+        ...defaultOptions,
+        ...newOptions
       });
-      context.onInvalidated(unwatchStatusProgress);
-
-      const unwatchOptions = optionsItem.watch(newOptions => {
-        if (!newOptions) {
-          return;
-        }
-
-        initContentOptions({
-          ...defaultOptions,
-          ...newOptions
-        });
-        setNativeDownloadVisibility(newOptions.isShowNativeDownload);
-        void crossWorldMessenger.sendMessage(CrossWorldMessage.OptionsUpdate, {
-          isShowNativeDownload: newOptions.isShowNativeDownload
-        });
+      setNativeDownloadVisibility(newOptions.isShowNativeDownload);
+      void crossWorldMessenger.sendMessage(CrossWorldMessage.OptionsUpdate, {
+        isShowNativeDownload: newOptions.isShowNativeDownload
       });
-      context.onInvalidated(unwatchOptions);
+    });
+    context.onInvalidated(unwatchOptions);
 
-      handlePageChange({
-        url: location.href,
-        context
-      });
-    }
+    handlePageChange({
+      url: location.href,
+      context
+    });
   }
 });
