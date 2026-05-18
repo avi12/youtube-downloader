@@ -17,7 +17,8 @@
       filenameOutput: string;
       quality?: string;
       tabId?: number;
-      isZipBundle?: boolean;
+      playlistId?: string;
+      playlistTitle?: string;
     }>;
     statusProgress: Record<string, {
       progress: number;

@@ -7,23 +7,17 @@
     progressLabel: string;
     statusLabel?: string | null;
     quality?: string;
-    outputBadge?: string;
     oncancel: () => void;
   }
 
-  const { filename, progress, progressLabel, statusLabel, quality, outputBadge, oncancel }: Props = $props();
+  const { filename, progress, progressLabel, statusLabel, quality, oncancel }: Props = $props();
 </script>
 
 <div class="download-item-content">
   <span class="download-filename" title={filename}>{filename}</span>
-  <div class="download-meta">
-    {#if quality}
-      <span class="download-quality">{quality}</span>
-    {/if}
-    {#if outputBadge}
-      <span class="download-output-badge">{outputBadge}</span>
-    {/if}
-  </div>
+  {#if quality}
+    <span class="download-quality">{quality}</span>
+  {/if}
   {#if progress !== null}
     <progress
       class="download-progress"
@@ -60,26 +54,9 @@
     white-space: nowrap;
   }
 
-  .download-meta {
-    display: flex;
-    gap: 6px;
-    align-items: center;
-  }
-
   .download-quality {
     color: var(--fg-subtle);
     font-size: 0.6875rem;
-  }
-
-  .download-output-badge {
-    padding: 1px 5px;
-    border: 1px solid var(--border);
-    border-radius: 4px;
-    color: var(--fg-subtle);
-    font-size: 0.625rem;
-    font-weight: 500;
-    letter-spacing: 0.03em;
-    text-transform: uppercase;
   }
 
   .download-progress {

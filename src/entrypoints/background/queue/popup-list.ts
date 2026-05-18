@@ -1,13 +1,14 @@
 import { musicListItem, videoDetailsItem, videoOnlyListItem, videoQueueItem } from "@/lib/storage/storage";
 import { DownloadType } from "@/types";
 
-export async function enqueueToPopupList({ videoId, type, filenameOutput, quality, tabId, isZipBundle }: {
+export async function enqueueToPopupList({ videoId, type, filenameOutput, quality, tabId, playlistId, playlistTitle }: {
   videoId: string;
   type: DownloadType;
   filenameOutput: string;
   quality?: string;
   tabId?: number;
-  isZipBundle?: boolean;
+  playlistId?: string;
+  playlistTitle?: string;
 }) {
   const details = await videoDetailsItem.getValue();
   details[videoId] = {
@@ -17,8 +18,11 @@ export async function enqueueToPopupList({ videoId, type, filenameOutput, qualit
     ...(tabId !== undefined && {
       tabId
     }),
-    ...(isZipBundle !== undefined && {
-      isZipBundle
+    ...(playlistId !== undefined && {
+      playlistId
+    }),
+    ...(playlistTitle !== undefined && {
+      playlistTitle
     })
   };
   await videoDetailsItem.setValue(details);

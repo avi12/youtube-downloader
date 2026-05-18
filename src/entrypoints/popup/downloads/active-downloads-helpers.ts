@@ -70,7 +70,8 @@ type VideoDetails = Record<string, {
   filenameOutput: string;
   quality?: string;
   tabId?: number;
-  isZipBundle?: boolean;
+  playlistId?: string;
+  playlistTitle?: string;
 }>;
 
 export function bindDownloadAccessors({ statusProgress, videoDetails, percentFormatter }: {

@@ -23,7 +23,10 @@ export function registerPlaylistDownloadHandler() {
         filenameOutput: item.filenameOutput,
         quality: item.videoFormat?.height ? `${item.videoFormat.height}p` : undefined,
         tabId,
-        isZipBundle: data.isZipBundle
+        ...(data.isZipBundle && {
+          playlistId: item.playlistId,
+          playlistTitle: item.playlistTitle ?? data.playlistTitle
+        })
       });
     }
 

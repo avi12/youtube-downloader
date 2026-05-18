@@ -30,7 +30,8 @@ export type VideoDetail = {
   filenameOutput: string;
   quality?: string;
   tabId?: number;
-  isZipBundle?: boolean;
+  playlistId?: string;
+  playlistTitle?: string;
 };
 
 export const videoDetailsItem = storage.defineItem<Record<string, VideoDetail>>("local:videoDetails", {
