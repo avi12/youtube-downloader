@@ -58,7 +58,12 @@ export function runMuxVideoAudio({ videoId, job }: {
   videoId: string;
   job: MuxVideoAudioJob;
 }) {
-  const transferables: Transferable[] = [job.videoData, job.audioData];
+  const transferables: Transferable[] = [];
+  if (job.videoData) {
+    transferables.push(job.videoData);
+  }
+
+  transferables.push(job.audioData);
   for (const track of job.extraAudioTracks) {
     transferables.push(track.data);
   }
@@ -66,16 +71,35 @@ export function runMuxVideoAudio({ videoId, job }: {
   return enqueueMuxJob({
     videoId,
     run: () =>
-      runWorkerJob<Uint8Array>({
-        send: port => port.send(WorkerMessageType.MuxVideoAudio, { job }, transferables),
-        transform(data) {
-          const isDataMissing = !data;
-          if (isDataMissing) {
-            throw new Error("Worker returned no data for muxVideoAudio");
-          }
-
-          return new Uint8Array(data);
+      new Promise<File>((resolve, reject) => {
+        const isWorkerMissing = !workerPort;
+        if (isWorkerMissing) {
+          reject(new Error("Mux worker not initialized"));
+          return;
         }
+
+        pendingJobReject = reject;
+
+        workerPort!.onMessage({
+          [WorkerMessageType.ResultFile]({ data }) {
+            pendingJobReject = null;
+            resolve(data);
+          },
+          [WorkerMessageType.Error]({ message }) {
+            pendingJobReject = null;
+            reject(new Error(message));
+          },
+          [WorkerMessageType.Progress]({ videoId: vId, progress, progressType, tabId }) {
+            void sendMessage(MessageType.PipelineProgress, {
+              videoId: vId,
+              progress,
+              progressType,
+              tabId
+            });
+          }
+        });
+
+        workerPort!.send(WorkerMessageType.MuxVideoAudio, { job }, transferables);
       })
   });
 }

@@ -1,3 +1,5 @@
+import { isOffscreenConnected } from "@/lib/messaging/offscreen-messaging";
+
 let processorReady: Promise<void> | null = null;
 let resolveFFmpegReady: (() => void) | null = null;
 
@@ -44,7 +46,7 @@ async function ensureOffscreenDocument() {
 }
 
 export async function ensureProcessor() {
-  if (processorReady) {
+  if (processorReady && isOffscreenConnected()) {
     return processorReady;
   }
 

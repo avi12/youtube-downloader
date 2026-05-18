@@ -8,6 +8,7 @@ export enum WorkerMessageType {
   TranscodeAudio = "transcodeAudio",
   TranscodeFile = "transcodeFile",
   Result = "result",
+  ResultFile = "resultFile",
   Error = "error",
   Progress = "progress"
 }
@@ -19,7 +20,8 @@ type BaseWorkerJob = {
 };
 
 export type MuxVideoAudioJob = BaseWorkerJob & {
-  videoData: ArrayBuffer;
+  videoData: ArrayBuffer | null;
+  videoFile?: File;
   audioData: ArrayBuffer;
   extraAudioTracks: {
     data: ArrayBuffer;

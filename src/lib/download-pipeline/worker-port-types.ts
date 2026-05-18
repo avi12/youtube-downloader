@@ -11,6 +11,7 @@ export type WorkerCommandMap = {
 
 export type WorkerDataResponseMap = {
   [WorkerMessageType.Result]: { data: ArrayBuffer | null };
+  [WorkerMessageType.ResultFile]: { data: File };
   [WorkerMessageType.Error]: { message: string };
   [WorkerMessageType.Progress]: {
     videoId: string;

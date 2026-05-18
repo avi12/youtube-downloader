@@ -26,6 +26,9 @@ export function createHostWorkerPort() {
       case WorkerMessageType.Result:
         responseHandlers[WorkerMessageType.Result]?.({ data: message.data });
         break;
+      case WorkerMessageType.ResultFile:
+        responseHandlers[WorkerMessageType.ResultFile]?.({ data: message.data });
+        break;
       case WorkerMessageType.Error:
         responseHandlers[WorkerMessageType.Error]?.({ message: message.message });
         break;

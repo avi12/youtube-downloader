@@ -44,6 +44,10 @@ function dispatchOffscreenMessage({ handlers, message }: {
 
 let swSidePort: Browser.runtime.Port | null = null;
 
+export function isOffscreenConnected() {
+  return swSidePort !== null;
+}
+
 export function initOffscreenPortListener() {
   browser.runtime.onConnect.addListener(port => {
     const isNotOffscreenPort = port.name !== OFFSCREEN_PORT_NAME;
