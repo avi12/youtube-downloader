@@ -68,7 +68,8 @@ export async function downloadViaWatchPage({ data, tabId }: {
   await enqueueToPopupList({
     videoId: data.videoId,
     type: data.type,
-    filenameOutput: data.filenameOutput
+    filenameOutput: data.filenameOutput,
+    tabId
   });
   trackVideoForTab({
     videoId: data.videoId,

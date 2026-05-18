@@ -49,7 +49,8 @@ export function registerPipelineHandlers() {
       await enqueueToPopupList({
         videoId: data.videoId,
         type: data.type,
-        filenameOutput: data.filenameOutput
+        filenameOutput: data.filenameOutput,
+        tabId: data.tabId
       });
     }
 

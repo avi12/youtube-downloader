@@ -18,7 +18,8 @@ const [
   videoOnlyList,
   videoDetails,
   statusProgress,
-  options
+  options,
+  activeTabs
 ] = await Promise.all([
   isFFmpegReadyItem.getValue(),
   videoQueueItem.getValue(),
@@ -26,8 +27,13 @@ const [
   videoOnlyListItem.getValue(),
   videoDetailsItem.getValue(),
   statusProgressItem.getValue(),
-  optionsItem.getValue()
+  optionsItem.getValue(),
+  browser.tabs.query({
+    active: true,
+    currentWindow: true
+  })
 ]);
+const currentTabId = activeTabs[0]?.id;
 
 const elApp = document.getElementById("app");
 if (!elApp) {
@@ -43,6 +49,7 @@ mount(App, {
     initialVideoOnlyList: videoOnlyList,
     initialVideoDetails: videoDetails,
     initialStatusProgress: statusProgress,
+    initialCurrentTabId: currentTabId,
     initialOptions: {
       ...defaultOptions,
       ...options

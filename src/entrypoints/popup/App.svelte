@@ -23,6 +23,7 @@
       progress: number;
       progressType: ProgressType;
     }>;
+    initialCurrentTabId?: number;
     initialOptions: Options;
   }
 
@@ -33,6 +34,7 @@
     initialVideoOnlyList,
     initialVideoDetails,
     initialStatusProgress,
+    initialCurrentTabId,
     initialOptions
   }: Props = $props();
 
@@ -49,6 +51,7 @@
       initialVideoOnlyList,
       initialVideoDetails,
       initialStatusProgress,
+      initialCurrentTabId,
       initialOptions
     }))
   );
@@ -98,6 +101,7 @@
         out:fly={flyOut}
       >
         <DownloadsTab
+          currentTabId={appState.currentTabId}
           isFFmpegReady={appState.isFFmpegReady}
           musicList={appState.musicList}
           now={appState.now}

@@ -26,10 +26,14 @@ export const musicListItem = storage.defineItem<string[]>("local:musicList", { f
 
 export const videoOnlyListItem = storage.defineItem<string[]>("local:videoOnlyList", { fallback: [] });
 
-export const videoDetailsItem = storage.defineItem<Record<string, {
+export type VideoDetail = {
   filenameOutput: string;
   quality?: string;
-}>>("local:videoDetails", {
+  tabId?: number;
+  isZipBundle?: boolean;
+};
+
+export const videoDetailsItem = storage.defineItem<Record<string, VideoDetail>>("local:videoDetails", {
   fallback: {}
 });
 

@@ -21,7 +21,9 @@ export function registerPlaylistDownloadHandler() {
         videoId: item.videoId,
         type: item.type,
         filenameOutput: item.filenameOutput,
-        quality: item.videoFormat?.height ? `${item.videoFormat.height}p` : undefined
+        quality: item.videoFormat?.height ? `${item.videoFormat.height}p` : undefined,
+        tabId,
+        isZipBundle: data.isZipBundle
       });
     }
 

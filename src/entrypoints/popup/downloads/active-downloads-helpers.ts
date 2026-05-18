@@ -69,6 +69,8 @@ type StatusProgress = Record<string, {
 type VideoDetails = Record<string, {
   filenameOutput: string;
   quality?: string;
+  tabId?: number;
+  isZipBundle?: boolean;
 }>;
 
 export function bindDownloadAccessors({ statusProgress, videoDetails, percentFormatter }: {

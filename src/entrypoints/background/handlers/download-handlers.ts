@@ -88,7 +88,8 @@ export function registerDownloadHandlers() {
       videoId: data.videoId,
       type: data.type,
       filenameOutput: data.filenameOutput,
-      quality: data.videoFormat?.height ? `${data.videoFormat.height}p` : undefined
+      quality: data.videoFormat?.height ? `${data.videoFormat.height}p` : undefined,
+      tabId
     });
     void startBackgroundDownload({
       request: data,

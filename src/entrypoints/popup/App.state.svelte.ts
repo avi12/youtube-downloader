@@ -14,6 +14,7 @@ export function createAppState(props: InitialAppStateProps) {
   let videoOnlyList = $state(props.initialVideoOnlyList);
   let videoDetails = $state(props.initialVideoDetails);
   let statusProgress = $state(props.initialStatusProgress);
+  const currentTabId = props.initialCurrentTabId;
   let options = $state<Options>(props.initialOptions);
   let recentDownloads = $state<RecentDownloadEntry[]>([]);
   let now = $state(Date.now());
@@ -60,6 +61,9 @@ export function createAppState(props: InitialAppStateProps) {
     },
     get videoDetails() {
       return videoDetails;
+    },
+    get currentTabId() {
+      return currentTabId;
     },
     get statusProgress() {
       return statusProgress;

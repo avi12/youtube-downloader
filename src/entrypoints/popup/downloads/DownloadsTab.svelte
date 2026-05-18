@@ -16,6 +16,8 @@
     videoDetails: Record<string, {
       filenameOutput: string;
       quality?: string;
+      tabId?: number;
+      isZipBundle?: boolean;
     }>;
     statusProgress: Record<string, {
       progress: number;
@@ -24,13 +26,14 @@
     percentFormatter: Intl.NumberFormat;
     recentDownloads: RecentDownloadEntry[];
     now: number;
+    currentTabId?: number;
     onChangeFormat: (entry: RecentDownloadEntry) => void;
     onRecentChanged: () => void;
   }
 
   const {
     isFFmpegReady, videoDownloads, musicList, videoOnlyList, videoDetails,
-    statusProgress, percentFormatter, recentDownloads, now, onChangeFormat, onRecentChanged
+    statusProgress, percentFormatter, recentDownloads, now, currentTabId, onChangeFormat, onRecentChanged
   }: Props = $props();
 
   const totalActiveDownloads = $derived(videoDownloads.length + musicList.length + videoOnlyList.length);
@@ -64,6 +67,7 @@
   <div class="download-sections">
     {#if totalActiveDownloads > 0}
       <ActiveDownloadsSections
+        {currentTabId}
         {isFFmpegReady}
         {musicList}
         onCancel={cancelDownload}

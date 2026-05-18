@@ -11,7 +11,7 @@ export type {
 } from "./youtube";
 
 export type { RecentDownloadEntry } from "@/lib/storage/recent-downloads-db";
-export type { VideoQueueItem } from "@/lib/storage/storage";
+export type { VideoDetail, VideoQueueItem } from "@/lib/storage/storage";
 export type { InterruptedDownload, ProgressUpdate } from "@/lib/messaging/messaging";
 export type { StreamDataPayload } from "@/lib/messaging/cross-world-messenger";
 
