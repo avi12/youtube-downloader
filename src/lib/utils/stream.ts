@@ -12,8 +12,8 @@ export async function readStreamToBuffer({ reader, expectedBytes, onBytesReceive
 
   const isStreamingMode = !!onChunk;
   let preallocated: Uint8Array | null = null;
-  const hasExpectedBytes = !isStreamingMode && expectedBytes > 0;
-  if (hasExpectedBytes) {
+  const hasExpectedBytes = expectedBytes > 0;
+  if (hasExpectedBytes && !isStreamingMode) {
     try {
       preallocated = new Uint8Array(expectedBytes);
     } catch {
@@ -56,6 +56,7 @@ export async function readStreamToBuffer({ reader, expectedBytes, onBytesReceive
 
       if (isStreamingMode) {
         onChunk!(value!);
+        totalBytes += value!.byteLength;
       } else if (preallocated) {
         preallocated.set(value!, writeOffset);
         writeOffset += value!.byteLength;
@@ -72,6 +73,11 @@ export async function readStreamToBuffer({ reader, expectedBytes, onBytesReceive
   }
 
   if (stall.isStalled) {
+    throw new StreamStallError(buildPartial());
+  }
+
+  const isShortRead = !isStreamingMode && hasExpectedBytes && totalBytes < expectedBytes;
+  if (isShortRead) {
     throw new StreamStallError(buildPartial());
   }
 
