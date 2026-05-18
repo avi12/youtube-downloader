@@ -39,6 +39,16 @@ export async function dispatchToOffscreen({ request, result, enrichedMetadata, t
         tabId
       })
     );
+  } else if (additionalAudioTracks.some(track => track.data)) {
+    await Promise.all(
+      buildTransferJobs({
+        videoData: null,
+        audioData: null,
+        additionalAudioTracks,
+        videoId,
+        tabId
+      })
+    );
   }
 
   const audioTrackLabels = [primaryAudioLabel ?? "", ...additionalAudioTracks.map(track => track.label)];

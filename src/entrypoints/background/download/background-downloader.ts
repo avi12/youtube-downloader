@@ -100,19 +100,25 @@ export async function startBackgroundDownload({ request, tabId }: {
       return;
     }
 
-    const hasStreamed = result?.streamedToOffscreen;
-    const needsCdn = (!result?.audioData && !hasStreamed) || result?.isPartialVideo || result?.isPartialAudio;
+    const hasNoAudioData = !result?.audioData && !result?.streamedToOffscreen;
+    const needsCdn = hasNoAudioData || result?.isPartialVideo || result?.isPartialAudio;
     const hasCdnUrls = !!(request.resolvedVideoUrl || request.resolvedAudioUrl);
     const shouldFallToCdn = needsCdn && hasCdnUrls;
     if (shouldFallToCdn) {
-      const partialVideoData = result?.isPartialVideo ? (result.videoData ?? undefined) : undefined;
+      // Never resume partial video data from SABR in non-streaming CDN mode.
+      // For large 4K files, combining SABR partial bytes + CDN remainder in RAM
+      // causes OOM. CDN streaming mode (chunks → offscreen → OPFS) avoids this.
       const partialAudioData = result?.isPartialAudio ? (result.audioData ?? undefined) : undefined;
+      const willStream = !isAudioOnly && !partialAudioData;
+      if (willStream) {
+        await ensureProcessor();
+      }
+
       result = await tryCdn({
         request,
         signal,
         videoId,
         tabId,
-        partialVideoData,
         partialAudioData
       });
     }
@@ -122,7 +128,7 @@ export async function startBackgroundDownload({ request, tabId }: {
     }
 
     const hasNoData = !result
-      || (!(result.videoData?.byteLength) && !(result.audioData?.byteLength) && !hasStreamed);
+      || (!(result.videoData?.byteLength) && !(result.audioData?.byteLength) && !result.streamedToOffscreen);
     if (hasNoData) {
       const directDownloadId = await tryDirectUrlDownload({ request });
       if (directDownloadId !== null) {
@@ -153,7 +159,7 @@ export async function startBackgroundDownload({ request, tabId }: {
       result: result!,
       enrichedMetadata: await enrichedMetadataPromise,
       tabId,
-      skipChunkTransfer: hasStreamed
+      skipChunkTransfer: result!.streamedToOffscreen
     });
     await clearInterruptedDownload(videoId);
   } catch (error) {

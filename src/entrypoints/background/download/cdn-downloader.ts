@@ -2,15 +2,17 @@ import type { DownloadResult } from "./background-downloader";
 import { fetchWithProgress } from "./cdn-fetch";
 import { createCdnProgressTracker } from "./cdn-progress";
 import { parseContentLength } from "./sabr-utils";
+import { sendNetworkChunkToOffscreen, sendStreamFinishedMarker } from "./stream-chunk-transfer";
 import { stripMimeParams } from "@/lib/utils/containers";
-import { DownloadType } from "@/types";
+import { DownloadType, StreamType } from "@/types";
 import type { DownloadRequest } from "@/types";
 
-function fetchStream({ url, signal, onBytes, initialData }: {
+function fetchStream({ url, signal, onBytes, initialData, onChunk }: {
   url: string | null | undefined;
   signal: AbortSignal;
   onBytes: (n: number) => void;
   initialData?: Uint8Array;
+  onChunk?: (chunk: Uint8Array) => void;
 }) {
   if (!url) {
     return Promise.resolve(null);
@@ -20,7 +22,8 @@ function fetchStream({ url, signal, onBytes, initialData }: {
     url,
     signal,
     onBytesReceived: onBytes,
-    initialData
+    initialData,
+    onChunk
   });
 }
 
@@ -62,18 +65,40 @@ export async function downloadViaCdn({ request, signal, videoId, tabId, partialV
     initialAudioBytes: partialAudioData?.byteLength ?? 0
   });
 
+  const isStreamingMode = hasVideo && hasAudio && !partialVideoData && !partialAudioData;
+  let iVideoChunk = 0;
+  let iAudioChunk = 0;
+
   const cdnResults = await Promise.all([
     hasVideo ? fetchStream({
       url: resolvedVideoUrl,
       signal,
       onBytes: tracker.onVideoBytes,
-      initialData: partialVideoData
+      initialData: partialVideoData,
+      onChunk: isStreamingMode ? chunk => {
+        sendNetworkChunkToOffscreen({
+          videoId,
+          streamType: StreamType.Video,
+          iChunk: iVideoChunk++,
+          chunk,
+          tabId
+        });
+      } : undefined
     }) : Promise.resolve(null),
     hasAudio ? fetchStream({
       url: resolvedAudioUrl,
       signal,
       onBytes: tracker.onAudioBytes,
-      initialData: partialAudioData
+      initialData: partialAudioData,
+      onChunk: isStreamingMode ? chunk => {
+        sendNetworkChunkToOffscreen({
+          videoId,
+          streamType: StreamType.Audio,
+          iChunk: iAudioChunk++,
+          chunk,
+          tabId
+        });
+      } : undefined
     }) : Promise.resolve(null),
     ...extraUrls.map((url, i) => fetchStream({
       url,
@@ -92,6 +117,27 @@ export async function downloadViaCdn({ request, signal, videoId, tabId, partialV
       languageCode: format.audioTrack?.id?.split(".")[0] ?? "",
       isDefault: format.audioTrack?.audioIsDefault ?? false
     });
+  }
+
+  if (isStreamingMode) {
+    sendStreamFinishedMarker({
+      videoId,
+      streamType: StreamType.Video,
+      totalChunks: iVideoChunk,
+      tabId
+    });
+    sendStreamFinishedMarker({
+      videoId,
+      streamType: StreamType.Audio,
+      totalChunks: iAudioChunk,
+      tabId
+    });
+    return {
+      videoData: null,
+      audioData: null,
+      additionalAudioTracks,
+      streamedToOffscreen: true
+    };
   }
 
   const [videoData = null, audioData = null] = cdnResults;
