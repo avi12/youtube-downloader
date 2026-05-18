@@ -26,5 +26,6 @@ export const MessageType = {
   TranscodeRecentDownload: "transcodeRecentDownload",
   PipelineZipProgress: "pipelineZipProgress",
   WatchDownloadCompleted: "watchDownloadCompleted",
-  RevealDownloadFile: "revealDownloadFile"
+  RevealDownloadFile: "revealDownloadFile",
+  DownloadBlobUrl: "downloadBlobUrl"
 } as const;

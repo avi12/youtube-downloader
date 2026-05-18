@@ -1,5 +1,11 @@
-import { cancelBackgroundDownload, dropPendingRetry, startBackgroundDownload } from "../download/background-downloader";
+import {
+  cancelBackgroundDownload,
+  dropPendingRetry,
+  reportDownloadFailed,
+  startBackgroundDownload
+} from "../download/background-downloader";
 import { downloadViaWatchPage, initIframeReadyListener } from "../download/iframe-downloader";
+import { clearIframeAutoRetry } from "../download/sabr-attempt";
 import { enqueueToPopupList, removeFromPopupList } from "../queue/popup-list";
 import { signalVideoComplete } from "../queue/sequential-queue";
 import { cancelDownloads, getTabIdsForVideo, trackVideoForTab } from "../queue/tab-tracker";
@@ -76,6 +82,32 @@ export function registerDownloadHandlers() {
     clearCurrentSequenceTabId();
     void removeFromPopupList(data.videoIds);
     void cancelDownloads(data.videoIds);
+  });
+
+  onMessage(MessageType.DownloadBlobUrl, async ({ data }) => {
+    const { blobUrl, filename, videoId } = data;
+    const tabId = getTabIdsForVideo(videoId)[0] ?? -1;
+    try {
+      await browser.downloads.download({
+        url: blobUrl,
+        filename
+      });
+      clearIframeAutoRetry(videoId);
+      await sendMessage(MessageType.UpdateDownloadProgress, {
+        videoId,
+        progress: 0,
+        progressType: ProgressType.Video,
+        isRemoved: true
+      }, tabId);
+      await removeFromPopupList(videoId);
+      signalVideoComplete(videoId);
+    } catch (error) {
+      console.warn("[ytdl:bg] Blob URL download failed:", error);
+      reportDownloadFailed({
+        videoId,
+        tabId
+      });
+    }
   });
 
   onMessage(MessageType.StartBackgroundDownload, async ({ data, sender }) => {

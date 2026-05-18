@@ -15,6 +15,7 @@ export type ResolvedDownloadData = {
   resolvedVideoUrl: string | null;
   resolvedAudioUrl: string | null;
   resolvedExtraAudioUrls: (string | null)[];
+  progressiveUrl: string | null;
 };
 
 export async function buildEnrichedRequest({ params, resolved }: {
@@ -26,7 +27,7 @@ export async function buildEnrichedRequest({ params, resolved }: {
   const {
     sabrConfig, poToken, sabrUrl, videoFormat, audioFormat, extraAudioFormats,
     orderedCaptionTracks, captionVttDataPromise,
-    resolvedVideoUrl, resolvedAudioUrl, resolvedExtraAudioUrls
+    resolvedVideoUrl, resolvedAudioUrl, resolvedExtraAudioUrls, progressiveUrl
   } = resolved;
   const metadata = await buildVideoMetadata(videoId);
   return {
@@ -50,6 +51,7 @@ export async function buildEnrichedRequest({ params, resolved }: {
     resolvedVideoUrl,
     resolvedAudioUrl,
     resolvedExtraAudioUrls,
+    progressiveUrl,
     playlistId,
     playlistTitle,
     playlistTotalCount

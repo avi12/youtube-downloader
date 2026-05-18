@@ -28,6 +28,7 @@ export type DownloadRequest = {
   resolvedVideoUrl?: string | null;
   resolvedAudioUrl?: string | null;
   resolvedExtraAudioUrls?: (string | null)[];
+  progressiveUrl?: string | null;
 };
 
 export type StreamData = {
@@ -70,4 +71,5 @@ export type VideoData = {
   audioFormats: AdaptiveFormatItem[];
   captionTracks: CaptionTrack[];
   sabrConfig: SabrConfig | null;
+  progressiveUrl: string | null;
 };

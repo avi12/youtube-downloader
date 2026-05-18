@@ -66,4 +66,8 @@ export function registerDownloadProgressHandlers() {
       progressType: data.progressType
     });
   });
+
+  crossWorldMessenger.onMessage(CrossWorldMessage.DownloadBlobUrl, ({ data }) => {
+    void sendMessage(MessageType.DownloadBlobUrl, data);
+  });
 }

@@ -93,4 +93,10 @@ export interface ProtocolMap {
   revealDownloadFile(data: {
     downloadId: number;
   }): void;
+
+  downloadBlobUrl(data: {
+    blobUrl: string;
+    filename: string;
+    videoId: string;
+  }): void;
 }

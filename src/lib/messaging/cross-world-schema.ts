@@ -95,6 +95,11 @@ export interface PageMessengerSchema {
   }): void;
   [CrossWorldMessage.ButtonClick](data: { buttonId: string }): void;
   [CrossWorldMessage.ProgressUpdate](data: ProgressUpdate): void;
+  [CrossWorldMessage.DownloadBlobUrl](data: {
+    blobUrl: string;
+    filename: string;
+    videoId: string;
+  }): void;
 }
 
 export type StreamDataPayload = Parameters<PageMessengerSchema[typeof CrossWorldMessage.StreamData]>[0];

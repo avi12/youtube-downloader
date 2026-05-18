@@ -24,5 +24,6 @@ export const CrossWorldMessage = {
   OpenSnackbar: "openSnackbar",
   SetSettingsOptionsData: "setSettingsOptionsData",
   ButtonClick: "buttonClick",
-  ProgressUpdate: "progressUpdate"
+  ProgressUpdate: "progressUpdate",
+  DownloadBlobUrl: "downloadBlobUrl"
 } as const;

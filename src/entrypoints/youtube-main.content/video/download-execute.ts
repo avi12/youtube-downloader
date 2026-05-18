@@ -9,8 +9,36 @@ import { buildEnrichedRequest, fetchCaptionWebVttData } from "./download-request
 import { generatePoTokenIfNeeded, videoDataCache } from "./video-data";
 import { crossWorldMessenger, CrossWorldMessage } from "@/lib/messaging/cross-world-messenger";
 import { CONTENT_OPTIONS } from "@/lib/ui/synced-stores.svelte";
+import { getCompatibleFilename, splitFilenameAndExtension } from "@/lib/utils/filename";
 import { isVideoDataExpired } from "@/lib/youtube/video-helpers";
 import type { DownloadRequest } from "@/types";
+
+async function tryProgressiveInPage({ url, filenameOutput, videoId }: {
+  url: string;
+  filenameOutput: string;
+  videoId: string;
+}) {
+  try {
+    const response = await fetch(url, { credentials: "include" });
+    if (!response.ok) {
+      console.warn("[ytdl:main] Progressive fetch status:", response.status);
+      return false;
+    }
+
+    const blob = await response.blob();
+    const blobUrl = URL.createObjectURL(blob);
+    const { name } = splitFilenameAndExtension(filenameOutput);
+    await crossWorldMessenger.sendMessage(CrossWorldMessage.DownloadBlobUrl, {
+      blobUrl,
+      filename: getCompatibleFilename(`${name}.mp4`),
+      videoId
+    });
+    return true;
+  } catch (error) {
+    console.warn("[ytdl:main] Progressive fetch failed:", error);
+    return false;
+  }
+}
 
 export type DownloadParams = Pick<DownloadRequest,
   "type" | "videoId" | "videoItag" | "audioItag" | "audioTrackId" |
@@ -81,12 +109,32 @@ export async function executeDownload({ params, abortSignal }: {
     return;
   }
 
+  const sabrUrl = credentials.sabrUrl ?? null;
+
+  // No adaptive CDN URLs but a progressive URL available: fetch directly in this
+  // main-world context where YouTube cookies flow to googlevideo.com without
+  // third-party restrictions. Works from the top-frame playlist/watch page and
+  // from the iframe fallback context.
+  const canTryProgressiveInPage = !resolvedVideoUrl
+    && !resolvedAudioUrl
+    && !!cachedVideoData.progressiveUrl;
+  if (canTryProgressiveInPage) {
+    const didStart = await tryProgressiveInPage({
+      url: cachedVideoData.progressiveUrl!,
+      filenameOutput: params.filenameOutput,
+      videoId
+    });
+    if (didStart) {
+      return;
+    }
+  }
+
   const enrichedRequest = await buildEnrichedRequest({
     params,
     resolved: {
       sabrConfig: cachedVideoData.sabrConfig,
       poToken: credentials.poToken,
-      sabrUrl: credentials.sabrUrl,
+      sabrUrl,
       videoFormat,
       audioFormat,
       extraAudioFormats,
@@ -94,7 +142,8 @@ export async function executeDownload({ params, abortSignal }: {
       captionVttDataPromise,
       resolvedVideoUrl,
       resolvedAudioUrl,
-      resolvedExtraAudioUrls
+      resolvedExtraAudioUrls,
+      progressiveUrl: cachedVideoData.progressiveUrl
     }
   });
   if (abortSignal.aborted) {

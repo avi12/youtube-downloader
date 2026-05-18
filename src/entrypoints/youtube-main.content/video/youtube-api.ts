@@ -2,6 +2,20 @@ import { byQualityDesc, getUniqueVideoFormats, getAudioFormats } from "./format-
 import { isVideoDownloadable, isVideoLive, isVideoMusic } from "@/lib/youtube/video-helpers";
 import type { PlayerResponse } from "@/types";
 
+const PROGRESSIVE_ITAG_PRIORITY = [22, 18] as const;
+
+function extractProgressiveUrl(playerResponse: PlayerResponse) {
+  const formats = playerResponse.streamingData?.formats ?? [];
+  for (const itag of PROGRESSIVE_ITAG_PRIORITY) {
+    const format = formats.find(fmt => fmt.itag === itag && fmt.url);
+    if (format?.url) {
+      return format.url;
+    }
+  }
+
+  return null;
+}
+
 function extractSabrConfig({ playerResponse, clientVersion, clientName }: {
   playerResponse: PlayerResponse;
   clientVersion: string;
@@ -51,7 +65,8 @@ export function buildVideoData({ playerResponse, clientVersion, clientName }: {
       playerResponse,
       clientVersion,
       clientName
-    })
+    }),
+    progressiveUrl: extractProgressiveUrl(playerResponse)
   };
 }
 
