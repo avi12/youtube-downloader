@@ -2,7 +2,13 @@ import { ensureProcessor } from "../handlers/processor";
 import { removeFromPopupList } from "../queue/popup-list";
 import { signalVideoComplete } from "../queue/sequential-queue";
 import { reportDownloadFailed } from "./download-failure-reporter";
-import { trySabr, tryCdn, tryDirectUrlDownload } from "./download-fallback-chain";
+import {
+  trySabr,
+  tryCdn,
+  tryWebClientCdn,
+  tryDirectUrlDownload,
+  tryProgressiveDownload
+} from "./download-fallback-chain";
 import type { DownloadResult } from "./download-result-types";
 import { enrichMetadataFromYouTubeMusic } from "./metadata-enrichment";
 import {
@@ -129,6 +135,19 @@ export async function startBackgroundDownload({ request, tabId }: {
       });
     }
 
+    if (needsCdn && !hasCdnUrls && !signal.aborted) {
+      if (!isAudioOnly) {
+        await ensureProcessor();
+      }
+
+      result = await tryWebClientCdn({
+        request,
+        signal,
+        videoId,
+        tabId
+      });
+    }
+
     if (signal.aborted) {
       return;
     }
@@ -136,6 +155,23 @@ export async function startBackgroundDownload({ request, tabId }: {
     const hasNoData = !result
       || (!(result.videoData?.byteLength) && !(result.audioData?.byteLength) && !result.streamedToOffscreen);
     if (hasNoData) {
+      const progressiveDownloadId = await tryProgressiveDownload({
+        request,
+        signal
+      });
+      if (progressiveDownloadId !== null) {
+        clearIframeAutoRetry(videoId);
+        await sendMessage(MessageType.UpdateDownloadProgress, {
+          videoId,
+          progress: 0,
+          progressType: ProgressType.Video,
+          isRemoved: true
+        }, tabId);
+        await removeFromPopupList(videoId);
+        signalVideoComplete(videoId);
+        return;
+      }
+
       const directDownloadId = await tryDirectUrlDownload({ request });
       if (directDownloadId !== null) {
         clearIframeAutoRetry(videoId);
