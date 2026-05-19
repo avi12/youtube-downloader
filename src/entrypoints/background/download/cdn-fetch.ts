@@ -4,7 +4,6 @@ const MAX_CDN_RETRY_ATTEMPTS = 10;
 const RETRY_BASE_DELAY_MS = 1_000;
 const RETRY_MAX_DELAY_MS = 30_000;
 const FETCH_HEADER_TIMEOUT_MS = 30_000;
-const HTTP_STATUS_FORBIDDEN = 403;
 const HTTP_STATUS_RANGE_NOT_SATISFIABLE = 416;
 const HTTP_STATUS_OK = 200;
 const HTTP_STATUS_TOO_MANY_REQUESTS = 429;
@@ -111,8 +110,7 @@ export async function fetchWithProgress({ url, signal, onBytesReceived, initialD
     const isResponseError = !response.ok;
     if (isResponseError) {
       const isRetryable = response.status >= 500
-        || response.status === HTTP_STATUS_TOO_MANY_REQUESTS
-        || response.status === HTTP_STATUS_FORBIDDEN;
+        || response.status === HTTP_STATUS_TOO_MANY_REQUESTS;
       if (!isRetryable || isLastAttempt) {
         throw new Error(`HTTP ${response.status} fetching stream`);
       }
