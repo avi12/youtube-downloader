@@ -58,6 +58,9 @@
     get panel() {
       return panel;
     },
+    get isInBatch() {
+      return batch.isInBatch;
+    },
     get isInProgressInZipBatch() {
       return batch.isInProgressInZipBatch;
     }

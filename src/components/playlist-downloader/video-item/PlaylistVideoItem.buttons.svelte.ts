@@ -10,6 +10,7 @@ export function createButtonManager(params: {
   readonly videoId: string;
   readonly itemState: ReturnType<typeof createPlaylistVideoItemState>;
   readonly panel: ReturnType<typeof createPanelManager>;
+  readonly isInBatch: boolean;
   readonly isInProgressInZipBatch: boolean;
 }) {
   let elButtonGroup: HTMLElement | null = null;
@@ -25,7 +26,8 @@ export function createButtonManager(params: {
       return;
     }
 
-    const tooltip = params.itemState.buttonTooltip;
+    const isBatchCompleted = params.isInBatch && (params.itemState.isDone || params.itemState.isLocallyDone);
+    const tooltip = isBatchCompleted ? "Download completed" : params.itemState.buttonTooltip;
     const isDisabled = !params.itemState.videoData?.isDownloadable || params.isInProgressInZipBatch;
     const iconName = params.isInProgressInZipBatch ? IconName.CheckCircleThick : params.itemState.downloadIconName;
     sendDownloadButtonData({

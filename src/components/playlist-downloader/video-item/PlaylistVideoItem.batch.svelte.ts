@@ -38,6 +38,9 @@ export function createBatchState(params: {
   );
 
   return {
+    get isInBatch() {
+      return isInBatch;
+    },
     get isCheckboxIndeterminate() {
       return isCheckboxIndeterminate;
     },
