@@ -8,6 +8,7 @@
   const SNACKBAR_DURATION_MS = 10_000;
   const CLOSE_ANIMATION_MS = 500;
   const VIEW_BUTTON_ID = "ytdl-snackbar-view";
+  const FILENAME_ID = "ytdl-snackbar-filename";
 
   let downloadId = $state<number | null>(null);
   let filename = $state("");
@@ -82,9 +83,10 @@
           <div class="snackbarViewModelTitle snackbarViewModelTitleWithSubtext">
             <span class="ytAttributedStringHost ytAttributedStringWhiteSpacePreWrap">Download complete</span>
           </div>
-          <div class="snackbarViewModelSubtext" title={filename}>
+          <div id={FILENAME_ID} class="snackbarViewModelSubtext">
             <span class="ytAttributedStringHost">{filename}</span>
           </div>
+          <tp-yt-paper-tooltip for={FILENAME_ID} position="top">{filename}</tp-yt-paper-tooltip>
         </div>
         <div class="snackbarViewModelButtonClassWrapper">
           <yt-button-view-model data-ytdl-button-id={VIEW_BUTTON_ID}></yt-button-view-model>
