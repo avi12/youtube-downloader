@@ -8,13 +8,22 @@
   const SNACKBAR_DURATION_MS = 10_000;
   const CLOSE_ANIMATION_MS = 500;
   const VIEW_BUTTON_ID = "ytdl-snackbar-view";
-  const FILENAME_ID = "ytdl-snackbar-filename";
-
   let downloadId = $state<number | null>(null);
   let filename = $state("");
   let isOpen = $state(false);
   let isOpened = $state(false);
   let isClosing = $state(false);
+  let filenameEl = $state<HTMLSpanElement | null>(null);
+  const canvasCtx = document.createElement("canvas").getContext("2d")!;
+  const isFilenameTruncated = $derived.by(() => {
+    if (!filenameEl?.parentElement) {
+      return false;
+    }
+
+    canvasCtx.font = getComputedStyle(filenameEl).font;
+    return canvasCtx.measureText(filename).width > filenameEl.parentElement.clientWidth;
+  });
+
   let dismissTimer: ReturnType<typeof setTimeout> | null = null;
   let closeTimer: ReturnType<typeof setTimeout> | null = null;
 
@@ -73,10 +82,14 @@
           <div class="snackbarViewModelTitle snackbarViewModelTitleWithSubtext">
             <span class="ytAttributedStringHost ytAttributedStringWhiteSpacePreWrap">Download complete</span>
           </div>
-          <div id={FILENAME_ID} class="snackbarViewModelSubtext">
-            <span class="ytAttributedStringHost">{filename}</span>
+          <div class="snackbarViewModelSubtext">
+            <span bind:this={filenameEl} class="ytAttributedStringHost">{filename}</span>
+            {#if isFilenameTruncated}
+              <tp-yt-paper-tooltip offset="8" position="top">
+                {filename}
+              </tp-yt-paper-tooltip>
+            {/if}
           </div>
-          <tp-yt-paper-tooltip for={FILENAME_ID} position="top">{filename}</tp-yt-paper-tooltip>
         </div>
         <!-- stylelint-disable-next-line custom-property-no-missing-var-function -->
         <div
