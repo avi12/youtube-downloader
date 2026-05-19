@@ -216,53 +216,53 @@
       display: flex;
       flex-direction: column;
       height: 600px;
-    }
 
-    .popup-header {
-      padding: 16px;
-      padding-bottom: 0;
-      background: var(--bg);
-    }
+      .popup-header {
+        padding: 16px;
+        padding-bottom: 0;
+        background: var(--bg);
 
-    .popup-header-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      margin-bottom: 12px;
-    }
+        .popup-header-top {
+          display: flex;
+          justify-content: space-between;
+          align-items: baseline;
+          margin-bottom: 12px;
 
-    .popup-title {
-      color: var(--fg);
-      font-weight: 500;
-      font-size: 1.125rem;
-      letter-spacing: 0;
-    }
+          .popup-title {
+            color: var(--fg);
+            font-weight: 500;
+            font-size: 1.125rem;
+            letter-spacing: 0;
+          }
 
-    .popup-credit {
-      color: var(--fg-muted);
-      font-size: 0.75rem;
+          .popup-credit {
+            color: var(--fg-muted);
+            font-size: 0.75rem;
 
-      & a {
-        color: var(--accent);
-        text-decoration: none;
+            & a {
+              color: var(--accent);
+              text-decoration: none;
 
-        &:hover {
-          text-decoration: underline;
+              &:hover {
+                text-decoration: underline;
+              }
+            }
+          }
         }
       }
-    }
 
-    .popup-content {
-      position: relative;
-      flex: 1;
-      overflow: hidden;
-      min-height: 120px;
-    }
+      .popup-content {
+        position: relative;
+        flex: 1;
+        overflow: hidden;
+        min-height: 120px;
 
-    .panel-wrapper {
-      position: absolute;
-      inset: 0;
-      overflow-y: auto;
-      padding: 16px;
+        .panel-wrapper {
+          position: absolute;
+          inset: 0;
+          overflow-y: auto;
+          padding: 16px;
+        }
+      }
     }
 </style>
