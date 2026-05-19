@@ -16,13 +16,19 @@ const FIELD_PO_TOKEN = 2;
 function parseStreamerContext(ctxData: Uint8Array) {
   let ctxOffset = 0;
   while (ctxOffset < ctxData.byteLength) {
-    const ctxTag = readVarint(ctxData, ctxOffset);
+    const ctxTag = readVarint({
+      buffer: ctxData,
+      offset: ctxOffset
+    });
     ctxOffset = ctxTag.offset;
     const ctxField = ctxTag.value >> PROTO_FIELD_NUMBER_SHIFT;
     const ctxWire = ctxTag.value & PROTO_WIRE_TYPE_MASK;
     const isVarintCtx = ctxWire === WIRE_TYPE_VARINT;
     if (isVarintCtx) {
-      ctxOffset = readVarint(ctxData, ctxOffset).offset;
+      ctxOffset = readVarint({
+        buffer: ctxData,
+        offset: ctxOffset
+      }).offset;
       continue;
     }
 
@@ -31,7 +37,10 @@ function parseStreamerContext(ctxData: Uint8Array) {
       break;
     }
 
-    const ctxFieldLength = readVarint(ctxData, ctxOffset);
+    const ctxFieldLength = readVarint({
+      buffer: ctxData,
+      offset: ctxOffset
+    });
     ctxOffset = ctxFieldLength.offset;
 
     const isPoTokenField = ctxField === FIELD_PO_TOKEN && ctxFieldLength.value > 0;
@@ -50,13 +59,19 @@ export function extractPoTokenFromBody(body: number[]) {
   let offset = 0;
 
   while (offset < buffer.byteLength) {
-    const tag = readVarint(buffer, offset);
+    const tag = readVarint({
+      buffer,
+      offset
+    });
     offset = tag.offset;
     const fieldNumber = tag.value >> PROTO_FIELD_NUMBER_SHIFT;
     const wireType = tag.value & PROTO_WIRE_TYPE_MASK;
     const isVarint = wireType === WIRE_TYPE_VARINT;
     if (isVarint) {
-      offset = readVarint(buffer, offset).offset;
+      offset = readVarint({
+        buffer,
+        offset
+      }).offset;
       continue;
     }
 
@@ -77,7 +92,10 @@ export function extractPoTokenFromBody(body: number[]) {
       break;
     }
 
-    const fieldLength = readVarint(buffer, offset);
+    const fieldLength = readVarint({
+      buffer,
+      offset
+    });
     offset = fieldLength.offset;
 
     const isStreamerContextField = fieldNumber === FIELD_STREAMER_CONTEXT;

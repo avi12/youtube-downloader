@@ -69,15 +69,19 @@ export async function handleMuxVideoAudio(job: MuxVideoAudioJob) {
   const outputHandle = await createOpfsOutputHandle(videoId);
   const syncHandle = await outputHandle.createSyncAccessHandle();
   const opfsOutDir = `/${videoId}${OPFS_OUT_SUFFIX}`;
-  const outputDriver = createOpfsOutputFs(state.ffmpeg!.FS, syncHandle, outputFilename);
+  const outputDriver = createOpfsOutputFs({
+    fs: state.ffmpeg!.FS,
+    syncHandle,
+    outputFilename
+  });
   state.ffmpeg!.FS.mkdir(opfsOutDir);
   state.ffmpeg!.FS.mount(outputDriver, {}, opfsOutDir);
   const opfsOutputFilename = `${opfsOutDir}/${outputFilename}`;
 
   let success: boolean | undefined;
   try {
-    success = executeMuxPhases(
-      {
+    success = executeMuxPhases({
+      params: {
         videoFilename,
         primaryAudioFilename,
         extraFilenames,
@@ -94,10 +98,10 @@ export async function handleMuxVideoAudio(job: MuxVideoAudioJob) {
         defaultAudioTrackIndex,
         isExtraTracksPresent
       },
-      filename => filename === opfsOutputFilename
+      checkOutput: filename => filename === opfsOutputFilename
         ? syncHandle.getSize() > 0
         : tryCheckOutput(filename)
-    );
+    });
   } finally {
     syncHandle.close();
     tryUnmount(opfsOutDir);
