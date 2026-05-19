@@ -1,5 +1,5 @@
 import { resolveButtonLabel, resolveDownloadIconName } from "./PlaylistVideoItem.display";
-import { cancelDownload, executeDownload } from "./PlaylistVideoItem.download";
+import { cancelDownload, triggerDownload } from "./PlaylistVideoItem.download";
 import { createVideoItemEffects } from "./PlaylistVideoItem.effects.svelte";
 import { buildButtonTooltip } from "./PlaylistVideoItem.helpers";
 import {
@@ -121,7 +121,7 @@ export function createPlaylistVideoItemState({ videoId, gridTitle, activeDownloa
 
     activeDownloadClicks.add(videoId);
     try {
-      await executeDownload(videoData!, videoId, gridTitle, value => {
+      await triggerDownload(videoData!, videoId, gridTitle, value => {
         isLocallyDone = value;
       });
     } finally {

@@ -1,5 +1,6 @@
 import { checkInterruptedDownload } from "../download/interrupted-downloads";
 import { CrossWorldEvent, emitCrossWorldEvent } from "@/lib/messaging/cross-world-events";
+import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { MessageType, onMessage } from "@/lib/messaging/messaging";
 import { completedDownloadsStore } from "@/lib/ui/completed-downloads-store.svelte";
 import { downloadProgressStore, interruptedDownloadStore } from "@/lib/ui/synced-stores.svelte";
@@ -30,6 +31,10 @@ export function registerBackgroundMessageHandlers() {
         isSaved: true
       }
     });
+  });
+
+  onMessage(MessageType.ExecuteDownloadItem, ({ data }) => {
+    void crossWorldMessenger.sendMessage(CrossWorldMessage.DownloadRequest, data);
   });
 
   onMessage(MessageType.UpdateDownloadProgress, ({ data }) => {

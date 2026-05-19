@@ -1,9 +1,6 @@
 import { reportDownloadFailed } from "../download/background-downloader";
-import { downloadViaWatchPage, prepareIframe } from "../download/iframe-downloader";
 import { awaitBytesTransferred, awaitVideoComplete } from "../queue/sequential-queue";
-import { trackVideoForTab } from "../queue/tab-tracker";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
-import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
 import type { DownloadRequest } from "@/types";
 
 export async function dispatchSequentially({ items, tabId, signal }: {
@@ -16,10 +13,22 @@ export async function dispatchSequentially({ items, tabId, signal }: {
       break;
     }
 
-    await downloadViaWatchPage({
-      data: item,
-      tabId
-    });
+    let triggered = false;
+    try {
+      await sendMessage(MessageType.ExecuteDownloadItem, item, tabId);
+      void sendMessage(MessageType.StartKeepalive, { videoId: item.videoId }, tabId);
+      triggered = true;
+    } catch (error) {
+      console.error("[ytdl:bg] ExecuteDownloadItem failed:", item.videoId, error);
+      reportDownloadFailed({
+        videoId: item.videoId,
+        tabId
+      });
+    }
+
+    if (triggered) {
+      await awaitVideoComplete(item.videoId);
+    }
   }
 }
 
@@ -35,35 +44,19 @@ export async function dispatchParallel({ items, tabId, signal }: {
       break;
     }
 
-    trackVideoForTab({
-      videoId: item.videoId,
-      tabId
-    });
-
     try {
-      await prepareIframe({
-        ...item,
-        isIframeFallback: true
-      });
+      await sendMessage(MessageType.ExecuteDownloadItem, item, tabId);
       void sendMessage(MessageType.StartKeepalive, { videoId: item.videoId }, tabId);
     } catch (error) {
-      console.error("[ytdl:bg] prepareIframe failed:", item.videoId, error);
+      console.error("[ytdl:bg] ExecuteDownloadItem failed:", item.videoId, error);
       reportDownloadFailed({
         videoId: item.videoId,
         tabId
       });
+      continue;
     }
 
-    completionPromises.push(
-      awaitVideoComplete(item.videoId).then(() =>
-        sendToOffscreen({
-          type: OffscreenMessageType.RemoveDownloadIframe,
-          data: {
-            videoId: item.videoId
-          }
-        }))
-    );
-
+    completionPromises.push(awaitVideoComplete(item.videoId));
     await awaitBytesTransferred(item.videoId);
   }
 

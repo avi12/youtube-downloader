@@ -1,12 +1,13 @@
 import { batchCanceledIds, batchDownloadStatus, batchVideoIds } from "../PlaylistDownloader.batch.svelte";
 import { cancelStreamTransfer } from "@/entrypoints/youtube.content/download/stream-transfer";
+import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { checkedPlaylistVideos } from "@/lib/ui/playlist-selection.svelte";
 import { CONTENT_OPTIONS, downloadProgressStore } from "@/lib/ui/synced-stores.svelte";
 import { resolveVideoFilename } from "@/lib/utils/containers";
 import { DownloadType, type VideoData } from "@/types";
 
-export async function executeDownload(
+export function triggerDownload(
   videoData: VideoData,
   videoId: string,
   gridTitle: string | undefined,
@@ -26,15 +27,7 @@ export async function executeDownload(
   });
 
   setLocallyDone(false);
-  downloadProgressStore.unsuppress(videoId);
-  downloadProgressStore.set(videoId, {
-    isDownloading: true,
-    isDone: false,
-    progress: 0,
-    progressType: ""
-  });
-
-  await sendMessage(MessageType.DownloadViaWatchPage, {
+  void crossWorldMessenger.sendMessage(CrossWorldMessage.DownloadRequest, {
     type: downloadType,
     videoId,
     videoItag: videoData.videoFormats[0]?.itag ?? 0,

@@ -1,4 +1,4 @@
-import { performDownload } from "../video/download";
+import { startDownload } from "../video/download";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { DownloadType, type TpYtIronDropdownElement, type VideoData, type YtButtonViewModelElement } from "@/types";
 
@@ -52,7 +52,7 @@ export function buildClickHandler({ videoData, elDropdown, state }: {
       state.setIsDone(false);
       state.setIsInterrupted(false);
       state.setIsError(false);
-      void performDownload({
+      void startDownload({
         type: state.getDefaultDownloadType(),
         videoId: videoData.videoId,
         videoItag: state.getDefaultVideoItag(),

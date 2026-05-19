@@ -1,6 +1,6 @@
 import { registerButtonDataHandler } from "./button-data-handler";
 import ctaButtonStyles from "./cta-button.css?inline";
-import { cancelActiveDownload, performDownload } from "./video/download";
+import { cancelActiveDownload, startDownload } from "./video/download";
 import { CrossWorldEvent, emitCrossWorldEvent } from "@/lib/messaging/cross-world-events";
 import { CrossWorldMessage, crossWorldMessenger, dispatchButtonClick } from "@/lib/messaging/cross-world-messenger";
 import {
@@ -32,7 +32,7 @@ function injectCtaButtonStyles() {
 export function registerCrossWorldHandlers() {
   injectCtaButtonStyles();
   crossWorldMessenger.onMessage(CrossWorldMessage.DownloadRequest, ({ data }) => {
-    void performDownload(data);
+    void startDownload(data);
   });
 
   crossWorldMessenger.onMessage(CrossWorldMessage.OpenSnackbar, () => {
@@ -46,7 +46,7 @@ export function registerCrossWorldHandlers() {
       elViewButton.data = {
         title: "View",
         accessibilityText: "View in folder",
-        style: ButtonStyle.CallToAction,
+        style: ButtonStyle.Overlay,
         type: ButtonType.Text,
         buttonSize: ButtonSize.XSmall,
         state: ButtonState.Active,
@@ -54,7 +54,6 @@ export function registerCrossWorldHandlers() {
         isDisabled: false,
         tooltip: ""
       };
-      elViewButton.setAttribute("data-ytdl-cta", "");
 
       elViewButton.addEventListener("click", () => dispatchButtonClick(SNACKBAR_VIEW_BUTTON_ID));
     });

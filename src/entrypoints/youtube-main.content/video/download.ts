@@ -1,4 +1,4 @@
-import { executeDownload } from "./download-execute";
+import { resolveAndDispatch } from "./download-execute";
 import { CrossWorldEvent, emitCrossWorldEvent } from "@/lib/messaging/cross-world-events";
 import { crossWorldMessenger, CrossWorldMessage } from "@/lib/messaging/cross-world-messenger";
 import { type DownloadRequest, ProgressType } from "@/types";
@@ -22,7 +22,7 @@ export function cancelAllActiveDownloads() {
   return videoIds;
 }
 
-export async function performDownload(params: Pick<DownloadRequest,
+export async function startDownload(params: Pick<DownloadRequest,
   "type" | "videoId" | "videoItag" | "audioItag" | "audioTrackId" |
   "selectedCaptionVssId" | "filenameOutput" | "isIframeFallback" |
   "playlistId" | "playlistTitle" | "playlistTotalCount"
@@ -52,7 +52,7 @@ export async function performDownload(params: Pick<DownloadRequest,
   });
 
   try {
-    await executeDownload({
+    await resolveAndDispatch({
       params,
       abortSignal: abortController.signal
     });

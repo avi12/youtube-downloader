@@ -46,7 +46,7 @@ export type DownloadParams = Pick<DownloadRequest,
   "playlistId" | "playlistTitle" | "playlistTotalCount"
 >;
 
-export async function executeDownload({ params, abortSignal }: {
+export async function resolveAndDispatch({ params, abortSignal }: {
   params: DownloadParams;
   abortSignal: AbortSignal;
 }) {
