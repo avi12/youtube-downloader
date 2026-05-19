@@ -10,11 +10,13 @@ export async function trySabr({ request, signal, tabId }: {
   signal: AbortSignal;
   tabId: number;
 }) {
-  return attemptSabrDownload({
-    request,
-    signal,
-    tabId
-  }).catch(error => {
+  try {
+    return await attemptSabrDownload({
+      request,
+      signal,
+      tabId
+    });
+  } catch (error) {
     if (signal.aborted) {
       throw error;
     }
@@ -26,7 +28,7 @@ export async function trySabr({ request, signal, tabId }: {
       progressType: ProgressType.Video
     }, tabId);
     return null;
-  });
+  }
 }
 
 export async function tryCdn({ request, signal, videoId, tabId, partialVideoData, partialAudioData }: {
@@ -37,21 +39,23 @@ export async function tryCdn({ request, signal, videoId, tabId, partialVideoData
   partialVideoData?: Uint8Array;
   partialAudioData?: Uint8Array;
 }) {
-  return downloadViaCdn({
-    request,
-    signal,
-    videoId,
-    tabId,
-    partialVideoData,
-    partialAudioData
-  }).catch(error => {
+  try {
+    return await downloadViaCdn({
+      request,
+      signal,
+      videoId,
+      tabId,
+      partialVideoData,
+      partialAudioData
+    });
+  } catch (error) {
     if (signal.aborted) {
       throw error;
     }
 
     console.warn("[ytdl:bg] CDN failed, trying iframe fallback:", error);
     return null;
-  });
+  }
 }
 
 export async function tryDirectUrlDownload({ request }: {

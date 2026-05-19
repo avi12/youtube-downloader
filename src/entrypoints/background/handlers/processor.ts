@@ -19,7 +19,7 @@ async function ensureOffscreenDocument() {
     const contextTypes = [browser.runtime.ContextType.OFFSCREEN_DOCUMENT];
     existingContexts = await browser.runtime.getContexts({ contextTypes });
   } catch {
-    // getContexts not available in all environments
+    // getContexts is not available in Firefox
   }
 
   const hasExistingContext = existingContexts.length > 0;
@@ -27,12 +27,11 @@ async function ensureOffscreenDocument() {
     try {
       await browser.offscreen.closeDocument();
     } catch {
-      // Already closed
+      // ignore if already closed
     }
   }
 
-  // Set up the ready promise BEFORE createDocument so we can't miss
-  // the PipelineFFmpegReady signal that fires right after initialization.
+  // Set up the ready promise before createDocument to avoid missing the PipelineFFmpegReady signal.
   const ffmpegReady = waitForFFmpegReady();
   await browser.offscreen.createDocument({
     url: "/offscreen.html",
@@ -40,8 +39,7 @@ async function ensureOffscreenDocument() {
     justification: "FFmpeg WASM mux + hidden YouTube watch iframe for grid-page downloads"
   });
 
-  // Offscreen's onMessage handlers aren't registered until createFFmpegCore({}) resolves,
-  // so waiting here avoids chunks being dropped right after createDocument().
+  // Waiting here avoids chunks being dropped before the offscreen message handlers are ready.
   await ffmpegReady;
 }
 

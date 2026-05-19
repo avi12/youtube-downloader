@@ -10,7 +10,7 @@
 </script>
 
 {#if targets.length === 0}
-  <p class="dialog-note">No alternative formats available for this file.</p>
+  <p class="dialog-note">No alternative formats available for this file</p>
 {:else}
   <div class="target-list" aria-label="Target format" role="radiogroup">
     {#each targets as target (target)}
@@ -28,7 +28,7 @@
   </div>
 
   <p class="dialog-note">
-    Transcoding takes {estimatedTimeLabel}. The download will restart with the new format.
+    Transcoding takes {estimatedTimeLabel}. The download will restart with the new format
   </p>
 {/if}
 

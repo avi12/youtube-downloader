@@ -1,6 +1,3 @@
-// Custom Emscripten filesystem that routes all writes to an OPFS FileSystemSyncAccessHandle.
-// This avoids storing large FFmpeg output files in MEMFS (which would OOM for multi-GB files).
-
 import "./emscripten-fs.d";
 import type { EmscriptenFsNode, EmscriptenNodeOps, EmscriptenStreamOps } from "./emscripten-fs.d";
 import type { FS } from "@ffmpeg/types";

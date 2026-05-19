@@ -21,9 +21,7 @@ export { dropPendingRetry, reportDownloadFailed };
 
 registerOnlineRetryListener(startBackgroundDownload);
 
-export function cancelBackgroundDownload(_videoId: string) {
-  // Downloads run in offscreen worker iframes; cancellation goes through CancelProcessing message.
-}
+export function cancelBackgroundDownload(_videoId: string) {}
 
 export async function startBackgroundDownload({ request, tabId }: {
   request: DownloadRequest;

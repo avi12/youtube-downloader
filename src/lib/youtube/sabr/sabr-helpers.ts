@@ -28,7 +28,7 @@ export function adaptiveFormatToSabrFormat(format: AdaptiveFormatItem) {
   });
 }
 
-export function collectReadableStream({ stream, expectedBytes, signal, onChunk }: {
+export async function collectReadableStream({ stream, expectedBytes, signal, onChunk }: {
   stream: ReadableStream<Uint8Array>;
   expectedBytes: number;
   signal?: AbortSignal;
@@ -42,27 +42,27 @@ export function collectReadableStream({ stream, expectedBytes, signal, onChunk }
     signal?.addEventListener("abort", () => void reader.cancel(), { once: true });
   }
 
-  return readStreamToBuffer({
-    reader,
-    expectedBytes,
-    onChunk
-  }).then(
-    data => ({
+  try {
+    const data = await readStreamToBuffer({
+      reader,
+      expectedBytes,
+      onChunk
+    });
+    return {
       data,
       isComplete: true
-    }),
-    error => {
-      const isStallError = error instanceof StreamStallError;
-      if (isStallError) {
-        return {
-          data: error.partialData,
-          isComplete: false
-        };
-      }
-
-      throw error;
+    };
+  } catch (error) {
+    const isStallError = error instanceof StreamStallError;
+    if (isStallError) {
+      return {
+        data: error.partialData,
+        isComplete: false
+      };
     }
-  );
+
+    throw error;
+  }
 }
 
 export function createSabrStream({ sabrConfig, fetchFunction, poToken }: {

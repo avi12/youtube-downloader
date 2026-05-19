@@ -33,7 +33,6 @@ export const ChipStyle = {
   ExploreLauncherChip: "STYLE_EXPLORE_LAUNCHER_CHIP"
 } as const;
 
-// https://github.com/LuanRT/YouTube.js/blob/main/src/parser/classes/ChipCloudChip.ts
 export type ChipData = {
   text: {
     simpleText: string;

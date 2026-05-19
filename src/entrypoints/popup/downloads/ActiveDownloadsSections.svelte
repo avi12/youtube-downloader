@@ -69,7 +69,6 @@
     })()
   );
 
-  // All this-tab video IDs in queue order (video+audio first, then audio, then video-only)
   const thisTabVideoIds = $derived(
     (() => {
       if (thisTabIds.size === 0) {
@@ -99,7 +98,6 @@
     })()
   );
 
-  // Zip groups: ordered by first appearance, keyed by playlistId
   const thisTabGroups = $derived(
     (() => {
       const zipGroups = new SvelteMap<string, {

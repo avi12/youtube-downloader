@@ -9,7 +9,6 @@ import {
 
 export function registerStorageHandlers() {
   onMessage(MessageType.GetCapturedSabrBody, ({ sender }) => {
-    // Offscreen iframes have no tab ID — use the sentinel key for player captures.
     const tabId = sender.tab?.id ?? OFFSCREEN_PLAYER_TAB_ID;
 
     const captured = getCapturedSabrData(tabId);

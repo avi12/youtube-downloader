@@ -135,7 +135,6 @@ export async function fetchWithProgress({ url, signal, onBytesReceived, initialD
       partialData = null;
     }
 
-    // Good response — reset consecutive error count before reading the body.
     consecutiveRetries = 0;
 
     try {
@@ -164,7 +163,7 @@ export async function fetchWithProgress({ url, signal, onBytesReceived, initialD
       }) : newData;
     } catch (error) {
       const isStreamStall = error instanceof StreamStallError;
-      // In streaming mode the chunks are already in OPFS — retrying from a byte
+      // In streaming mode the chunks are already in OPFS - retrying from a byte
       // offset would send duplicate/overlapping data and corrupt the file.
       // Accept the partial stream and let the mux work with what it has.
       if (isStreamStall && onChunk) {

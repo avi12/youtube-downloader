@@ -1,6 +1,6 @@
 import { executeMuxPhases, tryCheckOutput } from "./mux-handler-exec";
 import { cleanupMuxFiles, writeMuxInputFiles } from "./mux-handler-files";
-import { postFileResult, state } from "./mux-state";
+import { postFileResult, state, tryRmdir, tryUnmount } from "./mux-state";
 import { cleanupOpfsOutput, createOpfsOutputFs, createOpfsOutputHandle } from "./opfs-output-fs";
 import type { MuxVideoAudioJob } from "@/lib/download-pipeline/mux-worker-types";
 import {
@@ -97,16 +97,8 @@ export async function handleMuxVideoAudio(job: MuxVideoAudioJob) {
     );
   } finally {
     syncHandle.close();
-    try {
-      state.ffmpeg!.FS.unmount(opfsOutDir);
-    } catch {
-      // already unmounted
-    }
-    try {
-      state.ffmpeg!.FS.rmdir(opfsOutDir);
-    } catch {
-      // already removed
-    }
+    tryUnmount(opfsOutDir);
+    tryRmdir(opfsOutDir);
     cleanupMuxFiles({
       videoFilename,
       primaryAudioFilename,
@@ -119,16 +111,8 @@ export async function handleMuxVideoAudio(job: MuxVideoAudioJob) {
     });
 
     if (isWorkerfsVideo) {
-      try {
-        state.ffmpeg!.FS.unmount(workerfsDir);
-      } catch {
-        // already unmounted
-      }
-      try {
-        state.ffmpeg!.FS.rmdir(workerfsDir);
-      } catch {
-        // already removed
-      }
+      tryUnmount(workerfsDir);
+      tryRmdir(workerfsDir);
     }
   }
 

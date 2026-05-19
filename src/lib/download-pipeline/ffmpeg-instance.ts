@@ -11,11 +11,11 @@ export {
   runTranscodeFile
 } from "./worker-jobs";
 
-export function initMuxWorker(wasmBinary: ArrayBuffer) {
+export async function initMuxWorker(wasmBinary: ArrayBuffer) {
   const hostPort = createHostWorkerPort();
   setWorkerPort(hostPort);
 
-  return new Promise<void>((resolve, reject) => {
+  await new Promise<void>((resolve, reject) => {
     hostPort.onMessage({
       [WorkerMessageType.Ready]() {
         resolve();
@@ -40,7 +40,7 @@ export function initMuxWorker(wasmBinary: ArrayBuffer) {
       wasmBinary,
       port: hostPort.port
     }, [wasmBinary, hostPort.port]);
-  }).then(() => {
-    void sendMessage(MessageType.PipelineFFmpegReady);
   });
+
+  void sendMessage(MessageType.PipelineFFmpegReady);
 }

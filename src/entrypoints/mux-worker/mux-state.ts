@@ -40,6 +40,22 @@ export function tryUnlink(filename: string) {
   }
 }
 
+export function tryUnmount(path: string) {
+  try {
+    state.ffmpeg!.FS.unmount(path);
+  } catch {
+    // already unmounted
+  }
+}
+
+export function tryRmdir(path: string) {
+  try {
+    state.ffmpeg!.FS.rmdir(path);
+  } catch {
+    // already removed
+  }
+}
+
 export function reportFFmpegProgress(value: number) {
   state.portReceiver?.send(WorkerMessageType.Progress, {
     videoId: state.currentVideoId,

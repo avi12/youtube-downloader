@@ -107,9 +107,9 @@ export async function processVideoAudio({ item, isCancelled }: {
         audioMimeType
       }
     }),
-    onRevoke() {
-      void navigator.storage.getDirectory().then(root =>
-        root.removeEntry(videoId + OPFS_MUX_OUTPUT_SUFFIX).catch(() => {}));
+    async onRevoke() {
+      const root = await navigator.storage.getDirectory();
+      await root.removeEntry(videoId + OPFS_MUX_OUTPUT_SUFFIX).catch(() => {});
     }
   });
   await reportProgress({
