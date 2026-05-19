@@ -28,6 +28,7 @@ export interface CdpMessage {
   };
 }
 
+// noinspection JSUnusedGlobalSymbols
 export function attachCdpMonitor(wsUrl: string, label: string, enableLog = false) {
   const socket = new WebSocket(wsUrl);
   socket.on("open", () => {
@@ -47,7 +48,7 @@ export function attachCdpMonitor(wsUrl: string, label: string, enableLog = false
       );
     }
   });
-  socket.on("message", rawData => {
+  socket.on("message", (rawData: WebSocket.RawData) => {
     const message: CdpMessage = JSON.parse(String(rawData));
     if (message.method === "Runtime.consoleAPICalled") {
       const text = (message.params?.args ?? []).map(arg => arg.value ?? arg.description ?? JSON.stringify(arg)).join(" ");
@@ -66,6 +67,7 @@ export function attachCdpMonitor(wsUrl: string, label: string, enableLog = false
   return socket;
 }
 
+// noinspection JSUnusedGlobalSymbols
 export async function findExtensionTargets(port: number, extId: string) {
   const targets = await fetchTargets(port);
   return {
