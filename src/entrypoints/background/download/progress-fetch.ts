@@ -10,12 +10,13 @@ export { fetchWithProgress } from "./cdn-fetch";
 const PROGRESS_THROTTLE_INTERVAL_MS = 1000;
 const lastProgressTimestamps = new Map<string, number>();
 
-export async function sendProgressUpdate({ videoId, progress, progressType, tabId }: {
+type SendProgressUpdateParams = {
   videoId: string;
   progress: number;
   progressType: ProgressType;
   tabId: number;
-}) {
+};
+export async function sendProgressUpdate({ videoId, progress, progressType, tabId }: SendProgressUpdateParams) {
   const isComplete = progress >= 1;
   if (isComplete) {
     lastProgressTimestamps.delete(videoId);
@@ -45,10 +46,11 @@ export async function sendProgressUpdate({ videoId, progress, progressType, tabI
   }
 }
 
-export function createProgressFetch({ signal, onBytesReceived }: {
+type CreateProgressFetchParams = {
   signal: AbortSignal;
   onBytesReceived: (bytes: number) => void;
-}) {
+};
+export function createProgressFetch({ signal, onBytesReceived }: CreateProgressFetchParams) {
   return async (input: RequestInfo | URL, init?: RequestInit) => {
     const response = await fetch(input, {
       ...init,
