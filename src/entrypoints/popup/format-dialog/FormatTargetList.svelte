@@ -42,40 +42,40 @@
     margin: 0;
     padding: 0;
     border: none;
-  }
 
-  .visually-hidden {
-    position: absolute;
-    overflow: hidden;
-    width: 1px;
-    height: 1px;
-    clip-path: inset(50%);
-    white-space: nowrap;
-  }
-
-  .target-option {
-    display: flex;
-    gap: 6px;
-    align-items: center;
-    padding: 6px 12px;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    color: var(--fg);
-    font-size: 0.8125rem;
-    cursor: pointer;
-    transition: background-color 150ms;
-
-    &:hover {
-      background: var(--surface);
+    .visually-hidden {
+      position: absolute;
+      overflow: hidden;
+      width: 1px;
+      height: 1px;
+      clip-path: inset(50%);
+      white-space: nowrap;
     }
 
-    &:has(input:checked) {
-      border-color: var(--accent);
-      background: var(--accent-container);
-    }
+    .target-option {
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      padding: 6px 12px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--fg);
+      font-size: 0.8125rem;
+      cursor: pointer;
+      transition: background-color 150ms;
 
-    & [type="radio"] {
-      margin: 0;
+      &:hover {
+        background: var(--surface);
+      }
+
+      &:has(input:checked) {
+        border-color: var(--accent);
+        background: var(--accent-container);
+      }
+
+      [type="radio"] {
+        margin: 0;
+      }
     }
   }
 

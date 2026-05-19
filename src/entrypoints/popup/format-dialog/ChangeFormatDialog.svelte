@@ -117,43 +117,43 @@
     color: var(--fg);
     box-shadow: 0 8px 32px rgb(0 0 0 / 12%);
     animation: dialog-in 240ms cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
 
-  .dialog::backdrop {
-    background: rgb(0 0 0 / 40%);
-    animation: backdrop-in 200ms ease-out;
-  }
-
-  .dialog.closing {
-    animation: dialog-out 240ms cubic-bezier(0.36, 0, 0.66, -0.56) forwards;
-  }
-
-  .dialog.closing::backdrop {
-    animation: backdrop-out 200ms ease-in forwards;
-  }
-
-  .dialog-title {
-    margin: 0;
-    font-weight: 500;
-    font-size: 1.125rem;
-  }
-
-  .dialog-body {
-    margin: 0;
-    color: var(--fg-muted);
-    font-size: 0.8125rem;
-    line-height: 1.4;
-
-    & strong {
-      color: var(--fg);
+    &::backdrop {
+      background: rgb(0 0 0 / 40%);
+      animation: backdrop-in 200ms ease-out;
     }
 
-    & code {
-      padding: 2px 6px;
-      border-radius: 4px;
-      background: var(--surface);
-      font-family: inherit;
-      font-size: 0.75rem;
+    &.closing {
+      animation: dialog-out 240ms cubic-bezier(0.36, 0, 0.66, -0.56) forwards;
+
+      &::backdrop {
+        animation: backdrop-out 200ms ease-in forwards;
+      }
+    }
+
+    .dialog-title {
+      margin: 0;
+      font-weight: 500;
+      font-size: 1.125rem;
+    }
+
+    .dialog-body {
+      margin: 0;
+      color: var(--fg-muted);
+      font-size: 0.8125rem;
+      line-height: 1.4;
+
+      & strong {
+        color: var(--fg);
+      }
+
+      & code {
+        padding: 2px 6px;
+        border-radius: 4px;
+        background: var(--surface);
+        font-family: inherit;
+        font-size: 0.75rem;
+      }
     }
   }
 
