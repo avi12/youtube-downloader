@@ -6,35 +6,52 @@
   import { YtIconName } from "@/types";
 
   const SNACKBAR_DURATION_MS = 10_000;
+  const CLOSE_ANIMATION_MS = 500;
   const VIEW_BUTTON_ID = "ytdl-snackbar-view";
 
   let downloadId = $state<number | null>(null);
   let filename = $state("");
   let isOpen = $state(false);
+  let isOpened = $state(false);
+  let isClosing = $state(false);
   let dismissTimer: ReturnType<typeof setTimeout> | null = null;
+  let closeTimer: ReturnType<typeof setTimeout> | null = null;
+
+  function dismiss(): void {
+    clearTimeout(dismissTimer ?? undefined);
+    dismissTimer = null;
+    isOpened = false;
+    isClosing = true;
+    closeTimer = setTimeout(() => {
+      isOpen = false;
+      isClosing = false;
+    }, CLOSE_ANIMATION_MS);
+  }
 
   $effect(() => completedDownloadsStore.subscribe((_videoId, completed) => {
     downloadId = completed.downloadId;
     filename = completed.filename;
+    clearTimeout(closeTimer ?? undefined);
+    closeTimer = null;
+    isClosing = false;
     isOpen = true;
+    requestAnimationFrame(() => {
+      isOpened = true;
+    });
     clearTimeout(dismissTimer ?? undefined);
     void crossWorldMessenger.sendMessage(CrossWorldMessage.OpenSnackbar);
-    dismissTimer = setTimeout(() => {
-      isOpen = false;
-    }, SNACKBAR_DURATION_MS);
+    dismissTimer = setTimeout(dismiss, SNACKBAR_DURATION_MS);
   }));
 
   $effect(() => onButtonClick(buttonId => {
     const isViewButtonWithDownload = buttonId === VIEW_BUTTON_ID && downloadId !== null;
     if (isViewButtonWithDownload) {
       void sendMessage(MessageType.RevealDownloadFile, { downloadId: downloadId! });
-      clearTimeout(dismissTimer ?? undefined);
-      dismissTimer = null;
-      isOpen = false;
+      dismiss();
     }
   }));
 
-  function attachToSnackbar(node: HTMLElement) {
+  function attachToSnackbar(node: HTMLElement): () => void {
     document.querySelector("snackbar-container")?.append(node);
     return () => node.remove();
   }
@@ -51,7 +68,11 @@
 </style>
 
 {#if isOpen}
-  <div class="ytSnackbarContainerSnackbarContainer ytSnackbarContainerOpened" {@attach attachToSnackbar}>
+  <div
+    class="ytSnackbarContainerSnackbarContainer"
+    class:ytSnackbarContainerClosed={isClosing}
+    class:ytSnackbarContainerOpened={isOpened}
+    {@attach attachToSnackbar}>
     <snackbar-view-model class="snackbarViewModelHost">
       <div class="snackbarViewModelEngagementBarWrapper">
         <div class="snackbarViewModelAvatarContainer">
@@ -61,7 +82,7 @@
           <div class="snackbarViewModelTitle snackbarViewModelTitleWithSubtext">
             <span class="ytAttributedStringHost ytAttributedStringWhiteSpacePreWrap">Download complete</span>
           </div>
-          <div class="snackbarViewModelSubtext">
+          <div class="snackbarViewModelSubtext" title={filename}>
             <span class="ytAttributedStringHost">{filename}</span>
           </div>
         </div>
