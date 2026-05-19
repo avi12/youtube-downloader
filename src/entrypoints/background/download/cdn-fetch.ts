@@ -19,11 +19,10 @@ function mergeUint8Arrays({ first, second }: {
   return merged;
 }
 
-async function attemptFetch({ url, signal, byteOffset, extraHeaders }: {
+async function attemptFetch({ url, signal, byteOffset }: {
   url: string;
   signal: AbortSignal;
   byteOffset: number;
-  extraHeaders?: Record<string, string>;
 }) {
   // Timeout only guards against the server accepting the connection but not sending headers.
   // Once headers arrive we clear the timer so it never fires during the (potentially long) body read.
@@ -35,17 +34,14 @@ async function attemptFetch({ url, signal, byteOffset, extraHeaders }: {
   }
   signal.addEventListener("abort", abortOnUserCancel, { once: true });
 
-  const headers: Record<string, string> = { ...extraHeaders };
-  if (byteOffset > 0) {
-    headers["Range"] = `bytes=${byteOffset}-`;
-  }
-
   try {
     const response = await fetch(url, {
       signal: headerTimeoutController.signal,
       credentials: "include",
-      ...Object.keys(headers).length > 0 && {
-        headers
+      ...byteOffset > 0 && {
+        headers: {
+          Range: `bytes=${byteOffset}-`
+        }
       }
     });
     clearTimeout(timeoutId);
@@ -57,13 +53,12 @@ async function attemptFetch({ url, signal, byteOffset, extraHeaders }: {
   }
 }
 
-export async function fetchWithProgress({ url, signal, onBytesReceived, initialData, onChunk, extraHeaders }: {
+export async function fetchWithProgress({ url, signal, onBytesReceived, initialData, onChunk }: {
   url: string;
   signal: AbortSignal;
   onBytesReceived: (bytes: number) => void;
   initialData?: Uint8Array;
   onChunk?: (chunk: Uint8Array) => void;
-  extraHeaders?: Record<string, string>;
 }) {
   let partialData: Uint8Array | null = initialData ?? null;
   let byteOffset = initialData?.byteLength ?? 0;
@@ -81,8 +76,7 @@ export async function fetchWithProgress({ url, signal, onBytesReceived, initialD
       response = await attemptFetch({
         url,
         signal,
-        byteOffset,
-        extraHeaders
+        byteOffset
       });
     } catch (fetchError) {
       if (signal.aborted) {
