@@ -3,7 +3,14 @@ import { postError, postResult, state, tryUnlink } from "./mux-state";
 import type { TranscodeAudioJob, TranscodeFileJob } from "@/lib/download-pipeline/mux-worker-types";
 import { getCompatibleFilename, getFileExtension } from "@/lib/utils/containers";
 
-const AUDIO_CODEC_BY_EXTENSION: Record<string, string> = { flac: "flac" };
+const AUDIO_CODEC_BY_EXTENSION: Record<string, string> = {
+  flac: "flac",
+  m4a: "aac",
+  mp3: "libmp3lame",
+  ogg: "libvorbis",
+  opus: "libopus",
+  webm: "libopus"
+};
 
 export function handleTranscodeAudio(job: TranscodeAudioJob) {
   const { audioData, sourceExtension, filenameOutput, videoId, tabId } = job;

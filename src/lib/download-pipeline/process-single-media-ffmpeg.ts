@@ -3,7 +3,8 @@ import { runEmbedMetadata, runTranscodeAudio } from "./ffmpeg-instance";
 import { ProgressType } from "@/types";
 import type { VideoMetadata } from "@/types";
 
-const FLAC_EXTENSION = "flac";
+const WEBA_EXTENSION = "weba";
+const WEBM_EXTENSION = "webm";
 
 type ApplyAudioFfmpegParams = {
   videoId: string;
@@ -45,8 +46,9 @@ export async function applyAudioFfmpeg({
     });
   }
 
-  const isFlacOutput = outputExtension === FLAC_EXTENSION;
-  if (isFlacOutput) {
+  const isNativeContainer = sourceExtension === outputExtension
+    || (sourceExtension === WEBA_EXTENSION && outputExtension === WEBM_EXTENSION);
+  if (!isNativeContainer) {
     await reportProgress({
       videoId,
       progress: 0,

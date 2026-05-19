@@ -21,6 +21,7 @@ const extensionToMimeAll: Record<string, string> = {
 };
 
 const MIME_PREFIX_VIDEO = "video";
+const MIME_PREFIX_AUDIO = "audio";
 const EXT_WEBM = "webm";
 const EXT_MP4 = "mp4";
 const EXT_M4A = "m4a";
@@ -30,10 +31,14 @@ function filterExtensionsByPrefix(prefix: string) {
 }
 
 const videoExtensions = filterExtensionsByPrefix(MIME_PREFIX_VIDEO);
+const audioExtensions = {
+  [EXT_WEBM]: MIME_VIDEO_WEBM,
+  ...filterExtensionsByPrefix(MIME_PREFIX_AUDIO)
+};
 
 const extensionToMime = {
   video: videoExtensions,
-  audio: videoExtensions
+  audio: audioExtensions
 };
 
 export type SupportedExtension = keyof typeof extensionToMimeAll;
