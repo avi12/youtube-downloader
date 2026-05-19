@@ -59,11 +59,11 @@
 </script>
 
 {#if !isAnyContentAvailable}
-  <div class="empty-state">
+  <section class="empty-state">
     <span class="empty-state-icon">{@html downloadIcon}</span>
     <p class="empty-state-text">No downloads yet</p>
     <p class="empty-state-hint">Downloads appear here when you start one from YouTube</p>
-  </div>
+  </section>
 {:else}
   <div class="download-sections">
     {#if totalActiveDownloads > 0}
