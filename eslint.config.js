@@ -1,5 +1,6 @@
 import expandNestedObjectExpression from "./eslint-rules/expand-nested-object-expression.js";
 import expandNestedTypeLiteral from "./eslint-rules/expand-nested-type-literal.js";
+import expandSvelteBlock from "./eslint-rules/expand-svelte-block.js";
 import multilineArgParenNewline from "./eslint-rules/multiline-arg-paren-newline.js";
 import noPaddedTag from "./eslint-rules/no-padded-tag.js";
 import eslint from "@eslint/js";
@@ -223,6 +224,7 @@ const sharedPlugins = {
     rules: {
       "expand-nested-object-expression": expandNestedObjectExpression,
       "expand-nested-type-literal": expandNestedTypeLiteral,
+      "expand-svelte-block": expandSvelteBlock,
       "multiline-arg-paren-newline": multilineArgParenNewline,
       "no-padded-tag": noPaddedTag
     }
@@ -295,7 +297,8 @@ export default [
       "@typescript-eslint/explicit-function-return-type": ["error", {
         allowExpressions: true,
         allowHigherOrderFunctions: true
-      }]
+      }],
+      "local/expand-svelte-block": "error"
     }
   }
 ];

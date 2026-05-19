@@ -51,7 +51,9 @@
     options={qualityOptions}
     value={playlist.effectiveQuality}
   />
-  {#if playlist.isQualityOverridden}<PlaylistOverrideBadge />{/if}
+  {#if playlist.isQualityOverridden}
+    <PlaylistOverrideBadge />
+  {/if}
 </div>
 
 <div class="ytdl-section ytdl-section-select" class:is-disabled={isVideoTypeDisabled}>
@@ -63,7 +65,9 @@
     options={videoExtOptions}
     value={playlist.effectiveVideoExt}
   />
-  {#if playlist.isVideoExtOverridden}<PlaylistOverrideBadge />{/if}
+  {#if playlist.isVideoExtOverridden}
+    <PlaylistOverrideBadge />
+  {/if}
 </div>
 
 <div class="ytdl-section ytdl-section-select" class:is-disabled={isAudioExtTypeDisabled}>
@@ -75,7 +79,9 @@
     options={audioExtOptions}
     value={playlist.effectiveAudioExt}
   />
-  {#if playlist.isAudioExtOverridden}<PlaylistOverrideBadge />{/if}
+  {#if playlist.isAudioExtOverridden}
+    <PlaylistOverrideBadge />
+  {/if}
 </div>
 
 {#if playlist.isAnyOverrideActive}
