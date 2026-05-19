@@ -17,10 +17,11 @@ async function reportRemoval({ videoId, tabId }: VideoTabParams) {
   });
 }
 
-async function removeFromStorageQueue({ videoId, type }: {
+type RemoveFromStorageQueueParams = {
   videoId: string;
   type: DownloadType;
-}) {
+};
+async function removeFromStorageQueue({ videoId, type }: RemoveFromStorageQueueParams) {
   await sendMessage(MessageType.PipelineQueueRemove, {
     videoId,
     type

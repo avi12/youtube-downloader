@@ -7,10 +7,11 @@ import { DownloadType } from "@/types";
 
 export const TRANSCODE_VIDEO_ID_PREFIX = "transcode:";
 
-export async function transcodeRecentDownload({ entryId, targetContainer }: {
+type TranscodeRecentDownloadParams = {
   entryId: string;
   targetContainer: string;
-}) {
+};
+export async function transcodeRecentDownload({ entryId, targetContainer }: TranscodeRecentDownloadParams) {
   const transcodeVideoId = `${TRANSCODE_VIDEO_ID_PREFIX}${entryId}`;
 
   try {

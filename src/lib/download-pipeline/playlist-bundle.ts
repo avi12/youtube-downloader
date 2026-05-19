@@ -30,16 +30,17 @@ export function notifyPlaylistBundleFailure(playlistId: string) {
   playlistBundles.delete(playlistId);
 }
 
-export async function addToPlaylistBundle({
-  playlistId, playlistTitle, totalCount, tabId, filename, data
-}: {
+type AddToPlaylistBundleParams = {
   playlistId: string;
   playlistTitle: string;
   totalCount: number;
   tabId: number;
   filename: string;
   data: Uint8Array;
-}) {
+};
+export async function addToPlaylistBundle({
+  playlistId, playlistTitle, totalCount, tabId, filename, data
+}: AddToPlaylistBundleParams) {
   const isBundleNew = !playlistBundles.has(playlistId);
   if (isBundleNew) {
     playlistBundles.set(playlistId, {

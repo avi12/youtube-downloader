@@ -14,10 +14,11 @@ import type { ProcessStreamData } from "@/types";
 
 const DEFAULT_PLAYLIST_TITLE = "Playlist";
 
-export async function processVideoAudio({ item, isCancelled }: {
+type ProcessVideoAudioParams = {
   item: ProcessStreamData;
   isCancelled: () => boolean;
-}) {
+};
+export async function processVideoAudio({ item, isCancelled }: ProcessVideoAudioParams) {
   const {
     videoId, filenameOutput, videoMimeType, audioMimeType, tabId,
     additionalAudioStreams, subtitleTracks, primaryAudioLanguageCode, defaultAudioTrackIndex

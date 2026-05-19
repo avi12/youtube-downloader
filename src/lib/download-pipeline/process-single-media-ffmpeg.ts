@@ -5,6 +5,15 @@ import type { VideoMetadata } from "@/types";
 
 const FLAC_EXTENSION = "flac";
 
+type ApplyAudioFfmpegParams = {
+  videoId: string;
+  tabId: number;
+  data: Uint8Array;
+  sourceExtension: string;
+  filenameOutput: string;
+  outputExtension: string;
+  metadata?: VideoMetadata | null;
+};
 export async function applyAudioFfmpeg({
   videoId,
   tabId,
@@ -13,15 +22,7 @@ export async function applyAudioFfmpeg({
   filenameOutput,
   outputExtension,
   metadata
-}: {
-  videoId: string;
-  tabId: number;
-  data: Uint8Array;
-  sourceExtension: string;
-  filenameOutput: string;
-  outputExtension: string;
-  metadata?: VideoMetadata | null;
-}) {
+}: ApplyAudioFfmpegParams) {
   const isMusicMetadata = metadata?.isMusic;
   if (isMusicMetadata) {
     await reportProgress({

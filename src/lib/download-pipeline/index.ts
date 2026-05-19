@@ -8,10 +8,11 @@ export { enqueueStreamData, cancelDownloadsByIds } from "./stream-processor";
 
 export const FFMPEG_PROGRESS_CAP = 0.99;
 
-export function buildRecentContext({ item, extras }: {
+type BuildRecentContextParams = {
   item: Pick<ProcessStreamData, "videoId" | "filenameOutput" | "metadata">;
   extras?: Partial<RecentDownloadContext>;
-}) {
+};
+export function buildRecentContext({ item, extras }: BuildRecentContextParams) {
   return {
     videoId: item.videoId,
     title: item.metadata?.title ?? item.filenameOutput,

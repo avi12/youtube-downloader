@@ -41,19 +41,21 @@ export function buildSubtitleFiles(subtitleTracks: ProcessStreamData["subtitleTr
     }));
 }
 
-export function resolveDownloadFilename({ filenameOutput, hasExtraTracks }: {
+type ResolveDownloadFilenameParams = {
   filenameOutput: string;
   hasExtraTracks: boolean;
-}) {
+};
+export function resolveDownloadFilename({ filenameOutput, hasExtraTracks }: ResolveDownloadFilenameParams) {
   const targetExtension = hasExtraTracks ? MKV_EXTENSION : (filenameOutput.split(".").pop() ?? MKV_EXTENSION);
   return `${filenameOutput.replace(/\.[^.]+$/, "")}.${targetExtension}`;
 }
 
-export async function handleSingleStream({ item, videoData, audioData }: {
+type HandleSingleStreamParams = {
   item: ProcessStreamData;
   videoData: Uint8Array | null;
   audioData: Uint8Array | null;
-}) {
+};
+export async function handleSingleStream({ item, videoData, audioData }: HandleSingleStreamParams) {
   const hasNoData = !videoData && !audioData;
   if (hasNoData) {
     throw new Error(NO_STREAM_DATA_ERROR);

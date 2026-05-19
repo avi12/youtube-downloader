@@ -189,19 +189,21 @@ crossWorldMessenger.onMessage(CrossWorldMessage.ProgressUpdate, ({ data }) => {
   fanoutProgress(data);
 });
 
-export function emitCrossWorldEvent({ type, data }: {
+type EmitCrossWorldEventParams = {
   type: typeof CrossWorldEvent.ProgressUpdate;
   data: ProgressUpdate;
-}) {
+};
+export function emitCrossWorldEvent({ type, data }: EmitCrossWorldEventParams) {
   void type;
   void crossWorldMessenger.sendMessage(CrossWorldMessage.ProgressUpdate, data);
   fanoutProgress(data);
 }
 
-export function onCrossWorldEvent({ type, handler }: {
+type OnCrossWorldEventParams = {
   type: typeof CrossWorldEvent.ProgressUpdate;
   handler: (data: ProgressUpdate) => void;
-}) {
+};
+export function onCrossWorldEvent({ type, handler }: OnCrossWorldEventParams) {
   void type;
   progressHandlers.add(handler);
   return () => {

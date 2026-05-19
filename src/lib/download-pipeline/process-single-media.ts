@@ -20,10 +20,11 @@ function sourceAudioExtension(audioMimeType: string) {
   return audioMimeType.includes("webm") ? WEBM_AUDIO_EXTENSION : MP4_AUDIO_EXTENSION;
 }
 
-export async function processSingleMedia({ item, isCancelled }: {
+type ProcessSingleMediaParams = {
   item: ProcessStreamData;
   isCancelled: () => boolean;
-}) {
+};
+export async function processSingleMedia({ item, isCancelled }: ProcessSingleMediaParams) {
   const { videoId, type, filenameOutput, videoData, audioData, tabId } = item;
   const rawData = type === DownloadType.Audio ? audioData : videoData;
   let data = toUint8Array(rawData);

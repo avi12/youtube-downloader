@@ -15,13 +15,14 @@ export function getPendingJobReject() {
   return pendingJobReject;
 }
 
+type RunWorkerJobParams<T> = {
+  send: (port: HostWorkerPort) => void;
+  transform: (data: ArrayBuffer | null) => T;
+};
 export function runWorkerJob<T>({
   send,
   transform
-}: {
-  send: (port: HostWorkerPort) => void;
-  transform: (data: ArrayBuffer | null) => T;
-}) {
+}: RunWorkerJobParams<T>) {
   return new Promise<T>((resolve, reject) => {
     const isWorkerMissing = !workerPort;
     if (isWorkerMissing) {
@@ -54,10 +55,11 @@ export function runWorkerJob<T>({
   });
 }
 
-export function runMuxVideoAudio({ videoId, job }: {
+type RunMuxVideoAudioParams = {
   videoId: string;
   job: MuxVideoAudioJob;
-}) {
+};
+export function runMuxVideoAudio({ videoId, job }: RunMuxVideoAudioParams) {
   const transferables: Transferable[] = [];
   if (job.videoData) {
     transferables.push(job.videoData);
@@ -104,10 +106,11 @@ export function runMuxVideoAudio({ videoId, job }: {
   });
 }
 
-export function runEmbedMetadata({ videoId, job }: {
+type RunEmbedMetadataParams = {
   videoId: string;
   job: EmbedMetadataJob;
-}) {
+};
+export function runEmbedMetadata({ videoId, job }: RunEmbedMetadataParams) {
   return enqueueMuxJob({
     videoId,
     run: () =>
@@ -118,10 +121,11 @@ export function runEmbedMetadata({ videoId, job }: {
   });
 }
 
-export function runTranscodeAudio({ videoId, job }: {
+type RunTranscodeAudioParams = {
   videoId: string;
   job: TranscodeAudioJob;
-}) {
+};
+export function runTranscodeAudio({ videoId, job }: RunTranscodeAudioParams) {
   return enqueueMuxJob({
     videoId,
     run: () =>
@@ -139,10 +143,11 @@ export function runTranscodeAudio({ videoId, job }: {
   });
 }
 
-export function runTranscodeFile({ videoId, job }: {
+type RunTranscodeFileParams = {
   videoId: string;
   job: TranscodeFileJob;
-}) {
+};
+export function runTranscodeFile({ videoId, job }: RunTranscodeFileParams) {
   return enqueueMuxJob({
     videoId,
     run: () =>

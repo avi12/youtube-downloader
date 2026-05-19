@@ -6,11 +6,12 @@ const FALLBACK_MIME_TYPE = "application/octet-stream";
 
 const blobUrlsPendingRevocation = new Map<string, (() => void) | null>();
 
-export async function triggerDownload({ data, filenameOutput, recentContext }: {
+type TriggerDownloadParams = {
   data: Uint8Array;
   filenameOutput: string;
   recentContext?: RecentDownloadContext;
-}) {
+};
+export async function triggerDownload({ data, filenameOutput, recentContext }: TriggerDownloadParams) {
   const mimeType = getMimeType(filenameOutput) || FALLBACK_MIME_TYPE;
   const filename = getCompatibleFilename(filenameOutput);
   const blob = new Blob([new Uint8Array(data)], { type: mimeType });
@@ -25,12 +26,15 @@ export async function triggerDownload({ data, filenameOutput, recentContext }: {
   });
 }
 
-export async function triggerDownloadFromFile({ file, filenameOutput, recentContext, onRevoke }: {
+type TriggerDownloadFromFileParams = {
   file: File;
   filenameOutput: string;
   recentContext?: RecentDownloadContext;
   onRevoke?: () => void;
-}) {
+};
+export async function triggerDownloadFromFile({
+  file, filenameOutput, recentContext, onRevoke
+}: TriggerDownloadFromFileParams) {
   const mimeType = getMimeType(filenameOutput) || FALLBACK_MIME_TYPE;
   const filename = getCompatibleFilename(filenameOutput);
   const blob = new Blob([file], { type: mimeType });

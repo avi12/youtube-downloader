@@ -5,14 +5,15 @@ const PROGRESS_THROTTLE_INTERVAL_MS = 200;
 const lastProgressTimestamps = new Map<string, number>();
 const completedVideoIds = new Set<string>();
 
-export async function reportProgress({
-  videoId, progress, progressType, tabId
-}: {
+type ReportProgressParams = {
   videoId: string;
   progress: number;
   progressType: ProgressType;
   tabId: number;
-}) {
+};
+export async function reportProgress({
+  videoId, progress, progressType, tabId
+}: ReportProgressParams) {
   const isComplete = progress >= 1;
   if (!isComplete) {
     completedVideoIds.delete(videoId);

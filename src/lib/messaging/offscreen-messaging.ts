@@ -109,10 +109,11 @@ export type ProcessStreamEndData = OffscreenProtocolMap[typeof OffscreenMessageT
 
 const OFFSCREEN_PORT_NAME = "ytdl-offscreen";
 
-function dispatchOffscreenMessage({ handlers, message }: {
+type DispatchOffscreenMessageParams = {
   handlers: Partial<HandlerMap>;
   message: OffscreenMessage;
-}) {
+};
+function dispatchOffscreenMessage({ handlers, message }: DispatchOffscreenMessageParams) {
   switch (message.type) {
     case OffscreenMessageType.ProcessStreamChunk:
       handlers[OffscreenMessageType.ProcessStreamChunk]?.(message.data);
@@ -164,10 +165,11 @@ export function initOffscreenPortListener() {
   });
 }
 
-export function sendToOffscreen<T extends OffscreenMessageType>({ type, data }: {
+type SendToOffscreenParams<T extends OffscreenMessageType> = {
   type: T;
   data: OffscreenProtocolMap[T];
-}) {
+};
+export function sendToOffscreen<T extends OffscreenMessageType>({ type, data }: SendToOffscreenParams<T>) {
   swSidePort?.postMessage({
     type,
     data
