@@ -4,8 +4,9 @@ import {
   reportDownloadFailed,
   startBackgroundDownload
 } from "../download/background-downloader";
+import { tryDirectUrlDownload } from "../download/download-fallback-chain";
 import { downloadViaWatchPage, initIframeReadyListener } from "../download/iframe-downloader";
-import { clearIframeAutoRetry } from "../download/sabr-attempt";
+import { clearIframeAutoRetry, handleIframeFallback } from "../download/sabr-attempt";
 import { enqueueToPopupList, removeFromPopupList } from "../queue/popup-list";
 import { signalVideoComplete } from "../queue/sequential-queue";
 import { cancelDownloads, getTabIdsForVideo, trackVideoForTab } from "../queue/tab-tracker";
@@ -143,6 +144,63 @@ export function registerDownloadHandlers() {
 
     if (resolvedTabId >= 0) {
       await sendMessage(MessageType.StartKeepalive, { videoId: data.videoId }, resolvedTabId);
+    }
+  });
+
+  onMessage(MessageType.RequestDirectUrlDownload, async ({ data }) => {
+    const { videoId, tabId, request } = data;
+    const downloadId = await tryDirectUrlDownload({ request });
+    if (downloadId !== null) {
+      clearIframeAutoRetry(videoId);
+
+      if (tabId >= 0) {
+        await sendMessage(MessageType.UpdateDownloadProgress, {
+          videoId,
+          progress: 0,
+          progressType: ProgressType.Video,
+          isRemoved: true
+        }, tabId);
+      }
+
+      await removeFromPopupList(videoId);
+      signalVideoComplete(videoId);
+      return;
+    }
+
+    void sendMessage(MessageType.RequestWatchPageFallback, {
+      videoId,
+      tabId,
+      request
+    });
+  });
+
+  onMessage(MessageType.RequestWatchPageFallback, ({ data }) => {
+    const { videoId, tabId, request } = data;
+    void handleIframeFallback({
+      request,
+      tabId,
+      videoId,
+      reportDownloadFailed
+    });
+  });
+
+  onMessage(MessageType.WorkerDownloadComplete, async ({ data }) => {
+    const { videoId } = data;
+    clearIframeAutoRetry(videoId);
+  });
+
+  onMessage(MessageType.ReportWorkerDownloadFailed, ({ data }) => {
+    const { videoId, tabId } = data;
+    reportDownloadFailed({
+      videoId,
+      tabId
+    });
+  });
+
+  onMessage(MessageType.ForwardProgressUpdate, ({ data }) => {
+    const { tabId, ...progressData } = data;
+    if (tabId >= 0) {
+      void sendMessage(MessageType.UpdateDownloadProgress, progressData, tabId);
     }
   });
 }
