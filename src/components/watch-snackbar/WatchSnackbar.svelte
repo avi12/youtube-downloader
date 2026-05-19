@@ -13,15 +13,15 @@
   let isOpen = $state(false);
   let isOpened = $state(false);
   let isClosing = $state(false);
-  let filenameEl = $state<HTMLSpanElement | null>(null);
+  let elFilename = $state<HTMLSpanElement | null>(null);
   const canvasCtx = document.createElement("canvas").getContext("2d")!;
   const isFilenameTruncated = $derived.by(() => {
-    if (!filenameEl?.parentElement) {
+    if (!elFilename?.parentElement) {
       return false;
     }
 
-    canvasCtx.font = getComputedStyle(filenameEl).font;
-    return canvasCtx.measureText(filename).width > filenameEl.parentElement.clientWidth;
+    canvasCtx.font = getComputedStyle(elFilename).font;
+    return canvasCtx.measureText(filename).width > elFilename.parentElement.clientWidth;
   });
 
   let dismissTimer: ReturnType<typeof setTimeout> | null = null;
@@ -61,9 +61,9 @@
     }
   }));
 
-  function attachToSnackbar(node: HTMLElement): () => void {
-    document.querySelector("snackbar-container")?.append(node);
-    return () => node.remove();
+  function attachToSnackbar(elNode: HTMLElement): () => void {
+    document.querySelector("snackbar-container")?.append(elNode);
+    return () => elNode.remove();
   }
 </script>
 
@@ -83,7 +83,7 @@
             <span class="ytAttributedStringHost ytAttributedStringWhiteSpacePreWrap">Download complete</span>
           </div>
           <div class="snackbarViewModelSubtext">
-            <span bind:this={filenameEl} class="ytAttributedStringHost">{filename}</span>
+            <span bind:this={elFilename} class="ytAttributedStringHost">{filename}</span>
             {#if isFilenameTruncated}
               <tp-yt-paper-tooltip offset="8" position="top">
                 {filename}

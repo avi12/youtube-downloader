@@ -62,25 +62,25 @@ type WorkerMessage =
     error: string;
   };
 
-function handleWorkerMessage(msg: WorkerMessage) {
-  switch (msg.type) {
+function handleWorkerMessage(message: WorkerMessage) {
+  switch (message.type) {
     case "worker-chunk": {
       handleProcessStreamChunkRaw({
-        videoId: msg.videoId,
-        streamType: msg.streamType,
-        iChunk: msg.iChunk,
+        videoId: message.videoId,
+        streamType: message.streamType,
+        iChunk: message.iChunk,
         totalChunks: 0,
-        chunk: new Uint8Array(msg.buffer)
+        chunk: new Uint8Array(message.buffer)
       });
       break;
     }
 
     case "worker-stream-end": {
       handleProcessStreamChunk({
-        videoId: msg.videoId,
-        streamType: msg.streamType,
+        videoId: message.videoId,
+        streamType: message.streamType,
         iChunk: -1,
-        totalChunks: msg.totalChunks,
+        totalChunks: message.totalChunks,
         chunkBase64: "",
         tabId: 0
       });
@@ -88,7 +88,7 @@ function handleWorkerMessage(msg: WorkerMessage) {
     }
 
     case "worker-complete": {
-      const { videoId, isStreamed, streamEnd, videoBuffer, audioBuffer, extraAudioBuffers } = msg;
+      const { videoId, isStreamed, streamEnd, videoBuffer, audioBuffer, extraAudioBuffers } = message;
       if (!isStreamed) {
         if (videoBuffer) {
           handleProcessStreamChunkRaw({
@@ -128,47 +128,47 @@ function handleWorkerMessage(msg: WorkerMessage) {
     }
 
     case "worker-needs-direct-url": {
-      removeWorkerIframe(msg.videoId);
+      removeWorkerIframe(message.videoId);
       void sendMessage(MessageType.RequestDirectUrlDownload, {
-        videoId: msg.videoId,
-        tabId: msg.tabId,
-        request: msg.request
+        videoId: message.videoId,
+        tabId: message.tabId,
+        request: message.request
       });
       break;
     }
 
     case "worker-needs-fallback": {
-      removeWorkerIframe(msg.videoId);
+      removeWorkerIframe(message.videoId);
       void sendMessage(MessageType.RequestWatchPageFallback, {
-        videoId: msg.videoId,
-        tabId: msg.tabId,
-        request: msg.request
+        videoId: message.videoId,
+        tabId: message.tabId,
+        request: message.request
       });
       break;
     }
 
     case "worker-error": {
-      removeWorkerIframe(msg.videoId);
+      removeWorkerIframe(message.videoId);
       void sendMessage(MessageType.ReportWorkerDownloadFailed, {
-        videoId: msg.videoId,
-        tabId: msg.tabId
+        videoId: message.videoId,
+        tabId: message.tabId
       });
       break;
     }
   }
 }
 
-window.addEventListener("message", e => {
+addEventListener("message", e => {
   if (e.origin !== location.origin) {
     return;
   }
 
-  const msg: WorkerMessage = e.data;
-  if (!msg?.type?.startsWith("worker-")) {
+  const message: WorkerMessage = e.data;
+  if (!message?.type?.startsWith("worker-")) {
     return;
   }
 
-  handleWorkerMessage(msg);
+  handleWorkerMessage(message);
 });
 
 // Connect to the SW before FFmpeg init so the port is ready when
@@ -218,7 +218,7 @@ listenForOffscreenMessages({
   }
 });
 
-const wasmBinary = await fetch(
+const wasmBinary = await (await fetch(
   browser.runtime.getURL("/node_modules/@ffmpeg/core/dist/umd/ffmpeg-core.wasm")
-).then(res => res.arrayBuffer());
+)).arrayBuffer();
 await initMuxWorker(wasmBinary);

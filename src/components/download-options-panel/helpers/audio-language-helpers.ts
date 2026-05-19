@@ -2,8 +2,8 @@ import { preserveAutoVariant } from "./preserve-auto-variant";
 import { findOriginalAudioFormat, normalizeLanguageCode } from "@/lib/youtube/video-helpers";
 import type { AdaptiveFormatItem, CaptionTrack, LabeledOption } from "@/types";
 
-export function byLabel(optA: { label: string }, optB: { label: string }) {
-  return optA.label.localeCompare(optB.label);
+export function byLabel(optionA: { label: string }, optionB: { label: string }) {
+  return optionA.label.localeCompare(optionB.label);
 }
 
 export function buildUniqueAudioLanguages({

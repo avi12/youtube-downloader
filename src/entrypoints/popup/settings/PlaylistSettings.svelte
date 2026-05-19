@@ -30,11 +30,11 @@
   ] as const;
 
   function resolveDownloadMode(value: string): PlaylistDownloadMode {
-    return downloadModeOptions.find(opt => opt.value === value)?.value ?? PlaylistDownloadMode.Fast;
+    return downloadModeOptions.find(option => option.value === value)?.value ?? PlaylistDownloadMode.Fast;
   }
 
   function resolveOutputMode(value: string): PlaylistOutputMode {
-    return outputModeOptions.find(opt => opt.value === value)?.value ?? PlaylistOutputMode.Individual;
+    return outputModeOptions.find(option => option.value === value)?.value ?? PlaylistOutputMode.Individual;
   }
 </script>
 

@@ -66,13 +66,13 @@ export function capturePlayerCaptionBuses(player: MoviePlayerElement) {
 
   type AnyFunction = (...args: unknown[]) => unknown;
 
-  function captureApply(this: AnyFunction, thisArg: unknown, args: unknown[]) {
-    const isCaptionsCall = !internalCtx && Array.isArray(args) && args[0] === "captions";
+  function captureApply(this: AnyFunction, thisArg: unknown, callArgs: unknown[]) {
+    const isCaptionsCall = !internalCtx && Array.isArray(callArgs) && callArgs[0] === "captions";
     if (isCaptionsCall) {
       internalCtx = thisArg;
     }
 
-    return origApply.call(this, thisArg, args);
+    return origApply.call(this, thisArg, callArgs);
   }
 
   try {

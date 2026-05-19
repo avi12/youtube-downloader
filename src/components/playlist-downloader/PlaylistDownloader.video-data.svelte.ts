@@ -42,7 +42,7 @@ export function createVideoDataState() {
       return 0;
     }
 
-    let min = Infinity;
+    let minimum = Infinity;
     for (const data of videoDataMap.values()) {
       let videoMax = 0;
       for (const format of data.videoFormats) {
@@ -52,11 +52,11 @@ export function createVideoDataState() {
         }
       }
 
-      if (videoMax < min) {
-        min = videoMax;
+      if (videoMax < minimum) {
+        minimum = videoMax;
       }
     }
-    return min === Infinity ? 0 : min;
+    return minimum === Infinity ? 0 : minimum;
   });
 
   const selectedDownloadableVideos = $derived(

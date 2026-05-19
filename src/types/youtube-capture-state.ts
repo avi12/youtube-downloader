@@ -15,7 +15,7 @@ export interface YtdlCaptureState {
   }>;
   capturedMedia: Map<string, YtdlMediaCapture>;
   sourceBufferMimeTypes: WeakMap<SourceBuffer, string>;
-  addChunkToCapture: (args: {
+  addChunkToCapture: (chunkInfo: {
     capture: YtdlMediaCapture;
     mimeType: string;
     chunk: Uint8Array;

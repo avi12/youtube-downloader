@@ -7,7 +7,7 @@ const PROGRESSIVE_ITAG_PRIORITY = [22, 18] as const;
 function extractProgressiveUrl(playerResponse: PlayerResponse) {
   const formats = playerResponse.streamingData?.formats ?? [];
   for (const itag of PROGRESSIVE_ITAG_PRIORITY) {
-    const format = formats.find(fmt => fmt.itag === itag && fmt.url);
+    const format = formats.find(formatItem => formatItem.itag === itag && formatItem.url);
     if (format?.url) {
       return format.url;
     }

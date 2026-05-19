@@ -40,9 +40,9 @@
           tabButtonElements[next]?.focus();
         } else if (e.key === "ArrowLeft" || e.key === "ArrowUp") {
           e.preventDefault();
-          const prev = tabs[(iCurrent - 1 + tabs.length) % tabs.length].id;
-          onChange(prev);
-          tabButtonElements[prev]?.focus();
+          const previous = tabs[(iCurrent - 1 + tabs.length) % tabs.length].id;
+          onChange(previous);
+          tabButtonElements[previous]?.focus();
         }
       }}
       role="tab"

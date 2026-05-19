@@ -74,24 +74,24 @@ export function createTrackChoiceState(params: TrackChoiceParams) {
     }
 
     e.preventDefault();
-    const currentIndex = buttons.findIndex(btn => btn.mode === params.mode);
+    const iCurrent = buttons.findIndex(button => button.mode === params.mode);
     const delta = e.key === "ArrowRight" ? 1 : -1;
 
-    let nextIndex = currentIndex;
+    let iNext = iCurrent;
     for (let i = 0; i < buttons.length; i++) {
-      nextIndex = (nextIndex + delta + buttons.length) % buttons.length;
-      const isCandidateEnabled = !params.disabledModes.includes(buttons[nextIndex].mode);
+      iNext = (iNext + delta + buttons.length) % buttons.length;
+      const isCandidateEnabled = !params.disabledModes.includes(buttons[iNext].mode);
       if (isCandidateEnabled) {
         break;
       }
     }
 
-    const hasNoEnabledTarget = nextIndex === currentIndex;
+    const hasNoEnabledTarget = iNext === iCurrent;
     if (hasNoEnabledTarget) {
       return;
     }
 
-    const nextButton = buttons[nextIndex];
+    const nextButton = buttons[iNext];
     params.onmodechange(nextButton.mode);
     const elNext = elements.get(nextButton.id);
     queueMicrotask(() => elNext?.querySelector("button")?.focus());

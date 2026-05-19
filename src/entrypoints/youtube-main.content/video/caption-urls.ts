@@ -64,17 +64,17 @@ export async function fetchFreshCaptionUrls(videoId: string) {
         }
       }
     };
-    const resp = await fetch("/youtubei/v1/player?prettyPrint=false", {
+    const response = await fetch("/youtubei/v1/player?prettyPrint=false", {
       method: "POST",
       credentials: "include",
       headers,
       body: JSON.stringify(playerRequest)
     });
-    if (!resp.ok) {
+    if (!response.ok) {
       return new Map<string, string>();
     }
 
-    const data: PlayerResponse = await resp.json();
+    const data: PlayerResponse = await response.json();
     const freshTracks = data.captions?.playerCaptionsTracklistRenderer?.captionTracks ?? [];
     return new Map(freshTracks.map(track => [track.vssId, track.baseUrl]));
   } catch {

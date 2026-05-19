@@ -10,12 +10,12 @@ export const WIRE_TYPE_32_BIT = 5;
 export const WIRE_64_BIT_BYTE_SIZE = 8;
 export const WIRE_32_BIT_BYTE_SIZE = 4;
 
-export function readVarint(buffer: Uint8Array, off: number) {
+export function readVarint(buffer: Uint8Array, offset: number) {
   let value = 0;
   let shift = 0;
-  while (off < buffer.byteLength) {
-    const byte = buffer[off];
-    off++;
+  while (offset < buffer.byteLength) {
+    const byte = buffer[offset];
+    offset++;
     value |= (byte & VARINT_DATA_BITS_MASK) << shift;
 
     if ((byte & VARINT_CONTINUATION_BIT) === 0) {
@@ -26,6 +26,6 @@ export function readVarint(buffer: Uint8Array, off: number) {
   }
   return {
     value: value >>> 0,
-    offset: off
+    offset
   };
 }

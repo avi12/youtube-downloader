@@ -8,10 +8,10 @@ const CAPTION_FETCH_TIMEOUT_MS = 10_000;
 
 function formatWebVttTimestamp(seconds: number) {
   const hours = Math.floor(seconds / 3600);
-  const mins = Math.floor((seconds % 3600) / 60);
-  const secs = Math.floor(seconds % 60);
-  const millis = Math.round((seconds % 1) * 1000);
-  return `${String(hours).padStart(2, "0")}:${String(mins).padStart(2, "0")}:${String(secs).padStart(2, "0")}.${String(millis).padStart(3, "0")}`;
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const remainingSeconds = Math.floor(seconds % 60);
+  const milliseconds = Math.round((seconds % 1) * 1000);
+  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(remainingSeconds).padStart(2, "0")}.${String(milliseconds).padStart(3, "0")}`;
 }
 
 function cuesToWebVtt(cues: TextTrackCueList) {

@@ -87,11 +87,11 @@ export function createButtonManager(params: {
     });
   }
 
-  function setDownloadButtonElement(elBtn: Element) {
-    elDownloadButton = elBtn;
+  function setDownloadButtonElement(elButton: Element) {
+    elDownloadButton = elButton;
   }
-  function setChevronButtonElement(elBtn: Element) {
-    elChevronButton = elBtn;
+  function setChevronButtonElement(elButton: Element) {
+    elChevronButton = elButton;
   }
 
   return {

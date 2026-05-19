@@ -10,7 +10,7 @@ function matchAudioFormatToLanguage({ audioFormats, langCode }: {
 }
 
 function prependMatch(audioFormats: AdaptiveFormatItem[], match: AdaptiveFormatItem | undefined | null) {
-  return match ? [match, ...audioFormats.filter(fmt => fmt !== match)] : [];
+  return match ? [match, ...audioFormats.filter(format => format !== match)] : [];
 }
 
 export function selectPreferredAudioFormat({

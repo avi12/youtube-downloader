@@ -17,8 +17,8 @@ import {
 import { SvelteMap } from "svelte/reactivity";
 
 const SEGMENTED_IDS = new Set([
-  ...TOGGLE_BUTTON_GROUPS.speed.map(btn => btn.id),
-  ...TOGGLE_BUTTON_GROUPS.output.map(btn => btn.id)
+  ...TOGGLE_BUTTON_GROUPS.speed.map(button => button.id),
+  ...TOGGLE_BUTTON_GROUPS.output.map(button => button.id)
 ]);
 
 function resolveButtonType({ isActive }: {
@@ -42,7 +42,7 @@ export function createPlaylistToggleButtons(state: {
       return;
     }
 
-    const buttonDefinition = ALL_TOGGLE_BUTTONS.find(btn => btn.id === buttonId);
+    const buttonDefinition = ALL_TOGGLE_BUTTONS.find(button => button.id === buttonId);
     if (!buttonDefinition) {
       return;
     }
@@ -104,10 +104,10 @@ export function createPlaylistToggleButtons(state: {
       }
 
       e.preventDefault();
-      const currentIndex = group.findIndex(btn => btn.isActive(state));
+      const iCurrent = group.findIndex(button => button.isActive(state));
       const delta = e.key === "ArrowRight" ? 1 : -1;
-      const nextIndex = (currentIndex + delta + group.length) % group.length;
-      const nextButton = group[nextIndex];
+      const iNext = (iCurrent + delta + group.length) % group.length;
+      const nextButton = group[iNext];
       nextButton.onClick(state);
       const elNext = elements.get(nextButton.id);
       queueMicrotask(() => elNext?.querySelector<HTMLButtonElement>("button")?.focus());

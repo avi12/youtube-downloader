@@ -73,9 +73,9 @@
   });
 
   function handleTabChange(id: PopupPanel): void {
-    const prevIndex = PANEL_ORDER.indexOf(appState.activePanel);
-    const nextIndex = PANEL_ORDER.indexOf(id);
-    slideDirection = nextIndex > prevIndex ? 1 : -1;
+    const iPrevious = PANEL_ORDER.indexOf(appState.activePanel);
+    const iNext = PANEL_ORDER.indexOf(id);
+    slideDirection = iNext > iPrevious ? 1 : -1;
     appState.activePanel = id;
   }
 </script>

@@ -12,7 +12,7 @@ const SABR_FIRST_BYTE_TIMEOUT_MS = 5_000;
 const abortController = new AbortController();
 const { signal } = abortController;
 
-window.addEventListener("message", e => {
+addEventListener("message", e => {
   if (e.origin !== location.origin) {
     return;
   }
@@ -60,7 +60,7 @@ function sendChunkToParent(videoId: string, streamType: string, tabId: number) {
   return (chunk: Uint8Array, iChunk: number) => {
     const buffer = new ArrayBuffer(chunk.byteLength);
     new Uint8Array(buffer).set(chunk);
-    window.parent.postMessage(
+    parent.postMessage(
       {
         type: "worker-chunk",
         videoId,
@@ -77,7 +77,7 @@ function sendChunkToParent(videoId: string, streamType: string, tabId: number) {
 
 function sendStreamEndToParent(videoId: string, streamType: string) {
   return (totalChunks: number) => {
-    window.parent.postMessage(
+    parent.postMessage(
       {
         type: "worker-stream-end",
         videoId,
@@ -180,7 +180,7 @@ async function runDownload(request: DownloadRequest, tabId: number, enrichedMeta
     if (hasNoData) {
       const isDirectUrlEligible = isAudioOnly && !!resolvedAudioUrl;
       if (isDirectUrlEligible) {
-        window.parent.postMessage(
+        parent.postMessage(
           {
             type: "worker-needs-direct-url",
             videoId,
@@ -192,7 +192,7 @@ async function runDownload(request: DownloadRequest, tabId: number, enrichedMeta
         return;
       }
 
-      window.parent.postMessage(
+      parent.postMessage(
         {
           type: "worker-needs-fallback",
           videoId,
@@ -216,9 +216,9 @@ async function runDownload(request: DownloadRequest, tabId: number, enrichedMeta
     const isStreamed = result.streamedToOffscreen === true;
 
     function toArrayBuffer(data: Uint8Array): ArrayBuffer {
-      const buf = new ArrayBuffer(data.byteLength);
-      new Uint8Array(buf).set(data);
-      return buf;
+      const buffer = new ArrayBuffer(data.byteLength);
+      new Uint8Array(buffer).set(data);
+      return buffer;
     }
 
     const extraAudioBuffers: ArrayBuffer[] = additionalAudioTracks
@@ -248,14 +248,14 @@ async function runDownload(request: DownloadRequest, tabId: number, enrichedMeta
       }
     }
 
-    window.parent.postMessage(completeMsg, location.origin, transferList);
+    parent.postMessage(completeMsg, location.origin, transferList);
   } catch (error) {
     if (signal.aborted) {
       return;
     }
 
     console.error("[ytdl:worker] Download failed:", error);
-    window.parent.postMessage(
+    parent.postMessage(
       {
         type: "worker-error",
         videoId,

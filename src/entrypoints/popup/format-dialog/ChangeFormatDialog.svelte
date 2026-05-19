@@ -39,12 +39,12 @@
   async function handleConfirm(): Promise<void> {
     isSubmitting = true;
     try {
-      const done = await submitTranscode({
+      const isSuccess = await submitTranscode({
         entry,
         selectedTarget,
         isSubmitting: false
       });
-      if (done) {
+      if (isSuccess) {
         startClose();
       }
     } catch (error) {

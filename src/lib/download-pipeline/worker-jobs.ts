@@ -89,9 +89,9 @@ export function runMuxVideoAudio({ videoId, job }: {
             pendingJobReject = null;
             reject(new Error(message));
           },
-          [WorkerMessageType.Progress]({ videoId: vId, progress, progressType, tabId }) {
+          [WorkerMessageType.Progress]({ videoId: progressVideoId, progress, progressType, tabId }) {
             void sendMessage(MessageType.PipelineProgress, {
-              videoId: vId,
+              videoId: progressVideoId,
               progress,
               progressType,
               tabId
