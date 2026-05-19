@@ -192,22 +192,104 @@ On the watch page the player already runs BotGuard, so the extension captures th
 
 This is in `src/lib/youtube/signature-decryptor.ts` and is called by `src/entrypoints/youtube-main.content/video/stream-fetch.ts` when a format has a `signatureCipher` field instead of a plain URL.
 
-### Muxing
-
-Raw video and audio are separate `.webm`/`.mp4` streams. After all bytes are downloaded, the service worker ships them to an **offscreen document** (`offscreen/`) which runs [`@ffmpeg/ffmpeg`](https://npm.im/@ffmpeg/ffmpeg) (a WASM build). FFmpeg merges the streams, re-encodes if needed (e.g. WebM audio into an MP4 container), and emits the final file.
-
-The offscreen document exists because the service worker can't host the large WASM binary or stream data reliably - the offscreen document has a stable lifetime and full Blob/ArrayBuffer support.
-
 ### Download flow (single watch-page video)
 
-1. User clicks the injected button - `youtube-main.content/watch-button/watch-button.ts` calls `performDownload(...)`
-2. `youtube-main.content/video/download.ts` builds a `DownloadRequest` and posts it cross-world via `crossWorldMessenger`
-3. `youtube.content/index.ts` forwards it to the service worker as `StartBackgroundDownload`
-4. `background/handlers/download-handlers.ts` enqueues the video and calls `startBackgroundDownload(...)`
-5. `background/download/background-downloader.ts` tries SABR first (via [`googlevideo`](https://npm.im/googlevideo)), falls back to CDN if SABR fails
-6. Bytes stream to the offscreen document via `dispatchToOffscreen(...)`
-7. [`@ffmpeg/ffmpeg`](https://npm.im/@ffmpeg/ffmpeg) muxes the streams and produces the final file
-8. The pipeline posts a blob URL back to the service worker, which calls `browser.downloads.download(...)` to save it to disk
+#### 1. Button click - building the request
+
+User clicks the injected button (`youtube-main.content/watch-button/watch-button.ts` → `performDownload`).
+
+`youtube-main.content/video/download.ts` collects everything needed upfront - in parallel:
+- Resolves the best video and audio `itag` for the requested quality
+- Fetches fresh caption URLs and downloads the selected subtitle track as VTT
+- Reads the player's SABR config (streaming URL, ustreamer config)
+- Collects extra audio track `itag`s for any dubbed versions
+
+This produces a `DownloadRequest` struct with all format choices, captions, and metadata baked in.
+
+#### 2. Message routing
+
+The `DownloadRequest` crosses two message buses:
+
+1. MAIN world → isolated world via `crossWorldMessenger` (same-tab postMessage bridge)
+2. Isolated world → service worker via `sendMessage` (webext-core messaging)
+
+`background/handlers/download-handlers.ts` receives `StartBackgroundDownload`, persists the request, and hands it to `startBackgroundDownload(...)`.
+
+#### 3. Fetching the streams
+
+`background/download/background-downloader.ts` tries two methods in order:
+
+- **SABR** (`background/download/sabr-downloader.ts`) - speaks YouTube's internal streaming protocol via [`googlevideo`](https://npm.im/googlevideo). A `declarativeNetRequest` rule rewrites the `Origin` header on requests to `googlevideo.com` so YouTube accepts them. SABR fetches the primary video and audio streams, then extra dubbed tracks sequentially.
+- **CDN fallback** (`background/download/cdn-downloader.ts`) - plain HTTPS fetch with byte-range support, used when SABR is unavailable (older/live-clipped videos).
+
+Progress is reported in real time via `background/download/progress-fetch.ts`, which counts received bytes and throttles updates.
+
+#### 4. Processing dispatch
+
+Once all bytes are in memory, `dispatchToOffscreen(...)` ships them to the **offscreen document** (`offscreen/`). The offscreen document exists because the service worker can't host the large WASM binary or maintain stable ArrayBuffer transfers.
+
+The request is typed as `ProcessStreamData` which carries the raw bytes plus MIME types, filename, subtitle VTT blobs, and metadata.
+
+#### 5. Per-type processing
+
+**Video + Audio (`DownloadType.VideoAndAudio`)**
+
+`process-video-audio.ts` resolves the output container:
+1. Checks whether the video codec, audio codec, and any extra tracks are natively compatible with the user's chosen container (`src/lib/utils/container-specs.ts`)
+2. Falls back to MKV if the target container can't hold the codec combination
+3. Forces MKV if extra audio tracks are present (MP4/WebM only carry one audio stream)
+
+FFmpeg then runs via the mux worker (`entrypoints/mux-worker/`):
+- Maps video stream and all audio streams
+- Copies codecs where compatible; transcodes audio (e.g. AAC fallback for MP4) if needed
+- Maps subtitle streams with the appropriate codec (`webvtt` for WebM/MKV, `mov_text` for MP4)
+- If video is incompatible with the target container, routes through an intermediate MKV first
+
+**Video only (`DownloadType.Video`)**
+
+`process-single-media.ts` passes the raw video bytes directly to `triggerDownload` - no FFmpeg needed.
+
+**Audio only (`DownloadType.Audio`)**
+
+`process-single-media.ts` calls `applyAudioFfmpeg` which decides based on source vs target container:
+
+- Source is **WebM** (opus/vorbis), target is **WebM** → copy bytes directly, no transcode
+- Source is **M4A** (AAC), target is **M4A** → copy bytes directly, no transcode
+- Any other combination → `runTranscodeAudio` invokes FFmpeg with the right codec:
+
+  | Output format | FFmpeg codec  |
+  | ------------- | ------------- |
+  | mp3           | libmp3lame    |
+  | m4a           | aac           |
+  | flac          | flac          |
+  | ogg           | libvorbis     |
+  | opus          | libopus       |
+  | webm          | libopus       |
+
+For YouTube Music tracks, `applyAudioFfmpeg` instead runs the `EmbedMetadata` FFmpeg job which embeds ID3/cover art tags before saving.
+
+#### 6. Saving the file
+
+`triggerDownload(...)` in `src/lib/download-pipeline/index.ts`:
+1. Wraps the output bytes in a `Blob` with the correct MIME type
+2. Creates an object URL and calls `browser.downloads.download({ url, filename })`
+3. Revokes the object URL after the browser has claimed the download
+4. Stores a `RecentDownload` entry in extension storage for the popup history
+
+For playlist/batch downloads, the bytes are collected into a JSZip archive instead of saved immediately; the ZIP is flushed to disk when the last item completes.
+
+### Muxing internals
+
+The mux worker (`entrypoints/mux-worker/`) runs a WASM build of FFmpeg (`@ffmpeg/core`) inside a dedicated Web Worker. It receives jobs over a MessagePort and handles four job types:
+
+| Job type        | What it does                                         |
+| --------------- | ---------------------------------------------------- |
+| MuxVideoAudio   | Merge separate video + audio streams into one file   |
+| TranscodeAudio  | Transcode an audio-only stream to a different format |
+| EmbedMetadata   | Write ID3 tags and cover art into an audio file      |
+| TranscodeFile   | Re-wrap a single stream into a different container   |
+
+`mux-ffmpeg-args.ts` builds the FFmpeg argument list for each job type. Codec selection is driven by `CONTAINER_SPECS` (`src/lib/utils/container-specs.ts`) which maps each container (webm, mp4) to its allowed video/audio codecs and fallback codec for incompatible audio.
 
 ### Resilience
 
