@@ -5,11 +5,12 @@ import { getCompatibleFilename } from "@/lib/utils/filename";
 import { DownloadType, ProgressType } from "@/types";
 import type { DownloadRequest } from "@/types";
 
-export async function trySabr({ request, signal, tabId }: {
+type TrySabrParams = {
   request: DownloadRequest;
   signal: AbortSignal;
   tabId: number;
-}) {
+};
+export async function trySabr({ request, signal, tabId }: TrySabrParams) {
   try {
     return await attemptSabrDownload({
       request,
@@ -31,14 +32,15 @@ export async function trySabr({ request, signal, tabId }: {
   }
 }
 
-export async function tryCdn({ request, signal, videoId, tabId, partialVideoData, partialAudioData }: {
+type TryCdnParams = {
   request: DownloadRequest;
   signal: AbortSignal;
   videoId: string;
   tabId: number;
   partialVideoData?: Uint8Array;
   partialAudioData?: Uint8Array;
-}) {
+};
+export async function tryCdn({ request, signal, videoId, tabId, partialVideoData, partialAudioData }: TryCdnParams) {
   try {
     return await downloadViaCdn({
       request,

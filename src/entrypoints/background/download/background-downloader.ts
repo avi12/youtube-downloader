@@ -23,10 +23,11 @@ registerOnlineRetryListener(startBackgroundDownload);
 
 export function cancelBackgroundDownload(_videoId: string) {}
 
-export async function startBackgroundDownload({ request, tabId }: {
+type StartBackgroundDownloadParams = {
   request: DownloadRequest;
   tabId: number;
-}) {
+};
+export async function startBackgroundDownload({ request, tabId }: StartBackgroundDownloadParams) {
   const { videoId, metadata } = request;
   if (!request.isIframeFallback) {
     clearIframeAutoRetry(videoId);

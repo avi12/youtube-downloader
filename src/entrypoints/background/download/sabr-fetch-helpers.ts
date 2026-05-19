@@ -5,24 +5,28 @@ import type { AdaptiveFormatItem, SabrConfig } from "@/types";
 
 function noop() {}
 
-function makeFetch({ signal, onBytesReceived }: {
+type MakeFetchParams = {
   signal: AbortSignal;
   onBytesReceived?: (bytes: number) => void;
-}) {
+};
+function makeFetch({ signal, onBytesReceived }: MakeFetchParams) {
   return createProgressFetch({
     signal,
     onBytesReceived: onBytesReceived ?? noop
   });
 }
 
-export async function downloadAudioOnlyViaSabr({ config, audioFormat, poToken, signal, onBytesReceived, onChunk }: {
+type DownloadAudioOnlyViaSabrParams = {
   config: SabrConfig;
   audioFormat: AdaptiveFormatItem;
   poToken: string;
   signal: AbortSignal;
   onBytesReceived?: (bytes: number) => void;
   onChunk?: (chunk: Uint8Array) => void;
-}) {
+};
+export async function downloadAudioOnlyViaSabr(
+  { config, audioFormat, poToken, signal, onBytesReceived, onChunk }: DownloadAudioOnlyViaSabrParams
+) {
   return fetchAudioViaSabrStream({
     sabrConfig: config,
     audioFormat,
@@ -36,9 +40,7 @@ export async function downloadAudioOnlyViaSabr({ config, audioFormat, poToken, s
   });
 }
 
-export async function downloadVideoAudioViaSabr({
-  config, videoFormat, audioFormat, poToken, signal, onVideoBytesReceived, onAudioBytesReceived
-}: {
+type DownloadVideoAudioViaSabrParams = {
   config: SabrConfig;
   videoFormat: AdaptiveFormatItem;
   audioFormat: AdaptiveFormatItem;
@@ -46,7 +48,10 @@ export async function downloadVideoAudioViaSabr({
   signal: AbortSignal;
   onVideoBytesReceived?: (bytes: number) => void;
   onAudioBytesReceived?: (bytes: number) => void;
-}) {
+};
+export async function downloadVideoAudioViaSabr({
+  config, videoFormat, audioFormat, poToken, signal, onVideoBytesReceived, onAudioBytesReceived
+}: DownloadVideoAudioViaSabrParams) {
   return Promise.all([
     fetchVideoViaSabrStream({
       sabrConfig: config,
@@ -71,13 +76,19 @@ export async function downloadVideoAudioViaSabr({
   ]);
 }
 
-export async function downloadExtraAudioTracksViaSabr({ config, formats, poToken, signal, onTrackBytesReceived }: {
+type DownloadExtraAudioTracksViaSabrParams = {
   config: SabrConfig;
   formats: AdaptiveFormatItem[];
   poToken: string;
   signal: AbortSignal;
-  onTrackBytesReceived?: (trackIndex: number, bytes: number) => void;
-}) {
+  onTrackBytesReceived?: (params: {
+    trackIndex: number;
+    bytes: number;
+  }) => void;
+};
+export async function downloadExtraAudioTracksViaSabr(
+  { config, formats, poToken, signal, onTrackBytesReceived }: DownloadExtraAudioTracksViaSabrParams
+) {
   const results = [];
 
   for (const [i, format] of formats.entries()) {
@@ -87,7 +98,10 @@ export async function downloadExtraAudioTracksViaSabr({ config, formats, poToken
         audioFormat: format,
         fetchFunction: makeFetch({
           signal,
-          onBytesReceived: bytes => onTrackBytesReceived?.(i, bytes)
+          onBytesReceived: bytes => onTrackBytesReceived?.({
+            trackIndex: i,
+            bytes
+          })
         }),
         poToken,
         signal

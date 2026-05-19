@@ -37,12 +37,13 @@ export function getTabIdsForVideo(videoId: string) {
   return videoIdToTabIds[videoId] ?? [];
 }
 
-export function resolveTabId({ sender, videoId }: {
+type ResolveTabIdParams = {
   sender: {
     tab?: { id?: number };
   };
   videoId: string;
-}) {
+};
+export function resolveTabId({ sender, videoId }: ResolveTabIdParams) {
   return sender.tab?.id ?? getTabIdsForVideo(videoId)[0];
 }
 

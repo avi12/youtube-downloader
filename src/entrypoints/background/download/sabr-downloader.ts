@@ -11,12 +11,13 @@ import type { DownloadRequest } from "@/types";
 
 export { parseContentLength, buildEffectiveSabrConfig } from "./sabr-utils";
 
-export async function downloadViaSabr({ request, signal, tabId, onProgress }: {
+type DownloadViaSabrParams = {
   request: DownloadRequest;
   signal: AbortSignal;
   tabId: number;
   onProgress?: () => void;
-}) {
+};
+export async function downloadViaSabr({ request, signal, tabId, onProgress }: DownloadViaSabrParams) {
   const { videoId, type, sabrConfig, poToken, sabrUrl, videoFormat, audioFormat, additionalAudioFormats } = request;
   const isAudioOnly = type === DownloadType.Audio;
 

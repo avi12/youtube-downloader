@@ -20,11 +20,12 @@ export function clearCancelledVideo(videoId: string) {
   cancelledVideoIds.delete(videoId);
 }
 
-export async function updateStatusProgress({ mutate, progressUpdate, tabId }: {
+type UpdateStatusProgressParams = {
   mutate: (current: StatusProgressMap) => void;
   progressUpdate: ProgressUpdate;
   tabId: number;
-}) {
+};
+export async function updateStatusProgress({ mutate, progressUpdate, tabId }: UpdateStatusProgressParams) {
   await Promise.allSettled([
     sendMessage(MessageType.UpdateDownloadProgress, progressUpdate, tabId),
     mutateStorageItem({

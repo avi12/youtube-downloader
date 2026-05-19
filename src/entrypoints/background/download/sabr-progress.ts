@@ -5,9 +5,7 @@ import type { AdaptiveFormatItem } from "@/types";
 
 const DOWNLOAD_PROGRESS_CAP = 1;
 
-export function createProgressAccumulator({
-  videoId, tabId, captionCount, isAudioOnly, videoFormat, audioFormat, additionalFormats, onProgress
-}: {
+type CreateProgressAccumulatorParams = {
   videoId: string;
   tabId: number;
   captionCount: number;
@@ -16,7 +14,10 @@ export function createProgressAccumulator({
   audioFormat: AdaptiveFormatItem;
   additionalFormats: AdaptiveFormatItem[];
   onProgress?: () => void;
-}) {
+};
+export function createProgressAccumulator({
+  videoId, tabId, captionCount, isAudioOnly, videoFormat, audioFormat, additionalFormats, onProgress
+}: CreateProgressAccumulatorParams) {
   const videoPartBytes = isAudioOnly ? 0 : parseContentLength(videoFormat);
   const audioPartBytes = parseContentLength(audioFormat);
   const extraExpectedBytesArray = additionalFormats.map(format => {
@@ -72,7 +73,10 @@ export function createProgressAccumulator({
     onAudioBytes(bytes: number) {
       audioReceivedBytes += bytes; sendUpdate();
     },
-    onExtraTrackBytes(trackIndex: number, bytes: number) {
+    onExtraTrackBytes({ trackIndex, bytes }: {
+      trackIndex: number;
+      bytes: number;
+    }) {
       extraReceivedBytesArray[trackIndex] += bytes;
       sendUpdate();
     }

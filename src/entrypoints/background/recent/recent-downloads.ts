@@ -10,10 +10,11 @@ import { optionsItem } from "@/lib/storage/storage";
 import { getFileExtension } from "@/lib/utils/containers";
 import { DownloadType } from "@/types";
 
-export async function persistRecentDownload({ downloadId, data }: {
+type DownloadIdDataParams = {
   downloadId: number;
   data: PipelineDownloadMessage;
-}) {
+};
+export async function persistRecentDownload({ downloadId, data }: DownloadIdDataParams) {
   const context = data.recentContext;
   if (!context) {
     return;
@@ -64,10 +65,11 @@ async function isTabIdle(tabId: number) {
   }
 }
 
-async function notifyOnIdleIfNeeded({ data, tabIds }: {
+type NotifyOnIdleIfNeededParams = {
   data: PipelineDownloadMessage;
   tabIds: number[];
-}) {
+};
+async function notifyOnIdleIfNeeded({ data, tabIds }: NotifyOnIdleIfNeededParams) {
   const [tabId] = tabIds;
   const isIdle = tabId === undefined || await isTabIdle(tabId);
   if (!isIdle) {
@@ -82,10 +84,7 @@ async function notifyOnIdleIfNeeded({ data, tabIds }: {
   });
 }
 
-export function persistOnDownloadComplete({ downloadId, data }: {
-  downloadId: number;
-  data: PipelineDownloadMessage;
-}) {
+export function persistOnDownloadComplete({ downloadId, data }: DownloadIdDataParams) {
   return new Promise<void>(resolve => {
     async function handleChanged(delta: Browser.downloads.DownloadDelta) {
       const isUnrelatedOrIncomplete = delta.id !== downloadId || !delta.state?.current;
@@ -141,10 +140,11 @@ export function persistOnDownloadComplete({ downloadId, data }: {
   });
 }
 
-function scheduleRevokeBlobUrl({ downloadId, blobUrl }: {
+type ScheduleRevokeBlobUrlParams = {
   downloadId: number;
   blobUrl: string;
-}) {
+};
+function scheduleRevokeBlobUrl({ downloadId, blobUrl }: ScheduleRevokeBlobUrlParams) {
   function handleChanged(delta: Browser.downloads.DownloadDelta) {
     const isUnrelatedOrIncomplete = delta.id !== downloadId || !delta.state?.current;
     if (isUnrelatedOrIncomplete) {

@@ -3,11 +3,12 @@ import { awaitBytesTransferred, awaitVideoComplete } from "../queue/sequential-q
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import type { DownloadRequest } from "@/types";
 
-export async function dispatchSequentially({ items, tabId, signal }: {
+type DispatchParams = {
   items: DownloadRequest[];
   tabId: number;
   signal: AbortSignal;
-}) {
+};
+export async function dispatchSequentially({ items, tabId, signal }: DispatchParams) {
   for (const item of items) {
     if (signal.aborted) {
       break;
@@ -32,11 +33,7 @@ export async function dispatchSequentially({ items, tabId, signal }: {
   }
 }
 
-export async function dispatchParallel({ items, tabId, signal }: {
-  items: DownloadRequest[];
-  tabId: number;
-  signal: AbortSignal;
-}) {
+export async function dispatchParallel({ items, tabId, signal }: DispatchParams) {
   const completionPromises: Promise<void>[] = [];
 
   for (const item of items) {

@@ -1,7 +1,7 @@
 import { musicListItem, videoDetailsItem, videoOnlyListItem, videoQueueItem } from "@/lib/storage/storage";
 import { DownloadType } from "@/types";
 
-export async function enqueueToPopupList({ videoId, type, filenameOutput, quality, tabId, playlistId, playlistTitle }: {
+type EnqueueToPopupListParams = {
   videoId: string;
   type: DownloadType;
   filenameOutput: string;
@@ -9,7 +9,10 @@ export async function enqueueToPopupList({ videoId, type, filenameOutput, qualit
   tabId?: number;
   playlistId?: string;
   playlistTitle?: string;
-}) {
+};
+export async function enqueueToPopupList(
+  { videoId, type, filenameOutput, quality, tabId, playlistId, playlistTitle }: EnqueueToPopupListParams
+) {
   const details = await videoDetailsItem.getValue();
   details[videoId] = {
     ...details[videoId],

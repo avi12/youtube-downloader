@@ -1,9 +1,10 @@
 import type { AdaptiveFormatItem, SabrConfig } from "@/types";
 
-export function buildEffectiveSabrConfig({ sabrConfig, sabrUrl }: {
+type BuildEffectiveSabrConfigParams = {
   sabrConfig: SabrConfig;
   sabrUrl: string | undefined;
-}) {
+};
+export function buildEffectiveSabrConfig({ sabrConfig, sabrUrl }: BuildEffectiveSabrConfigParams) {
   const isCustomSabrUrl = sabrUrl && sabrUrl !== sabrConfig.serverAbrStreamingUrl;
   if (isCustomSabrUrl) {
     return {
@@ -23,10 +24,11 @@ export function parseContentLength(format: AdaptiveFormatItem | null) {
   return parseInt(format.contentLength, 10);
 }
 
-export function estimateFormatBytes({ format, referenceFormat }: {
+type EstimateFormatBytesParams = {
   format: AdaptiveFormatItem;
   referenceFormat: AdaptiveFormatItem;
-}) {
+};
+export function estimateFormatBytes({ format, referenceFormat }: EstimateFormatBytesParams) {
   const referenceBytes = parseContentLength(referenceFormat);
   if (!referenceBytes) {
     return 0;

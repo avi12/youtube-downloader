@@ -38,10 +38,11 @@ export function dropPendingRetry(videoId: string) {
   void clearInterruptedDownload(videoId);
 }
 
-export async function queueNetworkRetry({ request, tabId }: {
+type QueueNetworkRetryParams = {
   request: DownloadRequest;
   tabId: number;
-}) {
+};
+export async function queueNetworkRetry({ request, tabId }: QueueNetworkRetryParams) {
   pendingNetworkRetries.set(request.videoId, {
     request,
     tabId

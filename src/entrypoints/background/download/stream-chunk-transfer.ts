@@ -3,13 +3,16 @@ import { TRANSFER_CHUNK_SIZE, uint8ToBase64 } from "@/lib/utils/binary";
 import { AUDIO_EXTRA_STREAM_PREFIX, StreamType } from "@/types";
 import type { CaptionTrack } from "@/types";
 
-export function sendNetworkChunkToOffscreen({ videoId, streamType, iChunk, chunk, tabId }: {
+type SendNetworkChunkToOffscreenParams = {
   videoId: string;
   streamType: string;
   iChunk: number;
   chunk: Uint8Array;
   tabId: number;
-}) {
+};
+export function sendNetworkChunkToOffscreen(
+  { videoId, streamType, iChunk, chunk, tabId }: SendNetworkChunkToOffscreenParams
+) {
   sendToOffscreen({
     type: OffscreenMessageType.ProcessStreamChunk,
     data: {
@@ -23,12 +26,13 @@ export function sendNetworkChunkToOffscreen({ videoId, streamType, iChunk, chunk
   });
 }
 
-export function sendStreamFinishedMarker({ videoId, streamType, totalChunks, tabId }: {
+type SendStreamFinishedMarkerParams = {
   videoId: string;
   streamType: string;
   totalChunks: number;
   tabId: number;
-}) {
+};
+export function sendStreamFinishedMarker({ videoId, streamType, totalChunks, tabId }: SendStreamFinishedMarkerParams) {
   sendToOffscreen({
     type: OffscreenMessageType.ProcessStreamChunk,
     data: {
@@ -44,12 +48,15 @@ export function sendStreamFinishedMarker({ videoId, streamType, totalChunks, tab
 
 const YIELD_EVERY_N_CHUNKS = 32;
 
-export async function sendStreamChunksToOffscreen({ videoId, streamType, data, tabId }: {
+type SendStreamChunksToOffscreenParams = {
   videoId: string;
   streamType: string;
   data: Uint8Array;
   tabId: number;
-}) {
+};
+export async function sendStreamChunksToOffscreen(
+  { videoId, streamType, data, tabId }: SendStreamChunksToOffscreenParams
+) {
   const totalChunks = Math.ceil(data.byteLength / TRANSFER_CHUNK_SIZE);
 
   for (let iChunk = 0; iChunk < totalChunks; iChunk++) {
@@ -73,13 +80,16 @@ export async function sendStreamChunksToOffscreen({ videoId, streamType, data, t
   }
 }
 
-export function buildTransferJobs({ videoData, audioData, additionalAudioTracks, videoId, tabId }: {
+type BuildTransferJobsParams = {
   videoData: Uint8Array | null;
   audioData: Uint8Array | null;
   additionalAudioTracks: { data: Uint8Array | null }[];
   videoId: string;
   tabId: number;
-}) {
+};
+export function buildTransferJobs(
+  { videoData, audioData, additionalAudioTracks, videoId, tabId }: BuildTransferJobsParams
+) {
   const jobs: Promise<void>[] = [];
   if (videoData) {
     jobs.push(
@@ -119,10 +129,11 @@ export function buildTransferJobs({ videoData, audioData, additionalAudioTracks,
   return jobs;
 }
 
-export function buildSubtitleTracks({ captionTracks, captionVttData }: {
+type BuildSubtitleTracksParams = {
   captionTracks: CaptionTrack[] | undefined;
   captionVttData: (string | null)[];
-}) {
+};
+export function buildSubtitleTracks({ captionTracks, captionVttData }: BuildSubtitleTracksParams) {
   const subtitleTracks: {
     dataBase64: string;
     label: string;

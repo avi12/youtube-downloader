@@ -10,13 +10,16 @@ import type { DownloadRequest, VideoMetadata } from "@/types";
 const FALLBACK_VIDEO_MIME_TYPE = "video/mp4";
 const FALLBACK_AUDIO_MIME_TYPE = "audio/mp4";
 
-export async function dispatchToOffscreen({ request, result, enrichedMetadata, tabId, skipChunkTransfer }: {
+type DispatchToOffscreenParams = {
   request: DownloadRequest;
   result: DownloadResult;
   enrichedMetadata: VideoMetadata | null | undefined;
   tabId: number;
   skipChunkTransfer?: boolean;
-}) {
+};
+export async function dispatchToOffscreen(
+  { request, result, enrichedMetadata, tabId, skipChunkTransfer }: DispatchToOffscreenParams
+) {
   void sendMessage(MessageType.UpdateDownloadProgress, {
     videoId: request.videoId,
     progress: 0,

@@ -1,10 +1,7 @@
 import { sendProgressUpdate } from "./progress-fetch";
 import { ProgressType } from "@/types";
 
-export function createCdnProgressTracker({
-  videoId, tabId, totalStages, captionCount, hasVideo, hasAudio, extraCount,
-  videoExpectedBytes, audioExpectedBytes, extraExpectedBytesArray, initialVideoBytes, initialAudioBytes
-}: {
+type CreateCdnProgressTrackerParams = {
   videoId: string;
   tabId: number;
   totalStages: number;
@@ -17,7 +14,11 @@ export function createCdnProgressTracker({
   extraExpectedBytesArray: number[];
   initialVideoBytes: number;
   initialAudioBytes: number;
-}) {
+};
+export function createCdnProgressTracker({
+  videoId, tabId, totalStages, captionCount, hasVideo, hasAudio, extraCount,
+  videoExpectedBytes, audioExpectedBytes, extraExpectedBytesArray, initialVideoBytes, initialAudioBytes
+}: CreateCdnProgressTrackerParams) {
   let videoReceivedBytes = initialVideoBytes;
   let audioReceivedBytes = initialAudioBytes;
   let videoTotalBytes = videoExpectedBytes;
@@ -70,7 +71,10 @@ export function createCdnProgressTracker({
       audioTotalBytes = Math.max(audioTotalBytes, audioReceivedBytes);
       reportProgress();
     },
-    onExtraBytes(i: number, bytes: number) {
+    onExtraBytes({ i, bytes }: {
+      i: number;
+      bytes: number;
+    }) {
       extraReceivedBytesArray[i] += bytes;
       reportProgress();
     }

@@ -7,13 +7,14 @@ import { stripMimeParams } from "@/lib/utils/containers";
 import { DownloadType, StreamType } from "@/types";
 import type { DownloadRequest } from "@/types";
 
-function fetchStream({ url, signal, onBytes, initialData, onChunk }: {
+type FetchStreamParams = {
   url: string | null | undefined;
   signal: AbortSignal;
   onBytes: (n: number) => void;
   initialData?: Uint8Array;
   onChunk?: (chunk: Uint8Array) => void;
-}) {
+};
+function fetchStream({ url, signal, onBytes, initialData, onChunk }: FetchStreamParams) {
   if (!url) {
     return Promise.resolve(null);
   }
@@ -27,10 +28,7 @@ function fetchStream({ url, signal, onBytes, initialData, onChunk }: {
   });
 }
 
-export async function downloadViaCdn({
-  request, signal, videoId, tabId, partialVideoData, partialAudioData,
-  onVideoChunk, onAudioChunk, onVideoStreamEnd, onAudioStreamEnd
-}: {
+type DownloadViaCdnParams = {
   request: DownloadRequest;
   signal: AbortSignal;
   videoId: string;
@@ -41,7 +39,11 @@ export async function downloadViaCdn({
   onAudioChunk?: (chunk: Uint8Array, iChunk: number) => void;
   onVideoStreamEnd?: (totalChunks: number) => void;
   onAudioStreamEnd?: (totalChunks: number) => void;
-}) {
+};
+export async function downloadViaCdn({
+  request, signal, videoId, tabId, partialVideoData, partialAudioData,
+  onVideoChunk, onAudioChunk, onVideoStreamEnd, onAudioStreamEnd
+}: DownloadViaCdnParams) {
   const {
     type, videoFormat, audioFormat,
     resolvedVideoUrl, resolvedAudioUrl, resolvedExtraAudioUrls, additionalAudioFormats
@@ -118,7 +120,10 @@ export async function downloadViaCdn({
     ...extraUrls.map((url, i) => fetchStream({
       url,
       signal,
-      onBytes: bytes => tracker.onExtraBytes(i, bytes)
+      onBytes: bytes => tracker.onExtraBytes({
+        i,
+        bytes
+      })
     }))
   ]);
 

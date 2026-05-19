@@ -1,4 +1,4 @@
-import { StreamStallError, readStreamToBuffer } from "@/lib/utils/stream";
+import { readStreamToBuffer, StreamStallError } from "@/lib/utils/stream";
 
 const MAX_CDN_RETRY_ATTEMPTS = 10;
 const RETRY_BASE_DELAY_MS = 1_000;
@@ -7,24 +7,23 @@ const FETCH_HEADER_TIMEOUT_MS = 30_000;
 const HTTP_STATUS_RANGE_NOT_SATISFIABLE = 416;
 const HTTP_STATUS_OK = 200;
 const HTTP_STATUS_TOO_MANY_REQUESTS = 429;
-const RANGE_HEADER = "Range";
-const CONTENT_LENGTH_HEADER = "Content-Length";
-
-function mergeUint8Arrays({ first, second }: {
+type MergeUint8ArraysParams = {
   first: Uint8Array;
   second: Uint8Array;
-}) {
+};
+function mergeUint8Arrays({ first, second }: MergeUint8ArraysParams) {
   const merged = new Uint8Array(first.byteLength + second.byteLength);
   merged.set(first, 0);
   merged.set(second, first.byteLength);
   return merged;
 }
 
-async function attemptFetch({ url, signal, byteOffset }: {
+type AttemptFetchParams = {
   url: string;
   signal: AbortSignal;
   byteOffset: number;
-}) {
+};
+async function attemptFetch({ url, signal, byteOffset }: AttemptFetchParams) {
   // Timeout only guards against the server accepting the connection but not sending headers.
   // Once headers arrive we clear the timer so it never fires during the (potentially long) body read.
   // The user-cancel listener is kept so cancellation still aborts the body stream immediately.
@@ -41,7 +40,7 @@ async function attemptFetch({ url, signal, byteOffset }: {
       credentials: "include",
       ...byteOffset > 0 && {
         headers: {
-          [RANGE_HEADER]: `bytes=${byteOffset}-`
+          Range: `bytes=${byteOffset}-`
         }
       }
     });
@@ -54,13 +53,16 @@ async function attemptFetch({ url, signal, byteOffset }: {
   }
 }
 
-export async function fetchWithProgress({ url, signal, onBytesReceived, initialData, onChunk }: {
+type FetchWithProgressParams = {
   url: string;
   signal: AbortSignal;
   onBytesReceived: (bytes: number) => void;
   initialData?: Uint8Array;
   onChunk?: (chunk: Uint8Array) => void;
-}) {
+};
+export async function fetchWithProgress(
+  { url, signal, onBytesReceived, initialData, onChunk }: FetchWithProgressParams
+) {
   let partialData: Uint8Array | null = initialData ?? null;
   let byteOffset = initialData?.byteLength ?? 0;
   if (byteOffset > 0) {
@@ -147,7 +149,7 @@ export async function fetchWithProgress({ url, signal, onBytesReceived, initialD
         byteOffset += buffer.byteLength;
         newData = new Uint8Array(buffer);
       } else {
-        const contentLength = parseInt(response.headers.get(CONTENT_LENGTH_HEADER) ?? "0", 10);
+        const contentLength = parseInt(response.headers.get("Content-Length") ?? "0", 10);
         newData = await readStreamToBuffer({
           reader: response.body.getReader(),
           expectedBytes: contentLength,

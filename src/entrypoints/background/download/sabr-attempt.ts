@@ -13,11 +13,12 @@ export function clearIframeAutoRetry(videoId: string) {
   iframeAutoRetries.delete(videoId);
 }
 
-export async function attemptSabrDownload({ request, signal, tabId }: {
+type AttemptSabrDownloadParams = {
   request: DownloadRequest;
   signal: AbortSignal;
   tabId: number;
-}) {
+};
+export async function attemptSabrDownload({ request, signal, tabId }: AttemptSabrDownloadParams) {
   const sabrAbortController = new AbortController();
   let sabrStallTimeoutId = setTimeout(() => sabrAbortController.abort(), SABR_FIRST_BYTE_TIMEOUT_MS);
   signal.addEventListener("abort", () => sabrAbortController.abort(), { once: true });
@@ -39,14 +40,15 @@ export async function attemptSabrDownload({ request, signal, tabId }: {
   }
 }
 
-export async function handleIframeFallback({
-  request, tabId, videoId, reportDownloadFailed
-}: {
+type HandleIframeFallbackParams = {
   request: DownloadRequest;
   tabId: number;
   videoId: string;
   reportDownloadFailed: (params: VideoTabParams) => void;
-}) {
+};
+export async function handleIframeFallback({
+  request, tabId, videoId, reportDownloadFailed
+}: HandleIframeFallbackParams) {
   if (request.isIframeFallback) {
     const retries = iframeAutoRetries.get(videoId) ?? 0;
     const hasExhaustedRetries = retries >= MAX_IFRAME_AUTO_RETRIES;

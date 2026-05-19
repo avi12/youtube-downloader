@@ -63,10 +63,11 @@ export async function prepareIframe(data: DownloadRequest) {
   });
 }
 
-export async function downloadViaWatchPage({ data, tabId }: {
+type DownloadViaWatchPageParams = {
   data: DownloadRequest;
   tabId: number;
-}) {
+};
+export async function downloadViaWatchPage({ data, tabId }: DownloadViaWatchPageParams) {
   await enqueueToPopupList({
     videoId: data.videoId,
     type: data.type,
