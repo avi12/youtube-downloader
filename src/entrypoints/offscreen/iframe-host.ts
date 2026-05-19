@@ -1,6 +1,8 @@
 import { CHILD_LIST_SUBTREE } from "@/lib/utils/dom";
+import { browser } from "#imports";
 
 const downloadIframes = new Map<string, HTMLIFrameElement>();
+const workerIframes = new Map<string, HTMLIFrameElement>();
 
 function silenceIframeAudio(elIframe: HTMLIFrameElement) {
   const { contentDocument } = elIframe;
@@ -75,4 +77,30 @@ export function removeDownloadIframe(videoId: string) {
 
   elIframe.remove();
   downloadIframes.delete(videoId);
+}
+
+export function createWorkerIframe(videoId: string): HTMLIFrameElement {
+  removeWorkerIframe(videoId);
+
+  const elIframe = document.createElement("iframe");
+  elIframe.src = browser.runtime.getURL("/download-worker.html");
+  elIframe.style.cssText = "display:none";
+  document.body.append(elIframe);
+  workerIframes.set(videoId, elIframe);
+  return elIframe;
+}
+
+export function sendToWorkerIframe(videoId: string, message: unknown) {
+  const elIframe = workerIframes.get(videoId);
+  elIframe?.contentWindow?.postMessage(message, location.origin);
+}
+
+export function removeWorkerIframe(videoId: string) {
+  const elIframe = workerIframes.get(videoId);
+  if (!elIframe) {
+    return;
+  }
+
+  elIframe.remove();
+  workerIframes.delete(videoId);
 }
