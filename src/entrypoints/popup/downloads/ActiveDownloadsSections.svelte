@@ -274,32 +274,32 @@
     justify-content: space-between;
     align-items: center;
     margin-bottom: 8px;
-  }
 
-  .section-title {
-    color: var(--fg);
-    font-weight: 500;
-    font-size: 0.8125rem;
-  }
-
-  .cancel-all-button {
-    padding: 4px 12px;
-    border: none;
-    border-radius: 16px;
-    background: transparent;
-    color: var(--danger);
-    font-family: inherit;
-    font-size: 0.75rem;
-    cursor: pointer;
-    transition: background-color 200ms;
-
-    &:hover {
-      background: var(--danger-hover);
+    .section-title {
+      color: var(--fg);
+      font-weight: 500;
+      font-size: 0.8125rem;
     }
 
-    &:focus-visible {
-      outline: 2px solid var(--danger);
-      outline-offset: 2px;
+    .cancel-all-button {
+      padding: 4px 12px;
+      border: none;
+      border-radius: 16px;
+      background: transparent;
+      color: var(--danger);
+      font-family: inherit;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: background-color 200ms;
+
+      &:hover {
+        background: var(--danger-hover);
+      }
+
+      &:focus-visible {
+        outline: 2px solid var(--danger);
+        outline-offset: 2px;
+      }
     }
   }
 
@@ -316,15 +316,15 @@
     padding: 8px;
     border: 1px solid var(--border);
     border-radius: 12px;
-  }
 
-  .zip-group-label {
-    overflow: hidden;
-    padding: 0 4px;
-    color: var(--fg-subtle);
-    font-size: 0.6875rem;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    .zip-group-label {
+      overflow: hidden;
+      padding: 0 4px;
+      color: var(--fg-subtle);
+      font-size: 0.6875rem;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
   }
 
   .download-list {
@@ -344,10 +344,10 @@
     border-radius: 10px;
     background: var(--surface);
     transition: background-color 200ms;
-  }
 
-  .download-item--active {
-    padding-left: 9px;
-    border-left: 3px solid var(--accent);
+    &.download-item--active {
+      padding-left: 9px;
+      border-left: 3px solid var(--accent);
+    }
   }
 </style>
