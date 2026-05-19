@@ -37,22 +37,22 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
-  }
 
-  .recent-section-heading {
-    margin: 0;
-    padding: 0 4px;
-    color: var(--fg-muted);
-    font-weight: 500;
-    font-size: 0.8125rem;
-  }
+    .recent-section-heading {
+      margin: 0;
+      padding: 0 4px;
+      color: var(--fg-muted);
+      font-weight: 500;
+      font-size: 0.8125rem;
+    }
 
-  .recent-list {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    margin: 0;
-    padding: 0;
-    list-style: none;
+    .recent-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin: 0;
+      padding: 0;
+      list-style: none;
+    }
   }
 </style>
