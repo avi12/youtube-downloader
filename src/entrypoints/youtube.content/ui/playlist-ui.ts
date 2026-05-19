@@ -136,9 +136,11 @@ export async function injectPlaylistDownloaderUi(
 ) {
   cleanupPlaylistUi();
 
-  headerMountAbort = new AbortController();
-  const elHeader = await waitForPlaylistHeaderMount(headerMountAbort.signal);
-  if (!elHeader) {
+  const abortController = new AbortController();
+  headerMountAbort = abortController;
+
+  const elHeader = await waitForPlaylistHeaderMount(abortController.signal);
+  if (!elHeader || headerMountAbort !== abortController) {
     return;
   }
 
