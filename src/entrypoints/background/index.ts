@@ -5,7 +5,7 @@ import { ensureProcessor } from "./handlers/processor";
 import { registerStorageHandlers } from "./handlers/storage-handlers";
 import { registerTabLifecycleHandlers } from "./handlers/tab-lifecycle";
 import { registerSabrOriginRule } from "./network-rules";
-import { registerRecentDownloadsRetention } from "./recent/recent-downloads-retention";
+import { registerRecentDownloadsRetention } from "./recent/recent-downloads";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { initOffscreenPortListener } from "@/lib/messaging/offscreen-messaging";
 import {

@@ -1,7 +1,7 @@
 import { enqueueToPopupList, removeFromPopupList } from "../queue/popup-list";
 import { signalBytesTransferred } from "../queue/sequential-queue";
 import { resolveTabId } from "../queue/tab-tracker";
-import { registerRecentDownloadHandlers } from "../recent/recent-download-handler";
+import { registerRecentDownloadHandlers } from "../recent/recent-downloads";
 import { registerPipelineQueueHandlers } from "./pipeline-queue-handlers";
 import { clearCancelledVideo, isVideoCancelled, updateStatusProgress } from "./pipeline-state";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
