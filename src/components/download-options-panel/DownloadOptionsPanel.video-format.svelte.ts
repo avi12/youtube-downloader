@@ -6,13 +6,14 @@ const MOVIE_PLAYER_ID = "movie_player";
 const YTP_AD_PLAYING_CLASS = "ytp-ad-playing";
 const VIDEO_CAN_PLAY_EVENT = "canplay";
 
+type CreateVideoFormatTrackerParams = {
+  getVideoData: () => VideoData;
+  setSelectedVideoFormat: (value: AdaptiveFormatItem | null) => void;
+};
 export function createVideoFormatTracker({
   getVideoData,
   setSelectedVideoFormat
-}: {
-  getVideoData: () => VideoData;
-  setSelectedVideoFormat: (value: AdaptiveFormatItem | null) => void;
-}) {
+}: CreateVideoFormatTrackerParams) {
   async function matchToCurrentQuality(signal: AbortSignal) {
     const videoData = getVideoData();
     try {

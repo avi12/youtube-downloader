@@ -24,12 +24,12 @@ export function createRevealState({
     isRevealCanceled = false;
     revealedVideoCount = getVideoDataMapSize();
 
-    await revealAllPlaylistVideos(
-      update => {
+    await revealAllPlaylistVideos({
+      onProgress(update) {
         revealedVideoCount = update.revealedCount;
       },
-      () => isRevealCanceled
-    );
+      isAbortRequested: () => isRevealCanceled
+    });
 
     isRevealingAll = false;
 

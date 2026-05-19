@@ -40,13 +40,16 @@ async function waitForRoundTransition() {
  * scrolling to the bottom triggers the next batch. Guards against the
  * stall case by requiring multiple stable rounds before giving up.
  */
-export async function revealAllPlaylistVideos(
+export async function revealAllPlaylistVideos({
+  onProgress,
+  isAbortRequested
+}: {
   onProgress: (update: {
     revealedCount: number;
     isMoreAvailable: boolean;
-  }) => void,
-  isAbortRequested: () => boolean
-) {
+  }) => void;
+  isAbortRequested: () => boolean;
+}) {
   const elContents = queryPlaylistContents();
   if (!elContents) {
     return;

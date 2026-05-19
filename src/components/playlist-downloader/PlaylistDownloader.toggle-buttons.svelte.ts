@@ -29,12 +29,13 @@ function resolveButtonType({ isActive }: ResolveButtonTypeParams) {
   return isActive ? ButtonType.Filled : ButtonType.Outline;
 }
 
-export function createPlaylistToggleButtons(state: {
+type CreatePlaylistToggleButtonsParams = {
   downloadMode: PlaylistDownloadMode;
   outputMode: PlaylistOutputMode;
   effectiveDownloadType: DownloadTypePreference;
   isDownloading: boolean;
-}) {
+};
+export function createPlaylistToggleButtons(state: CreatePlaylistToggleButtonsParams) {
   const elements = new SvelteMap<string, HTMLElement>();
 
   function refresh(buttonId: string) {
