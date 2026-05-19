@@ -46,7 +46,7 @@ export function registerCrossWorldHandlers() {
       elViewButton.data = {
         title: "View",
         accessibilityText: "View in folder",
-        style: ButtonStyle.Overlay,
+        style: ButtonStyle.Mono,
         type: ButtonType.Text,
         buttonSize: ButtonSize.XSmall,
         state: ButtonState.Active,

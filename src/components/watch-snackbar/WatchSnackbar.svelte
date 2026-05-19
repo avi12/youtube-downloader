@@ -58,16 +58,6 @@
   }
 </script>
 
-<style>
-  /* The snackbar uses a light surface even when YouTube is in dark mode, so the
-     check icon's currentColor (inherited from the dark-theme text token) ends up
-     near-white on a near-white background. Pin it to the inverse text token so
-     it reads as dark against the snackbar. */
-  :global([dark] snackbar-container .snackbarViewModelAvatarContainer yt-icon) {
-    color: var(--yt-sys-color-baseline--text-primary-inverse, #0f0f0f);
-  }
-</style>
-
 {#if isOpen}
   <div
     class="ytSnackbarContainerSnackbarContainer"
@@ -88,7 +78,10 @@
           </div>
           <tp-yt-paper-tooltip for={FILENAME_ID} position="top">{filename}</tp-yt-paper-tooltip>
         </div>
-        <div class="snackbarViewModelButtonClassWrapper">
+        <!-- stylelint-disable-next-line custom-property-no-missing-var-function -->
+        <div
+          style:--tffc2fd3a644f6275="var(--t6216186c28b3834b)"
+          class="snackbarViewModelButtonClassWrapper">
           <yt-button-view-model data-ytdl-button-id={VIEW_BUTTON_ID}></yt-button-view-model>
         </div>
       </div>
