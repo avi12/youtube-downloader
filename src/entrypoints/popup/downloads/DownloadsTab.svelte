@@ -97,22 +97,22 @@
     align-items: center;
     padding: 32px 0;
     text-align: center;
-  }
 
-  .empty-state-icon {
-    display: contents;
-    color: var(--border);
-  }
+    .empty-state-icon {
+      display: contents;
+      color: var(--border);
+    }
 
-  .empty-state-text {
-    color: var(--fg-muted);
-    font-weight: 500;
-    font-size: 0.875rem;
-  }
+    .empty-state-text {
+      color: var(--fg-muted);
+      font-weight: 500;
+      font-size: 0.875rem;
+    }
 
-  .empty-state-hint {
-    color: var(--fg-subtle);
-    font-size: 0.75rem;
+    .empty-state-hint {
+      color: var(--fg-subtle);
+      font-size: 0.75rem;
+    }
   }
 
   .download-sections {
