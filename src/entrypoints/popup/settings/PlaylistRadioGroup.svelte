@@ -12,8 +12,8 @@
   const { legend, name, options, selected, onchange }: Props = $props();
 </script>
 
-<div class="settings-format-section">
-  <span class="settings-sub-legend">{legend}</span>
+<fieldset class="settings-format-section">
+  <legend class="settings-sub-legend">{legend}</legend>
   {#each options as { value, label } (value)}
     <div class="settings-row">
       <label class="settings-label settings-radio-label">
@@ -28,4 +28,4 @@
       </label>
     </div>
   {/each}
-</div>
+</fieldset>

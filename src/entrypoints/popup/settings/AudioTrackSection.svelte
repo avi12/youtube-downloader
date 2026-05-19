@@ -26,8 +26,8 @@
   ] as const;
 </script>
 
-<div class="settings-format-section">
-  <span class="settings-sub-legend">Audio track language</span>
+<fieldset class="settings-format-section">
+  <legend class="settings-sub-legend">Audio track language</legend>
   {#each languageModeOptions as { value, label, description } (value)}
     <div class="settings-row">
       <label class="settings-label settings-radio-label">
@@ -70,4 +70,4 @@
       </div>
     {/if}
   {/each}
-</div>
+</fieldset>

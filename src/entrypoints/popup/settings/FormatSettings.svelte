@@ -9,8 +9,8 @@
 </script>
 
 <SettingsGroup title="Format">
-  <div class="settings-format-section">
-    <span class="settings-sub-legend">Video container</span>
+  <fieldset class="settings-format-section">
+    <legend class="settings-sub-legend">Video container</legend>
     <FormatSelect
       onchange={extension => void setOption({
         key: "ext",
@@ -22,9 +22,9 @@
       options={supportedExtensions.video}
       value={options.ext.video}
     />
-  </div>
-  <div class="settings-format-section">
-    <span class="settings-sub-legend">Audio container</span>
+  </fieldset>
+  <fieldset class="settings-format-section">
+    <legend class="settings-sub-legend">Audio container</legend>
     <FormatSelect
       onchange={extension => void setOption({
         key: "ext",
@@ -37,5 +37,5 @@
       value={options.ext.audio}
     />
     <p class="settings-hint">Used for audio-only downloads</p>
-  </div>
+  </fieldset>
 </SettingsGroup>

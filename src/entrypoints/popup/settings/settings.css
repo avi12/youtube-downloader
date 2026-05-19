@@ -1,5 +1,9 @@
 .settings-format-section {
   display: grid;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
 
   & + & {
     margin-top: 12px;
@@ -10,6 +14,7 @@
 
 .settings-sub-legend {
   margin-bottom: 4px;
+  padding: 0;
   color: var(--fg-muted);
   font-weight: 500;
   font-size: 0.75rem;

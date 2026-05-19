@@ -29,8 +29,8 @@
   ] as const;
 </script>
 
-<div class="settings-format-section">
-  <span class="settings-sub-legend">Closed captions language</span>
+<fieldset class="settings-format-section">
+  <legend class="settings-sub-legend">Closed captions language</legend>
   {#each captionLanguageModeOptions as { value, label, description } (value)}
     <div class="settings-row">
       <label class="settings-label settings-radio-label">
@@ -51,4 +51,4 @@
       </label>
     </div>
   {/each}
-</div>
+</fieldset>
