@@ -77,20 +77,13 @@ export function createPlaylistDownloaderState() {
       return downloadMode;
     },
     set downloadMode(value) {
-      downloadMode = value; void setOption({
-        key: "playlistDownloadMode",
-        value
-      });
+      downloadMode = value;
     },
     get outputMode() {
       return outputMode;
     },
     set outputMode(value) {
       outputMode = value;
-      void setOption({
-        key: videoData.isAllMusicPlaylist ? "playlistAudioOutputMode" : "playlistOutputMode",
-        value
-      });
     },
     get downloadableVideos() {
       return videoData.downloadableVideos;
