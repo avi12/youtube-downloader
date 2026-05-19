@@ -5,6 +5,9 @@ import { type CaptionTrack } from "@/types";
 export { resolveOrderedCaptionTracks } from "./caption-urls";
 
 const CAPTION_FETCH_TIMEOUT_MS = 10_000;
+const HTML5_MAIN_VIDEO_SELECTOR = "video.html5-main-video";
+const CAPTION_FORMAT_PARAM = "fmt";
+const CAPTION_FORMAT_VTT = "vtt";
 
 function formatWebVttTimestamp(seconds: number) {
   const hours = Math.floor(seconds / 3600);
@@ -29,7 +32,7 @@ function cuesToWebVtt(cues: TextTrackCueList) {
 }
 
 async function fetchWebVttViaTrackElement(url: string) {
-  const elVideo = document.querySelector<HTMLVideoElement>("video.html5-main-video");
+  const elVideo = document.querySelector<HTMLVideoElement>(HTML5_MAIN_VIDEO_SELECTOR);
   if (!elVideo) {
     return null;
   }
@@ -73,7 +76,7 @@ export async function fetchCaptionWebVttData({ captionTracks, videoId }: {
   for (const track of captionTracks) {
     const baseUrl = freshUrls.get(track.vssId) ?? track.baseUrl;
     const url = new URL(baseUrl);
-    url.searchParams.set("fmt", "vtt");
+    url.searchParams.set(CAPTION_FORMAT_PARAM, CAPTION_FORMAT_VTT);
     results.push(await fetchWebVttViaTrackElement(url.toString()));
   }
   return results;

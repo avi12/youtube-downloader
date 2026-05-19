@@ -17,14 +17,17 @@ import {
 } from "@/types";
 
 const SNACKBAR_VIEW_BUTTON_ID = "ytdl-snackbar-view";
+const CTA_STYLES_ELEMENT_ID = "ytdl-cta-styles";
+const SETTINGS_OPTIONS_RENDERER_TAG = "ytd-settings-options-renderer";
+const SETTINGS_OPTIONS_ID_SELECTOR = "#options";
 
 function injectCtaButtonStyles() {
-  if (document.getElementById("ytdl-cta-styles")) {
+  if (document.getElementById(CTA_STYLES_ELEMENT_ID)) {
     return;
   }
 
   const elStyle = document.createElement("style");
-  elStyle.id = "ytdl-cta-styles";
+  elStyle.id = CTA_STYLES_ELEMENT_ID;
   elStyle.textContent = ctaButtonStyles;
   document.head.append(elStyle);
 }
@@ -82,7 +85,7 @@ export function registerCrossWorldHandlers() {
       return;
     }
 
-    const elRenderer = document.createElement("ytd-settings-options-renderer");
+    const elRenderer = document.createElement(SETTINGS_OPTIONS_RENDERER_TAG);
     const settingsId = elPlaceholder.getAttribute(DATA_SETTINGS_OPTIONS_ID_ATTR);
     if (settingsId) {
       elRenderer.setAttribute(DATA_SETTINGS_OPTIONS_ID_ATTR, settingsId);
@@ -104,7 +107,7 @@ export function registerCrossWorldHandlers() {
     });
     elPlaceholder.parentNode?.insertBefore(elRenderer, elPlaceholder);
 
-    const elOptions = elRenderer.querySelector("#options") ?? elRenderer;
+    const elOptions = elRenderer.querySelector(SETTINGS_OPTIONS_ID_SELECTOR) ?? elRenderer;
     while (elPlaceholder.firstChild) {
       elOptions.append(elPlaceholder.firstChild);
     }

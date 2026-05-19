@@ -1,6 +1,17 @@
 import type { TpYtIronDropdownElement, YtButtonViewModelElement } from "@/types";
 
 const PANEL_VIEWPORT_MARGIN = 16;
+const EVENT_IRON_OVERLAY_OPENED = "iron-overlay-opened";
+const EVENT_IRON_OVERLAY_CLOSED = "iron-overlay-closed";
+const EVENT_WINDOW_RESIZE = "resize";
+const ATTR_PANEL_POSITION = "data-ytdl-panel-position";
+const ATTR_PANEL_SLOT = "data-ytdl-panel-slot";
+const CSS_VAR_PANEL_TOP_DISTANCE = "--ytdl-panel-top-distance";
+const CSS_VAR_PANEL_BOTTOM_DISTANCE = "--ytdl-panel-bottom-distance";
+const CSS_VAR_PANEL_MAX_HEIGHT = "--ytdl-panel-max-height";
+const CSS_VAR_PANEL_ORIGIN = "--ytdl-panel-origin";
+const PANEL_POSITION_BELOW = "below";
+const PANEL_POSITION_ABOVE = "above";
 
 export function createPanelEffects({
   getElChevronButton,
@@ -28,23 +39,23 @@ export function createPanelEffects({
     const spaceBelow = innerHeight - chevronRect.bottom;
     const isPanelBelow = spaceBelow >= spaceAbove;
     if (isPanelBelow) {
-      elDropdown.setAttribute("data-ytdl-panel-position", "below");
-      elDropdown.style.setProperty("--ytdl-panel-top-distance", `${chevronRect.bottom}px`);
-      elDropdown.style.setProperty("--ytdl-panel-max-height", `${spaceBelow - PANEL_VIEWPORT_MARGIN}px`);
-      elDropdown.style.removeProperty("--ytdl-panel-bottom-distance");
+      elDropdown.setAttribute(ATTR_PANEL_POSITION, PANEL_POSITION_BELOW);
+      elDropdown.style.setProperty(CSS_VAR_PANEL_TOP_DISTANCE, `${chevronRect.bottom}px`);
+      elDropdown.style.setProperty(CSS_VAR_PANEL_MAX_HEIGHT, `${spaceBelow - PANEL_VIEWPORT_MARGIN}px`);
+      elDropdown.style.removeProperty(CSS_VAR_PANEL_BOTTOM_DISTANCE);
     } else {
-      elDropdown.setAttribute("data-ytdl-panel-position", "above");
-      elDropdown.style.setProperty("--ytdl-panel-bottom-distance", `${innerHeight - chevronRect.top}px`);
-      elDropdown.style.setProperty("--ytdl-panel-max-height", `${spaceAbove - PANEL_VIEWPORT_MARGIN}px`);
-      elDropdown.style.removeProperty("--ytdl-panel-top-distance");
+      elDropdown.setAttribute(ATTR_PANEL_POSITION, PANEL_POSITION_ABOVE);
+      elDropdown.style.setProperty(CSS_VAR_PANEL_BOTTOM_DISTANCE, `${innerHeight - chevronRect.top}px`);
+      elDropdown.style.setProperty(CSS_VAR_PANEL_MAX_HEIGHT, `${spaceAbove - PANEL_VIEWPORT_MARGIN}px`);
+      elDropdown.style.removeProperty(CSS_VAR_PANEL_TOP_DISTANCE);
     }
 
     setIsPanelBelow(isPanelBelow);
   }
 
   $effect(() => {
-    const elSlot = getElDropdown().querySelector<HTMLElement>("[data-ytdl-panel-slot]");
-    elSlot?.style.setProperty("--ytdl-panel-origin", getIsPanelBelow() ? "top" : "bottom");
+    const elSlot = getElDropdown().querySelector<HTMLElement>(`[${ATTR_PANEL_SLOT}]`);
+    elSlot?.style.setProperty(CSS_VAR_PANEL_ORIGIN, getIsPanelBelow() ? "top" : "bottom");
   });
 
   $effect(() => {
@@ -73,14 +84,14 @@ export function createPanelEffects({
       applyPanelPositioning();
     }
 
-    elDropdown.addEventListener("iron-overlay-opened", handleDropdownOpened);
-    elDropdown.addEventListener("iron-overlay-closed", handleDropdownClosed);
-    addEventListener("resize", handleWindowResize);
+    elDropdown.addEventListener(EVENT_IRON_OVERLAY_OPENED, handleDropdownOpened);
+    elDropdown.addEventListener(EVENT_IRON_OVERLAY_CLOSED, handleDropdownClosed);
+    addEventListener(EVENT_WINDOW_RESIZE, handleWindowResize);
 
     return () => {
-      elDropdown.removeEventListener("iron-overlay-opened", handleDropdownOpened);
-      elDropdown.removeEventListener("iron-overlay-closed", handleDropdownClosed);
-      removeEventListener("resize", handleWindowResize);
+      elDropdown.removeEventListener(EVENT_IRON_OVERLAY_OPENED, handleDropdownOpened);
+      elDropdown.removeEventListener(EVENT_IRON_OVERLAY_CLOSED, handleDropdownClosed);
+      removeEventListener(EVENT_WINDOW_RESIZE, handleWindowResize);
     };
   });
 }

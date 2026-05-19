@@ -2,6 +2,12 @@ import { CrossWorldMessage, crossWorldMessenger, dispatchButtonClick } from "@/l
 import { DATA_BUTTON_ID_ATTR } from "@/lib/ui/polymer-utils";
 import { ButtonStyle } from "@/types";
 
+const ATTR_CTA = "data-ytdl-cta";
+const ATTR_CLICK_BOUND = "data-ytdl-click-bound";
+const ATTR_ROLE = "role";
+const ATTR_ARIA_CHECKED = "aria-checked";
+const INNER_BUTTON_TAG = "button";
+
 const buttonIdByElement = new WeakMap<HTMLElement, string>();
 
 export function registerButtonDataHandler() {
@@ -17,7 +23,7 @@ export function registerButtonDataHandler() {
     }
 
     elButton.data = buttonData;
-    elButton.toggleAttribute("data-ytdl-cta", buttonData.style === ButtonStyle.CallToAction);
+    elButton.toggleAttribute(ATTR_CTA, buttonData.style === ButtonStyle.CallToAction);
 
     const cachedId = buttonIdByElement.get(elButton);
     const isButtonIdStale = cachedId && elButton.getAttribute(DATA_BUTTON_ID_ATTR) !== cachedId;
@@ -26,23 +32,23 @@ export function registerButtonDataHandler() {
     }
 
     queueMicrotask(() => {
-      const elInner = elButton.querySelector("button");
+      const elInner = elButton.querySelector(INNER_BUTTON_TAG);
       if (!elInner) {
         return;
       }
 
       if (a11y) {
         elInner.tabIndex = a11y.tabIndex;
-        elInner.setAttribute("role", a11y.role);
-        elInner.setAttribute("aria-checked", a11y.ariaChecked);
+        elInner.setAttribute(ATTR_ROLE, a11y.role);
+        elInner.setAttribute(ATTR_ARIA_CHECKED, a11y.ariaChecked);
       }
     });
 
-    if (elButton.hasAttribute("data-ytdl-click-bound")) {
+    if (elButton.hasAttribute(ATTR_CLICK_BOUND)) {
       return;
     }
 
-    elButton.setAttribute("data-ytdl-click-bound", "true");
+    elButton.setAttribute(ATTR_CLICK_BOUND, "true");
     elButton.addEventListener("click", e => {
       const currentButtonId = buttonIdByElement.get(elButton);
       if (currentButtonId) {

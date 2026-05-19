@@ -10,6 +10,12 @@ import { extractAndDispatchVideoData } from "./video/video-data";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import type { PlayerResponse } from "@/types";
 
+const YTDL_IFRAME_QUERY_PARAM = "ytdl=1";
+const EVENT_YT_NAVIGATE_FINISH = "yt-navigate-finish";
+const EVENT_YT_NAVIGATE_START = "yt-navigate-start";
+const EVENT_PAGEHIDE = "pagehide";
+const EVENT_LOAD = "load";
+
 declare global {
   interface Window {
     ytInitialPlayerResponse?: PlayerResponse;
@@ -49,7 +55,7 @@ export default defineContentScript({
   world: "MAIN",
   allFrames: true,
   async main() {
-    if (self !== top && !/ytdl=1/.test(location.search)) {
+    if (self !== top && !location.search.includes(YTDL_IFRAME_QUERY_PARAM)) {
       return;
     }
 
@@ -62,9 +68,9 @@ export default defineContentScript({
     registerGridTagger();
     registerGridVideoDataHandler();
 
-    document.addEventListener("yt-navigate-finish", handleNavigateSuccess);
-    document.addEventListener("yt-navigate-finish", setupAudioTrackWatcher);
-    document.addEventListener("yt-navigate-finish", setupCaptionTrackWatcher);
+    document.addEventListener(EVENT_YT_NAVIGATE_FINISH, handleNavigateSuccess);
+    document.addEventListener(EVENT_YT_NAVIGATE_FINISH, setupAudioTrackWatcher);
+    document.addEventListener(EVENT_YT_NAVIGATE_FINISH, setupCaptionTrackWatcher);
 
     if (self === top) {
       function cancelAllAndNotify() {
@@ -74,8 +80,8 @@ export default defineContentScript({
         }
       }
 
-      document.addEventListener("yt-navigate-start", cancelAllAndNotify);
-      addEventListener("pagehide", cancelAllAndNotify);
+      document.addEventListener(EVENT_YT_NAVIGATE_START, cancelAllAndNotify);
+      addEventListener(EVENT_PAGEHIDE, cancelAllAndNotify);
     }
 
     async function initializeOnLoad() {
@@ -88,7 +94,7 @@ export default defineContentScript({
     if (document.readyState === "complete") {
       void initializeOnLoad();
     } else {
-      addEventListener("load", () => void initializeOnLoad(), { once: true });
+      addEventListener(EVENT_LOAD, () => void initializeOnLoad(), { once: true });
     }
   }
 });

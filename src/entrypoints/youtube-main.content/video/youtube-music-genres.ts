@@ -1,5 +1,8 @@
 import { InnertubeClientName, type InnertubeBrowseRequest } from "@/lib/youtube/innertube";
 
+const YT_MUSIC_BROWSE_URL = "https://music.youtube.com/youtubei/v1/browse?prettyPrint=false";
+const YT_MUSIC_MOODS_AND_GENRES_BROWSE_ID = "FEmusic_moods_and_genres";
+
 interface MoodsAndGenresResponse {
   contents?: {
     singleColumnBrowseResultsRenderer?: {
@@ -36,7 +39,7 @@ export async function fetchYouTubeMusicGenres() {
 
   try {
     const browseRequest: InnertubeBrowseRequest = {
-      browseId: "FEmusic_moods_and_genres",
+      browseId: YT_MUSIC_MOODS_AND_GENRES_BROWSE_ID,
       context: {
         client: {
           clientName: InnertubeClientName.WebRemix,
@@ -44,7 +47,7 @@ export async function fetchYouTubeMusicGenres() {
         }
       }
     };
-    const response = await fetch("https://music.youtube.com/youtubei/v1/browse?prettyPrint=false", {
+    const response = await fetch(YT_MUSIC_BROWSE_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json"

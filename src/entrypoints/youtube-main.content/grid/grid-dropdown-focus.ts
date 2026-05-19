@@ -1,15 +1,18 @@
+const PAPER_DROPDOWN_MENU_TAG = "tp-yt-paper-dropdown-menu";
+const KEYBOARD_FOCUSED_ATTR = "keyboard-focused";
+
 function handleDropdownFocusIn(e: FocusEvent) {
   if (!(e.target instanceof Element)) {
     return;
   }
 
-  const elDropdown = e.target.closest("tp-yt-paper-dropdown-menu");
+  const elDropdown = e.target.closest(PAPER_DROPDOWN_MENU_TAG);
   if (!elDropdown) {
     return;
   }
 
   if (elDropdown.receivedFocusFromKeyboard) {
-    elDropdown.setAttribute("keyboard-focused", "");
+    elDropdown.setAttribute(KEYBOARD_FOCUSED_ATTR, "");
   }
 }
 
@@ -18,14 +21,14 @@ function handleDropdownFocusOut(e: FocusEvent) {
     return;
   }
 
-  const elDropdown = e.target.closest("tp-yt-paper-dropdown-menu");
+  const elDropdown = e.target.closest(PAPER_DROPDOWN_MENU_TAG);
   if (!elDropdown) {
     return;
   }
 
   requestAnimationFrame(() => {
     if (!elDropdown.contains(document.activeElement)) {
-      elDropdown.removeAttribute("keyboard-focused");
+      elDropdown.removeAttribute(KEYBOARD_FOCUSED_ATTR);
     }
   });
 }

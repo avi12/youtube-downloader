@@ -1,5 +1,10 @@
 import type { YtdlCaptureState } from "@/types";
 
+const MOVIE_PLAYER_ELEMENT_ID = "movie_player";
+const AD_PLAYING_CLASS = "ytp-ad-playing";
+const MIME_PREFIX_VIDEO = "video";
+const MIME_PREFIX_AUDIO = "audio";
+
 export function patchIframeMediaVolume() {
   const mediaProto = HTMLMediaElement.prototype;
 
@@ -32,7 +37,7 @@ export function patchSourceBuffer(captureState: YtdlCaptureState) {
   const originalAddSourceBuffer = MediaSource.prototype.addSourceBuffer;
   MediaSource.prototype.addSourceBuffer = function (mimeType) {
     const sourceBuffer = originalAddSourceBuffer.call(this, mimeType);
-    const isMediaMimeType = mimeType.startsWith("video") || mimeType.startsWith("audio");
+    const isMediaMimeType = mimeType.startsWith(MIME_PREFIX_VIDEO) || mimeType.startsWith(MIME_PREFIX_AUDIO);
     if (isMediaMimeType) {
       sourceBufferMimeTypes.set(sourceBuffer, mimeType);
     }
@@ -41,7 +46,7 @@ export function patchSourceBuffer(captureState: YtdlCaptureState) {
   };
 
   function isAdPlaying() {
-    return document.getElementById("movie_player")?.classList.contains("ytp-ad-playing") ?? false;
+    return document.getElementById(MOVIE_PLAYER_ELEMENT_ID)?.classList.contains(AD_PLAYING_CLASS) ?? false;
   }
 
   const originalAppendBuffer = SourceBuffer.prototype.appendBuffer;

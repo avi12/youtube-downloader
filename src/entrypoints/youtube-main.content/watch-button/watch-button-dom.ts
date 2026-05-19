@@ -1,6 +1,17 @@
 import watchButtonStyles from "./watch-button.css?inline";
 import { type TpYtIronDropdownElement } from "@/types";
 
+const WATCH_STYLES_ELEMENT_ID = "ytdl-watch-styles";
+const PANEL_CONTENT_ID_PREFIX = "ytdl-panel-content-";
+const IRON_DROPDOWN_TAG = "tp-yt-iron-dropdown";
+const NATIVE_DOWNLOAD_ICON_KEYWORD = "DOWNLOAD";
+const NATIVE_DOWNLOAD_ARIA_KEYWORD = "download";
+const YT_BUTTON_VIEW_MODEL_TAG = "yt-button-view-model";
+const INNER_BUTTON_TAG = "button";
+const ATTR_ARIA_LABEL = "aria-label";
+const ATTR_ROLE = "role";
+const ATTR_ROLE_PRESENTATION = "presentation";
+
 export interface DropdownElements {
   elDropdown: TpYtIronDropdownElement;
   elDropdownContentSlot: HTMLElement;
@@ -8,21 +19,21 @@ export interface DropdownElements {
 }
 
 export function injectWatchButtonStyles() {
-  if (document.getElementById("ytdl-watch-styles")) {
+  if (document.getElementById(WATCH_STYLES_ELEMENT_ID)) {
     return;
   }
 
   const elStyle = document.createElement("style");
-  elStyle.id = "ytdl-watch-styles";
+  elStyle.id = WATCH_STYLES_ELEMENT_ID;
   elStyle.textContent = watchButtonStyles;
   document.head.append(elStyle);
 }
 
 export function findNativeDownloadButton(elActionsContainer: HTMLElement) {
-  const elButtons = elActionsContainer.querySelectorAll<import("@/types").YtButtonViewModelElement>("yt-button-view-model");
+  const elButtons = elActionsContainer.querySelectorAll<import("@/types").YtButtonViewModelElement>(YT_BUTTON_VIEW_MODEL_TAG);
   for (const elButton of elButtons) {
-    const isDownload = elButton.data?.iconName?.includes("DOWNLOAD")
-      || (elButton.querySelector("button")?.getAttribute("aria-label") ?? "").toLowerCase().includes("download");
+    const isDownload = elButton.data?.iconName?.includes(NATIVE_DOWNLOAD_ICON_KEYWORD)
+      || (elButton.querySelector(INNER_BUTTON_TAG)?.getAttribute(ATTR_ARIA_LABEL) ?? "").toLowerCase().includes(NATIVE_DOWNLOAD_ARIA_KEYWORD);
     if (!isDownload) {
       continue;
     }
@@ -39,16 +50,16 @@ export function findNativeDownloadButton(elActionsContainer: HTMLElement) {
 }
 
 export function createDropdownElement({ videoId }: { videoId: string }) {
-  const panelContentId = `ytdl-panel-content-${videoId}`;
+  const panelContentId = `${PANEL_CONTENT_ID_PREFIX}${videoId}`;
 
-  const elDropdown = document.createElement("tp-yt-iron-dropdown");
+  const elDropdown = document.createElement(IRON_DROPDOWN_TAG);
   elDropdown.dataset.ytdlWatchDropdown = "true";
 
   const elDropdownContentSlot = document.createElement("div");
   elDropdownContentSlot.slot = "dropdown-content";
   elDropdownContentSlot.id = panelContentId;
   elDropdownContentSlot.dataset.ytdlPanelSlot = "true";
-  elDropdownContentSlot.setAttribute("role", "presentation");
+  elDropdownContentSlot.setAttribute(ATTR_ROLE, ATTR_ROLE_PRESENTATION);
   elDropdown.append(elDropdownContentSlot);
 
   document.body.append(elDropdown);

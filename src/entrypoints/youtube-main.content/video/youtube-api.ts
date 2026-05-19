@@ -3,6 +3,7 @@ import { isVideoDownloadable, isVideoLive, isVideoMusic } from "@/lib/youtube/vi
 import type { PlayerResponse } from "@/types";
 
 const PROGRESSIVE_ITAG_PRIORITY = [22, 18] as const;
+const YT_INITIAL_PLAYER_RESPONSE_PATTERN = /var ytInitialPlayerResponse\s*=\s*(.+?);\s*(?:var\s|<\/script>)/s;
 
 function extractProgressiveUrl(playerResponse: PlayerResponse) {
   const formats = playerResponse.streamingData?.formats ?? [];
@@ -72,7 +73,7 @@ export function buildVideoData({ playerResponse, clientVersion, clientName }: {
 
 export function extractPlayerResponseFromHtml(html: string) {
   try {
-    const [, playerJson = ""] = html.match(/var ytInitialPlayerResponse\s*=\s*(.+?);\s*(?:var\s|<\/script>)/s) ?? [];
+    const [, playerJson = ""] = html.match(YT_INITIAL_PLAYER_RESPONSE_PATTERN) ?? [];
     const parsed: PlayerResponse = JSON.parse(playerJson);
     return parsed;
   } catch {

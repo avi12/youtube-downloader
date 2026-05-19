@@ -1,4 +1,4 @@
-import { isCardPending, mountGridButton, Selector } from "./grid-card";
+import { ATTR_GRID_ITEM, isCardPending, mountGridButton, Selector } from "./grid-card";
 import { CHILD_LIST_SUBTREE } from "@/lib/utils/dom";
 
 const VIEWPORT_MARGIN = "200px";
@@ -12,7 +12,7 @@ export function cleanupGridUi() {
   visibilityObserver?.disconnect();
   visibilityObserver = null;
 
-  for (const elItem of document.querySelectorAll("[data-ytdl-grid-item]")) {
+  for (const elItem of document.querySelectorAll(`[${ATTR_GRID_ITEM}]`)) {
     elItem.remove();
   }
 }

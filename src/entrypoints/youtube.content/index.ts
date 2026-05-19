@@ -13,11 +13,13 @@ import { initContentOptions } from "@/lib/ui/synced-stores.svelte";
 import { forwardSabrCredentialsWithRetry, listenForSabrBodyReady } from "@/lib/youtube/sabr/credentials";
 import { INITIAL_OPTIONS as defaultOptions } from "@/lib/youtube/video-helpers";
 
+const YTDL_IFRAME_QUERY_PARAM = "ytdl=1";
+
 export default defineContentScript({
   matches: ["https://www.youtube.com/*"],
   allFrames: true,
   async main(context) {
-    const isDownloadIframe = self !== top && /ytdl=1/.test(location.search);
+    const isDownloadIframe = self !== top && location.search.includes(YTDL_IFRAME_QUERY_PARAM);
     const isUnrelatedIframe = self !== top && !isDownloadIframe;
     if (isUnrelatedIframe) {
       return;

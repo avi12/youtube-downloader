@@ -13,6 +13,8 @@ import { getCompatibleFilename, splitFilenameAndExtension } from "@/lib/utils/fi
 import { isVideoDataExpired } from "@/lib/youtube/video-helpers";
 import type { DownloadRequest } from "@/types";
 
+const PROGRESSIVE_DOWNLOAD_EXTENSION = "mp4";
+
 async function tryProgressiveInPage({ url, filenameOutput, videoId }: {
   url: string;
   filenameOutput: string;
@@ -30,7 +32,7 @@ async function tryProgressiveInPage({ url, filenameOutput, videoId }: {
     const { name } = splitFilenameAndExtension(filenameOutput);
     await crossWorldMessenger.sendMessage(CrossWorldMessage.DownloadBlobUrl, {
       blobUrl,
-      filename: getCompatibleFilename(`${name}.mp4`),
+      filename: getCompatibleFilename(`${name}.${PROGRESSIVE_DOWNLOAD_EXTENSION}`),
       videoId
     });
     return true;

@@ -3,10 +3,11 @@ import { sabrCredentials } from "@/lib/ui/synced-stores.svelte";
 
 const CREDENTIAL_POLL_INTERVAL_MS = 200;
 const CREDENTIAL_POLL_MAX_WAIT_MS = 5000;
+const SABR_CREDENTIALS_ELEMENT_ID = "ytdl-sabr-credentials";
 
 function resolveCredentials() {
   const creds = sabrCredentials.value;
-  const elCredentials = document.getElementById("ytdl-sabr-credentials");
+  const elCredentials = document.getElementById(SABR_CREDENTIALS_ELEMENT_ID);
 
   const currentPoToken =
     creds?.poToken ||

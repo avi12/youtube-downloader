@@ -2,6 +2,10 @@ import { registerDropdownFocusHandlers } from "./grid-dropdown-focus";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import type { TpYtIronDropdownElement } from "@/types";
 
+const IRON_DROPDOWN_TAG = "tp-yt-iron-dropdown";
+const POPUP_CONTAINER_SELECTOR = "ytd-popup-container";
+const GRID_PANEL_CONTENT_ID_PREFIX = "ytdl-grid-panel-";
+
 const gridDropdowns = new Map<string, TpYtIronDropdownElement>();
 
 function createGridDropdown({ contentId, positionTargetSelector }: {
@@ -24,10 +28,10 @@ function createGridDropdown({ contentId, positionTargetSelector }: {
   elDropdownContentSlot.slot = "dropdown-content";
   elDropdownContentSlot.id = contentId;
 
-  const elDropdown = document.createElement("tp-yt-iron-dropdown");
+  const elDropdown = document.createElement(IRON_DROPDOWN_TAG);
   elDropdown.append(elDropdownContentSlot);
 
-  const elPopupContainer = document.querySelector("ytd-popup-container") ?? document.body;
+  const elPopupContainer = document.querySelector(POPUP_CONTAINER_SELECTOR) ?? document.body;
   elPopupContainer.append(elDropdown);
 
   elDropdown.positionTarget = elPositionTarget;
@@ -53,7 +57,7 @@ function createGridDropdown({ contentId, positionTargetSelector }: {
 }
 
 function closeGridDropdown(videoId: string) {
-  const contentId = `ytdl-grid-panel-${videoId}`;
+  const contentId = `${GRID_PANEL_CONTENT_ID_PREFIX}${videoId}`;
   const elDropdown = gridDropdowns.get(contentId);
   if (elDropdown) {
     elDropdown.close();

@@ -4,7 +4,7 @@ const VIDEO_ACTION_BUTTON_SELECTORS = [
   "#above-the-fold #top-level-buttons-computed",
   "ytd-watch-metadata #top-level-buttons-computed",
   "#top-level-buttons-computed"
-];
+] as const;
 
 function findFirstVisibleActionsContainer() {
   for (const selector of VIDEO_ACTION_BUTTON_SELECTORS) {

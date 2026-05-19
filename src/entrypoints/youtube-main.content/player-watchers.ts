@@ -10,6 +10,12 @@ import type { MoviePlayerElement } from "@/lib/youtube/movie-player";
 
 const AD_PLAYER_CLASSES = ["ad-showing", "ad-interrupting"];
 const AUDIO_TRACK_ID_PATTERN = /^[a-z]{2,3}(-[A-Za-z0-9]+)?\.\d+$/;
+const PLAYER_EVENT_INTERNAL_AUDIO_FORMAT_CHANGE = "internalaudioformatchange";
+const PLAYER_EVENT_CAPTIONS_CHANGED = "captionschanged";
+const PLAYER_OPTION_CAPTIONS = "captions";
+const PLAYER_OPTION_TRACK = "track";
+const PLAYER_CLASS_ATTR = "class";
+const VIDEO_EVENT_PLAYING = "playing";
 
 function isAdPlaying(player: MoviePlayerElement | null) {
   return !!player && AD_PLAYER_CLASSES.some(adClass => player.classList.contains(adClass));
@@ -72,7 +78,7 @@ export function setupAudioTrackWatcher() {
   }
 
   for (const bus of buses) {
-    bus.subscribe("internalaudioformatchange", (trackId: unknown) => {
+    bus.subscribe(PLAYER_EVENT_INTERNAL_AUDIO_FORMAT_CHANGE, (trackId: unknown) => {
       if (typeof trackId === "string") {
         reportTrack(trackId);
       }
@@ -90,10 +96,10 @@ export function setupAudioTrackWatcher() {
   }
 
   syncAudioFromPlayer();
-  document.querySelector("video")?.addEventListener("playing", syncAudioFromPlayer);
+  document.querySelector("video")?.addEventListener(VIDEO_EVENT_PLAYING, syncAudioFromPlayer);
   new MutationObserver(syncAudioFromPlayer).observe(player, {
     attributes: true,
-    attributeFilter: ["class"]
+    attributeFilter: [PLAYER_CLASS_ATTR]
   });
 }
 
@@ -145,7 +151,7 @@ export function setupCaptionTrackWatcher() {
   }
 
   function syncCaptionFromPlayer() {
-    const track = player?.getOption?.("captions", "track");
+    const track = player?.getOption?.(PLAYER_OPTION_CAPTIONS, PLAYER_OPTION_TRACK);
     if (isPlayerCaptionTrackData(track)) {
       onCaptionTrack({
         languageCode: track.languageCode,
@@ -155,7 +161,7 @@ export function setupCaptionTrackWatcher() {
   }
 
   syncCaptionFromPlayer();
-  document.querySelector("video")?.addEventListener("playing", syncCaptionFromPlayer, { once: true });
+  document.querySelector("video")?.addEventListener(VIDEO_EVENT_PLAYING, syncCaptionFromPlayer, { once: true });
 
   const buses = capturePlayerCaptionBuses(player);
   if (!buses.length) {
@@ -164,7 +170,7 @@ export function setupCaptionTrackWatcher() {
 
   let lastVssId: string | null = null;
   function handleCaptionsChanged() {
-    const track = player?.getOption?.("captions", "track");
+    const track = player?.getOption?.(PLAYER_OPTION_CAPTIONS, PLAYER_OPTION_TRACK);
     const isSubtitlesOn = player?.isSubtitlesOn?.() ?? false;
     const hasActiveTrack = isSubtitlesOn && isPlayerCaptionTrackData(track);
     if (hasActiveTrack) {
@@ -189,6 +195,6 @@ export function setupCaptionTrackWatcher() {
   }
 
   for (const bus of buses) {
-    bus.subscribe("captionschanged", handleCaptionsChanged);
+    bus.subscribe(PLAYER_EVENT_CAPTIONS_CHANGED, handleCaptionsChanged);
   }
 }

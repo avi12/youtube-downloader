@@ -11,25 +11,32 @@ const MOUSE_LEAVE_OPTIONS: MouseEventInit = {
   composed: true
 };
 
+const ATTR_PLAYLIST_DOWNLOADER = "data-ytdl-playlist-downloader";
+const SELECTOR_YTDL_BUTTON = "[data-ytdl-button-id], [data-ytdl-button-id] button";
+const SELECTOR_YT_TOOLTIP_POPOVER = "yt-tooltip yt-popover";
+const SELECTOR_PLAYLIST_HEADER = "ytd-playlist-header-renderer, ytd-playlist-sidebar-primary-info-renderer";
+const SELECTOR_FLEXIBLE_ACTIONS = "yt-flexible-actions-view-model";
+const SELECTOR_PAGE_HEADER_HEADLINE = ".ytPageHeaderViewModelHeadlineInfo";
+const EVENT_MOUSEOVER = "mouseover";
+const EVENT_SCROLL = "scroll";
+
 let currentPlaylistUi: ReturnType<typeof mount> | null = null;
 let headerMountAbort: AbortController | null = null;
 let headerReinjectObserver: MutationObserver | null = null;
 
 function findPlaylistHeaderMount() {
-  for (const elFlex of document.querySelectorAll<HTMLElement>("yt-flexible-actions-view-model")) {
+  for (const elFlex of document.querySelectorAll<HTMLElement>(SELECTOR_FLEXIBLE_ACTIONS)) {
     if (elFlex.getBoundingClientRect().height <= 0) {
       continue;
     }
 
-    const elHeadline = elFlex.closest<HTMLElement>(".ytPageHeaderViewModelHeadlineInfo");
+    const elHeadline = elFlex.closest<HTMLElement>(SELECTOR_PAGE_HEADER_HEADLINE);
     if (elHeadline) {
       return elHeadline;
     }
   }
 
-  for (const elHeader of document.querySelectorAll<HTMLElement>(
-    "ytd-playlist-header-renderer, ytd-playlist-sidebar-primary-info-renderer"
-  )) {
+  for (const elHeader of document.querySelectorAll<HTMLElement>(SELECTOR_PLAYLIST_HEADER)) {
     if (elHeader.getBoundingClientRect().height > 0) {
       return elHeader;
     }
@@ -79,16 +86,14 @@ export function cleanupPlaylistUi() {
 
   checkedPlaylistVideos.clear();
 
-  for (const elItem of document.querySelectorAll("[data-ytdl-playlist-downloader]")) {
+  for (const elItem of document.querySelectorAll(`[${ATTR_PLAYLIST_DOWNLOADER}]`)) {
     elItem.remove();
   }
 }
 
 function hideYtdlTooltip() {
-  document.querySelector<HTMLElement>("yt-tooltip yt-popover")?.hidePopover?.();
-  for (const elButton of document.querySelectorAll<HTMLElement>(
-    "[data-ytdl-button-id], [data-ytdl-button-id] button"
-  )) {
+  document.querySelector<HTMLElement>(SELECTOR_YT_TOOLTIP_POPOVER)?.hidePopover?.();
+  for (const elButton of document.querySelectorAll<HTMLElement>(SELECTOR_YTDL_BUTTON)) {
     elButton.dispatchEvent(new MouseEvent("mouseleave", MOUSE_LEAVE_OPTIONS));
   }
 }
@@ -117,7 +122,7 @@ function makeTooltipHandlers() {
     }
 
     elHoveredYtdlButton = null;
-    document.querySelector<HTMLElement>("yt-tooltip yt-popover")?.hidePopover?.();
+    document.querySelector<HTMLElement>(SELECTOR_YT_TOOLTIP_POPOVER)?.hidePopover?.();
   }
 
   return {
@@ -153,14 +158,14 @@ export async function injectPlaylistDownloaderUi(
 
   const { trackHoveredButton, dismissTooltipOnScroll } = makeTooltipHandlers();
 
-  document.addEventListener("mouseover", trackHoveredButton, { passive: true });
-  document.addEventListener("scroll", dismissTooltipOnScroll, {
+  document.addEventListener(EVENT_MOUSEOVER, trackHoveredButton, { passive: true });
+  document.addEventListener(EVENT_SCROLL, dismissTooltipOnScroll, {
     capture: true,
     passive: true
   });
   context.onInvalidated(() => {
-    document.removeEventListener("mouseover", trackHoveredButton);
-    document.removeEventListener("scroll", dismissTooltipOnScroll, { capture: true });
+    document.removeEventListener(EVENT_MOUSEOVER, trackHoveredButton);
+    document.removeEventListener(EVENT_SCROLL, dismissTooltipOnScroll, { capture: true });
   });
 
   headerReinjectObserver = new MutationObserver(() => {

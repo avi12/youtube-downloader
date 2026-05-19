@@ -4,6 +4,14 @@ import { orderCaptionsByPreference, resolveCaptionLanguageMode } from "@/lib/you
 import { getYtcfg, YtcfgKey } from "@/lib/youtube/ytcfg";
 import { type CaptionTrack, type PlayerResponse } from "@/types";
 
+const PLAYER_API_PATH = "/youtubei/v1/player?prettyPrint=false";
+const HEADER_CONTENT_TYPE = "Content-Type";
+const HEADER_GOOG_API_KEY = "X-Goog-Api-Key";
+const HEADER_GOOG_VISITOR_ID = "X-Goog-Visitor-Id";
+const CONTENT_TYPE_JSON = "application/json";
+const DEFAULT_CAPTION_LANGUAGE = "en";
+const DEFAULT_CAPTION_REGION = "US";
+
 export function resolveOrderedCaptionTracks(
   captionTracks: CaptionTrack[],
   selectedCaptionVssId: string | undefined,
@@ -39,11 +47,11 @@ export async function fetchFreshCaptionUrls(videoId: string) {
 
   const visitorData = getYtcfg(YtcfgKey.VisitorData);
   const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    "X-Goog-Api-Key": apiKey
+    [HEADER_CONTENT_TYPE]: CONTENT_TYPE_JSON,
+    [HEADER_GOOG_API_KEY]: apiKey
   };
   if (visitorData) {
-    headers["X-Goog-Visitor-Id"] = visitorData;
+    headers[HEADER_GOOG_VISITOR_ID] = visitorData;
   }
 
   try {
@@ -58,13 +66,13 @@ export async function fetchFreshCaptionUrls(videoId: string) {
         client: {
           clientName: InnertubeClientName.Web,
           clientVersion: getYtcfg(YtcfgKey.ClientVersion) ?? "",
-          hl: getYtcfg(YtcfgKey.Hl) ?? "en",
-          gl: getYtcfg(YtcfgKey.Gl) ?? "US",
+          hl: getYtcfg(YtcfgKey.Hl) ?? DEFAULT_CAPTION_LANGUAGE,
+          gl: getYtcfg(YtcfgKey.Gl) ?? DEFAULT_CAPTION_REGION,
           visitorData: visitorData ?? ""
         }
       }
     };
-    const response = await fetch("/youtubei/v1/player?prettyPrint=false", {
+    const response = await fetch(PLAYER_API_PATH, {
       method: "POST",
       credentials: "include",
       headers,

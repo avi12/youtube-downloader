@@ -5,6 +5,12 @@ import { playlistMetadataSignal } from "@/lib/ui/synced-stores.svelte";
 import { type PlayerResponse } from "@/types";
 import { PlayabilityStatus } from "@/types/youtube";
 
+const WATCH_PATHNAME = "/watch";
+const WATCH_FLEXY_TAG = "ytd-watch-flexy";
+const WATCH_VIDEO_ID_PARAM = "v";
+const PLAYER_DATA_POLL_ATTEMPTS = 20;
+const PLAYER_DATA_POLL_INTERVAL_MS = 250;
+
 declare global {
   interface HTMLElementTagNameMap {
     "ytd-watch-flexy": HTMLElement & {
@@ -47,18 +53,16 @@ function handleNavigation() {
 export async function handleNavigateSuccess() {
   handleNavigation();
 
-  if (location.pathname !== "/watch") {
+  if (location.pathname !== WATCH_PATHNAME) {
     return;
   }
 
   // YouTube updates ytd-watch-flexy.playerData asynchronously after
   // navigation. Poll briefly until it matches the current video ID.
-  const playerDataPollAttempts = 20;
-  const playerDataPollIntervalMs = 250;
-  const expectedVideoId = new URLSearchParams(location.search).get("v");
+  const expectedVideoId = new URLSearchParams(location.search).get(WATCH_VIDEO_ID_PARAM);
 
-  for (let attempt = 0; attempt < playerDataPollAttempts; attempt++) {
-    const playerResponse = document.querySelector("ytd-watch-flexy")?.playerData ?? null;
+  for (let attempt = 0; attempt < PLAYER_DATA_POLL_ATTEMPTS; attempt++) {
+    const playerResponse = document.querySelector(WATCH_FLEXY_TAG)?.playerData ?? null;
     const isReady = playerResponse?.videoDetails?.videoId === expectedVideoId
       && playerResponse.playabilityStatus?.status !== PlayabilityStatus.Unplayable;
     if (isReady) {
@@ -66,6 +70,6 @@ export async function handleNavigateSuccess() {
       return;
     }
 
-    await new Promise(resolve => setTimeout(resolve, playerDataPollIntervalMs));
+    await new Promise(resolve => setTimeout(resolve, PLAYER_DATA_POLL_INTERVAL_MS));
   }
 }

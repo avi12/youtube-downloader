@@ -1,10 +1,12 @@
+const YTDL_IFRAME_QUERY_PARAM = "ytdl=1";
+
 export default defineContentScript({
   matches: ["https://www.youtube.com/*"],
   world: "MAIN",
   runAt: "document_start",
   allFrames: true,
   main() {
-    if (self === top || !/ytdl=1/.test(location.search)) {
+    if (self === top || !location.search.includes(YTDL_IFRAME_QUERY_PARAM)) {
       return;
     }
 

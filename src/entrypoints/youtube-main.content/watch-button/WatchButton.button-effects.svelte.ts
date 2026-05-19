@@ -1,6 +1,9 @@
 import { CHILD_LIST_SUBTREE } from "@/lib/utils/dom";
 import type { YtButtonViewModelElement } from "@/types";
 
+const SEGMENTED_START_CLASS = "ytSpecButtonShapeNextSegmentedStart";
+const SEGMENTED_END_CLASS = "ytSpecButtonShapeNextSegmentedEnd";
+
 export function createButtonElementEffects({
   getElDownloadButton,
   getElChevronButton,
@@ -17,10 +20,10 @@ export function createButtonElementEffects({
   function applySegmentedClasses() {
     getElDownloadButton()
       ?.querySelector<HTMLButtonElement>("button")
-      ?.classList.add("ytSpecButtonShapeNextSegmentedStart");
+      ?.classList.add(SEGMENTED_START_CLASS);
     getElChevronButton()
       ?.querySelector<HTMLButtonElement>("button")
-      ?.classList.add("ytSpecButtonShapeNextSegmentedEnd");
+      ?.classList.add(SEGMENTED_END_CLASS);
   }
 
   $effect(() => {

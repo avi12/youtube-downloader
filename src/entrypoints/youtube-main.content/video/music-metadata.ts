@@ -2,6 +2,7 @@ export { extractGenresFromKeywords, fetchYouTubeMusicGenres } from "./youtube-mu
 
 const VIDEO_TITLE_SUFFIX_PATTERN = /\s*[[(](?:official\s+(?:music\s+)?video|(?:official\s+)?lyrics?\s*(?:video)?|(?:official\s+)?audio|4k\s*remaster(?:ed)?|remaster(?:ed)?|hd|hq|visualizer|clip\s+officiel|video\s*oficial)[)\]]\s*/gi;
 const FEATURING_PATTERN = /\s+(?:ft\.?|feat\.?|featuring)\s+(.+)$/i;
+const YT_DESCRIPTION_MUSIC_PREFIX = "Provided to YouTube";
 
 export function parseMusicTitle(title: string) {
   const cleaned = title.replaceAll(VIDEO_TITLE_SUFFIX_PATTERN, "").trim();
@@ -30,7 +31,7 @@ export function parseMusicTitle(title: string) {
 }
 
 export function parseDescriptionMetadata(description: string) {
-  if (!description.startsWith("Provided to YouTube")) {
+  if (!description.startsWith(YT_DESCRIPTION_MUSIC_PREFIX)) {
     return {
       songTitle: undefined,
       artist: undefined,

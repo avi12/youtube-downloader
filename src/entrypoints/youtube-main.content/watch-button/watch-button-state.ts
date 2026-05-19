@@ -3,6 +3,10 @@ import { getCompatibleFilename, getOutputExtension, resolveAutoExtension } from 
 import { selectPreferredAudioFormat } from "@/lib/youtube/video-helpers";
 import { DownloadType, type VideoData } from "@/types";
 
+const MULTI_AUDIO_TRACK_EXTENSION = "mkv";
+const DEFAULT_VIDEO_MIME_TYPE = "video/mp4";
+const DEFAULT_AUDIO_MIME_TYPE = "audio/mp4";
+
 function getPreferredAudioFormat(videoData: VideoData) {
   const options = CONTENT_OPTIONS;
   const [firstVideoFormat] = videoData.videoFormats;
@@ -22,8 +26,8 @@ export function buildInitialDownloadState(videoData: VideoData) {
   let videoItag = firstFormat?.itag ?? 0;
   const preferredAudio = getPreferredAudioFormat(videoData);
   let audioItag = preferredAudio?.itag ?? 0;
-  const videoMime = firstFormat?.mimeType ?? "video/mp4";
-  const audioMime = preferredAudio?.mimeType ?? "audio/mp4";
+  const videoMime = firstFormat?.mimeType ?? DEFAULT_VIDEO_MIME_TYPE;
+  const audioMime = preferredAudio?.mimeType ?? DEFAULT_AUDIO_MIME_TYPE;
 
   const options = CONTENT_OPTIONS;
   let extension: string;
@@ -47,7 +51,7 @@ export function buildInitialDownloadState(videoData: VideoData) {
     const hasExtraAudioTracks = !!selectedTrackId &&
       videoData.audioFormats.some(format => format.audioTrack?.id && format.audioTrack.id !== selectedTrackId);
     if (hasExtraAudioTracks) {
-      extension = "mkv";
+      extension = MULTI_AUDIO_TRACK_EXTENSION;
     }
   }
 

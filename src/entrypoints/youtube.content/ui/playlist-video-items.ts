@@ -4,12 +4,16 @@ import { getVideoIdFromUrl } from "@/lib/youtube/youtube-url";
 import { mount } from "svelte";
 
 const PLAYLIST_VIDEO_TAG = "ytd-playlist-video-renderer";
+const ATTR_YTDL_ITEM = "data-ytdl-item";
+const SELECTOR_VIDEO_ID_LINK = "a#video-title";
+const SELECTOR_TOP_LEVEL_BUTTONS = "ytd-menu-renderer #top-level-buttons-computed";
+const SELECTOR_PLAYLIST_VIDEO_LIST_CONTENTS = "ytd-playlist-video-list-renderer #contents";
 
 function injectPlaylistVideoItemUi({ context, elVideoItem }: {
   context: InstanceType<typeof ContentScriptContext>;
   elVideoItem: Element;
 }) {
-  const elVideoIdLink = elVideoItem.querySelector<HTMLAnchorElement>("a#video-title");
+  const elVideoIdLink = elVideoItem.querySelector<HTMLAnchorElement>(SELECTOR_VIDEO_ID_LINK);
   if (!elVideoIdLink) {
     return;
   }
@@ -19,19 +23,19 @@ function injectPlaylistVideoItemUi({ context, elVideoItem }: {
     return;
   }
 
-  for (const elStale of elVideoItem.querySelectorAll("[data-ytdl-item]")) {
-    const isStaleItem = elStale.getAttribute("data-ytdl-item") !== videoId;
+  for (const elStale of elVideoItem.querySelectorAll(`[${ATTR_YTDL_ITEM}]`)) {
+    const isStaleItem = elStale.getAttribute(ATTR_YTDL_ITEM) !== videoId;
     if (isStaleItem) {
       elStale.remove();
     }
   }
 
-  const isAlreadyMounted = !!elVideoItem.querySelector(`[data-ytdl-item="${videoId}"]`);
+  const isAlreadyMounted = !!elVideoItem.querySelector(`[${ATTR_YTDL_ITEM}="${videoId}"]`);
   if (isAlreadyMounted) {
     return;
   }
 
-  const elTopLevelActions = elVideoItem.querySelector("ytd-menu-renderer #top-level-buttons-computed");
+  const elTopLevelActions = elVideoItem.querySelector(SELECTOR_TOP_LEVEL_BUTTONS);
   if (!elTopLevelActions) {
     return;
   }
@@ -85,7 +89,7 @@ function injectIntoSubtree({ root, context }: {
 }
 
 export function handlePlaylistVideoAdditions(context: InstanceType<typeof ContentScriptContext>) {
-  const elContents = document.querySelector("ytd-playlist-video-list-renderer #contents");
+  const elContents = document.querySelector(SELECTOR_PLAYLIST_VIDEO_LIST_CONTENTS);
   if (!elContents) {
     return;
   }
@@ -107,7 +111,7 @@ export function handlePlaylistVideoAdditions(context: InstanceType<typeof Conten
       }
 
       for (const node of mutation.removedNodes) {
-        if (!(node instanceof Element) || !node.hasAttribute("data-ytdl-item")) {
+        if (!(node instanceof Element) || !node.hasAttribute(ATTR_YTDL_ITEM)) {
           continue;
         }
 

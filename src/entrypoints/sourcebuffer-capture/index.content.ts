@@ -3,13 +3,16 @@
 import { patchIframeMediaVolume, patchSourceBuffer } from "./sourcebuffer-capture-patches";
 import type { YtdlCaptureState, YtdlMediaCapture } from "@/types";
 
+const YTDL_IFRAME_QUERY_PARAM = "ytdl=1";
+const MIME_PREFIX_VIDEO = "video";
+
 export default defineContentScript({
   matches: ["https://www.youtube.com/*"],
   world: "MAIN",
   runAt: "document_start",
   allFrames: true,
   main() {
-    const isUnrelatedIframe = self !== top && !/ytdl=1/.test(location.search);
+    const isUnrelatedIframe = self !== top && !location.search.includes(YTDL_IFRAME_QUERY_PARAM);
     if (isUnrelatedIframe) {
       return;
     }
@@ -26,7 +29,7 @@ export default defineContentScript({
       mimeType: string;
       chunk: Uint8Array;
     }) {
-      if (mimeType.startsWith("video")) {
+      if (mimeType.startsWith(MIME_PREFIX_VIDEO)) {
         capture.videoChunks.push(chunk.slice());
         capture.videoTotalBytes += chunk.byteLength;
         capture.videoMimeType = mimeType.split(";")[0];

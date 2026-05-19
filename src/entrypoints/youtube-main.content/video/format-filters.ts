@@ -1,12 +1,16 @@
 import type { AdaptiveFormatItem } from "@/types";
 
+const MIME_PREFIX_VIDEO = "video";
+const MIME_PREFIX_AUDIO = "audio";
+const QUALITY_LABEL_PREMIUM = "Premium";
+
 export function byQualityDesc(formatA: AdaptiveFormatItem, formatB: AdaptiveFormatItem) {
   const heightDiff = (formatB.height ?? 0) - (formatA.height ?? 0);
   return heightDiff !== 0 ? heightDiff : formatB.bitrate - formatA.bitrate;
 }
 
 export function getUniqueVideoFormats(formats: AdaptiveFormatItem[]) {
-  const videoFormats = formats.filter(format => format.mimeType.startsWith("video"));
+  const videoFormats = formats.filter(format => format.mimeType.startsWith(MIME_PREFIX_VIDEO));
   // Dedup by height + premium status so standard and enhanced bitrate variants are distinct.
   const seen = new Set<string>();
 
@@ -15,7 +19,7 @@ export function getUniqueVideoFormats(formats: AdaptiveFormatItem[]) {
       return false;
     }
 
-    const isPremium = (format.qualityLabel ?? "").includes("Premium");
+    const isPremium = (format.qualityLabel ?? "").includes(QUALITY_LABEL_PREMIUM);
     const key = `${format.height}-${isPremium}`;
     if (seen.has(key)) {
       return false;
@@ -27,7 +31,7 @@ export function getUniqueVideoFormats(formats: AdaptiveFormatItem[]) {
 }
 
 export function getAudioFormats(formats: AdaptiveFormatItem[]) {
-  const audioFormats = formats.filter(format => format.mimeType.startsWith("audio"));
+  const audioFormats = formats.filter(format => format.mimeType.startsWith(MIME_PREFIX_AUDIO));
   // Dedup by itag + audioTrack.id so different language tracks with the same itag
   // (e.g. original + dubbed) are preserved.
   const seenKeys = new Set<string>();

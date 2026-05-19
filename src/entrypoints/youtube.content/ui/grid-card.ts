@@ -2,10 +2,19 @@ import PlaylistVideoItem from "@/components/playlist-downloader/video-item/Playl
 import { getVideoIdFromUrl } from "@/lib/youtube/youtube-url";
 import { mount } from "svelte";
 
+const LOCKUP_VIEW_MODEL_TAG = "yt-lockup-view-model";
+const ATTR_CONTENT_ID = "data-ytdl-content-id";
+export const ATTR_GRID_ITEM = "data-ytdl-grid-item";
+const SELECTOR_VIDEO_TITLE_LINK = "a#video-title-link, a#video-title, a[href*='/watch?v=']";
+const SELECTOR_LOCKUP_METADATA_TITLE = ".ytLockupMetadataViewModelTitle, #video-title-link, #video-title";
+const SELECTOR_LOCKUP_METADATA_HOST = ".ytLockupMetadataViewModelHost";
+const SELECTOR_DISMISSIBLE = "#dismissible";
+const SELECTOR_DETAILS = "#details";
+
 function getLockupRoot(elCard: Element) {
-  const elLockup = elCard.tagName.toLowerCase() === "yt-lockup-view-model"
+  const elLockup = elCard.tagName.toLowerCase() === LOCKUP_VIEW_MODEL_TAG
     ? elCard
-    : elCard.querySelector("yt-lockup-view-model");
+    : elCard.querySelector(LOCKUP_VIEW_MODEL_TAG);
   return elLockup?.shadowRoot ?? null;
 }
 
@@ -17,11 +26,11 @@ export function shadowFirst({ elCard, selector }: {
 }
 
 export function extractVideoId(elCard: Element) {
-  const elLockup = elCard.tagName.toLowerCase() === "yt-lockup-view-model"
+  const elLockup = elCard.tagName.toLowerCase() === LOCKUP_VIEW_MODEL_TAG
     ? elCard
-    : elCard.querySelector("yt-lockup-view-model");
-  const mainWorldId = elCard.getAttribute("data-ytdl-content-id")
-    ?? elLockup?.getAttribute("data-ytdl-content-id");
+    : elCard.querySelector(LOCKUP_VIEW_MODEL_TAG);
+  const mainWorldId = elCard.getAttribute(ATTR_CONTENT_ID)
+    ?? elLockup?.getAttribute(ATTR_CONTENT_ID);
   if (mainWorldId) {
     return mainWorldId;
   }
@@ -36,7 +45,7 @@ export function extractVideoId(elCard: Element) {
 
   const elLink = shadowFirst({
     elCard,
-    selector: "a#video-title-link, a#video-title, a[href*='/watch?v=']"
+    selector: SELECTOR_VIDEO_TITLE_LINK
   });
   if (!(elLink instanceof HTMLAnchorElement)) {
     return null;
@@ -46,7 +55,7 @@ export function extractVideoId(elCard: Element) {
 }
 
 export const Selector = {
-  VideoCard: "yt-lockup-view-model, ytd-rich-item-renderer, ytd-grid-video-renderer",
+  VideoCard: `${LOCKUP_VIEW_MODEL_TAG}, ytd-rich-item-renderer, ytd-grid-video-renderer`,
   PageManager: "ytd-page-manager"
 } as const;
 
@@ -56,7 +65,7 @@ export function isCardPending(elCard: Element) {
     return false;
   }
 
-  return !(getLockupRoot(elCard) ?? elCard).querySelector(`[data-ytdl-grid-item="${videoId}"]`);
+  return !(getLockupRoot(elCard) ?? elCard).querySelector(`[${ATTR_GRID_ITEM}="${videoId}"]`);
 }
 
 export function mountGridButton({ context, elCard }: {
@@ -68,34 +77,34 @@ export function mountGridButton({ context, elCard }: {
     return;
   }
 
-  const isAlreadyMounted = !!(getLockupRoot(elCard) ?? elCard).querySelector(`[data-ytdl-grid-item="${videoId}"]`);
+  const isAlreadyMounted = !!(getLockupRoot(elCard) ?? elCard).querySelector(`[${ATTR_GRID_ITEM}="${videoId}"]`);
   if (isAlreadyMounted) {
     return;
   }
 
   const gridTitle = shadowFirst({
     elCard,
-    selector: ".ytLockupMetadataViewModelTitle, #video-title-link, #video-title"
+    selector: SELECTOR_LOCKUP_METADATA_TITLE
   })?.textContent?.trim() ?? "";
   const elItemContainer = document.createElement("div");
   elItemContainer.dataset.ytdlGridItem = videoId;
 
   const elHost = shadowFirst({
     elCard,
-    selector: ".ytLockupMetadataViewModelHost"
+    selector: SELECTOR_LOCKUP_METADATA_HOST
   });
   if (elHost) {
     elHost.append(elItemContainer);
   } else {
     const elDismissible = shadowFirst({
       elCard,
-      selector: "#dismissible"
+      selector: SELECTOR_DISMISSIBLE
     });
     if (!elDismissible) {
       return;
     }
 
-    const elDetails = elDismissible.querySelector("#details");
+    const elDetails = elDismissible.querySelector(SELECTOR_DETAILS);
     if (elDetails) {
       elDetails.insertAdjacentElement("afterend", elItemContainer);
     } else {
