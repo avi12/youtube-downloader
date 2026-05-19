@@ -1,6 +1,6 @@
-import { buildMuxFfmpegArgs } from "./mux-args-builder";
-import type { MuxFfmpegParams } from "./mux-args-builder";
-import { buildRemuxArgs } from "./mux-codec-args";
+import { buildMuxFfmpegArgs } from "./mux-ffmpeg-args";
+import type { MuxFfmpegParams } from "./mux-ffmpeg-args";
+import { buildRemuxArgs } from "./mux-ffmpeg-args";
 import { postError, state } from "./mux-state";
 
 type CheckOutput = (filename: string) => boolean;

@@ -1,4 +1,4 @@
-import { buildRemuxArgs } from "./mux-codec-args";
+import { buildRemuxArgs } from "./mux-ffmpeg-args";
 import { postError, postResult, state, tryUnlink } from "./mux-state";
 import type { TranscodeAudioJob, TranscodeFileJob } from "@/lib/download-pipeline/mux-worker-types";
 import { getCompatibleFilename, getFileExtension } from "@/lib/utils/containers";

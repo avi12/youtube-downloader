@@ -1,9 +1,6 @@
-import {
-  handleEmbedMetadata,
-  handleMuxVideoAudio,
-  handleTranscodeAudio,
-  handleTranscodeFile
-} from "./mux-job-handlers";
+import { handleEmbedMetadata } from "./mux-handler-embed-metadata";
+import { handleMuxVideoAudio } from "./mux-handler-mux-video-audio";
+import { handleTranscodeAudio, handleTranscodeFile } from "./mux-handler-transcode";
 import {
   initFfmpeg,
   initPortReceiver,

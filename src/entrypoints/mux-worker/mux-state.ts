@@ -1,6 +1,6 @@
 import { WorkerMessageType } from "@/lib/download-pipeline/mux-worker-types";
-import { createWorkerPortReceiver } from "@/lib/download-pipeline/worker-port";
-import type { WorkerPortReceiver } from "@/lib/download-pipeline/worker-port";
+import { createWorkerPortReceiver } from "@/lib/download-pipeline/worker-port-receiver";
+import type { WorkerPortReceiver } from "@/lib/download-pipeline/worker-port-receiver";
 import { ProgressType } from "@/types";
 import type { FFmpegCoreModule } from "@ffmpeg/types";
 
