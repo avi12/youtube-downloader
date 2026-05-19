@@ -33,10 +33,11 @@ export function getActivePlayerCaption() {
   }
 }
 
-export function resolveInitialCaptionMode({ options, videoData }: {
+type ResolveInitialCaptionModeParams = {
   options: Options;
   videoData: VideoData;
-}) {
+};
+export function resolveInitialCaptionMode({ options, videoData }: ResolveInitialCaptionModeParams) {
   const resolvedMode = resolveCaptionLanguageMode({
     captionMode: options.captionLanguageMode,
     audioMode: options.audioTrackLanguageMode
@@ -53,13 +54,21 @@ export function resolveInitialCaptionMode({ options, videoData }: {
   return PanelTrackMode.MatchVideo;
 }
 
-function resolveCustomCaption(candidateTracks: CaptionTrack[], langCode: string) {
+type ResolveCustomCaptionParams = {
+  candidateTracks: CaptionTrack[];
+  langCode: string;
+};
+function resolveCustomCaption({ candidateTracks, langCode }: ResolveCustomCaptionParams) {
   return candidateTracks.find(track => normalizeLanguageCode(track.languageCode) === langCode)
     ?? candidateTracks[0]
     ?? null;
 }
 
-function resolveOriginalCaption(candidateTracks: CaptionTrack[], audioFormats: AdaptiveFormatItem[]) {
+type ResolveOriginalCaptionParams = {
+  candidateTracks: CaptionTrack[];
+  audioFormats: AdaptiveFormatItem[];
+};
+function resolveOriginalCaption({ candidateTracks, audioFormats }: ResolveOriginalCaptionParams) {
   const originalLangId = findOriginalAudioFormat(audioFormats)?.audioTrack?.id;
   if (originalLangId) {
     const langCode = normalizeLanguageCode(originalLangId);
@@ -76,9 +85,13 @@ function resolveOriginalCaption(candidateTracks: CaptionTrack[], audioFormats: A
   return candidateTracks.find(track => !track.kind) ?? candidateTracks[0] ?? null;
 }
 
+type ResolveMatchVideoCaptionParams = {
+  allTracks: CaptionTrack[];
+  candidateTracks: CaptionTrack[];
+};
 // Only preserve the player's active caption (even if ASR); fall back to filtered
 // candidates so an absent player caption doesn't auto-pick an ASR default.
-function resolveMatchVideoCaption(allTracks: CaptionTrack[], candidateTracks: CaptionTrack[]) {
+function resolveMatchVideoCaption({ allTracks, candidateTracks }: ResolveMatchVideoCaptionParams) {
   const activeCaption = getActivePlayerCaption();
   if (activeCaption) {
     const match = allTracks.find(track => track.vssId === activeCaption.vss_id)
@@ -98,15 +111,16 @@ function resolveMatchVideoCaption(allTracks: CaptionTrack[], candidateTracks: Ca
   })[0] ?? null;
 }
 
+type ResolveInitialCaptionTrackParams = {
+  captionMode: PanelTrackMode;
+  options: Options;
+  videoData: VideoData;
+};
 export function resolveInitialCaptionTrack({
   captionMode,
   options,
   videoData
-}: {
-  captionMode: PanelTrackMode;
-  options: Options;
-  videoData: VideoData;
-}) {
+}: ResolveInitialCaptionTrackParams) {
   if (!videoData.captionTracks.length) {
     return null;
   }
@@ -115,12 +129,21 @@ export function resolveInitialCaptionTrack({
     ? videoData.captionTracks
     : videoData.captionTracks.filter(track => track.kind !== CAPTION_KIND_ASR);
   if (captionMode === PanelTrackMode.Custom) {
-    return resolveCustomCaption(candidateTracks, normalizeLanguageCode(options.customLanguage ?? ""));
+    return resolveCustomCaption({
+      candidateTracks,
+      langCode: normalizeLanguageCode(options.customLanguage ?? "")
+    });
   }
 
   if (captionMode === PanelTrackMode.Original) {
-    return resolveOriginalCaption(candidateTracks, videoData.audioFormats);
+    return resolveOriginalCaption({
+      candidateTracks,
+      audioFormats: videoData.audioFormats
+    });
   }
 
-  return resolveMatchVideoCaption(videoData.captionTracks, candidateTracks);
+  return resolveMatchVideoCaption({
+    allTracks: videoData.captionTracks,
+    candidateTracks
+  });
 }

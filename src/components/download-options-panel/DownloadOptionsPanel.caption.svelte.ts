@@ -4,7 +4,12 @@ import { PLAYER_ACTIVE_CAPTION } from "./helpers/player-active-tracks.svelte";
 import { findOriginalAudioFormat, normalizeLanguageCode } from "@/lib/youtube/video-helpers";
 import { PanelTrackMode, type CaptionTrack, type VideoData } from "@/types";
 
-function findCaptionTrack(tracks: CaptionTrack[], vssId: string | null, languageCode: string | null) {
+type FindCaptionTrackParams = {
+  tracks: CaptionTrack[];
+  vssId: string | null;
+  languageCode: string | null;
+};
+function findCaptionTrack({ tracks, vssId, languageCode }: FindCaptionTrackParams) {
   const byVssId = vssId ? tracks.find(track => track.vssId === vssId) : undefined;
   const byLangCode = languageCode
     ? tracks.find(track => normalizeLanguageCode(track.languageCode) === normalizeLanguageCode(languageCode))
@@ -12,15 +17,16 @@ function findCaptionTrack(tracks: CaptionTrack[], vssId: string | null, language
   return byVssId ?? byLangCode ?? null;
 }
 
+type CreateCaptionTrackStateParams = {
+  getVideoData: () => VideoData;
+  initialMode: PanelTrackMode;
+  initialTrack: CaptionTrack | null;
+};
 export function createCaptionTrackState({
   getVideoData,
   initialMode,
   initialTrack
-}: {
-  getVideoData: () => VideoData;
-  initialMode: PanelTrackMode;
-  initialTrack: CaptionTrack | null;
-}) {
+}: CreateCaptionTrackStateParams) {
   let panelCaptionMode = $state<PanelTrackMode>(initialMode);
   let selectedCaptionTrack = $state<CaptionTrack | null>(initialTrack);
 
@@ -31,7 +37,11 @@ export function createCaptionTrackState({
     if (isMatchVideoMode) {
       const activeCaption = getActivePlayerCaption();
       selectedCaptionTrack = activeCaption
-        ? findCaptionTrack(captionTracks, activeCaption.vss_id, activeCaption.languageCode)
+        ? findCaptionTrack({
+          tracks: captionTracks,
+          vssId: activeCaption.vss_id,
+          languageCode: activeCaption.languageCode
+        })
         : null;
       return;
     }
@@ -68,7 +78,11 @@ export function createCaptionTrackState({
     }
 
     const { captionTracks } = getVideoData();
-    const match = findCaptionTrack(captionTracks, vssId, languageCode);
+    const match = findCaptionTrack({
+      tracks: captionTracks,
+      vssId,
+      languageCode
+    });
     if (!match) {
       return;
     }

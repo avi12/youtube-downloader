@@ -8,11 +8,16 @@ export function findMatchVideoAudioFormat(audioFormats: AdaptiveFormatItem[]) {
     ?? null;
 }
 
-export function findAudioFormatForPlayerTrack({ audioFormats, trackId, langCode }: {
+type FindAudioFormatForPlayerTrackParams = {
   audioFormats: AdaptiveFormatItem[];
   trackId: string | null;
   langCode: string | null;
-}) {
+};
+export function findAudioFormatForPlayerTrack({
+  audioFormats,
+  trackId,
+  langCode
+}: FindAudioFormatForPlayerTrackParams) {
   const exactMatches = trackId
     ? audioFormats.filter(format => format.audioTrack?.id === trackId)
     : [];

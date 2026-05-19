@@ -7,12 +7,13 @@ import { CONTENT_OPTIONS, downloadProgressStore } from "@/lib/ui/synced-stores.s
 import { resolveVideoFilename } from "@/lib/utils/containers";
 import { DownloadType, type VideoData } from "@/types";
 
-export function triggerDownload(
-  videoData: VideoData,
-  videoId: string,
-  gridTitle: string | undefined,
-  setLocallyDone: (value: boolean) => void
-) {
+type TriggerDownloadParams = {
+  videoData: VideoData;
+  videoId: string;
+  gridTitle: string | undefined;
+  setLocallyDone: (value: boolean) => void;
+};
+export function triggerDownload({ videoData, videoId, gridTitle, setLocallyDone }: TriggerDownloadParams) {
   const options = CONTENT_OPTIONS;
   let downloadType: DownloadType = videoData.isMusic ? DownloadType.Audio : DownloadType.VideoAndAudio;
   const isExplicitType = options.defaultDownloadType && options.defaultDownloadType !== DownloadType.Auto;

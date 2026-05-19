@@ -22,10 +22,11 @@ export function getPreferredMusicAudioFormat(audioFormats: AdaptiveFormatItem[])
   return audioFormats.find(format => format.mimeType.includes("mp4")) ?? audioFormats[0] ?? null;
 }
 
-export function resolveInitialAudioFormat({ options, videoData }: {
+type OptionsVideoDataParams = {
   options: Options;
   videoData: VideoData;
-}) {
+};
+export function resolveInitialAudioFormat({ options, videoData }: OptionsVideoDataParams) {
   if (videoData.isMusic) {
     return getPreferredMusicAudioFormat(videoData.audioFormats);
   }
@@ -62,10 +63,11 @@ export function resolveInitialAudioFormat({ options, videoData }: {
   });
 }
 
-function findMatchedCustomLangCode({ options, audioFormats }: {
+type FindMatchedCustomLangCodeParams = {
   options: Options;
   audioFormats: AdaptiveFormatItem[];
-}) {
+};
+function findMatchedCustomLangCode({ options, audioFormats }: FindMatchedCustomLangCodeParams) {
   const isCustomMode = options.audioTrackLanguageMode === AudioTrackLanguageMode.Custom;
   if (!isCustomMode || !options.customLanguage) {
     return null;
@@ -78,10 +80,7 @@ function findMatchedCustomLangCode({ options, audioFormats }: {
   return hasMatch ? langCode : null;
 }
 
-export function resolveInitialAudioMode({ options, videoData }: {
-  options: Options;
-  videoData: VideoData;
-}) {
+export function resolveInitialAudioMode({ options, videoData }: OptionsVideoDataParams) {
   const customLangCode = findMatchedCustomLangCode({
     options,
     audioFormats: videoData.audioFormats
@@ -89,10 +88,7 @@ export function resolveInitialAudioMode({ options, videoData }: {
   return customLangCode ? PanelTrackMode.Custom : PanelTrackMode.MatchVideo;
 }
 
-export function resolveInitialAudioCustomLanguage({ options, videoData }: {
-  options: Options;
-  videoData: VideoData;
-}) {
+export function resolveInitialAudioCustomLanguage({ options, videoData }: OptionsVideoDataParams) {
   const customLangCode = findMatchedCustomLangCode({
     options,
     audioFormats: videoData.audioFormats

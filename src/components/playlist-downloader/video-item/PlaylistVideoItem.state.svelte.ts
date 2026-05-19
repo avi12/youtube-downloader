@@ -17,11 +17,16 @@ const defaultProgressState: DownloadProgressState = {
   progressType: ""
 };
 
-export function createPlaylistVideoItemState({ videoId, gridTitle, activeDownloadClicks }: {
+type CreatePlaylistVideoItemStateParams = {
   videoId: string;
   gridTitle: string | undefined;
   activeDownloadClicks: Set<string>;
-}) {
+};
+export function createPlaylistVideoItemState({
+  videoId,
+  gridTitle,
+  activeDownloadClicks
+}: CreatePlaylistVideoItemStateParams) {
   let videoData = $state<VideoData | null>(null);
   let isLoadFailed = $state(false);
   let isLocallyDone = $state(false);
@@ -121,8 +126,13 @@ export function createPlaylistVideoItemState({ videoId, gridTitle, activeDownloa
 
     activeDownloadClicks.add(videoId);
     try {
-      await triggerDownload(videoData!, videoId, gridTitle, value => {
-        isLocallyDone = value;
+      await triggerDownload({
+        videoData: videoData!,
+        videoId,
+        gridTitle,
+        setLocallyDone(value) {
+          isLocallyDone = value;
+        }
       });
     } finally {
       activeDownloadClicks.delete(videoId);

@@ -8,15 +8,24 @@ import {
   type VideoData
 } from "@/types";
 
-function assignButtonId({ elButton, buttonId }: {
+type AssignButtonIdParams = {
   elButton: Element;
   buttonId: string;
-}) {
+};
+function assignButtonId({ elButton, buttonId }: AssignButtonIdParams) {
   if (elButton.getAttribute(DATA_BUTTON_ID_ATTR) !== buttonId) {
     elButton.setAttribute(DATA_BUTTON_ID_ATTR, buttonId);
   }
 }
 
+type SendDownloadButtonDataParams = {
+  elButton: Element;
+  buttonId: string;
+  tooltip: string;
+  videoData: VideoData | null;
+  downloadIconName: IconName;
+  isDisabled: boolean;
+};
 export function sendDownloadButtonData({
   elButton,
   buttonId,
@@ -24,14 +33,7 @@ export function sendDownloadButtonData({
   videoData,
   downloadIconName,
   isDisabled
-}: {
-  elButton: Element;
-  buttonId: string;
-  tooltip: string;
-  videoData: VideoData | null;
-  downloadIconName: IconName;
-  isDisabled: boolean;
-}) {
+}: SendDownloadButtonDataParams) {
   assignButtonId({
     elButton,
     buttonId
@@ -53,17 +55,18 @@ export function sendDownloadButtonData({
   });
 }
 
+type SendChevronButtonDataParams = {
+  elButton: Element;
+  buttonId: string;
+  iconName: IconName;
+  isDisabled: boolean;
+};
 export function sendChevronButtonData({
   elButton,
   buttonId,
   iconName,
   isDisabled
-}: {
-  elButton: Element;
-  buttonId: string;
-  iconName: IconName;
-  isDisabled: boolean;
-}) {
+}: SendChevronButtonDataParams) {
   assignButtonId({
     elButton,
     buttonId

@@ -28,10 +28,11 @@ export function requestDropdownCreation(videoId: string) {
   return panelContentId;
 }
 
-export function mountPanelInContent({ contentId, videoData }: {
+type MountPanelInContentParams = {
   contentId: string;
   videoData: VideoData;
-}) {
+};
+export function mountPanelInContent({ contentId, videoData }: MountPanelInContentParams) {
   const elContent = document.getElementById(contentId);
   if (!elContent) {
     return null;
@@ -52,13 +53,14 @@ export function mountPanelInContent({ contentId, videoData }: {
   };
 }
 
+type RegisterDropdownCloseListenersParams = {
+  elDropdown: HTMLElement | null;
+  onClose: () => void;
+};
 export function registerDropdownCloseListeners({
   elDropdown,
   onClose
-}: {
-  elDropdown: HTMLElement | null;
-  onClose: () => void;
-}) {
+}: RegisterDropdownCloseListenersParams) {
   function handleOverlayClose() {
     onClose();
     elDropdown?.removeEventListener(IRON_OVERLAY_CLOSED_EVENT, handleOverlayClose);

@@ -1,10 +1,11 @@
 import { ACTION_BUTTON_IDS } from "./playlist-action-button-data";
 import { DATA_BUTTON_ID_ATTR } from "@/lib/ui/polymer-utils";
 
-export function attachButton({ buttonId, setter }: {
+type AttachButtonParams = {
   buttonId: string;
   setter: (el: HTMLElement) => void;
-}) {
+};
+export function attachButton({ buttonId, setter }: AttachButtonParams) {
   return (elButton: Element) => {
     const isHtmlElement = elButton instanceof HTMLElement;
     if (!isHtmlElement) {
@@ -16,7 +17,7 @@ export function attachButton({ buttonId, setter }: {
   };
 }
 
-export function handleActionButtonClick({ buttonId, state }: {
+type HandleActionButtonClickParams = {
   buttonId: string;
   state: {
     isRevealingAll: boolean;
@@ -25,7 +26,8 @@ export function handleActionButtonClick({ buttonId, state }: {
     revealAndDownloadAll(): Promise<void> | void;
     cancelReveal(): void;
   };
-}) {
+};
+export function handleActionButtonClick({ buttonId, state }: HandleActionButtonClickParams) {
   const isDeselectAll = buttonId === ACTION_BUTTON_IDS.DeselectAll;
   if (isDeselectAll) {
     state.clearSelection();

@@ -14,10 +14,11 @@ export function buildEstimatedTimeLabel(sizeBytes: number) {
   return seconds < 60 ? `~${seconds}s` : `~${Math.round(seconds / 60)} min`;
 }
 
-export function buildAvailableTargets({ entry, isVideoContainer }: {
+type BuildAvailableTargetsParams = {
   entry: RecentDownloadEntry;
   isVideoContainer: boolean;
-}) {
+};
+export function buildAvailableTargets({ entry, isVideoContainer }: BuildAvailableTargetsParams) {
   return (isVideoContainer ? videoContainers : audioContainers)
     .filter(target => target !== entry.container)
     .filter(target => !isVideoContainer || !entry.videoMimeType || isCompatibleForRemux({
@@ -27,15 +28,16 @@ export function buildAvailableTargets({ entry, isVideoContainer }: {
     }));
 }
 
+type SubmitTranscodeParams = {
+  entry: RecentDownloadEntry;
+  selectedTarget: string;
+  isSubmitting: boolean;
+};
 export async function submitTranscode({
   entry,
   selectedTarget,
   isSubmitting
-}: {
-  entry: RecentDownloadEntry;
-  selectedTarget: string;
-  isSubmitting: boolean;
-}) {
+}: SubmitTranscodeParams) {
   if (!selectedTarget || isSubmitting) {
     return false;
   }

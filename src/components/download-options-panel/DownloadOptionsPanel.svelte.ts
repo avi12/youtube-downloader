@@ -13,10 +13,11 @@ export interface PanelActions {
   revealDownload(): void;
 }
 
-export function setupPanelButtonHandler({ panel, onClose }: {
+type SetupPanelButtonHandlerParams = {
   panel: PanelActions;
   onClose: () => void;
-}) {
+};
+export function setupPanelButtonHandler({ panel, onClose }: SetupPanelButtonHandlerParams) {
   return onButtonClick(buttonId => {
     const isCloseButton = buttonId === HEADER_CLOSE_BUTTON_ID;
     if (isCloseButton) {

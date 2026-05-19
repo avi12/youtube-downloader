@@ -21,10 +21,11 @@ const SEGMENTED_IDS = new Set([
   ...TOGGLE_BUTTON_GROUPS.output.map(button => button.id)
 ]);
 
-function resolveButtonType({ isActive }: {
+type ResolveButtonTypeParams = {
   isActive: boolean;
   isSegmented: boolean;
-}) {
+};
+function resolveButtonType({ isActive }: ResolveButtonTypeParams) {
   return isActive ? ButtonType.Filled : ButtonType.Outline;
 }
 

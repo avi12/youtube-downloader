@@ -1,13 +1,23 @@
 import { ProgressType } from "@/types";
 
-export function getProgressLabel({ videoId, statusProgress, percentFormatter }: {
+type StatusProgress = Record<string, {
+  progress: number;
+  progressType: ProgressType;
+}>;
+type VideoDetails = Record<string, {
+  filenameOutput: string;
+  quality?: string;
+  tabId?: number;
+  playlistId?: string;
+  playlistTitle?: string;
+}>;
+
+type GetProgressLabelParams = {
   videoId: string;
-  statusProgress: Record<string, {
-    progress: number;
-    progressType: ProgressType;
-  }>;
+  statusProgress: StatusProgress;
   percentFormatter: Intl.NumberFormat;
-}) {
+};
+export function getProgressLabel({ videoId, statusProgress, percentFormatter }: GetProgressLabelParams) {
   const prog = statusProgress[videoId];
   if (!prog) {
     return "";
@@ -21,40 +31,31 @@ export function getProgressLabel({ videoId, statusProgress, percentFormatter }: 
   return `${percentage} (${prog.progressType})`;
 }
 
-export function getProgress({ videoId, statusProgress }: {
+type GetProgressParams = {
   videoId: string;
-  statusProgress: Record<string, {
-    progress: number;
-    progressType: ProgressType;
-  }>;
-}) {
+  statusProgress: StatusProgress;
+};
+export function getProgress({ videoId, statusProgress }: GetProgressParams) {
   return statusProgress[videoId]?.progress ?? null;
 }
 
-export function getFilename({ videoId, videoDetails }: {
+type VideoIdDetailsParams = {
   videoId: string;
-  videoDetails: Record<string, {
-    filenameOutput: string;
-    quality?: string;
-  }>;
-}) {
+  videoDetails: VideoDetails;
+};
+export function getFilename({ videoId, videoDetails }: VideoIdDetailsParams) {
   return videoDetails[videoId]?.filenameOutput ?? videoId;
 }
 
-export function getQuality({ videoId, videoDetails }: {
-  videoId: string;
-  videoDetails: Record<string, {
-    filenameOutput: string;
-    quality?: string;
-  }>;
-}) {
+export function getQuality({ videoId, videoDetails }: VideoIdDetailsParams) {
   return videoDetails[videoId]?.quality ?? "";
 }
 
-export function getVideoStatusLabel({ i, isFFmpegReady }: {
+type GetVideoStatusLabelParams = {
   i: number;
   isFFmpegReady: boolean;
-}) {
+};
+export function getVideoStatusLabel({ i, isFFmpegReady }: GetVideoStatusLabelParams) {
   if (i === 0) {
     return isFFmpegReady ? "Processing…" : "Waiting for FFmpeg…";
   }
@@ -62,23 +63,12 @@ export function getVideoStatusLabel({ i, isFFmpegReady }: {
   return "Downloading";
 }
 
-type StatusProgress = Record<string, {
-  progress: number;
-  progressType: ProgressType;
-}>;
-type VideoDetails = Record<string, {
-  filenameOutput: string;
-  quality?: string;
-  tabId?: number;
-  playlistId?: string;
-  playlistTitle?: string;
-}>;
-
-export function bindDownloadAccessors({ statusProgress, videoDetails, percentFormatter }: {
+type BindDownloadAccessorsParams = {
   statusProgress: StatusProgress;
   videoDetails: VideoDetails;
   percentFormatter: Intl.NumberFormat;
-}) {
+};
+export function bindDownloadAccessors({ statusProgress, videoDetails, percentFormatter }: BindDownloadAccessorsParams) {
   return {
     label: (id: string) => getProgressLabel({
       videoId: id,

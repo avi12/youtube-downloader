@@ -15,10 +15,11 @@ export {
   resolveInitialCaptionTrack
 } from "./panel-init-caption";
 
-export function resolveInitialDownloadType({ options, videoData }: {
+type OptionsVideoDataParams = {
   options: Options;
   videoData: VideoData;
-}) {
+};
+export function resolveInitialDownloadType({ options, videoData }: OptionsVideoDataParams) {
   const isExplicitType = options.defaultDownloadType !== DownloadType.Auto;
   if (isExplicitType) {
     return options.defaultDownloadType;
@@ -27,10 +28,7 @@ export function resolveInitialDownloadType({ options, videoData }: {
   return videoData.isMusic ? DownloadType.Audio : DownloadType.VideoAndAudio;
 }
 
-export function resolveInitialExtension({ options, videoData }: {
-  options: Options;
-  videoData: VideoData;
-}) {
+export function resolveInitialExtension({ options, videoData }: OptionsVideoDataParams) {
   const extensionPreference = videoData.isMusic ? options.ext.audio : options.ext.video;
   const defaultFormat = videoData.isMusic
     ? getPreferredMusicAudioFormat(videoData.audioFormats)
