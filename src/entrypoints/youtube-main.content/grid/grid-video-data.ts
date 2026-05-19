@@ -44,8 +44,8 @@ function requestVideoData(videoId: string) {
     return;
   }
 
-  const isVideoNotPending = !videoDataPending.has(videoId);
-  if (isVideoNotPending) {
+  const isVideoPending = videoDataPending.has(videoId);
+  if (!isVideoPending) {
     videoDataPending.add(videoId);
     void processNextVideoData();
   }

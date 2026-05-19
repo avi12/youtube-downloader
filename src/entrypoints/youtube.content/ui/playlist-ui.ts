@@ -102,8 +102,8 @@ function makeTooltipHandlers() {
   let elHoveredYtdlButton: HTMLElement | null = null;
 
   function trackHoveredButton(e: MouseEvent) {
-    const isNotElement = !(e.target instanceof Element);
-    if (isNotElement) {
+    const isElement = e.target instanceof Element;
+    if (!isElement) {
       return;
     }
 

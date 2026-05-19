@@ -27,15 +27,15 @@ export function buildClickHandler({ videoData, elDropdown, state }: {
 }) {
   return function handleClick(e: Event) {
     const { target } = e;
-    const isNotNode = !(target instanceof Node);
-    if (isNotNode) {
+    const isNode = target instanceof Node;
+    if (!isNode) {
       return;
     }
 
     const elDownloadButton = state.getElDownloadButton();
     if (elDownloadButton?.contains(target)) {
-      const isNotDownloadable = !videoData.isDownloadable;
-      if (isNotDownloadable) {
+      const isDownloadable = videoData.isDownloadable;
+      if (!isDownloadable) {
         return;
       }
 
@@ -65,8 +65,8 @@ export function buildClickHandler({ videoData, elDropdown, state }: {
 
     const elChevronButton = state.getElChevronButton();
     if (elChevronButton?.contains(target)) {
-      const isNotDownloadable = !videoData.isDownloadable;
-      if (isNotDownloadable) {
+      const isDownloadable = videoData.isDownloadable;
+      if (!isDownloadable) {
         return;
       }
 
