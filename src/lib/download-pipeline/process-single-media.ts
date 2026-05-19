@@ -11,8 +11,13 @@ import { getFileExtension } from "@/lib/utils/containers";
 import { DownloadType, ProgressType } from "@/types";
 import type { ProcessStreamData } from "@/types";
 
+const WEBM_AUDIO_EXTENSION = "weba";
+const MP4_AUDIO_EXTENSION = "m4a";
+const DEFAULT_PLAYLIST_TITLE = "Playlist";
+const NO_STREAM_DATA_ERROR = "No stream data accumulated";
+
 function sourceAudioExtension(audioMimeType: string) {
-  return audioMimeType.includes("webm") ? "weba" : "m4a";
+  return audioMimeType.includes("webm") ? WEBM_AUDIO_EXTENSION : MP4_AUDIO_EXTENSION;
 }
 
 export async function processSingleMedia({ item, isCancelled }: {
@@ -23,7 +28,7 @@ export async function processSingleMedia({ item, isCancelled }: {
   const rawData = type === DownloadType.Audio ? audioData : videoData;
   let data = toUint8Array(rawData);
   if (!data) {
-    throw new Error("No stream data accumulated");
+    throw new Error(NO_STREAM_DATA_ERROR);
   }
 
   await reportProgress({
@@ -57,7 +62,7 @@ export async function processSingleMedia({ item, isCancelled }: {
   if (isPlaylistItem) {
     await addToPlaylistBundle({
       playlistId: item.playlistId!,
-      playlistTitle: item.playlistTitle ?? "Playlist",
+      playlistTitle: item.playlistTitle ?? DEFAULT_PLAYLIST_TITLE,
       totalCount: item.playlistTotalCount ?? 1,
       tabId,
       filename: filenameOutput,

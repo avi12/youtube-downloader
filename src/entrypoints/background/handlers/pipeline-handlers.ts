@@ -44,8 +44,8 @@ export function registerPipelineHandlers() {
   });
 
   onMessage(MessageType.PipelineStart, async ({ data }) => {
-    const isNotCancelled = !isVideoCancelled(data.videoId);
-    if (isNotCancelled) {
+    const isCancelled = isVideoCancelled(data.videoId);
+    if (!isCancelled) {
       await enqueueToPopupList({
         videoId: data.videoId,
         type: data.type,

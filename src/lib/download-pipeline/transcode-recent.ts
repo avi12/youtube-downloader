@@ -5,11 +5,13 @@ import { getRecentDownloadBlob, getAllRecentDownloads } from "@/lib/storage/rece
 import { splitFilenameAndExtension } from "@/lib/utils/containers";
 import { DownloadType } from "@/types";
 
+export const TRANSCODE_VIDEO_ID_PREFIX = "transcode:";
+
 export async function transcodeRecentDownload({ entryId, targetContainer }: {
   entryId: string;
   targetContainer: string;
 }) {
-  const transcodeVideoId = `transcode:${entryId}`;
+  const transcodeVideoId = `${TRANSCODE_VIDEO_ID_PREFIX}${entryId}`;
 
   try {
     const allEntries = await getAllRecentDownloads();

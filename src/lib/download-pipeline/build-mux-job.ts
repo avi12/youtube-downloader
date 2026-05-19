@@ -9,6 +9,9 @@ import type { MuxVideoAudioJob } from "./mux-worker-types";
 import { ProgressType } from "@/types";
 import type { ProcessStreamData } from "@/types";
 
+const MKV_EXTENSION = "mkv";
+const NO_STREAM_DATA_ERROR = "No stream data accumulated";
+
 type ExtraAudioTrack = MuxVideoAudioJob["extraAudioTracks"][number];
 
 export function buildExtraAudioTracks(additionalAudioStreams: ProcessStreamData["additionalAudioStreams"]) {
@@ -42,7 +45,7 @@ export function resolveDownloadFilename({ filenameOutput, hasExtraTracks }: {
   filenameOutput: string;
   hasExtraTracks: boolean;
 }) {
-  const targetExtension = hasExtraTracks ? "mkv" : (filenameOutput.split(".").pop() ?? "mkv");
+  const targetExtension = hasExtraTracks ? MKV_EXTENSION : (filenameOutput.split(".").pop() ?? MKV_EXTENSION);
   return `${filenameOutput.replace(/\.[^.]+$/, "")}.${targetExtension}`;
 }
 
@@ -53,7 +56,7 @@ export async function handleSingleStream({ item, videoData, audioData }: {
 }) {
   const hasNoData = !videoData && !audioData;
   if (hasNoData) {
-    throw new Error("No stream data accumulated");
+    throw new Error(NO_STREAM_DATA_ERROR);
   }
 
   const recentContext = buildRecentContext({ item });

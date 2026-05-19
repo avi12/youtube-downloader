@@ -35,8 +35,8 @@ export function toUint8Array(data: Uint8Array | Record<string, number> | null) {
     return null;
   }
 
-  const isNotArrayBufferView = !ArrayBuffer.isView(data);
-  if (isNotArrayBufferView) {
+  const isArrayBufferView = ArrayBuffer.isView(data);
+  if (!isArrayBufferView) {
     return new Uint8Array(Object.values(data));
   }
 

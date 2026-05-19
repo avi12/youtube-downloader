@@ -1,6 +1,8 @@
 import { tabTracker, untrackVideoForTab } from "../queue/tab-tracker";
 import { clearCapturedSabrData } from "@/lib/youtube/sabr/request-capture";
 
+const YOUTUBE_HOSTNAME = "youtube.com";
+
 export function registerTabLifecycleHandlers() {
   browser.tabs.onRemoved.addListener(tabId => {
     const tabState = tabTracker[tabId];
@@ -20,9 +22,9 @@ export function registerTabLifecycleHandlers() {
   });
 
   browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-    const isNotLoading = changeInfo.status !== browser.tabs.TabStatus.LOADING;
-    const isNotYouTube = !(tab.url ?? "").includes("youtube.com");
-    if (isNotLoading || isNotYouTube) {
+    const isLoading = changeInfo.status === browser.tabs.TabStatus.LOADING;
+    const isYouTube = (tab.url ?? "").includes(YOUTUBE_HOSTNAME);
+    if (!isLoading || !isYouTube) {
       return;
     }
 

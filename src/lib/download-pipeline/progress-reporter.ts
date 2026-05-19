@@ -13,8 +13,8 @@ export async function reportProgress({
   progressType: ProgressType;
   tabId: number;
 }) {
-  const isNotComplete = progress < 1;
-  if (isNotComplete) {
+  const isComplete = progress >= 1;
+  if (!isComplete) {
     completedVideoIds.delete(videoId);
   }
 
@@ -23,7 +23,6 @@ export async function reportProgress({
     lastProgressTimestamps.delete(videoId);
   }
 
-  const isComplete = progress >= 1;
   if (isComplete) {
     const isAlreadyCompleted = completedVideoIds.has(videoId);
     if (isAlreadyCompleted) {

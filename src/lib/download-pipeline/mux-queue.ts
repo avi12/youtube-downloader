@@ -1,3 +1,5 @@
+export const MUX_JOB_CANCELLED_ERROR = "muxJobCancelled";
+
 interface MuxQueueEntry {
   videoId: string;
   run: () => Promise<void>;
@@ -24,7 +26,7 @@ async function processMuxQueue() {
     const isJobCancelled = cancelledMuxJobs.has(entry.videoId);
     if (isJobCancelled) {
       cancelledMuxJobs.delete(entry.videoId);
-      entry.reject(new Error("muxJobCancelled"));
+      entry.reject(new Error(MUX_JOB_CANCELLED_ERROR));
       continue;
     }
 
@@ -66,7 +68,7 @@ export function cancelMuxJobs(videoIds: string[]) {
     if (isEntryInSet) {
       muxQueue.splice(iEntry, 1);
       cancelledMuxJobs.delete(entry.videoId);
-      entry.reject(new Error("muxJobCancelled"));
+      entry.reject(new Error(MUX_JOB_CANCELLED_ERROR));
     }
   }
 }

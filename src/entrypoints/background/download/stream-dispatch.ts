@@ -7,6 +7,9 @@ import { stripMimeParams } from "@/lib/utils/containers";
 import { ProgressType } from "@/types";
 import type { DownloadRequest, VideoMetadata } from "@/types";
 
+const FALLBACK_VIDEO_MIME_TYPE = "video/mp4";
+const FALLBACK_AUDIO_MIME_TYPE = "audio/mp4";
+
 export async function dispatchToOffscreen({ request, result, enrichedMetadata, tabId, skipChunkTransfer }: {
   request: DownloadRequest;
   result: DownloadResult;
@@ -27,8 +30,8 @@ export async function dispatchToOffscreen({ request, result, enrichedMetadata, t
   } = request;
   const { videoData, audioData, additionalAudioTracks } = result;
 
-  const resolvedVideoMimeType = videoFormat ? stripMimeParams(videoFormat.mimeType) : "video/mp4";
-  const resolvedAudioMimeType = audioFormat ? stripMimeParams(audioFormat.mimeType) : "audio/mp4";
+  const resolvedVideoMimeType = videoFormat ? stripMimeParams(videoFormat.mimeType) : FALLBACK_VIDEO_MIME_TYPE;
+  const resolvedAudioMimeType = audioFormat ? stripMimeParams(audioFormat.mimeType) : FALLBACK_AUDIO_MIME_TYPE;
   if (!skipChunkTransfer) {
     await Promise.all(
       buildTransferJobs({

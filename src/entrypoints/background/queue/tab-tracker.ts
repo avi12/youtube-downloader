@@ -9,15 +9,15 @@ export const tabTracker: Record<number, {
 export function trackVideoForTab({ videoId, tabId }: VideoTabParams) {
   videoIdToTabIds[videoId] ??= [];
 
-  const isTabNotTracked = !videoIdToTabIds[videoId].includes(tabId);
-  if (isTabNotTracked) {
+  const isTabTracked = videoIdToTabIds[videoId].includes(tabId);
+  if (!isTabTracked) {
     videoIdToTabIds[videoId].push(tabId);
   }
 
   tabTracker[tabId] ??= { videoIdsAvailable: [] };
 
-  const isVideoNotTracked = !tabTracker[tabId].videoIdsAvailable.includes(videoId);
-  if (isVideoNotTracked) {
+  const isVideoTracked = tabTracker[tabId].videoIdsAvailable.includes(videoId);
+  if (!isVideoTracked) {
     tabTracker[tabId].videoIdsAvailable.push(videoId);
   }
 }

@@ -1,4 +1,5 @@
 import { cancelMuxJobs } from "./ffmpeg-instance";
+import { MUX_JOB_CANCELLED_ERROR } from "./mux-queue";
 import { processSingleMedia } from "./process-single-media";
 import { processVideoAudio } from "./process-video-audio";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
@@ -57,7 +58,7 @@ async function processItem(item: ProcessStreamData) {
       });
     }
   } catch (error) {
-    const isMuxCancellation = (error instanceof Error) && error.message === "muxJobCancelled";
+    const isMuxCancellation = (error instanceof Error) && error.message === MUX_JOB_CANCELLED_ERROR;
     if (isMuxCancellation) {
       return;
     }

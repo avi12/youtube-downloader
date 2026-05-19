@@ -7,6 +7,8 @@ const FETCH_HEADER_TIMEOUT_MS = 30_000;
 const HTTP_STATUS_RANGE_NOT_SATISFIABLE = 416;
 const HTTP_STATUS_OK = 200;
 const HTTP_STATUS_TOO_MANY_REQUESTS = 429;
+const RANGE_HEADER = "Range";
+const CONTENT_LENGTH_HEADER = "Content-Length";
 
 function mergeUint8Arrays({ first, second }: {
   first: Uint8Array;
@@ -39,7 +41,7 @@ async function attemptFetch({ url, signal, byteOffset }: {
       credentials: "include",
       ...byteOffset > 0 && {
         headers: {
-          Range: `bytes=${byteOffset}-`
+          [RANGE_HEADER]: `bytes=${byteOffset}-`
         }
       }
     });
@@ -145,7 +147,7 @@ export async function fetchWithProgress({ url, signal, onBytesReceived, initialD
         byteOffset += buffer.byteLength;
         newData = new Uint8Array(buffer);
       } else {
-        const contentLength = parseInt(response.headers.get("Content-Length") ?? "0", 10);
+        const contentLength = parseInt(response.headers.get(CONTENT_LENGTH_HEADER) ?? "0", 10);
         newData = await readStreamToBuffer({
           reader: response.body.getReader(),
           expectedBytes: contentLength,

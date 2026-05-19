@@ -1,6 +1,7 @@
 import { ensureProcessor } from "../handlers/processor";
 import { enqueueToPopupList } from "../queue/popup-list";
 import { getTabIdsForVideo } from "../queue/tab-tracker";
+import { TRANSCODE_VIDEO_ID_PREFIX } from "@/lib/download-pipeline/transcode-recent";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
 import type { PipelineDownloadMessage } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
@@ -69,14 +70,13 @@ async function notifyOnIdleIfNeeded({ data, tabIds }: {
 }) {
   const [tabId] = tabIds;
   const isIdle = tabId === undefined || await isTabIdle(tabId);
-  const isNotIdle = !isIdle;
-  if (isNotIdle) {
+  if (!isIdle) {
     return;
   }
 
   void browser.notifications.create({
-    type: "basic",
-    iconUrl: browser.runtime.getURL("/icons/128.png"),
+    type: NOTIFICATION_TYPE,
+    iconUrl: browser.runtime.getURL(NOTIFICATION_ICON_PATH),
     title: "Download complete",
     message: data.filename
   });
@@ -196,7 +196,10 @@ export function registerRecentDownloadHandlers() {
 
 const RETENTION_ALARM_NAME = "ytdl-prune-recent-downloads";
 const RETENTION_DURATION_MS = 10 * 60 * 1000;
+const RETENTION_ALARM_PERIOD_MINUTES = 1;
 const POPUP_PORT_NAME = "popup";
+const NOTIFICATION_ICON_PATH = "/icons/128.png";
+const NOTIFICATION_TYPE = "basic";
 
 let openPopupCount = 0;
 
@@ -224,11 +227,11 @@ export function registerRecentDownloadsRetention() {
     });
   });
 
-  void browser.alarms.create(RETENTION_ALARM_NAME, { periodInMinutes: 1 });
+  void browser.alarms.create(RETENTION_ALARM_NAME, { periodInMinutes: RETENTION_ALARM_PERIOD_MINUTES });
   browser.alarms.onAlarm.addListener(alarm => {
-    const isNotRetentionAlarm = alarm.name !== RETENTION_ALARM_NAME;
+    const isRetentionAlarm = alarm.name === RETENTION_ALARM_NAME;
     const isPopupOpen = openPopupCount > 0;
-    if (isNotRetentionAlarm || isPopupOpen) {
+    if (!isRetentionAlarm || isPopupOpen) {
       return;
     }
 
@@ -238,7 +241,7 @@ export function registerRecentDownloadsRetention() {
   onMessage(MessageType.TranscodeRecentDownload, async ({ data }) => {
     await ensureProcessor();
     await enqueueToPopupList({
-      videoId: `transcode:${data.entryId}`,
+      videoId: `${TRANSCODE_VIDEO_ID_PREFIX}${data.entryId}`,
       type: DownloadType.VideoAndAudio,
       filenameOutput: data.filenameOutput
     });

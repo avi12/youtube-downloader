@@ -3,6 +3,8 @@ import { runEmbedMetadata, runTranscodeAudio } from "./ffmpeg-instance";
 import { ProgressType } from "@/types";
 import type { VideoMetadata } from "@/types";
 
+const FLAC_EXTENSION = "flac";
+
 export async function applyAudioFfmpeg({
   videoId,
   tabId,
@@ -42,7 +44,7 @@ export async function applyAudioFfmpeg({
     });
   }
 
-  const isFlacOutput = outputExtension === "flac";
+  const isFlacOutput = outputExtension === FLAC_EXTENSION;
   if (isFlacOutput) {
     await reportProgress({
       videoId,

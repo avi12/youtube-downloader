@@ -8,6 +8,7 @@ import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen
 import type { DownloadRequest } from "@/types";
 
 const IFRAME_READY_TIMEOUT_MS = 30_000;
+const YOUTUBE_WATCH_BASE_URL = "https://www.youtube.com/watch";
 
 const pendingIframeReady = new Map<string, {
   resolve: () => void;
@@ -36,7 +37,7 @@ export async function prepareIframe(data: DownloadRequest) {
     mute: "1",
     autoplay: "1"
   });
-  const watchUrl = `https://www.youtube.com/watch?${watchParams.toString()}`;
+  const watchUrl = `${YOUTUBE_WATCH_BASE_URL}?${watchParams.toString()}`;
 
   sendToOffscreen({
     type: OffscreenMessageType.CreateDownloadIframe,

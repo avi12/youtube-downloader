@@ -2,6 +2,8 @@ import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import type { RecentDownloadContext } from "@/lib/messaging/messaging";
 import { getCompatibleFilename, getMimeType } from "@/lib/utils/containers";
 
+const FALLBACK_MIME_TYPE = "application/octet-stream";
+
 const blobUrlsPendingRevocation = new Map<string, (() => void) | null>();
 
 export async function triggerDownload({ data, filenameOutput, recentContext }: {
@@ -9,7 +11,7 @@ export async function triggerDownload({ data, filenameOutput, recentContext }: {
   filenameOutput: string;
   recentContext?: RecentDownloadContext;
 }) {
-  const mimeType = getMimeType(filenameOutput) || "application/octet-stream";
+  const mimeType = getMimeType(filenameOutput) || FALLBACK_MIME_TYPE;
   const filename = getCompatibleFilename(filenameOutput);
   const blob = new Blob([new Uint8Array(data)], { type: mimeType });
   const blobUrl = URL.createObjectURL(blob);
@@ -29,7 +31,7 @@ export async function triggerDownloadFromFile({ file, filenameOutput, recentCont
   recentContext?: RecentDownloadContext;
   onRevoke?: () => void;
 }) {
-  const mimeType = getMimeType(filenameOutput) || "application/octet-stream";
+  const mimeType = getMimeType(filenameOutput) || FALLBACK_MIME_TYPE;
   const filename = getCompatibleFilename(filenameOutput);
   const blob = new Blob([file], { type: mimeType });
   const blobUrl = URL.createObjectURL(blob);

@@ -12,6 +12,8 @@ import { OPFS_MUX_OUTPUT_SUFFIX } from "@/entrypoints/mux-worker/opfs-output-fs"
 import { ProgressType } from "@/types";
 import type { ProcessStreamData } from "@/types";
 
+const DEFAULT_PLAYLIST_TITLE = "Playlist";
+
 export async function processVideoAudio({ item, isCancelled }: {
   item: ProcessStreamData;
   isCancelled: () => boolean;
@@ -82,7 +84,7 @@ export async function processVideoAudio({ item, isCancelled }: {
     await root.removeEntry(videoId + OPFS_MUX_OUTPUT_SUFFIX).catch(() => {});
     await addToPlaylistBundle({
       playlistId: item.playlistId!,
-      playlistTitle: item.playlistTitle ?? "Playlist",
+      playlistTitle: item.playlistTitle ?? DEFAULT_PLAYLIST_TITLE,
       totalCount: item.playlistTotalCount ?? 1,
       tabId,
       filename: downloadFilename,
