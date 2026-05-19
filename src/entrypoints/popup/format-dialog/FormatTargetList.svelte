@@ -12,7 +12,8 @@
 {#if targets.length === 0}
   <p class="dialog-note">No alternative formats available for this file</p>
 {:else}
-  <div class="target-list" aria-label="Target format" role="radiogroup">
+  <fieldset class="target-list">
+    <legend class="visually-hidden">Target format</legend>
     {#each targets as target (target)}
       <label class="target-option">
         <input
@@ -25,7 +26,7 @@
         <span>{target}</span>
       </label>
     {/each}
-  </div>
+  </fieldset>
 
   <p class="dialog-note">
     Transcoding takes {estimatedTimeLabel}. The download will restart with the new format
@@ -37,6 +38,19 @@
     display: flex;
     flex-wrap: wrap;
     gap: 6px;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: none;
+  }
+
+  .visually-hidden {
+    position: absolute;
+    overflow: hidden;
+    width: 1px;
+    height: 1px;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 
   .target-option {

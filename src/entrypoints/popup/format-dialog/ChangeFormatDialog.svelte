@@ -23,6 +23,11 @@
   let selectedTarget = $state("");
   let isSubmitting = $state(false);
   let isClosing = $state(false);
+  let dialogEl = $state<HTMLDialogElement | null>(null);
+
+  $effect(() => {
+    dialogEl?.showModal();
+  });
 
   $effect(() => {
     if (!selectedTarget && availableTargets.length > 0) {
@@ -68,55 +73,37 @@
     }
   }} />
 
-<div
-  class="dialog-backdrop"
+<dialog
+  bind:this={dialogEl}
+  class="dialog"
   class:closing={isClosing}
+  aria-labelledby="change-format-title"
+  onanimationend={() => {
+    if (isClosing) {
+      onClose();
+    }
+  }}
   onclick={handleBackdropClick}
-  role="presentation"
 >
-  <div
-    class="dialog"
-    aria-labelledby="change-format-title"
-    aria-modal="true"
-    onanimationend={() => {
-      if (isClosing) {
-        onClose();
-      }
-    }}
-    role="dialog"
-  >
-    <h2 id="change-format-title" class="dialog-title">Change format</h2>
-    <p class="dialog-body">
-      Convert <strong>{entry.title}</strong> from <code>{entry.container}</code> to:
-    </p>
-    <FormatTargetList
-      {estimatedTimeLabel}
-      onSelect={target => (selectedTarget = target)}
-      {selectedTarget}
-      targets={availableTargets}
-    />
-    <ChangeFormatActions
-      isDisabled={!selectedTarget || isSubmitting || availableTargets.length === 0}
-      {isSubmitting}
-      onCancel={startClose}
-      onConfirm={handleConfirm}
-    />
-  </div>
-</div>
+  <h2 id="change-format-title" class="dialog-title">Change format</h2>
+  <p class="dialog-body">
+    Convert <strong>{entry.title}</strong> from <code>{entry.container}</code> to:
+  </p>
+  <FormatTargetList
+    {estimatedTimeLabel}
+    onSelect={target => (selectedTarget = target)}
+    {selectedTarget}
+    targets={availableTargets}
+  />
+  <ChangeFormatActions
+    isDisabled={!selectedTarget || isSubmitting || availableTargets.length === 0}
+    {isSubmitting}
+    onCancel={startClose}
+    onConfirm={handleConfirm}
+  />
+</dialog>
 
 <style>
-  .dialog-backdrop {
-    position: fixed;
-    inset: 0;
-    z-index: 50;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 16px;
-    background: rgb(0 0 0 / 40%);
-    animation: backdrop-in 200ms ease-out;
-  }
-
   .dialog {
     display: flex;
     flex-direction: column;
@@ -124,11 +111,25 @@
     width: 100%;
     max-width: 360px;
     padding: 20px;
+    border: none;
     border-radius: 16px;
     background: var(--surface-high);
     color: var(--fg);
     box-shadow: 0 8px 32px rgb(0 0 0 / 12%);
     animation: dialog-in 240ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .dialog::backdrop {
+    background: rgb(0 0 0 / 40%);
+    animation: backdrop-in 200ms ease-out;
+  }
+
+  .dialog.closing {
+    animation: dialog-out 240ms cubic-bezier(0.36, 0, 0.66, -0.56) forwards;
+  }
+
+  .dialog.closing::backdrop {
+    animation: backdrop-out 200ms ease-in forwards;
   }
 
   .dialog-title {
@@ -154,14 +155,6 @@
       font-family: inherit;
       font-size: 0.75rem;
     }
-  }
-
-  .dialog-backdrop.closing {
-    animation: backdrop-out 200ms ease-in forwards;
-  }
-
-  .dialog-backdrop.closing .dialog {
-    animation: dialog-out 240ms cubic-bezier(0.36, 0, 0.66, -0.56) forwards;
   }
 
   @keyframes backdrop-in {
