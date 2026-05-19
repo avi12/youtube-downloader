@@ -2,6 +2,10 @@ import { CONTENT_OPTIONS } from "@/lib/ui/synced-stores.svelte";
 import { waitForVideoElement } from "@/lib/youtube/video-helpers";
 import { VideoQualityMode, type AdaptiveFormatItem, type VideoData } from "@/types";
 
+const MOVIE_PLAYER_ID = "movie_player";
+const YTP_AD_PLAYING_CLASS = "ytp-ad-playing";
+const VIDEO_CAN_PLAY_EVENT = "canplay";
+
 export function createVideoFormatTracker({
   getVideoData,
   setSelectedVideoFormat
@@ -13,7 +17,7 @@ export function createVideoFormatTracker({
     const videoData = getVideoData();
     try {
       const elVideo = await waitForVideoElement(signal);
-      if (document.getElementById("movie_player")?.classList.contains("ytp-ad-playing")) {
+      if (document.getElementById(MOVIE_PLAYER_ID)?.classList.contains(YTP_AD_PLAYING_CLASS)) {
         setSelectedVideoFormat(videoData.videoFormats[0] ?? null);
         return;
       }
@@ -40,10 +44,10 @@ export function createVideoFormatTracker({
       function onCanPlay() {
         void matchToCurrentQuality(abortController.signal);
       }
-      elVideo?.addEventListener("canplay", onCanPlay);
+      elVideo?.addEventListener(VIDEO_CAN_PLAY_EVENT, onCanPlay);
       return () => {
         abortController.abort();
-        elVideo?.removeEventListener("canplay", onCanPlay);
+        elVideo?.removeEventListener(VIDEO_CAN_PLAY_EVENT, onCanPlay);
       };
     }
 

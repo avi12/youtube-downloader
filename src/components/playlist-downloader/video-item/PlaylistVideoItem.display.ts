@@ -13,8 +13,8 @@ export function resolveButtonLabel({
   isDownloading: boolean;
   isDownloadFailed: boolean;
 }) {
-  const isNotDownloadable = !videoData?.isDownloadable;
-  if (isNotDownloadable) {
+  const isDownloadable = videoData?.isDownloadable ?? false;
+  if (!isDownloadable) {
     return "N/A";
   }
 

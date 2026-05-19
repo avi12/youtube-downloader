@@ -110,8 +110,8 @@ export function createPlaylistVideoItemState({ videoId, gridTitle, activeDownloa
   const effectiveProgress = $derived(isDownloading ? displayProgress / 100 : 0);
 
   async function handleDownloadClick() {
-    const isNotReadyToDownload = !videoData?.isDownloadable || activeDownloadClicks.has(videoId);
-    if (isNotReadyToDownload) {
+    const isReadyToDownload = !!videoData?.isDownloadable && !activeDownloadClicks.has(videoId);
+    if (!isReadyToDownload) {
       return;
     }
 

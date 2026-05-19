@@ -1,3 +1,5 @@
+const CHEVRON_MARGIN_OVERRIDE_STYLE = "margin-left: 0 !important";
+
 export function attachDownloadButton({
   elButton,
   onClickDownload,
@@ -9,8 +11,8 @@ export function attachDownloadButton({
   refreshDownload: () => void;
   setDownloadButtonElement: (el: Element) => void;
 }) {
-  const isNotHtmlElement = !(elButton instanceof HTMLElement);
-  if (isNotHtmlElement) {
+  const isHtmlElement = elButton instanceof HTMLElement;
+  if (!isHtmlElement) {
     return;
   }
 
@@ -31,14 +33,14 @@ export function attachChevronButton({
   refreshChevron: () => void;
   setChevronButtonElement: (el: Element) => void;
 }) {
-  const isNotHtmlElement = !(elButton instanceof HTMLElement);
-  if (isNotHtmlElement) {
+  const isHtmlElement = elButton instanceof HTMLElement;
+  if (!isHtmlElement) {
     return;
   }
 
   setChevronButtonElement(elButton);
   elButton.addEventListener("click", onClickChevron);
   refreshChevron();
-  elButton.setAttribute("style", "margin-left: 0 !important");
+  elButton.setAttribute("style", CHEVRON_MARGIN_OVERRIDE_STYLE);
   return () => elButton.removeEventListener("click", onClickChevron);
 }

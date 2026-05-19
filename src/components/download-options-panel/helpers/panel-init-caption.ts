@@ -1,3 +1,4 @@
+import { CAPTION_KIND_ASR } from "./audio-language-helpers";
 import { ACTIVE_CAPTION_ATTR, isPlayerCaptionTrackData } from "@/lib/youtube/movie-player";
 import type { MoviePlayerElement } from "@/lib/youtube/movie-player";
 import {
@@ -15,8 +16,10 @@ import {
   type VideoData
 } from "@/types";
 
+const MOVIE_PLAYER_SELECTOR = "#movie_player";
+
 export function getActivePlayerCaption() {
-  const elPlayer = document.querySelector<MoviePlayerElement>("#movie_player");
+  const elPlayer = document.querySelector<MoviePlayerElement>(MOVIE_PLAYER_SELECTOR);
   const stored = elPlayer?.getAttribute(ACTIVE_CAPTION_ATTR);
   if (!stored) {
     return null;
@@ -110,7 +113,7 @@ export function resolveInitialCaptionTrack({
 
   const candidateTracks = options.includeAiCaptions
     ? videoData.captionTracks
-    : videoData.captionTracks.filter(track => track.kind !== "asr");
+    : videoData.captionTracks.filter(track => track.kind !== CAPTION_KIND_ASR);
   if (captionMode === PanelTrackMode.Custom) {
     return resolveCustomCaption(candidateTracks, normalizeLanguageCode(options.customLanguage ?? ""));
   }

@@ -39,8 +39,8 @@ export function applyPolymerCustomStyles({ element, styles }: {
   element: Element;
   styles: Record<string, string>;
 }) {
-  const isNotHtmlElement = !(element instanceof HTMLElement);
-  if (isNotHtmlElement) {
+  const isHtmlElement = element instanceof HTMLElement;
+  if (!isHtmlElement) {
     return;
   }
 

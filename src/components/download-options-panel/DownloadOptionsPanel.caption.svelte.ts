@@ -1,3 +1,4 @@
+import { CAPTION_KIND_ASR } from "./helpers/audio-language-helpers";
 import { getActivePlayerCaption } from "./helpers/panel-init-caption";
 import { PLAYER_ACTIVE_CAPTION } from "./helpers/player-active-tracks.svelte";
 import { findOriginalAudioFormat, normalizeLanguageCode } from "@/lib/youtube/video-helpers";
@@ -72,7 +73,7 @@ export function createCaptionTrackState({
     }
 
     const isMatchVideo = panelCaptionMode === PanelTrackMode.MatchVideo;
-    const isOnlyAsrAvailable = captionTracks.every(track => track.kind === "asr");
+    const isOnlyAsrAvailable = captionTracks.every(track => track.kind === CAPTION_KIND_ASR);
     if (!isMatchVideo && !isOnlyAsrAvailable) {
       return;
     }

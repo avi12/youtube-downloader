@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { CAPTION_KIND_ASR } from "./helpers/audio-language-helpers";
   import TrackChoice from "./TrackChoice.svelte";
   import { PanelTrackMode, TrackKind } from "@/types";
   import type { CaptionTrack, LabeledOption } from "@/types";
@@ -55,7 +56,7 @@
   // meaningful (it reflects the player's choice).
   const isOnlyAsrCaption = $derived(
     captionTracks.length > 0
-    && captionTracks.every(track => track.kind === "asr")
+    && captionTracks.every(track => track.kind === CAPTION_KIND_ASR)
     && !includeAiCaptions
   );
   const isSingleCaption = $derived(captionTracks.length === 1 && !isOnlyAsrCaption);

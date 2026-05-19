@@ -8,6 +8,7 @@ import type { VideoData } from "@/types";
 import { mount, unmount } from "svelte";
 
 const PANEL_ABOVE_OVERLAP_PX = 4;
+const IRON_OVERLAY_OPENED_EVENT = "iron-overlay-opened";
 
 export function createPanelManager({
   videoId,
@@ -68,8 +69,8 @@ export function createPanelManager({
     const panelContentId = requestDropdownCreation(videoId);
 
     unsubscribeDropdownReady = crossWorldMessenger.onMessage(CrossWorldMessage.DropdownReady, ({ data }) => {
-      const isNotThisPanel = data.contentId !== panelContentId;
-      if (isNotThisPanel) {
+      const isThisPanel = data.contentId === panelContentId;
+      if (!isThisPanel) {
         return;
       }
 
@@ -91,7 +92,7 @@ export function createPanelManager({
       elDropdown = mounted.elDropdown;
       panelInstance = mounted.panelInstance;
 
-      elDropdown?.addEventListener("iron-overlay-opened", () => {
+      elDropdown?.addEventListener(IRON_OVERLAY_OPENED_EVENT, () => {
         requestAnimationFrame(reconcilePanelPosition);
       }, { once: true });
       addEventListener("resize", reconcilePanelPosition);

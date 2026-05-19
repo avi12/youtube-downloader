@@ -69,8 +69,8 @@ export function createAudioTrackState({
 
   $effect(() => {
     const { trackId: playerTrackId, langCode: playerLangCode } = PLAYER_ACTIVE_AUDIO;
-    const isNotMatchVideo = panelAudioMode !== PanelTrackMode.MatchVideo;
-    if (isNotMatchVideo || !playerLangCode) {
+    const isMatchVideo = panelAudioMode === PanelTrackMode.MatchVideo;
+    if (!isMatchVideo || !playerLangCode) {
       return;
     }
 

@@ -4,6 +4,7 @@ import {
   byLabel,
   resolveCaptionOriginalLabel
 } from "./download-options-helpers";
+import { AUTO_DUB_TRACK_SUFFIX, CAPTION_KIND_ASR } from "./helpers/audio-language-helpers";
 import { PLAYER_ACTIVE_AUDIO, PLAYER_ACTIVE_CAPTION } from "./helpers/player-active-tracks.svelte";
 import { preserveAutoVariant } from "./helpers/preserve-auto-variant";
 import { optionsItem } from "@/lib/storage/storage";
@@ -13,11 +14,10 @@ import { DownloadType } from "@/types";
 import type { AdaptiveFormatItem, CaptionTrack } from "@/types";
 
 const AUTO_GENERATED_SUFFIX = "(auto-generated)";
-const AUTO_DUB_TRACK_SUFFIX = ".10";
 
 function formatCaptionLabel(track: CaptionTrack) {
   const name = track.name.simpleText;
-  if (track.kind !== "asr") {
+  if (track.kind !== CAPTION_KIND_ASR) {
     return name;
   }
 
@@ -67,7 +67,7 @@ export function createDownloadOptionsState(props: () => DownloadOptionsProps) {
   const filteredCaptionTracks = $derived(
     props().captionTracks.filter(track => preserveAutoVariant({
       item: track,
-      isAuto: track => track.kind === "asr",
+      isAuto: track => track.kind === CAPTION_KIND_ASR,
       matchesPlayer: track => track.vssId === PLAYER_ACTIVE_CAPTION.vssId,
       globalIncludes: PANEL_OPTIONS.includeAiCaptions
     }))
@@ -93,7 +93,7 @@ export function createDownloadOptionsState(props: () => DownloadOptionsProps) {
     props().captionTracks
       .filter(track => preserveAutoVariant({
         item: track,
-        isAuto: candidate => candidate.kind === "asr",
+        isAuto: candidate => candidate.kind === CAPTION_KIND_ASR,
         matchesPlayer: () => false,
         globalIncludes: PANEL_OPTIONS.includeAiCaptions
       }))

@@ -4,6 +4,8 @@ import { downloadProgressStore, playlistMetadataSignal } from "@/lib/ui/synced-s
 import { PlaylistDownloadMode, PlaylistOutputMode, ProgressType } from "@/types";
 import type { DownloadRequest, Options, VideoData } from "@/types";
 
+const PLAYLIST_ID_PREFIX = "playlist-";
+
 export function initBatchVideoProgress(videos: readonly VideoData[]) {
   for (const video of videos) {
     downloadProgressStore.deleteLocal(video.videoId);
@@ -70,7 +72,7 @@ export function buildBatchDownloadRequests({
   getEffectiveZipName: () => string;
 }) {
   const metadata = playlistMetadataSignal.value;
-  const playlistId = metadata?.playlistId || `playlist-${Date.now()}`;
+  const playlistId = metadata?.playlistId || `${PLAYLIST_ID_PREFIX}${Date.now()}`;
   const isZipBundle = getOutputMode() === PlaylistOutputMode.Zip;
   const zipName = getEffectiveZipName();
   const downloadRequests = videos.map(data =>

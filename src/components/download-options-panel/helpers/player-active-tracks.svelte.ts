@@ -1,13 +1,14 @@
+import { AUTO_DUB_TRACK_SUFFIX } from "./audio-language-helpers";
 import { getActivePlayerCaption } from "./panel-init-caption";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { ACTIVE_AUDIO_ATTR } from "@/lib/youtube/movie-player";
 import { getCurrentVideoAudioLanguage, normalizeLanguageCode } from "@/lib/youtube/video-helpers";
 import type { AdaptiveFormatItem } from "@/types";
 
-const AUTO_DUB_TRACK_SUFFIX = ".10";
+const MOVIE_PLAYER_SELECTOR = "#movie_player";
 
 function getInitialPlayerAudioTrackId() {
-  return document.querySelector("#movie_player")?.getAttribute(ACTIVE_AUDIO_ATTR) || null;
+  return document.querySelector(MOVIE_PLAYER_SELECTOR)?.getAttribute(ACTIVE_AUDIO_ATTR) || null;
 }
 
 const initialCaption = getActivePlayerCaption();

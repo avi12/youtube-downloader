@@ -44,9 +44,11 @@ export function setupPanelButtonHandler({ panel, onClose }: {
   });
 }
 
+export const PANEL_CLOSED_EVENT = "ytdl:panel-closed";
+
 export function sendPanelClosed() {
   void crossWorldMessenger.sendMessage(CrossWorldMessage.PanelClosed);
-  document.dispatchEvent(new CustomEvent("ytdl:panel-closed"));
+  document.dispatchEvent(new CustomEvent(PANEL_CLOSED_EVENT));
 }
 
 const YT_PLAYER_KEYS = new Set([" ", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"]);

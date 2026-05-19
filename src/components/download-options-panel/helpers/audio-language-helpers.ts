@@ -2,6 +2,9 @@ import { preserveAutoVariant } from "./preserve-auto-variant";
 import { findOriginalAudioFormat, normalizeLanguageCode } from "@/lib/youtube/video-helpers";
 import type { AdaptiveFormatItem, CaptionTrack, LabeledOption } from "@/types";
 
+export const AUTO_DUB_TRACK_SUFFIX = ".10";
+export const CAPTION_KIND_ASR = "asr";
+
 export function byLabel(optionA: { label: string }, optionB: { label: string }) {
   return optionA.label.localeCompare(optionB.label);
 }
@@ -22,7 +25,7 @@ export function buildUniqueAudioLanguages({
 
     const shouldKeep = preserveAutoVariant({
       item: format,
-      isAuto: candidate => !!candidate.audioTrack?.id.endsWith(".10"),
+      isAuto: candidate => !!candidate.audioTrack?.id.endsWith(AUTO_DUB_TRACK_SUFFIX),
       matchesPlayer: candidate => normalizeLanguageCode(candidate.audioTrack!.id) === preservedAutoDubbedLangCode,
       globalIncludes: includeAutoDubbing
     });
@@ -36,7 +39,7 @@ export function buildUniqueAudioLanguages({
     }
 
     seen.add(langCode);
-    const isAutoDubbed = format.audioTrack.id.endsWith(".10");
+    const isAutoDubbed = format.audioTrack.id.endsWith(AUTO_DUB_TRACK_SUFFIX);
     result.push({
       value: langCode,
       label: isAutoDubbed ? `${format.audioTrack.displayName} (auto-dubbed)` : format.audioTrack.displayName

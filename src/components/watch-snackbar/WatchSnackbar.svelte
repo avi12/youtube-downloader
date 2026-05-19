@@ -8,6 +8,7 @@
   const SNACKBAR_DURATION_MS = 10_000;
   const CLOSE_ANIMATION_MS = 500;
   const VIEW_BUTTON_ID = "ytdl-snackbar-view";
+  const SNACKBAR_CONTAINER_SELECTOR = "snackbar-container";
   let downloadId = $state<number | null>(null);
   let filename = $state("");
   let isOpen = $state(false);
@@ -62,7 +63,7 @@
   }));
 
   function attachToSnackbar(elNode: HTMLElement): () => void {
-    document.querySelector("snackbar-container")?.append(elNode);
+    document.querySelector(SNACKBAR_CONTAINER_SELECTOR)?.append(elNode);
     return () => elNode.remove();
   }
 </script>

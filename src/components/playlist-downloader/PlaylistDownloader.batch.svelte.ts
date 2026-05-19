@@ -5,6 +5,7 @@ import {
   initBatchVideoProgress,
   sendBatchDownloadMessage
 } from "./helpers/playlist-batch-ops";
+import { ZIP_PROGRESS_KEY_PREFIX } from "./helpers/playlist-progress-helpers";
 import { downloadProgressStore } from "@/lib/ui/synced-stores.svelte";
 import {
   PlaylistDownloadMode,
@@ -69,13 +70,13 @@ export function createBatchDownloadState({
 
     const isWaitingForZip = currentZipBundleId;
     if (isWaitingForZip) {
-      const zipEntry = downloadProgressStore.get(`zip:${currentZipBundleId}`);
-      const isZipNotDone = !zipEntry?.isDone;
-      if (isZipNotDone) {
+      const zipEntry = downloadProgressStore.get(`${ZIP_PROGRESS_KEY_PREFIX}${currentZipBundleId}`);
+      const isZipDone = zipEntry?.isDone ?? false;
+      if (!isZipDone) {
         return;
       }
 
-      downloadProgressStore.deleteLocal(`zip:${currentZipBundleId}`);
+      downloadProgressStore.deleteLocal(`${ZIP_PROGRESS_KEY_PREFIX}${currentZipBundleId}`);
       currentZipBundleId = null;
     }
 
@@ -147,7 +148,7 @@ export function createBatchDownloadState({
     batchCanceledIds.clear();
 
     if (currentZipBundleId) {
-      downloadProgressStore.deleteLocal(`zip:${currentZipBundleId}`);
+      downloadProgressStore.deleteLocal(`${ZIP_PROGRESS_KEY_PREFIX}${currentZipBundleId}`);
       currentZipBundleId = null;
     }
   }

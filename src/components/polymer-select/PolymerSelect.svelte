@@ -19,6 +19,13 @@
 
   const { id, label, options, value, disabled = false, onchange }: Props = $props();
 
+  const ANCHOR_NAME_PREFIX = "--ytdl-select-";
+  const POPOVER_ID_PREFIX = "ytdl-select-popup-";
+  const POLYMER_PAPER_ITEM = "tp-yt-paper-item";
+  const POLYMER_IRON_DROPDOWN_SELECTOR = "tp-yt-iron-dropdown";
+  const DATA_VALUE_ATTR = "data-value";
+  const POPOVER_OPEN_STATE = "open";
+
   const suffix = untrack(() => {
     if (id) {
       return id;
@@ -26,8 +33,8 @@
 
     return String(++selectInstanceCounter);
   });
-  const anchorName = `--ytdl-select-${suffix}`;
-  const popoverId = `ytdl-select-popup-${suffix}`;
+  const anchorName = `${ANCHOR_NAME_PREFIX}${suffix}`;
+  const popoverId = `${POPOVER_ID_PREFIX}${suffix}`;
 
   const selectedLabel = $derived(options.find(option => option.value === value)?.label ?? "");
 
@@ -41,8 +48,8 @@
   }
 
   function attachTrigger(elTarget: Element): (() => void) | void {
-    const isNotHtmlElement = !(elTarget instanceof HTMLElement);
-    if (isNotHtmlElement) {
+    const isHtmlElement = elTarget instanceof HTMLElement;
+    if (!isHtmlElement) {
       return;
     }
 
@@ -53,8 +60,8 @@
     }
 
     function handleKeydown(e: Event): void {
-      const isNotArrowDown = !(e instanceof KeyboardEvent) || e.key !== "ArrowDown";
-      if (isNotArrowDown) {
+      const isArrowDown = e instanceof KeyboardEvent && e.key === "ArrowDown";
+      if (!isArrowDown) {
         return;
       }
 
@@ -71,24 +78,25 @@
   }
 
   function attachPopover(elTarget: Element): (() => void) | void {
-    const isNotHtmlElement = !(elTarget instanceof HTMLElement);
-    if (isNotHtmlElement) {
+    const isHtmlElement = elTarget instanceof HTMLElement;
+    if (!isHtmlElement) {
       return;
     }
 
     elPopover = elTarget;
 
-    const elIronDropdown = elTarget.closest<HTMLElement & { noCancelOnEscKey?: boolean }>("tp-yt-iron-dropdown");
+    type IronDropdownElement = HTMLElement & { noCancelOnEscKey?: boolean };
+    const elIronDropdown = elTarget.closest<IronDropdownElement>(POLYMER_IRON_DROPDOWN_SELECTOR);
 
     function handleToggle(e: Event): void {
-      const isNotToggleEvent = !(e instanceof ToggleEvent);
-      if (isNotToggleEvent) {
+      const isToggleEvent = e instanceof ToggleEvent;
+      if (!isToggleEvent) {
         return;
       }
 
-      isOpen = e.newState === "open";
+      isOpen = e.newState === POPOVER_OPEN_STATE;
 
-      const isOpening = e.newState === "open";
+      const isOpening = e.newState === POPOVER_OPEN_STATE;
       if (isOpening) {
         if (elIronDropdown) {
           elIronDropdown.noCancelOnEscKey = true;
@@ -109,25 +117,25 @@
   }
 
   function attachMenu(elTarget: Element): (() => void) | void {
-    const isNotHtmlElement = !(elTarget instanceof HTMLElement);
-    if (isNotHtmlElement) {
+    const isHtmlElement = elTarget instanceof HTMLElement;
+    if (!isHtmlElement) {
       return;
     }
 
     elMenu = elTarget;
 
     function handleClick(e: Event): void {
-      const isNotElement = !(e.target instanceof Element);
-      if (isNotElement) {
+      const isElement = e.target instanceof Element;
+      if (!isElement) {
         return;
       }
 
-      const elItem = e.target.closest("tp-yt-paper-item");
+      const elItem = e.target.closest(POLYMER_PAPER_ITEM);
       if (!elItem) {
         return;
       }
 
-      const dataValue = elItem.getAttribute("data-value");
+      const dataValue = elItem.getAttribute(DATA_VALUE_ATTR);
       if (!dataValue) {
         return;
       }
@@ -141,8 +149,8 @@
     }
 
     function handleKeydown(e: Event): void {
-      const isNotKeyboardEvent = !(e instanceof KeyboardEvent);
-      if (isNotKeyboardEvent) {
+      const isKeyboardEvent = e instanceof KeyboardEvent;
+      if (!isKeyboardEvent) {
         return;
       }
 
@@ -162,13 +170,13 @@
       const isConfirm = e.key === "Enter" || e.key === " ";
       if (isConfirm) {
         const elActive = document.activeElement;
-        const isNotPaperItem = !(elActive instanceof HTMLElement) || !elActive.matches("tp-yt-paper-item");
-        if (isNotPaperItem) {
+        const isPaperItem = elActive instanceof HTMLElement && elActive.matches(POLYMER_PAPER_ITEM);
+        if (!isPaperItem) {
           return;
         }
 
         e.preventDefault();
-        const dataValue = elActive.getAttribute("data-value");
+        const dataValue = elActive.getAttribute(DATA_VALUE_ATTR);
         if (!dataValue) {
           return;
         }
