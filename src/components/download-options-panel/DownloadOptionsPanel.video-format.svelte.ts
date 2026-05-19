@@ -23,11 +23,10 @@ export function createVideoFormatTracker({
       }
 
       const currentQuality = Math.min(elVideo.videoHeight, elVideo.videoWidth);
-      setSelectedVideoFormat(
-        videoData.videoFormats.find(format => Math.min(format.height ?? 0, format.width ?? 0) === currentQuality)
-        ?? videoData.videoFormats[0]
-        ?? null
+      const matchingFormat = videoData.videoFormats.find(
+        format => Math.min(format.height ?? 0, format.width ?? 0) === currentQuality
       );
+      setSelectedVideoFormat(matchingFormat ?? videoData.videoFormats[0] ?? null);
     } catch {
       setSelectedVideoFormat(videoData.videoFormats[0] ?? null);
     }
@@ -57,10 +56,7 @@ export function createVideoFormatTracker({
       return;
     }
 
-    setSelectedVideoFormat(
-      videoData.videoFormats.find(format => format.height === options.videoQuality)
-      ?? videoData.videoFormats[0]
-      ?? null
-    );
+    const matchingFormat = videoData.videoFormats.find(format => format.height === options.videoQuality);
+    setSelectedVideoFormat(matchingFormat ?? videoData.videoFormats[0] ?? null);
   });
 }

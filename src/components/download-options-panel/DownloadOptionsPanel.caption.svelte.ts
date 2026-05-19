@@ -4,6 +4,14 @@ import { PLAYER_ACTIVE_CAPTION } from "./helpers/player-active-tracks.svelte";
 import { findOriginalAudioFormat, normalizeLanguageCode } from "@/lib/youtube/video-helpers";
 import { PanelTrackMode, type CaptionTrack, type VideoData } from "@/types";
 
+function findCaptionTrack(tracks: CaptionTrack[], vssId: string | null, languageCode: string | null) {
+  const byVssId = vssId ? tracks.find(track => track.vssId === vssId) : undefined;
+  const byLangCode = languageCode
+    ? tracks.find(track => normalizeLanguageCode(track.languageCode) === normalizeLanguageCode(languageCode))
+    : undefined;
+  return byVssId ?? byLangCode ?? null;
+}
+
 export function createCaptionTrackState({
   getVideoData,
   initialMode,
@@ -23,11 +31,7 @@ export function createCaptionTrackState({
     if (isMatchVideoMode) {
       const activeCaption = getActivePlayerCaption();
       selectedCaptionTrack = activeCaption
-        ? captionTracks.find(track => track.vssId === activeCaption.vss_id)
-          ?? captionTracks.find(
-            track => normalizeLanguageCode(track.languageCode) === normalizeLanguageCode(activeCaption.languageCode)
-          )
-          ?? null
+        ? findCaptionTrack(captionTracks, activeCaption.vss_id, activeCaption.languageCode)
         : null;
       return;
     }
@@ -64,10 +68,7 @@ export function createCaptionTrackState({
     }
 
     const { captionTracks } = getVideoData();
-    const match = captionTracks.find(track => track.vssId === vssId)
-      ?? (languageCode
-        ? captionTracks.find(track => normalizeLanguageCode(track.languageCode) === normalizeLanguageCode(languageCode))
-        : undefined);
+    const match = findCaptionTrack(captionTracks, vssId, languageCode);
     if (!match) {
       return;
     }
