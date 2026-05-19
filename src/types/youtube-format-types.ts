@@ -19,7 +19,7 @@ export type MediaItem = {
   approxDurationMs: `${number}`;
 };
 
-/** YouTube InnerTube API — values reverse-engineered from `streamingData.formats[]` in player responses. @see https://github.com/LuanRT/YouTube.js/blob/main/src/parser/classes/misc/Format.ts */
+/** YouTube InnerTube API -values reverse-engineered from `streamingData.formats[]` in player responses. @see https://github.com/LuanRT/YouTube.js/blob/main/src/parser/classes/misc/Format.ts */
 export type FormatItem = MediaItem & {
   width: number;
   height: number;
@@ -41,7 +41,7 @@ export type FormatItem = MediaItem & {
   audioChannels: number;
 };
 
-/** YouTube InnerTube API — values reverse-engineered from `streamingData.adaptiveFormats[]` in player responses. @see https://github.com/LuanRT/YouTube.js/blob/main/src/parser/classes/misc/Format.ts */
+/** YouTube InnerTube API -values reverse-engineered from `streamingData.adaptiveFormats[]` in player responses. @see https://github.com/LuanRT/YouTube.js/blob/main/src/parser/classes/misc/Format.ts */
 export type AdaptiveFormatItem = MediaItem & {
   width?: number;
   height?: number;

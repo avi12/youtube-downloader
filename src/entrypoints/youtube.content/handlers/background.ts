@@ -47,7 +47,7 @@ export function registerBackgroundMessageHandlers() {
         return;
       }
 
-      // Prevent backwards progress within the same phase — the download may
+      // Prevent backwards progress within the same phase - the download may
       // emit slightly out-of-order reports but the display must only advance.
       // Exception: an explicit reset (progress=0) comes from the fallback chain
       // (SABR → CDN → iframe) and must always pass through so the UI resets.
@@ -92,7 +92,7 @@ export function registerBackgroundMessageHandlers() {
       } else {
         // Guard against the cancel-then-restart race: the background's cancel
         // response can arrive after the user has already restarted the download.
-        // If a new download is running, this isRemoved is stale — drop it.
+        // If a new download is running, this isRemoved is stale - drop it.
         const isStillDownloading = downloadProgressStore.get(data.videoId)?.isDownloading;
         if (isStillDownloading) {
           return;
@@ -108,7 +108,7 @@ export function registerBackgroundMessageHandlers() {
       return;
     }
 
-    // Don't transition to `isDone` here even when FFmpeg phase hits 1 — the
+    // Don't transition to `isDone` here even when FFmpeg phase hits 1 - the
     // file isn't actually on disk yet. `completedDownloadsStore.subscribe`
     // above flips us to done once `browser.downloads.download` resolves and
     // chrome.downloads reports state=complete.

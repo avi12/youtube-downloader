@@ -17,7 +17,7 @@ export function tryCheckOutput(filename: string): boolean {
 // Emscripten-compiled FFmpeg may call abort() during context cleanup even
 // after a successful mux (e.g. WebVTT-in-MKV demuxer teardown). The output
 // file is fully written before cleanup runs, so a non-zero exit code alone
-// doesn't mean the mux failed — we check whether the file was actually written.
+// doesn't mean the mux failed - we check whether the file was actually written.
 export function executeMuxPhases(params: MuxFfmpegParams, checkOutput: CheckOutput): boolean {
   const { useIntermediateMkv, muxFilename, outputFilename, targetExtension, audioMimeType } = params;
 

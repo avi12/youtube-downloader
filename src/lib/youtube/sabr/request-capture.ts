@@ -4,7 +4,7 @@ export { extractPoTokenFromBody } from "./po-token-extractor";
 
 // Requests from offscreen iframes (youtube.com, tabId < 0) use this sentinel key.
 // These must be captured separately because tabId < 0 normally means "extension request"
-// and is skipped — but offscreen iframe player requests also arrive with tabId < 0.
+// and is skipped - but offscreen iframe player requests also arrive with tabId < 0.
 export const OFFSCREEN_PLAYER_TAB_ID = -2;
 
 const capturedByTab = new Map<number, {

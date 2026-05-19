@@ -13,7 +13,7 @@ export function isPaperToastElement(element: Element): element is TpYtPaperToast
   return "open" in element && "text" in element;
 }
 
-/** YouTube-internal Polymer view model — values reverse-engineered from YouTube's runtime. */
+/** YouTube-internal Polymer view model - values reverse-engineered from YouTube's runtime. */
 export interface YtButtonViewModelElement extends HTMLElement {
   data: ButtonViewModelData;
 }

@@ -23,7 +23,7 @@ export const YtIconName = {
 
 export type YtIconName = (typeof YtIconName)[keyof typeof YtIconName];
 
-/** YouTube-internal Polymer view model — values reverse-engineered from YouTube's runtime. */
+/** YouTube-internal Polymer view model -values reverse-engineered from YouTube's runtime. */
 export const TooltipPlacement = {
   Top: "TOOLTIP_VIEW_MODEL_PLACEMENT_TOP",
   Bottom: "TOOLTIP_VIEW_MODEL_PLACEMENT_BOTTOM",
@@ -33,7 +33,7 @@ export const TooltipPlacement = {
 
 export type TooltipPlacement = (typeof TooltipPlacement)[keyof typeof TooltipPlacement];
 
-/** YouTube-internal Polymer view model — values reverse-engineered from YouTube's runtime. */
+/** YouTube-internal Polymer view model -values reverse-engineered from YouTube's runtime. */
 export const TooltipStyle = {
   Default: "TOOLTIP_VIEW_MODEL_STYLE_DEFAULT",
   Player: "TOOLTIP_VIEW_MODEL_STYLE_PLAYER"

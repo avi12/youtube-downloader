@@ -2,7 +2,7 @@ import type { ButtonViewModelData } from "@/lib/ui/polymer-utils";
 
 export type { ButtonViewModelData };
 
-/** YouTube-internal Polymer view model — values reverse-engineered from YouTube's runtime. */
+/** YouTube-internal Polymer view model - values reverse-engineered from YouTube's runtime. */
 export const ButtonSize = {
   Default: "BUTTON_VIEW_MODEL_SIZE_DEFAULT",
   Large: "BUTTON_VIEW_MODEL_SIZE_LARGE",
@@ -12,7 +12,7 @@ export const ButtonSize = {
 
 export type ButtonSize = (typeof ButtonSize)[keyof typeof ButtonSize];
 
-/** YouTube-internal Polymer view model — values reverse-engineered from YouTube's runtime. */
+/** YouTube-internal Polymer view model - values reverse-engineered from YouTube's runtime. */
 export const ButtonStyle = {
   CallToAction: "BUTTON_VIEW_MODEL_STYLE_CALL_TO_ACTION",
   Custom: "BUTTON_VIEW_MODEL_STYLE_CUSTOM",
@@ -22,7 +22,7 @@ export const ButtonStyle = {
 
 export type ButtonStyle = (typeof ButtonStyle)[keyof typeof ButtonStyle];
 
-/** YouTube-internal Polymer view model — values reverse-engineered from YouTube's runtime. */
+/** YouTube-internal Polymer view model - values reverse-engineered from YouTube's runtime. */
 export const ButtonType = {
   Filled: "BUTTON_VIEW_MODEL_TYPE_FILLED",
   Outline: "BUTTON_VIEW_MODEL_TYPE_OUTLINE",
@@ -32,7 +32,7 @@ export const ButtonType = {
 
 export type ButtonType = (typeof ButtonType)[keyof typeof ButtonType];
 
-/** YouTube-internal Polymer view model — values reverse-engineered from YouTube's runtime. */
+/** YouTube-internal Polymer view model - values reverse-engineered from YouTube's runtime. */
 export const ButtonState = {
   Active: "BUTTON_VIEW_MODEL_STATE_ACTIVE",
   Disabled: "BUTTON_VIEW_MODEL_STATE_DISABLED"
@@ -40,7 +40,7 @@ export const ButtonState = {
 
 export type ButtonState = (typeof ButtonState)[keyof typeof ButtonState];
 
-/** YouTube-internal Polymer view model — values reverse-engineered from YouTube's runtime. */
+/** YouTube-internal Polymer view model - values reverse-engineered from YouTube's runtime. */
 export const IconName = {
   None: "",
   AccessTime: "ACCESS_TIME",

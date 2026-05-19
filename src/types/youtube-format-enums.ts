@@ -1,4 +1,4 @@
-/** YouTube InnerTube API — values reverse-engineered from `adaptiveFormats[].quality` in player responses. */
+/** YouTube InnerTube API -values reverse-engineered from `adaptiveFormats[].quality` in player responses. */
 export const VideoQuality = {
   Tiny: "tiny",
   Medium: "medium",
@@ -12,7 +12,7 @@ export const VideoQuality = {
 
 export type VideoQuality = (typeof VideoQuality)[keyof typeof VideoQuality];
 
-/** YouTube InnerTube API — values reverse-engineered from `adaptiveFormats[].qualityLabel` in player responses. */
+/** YouTube InnerTube API -values reverse-engineered from `adaptiveFormats[].qualityLabel` in player responses. */
 export const QualityLabel = {
   P144: "144p",
   P240: "240p",
@@ -27,7 +27,7 @@ export const QualityLabel = {
 
 export type QualityLabel = (typeof QualityLabel)[keyof typeof QualityLabel];
 
-/** YouTube InnerTube API — values reverse-engineered from `adaptiveFormats[].audioQuality` in player responses. */
+/** YouTube InnerTube API -values reverse-engineered from `adaptiveFormats[].audioQuality` in player responses. */
 export const AudioQuality = {
   Low: "AUDIO_QUALITY_LOW",
   Medium: "AUDIO_QUALITY_MEDIUM"
@@ -35,7 +35,7 @@ export const AudioQuality = {
 
 export type AudioQuality = (typeof AudioQuality)[keyof typeof AudioQuality];
 
-/** YouTube InnerTube API — values reverse-engineered from `playabilityStatus.status` in player responses. */
+/** YouTube InnerTube API -values reverse-engineered from `playabilityStatus.status` in player responses. */
 export const PlayabilityStatus = {
   Ok: "OK",
   Unplayable: "UNPLAYABLE",
