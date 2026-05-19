@@ -84,11 +84,20 @@
   {/if}
 </div>
 
-{#if playlist.isAnyOverrideActive}
-  <button class="ytdl-reset-link" disabled={playlist.isDownloading} onclick={playlist.resetOverrides} type="button">
+<p
+  class="ytdl-reset-wrapper"
+  class:is-visible={playlist.isAnyOverrideActive}
+  inert={!playlist.isAnyOverrideActive}
+>
+  <button
+    class="ytdl-reset-link"
+    disabled={playlist.isDownloading}
+    onclick={playlist.resetOverrides}
+    type="button"
+  >
     Reset to my defaults
   </button>
-{/if}
+</p>
 
 <style>
   .ytdl-section-select {
@@ -103,11 +112,24 @@
   :global(.ytdl-section-select .ytdl-override-badge) {
     position: absolute;
     top: 14px;
-    right: -12px;
+    left: 12px;
+  }
+
+  .ytdl-reset-wrapper {
+    display: grid;
+    grid-template-rows: 0fr;
+    overflow: clip;
+    width: fit-content;
+    margin: 0;
+    transition: grid-template-rows 200ms ease;
+
+    &.is-visible {
+      grid-template-rows: 1fr;
+    }
   }
 
   .ytdl-reset-link {
-    align-self: flex-start;
+    min-height: 0;
     padding: 0;
     border: 0;
     background: transparent;
