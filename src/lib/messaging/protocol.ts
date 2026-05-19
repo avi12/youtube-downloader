@@ -99,4 +99,29 @@ export interface ProtocolMap {
     filename: string;
     videoId: string;
   }): void;
+
+  requestDirectUrlDownload(data: {
+    videoId: string;
+    tabId: number;
+    request: DownloadRequest;
+  }): void;
+
+  requestWatchPageFallback(data: {
+    videoId: string;
+    tabId: number;
+    request: DownloadRequest;
+  }): void;
+
+  workerDownloadComplete(data: {
+    videoId: string;
+  }): void;
+
+  reportWorkerDownloadFailed(data: {
+    videoId: string;
+    tabId: number;
+  }): void;
+
+  forwardProgressUpdate(data: ProgressUpdate & {
+    tabId: number;
+  }): void;
 }

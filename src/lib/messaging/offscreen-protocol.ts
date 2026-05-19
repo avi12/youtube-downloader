@@ -1,4 +1,10 @@
-import type { AdaptiveFormatItem, DownloadType, SabrConfig, VideoMetadata } from "@/types";
+import type {
+  AdaptiveFormatItem,
+  DownloadRequest,
+  DownloadType,
+  SabrConfig,
+  VideoMetadata
+} from "@/types";
 
 export const OffscreenMessageType = {
   ProcessStreamChunk: "processStreamChunk",
@@ -8,7 +14,8 @@ export const OffscreenMessageType = {
   CreateDownloadIframe: "createDownloadIframe",
   RemoveDownloadIframe: "removeDownloadIframe",
   RevokeBlobUrl: "revokeBlobUrl",
-  DownloadAudioViaSabr: "downloadAudioViaSabr"
+  DownloadAudioViaSabr: "downloadAudioViaSabr",
+  StartDownloadInIframe: "startDownloadInIframe"
 } as const;
 
 export type OffscreenMessageType = (typeof OffscreenMessageType)[keyof typeof OffscreenMessageType];
@@ -79,6 +86,11 @@ export interface OffscreenProtocolMap {
     playlistTitle?: string;
     playlistTotalCount?: number;
     enrichedMetadata?: VideoMetadata | null;
+  };
+  [OffscreenMessageType.StartDownloadInIframe]: {
+    request: DownloadRequest;
+    tabId: number;
+    enrichedMetadata: VideoMetadata | null;
   };
 }
 

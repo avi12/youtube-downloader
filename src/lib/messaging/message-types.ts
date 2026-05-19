@@ -27,5 +27,10 @@ export const MessageType = {
   PipelineZipProgress: "pipelineZipProgress",
   WatchDownloadCompleted: "watchDownloadCompleted",
   RevealDownloadFile: "revealDownloadFile",
-  DownloadBlobUrl: "downloadBlobUrl"
+  DownloadBlobUrl: "downloadBlobUrl",
+  RequestDirectUrlDownload: "requestDirectUrlDownload",
+  RequestWatchPageFallback: "requestWatchPageFallback",
+  WorkerDownloadComplete: "workerDownloadComplete",
+  ReportWorkerDownloadFailed: "reportWorkerDownloadFailed",
+  ForwardProgressUpdate: "forwardProgressUpdate"
 } as const;

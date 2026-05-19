@@ -39,6 +39,9 @@ function dispatchOffscreenMessage({ handlers, message }: {
     case OffscreenMessageType.DownloadAudioViaSabr:
       handlers[OffscreenMessageType.DownloadAudioViaSabr]?.(message.data);
       break;
+    case OffscreenMessageType.StartDownloadInIframe:
+      handlers[OffscreenMessageType.StartDownloadInIframe]?.(message.data);
+      break;
   }
 }
 
