@@ -80,7 +80,7 @@
   }
 </script>
 
-<div class="popup-container">
+<main class="popup-container">
   <header class="popup-header">
     <div class="popup-header-top">
       <h1 class="popup-title">YouTube Downloader</h1>
@@ -127,7 +127,7 @@
       </div>
     {/if}
   </div>
-</div>
+</main>
 
 {#if appState.pendingFormatChangeEntry}
   <ChangeFormatDialog
