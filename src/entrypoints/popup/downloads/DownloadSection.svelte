@@ -26,7 +26,7 @@
 
 {#if videoIds.length > 0}
   <section aria-labelledby="{sectionId}-heading">
-    <div class="download-section-header">
+    <header class="download-section-header">
       <h2 id="{sectionId}-heading" class="download-section-title">
         {title}
         {#if loadingBadge}
@@ -40,9 +40,9 @@
       >
         Cancel all
       </button>
-    </div>
+    </header>
 
-    <ul class="download-section-list" aria-label={listAriaLabel} role="list">
+    <ul class="download-section-list" aria-label={listAriaLabel}>
       {#each videoIds as videoId, i (videoId)}
         {@render renderItem(videoId, i)}
       {/each}

@@ -146,7 +146,7 @@
 
 {#if thisTabVideoIds.length > 0}
   <section aria-labelledby="this-tab-heading">
-    <div class="section-header">
+    <header class="section-header">
       <h2 id="this-tab-heading" class="section-title">This tab</h2>
       <button
         class="cancel-all-button"
@@ -155,7 +155,7 @@
       >
         Cancel all
       </button>
-    </div>
+    </header>
 
     <div class="this-tab-content">
       {#each thisTabGroups.zipGroups as group (group.playlistTitle)}
@@ -163,9 +163,9 @@
           <span class="zip-group-label" title="{group.playlistTitle}.zip">
             → {group.playlistTitle}.zip
           </span>
-          <ul class="download-list" aria-label="Videos in {group.playlistTitle}.zip" role="list">
+          <ul class="download-list" aria-label="Videos in {group.playlistTitle}.zip">
             {#each group.videoIds as videoId (videoId)}
-              <li class="download-item" role="listitem">
+              <li class="download-item">
                 <DownloadItem
                   filename={accessors.filename(videoId)}
                   oncancel={() => onCancel([videoId])}
@@ -180,9 +180,9 @@
       {/each}
 
       {#if thisTabGroups.individualIds.length > 0}
-        <ul class="download-list" aria-label="Individual downloads from this tab" role="list">
+        <ul class="download-list" aria-label="Individual downloads from this tab">
           {#each thisTabGroups.individualIds as videoId (videoId)}
-            <li class="download-item" role="listitem">
+            <li class="download-item">
               <DownloadItem
                 filename={accessors.filename(videoId)}
                 oncancel={() => onCancel([videoId])}
@@ -212,7 +212,6 @@
       class="download-item"
       class:download-item--active={i === 0}
       aria-label={accessors.filename(videoId)}
-      role="listitem"
     >
       <DownloadItem
         filename={accessors.filename(videoId)}
@@ -238,7 +237,7 @@
   videoIds={otherMusicList}
 >
   {#snippet renderItem(videoId)}
-    <li class="download-item" role="listitem">
+    <li class="download-item">
       <DownloadItem
         filename={accessors.filename(videoId)}
         oncancel={() => onCancel([videoId])}
@@ -258,7 +257,7 @@
   videoIds={otherVideoOnlyList}
 >
   {#snippet renderItem(videoId)}
-    <li class="download-item" role="listitem">
+    <li class="download-item">
       <DownloadItem
         filename={accessors.filename(videoId)}
         oncancel={() => onCancel([videoId])}
