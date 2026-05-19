@@ -1,6 +1,6 @@
 import { WorkerMessageType } from "./mux-worker-types";
 import { getPendingJobReject, setWorkerPort } from "./worker-jobs";
-import { createHostWorkerPort } from "./worker-port";
+import { createHostWorkerPort } from "./worker-port-host";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 
 export { cancelMuxJobs } from "./mux-queue";

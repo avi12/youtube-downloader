@@ -1,5 +1,5 @@
 import { handleProgressUpdate, type ProgressUpdateHandlers } from "./watch-button-progress";
-import { CrossWorldEvent, onCrossWorldEvent } from "@/lib/messaging/cross-world-events";
+import { CrossWorldEvent, onCrossWorldEvent } from "@/lib/messaging/cross-world-messenger";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import type { TpYtIronDropdownElement } from "@/types";
 

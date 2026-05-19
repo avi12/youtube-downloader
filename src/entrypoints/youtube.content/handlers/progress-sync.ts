@@ -1,4 +1,4 @@
-import { CrossWorldEvent, emitCrossWorldEvent } from "@/lib/messaging/cross-world-events";
+import { CrossWorldEvent, emitCrossWorldEvent } from "@/lib/messaging/cross-world-messenger";
 import { statusProgressItem } from "@/lib/storage/storage";
 import { downloadProgressStore } from "@/lib/ui/synced-stores.svelte";
 import { ProgressType } from "@/types";

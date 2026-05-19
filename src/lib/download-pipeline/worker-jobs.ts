@@ -1,7 +1,7 @@
 import { enqueueMuxJob } from "./mux-queue";
 import type { EmbedMetadataJob, MuxVideoAudioJob, TranscodeAudioJob, TranscodeFileJob } from "./mux-worker-types";
 import { WorkerMessageType } from "./mux-worker-types";
-import type { HostWorkerPort } from "./worker-port";
+import type { HostWorkerPort } from "./worker-port-host";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 
 let workerPort: HostWorkerPort | null = null;

@@ -1,5 +1,5 @@
 import { checkInterruptedDownload } from "../download/interrupted-downloads";
-import { CrossWorldEvent, emitCrossWorldEvent } from "@/lib/messaging/cross-world-events";
+import { CrossWorldEvent, emitCrossWorldEvent } from "@/lib/messaging/cross-world-messenger";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { MessageType, onMessage } from "@/lib/messaging/messaging";
 import { completedDownloadsStore } from "@/lib/ui/completed-downloads-store.svelte";

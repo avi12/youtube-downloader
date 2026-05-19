@@ -1,7 +1,7 @@
 import { registerButtonDataHandler } from "./button-data-handler";
 import ctaButtonStyles from "./cta-button.css?inline";
 import { cancelActiveDownload, startDownload } from "./video/download";
-import { CrossWorldEvent, emitCrossWorldEvent } from "@/lib/messaging/cross-world-events";
+import { CrossWorldEvent, emitCrossWorldEvent } from "@/lib/messaging/cross-world-messenger";
 import { CrossWorldMessage, crossWorldMessenger, dispatchButtonClick } from "@/lib/messaging/cross-world-messenger";
 import {
   DATA_BUTTON_ID_ATTR,

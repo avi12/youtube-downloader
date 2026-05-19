@@ -1,5 +1,5 @@
 import { resolveAndDispatch } from "./download-execute";
-import { CrossWorldEvent, emitCrossWorldEvent } from "@/lib/messaging/cross-world-events";
+import { CrossWorldEvent, emitCrossWorldEvent } from "@/lib/messaging/cross-world-messenger";
 import { crossWorldMessenger, CrossWorldMessage } from "@/lib/messaging/cross-world-messenger";
 import { type DownloadRequest, ProgressType } from "@/types";
 
