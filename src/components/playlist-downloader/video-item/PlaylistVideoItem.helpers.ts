@@ -8,6 +8,7 @@ interface ButtonTooltipParams {
   isDone: boolean;
   isDownloadFailed: boolean;
   isDownloading: boolean;
+  isInBatch: boolean;
   downloadState: DownloadProgressState;
   displayProgress: number;
   buttonLabel: string;
@@ -19,12 +20,17 @@ export function buildButtonTooltip({
   isDone,
   isDownloadFailed,
   isDownloading,
+  isInBatch,
   downloadState,
   displayProgress,
   buttonLabel,
   videoData
 }: ButtonTooltipParams) {
   if (isLocallyDone || isDone) {
+    if (isInBatch) {
+      return "Download completed";
+    }
+
     return "Download again";
   }
 

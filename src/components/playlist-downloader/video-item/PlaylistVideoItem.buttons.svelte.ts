@@ -1,5 +1,6 @@
 import { sendChevronButtonData, sendDownloadButtonData } from "./PlaylistVideoItem.button-data";
 import { attachChevronButton, attachDownloadButton } from "./PlaylistVideoItem.buttons.attach";
+import { buildButtonTooltip } from "./PlaylistVideoItem.helpers";
 import type { createPanelManager } from "./PlaylistVideoItem.panel.svelte";
 import type { createPlaylistVideoItemState } from "./PlaylistVideoItem.state.svelte";
 import { IconName } from "@/types";
@@ -26,8 +27,18 @@ export function createButtonManager(params: {
       return;
     }
 
-    const isBatchCompleted = params.isInBatch && (params.itemState.isDone || params.itemState.isLocallyDone);
-    const tooltip = isBatchCompleted ? "Download completed" : params.itemState.buttonTooltip;
+    const { itemState } = params;
+    const tooltip = buildButtonTooltip({
+      isLocallyDone: itemState.isLocallyDone,
+      isDone: itemState.isDone,
+      isDownloadFailed: itemState.isDownloadFailed,
+      isDownloading: itemState.isDownloading,
+      isInBatch: params.isInBatch,
+      downloadState: itemState.downloadState,
+      displayProgress: itemState.displayProgress,
+      buttonLabel: itemState.buttonLabel,
+      videoData: itemState.videoData
+    });
     const isDisabled = !params.itemState.videoData?.isDownloadable || params.isInProgressInZipBatch;
     const iconName = params.isInProgressInZipBatch ? IconName.CheckCircleThick : params.itemState.downloadIconName;
     sendDownloadButtonData({

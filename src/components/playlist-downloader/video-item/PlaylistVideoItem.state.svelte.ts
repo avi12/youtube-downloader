@@ -77,6 +77,7 @@ export function createPlaylistVideoItemState({
       isDone,
       isDownloadFailed,
       isDownloading,
+      isInBatch: false,
       downloadState,
       displayProgress,
       buttonLabel,
@@ -178,6 +179,9 @@ export function createPlaylistVideoItemState({
     },
     get downloadStateClass() {
       return downloadStateClass;
+    },
+    get buttonLabel() {
+      return buttonLabel;
     },
     get buttonTooltip() {
       return buttonTooltip;
