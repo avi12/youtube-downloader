@@ -1,5 +1,6 @@
 <script lang="ts">
   import PlaylistOverrideBadge from "./PlaylistOverrideBadge.svelte";
+  import { slide } from "svelte/transition";
 
   interface Props {
     isDisabled: boolean;
@@ -11,7 +12,7 @@
   const { isDisabled, isOverridden, value, onchange }: Props = $props();
 </script>
 
-<div class="ytdl-zip-name">
+<div class="ytdl-zip-name" transition:slide>
   <label class="ytdl-zip-name-label" for="ytdl-zip-name-input">Filename</label>
   <div class="ytdl-zip-name-row">
     <div class="ytdl-zip-name-field">
@@ -43,6 +44,7 @@
     display: flex;
     flex-direction: column;
     gap: 4px;
+    margin-top: 10px;
   }
 
   .ytdl-zip-name-label {
