@@ -3,6 +3,14 @@ import type { ProcessStreamChunkData } from "@/lib/messaging/offscreen-messaging
 import { base64ToUint8Array } from "@/lib/utils/binary";
 import { StreamType } from "@/types";
 
+interface RawChunkData {
+  videoId: string;
+  streamType: string;
+  iChunk: number;
+  totalChunks: number;
+  chunk: Uint8Array;
+}
+
 interface AudioStream {
   chunks: Map<number, Uint8Array>;
   totalChunks: number;
@@ -16,8 +24,7 @@ export interface StreamAccumulator {
 
 export const STREAM_ACCUMULATORS = new Map<string, StreamAccumulator>();
 
-export function handleProcessStreamChunk(data: ProcessStreamChunkData) {
-  const { videoId, streamType, iChunk, totalChunks, chunkBase64 } = data;
+function applyChunkToAccumulator({ videoId, streamType, iChunk, totalChunks, chunk }: RawChunkData) {
   const isAccumulatorMissing = !STREAM_ACCUMULATORS.has(videoId);
   if (isAccumulatorMissing) {
     STREAM_ACCUMULATORS.set(videoId, {
@@ -32,8 +39,7 @@ export function handleProcessStreamChunk(data: ProcessStreamChunkData) {
     return;
   }
 
-  // iChunk === -1 is a final marker that sets totalChunks for streaming SabrDownload
-  // where total is unknown during transfer.
+  // iChunk === -1 is a final marker that sets totalChunks for streaming where total is unknown during transfer.
   if (iChunk === -1) {
     if (streamType === StreamType.Video) {
       accumulator.totalVideoChunks = totalChunks;
@@ -52,7 +58,7 @@ export function handleProcessStreamChunk(data: ProcessStreamChunkData) {
       accumulator.videoWriter = new OPFSVideoWriter(videoId);
     }
 
-    accumulator.videoWriter.enqueueChunk(base64ToUint8Array(chunkBase64));
+    accumulator.videoWriter.enqueueChunk(chunk);
 
     if (totalChunks > 0) {
       accumulator.totalVideoChunks = totalChunks;
@@ -61,7 +67,6 @@ export function handleProcessStreamChunk(data: ProcessStreamChunkData) {
     return;
   }
 
-  const decodedChunk = base64ToUint8Array(chunkBase64);
   if (!accumulator.audioStreams.has(streamType)) {
     accumulator.audioStreams.set(streamType, {
       chunks: new Map(),
@@ -74,9 +79,24 @@ export function handleProcessStreamChunk(data: ProcessStreamChunkData) {
     return;
   }
 
-  audioStream.chunks.set(iChunk, decodedChunk);
+  audioStream.chunks.set(iChunk, chunk);
 
   if (totalChunks > 0) {
     audioStream.totalChunks = totalChunks;
   }
+}
+
+export function handleProcessStreamChunk(data: ProcessStreamChunkData) {
+  const { videoId, streamType, iChunk, totalChunks, chunkBase64 } = data;
+  applyChunkToAccumulator({
+    videoId,
+    streamType,
+    iChunk,
+    totalChunks,
+    chunk: iChunk === -1 ? new Uint8Array(0) : base64ToUint8Array(chunkBase64)
+  });
+}
+
+export function handleProcessStreamChunkRaw(data: RawChunkData) {
+  applyChunkToAccumulator(data);
 }
