@@ -1,11 +1,15 @@
 import type { AdaptiveFormatItem } from "@/types";
 
+const AUDIO_TRACK_ORIGINAL_SUFFIX = ".4";
+const AUDIO_TRACK_ORIGINAL_LABEL = "(original)";
+const VIDEO_SELECTOR = "video.html5-main-video";
+
 export function normalizeLanguageCode(lang: string) {
   return lang.split("-")[0].split(".")[0].toLowerCase();
 }
 
 export function getCurrentVideoAudioLanguage() {
-  const elVideo = document.querySelector<HTMLVideoElement>("video.html5-main-video");
+  const elVideo = document.querySelector<HTMLVideoElement>(VIDEO_SELECTOR);
   const tracks = elVideo?.audioTracks;
   const hasNoTracks = !tracks?.length;
   if (hasNoTracks) {
@@ -27,8 +31,8 @@ export function findOriginalAudioFormat(audioFormats: AdaptiveFormatItem[]) {
     return noTrack;
   }
 
-  return audioFormats.find(format => format.audioTrack?.id.endsWith(".4"))
-    ?? audioFormats.find(format => format.audioTrack?.displayName.includes("(original)"))
+  return audioFormats.find(format => format.audioTrack?.id.endsWith(AUDIO_TRACK_ORIGINAL_SUFFIX))
+    ?? audioFormats.find(format => format.audioTrack?.displayName.includes(AUDIO_TRACK_ORIGINAL_LABEL))
     ?? audioFormats.find(format => format.audioTrack?.audioIsDefault)
     ?? null;
 }

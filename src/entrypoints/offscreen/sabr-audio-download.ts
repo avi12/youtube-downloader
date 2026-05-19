@@ -7,6 +7,8 @@ import { uint8ToBase64 } from "@/lib/utils/binary";
 import { fetchAudioViaSabrStream } from "@/lib/youtube/sabr/download";
 import { DownloadType, StreamType } from "@/types";
 
+const DEFAULT_VIDEO_MIME_TYPE = "video/mp4";
+
 type AudioSabrData = OffscreenProtocolMap[typeof OffscreenMessageType.DownloadAudioViaSabr];
 
 function makeFetch() {
@@ -61,7 +63,7 @@ export async function handleOffscreenAudioDownload(data: AudioSabrData) {
       type,
       videoId,
       filenameOutput,
-      videoMimeType: "video/mp4",
+      videoMimeType: DEFAULT_VIDEO_MIME_TYPE,
       audioMimeType,
       audioTrackLabels,
       audioTrackLanguages,

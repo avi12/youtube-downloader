@@ -2,6 +2,8 @@ import { normalizeLanguageCode } from "./audio-format-helpers";
 import { AudioTrackLanguageMode, CaptionLanguageMode } from "@/types";
 import type { CaptionTrack } from "@/types";
 
+const FALLBACK_LANGUAGE_CODE = "en";
+
 const CAPTION_TO_AUDIO_MODE: Partial<Record<CaptionLanguageMode, AudioTrackLanguageMode>> = {
   [CaptionLanguageMode.OriginalLanguage]: AudioTrackLanguageMode.OriginalLanguage,
   [CaptionLanguageMode.MatchVideo]: AudioTrackLanguageMode.MatchVideo,
@@ -37,7 +39,7 @@ export function orderCaptionsByPreference({
   const firstLang = languageMode === AudioTrackLanguageMode.Custom && customLanguage
     ? normalizeLanguageCode(customLanguage)
     : null;
-  const langPriority = [firstLang, locale, browserLanguage, "en"]
+  const langPriority = [firstLang, locale, browserLanguage, FALLBACK_LANGUAGE_CODE]
     .filter((lang): lang is string => !!lang);
 
   for (const lang of langPriority) {

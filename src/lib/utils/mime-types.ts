@@ -1,21 +1,35 @@
 import { getFileExtension } from "./filename";
 
+const MIME_AUDIO_FLAC = "audio/flac";
+const MIME_AUDIO_MP4 = "audio/mp4";
+const MIME_VIDEO_MATROSKA = "video/x-matroska";
+const MIME_AUDIO_MPEG = "audio/mpeg";
+const MIME_VIDEO_MP4 = "video/mp4";
+const MIME_AUDIO_OGG = "audio/ogg";
+const MIME_AUDIO_OPUS = "audio/opus";
+const MIME_VIDEO_WEBM = "video/webm";
+
 const extensionToMimeAll: Record<string, string> = {
-  flac: "audio/flac",
-  m4a: "audio/mp4",
-  mkv: "video/x-matroska",
-  mp3: "audio/mpeg",
-  mp4: "video/mp4",
-  ogg: "audio/ogg",
-  opus: "audio/opus",
-  webm: "video/webm"
+  flac: MIME_AUDIO_FLAC,
+  m4a: MIME_AUDIO_MP4,
+  mkv: MIME_VIDEO_MATROSKA,
+  mp3: MIME_AUDIO_MPEG,
+  mp4: MIME_VIDEO_MP4,
+  ogg: MIME_AUDIO_OGG,
+  opus: MIME_AUDIO_OPUS,
+  webm: MIME_VIDEO_WEBM
 };
+
+const MIME_PREFIX_VIDEO = "video";
+const EXT_WEBM = "webm";
+const EXT_MP4 = "mp4";
+const EXT_M4A = "m4a";
 
 function filterExtensionsByPrefix(prefix: string) {
   return Object.fromEntries(Object.entries(extensionToMimeAll).filter(([, mime]) => mime.startsWith(prefix)));
 }
 
-const videoExtensions = filterExtensionsByPrefix("video");
+const videoExtensions = filterExtensionsByPrefix(MIME_PREFIX_VIDEO);
 
 const extensionToMime = {
   video: videoExtensions,
@@ -43,11 +57,11 @@ export function stripMimeParams(mimeType: string) {
 }
 
 export function getVideoTempExtension(mimeType: string) {
-  return mimeType.includes("webm") ? "webm" : "mp4";
+  return mimeType.includes(EXT_WEBM) ? EXT_WEBM : EXT_MP4;
 }
 
 export function getAudioTempExtension(mimeType: string) {
-  return mimeType.includes("webm") ? "webm" : "m4a";
+  return mimeType.includes(EXT_WEBM) ? EXT_WEBM : EXT_M4A;
 }
 
 export const AUTO_EXTENSION = "auto";
@@ -65,10 +79,10 @@ export function resolveAutoExtension({ extension, mimeType }: {
   extension: string;
   mimeType: string;
 }) {
-  const isNotAuto = extension !== AUTO_EXTENSION;
-  if (isNotAuto) {
+  const isAuto = extension === AUTO_EXTENSION;
+  if (!isAuto) {
     return extension;
   }
 
-  return mimeType.includes("webm") ? "webm" : "mp4";
+  return mimeType.includes(EXT_WEBM) ? EXT_WEBM : EXT_MP4;
 }

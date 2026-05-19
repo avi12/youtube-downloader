@@ -1,6 +1,9 @@
 import { applyTransforms, findAndExtractOperations } from "./signature-parser";
 import type { TransformOp } from "./signature-parser";
 
+const DEFAULT_SIG_PARAM = "sig";
+const YOUTUBE_BASE_URL = "https://www.youtube.com";
+
 interface DecryptorState {
   operations: TransformOp[];
   playerJsUrl: string;
@@ -21,7 +24,7 @@ function getPlayerJsUrl() {
   const pageSource = document.documentElement.innerHTML;
   const [, playerPath] = pageSource.match(/"(\/s\/player\/[^"]+\/base\.js)"/) ?? [];
   if (playerPath) {
-    return `https://www.youtube.com${playerPath}`;
+    return `${YOUTUBE_BASE_URL}${playerPath}`;
   }
 
   return null;
@@ -58,7 +61,7 @@ async function initDecryptor() {
 export async function decryptSignatureCipher(signatureCipher: string) {
   const cipherParameters = new URLSearchParams(signatureCipher);
   const encryptedSig = cipherParameters.get("s");
-  const sigParam = cipherParameters.get("sp") ?? "sig";
+  const sigParam = cipherParameters.get("sp") ?? DEFAULT_SIG_PARAM;
   const url = cipherParameters.get("url");
   const isCipherInvalid = !encryptedSig || !url;
   if (isCipherInvalid) {

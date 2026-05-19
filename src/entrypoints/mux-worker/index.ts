@@ -11,6 +11,8 @@ import {
 import type { FFmpegFactory } from "./mux-state";
 import { WorkerMessageType } from "@/lib/download-pipeline/mux-worker-types";
 
+const FFMPEG_LOG_TYPE_STDERR = "stderr";
+
 type InitMessage = {
   type: WorkerMessageType.Init;
   wasmBinary: ArrayBuffer;
@@ -30,7 +32,7 @@ async function onInitMessage(e: MessageEvent<InitMessage>) {
   const createFFmpegCore: FFmpegFactory = createFFmpegCoreUntyped;
   initFfmpeg(await createFFmpegCore({ wasmBinary: e.data.wasmBinary }));
   state.ffmpeg!.setLogger(({ type, message }) => {
-    if (type === "stderr") {
+    if (type === FFMPEG_LOG_TYPE_STDERR) {
       console.error("[ytdl:ffmpeg]", message);
     }
   });

@@ -1,6 +1,9 @@
 import type { MuxVideoAudioJob } from "@/lib/download-pipeline/mux-worker-types";
 import { CONTAINER_SPECS, extractBaseCodec, videoContainers } from "@/lib/utils/containers";
 
+const FFMPEG_CODEC_COPY = "copy";
+const FFMPEG_SUBTITLE_CODEC_WEBVTT = "webvtt";
+
 export function resolveAudioCodec({ audioMimeType, targetExtension }: {
   audioMimeType: string;
   targetExtension: string;
@@ -11,11 +14,11 @@ export function resolveAudioCodec({ audioMimeType, targetExtension }: {
   }
 
   const codec = extractBaseCodec(audioMimeType);
-  return spec.audioCodecs.has(codec) ? "copy" : (spec.fallbackAudioCodec ?? "copy");
+  return spec.audioCodecs.has(codec) ? FFMPEG_CODEC_COPY : (spec.fallbackAudioCodec ?? FFMPEG_CODEC_COPY);
 }
 
 export function resolveSubtitleCodec(targetExtension: string) {
-  return CONTAINER_SPECS[targetExtension]?.subtitleCodec ?? "webvtt";
+  return CONTAINER_SPECS[targetExtension]?.subtitleCodec ?? FFMPEG_SUBTITLE_CODEC_WEBVTT;
 }
 
 export function buildRemuxArgs({
@@ -33,7 +36,7 @@ export function buildRemuxArgs({
     audioMimeType: audioMimeType ?? "",
     targetExtension
   });
-  const ffmpegArgs = ["-i", inputFilename, "-map", "0", "-c:v", "copy", "-c:a", audioCodec];
+  const ffmpegArgs = ["-i", inputFilename, "-map", "0", "-c:v", FFMPEG_CODEC_COPY, "-c:a", audioCodec];
   if (videoContainers.includes(targetExtension)) {
     ffmpegArgs.push("-c:s", resolveSubtitleCodec(targetExtension));
   }
@@ -125,14 +128,14 @@ export function buildMuxFfmpegArgs(params: MuxFfmpegParams) {
   }
 
   ffmpegArgs.push(
-    "-c:v", "copy", "-c:a", useIntermediateMkv ? "copy" : resolveAudioCodec({
+    "-c:v", FFMPEG_CODEC_COPY, "-c:a", useIntermediateMkv ? FFMPEG_CODEC_COPY : resolveAudioCodec({
       audioMimeType,
       targetExtension
     })
   );
 
   if (subtitleFilenames.length > 0) {
-    ffmpegArgs.push("-c:s", useIntermediateMkv ? "webvtt" : resolveSubtitleCodec(targetExtension));
+    ffmpegArgs.push("-c:s", useIntermediateMkv ? FFMPEG_SUBTITLE_CODEC_WEBVTT : resolveSubtitleCodec(targetExtension));
   }
 
   appendTrackMetadata({

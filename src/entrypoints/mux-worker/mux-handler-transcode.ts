@@ -4,13 +4,17 @@ import type { TranscodeAudioJob, TranscodeFileJob } from "@/lib/download-pipelin
 import { getCompatibleFilename, getFileExtension } from "@/lib/utils/containers";
 
 const AUDIO_CODEC_BY_EXTENSION: Record<string, string> = { flac: "flac" };
+const FFMPEG_CODEC_COPY = "copy";
+const INPUT_FILENAME_PREFIX = "input";
+const SOURCE_FILENAME_PREFIX = "source";
+const OUTPUT_FILENAME_PREFIX = "output";
 
 export function handleTranscodeAudio(job: TranscodeAudioJob) {
   const { audioData, sourceExtension, filenameOutput, videoId, tabId } = job;
   state.currentVideoId = videoId;
   state.currentTabId = tabId;
   const outputExtension = getFileExtension(filenameOutput) || sourceExtension;
-  const inputFilename = `input.${sourceExtension}`;
+  const inputFilename = `${INPUT_FILENAME_PREFIX}.${sourceExtension}`;
   const outputFilename = getCompatibleFilename(filenameOutput);
 
   state.progressOffset = 0;
@@ -19,7 +23,7 @@ export function handleTranscodeAudio(job: TranscodeAudioJob) {
   state.ffmpeg!.FS.writeFile(inputFilename, new Uint8Array(audioData));
 
   try {
-    const codec = AUDIO_CODEC_BY_EXTENSION[outputExtension] ?? "copy";
+    const codec = AUDIO_CODEC_BY_EXTENSION[outputExtension] ?? FFMPEG_CODEC_COPY;
     const exitCode = state.ffmpeg!.exec("-i", inputFilename, "-map", "0:a", "-c:a", codec, outputFilename);
     if (exitCode !== 0) {
       postError(`FFmpeg transcode exited with code ${exitCode}`);
@@ -44,8 +48,8 @@ export function handleTranscodeFile(job: TranscodeFileJob) {
   const { videoId, tabId, data, sourceExtension, targetContainer, audioMimeType } = job;
   state.currentVideoId = videoId;
   state.currentTabId = tabId;
-  const sourceFilename = `source.${sourceExtension}`;
-  const outputFilename = `output.${targetContainer}`;
+  const sourceFilename = `${SOURCE_FILENAME_PREFIX}.${sourceExtension}`;
+  const outputFilename = `${OUTPUT_FILENAME_PREFIX}.${targetContainer}`;
 
   state.progressOffset = 0;
   state.progressScale = 1;

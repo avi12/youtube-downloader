@@ -1,3 +1,20 @@
+const CODEC_VP8 = "vp8";
+const CODEC_VP9 = "vp9";
+const CODEC_AV01 = "av01";
+const CODEC_OPUS = "opus";
+const CODEC_VORBIS = "vorbis";
+const CODEC_AVC1 = "avc1";
+const CODEC_HVC1 = "hvc1";
+const CODEC_HEV1 = "hev1";
+const CODEC_MP4V = "mp4v";
+const CODEC_MP4A = "mp4a";
+const CODEC_AC3 = "ac-3";
+const CODEC_EC3 = "ec-3";
+const CODEC_FLAC = "flac";
+const CODEC_AAC = "aac";
+const SUBTITLE_CODEC_WEBVTT = "webvtt";
+const SUBTITLE_CODEC_MOV_TEXT = "mov_text";
+
 interface ContainerSpec {
   videoCodecs: Set<string>;
   audioCodecs: Set<string>;
@@ -8,16 +25,16 @@ interface ContainerSpec {
 
 export const CONTAINER_SPECS: Record<string, ContainerSpec> = {
   webm: {
-    videoCodecs: new Set(["vp8", "vp9", "av01"]),
-    audioCodecs: new Set(["opus", "vorbis"]),
-    subtitleCodec: "webvtt"
+    videoCodecs: new Set([CODEC_VP8, CODEC_VP9, CODEC_AV01]),
+    audioCodecs: new Set([CODEC_OPUS, CODEC_VORBIS]),
+    subtitleCodec: SUBTITLE_CODEC_WEBVTT
   },
   mp4: {
-    videoCodecs: new Set(["avc1", "hvc1", "hev1", "av01", "mp4v"]),
-    audioCodecs: new Set(["mp4a", "ac-3", "ec-3", "flac"]),
-    fallbackAudioCodec: "aac",
+    videoCodecs: new Set([CODEC_AVC1, CODEC_HVC1, CODEC_HEV1, CODEC_AV01, CODEC_MP4V]),
+    audioCodecs: new Set([CODEC_MP4A, CODEC_AC3, CODEC_EC3, CODEC_FLAC]),
+    fallbackAudioCodec: CODEC_AAC,
     allowNonNativeVideo: true,
-    subtitleCodec: "mov_text"
+    subtitleCodec: SUBTITLE_CODEC_MOV_TEXT
   }
 };
 

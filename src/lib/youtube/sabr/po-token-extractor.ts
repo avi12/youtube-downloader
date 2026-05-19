@@ -26,8 +26,8 @@ function parseStreamerContext(ctxData: Uint8Array) {
       continue;
     }
 
-    const isNotLengthDelimitedCtx = ctxWire !== WIRE_TYPE_LENGTH_DELIMITED;
-    if (isNotLengthDelimitedCtx) {
+    const isLengthDelimitedCtx = ctxWire === WIRE_TYPE_LENGTH_DELIMITED;
+    if (!isLengthDelimitedCtx) {
       break;
     }
 
@@ -72,8 +72,8 @@ export function extractPoTokenFromBody(body: number[]) {
       continue;
     }
 
-    const isNotLengthDelimited = wireType !== WIRE_TYPE_LENGTH_DELIMITED;
-    if (isNotLengthDelimited) {
+    const isLengthDelimited = wireType === WIRE_TYPE_LENGTH_DELIMITED;
+    if (!isLengthDelimited) {
       break;
     }
 

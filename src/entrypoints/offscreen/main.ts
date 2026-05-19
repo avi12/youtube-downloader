@@ -19,9 +19,20 @@ import { AUDIO_EXTRA_STREAM_PREFIX, StreamType } from "@/types";
 import type { DownloadRequest } from "@/types";
 import { browser } from "#imports";
 
+const WORKER_MSG_PREFIX = "worker-";
+const FFMPEG_WASM_PATH = "/node_modules/@ffmpeg/core/dist/umd/ffmpeg-core.wasm";
+const WORKER_MSG_CHUNK = "worker-chunk";
+const WORKER_MSG_STREAM_END = "worker-stream-end";
+const WORKER_MSG_COMPLETE = "worker-complete";
+const WORKER_MSG_NEEDS_DIRECT_URL = "worker-needs-direct-url";
+const WORKER_MSG_NEEDS_FALLBACK = "worker-needs-fallback";
+const WORKER_MSG_ERROR = "worker-error";
+const IFRAME_MSG_START = "start";
+const IFRAME_MSG_CANCEL = "cancel";
+
 type WorkerMessage =
   | {
-    type: "worker-chunk";
+    type: typeof WORKER_MSG_CHUNK;
     videoId: string;
     streamType: string;
     iChunk: number;
@@ -29,13 +40,13 @@ type WorkerMessage =
     buffer: ArrayBuffer;
   }
   | {
-    type: "worker-stream-end";
+    type: typeof WORKER_MSG_STREAM_END;
     videoId: string;
     streamType: string;
     totalChunks: number;
   }
   | {
-    type: "worker-complete";
+    type: typeof WORKER_MSG_COMPLETE;
     videoId: string;
     isStreamed: boolean;
     streamEnd: ProcessStreamEndData;
@@ -44,19 +55,19 @@ type WorkerMessage =
     extraAudioBuffers: ArrayBuffer[];
   }
   | {
-    type: "worker-needs-direct-url";
+    type: typeof WORKER_MSG_NEEDS_DIRECT_URL;
     videoId: string;
     tabId: number;
     request: DownloadRequest;
   }
   | {
-    type: "worker-needs-fallback";
+    type: typeof WORKER_MSG_NEEDS_FALLBACK;
     videoId: string;
     tabId: number;
     request: DownloadRequest;
   }
   | {
-    type: "worker-error";
+    type: typeof WORKER_MSG_ERROR;
     videoId: string;
     tabId: number;
     error: string;
@@ -64,7 +75,7 @@ type WorkerMessage =
 
 function handleWorkerMessage(message: WorkerMessage) {
   switch (message.type) {
-    case "worker-chunk": {
+    case WORKER_MSG_CHUNK: {
       handleProcessStreamChunkRaw({
         videoId: message.videoId,
         streamType: message.streamType,
@@ -75,7 +86,7 @@ function handleWorkerMessage(message: WorkerMessage) {
       break;
     }
 
-    case "worker-stream-end": {
+    case WORKER_MSG_STREAM_END: {
       handleProcessStreamChunk({
         videoId: message.videoId,
         streamType: message.streamType,
@@ -87,7 +98,7 @@ function handleWorkerMessage(message: WorkerMessage) {
       break;
     }
 
-    case "worker-complete": {
+    case WORKER_MSG_COMPLETE: {
       const { videoId, isStreamed, streamEnd, videoBuffer, audioBuffer, extraAudioBuffers } = message;
       if (!isStreamed) {
         if (videoBuffer) {
@@ -127,7 +138,7 @@ function handleWorkerMessage(message: WorkerMessage) {
       break;
     }
 
-    case "worker-needs-direct-url": {
+    case WORKER_MSG_NEEDS_DIRECT_URL: {
       removeWorkerIframe(message.videoId);
       void sendMessage(MessageType.RequestDirectUrlDownload, {
         videoId: message.videoId,
@@ -137,7 +148,7 @@ function handleWorkerMessage(message: WorkerMessage) {
       break;
     }
 
-    case "worker-needs-fallback": {
+    case WORKER_MSG_NEEDS_FALLBACK: {
       removeWorkerIframe(message.videoId);
       void sendMessage(MessageType.RequestWatchPageFallback, {
         videoId: message.videoId,
@@ -147,7 +158,7 @@ function handleWorkerMessage(message: WorkerMessage) {
       break;
     }
 
-    case "worker-error": {
+    case WORKER_MSG_ERROR: {
       removeWorkerIframe(message.videoId);
       void sendMessage(MessageType.ReportWorkerDownloadFailed, {
         videoId: message.videoId,
@@ -164,7 +175,7 @@ addEventListener("message", e => {
   }
 
   const message: WorkerMessage = e.data;
-  if (!message?.type?.startsWith("worker-")) {
+  if (!message?.type?.startsWith(WORKER_MSG_PREFIX)) {
     return;
   }
 
@@ -181,7 +192,7 @@ listenForOffscreenMessages({
   [OffscreenMessageType.CancelProcessing](data) {
     void cancelDownloadsByIds(data.videoIds);
     for (const videoId of data.videoIds) {
-      sendToWorkerIframe(videoId, { type: "cancel" });
+      sendToWorkerIframe(videoId, { type: IFRAME_MSG_CANCEL });
       removeWorkerIframe(videoId);
       removeDownloadIframe(videoId);
     }
@@ -207,7 +218,7 @@ listenForOffscreenMessages({
     elIframe.addEventListener("load", () => {
       elIframe.contentWindow?.postMessage(
         {
-          type: "start",
+          type: IFRAME_MSG_START,
           request,
           tabId,
           enrichedMetadata
@@ -219,6 +230,6 @@ listenForOffscreenMessages({
 });
 
 const wasmBinary = await (await fetch(
-  browser.runtime.getURL("/node_modules/@ffmpeg/core/dist/umd/ffmpeg-core.wasm")
+  browser.runtime.getURL(FFMPEG_WASM_PATH)
 )).arrayBuffer();
 await initMuxWorker(wasmBinary);

@@ -2,6 +2,8 @@ import { normalizeLanguageCode, findOriginalAudioFormat } from "./audio-format-h
 import { AudioTrackLanguageMode } from "@/types";
 import type { AdaptiveFormatItem } from "@/types";
 
+const FALLBACK_LANGUAGE_CODE = "en";
+
 function matchAudioFormatToLanguage({ audioFormats, langCode }: {
   audioFormats: AdaptiveFormatItem[];
   langCode: string;
@@ -46,7 +48,7 @@ export function selectPreferredAudioFormat({
     })
       ?? matchAudioFormatToLanguage({
         audioFormats,
-        langCode: "en"
+        langCode: FALLBACK_LANGUAGE_CODE
       });
     candidates = prependMatch(audioFormats, match);
   } else if (languageMode === AudioTrackLanguageMode.OriginalLanguage) {
@@ -55,7 +57,7 @@ export function selectPreferredAudioFormat({
 
   const hasNoCandidates = !candidates.length;
   if (hasNoCandidates) {
-    const langPriority = [locale, browserLanguage, "en"]
+    const langPriority = [locale, browserLanguage, FALLBACK_LANGUAGE_CODE]
       .filter((lang): lang is string => !!lang);
     for (const lang of langPriority) {
       const match = matchAudioFormatToLanguage({

@@ -152,8 +152,8 @@ export function isOffscreenConnected() {
 
 export function initOffscreenPortListener() {
   browser.runtime.onConnect.addListener(port => {
-    const isNotOffscreenPort = port.name !== OFFSCREEN_PORT_NAME;
-    if (isNotOffscreenPort) {
+    const isOffscreenPort = port.name === OFFSCREEN_PORT_NAME;
+    if (!isOffscreenPort) {
       return;
     }
 

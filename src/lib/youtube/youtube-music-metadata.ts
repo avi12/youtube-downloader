@@ -4,6 +4,9 @@ import type { MusicSearchResponse } from "./music-search-parser";
 import type { VideoMetadata } from "@/types";
 
 const SONG_FILTER_PARAMS = "EgWKAQIIAWoKEAkQAxAEEAoQBQ%3D%3D";
+const YOUTUBE_MUSIC_SEARCH_URL = "https://music.youtube.com/youtubei/v1/search?prettyPrint=false";
+const YOUTUBE_MUSIC_CLIENT_VERSION = "1.20260408.01.00";
+const CONTENT_TYPE_JSON = "application/json";
 
 export async function fetchYouTubeMusicMetadata({ searchQuery, existingMetadata }: {
   searchQuery: string;
@@ -16,14 +19,14 @@ export async function fetchYouTubeMusicMetadata({ searchQuery, existingMetadata 
       context: {
         client: {
           clientName: InnertubeClientName.WebRemix,
-          clientVersion: "1.20260408.01.00"
+          clientVersion: YOUTUBE_MUSIC_CLIENT_VERSION
         }
       }
     };
-    const response = await fetch("https://music.youtube.com/youtubei/v1/search?prettyPrint=false", {
+    const response = await fetch(YOUTUBE_MUSIC_SEARCH_URL, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": CONTENT_TYPE_JSON
       },
       body: JSON.stringify(searchRequest)
     });

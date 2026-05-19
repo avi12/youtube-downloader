@@ -12,11 +12,13 @@ import type { Options } from "@/types";
 export const VIDEO_QUALITIES = [4320, 2160, 1440, 1080, 720, 480, 360, 240, 144];
 
 const DEFAULT_VIDEO_QUALITY = 1080;
+const DEFAULT_VIDEO_EXTENSION = "mkv";
+const DEFAULT_CUSTOM_LANGUAGE = "en";
 
 export const INITIAL_OPTIONS: Options = {
   ext: {
     audio: AUTO_EXTENSION,
-    video: "mkv"
+    video: DEFAULT_VIDEO_EXTENSION
   },
   defaultDownloadType: DownloadType.Auto,
   videoQualityMode: VideoQualityMode.Best,
@@ -30,7 +32,7 @@ export const INITIAL_OPTIONS: Options = {
   isPlaylistScrollSyncEnabled: false,
   audioTrackLanguageMode: AudioTrackLanguageMode.MatchVideo,
   captionLanguageMode: CaptionLanguageMode.SameAsAudio,
-  customLanguage: "en",
+  customLanguage: DEFAULT_CUSTOM_LANGUAGE,
   downloadExtras: true,
   includeAutoDubbing: false,
   includeAiCaptions: false

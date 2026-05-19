@@ -3,6 +3,10 @@ import type { MuxVideoAudioJob } from "@/lib/download-pipeline/mux-worker-types"
 import { getAudioTempExtension } from "@/lib/utils/containers";
 import { AUDIO_EXTRA_STREAM_PREFIX } from "@/types";
 
+const SUBTITLE_STREAM_PREFIX = "sub";
+const VTT_EXTENSION = "vtt";
+const MKV_EXTENSION = "mkv";
+
 type ExtraAudioTracks = MuxVideoAudioJob["extraAudioTracks"];
 type SubtitleTracks = MuxVideoAudioJob["subtitleTracks"];
 
@@ -41,7 +45,7 @@ export function writeMuxInputFiles(params: WriteMuxInputFilesParams) {
 
   const subtitleFilenames: string[] = [];
   for (const [i, track] of subtitleTracks.entries()) {
-    const subFilename = `${videoId}-sub-${i}.vtt`;
+    const subFilename = `${videoId}-${SUBTITLE_STREAM_PREFIX}-${i}.${VTT_EXTENSION}`;
     state.ffmpeg!.FS.writeFile(subFilename, track.data);
     subtitleFilenames.push(subFilename);
   }
@@ -74,7 +78,7 @@ export function cleanupMuxFiles(params: MuxCleanupParams) {
     tryUnlink(params.muxFilename);
   }
 
-  if (params.targetExtension !== "mkv") {
+  if (params.targetExtension !== MKV_EXTENSION) {
     tryUnlink(params.outputFilename);
   }
 }

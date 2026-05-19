@@ -21,10 +21,17 @@ interface ChallengeResponse {
 }
 
 const WAA_API_KEY = "AIzaSyDyT5W0Jh49F30Pqqtyfdf7pDLFKLJoAnw";
+const ATT_GET_URL = "https://www.youtube.com/youtubei/v1/att/get?prettyPrint=false";
+const GENERATE_IT_URL = "https://www.youtube.com/api/jnn/v1/GenerateIT";
+const CONTENT_TYPE_JSON = "application/json";
+const CONTENT_TYPE_JSON_PROTOBUF = "application/json+protobuf";
+const HEADER_X_GOOG_API_KEY = "x-goog-api-key";
+const DEFAULT_CLIENT_VERSION = "2.20260401.01.00";
+const DEFAULT_REQUEST_KEY = "O43z0dpjhgX20SCx4KAo";
 
 export async function generatePoToken(videoId: string) {
-  const clientVersion = getYtcfg(YtcfgKey.ClientVersion) ?? "2.20260401.01.00";
-  const requestKey = getYtcfg(YtcfgKey.BotguardExperimentId) ?? "O43z0dpjhgX20SCx4KAo";
+  const clientVersion = getYtcfg(YtcfgKey.ClientVersion) ?? DEFAULT_CLIENT_VERSION;
+  const requestKey = getYtcfg(YtcfgKey.BotguardExperimentId) ?? DEFAULT_REQUEST_KEY;
 
   const attGetRequest: InnertubeAttGetRequest = {
     engagementType: InnertubeEngagementType.Unbound,
@@ -35,10 +42,10 @@ export async function generatePoToken(videoId: string) {
       }
     }
   };
-  const challengeResponse = await fetch("https://www.youtube.com/youtubei/v1/att/get?prettyPrint=false", {
+  const challengeResponse = await fetch(ATT_GET_URL, {
     method: "POST",
     headers: {
-      "Content-Type": "application/json"
+      "Content-Type": CONTENT_TYPE_JSON
     },
     body: JSON.stringify(attGetRequest)
   });
@@ -68,11 +75,11 @@ export async function generatePoToken(videoId: string) {
   });
 
   const generateItRequest: InnertubeGenerateItRequest = [requestKey, snapshotResponse];
-  const integrityResponse = await fetch("https://www.youtube.com/api/jnn/v1/GenerateIT", {
+  const integrityResponse = await fetch(GENERATE_IT_URL, {
     method: "POST",
     headers: {
-      "content-type": "application/json+protobuf",
-      "x-goog-api-key": WAA_API_KEY
+      "content-type": CONTENT_TYPE_JSON_PROTOBUF,
+      [HEADER_X_GOOG_API_KEY]: WAA_API_KEY
     },
     body: JSON.stringify(generateItRequest)
   });

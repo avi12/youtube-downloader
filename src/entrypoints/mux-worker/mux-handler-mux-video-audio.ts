@@ -12,6 +12,9 @@ import {
 
 const WORKERFS_MOUNT_SUFFIX = "-opfs-in";
 const OPFS_OUT_SUFFIX = "-opfs-out";
+const MKV_EXTENSION = "mkv";
+const VIDEO_TEMP_SUFFIX = "video";
+const AUDIO_TEMP_SUFFIX = "audio";
 
 export async function handleMuxVideoAudio(job: MuxVideoAudioJob) {
   const {
@@ -24,9 +27,9 @@ export async function handleMuxVideoAudio(job: MuxVideoAudioJob) {
 
   const isExtraTracksPresent = extraAudioTracks.length > 0;
   const filenameBase = filenameOutput.replace(/\.[^.]+$/, "");
-  const targetExtension = isExtraTracksPresent ? "mkv" : (filenameOutput.split(".").pop() ?? "mkv");
-  const muxFilename = getCompatibleFilename(`${videoId}-mux.mkv`);
-  const outputFilename = targetExtension !== "mkv"
+  const targetExtension = isExtraTracksPresent ? MKV_EXTENSION : (filenameOutput.split(".").pop() ?? MKV_EXTENSION);
+  const muxFilename = getCompatibleFilename(`${videoId}-mux.${MKV_EXTENSION}`);
+  const outputFilename = targetExtension !== MKV_EXTENSION
     ? getCompatibleFilename(`${videoId}-${filenameBase}.${targetExtension}`)
     : muxFilename;
   const useIntermediateMkv = targetExtension !== "mkv" && !isVideoNativeForContainer({
@@ -43,10 +46,10 @@ export async function handleMuxVideoAudio(job: MuxVideoAudioJob) {
     state.ffmpeg!.FS.mount(state.ffmpeg!.FS.filesystems.WORKERFS, { files: [videoFile] }, workerfsDir);
     videoFilename = `${workerfsDir}/${videoFile.name}`;
   } else {
-    videoFilename = `${videoId}-video.${getVideoTempExtension(videoMimeType)}`;
+    videoFilename = `${videoId}-${VIDEO_TEMP_SUFFIX}.${getVideoTempExtension(videoMimeType)}`;
   }
 
-  const primaryAudioFilename = `${videoId}-audio.${getAudioTempExtension(audioMimeType)}`;
+  const primaryAudioFilename = `${videoId}-${AUDIO_TEMP_SUFFIX}.${getAudioTempExtension(audioMimeType)}`;
 
   state.progressOffset = 0;
   state.progressScale = useIntermediateMkv ? 0.5 : 1;

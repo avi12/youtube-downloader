@@ -2,6 +2,10 @@ import type { MusicSearchResponse, SearchItem, SearchRun } from "./music-search-
 
 export type { MusicSearchResponse } from "./music-search-types";
 
+const MUSIC_PAGE_TYPE_ARTIST = "MUSIC_PAGE_TYPE_ARTIST";
+const MUSIC_PAGE_TYPE_ALBUM = "MUSIC_PAGE_TYPE_ALBUM";
+const THUMBNAIL_SIZE_PARAM = "=w544-h544";
+
 function extractPageType(run: SearchRun) {
   return run.navigationEndpoint?.browseEndpoint
     ?.browseEndpointContextSupportedConfigs
@@ -31,8 +35,8 @@ export function parseSearchResult(item: SearchItem) {
 
   for (const run of metadataRuns) {
     const pageType = extractPageType(run);
-    const isArtistPage = pageType === "MUSIC_PAGE_TYPE_ARTIST";
-    const isAlbumPage = pageType === "MUSIC_PAGE_TYPE_ALBUM";
+    const isArtistPage = pageType === MUSIC_PAGE_TYPE_ARTIST;
+    const isAlbumPage = pageType === MUSIC_PAGE_TYPE_ALBUM;
     if (isArtistPage) {
       artists.push(run.text);
 
@@ -52,7 +56,7 @@ export function parseSearchResult(item: SearchItem) {
   const thumbnails = item.musicResponsiveListItemRenderer?.thumbnail
     ?.musicThumbnailRenderer?.thumbnail?.thumbnails;
   const rawThumbnailUrl = thumbnails?.at(-1)?.url;
-  const thumbnailUrl = rawThumbnailUrl?.replace(/=w\d+-h\d+/, "=w544-h544");
+  const thumbnailUrl = rawThumbnailUrl?.replace(/=w\d+-h\d+/, THUMBNAIL_SIZE_PARAM);
 
   return {
     songTitle,

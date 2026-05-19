@@ -6,6 +6,17 @@ import { stripMimeParams } from "@/lib/utils/containers";
 import { DownloadType, StreamType } from "@/types";
 import type { DownloadRequest, VideoMetadata } from "@/types";
 
+const WORKER_MSG_CHUNK = "worker-chunk";
+const WORKER_MSG_STREAM_END = "worker-stream-end";
+const WORKER_MSG_COMPLETE = "worker-complete";
+const WORKER_MSG_NEEDS_DIRECT_URL = "worker-needs-direct-url";
+const WORKER_MSG_NEEDS_FALLBACK = "worker-needs-fallback";
+const WORKER_MSG_ERROR = "worker-error";
+const IFRAME_MSG_START = "start";
+const IFRAME_MSG_CANCEL = "cancel";
+const DEFAULT_VIDEO_MIME_TYPE = "video/mp4";
+const DEFAULT_AUDIO_MIME_TYPE = "audio/mp4";
+
 const SABR_STALL_TIMEOUT_MS = 10_000;
 const SABR_FIRST_BYTE_TIMEOUT_MS = 5_000;
 
@@ -17,11 +28,11 @@ addEventListener("message", e => {
     return;
   }
 
-  if (e.data?.type === "cancel") {
+  if (e.data?.type === IFRAME_MSG_CANCEL) {
     abortController.abort();
   }
 
-  if (e.data?.type === "start") {
+  if (e.data?.type === IFRAME_MSG_START) {
     const { request, tabId, enrichedMetadata } = e.data;
     void runDownload(request, tabId, enrichedMetadata);
   }
@@ -62,7 +73,7 @@ function sendChunkToParent(videoId: string, streamType: string, tabId: number) {
     new Uint8Array(buffer).set(chunk);
     parent.postMessage(
       {
-        type: "worker-chunk",
+        type: WORKER_MSG_CHUNK,
         videoId,
         streamType,
         iChunk,
@@ -79,7 +90,7 @@ function sendStreamEndToParent(videoId: string, streamType: string) {
   return (totalChunks: number) => {
     parent.postMessage(
       {
-        type: "worker-stream-end",
+        type: WORKER_MSG_STREAM_END,
         videoId,
         streamType,
         totalChunks
@@ -104,8 +115,8 @@ function buildStreamEnd({
     captionTracks, captionVttData,
     playlistId, playlistTitle, playlistTotalCount
   } = request;
-  const videoMimeType = videoFormat ? stripMimeParams(videoFormat.mimeType) : "video/mp4";
-  const audioMimeType = audioFormat ? stripMimeParams(audioFormat.mimeType) : "audio/mp4";
+  const videoMimeType = videoFormat ? stripMimeParams(videoFormat.mimeType) : DEFAULT_VIDEO_MIME_TYPE;
+  const audioMimeType = audioFormat ? stripMimeParams(audioFormat.mimeType) : DEFAULT_AUDIO_MIME_TYPE;
   const subtitleTracks = buildSubtitleTracks({
     captionTracks,
     captionVttData: captionVttData ?? []
@@ -182,7 +193,7 @@ async function runDownload(request: DownloadRequest, tabId: number, enrichedMeta
       if (isDirectUrlEligible) {
         parent.postMessage(
           {
-            type: "worker-needs-direct-url",
+            type: WORKER_MSG_NEEDS_DIRECT_URL,
             videoId,
             tabId,
             request
@@ -194,7 +205,7 @@ async function runDownload(request: DownloadRequest, tabId: number, enrichedMeta
 
       parent.postMessage(
         {
-          type: "worker-needs-fallback",
+          type: WORKER_MSG_NEEDS_FALLBACK,
           videoId,
           tabId,
           request
@@ -228,7 +239,7 @@ async function runDownload(request: DownloadRequest, tabId: number, enrichedMeta
 
     const transferList: ArrayBuffer[] = [...extraAudioBuffers];
     const completeMsg: Record<string, unknown> = {
-      type: "worker-complete",
+      type: WORKER_MSG_COMPLETE,
       videoId,
       isStreamed,
       streamEnd,
@@ -257,7 +268,7 @@ async function runDownload(request: DownloadRequest, tabId: number, enrichedMeta
     console.error("[ytdl:worker] Download failed:", error);
     parent.postMessage(
       {
-        type: "worker-error",
+        type: WORKER_MSG_ERROR,
         videoId,
         tabId,
         error: String(error)

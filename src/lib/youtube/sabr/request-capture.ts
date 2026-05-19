@@ -7,6 +7,9 @@ export { extractPoTokenFromBody } from "./po-token-extractor";
 // and is skipped - but offscreen iframe player requests also arrive with tabId < 0.
 export const OFFSCREEN_PLAYER_TAB_ID = -2;
 
+const GOOGLEVIDEO_URL_PATTERN = "https://*.googlevideo.com/videoplayback*";
+const YOUTUBE_ORIGIN = "https://www.youtube.com";
+
 const capturedByTab = new Map<number, {
   body: number[];
   url: string;
@@ -17,7 +20,7 @@ const capturedByTab = new Map<number, {
 export function startSabrRequestCapture() {
   browser.webRequest.onBeforeRequest.addListener(
     handleSabrRequest,
-    { urls: ["https://*.googlevideo.com/videoplayback*"] },
+    { urls: [GOOGLEVIDEO_URL_PATTERN] },
     ["requestBody"]
   );
   browser.tabs.onRemoved.addListener(tabId => capturedByTab.delete(tabId));
@@ -33,7 +36,7 @@ function handleSabrRequest(details: Browser.webRequest.OnBeforeRequestDetails) {
   // Background requests with youtube.com initiator come from offscreen iframe players.
   // Capture them so playlist iframes get the player's actual (n-param-decoded) URL.
   const isOffscreenPlayer = details.tabId < 0
-    && details.initiator === "https://www.youtube.com";
+    && details.initiator === YOUTUBE_ORIGIN;
   const isExtensionRequest = details.tabId < 0 && !isOffscreenPlayer;
   if (isExtensionRequest) {
     return undefined;

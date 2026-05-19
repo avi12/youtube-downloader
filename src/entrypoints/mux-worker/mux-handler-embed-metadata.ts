@@ -4,13 +4,20 @@ import type { EmbedMetadataJob } from "@/lib/download-pipeline/mux-worker-types"
 import { getCompatibleFilename, getFileExtension } from "@/lib/utils/containers";
 
 const FLAC_CODEC = "flac";
+const WEBM_EXTENSION = "webm";
+const WEBA_EXTENSION = "weba";
+const JPEG_EXTENSION = "jpg";
+const FFMPEG_CODEC_COPY = "copy";
+const FFMPEG_CODEC_MJPEG = "mjpeg";
+const COVER_FILENAME_PREFIX = "cover";
+const INPUT_FILENAME_PREFIX = "input";
 
 export async function handleEmbedMetadata(job: EmbedMetadataJob) {
   const { audioData, filenameOutput, sourceExtension, metadata, thumbnailUrl, videoId, tabId } = job;
   state.currentVideoId = videoId;
   state.currentTabId = tabId;
   const outputExtension = getFileExtension(filenameOutput) || sourceExtension;
-  const inputFilename = `input.${sourceExtension}`;
+  const inputFilename = `${INPUT_FILENAME_PREFIX}.${sourceExtension}`;
   const outputFilename = getCompatibleFilename(filenameOutput);
 
   state.progressOffset = 0;
@@ -22,13 +29,13 @@ export async function handleEmbedMetadata(job: EmbedMetadataJob) {
   state.ffmpeg!.FS.writeFile(inputFilename, new Uint8Array(audioData));
 
   const ffmpegArgs = ["-i", inputFilename];
-  const isWebmSource = sourceExtension === "weba" || sourceExtension === "webm";
-  const isWebmOutput = outputExtension === "weba" || outputExtension === "webm";
+  const isWebmSource = sourceExtension === WEBA_EXTENSION || sourceExtension === WEBM_EXTENSION;
+  const isWebmOutput = outputExtension === WEBA_EXTENSION || outputExtension === WEBM_EXTENSION;
   const isEmbeddableThumbnail = thumbnailUrl && !isWebmSource && !isWebmOutput;
   if (isEmbeddableThumbnail) {
     const thumbnail = await fetchThumbnail(thumbnailUrl);
     if (thumbnail) {
-      coverFilename = `cover.${thumbnail.extension}`;
+      coverFilename = `${COVER_FILENAME_PREFIX}.${thumbnail.extension}`;
       state.ffmpeg!.FS.writeFile(coverFilename, thumbnail.data);
       ffmpegArgs.push("-i", coverFilename);
       isCoverArtPresent = true;
@@ -39,11 +46,11 @@ export async function handleEmbedMetadata(job: EmbedMetadataJob) {
 
   if (isCoverArtPresent) {
     ffmpegArgs.push("-map", "1");
-    ffmpegArgs.push("-c:v", coverFilename.endsWith(".jpg") ? "copy" : "mjpeg");
+    ffmpegArgs.push("-c:v", coverFilename.endsWith(`.${JPEG_EXTENSION}`) ? FFMPEG_CODEC_COPY : FFMPEG_CODEC_MJPEG);
     ffmpegArgs.push("-disposition:v", "attached_pic");
   }
 
-  ffmpegArgs.push("-c:a", outputExtension === FLAC_CODEC ? FLAC_CODEC : "copy");
+  ffmpegArgs.push("-c:a", outputExtension === FLAC_CODEC ? FLAC_CODEC : FFMPEG_CODEC_COPY);
   ffmpegArgs.push("-metadata", `title=${sanitizeForFFmpeg(metadata.title)}`);
   ffmpegArgs.push("-metadata", `artist=${sanitizeForFFmpeg(metadata.artist)}`);
 

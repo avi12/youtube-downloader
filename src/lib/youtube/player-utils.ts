@@ -4,8 +4,8 @@ export async function waitForVideoElement(signal?: AbortSignal) {
   return new Promise<HTMLVideoElement>((resolve, reject) => {
     const observer = new MutationObserver(() => {
       const elVideo = document.querySelector<HTMLVideoElement>("video");
-      const isVideoNotReady = !elVideo || elVideo.videoHeight === 0;
-      if (isVideoNotReady) {
+      const isVideoReady = !!elVideo && elVideo.videoHeight > 0;
+      if (!isVideoReady) {
         return;
       }
 

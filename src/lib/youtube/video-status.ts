@@ -1,6 +1,8 @@
 import type { PlayerResponse } from "@/types";
 import { PlayabilityStatus } from "@/types/youtube";
 
+const MUSIC_CATEGORY = "Music";
+
 export function isVideoLive(playerResponse: PlayerResponse) {
   return Boolean(playerResponse.videoDetails?.isLive);
 }
@@ -12,8 +14,8 @@ export function isVideoDownloadable(playerResponse: PlayerResponse) {
   }
 
   const { status } = playerResponse.playabilityStatus;
-  const isNotPlayable = status === PlayabilityStatus.LoginRequired || status === PlayabilityStatus.Error;
-  if (isNotPlayable) {
+  const isUnplayable = status === PlayabilityStatus.LoginRequired || status === PlayabilityStatus.Error;
+  if (isUnplayable) {
     return false;
   }
 
@@ -29,5 +31,5 @@ export function isVideoDownloadable(playerResponse: PlayerResponse) {
 }
 
 export function isVideoMusic(playerResponse: PlayerResponse) {
-  return playerResponse.microformat?.playerMicroformatRenderer.category === "Music";
+  return playerResponse.microformat?.playerMicroformatRenderer.category === MUSIC_CATEGORY;
 }
