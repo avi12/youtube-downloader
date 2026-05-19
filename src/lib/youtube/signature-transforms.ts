@@ -16,10 +16,11 @@ export type TransformOp = {
     argument: number;
   };
 
-export function applyTransforms({ signature, operations }: {
+type ApplyTransformsParams = {
   signature: string;
   operations: TransformOp[];
-}) {
+};
+export function applyTransforms({ signature, operations }: ApplyTransformsParams) {
   const characters = signature.split("");
 
   for (const operation of operations) {

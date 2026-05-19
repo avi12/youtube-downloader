@@ -18,7 +18,11 @@ export function tryCheckOutput(filename: string): boolean {
 // after a successful mux (e.g. WebVTT-in-MKV demuxer teardown). The output
 // file is fully written before cleanup runs, so a non-zero exit code alone
 // doesn't mean the mux failed - we check whether the file was actually written.
-export function executeMuxPhases(params: MuxFfmpegParams, checkOutput: CheckOutput): boolean {
+type ExecuteMuxPhasesParams = {
+  params: MuxFfmpegParams;
+  checkOutput: CheckOutput;
+};
+export function executeMuxPhases({ params, checkOutput }: ExecuteMuxPhasesParams): boolean {
   const { useIntermediateMkv, muxFilename, outputFilename, targetExtension, audioMimeType } = params;
 
   const phase1Code = state.ffmpeg!.exec(...buildMuxFfmpegArgs(params));

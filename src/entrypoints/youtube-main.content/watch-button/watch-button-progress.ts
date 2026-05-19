@@ -13,7 +13,7 @@ export interface ProgressUpdateHandlers {
   getLastProgressReported(): string;
 }
 
-export function handleProgressUpdate({ data, videoId, handlers }: {
+type HandleProgressUpdateParams = {
   data: {
     videoId: string;
     isRemoved?: boolean;
@@ -24,7 +24,8 @@ export function handleProgressUpdate({ data, videoId, handlers }: {
   };
   videoId: string;
   handlers: ProgressUpdateHandlers;
-}) {
+};
+export function handleProgressUpdate({ data, videoId, handlers }: HandleProgressUpdateParams) {
   const isForOtherVideo = data.videoId !== videoId;
   if (isForOtherVideo) {
     return;

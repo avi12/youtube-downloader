@@ -103,10 +103,11 @@ export function setupAudioTrackWatcher() {
   });
 }
 
-function writeCaptionAttribute({ languageCode, vssId }: {
+type WriteCaptionAttributeParams = {
   languageCode: string;
   vssId: string;
-}) {
+};
+function writeCaptionAttribute({ languageCode, vssId }: WriteCaptionAttributeParams) {
   getMoviePlayer()?.setAttribute(
     ACTIVE_CAPTION_ATTR, JSON.stringify({
       languageCode,
@@ -128,10 +129,7 @@ export function setupCaptionTrackWatcher() {
 
   player.__ytdlCaptionWatched = true;
 
-  function onCaptionTrack({ languageCode, vssId }: {
-    languageCode: string;
-    vssId: string;
-  }) {
+  function onCaptionTrack({ languageCode, vssId }: WriteCaptionAttributeParams) {
     writeCaptionAttribute({
       languageCode,
       vssId

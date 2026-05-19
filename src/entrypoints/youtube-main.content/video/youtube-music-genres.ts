@@ -76,10 +76,11 @@ export async function fetchYouTubeMusicGenres() {
   }
 }
 
-export function extractGenresFromKeywords({ keywords, genreSet }: {
+type ExtractGenresFromKeywordsParams = {
   keywords: string[];
   genreSet: Set<string>;
-}) {
+};
+export function extractGenresFromKeywords({ keywords, genreSet }: ExtractGenresFromKeywordsParams) {
   const matched = new Set<string>();
   for (const keyword of keywords) {
     const normalized = keyword.toLowerCase().trim();

@@ -11,10 +11,11 @@ export function setNativeDownloadVisibility(isVisible: boolean) {
   document.documentElement.classList.toggle(HIDE_NATIVE_DOWNLOAD_CLASS, !isVisible);
 }
 
-export function handlePageChange({ url, context }: {
+type HandlePageChangeParams = {
   url: string;
   context: InstanceType<typeof ContentScriptContext>;
-}) {
+};
+export function handlePageChange({ url, context }: HandlePageChangeParams) {
   const { pathname } = new URL(url);
 
   cleanupPanelUi();

@@ -10,7 +10,11 @@ export const WIRE_TYPE_32_BIT = 5;
 export const WIRE_64_BIT_BYTE_SIZE = 8;
 export const WIRE_32_BIT_BYTE_SIZE = 4;
 
-export function readVarint(buffer: Uint8Array, offset: number) {
+type ReadVarintParams = {
+  buffer: Uint8Array;
+  offset: number;
+};
+export function readVarint({ buffer, offset }: ReadVarintParams) {
   let value = 0;
   let shift = 0;
   while (offset < buffer.byteLength) {

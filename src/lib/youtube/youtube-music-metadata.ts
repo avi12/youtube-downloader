@@ -8,10 +8,11 @@ const YOUTUBE_MUSIC_SEARCH_URL = "https://music.youtube.com/youtubei/v1/search?p
 const YOUTUBE_MUSIC_CLIENT_VERSION = "1.20260408.01.00";
 const CONTENT_TYPE_JSON = "application/json";
 
-export async function fetchYouTubeMusicMetadata({ searchQuery, existingMetadata }: {
+type FetchYouTubeMusicMetadataParams = {
   searchQuery: string;
   existingMetadata: VideoMetadata;
-}) {
+};
+export async function fetchYouTubeMusicMetadata({ searchQuery, existingMetadata }: FetchYouTubeMusicMetadataParams) {
   try {
     const searchRequest: InnertubeSearchRequest = {
       query: searchQuery,

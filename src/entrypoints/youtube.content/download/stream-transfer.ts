@@ -80,10 +80,11 @@ export async function handleStreamData(payload: StreamDataPayload) {
   });
 }
 
-export function handleStreamError({ videoId, error }: {
+type HandleStreamErrorParams = {
   videoId: string;
   error: string;
-}) {
+};
+export function handleStreamError({ videoId, error }: HandleStreamErrorParams) {
   console.error("[ytdl] Stream error for", videoId, error);
 
   downloadProgressStore.delete(videoId);

@@ -7,10 +7,11 @@ const DOWNLOAD_WORKER_HTML_PATH = "/download-worker.html";
 const IFRAME_ALLOW_AUTOPLAY = "autoplay";
 const DOWNLOAD_IFRAME_STYLE = "position:fixed;inset-block-start:-100px;inset-inline-start:-100px;inline-size:1px;block-size:1px;opacity:0%;pointer-events:none;border:0";
 
-export function createDownloadIframe({ videoId, watchUrl }: {
+type CreateDownloadIframeParams = {
   videoId: string;
   watchUrl: string;
-}) {
+};
+export function createDownloadIframe({ videoId, watchUrl }: CreateDownloadIframeParams) {
   const elExisting = downloadIframes.get(videoId);
   if (elExisting) {
     elExisting.remove();

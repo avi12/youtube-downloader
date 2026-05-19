@@ -3,11 +3,12 @@ import { ProgressType } from "@/types";
 const DOWNLOAD_PHASE_WEIGHT = 70;
 const MUX_PHASE_WEIGHT = 30;
 
-export function calculateWeightedProgress({ isDownloading, progress, progressType }: {
+type CalculateWeightedProgressParams = {
   isDownloading: boolean;
   progress: number;
   progressType: ProgressType | "";
-}) {
+};
+export function calculateWeightedProgress({ isDownloading, progress, progressType }: CalculateWeightedProgressParams) {
   if (!isDownloading) {
     return 0;
   }

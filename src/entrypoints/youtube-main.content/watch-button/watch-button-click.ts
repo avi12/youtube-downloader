@@ -20,11 +20,12 @@ export interface ClickHandlerState {
   setIsPanelOpen(value: boolean): void;
 }
 
-export function buildClickHandler({ videoData, elDropdown, state }: {
+type BuildClickHandlerParams = {
   videoData: VideoData;
   elDropdown: TpYtIronDropdownElement;
   state: ClickHandlerState;
-}) {
+};
+export function buildClickHandler({ videoData, elDropdown, state }: BuildClickHandlerParams) {
   return function handleClick(e: Event) {
     const { target } = e;
     const isNode = target instanceof Node;

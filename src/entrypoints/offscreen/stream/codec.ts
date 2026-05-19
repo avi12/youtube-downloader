@@ -1,7 +1,8 @@
-export function assembleStreamChunks({ chunks, totalChunks }: {
+type AssembleStreamChunksParams = {
   chunks: Map<number, Uint8Array>;
   totalChunks: number;
-}) {
+};
+export function assembleStreamChunks({ chunks, totalChunks }: AssembleStreamChunksParams) {
   if (totalChunks === 0) {
     return null;
   }

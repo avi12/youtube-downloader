@@ -11,14 +11,17 @@ export interface MessageEffectsSetters {
   setDefaultAudioTrackId(value: string | undefined): void;
 }
 
-export function createMessageEffects({ videoId, handlers, getIsPanelOpen, setIsPanelOpen, setters, getElDropdown }: {
+type CreateMessageEffectsParams = {
   videoId: string;
   handlers: ProgressUpdateHandlers;
   getIsPanelOpen: () => boolean;
   setIsPanelOpen: (value: boolean) => void;
   setters: MessageEffectsSetters;
   getElDropdown: () => TpYtIronDropdownElement;
-}) {
+};
+export function createMessageEffects({
+  videoId, handlers, getIsPanelOpen, setIsPanelOpen, setters, getElDropdown
+}: CreateMessageEffectsParams) {
   $effect(() => onCrossWorldEvent({
     type: CrossWorldEvent.ProgressUpdate,
     handler(data) {

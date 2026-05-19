@@ -9,10 +9,11 @@ const SELECTOR_VIDEO_ID_LINK = "a#video-title";
 const SELECTOR_TOP_LEVEL_BUTTONS = "ytd-menu-renderer #top-level-buttons-computed";
 const SELECTOR_PLAYLIST_VIDEO_LIST_CONTENTS = "ytd-playlist-video-list-renderer #contents";
 
-function injectPlaylistVideoItemUi({ context, elVideoItem }: {
+type InjectPlaylistVideoItemUiParams = {
   context: InstanceType<typeof ContentScriptContext>;
   elVideoItem: Element;
-}) {
+};
+function injectPlaylistVideoItemUi({ context, elVideoItem }: InjectPlaylistVideoItemUiParams) {
   const elVideoIdLink = elVideoItem.querySelector<HTMLAnchorElement>(SELECTOR_VIDEO_ID_LINK);
   if (!elVideoIdLink) {
     return;
@@ -61,10 +62,11 @@ function injectPlaylistVideoItemUi({ context, elVideoItem }: {
   ui.mount();
 }
 
-function injectIntoSubtree({ root, context }: {
+type InjectIntoSubtreeParams = {
   root: Element;
   context: InstanceType<typeof ContentScriptContext>;
-}) {
+};
+function injectIntoSubtree({ root, context }: InjectIntoSubtreeParams) {
   if (root.tagName.toLowerCase() === PLAYLIST_VIDEO_TAG) {
     injectPlaylistVideoItemUi({
       context,

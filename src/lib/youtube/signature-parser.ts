@@ -27,10 +27,11 @@ function findSignatureFunctionName(playerSource: string) {
   return null;
 }
 
-function extractTransformOperations({ playerSource, functionName }: {
+type ExtractTransformOperationsParams = {
   playerSource: string;
   functionName: string;
-}) {
+};
+function extractTransformOperations({ playerSource, functionName }: ExtractTransformOperationsParams) {
   const escapedName = escapeRegExp(functionName);
   const functionPattern = new RegExp(`(?:var\\s+${escapedName}|${escapedName}\\s*=\\s*function)\\s*=?\\s*function\\s*\\(([a-zA-Z])\\)\\s*\\{([^}]+)\\}`);
   const [, , functionBody] = playerSource.match(functionPattern) ?? [];

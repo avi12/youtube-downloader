@@ -6,12 +6,15 @@ export { resolveCredentialsWithRetry } from "./download-credentials";
 const MAX_ADDITIONAL_AUDIO_TRACKS = 16;
 const AUTO_DUB_TRACK_SUFFIX = ".10";
 
-export function getExtraAudioFormats({ audioFormats, selectedTrackId, selectedFormat, includeAutoDubbing }: {
+type GetExtraAudioFormatsParams = {
   audioFormats: AdaptiveFormatItem[];
   selectedTrackId: string | undefined;
   selectedFormat: AdaptiveFormatItem | null;
   includeAutoDubbing: boolean;
-}) {
+};
+export function getExtraAudioFormats({
+  audioFormats, selectedTrackId, selectedFormat, includeAutoDubbing
+}: GetExtraAudioFormatsParams) {
   if (!includeAutoDubbing && selectedTrackId?.endsWith(AUTO_DUB_TRACK_SUFFIX)) {
     return [];
   }
@@ -54,7 +57,7 @@ export function getExtraAudioFormats({ audioFormats, selectedTrackId, selectedFo
   return result;
 }
 
-export function selectFormats({ videoData, type, videoItag, audioItag, audioTrackId }: {
+type SelectFormatsParams = {
   videoData: {
     videoFormats: AdaptiveFormatItem[];
     audioFormats: AdaptiveFormatItem[];
@@ -63,7 +66,10 @@ export function selectFormats({ videoData, type, videoItag, audioItag, audioTrac
   videoItag: number | undefined;
   audioItag: number | undefined;
   audioTrackId: string | undefined;
-}) {
+};
+export function selectFormats({
+  videoData, type, videoItag, audioItag, audioTrackId
+}: SelectFormatsParams) {
   const videoFormat = type !== DownloadType.Audio
     ? (videoData.videoFormats.find(format => format.itag === videoItag) ?? videoData.videoFormats[0])
     : null;
@@ -84,12 +90,15 @@ export function selectFormats({ videoData, type, videoItag, audioItag, audioTrac
   };
 }
 
-export async function preResolveCdnUrls({ type, videoFormat, audioFormat, extraAudioFormats }: {
+type PreResolveCdnUrlsParams = {
   type: DownloadType;
   videoFormat: AdaptiveFormatItem | null;
   audioFormat: AdaptiveFormatItem | null;
   extraAudioFormats: AdaptiveFormatItem[];
-}) {
+};
+export async function preResolveCdnUrls({
+  type, videoFormat, audioFormat, extraAudioFormats
+}: PreResolveCdnUrlsParams) {
   return Promise.all([
     type !== DownloadType.Audio ? resolveFormatUrl(videoFormat) : Promise.resolve(null),
     type !== DownloadType.Video ? resolveFormatUrl(audioFormat) : Promise.resolve(null),

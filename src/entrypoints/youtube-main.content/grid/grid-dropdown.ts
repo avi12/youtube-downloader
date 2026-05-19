@@ -8,10 +8,11 @@ const GRID_PANEL_CONTENT_ID_PREFIX = "ytdl-grid-panel-";
 
 const gridDropdowns = new Map<string, TpYtIronDropdownElement>();
 
-function createGridDropdown({ contentId, positionTargetSelector }: {
+type CreateGridDropdownParams = {
   contentId: string;
   positionTargetSelector: string;
-}) {
+};
+function createGridDropdown({ contentId, positionTargetSelector }: CreateGridDropdownParams) {
   const elPositionTarget = document.querySelector(positionTargetSelector);
   if (!elPositionTarget) {
     return;

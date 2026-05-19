@@ -15,11 +15,12 @@ import type { DownloadRequest } from "@/types";
 
 const PROGRESSIVE_DOWNLOAD_EXTENSION = "mp4";
 
-async function tryProgressiveInPage({ url, filenameOutput, videoId }: {
+type TryProgressiveInPageParams = {
   url: string;
   filenameOutput: string;
   videoId: string;
-}) {
+};
+async function tryProgressiveInPage({ url, filenameOutput, videoId }: TryProgressiveInPageParams) {
   try {
     const response = await fetch(url, { credentials: "include" });
     if (!response.ok) {
@@ -48,10 +49,11 @@ export type DownloadParams = Pick<DownloadRequest,
   "playlistId" | "playlistTitle" | "playlistTotalCount"
 >;
 
-export async function resolveAndDispatch({ params, abortSignal }: {
+type ResolveAndDispatchParams = {
   params: DownloadParams;
   abortSignal: AbortSignal;
-}) {
+};
+export async function resolveAndDispatch({ params, abortSignal }: ResolveAndDispatchParams) {
   const {
     type, videoId, videoItag, audioItag, audioTrackId, selectedCaptionVssId
   } = params;
@@ -75,9 +77,11 @@ export async function resolveAndDispatch({ params, abortSignal }: {
   }
 
   const options = CONTENT_OPTIONS;
-  const orderedCaptionTracks = resolveOrderedCaptionTracks(
-    cachedVideoData.captionTracks, selectedCaptionVssId, options.downloadExtras
-  );
+  const orderedCaptionTracks = resolveOrderedCaptionTracks({
+    captionTracks: cachedVideoData.captionTracks,
+    selectedCaptionVssId,
+    downloadExtras: options.downloadExtras
+  });
   const captionVttDataPromise = fetchCaptionWebVttData({
     captionTracks: orderedCaptionTracks,
     videoId

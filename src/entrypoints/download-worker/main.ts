@@ -34,11 +34,19 @@ addEventListener("message", e => {
 
   if (e.data?.type === IFRAME_MSG_START) {
     const { request, tabId, enrichedMetadata } = e.data;
-    void runDownload(request, tabId, enrichedMetadata);
+    void runDownload({
+      request,
+      tabId,
+      enrichedMetadata
+    });
   }
 }, { once: false });
 
-async function trySabrWithStallTimer(request: DownloadRequest, tabId: number) {
+type TrySabrWithStallTimerParams = {
+  request: DownloadRequest;
+  tabId: number;
+};
+async function trySabrWithStallTimer({ request, tabId }: TrySabrWithStallTimerParams) {
   const sabrAbortController = new AbortController();
   let sabrStallTimeoutId = setTimeout(() => sabrAbortController.abort(), SABR_FIRST_BYTE_TIMEOUT_MS);
   signal.addEventListener("abort", () => sabrAbortController.abort(), { once: true });
@@ -67,7 +75,12 @@ async function trySabrWithStallTimer(request: DownloadRequest, tabId: number) {
   }
 }
 
-function sendChunkToParent(videoId: string, streamType: string, tabId: number) {
+type SendChunkToParentParams = {
+  videoId: string;
+  streamType: string;
+  tabId: number;
+};
+function sendChunkToParent({ videoId, streamType, tabId }: SendChunkToParentParams) {
   return (chunk: Uint8Array, iChunk: number) => {
     const buffer = new ArrayBuffer(chunk.byteLength);
     new Uint8Array(buffer).set(chunk);
@@ -86,7 +99,11 @@ function sendChunkToParent(videoId: string, streamType: string, tabId: number) {
   };
 }
 
-function sendStreamEndToParent(videoId: string, streamType: string) {
+type SendStreamEndToParentParams = {
+  videoId: string;
+  streamType: string;
+};
+function sendStreamEndToParent({ videoId, streamType }: SendStreamEndToParentParams) {
   return (totalChunks: number) => {
     parent.postMessage(
       {
@@ -100,15 +117,16 @@ function sendStreamEndToParent(videoId: string, streamType: string) {
   };
 }
 
-function buildStreamEnd({
-  request, tabId, enrichedMetadata, additionalAudioTrackLabels, additionalAudioLanguageCodes
-}: {
+type BuildStreamEndParams = {
   request: DownloadRequest;
   tabId: number;
   enrichedMetadata: VideoMetadata | null;
   additionalAudioTrackLabels: string[];
   additionalAudioLanguageCodes: string[];
-}): ProcessStreamEndData {
+};
+function buildStreamEnd({
+  request, tabId, enrichedMetadata, additionalAudioTrackLabels, additionalAudioLanguageCodes
+}: BuildStreamEndParams): ProcessStreamEndData {
   const {
     videoId, type, filenameOutput, videoFormat, audioFormat,
     primaryAudioLabel, primaryAudioLanguageCode,
@@ -140,11 +158,19 @@ function buildStreamEnd({
   };
 }
 
-async function runDownload(request: DownloadRequest, tabId: number, enrichedMetadata: VideoMetadata | null) {
+type RunDownloadParams = {
+  request: DownloadRequest;
+  tabId: number;
+  enrichedMetadata: VideoMetadata | null;
+};
+async function runDownload({ request, tabId, enrichedMetadata }: RunDownloadParams) {
   const { videoId, type, resolvedVideoUrl, resolvedAudioUrl } = request;
 
   try {
-    const sabrResult = await trySabrWithStallTimer(request, tabId);
+    const sabrResult = await trySabrWithStallTimer({
+      request,
+      tabId
+    });
     if (signal.aborted) {
       return;
     }
@@ -166,10 +192,24 @@ async function runDownload(request: DownloadRequest, tabId: number, enrichedMeta
         tabId,
         partialAudioData,
         ...(useStreaming && {
-          onVideoChunk: sendChunkToParent(videoId, StreamType.Video, tabId),
-          onAudioChunk: sendChunkToParent(videoId, StreamType.Audio, tabId),
-          onVideoStreamEnd: sendStreamEndToParent(videoId, StreamType.Video),
-          onAudioStreamEnd: sendStreamEndToParent(videoId, StreamType.Audio)
+          onVideoChunk: sendChunkToParent({
+            videoId,
+            streamType: StreamType.Video,
+            tabId
+          }),
+          onAudioChunk: sendChunkToParent({
+            videoId,
+            streamType: StreamType.Audio,
+            tabId
+          }),
+          onVideoStreamEnd: sendStreamEndToParent({
+            videoId,
+            streamType: StreamType.Video
+          }),
+          onAudioStreamEnd: sendStreamEndToParent({
+            videoId,
+            streamType: StreamType.Audio
+          })
         })
       }).catch(error => {
         if (signal.aborted) {

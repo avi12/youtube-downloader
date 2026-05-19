@@ -30,12 +30,13 @@ async function loadInterpreterScript(interpreterUrl: string) {
   });
 }
 
-export async function ensureBotGuardVm({ globalName, interpreterUrlRaw }: {
+type EnsureBotGuardVmParams = {
   globalName: string;
   interpreterUrlRaw: string | {
     privateDoNotAccessOrElseTrustedResourceUrlWrappedValue: string;
   } | undefined;
-}) {
+};
+export async function ensureBotGuardVm({ globalName, interpreterUrlRaw }: EnsureBotGuardVmParams) {
   const isVmAlreadyLoaded = Boolean(getBotGuardVm(globalName));
   if (isVmAlreadyLoaded) {
     return;
@@ -61,11 +62,12 @@ export async function ensureBotGuardVm({ globalName, interpreterUrlRaw }: {
 
 export type SignalFunction = (input: Uint8Array) => Promise<(input: Uint8Array) => Promise<Uint8Array>>;
 
-export function initBotGuardVm({ botGuardEntry, program, webPoSignalOutput }: {
+type InitBotGuardVmParams = {
   botGuardEntry: BotGuardVmEntry;
   program: string;
   webPoSignalOutput: SignalFunction[];
-}) {
+};
+export function initBotGuardVm({ botGuardEntry, program, webPoSignalOutput }: InitBotGuardVmParams) {
   const initResult = botGuardEntry.a(program, () => {}, true, undefined, () => {}, [[], []]);
   const snapshotFunction = initResult?.[0];
   const isSnapshotMissing = typeof snapshotFunction !== "function";

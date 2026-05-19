@@ -4,17 +4,30 @@ import type { AdaptiveFormatItem } from "@/types";
 
 const FALLBACK_LANGUAGE_CODE = "en";
 
-function matchAudioFormatToLanguage({ audioFormats, langCode }: {
+type MatchAudioFormatToLanguageParams = {
   audioFormats: AdaptiveFormatItem[];
   langCode: string;
-}) {
+};
+function matchAudioFormatToLanguage({ audioFormats, langCode }: MatchAudioFormatToLanguageParams) {
   return audioFormats.find(format => normalizeLanguageCode(format.audioTrack?.id ?? "") === langCode);
 }
 
-function prependMatch(audioFormats: AdaptiveFormatItem[], match: AdaptiveFormatItem | undefined | null) {
+type PrependMatchParams = {
+  audioFormats: AdaptiveFormatItem[];
+  match: AdaptiveFormatItem | undefined | null;
+};
+function prependMatch({ audioFormats, match }: PrependMatchParams) {
   return match ? [match, ...audioFormats.filter(format => format !== match)] : [];
 }
 
+type SelectPreferredAudioFormatParams = {
+  audioFormats: AdaptiveFormatItem[];
+  videoMimeType: string;
+  languageMode: AudioTrackLanguageMode;
+  locale: string;
+  browserLanguage?: string;
+  customLanguage?: string;
+};
 export function selectPreferredAudioFormat({
   audioFormats,
   videoMimeType,
@@ -22,14 +35,7 @@ export function selectPreferredAudioFormat({
   locale,
   browserLanguage,
   customLanguage
-}: {
-  audioFormats: AdaptiveFormatItem[];
-  videoMimeType: string;
-  languageMode: AudioTrackLanguageMode;
-  locale: string;
-  browserLanguage?: string;
-  customLanguage?: string;
-}) {
+}: SelectPreferredAudioFormatParams) {
   const hasNoFormats = !audioFormats.length;
   if (hasNoFormats) {
     return null;
@@ -50,9 +56,15 @@ export function selectPreferredAudioFormat({
         audioFormats,
         langCode: FALLBACK_LANGUAGE_CODE
       });
-    candidates = prependMatch(audioFormats, match);
+    candidates = prependMatch({
+      audioFormats,
+      match
+    });
   } else if (languageMode === AudioTrackLanguageMode.OriginalLanguage) {
-    candidates = prependMatch(audioFormats, originalTrack);
+    candidates = prependMatch({
+      audioFormats,
+      match: originalTrack
+    });
   }
 
   const hasNoCandidates = !candidates.length;
@@ -65,14 +77,20 @@ export function selectPreferredAudioFormat({
         langCode: normalizeLanguageCode(lang)
       });
       if (match) {
-        candidates = prependMatch(audioFormats, match);
+        candidates = prependMatch({
+          audioFormats,
+          match
+        });
         break;
       }
     }
   }
 
   if (!candidates.length) {
-    candidates = originalTrack ? prependMatch(audioFormats, originalTrack) : audioFormats;
+    candidates = originalTrack ? prependMatch({
+      audioFormats,
+      match: originalTrack
+    }) : audioFormats;
   }
 
   if (isWebm) {

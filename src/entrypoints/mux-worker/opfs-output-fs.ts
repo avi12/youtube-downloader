@@ -170,7 +170,12 @@ function makeOpfsFs(fs: FS, syncHandle: FileSystemSyncAccessHandle) {
   return opfsFs;
 }
 
-export function createOpfsOutputFs(fs: FS, syncHandle: FileSystemSyncAccessHandle, outputFilename: string) {
+type CreateOpfsOutputFsParams = {
+  fs: FS;
+  syncHandle: FileSystemSyncAccessHandle;
+  outputFilename: string;
+};
+export function createOpfsOutputFs({ fs, syncHandle, outputFilename }: CreateOpfsOutputFsParams) {
   const driver = makeOpfsFs(fs, syncHandle);
 
   return {

@@ -4,10 +4,11 @@ import { CONTAINER_SPECS, extractBaseCodec, videoContainers } from "@/lib/utils/
 const FFMPEG_CODEC_COPY = "copy";
 const FFMPEG_SUBTITLE_CODEC_WEBVTT = "webvtt";
 
-export function resolveAudioCodec({ audioMimeType, targetExtension }: {
+type ResolveAudioCodecParams = {
   audioMimeType: string;
   targetExtension: string;
-}) {
+};
+export function resolveAudioCodec({ audioMimeType, targetExtension }: ResolveAudioCodecParams) {
   const spec = CONTAINER_SPECS[targetExtension];
   if (!spec) {
     return "copy";
@@ -21,17 +22,18 @@ export function resolveSubtitleCodec(targetExtension: string) {
   return CONTAINER_SPECS[targetExtension]?.subtitleCodec ?? FFMPEG_SUBTITLE_CODEC_WEBVTT;
 }
 
+type BuildRemuxArgsParams = {
+  inputFilename: string;
+  outputFilename: string;
+  targetExtension: string;
+  audioMimeType: string | undefined;
+};
 export function buildRemuxArgs({
   inputFilename,
   outputFilename,
   targetExtension,
   audioMimeType
-}: {
-  inputFilename: string;
-  outputFilename: string;
-  targetExtension: string;
-  audioMimeType: string | undefined;
-}) {
+}: BuildRemuxArgsParams) {
   const audioCodec = resolveAudioCodec({
     audioMimeType: audioMimeType ?? "",
     targetExtension
@@ -66,10 +68,11 @@ export type MuxFfmpegParams = {
   isExtraTracksPresent: boolean;
 };
 
-function appendTrackMetadata({ ffmpegArgs, params }: {
+type AppendTrackMetadataParams = {
   ffmpegArgs: string[];
   params: MuxFfmpegParams;
-}) {
+};
+function appendTrackMetadata({ ffmpegArgs, params }: AppendTrackMetadataParams) {
   const audioTrackMeta = [
     {
       label: params.primaryAudioLabel,

@@ -38,10 +38,11 @@ function extractContentId(elCard: Element) {
   return null;
 }
 
-function tagCard({ elCard, retriesLeft = MAX_RETRIES }: {
+type TagCardParams = {
   elCard: Element;
   retriesLeft?: number;
-}) {
+};
+function tagCard({ elCard, retriesLeft = MAX_RETRIES }: TagCardParams) {
   if (elCard.hasAttribute(CONTENT_ID_ATTR)) {
     return;
   }

@@ -11,26 +11,28 @@ const CAPTION_TO_AUDIO_MODE: Partial<Record<CaptionLanguageMode, AudioTrackLangu
   [CaptionLanguageMode.Custom]: AudioTrackLanguageMode.Custom
 };
 
-export function resolveCaptionLanguageMode({ captionMode, audioMode }: {
+type ResolveCaptionLanguageModeParams = {
   captionMode: CaptionLanguageMode;
   audioMode: AudioTrackLanguageMode;
-}) {
+};
+export function resolveCaptionLanguageMode({ captionMode, audioMode }: ResolveCaptionLanguageModeParams) {
   return CAPTION_TO_AUDIO_MODE[captionMode] ?? audioMode;
 }
 
+type OrderCaptionsByPreferenceParams = {
+  captionTracks: CaptionTrack[];
+  languageMode: AudioTrackLanguageMode;
+  locale: string;
+  browserLanguage?: string;
+  customLanguage?: string;
+};
 export function orderCaptionsByPreference({
   captionTracks,
   languageMode,
   locale,
   browserLanguage,
   customLanguage
-}: {
-  captionTracks: CaptionTrack[];
-  languageMode: AudioTrackLanguageMode;
-  locale: string;
-  browserLanguage?: string;
-  customLanguage?: string;
-}) {
+}: OrderCaptionsByPreferenceParams) {
   const isOrderingUnnecessary = captionTracks.length <= 1 || languageMode === AudioTrackLanguageMode.OriginalLanguage;
   if (isOrderingUnnecessary) {
     return captionTracks;

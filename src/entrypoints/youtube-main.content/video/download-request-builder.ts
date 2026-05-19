@@ -18,10 +18,11 @@ export type ResolvedDownloadData = {
   progressiveUrl: string | null;
 };
 
-export async function buildEnrichedRequest({ params, resolved }: {
+type BuildEnrichedRequestParams = {
   params: DownloadParams;
   resolved: ResolvedDownloadData;
-}) {
+};
+export async function buildEnrichedRequest({ params, resolved }: BuildEnrichedRequestParams) {
   const { type, videoId, videoItag, audioItag, filenameOutput, isIframeFallback } = params;
   const { playlistId, playlistTitle, playlistTotalCount } = params;
   const {

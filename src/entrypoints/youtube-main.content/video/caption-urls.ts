@@ -12,11 +12,14 @@ const CONTENT_TYPE_JSON = "application/json";
 const DEFAULT_CAPTION_LANGUAGE = "en";
 const DEFAULT_CAPTION_REGION = "US";
 
-export function resolveOrderedCaptionTracks(
-  captionTracks: CaptionTrack[],
-  selectedCaptionVssId: string | undefined,
-  downloadExtras: boolean
-) {
+type ResolveOrderedCaptionTracksParams = {
+  captionTracks: CaptionTrack[];
+  selectedCaptionVssId: string | undefined;
+  downloadExtras: boolean;
+};
+export function resolveOrderedCaptionTracks({
+  captionTracks, selectedCaptionVssId, downloadExtras
+}: ResolveOrderedCaptionTracksParams) {
   const options = CONTENT_OPTIONS;
   const captionMode = resolveCaptionLanguageMode({
     captionMode: options.captionLanguageMode,

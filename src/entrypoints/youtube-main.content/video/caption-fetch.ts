@@ -62,10 +62,11 @@ async function fetchWebVttViaTrackElement(url: string) {
   });
 }
 
-export async function fetchCaptionWebVttData({ captionTracks, videoId }: {
+type FetchCaptionWebVttDataParams = {
   captionTracks: CaptionTrack[];
   videoId: string;
-}) {
+};
+export async function fetchCaptionWebVttData({ captionTracks, videoId }: FetchCaptionWebVttDataParams) {
   if (captionTracks.length === 0) {
     return [];
   }

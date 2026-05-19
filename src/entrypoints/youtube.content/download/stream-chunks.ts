@@ -1,11 +1,12 @@
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { TRANSFER_CHUNK_SIZE, uint8ToBase64 } from "@/lib/utils/binary";
 
-export async function sendStreamChunks({ videoId, streamType, data }: {
+type SendStreamChunksParams = {
   videoId: string;
   streamType: string;
   data: Uint8Array;
-}) {
+};
+export async function sendStreamChunks({ videoId, streamType, data }: SendStreamChunksParams) {
   const totalChunks = Math.ceil(data.byteLength / TRANSFER_CHUNK_SIZE);
 
   await Promise.all(
@@ -29,10 +30,11 @@ const playlistContextByVideoId = new Map<string, {
   playlistTotalCount: number;
 }>();
 
-export function setPlaylistContext({ videoId, context }: {
+type SetPlaylistContextParams = {
   videoId: string;
   context: Parameters<typeof playlistContextByVideoId.set>[1];
-}) {
+};
+export function setPlaylistContext({ videoId, context }: SetPlaylistContextParams) {
   playlistContextByVideoId.set(videoId, context);
 }
 

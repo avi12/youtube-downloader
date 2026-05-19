@@ -17,11 +17,12 @@ function extractProgressiveUrl(playerResponse: PlayerResponse) {
   return null;
 }
 
-function extractSabrConfig({ playerResponse, clientVersion, clientName }: {
+type VideoDataParams = {
   playerResponse: PlayerResponse;
   clientVersion: string;
   clientName: number;
-}) {
+};
+function extractSabrConfig({ playerResponse, clientVersion, clientName }: VideoDataParams) {
   const serverAbrStreamingUrl = playerResponse.streamingData?.serverAbrStreamingUrl;
   const videoPlaybackUstreamerConfig = playerResponse.playerConfig
     ?.mediaCommonConfig?.mediaUstreamerRequestConfig?.videoPlaybackUstreamerConfig;
@@ -38,11 +39,7 @@ function extractSabrConfig({ playerResponse, clientVersion, clientName }: {
   };
 }
 
-export function buildVideoData({ playerResponse, clientVersion, clientName }: {
-  playerResponse: PlayerResponse;
-  clientVersion: string;
-  clientName: number;
-}) {
+export function buildVideoData({ playerResponse, clientVersion, clientName }: VideoDataParams) {
   const isDownloadable = isVideoDownloadable(playerResponse);
   const isLive = isVideoLive(playerResponse);
   const isMusic = isVideoMusic(playerResponse);

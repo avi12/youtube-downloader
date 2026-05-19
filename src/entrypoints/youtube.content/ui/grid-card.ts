@@ -18,10 +18,11 @@ function getLockupRoot(elCard: Element) {
   return elLockup?.shadowRoot ?? null;
 }
 
-export function shadowFirst({ elCard, selector }: {
+type ShadowFirstParams = {
   elCard: Element;
   selector: string;
-}) {
+};
+export function shadowFirst({ elCard, selector }: ShadowFirstParams) {
   return getLockupRoot(elCard)?.querySelector(selector) ?? elCard.querySelector(selector);
 }
 
@@ -68,10 +69,11 @@ export function isCardPending(elCard: Element) {
   return !(getLockupRoot(elCard) ?? elCard).querySelector(`[${ATTR_GRID_ITEM}="${videoId}"]`);
 }
 
-export function mountGridButton({ context, elCard }: {
+type MountGridButtonParams = {
   context: InstanceType<typeof ContentScriptContext>;
   elCard: Element;
-}) {
+};
+export function mountGridButton({ context, elCard }: MountGridButtonParams) {
   const videoId = extractVideoId(elCard);
   if (!videoId) {
     return;
