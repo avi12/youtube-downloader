@@ -1,6 +1,10 @@
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { ProgressType } from "@/types";
 
+function isServiceWorker() {
+  return typeof document === "undefined";
+}
+
 export { fetchWithProgress } from "./cdn-fetch";
 
 const PROGRESS_THROTTLE_INTERVAL_MS = 1000;
@@ -25,11 +29,20 @@ export async function sendProgressUpdate({ videoId, progress, progressType, tabI
     lastProgressTimestamps.set(videoId, now);
   }
 
-  await sendMessage(MessageType.UpdateDownloadProgress, {
-    videoId,
-    progress,
-    progressType
-  }, tabId);
+  if (isServiceWorker()) {
+    await sendMessage(MessageType.UpdateDownloadProgress, {
+      videoId,
+      progress,
+      progressType
+    }, tabId);
+  } else {
+    await sendMessage(MessageType.ForwardProgressUpdate, {
+      videoId,
+      progress,
+      progressType,
+      tabId
+    });
+  }
 }
 
 export function createProgressFetch({ signal, onBytesReceived }: {
