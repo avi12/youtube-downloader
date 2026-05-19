@@ -80,7 +80,7 @@ export function buildDownloadAllData({
 
 export function buildStopAllData() {
   return {
-    iconName: IconName.Stop,
+    iconName: IconName.Close,
     title: "Stop all",
     accessibilityText: "Stop all downloads",
     style: ButtonStyle.Mono,
