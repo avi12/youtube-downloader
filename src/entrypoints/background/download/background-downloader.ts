@@ -139,12 +139,16 @@ export async function startBackgroundDownload({ request, tabId }: {
       const directDownloadId = await tryDirectUrlDownload({ request });
       if (directDownloadId !== null) {
         clearIframeAutoRetry(videoId);
-        await sendMessage(MessageType.UpdateDownloadProgress, {
-          videoId,
-          progress: 0,
-          progressType: ProgressType.Video,
-          isRemoved: true
-        }, tabId);
+
+        if (tabId >= 0) {
+          await sendMessage(MessageType.UpdateDownloadProgress, {
+            videoId,
+            progress: 0,
+            progressType: ProgressType.Video,
+            isRemoved: true
+          }, tabId);
+        }
+
         await removeFromPopupList(videoId);
         signalVideoComplete(videoId);
         return;

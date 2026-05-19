@@ -93,12 +93,16 @@ export function registerDownloadHandlers() {
         filename
       });
       clearIframeAutoRetry(videoId);
-      await sendMessage(MessageType.UpdateDownloadProgress, {
-        videoId,
-        progress: 0,
-        progressType: ProgressType.Video,
-        isRemoved: true
-      }, tabId);
+
+      if (tabId >= 0) {
+        await sendMessage(MessageType.UpdateDownloadProgress, {
+          videoId,
+          progress: 0,
+          progressType: ProgressType.Video,
+          isRemoved: true
+        }, tabId);
+      }
+
       await removeFromPopupList(videoId);
       signalVideoComplete(videoId);
     } catch (error) {
@@ -111,22 +115,34 @@ export function registerDownloadHandlers() {
   });
 
   onMessage(MessageType.StartBackgroundDownload, async ({ data, sender }) => {
-    const tabId = sender.tab?.id ?? getTabIdsForVideo(data.videoId)[0] ?? -1;
+    let tabId = sender.tab?.id ?? getTabIdsForVideo(data.videoId)[0];
+    if (!tabId) {
+      const [ytTab] = await browser.tabs.query({
+        url: "*://*.youtube.com/*",
+        active: true
+      });
+      tabId = ytTab?.id;
+    }
+
+    const resolvedTabId = tabId ?? -1;
     trackVideoForTab({
       videoId: data.videoId,
-      tabId
+      tabId: resolvedTabId
     });
     await enqueueToPopupList({
       videoId: data.videoId,
       type: data.type,
       filenameOutput: data.filenameOutput,
       quality: data.videoFormat?.height ? `${data.videoFormat.height}p` : undefined,
-      tabId
+      tabId: resolvedTabId
     });
     void startBackgroundDownload({
       request: data,
-      tabId
+      tabId: resolvedTabId
     });
-    await sendMessage(MessageType.StartKeepalive, { videoId: data.videoId }, tabId);
+
+    if (resolvedTabId >= 0) {
+      await sendMessage(MessageType.StartKeepalive, { videoId: data.videoId }, resolvedTabId);
+    }
   });
 }

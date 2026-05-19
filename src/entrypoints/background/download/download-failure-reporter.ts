@@ -5,13 +5,16 @@ import { ProgressType } from "@/types";
 import type { VideoTabParams } from "@/types";
 
 export function reportDownloadFailed({ videoId, tabId }: VideoTabParams) {
-  void sendMessage(MessageType.UpdateDownloadProgress, {
-    videoId,
-    progress: 0,
-    progressType: ProgressType.Video,
-    isRemoved: true,
-    isFailed: true
-  }, tabId);
+  if (tabId >= 0) {
+    void sendMessage(MessageType.UpdateDownloadProgress, {
+      videoId,
+      progress: 0,
+      progressType: ProgressType.Video,
+      isRemoved: true,
+      isFailed: true
+    }, tabId);
+  }
+
   void removeFromPopupList(videoId);
   signalVideoComplete(videoId);
 }

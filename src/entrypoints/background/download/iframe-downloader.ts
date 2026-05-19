@@ -82,7 +82,11 @@ export async function downloadViaWatchPage({ data, tabId }: {
       ...data,
       isIframeFallback: true
     });
-    await sendMessage(MessageType.StartKeepalive, { videoId: data.videoId }, tabId);
+
+    if (tabId >= 0) {
+      await sendMessage(MessageType.StartKeepalive, { videoId: data.videoId }, tabId);
+    }
+
     await awaitVideoComplete(data.videoId);
     sendToOffscreen({
       type: OffscreenMessageType.RemoveDownloadIframe,

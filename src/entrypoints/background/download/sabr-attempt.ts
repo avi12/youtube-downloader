@@ -70,11 +70,14 @@ export async function handleIframeFallback({
     console.warn("[ytdl:bg] SABR+CDN failed, trying offscreen iframe fallback for", videoId);
   }
 
-  void sendMessage(MessageType.UpdateDownloadProgress, {
-    videoId,
-    progress: 0,
-    progressType: ProgressType.Video
-  }, tabId);
+  if (tabId >= 0) {
+    void sendMessage(MessageType.UpdateDownloadProgress, {
+      videoId,
+      progress: 0,
+      progressType: ProgressType.Video
+    }, tabId);
+  }
+
   await downloadViaWatchPage({
     data: {
       ...request,
