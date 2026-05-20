@@ -184,14 +184,14 @@ export function createPanelState(getVideoData: () => VideoData) {
 
     const megabytes = totalBytes / (1024 * 1024);
     if (megabytes < 1) {
-      return SIZE_FORMATTER_KB.format(totalBytes / 1024);
+      return `~${SIZE_FORMATTER_KB.format(totalBytes / 1024)}`;
     }
 
     if (megabytes < 1000) {
-      return SIZE_FORMATTER_MB.format(megabytes);
+      return `~${SIZE_FORMATTER_MB.format(megabytes)}`;
     }
 
-    return SIZE_FORMATTER_GB.format(totalBytes / (1024 * 1024 * 1024));
+    return `~${SIZE_FORMATTER_GB.format(totalBytes / (1024 * 1024 * 1024))}`;
   });
 
   $effect(() => {
