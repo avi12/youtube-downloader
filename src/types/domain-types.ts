@@ -12,6 +12,7 @@ export type DownloadRequest = {
   filenameOutput: string;
   sabrConfig?: SabrConfig | null;
   downloadExtras?: boolean;
+  downloadExtraCaptions?: boolean;
   includeAutoDubbing?: boolean;
   isIframeFallback?: boolean;
   playlistId?: string;

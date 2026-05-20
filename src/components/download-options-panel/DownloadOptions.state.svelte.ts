@@ -38,7 +38,8 @@ export interface DownloadOptionsProps {
 export const PANEL_OPTIONS = $state({
   includeAiCaptions: CONTENT_OPTIONS.includeAiCaptions,
   includeAutoDubbing: CONTENT_OPTIONS.includeAutoDubbing,
-  downloadExtras: CONTENT_OPTIONS.downloadExtras
+  downloadExtras: CONTENT_OPTIONS.downloadExtras,
+  downloadExtraCaptions: CONTENT_OPTIONS.downloadExtras
 });
 
 optionsItem.watch(next => {
@@ -49,6 +50,7 @@ optionsItem.watch(next => {
   PANEL_OPTIONS.includeAiCaptions = next.includeAiCaptions ?? INITIAL_OPTIONS.includeAiCaptions;
   PANEL_OPTIONS.includeAutoDubbing = next.includeAutoDubbing ?? INITIAL_OPTIONS.includeAutoDubbing;
   PANEL_OPTIONS.downloadExtras = next.downloadExtras ?? INITIAL_OPTIONS.downloadExtras;
+  PANEL_OPTIONS.downloadExtraCaptions = next.downloadExtras ?? INITIAL_OPTIONS.downloadExtras;
 });
 
 export function createDownloadOptionsState(props: () => DownloadOptionsProps) {
@@ -163,6 +165,10 @@ export function createDownloadOptionsState(props: () => DownloadOptionsProps) {
     PANEL_OPTIONS.downloadExtras = value;
   }
 
+  function setDownloadExtraCaptions(value: boolean) {
+    PANEL_OPTIONS.downloadExtraCaptions = value;
+  }
+
   return {
     get includeAiCaptions() {
       return PANEL_OPTIONS.includeAiCaptions;
@@ -171,6 +177,10 @@ export function createDownloadOptionsState(props: () => DownloadOptionsProps) {
       return PANEL_OPTIONS.downloadExtras;
     },
     setDownloadExtras,
+    get downloadExtraCaptions() {
+      return PANEL_OPTIONS.downloadExtraCaptions;
+    },
+    setDownloadExtraCaptions,
     get isAudio() {
       return isAudio;
     },

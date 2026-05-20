@@ -45,7 +45,7 @@ async function tryProgressiveInPage({ url, filenameOutput, videoId }: TryProgres
 export type DownloadParams = Pick<DownloadRequest,
   "type" | "videoId" | "videoItag" | "audioItag" | "audioTrackId" |
   "selectedCaptionVssId" | "filenameOutput" | "isIframeFallback" |
-  "downloadExtras" | "includeAutoDubbing" |
+  "downloadExtras" | "downloadExtraCaptions" | "includeAutoDubbing" |
   "playlistId" | "playlistTitle" | "playlistTotalCount"
 >;
 
@@ -77,11 +77,12 @@ export async function resolveAndDispatch({ params, abortSignal }: ResolveAndDisp
   }
 
   const downloadExtras = params.downloadExtras ?? true;
+  const downloadExtraCaptions = params.downloadExtraCaptions ?? true;
   const includeAutoDubbing = params.includeAutoDubbing ?? true;
   const orderedCaptionTracks = resolveOrderedCaptionTracks({
     captionTracks: cachedVideoData.captionTracks,
     selectedCaptionVssId,
-    downloadExtras
+    downloadExtras: downloadExtraCaptions
   });
   const captionVttDataPromise = fetchCaptionWebVttData({
     captionTracks: orderedCaptionTracks,

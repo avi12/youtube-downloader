@@ -9,6 +9,7 @@
     captionTracks: CaptionTrack[];
     isDownloading: boolean;
     downloadExtras: boolean;
+    downloadExtraCaptions: boolean;
     hasExtrasToBundle: boolean;
     includeAiCaptions: boolean;
     panelAudioMode: PanelTrackMode;
@@ -25,6 +26,7 @@
     oncaptionmodechange: (mode: PanelTrackMode) => void;
     oncaptionchange: (vssId: string) => void;
     ondownloadextraschange: (value: boolean) => void;
+    ondownloadextracaptionschange: (value: boolean) => void;
   }
 
   const {
@@ -32,6 +34,7 @@
     captionTracks,
     isDownloading,
     downloadExtras,
+    downloadExtraCaptions,
     hasExtrasToBundle,
     includeAiCaptions,
     panelAudioMode,
@@ -47,7 +50,8 @@
     onaudiocustomchange,
     oncaptionmodechange,
     oncaptionchange,
-    ondownloadextraschange
+    ondownloadextraschange,
+    ondownloadextracaptionschange
   }: Props = $props();
 
   const SINGLE_CAPTION_DISABLED_MODES = [PanelTrackMode.MatchVideo, PanelTrackMode.Custom];
@@ -85,14 +89,6 @@
 
   const hasMultipleAudioTracks = $derived(uniqueAudioLanguages.length > 1);
   const hasCaptions = $derived(captionTracks.length > 0);
-
-  function handleToggleChange(e: Event): void {
-    if (!(e.target instanceof HTMLElement)) {
-      return;
-    }
-
-    ondownloadextraschange(e.target.hasAttribute("checked"));
-  }
 </script>
 
 <div
@@ -118,7 +114,11 @@
             aria-label="Bundle additional audio tracks"
             checked={downloadExtras ? "" : undefined}
             disabled={isDownloading ? "" : undefined}
-            onchange={handleToggleChange}
+            onchange={e => {
+              if (e.target instanceof HTMLElement) {
+                ondownloadextraschange(e.target.hasAttribute("checked"));
+              }
+            }}
           >Bundle additional audio tracks</tp-yt-paper-toggle-button>
           {#if downloadExtras && hasExtrasToBundle}
             <span class="ytdl-extras-note">
@@ -144,9 +144,13 @@
         >
           <tp-yt-paper-toggle-button
             aria-label="Bundle captions"
-            checked={downloadExtras ? "" : undefined}
+            checked={downloadExtraCaptions ? "" : undefined}
             disabled={isDownloading ? "" : undefined}
-            onchange={handleToggleChange}
+            onchange={e => {
+              if (e.target instanceof HTMLElement) {
+                ondownloadextracaptionschange(e.target.hasAttribute("checked"));
+              }
+            }}
           >Bundle captions</tp-yt-paper-toggle-button>
         </TrackChoice>
       </div>

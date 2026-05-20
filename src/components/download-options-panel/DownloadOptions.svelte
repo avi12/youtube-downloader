@@ -67,6 +67,7 @@
     captionOriginalLabel={derived.captionOriginalLabel}
     captionPlayerLabel={derived.captionPlayerLabel}
     captionTracks={derived.filteredCaptionTracks}
+    downloadExtraCaptions={derived.downloadExtraCaptions}
     downloadExtras={derived.downloadExtras}
     hasExtrasToBundle={derived.hasExtrasToBundle}
     includeAiCaptions={derived.includeAiCaptions}
@@ -76,6 +77,7 @@
     oncaptionchange={vssId =>
       oncaptionchange(derived.filteredCaptionTracks.find(track => track.vssId === vssId) ?? null)}
     {oncaptionmodechange}
+    ondownloadextracaptionschange={derived.setDownloadExtraCaptions}
     ondownloadextraschange={derived.setDownloadExtras}
     {panelAudioCustomLanguage}
     {panelAudioMode}
