@@ -59,7 +59,8 @@ async function processItem(item: ProcessStreamData) {
       });
     }
   } catch (error) {
-    const isMuxCancellation = (error instanceof Error) && error.message === MUX_JOB_CANCELLED_ERROR;
+    const isErrorInstance = error instanceof Error;
+    const isMuxCancellation = isErrorInstance && error.message === MUX_JOB_CANCELLED_ERROR;
     if (isMuxCancellation) {
       return;
     }

@@ -24,7 +24,9 @@ export function attachPrimaryButton({ elButton, getState, getIsDownloadable, get
 }) {
   $effect(() => {
     const state = getState();
-    const isActive = state !== PrimaryButtonState.Idle || (getIsDownloadable() && getIsFilenameValid());
+    const isNotIdle = state !== PrimaryButtonState.Idle;
+    const isDownloadReady = getIsDownloadable() && getIsFilenameValid();
+    const isActive = isNotIdle || isDownloadReady;
     const isHtmlElement = elButton instanceof HTMLElement;
     if (isHtmlElement) {
       elButton.classList.toggle("ytdl-cancel-state", state === PrimaryButtonState.Downloading);

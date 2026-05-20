@@ -26,7 +26,8 @@ export async function processVideoAudio({ item, isCancelled }: ProcessVideoAudio
 
   const videoData = item.videoFile ? null : toUint8Array(item.videoData);
   const audioData = toUint8Array(item.audioData);
-  const isMissingStream = (!videoData && !item.videoFile) || !audioData;
+  const isVideoMissing = !videoData && !item.videoFile;
+  const isMissingStream = isVideoMissing || !audioData;
   if (isMissingStream) {
     await handleSingleStream({
       item,

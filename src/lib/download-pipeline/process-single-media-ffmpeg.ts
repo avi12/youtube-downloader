@@ -46,8 +46,9 @@ export async function applyAudioFfmpeg({
     });
   }
 
-  const isNativeContainer = sourceExtension === outputExtension
-    || (sourceExtension === WEBA_EXTENSION && outputExtension === WEBM_EXTENSION);
+  const isMatchingExtension = sourceExtension === outputExtension;
+  const isWebaToWebm = sourceExtension === WEBA_EXTENSION && outputExtension === WEBM_EXTENSION;
+  const isNativeContainer = isMatchingExtension || isWebaToWebm;
   if (!isNativeContainer) {
     await reportProgress({
       videoId,

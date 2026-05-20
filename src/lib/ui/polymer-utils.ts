@@ -18,8 +18,6 @@ export function attachIcon(icon: YtIconName) {
       return;
     }
 
-    // Deferred: the @attach hook fires before Polymer upgrades the yt-icon,
-    // so setting the attribute synchronously gets overwritten on upgrade.
     requestAnimationFrame(() => {
       if (elTarget.isConnected) {
         elTarget.setAttribute("icon", icon);

@@ -14,7 +14,9 @@ export function attachDownloadButton({ elButton, getIsDownloadable, getIsFilenam
   getIsDone: () => boolean;
 }) {
   $effect(() => {
-    const isActive = getIsDownloadable() && getIsFilenameValid();
+    const isDownloadable = getIsDownloadable();
+    const isFilenameValid = getIsFilenameValid();
+    const isActive = isDownloadable && isFilenameValid;
     const isDone = getIsDone();
     const title = isDone ? "Download again" : "Download";
     sendButtonData({
