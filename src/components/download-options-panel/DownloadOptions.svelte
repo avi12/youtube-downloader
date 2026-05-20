@@ -87,6 +87,7 @@
     {extension}
     {filename}
     {isDownloading}
+    isMultiTrack={derived.hasExtrasToBundle}
     {onextensionchange}
     {onfilenamechange}
     {onvalidationchange}

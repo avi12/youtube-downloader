@@ -119,23 +119,31 @@ export function createDownloadOptionsState(props: () => DownloadOptionsProps) {
     const isAutoDubbed = format.audioTrack.id.endsWith(AUTO_DUB_TRACK_SUFFIX);
     return isAutoDubbed ? `${format.audioTrack.displayName} (auto-dubbed)` : format.audioTrack.displayName;
   });
-  const hasExtrasToBundle = $derived.by(() => {
-    const selectedTrackId = props().selectedAudioFormat?.audioTrack?.id;
-    if (!selectedTrackId) {
-      return false;
+  const audioTracksToBundle = $derived.by(() => {
+    const selected = props().selectedAudioFormat;
+    if (props().downloadType !== DownloadType.VideoAndAudio || !selected) {
+      return [];
+    }
+
+    const selectedTrackId = selected.audioTrack?.id;
+    if (!CONTENT_OPTIONS.downloadExtras || !selectedTrackId) {
+      return [selected];
     }
 
     if (!PANEL_OPTIONS.includeAutoDubbing && selectedTrackId.endsWith(AUTO_DUB_TRACK_SUFFIX)) {
-      return false;
+      return [selected];
     }
 
-    return props().audioFormats.some(format => {
+    const extras = props().audioFormats.filter(format => {
       const trackId = format.audioTrack?.id;
       return !!trackId
         && trackId !== selectedTrackId
         && (PANEL_OPTIONS.includeAutoDubbing || !trackId.endsWith(AUTO_DUB_TRACK_SUFFIX));
     });
+
+    return [selected, ...extras];
   });
+  const hasExtrasToBundle = $derived(audioTracksToBundle.length > 1);
   const audioOriginalLabel = $derived(findOriginalAudioFormat(props().audioFormats)?.audioTrack?.displayName ?? null);
   const captionPlayerLabel = $derived.by(() => {
     const track = props().selectedCaptionTrack;
