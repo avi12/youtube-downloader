@@ -12,6 +12,7 @@ const CODEC_AC3 = "ac-3";
 const CODEC_EC3 = "ec-3";
 const CODEC_FLAC = "flac";
 const CODEC_AAC = "aac";
+const CODEC_MP3_ENCODER = "libmp3lame";
 const SUBTITLE_CODEC_WEBVTT = "webvtt";
 const SUBTITLE_CODEC_MOV_TEXT = "mov_text";
 
@@ -35,6 +36,18 @@ export const CONTAINER_SPECS: Record<string, ContainerSpec> = {
     fallbackAudioCodec: CODEC_AAC,
     allowNonNativeVideo: true,
     subtitleCodec: SUBTITLE_CODEC_MOV_TEXT
+  },
+  mov: {
+    videoCodecs: new Set([CODEC_AVC1, CODEC_HVC1, CODEC_HEV1, CODEC_AV01, CODEC_MP4V]),
+    audioCodecs: new Set([CODEC_MP4A, CODEC_AC3, CODEC_EC3, CODEC_FLAC]),
+    fallbackAudioCodec: CODEC_AAC,
+    allowNonNativeVideo: true,
+    subtitleCodec: SUBTITLE_CODEC_MOV_TEXT
+  },
+  avi: {
+    videoCodecs: new Set([CODEC_AVC1, CODEC_MP4V]),
+    audioCodecs: new Set([CODEC_AC3]),
+    fallbackAudioCodec: CODEC_MP3_ENCODER
   }
 };
 

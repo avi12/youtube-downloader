@@ -1,22 +1,30 @@
 import { getFileExtension } from "./filename";
 
+const MIME_AUDIO_AIFF = "audio/aiff";
+const MIME_VIDEO_AVI = "video/x-msvideo";
 const MIME_AUDIO_FLAC = "audio/flac";
 const MIME_AUDIO_MP4 = "audio/mp4";
 const MIME_VIDEO_MATROSKA = "video/x-matroska";
+const MIME_VIDEO_QUICKTIME = "video/quicktime";
 const MIME_AUDIO_MPEG = "audio/mpeg";
 const MIME_VIDEO_MP4 = "video/mp4";
 const MIME_AUDIO_OGG = "audio/ogg";
 const MIME_AUDIO_OPUS = "audio/opus";
+const MIME_AUDIO_WAV = "audio/wav";
 const MIME_VIDEO_WEBM = "video/webm";
 
 const extensionToMimeAll: Record<string, string> = {
+  aiff: MIME_AUDIO_AIFF,
+  avi: MIME_VIDEO_AVI,
   flac: MIME_AUDIO_FLAC,
   m4a: MIME_AUDIO_MP4,
   mkv: MIME_VIDEO_MATROSKA,
+  mov: MIME_VIDEO_QUICKTIME,
   mp3: MIME_AUDIO_MPEG,
   mp4: MIME_VIDEO_MP4,
   ogg: MIME_AUDIO_OGG,
   opus: MIME_AUDIO_OPUS,
+  wav: MIME_AUDIO_WAV,
   webm: MIME_VIDEO_WEBM
 };
 

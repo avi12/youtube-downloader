@@ -19,7 +19,7 @@ export function resolveAudioCodec({ audioMimeType, targetExtension }: ResolveAud
 }
 
 export function resolveSubtitleCodec(targetExtension: string) {
-  return CONTAINER_SPECS[targetExtension]?.subtitleCodec ?? FFMPEG_SUBTITLE_CODEC_WEBVTT;
+  return CONTAINER_SPECS[targetExtension]?.subtitleCodec ?? null;
 }
 
 type BuildRemuxArgsParams = {
@@ -39,8 +39,10 @@ export function buildRemuxArgs({
     targetExtension
   });
   const ffmpegArgs = ["-i", inputFilename, "-map", "0", "-c:v", FFMPEG_CODEC_COPY, "-c:a", audioCodec];
-  if (videoContainers.includes(targetExtension)) {
-    ffmpegArgs.push("-c:s", resolveSubtitleCodec(targetExtension));
+  const isVideoContainer = videoContainers.includes(targetExtension);
+  const subtitleCodecForRemux = isVideoContainer ? resolveSubtitleCodec(targetExtension) : null;
+  if (subtitleCodecForRemux) {
+    ffmpegArgs.push("-c:s", subtitleCodecForRemux);
   }
 
   ffmpegArgs.push(outputFilename);
@@ -138,7 +140,10 @@ export function buildMuxFfmpegArgs(params: MuxFfmpegParams) {
   );
 
   if (subtitleFilenames.length > 0) {
-    ffmpegArgs.push("-c:s", useIntermediateMkv ? FFMPEG_SUBTITLE_CODEC_WEBVTT : resolveSubtitleCodec(targetExtension));
+    const subtitleCodec = useIntermediateMkv ? FFMPEG_SUBTITLE_CODEC_WEBVTT : resolveSubtitleCodec(targetExtension);
+    if (subtitleCodec) {
+      ffmpegArgs.push("-c:s", subtitleCodec);
+    }
   }
 
   appendTrackMetadata({

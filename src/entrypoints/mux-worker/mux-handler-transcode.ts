@@ -4,11 +4,13 @@ import type { TranscodeAudioJob, TranscodeFileJob } from "@/lib/download-pipelin
 import { getCompatibleFilename, getFileExtension } from "@/lib/utils/containers";
 
 const AUDIO_CODEC_BY_EXTENSION: Record<string, string> = {
+  aiff: "pcm_s16be",
   flac: "flac",
   m4a: "aac",
   mp3: "libmp3lame",
   ogg: "libvorbis",
   opus: "libopus",
+  wav: "pcm_s16le",
   webm: "libopus"
 };
 
