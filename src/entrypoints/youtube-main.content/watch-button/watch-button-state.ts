@@ -2,6 +2,7 @@ import { CONTENT_OPTIONS, interruptedDownloadStore } from "@/lib/ui/synced-store
 import {
   CONTAINER_SPECS,
   MULTI_TRACK_UNSUPPORTED_EXTENSIONS,
+  getAudioTempExtension,
   getCompatibleFilename,
   getOutputExtension,
   resolveAutoExtension
@@ -38,10 +39,7 @@ export function buildInitialDownloadState(videoData: VideoData) {
   const options = CONTENT_OPTIONS;
   let extension: string;
   if (videoData.isMusic) {
-    extension = resolveAutoExtension({
-      extension: options.ext.audio,
-      mimeType: audioMime
-    });
+    extension = getAudioTempExtension(audioMime);
   } else {
     const resolvedVideoExtension = resolveAutoExtension({
       extension: options.ext.video,

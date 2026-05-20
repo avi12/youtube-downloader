@@ -1,5 +1,10 @@
 import { getPreferredMusicAudioFormat } from "./panel-init-audio";
-import { getCompatibleFilename, hasVisibleContent, resolveAutoExtension } from "@/lib/utils/containers";
+import {
+  getAudioTempExtension,
+  getCompatibleFilename,
+  hasVisibleContent,
+  resolveAutoExtension
+} from "@/lib/utils/containers";
 import { DownloadType, type Options, type VideoData } from "@/types";
 
 export { IS_WATCH_PAGE } from "./panel-init-audio";
@@ -29,12 +34,14 @@ export function resolveInitialDownloadType({ options, videoData }: OptionsVideoD
 }
 
 export function resolveInitialExtension({ options, videoData }: OptionsVideoDataParams) {
-  const extensionPreference = videoData.isMusic ? options.ext.audio : options.ext.video;
-  const defaultFormat = videoData.isMusic
-    ? getPreferredMusicAudioFormat(videoData.audioFormats)
-    : videoData.videoFormats[0];
+  if (videoData.isMusic) {
+    const defaultFormat = getPreferredMusicAudioFormat(videoData.audioFormats);
+    return getAudioTempExtension(defaultFormat?.mimeType ?? "");
+  }
+
+  const defaultFormat = videoData.videoFormats[0];
   return resolveAutoExtension({
-    extension: extensionPreference,
+    extension: options.ext.video,
     mimeType: defaultFormat?.mimeType ?? ""
   });
 }
