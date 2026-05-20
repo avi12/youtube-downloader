@@ -15,14 +15,13 @@ export async function cleanupOpfsOutput(videoId: string) {
   try {
     const root = await navigator.storage.getDirectory();
     await root.removeEntry(videoId + OPFS_MUX_OUTPUT_SUFFIX);
-  } catch {
-    // Already removed or never created
-  }
+  } catch { /* no-op */ }
 }
 
 function asDir(node: EmscriptenFsNode): Record<string, EmscriptenFsNode> {
   const { contents } = node;
-  if (!contents || contents instanceof Uint8Array) {
+  const isNotDirectory = !contents || contents instanceof Uint8Array;
+  if (isNotDirectory) {
     throw new Error("Not a directory node");
   }
 
@@ -83,9 +82,7 @@ function makeNodeOps(opfsFs: ReturnType<typeof makeOpfsFs>): EmscriptenNodeOps {
 
 function makeStreamOps(): EmscriptenStreamOps {
   return {
-    open(_stream) {
-      // File is already "open" via the syncHandle created before mounting
-    },
+    open(_stream) {},
     write(stream, buffer, offset, length, position) {
       const { node } = stream;
       const syncHandle = node.syncHandle!;
@@ -158,7 +155,8 @@ function makeOpfsFs(fs: FS, syncHandle: FileSystemSyncAccessHandle) {
       root.contents = {};
       root.timestamp = Date.now();
 
-      if (typeof outputFilename === "string" && outputFilename) {
+      const isValidOutputFilename = typeof outputFilename === "string" && outputFilename;
+      if (isValidOutputFilename) {
         opfsFs.createFileNode(root, outputFilename, FILE_MODE);
       }
 

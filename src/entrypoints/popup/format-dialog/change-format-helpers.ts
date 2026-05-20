@@ -21,11 +21,14 @@ type BuildAvailableTargetsParams = {
 export function buildAvailableTargets({ entry, isVideoContainer }: BuildAvailableTargetsParams) {
   return (isVideoContainer ? videoContainers : audioContainers)
     .filter(target => target !== entry.container)
-    .filter(target => !isVideoContainer || !entry.videoMimeType || isCompatibleForRemux({
-      videoMimeType: entry.videoMimeType,
-      audioMimeType: entry.audioMimeType ?? "",
-      targetExtension: target
-    }));
+    .filter(target => {
+      const isRemuxCompatible = !isVideoContainer || !entry.videoMimeType || isCompatibleForRemux({
+        videoMimeType: entry.videoMimeType,
+        audioMimeType: entry.audioMimeType ?? "",
+        targetExtension: target
+      });
+      return isRemuxCompatible;
+    });
 }
 
 type SubmitTranscodeParams = {
@@ -38,7 +41,8 @@ export async function submitTranscode({
   selectedTarget,
   isSubmitting
 }: SubmitTranscodeParams) {
-  if (!selectedTarget || isSubmitting) {
+  const isNotReady = !selectedTarget || isSubmitting;
+  if (isNotReady) {
     return false;
   }
 

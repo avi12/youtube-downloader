@@ -182,8 +182,6 @@ addEventListener("message", e => {
   handleWorkerMessage(message);
 });
 
-// Connect to the SW before FFmpeg init so the port is ready when
-// PipelineFFmpegReady fires and the SW starts sending chunks.
 listenForOffscreenMessages({
   [OffscreenMessageType.ProcessStreamChunk]: handleProcessStreamChunk,
   [OffscreenMessageType.ProcessStreamEnd](data) {

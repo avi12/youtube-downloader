@@ -38,7 +38,8 @@
     }
 
     const { target } = e;
-    const isClickInsideMenu = target instanceof Node && (elMenu?.contains(target) || elTrigger?.contains(target));
+    const isTargetNode = target instanceof Node;
+    const isClickInsideMenu = isTargetNode && (elMenu?.contains(target) || elTrigger?.contains(target));
     if (isClickInsideMenu) {
       return;
     }
@@ -47,7 +48,8 @@
   }
 
   function handleKeydown(e: KeyboardEvent): void {
-    if (isMenuOpen && e.key === "Escape") {
+    const isEscapeWhileOpen = isMenuOpen && e.key === "Escape";
+    if (isEscapeWhileOpen) {
       e.preventDefault();
       closeMenu();
     }

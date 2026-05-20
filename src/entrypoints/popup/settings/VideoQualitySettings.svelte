@@ -8,6 +8,15 @@
 
   const { options, slideDuration }: SlidingSettingsProps = $props();
 
+  function handleQualitySelectChange(e: Event): void {
+    if (e.target instanceof HTMLSelectElement) {
+      void setOption({
+        key: "videoQuality",
+        value: Number(e.target.value)
+      });
+    }
+  }
+
   const qualityModeOptions = [
     {
       value: VideoQualityMode.CurrentQuality,
@@ -41,20 +50,15 @@
         {label}
       </label>
     </div>
-    {#if value === VideoQualityMode.Custom && options.videoQualityMode === VideoQualityMode.Custom}
+    {@const isCustomMode = value === VideoQualityMode.Custom}
+    {@const isCustomQualityActive = isCustomMode && options.videoQualityMode === VideoQualityMode.Custom}
+    {#if isCustomQualityActive}
       <div class="settings-sub-row" transition:slide={{ duration: slideDuration }}>
         <label class="settings-label" for="custom-quality-select">Quality</label>
         <select
           id="custom-quality-select"
           class="settings-select"
-          onchange={e => {
-            if (e.target instanceof HTMLSelectElement) {
-              void setOption({
-                key: "videoQuality",
-                value: Number(e.target.value)
-              });
-            }
-          }}
+          onchange={handleQualitySelectChange}
         >
           {#each VIDEO_QUALITIES as quality (quality)}
             <option selected={quality === options.videoQuality} value={quality}>{quality}p</option>

@@ -6,15 +6,16 @@ export default defineContentScript({
   runAt: "document_start",
   allFrames: true,
   main() {
-    if (self === top || !location.search.includes(YTDL_IFRAME_QUERY_PARAM)) {
+    const isNotYtdlIframe = self === top || !location.search.includes(YTDL_IFRAME_QUERY_PARAM);
+    if (isNotYtdlIframe) {
       return;
     }
 
-    const origPlay = HTMLVideoElement.prototype.play;
+    const originalPlay = HTMLVideoElement.prototype.play;
     HTMLVideoElement.prototype.play = function () {
       this.muted = true;
       this.volume = 0;
-      return origPlay.call(this);
+      return originalPlay.call(this);
     };
   }
 });

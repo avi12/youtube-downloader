@@ -32,10 +32,12 @@ export async function handleMuxVideoAudio(job: MuxVideoAudioJob) {
   const outputFilename = targetExtension !== MKV_EXTENSION
     ? getCompatibleFilename(`${videoId}-${filenameBase}.${targetExtension}`)
     : muxFilename;
-  const useIntermediateMkv = targetExtension !== "mkv" && !isVideoNativeForContainer({
+  const isNotMkv = targetExtension !== MKV_EXTENSION;
+  const isNonNativeContainer = !isVideoNativeForContainer({
     videoMimeType,
     targetExtension
   });
+  const useIntermediateMkv = isNotMkv && isNonNativeContainer;
 
   const isWorkerfsVideo = !!videoFile;
   const workerfsDir = `/${videoId}${WORKERFS_MOUNT_SUFFIX}`;

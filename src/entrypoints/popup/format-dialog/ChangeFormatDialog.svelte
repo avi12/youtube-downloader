@@ -23,10 +23,10 @@
   let selectedTarget = $state("");
   let isSubmitting = $state(false);
   let isClosing = $state(false);
-  let dialogEl = $state<HTMLDialogElement | null>(null);
+  let elDialog = $state<HTMLDialogElement | null>(null);
 
   $effect(() => {
-    dialogEl?.showModal();
+    elDialog?.showModal();
   });
 
   $effect(() => {
@@ -64,17 +64,20 @@
       startClose();
     }
   }
-</script>
 
-<svelte:window
-  onkeydown={e => {
+  function handleWindowKeydown(e: KeyboardEvent): void {
     if (e.key === "Escape") {
       startClose();
     }
-  }} />
+  }
+
+  const isConfirmDisabled = $derived(!selectedTarget || isSubmitting || availableTargets.length === 0);
+</script>
+
+<svelte:window onkeydown={handleWindowKeydown} />
 
 <dialog
-  bind:this={dialogEl}
+  bind:this={elDialog}
   class="dialog"
   class:closing={isClosing}
   aria-labelledby="change-format-title"
@@ -96,7 +99,7 @@
     targets={availableTargets}
   />
   <ChangeFormatActions
-    isDisabled={!selectedTarget || isSubmitting || availableTargets.length === 0}
+    isDisabled={isConfirmDisabled}
     {isSubmitting}
     onCancel={startClose}
     onConfirm={handleConfirm}

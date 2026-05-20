@@ -14,10 +14,6 @@ export function tryCheckOutput(filename: string): boolean {
   }
 }
 
-// Emscripten-compiled FFmpeg may call abort() during context cleanup even
-// after a successful mux (e.g. WebVTT-in-MKV demuxer teardown). The output
-// file is fully written before cleanup runs, so a non-zero exit code alone
-// doesn't mean the mux failed - we check whether the file was actually written.
 type ExecuteMuxPhasesParams = {
   params: MuxFfmpegParams;
   checkOutput: CheckOutput;
@@ -45,7 +41,8 @@ export function executeMuxPhases({ params, checkOutput }: ExecuteMuxPhasesParams
         audioMimeType
       })
     );
-    if (phase2Code !== 0 && !checkOutput(outputFilename)) {
+    const isPhase2Failed = phase2Code !== 0 && !checkOutput(outputFilename);
+    if (isPhase2Failed) {
       postError(`FFmpeg phase 2 exited with code ${phase2Code}`);
       return false;
     }

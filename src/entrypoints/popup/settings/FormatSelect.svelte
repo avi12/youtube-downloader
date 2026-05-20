@@ -10,6 +10,12 @@
 
   const { label, options, value, onchange }: Props = $props();
   const id = $props.id();
+
+  function handleSelectChange(e: Event): void {
+    if (e.target instanceof HTMLSelectElement) {
+      onchange(e.target.value);
+    }
+  }
 </script>
 
 <div class="format-select">
@@ -19,11 +25,7 @@
   <select
     {id}
     class="format-select-control"
-    onchange={e => {
-      if (e.target instanceof HTMLSelectElement) {
-        onchange(e.target.value);
-      }
-    }}
+    onchange={handleSelectChange}
     {value}
   >
     {#each options as option (option)}

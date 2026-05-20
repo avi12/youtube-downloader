@@ -26,6 +26,16 @@
   const relativeAgeLabel = $derived(formatRelativeAge(now - entry.completedAt));
   const sizeLabel = $derived(formatBytes(entry.size));
 
+  function handleFilenameKeydown(e: KeyboardEvent): void {
+    const isActivationKey = e.key !== "Enter" && e.key !== " ";
+    if (isActivationKey) {
+      return;
+    }
+
+    e.preventDefault();
+    onShowInFolder();
+  }
+
   function formatRelativeAge(deltaMs: number): string {
     const totalSeconds = Math.floor(deltaMs / 1000);
     const [, unit, divisor] = AGE_THRESHOLDS.find(([threshold]) => totalSeconds < threshold)!;
@@ -66,14 +76,7 @@
       data-tooltip={entry.filename}
       dir="auto"
       onclick={onShowInFolder}
-      onkeydown={e => {
-        if (e.key !== "Enter" && e.key !== " ") {
-          return;
-        }
-
-        e.preventDefault();
-        onShowInFolder();
-      }}
+      onkeydown={handleFilenameKeydown}
       type="button"
     >
       <span class="recent-filename-text">{entry.title}</span>

@@ -35,25 +35,19 @@ export function initPortReceiver(port: MessagePort) {
 export function tryUnlink(filename: string) {
   try {
     state.ffmpeg!.FS.unlink(filename);
-  } catch {
-    // file was never written
-  }
+  } catch { /* no-op */ }
 }
 
 export function tryUnmount(path: string) {
   try {
     state.ffmpeg!.FS.unmount(path);
-  } catch {
-    // already unmounted
-  }
+  } catch { /* no-op */ }
 }
 
 export function tryRmdir(path: string) {
   try {
     state.ffmpeg!.FS.rmdir(path);
-  } catch {
-    // already removed
-  }
+  } catch { /* no-op */ }
 }
 
 export function reportFFmpegProgress(value: number) {
@@ -76,10 +70,10 @@ export function postResult(data: Uint8Array | null) {
     return;
   }
 
-  // FS.readFile returns an exactly-sized buffer (byteOffset=0, byteLength=buffer.byteLength),
-  // so transfer it directly without a copy. The slice fallback handles any over-allocated edge cases.
   const { buffer } = data;
-  const isExact = data.byteOffset === 0 && data.byteLength === buffer.byteLength;
+  const isZeroOffset = data.byteOffset === 0;
+  const isExactSize = data.byteLength === buffer.byteLength;
+  const isExact = isZeroOffset && isExactSize;
   const exact = isExact ? buffer : buffer.slice(data.byteOffset, data.byteOffset + data.byteLength);
   state.portReceiver!.send(WorkerMessageType.Result, { data: exact }, [exact]);
 }

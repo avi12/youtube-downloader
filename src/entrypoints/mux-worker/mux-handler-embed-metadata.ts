@@ -31,7 +31,8 @@ export async function handleEmbedMetadata(job: EmbedMetadataJob) {
   const ffmpegArgs = ["-i", inputFilename];
   const isWebmSource = sourceExtension === WEBA_EXTENSION || sourceExtension === WEBM_EXTENSION;
   const isWebmOutput = outputExtension === WEBA_EXTENSION || outputExtension === WEBM_EXTENSION;
-  const isEmbeddableThumbnail = thumbnailUrl && !isWebmSource && !isWebmOutput;
+  const isNotWebm = !isWebmSource && !isWebmOutput;
+  const isEmbeddableThumbnail = thumbnailUrl && isNotWebm;
   if (isEmbeddableThumbnail) {
     const thumbnail = await fetchThumbnail(thumbnailUrl);
     if (thumbnail) {

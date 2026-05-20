@@ -52,7 +52,8 @@ export function patchSourceBuffer(captureState: YtdlCaptureState) {
   const originalAppendBuffer = SourceBuffer.prototype.appendBuffer;
   SourceBuffer.prototype.appendBuffer = function (data) {
     const mimeType = sourceBufferMimeTypes.get(this);
-    if (mimeType && !isAdPlaying()) {
+    const isCaptureActive = mimeType && !isAdPlaying();
+    if (isCaptureActive) {
       const chunk = data instanceof ArrayBuffer
         ? new Uint8Array(data)
         : new Uint8Array(data.buffer, data.byteOffset, data.byteLength);

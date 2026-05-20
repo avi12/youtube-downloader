@@ -39,8 +39,8 @@ function applyChunkToAccumulator({ videoId, streamType, iChunk, totalChunks, chu
     return;
   }
 
-  // iChunk === -1 is a final marker that sets totalChunks for streaming where total is unknown during transfer.
-  if (iChunk === -1) {
+  const isFinalMarker = iChunk === -1;
+  if (isFinalMarker) {
     if (streamType === StreamType.Video) {
       accumulator.totalVideoChunks = totalChunks;
     } else {
@@ -88,12 +88,13 @@ function applyChunkToAccumulator({ videoId, streamType, iChunk, totalChunks, chu
 
 export function handleProcessStreamChunk(data: ProcessStreamChunkData) {
   const { videoId, streamType, iChunk, totalChunks, chunkBase64 } = data;
+  const isFinalMarker = iChunk === -1;
   applyChunkToAccumulator({
     videoId,
     streamType,
     iChunk,
     totalChunks,
-    chunk: iChunk === -1 ? new Uint8Array(0) : base64ToUint8Array(chunkBase64)
+    chunk: isFinalMarker ? new Uint8Array(0) : base64ToUint8Array(chunkBase64)
   });
 }
 

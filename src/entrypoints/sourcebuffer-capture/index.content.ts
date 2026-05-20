@@ -1,5 +1,3 @@
-// Must run at document_start because YouTube creates SourceBuffers before document_idle;
-// patching later means sourceBufferMimeTypes is empty and appendBuffer captures nothing.
 import { patchIframeMediaVolume, patchSourceBuffer } from "./sourcebuffer-capture-patches";
 import type { YtdlCaptureState, YtdlMediaCapture } from "@/types";
 

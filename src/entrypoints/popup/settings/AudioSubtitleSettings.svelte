@@ -6,6 +6,33 @@
   import { setOption } from "@/lib/storage/storage";
 
   const { options, slideDuration }: SlidingSettingsProps = $props();
+
+  function handleDownloadExtrasChange(e: Event): void {
+    if (e.target instanceof HTMLInputElement) {
+      void setOption({
+        key: "downloadExtras",
+        value: e.target.checked
+      });
+    }
+  }
+
+  function handleIncludeAutoDubbingChange(e: Event): void {
+    if (e.target instanceof HTMLInputElement) {
+      void setOption({
+        key: "includeAutoDubbing",
+        value: e.target.checked
+      });
+    }
+  }
+
+  function handleIncludeAiCaptionsChange(e: Event): void {
+    if (e.target instanceof HTMLInputElement) {
+      void setOption({
+        key: "includeAiCaptions",
+        value: e.target.checked
+      });
+    }
+  }
 </script>
 
 <SettingsGroup title="Audio &amp; subtitles">
@@ -14,14 +41,7 @@
     <span class="settings-switch" aria-label="Download additional audio tracks and captions">
       <input
         checked={options.downloadExtras}
-        onchange={e => {
-          if (e.target instanceof HTMLInputElement) {
-            void setOption({
-              key: "downloadExtras",
-              value: e.target.checked
-            });
-          }
-        }}
+        onchange={handleDownloadExtrasChange}
         role="switch"
         type="checkbox"
       />
@@ -35,14 +55,7 @@
     <span class="settings-switch" aria-label="Include auto-dubbed audio tracks">
       <input
         checked={options.includeAutoDubbing}
-        onchange={e => {
-          if (e.target instanceof HTMLInputElement) {
-            void setOption({
-              key: "includeAutoDubbing",
-              value: e.target.checked
-            });
-          }
-        }}
+        onchange={handleIncludeAutoDubbingChange}
         role="switch"
         type="checkbox"
       />
@@ -56,14 +69,7 @@
     <span class="settings-switch" aria-label="Include AI-generated captions">
       <input
         checked={options.includeAiCaptions}
-        onchange={e => {
-          if (e.target instanceof HTMLInputElement) {
-            void setOption({
-              key: "includeAiCaptions",
-              value: e.target.checked
-            });
-          }
-        }}
+        onchange={handleIncludeAiCaptionsChange}
         role="switch"
         type="checkbox"
       />

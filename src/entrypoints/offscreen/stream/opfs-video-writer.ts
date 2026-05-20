@@ -28,8 +28,6 @@ export class OPFSVideoWriter {
     try {
       const root = await navigator.storage.getDirectory();
       await root.removeEntry(videoId + VIDEO_STREAM_SUFFIX);
-    } catch {
-      // Already removed or never created
-    }
+    } catch { /* no-op */ }
   }
 }

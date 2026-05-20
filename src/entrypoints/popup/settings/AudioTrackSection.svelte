@@ -7,6 +7,15 @@
 
   const { options, slideDuration }: SlidingSettingsProps = $props();
 
+  function handleLanguageSelectChange(e: Event): void {
+    if (e.target instanceof HTMLSelectElement) {
+      void setOption({
+        key: "customLanguage",
+        value: e.target.value
+      });
+    }
+  }
+
   const languageModeOptions = [
     {
       value: AudioTrackLanguageMode.OriginalLanguage,
@@ -47,20 +56,15 @@
         </span>
       </label>
     </div>
-    {#if value === AudioTrackLanguageMode.Custom && options.audioTrackLanguageMode === AudioTrackLanguageMode.Custom}
+    {@const isCustomMode = value === AudioTrackLanguageMode.Custom}
+    {@const isCustomLanguageActive = isCustomMode && options.audioTrackLanguageMode === AudioTrackLanguageMode.Custom}
+    {#if isCustomLanguageActive}
       <div class="settings-sub-row" transition:slide={{ duration: slideDuration }}>
         <label class="settings-label" for="custom-language-select">Language</label>
         <select
           id="custom-language-select"
           class="settings-select"
-          onchange={e => {
-            if (e.target instanceof HTMLSelectElement) {
-              void setOption({
-                key: "customLanguage",
-                value: e.target.value
-              });
-            }
-          }}
+          onchange={handleLanguageSelectChange}
           value={options.customLanguage}
         >
           {#each LANGUAGES as [name, code] (code)}
