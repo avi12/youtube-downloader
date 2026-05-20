@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { AUTO_EXTENSION, AUTO_EXTENSION_LABEL } from "@/lib/utils/containers";
+  import { AUTO_EXTENSION, AUTO_EXTENSION_LABEL, getFormatDescription } from "@/lib/utils/containers";
 
   interface Props {
     label?: string;
@@ -28,7 +28,7 @@
   >
     {#each options as option (option)}
       <option selected={option === value} value={option}>
-        {option === AUTO_EXTENSION ? AUTO_EXTENSION_LABEL : option}
+        {option === AUTO_EXTENSION ? AUTO_EXTENSION_LABEL : `${option} - ${getFormatDescription(option)}`}
       </option>
     {/each}
   </select>

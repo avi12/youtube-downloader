@@ -80,6 +80,25 @@ export function getAudioTempExtension(mimeType: string) {
 export const AUTO_EXTENSION = "auto";
 export const AUTO_EXTENSION_LABEL = "Auto (match source)";
 
+const FORMAT_DESCRIPTIONS: Record<string, string> = {
+  aiff: "Lossless, macOS",
+  avi: "Legacy Windows",
+  flac: "Lossless, compressed",
+  m4a: "AAC audio",
+  mkv: "Universal, multi-track",
+  mov: "QuickTime / macOS",
+  mp3: "Most compatible",
+  mp4: "Most compatible",
+  ogg: "Vorbis audio",
+  opus: "Modern, efficient",
+  wav: "Lossless, uncompressed",
+  webm: "Native YouTube format"
+};
+
+export function getFormatDescription(extension: string) {
+  return FORMAT_DESCRIPTIONS[extension] ?? "";
+}
+
 export const videoContainers = Object.keys(extensionToMime.video);
 export const audioContainers = Object.keys(extensionToMime.audio);
 

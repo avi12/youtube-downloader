@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { getFormatDescription } from "@/lib/utils/containers";
+
   interface Props {
     targets: string[];
     selectedTarget: string;
@@ -23,7 +25,12 @@
           type="radio"
           value={target}
         />
-        <span>{target}</span>
+        <span class="target-label">
+          <span class="target-ext">{target}</span>
+          {#if getFormatDescription(target)}
+            <span class="target-desc">{getFormatDescription(target)}</span>
+          {/if}
+        </span>
       </label>
     {/each}
   </fieldset>
@@ -63,6 +70,17 @@
       font-size: 0.8125rem;
       cursor: pointer;
       transition: background-color 150ms;
+
+      .target-label {
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+      }
+
+      .target-desc {
+        color: var(--fg-subtle);
+        font-size: 0.6875rem;
+      }
 
       &:hover {
         background: var(--surface);
