@@ -61,11 +61,12 @@
 
   <div class="ytdl-panel-body">
     <DownloadOptions
+      actualExtension={panel.actualExtension}
       audioFormats={props.videoData.audioFormats}
       captionTracks={props.videoData.captionTracks}
       downloadExtras={panel.downloadExtras}
       downloadType={panel.downloadType}
-      extension={panel.actualExtension}
+      extension={panel.extension}
       filename={panel.filename}
       isDownloading={panel.isDownloading}
       onaudiocustomchange={panel.audio.handlePanelAudioCustomChange}
