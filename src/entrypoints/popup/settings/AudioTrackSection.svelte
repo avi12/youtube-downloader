@@ -7,15 +7,6 @@
 
   const { options, slideDuration }: SlidingSettingsProps = $props();
 
-  function handleLanguageSelectChange(e: Event): void {
-    if (e.target instanceof HTMLSelectElement) {
-      void setOption({
-        key: "customLanguage",
-        value: e.target.value
-      });
-    }
-  }
-
   const languageModeOptions = [
     {
       value: AudioTrackLanguageMode.OriginalLanguage,
@@ -64,7 +55,16 @@
         <select
           id="custom-language-select"
           class="settings-select"
-          onchange={handleLanguageSelectChange}
+          onchange={e => {
+            if (!(e.target instanceof HTMLSelectElement)) {
+              return;
+            }
+
+            void setOption({
+              key: "customLanguage",
+              value: e.target.value
+            });
+          }}
           value={options.customLanguage}
         >
           {#each LANGUAGES as [name, code] (code)}

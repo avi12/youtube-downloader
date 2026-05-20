@@ -36,15 +36,6 @@
   function resolveOutputMode(value: string): PlaylistOutputMode {
     return outputModeOptions.find(option => option.value === value)?.value ?? PlaylistOutputMode.Individual;
   }
-
-  function handleScrollSyncChange(e: Event): void {
-    if (e.target instanceof HTMLInputElement) {
-      void setOption({
-        key: "isPlaylistScrollSyncEnabled",
-        value: e.target.checked
-      });
-    }
-  }
 </script>
 
 <SettingsGroup title="Playlist">
@@ -84,7 +75,16 @@
       <span class="settings-switch" aria-label="Scroll to each video while downloading">
         <input
           checked={options.isPlaylistScrollSyncEnabled}
-          onchange={handleScrollSyncChange}
+          onchange={e => {
+            if (!(e.target instanceof HTMLInputElement)) {
+              return;
+            }
+
+            void setOption({
+              key: "isPlaylistScrollSyncEnabled",
+              value: e.target.checked
+            });
+          }}
           role="switch"
           type="checkbox"
         />
