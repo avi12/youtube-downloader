@@ -1,6 +1,7 @@
 export type LabeledOption<V = string> = {
   value: V;
   label: string;
+  disabled?: boolean;
 };
 
 export const TrackKind = {

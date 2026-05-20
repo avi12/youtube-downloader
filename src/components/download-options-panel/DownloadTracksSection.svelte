@@ -3,11 +3,13 @@
   import { PLAYER_ACTIVE_AUDIO, PLAYER_ACTIVE_CAPTION } from "./helpers/player-active-tracks.svelte";
   import { onButtonClick } from "@/lib/messaging/cross-world-messenger";
   import { attachTracksHeaderButton as attachTracksHeaderButtonUtil } from "@/lib/ui/panel-button-attachments.svelte";
+  import { MULTI_TRACK_UNSUPPORTED_EXTENSIONS } from "@/lib/utils/containers";
   import { DownloadType, PanelTrackMode } from "@/types";
   import type { CaptionTrack, LabeledOption } from "@/types";
 
   interface Props {
     downloadType: DownloadType;
+    extension: string;
     uniqueAudioLanguages: LabeledOption[];
     captionTracks: CaptionTrack[];
     isDownloading: boolean;
@@ -30,6 +32,7 @@
 
   const {
     downloadType,
+    extension,
     uniqueAudioLanguages,
     captionTracks,
     isDownloading,
@@ -58,6 +61,7 @@
 
   const isAudioOnly = $derived(downloadType === DownloadType.Audio);
   const isVideoOnly = $derived(downloadType === DownloadType.Video);
+  const isExtensionMultiTrackIncompatible = $derived(MULTI_TRACK_UNSUPPORTED_EXTENSIONS.has(extension));
   const hasMultipleAudioTracks = $derived(uniqueAudioLanguages.length > 1);
   const hasCaptions = $derived(captionTracks.length > 0);
   const isVisible = $derived(hasMultipleAudioTracks || (hasCaptions && !isVideoOnly && !isAudioOnly));
@@ -243,7 +247,7 @@
               <tp-yt-paper-toggle-button
                 aria-label="Include all audio languages"
                 checked={downloadExtras ? "" : undefined}
-                disabled={isDownloading ? "" : undefined}
+                disabled={isDownloading || isExtensionMultiTrackIncompatible ? "" : undefined}
                 onchange={e => {
                   if (e.target instanceof HTMLElement) {
                     ondownloadextraschange(e.target.hasAttribute("checked"));

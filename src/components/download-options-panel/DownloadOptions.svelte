@@ -68,6 +68,7 @@
     downloadExtraCaptions={derived.downloadExtraCaptions}
     downloadExtras={derived.downloadExtras}
     {downloadType}
+    {extension}
     {isDownloading}
     {onaudiocustomchange}
     {onaudiomodechange}

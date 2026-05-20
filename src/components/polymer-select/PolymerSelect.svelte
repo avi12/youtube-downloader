@@ -140,6 +140,10 @@
         return;
       }
 
+      if (elItem.getAttribute("aria-disabled") === "true") {
+        return;
+      }
+
       const dataValue = elItem.getAttribute(DATA_VALUE_ATTR);
       if (!dataValue) {
         return;
@@ -178,6 +182,10 @@
         const isHtmlActiveElement = elActive instanceof HTMLElement;
         const isPaperItem = isHtmlActiveElement && elActive.matches(POLYMER_PAPER_ITEM);
         if (!isPaperItem) {
+          return;
+        }
+
+        if (elActive.getAttribute("aria-disabled") === "true") {
           return;
         }
 
@@ -244,6 +252,7 @@
     >
       {#each options as option (option.value)}
         <tp-yt-paper-item
+          aria-disabled={option.disabled ? "true" : undefined}
           aria-selected={option.value === value}
           data-value={option.value}
           role="option"
@@ -353,8 +362,13 @@
     cursor: pointer;
   }
 
-  :global(.ytdl-select-menu tp-yt-paper-item:hover) {
+  :global(.ytdl-select-menu tp-yt-paper-item:hover:not([aria-disabled="true"])) {
     background-color: var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 6%));
+  }
+
+  :global(.ytdl-select-menu tp-yt-paper-item[aria-disabled="true"]) {
+    opacity: 38%;
+    cursor: default;
   }
 
   :global(.ytdl-select-menu tp-yt-paper-item[aria-selected="true"]) {
