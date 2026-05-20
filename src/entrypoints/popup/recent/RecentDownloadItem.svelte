@@ -65,19 +65,19 @@
   }
 
   function formatBytes(bytes: number): string {
-    if (bytes < 1000) {
+    if (bytes < 1024) {
       return NF_BYTES.format(bytes);
     }
 
-    if (bytes < 1_000_000) {
-      return NF_KB.format(bytes / 1000);
+    if (bytes < 1024 * 1024) {
+      return NF_KB.format(bytes / 1024);
     }
 
-    if (bytes < 1_000_000_000) {
-      return NF_MB.format(bytes / 1_000_000);
+    if (bytes < 1024 * 1024 * 1024) {
+      return NF_MB.format(bytes / (1024 * 1024));
     }
 
-    return NF_GB.format(bytes / 1_000_000_000);
+    return NF_GB.format(bytes / (1024 * 1024 * 1024));
   }
 </script>
 
