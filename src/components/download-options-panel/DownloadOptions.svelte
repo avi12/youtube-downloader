@@ -69,6 +69,7 @@
     captionTracks={derived.filteredCaptionTracks}
     downloadExtraCaptions={derived.downloadExtraCaptions}
     downloadExtras={derived.downloadExtras}
+    {downloadType}
     hasExtrasToBundle={derived.hasExtrasToBundle}
     includeAiCaptions={derived.includeAiCaptions}
     {isDownloading}
