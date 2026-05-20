@@ -50,7 +50,6 @@ optionsItem.watch(next => {
   PANEL_OPTIONS.includeAiCaptions = next.includeAiCaptions ?? INITIAL_OPTIONS.includeAiCaptions;
   PANEL_OPTIONS.includeAutoDubbing = next.includeAutoDubbing ?? INITIAL_OPTIONS.includeAutoDubbing;
   PANEL_OPTIONS.downloadExtras = next.downloadExtras ?? INITIAL_OPTIONS.downloadExtras;
-  PANEL_OPTIONS.downloadExtraCaptions = next.downloadExtras ?? INITIAL_OPTIONS.downloadExtras;
 });
 
 export function createDownloadOptionsState(props: () => DownloadOptionsProps) {
