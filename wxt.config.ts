@@ -44,7 +44,8 @@ export default defineConfig({
         resources: ["offscreen.html"],
         matches: ["<all_urls>"]
       }
-    ]
+    ],
+    minimum_chrome_version: "117.0"
   },
   hooks: {
     "prepare:publicPaths"(_, paths) {
