@@ -35,7 +35,7 @@
   const formatOptions = $derived(
     buildFormatItems(extensionType, isMultiTrack).map(item => ({
       value: item.ext,
-      label: item.isExcluded ? `.${item.ext} ⚠` : `.${item.ext}`,
+      label: `.${item.ext}`,
       disabled: item.isExcluded
     }))
   );

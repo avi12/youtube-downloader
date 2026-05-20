@@ -42,6 +42,14 @@ export const PANEL_OPTIONS = $state({
   downloadExtraCaptions: CONTENT_OPTIONS.downloadExtras
 });
 
+$effect.root(() => {
+  $effect(() => {
+    PANEL_OPTIONS.includeAiCaptions = CONTENT_OPTIONS.includeAiCaptions;
+    PANEL_OPTIONS.includeAutoDubbing = CONTENT_OPTIONS.includeAutoDubbing;
+    PANEL_OPTIONS.downloadExtras = CONTENT_OPTIONS.downloadExtras;
+  });
+});
+
 optionsItem.watch(next => {
   if (!next) {
     return;
