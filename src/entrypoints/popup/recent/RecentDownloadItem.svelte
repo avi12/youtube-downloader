@@ -15,8 +15,30 @@
   let isMenuOpen = $state(false);
 
   const RTF = new Intl.RelativeTimeFormat(undefined, { numeric: "auto" });
-  const BYTE_UNITS = ["B", "KB", "MB", "GB"] as const;
-  const BYTE_DECIMALS = [0, 0, 1, 2] as const;
+  const NF_BYTES = new Intl.NumberFormat(undefined, {
+    style: "unit",
+    unit: "byte",
+    unitDisplay: "narrow",
+    maximumFractionDigits: 0
+  });
+  const NF_KB = new Intl.NumberFormat(undefined, {
+    style: "unit",
+    unit: "kilobyte",
+    unitDisplay: "narrow",
+    maximumFractionDigits: 0
+  });
+  const NF_MB = new Intl.NumberFormat(undefined, {
+    style: "unit",
+    unit: "megabyte",
+    unitDisplay: "narrow",
+    maximumFractionDigits: 1
+  });
+  const NF_GB = new Intl.NumberFormat(undefined, {
+    style: "unit",
+    unit: "gigabyte",
+    unitDisplay: "narrow",
+    maximumFractionDigits: 2
+  });
   const AGE_THRESHOLDS: [number, Intl.RelativeTimeFormatUnit, number][] = [
     [60, "second", 1],
     [3600, "minute", 60],
@@ -43,13 +65,19 @@
   }
 
   function formatBytes(bytes: number): string {
-    if (bytes === 0) {
-      return "0 B";
+    if (bytes < 1000) {
+      return NF_BYTES.format(bytes);
     }
 
-    const iUnit = Math.min(Math.floor(Math.log2(bytes) / 10), BYTE_UNITS.length - 1);
-    const scaled = (bytes / 1024 ** iUnit).toFixed(BYTE_DECIMALS[iUnit]);
-    return `${scaled} ${BYTE_UNITS[iUnit]}`;
+    if (bytes < 1_000_000) {
+      return NF_KB.format(bytes / 1000);
+    }
+
+    if (bytes < 1_000_000_000) {
+      return NF_MB.format(bytes / 1_000_000);
+    }
+
+    return NF_GB.format(bytes / 1_000_000_000);
   }
 </script>
 
