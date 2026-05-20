@@ -1,10 +1,11 @@
 <script lang="ts">
   import { CAPTION_KIND_ASR } from "./helpers/audio-language-helpers";
   import TrackChoice from "./TrackChoice.svelte";
-  import { PanelTrackMode, TrackKind } from "@/types";
+  import { DownloadType, PanelTrackMode, TrackKind } from "@/types";
   import type { CaptionTrack, LabeledOption } from "@/types";
 
   interface Props {
+    downloadType: DownloadType;
     uniqueAudioLanguages: LabeledOption[];
     captionTracks: CaptionTrack[];
     isDownloading: boolean;
@@ -30,6 +31,7 @@
   }
 
   const {
+    downloadType,
     uniqueAudioLanguages,
     captionTracks,
     isDownloading,
@@ -87,13 +89,17 @@
     return panelCaptionMode;
   });
 
+  const isSingleTrackMode = $derived(
+    downloadType === DownloadType.Video || downloadType === DownloadType.Audio
+  );
+
   const hasMultipleAudioTracks = $derived(uniqueAudioLanguages.length > 1);
   const hasCaptions = $derived(captionTracks.length > 0);
 </script>
 
 <div
   class="ytdl-tracks-section-host"
-  class:is-open={hasMultipleAudioTracks || hasCaptions}
+  class:is-open={hasMultipleAudioTracks || (hasCaptions && !isSingleTrackMode)}
 >
   <div class="ytdl-section ytdl-tracks-section">
     <span class="ytdl-section-label">Tracks</span>
@@ -110,25 +116,27 @@
           originalLabel={audioOriginalLabel}
           playerLabel={audioPlayerLabel}
         >
-          <tp-yt-paper-toggle-button
-            aria-label="Bundle additional audio tracks"
-            checked={downloadExtras ? "" : undefined}
-            disabled={isDownloading ? "" : undefined}
-            onchange={e => {
-              if (e.target instanceof HTMLElement) {
-                ondownloadextraschange(e.target.hasAttribute("checked"));
-              }
-            }}
-          >Bundle additional audio tracks</tp-yt-paper-toggle-button>
-          {#if downloadExtras && hasExtrasToBundle}
-            <span class="ytdl-extras-note">
-              Selected track is the default - all others are bundled as extras
-            </span>
+          {#if !isSingleTrackMode}
+            <div class="ytdl-toggle-row">
+              <tp-yt-paper-toggle-button
+                aria-label="Bundle additional audio tracks"
+                checked={downloadExtras ? "" : undefined}
+                disabled={isDownloading ? "" : undefined}
+                onchange={e => {
+                  if (e.target instanceof HTMLElement) {
+                    ondownloadextraschange(e.target.hasAttribute("checked"));
+                  }
+                }}
+              >Bundle additional audio tracks</tp-yt-paper-toggle-button>
+              {#if downloadExtras && hasExtrasToBundle}
+                <span class="ytdl-extras-note">Selected track is the default - all others are bundled as extras</span>
+              {/if}
+            </div>
           {/if}
         </TrackChoice>
       </div>
     </div>
-    <div class="ytdl-collapse-row" class:is-open={hasCaptions}>
+    <div class="ytdl-collapse-row" class:is-open={hasCaptions && !isSingleTrackMode}>
       <div class="ytdl-collapse-row-inner">
         <TrackChoice
           customOptions={captionCustomOptions}
@@ -205,8 +213,13 @@
     padding-top: 8px;
   }
 
+  .ytdl-toggle-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
   .ytdl-extras-note {
-    display: block;
     color: var(--yt-sys-color-baseline--text-secondary, #606060);
     font-size: 1.2rem;
   }
