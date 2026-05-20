@@ -26,6 +26,27 @@ import { DownloadType, type AdaptiveFormatItem, type VideoData } from "@/types";
 import { untrack } from "svelte";
 import { SvelteMap } from "svelte/reactivity";
 
+const PAGE_LOCALE = document.documentElement.lang || undefined;
+const SIZE_FORMATTER_KB = new Intl.NumberFormat(PAGE_LOCALE, {
+  style: "unit",
+  unit: "kilobyte",
+  unitDisplay: "narrow",
+  maximumFractionDigits: 0
+});
+const SIZE_FORMATTER_MB = new Intl.NumberFormat(PAGE_LOCALE, {
+  style: "unit",
+  unit: "megabyte",
+  unitDisplay: "narrow",
+  maximumFractionDigits: 1
+});
+const SIZE_FORMATTER_GB = new Intl.NumberFormat(PAGE_LOCALE, {
+  style: "unit",
+  unit: "gigabyte",
+  unitDisplay: "narrow",
+  maximumFractionDigits: 2
+});
+const CAPTION_BYTES_PER_SECOND = 10;
+
 export function createPanelState(getVideoData: () => VideoData) {
   const store = createDownloadStoreState(getVideoData);
 
@@ -89,23 +110,33 @@ export function createPanelState(getVideoData: () => VideoData) {
       selectedAudioFormat
     })
   );
+  const { audio, caption } = createTrackStates({
+    getVideoData,
+    setSelectedAudioFormat(value) {
+      selectedAudioFormat = value;
+    },
+    setSelectedVideoFormat(value) {
+      selectedVideoFormat = value;
+    },
+    resetDoneState: store.resetDoneState,
+    setDownloadId(value) {
+      downloadId = value;
+    }
+  });
+
   const estimatedSizeLabel = $derived.by(() => {
     const isAudioOnly = downloadType === DownloadType.Audio;
     const isVideoOnly = downloadType === DownloadType.Video;
+    const isVideoAndAudio = downloadType === DownloadType.VideoAndAudio;
     const videoBytes = !isAudioOnly ? parseInt(selectedVideoFormat?.contentLength ?? "0", 10) : 0;
 
     let audioBytes: number;
     const selectedTrackId = selectedAudioFormat?.audioTrack?.id;
-    const isBundleMode =
-      !isVideoOnly &&
-      PANEL_OPTIONS.downloadExtras &&
-      downloadType === DownloadType.VideoAndAudio &&
-      !!selectedTrackId;
+    const isBundleMode = !isVideoOnly && PANEL_OPTIONS.downloadExtras && isVideoAndAudio && !!selectedTrackId;
     if (isBundleMode && selectedTrackId!.endsWith(AUTO_DUB_TRACK_SUFFIX) && !PANEL_OPTIONS.includeAutoDubbing) {
       audioBytes = parseInt(selectedAudioFormat!.contentLength ?? "0", 10);
     } else if (isBundleMode) {
       const bestByLanguage = new SvelteMap<string, AdaptiveFormatItem>();
-
       for (const format of getVideoData().audioFormats) {
         if (!format.audioTrack) {
           continue;
@@ -135,35 +166,32 @@ export function createPanelState(getVideoData: () => VideoData) {
       audioBytes = !isVideoOnly ? parseInt(selectedAudioFormat?.contentLength ?? "0", 10) : 0;
     }
 
-    const totalBytes = videoBytes + audioBytes;
+    const durationSeconds = parseInt(
+      selectedAudioFormat?.approxDurationMs ?? selectedVideoFormat?.approxDurationMs ?? "0",
+      10
+    ) / 1000;
+    let captionTrackCount = 0;
+    if (isVideoAndAudio && caption.selectedCaptionTrack) {
+      captionTrackCount = PANEL_OPTIONS.downloadExtraCaptions ? getVideoData().captionTracks.length : 1;
+    }
+
+    const captionBytes = captionTrackCount * durationSeconds * CAPTION_BYTES_PER_SECOND;
+
+    const totalBytes = videoBytes + audioBytes + captionBytes;
     if (!totalBytes) {
       return "";
     }
 
     const megabytes = totalBytes / (1024 * 1024);
     if (megabytes < 1) {
-      return `${Math.round(totalBytes / 1024)} KB`;
+      return SIZE_FORMATTER_KB.format(totalBytes / 1024);
     }
 
     if (megabytes < 1000) {
-      return `${Math.round(megabytes * 10) / 10} MB`;
+      return SIZE_FORMATTER_MB.format(megabytes);
     }
 
-    return `${(totalBytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
-  });
-
-  const { audio, caption } = createTrackStates({
-    getVideoData,
-    setSelectedAudioFormat(value) {
-      selectedAudioFormat = value;
-    },
-    setSelectedVideoFormat(value) {
-      selectedVideoFormat = value;
-    },
-    resetDoneState: store.resetDoneState,
-    setDownloadId(value) {
-      downloadId = value;
-    }
+    return SIZE_FORMATTER_GB.format(totalBytes / (1024 * 1024 * 1024));
   });
 
   $effect(() => {
