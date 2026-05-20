@@ -32,12 +32,6 @@
     })
   );
   const isFilenameValid = $derived(!filenameValidationError);
-  const isExtensionError = $derived(
-    filenameValidationError.startsWith("No extension") ||
-    filenameValidationError.startsWith("Extension .") ||
-    filenameValidationError.startsWith("AVI doesn't")
-  );
-
   const formatOptions = $derived(
     buildFormatItems(extensionType, isMultiTrack).map(item => ({
       value: item.ext,
@@ -72,7 +66,6 @@
     <tp-yt-paper-input
       id="filename-input"
       {@attach applyPolymerTheme}
-      aria-describedby={!isFilenameValid ? "filename-error" : undefined}
       aria-invalid={!isFilenameValid}
       autocomplete="off"
       disabled={isDownloading || undefined}
@@ -99,27 +92,6 @@
   {#if extension !== actualExtension && !isFilenameValid}
     <p class="ytdl-extension-note">Will be saved as .{actualExtension} due to format constraints</p>
   {/if}
-  <div
-    id="filename-error"
-    class="ytdl-filename-error-block"
-    class:ytdl-open={!isFilenameValid}
-  >
-    <div class="ytdl-filename-error-inner">
-      <p class="ytdl-filename-error-text">{filenameValidationError}</p>
-      <div class="ytdl-format-list-block" class:ytdl-open={isExtensionError}>
-        <ul class="ytdl-format-list" role="list">
-          {#each buildFormatItems(extensionType, isMultiTrack) as { ext, desc, isExcluded } (ext)}
-            <li class="ytdl-format-item" class:ytdl-excluded={isExcluded}>
-              <div class="ytdl-format-item-inner">
-                <span class="ytdl-format-ext">{ext}</span>
-                <span class="ytdl-format-desc">{desc}</span>
-              </div>
-            </li>
-          {/each}
-        </ul>
-      </div>
-    </div>
-  </div>
 </div>
 
 <style>
@@ -178,76 +150,5 @@
     margin: 0;
     color: var(--yt-sys-color-baseline--text-secondary, #606060);
     font-size: 1.2rem;
-  }
-
-  .ytdl-filename-error-block {
-    display: grid;
-    grid-template-rows: 0fr;
-    transition: grid-template-rows 250ms ease;
-
-    &.ytdl-open {
-      grid-template-rows: 1fr;
-    }
-
-    .ytdl-filename-error-inner {
-      overflow: hidden;
-      min-height: 0;
-
-      .ytdl-filename-error-text {
-        color: var(--paper-input-container-invalid-color, var(--error-color, #cc0000));
-        font-size: 1.2rem;
-      }
-
-      .ytdl-format-list-block {
-        display: grid;
-        grid-template-rows: 0fr;
-        transition: grid-template-rows 250ms ease;
-
-        &.ytdl-open {
-          grid-template-rows: 1fr;
-        }
-
-        .ytdl-format-list {
-          display: flex;
-          flex-direction: column;
-          overflow: hidden;
-          min-height: 0;
-          padding: 0;
-          color: var(--paper-input-container-invalid-color, var(--error-color, #cc0000));
-          list-style: none;
-          font-size: 1.2rem;
-
-          .ytdl-format-item {
-            @starting-style {
-              grid-template-rows: 0fr;
-            }
-
-            display: grid;
-            grid-template-rows: 1fr;
-            transition: grid-template-rows 250ms ease;
-
-            &:global(.ytdl-excluded) {
-              grid-template-rows: 0fr;
-            }
-
-            & + .ytdl-format-item {
-              margin-top: 4px;
-            }
-
-            .ytdl-format-item-inner {
-              display: grid;
-              grid-template-columns: auto 1fr;
-              overflow: hidden;
-              min-height: 0;
-              column-gap: 8px;
-            }
-
-            .ytdl-format-ext {
-              font-weight: 600;
-            }
-          }
-        }
-      }
-    }
   }
 </style>
