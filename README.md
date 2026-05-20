@@ -1,11 +1,8 @@
 # YouTube Downloader
 
-A browser extension for downloading YouTube videos with full format control, batch playlist downloads, and a built-in
-download manager
+A Chromium MV3 browser extension that reverse-engineers YouTube's internal streaming infrastructure to download videos, playlists, and subscriptions - with full format control, multi-track audio, embedded subtitles, and a live download manager.
 
-Made by [Avi](https://avi12.com) with supervised [Claude Code](https://claude.com/product/claude-code)
-
-## Supported browsers
+Built by [Avi](https://avi12.com) with supervised [Claude Code](https://claude.com/product/claude-code)
 
 <p>
   <img src="https://user-images.githubusercontent.com/6422804/135838451-1c3ac8f1-409f-4aec-972f-1d077c05f1ea.png" width="30" alt="Google Chrome">
@@ -14,334 +11,93 @@ Made by [Avi](https://avi12.com) with supervised [Claude Code](https://claude.co
   <img src="https://upload.wikimedia.org/wikipedia/commons/e/e7/Opera_GX_Icon.svg?utm_source=commons.wikimedia.org&utm_campaign=index&utm_content=original" width="30" alt="Opera GX">
 </p>
 
-Chrome, Edge, Opera, and Opera GX (all MV3).
-
-## Features
-
-### Watch page (`/watch`)
-
-- Download button injected next to YouTube's native controls
-- Tooltip shows the filename and quality before you click
-- Music videos auto-select audio-only; everything else defaults to video + audio
-- Configurable default download type (auto, video + audio, video only, audio only)
-
-### Playlist page (`/playlist`)
-
-- Per-video download buttons and checkboxes injected into each playlist item
-- Batch download selected videos with one click
-- **Speed** - sequential (one at a time) or parallel (muxing phases overlap, SABR sessions stay sequential)
-- **Output** - separate files or a single ZIP archive; customize the ZIP filename
-- **Type** - video + audio, video only, or audio only for the whole batch
-- **Format** - per-type file extension override (e.g. force `.mp3` for audio)
-- "Download all when ready" - queues every video in the playlist as items load
-- "Scroll to the current video" - auto-scrolls to whichever video is actively downloading
-- Select all / deselect all actions
-- Individual downloads are cancellable mid-flight
-
-### Subscriptions, channel pages, and search
-
-- Download buttons injected directly into YouTube's video card menus
-- Uses background service worker fetch to bypass CORS restrictions on `googlevideo.com`
-- Downloads resume automatically on a flaky connection - partial progress is never lost
-
-### Popup - Download manager
-
-- Live progress bars for every active download (video, audio, processing, ZIP phases)
-- Cancel individual downloads or cancel all at once
-- Downloads resume automatically if the connection drops mid-transfer
-- Recent downloads list - thumbnail, title, channel, file size, relative timestamp
-- Per-item actions: show in folder, change format, remove from history
-
-### Global options (popup settings tab)
-
-- Default download type (auto / video + audio / video only / audio only)
-- Video file extension (mp4, webm, mkv, ...)
-- Audio file extension (mp3, m4a, opus, ogg, ...)
-- Default video quality (highest available or a specific resolution)
-- Toggle removal of YouTube's native download button
-
-## Development
-
-### Requirements
-
-- [Node.js](https://nodejs.org) (for running the dev server via `tsx`)
-- [pnpm](https://pnpm.io)
-
-### Setup
-
-```bash
-pnpm i
-```
-
-### Dev server (Chrome, auto-reload on file save)
-
-```bash
-pnpm dev
-```
-
-Builds for production (with source maps), launches Chrome with the extension sideloaded, and reloads
-both the extension and any open YouTube tabs on every file change under `src/`.
-
-### Other dev commands
-
-```bash
-pnpm build         # Production build
-pnpm svelte:check  # Svelte type-check
-pnpm lint          # ESLint + Stylelint
-pnpx fallow audit  # Dead code detection
-```
-
 ## Tech stack
 
-| Layer               | Package                                                                                              |
-| ------------------- | ---------------------------------------------------------------------------------------------------- |
-| Extension framework | [WXT](https://wxt.dev)                                                                               |
-| UI                  | [Svelte 5](https://svelte.dev)                                                                       |
-| Streaming           | SABR (YouTube's Scalable Adaptive Bit Rate protocol) via [`googlevideo`](https://npm.im/googlevideo) |
-| Muxing              | [`@ffmpeg/ffmpeg`](https://npm.im/@ffmpeg/ffmpeg) (WASM build, runs in an offscreen document)        |
-| Messaging           | [`@webext-core/messaging`](https://npm.im/@webext-core/messaging)                                    |
+| Package | Purpose |
+| --- | --- |
+| [WXT](https://wxt.dev) | Extension build framework (MV3, hot-reload, sandboxed pages) |
+| [Svelte 5](https://svelte.dev) | UI for content scripts and popup |
+| [@ffmpeg/core](https://ffmpegwasm.netlify.app) | FFmpeg compiled to WASM - muxes video, audio, subtitles, and cover art in-browser |
+| [@webext-core/messaging](https://webext-core.aklinker1.io/messaging) | Typed message passing between extension contexts |
+| [googlevideo](https://npm.im/googlevideo) | YouTube SABR adaptive streaming protobuf protocol |
+| [fflate](https://npm.im/fflate) | ZIP compression for batch downloads |
 
-## How it works
+## Technical highlights
 
-The extension is split across five MV3 runtimes (each lives under `src/entrypoints/`):
+### 1. Click - deciding what to download
 
-| Runtime                   | Folder                  | Job                                                                                                             |
-| ------------------------- | ----------------------- | --------------------------------------------------------------------------------------------------------------- |
-| Service worker            | `background/`           | Owns downloads, SABR/CDN fetches, declarativeNetRequest header rewrites, tab tracking, persistence              |
-| MAIN-world content script | `youtube-main.content/` | Reads YouTube's Polymer state (player config, video metadata) and injects the download button                   |
-| Isolated content script   | `youtube.content/`      | Bridge between MAIN world and the service worker; mounts Svelte UI (toasts, grid overlays, playlist downloader) |
-| Offscreen document        | `offscreen/`            | Runs [`@ffmpeg/ffmpeg`](https://npm.im/@ffmpeg/ffmpeg) WASM to mux video + audio streams                        |
-| Popup                     | `popup/`                | Download manager UI (active progress + recent history + settings)                                               |
+[`watch-button-click.ts`](src/entrypoints/youtube-main.content/watch-button/watch-button-click.ts) handles the button click. If a download is already running for that video it cancels it by emitting a `CrossWorldMessage.CancelDownload`. Otherwise it calls [`startDownload()`](src/entrypoints/youtube-main.content/video/download.ts) with the chosen download type (video+audio, video-only, audio-only).
 
-### Fetching streams from YouTube
+### 2. Request assembly - reading YouTube's internal state
 
-YouTube serves video and audio as separate adaptive streams. The extension tries two methods in order:
+[`startDownload()`](src/entrypoints/youtube-main.content/video/download.ts) calls [`resolveAndDispatch()`](src/entrypoints/youtube-main.content/video/download-execute.ts), which collects everything the background will need - in parallel:
 
-**1. SABR (Scalable Adaptive Bit Rate)** - YouTube's internal streaming protocol. The extension uses [`googlevideo`](https://npm.im/googlevideo) to speak this protocol, making requests look like a real player session. SABR gives the best compatibility and avoids CDN rate limits.
+- The best video and audio itags for the requested quality
+- Fresh caption URLs (the ones baked into the player config expire quickly) and each subtitle track downloaded as a VTT string
+- The player's SABR streaming URL and ustreamer config blob
+- Itags for any dubbed audio tracks
 
-The SABR session lives in the service worker (`background/download/sabr-downloader.ts`). Because the service worker can't directly reach `googlevideo.com` (CORS), a `declarativeNetRequest` rule rewrites the `Origin` header on outgoing requests so YouTube accepts them.
+All of this is packed into a single `DownloadRequest` object. The content script runs in YouTube's MAIN world and can read Polymer state directly - the background can't - so all resolution happens here, upfront, before any message is sent.
 
-If a video has multiple audio tracks (dubbed versions), SABR downloads them sequentially after the main stream.
+### 3. Authentication - BotGuard and PO tokens
 
-**2. CDN fallback** - If SABR fails (e.g. for very old or live-clipped videos), the extension falls back to direct CDN URLs from the player response (`background/download/cdn-downloader.ts`). These are plain HTTPS fetches with byte-range support for retrying interrupted transfers.
+YouTube gates SABR access behind a cryptographic Proof-of-Origin token. [`po-token-generator.ts`](src/lib/youtube/po-token-generator.ts) generates it by executing YouTube's own BotGuard anti-bot interpreter in the MAIN world, submitting the resulting browser environment snapshot to YouTube's `api/jnn/v1/GenerateIT` integrity endpoint, and minting a per-video token from the response - entirely client-side, no backend required.
 
-### Additional audio tracks
+On the watch page the player has already run BotGuard, so [`request-capture.ts`](src/lib/youtube/sabr/request-capture.ts) intercepts the player's own SABR requests to extract the URL and token directly instead of re-running the challenge.
 
-When a video has multiple dubbed or language variants, the extension downloads all of them automatically.
+For CDN stream URLs that carry a `signatureCipher` field, [`signature-decryptor.ts`](src/lib/youtube/signature-decryptor.ts) downloads `player.js`, pattern-matches the obfuscated transform function (swap, reverse, splice operations), and replays it locally to decrypt the `sig` parameter before the URL is used.
 
-`getExtraAudioFormats()` in `youtube-main.content/video/download.ts` collects every audio track whose `audioTrack.id` differs from the user's chosen primary track (up to 16 extras). These are passed in the `DownloadRequest` as `additionalAudioFormats`.
+### 4. Message routing - crossing the MV3 world boundaries
 
-In the background:
+MV3 fragments execution across isolated runtimes that can't share memory. The `DownloadRequest` travels over two buses in series:
 
-- **SABR** - `downloadExtraAudioTracksViaSabr()` fetches each extra track sequentially (one SABR session per track). Sequential ordering avoids overloading the session slot limit.
-- **CDN** - `resolvedExtraAudioUrls` are fetched in parallel alongside the main video and audio.
+- **MAIN world -> isolated world** via [`cross-world-messenger.ts`](src/lib/messaging/cross-world-messenger.ts) - a typed `dispatchEvent` / `addEventListener` bridge between the two JavaScript scopes sharing the same DOM
+- **Isolated world -> service worker** via [`messaging.ts`](src/lib/messaging/messaging.ts) - a typed wrapper over `browser.runtime.sendMessage` from `@webext-core/messaging`
 
-After downloading, each extra track is passed to the offscreen document with its `label`, `languageCode`, and `isDefault` flag. FFmpeg maps them as separate audio streams in the output file (MKV only; MP4 and WebM carry a single audio track).
+[`download-handlers.ts`](src/entrypoints/background/handlers/download-handlers.ts) receives `StartBackgroundDownload` on the other end, associates the download with the originating tab, enqueues it in the popup, and calls [`startBackgroundDownload()`](src/entrypoints/background/download/background-downloader.ts).
 
-### Closed captions
+### 5. Dispatching to the download worker
 
-Caption tracks are fetched in the content script **before** the background download starts, concurrently with format resolution.
+[`startBackgroundDownload()`](src/entrypoints/background/download/background-downloader.ts) takes two paths based on the request type:
 
-`fetchCaptionVttData()` in `youtube-main.content/video/download.ts`:
+- **Audio-only with SABR config** - sends `DownloadAudioViaSabr` directly to the offscreen document, which handles the SABR session in [`sabr-audio-download.ts`](src/entrypoints/offscreen/sabr-audio-download.ts)
+- **Everything else** (video+audio, video-only, CDN audio) - sends `StartDownloadInIframe` to the offscreen document
 
-1. Calls `fetchFreshCaptionUrls(videoId)` - sends an InnerTube `player` request to get non-expired `baseUrl` values for each caption track (the URLs baked into the player config expire quickly)
-2. For each ordered track, appends `?fmt=vtt` and fetches the raw VTT text
-3. Returns the VTT strings as base64-encoded data alongside their `vssId`, language code, and display name
+For the iframe path, [`main.ts`](src/entrypoints/offscreen/main.ts) in the offscreen document receives the message and calls [`createWorkerIframe()`](src/entrypoints/offscreen/iframe-host.ts), which spawns a sandboxed `<iframe>` running [`download-worker/main.ts`](src/entrypoints/download-worker/main.ts). The background service worker never touches the stream bytes directly - all network I/O happens inside this worker iframe.
 
-`orderCaptionsByPreference()` sorts tracks according to the user's language setting so the default subtitle stream in the output file matches the UI language.
+### 6. Stream fetch - SABR and CDN fallback
 
-The caption data travels in `captionVttData` inside `DownloadRequest`. Because captions are fully downloaded before the background service worker starts, they count as pre-completed stages in the proportional progress calculation - the download bar starts already past the caption share.
+[`download-worker/main.ts`](src/entrypoints/download-worker/main.ts) is the actual download engine. It tries two methods in order:
 
-FFmpeg receives each VTT string as a virtual input file and muxes it as a subtitle stream (`-c:s copy` for MKV; captions are skipped for MP4/WebM since those containers don't embed WebVTT streams reliably).
+**SABR** ([`sabr-downloader.ts`](src/entrypoints/background/download/sabr-downloader.ts)) speaks YouTube's internal adaptive streaming protocol via [`googlevideo`](https://npm.im/googlevideo), constructing protobuf requests that the CDN accepts as a real player session. A stall timer aborts and falls back to CDN if no bytes arrive within 5 seconds, or if progress stalls for 10 seconds. Because the service worker can't set `Origin` headers (Chrome strips them), a `declarativeNetRequest` rule in [`wxt.config.ts`](wxt.config.ts) rewrites the header at the network layer on every outgoing request to `googlevideo.com`.
 
-### Thumbnail and YouTube Music ID3 metadata
+**CDN fallback** ([`cdn-downloader.ts`](src/entrypoints/background/download/cdn-downloader.ts)) is used when SABR stalls or isn't available - plain HTTPS fetches with byte-range support so a dropped connection resumes from where it left off rather than restarting.
 
-**Thumbnail source** - `buildVideoMetadata()` in `youtube-main.content/video/video-data.ts` takes the highest-resolution thumbnail URL from the player's `videoDetails.thumbnail.thumbnails` array and stores it in `metadata.thumbnailUrl`.
+As each chunk arrives the worker posts a `worker-chunk` message to the offscreen document. [`accumulator.ts`](src/entrypoints/offscreen/stream/accumulator.ts) collects and sequences the chunks. When all chunks for a stream have arrived, [`end-handler.ts`](src/entrypoints/offscreen/stream/end-handler.ts) marks the stream complete and, once both video and audio streams are finished, hands everything to the processing pipeline.
 
-**YouTube Music enrichment** - For videos where `metadata.isMusic` is true (YouTube Music tracks), `enrichMetadataFromYouTubeMusic()` in `background/download/background-downloader.ts` queries `music.youtube.com/youtubei/v1/search` using the `WebRemix` InnerTube client with a Songs filter. It reads the first `musicResponsiveListItemRenderer` result:
+### 7. Muxing - FFmpeg WASM in the browser
 
-- Column 1 → song title
-- Column 2 runs → artist names (runs whose `pageType` is `MUSIC_PAGE_TYPE_ARTIST`) and album (`MUSIC_PAGE_TYPE_ALBUM`)
-- Thumbnail → last entry in the thumbnail list, resized to 544×544 via URL rewriting (`=w544-h544`)
+[`stream-processor.ts`](src/lib/download-pipeline/stream-processor.ts) receives the assembled streams and routes based on `DownloadType`:
 
-This overrides whatever title/artist/album the standard player response provided, giving ID3 tags that match the YouTube Music catalogue entry.
+- **Video + audio** - [`process-video-audio.ts`](src/lib/download-pipeline/process-video-audio.ts) checks whether the video codec, audio codec, and any extra tracks are natively compatible with the chosen output container. If not (e.g. an Opus track in an MP4), it either transcodes the audio or falls back to MKV. It also forces MKV when extra audio tracks are present, since MP4 and WebM carry only one audio stream. Then it drives the mux worker to merge everything into the final file.
+- **Video-only or audio-only** - [`process-single-media.ts`](src/lib/download-pipeline/process-single-media.ts) saves video bytes directly with no FFmpeg pass. For audio, if source and target format match (WebM-to-WebM, M4A-to-M4A) the bytes are saved as-is; any other combination goes through FFmpeg to transcode.
 
-**Thumbnail embedding** - In the mux worker, `fetchThumbnail()` fetches the thumbnail URL after rewriting WebP paths to JPEG (`/vi_webp/` → `/vi/`, `.webp` → `.jpg`). The actual image format is then confirmed by magic bytes (`FF D8 FF` = JPEG, `89 50 4E 47` = PNG, RIFF+WEBP = WebP) so the correct file extension is set regardless of the URL. The image is written as a virtual FFmpeg input and embedded as an attached picture. Thumbnail embedding is only applied to MP3 and M4A outputs; WebM/MKV containers don't receive it since those formats don't have a standardised cover art field.
+The mux worker ([`mux-worker/index.ts`](src/entrypoints/mux-worker/index.ts)) runs FFmpeg compiled to WASM inside a dedicated Web Worker (the offscreen document exists precisely to host this binary - the service worker can't). It receives jobs over a `MessagePort` and merges video, all audio tracks, subtitle streams, cover art, and ID3 metadata into the final file.
 
-FFmpeg also writes the full ID3/metadata block: title, artist, album_artist, album, genre, date, and track number.
+For YouTube Music tracks, [`background-downloader.ts`](src/entrypoints/background/download/background-downloader.ts) first queries the YouTube Music InnerTube API to replace the standard player metadata with the canonical catalogue entry (song title, artist, album, 544x544 cover thumbnail) before the mux job runs.
 
-### YouTube authentication
+### 8. Progress - a message chain across four runtimes
 
-**PO token (Proof of Origin)** - YouTube requires a cryptographic proof that requests come from a real browser session, not a bot. The extension generates this by running YouTube's own **BotGuard** anti-bot JavaScript:
+As chunks arrive and FFmpeg runs, [`progress-reporter.ts`](src/lib/download-pipeline/progress-reporter.ts) emits `PipelineProgress` messages with a 0-1 value and a phase label (video fetch, audio fetch, FFmpeg mux). The message travels:
 
-1. Fetches a challenge from YouTube's InnerTube `att/get` endpoint
-2. Loads (or reuses) the BotGuard interpreter script in the MAIN world
-3. Runs the interpreter to get a "snapshot" of the browser environment
-4. Submits the snapshot to `api/jnn/v1/GenerateIT` to receive an integrity token
-5. Uses the integrity token to mint a per-video PO token
+`offscreen` -> [`pipeline-handlers.ts`](src/entrypoints/background/handlers/pipeline-handlers.ts) -> [`background.ts`](src/entrypoints/youtube.content/handlers/background.ts) -> `CrossWorldEvent.ProgressUpdate` -> [`WatchButton.message-effects.svelte.ts`](src/entrypoints/youtube-main.content/watch-button/WatchButton.message-effects.svelte.ts)
 
-The full process is in `src/lib/youtube/po-token-generator.ts`. Without a valid token, YouTube returns `403 Forbidden`.
+[`watch-button-progress.ts`](src/entrypoints/youtube-main.content/watch-button/watch-button-progress.ts) blends fetch and FFmpeg progress proportionally so the progress ring on the button advances smoothly across both phases.
 
-On the watch page the player already runs BotGuard, so the extension captures the resulting SABR URL and PO token directly from the player's own requests (via `src/lib/youtube/sabr/request-capture.ts`). On grid/subscription pages where the player isn't running, the extension generates a fresh token using the process above.
+### 9. Save - triggering the browser download
 
-**Signature cipher** - CDN stream URLs are sometimes protected by an obfuscated JavaScript transform that has to be applied to decrypt the `sig` parameter before the URL is usable. The extension:
-
-1. Downloads the player's `player.js`
-2. Extracts the transform function and its operations (swap, reverse, splice) by pattern-matching against known obfuscation patterns
-3. Replays the operations locally to produce the decrypted signature
-
-This is in `src/lib/youtube/signature-decryptor.ts` and is called by `src/entrypoints/youtube-main.content/video/stream-fetch.ts` when a format has a `signatureCipher` field instead of a plain URL.
-
-### Download flow (single watch-page video)
-
-#### 1. Button click - building the request
-
-User clicks the injected button (`youtube-main.content/watch-button/watch-button.ts` → `performDownload`).
-
-`youtube-main.content/video/download.ts` collects everything needed upfront - in parallel:
-- Resolves the best video and audio `itag` for the requested quality
-- Fetches fresh caption URLs and downloads the selected subtitle track as VTT
-- Reads the player's SABR config (streaming URL, ustreamer config)
-- Collects extra audio track `itag`s for any dubbed versions
-
-This produces a `DownloadRequest` struct with all format choices, captions, and metadata baked in.
-
-#### 2. Message routing
-
-The `DownloadRequest` crosses two message buses:
-
-1. MAIN world → isolated world via `crossWorldMessenger` (same-tab postMessage bridge)
-2. Isolated world → service worker via `sendMessage` (webext-core messaging)
-
-`background/handlers/download-handlers.ts` receives `StartBackgroundDownload`, persists the request, and hands it to `startBackgroundDownload(...)`.
-
-#### 3. Fetching the streams
-
-`background/download/background-downloader.ts` tries two methods in order:
-
-- **SABR** (`background/download/sabr-downloader.ts`) - speaks YouTube's internal streaming protocol via [`googlevideo`](https://npm.im/googlevideo). A `declarativeNetRequest` rule rewrites the `Origin` header on requests to `googlevideo.com` so YouTube accepts them. SABR fetches the primary video and audio streams, then extra dubbed tracks sequentially.
-- **CDN fallback** (`background/download/cdn-downloader.ts`) - plain HTTPS fetch with byte-range support, used when SABR is unavailable (older/live-clipped videos).
-
-Progress is reported in real time via `background/download/progress-fetch.ts`, which counts received bytes and throttles updates.
-
-#### 4. Processing dispatch
-
-Once all bytes are in memory, `dispatchToOffscreen(...)` ships them to the **offscreen document** (`offscreen/`). The offscreen document exists because the service worker can't host the large WASM binary or maintain stable ArrayBuffer transfers.
-
-The request is typed as `ProcessStreamData` which carries the raw bytes plus MIME types, filename, subtitle VTT blobs, and metadata.
-
-#### 5. Per-type processing
-
-**Video + Audio (`DownloadType.VideoAndAudio`)**
-
-`process-video-audio.ts` resolves the output container:
-1. Checks whether the video codec, audio codec, and any extra tracks are natively compatible with the user's chosen container (`src/lib/utils/container-specs.ts`)
-2. Falls back to MKV if the target container can't hold the codec combination
-3. Forces MKV if extra audio tracks are present (MP4/WebM only carry one audio stream)
-
-FFmpeg then runs via the mux worker (`entrypoints/mux-worker/`):
-- Maps video stream and all audio streams
-- Copies codecs where compatible; transcodes audio (e.g. AAC fallback for MP4) if needed
-- Maps subtitle streams with the appropriate codec (`webvtt` for WebM/MKV, `mov_text` for MP4)
-- If video is incompatible with the target container, routes through an intermediate MKV first
-
-**Video only (`DownloadType.Video`)**
-
-`process-single-media.ts` passes the raw video bytes directly to `triggerDownload` - no FFmpeg needed.
-
-**Audio only (`DownloadType.Audio`)**
-
-`process-single-media.ts` calls `applyAudioFfmpeg` which decides based on source vs target container:
-
-- Source is **WebM** (opus/vorbis), target is **WebM** → copy bytes directly, no transcode
-- Source is **M4A** (AAC), target is **M4A** → copy bytes directly, no transcode
-- Any other combination → `runTranscodeAudio` invokes FFmpeg with the right codec:
-
-  | Output format | FFmpeg codec  |
-  | ------------- | ------------- |
-  | mp3           | libmp3lame    |
-  | m4a           | aac           |
-  | flac          | flac          |
-  | ogg           | libvorbis     |
-  | opus          | libopus       |
-  | webm          | libopus       |
-
-For YouTube Music tracks, `applyAudioFfmpeg` instead runs the `EmbedMetadata` FFmpeg job which embeds ID3/cover art tags before saving.
-
-#### 6. Saving the file
-
-`triggerDownload(...)` in `src/lib/download-pipeline/index.ts`:
-1. Wraps the output bytes in a `Blob` with the correct MIME type
-2. Creates an object URL and calls `browser.downloads.download({ url, filename })`
-3. Revokes the object URL after the browser has claimed the download
-4. Stores a `RecentDownload` entry in extension storage for the popup history
-
-For playlist/batch downloads, the bytes are collected into a JSZip archive instead of saved immediately; the ZIP is flushed to disk when the last item completes.
-
-### Muxing internals
-
-The mux worker (`entrypoints/mux-worker/`) runs a WASM build of FFmpeg (`@ffmpeg/core`) inside a dedicated Web Worker. It receives jobs over a MessagePort and handles four job types:
-
-| Job type        | What it does                                         |
-| --------------- | ---------------------------------------------------- |
-| MuxVideoAudio   | Merge separate video + audio streams into one file   |
-| TranscodeAudio  | Transcode an audio-only stream to a different format |
-| EmbedMetadata   | Write ID3 tags and cover art into an audio file      |
-| TranscodeFile   | Re-wrap a single stream into a different container   |
-
-`mux-ffmpeg-args.ts` builds the FFmpeg argument list for each job type. Codec selection is driven by `CONTAINER_SPECS` (`src/lib/utils/container-specs.ts`) which maps each container (webm, mp4) to its allowed video/audio codecs and fallback codec for incompatible audio.
+[`triggerDownload()`](src/lib/download-pipeline/blob-download.ts) wraps the output bytes in a `Blob` with the correct MIME type, creates an object URL, and calls `browser.downloads.download({ url, filename })`. After the browser claims the file it revokes the object URL and writes a `RecentDownload` entry to storage for the popup history. For batch downloads, bytes accumulate into a JSZip archive that flushes to disk when the last item in the batch completes.
 
 ### Resilience
 
-- If the connection drops mid-fetch, the service worker persists the request and re-fires it on the next `online` event
-- If the user clicks cancel, both the in-flight SABR fetch and any pending FFmpeg mux are killed, and the persisted retry is dropped - so a manual cancel never gets resurrected
-
-## Contributor guide
-
-### Runtimes and messaging
-
-Chrome content scripts run in an **isolated world** - same DOM as the page, but a separate JavaScript scope. Two message buses connect the runtimes:
-
-| Bus                   | File                                         | Scope                                   |
-| --------------------- | -------------------------------------------- | --------------------------------------- |
-| `crossWorldMessenger` | `src/lib/messaging/cross-world-messenger.ts` | MAIN world to isolated world (same tab) |
-| `sendMessage`         | `src/lib/messaging/messaging.ts`             | Content scripts to service worker       |
-
-Both are built on [`@webext-core/messaging`](https://npm.im/@webext-core/messaging). To add a new message type, extend the relevant `enum`/`const` map and register a handler with `onMessage`.
-
-### Backend: adding or changing download logic
-
-The core download path lives in `src/entrypoints/background/`:
-
-- `download/background-downloader.ts` - orchestrates the SABR/CDN/iframe fallback chain
-- `download/sabr-downloader.ts` - constructs and sends SABR requests via [`googlevideo`](https://npm.im/googlevideo); extra audio tracks (dubbed versions) are fetched sequentially and their byte counts contribute to the unified progress counter
-- `download/cdn-downloader.ts` - direct CDN fetch with byte-range retry for flaky connections
-- `download/progress-fetch.ts` - wraps `fetch` to count received bytes and throttle progress updates
-
-SABR requests need a valid `Origin: https://www.youtube.com` header. The service worker can't set this directly (Chrome strips it), so `wxt.config.ts` registers a `declarativeNetRequest` rule that rewrites the header on outgoing requests to `googlevideo.com`.
-
-The offscreen mux pipeline starts in `src/entrypoints/offscreen/` and uses [`@ffmpeg/ffmpeg`](https://npm.im/@ffmpeg/ffmpeg). `src/lib/download-pipeline/index.ts` is the entry point that receives raw streams and drives FFmpeg to produce the final file.
-
-### UI: working with Polymer elements
-
-The download button and panel are injected into YouTube's Polymer-based UI. YouTube's custom elements (`yt-button-view-model`, `tp-yt-paper-progress`, `tp-yt-paper-input`) have JavaScript property setters defined in the MAIN world. The panel runs in the isolated world, so:
-
-- **Button configuration** has to go through `sendButtonData()` in `src/lib/ui/polymer-utils.ts`, which sends the data via `crossWorldMessenger` to the MAIN world where the setter is actually invoked
-- **CSS custom properties** on Polymer elements must be set via `element.updateStyles({ "--var": "value" })`, not inline styles, so Polymer's Shady DOM picks them up
-- `WatchButton.svelte` is the exception - it runs in `youtube-main.content` (MAIN world) and can set `.data` directly
-
-Svelte 5's `{@attach fn}` directive is used for one-time Polymer element setup. The `fn(element)` callback runs after insertion and can return a cleanup function. See `src/lib/ui/panel-button-attachments.svelte.ts` for examples.
-
-### Good first issues
-
-| Area                   | Where to start                                       |
-| ---------------------- | ---------------------------------------------------- |
-| SABR streaming         | `src/lib/youtube/sabr/`                              |
-| Download orchestration | `src/entrypoints/background/download/`               |
-| FFmpeg muxing pipeline | `src/entrypoints/offscreen/`                         |
-| Download panel         | `src/components/download-options-panel/`             |
-| Watch-page button      | `src/entrypoints/youtube-main.content/watch-button/` |
-| Playlist downloader    | `src/components/playlist-downloader/`                |
-| Shared types           | `src/types/index.ts`                                 |
-
-After any change under `src/`, the dev server (`pnpm run dev`) auto-rebuilds and reloads the extension and YouTube tabs. Run `pnpm run lint`, `pnpm run svelte:check`, and `pnpx fallow audit` before committing.
+The service worker persists each `DownloadRequest` before dispatching and re-fires it on the next `online` event if the connection drops. Manual cancels propagate atomically through the worker iframe, any pending FFmpeg mux, and the persisted retry record - so a cancelled download is never resurrected.
