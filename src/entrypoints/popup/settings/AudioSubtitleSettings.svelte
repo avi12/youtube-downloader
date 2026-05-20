@@ -4,23 +4,8 @@
   import type { SlidingSettingsProps } from "./settings-types";
   import SettingsGroup from "./SettingsGroup.svelte";
   import { setOption } from "@/lib/storage/storage";
-  import { AUTO_EXTENSION, MULTI_TRACK_UNSUPPORTED_EXTENSIONS } from "@/lib/utils/containers";
 
   const { options, slideDuration }: SlidingSettingsProps = $props();
-
-  async function switchVideoFormatIfUnsupported(isEnabled: boolean): Promise<void> {
-    if (!isEnabled || !MULTI_TRACK_UNSUPPORTED_EXTENSIONS.has(options.ext.video)) {
-      return;
-    }
-
-    await setOption({
-      key: "ext",
-      value: {
-        ...options.ext,
-        video: AUTO_EXTENSION
-      }
-    });
-  }
 </script>
 
 <SettingsGroup title="Audio &amp; subtitles">
@@ -29,16 +14,15 @@
     <span class="settings-switch" aria-label="Download additional audio tracks and captions">
       <input
         checked={options.downloadExtras}
-        onchange={async e => {
+        onchange={e => {
           if (!(e.target instanceof HTMLInputElement)) {
             return;
           }
 
-          await setOption({
+          void setOption({
             key: "downloadExtras",
             value: e.target.checked
           });
-          await switchVideoFormatIfUnsupported(e.target.checked);
         }}
         role="switch"
         type="checkbox"
@@ -53,16 +37,15 @@
     <span class="settings-switch" aria-label="Include auto-dubbed audio tracks">
       <input
         checked={options.includeAutoDubbing}
-        onchange={async e => {
+        onchange={e => {
           if (!(e.target instanceof HTMLInputElement)) {
             return;
           }
 
-          await setOption({
+          void setOption({
             key: "includeAutoDubbing",
             value: e.target.checked
           });
-          await switchVideoFormatIfUnsupported(e.target.checked);
         }}
         role="switch"
         type="checkbox"
