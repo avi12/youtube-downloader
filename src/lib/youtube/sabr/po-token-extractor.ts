@@ -43,7 +43,9 @@ function parseStreamerContext(ctxData: Uint8Array) {
     });
     ctxOffset = ctxFieldLength.offset;
 
-    const isPoTokenField = ctxField === FIELD_PO_TOKEN && ctxFieldLength.value > 0;
+    const isPoTokenFieldNumber = ctxField === FIELD_PO_TOKEN;
+    const hasPoTokenData = ctxFieldLength.value > 0;
+    const isPoTokenField = isPoTokenFieldNumber && hasPoTokenData;
     if (isPoTokenField) {
       const poTokenBytes = ctxData.subarray(ctxOffset, ctxOffset + ctxFieldLength.value);
       return btoa(String.fromCharCode(...poTokenBytes));

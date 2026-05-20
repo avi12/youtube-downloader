@@ -13,12 +13,12 @@ export function getMoviePlayer() {
 }
 
 export function isPlayerCaptionTrackData(value: unknown): value is PlayerCaptionTrackData {
-  return (
-    typeof value === "object"
-    && value !== null
-    && "languageCode" in value
-    && "vss_id" in value
-  );
+  const isObject = typeof value === "object";
+  const isNotNull = value !== null;
+  const isNonNullObject = isObject && isNotNull;
+  const hasLanguageCode = isNonNullObject && "languageCode" in value;
+  const hasVssId = isNonNullObject && "vss_id" in value;
+  return isNonNullObject && hasLanguageCode && hasVssId;
 }
 
 type CaptionBusContext = {
@@ -30,11 +30,20 @@ function isGetOptionFunction(value: unknown): value is (module: string, option: 
 }
 
 function isCaptionBusContext(value: unknown): value is CaptionBusContext {
-  return typeof value === "object" && value !== null;
+  const isObject = typeof value === "object";
+  const isNotNull = value !== null;
+  return isObject && isNotNull;
 }
 
 function hasSubscribe(value: unknown): value is { subscribe: unknown } {
-  return typeof value === "object" && value !== null && "subscribe" in value;
+  const isObject = typeof value === "object";
+  const isNotNull = value !== null;
+  const isNonNullObject = isObject && isNotNull;
+  if (!isNonNullObject) {
+    return false;
+  }
+
+  return "subscribe" in value;
 }
 
 function isCaptionEventBus(value: unknown): value is CaptionEventBus {
@@ -67,7 +76,9 @@ export function capturePlayerCaptionBuses(player: MoviePlayerElement) {
   type AnyFunction = (...args: unknown[]) => unknown;
 
   function captureApply(this: AnyFunction, thisArg: unknown, callArgs: unknown[]) {
-    const isCaptionsCall = !internalCtx && Array.isArray(callArgs) && callArgs[0] === "captions";
+    const isContextUncaptured = !internalCtx;
+    const isCaptionsArgs = Array.isArray(callArgs) && callArgs[0] === "captions";
+    const isCaptionsCall = isContextUncaptured && isCaptionsArgs;
     if (isCaptionsCall) {
       internalCtx = thisArg;
     }

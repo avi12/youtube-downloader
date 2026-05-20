@@ -37,7 +37,8 @@ export async function readChunk(reader: ReadableStreamDefaultReader<Uint8Array>)
   try {
     return await reader.read();
   } catch (error) {
-    const isAbortError = error instanceof DOMException && error.name === "AbortError";
+    const isDomException = error instanceof DOMException;
+    const isAbortError = isDomException && error.name === "AbortError";
     if (isAbortError) {
       throw error;
     }

@@ -35,9 +35,10 @@ export function onSabrBodyCaptured(callback: (tabId: number) => void) {
 function handleSabrRequest(details: Browser.webRequest.OnBeforeRequestDetails) {
   // Background requests with youtube.com initiator come from offscreen iframe players.
   // Capture them so playlist iframes get the player's actual (n-param-decoded) URL.
-  const isOffscreenPlayer = details.tabId < 0
-    && details.initiator === YOUTUBE_ORIGIN;
-  const isExtensionRequest = details.tabId < 0 && !isOffscreenPlayer;
+  const isBackgroundTab = details.tabId < 0;
+  const isYouTubeInitiator = details.initiator === YOUTUBE_ORIGIN;
+  const isOffscreenPlayer = isBackgroundTab && isYouTubeInitiator;
+  const isExtensionRequest = isBackgroundTab && !isOffscreenPlayer;
   if (isExtensionRequest) {
     return undefined;
   }

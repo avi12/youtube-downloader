@@ -42,7 +42,8 @@ export async function readStreamToBuffer({ reader, expectedBytes, onBytesReceive
     while (true) {
       const chunk = await readChunk(reader);
       if (!chunk) {
-        if (!stall.isStalled) {
+        const isUnexpectedEnd = !stall.isStalled;
+        if (isUnexpectedEnd) {
           throw new StreamStallError(buildPartial());
         }
 
@@ -76,7 +77,8 @@ export async function readStreamToBuffer({ reader, expectedBytes, onBytesReceive
     throw new StreamStallError(buildPartial());
   }
 
-  const isShortRead = !isStreamingMode && hasExpectedBytes && totalBytes < expectedBytes;
+  const isBelowExpected = totalBytes < expectedBytes;
+  const isShortRead = !isStreamingMode && hasExpectedBytes && isBelowExpected;
   if (isShortRead) {
     throw new StreamStallError(buildPartial());
   }

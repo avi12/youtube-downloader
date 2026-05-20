@@ -15,7 +15,8 @@ export function isVideoDataExpired(videoData: {
   audioFormats: AdaptiveFormatItem[];
 }) {
   const sabrUrl = videoData.sabrConfig?.serverAbrStreamingUrl;
-  const isSabrUrlExpired = sabrUrl && isUrlExpired(sabrUrl);
+  const hasSabrUrl = Boolean(sabrUrl);
+  const isSabrUrlExpired = hasSabrUrl && isUrlExpired(sabrUrl!);
   if (isSabrUrlExpired) {
     return true;
   }

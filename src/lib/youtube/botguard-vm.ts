@@ -6,12 +6,19 @@ interface BotGuardVmEntry {
 }
 
 function isBotGuardVmEntry(value: unknown): value is BotGuardVmEntry {
-  return (
-    typeof value === "object"
-    && value !== null
-    && "a" in value
-    && typeof value.a === "function"
-  );
+  const isObject = typeof value === "object";
+  const isNotNull = value !== null;
+  const isNonNullObject = isObject && isNotNull;
+  if (!isNonNullObject) {
+    return false;
+  }
+
+  const hasAKey = "a" in value;
+  if (!hasAKey) {
+    return false;
+  }
+
+  return typeof value.a === "function";
 }
 
 export function getBotGuardVm(name: string) {

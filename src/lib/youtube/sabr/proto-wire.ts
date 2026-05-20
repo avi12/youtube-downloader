@@ -22,7 +22,8 @@ export function readVarint({ buffer, offset }: ReadVarintParams) {
     offset++;
     value |= (byte & VARINT_DATA_BITS_MASK) << shift;
 
-    if ((byte & VARINT_CONTINUATION_BIT) === 0) {
+    const isLastByte = (byte & VARINT_CONTINUATION_BIT) === 0;
+    if (isLastByte) {
       break;
     }
 

@@ -69,10 +69,15 @@ export function getOutputExtension({ videoMimeType, audioMimeType, userExtension
 
   const videoCodec = extractBaseCodec(videoMimeType);
   const audioCodec = extractBaseCodec(audioMimeType);
-  const videoOk = spec.videoCodecs.has(videoCodec) || !!spec.allowNonNativeVideo;
-  const audioOk = spec.audioCodecs.has(audioCodec) || spec.fallbackAudioCodec !== undefined;
+  const isVideoNative = spec.videoCodecs.has(videoCodec);
+  const hasNonNativeAllowed = !!spec.allowNonNativeVideo;
+  const videoOk = isVideoNative || hasNonNativeAllowed;
+  const isAudioNative = spec.audioCodecs.has(audioCodec);
+  const hasFallbackAudio = spec.fallbackAudioCodec !== undefined;
+  const audioOk = isAudioNative || hasFallbackAudio;
+  const isCompatible = videoOk && audioOk;
 
-  return videoOk && audioOk ? userExtension : "mkv";
+  return isCompatible ? userExtension : "mkv";
 }
 
 export function isVideoNativeForContainer({ videoMimeType, targetExtension }: {
@@ -97,7 +102,11 @@ export function isCompatibleForRemux({ videoMimeType, audioMimeType, targetExten
     return true;
   }
 
-  const videoOk = spec.videoCodecs.has(extractBaseCodec(videoMimeType)) || !!spec.allowNonNativeVideo;
-  const audioOk = spec.audioCodecs.has(extractBaseCodec(audioMimeType)) || spec.fallbackAudioCodec !== undefined;
+  const isVideoNative = spec.videoCodecs.has(extractBaseCodec(videoMimeType));
+  const hasNonNativeAllowed = !!spec.allowNonNativeVideo;
+  const videoOk = isVideoNative || hasNonNativeAllowed;
+  const isAudioNative = spec.audioCodecs.has(extractBaseCodec(audioMimeType));
+  const hasFallbackAudio = spec.fallbackAudioCodec !== undefined;
+  const audioOk = isAudioNative || hasFallbackAudio;
   return videoOk && audioOk;
 }

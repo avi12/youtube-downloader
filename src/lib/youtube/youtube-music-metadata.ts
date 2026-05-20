@@ -49,11 +49,12 @@ export async function fetchYouTubeMusicMetadata({ searchQuery, existingMetadata 
       return existingMetadata;
     }
 
+    const isAlbumArtistDifferent = parsed.mainArtist !== parsed.artist;
     return {
       ...existingMetadata,
       title: parsed.songTitle || existingMetadata.title,
       artist: parsed.artist || existingMetadata.artist,
-      albumArtist: parsed.mainArtist !== parsed.artist ? parsed.mainArtist : existingMetadata.albumArtist,
+      albumArtist: isAlbumArtistDifferent ? parsed.mainArtist : existingMetadata.albumArtist,
       album: parsed.album || existingMetadata.album,
       thumbnailUrl: parsed.thumbnailUrl || existingMetadata.thumbnailUrl
     };

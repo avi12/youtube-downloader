@@ -14,7 +14,9 @@ export function isVideoDownloadable(playerResponse: PlayerResponse) {
   }
 
   const { status } = playerResponse.playabilityStatus;
-  const isUnplayable = status === PlayabilityStatus.LoginRequired || status === PlayabilityStatus.Error;
+  const isLoginRequired = status === PlayabilityStatus.LoginRequired;
+  const isError = status === PlayabilityStatus.Error;
+  const isUnplayable = isLoginRequired || isError;
   if (isUnplayable) {
     return false;
   }
@@ -26,8 +28,9 @@ export function isVideoDownloadable(playerResponse: PlayerResponse) {
   }
 
   const formats = streamingData.adaptiveFormats ?? [];
-  return formats.some(format => Boolean(format.url) || Boolean(format.signatureCipher))
-    || Boolean(streamingData.serverAbrStreamingUrl);
+  const hasDirectFormats = formats.some(format => Boolean(format.url) || Boolean(format.signatureCipher));
+  const hasSabrUrl = Boolean(streamingData.serverAbrStreamingUrl);
+  return hasDirectFormats || hasSabrUrl;
 }
 
 export function isVideoMusic(playerResponse: PlayerResponse) {

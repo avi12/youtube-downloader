@@ -33,13 +33,16 @@ export function orderCaptionsByPreference({
   browserLanguage,
   customLanguage
 }: OrderCaptionsByPreferenceParams) {
-  const isOrderingUnnecessary = captionTracks.length <= 1 || languageMode === AudioTrackLanguageMode.OriginalLanguage;
+  const hasSingleTrack = captionTracks.length <= 1;
+  const isOriginalLanguageMode = languageMode === AudioTrackLanguageMode.OriginalLanguage;
+  const isOrderingUnnecessary = hasSingleTrack || isOriginalLanguageMode;
   if (isOrderingUnnecessary) {
     return captionTracks;
   }
 
-  const firstLang = languageMode === AudioTrackLanguageMode.Custom && customLanguage
-    ? normalizeLanguageCode(customLanguage)
+  const isCustomWithLanguage = languageMode === AudioTrackLanguageMode.Custom && customLanguage;
+  const firstLang = isCustomWithLanguage
+    ? normalizeLanguageCode(customLanguage!)
     : null;
   const langPriority = [firstLang, locale, browserLanguage, FALLBACK_LANGUAGE_CODE]
     .filter((lang): lang is string => !!lang);
