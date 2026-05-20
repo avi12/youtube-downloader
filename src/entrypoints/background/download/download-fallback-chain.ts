@@ -65,7 +65,8 @@ export async function tryDirectUrlDownload({ request }: {
 }) {
   const { type, resolvedAudioUrl, filenameOutput } = request;
   const isAudioOnly = type === DownloadType.Audio;
-  if (!isAudioOnly || !resolvedAudioUrl) {
+  const cannotDirectDownload = !isAudioOnly || !resolvedAudioUrl;
+  if (cannotDirectDownload) {
     return null;
   }
 

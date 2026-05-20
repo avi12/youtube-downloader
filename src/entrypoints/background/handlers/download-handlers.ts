@@ -117,7 +117,8 @@ export function registerDownloadHandlers() {
 
   onMessage(MessageType.StartBackgroundDownload, async ({ data, sender }) => {
     let tabId = sender.tab?.id ?? getTabIdsForVideo(data.videoId)[0];
-    if (!tabId) {
+    const isTabIdUnknown = !tabId;
+    if (isTabIdUnknown) {
       const [ytTab] = await browser.tabs.query({
         url: "*://*.youtube.com/*",
         active: true

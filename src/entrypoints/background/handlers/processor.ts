@@ -44,7 +44,8 @@ async function ensureOffscreenDocument() {
 }
 
 export async function ensureProcessor() {
-  if (processorReady && isOffscreenConnected()) {
+  const isProcessorAlive = processorReady && isOffscreenConnected();
+  if (isProcessorAlive) {
     return processorReady;
   }
 

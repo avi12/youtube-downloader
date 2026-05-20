@@ -115,7 +115,8 @@ export async function fetchWithProgress(
     if (isResponseError) {
       const isRetryable = response.status >= 500
         || response.status === HTTP_STATUS_TOO_MANY_REQUESTS;
-      if (!isRetryable || isLastAttempt) {
+      const isUnrecoverable = !isRetryable || isLastAttempt;
+      if (isUnrecoverable) {
         throw new Error(`HTTP ${response.status} fetching stream`);
       }
 
@@ -167,10 +168,8 @@ export async function fetchWithProgress(
       }) : newData;
     } catch (error) {
       const isStreamStall = error instanceof StreamStallError;
-      // In streaming mode the chunks are already in OPFS - retrying from a byte
-      // offset would send duplicate/overlapping data and corrupt the file.
-      // Accept the partial stream and let the mux work with what it has.
-      if (isStreamStall && onChunk) {
+      const isStreamStallInStreamingMode = isStreamStall && !!onChunk;
+      if (isStreamStallInStreamingMode) {
         return new Uint8Array(0);
       }
 

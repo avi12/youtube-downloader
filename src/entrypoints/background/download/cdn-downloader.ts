@@ -74,7 +74,8 @@ export async function downloadViaCdn({
     initialAudioBytes: partialAudioData?.byteLength ?? 0
   });
 
-  const isStreamingMode = hasVideo && hasAudio && !partialVideoData && !partialAudioData;
+  const hasNoPartialData = !partialVideoData && !partialAudioData;
+  const isStreamingMode = hasVideo && hasAudio && hasNoPartialData;
   let iVideoChunk = 0;
   let iAudioChunk = 0;
 

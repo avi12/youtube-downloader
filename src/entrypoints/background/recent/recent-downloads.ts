@@ -71,7 +71,8 @@ type NotifyOnIdleIfNeededParams = {
 };
 async function notifyOnIdleIfNeeded({ data, tabIds }: NotifyOnIdleIfNeededParams) {
   const [tabId] = tabIds;
-  const isIdle = tabId === undefined || await isTabIdle(tabId);
+  const isTabUndefined = tabId === undefined;
+  const isIdle = isTabUndefined || await isTabIdle(tabId);
   if (!isIdle) {
     return;
   }
@@ -231,7 +232,8 @@ export function registerRecentDownloadsRetention() {
   browser.alarms.onAlarm.addListener(alarm => {
     const isRetentionAlarm = alarm.name === RETENTION_ALARM_NAME;
     const isPopupOpen = openPopupCount > 0;
-    if (!isRetentionAlarm || isPopupOpen) {
+    const shouldSkipPrune = !isRetentionAlarm || isPopupOpen;
+    if (shouldSkipPrune) {
       return;
     }
 

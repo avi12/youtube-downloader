@@ -25,11 +25,13 @@ export async function downloadViaSabr({ request, signal, tabId, onProgress }: Do
     sabrConfig,
     sabrUrl
   }) : null;
-  if (!effectiveConfig || !audioFormat) {
+  const isMissingRequiredConfig = !effectiveConfig || !audioFormat;
+  if (isMissingRequiredConfig) {
     return null;
   }
 
-  if (!isAudioOnly && !videoFormat) {
+  const isMissingVideoFormat = !isAudioOnly && !videoFormat;
+  if (isMissingVideoFormat) {
     return null;
   }
 
