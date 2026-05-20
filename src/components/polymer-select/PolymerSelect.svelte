@@ -124,6 +124,10 @@
 
     elMenu = elTarget;
 
+    function handleMousedown(e: Event): void {
+      e.preventDefault();
+    }
+
     function handleClick(e: Event): void {
       const isElement = e.target instanceof Element;
       if (!isElement) {
@@ -190,9 +194,11 @@
       }
     }
 
+    elTarget.addEventListener("mousedown", handleMousedown);
     elTarget.addEventListener("click", handleClick);
     elTarget.addEventListener("keydown", handleKeydown);
     return () => {
+      elTarget.removeEventListener("mousedown", handleMousedown);
       elTarget.removeEventListener("click", handleClick);
       elTarget.removeEventListener("keydown", handleKeydown);
     };
