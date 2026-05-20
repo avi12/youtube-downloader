@@ -90,6 +90,7 @@
 
   <DownloadOptionsPanelFooter
     displayProgress={panel.displayProgress}
+    estimatedSizeLabel={panel.estimatedSizeLabel}
     getIsDownloadable={() => panel.isDownloadable}
     getIsFilenameValid={() => panel.isFilenameValid}
     primaryButtonId={PRIMARY_BUTTON_ID}
@@ -108,7 +109,7 @@
   .ytdl-panel {
     display: flex;
     flex-direction: column;
-    width: 420px;
+    width: 380px;
     max-height: inherit;
     border: 1px solid var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 10%));
     border-radius: 12px;

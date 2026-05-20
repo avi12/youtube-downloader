@@ -11,11 +11,13 @@
     viewButtonId: string;
     getIsDownloadable: () => boolean;
     getIsFilenameValid: () => boolean;
+    estimatedSizeLabel: string;
   }
 
   const {
     primaryState, displayProgress, progressType, scopingClass,
-    primaryButtonId, viewButtonId, getIsDownloadable, getIsFilenameValid
+    primaryButtonId, viewButtonId, getIsDownloadable, getIsFilenameValid,
+    estimatedSizeLabel
   }: Props = $props();
 
   const isDone = $derived(primaryState === PrimaryButtonState.Done);
@@ -37,6 +39,9 @@
     },
     get getIsFilenameValid() {
       return getIsFilenameValid;
+    },
+    get estimatedSizeLabel() {
+      return estimatedSizeLabel;
     }
   });
 </script>

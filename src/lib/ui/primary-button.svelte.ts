@@ -16,12 +16,17 @@ export enum PrimaryButtonState {
   Failed = "failed"
 }
 
-export function attachPrimaryButton({ elButton, getState, getIsDownloadable, getIsFilenameValid }: {
+interface AttachPrimaryButtonParams {
   elButton: Element;
   getState: () => PrimaryButtonState;
   getIsDownloadable: () => boolean;
   getIsFilenameValid: () => boolean;
-}) {
+  getEstimatedSizeLabel: () => string;
+}
+
+export function attachPrimaryButton(
+  { elButton, getState, getIsDownloadable, getIsFilenameValid, getEstimatedSizeLabel }: AttachPrimaryButtonParams
+) {
   $effect(() => {
     const state = getState();
     const isNotIdle = state !== PrimaryButtonState.Idle;
@@ -81,7 +86,9 @@ export function attachPrimaryButton({ elButton, getState, getIsDownloadable, get
         };
       }
 
-      const title = state === PrimaryButtonState.Done ? "Download again" : "Download";
+      const sizeLabel = getEstimatedSizeLabel();
+      const baseTitle = state === PrimaryButtonState.Done ? "Download again" : "Download";
+      const title = sizeLabel ? `${baseTitle}  ·  ${sizeLabel}` : baseTitle;
       return {
         iconName: IconName.Download,
         title,

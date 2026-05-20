@@ -12,9 +12,10 @@ export interface FooterParams {
   readonly progressType: string;
   readonly getIsDownloadable: () => boolean;
   readonly getIsFilenameValid: () => boolean;
+  readonly estimatedSizeLabel: string;
 }
 
-const percentFormatter = new Intl.NumberFormat(document.documentElement.lang || undefined, {
+const PERCENT_FORMATTER = new Intl.NumberFormat(document.documentElement.lang || undefined, {
   style: "percent",
   maximumFractionDigits: 0
 });
@@ -25,7 +26,7 @@ export function createFooterState(params: FooterParams) {
       return "Preparing";
     }
 
-    const formattedPercentage = percentFormatter.format(params.displayProgress / 100);
+    const formattedPercentage = PERCENT_FORMATTER.format(params.displayProgress / 100);
     if (params.progressType === ProgressType.FFmpeg) {
       return `${formattedPercentage} - Processing`;
     }
@@ -38,7 +39,8 @@ export function createFooterState(params: FooterParams) {
       elButton,
       getState: () => params.primaryState,
       getIsDownloadable: params.getIsDownloadable,
-      getIsFilenameValid: params.getIsFilenameValid
+      getIsFilenameValid: params.getIsFilenameValid,
+      getEstimatedSizeLabel: () => params.estimatedSizeLabel
     });
   }
 

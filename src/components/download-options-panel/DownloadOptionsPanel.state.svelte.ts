@@ -1,6 +1,7 @@
 import { PANEL_OPTIONS } from "./DownloadOptions.state.svelte";
 import { createDownloadStoreState } from "./DownloadOptionsPanel.download-state.svelte";
 import { createTrackStates } from "./DownloadOptionsPanel.tracks.svelte";
+import { AUTO_DUB_TRACK_SUFFIX } from "./helpers/audio-language-helpers";
 import {
   applyDownloadTypeChange,
   sendCancelDownload,
@@ -20,9 +21,10 @@ import { syncAudioFromFormat } from "./helpers/player-active-tracks.svelte";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { CONTENT_OPTIONS, interruptedDownloadStore } from "@/lib/ui/synced-stores.svelte";
 import { getCompatibleFilename } from "@/lib/utils/containers";
-import { calculateWeightedProgress } from "@/lib/youtube/video-helpers";
+import { calculateWeightedProgress, normalizeLanguageCode } from "@/lib/youtube/video-helpers";
 import { DownloadType, type AdaptiveFormatItem, type VideoData } from "@/types";
 import { untrack } from "svelte";
+import { SvelteMap } from "svelte/reactivity";
 
 export function createPanelState(getVideoData: () => VideoData) {
   const store = createDownloadStoreState(getVideoData);
@@ -87,6 +89,68 @@ export function createPanelState(getVideoData: () => VideoData) {
       selectedAudioFormat
     })
   );
+  const estimatedSizeLabel = $derived.by(() => {
+    const isAudioOnly = downloadType === DownloadType.Audio;
+    const isVideoOnly = downloadType === DownloadType.Video;
+    const videoBytes = !isAudioOnly ? parseInt(selectedVideoFormat?.contentLength ?? "0", 10) : 0;
+
+    let audioBytes: number;
+    const selectedTrackId = selectedAudioFormat?.audioTrack?.id;
+    const isBundleMode =
+      !isVideoOnly &&
+      PANEL_OPTIONS.downloadExtras &&
+      downloadType === DownloadType.VideoAndAudio &&
+      !!selectedTrackId;
+    if (isBundleMode && selectedTrackId!.endsWith(AUTO_DUB_TRACK_SUFFIX) && !PANEL_OPTIONS.includeAutoDubbing) {
+      audioBytes = parseInt(selectedAudioFormat!.contentLength ?? "0", 10);
+    } else if (isBundleMode) {
+      const bestByLanguage = new SvelteMap<string, AdaptiveFormatItem>();
+
+      for (const format of getVideoData().audioFormats) {
+        if (!format.audioTrack) {
+          continue;
+        }
+
+        const trackId = format.audioTrack.id;
+        if (trackId === selectedTrackId) {
+          continue;
+        }
+
+        if (!PANEL_OPTIONS.includeAutoDubbing && trackId.endsWith(AUTO_DUB_TRACK_SUFFIX)) {
+          continue;
+        }
+
+        const languageCode = normalizeLanguageCode(trackId);
+        const existing = bestByLanguage.get(languageCode);
+        if (!existing || format.bitrate > existing.bitrate) {
+          bestByLanguage.set(languageCode, format);
+        }
+      }
+
+      audioBytes = parseInt(selectedAudioFormat!.contentLength ?? "0", 10);
+      for (const format of bestByLanguage.values()) {
+        audioBytes += parseInt(format.contentLength ?? "0", 10);
+      }
+    } else {
+      audioBytes = !isVideoOnly ? parseInt(selectedAudioFormat?.contentLength ?? "0", 10) : 0;
+    }
+
+    const totalBytes = videoBytes + audioBytes;
+    if (!totalBytes) {
+      return "";
+    }
+
+    const megabytes = totalBytes / (1024 * 1024);
+    if (megabytes < 1) {
+      return `${Math.round(totalBytes / 1024)} KB`;
+    }
+
+    if (megabytes < 1000) {
+      return `${Math.round(megabytes * 10) / 10} MB`;
+    }
+
+    return `${(totalBytes / (1024 * 1024 * 1024)).toFixed(2)} GB`;
+  });
 
   const { audio, caption } = createTrackStates({
     getVideoData,
@@ -204,6 +268,9 @@ export function createPanelState(getVideoData: () => VideoData) {
     },
     get qualityLabel() {
       return qualityLabel;
+    },
+    get estimatedSizeLabel() {
+      return estimatedSizeLabel;
     },
     get isFilenameValid() {
       return isFilenameValid;
