@@ -28,25 +28,20 @@ const extensionToMimeAll: Record<string, string> = {
   webm: MIME_VIDEO_WEBM
 };
 
-const MIME_PREFIX_VIDEO = "video";
-const MIME_PREFIX_AUDIO = "audio";
 const EXT_WEBM = "webm";
 const EXT_MP4 = "mp4";
 const EXT_M4A = "m4a";
 
-function filterExtensionsByPrefix(prefix: string) {
-  return Object.fromEntries(Object.entries(extensionToMimeAll).filter(([, mime]) => mime.startsWith(prefix)));
+const VIDEO_EXTENSION_ORDER = ["mp4", "webm", "mkv", "mov", "avi"] as const;
+const AUDIO_EXTENSION_ORDER = ["webm", "mp3", "m4a", "flac", "opus", "ogg", "wav", "aiff"] as const;
+
+function toExtensionMap(extensions: readonly string[]) {
+  return Object.fromEntries(extensions.map(ext => [ext, extensionToMimeAll[ext]]));
 }
 
-const videoExtensions = filterExtensionsByPrefix(MIME_PREFIX_VIDEO);
-const audioExtensions = {
-  [EXT_WEBM]: MIME_VIDEO_WEBM,
-  ...filterExtensionsByPrefix(MIME_PREFIX_AUDIO)
-};
-
 const extensionToMime = {
-  video: videoExtensions,
-  audio: audioExtensions
+  video: toExtensionMap(VIDEO_EXTENSION_ORDER),
+  audio: toExtensionMap(AUDIO_EXTENSION_ORDER)
 };
 
 export type SupportedExtension = keyof typeof extensionToMimeAll;
