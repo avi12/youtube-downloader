@@ -52,24 +52,25 @@ export function buildInitialDownloadState(videoData: VideoData) {
     });
 
     const selectedTrackId = preferredAudio?.audioTrack?.id;
-    const hasSelectedTrack = !!selectedTrackId;
-    const hasOtherAudioTracks = videoData.audioFormats.some(
+    const isTrackSelected = Boolean(selectedTrackId);
+    const isOtherAudioTrackPresent = videoData.audioFormats.some(
       format => format.audioTrack?.id && format.audioTrack.id !== selectedTrackId
     );
-    const hasExtraAudioTracks = hasSelectedTrack && hasOtherAudioTracks;
-    if (hasExtraAudioTracks) {
+    const isMultiTrack = isTrackSelected && isOtherAudioTrackPresent;
+    if (isMultiTrack) {
       const isKnownContainer = extension in CONTAINER_SPECS;
-      extension = isKnownContainer && !MULTI_TRACK_UNSUPPORTED_EXTENSIONS.has(extension) ? extension : MKV_EXTENSION;
+      if (!isKnownContainer || MULTI_TRACK_UNSUPPORTED_EXTENSIONS.has(extension)) {
+        extension = MKV_EXTENSION;
+      }
     }
   }
 
   const filename = getCompatibleFilename(`${videoData.title || videoData.videoId}.${extension}`);
   const downloadType = videoData.isMusic ? DownloadType.Audio : DownloadType.VideoAndAudio;
 
-  let isInterrupted = false;
   const interrupted = interruptedDownloadStore.get(videoData.videoId);
+  const isInterrupted = Boolean(interrupted);
   if (interrupted) {
-    isInterrupted = true;
     videoItag = interrupted.videoItag || videoItag;
     audioItag = interrupted.audioItag || audioItag;
   }
