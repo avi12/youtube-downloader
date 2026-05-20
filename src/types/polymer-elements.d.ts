@@ -80,6 +80,12 @@ declare module "svelte/elements" {
       "aria-label"?: string;
       onchange?: (e: Event) => void;
     };
+    "tp-yt-paper-toggle-button": HTMLAttributes<HTMLElement> & {
+      checked?: "" | undefined;
+      disabled?: "" | undefined;
+      "aria-label"?: string;
+      onchange?: (e: Event) => void;
+    };
     "yt-chip-cloud-chip-renderer": HTMLAttributes<HTMLElement> & {
       "chip-style"?: string;
       selected?: "" | undefined;

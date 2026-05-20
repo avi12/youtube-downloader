@@ -14,7 +14,6 @@
     extension: string;
     actualExtension: string;
     isDownloading: boolean;
-    downloadExtras: boolean;
     ondownloadtypechange: (type: import("@/types").DownloadType) => void;
     onvideoformatchange: (format: AdaptiveFormatItem) => void;
     onaudioformatchange: (format: AdaptiveFormatItem) => void;
@@ -31,7 +30,7 @@
     downloadType, videoFormats, audioFormats, captionTracks,
     selectedVideoFormat, selectedAudioFormat, selectedCaptionTrack,
     panelAudioMode, panelAudioCustomLanguage, panelCaptionMode,
-    filename, extension, actualExtension, isDownloading, downloadExtras,
+    filename, extension, actualExtension, isDownloading,
     ondownloadtypechange, onvideoformatchange, onaudioformatchange,
     onaudiomodechange, onaudiocustomchange, oncaptionmodechange,
     oncaptionchange, onfilenamechange, onextensionchange, onvalidationchange
@@ -68,7 +67,7 @@
     captionOriginalLabel={derived.captionOriginalLabel}
     captionPlayerLabel={derived.captionPlayerLabel}
     captionTracks={derived.filteredCaptionTracks}
-    {downloadExtras}
+    downloadExtras={derived.downloadExtras}
     hasExtrasToBundle={derived.hasExtrasToBundle}
     includeAiCaptions={derived.includeAiCaptions}
     {isDownloading}
@@ -77,6 +76,7 @@
     oncaptionchange={vssId =>
       oncaptionchange(derived.filteredCaptionTracks.find(track => track.vssId === vssId) ?? null)}
     {oncaptionmodechange}
+    ondownloadextraschange={derived.setDownloadExtras}
     {panelAudioCustomLanguage}
     {panelAudioMode}
     {panelCaptionMode}

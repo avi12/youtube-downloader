@@ -6,6 +6,7 @@ import { formatAudioCodecLabel, formatVideoQualityLabel } from "@/lib/youtube/vi
 import { DownloadType, type AdaptiveFormatItem, type VideoData } from "@/types";
 
 const MKV_EXTENSION = "mkv";
+const BITS_PER_KILOBIT = 1000;
 
 function resolveMultiTrackExtension(baseExtension: string) {
   const isKnownContainer = baseExtension in CONTAINER_SPECS;
@@ -17,13 +18,15 @@ export function resolveActualExtension({
   selectedVideoFormat,
   selectedAudioFormat,
   extension,
-  getVideoData
+  getVideoData,
+  downloadExtras
 }: {
   downloadType: DownloadType;
   selectedVideoFormat: AdaptiveFormatItem | null;
   selectedAudioFormat: AdaptiveFormatItem | null;
   extension: string;
   getVideoData: () => VideoData;
+  downloadExtras: boolean;
 }) {
   const isAudioOrMissingFormat = downloadType === DownloadType.Audio || !selectedVideoFormat || !selectedAudioFormat;
   if (isAudioOrMissingFormat) {
@@ -37,7 +40,7 @@ export function resolveActualExtension({
   });
 
   const selectedTrackId = selectedAudioFormat.audioTrack?.id;
-  const isTrackWithExtras = selectedTrackId && CONTENT_OPTIONS.downloadExtras;
+  const isTrackWithExtras = selectedTrackId && downloadExtras;
   if (isTrackWithExtras) {
     const isSelectedAutoDubbed = selectedTrackId.endsWith(AUTO_DUB_TRACK_SUFFIX);
     const isAutoDubbingBlockedForSelected = !CONTENT_OPTIONS.includeAutoDubbing && isSelectedAutoDubbed;
@@ -98,7 +101,7 @@ export function resolveQualityLabel({
   const isAudioType = downloadType === DownloadType.Audio;
   if (isAudioType) {
     return selectedAudioFormat
-      ? `${Math.floor(selectedAudioFormat.bitrate / 1000)} kbps (${formatAudioCodecLabel(selectedAudioFormat.mimeType)})`
+      ? `${Math.floor(selectedAudioFormat.bitrate / BITS_PER_KILOBIT)} kbps (${formatAudioCodecLabel(selectedAudioFormat.mimeType)})`
       : "";
   }
 

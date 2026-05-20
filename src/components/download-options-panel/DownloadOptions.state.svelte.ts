@@ -14,6 +14,7 @@ import { DownloadType } from "@/types";
 import type { AdaptiveFormatItem, CaptionTrack } from "@/types";
 
 const AUTO_GENERATED_SUFFIX = "(auto-generated)";
+const AUTO_DUBBED_LABEL_SUFFIX = "(auto-dubbed)";
 
 function formatCaptionLabel(track: CaptionTrack) {
   const name = track.name.simpleText;
@@ -34,9 +35,10 @@ export interface DownloadOptionsProps {
   selectedCaptionTrack: CaptionTrack | null;
 }
 
-const PANEL_OPTIONS = $state({
+export const PANEL_OPTIONS = $state({
   includeAiCaptions: CONTENT_OPTIONS.includeAiCaptions,
-  includeAutoDubbing: CONTENT_OPTIONS.includeAutoDubbing
+  includeAutoDubbing: CONTENT_OPTIONS.includeAutoDubbing,
+  downloadExtras: CONTENT_OPTIONS.downloadExtras
 });
 
 optionsItem.watch(next => {
@@ -46,6 +48,7 @@ optionsItem.watch(next => {
 
   PANEL_OPTIONS.includeAiCaptions = next.includeAiCaptions ?? INITIAL_OPTIONS.includeAiCaptions;
   PANEL_OPTIONS.includeAutoDubbing = next.includeAutoDubbing ?? INITIAL_OPTIONS.includeAutoDubbing;
+  PANEL_OPTIONS.downloadExtras = next.downloadExtras ?? INITIAL_OPTIONS.downloadExtras;
 });
 
 export function createDownloadOptionsState(props: () => DownloadOptionsProps) {
@@ -68,8 +71,8 @@ export function createDownloadOptionsState(props: () => DownloadOptionsProps) {
   const filteredCaptionTracks = $derived(
     props().captionTracks.filter(track => preserveAutoVariant({
       item: track,
-      isAuto: track => track.kind === CAPTION_KIND_ASR,
-      matchesPlayer: track => track.vssId === PLAYER_ACTIVE_CAPTION.vssId,
+      isAuto: candidate => candidate.kind === CAPTION_KIND_ASR,
+      matchesPlayer: candidate => candidate.vssId === PLAYER_ACTIVE_CAPTION.vssId,
       globalIncludes: PANEL_OPTIONS.includeAiCaptions
     }))
   );
@@ -118,7 +121,7 @@ export function createDownloadOptionsState(props: () => DownloadOptionsProps) {
     }
 
     const isAutoDubbed = format.audioTrack.id.endsWith(AUTO_DUB_TRACK_SUFFIX);
-    return isAutoDubbed ? `${format.audioTrack.displayName} (auto-dubbed)` : format.audioTrack.displayName;
+    return isAutoDubbed ? `${format.audioTrack.displayName} ${AUTO_DUBBED_LABEL_SUFFIX}` : format.audioTrack.displayName;
   });
   const audioTracksToBundle = $derived.by(() => {
     const selected = props().selectedAudioFormat;
@@ -128,7 +131,7 @@ export function createDownloadOptionsState(props: () => DownloadOptionsProps) {
     }
 
     const selectedTrackId = selected.audioTrack?.id;
-    const isExtrasWithTrack = CONTENT_OPTIONS.downloadExtras && selectedTrackId;
+    const isExtrasWithTrack = PANEL_OPTIONS.downloadExtras && selectedTrackId;
     if (!isExtrasWithTrack) {
       return [selected];
     }
@@ -156,10 +159,18 @@ export function createDownloadOptionsState(props: () => DownloadOptionsProps) {
   });
   const selectedCaptionVssId = $derived(props().selectedCaptionTrack?.vssId ?? "");
 
+  function setDownloadExtras(value: boolean) {
+    PANEL_OPTIONS.downloadExtras = value;
+  }
+
   return {
     get includeAiCaptions() {
       return PANEL_OPTIONS.includeAiCaptions;
     },
+    get downloadExtras() {
+      return PANEL_OPTIONS.downloadExtras;
+    },
+    setDownloadExtras,
     get isAudio() {
       return isAudio;
     },

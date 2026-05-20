@@ -4,6 +4,7 @@
   import { attachIcon } from "@/lib/ui/polymer-utils";
   import { PanelTrackMode, YtIconName } from "@/types";
   import type { LabeledOption, TrackKind } from "@/types";
+  import type { Snippet } from "svelte";
 
   interface Props {
     kind: TrackKind;
@@ -16,11 +17,13 @@
     disabledModes?: readonly PanelTrackMode[];
     onmodechange: (mode: PanelTrackMode) => void;
     oncustomchange: (value: string) => void;
+    children?: Snippet;
   }
 
   const {
     kind, playerLabel, originalLabel, customOptions,
-    customValue, mode, disabled = false, disabledModes = [], onmodechange, oncustomchange
+    customValue, mode, disabled = false, disabledModes = [], onmodechange, oncustomchange,
+    children
   }: Props = $props();
 
   const state = createTrackChoiceState({
@@ -91,6 +94,7 @@
       value={customValue}
     />
   {/if}
+  {@render children?.()}
 </div>
 
 <style>

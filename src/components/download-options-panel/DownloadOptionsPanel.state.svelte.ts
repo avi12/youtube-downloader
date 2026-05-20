@@ -1,3 +1,4 @@
+import { PANEL_OPTIONS } from "./DownloadOptions.state.svelte";
 import { createDownloadStoreState } from "./DownloadOptionsPanel.download-state.svelte";
 import { createTrackStates } from "./DownloadOptionsPanel.tracks.svelte";
 import {
@@ -57,7 +58,8 @@ export function createPanelState(getVideoData: () => VideoData) {
       selectedVideoFormat,
       selectedAudioFormat,
       extension,
-      getVideoData
+      getVideoData,
+      downloadExtras: PANEL_OPTIONS.downloadExtras
     })
   );
   const isDownloadable = $derived(getVideoData().isDownloadable);
@@ -216,7 +218,7 @@ export function createPanelState(getVideoData: () => VideoData) {
       return IS_WATCH_PAGE;
     },
     get downloadExtras() {
-      return CONTENT_OPTIONS.downloadExtras;
+      return PANEL_OPTIONS.downloadExtras;
     },
     audio,
     caption,

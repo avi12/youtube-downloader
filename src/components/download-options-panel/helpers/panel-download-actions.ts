@@ -1,6 +1,7 @@
+import { PANEL_OPTIONS } from "../DownloadOptions.state.svelte";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
-import { CONTENT_OPTIONS, interruptedDownloadStore, downloadProgressStore } from "@/lib/ui/synced-stores.svelte";
+import { interruptedDownloadStore, downloadProgressStore } from "@/lib/ui/synced-stores.svelte";
 import { DownloadType, type AdaptiveFormatItem, type CaptionTrack, type VideoData } from "@/types";
 
 export { applyDownloadTypeChange } from "./panel-type-change";
@@ -16,9 +17,9 @@ export function buildStartDownloadParams(params: {
   fullFilename: string;
   videoData: VideoData;
 }) {
-  const cannotStart =
+  const isStartBlocked =
     params.isDownloading || !params.isDownloadable || !params.isFilenameValid || !params.selectedAudioFormat;
-  if (cannotStart) {
+  if (isStartBlocked) {
     return null;
   }
 
@@ -36,8 +37,8 @@ export function buildStartDownloadParams(params: {
     selectedCaptionVssId: params.selectedCaptionTrack?.vssId,
     filenameOutput: params.fullFilename,
     sabrConfig: params.videoData.sabrConfig,
-    downloadExtras: CONTENT_OPTIONS.downloadExtras,
-    includeAutoDubbing: CONTENT_OPTIONS.includeAutoDubbing
+    downloadExtras: PANEL_OPTIONS.downloadExtras,
+    includeAutoDubbing: PANEL_OPTIONS.includeAutoDubbing
   };
 }
 
