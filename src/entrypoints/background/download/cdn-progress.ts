@@ -30,27 +30,31 @@ export function createCdnProgressTracker({
       return;
     }
 
-    let completed = captionCount;
+    const mediaStages = totalStages - captionCount;
+    let mediaCompleted = 0;
     if (hasVideo) {
       const expected = videoTotalBytes || videoReceivedBytes;
       if (expected > 0) {
-        completed += Math.min(videoReceivedBytes / expected, 1);
+        mediaCompleted += Math.min(videoReceivedBytes / expected, 1);
       }
     }
 
     if (hasAudio) {
       const expected = audioTotalBytes || audioReceivedBytes;
       if (expected > 0) {
-        completed += Math.min(audioReceivedBytes / expected, 1);
+        mediaCompleted += Math.min(audioReceivedBytes / expected, 1);
       }
     }
 
     for (const [i, expected] of extraExpectedBytesArray.entries()) {
       const effectiveExpected = expected || extraReceivedBytesArray[i];
       if (effectiveExpected > 0) {
-        completed += Math.min(extraReceivedBytesArray[i] / effectiveExpected, 1);
+        mediaCompleted += Math.min(extraReceivedBytesArray[i] / effectiveExpected, 1);
       }
     }
+
+    const captionCompleted = mediaCompleted >= mediaStages ? captionCount : 0;
+    const completed = mediaCompleted + captionCompleted;
 
     void sendProgressUpdate({
       videoId,

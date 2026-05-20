@@ -38,22 +38,24 @@ export function createProgressAccumulator({
       return 0;
     }
 
-    let completed = captionCount;
+    const mediaStages = totalStages - captionCount;
+    let mediaCompleted = 0;
     if (!isAudioOnly && videoPartBytes > 0) {
-      completed += Math.min(videoReceivedBytes / videoPartBytes, 1);
+      mediaCompleted += Math.min(videoReceivedBytes / videoPartBytes, 1);
     }
 
     if (audioPartBytes > 0) {
-      completed += Math.min(audioReceivedBytes / audioPartBytes, 1);
+      mediaCompleted += Math.min(audioReceivedBytes / audioPartBytes, 1);
     }
 
     for (const [i, expected] of extraExpectedBytesArray.entries()) {
       if (expected > 0) {
-        completed += Math.min(extraReceivedBytesArray[i] / expected, 1);
+        mediaCompleted += Math.min(extraReceivedBytesArray[i] / expected, 1);
       }
     }
 
-    return Math.min(completed / totalStages, DOWNLOAD_PROGRESS_CAP);
+    const captionCompleted = mediaCompleted >= mediaStages ? captionCount : 0;
+    return Math.min((mediaCompleted + captionCompleted) / totalStages, DOWNLOAD_PROGRESS_CAP);
   }
 
   function sendUpdate() {
