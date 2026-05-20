@@ -62,16 +62,12 @@
   />
   <DownloadTracksSection
     audioOriginalLabel={derived.audioOriginalLabel}
-    audioPlayerLabel={derived.audioPlayerLabel}
     captionCustomOptions={derived.captionCustomOptions}
     captionOriginalLabel={derived.captionOriginalLabel}
-    captionPlayerLabel={derived.captionPlayerLabel}
     captionTracks={derived.filteredCaptionTracks}
     downloadExtraCaptions={derived.downloadExtraCaptions}
     downloadExtras={derived.downloadExtras}
     {downloadType}
-    hasExtrasToBundle={derived.hasExtrasToBundle}
-    includeAiCaptions={derived.includeAiCaptions}
     {isDownloading}
     {onaudiocustomchange}
     {onaudiomodechange}
@@ -108,9 +104,5 @@
 
   .ytdl-options-container > :global(*:not(:first-child)) {
     margin-top: 16px;
-  }
-
-  .ytdl-options-container > :global(.ytdl-tracks-section-host) {
-    margin-top: 0;
   }
 </style>

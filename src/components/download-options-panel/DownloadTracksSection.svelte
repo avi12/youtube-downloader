@@ -1,7 +1,9 @@
 <script lang="ts">
-  import { CAPTION_KIND_ASR } from "./helpers/audio-language-helpers";
-  import TrackChoice from "./TrackChoice.svelte";
-  import { DownloadType, PanelTrackMode, TrackKind } from "@/types";
+  import PolymerSelect from "../polymer-select/PolymerSelect.svelte";
+  import { PLAYER_ACTIVE_AUDIO, PLAYER_ACTIVE_CAPTION } from "./helpers/player-active-tracks.svelte";
+  import { onButtonClick } from "@/lib/messaging/cross-world-messenger";
+  import { attachTracksHeaderButton as attachTracksHeaderButtonUtil } from "@/lib/ui/panel-button-attachments.svelte";
+  import { DownloadType, PanelTrackMode } from "@/types";
   import type { CaptionTrack, LabeledOption } from "@/types";
 
   interface Props {
@@ -11,17 +13,13 @@
     isDownloading: boolean;
     downloadExtras: boolean;
     downloadExtraCaptions: boolean;
-    hasExtrasToBundle: boolean;
-    includeAiCaptions: boolean;
     panelAudioMode: PanelTrackMode;
     panelAudioCustomLanguage: string;
-    audioPlayerLabel: string | null;
     audioOriginalLabel: string | null;
     panelCaptionMode: PanelTrackMode;
     captionCustomOptions: LabeledOption[];
-    selectedCaptionVssId: string;
-    captionPlayerLabel: string | null;
     captionOriginalLabel: string | null;
+    selectedCaptionVssId: string;
     onaudiomodechange: (mode: PanelTrackMode) => void;
     onaudiocustomchange: (langCode: string) => void;
     oncaptionmodechange: (mode: PanelTrackMode) => void;
@@ -37,17 +35,13 @@
     isDownloading,
     downloadExtras,
     downloadExtraCaptions,
-    hasExtrasToBundle,
-    includeAiCaptions,
     panelAudioMode,
     panelAudioCustomLanguage,
-    audioPlayerLabel,
     audioOriginalLabel,
     panelCaptionMode,
     captionCustomOptions,
-    selectedCaptionVssId,
-    captionPlayerLabel,
     captionOriginalLabel,
+    selectedCaptionVssId,
     onaudiomodechange,
     onaudiocustomchange,
     oncaptionmodechange,
@@ -56,70 +50,198 @@
     ondownloadextracaptionschange
   }: Props = $props();
 
-  const SINGLE_CAPTION_DISABLED_MODES = [PanelTrackMode.MatchVideo, PanelTrackMode.Custom];
-  const ONLY_ASR_DISABLED_MODES = [PanelTrackMode.Original, PanelTrackMode.Custom];
+  const AUDIO_AUTO = "auto";
+  const CAPTION_AUTO = "auto";
+  const CAPTION_OFF = "off";
+  const TRACKS_HEADER_BUTTON_ID = "ytdl-tracks-header-btn";
+  const scopingClass = document.querySelector("[data-ytdl-download-group] yt-button-view-model, yt-button-view-model")?.getAttribute("class") ?? "";
 
-  const isOnlyAsrCaption = $derived(
-    captionTracks.length > 0
-    && captionTracks.every(track => track.kind === CAPTION_KIND_ASR)
-    && !includeAiCaptions
-  );
-  const isSingleCaption = $derived(captionTracks.length === 1 && !isOnlyAsrCaption);
-
-  const captionDisabledModes = $derived.by(() => {
-    if (isOnlyAsrCaption) {
-      return ONLY_ASR_DISABLED_MODES;
-    }
-
-    if (isSingleCaption) {
-      return SINGLE_CAPTION_DISABLED_MODES;
-    }
-
-    return [];
-  });
-  const captionForcedMode = $derived.by(() => {
-    if (isOnlyAsrCaption) {
-      return PanelTrackMode.MatchVideo;
-    }
-
-    if (isSingleCaption) {
-      return PanelTrackMode.Original;
-    }
-
-    return panelCaptionMode;
-  });
-
-  const isSingleTrackMode = $derived(
-    downloadType === DownloadType.Video || downloadType === DownloadType.Audio
-  );
-
+  const isAudioOnly = $derived(downloadType === DownloadType.Audio);
+  const isVideoOnly = $derived(downloadType === DownloadType.Video);
   const hasMultipleAudioTracks = $derived(uniqueAudioLanguages.length > 1);
   const hasCaptions = $derived(captionTracks.length > 0);
+  const isVisible = $derived(hasMultipleAudioTracks || (hasCaptions && !isVideoOnly && !isAudioOnly));
+
+  const originalAudioLangCode = $derived(
+    uniqueAudioLanguages.find(language => language.label === audioOriginalLabel)?.value ?? null
+  );
+
+  const playerAudioLabel = $derived(
+    uniqueAudioLanguages.find(language => language.value === PLAYER_ACTIVE_AUDIO.langCode)?.label ?? null
+  );
+
+  const playerCaptionLabel = $derived(
+    captionCustomOptions.find(option => option.value === PLAYER_ACTIVE_CAPTION.vssId)?.label ?? null
+  );
+
+  const audioSelectValue = $derived.by(() => {
+    if (panelAudioMode === PanelTrackMode.MatchVideo) {
+      return AUDIO_AUTO;
+    }
+
+    if (panelAudioMode === PanelTrackMode.Original) {
+      return originalAudioLangCode ?? AUDIO_AUTO;
+    }
+
+    return panelAudioCustomLanguage || AUDIO_AUTO;
+  });
+
+  const captionSelectValue = $derived.by(() => {
+    if (panelCaptionMode === PanelTrackMode.MatchVideo) {
+      return CAPTION_AUTO;
+    }
+
+    return selectedCaptionVssId || CAPTION_OFF;
+  });
+
+  const sortedAudioLanguages = $derived.by(() => {
+    const languages = [...uniqueAudioLanguages];
+    const originalIndex = languages.findIndex(language => language.value === originalAudioLangCode);
+    if (originalIndex > 0) {
+      const [originalLanguage] = languages.splice(originalIndex, 1);
+      languages.unshift(originalLanguage);
+    }
+
+    return languages;
+  });
+
+  const sortedCaptionCustomOptions = $derived.by(() => {
+    const options = [...captionCustomOptions];
+    const originalIndex = options.findIndex(option => option.label === captionOriginalLabel);
+    if (originalIndex > 0) {
+      const [originalOption] = options.splice(originalIndex, 1);
+      options.unshift(originalOption);
+    }
+
+    return options;
+  });
+
+  const audioOptions = $derived([
+    {
+      value: AUDIO_AUTO,
+      label: playerAudioLabel ? `Auto · ${playerAudioLabel}` : "Auto · match player track"
+    },
+    ...sortedAudioLanguages.map(language => ({
+      value: language.value,
+      label: language.value === originalAudioLangCode ? `${language.label} · Original` : language.label
+    }))
+  ]);
+
+  const captionOptions = $derived([
+    {
+      value: CAPTION_AUTO,
+      label: playerCaptionLabel ? `Auto · ${playerCaptionLabel}` : "Auto · match player track"
+    },
+    {
+      value: CAPTION_OFF,
+      label: "No captions"
+    },
+    ...sortedCaptionCustomOptions
+  ]);
+
+  const audioSummaryText = $derived.by(() => {
+    if (!hasMultipleAudioTracks) {
+      return null;
+    }
+
+    if (audioSelectValue === AUDIO_AUTO) {
+      return "Audio: matches player";
+    }
+
+    const label = uniqueAudioLanguages.find(language => language.value === audioSelectValue)?.label;
+    return label ? `Audio: ${label}` : null;
+  });
+
+  const captionSummaryText = $derived.by(() => {
+    if (isAudioOnly || isVideoOnly || !hasCaptions) {
+      return null;
+    }
+
+    if (captionSelectValue === CAPTION_AUTO) {
+      return "Captions: matches player";
+    }
+
+    if (captionSelectValue === CAPTION_OFF) {
+      return "No captions";
+    }
+
+    const label = captionCustomOptions.find(option => option.value === captionSelectValue)?.label;
+    return label ? `Captions: ${label}` : null;
+  });
+
+  const summaryMeta = $derived([audioSummaryText, captionSummaryText].filter(Boolean).join("  ·  "));
+
+  let isOpen = $state(false);
+
+  $effect(() => onButtonClick(buttonId => {
+    if (buttonId === TRACKS_HEADER_BUTTON_ID) {
+      isOpen = !isOpen;
+    }
+  }));
+
+  function attachTracksHeaderButton(elButton: Element): void {
+    attachTracksHeaderButtonUtil({
+      elButton,
+      getIsOpen: () => isOpen,
+      getIsDownloading: () => isDownloading,
+      getIsAudioOnly: () => isAudioOnly,
+      getSummaryMeta: () => summaryMeta
+    });
+  }
+
+  function handleAudioChange(value: string): void {
+    if (value === AUDIO_AUTO) {
+      onaudiomodechange(PanelTrackMode.MatchVideo);
+      return;
+    }
+
+    onaudiomodechange(PanelTrackMode.Custom);
+    onaudiocustomchange(value);
+  }
+
+  function handleCaptionChange(value: string): void {
+    if (value === CAPTION_AUTO) {
+      oncaptionmodechange(PanelTrackMode.MatchVideo);
+      return;
+    }
+
+    if (value === CAPTION_OFF) {
+      oncaptionmodechange(PanelTrackMode.Custom);
+      oncaptionchange("");
+      return;
+    }
+
+    oncaptionmodechange(PanelTrackMode.Custom);
+    oncaptionchange(value);
+  }
 </script>
 
-<div
-  class="ytdl-tracks-section-host"
-  class:is-open={hasMultipleAudioTracks || (hasCaptions && !isSingleTrackMode)}
->
-  <div class="ytdl-section ytdl-tracks-section">
-    <span class="ytdl-section-label">Tracks</span>
-    <div class="ytdl-collapse-row" class:is-open={hasMultipleAudioTracks}>
-      <div class="ytdl-collapse-row-inner">
-        <TrackChoice
-          customOptions={uniqueAudioLanguages}
-          customValue={panelAudioCustomLanguage}
-          disabled={isDownloading}
-          kind={TrackKind.Audio}
-          mode={panelAudioMode}
-          oncustomchange={onaudiocustomchange}
-          onmodechange={onaudiomodechange}
-          originalLabel={audioOriginalLabel}
-          playerLabel={audioPlayerLabel}
-        >
-          {#if !isSingleTrackMode}
-            <div class="ytdl-toggle-row">
+<div class="ytdl-tracks-section-host" class:is-open={isVisible}>
+  <div class="ytdl-tracks-wrapper">
+    <yt-button-view-model
+      class={scopingClass}
+      {@attach attachTracksHeaderButton}
+      aria-expanded={isOpen}
+      data-ytdl-button-id={TRACKS_HEADER_BUTTON_ID}
+      role="button"
+      tabindex={isDownloading ? undefined : 0}
+    ></yt-button-view-model>
+
+    <div class="ytdl-tracks-body" class:is-open={isOpen}>
+      <div class="ytdl-tracks-body-inner">
+        {#if hasMultipleAudioTracks}
+          <div class="ytdl-track-field">
+            <PolymerSelect
+              id="tracks-audio-select"
+              disabled={isDownloading}
+              label="Audio language"
+              onchange={handleAudioChange}
+              options={audioOptions}
+              value={audioSelectValue}
+            />
+            {#if !isAudioOnly}
               <tp-yt-paper-toggle-button
-                aria-label="Bundle additional audio tracks"
+                aria-label="Include all audio languages"
                 checked={downloadExtras ? "" : undefined}
                 disabled={isDownloading ? "" : undefined}
                 onchange={e => {
@@ -127,40 +249,35 @@
                     ondownloadextraschange(e.target.hasAttribute("checked"));
                   }
                 }}
-              >Bundle additional audio tracks</tp-yt-paper-toggle-button>
-              {#if downloadExtras && hasExtrasToBundle}
-                <span class="ytdl-extras-note">Selected track is the default - all others are bundled as extras</span>
-              {/if}
-            </div>
-          {/if}
-        </TrackChoice>
-      </div>
-    </div>
-    <div class="ytdl-collapse-row" class:is-open={hasCaptions && !isSingleTrackMode}>
-      <div class="ytdl-collapse-row-inner">
-        <TrackChoice
-          customOptions={captionCustomOptions}
-          customValue={selectedCaptionVssId}
-          disabled={isDownloading}
-          disabledModes={captionDisabledModes}
-          kind={TrackKind.Captions}
-          mode={captionForcedMode}
-          oncustomchange={oncaptionchange}
-          onmodechange={oncaptionmodechange}
-          originalLabel={captionOriginalLabel}
-          playerLabel={captionPlayerLabel}
-        >
-          <tp-yt-paper-toggle-button
-            aria-label="Bundle captions"
-            checked={downloadExtraCaptions ? "" : undefined}
-            disabled={isDownloading ? "" : undefined}
-            onchange={e => {
-              if (e.target instanceof HTMLElement) {
-                ondownloadextracaptionschange(e.target.hasAttribute("checked"));
-              }
-            }}
-          >Bundle captions</tp-yt-paper-toggle-button>
-        </TrackChoice>
+              >Include all audio languages</tp-yt-paper-toggle-button>
+            {/if}
+          </div>
+        {/if}
+
+        {#if hasCaptions && !isAudioOnly && !isVideoOnly}
+          <div class="ytdl-track-field">
+            <PolymerSelect
+              id="tracks-caption-select"
+              disabled={isDownloading}
+              label="Captions"
+              onchange={handleCaptionChange}
+              options={captionOptions}
+              value={captionSelectValue}
+            />
+            {#if captionSelectValue !== CAPTION_OFF}
+              <tp-yt-paper-toggle-button
+                aria-label="Include all caption languages"
+                checked={downloadExtraCaptions ? "" : undefined}
+                disabled={isDownloading ? "" : undefined}
+                onchange={e => {
+                  if (e.target instanceof HTMLElement) {
+                    ondownloadextracaptionschange(e.target.hasAttribute("checked"));
+                  }
+                }}
+              >Include all caption languages</tp-yt-paper-toggle-button>
+            {/if}
+          </div>
+        {/if}
       </div>
     </div>
   </div>
@@ -178,50 +295,40 @@
     }
   }
 
-  .ytdl-tracks-section {
-    gap: 0;
+  .ytdl-tracks-wrapper {
     overflow: hidden;
-    box-sizing: border-box;
     min-height: 0;
     padding-top: 16px;
-
-    & > :global(*:not(:first-child)) {
-      margin-top: 8px;
-    }
   }
 
-  .ytdl-collapse-row {
+  .ytdl-tracks-body {
     display: grid;
     grid-template-rows: minmax(0, 0fr);
-    transition: grid-template-rows 300ms cubic-bezier(0.33, 1, 0.68, 1);
+    overflow: hidden;
+    transition: grid-template-rows 220ms ease;
 
     &.is-open {
       grid-template-rows: minmax(0, 1fr);
+      border: 1px solid var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 10%));
+      border-top: none;
+      border-bottom-right-radius: 10px;
+      border-bottom-left-radius: 10px;
     }
   }
 
-  .ytdl-tracks-section > .ytdl-collapse-row {
-    margin-top: 0;
+  .ytdl-tracks-body-inner {
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+    overflow: hidden;
+    min-height: 0;
+    padding: 14px;
   }
 
-  .ytdl-collapse-row-inner {
+  .ytdl-track-field {
     display: flex;
     flex-direction: column;
     gap: 8px;
-    overflow: hidden;
-    min-height: 0;
-    padding-top: 8px;
-  }
-
-  .ytdl-toggle-row {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-  }
-
-  .ytdl-extras-note {
-    color: var(--yt-sys-color-baseline--text-secondary, #606060);
-    font-size: 1.2rem;
   }
 
   :global(tp-yt-paper-toggle-button) {
