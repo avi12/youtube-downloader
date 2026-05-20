@@ -33,7 +33,9 @@ export function triggerDownload({ videoData, videoId, gridTitle, setLocallyDone 
     videoId,
     videoItag: videoData.videoFormats[0]?.itag ?? 0,
     audioItag: videoData.audioFormats[0]?.itag ?? 0,
-    filenameOutput
+    filenameOutput,
+    downloadExtras: options.downloadExtras,
+    includeAutoDubbing: options.includeAutoDubbing
   });
 }
 

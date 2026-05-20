@@ -1,6 +1,6 @@
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
-import { interruptedDownloadStore, downloadProgressStore } from "@/lib/ui/synced-stores.svelte";
+import { CONTENT_OPTIONS, interruptedDownloadStore, downloadProgressStore } from "@/lib/ui/synced-stores.svelte";
 import { DownloadType, type AdaptiveFormatItem, type CaptionTrack, type VideoData } from "@/types";
 
 export { applyDownloadTypeChange } from "./panel-type-change";
@@ -34,7 +34,9 @@ export function buildStartDownloadParams(params: {
     audioTrackId: params.selectedAudioFormat!.audioTrack?.id,
     selectedCaptionVssId: params.selectedCaptionTrack?.vssId,
     filenameOutput: params.fullFilename,
-    sabrConfig: params.videoData.sabrConfig
+    sabrConfig: params.videoData.sabrConfig,
+    downloadExtras: CONTENT_OPTIONS.downloadExtras,
+    includeAutoDubbing: CONTENT_OPTIONS.includeAutoDubbing
   };
 }
 

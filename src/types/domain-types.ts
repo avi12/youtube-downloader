@@ -11,6 +11,8 @@ export type DownloadRequest = {
   selectedCaptionVssId?: string;
   filenameOutput: string;
   sabrConfig?: SabrConfig | null;
+  downloadExtras?: boolean;
+  includeAutoDubbing?: boolean;
   isIframeFallback?: boolean;
   playlistId?: string;
   playlistTitle?: string;

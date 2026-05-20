@@ -8,7 +8,6 @@ import {
 import { buildEnrichedRequest, fetchCaptionWebVttData } from "./download-request-builder";
 import { generatePoTokenIfNeeded, videoDataCache } from "./video-data";
 import { crossWorldMessenger, CrossWorldMessage } from "@/lib/messaging/cross-world-messenger";
-import { CONTENT_OPTIONS } from "@/lib/ui/synced-stores.svelte";
 import { getCompatibleFilename, splitFilenameAndExtension } from "@/lib/utils/filename";
 import { isVideoDataExpired } from "@/lib/youtube/video-helpers";
 import type { DownloadRequest } from "@/types";
@@ -46,6 +45,7 @@ async function tryProgressiveInPage({ url, filenameOutput, videoId }: TryProgres
 export type DownloadParams = Pick<DownloadRequest,
   "type" | "videoId" | "videoItag" | "audioItag" | "audioTrackId" |
   "selectedCaptionVssId" | "filenameOutput" | "isIframeFallback" |
+  "downloadExtras" | "includeAutoDubbing" |
   "playlistId" | "playlistTitle" | "playlistTotalCount"
 >;
 
@@ -76,11 +76,12 @@ export async function resolveAndDispatch({ params, abortSignal }: ResolveAndDisp
     return;
   }
 
-  const options = CONTENT_OPTIONS;
+  const downloadExtras = params.downloadExtras ?? true;
+  const includeAutoDubbing = params.includeAutoDubbing ?? true;
   const orderedCaptionTracks = resolveOrderedCaptionTracks({
     captionTracks: cachedVideoData.captionTracks,
     selectedCaptionVssId,
-    downloadExtras: options.downloadExtras
+    downloadExtras
   });
   const captionVttDataPromise = fetchCaptionWebVttData({
     captionTracks: orderedCaptionTracks,
@@ -93,12 +94,12 @@ export async function resolveAndDispatch({ params, abortSignal }: ResolveAndDisp
     audioItag,
     audioTrackId
   });
-  const extraAudioFormats = options.downloadExtras
+  const extraAudioFormats = downloadExtras
     ? getExtraAudioFormats({
       audioFormats: cachedVideoData.audioFormats,
       selectedTrackId: audioFormat?.audioTrack?.id,
       selectedFormat: audioFormat,
-      includeAutoDubbing: options.includeAutoDubbing
+      includeAutoDubbing
     })
     : [];
 
