@@ -55,7 +55,8 @@ export default defineContentScript({
   world: "MAIN",
   allFrames: true,
   async main() {
-    if (self !== top && !location.search.includes(YTDL_IFRAME_QUERY_PARAM)) {
+    const isUnrelatedIframe = self !== top && !location.search.includes(YTDL_IFRAME_QUERY_PARAM);
+    if (isUnrelatedIframe) {
       return;
     }
 

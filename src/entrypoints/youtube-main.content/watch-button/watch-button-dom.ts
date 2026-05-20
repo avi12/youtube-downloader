@@ -32,8 +32,9 @@ export function injectWatchButtonStyles() {
 export function findNativeDownloadButton(elActionsContainer: HTMLElement) {
   const elButtons = elActionsContainer.querySelectorAll<import("@/types").YtButtonViewModelElement>(YT_BUTTON_VIEW_MODEL_TAG);
   for (const elButton of elButtons) {
-    const isDownload = elButton.data?.iconName?.includes(NATIVE_DOWNLOAD_ICON_KEYWORD)
-      || (elButton.querySelector(INNER_BUTTON_TAG)?.getAttribute(ATTR_ARIA_LABEL) ?? "").toLowerCase().includes(NATIVE_DOWNLOAD_ARIA_KEYWORD);
+    const hasDownloadIcon = elButton.data?.iconName?.includes(NATIVE_DOWNLOAD_ICON_KEYWORD);
+    const hasDownloadAriaLabel = (elButton.querySelector(INNER_BUTTON_TAG)?.getAttribute(ATTR_ARIA_LABEL) ?? "").toLowerCase().includes(NATIVE_DOWNLOAD_ARIA_KEYWORD);
+    const isDownload = hasDownloadIcon || hasDownloadAriaLabel;
     if (!isDownload) {
       continue;
     }

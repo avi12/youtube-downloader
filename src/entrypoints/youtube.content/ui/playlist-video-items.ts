@@ -113,7 +113,8 @@ export function handlePlaylistVideoAdditions(context: InstanceType<typeof Conten
       }
 
       for (const node of mutation.removedNodes) {
-        if (!(node instanceof Element) || !node.hasAttribute(ATTR_YTDL_ITEM)) {
+        const isSkippableNode = !(node instanceof Element) || !node.hasAttribute(ATTR_YTDL_ITEM);
+        if (isSkippableNode) {
           continue;
         }
 

@@ -40,9 +40,6 @@ export function handleProgressUpdate({ data, videoId, handlers }: HandleProgress
     handlers.setLastProgressReported("");
   }
 
-  // `isSaved` is the terminal event after the file is on disk. It shares
-  // (progress=1, progressType=FFmpeg) with the muxing-complete update that
-  // arrives ~1s earlier, so include it in the dedup key to keep both through.
   const reportedKey = data.isRemoved
     ? ""
     : `${data.progress}|${data.progressType}|${data.isSaved ? "saved" : ""}`;
@@ -76,10 +73,6 @@ export function handleProgressUpdate({ data, videoId, handlers }: HandleProgress
   );
   handlers.setDownloadProgressType(data.progressType);
 
-  // `isSaved` is dispatched after `browser.downloads.download` resolves AND
-  // `chrome.downloads` reports state=complete. FFmpeg phase finishing at
-  // progress=1 used to flip us to done, but that fires ~1s before the file is
-  // actually on disk; if the save fails, the UI would silently lie.
   if (data.isSaved) {
     handlers.setIsDone(true);
     handlers.setIsDownloading(false);

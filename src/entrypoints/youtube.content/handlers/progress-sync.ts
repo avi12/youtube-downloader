@@ -3,9 +3,6 @@ import { statusProgressItem } from "@/lib/storage/storage";
 import { downloadProgressStore } from "@/lib/ui/synced-stores.svelte";
 import { ProgressType } from "@/types";
 
-// Downloads only reach storage once the FFmpeg phase begins. A video that is
-// isDownloading but has never appeared in storage is still in the fetch phase —
-// not an orphan - so the orphan check must be gated on prior storage presence.
 const committedToStorageIds = new Set<string>();
 
 function markCommitted(videoId: string) {

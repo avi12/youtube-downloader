@@ -30,7 +30,8 @@ export async function buildVideoMetadata(videoId: string) {
   const { playerResponse } = cached;
   const { videoDetails, microformat } = playerResponse;
   const thumbnails = videoDetails?.thumbnail?.thumbnails ?? [];
-  const thumbnailUrl = thumbnails.length > 0 ? thumbnails[thumbnails.length - 1].url : undefined;
+  const hasThumbnails = thumbnails.length > 0;
+  const thumbnailUrl = hasThumbnails ? thumbnails[thumbnails.length - 1].url : undefined;
 
   const renderer = microformat?.playerMicroformatRenderer;
   const description = videoDetails?.shortDescription ?? "";
@@ -45,13 +46,14 @@ export async function buildVideoMetadata(videoId: string) {
 
   const artist = descriptionMeta.artist || titleMeta.fullArtist || videoDetails?.author || "";
   const albumArtist = descriptionMeta.mainArtist || titleMeta.mainArtist || undefined;
+  const hasGenres = genres.length > 0;
 
   return {
     title: descriptionMeta.songTitle || titleMeta.songTitle,
     artist,
     albumArtist: albumArtist !== artist ? albumArtist : undefined,
     album: descriptionMeta.album,
-    genres: genres.length > 0 ? genres : undefined,
+    genres: hasGenres ? genres : undefined,
     date: renderer?.publishDate,
     thumbnailUrl,
     isMusic: cached.isMusic

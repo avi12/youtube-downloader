@@ -44,9 +44,10 @@ export function buildDownloadData(state: ButtonViewState) {
 export function buildChevronData(state: ButtonViewState) {
   const { isDownloadable, isPanelBelow, isPanelOpen } = state;
   const isDisabled = !isDownloadable;
+  const isPanelOpenAbove = isPanelOpen && !isPanelBelow;
 
   return {
-    iconName: isPanelOpen && !isPanelBelow ? IconName.ExpandLess : IconName.ExpandMore,
+    iconName: isPanelOpenAbove ? IconName.ExpandLess : IconName.ExpandMore,
     title: "",
     accessibilityText: isPanelOpen ? "Close download options" : "Open download options",
     style: ButtonStyle.Mono,

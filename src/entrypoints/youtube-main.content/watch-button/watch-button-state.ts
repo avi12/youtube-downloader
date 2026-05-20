@@ -54,8 +54,11 @@ export function buildInitialDownloadState(videoData: VideoData) {
     });
 
     const selectedTrackId = preferredAudio?.audioTrack?.id;
-    const hasExtraAudioTracks = !!selectedTrackId &&
-      videoData.audioFormats.some(format => format.audioTrack?.id && format.audioTrack.id !== selectedTrackId);
+    const hasSelectedTrack = !!selectedTrackId;
+    const hasOtherAudioTracks = videoData.audioFormats.some(
+      format => format.audioTrack?.id && format.audioTrack.id !== selectedTrackId
+    );
+    const hasExtraAudioTracks = hasSelectedTrack && hasOtherAudioTracks;
     if (hasExtraAudioTracks) {
       const isKnownContainer = extension in CONTAINER_SPECS;
       extension = isKnownContainer && !MULTI_TRACK_UNSUPPORTED_EXTENSIONS.has(extension) ? extension : MKV_EXTENSION;

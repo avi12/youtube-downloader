@@ -57,8 +57,6 @@ export async function handleNavigateSuccess() {
     return;
   }
 
-  // YouTube updates ytd-watch-flexy.playerData asynchronously after
-  // navigation. Poll briefly until it matches the current video ID.
   const expectedVideoId = new URLSearchParams(location.search).get(WATCH_VIDEO_ID_PARAM);
 
   for (let attempt = 0; attempt < PLAYER_DATA_POLL_ATTEMPTS; attempt++) {

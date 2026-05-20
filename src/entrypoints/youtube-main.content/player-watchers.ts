@@ -21,8 +21,6 @@ function isAdPlaying(player: MoviePlayerElement | null) {
   return !!player && AD_PLAYER_CLASSES.some(adClass => player.classList.contains(adClass));
 }
 
-// A real YouTube audio track id looks like "en-US.4" or "hi.10"; the player
-// also exposes opaque ids ("251;ChQK...") and "und" that must be ignored.
 function isAudioTrackId(value: string) {
   return AUDIO_TRACK_ID_PATTERN.test(value);
 }
@@ -66,9 +64,8 @@ export function setupAudioTrackWatcher() {
   let lastTrackId: string | null = null;
   function reportTrack(trackId: string) {
     const isNewValidTrack = isAudioTrackId(trackId) && trackId !== lastTrackId;
-    // The player exposes the upcoming content track even while an ad runs, but
-    // the user has no access to the tracks yet - so hold off until the ad ends.
-    if (!isNewValidTrack || isAdPlaying(player)) {
+    const shouldSkipTrack = !isNewValidTrack || isAdPlaying(player);
+    if (shouldSkipTrack) {
       return;
     }
 
@@ -85,9 +82,6 @@ export function setupAudioTrackWatcher() {
     });
   }
 
-  // internalaudioformatchange never fires for the first content playback, so
-  // read the active track straight from the player whenever playback starts
-  // and whenever the player's class changes (which is how ads end).
   function syncAudioFromPlayer() {
     const trackId = readActiveAudioTrackId(player);
     if (trackId) {

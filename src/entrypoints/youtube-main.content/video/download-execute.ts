@@ -118,10 +118,6 @@ export async function resolveAndDispatch({ params, abortSignal }: ResolveAndDisp
 
   const sabrUrl = credentials.sabrUrl ?? null;
 
-  // No adaptive CDN URLs but a progressive URL available: fetch directly in this
-  // main-world context where YouTube cookies flow to googlevideo.com without
-  // third-party restrictions. Works from the top-frame playlist/watch page and
-  // from the iframe fallback context.
   const canTryProgressiveInPage = !resolvedVideoUrl
     && !resolvedAudioUrl
     && !!cachedVideoData.progressiveUrl;

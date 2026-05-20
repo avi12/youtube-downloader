@@ -11,7 +11,6 @@ export function byQualityDesc(formatA: AdaptiveFormatItem, formatB: AdaptiveForm
 
 export function getUniqueVideoFormats(formats: AdaptiveFormatItem[]) {
   const videoFormats = formats.filter(format => format.mimeType.startsWith(MIME_PREFIX_VIDEO));
-  // Dedup by height + premium status so standard and enhanced bitrate variants are distinct.
   const seen = new Set<string>();
 
   return videoFormats.filter(format => {
@@ -32,8 +31,6 @@ export function getUniqueVideoFormats(formats: AdaptiveFormatItem[]) {
 
 export function getAudioFormats(formats: AdaptiveFormatItem[]) {
   const audioFormats = formats.filter(format => format.mimeType.startsWith(MIME_PREFIX_AUDIO));
-  // Dedup by itag + audioTrack.id so different language tracks with the same itag
-  // (e.g. original + dubbed) are preserved.
   const seenKeys = new Set<string>();
   return audioFormats.filter(format => {
     const key = `${format.itag}:${format.audioTrack?.id ?? ""}`;

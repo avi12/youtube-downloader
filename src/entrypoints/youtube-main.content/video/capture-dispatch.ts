@@ -61,7 +61,10 @@ export async function buildAndDispatchVideoData({ playerResponse }: {
     playerResponse,
     clientVersion,
     clientName
-  });  if (self === top && location.pathname === WATCH_PATHNAME) {
+  });
+
+  const isTopFrameOnWatchPage = self === top && location.pathname === WATCH_PATHNAME;
+  if (isTopFrameOnWatchPage) {
     const initialDataTitle = readInitialDataTitle(videoData.videoId);
     if (initialDataTitle) {
       videoData.title = initialDataTitle;

@@ -26,8 +26,6 @@ export default defineContentScript({
     }
 
     if (isDownloadIframe) {
-      // Register handlers before any await: MAIN world fires IframePlayerReady synchronously
-      // at document_idle and we must not miss it with an async storage read in the way
       registerCrossWorldHandlers({
         isDownloadIframe,
         context

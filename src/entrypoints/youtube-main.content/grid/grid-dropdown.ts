@@ -52,7 +52,6 @@ function createGridDropdown({ contentId, positionTargetSelector }: CreateGridDro
   resizeObserver.observe(elDropdownContentSlot);
   gridDropdowns.set(contentId, elDropdown);
 
-  // Opening after a frame lets Polymer finish initialization.
   void crossWorldMessenger.sendMessage(CrossWorldMessage.DropdownReady, { contentId });
   requestAnimationFrame(() => elDropdown.open());
 }
