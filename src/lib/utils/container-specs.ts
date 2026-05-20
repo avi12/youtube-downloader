@@ -24,6 +24,8 @@ interface ContainerSpec {
   subtitleCodec?: string;
 }
 
+export const MULTI_TRACK_UNSUPPORTED_EXTENSIONS = new Set(["avi"]);
+
 export const CONTAINER_SPECS: Record<string, ContainerSpec> = {
   webm: {
     videoCodecs: new Set([CODEC_VP8, CODEC_VP9, CODEC_AV01]),

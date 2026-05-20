@@ -1,9 +1,15 @@
 import { CONTENT_OPTIONS, interruptedDownloadStore } from "@/lib/ui/synced-stores.svelte";
-import { getCompatibleFilename, getOutputExtension, resolveAutoExtension } from "@/lib/utils/containers";
+import {
+  CONTAINER_SPECS,
+  MULTI_TRACK_UNSUPPORTED_EXTENSIONS,
+  getCompatibleFilename,
+  getOutputExtension,
+  resolveAutoExtension
+} from "@/lib/utils/containers";
 import { selectPreferredAudioFormat } from "@/lib/youtube/video-helpers";
 import { DownloadType, type VideoData } from "@/types";
 
-const MULTI_AUDIO_TRACK_EXTENSION = "mkv";
+const MKV_EXTENSION = "mkv";
 const DEFAULT_VIDEO_MIME_TYPE = "video/mp4";
 const DEFAULT_AUDIO_MIME_TYPE = "audio/mp4";
 
@@ -51,7 +57,8 @@ export function buildInitialDownloadState(videoData: VideoData) {
     const hasExtraAudioTracks = !!selectedTrackId &&
       videoData.audioFormats.some(format => format.audioTrack?.id && format.audioTrack.id !== selectedTrackId);
     if (hasExtraAudioTracks) {
-      extension = MULTI_AUDIO_TRACK_EXTENSION;
+      const isKnownContainer = extension in CONTAINER_SPECS;
+      extension = isKnownContainer && !MULTI_TRACK_UNSUPPORTED_EXTENSIONS.has(extension) ? extension : MKV_EXTENSION;
     }
   }
 

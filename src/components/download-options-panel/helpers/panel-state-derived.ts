@@ -1,11 +1,16 @@
 import { AUTO_DUB_TRACK_SUFFIX } from "./audio-language-helpers";
 import { PrimaryButtonState } from "@/lib/ui/panel-button-attachments.svelte";
 import { CONTENT_OPTIONS } from "@/lib/ui/synced-stores.svelte";
-import { getOutputExtension } from "@/lib/utils/containers";
+import { CONTAINER_SPECS, MULTI_TRACK_UNSUPPORTED_EXTENSIONS, getOutputExtension } from "@/lib/utils/containers";
 import { formatAudioCodecLabel, formatVideoQualityLabel } from "@/lib/youtube/video-helpers";
 import { DownloadType, type AdaptiveFormatItem, type VideoData } from "@/types";
 
 const MKV_EXTENSION = "mkv";
+
+function resolveMultiTrackExtension(baseExtension: string) {
+  const isKnownContainer = baseExtension in CONTAINER_SPECS;
+  return isKnownContainer && !MULTI_TRACK_UNSUPPORTED_EXTENSIONS.has(baseExtension) ? baseExtension : MKV_EXTENSION;
+}
 
 export function resolveActualExtension({
   downloadType,
@@ -43,7 +48,7 @@ export function resolveActualExtension({
           && (CONTENT_OPTIONS.includeAutoDubbing || !trackId.endsWith(AUTO_DUB_TRACK_SUFFIX));
       });
     if (hasExtraAudioTracks) {
-      return MKV_EXTENSION;
+      return resolveMultiTrackExtension(baseExtension);
     }
   }
 
