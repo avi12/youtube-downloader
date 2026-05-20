@@ -42,29 +42,6 @@
     onvalidationchange(isFilenameValid);
   });
 
-  function observeFormatList(elList: Element): () => void {
-    for (const child of elList.children) {
-      if (child instanceof HTMLElement) {
-        child.classList.add("ytdl-visible");
-      }
-    }
-
-    const observer = new MutationObserver(mutations => {
-      for (const mutation of mutations) {
-        for (const node of mutation.addedNodes) {
-          if (!(node instanceof HTMLElement)) {
-            continue;
-          }
-
-          node.getBoundingClientRect();
-
-        }
-      }
-    });
-    observer.observe(elList, { childList: true });
-    return () => observer.disconnect();
-  }
-
   function applyPolymerTheme(elTarget: Element): void {
     const elInput = elTarget.querySelector("input");
     if (elInput) {
@@ -107,7 +84,7 @@
     <div class="ytdl-filename-error-inner">
       <p class="ytdl-filename-error-text">{filenameValidationError}</p>
       <div class="ytdl-format-list-block" class:ytdl-open={isExtensionError}>
-        <ul class="ytdl-format-list" {@attach observeFormatList} role="list">
+        <ul class="ytdl-format-list" role="list">
           {#each formatItems as { ext, desc, isExcluded } (ext)}
             <li class="ytdl-format-item" class:ytdl-excluded={isExcluded}>
               <div class="ytdl-format-item-inner">
@@ -178,13 +155,13 @@
           font-size: 1.2rem;
 
           .ytdl-format-item {
-            display: grid;
-            grid-template-rows: 0fr;
-            transition: grid-template-rows 250ms ease;
-
-            &:global(.ytdl-visible) {
-              grid-template-rows: 1fr;
+            @starting-style {
+              grid-template-rows: 0fr;
             }
+
+            display: grid;
+            grid-template-rows: 1fr;
+            transition: grid-template-rows 250ms ease;
 
             &:global(.ytdl-excluded) {
               grid-template-rows: 0fr;
