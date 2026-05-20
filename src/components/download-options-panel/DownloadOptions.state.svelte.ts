@@ -38,6 +38,7 @@ export interface DownloadOptionsProps {
 let includeAiCaptionsLocal = $state<boolean | null>(null);
 let includeAutoDubbingLocal = $state<boolean | null>(null);
 let downloadExtrasLocal = $state<boolean | null>(null);
+let downloadExtraCaptionsLocal = $state(CONTENT_OPTIONS.downloadExtras);
 
 export const PANEL_OPTIONS = {
   get includeAiCaptions() {
@@ -58,7 +59,12 @@ export const PANEL_OPTIONS = {
   set downloadExtras(value: boolean) {
     downloadExtrasLocal = value;
   },
-  downloadExtraCaptions: $state(CONTENT_OPTIONS.downloadExtras)
+  get downloadExtraCaptions() {
+    return downloadExtraCaptionsLocal;
+  },
+  set downloadExtraCaptions(value: boolean) {
+    downloadExtraCaptionsLocal = value;
+  }
 };
 
 optionsItem.watch(next => {
