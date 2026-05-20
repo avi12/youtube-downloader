@@ -86,6 +86,12 @@
   font-size: 0.6875rem;
 }
 
+.settings-warning {
+  margin-top: 8px;
+  color: var(--warning, #b45309);
+  font-size: 0.6875rem;
+}
+
 .settings-option-description {
   display: block;
   color: var(--fg-muted);

@@ -18,7 +18,7 @@
 </script>
 
 <div class="settings-container">
-  <FormatSettings {options} />
+  <FormatSettings {options} slideDuration={SLIDE_DURATION} />
   <DownloadTypeSettings {options} />
   <VideoQualitySettings {options} slideDuration={SLIDE_DURATION} />
   <PlaylistSettings {options} />

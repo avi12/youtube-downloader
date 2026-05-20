@@ -4,34 +4,22 @@
   import type { SlidingSettingsProps } from "./settings-types";
   import SettingsGroup from "./SettingsGroup.svelte";
   import { setOption } from "@/lib/storage/storage";
+  import { AUTO_EXTENSION, MULTI_TRACK_UNSUPPORTED_EXTENSIONS } from "@/lib/utils/containers";
 
   const { options, slideDuration }: SlidingSettingsProps = $props();
 
-  function handleDownloadExtrasChange(e: Event): void {
-    if (e.target instanceof HTMLInputElement) {
-      void setOption({
-        key: "downloadExtras",
-        value: e.target.checked
-      });
+  async function switchVideoFormatIfUnsupported(isEnabled: boolean): Promise<void> {
+    if (!isEnabled || !MULTI_TRACK_UNSUPPORTED_EXTENSIONS.has(options.ext.video)) {
+      return;
     }
-  }
 
-  function handleIncludeAutoDubbingChange(e: Event): void {
-    if (e.target instanceof HTMLInputElement) {
-      void setOption({
-        key: "includeAutoDubbing",
-        value: e.target.checked
-      });
-    }
-  }
-
-  function handleIncludeAiCaptionsChange(e: Event): void {
-    if (e.target instanceof HTMLInputElement) {
-      void setOption({
-        key: "includeAiCaptions",
-        value: e.target.checked
-      });
-    }
+    await setOption({
+      key: "ext",
+      value: {
+        ...options.ext,
+        video: AUTO_EXTENSION
+      }
+    });
   }
 </script>
 
@@ -41,7 +29,17 @@
     <span class="settings-switch" aria-label="Download additional audio tracks and captions">
       <input
         checked={options.downloadExtras}
-        onchange={handleDownloadExtrasChange}
+        onchange={async e => {
+          if (!(e.target instanceof HTMLInputElement)) {
+            return;
+          }
+
+          await setOption({
+            key: "downloadExtras",
+            value: e.target.checked
+          });
+          await switchVideoFormatIfUnsupported(e.target.checked);
+        }}
         role="switch"
         type="checkbox"
       />
@@ -55,7 +53,17 @@
     <span class="settings-switch" aria-label="Include auto-dubbed audio tracks">
       <input
         checked={options.includeAutoDubbing}
-        onchange={handleIncludeAutoDubbingChange}
+        onchange={async e => {
+          if (!(e.target instanceof HTMLInputElement)) {
+            return;
+          }
+
+          await setOption({
+            key: "includeAutoDubbing",
+            value: e.target.checked
+          });
+          await switchVideoFormatIfUnsupported(e.target.checked);
+        }}
         role="switch"
         type="checkbox"
       />
@@ -69,7 +77,16 @@
     <span class="settings-switch" aria-label="Include AI-generated captions">
       <input
         checked={options.includeAiCaptions}
-        onchange={handleIncludeAiCaptionsChange}
+        onchange={e => {
+          if (!(e.target instanceof HTMLInputElement)) {
+            return;
+          }
+
+          void setOption({
+            key: "includeAiCaptions",
+            value: e.target.checked
+          });
+        }}
         role="switch"
         type="checkbox"
       />
