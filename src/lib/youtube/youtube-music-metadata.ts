@@ -8,44 +8,45 @@ const YOUTUBE_MUSIC_SEARCH_URL = "https://music.youtube.com/youtubei/v1/search?p
 const YOUTUBE_MUSIC_CLIENT_VERSION = "1.20260408.01.00";
 const CONTENT_TYPE_JSON = "application/json";
 
+async function fetchFirstMusicResult(searchQuery: string) {
+  const searchRequest: InnertubeSearchRequest = {
+    query: searchQuery,
+    params: SONG_FILTER_PARAMS,
+    context: {
+      client: {
+        clientName: InnertubeClientName.WebRemix,
+        clientVersion: YOUTUBE_MUSIC_CLIENT_VERSION
+      }
+    }
+  };
+  const response = await fetch(YOUTUBE_MUSIC_SEARCH_URL, {
+    method: "POST",
+    headers: {
+      "Content-Type": CONTENT_TYPE_JSON
+    },
+    body: JSON.stringify(searchRequest)
+  });
+  if (!response.ok) {
+    return null;
+  }
+
+  const data: MusicSearchResponse = await response.json();
+  const firstItem = extractFirstSearchItem(data);
+  if (!firstItem) {
+    return null;
+  }
+
+  return parseSearchResult(firstItem);
+}
+
 type FetchYouTubeMusicMetadataParams = {
   searchQuery: string;
   existingMetadata: VideoMetadata;
 };
 export async function fetchYouTubeMusicMetadata({ searchQuery, existingMetadata }: FetchYouTubeMusicMetadataParams) {
   try {
-    const searchRequest: InnertubeSearchRequest = {
-      query: searchQuery,
-      params: SONG_FILTER_PARAMS,
-      context: {
-        client: {
-          clientName: InnertubeClientName.WebRemix,
-          clientVersion: YOUTUBE_MUSIC_CLIENT_VERSION
-        }
-      }
-    };
-    const response = await fetch(YOUTUBE_MUSIC_SEARCH_URL, {
-      method: "POST",
-      headers: {
-        "Content-Type": CONTENT_TYPE_JSON
-      },
-      body: JSON.stringify(searchRequest)
-    });
-    const isResponseError = !response.ok;
-    if (isResponseError) {
-      return existingMetadata;
-    }
-
-    const data: MusicSearchResponse = await response.json();
-    const firstItem = extractFirstSearchItem(data);
-    const isFirstItemMissing = !firstItem;
-    if (isFirstItemMissing) {
-      return existingMetadata;
-    }
-
-    const parsed = parseSearchResult(firstItem);
-    const isParsedMissing = !parsed;
-    if (isParsedMissing) {
+    const parsed = await fetchFirstMusicResult(searchQuery);
+    if (!parsed) {
       return existingMetadata;
     }
 
@@ -60,5 +61,18 @@ export async function fetchYouTubeMusicMetadata({ searchQuery, existingMetadata 
     };
   } catch {
     return existingMetadata;
+  }
+}
+
+export async function fetchMusicThumbnailUrl(searchQuery: string) {
+  if (!searchQuery) {
+    return undefined;
+  }
+
+  try {
+    const result = await fetchFirstMusicResult(searchQuery);
+    return result?.thumbnailUrl;
+  } catch {
+    return undefined;
   }
 }

@@ -7,6 +7,7 @@ import {
 } from "./music-metadata";
 import { sabrCredentials } from "@/lib/ui/synced-stores.svelte";
 import { generatePoToken } from "@/lib/youtube/po-token-generator";
+import { fetchMusicThumbnailUrl } from "@/lib/youtube/youtube-music-metadata";
 import { getYtcfg, YtcfgKey } from "@/lib/youtube/ytcfg";
 import { type VideoData } from "@/types";
 
@@ -29,9 +30,6 @@ export async function buildVideoMetadata(videoId: string) {
 
   const { playerResponse } = cached;
   const { videoDetails, microformat } = playerResponse;
-  const thumbnails = videoDetails?.thumbnail?.thumbnails ?? [];
-  const hasThumbnails = thumbnails.length > 0;
-  const thumbnailUrl = hasThumbnails ? thumbnails[thumbnails.length - 1].url : undefined;
 
   const renderer = microformat?.playerMicroformatRenderer;
   const description = videoDetails?.shortDescription ?? "";
@@ -44,18 +42,23 @@ export async function buildVideoMetadata(videoId: string) {
     genreSet
   });
 
+  const title = descriptionMeta.songTitle || titleMeta.songTitle;
   const artist = descriptionMeta.artist || titleMeta.fullArtist || videoDetails?.author || "";
   const albumArtist = descriptionMeta.mainArtist || titleMeta.mainArtist || undefined;
   const hasGenres = genres.length > 0;
 
+  const youtubeThumbnailUrl = videoDetails?.thumbnail?.thumbnails?.at(-1)?.url;
+  const searchQuery = `${artist} ${title}`.trim();
+  const musicThumbnailUrl = cached.isMusic ? await fetchMusicThumbnailUrl(searchQuery) : undefined;
+
   return {
-    title: descriptionMeta.songTitle || titleMeta.songTitle,
+    title,
     artist,
     albumArtist: albumArtist !== artist ? albumArtist : undefined,
     album: descriptionMeta.album,
     genres: hasGenres ? genres : undefined,
     date: renderer?.publishDate,
-    thumbnailUrl,
+    thumbnailUrl: musicThumbnailUrl ?? youtubeThumbnailUrl,
     isMusic: cached.isMusic
   };
 }
