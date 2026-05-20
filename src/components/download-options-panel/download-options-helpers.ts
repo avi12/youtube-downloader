@@ -2,7 +2,8 @@ import {
   splitFilenameAndExtension,
   supportedExtensions,
   getFormatDescription,
-  AUTO_EXTENSION
+  AUTO_EXTENSION,
+  MULTI_TRACK_UNSUPPORTED_EXTENSIONS
 } from "@/lib/utils/containers";
 import { DownloadType } from "@/types";
 
@@ -24,18 +25,16 @@ export const DOWNLOAD_TYPES = [
   }
 ] as const;
 
-const MULTI_TRACK_UNSUPPORTED_EXTENSIONS = new Set(["avi"]);
-
 export function buildFormatItems(
   type: typeof DownloadType.Video | typeof DownloadType.Audio,
   isMultiTrack = false
 ) {
   return supportedExtensions[type]
     .filter(e => e !== AUTO_EXTENSION)
-    .filter(e => !isMultiTrack || !MULTI_TRACK_UNSUPPORTED_EXTENSIONS.has(e))
     .map(e => ({
       ext: e,
-      desc: getFormatDescription(e)
+      desc: getFormatDescription(e),
+      isExcluded: isMultiTrack && MULTI_TRACK_UNSUPPORTED_EXTENSIONS.has(e)
     }));
 }
 

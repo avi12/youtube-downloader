@@ -6,6 +6,7 @@
   interface Props {
     filename: string;
     extension: string;
+    actualExtension: string;
     isDownloading: boolean;
     downloadType: DownloadType;
     isMultiTrack: boolean;
@@ -15,16 +16,16 @@
   }
 
   const {
-    filename, extension, isDownloading, downloadType, isMultiTrack,
+    filename, extension, actualExtension, isDownloading, downloadType, isMultiTrack,
     onfilenamechange, onextensionchange, onvalidationchange
   }: Props = $props();
 
   const isAudio = $derived(downloadType === DownloadType.Audio);
   const extensionType = $derived(isAudio ? DownloadType.Audio : DownloadType.Video);
-  const fullFilename = $derived(`${filename}.${extension}`);
+  const fullFilename = $derived(`${filename}.${actualExtension}`);
   const filenameValidationError = $derived(
     getFilenameError({
-      value: fullFilename,
+      value: `${filename}.${extension}`,
       type: extensionType,
       isMultiTrack
     })
@@ -40,6 +41,29 @@
   $effect(() => {
     onvalidationchange(isFilenameValid);
   });
+
+  function observeFormatList(elList: Element): () => void {
+    for (const child of elList.children) {
+      if (child instanceof HTMLElement) {
+        child.classList.add("ytdl-visible");
+      }
+    }
+
+    const observer = new MutationObserver(mutations => {
+      for (const mutation of mutations) {
+        for (const node of mutation.addedNodes) {
+          if (!(node instanceof HTMLElement)) {
+            continue;
+          }
+
+          node.getBoundingClientRect();
+
+        }
+      }
+    });
+    observer.observe(elList, { childList: true });
+    return () => observer.disconnect();
+  }
 
   function applyPolymerTheme(elTarget: Element): void {
     const elInput = elTarget.querySelector("input");
@@ -83,11 +107,13 @@
     <div class="ytdl-filename-error-inner">
       <p class="ytdl-filename-error-text">{filenameValidationError}</p>
       <div class="ytdl-format-list-block" class:ytdl-open={isExtensionError}>
-        <ul class="ytdl-format-list" role="list">
-          {#each formatItems as { ext, desc } (ext)}
-            <li class="ytdl-format-item">
-              <span class="ytdl-format-ext">{ext}</span>
-              <span class="ytdl-format-desc">{desc}</span>
+        <ul class="ytdl-format-list" {@attach observeFormatList} role="list">
+          {#each formatItems as { ext, desc, isExcluded } (ext)}
+            <li class="ytdl-format-item" class:ytdl-excluded={isExcluded}>
+              <div class="ytdl-format-item-inner">
+                <span class="ytdl-format-ext">{ext}</span>
+                <span class="ytdl-format-desc">{desc}</span>
+              </div>
             </li>
           {/each}
         </ul>
@@ -142,19 +168,39 @@
         }
 
         .ytdl-format-list {
-          display: grid;
-          grid-template-columns: auto 1fr;
-          row-gap: 4px;
+          display: flex;
+          flex-direction: column;
           overflow: hidden;
           min-height: 0;
           padding: 0;
           color: var(--paper-input-container-invalid-color, var(--error-color, #cc0000));
           list-style: none;
           font-size: 1.2rem;
-          column-gap: 8px;
 
           .ytdl-format-item {
-            display: contents;
+            display: grid;
+            grid-template-rows: 0fr;
+            transition: grid-template-rows 250ms ease;
+
+            &:global(.ytdl-visible) {
+              grid-template-rows: 1fr;
+            }
+
+            &:global(.ytdl-excluded) {
+              grid-template-rows: 0fr;
+            }
+
+            & + .ytdl-format-item {
+              margin-top: 4px;
+            }
+
+            .ytdl-format-item-inner {
+              display: grid;
+              grid-template-columns: auto 1fr;
+              overflow: hidden;
+              min-height: 0;
+              column-gap: 8px;
+            }
 
             .ytdl-format-ext {
               font-weight: 600;
