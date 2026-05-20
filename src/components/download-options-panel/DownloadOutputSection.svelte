@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { getFilenameError, buildFormatItems } from "./download-options-helpers";
-  import { splitFilenameAndExtension } from "@/lib/utils/containers";
+  import PolymerSelect from "../polymer-select/PolymerSelect.svelte";
+  import { buildFormatItems, getFilenameError } from "./download-options-helpers";
+  import { getFormatDescription } from "@/lib/utils/containers";
   import { DownloadType } from "@/types";
 
   interface Props {
@@ -22,7 +23,7 @@
 
   const isAudio = $derived(downloadType === DownloadType.Audio);
   const extensionType = $derived(isAudio ? DownloadType.Audio : DownloadType.Video);
-  const fullFilename = $derived(`${filename}.${actualExtension}`);
+
   const filenameValidationError = $derived(
     getFilenameError({
       value: `${filename}.${extension}`,
@@ -36,7 +37,15 @@
     filenameValidationError.startsWith("Extension .") ||
     filenameValidationError.startsWith("AVI doesn't")
   );
-  const formatItems = $derived(buildFormatItems(extensionType, isMultiTrack));
+
+  const formatOptions = $derived(
+    buildFormatItems(extensionType, isMultiTrack).map(item => ({
+      value: item.ext,
+      label: item.isExcluded ? `.${item.ext} ⚠` : `.${item.ext}`
+    }))
+  );
+
+  const currentFormatDesc = $derived(getFormatDescription(extension));
 
   $effect(() => {
     onvalidationchange(isFilenameValid);
@@ -54,28 +63,42 @@
       return;
     }
 
-    const value = e.target.value.trim();
-    const { name, extension: ext } = splitFilenameAndExtension(value);
-    onfilenamechange(name);
-    onextensionchange(ext);
+    onfilenamechange(e.target.value.trim());
   }
 </script>
 
 <div class="ytdl-section">
-  <span class="ytdl-section-label">Output</span>
-  <tp-yt-paper-input
-    id="filename-input"
-    {@attach applyPolymerTheme}
-    aria-describedby={!isFilenameValid ? "filename-error" : undefined}
-    aria-invalid={!isFilenameValid}
-    autocomplete="off"
-    disabled={isDownloading || undefined}
-    invalid={!isFilenameValid || undefined}
-    label="Filename"
-    oninput={handleInput}
-    spellcheck={false}
-    value={fullFilename}
-  ></tp-yt-paper-input>
+  <div class="ytdl-output-row">
+    <tp-yt-paper-input
+      id="filename-input"
+      {@attach applyPolymerTheme}
+      aria-describedby={!isFilenameValid ? "filename-error" : undefined}
+      aria-invalid={!isFilenameValid}
+      autocomplete="off"
+      disabled={isDownloading || undefined}
+      invalid={!isFilenameValid || undefined}
+      label="Filename"
+      oninput={handleInput}
+      spellcheck={false}
+      value={filename}
+    ></tp-yt-paper-input>
+    <div class="ytdl-format-select">
+      <PolymerSelect
+        id="format-select"
+        disabled={isDownloading}
+        label="Format"
+        onchange={onextensionchange}
+        options={formatOptions}
+        value={extension}
+      />
+    </div>
+  </div>
+  {#if currentFormatDesc}
+    <p class="ytdl-format-hint">{currentFormatDesc}</p>
+  {/if}
+  {#if extension !== actualExtension && !isFilenameValid}
+    <p class="ytdl-extension-note">Will be saved as .{actualExtension} due to format constraints</p>
+  {/if}
   <div
     id="filename-error"
     class="ytdl-filename-error-block"
@@ -85,7 +108,7 @@
       <p class="ytdl-filename-error-text">{filenameValidationError}</p>
       <div class="ytdl-format-list-block" class:ytdl-open={isExtensionError}>
         <ul class="ytdl-format-list" role="list">
-          {#each formatItems as { ext, desc, isExcluded } (ext)}
+          {#each buildFormatItems(extensionType, isMultiTrack) as { ext, desc, isExcluded } (ext)}
             <li class="ytdl-format-item" class:ytdl-excluded={isExcluded}>
               <div class="ytdl-format-item-inner">
                 <span class="ytdl-format-ext">{ext}</span>
@@ -100,6 +123,30 @@
 </div>
 
 <style>
+  .ytdl-output-row {
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+  }
+
+  tp-yt-paper-input {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .ytdl-format-select {
+    flex-shrink: 0;
+
+    :global(.ytdl-select-label) {
+      display: none;
+    }
+
+    :global(.ytdl-select-trigger) {
+      width: auto;
+      min-width: 90px;
+    }
+  }
+
   :global {
     #filename-input {
       label {
@@ -113,7 +160,24 @@
       tp-yt-paper-input-container {
         padding-bottom: 0;
       }
+
+      &[invalid] tp-yt-paper-input-container {
+        border-inline-start: none;
+        box-shadow: none;
+      }
     }
+  }
+
+  .ytdl-format-hint {
+    margin: 0;
+    color: var(--yt-sys-color-baseline--text-secondary, #606060);
+    font-size: 1.2rem;
+  }
+
+  .ytdl-extension-note {
+    margin: 0;
+    color: var(--yt-sys-color-baseline--text-secondary, #606060);
+    font-size: 1.2rem;
   }
 
   .ytdl-filename-error-block {
