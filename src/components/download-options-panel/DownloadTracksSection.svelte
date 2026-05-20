@@ -15,6 +15,7 @@
     isDownloading: boolean;
     downloadExtras: boolean;
     downloadExtraCaptions: boolean;
+    isExtrasAutoDisabled: boolean;
     panelAudioMode: PanelTrackMode;
     panelAudioCustomLanguage: string;
     audioOriginalLabel: string | null;
@@ -38,6 +39,7 @@
     isDownloading,
     downloadExtras,
     downloadExtraCaptions,
+    isExtrasAutoDisabled,
     panelAudioMode,
     panelAudioCustomLanguage,
     audioOriginalLabel,
@@ -245,7 +247,7 @@
             />
             {#if !isAudioOnly}
               <tp-yt-paper-toggle-button
-                aria-label="Include all audio languages"
+                aria-label="Include all audio tracks"
                 checked={downloadExtras ? "" : undefined}
                 disabled={isDownloading || isExtensionMultiTrackIncompatible ? "" : undefined}
                 onchange={e => {
@@ -253,7 +255,10 @@
                     ondownloadextraschange(e.target.hasAttribute("checked"));
                   }
                 }}
-              >Include all audio languages</tp-yt-paper-toggle-button>
+              >Include all audio tracks</tp-yt-paper-toggle-button>
+              <div class="ytdl-extras-error-host" class:is-open={isExtrasAutoDisabled}>
+                <p class="ytdl-extras-error">AVI doesn't support multiple audio tracks</p>
+              </div>
             {/if}
           </div>
         {/if}
@@ -270,7 +275,7 @@
             />
             {#if captionSelectValue !== CAPTION_OFF}
               <tp-yt-paper-toggle-button
-                aria-label="Include all caption languages"
+                aria-label="Include all captions"
                 checked={downloadExtraCaptions ? "" : undefined}
                 disabled={isDownloading ? "" : undefined}
                 onchange={e => {
@@ -278,7 +283,7 @@
                     ondownloadextracaptionschange(e.target.hasAttribute("checked"));
                   }
                 }}
-              >Include all caption languages</tp-yt-paper-toggle-button>
+              >Include all captions</tp-yt-paper-toggle-button>
             {/if}
           </div>
         {/if}
@@ -338,5 +343,23 @@
   :global(tp-yt-paper-toggle-button) {
     color: var(--yt-sys-color-baseline--text-primary, #0f0f0f);
     font-size: 1.3rem;
+  }
+
+  .ytdl-extras-error-host {
+    display: grid;
+    grid-template-rows: minmax(0, 0fr);
+    overflow: hidden;
+    transition: grid-template-rows 220ms ease;
+
+    &.is-open {
+      grid-template-rows: minmax(0, 1fr);
+    }
+  }
+
+  .ytdl-extras-error {
+    margin: 0;
+    padding-top: 4px;
+    color: var(--yt-sys-color-baseline--text-error, #d93025);
+    font-size: 1.2rem;
   }
 </style>

@@ -3,6 +3,7 @@
   import { createDownloadOptionsState, type DownloadOptionsProps } from "./DownloadOptions.state.svelte";
   import DownloadOutputSection from "./DownloadOutputSection.svelte";
   import DownloadTracksSection from "./DownloadTracksSection.svelte";
+  import { MULTI_TRACK_UNSUPPORTED_EXTENSIONS } from "@/lib/utils/containers";
   import { PanelTrackMode } from "@/types";
   import type { AdaptiveFormatItem, CaptionTrack } from "@/types";
 
@@ -45,6 +46,20 @@
     selectedAudioFormat,
     selectedCaptionTrack
   }));
+
+  let isExtrasAutoDisabled = $state(false);
+
+  function handleExtensionChange(newExtension: string): void {
+    const isIncompatible = MULTI_TRACK_UNSUPPORTED_EXTENSIONS.has(newExtension);
+    if (isIncompatible && derived.downloadExtras && derived.uniqueAudioLanguages.length > 1) {
+      derived.setDownloadExtras(false);
+      isExtrasAutoDisabled = true;
+    } else {
+      isExtrasAutoDisabled = false;
+    }
+
+    onextensionchange(newExtension);
+  }
 </script>
 
 <div class="ytdl-options-container">
@@ -70,6 +85,7 @@
     {downloadType}
     {extension}
     {isDownloading}
+    {isExtrasAutoDisabled}
     {onaudiocustomchange}
     {onaudiomodechange}
     oncaptionchange={vssId =>
@@ -89,8 +105,8 @@
     {extension}
     {filename}
     {isDownloading}
-    isMultiTrack={derived.downloadExtras}
-    {onextensionchange}
+    isMultiTrack={false}
+    onextensionchange={handleExtensionChange}
     {onfilenamechange}
     {onvalidationchange}
   />
