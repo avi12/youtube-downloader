@@ -40,7 +40,8 @@ export function resolveActualExtension({
   const isTrackWithExtras = selectedTrackId && CONTENT_OPTIONS.downloadExtras;
   if (isTrackWithExtras) {
     const isSelectedAutoDubbed = selectedTrackId.endsWith(AUTO_DUB_TRACK_SUFFIX);
-    const hasExtraAudioTracks = !(!CONTENT_OPTIONS.includeAutoDubbing && isSelectedAutoDubbed)
+    const isAutoDubbingBlockedForSelected = !CONTENT_OPTIONS.includeAutoDubbing && isSelectedAutoDubbed;
+    const hasExtraAudioTracks = !isAutoDubbingBlockedForSelected
       && getVideoData().audioFormats.some(format => {
         const trackId = format.audioTrack?.id;
         return trackId

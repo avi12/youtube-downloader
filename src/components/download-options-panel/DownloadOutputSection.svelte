@@ -100,7 +100,6 @@
 </div>
 
 <style>
-  /* ShadyDOM blocks updateStyles/setProperty from the isolated world; CSS rule is the only fix. */
   :global {
     #filename-input {
       label {

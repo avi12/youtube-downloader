@@ -16,7 +16,8 @@ export function createVideoItemEffects({
   $effect(() => {
     const entry = downloadProgressStore.get(videoId);
     if (entry?.isDone) {
-      setIsLocallyDone(true); return;
+      setIsLocallyDone(true);
+      return;
     }
 
     const isClearState = !entry || entry.isFailed || entry.isDownloading;
@@ -28,12 +29,14 @@ export function createVideoItemEffects({
   $effect(() => {
     const storeData = videoDataStore.get(videoId);
     if (storeData) {
-      setVideoData(storeData); return;
+      setVideoData(storeData);
+      return;
     }
 
     const isLoadFailed = videoDataFailedStore.get(videoId);
     if (isLoadFailed) {
-      setIsLoadFailed(true); return;
+      setIsLoadFailed(true);
+      return;
     }
 
     void crossWorldMessenger.sendMessage(CrossWorldMessage.RequestVideoData, { videoId });

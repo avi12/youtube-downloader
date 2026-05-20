@@ -60,7 +60,8 @@
     }
 
     function handleKeydown(e: Event): void {
-      const isArrowDown = e instanceof KeyboardEvent && e.key === "ArrowDown";
+      const isKeyboardEvent = e instanceof KeyboardEvent;
+      const isArrowDown = isKeyboardEvent && e.key === "ArrowDown";
       if (!isArrowDown) {
         return;
       }
@@ -94,9 +95,9 @@
         return;
       }
 
-      isOpen = e.newState === POPOVER_OPEN_STATE;
-
       const isOpening = e.newState === POPOVER_OPEN_STATE;
+      isOpen = isOpening;
+
       if (isOpening) {
         if (elIronDropdown) {
           elIronDropdown.noCancelOnEscKey = true;
@@ -174,7 +175,8 @@
       const isConfirm = e.key === "Enter" || e.key === " ";
       if (isConfirm) {
         const elActive = document.activeElement;
-        const isPaperItem = elActive instanceof HTMLElement && elActive.matches(POLYMER_PAPER_ITEM);
+        const isHtmlActiveElement = elActive instanceof HTMLElement;
+        const isPaperItem = isHtmlActiveElement && elActive.matches(POLYMER_PAPER_ITEM);
         if (!isPaperItem) {
           return;
         }

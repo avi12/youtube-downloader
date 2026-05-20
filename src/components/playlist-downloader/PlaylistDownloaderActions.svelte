@@ -44,11 +44,14 @@
     return `${count} video${count === 1 ? "" : "s"} in progress`;
   });
 
+  const isActiveBatchDownload = $derived(playlist.isDownloading && playlist.totalCount > 0);
+  const hasIndividualDownloads = $derived(playlist.activeIndividualDownloadCount > 0);
+  const hasBatchProgress = $derived(playlist.completedBatchProgress > 0);
   const isProgressVisible = $derived(
     playlist.isRevealingAll
-    || (playlist.isDownloading && playlist.totalCount > 0)
-    || playlist.activeIndividualDownloadCount > 0
-    || playlist.completedBatchProgress > 0
+    || isActiveBatchDownload
+    || hasIndividualDownloads
+    || hasBatchProgress
   );
 </script>
 

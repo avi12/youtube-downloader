@@ -55,7 +55,8 @@
   }));
 
   $effect(() => onButtonClick(buttonId => {
-    const isViewButtonWithDownload = buttonId === VIEW_BUTTON_ID && downloadId !== null;
+    const isViewButton = buttonId === VIEW_BUTTON_ID;
+    const isViewButtonWithDownload = isViewButton && downloadId !== null;
     if (isViewButtonWithDownload) {
       void sendMessage(MessageType.RevealDownloadFile, { downloadId: downloadId! });
       dismiss();
@@ -92,7 +93,6 @@
             {/if}
           </div>
         </div>
-        <!-- stylelint-disable-next-line custom-property-no-missing-var-function -->
         <div
           style:--tffc2fd3a644f6275="var(--t6216186c28b3834b)"
           class="snackbarViewModelButtonClassWrapper">

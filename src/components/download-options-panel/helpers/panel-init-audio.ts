@@ -44,9 +44,6 @@ export function resolveInitialAudioFormat({ options, videoData }: OptionsVideoDa
       }
     }
 
-    // Video not loaded yet (e.g. an ad is playing): the user can't see the real
-    // audio tracks, so default to the original one. The match-video effect
-    // re-selects once the player reports its active track.
     const original = findOriginalAudioFormat(videoData.audioFormats);
     if (original) {
       return original;

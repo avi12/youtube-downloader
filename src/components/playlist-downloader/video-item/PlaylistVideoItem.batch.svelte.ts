@@ -9,30 +9,25 @@ export function createBatchState(params: {
   const isInBatch = $derived(batchVideoIds.has(params.videoId));
   const isIndividuallyCanceled = $derived(batchCanceledIds.has(params.videoId));
 
-  const isCheckboxIndeterminate = $derived(
-    batchDownloadStatus.isRunning && isInBatch && !isIndividuallyCanceled && params.itemState.isDownloading
-  );
-  const isCheckboxDisabled = $derived(
-    batchDownloadStatus.isRunning || (params.itemState.isDownloading && !params.itemState.isLocallyDone)
-  );
-  const isZipBatchActive = $derived(
-    batchDownloadStatus.isRunning && batchDownloadStatus.isZipBatch && isInBatch && !isIndividuallyCanceled
-  );
+  const isActiveInBatch = $derived(batchDownloadStatus.isRunning && isInBatch && !isIndividuallyCanceled);
+  const isCheckboxIndeterminate = $derived(isActiveInBatch && params.itemState.isDownloading);
+  const isDownloadingAndNotDone = $derived(params.itemState.isDownloading && !params.itemState.isLocallyDone);
+  const isCheckboxDisabled = $derived(batchDownloadStatus.isRunning || isDownloadingAndNotDone);
+  const isZipBatchActive = $derived(isActiveInBatch && batchDownloadStatus.isZipBatch);
   const isInProgressInZipBatch = $derived(isZipBatchActive && !params.itemState.isDownloading);
+  const isComplete = $derived(params.itemState.isDone || params.itemState.isLocallyDone);
   const isProgressBarVisible = $derived(
     params.itemState.isDownloading
-    || params.itemState.isDone
-    || params.itemState.isLocallyDone
+    || isComplete
     || (params.isPlaylistItem && isInProgressInZipBatch)
   );
   const isProgressBarIndeterminate = $derived(
-    !params.itemState.isDone
-    && !params.itemState.isLocallyDone
+    !isComplete
     && !isInProgressInZipBatch
     && params.itemState.displayProgress === 0
   );
   const progressBarValue = $derived(
-    params.itemState.isDone || params.itemState.isLocallyDone || isInProgressInZipBatch
+    isComplete || isInProgressInZipBatch
       ? 100
       : Math.round(params.itemState.displayProgress)
   );

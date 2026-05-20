@@ -37,14 +37,9 @@ export function createFocusManager() {
       elDropdownMenu.querySelector(POLYMER_INPUT)?.removeAttribute(ATTR_FOCUSED);
     }
 
-    // Applying the inert trap before open() interferes with Polymer's overlay mechanics.
     const elDropdownRoot = elPanel.closest<HTMLElement>(POLYMER_IRON_DROPDOWN) ?? elPanel;
 
     elDropdownRoot.addEventListener(IRON_OVERLAY_OPENED_EVENT, e => {
-      // Inner paper-menu-button overlays bubble iron-overlay-opened up to here.
-      // Only respond when the panel's own dropdown opens, otherwise the saved
-      // removeInert gets overwritten and the first trap never releases - leaving
-      // the rest of the page permanently inert.
       const isInnerOverlay = e.target !== elDropdownRoot;
       if (isInnerOverlay) {
         return;
@@ -52,13 +47,9 @@ export function createFocusManager() {
 
       removeInert = applyInertTrap(elDropdownRoot);
 
-      // Focus the first form control so Tab from here moves forward through
-      // the controls, not to the close button which is earlier in DOM order.
       const elFirstControl = elPanel.querySelector<HTMLElement>(PANEL_FIRST_CONTROL_SELECTOR);
       (elFirstControl ?? elPanel).focus();
 
-      // Release the inert trap when Polymer closes the overlay externally
-      // (click-outside or Escape) since closePanel() only handles explicit close.
       elDropdownRoot.addEventListener(IRON_OVERLAY_CLOSED_EVENT, handleOverlayClosed);
     });
 
@@ -72,8 +63,6 @@ export function createFocusManager() {
       release();
     }
 
-    // Polymer's IronFocusedBehavior doesn't always clear the focused attribute
-    // from sibling dropdowns when Tab moves between them.
     function onFocusIn() {
       for (const elDropdownMenu of elPanel.querySelectorAll(`${POLYMER_DROPDOWN_MENU}[${ATTR_FOCUSED}]`)) {
         if (elDropdownMenu.contains(document.activeElement)) {

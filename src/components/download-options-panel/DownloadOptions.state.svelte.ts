@@ -51,10 +51,11 @@ optionsItem.watch(next => {
 export function createDownloadOptionsState(props: () => DownloadOptionsProps) {
   const isAudio = $derived(props().downloadType === DownloadType.Audio);
 
-  const preservedAutoDubbedLangCode = $derived(
+  const isPlayerOnAutoDubbedAndExcluded = $derived(
     !PANEL_OPTIONS.includeAutoDubbing && PLAYER_ACTIVE_AUDIO.isAutoDubbed
-      ? PLAYER_ACTIVE_AUDIO.langCode
-      : null
+  );
+  const preservedAutoDubbedLangCode = $derived(
+    isPlayerOnAutoDubbedAndExcluded ? PLAYER_ACTIVE_AUDIO.langCode : null
   );
   const uniqueAudioLanguages = $derived(
     buildUniqueAudioLanguages({
@@ -121,24 +122,28 @@ export function createDownloadOptionsState(props: () => DownloadOptionsProps) {
   });
   const audioTracksToBundle = $derived.by(() => {
     const selected = props().selectedAudioFormat;
-    if (props().downloadType !== DownloadType.VideoAndAudio || !selected) {
+    const isNotVideoAndAudio = props().downloadType !== DownloadType.VideoAndAudio;
+    if (isNotVideoAndAudio || !selected) {
       return [];
     }
 
     const selectedTrackId = selected.audioTrack?.id;
-    if (!CONTENT_OPTIONS.downloadExtras || !selectedTrackId) {
+    const isExtrasWithTrack = CONTENT_OPTIONS.downloadExtras && selectedTrackId;
+    if (!isExtrasWithTrack) {
       return [selected];
     }
 
-    if (!PANEL_OPTIONS.includeAutoDubbing && selectedTrackId.endsWith(AUTO_DUB_TRACK_SUFFIX)) {
+    const isSelectedAutoDubbed = selectedTrackId.endsWith(AUTO_DUB_TRACK_SUFFIX);
+    const isAutoDubbingBlockedForSelected = !PANEL_OPTIONS.includeAutoDubbing && isSelectedAutoDubbed;
+    if (isAutoDubbingBlockedForSelected) {
       return [selected];
     }
 
     const extras = props().audioFormats.filter(format => {
       const trackId = format.audioTrack?.id;
-      return !!trackId
-        && trackId !== selectedTrackId
-        && (PANEL_OPTIONS.includeAutoDubbing || !trackId.endsWith(AUTO_DUB_TRACK_SUFFIX));
+      const isOtherTrack = !!trackId && trackId !== selectedTrackId;
+      const isAllowedByDubbingPref = PANEL_OPTIONS.includeAutoDubbing || !trackId?.endsWith(AUTO_DUB_TRACK_SUFFIX);
+      return isOtherTrack && isAllowedByDubbingPref;
     });
 
     return [selected, ...extras];

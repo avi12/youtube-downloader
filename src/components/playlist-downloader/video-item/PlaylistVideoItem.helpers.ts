@@ -59,14 +59,14 @@ export function buildButtonTooltip({
     extension: currentOptions.ext.video,
     mimeType: primaryVideoFormat?.mimeType ?? ""
   });
-  const containerExtension =
-    primaryVideoFormat && primaryAudioFormat
-      ? getOutputExtension({
-        videoMimeType: primaryVideoFormat.mimeType,
-        audioMimeType: primaryAudioFormat.mimeType,
-        userExtension: resolvedContainerExtension
-      })
-      : resolvedContainerExtension;
+  const hasBothFormats = !!primaryVideoFormat && !!primaryAudioFormat;
+  const containerExtension = hasBothFormats
+    ? getOutputExtension({
+      videoMimeType: primaryVideoFormat.mimeType,
+      audioMimeType: primaryAudioFormat.mimeType,
+      userExtension: resolvedContainerExtension
+    })
+    : resolvedContainerExtension;
   const qualityLabel = primaryVideoFormat ? formatVideoQualityLabel(primaryVideoFormat) : "";
   if (!qualityLabel) {
     return `${videoData.title}.${containerExtension}`;

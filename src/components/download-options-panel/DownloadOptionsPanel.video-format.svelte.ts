@@ -41,13 +41,13 @@ export function createVideoFormatTracker({
       const abortController = new AbortController();
       void matchToCurrentQuality(abortController.signal);
       const elVideo = document.querySelector("video");
-      function onCanPlay() {
+      function handleCanPlay() {
         void matchToCurrentQuality(abortController.signal);
       }
-      elVideo?.addEventListener(VIDEO_CAN_PLAY_EVENT, onCanPlay);
+      elVideo?.addEventListener(VIDEO_CAN_PLAY_EVENT, handleCanPlay);
       return () => {
         abortController.abort();
-        elVideo?.removeEventListener(VIDEO_CAN_PLAY_EVENT, onCanPlay);
+        elVideo?.removeEventListener(VIDEO_CAN_PLAY_EVENT, handleCanPlay);
       };
     }
 

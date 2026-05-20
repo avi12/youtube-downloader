@@ -89,8 +89,6 @@ type ResolveMatchVideoCaptionParams = {
   allTracks: CaptionTrack[];
   candidateTracks: CaptionTrack[];
 };
-// Only preserve the player's active caption (even if ASR); fall back to filtered
-// candidates so an absent player caption doesn't auto-pick an ASR default.
 function resolveMatchVideoCaption({ allTracks, candidateTracks }: ResolveMatchVideoCaptionParams) {
   const activeCaption = getActivePlayerCaption();
   if (activeCaption) {

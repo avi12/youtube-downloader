@@ -51,9 +51,6 @@
   const SINGLE_CAPTION_DISABLED_MODES = [PanelTrackMode.MatchVideo, PanelTrackMode.Custom];
   const ONLY_ASR_DISABLED_MODES = [PanelTrackMode.Original, PanelTrackMode.Custom];
 
-  // Global AI off but the user's player has an ASR selected: the only caption
-  // surfaced in `captionTracks` is the preserved one. Only Match-video mode is
-  // meaningful (it reflects the player's choice).
   const isOnlyAsrCaption = $derived(
     captionTracks.length > 0
     && captionTracks.every(track => track.kind === CAPTION_KIND_ASR)

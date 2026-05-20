@@ -35,12 +35,9 @@ export function createPlaylistVideoItemState({
   const isDownloading = $derived(downloadState.isDownloading);
   const isDone = $derived(downloadState.isDone);
   const isDownloadFailed = $derived(!!downloadState.isFailed);
-  const isInterrupted = $derived(
-    !!interruptedDownloadStore.get(videoId)
-    && !isDownloading
-    && !isDone
-    && !isDownloadFailed
-  );
+  const isInterruptedEntry = $derived(!!interruptedDownloadStore.get(videoId));
+  const isInActiveState = $derived(isDownloading || isDone || isDownloadFailed);
+  const isInterrupted = $derived(isInterruptedEntry && !isInActiveState);
 
   createVideoItemEffects({
     videoId,
@@ -122,7 +119,8 @@ export function createPlaylistVideoItemState({
     }
 
     if (isDownloading) {
-      cancelDownload(videoId); return;
+      cancelDownload(videoId);
+      return;
     }
 
     activeDownloadClicks.add(videoId);

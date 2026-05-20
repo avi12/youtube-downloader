@@ -116,7 +116,8 @@ export function createPlaylistDownloaderState() {
       return isScrollSyncEnabled;
     },
     set isScrollSyncEnabled(value) {
-      isScrollSyncEnabled = value; void setOption({
+      isScrollSyncEnabled = value;
+      void setOption({
         key: "isPlaylistScrollSyncEnabled",
         value
       });

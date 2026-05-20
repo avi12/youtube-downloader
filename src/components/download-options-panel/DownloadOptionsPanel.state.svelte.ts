@@ -155,25 +155,29 @@ export function createPanelState(getVideoData: () => VideoData) {
       return selectedVideoFormat;
     },
     set selectedVideoFormat(value: AdaptiveFormatItem | null) {
-      selectedVideoFormat = value; store.resetDoneState();
+      selectedVideoFormat = value;
+      store.resetDoneState();
     },
     get selectedAudioFormat() {
       return selectedAudioFormat;
     },
     set selectedAudioFormat(value: AdaptiveFormatItem | null) {
-      selectedAudioFormat = value; store.resetDoneState();
+      selectedAudioFormat = value;
+      store.resetDoneState();
     },
     get filename() {
       return filename;
     },
     set filename(value: string) {
-      filename = value; store.resetDoneState();
+      filename = value;
+      store.resetDoneState();
     },
     get extension() {
       return extension;
     },
     set extension(value: string) {
-      extension = value; store.resetDoneState();
+      extension = value;
+      store.resetDoneState();
     },
     get actualExtension() {
       return actualExtension;

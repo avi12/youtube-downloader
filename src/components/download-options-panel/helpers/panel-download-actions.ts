@@ -22,7 +22,8 @@ export function buildStartDownloadParams(params: {
     return null;
   }
 
-  if (params.downloadType !== DownloadType.Audio && !params.selectedVideoFormat) {
+  const isVideoTypeWithoutFormat = params.downloadType !== DownloadType.Audio && !params.selectedVideoFormat;
+  if (isVideoTypeWithoutFormat) {
     return null;
   }
 

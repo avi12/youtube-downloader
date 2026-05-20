@@ -62,7 +62,8 @@ export function createOverrideState(getDefaultZipName: () => string) {
     },
     set effectiveZipName(value: string) {
       const trimmed = value.trim();
-      zipNameOverride = !trimmed || trimmed === getDefaultZipName() ? null : trimmed;
+      const isEmptyOrDefault = !trimmed || trimmed === getDefaultZipName();
+      zipNameOverride = isEmptyOrDefault ? null : trimmed;
     },
     get isAnyOverrideActive() {
       return isAnyOverrideActive;

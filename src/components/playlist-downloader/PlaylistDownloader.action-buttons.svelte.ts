@@ -33,7 +33,8 @@ export function createPlaylistActionButtons(state: {
     }
 
     elDeselectAll.setAttribute(DATA_BUTTON_ID_ATTR, ACTION_BUTTON_IDS.DeselectAll);
-    const isDisabled = state.selectedDownloadableVideos.length === 0 || state.isDownloading;
+    const isNothingSelected = state.selectedDownloadableVideos.length === 0;
+    const isDisabled = isNothingSelected || state.isDownloading;
     sendButtonData({
       elButton: elDeselectAll,
       data: buildDeselectAllData(isDisabled)
@@ -46,7 +47,8 @@ export function createPlaylistActionButtons(state: {
     }
 
     elDownload.setAttribute(DATA_BUTTON_ID_ATTR, ACTION_BUTTON_IDS.Download);
-    const isDisabled = state.selectedDownloadableVideos.length === 0 && !state.isDownloading;
+    const isNothingSelectedAndIdle = state.selectedDownloadableVideos.length === 0 && !state.isDownloading;
+    const isDisabled = isNothingSelectedAndIdle;
     sendButtonData({
       elButton: elDownload,
       data: buildDownloadData({
@@ -63,7 +65,8 @@ export function createPlaylistActionButtons(state: {
     }
 
     elDownloadAll.setAttribute(DATA_BUTTON_ID_ATTR, ACTION_BUTTON_IDS.DownloadAll);
-    const isBusy = state.isRevealingAll || state.isDownloading || state.activeIndividualDownloadCount > 0;
+    const hasIndividualDownloads = state.activeIndividualDownloadCount > 0;
+    const isBusy = state.isRevealingAll || state.isDownloading || hasIndividualDownloads;
     sendButtonData({
       elButton: elDownloadAll,
       data: buildDownloadAllData({

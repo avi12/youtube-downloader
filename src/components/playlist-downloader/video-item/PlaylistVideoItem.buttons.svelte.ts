@@ -39,7 +39,8 @@ export function createButtonManager(params: {
       buttonLabel: itemState.buttonLabel,
       videoData: itemState.videoData
     });
-    const isDisabled = !params.itemState.videoData?.isDownloadable || params.isInProgressInZipBatch;
+    const isNotDownloadable = !params.itemState.videoData?.isDownloadable;
+    const isDisabled = isNotDownloadable || params.isInProgressInZipBatch;
     const iconName = params.isInProgressInZipBatch ? IconName.CheckCircleThick : params.itemState.downloadIconName;
     sendDownloadButtonData({
       elButton: elDownloadButton,
@@ -57,9 +58,8 @@ export function createButtonManager(params: {
     }
 
     const isDisabled = !params.itemState.videoData?.isDownloadable;
-    const iconName = params.panel.isOpen && !params.panel.isPanelBelow
-      ? IconName.ExpandLess
-      : IconName.ExpandMore;
+    const isPanelOpenAbove = params.panel.isOpen && !params.panel.isPanelBelow;
+    const iconName = isPanelOpenAbove ? IconName.ExpandLess : IconName.ExpandMore;
     sendChevronButtonData({
       elButton: elChevronButton,
       buttonId: chevronButtonId,
@@ -74,7 +74,8 @@ export function createButtonManager(params: {
     }
 
     queueMicrotask(() => {
-      refreshDownloadButton(); refreshChevronButton();
+      refreshDownloadButton();
+      refreshChevronButton();
     });
     buttonRefreshTimer = setTimeout(() => {
       buttonRefreshTimer = null;
@@ -96,7 +97,8 @@ export function createButtonManager(params: {
 
   function onChevronClick() {
     queueMicrotask(() => {
-      params.panel.toggle(); refreshChevronButton();
+      params.panel.toggle();
+      refreshChevronButton();
     });
   }
 

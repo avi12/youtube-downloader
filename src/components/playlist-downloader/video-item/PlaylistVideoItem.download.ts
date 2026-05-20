@@ -44,7 +44,8 @@ export function cancelDownload(videoId: string) {
   cancelStreamTransfer(videoId);
   void sendMessage(MessageType.CancelDownload, { videoIds: [videoId] });
 
-  if (batchDownloadStatus.isRunning && batchVideoIds.has(videoId)) {
+  const isPartOfActiveBatch = batchDownloadStatus.isRunning && batchVideoIds.has(videoId);
+  if (isPartOfActiveBatch) {
     batchCanceledIds.add(videoId);
     checkedPlaylistVideos.delete(videoId);
   }

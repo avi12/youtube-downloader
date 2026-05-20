@@ -54,12 +54,6 @@
 ></tp-yt-paper-checkbox>
 
 <style>
-  /*
-   * YouTube strips the indeterminate state from tp-yt-paper-checkbox.
-   * These rules restore it using the [indeterminate] attribute and the
-   * component's own CSS variables, so the dash adapts to YouTube's theme.
-   * Specificity (2,3,1) beats the checkmark animation rule (2,3,0).
-   */
   :global(tp-yt-paper-checkbox[indeterminate] #checkbox.tp-yt-paper-checkbox) {
     border-color: var(--paper-checkbox-checked-color, var(--primary-color));
     background-color: var(--paper-checkbox-checked-color, var(--primary-color));

@@ -53,6 +53,7 @@ export function createPlaylistToggleButtons(state: CreatePlaylistToggleButtonsPa
 
     const isActive = buttonDefinition.isActive(state);
     const isSegmented = SEGMENTED_IDS.has(buttonId);
+    const isSegmentedAndActive = isSegmented && isActive;
 
     sendButtonData({
       elButton,
@@ -60,7 +61,7 @@ export function createPlaylistToggleButtons(state: CreatePlaylistToggleButtonsPa
         iconName: IconName.None,
         title: buttonDefinition.label,
         accessibilityText: buttonDefinition.label,
-        style: isSegmented && isActive ? ButtonStyle.Overlay : ButtonStyle.Mono,
+        style: isSegmentedAndActive ? ButtonStyle.Overlay : ButtonStyle.Mono,
         type: resolveButtonType({
           isActive,
           isSegmented

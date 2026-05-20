@@ -90,8 +90,6 @@
   }
 
   .ytdl-progress-block {
-    /* CSS custom properties cascade into tp-yt-paper-progress so ShadyCSS reads
-       the correct color from getComputedStyle on every rebase cycle. */
     --paper-progress-active-color: var(--yt-sys-color-baseline--call-to-action, #065fd4);
     --paper-progress-container-color: var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 10%));
     --paper-progress-height: 4px;

@@ -33,13 +33,6 @@ async function waitForRoundTransition() {
   await new Promise(resolve => setTimeout(resolve, REVEAL_POLL_INTERVAL_MS));
 }
 
-/**
- * Scrolls the playlist container until no new video renderers appear for
- * several consecutive polls. YouTube's infinite-scroll loads in batches of
- * ~100 when the continuation sentinel enters the viewport, so repeatedly
- * scrolling to the bottom triggers the next batch. Guards against the
- * stall case by requiring multiple stable rounds before giving up.
- */
 export async function revealAllPlaylistVideos({
   onProgress,
   isAbortRequested
