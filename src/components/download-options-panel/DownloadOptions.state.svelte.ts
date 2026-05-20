@@ -35,20 +35,31 @@ export interface DownloadOptionsProps {
   selectedCaptionTrack: CaptionTrack | null;
 }
 
-export const PANEL_OPTIONS = $state({
-  includeAiCaptions: CONTENT_OPTIONS.includeAiCaptions,
-  includeAutoDubbing: CONTENT_OPTIONS.includeAutoDubbing,
-  downloadExtras: CONTENT_OPTIONS.downloadExtras,
-  downloadExtraCaptions: CONTENT_OPTIONS.downloadExtras
-});
+let includeAiCaptionsLocal = $state<boolean | null>(null);
+let includeAutoDubbingLocal = $state<boolean | null>(null);
+let downloadExtrasLocal = $state<boolean | null>(null);
 
-$effect.root(() => {
-  $effect(() => {
-    PANEL_OPTIONS.includeAiCaptions = CONTENT_OPTIONS.includeAiCaptions;
-    PANEL_OPTIONS.includeAutoDubbing = CONTENT_OPTIONS.includeAutoDubbing;
-    PANEL_OPTIONS.downloadExtras = CONTENT_OPTIONS.downloadExtras;
-  });
-});
+export const PANEL_OPTIONS = {
+  get includeAiCaptions() {
+    return includeAiCaptionsLocal ?? CONTENT_OPTIONS.includeAiCaptions;
+  },
+  set includeAiCaptions(value: boolean) {
+    includeAiCaptionsLocal = value;
+  },
+  get includeAutoDubbing() {
+    return includeAutoDubbingLocal ?? CONTENT_OPTIONS.includeAutoDubbing;
+  },
+  set includeAutoDubbing(value: boolean) {
+    includeAutoDubbingLocal = value;
+  },
+  get downloadExtras() {
+    return downloadExtrasLocal ?? CONTENT_OPTIONS.downloadExtras;
+  },
+  set downloadExtras(value: boolean) {
+    downloadExtrasLocal = value;
+  },
+  downloadExtraCaptions: $state(CONTENT_OPTIONS.downloadExtras)
+};
 
 optionsItem.watch(next => {
   if (!next) {
