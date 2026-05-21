@@ -274,7 +274,7 @@
               options={captionOptions}
               value={captionSelectValue}
             />
-            {#if captionSelectValue !== CAPTION_OFF}
+            {#if captionSelectValue !== CAPTION_OFF && captionCustomOptions.length > 1}
               <tp-yt-paper-toggle-button
                 aria-label="Include all captions"
                 checked={downloadExtraCaptions ? "" : undefined}
