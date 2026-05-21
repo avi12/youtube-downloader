@@ -9,13 +9,14 @@ type ResolveAudioCodecParams = {
   targetExtension: string;
 };
 export function resolveAudioCodec({ audioMimeType, targetExtension }: ResolveAudioCodecParams) {
-  const spec = CONTAINER_SPECS[targetExtension];
-  if (!spec) {
+  const containerSpec = CONTAINER_SPECS[targetExtension];
+  if (!containerSpec) {
     return "copy";
   }
 
   const codec = extractBaseCodec(audioMimeType);
-  return spec.audioCodecs.has(codec) ? FFMPEG_CODEC_COPY : (spec.fallbackAudioCodec ?? FFMPEG_CODEC_COPY);
+  const fallbackCodec = containerSpec.fallbackAudioCodec ?? FFMPEG_CODEC_COPY;
+  return containerSpec.audioCodecs.has(codec) ? FFMPEG_CODEC_COPY : fallbackCodec;
 }
 
 export function resolveSubtitleCodec(targetExtension: string) {

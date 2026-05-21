@@ -18,17 +18,17 @@ type GetProgressLabelParams = {
   percentFormatter: Intl.NumberFormat;
 };
 export function getProgressLabel({ videoId, statusProgress, percentFormatter }: GetProgressLabelParams) {
-  const prog = statusProgress[videoId];
-  if (!prog) {
+  const progressEntry = statusProgress[videoId];
+  if (!progressEntry) {
     return "";
   }
 
-  const percentage = percentFormatter.format(prog.progress);
-  if (prog.progressType === ProgressType.FFmpeg) {
+  const percentage = percentFormatter.format(progressEntry.progress);
+  if (progressEntry.progressType === ProgressType.FFmpeg) {
     return `${percentage} stitching`;
   }
 
-  return `${percentage} (${prog.progressType})`;
+  return `${percentage} (${progressEntry.progressType})`;
 }
 
 type GetProgressParams = {
