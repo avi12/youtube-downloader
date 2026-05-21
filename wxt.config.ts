@@ -45,7 +45,7 @@ export default defineConfig({
         matches: ["<all_urls>"]
       }
     ],
-    minimum_chrome_version: "116"
+    minimum_chrome_version: "125.0"
   },
   hooks: {
     "prepare:publicPaths"(_, paths) {

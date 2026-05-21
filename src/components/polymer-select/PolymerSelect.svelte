@@ -25,6 +25,9 @@
   const POLYMER_IRON_DROPDOWN_SELECTOR = "tp-yt-iron-dropdown";
   const DATA_VALUE_ATTR = "data-value";
   const POPOVER_OPEN_STATE = "open";
+  const POPUP_MARGIN_TOP = 4;
+  const POPUP_BOTTOM_GAP = 8;
+  const POPUP_MIN_HEIGHT = 120;
 
   const suffix = untrack(() => {
     if (id) {
@@ -99,6 +102,12 @@
       isOpen = isOpening;
 
       if (isOpening) {
+        if (elTrigger) {
+          const { bottom } = elTrigger.getBoundingClientRect();
+          const availableHeight = window.innerHeight - bottom - POPUP_MARGIN_TOP - POPUP_BOTTOM_GAP;
+          elPopover?.style.setProperty("--ytdl-popup-max-height", `${Math.max(POPUP_MIN_HEIGHT, availableHeight)}px`);
+        }
+
         if (elIronDropdown) {
           elIronDropdown.noCancelOnEscKey = true;
         }
@@ -124,6 +133,11 @@
     }
 
     elMenu = elTarget;
+
+    const itemsObserver = new MutationObserver(() => {
+      elTarget.style.removeProperty("height");
+    });
+    itemsObserver.observe(elTarget, { childList: true });
 
     function handleMousedown(e: Event): void {
       e.preventDefault();
@@ -208,6 +222,7 @@
     elTarget.addEventListener("click", handleClick);
     elTarget.addEventListener("keydown", handleKeydown);
     return () => {
+      itemsObserver.disconnect();
       elTarget.removeEventListener("mousedown", handleMousedown);
       elTarget.removeEventListener("click", handleClick);
       elTarget.removeEventListener("keydown", handleKeydown);
@@ -329,17 +344,13 @@
     }
   }
 
-  @position-try --ytdl-popup-fits-viewport {
-    bottom: 8px;
-    height: auto;
-  }
-
   .ytdl-select-popup {
     position: fixed;
     top: anchor(bottom);
     left: anchor(left);
     overflow-y: auto;
     min-width: anchor-size(width);
+    max-height: var(--ytdl-popup-max-height, clamp(120px, 50dvh, calc(100dvh - 16px)));
     margin-block-start: 4px;
     padding: 4px;
     border: 1px solid var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 10%));
@@ -347,7 +358,11 @@
     background: var(--yt-sys-color-baseline--raised-background, var(--yt-sys-color-baseline--base-background, #ffffff));
     scrollbar-width: thin;
     box-shadow: 0 8px 32px rgb(0 0 0 / 32%), 0 2px 8px rgb(0 0 0 / 16%);
-    position-try-fallbacks: --ytdl-popup-fits-viewport;
+  }
+
+  :global(.ytdl-select-menu) {
+    height: auto !important;
+    min-height: 0 !important;
   }
 
   :global(.ytdl-select-menu tp-yt-paper-item) {
