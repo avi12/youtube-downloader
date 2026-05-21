@@ -29,10 +29,10 @@ export async function handleMuxVideoAudio(job: MuxVideoAudioJob) {
   const filenameBase = filenameOutput.replace(/\.[^.]+$/, "");
   const targetExtension = isExtraTracksPresent ? MKV_EXTENSION : (filenameOutput.split(".").pop() ?? MKV_EXTENSION);
   const muxFilename = getCompatibleFilename(`${videoId}-mux.${MKV_EXTENSION}`);
-  const outputFilename = targetExtension !== MKV_EXTENSION
+  const isNotMkv = targetExtension !== MKV_EXTENSION;
+  const outputFilename = isNotMkv
     ? getCompatibleFilename(`${videoId}-${filenameBase}.${targetExtension}`)
     : muxFilename;
-  const isNotMkv = targetExtension !== MKV_EXTENSION;
   const isNonNativeContainer = !isVideoNativeForContainer({
     videoMimeType,
     targetExtension

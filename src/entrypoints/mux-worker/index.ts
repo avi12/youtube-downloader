@@ -27,17 +27,19 @@ async function onInitMessage(e: MessageEvent<InitMessage>) {
   removeEventListener("message", onInitMessage);
   initPortReceiver(e.data.port);
 
-  // @ts-expect-error @ffmpeg/core ships no .d.ts; we type it via @ffmpeg/types
+  // @ts-expect-error @ffmpeg/core ships no .d.ts
   const { default: createFFmpegCoreUntyped } = await import("@ffmpeg/core");
   const createFFmpegCore: FFmpegFactory = createFFmpegCoreUntyped;
   initFfmpeg(await createFFmpegCore({ wasmBinary: e.data.wasmBinary }));
   state.ffmpeg!.setLogger(({ type, message }) => {
-    if (type === FFMPEG_LOG_TYPE_STDERR) {
+    const isStderr = type === FFMPEG_LOG_TYPE_STDERR;
+    if (isStderr) {
       console.error("[ytdl:ffmpeg]", message);
     }
   });
   state.ffmpeg!.setProgress(({ progress }) => {
-    if (progress < 0) {
+    const isInvalidProgress = progress < 0;
+    if (isInvalidProgress) {
       return;
     }
 

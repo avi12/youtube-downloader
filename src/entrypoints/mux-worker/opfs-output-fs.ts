@@ -155,8 +155,8 @@ function makeOpfsFs(fs: FS, syncHandle: FileSystemSyncAccessHandle) {
       root.contents = {};
       root.timestamp = Date.now();
 
-      const isValidOutputFilename = typeof outputFilename === "string" && outputFilename;
-      if (isValidOutputFilename) {
+      const isOutputFilenameValid = typeof outputFilename === "string" && outputFilename;
+      if (isOutputFilenameValid) {
         opfsFs.createFileNode(root, outputFilename, FILE_MODE);
       }
 

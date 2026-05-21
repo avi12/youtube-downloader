@@ -74,7 +74,8 @@ export async function sendStreamChunksToOffscreen(
       }
     });
 
-    if ((iChunk + 1) % YIELD_EVERY_N_CHUNKS === 0) {
+    const shouldYield = (iChunk + 1) % YIELD_EVERY_N_CHUNKS === 0;
+    if (shouldYield) {
       await new Promise(resolve => setTimeout(resolve, 0));
     }
   }

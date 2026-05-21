@@ -14,13 +14,15 @@ export async function awaitVideoComplete(videoId: string) {
       const callbacks = completionCallbacks.get(videoId);
       callbacks?.delete(onComplete);
 
-      if (callbacks && !callbacks.size) {
+      const isCallbacksEmpty = callbacks && !callbacks.size;
+      if (isCallbacksEmpty) {
         completionCallbacks.delete(videoId);
       }
 
       reject(new Error(`Download timed out: ${videoId}`));
     }, MAX_VIDEO_DOWNLOAD_MS);
-    if (!completionCallbacks.has(videoId)) {
+    const isCallbackSetMissing = !completionCallbacks.has(videoId);
+    if (isCallbackSetMissing) {
       completionCallbacks.set(videoId, new Set());
     }
 

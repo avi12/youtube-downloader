@@ -170,12 +170,14 @@ function handleWorkerMessage(message: WorkerMessage) {
 }
 
 addEventListener("message", e => {
-  if (e.origin !== location.origin) {
+  const isExternalOrigin = e.origin !== location.origin;
+  if (isExternalOrigin) {
     return;
   }
 
   const message: WorkerMessage = e.data;
-  if (!message?.type?.startsWith(WORKER_MSG_PREFIX)) {
+  const isWorkerMessage = message?.type?.startsWith(WORKER_MSG_PREFIX);
+  if (!isWorkerMessage) {
     return;
   }
 

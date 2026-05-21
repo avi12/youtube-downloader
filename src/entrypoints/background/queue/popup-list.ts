@@ -33,7 +33,8 @@ export async function enqueueToPopupList(
   if (type === DownloadType.VideoAndAudio) {
     const queue = await videoQueueItem.getValue();
     const isVideoQueued = queue.some(item => item.videoId === videoId);
-    if (!isVideoQueued) {
+    const isNotQueued = !isVideoQueued;
+    if (isNotQueued) {
       queue.push({
         videoId,
         filenameOutput
@@ -47,7 +48,8 @@ export async function enqueueToPopupList(
   const listItem = type === DownloadType.Audio ? musicListItem : videoOnlyListItem;
   const list = await listItem.getValue();
   const isVideoListed = list.includes(videoId);
-  if (!isVideoListed) {
+  const isNotListed = !isVideoListed;
+  if (isNotListed) {
     list.push(videoId);
     await listItem.setValue(list);
   }
@@ -68,15 +70,18 @@ export async function removeFromPopupList(videoIds: string | string[]) {
   const filteredVideoOnly = videoOnlyList.filter(id => !videoIdsToRemove.has(id));
 
   const writes: Promise<void>[] = [];
-  if (filteredQueue.length !== queue.length) {
+  const isQueueChanged = filteredQueue.length !== queue.length;
+  if (isQueueChanged) {
     writes.push(videoQueueItem.setValue(filteredQueue));
   }
 
-  if (filteredMusic.length !== musicList.length) {
+  const isMusicChanged = filteredMusic.length !== musicList.length;
+  if (isMusicChanged) {
     writes.push(musicListItem.setValue(filteredMusic));
   }
 
-  if (filteredVideoOnly.length !== videoOnlyList.length) {
+  const isVideoOnlyChanged = filteredVideoOnly.length !== videoOnlyList.length;
+  if (isVideoOnlyChanged) {
     writes.push(videoOnlyListItem.setValue(filteredVideoOnly));
   }
 

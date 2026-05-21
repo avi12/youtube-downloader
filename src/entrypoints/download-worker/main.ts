@@ -24,15 +24,18 @@ const abortController = new AbortController();
 const { signal } = abortController;
 
 addEventListener("message", e => {
-  if (e.origin !== location.origin) {
+  const isExternalOrigin = e.origin !== location.origin;
+  if (isExternalOrigin) {
     return;
   }
 
-  if (e.data?.type === IFRAME_MSG_CANCEL) {
+  const isCancel = e.data?.type === IFRAME_MSG_CANCEL;
+  if (isCancel) {
     abortController.abort();
   }
 
-  if (e.data?.type === IFRAME_MSG_START) {
+  const isStart = e.data?.type === IFRAME_MSG_START;
+  if (isStart) {
     const { request, tabId, enrichedMetadata } = e.data;
     void runDownload({
       request,
@@ -181,7 +184,8 @@ async function runDownload({ request, tabId, enrichedMetadata }: RunDownloadPara
     const isAudioOnly = type === DownloadType.Audio;
 
     let cdnResult = null;
-    if (needsCdn && isCdnUrlsPresent) {
+    const shouldUseCdn = needsCdn && isCdnUrlsPresent;
+    if (shouldUseCdn) {
       const partialAudioData = sabrResult?.isPartialAudio ? (sabrResult.audioData ?? undefined) : undefined;
       const useStreaming = !isAudioOnly && !partialAudioData;
 
@@ -226,8 +230,10 @@ async function runDownload({ request, tabId, enrichedMetadata }: RunDownloadPara
     }
 
     const result = cdnResult ?? sabrResult;
-    const isDataMissing = !result
-      || (!(result.videoData?.byteLength) && !(result.audioData?.byteLength) && !result.streamedToOffscreen);
+    const hasNoVideoData = !(result?.videoData?.byteLength);
+    const hasNoAudioData = !(result?.audioData?.byteLength);
+    const isNotStreamed = !result?.streamedToOffscreen;
+    const isDataMissing = !result || (hasNoVideoData && hasNoAudioData && isNotStreamed);
     if (isDataMissing) {
       const isDirectUrlEligible = isAudioOnly && !!resolvedAudioUrl;
       if (isDirectUrlEligible) {
@@ -275,7 +281,7 @@ async function runDownload({ request, tabId, enrichedMetadata }: RunDownloadPara
     const extraAudioBuffers: ArrayBuffer[] = additionalAudioTracks
       .map(track => track.data)
       .filter((data): data is Uint8Array => data !== null && data.byteLength > 0)
-      .map(toArrayBuffer);
+      .map(data => toArrayBuffer(data));
 
     const transferList: ArrayBuffer[] = [...extraAudioBuffers];
     const completeMsg: Record<string, unknown> = {
@@ -286,14 +292,16 @@ async function runDownload({ request, tabId, enrichedMetadata }: RunDownloadPara
       extraAudioBuffers
     };
     if (!isStreamed) {
-      if (result.videoData?.byteLength) {
-        const videoBuffer = toArrayBuffer(result.videoData);
+      const hasVideoData = !!result.videoData?.byteLength;
+      if (hasVideoData) {
+        const videoBuffer = toArrayBuffer(result.videoData!);
         transferList.push(videoBuffer);
         completeMsg.videoBuffer = videoBuffer;
       }
 
-      if (result.audioData?.byteLength) {
-        const audioBuffer = toArrayBuffer(result.audioData);
+      const hasAudioData = !!result.audioData?.byteLength;
+      if (hasAudioData) {
+        const audioBuffer = toArrayBuffer(result.audioData!);
         transferList.push(audioBuffer);
         completeMsg.audioBuffer = audioBuffer;
       }

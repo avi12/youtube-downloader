@@ -30,7 +30,8 @@ export function handleTranscodeAudio(job: TranscodeAudioJob) {
   try {
     const codec = AUDIO_CODEC_BY_EXTENSION[outputExtension] ?? "copy";
     const exitCode = state.ffmpeg!.exec("-i", inputFilename, "-map", "0:a", "-c:a", codec, outputFilename);
-    if (exitCode !== 0) {
+    const isExecFailed = exitCode !== 0;
+    if (isExecFailed) {
       postError(`FFmpeg transcode exited with code ${exitCode}`);
       return;
     }
@@ -70,13 +71,15 @@ export function handleTranscodeFile(job: TranscodeFileJob) {
         audioMimeType
       })
     );
-    if (exitCode !== 0) {
+    const isExecFailed = exitCode !== 0;
+    if (isExecFailed) {
       postError(`FFmpeg exited with code ${exitCode}`);
       return;
     }
 
     const output = state.ffmpeg!.FS.readFile(outputFilename, { encoding: "binary" });
-    if (typeof output === "string") {
+    const isStringOutput = typeof output === "string";
+    if (isStringOutput) {
       postError("FFmpeg readFile returned unexpected string output");
       return;
     }

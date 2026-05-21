@@ -17,11 +17,12 @@ export function registerPlaylistDownloadHandler() {
     currentSequenceTabId = tabId;
 
     for (const item of data.items) {
+      const hasHeight = !!item.videoFormat?.height;
       await enqueueToPopupList({
         videoId: item.videoId,
         type: item.type,
         filenameOutput: item.filenameOutput,
-        quality: item.videoFormat?.height ? `${item.videoFormat.height}p` : undefined,
+        quality: hasHeight ? `${item.videoFormat!.height}p` : undefined,
         tabId,
         ...(data.isZipBundle && {
           playlistId: item.playlistId,

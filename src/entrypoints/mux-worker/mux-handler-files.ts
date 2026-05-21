@@ -78,7 +78,8 @@ export function cleanupMuxFiles(params: MuxCleanupParams) {
     tryUnlink(params.muxFilename);
   }
 
-  if (params.targetExtension !== MKV_EXTENSION) {
+  const isNotMkv = params.targetExtension !== MKV_EXTENSION;
+  if (isNotMkv) {
     tryUnlink(params.outputFilename);
   }
 }

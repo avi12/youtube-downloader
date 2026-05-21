@@ -51,7 +51,8 @@ export async function handleEmbedMetadata(job: EmbedMetadataJob) {
     ffmpegArgs.push("-disposition:v", "attached_pic");
   }
 
-  ffmpegArgs.push("-c:a", outputExtension === FLAC_CODEC ? FLAC_CODEC : FFMPEG_CODEC_COPY);
+  const audioCodec = outputExtension === FLAC_CODEC ? FLAC_CODEC : FFMPEG_CODEC_COPY;
+  ffmpegArgs.push("-c:a", audioCodec);
   ffmpegArgs.push("-metadata", `title=${sanitizeForFFmpeg(metadata.title)}`);
   ffmpegArgs.push("-metadata", `artist=${sanitizeForFFmpeg(metadata.artist)}`);
 
@@ -75,7 +76,8 @@ export async function handleEmbedMetadata(job: EmbedMetadataJob) {
 
   try {
     const exitCode = state.ffmpeg!.exec(...ffmpegArgs);
-    if (exitCode !== 0) {
+    const isExecFailed = exitCode !== 0;
+    if (isExecFailed) {
       postResult(new Uint8Array(audioData));
       return;
     }

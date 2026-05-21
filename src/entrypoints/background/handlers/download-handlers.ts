@@ -117,8 +117,8 @@ export function registerDownloadHandlers() {
 
   onMessage(MessageType.StartBackgroundDownload, async ({ data, sender }) => {
     let tabId = sender.tab?.id ?? getTabIdsForVideo(data.videoId)[0];
-    const isTabIdUnknown = !tabId;
-    if (isTabIdUnknown) {
+    const isTabIdMissing = !tabId;
+    if (isTabIdMissing) {
       const [ytTab] = await browser.tabs.query({
         url: "*://*.youtube.com/*",
         active: true
@@ -131,11 +131,12 @@ export function registerDownloadHandlers() {
       videoId: data.videoId,
       tabId: resolvedTabId
     });
+    const hasHeight = !!data.videoFormat?.height;
     await enqueueToPopupList({
       videoId: data.videoId,
       type: data.type,
       filenameOutput: data.filenameOutput,
-      quality: data.videoFormat?.height ? `${data.videoFormat.height}p` : undefined,
+      quality: hasHeight ? `${data.videoFormat!.height}p` : undefined,
       tabId: resolvedTabId
     });
     void startBackgroundDownload({

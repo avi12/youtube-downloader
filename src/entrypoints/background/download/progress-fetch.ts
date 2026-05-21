@@ -23,14 +23,16 @@ export async function sendProgressUpdate({ videoId, progress, progressType, tabI
   } else {
     const now = Date.now();
     const lastSent = lastProgressTimestamps.get(videoId) ?? 0;
-    if (now - lastSent < PROGRESS_THROTTLE_INTERVAL_MS) {
+    const isTooSoon = now - lastSent < PROGRESS_THROTTLE_INTERVAL_MS;
+    if (isTooSoon) {
       return;
     }
 
     lastProgressTimestamps.set(videoId, now);
   }
 
-  if (isServiceWorker()) {
+  const isWorker = isServiceWorker();
+  if (isWorker) {
     await sendMessage(MessageType.UpdateDownloadProgress, {
       videoId,
       progress,

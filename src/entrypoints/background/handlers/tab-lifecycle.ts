@@ -24,8 +24,8 @@ export function registerTabLifecycleHandlers() {
   browser.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     const isLoading = changeInfo.status === browser.tabs.TabStatus.LOADING;
     const isYouTube = (tab.url ?? "").includes(YOUTUBE_HOSTNAME);
-    const isNotYouTubeLoading = !isLoading || !isYouTube;
-    if (isNotYouTubeLoading) {
+    const isYouTubeLoading = isLoading && isYouTube;
+    if (!isYouTubeLoading) {
       return;
     }
 

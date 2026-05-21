@@ -41,7 +41,8 @@ function applyChunkToAccumulator({ videoId, streamType, iChunk, totalChunks, chu
 
   const isFinalMarker = iChunk === -1;
   if (isFinalMarker) {
-    if (streamType === StreamType.Video) {
+    const isVideoStream = streamType === StreamType.Video;
+    if (isVideoStream) {
       accumulator.totalVideoChunks = totalChunks;
     } else {
       const audioStream = accumulator.audioStreams.get(streamType);
@@ -60,14 +61,16 @@ function applyChunkToAccumulator({ videoId, streamType, iChunk, totalChunks, chu
 
     accumulator.videoWriter.enqueueChunk(chunk);
 
-    if (totalChunks > 0) {
+    const hasTotalChunks = totalChunks > 0;
+    if (hasTotalChunks) {
       accumulator.totalVideoChunks = totalChunks;
     }
 
     return;
   }
 
-  if (!accumulator.audioStreams.has(streamType)) {
+  const isAudioStreamMissing = !accumulator.audioStreams.has(streamType);
+  if (isAudioStreamMissing) {
     accumulator.audioStreams.set(streamType, {
       chunks: new Map(),
       totalChunks: 0
@@ -81,7 +84,8 @@ function applyChunkToAccumulator({ videoId, streamType, iChunk, totalChunks, chu
 
   audioStream.chunks.set(iChunk, chunk);
 
-  if (totalChunks > 0) {
+  const hasTotalChunks = totalChunks > 0;
+  if (hasTotalChunks) {
     audioStream.totalChunks = totalChunks;
   }
 }

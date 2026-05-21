@@ -25,11 +25,9 @@ export async function handleOffscreenAudioDownload(data: AudioSabrData) {
     subtitleTracks, playlistId, playlistTitle, playlistTotalCount, enrichedMetadata
   } = data;
 
-  console.log("[ytdl:offscreen] Starting audio SABR download for", videoId);
-
   try {
     let iChunk = 0;
-    const audioResult = await fetchAudioViaSabrStream({
+    await fetchAudioViaSabrStream({
       sabrConfig,
       audioFormat,
       fetchFunction: makeFetch(),
@@ -55,10 +53,6 @@ export async function handleOffscreenAudioDownload(data: AudioSabrData) {
       tabId
     });
 
-    if (!audioResult.isComplete) {
-      console.warn("[ytdl:offscreen] Audio SABR download incomplete for", videoId);
-    }
-
     void handleProcessStreamEnd({
       type,
       videoId,
@@ -77,7 +71,6 @@ export async function handleOffscreenAudioDownload(data: AudioSabrData) {
     });
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error("[ytdl:offscreen] Audio SABR download failed:", errorMessage);
     await sendMessage(MessageType.ProcessStreamError, {
       videoId,
       error: errorMessage

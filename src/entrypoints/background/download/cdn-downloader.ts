@@ -141,7 +141,8 @@ export async function downloadViaCdn({
   }
 
   if (isStreamingMode) {
-    if (onVideoStreamEnd) {
+    const hasStreamEndCallback = !!onVideoStreamEnd;
+    if (hasStreamEndCallback) {
       onVideoStreamEnd(iVideoChunk);
       onAudioStreamEnd?.(iAudioChunk);
     } else {

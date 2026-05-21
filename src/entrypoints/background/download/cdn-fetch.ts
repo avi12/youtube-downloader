@@ -24,9 +24,6 @@ type AttemptFetchParams = {
   byteOffset: number;
 };
 async function attemptFetch({ url, signal, byteOffset }: AttemptFetchParams) {
-  // Timeout only guards against the server accepting the connection but not sending headers.
-  // Once headers arrive we clear the timer so it never fires during the (potentially long) body read.
-  // The user-cancel listener is kept so cancellation still aborts the body stream immediately.
   const headerTimeoutController = new AbortController();
   const timeoutId = setTimeout(() => headerTimeoutController.abort(), FETCH_HEADER_TIMEOUT_MS);
   function abortOnUserCancel() {
@@ -130,8 +127,6 @@ export async function fetchWithProgress(
     const isRangeRequestIgnored = byteOffset > 0 && response.status === HTTP_STATUS_OK;
     if (isRangeRequestIgnored) {
       if (onChunk) {
-        // Streaming mode: data is already in OPFS. Re-reading from byte 0 would
-        // corrupt the file. Accept what was streamed and let the mux handle it.
         return new Uint8Array(0);
       }
 
@@ -173,7 +168,8 @@ export async function fetchWithProgress(
         return new Uint8Array(0);
       }
 
-      const isUnrecoverableError = !isStreamStall || consecutiveRetries >= MAX_CDN_RETRY_ATTEMPTS;
+      const isRetryExhausted = consecutiveRetries >= MAX_CDN_RETRY_ATTEMPTS;
+      const isUnrecoverableError = !isStreamStall || isRetryExhausted;
       if (isUnrecoverableError) {
         throw error;
       }

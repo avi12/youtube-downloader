@@ -22,9 +22,11 @@ export function executeMuxPhases({ params, checkOutput }: ExecuteMuxPhasesParams
   const { useIntermediateMkv, muxFilename, outputFilename, targetExtension, audioMimeType } = params;
 
   const phase1Code = state.ffmpeg!.exec(...buildMuxFfmpegArgs(params));
-  if (phase1Code !== 0) {
+  const isPhase1Failed = phase1Code !== 0;
+  if (isPhase1Failed) {
     const phase1File = useIntermediateMkv ? muxFilename : outputFilename;
-    if (!checkOutput(phase1File)) {
+    const isPhase1OutputMissing = !checkOutput(phase1File);
+    if (isPhase1OutputMissing) {
       postError(`FFmpeg phase 1 exited with code ${phase1Code}`);
       return false;
     }

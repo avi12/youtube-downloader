@@ -45,16 +45,19 @@ export async function dispatchToOffscreen(
         tabId
       })
     );
-  } else if (additionalAudioTracks.some(track => track.data)) {
-    await Promise.all(
-      buildTransferJobs({
-        videoData: null,
-        audioData: null,
-        additionalAudioTracks,
-        videoId,
-        tabId
-      })
-    );
+  } else {
+    const hasExtraTrackData = additionalAudioTracks.some(track => track.data);
+    if (hasExtraTrackData) {
+      await Promise.all(
+        buildTransferJobs({
+          videoData: null,
+          audioData: null,
+          additionalAudioTracks,
+          videoId,
+          tabId
+        })
+      );
+    }
   }
 
   const audioTrackLabels = [primaryAudioLabel ?? "", ...additionalAudioTracks.map(track => track.label)];

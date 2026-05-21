@@ -59,7 +59,8 @@ async function isTabIdle(tabId: number) {
     }
 
     const win = await browser.windows.get(tab.windowId);
-    return !win.focused;
+    const isWindowUnfocused = !win.focused;
+    return isWindowUnfocused;
   } catch {
     return true;
   }
@@ -71,8 +72,8 @@ type NotifyOnIdleIfNeededParams = {
 };
 async function notifyOnIdleIfNeeded({ data, tabIds }: NotifyOnIdleIfNeededParams) {
   const [tabId] = tabIds;
-  const isTabUndefined = tabId === undefined;
-  const isIdle = isTabUndefined || await isTabIdle(tabId);
+  const isTabMissing = tabId === undefined;
+  const isIdle = isTabMissing || await isTabIdle(tabId);
   if (!isIdle) {
     return;
   }
@@ -93,7 +94,8 @@ export function persistOnDownloadComplete({ downloadId, data }: DownloadIdDataPa
         return;
       }
 
-      if (delta.state!.current === browser.downloads.State.COMPLETE) {
+      const currentState = delta.state!.current;
+      if (currentState === browser.downloads.State.COMPLETE) {
         browser.downloads.onChanged.removeListener(handleChanged);
 
         const tabIds = data.recentContext?.videoId
@@ -131,7 +133,7 @@ export function persistOnDownloadComplete({ downloadId, data }: DownloadIdDataPa
         return;
       }
 
-      if (delta.state!.current === browser.downloads.State.INTERRUPTED) {
+      if (currentState === browser.downloads.State.INTERRUPTED) {
         browser.downloads.onChanged.removeListener(handleChanged);
         resolve();
       }
@@ -153,8 +155,9 @@ function scheduleRevokeBlobUrl({ downloadId, blobUrl }: ScheduleRevokeBlobUrlPar
     }
 
     const { current } = delta.state!;
-    const isTerminal = current === browser.downloads.State.COMPLETE
-      || current === browser.downloads.State.INTERRUPTED;
+    const isComplete = current === browser.downloads.State.COMPLETE;
+    const isInterrupted = current === browser.downloads.State.INTERRUPTED;
+    const isTerminal = isComplete || isInterrupted;
     if (!isTerminal) {
       return;
     }
@@ -232,8 +235,8 @@ export function registerRecentDownloadsRetention() {
   browser.alarms.onAlarm.addListener(alarm => {
     const isRetentionAlarm = alarm.name === RETENTION_ALARM_NAME;
     const isPopupOpen = openPopupCount > 0;
-    const isPruneSkipped = !isRetentionAlarm || isPopupOpen;
-    if (isPruneSkipped) {
+    const shouldSkipPrune = !isRetentionAlarm || isPopupOpen;
+    if (shouldSkipPrune) {
       return;
     }
 
