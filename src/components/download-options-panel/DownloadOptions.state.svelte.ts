@@ -94,12 +94,17 @@ export function createDownloadOptionsState(props: () => DownloadOptionsProps) {
     })
   );
 
+  const isOnlyAsrAvailable = $derived(
+    props().captionTracks.length > 0 &&
+    props().captionTracks.every(track => track.kind === CAPTION_KIND_ASR)
+  );
+
   const filteredCaptionTracks = $derived(
     props().captionTracks.filter(track => preserveAutoVariant({
       item: track,
       isAuto: candidate => candidate.kind === CAPTION_KIND_ASR,
       matchesPlayer: candidate => candidate.vssId === PLAYER_ACTIVE_CAPTION.vssId,
-      globalIncludes: PANEL_OPTIONS.includeAiCaptions
+      globalIncludes: PANEL_OPTIONS.includeAiCaptions || isOnlyAsrAvailable
     }))
   );
 
@@ -125,7 +130,7 @@ export function createDownloadOptionsState(props: () => DownloadOptionsProps) {
         item: track,
         isAuto: candidate => candidate.kind === CAPTION_KIND_ASR,
         matchesPlayer: () => false,
-        globalIncludes: PANEL_OPTIONS.includeAiCaptions
+        globalIncludes: PANEL_OPTIONS.includeAiCaptions || isOnlyAsrAvailable
       }))
       .map(track => ({
         value: track.vssId,
