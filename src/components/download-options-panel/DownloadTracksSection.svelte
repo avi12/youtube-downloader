@@ -64,9 +64,10 @@
   const isAudioOnly = $derived(downloadType === DownloadType.Audio);
   const isVideoOnly = $derived(downloadType === DownloadType.Video);
   const isExtensionMultiTrackIncompatible = $derived(MULTI_TRACK_UNSUPPORTED_EXTENSIONS.has(extension));
+  const hasAudioTrackSelector = $derived(uniqueAudioLanguages.length > 0);
   const hasMultipleAudioTracks = $derived(uniqueAudioLanguages.length > 1);
   const hasCaptions = $derived(captionTracks.length > 0);
-  const isVisible = $derived(hasMultipleAudioTracks || (hasCaptions && !isVideoOnly && !isAudioOnly));
+  const isVisible = $derived(hasAudioTrackSelector || (hasCaptions && !isVideoOnly && !isAudioOnly));
 
   const originalAudioLangCode = $derived(
     uniqueAudioLanguages.find(language => language.label === audioOriginalLabel)?.value ?? null
@@ -146,7 +147,7 @@
   ]);
 
   const audioSummaryText = $derived.by(() => {
-    if (!hasMultipleAudioTracks) {
+    if (!hasAudioTrackSelector) {
       return null;
     }
 
@@ -235,7 +236,7 @@
 
     <div class="ytdl-tracks-body" class:is-open={isOpen}>
       <div class="ytdl-tracks-body-inner">
-        {#if hasMultipleAudioTracks}
+        {#if hasAudioTrackSelector}
           <div class="ytdl-track-field">
             <PolymerSelect
               id="tracks-audio-select"
@@ -245,7 +246,7 @@
               options={audioOptions}
               value={audioSelectValue}
             />
-            {#if !isAudioOnly}
+            {#if !isAudioOnly && hasMultipleAudioTracks}
               <tp-yt-paper-toggle-button
                 aria-label="Include all audio tracks"
                 checked={downloadExtras ? "" : undefined}
