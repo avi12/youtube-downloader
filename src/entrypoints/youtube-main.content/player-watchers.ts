@@ -64,8 +64,8 @@ export function setupAudioTrackWatcher() {
   let lastTrackId: string | null = null;
   function reportTrack(trackId: string) {
     const isNewValidTrack = isAudioTrackId(trackId) && trackId !== lastTrackId;
-    const shouldSkipTrack = !isNewValidTrack || isAdPlaying(player);
-    if (shouldSkipTrack) {
+    const isTrackSkipped = !isNewValidTrack || isAdPlaying(player);
+    if (isTrackSkipped) {
       return;
     }
 
@@ -75,7 +75,7 @@ export function setupAudioTrackWatcher() {
   }
 
   for (const bus of buses) {
-    bus.subscribe(PLAYER_EVENT_INTERNAL_AUDIO_FORMAT_CHANGE, (trackId: unknown) => {
+    bus.subscribe(PLAYER_EVENT_INTERNAL_AUDIO_FORMAT_CHANGE, trackId => {
       if (typeof trackId === "string") {
         reportTrack(trackId);
       }
@@ -164,8 +164,8 @@ export function setupCaptionTrackWatcher() {
   function handleCaptionsChanged() {
     const track = player?.getOption?.(PLAYER_OPTION_CAPTIONS, PLAYER_OPTION_TRACK);
     const isSubtitlesOn = player?.isSubtitlesOn?.() ?? false;
-    const hasActiveTrack = isSubtitlesOn && isPlayerCaptionTrackData(track);
-    if (hasActiveTrack) {
+    const isActiveTrackPresent = isSubtitlesOn && isPlayerCaptionTrackData(track);
+    if (isActiveTrackPresent) {
       if (lastVssId === track.vss_id) {
         return;
       }

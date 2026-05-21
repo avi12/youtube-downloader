@@ -45,7 +45,7 @@ export async function buildVideoMetadata(videoId: string) {
   const title = descriptionMeta.songTitle || titleMeta.songTitle;
   const artist = descriptionMeta.artist || titleMeta.fullArtist || videoDetails?.author || "";
   const albumArtist = descriptionMeta.mainArtist || titleMeta.mainArtist || undefined;
-  const hasGenres = genres.length > 0;
+  const isGenresPresent = genres.length > 0;
 
   const youtubeThumbnailUrl = videoDetails?.thumbnail?.thumbnails?.at(-1)?.url;
   const searchQuery = `${artist} ${title}`.trim();
@@ -56,7 +56,7 @@ export async function buildVideoMetadata(videoId: string) {
     artist,
     albumArtist: albumArtist !== artist ? albumArtist : undefined,
     album: descriptionMeta.album,
-    genres: hasGenres ? genres : undefined,
+    genres: isGenresPresent ? genres : undefined,
     date: renderer?.publishDate,
     thumbnailUrl: musicThumbnailUrl ?? youtubeThumbnailUrl,
     isMusic: cached.isMusic
@@ -64,8 +64,8 @@ export async function buildVideoMetadata(videoId: string) {
 }
 
 export async function generatePoTokenIfNeeded(videoData: VideoData) {
-  const hasCurrentPoToken = capturedPoToken && capturedPoTokenVideoId === videoData.videoId;
-  if (hasCurrentPoToken) {
+  const isCurrentPoTokenPresent = capturedPoToken && capturedPoTokenVideoId === videoData.videoId;
+  if (isCurrentPoTokenPresent) {
     return;
   }
 

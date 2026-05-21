@@ -20,7 +20,7 @@ export function getExtraAudioFormats({
   }
 
   const seenTrackIds = new Set(selectedTrackId ? [selectedTrackId] : []);
-  let hasUntaggedExtra = !selectedTrackId;
+  let isUntaggedExtraPresent = !selectedTrackId;
   const result: AdaptiveFormatItem[] = [];
   for (const format of audioFormats) {
     if (result.length >= MAX_ADDITIONAL_AUDIO_TRACKS) {
@@ -33,11 +33,11 @@ export function getExtraAudioFormats({
 
     const trackId = format.audioTrack?.id;
     if (!trackId) {
-      if (hasUntaggedExtra) {
+      if (isUntaggedExtraPresent) {
         continue;
       }
 
-      hasUntaggedExtra = true;
+      isUntaggedExtraPresent = true;
       result.push(format);
       continue;
     }

@@ -9,8 +9,8 @@ let activeVideoDataFetches = 0;
 
 async function processNextVideoData() {
   const isAtCapacity = activeVideoDataFetches >= MAX_CONCURRENT_FETCHES;
-  const hasNoPending = videoDataPending.size === 0;
-  if (isAtCapacity || hasNoPending) {
+  const isPendingEmpty = videoDataPending.size === 0;
+  if (isAtCapacity || isPendingEmpty) {
     return;
   }
 
