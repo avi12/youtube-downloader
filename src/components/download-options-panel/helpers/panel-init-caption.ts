@@ -123,7 +123,8 @@ export function resolveInitialCaptionTrack({
     return null;
   }
 
-  const candidateTracks = options.includeAiCaptions
+  const allTracksAreAsr = videoData.captionTracks.every(track => track.kind === CAPTION_KIND_ASR);
+  const candidateTracks = options.includeAiCaptions || allTracksAreAsr
     ? videoData.captionTracks
     : videoData.captionTracks.filter(track => track.kind !== CAPTION_KIND_ASR);
   if (captionMode === PanelTrackMode.Custom) {
