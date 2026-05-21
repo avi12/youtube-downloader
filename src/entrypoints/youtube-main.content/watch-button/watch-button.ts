@@ -50,7 +50,8 @@ export async function injectSegmentedDownloadButton(videoData: VideoData) {
   const generation = ++injectionGeneration;
   containerSearchAbort = new AbortController();
   const elActionsContainer = await findVideoActionsContainer(containerSearchAbort.signal);
-  if (!elActionsContainer || generation !== injectionGeneration) {
+  const isStaleOrAborted = !elActionsContainer || generation !== injectionGeneration;
+  if (isStaleOrAborted) {
     return;
   }
 
@@ -63,7 +64,8 @@ export async function injectSegmentedDownloadButton(videoData: VideoData) {
   injectWatchButtonStyles();
 
   const elNativeDownload = findNativeDownloadButton(elActionsContainer);
-  if (!isShowNativeDownload && elNativeDownload) {
+  const shouldHideNativeDownload = !isShowNativeDownload && elNativeDownload;
+  if (shouldHideNativeDownload) {
     elNativeDownload.classList.add(NATIVE_HIDDEN_CLASS);
   }
 

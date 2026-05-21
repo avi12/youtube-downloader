@@ -23,7 +23,8 @@ export function registerDownloadProgressHandlers() {
     void sendMessage(MessageType.CancelDownload, { videoIds: data.videoIds });
     const currentProgress = await statusProgressItem.getValue();
     for (const id of data.videoIds) {
-      if (!downloadProgressStore.get(id)?.isDownloading) {
+      const isNotDownloading = !downloadProgressStore.get(id)?.isDownloading;
+      if (isNotDownloading) {
         delete currentProgress[id];
       }
     }
@@ -33,7 +34,8 @@ export function registerDownloadProgressHandlers() {
 
   crossWorldMessenger.onMessage(CrossWorldMessage.StartBackgroundDownload, ({ data }) => {
     const request: DownloadRequest = JSON.parse(data.requestJson);
-    if (!downloadProgressStore.setLocal(request.videoId, INITIAL_DOWNLOAD_PROGRESS)) {
+    const isProgressSlotAvailable = downloadProgressStore.setLocal(request.videoId, INITIAL_DOWNLOAD_PROGRESS);
+    if (!isProgressSlotAvailable) {
       return;
     }
 

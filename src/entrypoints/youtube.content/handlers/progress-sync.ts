@@ -60,10 +60,11 @@ export function syncStoredProgressToStore(
   }
 
   for (const videoId of downloadProgressStore.keys()) {
-    if (isOrphaned({
+    const isOrphanedDownload = isOrphaned({
       videoId,
       storedProgress
-    })) {
+    });
+    if (isOrphanedDownload) {
       resolveOrphan(videoId);
     }
   }

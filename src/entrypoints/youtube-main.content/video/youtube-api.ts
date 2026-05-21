@@ -26,7 +26,8 @@ function extractSabrConfig({ playerResponse, clientVersion, clientName }: VideoD
   const serverAbrStreamingUrl = playerResponse.streamingData?.serverAbrStreamingUrl;
   const videoPlaybackUstreamerConfig = playerResponse.playerConfig
     ?.mediaCommonConfig?.mediaUstreamerRequestConfig?.videoPlaybackUstreamerConfig;
-  if (!serverAbrStreamingUrl || !videoPlaybackUstreamerConfig) {
+  const isSabrConfigMissing = !serverAbrStreamingUrl || !videoPlaybackUstreamerConfig;
+  if (isSabrConfigMissing) {
     return null;
   }
 

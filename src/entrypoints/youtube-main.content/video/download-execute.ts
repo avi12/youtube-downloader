@@ -19,14 +19,16 @@ function buildVirtualTranslatedTrack(
   captionTracks: CaptionTrack[],
   translationLanguages: TranslationLanguage[]
 ) {
-  if (!vssId.startsWith(TRANSLATED_CAPTION_VSSID_PREFIX)) {
+  const isTranslatedCaption = vssId.startsWith(TRANSLATED_CAPTION_VSSID_PREFIX);
+  if (!isTranslatedCaption) {
     return null;
   }
 
   const targetLangCode = vssId.slice(TRANSLATED_CAPTION_VSSID_PREFIX.length);
   const translationLang = translationLanguages.find(lang => lang.languageCode === targetLangCode);
   const sourceTrack = captionTracks.find(track => track.isTranslatable);
-  if (!translationLang || !sourceTrack) {
+  const isMissingTranslationData = !translationLang || !sourceTrack;
+  if (isMissingTranslationData) {
     return null;
   }
 

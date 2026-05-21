@@ -21,7 +21,8 @@ declare global {
 
 export function extractPlaylistMetadata() {
   const { header, metadata } = window.ytInitialData ?? {};
-  if (!header && !metadata) {
+  const hasNoPlaylistData = !header && !metadata;
+  if (hasNoPlaylistData) {
     playlistMetadataSignal.value = null;
     return;
   }
@@ -32,7 +33,8 @@ export function extractPlaylistMetadata() {
   const playlistTitle = headerRenderer?.title?.simpleText ?? metadataRenderer?.title ?? "";
   const playlistId = headerRenderer?.playlistId ?? "";
   const playlistOwner = headerRenderer?.ownerText?.runs?.[0]?.text ?? "";
-  if (!playlistTitle && !playlistId) {
+  const hasNoPlaylistIdentifier = !playlistTitle && !playlistId;
+  if (hasNoPlaylistIdentifier) {
     playlistMetadataSignal.value = null;
     return;
   }
@@ -53,7 +55,8 @@ function handleNavigation() {
 export async function handleNavigateSuccess() {
   handleNavigation();
 
-  if (location.pathname !== WATCH_PATHNAME) {
+  const isWatchPage = location.pathname === WATCH_PATHNAME;
+  if (!isWatchPage) {
     return;
   }
 
@@ -62,7 +65,7 @@ export async function handleNavigateSuccess() {
   for (let attempt = 0; attempt < PLAYER_DATA_POLL_ATTEMPTS; attempt++) {
     const playerResponse = document.querySelector(WATCH_FLEXY_TAG)?.playerData ?? null;
     const isReady = playerResponse?.videoDetails?.videoId === expectedVideoId
-      && playerResponse.playabilityStatus?.status !== PlayabilityStatus.Unplayable;
+      && playerResponse?.playabilityStatus?.status !== PlayabilityStatus.Unplayable;
     if (isReady) {
       await buildAndDispatchVideoData({ playerResponse });
       return;

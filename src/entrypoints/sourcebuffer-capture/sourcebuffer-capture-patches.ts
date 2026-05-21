@@ -54,7 +54,8 @@ export function patchSourceBuffer(captureState: YtdlCaptureState) {
     const mimeType = sourceBufferMimeTypes.get(this);
     const isCaptureActive = mimeType && !isAdPlaying();
     if (isCaptureActive) {
-      const chunk = data instanceof ArrayBuffer
+      const isArrayBuffer = data instanceof ArrayBuffer;
+      const chunk = isArrayBuffer
         ? new Uint8Array(data)
         : new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
       const { activeVideoId } = captureState;

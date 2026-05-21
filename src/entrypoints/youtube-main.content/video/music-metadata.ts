@@ -8,7 +8,8 @@ export function parseMusicTitle(title: string) {
   const cleaned = title.replaceAll(VIDEO_TITLE_SUFFIX_PATTERN, "").trim();
 
   const iSeparator = cleaned.search(/\s[-–]\s/);
-  if (iSeparator === -1) {
+  const hasSeparator = iSeparator !== -1;
+  if (!hasSeparator) {
     return {
       mainArtist: "",
       fullArtist: "",
@@ -31,7 +32,8 @@ export function parseMusicTitle(title: string) {
 }
 
 export function parseDescriptionMetadata(description: string) {
-  if (!description.startsWith(YT_DESCRIPTION_MUSIC_PREFIX)) {
+  const isYouTubeMusicDescription = description.startsWith(YT_DESCRIPTION_MUSIC_PREFIX);
+  if (!isYouTubeMusicDescription) {
     return {
       songTitle: undefined,
       artist: undefined,

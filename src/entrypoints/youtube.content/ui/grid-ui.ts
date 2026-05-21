@@ -42,7 +42,8 @@ function observePendingCards() {
   }
 
   for (const elCard of document.querySelectorAll(Selector.VideoCard)) {
-    if (isCardPending(elCard)) {
+    const isPending = isCardPending(elCard);
+    if (isPending) {
       visibilityObserver.observe(elCard);
     }
   }

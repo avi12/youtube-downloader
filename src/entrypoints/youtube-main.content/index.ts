@@ -76,7 +76,8 @@ export default defineContentScript({
     if (self === top) {
       function cancelAllAndNotify() {
         const videoIds = cancelAllActiveDownloads();
-        if (videoIds.length > 0) {
+        const hasActiveDownloads = videoIds.length > 0;
+        if (hasActiveDownloads) {
           void crossWorldMessenger.sendMessage(CrossWorldMessage.CancelDownload, { videoIds });
         }
       }
@@ -92,7 +93,8 @@ export default defineContentScript({
       setupCaptionTrackWatcher();
     }
 
-    if (document.readyState === "complete") {
+    const isDocumentReady = document.readyState === "complete";
+    if (isDocumentReady) {
       void initializeOnLoad();
     } else {
       addEventListener(EVENT_LOAD, () => void initializeOnLoad(), { once: true });

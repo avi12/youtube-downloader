@@ -20,7 +20,8 @@ export function getUniqueVideoFormats(formats: AdaptiveFormatItem[]) {
 
     const isPremium = (format.qualityLabel ?? "").includes(QUALITY_LABEL_PREMIUM);
     const key = `${format.height}-${isPremium}`;
-    if (seen.has(key)) {
+    const isSeenKey = seen.has(key);
+    if (isSeenKey) {
       return false;
     }
 
@@ -34,7 +35,8 @@ export function getAudioFormats(formats: AdaptiveFormatItem[]) {
   const seenKeys = new Set<string>();
   return audioFormats.filter(format => {
     const key = `${format.itag}:${format.audioTrack?.id ?? ""}`;
-    if (seenKeys.has(key)) {
+    const isSeenKey = seenKeys.has(key);
+    if (isSeenKey) {
       return false;
     }
 

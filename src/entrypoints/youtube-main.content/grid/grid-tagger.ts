@@ -53,7 +53,8 @@ function tagCard({ elCard, retriesLeft = MAX_RETRIES }: TagCardParams) {
     return;
   }
 
-  if (retriesLeft > 0) {
+  const hasRetriesLeft = retriesLeft > 0;
+  if (hasRetriesLeft) {
     requestAnimationFrame(() => tagCard({
       elCard,
       retriesLeft: retriesLeft - 1
@@ -77,7 +78,8 @@ export function registerGridTagger() {
           continue;
         }
 
-        if (elNode.matches(LOCKUP_SELECTOR)) {
+        const isLockupElement = elNode.matches(LOCKUP_SELECTOR);
+        if (isLockupElement) {
           tagCard({ elCard: elNode });
         }
 

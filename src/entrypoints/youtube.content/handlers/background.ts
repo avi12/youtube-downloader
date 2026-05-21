@@ -36,7 +36,8 @@ export function registerBackgroundMessageHandlers() {
   onMessage(MessageType.UpdateDownloadProgress, ({ data }) => {
     if (!data.isRemoved) {
       const reportedKey = `${data.progress}|${data.progressType}`;
-      if (lastReportedProgress.get(data.videoId) === reportedKey) {
+      const isDuplicateReport = lastReportedProgress.get(data.videoId) === reportedKey;
+      if (isDuplicateReport) {
         return;
       }
 

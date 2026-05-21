@@ -18,12 +18,13 @@ export async function fetchVideoDataViaApi(videoId: string) {
     const { clientVersion, clientName } = readYtcfg();
     const visitorData = getYtcfg(YtcfgKey.VisitorData) ?? "";
     const signatureTimestamp = getYtcfg(YtcfgKey.Sts);
+    const isDefaultWebClient = clientName === 1;
 
     const playerRequest: InnertubePlayerRequest = {
       videoId,
       context: {
         client: {
-          clientName: clientName === 1 ? InnertubeClientName.Web : String(clientName),
+          clientName: isDefaultWebClient ? InnertubeClientName.Web : String(clientName),
           clientVersion: String(clientVersion)
         }
       },
@@ -48,7 +49,8 @@ export async function fetchVideoDataViaApi(videoId: string) {
       }
     );
     const playerData: PlayerResponse = await response.json();
-    if (playerData?.videoDetails?.videoId) {
+    const hasPlayerDataVideoId = !!playerData?.videoDetails?.videoId;
+    if (hasPlayerDataVideoId) {
       await buildAndDispatchVideoData({ playerResponse: playerData });
       return;
     }
@@ -60,7 +62,8 @@ export async function fetchVideoDataViaApi(videoId: string) {
   )).text();
 
   const playerResponse = extractPlayerResponseFromHtml(html);
-  if (playerResponse?.videoDetails?.videoId) {
+  const hasPlayerResponseVideoId = !!playerResponse?.videoDetails?.videoId;
+  if (hasPlayerResponseVideoId) {
     await buildAndDispatchVideoData({ playerResponse });
   }
 }

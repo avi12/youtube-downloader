@@ -84,7 +84,8 @@ export function extractGenresFromKeywords({ keywords, genreSet }: ExtractGenresF
   const matched = new Set<string>();
   for (const keyword of keywords) {
     const normalized = keyword.toLowerCase().trim();
-    if (genreSet.has(normalized)) {
+    const isMatchedGenre = genreSet.has(normalized);
+    if (isMatchedGenre) {
       matched.add(keyword.trim());
     }
   }

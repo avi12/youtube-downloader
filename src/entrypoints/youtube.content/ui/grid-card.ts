@@ -12,7 +12,8 @@ const SELECTOR_DISMISSIBLE = "#dismissible";
 const SELECTOR_DETAILS = "#details";
 
 function getLockupRoot(elCard: Element) {
-  const elLockup = elCard.tagName.toLowerCase() === LOCKUP_VIEW_MODEL_TAG
+  const isLockupCard = elCard.tagName.toLowerCase() === LOCKUP_VIEW_MODEL_TAG;
+  const elLockup = isLockupCard
     ? elCard
     : elCard.querySelector(LOCKUP_VIEW_MODEL_TAG);
   return elLockup?.shadowRoot ?? null;
@@ -27,7 +28,8 @@ export function shadowFirst({ elCard, selector }: ShadowFirstParams) {
 }
 
 export function extractVideoId(elCard: Element) {
-  const elLockup = elCard.tagName.toLowerCase() === LOCKUP_VIEW_MODEL_TAG
+  const isLockupCard = elCard.tagName.toLowerCase() === LOCKUP_VIEW_MODEL_TAG;
+  const elLockup = isLockupCard
     ? elCard
     : elCard.querySelector(LOCKUP_VIEW_MODEL_TAG);
   const mainWorldId = elCard.getAttribute(ATTR_CONTENT_ID)

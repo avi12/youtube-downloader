@@ -77,7 +77,8 @@ export function buildDownloadTooltip(state: ButtonViewState) {
   }
 
   if (isInterrupted) {
-    return downloadProgress !== "0%"
+    const hasInterruptedProgress = downloadProgress !== "0%";
+    return hasInterruptedProgress
       ? `${base} - paused at ${downloadProgress}`
       : base;
   }

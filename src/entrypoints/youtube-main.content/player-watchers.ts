@@ -76,7 +76,8 @@ export function setupAudioTrackWatcher() {
 
   for (const bus of buses) {
     bus.subscribe(PLAYER_EVENT_INTERNAL_AUDIO_FORMAT_CHANGE, trackId => {
-      if (typeof trackId === "string") {
+      const isStringTrackId = typeof trackId === "string";
+      if (isStringTrackId) {
         reportTrack(trackId);
       }
     });
@@ -166,7 +167,8 @@ export function setupCaptionTrackWatcher() {
     const isSubtitlesOn = player?.isSubtitlesOn?.() ?? false;
     const isActiveTrackPresent = isSubtitlesOn && isPlayerCaptionTrackData(track);
     if (isActiveTrackPresent) {
-      if (lastVssId === track.vss_id) {
+      const isSameTrack = lastVssId === track.vss_id;
+      if (isSameTrack) {
         return;
       }
 
@@ -178,7 +180,8 @@ export function setupCaptionTrackWatcher() {
       return;
     }
 
-    if (lastVssId === null) {
+    const isNoCaptionActive = lastVssId === null;
+    if (isNoCaptionActive) {
       return;
     }
 

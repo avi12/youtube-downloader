@@ -102,8 +102,8 @@ function makeTooltipHandlers() {
   let elHoveredYtdlButton: HTMLElement | null = null;
 
   function trackHoveredButton(e: MouseEvent) {
-    const isElement = e.target instanceof Element;
-    if (!isElement) {
+    const isTargetElement = e.target instanceof Element;
+    if (!isTargetElement) {
       return;
     }
 
@@ -140,7 +140,8 @@ export async function injectPlaylistDownloaderUi(
   headerMountAbort = abortController;
 
   const elHeader = await waitForPlaylistHeaderMount(abortController.signal);
-  if (!elHeader || headerMountAbort !== abortController) {
+  const isAbortedOrStale = !elHeader || headerMountAbort !== abortController;
+  if (isAbortedOrStale) {
     return;
   }
 

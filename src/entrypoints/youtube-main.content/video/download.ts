@@ -58,7 +58,8 @@ export async function startDownload(params: Pick<DownloadRequest,
       abortSignal: abortController.signal
     });
   } catch (error) {
-    if (abortController.signal.aborted) {
+    const isAborted = abortController.signal.aborted;
+    if (isAborted) {
       return;
     }
 

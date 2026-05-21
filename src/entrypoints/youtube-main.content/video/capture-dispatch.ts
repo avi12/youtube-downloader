@@ -44,7 +44,8 @@ function flushPendingChunks() {
 
 function readInitialDataTitle(videoId: string) {
   const data = window.ytInitialData;
-  if (data?.currentVideoEndpoint?.watchEndpoint?.videoId !== videoId) {
+  const isMatchingVideoId = data?.currentVideoEndpoint?.watchEndpoint?.videoId === videoId;
+  if (!isMatchingVideoId) {
     return "";
   }
 
@@ -91,14 +92,16 @@ export async function buildAndDispatchVideoData({ playerResponse }: {
 
   flushPendingChunks();
 
-  if (self !== top) {
+  const isIframe = self !== top;
+  if (isIframe) {
     getMoviePlayer()?.stopVideo?.();
     void crossWorldMessenger.sendMessage(CrossWorldMessage.IframePlayerReady, { videoId: videoData.videoId });
     await generatePoTokenIfNeeded(videoData);
     return;
   }
 
-  if (location.pathname === WATCH_PATHNAME) {
+  const isWatchPage = location.pathname === WATCH_PATHNAME;
+  if (isWatchPage) {
     await injectSegmentedDownloadButton(videoData);
   }
 }
@@ -107,13 +110,14 @@ const PLAYER_RESPONSE_POLL_ATTEMPTS = 20;
 const PLAYER_RESPONSE_POLL_INTERVAL_MS = 250;
 
 export async function extractAndDispatchVideoData() {
-  if (!location.pathname.startsWith(WATCH_PATHNAME)) {
+  const isOnWatchPage = location.pathname.startsWith(WATCH_PATHNAME);
+  if (!isOnWatchPage) {
     return;
   }
 
   for (let attempt = 0; attempt < PLAYER_RESPONSE_POLL_ATTEMPTS; attempt++) {
     const playerResponse = window.ytInitialPlayerResponse ?? null;
-    const isReady = playerResponse?.videoDetails?.videoId
+    const isReady = !!playerResponse?.videoDetails?.videoId
       && playerResponse.playabilityStatus?.status !== PlayabilityStatus.Unplayable;
     if (isReady) {
       await buildAndDispatchVideoData({ playerResponse });

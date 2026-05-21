@@ -104,7 +104,8 @@ export function handlePlaylistVideoAdditions(context: InstanceType<typeof Conten
   const mutationObserver = new MutationObserver(mutations => {
     for (const mutation of mutations) {
       for (const node of mutation.addedNodes) {
-        if (node instanceof Element) {
+        const isElementNode = node instanceof Element;
+        if (isElementNode) {
           injectIntoSubtree({
             root: node,
             context

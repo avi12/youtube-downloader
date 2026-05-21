@@ -59,7 +59,8 @@ export function buildInitialDownloadState(videoData: VideoData) {
     const isMultiTrack = isTrackSelected && isOtherAudioTrackPresent;
     if (isMultiTrack) {
       const isKnownContainer = extension in CONTAINER_SPECS;
-      if (!isKnownContainer || MULTI_TRACK_UNSUPPORTED_EXTENSIONS.has(extension)) {
+      const isUnsupportedMultiTrackContainer = !isKnownContainer || MULTI_TRACK_UNSUPPORTED_EXTENSIONS.has(extension);
+      if (isUnsupportedMultiTrackContainer) {
         extension = MKV_EXTENSION;
       }
     }

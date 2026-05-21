@@ -15,7 +15,8 @@ type GetExtraAudioFormatsParams = {
 export function getExtraAudioFormats({
   audioFormats, selectedTrackId, selectedFormat, includeAutoDubbing
 }: GetExtraAudioFormatsParams) {
-  if (!includeAutoDubbing && selectedTrackId?.endsWith(AUTO_DUB_TRACK_SUFFIX)) {
+  const isSelectedAutoDub = !includeAutoDubbing && selectedTrackId?.endsWith(AUTO_DUB_TRACK_SUFFIX);
+  if (isSelectedAutoDub) {
     return [];
   }
 
@@ -23,11 +24,13 @@ export function getExtraAudioFormats({
   let isUntaggedExtraPresent = !selectedTrackId;
   const result: AdaptiveFormatItem[] = [];
   for (const format of audioFormats) {
-    if (result.length >= MAX_ADDITIONAL_AUDIO_TRACKS) {
+    const isAtTrackLimit = result.length >= MAX_ADDITIONAL_AUDIO_TRACKS;
+    if (isAtTrackLimit) {
       break;
     }
 
-    if (format === selectedFormat) {
+    const isSelectedFormat = format === selectedFormat;
+    if (isSelectedFormat) {
       continue;
     }
 
@@ -42,11 +45,13 @@ export function getExtraAudioFormats({
       continue;
     }
 
-    if (!includeAutoDubbing && trackId.endsWith(AUTO_DUB_TRACK_SUFFIX)) {
+    const isAutoDubTrack = !includeAutoDubbing && trackId.endsWith(AUTO_DUB_TRACK_SUFFIX);
+    if (isAutoDubTrack) {
       continue;
     }
 
-    if (seenTrackIds.has(trackId)) {
+    const isTrackAlreadySeen = seenTrackIds.has(trackId);
+    if (isTrackAlreadySeen) {
       continue;
     }
 
@@ -70,12 +75,14 @@ type SelectFormatsParams = {
 export function selectFormats({
   videoData, type, videoItag, audioItag, audioTrackId
 }: SelectFormatsParams) {
-  const videoFormat = type !== DownloadType.Audio
+  const isVideoRequested = type !== DownloadType.Audio;
+  const videoFormat = isVideoRequested
     ? (videoData.videoFormats.find(format => format.itag === videoItag) ?? videoData.videoFormats[0])
     : null;
 
   let audioFormat: AdaptiveFormatItem | null = null;
-  if (type !== DownloadType.Video) {
+  const isAudioRequested = type !== DownloadType.Video;
+  if (isAudioRequested) {
     const byItag = videoData.audioFormats.filter(format => format.itag === audioItag);
     audioFormat = (audioTrackId
       ? byItag.find(format => format.audioTrack?.id === audioTrackId)
@@ -99,9 +106,11 @@ type PreResolveCdnUrlsParams = {
 export async function preResolveCdnUrls({
   type, videoFormat, audioFormat, extraAudioFormats
 }: PreResolveCdnUrlsParams) {
+  const videoUrlPromise = type !== DownloadType.Audio ? resolveFormatUrl(videoFormat) : Promise.resolve(null);
+  const audioUrlPromise = type !== DownloadType.Video ? resolveFormatUrl(audioFormat) : Promise.resolve(null);
   return Promise.all([
-    type !== DownloadType.Audio ? resolveFormatUrl(videoFormat) : Promise.resolve(null),
-    type !== DownloadType.Video ? resolveFormatUrl(audioFormat) : Promise.resolve(null),
+    videoUrlPromise,
+    audioUrlPromise,
     ...extraAudioFormats.map(format => resolveFormatUrl(format))
   ]);
 }
