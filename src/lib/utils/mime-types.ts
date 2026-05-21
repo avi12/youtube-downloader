@@ -13,7 +13,7 @@ const MIME_AUDIO_OPUS = "audio/opus";
 const MIME_AUDIO_WAV = "audio/wav";
 const MIME_VIDEO_WEBM = "video/webm";
 
-const extensionToMimeAll: Record<string, string> = {
+const EXTENSION_TO_MIME_ALL: Record<string, string> = {
   aiff: MIME_AUDIO_AIFF,
   avi: MIME_VIDEO_AVI,
   flac: MIME_AUDIO_FLAC,
@@ -36,7 +36,7 @@ const VIDEO_EXTENSION_ORDER = ["mp4", "webm", "mkv", "mov", "avi"] as const;
 const AUDIO_EXTENSION_ORDER = ["webm", "mp3", "m4a", "flac", "opus", "ogg", "wav", "aiff"] as const;
 
 function toExtensionMap(extensions: readonly string[]) {
-  return Object.fromEntries(extensions.map(ext => [ext, extensionToMimeAll[ext]]));
+  return Object.fromEntries(extensions.map(extension => [extension, EXTENSION_TO_MIME_ALL[extension]]));
 }
 
 const extensionToMime = {
@@ -44,10 +44,10 @@ const extensionToMime = {
   audio: toExtensionMap(AUDIO_EXTENSION_ORDER)
 };
 
-export type SupportedExtension = keyof typeof extensionToMimeAll;
+export type SupportedExtension = keyof typeof EXTENSION_TO_MIME_ALL;
 
 function isSupportedExtension(extension: string): extension is SupportedExtension {
-  return extension in extensionToMimeAll;
+  return extension in EXTENSION_TO_MIME_ALL;
 }
 
 export function getMimeType(filename: string) {
@@ -57,7 +57,7 @@ export function getMimeType(filename: string) {
     return null;
   }
 
-  return extensionToMimeAll[extension];
+  return EXTENSION_TO_MIME_ALL[extension];
 }
 
 export function stripMimeParams(mimeType: string) {

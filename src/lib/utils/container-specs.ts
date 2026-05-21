@@ -62,19 +62,19 @@ export function getOutputExtension({ videoMimeType, audioMimeType, userExtension
   audioMimeType: string;
   userExtension: string;
 }) {
-  const spec: ContainerSpec | undefined = CONTAINER_SPECS[userExtension];
-  if (!spec) {
+  const containerSpec: ContainerSpec | undefined = CONTAINER_SPECS[userExtension];
+  if (!containerSpec) {
     return userExtension;
   }
 
   const videoCodec = extractBaseCodec(videoMimeType);
   const audioCodec = extractBaseCodec(audioMimeType);
-  const isVideoNative = spec.videoCodecs.has(videoCodec);
-  const hasNonNativeAllowed = !!spec.allowNonNativeVideo;
-  const videoOk = isVideoNative || hasNonNativeAllowed;
-  const isAudioNative = spec.audioCodecs.has(audioCodec);
-  const hasFallbackAudio = spec.fallbackAudioCodec !== undefined;
-  const audioOk = isAudioNative || hasFallbackAudio;
+  const isVideoNative = containerSpec.videoCodecs.has(videoCodec);
+  const isNonNativeAllowed = !!containerSpec.allowNonNativeVideo;
+  const videoOk = isVideoNative || isNonNativeAllowed;
+  const isAudioNative = containerSpec.audioCodecs.has(audioCodec);
+  const isFallbackAudioPresent = containerSpec.fallbackAudioCodec !== undefined;
+  const audioOk = isAudioNative || isFallbackAudioPresent;
   const isCompatible = videoOk && audioOk;
 
   return isCompatible ? userExtension : "mkv";
@@ -84,12 +84,12 @@ export function isVideoNativeForContainer({ videoMimeType, targetExtension }: {
   videoMimeType: string;
   targetExtension: string;
 }) {
-  const spec = CONTAINER_SPECS[targetExtension];
-  if (!spec) {
+  const containerSpec = CONTAINER_SPECS[targetExtension];
+  if (!containerSpec) {
     return true;
   }
 
-  return spec.videoCodecs.has(extractBaseCodec(videoMimeType));
+  return containerSpec.videoCodecs.has(extractBaseCodec(videoMimeType));
 }
 
 export function isCompatibleForRemux({ videoMimeType, audioMimeType, targetExtension }: {
@@ -97,16 +97,16 @@ export function isCompatibleForRemux({ videoMimeType, audioMimeType, targetExten
   audioMimeType: string;
   targetExtension: string;
 }) {
-  const spec = CONTAINER_SPECS[targetExtension];
-  if (!spec) {
+  const containerSpec = CONTAINER_SPECS[targetExtension];
+  if (!containerSpec) {
     return true;
   }
 
-  const isVideoNative = spec.videoCodecs.has(extractBaseCodec(videoMimeType));
-  const hasNonNativeAllowed = !!spec.allowNonNativeVideo;
-  const videoOk = isVideoNative || hasNonNativeAllowed;
-  const isAudioNative = spec.audioCodecs.has(extractBaseCodec(audioMimeType));
-  const hasFallbackAudio = spec.fallbackAudioCodec !== undefined;
-  const audioOk = isAudioNative || hasFallbackAudio;
+  const isVideoNative = containerSpec.videoCodecs.has(extractBaseCodec(videoMimeType));
+  const isNonNativeAllowed = !!containerSpec.allowNonNativeVideo;
+  const videoOk = isVideoNative || isNonNativeAllowed;
+  const isAudioNative = containerSpec.audioCodecs.has(extractBaseCodec(audioMimeType));
+  const isFallbackAudioPresent = containerSpec.fallbackAudioCodec !== undefined;
+  const audioOk = isAudioNative || isFallbackAudioPresent;
   return videoOk && audioOk;
 }

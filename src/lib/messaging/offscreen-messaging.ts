@@ -182,7 +182,7 @@ export function listenForOffscreenMessages(handlers: HandlerMap) {
     port.onDisconnect.addListener(() => {
       connect();
     });
-    port.onMessage.addListener((message: OffscreenMessage) => {
+    port.onMessage.addListener(message => {
       dispatchOffscreenMessage({
         handlers,
         message
