@@ -22,8 +22,8 @@ async function ensureOffscreenDocument() {
     // getContexts is not available in Firefox
   }
 
-  const hasExistingContext = existingContexts.length > 0;
-  if (hasExistingContext) {
+  const isExistingContextPresent = existingContexts.length > 0;
+  if (isExistingContextPresent) {
     try {
       await browser.offscreen.closeDocument();
     } catch {

@@ -80,15 +80,15 @@ export async function removeFromPopupList(videoIds: string | string[]) {
     writes.push(videoOnlyListItem.setValue(filteredVideoOnly));
   }
 
-  let hasRemovedDetails = false;
+  let isDetailsRemoved = false;
   for (const id of videoIdsToRemove) {
     if (id in details) {
       delete details[id];
-      hasRemovedDetails = true;
+      isDetailsRemoved = true;
     }
   }
 
-  if (hasRemovedDetails) {
+  if (isDetailsRemoved) {
     writes.push(videoDetailsItem.setValue(details));
   }
 

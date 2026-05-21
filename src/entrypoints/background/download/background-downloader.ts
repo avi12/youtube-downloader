@@ -36,8 +36,8 @@ export async function startBackgroundDownload({ request, tabId }: StartBackgroun
   try {
     const enrichedMetadataPromise = enrichMetadataFromYouTubeMusic(metadata);
     const isAudioOnly = request.type === DownloadType.Audio;
-    const hasSabrConfig = !!(request.sabrConfig && request.audioFormat);
-    const isAudioOnlyWithSabr = isAudioOnly && hasSabrConfig;
+    const isSabrConfigPresent = !!(request.sabrConfig && request.audioFormat);
+    const isAudioOnlyWithSabr = isAudioOnly && isSabrConfigPresent;
     if (isAudioOnlyWithSabr) {
       await ensureProcessor();
       const effectiveSabrConfig = buildEffectiveSabrConfig({

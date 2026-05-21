@@ -27,8 +27,8 @@ export function createProgressAccumulator({
       referenceFormat: audioFormat
     });
   });
-  const hasVideoStage = !isAudioOnly && !!videoFormat;
-  const totalStages = captionCount + (hasVideoStage ? 1 : 0) + 1 + additionalFormats.length;
+  const isVideoStagePresent = !isAudioOnly && !!videoFormat;
+  const totalStages = captionCount + (isVideoStagePresent ? 1 : 0) + 1 + additionalFormats.length;
 
   let videoReceivedBytes = 0;
   let audioReceivedBytes = 0;
@@ -41,8 +41,8 @@ export function createProgressAccumulator({
 
     const mediaStages = totalStages - captionCount;
     let mediaCompleted = 0;
-    const hasVideoProgress = !isAudioOnly && videoPartBytes > 0;
-    if (hasVideoProgress) {
+    const isVideoProgressPresent = !isAudioOnly && videoPartBytes > 0;
+    if (isVideoProgressPresent) {
       mediaCompleted += Math.min(videoReceivedBytes / videoPartBytes, 1);
     }
 

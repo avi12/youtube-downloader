@@ -48,24 +48,24 @@ export async function downloadViaCdn({
     type, videoFormat, audioFormat,
     resolvedVideoUrl, resolvedAudioUrl, resolvedExtraAudioUrls, additionalAudioFormats
   } = request;
-  const hasNoUrls = !resolvedVideoUrl && !resolvedAudioUrl;
-  if (hasNoUrls) {
+  const isUrlsMissing = !resolvedVideoUrl && !resolvedAudioUrl;
+  if (isUrlsMissing) {
     return null;
   }
 
   const captionCount = request.captionTracks?.length ?? 0;
   const extraUrls = resolvedExtraAudioUrls ?? [];
-  const hasVideo = type !== DownloadType.Audio;
-  const hasAudio = type !== DownloadType.Video;
-  const totalStages = captionCount + (hasVideo ? 1 : 0) + (hasAudio ? 1 : 0) + extraUrls.length;
+  const isVideoPresent = type !== DownloadType.Audio;
+  const isAudioPresent = type !== DownloadType.Video;
+  const totalStages = captionCount + (isVideoPresent ? 1 : 0) + (isAudioPresent ? 1 : 0) + extraUrls.length;
 
   const tracker = createCdnProgressTracker({
     videoId,
     tabId,
     totalStages,
     captionCount,
-    hasVideo,
-    hasAudio,
+    hasVideo: isVideoPresent,
+    hasAudio: isAudioPresent,
     extraCount: extraUrls.length,
     videoExpectedBytes: parseContentLength(videoFormat ?? null),
     audioExpectedBytes: parseContentLength(audioFormat ?? null),
@@ -74,13 +74,13 @@ export async function downloadViaCdn({
     initialAudioBytes: partialAudioData?.byteLength ?? 0
   });
 
-  const hasNoPartialData = !partialVideoData && !partialAudioData;
-  const isStreamingMode = hasVideo && hasAudio && hasNoPartialData;
+  const isPartialDataMissing = !partialVideoData && !partialAudioData;
+  const isStreamingMode = isVideoPresent && isAudioPresent && isPartialDataMissing;
   let iVideoChunk = 0;
   let iAudioChunk = 0;
 
   const cdnResults = await Promise.all([
-    hasVideo ? fetchStream({
+    isVideoPresent ? fetchStream({
       url: resolvedVideoUrl,
       signal,
       onBytes: tracker.onVideoBytes,
@@ -99,7 +99,7 @@ export async function downloadViaCdn({
         }
       } : undefined
     }) : Promise.resolve(null),
-    hasAudio ? fetchStream({
+    isAudioPresent ? fetchStream({
       url: resolvedAudioUrl,
       signal,
       onBytes: tracker.onAudioBytes,

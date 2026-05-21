@@ -232,8 +232,8 @@ export function registerRecentDownloadsRetention() {
   browser.alarms.onAlarm.addListener(alarm => {
     const isRetentionAlarm = alarm.name === RETENTION_ALARM_NAME;
     const isPopupOpen = openPopupCount > 0;
-    const shouldSkipPrune = !isRetentionAlarm || isPopupOpen;
-    if (shouldSkipPrune) {
+    const isPruneSkipped = !isRetentionAlarm || isPopupOpen;
+    if (isPruneSkipped) {
       return;
     }
 

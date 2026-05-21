@@ -175,13 +175,13 @@ async function runDownload({ request, tabId, enrichedMetadata }: RunDownloadPara
       return;
     }
 
-    const hasNoAudioData = !(sabrResult?.audioData?.byteLength) && !sabrResult?.streamedToOffscreen;
-    const needsCdn = hasNoAudioData || sabrResult?.isPartialVideo || sabrResult?.isPartialAudio;
-    const hasCdnUrls = !!(resolvedVideoUrl || resolvedAudioUrl);
+    const isAudioDataMissing = !(sabrResult?.audioData?.byteLength) && !sabrResult?.streamedToOffscreen;
+    const needsCdn = isAudioDataMissing || sabrResult?.isPartialVideo || sabrResult?.isPartialAudio;
+    const isCdnUrlsPresent = !!(resolvedVideoUrl || resolvedAudioUrl);
     const isAudioOnly = type === DownloadType.Audio;
 
     let cdnResult = null;
-    if (needsCdn && hasCdnUrls) {
+    if (needsCdn && isCdnUrlsPresent) {
       const partialAudioData = sabrResult?.isPartialAudio ? (sabrResult.audioData ?? undefined) : undefined;
       const useStreaming = !isAudioOnly && !partialAudioData;
 
@@ -226,9 +226,9 @@ async function runDownload({ request, tabId, enrichedMetadata }: RunDownloadPara
     }
 
     const result = cdnResult ?? sabrResult;
-    const hasNoData = !result
+    const isDataMissing = !result
       || (!(result.videoData?.byteLength) && !(result.audioData?.byteLength) && !result.streamedToOffscreen);
-    if (hasNoData) {
+    if (isDataMissing) {
       const isDirectUrlEligible = isAudioOnly && !!resolvedAudioUrl;
       if (isDirectUrlEligible) {
         parent.postMessage(
