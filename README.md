@@ -11,6 +11,34 @@ Built by [Avi](https://avi12.com) with supervised [Claude Code](https://claude.c
   <img src="https://upload.wikimedia.org/wikipedia/commons/e/e7/Opera_GX_Icon.svg?utm_source=commons.wikimedia.org&utm_campaign=index&utm_content=original" width="30" alt="Opera GX">
 </p>
 
+## Installation
+
+### 1. Build
+
+```sh
+pnpm install
+pnpm build
+```
+
+The packed extension lands in `.output/chrome-mv3/`.
+
+### 2. Sideload
+
+**Chrome**
+1. Go to `chrome://extensions`
+2. Enable **Developer mode** (top-right toggle)
+3. Click **Load unpacked** and select the `.output/chrome-mv3` folder
+
+**Edge**
+1. Go to `edge://extensions`
+2. Enable **Developer mode** (left sidebar)
+3. Click **Load unpacked** and select the `.output/chrome-mv3` folder
+
+**Opera / Opera GX**
+1. Go to `opera://extensions`
+2. Enable **Developer mode** (top-right toggle)
+3. Click **Load unpacked** and select the `.output/chrome-mv3` folder
+
 ## Tech stack
 
 | Package | Purpose |
