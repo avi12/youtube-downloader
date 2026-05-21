@@ -67,9 +67,10 @@ export async function processVideoAudio({ item, isCancelled }: ProcessVideoAudio
       filenameOutput
     }
   });
-  if (item.videoFile) {
+  const hasVideoFile = Boolean(item.videoFile);
+  if (hasVideoFile) {
     const root = await navigator.storage.getDirectory();
-    await root.removeEntry(item.videoFile.name).catch(() => {});
+    await root.removeEntry(item.videoFile!.name).catch(() => {});
   }
 
   const isDownloadCancelled = isCancelled();

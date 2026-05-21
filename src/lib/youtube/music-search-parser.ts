@@ -40,7 +40,8 @@ export function parseSearchResult(item: SearchItem) {
     if (isArtistPage) {
       artists.push(run.text);
 
-      if (!mainArtist) {
+      const isMainArtistUnset = !mainArtist;
+      if (isMainArtistUnset) {
         mainArtist = run.text;
       }
     } else if (isAlbumPage) {

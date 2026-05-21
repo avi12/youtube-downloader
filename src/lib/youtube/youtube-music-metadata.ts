@@ -26,13 +26,15 @@ async function fetchFirstMusicResult(searchQuery: string) {
     },
     body: JSON.stringify(searchRequest)
   });
-  if (!response.ok) {
+  const isResponseOk = response.ok;
+  if (!isResponseOk) {
     return null;
   }
 
   const data: MusicSearchResponse = await response.json();
   const firstItem = extractFirstSearchItem(data);
-  if (!firstItem) {
+  const isFirstItemMissing = !firstItem;
+  if (isFirstItemMissing) {
     return null;
   }
 
@@ -46,7 +48,8 @@ type FetchYouTubeMusicMetadataParams = {
 export async function fetchYouTubeMusicMetadata({ searchQuery, existingMetadata }: FetchYouTubeMusicMetadataParams) {
   try {
     const parsed = await fetchFirstMusicResult(searchQuery);
-    if (!parsed) {
+    const isParsedMissing = !parsed;
+    if (isParsedMissing) {
       return existingMetadata;
     }
 
@@ -65,7 +68,8 @@ export async function fetchYouTubeMusicMetadata({ searchQuery, existingMetadata 
 }
 
 export async function fetchMusicThumbnailUrl(searchQuery: string) {
-  if (!searchQuery) {
+  const isSearchQueryEmpty = !searchQuery;
+  if (isSearchQueryEmpty) {
     return undefined;
   }
 

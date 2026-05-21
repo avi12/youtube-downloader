@@ -13,12 +13,14 @@ function openDatabase() {
     const openRequest = indexedDB.open(DB_NAME, DB_VERSION);
     openRequest.onupgradeneeded = () => {
       const db = openRequest.result;
-      if (!db.objectStoreNames.contains(Store.Entries)) {
+      const hasEntriesStore = db.objectStoreNames.contains(Store.Entries);
+      if (!hasEntriesStore) {
         const store = db.createObjectStore(Store.Entries, { keyPath: "id" });
         store.createIndex("completedAt", "completedAt");
       }
 
-      if (!db.objectStoreNames.contains(Store.Blobs)) {
+      const hasBlobsStore = db.objectStoreNames.contains(Store.Blobs);
+      if (!hasBlobsStore) {
         db.createObjectStore(Store.Blobs);
       }
     };
@@ -118,12 +120,14 @@ export async function pruneRecentDownloads({ olderThanTimestamp, protectedIds }:
 
   cursorRequest.onsuccess = () => {
     const cursor = cursorRequest.result;
-    if (!cursor) {
+    const isCursorDone = !cursor;
+    if (isCursorDone) {
       return;
     }
 
     const entry: RecentDownloadEntry = cursor.value;
-    if (!protectedIds.has(entry.id)) {
+    const isEntryProtected = protectedIds.has(entry.id);
+    if (!isEntryProtected) {
       entriesStore.delete(entry.id);
       blobsStore.delete(entry.id);
     }

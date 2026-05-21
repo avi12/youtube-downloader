@@ -29,7 +29,8 @@ export async function initMuxWorker(wasmBinary: ArrayBuffer) {
     worker.onerror = e => {
       const error = new Error(`Worker crashed: ${e.message}`);
       const rejectJob = getPendingJobReject();
-      if (rejectJob) {
+      const hasRejectJob = rejectJob !== null;
+      if (hasRejectJob) {
         rejectJob(error);
       } else {
         reject(error);

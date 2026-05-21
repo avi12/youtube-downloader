@@ -92,7 +92,8 @@ export async function cancelDownloadsByIds(videoIds: string[]) {
   await Promise.all(
     videoIds.map(async videoId => {
       const activeJob = activeJobs.get(videoId);
-      if (!activeJob) {
+      const isJobMissing = !activeJob;
+      if (isJobMissing) {
         return;
       }
 

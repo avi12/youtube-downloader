@@ -18,7 +18,8 @@ export function buildExtraAudioTracks(additionalAudioStreams: ProcessStreamData[
   return additionalAudioStreams
     .map(stream => {
       const data = toUint8Array(stream.data);
-      if (!data) {
+      const isDataMissing = !data;
+      if (isDataMissing) {
         return null;
       }
 

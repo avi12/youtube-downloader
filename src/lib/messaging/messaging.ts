@@ -130,7 +130,6 @@ export type ProgressUpdate = {
   isRemoved?: boolean;
   isFailed?: boolean;
   isInterrupted?: boolean;
-  /** `chrome.downloads.download` has fired and the file has reached `state: complete`. */
   isSaved?: boolean;
 };
 

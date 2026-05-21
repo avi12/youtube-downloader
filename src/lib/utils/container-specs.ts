@@ -63,7 +63,8 @@ export function getOutputExtension({ videoMimeType, audioMimeType, userExtension
   userExtension: string;
 }) {
   const containerSpec: ContainerSpec | undefined = CONTAINER_SPECS[userExtension];
-  if (!containerSpec) {
+  const isContainerSpecMissing = !containerSpec;
+  if (isContainerSpecMissing) {
     return userExtension;
   }
 
@@ -85,7 +86,8 @@ export function isVideoNativeForContainer({ videoMimeType, targetExtension }: {
   targetExtension: string;
 }) {
   const containerSpec = CONTAINER_SPECS[targetExtension];
-  if (!containerSpec) {
+  const isSpecMissing = !containerSpec;
+  if (isSpecMissing) {
     return true;
   }
 
@@ -98,7 +100,8 @@ export function isCompatibleForRemux({ videoMimeType, audioMimeType, targetExten
   targetExtension: string;
 }) {
   const containerSpec = CONTAINER_SPECS[targetExtension];
-  if (!containerSpec) {
+  const isSpecMissing = !containerSpec;
+  if (isSpecMissing) {
     return true;
   }
 

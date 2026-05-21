@@ -2,9 +2,6 @@ import { extractPoTokenFromBody } from "./po-token-extractor";
 
 export { extractPoTokenFromBody } from "./po-token-extractor";
 
-// Requests from offscreen iframes (youtube.com, tabId < 0) use this sentinel key.
-// These must be captured separately because tabId < 0 normally means "extension request"
-// and is skipped - but offscreen iframe player requests also arrive with tabId < 0.
 export const OFFSCREEN_PLAYER_TAB_ID = -2;
 
 const GOOGLEVIDEO_URL_PATTERN = "https://*.googlevideo.com/videoplayback*";
@@ -33,8 +30,6 @@ export function onSabrBodyCaptured(callback: (tabId: number) => void) {
 }
 
 function handleSabrRequest(details: Browser.webRequest.OnBeforeRequestDetails) {
-  // Background requests with youtube.com initiator come from offscreen iframe players.
-  // Capture them so playlist iframes get the player's actual (n-param-decoded) URL.
   const isBackgroundTab = details.tabId < 0;
   const isYouTubeInitiator = details.initiator === YOUTUBE_ORIGIN;
   const isOffscreenPlayer = isBackgroundTab && isYouTubeInitiator;
@@ -67,7 +62,8 @@ function handleSabrRequest(details: Browser.webRequest.OnBeforeRequestDetails) {
 
   const isPoTokenPresent = Boolean(extractPoTokenFromBody(Array.from(bodyBytes)));
   const isNewPoToken = isPoTokenPresent && !isPreviousPoToken;
-  if (isFirstCapture || isNewPoToken) {
+  const shouldNotifyCapture = isFirstCapture || isNewPoToken;
+  if (shouldNotifyCapture) {
     onCaptureCallback?.(captureTabId);
   }
 }

@@ -32,7 +32,8 @@ export function toOwnedArrayBuffer(view: ArrayBufferView) {
 }
 
 export function toUint8Array(data: Uint8Array | Record<string, number> | null) {
-  if (!data) {
+  const isDataMissing = !data;
+  if (isDataMissing) {
     return null;
   }
 

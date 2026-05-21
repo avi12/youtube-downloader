@@ -134,13 +134,6 @@ export type StreamDataPayload = Parameters<PageMessengerSchema[typeof CrossWorld
 
 export const crossWorldMessenger = defineCustomEventMessaging<PageMessengerSchema>({ namespace: "ytdl" });
 
-// Multi-subscriber fanout for button clicks. The messenger's per-type
-// single-listener constraint is bypassed by maintaining one module-level
-// listener that distributes to every subscribed handler. Same-context
-// dispatches are also delivered locally because the messenger filters out
-// its own instanceId, otherwise a MAIN-world emitter wouldn't reach a
-// MAIN-world subscriber.
-
 const buttonClickHandlers = new Set<(buttonId: string) => void>();
 
 function fanoutButtonClick(buttonId: string) {
@@ -164,14 +157,6 @@ export function onButtonClick(handler: (buttonId: string) => void) {
     buttonClickHandlers.delete(handler);
   };
 }
-
-/**
- * Multi-subscriber fanout for one-way cross-world events. Funnels through
- * `crossWorldMessenger` but distributes to every subscribed handler so the
- * messenger's per-type single-listener constraint doesn't apply. Same-context
- * emissions are dispatched locally too because the messenger filters out its
- * own instanceId.
- */
 
 export const CrossWorldEvent = {
   ProgressUpdate: "progressUpdate"

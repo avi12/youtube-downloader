@@ -50,7 +50,8 @@ export function orderCaptionsByPreference({
   for (const lang of langPriority) {
     const normalized = normalizeLanguageCode(lang);
     const preferred = captionTracks.filter(track => normalizeLanguageCode(track.languageCode) === normalized);
-    if (preferred.length) {
+    const hasPreferredTracks = preferred.length > 0;
+    if (hasPreferredTracks) {
       const rest = captionTracks.filter(track => normalizeLanguageCode(track.languageCode) !== normalized);
       return [...preferred, ...rest];
     }

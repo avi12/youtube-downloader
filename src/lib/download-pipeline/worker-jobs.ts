@@ -61,8 +61,9 @@ type RunMuxVideoAudioParams = {
 };
 export function runMuxVideoAudio({ videoId, job }: RunMuxVideoAudioParams) {
   const transferables: Transferable[] = [];
-  if (job.videoData) {
-    transferables.push(job.videoData);
+  const hasVideoData = Boolean(job.videoData);
+  if (hasVideoData) {
+    transferables.push(job.videoData!);
   }
 
   transferables.push(job.audioData);

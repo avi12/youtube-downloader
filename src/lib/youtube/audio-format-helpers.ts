@@ -17,7 +17,8 @@ export function getCurrentVideoAudioLanguage() {
   }
 
   for (const track of tracks) {
-    if (track.enabled) {
+    const isTrackEnabled = track.enabled;
+    if (isTrackEnabled) {
       return normalizeLanguageCode(track.language);
     }
   }

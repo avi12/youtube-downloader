@@ -14,12 +14,14 @@ export { DATA_SETTINGS_OPTIONS_ID_ATTR, attachSettingsOptions, isYtdSettingsOpti
 
 export function attachIcon(icon: YtIconName) {
   return (elTarget: Element) => {
-    if (!(elTarget instanceof HTMLElement)) {
+    const isHtmlElement = elTarget instanceof HTMLElement;
+    if (!isHtmlElement) {
       return;
     }
 
     requestAnimationFrame(() => {
-      if (elTarget.isConnected) {
+      const isConnected = elTarget.isConnected;
+      if (isConnected) {
         elTarget.setAttribute("icon", icon);
       }
     });

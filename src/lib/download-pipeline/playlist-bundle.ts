@@ -52,7 +52,8 @@ export async function addToPlaylistBundle({
   }
 
   const bundle = playlistBundles.get(playlistId);
-  if (!bundle) {
+  const isBundleMissing = !bundle;
+  if (isBundleMissing) {
     return;
   }
 

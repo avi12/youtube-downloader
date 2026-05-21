@@ -60,11 +60,14 @@ export function selectPreferredAudioFormat({
       audioFormats,
       match
     });
-  } else if (languageMode === AudioTrackLanguageMode.OriginalLanguage) {
-    candidates = prependMatch({
-      audioFormats,
-      match: originalTrack
-    });
+  } else {
+    const isOriginalLanguageMode = languageMode === AudioTrackLanguageMode.OriginalLanguage;
+    if (isOriginalLanguageMode) {
+      candidates = prependMatch({
+        audioFormats,
+        match: originalTrack
+      });
+    }
   }
 
   const hasNoCandidates = !candidates.length;
@@ -86,7 +89,8 @@ export function selectPreferredAudioFormat({
     }
   }
 
-  if (!candidates.length) {
+  const isStillNoCandidates = !candidates.length;
+  if (isStillNoCandidates) {
     candidates = originalTrack ? prependMatch({
       audioFormats,
       match: originalTrack

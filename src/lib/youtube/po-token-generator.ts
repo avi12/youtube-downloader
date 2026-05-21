@@ -63,7 +63,8 @@ export async function generatePoToken(videoId: string) {
   });
 
   const botGuardVm = getBotGuardVm(globalName);
-  if (!botGuardVm) {
+  const isBotGuardVmMissing = !botGuardVm;
+  if (isBotGuardVmMissing) {
     throw new Error(`BotGuard VM not found at window.${globalName}`);
   }
 

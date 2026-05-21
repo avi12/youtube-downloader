@@ -17,13 +17,15 @@ export async function transcodeRecentDownload({ entryId, targetContainer }: Tran
   try {
     const allEntries = await getAllRecentDownloads();
     const entry = allEntries.find(item => item.id === entryId);
-    if (!entry) {
+    const isEntryMissing = !entry;
+    if (isEntryMissing) {
       console.warn("[ytdl:transcode] Entry not found:", entryId);
       return;
     }
 
     const blob = await getRecentDownloadBlob(entryId);
-    if (!blob) {
+    const isBlobMissing = !blob;
+    if (isBlobMissing) {
       console.warn("[ytdl:transcode] Blob not found:", entryId);
       return;
     }
@@ -41,7 +43,8 @@ export async function transcodeRecentDownload({ entryId, targetContainer }: Tran
         audioMimeType: entry.audioMimeType
       }
     });
-    if (!output) {
+    const isOutputMissing = !output;
+    if (isOutputMissing) {
       throw new Error("FFmpeg returned no data for recent download transcode");
     }
 

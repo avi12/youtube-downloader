@@ -13,12 +13,11 @@ export async function readStreamToBuffer({ reader, expectedBytes, onBytesReceive
   const isStreamingMode = !!onChunk;
   let preallocated: Uint8Array | null = null;
   const hasExpectedBytes = expectedBytes > 0;
-  if (hasExpectedBytes && !isStreamingMode) {
+  const canPreallocate = hasExpectedBytes && !isStreamingMode;
+  if (canPreallocate) {
     try {
       preallocated = new Uint8Array(expectedBytes);
-    } catch {
-      // OOM for large files - fall through to chunked accumulation
-    }
+    } catch { /* OOM fallback */ }
   }
 
   const chunks: Uint8Array[] = [];
@@ -41,7 +40,8 @@ export async function readStreamToBuffer({ reader, expectedBytes, onBytesReceive
   try {
     while (true) {
       const chunk = await readChunk(reader);
-      if (!chunk) {
+      const isChunkMissing = !chunk;
+      if (isChunkMissing) {
         const isUnexpectedEnd = !stall.isStalled;
         if (isUnexpectedEnd) {
           throw new StreamStallError(buildPartial());
@@ -73,7 +73,8 @@ export async function readStreamToBuffer({ reader, expectedBytes, onBytesReceive
     stall.clear();
   }
 
-  if (stall.isStalled) {
+  const isStreamStalled = stall.isStalled;
+  if (isStreamStalled) {
     throw new StreamStallError(buildPartial());
   }
 

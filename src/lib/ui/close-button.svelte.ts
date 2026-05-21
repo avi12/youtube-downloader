@@ -60,7 +60,8 @@ export function attachCloseButton(elTarget: Element) {
 
   const observer = new MutationObserver(() => {
     const elInner = elTarget.querySelector("button");
-    if (!elInner) {
+    const isInnerMissing = !elInner;
+    if (isInnerMissing) {
       return;
     }
 

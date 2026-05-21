@@ -19,7 +19,8 @@ async function processMuxQueue() {
 
   while (muxQueue.length > 0) {
     const entry = muxQueue.shift();
-    if (!entry) {
+    const isEntryMissing = !entry;
+    if (isEntryMissing) {
       break;
     }
 
