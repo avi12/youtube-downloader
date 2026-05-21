@@ -1,8 +1,16 @@
 import { CAPTION_KIND_ASR } from "./helpers/audio-language-helpers";
+import { IS_WATCH_PAGE } from "./helpers/panel-init-audio";
 import { getActivePlayerCaption } from "./helpers/panel-init-caption";
 import { PLAYER_ACTIVE_CAPTION } from "./helpers/player-active-tracks.svelte";
-import { findOriginalAudioFormat, normalizeLanguageCode } from "@/lib/youtube/video-helpers";
-import { PanelTrackMode, type CaptionTrack, type VideoData } from "@/types";
+import { CONTENT_OPTIONS } from "@/lib/ui/synced-stores.svelte";
+import {
+  findOriginalAudioFormat,
+  normalizeLanguageCode,
+  orderCaptionsByPreference,
+  resolveCaptionLanguageMode
+} from "@/lib/youtube/video-helpers";
+import { AudioTrackLanguageMode, PanelTrackMode, type CaptionTrack, type VideoData } from "@/types";
+import { untrack } from "svelte";
 
 type FindCaptionTrackParams = {
   tracks: CaptionTrack[];
@@ -35,14 +43,24 @@ export function createCaptionTrackState({
     const { captionTracks } = getVideoData();
     const isMatchVideoMode = newMode === PanelTrackMode.MatchVideo;
     if (isMatchVideoMode) {
-      const activeCaption = getActivePlayerCaption();
-      selectedCaptionTrack = activeCaption
-        ? findCaptionTrack({
-          tracks: captionTracks,
-          vssId: activeCaption.vss_id,
-          languageCode: activeCaption.languageCode
-        })
-        : null;
+      if (IS_WATCH_PAGE) {
+        const activeCaption = getActivePlayerCaption();
+        selectedCaptionTrack = activeCaption
+          ? findCaptionTrack({
+            tracks: captionTracks,
+            vssId: activeCaption.vss_id,
+            languageCode: activeCaption.languageCode
+          })
+          : null;
+        return;
+      }
+
+      selectedCaptionTrack = orderCaptionsByPreference({
+        captionTracks,
+        languageMode: AudioTrackLanguageMode.MatchYouTube,
+        locale: document.documentElement.lang,
+        browserLanguage: navigator.language
+      })[0] ?? null;
       return;
     }
 
@@ -72,8 +90,39 @@ export function createCaptionTrackState({
   }
 
   $effect(() => {
+    const { captionLanguageMode, audioTrackLanguageMode, customLanguage } = CONTENT_OPTIONS;
+
+    untrack(() => {
+      const resolvedMode = resolveCaptionLanguageMode({
+        captionMode: captionLanguageMode,
+        audioMode: audioTrackLanguageMode
+      });      if (resolvedMode === AudioTrackLanguageMode.OriginalLanguage) {
+        handlePanelCaptionModeChange(PanelTrackMode.Original);
+        return;
+      }
+
+      if (resolvedMode === AudioTrackLanguageMode.Custom && customLanguage) {
+        const langCode = normalizeLanguageCode(customLanguage);
+        const { captionTracks } = getVideoData();
+        const manualTracks = captionTracks.filter(track => !track.kind);
+        const candidates = manualTracks.length > 0 ? manualTracks : captionTracks;
+        const match = candidates.find(track => normalizeLanguageCode(track.languageCode) === langCode)
+          ?? captionTracks.find(track => normalizeLanguageCode(track.languageCode) === langCode)
+          ?? null;
+        if (match) {
+          handlePanelCaptionModeChange(PanelTrackMode.Custom);
+          selectedCaptionTrack = match;
+          return;
+        }
+      }
+
+      handlePanelCaptionModeChange(PanelTrackMode.MatchVideo);
+    });
+  });
+
+  $effect(() => {
     const { vssId, languageCode } = PLAYER_ACTIVE_CAPTION;
-    if (!vssId && !languageCode) {
+    if (!IS_WATCH_PAGE || (!vssId && !languageCode)) {
       return;
     }
 

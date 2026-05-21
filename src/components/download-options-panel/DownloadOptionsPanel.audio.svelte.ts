@@ -1,7 +1,14 @@
 import { findAudioFormatForPlayerTrack, findMatchVideoAudioFormat } from "./helpers/panel-audio-actions";
+import { IS_WATCH_PAGE } from "./helpers/panel-init-audio";
 import { PLAYER_ACTIVE_AUDIO } from "./helpers/player-active-tracks.svelte";
-import { findOriginalAudioFormat, normalizeLanguageCode } from "@/lib/youtube/video-helpers";
-import { PanelTrackMode, type AdaptiveFormatItem, type VideoData } from "@/types";
+import { CONTENT_OPTIONS } from "@/lib/ui/synced-stores.svelte";
+import {
+  findOriginalAudioFormat,
+  normalizeLanguageCode,
+  selectPreferredAudioFormat
+} from "@/lib/youtube/video-helpers";
+import { AudioTrackLanguageMode, PanelTrackMode, type AdaptiveFormatItem, type VideoData } from "@/types";
+import { untrack } from "svelte";
 
 export function createAudioTrackState({
   getVideoData,
@@ -54,8 +61,16 @@ export function createAudioTrackState({
       return;
     }
 
-    const { audioFormats: matchAudioFormats } = getVideoData();
-    const matchDefault = findMatchVideoAudioFormat(matchAudioFormats);
+    const { audioFormats: matchAudioFormats, videoFormats } = getVideoData();
+    const matchDefault = IS_WATCH_PAGE
+      ? findMatchVideoAudioFormat(matchAudioFormats)
+      : selectPreferredAudioFormat({
+        audioFormats: matchAudioFormats,
+        videoMimeType: videoFormats[0]?.mimeType ?? "",
+        languageMode: AudioTrackLanguageMode.MatchYouTube,
+        locale: document.documentElement.lang,
+        browserLanguage: navigator.language
+      });
     if (matchDefault) {
       setSelectedAudioFormat(matchDefault);
       resetDoneState();
@@ -68,9 +83,35 @@ export function createAudioTrackState({
   }
 
   $effect(() => {
+    const { audioTrackLanguageMode, customLanguage } = CONTENT_OPTIONS;
+
+    untrack(() => {
+      if (audioTrackLanguageMode === AudioTrackLanguageMode.OriginalLanguage) {
+        handlePanelAudioModeChange(PanelTrackMode.Original);
+        return;
+      }
+
+      if (audioTrackLanguageMode === AudioTrackLanguageMode.Custom) {
+        const langCode = normalizeLanguageCode(customLanguage);
+        const { audioFormats } = getVideoData();
+        const isMatchFound = audioFormats.some(
+          format => format.audioTrack && normalizeLanguageCode(format.audioTrack.id) === langCode
+        );
+        if (isMatchFound) {
+          panelAudioCustomLanguage = langCode;
+          handlePanelAudioModeChange(PanelTrackMode.Custom);
+          return;
+        }
+      }
+
+      handlePanelAudioModeChange(PanelTrackMode.MatchVideo);
+    });
+  });
+
+  $effect(() => {
     const { trackId: playerTrackId, langCode: playerLangCode } = PLAYER_ACTIVE_AUDIO;
     const isMatchVideo = panelAudioMode === PanelTrackMode.MatchVideo;
-    const isAudioSyncSkipped = !isMatchVideo || !playerLangCode;
+    const isAudioSyncSkipped = !IS_WATCH_PAGE || !isMatchVideo || !playerLangCode;
     if (isAudioSyncSkipped) {
       return;
     }
