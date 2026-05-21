@@ -39,7 +39,13 @@ Built by [Avi](https://avi12.com) with supervised [Claude Code](https://claude.c
 
 All of this is packed into a single `DownloadRequest` object. The content script runs in YouTube's MAIN world and can read Polymer state directly - the background can't - so all resolution happens here, upfront, before any message is sent.
 
-### 3. Authentication - BotGuard and PO tokens
+### 3. Audio tracks and captions - resolving multi-language content
+
+**Audio tracks**: YouTube embeds every available audio variant inside `streamingData.adaptiveFormats`. Each format that carries an `audioTrack` object represents a separate language or dub. [`audio-format-helpers.ts`](src/lib/youtube/audio-format-helpers.ts) identifies the original track by a four-step fallback: a format with no `audioTrack` at all wins first; otherwise it checks for an ID ending in `.4`, a display name containing `"(original)"`, or the `audioIsDefault` flag - in that order. Auto-dubbed tracks carry IDs ending in `.10`. [`download-execute.ts`](src/entrypoints/youtube-main.content/video/download-execute.ts) collects the primary audio format plus every extra language into `additionalAudioFormats`, de-duplicated by language code, so the background can fetch all of them in parallel.
+
+**Captions**: The `baseUrl` values baked into the initial player config expire within seconds of page load. [`caption-urls.ts`](src/entrypoints/youtube-main.content/video/caption-urls.ts) re-fetches a fresh set by POSTing an InnerTube request to `/youtubei/v1/player`, then extracts `captions.playerCaptionsTracklistRenderer.captionTracks` and builds a `vssId -> baseUrl` map. For each selected track, [`caption-fetch.ts`](src/entrypoints/youtube-main.content/video/caption-fetch.ts) injects a `<track kind="metadata">` element onto the page's video element, waits for its `load` event (10-second timeout), reads the browser-parsed `TextTrackCue` objects, serializes them back to WebVTT, and base64-encodes the result. The strings travel inside the `DownloadRequest` and are passed straight to FFmpeg as subtitle streams.
+
+### 4. Authentication - BotGuard and PO tokens
 
 YouTube gates SABR access behind a cryptographic Proof-of-Origin token. [`po-token-generator.ts`](src/lib/youtube/po-token-generator.ts) generates it by executing YouTube's own BotGuard anti-bot interpreter in the MAIN world, submitting the resulting browser environment snapshot to YouTube's `api/jnn/v1/GenerateIT` integrity endpoint, and minting a per-video token from the response - entirely client-side, no backend required.
 
@@ -47,7 +53,7 @@ On the watch page the player has already run BotGuard, so [`request-capture.ts`]
 
 For CDN stream URLs that carry a `signatureCipher` field, [`signature-decryptor.ts`](src/lib/youtube/signature-decryptor.ts) downloads `player.js`, pattern-matches the obfuscated transform function (swap, reverse, splice operations), and replays it locally to decrypt the `sig` parameter before the URL is used.
 
-### 4. Message routing - crossing the MV3 world boundaries
+### 5. Message routing - crossing the MV3 world boundaries
 
 MV3 fragments execution across isolated runtimes that can't share memory. The `DownloadRequest` travels over two buses in series:
 
@@ -56,7 +62,7 @@ MV3 fragments execution across isolated runtimes that can't share memory. The `D
 
 [`download-handlers.ts`](src/entrypoints/background/handlers/download-handlers.ts) receives `StartBackgroundDownload` on the other end, associates the download with the originating tab, enqueues it in the popup, and calls [`startBackgroundDownload()`](src/entrypoints/background/download/background-downloader.ts).
 
-### 5. Dispatching to the download worker
+### 6. Dispatching to the download worker
 
 [`startBackgroundDownload()`](src/entrypoints/background/download/background-downloader.ts) takes two paths based on the request type:
 
@@ -65,7 +71,7 @@ MV3 fragments execution across isolated runtimes that can't share memory. The `D
 
 For the iframe path, [`main.ts`](src/entrypoints/offscreen/main.ts) in the offscreen document receives the message and calls [`createWorkerIframe()`](src/entrypoints/offscreen/iframe-host.ts), which spawns a sandboxed `<iframe>` running [`download-worker/main.ts`](src/entrypoints/download-worker/main.ts). The background service worker never touches the stream bytes directly - all network I/O happens inside this worker iframe.
 
-### 6. Stream fetch - SABR and CDN fallback
+### 7. Stream fetch - SABR and CDN fallback
 
 [`download-worker/main.ts`](src/entrypoints/download-worker/main.ts) is the actual download engine. It tries two methods in order:
 
@@ -75,7 +81,7 @@ For the iframe path, [`main.ts`](src/entrypoints/offscreen/main.ts) in the offsc
 
 As each chunk arrives the worker posts a `worker-chunk` message to the offscreen document. [`accumulator.ts`](src/entrypoints/offscreen/stream/accumulator.ts) collects and sequences the chunks. When all chunks for a stream have arrived, [`end-handler.ts`](src/entrypoints/offscreen/stream/end-handler.ts) marks the stream complete and, once both video and audio streams are finished, hands everything to the processing pipeline.
 
-### 7. Muxing - FFmpeg WASM in the browser
+### 8. Muxing - FFmpeg WASM in the browser
 
 [`stream-processor.ts`](src/lib/download-pipeline/stream-processor.ts) receives the assembled streams and routes based on `DownloadType`:
 
@@ -86,7 +92,7 @@ The mux worker ([`mux-worker/index.ts`](src/entrypoints/mux-worker/index.ts)) ru
 
 For YouTube Music tracks, [`background-downloader.ts`](src/entrypoints/background/download/background-downloader.ts) first queries the YouTube Music InnerTube API to replace the standard player metadata with the canonical catalogue entry (song title, artist, album, 544x544 cover thumbnail) before the mux job runs.
 
-### 8. Progress - a message chain across four runtimes
+### 9. Progress - a message chain across four runtimes
 
 As chunks arrive and FFmpeg runs, [`progress-reporter.ts`](src/lib/download-pipeline/progress-reporter.ts) emits `PipelineProgress` messages with a 0-1 value and a phase label (video fetch, audio fetch, FFmpeg mux). The message travels:
 
@@ -94,7 +100,7 @@ As chunks arrive and FFmpeg runs, [`progress-reporter.ts`](src/lib/download-pipe
 
 [`watch-button-progress.ts`](src/entrypoints/youtube-main.content/watch-button/watch-button-progress.ts) blends fetch and FFmpeg progress proportionally so the progress ring on the button advances smoothly across both phases.
 
-### 9. Save - triggering the browser download
+### 10. Save - triggering the browser download
 
 [`triggerDownload()`](src/lib/download-pipeline/blob-download.ts) wraps the output bytes in a `Blob` with the correct MIME type, creates an object URL, and calls `browser.downloads.download({ url, filename })`. After the browser claims the file it revokes the object URL and writes a `RecentDownload` entry to storage for the popup history. For batch downloads, bytes accumulate into a JSZip archive that flushes to disk when the last item in the batch completes.
 
