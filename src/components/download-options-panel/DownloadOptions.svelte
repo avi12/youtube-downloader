@@ -28,7 +28,7 @@
   }
 
   const {
-    downloadType, videoFormats, audioFormats, captionTracks,
+    downloadType, videoFormats, audioFormats, captionTracks, translationLanguages,
     selectedVideoFormat, selectedAudioFormat, selectedCaptionTrack,
     panelAudioMode, panelAudioCustomLanguage, panelCaptionMode,
     filename, extension, actualExtension, isDownloading,
@@ -42,6 +42,7 @@
     videoFormats,
     audioFormats,
     captionTracks,
+    translationLanguages,
     selectedVideoFormat,
     selectedAudioFormat,
     selectedCaptionTrack
@@ -88,8 +89,14 @@
     {isExtrasAutoDisabled}
     {onaudiocustomchange}
     {onaudiomodechange}
-    oncaptionchange={vssId =>
-      oncaptionchange(derived.filteredCaptionTracks.find(track => track.vssId === vssId) ?? null)}
+    oncaptionchange={vssId => {
+      const native = derived.filteredCaptionTracks.find(track => track.vssId === vssId);
+      if (native) {
+        oncaptionchange(native); return;
+      }
+
+      oncaptionchange(derived.translatedCaptionTracks.find(track => track.vssId === vssId) ?? null);
+    }}
     {oncaptionmodechange}
     ondownloadextracaptionschange={derived.setDownloadExtraCaptions}
     ondownloadextraschange={derived.setDownloadExtras}

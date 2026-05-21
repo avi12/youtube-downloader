@@ -48,7 +48,9 @@ export function buildVideoData({ playerResponse, clientVersion, clientName }: Vi
     ?.toSorted(byQualityDesc) ?? [];
 
   const { videoDetails } = playerResponse;
-  const allCaptionTracks = playerResponse.captions?.playerCaptionsTracklistRenderer?.captionTracks ?? [];
+  const captionsRenderer = playerResponse.captions?.playerCaptionsTracklistRenderer;
+  const allCaptionTracks = captionsRenderer?.captionTracks ?? [];
+  const translationLanguages = captionsRenderer?.translationLanguages ?? [];
   return {
     playerResponse,
     videoId: videoDetails?.videoId ?? "",
@@ -59,6 +61,7 @@ export function buildVideoData({ playerResponse, clientVersion, clientName }: Vi
     videoFormats: getUniqueVideoFormats(allFormats),
     audioFormats: getAudioFormats(allFormats),
     captionTracks: allCaptionTracks,
+    translationLanguages,
     sabrConfig: extractSabrConfig({
       playerResponse,
       clientVersion,
