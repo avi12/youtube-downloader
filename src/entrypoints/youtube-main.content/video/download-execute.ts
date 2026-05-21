@@ -10,7 +10,36 @@ import { generatePoTokenIfNeeded, videoDataCache } from "./video-data";
 import { crossWorldMessenger, CrossWorldMessage } from "@/lib/messaging/cross-world-messenger";
 import { getCompatibleFilename, splitFilenameAndExtension } from "@/lib/utils/filename";
 import { isVideoDataExpired } from "@/lib/youtube/video-helpers";
-import type { DownloadRequest } from "@/types";
+import type { CaptionTrack, DownloadRequest, TranslationLanguage } from "@/types";
+
+const TRANSLATED_CAPTION_VSSID_PREFIX = "t.";
+
+function buildVirtualTranslatedTrack(
+  vssId: string,
+  captionTracks: CaptionTrack[],
+  translationLanguages: TranslationLanguage[]
+) {
+  if (!vssId.startsWith(TRANSLATED_CAPTION_VSSID_PREFIX)) {
+    return null;
+  }
+
+  const targetLangCode = vssId.slice(TRANSLATED_CAPTION_VSSID_PREFIX.length);
+  const translationLang = translationLanguages.find(lang => lang.languageCode === targetLangCode);
+  const sourceTrack = captionTracks.find(track => track.isTranslatable);
+  if (!translationLang || !sourceTrack) {
+    return null;
+  }
+
+  return {
+    baseUrl: sourceTrack.baseUrl,
+    name: translationLang.languageName,
+    vssId,
+    languageCode: targetLangCode,
+    isTranslatable: false,
+    translationLanguageCode: targetLangCode,
+    sourceTrackVssId: sourceTrack.vssId
+  };
+}
 
 const PROGRESSIVE_DOWNLOAD_EXTENSION = "mp4";
 
@@ -79,8 +108,18 @@ export async function resolveAndDispatch({ params, abortSignal }: ResolveAndDisp
   const downloadExtras = params.downloadExtras ?? true;
   const downloadExtraCaptions = params.downloadExtraCaptions ?? true;
   const includeAutoDubbing = params.includeAutoDubbing ?? true;
+  const virtualTrack = selectedCaptionVssId
+    ? buildVirtualTranslatedTrack(
+      selectedCaptionVssId,
+      cachedVideoData.captionTracks,
+      cachedVideoData.translationLanguages
+    )
+    : null;
+  const captionTracksForResolution = virtualTrack
+    ? [...cachedVideoData.captionTracks, virtualTrack]
+    : cachedVideoData.captionTracks;
   const orderedCaptionTracks = resolveOrderedCaptionTracks({
-    captionTracks: cachedVideoData.captionTracks,
+    captionTracks: captionTracksForResolution,
     selectedCaptionVssId,
     downloadExtras: downloadExtraCaptions
   });

@@ -36,7 +36,9 @@ export function resolveOrderedCaptionTracks({
     ? (allCaptionTracks.find(track => track.vssId === selectedCaptionVssId) ?? allCaptionTracks[0])
     : allCaptionTracks[0];
   if (downloadExtras) {
-    return allCaptionTracks;
+    const nativeTracks = allCaptionTracks.filter(track => !track.translationLanguageCode);
+    const isSelectedTranslated = primaryCaptionTrack?.translationLanguageCode;
+    return isSelectedTranslated ? [primaryCaptionTrack, ...nativeTracks] : nativeTracks;
   }
 
   return primaryCaptionTrack ? [primaryCaptionTrack] : [];

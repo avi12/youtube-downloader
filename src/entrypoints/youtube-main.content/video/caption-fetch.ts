@@ -8,6 +8,7 @@ const CAPTION_FETCH_TIMEOUT_MS = 10_000;
 const HTML5_MAIN_VIDEO_SELECTOR = "video.html5-main-video";
 const CAPTION_FORMAT_PARAM = "fmt";
 const CAPTION_FORMAT_VTT = "vtt";
+const CAPTION_TLANG_PARAM = "tlang";
 
 function formatWebVttTimestamp(seconds: number) {
   const hours = Math.floor(seconds / 3600);
@@ -75,9 +76,15 @@ export async function fetchCaptionWebVttData({ captionTracks, videoId }: FetchCa
 
   const results: (string | null)[] = [];
   for (const track of captionTracks) {
-    const baseUrl = freshUrls.get(track.vssId) ?? track.baseUrl;
+    const sourceVssId = track.translationLanguageCode ? track.sourceTrackVssId! : track.vssId;
+    const baseUrl = freshUrls.get(sourceVssId) ?? track.baseUrl;
     const url = new URL(baseUrl);
     url.searchParams.set(CAPTION_FORMAT_PARAM, CAPTION_FORMAT_VTT);
+
+    if (track.translationLanguageCode) {
+      url.searchParams.set(CAPTION_TLANG_PARAM, track.translationLanguageCode);
+    }
+
     results.push(await fetchWebVttViaTrackElement(url.toString()));
   }
   return results;

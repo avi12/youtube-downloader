@@ -9,9 +9,14 @@ import { PLAYER_ACTIVE_CAPTION } from "./helpers/player-active-tracks.svelte";
 import { preserveAutoVariant } from "./helpers/preserve-auto-variant";
 import { optionsItem } from "@/lib/storage/storage";
 import { CONTENT_OPTIONS } from "@/lib/ui/synced-stores.svelte";
+import { normalizeLanguageCode } from "@/lib/youtube/audio-format-helpers";
 import { findOriginalAudioFormat, INITIAL_OPTIONS } from "@/lib/youtube/video-helpers";
 import { DownloadType } from "@/types";
-import type { AdaptiveFormatItem, CaptionTrack } from "@/types";
+import type { AdaptiveFormatItem, CaptionTrack, TranslationLanguage } from "@/types";
+import { SvelteSet } from "svelte/reactivity";
+
+const TRANSLATED_CAPTION_VSSID_PREFIX = "t.";
+const TRANSLATED_CAPTION_LABEL_SUFFIX = "(auto-translated)";
 
 const AUTO_GENERATED_SUFFIX = "(auto-generated)";
 const AUTO_DUBBED_LABEL_SUFFIX = "(auto-dubbed)";
@@ -30,6 +35,7 @@ export interface DownloadOptionsProps {
   videoFormats: AdaptiveFormatItem[];
   audioFormats: AdaptiveFormatItem[];
   captionTracks: CaptionTrack[];
+  translationLanguages: TranslationLanguage[];
   selectedVideoFormat: AdaptiveFormatItem | null;
   selectedAudioFormat: AdaptiveFormatItem | null;
   selectedCaptionTrack: CaptionTrack | null;
@@ -83,22 +89,32 @@ export function createDownloadOptionsState(props: () => DownloadOptionsProps) {
   const uniqueAudioLanguages = $derived(
     buildUniqueAudioLanguages({
       audioFormats: props().audioFormats,
-      includeAutoDubbing: true
+      includeAutoDubbing: PANEL_OPTIONS.includeAutoDubbing
     })
   );
 
-  const isOnlyAsrAvailable = $derived(
-    props().captionTracks.length > 0 &&
-    props().captionTracks.every(track => track.kind === CAPTION_KIND_ASR)
+  const manualCaptionLanguageCodes = $derived(
+    new SvelteSet(
+      props().captionTracks
+        .filter(track => track.kind !== CAPTION_KIND_ASR)
+        .map(track => normalizeLanguageCode(track.languageCode))
+    )
   );
 
+  function hasManualCounterpart(track: CaptionTrack): boolean {
+    return track.kind === CAPTION_KIND_ASR &&
+      manualCaptionLanguageCodes.has(normalizeLanguageCode(track.languageCode));
+  }
+
   const filteredCaptionTracks = $derived(
-    props().captionTracks.filter(track => preserveAutoVariant({
-      item: track,
-      isAuto: candidate => candidate.kind === CAPTION_KIND_ASR,
-      matchesPlayer: candidate => candidate.vssId === PLAYER_ACTIVE_CAPTION.vssId,
-      globalIncludes: PANEL_OPTIONS.includeAiCaptions || isOnlyAsrAvailable
-    }))
+    props().captionTracks
+      .filter(track => preserveAutoVariant({
+        item: track,
+        isAuto: candidate => candidate.kind === CAPTION_KIND_ASR,
+        matchesPlayer: candidate => candidate.vssId === PLAYER_ACTIVE_CAPTION.vssId,
+        globalIncludes: PANEL_OPTIONS.includeAiCaptions
+      }))
+      .filter(track => !hasManualCounterpart(track))
   );
 
   const qualityOptions = $derived(
@@ -117,20 +133,49 @@ export function createDownloadOptionsState(props: () => DownloadOptionsProps) {
       : (props().selectedVideoFormat?.itag.toString() ?? "")
   );
 
-  const captionCustomOptions = $derived(
-    props().captionTracks
+  const translatedCaptionTracks = $derived.by(() => {
+    const { captionTracks, translationLanguages } = props();
+    const sourceTrack = captionTracks.find(track => track.isTranslatable);
+    const isAiDisabled = !PANEL_OPTIONS.includeAiCaptions || !PANEL_OPTIONS.includeAutoDubbing;
+    if (!sourceTrack || translationLanguages.length === 0 || isAiDisabled) {
+      return [];
+    }
+
+    const existingLangCodes = new SvelteSet(captionTracks.map(track => normalizeLanguageCode(track.languageCode)));
+    return translationLanguages
+      .filter(lang => !existingLangCodes.has(normalizeLanguageCode(lang.languageCode)))
+      .map(lang => ({
+        baseUrl: sourceTrack.baseUrl,
+        name: lang.languageName,
+        vssId: `${TRANSLATED_CAPTION_VSSID_PREFIX}${lang.languageCode}`,
+        languageCode: lang.languageCode,
+        isTranslatable: false,
+        translationLanguageCode: lang.languageCode,
+        sourceTrackVssId: sourceTrack.vssId
+      }));
+  });
+
+  const captionCustomOptions = $derived.by(() => {
+    const nativeOptions = props().captionTracks
       .filter(track => preserveAutoVariant({
         item: track,
         isAuto: candidate => candidate.kind === CAPTION_KIND_ASR,
         matchesPlayer: () => false,
-        globalIncludes: PANEL_OPTIONS.includeAiCaptions || isOnlyAsrAvailable
+        globalIncludes: PANEL_OPTIONS.includeAiCaptions
       }))
+      .filter(track => !hasManualCounterpart(track))
       .map(track => ({
         value: track.vssId,
         label: formatCaptionLabel(track)
-      }))
-      .toSorted(byLabel)
-  );
+      }));
+
+    const translatedOptions = translatedCaptionTracks.map(track => ({
+      value: track.vssId,
+      label: `${track.name.simpleText} ${TRANSLATED_CAPTION_LABEL_SUFFIX}`
+    }));
+
+    return [...nativeOptions, ...translatedOptions].toSorted(byLabel);
+  });
 
   const captionOriginalLabel = $derived(
     resolveCaptionOriginalLabel({
@@ -220,6 +265,9 @@ export function createDownloadOptionsState(props: () => DownloadOptionsProps) {
     },
     get captionCustomOptions() {
       return captionCustomOptions;
+    },
+    get translatedCaptionTracks() {
+      return translatedCaptionTracks;
     },
     get captionOriginalLabel() {
       return captionOriginalLabel;
