@@ -85,6 +85,11 @@ export type AdaptiveFormatItem = MediaItem & {
   xtags?: string;
 };
 
+export type TranslationLanguage = {
+  languageCode: string;
+  languageName: { simpleText: string };
+};
+
 /** @see https://github.com/LuanRT/YouTube.js/blob/main/src/parser/classes/PlayerCaptionsTracklist.ts */
 export type CaptionTrack = {
   baseUrl: string;
@@ -93,4 +98,6 @@ export type CaptionTrack = {
   languageCode: string;
   kind?: string;
   isTranslatable: boolean;
+  translationLanguageCode?: string;
+  sourceTrackVssId?: string;
 };

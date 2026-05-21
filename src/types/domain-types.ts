@@ -1,6 +1,6 @@
 import type { DownloadType } from "./download-enums";
 import type { SabrConfig, SubtitleTrack, VideoMetadata } from "./settings-types";
-import type { AdaptiveFormatItem, CaptionTrack, PlayerResponse } from "./youtube";
+import type { AdaptiveFormatItem, CaptionTrack, PlayerResponse, TranslationLanguage } from "./youtube";
 
 export type DownloadRequest = {
   type: DownloadType;
@@ -73,6 +73,7 @@ export type VideoData = {
   videoFormats: AdaptiveFormatItem[];
   audioFormats: AdaptiveFormatItem[];
   captionTracks: CaptionTrack[];
+  translationLanguages: TranslationLanguage[];
   sabrConfig: SabrConfig | null;
   progressiveUrl: string | null;
 };

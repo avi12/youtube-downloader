@@ -5,6 +5,7 @@ export type {
   PlayerResponse,
   TpYtIronDropdownElement,
   TpYtPaperInputElement,
+  TranslationLanguage,
   YtButtonViewModelElement,
   YtdlCaptureState,
   YtdlMediaCapture

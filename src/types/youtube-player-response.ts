@@ -1,5 +1,5 @@
 import type { PlayabilityStatus } from "./youtube-format-enums";
-import type { FormatItem, AdaptiveFormatItem, CaptionTrack } from "./youtube-format-types";
+import type { FormatItem, AdaptiveFormatItem, CaptionTrack, TranslationLanguage } from "./youtube-format-types";
 
 /** @see https://github.com/LuanRT/YouTube.js/blob/main/src/parser/types/ParsedResponse.ts */
 export type PlayerResponse = {
@@ -60,6 +60,7 @@ export type PlayerResponse = {
   captions?: {
     playerCaptionsTracklistRenderer: {
       captionTracks: CaptionTrack[];
+      translationLanguages?: TranslationLanguage[];
     };
   };
 };
