@@ -1,6 +1,8 @@
 import { formatAudioCodecLabel, formatVideoQualityLabel } from "@/lib/youtube/video-helpers";
 import type { AdaptiveFormatItem } from "@/types";
 
+const BITS_PER_KILOBIT = 1000;
+
 export function buildQualityOptions({
   isAudio,
   audioFormats,
@@ -21,7 +23,7 @@ export function buildQualityOptions({
       : audioFormats;
     return formats.map(format => ({
       value: `${format.itag}:${format.audioTrack?.id ?? ""}`,
-      label: `${Math.floor(format.bitrate / 1000)} kbps (${formatAudioCodecLabel(format.mimeType)})`
+      label: `${Math.floor(format.bitrate / BITS_PER_KILOBIT)} kbps (${formatAudioCodecLabel(format.mimeType)})`
     }));
   }
 

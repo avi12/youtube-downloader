@@ -46,6 +46,11 @@ const SIZE_FORMATTER_GB = new Intl.NumberFormat(PAGE_LOCALE, {
   maximumFractionDigits: 2
 });
 const CAPTION_BYTES_PER_SECOND = 10;
+const MILLISECONDS_PER_SECOND = 1000;
+const BYTES_PER_KILOBYTE = 1024;
+const BYTES_PER_MEGABYTE = BYTES_PER_KILOBYTE * 1024;
+const BYTES_PER_GIGABYTE = BYTES_PER_MEGABYTE * 1024;
+const MEGABYTES_PER_GIGABYTE = 1000;
 
 export function createPanelState(getVideoData: () => VideoData) {
   const store = createDownloadStoreState(getVideoData);
@@ -169,7 +174,7 @@ export function createPanelState(getVideoData: () => VideoData) {
     const durationSeconds = parseInt(
       selectedAudioFormat?.approxDurationMs ?? selectedVideoFormat?.approxDurationMs ?? "0",
       10
-    ) / 1000;
+    ) / MILLISECONDS_PER_SECOND;
     let captionTrackCount = 0;
     if (isVideoAndAudio && caption.selectedCaptionTrack) {
       captionTrackCount = PANEL_OPTIONS.downloadExtraCaptions ? getVideoData().captionTracks.length : 1;
@@ -182,16 +187,16 @@ export function createPanelState(getVideoData: () => VideoData) {
       return "";
     }
 
-    const megabytes = totalBytes / (1024 * 1024);
+    const megabytes = totalBytes / BYTES_PER_MEGABYTE;
     if (megabytes < 1) {
-      return `~${SIZE_FORMATTER_KB.format(totalBytes / 1024)}`;
+      return `~${SIZE_FORMATTER_KB.format(totalBytes / BYTES_PER_KILOBYTE)}`;
     }
 
-    if (megabytes < 1000) {
+    if (megabytes < MEGABYTES_PER_GIGABYTE) {
       return `~${SIZE_FORMATTER_MB.format(megabytes)}`;
     }
 
-    return `~${SIZE_FORMATTER_GB.format(totalBytes / (1024 * 1024 * 1024))}`;
+    return `~${SIZE_FORMATTER_GB.format(totalBytes / BYTES_PER_GIGABYTE)}`;
   });
 
   $effect(() => {

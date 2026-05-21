@@ -30,11 +30,11 @@ export function buildFormatItems(
   isMultiTrack = false
 ) {
   return supportedExtensions[type]
-    .filter(e => e !== AUTO_EXTENSION)
-    .map(e => ({
-      ext: e,
-      desc: getFormatDescription(e),
-      isExcluded: isMultiTrack && MULTI_TRACK_UNSUPPORTED_EXTENSIONS.has(e)
+    .filter(extension => extension !== AUTO_EXTENSION)
+    .map(extension => ({
+      ext: extension,
+      desc: getFormatDescription(extension),
+      isExcluded: isMultiTrack && MULTI_TRACK_UNSUPPORTED_EXTENSIONS.has(extension)
     }));
 }
 
@@ -57,18 +57,18 @@ export function getFilenameError({
     return "Filename can't be empty";
   }
 
-  const ext = extension.toLowerCase();
+  const fileExtension = extension.toLowerCase();
   const validExtensions = supportedExtensions[type];
-  if (!ext) {
+  if (!fileExtension) {
     return "No extension - pick one below";
   }
 
-  if (isMultiTrack && MULTI_TRACK_UNSUPPORTED_EXTENSIONS.has(ext)) {
+  if (isMultiTrack && MULTI_TRACK_UNSUPPORTED_EXTENSIONS.has(fileExtension)) {
     return "AVI doesn't support multiple audio tracks";
   }
 
-  if (!validExtensions.includes(ext)) {
-    return `Extension .${ext} isn't supported for ${type}`;
+  if (!validExtensions.includes(fileExtension)) {
+    return `Extension .${fileExtension} isn't supported for ${type}`;
   }
 
   return "";

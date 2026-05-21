@@ -70,8 +70,8 @@ export function createAudioTrackState({
   $effect(() => {
     const { trackId: playerTrackId, langCode: playerLangCode } = PLAYER_ACTIVE_AUDIO;
     const isMatchVideo = panelAudioMode === PanelTrackMode.MatchVideo;
-    const shouldSkipAudioSync = !isMatchVideo || !playerLangCode;
-    if (shouldSkipAudioSync) {
+    const isAudioSyncSkipped = !isMatchVideo || !playerLangCode;
+    if (isAudioSyncSkipped) {
       return;
     }
 

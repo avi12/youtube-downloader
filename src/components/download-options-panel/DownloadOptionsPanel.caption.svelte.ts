@@ -89,8 +89,8 @@ export function createCaptionTrackState({
 
     const isMatchVideo = panelCaptionMode === PanelTrackMode.MatchVideo;
     const isOnlyAsrAvailable = captionTracks.every(track => track.kind === CAPTION_KIND_ASR);
-    const shouldIgnorePlayerCaption = !isMatchVideo && !isOnlyAsrAvailable;
-    if (shouldIgnorePlayerCaption) {
+    const isPlayerCaptionIgnored = !isMatchVideo && !isOnlyAsrAvailable;
+    if (isPlayerCaptionIgnored) {
       return;
     }
 

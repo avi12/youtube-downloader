@@ -23,13 +23,13 @@ export function buildUniqueAudioLanguages({
       continue;
     }
 
-    const shouldKeep = preserveAutoVariant({
+    const isKept = preserveAutoVariant({
       item: format,
       isAuto: candidate => !!candidate.audioTrack?.id.endsWith(AUTO_DUB_TRACK_SUFFIX),
       matchesPlayer: candidate => normalizeLanguageCode(candidate.audioTrack!.id) === preservedAutoDubbedLangCode,
       globalIncludes: includeAutoDubbing
     });
-    if (!shouldKeep) {
+    if (!isKept) {
       continue;
     }
 

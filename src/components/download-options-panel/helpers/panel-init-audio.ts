@@ -71,10 +71,10 @@ function findMatchedCustomLangCode({ options, audioFormats }: FindMatchedCustomL
   }
 
   const langCode = normalizeLanguageCode(options.customLanguage);
-  const hasMatch = audioFormats.some(
+  const isMatchFound = audioFormats.some(
     format => format.audioTrack && normalizeLanguageCode(format.audioTrack.id) === langCode
   );
-  return hasMatch ? langCode : null;
+  return isMatchFound ? langCode : null;
 }
 
 export function resolveInitialAudioMode({ options, videoData }: OptionsVideoDataParams) {

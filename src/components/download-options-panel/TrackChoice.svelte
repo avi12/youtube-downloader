@@ -50,7 +50,7 @@
     <span class="track-label">{state.kindLabel}</span>
     <div
       class="track-seg"
-      class:is-inert={state.hasNoAlternativeMode}
+      class:is-inert={state.isAlternativeModeAbsent}
       aria-label="{state.kindLabel} source"
       onkeydown={state.handleSegmentedKeydown}
       role="radiogroup"

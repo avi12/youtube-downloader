@@ -64,10 +64,10 @@
   const isAudioOnly = $derived(downloadType === DownloadType.Audio);
   const isVideoOnly = $derived(downloadType === DownloadType.Video);
   const isExtensionMultiTrackIncompatible = $derived(MULTI_TRACK_UNSUPPORTED_EXTENSIONS.has(extension));
-  const hasAudioTrackSelector = $derived(uniqueAudioLanguages.length > 0);
-  const hasMultipleAudioTracks = $derived(uniqueAudioLanguages.length > 1);
-  const hasCaptions = $derived(captionTracks.length > 0);
-  const isVisible = $derived(hasAudioTrackSelector || (hasCaptions && !isVideoOnly && !isAudioOnly));
+  const isAudioTrackSelectorPresent = $derived(uniqueAudioLanguages.length > 0);
+  const isMultipleAudioTracks = $derived(uniqueAudioLanguages.length > 1);
+  const isCaptionsPresent = $derived(captionTracks.length > 0);
+  const isVisible = $derived(isAudioTrackSelectorPresent || (isCaptionsPresent && !isVideoOnly && !isAudioOnly));
 
   const originalAudioLangCode = $derived(
     uniqueAudioLanguages.find(language => language.label === audioOriginalLabel)?.value ?? null
@@ -147,7 +147,7 @@
   ]);
 
   const audioSummaryText = $derived.by(() => {
-    if (!hasAudioTrackSelector) {
+    if (!isAudioTrackSelectorPresent) {
       return null;
     }
 
@@ -160,7 +160,7 @@
   });
 
   const captionSummaryText = $derived.by(() => {
-    if (isAudioOnly || isVideoOnly || !hasCaptions) {
+    if (isAudioOnly || isVideoOnly || !isCaptionsPresent) {
       return null;
     }
 
@@ -236,7 +236,7 @@
 
     <div class="ytdl-tracks-body" class:is-open={isOpen}>
       <div class="ytdl-tracks-body-inner">
-        {#if hasAudioTrackSelector}
+        {#if isAudioTrackSelectorPresent}
           <div class="ytdl-track-field">
             <PolymerSelect
               id="tracks-audio-select"
@@ -246,7 +246,7 @@
               options={audioOptions}
               value={audioSelectValue}
             />
-            {#if !isAudioOnly && hasMultipleAudioTracks}
+            {#if !isAudioOnly && isMultipleAudioTracks}
               <tp-yt-paper-toggle-button
                 aria-label="Include all audio tracks"
                 checked={downloadExtras ? "" : undefined}
@@ -264,7 +264,7 @@
           </div>
         {/if}
 
-        {#if hasCaptions && !isAudioOnly && !isVideoOnly}
+        {#if isCaptionsPresent && !isAudioOnly && !isVideoOnly}
           <div class="ytdl-track-field">
             <PolymerSelect
               id="tracks-caption-select"

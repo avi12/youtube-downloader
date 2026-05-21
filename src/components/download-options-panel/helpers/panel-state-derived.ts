@@ -44,14 +44,14 @@ export function resolveActualExtension({
   if (isTrackWithExtras) {
     const isSelectedAutoDubbed = selectedTrackId.endsWith(AUTO_DUB_TRACK_SUFFIX);
     const isAutoDubbingBlockedForSelected = !CONTENT_OPTIONS.includeAutoDubbing && isSelectedAutoDubbed;
-    const hasExtraAudioTracks = !isAutoDubbingBlockedForSelected
+    const isExtraAudioTracksPresent = !isAutoDubbingBlockedForSelected
       && getVideoData().audioFormats.some(format => {
         const trackId = format.audioTrack?.id;
         return trackId
           && trackId !== selectedTrackId
           && (CONTENT_OPTIONS.includeAutoDubbing || !trackId.endsWith(AUTO_DUB_TRACK_SUFFIX));
       });
-    if (hasExtraAudioTracks) {
+    if (isExtraAudioTracksPresent) {
       return resolveMultiTrackExtension(baseExtension);
     }
   }

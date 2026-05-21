@@ -175,7 +175,7 @@ export function createDownloadOptionsState(props: () => DownloadOptionsProps) {
 
     return [selected, ...extras];
   });
-  const hasExtrasToBundle = $derived(audioTracksToBundle.length > 1);
+  const isExtrasToBundle = $derived(audioTracksToBundle.length > 1);
   const audioOriginalLabel = $derived(findOriginalAudioFormat(props().audioFormats)?.audioTrack?.displayName ?? null);
   const captionPlayerLabel = $derived.by(() => {
     const track = props().selectedCaptionTrack;
@@ -227,8 +227,8 @@ export function createDownloadOptionsState(props: () => DownloadOptionsProps) {
     get audioPlayerLabel() {
       return audioPlayerLabel;
     },
-    get hasExtrasToBundle() {
-      return hasExtrasToBundle;
+    get isExtrasToBundle() {
+      return isExtrasToBundle;
     },
     get audioOriginalLabel() {
       return audioOriginalLabel;

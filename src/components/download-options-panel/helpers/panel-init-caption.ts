@@ -45,8 +45,8 @@ export function resolveInitialCaptionMode({ options, videoData }: ResolveInitial
   const isCustomWithLanguage = resolvedMode === AudioTrackLanguageMode.Custom && options.customLanguage;
   if (isCustomWithLanguage) {
     const langCode = normalizeLanguageCode(options.customLanguage);
-    const hasMatch = videoData.captionTracks.some(track => normalizeLanguageCode(track.languageCode) === langCode);
-    if (hasMatch) {
+    const isMatchFound = videoData.captionTracks.some(track => normalizeLanguageCode(track.languageCode) === langCode);
+    if (isMatchFound) {
       return PanelTrackMode.Custom;
     }
   }

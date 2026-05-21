@@ -19,7 +19,7 @@ export function createTrackChoiceState(params: TrackChoiceParams) {
   const kindLabel = $derived(isAudio ? "Audio language" : "Captions");
   const originalSubLabel = $derived(isAudio ? "The creator's baked-in audio track" : "The video's original caption track");
   const accessibleLabel = $derived(isAudio ? "Audio language" : "Caption language");
-  const hasNoAlternativeMode = $derived(buttons.length > 0 && params.disabledModes.length >= buttons.length - 1);
+  const isAlternativeModeAbsent = $derived(buttons.length > 0 && params.disabledModes.length >= buttons.length - 1);
 
   const elements = new SvelteMap<string, HTMLElement>();
 
@@ -86,8 +86,8 @@ export function createTrackChoiceState(params: TrackChoiceParams) {
       }
     }
 
-    const hasNoEnabledTarget = iNext === iCurrent;
-    if (hasNoEnabledTarget) {
+    const isEnabledTargetAbsent = iNext === iCurrent;
+    if (isEnabledTargetAbsent) {
       return;
     }
 
@@ -110,8 +110,8 @@ export function createTrackChoiceState(params: TrackChoiceParams) {
     get accessibleLabel() {
       return accessibleLabel;
     },
-    get hasNoAlternativeMode() {
-      return hasNoAlternativeMode;
+    get isAlternativeModeAbsent() {
+      return isAlternativeModeAbsent;
     },
     createAttacher,
     handleSegmentedKeydown
