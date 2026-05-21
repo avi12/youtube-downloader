@@ -247,7 +247,8 @@
                 checked={downloadExtras ? "" : undefined}
                 disabled={isDownloading || isExtensionMultiTrackIncompatible ? "" : undefined}
                 onchange={e => {
-                  if (e.target instanceof HTMLElement) {
+                  const isHtmlElement = e.target instanceof HTMLElement;
+                  if (isHtmlElement) {
                     ondownloadextraschange(e.target.hasAttribute("checked"));
                   }
                 }}
@@ -275,7 +276,8 @@
                 checked={downloadExtraCaptions ? "" : undefined}
                 disabled={isDownloading ? "" : undefined}
                 onchange={e => {
-                  if (e.target instanceof HTMLElement) {
+                  const isHtmlElement = e.target instanceof HTMLElement;
+                  if (isHtmlElement) {
                     ondownloadextracaptionschange(e.target.hasAttribute("checked"));
                   }
                 }}

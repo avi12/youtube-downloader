@@ -101,7 +101,8 @@ export function createCaptionTrackState({
         return;
       }
 
-      if (resolvedMode === AudioTrackLanguageMode.Custom && customLanguage) {
+      const isCustomModeWithLanguage = resolvedMode === AudioTrackLanguageMode.Custom && customLanguage;
+      if (isCustomModeWithLanguage) {
         const langCode = normalizeLanguageCode(customLanguage);
         const { captionTracks } = getVideoData();
         const manualTracks = captionTracks.filter(track => !track.kind);
@@ -122,7 +123,8 @@ export function createCaptionTrackState({
 
   $effect(() => {
     const { vssId, languageCode } = PLAYER_ACTIVE_CAPTION;
-    if (!IS_WATCH_PAGE || (!vssId && !languageCode)) {
+    const isTrackSyncSkipped = !IS_WATCH_PAGE || (!vssId && !languageCode);
+    if (isTrackSyncSkipped) {
       return;
     }
 

@@ -86,12 +86,14 @@ export function createAudioTrackState({
     const { audioTrackLanguageMode, customLanguage } = CONTENT_OPTIONS;
 
     untrack(() => {
-      if (audioTrackLanguageMode === AudioTrackLanguageMode.OriginalLanguage) {
+      const isOriginalLanguageMode = audioTrackLanguageMode === AudioTrackLanguageMode.OriginalLanguage;
+      if (isOriginalLanguageMode) {
         handlePanelAudioModeChange(PanelTrackMode.Original);
         return;
       }
 
-      if (audioTrackLanguageMode === AudioTrackLanguageMode.Custom) {
+      const isCustomLanguageMode = audioTrackLanguageMode === AudioTrackLanguageMode.Custom;
+      if (isCustomLanguageMode) {
         const langCode = normalizeLanguageCode(customLanguage);
         const { audioFormats } = getVideoData();
         const isMatchFound = audioFormats.some(

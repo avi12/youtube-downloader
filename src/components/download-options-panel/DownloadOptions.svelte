@@ -52,7 +52,8 @@
 
   function handleExtensionChange(newExtension: string): void {
     const isIncompatible = MULTI_TRACK_UNSUPPORTED_EXTENSIONS.has(newExtension);
-    if (isIncompatible && derived.downloadExtras && derived.uniqueAudioLanguages.length > 1) {
+    const isExtrasIncompatible = isIncompatible && derived.downloadExtras && derived.uniqueAudioLanguages.length > 1;
+    if (isExtrasIncompatible) {
       derived.setDownloadExtras(false);
       isExtrasAutoDisabled = true;
     } else {

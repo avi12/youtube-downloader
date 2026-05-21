@@ -23,7 +23,8 @@
         dir="auto"
         disabled={isDisabled}
         oninput={e => {
-          if (e.target instanceof HTMLInputElement) {
+          const isInputElement = e.target instanceof HTMLInputElement;
+          if (isInputElement) {
             onchange(e.target.value);
           }
         }}

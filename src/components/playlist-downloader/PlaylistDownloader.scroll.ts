@@ -22,7 +22,8 @@ function isMoreAvailable(elContents: Element) {
 
 function scrollContainerToBottom(elContents: Element) {
   const elLastChild = elContents.lastElementChild;
-  if (!(elLastChild instanceof HTMLElement)) {
+  const isHtmlElement = elLastChild instanceof HTMLElement;
+  if (!isHtmlElement) {
     return;
   }
 
@@ -57,11 +58,13 @@ export async function revealAllPlaylistVideos({
   });
 
   while (Date.now() < deadline) {
-    if (isAbortRequested()) {
+    const isAborted = isAbortRequested();
+    if (isAborted) {
       return;
     }
 
-    if (!isMoreAvailable(elContents)) {
+    const isNoMoreAvailable = !isMoreAvailable(elContents);
+    if (isNoMoreAvailable) {
       return;
     }
 
@@ -73,16 +76,16 @@ export async function revealAllPlaylistVideos({
       revealedCount: nextCount,
       isMoreAvailable: isMoreAvailable(elContents)
     });
-
-    if (nextCount > lastCount) {
+    const isNewItemsLoaded = nextCount > lastCount;
+    if (isNewItemsLoaded) {
       stableRounds = 0;
       lastCount = nextCount;
       continue;
     }
 
     stableRounds++;
-
-    if (stableRounds >= REVEAL_STABLE_ROUNDS_REQUIRED) {
+    const isStableRoundsComplete = stableRounds >= REVEAL_STABLE_ROUNDS_REQUIRED;
+    if (isStableRoundsComplete) {
       return;
     }
   }
@@ -91,7 +94,8 @@ export async function revealAllPlaylistVideos({
 export function scrollVideoItemIntoView(videoId: string) {
   const elItemAnchor = document.querySelector(`[data-ytdl-item="${CSS.escape(videoId)}"]`);
   const elPlaylistItem = elItemAnchor?.closest(Selector.PlaylistVideo);
-  if (!(elPlaylistItem instanceof HTMLElement)) {
+  const isHtmlPlaylistItem = elPlaylistItem instanceof HTMLElement;
+  if (!isHtmlPlaylistItem) {
     return;
   }
 

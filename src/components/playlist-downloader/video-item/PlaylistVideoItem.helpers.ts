@@ -26,7 +26,8 @@ export function buildButtonTooltip({
   buttonLabel,
   videoData
 }: ButtonTooltipParams) {
-  if (isLocallyDone || isDone) {
+  const isComplete = isLocallyDone || isDone;
+  if (isComplete) {
     if (isInBatch) {
       return "Download completed";
     }
@@ -44,7 +45,8 @@ export function buildButtonTooltip({
       return buttonLabel;
     }
 
-    const activePhaseLabel = downloadState.progressType === ProgressType.FFmpeg ? "Processing" : "Downloading";
+    const isFfmpegPhase = downloadState.progressType === ProgressType.FFmpeg;
+    const activePhaseLabel = isFfmpegPhase ? "Processing" : "Downloading";
     return `${Math.round(displayProgress)}% - ${activePhaseLabel}`;
   }
 

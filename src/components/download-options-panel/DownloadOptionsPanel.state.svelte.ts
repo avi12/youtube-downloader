@@ -138,27 +138,33 @@ export function createPanelState(getVideoData: () => VideoData) {
     let audioBytes: number;
     const selectedTrackId = selectedAudioFormat?.audioTrack?.id;
     const isBundleMode = !isVideoOnly && PANEL_OPTIONS.downloadExtras && isVideoAndAudio && !!selectedTrackId;
-    if (isBundleMode && selectedTrackId!.endsWith(AUTO_DUB_TRACK_SUFFIX) && !PANEL_OPTIONS.includeAutoDubbing) {
+    const isSelectedAutoDubbed = isBundleMode && selectedTrackId!.endsWith(AUTO_DUB_TRACK_SUFFIX);
+    const isAutoDubbedWithBundleBlocked = isSelectedAutoDubbed && !PANEL_OPTIONS.includeAutoDubbing;
+    if (isAutoDubbedWithBundleBlocked) {
       audioBytes = parseInt(selectedAudioFormat!.contentLength ?? "0", 10);
     } else if (isBundleMode) {
       const bestByLanguage = new SvelteMap<string, AdaptiveFormatItem>();
       for (const format of getVideoData().audioFormats) {
-        if (!format.audioTrack) {
+        const isFormatWithoutTrack = !format.audioTrack;
+        if (isFormatWithoutTrack) {
           continue;
         }
 
-        const trackId = format.audioTrack.id;
-        if (trackId === selectedTrackId) {
+        const trackId = format.audioTrack!.id;
+        const isSameAsSelected = trackId === selectedTrackId;
+        if (isSameAsSelected) {
           continue;
         }
 
-        if (!PANEL_OPTIONS.includeAutoDubbing && trackId.endsWith(AUTO_DUB_TRACK_SUFFIX)) {
+        const isAutoDubbingBlocked = !PANEL_OPTIONS.includeAutoDubbing && trackId.endsWith(AUTO_DUB_TRACK_SUFFIX);
+        if (isAutoDubbingBlocked) {
           continue;
         }
 
         const languageCode = normalizeLanguageCode(trackId);
         const existing = bestByLanguage.get(languageCode);
-        if (!existing || format.bitrate > existing.bitrate) {
+        const isBetterBitrate = !existing || format.bitrate > existing.bitrate;
+        if (isBetterBitrate) {
           bestByLanguage.set(languageCode, format);
         }
       }
@@ -176,7 +182,8 @@ export function createPanelState(getVideoData: () => VideoData) {
       10
     ) / MILLISECONDS_PER_SECOND;
     let captionTrackCount = 0;
-    if (isVideoAndAudio && caption.selectedCaptionTrack) {
+    const isVideoAndAudioWithCaption = isVideoAndAudio && caption.selectedCaptionTrack;
+    if (isVideoAndAudioWithCaption) {
       captionTrackCount = PANEL_OPTIONS.downloadExtraCaptions ? getVideoData().captionTracks.length : 1;
     }
 
@@ -188,11 +195,13 @@ export function createPanelState(getVideoData: () => VideoData) {
     }
 
     const megabytes = totalBytes / BYTES_PER_MEGABYTE;
-    if (megabytes < 1) {
+    const isLessThanMegabyte = megabytes < 1;
+    if (isLessThanMegabyte) {
       return `~${SIZE_FORMATTER_KB.format(totalBytes / BYTES_PER_KILOBYTE)}`;
     }
 
-    if (megabytes < MEGABYTES_PER_GIGABYTE) {
+    const isLessThanGigabyte = megabytes < MEGABYTES_PER_GIGABYTE;
+    if (isLessThanGigabyte) {
       return `~${SIZE_FORMATTER_MB.format(megabytes)}`;
     }
 

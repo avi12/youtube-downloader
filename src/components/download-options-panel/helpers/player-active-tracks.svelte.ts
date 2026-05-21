@@ -45,11 +45,12 @@ crossWorldMessenger.onMessage(CrossWorldMessage.AudioTrackChanged, ({ data }) =>
 });
 
 export function syncAudioFromFormat(format: AdaptiveFormatItem | null) {
-  if (PLAYER_ACTIVE_AUDIO.trackId || !format?.audioTrack) {
+  const isAlreadySynced = PLAYER_ACTIVE_AUDIO.trackId || !format?.audioTrack;
+  if (isAlreadySynced) {
     return;
   }
 
-  PLAYER_ACTIVE_AUDIO.trackId = format.audioTrack.id;
-  PLAYER_ACTIVE_AUDIO.langCode = normalizeLanguageCode(format.audioTrack.id);
-  PLAYER_ACTIVE_AUDIO.isAutoDubbed = format.audioTrack.id.endsWith(AUTO_DUB_TRACK_SUFFIX);
+  PLAYER_ACTIVE_AUDIO.trackId = format!.audioTrack!.id;
+  PLAYER_ACTIVE_AUDIO.langCode = normalizeLanguageCode(format!.audioTrack!.id);
+  PLAYER_ACTIVE_AUDIO.isAutoDubbed = format!.audioTrack!.id.endsWith(AUTO_DUB_TRACK_SUFFIX);
 }

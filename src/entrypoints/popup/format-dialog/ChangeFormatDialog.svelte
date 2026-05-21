@@ -66,7 +66,8 @@
   }
 
   function handleWindowKeydown(e: KeyboardEvent): void {
-    if (e.key === "Escape") {
+    const isEscape = e.key === "Escape";
+    if (isEscape) {
       startClose();
     }
   }

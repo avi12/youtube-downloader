@@ -13,7 +13,8 @@ type AssignButtonIdParams = {
   buttonId: string;
 };
 function assignButtonId({ elButton, buttonId }: AssignButtonIdParams) {
-  if (elButton.getAttribute(DATA_BUTTON_ID_ATTR) !== buttonId) {
+  const isIdMismatch = elButton.getAttribute(DATA_BUTTON_ID_ATTR) !== buttonId;
+  if (isIdMismatch) {
     elButton.setAttribute(DATA_BUTTON_ID_ATTR, buttonId);
   }
 }

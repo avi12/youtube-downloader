@@ -42,25 +42,29 @@
 
   const thisTabIds = $derived(
     (() => {
-      if (currentTabId === undefined) {
+      const isTabIdUnknown = currentTabId === undefined;
+      if (isTabIdUnknown) {
         return new SvelteSet<string>();
       }
 
       const ids = new SvelteSet<string>();
       for (const item of videoDownloads) {
-        if (videoDetails[item.videoId]?.tabId === currentTabId) {
+        const isThisTab = videoDetails[item.videoId]?.tabId === currentTabId;
+        if (isThisTab) {
           ids.add(item.videoId);
         }
       }
 
       for (const id of musicList) {
-        if (videoDetails[id]?.tabId === currentTabId) {
+        const isThisTab = videoDetails[id]?.tabId === currentTabId;
+        if (isThisTab) {
           ids.add(id);
         }
       }
 
       for (const id of videoOnlyList) {
-        if (videoDetails[id]?.tabId === currentTabId) {
+        const isThisTab = videoDetails[id]?.tabId === currentTabId;
+        if (isThisTab) {
           ids.add(id);
         }
       }
@@ -108,13 +112,14 @@
 
       for (const id of thisTabVideoIds) {
         const detail = videoDetails[id];
-        if (detail?.playlistId && detail.playlistTitle) {
-          const group = zipGroups.get(detail.playlistId);
+        const isInPlaylist = detail?.playlistId && detail.playlistTitle;
+        if (isInPlaylist) {
+          const group = zipGroups.get(detail!.playlistId!);
           if (group) {
             group.videoIds.push(id);
           } else {
-            zipGroups.set(detail.playlistId, {
-              playlistTitle: detail.playlistTitle,
+            zipGroups.set(detail!.playlistId!, {
+              playlistTitle: detail!.playlistTitle!,
               videoIds: [id]
             });
           }

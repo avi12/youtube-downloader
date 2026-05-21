@@ -24,7 +24,8 @@ export function getProgressLabel({ videoId, statusProgress, percentFormatter }: 
   }
 
   const percentage = percentFormatter.format(progressEntry.progress);
-  if (progressEntry.progressType === ProgressType.FFmpeg) {
+  const isFfmpegProgress = progressEntry.progressType === ProgressType.FFmpeg;
+  if (isFfmpegProgress) {
     return `${percentage} stitching`;
   }
 
@@ -56,7 +57,8 @@ type GetVideoStatusLabelParams = {
   isFFmpegReady: boolean;
 };
 export function getVideoStatusLabel({ i, isFFmpegReady }: GetVideoStatusLabelParams) {
-  if (i === 0) {
+  const isFirstItem = i === 0;
+  if (isFirstItem) {
     return isFFmpegReady ? "Processing…" : "Waiting for FFmpeg…";
   }
 

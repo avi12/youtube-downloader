@@ -65,7 +65,8 @@ export function createFocusManager() {
 
     function onFocusIn() {
       for (const elDropdownMenu of elPanel.querySelectorAll(`${POLYMER_DROPDOWN_MENU}[${ATTR_FOCUSED}]`)) {
-        if (elDropdownMenu.contains(document.activeElement)) {
+        const isActiveElementInside = elDropdownMenu.contains(document.activeElement);
+        if (isActiveElementInside) {
           continue;
         }
 

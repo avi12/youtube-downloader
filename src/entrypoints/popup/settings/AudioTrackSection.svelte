@@ -56,7 +56,8 @@
           id="custom-language-select"
           class="settings-select"
           onchange={e => {
-            if (!(e.target instanceof HTMLSelectElement)) {
+            const isSelectElement = e.target instanceof HTMLSelectElement;
+            if (!isSelectElement) {
               return;
             }
 

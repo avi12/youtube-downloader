@@ -20,7 +20,8 @@
     {id}
     class="format-select-control"
     onchange={e => {
-      if (!(e.target instanceof HTMLSelectElement)) {
+      const isSelectElement = e.target instanceof HTMLSelectElement;
+      if (!isSelectElement) {
         return;
       }
 

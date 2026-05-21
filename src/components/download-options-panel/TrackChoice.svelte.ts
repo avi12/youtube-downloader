@@ -40,7 +40,8 @@ export function createTrackChoiceState(params: TrackChoiceParams) {
 
   function createAttacher(button: (typeof buttons)[number]) {
     return (elTarget: Element) => {
-      if (!(elTarget instanceof HTMLElement)) {
+      const isHtmlElement = elTarget instanceof HTMLElement;
+      if (!isHtmlElement) {
         return;
       }
 

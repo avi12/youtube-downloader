@@ -11,7 +11,8 @@
   <tp-yt-paper-checkbox
     checked={isEnabled ? "" : undefined}
     onchange={e => {
-      if (e.target instanceof HTMLElement) {
+      const isHtmlElement = e.target instanceof HTMLElement;
+      if (isHtmlElement) {
         ontoggle(e.target.hasAttribute("checked"));
       }
     }}

@@ -39,6 +39,10 @@
     unitDisplay: "narrow",
     maximumFractionDigits: 2
   });
+  const BYTES_PER_KB = 1024;
+  const BYTES_PER_MB = 1024 * 1024;
+  const BYTES_PER_GB = 1024 * 1024 * 1024;
+
   const AGE_THRESHOLDS: [number, Intl.RelativeTimeFormatUnit, number][] = [
     [60, "second", 1],
     [3600, "minute", 60],
@@ -65,19 +69,22 @@
   }
 
   function formatBytes(bytes: number): string {
-    if (bytes < 1024) {
+    const isLessThanKb = bytes < BYTES_PER_KB;
+    if (isLessThanKb) {
       return NF_BYTES.format(bytes);
     }
 
-    if (bytes < 1024 * 1024) {
-      return NF_KB.format(bytes / 1024);
+    const isLessThanMb = bytes < BYTES_PER_MB;
+    if (isLessThanMb) {
+      return NF_KB.format(bytes / BYTES_PER_KB);
     }
 
-    if (bytes < 1024 * 1024 * 1024) {
-      return NF_MB.format(bytes / (1024 * 1024));
+    const isLessThanGb = bytes < BYTES_PER_GB;
+    if (isLessThanGb) {
+      return NF_MB.format(bytes / BYTES_PER_MB);
     }
 
-    return NF_GB.format(bytes / (1024 * 1024 * 1024));
+    return NF_GB.format(bytes / BYTES_PER_GB);
   }
 </script>
 

@@ -104,7 +104,7 @@
       if (isOpening) {
         if (elTrigger) {
           const { bottom } = elTrigger.getBoundingClientRect();
-          const availableHeight = window.innerHeight - bottom - POPUP_MARGIN_TOP - POPUP_BOTTOM_GAP;
+          const availableHeight = innerHeight - bottom - POPUP_MARGIN_TOP - POPUP_BOTTOM_GAP;
           elPopover?.style.setProperty("--ytdl-popup-max-height", `${Math.max(POPUP_MIN_HEIGHT, availableHeight)}px`);
         }
 
@@ -154,7 +154,8 @@
         return;
       }
 
-      if (elItem.getAttribute("aria-disabled") === "true") {
+      const isItemDisabled = elItem.getAttribute("aria-disabled") === "true";
+      if (isItemDisabled) {
         return;
       }
 
@@ -199,7 +200,8 @@
           return;
         }
 
-        if (elActive.getAttribute("aria-disabled") === "true") {
+        const isActiveDisabled = elActive.getAttribute("aria-disabled") === "true";
+        if (isActiveDisabled) {
           return;
         }
 

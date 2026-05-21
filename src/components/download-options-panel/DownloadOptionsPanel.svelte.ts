@@ -27,9 +27,11 @@ export function setupPanelButtonHandler({ panel, onClose }: SetupPanelButtonHand
 
     const isPrimaryButton = buttonId === PRIMARY_BUTTON_ID;
     if (isPrimaryButton) {
-      if (panel.primaryState === PrimaryButtonState.Downloading) {
+      const isDownloading = panel.primaryState === PrimaryButtonState.Downloading;
+      const isInterrupted = panel.primaryState === PrimaryButtonState.Interrupted;
+      if (isDownloading) {
         panel.cancelDownload();
-      } else if (panel.primaryState === PrimaryButtonState.Interrupted) {
+      } else if (isInterrupted) {
         panel.resumeDownload();
       } else {
         panel.startDownload();

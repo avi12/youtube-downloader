@@ -19,7 +19,8 @@
   let elSelectAllCheckbox = $state<HTMLElement | null>(null);
 
   function attachSelectAllCheckbox(elCheckbox: Element): void {
-    if (elCheckbox instanceof HTMLElement) {
+    const isHtmlElement = elCheckbox instanceof HTMLElement;
+    if (isHtmlElement) {
       elSelectAllCheckbox = elCheckbox;
     }
   }
@@ -47,7 +48,8 @@
     checked={(playlist.isAllSelected || isIndeterminate) ? "" : undefined}
     disabled={isSelectAllDisabled ? "" : undefined}
     onchange={e => {
-      if (!(e.target instanceof HTMLElement)) {
+      const isHtmlElement = e.target instanceof HTMLElement;
+      if (!isHtmlElement) {
         return;
       }
 

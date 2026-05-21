@@ -49,7 +49,8 @@ export function setupPlaylistEffects({
 
   $effect(() => onButtonClick(buttonId => {
     untrack(() => {
-      if (actionButtons.handleClick(buttonId)) {
+      const isHandled = actionButtons.handleClick(buttonId);
+      if (isHandled) {
         return;
       }
 

@@ -72,7 +72,7 @@
         <yt-icon class="sync-icon" {@attach attachIcon(YtIconName.Autorenew)}></yt-icon>
       </div>
       <div class="track-follow-body">
-        <span class="track-follow-value">{playerLabel ?? "—"}</span>
+        <span class="track-follow-value">{playerLabel ?? "-"}</span>
         <span class="track-follow-sub">Synced with player · changes as you switch tracks</span>
       </div>
     </div>

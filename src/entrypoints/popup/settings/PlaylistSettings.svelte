@@ -76,7 +76,8 @@
         <input
           checked={options.isPlaylistScrollSyncEnabled}
           onchange={e => {
-            if (!(e.target instanceof HTMLInputElement)) {
+            const isInputElement = e.target instanceof HTMLInputElement;
+            if (!isInputElement) {
               return;
             }
 

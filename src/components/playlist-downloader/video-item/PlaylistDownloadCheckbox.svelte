@@ -13,7 +13,8 @@
   let elCheckbox = $state<HTMLElement | null>(null);
 
   function attachCheckbox(elTarget: Element): void {
-    if (elTarget instanceof HTMLElement) {
+    const isHtmlElement = elTarget instanceof HTMLElement;
+    if (isHtmlElement) {
       elCheckbox = elTarget;
     }
   }
@@ -40,12 +41,15 @@
   checked={(isIndeterminate || isChecked) ? "" : undefined}
   disabled={isDisabled ? "" : undefined}
   onchange={e => {
-    if (!(e.target instanceof HTMLElement) || isDisabled) {
+    const isHtmlElement = e.target instanceof HTMLElement;
+    const isChangeBlocked = !isHtmlElement || isDisabled;
+    if (isChangeBlocked) {
       return;
     }
 
     const isNowChecked = e.target.hasAttribute("checked");
-    if (isNowChecked && !checkedPlaylistVideos.has(videoId)) {
+    const isAddingNew = isNowChecked && !checkedPlaylistVideos.has(videoId);
+    if (isAddingNew) {
       checkedPlaylistVideos.add(videoId);
     } else if (!isNowChecked && checkedPlaylistVideos.has(videoId)) {
       checkedPlaylistVideos.delete(videoId);

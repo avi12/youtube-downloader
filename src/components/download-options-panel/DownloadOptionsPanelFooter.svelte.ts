@@ -22,12 +22,14 @@ const PERCENT_FORMATTER = new Intl.NumberFormat(document.documentElement.lang ||
 
 export function createFooterState(params: FooterParams) {
   const downloadingLabel = $derived.by(() => {
-    if (params.displayProgress === 0) {
+    const isProgressZero = params.displayProgress === 0;
+    if (isProgressZero) {
       return "Preparing";
     }
 
     const formattedPercentage = PERCENT_FORMATTER.format(params.displayProgress / 100);
-    if (params.progressType === ProgressType.FFmpeg) {
+    const isFfmpegProgress = params.progressType === ProgressType.FFmpeg;
+    if (isFfmpegProgress) {
       return `${formattedPercentage} - Processing`;
     }
 

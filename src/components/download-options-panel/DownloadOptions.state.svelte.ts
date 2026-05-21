@@ -137,7 +137,8 @@ export function createDownloadOptionsState(props: () => DownloadOptionsProps) {
     const { captionTracks, translationLanguages } = props();
     const sourceTrack = captionTracks.find(track => track.isTranslatable);
     const isAiDisabled = !PANEL_OPTIONS.includeAiCaptions || !PANEL_OPTIONS.includeAutoDubbing;
-    if (!sourceTrack || translationLanguages.length === 0 || isAiDisabled) {
+    const isTranslationUnavailable = !sourceTrack || translationLanguages.length === 0 || isAiDisabled;
+    if (isTranslationUnavailable) {
       return [];
     }
 

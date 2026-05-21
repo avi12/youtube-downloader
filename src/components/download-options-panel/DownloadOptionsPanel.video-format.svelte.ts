@@ -18,7 +18,8 @@ export function createVideoFormatTracker({
     const videoData = getVideoData();
     try {
       const elVideo = await waitForVideoElement(signal);
-      if (document.getElementById(MOVIE_PLAYER_ID)?.classList.contains(YTP_AD_PLAYING_CLASS)) {
+      const isAdPlaying = document.getElementById(MOVIE_PLAYER_ID)?.classList.contains(YTP_AD_PLAYING_CLASS);
+      if (isAdPlaying) {
         setSelectedVideoFormat(videoData.videoFormats[0] ?? null);
         return;
       }

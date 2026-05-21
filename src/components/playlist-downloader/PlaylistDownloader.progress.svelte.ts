@@ -80,7 +80,8 @@ export function createProgressState({
   });
 
   $effect(() => {
-    if (!getIsScrollSyncEnabled() || !activeDownloadVideoId) {
+    const isScrollSyncUnavailable = !getIsScrollSyncEnabled() || !activeDownloadVideoId;
+    if (isScrollSyncUnavailable) {
       return;
     }
 

@@ -54,7 +54,8 @@
   }
 
   function handleInput(e: Event): void {
-    if (!(e.target instanceof HTMLInputElement)) {
+    const isInputElement = e.target instanceof HTMLInputElement;
+    if (!isInputElement) {
       return;
     }
 

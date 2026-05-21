@@ -42,7 +42,9 @@ export function resolveInitialCaptionMode({ options, videoData }: ResolveInitial
   const resolvedMode = resolveCaptionLanguageMode({
     captionMode: options.captionLanguageMode,
     audioMode: options.audioTrackLanguageMode
-  });  if (resolvedMode === AudioTrackLanguageMode.OriginalLanguage) {
+  });
+  const isOriginalLanguageMode = resolvedMode === AudioTrackLanguageMode.OriginalLanguage;
+  if (isOriginalLanguageMode) {
     return PanelTrackMode.Original;
   }
 
@@ -135,14 +137,16 @@ export function resolveInitialCaptionTrack({
   const candidateTracks = options.includeAiCaptions || allTracksAreAsr
     ? videoData.captionTracks
     : videoData.captionTracks.filter(track => track.kind !== CAPTION_KIND_ASR);
-  if (captionMode === PanelTrackMode.Custom) {
+  const isCustomMode = captionMode === PanelTrackMode.Custom;
+  if (isCustomMode) {
     return resolveCustomCaption({
       candidateTracks,
       langCode: normalizeLanguageCode(options.customLanguage ?? "")
     });
   }
 
-  if (captionMode === PanelTrackMode.Original) {
+  const isOriginalMode = captionMode === PanelTrackMode.Original;
+  if (isOriginalMode) {
     return resolveOriginalCaption({
       candidateTracks,
       audioFormats: videoData.audioFormats

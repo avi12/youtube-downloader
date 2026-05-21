@@ -28,8 +28,9 @@ export function createVideoDataState() {
     const allHeights: number[] = [];
     for (const data of videoDataMap.values()) {
       for (const format of data.videoFormats) {
-        if (format.height) {
-          allHeights.push(format.height);
+        const isHeightPresent = !!format.height;
+        if (isHeightPresent) {
+          allHeights.push(format.height!);
         }
       }
     }
@@ -47,12 +48,13 @@ export function createVideoDataState() {
       let videoMax = 0;
       for (const format of data.videoFormats) {
         const height = format.height ?? 0;
-        if (height > videoMax) {
+        const isNewMax = height > videoMax;
+        if (isNewMax) {
           videoMax = height;
         }
       }
-
-      if (videoMax < minimum) {
+      const isNewMinimum = videoMax < minimum;
+      if (isNewMinimum) {
         minimum = videoMax;
       }
     }
