@@ -1,0 +1,17 @@
+diff --git a/lie.d.ts b/lie.d.ts
+index 424c03619e37c11a840916488abc69eaf4873c17..b94e30db87027ccab0c7f9b347258c7e26fb3d3a 100644
+--- a/lie.d.ts
++++ b/lie.d.ts
+@@ -6,7 +6,11 @@
+ // These types are copied from TypeScript's built-in Promise types
+ // and extended with extra Lie utilities namely, finally.
+ 
+-export as namespace Promise;
++// `export as namespace Promise` removed — it was adding `Promise` to the
++// global scope as a UMD module, which made WebStorm (and TypeScript under
++// strict settings) flag every built-in `Promise` use as "Referenced UMD
++// global variable". `lie` is a transitive dep via jszip → wxt and we never
++// import it directly.
+ 
+ /**
+  * Represents the completion of an asynchronous operation

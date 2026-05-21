@@ -1,0 +1,33 @@
+@import url("@/components/download-button/download-button-state.css");
+
+.ytdl-hide-native-download ytd-download-button-renderer {
+  display: none;
+}
+
+[data-ytdl-progress] {
+  position: absolute;
+  inset-block-end: 0;
+  inset-inline-start: 0;
+  z-index: 1;
+  overflow: hidden;
+  block-size: 4px;
+  inline-size: 100%;
+}
+
+.ytLockupMetadataViewModelHost:has([data-ytdl-grid-item]) {
+  padding-inline-end: 30px;
+}
+
+.ytLockupMetadataViewModelHost:has([data-ytdl-grid-item]) .ytLockupMetadataViewModelTextContainer {
+  flex: 1 1 0;
+}
+
+.ytLockupMetadataViewModelHost:has([data-ytdl-grid-item]) [data-ytdl-grid-item] {
+  margin-block-start: -6px;
+}
+
+ytd-menu-renderer.ytd-playlist-video-renderer:has([data-ytdl-item]) {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+}

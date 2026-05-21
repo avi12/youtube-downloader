@@ -1,0 +1,77 @@
+[data-ytdl-download-state="downloading"],
+[data-ytdl-download-state="resuming"] {
+  --ytdl-state-color: #065fd4;
+  --ytdl-state-mix: 12%;
+}
+
+[data-ytdl-download-state="done"] {
+  --ytdl-state-color: #1e8e3e;
+  --ytdl-state-mix: 18%;
+}
+
+[data-ytdl-download-state="error"] {
+  --ytdl-state-color: #d93025;
+  --ytdl-state-mix: 18%;
+}
+
+[data-ytdl-download-state="interrupted"] {
+  --ytdl-state-color: #b56500;
+  --ytdl-state-mix: 22%;
+}
+
+[dark] [data-ytdl-download-state="downloading"],
+[dark] [data-ytdl-download-state="resuming"] {
+  --ytdl-state-color: #3ea6ff;
+}
+
+[dark] [data-ytdl-download-state="done"] {
+  --ytdl-state-color: #6cd16c;
+}
+
+[dark] [data-ytdl-download-state="error"] {
+  --ytdl-state-color: #ff6b6b;
+}
+
+[dark] [data-ytdl-download-state="interrupted"] {
+  --ytdl-state-color: #f5b94a;
+}
+
+[data-ytdl-download-state]:not([data-ytdl-download-state=""]) {
+  --ytdl-state-bg-base: rgb(245 245 245);
+
+  color: var(--ytdl-state-color);
+}
+
+[dark] [data-ytdl-download-state]:not([data-ytdl-download-state=""]) {
+  --ytdl-state-bg-base: rgb(35 35 35);
+}
+
+[data-ytdl-download-state]:not([data-ytdl-download-state=""]) .ytdl-download-button button,
+[data-ytdl-download-state]:not([data-ytdl-download-state=""]) .ytdl-chevron-button button,
+[data-ytdl-download-state]:not([data-ytdl-download-state=""]) .ytdl-download-btn-wrapper yt-button-view-model button {
+  background-color: color-mix(in oklab, var(--ytdl-state-color) var(--ytdl-state-mix), var(--ytdl-state-bg-base));
+  color: var(--ytdl-state-color);
+}
+
+[data-ytdl-download-state]:not([data-ytdl-download-state=""]) .ytdl-download-button button:hover,
+[data-ytdl-download-state]:not([data-ytdl-download-state=""]) .ytdl-chevron-button button:hover,
+[data-ytdl-download-state]:not([data-ytdl-download-state=""]) .ytdl-download-btn-wrapper yt-button-view-model button:hover {
+  background-color: color-mix(in oklab, var(--ytdl-state-color) calc(var(--ytdl-state-mix) + 8%), var(--ytdl-state-bg-base));
+}
+
+[data-ytdl-download-state="downloading"] .ytdl-download-ring__indicator,
+[data-ytdl-download-state="resuming"] .ytdl-download-ring__indicator {
+  stroke: var(--yt-sys-color-baseline--call-to-action, #3ea6ff);
+}
+
+[data-ytdl-download-state="done"] .ytdl-download-ring__indicator {
+  stroke: var(--yt-sys-color-baseline--text-complete, var(--yt-sys-color-baseline--themed-green, #1e8e3e));
+}
+
+[data-ytdl-download-state="error"] .ytdl-download-ring__indicator {
+  stroke: var(--yt-sys-color-baseline--text-error, var(--yt-sys-color-baseline--error-indicator, #d93025));
+}
+
+[data-ytdl-download-state="interrupted"] .ytdl-download-ring__indicator {
+  stroke: var(--yt-sys-color-baseline--text-warning, #b56500);
+}

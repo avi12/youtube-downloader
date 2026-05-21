@@ -1,0 +1,72 @@
+import { CHILD_LIST_SUBTREE } from "@/lib/utils/dom";
+import type { YtButtonViewModelElement } from "@/types";
+
+const SEGMENTED_START_CLASS = "ytSpecButtonShapeNextSegmentedStart";
+const SEGMENTED_END_CLASS = "ytSpecButtonShapeNextSegmentedEnd";
+
+export function createButtonElementEffects({
+  getElDownloadButton,
+  getElChevronButton,
+  getDownloadData,
+  getChevronData,
+  getElDropdown
+}: {
+  getElDownloadButton: () => YtButtonViewModelElement | null;
+  getElChevronButton: () => YtButtonViewModelElement | null;
+  getDownloadData: () => ReturnType<typeof import("./watch-button-view-model").buildDownloadData>;
+  getChevronData: () => ReturnType<typeof import("./watch-button-view-model").buildChevronData>;
+  getElDropdown: () => import("@/types").TpYtIronDropdownElement;
+}) {
+  function applySegmentedClasses() {
+    getElDownloadButton()
+      ?.querySelector<HTMLButtonElement>("button")
+      ?.classList.add(SEGMENTED_START_CLASS);
+    getElChevronButton()
+      ?.querySelector<HTMLButtonElement>("button")
+      ?.classList.add(SEGMENTED_END_CLASS);
+  }
+
+  $effect(() => {
+    const elDownloadButton = getElDownloadButton();
+    if (!elDownloadButton) {
+      return;
+    }
+
+    elDownloadButton.data = getDownloadData();
+    requestAnimationFrame(applySegmentedClasses);
+  });
+
+  $effect(() => {
+    const elChevronButton = getElChevronButton();
+    if (!elChevronButton) {
+      return;
+    }
+
+    elChevronButton.data = getChevronData();
+    requestAnimationFrame(applySegmentedClasses);
+  });
+
+  $effect(() => {
+    const elDownloadButton = getElDownloadButton();
+    const elChevronButton = getElChevronButton();
+    const areBothButtonsMissing = !elDownloadButton || !elChevronButton;
+    if (areBothButtonsMissing) {
+      return;
+    }
+
+    const observer = new MutationObserver(() => requestAnimationFrame(applySegmentedClasses));
+    observer.observe(elDownloadButton, CHILD_LIST_SUBTREE);
+    observer.observe(elChevronButton, CHILD_LIST_SUBTREE);
+    requestAnimationFrame(applySegmentedClasses);
+    return () => observer.disconnect();
+  });
+
+  $effect(() => {
+    const elChevronButton = getElChevronButton();
+    if (!elChevronButton) {
+      return;
+    }
+
+    getElDropdown().positionTarget = elChevronButton;
+  });
+}

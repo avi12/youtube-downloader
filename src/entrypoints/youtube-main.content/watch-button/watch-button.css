@@ -1,0 +1,55 @@
+@import url("@/components/download-button/download-button-state.css");
+
+[data-ytdl-download-group] {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-left: 8px;
+}
+
+.ytdl-chevron-button {
+  margin-left: 0 !important;
+}
+
+.ytdl-watch-ring-slot {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: 10px;
+  block-size: 24px;
+  inline-size: 24px;
+  margin-block: auto;
+  opacity: 0%;
+  pointer-events: none;
+  transition: opacity 120ms ease-out;
+
+  &.is-visible {
+    opacity: 100%;
+  }
+}
+
+.ytdl-native-hidden {
+  display: none;
+}
+
+[data-ytdl-watch-dropdown],
+[data-ytdl-panel-slot="true"] {
+  overflow: visible !important;
+}
+
+[data-ytdl-panel-slot="true"] {
+  max-height: var(--ytdl-panel-max-height, none) !important;
+}
+
+[data-ytdl-panel-slot="true"] > * {
+  max-height: inherit;
+}
+
+[data-ytdl-watch-dropdown][data-ytdl-panel-position="above"] {
+  top: auto !important;
+  bottom: var(--ytdl-panel-bottom-distance) !important;
+}
+
+[data-ytdl-watch-dropdown][data-ytdl-panel-position="below"] {
+  top: var(--ytdl-panel-top-distance) !important;
+  bottom: auto !important;
+}

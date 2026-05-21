@@ -1,6 +1,11 @@
 /node_modules/
-/dist/build/
-dist_packed
+/dist/
+/dist_packed/
+/.output/
+/.wxt/
 
 .DS_Store
-.idea
+.idea/
+*.log
+.claude/
+user-profiles/

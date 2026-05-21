@@ -1,11 +1,8 @@
 {
-  "include": ["src/**/*"],
-  "exclude": ["node_modules/*", "dist/*"],
+  "extends": "./.wxt/tsconfig.json",
   "compilerOptions": {
-    "target": "ESNext",
-    "typeRoots": ["node_modules/@types"],
-    "types": ["svelte", "chrome"],
-    "moduleResolution": "Node"
+    "types": ["svelte"],
+    "allowImportingTsExtensions": true
   },
-  "extends": "@tsconfig/svelte/tsconfig.json"
+  "exclude": ["scripts/**", "node_modules/**", "user-profiles/**"]
 }
