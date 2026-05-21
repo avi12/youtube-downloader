@@ -5,7 +5,7 @@ import {
   resolveCaptionOriginalLabel
 } from "./download-options-helpers";
 import { AUTO_DUB_TRACK_SUFFIX, CAPTION_KIND_ASR } from "./helpers/audio-language-helpers";
-import { PLAYER_ACTIVE_AUDIO, PLAYER_ACTIVE_CAPTION } from "./helpers/player-active-tracks.svelte";
+import { PLAYER_ACTIVE_CAPTION } from "./helpers/player-active-tracks.svelte";
 import { preserveAutoVariant } from "./helpers/preserve-auto-variant";
 import { optionsItem } from "@/lib/storage/storage";
 import { CONTENT_OPTIONS } from "@/lib/ui/synced-stores.svelte";
@@ -80,17 +80,10 @@ optionsItem.watch(next => {
 export function createDownloadOptionsState(props: () => DownloadOptionsProps) {
   const isAudio = $derived(props().downloadType === DownloadType.Audio);
 
-  const isPlayerOnAutoDubbedAndExcluded = $derived(
-    !PANEL_OPTIONS.includeAutoDubbing && PLAYER_ACTIVE_AUDIO.isAutoDubbed
-  );
-  const preservedAutoDubbedLangCode = $derived(
-    isPlayerOnAutoDubbedAndExcluded ? PLAYER_ACTIVE_AUDIO.langCode : null
-  );
   const uniqueAudioLanguages = $derived(
     buildUniqueAudioLanguages({
       audioFormats: props().audioFormats,
-      includeAutoDubbing: PANEL_OPTIONS.includeAutoDubbing,
-      preservedAutoDubbedLangCode
+      includeAutoDubbing: true
     })
   );
 
