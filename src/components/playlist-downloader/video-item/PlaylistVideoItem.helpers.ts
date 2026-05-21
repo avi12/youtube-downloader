@@ -59,8 +59,8 @@ export function buildButtonTooltip({
     extension: currentOptions.ext.video,
     mimeType: primaryVideoFormat?.mimeType ?? ""
   });
-  const hasBothFormats = !!primaryVideoFormat && !!primaryAudioFormat;
-  const containerExtension = hasBothFormats
+  const isBothFormatsPresent = !!primaryVideoFormat && !!primaryAudioFormat;
+  const containerExtension = isBothFormatsPresent
     ? getOutputExtension({
       videoMimeType: primaryVideoFormat.mimeType,
       audioMimeType: primaryAudioFormat.mimeType,

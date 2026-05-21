@@ -13,15 +13,15 @@
   const { playlist }: Props = $props();
 
   const videoExtOptions = $derived(
-    supportedExtensions.video.map(ext => ({
-      value: ext,
-      label: formatExtensionLabel(ext)
+    supportedExtensions.video.map(extension => ({
+      value: extension,
+      label: formatExtensionLabel(extension)
     }))
   );
   const audioExtOptions = $derived(
-    supportedExtensions.audio.map(ext => ({
-      value: ext,
-      label: formatExtensionLabel(ext)
+    supportedExtensions.audio.map(extension => ({
+      value: extension,
+      label: formatExtensionLabel(extension)
     }))
   );
   const qualityOptions = $derived([

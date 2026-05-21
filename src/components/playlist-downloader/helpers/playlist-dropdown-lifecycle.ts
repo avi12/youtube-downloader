@@ -38,8 +38,8 @@ export function mountPanelInContent({ contentId, videoData }: MountPanelInConten
     return null;
   }
 
-  const elDropdownEl = elContent.closest(POLYMER_IRON_DROPDOWN);
-  const elDropdown = elDropdownEl instanceof HTMLElement ? elDropdownEl : null;
+  const elDropdownCandidate = elContent.closest(POLYMER_IRON_DROPDOWN);
+  const elDropdown = elDropdownCandidate instanceof HTMLElement ? elDropdownCandidate : null;
   const panelInstance = mount(DownloadOptionsPanel, {
     target: elContent,
     props: {

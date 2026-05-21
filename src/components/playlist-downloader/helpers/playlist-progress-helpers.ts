@@ -51,8 +51,8 @@ export function calculateBatchProgress({
     return sum / totalCount;
   }
 
-  const hasActiveIndividualDownloads = activeIndividualDownloadCount > 0;
-  if (hasActiveIndividualDownloads) {
+  const isIndividualDownloadsActive = activeIndividualDownloadCount > 0;
+  if (isIndividualDownloadsActive) {
     let sum = 0;
     for (const videoId of videoDataMapKeys) {
       const entry = getProgressEntry(videoId);

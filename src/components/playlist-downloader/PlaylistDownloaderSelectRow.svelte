@@ -10,8 +10,8 @@
 
   const { playlist, actionButtons }: Props = $props();
 
-  const hasSomeSelected = $derived(playlist.selectedDownloadableVideos.length > 0);
-  const isIndeterminate = $derived(hasSomeSelected && !playlist.isAllSelected);
+  const isSomeSelected = $derived(playlist.selectedDownloadableVideos.length > 0);
+  const isIndeterminate = $derived(isSomeSelected && !playlist.isAllSelected);
   const selectAllLabel = $derived(playlist.isAllSelected ? "Deselect all" : "Select all loaded");
   const isNoVideosAvailable = $derived(playlist.downloadableVideos.length === 0);
   const isSelectAllDisabled = $derived(isNoVideosAvailable || playlist.isDownloading);

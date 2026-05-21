@@ -3,7 +3,7 @@ import { DATA_BUTTON_ID_ATTR } from "@/lib/ui/polymer-utils";
 
 type AttachButtonParams = {
   buttonId: string;
-  setter: (el: HTMLElement) => void;
+  setter: (element: HTMLElement) => void;
 };
 export function attachButton({ buttonId, setter }: AttachButtonParams) {
   return (elButton: Element) => {

@@ -65,8 +65,8 @@ export function createPlaylistActionButtons(state: {
     }
 
     elDownloadAll.setAttribute(DATA_BUTTON_ID_ATTR, ACTION_BUTTON_IDS.DownloadAll);
-    const hasIndividualDownloads = state.activeIndividualDownloadCount > 0;
-    const isBusy = state.isRevealingAll || state.isDownloading || hasIndividualDownloads;
+    const isIndividualDownloadsPresent = state.activeIndividualDownloadCount > 0;
+    const isBusy = state.isRevealingAll || state.isDownloading || isIndividualDownloadsPresent;
     sendButtonData({
       elButton: elDownloadAll,
       data: buildDownloadAllData({

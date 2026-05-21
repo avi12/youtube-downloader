@@ -45,13 +45,13 @@
   });
 
   const isActiveBatchDownload = $derived(playlist.isDownloading && playlist.totalCount > 0);
-  const hasIndividualDownloads = $derived(playlist.activeIndividualDownloadCount > 0);
-  const hasBatchProgress = $derived(playlist.completedBatchProgress > 0);
+  const isIndividualDownloadsPresent = $derived(playlist.activeIndividualDownloadCount > 0);
+  const isBatchProgressPresent = $derived(playlist.completedBatchProgress > 0);
   const isProgressVisible = $derived(
     playlist.isRevealingAll
     || isActiveBatchDownload
-    || hasIndividualDownloads
-    || hasBatchProgress
+    || isIndividualDownloadsPresent
+    || isBatchProgressPresent
   );
 </script>
 

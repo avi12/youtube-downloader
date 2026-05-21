@@ -50,8 +50,8 @@ export async function cancelActiveDownloads(activeDownloadRequests: DownloadRequ
   const activeVideoIds = activeDownloadRequests
     .filter(request => downloadProgressStore.get(request.videoId)?.isDownloading)
     .map(request => request.videoId);
-  const hasActiveDownloads = activeVideoIds.length > 0;
-  if (hasActiveDownloads) {
+  const isActiveDownloadsPresent = activeVideoIds.length > 0;
+  if (isActiveDownloadsPresent) {
     await sendMessage(MessageType.CancelDownload, { videoIds: activeVideoIds });
   }
 

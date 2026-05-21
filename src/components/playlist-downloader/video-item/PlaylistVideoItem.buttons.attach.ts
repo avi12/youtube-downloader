@@ -9,7 +9,7 @@ export function attachDownloadButton({
   elButton: Element;
   onClickDownload: () => void;
   refreshDownload: () => void;
-  setDownloadButtonElement: (el: Element) => void;
+  setDownloadButtonElement: (element: Element) => void;
 }) {
   const isHtmlElement = elButton instanceof HTMLElement;
   if (!isHtmlElement) {
@@ -31,7 +31,7 @@ export function attachChevronButton({
   elButton: Element;
   onClickChevron: () => void;
   refreshChevron: () => void;
-  setChevronButtonElement: (el: Element) => void;
+  setChevronButtonElement: (element: Element) => void;
 }) {
   const isHtmlElement = elButton instanceof HTMLElement;
   if (!isHtmlElement) {
