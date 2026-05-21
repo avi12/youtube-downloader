@@ -1,4 +1,5 @@
 import { CAPTION_KIND_ASR } from "./audio-language-helpers";
+import { IS_WATCH_PAGE } from "./panel-init-audio";
 import { ACTIVE_CAPTION_ATTR, isPlayerCaptionTrackData } from "@/lib/youtube/movie-player";
 import type { MoviePlayerElement } from "@/lib/youtube/movie-player";
 import {
@@ -41,7 +42,10 @@ export function resolveInitialCaptionMode({ options, videoData }: ResolveInitial
   const resolvedMode = resolveCaptionLanguageMode({
     captionMode: options.captionLanguageMode,
     audioMode: options.audioTrackLanguageMode
-  });
+  });  if (resolvedMode === AudioTrackLanguageMode.OriginalLanguage) {
+    return PanelTrackMode.Original;
+  }
+
   const isCustomWithLanguage = resolvedMode === AudioTrackLanguageMode.Custom && options.customLanguage;
   if (isCustomWithLanguage) {
     const langCode = normalizeLanguageCode(options.customLanguage);
@@ -99,6 +103,10 @@ function resolveMatchVideoCaption({ allTracks, candidateTracks }: ResolveMatchVi
     if (match) {
       return match;
     }
+  }
+
+  if (IS_WATCH_PAGE) {
+    return null;
   }
 
   return orderCaptionsByPreference({

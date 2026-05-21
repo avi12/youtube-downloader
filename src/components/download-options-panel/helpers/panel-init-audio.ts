@@ -1,7 +1,6 @@
 import { findAudioFormatForPlayerTrack } from "./panel-audio-actions";
 import { PLAYER_ACTIVE_AUDIO } from "./player-active-tracks.svelte";
 import {
-  findOriginalAudioFormat,
   normalizeLanguageCode,
   selectPreferredAudioFormat,
   sortAudioFormatsByDisplayName
@@ -31,7 +30,11 @@ export function resolveInitialAudioFormat({ options, videoData }: OptionsVideoDa
     return getPreferredMusicAudioFormat(videoData.audioFormats);
   }
 
-  if (IS_WATCH_PAGE) {
+  const isFollowPlayerMode = IS_WATCH_PAGE && (
+    options.audioTrackLanguageMode === AudioTrackLanguageMode.MatchVideo ||
+    options.audioTrackLanguageMode === AudioTrackLanguageMode.MatchYouTube
+  );
+  if (isFollowPlayerMode) {
     const playerTrackId = PLAYER_ACTIVE_AUDIO.trackId;
     if (playerTrackId) {
       const match = findAudioFormatForPlayerTrack({
@@ -42,11 +45,6 @@ export function resolveInitialAudioFormat({ options, videoData }: OptionsVideoDa
       if (match) {
         return match;
       }
-    }
-
-    const original = findOriginalAudioFormat(videoData.audioFormats);
-    if (original) {
-      return original;
     }
   }
 
@@ -78,6 +76,10 @@ function findMatchedCustomLangCode({ options, audioFormats }: FindMatchedCustomL
 }
 
 export function resolveInitialAudioMode({ options, videoData }: OptionsVideoDataParams) {
+  if (options.audioTrackLanguageMode === AudioTrackLanguageMode.OriginalLanguage) {
+    return PanelTrackMode.Original;
+  }
+
   const customLangCode = findMatchedCustomLangCode({
     options,
     audioFormats: videoData.audioFormats
