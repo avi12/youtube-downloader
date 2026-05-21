@@ -7,7 +7,7 @@
   "license": "MIT",
   "type": "module",
   "scripts": {
-    "dev": "pnpx tsx scripts/dev-server.ts",
+    "dev": "tsx scripts/dev-server.ts",
     "build": "wxt build",
     "pack": "wxt zip",
     "postinstall": "wxt prepare",
@@ -27,6 +27,7 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@ffmpeg/core-st": "0.11.1",
+    "@puppeteer/browsers": "^3.0.3",
     "@stylistic/eslint-plugin": "^5.10.0",
     "@stylistic/stylelint-plugin": "^5.1.0",
     "@types/ws": "^8.18.1",
@@ -44,6 +45,7 @@
     "stylelint-config-ccb": "^3.31.1",
     "svelte": "^5.55.0",
     "svelte-eslint-parser": "^1.6.0",
+    "tsx": "^4.20.6",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.57.2",
     "web-ext-run": "^0.2.4",
