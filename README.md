@@ -92,7 +92,13 @@ The mux worker ([`mux-worker/index.ts`](src/entrypoints/mux-worker/index.ts)) ru
 
 For YouTube Music tracks, [`background-downloader.ts`](src/entrypoints/background/download/background-downloader.ts) first queries the YouTube Music InnerTube API to replace the standard player metadata with the canonical catalogue entry (song title, artist, album, 544x544 cover thumbnail) before the mux job runs.
 
-### 9. Progress - a message chain across four runtimes
+### 9. Thumbnail extraction - cover art for music tracks
+
+For YouTube Music tracks, the mux job embeds a cover art image directly into the output file. [`background-downloader.ts`](src/entrypoints/background/download/background-downloader.ts) queries the YouTube Music InnerTube API (`/youtubei/v1/search` on `music.youtube.com`) to find the canonical catalogue entry and pulls a 544x544 thumbnail URL out of `musicThumbnailRenderer`. If no match is found it falls back to the highest-resolution entry in the player config's `videoDetails.thumbnail.thumbnails`, normalising the size to `w544-h544` via a query-parameter replacement.
+
+That URL travels into the mux worker inside `EmbedMetadataJob.thumbnailUrl`. [`mux-thumbnail.ts`](src/entrypoints/mux-worker/mux-thumbnail.ts) fetches the bytes directly (YouTube CDN URLs are CORS-permissive), preferring JPEG over WebP by swapping the `/vi_webp/` path segment to `/vi/`. [`mux-handler-embed-metadata.ts`](src/entrypoints/mux-worker/mux-handler-embed-metadata.ts) then detects the actual format from magic bytes (JPEG `FF D8 FF`, PNG `89 50 4E 47`, WebP `RIFF…WEBP`), writes the image to a temporary `cover.{ext}` file, and hands it to FFmpeg with `-disposition:v attached_pic`. JPEG images are stream-copied; any other format is re-encoded to MJPEG.
+
+### 10. Progress - a message chain across four runtimes
 
 As chunks arrive and FFmpeg runs, [`progress-reporter.ts`](src/lib/download-pipeline/progress-reporter.ts) emits `PipelineProgress` messages with a 0-1 value and a phase label (video fetch, audio fetch, FFmpeg mux). The message travels:
 
@@ -100,7 +106,7 @@ As chunks arrive and FFmpeg runs, [`progress-reporter.ts`](src/lib/download-pipe
 
 [`watch-button-progress.ts`](src/entrypoints/youtube-main.content/watch-button/watch-button-progress.ts) blends fetch and FFmpeg progress proportionally so the progress ring on the button advances smoothly across both phases.
 
-### 10. Save - triggering the browser download
+### 11. Save - triggering the browser download
 
 [`triggerDownload()`](src/lib/download-pipeline/blob-download.ts) wraps the output bytes in a `Blob` with the correct MIME type, creates an object URL, and calls `browser.downloads.download({ url, filename })`. After the browser claims the file it revokes the object URL and writes a `RecentDownload` entry to storage for the popup history. For batch downloads, bytes accumulate into a JSZip archive that flushes to disk when the last item in the batch completes.
 
