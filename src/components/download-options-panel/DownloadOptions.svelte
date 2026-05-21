@@ -78,8 +78,10 @@
   />
   <DownloadTracksSection
     audioOriginalLabel={derived.audioOriginalLabel}
+    audioPlayerLabel={derived.audioPlayerLabel}
     captionCustomOptions={derived.captionCustomOptions}
     captionOriginalLabel={derived.captionOriginalLabel}
+    captionPlayerLabel={derived.captionPlayerLabel}
     captionTracks={derived.filteredCaptionTracks}
     downloadExtraCaptions={derived.downloadExtraCaptions}
     downloadExtras={derived.downloadExtras}

@@ -1,6 +1,5 @@
 <script lang="ts">
   import PolymerSelect from "../polymer-select/PolymerSelect.svelte";
-  import { PLAYER_ACTIVE_AUDIO, PLAYER_ACTIVE_CAPTION } from "./helpers/player-active-tracks.svelte";
   import { onButtonClick } from "@/lib/messaging/cross-world-messenger";
   import { attachTracksHeaderButton as attachTracksHeaderButtonUtil } from "@/lib/ui/panel-button-attachments.svelte";
   import { MULTI_TRACK_UNSUPPORTED_EXTENSIONS } from "@/lib/utils/containers";
@@ -23,6 +22,8 @@
     captionCustomOptions: LabeledOption[];
     captionOriginalLabel: string | null;
     selectedCaptionVssId: string;
+    audioPlayerLabel: string | null;
+    captionPlayerLabel: string | null;
     onaudiomodechange: (mode: PanelTrackMode) => void;
     onaudiocustomchange: (langCode: string) => void;
     oncaptionmodechange: (mode: PanelTrackMode) => void;
@@ -47,6 +48,8 @@
     captionCustomOptions,
     captionOriginalLabel,
     selectedCaptionVssId,
+    audioPlayerLabel,
+    captionPlayerLabel,
     onaudiomodechange,
     onaudiocustomchange,
     oncaptionmodechange,
@@ -71,14 +74,6 @@
 
   const originalAudioLangCode = $derived(
     uniqueAudioLanguages.find(language => language.label === audioOriginalLabel)?.value ?? null
-  );
-
-  const playerAudioLabel = $derived(
-    uniqueAudioLanguages.find(language => language.value === PLAYER_ACTIVE_AUDIO.langCode)?.label ?? null
-  );
-
-  const playerCaptionLabel = $derived(
-    captionCustomOptions.find(option => option.value === PLAYER_ACTIVE_CAPTION.vssId)?.label ?? null
   );
 
   const audioSelectValue = $derived.by(() => {
@@ -126,7 +121,7 @@
   const audioOptions = $derived([
     {
       value: AUDIO_AUTO,
-      label: playerAudioLabel ? `Auto · ${playerAudioLabel}` : "Auto · match player track"
+      label: audioPlayerLabel ? `Auto · ${audioPlayerLabel}` : "Auto"
     },
     ...sortedAudioLanguages.map(language => ({
       value: language.value,
@@ -137,7 +132,7 @@
   const captionOptions = $derived([
     {
       value: CAPTION_AUTO,
-      label: playerCaptionLabel ? `Auto · ${playerCaptionLabel}` : "Auto · match player track"
+      label: captionPlayerLabel ? `Auto · ${captionPlayerLabel}` : "Auto"
     },
     {
       value: CAPTION_OFF,
