@@ -87,7 +87,7 @@
 {/if}
 
 <style>
-  .ytdl-error-banner {
+  :global(.ytdl-error-banner) {
     padding: 8px 12px;
     border-radius: 4px;
     background: var(--yt-sys-color-baseline--error-indicator, rgb(204 0 0));

@@ -69,7 +69,7 @@
       font-size: 1.4rem;
     }
 
-    .ytdl-playlist-container ytd-settings-options-renderer #section {
+    ytd-settings-options-renderer > #section {
       flex-direction: column !important;
       gap: 8px !important;
       padding: 0 !important;

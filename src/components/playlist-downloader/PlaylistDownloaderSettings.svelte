@@ -80,7 +80,7 @@
     line-height: 1.2;
   }
 
-  .ytdl-seg {
+  :global(.ytdl-seg) {
     display: inline-flex;
     flex-shrink: 0;
     gap: 2px;
