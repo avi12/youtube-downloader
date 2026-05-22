@@ -103,67 +103,73 @@
 </div>
 
 <style>
-  :global([id^="ytdl-grid-panel-"]) {
-    overflow: visible !important;
-  }
+  :global {
+    [id^="ytdl-grid-panel-"] {
+      overflow: visible !important;
+    }
 
-  .ytdl-panel {
-    display: flex;
-    flex-direction: column;
-    width: 380px;
-    max-height: inherit;
-    border: 1px solid var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 10%));
-    border-radius: 12px;
-    background: var(--yt-sys-color-baseline--raised-background, var(--yt-sys-color-baseline--base-background, #ffffff));
-    color: var(--yt-sys-color-baseline--text-primary, #0f0f0f);
-    box-shadow: 0 4px 24px var(--yt-sys-color-baseline--shadow-medium, rgb(0 0 0 / 25%));
-    transform-origin: var(--ytdl-panel-origin, bottom) center;
+    .ytdl-panel {
+      display: flex;
+      flex-direction: column;
+      width: 380px;
+      max-height: inherit;
+      border: 1px solid var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 10%));
+      border-radius: 12px;
+      background:
+        var(
+          --yt-sys-color-baseline--raised-background,
+          var(--yt-sys-color-baseline--base-background, #ffffff)
+        );
+      color: var(--yt-sys-color-baseline--text-primary, #0f0f0f);
+      box-shadow: 0 4px 24px var(--yt-sys-color-baseline--shadow-medium, rgb(0 0 0 / 25%));
+      transform-origin: var(--ytdl-panel-origin, bottom) center;
+    }
 
-    &:focus {
+    .ytdl-panel:focus {
       outline: none;
     }
 
-    & :global(.ytSpecButtonShapeNextMono.ytSpecButtonShapeNextFilled.ytSpecButtonShapeNextFocused) {
+    .ytdl-panel .ytSpecButtonShapeNextMono.ytSpecButtonShapeNextFilled.ytSpecButtonShapeNextFocused {
       border-color: transparent;
       background: var(--yt-sys-color-baseline--text-primary, #0f0f0f);
       color: var(--yt-sys-color-baseline--base-background, #ffffff);
     }
 
-    & :global(button:focus-visible) {
+    .ytdl-panel button:focus-visible {
       outline: 2px solid var(--yt-sys-color-baseline--call-to-action, #065fd4);
       outline-offset: 3px;
     }
 
-    & :global(.ytdl-cancel-state button) {
+    .ytdl-panel .ytdl-cancel-state button {
       border-color: var(--yt-sys-color-baseline--text-error, #d93025);
       background: transparent;
       color: var(--yt-sys-color-baseline--text-error, #d93025);
     }
 
-    & :global(.ytdl-cancel-state button:hover) {
+    .ytdl-panel .ytdl-cancel-state button:hover {
       background: color-mix(in oklab, var(--yt-sys-color-baseline--text-error, #d93025) 12%, transparent);
     }
-  }
 
-  .ytdl-panel-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding-block: 20px 16px;
-    padding-inline: 24px;
-  }
+    .ytdl-panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-block: 20px 16px;
+      padding-inline: 24px;
+    }
 
-  .ytdl-panel-title {
-    margin: 0;
-    font-weight: 600;
-    font-size: 1.6rem;
-    line-height: 1.375;
-  }
+    .ytdl-panel-title {
+      margin: 0;
+      font-weight: 600;
+      font-size: 1.6rem;
+      line-height: 1.375;
+    }
 
-  .ytdl-panel-body {
-    flex: 1;
-    overflow-y: auto;
-    min-height: 0;
-    padding: 0 24px;
+    .ytdl-panel-body {
+      flex: 1;
+      overflow-y: auto;
+      min-height: 0;
+      padding: 0 24px;
+    }
   }
 </style>
