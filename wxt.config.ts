@@ -47,6 +47,9 @@ export default defineConfig({
     ],
     minimum_chrome_version: "125.0"
   },
+  zip: {
+    artifactTemplate: "youtube-downloader-{{version}}-{{browser}}.zip"
+  },
   hooks: {
     "prepare:publicPaths"(_, paths) {
       paths.push(...ffmpegAssetPaths);
