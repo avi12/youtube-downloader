@@ -67,7 +67,7 @@
   const isAudioOnly = $derived(downloadType === DownloadType.Audio);
   const isVideoOnly = $derived(downloadType === DownloadType.Video);
   const isExtensionMultiTrackIncompatible = $derived(MULTI_TRACK_UNSUPPORTED_EXTENSIONS.has(extension));
-  const isAudioTrackSelectorPresent = $derived(uniqueAudioLanguages.length > 0);
+  const isAudioTrackSelectorPresent = $derived(uniqueAudioLanguages.length > 1);
   const isMultipleAudioTracks = $derived(uniqueAudioLanguages.length > 1);
   const isCaptionsPresent = $derived(captionTracks.length > 0);
   const isVisible = $derived(isAudioTrackSelectorPresent || (isCaptionsPresent && !isVideoOnly && !isAudioOnly));
