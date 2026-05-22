@@ -1,5 +1,5 @@
 import type { DownloadRequest, DownloadType, ProgressType, VideoMetadata } from "@/types";
-import { defineExtensionMessaging } from "@webext-core/messaging";
+import { defineExtensionMessaging, type GetDataType, type GetReturnType } from "@webext-core/messaging";
 
 export const MessageType = {
   BackgroundProxyFetch: "backgroundProxyFetch",
@@ -250,3 +250,15 @@ export const { sendMessage, onMessage } =
   defineExtensionMessaging<ProtocolMap>({
     breakError: true
   });
+
+export async function sendMessageToTab<TType extends keyof ProtocolMap>(
+  type: TType,
+  data: GetDataType<ProtocolMap[TType]>,
+  tabId: number
+): Promise<GetReturnType<ProtocolMap[TType]> | undefined> {
+  if (tabId < 0) {
+    return undefined;
+  }
+
+  return sendMessage(type, data, tabId);
+}

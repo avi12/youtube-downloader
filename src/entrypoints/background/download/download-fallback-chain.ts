@@ -1,6 +1,6 @@
 import { downloadViaCdn } from "./cdn-downloader";
 import { attemptSabrDownload } from "./sabr-attempt";
-import { MessageType, sendMessage } from "@/lib/messaging/messaging";
+import { MessageType, sendMessageToTab } from "@/lib/messaging/messaging";
 import { getCompatibleFilename } from "@/lib/utils/filename";
 import { DownloadType, ProgressType } from "@/types";
 import type { DownloadRequest } from "@/types";
@@ -12,7 +12,7 @@ type TrySabrParams = {
 };
 export async function trySabr({ request, signal, tabId }: TrySabrParams) {
   try {
-    return await attemptSabrDownload({
+    return attemptSabrDownload({
       request,
       signal,
       tabId
@@ -23,7 +23,7 @@ export async function trySabr({ request, signal, tabId }: TrySabrParams) {
     }
 
     console.warn("[ytdl:bg] SABR failed, trying CDN:", error);
-    void sendMessage(MessageType.UpdateDownloadProgress, {
+    void sendMessageToTab(MessageType.UpdateDownloadProgress, {
       videoId: request.videoId,
       progress: 0,
       progressType: ProgressType.Video

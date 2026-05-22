@@ -1,4 +1,4 @@
-import { MessageType, sendMessage } from "@/lib/messaging/messaging";
+import { MessageType, sendMessage, sendMessageToTab } from "@/lib/messaging/messaging";
 import { ProgressType } from "@/types";
 
 function isServiceWorker() {
@@ -33,7 +33,7 @@ export async function sendProgressUpdate({ videoId, progress, progressType, tabI
 
   const isWorker = isServiceWorker();
   if (isWorker) {
-    await sendMessage(MessageType.UpdateDownloadProgress, {
+    await sendMessageToTab(MessageType.UpdateDownloadProgress, {
       videoId,
       progress,
       progressType

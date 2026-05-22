@@ -1,6 +1,6 @@
 import { downloadViaWatchPage } from "./iframe-downloader";
 import { downloadViaSabr } from "./sabr-downloader";
-import { MessageType, sendMessage } from "@/lib/messaging/messaging";
+import { MessageType, sendMessageToTab } from "@/lib/messaging/messaging";
 import { ProgressType } from "@/types";
 import type { DownloadRequest, VideoTabParams } from "@/types";
 
@@ -29,7 +29,7 @@ export async function attemptSabrDownload({ request, signal, tabId }: AttemptSab
   }
 
   try {
-    return await downloadViaSabr({
+    return downloadViaSabr({
       request,
       signal: sabrAbortController.signal,
       tabId,
@@ -68,13 +68,11 @@ export async function handleIframeFallback({
     console.warn("[ytdl:bg] SABR+CDN failed, trying offscreen iframe fallback for", videoId);
   }
 
-  if (tabId >= 0) {
-    void sendMessage(MessageType.UpdateDownloadProgress, {
-      videoId,
-      progress: 0,
-      progressType: ProgressType.Video
-    }, tabId);
-  }
+  await sendMessageToTab(MessageType.UpdateDownloadProgress, {
+    videoId,
+    progress: 0,
+    progressType: ProgressType.Video
+  }, tabId);
 
   await downloadViaWatchPage({
     data: {

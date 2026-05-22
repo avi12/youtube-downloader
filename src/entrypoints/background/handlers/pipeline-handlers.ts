@@ -4,7 +4,7 @@ import { resolveTabId } from "../queue/tab-tracker";
 import { registerRecentDownloadHandlers } from "../recent/recent-downloads";
 import { registerPipelineQueueHandlers } from "./pipeline-queue-handlers";
 import { clearCancelledVideo, isVideoCancelled, updateStatusProgress } from "./pipeline-state";
-import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
+import { MessageType, onMessage, sendMessageToTab } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
 import { ProgressType } from "@/types";
 
@@ -14,7 +14,7 @@ export function registerPipelineHandlers() {
   registerRecentDownloadHandlers();
   registerPipelineQueueHandlers();
 
-  onMessage(MessageType.ProcessStreamError, ({ data, sender }) => {
+  onMessage(MessageType.ProcessStreamError, async ({ data, sender }) => {
     const tabId = resolveTabId({
       sender,
       videoId: data.videoId
@@ -24,7 +24,7 @@ export function registerPipelineHandlers() {
     }
 
     console.error("[ytdl] Stream error for", data.videoId, data.error);
-    void sendMessage(
+    await sendMessageToTab(
       MessageType.UpdateDownloadProgress,
       {
         videoId: data.videoId,

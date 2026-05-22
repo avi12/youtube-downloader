@@ -1,6 +1,6 @@
 import { reportDownloadFailed } from "../download/background-downloader";
 import { awaitBytesTransferred, awaitVideoComplete } from "../queue/sequential-queue";
-import { MessageType, sendMessage } from "@/lib/messaging/messaging";
+import { MessageType, sendMessageToTab } from "@/lib/messaging/messaging";
 import type { DownloadRequest } from "@/types";
 
 type DispatchParams = {
@@ -16,8 +16,8 @@ export async function dispatchSequentially({ items, tabId, signal }: DispatchPar
 
     let triggered = false;
     try {
-      await sendMessage(MessageType.ExecuteDownloadItem, item, tabId);
-      void sendMessage(MessageType.StartKeepalive, { videoId: item.videoId }, tabId);
+      await sendMessageToTab(MessageType.ExecuteDownloadItem, item, tabId);
+      await sendMessageToTab(MessageType.StartKeepalive, { videoId: item.videoId }, tabId);
       triggered = true;
     } catch (error) {
       console.error("[ytdl:bg] ExecuteDownloadItem failed:", item.videoId, error);
@@ -42,8 +42,8 @@ export async function dispatchParallel({ items, tabId, signal }: DispatchParams)
     }
 
     try {
-      await sendMessage(MessageType.ExecuteDownloadItem, item, tabId);
-      void sendMessage(MessageType.StartKeepalive, { videoId: item.videoId }, tabId);
+      await sendMessageToTab(MessageType.ExecuteDownloadItem, item, tabId);
+      await sendMessageToTab(MessageType.StartKeepalive, { videoId: item.videoId }, tabId);
     } catch (error) {
       console.error("[ytdl:bg] ExecuteDownloadItem failed:", item.videoId, error);
       reportDownloadFailed({

@@ -1,4 +1,4 @@
-import { MessageType, sendMessage } from "@/lib/messaging/messaging";
+import { MessageType, sendMessageToTab } from "@/lib/messaging/messaging";
 import { interruptedDownloadsItem, mutateStorageItem } from "@/lib/storage/storage";
 import { ProgressType } from "@/types";
 import type { DownloadRequest } from "@/types";
@@ -48,7 +48,7 @@ export async function queueNetworkRetry({ request, tabId }: QueueNetworkRetryPar
     tabId
   });
   await persistInterruptedDownload(request);
-  void sendMessage(MessageType.UpdateDownloadProgress, {
+  void sendMessageToTab(MessageType.UpdateDownloadProgress, {
     videoId: request.videoId,
     progress: 0,
     progressType: ProgressType.Video,
@@ -67,7 +67,7 @@ export function registerOnlineRetryListener(
     const retries = [...pendingNetworkRetries.values()];
     pendingNetworkRetries.clear();
     for (const { request, tabId } of retries) {
-      void sendMessage(MessageType.UpdateDownloadProgress, {
+      void sendMessageToTab(MessageType.UpdateDownloadProgress, {
         videoId: request.videoId,
         progress: 0,
         progressType: ProgressType.Video

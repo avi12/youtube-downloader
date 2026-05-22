@@ -3,7 +3,7 @@ import { enqueueToPopupList } from "../queue/popup-list";
 import { awaitVideoComplete } from "../queue/sequential-queue";
 import { trackVideoForTab } from "../queue/tab-tracker";
 import { reportDownloadFailed } from "./background-downloader";
-import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
+import { MessageType, onMessage, sendMessageToTab } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
 import type { DownloadRequest } from "@/types";
 
@@ -85,9 +85,7 @@ export async function downloadViaWatchPage({ data, tabId }: DownloadViaWatchPage
       isIframeFallback: true
     });
 
-    if (tabId >= 0) {
-      await sendMessage(MessageType.StartKeepalive, { videoId: data.videoId }, tabId);
-    }
+    await sendMessageToTab(MessageType.StartKeepalive, { videoId: data.videoId }, tabId);
 
     await awaitVideoComplete(data.videoId);
     sendToOffscreen({

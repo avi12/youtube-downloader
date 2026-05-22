@@ -1,4 +1,4 @@
-import { MessageType, sendMessage } from "@/lib/messaging/messaging";
+import { MessageType, sendMessageToTab } from "@/lib/messaging/messaging";
 import { mutateStorageItem, statusProgressItem } from "@/lib/storage/storage";
 import type { ProgressUpdate } from "@/types";
 
@@ -27,7 +27,7 @@ type UpdateStatusProgressParams = {
 };
 export async function updateStatusProgress({ mutate, progressUpdate, tabId }: UpdateStatusProgressParams) {
   await Promise.allSettled([
-    sendMessage(MessageType.UpdateDownloadProgress, progressUpdate, tabId),
+    sendMessageToTab(MessageType.UpdateDownloadProgress, progressUpdate, tabId),
     mutateStorageItem({
       item: statusProgressItem,
       mutator: mutate

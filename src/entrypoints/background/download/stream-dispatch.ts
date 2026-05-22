@@ -1,7 +1,7 @@
 import { ensureProcessor } from "../handlers/processor";
 import type { DownloadResult } from "./download-result-types";
 import { buildSubtitleTracks, buildTransferJobs } from "./stream-chunk-transfer";
-import { MessageType, sendMessage } from "@/lib/messaging/messaging";
+import { MessageType, sendMessageToTab } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
 import { stripMimeParams } from "@/lib/utils/containers";
 import { ProgressType } from "@/types";
@@ -20,7 +20,7 @@ type DispatchToOffscreenParams = {
 export async function dispatchToOffscreen(
   { request, result, enrichedMetadata, tabId, skipChunkTransfer }: DispatchToOffscreenParams
 ) {
-  void sendMessage(MessageType.UpdateDownloadProgress, {
+  void sendMessageToTab(MessageType.UpdateDownloadProgress, {
     videoId: request.videoId,
     progress: 0,
     progressType: ProgressType.FFmpeg
