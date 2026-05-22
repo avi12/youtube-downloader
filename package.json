@@ -10,6 +10,7 @@
     "dev": "tsx scripts/dev-server.ts",
     "build": "wxt build",
     "pack": "wxt zip",
+    "build:pack": "pnpm build && pnpm run pack",
     "postinstall": "wxt prepare",
     "lint": "eslint --fix",
     "compile": "tsc --noEmit",
