@@ -1,11 +1,10 @@
+import { resolveAudioCodec } from "./mux-ffmpeg-args";
 import { postResult, state, tryUnlink } from "./mux-state";
 import { fetchThumbnail, sanitizeForFFmpeg } from "./mux-thumbnail";
 import type { EmbedMetadataJob } from "@/lib/download-pipeline/mux-worker-types";
 import { getCompatibleFilename, getFileExtension } from "@/lib/utils/containers";
 
-const FLAC_CODEC = "flac";
-const WEBM_EXTENSION = "webm";
-const WEBA_EXTENSION = "weba";
+const WEBM_AUDIO_OUTPUT_EXTENSIONS = new Set(["weba", "webm"]);
 const JPEG_EXTENSION = "jpg";
 const FFMPEG_CODEC_COPY = "copy";
 const FFMPEG_CODEC_MJPEG = "mjpeg";
@@ -13,7 +12,7 @@ const COVER_FILENAME_PREFIX = "cover";
 const INPUT_FILENAME_PREFIX = "input";
 
 export async function handleEmbedMetadata(job: EmbedMetadataJob) {
-  const { audioData, filenameOutput, sourceExtension, metadata, thumbnailUrl, videoId, tabId } = job;
+  const { audioData, filenameOutput, sourceExtension, audioMimeType, metadata, thumbnailUrl, videoId, tabId } = job;
   state.currentVideoId = videoId;
   state.currentTabId = tabId;
   const outputExtension = getFileExtension(filenameOutput) || sourceExtension;
@@ -29,10 +28,8 @@ export async function handleEmbedMetadata(job: EmbedMetadataJob) {
   state.ffmpeg!.FS.writeFile(inputFilename, new Uint8Array(audioData));
 
   const ffmpegArgs = ["-i", inputFilename];
-  const isWebmSource = sourceExtension === WEBA_EXTENSION || sourceExtension === WEBM_EXTENSION;
-  const isWebmOutput = outputExtension === WEBA_EXTENSION || outputExtension === WEBM_EXTENSION;
-  const isNotWebm = !isWebmSource && !isWebmOutput;
-  const isEmbeddableThumbnail = thumbnailUrl && isNotWebm;
+  const isWebmOutput = WEBM_AUDIO_OUTPUT_EXTENSIONS.has(outputExtension);
+  const isEmbeddableThumbnail = thumbnailUrl && !isWebmOutput;
   if (isEmbeddableThumbnail) {
     const thumbnail = await fetchThumbnail(thumbnailUrl);
     if (thumbnail) {
@@ -51,7 +48,10 @@ export async function handleEmbedMetadata(job: EmbedMetadataJob) {
     ffmpegArgs.push("-disposition:v", "attached_pic");
   }
 
-  const audioCodec = outputExtension === FLAC_CODEC ? FLAC_CODEC : FFMPEG_CODEC_COPY;
+  const audioCodec = resolveAudioCodec({
+    audioMimeType: audioMimeType ?? "",
+    targetExtension: outputExtension
+  });
   ffmpegArgs.push("-c:a", audioCodec);
   ffmpegArgs.push("-metadata", `title=${sanitizeForFFmpeg(metadata.title)}`);
   ffmpegArgs.push("-metadata", `artist=${sanitizeForFFmpeg(metadata.artist)}`);

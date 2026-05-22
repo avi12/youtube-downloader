@@ -43,6 +43,7 @@ export type MuxVideoAudioJob = BaseWorkerJob & {
 export type EmbedMetadataJob = BaseWorkerJob & {
   audioData: ArrayBuffer;
   sourceExtension: string;
+  audioMimeType?: string;
   metadata: VideoMetadata;
   thumbnailUrl?: string;
 };

@@ -11,6 +11,7 @@ type ApplyAudioFfmpegParams = {
   tabId: number;
   data: Uint8Array;
   sourceExtension: string;
+  audioMimeType?: string;
   filenameOutput: string;
   outputExtension: string;
   metadata?: VideoMetadata | null;
@@ -20,6 +21,7 @@ export async function applyAudioFfmpeg({
   tabId,
   data,
   sourceExtension,
+  audioMimeType,
   filenameOutput,
   outputExtension,
   metadata
@@ -38,6 +40,7 @@ export async function applyAudioFfmpeg({
         audioData: toOwnedArrayBuffer(data),
         filenameOutput,
         sourceExtension,
+        audioMimeType,
         metadata,
         thumbnailUrl: metadata.thumbnailUrl,
         videoId,

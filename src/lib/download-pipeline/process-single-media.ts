@@ -48,6 +48,7 @@ export async function processSingleMedia({ item, isCancelled }: ProcessSingleMed
       tabId,
       data,
       sourceExtension,
+      audioMimeType: item.audioMimeType,
       filenameOutput,
       outputExtension,
       metadata: item.metadata
