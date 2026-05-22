@@ -2,6 +2,7 @@ import { ATTR_GRID_ITEM, isCardPending, mountGridButton, Selector } from "./grid
 import { CHILD_LIST_SUBTREE } from "@/lib/utils/dom";
 
 const VIEWPORT_MARGIN = "200px";
+const MOUNT_RETRY_MAX = 8;
 
 let gridObserver: MutationObserver | null = null;
 let visibilityObserver: IntersectionObserver | null = null;
@@ -17,6 +18,32 @@ export function cleanupGridUi() {
   }
 }
 
+function tryMountWithRetries({ context, elCard, attempts = MOUNT_RETRY_MAX }: {
+  context: InstanceType<typeof ContentScriptContext>;
+  elCard: Element;
+  attempts?: number;
+}): void {
+  const didMount = mountGridButton({
+    context,
+    elCard
+  });
+  if (didMount) {
+    visibilityObserver?.unobserve(elCard);
+    return;
+  }
+
+  const hasRetriesLeft = attempts > 0;
+  if (!hasRetriesLeft) {
+    return;
+  }
+
+  requestAnimationFrame(() => tryMountWithRetries({
+    context,
+    elCard,
+    attempts: attempts - 1
+  }));
+}
+
 function createVisibilityObserver(context: InstanceType<typeof ContentScriptContext>) {
   return new IntersectionObserver(
     entries => {
@@ -25,8 +52,7 @@ function createVisibilityObserver(context: InstanceType<typeof ContentScriptCont
           continue;
         }
 
-        visibilityObserver?.unobserve(entry.target);
-        mountGridButton({
+        tryMountWithRetries({
           context,
           elCard: entry.target
         });
