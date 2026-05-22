@@ -70,6 +70,7 @@
   const isAudioTrackSelectorPresent = $derived(uniqueAudioLanguages.length > 1);
   const isMultipleAudioTracks = $derived(uniqueAudioLanguages.length > 1);
   const isCaptionsPresent = $derived(captionTracks.length > 0);
+  const isSingleCaptionOption = $derived(captionCustomOptions.length === 1);
   const isVisible = $derived(isAudioTrackSelectorPresent || (isCaptionsPresent && !isVideoOnly && !isAudioOnly));
 
   const originalAudioLangCode = $derived(
@@ -90,6 +91,10 @@
 
   const captionSelectValue = $derived.by(() => {
     if (panelCaptionMode === PanelTrackMode.MatchVideo) {
+      if (isSingleCaptionOption) {
+        return captionCustomOptions[0].value;
+      }
+
       return CAPTION_AUTO;
     }
 
@@ -130,10 +135,10 @@
   ]);
 
   const captionOptions = $derived([
-    {
+    ...(isSingleCaptionOption ? [] : [{
       value: CAPTION_AUTO,
       label: captionPlayerLabel ? `Auto · ${captionPlayerLabel}` : "Auto"
-    },
+    }]),
     {
       value: CAPTION_OFF,
       label: "No captions"
