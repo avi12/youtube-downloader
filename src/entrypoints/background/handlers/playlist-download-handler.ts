@@ -1,4 +1,5 @@
 import { enqueueToPopupList } from "../queue/popup-list";
+import { trackVideoForTab } from "../queue/tab-tracker";
 import { dispatchParallel, dispatchSequentially } from "./playlist-dispatch";
 import { MessageType, onMessage } from "@/lib/messaging/messaging";
 
@@ -29,6 +30,13 @@ export function registerPlaylistDownloadHandler() {
           playlistTitle: item.playlistTitle ?? data.playlistTitle
         })
       });
+
+      if (data.isZipBundle && item.playlistId) {
+        trackVideoForTab({
+          videoId: item.playlistId,
+          tabId
+        });
+      }
     }
 
     currentSequenceAbort = new AbortController();
