@@ -20,8 +20,12 @@ import { resolveActualExtension, resolvePrimaryState, resolveQualityLabel } from
 import { syncAudioFromFormat } from "./helpers/player-active-tracks.svelte";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { CONTENT_OPTIONS, interruptedDownloadStore } from "@/lib/ui/synced-stores.svelte";
-import { getCompatibleFilename } from "@/lib/utils/containers";
-import { calculateWeightedProgress, normalizeLanguageCode } from "@/lib/youtube/video-helpers";
+import { getAudioTempExtension, getCompatibleFilename, isAudioMimeNativeForContainer } from "@/lib/utils/containers";
+import {
+  alignAudioFormatToExtension,
+  calculateWeightedProgress,
+  normalizeLanguageCode
+} from "@/lib/youtube/video-helpers";
 import { DownloadType, type AdaptiveFormatItem, type VideoData } from "@/types";
 import { untrack } from "svelte";
 import { SvelteMap } from "svelte/reactivity";
@@ -218,6 +222,24 @@ export function createPanelState(getVideoData: () => VideoData) {
     });
   });
 
+  $effect(() => {
+    const currentAudioFormat = selectedAudioFormat;
+    const isAudioDownload = downloadType === DownloadType.Audio;
+    if (!isAudioDownload || !currentAudioFormat) {
+      return;
+    }
+
+    const isCurrentCompatible = isAudioMimeNativeForContainer({
+      audioMimeType: currentAudioFormat.mimeType,
+      targetExtension: untrack(() => extension)
+    });
+    if (isCurrentCompatible) {
+      return;
+    }
+
+    extension = getAudioTempExtension(currentAudioFormat.mimeType);
+  });
+
   function handleDownloadTypeChange(newType: DownloadType) {
     const result = applyDownloadTypeChange({
       newType,
@@ -285,6 +307,19 @@ export function createPanelState(getVideoData: () => VideoData) {
     },
     set extension(value: string) {
       extension = value;
+      const isAudioDownload = downloadType === DownloadType.Audio;
+      if (isAudioDownload) {
+        const aligned = alignAudioFormatToExtension({
+          audioFormats: getVideoData().audioFormats,
+          currentFormat: selectedAudioFormat,
+          targetExtension: value
+        });
+        if (aligned && aligned !== selectedAudioFormat) {
+          selectedAudioFormat = aligned;
+          syncAudioFromFormat(aligned);
+        }
+      }
+
       store.resetDoneState();
     },
     get actualExtension() {

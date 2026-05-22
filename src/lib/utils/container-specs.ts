@@ -110,6 +110,18 @@ export function getAudioFallbackCodec(targetExtension: string) {
   return CONTAINER_SPECS[targetExtension]?.fallbackAudioCodec;
 }
 
+export function isAudioMimeNativeForContainer({ audioMimeType, targetExtension }: {
+  audioMimeType: string;
+  targetExtension: string;
+}) {
+  const spec = CONTAINER_SPECS[targetExtension];
+  if (!spec) {
+    return true;
+  }
+
+  return spec.audioCodecs.has(extractBaseCodec(audioMimeType));
+}
+
 export function getOutputExtension({ videoMimeType, audioMimeType, userExtension }: {
   videoMimeType: string;
   audioMimeType: string;

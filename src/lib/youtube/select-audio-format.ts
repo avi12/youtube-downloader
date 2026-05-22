@@ -1,4 +1,5 @@
 import { normalizeLanguageCode, findOriginalAudioFormat } from "./audio-format-helpers";
+import { isAudioMimeNativeForContainer } from "@/lib/utils/containers";
 import { AudioTrackLanguageMode } from "@/types";
 import type { AdaptiveFormatItem } from "@/types";
 
@@ -102,4 +103,43 @@ export function selectPreferredAudioFormat({
   }
 
   return candidates[0] ?? null;
+}
+
+function pickBestByBitrate(formats: AdaptiveFormatItem[]) {
+  return formats.reduce<AdaptiveFormatItem | null>(
+    (best, format) => !best || format.bitrate > best.bitrate ? format : best,
+    null
+  );
+}
+
+type AlignAudioFormatToExtensionParams = {
+  audioFormats: AdaptiveFormatItem[];
+  currentFormat: AdaptiveFormatItem | null;
+  targetExtension: string;
+};
+export function alignAudioFormatToExtension({
+  audioFormats,
+  currentFormat,
+  targetExtension
+}: AlignAudioFormatToExtensionParams) {
+  const isCurrentCompatible = currentFormat
+    && isAudioMimeNativeForContainer({
+      audioMimeType: currentFormat.mimeType,
+      targetExtension
+    });
+  if (isCurrentCompatible) {
+    return currentFormat;
+  }
+
+  const selectedTrackId = currentFormat?.audioTrack?.id;
+  const sameTrackCandidates = selectedTrackId
+    ? audioFormats.filter(format => format.audioTrack?.id === selectedTrackId)
+    : audioFormats;
+  const candidates = sameTrackCandidates.length ? sameTrackCandidates : audioFormats;
+  const nativeFormats = candidates.filter(format => isAudioMimeNativeForContainer({
+    audioMimeType: format.mimeType,
+    targetExtension
+  }));
+
+  return pickBestByBitrate(nativeFormats) ?? pickBestByBitrate(candidates) ?? currentFormat;
 }
