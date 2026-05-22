@@ -1,18 +1,10 @@
 import { buildRemuxArgs } from "./mux-ffmpeg-args";
 import { postError, postResult, state, tryUnlink } from "./mux-state";
 import type { TranscodeAudioJob, TranscodeFileJob } from "@/lib/download-pipeline/mux-worker-types";
+import { getAudioFallbackCodec } from "@/lib/utils/container-specs";
 import { getCompatibleFilename, getFileExtension } from "@/lib/utils/containers";
 
-const AUDIO_CODEC_BY_EXTENSION: Record<string, string> = {
-  aiff: "pcm_s16be",
-  flac: "flac",
-  m4a: "aac",
-  mp3: "libmp3lame",
-  ogg: "libvorbis",
-  opus: "libopus",
-  wav: "pcm_s16le",
-  webm: "libopus"
-};
+const FFMPEG_CODEC_COPY = "copy";
 
 export function handleTranscodeAudio(job: TranscodeAudioJob) {
   const { audioData, sourceExtension, filenameOutput, videoId, tabId } = job;
@@ -28,7 +20,7 @@ export function handleTranscodeAudio(job: TranscodeAudioJob) {
   state.ffmpeg!.FS.writeFile(inputFilename, new Uint8Array(audioData));
 
   try {
-    const codec = AUDIO_CODEC_BY_EXTENSION[outputExtension] ?? "copy";
+    const codec = getAudioFallbackCodec(outputExtension) ?? FFMPEG_CODEC_COPY;
     const exitCode = state.ffmpeg!.exec("-i", inputFilename, "-map", "0:a", "-c:a", codec, outputFilename);
     const isExecFailed = exitCode !== 0;
     if (isExecFailed) {
