@@ -42,6 +42,7 @@ const { LANG = "en" } = process.env;
 const START_URL = "https://www.youtube.com/feed/subscriptions";
 const CDP_PORT_WINDOWS = 9229;
 const CDP_PORT_LINUX = 9233;
+const CDP_PORT_FIREFOX = 9230;
 const CDP_PORT = platform() === "linux" ? CDP_PORT_LINUX : CDP_PORT_WINDOWS;
 const REBUILD_DEBOUNCE_MS = 800;
 
@@ -201,7 +202,7 @@ async function sendCdpMessage(websocketUrl: string, method: string, params: Reco
   });
 }
 
-async function reloadChromeAtPort(port: number) {
+async function reloadBrowserAtPort(port: number) {
   let targets: CdpTarget[];
   try {
     const response = await fetch(`http://localhost:${port}/json`);
@@ -210,6 +211,8 @@ async function reloadChromeAtPort(port: number) {
     return;
   }
 
+  // Chrome MV3 exposes the extension as a service_worker; Firefox MV3 doesn't.
+  // For Firefox, the extension is reloaded by web-ext-run's runner via Marionette.
   const extensionWorker = targets.find(target =>
     target.type === "service_worker" && target.url.startsWith("chrome-extension://"));
   if (extensionWorker?.webSocketDebuggerUrl) {
@@ -227,8 +230,9 @@ async function reloadChromeAtPort(port: number) {
 
 async function reloadYouTubeTabs() {
   await Promise.all([
-    reloadChromeAtPort(CDP_PORT_WINDOWS),
-    reloadChromeAtPort(CDP_PORT_LINUX)
+    reloadBrowserAtPort(CDP_PORT_WINDOWS),
+    reloadBrowserAtPort(CDP_PORT_LINUX),
+    reloadBrowserAtPort(CDP_PORT_FIREFOX)
   ]);
 }
 
@@ -392,11 +396,7 @@ async function main() {
     try {
       await buildExtension();
       await runner.reloadAllExtensions();
-
-      if (!IS_FIREFOX) {
-        await reloadYouTubeTabs();
-      }
-
+      await reloadYouTubeTabs();
       console.log(`Reloaded at ${new Date().toLocaleTimeString()}`);
     } catch (error) {
       console.error("Rebuild failed:", error);
