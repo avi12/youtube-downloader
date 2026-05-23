@@ -6,7 +6,7 @@
   import {
     HEADER_CLOSE_BUTTON_ID,
     sendPanelClosed
-  } from "@/components/download-options-panel/DownloadOptionsPanel.svelte.ts";
+  } from "@/components/download-options-panel/DownloadOptionsPanel.handlers.ts";
   import { onButtonClick } from "@/lib/messaging/cross-world-messenger";
   import { attachCloseButton } from "@/lib/ui/panel-button-attachments.svelte";
 

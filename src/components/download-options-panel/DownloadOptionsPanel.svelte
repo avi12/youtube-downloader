@@ -9,7 +9,7 @@
     sendPanelClosed,
     setupPanelButtonHandler,
     VIEW_BUTTON_ID
-  } from "./DownloadOptionsPanel.svelte.ts";
+  } from "./DownloadOptionsPanel.handlers.ts";
   import DownloadOptionsPanelFooter from "./DownloadOptionsPanelFooter.svelte";
   import { attachCloseButton } from "@/lib/ui/panel-button-attachments.svelte";
   import type { VideoData } from "@/types";

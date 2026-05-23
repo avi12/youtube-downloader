@@ -1,6 +1,6 @@
 import type { createPlaylistGridItemState } from "../PlaylistGridItem.state.svelte";
 import PlaylistGridPanel from "../PlaylistGridPanel.svelte";
-import { PANEL_CLOSED_EVENT } from "@/components/download-options-panel/DownloadOptionsPanel.svelte.ts";
+import { PANEL_CLOSED_EVENT } from "@/components/download-options-panel/DownloadOptionsPanel.handlers.ts";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { mount } from "svelte";
 
