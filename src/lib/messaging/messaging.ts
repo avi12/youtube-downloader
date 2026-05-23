@@ -247,9 +247,7 @@ export interface ProtocolMap {
 }
 
 export const { sendMessage, onMessage } =
-  defineExtensionMessaging<ProtocolMap>({
-    breakError: true
-  });
+  defineExtensionMessaging<ProtocolMap>();
 
 export async function sendMessageToTab<TType extends keyof ProtocolMap>(
   type: TType,
