@@ -13,31 +13,26 @@ Built by [Avi](https://avi12.com) with supervised [Claude Code](https://claude.c
 
 ## Installation
 
-### 1. Build
+### 1. Download
 
-```sh
-pnpm install
-pnpm build:pack
-```
-
-The packed extension zip lands in `.output/`.
+Grab the latest `youtube-downloader-*-chrome.zip` from the [Releases page](https://github.com/avi12/youtube-downloader/releases).
 
 ### 2. Sideload
 
 **Chrome**
 1. Go to `chrome://extensions`
 2. Enable **Developer mode** (top-right toggle)
-3. Drag and drop the `.output/youtube-downloader-*-chrome.zip` file onto the page
+3. Drag and drop the zip onto the page
 
 **Edge**
 1. Go to `edge://extensions`
 2. Enable **Developer mode** (left sidebar)
-3. Drag and drop the `.output/youtube-downloader-*-chrome.zip` file onto the page
+3. Drag and drop the zip onto the page
 
 **Opera / Opera GX**
 1. Go to `opera://extensions`
 2. Enable **Developer mode** (top-right toggle)
-3. Drag and drop the `.output/youtube-downloader-*-chrome.zip` file onto the page
+3. Drag and drop the zip onto the page
 
 ## Tech stack
 
