@@ -347,7 +347,14 @@ async function main() {
       chromiumArgs.push("--force-dark-mode", "--enable-features=WebContentsForceDark");
     }
 
-    chromiumArgs.push("--disable-gpu", "--disable-software-rasterizer");
+    chromiumArgs.push(
+      "--disable-gpu",
+      "--disable-software-rasterizer",
+      // Ubuntu 24.04 AppArmor blocks Chrome's unprivileged userns sandbox even
+      // with kernel.unprivileged_userns_clone=1. --no-sandbox is Chrome's own
+      // documented workaround and is safe inside the disposable Multipass VM.
+      "--no-sandbox"
+    );
   }
 
   const runOptions = IS_FIREFOX

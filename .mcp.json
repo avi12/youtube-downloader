@@ -9,7 +9,7 @@
     "chrome-devtools-mcp-linux": {
       "type": "stdio",
       "command": "cmd",
-      "args": ["/c", "pnpx", "chrome-devtools-mcp@latest", "--browserUrl", "http://localhost:9233"],
+      "args": ["/c", "pnpx", "chrome-devtools-mcp@latest", "--browserUrl", "http://localhost:9234"],
       "env": {}
     },
     "firefox-devtools-mcp": {
