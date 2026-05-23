@@ -141,3 +141,33 @@ As chunks arrive and FFmpeg runs, [`progress-reporter.ts`](src/lib/download-pipe
 ### Resilience
 
 The service worker persists each `DownloadRequest` before dispatching and re-fires it on the next `online` event if the connection drops. Manual cancels propagate atomically through the worker iframe, any pending FFmpeg mux, and the persisted retry record - so a cancelled download is never resurrected.
+
+## Contribute
+
+### Testing on Chrome on Linux
+
+Some bugs only surface on Linux (e.g. Chrome sandbox restrictions, different CDP behaviour). To reproduce them on Windows without a separate machine, use the included Multipass VM workflow:
+
+**Prerequisites (one-time, elevated)**
+
+```sh
+pnpm install:hyperv-multipass
+```
+
+This enables Hyper-V and installs [Multipass](https://multipass.run). A reboot is required after the first run.
+
+**VM setup (one-time)**
+
+```sh
+pnpm setup:linux-vm
+```
+
+Creates an Ubuntu 24.04 VM named `ytdl-linux`, mounts the repo read-only at `/host-repo` inside the VM, installs Node 22 / pnpm / bun / Chrome dependencies, and wires a `netsh portproxy` so the VM's CDP port is reachable at `localhost:9234` on Windows (used by the `chrome-devtools-mcp-linux` MCP server).
+
+**Daily dev**
+
+```sh
+pnpm dev:linux
+```
+
+Starts the VM if needed, refreshes the port proxy, syncs the current branch into the VM, and launches `pnpm dev` under Xvfb so Chrome runs headless. A VNC server also starts so you can visually inspect the browser via any VNC viewer pointed at `localhost:5900`.
