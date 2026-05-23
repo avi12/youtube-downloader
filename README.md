@@ -17,27 +17,27 @@ Built by [Avi](https://avi12.com) with supervised [Claude Code](https://claude.c
 
 ```sh
 pnpm install
-pnpm build
+pnpm build:pack
 ```
 
-The packed extension lands in `.output/chrome-mv3/`.
+The packed extension zip lands in `.output/`.
 
 ### 2. Sideload
 
 **Chrome**
 1. Go to `chrome://extensions`
 2. Enable **Developer mode** (top-right toggle)
-3. Click **Load unpacked** and select the `.output/chrome-mv3` folder
+3. Drag and drop the `.output/youtube-downloader-*-chrome.zip` file onto the page
 
 **Edge**
 1. Go to `edge://extensions`
 2. Enable **Developer mode** (left sidebar)
-3. Click **Load unpacked** and select the `.output/chrome-mv3` folder
+3. Drag and drop the `.output/youtube-downloader-*-chrome.zip` file onto the page
 
 **Opera / Opera GX**
 1. Go to `opera://extensions`
 2. Enable **Developer mode** (top-right toggle)
-3. Click **Load unpacked** and select the `.output/chrome-mv3` folder
+3. Drag and drop the `.output/youtube-downloader-*-chrome.zip` file onto the page
 
 ## Tech stack
 
