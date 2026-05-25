@@ -53,6 +53,25 @@ function resolvePrimaryAudioLanguageCode({ audioFormat, sourceCaptionTracks }: R
   return "";
 }
 
+// FFmpeg only emits a `title=` tag when we pass one explicitly; without it
+// VLC labels the stream "Track 1 - [Hebrew]". Resolve the human-readable
+// language name from the ISO code via `Intl.DisplayNames` so VLC instead
+// shows "Hebrew - [Hebrew]". Multi-track uploads already supply a richer
+// `audioTrack.displayName` (e.g. "English (original)"), so prefer that.
+function deriveAudioTrackLabelFromLanguageCode(languageCode: string) {
+  if (!languageCode) {
+    return "";
+  }
+
+  try {
+    const displayName = new Intl.DisplayNames(["en"], { type: "language" }).of(languageCode);
+    const isFallbackToCode = !displayName || displayName === languageCode;
+    return isFallbackToCode ? "" : displayName;
+  } catch {
+    return "";
+  }
+}
+
 type BuildEnrichedRequestParams = {
   params: DownloadParams;
   resolved: ResolvedDownloadData;
@@ -66,6 +85,10 @@ export async function buildEnrichedRequest({ params, resolved }: BuildEnrichedRe
     resolvedVideoUrl, resolvedAudioUrl, resolvedExtraAudioUrls, progressiveUrl
   } = resolved;
   const metadata = await buildVideoMetadata(videoId);
+  const primaryAudioLanguageCode = resolvePrimaryAudioLanguageCode({
+    audioFormat,
+    sourceCaptionTracks
+  });
   return {
     type,
     videoId,
@@ -79,11 +102,9 @@ export async function buildEnrichedRequest({ params, resolved }: BuildEnrichedRe
     videoFormat,
     audioFormat,
     additionalAudioFormats: extraAudioFormats,
-    primaryAudioLabel: audioFormat?.audioTrack?.displayName ?? "",
-    primaryAudioLanguageCode: resolvePrimaryAudioLanguageCode({
-      audioFormat,
-      sourceCaptionTracks
-    }),
+    primaryAudioLabel: audioFormat?.audioTrack?.displayName
+      ?? deriveAudioTrackLabelFromLanguageCode(primaryAudioLanguageCode),
+    primaryAudioLanguageCode,
     captionTracks: orderedCaptionTracks,
     captionVttData: await captionVttDataPromise,
     metadata,
