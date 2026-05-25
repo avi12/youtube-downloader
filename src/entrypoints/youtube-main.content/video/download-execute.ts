@@ -184,6 +184,7 @@ export async function resolveAndDispatch({ params, abortSignal }: ResolveAndDisp
       audioFormat,
       extraAudioFormats,
       orderedCaptionTracks,
+      sourceCaptionTracks: cachedVideoData.captionTracks,
       captionVttDataPromise,
       resolvedVideoUrl,
       resolvedAudioUrl,
