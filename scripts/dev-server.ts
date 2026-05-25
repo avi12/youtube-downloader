@@ -18,7 +18,6 @@ import {
 } from "node:fs";
 import { homedir, platform } from "node:os";
 import { resolve, join, dirname } from "node:path";
-import { debounce } from "perfect-debounce";
 import webExtRun from "web-ext-run";
 import { consoleStream as webExtConsoleStream } from "web-ext-run/util/logger";
 
@@ -45,9 +44,6 @@ const CDP_PORT_LINUX = 9233;
 const CDP_PORT_FIREFOX = 9230;
 const CDP_PORT = platform() === "linux" ? CDP_PORT_LINUX : CDP_PORT_WINDOWS;
 const REBUILD_DEBOUNCE_MS = 800;
-const BROWSER_POLL_INTERVAL_MS = 3_000;
-const BROWSER_POLL_TIMEOUT_MS = 2_000;
-const BROWSER_POLL_MAX_FAILURES = 3;
 
 // ── Chrome profile setup ────────────────────────────────────────────────────
 
@@ -213,45 +209,24 @@ async function sendCdpMessage(websocketUrl: string, method: string, params: Reco
   });
 }
 
-async function reloadBrowserAtPort(port: number) {
-  let targets: CdpTarget[];
+async function fetchCdpTargets(port: number): Promise<CdpTarget[]> {
   try {
     const response = await fetch(`http://localhost:${port}/json`);
-    targets = await response.json();
+    return await response.json();
   } catch {
-    return;
-  }
-
-  const extensionWorker = targets.find(target =>
-    target.type === "service_worker" && target.url.startsWith("chrome-extension://"));
-  if (extensionWorker?.webSocketDebuggerUrl) {
-    await sendCdpMessage(extensionWorker.webSocketDebuggerUrl, "Runtime.evaluate", {
-      expression: "chrome.runtime.reload()"
-    });
-  }
-
-  const firefoxExtensionPage = targets.find(target => target.url?.startsWith("moz-extension://"));
-  if (firefoxExtensionPage?.webSocketDebuggerUrl) {
-    await sendCdpMessage(firefoxExtensionPage.webSocketDebuggerUrl, "Runtime.evaluate", {
-      expression: "browser.runtime.reload()"
-    });
-  }
-
-  const youtubeTabs = targets.filter(target =>
-    target.url?.includes("youtube.com") && target.webSocketDebuggerUrl);
-  for (const tab of youtubeTabs) {
-    await sendCdpMessage(tab.webSocketDebuggerUrl!, "Runtime.evaluate", {
-      expression: "location.reload()"
-    });
+    return [];
   }
 }
 
-async function reloadYouTubeTabs() {
-  await Promise.all([
-    reloadBrowserAtPort(CDP_PORT_WINDOWS),
-    reloadBrowserAtPort(CDP_PORT_LINUX),
-    reloadBrowserAtPort(CDP_PORT_FIREFOX)
-  ]);
+async function reloadYouTubeTabsAtPort(port: number) {
+  const targets = await fetchCdpTargets(port);
+  const youtubeTabs = targets.filter(target => target.url?.includes("youtube.com") && target.webSocketDebuggerUrl);
+  await Promise.all(
+    youtubeTabs.map(tab =>
+      sendCdpMessage(tab.webSocketDebuggerUrl!, "Runtime.evaluate", {
+        expression: "location.reload()"
+      }))
+  );
 }
 
 // ── Chrome for Testing (branded Chrome 137+ removed --load-extension; CfT keeps it) ──
@@ -436,20 +411,14 @@ async function main() {
 
   const watcher = chokidar.watch(
     [join(PROJECT_ROOT, "src"), join(PROJECT_ROOT, "wxt.config.ts")],
-    {
-      ignoreInitial: true,
-      usePolling: true,
-      interval: 500
-    }
+    { ignoreInitial: true }
   );
 
   let isRebuilding = false;
+  let pendingRebuild: string | null = null;
+  let rebuildTimer: ReturnType<typeof setTimeout> | null = null;
 
-  const onFileChange = debounce(async (_event: string, filePath: string) => {
-    if (isRebuilding) {
-      return;
-    }
-
+  async function runRebuild(filePath: string) {
     isRebuilding = true;
     console.log(`\nChange detected: ${filePath}`);
     console.log("Rebuilding...");
@@ -462,16 +431,42 @@ async function main() {
         await runner.reloadAllExtensions().catch(() => {});
       }
 
-      await reloadYouTubeTabs();
+      await reloadYouTubeTabsAtPort(IS_FIREFOX ? CDP_PORT_FIREFOX : CDP_PORT);
       console.log(`Reloaded at ${new Date().toLocaleTimeString()}`);
     } catch (error) {
       console.error("Rebuild failed:", error);
     } finally {
       isRebuilding = false;
-    }
-  }, REBUILD_DEBOUNCE_MS);
 
-  watcher.on("all", (event, filePath) => onFileChange(event, filePath));
+      if (pendingRebuild !== null) {
+        const next = pendingRebuild;
+        pendingRebuild = null;
+        void runRebuild(next);
+      }
+    }
+  }
+
+  function scheduleRebuild(filePath: string) {
+    pendingRebuild = filePath;
+
+    if (rebuildTimer !== null) {
+      clearTimeout(rebuildTimer);
+    }
+
+    rebuildTimer = setTimeout(() => {
+      rebuildTimer = null;
+
+      if (isRebuilding) {
+        return;
+      }
+
+      const path = pendingRebuild!;
+      pendingRebuild = null;
+      void runRebuild(path);
+    }, REBUILD_DEBOUNCE_MS);
+  }
+
+  watcher.on("all", (_event, filePath) => scheduleRebuild(filePath));
   watcher.on("error", error => console.error("Watcher error:", error));
 
   let isExiting = false;
@@ -496,21 +491,10 @@ async function main() {
     });
   }
 
-  const cdpPort = IS_FIREFOX ? CDP_PORT_FIREFOX : CDP_PORT;
-  let browserPollFailures = 0;
-  setInterval(async () => {
-    try {
-      await fetch(`http://localhost:${cdpPort}/json`, {
-        signal: AbortSignal.timeout(BROWSER_POLL_TIMEOUT_MS)
-      });
-      browserPollFailures = 0;
-    } catch {
-      if (++browserPollFailures >= BROWSER_POLL_MAX_FAILURES) {
-        console.log("\nBrowser closed. Exiting.");
-        void exit();
-      }
-    }
-  }, BROWSER_POLL_INTERVAL_MS);
+  runner.registerCleanup(() => {
+    console.log("\nBrowser closed. Exiting.");
+    void exit();
+  });
 
   // Keep process alive until exit
   await new Promise(() => {});
