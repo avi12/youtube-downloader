@@ -1,9 +1,8 @@
 import { sendProgressUpdate } from "./progress-fetch";
+import { computeWeightedProgress } from "./progress-stages";
 import { parseContentLength, estimateFormatBytes } from "./sabr-utils";
 import { ProgressType } from "@/types";
 import type { AdaptiveFormatItem } from "@/types";
-
-const DOWNLOAD_PROGRESS_CAP = 1;
 
 type CreateProgressAccumulatorParams = {
   videoId: string;
@@ -18,8 +17,9 @@ type CreateProgressAccumulatorParams = {
 export function createProgressAccumulator({
   videoId, tabId, captionCount, isAudioOnly, videoFormat, audioFormat, additionalFormats, onProgress
 }: CreateProgressAccumulatorParams) {
-  const videoPartBytes = isAudioOnly ? 0 : parseContentLength(videoFormat);
-  const audioPartBytes = parseContentLength(audioFormat);
+  const hasVideoStage = !isAudioOnly && !!videoFormat;
+  const videoExpectedBytes = hasVideoStage ? parseContentLength(videoFormat) : 0;
+  const audioExpectedBytes = parseContentLength(audioFormat);
   const extraExpectedBytesArray = additionalFormats.map(format => {
     const known = parseContentLength(format);
     return known > 0 ? known : estimateFormatBytes({
@@ -27,46 +27,27 @@ export function createProgressAccumulator({
       referenceFormat: audioFormat
     });
   });
-  const isVideoStagePresent = !isAudioOnly && !!videoFormat;
-  const additionalFormatCount = additionalFormats.length;
-  const totalStages = captionCount + (isVideoStagePresent ? 1 : 0) + 1 + additionalFormatCount;
 
   let videoReceivedBytes = 0;
   let audioReceivedBytes = 0;
   const extraReceivedBytesArray = additionalFormats.map(() => 0);
 
-  function computeProgress() {
-    if (totalStages === 0) {
-      return 0;
-    }
-
-    const mediaStages = totalStages - captionCount;
-    let mediaCompleted = 0;
-    const hasVideoBytes = videoPartBytes > 0;
-    const isVideoProgressPresent = !isAudioOnly && hasVideoBytes;
-    if (isVideoProgressPresent) {
-      mediaCompleted += Math.min(videoReceivedBytes / videoPartBytes, 1);
-    }
-
-    if (audioPartBytes > 0) {
-      mediaCompleted += Math.min(audioReceivedBytes / audioPartBytes, 1);
-    }
-
-    for (const [i, expected] of extraExpectedBytesArray.entries()) {
-      if (expected > 0) {
-        mediaCompleted += Math.min(extraReceivedBytesArray[i] / expected, 1);
-      }
-    }
-
-    const captionCompleted = mediaCompleted >= mediaStages ? captionCount : 0;
-    return Math.min((mediaCompleted + captionCompleted) / totalStages, DOWNLOAD_PROGRESS_CAP);
-  }
-
-  function sendUpdate() {
+  function emit() {
+    const progress = computeWeightedProgress({
+      hasVideoStage,
+      videoReceivedBytes,
+      videoExpectedBytes,
+      hasAudioStage: true,
+      audioReceivedBytes,
+      audioExpectedBytes,
+      extraReceivedBytesArray,
+      extraExpectedBytesArray,
+      captionCount
+    });
     onProgress?.();
     void sendProgressUpdate({
       videoId,
-      progress: computeProgress(),
+      progress,
       progressType: ProgressType.Video,
       tabId
     });
@@ -74,17 +55,19 @@ export function createProgressAccumulator({
 
   return {
     onVideoBytes(bytes: number) {
-      videoReceivedBytes += bytes; sendUpdate();
+      videoReceivedBytes += bytes;
+      emit();
     },
     onAudioBytes(bytes: number) {
-      audioReceivedBytes += bytes; sendUpdate();
+      audioReceivedBytes += bytes;
+      emit();
     },
     onExtraTrackBytes({ trackIndex, bytes }: {
       trackIndex: number;
       bytes: number;
     }) {
       extraReceivedBytesArray[trackIndex] += bytes;
-      sendUpdate();
+      emit();
     }
   };
 }

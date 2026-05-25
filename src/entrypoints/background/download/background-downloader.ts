@@ -8,19 +8,19 @@ import {
   registerOnlineRetryListener
 } from "./network-retry";
 import { createPageProxyFetch } from "./page-proxy-fetch";
+import { sendProgressUpdate } from "./progress-fetch";
+import { computeWeightedProgress } from "./progress-stages";
 import { clearIframeAutoRetry } from "./sabr-attempt";
 import { buildEffectiveSabrConfig } from "./sabr-utils";
 import { buildSubtitleTracks, sendNetworkChunkToOffscreen, sendStreamFinishedMarker } from "./stream-chunk-transfer";
 import { notifyPlaylistBundleFailure } from "@/lib/download-pipeline/playlist-bundle";
-import { MessageType, sendMessageToTab } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
 import { stripMimeParams } from "@/lib/utils/containers";
-import { resolveAndroidUrls } from "@/lib/youtube/android-player";
+import { resolveAndroidUrls, type ResolvedAndroidUrls } from "@/lib/youtube/android-player";
 import { DownloadType, ProgressType, StreamType } from "@/types";
 import type { DownloadRequest, VideoMetadata } from "@/types";
 
 const ANDROID_VR_CHUNK_SIZE = 10 * 1024 * 1024;
-const PROGRESS_THROTTLE_MS = 250;
 
 // Chrome MV3 has `chrome.offscreen`. Firefox MV3 does not, so this acts as a
 // reliable browser discriminator throughout the download pipeline.
@@ -126,7 +126,7 @@ async function runFirefoxDirectDownload({ request, tabId, enrichedMetadata }: Ru
   const wantsVideo = !isAudioOnly;
   const wantsAudio = !isVideoOnly;
 
-  let resolved;
+  let resolved: ResolvedAndroidUrls;
   try {
     resolved = await resolveAndroidUrls({
       videoId,
@@ -154,27 +154,27 @@ async function runFirefoxDirectDownload({ request, tabId, enrichedMetadata }: Ru
     throw new Error(`ANDROID_VR did not return URL for audio itag ${audioItag}`);
   }
 
-  const totalExpectedBytes = (wantsVideo ? resolved.videoContentLength : 0)
-    + (wantsAudio ? resolved.audioContentLength : 0);
-  let totalReceivedBytes = 0;
-  let lastProgressReport = 0;
-  function reportDownloadProgress(force = false) {
-    if (totalExpectedBytes === 0) {
-      return;
-    }
-
-    const now = Date.now();
-    if (!force && now - lastProgressReport < PROGRESS_THROTTLE_MS) {
-      return;
-    }
-
-    lastProgressReport = now;
-    const progress = Math.min(totalReceivedBytes / totalExpectedBytes, 1);
-    void sendMessageToTab(MessageType.UpdateDownloadProgress, {
+  const captionCount = request.captionTracks?.length ?? 0;
+  let videoReceivedBytes = 0;
+  let audioReceivedBytes = 0;
+  function reportDownloadProgress() {
+    const progress = computeWeightedProgress({
+      hasVideoStage: wantsVideo,
+      videoReceivedBytes,
+      videoExpectedBytes: resolved.videoContentLength,
+      hasAudioStage: wantsAudio,
+      audioReceivedBytes,
+      audioExpectedBytes: resolved.audioContentLength,
+      extraReceivedBytesArray: [],
+      extraExpectedBytesArray: [],
+      captionCount
+    });
+    void sendProgressUpdate({
       videoId,
       progress,
-      progressType: ProgressType.Video
-    }, tabId);
+      progressType: ProgressType.Video,
+      tabId
+    });
   }
 
   let videoChunkCount = 0;
@@ -198,7 +198,7 @@ async function runFirefoxDirectDownload({ request, tabId, enrichedMetadata }: Ru
           chunk,
           tabId
         });
-        totalReceivedBytes += chunk.byteLength;
+        videoReceivedBytes += chunk.byteLength;
         reportDownloadProgress();
         videoChunkCount = iChunk + 1;
       }
@@ -217,14 +217,14 @@ async function runFirefoxDirectDownload({ request, tabId, enrichedMetadata }: Ru
           chunk,
           tabId
         });
-        totalReceivedBytes += chunk.byteLength;
+        audioReceivedBytes += chunk.byteLength;
         reportDownloadProgress();
         audioChunkCount = iChunk + 1;
       }
     }) : Promise.resolve()
   ]);
 
-  reportDownloadProgress(true);
+  reportDownloadProgress();
 
   if (wantsVideo) {
     sendStreamFinishedMarker({

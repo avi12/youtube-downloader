@@ -57,16 +57,13 @@ export async function downloadViaCdn({
   const extraUrls = resolvedExtraAudioUrls ?? [];
   const isVideoPresent = type !== DownloadType.Audio;
   const isAudioPresent = type !== DownloadType.Video;
-  const totalStages = captionCount + (isVideoPresent ? 1 : 0) + (isAudioPresent ? 1 : 0) + extraUrls.length;
 
   const tracker = createCdnProgressTracker({
     videoId,
     tabId,
-    totalStages,
     captionCount,
     hasVideo: isVideoPresent,
     hasAudio: isAudioPresent,
-    extraCount: extraUrls.length,
     videoExpectedBytes: parseContentLength(videoFormat ?? null),
     audioExpectedBytes: parseContentLength(audioFormat ?? null),
     extraExpectedBytesArray: (additionalAudioFormats ?? []).map(format => parseContentLength(format)),
