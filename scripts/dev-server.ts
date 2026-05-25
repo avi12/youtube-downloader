@@ -45,6 +45,9 @@ const CDP_PORT_LINUX = 9233;
 const CDP_PORT_FIREFOX = 9230;
 const CDP_PORT = platform() === "linux" ? CDP_PORT_LINUX : CDP_PORT_WINDOWS;
 const REBUILD_DEBOUNCE_MS = 800;
+const BROWSER_POLL_INTERVAL_MS = 3_000;
+const BROWSER_POLL_TIMEOUT_MS = 2_000;
+const BROWSER_POLL_MAX_FAILURES = 3;
 
 // ── Chrome profile setup ────────────────────────────────────────────────────
 
@@ -111,6 +114,13 @@ function findDefaultFirefoxProfilePath() {
   }
 
   const ini = readFileSync(profilesIniPath, "utf-8");
+
+  // [Install<hash>] Default= is what Firefox actually launches; prefer it over Profile Default=1
+  const installMatch = ini.match(/^\[Install[^\]]+][^[]*^Default=(.+)$/m);
+  if (installMatch) {
+    return join(firefoxDataPath, installMatch[1].trim());
+  }
+
   const sections = ini.split(/(?=^\[Profile\d)/m);
   const defaultSection = sections.find(section => /^Default=1$/m.test(section));
   const pathMatch = defaultSection?.match(/^Path=(.+)$/m);
@@ -123,7 +133,7 @@ function findDefaultFirefoxProfilePath() {
   return isRelative ? join(firefoxDataPath, profilePath) : profilePath;
 }
 
-const FIREFOX_PROFILE_DIR = join(USER_PROFILES_DIR, `firefox-${PROFILE_PLATFORM_SUFFIX}`);
+const FIREFOX_PROFILE_DIR = join(USER_PROFILES_DIR, "firefox");
 const FIREFOX_PROFILE_SENTINEL = join(FIREFOX_PROFILE_DIR, ".seeded");
 
 function setupFirefoxProfile() {
@@ -199,6 +209,7 @@ async function sendCdpMessage(websocketUrl: string, method: string, params: Reco
       }
     };
     websocket.onerror = () => resolve();
+    websocket.onclose = () => resolve();
   });
 }
 
@@ -211,8 +222,6 @@ async function reloadBrowserAtPort(port: number) {
     return;
   }
 
-  // Chrome MV3 exposes the extension as a service_worker; Firefox MV3 doesn't.
-  // For Firefox, the extension is reloaded by web-ext-run's runner via Marionette.
   const extensionWorker = targets.find(target =>
     target.type === "service_worker" && target.url.startsWith("chrome-extension://"));
   if (extensionWorker?.webSocketDebuggerUrl) {
@@ -221,10 +230,19 @@ async function reloadBrowserAtPort(port: number) {
     });
   }
 
+  const firefoxExtensionPage = targets.find(target => target.url?.startsWith("moz-extension://"));
+  if (firefoxExtensionPage?.webSocketDebuggerUrl) {
+    await sendCdpMessage(firefoxExtensionPage.webSocketDebuggerUrl, "Runtime.evaluate", {
+      expression: "browser.runtime.reload()"
+    });
+  }
+
   const youtubeTabs = targets.filter(target =>
     target.url?.includes("youtube.com") && target.webSocketDebuggerUrl);
   for (const tab of youtubeTabs) {
-    await sendCdpMessage(tab.webSocketDebuggerUrl!, "Page.reload");
+    await sendCdpMessage(tab.webSocketDebuggerUrl!, "Runtime.evaluate", {
+      expression: "location.reload()"
+    });
   }
 }
 
@@ -299,11 +317,37 @@ const WXT_BIN = resolve(
   process.platform === "win32" ? "wxt.cmd" : "wxt"
 );
 
+const TSX_BIN = resolve(
+  PROJECT_ROOT,
+  "node_modules",
+  ".bin",
+  process.platform === "win32" ? "tsx.cmd" : "tsx"
+);
+
+function reloadFirefoxExtension() {
+  const result = spawnSync(
+    TSX_BIN,
+    [join(PROJECT_ROOT, "scripts", "firefox-marionette-eval.ts"), "reload-ext", OUTPUT_DIR],
+    {
+      cwd: PROJECT_ROOT,
+      stdio: ["ignore", "ignore", "inherit"],
+      shell: true,
+      timeout: 8000
+    }
+  );
+  if (result.status !== 0) {
+    console.warn("Firefox Marionette extension reload failed");
+  }
+}
+
+const BUILD_TIMEOUT_MS = 120_000;
+
 function buildExtension() {
   const result = spawnSync(WXT_BIN, ["build", ...(IS_FIREFOX ? ["--browser", "firefox"] : [])], {
     cwd: PROJECT_ROOT,
     stdio: "inherit",
-    shell: true
+    shell: true,
+    timeout: BUILD_TIMEOUT_MS
   });
   if (result.status !== 0) {
     throw new Error("Build failed");
@@ -364,7 +408,7 @@ async function main() {
       startUrl: [START_URL],
       keepProfileChanges: true,
       firefoxProfile: profileDirectory,
-      args: [`--lang=${LANG}`, "--marionette", "--remote-debugging-port=9230"],
+      args: ["--marionette", "--remote-debugging-port=9230"],
       noReload: true,
       noInput: true
     }
@@ -390,37 +434,85 @@ async function main() {
 
   console.log("Watching for file changes...\n");
 
-  const watcher = chokidar.watch(["src", "wxt.config.ts"], {
-    cwd: PROJECT_ROOT.replaceAll("\\", "/"),
-    ignoreInitial: true,
-    usePolling: true,
-    interval: 500
-  });
+  const watcher = chokidar.watch(
+    [join(PROJECT_ROOT, "src"), join(PROJECT_ROOT, "wxt.config.ts")],
+    {
+      ignoreInitial: true,
+      usePolling: true,
+      interval: 500
+    }
+  );
+
+  let isRebuilding = false;
 
   const onFileChange = debounce(async (_event: string, filePath: string) => {
+    if (isRebuilding) {
+      return;
+    }
+
+    isRebuilding = true;
     console.log(`\nChange detected: ${filePath}`);
     console.log("Rebuilding...");
     try {
-      await buildExtension();
-      await runner.reloadAllExtensions();
+      buildExtension();
+
+      if (IS_FIREFOX) {
+        reloadFirefoxExtension();
+      } else {
+        await runner.reloadAllExtensions().catch(() => {});
+      }
+
       await reloadYouTubeTabs();
       console.log(`Reloaded at ${new Date().toLocaleTimeString()}`);
     } catch (error) {
       console.error("Rebuild failed:", error);
+    } finally {
+      isRebuilding = false;
     }
   }, REBUILD_DEBOUNCE_MS);
 
   watcher.on("all", (event, filePath) => onFileChange(event, filePath));
+  watcher.on("error", error => console.error("Watcher error:", error));
+
+  let isExiting = false;
+  async function exit() {
+    if (isExiting) {
+      return;
+    }
+
+    isExiting = true;
+    try {
+      await watcher.close();
+    } catch { /* ignore */ }
+    try {
+      await runner.exit();
+    } catch { /* ignore */ }
+    process.exit(0);
+  }
 
   for (const signal of ["SIGINT", "SIGTERM"] as const) {
     process.on(signal, () => {
-      void watcher.close();
-      void runner.exit();
-      process.exit(0);
+      void exit();
     });
   }
 
-  // Keep process alive until signal
+  const cdpPort = IS_FIREFOX ? CDP_PORT_FIREFOX : CDP_PORT;
+  let browserPollFailures = 0;
+  setInterval(async () => {
+    try {
+      await fetch(`http://localhost:${cdpPort}/json`, {
+        signal: AbortSignal.timeout(BROWSER_POLL_TIMEOUT_MS)
+      });
+      browserPollFailures = 0;
+    } catch {
+      if (++browserPollFailures >= BROWSER_POLL_MAX_FAILURES) {
+        console.log("\nBrowser closed. Exiting.");
+        void exit();
+      }
+    }
+  }, BROWSER_POLL_INTERVAL_MS);
+
+  // Keep process alive until exit
   await new Promise(() => {});
 }
 

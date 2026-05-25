@@ -5,7 +5,10 @@
 - TypeScript (100% type safety, let TypeScript infer return types)
 - @ffmpeg/ffmpeg for video/audio processing
 - @webext-core/messaging for message passing
-- Chromium (Chrome, Edge, Opera) MV3
+- Chromium (Chrome, Edge, Opera) MV3 + Firefox MV3
+  - Single shared code path; branch only when an API genuinely diverges
+  - Offscreen API is Chrome-only; Firefox falls back to a hidden iframe hosted by the background event page (see `background/handlers/processor.ts`)
+  - Firefox manifest is emitted via the `manifest` function in `wxt.config.ts` (no `offscreen` permission, no `minimum_chrome_version`, gets `browser_specific_settings.gecko`)
 
 # Code style
 - Use the `browser` namespace
