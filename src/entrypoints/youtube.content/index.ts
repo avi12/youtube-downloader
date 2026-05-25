@@ -1,6 +1,7 @@
 import { listenForKeepalive } from "./download/keepalive";
 import { registerBackgroundMessageHandlers } from "./handlers/background";
 import { registerCrossWorldHandlers } from "./handlers/cross-world";
+import { registerPageSabrFetchBridge } from "./handlers/page-sabr-fetch-bridge";
 import { restoreStoredProgress, syncStoredProgressToStore } from "./handlers/progress-sync";
 import "./style.css";
 import { setNativeDownloadVisibility } from "./ui/page-router";
@@ -24,6 +25,8 @@ export default defineContentScript({
     if (isUnrelatedIframe) {
       return;
     }
+
+    registerPageSabrFetchBridge();
 
     if (isDownloadIframe) {
       registerCrossWorldHandlers({

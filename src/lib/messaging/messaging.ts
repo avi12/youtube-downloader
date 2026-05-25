@@ -35,8 +35,22 @@ export const MessageType = {
   RequestWatchPageFallback: "requestWatchPageFallback",
   WorkerDownloadComplete: "workerDownloadComplete",
   ReportWorkerDownloadFailed: "reportWorkerDownloadFailed",
-  ForwardProgressUpdate: "forwardProgressUpdate"
+  ForwardProgressUpdate: "forwardProgressUpdate",
+  PageSabrFetch: "pageSabrFetch"
 } as const;
+
+export type PageSabrFetchRequest = {
+  url: string;
+  method: string;
+  bodyBase64: string;
+  headers?: Record<string, string>;
+};
+
+export type PageSabrFetchResponse = {
+  status: number;
+  bodyBase64: string;
+  responseHeaders: Record<string, string>;
+} | null;
 
 export type BackgroundProxyFetchRequest = {
   url: string;
@@ -244,6 +258,8 @@ export interface ProtocolMap {
   forwardProgressUpdate(data: ProgressUpdate & {
     tabId: number;
   }): void;
+
+  pageSabrFetch(data: PageSabrFetchRequest): PageSabrFetchResponse;
 }
 
 export const { sendMessage, onMessage } =
