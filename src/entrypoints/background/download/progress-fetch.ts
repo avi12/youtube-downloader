@@ -1,13 +1,21 @@
 import { MessageType, sendMessage, sendMessageToTab } from "@/lib/messaging/messaging";
 import { ProgressType } from "@/types";
 
-// Chrome MV3 service workers and Firefox MV3 background event-pages expose
-// `browser.tabs`; the offscreen page and download-worker iframe do NOT (they
-// only have `browser.runtime`). The two contexts need different progress-
-// reporting paths: the former can message the tab directly; the latter must
-// hop through the background's `ForwardProgressUpdate` handler.
+// On Chrome MV3, only the background service worker can call
+// `browser.tabs.sendMessage`; the offscreen page and download-worker iframe
+// inherit the offscreen API restriction and can only use `browser.runtime`.
+// On Firefox MV3 every extension context (BG event-page, offscreen iframe,
+// nested worker iframe) shares the BG document and has full extension API
+// access, so they can all message the tab directly.
+//
+// Distinguish by runtime: Chrome SW = no document; everything else on
+// Firefox = `browser.runtime.getURL("").startsWith("moz-extension://")`.
 function canSendToTabDirectly() {
-  return typeof browser.tabs?.sendMessage === "function";
+  if (typeof document === "undefined") {
+    return true;
+  }
+
+  return browser.runtime.getURL("").startsWith("moz-extension://");
 }
 
 export { fetchWithProgress } from "./cdn-fetch";
