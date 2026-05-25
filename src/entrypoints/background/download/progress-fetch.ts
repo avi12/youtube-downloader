@@ -1,8 +1,13 @@
 import { MessageType, sendMessage, sendMessageToTab } from "@/lib/messaging/messaging";
 import { ProgressType } from "@/types";
 
-function isServiceWorker() {
-  return typeof document === "undefined";
+// Chrome MV3 service workers and Firefox MV3 background event-pages expose
+// `browser.tabs`; the offscreen page and download-worker iframe do NOT (they
+// only have `browser.runtime`). The two contexts need different progress-
+// reporting paths: the former can message the tab directly; the latter must
+// hop through the background's `ForwardProgressUpdate` handler.
+function canSendToTabDirectly() {
+  return typeof browser.tabs?.sendMessage === "function";
 }
 
 export { fetchWithProgress } from "./cdn-fetch";
@@ -31,21 +36,21 @@ export async function sendProgressUpdate({ videoId, progress, progressType, tabI
     lastProgressTimestamps.set(videoId, now);
   }
 
-  const isWorker = isServiceWorker();
-  if (isWorker) {
+  if (canSendToTabDirectly()) {
     await sendMessageToTab(MessageType.UpdateDownloadProgress, {
       videoId,
       progress,
       progressType
     }, tabId);
-  } else {
-    await sendMessage(MessageType.ForwardProgressUpdate, {
-      videoId,
-      progress,
-      progressType,
-      tabId
-    });
+    return;
   }
+
+  await sendMessage(MessageType.ForwardProgressUpdate, {
+    videoId,
+    progress,
+    progressType,
+    tabId
+  });
 }
 
 type CreateProgressFetchParams = {
