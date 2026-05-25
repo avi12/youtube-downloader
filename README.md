@@ -1,6 +1,6 @@
 # YouTube Downloader
 
-A Chromium MV3 browser extension that reverse-engineers YouTube's internal streaming infrastructure to download videos, playlists, and subscriptions - with full format control, multi-track audio, embedded subtitles, and a live download manager.
+An MV3 browser extension that reverse-engineers YouTube's internal streaming infrastructure to download videos, playlists, and subscriptions - with full format control, multi-track audio, embedded subtitles, and a live download manager. Runs on Chromium and Firefox.
 
 Built by [Avi](https://avi12.com) with supervised [Claude Code](https://claude.com/product/claude-code)
 
@@ -9,13 +9,17 @@ Built by [Avi](https://avi12.com) with supervised [Claude Code](https://claude.c
   <img src="https://user-images.githubusercontent.com/6422804/135838702-e852bb47-8c0d-4275-baf1-8adc1c50a3c1.png" width="30" alt="Microsoft Edge">
   <img src="https://user-images.githubusercontent.com/6422804/135838972-113f73a3-6a04-48a9-ae04-754f25bc6eb0.png" width="30" alt="Opera">
   <img src="https://upload.wikimedia.org/wikipedia/commons/e/e7/Opera_GX_Icon.svg?utm_source=commons.wikimedia.org&utm_campaign=index&utm_content=original" width="30" alt="Opera GX">
+  <img src="https://upload.wikimedia.org/wikipedia/commons/a/a0/Firefox_logo%2C_2019.svg" width="30" alt="Firefox">
 </p>
 
 ## Installation
 
 ### 1. Download
 
-Grab the latest `youtube-downloader-*-chrome.zip` from the [Releases page](https://github.com/avi12/youtube-downloader/releases).
+Grab the latest zip for your browser from the [Releases page](https://github.com/avi12/youtube-downloader/releases):
+
+- Chromium browsers: `youtube-downloader-*-chrome.zip`
+- Firefox: `youtube-downloader-*-firefox.zip`
 
 ### 2. Sideload
 
@@ -33,6 +37,13 @@ Grab the latest `youtube-downloader-*-chrome.zip` from the [Releases page](https
 1. Go to `opera://extensions`
 2. Enable **Developer mode** (top-right toggle)
 3. Drag and drop the zip onto the page
+
+**Firefox**
+1. Unzip the Firefox zip
+2. Go to `about:debugging#/runtime/this-firefox`
+3. Click **Load Temporary Add-on** and pick the `manifest.json` inside the unzipped folder
+
+> Firefox 128+ required. Temporary add-ons are removed when Firefox restarts; for a permanent install, sign and install the build via [AMO](https://addons.mozilla.org).
 
 ## Tech stack
 
@@ -87,22 +98,37 @@ MV3 fragments execution across isolated runtimes that can't share memory. The `D
 
 ### 6. Dispatching to the download worker
 
-[`startBackgroundDownload()`](src/entrypoints/background/download/background-downloader.ts) takes two paths based on the request type:
+[`startBackgroundDownload()`](src/entrypoints/background/download/background-downloader.ts) splits on browser and request type. Chrome MV3 has `chrome.offscreen`; Firefox MV3 does not, and that single API check (`isFirefoxRuntime()` in [`background-downloader.ts`](src/entrypoints/background/download/background-downloader.ts)) gates the entire download path:
 
-- **Audio-only with SABR config** - sends `DownloadAudioViaSabr` directly to the offscreen document, which handles the SABR session in [`sabr-audio-download.ts`](src/entrypoints/offscreen/sabr-audio-download.ts)
-- **Everything else** (video+audio, video-only, CDN audio) - sends `StartDownloadInIframe` to the offscreen document
+- **Audio-only with SABR config** (both browsers) - sends `DownloadAudioViaSabr` directly to the offscreen document, which handles the SABR session in [`sabr-audio-download.ts`](src/entrypoints/offscreen/sabr-audio-download.ts)
+- **Firefox, anything else** - calls [`runFirefoxDirectDownload()`](src/entrypoints/background/download/background-downloader.ts) inline in the background. See section 7b for why Firefox can't use SABR
+- **Chrome, anything else** (video+audio, video-only, CDN audio) - sends `StartDownloadInIframe` to the offscreen document
 
-For the iframe path, [`main.ts`](src/entrypoints/offscreen/main.ts) in the offscreen document receives the message and calls [`createWorkerIframe()`](src/entrypoints/offscreen/iframe-host.ts), which spawns a sandboxed `<iframe>` running [`download-worker/main.ts`](src/entrypoints/download-worker/main.ts). The background service worker never touches the stream bytes directly - all network I/O happens inside this worker iframe.
+For the iframe path, [`main.ts`](src/entrypoints/offscreen/main.ts) in the offscreen document receives the message and calls [`createWorkerIframe()`](src/entrypoints/offscreen/iframe-host.ts), which spawns a sandboxed `<iframe>` running [`download-worker/main.ts`](src/entrypoints/download-worker/main.ts). The background service worker never touches the stream bytes directly on Chrome - all network I/O happens inside this worker iframe.
 
-### 7. Stream fetch - SABR and CDN fallback
+The offscreen host itself differs by browser: [`processor.ts`](src/entrypoints/background/handlers/processor.ts) calls `chrome.offscreen.createDocument()` on Chrome and falls back to appending a hidden `<iframe src="/offscreen.html">` to the background event-page's own document on Firefox. From the application's perspective the offscreen URL hosts the same page either way, so all downstream code (FFmpeg muxer, download-worker iframes, message ports) is shared.
 
-[`download-worker/main.ts`](src/entrypoints/download-worker/main.ts) is the actual download engine. It tries two methods in order:
+### 7a. Chrome stream fetch - SABR and CDN fallback
+
+On Chrome, [`download-worker/main.ts`](src/entrypoints/download-worker/main.ts) is the actual download engine. It tries two methods in order:
 
 **SABR** ([`sabr-downloader.ts`](src/entrypoints/background/download/sabr-downloader.ts)) speaks YouTube's internal adaptive streaming protocol via [`googlevideo`](https://npm.im/googlevideo), constructing protobuf requests that the CDN accepts as a real player session. A stall timer aborts and falls back to CDN if no bytes arrive within 5 seconds, or if progress stalls for 10 seconds. Because the service worker can't set `Origin` headers (Chrome strips them), a `declarativeNetRequest` rule in [`wxt.config.ts`](wxt.config.ts) rewrites the header at the network layer on every outgoing request to `googlevideo.com`.
 
 **CDN fallback** ([`cdn-downloader.ts`](src/entrypoints/background/download/cdn-downloader.ts)) is used when SABR stalls or isn't available - plain HTTPS fetches with byte-range support so a dropped connection resumes from where it left off rather than restarting.
 
 As each chunk arrives the worker posts a `worker-chunk` message to the offscreen document. [`accumulator.ts`](src/entrypoints/offscreen/stream/accumulator.ts) collects and sequences the chunks. When all chunks for a stream have arrived, [`end-handler.ts`](src/entrypoints/offscreen/stream/end-handler.ts) marks the stream complete and, once both video and audio streams are finished, hands everything to the processing pipeline.
+
+### 7b. Firefox stream fetch - `ANDROID_VR` bypass
+
+On Firefox-on-Windows, YouTube's anti-bot infrastructure rejects SABR with `HTTP 403` or caps the response at ~60s regardless of cookies, PO token, or DNR header rewrites. The TLS fingerprint and request signature differ enough from Chrome's that the `WEB`-client SABR path is unusable. Direct progressive URLs returned by the `WEB` client also 403 from any context (extension or page). [`runFirefoxDirectDownload()`](src/entrypoints/background/download/background-downloader.ts) sidesteps this by impersonating yt-dlp's `android_vr` extractor:
+
+1. **InnerTube call** - POST `/youtubei/v1/player` with `clientName: ANDROID_VR` (X-YouTube-Client-Name 28, Oculus Quest 3, Android 12L user agent) via [`android-player.ts`](src/lib/youtube/android-player.ts). The request body embeds `visitorData` (read from `ytcfg` via the MAIN-world bridge) and is sent with `credentials: "include"`. `ANDROID_VR` is the only first-party client that returns direct CDN URLs for every adaptive format without requiring a PO token, without forcing SABR, and without the 4 MB per-request range cap that the plain `ANDROID` client enforces. The background event-page tries the fetch itself first; if YouTube 403s, it retries via the page-proxy so the request goes out from the watch tab's TLS context.
+
+2. **Page proxy** ([`page-sabr-fetch.content.ts`](src/entrypoints/page-sabr-fetch.content.ts), [`page-proxy-fetch.ts`](src/entrypoints/background/download/page-proxy-fetch.ts)) - a MAIN-world content script that the background can invoke via `browser.tabs.sendMessage`. It performs the fetch inside an `about:blank` iframe's pristine `fetch` (YouTube wraps `window.fetch` with a Trusted-Types anti-bot wrapper that throws when invoked from extension code). Before each request it substitutes the `__YTDL_VISITOR_DATA__` placeholder in the body with `ytcfg.VISITOR_DATA`, which is only readable from the page context.
+
+3. **Chunked download** - the resolved adaptive URLs are fetched as 10 MB closed-range chunks (matching yt-dlp's `--http-chunk-size` default) in parallel for video and audio. Each chunk first tries a direct background fetch and falls back to the page proxy if the direct call fails. Chunks stream to the offscreen iframe via `sendNetworkChunkToOffscreen` and flow into the same `accumulator.ts` / `end-handler.ts` pipeline Chrome uses, so muxing is identical on both browsers.
+
+The architectural cost of the bypass is bounded: only the request-resolution and byte-fetch steps differ between Chrome and Firefox. Once chunks reach the offscreen host, the rest of the pipeline (FFmpeg muxing, blob creation, `browser.downloads.download`) runs on shared code.
 
 ### 8. Muxing - FFmpeg WASM in the browser
 
@@ -128,6 +154,8 @@ As chunks arrive and FFmpeg runs, [`progress-reporter.ts`](src/lib/download-pipe
 `offscreen` -> [`pipeline-handlers.ts`](src/entrypoints/background/handlers/pipeline-handlers.ts) -> [`background.ts`](src/entrypoints/youtube.content/handlers/background.ts) -> `CrossWorldEvent.ProgressUpdate` -> [`WatchButton.message-effects.svelte.ts`](src/entrypoints/youtube-main.content/watch-button/WatchButton.message-effects.svelte.ts)
 
 [`watch-button-progress.ts`](src/entrypoints/youtube-main.content/watch-button/watch-button-progress.ts) blends fetch and FFmpeg progress proportionally so the progress ring on the button advances smoothly across both phases.
+
+The download-phase `UpdateDownloadProgress` messages have two delivery paths because not every extension context can call `browser.tabs.sendMessage`. [`progress-fetch.ts`](src/entrypoints/background/download/progress-fetch.ts) probes for `browser.tabs?.sendMessage` at runtime: if it exists (Chrome service worker, Firefox background event-page), the message goes directly to the tab; otherwise (Chrome offscreen document, download-worker iframe) it routes via `ForwardProgressUpdate` to the background, which has the `tabs` API and forwards on. FFmpeg muxing progress always originates in the offscreen document and uses `PipelineProgress`, which `pipeline-handlers.ts` re-broadcasts unconditionally.
 
 ### 11. Save - triggering the browser download
 
