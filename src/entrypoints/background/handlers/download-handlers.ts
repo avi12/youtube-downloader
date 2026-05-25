@@ -106,7 +106,7 @@ export function registerDownloadHandlers() {
       signalVideoComplete(videoId);
     } catch (error) {
       console.warn("[ytdl:bg] Blob URL download failed:", error);
-      reportDownloadFailed({
+      void reportDownloadFailed({
         videoId,
         tabId
       });
@@ -114,7 +114,7 @@ export function registerDownloadHandlers() {
   });
 
   onMessage(MessageType.StartBackgroundDownload, async ({ data, sender }) => {
-    let tabId = sender.tab?.id ?? getTabIdsForVideo(data.videoId)[0];
+    let tabId: number | undefined = sender.tab?.id ?? getTabIdsForVideo(data.videoId)[0];
     const isTabIdMissing = !tabId;
     if (isTabIdMissing) {
       const [ytTab] = await browser.tabs.query({
@@ -187,7 +187,7 @@ export function registerDownloadHandlers() {
 
   onMessage(MessageType.ReportWorkerDownloadFailed, ({ data }) => {
     const { videoId, tabId } = data;
-    reportDownloadFailed({
+    void reportDownloadFailed({
       videoId,
       tabId
     });
