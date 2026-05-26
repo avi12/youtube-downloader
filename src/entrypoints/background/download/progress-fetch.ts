@@ -1,4 +1,5 @@
 import { MessageType, sendMessage, sendMessageToTab } from "@/lib/messaging/messaging";
+import { mutateStorageItem, statusProgressItem } from "@/lib/storage/storage";
 import { ProgressType } from "@/types";
 
 // On Chrome MV3, only the background service worker can call
@@ -20,6 +21,26 @@ function canSendToTabDirectly() {
 
 export { fetchWithProgress } from "./cdn-fetch";
 
+type WriteProgressToStorageParams = {
+  videoId: string;
+  progress: number;
+  progressType: ProgressType;
+};
+async function writeProgressToStorage({ videoId, progress, progressType }: WriteProgressToStorageParams) {
+  const isComplete = progress >= 1 && progressType === ProgressType.FFmpeg;
+  await mutateStorageItem({
+    item: statusProgressItem,
+    mutator(current) {
+      current[videoId] = {
+        isDownloading: !isComplete,
+        isDone: isComplete,
+        progress,
+        progressType
+      };
+    }
+  });
+}
+
 type SendProgressUpdateParams = {
   videoId: string;
   progress: number;
@@ -27,6 +48,16 @@ type SendProgressUpdateParams = {
   tabId: number;
 };
 export async function sendProgressUpdate({ videoId, progress, progressType, tabId }: SendProgressUpdateParams) {
+  // Storage is shared across all extension documents, so writing the entry
+  // here keeps the popup's `statusProgressItem.watch()` byte-precise without
+  // a separate message round-trip. Per-chunk races on get-modify-set are
+  // self-healing - the next chunk overwrites with the freshest value.
+  await writeProgressToStorage({
+    videoId,
+    progress,
+    progressType
+  });
+
   if (canSendToTabDirectly()) {
     await sendMessageToTab(MessageType.UpdateDownloadProgress, {
       videoId,

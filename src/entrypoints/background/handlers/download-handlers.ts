@@ -21,6 +21,7 @@ import {
 import { registerProxyFetchHandler } from "./proxy-fetch-handler";
 import { MessageType, onMessage, sendMessage, sendMessageToTab } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
+import { mutateStorageItem, statusProgressItem } from "@/lib/storage/storage";
 import { ProgressType } from "@/types";
 
 export function registerDownloadHandlers() {
@@ -56,6 +57,15 @@ export function registerDownloadHandlers() {
       type: OffscreenMessageType.CancelProcessing,
       data: {
         videoIds: data.videoIds
+      }
+    });
+
+    await mutateStorageItem({
+      item: statusProgressItem,
+      mutator(current) {
+        for (const videoId of data.videoIds) {
+          delete current[videoId];
+        }
       }
     });
 
