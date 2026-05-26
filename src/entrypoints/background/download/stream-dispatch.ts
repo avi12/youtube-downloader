@@ -1,6 +1,7 @@
 import { ensureProcessor } from "../handlers/processor";
 import type { DownloadResult } from "./download-result-types";
-import { buildSubtitleTracks, buildTransferJobs } from "./stream-chunk-transfer";
+import { buildTransferJobs } from "./stream-chunk-transfer";
+import { buildSubtitleTracks } from "./subtitle-track-builder";
 import { MessageType, sendMessageToTab } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
 import { stripMimeParams } from "@/lib/utils/containers";

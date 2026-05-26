@@ -1,6 +1,6 @@
 import { downloadViaCdn } from "../background/download/cdn-downloader";
 import { downloadViaSabr } from "../background/download/sabr-downloader";
-import { buildSubtitleTracks } from "../background/download/stream-chunk-transfer";
+import { buildSubtitleTracks } from "../background/download/subtitle-track-builder";
 import type { ProcessStreamEndData } from "@/lib/messaging/offscreen-messaging";
 import { stripMimeParams } from "@/lib/utils/containers";
 import { DownloadType, StreamType } from "@/types";
