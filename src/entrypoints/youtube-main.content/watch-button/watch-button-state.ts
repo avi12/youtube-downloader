@@ -59,7 +59,8 @@ export function buildInitialDownloadState(videoData: VideoData) {
     const isMultiTrack = isTrackSelected && isOtherAudioTrackPresent;
     if (isMultiTrack) {
       const isKnownContainer = extension in CONTAINER_SPECS;
-      const isUnsupportedMultiTrackContainer = !isKnownContainer || MULTI_TRACK_UNSUPPORTED_EXTENSIONS.has(extension);
+      const isMultiTrackUnsupported = MULTI_TRACK_UNSUPPORTED_EXTENSIONS.has(extension);
+      const isUnsupportedMultiTrackContainer = !isKnownContainer || isMultiTrackUnsupported;
       if (isUnsupportedMultiTrackContainer) {
         extension = MKV_EXTENSION;
       }
@@ -70,7 +71,6 @@ export function buildInitialDownloadState(videoData: VideoData) {
   const downloadType = videoData.isMusic ? DownloadType.Audio : DownloadType.VideoAndAudio;
 
   const interrupted = interruptedDownloadStore.get(videoData.videoId);
-  const isInterrupted = Boolean(interrupted);
   if (interrupted) {
     videoItag = interrupted.videoItag || videoItag;
     audioItag = interrupted.audioItag || audioItag;
@@ -82,7 +82,6 @@ export function buildInitialDownloadState(videoData: VideoData) {
     audioTrackId: preferredAudio?.audioTrack?.id,
     filename,
     quality: "",
-    downloadType,
-    isInterrupted
+    downloadType
   };
 }

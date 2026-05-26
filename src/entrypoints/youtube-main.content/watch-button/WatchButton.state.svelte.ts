@@ -5,30 +5,46 @@ import { buildChevronData, buildDownloadData } from "./watch-button-view-model";
 import { createButtonElementEffects } from "./WatchButton.button-effects.svelte";
 import { createMessageEffects } from "./WatchButton.message-effects.svelte";
 import { createPanelEffects } from "./WatchButton.panel-effects.svelte";
-import { ProgressType, type VideoData, type YtButtonViewModelElement } from "@/types";
+import { downloadProgressStore, interruptedDownloadStore } from "@/lib/ui/synced-stores.svelte";
+import { calculateWeightedProgress } from "@/lib/youtube/video-helpers";
+import { type VideoData, type YtButtonViewModelElement } from "@/types";
 import { untrack } from "svelte";
+
+const PERCENT_COMPLETE = 100;
 
 export function createWatchButtonState(params: {
   readonly videoData: VideoData;
   readonly elDropdown: import("@/types").TpYtIronDropdownElement;
 }) {
   const initial = untrack(() => buildInitialDownloadState(params.videoData));
+  const { videoId } = params.videoData;
 
-  let isDownloading = $state(false);
-  let isDone = $state(false);
-  let isInterrupted = $state(initial.isInterrupted);
-  let isError = $state(false);
+  const isDownloading = $derived(downloadProgressStore.get(videoId)?.isDownloading ?? false);
+  const isDone = $derived(downloadProgressStore.get(videoId)?.isDone ?? false);
+  const isError = $derived(downloadProgressStore.get(videoId)?.isFailed ?? false);
+  const isInterrupted = $derived(!!interruptedDownloadStore.get(videoId));
+  const downloadProgressType = $derived(downloadProgressStore.get(videoId)?.progressType ?? "");
+  const downloadProgress = $derived.by(() => {
+    const entry = downloadProgressStore.get(videoId);
+    if (!entry) {
+      return 0;
+    }
+
+    return calculateWeightedProgress({
+      isDownloading: entry.isDownloading,
+      progress: entry.progress,
+      progressType: entry.progressType
+    }) / PERCENT_COMPLETE;
+  });
+
   let isPanelOpen = $state(false);
   let isPanelBelow = $state(true);
-  let downloadProgress = $state(0);
-  let downloadProgressType = $state<ProgressType | "">("");
   let defaultVideoItag = $state(initial.videoItag);
   let defaultAudioItag = $state(initial.audioItag);
   let defaultAudioTrackId = $state(initial.audioTrackId);
   let defaultFilename = $state(initial.filename);
   let defaultQuality = $state(initial.quality);
   const defaultDownloadType = initial.downloadType;
-  let lastProgressReported = $state("");
 
   let elGroup = $state<HTMLDivElement | null>(null);
   let elDownloadButton = $state<YtButtonViewModelElement | null>(null);
@@ -108,32 +124,6 @@ export function createWatchButtonState(params: {
   });
 
   createMessageEffects({
-    videoId: params.videoData.videoId,
-    handlers: {
-      setIsDownloading(value) {
-        isDownloading = value;
-      },
-      setIsDone(value) {
-        isDone = value;
-      },
-      setIsError(value) {
-        isError = value;
-      },
-      setIsInterrupted(value) {
-        isInterrupted = value;
-      },
-      setDownloadProgress(value) {
-        downloadProgress = value;
-      },
-      setDownloadProgressType(value) {
-        downloadProgressType = value;
-      },
-      setLastProgressReported(value) {
-        lastProgressReported = value;
-      },
-      getIsDone: () => isDone,
-      getLastProgressReported: () => lastProgressReported
-    },
     getIsPanelOpen: () => isPanelOpen,
     setIsPanelOpen(value) {
       isPanelOpen = value;
@@ -172,18 +162,6 @@ export function createWatchButtonState(params: {
       getDefaultFilename: () => defaultFilename,
       getElDownloadButton: () => elDownloadButton,
       getElChevronButton: () => elChevronButton,
-      setIsDownloading(value) {
-        isDownloading = value;
-      },
-      setIsInterrupted(value) {
-        isInterrupted = value;
-      },
-      setIsDone(value) {
-        isDone = value;
-      },
-      setIsError(value) {
-        isError = value;
-      },
       setIsPanelOpen(value) {
         isPanelOpen = value;
       }

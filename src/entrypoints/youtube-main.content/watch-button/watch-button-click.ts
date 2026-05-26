@@ -13,10 +13,6 @@ export interface ClickHandlerState {
   getDefaultFilename(): string;
   getElDownloadButton(): YtButtonViewModelElement | null;
   getElChevronButton(): YtButtonViewModelElement | null;
-  setIsDownloading(value: boolean): void;
-  setIsInterrupted(value: boolean): void;
-  setIsDone(value: boolean): void;
-  setIsError(value: boolean): void;
   setIsPanelOpen(value: boolean): void;
 }
 
@@ -34,7 +30,8 @@ export function buildClickHandler({ videoData, elDropdown, state }: BuildClickHa
     }
 
     const elDownloadButton = state.getElDownloadButton();
-    if (elDownloadButton?.contains(target)) {
+    const isDownloadButtonClicked = !!elDownloadButton?.contains(target);
+    if (isDownloadButtonClicked) {
       const isDownloadable = videoData.isDownloadable;
       if (!isDownloadable) {
         return;
@@ -42,17 +39,12 @@ export function buildClickHandler({ videoData, elDropdown, state }: BuildClickHa
 
       const isActiveDownload = state.getIsDownloading() || state.getIsInterrupted();
       if (isActiveDownload) {
-        state.setIsDownloading(false);
-        state.setIsInterrupted(false);
         void crossWorldMessenger.sendMessage(CrossWorldMessage.CancelDownload, {
           videoIds: [videoData.videoId]
         });
         return;
       }
 
-      state.setIsDone(false);
-      state.setIsInterrupted(false);
-      state.setIsError(false);
       void startDownload({
         type: state.getDefaultDownloadType(),
         videoId: videoData.videoId,
@@ -65,7 +57,8 @@ export function buildClickHandler({ videoData, elDropdown, state }: BuildClickHa
     }
 
     const elChevronButton = state.getElChevronButton();
-    if (elChevronButton?.contains(target)) {
+    const isChevronButtonClicked = !!elChevronButton?.contains(target);
+    if (isChevronButtonClicked) {
       const isDownloadable = videoData.isDownloadable;
       if (!isDownloadable) {
         return;
@@ -77,7 +70,7 @@ export function buildClickHandler({ videoData, elDropdown, state }: BuildClickHa
       if (isNowOpen) {
         e.stopPropagation();
         elDropdown.open();
-        elChevronButton.querySelector<HTMLButtonElement>("button")?.blur();
+        elChevronButton!.querySelector<HTMLButtonElement>("button")?.blur();
       } else {
         elDropdown.close();
       }

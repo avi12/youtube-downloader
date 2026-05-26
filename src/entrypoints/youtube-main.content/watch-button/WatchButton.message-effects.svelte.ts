@@ -1,5 +1,3 @@
-import { handleProgressUpdate, type ProgressUpdateHandlers } from "./watch-button-progress";
-import { CrossWorldEvent, onCrossWorldEvent } from "@/lib/messaging/cross-world-messenger";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import type { TpYtIronDropdownElement } from "@/types";
 
@@ -12,27 +10,14 @@ export interface MessageEffectsSetters {
 }
 
 type CreateMessageEffectsParams = {
-  videoId: string;
-  handlers: ProgressUpdateHandlers;
   getIsPanelOpen: () => boolean;
   setIsPanelOpen: (value: boolean) => void;
   setters: MessageEffectsSetters;
   getElDropdown: () => TpYtIronDropdownElement;
 };
 export function createMessageEffects({
-  videoId, handlers, getIsPanelOpen, setIsPanelOpen, setters, getElDropdown
+  getIsPanelOpen, setIsPanelOpen, setters, getElDropdown
 }: CreateMessageEffectsParams) {
-  $effect(() => onCrossWorldEvent({
-    type: CrossWorldEvent.ProgressUpdate,
-    handler(data) {
-      handleProgressUpdate({
-        data,
-        videoId,
-        handlers
-      });
-    }
-  }));
-
   $effect(() => crossWorldMessenger.onMessage(CrossWorldMessage.PanelClosed, () => {
     const isPanelClosed = !getIsPanelOpen();
     if (isPanelClosed) {
@@ -47,18 +32,18 @@ export function createMessageEffects({
     setters.setDefaultFilename(data.filename);
     setters.setDefaultQuality(data.quality ?? "");
 
-    const hasVideoItag = data.videoItag !== undefined;
-    if (hasVideoItag) {
+    const isVideoItagPresent = data.videoItag !== undefined;
+    if (isVideoItagPresent) {
       setters.setDefaultVideoItag(data.videoItag!);
     }
 
-    const hasAudioItag = data.audioItag !== undefined;
-    if (hasAudioItag) {
+    const isAudioItagPresent = data.audioItag !== undefined;
+    if (isAudioItagPresent) {
       setters.setDefaultAudioItag(data.audioItag!);
     }
 
-    const hasAudioTrackId = data.audioTrackId !== undefined;
-    if (hasAudioTrackId) {
+    const isAudioTrackIdPresent = data.audioTrackId !== undefined;
+    if (isAudioTrackIdPresent) {
       setters.setDefaultAudioTrackId(data.audioTrackId);
     }
   }));

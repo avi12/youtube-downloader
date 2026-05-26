@@ -2,7 +2,6 @@ import type {
   ButtonViewModelData,
   DownloadRequest,
   DownloadType,
-  ProgressUpdate,
   VideoData,
   VideoMetadata
 } from "@/types";
@@ -35,7 +34,6 @@ export const CrossWorldMessage = {
   OpenSnackbar: "openSnackbar",
   SetSettingsOptionsData: "setSettingsOptionsData",
   ButtonClick: "buttonClick",
-  ProgressUpdate: "progressUpdate",
   DownloadBlobUrl: "downloadBlobUrl"
 } as const;
 
@@ -122,7 +120,6 @@ export interface PageMessengerSchema {
     title: string;
   }): void;
   [CrossWorldMessage.ButtonClick](data: { buttonId: string }): void;
-  [CrossWorldMessage.ProgressUpdate](data: ProgressUpdate): void;
   [CrossWorldMessage.DownloadBlobUrl](data: {
     blobUrl: string;
     filename: string;
@@ -155,43 +152,5 @@ export function onButtonClick(handler: (buttonId: string) => void) {
   buttonClickHandlers.add(handler);
   return () => {
     buttonClickHandlers.delete(handler);
-  };
-}
-
-export const CrossWorldEvent = {
-  ProgressUpdate: "progressUpdate"
-} as const;
-
-const progressHandlers = new Set<(data: ProgressUpdate) => void>();
-
-function fanoutProgress(data: ProgressUpdate) {
-  for (const handler of progressHandlers) {
-    handler(data);
-  }
-}
-
-crossWorldMessenger.onMessage(CrossWorldMessage.ProgressUpdate, ({ data }) => {
-  fanoutProgress(data);
-});
-
-type EmitCrossWorldEventParams = {
-  type: typeof CrossWorldEvent.ProgressUpdate;
-  data: ProgressUpdate;
-};
-export function emitCrossWorldEvent({ type, data }: EmitCrossWorldEventParams) {
-  void type;
-  void crossWorldMessenger.sendMessage(CrossWorldMessage.ProgressUpdate, data);
-  fanoutProgress(data);
-}
-
-type OnCrossWorldEventParams = {
-  type: typeof CrossWorldEvent.ProgressUpdate;
-  handler: (data: ProgressUpdate) => void;
-};
-export function onCrossWorldEvent({ type, handler }: OnCrossWorldEventParams) {
-  void type;
-  progressHandlers.add(handler);
-  return () => {
-    progressHandlers.delete(handler);
   };
 }

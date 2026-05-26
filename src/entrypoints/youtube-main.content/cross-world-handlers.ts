@@ -1,20 +1,13 @@
 import { registerButtonDataHandler } from "./button-data-handler";
 import ctaButtonStyles from "./cta-button.css?inline";
 import { cancelActiveDownload, startDownload } from "./video/download";
-import { CrossWorldEvent, emitCrossWorldEvent } from "@/lib/messaging/cross-world-messenger";
 import { CrossWorldMessage, crossWorldMessenger, dispatchButtonClick } from "@/lib/messaging/cross-world-messenger";
 import {
   DATA_BUTTON_ID_ATTR,
   DATA_SETTINGS_OPTIONS_ID_ATTR,
   isYtdSettingsOptionsRenderer
 } from "@/lib/ui/polymer-utils";
-import {
-  ButtonSize,
-  ButtonState,
-  ButtonStyle,
-  ButtonType,
-  ProgressType
-} from "@/types";
+import { ButtonSize, ButtonState, ButtonStyle, ButtonType } from "@/types";
 
 const SNACKBAR_VIEW_BUTTON_ID = "ytdl-snackbar-view";
 const CTA_STYLES_ELEMENT_ID = "ytdl-cta-styles";
@@ -22,7 +15,8 @@ const SETTINGS_OPTIONS_RENDERER_TAG = "ytd-settings-options-renderer";
 const SETTINGS_OPTIONS_ID_SELECTOR = "#options";
 
 function injectCtaButtonStyles() {
-  if (document.getElementById(CTA_STYLES_ELEMENT_ID)) {
+  const isCtaStylesAlreadyInjected = !!document.getElementById(CTA_STYLES_ELEMENT_ID);
+  if (isCtaStylesAlreadyInjected) {
     return;
   }
 
@@ -65,15 +59,6 @@ export function registerCrossWorldHandlers() {
   crossWorldMessenger.onMessage(CrossWorldMessage.CancelDownload, ({ data }) => {
     for (const videoId of data.videoIds) {
       cancelActiveDownload(videoId);
-      emitCrossWorldEvent({
-        type: CrossWorldEvent.ProgressUpdate,
-        data: {
-          videoId,
-          progress: 0,
-          progressType: ProgressType.Video,
-          isRemoved: true
-        }
-      });
     }
   });
 
@@ -95,7 +80,8 @@ export function registerCrossWorldHandlers() {
       elRenderer.classList.add(className);
     }
 
-    if (!isYtdSettingsOptionsRenderer(elRenderer)) {
+    const isValidSettingsRenderer = isYtdSettingsOptionsRenderer(elRenderer);
+    if (!isValidSettingsRenderer) {
       return;
     }
 

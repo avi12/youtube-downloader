@@ -1,5 +1,4 @@
 import { resolveAndDispatch } from "./download-execute";
-import { CrossWorldEvent, emitCrossWorldEvent } from "@/lib/messaging/cross-world-messenger";
 import { crossWorldMessenger, CrossWorldMessage } from "@/lib/messaging/cross-world-messenger";
 import { type DownloadRequest, ProgressType } from "@/types";
 
@@ -37,15 +36,6 @@ export async function startDownload(params: Pick<DownloadRequest,
   const abortController = new AbortController();
   activeDownloads.set(params.videoId, abortController);
 
-  emitCrossWorldEvent({
-    type: CrossWorldEvent.ProgressUpdate,
-    data: {
-      videoId: params.videoId,
-      progress: 0,
-      progressType: ProgressType.Video,
-      isRemoved: false
-    }
-  });
   void crossWorldMessenger.sendMessage(CrossWorldMessage.DownloadProgress, {
     videoId: params.videoId,
     progress: 0,
@@ -65,6 +55,9 @@ export async function startDownload(params: Pick<DownloadRequest,
 
     throw error;
   } finally {
-    activeDownloads.delete(params.videoId);
+    const isStillOwnController = activeDownloads.get(params.videoId) === abortController;
+    if (isStillOwnController) {
+      activeDownloads.delete(params.videoId);
+    }
   }
 }
