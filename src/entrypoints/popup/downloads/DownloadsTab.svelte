@@ -4,8 +4,7 @@
   import ActiveDownloadsSections from "./ActiveDownloadsSections.svelte";
   import { MessageType, sendMessage } from "@/lib/messaging/messaging";
   import { deleteRecentDownload } from "@/lib/storage/recent-downloads-db";
-  import { ProgressType } from "@/types";
-  import type { RecentDownloadEntry, VideoQueueItem } from "@/types";
+  import type { DownloadProgressEntry, RecentDownloadEntry, VideoQueueItem } from "@/types";
   import { browser } from "#imports";
 
   interface Props {
@@ -20,10 +19,7 @@
       playlistId?: string;
       playlistTitle?: string;
     }>;
-    statusProgress: Record<string, {
-      progress: number;
-      progressType: ProgressType;
-    }>;
+    statusProgress: Record<string, DownloadProgressEntry>;
     percentFormatter: Intl.NumberFormat;
     recentDownloads: RecentDownloadEntry[];
     now: number;

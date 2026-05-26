@@ -4,8 +4,7 @@
   import ChangeFormatDialog from "./format-dialog/ChangeFormatDialog.svelte";
   import SettingsTab from "./settings/SettingsTab.svelte";
   import TabNav from "./TabNav.svelte";
-  import type { Options, VideoQueueItem } from "@/types";
-  import { ProgressType } from "@/types";
+  import type { DownloadProgressEntry, Options, VideoQueueItem } from "@/types";
   import { untrack } from "svelte";
   import { cubicOut } from "svelte/easing";
   import { fly } from "svelte/transition";
@@ -19,10 +18,7 @@
       filenameOutput: string;
       quality?: string;
     }>;
-    initialStatusProgress: Record<string, {
-      progress: number;
-      progressType: ProgressType;
-    }>;
+    initialStatusProgress: Record<string, DownloadProgressEntry>;
     initialCurrentTabId?: number;
     initialOptions: Options;
   }

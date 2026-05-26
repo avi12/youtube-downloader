@@ -2,8 +2,7 @@
   import { bindDownloadAccessors, getVideoStatusLabel } from "./active-downloads-helpers";
   import DownloadItem from "./DownloadItem.svelte";
   import DownloadSection from "./DownloadSection.svelte";
-  import { ProgressType } from "@/types";
-  import type { VideoQueueItem } from "@/types";
+  import type { DownloadProgressEntry, VideoQueueItem } from "@/types";
   import { SvelteMap, SvelteSet } from "svelte/reactivity";
 
   interface Props {
@@ -18,10 +17,7 @@
       playlistId?: string;
       playlistTitle?: string;
     }>;
-    statusProgress: Record<string, {
-      progress: number;
-      progressType: ProgressType;
-    }>;
+    statusProgress: Record<string, DownloadProgressEntry>;
     percentFormatter: Intl.NumberFormat;
     currentTabId?: number;
     onCancel: (videoIds: string[]) => void;
@@ -112,7 +108,7 @@
 
       for (const id of thisTabVideoIds) {
         const detail = videoDetails[id];
-        const isInPlaylist = detail?.playlistId && detail.playlistTitle;
+        const isInPlaylist = Boolean(detail?.playlistId && detail.playlistTitle);
         if (isInPlaylist) {
           const group = zipGroups.get(detail!.playlistId!);
           if (group) {
@@ -135,16 +131,17 @@
     })()
   );
 
+  const isThisTabKnown = $derived(thisTabIds.size > 0);
   const otherVideoDownloadIds = $derived(
-    thisTabIds.size > 0
+    isThisTabKnown
       ? videoDownloads.filter(item => !thisTabIds.has(item.videoId)).map(item => item.videoId)
       : videoDownloads.map(item => item.videoId)
   );
   const otherMusicList = $derived(
-    thisTabIds.size > 0 ? musicList.filter(id => !thisTabIds.has(id)) : musicList
+    isThisTabKnown ? musicList.filter(id => !thisTabIds.has(id)) : musicList
   );
   const otherVideoOnlyList = $derived(
-    thisTabIds.size > 0 ? videoOnlyList.filter(id => !thisTabIds.has(id)) : videoOnlyList
+    isThisTabKnown ? videoOnlyList.filter(id => !thisTabIds.has(id)) : videoOnlyList
   );
   const videoDownloadIds = $derived(videoDownloads.map(item => item.videoId));
 </script>

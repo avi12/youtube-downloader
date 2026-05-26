@@ -1,9 +1,7 @@
 import { ProgressType } from "@/types";
+import type { DownloadProgressEntry } from "@/types";
 
-type StatusProgress = Record<string, {
-  progress: number;
-  progressType: ProgressType;
-}>;
+type StatusProgress = Record<string, DownloadProgressEntry>;
 type VideoDetails = Record<string, {
   filenameOutput: string;
   quality?: string;
@@ -27,6 +25,11 @@ export function getProgressLabel({ videoId, statusProgress, percentFormatter }: 
   const isFfmpegProgress = progressEntry.progressType === ProgressType.FFmpeg;
   if (isFfmpegProgress) {
     return `${percentage} stitching`;
+  }
+
+  const hasProgressType = progressEntry.progressType !== "";
+  if (!hasProgressType) {
+    return percentage;
   }
 
   return `${percentage} (${progressEntry.progressType})`;

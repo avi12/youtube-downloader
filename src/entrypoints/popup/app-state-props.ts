@@ -1,4 +1,4 @@
-import type { Options, ProgressType, VideoDetail, VideoQueueItem } from "@/types";
+import type { DownloadProgressEntry, Options, VideoDetail, VideoQueueItem } from "@/types";
 
 export interface InitialAppStateProps {
   initialIsFFmpegReady: boolean;
@@ -6,10 +6,7 @@ export interface InitialAppStateProps {
   initialMusicList: string[];
   initialVideoOnlyList: string[];
   initialVideoDetails: Record<string, VideoDetail>;
-  initialStatusProgress: Record<string, {
-    progress: number;
-    progressType: ProgressType;
-  }>;
+  initialStatusProgress: Record<string, DownloadProgressEntry>;
   initialCurrentTabId?: number;
   initialOptions: Options;
 }
