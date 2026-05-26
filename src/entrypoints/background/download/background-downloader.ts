@@ -1,12 +1,16 @@
+import { isVideoCancelled } from "../handlers/pipeline-state";
 import { ensureProcessor } from "../handlers/processor";
 import { reportDownloadFailed } from "./download-failure-reporter";
 import { runFirefoxDirectDownload } from "./firefox-direct-download";
 import { enrichMetadataFromYouTubeMusic } from "./metadata-enrichment";
 import {
+  clearAutoRetryCounter,
   clearInterruptedDownload,
   dropPendingRetry,
+  isRecoverableError,
   queueNetworkRetry,
-  registerOnlineRetryListener
+  registerOnlineRetryListener,
+  scheduleAutoRetry
 } from "./network-retry";
 import { clearIframeAutoRetry } from "./sabr-attempt";
 import { buildEffectiveSabrConfig } from "./sabr-utils";
@@ -102,7 +106,14 @@ export async function startBackgroundDownload({ request, tabId }: StartBackgroun
         enrichedMetadata: (await enrichedMetadataPromise) ?? null
       }
     });
+    clearAutoRetryCounter(videoId);
   } catch (error) {
+    const isUserCancelled = isVideoCancelled(videoId);
+    if (isUserCancelled) {
+      clearAutoRetryCounter(videoId);
+      return;
+    }
+
     const isOffline = !navigator.onLine;
     if (isOffline) {
       await queueNetworkRetry({
@@ -112,13 +123,27 @@ export async function startBackgroundDownload({ request, tabId }: StartBackgroun
       return;
     }
 
+    const isRecoverable = isRecoverableError(error);
+    if (isRecoverable) {
+      const isRescheduled = await scheduleAutoRetry({
+        request,
+        tabId,
+        startBackgroundDownload
+      });
+      if (isRescheduled) {
+        console.warn("[ytdl:bg] Recoverable error, auto-retrying:", error);
+        return;
+      }
+    }
+
     console.warn("[ytdl:bg] Background download failed:", error);
+    clearAutoRetryCounter(videoId);
 
     if (request.playlistId) {
       notifyPlaylistBundleFailure(request.playlistId);
     }
 
-    void reportDownloadFailed({
+    await reportDownloadFailed({
       videoId,
       tabId
     });

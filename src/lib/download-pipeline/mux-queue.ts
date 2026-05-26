@@ -41,6 +41,10 @@ export function enqueueMuxJob<T>({ videoId, run }: {
   videoId: string;
   run: () => Promise<T>;
 }) {
+  // A fresh enqueue for this videoId supersedes any stale cancel marker. Without
+  // this, the next time the queue drains after a cancel-then-restart, the new
+  // entry would be silently rejected with MUX_JOB_CANCELLED_ERROR.
+  cancelledMuxJobs.delete(videoId);
   return new Promise<T>((resolve, reject) => {
     muxQueue.push({
       videoId,

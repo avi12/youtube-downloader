@@ -23,6 +23,17 @@ export function registerPipelineHandlers() {
       return;
     }
 
+    const isCancelStreamAbort = isVideoCancelled(data.videoId);
+    if (isCancelStreamAbort) {
+      sendToOffscreen({
+        type: OffscreenMessageType.RemoveDownloadIframe,
+        data: {
+          videoId: data.videoId
+        }
+      });
+      return;
+    }
+
     console.error("[ytdl] Stream error for", data.videoId, data.error);
     await sendMessageToTab(
       MessageType.UpdateDownloadProgress,
@@ -81,6 +92,7 @@ export function registerPipelineHandlers() {
 
   onMessage(MessageType.PipelineRemoval, async ({ data }) => {
     const { videoId, tabId } = data;
+    const isCancelRemoval = isVideoCancelled(videoId);
     await updateStatusProgress({
       mutate(current) {
         delete current[videoId];
@@ -90,7 +102,7 @@ export function registerPipelineHandlers() {
         progress: 0,
         progressType: ProgressType.Video,
         isRemoved: true,
-        isFailed: true
+        isFailed: !isCancelRemoval
       },
       tabId
     });

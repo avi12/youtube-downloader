@@ -11,6 +11,7 @@ import { enqueueToPopupList, removeFromPopupList } from "../queue/popup-list";
 import { signalVideoComplete } from "../queue/sequential-queue";
 import { cancelDownloads, getTabIdsForVideo, trackVideoForTab } from "../queue/tab-tracker";
 import { markVideosCancelled } from "./pipeline-handlers";
+import { clearCancelledVideo, isVideoCancelled } from "./pipeline-state";
 import {
   abortCurrentSequence,
   clearCurrentSequenceTabId,
@@ -61,7 +62,7 @@ export function registerDownloadHandlers() {
     const sequenceTabId = getCurrentSequenceTabId();
     for (const videoId of data.videoIds) {
       cancelBackgroundDownload(videoId);
-      dropPendingRetry(videoId);
+      await dropPendingRetry(videoId);
       signalVideoComplete(videoId);
       const trackedTabIds = getTabIdsForVideo(videoId);
       for (const tabId of trackedTabIds) {
@@ -125,6 +126,10 @@ export function registerDownloadHandlers() {
     }
 
     const resolvedTabId = tabId ?? -1;
+    // A fresh download intent supersedes any prior cancel marker for this
+    // video. Without this the BG would still treat post-cancel errors as
+    // "user cancelled" even though this is a brand-new attempt.
+    clearCancelledVideo(data.videoId);
     trackVideoForTab({
       videoId: data.videoId,
       tabId: resolvedTabId
@@ -185,16 +190,21 @@ export function registerDownloadHandlers() {
     clearIframeAutoRetry(videoId);
   });
 
-  onMessage(MessageType.ReportWorkerDownloadFailed, ({ data }) => {
+  onMessage(MessageType.ReportWorkerDownloadFailed, async ({ data }) => {
     const { videoId, tabId } = data;
-    void reportDownloadFailed({
+    const isCancelAbort = isVideoCancelled(videoId);
+    if (isCancelAbort) {
+      return;
+    }
+
+    await reportDownloadFailed({
       videoId,
       tabId
     });
   });
 
-  onMessage(MessageType.ForwardProgressUpdate, ({ data }) => {
+  onMessage(MessageType.ForwardProgressUpdate, async ({ data }) => {
     const { tabId, ...progressData } = data;
-    void sendMessageToTab(MessageType.UpdateDownloadProgress, progressData, tabId);
+    await sendMessageToTab(MessageType.UpdateDownloadProgress, progressData, tabId);
   });
 }
