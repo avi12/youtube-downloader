@@ -60,9 +60,12 @@ export function registerPipelineHandlers() {
 
   onMessage(MessageType.PipelineProgress, async ({ data }) => {
     const { videoId, progress, progressType, tabId } = data;
+    const isComplete = progress >= 1 && progressType === ProgressType.FFmpeg;
     await updateStatusProgress({
       mutate(current) {
         current[videoId] = {
+          isDownloading: !isComplete,
+          isDone: isComplete,
           progress,
           progressType
         };

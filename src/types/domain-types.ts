@@ -1,6 +1,14 @@
-import type { DownloadType } from "./download-enums";
+import type { DownloadType, ProgressType } from "./download-enums";
 import type { SabrConfig, SubtitleTrack, VideoMetadata } from "./settings-types";
 import type { AdaptiveFormatItem, CaptionTrack, PlayerResponse, TranslationLanguage } from "./youtube";
+
+export type DownloadProgressEntry = {
+  isDownloading: boolean;
+  isDone: boolean;
+  progress: number;
+  progressType: ProgressType | "";
+  isFailed?: boolean;
+};
 
 export type DownloadRequest = {
   type: DownloadType;
@@ -73,6 +81,7 @@ export type VideoData = {
   videoFormats: AdaptiveFormatItem[];
   audioFormats: AdaptiveFormatItem[];
   captionTracks: CaptionTrack[];
+  sourceCaptionLanguageCode: string;
   translationLanguages: TranslationLanguage[];
   sabrConfig: SabrConfig | null;
   progressiveUrl: string | null;

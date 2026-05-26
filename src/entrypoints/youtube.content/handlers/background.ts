@@ -1,5 +1,4 @@
 import { checkInterruptedDownload } from "../download/interrupted-downloads";
-import { CrossWorldEvent, emitCrossWorldEvent } from "@/lib/messaging/cross-world-messenger";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { MessageType, onMessage } from "@/lib/messaging/messaging";
 import { completedDownloadsStore } from "@/lib/ui/completed-downloads-store.svelte";
@@ -11,22 +10,13 @@ export function registerBackgroundMessageHandlers() {
 
   completedDownloadsStore.subscribe(videoId => {
     downloadProgressStore.unsuppress(videoId);
-    downloadProgressStore.setLocal(videoId, {
+    downloadProgressStore.set(videoId, {
       isDownloading: false,
       isDone: true,
       progress: 1,
       progressType: ProgressType.FFmpeg
     });
     interruptedDownloadStore.delete(videoId);
-    emitCrossWorldEvent({
-      type: CrossWorldEvent.ProgressUpdate,
-      data: {
-        videoId,
-        progress: 1,
-        progressType: ProgressType.FFmpeg,
-        isSaved: true
-      }
-    });
   });
 
   onMessage(MessageType.ExecuteDownloadItem, ({ data }) => {
@@ -62,51 +52,42 @@ export function registerBackgroundMessageHandlers() {
     if (data.isRemoved) {
       if (data.isFailed) {
         downloadProgressStore.unsuppress(data.videoId);
-        downloadProgressStore.setLocal(data.videoId, {
+        downloadProgressStore.set(data.videoId, {
           isDownloading: false,
           isDone: false,
           progress: 0,
           progressType: data.progressType,
           isFailed: true
         });
-      } else if (data.isInterrupted) {
+        return;
+      }
+
+      if (data.isInterrupted) {
         downloadProgressStore.unsuppress(data.videoId);
-        downloadProgressStore.setLocal(data.videoId, {
+        downloadProgressStore.set(data.videoId, {
           isDownloading: false,
           isDone: false,
           progress: 0,
           progressType: data.progressType
         });
         void checkInterruptedDownload(data.videoId);
-      } else {
-        const isStillDownloading = downloadProgressStore.get(data.videoId)?.isDownloading;
-        if (isStillDownloading) {
-          return;
-        }
-
-        downloadProgressStore.delete(data.videoId);
+        return;
       }
 
-      emitCrossWorldEvent({
-        type: CrossWorldEvent.ProgressUpdate,
-        data
-      });
+      const isStillDownloading = downloadProgressStore.get(data.videoId)?.isDownloading;
+      if (isStillDownloading) {
+        return;
+      }
+
+      downloadProgressStore.delete(data.videoId);
       return;
     }
 
-    const wasSet = downloadProgressStore.setLocal(data.videoId, {
+    downloadProgressStore.set(data.videoId, {
       isDownloading: true,
       isDone: false,
       progress: data.progress,
       progressType: data.progressType
-    });
-    if (!wasSet) {
-      return;
-    }
-
-    emitCrossWorldEvent({
-      type: CrossWorldEvent.ProgressUpdate,
-      data
     });
   });
 }

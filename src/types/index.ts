@@ -59,6 +59,7 @@ export type {
 } from "./settings-types";
 
 export type {
+  DownloadProgressEntry,
   DownloadRequest,
   ProcessStreamData,
   StreamData,

@@ -66,7 +66,7 @@ export function createSyncedMap<T>(messenger: MapMessenger<T>) {
     set(mapKey: string, value: T) {
       const isSetKeySuppressed = suppressed.has(mapKey);
       if (isSetKeySuppressed) {
-        return;
+        return false;
       }
 
       map.set(mapKey, value);
@@ -77,6 +77,8 @@ export function createSyncedMap<T>(messenger: MapMessenger<T>) {
           mapValue: value
         });
       }
+
+      return true;
     },
     setLocal(mapKey: string, value: T) {
       const isLocalKeySuppressed = suppressed.has(mapKey);

@@ -1,4 +1,3 @@
-import { CrossWorldEvent, emitCrossWorldEvent } from "@/lib/messaging/cross-world-messenger";
 import { statusProgressItem } from "@/lib/storage/storage";
 import { downloadProgressStore } from "@/lib/ui/synced-stores.svelte";
 import { ProgressType } from "@/types";
@@ -27,36 +26,14 @@ function resolveOrphan(videoId: string) {
     progress: 1,
     progressType: ProgressType.FFmpeg
   });
-  emitCrossWorldEvent({
-    type: CrossWorldEvent.ProgressUpdate,
-    data: {
-      videoId,
-      progress: 1,
-      progressType: ProgressType.FFmpeg
-    }
-  });
 }
 
 export function syncStoredProgressToStore(
   storedProgress: Awaited<ReturnType<typeof statusProgressItem.getValue>>
 ) {
-  for (const [videoId, { progress, progressType }] of Object.entries(storedProgress)) {
+  for (const [videoId, entry] of Object.entries(storedProgress)) {
     markCommitted(videoId);
-    const isComplete = progress >= 1 && progressType === ProgressType.FFmpeg;
-    downloadProgressStore.set(videoId, {
-      isDownloading: !isComplete,
-      isDone: isComplete,
-      progress,
-      progressType
-    });
-    emitCrossWorldEvent({
-      type: CrossWorldEvent.ProgressUpdate,
-      data: {
-        videoId,
-        progress,
-        progressType
-      }
-    });
+    downloadProgressStore.set(videoId, entry);
   }
 
   for (const videoId of downloadProgressStore.keys()) {

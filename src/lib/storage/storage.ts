@@ -1,5 +1,5 @@
 import { INITIAL_OPTIONS } from "@/lib/youtube/video-helpers";
-import type { InterruptedDownload, Options, ProgressType } from "@/types";
+import type { DownloadProgressEntry, InterruptedDownload, Options } from "@/types";
 
 interface StorageItem<T> {
   getValue(): Promise<T>;
@@ -38,12 +38,12 @@ export const videoDetailsItem = storage.defineItem<Record<string, VideoDetail>>(
   fallback: {}
 });
 
-export const statusProgressItem = storage.defineItem<Record<string, {
-  progress: number;
-  progressType: ProgressType;
-}>>("local:statusProgress", {
-  fallback: {}
-});
+export const statusProgressItem = storage.defineItem<Record<string, DownloadProgressEntry>>(
+  "local:statusProgress",
+  {
+    fallback: {}
+  }
+);
 
 export const isFFmpegReadyItem = storage.defineItem<boolean>("session:isFFmpegReady", { fallback: false });
 

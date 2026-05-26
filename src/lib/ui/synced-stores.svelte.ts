@@ -5,7 +5,7 @@ import {
   createSyncedSignal
 } from "@/lib/ui/synced-signal.svelte";
 import { INITIAL_OPTIONS } from "@/lib/youtube/video-helpers";
-import type { InterruptedDownload, Options, ProgressType, VideoData } from "@/types";
+import type { DownloadProgressEntry, InterruptedDownload, Options, VideoData } from "@/types";
 
 export const CONTENT_OPTIONS = $state<Options>(INITIAL_OPTIONS);
 
@@ -24,17 +24,9 @@ export const sabrCredentials = createSyncedSignal({
 export const videoDataStore = createSyncedMap(createMapMessenger<VideoData>("video-data"));
 export const videoDataFailedStore = createSyncedMap(createMapMessenger<boolean>("video-data-failed"));
 
-export const downloadProgressStore = createSyncedMap(
-  createMapMessenger<{
-    isDownloading: boolean;
-    isDone: boolean;
-    progress: number;
-    progressType: ProgressType | "";
-    isFailed?: boolean;
-  }>("download-progress")
-);
+export const downloadProgressStore = createSyncedMap(createMapMessenger<DownloadProgressEntry>("download-progress"));
 
-export type DownloadProgressState = Parameters<(typeof downloadProgressStore)["set"]>[1];
+export type DownloadProgressState = DownloadProgressEntry;
 
 export const playlistMetadataSignal = createSyncedSignal({
   messenger: createSignalMessenger<{
