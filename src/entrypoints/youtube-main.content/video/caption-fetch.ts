@@ -17,13 +17,24 @@ const CAPTION_FORMAT_VTT: CaptionFormat = "vtt";
 
 type CaptionBaseParams = { [CAPTION_FORMAT_PARAM]: CaptionFormat };
 type CaptionTranslatedParams = CaptionBaseParams & { [CAPTION_TLANG_PARAM]: string };
+type CaptionParams = CaptionBaseParams | CaptionTranslatedParams;
+
+const TWO_DIGIT_PAD = 2;
+const THREE_DIGIT_PAD = 3;
+const PAD_CHAR = "0";
 
 function formatWebVttTimestamp(seconds: number) {
   const hours = Math.floor(seconds / SECONDS_PER_HOUR);
   const minutes = Math.floor((seconds % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE);
   const remainingSeconds = Math.floor(seconds % SECONDS_PER_MINUTE);
   const milliseconds = Math.round((seconds % 1) * MILLISECONDS_PER_SECOND);
-  return `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(remainingSeconds).padStart(2, "0")}.${String(milliseconds).padStart(3, "0")}`;
+
+  const hoursPadded = String(hours).padStart(TWO_DIGIT_PAD, PAD_CHAR);
+  const minutesPadded = String(minutes).padStart(TWO_DIGIT_PAD, PAD_CHAR);
+  const secondsPadded = String(remainingSeconds).padStart(TWO_DIGIT_PAD, PAD_CHAR);
+  const millisecondsPadded = String(milliseconds).padStart(THREE_DIGIT_PAD, PAD_CHAR);
+
+  return `${hoursPadded}:${minutesPadded}:${secondsPadded}.${millisecondsPadded}`;
 }
 
 function cuesToWebVtt(cues: TextTrackCueList) {
@@ -89,13 +100,15 @@ export async function fetchCaptionWebVttData({ captionTracks, videoId }: FetchCa
       const sourceVssId = translationLanguageCode ? track.sourceTrackVssId! : track.vssId;
       const baseUrl = freshUrls.get(sourceVssId) ?? track.baseUrl;
       const url = new URL(baseUrl);
-      const params: CaptionBaseParams | CaptionTranslatedParams = translationLanguageCode
+      const captionParams: CaptionParams = translationLanguageCode
         ? {
           [CAPTION_FORMAT_PARAM]: CAPTION_FORMAT_VTT,
           [CAPTION_TLANG_PARAM]: translationLanguageCode
         }
         : { [CAPTION_FORMAT_PARAM]: CAPTION_FORMAT_VTT };
-      url.search = new URLSearchParams(params).toString();
+      for (const [key, value] of new URLSearchParams(captionParams)) {
+        url.searchParams.set(key, value);
+      }
 
       return fetchWebVttViaTrackElement(url.toString());
     })
