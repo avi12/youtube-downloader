@@ -1,5 +1,5 @@
 import { registerButtonDataHandler } from "./button-data-handler";
-import ctaButtonStyles from "./cta-button.css?inline";
+import "./cta-button.css";
 import { cancelActiveDownload, startDownload } from "./video/download";
 import { CrossWorldMessage, crossWorldMessenger, dispatchButtonClick } from "@/lib/messaging/cross-world-messenger";
 import {
@@ -10,24 +10,10 @@ import {
 import { ButtonSize, ButtonState, ButtonStyle, ButtonType } from "@/types";
 
 const SNACKBAR_VIEW_BUTTON_ID = "ytdl-snackbar-view";
-const CTA_STYLES_ELEMENT_ID = "ytdl-cta-styles";
 const SETTINGS_OPTIONS_RENDERER_TAG = "ytd-settings-options-renderer";
 const SETTINGS_OPTIONS_ID_SELECTOR = "#options";
 
-function injectCtaButtonStyles() {
-  const isCtaStylesAlreadyInjected = !!document.getElementById(CTA_STYLES_ELEMENT_ID);
-  if (isCtaStylesAlreadyInjected) {
-    return;
-  }
-
-  const elStyle = document.createElement("style");
-  elStyle.id = CTA_STYLES_ELEMENT_ID;
-  elStyle.textContent = ctaButtonStyles;
-  document.head.append(elStyle);
-}
-
 export function registerCrossWorldHandlers() {
-  injectCtaButtonStyles();
   crossWorldMessenger.onMessage(CrossWorldMessage.DownloadRequest, ({ data }) => {
     void startDownload(data);
   });
