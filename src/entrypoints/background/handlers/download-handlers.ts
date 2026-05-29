@@ -116,7 +116,7 @@ export function registerDownloadHandlers() {
   });
 
   onMessage(MessageType.StartBackgroundDownload, async ({ data, sender }) => {
-    let tabId = sender.tab?.id ?? getTabIdsForVideo(data.videoId)[0];
+    let tabId = data.originTabId ?? sender.tab?.id ?? getTabIdsForVideo(data.videoId)[0];
     const isTabIdMissing = !tabId;
     if (isTabIdMissing) {
       const [ytTab] = await browser.tabs.query({

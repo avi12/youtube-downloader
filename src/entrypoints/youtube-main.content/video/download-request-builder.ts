@@ -23,7 +23,7 @@ type BuildEnrichedRequestParams = {
   resolved: ResolvedDownloadData;
 };
 export async function buildEnrichedRequest({ params, resolved }: BuildEnrichedRequestParams) {
-  const { type, videoId, videoItag, audioItag, filenameOutput, isIframeFallback } = params;
+  const { type, videoId, videoItag, audioItag, filenameOutput, isIframeFallback, originTabId } = params;
   const { playlistId, playlistTitle, playlistTotalCount } = params;
   const {
     sabrConfig, poToken, sabrUrl, videoFormat, audioFormat, extraAudioFormats,
@@ -55,7 +55,8 @@ export async function buildEnrichedRequest({ params, resolved }: BuildEnrichedRe
     progressiveUrl,
     playlistId,
     playlistTitle,
-    playlistTotalCount
+    playlistTotalCount,
+    originTabId
   };
 }
 

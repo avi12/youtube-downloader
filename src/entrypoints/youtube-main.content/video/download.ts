@@ -26,7 +26,8 @@ export async function startDownload(params: Pick<DownloadRequest,
   "type" | "videoId" | "videoItag" | "audioItag" | "audioTrackId" |
   "selectedCaptionVssId" | "filenameOutput" | "isIframeFallback" |
   "downloadExtras" | "includeAutoDubbing" |
-  "playlistId" | "playlistTitle" | "playlistTotalCount"
+  "playlistId" | "playlistTitle" | "playlistTotalCount" |
+  "originTabId"
 >) {
   const isIframeFallbackOnTop = params.isIframeFallback && self === top;
   if (isIframeFallbackOnTop) {

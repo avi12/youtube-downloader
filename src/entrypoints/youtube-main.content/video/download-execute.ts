@@ -77,7 +77,8 @@ export type DownloadParams = Pick<DownloadRequest,
   "type" | "videoId" | "videoItag" | "audioItag" | "audioTrackId" |
   "selectedCaptionVssId" | "filenameOutput" | "isIframeFallback" |
   "downloadExtras" | "downloadExtraCaptions" | "includeAutoDubbing" |
-  "playlistId" | "playlistTitle" | "playlistTotalCount"
+  "playlistId" | "playlistTitle" | "playlistTotalCount" |
+  "originTabId"
 >;
 
 type ResolveAndDispatchParams = {

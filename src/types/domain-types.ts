@@ -32,6 +32,7 @@ export type DownloadRequest = {
   resolvedAudioUrl?: string | null;
   resolvedExtraAudioUrls?: (string | null)[];
   progressiveUrl?: string | null;
+  originTabId?: number;
 };
 
 export type StreamData = {

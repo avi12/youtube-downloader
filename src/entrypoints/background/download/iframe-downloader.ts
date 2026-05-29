@@ -82,7 +82,8 @@ export async function downloadViaWatchPage({ data, tabId }: DownloadViaWatchPage
   try {
     await prepareIframe({
       ...data,
-      isIframeFallback: true
+      isIframeFallback: true,
+      originTabId: tabId
     });
 
     if (tabId >= 0) {
