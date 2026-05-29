@@ -1,10 +1,10 @@
 import { sendProgressUpdate } from "./progress-fetch";
+import { CAPTION_ESTIMATED_BYTES } from "@/lib/youtube/download-progress";
 import { ProgressType } from "@/types";
 
 type CreateCdnProgressTrackerParams = {
   videoId: string;
   tabId: number;
-  totalStages: number;
   captionCount: number;
   hasVideo: boolean;
   hasAudio: boolean;
@@ -16,7 +16,7 @@ type CreateCdnProgressTrackerParams = {
   initialAudioBytes: number;
 };
 export function createCdnProgressTracker({
-  videoId, tabId, totalStages, captionCount, hasVideo, hasAudio, extraCount,
+  videoId, tabId, captionCount, hasVideo, hasAudio, extraCount,
   videoExpectedBytes, audioExpectedBytes, extraExpectedBytesArray, initialVideoBytes, initialAudioBytes
 }: CreateCdnProgressTrackerParams) {
   let videoReceivedBytes = initialVideoBytes;
@@ -24,41 +24,51 @@ export function createCdnProgressTracker({
   let videoTotalBytes = videoExpectedBytes;
   let audioTotalBytes = audioExpectedBytes;
   const extraReceivedBytesArray = Array.from({ length: extraCount }, () => 0);
+  const captionBytesTotal = captionCount * CAPTION_ESTIMATED_BYTES;
 
   function reportProgress() {
-    if (totalStages === 0) {
+    let totalExpected = captionBytesTotal;
+    if (hasVideo) {
+      totalExpected += videoTotalBytes || videoReceivedBytes;
+    }
+
+    if (hasAudio) {
+      totalExpected += audioTotalBytes || audioReceivedBytes;
+    }
+
+    for (const [i, expected] of extraExpectedBytesArray.entries()) {
+      totalExpected += expected || extraReceivedBytesArray[i];
+    }
+
+    if (totalExpected === 0) {
       return;
     }
 
-    const mediaStages = totalStages - captionCount;
-    let mediaCompleted = 0;
+    let received = captionBytesTotal;
     if (hasVideo) {
       const expected = videoTotalBytes || videoReceivedBytes;
       if (expected > 0) {
-        mediaCompleted += Math.min(videoReceivedBytes / expected, 1);
+        received += Math.min(videoReceivedBytes, expected);
       }
     }
 
     if (hasAudio) {
       const expected = audioTotalBytes || audioReceivedBytes;
       if (expected > 0) {
-        mediaCompleted += Math.min(audioReceivedBytes / expected, 1);
+        received += Math.min(audioReceivedBytes, expected);
       }
     }
 
     for (const [i, expected] of extraExpectedBytesArray.entries()) {
       const effectiveExpected = expected || extraReceivedBytesArray[i];
       if (effectiveExpected > 0) {
-        mediaCompleted += Math.min(extraReceivedBytesArray[i] / effectiveExpected, 1);
+        received += Math.min(extraReceivedBytesArray[i], effectiveExpected);
       }
     }
 
-    const captionCompleted = mediaCompleted >= mediaStages ? captionCount : 0;
-    const completed = mediaCompleted + captionCompleted;
-
     void sendProgressUpdate({
       videoId,
-      progress: Math.min(completed / totalStages, 1),
+      progress: Math.min(received / totalExpected, 1),
       progressType: ProgressType.Video,
       tabId
     });
