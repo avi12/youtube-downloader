@@ -40,7 +40,7 @@
 
   const percentFormatter = new Intl.NumberFormat(browser.i18n.getUILanguage(), {
     style: "percent",
-    maximumFractionDigits: 1
+    maximumFractionDigits: 0
   });
 
   const appState = createAppState(
