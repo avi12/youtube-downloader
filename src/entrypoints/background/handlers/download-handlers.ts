@@ -200,8 +200,18 @@ export function registerDownloadHandlers() {
     });
   });
 
-  onMessage(MessageType.ForwardProgressUpdate, ({ data }) => {
+  onMessage(MessageType.ForwardProgressUpdate, async ({ data }) => {
     const { tabId, ...progressData } = data;
+    await mutateStorageItem({
+      item: statusProgressItem,
+      mutator(current) {
+        current[progressData.videoId] = {
+          progress: progressData.progress,
+          progressType: progressData.progressType
+        };
+      }
+    });
+
     if (tabId >= 0) {
       void sendMessage(MessageType.UpdateDownloadProgress, progressData, tabId);
     }

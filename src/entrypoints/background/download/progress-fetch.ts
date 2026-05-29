@@ -49,14 +49,13 @@ export async function sendProgressUpdate({ videoId, progress, progressType, tabI
     lastProgressTimestamps.set(videoId, now);
   }
 
-  await writeProgressToStorage({
-    videoId,
-    progress,
-    progressType
-  });
-
   const isWorker = isServiceWorker();
   if (isWorker) {
+    await writeProgressToStorage({
+      videoId,
+      progress,
+      progressType
+    });
     await sendMessage(MessageType.UpdateDownloadProgress, {
       videoId,
       progress,
