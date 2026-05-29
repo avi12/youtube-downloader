@@ -20,6 +20,7 @@ import {
 import { registerProxyFetchHandler } from "./proxy-fetch-handler";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
+import { mutateStorageItem, statusProgressItem } from "@/lib/storage/storage";
 import { ProgressType } from "@/types";
 
 export function registerDownloadHandlers() {
@@ -203,6 +204,27 @@ export function registerDownloadHandlers() {
     const { tabId, ...progressData } = data;
     if (tabId >= 0) {
       void sendMessage(MessageType.UpdateDownloadProgress, progressData, tabId);
+    }
+  });
+
+  onMessage(MessageType.ReportPageProgress, async ({ data, sender }) => {
+    const tabId = sender.tab?.id ?? getTabIdsForVideo(data.videoId)[0] ?? -1;
+    await mutateStorageItem({
+      item: statusProgressItem,
+      mutator(current) {
+        current[data.videoId] = {
+          progress: data.progress,
+          progressType: data.progressType
+        };
+      }
+    });
+
+    if (tabId >= 0) {
+      await sendMessage(MessageType.UpdateDownloadProgress, {
+        videoId: data.videoId,
+        progress: data.progress,
+        progressType: data.progressType
+      }, tabId);
     }
   });
 }

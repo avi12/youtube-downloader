@@ -126,10 +126,6 @@ export async function resolveAndDispatch({ params, abortSignal }: ResolveAndDisp
     selectedCaptionVssId,
     downloadExtras: downloadExtraCaptions
   });
-  const captionVttDataPromise = fetchCaptionWebVttData({
-    captionTracks: orderedCaptionTracks,
-    videoId
-  });
   const { videoFormat, audioFormat } = selectFormats({
     videoData: cachedVideoData,
     type,
@@ -145,6 +141,15 @@ export async function resolveAndDispatch({ params, abortSignal }: ResolveAndDisp
       includeAutoDubbing
     })
     : [];
+  const totalStages = (videoFormat ? 1 : 0)
+    + (audioFormat ? 1 : 0)
+    + extraAudioFormats.length
+    + orderedCaptionTracks.length;
+  const captionVttDataPromise = fetchCaptionWebVttData({
+    captionTracks: orderedCaptionTracks,
+    videoId,
+    totalStages
+  });
 
   await generatePoTokenIfNeeded(cachedVideoData);
   const credentials = await resolveCredentialsWithRetry();

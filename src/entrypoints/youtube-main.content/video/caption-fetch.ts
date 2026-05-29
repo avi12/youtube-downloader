@@ -1,6 +1,7 @@
 import { fetchFreshCaptionUrls } from "./caption-urls";
+import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { uint8ToBase64 } from "@/lib/utils/binary";
-import { type CaptionTrack } from "@/types";
+import { ProgressType, type CaptionTrack } from "@/types";
 
 export { resolveOrderedCaptionTracks } from "./caption-urls";
 
@@ -66,17 +67,19 @@ async function fetchWebVttViaTrackElement(url: string) {
 type FetchCaptionWebVttDataParams = {
   captionTracks: CaptionTrack[];
   videoId: string;
+  totalStages?: number;
 };
-export async function fetchCaptionWebVttData({ captionTracks, videoId }: FetchCaptionWebVttDataParams) {
+export async function fetchCaptionWebVttData({ captionTracks, videoId, totalStages }: FetchCaptionWebVttDataParams) {
   const hasCaptionTracks = captionTracks.length > 0;
   if (!hasCaptionTracks) {
     return [];
   }
 
   const freshUrls = await fetchFreshCaptionUrls(videoId);
+  const captionStagesAcrossTotal = totalStages && totalStages > 0 ? totalStages : captionTracks.length;
 
   const results: (string | null)[] = [];
-  for (const track of captionTracks) {
+  for (const [iTrack, track] of captionTracks.entries()) {
     const isTranslated = !!track.translationLanguageCode;
     const sourceVssId = isTranslated ? track.sourceTrackVssId! : track.vssId;
     const baseUrl = freshUrls.get(sourceVssId) ?? track.baseUrl;
@@ -88,6 +91,13 @@ export async function fetchCaptionWebVttData({ captionTracks, videoId }: FetchCa
     }
 
     results.push(await fetchWebVttViaTrackElement(url.toString()));
+
+    const progress = (iTrack + 1) / captionStagesAcrossTotal;
+    void crossWorldMessenger.sendMessage(CrossWorldMessage.ReportPageProgress, {
+      videoId,
+      progress,
+      progressType: ProgressType.Video
+    });
   }
   return results;
 }

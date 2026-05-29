@@ -27,9 +27,13 @@ export function createProgressAccumulator({
       referenceFormat: audioFormat
     });
   });
-  const isVideoStagePresent = !isAudioOnly && !!videoFormat;
+  const isVideoStagePresent = !isAudioOnly && videoPartBytes > 0;
+  const isAudioStagePresent = audioPartBytes > 0;
   const additionalFormatCount = additionalFormats.length;
-  const totalStages = captionCount + (isVideoStagePresent ? 1 : 0) + 1 + additionalFormatCount;
+  const totalStages = captionCount
+    + (isVideoStagePresent ? 1 : 0)
+    + (isAudioStagePresent ? 1 : 0)
+    + additionalFormatCount;
 
   let videoReceivedBytes = 0;
   let audioReceivedBytes = 0;
@@ -40,15 +44,12 @@ export function createProgressAccumulator({
       return 0;
     }
 
-    const mediaStages = totalStages - captionCount;
     let mediaCompleted = 0;
-    const hasVideoBytes = videoPartBytes > 0;
-    const isVideoProgressPresent = !isAudioOnly && hasVideoBytes;
-    if (isVideoProgressPresent) {
+    if (isVideoStagePresent) {
       mediaCompleted += Math.min(videoReceivedBytes / videoPartBytes, 1);
     }
 
-    if (audioPartBytes > 0) {
+    if (isAudioStagePresent) {
       mediaCompleted += Math.min(audioReceivedBytes / audioPartBytes, 1);
     }
 
@@ -58,8 +59,10 @@ export function createProgressAccumulator({
       }
     }
 
-    const captionCompleted = mediaCompleted >= mediaStages ? captionCount : 0;
-    return Math.min((mediaCompleted + captionCompleted) / totalStages, DOWNLOAD_PROGRESS_CAP);
+    // Captions are pre-fetched on the page before the worker starts, so by the
+    // time we reach this point they're already complete and contribute their
+    // proportional share of the download phase.
+    return Math.min((mediaCompleted + captionCount) / totalStages, DOWNLOAD_PROGRESS_CAP);
   }
 
   function sendUpdate() {

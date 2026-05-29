@@ -35,7 +35,8 @@ export const MessageType = {
   RequestWatchPageFallback: "requestWatchPageFallback",
   WorkerDownloadComplete: "workerDownloadComplete",
   ReportWorkerDownloadFailed: "reportWorkerDownloadFailed",
-  ForwardProgressUpdate: "forwardProgressUpdate"
+  ForwardProgressUpdate: "forwardProgressUpdate",
+  ReportPageProgress: "reportPageProgress"
 } as const;
 
 export type BackgroundProxyFetchRequest = {
@@ -243,6 +244,12 @@ export interface ProtocolMap {
 
   forwardProgressUpdate(data: ProgressUpdate & {
     tabId: number;
+  }): void;
+
+  reportPageProgress(data: {
+    videoId: string;
+    progress: number;
+    progressType: ProgressType;
   }): void;
 }
 

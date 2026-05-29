@@ -72,4 +72,15 @@ export function registerDownloadProgressHandlers() {
   crossWorldMessenger.onMessage(CrossWorldMessage.DownloadBlobUrl, ({ data }) => {
     void sendMessage(MessageType.DownloadBlobUrl, data);
   });
+
+  crossWorldMessenger.onMessage(CrossWorldMessage.ReportPageProgress, ({ data }) => {
+    downloadProgressStore.unsuppress(data.videoId);
+    downloadProgressStore.setLocal(data.videoId, {
+      isDownloading: true,
+      isDone: false,
+      progress: data.progress,
+      progressType: data.progressType
+    });
+    void sendMessage(MessageType.ReportPageProgress, data);
+  });
 }

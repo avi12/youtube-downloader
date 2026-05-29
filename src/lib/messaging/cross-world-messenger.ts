@@ -36,7 +36,8 @@ export const CrossWorldMessage = {
   SetSettingsOptionsData: "setSettingsOptionsData",
   ButtonClick: "buttonClick",
   ProgressUpdate: "progressUpdate",
-  DownloadBlobUrl: "downloadBlobUrl"
+  DownloadBlobUrl: "downloadBlobUrl",
+  ReportPageProgress: "reportPageProgress"
 } as const;
 
 export interface PageMessengerSchema {
@@ -127,6 +128,11 @@ export interface PageMessengerSchema {
     blobUrl: string;
     filename: string;
     videoId: string;
+  }): void;
+  [CrossWorldMessage.ReportPageProgress](data: {
+    videoId: string;
+    progress: number;
+    progressType: ProgressType;
   }): void;
 }
 
