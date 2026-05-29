@@ -1,4 +1,5 @@
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
+import { mutateStorageItem, statusProgressItem } from "@/lib/storage/storage";
 import { ProgressType } from "@/types";
 
 function isServiceWorker() {
@@ -9,6 +10,23 @@ export { fetchWithProgress } from "./cdn-fetch";
 
 const PROGRESS_THROTTLE_INTERVAL_MS = 1000;
 const lastProgressTimestamps = new Map<string, number>();
+
+type WriteProgressToStorageParams = {
+  videoId: string;
+  progress: number;
+  progressType: ProgressType;
+};
+async function writeProgressToStorage({ videoId, progress, progressType }: WriteProgressToStorageParams) {
+  await mutateStorageItem({
+    item: statusProgressItem,
+    mutator(current) {
+      current[videoId] = {
+        progress,
+        progressType
+      };
+    }
+  });
+}
 
 type SendProgressUpdateParams = {
   videoId: string;
@@ -30,6 +48,12 @@ export async function sendProgressUpdate({ videoId, progress, progressType, tabI
 
     lastProgressTimestamps.set(videoId, now);
   }
+
+  await writeProgressToStorage({
+    videoId,
+    progress,
+    progressType
+  });
 
   const isWorker = isServiceWorker();
   if (isWorker) {
