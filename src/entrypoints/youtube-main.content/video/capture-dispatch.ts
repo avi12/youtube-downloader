@@ -108,6 +108,65 @@ export async function buildAndDispatchVideoData({ playerResponse }: {
 
 const PLAYER_RESPONSE_POLL_ATTEMPTS = 20;
 const PLAYER_RESPONSE_POLL_INTERVAL_MS = 250;
+const IFRAME_DOWNLOAD_PARAM = "ytdl";
+const MAX_IFRAME_UNPLAYABLE_RELOADS = 5;
+const IFRAME_RELOAD_COUNT_KEY = "__ytdlIframeUnplayableReloads";
+
+function isInDownloadIframe() {
+  const isNestedFrame = self !== top;
+  if (!isNestedFrame) {
+    return false;
+  }
+
+  return new URLSearchParams(location.search).get(IFRAME_DOWNLOAD_PARAM) === "1";
+}
+
+function readReloadCount() {
+  const stored = Number(sessionStorage.getItem(IFRAME_RELOAD_COUNT_KEY));
+  return Number.isFinite(stored) ? stored : 0;
+}
+
+function reloadUnplayableIframe() {
+  const reloadCount = readReloadCount();
+  const isExhausted = reloadCount >= MAX_IFRAME_UNPLAYABLE_RELOADS;
+  if (isExhausted) {
+    return false;
+  }
+
+  sessionStorage.setItem(IFRAME_RELOAD_COUNT_KEY, String(reloadCount + 1));
+  console.warn(`[ytdl:iframe] Player response UNPLAYABLE; reloading iframe (${reloadCount + 1}/${MAX_IFRAME_UNPLAYABLE_RELOADS})`);
+  location.reload();
+  return true;
+}
+
+const PollOutcome = {
+  Ready: "ready",
+  RetriedAsync: "retried",
+  Wait: "wait"
+} as const;
+
+type PollOutcome = (typeof PollOutcome)[keyof typeof PollOutcome];
+
+async function tryDispatchOnce(isDownloadIframe: boolean): Promise<PollOutcome> {
+  const playerResponse = window.ytInitialPlayerResponse ?? null;
+  const hasVideoId = !!playerResponse?.videoDetails?.videoId;
+  if (!hasVideoId) {
+    return PollOutcome.Wait;
+  }
+
+  const isUnplayable = playerResponse.playabilityStatus?.status === PlayabilityStatus.Unplayable;
+  if (isUnplayable && isDownloadIframe && reloadUnplayableIframe()) {
+    return PollOutcome.RetriedAsync;
+  }
+
+  if (isUnplayable) {
+    return PollOutcome.Wait;
+  }
+
+  sessionStorage.removeItem(IFRAME_RELOAD_COUNT_KEY);
+  await buildAndDispatchVideoData({ playerResponse });
+  return PollOutcome.Ready;
+}
 
 export async function extractAndDispatchVideoData() {
   const isOnWatchPage = location.pathname.startsWith(WATCH_PATHNAME);
@@ -115,12 +174,11 @@ export async function extractAndDispatchVideoData() {
     return;
   }
 
+  const isDownloadIframe = isInDownloadIframe();
   for (let attempt = 0; attempt < PLAYER_RESPONSE_POLL_ATTEMPTS; attempt++) {
-    const playerResponse = window.ytInitialPlayerResponse ?? null;
-    const isReady = !!playerResponse?.videoDetails?.videoId
-      && playerResponse.playabilityStatus?.status !== PlayabilityStatus.Unplayable;
-    if (isReady) {
-      await buildAndDispatchVideoData({ playerResponse });
+    const outcome = await tryDispatchOnce(isDownloadIframe);
+    const isTerminal = outcome === PollOutcome.Ready || outcome === PollOutcome.RetriedAsync;
+    if (isTerminal) {
       return;
     }
 

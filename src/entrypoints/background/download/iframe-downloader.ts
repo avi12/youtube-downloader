@@ -7,7 +7,7 @@ import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
 import type { DownloadRequest } from "@/types";
 
-const IFRAME_READY_TIMEOUT_MS = 30_000;
+const IFRAME_READY_TIMEOUT_MS = 60_000;
 const YOUTUBE_WATCH_BASE_URL = "https://www.youtube.com/watch";
 
 const pendingIframeReady = new Map<string, {
