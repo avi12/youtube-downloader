@@ -67,16 +67,18 @@ async function fetchWebVttViaTrackElement(url: string) {
 type FetchCaptionWebVttDataParams = {
   captionTracks: CaptionTrack[];
   videoId: string;
-  totalStages?: number;
+  captionBytesPerUnit: number;
+  totalExpectedBytes: number;
 };
-export async function fetchCaptionWebVttData({ captionTracks, videoId, totalStages }: FetchCaptionWebVttDataParams) {
+export async function fetchCaptionWebVttData({
+  captionTracks, videoId, captionBytesPerUnit, totalExpectedBytes
+}: FetchCaptionWebVttDataParams) {
   const hasCaptionTracks = captionTracks.length > 0;
   if (!hasCaptionTracks) {
     return [];
   }
 
   const freshUrls = await fetchFreshCaptionUrls(videoId);
-  const captionStagesAcrossTotal = totalStages && totalStages > 0 ? totalStages : captionTracks.length;
 
   const results: (string | null)[] = [];
   for (const [iTrack, track] of captionTracks.entries()) {
@@ -92,12 +94,15 @@ export async function fetchCaptionWebVttData({ captionTracks, videoId, totalStag
 
     results.push(await fetchWebVttViaTrackElement(url.toString()));
 
-    const progress = (iTrack + 1) / captionStagesAcrossTotal;
-    void crossWorldMessenger.sendMessage(CrossWorldMessage.ReportPageProgress, {
-      videoId,
-      progress,
-      progressType: ProgressType.Video
-    });
+    const isTotalKnown = totalExpectedBytes > 0;
+    if (isTotalKnown) {
+      const progress = ((iTrack + 1) * captionBytesPerUnit) / totalExpectedBytes;
+      void crossWorldMessenger.sendMessage(CrossWorldMessage.ReportPageProgress, {
+        videoId,
+        progress,
+        progressType: ProgressType.Video
+      });
+    }
   }
   return results;
 }

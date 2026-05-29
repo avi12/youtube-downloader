@@ -1,5 +1,6 @@
 import { sendProgressUpdate } from "./progress-fetch";
 import { parseContentLength, estimateFormatBytes } from "./sabr-utils";
+import { CAPTION_ESTIMATED_BYTES } from "@/lib/youtube/download-progress";
 import { ProgressType } from "@/types";
 import type { AdaptiveFormatItem } from "@/types";
 
@@ -29,40 +30,42 @@ export function createProgressAccumulator({
   });
   const isVideoStagePresent = !isAudioOnly && videoPartBytes > 0;
   const isAudioStagePresent = audioPartBytes > 0;
-  const additionalFormatCount = additionalFormats.length;
-  const totalStages = captionCount
-    + (isVideoStagePresent ? 1 : 0)
-    + (isAudioStagePresent ? 1 : 0)
-    + additionalFormatCount;
+  const captionBytesTotal = captionCount * CAPTION_ESTIMATED_BYTES;
+  const totalExpectedBytes = videoPartBytes
+    + audioPartBytes
+    + extraExpectedBytesArray.reduce((sum, bytes) => sum + bytes, 0)
+    + captionBytesTotal;
 
   let videoReceivedBytes = 0;
   let audioReceivedBytes = 0;
   const extraReceivedBytesArray = additionalFormats.map(() => 0);
 
   function computeProgress() {
-    if (totalStages === 0) {
+    if (totalExpectedBytes === 0) {
       return 0;
     }
 
-    let mediaCompleted = 0;
+    let received = 0;
     if (isVideoStagePresent) {
-      mediaCompleted += Math.min(videoReceivedBytes / videoPartBytes, 1);
+      received += Math.min(videoReceivedBytes, videoPartBytes);
     }
 
     if (isAudioStagePresent) {
-      mediaCompleted += Math.min(audioReceivedBytes / audioPartBytes, 1);
+      received += Math.min(audioReceivedBytes, audioPartBytes);
     }
 
     for (const [i, expected] of extraExpectedBytesArray.entries()) {
       if (expected > 0) {
-        mediaCompleted += Math.min(extraReceivedBytesArray[i] / expected, 1);
+        received += Math.min(extraReceivedBytesArray[i], expected);
       }
     }
 
     // Captions are pre-fetched on the page before the worker starts, so by the
     // time we reach this point they're already complete and contribute their
-    // proportional share of the download phase.
-    return Math.min((mediaCompleted + captionCount) / totalStages, DOWNLOAD_PROGRESS_CAP);
+    // (small) byte share of the download phase.
+    received += captionBytesTotal;
+
+    return Math.min(received / totalExpectedBytes, DOWNLOAD_PROGRESS_CAP);
   }
 
   function sendUpdate() {

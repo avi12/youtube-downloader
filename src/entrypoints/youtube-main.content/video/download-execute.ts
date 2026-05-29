@@ -9,10 +9,20 @@ import { buildEnrichedRequest, fetchCaptionWebVttData } from "./download-request
 import { generatePoTokenIfNeeded, videoDataCache } from "./video-data";
 import { crossWorldMessenger, CrossWorldMessage } from "@/lib/messaging/cross-world-messenger";
 import { getCompatibleFilename, splitFilenameAndExtension } from "@/lib/utils/filename";
+import { CAPTION_ESTIMATED_BYTES } from "@/lib/youtube/download-progress";
 import { isVideoDataExpired } from "@/lib/youtube/video-helpers";
-import type { CaptionTrack, DownloadRequest, TranslationLanguage } from "@/types";
+import type { AdaptiveFormatItem, CaptionTrack, DownloadRequest, TranslationLanguage } from "@/types";
 
 const TRANSLATED_CAPTION_VSSID_PREFIX = "t.";
+
+function readContentLength(format: AdaptiveFormatItem | null) {
+  if (!format?.contentLength) {
+    return 0;
+  }
+
+  const bytes = Number(format.contentLength);
+  return Number.isFinite(bytes) && bytes > 0 ? bytes : 0;
+}
 
 function buildVirtualTranslatedTrack(
   vssId: string,
@@ -141,14 +151,16 @@ export async function resolveAndDispatch({ params, abortSignal }: ResolveAndDisp
       includeAutoDubbing
     })
     : [];
-  const totalStages = (videoFormat ? 1 : 0)
-    + (audioFormat ? 1 : 0)
-    + extraAudioFormats.length
-    + orderedCaptionTracks.length;
+  const captionExpectedBytesTotal = orderedCaptionTracks.length * CAPTION_ESTIMATED_BYTES;
+  const totalExpectedBytes = readContentLength(videoFormat)
+    + readContentLength(audioFormat)
+    + extraAudioFormats.reduce((sum, format) => sum + readContentLength(format), 0)
+    + captionExpectedBytesTotal;
   const captionVttDataPromise = fetchCaptionWebVttData({
     captionTracks: orderedCaptionTracks,
     videoId,
-    totalStages
+    captionBytesPerUnit: CAPTION_ESTIMATED_BYTES,
+    totalExpectedBytes
   });
 
   await generatePoTokenIfNeeded(cachedVideoData);

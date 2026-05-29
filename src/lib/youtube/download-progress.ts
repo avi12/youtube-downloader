@@ -4,6 +4,8 @@ const DOWNLOAD_PHASE_WEIGHT = 70;
 const MUX_PHASE_WEIGHT = 30;
 const MIN_VISIBLE_PERCENT = 0.5;
 
+export const CAPTION_ESTIMATED_BYTES = 50_000;
+
 type CalculateWeightedProgressParams = {
   isDownloading: boolean;
   progress: number;
