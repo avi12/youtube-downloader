@@ -36,10 +36,12 @@
   });
 
   const selectedItem = $derived(findTargetItem(targetGroups, selectedTarget));
-  const estimatedTimeLabel = $derived(buildEstimatedTimeLabel({
-    sizeBytes: entry.size,
-    isSlow: selectedItem?.isSlow ?? false
-  }));
+  const estimatedTimeLabel = $derived(
+    buildEstimatedTimeLabel({
+      sizeBytes: entry.size,
+      isSlow: selectedItem?.isSlow ?? false
+    })
+  );
 
   function startClose(): void {
     isClosing = true;
@@ -116,15 +118,37 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
-    width: 100%;
+    box-sizing: border-box;
+    width: 80vw;
     max-width: 360px;
     padding: 20px;
+    overflow-x: hidden;
     border: none;
     border-radius: 16px;
     background: var(--surface-high);
     color: var(--fg);
     box-shadow: 0 8px 32px rgb(0 0 0 / 12%);
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+    scrollbar-gutter: stable both-edges;
     animation: dialog-in 240ms cubic-bezier(0.34, 1.56, 0.64, 1);
+
+    &::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      border-radius: 4px;
+      background: var(--border);
+    }
+
+    &::-webkit-scrollbar-thumb:hover {
+      background: var(--fg-subtle);
+    }
 
     &::backdrop {
       background: rgb(0 0 0 / 40%);

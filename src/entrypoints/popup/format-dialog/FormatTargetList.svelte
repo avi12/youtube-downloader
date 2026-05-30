@@ -88,8 +88,8 @@
     }
 
     .target-list {
-      display: flex;
-      flex-wrap: wrap;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
       gap: 6px;
     }
 
@@ -97,6 +97,7 @@
       display: flex;
       gap: 6px;
       align-items: center;
+      min-width: 0;
       padding: 6px 12px;
       border: 1px solid var(--border);
       border-radius: 8px;

@@ -241,7 +241,7 @@
               options={audioOptions}
               value={audioSelectValue}
             />
-            {#if !isAudioOnly && isMultipleAudioTracks}
+            {#if !isAudioOnly && !isVideoOnly && isMultipleAudioTracks}
               <tp-yt-paper-toggle-button
                 aria-label="Include all audio tracks"
                 checked={downloadExtras ? "" : undefined}

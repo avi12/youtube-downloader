@@ -39,7 +39,17 @@
     }, CLOSE_ANIMATION_MS);
   }
 
-  $effect(() => completedDownloadsStore.subscribe((_videoId, completed) => {
+  function scheduleDismiss(): void {
+    clearTimeout(dismissTimer ?? undefined);
+    dismissTimer = setTimeout(dismiss, SNACKBAR_DURATION_MS);
+  }
+
+  function cancelDismiss(): void {
+    clearTimeout(dismissTimer ?? undefined);
+    dismissTimer = null;
+  }
+
+  $effect(() => completedDownloadsStore.subscribe(async (_videoId, completed) => {
     downloadId = completed.downloadId;
     filename = completed.filename;
     clearTimeout(closeTimer ?? undefined);
@@ -49,17 +59,16 @@
     requestAnimationFrame(() => {
       isOpened = true;
     });
-    clearTimeout(dismissTimer ?? undefined);
-    void crossWorldMessenger.sendMessage(CrossWorldMessage.OpenSnackbar);
-    dismissTimer = setTimeout(dismiss, SNACKBAR_DURATION_MS);
+    scheduleDismiss();
+    await crossWorldMessenger.sendMessage(CrossWorldMessage.OpenSnackbar);
   }));
 
-  $effect(() => onButtonClick(buttonId => {
+  $effect(() => onButtonClick(async buttonId => {
     const isViewButton = buttonId === VIEW_BUTTON_ID;
     const isViewButtonWithDownload = isViewButton && downloadId !== null;
     if (isViewButtonWithDownload) {
-      void sendMessage(MessageType.RevealDownloadFile, { downloadId: downloadId! });
       dismiss();
+      await sendMessage(MessageType.RevealDownloadFile, { downloadId: downloadId! });
     }
   }));
 
@@ -74,7 +83,9 @@
     class="ytSnackbarContainerSnackbarContainer"
     class:ytSnackbarContainerClosed={isClosing}
     class:ytSnackbarContainerOpened={isOpened}
-    {@attach attachToSnackbar}>
+    {@attach attachToSnackbar}
+    onmouseenter={cancelDismiss}
+    onmouseleave={scheduleDismiss}>
     <snackbar-view-model class="snackbarViewModelHost">
       <div class="snackbarViewModelEngagementBarWrapper">
         <div class="snackbarViewModelAvatarContainer">
