@@ -2,7 +2,6 @@ import { downloadViaCdn } from "../background/download/cdn-downloader";
 import { downloadViaSabr } from "../background/download/sabr-downloader";
 import { buildSubtitleTracks } from "../background/download/stream-chunk-transfer";
 import type { ProcessStreamEndData } from "@/lib/messaging/offscreen-messaging";
-import { stripMimeParams } from "@/lib/utils/containers";
 import { resolveQualityLabel } from "@/lib/youtube/audio-format-helpers";
 import { DownloadType, StreamType } from "@/types";
 import type { DownloadRequest, VideoMetadata } from "@/types";
@@ -160,8 +159,8 @@ function buildStreamEnd({
     captionTracks, captionVttData,
     playlistId, playlistTitle, playlistTotalCount, sourceUrl
   } = request;
-  const videoMimeType = videoFormat ? stripMimeParams(videoFormat.mimeType) : DEFAULT_VIDEO_MIME_TYPE;
-  const audioMimeType = audioFormat ? stripMimeParams(audioFormat.mimeType) : DEFAULT_AUDIO_MIME_TYPE;
+  const videoMimeType = videoFormat?.mimeType ?? DEFAULT_VIDEO_MIME_TYPE;
+  const audioMimeType = audioFormat?.mimeType ?? DEFAULT_AUDIO_MIME_TYPE;
   const subtitleTracks = buildSubtitleTracks({
     captionTracks,
     captionVttData: captionVttData ?? []

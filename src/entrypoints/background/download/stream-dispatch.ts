@@ -3,7 +3,6 @@ import type { DownloadResult } from "./download-result-types";
 import { buildSubtitleTracks, buildTransferJobs } from "./stream-chunk-transfer";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
-import { stripMimeParams } from "@/lib/utils/containers";
 import { resolveQualityLabel } from "@/lib/youtube/audio-format-helpers";
 import { ProgressType } from "@/types";
 import type { DownloadRequest, VideoMetadata } from "@/types";
@@ -34,8 +33,8 @@ export async function dispatchToOffscreen(
   } = request;
   const { videoData, audioData, additionalAudioTracks } = result;
 
-  const resolvedVideoMimeType = videoFormat ? stripMimeParams(videoFormat.mimeType) : FALLBACK_VIDEO_MIME_TYPE;
-  const resolvedAudioMimeType = audioFormat ? stripMimeParams(audioFormat.mimeType) : FALLBACK_AUDIO_MIME_TYPE;
+  const resolvedVideoMimeType = videoFormat?.mimeType ?? FALLBACK_VIDEO_MIME_TYPE;
+  const resolvedAudioMimeType = audioFormat?.mimeType ?? FALLBACK_AUDIO_MIME_TYPE;
   if (!skipChunkTransfer) {
     await Promise.all(
       buildTransferJobs({
