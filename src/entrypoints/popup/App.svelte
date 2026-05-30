@@ -162,9 +162,9 @@
 
       [data-tooltip]::after {
         content: attr(data-tooltip);
-        position: absolute;
-        bottom: calc(100% + 6px);
-        inset-inline-start: 0;
+        position: fixed;
+        bottom: calc(anchor(top) + 6px);
+        inset-inline-start: anchor(start);
         z-index: 10;
         width: max-content;
         max-width: 240px;
