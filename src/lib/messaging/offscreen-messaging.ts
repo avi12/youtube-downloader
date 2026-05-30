@@ -48,6 +48,7 @@ export interface OffscreenProtocolMap {
     playlistTitle?: string;
     playlistTotalCount?: number;
     metadata?: VideoMetadata | null;
+    quality?: string;
   };
   [OffscreenMessageType.CancelProcessing]: {
     videoIds: string[];

@@ -9,7 +9,7 @@ export { enqueueStreamData, cancelDownloadsByIds } from "./stream-processor";
 export const FFMPEG_PROGRESS_CAP = 0.99;
 
 type BuildRecentContextParams = {
-  item: Pick<ProcessStreamData, "videoId" | "filenameOutput" | "metadata" | "tabId">;
+  item: Pick<ProcessStreamData, "videoId" | "filenameOutput" | "metadata" | "tabId" | "quality">;
   extras?: Partial<RecentDownloadContext>;
 };
 export function buildRecentContext({ item, extras }: BuildRecentContextParams) {
@@ -19,6 +19,7 @@ export function buildRecentContext({ item, extras }: BuildRecentContextParams) {
     channel: item.metadata?.artist ?? "",
     thumbnailUrl: item.metadata?.thumbnailUrl,
     tabId: item.tabId,
+    quality: item.quality,
     ...extras
   };
 }

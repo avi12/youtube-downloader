@@ -62,6 +62,7 @@ export type ProcessStreamData = StreamData & {
   playlistTotalCount?: number;
   defaultAudioTrackIndex?: number;
   metadata?: VideoMetadata | null;
+  quality?: string;
 };
 
 export type VideoData = {

@@ -119,7 +119,11 @@
     {#if entry.channel}
       <p class="recent-meta recent-channel" dir="auto">{entry.channel}</p>
     {/if}
-    <p class="recent-meta">{sizeLabel} · {relativeAgeLabel}</p>
+    <p class="recent-meta">
+      {#if entry.quality}
+        {entry.quality} ·
+      {/if}{sizeLabel} · {relativeAgeLabel}
+    </p>
   </div>
 
   <RecentDownloadMenu

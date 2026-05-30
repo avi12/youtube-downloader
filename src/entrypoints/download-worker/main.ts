@@ -3,6 +3,7 @@ import { downloadViaSabr } from "../background/download/sabr-downloader";
 import { buildSubtitleTracks } from "../background/download/stream-chunk-transfer";
 import type { ProcessStreamEndData } from "@/lib/messaging/offscreen-messaging";
 import { stripMimeParams } from "@/lib/utils/containers";
+import { resolveQualityLabel } from "@/lib/youtube/audio-format-helpers";
 import { DownloadType, StreamType } from "@/types";
 import type { DownloadRequest, VideoMetadata } from "@/types";
 
@@ -180,7 +181,12 @@ function buildStreamEnd({
     playlistId,
     playlistTitle,
     playlistTotalCount,
-    metadata: enrichedMetadata
+    metadata: enrichedMetadata,
+    quality: resolveQualityLabel({
+      type,
+      videoFormat,
+      audioFormat
+    })
   };
 }
 

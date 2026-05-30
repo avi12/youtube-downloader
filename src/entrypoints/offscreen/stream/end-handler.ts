@@ -9,7 +9,7 @@ export async function handleProcessStreamEnd(data: ProcessStreamEndData) {
   const {
     videoId, type, filenameOutput, videoMimeType, audioMimeType,
     audioTrackLabels, audioTrackLanguages, defaultAudioTrackIndex, subtitleTracks, tabId,
-    playlistId, playlistTitle, playlistTotalCount
+    playlistId, playlistTitle, playlistTotalCount, quality
   } = data;
   const accumulator = STREAM_ACCUMULATORS.get(videoId);
   STREAM_ACCUMULATORS.delete(videoId);
@@ -66,6 +66,7 @@ export async function handleProcessStreamEnd(data: ProcessStreamEndData) {
     playlistId,
     playlistTitle,
     playlistTotalCount,
-    metadata: data.metadata
+    metadata: data.metadata,
+    quality
   });
 }

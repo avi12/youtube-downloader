@@ -4,6 +4,7 @@ import { buildSubtitleTracks, buildTransferJobs } from "./stream-chunk-transfer"
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
 import { stripMimeParams } from "@/lib/utils/containers";
+import { resolveQualityLabel } from "@/lib/youtube/audio-format-helpers";
 import { ProgressType } from "@/types";
 import type { DownloadRequest, VideoMetadata } from "@/types";
 
@@ -87,7 +88,12 @@ export async function dispatchToOffscreen(
       playlistId,
       playlistTitle,
       playlistTotalCount,
-      metadata: enrichedMetadata
+      metadata: enrichedMetadata,
+      quality: resolveQualityLabel({
+        type: request.type,
+        videoFormat: request.videoFormat,
+        audioFormat: request.audioFormat
+      })
     }
   });
 }

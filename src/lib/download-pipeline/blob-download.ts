@@ -33,6 +33,7 @@ async function persistAndTrigger({ blob, blobUrl, filename, mimeType, recentCont
         size: blob.size,
         thumbnailUrl: recentContext.thumbnailUrl,
         tabId: recentContext.tabId,
+        quality: recentContext.quality,
         completedAt: Date.now()
       },
       blob

@@ -72,6 +72,7 @@ export async function addRecentDownload({ entry, blob }: {
     thumbnailUrl?: string;
     completedAt: number;
     tabId?: number;
+    quality?: string;
   };
   blob: Blob;
 }) {
