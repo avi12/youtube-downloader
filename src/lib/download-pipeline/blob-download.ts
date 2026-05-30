@@ -32,6 +32,7 @@ async function persistAndTrigger({ blob, blobUrl, filename, mimeType, recentCont
         audioMimeType: recentContext.audioMimeType,
         size: blob.size,
         thumbnailUrl: recentContext.thumbnailUrl,
+        tabId: recentContext.tabId,
         completedAt: Date.now()
       },
       blob

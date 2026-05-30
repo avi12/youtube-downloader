@@ -106,6 +106,7 @@ export type RecentDownloadContext = {
   thumbnailUrl?: string;
   videoMimeType?: string;
   audioMimeType?: string;
+  tabId?: number;
 };
 
 export type PipelineDownloadMessage = {

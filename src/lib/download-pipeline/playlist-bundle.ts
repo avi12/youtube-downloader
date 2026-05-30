@@ -96,7 +96,8 @@ export async function addToPlaylistBundle({
       recentContext: {
         videoId: playlistId,
         title: bundle.playlistTitle,
-        channel: `${bundle.totalCount} files`
+        channel: `${bundle.totalCount} files`,
+        tabId: bundle.tabId
       }
     });
   } finally {

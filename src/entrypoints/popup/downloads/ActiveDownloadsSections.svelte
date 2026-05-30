@@ -1,9 +1,10 @@
 <script lang="ts">
+  import RecentDownloadItem from "../recent/RecentDownloadItem.svelte";
   import { bindDownloadAccessors, getVideoStatusLabel } from "./active-downloads-helpers";
   import DownloadItem from "./DownloadItem.svelte";
   import DownloadSection from "./DownloadSection.svelte";
   import { ProgressType } from "@/types";
-  import type { VideoQueueItem } from "@/types";
+  import type { RecentDownloadEntry, VideoQueueItem } from "@/types";
   import { SvelteMap, SvelteSet } from "svelte/reactivity";
 
   interface Props {
@@ -24,13 +25,26 @@
     }>;
     percentFormatter: Intl.NumberFormat;
     currentTabId?: number;
+    recentDownloads: RecentDownloadEntry[];
+    now: number;
     onCancel: (videoIds: string[]) => void;
+    onShowRecentInFolder: (entry: RecentDownloadEntry) => void;
+    onChangeFormat: (entry: RecentDownloadEntry) => void;
+    onRemoveRecent: (entry: RecentDownloadEntry) => void;
   }
 
   const {
     isFFmpegReady, videoDownloads, musicList, videoOnlyList,
-    videoDetails, statusProgress, percentFormatter, currentTabId, onCancel
+    videoDetails, statusProgress, percentFormatter, currentTabId,
+    recentDownloads, now,
+    onCancel, onShowRecentInFolder, onChangeFormat, onRemoveRecent
   }: Props = $props();
+
+  const thisTabRecent = $derived(
+    currentTabId === undefined
+      ? []
+      : recentDownloads.filter(entry => entry.tabId === currentTabId)
+  );
 
   const accessors = $derived(
     bindDownloadAccessors({
@@ -149,17 +163,19 @@
   const videoDownloadIds = $derived(videoDownloads.map(item => item.videoId));
 </script>
 
-{#if thisTabVideoIds.length > 0}
+{#if thisTabVideoIds.length > 0 || thisTabRecent.length > 0}
   <section aria-labelledby="this-tab-heading">
     <header class="section-header">
       <h2 id="this-tab-heading" class="section-title">This tab</h2>
-      <button
-        class="cancel-all-button"
-        aria-label="Cancel all downloads from this tab"
-        onclick={() => onCancel(thisTabVideoIds)}
-      >
-        Cancel all
-      </button>
+      {#if thisTabVideoIds.length > 0}
+        <button
+          class="cancel-all-button"
+          aria-label="Cancel all downloads from this tab"
+          onclick={() => onCancel(thisTabVideoIds)}
+        >
+          Cancel all
+        </button>
+      {/if}
     </header>
 
     <div class="this-tab-content">
@@ -194,6 +210,22 @@
                 progress={accessors.progress(videoId)}
                 progressLabel={accessors.label(videoId)}
                 quality={accessors.quality(videoId)}
+              />
+            </li>
+          {/each}
+        </ul>
+      {/if}
+
+      {#if thisTabRecent.length > 0}
+        <ul class="recent-list" aria-label="Recent downloads from this tab">
+          {#each thisTabRecent as entry (entry.id)}
+            <li>
+              <RecentDownloadItem
+                {entry}
+                {now}
+                onChangeFormat={() => onChangeFormat(entry)}
+                onRemove={() => onRemoveRecent(entry)}
+                onShowInFolder={() => onShowRecentInFolder(entry)}
               />
             </li>
           {/each}
@@ -332,7 +364,8 @@
     }
   }
 
-  .download-list {
+  .download-list,
+  .recent-list {
     display: flex;
     flex-direction: column;
     gap: 4px;

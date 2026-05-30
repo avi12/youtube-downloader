@@ -66,20 +66,24 @@
   </section>
 {:else}
   <div class="download-sections">
-    {#if totalActiveDownloads > 0}
-      <ActiveDownloadsSections
-        {currentTabId}
-        {isFFmpegReady}
-        {musicList}
-        onCancel={cancelDownload}
-        {percentFormatter}
-        {statusProgress}
-        {videoDetails}
-        {videoDownloads}
-        {videoOnlyList}
-      />
-    {/if}
+    <ActiveDownloadsSections
+      {currentTabId}
+      {isFFmpegReady}
+      {musicList}
+      {now}
+      onCancel={cancelDownload}
+      onChangeFormat={entry => onChangeFormat(entry)}
+      onRemoveRecent={handleRemove}
+      onShowRecentInFolder={handleShowInFolder}
+      {percentFormatter}
+      {recentDownloads}
+      {statusProgress}
+      {videoDetails}
+      {videoDownloads}
+      {videoOnlyList}
+    />
     <RecentDownloadsSection
+      {currentTabId}
       {now}
       onChangeFormat={entry => onChangeFormat(entry)}
       onRemove={handleRemove}

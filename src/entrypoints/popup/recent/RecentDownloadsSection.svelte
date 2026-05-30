@@ -5,19 +5,26 @@
   interface Props {
     recentDownloads: RecentDownloadEntry[];
     now: number;
+    currentTabId?: number;
     onChangeFormat: (entry: RecentDownloadEntry) => void;
     onRemove: (entry: RecentDownloadEntry) => void;
     onShowInFolder: (entry: RecentDownloadEntry) => void;
   }
 
-  const { recentDownloads, now, onChangeFormat, onRemove, onShowInFolder }: Props = $props();
+  const { recentDownloads, now, currentTabId, onChangeFormat, onRemove, onShowInFolder }: Props = $props();
+
+  const otherRecent = $derived(
+    currentTabId === undefined
+      ? recentDownloads
+      : recentDownloads.filter(entry => entry.tabId !== currentTabId)
+  );
 </script>
 
-{#if recentDownloads.length > 0}
+{#if otherRecent.length > 0}
   <section class="recent-section" aria-labelledby="recent-section-heading">
     <h2 id="recent-section-heading" class="recent-section-heading">Recent</h2>
     <ul class="recent-list">
-      {#each recentDownloads as entry (entry.id)}
+      {#each otherRecent as entry (entry.id)}
         <li>
           <RecentDownloadItem
             {entry}
