@@ -9,6 +9,7 @@ import {
   videoQueueItem
 } from "@/lib/storage/storage";
 import { INITIAL_OPTIONS as defaultOptions } from "@/lib/youtube/video-helpers";
+import { getPlaylistIdFromUrl, getVideoIdFromUrl } from "@/lib/youtube/youtube-url";
 import { mount } from "svelte";
 
 const [
@@ -33,7 +34,9 @@ const [
     currentWindow: true
   })
 ]);
-const currentTabId = activeTabs[0]?.id;
+const activeTabUrl = activeTabs[0]?.url ?? "";
+const currentVideoId = getVideoIdFromUrl(activeTabUrl) ?? undefined;
+const currentPlaylistId = getPlaylistIdFromUrl(activeTabUrl) ?? undefined;
 
 const elApp = document.getElementById("app");
 if (!elApp) {
@@ -49,7 +52,8 @@ mount(App, {
     initialVideoOnlyList: videoOnlyList,
     initialVideoDetails: videoDetails,
     initialStatusProgress: statusProgress,
-    initialCurrentTabId: currentTabId,
+    initialCurrentVideoId: currentVideoId,
+    initialCurrentPlaylistId: currentPlaylistId,
     initialOptions: {
       ...defaultOptions,
       ...options

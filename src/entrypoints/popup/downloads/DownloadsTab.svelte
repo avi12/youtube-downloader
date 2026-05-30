@@ -27,14 +27,16 @@
     percentFormatter: Intl.NumberFormat;
     recentDownloads: RecentDownloadEntry[];
     now: number;
-    currentTabId?: number;
+    currentVideoId?: string;
+    currentPlaylistId?: string;
     onChangeFormat: (entry: RecentDownloadEntry) => void;
     onRecentChanged: () => void;
   }
 
   const {
     isFFmpegReady, videoDownloads, musicList, videoOnlyList, videoDetails,
-    statusProgress, percentFormatter, recentDownloads, now, currentTabId, onChangeFormat, onRecentChanged
+    statusProgress, percentFormatter, recentDownloads, now,
+    currentVideoId, currentPlaylistId, onChangeFormat, onRecentChanged
   }: Props = $props();
 
   const totalActiveDownloads = $derived(videoDownloads.length + musicList.length + videoOnlyList.length);
@@ -67,7 +69,8 @@
 {:else}
   <div class="download-sections">
     <ActiveDownloadsSections
-      {currentTabId}
+      {currentPlaylistId}
+      {currentVideoId}
       {isFFmpegReady}
       {musicList}
       {now}
@@ -83,7 +86,8 @@
       {videoOnlyList}
     />
     <RecentDownloadsSection
-      {currentTabId}
+      {currentPlaylistId}
+      {currentVideoId}
       {now}
       onChangeFormat={entry => onChangeFormat(entry)}
       onRemove={handleRemove}

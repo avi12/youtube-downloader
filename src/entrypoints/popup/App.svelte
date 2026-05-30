@@ -101,7 +101,8 @@
         out:fly={flyOut}
       >
         <DownloadsTab
-          currentTabId={appState.currentTabId}
+          currentPlaylistId={appState.currentPlaylistId}
+          currentVideoId={appState.currentVideoId}
           isFFmpegReady={appState.isFFmpegReady}
           musicList={appState.musicList}
           now={appState.now}

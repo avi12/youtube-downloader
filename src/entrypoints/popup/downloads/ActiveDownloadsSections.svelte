@@ -24,7 +24,8 @@
       progressType: ProgressType;
     }>;
     percentFormatter: Intl.NumberFormat;
-    currentTabId?: number;
+    currentVideoId?: string;
+    currentPlaylistId?: string;
     recentDownloads: RecentDownloadEntry[];
     now: number;
     onCancel: (videoIds: string[]) => void;
@@ -35,15 +36,39 @@
 
   const {
     isFFmpegReady, videoDownloads, musicList, videoOnlyList,
-    videoDetails, statusProgress, percentFormatter, currentTabId,
+    videoDetails, statusProgress, percentFormatter, currentVideoId, currentPlaylistId,
     recentDownloads, now,
     onCancel, onShowRecentInFolder, onChangeFormat, onRemoveRecent
   }: Props = $props();
 
+  function isVideoIdInThisTab(videoId: string): boolean {
+    if (currentVideoId && videoId === currentVideoId) {
+      return true;
+    }
+
+    if (currentPlaylistId && videoDetails[videoId]?.playlistId === currentPlaylistId) {
+      return true;
+    }
+
+    return false;
+  }
+
+  function isRecentEntryInThisTab(entry: RecentDownloadEntry): boolean {
+    if (currentVideoId && entry.videoId === currentVideoId) {
+      return true;
+    }
+
+    if (currentPlaylistId && entry.videoId === currentPlaylistId) {
+      return true;
+    }
+
+    return false;
+  }
+
   const thisTabRecent = $derived(
-    currentTabId === undefined
+    !currentVideoId && !currentPlaylistId
       ? []
-      : recentDownloads.filter(entry => entry.tabId === currentTabId)
+      : recentDownloads.filter(isRecentEntryInThisTab)
   );
 
   const accessors = $derived(
@@ -56,29 +81,25 @@
 
   const thisTabIds = $derived(
     (() => {
-      const isTabIdUnknown = currentTabId === undefined;
-      if (isTabIdUnknown) {
+      if (!currentVideoId && !currentPlaylistId) {
         return new SvelteSet<string>();
       }
 
       const ids = new SvelteSet<string>();
       for (const item of videoDownloads) {
-        const isThisTab = videoDetails[item.videoId]?.tabId === currentTabId;
-        if (isThisTab) {
+        if (isVideoIdInThisTab(item.videoId)) {
           ids.add(item.videoId);
         }
       }
 
       for (const id of musicList) {
-        const isThisTab = videoDetails[id]?.tabId === currentTabId;
-        if (isThisTab) {
+        if (isVideoIdInThisTab(id)) {
           ids.add(id);
         }
       }
 
       for (const id of videoOnlyList) {
-        const isThisTab = videoDetails[id]?.tabId === currentTabId;
-        if (isThisTab) {
+        if (isVideoIdInThisTab(id)) {
           ids.add(id);
         }
       }

@@ -10,6 +10,7 @@ export interface InitialAppStateProps {
     progress: number;
     progressType: ProgressType;
   }>;
-  initialCurrentTabId?: number;
+  initialCurrentVideoId?: string;
+  initialCurrentPlaylistId?: string;
   initialOptions: Options;
 }
