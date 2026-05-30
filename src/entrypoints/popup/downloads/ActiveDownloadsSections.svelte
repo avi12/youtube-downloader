@@ -210,6 +210,7 @@
                 progress={accessors.progress(videoId)}
                 progressLabel={accessors.label(videoId)}
                 quality={accessors.quality(videoId)}
+                {videoId}
               />
             </li>
           {/each}
@@ -260,6 +261,7 @@
           i,
           isFFmpegReady
         }) : null}
+        {videoId}
       />
     </li>
   {/snippet}
@@ -280,6 +282,7 @@
         oncancel={() => onCancel([videoId])}
         progress={accessors.progress(videoId)}
         progressLabel={accessors.label(videoId)}
+        {videoId}
       />
     </li>
   {/snippet}
@@ -300,6 +303,7 @@
         oncancel={() => onCancel([videoId])}
         progress={accessors.progress(videoId)}
         progressLabel={accessors.label(videoId)}
+        {videoId}
       />
     </li>
   {/snippet}
