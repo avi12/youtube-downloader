@@ -48,9 +48,12 @@ type DownloadVideoAudioViaSabrParams = {
   signal: AbortSignal;
   onVideoBytesReceived?: (bytes: number) => void;
   onAudioBytesReceived?: (bytes: number) => void;
+  onVideoChunk?: (chunk: Uint8Array) => void;
+  onAudioChunk?: (chunk: Uint8Array) => void;
 };
 export async function downloadVideoAudioViaSabr({
-  config, videoFormat, audioFormat, poToken, signal, onVideoBytesReceived, onAudioBytesReceived
+  config, videoFormat, audioFormat, poToken, signal,
+  onVideoBytesReceived, onAudioBytesReceived, onVideoChunk, onAudioChunk
 }: DownloadVideoAudioViaSabrParams) {
   return Promise.all([
     fetchVideoViaSabrStream({
@@ -61,7 +64,8 @@ export async function downloadVideoAudioViaSabr({
         onBytesReceived: onVideoBytesReceived
       }),
       poToken,
-      signal
+      signal,
+      onChunk: onVideoChunk
     }),
     fetchAudioViaSabrStream({
       sabrConfig: config,
@@ -71,7 +75,8 @@ export async function downloadVideoAudioViaSabr({
         onBytesReceived: onAudioBytesReceived
       }),
       poToken,
-      signal
+      signal,
+      onChunk: onAudioChunk
     })
   ]);
 }

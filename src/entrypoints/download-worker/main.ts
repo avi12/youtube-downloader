@@ -59,12 +59,35 @@ async function trySabrWithStallTimer({ request, tabId }: TrySabrWithStallTimerPa
     sabrStallTimeoutId = setTimeout(() => sabrAbortController.abort(), SABR_STALL_TIMEOUT_MS);
   }
 
+  const isAudioOnly = request.type === DownloadType.Audio;
+  const useStreaming = !isAudioOnly;
+
   try {
     return await downloadViaSabr({
       request,
       signal: sabrAbortController.signal,
       tabId,
-      onProgress: resetSabrStallTimer
+      onProgress: resetSabrStallTimer,
+      ...(useStreaming && {
+        onVideoChunk: sendChunkToParent({
+          videoId: request.videoId,
+          streamType: StreamType.Video,
+          tabId
+        }),
+        onAudioChunk: sendChunkToParent({
+          videoId: request.videoId,
+          streamType: StreamType.Audio,
+          tabId
+        }),
+        onVideoStreamEnd: sendStreamEndToParent({
+          videoId: request.videoId,
+          streamType: StreamType.Video
+        }),
+        onAudioStreamEnd: sendStreamEndToParent({
+          videoId: request.videoId,
+          streamType: StreamType.Audio
+        })
+      })
     });
   } catch (error) {
     if (signal.aborted) {

@@ -16,8 +16,14 @@ type DownloadViaSabrParams = {
   signal: AbortSignal;
   tabId: number;
   onProgress?: () => void;
+  onVideoChunk?: (chunk: Uint8Array, iChunk: number) => void;
+  onAudioChunk?: (chunk: Uint8Array, iChunk: number) => void;
+  onVideoStreamEnd?: (totalChunks: number) => void;
+  onAudioStreamEnd?: (totalChunks: number) => void;
 };
-export async function downloadViaSabr({ request, signal, tabId, onProgress }: DownloadViaSabrParams) {
+export async function downloadViaSabr({
+  request, signal, tabId, onProgress, onVideoChunk, onAudioChunk, onVideoStreamEnd, onAudioStreamEnd
+}: DownloadViaSabrParams) {
   const { videoId, type, sabrConfig, poToken, sabrUrl, videoFormat, audioFormat, additionalAudioFormats } = request;
   const isAudioOnly = type === DownloadType.Audio;
 
@@ -86,6 +92,9 @@ export async function downloadViaSabr({ request, signal, tabId, onProgress }: Do
     return null;
   }
 
+  const isStreamingMode = !!(onVideoChunk && onAudioChunk);
+  let iVideoChunk = 0;
+  let iAudioChunk = 0;
   const [videoResult, audioResult] = await downloadVideoAudioViaSabr({
     config: effectiveConfig,
     videoFormat,
@@ -93,8 +102,15 @@ export async function downloadViaSabr({ request, signal, tabId, onProgress }: Do
     poToken: resolvedPoToken,
     signal,
     onVideoBytesReceived: onVideoBytes,
-    onAudioBytesReceived: onAudioBytes
+    onAudioBytesReceived: onAudioBytes,
+    onVideoChunk: onVideoChunk ? chunk => onVideoChunk(chunk, iVideoChunk++) : undefined,
+    onAudioChunk: onAudioChunk ? chunk => onAudioChunk(chunk, iAudioChunk++) : undefined
   });
+  if (isStreamingMode) {
+    onVideoStreamEnd?.(iVideoChunk);
+    onAudioStreamEnd?.(iAudioChunk);
+  }
+
   const additionalAudioTracks = await downloadExtraAudioTracksViaSabr({
     config: effectiveConfig,
     formats: additionalFormats,
@@ -102,6 +118,16 @@ export async function downloadViaSabr({ request, signal, tabId, onProgress }: Do
     signal,
     onTrackBytesReceived: onExtraTrackBytes
   });
+  if (isStreamingMode) {
+    return {
+      videoData: null,
+      audioData: null,
+      additionalAudioTracks,
+      isPartialVideo: !videoResult.isComplete,
+      isPartialAudio: !audioResult.isComplete,
+      streamedToOffscreen: true
+    };
+  }
 
   return {
     videoData: videoResult.data,

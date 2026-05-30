@@ -200,9 +200,9 @@ export function registerDownloadHandlers() {
     });
   });
 
-  onMessage(MessageType.ForwardProgressUpdate, async ({ data }) => {
+  onMessage(MessageType.ForwardProgressUpdate, ({ data }) => {
     const { tabId, ...progressData } = data;
-    await mutateStorageItem({
+    void mutateStorageItem({
       item: statusProgressItem,
       mutator(current) {
         current[progressData.videoId] = {
