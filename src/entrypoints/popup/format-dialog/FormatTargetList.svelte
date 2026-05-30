@@ -17,8 +17,8 @@
   <fieldset class="target-groups">
     <legend class="visually-hidden">Target format</legend>
     {#each groups as group (group.heading)}
-      <div class="target-group" aria-label={group.heading} role="group">
-        <p class="target-group-heading">{group.heading}</p>
+      <div class="target-group" aria-label={group.caption ?? group.heading} role="group">
+        <p class="target-group-heading">{group.caption ?? group.heading}</p>
         <div class="target-list">
           {#each group.items as item (item.extension)}
             <label class="target-option" class:is-excluded={item.isExcluded}>

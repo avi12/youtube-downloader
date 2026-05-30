@@ -4,7 +4,6 @@ import {
   buildFormatGroups,
   flattenFormatGroups,
   isCompatibleForRemux,
-  MULTI_TRACK_UNSUPPORTED_EXTENSIONS,
   splitFilenameAndExtension,
   videoContainers
 } from "@/lib/utils/containers";
@@ -24,37 +23,42 @@ export function isAudioSourceEntry(entry: RecentDownloadEntry) {
 
 type BuildAvailableTargetGroupsParams = {
   entry: RecentDownloadEntry;
-  isMultiTrack?: boolean;
 };
-export function buildAvailableTargetGroups({
-  entry, isMultiTrack = false
-}: BuildAvailableTargetGroupsParams): FormatGroup[] {
+export function buildAvailableTargetGroups({ entry }: BuildAvailableTargetGroupsParams): FormatGroup[] {
   const isAudioSource = isAudioSourceEntry(entry);
   // Audio sources can only re-target audio containers (no audio -> video).
   // Video sources can re-target video containers or extract to audio.
-  const allowedExtensions = isAudioSource ? audioContainers : [...videoContainers, ...audioContainers];
+  const baseAllowed = isAudioSource ? audioContainers : [...videoContainers, ...audioContainers];
 
-  const remuxIncompatibleVideo = !isAudioSource && entry.videoMimeType
-    ? videoContainers.filter(target => !isCompatibleForRemux({
+  const allowedExtensions = baseAllowed.filter(target => {
+    if (target === entry.container) {
+      return false;
+    }
+
+    const isVideoTarget = videoContainers.includes(target);
+    const needsRemuxCheck = !isAudioSource && isVideoTarget && entry.videoMimeType;
+    if (!needsRemuxCheck) {
+      return true;
+    }
+
+    return isCompatibleForRemux({
       videoMimeType: entry.videoMimeType!,
       audioMimeType: entry.audioMimeType ?? "",
       targetExtension: target
-    }))
-    : [];
-  const multiTrackExcluded = isMultiTrack ? [...MULTI_TRACK_UNSUPPORTED_EXTENSIONS] : [];
-
-  const groups = buildFormatGroups({
-    allowedExtensions,
-    excludedExtensions: [...remuxIncompatibleVideo, ...multiTrackExcluded, entry.container]
+    });
   });
-  // The current container is still listed (as excluded) by default; strip it
-  // outright since "convert to the same format" is never a useful target.
-  return groups
-    .map(group => ({
-      heading: group.heading,
-      items: group.items.filter(item => item.extension !== entry.container)
-    }))
-    .filter(group => group.items.length > 0);
+
+  const groups = buildFormatGroups({ allowedExtensions });
+  if (isAudioSource) {
+    return groups;
+  }
+
+  return groups.map(group => group.heading === "Audio"
+    ? {
+      ...group,
+      caption: "Extract audio as"
+    }
+    : group);
 }
 
 export function pickFirstSelectableTarget(groups: FormatGroup[]) {

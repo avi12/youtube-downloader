@@ -14,6 +14,7 @@ export type FormatItem = {
 
 export type FormatGroup = {
   heading: FormatGroupHeading;
+  caption?: string;
   items: FormatItem[];
 };
 
