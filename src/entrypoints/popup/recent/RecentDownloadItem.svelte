@@ -146,6 +146,7 @@
       class="recent-open-in-new"
       aria-label={openInNewTabLabel}
       data-tooltip={openInNewTabLabel}
+      data-tooltip-align="end"
       onclick={openInNewTab}
       type="button"
     >
