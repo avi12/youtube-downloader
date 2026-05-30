@@ -359,37 +359,12 @@
     border-radius: 12px;
 
     .zip-group-label {
-      position: relative;
       overflow: hidden;
       padding: 0 4px;
       color: var(--fg-subtle);
       font-size: 0.6875rem;
       text-overflow: ellipsis;
       white-space: nowrap;
-
-      &::after {
-        content: attr(data-tooltip);
-        position: absolute;
-        bottom: calc(100% + 4px);
-        left: 0;
-        z-index: 10;
-        max-width: 280px;
-        padding: 4px 8px;
-        border-radius: 6px;
-        background: var(--fg);
-        color: var(--bg);
-        font-weight: 400;
-        font-size: 0.6875rem;
-        white-space: normal;
-        word-break: break-all;
-        opacity: 0%;
-        pointer-events: none;
-        transition: opacity 150ms;
-      }
-
-      &:hover::after {
-        opacity: 100%;
-      }
     }
   }
 
