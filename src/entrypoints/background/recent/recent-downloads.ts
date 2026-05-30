@@ -89,6 +89,12 @@ export function notifyOnDownloadComplete({ downloadId, data }: DownloadIdDataPar
           });
         }
 
+        try {
+          await sendMessage(MessageType.RecentDownloadsChanged);
+        } catch {
+          // Popup not open - ignore.
+        }
+
         resolve();
         return;
       }
@@ -146,7 +152,7 @@ export function registerRecentDownloadHandlers() {
     });
 
     if (data.recentContext) {
-      void notifyOnDownloadComplete({
+      await notifyOnDownloadComplete({
         downloadId,
         data
       });
