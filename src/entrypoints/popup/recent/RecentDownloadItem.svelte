@@ -1,16 +1,32 @@
 <script lang="ts">
+  import openInNewIcon from "../icons/open-in-new.svg?raw";
   import RecentDownloadMenu from "./RecentDownloadMenu.svelte";
   import type { RecentDownloadEntry } from "@/types";
+  import { browser } from "#imports";
 
   interface Props {
     entry: RecentDownloadEntry;
     now: number;
+    showOpenInNew?: boolean;
     onShowInFolder: () => void;
     onChangeFormat: () => void;
     onRemove: () => void;
   }
 
-  const { entry, now, onShowInFolder, onChangeFormat, onRemove }: Props = $props();
+  const {
+    entry, now, showOpenInNew = false,
+    onShowInFolder, onChangeFormat, onRemove
+  }: Props = $props();
+
+  const isZip = $derived(entry.container === "zip");
+  const openInNewTabLabel = $derived(isZip ? "Open playlist in new tab" : "Open video in new tab");
+
+  function openInNewTab(): void {
+    const url = isZip
+      ? `https://www.youtube.com/playlist?list=${entry.videoId}`
+      : `https://www.youtube.com/watch?v=${entry.videoId}`;
+    void browser.tabs.create({ url });
+  }
 
   let isMenuOpen = $state(false);
 
@@ -126,9 +142,21 @@
     </p>
   </div>
 
+  {#if showOpenInNew}
+    <button
+      class="recent-open-in-new"
+      aria-label={openInNewTabLabel}
+      data-tooltip={openInNewTabLabel}
+      onclick={openInNewTab}
+      type="button"
+    >
+      {@html openInNewIcon}
+    </button>
+  {/if}
+
   <RecentDownloadMenu
     entryId={entry.id}
-    isZip={entry.container === "zip"}
+    {isZip}
     {onChangeFormat}
     onMenuOpenChange={value => (isMenuOpen = value)}
     {onRemove}
@@ -222,6 +250,36 @@
 
     &.recent-channel {
       margin-top: 0;
+    }
+  }
+
+  .recent-open-in-new {
+    display: flex;
+    flex-shrink: 0;
+    justify-content: center;
+    align-items: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--fg-muted);
+    cursor: pointer;
+    transition: background-color 150ms;
+
+    :global(svg) {
+      width: 18px;
+      height: 18px;
+    }
+
+    &:hover {
+      background: var(--surface-high);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
     }
   }
 </style>
