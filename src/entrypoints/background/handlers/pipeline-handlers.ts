@@ -50,7 +50,8 @@ export function registerPipelineHandlers() {
         videoId: data.videoId,
         type: data.type,
         filenameOutput: data.filenameOutput,
-        tabId: data.tabId
+        tabId: data.tabId,
+        sourceUrl: data.sourceUrl
       });
     }
 

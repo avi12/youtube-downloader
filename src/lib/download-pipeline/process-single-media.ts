@@ -67,7 +67,8 @@ export async function processSingleMedia({ item, isCancelled }: ProcessSingleMed
       totalCount: item.playlistTotalCount ?? 1,
       tabId,
       filename: filenameOutput,
-      data
+      data,
+      sourceUrl: item.sourceUrl
     });
     await reportProgress({
       videoId,

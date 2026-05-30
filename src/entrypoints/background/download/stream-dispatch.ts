@@ -93,7 +93,8 @@ export async function dispatchToOffscreen(
         type: request.type,
         videoFormat: request.videoFormat,
         audioFormat: request.audioFormat
-      })
+      }),
+      sourceUrl: request.sourceUrl
     }
   });
 }

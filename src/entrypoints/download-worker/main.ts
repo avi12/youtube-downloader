@@ -158,7 +158,7 @@ function buildStreamEnd({
     videoId, type, filenameOutput, videoFormat, audioFormat,
     primaryAudioLabel, primaryAudioLanguageCode,
     captionTracks, captionVttData,
-    playlistId, playlistTitle, playlistTotalCount
+    playlistId, playlistTitle, playlistTotalCount, sourceUrl
   } = request;
   const videoMimeType = videoFormat ? stripMimeParams(videoFormat.mimeType) : DEFAULT_VIDEO_MIME_TYPE;
   const audioMimeType = audioFormat ? stripMimeParams(audioFormat.mimeType) : DEFAULT_AUDIO_MIME_TYPE;
@@ -186,7 +186,8 @@ function buildStreamEnd({
       type,
       videoFormat,
       audioFormat
-    })
+    }),
+    sourceUrl
   };
 }
 

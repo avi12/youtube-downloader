@@ -73,6 +73,7 @@ export async function addRecentDownload({ entry, blob }: {
     completedAt: number;
     tabId?: number;
     quality?: string;
+    sourceUrl?: string;
   };
   blob: Blob;
 }) {

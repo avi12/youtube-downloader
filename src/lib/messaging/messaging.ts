@@ -91,6 +91,7 @@ export type PipelineStartMessage = {
   type: DownloadType;
   filenameOutput: string;
   tabId: number;
+  sourceUrl?: string;
 };
 
 export type TranscodeRecentDownloadMessage = {
@@ -108,6 +109,7 @@ export type RecentDownloadContext = {
   audioMimeType?: string;
   tabId?: number;
   quality?: string;
+  sourceUrl?: string;
 };
 
 export type PipelineDownloadMessage = {

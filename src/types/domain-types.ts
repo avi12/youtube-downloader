@@ -33,6 +33,7 @@ export type DownloadRequest = {
   resolvedExtraAudioUrls?: (string | null)[];
   progressiveUrl?: string | null;
   originTabId?: number;
+  sourceUrl?: string;
 };
 
 export type StreamData = {
@@ -63,6 +64,7 @@ export type ProcessStreamData = StreamData & {
   defaultAudioTrackIndex?: number;
   metadata?: VideoMetadata | null;
   quality?: string;
+  sourceUrl?: string;
 };
 
 export type VideoData = {

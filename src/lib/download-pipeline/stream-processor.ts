@@ -38,7 +38,8 @@ async function processItem(item: ProcessStreamData) {
     videoId: item.videoId,
     type: item.type,
     filenameOutput: item.filenameOutput,
-    tabId: item.tabId
+    tabId: item.tabId,
+    sourceUrl: item.sourceUrl
   });
 
   function isCancelled() {

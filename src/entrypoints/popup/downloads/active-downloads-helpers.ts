@@ -13,6 +13,7 @@ type VideoDetails = Record<string, {
   tabId?: number;
   playlistId?: string;
   playlistTitle?: string;
+  sourceUrl?: string;
 }>;
 
 function computeWeightedFraction(entry: StatusProgress[string]) {

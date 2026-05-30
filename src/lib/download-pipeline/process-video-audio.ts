@@ -91,7 +91,8 @@ export async function processVideoAudio({ item, isCancelled }: ProcessVideoAudio
       totalCount: item.playlistTotalCount ?? 1,
       tabId,
       filename: downloadFilename,
-      data
+      data,
+      sourceUrl: item.sourceUrl
     });
     await reportProgress({
       videoId,

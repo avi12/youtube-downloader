@@ -35,8 +35,12 @@ export function registerDownloadHandlers() {
       return;
     }
 
+    const sourceUrl = data.sourceUrl ?? sender.tab?.url;
     void downloadViaWatchPage({
-      data,
+      data: sourceUrl ? {
+        ...data,
+        sourceUrl
+      } : data,
       tabId: originTabId
     });
   });
@@ -129,6 +133,11 @@ export function registerDownloadHandlers() {
     }
 
     const resolvedTabId = tabId ?? -1;
+    const sourceUrl = data.sourceUrl ?? sender.tab?.url;
+    const enrichedRequest = sourceUrl ? {
+      ...data,
+      sourceUrl
+    } : data;
     trackVideoForTab({
       videoId: data.videoId,
       tabId: resolvedTabId
@@ -138,10 +147,11 @@ export function registerDownloadHandlers() {
       type: data.type,
       filenameOutput: data.filenameOutput,
       quality: resolveQualityLabel(data),
-      tabId: resolvedTabId
+      tabId: resolvedTabId,
+      sourceUrl
     });
     void startBackgroundDownload({
-      request: data,
+      request: enrichedRequest,
       tabId: resolvedTabId
     });
 

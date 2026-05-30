@@ -13,6 +13,8 @@ export function registerPlaylistDownloadHandler() {
       return;
     }
 
+    const sourceUrl = sender.tab?.url;
+
     currentSequenceAbort?.abort();
     currentSequenceAbort = null;
     currentSequenceTabId = tabId;
@@ -24,6 +26,7 @@ export function registerPlaylistDownloadHandler() {
         filenameOutput: item.filenameOutput,
         quality: resolveQualityLabel(item),
         tabId,
+        sourceUrl,
         ...(data.isZipBundle && {
           playlistId: item.playlistId,
           playlistTitle: item.playlistTitle ?? data.playlistTitle

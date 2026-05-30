@@ -12,6 +12,7 @@ const playlistBundles = new Map<string, {
     data: Uint8Array;
   }>;
   tabId: number;
+  sourceUrl?: string;
 }>();
 
 function zipToBuffer(entries: AsyncZippable) {
@@ -37,9 +38,10 @@ type AddToPlaylistBundleParams = {
   tabId: number;
   filename: string;
   data: Uint8Array;
+  sourceUrl?: string;
 };
 export async function addToPlaylistBundle({
-  playlistId, playlistTitle, totalCount, tabId, filename, data
+  playlistId, playlistTitle, totalCount, tabId, filename, data, sourceUrl
 }: AddToPlaylistBundleParams) {
   const isBundleNew = !playlistBundles.has(playlistId);
   if (isBundleNew) {
@@ -47,7 +49,8 @@ export async function addToPlaylistBundle({
       playlistTitle,
       totalCount,
       files: new Map(),
-      tabId
+      tabId,
+      sourceUrl
     });
   }
 
@@ -63,6 +66,7 @@ export async function addToPlaylistBundle({
     bundle.totalCount = totalCount;
     bundle.playlistTitle = playlistTitle;
     bundle.tabId = tabId;
+    bundle.sourceUrl = sourceUrl;
   }
 
   bundle.files.set(filename, {
@@ -97,7 +101,8 @@ export async function addToPlaylistBundle({
         videoId: playlistId,
         title: bundle.playlistTitle,
         channel: `${bundle.totalCount} files`,
-        tabId: bundle.tabId
+        tabId: bundle.tabId,
+        sourceUrl: bundle.sourceUrl
       }
     });
   } finally {
