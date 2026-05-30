@@ -4,27 +4,37 @@ const MIME_AUDIO_AIFF = "audio/aiff";
 const MIME_VIDEO_AVI = "video/x-msvideo";
 const MIME_AUDIO_FLAC = "audio/flac";
 const MIME_AUDIO_MP4 = "audio/mp4";
+const MIME_AUDIO_MP4_BOOK = "audio/mp4";
 const MIME_VIDEO_MATROSKA = "video/x-matroska";
 const MIME_VIDEO_QUICKTIME = "video/quicktime";
 const MIME_AUDIO_MPEG = "audio/mpeg";
 const MIME_VIDEO_MP4 = "video/mp4";
+const MIME_VIDEO_MP4_ITUNES = "video/mp4";
+const MIME_VIDEO_3GP = "video/3gpp";
+const MIME_VIDEO_MPEG_TS = "video/mp2t";
 const MIME_AUDIO_OGG = "audio/ogg";
 const MIME_AUDIO_OPUS = "audio/opus";
 const MIME_AUDIO_WAV = "audio/wav";
+const MIME_AUDIO_WEBM = "audio/webm";
 const MIME_VIDEO_WEBM = "video/webm";
 
 const EXTENSION_TO_MIME_ALL: Record<string, string> = {
+  "3gp": MIME_VIDEO_3GP,
   aiff: MIME_AUDIO_AIFF,
   avi: MIME_VIDEO_AVI,
   flac: MIME_AUDIO_FLAC,
   m4a: MIME_AUDIO_MP4,
+  m4b: MIME_AUDIO_MP4_BOOK,
+  m4v: MIME_VIDEO_MP4_ITUNES,
   mkv: MIME_VIDEO_MATROSKA,
   mov: MIME_VIDEO_QUICKTIME,
   mp3: MIME_AUDIO_MPEG,
   mp4: MIME_VIDEO_MP4,
   ogg: MIME_AUDIO_OGG,
   opus: MIME_AUDIO_OPUS,
+  ts: MIME_VIDEO_MPEG_TS,
   wav: MIME_AUDIO_WAV,
+  weba: MIME_AUDIO_WEBM,
   webm: MIME_VIDEO_WEBM
 };
 
@@ -32,14 +42,18 @@ const EXT_WEBM = "webm";
 const EXT_MP4 = "mp4";
 const EXT_M4A = "m4a";
 
-const VIDEO_EXTENSION_ORDER = ["mp4", "webm", "mkv", "mov", "avi"] as const;
-const AUDIO_EXTENSION_ORDER = ["webm", "mp3", "m4a", "flac", "opus", "ogg", "wav", "aiff"] as const;
+// Order both lists by quality + everyday relevance, highest first. Video
+// containers don't carry quality on their own, so relevance/compatibility
+// is the dominant signal there. Audio sorts losslessless-first, then
+// modern lossy (AAC/Opus) over legacy lossy (MP3/Vorbis), then niche.
+const VIDEO_EXTENSION_ORDER = ["mp4", "mkv", "webm", "mov", "m4v", "ts", "avi", "3gp"] as const;
+const AUDIO_EXTENSION_ORDER = ["flac", "wav", "aiff", "m4a", "opus", "mp3", "ogg", "weba", "m4b"] as const;
 
 function toExtensionMap(extensions: readonly string[]) {
   return Object.fromEntries(extensions.map(extension => [extension, EXTENSION_TO_MIME_ALL[extension]]));
 }
 
-const extensionToMime = {
+const EXTENSION_TO_MIME = {
   video: toExtensionMap(VIDEO_EXTENSION_ORDER),
   audio: toExtensionMap(AUDIO_EXTENSION_ORDER)
 };
@@ -76,17 +90,22 @@ export const AUTO_EXTENSION = "auto";
 export const AUTO_EXTENSION_LABEL = "Auto (match source)";
 
 const FORMAT_DESCRIPTIONS: Record<string, string> = {
+  "3gp": "Mobile / legacy",
   aiff: "Lossless, macOS",
   avi: "Legacy Windows",
   flac: "Lossless, compressed",
   m4a: "AAC audio",
+  m4b: "Audiobook (chaptered)",
+  m4v: "iTunes / Apple",
   mkv: "Universal, multi-track",
   mov: "QuickTime / macOS",
   mp3: "Most compatible",
   mp4: "Most compatible",
   ogg: "Vorbis audio",
   opus: "Modern, efficient",
+  ts: "MPEG-TS / streaming",
   wav: "Lossless, uncompressed",
+  weba: "WebM audio (Opus)",
   webm: "Native YouTube format"
 };
 
@@ -94,8 +113,8 @@ export function getFormatDescription(extension: string) {
   return FORMAT_DESCRIPTIONS[extension] ?? "";
 }
 
-export const videoContainers = Object.keys(extensionToMime.video);
-export const audioContainers = Object.keys(extensionToMime.audio);
+export const videoContainers = Object.keys(EXTENSION_TO_MIME.video);
+export const audioContainers = Object.keys(EXTENSION_TO_MIME.audio);
 
 export const supportedExtensions = {
   video: [AUTO_EXTENSION, ...videoContainers],
