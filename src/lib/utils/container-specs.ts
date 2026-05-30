@@ -1,5 +1,6 @@
 const CODEC_VP8 = "vp8";
 const CODEC_VP9 = "vp9";
+const CODEC_VP09 = "vp09";
 const CODEC_AV01 = "av01";
 const CODEC_OPUS = "opus";
 const CODEC_VORBIS = "vorbis";
@@ -45,7 +46,7 @@ function audioOnly({ audioCodecs, fallbackAudioCodec }: AudioOnlySpec): Containe
 
 export const CONTAINER_SPECS: Record<string, ContainerSpec> = {
   webm: {
-    videoCodecs: new Set([CODEC_VP8, CODEC_VP9, CODEC_AV01]),
+    videoCodecs: new Set([CODEC_VP8, CODEC_VP9, CODEC_VP09, CODEC_AV01]),
     audioCodecs: new Set([CODEC_OPUS, CODEC_VORBIS]),
     fallbackVideoCodec: CODEC_VP9_ENCODER,
     subtitleCodec: SUBTITLE_CODEC_WEBVTT
@@ -93,12 +94,11 @@ export const CONTAINER_SPECS: Record<string, ContainerSpec> = {
     fallbackVideoCodec: CODEC_H264_ENCODER
   },
   mkv: {
-    videoCodecs: new Set([CODEC_VP8, CODEC_VP9, CODEC_AV01, CODEC_AVC1, CODEC_HVC1, CODEC_HEV1, CODEC_MP4V]),
+    videoCodecs: new Set([
+      CODEC_VP8, CODEC_VP9, CODEC_VP09, CODEC_AV01, CODEC_AVC1, CODEC_HVC1, CODEC_HEV1, CODEC_MP4V
+    ]),
     audioCodecs: new Set([CODEC_OPUS, CODEC_VORBIS, CODEC_MP4A, CODEC_AC3, CODEC_EC3, CODEC_FLAC, CODEC_MP3]),
-    fallbackAudioCodec: CODEC_OPUS_ENCODER,
-    fallbackVideoCodec: CODEC_H264_ENCODER,
-    allowNonNativeVideo: true,
-    subtitleCodec: SUBTITLE_CODEC_WEBVTT
+    allowNonNativeVideo: true
   },
   m4b: audioOnly({
     audioCodecs: new Set([CODEC_MP4A, CODEC_AAC]),
@@ -138,6 +138,13 @@ export const CONTAINER_SPECS: Record<string, ContainerSpec> = {
   })
 };
 
+const MKV_EXTENSION = "mkv";
+
+export function resolveMultiTrackExtension(baseExtension: string) {
+  const isKnownContainer = baseExtension in CONTAINER_SPECS;
+  return isKnownContainer && !MULTI_TRACK_UNSUPPORTED_EXTENSIONS.has(baseExtension) ? baseExtension : MKV_EXTENSION;
+}
+
 export function extractBaseCodec(mimeType: string) {
   return mimeType.match(/codecs="?([^",.;]+)/i)?.[1]?.toLowerCase() ?? "";
 }
@@ -169,7 +176,12 @@ export function requiresVideoReencode({ videoMimeType, targetExtension }: {
     return false;
   }
 
-  return !videoCodecsFor(spec).has(extractBaseCodec(videoMimeType));
+  const sourceCodec = extractBaseCodec(videoMimeType);
+  if (!sourceCodec) {
+    return false;
+  }
+
+  return !videoCodecsFor(spec).has(sourceCodec);
 }
 
 export function isAudioMimeNativeForContainer({ audioMimeType, targetExtension }: {
