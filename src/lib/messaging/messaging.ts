@@ -198,7 +198,7 @@ export interface ProtocolMap {
   }): void;
   pipelineFFmpegReady(): void;
   pipelineStart(data: PipelineStartMessage): void;
-  pipelineDownload(data: PipelineDownloadMessage): void;
+  pipelineDownload(data: PipelineDownloadMessage): { downloadId: number } | null;
   recentDownloadsChanged(): void;
   transcodeRecentDownload(data: TranscodeRecentDownloadMessage): void;
   pipelineZipProgress(data: {

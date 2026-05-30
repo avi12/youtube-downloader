@@ -5,51 +5,14 @@ import { TRANSCODE_VIDEO_ID_PREFIX } from "@/lib/download-pipeline/transcode-rec
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
 import type { PipelineDownloadMessage } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
-import { addRecentDownload, pruneRecentDownloads } from "@/lib/storage/recent-downloads-db";
+import { pruneRecentDownloads } from "@/lib/storage/recent-downloads-db";
 import { optionsItem } from "@/lib/storage/storage";
-import { getFileExtension } from "@/lib/utils/containers";
 import { DownloadType } from "@/types";
 
 type DownloadIdDataParams = {
   downloadId: number;
   data: PipelineDownloadMessage;
 };
-export async function persistRecentDownload({ downloadId, data }: DownloadIdDataParams) {
-  const context = data.recentContext;
-  if (!context) {
-    return;
-  }
-
-  try {
-    const response = await fetch(data.blobUrl);
-    const blob = await response.blob();
-    await addRecentDownload({
-      entry: {
-        id: crypto.randomUUID(),
-        downloadId,
-        videoId: context.videoId,
-        title: context.title,
-        channel: context.channel,
-        filename: data.filename,
-        container: getFileExtension(data.filename),
-        mimeType: data.mimeType,
-        videoMimeType: context.videoMimeType,
-        audioMimeType: context.audioMimeType,
-        size: blob.size,
-        thumbnailUrl: context.thumbnailUrl,
-        completedAt: Date.now()
-      },
-      blob
-    });
-    try {
-      await sendMessage(MessageType.RecentDownloadsChanged);
-    } catch {
-      // Popup not open - ignore.
-    }
-  } catch (error) {
-    console.warn("[ytdl:bg] Persist recent download failed:", error);
-  }
-}
 
 async function isTabIdle(tabId: number) {
   try {
@@ -86,7 +49,7 @@ async function notifyOnIdleIfNeeded({ data, tabIds }: NotifyOnIdleIfNeededParams
   });
 }
 
-export function persistOnDownloadComplete({ downloadId, data }: DownloadIdDataParams) {
+export function notifyOnDownloadComplete({ downloadId, data }: DownloadIdDataParams) {
   return new Promise<void>(resolve => {
     async function handleChanged(delta: Browser.downloads.DownloadDelta) {
       const isUnrelatedOrIncomplete = delta.id !== downloadId || !delta.state?.current;
@@ -126,10 +89,7 @@ export function persistOnDownloadComplete({ downloadId, data }: DownloadIdDataPa
           });
         }
 
-        void persistRecentDownload({
-          downloadId,
-          data
-        }).finally(resolve);
+        resolve();
         return;
       }
 
@@ -186,11 +146,13 @@ export function registerRecentDownloadHandlers() {
     });
 
     if (data.recentContext) {
-      void persistOnDownloadComplete({
+      void notifyOnDownloadComplete({
         downloadId,
         data
       });
     }
+
+    return { downloadId };
   });
 
   onMessage(MessageType.RevealDownloadFile, ({ data }) => {
