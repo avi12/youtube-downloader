@@ -55,7 +55,7 @@ function ensureFirefoxOffscreenIframe() {
   const elIframe = document.createElement("iframe");
   elIframe.id = OFFSCREEN_IFRAME_ID;
   elIframe.src = browser.runtime.getURL(OFFSCREEN_URL_PATH);
-  elIframe.style.cssText = "display:none";
+  elIframe.style.display = "none";
   document.body.append(elIframe);
 }
 

@@ -2,8 +2,16 @@ import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { mutateStorageItem, statusProgressItem } from "@/lib/storage/storage";
 import { ProgressType } from "@/types";
 
-function isServiceWorker() {
-  return typeof document === "undefined";
+// On Chrome MV3, only the background service worker can call
+// browser.tabs.sendMessage; offscreen page and download-worker iframe cannot.
+// On Firefox MV3 every extension context shares the BG document and has full
+// extension API access. Distinguish by runtime URL scheme.
+function canSendToTabDirectly() {
+  if (typeof document === "undefined") {
+    return true;
+  }
+
+  return browser.runtime.getURL("").startsWith("moz-extension://");
 }
 
 export { fetchWithProgress } from "./cdn-fetch";
@@ -49,8 +57,7 @@ export async function sendProgressUpdate({ videoId, progress, progressType, tabI
     lastProgressTimestamps.set(videoId, now);
   }
 
-  const isWorker = isServiceWorker();
-  if (isWorker) {
+  if (canSendToTabDirectly()) {
     await writeProgressToStorage({
       videoId,
       progress,
