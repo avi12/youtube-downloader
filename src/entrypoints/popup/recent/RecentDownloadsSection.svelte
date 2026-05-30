@@ -5,32 +5,29 @@
   interface Props {
     recentDownloads: RecentDownloadEntry[];
     now: number;
-    currentVideoId?: string;
-    currentPlaylistId?: string;
+    currentTabId?: number;
+    currentSourceUrl?: string;
     onChangeFormat: (entry: RecentDownloadEntry) => void;
     onRemove: (entry: RecentDownloadEntry) => void;
     onShowInFolder: (entry: RecentDownloadEntry) => void;
   }
 
   const {
-    recentDownloads, now, currentVideoId, currentPlaylistId,
+    recentDownloads, now, currentTabId, currentSourceUrl,
     onChangeFormat, onRemove, onShowInFolder
   }: Props = $props();
 
   function isInCurrentTab(entry: RecentDownloadEntry): boolean {
-    if (currentVideoId && entry.videoId === currentVideoId) {
-      return true;
-    }
-
-    if (currentPlaylistId && entry.videoId === currentPlaylistId) {
-      return true;
-    }
-
-    return false;
+    return Boolean(
+      currentTabId !== undefined
+      && entry.tabId === currentTabId
+      && currentSourceUrl
+      && entry.sourceUrl === currentSourceUrl
+    );
   }
 
   const otherRecent = $derived(
-    !currentVideoId && !currentPlaylistId
+    currentTabId === undefined || !currentSourceUrl
       ? recentDownloads
       : recentDownloads.filter(entry => !isInCurrentTab(entry))
   );

@@ -19,6 +19,7 @@
       tabId?: number;
       playlistId?: string;
       playlistTitle?: string;
+      sourceUrl?: string;
     }>;
     statusProgress: Record<string, {
       progress: number;
@@ -27,8 +28,8 @@
     percentFormatter: Intl.NumberFormat;
     recentDownloads: RecentDownloadEntry[];
     now: number;
-    currentVideoId?: string;
-    currentPlaylistId?: string;
+    currentTabId?: number;
+    currentSourceUrl?: string;
     onChangeFormat: (entry: RecentDownloadEntry) => void;
     onRecentChanged: () => void;
   }
@@ -36,7 +37,7 @@
   const {
     isFFmpegReady, videoDownloads, musicList, videoOnlyList, videoDetails,
     statusProgress, percentFormatter, recentDownloads, now,
-    currentVideoId, currentPlaylistId, onChangeFormat, onRecentChanged
+    currentTabId, currentSourceUrl, onChangeFormat, onRecentChanged
   }: Props = $props();
 
   const totalActiveDownloads = $derived(videoDownloads.length + musicList.length + videoOnlyList.length);
@@ -69,8 +70,8 @@
 {:else}
   <div class="download-sections">
     <ActiveDownloadsSections
-      {currentPlaylistId}
-      {currentVideoId}
+      {currentSourceUrl}
+      {currentTabId}
       {isFFmpegReady}
       {musicList}
       {now}
@@ -86,8 +87,8 @@
       {videoOnlyList}
     />
     <RecentDownloadsSection
-      {currentPlaylistId}
-      {currentVideoId}
+      {currentSourceUrl}
+      {currentTabId}
       {now}
       onChangeFormat={entry => onChangeFormat(entry)}
       onRemove={handleRemove}

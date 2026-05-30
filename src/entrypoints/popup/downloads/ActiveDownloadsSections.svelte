@@ -18,14 +18,15 @@
       tabId?: number;
       playlistId?: string;
       playlistTitle?: string;
+      sourceUrl?: string;
     }>;
     statusProgress: Record<string, {
       progress: number;
       progressType: ProgressType;
     }>;
     percentFormatter: Intl.NumberFormat;
-    currentVideoId?: string;
-    currentPlaylistId?: string;
+    currentTabId?: number;
+    currentSourceUrl?: string;
     recentDownloads: RecentDownloadEntry[];
     now: number;
     onCancel: (videoIds: string[]) => void;
@@ -36,37 +37,33 @@
 
   const {
     isFFmpegReady, videoDownloads, musicList, videoOnlyList,
-    videoDetails, statusProgress, percentFormatter, currentVideoId, currentPlaylistId,
+    videoDetails, statusProgress, percentFormatter, currentTabId, currentSourceUrl,
     recentDownloads, now,
     onCancel, onShowRecentInFolder, onChangeFormat, onRemoveRecent
   }: Props = $props();
 
   function isVideoIdInThisTab(videoId: string): boolean {
-    if (currentVideoId && videoId === currentVideoId) {
-      return true;
-    }
-
-    if (currentPlaylistId && videoDetails[videoId]?.playlistId === currentPlaylistId) {
-      return true;
-    }
-
-    return false;
+    const detail = videoDetails[videoId];
+    return Boolean(
+      detail
+      && currentTabId !== undefined
+      && detail.tabId === currentTabId
+      && currentSourceUrl
+      && detail.sourceUrl === currentSourceUrl
+    );
   }
 
   function isRecentEntryInThisTab(entry: RecentDownloadEntry): boolean {
-    if (currentVideoId && entry.videoId === currentVideoId) {
-      return true;
-    }
-
-    if (currentPlaylistId && entry.videoId === currentPlaylistId) {
-      return true;
-    }
-
-    return false;
+    return Boolean(
+      currentTabId !== undefined
+      && entry.tabId === currentTabId
+      && currentSourceUrl
+      && entry.sourceUrl === currentSourceUrl
+    );
   }
 
   const thisTabRecent = $derived(
-    !currentVideoId && !currentPlaylistId
+    currentTabId === undefined || !currentSourceUrl
       ? []
       : recentDownloads.filter(isRecentEntryInThisTab)
   );
@@ -81,7 +78,7 @@
 
   const thisTabIds = $derived(
     (() => {
-      if (!currentVideoId && !currentPlaylistId) {
+      if (currentTabId === undefined || !currentSourceUrl) {
         return new SvelteSet<string>();
       }
 
