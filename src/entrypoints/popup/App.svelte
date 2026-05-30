@@ -165,6 +165,7 @@
         bottom: calc(100% + 6px);
         left: 0;
         z-index: 10;
+        width: max-content;
         max-width: 240px;
         padding: 6px 12px;
         border-radius: 8px;
