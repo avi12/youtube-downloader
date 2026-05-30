@@ -268,11 +268,6 @@
     cursor: pointer;
     transition: background-color 150ms;
 
-    :global(svg) {
-      width: 18px;
-      height: 18px;
-    }
-
     &:hover {
       background: var(--surface-high);
     }
