@@ -29,7 +29,7 @@
   />
 {/if}
 <div class="download-item-content">
-  <span class="download-filename" title={filename}>{filename}</span>
+  <span class="download-filename" data-tooltip={filename}>{filename}</span>
   {#if quality}
     <span class="download-quality">{quality}</span>
   {/if}
@@ -72,10 +72,35 @@
   }
 
   .download-filename {
+    position: relative;
     overflow: hidden;
     font-size: 0.75rem;
     text-overflow: ellipsis;
     white-space: nowrap;
+
+    &::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: calc(100% + 4px);
+      left: 0;
+      z-index: 10;
+      max-width: 280px;
+      padding: 4px 8px;
+      border-radius: 6px;
+      background: var(--fg);
+      color: var(--bg);
+      font-weight: 400;
+      font-size: 0.6875rem;
+      white-space: normal;
+      word-break: break-all;
+      opacity: 0%;
+      pointer-events: none;
+      transition: opacity 150ms;
+    }
+
+    &:hover::after {
+      opacity: 100%;
+    }
   }
 
   .download-quality {
