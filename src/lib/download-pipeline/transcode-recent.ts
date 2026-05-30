@@ -2,7 +2,9 @@ import { triggerDownload } from ".";
 import { runTranscodeFile } from "./ffmpeg-instance";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { getRecentDownloadBlob, getAllRecentDownloads } from "@/lib/storage/recent-downloads-db";
-import { splitFilenameAndExtension } from "@/lib/utils/containers";
+import type { RecentDownloadEntry } from "@/lib/storage/recent-downloads-db";
+import { audioContainers, splitFilenameAndExtension, videoContainers } from "@/lib/utils/containers";
+import { fetchMusicThumbnailUrl } from "@/lib/youtube/youtube-music-metadata";
 import { DownloadType } from "@/types";
 
 export const TRANSCODE_VIDEO_ID_PREFIX = "transcode:";
@@ -11,6 +13,13 @@ type TranscodeRecentDownloadParams = {
   entryId: string;
   targetContainer: string;
 };
+
+async function resolveCoverArtUrl(entry: RecentDownloadEntry) {
+  const searchQuery = `${entry.channel} ${entry.title}`.trim();
+  const musicUrl = await fetchMusicThumbnailUrl(searchQuery);
+  return musicUrl ?? entry.thumbnailUrl;
+}
+
 export async function transcodeRecentDownload({ entryId, targetContainer }: TranscodeRecentDownloadParams) {
   const transcodeVideoId = `${TRANSCODE_VIDEO_ID_PREFIX}${entryId}`;
 
@@ -31,6 +40,8 @@ export async function transcodeRecentDownload({ entryId, targetContainer }: Tran
     }
 
     const downloadFilename = `${splitFilenameAndExtension(entry.filename).name}.${targetContainer}`;
+    const isVideoToAudio = videoContainers.includes(entry.container) && audioContainers.includes(targetContainer);
+    const coverArtUrl = isVideoToAudio ? await resolveCoverArtUrl(entry) : undefined;
 
     const output = await runTranscodeFile({
       videoId: transcodeVideoId,
@@ -40,7 +51,8 @@ export async function transcodeRecentDownload({ entryId, targetContainer }: Tran
         data: await blob.arrayBuffer(),
         sourceExtension: entry.container,
         targetContainer,
-        audioMimeType: entry.audioMimeType
+        audioMimeType: entry.audioMimeType,
+        coverArtUrl
       }
     });
     const isOutputMissing = !output;

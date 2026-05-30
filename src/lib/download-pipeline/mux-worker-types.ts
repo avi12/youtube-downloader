@@ -59,4 +59,5 @@ export type TranscodeFileJob = {
   sourceExtension: string;
   targetContainer: string;
   audioMimeType?: string;
+  coverArtUrl?: string;
 };

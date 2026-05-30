@@ -1,7 +1,18 @@
 import { buildRemuxArgs } from "./mux-ffmpeg-args";
 import { postError, postResult, state, tryUnlink } from "./mux-state";
+import { fetchThumbnail } from "./mux-thumbnail";
 import type { TranscodeAudioJob, TranscodeFileJob } from "@/lib/download-pipeline/mux-worker-types";
-import { getCompatibleFilename, getFileExtension } from "@/lib/utils/containers";
+import {
+  audioContainers,
+  getAudioFallbackCodec,
+  getCompatibleFilename,
+  getFileExtension
+} from "@/lib/utils/containers";
+
+const FFMPEG_CODEC_COPY = "copy";
+const FFMPEG_CODEC_MJPEG = "mjpeg";
+const JPEG_EXTENSION = "jpg";
+const COVER_FILENAME_PREFIX = "cover";
 
 const AUDIO_CODEC_BY_EXTENSION: Record<string, string> = {
   aiff: "pcm_s16be",
@@ -50,27 +61,78 @@ export function handleTranscodeAudio(job: TranscodeAudioJob) {
   }
 }
 
-export function handleTranscodeFile(job: TranscodeFileJob) {
-  const { videoId, tabId, data, sourceExtension, targetContainer, audioMimeType } = job;
+async function tryWriteCoverArt(coverArtUrl: string) {
+  const thumbnail = await fetchThumbnail(coverArtUrl);
+  if (!thumbnail) {
+    return null;
+  }
+
+  const coverFilename = `${COVER_FILENAME_PREFIX}.${thumbnail.extension}`;
+  state.ffmpeg!.FS.writeFile(coverFilename, thumbnail.data);
+  return coverFilename;
+}
+
+type ExtractAudioWithCoverArtParams = {
+  sourceFilename: string;
+  outputFilename: string;
+  targetContainer: string;
+  coverArtUrl: string;
+};
+async function extractAudioWithCoverArt({
+  sourceFilename, outputFilename, targetContainer, coverArtUrl
+}: ExtractAudioWithCoverArtParams) {
+  const coverFilename = await tryWriteCoverArt(coverArtUrl);
+  const audioCodec = getAudioFallbackCodec(targetContainer) ?? FFMPEG_CODEC_COPY;
+  const ffmpegArgs = ["-i", sourceFilename];
+  if (coverFilename) {
+    ffmpegArgs.push("-i", coverFilename, "-map", "0:a", "-map", "1");
+    ffmpegArgs.push("-c:v", coverFilename.endsWith(`.${JPEG_EXTENSION}`) ? FFMPEG_CODEC_COPY : FFMPEG_CODEC_MJPEG);
+    ffmpegArgs.push("-disposition:v", "attached_pic");
+  } else {
+    ffmpegArgs.push("-map", "0:a");
+  }
+
+  ffmpegArgs.push("-c:a", audioCodec, outputFilename);
+  return {
+    args: ffmpegArgs,
+    coverFilename
+  };
+}
+
+export async function handleTranscodeFile(job: TranscodeFileJob) {
+  const { videoId, tabId, data, sourceExtension, targetContainer, audioMimeType, coverArtUrl } = job;
   state.currentVideoId = videoId;
   state.currentTabId = tabId;
   const sourceFilename = `source.${sourceExtension}`;
   const outputFilename = `output.${targetContainer}`;
+  const isAudioTarget = audioContainers.includes(targetContainer);
 
   state.progressOffset = 0;
   state.progressScale = 1;
 
   state.ffmpeg!.FS.writeFile(sourceFilename, new Uint8Array(data));
 
+  let coverFilenameForCleanup: string | null = null;
   try {
-    const exitCode = state.ffmpeg!.exec(
-      ...buildRemuxArgs({
+    const ffmpegArgs = isAudioTarget && coverArtUrl
+      ? await (async () => {
+        const result = await extractAudioWithCoverArt({
+          sourceFilename,
+          outputFilename,
+          targetContainer,
+          coverArtUrl
+        });
+        coverFilenameForCleanup = result.coverFilename;
+        return result.args;
+      })()
+      : buildRemuxArgs({
         inputFilename: sourceFilename,
         outputFilename,
         targetExtension: targetContainer,
         audioMimeType
-      })
-    );
+      });
+
+    const exitCode = state.ffmpeg!.exec(...ffmpegArgs);
     const isExecFailed = exitCode !== 0;
     if (isExecFailed) {
       postError(`FFmpeg exited with code ${exitCode}`);
@@ -88,5 +150,9 @@ export function handleTranscodeFile(job: TranscodeFileJob) {
   } finally {
     tryUnlink(sourceFilename);
     tryUnlink(outputFilename);
+
+    if (coverFilenameForCleanup) {
+      tryUnlink(coverFilenameForCleanup);
+    }
   }
 }

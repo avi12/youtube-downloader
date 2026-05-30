@@ -65,11 +65,9 @@ async function onInitMessage(e: MessageEvent<InitMessage>) {
       }
     },
     [WorkerMessageType.TranscodeFile]({ job }) {
-      try {
-        handleTranscodeFile(job);
-      } catch (error) {
+      void handleTranscodeFile(job).catch(error => {
         postError(error instanceof Error ? error.message : String(error));
-      }
+      });
     }
   });
 
