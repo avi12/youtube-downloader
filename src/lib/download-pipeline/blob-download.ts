@@ -36,11 +36,6 @@ async function persistAndTrigger({ blob, blobUrl, filename, mimeType, recentCont
       },
       blob
     });
-    try {
-      await sendMessage(MessageType.RecentDownloadsChanged);
-    } catch {
-      // Popup not open - ignore.
-    }
   }
 
   const response = await sendMessage(MessageType.PipelineDownload, {
