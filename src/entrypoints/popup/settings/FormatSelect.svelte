@@ -1,15 +1,24 @@
 <script lang="ts">
-  import { AUTO_EXTENSION, AUTO_EXTENSION_LABEL, getFormatDescription } from "@/lib/utils/containers";
+  import { AUTO_EXTENSION, AUTO_EXTENSION_LABEL } from "@/lib/utils/containers";
+  import type { FormatItem } from "@/lib/utils/containers";
 
   interface Props {
     label?: string;
-    options: string[];
+    items: Pick<FormatItem, "extension" | "description">[];
     value: string;
     onchange: (value: string) => void;
   }
 
-  const { label, options, value, onchange }: Props = $props();
+  const { label, items, value, onchange }: Props = $props();
   const id = $props.id();
+
+  function formatLabel(item: Pick<FormatItem, "extension" | "description">): string {
+    if (item.extension === AUTO_EXTENSION) {
+      return AUTO_EXTENSION_LABEL;
+    }
+
+    return item.description ? `${item.extension} - ${item.description}` : item.extension;
+  }
 </script>
 
 <div class="format-select">
@@ -29,9 +38,9 @@
     }}
     {value}
   >
-    {#each options as option (option)}
-      <option selected={option === value} value={option}>
-        {option === AUTO_EXTENSION ? AUTO_EXTENSION_LABEL : `${option} - ${getFormatDescription(option)}`}
+    {#each items as item (item.extension)}
+      <option selected={item.extension === value} value={item.extension}>
+        {formatLabel(item)}
       </option>
     {/each}
   </select>

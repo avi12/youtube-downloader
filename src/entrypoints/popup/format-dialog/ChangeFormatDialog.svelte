@@ -1,8 +1,12 @@
 <script lang="ts">
-  import { buildAvailableTargets, buildEstimatedTimeLabel, submitTranscode } from "./change-format-helpers";
+  import {
+    buildAvailableTargetGroups,
+    buildEstimatedTimeLabel,
+    pickFirstSelectableTarget,
+    submitTranscode
+  } from "./change-format-helpers";
   import ChangeFormatActions from "./ChangeFormatActions.svelte";
   import FormatTargetList from "./FormatTargetList.svelte";
-  import { videoContainers } from "@/lib/utils/containers";
   import type { RecentDownloadEntry } from "@/types";
 
   interface Props {
@@ -12,13 +16,8 @@
 
   const { entry, onClose }: Props = $props();
 
-  const isVideoContainer = $derived(videoContainers.includes(entry.container));
-  const availableTargets = $derived(
-    buildAvailableTargets({
-      entry,
-      isVideoContainer
-    })
-  );
+  const targetGroups = $derived(buildAvailableTargetGroups({ entry }));
+  const hasAnyTarget = $derived(targetGroups.some(group => group.items.some(item => !item.isExcluded)));
 
   let selectedTarget = $state("");
   let isSubmitting = $state(false);
@@ -30,8 +29,8 @@
   });
 
   $effect(() => {
-    if (!selectedTarget && availableTargets.length > 0) {
-      [selectedTarget] = availableTargets;
+    if (!selectedTarget && hasAnyTarget) {
+      selectedTarget = pickFirstSelectableTarget(targetGroups);
     }
   });
 
@@ -72,7 +71,7 @@
     }
   }
 
-  const isConfirmDisabled = $derived(!selectedTarget || isSubmitting || availableTargets.length === 0);
+  const isConfirmDisabled = $derived(!selectedTarget || isSubmitting || !hasAnyTarget);
 </script>
 
 <svelte:window onkeydown={handleWindowKeydown} />
@@ -95,9 +94,9 @@
   </p>
   <FormatTargetList
     {estimatedTimeLabel}
+    groups={targetGroups}
     onSelect={target => (selectedTarget = target)}
     {selectedTarget}
-    targets={availableTargets}
   />
   <ChangeFormatActions
     isDisabled={isConfirmDisabled}
