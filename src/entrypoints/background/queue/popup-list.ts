@@ -17,7 +17,9 @@ export async function enqueueToPopupList(
   details[videoId] = {
     ...details[videoId],
     filenameOutput,
-    quality,
+    ...(quality !== undefined && {
+      quality
+    }),
     ...(tabId !== undefined && {
       tabId
     }),

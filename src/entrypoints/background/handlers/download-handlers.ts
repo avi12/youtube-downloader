@@ -21,6 +21,7 @@ import { registerProxyFetchHandler } from "./proxy-fetch-handler";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
 import { mutateStorageItem, statusProgressItem } from "@/lib/storage/storage";
+import { resolveQualityLabel } from "@/lib/youtube/audio-format-helpers";
 import { ProgressType } from "@/types";
 
 export function registerDownloadHandlers() {
@@ -132,12 +133,11 @@ export function registerDownloadHandlers() {
       videoId: data.videoId,
       tabId: resolvedTabId
     });
-    const hasHeight = !!data.videoFormat?.height;
     await enqueueToPopupList({
       videoId: data.videoId,
       type: data.type,
       filenameOutput: data.filenameOutput,
-      quality: hasHeight ? `${data.videoFormat!.height}p` : undefined,
+      quality: resolveQualityLabel(data),
       tabId: resolvedTabId
     });
     void startBackgroundDownload({
