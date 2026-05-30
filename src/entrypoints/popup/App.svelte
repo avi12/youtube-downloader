@@ -157,13 +157,14 @@
 
       [data-tooltip] {
         position: relative;
+        anchor-name: --tooltip-trigger;
       }
 
       [data-tooltip]::after {
         content: attr(data-tooltip);
         position: absolute;
         bottom: calc(100% + 6px);
-        left: 0;
+        inset-inline-start: 0;
         z-index: 10;
         width: max-content;
         max-width: 240px;
@@ -183,6 +184,8 @@
           0 1px 2px 0 color-mix(in oklab, var(--fg) 30%, transparent);
         pointer-events: none;
         transition: opacity 150ms cubic-bezier(0.2, 0, 0, 1);
+        position-anchor: --tooltip-trigger;
+        position-try-fallbacks: flip-inline;
       }
 
       [data-tooltip]:hover::after,
