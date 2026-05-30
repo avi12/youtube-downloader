@@ -1,7 +1,7 @@
 import { toUint8Array, reportProgress, toOwnedArrayBuffer, buildRecentContext } from ".";
 import { triggerDownloadFromFile } from "./blob-download";
 import {
-  buildExtraAudioTracks,
+  buildAdditionalAudioTracks,
   buildSubtitleFiles,
   handleSingleStream,
   resolveDownloadFilename
@@ -44,9 +44,19 @@ export async function processVideoAudio({ item, isCancelled }: ProcessVideoAudio
     tabId
   });
 
+  const additionalAudioTracks = buildAdditionalAudioTracks(additionalAudioStreams);
+  const audioTracks = [
+    {
+      data: toOwnedArrayBuffer(audioData!),
+      label: item.primaryAudioLabel ?? "",
+      languageCode: primaryAudioLanguageCode ?? ""
+    },
+    ...additionalAudioTracks
+  ];
+
   const downloadFilename = resolveDownloadFilename({
     filenameOutput,
-    hasExtraTracks: additionalAudioStreams.length > 0
+    hasExtraTracks: additionalAudioTracks.length > 0
   });
 
   const outputFile = await runMuxVideoAudio({
@@ -54,15 +64,12 @@ export async function processVideoAudio({ item, isCancelled }: ProcessVideoAudio
     job: {
       videoData: item.videoFile ? null : toOwnedArrayBuffer(videoData!),
       videoFile: item.videoFile,
-      audioData: toOwnedArrayBuffer(audioData!),
-      extraAudioTracks: buildExtraAudioTracks(additionalAudioStreams),
+      audioTracks,
       subtitleTracks: buildSubtitleFiles(subtitleTracks),
       videoMimeType,
       audioMimeType,
       videoId,
       tabId,
-      primaryAudioLabel: item.primaryAudioLabel ?? "",
-      primaryAudioLanguageCode: primaryAudioLanguageCode ?? "",
       defaultAudioTrackIndex: defaultAudioTrackIndex ?? 0,
       filenameOutput
     }

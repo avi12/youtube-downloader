@@ -1,17 +1,17 @@
 import { state, tryUnlink } from "./mux-state";
 import type { MuxVideoAudioJob } from "@/lib/download-pipeline/mux-worker-types";
 import { getAudioTempExtension } from "@/lib/utils/containers";
-import { AUDIO_EXTRA_STREAM_PREFIX } from "@/types";
 
+const AUDIO_TEMP_SUFFIX = "audio";
 const SUBTITLE_STREAM_PREFIX = "sub";
 const VTT_EXTENSION = "vtt";
 const MKV_EXTENSION = "mkv";
 
-type ExtraAudioTracks = MuxVideoAudioJob["extraAudioTracks"];
+type AudioTracks = MuxVideoAudioJob["audioTracks"];
 type SubtitleTracks = MuxVideoAudioJob["subtitleTracks"];
 
 export type MuxInputFiles = {
-  extraFilenames: string[];
+  audioFilenames: string[];
   subtitleFilenames: string[];
 };
 
@@ -20,27 +20,22 @@ type WriteMuxInputFilesParams = {
   videoFilename: string;
   videoData: ArrayBuffer;
   skipVideoWrite?: boolean;
-  primaryAudioFilename: string;
-  audioData: ArrayBuffer;
+  audioTracks: AudioTracks;
   audioMimeType: string;
-  extraAudioTracks: ExtraAudioTracks;
   subtitleTracks: SubtitleTracks;
 };
 
 export function writeMuxInputFiles(params: WriteMuxInputFilesParams) {
-  const { videoId, videoFilename, videoData, skipVideoWrite, primaryAudioFilename, audioData, audioMimeType } = params;
-  const { extraAudioTracks, subtitleTracks } = params;
+  const { videoId, videoFilename, videoData, skipVideoWrite, audioTracks, audioMimeType, subtitleTracks } = params;
   if (!skipVideoWrite) {
     state.ffmpeg!.FS.writeFile(videoFilename, new Uint8Array(videoData));
   }
 
-  state.ffmpeg!.FS.writeFile(primaryAudioFilename, new Uint8Array(audioData));
-
-  const extraFilenames: string[] = [];
-  for (const [i, track] of extraAudioTracks.entries()) {
-    const extraFilename = `${videoId}-${AUDIO_EXTRA_STREAM_PREFIX}-${i}.${getAudioTempExtension(audioMimeType)}`;
-    state.ffmpeg!.FS.writeFile(extraFilename, new Uint8Array(track.data));
-    extraFilenames.push(extraFilename);
+  const audioFilenames: string[] = [];
+  for (const [i, track] of audioTracks.entries()) {
+    const audioFilename = `${videoId}-${AUDIO_TEMP_SUFFIX}-${i}.${getAudioTempExtension(audioMimeType)}`;
+    state.ffmpeg!.FS.writeFile(audioFilename, new Uint8Array(track.data));
+    audioFilenames.push(audioFilename);
   }
 
   const subtitleFilenames: string[] = [];
@@ -51,15 +46,14 @@ export function writeMuxInputFiles(params: WriteMuxInputFilesParams) {
   }
 
   return {
-    extraFilenames,
+    audioFilenames,
     subtitleFilenames
   };
 }
 
 export type MuxCleanupParams = {
   videoFilename: string;
-  primaryAudioFilename: string;
-  extraFilenames: string[];
+  audioFilenames: string[];
   subtitleFilenames: string[];
   muxFilename: string;
   outputFilename: string;
@@ -69,8 +63,7 @@ export type MuxCleanupParams = {
 
 export function cleanupMuxFiles(params: MuxCleanupParams) {
   tryUnlink(params.videoFilename);
-  tryUnlink(params.primaryAudioFilename);
-  for (const filename of [...params.extraFilenames, ...params.subtitleFilenames]) {
+  for (const filename of [...params.audioFilenames, ...params.subtitleFilenames]) {
     tryUnlink(filename);
   }
 

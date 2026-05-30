@@ -19,15 +19,16 @@ type BaseWorkerJob = {
   filenameOutput: string;
 };
 
+export type AudioTrack = {
+  data: ArrayBuffer;
+  label: string;
+  languageCode: string;
+};
+
 export type MuxVideoAudioJob = BaseWorkerJob & {
   videoData: ArrayBuffer | null;
   videoFile?: File;
-  audioData: ArrayBuffer;
-  extraAudioTracks: {
-    data: ArrayBuffer;
-    label: string;
-    languageCode: string;
-  }[];
+  audioTracks: AudioTrack[];
   subtitleTracks: {
     data: Uint8Array;
     label: string;
@@ -35,8 +36,6 @@ export type MuxVideoAudioJob = BaseWorkerJob & {
   }[];
   videoMimeType: string;
   audioMimeType: string;
-  primaryAudioLabel: string;
-  primaryAudioLanguageCode: string;
   defaultAudioTrackIndex: number;
 };
 

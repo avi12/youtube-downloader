@@ -82,25 +82,21 @@ export function buildRemuxArgs({
   return ffmpegArgs;
 }
 
-type ExtraAudioTracks = MuxVideoAudioJob["extraAudioTracks"];
+type AudioTracks = MuxVideoAudioJob["audioTracks"];
 type SubtitleTracks = MuxVideoAudioJob["subtitleTracks"];
 
 export type MuxFfmpegParams = {
   videoFilename: string;
-  primaryAudioFilename: string;
-  extraFilenames: string[];
+  audioFilenames: string[];
   subtitleFilenames: string[];
   outputFilename: string;
   muxFilename: string;
   useIntermediateMkv: boolean;
   audioMimeType: string;
   targetExtension: string;
-  extraAudioTracks: ExtraAudioTracks;
+  audioTracks: AudioTracks;
   subtitleTracks: SubtitleTracks;
-  primaryAudioLabel: string;
-  primaryAudioLanguageCode: string;
   defaultAudioTrackIndex: number;
-  isExtraTracksPresent: boolean;
 };
 
 type AppendTrackMetadataParams = {
@@ -108,23 +104,13 @@ type AppendTrackMetadataParams = {
   params: MuxFfmpegParams;
 };
 function appendTrackMetadata({ ffmpegArgs, params }: AppendTrackMetadataParams) {
-  const audioTrackMeta = [
-    {
-      label: params.primaryAudioLabel,
-      languageCode: params.primaryAudioLanguageCode
-    },
-    ...params.extraAudioTracks.map(track => ({
-      label: track.label,
-      languageCode: track.languageCode
-    }))
-  ];
-  for (const [i, { label, languageCode }] of audioTrackMeta.entries()) {
-    if (label) {
-      ffmpegArgs.push(`-metadata:s:a:${i}`, `title=${label}`);
+  for (const [i, track] of params.audioTracks.entries()) {
+    if (track.label) {
+      ffmpegArgs.push(`-metadata:s:a:${i}`, `title=${track.label}`);
     }
 
-    if (languageCode) {
-      ffmpegArgs.push(`-metadata:s:a:${i}`, `language=${languageCode}`);
+    if (track.languageCode) {
+      ffmpegArgs.push(`-metadata:s:a:${i}`, `language=${track.languageCode}`);
     }
   }
 
@@ -138,8 +124,9 @@ function appendTrackMetadata({ ffmpegArgs, params }: AppendTrackMetadataParams) 
     }
   }
 
-  if (params.isExtraTracksPresent) {
-    for (let i = 0; i < 1 + params.extraAudioTracks.length; i++) {
+  const isMultiTrack = params.audioTracks.length > 1;
+  if (isMultiTrack) {
+    for (let i = 0; i < params.audioTracks.length; i++) {
       ffmpegArgs.push(`-disposition:a:${i}`, i === params.defaultAudioTrackIndex ? "default" : "0");
     }
   }
@@ -147,20 +134,21 @@ function appendTrackMetadata({ ffmpegArgs, params }: AppendTrackMetadataParams) 
 
 export function buildMuxFfmpegArgs(params: MuxFfmpegParams) {
   const {
-    videoFilename, primaryAudioFilename, extraFilenames, subtitleFilenames,
+    videoFilename, audioFilenames, subtitleFilenames,
     outputFilename, muxFilename, useIntermediateMkv, audioMimeType, targetExtension
   } = params;
-  const ffmpegArgs = ["-i", videoFilename, "-i", primaryAudioFilename];
-  for (const filename of [...extraFilenames, ...subtitleFilenames]) {
+
+  const ffmpegArgs = ["-i", videoFilename];
+  for (const filename of [...audioFilenames, ...subtitleFilenames]) {
     ffmpegArgs.push("-i", filename);
   }
 
   ffmpegArgs.push("-map", "0:v:0");
-  for (let i = 0; i <= params.extraAudioTracks.length; i++) {
+  for (let i = 0; i < audioFilenames.length; i++) {
     ffmpegArgs.push("-map", `${i + 1}:a:0`);
   }
 
-  const subtitleInputOffset = 2 + params.extraAudioTracks.length;
+  const subtitleInputOffset = 1 + audioFilenames.length;
   for (let i = 0; i < subtitleFilenames.length; i++) {
     ffmpegArgs.push("-map", `${subtitleInputOffset + i}:s:0`);
   }

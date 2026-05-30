@@ -66,8 +66,7 @@ export function runMuxVideoAudio({ videoId, job }: RunMuxVideoAudioParams) {
     transferables.push(job.videoData!);
   }
 
-  transferables.push(job.audioData);
-  for (const track of job.extraAudioTracks) {
+  for (const track of job.audioTracks) {
     transferables.push(track.data);
   }
 
