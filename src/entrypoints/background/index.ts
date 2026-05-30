@@ -6,7 +6,7 @@ import { registerStorageHandlers } from "./handlers/storage-handlers";
 import { registerTabLifecycleHandlers } from "./handlers/tab-lifecycle";
 import { registerSabrOriginRule } from "./network-rules";
 import { registerRecentDownloadsRetention } from "./recent/recent-downloads";
-import { MessageType, sendMessage } from "@/lib/messaging/messaging";
+import { MessageType, sendMessageToTab } from "@/lib/messaging/messaging";
 import { initOffscreenPortListener } from "@/lib/messaging/offscreen-messaging";
 import {
   clearLocalStorage,
@@ -23,7 +23,7 @@ export default defineBackground(() => {
   void registerSabrOriginRule();
   startSabrRequestCapture();
   onSabrBodyCaptured(tabId => {
-    void sendMessage(MessageType.SabrBodyReady, undefined, tabId);
+    void sendMessageToTab(MessageType.SabrBodyReady, undefined, tabId);
   });
 
   void statusProgressItem.setValue({});

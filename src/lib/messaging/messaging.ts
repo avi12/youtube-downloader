@@ -1,5 +1,5 @@
 import type { DownloadRequest, DownloadType, ProgressType, VideoMetadata } from "@/types";
-import { defineExtensionMessaging } from "@webext-core/messaging";
+import { defineExtensionMessaging, type GetDataType, type GetReturnType } from "@webext-core/messaging";
 
 export const MessageType = {
   BackgroundProxyFetch: "backgroundProxyFetch",
@@ -36,8 +36,22 @@ export const MessageType = {
   WorkerDownloadComplete: "workerDownloadComplete",
   ReportWorkerDownloadFailed: "reportWorkerDownloadFailed",
   ForwardProgressUpdate: "forwardProgressUpdate",
-  ReportPageProgress: "reportPageProgress"
+  ReportPageProgress: "reportPageProgress",
+  PageSabrFetch: "pageSabrFetch"
 } as const;
+
+export type PageSabrFetchRequest = {
+  url: string;
+  method: string;
+  bodyBase64: string;
+  headers?: Record<string, string>;
+};
+
+export type PageSabrFetchResponse = {
+  status: number;
+  bodyBase64: string;
+  responseHeaders: Record<string, string>;
+} | null;
 
 export type BackgroundProxyFetchRequest = {
   url: string;
@@ -255,9 +269,23 @@ export interface ProtocolMap {
     progress: number;
     progressType: ProgressType;
   }): void;
+
+  pageSabrFetch(data: PageSabrFetchRequest): PageSabrFetchResponse;
 }
 
 export const { sendMessage, onMessage } =
   defineExtensionMessaging<ProtocolMap>({
     breakError: true
   });
+
+export async function sendMessageToTab<TType extends keyof ProtocolMap>(
+  type: TType,
+  data: GetDataType<ProtocolMap[TType]>,
+  tabId: number
+): Promise<GetReturnType<ProtocolMap[TType]> | undefined> {
+  if (tabId < 0) {
+    return undefined;
+  }
+
+  return sendMessage(type, data, tabId);
+}

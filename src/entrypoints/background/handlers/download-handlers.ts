@@ -10,6 +10,7 @@ import { clearIframeAutoRetry, handleIframeFallback } from "../download/sabr-att
 import { enqueueToPopupList, removeFromPopupList } from "../queue/popup-list";
 import { signalVideoComplete } from "../queue/sequential-queue";
 import { cancelDownloads, getTabIdsForVideo, trackVideoForTab } from "../queue/tab-tracker";
+import { notifyWatchTabsOnComplete } from "../recent/recent-downloads";
 import { markVideosCancelled } from "./pipeline-handlers";
 import {
   abortCurrentSequence,
@@ -18,7 +19,7 @@ import {
   registerPlaylistDownloadHandler
 } from "./playlist-download-handler";
 import { registerProxyFetchHandler } from "./proxy-fetch-handler";
-import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
+import { MessageType, onMessage, sendMessage, sendMessageToTab } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
 import { mutateStorageItem, statusProgressItem } from "@/lib/storage/storage";
 import { resolveQualityLabel } from "@/lib/youtube/audio-format-helpers";
@@ -95,20 +96,23 @@ export function registerDownloadHandlers() {
     const { blobUrl, filename, videoId } = data;
     const tabId = getTabIdsForVideo(videoId)[0] ?? -1;
     try {
-      await browser.downloads.download({
+      const downloadId = await browser.downloads.download({
         url: blobUrl,
         filename
       });
       clearIframeAutoRetry(videoId);
+      notifyWatchTabsOnComplete({
+        downloadId,
+        videoId,
+        filename
+      });
 
-      if (tabId >= 0) {
-        await sendMessage(MessageType.UpdateDownloadProgress, {
-          videoId,
-          progress: 0,
-          progressType: ProgressType.Video,
-          isRemoved: true
-        }, tabId);
-      }
+      await sendMessageToTab(MessageType.UpdateDownloadProgress, {
+        videoId,
+        progress: 0,
+        progressType: ProgressType.Video,
+        isRemoved: true
+      }, tabId);
 
       await removeFromPopupList(videoId);
       signalVideoComplete(videoId);
@@ -155,9 +159,7 @@ export function registerDownloadHandlers() {
       tabId: resolvedTabId
     });
 
-    if (resolvedTabId >= 0) {
-      await sendMessage(MessageType.StartKeepalive, { videoId: data.videoId }, resolvedTabId);
-    }
+    await sendMessageToTab(MessageType.StartKeepalive, { videoId: data.videoId }, resolvedTabId);
   });
 
   onMessage(MessageType.RequestDirectUrlDownload, async ({ data }) => {
@@ -165,15 +167,18 @@ export function registerDownloadHandlers() {
     const downloadId = await tryDirectUrlDownload({ request });
     if (downloadId !== null) {
       clearIframeAutoRetry(videoId);
+      notifyWatchTabsOnComplete({
+        downloadId,
+        videoId,
+        filename: request.filenameOutput
+      });
 
-      if (tabId >= 0) {
-        await sendMessage(MessageType.UpdateDownloadProgress, {
-          videoId,
-          progress: 0,
-          progressType: ProgressType.Video,
-          isRemoved: true
-        }, tabId);
-      }
+      await sendMessageToTab(MessageType.UpdateDownloadProgress, {
+        videoId,
+        progress: 0,
+        progressType: ProgressType.Video,
+        isRemoved: true
+      }, tabId);
 
       await removeFromPopupList(videoId);
       signalVideoComplete(videoId);
@@ -222,9 +227,7 @@ export function registerDownloadHandlers() {
       }
     });
 
-    if (tabId >= 0) {
-      void sendMessage(MessageType.UpdateDownloadProgress, progressData, tabId);
-    }
+    void sendMessageToTab(MessageType.UpdateDownloadProgress, progressData, tabId);
   });
 
   onMessage(MessageType.ReportPageProgress, async ({ data, sender }) => {
@@ -239,12 +242,10 @@ export function registerDownloadHandlers() {
       }
     });
 
-    if (tabId >= 0) {
-      await sendMessage(MessageType.UpdateDownloadProgress, {
-        videoId: data.videoId,
-        progress: data.progress,
-        progressType: data.progressType
-      }, tabId);
-    }
+    await sendMessageToTab(MessageType.UpdateDownloadProgress, {
+      videoId: data.videoId,
+      progress: data.progress,
+      progressType: data.progressType
+    }, tabId);
   });
 }

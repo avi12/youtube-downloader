@@ -140,6 +140,55 @@ function scheduleRevokeBlobUrl({ downloadId, blobUrl }: ScheduleRevokeBlobUrlPar
   browser.downloads.onChanged.addListener(handleChanged);
 }
 
+type NotifyWatchTabsParams = {
+  downloadId: number;
+  videoId: string;
+  filename: string;
+};
+
+export function notifyWatchTabsOnComplete({ downloadId, videoId, filename }: NotifyWatchTabsParams) {
+  async function handleChanged(delta: Browser.downloads.DownloadDelta) {
+    const isUnrelated = delta.id !== downloadId || !delta.state?.current;
+    if (isUnrelated) {
+      return;
+    }
+
+    const { current } = delta.state!;
+    const isComplete = current === browser.downloads.State.COMPLETE;
+    const isTerminal = isComplete || current === browser.downloads.State.INTERRUPTED;
+    if (!isTerminal) {
+      return;
+    }
+
+    browser.downloads.onChanged.removeListener(handleChanged);
+
+    if (!isComplete) {
+      return;
+    }
+
+    const tabIds = getTabIdsForVideo(videoId);
+    const [downloadItem] = await browser.downloads.search({ id: downloadId });
+    const actualFilename = downloadItem?.filename
+      ? downloadItem.filename.split(/[/\\]/).pop()!
+      : filename;
+
+    for (const tabId of tabIds) {
+      void sendMessage(MessageType.WatchDownloadCompleted, {
+        videoId,
+        downloadId,
+        filename: actualFilename
+      }, tabId);
+    }
+
+    const options = await optionsItem.getValue();
+    if (options.isRevealOnComplete) {
+      browser.downloads.show(downloadId);
+    }
+  }
+
+  browser.downloads.onChanged.addListener(handleChanged);
+}
+
 export function registerRecentDownloadHandlers() {
   onMessage(MessageType.PipelineDownload, async ({ data }) => {
     const downloadId = await browser.downloads.download({
