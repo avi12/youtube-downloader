@@ -52,6 +52,7 @@ export async function transcodeRecentDownload({ entryId, targetContainer }: Tran
         sourceExtension: entry.container,
         targetContainer,
         audioMimeType: entry.audioMimeType,
+        videoMimeType: entry.videoMimeType,
         coverArtUrl
       }
     });

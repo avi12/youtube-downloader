@@ -1,5 +1,10 @@
 import type { MuxVideoAudioJob } from "@/lib/download-pipeline/mux-worker-types";
-import { CONTAINER_SPECS, extractBaseCodec, videoContainers } from "@/lib/utils/containers";
+import {
+  CONTAINER_SPECS,
+  extractBaseCodec,
+  isVideoNativeForContainer,
+  videoContainers
+} from "@/lib/utils/containers";
 
 const FFMPEG_CODEC_COPY = "copy";
 const FFMPEG_SUBTITLE_CODEC_WEBVTT = "webvtt";
@@ -19,6 +24,26 @@ export function resolveAudioCodec({ audioMimeType, targetExtension }: ResolveAud
   return containerSpec.audioCodecs.has(codec) ? FFMPEG_CODEC_COPY : fallbackCodec;
 }
 
+type ResolveVideoCodecParams = {
+  videoMimeType: string | undefined;
+  targetExtension: string;
+};
+export function resolveVideoCodec({ videoMimeType, targetExtension }: ResolveVideoCodecParams) {
+  if (!videoMimeType) {
+    return FFMPEG_CODEC_COPY;
+  }
+
+  const isNative = isVideoNativeForContainer({
+    videoMimeType,
+    targetExtension
+  });
+  if (isNative) {
+    return FFMPEG_CODEC_COPY;
+  }
+
+  return CONTAINER_SPECS[targetExtension]?.fallbackVideoCodec ?? FFMPEG_CODEC_COPY;
+}
+
 export function resolveSubtitleCodec(targetExtension: string) {
   return CONTAINER_SPECS[targetExtension]?.subtitleCodec ?? null;
 }
@@ -28,18 +53,24 @@ type BuildRemuxArgsParams = {
   outputFilename: string;
   targetExtension: string;
   audioMimeType: string | undefined;
+  videoMimeType?: string;
 };
 export function buildRemuxArgs({
   inputFilename,
   outputFilename,
   targetExtension,
-  audioMimeType
+  audioMimeType,
+  videoMimeType
 }: BuildRemuxArgsParams) {
   const audioCodec = resolveAudioCodec({
     audioMimeType: audioMimeType ?? "",
     targetExtension
   });
-  const ffmpegArgs = ["-i", inputFilename, "-map", "0", "-c:v", FFMPEG_CODEC_COPY, "-c:a", audioCodec];
+  const videoCodec = resolveVideoCodec({
+    videoMimeType,
+    targetExtension
+  });
+  const ffmpegArgs = ["-i", inputFilename, "-map", "0", "-c:v", videoCodec, "-c:a", audioCodec];
   const isVideoContainer = videoContainers.includes(targetExtension);
   const subtitleCodecForRemux = isVideoContainer ? resolveSubtitleCodec(targetExtension) : null;
   const hasSubtitleCodec = !!subtitleCodecForRemux;

@@ -10,6 +10,7 @@ export type FormatItem = {
   description: string;
   group: FormatGroupHeading;
   isExcluded: boolean;
+  isSlow?: boolean;
 };
 
 export type FormatGroup = {

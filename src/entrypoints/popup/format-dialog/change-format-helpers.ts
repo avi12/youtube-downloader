@@ -3,17 +3,24 @@ import {
   audioContainers,
   buildFormatGroups,
   flattenFormatGroups,
-  isCompatibleForRemux,
+  getVideoFallbackCodec,
+  requiresVideoReencode,
   splitFilenameAndExtension,
   videoContainers
 } from "@/lib/utils/containers";
-import type { FormatGroup } from "@/lib/utils/containers";
+import type { FormatGroup, FormatItem } from "@/lib/utils/containers";
 import type { RecentDownloadEntry } from "@/types";
 
-const APPROX_SECONDS_PER_MB = 0.05;
+const APPROX_SECONDS_PER_MB_REMUX = 0.05;
+const APPROX_SECONDS_PER_MB_REENCODE = 0.6;
 
-export function buildEstimatedTimeLabel(sizeBytes: number) {
-  const seconds = Math.max(1, Math.round((sizeBytes / (1024 * 1024)) * APPROX_SECONDS_PER_MB));
+type EstimatedTimeParams = {
+  sizeBytes: number;
+  isSlow?: boolean;
+};
+export function buildEstimatedTimeLabel({ sizeBytes, isSlow = false }: EstimatedTimeParams) {
+  const secondsPerMb = isSlow ? APPROX_SECONDS_PER_MB_REENCODE : APPROX_SECONDS_PER_MB_REMUX;
+  const seconds = Math.max(1, Math.round((sizeBytes / (1024 * 1024)) * secondsPerMb));
   return seconds < 60 ? `~${seconds}s` : `~${Math.round(seconds / 60)} min`;
 }
 
@@ -26,8 +33,6 @@ type BuildAvailableTargetGroupsParams = {
 };
 export function buildAvailableTargetGroups({ entry }: BuildAvailableTargetGroupsParams): FormatGroup[] {
   const isAudioSource = isAudioSourceEntry(entry);
-  // Audio sources can only re-target audio containers (no audio -> video).
-  // Video sources can re-target video containers or extract to audio.
   const baseAllowed = isAudioSource ? audioContainers : [...videoContainers, ...audioContainers];
 
   const allowedExtensions = baseAllowed.filter(target => {
@@ -36,24 +41,48 @@ export function buildAvailableTargetGroups({ entry }: BuildAvailableTargetGroups
     }
 
     const isVideoTarget = videoContainers.includes(target);
-    const needsRemuxCheck = !isAudioSource && isVideoTarget && entry.videoMimeType;
-    if (!needsRemuxCheck) {
+    const needsReencodeCheck = !isAudioSource && isVideoTarget && entry.videoMimeType;
+    if (!needsReencodeCheck) {
       return true;
     }
 
-    return isCompatibleForRemux({
+    const wouldReencode = requiresVideoReencode({
       videoMimeType: entry.videoMimeType!,
-      audioMimeType: entry.audioMimeType ?? "",
       targetExtension: target
     });
+    if (!wouldReencode) {
+      return true;
+    }
+
+    // Re-encode is only possible when the target container declares an encoder.
+    return Boolean(getVideoFallbackCodec(target));
   });
 
+  const slowExtensions = new Set(
+    !isAudioSource && entry.videoMimeType
+      ? videoContainers.filter(target => requiresVideoReencode({
+        videoMimeType: entry.videoMimeType!,
+        targetExtension: target
+      }))
+      : []
+  );
+
   const groups = buildFormatGroups({ allowedExtensions });
+  const withSlow = groups.map(group => ({
+    ...group,
+    items: group.items.map(item => slowExtensions.has(item.extension)
+      ? {
+        ...item,
+        isSlow: true
+      }
+      : item)
+  }));
+
   if (isAudioSource) {
-    return groups;
+    return withSlow;
   }
 
-  return groups.map(group => group.heading === "Audio"
+  return withSlow.map(group => group.heading === "Audio"
     ? {
       ...group,
       caption: "Extract audio as"
@@ -70,6 +99,17 @@ export function pickFirstSelectableTarget(groups: FormatGroup[]) {
   }
 
   return "";
+}
+
+export function findTargetItem(groups: FormatGroup[], extension: string): FormatItem | undefined {
+  for (const group of groups) {
+    const found = group.items.find(item => item.extension === extension);
+    if (found) {
+      return found;
+    }
+  }
+
+  return undefined;
 }
 
 export function flattenTargets(groups: FormatGroup[]) {

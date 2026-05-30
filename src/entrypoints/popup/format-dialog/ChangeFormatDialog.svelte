@@ -2,6 +2,7 @@
   import {
     buildAvailableTargetGroups,
     buildEstimatedTimeLabel,
+    findTargetItem,
     pickFirstSelectableTarget,
     submitTranscode
   } from "./change-format-helpers";
@@ -34,7 +35,11 @@
     }
   });
 
-  const estimatedTimeLabel = $derived(buildEstimatedTimeLabel(entry.size));
+  const selectedItem = $derived(findTargetItem(targetGroups, selectedTarget));
+  const estimatedTimeLabel = $derived(buildEstimatedTimeLabel({
+    sizeBytes: entry.size,
+    isSlow: selectedItem?.isSlow ?? false
+  }));
 
   function startClose(): void {
     isClosing = true;

@@ -100,7 +100,9 @@ async function extractAudioWithCoverArt({
 }
 
 export async function handleTranscodeFile(job: TranscodeFileJob) {
-  const { videoId, tabId, data, sourceExtension, targetContainer, audioMimeType, coverArtUrl } = job;
+  const {
+    videoId, tabId, data, sourceExtension, targetContainer, audioMimeType, videoMimeType, coverArtUrl
+  } = job;
   state.currentVideoId = videoId;
   state.currentTabId = tabId;
   const sourceFilename = `source.${sourceExtension}`;
@@ -129,7 +131,8 @@ export async function handleTranscodeFile(job: TranscodeFileJob) {
         inputFilename: sourceFilename,
         outputFilename,
         targetExtension: targetContainer,
-        audioMimeType
+        audioMimeType,
+        videoMimeType
       });
 
     const exitCode = state.ffmpeg!.exec(...ffmpegArgs);

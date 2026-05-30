@@ -31,7 +31,12 @@
                 value={item.extension}
               />
               <span class="target-label">
-                <span class="target-ext">{item.extension}</span>
+                <span class="target-ext">
+                  {item.extension}
+                  {#if item.isSlow}
+                    <span class="target-slow-tag" data-tooltip="Requires video re-encoding">slower</span>
+                  {/if}
+                </span>
                 {#if item.description}
                   <span class="target-desc">{item.description}</span>
                 {/if}
@@ -109,6 +114,20 @@
       .target-desc {
         color: var(--fg-subtle);
         font-size: 0.6875rem;
+      }
+
+      .target-slow-tag {
+        display: inline-block;
+        vertical-align: middle;
+        margin-inline-start: 4px;
+        padding: 1px 6px;
+        border-radius: 8px;
+        background: var(--accent-container);
+        color: var(--fg);
+        font-weight: 500;
+        font-size: 0.625rem;
+        letter-spacing: 0.04em;
+        text-transform: uppercase;
       }
 
       &:hover {
