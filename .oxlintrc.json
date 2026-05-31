@@ -45,7 +45,8 @@
     {
       "files": ["**/*.svelte"],
       "rules": {
-        "typescript/no-explicit-any": "off"
+        "typescript/no-explicit-any": "off",
+        "prefer-const": "off"
       }
     }
   ],

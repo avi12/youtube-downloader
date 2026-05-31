@@ -14,7 +14,7 @@
   let isOpen = $state(false);
   let isOpened = $state(false);
   let isClosing = $state(false);
-  const elFilename = $state<HTMLSpanElement | null>(null);
+  let elFilename = $state<HTMLSpanElement | null>(null);
   const canvasCtx = document.createElement("canvas").getContext("2d")!;
   const isFilenameTruncated = $derived.by(() => {
     if (!elFilename?.parentElement) {
