@@ -10,6 +10,14 @@ import { ProgressType } from "@/types";
 
 export { markVideosCancelled } from "./pipeline-state";
 
+const muxCancelledVideoIds = new Set<string>();
+
+export function addMuxCancelledVideoIds(videoIds: string[]) {
+  for (const videoId of videoIds) {
+    muxCancelledVideoIds.add(videoId);
+  }
+}
+
 export function registerPipelineHandlers() {
   registerRecentDownloadHandlers();
   registerPipelineQueueHandlers();
@@ -46,12 +54,21 @@ export function registerPipelineHandlers() {
   onMessage(MessageType.PipelineStart, async ({ data }) => {
     const isCancelled = isVideoCancelled(data.videoId);
     if (!isCancelled) {
+      muxCancelledVideoIds.delete(data.videoId);
       await enqueueToPopupList({
         videoId: data.videoId,
         type: data.type,
         filenameOutput: data.filenameOutput,
         tabId: data.tabId,
         sourceUrl: data.sourceUrl
+      });
+    } else {
+      muxCancelledVideoIds.add(data.videoId);
+      sendToOffscreen({
+        type: OffscreenMessageType.CancelProcessing,
+        data: {
+          videoIds: [data.videoId]
+        }
       });
     }
 
@@ -79,6 +96,7 @@ export function registerPipelineHandlers() {
 
   onMessage(MessageType.PipelineRemoval, async ({ data }) => {
     const { videoId, tabId } = data;
+    const wasMuxCancelled = muxCancelledVideoIds.delete(videoId);
     await updateStatusProgress({
       mutate(current) {
         delete current[videoId];
@@ -88,7 +106,7 @@ export function registerPipelineHandlers() {
         progress: 0,
         progressType: ProgressType.Video,
         isRemoved: true,
-        isFailed: true
+        isFailed: !wasMuxCancelled
       },
       tabId
     });

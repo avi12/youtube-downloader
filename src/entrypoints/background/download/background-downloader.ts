@@ -1,5 +1,6 @@
 import { ensureProcessor } from "../handlers/processor";
 import { reportDownloadFailed } from "./download-failure-reporter";
+import { clearCancelledVideo, isVideoCancelled } from "../handlers/pipeline-state";
 import { enrichMetadataFromYouTubeMusic } from "./metadata-enrichment";
 import {
   clearInterruptedDownload,
@@ -16,11 +17,14 @@ import { MessageType, sendMessageToTab } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
 import { stripMimeParams } from "@/lib/utils/containers";
 import { resolveAndroidUrls } from "@/lib/youtube/android-player";
-import { DownloadType, ProgressType, StreamType } from "@/types";
+import { AUDIO_EXTRA_STREAM_PREFIX, DownloadType, ProgressType, StreamType } from "@/types";
 import type { DownloadRequest, VideoMetadata } from "@/types";
 
 const ANDROID_VR_CHUNK_SIZE = 10 * 1024 * 1024;
 const PROGRESS_THROTTLE_MS = 250;
+
+const activeFirefoxDownloads = new Map<string, AbortController>();
+const cancelledFirefoxDownloads = new Set<string>();
 
 // Chrome MV3 has `chrome.offscreen`. Firefox MV3 does not, so this acts as a
 // reliable browser discriminator throughout the download pipeline.
@@ -37,6 +41,7 @@ type FetchAndroidVrChunkedParams = {
   pageProxyFetch: ChunkFetchFn | null;
   onChunk: (chunk: Uint8Array, iChunk: number) => void;
   label: string;
+  signal: AbortSignal;
 };
 
 // Closed-range chunked GETs (yt-dlp's --http-chunk-size default of 10 MB)
@@ -44,15 +49,20 @@ type FetchAndroidVrChunkedParams = {
 // signature, so `credentials: "include"` is safe and consistent with the
 // rest of the InnerTube auth strategy.
 async function fetchAndroidVrChunked({
-  url, contentLength, bgFetch, pageProxyFetch, onChunk, label
+  url, contentLength, bgFetch, pageProxyFetch, onChunk, label, signal
 }: FetchAndroidVrChunkedParams) {
   let byteOffset = 0;
   let iChunk = 0;
   let useBgDirect = true;
   while (byteOffset < contentLength) {
+    if (signal.aborted) {
+      return iChunk;
+    }
+
     const rangeEnd = Math.min(byteOffset + ANDROID_VR_CHUNK_SIZE - 1, contentLength - 1);
     const init: RequestInit = {
       credentials: "include",
+      signal,
       headers: {
         Range: `bytes=${byteOffset}-${rangeEnd}`
       }
@@ -67,6 +77,10 @@ async function fetchAndroidVrChunked({
         throw new Error(`HTTP ${response.status}`);
       }
     } catch (err) {
+      if (signal.aborted) {
+        return iChunk;
+      }
+
       const canFallback = useBgDirect && pageProxyFetch;
       if (!canFallback) {
         throw new Error(`${label} chunk fetch failed at offset ${byteOffset}: ${String(err)}`, {
@@ -116,6 +130,8 @@ type RunFirefoxDirectDownloadParams = {
 // offscreen iframe for FFmpeg muxing on the shared Chrome+Firefox pipeline.
 async function runFirefoxDirectDownload({ request, tabId, enrichedMetadata }: RunFirefoxDirectDownloadParams) {
   const { videoId, type, videoItag, audioItag, filenameOutput } = request;
+  const additionalAudioFormats = request.additionalAudioFormats ?? [];
+  const extraAudioItags = additionalAudioFormats.map(format => format.itag);
   // Page-proxy routes the InnerTube POST through the watch tab's MAIN-world
   // pristine fetch so cookies + page TLS context pass the anti-bot gate. The
   // BG-direct fetch is tried first as a fast path; if YouTube ever stops
@@ -131,7 +147,8 @@ async function runFirefoxDirectDownload({ request, tabId, enrichedMetadata }: Ru
     resolved = await resolveAndroidUrls({
       videoId,
       videoItag: wantsVideo ? videoItag : undefined,
-      audioItag: wantsAudio ? audioItag : undefined
+      audioItag: wantsAudio ? audioItag : undefined,
+      extraAudioItags: wantsAudio ? extraAudioItags : undefined
     });
   } catch (bgErr) {
     if (!pageProxyFetch) {
@@ -142,6 +159,7 @@ async function runFirefoxDirectDownload({ request, tabId, enrichedMetadata }: Ru
       videoId,
       videoItag: wantsVideo ? videoItag : undefined,
       audioItag: wantsAudio ? audioItag : undefined,
+      extraAudioItags: wantsAudio ? extraAudioItags : undefined,
       customFetch: pageProxyFetch
     });
   }
@@ -154,8 +172,43 @@ async function runFirefoxDirectDownload({ request, tabId, enrichedMetadata }: Ru
     throw new Error(`ANDROID_VR did not return URL for audio itag ${audioItag}`);
   }
 
-  const totalExpectedBytes = (wantsVideo ? resolved.videoContentLength : 0)
-    + (wantsAudio ? resolved.audioContentLength : 0);
+  type StreamDescriptor = {
+    url: string;
+    contentLength: number;
+    streamType: string;
+    label: string;
+  };
+  const streams: StreamDescriptor[] = [];
+  if (wantsVideo && resolved.videoUrl) {
+    streams.push({
+      url: resolved.videoUrl,
+      contentLength: resolved.videoContentLength,
+      streamType: StreamType.Video,
+      label: "video"
+    });
+  }
+
+  if (wantsAudio && resolved.audioUrl) {
+    streams.push({
+      url: resolved.audioUrl,
+      contentLength: resolved.audioContentLength,
+      streamType: StreamType.Audio,
+      label: "audio"
+    });
+  }
+
+  for (const [iExtra, extra] of resolved.extraAudioUrls.entries()) {
+    if (extra.url) {
+      streams.push({
+        url: extra.url,
+        contentLength: extra.contentLength,
+        streamType: `${AUDIO_EXTRA_STREAM_PREFIX}-${iExtra}`,
+        label: `audio-extra-${iExtra}`
+      });
+    }
+  }
+
+  const totalExpectedBytes = streams.reduce((total, stream) => total + stream.contentLength, 0);
   let totalReceivedBytes = 0;
   let lastProgressReport = 0;
   function reportDownloadProgress(force = false) {
@@ -177,69 +230,58 @@ async function runFirefoxDirectDownload({ request, tabId, enrichedMetadata }: Ru
     }, tabId);
   }
 
-  let videoChunkCount = 0;
-  let audioChunkCount = 0;
+  const chunkCounts = new Map<string, number>();
+  const abortController = new AbortController();
+  activeFirefoxDownloads.set(videoId, abortController);
   function bgFetch(input: RequestInfo | URL, init?: RequestInit) {
     return fetch(input, init);
   }
 
-  await Promise.all([
-    wantsVideo && resolved.videoUrl ? fetchAndroidVrChunked({
-      url: resolved.videoUrl,
-      contentLength: resolved.videoContentLength,
-      bgFetch,
-      pageProxyFetch,
-      label: "video",
-      onChunk(chunk, iChunk) {
-        sendNetworkChunkToOffscreen({
-          videoId,
-          streamType: StreamType.Video,
-          iChunk,
-          chunk,
-          tabId
-        });
-        totalReceivedBytes += chunk.byteLength;
-        reportDownloadProgress();
-        videoChunkCount = iChunk + 1;
-      }
-    }) : Promise.resolve(),
-    wantsAudio && resolved.audioUrl ? fetchAndroidVrChunked({
-      url: resolved.audioUrl,
-      contentLength: resolved.audioContentLength,
-      bgFetch,
-      pageProxyFetch,
-      label: "audio",
-      onChunk(chunk, iChunk) {
-        sendNetworkChunkToOffscreen({
-          videoId,
-          streamType: StreamType.Audio,
-          iChunk,
-          chunk,
-          tabId
-        });
-        totalReceivedBytes += chunk.byteLength;
-        reportDownloadProgress();
-        audioChunkCount = iChunk + 1;
-      }
-    }) : Promise.resolve()
-  ]);
+  try {
+    await Promise.all(
+      streams.map(({ url, contentLength, streamType, label }) =>
+        fetchAndroidVrChunked({
+          url,
+          contentLength,
+          bgFetch,
+          pageProxyFetch,
+          signal: abortController.signal,
+          label,
+          onChunk(chunk, iChunk) {
+            sendNetworkChunkToOffscreen({
+              videoId,
+              streamType,
+              iChunk,
+              chunk,
+              tabId
+            });
+            totalReceivedBytes += chunk.byteLength;
+            reportDownloadProgress();
+            chunkCounts.set(streamType, iChunk + 1);
+          }
+        }))
+    );
+  } catch (err) {
+    if (abortController.signal.aborted) {
+      return;
+    }
+
+    throw err;
+  } finally {
+    activeFirefoxDownloads.delete(videoId);
+  }
+
+  if (abortController.signal.aborted || cancelledFirefoxDownloads.delete(videoId)) {
+    return;
+  }
 
   reportDownloadProgress(true);
 
-  if (wantsVideo) {
+  for (const { streamType } of streams) {
     sendStreamFinishedMarker({
       videoId,
-      streamType: StreamType.Video,
-      totalChunks: videoChunkCount,
-      tabId
-    });
-  }
-
-  if (wantsAudio) {
-    sendStreamFinishedMarker({
-      videoId,
-      streamType: StreamType.Audio,
-      totalChunks: audioChunkCount,
+      streamType,
+      totalChunks: chunkCounts.get(streamType) ?? 0,
       tabId
     });
   }
@@ -253,6 +295,15 @@ async function runFirefoxDirectDownload({ request, tabId, enrichedMetadata }: Ru
     captionVttData: request.captionVttData ?? []
   });
 
+  const audioTrackLabels = [
+    request.primaryAudioLabel ?? "",
+    ...additionalAudioFormats.map(format => format.audioTrack?.displayName ?? "")
+  ];
+  const audioTrackLanguages = [
+    request.primaryAudioLanguageCode ?? "",
+    ...additionalAudioFormats.map(format => format.audioTrack?.id?.split(".")[0] ?? "")
+  ];
+
   sendToOffscreen({
     type: OffscreenMessageType.ProcessStreamEnd,
     data: {
@@ -261,8 +312,8 @@ async function runFirefoxDirectDownload({ request, tabId, enrichedMetadata }: Ru
       filenameOutput,
       videoMimeType,
       audioMimeType,
-      audioTrackLabels: [request.primaryAudioLabel ?? ""],
-      audioTrackLanguages: [request.primaryAudioLanguageCode ?? ""],
+      audioTrackLabels,
+      audioTrackLanguages,
       defaultAudioTrackIndex: 0,
       subtitleTracks,
       tabId,
@@ -279,7 +330,10 @@ export { dropPendingRetry, reportDownloadFailed };
 
 registerOnlineRetryListener(startBackgroundDownload);
 
-export function cancelBackgroundDownload(_videoId: string) {}
+export function cancelBackgroundDownload(videoId: string) {
+  cancelledFirefoxDownloads.add(videoId);
+  activeFirefoxDownloads.get(videoId)?.abort();
+}
 
 type StartBackgroundDownloadParams = {
   request: DownloadRequest;
@@ -354,6 +408,11 @@ export async function startBackgroundDownload({ request, tabId }: StartBackgroun
       }
     });
   } catch (error) {
+    if (isVideoCancelled(videoId)) {
+      clearCancelledVideo(videoId);
+      return;
+    }
+
     const isOffline = !navigator.onLine;
     if (isOffline) {
       await queueNetworkRetry({

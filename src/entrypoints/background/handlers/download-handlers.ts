@@ -11,7 +11,7 @@ import { enqueueToPopupList, removeFromPopupList } from "../queue/popup-list";
 import { signalVideoComplete } from "../queue/sequential-queue";
 import { cancelDownloads, getTabIdsForVideo, trackVideoForTab } from "../queue/tab-tracker";
 import { notifyWatchTabsOnComplete } from "../recent/recent-downloads";
-import { markVideosCancelled } from "./pipeline-handlers";
+import { addMuxCancelledVideoIds, markVideosCancelled } from "./pipeline-handlers";
 import {
   abortCurrentSequence,
   clearCurrentSequenceTabId,
@@ -51,6 +51,7 @@ export function registerDownloadHandlers() {
   onMessage(MessageType.CancelDownload, ({ data }) => {
     abortCurrentSequence();
     markVideosCancelled(data.videoIds);
+    addMuxCancelledVideoIds(data.videoIds);
 
     const progressRemoval = {
       progress: 0,
