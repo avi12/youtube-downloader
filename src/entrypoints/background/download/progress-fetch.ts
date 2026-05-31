@@ -1,40 +1,10 @@
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
-import { mutateStorageItem, statusProgressItem } from "@/lib/storage/storage";
 import { ProgressType } from "@/types";
-
-// On Chrome MV3, only the background service worker can call
-// browser.tabs.sendMessage; offscreen page and download-worker iframe cannot.
-// On Firefox MV3 every extension context shares the BG document and has full
-// extension API access. Distinguish by runtime URL scheme.
-function canSendToTabDirectly() {
-  if (typeof document === "undefined") {
-    return true;
-  }
-
-  return browser.runtime.getURL("").startsWith("moz-extension://");
-}
 
 export { fetchWithProgress } from "./cdn-fetch";
 
 const PROGRESS_THROTTLE_INTERVAL_MS = 1000;
 const lastProgressTimestamps = new Map<string, number>();
-
-type WriteProgressToStorageParams = {
-  videoId: string;
-  progress: number;
-  progressType: ProgressType;
-};
-async function writeProgressToStorage({ videoId, progress, progressType }: WriteProgressToStorageParams) {
-  await mutateStorageItem({
-    item: statusProgressItem,
-    mutator(current) {
-      current[videoId] = {
-        progress,
-        progressType
-      };
-    }
-  });
-}
 
 type SendProgressUpdateParams = {
   videoId: string;
@@ -57,25 +27,12 @@ export async function sendProgressUpdate({ videoId, progress, progressType, tabI
     lastProgressTimestamps.set(videoId, now);
   }
 
-  if (canSendToTabDirectly()) {
-    await writeProgressToStorage({
-      videoId,
-      progress,
-      progressType
-    });
-    await sendMessage(MessageType.UpdateDownloadProgress, {
-      videoId,
-      progress,
-      progressType
-    }, tabId);
-  } else {
-    await sendMessage(MessageType.ForwardProgressUpdate, {
-      videoId,
-      progress,
-      progressType,
-      tabId
-    });
-  }
+  await sendMessage(MessageType.ForwardProgressUpdate, {
+    videoId,
+    progress,
+    progressType,
+    tabId
+  });
 }
 
 type CreateProgressFetchParams = {
