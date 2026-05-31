@@ -65,17 +65,16 @@ export function postResult(data: Uint8Array | null) {
     return;
   }
 
-  const isNotArrayBuffer = !(data.buffer instanceof ArrayBuffer);
-  if (isNotArrayBuffer) {
+  if (!(data.buffer instanceof ArrayBuffer)) {
     state.portReceiver!.send(WorkerMessageType.Error, { message: "Unexpected SharedArrayBuffer in result" });
     return;
   }
 
-  const { buffer } = data;
+  const buffer: ArrayBuffer = data.buffer;
   const isZeroOffset = data.byteOffset === 0;
   const isExactSize = data.byteLength === buffer.byteLength;
   const isExact = isZeroOffset && isExactSize;
-  const exact = (isExact ? buffer : buffer.slice(data.byteOffset, data.byteOffset + data.byteLength)) as ArrayBuffer;
+  const exact: ArrayBuffer = isExact ? buffer : buffer.slice(data.byteOffset, data.byteOffset + data.byteLength);
   state.portReceiver!.send(WorkerMessageType.Result, { data: exact }, [exact]);
 }
 

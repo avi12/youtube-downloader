@@ -16,10 +16,6 @@ const CAPTION_TLANG_PARAM = "tlang";
 type CaptionFormat = "vtt" | "json3" | "srv1" | "srv2" | "srv3" | "ttml" | "sbv";
 const CAPTION_FORMAT_VTT: CaptionFormat = "vtt";
 
-type CaptionBaseParams = { [CAPTION_FORMAT_PARAM]: CaptionFormat };
-type CaptionTranslatedParams = CaptionBaseParams & { [CAPTION_TLANG_PARAM]: string };
-type CaptionParams = CaptionBaseParams | CaptionTranslatedParams;
-
 const TWO_DIGIT_PAD = 2;
 const THREE_DIGIT_PAD = 3;
 const PAD_CHAR = "0";

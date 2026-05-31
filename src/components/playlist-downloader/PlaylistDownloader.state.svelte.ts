@@ -183,9 +183,13 @@ export function createPlaylistDownloaderState() {
       return overrides.isZipNameOverridden;
     },
     resetOverrides: overrides.resetOverrides,
-    toggleSelectedDownload: () => batch.isDownloading
-      ? void batch.cancelDownload()
-      : void batch.startDownload(videoData.selectedDownloadableVideos),
+    toggleSelectedDownload() {
+      if (batch.isDownloading) {
+        void batch.cancelDownload();
+      } else {
+        void batch.startDownload(videoData.selectedDownloadableVideos);
+      }
+    },
     revealAndDownloadAll: reveal.revealAndDownloadAll,
     cancelReveal: reveal.cancelReveal,
     selectAll() {

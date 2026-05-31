@@ -19,14 +19,14 @@
     "chrome": "readonly"
   },
   "rules": {
-    "no-void": "error",
+    "no-void": ["error", { "allowAsStatement": true }],
     "prefer-const": "error",
     "no-nested-ternary": "error",
     "curly": ["error", "all"],
     "object-shorthand": ["error", "always", { "avoidExplicitReturnArrows": true }],
     "id-length": ["error", {
       "min": 3,
-      "exceptions": ["z", "_", "i", "fs", "id", "os", "e", "db", "mi", "ui", "HL", "GL", "js", "q", "to", "dd", "mm", "x", "y", "d"],
+      "exceptions": ["z", "_", "i", "fs", "id", "os", "e", "db", "mi", "ui", "HL", "GL", "js", "q", "to", "dd", "mm", "x", "y", "d", "T", "a", "fd", "n", "K", "V", "on", "gw", "hl", "gl", "FS"],
       "properties": "never"
     }],
     "func-style": ["error", "declaration", { "allowArrowFunctions": false }],
@@ -63,6 +63,10 @@
     "scripts/check-*",
     "scripts/capture-logs.mjs",
     "scripts/reload-yt.mjs",
-    "scripts/cherry-pick-*"
+    "scripts/cherry-pick-*",
+    "scripts/firefox-*",
+    "scripts/dump-*",
+    "scripts/cdp-*",
+    "src/entrypoints/mux-worker/opfs.d.ts"
   ]
 }
