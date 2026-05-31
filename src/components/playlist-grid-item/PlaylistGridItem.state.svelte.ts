@@ -128,15 +128,22 @@ function formatSize(bytes: number) {
   return `${bytes} B`;
 }
 
-function estimateVideoSize({ video, options }: {
+function resolvePerVideoDownloadType(video: VideoData, downloadType: DownloadType): DownloadType {
+  if (downloadType === DownloadType.Auto) {
+    return video.isMusic ? DownloadType.Audio : DownloadType.VideoAndAudio;
+  }
+
+  return downloadType;
+}
+
+function estimateVideoSize({ video, options, playlistDownloadType }: {
   video: VideoData;
   options: Options;
+  playlistDownloadType: DownloadType;
 }) {
   const selectedAudio = selectPlaylistAudioFormat(video.audioFormats);
   const audioBytes = Number(selectedAudio?.contentLength ?? 0);
-  const isAudioOnly = options.defaultDownloadType === DownloadType.Audio
-    || (options.defaultDownloadType === DownloadType.Auto && video.isMusic);
-  if (isAudioOnly) {
+  const resolvedType = resolvePerVideoDownloadType(video, playlistDownloadType);  if (resolvedType === DownloadType.Audio) {
     return audioBytes;
   }
 
@@ -146,10 +153,7 @@ function estimateVideoSize({ video, options }: {
   const videoFormat = options.videoQualityMode === VideoQualityMode.Best
     ? video.videoFormats[0]
     : (video.videoFormats.find(format => format.height === targetHeight) ?? video.videoFormats[0]);
-  const videoBytes = Number(videoFormat?.contentLength ?? 0);
-
-  const isVideoOnly = options.defaultDownloadType === DownloadType.Video;
-  if (isVideoOnly) {
+  const videoBytes = Number(videoFormat?.contentLength ?? 0);  if (resolvedType === DownloadType.Video) {
     return videoBytes;
   }
 
@@ -163,6 +167,7 @@ type BuildPlaylistGridRequestParams = {
   playlistTitle: string;
   playlistTotalCount: number;
   isZipBundle: boolean;
+  playlistDownloadType: DownloadType;
 };
 function buildPlaylistGridRequest({
   data,
@@ -170,9 +175,10 @@ function buildPlaylistGridRequest({
   playlistId,
   playlistTitle,
   playlistTotalCount,
-  isZipBundle
+  isZipBundle,
+  playlistDownloadType
 }: BuildPlaylistGridRequestParams): DownloadRequest {
-  const downloadType = data.isMusic ? DownloadType.Audio : DownloadType.VideoAndAudio;
+  const downloadType = resolvePerVideoDownloadType(data, playlistDownloadType);
 
   const videoFormat = options.videoQualityMode === VideoQualityMode.Best
     ? data.videoFormats[0]
@@ -213,8 +219,10 @@ export function createPlaylistGridItemState({ playlistId, gridTitle }: CreatePla
   let videoExtOverride = $state<string | null>(null);
   let audioExtOverride = $state<string | null>(null);
   let zipNameOverride = $state<string | null>(null);
+  let downloadModeOverride = $state<DownloadType | null>(null);
 
   let status = $state<PlaylistGridStatus>(PlaylistGridStatus.Idle);
+  let downloadToken = 0;
   let errorMessage = $state("");
   let totalCount = $state(0);
   let resolvedTitle = $state(gridTitle);
@@ -230,6 +238,8 @@ export function createPlaylistGridItemState({ playlistId, gridTitle }: CreatePla
     }
     return videos;
   });
+
+  const effectiveDownloadType = $derived(downloadModeOverride ?? CONTENT_OPTIONS.defaultDownloadType);
 
   const effectiveQuality = $derived(qualityOverride ?? optionsToQualityValue(CONTENT_OPTIONS));
   const effectiveOutputMode = $derived(outputModeOverride ?? CONTENT_OPTIONS.playlistOutputMode);
@@ -252,7 +262,7 @@ export function createPlaylistGridItemState({ playlistId, gridTitle }: CreatePla
   );
 
   const primaryState = $derived.by<PrimaryButtonState>(() => {
-    if (status === PlaylistGridStatus.Downloading) {
+    if (isWorking) {
       return PrimaryButtonState.Downloading;
     }
 
@@ -295,7 +305,8 @@ export function createPlaylistGridItemState({ playlistId, gridTitle }: CreatePla
     for (const video of loadedVideos) {
       total += estimateVideoSize({
         video,
-        options
+        options,
+        playlistDownloadType: effectiveDownloadType
       });
     }
     return total;
@@ -454,10 +465,15 @@ export function createPlaylistGridItemState({ playlistId, gridTitle }: CreatePla
       return;
     }
 
+    const token = ++downloadToken;
     status = PlaylistGridStatus.Fetching;
     errorMessage = "";
 
     const videos = await ensureMetadataLoaded();
+    if (token !== downloadToken) {
+      return;
+    }
+
     if (videos.length === 0) {
       status = PlaylistGridStatus.Failed;
       errorMessage = errorMessage || "No downloadable videos in playlist";
@@ -472,7 +488,8 @@ export function createPlaylistGridItemState({ playlistId, gridTitle }: CreatePla
       playlistId,
       playlistTitle: effectiveZipName,
       playlistTotalCount: videos.length,
-      isZipBundle
+      isZipBundle,
+      playlistDownloadType: effectiveDownloadType
     }));
 
     initBatchVideoProgress(videos);
@@ -492,6 +509,7 @@ export function createPlaylistGridItemState({ playlistId, gridTitle }: CreatePla
   }
 
   function cancelDownload() {
+    downloadToken++;
     const videoIds = loadedVideos.map(video => video.videoId);
     if (videoIds.length > 0) {
       void sendMessage(MessageType.CancelDownload, { videoIds });
@@ -509,7 +527,7 @@ export function createPlaylistGridItemState({ playlistId, gridTitle }: CreatePla
   }
 
   function handlePrimaryClick() {
-    if (status === PlaylistGridStatus.Downloading) {
+    if (isWorking) {
       cancelDownload();
       return;
     }
@@ -541,6 +559,7 @@ export function createPlaylistGridItemState({ playlistId, gridTitle }: CreatePla
     videoExtOverride = null;
     audioExtOverride = null;
     zipNameOverride = null;
+    downloadModeOverride = null;
   }
 
   return {
@@ -618,12 +637,19 @@ export function createPlaylistGridItemState({ playlistId, gridTitle }: CreatePla
     get isZipNameOverridden() {
       return zipNameOverride !== null;
     },
+    get effectiveDownloadType() {
+      return effectiveDownloadType;
+    },
+    set effectiveDownloadType(value: DownloadType) {
+      downloadModeOverride = value === CONTENT_OPTIONS.defaultDownloadType ? null : value;
+    },
     get isAnyOverrideActive() {
       return qualityOverride !== null
         || outputModeOverride !== null
         || videoExtOverride !== null
         || audioExtOverride !== null
-        || zipNameOverride !== null;
+        || zipNameOverride !== null
+        || downloadModeOverride !== null;
     },
     startDownload,
     ensureMetadataLoaded,

@@ -27,6 +27,10 @@ export function createButtonManager({ playlistId, state, panel }: CreateButtonMa
   const chevronButtonId = buildPlaylistChevronButtonId(playlistId);
 
   function resolveDownloadIcon() {
+    if (state.isWorking) {
+      return IconName.Close;
+    }
+
     if (state.status === PlaylistGridStatus.Done) {
       return IconName.CheckCircleThick;
     }
@@ -36,15 +40,15 @@ export function createButtonManager({ playlistId, state, panel }: CreateButtonMa
 
   function resolveTooltip() {
     if (state.status === PlaylistGridStatus.Fetching) {
-      return "Fetching playlist";
+      return "Cancel";
     }
 
     if (state.status === PlaylistGridStatus.Loading) {
-      return "Loading videos";
+      return "Cancel";
     }
 
     if (state.status === PlaylistGridStatus.Downloading) {
-      return "Downloading playlist";
+      return "Cancel";
     }
 
     if (state.status === PlaylistGridStatus.Done) {
@@ -70,7 +74,7 @@ export function createButtonManager({ playlistId, state, panel }: CreateButtonMa
       tooltip,
       videoData: null,
       downloadIconName: resolveDownloadIcon(),
-      isDisabled: state.isWorking
+      isDisabled: false
     });
   }
 
@@ -85,7 +89,7 @@ export function createButtonManager({ playlistId, state, panel }: CreateButtonMa
       elButton: elChevronButton,
       buttonId: chevronButtonId,
       iconName,
-      isDisabled: state.isWorking
+      isDisabled: false
     });
   }
 
@@ -104,7 +108,7 @@ export function createButtonManager({ playlistId, state, panel }: CreateButtonMa
   }
 
   function onDownloadClick() {
-    queueMicrotask(() => void state.startDownload());
+    queueMicrotask(() => state.handlePrimaryClick());
   }
 
   function onChevronClick() {
@@ -131,6 +135,7 @@ export function createButtonManager({ playlistId, state, panel }: CreateButtonMa
     attachDownloadButton: (elButton: Element) =>
       attachDownloadButtonElement({
         elButton,
+        buttonId: downloadButtonId,
         onClickDownload: onDownloadClick,
         refreshDownload: refreshDownloadButton,
         setDownloadButtonElement
@@ -138,6 +143,7 @@ export function createButtonManager({ playlistId, state, panel }: CreateButtonMa
     attachChevronButton: (elButton: Element) =>
       attachChevronButtonElement({
         elButton,
+        buttonId: chevronButtonId,
         onClickChevron: onChevronClick,
         refreshChevron: refreshChevronButton,
         setChevronButtonElement

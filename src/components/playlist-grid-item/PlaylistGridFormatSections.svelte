@@ -13,6 +13,7 @@
     ButtonState,
     ButtonStyle,
     ButtonType,
+    DownloadType,
     IconName,
     PlaylistOutputMode,
     VideoQualityMode
@@ -25,6 +26,25 @@
   const OUTPUT_ID_INDIVIDUAL_SUFFIX = "-individual";
   const OUTPUT_ID_ZIP_SUFFIX = "-zip";
   const OUTPUT_SETTINGS_TITLE = "Output";
+
+  const downloadTypeOptions = [
+    {
+      value: DownloadType.Auto,
+      label: "Auto (match each item)"
+    },
+    {
+      value: DownloadType.VideoAndAudio,
+      label: "Video + audio"
+    },
+    {
+      value: DownloadType.Video,
+      label: "Video only"
+    },
+    {
+      value: DownloadType.Audio,
+      label: "Audio only"
+    }
+  ];
 
   interface Props {
     playlistId: string;
@@ -194,6 +214,17 @@
   }
 </script>
 
+<div class="ytdl-section">
+  <PolymerSelect
+    id="playlist-grid-download-type-{playlistId}"
+    disabled={state.isWorking}
+    label="Download type"
+    onchange={value => (state.effectiveDownloadType = value as DownloadType)}
+    options={downloadTypeOptions}
+    value={state.effectiveDownloadType}
+  />
+</div>
+
 <ytd-settings-options-renderer class="ytdl-section" {@attach attachSettingsOptions(OUTPUT_SETTINGS_TITLE)}>
   <div
     class="ytdl-seg"
@@ -227,35 +258,39 @@
   </div>
 {/if}
 
-<div class="ytdl-grid">
-  <PolymerSelect
-    id="playlist-grid-quality-{playlistId}"
-    disabled={state.isWorking}
-    label="Quality"
-    onchange={value => (state.effectiveQuality = value)}
-    options={qualityOptions}
-    value={state.effectiveQuality}
-  />
-  <PolymerSelect
-    id="playlist-grid-video-ext-{playlistId}"
-    disabled={state.isWorking}
-    label="Video format"
-    onchange={value => (state.effectiveVideoExt = value)}
-    options={videoExtOptions}
-    value={state.effectiveVideoExt}
-  />
-</div>
+{#if state.effectiveDownloadType !== DownloadType.Audio}
+  <div class="ytdl-grid">
+    <PolymerSelect
+      id="playlist-grid-quality-{playlistId}"
+      disabled={state.isWorking}
+      label="Quality"
+      onchange={value => (state.effectiveQuality = value)}
+      options={qualityOptions}
+      value={state.effectiveQuality}
+    />
+    <PolymerSelect
+      id="playlist-grid-video-ext-{playlistId}"
+      disabled={state.isWorking}
+      label="Video format"
+      onchange={value => (state.effectiveVideoExt = value)}
+      options={videoExtOptions}
+      value={state.effectiveVideoExt}
+    />
+  </div>
+{/if}
 
-<div class="ytdl-section ytdl-audio-format-section">
-  <PolymerSelect
-    id="playlist-grid-audio-ext-{playlistId}"
-    disabled={state.isWorking}
-    label="Audio format"
-    onchange={value => (state.effectiveAudioExt = value)}
-    options={audioExtOptions}
-    value={state.effectiveAudioExt}
-  />
-</div>
+{#if state.effectiveDownloadType !== DownloadType.Video}
+  <div class="ytdl-section ytdl-audio-format-section">
+    <PolymerSelect
+      id="playlist-grid-audio-ext-{playlistId}"
+      disabled={state.isWorking}
+      label="Audio format"
+      onchange={value => (state.effectiveAudioExt = value)}
+      options={audioExtOptions}
+      value={state.effectiveAudioExt}
+    />
+  </div>
+{/if}
 
 <p
   class="ytdl-reset-wrapper"
