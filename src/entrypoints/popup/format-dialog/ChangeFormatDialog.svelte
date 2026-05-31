@@ -118,19 +118,19 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
+    overflow-x: hidden;
     box-sizing: border-box;
     width: 80vw;
     max-width: 360px;
     padding: 20px;
-    overflow-x: hidden;
     border: none;
     border-radius: 16px;
     background: var(--surface-high);
     color: var(--fg);
-    box-shadow: 0 8px 32px rgb(0 0 0 / 12%);
-    scrollbar-width: thin;
     scrollbar-color: var(--border) transparent;
+    scrollbar-width: thin;
     scrollbar-gutter: stable both-edges;
+    box-shadow: 0 8px 32px rgb(0 0 0 / 12%);
     animation: dialog-in 240ms cubic-bezier(0.34, 1.56, 0.64, 1);
 
     &::-webkit-scrollbar {
