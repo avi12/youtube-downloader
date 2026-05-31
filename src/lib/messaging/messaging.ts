@@ -149,6 +149,7 @@ export type ProgressUpdate = {
   isRemoved?: boolean;
   isFailed?: boolean;
   isInterrupted?: boolean;
+  isCancelled?: boolean;
   isSaved?: boolean;
 };
 

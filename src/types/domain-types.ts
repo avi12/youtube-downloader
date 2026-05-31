@@ -8,6 +8,9 @@ export type DownloadProgressEntry = {
   progress: number;
   progressType: ProgressType | "";
   isFailed?: boolean;
+  videoItag?: number;
+  audioItag?: number;
+  downloadType?: DownloadType;
 };
 
 export type DownloadRequest = {
