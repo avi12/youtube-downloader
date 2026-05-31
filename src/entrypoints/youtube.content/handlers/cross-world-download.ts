@@ -1,30 +1,22 @@
-import { cancelStreamTransfer, uncancelStreamTransfer } from "../download/stream-transfer";
+import { cancelDownloadsLocally } from "../download/cancel-actions";
+import { uncancelStreamTransfer } from "../download/stream-transfer";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
-import { performCancelDownload } from "@/lib/ui/cancel-download";
 import { downloadProgressStore } from "@/lib/ui/synced-stores.svelte";
 import type { DownloadRequest } from "@/types";
 
-const INITIAL_DOWNLOAD_PROGRESS = {
-  isDownloading: true,
-  isDone: false,
-  progress: 0,
-  progressType: ""
-} as const;
-
 export function registerDownloadProgressHandlers() {
   crossWorldMessenger.onMessage(CrossWorldMessage.CancelDownload, ({ data }) => {
-    for (const id of data.videoIds) {
-      cancelStreamTransfer(id);
-    }
-
-    void performCancelDownload(data.videoIds);
+    void cancelDownloadsLocally(data.videoIds);
   });
 
   crossWorldMessenger.onMessage(CrossWorldMessage.StartBackgroundDownload, ({ data }) => {
     const request: DownloadRequest = JSON.parse(data.requestJson);
     const isProgressSlotAvailable = downloadProgressStore.setLocal(request.videoId, {
-      ...INITIAL_DOWNLOAD_PROGRESS,
+      isDownloading: true,
+      isDone: false,
+      progress: 0,
+      progressType: "",
       videoItag: request.videoItag,
       audioItag: request.audioItag,
       downloadType: request.type
