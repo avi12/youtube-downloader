@@ -24,8 +24,8 @@ ws.on("message", data => {
     const msg = JSON.parse(String(data));
     if (msg.method === "Runtime.consoleAPICalled") {
       const args = (msg.params.args || []).map(a => {
-        if (a.type === "string") return a.value;
-        if (a.type === "object") return a.description || JSON.stringify(a.preview || {});
+        if (a.type === "string") {return a.value;}
+        if (a.type === "object") {return a.description || JSON.stringify(a.preview || {});}
         return a.value ?? a.description ?? "";
       }).join(" ");
       emit("[" + msg.params.type + "] " + args);

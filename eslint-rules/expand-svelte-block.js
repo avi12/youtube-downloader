@@ -44,9 +44,7 @@ export default {
             const openTagEnd = findOpenTagEnd(node.expression);
             const fixes = [
               fixer.replaceTextRange([openTagEnd, firstChild.range[0]], `\n${childIndent}`)
-            ];
-
-            if (!node.else && !node.elseif) {
+            ];            if (!node.else && !node.elseif) {
               const lastChild = node.children[node.children.length - 1];
               if (node.loc.end.line === lastChild.loc.end.line) {
                 const closeTagStart = node.range[1] - 5;

@@ -1,0 +1,16 @@
+git bisect start
+# status: waiting for both good and bad commits
+# bad: [24d54a2c809e5a1198e531837d2257a3fbec362c] docs(readme): update sideload to zip drag-drop
+git bisect bad 24d54a2c809e5a1198e531837d2257a3fbec362c
+# status: waiting for good commit(s), bad commit known
+# good: [fc7efe848a824f7c17fa2ffb32544e2d2734c71d] Merge pull request #10 from avi12/revamp
+git bisect good fc7efe848a824f7c17fa2ffb32544e2d2734c71d
+# bad: [1b0d94317731d25841cb8c4b7d7491ed2f72876b] fix(panel): keep audio Quality and Format in sync
+git bisect bad 1b0d94317731d25841cb8c4b7d7491ed2f72876b
+# bad: [9cc569c615f83df83c890c1b94e3219e5c7a43c2] feat(dev-server): reload Firefox YT tabs alongside Chrome on rebuild
+git bisect bad 9cc569c615f83df83c890c1b94e3219e5c7a43c2
+# bad: [3ca9bdd9180da0926355b9af9337b81e4af1503c] chore(mcp): add Linux Chrome entry on 9233, switch to pnpx
+git bisect bad 3ca9bdd9180da0926355b9af9337b81e4af1503c
+# good: [7004bbba8f55d2d3cedd5ce97faae3863966b3c1] chore(pnpm): support multi-platform installs + add tsx/cft deps
+git bisect good 7004bbba8f55d2d3cedd5ce97faae3863966b3c1
+# first bad commit: [3ca9bdd9180da0926355b9af9337b81e4af1503c] chore(mcp): add Linux Chrome entry on 9233, switch to pnpx

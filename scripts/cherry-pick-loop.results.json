@@ -1,0 +1,44 @@
+[
+  {
+    "sha": "9cc569c6",
+    "subject": "feat(dev-server): reload Firefox YT tabs alongside Chrome on rebuild",
+    "outcome": "skipped-conflict",
+    "detail": "error: could not apply 9cc569c6... feat(dev-server): reload Firefox YT tabs alongside Chrome on rebuild | hint: After resolving the conflicts, mark them with | hint: \"git add/rm <pathspec>\", then run | hint: \"git cherry-pick --continue\". | hint: You can instead skip this commit with \"git cherry-pick --skip\"."
+  },
+  {
+    "sha": "08f629e8",
+    "subject": "fix(progress): route UpdateDownloadProgress by tabs API availability",
+    "outcome": "skipped-conflict",
+    "detail": "error: could not apply 08f629e8... fix(progress): route UpdateDownloadProgress by tabs API availability | hint: After resolving the conflicts, mark them with | hint: \"git add/rm <pathspec>\", then run | hint: \"git cherry-pick --continue\". | hint: You can instead skip this commit with \"git cherry-pick --skip\"."
+  },
+  {
+    "sha": "f3b9a8ec",
+    "subject": "fix(progress): detect Firefox runtime via runtime.getURL",
+    "outcome": "skipped-conflict",
+    "detail": "error: could not apply f3b9a8ec... fix(progress): detect Firefox runtime via runtime.getURL | hint: After resolving the conflicts, mark them with | hint: \"git add/rm <pathspec>\", then run | hint: \"git cherry-pick --continue\". | hint: You can instead skip this commit with \"git cherry-pick --skip\"."
+  },
+  {
+    "sha": "3b82a0c8",
+    "subject": "refactor(wxt): arrow manifest, typed sharedPermissions, drop firefoxPermissions",
+    "outcome": "skipped-conflict",
+    "detail": "error: could not apply 3b82a0c8... refactor(wxt): arrow manifest, typed sharedPermissions, drop firefoxPermissions | hint: After resolving the conflicts, mark them with | hint: \"git add/rm <pathspec>\", then run | hint: \"git cherry-pick --continue\". | hint: You can instead skip this commit with \"git cherry-pick --skip\"."
+  },
+  {
+    "sha": "994fd115",
+    "subject": "chore(dev): add Firefox MV3 dev workflow and manifest split",
+    "outcome": "skipped-conflict",
+    "detail": "error: could not apply 994fd115... chore(dev): add Firefox MV3 dev workflow and manifest split | hint: After resolving the conflicts, mark them with | hint: \"git add/rm <pathspec>\", then run | hint: \"git cherry-pick --continue\". | hint: You can instead skip this commit with \"git cherry-pick --skip\"."
+  },
+  {
+    "sha": "cd01ea54",
+    "subject": "chore(processor): use style.display for Firefox offscreen iframe",
+    "outcome": "skipped-conflict",
+    "detail": "error: could not apply cd01ea54... chore(processor): use style.display for Firefox offscreen iframe | hint: After resolving the conflicts, mark them with | hint: \"git add/rm <pathspec>\", then run | hint: \"git cherry-pick --continue\". | hint: You can instead skip this commit with \"git cherry-pick --skip\"."
+  },
+  {
+    "sha": "2fdf24c6",
+    "subject": "fix(processor): host offscreen page in a BG iframe on Firefox",
+    "outcome": "ok",
+    "verify": "{\"ok\":true,\"filename\":\"C:\\\\Users\\\\Avi\\\\Downloads\\\\Did Apple Just Delete Meta - TalkLinked (1).mkv\",\"bytes\":44015234,\"durationMs\":126272}"
+  }
+]

@@ -194,9 +194,9 @@ async function main() {
 
     if (cmd === "key") {
       const key = args[0];
-      if (!key) throw new Error("Usage: key <keyName>");
+      if (!key) {throw new Error("Usage: key <keyName>");}
       const tab = await findYouTubeWatchWindow(client);
-      if (!tab) throw new Error("No YouTube tab");
+      if (!tab) {throw new Error("No YouTube tab");}
       await switchWindow(client, tab.handle);
       await client.send("WebDriver:PerformActions", {
         actions: [{
@@ -215,13 +215,13 @@ async function main() {
     if (cmd === "click") {
       const selector = args.join(" ");
       const tab = await findYouTubeWatchWindow(client);
-      if (!tab) throw new Error("No YouTube tab");
+      if (!tab) {throw new Error("No YouTube tab");}
       await switchWindow(client, tab.handle);
       const elResp = await client.send<{ value: Record<string, string> }>("WebDriver:FindElement", { using: "css selector", value: selector });
       const elRef = elResp.value;
       const refKey = Object.keys(elRef).find(k => k.includes("element"));
       const elementId = refKey ? elRef[refKey] : null;
-      if (!elementId) throw new Error(`Cannot resolve element id from ${JSON.stringify(elRef)}`);
+      if (!elementId) {throw new Error(`Cannot resolve element id from ${JSON.stringify(elRef)}`);}
       await client.send("WebDriver:ElementClick", { id: elementId });
       console.log(`clicked ${selector}`);
       return;

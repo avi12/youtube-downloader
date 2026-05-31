@@ -1,0 +1,18 @@
+git bisect start
+# status: waiting for both good and bad commits
+# bad: [24d54a2c809e5a1198e531837d2257a3fbec362c] docs(readme): update sideload to zip drag-drop
+git bisect bad 24d54a2c809e5a1198e531837d2257a3fbec362c
+# status: waiting for good commit(s), bad commit known
+# good: [fc7efe848a824f7c17fa2ffb32544e2d2734c71d] Merge pull request #10 from avi12/revamp
+git bisect good fc7efe848a824f7c17fa2ffb32544e2d2734c71d
+# bad: [1b0d94317731d25841cb8c4b7d7491ed2f72876b] fix(panel): keep audio Quality and Format in sync
+git bisect bad 1b0d94317731d25841cb8c4b7d7491ed2f72876b
+# good: [9cc569c615f83df83c890c1b94e3219e5c7a43c2] feat(dev-server): reload Firefox YT tabs alongside Chrome on rebuild
+git bisect good 9cc569c615f83df83c890c1b94e3219e5c7a43c2
+# good: [ae39eef3bbdb78362737555b78bf8c0650ed1bdf] chore(scripts): add CDP SW/page log dumpers for debugging
+git bisect good ae39eef3bbdb78362737555b78bf8c0650ed1bdf
+# good: [d4e2f6c2e5791b990f5439f8eb19827a036c0460] chore(container-specs): centralise audio container info
+git bisect good d4e2f6c2e5791b990f5439f8eb19827a036c0460
+# good: [2b85ab246e6fec17cef9020c7340aa4bf8ffbf9f] fix(mux): bake YT Music thumbnail into transcoded music audio
+git bisect good 2b85ab246e6fec17cef9020c7340aa4bf8ffbf9f
+# first bad commit: [1b0d94317731d25841cb8c4b7d7491ed2f72876b] fix(panel): keep audio Quality and Format in sync
