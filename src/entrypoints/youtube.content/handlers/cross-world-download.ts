@@ -1,8 +1,8 @@
 import { cancelStreamTransfer, uncancelStreamTransfer } from "../download/stream-transfer";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
-import { statusProgressItem } from "@/lib/storage/storage";
-import { downloadProgressStore, interruptedDownloadStore } from "@/lib/ui/synced-stores.svelte";
+import { performCancelDownload } from "@/lib/ui/cancel-download";
+import { downloadProgressStore } from "@/lib/ui/synced-stores.svelte";
 import type { DownloadRequest } from "@/types";
 
 const INITIAL_DOWNLOAD_PROGRESS = {
@@ -13,28 +13,22 @@ const INITIAL_DOWNLOAD_PROGRESS = {
 } as const;
 
 export function registerDownloadProgressHandlers() {
-  crossWorldMessenger.onMessage(CrossWorldMessage.CancelDownload, async ({ data }) => {
+  crossWorldMessenger.onMessage(CrossWorldMessage.CancelDownload, ({ data }) => {
     for (const id of data.videoIds) {
-      downloadProgressStore.delete(id);
-      interruptedDownloadStore.delete(id);
       cancelStreamTransfer(id);
     }
 
-    void sendMessage(MessageType.CancelDownload, { videoIds: data.videoIds });
-    const currentProgress = await statusProgressItem.getValue();
-    for (const id of data.videoIds) {
-      const isNotDownloading = !downloadProgressStore.get(id)?.isDownloading;
-      if (isNotDownloading) {
-        delete currentProgress[id];
-      }
-    }
-
-    await statusProgressItem.setValue(currentProgress);
+    void performCancelDownload(data.videoIds);
   });
 
   crossWorldMessenger.onMessage(CrossWorldMessage.StartBackgroundDownload, ({ data }) => {
     const request: DownloadRequest = JSON.parse(data.requestJson);
-    const isProgressSlotAvailable = downloadProgressStore.setLocal(request.videoId, INITIAL_DOWNLOAD_PROGRESS);
+    const isProgressSlotAvailable = downloadProgressStore.setLocal(request.videoId, {
+      ...INITIAL_DOWNLOAD_PROGRESS,
+      videoItag: request.videoItag,
+      audioItag: request.audioItag,
+      downloadType: request.type
+    });
     if (!isProgressSlotAvailable) {
       return;
     }
@@ -55,12 +49,16 @@ export function registerDownloadProgressHandlers() {
       isDownloading: true,
       isDone: false,
       progress: 0,
-      progressType: ""
+      progressType: "",
+      videoItag: data.videoItag,
+      audioItag: data.audioItag,
+      downloadType: data.type
     });
     uncancelStreamTransfer(data.videoId);
   });
 
   crossWorldMessenger.onMessage(CrossWorldMessage.DownloadProgress, ({ data }) => {
+    downloadProgressStore.unsuppress(data.videoId);
     downloadProgressStore.setLocal(data.videoId, {
       isDownloading: true,
       isDone: false,

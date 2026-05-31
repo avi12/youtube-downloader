@@ -1,5 +1,6 @@
-import { startDownload } from "../video/download";
+import { cancelActiveDownload, startDownload } from "../video/download";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
+import { downloadProgressStore } from "@/lib/ui/synced-stores.svelte";
 import { DownloadType, type TpYtIronDropdownElement, type VideoData, type YtButtonViewModelElement } from "@/types";
 
 export interface ClickHandlerState {
@@ -39,6 +40,8 @@ export function buildClickHandler({ videoData, elDropdown, state }: BuildClickHa
 
       const isActiveDownload = state.getIsDownloading() || state.getIsInterrupted();
       if (isActiveDownload) {
+        cancelActiveDownload(videoData.videoId);
+        downloadProgressStore.delete(videoData.videoId);
         void crossWorldMessenger.sendMessage(CrossWorldMessage.CancelDownload, {
           videoIds: [videoData.videoId]
         });

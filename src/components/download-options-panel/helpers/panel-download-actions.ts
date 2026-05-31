@@ -63,6 +63,7 @@ export function sendStartDownload(params: {
 }
 
 export function sendCancelDownload(videoId: string) {
+  downloadProgressStore.delete(videoId);
   void crossWorldMessenger.sendMessage(CrossWorldMessage.CancelDownload, { videoIds: [videoId] });
 }
 

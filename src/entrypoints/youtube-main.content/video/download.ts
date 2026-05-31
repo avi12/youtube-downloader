@@ -1,5 +1,6 @@
 import { resolveAndDispatch } from "./download-execute";
 import { crossWorldMessenger, CrossWorldMessage } from "@/lib/messaging/cross-world-messenger";
+import { downloadProgressStore } from "@/lib/ui/synced-stores.svelte";
 import { type DownloadRequest, ProgressType } from "@/types";
 
 const activeDownloads = new Map<string, AbortController>();
@@ -36,6 +37,16 @@ export async function startDownload(params: Pick<DownloadRequest,
   cancelActiveDownload(params.videoId);
   const abortController = new AbortController();
   activeDownloads.set(params.videoId, abortController);
+  downloadProgressStore.unsuppress(params.videoId);
+  downloadProgressStore.set(params.videoId, {
+    isDownloading: true,
+    isDone: false,
+    progress: 0,
+    progressType: ProgressType.Video,
+    videoItag: params.videoItag,
+    audioItag: params.audioItag,
+    downloadType: params.type
+  });
 
   void crossWorldMessenger.sendMessage(CrossWorldMessage.DownloadProgress, {
     videoId: params.videoId,
