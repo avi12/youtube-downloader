@@ -1,7 +1,6 @@
 <script lang="ts">
   import DownloadOptions from "./DownloadOptions.svelte";
   import { createFocusManager } from "./DownloadOptionsPanel.focus.svelte";
-  import { createPanelState } from "./DownloadOptionsPanel.state.svelte.ts";
   import {
     handlePanelKeydown,
     HEADER_CLOSE_BUTTON_ID,
@@ -10,6 +9,7 @@
     setupPanelButtonHandler,
     VIEW_BUTTON_ID
   } from "./DownloadOptionsPanel.handlers.ts";
+  import { createPanelState } from "./DownloadOptionsPanel.state.svelte.ts";
   import DownloadOptionsPanelFooter from "./DownloadOptionsPanelFooter.svelte";
   import { attachCloseButton } from "@/lib/ui/panel-button-attachments.svelte";
   import type { VideoData } from "@/types";

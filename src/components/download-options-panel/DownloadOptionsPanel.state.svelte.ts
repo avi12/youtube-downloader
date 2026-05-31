@@ -19,7 +19,7 @@ import {
 import { resolveActualExtension, resolvePrimaryState, resolveQualityLabel } from "./helpers/panel-state-derived";
 import { syncAudioFromFormat } from "./helpers/player-active-tracks.svelte";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
-import { CONTENT_OPTIONS, interruptedDownloadStore } from "@/lib/ui/synced-stores.svelte";
+import { CONTENT_OPTIONS, downloadProgressStore, interruptedDownloadStore } from "@/lib/ui/synced-stores.svelte";
 import { getAudioTempExtension, getCompatibleFilename, isAudioMimeNativeForContainer } from "@/lib/utils/containers";
 import {
   alignAudioFormatToExtension,
@@ -61,18 +61,43 @@ export function createPanelState(getVideoData: () => VideoData) {
 
   let downloadId = $state<number | null>(null);
   let downloadType = $state<DownloadType>(
-    untrack(() => resolveInitialDownloadType({
-      options: CONTENT_OPTIONS,
-      videoData: getVideoData()
-    }))
+    untrack(() => {
+      const entry = downloadProgressStore.get(getVideoData().videoId);
+      if (entry?.downloadType && entry.isDownloading) {
+        return entry.downloadType;
+      }
+
+      return resolveInitialDownloadType({
+        options: CONTENT_OPTIONS,
+        videoData: getVideoData()
+      });
+    })
   );
   let selectedVideoFormat = $state<AdaptiveFormatItem | null>(
-    untrack(() => getVideoData().videoFormats[0] ?? null)
+    untrack(() => {
+      const entry = downloadProgressStore.get(getVideoData().videoId);
+      if (entry?.videoItag && entry.isDownloading) {
+        const matched = getVideoData().videoFormats.find(fmt => fmt.itag === entry.videoItag);
+        return matched ?? getVideoData().videoFormats[0] ?? null;
+      }
+
+      return getVideoData().videoFormats[0] ?? null;
+    })
   );
-  const initialAudioFormat = untrack(() => resolveInitialAudioFormat({
-    options: CONTENT_OPTIONS,
-    videoData: getVideoData()
-  }));
+  const initialAudioFormat = untrack(() => {
+    const entry = downloadProgressStore.get(getVideoData().videoId);
+    if (entry?.audioItag && entry.isDownloading) {
+      return getVideoData().audioFormats.find(fmt => fmt.itag === entry.audioItag) ?? resolveInitialAudioFormat({
+        options: CONTENT_OPTIONS,
+        videoData: getVideoData()
+      });
+    }
+
+    return resolveInitialAudioFormat({
+      options: CONTENT_OPTIONS,
+      videoData: getVideoData()
+    });
+  });
   untrack(() => syncAudioFromFormat(initialAudioFormat));
   let selectedAudioFormat = $state<AdaptiveFormatItem | null>(initialAudioFormat);
   let filename = $state(untrack(() => resolveInitialFilename(getVideoData())));

@@ -47,13 +47,15 @@
 </script>
 
 <div class="ytdl-panel-footer">
-  <yt-button-view-model
-    class={scopingClass}
-    {@attach footer.attachPrimaryButton}
-    data-ytdl-button-id={primaryButtonId}
-    role="button"
-    tabindex="0"
-  ></yt-button-view-model>
+  <div class="ytdl-primary-button-wrapper">
+    <yt-button-view-model
+      class={scopingClass}
+      {@attach footer.attachPrimaryButton}
+      data-ytdl-button-id={primaryButtonId}
+      role="button"
+      tabindex="0"
+    ></yt-button-view-model>
+  </div>
 
   <div
     style:visibility={isActive ? null : "hidden"}
