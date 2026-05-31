@@ -136,6 +136,15 @@ async function runFirefoxDirectDownload({ request, tabId, enrichedMetadata }: Ru
   const { videoId, type, videoItag, audioItag, filenameOutput } = request;
   const additionalAudioFormats = request.additionalAudioFormats ?? [];
   const extraAudioItags = additionalAudioFormats.map(format => format.itag);
+
+  const abortController = new AbortController();
+  activeFirefoxDownloads.set(videoId, abortController);
+
+  if (cancelledFirefoxDownloads.delete(videoId)) {
+    activeFirefoxDownloads.delete(videoId);
+    return;
+  }
+
   // Page-proxy routes the InnerTube POST through the watch tab's MAIN-world
   // pristine fetch so cookies + page TLS context pass the anti-bot gate. The
   // BG-direct fetch is tried first as a fast path; if YouTube ever stops
@@ -234,9 +243,11 @@ async function runFirefoxDirectDownload({ request, tabId, enrichedMetadata }: Ru
     }, tabId);
   }
 
+  if (abortController.signal.aborted) {
+    return;
+  }
+
   const chunkCounts = new Map<string, number>();
-  const abortController = new AbortController();
-  activeFirefoxDownloads.set(videoId, abortController);
   function bgFetch(input: RequestInfo | URL, init?: RequestInit) {
     return fetch(input, init);
   }

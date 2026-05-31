@@ -75,7 +75,7 @@ export function registerBackgroundMessageHandlers() {
       }
 
       const isStillDownloading = downloadProgressStore.get(data.videoId)?.isDownloading;
-      if (isStillDownloading) {
+      if (isStillDownloading && !data.isCancelled) {
         return;
       }
 

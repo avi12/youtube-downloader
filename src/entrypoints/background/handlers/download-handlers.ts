@@ -57,7 +57,8 @@ export function registerDownloadHandlers() {
     const progressRemoval = {
       progress: 0,
       progressType: ProgressType.Video,
-      isRemoved: true
+      isRemoved: true,
+      isCancelled: true
     } as const;
 
     sendToOffscreen({
