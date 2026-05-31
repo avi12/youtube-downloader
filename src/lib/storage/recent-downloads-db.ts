@@ -71,6 +71,7 @@ export async function addRecentDownload({ entry, blob }: {
     size: number;
     thumbnailUrl?: string;
     completedAt: number;
+    lastActivityAt?: number;
     tabId?: number;
     quality?: string;
     sourceUrl?: string;
@@ -85,6 +86,20 @@ export async function addRecentDownload({ entry, blob }: {
 }
 
 export type RecentDownloadEntry = Parameters<typeof addRecentDownload>[0]["entry"];
+
+export async function touchRecentDownload(id: string) {
+  const db = await getDatabase();
+  const transaction = db.transaction(Store.Entries, "readwrite");
+  const store = transaction.objectStore(Store.Entries);
+  const entry: RecentDownloadEntry | undefined = await awaitRequest(store.get(id));
+  if (!entry) {
+    return;
+  }
+
+  entry.lastActivityAt = Date.now();
+  store.put(entry);
+  await awaitTransaction(transaction);
+}
 
 export async function updateRecentDownloadId({ id, downloadId }: {
   id: string;
@@ -134,19 +149,18 @@ export async function pruneRecentDownloads({ olderThanTimestamp, protectedIds }:
   const transaction = db.transaction([Store.Entries, Store.Blobs], "readwrite");
   const entriesStore = transaction.objectStore(Store.Entries);
   const blobsStore = transaction.objectStore(Store.Blobs);
-  const index = entriesStore.index("completedAt");
-  const cursorRequest = index.openCursor(IDBKeyRange.upperBound(olderThanTimestamp));
+  const cursorRequest = entriesStore.openCursor();
 
   cursorRequest.onsuccess = () => {
     const cursor = cursorRequest.result;
-    const isCursorDone = !cursor;
-    if (isCursorDone) {
+    if (!cursor) {
       return;
     }
 
     const entry: RecentDownloadEntry = cursor.value;
+    const youngestTimestamp = Math.max(entry.lastActivityAt ?? 0, entry.completedAt);
     const isEntryProtected = protectedIds.has(entry.id);
-    if (!isEntryProtected) {
+    if (youngestTimestamp <= olderThanTimestamp && !isEntryProtected) {
       entriesStore.delete(entry.id);
       blobsStore.delete(entry.id);
     }
