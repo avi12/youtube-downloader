@@ -1,6 +1,7 @@
 <script lang="ts">
   import PolymerSelect from "../polymer-select/PolymerSelect.svelte";
   import { buildFormatItems, getFilenameError } from "./download-options-helpers";
+  import { getCompatibleFilename } from "@/lib/utils/containers";
   import { getFormatDescription } from "@/lib/utils/containers";
   import { DownloadType } from "@/types";
 
@@ -59,7 +60,7 @@
       return;
     }
 
-    onfilenamechange(e.target.value.trim());
+    onfilenamechange(getCompatibleFilename(e.target.value.trim()));
   }
 </script>
 

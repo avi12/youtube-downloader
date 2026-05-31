@@ -52,11 +52,6 @@ export function getFilenameError({
   type: FormatItemsType;
   isMultiTrack?: boolean;
 }) {
-  const illegalMatch = value.match(/[<>:"/\\|?*]/);
-  if (illegalMatch) {
-    return `Character "${illegalMatch[0]}" isn't allowed in filenames`;
-  }
-
   const { name, extension } = splitFilenameAndExtension(value);
   if (!name.trim()) {
     return "Filename can't be empty";
