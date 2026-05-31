@@ -179,7 +179,6 @@ export function requiresVideoReencode({ videoMimeType, targetExtension }: {
   return !videoCodecsFor(spec).has(sourceCodec);
 }
 
-
 export function isAudioMimeNativeForContainer({ audioMimeType, targetExtension }: {
   audioMimeType: string;
   targetExtension: string;

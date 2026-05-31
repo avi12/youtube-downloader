@@ -1,10 +1,5 @@
 import type { MuxVideoAudioJob } from "@/lib/download-pipeline/mux-worker-types";
-import {
-  CONTAINER_SPECS,
-  extractBaseCodec,
-  isVideoNativeForContainer,
-  videoContainers
-} from "@/lib/utils/containers";
+import { CONTAINER_SPECS, extractBaseCodec, isVideoNativeForContainer, videoContainers } from "@/lib/utils/containers";
 
 const FFMPEG_CODEC_COPY = "copy";
 const FFMPEG_SUBTITLE_CODEC_WEBVTT = "webvtt";
