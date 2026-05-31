@@ -35,6 +35,7 @@
     || state.status === PlaylistGridStatus.Loading
     || state.status === PlaylistGridStatus.Downloading
   );
+  const isIndeterminate = $derived(state.isWorking && state.displayProgress === 0);
 
   $effect(() => {
     void state.status;
@@ -52,8 +53,8 @@
         <DownloadProgressRing
           ariaLabel="Playlist download progress"
           isError={state.status === PlaylistGridStatus.Failed}
-          isIndeterminate={true}
-          progress={0}
+          {isIndeterminate}
+          progress={state.displayProgress / 100}
         />
       </div>
     </div>
@@ -83,7 +84,7 @@
 
   .ytdl-playlist-ring-slot {
     position: absolute;
-    inset: 0;
+    inset: -8px;
     opacity: 0%;
     pointer-events: none;
     transition: opacity 120ms ease-out;

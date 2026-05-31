@@ -139,7 +139,7 @@
 
   .ytdl-playlist-ring-slot {
     position: absolute;
-    inset: 0;
+    inset: -8px;
     opacity: 0%;
     pointer-events: none;
     transition: opacity 120ms ease-out;
