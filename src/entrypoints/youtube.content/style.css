@@ -26,6 +26,13 @@
   margin-block-start: -6px;
 }
 
+#title-wrapper > [data-ytdl-grid-item] {
+  align-self: center;
+  margin-block-start: -9px;
+  margin-inline-end: 4px;
+  margin-inline-start: auto;
+}
+
 ytd-menu-renderer.ytd-playlist-video-renderer:has([data-ytdl-item]) {
   display: flex;
   flex-direction: row;

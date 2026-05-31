@@ -12,6 +12,7 @@ const SELECTOR_LOCKUP_METADATA_HOST = ".ytLockupMetadataViewModelHost";
 const SELECTOR_LOCKUP_HOST = ".ytLockupViewModelHost";
 const SELECTOR_DISMISSIBLE = "#dismissible";
 const SELECTOR_DETAILS = "#details";
+const SELECTOR_TITLE_WRAPPER_MENU = "#title-wrapper #menu";
 const SELECTOR_CONTENT_ID_CLASS = "[class*='content-id-']";
 const SELECTOR_AD_INDICATOR = "feed-ad-metadata-view-model, ad-avatar-view-model, ytd-ad-slot-renderer, ytd-display-ad-renderer, ytd-promoted-sparkles-web-renderer, [class*='ytwFeedAdMetadataViewModel'], [class*='ytwAdAvatarViewModel']";
 const PLAYLIST_ID_PREFIXES = ["PL", "LL", "FL", "OL", "RD", "UU", "UL", "EL", "VL"];
@@ -124,7 +125,7 @@ export function extractVideoId(elCard: Element) {
 }
 
 export const Selector = {
-  VideoCard: `${LOCKUP_VIEW_MODEL_TAG}, ytd-rich-item-renderer, ytd-grid-video-renderer`,
+  VideoCard: `${LOCKUP_VIEW_MODEL_TAG}, ytd-rich-item-renderer, ytd-grid-video-renderer, ytd-video-renderer`,
   PageManager: "ytd-page-manager"
 } as const;
 
@@ -181,6 +182,14 @@ function resolveMountPoint(elCard: Element) {
     } as const;
   }
 
+  const elTitleWrapperMenu = elDismissible.querySelector(SELECTOR_TITLE_WRAPPER_MENU);
+  if (elTitleWrapperMenu) {
+    return {
+      elTarget: elTitleWrapperMenu,
+      position: "before"
+    } as const;
+  }
+
   return {
     elTarget: elDismissible,
     position: "append"
@@ -218,6 +227,8 @@ export function mountGridButton({ context, elCard }: MountGridButtonParams) {
 
   if (mountPoint.position === "after") {
     mountPoint.elTarget.insertAdjacentElement("afterend", elItemContainer);
+  } else if (mountPoint.position === "before") {
+    mountPoint.elTarget.insertAdjacentElement("beforebegin", elItemContainer);
   } else {
     mountPoint.elTarget.append(elItemContainer);
   }
