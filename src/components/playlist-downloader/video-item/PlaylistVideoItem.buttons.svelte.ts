@@ -128,6 +128,7 @@ export function createButtonManager(params: {
     attachDownloadButton: (elButton: Element) =>
       attachDownloadButton({
         elButton,
+        buttonId: downloadButtonId,
         onClickDownload: onDownloadClick,
         refreshDownload: refreshDownloadButton,
         setDownloadButtonElement
@@ -135,6 +136,7 @@ export function createButtonManager(params: {
     attachChevronButton: (elButton: Element) =>
       attachChevronButton({
         elButton,
+        buttonId: chevronButtonId,
         onClickChevron: onChevronClick,
         refreshChevron: refreshChevronButton,
         setChevronButtonElement

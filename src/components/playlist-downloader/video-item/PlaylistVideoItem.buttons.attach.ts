@@ -1,12 +1,16 @@
+import { onButtonClick } from "@/lib/messaging/cross-world-messenger";
+
 const CHEVRON_MARGIN_OVERRIDE_STYLE = "margin-left: 0 !important";
 
 export function attachDownloadButton({
   elButton,
+  buttonId,
   onClickDownload,
   refreshDownload,
   setDownloadButtonElement
 }: {
   elButton: Element;
+  buttonId: string;
   onClickDownload: () => void;
   refreshDownload: () => void;
   setDownloadButtonElement: (element: Element) => void;
@@ -17,18 +21,24 @@ export function attachDownloadButton({
   }
 
   setDownloadButtonElement(elButton);
-  elButton.addEventListener("click", onClickDownload);
+  const unsubscribe = onButtonClick(clickedId => {
+    if (clickedId === buttonId) {
+      onClickDownload();
+    }
+  });
   refreshDownload();
-  return () => elButton.removeEventListener("click", onClickDownload);
+  return unsubscribe;
 }
 
 export function attachChevronButton({
   elButton,
+  buttonId,
   onClickChevron,
   refreshChevron,
   setChevronButtonElement
 }: {
   elButton: Element;
+  buttonId: string;
   onClickChevron: () => void;
   refreshChevron: () => void;
   setChevronButtonElement: (element: Element) => void;
@@ -39,8 +49,12 @@ export function attachChevronButton({
   }
 
   setChevronButtonElement(elButton);
-  elButton.addEventListener("click", onClickChevron);
+  const unsubscribe = onButtonClick(clickedId => {
+    if (clickedId === buttonId) {
+      onClickChevron();
+    }
+  });
   refreshChevron();
   elButton.setAttribute("style", CHEVRON_MARGIN_OVERRIDE_STYLE);
-  return () => elButton.removeEventListener("click", onClickChevron);
+  return unsubscribe;
 }
