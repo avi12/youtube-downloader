@@ -14,7 +14,7 @@
   let isOpen = $state(false);
   let isOpened = $state(false);
   let isClosing = $state(false);
-  let elFilename = $state<HTMLSpanElement | null>(null);
+  const elFilename = $state<HTMLSpanElement | null>(null);
   const canvasCtx = document.createElement("canvas").getContext("2d")!;
   const isFilenameTruncated = $derived.by(() => {
     if (!elFilename?.parentElement) {
@@ -80,7 +80,7 @@
 
 {#if isOpen}
   <div
-    class="ytSnackbarContainerSnackbarContainer"
+    class="ytSnackbarContainerSnackbarContainer ytdlSnackbarHost"
     class:ytSnackbarContainerClosed={isClosing}
     class:ytSnackbarContainerOpened={isOpened}
     {@attach attachToSnackbar}

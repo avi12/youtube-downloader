@@ -2,6 +2,10 @@
   color: var(--yt-sys-color-baseline--call-to-action, rgb(62 166 255));
 }
 
-[data-ytdl-button-id="ytdl-snackbar-view"] button:not(:disabled) {
+[data-ytdl-button-id="ytdl-snackbar-view"] {
   cursor: pointer;
+}
+
+.ytdlSnackbarHost {
+  pointer-events: auto;
 }
