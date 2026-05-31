@@ -102,6 +102,7 @@
           isFFmpegReady={appState.isFFmpegReady}
           musicList={appState.musicList}
           now={appState.now}
+          onCancel={appState.cancelDownloads}
           onChangeFormat={appState.handleChangeFormat}
           onRecentChanged={appState.refreshRecentDownloads}
           {percentFormatter}

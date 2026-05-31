@@ -2,7 +2,6 @@
   import downloadIcon from "../icons/download.svg?raw";
   import RecentDownloadsSection from "../recent/RecentDownloadsSection.svelte";
   import ActiveDownloadsSections from "./ActiveDownloadsSections.svelte";
-  import { MessageType, sendMessage } from "@/lib/messaging/messaging";
   import { deleteRecentDownload } from "@/lib/storage/recent-downloads-db";
   import type { DownloadProgressEntry, RecentDownloadEntry, VideoQueueItem } from "@/types";
   import { browser } from "#imports";
@@ -26,6 +25,7 @@
     now: number;
     currentTabId?: number;
     currentSourceUrl?: string;
+    onCancel: (videoIds: string[]) => void;
     onChangeFormat: (entry: RecentDownloadEntry) => void;
     onRecentChanged: () => void;
   }
@@ -33,7 +33,7 @@
   const {
     isFFmpegReady, videoDownloads, musicList, videoOnlyList, videoDetails,
     statusProgress, percentFormatter, recentDownloads, now,
-    currentTabId, currentSourceUrl, onChangeFormat, onRecentChanged
+    currentTabId, currentSourceUrl, onCancel, onChangeFormat, onRecentChanged
   }: Props = $props();
 
   const totalActiveDownloads = $derived(videoDownloads.length + musicList.length + videoOnlyList.length);
@@ -51,10 +51,6 @@
       console.warn("[ytdl:popup] Show in folder failed:", error);
     }
   }
-
-  function cancelDownload(videoIds: string[]): void {
-    void sendMessage(MessageType.CancelDownload, { videoIds });
-  }
 </script>
 
 {#if !isAnyContentAvailable}
@@ -71,7 +67,7 @@
       {isFFmpegReady}
       {musicList}
       {now}
-      onCancel={cancelDownload}
+      {onCancel}
       onChangeFormat={entry => onChangeFormat(entry)}
       onRemoveRecent={handleRemove}
       onShowRecentInFolder={handleShowInFolder}
