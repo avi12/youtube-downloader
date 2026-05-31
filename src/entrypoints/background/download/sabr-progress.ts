@@ -27,7 +27,6 @@ export function createProgressAccumulator({
       referenceFormat: audioFormat
     });
   });
-
   let videoReceivedBytes = 0;
   let audioReceivedBytes = 0;
   const extraReceivedBytesArray = additionalFormats.map(() => 0);

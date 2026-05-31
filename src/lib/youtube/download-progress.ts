@@ -2,6 +2,9 @@ import { ProgressType } from "@/types";
 
 const DOWNLOAD_PHASE_WEIGHT = 70;
 const MUX_PHASE_WEIGHT = 30;
+const MIN_VISIBLE_PERCENT = 0.5;
+
+export const CAPTION_ESTIMATED_BYTES = 50_000;
 
 type CalculateWeightedProgressParams = {
   isDownloading: boolean;
@@ -14,9 +17,15 @@ export function calculateWeightedProgress({ isDownloading, progress, progressTyp
   }
 
   const isMuxProgress = progressType === ProgressType.FFmpeg;
-  if (isMuxProgress) {
-    return DOWNLOAD_PHASE_WEIGHT + progress * MUX_PHASE_WEIGHT;
+  const weighted = isMuxProgress
+    ? DOWNLOAD_PHASE_WEIGHT + progress * MUX_PHASE_WEIGHT
+    : progress * DOWNLOAD_PHASE_WEIGHT;
+
+  const hasProgress = progress > 0;
+  const isBelowVisibleFloor = weighted < MIN_VISIBLE_PERCENT;
+  if (hasProgress && isBelowVisibleFloor) {
+    return MIN_VISIBLE_PERCENT;
   }
 
-  return progress * DOWNLOAD_PHASE_WEIGHT;
+  return weighted;
 }

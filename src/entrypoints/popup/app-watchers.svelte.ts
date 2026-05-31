@@ -48,7 +48,7 @@ export function setupAppWatchers(targets: AppWatcherTargets) {
     statusProgressItem.watch(value => targets.setStatusProgress(value ?? {})),
     optionsItem.watch(value => targets.setOptions({
       ...defaultOptions,
-      ...(value ?? {})
+      ...value
     }))
   ];
 

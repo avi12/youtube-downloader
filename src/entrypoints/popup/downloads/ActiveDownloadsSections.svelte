@@ -1,8 +1,9 @@
 <script lang="ts">
+  import RecentDownloadItem from "../recent/RecentDownloadItem.svelte";
   import { bindDownloadAccessors, getVideoStatusLabel } from "./active-downloads-helpers";
   import DownloadItem from "./DownloadItem.svelte";
   import DownloadSection from "./DownloadSection.svelte";
-  import type { DownloadProgressEntry, VideoQueueItem } from "@/types";
+  import type { DownloadProgressEntry, RecentDownloadEntry, VideoQueueItem } from "@/types";
   import { SvelteMap, SvelteSet } from "svelte/reactivity";
 
   interface Props {
@@ -16,17 +17,52 @@
       tabId?: number;
       playlistId?: string;
       playlistTitle?: string;
+      sourceUrl?: string;
     }>;
     statusProgress: Record<string, DownloadProgressEntry>;
     percentFormatter: Intl.NumberFormat;
     currentTabId?: number;
+    currentSourceUrl?: string;
+    recentDownloads: RecentDownloadEntry[];
+    now: number;
     onCancel: (videoIds: string[]) => void;
+    onShowRecentInFolder: (entry: RecentDownloadEntry) => void;
+    onChangeFormat: (entry: RecentDownloadEntry) => void;
+    onRemoveRecent: (entry: RecentDownloadEntry) => void;
   }
 
   const {
     isFFmpegReady, videoDownloads, musicList, videoOnlyList,
-    videoDetails, statusProgress, percentFormatter, currentTabId, onCancel
+    videoDetails, statusProgress, percentFormatter, currentTabId, currentSourceUrl,
+    recentDownloads, now,
+    onCancel, onShowRecentInFolder, onChangeFormat, onRemoveRecent
   }: Props = $props();
+
+  function isVideoIdInThisTab(videoId: string): boolean {
+    const detail = videoDetails[videoId];
+    return Boolean(
+      detail
+      && currentTabId !== undefined
+      && detail.tabId === currentTabId
+      && currentSourceUrl
+      && detail.sourceUrl === currentSourceUrl
+    );
+  }
+
+  function isRecentEntryInThisTab(entry: RecentDownloadEntry): boolean {
+    return Boolean(
+      currentTabId !== undefined
+      && entry.tabId === currentTabId
+      && currentSourceUrl
+      && entry.sourceUrl === currentSourceUrl
+    );
+  }
+
+  const thisTabRecent = $derived(
+    currentTabId === undefined || !currentSourceUrl
+      ? []
+      : recentDownloads.filter(isRecentEntryInThisTab)
+  );
 
   const accessors = $derived(
     bindDownloadAccessors({
@@ -38,29 +74,25 @@
 
   const thisTabIds = $derived(
     (() => {
-      const isTabIdUnknown = currentTabId === undefined;
-      if (isTabIdUnknown) {
+      if (currentTabId === undefined || !currentSourceUrl) {
         return new SvelteSet<string>();
       }
 
       const ids = new SvelteSet<string>();
       for (const item of videoDownloads) {
-        const isThisTab = videoDetails[item.videoId]?.tabId === currentTabId;
-        if (isThisTab) {
+        if (isVideoIdInThisTab(item.videoId)) {
           ids.add(item.videoId);
         }
       }
 
       for (const id of musicList) {
-        const isThisTab = videoDetails[id]?.tabId === currentTabId;
-        if (isThisTab) {
+        if (isVideoIdInThisTab(id)) {
           ids.add(id);
         }
       }
 
       for (const id of videoOnlyList) {
-        const isThisTab = videoDetails[id]?.tabId === currentTabId;
-        if (isThisTab) {
+        if (isVideoIdInThisTab(id)) {
           ids.add(id);
         }
       }
@@ -146,23 +178,25 @@
   const videoDownloadIds = $derived(videoDownloads.map(item => item.videoId));
 </script>
 
-{#if thisTabVideoIds.length > 0}
+{#if thisTabVideoIds.length > 0 || thisTabRecent.length > 0}
   <section aria-labelledby="this-tab-heading">
     <header class="section-header">
       <h2 id="this-tab-heading" class="section-title">This tab</h2>
-      <button
-        class="cancel-all-button"
-        aria-label="Cancel all downloads from this tab"
-        onclick={() => onCancel(thisTabVideoIds)}
-      >
-        Cancel all
-      </button>
+      {#if thisTabVideoIds.length > 0}
+        <button
+          class="cancel-all-button"
+          aria-label="Cancel all downloads from this tab"
+          onclick={() => onCancel(thisTabVideoIds)}
+        >
+          Cancel all
+        </button>
+      {/if}
     </header>
 
     <div class="this-tab-content">
       {#each thisTabGroups.zipGroups as group (group.playlistTitle)}
         <div class="zip-group">
-          <span class="zip-group-label" title="{group.playlistTitle}.zip">
+          <span class="zip-group-label" data-tooltip="{group.playlistTitle}.zip">
             → {group.playlistTitle}.zip
           </span>
           <ul class="download-list" aria-label="Videos in {group.playlistTitle}.zip">
@@ -191,6 +225,23 @@
                 progress={accessors.progress(videoId)}
                 progressLabel={accessors.label(videoId)}
                 quality={accessors.quality(videoId)}
+                {videoId}
+              />
+            </li>
+          {/each}
+        </ul>
+      {/if}
+
+      {#if thisTabRecent.length > 0}
+        <ul class="recent-list" aria-label="Recent downloads from this tab">
+          {#each thisTabRecent as entry (entry.id)}
+            <li>
+              <RecentDownloadItem
+                {entry}
+                {now}
+                onChangeFormat={() => onChangeFormat(entry)}
+                onRemove={() => onRemoveRecent(entry)}
+                onShowInFolder={() => onShowRecentInFolder(entry)}
               />
             </li>
           {/each}
@@ -225,6 +276,7 @@
           i,
           isFFmpegReady
         }) : null}
+        {videoId}
       />
     </li>
   {/snippet}
@@ -245,6 +297,7 @@
         oncancel={() => onCancel([videoId])}
         progress={accessors.progress(videoId)}
         progressLabel={accessors.label(videoId)}
+        {videoId}
       />
     </li>
   {/snippet}
@@ -265,6 +318,7 @@
         oncancel={() => onCancel([videoId])}
         progress={accessors.progress(videoId)}
         progressLabel={accessors.label(videoId)}
+        {videoId}
       />
     </li>
   {/snippet}
@@ -275,9 +329,10 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 8px;
+    margin-bottom: 4px;
 
     .section-title {
+      margin: 0;
       color: var(--fg);
       font-weight: 500;
       font-size: 0.8125rem;
@@ -329,7 +384,8 @@
     }
   }
 
-  .download-list {
+  .download-list,
+  .recent-list {
     display: flex;
     flex-direction: column;
     gap: 4px;

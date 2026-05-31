@@ -1,9 +1,11 @@
 import {
+  audioContainers,
+  buildFormatGroups,
+  flattenFormatGroups,
+  MULTI_TRACK_UNSUPPORTED_EXTENSIONS,
   splitFilenameAndExtension,
   supportedExtensions,
-  getFormatDescription,
-  AUTO_EXTENSION,
-  MULTI_TRACK_UNSUPPORTED_EXTENSIONS
+  videoContainers
 } from "@/lib/utils/containers";
 import { DownloadType } from "@/types";
 
@@ -25,17 +27,20 @@ export const DOWNLOAD_TYPES = [
   }
 ] as const;
 
-export function buildFormatItems(
-  type: typeof DownloadType.Video | typeof DownloadType.Audio,
-  isMultiTrack = false
-) {
-  return supportedExtensions[type]
-    .filter(extension => extension !== AUTO_EXTENSION)
-    .map(extension => ({
-      ext: extension,
-      desc: getFormatDescription(extension),
-      isExcluded: isMultiTrack && MULTI_TRACK_UNSUPPORTED_EXTENSIONS.has(extension)
-    }));
+type FormatItemsType = typeof DownloadType.Video | typeof DownloadType.Audio;
+
+export function buildFormatItems(type: FormatItemsType, isMultiTrack = false) {
+  const allowedExtensions = type === DownloadType.Video ? videoContainers : audioContainers;
+  const excludedExtensions = isMultiTrack ? MULTI_TRACK_UNSUPPORTED_EXTENSIONS : undefined;
+  const groups = buildFormatGroups({
+    allowedExtensions,
+    excludedExtensions
+  });
+  return flattenFormatGroups(groups).map(item => ({
+    ext: item.extension,
+    desc: item.description,
+    isExcluded: item.isExcluded
+  }));
 }
 
 export function getFilenameError({
@@ -44,7 +49,7 @@ export function getFilenameError({
   isMultiTrack = false
 }: {
   value: string;
-  type: typeof DownloadType.Video | typeof DownloadType.Audio;
+  type: FormatItemsType;
   isMultiTrack?: boolean;
 }) {
   const illegalMatch = value.match(/[<>:"/\\|?*]/);
@@ -64,7 +69,7 @@ export function getFilenameError({
   }
 
   if (isMultiTrack && MULTI_TRACK_UNSUPPORTED_EXTENSIONS.has(fileExtension)) {
-    return "AVI doesn't support multiple audio tracks";
+    return `${fileExtension.toUpperCase()} doesn't support multiple audio tracks`;
   }
 
   if (!validExtensions.includes(fileExtension)) {

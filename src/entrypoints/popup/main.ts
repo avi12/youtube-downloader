@@ -34,6 +34,7 @@ const [
   })
 ]);
 const currentTabId = activeTabs[0]?.id;
+const currentSourceUrl = activeTabs[0]?.url;
 
 const elApp = document.getElementById("app");
 if (!elApp) {
@@ -50,6 +51,7 @@ mount(App, {
     initialVideoDetails: videoDetails,
     initialStatusProgress: statusProgress,
     initialCurrentTabId: currentTabId,
+    initialCurrentSourceUrl: currentSourceUrl,
     initialOptions: {
       ...defaultOptions,
       ...options

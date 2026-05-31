@@ -9,10 +9,20 @@ import { buildEnrichedRequest, fetchCaptionWebVttData } from "./download-request
 import { generatePoTokenIfNeeded, videoDataCache } from "./video-data";
 import { crossWorldMessenger, CrossWorldMessage } from "@/lib/messaging/cross-world-messenger";
 import { getCompatibleFilename, splitFilenameAndExtension } from "@/lib/utils/filename";
+import { CAPTION_ESTIMATED_BYTES } from "@/lib/youtube/download-progress";
 import { isVideoDataExpired } from "@/lib/youtube/video-helpers";
-import type { CaptionTrack, DownloadRequest, TranslationLanguage } from "@/types";
+import type { AdaptiveFormatItem, CaptionTrack, DownloadRequest, TranslationLanguage } from "@/types";
 
 const TRANSLATED_CAPTION_VSSID_PREFIX = "t.";
+
+function readContentLength(format: AdaptiveFormatItem | null) {
+  if (!format?.contentLength) {
+    return 0;
+  }
+
+  const bytes = Number(format.contentLength);
+  return Number.isFinite(bytes) && bytes > 0 ? bytes : 0;
+}
 
 function buildVirtualTranslatedTrack(
   vssId: string,
@@ -77,7 +87,8 @@ export type DownloadParams = Pick<DownloadRequest,
   "type" | "videoId" | "videoItag" | "audioItag" | "audioTrackId" |
   "selectedCaptionVssId" | "filenameOutput" | "isIframeFallback" |
   "downloadExtras" | "downloadExtraCaptions" | "includeAutoDubbing" |
-  "playlistId" | "playlistTitle" | "playlistTotalCount"
+  "playlistId" | "playlistTitle" | "playlistTotalCount" |
+  "originTabId"
 >;
 
 type ResolveAndDispatchParams = {
@@ -125,10 +136,6 @@ export async function resolveAndDispatch({ params, abortSignal }: ResolveAndDisp
     selectedCaptionVssId,
     downloadExtras: downloadExtraCaptions
   });
-  const captionVttDataPromise = fetchCaptionWebVttData({
-    captionTracks: orderedCaptionTracks,
-    videoId
-  });
   const { videoFormat, audioFormat } = selectFormats({
     videoData: cachedVideoData,
     type,
@@ -144,6 +151,17 @@ export async function resolveAndDispatch({ params, abortSignal }: ResolveAndDisp
       includeAutoDubbing
     })
     : [];
+  const captionExpectedBytesTotal = orderedCaptionTracks.length * CAPTION_ESTIMATED_BYTES;
+  const totalExpectedBytes = readContentLength(videoFormat)
+    + readContentLength(audioFormat)
+    + extraAudioFormats.reduce((sum, format) => sum + readContentLength(format), 0)
+    + captionExpectedBytesTotal;
+  const captionVttDataPromise = fetchCaptionWebVttData({
+    captionTracks: orderedCaptionTracks,
+    videoId,
+    captionBytesPerUnit: CAPTION_ESTIMATED_BYTES,
+    totalExpectedBytes
+  });
 
   await generatePoTokenIfNeeded(cachedVideoData);
   const credentials = await resolveCredentialsWithRetry();

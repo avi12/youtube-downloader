@@ -4,7 +4,7 @@ import { buildTransferJobs } from "./stream-chunk-transfer";
 import { buildSubtitleTracks } from "./subtitle-track-builder";
 import { MessageType, sendMessageToTab } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
-import { stripMimeParams } from "@/lib/utils/containers";
+import { resolveQualityLabel } from "@/lib/youtube/audio-format-helpers";
 import { ProgressType } from "@/types";
 import type { DownloadRequest, VideoMetadata } from "@/types";
 
@@ -34,8 +34,8 @@ export async function dispatchToOffscreen(
   } = request;
   const { videoData, audioData, additionalAudioTracks } = result;
 
-  const resolvedVideoMimeType = videoFormat ? stripMimeParams(videoFormat.mimeType) : FALLBACK_VIDEO_MIME_TYPE;
-  const resolvedAudioMimeType = audioFormat ? stripMimeParams(audioFormat.mimeType) : FALLBACK_AUDIO_MIME_TYPE;
+  const resolvedVideoMimeType = videoFormat?.mimeType ?? FALLBACK_VIDEO_MIME_TYPE;
+  const resolvedAudioMimeType = audioFormat?.mimeType ?? FALLBACK_AUDIO_MIME_TYPE;
   if (!skipChunkTransfer) {
     await Promise.all(
       buildTransferJobs({
@@ -88,7 +88,13 @@ export async function dispatchToOffscreen(
       playlistId,
       playlistTitle,
       playlistTotalCount,
-      metadata: enrichedMetadata
+      metadata: enrichedMetadata,
+      quality: resolveQualityLabel({
+        type: request.type,
+        videoFormat: request.videoFormat,
+        audioFormat: request.audioFormat
+      }),
+      sourceUrl: request.sourceUrl
     }
   });
 }

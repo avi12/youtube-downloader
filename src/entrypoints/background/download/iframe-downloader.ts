@@ -7,7 +7,7 @@ import { MessageType, onMessage, sendMessageToTab } from "@/lib/messaging/messag
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
 import type { DownloadRequest } from "@/types";
 
-const IFRAME_READY_TIMEOUT_MS = 30_000;
+const IFRAME_READY_TIMEOUT_MS = 60_000;
 const YOUTUBE_WATCH_BASE_URL = "https://www.youtube.com/watch";
 
 const pendingIframeReady = new Map<string, {
@@ -72,7 +72,8 @@ export async function downloadViaWatchPage({ data, tabId }: DownloadViaWatchPage
     videoId: data.videoId,
     type: data.type,
     filenameOutput: data.filenameOutput,
-    tabId
+    tabId,
+    sourceUrl: data.sourceUrl
   });
   trackVideoForTab({
     videoId: data.videoId,
@@ -82,7 +83,8 @@ export async function downloadViaWatchPage({ data, tabId }: DownloadViaWatchPage
   try {
     await prepareIframe({
       ...data,
-      isIframeFallback: true
+      isIframeFallback: true,
+      originTabId: tabId
     });
 
     await sendMessageToTab(MessageType.StartKeepalive, { videoId: data.videoId }, tabId);

@@ -40,6 +40,8 @@ export type DownloadRequest = {
   resolvedAudioUrl?: string | null;
   resolvedExtraAudioUrls?: (string | null)[];
   progressiveUrl?: string | null;
+  originTabId?: number;
+  sourceUrl?: string;
 };
 
 export type StreamData = {
@@ -69,6 +71,8 @@ export type ProcessStreamData = StreamData & {
   playlistTotalCount?: number;
   defaultAudioTrackIndex?: number;
   metadata?: VideoMetadata | null;
+  quality?: string;
+  sourceUrl?: string;
 };
 
 export type VideoData = {
@@ -81,7 +85,7 @@ export type VideoData = {
   videoFormats: AdaptiveFormatItem[];
   audioFormats: AdaptiveFormatItem[];
   captionTracks: CaptionTrack[];
-  sourceCaptionLanguageCode: string;
+  sourceCaptionLanguageCode?: string;
   translationLanguages: TranslationLanguage[];
   sabrConfig: SabrConfig | null;
   progressiveUrl: string | null;

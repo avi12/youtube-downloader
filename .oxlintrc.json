@@ -1,0 +1,68 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": [
+    "typescript",
+    "unicorn",
+    "oxc",
+    "import"
+  ],
+  "categories": {
+    "correctness": "error"
+  },
+  "env": {
+    "browser": true,
+    "node": true,
+    "builtin": true
+  },
+  "globals": {
+    "browser": "readonly",
+    "chrome": "readonly"
+  },
+  "rules": {
+    "no-void": "error",
+    "prefer-const": "error",
+    "no-nested-ternary": "error",
+    "curly": ["error", "all"],
+    "object-shorthand": ["error", "always", { "avoidExplicitReturnArrows": true }],
+    "id-length": ["error", {
+      "min": 3,
+      "exceptions": ["z", "_", "i", "fs", "id", "os", "e", "db", "mi", "ui", "HL", "GL", "js", "q", "to", "dd", "mm", "x", "y", "d"],
+      "properties": "never"
+    }],
+    "func-style": ["error", "declaration", { "allowArrowFunctions": false }],
+    "arrow-body-style": ["error", "as-needed"],
+    "no-control-regex": "off",
+    "typescript/no-explicit-any": "error",
+    "typescript/no-unused-vars": ["error", {
+      "varsIgnorePattern": "^_",
+      "argsIgnorePattern": "^_",
+      "caughtErrorsIgnorePattern": "^_"
+    }],
+    "typescript/consistent-type-assertions": ["error", { "assertionStyle": "never" }],
+    "import/first": "error"
+  },
+  "overrides": [
+    {
+      "files": ["**/*.svelte"],
+      "rules": {
+        "typescript/no-explicit-any": "off",
+        "prefer-const": "off"
+      }
+    }
+  ],
+  "ignorePatterns": [
+    "build/**",
+    "node_modules/**",
+    ".output/**",
+    ".wxt/**",
+    "User Data/**",
+    "patches/**",
+    "scripts/bisect-*",
+    "scripts/verify-download.mjs",
+    "scripts/inspect-*",
+    "scripts/check-*",
+    "scripts/capture-logs.mjs",
+    "scripts/reload-yt.mjs",
+    "scripts/cherry-pick-*"
+  ]
+}

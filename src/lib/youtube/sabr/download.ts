@@ -9,9 +9,10 @@ type FetchVideoViaSabrStreamParams = {
   fetchFunction: typeof globalThis.fetch;
   poToken: string;
   signal?: AbortSignal;
+  onChunk?: (chunk: Uint8Array) => void;
 };
 export async function fetchVideoViaSabrStream({
-  sabrConfig, videoFormat, fetchFunction, poToken, signal
+  sabrConfig, videoFormat, fetchFunction, poToken, signal, onChunk
 }: FetchVideoViaSabrStreamParams) {
   const sabrStream = createSabrStream({
     sabrConfig,
@@ -25,7 +26,8 @@ export async function fetchVideoViaSabrStream({
   return collectReadableStream({
     stream: videoStream,
     expectedBytes: parseInt(videoFormat.contentLength, 10),
-    signal
+    signal,
+    onChunk
   });
 }
 

@@ -30,11 +30,11 @@ export default defineContentScript({
       if (mimeType.startsWith(MIME_PREFIX_VIDEO)) {
         capture.videoChunks.push(chunk.slice());
         capture.videoTotalBytes += chunk.byteLength;
-        capture.videoMimeType = mimeType.split(";")[0];
+        capture.videoMimeType = mimeType;
       } else {
         capture.audioChunks.push(chunk.slice());
         capture.audioTotalBytes += chunk.byteLength;
-        capture.audioMimeType = mimeType.split(";")[0];
+        capture.audioMimeType = mimeType;
       }
     }
 

@@ -36,6 +36,7 @@ export const MessageType = {
   WorkerDownloadComplete: "workerDownloadComplete",
   ReportWorkerDownloadFailed: "reportWorkerDownloadFailed",
   ForwardProgressUpdate: "forwardProgressUpdate",
+  ReportPageProgress: "reportPageProgress",
   PageSabrFetch: "pageSabrFetch"
 } as const;
 
@@ -104,6 +105,7 @@ export type PipelineStartMessage = {
   type: DownloadType;
   filenameOutput: string;
   tabId: number;
+  sourceUrl?: string;
 };
 
 export type TranscodeRecentDownloadMessage = {
@@ -119,6 +121,9 @@ export type RecentDownloadContext = {
   thumbnailUrl?: string;
   videoMimeType?: string;
   audioMimeType?: string;
+  tabId?: number;
+  quality?: string;
+  sourceUrl?: string;
 };
 
 export type PipelineDownloadMessage = {
@@ -211,7 +216,7 @@ export interface ProtocolMap {
   }): void;
   pipelineFFmpegReady(): void;
   pipelineStart(data: PipelineStartMessage): void;
-  pipelineDownload(data: PipelineDownloadMessage): void;
+  pipelineDownload(data: PipelineDownloadMessage): { downloadId: number } | null;
   recentDownloadsChanged(): void;
   transcodeRecentDownload(data: TranscodeRecentDownloadMessage): void;
   pipelineZipProgress(data: {
@@ -257,6 +262,12 @@ export interface ProtocolMap {
 
   forwardProgressUpdate(data: ProgressUpdate & {
     tabId: number;
+  }): void;
+
+  reportPageProgress(data: {
+    videoId: string;
+    progress: number;
+    progressType: ProgressType;
   }): void;
 
   pageSabrFetch(data: PageSabrFetchRequest): PageSabrFetchResponse;

@@ -10,7 +10,8 @@ import { clearIframeAutoRetry, handleIframeFallback } from "../download/sabr-att
 import { enqueueToPopupList, removeFromPopupList } from "../queue/popup-list";
 import { signalVideoComplete } from "../queue/sequential-queue";
 import { cancelDownloads, getTabIdsForVideo, trackVideoForTab } from "../queue/tab-tracker";
-import { markVideosCancelled } from "./pipeline-handlers";
+import { notifyWatchTabsOnComplete } from "../recent/recent-downloads";
+import { addMuxCancelledVideoIds, markVideosCancelled } from "./pipeline-handlers";
 import { clearCancelledVideo, isVideoCancelled } from "./pipeline-state";
 import {
   abortCurrentSequence,
@@ -22,6 +23,7 @@ import { registerProxyFetchHandler } from "./proxy-fetch-handler";
 import { MessageType, onMessage, sendMessage, sendMessageToTab } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
 import { mutateStorageItem, statusProgressItem } from "@/lib/storage/storage";
+import { resolveQualityLabel } from "@/lib/youtube/audio-format-helpers";
 import { ProgressType } from "@/types";
 
 export function registerDownloadHandlers() {
@@ -35,8 +37,12 @@ export function registerDownloadHandlers() {
       return;
     }
 
+    const sourceUrl = data.sourceUrl ?? sender.tab?.url;
     void downloadViaWatchPage({
-      data,
+      data: sourceUrl ? {
+        ...data,
+        sourceUrl
+      } : data,
       tabId: originTabId
     });
   });
@@ -46,6 +52,7 @@ export function registerDownloadHandlers() {
   onMessage(MessageType.CancelDownload, async ({ data }) => {
     abortCurrentSequence();
     markVideosCancelled(data.videoIds);
+    addMuxCancelledVideoIds(data.videoIds);
 
     const progressRemoval = {
       progress: 0,
@@ -100,11 +107,16 @@ export function registerDownloadHandlers() {
     const { blobUrl, filename, videoId } = data;
     const tabId = getTabIdsForVideo(videoId)[0] ?? -1;
     try {
-      await browser.downloads.download({
+      const downloadId = await browser.downloads.download({
         url: blobUrl,
         filename
       });
       clearIframeAutoRetry(videoId);
+      notifyWatchTabsOnComplete({
+        downloadId,
+        videoId,
+        filename
+      });
 
       await sendMessageToTab(MessageType.UpdateDownloadProgress, {
         videoId,
@@ -125,7 +137,7 @@ export function registerDownloadHandlers() {
   });
 
   onMessage(MessageType.StartBackgroundDownload, async ({ data, sender }) => {
-    let tabId: number | undefined = sender.tab?.id ?? getTabIdsForVideo(data.videoId)[0];
+    let tabId = data.originTabId ?? sender.tab?.id ?? getTabIdsForVideo(data.videoId)[0];
     const isTabIdMissing = !tabId;
     if (isTabIdMissing) {
       const [ytTab] = await browser.tabs.query({
@@ -136,24 +148,26 @@ export function registerDownloadHandlers() {
     }
 
     const resolvedTabId = tabId ?? -1;
-    // A fresh download intent supersedes any prior cancel marker for this
-    // video. Without this the BG would still treat post-cancel errors as
-    // "user cancelled" even though this is a brand-new attempt.
     clearCancelledVideo(data.videoId);
+    const sourceUrl = data.sourceUrl ?? sender.tab?.url;
+    const enrichedRequest = sourceUrl ? {
+      ...data,
+      sourceUrl
+    } : data;
     trackVideoForTab({
       videoId: data.videoId,
       tabId: resolvedTabId
     });
-    const hasHeight = !!data.videoFormat?.height;
     await enqueueToPopupList({
       videoId: data.videoId,
       type: data.type,
       filenameOutput: data.filenameOutput,
-      quality: hasHeight ? `${data.videoFormat!.height}p` : undefined,
-      tabId: resolvedTabId
+      quality: resolveQualityLabel(data),
+      tabId: resolvedTabId,
+      sourceUrl
     });
     void startBackgroundDownload({
-      request: data,
+      request: enrichedRequest,
       tabId: resolvedTabId
     });
 
@@ -165,6 +179,11 @@ export function registerDownloadHandlers() {
     const downloadId = await tryDirectUrlDownload({ request });
     if (downloadId !== null) {
       clearIframeAutoRetry(videoId);
+      notifyWatchTabsOnComplete({
+        downloadId,
+        videoId,
+        filename: request.filenameOutput
+      });
 
       await sendMessageToTab(MessageType.UpdateDownloadProgress, {
         videoId,
@@ -215,6 +234,39 @@ export function registerDownloadHandlers() {
 
   onMessage(MessageType.ForwardProgressUpdate, async ({ data }) => {
     const { tabId, ...progressData } = data;
-    await sendMessageToTab(MessageType.UpdateDownloadProgress, progressData, tabId);
+    void mutateStorageItem({
+      item: statusProgressItem,
+      mutator(current) {
+        current[progressData.videoId] = {
+          isDownloading: true,
+          isDone: false,
+          progress: progressData.progress,
+          progressType: progressData.progressType
+        };
+      }
+    });
+
+    void sendMessageToTab(MessageType.UpdateDownloadProgress, progressData, tabId);
+  });
+
+  onMessage(MessageType.ReportPageProgress, async ({ data, sender }) => {
+    const tabId = sender.tab?.id ?? getTabIdsForVideo(data.videoId)[0] ?? -1;
+    await mutateStorageItem({
+      item: statusProgressItem,
+      mutator(current) {
+        current[data.videoId] = {
+          isDownloading: true,
+          isDone: false,
+          progress: data.progress,
+          progressType: data.progressType
+        };
+      }
+    });
+
+    await sendMessageToTab(MessageType.UpdateDownloadProgress, {
+      videoId: data.videoId,
+      progress: data.progress,
+      progressType: data.progressType
+    }, tabId);
   });
 }

@@ -1,8 +1,13 @@
 <script lang="ts">
-  import { buildAvailableTargets, buildEstimatedTimeLabel, submitTranscode } from "./change-format-helpers";
+  import {
+    buildAvailableTargetGroups,
+    buildEstimatedTimeLabel,
+    findTargetItem,
+    pickFirstSelectableTarget,
+    submitTranscode
+  } from "./change-format-helpers";
   import ChangeFormatActions from "./ChangeFormatActions.svelte";
   import FormatTargetList from "./FormatTargetList.svelte";
-  import { videoContainers } from "@/lib/utils/containers";
   import type { RecentDownloadEntry } from "@/types";
 
   interface Props {
@@ -12,13 +17,8 @@
 
   const { entry, onClose }: Props = $props();
 
-  const isVideoContainer = $derived(videoContainers.includes(entry.container));
-  const availableTargets = $derived(
-    buildAvailableTargets({
-      entry,
-      isVideoContainer
-    })
-  );
+  const targetGroups = $derived(buildAvailableTargetGroups({ entry }));
+  const hasAnyTarget = $derived(targetGroups.some(group => group.items.some(item => !item.isExcluded)));
 
   let selectedTarget = $state("");
   let isSubmitting = $state(false);
@@ -30,12 +30,18 @@
   });
 
   $effect(() => {
-    if (!selectedTarget && availableTargets.length > 0) {
-      [selectedTarget] = availableTargets;
+    if (!selectedTarget && hasAnyTarget) {
+      selectedTarget = pickFirstSelectableTarget(targetGroups);
     }
   });
 
-  const estimatedTimeLabel = $derived(buildEstimatedTimeLabel(entry.size));
+  const selectedItem = $derived(findTargetItem(targetGroups, selectedTarget));
+  const estimatedTimeLabel = $derived(
+    buildEstimatedTimeLabel({
+      sizeBytes: entry.size,
+      isSlow: selectedItem?.isSlow ?? false
+    })
+  );
 
   function startClose(): void {
     isClosing = true;
@@ -72,7 +78,7 @@
     }
   }
 
-  const isConfirmDisabled = $derived(!selectedTarget || isSubmitting || availableTargets.length === 0);
+  const isConfirmDisabled = $derived(!selectedTarget || isSubmitting || !hasAnyTarget);
 </script>
 
 <svelte:window onkeydown={handleWindowKeydown} />
@@ -95,9 +101,9 @@
   </p>
   <FormatTargetList
     {estimatedTimeLabel}
+    groups={targetGroups}
     onSelect={target => (selectedTarget = target)}
     {selectedTarget}
-    targets={availableTargets}
   />
   <ChangeFormatActions
     isDisabled={isConfirmDisabled}
@@ -112,15 +118,37 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
-    width: 100%;
+    box-sizing: border-box;
+    width: 80vw;
     max-width: 360px;
     padding: 20px;
+    overflow-x: hidden;
     border: none;
     border-radius: 16px;
     background: var(--surface-high);
     color: var(--fg);
     box-shadow: 0 8px 32px rgb(0 0 0 / 12%);
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+    scrollbar-gutter: stable both-edges;
     animation: dialog-in 240ms cubic-bezier(0.34, 1.56, 0.64, 1);
+
+    &::-webkit-scrollbar {
+      width: 8px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      border-radius: 4px;
+      background: var(--border);
+    }
+
+    &::-webkit-scrollbar-thumb:hover {
+      background: var(--fg-subtle);
+    }
 
     &::backdrop {
       background: rgb(0 0 0 / 40%);

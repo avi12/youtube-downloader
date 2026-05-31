@@ -1,5 +1,5 @@
 const DB_NAME = "ytdl-recent-downloads";
-const DB_VERSION = 1;
+const DB_VERSION = 3;
 
 const Store = {
   Entries: "entries",
@@ -71,6 +71,9 @@ export async function addRecentDownload({ entry, blob }: {
     size: number;
     thumbnailUrl?: string;
     completedAt: number;
+    tabId?: number;
+    quality?: string;
+    sourceUrl?: string;
   };
   blob: Blob;
 }) {
@@ -82,6 +85,22 @@ export async function addRecentDownload({ entry, blob }: {
 }
 
 export type RecentDownloadEntry = Parameters<typeof addRecentDownload>[0]["entry"];
+
+export async function updateRecentDownloadId({ id, downloadId }: {
+  id: string;
+  downloadId: number;
+}) {
+  const db = await getDatabase();
+  const transaction = db.transaction(Store.Entries, "readwrite");
+  const store = transaction.objectStore(Store.Entries);
+  const entry = await awaitRequest(store.get(id));
+  if (entry) {
+    entry.downloadId = downloadId;
+    store.put(entry);
+  }
+
+  await awaitTransaction(transaction);
+}
 
 export async function getAllRecentDownloads() {
   const db = await getDatabase();

@@ -19,7 +19,7 @@
     "build:pack": "pnpm build && pnpm run pack",
     "build:pack:firefox": "pnpm build:firefox && pnpm run pack:firefox",
     "postinstall": "wxt prepare",
-    "lint": "eslint --fix",
+    "lint": "oxlint --fix && eslint --fix",
     "compile": "tsc --noEmit",
     "stylelint": "stylelint \"src/**/*.{css,svelte}\" --fix",
     "svelte-check": "pnpx svelte-check"
@@ -47,6 +47,7 @@
     "eslint-plugin-perfectionist": "^5.9.0",
     "eslint-plugin-svelte": "^3.17.1",
     "globals": "^17.6.0",
+    "oxlint": "^1.67.0",
     "perfect-debounce": "^2.1.0",
     "postcss-html": "^1.8.1",
     "stylelint": "^17.12.0",

@@ -93,18 +93,15 @@ async function fetchAndroidPlayerResponse({
   return response.json();
 }
 
-type ResolveAndroidUrlsParams = {
-  videoId: string;
-  videoItag?: number;
-  audioItag?: number;
-  customFetch?: FetchFn;
-};
-
 export type ResolvedAndroidUrls = {
   videoUrl: string | null;
   videoContentLength: number;
   audioUrl: string | null;
   audioContentLength: number;
+  extraAudioUrls: {
+    url: string | null;
+    contentLength: number;
+  }[];
 };
 
 function parseContentLength(value: string | undefined) {
@@ -116,8 +113,16 @@ function parseContentLength(value: string | undefined) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+type ResolveAndroidUrlsParams = {
+  videoId: string;
+  videoItag?: number;
+  audioItag?: number;
+  extraAudioItags?: number[];
+  customFetch?: FetchFn;
+};
+
 export async function resolveAndroidUrls({
-  videoId, videoItag, audioItag, customFetch
+  videoId, videoItag, audioItag, extraAudioItags, customFetch
 }: ResolveAndroidUrlsParams): Promise<ResolvedAndroidUrls> {
   const response = await fetchAndroidPlayerResponse({
     videoId,
@@ -134,11 +139,19 @@ export async function resolveAndroidUrls({
 
   const videoMatch = videoItag != null ? allFormats.find(format => format.itag === videoItag) : null;
   const audioMatch = audioItag != null ? allFormats.find(format => format.itag === audioItag) : null;
+  const extraAudioUrls = (extraAudioItags ?? []).map(itag => {
+    const match = allFormats.find(format => format.itag === itag);
+    return {
+      url: match?.url ?? null,
+      contentLength: parseContentLength(match?.contentLength)
+    };
+  });
 
   return {
     videoUrl: videoMatch?.url ?? null,
     videoContentLength: parseContentLength(videoMatch?.contentLength),
     audioUrl: audioMatch?.url ?? null,
-    audioContentLength: parseContentLength(audioMatch?.contentLength)
+    audioContentLength: parseContentLength(audioMatch?.contentLength),
+    extraAudioUrls
   };
 }

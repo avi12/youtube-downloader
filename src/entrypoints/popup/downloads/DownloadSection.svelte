@@ -55,12 +55,13 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 8px;
+    margin-bottom: 4px;
 
     .download-section-title {
       display: flex;
       gap: 8px;
       align-items: center;
+      margin: 0;
       color: var(--fg);
       font-weight: 500;
       font-size: 0.8125rem;

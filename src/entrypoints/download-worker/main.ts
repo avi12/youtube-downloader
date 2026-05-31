@@ -2,7 +2,7 @@ import { downloadViaCdn } from "../background/download/cdn-downloader";
 import { downloadViaSabr } from "../background/download/sabr-downloader";
 import { buildSubtitleTracks } from "../background/download/subtitle-track-builder";
 import type { ProcessStreamEndData } from "@/lib/messaging/offscreen-messaging";
-import { stripMimeParams } from "@/lib/utils/containers";
+import { resolveQualityLabel } from "@/lib/youtube/audio-format-helpers";
 import { DownloadType, StreamType } from "@/types";
 import type { DownloadRequest, VideoMetadata } from "@/types";
 
@@ -59,12 +59,35 @@ async function trySabrWithStallTimer({ request, tabId }: TrySabrWithStallTimerPa
     sabrStallTimeoutId = setTimeout(() => sabrAbortController.abort(), SABR_STALL_TIMEOUT_MS);
   }
 
+  const isAudioOnly = request.type === DownloadType.Audio;
+  const useStreaming = !isAudioOnly;
+
   try {
     return await downloadViaSabr({
       request,
       signal: sabrAbortController.signal,
       tabId,
-      onProgress: resetSabrStallTimer
+      onProgress: resetSabrStallTimer,
+      ...(useStreaming && {
+        onVideoChunk: sendChunkToParent({
+          videoId: request.videoId,
+          streamType: StreamType.Video,
+          tabId
+        }),
+        onAudioChunk: sendChunkToParent({
+          videoId: request.videoId,
+          streamType: StreamType.Audio,
+          tabId
+        }),
+        onVideoStreamEnd: sendStreamEndToParent({
+          videoId: request.videoId,
+          streamType: StreamType.Video
+        }),
+        onAudioStreamEnd: sendStreamEndToParent({
+          videoId: request.videoId,
+          streamType: StreamType.Audio
+        })
+      })
     });
   } catch (error) {
     if (signal.aborted) {
@@ -134,10 +157,10 @@ function buildStreamEnd({
     videoId, type, filenameOutput, videoFormat, audioFormat,
     primaryAudioLabel, primaryAudioLanguageCode,
     captionTracks, captionVttData,
-    playlistId, playlistTitle, playlistTotalCount
+    playlistId, playlistTitle, playlistTotalCount, sourceUrl
   } = request;
-  const videoMimeType = videoFormat ? stripMimeParams(videoFormat.mimeType) : DEFAULT_VIDEO_MIME_TYPE;
-  const audioMimeType = audioFormat ? stripMimeParams(audioFormat.mimeType) : DEFAULT_AUDIO_MIME_TYPE;
+  const videoMimeType = videoFormat?.mimeType ?? DEFAULT_VIDEO_MIME_TYPE;
+  const audioMimeType = audioFormat?.mimeType ?? DEFAULT_AUDIO_MIME_TYPE;
   const subtitleTracks = buildSubtitleTracks({
     captionTracks,
     captionVttData: captionVttData ?? []
@@ -157,7 +180,13 @@ function buildStreamEnd({
     playlistId,
     playlistTitle,
     playlistTotalCount,
-    metadata: enrichedMetadata
+    metadata: enrichedMetadata,
+    quality: resolveQualityLabel({
+      type,
+      videoFormat,
+      audioFormat
+    }),
+    sourceUrl
   };
 }
 

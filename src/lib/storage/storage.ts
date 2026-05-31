@@ -32,6 +32,7 @@ export type VideoDetail = {
   tabId?: number;
   playlistId?: string;
   playlistTitle?: string;
+  sourceUrl?: string;
 };
 
 export const videoDetailsItem = storage.defineItem<Record<string, VideoDetail>>("local:videoDetails", {
@@ -45,7 +46,7 @@ export const statusProgressItem = storage.defineItem<Record<string, DownloadProg
   }
 );
 
-export const isFFmpegReadyItem = storage.defineItem<boolean>("session:isFFmpegReady", { fallback: false });
+export const isFFmpegReadyItem = storage.defineItem<boolean>("local:isFFmpegReady", { fallback: false });
 
 export const interruptedDownloadsItem = storage.defineItem<Record<string, InterruptedDownload>>("local:interruptedDownloads", {
   fallback: {}

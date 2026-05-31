@@ -4,30 +4,30 @@ import { postFileResult, state, tryRmdir, tryUnmount } from "./mux-state";
 import { cleanupOpfsOutput, createOpfsOutputFs, createOpfsOutputHandle } from "./opfs-output-fs";
 import type { MuxVideoAudioJob } from "@/lib/download-pipeline/mux-worker-types";
 import {
-  getAudioTempExtension,
   getCompatibleFilename,
   getVideoTempExtension,
-  isVideoNativeForContainer
+  isVideoNativeForContainer,
+  resolveMultiTrackExtension
 } from "@/lib/utils/containers";
 
 const WORKERFS_MOUNT_SUFFIX = "-opfs-in";
 const OPFS_OUT_SUFFIX = "-opfs-out";
 const MKV_EXTENSION = "mkv";
 const VIDEO_TEMP_SUFFIX = "video";
-const AUDIO_TEMP_SUFFIX = "audio";
 
 export async function handleMuxVideoAudio(job: MuxVideoAudioJob) {
   const {
-    videoData, videoFile, audioData, extraAudioTracks, subtitleTracks,
+    videoData, videoFile, audioTracks, subtitleTracks,
     videoMimeType, audioMimeType, videoId, tabId,
-    primaryAudioLabel, primaryAudioLanguageCode, defaultAudioTrackIndex, filenameOutput
+    defaultAudioTrackIndex, filenameOutput
   } = job;
   state.currentVideoId = videoId;
   state.currentTabId = tabId;
 
-  const isExtraTracksPresent = extraAudioTracks.length > 0;
+  const isMultiTrack = audioTracks.length > 1;
   const filenameBase = filenameOutput.replace(/\.[^.]+$/, "");
-  const targetExtension = isExtraTracksPresent ? MKV_EXTENSION : (filenameOutput.split(".").pop() ?? MKV_EXTENSION);
+  const existingExtension = filenameOutput.split(".").pop() ?? MKV_EXTENSION;
+  const targetExtension = isMultiTrack ? resolveMultiTrackExtension(existingExtension) : existingExtension;
   const muxFilename = getCompatibleFilename(`${videoId}-mux.${MKV_EXTENSION}`);
   const isNotMkv = targetExtension !== MKV_EXTENSION;
   const outputFilename = isNotMkv
@@ -51,20 +51,16 @@ export async function handleMuxVideoAudio(job: MuxVideoAudioJob) {
     videoFilename = `${videoId}-${VIDEO_TEMP_SUFFIX}.${getVideoTempExtension(videoMimeType)}`;
   }
 
-  const primaryAudioFilename = `${videoId}-${AUDIO_TEMP_SUFFIX}.${getAudioTempExtension(audioMimeType)}`;
-
   state.progressOffset = 0;
   state.progressScale = useIntermediateMkv ? 0.5 : 1;
 
-  const { extraFilenames, subtitleFilenames } = writeMuxInputFiles({
+  const { audioFilenames, subtitleFilenames } = writeMuxInputFiles({
     videoId,
     videoFilename,
     videoData: videoData ?? new ArrayBuffer(0),
     skipVideoWrite: isWorkerfsVideo,
-    primaryAudioFilename,
-    audioData,
+    audioTracks,
     audioMimeType,
-    extraAudioTracks,
     subtitleTracks
   });
 
@@ -85,20 +81,16 @@ export async function handleMuxVideoAudio(job: MuxVideoAudioJob) {
     success = executeMuxPhases({
       params: {
         videoFilename,
-        primaryAudioFilename,
-        extraFilenames,
+        audioFilenames,
         subtitleFilenames,
         outputFilename: opfsOutputFilename,
         muxFilename,
         useIntermediateMkv,
         audioMimeType,
         targetExtension,
-        extraAudioTracks,
+        audioTracks,
         subtitleTracks,
-        primaryAudioLabel,
-        primaryAudioLanguageCode,
-        defaultAudioTrackIndex,
-        isExtraTracksPresent
+        defaultAudioTrackIndex
       },
       checkOutput: filename => filename === opfsOutputFilename
         ? syncHandle.getSize() > 0
@@ -110,8 +102,7 @@ export async function handleMuxVideoAudio(job: MuxVideoAudioJob) {
     tryRmdir(opfsOutDir);
     cleanupMuxFiles({
       videoFilename,
-      primaryAudioFilename,
-      extraFilenames,
+      audioFilenames,
       subtitleFilenames,
       muxFilename,
       outputFilename,

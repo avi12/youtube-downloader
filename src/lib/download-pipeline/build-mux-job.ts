@@ -5,16 +5,15 @@ import {
   reportProgress,
   buildRecentContext
 } from ".";
-import type { MuxVideoAudioJob } from "./mux-worker-types";
+import type { AudioTrack } from "./mux-worker-types";
+import { resolveMultiTrackExtension } from "@/lib/utils/containers";
 import { ProgressType } from "@/types";
 import type { ProcessStreamData } from "@/types";
 
 const MKV_EXTENSION = "mkv";
 const NO_STREAM_DATA_ERROR = "No stream data accumulated";
 
-type ExtraAudioTrack = MuxVideoAudioJob["extraAudioTracks"][number];
-
-export function buildExtraAudioTracks(additionalAudioStreams: ProcessStreamData["additionalAudioStreams"]) {
+export function buildAdditionalAudioTracks(additionalAudioStreams: ProcessStreamData["additionalAudioStreams"]) {
   return additionalAudioStreams
     .map(stream => {
       const data = toUint8Array(stream.data);
@@ -29,7 +28,7 @@ export function buildExtraAudioTracks(additionalAudioStreams: ProcessStreamData[
         languageCode: stream.languageCode ?? ""
       };
     })
-    .filter((track): track is ExtraAudioTrack => track !== null);
+    .filter((track): track is AudioTrack => track !== null);
 }
 
 export function buildSubtitleFiles(subtitleTracks: ProcessStreamData["subtitleTracks"]) {
@@ -47,7 +46,8 @@ type ResolveDownloadFilenameParams = {
   hasExtraTracks: boolean;
 };
 export function resolveDownloadFilename({ filenameOutput, hasExtraTracks }: ResolveDownloadFilenameParams) {
-  const targetExtension = hasExtraTracks ? MKV_EXTENSION : (filenameOutput.split(".").pop() ?? MKV_EXTENSION);
+  const existingExtension = filenameOutput.split(".").pop() ?? MKV_EXTENSION;
+  const targetExtension = hasExtraTracks ? resolveMultiTrackExtension(existingExtension) : existingExtension;
   return `${filenameOutput.replace(/\.[^.]+$/, "")}.${targetExtension}`;
 }
 

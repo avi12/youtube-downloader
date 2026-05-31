@@ -15,9 +15,7 @@ import svelteParser from "svelte-eslint-parser";
 import tsEslint from "typescript-eslint";
 
 const tsStyleRules = {
-  "import/first": "error",
   "import/order": "off",
-  "prefer-const": "error",
   "perfectionist/sort-imports": [
     "error",
     {
@@ -31,12 +29,6 @@ const tsStyleRules = {
   "@stylistic/quotes": ["error", "double", { allowTemplateLiterals: "always" }],
   "@stylistic/quote-props": ["error", "as-needed"],
   "@stylistic/semi": ["error"],
-  "@typescript-eslint/no-unused-vars": ["error", {
-    varsIgnorePattern: "^_",
-    argsIgnorePattern: "^_",
-    caughtErrorsIgnorePattern: "^_"
-  }],
-  "@typescript-eslint/no-explicit-any": "error",
   "@typescript-eslint/naming-convention": [
     "error",
     {
@@ -48,7 +40,6 @@ const tsStyleRules = {
       }
     }
   ],
-  curly: ["error", "all"],
   "@stylistic/indent": ["error", 2],
   "@stylistic/arrow-parens": ["error", "as-needed"],
   "@stylistic/object-curly-spacing": ["error", "always"],
@@ -145,27 +136,6 @@ const tsStyleRules = {
     }
   ],
   "@stylistic/object-property-newline": ["error", { allowAllPropertiesOnSameLine: false }],
-  "id-length": ["error", {
-    min: 3,
-    exceptions: ["z", "_", "i", "fs", "id", "os", "e", "db", "mi", "ui", "HL", "GL", "js", "q", "to", "dd", "mm", "x", "y", "d"],
-    properties: "never"
-  }],
-  "func-style": ["error", "declaration", { allowArrowFunctions: false }],
-  "no-restricted-syntax": [
-    "error",
-    {
-      selector: "VariableDeclarator > ArrowFunctionExpression",
-      message: "Do not assign arrow functions to variables. Use a named function declaration instead."
-    },
-    {
-      selector: "ForOfStatement > CallExpression[callee.object.name='Object'][callee.property.name='keys']",
-      message: "Use a for-in loop instead of for-of Object.keys()."
-    },
-    {
-      selector: "MemberExpression[object.name='Reflect']",
-      message: "Do not use Reflect. Use direct property access instead."
-    }
-  ],
   "@stylistic/padding-line-between-statements": [
     "error",
     {
@@ -194,8 +164,6 @@ const tsStyleRules = {
       next: "*"
     }
   ],
-  "no-control-regex": "off",
-  "object-shorthand": ["error", "always", { avoidExplicitReturnArrows: true }],
   "perfectionist/sort-objects": [
     "error",
     {
@@ -203,15 +171,27 @@ const tsStyleRules = {
       newlinesBetween: 0
     }
   ],
-  "arrow-body-style": ["error", "as-needed"],
   "@stylistic/function-call-argument-newline": ["error", "consistent"],
   "@stylistic/function-paren-newline": ["error", "consistent"],
   "local/expand-nested-object-expression": "error",
   "local/expand-nested-type-literal": "error",
   "local/multiline-arg-paren-newline": "error",
   "local/no-padded-tag": "error",
-  "no-nested-ternary": "error",
-  "@typescript-eslint/consistent-type-assertions": ["error", { assertionStyle: "never" }],
+  "no-restricted-syntax": [
+    "error",
+    {
+      selector: "VariableDeclarator > ArrowFunctionExpression",
+      message: "Do not assign arrow functions to variables. Use a named function declaration instead."
+    },
+    {
+      selector: "ForOfStatement > CallExpression[callee.object.name='Object'][callee.property.name='keys']",
+      message: "Use a for-in loop instead of for-of Object.keys()."
+    },
+    {
+      selector: "MemberExpression[object.name='Reflect']",
+      message: "Do not use Reflect. Use direct property access instead."
+    }
+  ],
   "@typescript-eslint/no-floating-promises": "error"
 };
 
@@ -267,8 +247,7 @@ export default [
     plugins: sharedPlugins,
     rules: {
       ...tsStyleRules,
-      "@typescript-eslint/no-floating-promises": "off",
-      "@typescript-eslint/consistent-type-assertions": "off"
+      "@typescript-eslint/no-floating-promises": "off"
     }
   },
   {
@@ -289,11 +268,8 @@ export default [
       "svelte/indent": ["error", { indent: 2 }],
       "svelte/sort-attributes": "error",
       "svelte/shorthand-directive": "error",
-      "arrow-body-style": ["error", "as-needed"],
       "svelte/first-attribute-linebreak": ["error"],
       "svelte/shorthand-attribute": ["error", { prefer: "always" }],
-      "@typescript-eslint/no-explicit-any": "off",
-      "prefer-const": ["error", { destructuring: "all" }],
       "@typescript-eslint/explicit-function-return-type": ["error", {
         allowExpressions: true,
         allowHigherOrderFunctions: true

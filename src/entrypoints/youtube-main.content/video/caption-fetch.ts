@@ -1,6 +1,7 @@
 import { fetchFreshCaptionUrls } from "./caption-urls";
+import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { uint8ToBase64 } from "@/lib/utils/binary";
-import { type CaptionTrack } from "@/types";
+import { ProgressType, type CaptionTrack } from "@/types";
 
 export { resolveOrderedCaptionTracks } from "./caption-urls";
 
@@ -85,32 +86,42 @@ async function fetchWebVttViaTrackElement(url: string) {
 type FetchCaptionWebVttDataParams = {
   captionTracks: CaptionTrack[];
   videoId: string;
+  captionBytesPerUnit: number;
+  totalExpectedBytes: number;
 };
-export async function fetchCaptionWebVttData({ captionTracks, videoId }: FetchCaptionWebVttDataParams) {
-  const isCaptionTracksPresent = captionTracks.length > 0;
-  if (!isCaptionTracksPresent) {
+export async function fetchCaptionWebVttData({
+  captionTracks, videoId, captionBytesPerUnit, totalExpectedBytes
+}: FetchCaptionWebVttDataParams) {
+  const hasCaptionTracks = captionTracks.length > 0;
+  if (!hasCaptionTracks) {
     return [];
   }
 
   const freshUrls = await fetchFreshCaptionUrls(videoId);
 
-  return Promise.all(
-    captionTracks.map(track => {
-      const translationLanguageCode = track.translationLanguageCode;
-      const sourceVssId = translationLanguageCode ? track.sourceTrackVssId! : track.vssId;
-      const baseUrl = freshUrls.get(sourceVssId) ?? track.baseUrl;
-      const url = new URL(baseUrl);
-      const captionParams: CaptionParams = translationLanguageCode
-        ? {
-          [CAPTION_FORMAT_PARAM]: CAPTION_FORMAT_VTT,
-          [CAPTION_TLANG_PARAM]: translationLanguageCode
-        }
-        : { [CAPTION_FORMAT_PARAM]: CAPTION_FORMAT_VTT };
-      for (const [key, value] of new URLSearchParams(captionParams)) {
-        url.searchParams.set(key, value);
-      }
+  const results: (string | null)[] = [];
+  for (const [iTrack, track] of captionTracks.entries()) {
+    const isTranslated = !!track.translationLanguageCode;
+    const sourceVssId = isTranslated ? track.sourceTrackVssId! : track.vssId;
+    const baseUrl = freshUrls.get(sourceVssId) ?? track.baseUrl;
+    const url = new URL(baseUrl);
+    url.searchParams.set(CAPTION_FORMAT_PARAM, CAPTION_FORMAT_VTT);
 
-      return fetchWebVttViaTrackElement(url.toString());
-    })
-  );
+    if (isTranslated) {
+      url.searchParams.set(CAPTION_TLANG_PARAM, track.translationLanguageCode!);
+    }
+
+    results.push(await fetchWebVttViaTrackElement(url.toString()));
+
+    const isTotalKnown = totalExpectedBytes > 0;
+    if (isTotalKnown) {
+      const progress = ((iTrack + 1) * captionBytesPerUnit) / totalExpectedBytes;
+      void crossWorldMessenger.sendMessage(CrossWorldMessage.ReportPageProgress, {
+        videoId,
+        progress,
+        progressType: ProgressType.Video
+      });
+    }
+  }
+  return results;
 }

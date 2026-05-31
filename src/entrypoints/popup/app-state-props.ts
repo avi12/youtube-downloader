@@ -8,5 +8,6 @@ export interface InitialAppStateProps {
   initialVideoDetails: Record<string, VideoDetail>;
   initialStatusProgress: Record<string, DownloadProgressEntry>;
   initialCurrentTabId?: number;
+  initialCurrentSourceUrl?: string;
   initialOptions: Options;
 }

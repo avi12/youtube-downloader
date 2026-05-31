@@ -33,18 +33,18 @@ export async function buildVideoMetadata(videoId: string) {
 
   const renderer = microformat?.playerMicroformatRenderer;
   const description = videoDetails?.shortDescription ?? "";
-  const titleMeta = parseMusicTitle(cached.title);
-  const descriptionMeta = parseDescriptionMetadata(description);
+  const titleMeta = cached.isMusic ? parseMusicTitle(cached.title) : null;
+  const descriptionMeta = cached.isMusic ? parseDescriptionMetadata(description) : null;
   const keywords = videoDetails?.keywords ?? [];
-  const genreSet = await fetchYouTubeMusicGenres();
+  const genreSet = cached.isMusic ? await fetchYouTubeMusicGenres() : new Set<string>();
   const genres = extractGenresFromKeywords({
     keywords,
     genreSet
   });
 
-  const title = descriptionMeta.songTitle || titleMeta.songTitle;
-  const artist = descriptionMeta.artist || titleMeta.fullArtist || videoDetails?.author || "";
-  const albumArtist = descriptionMeta.mainArtist || titleMeta.mainArtist || undefined;
+  const title = descriptionMeta?.songTitle || titleMeta?.songTitle || cached.title;
+  const artist = descriptionMeta?.artist || titleMeta?.fullArtist || videoDetails?.author || "";
+  const albumArtist = descriptionMeta?.mainArtist || titleMeta?.mainArtist || undefined;
   const isGenresPresent = genres.length > 0;
 
   const youtubeThumbnailUrl = videoDetails?.thumbnail?.thumbnails?.at(-1)?.url;
@@ -55,7 +55,7 @@ export async function buildVideoMetadata(videoId: string) {
     title,
     artist,
     albumArtist: albumArtist !== artist ? albumArtist : undefined,
-    album: descriptionMeta.album,
+    album: descriptionMeta?.album,
     genres: isGenresPresent ? genres : undefined,
     date: renderer?.publishDate,
     thumbnailUrl: musicThumbnailUrl ?? youtubeThumbnailUrl,

@@ -36,7 +36,7 @@
 
   const percentFormatter = new Intl.NumberFormat(browser.i18n.getUILanguage(), {
     style: "percent",
-    maximumFractionDigits: 1
+    maximumFractionDigits: 0
   });
 
   const appState = createAppState(
@@ -97,6 +97,7 @@
         out:fly={flyOut}
       >
         <DownloadsTab
+          currentSourceUrl={appState.currentSourceUrl}
           currentTabId={appState.currentTabId}
           isFFmpegReady={appState.isFFmpegReady}
           musicList={appState.musicList}
@@ -135,6 +136,12 @@
 <style>
     :global {
       @media (prefers-reduced-motion: reduce) {
+        [data-tooltip]::after {
+          transition: none;
+        }
+      }
+
+      @media (prefers-reduced-motion: reduce) {
         *,
         *::before,
         *::after {
@@ -142,6 +149,47 @@
           animation-duration: 0.01ms !important;
           animation-iteration-count: 1 !important;
         }
+      }
+
+      [data-tooltip] {
+        position: relative;
+      }
+
+      [data-tooltip]::after {
+        content: attr(data-tooltip);
+        position: absolute;
+        bottom: calc(100% + 6px);
+        inset-inline-start: 0;
+        z-index: 10;
+        width: max-content;
+        max-width: 240px;
+        padding: 6px 12px;
+        border-radius: 8px;
+        background: var(--md-sys-color-inverse-surface, var(--fg));
+        color: var(--md-sys-color-inverse-on-surface, var(--bg));
+        font-weight: 500;
+        font-size: 0.75rem;
+        line-height: 1rem;
+        letter-spacing: 0.025em;
+        white-space: normal;
+        overflow-wrap: anywhere;
+        opacity: 0%;
+        box-shadow:
+          0 2px 6px 2px color-mix(in oklab, var(--fg) 15%, transparent),
+          0 1px 2px 0 color-mix(in oklab, var(--fg) 30%, transparent);
+        pointer-events: none;
+        transition: opacity 150ms cubic-bezier(0.2, 0, 0, 1);
+      }
+
+      [data-tooltip][data-tooltip-align="end"]::after {
+        inset-inline-end: 0;
+        inset-inline-start: auto;
+      }
+
+      [data-tooltip]:hover::after,
+      [data-tooltip]:focus-visible::after {
+        opacity: 100%;
+        transition-delay: 500ms;
       }
 
       html {
@@ -164,6 +212,8 @@
         --md-sys-color-error: oklch(50.1% 0.1783 28.7deg);
         --md-sys-color-error-container: oklch(92.2% 0.0301 22.8deg);
         --md-sys-color-on-error-container: oklch(25.4% 0.0794 27.6deg);
+        --md-sys-color-inverse-surface: oklch(30.4% 0.0132 305.1deg);
+        --md-sys-color-inverse-on-surface: oklch(94.9% 0.0118 314.1deg);
         --bg: var(--md-sys-color-surface);
         --fg: var(--md-sys-color-on-surface);
         --fg-muted: var(--md-sys-color-on-surface-variant);
@@ -203,6 +253,8 @@
           --md-sys-color-error: oklch(83.4% 0.0677 22deg);
           --md-sys-color-error-container: oklch(42% 0.1473 28.1deg);
           --md-sys-color-on-error-container: oklch(92.2% 0.0301 22.8deg);
+          --md-sys-color-inverse-surface: oklch(91.4% 0.0137 314.8deg);
+          --md-sys-color-inverse-on-surface: oklch(28.6% 0.0129 298.6deg);
           --on-danger: oklch(25.4% 0.0794 27.6deg);
         }
       }

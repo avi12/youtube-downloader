@@ -2,6 +2,7 @@ import { enqueueToPopupList } from "../queue/popup-list";
 import { trackVideoForTab } from "../queue/tab-tracker";
 import { dispatchParallel, dispatchSequentially } from "./playlist-dispatch";
 import { MessageType, onMessage } from "@/lib/messaging/messaging";
+import { resolveQualityLabel } from "@/lib/youtube/audio-format-helpers";
 
 export let currentSequenceAbort: AbortController | null = null;
 export let currentSequenceTabId: number | null = null;
@@ -13,18 +14,20 @@ export function registerPlaylistDownloadHandler() {
       return;
     }
 
+    const sourceUrl = sender.tab?.url;
+
     currentSequenceAbort?.abort();
     currentSequenceAbort = null;
     currentSequenceTabId = tabId;
 
     for (const item of data.items) {
-      const hasHeight = !!item.videoFormat?.height;
       await enqueueToPopupList({
         videoId: item.videoId,
         type: item.type,
         filenameOutput: item.filenameOutput,
-        quality: hasHeight ? `${item.videoFormat!.height}p` : undefined,
+        quality: resolveQualityLabel(item),
         tabId,
+        sourceUrl,
         ...(data.isZipBundle && {
           playlistId: item.playlistId,
           playlistTitle: item.playlistTitle ?? data.playlistTitle

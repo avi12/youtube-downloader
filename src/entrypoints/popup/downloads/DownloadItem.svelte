@@ -7,14 +7,29 @@
     progressLabel: string;
     statusLabel?: string | null;
     quality?: string;
+    videoId?: string;
     oncancel: () => void;
   }
 
-  const { filename, progress, progressLabel, statusLabel, quality, oncancel }: Props = $props();
+  const { filename, progress, progressLabel, statusLabel, quality, videoId, oncancel }: Props = $props();
+
+  const YT_THUMBNAIL_HOST = "https://i.ytimg.com/vi";
+  const thumbnailUrl = $derived(videoId ? `${YT_THUMBNAIL_HOST}/${videoId}/mqdefault.jpg` : null);
+  let isThumbnailBroken = $state(false);
 </script>
 
+{#if thumbnailUrl && !isThumbnailBroken}
+  <img
+    class="download-thumb"
+    alt=""
+    height="48"
+    onerror={() => (isThumbnailBroken = true)}
+    src={thumbnailUrl}
+    width="48"
+  />
+{/if}
 <div class="download-item-content">
-  <span class="download-filename" title={filename}>{filename}</span>
+  <span class="download-filename" data-tooltip={filename}>{filename}</span>
   {#if quality}
     <span class="download-quality">{quality}</span>
   {/if}
@@ -39,6 +54,15 @@
 </button>
 
 <style>
+  .download-thumb {
+    flex-shrink: 0;
+    object-fit: cover;
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    background: var(--surface-high);
+  }
+
   .download-item-content {
     display: flex;
     flex: 1;

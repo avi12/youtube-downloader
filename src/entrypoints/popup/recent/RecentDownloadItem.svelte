@@ -1,16 +1,31 @@
 <script lang="ts">
   import RecentDownloadMenu from "./RecentDownloadMenu.svelte";
   import type { RecentDownloadEntry } from "@/types";
+  import { browser } from "#imports";
 
   interface Props {
     entry: RecentDownloadEntry;
     now: number;
+    showOpenInNew?: boolean;
     onShowInFolder: () => void;
     onChangeFormat: () => void;
     onRemove: () => void;
   }
 
-  const { entry, now, onShowInFolder, onChangeFormat, onRemove }: Props = $props();
+  const {
+    entry, now, showOpenInNew = false,
+    onShowInFolder, onChangeFormat, onRemove
+  }: Props = $props();
+
+  const isZip = $derived(entry.container === "zip");
+  const openInNewTabLabel = $derived(isZip ? "Open playlist in new tab" : "Open video in new tab");
+
+  function openInNewTab(): void {
+    const url = isZip
+      ? `https://www.youtube.com/playlist?list=${entry.videoId}`
+      : `https://www.youtube.com/watch?v=${entry.videoId}`;
+    void browser.tabs.create({ url });
+  }
 
   let isMenuOpen = $state(false);
 
@@ -119,12 +134,31 @@
     {#if entry.channel}
       <p class="recent-meta recent-channel" dir="auto">{entry.channel}</p>
     {/if}
-    <p class="recent-meta">{sizeLabel} · {relativeAgeLabel}</p>
+    <p class="recent-meta">
+      {#if entry.quality}
+        {entry.quality} ·
+      {/if}{sizeLabel} · {relativeAgeLabel}
+    </p>
   </div>
+
+  {#if showOpenInNew}
+    <button
+      class="recent-open-in-new"
+      aria-label={openInNewTabLabel}
+      data-tooltip={openInNewTabLabel}
+      data-tooltip-align="end"
+      onclick={openInNewTab}
+      type="button"
+    >
+      <svg aria-hidden="true" fill="currentColor" height="20" viewBox="0 -960 960 960" width="20" xmlns="http://www.w3.org/2000/svg">
+        <path d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h280v80H200v560h560v-280h80v280q0 33-23.5 56.5T760-120H200Zm188-212-56-56 372-372H560v-80h280v280h-80v-144L388-332Z" />
+      </svg>
+    </button>
+  {/if}
 
   <RecentDownloadMenu
     entryId={entry.id}
-    isZip={entry.container === "zip"}
+    {isZip}
     {onChangeFormat}
     onMenuOpenChange={value => (isMenuOpen = value)}
     {onRemove}
@@ -177,7 +211,6 @@
   }
 
   .recent-filename {
-    position: relative;
     display: block;
     width: 100%;
     padding: 0;
@@ -194,30 +227,6 @@
       border-radius: 4px;
       outline: 2px solid var(--accent);
       outline-offset: 2px;
-    }
-
-    &::after {
-      content: attr(data-tooltip);
-      position: absolute;
-      bottom: calc(100% + 4px);
-      left: 0;
-      z-index: 10;
-      max-width: 280px;
-      padding: 4px 8px;
-      border-radius: 6px;
-      background: var(--fg);
-      color: var(--bg);
-      font-weight: 400;
-      font-size: 0.6875rem;
-      word-break: break-all;
-      opacity: 0%;
-      pointer-events: none;
-      transition: opacity 150ms;
-    }
-
-    &:hover::after,
-    &:focus-visible::after {
-      opacity: 100%;
     }
   }
 
@@ -243,6 +252,31 @@
 
     &.recent-channel {
       margin-top: 0;
+    }
+  }
+
+  .recent-open-in-new {
+    display: flex;
+    flex-shrink: 0;
+    justify-content: center;
+    align-items: center;
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--fg-muted);
+    cursor: pointer;
+    transition: background-color 150ms;
+
+    &:hover {
+      background: var(--surface-high);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
     }
   }
 </style>

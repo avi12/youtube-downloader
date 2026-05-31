@@ -5,19 +5,39 @@
   interface Props {
     recentDownloads: RecentDownloadEntry[];
     now: number;
+    currentTabId?: number;
+    currentSourceUrl?: string;
     onChangeFormat: (entry: RecentDownloadEntry) => void;
     onRemove: (entry: RecentDownloadEntry) => void;
     onShowInFolder: (entry: RecentDownloadEntry) => void;
   }
 
-  const { recentDownloads, now, onChangeFormat, onRemove, onShowInFolder }: Props = $props();
+  const {
+    recentDownloads, now, currentTabId, currentSourceUrl,
+    onChangeFormat, onRemove, onShowInFolder
+  }: Props = $props();
+
+  function isInCurrentTab(entry: RecentDownloadEntry): boolean {
+    return Boolean(
+      currentTabId !== undefined
+      && entry.tabId === currentTabId
+      && currentSourceUrl
+      && entry.sourceUrl === currentSourceUrl
+    );
+  }
+
+  const otherRecent = $derived(
+    currentTabId === undefined || !currentSourceUrl
+      ? recentDownloads
+      : recentDownloads.filter(entry => !isInCurrentTab(entry))
+  );
 </script>
 
-{#if recentDownloads.length > 0}
+{#if otherRecent.length > 0}
   <section class="recent-section" aria-labelledby="recent-section-heading">
     <h2 id="recent-section-heading" class="recent-section-heading">Recent</h2>
     <ul class="recent-list">
-      {#each recentDownloads as entry (entry.id)}
+      {#each otherRecent as entry (entry.id)}
         <li>
           <RecentDownloadItem
             {entry}
@@ -25,6 +45,7 @@
             onChangeFormat={() => onChangeFormat(entry)}
             onRemove={() => onRemove(entry)}
             onShowInFolder={() => onShowInFolder(entry)}
+            showOpenInNew
           />
         </li>
       {/each}
