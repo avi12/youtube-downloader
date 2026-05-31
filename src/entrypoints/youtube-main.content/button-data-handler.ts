@@ -42,6 +42,17 @@ export function registerButtonDataHandler() {
         elInner.setAttribute(ATTR_ROLE, a11y.role);
         elInner.setAttribute(ATTR_ARIA_CHECKED, a11y.ariaChecked);
       }
+
+      if (!elInner.hasAttribute(ATTR_CLICK_BOUND)) {
+        elInner.setAttribute(ATTR_CLICK_BOUND, "true");
+        elInner.addEventListener("click", e => {
+          const currentButtonId = buttonIdByElement.get(elButton);
+          if (currentButtonId) {
+            e.stopPropagation();
+            dispatchButtonClick(currentButtonId);
+          }
+        });
+      }
     });
 
     if (elButton.hasAttribute(ATTR_CLICK_BOUND)) {
