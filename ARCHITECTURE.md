@@ -134,17 +134,20 @@ Captured bytes from every layer flow into the same offscreen accumulator, so mux
 
 ```mermaid
 sequenceDiagram
+    actor Tab as ▶ Watch tab
     participant BG as Background
-    participant Tab as MAIN-world page-proxy
+    participant Page as MAIN-world page-proxy
     participant YT as youtubei API
     participant CDN as YouTube CDN
+    actor DL as ■ browser.downloads
 
+    Tab->>BG: click Download<br/>(DownloadRequest)
     BG->>YT: InnerTube POST (ANDROID_VR, placeholder visitorData) [fast path]
     YT--xBG: LOGIN_REQUIRED (anti-bot)
-    BG->>Tab: pageSabrFetch (with __YTDL_VISITOR_DATA__ placeholder)
-    Tab->>YT: POST from page context<br/>(real ytcfg.VISITOR_DATA substituted)
-    YT-->>Tab: adaptive stream URLs
-    Tab-->>BG: stream URLs
+    BG->>Page: pageSabrFetch (with __YTDL_VISITOR_DATA__ placeholder)
+    Page->>YT: POST from page context<br/>(real ytcfg.VISITOR_DATA substituted)
+    YT-->>Page: adaptive stream URLs
+    Page-->>BG: stream URLs
     par video chunks
       BG->>CDN: GET Range bytes=0-10MB
       CDN-->>BG: chunk
@@ -152,6 +155,8 @@ sequenceDiagram
       BG->>CDN: GET Range bytes=0-10MB
       CDN-->>BG: chunk
     end
+    BG->>DL: muxed blob (via offscreen + FFmpeg)
+    DL-->>Tab: file saved to disk
 ```
 
 On Firefox-on-Windows, YouTube's anti-bot infrastructure rejects SABR (HTTP 403 or ~60 s response cap) regardless of cookies, PO token, or DNR rewrites. The TLS fingerprint and request signature differ enough from Chrome's that the `WEB`-client SABR path is unusable, and direct progressive URLs returned by the `WEB` client also 403 from any context.
