@@ -38,15 +38,19 @@
     onCancel, onShowRecentInFolder, onChangeFormat, onRemoveRecent
   }: Props = $props();
 
+  function matchesCurrentTab(detail: {
+    tabId?: number;
+    sourceUrl?: string;
+  } | undefined): boolean {
+    return detail?.tabId === currentTabId && detail?.sourceUrl === currentSourceUrl;
+  }
+
   function isVideoIdInThisTab(videoId: string): boolean {
-    const detail = videoDetails[videoId];
-    return Boolean(
-      detail
-      && currentTabId !== undefined
-      && detail.tabId === currentTabId
-      && currentSourceUrl
-      && detail.sourceUrl === currentSourceUrl
-    );
+    if (currentTabId === undefined || !currentSourceUrl) {
+      return false;
+    }
+
+    return matchesCurrentTab(videoDetails[videoId]);
   }
 
   function isRecentEntryInThisTab(entry: RecentDownloadEntry): boolean {
@@ -56,6 +60,41 @@
       && currentSourceUrl
       && entry.sourceUrl === currentSourceUrl
     );
+  }
+
+  function addMatchingTabIds(ids: SvelteSet<string>, list: Iterable<string>): void {
+    for (const id of list) {
+      if (isVideoIdInThisTab(id)) {
+        ids.add(id);
+      }
+    }
+  }
+
+  type ZipGroup = {
+    playlistTitle: string;
+    videoIds: string[];
+  };
+
+  function upsertGroup(zipGroups: SvelteMap<string, ZipGroup>, playlistId: string, playlistTitle: string, id: string): void {
+    const group = zipGroups.get(playlistId);
+    if (group) {
+      group.videoIds.push(id);
+    } else {
+      zipGroups.set(playlistId, {
+        playlistTitle,
+        videoIds: [id]
+      });
+    }
+  }
+
+  function addToGroups(zipGroups: SvelteMap<string, ZipGroup>, individualIds: string[], id: string): void {
+    const { playlistId, playlistTitle } = videoDetails[id] ?? {};
+    if (!playlistId || !playlistTitle) {
+      individualIds.push(id);
+      return;
+    }
+
+    upsertGroup(zipGroups, playlistId, playlistTitle, id);
   }
 
   const thisTabRecent = $derived(
@@ -79,83 +118,27 @@
       }
 
       const ids = new SvelteSet<string>();
-      for (const item of videoDownloads) {
-        if (isVideoIdInThisTab(item.videoId)) {
-          ids.add(item.videoId);
-        }
-      }
-
-      for (const id of musicList) {
-        if (isVideoIdInThisTab(id)) {
-          ids.add(id);
-        }
-      }
-
-      for (const id of videoOnlyList) {
-        if (isVideoIdInThisTab(id)) {
-          ids.add(id);
-        }
-      }
-
+      addMatchingTabIds(ids, videoDownloads.map(item => item.videoId));
+      addMatchingTabIds(ids, musicList);
+      addMatchingTabIds(ids, videoOnlyList);
       return ids;
     })()
   );
 
   const thisTabVideoIds = $derived(
-    (() => {
-      if (thisTabIds.size === 0) {
-        return [];
-      }
-
-      const ids: string[] = [];
-      for (const item of videoDownloads) {
-        if (thisTabIds.has(item.videoId)) {
-          ids.push(item.videoId);
-        }
-      }
-
-      for (const id of musicList) {
-        if (thisTabIds.has(id)) {
-          ids.push(id);
-        }
-      }
-
-      for (const id of videoOnlyList) {
-        if (thisTabIds.has(id)) {
-          ids.push(id);
-        }
-      }
-
-      return ids;
-    })()
+    thisTabIds.size === 0
+      ? []
+      : [...videoDownloads.map(item => item.videoId), ...musicList, ...videoOnlyList]
+        .filter(id => thisTabIds.has(id))
   );
 
   const thisTabGroups = $derived(
     (() => {
-      const zipGroups = new SvelteMap<string, {
-        playlistTitle: string;
-        videoIds: string[];
-      }>();
+      const zipGroups = new SvelteMap<string, ZipGroup>();
       const individualIds: string[] = [];
-
       for (const id of thisTabVideoIds) {
-        const detail = videoDetails[id];
-        const isInPlaylist = Boolean(detail?.playlistId && detail.playlistTitle);
-        if (isInPlaylist) {
-          const group = zipGroups.get(detail!.playlistId!);
-          if (group) {
-            group.videoIds.push(id);
-          } else {
-            zipGroups.set(detail!.playlistId!, {
-              playlistTitle: detail!.playlistTitle!,
-              videoIds: [id]
-            });
-          }
-        } else {
-          individualIds.push(id);
-        }
+        addToGroups(zipGroups, individualIds, id);
       }
-
       return {
         zipGroups: [...zipGroups.values()],
         individualIds
@@ -181,7 +164,10 @@
 {#if thisTabVideoIds.length > 0 || thisTabRecent.length > 0}
   <section aria-labelledby="this-tab-heading">
     <header class="section-header">
-      <h2 id="this-tab-heading" class="section-title">This tab</h2>
+      <h2 id="this-tab-heading" class="section-title">
+        This tab
+        <span class="section-count">{thisTabVideoIds.length + thisTabRecent.length}</span>
+      </h2>
       {#if thisTabVideoIds.length > 0}
         <button
           class="cancel-all-button"
@@ -263,7 +249,6 @@
   {#snippet renderItem(videoId, i)}
     <li
       class="download-item"
-      class:download-item--active={i === 0}
       aria-label={accessors.filename(videoId)}
     >
       <DownloadItem
@@ -332,10 +317,31 @@
     margin-bottom: 4px;
 
     .section-title {
+      display: flex;
+      gap: 6px;
+      align-items: center;
       margin: 0;
-      color: var(--fg);
-      font-weight: 500;
-      font-size: 0.8125rem;
+      color: var(--fg-muted);
+      font-weight: 600;
+      font-size: 0.75rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+
+      .section-count {
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        min-width: 18px;
+        height: 18px;
+        padding: 0 5px;
+        border-radius: 9px;
+        background: var(--accent-container);
+        color: var(--fg);
+        font-weight: 700;
+        font-size: 0.6875rem;
+        letter-spacing: 0;
+        text-transform: none;
+      }
     }
 
     .cancel-all-button {
@@ -394,18 +400,6 @@
   }
 
   .download-item {
-    display: flex;
-    gap: 10px;
-    align-items: flex-start;
-    padding: 10px 12px;
-    border: none;
-    border-radius: 10px;
-    background: var(--surface);
-    transition: background-color 200ms;
-
-    &.download-item--active {
-      padding-left: 9px;
-      border-left: 3px solid var(--accent);
-    }
+    display: block;
   }
 </style>
