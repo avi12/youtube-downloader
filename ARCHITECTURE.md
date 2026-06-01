@@ -8,35 +8,29 @@ The central constraint shaping everything: MV3 fragments execution across isolat
 
 ```mermaid
 flowchart LR
-    subgraph PageCtx["YouTube tab"]
-      Main["MAIN-world content<br/>(reads Polymer, generates PO token,<br/>captures SABR/Innertube credentials)"]
+    subgraph Page["YouTube tab"]
+      Main["MAIN content<br/>(reads page, builds DownloadRequest)"]
       Iso["ISOLATED content<br/>(messaging bridge)"]
-      Main <-->|"CustomEvent bus"| Iso
     end
 
     subgraph BG["Background"]
-      SW["Chrome: service worker<br/>Firefox: event-page"]
+      SW["Service worker (Chrome)<br/>/ event-page (Firefox)"]
     end
 
     subgraph Off["Offscreen document"]
-      Worker["Download-worker iframe<br/>(Chrome only)<br/>SABR -> CDN"]
-      Scrub["Scrub-capture iframe<br/>(Chrome fallback)<br/>SourceBuffer hook"]
+      Worker["Download iframe<br/>(Chrome only)"]
       Mux["FFmpeg WASM worker"]
     end
 
+    Main <-->|"CustomEvent bus"| Iso
     Iso -->|"DownloadRequest"| SW
-    SW -->|"Chrome:<br/>StartDownloadInIframe"| Worker
-    SW -.->|"Firefox:<br/>ANDROID_VR chunked GET"| CDN[("YouTube CDN<br/>(googlevideo.com)")]
-    Worker -->|"protobuf SABR /<br/>byte-range CDN"| CDN
-    Worker -.->|"fallback"| Scrub
-    Scrub -->|"plays video,<br/>siphons bytes"| CDN
+    SW -->|"Chrome"| Worker
+    SW -.->|"Firefox: ANDROID_VR direct fetch"| Mux
     Worker -->|"chunks"| Mux
-    Scrub -->|"chunks"| Mux
-    SW -->|"Firefox: chunks"| Mux
-    Mux -->|"final blob"| Downloads["browser.downloads"]
+    Mux --> DL["browser.downloads"]
 ```
 
-Chrome and Firefox diverge only in the two highlighted edges: Chrome runs SABR + CDN inside the download-worker iframe; Firefox can't (TLS-fingerprint anti-bot rejection) and instead runs an InnerTube `ANDROID_VR` chunked GET from the background itself, routed through the tab when the anti-bot gate demands page context. Everything after the bytes leave the network — accumulation, end-handling, muxing, blob creation, `browser.downloads` — is shared code.
+The execution-context layout is the *only* thing that's identical on Chrome and Firefox. The fetch path differs (see the two deep dives below), but everything downstream of the chunks — accumulation, muxing, blob creation, `browser.downloads` — is shared code.
 
 ## Codemap
 
@@ -82,6 +76,28 @@ These three sections are the parts of the system that are most non-obvious and m
 
 ### Chrome stream fetch — four-layer fallback chain
 
+```mermaid
+sequenceDiagram
+    participant W as Download-worker iframe
+    participant CDN as YouTube CDN
+    participant BG as Background
+    participant DL as browser.downloads
+
+    W->>CDN: 1. SABR (protobuf via googlevideo)
+    Note over W,CDN: stall timer aborts if no bytes in 5s<br/>or progress stalls for 10s
+    CDN--xW: empty / stalled
+    W->>CDN: 2. CDN byte-range GET
+    CDN--xW: empty / 403
+    alt audio-only with resolvedAudioUrl
+      W-)BG: worker-needs-direct-url
+      BG->>DL: 3. browser.downloads.download(audioUrl)
+    else any other case
+      W-)BG: worker-needs-fallback
+      BG->>BG: 4. open hidden watch-page iframe (ytdl=1)
+      Note right of BG: SourceBuffer hook siphons segments<br/>as YouTube's player decodes them
+    end
+```
+
 The Chrome path walks four layers, each only invoked when the one above returns no usable bytes.
 
 1. **SABR.** YouTube's internal adaptive streaming protocol, spoken via `googlevideo`. The download-worker iframe constructs protobuf requests the CDN accepts as a real player session. A stall timer aborts and yields to layer 2 if no bytes arrive within 5 s, or progress stalls for 10 s.
@@ -92,6 +108,28 @@ The Chrome path walks four layers, each only invoked when the one above returns 
 Captured bytes from every layer flow into the same offscreen accumulator, so muxing is identical regardless of which layer produced them.
 
 ### Firefox stream fetch — `ANDROID_VR` bypass
+
+```mermaid
+sequenceDiagram
+    participant BG as Background
+    participant Tab as MAIN-world page-proxy
+    participant YT as youtubei API
+    participant CDN as YouTube CDN
+
+    BG->>YT: InnerTube POST (ANDROID_VR, placeholder visitorData) [fast path]
+    YT--xBG: LOGIN_REQUIRED (anti-bot)
+    BG->>Tab: pageSabrFetch (with __YTDL_VISITOR_DATA__ placeholder)
+    Tab->>YT: POST from page context<br/>(real ytcfg.VISITOR_DATA substituted)
+    YT-->>Tab: adaptive stream URLs
+    Tab-->>BG: stream URLs
+    par video chunks
+      BG->>CDN: GET Range bytes=0-10MB
+      CDN-->>BG: chunk
+    and audio chunks
+      BG->>CDN: GET Range bytes=0-10MB
+      CDN-->>BG: chunk
+    end
+```
 
 On Firefox-on-Windows, YouTube's anti-bot infrastructure rejects SABR (HTTP 403 or ~60 s response cap) regardless of cookies, PO token, or DNR rewrites. The TLS fingerprint and request signature differ enough from Chrome's that the `WEB`-client SABR path is unusable, and direct progressive URLs returned by the `WEB` client also 403 from any context.
 
