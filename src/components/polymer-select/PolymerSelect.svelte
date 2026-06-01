@@ -92,9 +92,30 @@
     type IronDropdownElement = HTMLElement & { noCancelOnEscKey?: boolean };
     const elIronDropdown = elTarget.closest<IronDropdownElement>(POLYMER_IRON_DROPDOWN_SELECTOR);
 
+    function openPopup(): void {
+      if (elTrigger) {
+        const { bottom } = elTrigger.getBoundingClientRect();
+        const availableHeight = innerHeight - bottom - POPUP_MARGIN_TOP - POPUP_BOTTOM_GAP;
+        elPopover?.style.setProperty("--ytdl-popup-max-height", `${Math.max(POPUP_MIN_HEIGHT, availableHeight)}px`);
+      }
+
+      if (elIronDropdown) {
+        elIronDropdown.noCancelOnEscKey = true;
+      }
+
+      requestAnimationFrame(() => elMenu?.focus());
+    }
+
+    function closePopup(): void {
+      if (elIronDropdown) {
+        elIronDropdown.noCancelOnEscKey = false;
+      }
+
+      focusTrigger();
+    }
+
     function handleToggle(e: Event): void {
-      const isToggleEvent = e instanceof ToggleEvent;
-      if (!isToggleEvent) {
+      if (!(e instanceof ToggleEvent)) {
         return;
       }
 
@@ -102,23 +123,9 @@
       isOpen = isOpening;
 
       if (isOpening) {
-        if (elTrigger) {
-          const { bottom } = elTrigger.getBoundingClientRect();
-          const availableHeight = innerHeight - bottom - POPUP_MARGIN_TOP - POPUP_BOTTOM_GAP;
-          elPopover?.style.setProperty("--ytdl-popup-max-height", `${Math.max(POPUP_MIN_HEIGHT, availableHeight)}px`);
-        }
-
-        if (elIronDropdown) {
-          elIronDropdown.noCancelOnEscKey = true;
-        }
-
-        requestAnimationFrame(() => elMenu?.focus());
+        openPopup();
       } else {
-        if (elIronDropdown) {
-          elIronDropdown.noCancelOnEscKey = false;
-        }
-
-        focusTrigger();
+        closePopup();
       }
     }
 
@@ -143,19 +150,8 @@
       e.preventDefault();
     }
 
-    function handleClick(e: Event): void {
-      const isElement = e.target instanceof Element;
-      if (!isElement) {
-        return;
-      }
-
-      const elItem = e.target.closest(POLYMER_PAPER_ITEM);
-      if (!elItem) {
-        return;
-      }
-
-      const isItemDisabled = elItem.getAttribute("aria-disabled") === "true";
-      if (isItemDisabled) {
+    function selectItem(elItem: Element): void {
+      if (elItem.getAttribute("aria-disabled") === "true") {
         return;
       }
 
@@ -164,60 +160,57 @@
         return;
       }
 
-      const isNewValue = dataValue !== value;
-      if (isNewValue) {
+      if (dataValue !== value) {
         onchange(dataValue);
       }
 
       elPopover?.hidePopover();
     }
 
+    function handleClick(e: Event): void {
+      if (!(e.target instanceof Element)) {
+        return;
+      }
+
+      const elItem = e.target.closest(POLYMER_PAPER_ITEM);
+      if (!elItem) {
+        return;
+      }
+
+      selectItem(elItem);
+    }
+
+    function handleConfirmKey(e: KeyboardEvent): void {
+      const elActive = document.activeElement;
+      if (!(elActive instanceof HTMLElement) || !elActive.matches(POLYMER_PAPER_ITEM)) {
+        return;
+      }
+
+      e.preventDefault();
+      selectItem(elActive);
+    }
+
+    function handleEscapeKey(e: KeyboardEvent): void {
+      e.stopPropagation();
+    }
+
+    function handleTabKey(e: KeyboardEvent): void {
+      e.preventDefault();
+      elPopover?.hidePopover();
+    }
+
     function handleKeydown(e: Event): void {
-      const isKeyboardEvent = e instanceof KeyboardEvent;
-      if (!isKeyboardEvent) {
+      if (!(e instanceof KeyboardEvent)) {
         return;
       }
 
-      const isEscape = e.key === "Escape";
-      if (isEscape) {
-        e.stopPropagation();
-        return;
-      }
-
-      const isTab = e.key === "Tab";
-      if (isTab) {
-        e.preventDefault();
-        elPopover?.hidePopover();
-        return;
-      }
-
-      const isConfirm = e.key === "Enter" || e.key === " ";
-      if (isConfirm) {
-        const elActive = document.activeElement;
-        const isHtmlActiveElement = elActive instanceof HTMLElement;
-        const isPaperItem = isHtmlActiveElement && elActive.matches(POLYMER_PAPER_ITEM);
-        if (!isPaperItem) {
-          return;
-        }
-
-        const isActiveDisabled = elActive.getAttribute("aria-disabled") === "true";
-        if (isActiveDisabled) {
-          return;
-        }
-
-        e.preventDefault();
-        const dataValue = elActive.getAttribute(DATA_VALUE_ATTR);
-        if (!dataValue) {
-          return;
-        }
-
-        const isNewValue = dataValue !== value;
-        if (isNewValue) {
-          onchange(dataValue);
-        }
-
-        elPopover?.hidePopover();
-      }
+      const keyHandlers: Partial<Record<string, (e: KeyboardEvent) => void>> = {
+        Escape: handleEscapeKey,
+        Tab: handleTabKey,
+        Enter: handleConfirmKey,
+        " ": handleConfirmKey
+      };
+      keyHandlers[e.key]?.(e);
     }
 
     elTarget.addEventListener("mousedown", handleMousedown);
@@ -236,7 +229,7 @@
   <label class="ytdl-select-label" for={id}>{label}</label>
   <button
     {id}
-    style="anchor-name: {anchorName};"
+    style:anchor-name={anchorName}
     class="ytdl-select-trigger"
     class:open={isOpen}
     {@attach attachTrigger}
@@ -254,7 +247,7 @@
 
   <div
     id={popoverId}
-    style="position-anchor: {anchorName};"
+    style:position-anchor={anchorName}
     class="ytdl-select-popup"
     {@attach attachPopover}
     popover="auto"
