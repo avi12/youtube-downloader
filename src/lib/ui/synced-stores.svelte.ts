@@ -26,6 +26,12 @@ export const videoDataFailedStore = createSyncedMap(createMapMessenger<boolean>(
 
 export const downloadProgressStore = createSyncedMap(createMapMessenger<DownloadProgressEntry>("download-progress"));
 
+const INITIAL_STATUS_PROGRESS: Record<string, DownloadProgressEntry> = {};
+export const statusProgressSignal = createSyncedSignal({
+  messenger: createSignalMessenger<Record<string, DownloadProgressEntry>>("status-progress"),
+  initial: INITIAL_STATUS_PROGRESS
+});
+
 export type DownloadProgressState = DownloadProgressEntry;
 
 export const playlistMetadataSignal = createSyncedSignal({

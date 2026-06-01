@@ -5,7 +5,7 @@ import { buildChevronData, buildDownloadData } from "./watch-button-view-model";
 import { createButtonElementEffects } from "./WatchButton.button-effects.svelte";
 import { createMessageEffects } from "./WatchButton.message-effects.svelte";
 import { createPanelEffects } from "./WatchButton.panel-effects.svelte";
-import { downloadProgressStore, interruptedDownloadStore } from "@/lib/ui/synced-stores.svelte";
+import { downloadProgressStore, interruptedDownloadStore, statusProgressSignal } from "@/lib/ui/synced-stores.svelte";
 import { calculateWeightedProgress } from "@/lib/youtube/video-helpers";
 import { type VideoData, type YtButtonViewModelElement } from "@/types";
 import { untrack } from "svelte";
@@ -19,21 +19,21 @@ export function createWatchButtonState(params: {
   const initial = untrack(() => buildInitialDownloadState(params.videoData));
   const { videoId } = params.videoData;
 
-  const isDownloading = $derived(downloadProgressStore.get(videoId)?.isDownloading ?? false);
-  const isDone = $derived(downloadProgressStore.get(videoId)?.isDone ?? false);
+  const statusEntry = $derived(statusProgressSignal.value[videoId]);
+  const isDownloading = $derived(statusEntry?.isDownloading ?? false);
+  const isDone = $derived(statusEntry?.isDone ?? false);
   const isError = $derived(downloadProgressStore.get(videoId)?.isFailed ?? false);
   const isInterrupted = $derived(!!interruptedDownloadStore.get(videoId));
-  const downloadProgressType = $derived(downloadProgressStore.get(videoId)?.progressType ?? "");
+  const downloadProgressType = $derived(statusEntry?.progressType ?? "");
   const downloadProgress = $derived.by(() => {
-    const entry = downloadProgressStore.get(videoId);
-    if (!entry) {
+    if (!statusEntry) {
       return 0;
     }
 
     return calculateWeightedProgress({
-      isDownloading: entry.isDownloading,
-      progress: entry.progress,
-      progressType: entry.progressType
+      isDownloading: statusEntry.isDownloading,
+      progress: statusEntry.progress,
+      progressType: statusEntry.progressType
     }) / PERCENT_COMPLETE;
   });
 

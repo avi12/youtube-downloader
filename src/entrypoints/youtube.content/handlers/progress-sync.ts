@@ -1,5 +1,5 @@
 import { statusProgressItem } from "@/lib/storage/storage";
-import { downloadProgressStore } from "@/lib/ui/synced-stores.svelte";
+import { downloadProgressStore, statusProgressSignal } from "@/lib/ui/synced-stores.svelte";
 import { ProgressType } from "@/types";
 
 const committedToStorageIds = new Set<string>();
@@ -31,6 +31,8 @@ function resolveOrphan(videoId: string) {
 export function syncStoredProgressToStore(
   storedProgress: Awaited<ReturnType<typeof statusProgressItem.getValue>>
 ) {
+  statusProgressSignal.value = storedProgress;
+
   for (const [videoId, entry] of Object.entries(storedProgress)) {
     markCommitted(videoId);
     downloadProgressStore.set(videoId, entry);

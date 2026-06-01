@@ -19,7 +19,12 @@ import {
 import { resolveActualExtension, resolvePrimaryState, resolveQualityLabel } from "./helpers/panel-state-derived";
 import { syncAudioFromFormat } from "./helpers/player-active-tracks.svelte";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
-import { CONTENT_OPTIONS, downloadProgressStore, interruptedDownloadStore } from "@/lib/ui/synced-stores.svelte";
+import {
+  CONTENT_OPTIONS,
+  downloadProgressStore,
+  interruptedDownloadStore,
+  statusProgressSignal
+} from "@/lib/ui/synced-stores.svelte";
 import { getAudioTempExtension, getCompatibleFilename, isAudioMimeNativeForContainer } from "@/lib/utils/containers";
 import {
   alignAudioFormatToExtension,
@@ -121,19 +126,22 @@ export function createPanelState(getVideoData: () => VideoData) {
   );
   const isDownloadable = $derived(getVideoData().isDownloadable);
   const isInterrupted = $derived(!!interruptedDownloadStore.get(getVideoData().videoId));
+  const statusEntry = $derived(statusProgressSignal.value[getVideoData().videoId]);
+  const statusIsDownloading = $derived(statusEntry?.isDownloading ?? false);
+  const statusIsDone = $derived(statusEntry?.isDone ?? false);
   const primaryState = $derived(
     resolvePrimaryState({
-      isDownloading: store.isDownloading,
+      isDownloading: statusIsDownloading,
       isFailed: store.isFailed,
       isInterrupted,
-      isDone: store.isDone
+      isDone: statusIsDone
     })
   );
   const displayProgress = $derived(
     calculateWeightedProgress({
-      isDownloading: store.isDownloading,
-      progress: store.progress,
-      progressType: store.progressType
+      isDownloading: statusIsDownloading,
+      progress: statusEntry?.progress ?? 0,
+      progressType: statusEntry?.progressType ?? ""
     })
   );
   const fullFilename = $derived(getCompatibleFilename(`${filename}.${actualExtension}`));
@@ -292,16 +300,16 @@ export function createPanelState(getVideoData: () => VideoData) {
 
   return {
     get isDownloading() {
-      return store.isDownloading;
+      return statusIsDownloading;
     },
     get isDone() {
-      return store.isDone;
+      return statusIsDone;
     },
     get progress() {
-      return store.progress;
+      return statusEntry?.progress ?? 0;
     },
     get progressType() {
-      return store.progressType;
+      return statusEntry?.progressType ?? "";
     },
     get downloadType() {
       return downloadType;
