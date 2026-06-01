@@ -1,24 +1,18 @@
 <script lang="ts">
+  import downloadIcon from "../icons/download.svg?raw";
+  import openInNewIcon from "../icons/open-in-new.svg?raw";
   import { bindDownloadAccessors, getVideoStatusLabel } from "./active-downloads-helpers";
   import DownloadItem from "./DownloadItem.svelte";
-  import DownloadSection from "./DownloadSection.svelte";
   import RecentDownloadItem from "./recent/RecentDownloadItem.svelte";
-  import type { DownloadProgressEntry, RecentDownloadEntry, VideoQueueItem } from "@/types";
-  import { SvelteMap, SvelteSet } from "svelte/reactivity";
+  import type { DownloadProgressEntry, RecentDownloadEntry, VideoDetail, VideoQueueItem } from "@/types";
+  import { SvelteMap } from "svelte/reactivity";
 
   interface Props {
     isFFmpegReady: boolean;
     videoDownloads: VideoQueueItem[];
     musicList: string[];
     videoOnlyList: string[];
-    videoDetails: Record<string, {
-      filenameOutput: string;
-      quality?: string;
-      tabId?: number;
-      playlistId?: string;
-      playlistTitle?: string;
-      sourceUrl?: string;
-    }>;
+    videoDetails: Record<string, VideoDetail>;
     statusProgress: Record<string, DownloadProgressEntry>;
     percentFormatter: Intl.NumberFormat;
     currentTabId?: number;
@@ -38,71 +32,6 @@
     onCancel, onShowRecentInFolder, onChangeFormat, onRemoveRecent
   }: Props = $props();
 
-  function matchesCurrentTab(detail: {
-    tabId?: number;
-    sourceUrl?: string;
-  } | undefined): boolean {
-    return detail?.tabId === currentTabId && detail?.sourceUrl === currentSourceUrl;
-  }
-
-  function isVideoIdInThisTab(videoId: string): boolean {
-    if (currentTabId === undefined || !currentSourceUrl) {
-      return false;
-    }
-
-    return matchesCurrentTab(videoDetails[videoId]);
-  }
-
-  function isRecentEntryInThisTab(entry: RecentDownloadEntry): boolean {
-    return Boolean(
-      currentTabId !== undefined
-      && entry.tabId === currentTabId
-      && currentSourceUrl
-      && entry.sourceUrl === currentSourceUrl
-    );
-  }
-
-  function addMatchingTabIds(ids: SvelteSet<string>, list: Iterable<string>): void {
-    for (const id of list) {
-      if (isVideoIdInThisTab(id)) {
-        ids.add(id);
-      }
-    }
-  }
-
-  type ZipGroup = {
-    playlistTitle: string;
-    videoIds: string[];
-  };
-
-  function upsertGroup(zipGroups: SvelteMap<string, ZipGroup>, playlistId: string, playlistTitle: string, id: string): void {
-    const group = zipGroups.get(playlistId);
-    if (group) {
-      group.videoIds.push(id);
-    } else {
-      zipGroups.set(playlistId, {
-        playlistTitle,
-        videoIds: [id]
-      });
-    }
-  }
-
-  function addToGroups(zipGroups: SvelteMap<string, ZipGroup>, individualIds: string[], id: string): void {
-    const { playlistId, playlistTitle } = videoDetails[id] ?? {};
-    if (!playlistId || !playlistTitle) {
-      individualIds.push(id);
-      return;
-    }
-
-    upsertGroup(zipGroups, playlistId, playlistTitle, id);
-  }
-
-  const thisTabRecent = $derived(
-    currentTabId === undefined || !currentSourceUrl
-      ? []
-      : recentDownloads.filter(isRecentEntryInThisTab)
-  );
-
   const accessors = $derived(
     bindDownloadAccessors({
       statusProgress,
@@ -111,214 +40,237 @@
     })
   );
 
-  const thisTabIds = $derived(
-    (() => {
-      if (currentTabId === undefined || !currentSourceUrl) {
-        return new SvelteSet<string>();
+  type ZipGroup = {
+    playlistId: string;
+    playlistTitle: string;
+    videoIds: string[];
+  };
+
+  type Partition = {
+    zipGroups: ZipGroup[];
+    individualIds: string[];
+    recent: RecentDownloadEntry[];
+  };
+
+  const videoDownloadIndex = $derived(
+    new Map(videoDownloads.map((item, i) => [item.videoId, i] as const))
+  );
+
+  const allActiveIds = $derived([
+    ...videoDownloads.map(item => item.videoId),
+    ...musicList,
+    ...videoOnlyList
+  ]);
+
+  function isInCurrentTab(detail: VideoDetail | undefined): boolean {
+    if (currentTabId === undefined || !currentSourceUrl) {
+      return false;
+    }
+
+    return detail?.tabId === currentTabId && detail?.sourceUrl === currentSourceUrl;
+  }
+
+  function isRecentInCurrentTab(entry: RecentDownloadEntry): boolean {
+    return Boolean(
+      currentTabId !== undefined
+      && entry.tabId === currentTabId
+      && currentSourceUrl
+      && entry.sourceUrl === currentSourceUrl
+    );
+  }
+
+  function partitionActive(videoIds: string[], recent: RecentDownloadEntry[]): Partition {
+    const zipGroups = new SvelteMap<string, ZipGroup>();
+    const individualIds: string[] = [];
+
+    for (const id of videoIds) {
+      const detail = videoDetails[id];
+      const playlistId = detail?.playlistId;
+      const playlistTitle = detail?.playlistTitle;
+      if (playlistId && playlistTitle) {
+        const group = zipGroups.get(playlistId);
+        if (group) {
+          group.videoIds.push(id);
+          continue;
+        }
+
+        zipGroups.set(playlistId, {
+          playlistId,
+          playlistTitle,
+          videoIds: [id]
+        });
+        continue;
       }
 
-      const ids = new SvelteSet<string>();
-      addMatchingTabIds(ids, videoDownloads.map(item => item.videoId));
-      addMatchingTabIds(ids, musicList);
-      addMatchingTabIds(ids, videoOnlyList);
-      return ids;
-    })()
-  );
+      individualIds.push(id);
+    }
 
-  const thisTabVideoIds = $derived(
-    thisTabIds.size === 0
-      ? []
-      : [...videoDownloads.map(item => item.videoId), ...musicList, ...videoOnlyList]
-        .filter(id => thisTabIds.has(id))
-  );
+    return {
+      zipGroups: [...zipGroups.values()],
+      individualIds,
+      recent
+    };
+  }
 
-  const thisTabGroups = $derived(
-    (() => {
-      const zipGroups = new SvelteMap<string, ZipGroup>();
-      const individualIds: string[] = [];
-      for (const id of thisTabVideoIds) {
-        addToGroups(zipGroups, individualIds, id);
-      }
-      return {
-        zipGroups: [...zipGroups.values()],
-        individualIds
-      };
-    })()
-  );
+  const thisTabIds = $derived(allActiveIds.filter(id => isInCurrentTab(videoDetails[id])));
+  const otherIds = $derived(allActiveIds.filter(id => !isInCurrentTab(videoDetails[id])));
 
-  const isThisTabKnown = $derived(thisTabIds.size > 0);
-  const otherVideoDownloadIds = $derived(
-    isThisTabKnown
-      ? videoDownloads.filter(item => !thisTabIds.has(item.videoId)).map(item => item.videoId)
-      : videoDownloads.map(item => item.videoId)
-  );
-  const otherMusicList = $derived(
-    isThisTabKnown ? musicList.filter(id => !thisTabIds.has(id)) : musicList
-  );
-  const otherVideoOnlyList = $derived(
-    isThisTabKnown ? videoOnlyList.filter(id => !thisTabIds.has(id)) : videoOnlyList
-  );
-  const videoDownloadIds = $derived(videoDownloads.map(item => item.videoId));
+  const thisTabRecent = $derived(recentDownloads.filter(isRecentInCurrentTab));
+
+  const thisTab = $derived(partitionActive(thisTabIds, thisTabRecent));
+  const otherTabs = $derived(partitionActive(otherIds, []));
+
+  const thisTabCount = $derived(thisTab.individualIds.length + thisTab.zipGroups.length + thisTab.recent.length);
+  const otherTabsCount = $derived(otherTabs.individualIds.length + otherTabs.zipGroups.length);
+
+  function videoStatusLabel(videoId: string): string | null {
+    const i = videoDownloadIndex.get(videoId);
+    if (i === undefined) {
+      return null;
+    }
+
+    if (accessors.progress(videoId) !== null) {
+      return null;
+    }
+
+    return getVideoStatusLabel({
+      i,
+      isFFmpegReady
+    });
+  }
+
+  function emitCancel(ids: string[]): void {
+    onCancel(ids);
+  }
 </script>
 
-{#if thisTabVideoIds.length > 0 || thisTabRecent.length > 0}
+{#snippet renderCard(videoId: string, showTabActions: boolean)}
+  {@const detail = accessors.detail(videoId)}
+  {@const entry = accessors.entry(videoId)}
+  <DownloadItem
+    bytesPerSecond={entry?.bytesPerSecond}
+    channel={detail?.channel}
+    downloadedBytes={entry?.downloadedBytes}
+    filename={accessors.filename(videoId)}
+    lengthSeconds={detail?.lengthSeconds}
+    oncancel={() => emitCancel([videoId])}
+    progress={accessors.progress(videoId)}
+    progressLabel={accessors.label(videoId)}
+    quality={accessors.quality(videoId)}
+    {showTabActions}
+    sourceUrl={detail?.sourceUrl}
+    statusLabel={videoStatusLabel(videoId)}
+    tabId={detail?.tabId}
+    thumbnailUrl={detail?.thumbnailUrl}
+    title={detail?.title}
+    totalBytes={entry?.totalBytes}
+    {videoId}
+  />
+{/snippet}
+
+{#snippet renderSectionBody(partition: Partition, showTabActions: boolean)}
+  {#each partition.zipGroups as group (group.playlistId)}
+    <div class="zip-group">
+      <span class="zip-group-label" data-tooltip="{group.playlistTitle}.zip">
+        → {group.playlistTitle}.zip
+      </span>
+      <ul class="download-list" aria-label="Videos in {group.playlistTitle}.zip">
+        {#each group.videoIds as videoId (videoId)}
+          <li class="download-item">
+            {@render renderCard(videoId, showTabActions)}
+          </li>
+        {/each}
+      </ul>
+    </div>
+  {/each}
+
+  {#if partition.individualIds.length > 0}
+    <ul class="download-list">
+      {#each partition.individualIds as videoId (videoId)}
+        <li class="download-item">
+          {@render renderCard(videoId, showTabActions)}
+        </li>
+      {/each}
+    </ul>
+  {/if}
+
+  {#if partition.recent.length > 0}
+    <ul class="recent-list" aria-label="Recent downloads from this tab">
+      {#each partition.recent as entry (entry.id)}
+        <li>
+          <RecentDownloadItem
+            {entry}
+            {now}
+            onChangeFormat={() => onChangeFormat(entry)}
+            onRemove={() => onRemoveRecent(entry)}
+            onShowInFolder={() => onShowRecentInFolder(entry)}
+          />
+        </li>
+      {/each}
+    </ul>
+  {/if}
+{/snippet}
+
+{#if thisTabCount > 0}
   <section aria-labelledby="this-tab-heading">
     <header class="section-header">
       <h2 id="this-tab-heading" class="section-title">
+        <span class="section-icon" aria-hidden="true">{@html downloadIcon}</span>
         This tab
-        <span class="section-count">{thisTabVideoIds.length + thisTabRecent.length}</span>
+        <span class="section-count">{thisTabCount}</span>
       </h2>
-      {#if thisTabVideoIds.length > 0}
+      {#if thisTabIds.length > 0}
         <button
           class="cancel-all-button"
           aria-label="Cancel all downloads from this tab"
-          onclick={() => onCancel(thisTabVideoIds)}
+          onclick={() => emitCancel(thisTabIds)}
+          type="button"
         >
           Cancel all
         </button>
       {/if}
     </header>
-
-    <div class="this-tab-content">
-      {#each thisTabGroups.zipGroups as group (group.playlistTitle)}
-        <div class="zip-group">
-          <span class="zip-group-label" data-tooltip="{group.playlistTitle}.zip">
-            → {group.playlistTitle}.zip
-          </span>
-          <ul class="download-list" aria-label="Videos in {group.playlistTitle}.zip">
-            {#each group.videoIds as videoId (videoId)}
-              <li class="download-item">
-                <DownloadItem
-                  filename={accessors.filename(videoId)}
-                  oncancel={() => onCancel([videoId])}
-                  progress={accessors.progress(videoId)}
-                  progressLabel={accessors.label(videoId)}
-                  quality={accessors.quality(videoId)}
-                />
-              </li>
-            {/each}
-          </ul>
-        </div>
-      {/each}
-
-      {#if thisTabGroups.individualIds.length > 0}
-        <ul class="download-list" aria-label="Individual downloads from this tab">
-          {#each thisTabGroups.individualIds as videoId (videoId)}
-            <li class="download-item">
-              <DownloadItem
-                filename={accessors.filename(videoId)}
-                oncancel={() => onCancel([videoId])}
-                progress={accessors.progress(videoId)}
-                progressLabel={accessors.label(videoId)}
-                quality={accessors.quality(videoId)}
-                {videoId}
-              />
-            </li>
-          {/each}
-        </ul>
-      {/if}
-
-      {#if thisTabRecent.length > 0}
-        <ul class="recent-list" aria-label="Recent downloads from this tab">
-          {#each thisTabRecent as entry (entry.id)}
-            <li>
-              <RecentDownloadItem
-                {entry}
-                {now}
-                onChangeFormat={() => onChangeFormat(entry)}
-                onRemove={() => onRemoveRecent(entry)}
-                onShowInFolder={() => onShowRecentInFolder(entry)}
-              />
-            </li>
-          {/each}
-        </ul>
-      {/if}
+    <div class="section-body">
+      {@render renderSectionBody(thisTab, false)}
     </div>
   </section>
 {/if}
 
-<DownloadSection
-  cancelAriaLabel="Cancel all video downloads"
-  listAriaLabel="Active video downloads"
-  loadingBadge={!isFFmpegReady ? "Loading FFmpeg…" : undefined}
-  onCancelAll={() => onCancel(videoDownloadIds)}
-  sectionId="video-downloads"
-  title="Video downloads"
-  videoIds={otherVideoDownloadIds}
->
-  {#snippet renderItem(videoId, i)}
-    <li
-      class="download-item"
-      aria-label={accessors.filename(videoId)}
-    >
-      <DownloadItem
-        filename={accessors.filename(videoId)}
-        oncancel={() => onCancel([videoId])}
-        progress={accessors.progress(videoId)}
-        progressLabel={accessors.label(videoId)}
-        quality={accessors.quality(videoId)}
-        statusLabel={accessors.progress(videoId) === null ? getVideoStatusLabel({
-          i,
-          isFFmpegReady
-        }) : null}
-        {videoId}
-      />
-    </li>
-  {/snippet}
-</DownloadSection>
-
-<DownloadSection
-  cancelAriaLabel="Cancel all audio downloads"
-  listAriaLabel="Audio downloads"
-  onCancelAll={() => onCancel(musicList)}
-  sectionId="music-list"
-  title="Audio"
-  videoIds={otherMusicList}
->
-  {#snippet renderItem(videoId)}
-    <li class="download-item">
-      <DownloadItem
-        filename={accessors.filename(videoId)}
-        oncancel={() => onCancel([videoId])}
-        progress={accessors.progress(videoId)}
-        progressLabel={accessors.label(videoId)}
-        {videoId}
-      />
-    </li>
-  {/snippet}
-</DownloadSection>
-
-<DownloadSection
-  cancelAriaLabel="Cancel all video-only downloads"
-  listAriaLabel="Video-only downloads"
-  onCancelAll={() => onCancel(videoOnlyList)}
-  sectionId="video-only"
-  title="Video only"
-  videoIds={otherVideoOnlyList}
->
-  {#snippet renderItem(videoId)}
-    <li class="download-item">
-      <DownloadItem
-        filename={accessors.filename(videoId)}
-        oncancel={() => onCancel([videoId])}
-        progress={accessors.progress(videoId)}
-        progressLabel={accessors.label(videoId)}
-        {videoId}
-      />
-    </li>
-  {/snippet}
-</DownloadSection>
+{#if otherTabsCount > 0}
+  <section aria-labelledby="other-tabs-heading">
+    <header class="section-header">
+      <h2 id="other-tabs-heading" class="section-title">
+        <span class="section-icon" aria-hidden="true">{@html openInNewIcon}</span>
+        Other tabs
+        <span class="section-count">{otherTabsCount}</span>
+      </h2>
+      {#if otherIds.length > 0}
+        <button
+          class="cancel-all-button"
+          aria-label="Cancel all downloads from other tabs"
+          onclick={() => emitCancel(otherIds)}
+          type="button"
+        >
+          Cancel all
+        </button>
+      {/if}
+    </header>
+    <div class="section-body">
+      {@render renderSectionBody(otherTabs, true)}
+    </div>
+  </section>
+{/if}
 
 <style>
   .section-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 4px;
+    margin-bottom: 6px;
 
     .section-title {
       display: flex;
-      gap: 6px;
+      gap: 8px;
       align-items: center;
       margin: 0;
       color: var(--fg-muted);
@@ -327,13 +279,25 @@
       letter-spacing: 0.06em;
       text-transform: uppercase;
 
+      .section-icon {
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        color: var(--fg-muted);
+
+        :global(svg) {
+          width: 16px;
+          height: 16px;
+        }
+      }
+
       .section-count {
         display: inline-flex;
         justify-content: center;
         align-items: center;
         min-width: 18px;
         height: 18px;
-        padding: 0 5px;
+        padding: 0 6px;
         border-radius: 9px;
         background: var(--accent-container);
         color: var(--fg);
@@ -366,7 +330,7 @@
     }
   }
 
-  .this-tab-content {
+  .section-body {
     display: flex;
     flex-direction: column;
     gap: 8px;
@@ -378,7 +342,7 @@
     gap: 4px;
     padding: 8px;
     border: 1px solid var(--border);
-    border-radius: 12px;
+    border-radius: 16px;
 
     .zip-group-label {
       overflow: hidden;
@@ -394,12 +358,19 @@
   .recent-list {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 6px;
+    margin: 0;
     padding: 0;
     list-style: none;
   }
 
   .download-item {
     display: block;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .cancel-all-button {
+      transition: none;
+    }
   }
 </style>
