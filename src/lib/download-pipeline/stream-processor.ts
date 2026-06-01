@@ -29,25 +29,26 @@ async function removeFromStorageQueue({ videoId, type }: RemoveFromStorageQueueP
 }
 
 async function processItem(item: ProcessStreamData) {
-  activeJobs.set(item.videoId, {
-    videoId: item.videoId,
-    tabId: item.tabId
+  const { videoId, tabId, type, filenameOutput, sourceUrl } = item;
+  activeJobs.set(videoId, {
+    videoId,
+    tabId
   });
 
   await sendMessage(MessageType.PipelineStart, {
-    videoId: item.videoId,
-    type: item.type,
-    filenameOutput: item.filenameOutput,
-    tabId: item.tabId,
-    sourceUrl: item.sourceUrl
+    videoId,
+    type,
+    filenameOutput,
+    tabId,
+    sourceUrl
   });
 
   function isCancelled() {
-    return !activeJobs.has(item.videoId);
+    return !activeJobs.has(videoId);
   }
 
   try {
-    const isVideoAndAudio = item.type === DownloadType.VideoAndAudio;
+    const isVideoAndAudio = type === DownloadType.VideoAndAudio;
     if (isVideoAndAudio) {
       await processVideoAudio({
         item,
@@ -67,14 +68,14 @@ async function processItem(item: ProcessStreamData) {
     }
 
     await reportRemoval({
-      videoId: item.videoId,
-      tabId: item.tabId
+      videoId,
+      tabId
     });
   } finally {
-    activeJobs.delete(item.videoId);
+    activeJobs.delete(videoId);
     await removeFromStorageQueue({
-      videoId: item.videoId,
-      type: item.type
+      videoId,
+      type
     });
   }
 }

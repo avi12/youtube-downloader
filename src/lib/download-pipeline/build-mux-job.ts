@@ -62,17 +62,18 @@ export async function handleSingleStream({ item, videoData, audioData }: HandleS
     throw new Error(NO_STREAM_DATA_ERROR);
   }
 
+  const { videoId, tabId, filenameOutput } = item;
   const recentContext = buildRecentContext({ item });
   const data = (videoData ?? audioData)!;
   await triggerDownload({
     data,
-    filenameOutput: item.filenameOutput,
+    filenameOutput,
     recentContext
   });
   await reportProgress({
-    videoId: item.videoId,
+    videoId,
     progress: 1,
     progressType: ProgressType.FFmpeg,
-    tabId: item.tabId
+    tabId
   });
 }
