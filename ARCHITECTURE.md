@@ -7,7 +7,7 @@ The central constraint shaping everything: MV3 fragments execution across isolat
 ## System diagram
 
 ```mermaid
-flowchart LR
+flowchart TB
     subgraph Page["YouTube tab"]
       Main["MAIN content<br/>(reads page, builds DownloadRequest)"]
       Iso["ISOLATED content<br/>(messaging bridge)"]
