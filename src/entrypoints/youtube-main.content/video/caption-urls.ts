@@ -35,13 +35,13 @@ export function resolveOrderedCaptionTracks({
   const primaryCaptionTrack = selectedCaptionVssId
     ? (allCaptionTracks.find(track => track.vssId === selectedCaptionVssId) ?? allCaptionTracks[0])
     : allCaptionTracks[0];
-  if (downloadExtras) {
-    const nativeTracks = allCaptionTracks.filter(track => !track.translationLanguageCode);
-    const isSelectedTranslated = !!primaryCaptionTrack?.translationLanguageCode;
-    return isSelectedTranslated ? [primaryCaptionTrack, ...nativeTracks] : nativeTracks;
+  if (!downloadExtras) {
+    return primaryCaptionTrack ? [primaryCaptionTrack] : [];
   }
 
-  return primaryCaptionTrack ? [primaryCaptionTrack] : [];
+  const nativeTracks = allCaptionTracks.filter(track => !track.translationLanguageCode);
+  const isSelectedTranslated = !!primaryCaptionTrack?.translationLanguageCode;
+  return isSelectedTranslated ? [primaryCaptionTrack, ...nativeTracks] : nativeTracks;
 }
 
 export async function fetchFreshCaptionUrls(videoId: string) {
