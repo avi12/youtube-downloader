@@ -1,18 +1,11 @@
 import { calculateWeightedProgress } from "@/lib/youtube/video-helpers";
 import { ProgressType } from "@/types";
-import type { DownloadProgressEntry } from "@/types";
+import type { DownloadProgressEntry, VideoDetail } from "@/types";
 
 const PERCENT_COMPLETE = 100;
 
 type StatusProgress = Record<string, DownloadProgressEntry>;
-type VideoDetails = Record<string, {
-  filenameOutput: string;
-  quality?: string;
-  tabId?: number;
-  playlistId?: string;
-  playlistTitle?: string;
-  sourceUrl?: string;
-}>;
+type VideoDetails = Record<string, VideoDetail>;
 
 function computeWeightedFraction(entry: StatusProgress[string]) {
   return calculateWeightedProgress({
@@ -67,6 +60,20 @@ export function getQuality({ videoId, videoDetails }: VideoIdDetailsParams) {
   return videoDetails[videoId]?.quality ?? "";
 }
 
+function getDetail({ videoId, videoDetails }: VideoIdDetailsParams): VideoDetail | undefined {
+  return videoDetails[videoId];
+}
+
+type GetProgressEntryParams = {
+  videoId: string;
+  statusProgress: StatusProgress;
+};
+function getProgressEntry(
+  { videoId, statusProgress }: GetProgressEntryParams
+): DownloadProgressEntry | undefined {
+  return statusProgress[videoId];
+}
+
 type GetVideoStatusLabelParams = {
   i: number;
   isFFmpegReady: boolean;
@@ -103,6 +110,14 @@ export function bindDownloadAccessors({ statusProgress, videoDetails, percentFor
     quality: (id: string) => getQuality({
       videoId: id,
       videoDetails
+    }),
+    detail: (id: string) => getDetail({
+      videoId: id,
+      videoDetails
+    }),
+    entry: (id: string) => getProgressEntry({
+      videoId: id,
+      statusProgress
     })
   };
 }

@@ -4,7 +4,7 @@
   import ActiveDownloadsSections from "./ActiveDownloadsSections.svelte";
   import RecentDownloadsSection from "./recent/RecentDownloadsSection.svelte";
   import { deleteRecentDownload } from "@/lib/storage/recent-downloads-db";
-  import type { DownloadProgressEntry, RecentDownloadEntry, VideoQueueItem } from "@/types";
+  import type { DownloadProgressEntry, RecentDownloadEntry, VideoDetail, VideoQueueItem } from "@/types";
   import { browser } from "#imports";
 
   interface Props {
@@ -12,14 +12,7 @@
     videoDownloads: VideoQueueItem[];
     musicList: string[];
     videoOnlyList: string[];
-    videoDetails: Record<string, {
-      filenameOutput: string;
-      quality?: string;
-      tabId?: number;
-      playlistId?: string;
-      playlistTitle?: string;
-      sourceUrl?: string;
-    }>;
+    videoDetails: Record<string, VideoDetail>;
     statusProgress: Record<string, DownloadProgressEntry>;
     percentFormatter: Intl.NumberFormat;
     recentDownloads: RecentDownloadEntry[];
@@ -60,7 +53,9 @@
       {@html downloadIcon}
     </div>
     <h3 class="empty-state-heading">No downloads yet</h3>
-    <p class="empty-state-text">Anything you grab shows up here. Open a video, channel, or playlist and tap the toolbar button to start</p>
+    <p class="empty-state-text">
+      Anything you grab shows up here. Open a video, channel, or playlist and tap the toolbar button to start
+    </p>
     <div class="empty-state-hint">
       {@html sparkleIcon}
       Tip: pick formats, quality &amp; languages in Settings

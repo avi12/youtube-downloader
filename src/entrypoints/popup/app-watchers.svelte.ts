@@ -9,17 +9,14 @@ import {
   videoQueueItem
 } from "@/lib/storage/storage";
 import { INITIAL_OPTIONS as defaultOptions } from "@/lib/youtube/video-helpers";
-import type { DownloadProgressEntry, Options, VideoQueueItem } from "@/types";
+import type { DownloadProgressEntry, Options, VideoDetail, VideoQueueItem } from "@/types";
 
 export interface AppWatcherTargets {
   setIsFFmpegReady: (value: boolean) => void;
   setVideoDownloads: (value: VideoQueueItem[]) => void;
   setMusicList: (value: string[]) => void;
   setVideoOnlyList: (value: string[]) => void;
-  setVideoDetails: (value: Record<string, {
-    filenameOutput: string;
-    quality?: string;
-  }>) => void;
+  setVideoDetails: (value: Record<string, VideoDetail>) => void;
   setStatusProgress: (value: Record<string, DownloadProgressEntry>) => void;
   setOptions: (value: Options) => void;
   setNow: (value: number) => void;
