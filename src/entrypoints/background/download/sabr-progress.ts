@@ -44,11 +44,19 @@ export function createProgressAccumulator({
       captionCount
     });
     onProgress?.();
+    const extraReceived = extraReceivedBytesArray.reduce((acc, n) => acc + n, 0);
+    const extraExpected = extraExpectedBytesArray.reduce((acc, n) => acc + n, 0);
+    const downloadedBytes = videoReceivedBytes + audioReceivedBytes + extraReceived;
+    const expectedBytes = videoExpectedBytes + audioExpectedBytes + extraExpected;
     sendProgressUpdate({
       videoId,
       progress,
       progressType: ProgressType.Video,
-      tabId
+      tabId,
+      downloadedBytes,
+      ...(expectedBytes > 0 && {
+        totalBytes: expectedBytes
+      })
     });
   }
 

@@ -243,7 +243,16 @@ export function registerDownloadHandlers() {
           isDownloading: !isComplete,
           isDone: isComplete,
           progress: progressData.progress,
-          progressType: progressData.progressType
+          progressType: progressData.progressType,
+          ...(progressData.downloadedBytes !== undefined && {
+            downloadedBytes: progressData.downloadedBytes
+          }),
+          ...(progressData.totalBytes !== undefined && {
+            totalBytes: progressData.totalBytes
+          }),
+          ...(progressData.bytesPerSecond !== undefined && {
+            bytesPerSecond: progressData.bytesPerSecond
+          })
         };
       }
     });

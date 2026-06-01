@@ -25,8 +25,13 @@ type WriteProgressToStorageParams = {
   videoId: string;
   progress: number;
   progressType: ProgressType;
+  downloadedBytes?: number;
+  totalBytes?: number;
+  bytesPerSecond?: number;
 };
-async function writeProgressToStorage({ videoId, progress, progressType }: WriteProgressToStorageParams) {
+async function writeProgressToStorage({
+  videoId, progress, progressType, downloadedBytes, totalBytes, bytesPerSecond
+}: WriteProgressToStorageParams) {
   const isComplete = progress >= 1 && progressType === ProgressType.FFmpeg;
   await mutateStorageItem({
     item: statusProgressItem,
@@ -35,7 +40,16 @@ async function writeProgressToStorage({ videoId, progress, progressType }: Write
         isDownloading: !isComplete,
         isDone: isComplete,
         progress,
-        progressType
+        progressType,
+        ...(downloadedBytes !== undefined && {
+          downloadedBytes
+        }),
+        ...(totalBytes !== undefined && {
+          totalBytes
+        }),
+        ...(bytesPerSecond !== undefined && {
+          bytesPerSecond
+        })
       };
     }
   });
@@ -46,10 +60,50 @@ type SendProgressUpdateParams = {
   progress: number;
   progressType: ProgressType;
   tabId: number;
+  downloadedBytes?: number;
+  totalBytes?: number;
 };
 
-async function dispatchProgressUpdate({ videoId, progress, progressType, tabId }: SendProgressUpdateParams) {
-  // Chrome offscreen documents throw on wxt/storage despite the manifest
+type SpeedSample = {
+  bytes: number;
+  timestamp: number;
+};
+const SPEED_WINDOW_MS = 2_000;
+const speedHistoryByVideoId = new Map<string, SpeedSample[]>();
+
+function computeBytesPerSecond({ videoId, downloadedBytes }: {
+  videoId: string;
+  downloadedBytes: number;
+}) {
+  const now = performance.now();
+  const history = speedHistoryByVideoId.get(videoId) ?? [];
+  const windowStart = now - SPEED_WINDOW_MS;
+  const filtered = history.filter(sample => sample.timestamp >= windowStart);
+  filtered.push({
+    bytes: downloadedBytes,
+    timestamp: now
+  });
+  speedHistoryByVideoId.set(videoId, filtered);
+
+  const [oldest] = filtered;
+  const elapsedMs = now - oldest.timestamp;
+  if (elapsedMs <= 0) {
+    return 0;
+  }
+
+  const deltaBytes = downloadedBytes - oldest.bytes;
+  return Math.max(0, (deltaBytes / elapsedMs) * 1000);
+}
+
+async function dispatchProgressUpdate({
+  videoId, progress, progressType, tabId, downloadedBytes, totalBytes
+}: SendProgressUpdateParams) {
+  const bytesPerSecond = downloadedBytes !== undefined
+    ? computeBytesPerSecond({
+      videoId,
+      downloadedBytes
+    })
+    : undefined;  // Chrome offscreen documents throw on wxt/storage despite the manifest
   // permission, so we cannot write storage here in that context (see memory
   // `chrome148-offscreen-apis`). Route through the BG SW via
   // ForwardProgressUpdate, which writes storage on the SW side.
@@ -58,7 +112,16 @@ async function dispatchProgressUpdate({ videoId, progress, progressType, tabId }
       videoId,
       progress,
       progressType,
-      tabId
+      tabId,
+      ...(downloadedBytes !== undefined && {
+        downloadedBytes
+      }),
+      ...(totalBytes !== undefined && {
+        totalBytes
+      }),
+      ...(bytesPerSecond !== undefined && {
+        bytesPerSecond
+      })
     });
     return;
   }
@@ -68,13 +131,22 @@ async function dispatchProgressUpdate({ videoId, progress, progressType, tabId }
   await writeProgressToStorage({
     videoId,
     progress,
-    progressType
+    progressType,
+    downloadedBytes,
+    totalBytes,
+    bytesPerSecond
   });
 
   await sendMessageToTab(MessageType.UpdateDownloadProgress, {
     videoId,
     progress,
-    progressType
+    progressType,
+    ...(downloadedBytes !== undefined && {
+      downloadedBytes
+    }),
+    ...(totalBytes !== undefined && {
+      totalBytes
+    })
   }, tabId);
 }
 

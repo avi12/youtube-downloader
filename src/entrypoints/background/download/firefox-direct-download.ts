@@ -180,11 +180,17 @@ function createProgressReporter({
       extraExpectedBytesArray: [],
       captionCount
     });
+    const downloadedBytes = videoReceivedBytes + audioReceivedBytes;
+    const expectedBytes = videoExpectedBytes + audioExpectedBytes;
     sendProgressUpdate({
       videoId,
       progress,
       progressType: ProgressType.Video,
-      tabId
+      tabId,
+      downloadedBytes,
+      ...(expectedBytes > 0 && {
+        totalBytes: expectedBytes
+      })
     });
   }
 
