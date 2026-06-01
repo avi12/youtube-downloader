@@ -31,7 +31,7 @@
         {title}
         <span class="download-section-count">{videoIds.length}</span>
         {#if loadingBadge}
-          <span class="download-section-loading-badge" aria-label={loadingBadge}>{loadingBadge}</span>
+          <span class="download-section-loading-badge">{loadingBadge}</span>
         {/if}
       </h2>
       <button

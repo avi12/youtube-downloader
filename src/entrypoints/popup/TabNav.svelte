@@ -91,7 +91,7 @@
       {/if}
       {tab.label}
       {#if tab.badge !== undefined && tab.badge > 0}
-        <span class="badge" aria-label="{tab.badge} active">{tab.badge}</span>
+        <span class="badge">{tab.badge}</span>
       {/if}
     </button>
   {/each}
