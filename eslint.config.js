@@ -192,7 +192,8 @@ const tsStyleRules = {
       message: "Do not use Reflect. Use direct property access instead."
     }
   ],
-  "@typescript-eslint/no-floating-promises": "error"
+  "@typescript-eslint/no-floating-promises": "error",
+  "@typescript-eslint/no-unused-vars": ["error", { ignoreRestSiblings: true }]
 };
 
 const sharedPlugins = {

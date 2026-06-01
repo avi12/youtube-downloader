@@ -36,7 +36,8 @@
     "typescript/no-unused-vars": ["error", {
       "varsIgnorePattern": "^_",
       "argsIgnorePattern": "^_",
-      "caughtErrorsIgnorePattern": "^_"
+      "caughtErrorsIgnorePattern": "^_",
+      "ignoreRestSiblings": true
     }],
     "typescript/consistent-type-assertions": ["error", { "assertionStyle": "never" }],
     "import/first": "error"

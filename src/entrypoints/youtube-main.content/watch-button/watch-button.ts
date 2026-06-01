@@ -83,7 +83,7 @@ export async function injectSegmentedDownloadButton(videoData: VideoData) {
 
   elDropdownContentSlot.id = panelContentId;
 
-  const { playerResponse: _pr, ...videoDataForPanel } = videoData;
+  const { playerResponse, ...videoDataForPanel } = videoData;
   void crossWorldMessenger.sendMessage(CrossWorldMessage.PanelContentReady, {
     contentId: panelContentId,
     videoDataJson: JSON.stringify(videoDataForPanel)

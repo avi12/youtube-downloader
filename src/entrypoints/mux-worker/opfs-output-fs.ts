@@ -82,7 +82,6 @@ function makeNodeOps(opfsFs: ReturnType<typeof makeOpfsFs>): EmscriptenNodeOps {
 
 function makeStreamOps(): EmscriptenStreamOps {
   return {
-    open(_stream) {},
     write(stream, buffer, offset, length, position) {
       const { node } = stream;
       const syncHandle = node.syncHandle!;
