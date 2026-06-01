@@ -541,10 +541,4 @@
     background: var(--surface-high);
     color: var(--fg-muted);
   }
-
-  @media (prefers-reduced-motion: reduce) {
-    .dl-action {
-      transition: none;
-    }
-  }
 </style>

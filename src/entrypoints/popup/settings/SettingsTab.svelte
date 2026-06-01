@@ -14,20 +14,14 @@
   const { options }: Props = $props();
 
   const SLIDE_DURATION = 200;
-  const prefersReducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
-  let isReducedMotion = $state(prefersReducedMotion.matches);
-  prefersReducedMotion.addEventListener("change", e => {
-    isReducedMotion = e.matches;
-  });
-  const effectiveSlideDuration = $derived(isReducedMotion ? 0 : SLIDE_DURATION);
 </script>
 
 <div class="settings-container">
-  <FormatSettings {options} slideDuration={effectiveSlideDuration} />
+  <FormatSettings {options} slideDuration={SLIDE_DURATION} />
   <DownloadTypeSettings {options} />
-  <VideoQualitySettings {options} slideDuration={effectiveSlideDuration} />
+  <VideoQualitySettings {options} slideDuration={SLIDE_DURATION} />
   <PlaylistSettings {options} />
-  <AudioSubtitleSettings {options} slideDuration={effectiveSlideDuration} />
+  <AudioSubtitleSettings {options} slideDuration={SLIDE_DURATION} />
   <CompletionSettings {options} />
 </div>
 

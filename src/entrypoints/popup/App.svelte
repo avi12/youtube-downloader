@@ -55,21 +55,15 @@
   const SLIDE_DURATION = 200;
   const PANEL_ORDER = [PopupPanel.Downloads, PopupPanel.Settings] as const;
   let slideDirection = $state(1);
-  const prefersReducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
-  let isReducedMotion = $state(prefersReducedMotion.matches);
-  prefersReducedMotion.addEventListener("change", e => {
-    isReducedMotion = e.matches;
-  });
-  const slideDurationEffective = $derived(isReducedMotion ? 0 : SLIDE_DURATION);
   const flyIn = $derived({
     x: slideDirection * 50,
-    duration: slideDurationEffective,
+    duration: SLIDE_DURATION,
     opacity: 0,
     easing: cubicOut
   });
   const flyOut = $derived({
     x: -slideDirection * 50,
-    duration: slideDurationEffective,
+    duration: SLIDE_DURATION,
     opacity: 0,
     easing: cubicOut
   });

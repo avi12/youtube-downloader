@@ -367,10 +367,4 @@
   .download-item {
     display: block;
   }
-
-  @media (prefers-reduced-motion: reduce) {
-    .cancel-all-button {
-      transition: none;
-    }
-  }
 </style>
