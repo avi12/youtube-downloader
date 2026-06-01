@@ -27,7 +27,8 @@
 </script>
 
 <SettingsGroup title="Download type">
-  <div class="radio-group" aria-label="Download type" role="radiogroup">
+  <fieldset class="radio-group">
+    <legend class="visually-hidden">Download type</legend>
     {#each downloadTypeOptions as { value, label } (value)}
       <label class="radio-item">
         <input
@@ -47,5 +48,5 @@
         </div>
       </label>
     {/each}
-  </div>
+  </fieldset>
 </SettingsGroup>

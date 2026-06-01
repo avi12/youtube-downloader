@@ -25,7 +25,8 @@
 </script>
 
 <SettingsGroup title="Video quality">
-  <div class="radio-group" aria-label="Video quality" role="radiogroup">
+  <fieldset class="radio-group">
+    <legend class="visually-hidden">Video quality</legend>
     {#each qualityModeOptions as { value, label } (value)}
       <label class="radio-item">
         <input
@@ -45,7 +46,7 @@
         </div>
       </label>
     {/each}
-  </div>
+  </fieldset>
   {#if options.videoQualityMode === VideoQualityMode.Custom}
     <div class="set-inset" transition:slide={{ duration: slideDuration }}>
       <label class="set-inset-label" for="custom-quality-select">Quality</label>

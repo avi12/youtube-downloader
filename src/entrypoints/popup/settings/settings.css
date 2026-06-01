@@ -143,7 +143,19 @@
 .radio-group {
   display: flex;
   flex-direction: column;
+  min-inline-size: auto;
+  margin: 0;
   padding: 4px;
+  border: none;
+}
+
+.visually-hidden {
+  position: absolute;
+  overflow: hidden;
+  width: 1px;
+  height: 1px;
+  clip-path: inset(50%);
+  white-space: nowrap;
 }
 
 .radio-item {
