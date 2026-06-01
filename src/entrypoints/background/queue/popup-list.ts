@@ -77,8 +77,7 @@ export async function enqueueToPopupList(
   if (type === DownloadType.VideoAndAudio) {
     const queue = await videoQueueItem.getValue();
     const isVideoQueued = queue.some(item => item.videoId === videoId);
-    const isNotQueued = !isVideoQueued;
-    if (isNotQueued) {
+    if (!isVideoQueued) {
       queue.push({
         videoId,
         filenameOutput
@@ -92,8 +91,7 @@ export async function enqueueToPopupList(
   const listItem = type === DownloadType.Audio ? musicListItem : videoOnlyListItem;
   const list = await listItem.getValue();
   const isVideoListed = list.includes(videoId);
-  const isNotListed = !isVideoListed;
-  if (isNotListed) {
+  if (!isVideoListed) {
     list.push(videoId);
     await listItem.setValue(list);
   }
