@@ -37,7 +37,8 @@
   }
 
   function handleDocumentClick(e: MouseEvent): void {
-    if (isMenuOpen && e.target instanceof Node && isOutsideMenu(e.target)) {
+    const isOutsideClickWhileOpen = isMenuOpen && e.target instanceof Node && isOutsideMenu(e.target);
+    if (isOutsideClickWhileOpen) {
       closeMenu();
     }
   }
