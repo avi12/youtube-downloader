@@ -165,7 +165,10 @@ export function registerDownloadHandlers() {
       filenameOutput: data.filenameOutput,
       quality: resolveQualityLabel(data),
       tabId: resolvedTabId,
-      sourceUrl
+      sourceUrl,
+      title: data.metadata?.title,
+      channel: data.metadata?.artist,
+      thumbnailUrl: data.metadata?.thumbnailUrl
     });
     void startBackgroundDownload({
       request: enrichedRequest,

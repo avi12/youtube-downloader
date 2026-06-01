@@ -16,9 +16,16 @@ type EnqueueToPopupListParams = {
   playlistId?: string;
   playlistTitle?: string;
   sourceUrl?: string;
+  title?: string;
+  channel?: string;
+  lengthSeconds?: number;
+  thumbnailUrl?: string;
 };
 export async function enqueueToPopupList(
-  { videoId, type, filenameOutput, quality, tabId, playlistId, playlistTitle, sourceUrl }: EnqueueToPopupListParams
+  {
+    videoId, type, filenameOutput, quality, tabId, playlistId, playlistTitle, sourceUrl,
+    title, channel, lengthSeconds, thumbnailUrl
+  }: EnqueueToPopupListParams
 ) {
   const details = await videoDetailsItem.getValue();
   details[videoId] = {
@@ -38,6 +45,18 @@ export async function enqueueToPopupList(
     }),
     ...(sourceUrl !== undefined && {
       sourceUrl
+    }),
+    ...(title !== undefined && {
+      title
+    }),
+    ...(channel !== undefined && {
+      channel
+    }),
+    ...(lengthSeconds !== undefined && {
+      lengthSeconds
+    }),
+    ...(thumbnailUrl !== undefined && {
+      thumbnailUrl
     })
   };
   await videoDetailsItem.setValue(details);

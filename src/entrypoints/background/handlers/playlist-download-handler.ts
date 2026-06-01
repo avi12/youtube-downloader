@@ -28,6 +28,9 @@ export function registerPlaylistDownloadHandler() {
         quality: resolveQualityLabel(item),
         tabId,
         sourceUrl,
+        title: item.metadata?.title,
+        channel: item.metadata?.artist,
+        thumbnailUrl: item.metadata?.thumbnailUrl,
         ...(data.isZipBundle && {
           playlistId: item.playlistId,
           playlistTitle: item.playlistTitle ?? data.playlistTitle
