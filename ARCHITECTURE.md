@@ -16,7 +16,6 @@ flowchart LR
 
     subgraph BG["Background"]
       SW["Chrome: service worker<br/>Firefox: event-page"]
-      DNR["DNR rule:<br/>rewrites Origin on<br/>googlevideo.com fetches"]
     end
 
     subgraph Off["Offscreen document"]
