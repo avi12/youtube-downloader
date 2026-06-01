@@ -2,7 +2,6 @@ import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import {
   audioContainers,
   buildFormatGroups,
-  flattenFormatGroups,
   getVideoFallbackCodec,
   requiresVideoReencode,
   splitFilenameAndExtension,
@@ -24,70 +23,69 @@ export function buildEstimatedTimeLabel({ sizeBytes, isSlow = false }: Estimated
   return seconds < 60 ? `~${seconds}s` : `~${Math.round(seconds / 60)} min`;
 }
 
-export function isAudioSourceEntry(entry: RecentDownloadEntry) {
+function isAudioSourceEntry(entry: RecentDownloadEntry) {
   return audioContainers.includes(entry.container) && !videoContainers.includes(entry.container);
 }
 
 type BuildAvailableTargetGroupsParams = {
   entry: RecentDownloadEntry;
 };
+function isVideoTargetWithMime(target: string, entry: RecentDownloadEntry, isAudioSource: boolean): boolean {
+  return !isAudioSource && videoContainers.includes(target) && Boolean(entry.videoMimeType);
+}
+
+function canReencodeTarget(target: string, videoMimeType: string): boolean {
+  return !requiresVideoReencode({
+    videoMimeType,
+    targetExtension: target
+  })
+    || Boolean(getVideoFallbackCodec(target));
+}
+
+function isTargetAllowed(target: string, entry: RecentDownloadEntry, isAudioSource: boolean): boolean {
+  if (target === entry.container) {
+    return false;
+  }
+
+  if (!isVideoTargetWithMime(target, entry, isAudioSource)) {
+    return true;
+  }
+
+  return canReencodeTarget(target, entry.videoMimeType!);
+}
+
+function buildSlowExtensions(entry: RecentDownloadEntry, isAudioSource: boolean): Set<string> {
+  if (isAudioSource || !entry.videoMimeType) {
+    return new Set();
+  }
+
+  return new Set(videoContainers.filter(target => requiresVideoReencode({
+    videoMimeType: entry.videoMimeType!,
+    targetExtension: target
+  })));
+}
+
 export function buildAvailableTargetGroups({ entry }: BuildAvailableTargetGroupsParams): FormatGroup[] {
   const isAudioSource = isAudioSourceEntry(entry);
   const baseAllowed = isAudioSource ? audioContainers : [...videoContainers, ...audioContainers];
-
-  const allowedExtensions = baseAllowed.filter(target => {
-    if (target === entry.container) {
-      return false;
-    }
-
-    const isVideoTarget = videoContainers.includes(target);
-    const needsReencodeCheck = !isAudioSource && isVideoTarget && entry.videoMimeType;
-    if (!needsReencodeCheck) {
-      return true;
-    }
-
-    const wouldReencode = requiresVideoReencode({
-      videoMimeType: entry.videoMimeType!,
-      targetExtension: target
-    });
-    if (!wouldReencode) {
-      return true;
-    }
-
-    // Re-encode is only possible when the target container declares an encoder.
-    return Boolean(getVideoFallbackCodec(target));
-  });
-
-  const slowExtensions = new Set(
-    !isAudioSource && entry.videoMimeType
-      ? videoContainers.filter(target => requiresVideoReencode({
-        videoMimeType: entry.videoMimeType!,
-        targetExtension: target
-      }))
-      : []
-  );
-
+  const allowedExtensions = baseAllowed.filter(target => isTargetAllowed(target, entry, isAudioSource));
+  const slowExtensions = buildSlowExtensions(entry, isAudioSource);
   const groups = buildFormatGroups({ allowedExtensions });
   const withSlow = groups.map(group => ({
     ...group,
-    items: group.items.map(item => slowExtensions.has(item.extension)
-      ? {
-        ...item,
-        isSlow: true
-      }
-      : item)
+    items: group.items.map(item => slowExtensions.has(item.extension) ? {
+      ...item,
+      isSlow: true
+    } : item)
   }));
-
   if (isAudioSource) {
     return withSlow;
   }
 
-  return withSlow.map(group => group.heading === "Audio"
-    ? {
-      ...group,
-      caption: "Extract audio as"
-    }
-    : group);
+  return withSlow.map(group => group.heading === "Audio" ? {
+    ...group,
+    caption: "Extract audio as"
+  } : group);
 }
 
 export function pickFirstSelectableTarget(groups: FormatGroup[]) {
@@ -110,10 +108,6 @@ export function findTargetItem(groups: FormatGroup[], extension: string): Format
   }
 
   return undefined;
-}
-
-export function flattenTargets(groups: FormatGroup[]) {
-  return flattenFormatGroups(groups).map(item => item.extension);
 }
 
 type SubmitTranscodeParams = {
