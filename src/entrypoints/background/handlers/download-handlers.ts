@@ -235,12 +235,13 @@ export function registerDownloadHandlers() {
 
   onMessage(MessageType.ForwardProgressUpdate, async ({ data }) => {
     const { tabId, ...progressData } = data;
+    const isComplete = progressData.progress >= 1 && progressData.progressType === ProgressType.FFmpeg;
     void mutateStorageItem({
       item: statusProgressItem,
       mutator(current) {
         current[progressData.videoId] = {
-          isDownloading: true,
-          isDone: false,
+          isDownloading: !isComplete,
+          isDone: isComplete,
           progress: progressData.progress,
           progressType: progressData.progressType
         };
