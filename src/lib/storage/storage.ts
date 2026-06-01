@@ -6,13 +6,22 @@ interface StorageItem<T> {
   setValue(value: T): Promise<void>;
 }
 
+const mutationLocks = new WeakMap<object, Promise<void>>();
+
 export async function mutateStorageItem<T>({ item, mutator }: {
   item: StorageItem<T>;
   mutator: (current: T) => void;
 }) {
-  const current = await item.getValue();
-  mutator(current);
-  await item.setValue(current);
+  const previousLock = mutationLocks.get(item) ?? Promise.resolve();
+  async function run() {
+    await previousLock;
+    const current = await item.getValue();
+    mutator(current);
+    await item.setValue(current);
+  }
+  const currentLock = run().catch(() => {});
+  mutationLocks.set(item, currentLock);
+  await currentLock;
 }
 
 export const videoQueueItem = storage.defineItem<{
