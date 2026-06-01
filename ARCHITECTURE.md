@@ -28,8 +28,8 @@ flowchart TB
     Branch -->|"Firefox"| FF["ANDROID_VR InnerTube call<br/>(BG-direct fast path,<br/>page-proxy fallback for visitorData)"]
 
     Worker --> SABR["1. SABR<br/>(googlevideo protobuf,<br/>5s/10s stall timer,<br/>DNR rewrites Origin)"]
-    SABR -->|"empty / stall"| CDN["2. CDN byte-range GET<br/>(resumable)"]
-    CDN -->|"empty / 403"| FB{"audio-only +<br/>resolvedAudioUrl?"}
+    SABR -->|"hand off partial bytes +<br/>byte offset"| CDN["2. CDN byte-range GET<br/>resumes at SABR's offset;<br/>transient errors (5xx, 429, net)<br/>retry from current offset"]
+    CDN -->|"both layers exhausted"| FB{"audio-only +<br/>resolvedAudioUrl?"}
     FB -->|"yes"| Direct["3. browser.downloads<br/>direct CDN URL<br/>(skips muxer)"]
     FB -->|"no"| Scrub["4. Scrub-capture iframe<br/>(hidden watch tab ytdl=1,<br/>SourceBuffer hook)"]
 
