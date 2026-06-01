@@ -66,8 +66,7 @@ export default defineContentScript({
   world: "MAIN",
   runAt: "document_start",
   main() {
-    sabrFetchBridge.onMessage("pageSabrFetch", async ({ data }) => {
-      const { url, method, bodyBase64, headers } = data;
+    sabrFetchBridge.onMessage("pageSabrFetch", async ({ data: { url, method, bodyBase64, headers } }) => {
       const rawBodyBytes = bodyBase64 ? base64ToUint8Array(bodyBase64) : null;
       const bodyBuffer = rawBodyBytes ? substituteBodyTokens(rawBodyBytes) : null;
 
