@@ -48,31 +48,33 @@ type SendProgressUpdateParams = {
   tabId: number;
 };
 export async function sendProgressUpdate({ videoId, progress, progressType, tabId }: SendProgressUpdateParams) {
-  // Storage is shared across all extension documents, so writing the entry
-  // here keeps the popup's `statusProgressItem.watch()` byte-precise without
-  // a separate message round-trip. Per-chunk races on get-modify-set are
-  // self-healing - the next chunk overwrites with the freshest value.
+  // Chrome offscreen documents throw on wxt/storage despite the manifest
+  // permission, so we cannot write storage here in that context (see memory
+  // `chrome148-offscreen-apis`). Route through the BG SW via
+  // ForwardProgressUpdate, which writes storage on the SW side.
+  if (!canSendToTabDirectly()) {
+    await sendMessage(MessageType.ForwardProgressUpdate, {
+      videoId,
+      progress,
+      progressType,
+      tabId
+    });
+    return;
+  }
+
+  // Direct paths (Chrome BG SW, Firefox BG document) have working storage,
+  // so write here and skip the BG round-trip.
   await writeProgressToStorage({
     videoId,
     progress,
     progressType
   });
 
-  if (canSendToTabDirectly()) {
-    await sendMessageToTab(MessageType.UpdateDownloadProgress, {
-      videoId,
-      progress,
-      progressType
-    }, tabId);
-    return;
-  }
-
-  await sendMessage(MessageType.ForwardProgressUpdate, {
+  await sendMessageToTab(MessageType.UpdateDownloadProgress, {
     videoId,
     progress,
-    progressType,
-    tabId
-  });
+    progressType
+  }, tabId);
 }
 
 type CreateProgressFetchParams = {
