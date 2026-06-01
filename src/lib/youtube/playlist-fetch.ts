@@ -197,7 +197,12 @@ export async function fetchPlaylistContents(playlistId: string): Promise<Playlis
     return null;
   }
 
-  const data: YtInitialDataPlaylist = JSON.parse(jsonText);
+  let data: YtInitialDataPlaylist;
+  try {
+    data = JSON.parse(jsonText);
+  } catch {
+    return null;
+  }
   const initialEntries = extractInitialPlaylistEntries(data);
   const initial = parseEntries(initialEntries);
   const videoIds = [...initial.videoIds];
