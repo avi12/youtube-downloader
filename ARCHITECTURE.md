@@ -8,7 +8,7 @@ The central constraint shaping everything: MV3 fragments execution across isolat
 
 ```mermaid
 flowchart TB
-    Click["User clicks Download<br/>(watch-button-click.ts)"]
+    Click(["**START**<br/>User clicks Download<br/>(watch-button-click.ts)"])
 
     subgraph Resolve["MAIN-world resolution (parallel)"]
       direction TB
@@ -42,8 +42,11 @@ flowchart TB
 
     Acc --> Mux["FFmpeg WASM mux worker<br/>(video + audio tracks +<br/>VTT subtitles + cover art +<br/>ID3 metadata)"]
     Mux --> Blob["Output blob"]
-    Blob --> DL["browser.downloads.download"]
+    Blob --> DL(["**END**<br/>File saved via<br/>browser.downloads.download"])
     Direct --> DL
+
+    classDef startEnd fill:#e8f5e9,stroke:#2e7d32,stroke-width:3px,color:#1b5e20
+    class Click,DL startEnd
 ```
 
 Chrome and Firefox diverge only at `isFirefoxRuntime?`. Everything that runs in MAIN context before the dispatch (auth, itags, captions) and everything after the chunks reach the accumulator (muxing, blob creation, `browser.downloads`) is shared code. The two sequence diagrams further down zoom into the Chrome 4-layer fallback chain and the Firefox page-proxy hand-off.
