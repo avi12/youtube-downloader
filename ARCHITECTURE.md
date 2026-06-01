@@ -97,14 +97,13 @@ These three sections are the parts of the system that are most non-obvious and m
 
 ```mermaid
 sequenceDiagram
+    actor Tab as ▶ Watch tab
     participant W as Download-worker iframe
     participant CDN as YouTube CDN
     participant BG as Background
-    participant DL as browser.downloads
+    actor DL as ■ browser.downloads
 
-    rect rgb(232, 245, 233)
-      Note over W: ▶ START: DownloadRequest received
-    end
+    Tab->>W: click Download<br/>(DownloadRequest)
     W->>CDN: 1. SABR (protobuf via googlevideo)
     Note over W,CDN: stall timer aborts if no bytes in 5s<br/>or progress stalls for 10s
     CDN--xW: empty / stalled (partial bytes kept)
@@ -119,9 +118,7 @@ sequenceDiagram
       Note right of BG: SourceBuffer hook siphons segments<br/>as YouTube's player decodes them
       BG->>DL: muxed blob via accumulator + FFmpeg
     end
-    rect rgb(232, 245, 233)
-      Note over DL: ■ END: file saved
-    end
+    DL-->>Tab: file saved to disk
 ```
 
 The Chrome path walks four layers, each only invoked when the one above returns no usable bytes.
