@@ -3,6 +3,7 @@
   import SettingsGroup from "./SettingsGroup.svelte";
   import { setOption } from "@/lib/storage/storage";
   import { DownloadType } from "@/types";
+
   const { options }: SettingsProps = $props();
 
   const downloadTypeOptions = [
@@ -26,11 +27,12 @@
 </script>
 
 <SettingsGroup title="Download type">
-  {#each downloadTypeOptions as { value, label } (value)}
-    <div class="settings-row">
-      <label class="settings-label settings-radio-label">
+  <div class="radio-group" aria-label="Download type" role="radiogroup">
+    {#each downloadTypeOptions as { value, label } (value)}
+      <label class="radio-item">
         <input
           name="download-type"
+          class="radio-input-hidden"
           checked={options.defaultDownloadType === value}
           onchange={() => void setOption({
             key: "defaultDownloadType",
@@ -39,8 +41,11 @@
           type="radio"
           {value}
         />
-        {label}
+        <div class="radio-dot"></div>
+        <div class="radio-txt">
+          <span class="radio-label">{label}</span>
+        </div>
       </label>
-    </div>
-  {/each}
+    {/each}
+  </div>
 </SettingsGroup>

@@ -30,6 +30,6 @@
   .settings-container {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 4px;
   }
 </style>

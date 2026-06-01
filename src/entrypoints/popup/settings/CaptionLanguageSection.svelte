@@ -29,13 +29,14 @@
   ] as const;
 </script>
 
-<fieldset class="settings-format-section">
-  <legend class="settings-sub-legend">Closed captions language</legend>
-  {#each captionLanguageModeOptions as { value, label, description } (value)}
-    <div class="settings-row">
-      <label class="settings-label settings-radio-label">
+<fieldset class="set-section-fieldset">
+  <legend class="radio-group-legend">Closed captions language</legend>
+  <div class="radio-group" role="radiogroup">
+    {#each captionLanguageModeOptions as { value, label, description } (value)}
+      <label class="radio-item">
         <input
           name="caption-language-mode"
+          class="radio-input-hidden"
           checked={options.captionLanguageMode === value}
           onchange={() => void setOption({
             key: "captionLanguageMode",
@@ -44,11 +45,12 @@
           type="radio"
           {value}
         />
-        <span>
-          {label}
-          <span class="settings-option-description">{description}</span>
-        </span>
+        <div class="radio-dot"></div>
+        <div class="radio-txt">
+          <span class="radio-label">{label}</span>
+          <span class="radio-desc">{description}</span>
+        </div>
       </label>
-    </div>
-  {/each}
+    {/each}
+  </div>
 </fieldset>

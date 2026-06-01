@@ -36,6 +36,9 @@
   function resolveOutputMode(value: string): PlaylistOutputMode {
     return outputModeOptions.find(option => option.value === value)?.value ?? PlaylistOutputMode.Individual;
   }
+
+  const SCROLL_ICON_PATH = "M480-240 280-400l57-56 143 114 143-114 57 56-200 160Zm0-160L280-560l57-56 143 114"
+    + " 143-114 57 56-200 160Zm0-160L280-720l200-160 200 160-200 160Z";
 </script>
 
 <SettingsGroup title="Playlist">
@@ -69,15 +72,22 @@
     options={outputModeOptions}
     selected={options.playlistAudioOutputMode}
   />
-  <div class="settings-format-section">
-    <label class="settings-row">
-      <span class="settings-label">Scroll to each video while downloading</span>
-      <span class="settings-switch" aria-label="Scroll to each video while downloading">
+  <label class="set-item set-item-label">
+    <div class="set-lead">
+      <svg aria-hidden="true" fill="currentColor" height="20" viewBox="0 -960 960 960" width="20">
+        <path d={SCROLL_ICON_PATH} />
+      </svg>
+    </div>
+    <div class="set-txt">
+      <span class="set-label">Scroll to each video while downloading</span>
+    </div>
+    <div class="set-trail">
+      <span class="set-switch">
         <input
+          class="set-switch-input"
           checked={options.isPlaylistScrollSyncEnabled}
           onchange={e => {
-            const isInputElement = e.target instanceof HTMLInputElement;
-            if (!isInputElement) {
+            if (!(e.target instanceof HTMLInputElement)) {
               return;
             }
 
@@ -89,10 +99,8 @@
           role="switch"
           type="checkbox"
         />
-        <span class="settings-switch-track">
-          <span class="settings-switch-thumb"></span>
-        </span>
+        <span class="set-switch-track"></span>
       </span>
-    </label>
-  </div>
+    </div>
+  </label>
 </SettingsGroup>

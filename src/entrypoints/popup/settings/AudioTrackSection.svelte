@@ -26,13 +26,14 @@
   ] as const;
 </script>
 
-<fieldset class="settings-format-section">
-  <legend class="settings-sub-legend">Audio track language</legend>
-  {#each languageModeOptions as { value, label, description } (value)}
-    <div class="settings-row">
-      <label class="settings-label settings-radio-label">
+<fieldset class="set-section-fieldset">
+  <legend class="radio-group-legend">Audio track language</legend>
+  <div class="radio-group" role="radiogroup">
+    {#each languageModeOptions as { value, label, description } (value)}
+      <label class="radio-item">
         <input
           name="language-mode"
+          class="radio-input-hidden"
           checked={options.audioTrackLanguageMode === value}
           onchange={() => void setOption({
             key: "audioTrackLanguageMode",
@@ -41,38 +42,36 @@
           type="radio"
           {value}
         />
-        <span>
-          {label}
-          <span class="settings-option-description">{description}</span>
-        </span>
+        <div class="radio-dot"></div>
+        <div class="radio-txt">
+          <span class="radio-label">{label}</span>
+          <span class="radio-desc">{description}</span>
+        </div>
       </label>
-    </div>
-    {@const isCustomMode = value === AudioTrackLanguageMode.Custom}
-    {@const isCustomLanguageActive = isCustomMode && options.audioTrackLanguageMode === AudioTrackLanguageMode.Custom}
-    {#if isCustomLanguageActive}
-      <div class="settings-sub-row" transition:slide={{ duration: slideDuration }}>
-        <label class="settings-label" for="custom-language-select">Language</label>
-        <select
-          id="custom-language-select"
-          class="settings-select"
-          onchange={e => {
-            const isSelectElement = e.target instanceof HTMLSelectElement;
-            if (!isSelectElement) {
-              return;
-            }
+    {/each}
+  </div>
+  {#if options.audioTrackLanguageMode === AudioTrackLanguageMode.Custom}
+    <div class="set-inset" transition:slide={{ duration: slideDuration }}>
+      <label class="set-inset-label" for="custom-language-select">Language</label>
+      <select
+        id="custom-language-select"
+        class="set-select"
+        onchange={e => {
+          if (!(e.target instanceof HTMLSelectElement)) {
+            return;
+          }
 
-            void setOption({
-              key: "customLanguage",
-              value: e.target.value
-            });
-          }}
-          value={options.customLanguage}
-        >
-          {#each LANGUAGES as [name, code] (code)}
-            <option selected={options.customLanguage === code} value={code}>{name}</option>
-          {/each}
-        </select>
-      </div>
-    {/if}
-  {/each}
+          void setOption({
+            key: "customLanguage",
+            value: e.target.value
+          });
+        }}
+        value={options.customLanguage}
+      >
+        {#each LANGUAGES as [name, code] (code)}
+          <option selected={options.customLanguage === code} value={code}>{name}</option>
+        {/each}
+      </select>
+    </div>
+  {/if}
 </fieldset>

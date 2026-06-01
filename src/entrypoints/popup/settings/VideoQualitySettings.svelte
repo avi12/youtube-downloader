@@ -25,11 +25,12 @@
 </script>
 
 <SettingsGroup title="Video quality">
-  {#each qualityModeOptions as { value, label } (value)}
-    <div class="settings-row">
-      <label class="settings-label settings-radio-label">
+  <div class="radio-group" aria-label="Video quality" role="radiogroup">
+    {#each qualityModeOptions as { value, label } (value)}
+      <label class="radio-item">
         <input
           name="quality-mode"
+          class="radio-input-hidden"
           checked={options.videoQualityMode === value}
           onchange={() => void setOption({
             key: "videoQualityMode",
@@ -38,34 +39,34 @@
           type="radio"
           {value}
         />
-        {label}
+        <div class="radio-dot"></div>
+        <div class="radio-txt">
+          <span class="radio-label">{label}</span>
+        </div>
       </label>
-    </div>
-    {@const isCustomMode = value === VideoQualityMode.Custom}
-    {@const isCustomQualityActive = isCustomMode && options.videoQualityMode === VideoQualityMode.Custom}
-    {#if isCustomQualityActive}
-      <div class="settings-sub-row" transition:slide={{ duration: slideDuration }}>
-        <label class="settings-label" for="custom-quality-select">Quality</label>
-        <select
-          id="custom-quality-select"
-          class="settings-select"
-          onchange={e => {
-            const isSelectElement = e.target instanceof HTMLSelectElement;
-            if (!isSelectElement) {
-              return;
-            }
+    {/each}
+  </div>
+  {#if options.videoQualityMode === VideoQualityMode.Custom}
+    <div class="set-inset" transition:slide={{ duration: slideDuration }}>
+      <label class="set-inset-label" for="custom-quality-select">Quality</label>
+      <select
+        id="custom-quality-select"
+        class="set-select"
+        onchange={e => {
+          if (!(e.target instanceof HTMLSelectElement)) {
+            return;
+          }
 
-            void setOption({
-              key: "videoQuality",
-              value: Number(e.target.value)
-            });
-          }}
-        >
-          {#each VIDEO_QUALITIES as quality (quality)}
-            <option selected={quality === options.videoQuality} value={quality}>{quality}p</option>
-          {/each}
-        </select>
-      </div>
-    {/if}
-  {/each}
+          void setOption({
+            key: "videoQuality",
+            value: Number(e.target.value)
+          });
+        }}
+      >
+        {#each VIDEO_QUALITIES as quality (quality)}
+          <option selected={quality === options.videoQuality} value={quality}>{quality}p</option>
+        {/each}
+      </select>
+    </div>
+  {/if}
 </SettingsGroup>

@@ -12,20 +12,24 @@
   const { legend, name, options, selected, onchange }: Props = $props();
 </script>
 
-<fieldset class="settings-format-section">
-  <legend class="settings-sub-legend">{legend}</legend>
-  {#each options as { value, label } (value)}
-    <div class="settings-row">
-      <label class="settings-label settings-radio-label">
+<fieldset class="set-section-fieldset">
+  <legend class="radio-group-legend">{legend}</legend>
+  <div class="radio-group">
+    {#each options as { value, label } (value)}
+      <label class="radio-item">
         <input
           {name}
+          class="radio-input-hidden"
           checked={selected === value}
           onchange={() => onchange(value)}
           type="radio"
           {value}
         />
-        {label}
+        <div class="radio-dot"></div>
+        <div class="radio-txt">
+          <span class="radio-label">{label}</span>
+        </div>
       </label>
-    </div>
-  {/each}
+    {/each}
+  </div>
 </fieldset>
