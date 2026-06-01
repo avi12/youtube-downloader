@@ -34,7 +34,9 @@ type BuildFormatGroupsParams = {
  * inherited from `videoContainers`/`audioContainers` in mime-types.ts, which
  * is ranked highest-quality / most-relevant first.
  */
-export function buildFormatGroups({ allowedExtensions, excludedExtensions }: BuildFormatGroupsParams = {}): FormatGroup[] {
+export function buildFormatGroups(
+  { allowedExtensions, excludedExtensions }: BuildFormatGroupsParams = {}
+): FormatGroup[] {
   const allowed = allowedExtensions ? new Set(allowedExtensions) : null;
   const excluded = excludedExtensions ? new Set(excludedExtensions) : null;
   function toItem(extension: string, group: FormatGroupHeading): FormatItem {
