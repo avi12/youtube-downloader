@@ -1,5 +1,5 @@
 <script lang="ts">
-  import ExpandVertical from "../icons/ExpandVertical.svelte";
+  import expandVerticalIcon from "../icons/expand-vertical.svg?raw";
   import PlaylistRadioGroup from "./PlaylistRadioGroup.svelte";
   import type { SettingsProps } from "./settings-types";
   import SettingsGroup from "./SettingsGroup.svelte";
@@ -72,7 +72,7 @@
   />
   <label class="set-item set-item-label">
     <div class="set-lead">
-      <ExpandVertical size={20} />
+      {@html expandVerticalIcon}
     </div>
     <div class="set-txt">
       <span class="set-label">Scroll to each video while downloading</span>

@@ -1,7 +1,7 @@
 <script lang="ts">
-  import ChangeFormat from "../icons/ChangeFormat.svelte";
+  import changeFormatIcon from "../icons/change-format.svg?raw";
   import Folder from "../icons/Folder.svelte";
-  import OpenInNew from "../icons/OpenInNew.svelte";
+  import openInNewIcon from "../icons/open-in-new.svg?raw";
   import type { RecentDownloadEntry } from "@/types";
   import { browser } from "#imports";
 
@@ -134,7 +134,7 @@
         onclick={openInNewTab}
         type="button"
       >
-        <OpenInNew size={18} />
+        {@html openInNewIcon}
       </button>
       <button
         class="recent-action-btn"
@@ -144,7 +144,7 @@
         onclick={onChangeFormat}
         type="button"
       >
-        <ChangeFormat size={18} />
+        {@html changeFormatIcon}
       </button>
     </div>
   </div>

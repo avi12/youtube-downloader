@@ -1,6 +1,6 @@
 <script lang="ts">
   import WavyProgress from "../components/WavyProgress.svelte";
-  import Close from "../icons/Close.svelte";
+  import closeIcon from "../icons/close.svg?raw";
 
   interface Props {
     filename: string;
@@ -57,7 +57,7 @@
       data-tooltip-align="end"
       onclick={oncancel}
     >
-      <Close size={18} />
+      {@html closeIcon}
     </button>
   </div>
 

@@ -1,7 +1,7 @@
 <script lang="ts">
-  import Bell from "../icons/Bell.svelte";
+  import bellIcon from "../icons/bell.svg?raw";
   import Folder from "../icons/Folder.svelte";
-  import PlayArrow from "../icons/PlayArrow.svelte";
+  import playArrowIcon from "../icons/play-arrow.svg?raw";
   import type { SettingsProps } from "./settings-types";
   import SettingsGroup from "./SettingsGroup.svelte";
   import { setOption } from "@/lib/storage/storage";
@@ -12,7 +12,7 @@
 <SettingsGroup title="When download completes">
   <label class="set-item set-item-label">
     <div class="set-lead accent">
-      <Bell size={20} />
+      {@html bellIcon}
     </div>
     <div class="set-txt">
       <span class="set-label">Notify when window is idle</span>
@@ -73,7 +73,7 @@
 <SettingsGroup title="Integration">
   <label class="set-item set-item-label">
     <div class="set-lead accent">
-      <PlayArrow size={20} />
+      {@html playArrowIcon}
     </div>
     <div class="set-txt">
       <span class="set-label">Show native download button on watch page</span>

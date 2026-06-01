@@ -1,5 +1,5 @@
 <script lang="ts">
-  import MoreActions from "../icons/MoreActions.svelte";
+  import moreActionsIcon from "../icons/more-actions.svg?raw";
   import RecentMenuItems from "./RecentMenuItems.svelte";
 
   interface Props {
@@ -75,7 +75,7 @@
     onclick={() => setMenuOpen(!isMenuOpen)}
     type="button"
   >
-    <MoreActions size={20} />
+    {@html moreActionsIcon}
   </button>
 
   {#if isMenuOpen}

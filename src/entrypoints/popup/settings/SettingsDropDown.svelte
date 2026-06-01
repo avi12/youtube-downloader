@@ -1,6 +1,6 @@
 <script lang="ts">
-  import Check from "../icons/Check.svelte";
-  import ChevronRight from "../icons/ChevronRight.svelte";
+  import checkIcon from "../icons/check.svg?raw";
+  import chevronRightIcon from "../icons/chevron-right.svg?raw";
   import type { Snippet } from "svelte";
   import { slide } from "svelte/transition";
 
@@ -115,7 +115,7 @@
   <div class="set-trail">
     <span class="set-value">{displayValue}</span>
     <span class="set-chevron" class:set-chevron--open={isOpen}>
-      <ChevronRight size={18} />
+      {@html chevronRightIcon}
     </span>
   </div>
 </button>
@@ -139,7 +139,7 @@
           {/if}
         </div>
         {#if currentValue === item.value}
-          <Check size={18} />
+          {@html checkIcon}
         {/if}
       </button>
     {/each}

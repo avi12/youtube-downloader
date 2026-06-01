@@ -1,7 +1,7 @@
 <script lang="ts">
-  import AiCaptions from "../icons/AiCaptions.svelte";
-  import AudioVolume from "../icons/AudioVolume.svelte";
-  import Captions from "../icons/Captions.svelte";
+  import aiCaptionsIcon from "../icons/ai-captions.svg?raw";
+  import audioVolumeIcon from "../icons/audio-volume.svg?raw";
+  import captionsIcon from "../icons/captions.svg?raw";
   import AudioTrackSection from "./AudioTrackSection.svelte";
   import CaptionLanguageSection from "./CaptionLanguageSection.svelte";
   import type { SlidingSettingsProps } from "./settings-types";
@@ -14,7 +14,7 @@
 <SettingsGroup title="Audio &amp; subtitles">
   <label class="set-item set-item-label">
     <div class="set-lead accent">
-      <Captions size={20} />
+      {@html captionsIcon}
     </div>
     <div class="set-txt">
       <span class="set-label">Download additional audio tracks and captions</span>
@@ -43,7 +43,7 @@
   </label>
   <label class="set-item set-item-label">
     <div class="set-lead">
-      <AudioVolume size={20} />
+      {@html audioVolumeIcon}
     </div>
     <div class="set-txt">
       <span class="set-label">Include auto-dubbed audio tracks</span>
@@ -72,7 +72,7 @@
   </label>
   <label class="set-item set-item-label">
     <div class="set-lead">
-      <AiCaptions size={20} />
+      {@html aiCaptionsIcon}
     </div>
     <div class="set-txt">
       <span class="set-label">Include AI-generated captions</span>

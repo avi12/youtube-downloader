@@ -1,6 +1,6 @@
 <script lang="ts">
-  import Download from "../icons/Download.svelte";
-  import Settings from "../icons/Settings.svelte";
+  import downloadIcon from "../icons/download.svg?raw";
+  import settingsIcon from "../icons/settings.svg?raw";
   import RecentDownloadsSection from "../recent/RecentDownloadsSection.svelte";
   import ActiveDownloadsSections from "./ActiveDownloadsSections.svelte";
   import { deleteRecentDownload } from "@/lib/storage/recent-downloads-db";
@@ -57,12 +57,12 @@
 {#if !isAnyContentAvailable}
   <section class="empty-state">
     <div class="empty-state-icon-box">
-      <Download size={40} />
+      {@html downloadIcon}
     </div>
     <h3 class="empty-state-heading">No downloads yet</h3>
     <p class="empty-state-text">Anything you grab shows up here. Open a video, channel, or playlist and tap the toolbar button to start</p>
     <div class="empty-state-hint">
-      <Settings size={14} />
+      {@html settingsIcon}
       Tip: pick formats, quality &amp; languages in Settings
     </div>
   </section>

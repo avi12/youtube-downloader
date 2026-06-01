@@ -1,6 +1,6 @@
 <script lang="ts">
-  import Audio from "../icons/Audio.svelte";
-  import Video from "../icons/Video.svelte";
+  import audioIcon from "../icons/audio.svg?raw";
+  import videoIcon from "../icons/video.svg?raw";
   import type { SlidingSettingsProps } from "./settings-types";
   import SettingsDropDown from "./SettingsDropDown.svelte";
   import SettingsGroup from "./SettingsGroup.svelte";
@@ -80,7 +80,7 @@
     {slideDuration}
   >
     {#snippet icon()}
-      <Video size={20} />
+      {@html videoIcon}
     {/snippet}
   </SettingsDropDown>
 
@@ -94,7 +94,7 @@
     subtitle="Used for audio-only downloads"
   >
     {#snippet icon()}
-      <Audio size={20} />
+      {@html audioIcon}
     {/snippet}
   </SettingsDropDown>
 </SettingsGroup>

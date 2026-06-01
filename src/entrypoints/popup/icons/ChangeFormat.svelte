@@ -1,9 +1,0 @@
-<script lang="ts">
-  interface Props { size?: number }
-  const { size = 18 }: Props = $props();
-  const PATH = "M280-120q-100 0-170-70T40-360q0-92 56-162t144-87l-40-41 56-56 160 160-160 160-56-57 54-54q-56 10-95 52t-39 85q0 66 47 113t113 47q66 0 113-47t47-113v-40h80v40q0 100-70 170T280-120Zm200-280L320-560l160-160 56 57-54 54q57 9 96.5 51.5T619-500h-81q-8-35-35.5-57.5T440-580l40 41-56 55Zm280-40q0-66-47-113t-113-47v-80q100 0 170 70t70 170h-80Z";
-</script>
-
-<svg aria-hidden="true" fill="currentColor" height={size} viewBox="0 -960 960 960" width={size} xmlns="http://www.w3.org/2000/svg">
-  <path d={PATH} />
-</svg>
