@@ -6,8 +6,8 @@ export default defineContentScript({
   runAt: "document_start",
   allFrames: true,
   main() {
-    const isNotYtdlIframe = self === top || !location.search.includes(YTDL_IFRAME_QUERY_PARAM);
-    if (isNotYtdlIframe) {
+    const isYtdlIframe = self !== top && location.search.includes(YTDL_IFRAME_QUERY_PARAM);
+    if (!isYtdlIframe) {
       return;
     }
 
