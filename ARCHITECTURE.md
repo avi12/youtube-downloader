@@ -102,11 +102,14 @@ sequenceDiagram
     participant BG as Background
     participant DL as browser.downloads
 
+    rect rgb(232, 245, 233)
+      Note over W: ▶ START: DownloadRequest received
+    end
     W->>CDN: 1. SABR (protobuf via googlevideo)
     Note over W,CDN: stall timer aborts if no bytes in 5s<br/>or progress stalls for 10s
-    CDN--xW: empty / stalled
-    W->>CDN: 2. CDN byte-range GET
-    CDN--xW: empty / 403
+    CDN--xW: empty / stalled (partial bytes kept)
+    W->>CDN: 2. CDN byte-range GET (resumes at SABR's offset)
+    CDN--xW: both layers exhausted
     alt audio-only with resolvedAudioUrl
       W-)BG: worker-needs-direct-url
       BG->>DL: 3. browser.downloads.download(audioUrl)
@@ -114,6 +117,10 @@ sequenceDiagram
       W-)BG: worker-needs-fallback
       BG->>BG: 4. open hidden watch-page iframe (ytdl=1)
       Note right of BG: SourceBuffer hook siphons segments<br/>as YouTube's player decodes them
+      BG->>DL: muxed blob via accumulator + FFmpeg
+    end
+    rect rgb(232, 245, 233)
+      Note over DL: ■ END: file saved
     end
 ```
 
