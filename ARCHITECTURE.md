@@ -48,7 +48,7 @@ Each top-level directory under `src/` owns one layer of the relay.
 | `src/entrypoints/mux-worker/` | Web Worker that drives `@ffmpeg/core` to mux video + audio + subtitles + cover art. |
 | `src/entrypoints/popup/` | Browser-action popup. Download history (IndexedDB + blob store), live progress, format-change dialog, settings. |
 | `src/lib/youtube/` | YouTube-specific knowledge: Innertube schemas, SABR protocol, BotGuard / PO token, format helpers, signature decryptor. |
-| `src/lib/messaging/` | Typed buses: cross-world (MAIN <-> ISOLATED via `CustomEvent`), runtime (content <-> BG), offscreen (BG <-> offscreen via `MessagePort`), window (page <-> extension via `window.postMessage`). |
+| `src/lib/messaging/` | Typed buses: cross-world (MAIN ↔ ISOLATED via `CustomEvent`), runtime (content ↔ BG), offscreen (BG ↔ offscreen via `MessagePort`), window (page ↔ extension via `window.postMessage`). |
 | `src/lib/download-pipeline/` | Browser-agnostic post-fetch pipeline: stream processor, mux job builder, FFmpeg instance, blob download, recent-downloads store. |
 | `src/lib/storage/` | `wxt/storage`-backed items with per-item mutation locks. |
 | `src/lib/ui/` | Svelte 5 stores and reactive helpers shared across content scripts and popup. |
