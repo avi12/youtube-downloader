@@ -4,7 +4,7 @@
   import ChangeFormatDialog from "./format-dialog/ChangeFormatDialog.svelte";
   import SettingsTab from "./settings/SettingsTab.svelte";
   import TabNav from "./shared/TabNav.svelte";
-  import type { DownloadProgressEntry, Options, VideoQueueItem } from "@/types";
+  import type { DownloadProgressEntry, Options, VideoDetail, VideoQueueItem } from "@/types";
   import { untrack } from "svelte";
   import { cubicOut } from "svelte/easing";
   import { fly } from "svelte/transition";
@@ -14,12 +14,10 @@
     initialVideoQueue: VideoQueueItem[];
     initialMusicList: string[];
     initialVideoOnlyList: string[];
-    initialVideoDetails: Record<string, {
-      filenameOutput: string;
-      quality?: string;
-    }>;
+    initialVideoDetails: Record<string, VideoDetail>;
     initialStatusProgress: Record<string, DownloadProgressEntry>;
     initialCurrentTabId?: number;
+    initialCurrentSourceUrl?: string;
     initialOptions: Options;
   }
 
@@ -31,6 +29,7 @@
     initialVideoDetails,
     initialStatusProgress,
     initialCurrentTabId,
+    initialCurrentSourceUrl,
     initialOptions
   }: Props = $props();
 
@@ -48,6 +47,7 @@
       initialVideoDetails,
       initialStatusProgress,
       initialCurrentTabId,
+      initialCurrentSourceUrl,
       initialOptions
     }))
   );
@@ -55,15 +55,21 @@
   const SLIDE_DURATION = 200;
   const PANEL_ORDER = [PopupPanel.Downloads, PopupPanel.Settings] as const;
   let slideDirection = $state(1);
+  const prefersReducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
+  let isReducedMotion = $state(prefersReducedMotion.matches);
+  prefersReducedMotion.addEventListener("change", e => {
+    isReducedMotion = e.matches;
+  });
+  const slideDurationEffective = $derived(isReducedMotion ? 0 : SLIDE_DURATION);
   const flyIn = $derived({
     x: slideDirection * 50,
-    duration: SLIDE_DURATION,
+    duration: slideDurationEffective,
     opacity: 0,
     easing: cubicOut
   });
   const flyOut = $derived({
     x: -slideDirection * 50,
-    duration: SLIDE_DURATION,
+    duration: slideDurationEffective,
     opacity: 0,
     easing: cubicOut
   });

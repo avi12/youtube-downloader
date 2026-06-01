@@ -122,4 +122,10 @@
     from{ transform: translateX(0); }
     to{ transform: translateX(-24px); }
   }
+
+  @media (prefers-reduced-motion: reduce) {
+    .prog-active {
+      animation: none;
+    }
+  }
 </style>
