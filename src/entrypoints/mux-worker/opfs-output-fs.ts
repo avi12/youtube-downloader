@@ -20,8 +20,8 @@ export async function cleanupOpfsOutput(videoId: string) {
 
 function asDir(node: EmscriptenFsNode): Record<string, EmscriptenFsNode> {
   const { contents } = node;
-  const isNotDirectory = !contents || contents instanceof Uint8Array;
-  if (isNotDirectory) {
+  const isDirectory = !!contents && !(contents instanceof Uint8Array);
+  if (!isDirectory) {
     throw new Error("Not a directory node");
   }
 
