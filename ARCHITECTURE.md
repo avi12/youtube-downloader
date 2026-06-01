@@ -12,10 +12,25 @@ flowchart TB
 
     subgraph Resolve["MAIN-world resolution (parallel)"]
       direction TB
-      Itags["Read itags +<br/>audio-track metadata<br/>from streamingData"]
       PO["PO Token<br/>(BotGuard interpreter +<br/>/api/jnn/v1/GenerateIT)"]
       Sig["Decipher signatureCipher<br/>(pattern-match player.js,<br/>replay swap/reverse/splice)"]
-      Captions["Fresh caption URLs<br/>(InnerTube /youtubei/v1/player)<br/>+ fetch VTT blobs"]
+      subgraph Tracks["Tracks (from streamingData)"]
+        direction TB
+        Itags["Pick video itag"]
+        Aprimary["Pick primary audio<br/>(language priority +<br/>container match)"]
+        Aextras["Collect extra audio tracks<br/>(dub languages, dedupe,<br/>cap 16, skip auto-dub)"]
+        Aresolve["Resolve CDN URLs in parallel<br/>(decipher signatures)"]
+        Itags --> Aresolve
+        Aprimary --> Aresolve
+        Aextras --> Aresolve
+      end
+      subgraph CaptionsBox["Captions (3-step pipeline)"]
+        direction TB
+        Cpick["1. Pick + order tracks<br/>(language preference)"]
+        Cfresh["2. Refresh URLs via<br/>POST /youtubei/v1/player"]
+        Cvtt["3. Fetch VTT bytes via<br/>hidden &lt;track&gt; element<br/>+ browser cue parser"]
+        Cpick --> Cfresh --> Cvtt
+      end
     end
 
     Click --> Resolve
@@ -54,10 +69,14 @@ flowchart TB
 | Diagram node | Code |
 | --- | --- |
 | User clicks Download | [`watch-button-click.ts:25`](src/entrypoints/youtube-main.content/watch-button/watch-button-click.ts) `buildClickHandler` |
-| Read itags + audio-track metadata | [`video-data.ts`](src/entrypoints/youtube-main.content/video/video-data.ts) `buildVideoMetadata` + [`download-formats.ts`](src/entrypoints/youtube-main.content/video/download-formats.ts) |
+| Pick video itag + audio tracks | [`download-formats.ts:75`](src/entrypoints/youtube-main.content/video/download-formats.ts) `selectFormats` + [`:15`](src/entrypoints/youtube-main.content/video/download-formats.ts) `getExtraAudioFormats` |
+| Pick primary audio (language + container) | [`select-audio-format.ts:32`](src/lib/youtube/select-audio-format.ts) `selectPreferredAudioFormat` |
+| Resolve CDN URLs (decipher signatures) | [`download-formats.ts:106`](src/entrypoints/youtube-main.content/video/download-formats.ts) `preResolveCdnUrls` -> [`stream-fetch.ts`](src/entrypoints/youtube-main.content/video/stream-fetch.ts) `resolveFormatUrl` |
 | PO token (BotGuard + GenerateIT) | [`po-token-generator.ts:32`](src/lib/youtube/po-token-generator.ts) `generatePoToken` (driving [`botguard-vm.ts`](src/lib/youtube/botguard-vm.ts)) |
 | Decipher signatureCipher | [`signature-decryptor.ts:61`](src/lib/youtube/signature-decryptor.ts) `decryptSignatureCipher` + [`signature-transforms.ts`](src/lib/youtube/signature-transforms.ts) |
-| Fresh caption URLs + VTT fetch | [`caption-urls.ts:47`](src/entrypoints/youtube-main.content/video/caption-urls.ts) `fetchFreshCaptionUrls` + [`caption-fetch.ts`](src/entrypoints/youtube-main.content/video/caption-fetch.ts) |
+| 1. Pick + order caption tracks | [`caption-urls.ts:20`](src/entrypoints/youtube-main.content/video/caption-urls.ts) `resolveOrderedCaptionTracks` + [`caption-helpers.ts:29`](src/lib/youtube/caption-helpers.ts) `orderCaptionsByPreference` |
+| 2. Refresh caption URLs via InnerTube | [`caption-urls.ts:47`](src/entrypoints/youtube-main.content/video/caption-urls.ts) `fetchFreshCaptionUrls` |
+| 3. Fetch VTT bytes via `<track>` | [`caption-fetch.ts:88`](src/entrypoints/youtube-main.content/video/caption-fetch.ts) `fetchCaptionWebVttData` |
 | Pack DownloadRequest | [`download-request-builder.ts:79`](src/entrypoints/youtube-main.content/video/download-request-builder.ts) `buildEnrichedRequest` |
 | Cross-world CustomEvent bus | [`cross-world-messenger.ts`](src/lib/messaging/cross-world-messenger.ts) `crossWorldMessenger` |
 | ISOLATED content runtime bridge | [`cross-world-download.ts:8`](src/entrypoints/youtube.content/handlers/cross-world-download.ts) `registerDownloadProgressHandlers` |
@@ -237,6 +256,68 @@ Updates are coalesced per `videoId` at 100 ms (constant [`PROGRESS_COALESCE_MS`]
 The ISOLATED content handler writes the `DownloadProgressEntry` into [`downloadProgressStore`](src/lib/ui/synced-stores.svelte.ts), a `createSyncedMap` whose `set()` dispatches a `CustomEvent` on `window`. `CustomEvent`s on `window` cross the MAIN/ISOLATED boundary inside the same document, so the watch button (MAIN world, Svelte 5 `$derived`) receives updates without any explicit bridge. The popup, which lives in a different document, reads the same shape from `chrome.storage.local` via `statusProgressItem`.
 
 Per-stage weighting: the 0–70 % slice divides evenly across every component being fetched (video, primary audio, each additional audio track, each caption); 70–100 % covers FFmpeg muxing. The weighting formula lives in [`computeWeightedProgress`](src/entrypoints/background/download/progress-stages.ts) and is shared across SABR, CDN, and the Firefox direct path so the ring layout is identical regardless of route. Captions ship pre-fetched inside the `DownloadRequest` so they count as instantly complete; the bar opens at `captionCount/totalStages`.
+
+### Audio track resolution
+
+YouTube videos can ship multi-language audio (an "original" track plus dubs in other languages, plus opt-in machine-translated "auto-dubs"). The extension exposes all of them in the panel and embeds whichever ones the user picks into a single output file as separate audio tracks.
+
+```mermaid
+flowchart LR
+  AF["streamingData.adaptiveFormats<br/>(every audio variant)"]
+  AF --> Primary["1. Pick primary track<br/>(language priority +<br/>container match)"]
+  Primary --> Extras["2. Collect extra tracks<br/>(rest of adaptiveFormats,<br/>dedupe by audioTrack.id,<br/>skip auto-dub, cap 16)"]
+  Extras --> Resolve["3. Resolve CDN URLs in parallel<br/>(primary + extras,<br/>decipher signatures)"]
+  Resolve --> Lang["4. Tag source language<br/>(audioTrack.id ->&nbsp;<br/>live audioTracks ->&nbsp;<br/>caption fallback)"]
+  Lang --> Pack["Into DownloadRequest"]
+```
+
+1. **Pick primary.** [`selectPreferredAudioFormat`](src/lib/youtube/select-audio-format.ts) walks a language priority chain depending on the user's `audioTrackLanguageMode` setting: `OriginalLanguage` mode prefers the track tagged `(original)` (resolved by [`findOriginalAudioFormat`](src/lib/youtube/audio-format-helpers.ts) via the `.4` track-id suffix or `audioIsDefault` flag), `Custom` mode prefers the user-chosen language code, and the default mode walks `locale -> navigator.language -> "en"`. When the chosen video format is WebM, the picker prefers a matching WebM audio variant so the muxer doesn't have to transcode.
+2. **Collect extras.** [`getExtraAudioFormats`](src/entrypoints/youtube-main.content/video/download-formats.ts) gathers the other audio tracks the user wants embedded as additional MKV streams. It dedupes by `audioTrack.id` (YouTube ships one variant per codec per language), skips `.10` auto-dub tracks unless the user opted into auto-dubbing, allows one untagged stream through (for videos that have a single anonymous track alongside tagged ones), and caps at 16.
+3. **Resolve CDN URLs.** [`preResolveCdnUrls`](src/entrypoints/youtube-main.content/video/download-formats.ts) fans out [`resolveFormatUrl`](src/entrypoints/youtube-main.content/video/stream-fetch.ts) calls in parallel for video + primary audio + every extra track. Each resolve runs the `signatureCipher` decoder ([`decryptSignatureCipher`](src/lib/youtube/signature-decryptor.ts)) if the URL is signature-gated.
+4. **Tag source language.** [`resolvePrimaryAudioLanguageCode`](src/entrypoints/youtube-main.content/video/download-request-builder.ts) labels the source language so FFmpeg can write a `language=` tag and VLC stops falling back to "[English]". It walks `audioTrack.id` -> the active stream from [`getCurrentVideoAudioLanguage`](src/lib/youtube/audio-format-helpers.ts) (the live `<video>.audioTracks` entry) -> the first non-translated caption track. The fallback chain matters for single-track uploads, which carry no `audioTrack.id` at all.
+
+**Where each step lives**
+
+| Step | Code |
+| --- | --- |
+| Pick primary by language + container | [`select-audio-format.ts:32`](src/lib/youtube/select-audio-format.ts) `selectPreferredAudioFormat` |
+| Find "original" track | [`audio-format-helpers.ts:86`](src/lib/youtube/audio-format-helpers.ts) `findOriginalAudioFormat` |
+| Pick video itag + dispatch to picker | [`download-formats.ts:75`](src/entrypoints/youtube-main.content/video/download-formats.ts) `selectFormats` |
+| Collect extra tracks (dedupe + cap) | [`download-formats.ts:15`](src/entrypoints/youtube-main.content/video/download-formats.ts) `getExtraAudioFormats` |
+| Resolve CDN URLs in parallel | [`download-formats.ts:106`](src/entrypoints/youtube-main.content/video/download-formats.ts) `preResolveCdnUrls` |
+| Per-format URL + signature decipher | [`stream-fetch.ts`](src/entrypoints/youtube-main.content/video/stream-fetch.ts) `resolveFormatUrl` -> [`signature-decryptor.ts:61`](src/lib/youtube/signature-decryptor.ts) `decryptSignatureCipher` |
+| Tag source language for FFmpeg | [`download-request-builder.ts:37`](src/entrypoints/youtube-main.content/video/download-request-builder.ts) `resolvePrimaryAudioLanguageCode` |
+| Live `<video>.audioTracks` probe | [`audio-format-helpers.ts:68`](src/lib/youtube/audio-format-helpers.ts) `getCurrentVideoAudioLanguage` |
+| Align audio container to output extension | [`select-audio-format.ts:120`](src/lib/youtube/select-audio-format.ts) `alignAudioFormatToExtension` |
+
+### Caption resolution
+
+Captions come from the same `playerResponse` payload as the streams, but they need two extra round-trips: one to refresh URLs (caption URLs expire fast), and one per track to actually grab VTT bytes (the browser's own cue parser is the simplest way to turn YouTube's caption blob into VTT text).
+
+```mermaid
+flowchart LR
+  PR["streamingData<br/>playerCaptionsTracklistRenderer"]
+  PR --> Order["1. Pick + order by language<br/>(setting-driven priority chain)"]
+  Order --> Fresh["2. Refresh URLs via<br/>POST /youtubei/v1/player<br/>(returns Map vssId -> baseUrl)"]
+  Fresh --> VTT["3. Fetch each track via<br/>hidden &lt;track&gt; element<br/>(fmt=vtt, tlang for translations)"]
+  VTT --> Inline["Encode base64 +<br/>inline into DownloadRequest"]
+```
+
+1. **Pick + order tracks.** [`resolveOrderedCaptionTracks`](src/entrypoints/youtube-main.content/video/caption-urls.ts) reads the user's `captionLanguageMode` setting, mirrors it to an `audioTrackLanguageMode` via [`resolveCaptionLanguageMode`](src/lib/youtube/caption-helpers.ts), and orders the full list with [`orderCaptionsByPreference`](src/lib/youtube/caption-helpers.ts). The selected track moves to the front; if the user wants extras enabled, all native (non-translated) tracks come along behind it. If the selection is a translated track, that translation rides alongside the native set.
+2. **Refresh URLs.** [`fetchFreshCaptionUrls`](src/entrypoints/youtube-main.content/video/caption-urls.ts) re-POSTs `/youtubei/v1/player` from the page context with the visitor data + InnerTube API key from `ytcfg`. The response carries fresh `baseUrl`s for every track; it returns a `Map<vssId, baseUrl>`. The original URLs from the in-page player response often expire before the download finishes, so this refresh is mandatory, not optional.
+3. **Fetch VTT bytes.** [`fetchCaptionWebVttData`](src/entrypoints/youtube-main.content/video/caption-fetch.ts) walks the ordered tracks. For each one it builds the final URL (`fmt=vtt`, plus `tlang=<code>` for translated tracks), appends a hidden `<track kind="metadata">` element to the YouTube `<video>` element, and waits for `load` to fire. Reading `elTrack.track.cues` gives parsed `VTTCue` objects which `cuesToWebVtt` serialises into a VTT string. The `<track>` route works for YouTube's caption variants where a plain `fetch()` would CORS-fail. Each track times out at 10 s. The VTT bytes are base64-encoded and inlined into the `DownloadRequest`, which is why captions count as "instantly complete" in the progress ring.
+
+**Where each step lives**
+
+| Step | Code |
+| --- | --- |
+| Pick + order tracks | [`caption-urls.ts:20`](src/entrypoints/youtube-main.content/video/caption-urls.ts) `resolveOrderedCaptionTracks` |
+| Mirror caption mode to audio mode | [`caption-helpers.ts:18`](src/lib/youtube/caption-helpers.ts) `resolveCaptionLanguageMode` |
+| Order by language priority | [`caption-helpers.ts:29`](src/lib/youtube/caption-helpers.ts) `orderCaptionsByPreference` |
+| Refresh URLs (InnerTube POST) | [`caption-urls.ts:47`](src/entrypoints/youtube-main.content/video/caption-urls.ts) `fetchFreshCaptionUrls` |
+| Fetch VTT bytes per track | [`caption-fetch.ts:88`](src/entrypoints/youtube-main.content/video/caption-fetch.ts) `fetchCaptionWebVttData` |
+| `<track>`-element extractor + cue parser | [`caption-fetch.ts:51`](src/entrypoints/youtube-main.content/video/caption-fetch.ts) `fetchWebVttViaTrackElement` + [`:37`](src/entrypoints/youtube-main.content/video/caption-fetch.ts) `cuesToWebVtt` |
+| Pre-fetch progress reporting | [`caption-fetch.ts:115`](src/entrypoints/youtube-main.content/video/caption-fetch.ts) (`ReportPageProgress` per track) |
 
 ## Cross-cutting concerns
 
