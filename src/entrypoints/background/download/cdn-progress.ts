@@ -36,7 +36,7 @@ export function createCdnProgressTracker({
       extraExpectedBytesArray,
       captionCount
     });
-    void sendProgressUpdate({
+    sendProgressUpdate({
       videoId,
       progress,
       progressType: ProgressType.Video,

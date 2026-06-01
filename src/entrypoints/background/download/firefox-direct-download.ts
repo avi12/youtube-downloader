@@ -180,7 +180,7 @@ function createProgressReporter({
       extraExpectedBytesArray: [],
       captionCount
     });
-    void sendProgressUpdate({
+    sendProgressUpdate({
       videoId,
       progress,
       progressType: ProgressType.Video,

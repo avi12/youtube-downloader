@@ -44,7 +44,7 @@ export function createProgressAccumulator({
       captionCount
     });
     onProgress?.();
-    void sendProgressUpdate({
+    sendProgressUpdate({
       videoId,
       progress,
       progressType: ProgressType.Video,

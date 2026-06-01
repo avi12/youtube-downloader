@@ -47,7 +47,8 @@ type SendProgressUpdateParams = {
   progressType: ProgressType;
   tabId: number;
 };
-export async function sendProgressUpdate({ videoId, progress, progressType, tabId }: SendProgressUpdateParams) {
+
+async function dispatchProgressUpdate({ videoId, progress, progressType, tabId }: SendProgressUpdateParams) {
   // Chrome offscreen documents throw on wxt/storage despite the manifest
   // permission, so we cannot write storage here in that context (see memory
   // `chrome148-offscreen-apis`). Route through the BG SW via
@@ -75,6 +76,34 @@ export async function sendProgressUpdate({ videoId, progress, progressType, tabI
     progress,
     progressType
   }, tabId);
+}
+
+const PROGRESS_COALESCE_MS = 100;
+const pendingProgressByVideoId = new Map<string, SendProgressUpdateParams>();
+const scheduledFlushByVideoId = new Map<string, ReturnType<typeof setTimeout>>();
+
+async function flushPendingProgress(videoId: string) {
+  scheduledFlushByVideoId.delete(videoId);
+  const pending = pendingProgressByVideoId.get(videoId);
+  if (!pending) {
+    return;
+  }
+
+  pendingProgressByVideoId.delete(videoId);
+  await dispatchProgressUpdate(pending);
+}
+
+export function sendProgressUpdate(params: SendProgressUpdateParams) {
+  pendingProgressByVideoId.set(params.videoId, params);
+  const isFlushScheduled = scheduledFlushByVideoId.has(params.videoId);
+  if (isFlushScheduled) {
+    return;
+  }
+
+  const timeoutId = setTimeout(() => {
+    void flushPendingProgress(params.videoId);
+  }, PROGRESS_COALESCE_MS);
+  scheduledFlushByVideoId.set(params.videoId, timeoutId);
 }
 
 type CreateProgressFetchParams = {
