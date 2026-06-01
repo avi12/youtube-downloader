@@ -324,7 +324,7 @@ flowchart LR
 Output files carry as much rich metadata as YouTube exposes: title, artist, album, album artist, genres, publish date, and an embedded thumbnail. Two distinct mux paths consume this metadata differently — audio-only files get global ID3-style tags + a cover-art image, video files get per-track titles + language tags but no globals.
 
 ```mermaid
-flowchart LR
+flowchart TB
   Page["MAIN-world<br/>buildVideoMetadata"]
   Page -->|"isMusic?"| YTM["YouTube Music search<br/>(hi-res square thumb,<br/>genres from keywords)"]
   YTM --> Page
