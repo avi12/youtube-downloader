@@ -11,6 +11,9 @@ export type DownloadProgressEntry = {
   videoItag?: number;
   audioItag?: number;
   downloadType?: DownloadType;
+  downloadedBytes?: number;
+  totalBytes?: number;
+  bytesPerSecond?: number;
 };
 
 export type DownloadRequest = {

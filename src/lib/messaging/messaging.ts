@@ -146,6 +146,9 @@ export type ProgressUpdate = {
   videoId: string;
   progress: number;
   progressType: ProgressType;
+  downloadedBytes?: number;
+  totalBytes?: number;
+  bytesPerSecond?: number;
   isRemoved?: boolean;
   isFailed?: boolean;
   isInterrupted?: boolean;

@@ -42,6 +42,10 @@ export type VideoDetail = {
   playlistId?: string;
   playlistTitle?: string;
   sourceUrl?: string;
+  title?: string;
+  channel?: string;
+  lengthSeconds?: number;
+  thumbnailUrl?: string;
 };
 
 export const videoDetailsItem = storage.defineItem<Record<string, VideoDetail>>("local:videoDetails", {
