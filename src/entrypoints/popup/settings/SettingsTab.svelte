@@ -4,7 +4,6 @@
   import DownloadTypeSettings from "./DownloadTypeSettings.svelte";
   import FormatSettings from "./FormatSettings.svelte";
   import PlaylistSettings from "./PlaylistSettings.svelte";
-  import "./settings.css";
   import VideoQualitySettings from "./VideoQualitySettings.svelte";
   import type { Options } from "@/types";
 

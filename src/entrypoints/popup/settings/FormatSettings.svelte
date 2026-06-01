@@ -1,4 +1,6 @@
 <script lang="ts">
+  import Audio from "../icons/Audio.svelte";
+  import Video from "../icons/Video.svelte";
   import type { SlidingSettingsProps } from "./settings-types";
   import SettingsDropDown from "./SettingsDropDown.svelte";
   import SettingsGroup from "./SettingsGroup.svelte";
@@ -66,11 +68,6 @@
       }
     });
   }
-
-  const VIDEO_ICON_PATH = "M160-160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h640q33 0 56.5 23.5"
-    + "T880-720v480q0 33-23.5 56.5T800-160H160Zm0-80h640v-480H160v480Zm160-80 200-120-200-120v240Zm-160 80v-480 480Z";
-  const AUDIO_ICON_PATH = "M400-120q-66 0-113-47t-47-113q0-66 47-113t113-47q23 0 42.5 5.5T480-418v-422h240v160H560"
-    + "v400q0 66-47 113t-113 47Zm0-80q33 0 56.5-23.5T480-280q0-33-23.5-56.5T400-360q-33 0-56.5 23.5T320-280q0 33 23.5 56.5T400-200Z";
 </script>
 
 <SettingsGroup title="Format">
@@ -83,9 +80,7 @@
     {slideDuration}
   >
     {#snippet icon()}
-      <svg aria-hidden="true" fill="currentColor" height="20" viewBox="0 -960 960 960" width="20">
-        <path d={VIDEO_ICON_PATH} />
-      </svg>
+      <Video size={20} />
     {/snippet}
   </SettingsDropDown>
 
@@ -99,9 +94,7 @@
     subtitle="Used for audio-only downloads"
   >
     {#snippet icon()}
-      <svg aria-hidden="true" fill="currentColor" height="20" viewBox="0 -960 960 960" width="20">
-        <path d={AUDIO_ICON_PATH} />
-      </svg>
+      <Audio size={20} />
     {/snippet}
   </SettingsDropDown>
 </SettingsGroup>

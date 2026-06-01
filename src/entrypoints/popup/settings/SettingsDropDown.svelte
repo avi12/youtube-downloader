@@ -1,4 +1,6 @@
 <script lang="ts">
+  import Check from "../icons/Check.svelte";
+  import ChevronRight from "../icons/ChevronRight.svelte";
   import type { Snippet } from "svelte";
   import { slide } from "svelte/transition";
 
@@ -112,17 +114,9 @@
   </div>
   <div class="set-trail">
     <span class="set-value">{displayValue}</span>
-    <svg
-      class="set-chevron"
-      class:set-chevron--open={isOpen}
-      aria-hidden="true"
-      fill="currentColor"
-      height="18"
-      viewBox="0 -960 960 960"
-      width="18"
-    >
-      <path d="M504-480 320-664l56-56 240 240-240 240-56-56 184-184Z" />
-    </svg>
+    <span class="set-chevron" class:set-chevron--open={isOpen}>
+      <ChevronRight size={18} />
+    </span>
   </div>
 </button>
 {#if isOpen}
@@ -145,11 +139,149 @@
           {/if}
         </div>
         {#if currentValue === item.value}
-          <svg aria-hidden="true" fill="currentColor" height="18" viewBox="0 -960 960 960" width="18">
-            <path d="M382-240 154-468l57-57 171 171 367-367 57 57-424 424Z" />
-          </svg>
+          <Check size={18} />
         {/if}
       </button>
     {/each}
   </div>
 {/if}
+
+<style>
+  .set-item {
+    display: flex;
+    gap: 13px;
+    align-items: center;
+    min-height: 52px;
+    padding: 13px 14px;
+  }
+
+  .set-lead {
+    display: grid;
+    flex-shrink: 0;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    background: var(--surface-high);
+    color: var(--fg-muted);
+
+    &.accent {
+      background: var(--accent-container);
+      color: var(--fg);
+    }
+  }
+
+  .set-txt {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
+  .set-label {
+    color: var(--fg);
+    font-weight: 500;
+    font-size: 0.84375rem;
+  }
+
+  .set-sub {
+    color: var(--fg-muted);
+    font-size: 0.71875rem;
+  }
+
+  .set-trail {
+    display: flex;
+    flex-shrink: 0;
+    gap: 8px;
+    align-items: center;
+    color: var(--fg-muted);
+  }
+
+  .set-picker-btn {
+    width: 100%;
+    border: none;
+    background: transparent;
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
+
+    &:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: -2px;
+    }
+  }
+
+  .set-value {
+    color: var(--accent);
+    font-weight: 500;
+    font-size: 0.84375rem;
+    white-space: nowrap;
+  }
+
+  .set-chevron {
+    display: inline-flex;
+    flex-shrink: 0;
+    color: var(--fg-subtle);
+    transition: transform 200ms cubic-bezier(0.2, 0, 0, 1);
+  }
+
+  .set-chevron--open {
+    transform: rotate(90deg);
+  }
+
+  .dropdown-list {
+    padding: 4px;
+    border-top: 1px solid var(--border);
+  }
+
+  .dropdown-item {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    width: 100%;
+    padding: 9px 10px;
+    border: none;
+    border-radius: 12px;
+    background: transparent;
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
+
+    &:hover {
+      background: var(--surface-high);
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: -2px;
+    }
+  }
+
+  .dropdown-item-text {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+  }
+
+  .dropdown-item-label {
+    font-weight: 500;
+    font-size: 0.84375rem;
+  }
+
+  .dropdown-item-desc {
+    color: var(--fg-muted);
+    font-size: 0.71875rem;
+  }
+
+  .dropdown-item--selected {
+    color: var(--accent);
+
+    .dropdown-item-desc {
+      color: var(--accent);
+      opacity: 70%;
+    }
+  }
+</style>
