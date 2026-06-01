@@ -17,8 +17,8 @@ export function buildAdditionalAudioTracks(additionalAudioStreams: ProcessStream
   return additionalAudioStreams
     .map(stream => {
       const data = toUint8Array(stream.data);
-      const isDataMissing = !data;
-      if (isDataMissing) {
+      const hasData = !!data;
+      if (!hasData) {
         return null;
       }
 
@@ -57,8 +57,8 @@ type HandleSingleStreamParams = {
   audioData: Uint8Array | null;
 };
 export async function handleSingleStream({ item, videoData, audioData }: HandleSingleStreamParams) {
-  const hasNoData = !videoData && !audioData;
-  if (hasNoData) {
+  const hasData = !!videoData || !!audioData;
+  if (!hasData) {
     throw new Error(NO_STREAM_DATA_ERROR);
   }
 

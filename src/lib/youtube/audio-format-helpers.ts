@@ -68,8 +68,8 @@ export function normalizeLanguageCode(lang: string) {
 export function getCurrentVideoAudioLanguage() {
   const elVideo = document.querySelector<HTMLVideoElement>(VIDEO_SELECTOR);
   const tracks = elVideo?.audioTracks;
-  const hasNoTracks = !tracks?.length;
-  if (hasNoTracks) {
+  const hasTracks = !!tracks?.length;
+  if (!hasTracks) {
     return null;
   }
 

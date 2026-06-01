@@ -37,8 +37,8 @@ export function selectPreferredAudioFormat({
   browserLanguage,
   customLanguage
 }: SelectPreferredAudioFormatParams) {
-  const hasNoFormats = !audioFormats.length;
-  if (hasNoFormats) {
+  const hasFormats = audioFormats.length > 0;
+  if (!hasFormats) {
     return null;
   }
 
@@ -71,8 +71,8 @@ export function selectPreferredAudioFormat({
     }
   }
 
-  const hasNoCandidates = !candidates.length;
-  if (hasNoCandidates) {
+  const hasCandidates = candidates.length > 0;
+  if (!hasCandidates) {
     const langPriority = [locale, browserLanguage, FALLBACK_LANGUAGE_CODE]
       .filter((lang): lang is string => !!lang);
     for (const lang of langPriority) {

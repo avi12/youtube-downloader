@@ -12,8 +12,8 @@ export function hasVisibleContent(filename: string) {
 
 export function getFileExtension(filename: string) {
   const iDot = filename.lastIndexOf(".");
-  const hasNoDot = iDot === -1;
-  if (hasNoDot) {
+  const hasDot = iDot !== -1;
+  if (!hasDot) {
     return "";
   }
 
@@ -22,8 +22,8 @@ export function getFileExtension(filename: string) {
 
 export function splitFilenameAndExtension(filename: string) {
   const iDot = filename.lastIndexOf(".");
-  const hasNoDot = iDot === -1;
-  if (hasNoDot) {
+  const hasDot = iDot !== -1;
+  if (!hasDot) {
     return {
       name: filename,
       extension: ""
