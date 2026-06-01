@@ -119,7 +119,7 @@
   }
 
   @keyframes wave-shift {
-    from{ transform: translateX(0); }
-    to{ transform: translateX(-24px); }
+    from{ translate: 0; }
+    to{ translate: -24px; }
   }
 </style>
