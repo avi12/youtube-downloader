@@ -56,14 +56,13 @@ export function buildDownloadTitle(state: ButtonViewState) {
 
 export function buildDownloadTooltip(state: ButtonViewState) {
   const {
-    isDone, isDownloading, isError, isInterrupted, isDownloadable,
+    isDone, isDownloading, isError, isInterrupted, isDownloadable, isProgressNonZero,
     downloadProgress, progressType, filename, quality
   } = state;
   if (!isDownloadable) {
     return "";
   }
 
-  const { isProgressNonZero } = state;
   const isProcessing = isDownloading && progressType === ProgressType.FFmpeg;
   const isPreparingDownload = isDownloading && !isProgressNonZero;
   const isActivelyDownloading = isDownloading && isProgressNonZero;
