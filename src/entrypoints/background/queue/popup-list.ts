@@ -1,4 +1,11 @@
-import { musicListItem, videoDetailsItem, videoOnlyListItem, videoQueueItem } from "@/lib/storage/storage";
+import {
+  mutateStorageItem,
+  musicListItem,
+  statusProgressItem,
+  videoDetailsItem,
+  videoOnlyListItem,
+  videoQueueItem
+} from "@/lib/storage/storage";
 import { DownloadType } from "@/types";
 
 type EnqueueToPopupListParams = {
@@ -35,6 +42,22 @@ export async function enqueueToPopupList(
     })
   };
   await videoDetailsItem.setValue(details);
+
+  await mutateStorageItem({
+    item: statusProgressItem,
+    mutator(current) {
+      if (current[videoId]) {
+        return;
+      }
+
+      current[videoId] = {
+        isDownloading: true,
+        isDone: false,
+        progress: 0,
+        progressType: ""
+      };
+    }
+  });
 
   if (type === DownloadType.VideoAndAudio) {
     const queue = await videoQueueItem.getValue();
