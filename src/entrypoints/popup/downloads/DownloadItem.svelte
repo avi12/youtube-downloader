@@ -1,5 +1,6 @@
 <script lang="ts">
   import WavyProgress from "../components/WavyProgress.svelte";
+  import Close from "../icons/Close.svelte";
 
   interface Props {
     filename: string;
@@ -56,9 +57,7 @@
       data-tooltip-align="end"
       onclick={oncancel}
     >
-      <svg aria-hidden="true" fill="currentColor" height="18" viewBox="0 -960 960 960" width="18" xmlns="http://www.w3.org/2000/svg">
-        <path d="m256-200-56-56 224-224-224-224 56-56 224 224 224-224 56 56-224 224 224 224-56 56-224-224-224 224Z" />
-      </svg>
+      <Close size={18} />
     </button>
   </div>
 

@@ -1,4 +1,7 @@
 <script lang="ts">
+  import ChangeFormat from "../icons/ChangeFormat.svelte";
+  import Folder from "../icons/Folder.svelte";
+  import OpenInNew from "../icons/OpenInNew.svelte";
   import type { RecentDownloadEntry } from "@/types";
   import { browser } from "#imports";
 
@@ -121,9 +124,7 @@
         onclick={onShowInFolder}
         type="button"
       >
-        <svg aria-hidden="true" fill="currentColor" height="18" viewBox="0 -960 960 960" width="18" xmlns="http://www.w3.org/2000/svg">
-          <path d="M160-160q-33 0-56.5-23.5T80-240v-480q0-33 23.5-56.5T160-800h240l80 80h320q33 0 56.5 23.5T880-640v400q0 33-23.5 56.5T800-160H160Zm0-80h640v-400H447l-80-80H160v480Zm0 0v-480 480Z" />
-        </svg>
+        <Folder size={18} />
       </button>
       <button
         class="recent-action-btn"
@@ -133,9 +134,7 @@
         onclick={openInNewTab}
         type="button"
       >
-        <svg aria-hidden="true" fill="currentColor" height="18" viewBox="0 -960 960 960" width="18" xmlns="http://www.w3.org/2000/svg">
-          <path d="M200-120q-33 0-56.5-23.5T120-200v-560q0-33 23.5-56.5T200-840h280v80H200v560h560v-280h80v280q0 33-23.5 56.5T760-120H200Zm188-212-56-56 372-372H560v-80h280v280h-80v-144L388-332Z" />
-        </svg>
+        <OpenInNew size={18} />
       </button>
       <button
         class="recent-action-btn"
@@ -145,9 +144,7 @@
         onclick={onChangeFormat}
         type="button"
       >
-        <svg aria-hidden="true" fill="currentColor" height="18" viewBox="0 -960 960 960" width="18" xmlns="http://www.w3.org/2000/svg">
-          <path d="M280-120q-100 0-170-70T40-360q0-92 56-162t144-87l-40-41 56-56 160 160-160 160-56-57 54-54q-56 10-95 52t-39 85q0 66 47 113t113 47q66 0 113-47t47-113v-40h80v40q0 100-70 170T280-120Zm200-280L320-560l160-160 56 57-54 54q57 9 96.5 51.5T619-500h-81q-8-35-35.5-57.5T440-580l40 41-56 55Zm280-40q0-66-47-113t-113-47v-80q100 0 170 70t70 170h-80Z" />
-        </svg>
+        <ChangeFormat size={18} />
       </button>
     </div>
   </div>
