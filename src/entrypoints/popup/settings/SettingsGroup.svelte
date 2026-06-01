@@ -9,9 +9,9 @@
   const { title, children }: Props = $props();
 </script>
 
-<div class="set-group">
-  <div class="set-group-title">{title}</div>
+<section class="set-group">
+  <h3 class="set-group-title">{title}</h3>
   <div class="set-card">
     {@render children()}
   </div>
-</div>
+</section>

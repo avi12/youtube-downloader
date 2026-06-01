@@ -5,6 +5,7 @@
 }
 
 .set-group-title {
+  margin: 0;
   padding-block: 14px 6px;
   padding-inline: 6px;
   color: var(--accent);
