@@ -67,7 +67,7 @@ Each top-level directory under `src/` owns one layer of the relay.
 | `src/entrypoints/mux-worker/` | Web Worker that drives `@ffmpeg/core` to mux video + audio + subtitles + cover art. |
 | `src/entrypoints/popup/` | Browser-action popup. Download history (IndexedDB + blob store), live progress, format-change dialog, settings. |
 | `src/lib/youtube/` | YouTube-specific knowledge: Innertube schemas, SABR protocol, BotGuard / PO token, format helpers, signature decryptor. |
-| `src/lib/messaging/` | Typed buses: cross-world (MAIN ↔ ISOLATED via `CustomEvent`), runtime (content ↔ BG), offscreen (BG ↔ offscreen via `MessagePort`), window (page ↔ extension via `window.postMessage`). |
+| `src/lib/messaging/` | Typed buses: cross-world between MAIN and ISOLATED via `CustomEvent`; runtime between content and BG; offscreen between BG and offscreen via `MessagePort`; window between page and extension via `window.postMessage`. |
 | `src/lib/download-pipeline/` | Browser-agnostic post-fetch pipeline: stream processor, mux job builder, FFmpeg instance, blob download, recent-downloads store. |
 | `src/lib/storage/` | `wxt/storage`-backed items with per-item mutation locks. |
 | `src/lib/ui/` | Svelte 5 stores and reactive helpers shared across content scripts and popup. |
@@ -152,7 +152,7 @@ sequenceDiagram
 
 On Firefox-on-Windows, YouTube's anti-bot infrastructure rejects SABR (HTTP 403 or ~60 s response cap) regardless of cookies, PO token, or DNR rewrites. The TLS fingerprint and request signature differ enough from Chrome's that the `WEB`-client SABR path is unusable, and direct progressive URLs returned by the `WEB` client also 403 from any context.
 
-The bypass mirrors yt-dlp's `android_vr` extractor:
+The bypass mirrors [yt-dlp](https://github.com/yt-dlp/yt-dlp)'s `android_vr` extractor:
 
 1. **InnerTube call.** `POST /youtubei/v1/player` with `clientName: ANDROID_VR` (X-YouTube-Client-Name 28, Oculus Quest 3, Android 12L user agent). `ANDROID_VR` is the only first-party client that returns direct CDN URLs for every adaptive format without forcing SABR, without requiring a PO token, and without the 4 MB per-request range cap that the plain `ANDROID` client enforces.
 2. **Page-proxy auth.** The InnerTube anti-bot gate validates the *value* of the `visitorData` blob, not just its presence — empty string and dummy bytes both return `LOGIN_REQUIRED`. The blob is a 520-byte base64-protobuf with server-generated metadata the extension can't reconstruct, and only exists in MAIN-world page context (`ytcfg.get("VISITOR_DATA")`). So the call has to go through a page-proxy bridge: the background sends a `pageSabrFetch` message to a MAIN-world iframe, which substitutes a `__YTDL_VISITOR_DATA__` placeholder in the request body and runs the fetch from page context. A BG-direct fast path is tried first and falls through to the page-proxy on failure.
