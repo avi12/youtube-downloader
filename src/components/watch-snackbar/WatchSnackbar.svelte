@@ -85,7 +85,8 @@
     class:ytSnackbarContainerOpened={isOpened}
     {@attach attachToSnackbar}
     onmouseenter={cancelDismiss}
-    onmouseleave={scheduleDismiss}>
+    onmouseleave={scheduleDismiss}
+    role="status">
     <snackbar-view-model class="snackbarViewModelHost">
       <div class="snackbarViewModelEngagementBarWrapper">
         <div class="snackbarViewModelAvatarContainer">

@@ -124,6 +124,8 @@
     bind:this={elList}
     class="dropdown-list"
     onkeydown={handleListKeydown}
+    role="listbox"
+    tabindex="-1"
     transition:slide={{ duration: slideDuration }}
   >
     {#each items as item (item.value)}
