@@ -1,11 +1,10 @@
 import { downloadViaWatchPage } from "./iframe-downloader";
 import { downloadViaSabr } from "./sabr-downloader";
+import { createSabrStallTimer } from "./sabr-stall-timer";
 import { MessageType, sendMessageToTab } from "@/lib/messaging/messaging";
 import { ProgressType } from "@/types";
 import type { DownloadRequest, VideoTabParams } from "@/types";
 
-const SABR_STALL_TIMEOUT_MS = 10_000;
-const SABR_FIRST_BYTE_TIMEOUT_MS = 5_000;
 const MAX_IFRAME_AUTO_RETRIES = 2;
 const iframeAutoRetries = new Map<string, number>();
 
@@ -19,24 +18,17 @@ type AttemptSabrDownloadParams = {
   tabId: number;
 };
 export async function attemptSabrDownload({ request, signal, tabId }: AttemptSabrDownloadParams) {
-  const sabrAbortController = new AbortController();
-  let sabrStallTimeoutId = setTimeout(() => sabrAbortController.abort(), SABR_FIRST_BYTE_TIMEOUT_MS);
-  signal.addEventListener("abort", () => sabrAbortController.abort(), { once: true });
-
-  function resetSabrStallTimer() {
-    clearTimeout(sabrStallTimeoutId);
-    sabrStallTimeoutId = setTimeout(() => sabrAbortController.abort(), SABR_STALL_TIMEOUT_MS);
-  }
+  const stallTimer = createSabrStallTimer(signal);
 
   try {
     return downloadViaSabr({
       request,
-      signal: sabrAbortController.signal,
+      signal: stallTimer.signal,
       tabId,
-      onProgress: resetSabrStallTimer
+      onProgress: stallTimer.onProgress
     });
   } finally {
-    clearTimeout(sabrStallTimeoutId);
+    stallTimer.cleanup();
   }
 }
 

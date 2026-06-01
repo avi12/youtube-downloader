@@ -1,5 +1,6 @@
 import { downloadViaCdn } from "../background/download/cdn-downloader";
 import { downloadViaSabr } from "../background/download/sabr-downloader";
+import { createSabrStallTimer } from "../background/download/sabr-stall-timer";
 import { buildSubtitleTracks } from "../background/download/subtitle-track-builder";
 import type { ProcessStreamEndData } from "@/lib/messaging/offscreen-messaging";
 import { resolveQualityLabel } from "@/lib/youtube/audio-format-helpers";
@@ -16,9 +17,6 @@ const IFRAME_MSG_START = "start";
 const IFRAME_MSG_CANCEL = "cancel";
 const DEFAULT_VIDEO_MIME_TYPE = "video/mp4";
 const DEFAULT_AUDIO_MIME_TYPE = "audio/mp4";
-
-const SABR_STALL_TIMEOUT_MS = 10_000;
-const SABR_FIRST_BYTE_TIMEOUT_MS = 5_000;
 
 const abortController = new AbortController();
 const { signal } = abortController;
@@ -50,14 +48,7 @@ type TrySabrWithStallTimerParams = {
   tabId: number;
 };
 async function trySabrWithStallTimer({ request, tabId }: TrySabrWithStallTimerParams) {
-  const sabrAbortController = new AbortController();
-  let sabrStallTimeoutId = setTimeout(() => sabrAbortController.abort(), SABR_FIRST_BYTE_TIMEOUT_MS);
-  signal.addEventListener("abort", () => sabrAbortController.abort(), { once: true });
-
-  function resetSabrStallTimer() {
-    clearTimeout(sabrStallTimeoutId);
-    sabrStallTimeoutId = setTimeout(() => sabrAbortController.abort(), SABR_STALL_TIMEOUT_MS);
-  }
+  const stallTimer = createSabrStallTimer(signal);
 
   const isAudioOnly = request.type === DownloadType.Audio;
   const useStreaming = !isAudioOnly;
@@ -65,9 +56,9 @@ async function trySabrWithStallTimer({ request, tabId }: TrySabrWithStallTimerPa
   try {
     return await downloadViaSabr({
       request,
-      signal: sabrAbortController.signal,
+      signal: stallTimer.signal,
       tabId,
-      onProgress: resetSabrStallTimer,
+      onProgress: stallTimer.onProgress,
       ...(useStreaming && {
         onVideoChunk: sendChunkToParent({
           videoId: request.videoId,
@@ -97,7 +88,7 @@ async function trySabrWithStallTimer({ request, tabId }: TrySabrWithStallTimerPa
     console.warn("[ytdl:worker] SABR failed, trying CDN:", error);
     return null;
   } finally {
-    clearTimeout(sabrStallTimeoutId);
+    stallTimer.cleanup();
   }
 }
 
