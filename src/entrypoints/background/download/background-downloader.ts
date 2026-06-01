@@ -26,6 +26,8 @@ import type { DownloadRequest, VideoMetadata } from "@/types";
 
 const ANDROID_VR_CHUNK_SIZE = 10 * 1024 * 1024;
 const PROGRESS_THROTTLE_MS = 250;
+const HTTP_STATUS_OK = 200;
+const HTTP_STATUS_PARTIAL_CONTENT = 206;
 
 const activeFirefoxDownloads = new Map<string, AbortController>();
 const cancelledFirefoxDownloads = new Set<string>();
@@ -77,7 +79,7 @@ async function fetchAndroidVrChunked({
       const performFetch = useBgDirect ? bgFetch : pageProxyFetch!;
       response = await performFetch(url, init);
 
-      if (response.status !== 206 && response.status !== 200) {
+      if (response.status !== HTTP_STATUS_PARTIAL_CONTENT && response.status !== HTTP_STATUS_OK) {
         throw new Error(`HTTP ${response.status}`);
       }
     } catch (err) {
@@ -95,7 +97,7 @@ async function fetchAndroidVrChunked({
       useBgDirect = false;
       response = await pageProxyFetch!(url, init);
 
-      if (response.status !== 206 && response.status !== 200) {
+      if (response.status !== HTTP_STATUS_PARTIAL_CONTENT && response.status !== HTTP_STATUS_OK) {
         throw new Error(`${label} chunk fetch HTTP ${response.status} at offset ${byteOffset} (page-proxy fallback)`, {
           cause: err
         });
