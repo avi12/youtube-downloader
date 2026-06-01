@@ -79,7 +79,8 @@ async function fetchAndroidVrChunked({
       const performFetch = useBgDirect ? bgFetch : pageProxyFetch!;
       response = await performFetch(url, init);
 
-      if (response.status !== HTTP_STATUS_PARTIAL_CONTENT && response.status !== HTTP_STATUS_OK) {
+      const isAcceptableStatus = response.status === HTTP_STATUS_PARTIAL_CONTENT || response.status === HTTP_STATUS_OK;
+      if (!isAcceptableStatus) {
         throw new Error(`HTTP ${response.status}`);
       }
     } catch (err) {
@@ -97,7 +98,8 @@ async function fetchAndroidVrChunked({
       useBgDirect = false;
       response = await pageProxyFetch!(url, init);
 
-      if (response.status !== HTTP_STATUS_PARTIAL_CONTENT && response.status !== HTTP_STATUS_OK) {
+      const isAcceptableStatus = response.status === HTTP_STATUS_PARTIAL_CONTENT || response.status === HTTP_STATUS_OK;
+      if (!isAcceptableStatus) {
         throw new Error(`${label} chunk fetch HTTP ${response.status} at offset ${byteOffset} (page-proxy fallback)`, {
           cause: err
         });
