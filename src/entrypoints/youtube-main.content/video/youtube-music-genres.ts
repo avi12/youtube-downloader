@@ -39,21 +39,20 @@ export async function fetchYouTubeMusicGenres() {
   }
 
   try {
-    const browseRequest: InnertubeBrowseRequest = {
-      browseId: YT_MUSIC_MOODS_AND_GENRES_BROWSE_ID,
-      context: {
-        client: {
-          clientName: InnertubeClientName.WebRemix,
-          clientVersion: YT_MUSIC_CLIENT_VERSION
-        }
-      }
-    };
     const response = await fetch(YT_MUSIC_BROWSE_URL, {
       method: "POST",
       headers: {
         "Content-Type": CONTENT_TYPE_JSON
       },
-      body: JSON.stringify(browseRequest)
+      body: JSON.stringify({
+        browseId: YT_MUSIC_MOODS_AND_GENRES_BROWSE_ID,
+        context: {
+          client: {
+            clientName: InnertubeClientName.WebRemix,
+            clientVersion: YT_MUSIC_CLIENT_VERSION
+          }
+        }
+      } satisfies InnertubeBrowseRequest)
     });
 
     const data: MoodsAndGenresResponse = await response.json();

@@ -33,21 +33,20 @@ export async function generatePoToken(videoId: string) {
   const clientVersion = getYtcfg(YtcfgKey.ClientVersion) ?? DEFAULT_CLIENT_VERSION;
   const requestKey = getYtcfg(YtcfgKey.BotguardExperimentId) ?? DEFAULT_REQUEST_KEY;
 
-  const attGetRequest: InnertubeAttGetRequest = {
-    engagementType: InnertubeEngagementType.Unbound,
-    context: {
-      client: {
-        clientName: InnertubeClientName.Web,
-        clientVersion
-      }
-    }
-  };
   const challengeResponse = await fetch(ATT_GET_URL, {
     method: "POST",
     headers: {
       "Content-Type": CONTENT_TYPE_JSON
     },
-    body: JSON.stringify(attGetRequest)
+    body: JSON.stringify({
+      engagementType: InnertubeEngagementType.Unbound,
+      context: {
+        client: {
+          clientName: InnertubeClientName.Web,
+          clientVersion
+        }
+      }
+    } satisfies InnertubeAttGetRequest)
   });
 
   const challengeData: ChallengeResponse = await challengeResponse.json();
@@ -75,14 +74,13 @@ export async function generatePoToken(videoId: string) {
     webPoSignalOutput
   });
 
-  const generateItRequest: InnertubeGenerateItRequest = [requestKey, snapshotResponse];
   const integrityResponse = await fetch(GENERATE_IT_URL, {
     method: "POST",
     headers: {
       "content-type": CONTENT_TYPE_JSON_PROTOBUF,
       [HEADER_X_GOOG_API_KEY]: WAA_API_KEY
     },
-    body: JSON.stringify(generateItRequest)
+    body: JSON.stringify([requestKey, snapshotResponse] satisfies InnertubeGenerateItRequest)
   });
 
   const integrityData: InnertubeGenerateItResponse = await integrityResponse.json();

@@ -60,28 +60,27 @@ export async function fetchFreshCaptionUrls(videoId: string) {
   }
 
   try {
-    const playerRequest: InnertubePlayerRequest = {
-      videoId,
-      playbackContext: {
-        contentPlaybackContext: {
-          signatureTimestamp: getYtcfg(YtcfgKey.Sts)
-        }
-      },
-      context: {
-        client: {
-          clientName: InnertubeClientName.Web,
-          clientVersion: getYtcfg(YtcfgKey.ClientVersion) ?? "",
-          hl: getYtcfg(YtcfgKey.Hl) ?? DEFAULT_CAPTION_LANGUAGE,
-          gl: getYtcfg(YtcfgKey.Gl) ?? DEFAULT_CAPTION_REGION,
-          visitorData: visitorData ?? ""
-        }
-      }
-    };
     const response = await fetch(PLAYER_API_PATH, {
       method: "POST",
       credentials: "include",
       headers,
-      body: JSON.stringify(playerRequest)
+      body: JSON.stringify({
+        videoId,
+        playbackContext: {
+          contentPlaybackContext: {
+            signatureTimestamp: getYtcfg(YtcfgKey.Sts)
+          }
+        },
+        context: {
+          client: {
+            clientName: InnertubeClientName.Web,
+            clientVersion: getYtcfg(YtcfgKey.ClientVersion) ?? "",
+            hl: getYtcfg(YtcfgKey.Hl) ?? DEFAULT_CAPTION_LANGUAGE,
+            gl: getYtcfg(YtcfgKey.Gl) ?? DEFAULT_CAPTION_REGION,
+            visitorData: visitorData ?? ""
+          }
+        }
+      } satisfies InnertubePlayerRequest)
     });
     if (!response.ok) {
       return new Map<string, string>();
