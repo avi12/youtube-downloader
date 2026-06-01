@@ -108,7 +108,7 @@ export async function downloadViaWatchPage({ data, tabId }: DownloadViaWatchPage
         videoId: data.videoId
       }
     });
-    reportDownloadFailed({
+    void reportDownloadFailed({
       videoId: data.videoId,
       tabId
     });

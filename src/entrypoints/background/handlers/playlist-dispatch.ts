@@ -21,7 +21,7 @@ export async function dispatchSequentially({ items, tabId, signal }: DispatchPar
       triggered = true;
     } catch (error) {
       console.error("[ytdl:bg] ExecuteDownloadItem failed:", item.videoId, error);
-      reportDownloadFailed({
+      void reportDownloadFailed({
         videoId: item.videoId,
         tabId
       });
@@ -46,7 +46,7 @@ export async function dispatchParallel({ items, tabId, signal }: DispatchParams)
       void sendMessageToTab(MessageType.StartKeepalive, { videoId: item.videoId }, tabId);
     } catch (error) {
       console.error("[ytdl:bg] ExecuteDownloadItem failed:", item.videoId, error);
-      reportDownloadFailed({
+      void reportDownloadFailed({
         videoId: item.videoId,
         tabId
       });
