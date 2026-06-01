@@ -1,5 +1,4 @@
 import {
-  mutateStorageItem,
   musicListItem,
   statusProgressItem,
   videoDetailsItem,
@@ -43,21 +42,18 @@ export async function enqueueToPopupList(
   };
   await videoDetailsItem.setValue(details);
 
-  await mutateStorageItem({
-    item: statusProgressItem,
-    mutator(current) {
-      if (current[videoId]) {
-        return;
-      }
-
-      current[videoId] = {
-        isDownloading: true,
-        isDone: false,
-        progress: 0,
-        progressType: ""
-      };
-    }
-  });
+  const currentStatusProgress = await statusProgressItem.getValue();
+  const existingEntry = currentStatusProgress[videoId];
+  const isStaleEntry = !existingEntry || existingEntry.isDone || existingEntry.isFailed || !existingEntry.isDownloading;
+  if (isStaleEntry) {
+    currentStatusProgress[videoId] = {
+      isDownloading: true,
+      isDone: false,
+      progress: 0,
+      progressType: ""
+    };
+    await statusProgressItem.setValue(currentStatusProgress);
+  }
 
   if (type === DownloadType.VideoAndAudio) {
     const queue = await videoQueueItem.getValue();

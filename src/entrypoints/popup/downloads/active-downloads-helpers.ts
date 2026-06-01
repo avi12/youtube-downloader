@@ -16,7 +16,7 @@ type VideoDetails = Record<string, {
 
 function computeWeightedFraction(entry: StatusProgress[string]) {
   return calculateWeightedProgress({
-    isDownloading: true,
+    isDownloading: entry.isDownloading,
     progress: entry.progress,
     progressType: entry.progressType
   }) / PERCENT_COMPLETE;
