@@ -120,8 +120,8 @@ export async function submitTranscode({
   selectedTarget,
   isSubmitting
 }: SubmitTranscodeParams) {
-  const isNotReady = !selectedTarget || isSubmitting;
-  if (isNotReady) {
+  const isReady = !!selectedTarget && !isSubmitting;
+  if (!isReady) {
     return false;
   }
 
