@@ -1,5 +1,6 @@
 <script lang="ts">
   import changeFormatIcon from "../../icons/change-format.svg?raw";
+  import closeIcon from "../../icons/close.svg?raw";
   import folderIcon from "../../icons/folder.svg?raw";
   import openInNewIcon from "../../icons/open-in-new.svg?raw";
   import type { RecentDownloadEntry } from "@/types";
@@ -145,6 +146,16 @@
         type="button"
       >
         {@html changeFormatIcon}
+      </button>
+      <button
+        class="recent-action-btn"
+        aria-label="Remove from history"
+        data-tooltip="Remove from history"
+        data-tooltip-align="end"
+        onclick={onRemove}
+        type="button"
+      >
+        {@html closeIcon}
       </button>
     </div>
   </div>
