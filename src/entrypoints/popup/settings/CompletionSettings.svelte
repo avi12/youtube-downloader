@@ -1,6 +1,6 @@
 <script lang="ts">
   import bellIcon from "../icons/bell.svg?raw";
-  import Folder from "../icons/Folder.svelte";
+  import folderIcon from "../icons/folder.svg?raw";
   import playArrowIcon from "../icons/play-arrow.svg?raw";
   import type { SettingsProps } from "./settings-types";
   import SettingsGroup from "./SettingsGroup.svelte";
@@ -41,7 +41,7 @@
   </label>
   <label class="set-item set-item-label">
     <div class="set-lead">
-      <Folder size={20} />
+      {@html folderIcon}
     </div>
     <div class="set-txt">
       <span class="set-label">Reveal file in folder</span>
@@ -128,6 +128,11 @@
     &.accent {
       background: var(--accent-container);
       color: var(--fg);
+    }
+
+    :global(svg) {
+      width: 20px;
+      height: 20px;
     }
   }
 

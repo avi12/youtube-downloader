@@ -1,3 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" fill="currentColor" height="20" viewBox="0 -960 960 960" width="20">
-  <path d="M480-240 280-400l57-56 143 114 143-114 57 56-200 160Zm0-160L280-560l57-56 143 114 143-114 57 56-200 160Zm0-160L280-720l200-160 200 160-200 160Z" />
+<svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+  <path d="m12 3 9 5-9 5-9-5z" />
+  <path d="m3 13 9 5 9-5" />
 </svg>

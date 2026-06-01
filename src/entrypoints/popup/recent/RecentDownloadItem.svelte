@@ -1,6 +1,6 @@
 <script lang="ts">
   import changeFormatIcon from "../icons/change-format.svg?raw";
-  import Folder from "../icons/Folder.svelte";
+  import folderIcon from "../icons/folder.svg?raw";
   import openInNewIcon from "../icons/open-in-new.svg?raw";
   import type { RecentDownloadEntry } from "@/types";
   import { browser } from "#imports";
@@ -124,7 +124,7 @@
         onclick={onShowInFolder}
         type="button"
       >
-        <Folder size={18} />
+        {@html folderIcon}
       </button>
       <button
         class="recent-action-btn"
@@ -269,6 +269,11 @@
     &:focus-visible {
       outline: 2px solid var(--accent);
       outline-offset: 2px;
+    }
+
+    :global(svg) {
+      width: 18px;
+      height: 18px;
     }
   }
 </style>

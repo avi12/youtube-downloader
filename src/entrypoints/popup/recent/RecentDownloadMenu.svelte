@@ -122,6 +122,11 @@
       outline: 2px solid var(--accent);
       outline-offset: 2px;
     }
+
+    :global(svg) {
+      width: 20px;
+      height: 20px;
+    }
   }
 
   .recent-menu {

@@ -1,6 +1,6 @@
 <script lang="ts">
   import downloadIcon from "../icons/download.svg?raw";
-  import settingsIcon from "../icons/settings.svg?raw";
+  import sparkleIcon from "../icons/sparkle.svg?raw";
   import RecentDownloadsSection from "../recent/RecentDownloadsSection.svelte";
   import ActiveDownloadsSections from "./ActiveDownloadsSections.svelte";
   import { deleteRecentDownload } from "@/lib/storage/recent-downloads-db";
@@ -62,7 +62,7 @@
     <h3 class="empty-state-heading">No downloads yet</h3>
     <p class="empty-state-text">Anything you grab shows up here. Open a video, channel, or playlist and tap the toolbar button to start</p>
     <div class="empty-state-hint">
-      {@html settingsIcon}
+      {@html sparkleIcon}
       Tip: pick formats, quality &amp; languages in Settings
     </div>
   </section>
@@ -117,6 +117,11 @@
       border-radius: 28px;
       background: var(--accent-container);
       color: var(--accent);
+
+      :global(svg) {
+        width: 40px;
+        height: 40px;
+      }
     }
 
     .empty-state-heading {
@@ -142,6 +147,13 @@
       background: var(--surface);
       color: var(--fg-muted);
       font-size: 0.75rem;
+
+      :global(svg) {
+        flex-shrink: 0;
+        width: 16px;
+        height: 16px;
+        color: var(--accent);
+      }
     }
   }
 

@@ -123,6 +123,11 @@
     border-radius: 12px;
     background: var(--surface-high);
     color: var(--fg-muted);
+
+    :global(svg) {
+      width: 20px;
+      height: 20px;
+    }
   }
 
   .set-txt {

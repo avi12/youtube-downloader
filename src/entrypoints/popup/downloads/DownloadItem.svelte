@@ -171,6 +171,11 @@
       outline: 2px solid var(--danger);
       outline-offset: 2px;
     }
+
+    :global(svg) {
+      width: 18px;
+      height: 18px;
+    }
   }
 
   .dl-prog-bar {

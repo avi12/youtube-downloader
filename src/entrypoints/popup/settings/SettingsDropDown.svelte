@@ -169,6 +169,11 @@
       background: var(--accent-container);
       color: var(--fg);
     }
+
+    :global(svg) {
+      width: 20px;
+      height: 20px;
+    }
   }
 
   .set-txt {
@@ -224,6 +229,11 @@
     flex-shrink: 0;
     color: var(--fg-subtle);
     transition: transform 200ms cubic-bezier(0.2, 0, 0, 1);
+
+    :global(svg) {
+      width: 18px;
+      height: 18px;
+    }
   }
 
   .set-chevron--open {
@@ -255,6 +265,12 @@
     &:focus-visible {
       outline: 2px solid var(--accent);
       outline-offset: -2px;
+    }
+
+    :global(svg) {
+      flex-shrink: 0;
+      width: 18px;
+      height: 18px;
     }
   }
 

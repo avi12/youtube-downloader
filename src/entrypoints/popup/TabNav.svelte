@@ -85,9 +85,7 @@
       tabindex={activeTab === tab.id ? 0 : -1}
     >
       {#if tab.icon}
-        <svg aria-hidden="true" fill="currentColor" height="18" viewBox="0 -960 960 960" width="18">
-          <path d={tab.icon} />
-        </svg>
+        {@html tab.icon}
       {/if}
       {tab.label}
       {#if tab.badge !== undefined && tab.badge > 0}
@@ -132,6 +130,11 @@
     &:focus-visible {
       outline: 2px solid var(--accent);
       outline-offset: -2px;
+    }
+
+    :global(svg) {
+      width: 18px;
+      height: 18px;
     }
   }
 

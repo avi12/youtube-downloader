@@ -1,3 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" fill="currentColor" height="20" viewBox="0 -960 960 960" width="20">
-  <path d="M560-131v-82q90-26 145-100t55-168q0-94-55-168T560-749v-82q124 28 202 125.5T840-481q0 127-78 224.5T560-131ZM120-360v-240h160l200-200v640L280-360H120Zm440 40v-322q47 22 73.5 66t26.5 96q0 51-26.5 94.5T560-320Z" />
+<svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24">
+  <path d="M4 10v4h3.5L13 18.5V5.5L7.5 10z" />
+  <path d="M16.5 8.5a5 5 0 0 1 0 7" />
 </svg>

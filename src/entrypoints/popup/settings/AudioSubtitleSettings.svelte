@@ -1,7 +1,7 @@
 <script lang="ts">
-  import aiCaptionsIcon from "../icons/ai-captions.svg?raw";
   import audioVolumeIcon from "../icons/audio-volume.svg?raw";
   import captionsIcon from "../icons/captions.svg?raw";
+  import sparkleIcon from "../icons/sparkle.svg?raw";
   import AudioTrackSection from "./AudioTrackSection.svelte";
   import CaptionLanguageSection from "./CaptionLanguageSection.svelte";
   import type { SlidingSettingsProps } from "./settings-types";
@@ -72,7 +72,7 @@
   </label>
   <label class="set-item set-item-label">
     <div class="set-lead">
-      {@html aiCaptionsIcon}
+      {@html sparkleIcon}
     </div>
     <div class="set-txt">
       <span class="set-label">Include AI-generated captions</span>
@@ -129,6 +129,11 @@
     &.accent {
       background: var(--accent-container);
       color: var(--fg);
+    }
+
+    :global(svg) {
+      width: 20px;
+      height: 20px;
     }
   }
 
