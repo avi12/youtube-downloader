@@ -32,19 +32,14 @@
     closeMenu();
   }
 
+  function isOutsideMenu(target: Node): boolean {
+    return !elMenu?.contains(target) && !elTrigger?.contains(target);
+  }
+
   function handleDocumentClick(e: MouseEvent): void {
-    if (!isMenuOpen) {
-      return;
+    if (isMenuOpen && e.target instanceof Node && isOutsideMenu(e.target)) {
+      closeMenu();
     }
-
-    const { target } = e;
-    const isTargetNode = target instanceof Node;
-    const isClickInsideMenu = isTargetNode && (elMenu?.contains(target) || elTrigger?.contains(target));
-    if (isClickInsideMenu) {
-      return;
-    }
-
-    closeMenu();
   }
 
   function handleKeydown(e: KeyboardEvent): void {
@@ -72,7 +67,7 @@
 <div class="recent-menu-wrap">
   <button
     bind:this={elTrigger}
-    style="anchor-name: --menu-{entryId};"
+    style:anchor-name="--menu-{entryId}"
     class="recent-menu-trigger"
     aria-expanded={isMenuOpen}
     aria-haspopup="menu"
@@ -86,7 +81,7 @@
   {#if isMenuOpen}
     <div
       bind:this={elMenu}
-      style="position-anchor: --menu-{entryId};"
+      style:position-anchor="--menu-{entryId}"
       class="recent-menu"
       role="menu"
     >

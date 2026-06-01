@@ -45,7 +45,6 @@
             onChangeFormat={() => onChangeFormat(entry)}
             onRemove={() => onRemove(entry)}
             onShowInFolder={() => onShowInFolder(entry)}
-            showOpenInNew
           />
         </li>
       {/each}
