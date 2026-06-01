@@ -2,6 +2,7 @@ import { InnertubeClientName, type InnertubeBrowseRequest } from "@/lib/youtube/
 
 const YT_MUSIC_BROWSE_URL = "https://music.youtube.com/youtubei/v1/browse?prettyPrint=false";
 const YT_MUSIC_MOODS_AND_GENRES_BROWSE_ID = "FEmusic_moods_and_genres";
+const CONTENT_TYPE_JSON = "application/json";
 
 interface MoodsAndGenresResponse {
   contents?: {
@@ -50,7 +51,7 @@ export async function fetchYouTubeMusicGenres() {
     const response = await fetch(YT_MUSIC_BROWSE_URL, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json"
+        "Content-Type": CONTENT_TYPE_JSON
       },
       body: JSON.stringify(browseRequest)
     });

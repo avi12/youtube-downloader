@@ -8,6 +8,7 @@ const ANDROID_VR_USER_AGENT =
   "com.google.android.apps.youtube.vr.oculus/1.65.10 (Linux; U; Android 12L) gzip";
 const ANDROID_VR_OS_NAME = "Android";
 const ANDROID_VR_OS_VERSION = "12L";
+const CONTENT_TYPE_JSON = "application/json";
 
 // Placeholder substituted in MAIN-world by page-sabr-fetch.content.ts so the BG
 // never needs to read ytcfg.VISITOR_DATA directly (extension contexts cannot
@@ -82,7 +83,7 @@ async function fetchAndroidPlayerResponse({
     method: "POST",
     credentials: "include",
     headers: {
-      "Content-Type": "application/json"
+      "Content-Type": CONTENT_TYPE_JSON
     },
     body: JSON.stringify(body)
   });
