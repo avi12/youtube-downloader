@@ -319,6 +319,51 @@ flowchart LR
 | `<track>`-element extractor + cue parser | [`caption-fetch.ts:51`](src/entrypoints/youtube-main.content/video/caption-fetch.ts) `fetchWebVttViaTrackElement` + [`:37`](src/entrypoints/youtube-main.content/video/caption-fetch.ts) `cuesToWebVtt` |
 | Pre-fetch progress reporting | [`caption-fetch.ts:115`](src/entrypoints/youtube-main.content/video/caption-fetch.ts) (`ReportPageProgress` per track) |
 
+### Metadata, ID3 tags, and cover art
+
+Output files carry as much rich metadata as YouTube exposes: title, artist, album, album artist, genres, publish date, and an embedded thumbnail. Two distinct mux paths consume this metadata differently — audio-only files get global ID3-style tags + a cover-art image, video files get per-track titles + language tags but no globals.
+
+```mermaid
+flowchart LR
+  Page["MAIN-world<br/>buildVideoMetadata"]
+  Page -->|"isMusic?"| YTM["YouTube Music search<br/>(hi-res square thumb,<br/>genres from keywords)"]
+  YTM --> Page
+  Page --> Pack["DownloadRequest<br/>(metadata + thumbnailUrl)"]
+  Pack --> BGEnrich["BG enrichment<br/>(YT Music canonical<br/>artist/album/title)"]
+  BGEnrich --> Mux{"mux path?"}
+  Mux -->|"audio only"| Embed["handleEmbedMetadata:<br/>fetchThumbnail (prefer JPEG),<br/>magic-byte sniff,<br/>-map cover -disposition attached_pic,<br/>-metadata title/artist/album/genre/date"]
+  Mux -->|"video + audio"| Tracks["appendTrackMetadata:<br/>-metadata:s:a:i title/language,<br/>-metadata:s:s:i title/language,<br/>-disposition:a:i default<br/>(no globals, no cover)"]
+```
+
+1. **Build metadata in the page.** [`buildVideoMetadata`](src/entrypoints/youtube-main.content/video/video-data.ts) reads `playerResponse.videoDetails` (title, author, keywords, thumbnails) and `playerResponse.microformat.playerMicroformatRenderer` (publish date). The default thumbnail picked is the largest-resolution entry from `videoDetails.thumbnail.thumbnails`.
+2. **Music-specific parsing.** If the video is detected as music (the `isMusic` flag set on the video data), the title is split into artist + song via [`parseMusicTitle`](src/entrypoints/youtube-main.content/video/music-metadata.ts) (handles "Artist - Song (Official Video)", "feat." suffixes, common bracketed tag noise). If the description starts with "Provided to YouTube", [`parseDescriptionMetadata`](src/entrypoints/youtube-main.content/video/music-metadata.ts) extracts the canonical song/artist/album from the auto-generated YT Music description block (the dot-separated line and the album line).
+3. **YouTube Music thumbnail upgrade.** For music videos, [`fetchMusicThumbnailUrl`](src/lib/youtube/youtube-music-metadata.ts) does a `POST music.youtube.com/youtubei/v1/search` with `clientName: WEB_REMIX` and a song-filter param. The first result's thumbnail is the high-res square art (used as cover art), which is much better than the 16:9 video thumbnail. Falls back to the YouTube `videoDetails` thumbnail if the search fails.
+4. **Genre extraction.** [`fetchYouTubeMusicGenres`](src/entrypoints/youtube-main.content/video/youtube-music-genres.ts) pulls the official YT Music genre vocabulary; [`extractGenresFromKeywords`](src/entrypoints/youtube-main.content/video/music-metadata.ts) cross-references the video's `keywords` list against it.
+5. **Background-side canonical enrichment.** [`enrichMetadataFromYouTubeMusic`](src/entrypoints/background/download/metadata-enrichment.ts) runs in the BG when the dispatcher kicks off the download ([`background-downloader.ts:368`](src/entrypoints/background/download/background-downloader.ts)). For music videos it calls [`fetchYouTubeMusicMetadata`](src/lib/youtube/youtube-music-metadata.ts) to fill in the canonical song title, artist, album, album_artist, and thumbnail. The MAIN-world prefetch in step 3 covers the common case; the BG enrichment exists so the audio-embed path always has the best metadata even if the page-side fetch was skipped or stale.
+
+**Cover-art injection (audio-only path)**, in [`handleEmbedMetadata`](src/entrypoints/mux-worker/mux-handler-embed-metadata.ts):
+
+- **Prefer JPEG over WebP.** [`preferJpegThumbnail`](src/entrypoints/mux-worker/mux-thumbnail.ts) rewrites `/vi_webp/...webp` URLs to `/vi/...jpg`. YouTube serves both; the JPEG version lets FFmpeg `-c:v copy` the image into the container without an MJPEG re-encode pass.
+- **Magic-byte sniff.** [`detectImageExtension`](src/entrypoints/mux-worker/mux-thumbnail.ts) checks for `FF D8 FF` (JPEG), `89 50 4E 47` (PNG), or `RIFF...WEBP` at offset 8 (WebP). Trusting the URL extension isn't enough because the rewrite occasionally falls back to the original format.
+- **Embed as attached picture.** The image is written to FFmpeg's MEMFS as `cover.<ext>`, added as the 2nd input (`-i cover.<ext>`), mapped with `-map 1`, codec'd as `copy` for JPEG or `mjpeg` for PNG/WebP, and stamped with `-disposition:v attached_pic`. The disposition flag is what tells the container "this video stream is a static cover, not a video track" — so players show it as album art, not a 1-frame video.
+- **Skipped for WebM output.** Opus-in-WebM containers don't support attached pictures cleanly; the flag is gated by `!isWebmOutput`.
+
+**ID3-style tag injection (audio-only path)**, same [`handleEmbedMetadata`](src/entrypoints/mux-worker/mux-handler-embed-metadata.ts):
+
+- Global tags emitted via `-metadata title=`, `-metadata artist=`, `-metadata album_artist=`, `-metadata album=`, `-metadata genre=`, `-metadata date=`.
+- All string values pass through [`sanitizeForFFmpeg`](src/entrypoints/mux-worker/mux-thumbnail.ts) which strips `\n`, `\r`, `"`, and `\`. FFmpeg parses these as delimiters in `-metadata` args; an un-escaped quote in a title breaks the whole command line.
+- FFmpeg writes the tags in the container's native format: ID3v2 for MP3, Vorbis comments for OGG/Opus, iTunes-style atoms for M4A.
+- Genres are joined with `", "` if multiple were detected.
+- `albumArtist` is only emitted when it differs from `artist` (filter applied at `buildVideoMetadata` time).
+
+**Per-track metadata (video mux path)**, in [`appendTrackMetadata`](src/entrypoints/mux-worker/mux-ffmpeg-args.ts):
+
+- Each audio input gets `-metadata:s:a:<i> title=<label>` and `-metadata:s:a:<i> language=<code>`. The label is the human-readable track name (e.g. "English (United States)"), the language code is the BCP-47 tag (e.g. `en-US`).
+- Each subtitle input gets `-metadata:s:s:<i> title=<label>` and `-metadata:s:s:<i> language=<code>`.
+- Multi-track audio: `-disposition:a:<i> default` is set on the user-selected primary track, `-disposition:a:<i> 0` on the rest. Players (VLC, mpv) honor this when picking the default track on open.
+- No global `-metadata title=` / `-metadata artist=` is set on video files — those tags don't have a standard meaning across video container formats and would clobber the per-track metadata in some containers.
+- No cover-art embedding — the source has a thumbnail URL but the video mux path ignores it. Cover art on video containers is inconsistent across players, and the visible video stream already serves as the visual identity.
+
 ## Cross-cutting concerns
 
 ### Resilience
