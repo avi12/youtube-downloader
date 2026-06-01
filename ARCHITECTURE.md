@@ -8,29 +8,45 @@ The central constraint shaping everything: MV3 fragments execution across isolat
 
 ```mermaid
 flowchart TB
-    subgraph Page["YouTube tab"]
-      Main["MAIN content<br/>(reads page, builds DownloadRequest)"]
-      Iso["ISOLATED content<br/>(messaging bridge)"]
+    Click["User clicks Download<br/>(watch-button-click.ts)"]
+
+    subgraph Resolve["MAIN-world resolution (parallel)"]
+      direction TB
+      Itags["Read itags +<br/>audio-track metadata<br/>from streamingData"]
+      PO["PO Token<br/>(BotGuard interpreter +<br/>/api/jnn/v1/GenerateIT)"]
+      Sig["Decipher signatureCipher<br/>(pattern-match player.js,<br/>replay swap/reverse/splice)"]
+      Captions["Fresh caption URLs<br/>(InnerTube /youtubei/v1/player)<br/>+ fetch VTT blobs"]
     end
 
-    subgraph BG["Background"]
-      SW["Service worker (Chrome)<br/>/ event-page (Firefox)"]
-    end
+    Click --> Resolve
+    Resolve --> Pack["Pack DownloadRequest"]
+    Pack -->|"CustomEvent bus"| Iso["ISOLATED content"]
+    Iso -->|"runtime message"| SW["Background SW / event-page"]
 
-    subgraph Off["Offscreen document"]
-      Worker["Download iframe<br/>(Chrome only)"]
-      Mux["FFmpeg WASM worker"]
-    end
+    SW --> Branch{"isFirefoxRuntime?"}
+    Branch -->|"Chrome"| Worker["Download-worker iframe<br/>(in offscreen document)"]
+    Branch -->|"Firefox"| FF["ANDROID_VR InnerTube call<br/>(BG-direct fast path,<br/>page-proxy fallback for visitorData)"]
 
-    Main <-->|"CustomEvent bus"| Iso
-    Iso -->|"DownloadRequest"| SW
-    SW -->|"Chrome"| Worker
-    SW -.->|"Firefox: ANDROID_VR direct fetch"| Mux
-    Worker -->|"chunks"| Mux
-    Mux --> DL["browser.downloads"]
+    Worker --> SABR["1. SABR<br/>(googlevideo protobuf,<br/>5s/10s stall timer,<br/>DNR rewrites Origin)"]
+    SABR -->|"empty / stall"| CDN["2. CDN byte-range GET<br/>(resumable)"]
+    CDN -->|"empty / 403"| FB{"audio-only +<br/>resolvedAudioUrl?"}
+    FB -->|"yes"| Direct["3. browser.downloads<br/>direct CDN URL<br/>(skips muxer)"]
+    FB -->|"no"| Scrub["4. Scrub-capture iframe<br/>(hidden watch tab ytdl=1,<br/>SourceBuffer hook)"]
+
+    FF --> FFchunk["10 MB closed-range chunks,<br/>video + audio in parallel"]
+
+    SABR -->|"chunks"| Acc["Offscreen accumulator +<br/>end-handler"]
+    CDN -->|"chunks"| Acc
+    Scrub -->|"chunks"| Acc
+    FFchunk -->|"chunks"| Acc
+
+    Acc --> Mux["FFmpeg WASM mux worker<br/>(video + audio tracks +<br/>VTT subtitles + cover art +<br/>ID3 metadata)"]
+    Mux --> Blob["Output blob"]
+    Blob --> DL["browser.downloads.download"]
+    Direct --> DL
 ```
 
-The execution-context layout is the *only* thing that's identical on Chrome and Firefox. The fetch path differs (see the two deep dives below), but everything downstream of the chunks — accumulation, muxing, blob creation, `browser.downloads` — is shared code.
+Chrome and Firefox diverge only at `isFirefoxRuntime?`. Everything that runs in MAIN context before the dispatch (auth, itags, captions) and everything after the chunks reach the accumulator (muxing, blob creation, `browser.downloads`) is shared code. The two sequence diagrams further down zoom into the Chrome 4-layer fallback chain and the Firefox page-proxy hand-off.
 
 ## Codemap
 
