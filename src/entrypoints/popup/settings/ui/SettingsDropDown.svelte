@@ -1,6 +1,6 @@
 <script lang="ts">
-  import checkIcon from "../icons/check.svg?raw";
-  import chevronRightIcon from "../icons/chevron-right.svg?raw";
+  import checkIcon from "../../icons/check.svg?raw";
+  import chevronRightIcon from "../../icons/chevron-right.svg?raw";
   import type { Snippet } from "svelte";
   import { slide } from "svelte/transition";
 

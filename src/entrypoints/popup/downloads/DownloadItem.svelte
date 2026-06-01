@@ -1,6 +1,6 @@
 <script lang="ts">
-  import WavyProgress from "../components/WavyProgress.svelte";
   import closeIcon from "../icons/close.svg?raw";
+  import WavyProgress from "../shared/WavyProgress.svelte";
 
   interface Props {
     filename: string;

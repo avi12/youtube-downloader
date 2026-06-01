@@ -1,8 +1,8 @@
 <script lang="ts">
-  import RecentDownloadItem from "../recent/RecentDownloadItem.svelte";
   import { bindDownloadAccessors, getVideoStatusLabel } from "./active-downloads-helpers";
   import DownloadItem from "./DownloadItem.svelte";
   import DownloadSection from "./DownloadSection.svelte";
+  import RecentDownloadItem from "./recent/RecentDownloadItem.svelte";
   import type { DownloadProgressEntry, RecentDownloadEntry, VideoQueueItem } from "@/types";
   import { SvelteMap, SvelteSet } from "svelte/reactivity";
 

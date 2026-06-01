@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { createAppState, PopupPanel } from "./App.state.svelte";
+  import { createAppState, PopupPanel } from "./app-state.svelte";
   import DownloadsTab from "./downloads/DownloadsTab.svelte";
   import ChangeFormatDialog from "./format-dialog/ChangeFormatDialog.svelte";
   import SettingsTab from "./settings/SettingsTab.svelte";
-  import TabNav from "./TabNav.svelte";
+  import TabNav from "./shared/TabNav.svelte";
   import type { DownloadProgressEntry, Options, VideoQueueItem } from "@/types";
   import { untrack } from "svelte";
   import { cubicOut } from "svelte/easing";

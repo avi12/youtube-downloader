@@ -1,8 +1,8 @@
 <script lang="ts">
   import downloadIcon from "../icons/download.svg?raw";
   import sparkleIcon from "../icons/sparkle.svg?raw";
-  import RecentDownloadsSection from "../recent/RecentDownloadsSection.svelte";
   import ActiveDownloadsSections from "./ActiveDownloadsSections.svelte";
+  import RecentDownloadsSection from "./recent/RecentDownloadsSection.svelte";
   import { deleteRecentDownload } from "@/lib/storage/recent-downloads-db";
   import type { DownloadProgressEntry, RecentDownloadEntry, VideoQueueItem } from "@/types";
   import { browser } from "#imports";

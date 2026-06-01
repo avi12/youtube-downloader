@@ -1,45 +1,42 @@
 <script lang="ts">
-  import type { SettingsProps } from "./settings-types";
+  import type { SettingsProps } from "../settings-types";
+  import SettingsGroup from "../ui/SettingsGroup.svelte";
   import { setOption } from "@/lib/storage/storage";
-  import { CaptionLanguageMode } from "@/types";
+  import { DownloadType } from "@/types";
 
   const { options }: SettingsProps = $props();
 
-  const captionLanguageModeOptions = [
+  const downloadTypeOptions = [
     {
-      value: CaptionLanguageMode.SameAsAudio,
-      label: "Same as audio",
-      description: "Follows the audio language setting above"
+      value: DownloadType.Auto,
+      label: "Auto (video for videos, audio for music)"
     },
     {
-      value: CaptionLanguageMode.OriginalLanguage,
-      label: "Original language",
-      description: "Prefers the video's native language captions"
+      value: DownloadType.VideoAndAudio,
+      label: "Always video + audio"
     },
     {
-      value: CaptionLanguageMode.MatchVideo,
-      label: "Match selected track",
-      description: "Uses the watch page audio track language, or YouTube's language elsewhere"
+      value: DownloadType.Video,
+      label: "Always video only"
     },
     {
-      value: CaptionLanguageMode.Custom,
-      label: "Custom language",
-      description: "Uses the same custom language set for audio above"
+      value: DownloadType.Audio,
+      label: "Always audio only"
     }
   ] as const;
 </script>
 
-<fieldset class="set-section-fieldset">
-  <legend class="radio-group-legend">Closed captions language</legend>
-  <div class="radio-group" role="radiogroup">
-    {#each captionLanguageModeOptions as { value, label, description } (value)}
+<SettingsGroup title="Download type">
+  <fieldset class="radio-group">
+    <legend class="visually-hidden">Download type</legend>
+    {#each downloadTypeOptions as { value, label } (value)}
       <label class="radio-item">
         <input
-          name="caption-language-mode"
+          name="download-type"
           class="radio-input-hidden"
-          checked={options.captionLanguageMode === value}
+          checked={options.defaultDownloadType === value}
           onchange={() => void setOption({
-            key: "captionLanguageMode",
+            key: "defaultDownloadType",
             value
           })}
           type="radio"
@@ -48,33 +45,13 @@
         <div class="radio-dot"></div>
         <div class="radio-txt">
           <span class="radio-label">{label}</span>
-          <span class="radio-desc">{description}</span>
         </div>
       </label>
     {/each}
-  </div>
-</fieldset>
+  </fieldset>
+</SettingsGroup>
 
 <style>
-  .set-section-fieldset {
-    margin: 0;
-    padding: 0;
-    border: none;
-    border-top: 1px solid var(--border);
-
-    &:first-child {
-      border-top: none;
-    }
-  }
-
-  .radio-group-legend {
-    padding-block: 10px 2px;
-    padding-inline: 14px;
-    color: var(--fg-muted);
-    font-weight: 500;
-    font-size: 0.75rem;
-  }
-
   .radio-group {
     display: flex;
     flex-direction: column;
@@ -82,6 +59,15 @@
     margin: 0;
     padding: 4px;
     border: none;
+  }
+
+  .visually-hidden {
+    position: absolute;
+    overflow: hidden;
+    width: 1px;
+    height: 1px;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
 
   .radio-item {
@@ -152,10 +138,5 @@
     color: var(--fg);
     font-weight: 500;
     font-size: 0.84375rem;
-  }
-
-  .radio-desc {
-    color: var(--fg-muted);
-    font-size: 0.71875rem;
   }
 </style>

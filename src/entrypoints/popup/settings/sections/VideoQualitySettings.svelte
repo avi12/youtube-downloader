@@ -1,42 +1,40 @@
 <script lang="ts">
-  import type { SettingsProps } from "./settings-types";
-  import SettingsGroup from "./SettingsGroup.svelte";
+  import type { SlidingSettingsProps } from "../settings-types";
+  import SettingsGroup from "../ui/SettingsGroup.svelte";
   import { setOption } from "@/lib/storage/storage";
-  import { DownloadType } from "@/types";
+  import { VIDEO_QUALITIES } from "@/lib/youtube/video-helpers";
+  import { VideoQualityMode } from "@/types";
+  import { slide } from "svelte/transition";
 
-  const { options }: SettingsProps = $props();
+  const { options, slideDuration }: SlidingSettingsProps = $props();
 
-  const downloadTypeOptions = [
+  const qualityModeOptions = [
     {
-      value: DownloadType.Auto,
-      label: "Auto (video for videos, audio for music)"
+      value: VideoQualityMode.CurrentQuality,
+      label: "Match current player quality"
     },
     {
-      value: DownloadType.VideoAndAudio,
-      label: "Always video + audio"
+      value: VideoQualityMode.Best,
+      label: "Best available quality"
     },
     {
-      value: DownloadType.Video,
-      label: "Always video only"
-    },
-    {
-      value: DownloadType.Audio,
-      label: "Always audio only"
+      value: VideoQualityMode.Custom,
+      label: "Custom quality"
     }
   ] as const;
 </script>
 
-<SettingsGroup title="Download type">
+<SettingsGroup title="Video quality">
   <fieldset class="radio-group">
-    <legend class="visually-hidden">Download type</legend>
-    {#each downloadTypeOptions as { value, label } (value)}
+    <legend class="visually-hidden">Video quality</legend>
+    {#each qualityModeOptions as { value, label } (value)}
       <label class="radio-item">
         <input
-          name="download-type"
+          name="quality-mode"
           class="radio-input-hidden"
-          checked={options.defaultDownloadType === value}
+          checked={options.videoQualityMode === value}
           onchange={() => void setOption({
-            key: "defaultDownloadType",
+            key: "videoQualityMode",
             value
           })}
           type="radio"
@@ -49,6 +47,29 @@
       </label>
     {/each}
   </fieldset>
+  {#if options.videoQualityMode === VideoQualityMode.Custom}
+    <div class="set-inset" transition:slide={{ duration: slideDuration }}>
+      <label class="set-inset-label" for="custom-quality-select">Quality</label>
+      <select
+        id="custom-quality-select"
+        class="set-select"
+        onchange={e => {
+          if (!(e.target instanceof HTMLSelectElement)) {
+            return;
+          }
+
+          void setOption({
+            key: "videoQuality",
+            value: Number(e.target.value)
+          });
+        }}
+      >
+        {#each VIDEO_QUALITIES as quality (quality)}
+          <option selected={quality === options.videoQuality} value={quality}>{quality}p</option>
+        {/each}
+      </select>
+    </div>
+  {/if}
 </SettingsGroup>
 
 <style>
@@ -138,5 +159,36 @@
     color: var(--fg);
     font-weight: 500;
     font-size: 0.84375rem;
+  }
+
+  .set-inset {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    padding: 10px 14px;
+    border-top: 1px solid var(--border);
+    background: var(--surface-high);
+  }
+
+  .set-inset-label {
+    flex: 1;
+    color: var(--fg-muted);
+    font-size: 0.8125rem;
+  }
+
+  .set-select {
+    padding: 6px 10px;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: transparent;
+    color: inherit;
+    font-family: inherit;
+    font-size: 0.8125rem;
+    cursor: pointer;
+
+    &:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
   }
 </style>

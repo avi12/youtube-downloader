@@ -1,42 +1,45 @@
 <script lang="ts">
-  import type { SlidingSettingsProps } from "./settings-types";
+  import type { SettingsProps } from "../settings-types";
   import { setOption } from "@/lib/storage/storage";
-  import { LANGUAGES } from "@/lib/utils/languages";
-  import { AudioTrackLanguageMode } from "@/types";
-  import { slide } from "svelte/transition";
+  import { CaptionLanguageMode } from "@/types";
 
-  const { options, slideDuration }: SlidingSettingsProps = $props();
+  const { options }: SettingsProps = $props();
 
-  const languageModeOptions = [
+  const captionLanguageModeOptions = [
     {
-      value: AudioTrackLanguageMode.OriginalLanguage,
+      value: CaptionLanguageMode.SameAsAudio,
+      label: "Same as audio",
+      description: "Follows the audio language setting above"
+    },
+    {
+      value: CaptionLanguageMode.OriginalLanguage,
       label: "Original language",
-      description: "Uses the video's native/untagged audio track; falls back to video language then YouTube's language"
+      description: "Prefers the video's native language captions"
     },
     {
-      value: AudioTrackLanguageMode.MatchVideo,
+      value: CaptionLanguageMode.MatchVideo,
       label: "Match selected track",
-      description: "Uses the video's current audio track on watch pages, or YouTube's language elsewhere"
+      description: "Uses the watch page audio track language, or YouTube's language elsewhere"
     },
     {
-      value: AudioTrackLanguageMode.Custom,
+      value: CaptionLanguageMode.Custom,
       label: "Custom language",
-      description: "Falls back to English if the language is unavailable"
+      description: "Uses the same custom language set for audio above"
     }
   ] as const;
 </script>
 
 <fieldset class="set-section-fieldset">
-  <legend class="radio-group-legend">Audio track language</legend>
+  <legend class="radio-group-legend">Closed captions language</legend>
   <div class="radio-group" role="radiogroup">
-    {#each languageModeOptions as { value, label, description } (value)}
+    {#each captionLanguageModeOptions as { value, label, description } (value)}
       <label class="radio-item">
         <input
-          name="language-mode"
+          name="caption-language-mode"
           class="radio-input-hidden"
-          checked={options.audioTrackLanguageMode === value}
+          checked={options.captionLanguageMode === value}
           onchange={() => void setOption({
-            key: "audioTrackLanguageMode",
+            key: "captionLanguageMode",
             value
           })}
           type="radio"
@@ -50,30 +53,6 @@
       </label>
     {/each}
   </div>
-  {#if options.audioTrackLanguageMode === AudioTrackLanguageMode.Custom}
-    <div class="set-inset" transition:slide={{ duration: slideDuration }}>
-      <label class="set-inset-label" for="custom-language-select">Language</label>
-      <select
-        id="custom-language-select"
-        class="set-select"
-        onchange={e => {
-          if (!(e.target instanceof HTMLSelectElement)) {
-            return;
-          }
-
-          void setOption({
-            key: "customLanguage",
-            value: e.target.value
-          });
-        }}
-        value={options.customLanguage}
-      >
-        {#each LANGUAGES as [name, code] (code)}
-          <option selected={options.customLanguage === code} value={code}>{name}</option>
-        {/each}
-      </select>
-    </div>
-  {/if}
 </fieldset>
 
 <style>
@@ -178,36 +157,5 @@
   .radio-desc {
     color: var(--fg-muted);
     font-size: 0.71875rem;
-  }
-
-  .set-inset {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    padding: 10px 14px;
-    border-top: 1px solid var(--border);
-    background: var(--surface-high);
-  }
-
-  .set-inset-label {
-    flex: 1;
-    color: var(--fg-muted);
-    font-size: 0.8125rem;
-  }
-
-  .set-select {
-    padding: 6px 10px;
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    background: transparent;
-    color: inherit;
-    font-family: inherit;
-    font-size: 0.8125rem;
-    cursor: pointer;
-
-    &:focus-visible {
-      outline: 2px solid var(--accent);
-      outline-offset: 2px;
-    }
   }
 </style>

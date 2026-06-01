@@ -1,8 +1,8 @@
 <script lang="ts">
-  import expandVerticalIcon from "../icons/expand-vertical.svg?raw";
-  import PlaylistRadioGroup from "./PlaylistRadioGroup.svelte";
-  import type { SettingsProps } from "./settings-types";
-  import SettingsGroup from "./SettingsGroup.svelte";
+  import expandVerticalIcon from "../../icons/expand-vertical.svg?raw";
+  import type { SettingsProps } from "../settings-types";
+  import PlaylistRadioGroup from "../ui/PlaylistRadioGroup.svelte";
+  import SettingsGroup from "../ui/SettingsGroup.svelte";
   import { setOption } from "@/lib/storage/storage";
   import { PlaylistDownloadMode, PlaylistOutputMode } from "@/types";
 

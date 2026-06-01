@@ -1,11 +1,11 @@
 import type { InitialAppStateProps } from "./app-state-props";
 import { setupAppWatchers } from "./app-watchers.svelte";
-import { buildTabs, PopupPanel } from "./popup-panel";
+import { buildTabs, PopupPanel } from "./tabs";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { getAllRecentDownloads } from "@/lib/storage/recent-downloads-db";
 import type { Options, RecentDownloadEntry } from "@/types";
 
-export { PopupPanel } from "./popup-panel";
+export { PopupPanel } from "./tabs";
 
 export function createAppState(props: InitialAppStateProps) {
   let activePanel = $state<PopupPanel>(PopupPanel.Downloads);

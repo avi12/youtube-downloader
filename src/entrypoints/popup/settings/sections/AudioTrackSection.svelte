@@ -1,40 +1,42 @@
 <script lang="ts">
-  import type { SlidingSettingsProps } from "./settings-types";
-  import SettingsGroup from "./SettingsGroup.svelte";
+  import type { SlidingSettingsProps } from "../settings-types";
   import { setOption } from "@/lib/storage/storage";
-  import { VIDEO_QUALITIES } from "@/lib/youtube/video-helpers";
-  import { VideoQualityMode } from "@/types";
+  import { LANGUAGES } from "@/lib/utils/languages";
+  import { AudioTrackLanguageMode } from "@/types";
   import { slide } from "svelte/transition";
 
   const { options, slideDuration }: SlidingSettingsProps = $props();
 
-  const qualityModeOptions = [
+  const languageModeOptions = [
     {
-      value: VideoQualityMode.CurrentQuality,
-      label: "Match current player quality"
+      value: AudioTrackLanguageMode.OriginalLanguage,
+      label: "Original language",
+      description: "Uses the video's native/untagged audio track; falls back to video language then YouTube's language"
     },
     {
-      value: VideoQualityMode.Best,
-      label: "Best available quality"
+      value: AudioTrackLanguageMode.MatchVideo,
+      label: "Match selected track",
+      description: "Uses the video's current audio track on watch pages, or YouTube's language elsewhere"
     },
     {
-      value: VideoQualityMode.Custom,
-      label: "Custom quality"
+      value: AudioTrackLanguageMode.Custom,
+      label: "Custom language",
+      description: "Falls back to English if the language is unavailable"
     }
   ] as const;
 </script>
 
-<SettingsGroup title="Video quality">
-  <fieldset class="radio-group">
-    <legend class="visually-hidden">Video quality</legend>
-    {#each qualityModeOptions as { value, label } (value)}
+<fieldset class="set-section-fieldset">
+  <legend class="radio-group-legend">Audio track language</legend>
+  <div class="radio-group" role="radiogroup">
+    {#each languageModeOptions as { value, label, description } (value)}
       <label class="radio-item">
         <input
-          name="quality-mode"
+          name="language-mode"
           class="radio-input-hidden"
-          checked={options.videoQualityMode === value}
+          checked={options.audioTrackLanguageMode === value}
           onchange={() => void setOption({
-            key: "videoQualityMode",
+            key: "audioTrackLanguageMode",
             value
           })}
           type="radio"
@@ -43,15 +45,16 @@
         <div class="radio-dot"></div>
         <div class="radio-txt">
           <span class="radio-label">{label}</span>
+          <span class="radio-desc">{description}</span>
         </div>
       </label>
     {/each}
-  </fieldset>
-  {#if options.videoQualityMode === VideoQualityMode.Custom}
+  </div>
+  {#if options.audioTrackLanguageMode === AudioTrackLanguageMode.Custom}
     <div class="set-inset" transition:slide={{ duration: slideDuration }}>
-      <label class="set-inset-label" for="custom-quality-select">Quality</label>
+      <label class="set-inset-label" for="custom-language-select">Language</label>
       <select
-        id="custom-quality-select"
+        id="custom-language-select"
         class="set-select"
         onchange={e => {
           if (!(e.target instanceof HTMLSelectElement)) {
@@ -59,20 +62,40 @@
           }
 
           void setOption({
-            key: "videoQuality",
-            value: Number(e.target.value)
+            key: "customLanguage",
+            value: e.target.value
           });
         }}
+        value={options.customLanguage}
       >
-        {#each VIDEO_QUALITIES as quality (quality)}
-          <option selected={quality === options.videoQuality} value={quality}>{quality}p</option>
+        {#each LANGUAGES as [name, code] (code)}
+          <option selected={options.customLanguage === code} value={code}>{name}</option>
         {/each}
       </select>
     </div>
   {/if}
-</SettingsGroup>
+</fieldset>
 
 <style>
+  .set-section-fieldset {
+    margin: 0;
+    padding: 0;
+    border: none;
+    border-top: 1px solid var(--border);
+
+    &:first-child {
+      border-top: none;
+    }
+  }
+
+  .radio-group-legend {
+    padding-block: 10px 2px;
+    padding-inline: 14px;
+    color: var(--fg-muted);
+    font-weight: 500;
+    font-size: 0.75rem;
+  }
+
   .radio-group {
     display: flex;
     flex-direction: column;
@@ -80,15 +103,6 @@
     margin: 0;
     padding: 4px;
     border: none;
-  }
-
-  .visually-hidden {
-    position: absolute;
-    overflow: hidden;
-    width: 1px;
-    height: 1px;
-    clip-path: inset(50%);
-    white-space: nowrap;
   }
 
   .radio-item {
@@ -159,6 +173,11 @@
     color: var(--fg);
     font-weight: 500;
     font-size: 0.84375rem;
+  }
+
+  .radio-desc {
+    color: var(--fg-muted);
+    font-size: 0.71875rem;
   }
 
   .set-inset {

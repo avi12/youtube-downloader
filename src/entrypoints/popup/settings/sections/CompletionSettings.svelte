@@ -1,36 +1,34 @@
 <script lang="ts">
-  import audioVolumeIcon from "../icons/audio-volume.svg?raw";
-  import captionsIcon from "../icons/captions.svg?raw";
-  import sparkleIcon from "../icons/sparkle.svg?raw";
-  import AudioTrackSection from "./AudioTrackSection.svelte";
-  import CaptionLanguageSection from "./CaptionLanguageSection.svelte";
-  import type { SlidingSettingsProps } from "./settings-types";
-  import SettingsGroup from "./SettingsGroup.svelte";
+  import bellIcon from "../../icons/bell.svg?raw";
+  import folderIcon from "../../icons/folder.svg?raw";
+  import playArrowIcon from "../../icons/play-arrow.svg?raw";
+  import type { SettingsProps } from "../settings-types";
+  import SettingsGroup from "../ui/SettingsGroup.svelte";
   import { setOption } from "@/lib/storage/storage";
 
-  const { options, slideDuration }: SlidingSettingsProps = $props();
+  const { options }: SettingsProps = $props();
 </script>
 
-<SettingsGroup title="Audio &amp; subtitles">
+<SettingsGroup title="When download completes">
   <label class="set-item set-item-label">
     <div class="set-lead accent">
-      {@html captionsIcon}
+      {@html bellIcon}
     </div>
     <div class="set-txt">
-      <span class="set-label">Download additional audio tracks and captions</span>
+      <span class="set-label">Notify when window is idle</span>
     </div>
     <div class="set-trail">
       <span class="set-switch">
         <input
           class="set-switch-input"
-          checked={options.downloadExtras}
+          checked={options.isNotifyOnIdle}
           onchange={e => {
             if (!(e.target instanceof HTMLInputElement)) {
               return;
             }
 
             void setOption({
-              key: "downloadExtras",
+              key: "isNotifyOnIdle",
               value: e.target.checked
             });
           }}
@@ -43,23 +41,23 @@
   </label>
   <label class="set-item set-item-label">
     <div class="set-lead">
-      {@html audioVolumeIcon}
+      {@html folderIcon}
     </div>
     <div class="set-txt">
-      <span class="set-label">Include auto-dubbed audio tracks</span>
+      <span class="set-label">Reveal file in folder</span>
     </div>
     <div class="set-trail">
       <span class="set-switch">
         <input
           class="set-switch-input"
-          checked={options.includeAutoDubbing}
+          checked={options.isRevealOnComplete}
           onchange={e => {
             if (!(e.target instanceof HTMLInputElement)) {
               return;
             }
 
             void setOption({
-              key: "includeAutoDubbing",
+              key: "isRevealOnComplete",
               value: e.target.checked
             });
           }}
@@ -70,25 +68,28 @@
       </span>
     </div>
   </label>
+</SettingsGroup>
+
+<SettingsGroup title="Integration">
   <label class="set-item set-item-label">
-    <div class="set-lead">
-      {@html sparkleIcon}
+    <div class="set-lead accent">
+      {@html playArrowIcon}
     </div>
     <div class="set-txt">
-      <span class="set-label">Include AI-generated captions</span>
+      <span class="set-label">Show native download button on watch page</span>
     </div>
     <div class="set-trail">
       <span class="set-switch">
         <input
           class="set-switch-input"
-          checked={options.includeAiCaptions}
+          checked={options.isShowNativeDownload}
           onchange={e => {
             if (!(e.target instanceof HTMLInputElement)) {
               return;
             }
 
             void setOption({
-              key: "includeAiCaptions",
+              key: "isShowNativeDownload",
               value: e.target.checked
             });
           }}
@@ -99,8 +100,6 @@
       </span>
     </div>
   </label>
-  <AudioTrackSection {options} {slideDuration} />
-  <CaptionLanguageSection {options} />
 </SettingsGroup>
 
 <style>

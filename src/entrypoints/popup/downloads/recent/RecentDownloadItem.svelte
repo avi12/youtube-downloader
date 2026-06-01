@@ -1,7 +1,7 @@
 <script lang="ts">
-  import changeFormatIcon from "../icons/change-format.svg?raw";
-  import folderIcon from "../icons/folder.svg?raw";
-  import openInNewIcon from "../icons/open-in-new.svg?raw";
+  import changeFormatIcon from "../../icons/change-format.svg?raw";
+  import folderIcon from "../../icons/folder.svg?raw";
+  import openInNewIcon from "../../icons/open-in-new.svg?raw";
   import type { RecentDownloadEntry } from "@/types";
   import { browser } from "#imports";
 
