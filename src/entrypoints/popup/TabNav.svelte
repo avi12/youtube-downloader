@@ -4,14 +4,20 @@
       id: T;
       label: string;
       badge?: number;
+      icon?: string;
     }[];
     activeTab: T;
+    initialActiveTab: T;
     onChange(id: T): void;
   }
 
-  const { tabs, activeTab, onChange }: Props = $props();
+  const { tabs, activeTab, initialActiveTab, onChange }: Props = $props();
 
-  const tabButtonElements: Record<string, HTMLButtonElement> = {};
+  let tabButtonElements = $state<Record<string, HTMLButtonElement>>({});
+  let tabListEl: HTMLDivElement | null = $state(null);
+  let indLeft = $state(0);
+  let indWidth = $state(0);
+  let hasChanged = $state(false);
 
   function registerTabButton(tabId: T) {
     return (element: Element) => {
@@ -21,25 +27,50 @@
     };
   }
 
-  function handleTabKeydown(e: KeyboardEvent): void {
-    const iCurrent = tabs.findIndex(tab => tab.id === activeTab);
-    const isNextKey = e.key === "ArrowRight" || e.key === "ArrowDown";
-    const isPreviousKey = e.key === "ArrowLeft" || e.key === "ArrowUp";
-    if (isNextKey) {
-      e.preventDefault();
-      const next = tabs[(iCurrent + 1) % tabs.length].id;
-      onChange(next);
-      tabButtonElements[next]?.focus();
-    } else if (isPreviousKey) {
-      e.preventDefault();
-      const previous = tabs[(iCurrent - 1 + tabs.length) % tabs.length].id;
-      onChange(previous);
-      tabButtonElements[previous]?.focus();
+  function updateIndicator(tabId: T): void {
+    const elTabButton = tabButtonElements[tabId];
+    if (!elTabButton || !tabListEl) {
+      return;
     }
+
+    const parentLeft = tabListEl.getBoundingClientRect().left;
+    const btnRect = elTabButton.getBoundingClientRect();
+    const indicatorWidth = Math.min(72, btnRect.width - 28);
+    indLeft = btnRect.left - parentLeft + btnRect.width / 2 - indicatorWidth / 2;
+    indWidth = indicatorWidth;
+  }
+
+  $effect(() => {
+    updateIndicator(activeTab);
+  });
+
+  $effect(() => {
+    if (activeTab !== initialActiveTab) {
+      hasChanged = true;
+    }
+  });
+
+  function handleTabKeydown(e: KeyboardEvent): void {
+    const keyDirections: Partial<Record<string, 1 | -1>> = {
+      ArrowRight: 1,
+      ArrowDown: 1,
+      ArrowLeft: -1,
+      ArrowUp: -1
+    };
+    const direction = keyDirections[e.key];
+    if (direction === undefined) {
+      return;
+    }
+
+    e.preventDefault();
+    const iCurrent = tabs.findIndex(tab => tab.id === activeTab);
+    const nextId = tabs[(iCurrent + direction + tabs.length) % tabs.length].id;
+    onChange(nextId);
+    tabButtonElements[nextId]?.focus();
   }
 </script>
 
-<div class="tab-nav" role="tablist">
+<div bind:this={tabListEl} class="tab-nav" role="tablist">
   {#each tabs as tab (tab.id)}
     <button
       class="tab-nav-button"
@@ -47,11 +78,17 @@
       {@attach registerTabButton(tab.id)}
       aria-controls="panel-{tab.id}"
       aria-selected={activeTab === tab.id}
+      data-id={tab.id}
       onclick={() => onChange(tab.id)}
       onkeydown={handleTabKeydown}
       role="tab"
       tabindex={activeTab === tab.id ? 0 : -1}
     >
+      {#if tab.icon}
+        <svg aria-hidden="true" fill="currentColor" height="18" viewBox="0 -960 960 960" width="18">
+          <path d={tab.icon} />
+        </svg>
+      {/if}
       {tab.label}
       {#if tab.badge !== undefined && tab.badge > 0}
         <span class="badge" aria-label="{tab.badge} active">{tab.badge}</span>
@@ -59,14 +96,19 @@
     </button>
   {/each}
 </div>
+<div class="tab-track">
+  <div
+    style:--ind-left="{indLeft}px"
+    style:--ind-width="{indWidth}px"
+    class="tab-ind"
+    class:tab-ind--animated={hasChanged}
+  ></div>
+</div>
 
 <style>
   .tab-nav {
+    position: relative;
     display: flex;
-    gap: 4px;
-    padding: 4px;
-    border-radius: 16px;
-    background: var(--surface);
   }
 
   .tab-nav-button {
@@ -75,33 +117,59 @@
     gap: 6px;
     justify-content: center;
     align-items: center;
-    padding: 8px 16px;
+    height: 46px;
+    padding: 0;
     border: none;
-    border-radius: 12px;
     background: transparent;
     color: var(--fg-muted);
     font-family: inherit;
     font-weight: 500;
-    font-size: 0.8125rem;
+    font-size: 0.84375rem;
     white-space: nowrap;
     cursor: pointer;
-    transition: background-color 200ms, color 200ms;
-
-    &:hover {
-      background: var(--accent-hover);
-      color: var(--fg);
-    }
+    transition: color 200ms cubic-bezier(0.2, 0, 0, 1);
 
     &:focus-visible {
       outline: 2px solid var(--accent);
-      outline-offset: 2px;
+      outline-offset: -2px;
     }
   }
 
   .tab-nav-button--active {
-    background: var(--accent-container);
     color: var(--accent);
-    font-weight: 600;
+  }
+
+  .tab-track {
+    position: relative;
+    height: 3px;
+    background: transparent;
+
+    &::before {
+      content: "";
+      position: absolute;
+      inset-inline: 0;
+      bottom: 0;
+      height: 1px;
+      background: var(--border);
+    }
+  }
+
+  .tab-ind {
+    position: absolute;
+    bottom: 0;
+    width: var(--ind-width, 0);
+    height: 3px;
+    border-radius: 3px 3px 0 0;
+    background: var(--accent);
+    transform: translateX(var(--ind-left, 0));
+
+    &.tab-ind--animated {
+      /* stylelint-disable plugin/no-low-performance-animation-properties */
+      transition:
+        transform 420ms cubic-bezier(0.34, 1.56, 0.64, 1),
+        width 300ms cubic-bezier(0.3, 0, 0, 1);
+      /* stylelint-enable plugin/no-low-performance-animation-properties */
+    }
   }
 
   .badge {
@@ -112,9 +180,9 @@
     height: 18px;
     padding: 0 5px;
     border-radius: 9px;
-    background: var(--danger);
-    color: var(--on-danger);
-    font-weight: 600;
-    font-size: 0.6875rem;
+    background: var(--accent);
+    color: var(--on-primary, #ffffff);
+    font-weight: 700;
+    font-size: 0.65625rem;
   }
 </style>

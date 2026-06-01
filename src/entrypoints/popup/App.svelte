@@ -84,7 +84,12 @@
         by <a href="https://avi12.com" target="_blank">Avi</a>
       </span>
     </div>
-    <TabNav activeTab={appState.activePanel} onChange={handleTabChange} tabs={appState.tabs} />
+    <TabNav
+      activeTab={appState.activePanel}
+      initialActiveTab={PopupPanel.Downloads}
+      onChange={handleTabChange}
+      tabs={appState.tabs}
+    />
   </header>
 
   <div class="popup-content">
@@ -228,13 +233,15 @@
         --on-danger: oklch(100% 0 0deg);
         --surface: var(--md-sys-color-surface-container);
         --surface-high: var(--md-sys-color-surface-container-high);
+        --on-primary: var(--md-sys-color-on-primary);
+        --motion: 1;
 
-        width: 420px;
+        width: 400px;
         min-height: 600px;
         margin: 0;
         background-color: var(--bg);
         color: var(--fg);
-        font-family: "Google Sans", Roboto, Arial, sans-serif;
+        font-family: "Roboto Flex", Roboto, system-ui, sans-serif;
         font-size: 0.875rem;
         line-height: 1.5;
 
@@ -279,7 +286,7 @@
 
           .popup-title {
             color: var(--fg);
-            font-weight: 500;
+            font-weight: 600;
             font-size: 1.125rem;
             letter-spacing: 0;
           }
@@ -290,10 +297,12 @@
 
             & a {
               color: var(--accent);
-              text-decoration: none;
+              font-weight: 600;
+              text-decoration: underline;
+              text-underline-offset: 2px;
 
               &:hover {
-                text-decoration: underline;
+                opacity: 80%;
               }
             }
           }
@@ -311,6 +320,25 @@
           inset: 0;
           overflow-y: auto;
           padding: 16px;
+          scrollbar-color: var(--border) transparent;
+          scrollbar-width: thin;
+
+          &::-webkit-scrollbar {
+            width: 6px;
+          }
+
+          &::-webkit-scrollbar-track {
+            background: transparent;
+          }
+
+          &::-webkit-scrollbar-thumb {
+            border-radius: 3px;
+            background: var(--border);
+          }
+
+          &::-webkit-scrollbar-thumb:hover {
+            background: var(--fg-subtle);
+          }
         }
       }
     }
