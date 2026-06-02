@@ -27,7 +27,8 @@ export function applyDownloadTypeChange({
   const format = newType === DownloadType.Audio ? selectedAudioFormat : selectedVideoFormat;
   const extension = resolveAutoExtension({
     extension: extensionPreference,
-    mimeType: format?.mimeType ?? ""
+    mimeType: format?.mimeType ?? "",
+    isAudio: newType === DownloadType.Audio
   });
   return {
     downloadType: newType,

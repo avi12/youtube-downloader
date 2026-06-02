@@ -25,7 +25,7 @@ import {
   interruptedDownloadStore,
   statusProgressSignal
 } from "@/lib/ui/synced-stores.svelte";
-import { getAudioTempExtension, getCompatibleFilename, isAudioMimeNativeForContainer } from "@/lib/utils/containers";
+import { getCompatibleFilename, isAudioMimeNativeForContainer, resolveAutoExtension } from "@/lib/utils/containers";
 import {
   alignAudioFormatToExtension,
   calculateWeightedProgress,
@@ -270,7 +270,11 @@ export function createPanelState(getVideoData: () => VideoData) {
       return;
     }
 
-    extension = getAudioTempExtension(currentAudioFormat.mimeType);
+    extension = resolveAutoExtension({
+      extension: CONTENT_OPTIONS.ext.audio,
+      mimeType: currentAudioFormat.mimeType,
+      isAudio: true
+    });
   });
 
   function handleDownloadTypeChange(newType: DownloadType) {

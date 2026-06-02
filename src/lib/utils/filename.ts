@@ -47,7 +47,8 @@ export function resolveVideoFilename({ videoData, options, titleOverride }: {
   const defaultFormat = videoData.isMusic ? audioFormat : videoFormat;
   const resolvedExtension = resolveAutoExtension({
     extension: extensionPreference,
-    mimeType: defaultFormat?.mimeType ?? ""
+    mimeType: defaultFormat?.mimeType ?? "",
+    isAudio: videoData.isMusic
   });
   const outputExtension = videoFormat && audioFormat && !videoData.isMusic
     ? getOutputExtension({

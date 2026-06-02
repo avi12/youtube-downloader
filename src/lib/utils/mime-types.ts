@@ -121,11 +121,19 @@ export const supportedExtensions = {
   audio: [AUTO_EXTENSION, ...audioContainers]
 };
 
-export function resolveAutoExtension({ extension, mimeType }: {
+const WEBM_AUDIO_EXTENSIONS = new Set([EXT_WEBM, "weba"]);
+
+export function resolveAutoExtension({ extension, mimeType, isAudio = false }: {
   extension: string;
   mimeType: string;
+  isAudio?: boolean;
 }) {
   const isAuto = extension === AUTO_EXTENSION;
+  if (isAudio) {
+    const isWebmAudioTarget = isAuto || WEBM_AUDIO_EXTENSIONS.has(extension);
+    return isWebmAudioTarget ? EXT_M4A : extension;
+  }
+
   if (!isAuto) {
     return extension;
   }
