@@ -2,14 +2,10 @@
   import audioIcon from "../icons/audio.svg?raw";
   import closeIcon from "../icons/close.svg?raw";
   import videoIcon from "../icons/video.svg?raw";
-  import {
-    buildAvailableTargetGroups,
-    isAudioSourceEntry,
-    submitTranscode
-  } from "./change-format-helpers";
+  import { buildAvailableTargetGroups, isAudioSourceEntry, submitTranscode } from "./change-format-helpers";
   import FormatGrid from "./FormatGrid.svelte";
-  import { FORMAT_GROUP_AUDIO, FORMAT_GROUP_VIDEO } from "@/lib/utils/containers";
   import type { FormatGroup, FormatItem } from "@/lib/utils/containers";
+  import { FORMAT_GROUP_AUDIO, FORMAT_GROUP_VIDEO } from "@/lib/utils/containers";
   import type { RecentDownloadEntry } from "@/types";
 
   interface Props {
@@ -17,10 +13,26 @@
     onClose: () => void;
   }
 
+  const DialogMode = {
+    Video: "video",
+    Audio: "audio"
+  } as const;
+  type DialogMode = (typeof DialogMode)[keyof typeof DialogMode];
+
+  const DialogPlacement = {
+    Below: "below",
+    Above: "above"
+  } as const;
+  type DialogPlacement = (typeof DialogPlacement)[keyof typeof DialogPlacement];
+
+  const ANCHOR_NAME_PREFIX = "--cf-";
+  const ANCHOR_NAME_SANITIZE_PATTERN = /[^a-zA-Z0-9-]/g;
   const { entry, onClose }: Props = $props();
 
   const isAudioSource = $derived(isAudioSourceEntry(entry));
-  const anchorName = $derived(`--cf-${entry.id.replace(/[^a-zA-Z0-9-]/g, "")}`);
+  const anchorName = $derived(
+    `${ANCHOR_NAME_PREFIX}${entry.id.replace(ANCHOR_NAME_SANITIZE_PATTERN, "")}`
+  );
   const targetGroups = $derived(buildAvailableTargetGroups({ entry }));
   const videoItems = $derived(
     findGroup(targetGroups, FORMAT_GROUP_VIDEO)?.items ?? []
@@ -31,20 +43,20 @@
   const hasVideoMode = $derived(!isAudioSource && videoItems.length > 0);
   const hasAudioMode = $derived(audioItems.length > 0);
 
-  let mode = $state<"video" | "audio">("video");
+  let mode = $state<DialogMode>(DialogMode.Video);
 
   $effect(() => {
     if (!hasVideoMode && hasAudioMode) {
-      mode = "audio";
+      mode = DialogMode.Audio;
     }
   });
 
-  const activeItems = $derived(mode === "video" ? videoItems : audioItems);
+  const activeItems = $derived(mode === DialogMode.Video ? videoItems : audioItems);
 
   let isSubmitting = $state(false);
   let pendingExtension = $state<string | null>(null);
   let isClosing = $state(false);
-  let placement = $state<"below" | "above">("below");
+  let placement = $state<DialogPlacement>(DialogPlacement.Below);
 
   $effect(() => {
     const trigger = document.querySelector<HTMLElement>(
@@ -57,7 +69,7 @@
     const rect = trigger.getBoundingClientRect();
     const spaceBelow = window.innerHeight - rect.bottom;
     const spaceAbove = rect.top;
-    placement = spaceBelow >= spaceAbove ? "below" : "above";
+    placement = spaceBelow >= spaceAbove ? DialogPlacement.Below : DialogPlacement.Above;
   });
 
   function handleLayerPointerDown(): void {
@@ -150,9 +162,9 @@
       <div class="mode-toggle" role="tablist">
         <button
           class="mode-btn"
-          class:mode-btn--active={mode === "video"}
-          aria-selected={mode === "video"}
-          onclick={() => (mode = "video")}
+          class:mode-btn--active={mode === DialogMode.Video}
+          aria-selected={mode === DialogMode.Video}
+          onclick={() => (mode = DialogMode.Video)}
           role="tab"
           type="button"
         >
@@ -161,9 +173,9 @@
         </button>
         <button
           class="mode-btn"
-          class:mode-btn--active={mode === "audio"}
-          aria-selected={mode === "audio"}
-          onclick={() => (mode = "audio")}
+          class:mode-btn--active={mode === DialogMode.Audio}
+          aria-selected={mode === DialogMode.Audio}
+          onclick={() => (mode = DialogMode.Audio)}
           role="tab"
           type="button"
         >
@@ -175,7 +187,7 @@
 
     {#if activeItems.length > 0}
       <p class="dialog-description">
-        {#if mode === "video"}
+        {#if mode === DialogMode.Video}
           <strong>Instant</strong> just repackages the file. Others re-encode the video — <strong>Slower</strong> targets use a legacy codec and take noticeably longer
         {:else}
           <strong>Instant</strong> just repackages the file. Others re-encode the audio
