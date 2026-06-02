@@ -210,6 +210,7 @@
       0 4px 12px rgb(0 0 0 / 16%);
     animation: dialog-in 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
     position-try-fallbacks: --above;
+    position-try-order: most-block-size;
 
     &.closing {
       animation: dialog-out 180ms cubic-bezier(0.36, 0, 0.66, -0.56) forwards;
