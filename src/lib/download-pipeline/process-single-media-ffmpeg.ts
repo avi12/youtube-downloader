@@ -5,6 +5,7 @@ import type { VideoMetadata } from "@/types";
 
 const WEBA_EXTENSION = "weba";
 const WEBM_EXTENSION = "webm";
+const WEBM_AUDIO_OUTPUT_EXTENSIONS = new Set([WEBA_EXTENSION, WEBM_EXTENSION]);
 
 type ApplyAudioFfmpegParams = {
   videoId: string;
@@ -26,8 +27,9 @@ export async function applyAudioFfmpeg({
   outputExtension,
   metadata
 }: ApplyAudioFfmpegParams) {
-  const isMusicMetadata = metadata?.isMusic;
-  if (isMusicMetadata) {
+  const isWebmOutput = WEBM_AUDIO_OUTPUT_EXTENSIONS.has(outputExtension);
+  const hasEmbeddableThumbnail = metadata != null && Boolean(metadata.thumbnailUrl) && !isWebmOutput;
+  if (hasEmbeddableThumbnail) {
     await reportProgress({
       videoId,
       progress: 0,
