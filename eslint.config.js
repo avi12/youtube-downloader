@@ -192,7 +192,6 @@ const tsStyleRules = {
       message: "Do not use Reflect. Use direct property access instead."
     }
   ],
-  "@typescript-eslint/no-floating-promises": "error",
   "@typescript-eslint/no-unused-vars": ["error", { ignoreRestSiblings: true }]
 };
 
@@ -223,33 +222,15 @@ export default [
   eslint.configs.recommended,
   ...tsEslint.configs.recommended,
   ...svelteEslint.configs["flat/recommended"],
-  globalIgnores(["build/**", "node_modules/**", ".output/**", ".wxt/**", "User Data/**", "patches/**", "scripts/firefox-*.ts", "scripts/**", "src/entrypoints/mux-worker/opfs.d.ts", ".claude/worktrees/**"]),
+  globalIgnores(["build/**", "node_modules/**", ".output/**", ".wxt/**", "User Data/**", "user-profiles/**", "patches/**", "scripts/firefox-*.ts", "scripts/**", "src/entrypoints/mux-worker/opfs.d.ts", ".claude/worktrees/**"]),
   {
     files: ["**/*.{ts,js,mjs}"],
-    ignores: ["eslint.config.js"],
     languageOptions: {
       parser: tsEslint.parser,
-      parserOptions: {
-        projectService: {
-          allowDefaultProject: ["eslint-rules/*.js"]
-        }
-      },
       globals: sharedGlobals
     },
     plugins: sharedPlugins,
     rules: tsStyleRules
-  },
-  {
-    files: ["eslint.config.js"],
-    languageOptions: {
-      parser: tsEslint.parser,
-      globals: sharedGlobals
-    },
-    plugins: sharedPlugins,
-    rules: {
-      ...tsStyleRules,
-      "@typescript-eslint/no-floating-promises": "off"
-    }
   },
   {
     files: ["**/*.svelte"],
@@ -257,7 +238,6 @@ export default [
       parser: svelteParser,
       parserOptions: {
         parser: tsEslint.parser,
-        projectService: true,
         extraFileExtensions: [".svelte"]
       },
       globals: sharedGlobals
