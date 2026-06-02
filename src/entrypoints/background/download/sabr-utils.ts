@@ -30,11 +30,24 @@ type EstimateFormatBytesParams = {
 };
 export function estimateFormatBytes({ format, referenceFormat }: EstimateFormatBytesParams) {
   const referenceBytes = parseContentLength(referenceFormat);
-  if (!referenceBytes) {
+  if (referenceBytes) {
+    const referenceBitrate = referenceFormat.bitrate || 1;
+    const formatBitrate = format.bitrate || referenceBitrate;
+    return Math.round(referenceBytes * formatBitrate / referenceBitrate);
+  }
+
+  return estimateBytesFromBitrate(format);
+}
+
+const BITS_PER_BYTE = 8;
+const MS_PER_SECOND = 1000;
+
+export function estimateBytesFromBitrate(format: AdaptiveFormatItem) {
+  const bitrate = format.bitrate;
+  const durationMs = parseInt(format.approxDurationMs ?? "0", 10);
+  if (!bitrate || !durationMs) {
     return 0;
   }
 
-  const referenceBitrate = referenceFormat.bitrate || 1;
-  const formatBitrate = format.bitrate || referenceBitrate;
-  return Math.round(referenceBytes * formatBitrate / referenceBitrate);
+  return Math.round(bitrate * durationMs / MS_PER_SECOND / BITS_PER_BYTE);
 }

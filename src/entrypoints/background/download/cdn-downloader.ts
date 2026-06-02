@@ -1,7 +1,7 @@
 import type { DownloadResult } from "./background-downloader";
 import { fetchWithProgress } from "./cdn-fetch";
 import { createCdnProgressTracker } from "./cdn-progress";
-import { parseContentLength } from "./sabr-utils";
+import { estimateBytesFromBitrate, parseContentLength } from "./sabr-utils";
 import { sendNetworkChunkToOffscreen, sendStreamFinishedMarker } from "./stream-chunk-transfer";
 import { stripMimeParams } from "@/lib/utils/containers";
 import { DownloadType, StreamType } from "@/types";
@@ -64,9 +64,15 @@ export async function downloadViaCdn({
     captionCount,
     hasVideo: isVideoPresent,
     hasAudio: isAudioPresent,
-    videoExpectedBytes: parseContentLength(videoFormat ?? null),
-    audioExpectedBytes: parseContentLength(audioFormat ?? null),
-    extraExpectedBytesArray: (additionalAudioFormats ?? []).map(format => parseContentLength(format)),
+    videoExpectedBytes: videoFormat
+      ? (parseContentLength(videoFormat) || estimateBytesFromBitrate(videoFormat))
+      : 0,
+    audioExpectedBytes: audioFormat
+      ? (parseContentLength(audioFormat) || estimateBytesFromBitrate(audioFormat))
+      : 0,
+    extraExpectedBytesArray: (additionalAudioFormats ?? []).map(format =>
+      parseContentLength(format) || estimateBytesFromBitrate(format)
+    ),
     initialVideoBytes: partialVideoData?.byteLength ?? 0,
     initialAudioBytes: partialAudioData?.byteLength ?? 0
   });

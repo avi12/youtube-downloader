@@ -1,6 +1,6 @@
 import { sendProgressUpdate } from "./progress-fetch";
 import { computeWeightedProgress } from "./progress-stages";
-import { parseContentLength, estimateFormatBytes } from "./sabr-utils";
+import { parseContentLength, estimateFormatBytes, estimateBytesFromBitrate } from "./sabr-utils";
 import { ProgressType } from "@/types";
 import type { AdaptiveFormatItem } from "@/types";
 
@@ -18,19 +18,23 @@ export function createProgressAccumulator({
   videoId, tabId, captionCount, isAudioOnly, videoFormat, audioFormat, additionalFormats, onProgress
 }: CreateProgressAccumulatorParams) {
   const hasVideoStage = !isAudioOnly && !!videoFormat;
-  const audioExpectedBytes = parseContentLength(audioFormat);
+  const audioExpectedBytes = parseContentLength(audioFormat) || estimateBytesFromBitrate(audioFormat);
   const videoExpectedBytes = hasVideoStage
     ? (parseContentLength(videoFormat) || estimateFormatBytes({
       format: videoFormat,
       referenceFormat: audioFormat
-    }))
+    }) || estimateBytesFromBitrate(videoFormat))
     : 0;
   const extraExpectedBytesArray = additionalFormats.map(format => {
     const known = parseContentLength(format);
-    return known > 0 ? known : estimateFormatBytes({
+    if (known > 0) {
+      return known;
+    }
+
+    return estimateFormatBytes({
       format,
       referenceFormat: audioFormat
-    });
+    }) || estimateBytesFromBitrate(format);
   });
   let videoReceivedBytes = 0;
   let audioReceivedBytes = 0;
