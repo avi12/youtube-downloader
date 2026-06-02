@@ -65,9 +65,8 @@ export function buildAvailableTargetGroups({ entry }: BuildAvailableTargetGroups
   const baseAllowed = isAudioSource ? audioContainers : [...videoContainers, ...audioContainers];
   const allowedExtensions = baseAllowed.filter(target => isTargetAllowed(target, entry, isAudioSource));
   const groups = buildFormatGroups({ allowedExtensions });
-  const withFlags = groups.map(group => ({
-    ...group,
-    items: group.items.map(item => {
+  const withFlags = groups.map(group => {
+    const items = group.items.map(item => {
       const isCurrent = item.extension === entry.container;
       const transcodeSpeed = group.heading === FORMAT_GROUP_VIDEO && entry.videoMimeType
         ? classifyVideoTargetSpeed(item.extension, entry.videoMimeType)
@@ -78,8 +77,18 @@ export function buildAvailableTargetGroups({ entry }: BuildAvailableTargetGroups
         isSlow: transcodeSpeed === TranscodeSpeed.Slower,
         transcodeSpeed
       };
-    })
-  }));
+    });
+    const iCurrent = items.findIndex(item => item.isCurrent);
+    if (iCurrent > 0) {
+      const [current] = items.splice(iCurrent, 1);
+      items.unshift(current);
+    }
+
+    return {
+      ...group,
+      items
+    };
+  });
   if (isAudioSource) {
     return withFlags;
   }
