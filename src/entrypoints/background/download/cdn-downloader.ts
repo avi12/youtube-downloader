@@ -71,8 +71,7 @@ export async function downloadViaCdn({
       ? (parseContentLength(audioFormat) || estimateBytesFromBitrate(audioFormat))
       : 0,
     extraExpectedBytesArray: (additionalAudioFormats ?? []).map(format =>
-      parseContentLength(format) || estimateBytesFromBitrate(format)
-    ),
+      parseContentLength(format) || estimateBytesFromBitrate(format)),
     initialVideoBytes: partialVideoData?.byteLength ?? 0,
     initialAudioBytes: partialAudioData?.byteLength ?? 0
   });

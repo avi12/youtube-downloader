@@ -142,7 +142,6 @@
       </div>
     {/if}
     <ActiveDownloadsSections
-      {pendingFormatChangeId}
       {currentSourceUrl}
       {currentTabId}
       {isFFmpegReady}
@@ -152,6 +151,7 @@
       onChangeFormat={entry => onChangeFormat(entry)}
       onRemoveRecent={handleRemove}
       onShowRecentInFolder={handleShowInFolder}
+      {pendingFormatChangeId}
       {percentFormatter}
       {recentDownloads}
       {statusProgress}

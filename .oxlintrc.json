@@ -74,6 +74,7 @@
     "scripts/firefox-*",
     "scripts/dump-*",
     "scripts/cdp-*",
+    "scripts/screenshot-*",
     "src/entrypoints/mux-worker/opfs.d.ts"
   ]
 }

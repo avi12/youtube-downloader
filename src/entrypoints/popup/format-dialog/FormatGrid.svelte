@@ -39,7 +39,7 @@
     slower: "Slower"
   };
 
-  function getTagIcon(kind: TagKind) {
+  function getTagIcon(kind: TagKind): string {
     if (kind === "current") {
       return "";
     }

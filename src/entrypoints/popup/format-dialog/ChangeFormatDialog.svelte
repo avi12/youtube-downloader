@@ -57,6 +57,11 @@
   let pendingExtension = $state<string | null>(null);
   let isClosing = $state(false);
   let placement = $state<DialogPlacement>(DialogPlacement.Below);
+  let elDialog = $state<HTMLDialogElement | null>(null);
+
+  $effect(() => {
+    elDialog?.show();
+  });
 
   $effect(() => {
     const trigger = document.querySelector<HTMLElement>(
@@ -80,7 +85,7 @@
     e.stopPropagation();
   }
 
-  function findGroup(groups: FormatGroup[], heading: string) {
+  function findGroup(groups: FormatGroup[], heading: string): FormatGroup | undefined {
     return groups.find(group => group.heading === heading);
   }
 
@@ -132,19 +137,18 @@
   role="presentation"
 ></div>
 
-<div
+<dialog
+  bind:this={elDialog}
   style:position-anchor={anchorName}
   class="dialog dialog--{placement}"
   class:closing={isClosing}
   aria-labelledby="change-format-title"
-  aria-modal="false"
   onanimationend={() => {
     if (isClosing) {
       onClose();
     }
   }}
   onpointerdown={stopPropagation}
-  role="dialog"
 >
   <header class="dialog-header">
     <div class="dialog-header-row">
@@ -188,7 +192,9 @@
     {#if activeItems.length > 0}
       <p class="dialog-description">
         {#if mode === DialogMode.Video}
-          <strong>Instant</strong> just repackages the file. Others re-encode the video — <strong>Slower</strong> targets use a legacy codec and take noticeably longer
+          <strong>Instant</strong> just repackages the file.
+          Others re-encode the video — <strong>Slower</strong>
+          targets use a legacy codec and take noticeably longer
         {:else}
           <strong>Instant</strong> just repackages the file. Others re-encode the audio
         {/if}
@@ -207,7 +213,7 @@
       />
     {/if}
   </div>
-</div>
+</dialog>
 
 <style>
   .popover-layer {
@@ -233,6 +239,8 @@
     box-sizing: border-box;
     width: 340px;
     max-width: calc(100vw - 24px);
+    height: auto;
+    margin: 0;
     padding: 14px;
     border: 1px solid var(--border);
     border-radius: 20px;
