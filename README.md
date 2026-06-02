@@ -91,6 +91,8 @@ Once the extension is installed by any of these methods, the `update_url` auto-u
 
 How it works — system diagram, codemap, invariants, the Chrome 4-layer fallback chain, the Firefox `ANDROID_VR` bypass, and cross-world progress propagation — lives in [ARCHITECTURE.md](ARCHITECTURE.md).
 
+The Firefox bypass (routing player requests through the `ANDROID_VR` InnerTube client to get direct CDN URLs) was reverse-engineered by reading [yt-dlp](https://github.com/yt-dlp/yt-dlp)'s YouTube extractor — credit to that project for documenting the InnerTube client matrix.
+
 ## Contribute
 
 ### Testing on Chrome on Linux
