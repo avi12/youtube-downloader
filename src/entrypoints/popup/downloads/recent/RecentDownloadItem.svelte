@@ -100,9 +100,9 @@
       <img
         class="recent-thumb"
         alt=""
-        height="40"
+        height="67"
         src={entry.thumbnailUrl}
-        width="72"
+        width="120"
       />
     {:else}
       <div class="recent-thumb recent-thumb-placeholder" aria-hidden="true">
@@ -197,8 +197,8 @@
   .recent-thumb {
     flex-shrink: 0;
     object-fit: cover;
-    width: 72px;
-    height: 40px;
+    width: 120px;
+    height: 67px;
     border-radius: 12px;
     background: var(--surface-high);
   }

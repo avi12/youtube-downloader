@@ -41,7 +41,10 @@
   let isThumbnailBroken = $state(false);
 
   const ytThumbnail = $derived(videoId ? `${YT_THUMBNAIL_HOST}/${videoId}/mqdefault.jpg` : null);
-  const resolvedThumbnail = $derived(thumbnailUrl ?? ytThumbnail);
+  // Always prefer the standard YouTube video thumbnail in the popup card.
+  // thumbnailUrl may be a square YouTube Music cover-art image that's
+  // meant for ID3 embedding in the final audio file, not display here.
+  const resolvedThumbnail = $derived(ytThumbnail ?? thumbnailUrl);
 
   const displayTitle = $derived(title ?? stripExtension(filename));
   const container = $derived(deriveContainer(filename));
