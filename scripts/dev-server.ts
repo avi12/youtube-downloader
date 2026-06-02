@@ -409,60 +409,67 @@ async function main() {
 
   console.log("Watching for file changes...\n");
 
+  const STABILITY_THRESHOLD_MS = 150;
+  const POLL_INTERVAL_MS = 50;
   const watcher = chokidar.watch(
     [join(PROJECT_ROOT, "src"), join(PROJECT_ROOT, "wxt.config.ts")],
-    { ignoreInitial: true }
+    {
+      ignoreInitial: true,
+      // Atomic-write editors (VSCode/JetBrains) save via temp-file+rename; without this
+      // chokidar fires `change` mid-write and the build reads stale/partial source.
+      awaitWriteFinish: {
+        stabilityThreshold: STABILITY_THRESHOLD_MS,
+        pollInterval: POLL_INTERVAL_MS
+      }
+    }
   );
 
   let isRebuilding = false;
-  let pendingRebuild: string | null = null;
-  let rebuildTimer: ReturnType<typeof setTimeout> | null = null;
+  let pendingChange: string | null = null;
+  let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
-  async function runRebuild(filePath: string) {
+  async function drainPending() {
+    if (isRebuilding) {
+      return;
+    }
+
     isRebuilding = true;
-    console.log(`\nChange detected: ${filePath}`);
-    console.log("Rebuilding...");
     try {
-      buildExtension();
+      while (pendingChange !== null) {
+        const filePath = pendingChange;
+        pendingChange = null;
+        console.log(`\nChange detected: ${filePath}`);
+        console.log("Rebuilding...");
+        try {
+          buildExtension();
 
-      if (IS_FIREFOX) {
-        reloadFirefoxExtension();
-      } else {
-        await runner.reloadAllExtensions().catch(() => {});
+          if (IS_FIREFOX) {
+            reloadFirefoxExtension();
+          } else {
+            await runner.reloadAllExtensions().catch(() => {});
+          }
+
+          await reloadYouTubeTabsAtPort(IS_FIREFOX ? CDP_PORT_FIREFOX : CDP_PORT);
+          console.log(`Reloaded at ${new Date().toLocaleTimeString()}`);
+        } catch (error) {
+          console.error("Rebuild failed:", error);
+        }
       }
-
-      await reloadYouTubeTabsAtPort(IS_FIREFOX ? CDP_PORT_FIREFOX : CDP_PORT);
-      console.log(`Reloaded at ${new Date().toLocaleTimeString()}`);
-    } catch (error) {
-      console.error("Rebuild failed:", error);
     } finally {
       isRebuilding = false;
-
-      if (pendingRebuild !== null) {
-        const next = pendingRebuild;
-        pendingRebuild = null;
-        void runRebuild(next);
-      }
     }
   }
 
   function scheduleRebuild(filePath: string) {
-    pendingRebuild = filePath;
+    pendingChange = filePath;
 
-    if (rebuildTimer !== null) {
-      clearTimeout(rebuildTimer);
+    if (debounceTimer !== null) {
+      clearTimeout(debounceTimer);
     }
 
-    rebuildTimer = setTimeout(() => {
-      rebuildTimer = null;
-
-      if (isRebuilding) {
-        return;
-      }
-
-      const path = pendingRebuild!;
-      pendingRebuild = null;
-      void runRebuild(path);
+    debounceTimer = setTimeout(() => {
+      debounceTimer = null;
+      void drainPending();
     }, REBUILD_DEBOUNCE_MS);
   }
 
