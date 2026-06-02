@@ -22,7 +22,14 @@ type DownloadViaSabrParams = {
   onAudioStreamEnd?: (totalChunks: number) => void;
 };
 export async function downloadViaSabr({
-  request, signal, tabId, onProgress, onVideoChunk, onAudioChunk, onVideoStreamEnd, onAudioStreamEnd
+  request,
+  signal,
+  tabId,
+  onProgress,
+  onVideoChunk: callerOnVideoChunk,
+  onAudioChunk: callerOnAudioChunk,
+  onVideoStreamEnd,
+  onAudioStreamEnd
 }: DownloadViaSabrParams) {
   const { videoId, type, sabrConfig, poToken, sabrUrl, videoFormat, audioFormat, additionalAudioFormats } = request;
   const isAudioOnly = type === DownloadType.Audio;
@@ -62,8 +69,11 @@ export async function downloadViaSabr({
       audioFormat,
       poToken: resolvedPoToken,
       signal,
-      onBytesReceived: onAudioBytes,
       onChunk(chunk) {
+        // Count parsed media bytes (after googlevideo strips UMP framing
+        // and dedupes re-deliveries). Raw network bytes overcount by 10-100x
+        // because of UMP envelopes + SABR session retries.
+        onAudioBytes(chunk.byteLength);
         sendNetworkChunkToOffscreen({
           videoId,
           streamType: StreamType.Audio,
@@ -92,7 +102,7 @@ export async function downloadViaSabr({
     return null;
   }
 
-  const isStreamingMode = !!(onVideoChunk && onAudioChunk);
+  const isStreamingMode = !!(callerOnVideoChunk && callerOnAudioChunk);
   let iVideoChunk = 0;
   let iAudioChunk = 0;
   const [videoResult, audioResult] = await downloadVideoAudioViaSabr({
@@ -101,10 +111,14 @@ export async function downloadViaSabr({
     audioFormat,
     poToken: resolvedPoToken,
     signal,
-    onVideoBytesReceived: onVideoBytes,
-    onAudioBytesReceived: onAudioBytes,
-    onVideoChunk: onVideoChunk ? chunk => onVideoChunk(chunk, iVideoChunk++) : undefined,
-    onAudioChunk: onAudioChunk ? chunk => onAudioChunk(chunk, iAudioChunk++) : undefined
+    onVideoChunk(chunk) {
+      onVideoBytes(chunk.byteLength);
+      callerOnVideoChunk?.(chunk, iVideoChunk++);
+    },
+    onAudioChunk(chunk) {
+      onAudioBytes(chunk.byteLength);
+      callerOnAudioChunk?.(chunk, iAudioChunk++);
+    }
   });
   if (isStreamingMode) {
     onVideoStreamEnd?.(iVideoChunk);
@@ -116,7 +130,10 @@ export async function downloadViaSabr({
     formats: additionalFormats,
     poToken: resolvedPoToken,
     signal,
-    onTrackBytesReceived: onExtraTrackBytes
+    onTrackChunk: ({ trackIndex, chunk }) => onExtraTrackBytes({
+      trackIndex,
+      bytes: chunk.byteLength
+    })
   });
   if (isStreamingMode) {
     return {

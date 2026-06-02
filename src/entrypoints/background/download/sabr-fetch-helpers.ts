@@ -1,18 +1,15 @@
-import { createProgressFetch } from "./progress-fetch";
 import { stripMimeParams } from "@/lib/utils/containers";
 import { fetchAudioViaSabrStream, fetchVideoViaSabrStream } from "@/lib/youtube/sabr/download";
 import type { AdaptiveFormatItem, SabrConfig } from "@/types";
 
-function noop() {}
-
 type MakeFetchParams = {
   signal: AbortSignal;
-  onBytesReceived?: (bytes: number) => void;
 };
-function makeFetch({ signal, onBytesReceived }: MakeFetchParams) {
-  return createProgressFetch({
+function makeFetch({ signal }: MakeFetchParams) {
+  return (input: RequestInfo | URL, init?: RequestInit) => fetch(input, {
+    ...init,
     signal,
-    onBytesReceived: onBytesReceived ?? noop
+    credentials: "include"
   });
 }
 
@@ -21,19 +18,15 @@ type DownloadAudioOnlyViaSabrParams = {
   audioFormat: AdaptiveFormatItem;
   poToken: string;
   signal: AbortSignal;
-  onBytesReceived?: (bytes: number) => void;
   onChunk?: (chunk: Uint8Array) => void;
 };
 export async function downloadAudioOnlyViaSabr(
-  { config, audioFormat, poToken, signal, onBytesReceived, onChunk }: DownloadAudioOnlyViaSabrParams
+  { config, audioFormat, poToken, signal, onChunk }: DownloadAudioOnlyViaSabrParams
 ) {
   return fetchAudioViaSabrStream({
     sabrConfig: config,
     audioFormat,
-    fetchFunction: makeFetch({
-      signal,
-      onBytesReceived
-    }),
+    fetchFunction: makeFetch({ signal }),
     poToken,
     signal,
     onChunk
@@ -46,23 +39,17 @@ type DownloadVideoAudioViaSabrParams = {
   audioFormat: AdaptiveFormatItem;
   poToken: string;
   signal: AbortSignal;
-  onVideoBytesReceived?: (bytes: number) => void;
-  onAudioBytesReceived?: (bytes: number) => void;
   onVideoChunk?: (chunk: Uint8Array) => void;
   onAudioChunk?: (chunk: Uint8Array) => void;
 };
 export async function downloadVideoAudioViaSabr({
-  config, videoFormat, audioFormat, poToken, signal,
-  onVideoBytesReceived, onAudioBytesReceived, onVideoChunk, onAudioChunk
+  config, videoFormat, audioFormat, poToken, signal, onVideoChunk, onAudioChunk
 }: DownloadVideoAudioViaSabrParams) {
   return Promise.all([
     fetchVideoViaSabrStream({
       sabrConfig: config,
       videoFormat,
-      fetchFunction: makeFetch({
-        signal,
-        onBytesReceived: onVideoBytesReceived
-      }),
+      fetchFunction: makeFetch({ signal }),
       poToken,
       signal,
       onChunk: onVideoChunk
@@ -70,10 +57,7 @@ export async function downloadVideoAudioViaSabr({
     fetchAudioViaSabrStream({
       sabrConfig: config,
       audioFormat,
-      fetchFunction: makeFetch({
-        signal,
-        onBytesReceived: onAudioBytesReceived
-      }),
+      fetchFunction: makeFetch({ signal }),
       poToken,
       signal,
       onChunk: onAudioChunk
@@ -86,13 +70,13 @@ type DownloadExtraAudioTracksViaSabrParams = {
   formats: AdaptiveFormatItem[];
   poToken: string;
   signal: AbortSignal;
-  onTrackBytesReceived?: (params: {
+  onTrackChunk?: (params: {
     trackIndex: number;
-    bytes: number;
+    chunk: Uint8Array;
   }) => void;
 };
 export async function downloadExtraAudioTracksViaSabr(
-  { config, formats, poToken, signal, onTrackBytesReceived }: DownloadExtraAudioTracksViaSabrParams
+  { config, formats, poToken, signal, onTrackChunk }: DownloadExtraAudioTracksViaSabrParams
 ) {
   const results = [];
 
@@ -101,15 +85,13 @@ export async function downloadExtraAudioTracksViaSabr(
       const { data } = await fetchAudioViaSabrStream({
         sabrConfig: config,
         audioFormat: format,
-        fetchFunction: makeFetch({
-          signal,
-          onBytesReceived: bytes => onTrackBytesReceived?.({
-            trackIndex: i,
-            bytes
-          })
-        }),
+        fetchFunction: makeFetch({ signal }),
         poToken,
-        signal
+        signal,
+        onChunk: chunk => onTrackChunk?.({
+          trackIndex: i,
+          chunk
+        })
       });
       results.push({
         data,
