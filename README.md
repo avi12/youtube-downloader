@@ -14,36 +14,21 @@ Built by [Avi](https://avi12.com) with supervised [Claude Code](https://claude.c
 
 ## Installation
 
-### 1. Download
+Grab the latest signed package for your browser from the [Releases page](https://github.com/avi12/youtube-downloader/releases). Both formats persist across browser restarts and auto-update from this repo's GitHub Pages on every poll.
 
-Grab the latest zip for your browser from the [Releases page](https://github.com/avi12/youtube-downloader/releases):
-
-- Chromium browsers: `youtube-downloader-*-chrome.zip`
-- Firefox: `youtube-downloader-*-firefox.zip`
-
-### 2. Sideload
-
-**Chrome**
-1. Go to `chrome://extensions`
+**Chromium (Chrome / Edge / Opera / Brave / Vivaldi)** - `youtube-downloader-*-chrome.crx`
+1. Go to `chrome://extensions` (or `edge://extensions`, `opera://extensions`, etc.)
 2. Enable **Developer mode** (top-right toggle)
-3. Drag and drop the zip onto the page
+3. Drag and drop the `.crx` onto the page
 
-**Edge**
-1. Go to `edge://extensions`
-2. Enable **Developer mode** (left sidebar)
-3. Drag and drop the zip onto the page
+**Firefox** - `youtube-downloader-*-firefox.xpi`
+1. Right-click the `.xpi` download link on the Releases page -> **Save Link As...** is not needed
+2. Just click the `.xpi` link directly in Firefox; the browser prompts to install it
+3. Confirm the install
 
-**Opera / Opera GX**
-1. Go to `opera://extensions`
-2. Enable **Developer mode** (top-right toggle)
-3. Drag and drop the zip onto the page
+> Firefox 147+ required. The `.xpi` is signed by Mozilla as an unlisted self-distribution package, so Firefox accepts it permanently without further configuration.
 
-**Firefox**
-1. Unzip the Firefox zip
-2. Go to `about:debugging#/runtime/this-firefox`
-3. Click **Load Temporary Add-on** and pick the `manifest.json` inside the unzipped folder
-
-> Firefox 128+ required. Temporary add-ons are removed when Firefox restarts; for a permanent install, sign and install the build via [AMO](https://addons.mozilla.org).
+Sideloaded `.zip`s are still attached to each release for development purposes (unsigned, no auto-update); they require Developer Mode + manifest.json drag-drop and don't persist across Firefox restarts. Prefer the `.crx` / `.xpi` for actual use.
 
 ## Auto-update (self-hosted)
 
