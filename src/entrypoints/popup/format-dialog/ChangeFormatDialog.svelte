@@ -214,14 +214,6 @@
       0 4px 12px rgb(0 0 0 / 16%);
     animation: dialog-in 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
 
-    /*
-     * Anchor positioning — Chrome 125+ / Edge 125+. Pins the popover under
-     * the change-format button it was opened from. Falls back to the
-     * inset-block-start/inset-inline above on browsers without anchor()
-     * support (Firefox as of Jan 2026 — under development, see
-     * https://developer.chrome.com/blog/anchor-positioning-api and
-     * https://bugzilla.mozilla.org/show_bug.cgi?id=1838746).
-     */
     @supports (anchor-name: --x) {
       inset-block-start: calc(anchor(bottom) + 8px);
       inset-inline-end: anchor(right);
