@@ -65,6 +65,7 @@ function computeChromeExtensionId(base64PublicKey: string): string {
   return Array.from(hexHash, hexChar => String.fromCharCode("a".charCodeAt(0) + parseInt(hexChar, 16))).join("");
 }
 
+// noinspection HttpUrlsUsage -- Chrome's Omaha namespace is literally http://
 function renderChromeUpdatesXml(appId: string, appVersion: string, crxUrl: string): string {
   return `<?xml version="1.0" encoding="UTF-8"?>
 <gupdate xmlns="http://www.google.com/update2/response" protocol="2.0">
