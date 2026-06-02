@@ -246,16 +246,17 @@
       {#if canShowTabAction}
         <button
           class="dl-title dl-title-button"
+          dir="auto"
           onclick={focusSourceTab}
           type="button"
         >{displayTitle}</button>
       {:else}
-        <span class="dl-title">{displayTitle}</span>
+        <span class="dl-title" dir="auto">{displayTitle}</span>
       {/if}
       {#if hasByline}
         <span class="dl-byline">
           {#if channel}
-            <span class="dl-channel">{channel}</span>
+            <span class="dl-channel" dir="auto">{channel}</span>
           {/if}
           {#if channel && canShowTabAction}
             <span class="dl-byline-sep">·</span>

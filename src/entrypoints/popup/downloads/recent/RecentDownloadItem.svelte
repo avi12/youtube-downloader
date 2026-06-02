@@ -119,9 +119,9 @@
     {/if}
 
     <div class="recent-titleblock">
-      <span class="recent-title">{entry.title}</span>
+      <span class="recent-title" dir="auto">{entry.title}</span>
       {#if entry.channel}
-        <span class="recent-channel">{entry.channel}</span>
+        <span class="recent-channel" dir="auto">{entry.channel}</span>
       {/if}
     </div>
   </div>
