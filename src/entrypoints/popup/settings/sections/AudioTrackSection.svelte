@@ -35,10 +35,12 @@
           name="language-mode"
           class="radio-input-hidden"
           checked={options.audioTrackLanguageMode === value}
-          onchange={() => void setOption({
-            key: "audioTrackLanguageMode",
-            value
-          })}
+          onchange={() => {
+            void setOption({
+              key: "audioTrackLanguageMode",
+              value
+            });
+          }}
           type="radio"
           {value}
         />

@@ -192,7 +192,8 @@ const tsStyleRules = {
       message: "Do not use Reflect. Use direct property access instead."
     }
   ],
-  "@typescript-eslint/no-unused-vars": ["error", { ignoreRestSiblings: true }]
+  "@typescript-eslint/no-unused-vars": ["error", { ignoreRestSiblings: true }],
+  "no-void": ["error", { allowAsStatement: true }]
 };
 
 const sharedPlugins = {

@@ -151,7 +151,9 @@
           aria-label={openInNewTabLabel}
           data-tooltip={openInNewTabLabel}
           data-tooltip-align="end"
-          onclick={() => void browser.tabs.create({ url: openInNewTabUrl })}
+          onclick={() => {
+            void browser.tabs.create({ url: openInNewTabUrl });
+          }}
           type="button"
         >
           {@html openInNewIcon}

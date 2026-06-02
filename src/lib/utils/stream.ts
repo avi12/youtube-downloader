@@ -8,7 +8,9 @@ export async function readStreamToBuffer({ reader, expectedBytes, onBytesReceive
   onBytesReceived?: (bytes: number) => void;
   onChunk?: (chunk: Uint8Array) => void;
 }) {
-  const stall = createStallChecker(() => void reader.cancel());
+  const stall = createStallChecker(() => {
+    void reader.cancel();
+  });
 
   const isStreamingMode = !!onChunk;
   let preallocated: Uint8Array | null = null;

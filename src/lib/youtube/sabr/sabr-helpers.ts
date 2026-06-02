@@ -40,7 +40,9 @@ export async function collectReadableStream({ stream, expectedBytes, signal, onC
   if (isAborted) {
     void reader.cancel();
   } else {
-    signal?.addEventListener("abort", () => void reader.cancel(), { once: true });
+    signal?.addEventListener("abort", () => {
+      void reader.cancel();
+    }, { once: true });
   }
 
   try {

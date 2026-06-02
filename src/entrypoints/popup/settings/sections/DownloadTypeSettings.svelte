@@ -35,10 +35,12 @@
           name="download-type"
           class="radio-input-hidden"
           checked={options.defaultDownloadType === value}
-          onchange={() => void setOption({
-            key: "defaultDownloadType",
-            value
-          })}
+          onchange={() => {
+            void setOption({
+              key: "defaultDownloadType",
+              value
+            });
+          }}
           type="radio"
           {value}
         />

@@ -33,10 +33,12 @@
           name="quality-mode"
           class="radio-input-hidden"
           checked={options.videoQualityMode === value}
-          onchange={() => void setOption({
-            key: "videoQualityMode",
-            value
-          })}
+          onchange={() => {
+            void setOption({
+              key: "videoQualityMode",
+              value
+            });
+          }}
           type="radio"
           {value}
         />

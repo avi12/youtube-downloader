@@ -91,7 +91,9 @@ export function createButtonManager(params: {
 
   function onDownloadClick() {
     if (!params.isInProgressInZipBatch) {
-      queueMicrotask(() => void params.itemState.handleDownloadClick());
+      queueMicrotask(() => {
+        void params.itemState.handleDownloadClick();
+      });
     }
   }
 

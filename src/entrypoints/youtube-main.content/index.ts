@@ -97,7 +97,9 @@ export default defineContentScript({
     if (isDocumentReady) {
       void initializeOnLoad();
     } else {
-      addEventListener(EVENT_LOAD, () => void initializeOnLoad(), { once: true });
+      addEventListener(EVENT_LOAD, () => {
+        void initializeOnLoad();
+      }, { once: true });
     }
   }
 });

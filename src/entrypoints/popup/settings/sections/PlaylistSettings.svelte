@@ -43,30 +43,36 @@
   <PlaylistRadioGroup
     name="playlist-download-mode"
     legend="Download speed"
-    onchange={value => void setOption({
-      key: "playlistDownloadMode",
-      value: resolveDownloadMode(value)
-    })}
+    onchange={value => {
+      void setOption({
+        key: "playlistDownloadMode",
+        value: resolveDownloadMode(value)
+      });
+    }}
     options={downloadModeOptions}
     selected={options.playlistDownloadMode}
   />
   <PlaylistRadioGroup
     name="playlist-output-mode"
     legend="Output - video playlists"
-    onchange={value => void setOption({
-      key: "playlistOutputMode",
-      value: resolveOutputMode(value)
-    })}
+    onchange={value => {
+      void setOption({
+        key: "playlistOutputMode",
+        value: resolveOutputMode(value)
+      });
+    }}
     options={outputModeOptions}
     selected={options.playlistOutputMode}
   />
   <PlaylistRadioGroup
     name="playlist-audio-output-mode"
     legend="Output - audio playlists"
-    onchange={value => void setOption({
-      key: "playlistAudioOutputMode",
-      value: resolveOutputMode(value)
-    })}
+    onchange={value => {
+      void setOption({
+        key: "playlistAudioOutputMode",
+        value: resolveOutputMode(value)
+      });
+    }}
     options={outputModeOptions}
     selected={options.playlistAudioOutputMode}
   />

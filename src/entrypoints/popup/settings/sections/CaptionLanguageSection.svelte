@@ -38,10 +38,12 @@
           name="caption-language-mode"
           class="radio-input-hidden"
           checked={options.captionLanguageMode === value}
-          onchange={() => void setOption({
-            key: "captionLanguageMode",
-            value
-          })}
+          onchange={() => {
+            void setOption({
+              key: "captionLanguageMode",
+              value
+            });
+          }}
           type="radio"
           {value}
         />
