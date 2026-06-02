@@ -26,8 +26,6 @@ Grab the latest signed package for your browser from the [Releases page](https:/
 2. Just click the `.xpi` link directly in Firefox; the browser prompts to install it
 3. Confirm the install
 
-> Firefox 147+ required. The `.xpi` is signed by Mozilla as an unlisted self-distribution package, so Firefox accepts it permanently without further configuration.
-
 Sideloaded `.zip`s are still attached to each release for development purposes (unsigned, no auto-update); they require Developer Mode + manifest.json drag-drop and don't persist across Firefox restarts. Prefer the `.crx` / `.xpi` for actual use.
 
 ## Auto-update (self-hosted)
