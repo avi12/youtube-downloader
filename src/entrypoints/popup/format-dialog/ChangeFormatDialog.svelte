@@ -198,7 +198,7 @@
     gap: 10px;
     overflow: hidden;
     box-sizing: border-box;
-    width: 280px;
+    width: 340px;
     max-width: calc(100vw - 24px);
     padding: 14px;
     border: 1px solid var(--border);
