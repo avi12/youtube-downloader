@@ -44,6 +44,21 @@
   let isSubmitting = $state(false);
   let pendingExtension = $state<string | null>(null);
   let isClosing = $state(false);
+  let placement = $state<"below" | "above">("below");
+
+  $effect(() => {
+    const trigger = document.querySelector<HTMLElement>(
+      `[data-cf-trigger][style*="${anchorName}"]`
+    );
+    if (!trigger) {
+      return;
+    }
+
+    const rect = trigger.getBoundingClientRect();
+    const spaceBelow = window.innerHeight - rect.bottom;
+    const spaceAbove = rect.top;
+    placement = spaceBelow >= spaceAbove ? "below" : "above";
+  });
 
   function handleLayerPointerDown(): void {
     startClose();
@@ -107,7 +122,7 @@
 
 <div
   style:position-anchor={anchorName}
-  class="dialog"
+  class="dialog dialog--{placement}"
   class:closing={isClosing}
   aria-labelledby="change-format-title"
   aria-modal="false"
@@ -188,7 +203,6 @@
 
   .dialog {
     position: fixed;
-    inset-block-start: calc(anchor(bottom) + 8px);
     inset-inline-end: anchor(right);
     inset-inline-start: auto;
     z-index: 50;
@@ -199,7 +213,6 @@
     box-sizing: border-box;
     width: 340px;
     max-width: calc(100vw - 24px);
-    max-height: calc(100vh - 24px);
     padding: 14px;
     border: 1px solid var(--border);
     border-radius: 20px;
@@ -209,18 +222,20 @@
       0 12px 32px rgb(0 0 0 / 24%),
       0 4px 12px rgb(0 0 0 / 16%);
     animation: dialog-in 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
-    position-try-fallbacks: --above;
 
     &.closing {
       animation: dialog-out 180ms cubic-bezier(0.36, 0, 0.66, -0.56) forwards;
     }
   }
 
-  @position-try --above {
+  .dialog--below {
+    inset-block-end: 12px;
+    inset-block-start: calc(anchor(bottom) + 8px);
+  }
+
+  .dialog--above {
     inset-block-end: calc(anchor(top) + 8px);
-    inset-block-start: auto;
-    inset-inline-end: anchor(right);
-    inset-inline-start: auto;
+    inset-block-start: 12px;
   }
 
   .dialog-header {
