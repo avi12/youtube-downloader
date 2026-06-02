@@ -175,7 +175,11 @@
 
     {#if activeItems.length > 0}
       <p class="dialog-description">
-        <strong>Instant</strong> just repackages the file. Others re-encode the {mode === "video" ? "video" : "audio"} — <strong>Slower</strong> targets use a legacy codec and take noticeably longer
+        {#if mode === "video"}
+          <strong>Instant</strong> just repackages the file. Others re-encode the video — <strong>Slower</strong> targets use a legacy codec and take noticeably longer
+        {:else}
+          <strong>Instant</strong> just repackages the file. Others re-encode the audio
+        {/if}
       </p>
     {/if}
   </header>
