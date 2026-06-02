@@ -50,31 +50,13 @@
     elDialog?.show();
   });
 
-  $effect(() => {
-    function handleDocumentPointerDown(e: PointerEvent) {
-      const { target } = e;
-      if (!(target instanceof Element)) {
-        return;
-      }
+  function handleLayerPointerDown(): void {
+    startClose();
+  }
 
-      const isTriggerClick = target.closest("[data-cf-trigger]") !== null;
-      if (isTriggerClick) {
-        return;
-      }
-
-      if (elDialog && !elDialog.contains(target)) {
-        startClose();
-      }
-    }
-
-    const timeoutId = setTimeout(() => {
-      document.addEventListener("pointerdown", handleDocumentPointerDown);
-    }, 0);
-    return () => {
-      clearTimeout(timeoutId);
-      document.removeEventListener("pointerdown", handleDocumentPointerDown);
-    };
-  });
+  function stopPropagation(e: Event): void {
+    e.stopPropagation();
+  }
 
   function findGroup(groups: FormatGroup[], heading: string) {
     return groups.find(group => group.heading === heading);
@@ -121,6 +103,13 @@
 
 <svelte:window onkeydown={handleWindowKeydown} />
 
+<div
+  class="popover-layer"
+  class:popover-layer--closing={isClosing}
+  onpointerdown={handleLayerPointerDown}
+  role="presentation"
+></div>
+
 <dialog
   bind:this={elDialog}
   style:position-anchor={anchorName}
@@ -132,6 +121,7 @@
       onClose();
     }
   }}
+  onpointerdown={stopPropagation}
 >
   <header class="dialog-header">
     <h2 id="change-format-title" class="dialog-title">Change format</h2>
@@ -187,6 +177,17 @@
 </dialog>
 
 <style>
+  .popover-layer {
+    position: fixed;
+    inset: 0;
+    z-index: 49;
+    animation: layer-in 180ms ease-out;
+  }
+
+  .popover-layer--closing {
+    animation: layer-out 160ms ease-in forwards;
+  }
+
   .dialog {
     position: fixed;
     inset-block-start: calc(anchor(bottom) + 8px);
@@ -345,6 +346,26 @@
     & strong {
       color: var(--fg);
       font-weight: 700;
+    }
+  }
+
+  @keyframes layer-in {
+    from {
+      opacity: 0%;
+    }
+
+    to {
+      opacity: 100%;
+    }
+  }
+
+  @keyframes layer-out {
+    from {
+      opacity: 100%;
+    }
+
+    to {
+      opacity: 0%;
     }
   }
 
