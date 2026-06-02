@@ -10,13 +10,15 @@
     entry: RecentDownloadEntry;
     now: number;
     showOpenInNew?: boolean;
+    isFormatDialogOpen?: boolean;
     onShowInFolder: () => void;
     onChangeFormat: () => void;
     onRemove: () => void;
   }
 
   const {
-    entry, now, showOpenInNew = true, onShowInFolder, onChangeFormat, onRemove
+    entry, now, showOpenInNew = true, isFormatDialogOpen = false,
+    onShowInFolder, onChangeFormat, onRemove
   }: Props = $props();
 
   const anchorName = $derived(`--cf-${entry.id.replace(/[^a-zA-Z0-9-]/g, "")}`);
@@ -92,7 +94,7 @@
   }
 </script>
 
-<article class="recent-item">
+<article class="recent-item" class:recent-item--active={isFormatDialogOpen}>
   <div class="recent-top">
     {#if entry.thumbnailUrl}
       <img
@@ -180,7 +182,8 @@
     background: var(--surface);
     transition: background-color 200ms;
 
-    &:hover {
+    &:hover,
+    &.recent-item--active {
       background: var(--surface-high);
     }
   }

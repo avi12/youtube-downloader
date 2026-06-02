@@ -7,13 +7,14 @@
     now: number;
     currentTabId?: number;
     currentSourceUrl?: string;
+    pendingFormatChangeId: string | null;
     onChangeFormat: (entry: RecentDownloadEntry) => void;
     onRemove: (entry: RecentDownloadEntry) => void;
     onShowInFolder: (entry: RecentDownloadEntry) => void;
   }
 
   const {
-    recentDownloads, now, currentTabId, currentSourceUrl,
+    recentDownloads, now, currentTabId, currentSourceUrl, pendingFormatChangeId,
     onChangeFormat, onRemove, onShowInFolder
   }: Props = $props();
 
@@ -41,6 +42,7 @@
         <li>
           <RecentDownloadItem
             {entry}
+            isFormatDialogOpen={entry.id === pendingFormatChangeId}
             {now}
             onChangeFormat={() => onChangeFormat(entry)}
             onRemove={() => onRemove(entry)}

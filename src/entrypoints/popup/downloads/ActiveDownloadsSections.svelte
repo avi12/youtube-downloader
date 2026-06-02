@@ -20,6 +20,7 @@
     currentSourceUrl?: string;
     recentDownloads: RecentDownloadEntry[];
     now: number;
+    pendingFormatChangeId: string | null;
     onCancel: (videoIds: string[]) => void;
     onShowRecentInFolder: (entry: RecentDownloadEntry) => void;
     onChangeFormat: (entry: RecentDownloadEntry) => void;
@@ -29,7 +30,7 @@
   const {
     isFFmpegReady, videoDownloads, musicList, videoOnlyList,
     videoDetails, statusProgress, percentFormatter, currentTabId, currentSourceUrl,
-    recentDownloads, now,
+    recentDownloads, now, pendingFormatChangeId,
     onCancel, onShowRecentInFolder, onChangeFormat, onRemoveRecent
   }: Props = $props();
 
@@ -222,6 +223,7 @@
         <li>
           <RecentDownloadItem
             {entry}
+            isFormatDialogOpen={entry.id === pendingFormatChangeId}
             {now}
             onChangeFormat={() => onChangeFormat(entry)}
             onRemove={() => onRemoveRecent(entry)}

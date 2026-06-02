@@ -111,6 +111,7 @@
           onCancel={appState.cancelDownloads}
           onChangeFormat={appState.handleChangeFormat}
           onRecentChanged={appState.refreshRecentDownloads}
+          pendingFormatChangeId={appState.pendingFormatChangeEntry?.id ?? null}
           {percentFormatter}
           recentDownloads={appState.recentDownloads}
           statusProgress={appState.statusProgress}
