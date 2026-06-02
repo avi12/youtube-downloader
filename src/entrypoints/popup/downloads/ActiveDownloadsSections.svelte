@@ -244,7 +244,7 @@
         This tab
         <span class="section-count">{thisTabCount}</span>
       </h2>
-      {#if currentSourceUrl}
+      {#if currentSourceUrl && thisTabIds.length > 0}
         <button
           class="section-action-button"
           aria-label="Go to Watch page"
