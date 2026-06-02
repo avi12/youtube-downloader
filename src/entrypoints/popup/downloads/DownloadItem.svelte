@@ -193,29 +193,62 @@
 
 <article class="dl-card">
   <div class="dl-row">
-    <div class="dl-thumb-wrap">
-      {#if resolvedThumbnail && !isThumbnailBroken}
-        <img
-          class="dl-thumb"
-          alt=""
-          height="67"
-          onerror={() => (isThumbnailBroken = true)}
-          src={resolvedThumbnail}
-          width="120"
-        />
-      {:else}
-        <div class="dl-thumb dl-thumb-placeholder" aria-hidden="true"></div>
-      {/if}
-      <span class="dl-thumb-play" aria-hidden="true">
-        {@html playArrowIcon}
-      </span>
-      {#if durationLabel}
-        <span class="dl-thumb-duration">{durationLabel}</span>
-      {/if}
-    </div>
+    {#if canShowTabAction}
+      <button
+        class="dl-thumb-wrap dl-thumb-wrap-button"
+        aria-label="Open {displayTitle} in source tab"
+        onclick={focusSourceTab}
+        type="button"
+      >
+        {#if resolvedThumbnail && !isThumbnailBroken}
+          <img
+            class="dl-thumb"
+            alt=""
+            height="67"
+            onerror={() => (isThumbnailBroken = true)}
+            src={resolvedThumbnail}
+            width="120"
+          />
+        {:else}
+          <div class="dl-thumb dl-thumb-placeholder" aria-hidden="true"></div>
+        {/if}
+        <span class="dl-thumb-play" aria-hidden="true">
+          {@html playArrowIcon}
+        </span>
+        {#if durationLabel}
+          <span class="dl-thumb-duration">{durationLabel}</span>
+        {/if}
+      </button>
+    {:else}
+      <div class="dl-thumb-wrap">
+        {#if resolvedThumbnail && !isThumbnailBroken}
+          <img
+            class="dl-thumb"
+            alt=""
+            height="67"
+            onerror={() => (isThumbnailBroken = true)}
+            src={resolvedThumbnail}
+            width="120"
+          />
+        {:else}
+          <div class="dl-thumb dl-thumb-placeholder" aria-hidden="true"></div>
+        {/if}
+        {#if durationLabel}
+          <span class="dl-thumb-duration">{durationLabel}</span>
+        {/if}
+      </div>
+    {/if}
 
     <div class="dl-info">
-      <span class="dl-title">{displayTitle}</span>
+      {#if canShowTabAction}
+        <button
+          class="dl-title dl-title-button"
+          onclick={focusSourceTab}
+          type="button"
+        >{displayTitle}</button>
+      {:else}
+        <span class="dl-title">{displayTitle}</span>
+      {/if}
       {#if hasByline}
         <span class="dl-byline">
           {#if channel}
@@ -322,6 +355,24 @@
     background: var(--surface-high);
   }
 
+  .dl-thumb-wrap-button {
+    padding: 0;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    transition: opacity 150ms;
+
+    &:hover,
+    &:focus-visible {
+      opacity: 90%;
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+  }
+
   .dl-thumb {
     display: block;
     object-fit: cover;
@@ -385,6 +436,28 @@
     -webkit-line-clamp: 2;
     line-clamp: 2;
     -webkit-box-orient: vertical;
+  }
+
+  .dl-title-button {
+    padding: 0;
+    border: none;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    font-weight: 600;
+    text-align: start;
+    cursor: pointer;
+    transition: color 150ms;
+
+    &:hover {
+      color: var(--accent);
+    }
+
+    &:focus-visible {
+      border-radius: 4px;
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
   }
 
   .dl-byline {
