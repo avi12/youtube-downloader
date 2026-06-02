@@ -9,12 +9,15 @@
   interface Props {
     entry: RecentDownloadEntry;
     now: number;
+    showOpenInNew?: boolean;
     onShowInFolder: () => void;
     onChangeFormat: () => void;
     onRemove: () => void;
   }
 
-  const { entry, now, onShowInFolder, onChangeFormat, onRemove }: Props = $props();
+  const {
+    entry, now, showOpenInNew = true, onShowInFolder, onChangeFormat, onRemove
+  }: Props = $props();
 
   const isZip = $derived(entry.container === "zip");
   const openInNewTabLabel = $derived(isZip ? "Open playlist in new tab" : "Open video in new tab");
@@ -127,16 +130,18 @@
       >
         {@html folderIcon}
       </button>
-      <button
-        class="recent-action-btn"
-        aria-label={openInNewTabLabel}
-        data-tooltip={openInNewTabLabel}
-        data-tooltip-align="end"
-        onclick={openInNewTab}
-        type="button"
-      >
-        {@html openInNewIcon}
-      </button>
+      {#if showOpenInNew}
+        <button
+          class="recent-action-btn"
+          aria-label={openInNewTabLabel}
+          data-tooltip={openInNewTabLabel}
+          data-tooltip-align="end"
+          onclick={openInNewTab}
+          type="button"
+        >
+          {@html openInNewIcon}
+        </button>
+      {/if}
       <button
         class="recent-action-btn"
         aria-label="Change format"

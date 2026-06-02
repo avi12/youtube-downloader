@@ -204,6 +204,7 @@
             onChangeFormat={() => onChangeFormat(entry)}
             onRemove={() => onRemoveRecent(entry)}
             onShowInFolder={() => onShowRecentInFolder(entry)}
+            showOpenInNew={showTabActions}
           />
         </li>
       {/each}
