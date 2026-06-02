@@ -11,6 +11,7 @@ export type FormatItem = {
   group: FormatGroupHeading;
   isExcluded: boolean;
   isSlow?: boolean;
+  isCurrent?: boolean;
 };
 
 export type FormatGroup = {

@@ -1,14 +1,15 @@
 <script lang="ts">
+  import audioIcon from "../icons/audio.svg?raw";
+  import closeIcon from "../icons/close.svg?raw";
+  import videoIcon from "../icons/video.svg?raw";
   import {
     buildAvailableTargetGroups,
-    buildEstimatedTimeLabel,
-    findTargetItem,
     isAudioSourceEntry,
-    pickFirstSelectableTarget,
     submitTranscode
   } from "./change-format-helpers";
-  import ChangeFormatActions from "./ChangeFormatActions.svelte";
-  import FormatTargetList from "./FormatTargetList.svelte";
+  import FormatGrid from "./FormatGrid.svelte";
+  import { FORMAT_GROUP_AUDIO, FORMAT_GROUP_VIDEO } from "@/lib/utils/containers";
+  import type { FormatGroup, FormatItem } from "@/lib/utils/containers";
   import type { RecentDownloadEntry } from "@/types";
 
   interface Props {
@@ -19,12 +20,28 @@
   const { entry, onClose }: Props = $props();
 
   const isAudioSource = $derived(isAudioSourceEntry(entry));
-  const dialogTitle = $derived(isAudioSource ? "Change audio format" : "Change video format");
   const targetGroups = $derived(buildAvailableTargetGroups({ entry }));
-  const hasAnyTarget = $derived(targetGroups.some(group => group.items.some(item => !item.isExcluded)));
+  const videoItems = $derived(
+    findGroup(targetGroups, FORMAT_GROUP_VIDEO)?.items ?? []
+  );
+  const audioItems = $derived(
+    findGroup(targetGroups, FORMAT_GROUP_AUDIO)?.items ?? []
+  );
+  const hasVideoMode = $derived(!isAudioSource && videoItems.length > 0);
+  const hasAudioMode = $derived(audioItems.length > 0);
 
-  let selectedTarget = $state("");
+  let mode = $state<"video" | "audio">("video");
+
+  $effect(() => {
+    if (!hasVideoMode && hasAudioMode) {
+      mode = "audio";
+    }
+  });
+
+  const activeItems = $derived(mode === "video" ? videoItems : audioItems);
+
   let isSubmitting = $state(false);
+  let pendingExtension = $state<string | null>(null);
   let isClosing = $state(false);
   let elDialog = $state<HTMLDialogElement | null>(null);
 
@@ -32,38 +49,38 @@
     elDialog?.showModal();
   });
 
-  $effect(() => {
-    if (!selectedTarget && hasAnyTarget) {
-      selectedTarget = pickFirstSelectableTarget(targetGroups);
-    }
-  });
-
-  const selectedItem = $derived(findTargetItem(targetGroups, selectedTarget));
-  const estimatedTimeLabel = $derived(
-    buildEstimatedTimeLabel({
-      sizeBytes: entry.size,
-      isSlow: selectedItem?.isSlow ?? false
-    })
-  );
+  function findGroup(groups: FormatGroup[], heading: string) {
+    return groups.find(group => group.heading === heading);
+  }
 
   function startClose(): void {
     isClosing = true;
   }
 
-  async function handleConfirm(): Promise<void> {
+  async function handleSelect(item: FormatItem): Promise<void> {
+    if (item.isCurrent || item.isExcluded || isSubmitting) {
+      return;
+    }
+
+    pendingExtension = item.extension;
     isSubmitting = true;
     try {
       const isSuccess = await submitTranscode({
         entry,
-        selectedTarget,
+        selectedTarget: item.extension,
         isSubmitting: false
       });
       if (isSuccess) {
         startClose();
+        return;
       }
+
+      isSubmitting = false;
+      pendingExtension = null;
     } catch (error) {
       console.warn("[ytdl:popup] Transcode request failed:", error);
       isSubmitting = false;
+      pendingExtension = null;
     }
   }
 
@@ -80,8 +97,6 @@
       startClose();
     }
   }
-
-  const isConfirmDisabled = $derived(!selectedTarget || isSubmitting || !hasAnyTarget);
 </script>
 
 <svelte:window onkeydown={handleWindowKeydown} />
@@ -98,22 +113,61 @@
   }}
   onclick={handleBackdropClick}
 >
-  <h2 id="change-format-title" class="dialog-title">{dialogTitle}</h2>
-  <p class="dialog-body">
-    Convert <strong>{entry.title}</strong> from <code>{entry.container}</code> to:
+  <header class="dialog-header">
+    <h2 id="change-format-title" class="dialog-title">Change format</h2>
+    <button
+      class="dialog-close"
+      aria-label="Close"
+      data-tooltip="Close"
+      data-tooltip-align="end"
+      onclick={startClose}
+      type="button"
+    >
+      {@html closeIcon}
+    </button>
+  </header>
+
+  {#if hasVideoMode && hasAudioMode}
+    <div class="mode-toggle" role="tablist">
+      <button
+        class="mode-btn"
+        class:mode-btn--active={mode === "video"}
+        aria-selected={mode === "video"}
+        onclick={() => (mode = "video")}
+        role="tab"
+        type="button"
+      >
+        <span class="mode-icon" aria-hidden="true">{@html videoIcon}</span>
+        Video
+      </button>
+      <button
+        class="mode-btn"
+        class:mode-btn--active={mode === "audio"}
+        aria-selected={mode === "audio"}
+        onclick={() => (mode = "audio")}
+        role="tab"
+        type="button"
+      >
+        <span class="mode-icon" aria-hidden="true">{@html audioIcon}</span>
+        Extract audio
+      </button>
+    </div>
+  {/if}
+
+  <p class="dialog-description">
+    Pick a format to repackage or re-encode {mode === "video" ? "this video" : "audio"} as.
+    <span class="dialog-description-hint"><strong>Slower</strong> targets use a legacy codec</span>
   </p>
-  <FormatTargetList
-    {estimatedTimeLabel}
-    groups={targetGroups}
-    onSelect={target => (selectedTarget = target)}
-    {selectedTarget}
-  />
-  <ChangeFormatActions
-    isDisabled={isConfirmDisabled}
-    {isSubmitting}
-    onCancel={startClose}
-    onConfirm={handleConfirm}
-  />
+
+  {#if activeItems.length === 0}
+    <p class="dialog-empty">No alternative formats available</p>
+  {:else}
+    <FormatGrid
+      items={activeItems}
+      onSelect={handleSelect}
+      pendingExtension={isSubmitting ? pendingExtension : null}
+    />
+  {/if}
 </dialog>
 
 <style>
@@ -125,9 +179,9 @@
     box-sizing: border-box;
     width: 80vw;
     max-width: 360px;
-    padding: 20px;
+    padding: 16px;
     border: none;
-    border-radius: 16px;
+    border-radius: 20px;
     background: var(--surface-high);
     color: var(--fg);
     scrollbar-color: var(--border) transparent;
@@ -165,31 +219,127 @@
         animation: backdrop-out 200ms ease-in forwards;
       }
     }
+  }
 
-    .dialog-title {
-      margin: 0;
-      font-weight: 500;
-      font-size: 1.125rem;
+  .dialog-header {
+    display: flex;
+    gap: 8px;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .dialog-title {
+    margin: 0;
+    color: var(--fg-muted);
+    font-weight: 600;
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  .dialog-close {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--fg-muted);
+    cursor: pointer;
+    transition: background-color 200ms, color 200ms;
+
+    &:hover {
+      background: var(--accent-hover);
+      color: var(--fg);
     }
 
-    .dialog-body {
-      margin: 0;
-      color: var(--fg-muted);
-      font-size: 0.8125rem;
-      line-height: 1.4;
+    &:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
 
-      & strong {
+    :global(svg) {
+      width: 16px;
+      height: 16px;
+    }
+  }
+
+  .mode-toggle {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+    padding: 4px;
+    border-radius: 999px;
+    background: var(--surface);
+
+    .mode-btn {
+      display: inline-flex;
+      gap: 6px;
+      justify-content: center;
+      align-items: center;
+      padding: 8px 12px;
+      border: none;
+      border-radius: 999px;
+      background: transparent;
+      color: var(--fg-muted);
+      font-family: inherit;
+      font-weight: 600;
+      font-size: 0.8125rem;
+      cursor: pointer;
+      transition: background-color 200ms, color 200ms;
+
+      &:hover:not(.mode-btn--active) {
         color: var(--fg);
       }
 
-      & code {
-        padding: 2px 6px;
-        border-radius: 4px;
-        background: var(--surface);
-        font-family: inherit;
-        font-size: 0.75rem;
+      &:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+
+      .mode-icon {
+        display: inline-flex;
+
+        :global(svg) {
+          width: 16px;
+          height: 16px;
+        }
       }
     }
+
+    .mode-btn--active {
+      background: var(--accent);
+      color: var(--on-primary);
+    }
+  }
+
+  .dialog-description {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin: 0;
+    color: var(--fg-muted);
+    font-size: 0.75rem;
+    line-height: 1.4;
+
+    & strong {
+      color: var(--fg);
+      font-weight: 600;
+    }
+
+    .dialog-description-hint {
+      color: var(--fg-subtle);
+      font-size: 0.6875rem;
+    }
+  }
+
+  .dialog-empty {
+    margin: 0;
+    color: var(--fg-subtle);
+    font-size: 0.8125rem;
   }
 
   @keyframes backdrop-in {
@@ -215,24 +365,28 @@
   @keyframes dialog-in {
     from {
       opacity: 0%;
-      transform: scale(0.92) translateY(8px);
+      scale: 0.92;
+      translate: 0 8px;
     }
 
     to {
       opacity: 100%;
-      transform: scale(1) translateY(0);
+      scale: 1;
+      translate: 0 0;
     }
   }
 
   @keyframes dialog-out {
     from {
       opacity: 100%;
-      transform: scale(1) translateY(0);
+      scale: 1;
+      translate: 0 0;
     }
 
     to {
       opacity: 0%;
-      transform: scale(0.92) translateY(8px);
+      scale: 0.92;
+      translate: 0 8px;
     }
   }
 </style>

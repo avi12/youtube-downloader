@@ -7,21 +7,8 @@ import {
   splitFilenameAndExtension,
   videoContainers
 } from "@/lib/utils/containers";
-import type { FormatGroup, FormatItem } from "@/lib/utils/containers";
+import type { FormatGroup } from "@/lib/utils/containers";
 import type { RecentDownloadEntry } from "@/types";
-
-const APPROX_SECONDS_PER_MB_REMUX = 0.05;
-const APPROX_SECONDS_PER_MB_REENCODE = 0.6;
-
-type EstimatedTimeParams = {
-  sizeBytes: number;
-  isSlow?: boolean;
-};
-export function buildEstimatedTimeLabel({ sizeBytes, isSlow = false }: EstimatedTimeParams) {
-  const secondsPerMb = isSlow ? APPROX_SECONDS_PER_MB_REENCODE : APPROX_SECONDS_PER_MB_REMUX;
-  const seconds = Math.max(1, Math.round((sizeBytes / (1024 * 1024)) * secondsPerMb));
-  return seconds < 60 ? `~${seconds}s` : `~${Math.round(seconds / 60)} min`;
-}
 
 export function isAudioSourceEntry(entry: RecentDownloadEntry) {
   return audioContainers.includes(entry.container) && !videoContainers.includes(entry.container);
@@ -43,10 +30,6 @@ function canReencodeTarget(target: string, videoMimeType: string): boolean {
 }
 
 function isTargetAllowed(target: string, entry: RecentDownloadEntry, isAudioSource: boolean): boolean {
-  if (target === entry.container) {
-    return false;
-  }
-
   if (!isVideoTargetWithMime(target, entry, isAudioSource)) {
     return true;
   }
@@ -71,43 +54,22 @@ export function buildAvailableTargetGroups({ entry }: BuildAvailableTargetGroups
   const allowedExtensions = baseAllowed.filter(target => isTargetAllowed(target, entry, isAudioSource));
   const slowExtensions = buildSlowExtensions(entry, isAudioSource);
   const groups = buildFormatGroups({ allowedExtensions });
-  const withSlow = groups.map(group => ({
+  const withFlags = groups.map(group => ({
     ...group,
-    items: group.items.map(item => slowExtensions.has(item.extension) ? {
+    items: group.items.map(item => ({
       ...item,
-      isSlow: true
-    } : item)
+      isSlow: slowExtensions.has(item.extension),
+      isCurrent: item.extension === entry.container
+    }))
   }));
   if (isAudioSource) {
-    return withSlow;
+    return withFlags;
   }
 
-  return withSlow.map(group => group.heading === "Audio" ? {
+  return withFlags.map(group => group.heading === "Audio" ? {
     ...group,
     caption: "Extract audio as"
   } : group);
-}
-
-export function pickFirstSelectableTarget(groups: FormatGroup[]) {
-  for (const group of groups) {
-    const candidate = group.items.find(item => !item.isExcluded);
-    if (candidate) {
-      return candidate.extension;
-    }
-  }
-
-  return "";
-}
-
-export function findTargetItem(groups: FormatGroup[], extension: string): FormatItem | undefined {
-  for (const group of groups) {
-    const found = group.items.find(item => item.extension === extension);
-    if (found) {
-      return found;
-    }
-  }
-
-  return undefined;
 }
 
 type SubmitTranscodeParams = {

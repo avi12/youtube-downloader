@@ -90,23 +90,23 @@ export const AUTO_EXTENSION = "auto";
 export const AUTO_EXTENSION_LABEL = "Auto (match source)";
 
 const FORMAT_DESCRIPTIONS: Record<string, string> = {
-  "3gp": "Mobile / legacy",
-  aiff: "Lossless, macOS",
-  avi: "Legacy Windows",
-  flac: "Lossless, compressed",
+  "3gp": "Mobile",
+  aiff: "Lossless",
+  avi: "Legacy",
+  flac: "Lossless",
   m4a: "AAC audio",
-  m4b: "Audiobook (chaptered)",
-  m4v: "iTunes / Apple",
-  mkv: "Universal, multi-track",
-  mov: "QuickTime / macOS",
-  mp3: "Most compatible",
+  m4b: "Audiobook",
+  m4v: "Apple",
+  mkv: "Many tracks",
+  mov: "Apple",
+  mp3: "Compatible",
   mp4: "Most compatible",
-  ogg: "Vorbis audio",
-  opus: "Modern, efficient",
-  ts: "MPEG-TS / streaming",
-  wav: "Lossless, uncompressed",
-  weba: "WebM audio (Opus)",
-  webm: "Native YouTube format"
+  ogg: "Vorbis",
+  opus: "Modern",
+  ts: "Transport",
+  wav: "Lossless",
+  weba: "WebM audio",
+  webm: "Open, small"
 };
 
 export function getFormatDescription(extension: string) {
