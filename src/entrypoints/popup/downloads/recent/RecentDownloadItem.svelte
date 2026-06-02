@@ -19,6 +19,8 @@
     entry, now, showOpenInNew = true, onShowInFolder, onChangeFormat, onRemove
   }: Props = $props();
 
+  const anchorName = $derived(`--cf-${entry.id.replace(/[^a-zA-Z0-9-]/g, "")}`);
+
   const isZip = $derived(entry.container === "zip");
   const openInNewTabLabel = $derived(isZip ? "Open playlist in new tab" : "Open video in new tab");
 
@@ -143,8 +145,10 @@
         </button>
       {/if}
       <button
+        style:anchor-name={anchorName}
         class="recent-action-btn"
         aria-label="Change format"
+        data-cf-trigger
         data-tooltip="Change format"
         data-tooltip-align="end"
         onclick={onChangeFormat}

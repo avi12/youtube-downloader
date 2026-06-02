@@ -20,6 +20,7 @@
   const { entry, onClose }: Props = $props();
 
   const isAudioSource = $derived(isAudioSourceEntry(entry));
+  const anchorName = $derived(`--cf-${entry.id.replace(/[^a-zA-Z0-9-]/g, "")}`);
   const targetGroups = $derived(buildAvailableTargetGroups({ entry }));
   const videoItems = $derived(
     findGroup(targetGroups, FORMAT_GROUP_VIDEO)?.items ?? []
@@ -46,7 +47,33 @@
   let elDialog = $state<HTMLDialogElement | null>(null);
 
   $effect(() => {
-    elDialog?.showModal();
+    elDialog?.show();
+  });
+
+  $effect(() => {
+    function handleDocumentPointerDown(e: PointerEvent) {
+      const { target } = e;
+      if (!(target instanceof Element)) {
+        return;
+      }
+
+      const isTriggerClick = target.closest("[data-cf-trigger]") !== null;
+      if (isTriggerClick) {
+        return;
+      }
+
+      if (elDialog && !elDialog.contains(target)) {
+        startClose();
+      }
+    }
+
+    const timeoutId = setTimeout(() => {
+      document.addEventListener("pointerdown", handleDocumentPointerDown);
+    }, 0);
+    return () => {
+      clearTimeout(timeoutId);
+      document.removeEventListener("pointerdown", handleDocumentPointerDown);
+    };
   });
 
   function findGroup(groups: FormatGroup[], heading: string) {
@@ -84,13 +111,6 @@
     }
   }
 
-  function handleBackdropClick(e: MouseEvent): void {
-    const isBackdropClick = e.target === e.currentTarget;
-    if (isBackdropClick) {
-      startClose();
-    }
-  }
-
   function handleWindowKeydown(e: KeyboardEvent): void {
     const isEscape = e.key === "Escape";
     if (isEscape) {
@@ -103,6 +123,7 @@
 
 <dialog
   bind:this={elDialog}
+  style:position-anchor={anchorName}
   class="dialog"
   class:closing={isClosing}
   aria-labelledby="change-format-title"
@@ -111,7 +132,6 @@
       onClose();
     }
   }}
-  onclick={handleBackdropClick}
 >
   <header class="dialog-header">
     <h2 id="change-format-title" class="dialog-title">Change format</h2>
@@ -170,23 +190,44 @@
 
 <style>
   .dialog {
+    position: fixed;
+    inset-inline: 12px;
+    inset-block-start: 96px;
+    z-index: 50;
     display: flex;
     flex-direction: column;
     gap: 10px;
-    overflow-x: hidden;
+    overflow: hidden auto;
     box-sizing: border-box;
-    width: 80vw;
-    max-width: 340px;
+    max-width: calc(100vw - 24px);
+    max-height: 100vh;
     padding: 14px;
-    border: none;
+    border: 1px solid var(--border);
     border-radius: 20px;
     background: var(--surface-high);
     color: var(--fg);
     scrollbar-color: var(--border) transparent;
     scrollbar-width: thin;
     scrollbar-gutter: stable both-edges;
-    box-shadow: 0 8px 32px rgb(0 0 0 / 12%);
-    animation: dialog-in 240ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    box-shadow:
+      0 12px 32px rgb(0 0 0 / 24%),
+      0 4px 12px rgb(0 0 0 / 16%);
+    animation: dialog-in 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
+
+    /*
+     * Anchor positioning — Chrome 125+ / Edge 125+. Pins the popover under
+     * the change-format button it was opened from. Falls back to the
+     * inset-block-start/inset-inline above on browsers without anchor()
+     * support (Firefox as of Jan 2026 — under development, see
+     * https://developer.chrome.com/blog/anchor-positioning-api and
+     * https://bugzilla.mozilla.org/show_bug.cgi?id=1838746).
+     */
+    @supports (anchor-name: --x) {
+      inset-block-start: calc(anchor(bottom) + 8px);
+      inset-inline-end: anchor(right);
+      inset-inline-start: auto;
+      max-width: calc(anchor(right) - 12px);
+    }
 
     &::-webkit-scrollbar {
       width: 8px;
@@ -205,17 +246,8 @@
       background: var(--fg-subtle);
     }
 
-    &::backdrop {
-      background: rgb(0 0 0 / 40%);
-      animation: backdrop-in 200ms ease-out;
-    }
-
     &.closing {
-      animation: dialog-out 240ms cubic-bezier(0.36, 0, 0.66, -0.56) forwards;
-
-      &::backdrop {
-        animation: backdrop-out 200ms ease-in forwards;
-      }
+      animation: dialog-out 180ms cubic-bezier(0.36, 0, 0.66, -0.56) forwards;
     }
   }
 
@@ -329,26 +361,6 @@
     & strong {
       color: var(--fg);
       font-weight: 700;
-    }
-  }
-
-  @keyframes backdrop-in {
-    from {
-      opacity: 0%;
-    }
-
-    to {
-      opacity: 100%;
-    }
-  }
-
-  @keyframes backdrop-out {
-    from {
-      opacity: 100%;
-    }
-
-    to {
-      opacity: 0%;
     }
   }
 
