@@ -149,7 +149,8 @@
     const parts: string[] = [];
     if (downloadedBytes !== undefined && downloadedBytes > 0) {
       const downloadedStr = formatBytes(downloadedBytes, 0);
-      if (totalBytes !== undefined && totalBytes > 0) {
+      const hasValidTotal = totalBytes !== undefined && totalBytes >= downloadedBytes;
+      if (hasValidTotal) {
         const totalStr = formatBytes(totalBytes, 2);
         parts.push(`${downloadedStr} / ${totalStr}`);
       } else {

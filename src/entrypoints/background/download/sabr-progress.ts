@@ -18,8 +18,13 @@ export function createProgressAccumulator({
   videoId, tabId, captionCount, isAudioOnly, videoFormat, audioFormat, additionalFormats, onProgress
 }: CreateProgressAccumulatorParams) {
   const hasVideoStage = !isAudioOnly && !!videoFormat;
-  const videoExpectedBytes = hasVideoStage ? parseContentLength(videoFormat) : 0;
   const audioExpectedBytes = parseContentLength(audioFormat);
+  const videoExpectedBytes = hasVideoStage
+    ? (parseContentLength(videoFormat) || estimateFormatBytes({
+      format: videoFormat,
+      referenceFormat: audioFormat
+    }))
+    : 0;
   const extraExpectedBytesArray = additionalFormats.map(format => {
     const known = parseContentLength(format);
     return known > 0 ? known : estimateFormatBytes({
