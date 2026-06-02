@@ -13,41 +13,47 @@
 
   const { items, pendingExtension, onSelect }: Props = $props();
 
-  type TagKind = "current" | "instant" | "re-encodes" | "slower";
+  const TagKind = {
+    Current: "current",
+    Instant: "instant",
+    ReEncodes: "re-encodes",
+    Slower: "slower"
+  } as const;
+  type TagKind = (typeof TagKind)[keyof typeof TagKind];
 
   function getTagKind(item: FormatItem): TagKind {
     if (item.isCurrent) {
-      return "current";
+      return TagKind.Current;
     }
 
     if (item.transcodeSpeed === TranscodeSpeed.Slower) {
-      return "slower";
+      return TagKind.Slower;
     }
 
     if (item.transcodeSpeed === TranscodeSpeed.ReEncodes) {
-      return "re-encodes";
+      return TagKind.ReEncodes;
     }
 
-    return "instant";
+    return TagKind.Instant;
   }
 
   const TAG_LABEL: Record<TagKind, string> = {
-    current: "Current",
-    instant: "Instant",
-    "re-encodes": "Re-encodes",
-    slower: "Slower"
+    [TagKind.Current]: "Current",
+    [TagKind.Instant]: "Instant",
+    [TagKind.ReEncodes]: "Re-encodes",
+    [TagKind.Slower]: "Slower"
   };
 
   function getTagIcon(kind: TagKind): string {
-    if (kind === "current") {
+    if (kind === TagKind.Current) {
       return "";
     }
 
-    if (kind === "instant") {
+    if (kind === TagKind.Instant) {
       return instantIcon;
     }
 
-    if (kind === "re-encodes") {
+    if (kind === TagKind.ReEncodes) {
       return reEncodeIcon;
     }
 
@@ -69,14 +75,14 @@
     >
       <div class="format-card-head">
         <span class="format-name">{item.extension.toUpperCase()}</span>
-        {#if tag === "current"}
-          <span class="format-tag format-tag--current">{TAG_LABEL.current}</span>
+        {#if tag === TagKind.Current}
+          <span class="format-tag format-tag--current">{TAG_LABEL[TagKind.Current]}</span>
         {/if}
       </div>
       {#if item.description}
         <span class="format-desc">{item.description}</span>
       {/if}
-      {#if tag !== "current"}
+      {#if tag !== TagKind.Current}
         <span class="format-tag format-tag--{tag}">
           <span class="format-tag-icon" aria-hidden="true">{@html getTagIcon(tag)}</span>
           {TAG_LABEL[tag]}
