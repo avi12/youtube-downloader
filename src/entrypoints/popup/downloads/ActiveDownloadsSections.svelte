@@ -278,10 +278,15 @@
 
 <style>
   .section-header {
+    position: sticky;
+    inset-block-start: 0;
+    z-index: 2;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 6px;
+    margin-inline: -16px;
+    padding: 8px 16px;
+    background: var(--bg);
 
     .section-title {
       display: flex;

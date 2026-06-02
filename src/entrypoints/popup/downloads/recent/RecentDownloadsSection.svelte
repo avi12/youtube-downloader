@@ -61,8 +61,12 @@
     gap: 8px;
 
     .recent-section-heading {
-      margin: 0;
-      padding: 0 4px;
+      position: sticky;
+      inset-block-start: 0;
+      z-index: 2;
+      margin: 0 -16px;
+      padding: 8px 16px;
+      background: var(--bg);
       color: var(--fg-muted);
       font-weight: 500;
       font-size: 0.8125rem;
