@@ -191,15 +191,16 @@
 <style>
   .dialog {
     position: fixed;
-    inset-inline: 12px;
-    inset-block-start: 96px;
+    inset-block-start: calc(anchor(bottom) + 8px);
+    inset-inline-end: anchor(right);
+    inset-inline-start: auto;
     z-index: 50;
     display: flex;
     flex-direction: column;
     gap: 10px;
     overflow: hidden auto;
     box-sizing: border-box;
-    max-width: calc(100vw - 24px);
+    max-width: calc(anchor(right) - 12px);
     max-height: 100vh;
     padding: 14px;
     border: 1px solid var(--border);
@@ -213,13 +214,6 @@
       0 12px 32px rgb(0 0 0 / 24%),
       0 4px 12px rgb(0 0 0 / 16%);
     animation: dialog-in 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
-
-    @supports (anchor-name: --x) {
-      inset-block-start: calc(anchor(bottom) + 8px);
-      inset-inline-end: anchor(right);
-      inset-inline-start: auto;
-      max-width: calc(anchor(right) - 12px);
-    }
 
     &::-webkit-scrollbar {
       width: 8px;
