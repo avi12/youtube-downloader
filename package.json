@@ -19,7 +19,7 @@
     "build:pack": "pnpm build && pnpm run pack",
     "build:pack:firefox": "pnpm build:firefox && pnpm run pack:firefox",
     "postinstall": "wxt prepare",
-    "lint": "oxlint --type-aware --fix && eslint --fix --cache --cache-location node_modules/.cache/eslint",
+    "lint": "oxlint --type-aware --fix && eslint --fix",
     "compile": "tsc --noEmit",
     "stylelint": "stylelint \"src/**/*.{css,svelte}\" --fix",
     "svelte-check": "pnpx svelte-check"
