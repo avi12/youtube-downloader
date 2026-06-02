@@ -3,6 +3,7 @@
     buildAvailableTargetGroups,
     buildEstimatedTimeLabel,
     findTargetItem,
+    isAudioSourceEntry,
     pickFirstSelectableTarget,
     submitTranscode
   } from "./change-format-helpers";
@@ -17,6 +18,8 @@
 
   const { entry, onClose }: Props = $props();
 
+  const isAudioSource = $derived(isAudioSourceEntry(entry));
+  const dialogTitle = $derived(isAudioSource ? "Change audio format" : "Change video format");
   const targetGroups = $derived(buildAvailableTargetGroups({ entry }));
   const hasAnyTarget = $derived(targetGroups.some(group => group.items.some(item => !item.isExcluded)));
 
@@ -95,7 +98,7 @@
   }}
   onclick={handleBackdropClick}
 >
-  <h2 id="change-format-title" class="dialog-title">Change format</h2>
+  <h2 id="change-format-title" class="dialog-title">{dialogTitle}</h2>
   <p class="dialog-body">
     Convert <strong>{entry.title}</strong> from <code>{entry.container}</code> to:
   </p>

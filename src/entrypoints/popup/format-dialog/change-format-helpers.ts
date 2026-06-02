@@ -23,7 +23,7 @@ export function buildEstimatedTimeLabel({ sizeBytes, isSlow = false }: Estimated
   return seconds < 60 ? `~${seconds}s` : `~${Math.round(seconds / 60)} min`;
 }
 
-function isAudioSourceEntry(entry: RecentDownloadEntry) {
+export function isAudioSourceEntry(entry: RecentDownloadEntry) {
   return audioContainers.includes(entry.container) && !videoContainers.includes(entry.container);
 }
 
