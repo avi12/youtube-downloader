@@ -138,8 +138,6 @@
     <button
       class="dialog-close"
       aria-label="Close"
-      data-tooltip="Close"
-      data-tooltip-align="end"
       onclick={startClose}
       type="button"
     >
@@ -214,7 +212,7 @@
       0 12px 32px rgb(0 0 0 / 24%),
       0 4px 12px rgb(0 0 0 / 16%);
     animation: dialog-in 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
-    position-try-fallbacks: --above;
+    position-try-fallbacks: --viewport, --above;
 
     &::-webkit-scrollbar {
       width: 8px;
@@ -236,6 +234,13 @@
     &.closing {
       animation: dialog-out 180ms cubic-bezier(0.36, 0, 0.66, -0.56) forwards;
     }
+  }
+
+  @position-try --viewport {
+    inset-block: 12px;
+    inset-inline-end: anchor(right);
+    inset-inline-start: auto;
+    max-height: none;
   }
 
   @position-try --above {
