@@ -2,9 +2,12 @@ import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import {
   audioContainers,
   buildFormatGroups,
+  FORMAT_GROUP_VIDEO,
   getVideoFallbackCodec,
+  isSlowVideoEncoder,
   requiresVideoReencode,
   splitFilenameAndExtension,
+  TranscodeSpeed,
   videoContainers
 } from "@/lib/utils/containers";
 import type { FormatGroup } from "@/lib/utils/containers";
@@ -37,30 +40,42 @@ function isTargetAllowed(target: string, entry: RecentDownloadEntry, isAudioSour
   return canReencodeTarget(target, entry.videoMimeType!);
 }
 
-function buildSlowExtensions(entry: RecentDownloadEntry, isAudioSource: boolean): Set<string> {
-  if (isAudioSource || !entry.videoMimeType) {
-    return new Set();
+function classifyVideoTargetSpeed(target: string, videoMimeType: string): TranscodeSpeed {
+  const needsReencode = requiresVideoReencode({
+    videoMimeType,
+    targetExtension: target
+  });
+  if (!needsReencode) {
+    return TranscodeSpeed.Instant;
   }
 
-  return new Set(videoContainers.filter(target => requiresVideoReencode({
-    videoMimeType: entry.videoMimeType!,
-    targetExtension: target
-  })));
+  const encoder = getVideoFallbackCodec(target);
+  if (isSlowVideoEncoder(encoder)) {
+    return TranscodeSpeed.Slower;
+  }
+
+  return TranscodeSpeed.ReEncodes;
 }
 
 export function buildAvailableTargetGroups({ entry }: BuildAvailableTargetGroupsParams): FormatGroup[] {
   const isAudioSource = isAudioSourceEntry(entry);
   const baseAllowed = isAudioSource ? audioContainers : [...videoContainers, ...audioContainers];
   const allowedExtensions = baseAllowed.filter(target => isTargetAllowed(target, entry, isAudioSource));
-  const slowExtensions = buildSlowExtensions(entry, isAudioSource);
   const groups = buildFormatGroups({ allowedExtensions });
   const withFlags = groups.map(group => ({
     ...group,
-    items: group.items.map(item => ({
-      ...item,
-      isSlow: slowExtensions.has(item.extension),
-      isCurrent: item.extension === entry.container
-    }))
+    items: group.items.map(item => {
+      const isCurrent = item.extension === entry.container;
+      const transcodeSpeed = group.heading === FORMAT_GROUP_VIDEO && entry.videoMimeType
+        ? classifyVideoTargetSpeed(item.extension, entry.videoMimeType)
+        : TranscodeSpeed.Instant;
+      return {
+        ...item,
+        isCurrent,
+        isSlow: transcodeSpeed === TranscodeSpeed.Slower,
+        transcodeSpeed
+      };
+    })
   }));
   if (isAudioSource) {
     return withFlags;

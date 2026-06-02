@@ -97,16 +97,16 @@ const FORMAT_DESCRIPTIONS: Record<string, string> = {
   m4a: "AAC audio",
   m4b: "Audiobook (chaptered)",
   m4v: "iTunes / Apple",
-  mkv: "Universal, multi-track",
-  mov: "QuickTime / macOS",
+  mkv: "Holds many tracks",
+  mov: "Apple / editing",
   mp3: "Most compatible",
-  mp4: "Most compatible",
+  mp4: "Plays on everything",
   ogg: "Vorbis audio",
   opus: "Modern, efficient",
-  ts: "MPEG-TS / streaming",
+  ts: "Broadcast stream",
   wav: "Lossless, uncompressed",
   weba: "WebM audio (Opus)",
-  webm: "Native YouTube format"
+  webm: "Open & web-native"
 };
 
 export function getFormatDescription(extension: string) {

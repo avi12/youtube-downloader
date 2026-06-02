@@ -161,6 +161,12 @@ export function getVideoFallbackCodec(targetExtension: string) {
   return CONTAINER_SPECS[targetExtension]?.fallbackVideoCodec;
 }
 
+const SLOW_VIDEO_ENCODERS = new Set([CODEC_VP9_ENCODER, CODEC_MPEG4_ENCODER]);
+
+export function isSlowVideoEncoder(encoder: string | undefined) {
+  return !!encoder && SLOW_VIDEO_ENCODERS.has(encoder);
+}
+
 export function requiresVideoReencode({ videoMimeType, targetExtension }: {
   videoMimeType: string;
   targetExtension: string;

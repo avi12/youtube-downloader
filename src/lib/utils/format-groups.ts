@@ -5,6 +5,14 @@ export const FORMAT_GROUP_AUDIO = "Audio";
 
 export type FormatGroupHeading = typeof FORMAT_GROUP_VIDEO | typeof FORMAT_GROUP_AUDIO;
 
+export const TranscodeSpeed = {
+  Instant: "instant",
+  ReEncodes: "re-encodes",
+  Slower: "slower"
+} as const;
+
+export type TranscodeSpeed = (typeof TranscodeSpeed)[keyof typeof TranscodeSpeed];
+
 export type FormatItem = {
   extension: string;
   description: string;
@@ -12,6 +20,7 @@ export type FormatItem = {
   isExcluded: boolean;
   isSlow?: boolean;
   isCurrent?: boolean;
+  transcodeSpeed?: TranscodeSpeed;
 };
 
 export type FormatGroup = {

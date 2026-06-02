@@ -157,6 +157,9 @@
   {#if activeItems.length === 0}
     <p class="dialog-empty">No alternative formats available</p>
   {:else}
+    <p class="dialog-description">
+      <strong>Instant</strong> just repackages the file. Others re-encode the {mode === "video" ? "video" : "audio"} — <strong>Slower</strong> targets use a legacy codec and take noticeably longer
+    </p>
     <FormatGrid
       items={activeItems}
       onSelect={handleSelect}
@@ -315,6 +318,18 @@
     margin: 0;
     color: var(--fg-subtle);
     font-size: 0.8125rem;
+  }
+
+  .dialog-description {
+    margin: 0;
+    color: var(--fg-muted);
+    font-size: 0.75rem;
+    line-height: 1.45;
+
+    & strong {
+      color: var(--fg);
+      font-weight: 700;
+    }
   }
 
   @keyframes backdrop-in {
