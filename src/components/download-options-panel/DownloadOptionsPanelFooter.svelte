@@ -113,31 +113,31 @@
     &.failed {
       --paper-progress-active-color: var(--yt-sys-color-baseline--text-error, #d93025);
     }
-  }
 
-  .ytdl-done-row {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-  }
+    .ytdl-done-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
 
-  .ytdl-progress-track {
-    display: block;
-    overflow: hidden;
-    width: 100%;
-    border-radius: 4px;
-  }
+    .ytdl-progress-track {
+      display: block;
+      overflow: hidden;
+      width: 100%;
+      border-radius: 4px;
+    }
 
-  .ytdl-progress-label {
-    color: var(--yt-sys-color-baseline--text-secondary, #606060);
-    font-size: 1.2rem;
-    font-variant-numeric: tabular-nums;
+    .ytdl-progress-label {
+      color: var(--yt-sys-color-baseline--text-secondary, #606060);
+      font-size: 1.2rem;
+      font-variant-numeric: tabular-nums;
+    }
 
-    .ytdl-progress-block.done & {
+    &.done .ytdl-progress-label {
       color: var(--yt-sys-color-baseline--text-complete, #1e8e3e);
     }
 
-    .ytdl-progress-block.failed & {
+    &.failed .ytdl-progress-label {
       color: var(--yt-sys-color-baseline--text-error, #d93025);
     }
   }

@@ -123,31 +123,31 @@
       color: var(--yt-sys-color-baseline--text-primary, #0f0f0f);
       box-shadow: 0 4px 24px var(--yt-sys-color-baseline--shadow-medium, rgb(0 0 0 / 25%));
       transform-origin: var(--ytdl-panel-origin, bottom) center;
-    }
 
-    .ytdl-panel:focus {
-      outline: none;
-    }
+      &:focus {
+        outline: none;
+      }
 
-    .ytdl-panel .ytSpecButtonShapeNextMono.ytSpecButtonShapeNextFilled.ytSpecButtonShapeNextFocused {
-      border-color: transparent;
-      background: var(--yt-sys-color-baseline--text-primary, #0f0f0f);
-      color: var(--yt-sys-color-baseline--base-background, #ffffff);
-    }
+      .ytSpecButtonShapeNextMono.ytSpecButtonShapeNextFilled.ytSpecButtonShapeNextFocused {
+        border-color: transparent;
+        background: var(--yt-sys-color-baseline--text-primary, #0f0f0f);
+        color: var(--yt-sys-color-baseline--base-background, #ffffff);
+      }
 
-    .ytdl-panel button:focus-visible {
-      outline: 2px solid var(--yt-sys-color-baseline--call-to-action, #065fd4);
-      outline-offset: 3px;
-    }
+      button:focus-visible {
+        outline: 2px solid var(--yt-sys-color-baseline--call-to-action, #065fd4);
+        outline-offset: 3px;
+      }
 
-    .ytdl-panel .ytdl-cancel-state button {
-      border-color: var(--yt-sys-color-baseline--text-error, #d93025);
-      background: transparent;
-      color: var(--yt-sys-color-baseline--text-error, #d93025);
-    }
+      .ytdl-cancel-state button {
+        border-color: var(--yt-sys-color-baseline--text-error, #d93025);
+        background: transparent;
+        color: var(--yt-sys-color-baseline--text-error, #d93025);
 
-    .ytdl-panel .ytdl-cancel-state button:hover {
-      background: color-mix(in oklab, var(--yt-sys-color-baseline--text-error, #d93025) 12%, transparent);
+        &:hover {
+          background: color-mix(in oklab, var(--yt-sys-color-baseline--text-error, #d93025) 12%, transparent);
+        }
+      }
     }
 
     .ytdl-panel-header {

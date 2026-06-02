@@ -177,36 +177,36 @@
     border-radius: 999px;
     background: var(--ytdl-tficon-bg);
     color: var(--ytdl-tficon-color);
-  }
 
-  .sync-icon {
-    width: 14px;
-    height: 14px;
-  }
+    .sync-icon {
+      width: 14px;
+      height: 14px;
+    }
 
-  .sync-pulse {
-    position: absolute;
-    inset: 0;
-    border: 1.5px solid var(--yt-sys-color-baseline--call-to-action, #065fd4);
-    border-radius: 999px;
-    opacity: 60%;
-    animation: ytdl-track-pulse 2000ms ease-out infinite;
+    .sync-pulse {
+      position: absolute;
+      inset: 0;
+      border: 1.5px solid var(--yt-sys-color-baseline--call-to-action, #065fd4);
+      border-radius: 999px;
+      opacity: 60%;
+      animation: ytdl-track-pulse 2000ms ease-out infinite;
+    }
   }
 
   @keyframes ytdl-track-pulse {
     0% {
       opacity: 55%;
-      transform: scale(0.85);
+      scale: 0.85;
     }
 
     70% {
       opacity: 0%;
-      transform: scale(1.35);
+      scale: 1.35;
     }
 
     100% {
       opacity: 0%;
-      transform: scale(1.35);
+      scale: 1.35;
     }
   }
 

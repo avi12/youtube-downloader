@@ -226,16 +226,16 @@
     display: inline-flex;
     flex-shrink: 0;
     color: var(--fg-subtle);
-    transition: transform 200ms cubic-bezier(0.2, 0, 0, 1);
+    transition: rotate 200ms cubic-bezier(0.2, 0, 0, 1);
+
+    &.set-chevron--open {
+      rotate: 90deg;
+    }
 
     :global(svg) {
       width: 18px;
       height: 18px;
     }
-  }
-
-  .set-chevron--open {
-    transform: rotate(90deg);
   }
 
   .dropdown-list {

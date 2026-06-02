@@ -58,27 +58,27 @@
     stroke-linecap: round;
     stroke-width: 2.4;
     transition: stroke-dashoffset 160ms ease-out;
-    transform: rotate(-90deg);
+    rotate: -90deg;
     transform-origin: center;
-  }
 
-  .ytdl-download-ring--error .ytdl-download-ring__indicator {
-    stroke-dashoffset: 0;
-  }
+    .ytdl-download-ring--error & {
+      stroke-dashoffset: 0;
+    }
 
-  .ytdl-download-ring--indeterminate .ytdl-download-ring__indicator {
-    stroke-dasharray: 30 70;
-    transition: none;
-    animation: ytdl-download-ring-spin 1400ms linear infinite;
+    .ytdl-download-ring--indeterminate & {
+      stroke-dasharray: 30 70;
+      transition: none;
+      animation: ytdl-download-ring-spin 1400ms linear infinite;
+    }
   }
 
   @keyframes ytdl-download-ring-spin {
     from {
-      transform: rotate(-90deg);
+      rotate: -90deg;
     }
 
     to {
-      transform: rotate(270deg);
+      rotate: 270deg;
     }
   }
 </style>

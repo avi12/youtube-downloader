@@ -144,22 +144,22 @@
       margin: auto;
       border-radius: 50%;
       background: var(--accent);
-      transition: transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1);
-      transform: scale(0);
+      transition: scale 180ms cubic-bezier(0.34, 1.56, 0.64, 1);
+      scale: 0;
     }
-  }
 
-  .radio-input-hidden:checked ~ .radio-dot {
-    box-shadow: inset 0 0 0 2px var(--accent);
-  }
+    .radio-input-hidden:checked ~ & {
+      box-shadow: inset 0 0 0 2px var(--accent);
 
-  .radio-input-hidden:checked ~ .radio-dot::after {
-    transform: scale(1);
-  }
+      &::after {
+        scale: 1;
+      }
+    }
 
-  .radio-item:has(.radio-input-hidden:focus-visible) .radio-dot {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
+    .radio-item:has(.radio-input-hidden:focus-visible) & {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
   }
 
   .radio-txt {

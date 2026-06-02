@@ -149,12 +149,14 @@
   @keyframes menu-in {
     from {
       opacity: 0%;
-      transform: scale(0.92) translateY(-4px);
+      scale: 0.92;
+      translate: 0 -4px;
     }
 
     to {
       opacity: 100%;
-      transform: scale(1) translateY(0);
+      scale: 1;
+      translate: 0 0;
     }
   }
 </style>

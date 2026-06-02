@@ -127,9 +127,9 @@
     display: flex;
     flex-direction: column;
     padding-bottom: 4px;
-  }
 
-  .ytdl-options-container > :global(*:not(:first-child)) {
-    margin-top: 16px;
+    > :global(*:not(:first-child)) {
+      margin-top: 16px;
+    }
   }
 </style>

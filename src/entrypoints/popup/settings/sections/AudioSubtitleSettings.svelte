@@ -110,10 +110,10 @@
     align-items: center;
     min-height: 52px;
     padding: 13px 14px;
-  }
 
-  .set-item-label {
-    cursor: pointer;
+    &.set-item-label {
+      cursor: pointer;
+    }
   }
 
   .set-lead {
@@ -185,8 +185,11 @@
       height: 16px;
       border-radius: 50%;
       background-color: var(--fg-subtle);
-      transition: transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1), background-color 200ms;
-      transform: translate(-50%, -50%);
+      transition:
+        translate 300ms cubic-bezier(0.34, 1.56, 0.64, 1),
+        scale 300ms cubic-bezier(0.34, 1.56, 0.64, 1),
+        background-color 200ms;
+      translate: -50% -50%;
     }
   }
 
@@ -203,7 +206,8 @@
 
     &:checked + .set-switch-track::after {
       background-color: var(--on-primary);
-      transform: translate(-50%, -50%) translateX(22px) scale(1.5);
+      scale: 1.5;
+      translate: calc(-50% + 22px) -50%;
     }
 
     &:focus-visible + .set-switch-track {

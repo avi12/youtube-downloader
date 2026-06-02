@@ -144,12 +144,6 @@
 <style>
     :global {
       @media (prefers-reduced-motion: reduce) {
-        [data-tooltip]::after {
-          transition: none;
-        }
-      }
-
-      @media (prefers-reduced-motion: reduce) {
         *,
         *::before,
         *::after {
@@ -157,47 +151,51 @@
           animation-duration: 0.01ms !important;
           animation-iteration-count: 1 !important;
         }
+
+        [data-tooltip]::after {
+          transition: none;
+        }
       }
 
       [data-tooltip] {
         position: relative;
-      }
 
-      [data-tooltip]::after {
-        content: attr(data-tooltip);
-        position: absolute;
-        bottom: calc(100% + 6px);
-        inset-inline-start: 0;
-        z-index: 10;
-        width: max-content;
-        max-width: 240px;
-        padding: 6px 12px;
-        border-radius: 8px;
-        background: var(--md-sys-color-inverse-surface, var(--fg));
-        color: var(--md-sys-color-inverse-on-surface, var(--bg));
-        font-weight: 500;
-        font-size: 0.75rem;
-        line-height: 1rem;
-        letter-spacing: 0.025em;
-        white-space: normal;
-        overflow-wrap: anywhere;
-        opacity: 0%;
-        box-shadow:
-          0 2px 6px 2px color-mix(in oklab, var(--fg) 15%, transparent),
-          0 1px 2px 0 color-mix(in oklab, var(--fg) 30%, transparent);
-        pointer-events: none;
-        transition: opacity 150ms cubic-bezier(0.2, 0, 0, 1);
-      }
+        &::after {
+          content: attr(data-tooltip);
+          position: absolute;
+          bottom: calc(100% + 6px);
+          inset-inline-start: 0;
+          z-index: 10;
+          width: max-content;
+          max-width: 240px;
+          padding: 6px 12px;
+          border-radius: 8px;
+          background: var(--md-sys-color-inverse-surface, var(--fg));
+          color: var(--md-sys-color-inverse-on-surface, var(--bg));
+          font-weight: 500;
+          font-size: 0.75rem;
+          line-height: 1rem;
+          letter-spacing: 0.025em;
+          white-space: normal;
+          overflow-wrap: anywhere;
+          opacity: 0%;
+          box-shadow:
+            0 2px 6px 2px color-mix(in oklab, var(--fg) 15%, transparent),
+            0 1px 2px 0 color-mix(in oklab, var(--fg) 30%, transparent);
+          pointer-events: none;
+          transition: opacity 150ms cubic-bezier(0.2, 0, 0, 1);
+        }
 
-      [data-tooltip][data-tooltip-align="end"]::after {
-        inset-inline-end: 0;
-        inset-inline-start: auto;
-      }
+        &[data-tooltip-align="end"]::after {
+          inset-inline-end: 0;
+          inset-inline-start: auto;
+        }
 
-      [data-tooltip]:hover::after,
-      [data-tooltip]:focus-visible::after {
-        opacity: 100%;
-        transition-delay: 500ms;
+        &:hover::after,
+        &:focus-visible::after {
+          opacity: 100%;
+          transition-delay: 500ms;
+        }
       }
 
       html {

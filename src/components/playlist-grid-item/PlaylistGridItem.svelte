@@ -60,9 +60,9 @@
   :global([data-ytdl-grid-item] .ytSpecButtonShapeNextMono.ytSpecButtonShapeNextTonal:not([disabled])) {
     background: var(--t7f4f2c6d54836ce0, rgb(0 0 0 / 5%));
     color: var(--yt-sys-color-baseline--text-primary, #0f0f0f);
-  }
 
-  :global([data-ytdl-grid-item] .ytSpecButtonShapeNextMono.ytSpecButtonShapeNextTonal:not([disabled]):hover) {
-    background: var(--t416e5931fc464589, rgb(0 0 0 / 10%));
+    &:hover {
+      background: var(--t416e5931fc464589, rgb(0 0 0 / 10%));
+    }
   }
 </style>

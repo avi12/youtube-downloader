@@ -126,26 +126,26 @@
       border-color: var(--accent);
       background: var(--accent-hover);
     }
-  }
 
-  .format-card--current {
-    opacity: 80%;
-  }
+    &.format-card--current {
+      opacity: 80%;
+    }
 
-  .format-card--pending {
-    border-color: var(--accent);
-    background: var(--accent-container);
-  }
+    &.format-card--pending {
+      border-color: var(--accent);
+      background: var(--accent-container);
+    }
 
-  .format-card--slower {
-    border-color: color-mix(in oklab, oklch(75% 0.16 60deg) 60%, transparent);
-  }
+    &.format-card--slower {
+      border-color: color-mix(in oklab, oklch(75% 0.16 60deg) 60%, transparent);
+    }
 
-  .format-card-head {
-    display: flex;
-    gap: 6px;
-    justify-content: space-between;
-    align-items: center;
+    .format-card-head {
+      display: flex;
+      gap: 6px;
+      justify-content: space-between;
+      align-items: center;
+    }
   }
 
   .format-name {
@@ -182,27 +182,27 @@
         height: 9px;
       }
     }
-  }
 
-  .format-tag--current {
-    margin-top: 0;
-    background: var(--accent-container);
-    color: var(--accent);
-  }
+    &.format-tag--current {
+      margin-top: 0;
+      background: var(--accent-container);
+      color: var(--accent);
+    }
 
-  .format-tag--instant {
-    background: color-mix(in oklab, oklch(75% 0.18 145deg) 50%, transparent);
-    color: oklch(32% 0.18 145deg);
-  }
+    &.format-tag--instant {
+      background: color-mix(in oklab, oklch(75% 0.18 145deg) 50%, transparent);
+      color: oklch(32% 0.18 145deg);
+    }
 
-  .format-tag--re-encodes {
-    background: var(--surface-high);
-    color: var(--fg-muted);
-  }
+    &.format-tag--re-encodes {
+      background: var(--surface-high);
+      color: var(--fg-muted);
+    }
 
-  .format-tag--slower {
-    background: color-mix(in oklab, oklch(80% 0.16 75deg) 55%, transparent);
-    color: oklch(36% 0.16 60deg);
+    &.format-tag--slower {
+      background: color-mix(in oklab, oklch(80% 0.16 75deg) 55%, transparent);
+      color: oklch(36% 0.16 60deg);
+    }
   }
 
   @media (prefers-color-scheme: dark) {

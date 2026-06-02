@@ -211,10 +211,10 @@
     inset: 0;
     z-index: 49;
     animation: layer-in 180ms ease-out;
-  }
 
-  .popover-layer--closing {
-    animation: layer-out 160ms ease-in forwards;
+    &.popover-layer--closing {
+      animation: layer-out 160ms ease-in forwards;
+    }
   }
 
   .dialog {
@@ -244,16 +244,16 @@
     &.closing {
       animation: dialog-out 180ms cubic-bezier(0.36, 0, 0.66, -0.56) forwards;
     }
-  }
 
-  .dialog--below {
-    inset-block-end: 12px;
-    inset-block-start: calc(anchor(bottom) + 8px);
-  }
+    &.dialog--below {
+      inset-block-end: 12px;
+      inset-block-start: calc(anchor(bottom) + 8px);
+    }
 
-  .dialog--above {
-    inset-block-end: calc(anchor(top) + 8px);
-    inset-block-start: 12px;
+    &.dialog--above {
+      inset-block-end: calc(anchor(top) + 8px);
+      inset-block-start: 12px;
+    }
   }
 
   .dialog-header {
@@ -261,13 +261,13 @@
     flex-shrink: 0;
     flex-direction: column;
     gap: 10px;
-  }
 
-  .dialog-header-row {
-    display: flex;
-    gap: 8px;
-    justify-content: space-between;
-    align-items: center;
+    .dialog-header-row {
+      display: flex;
+      gap: 8px;
+      justify-content: space-between;
+      align-items: center;
+    }
   }
 
   .dialog-body {

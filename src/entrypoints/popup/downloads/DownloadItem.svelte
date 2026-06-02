@@ -564,13 +564,15 @@
     }
   }
 
-  .dl-cancel:hover {
-    background: var(--danger-hover);
-    color: var(--danger);
-  }
+  .dl-cancel {
+    &:hover {
+      background: var(--danger-hover);
+      color: var(--danger);
+    }
 
-  .dl-cancel:focus-visible {
-    outline-color: var(--danger);
+    &:focus-visible {
+      outline-color: var(--danger);
+    }
   }
 
   .dl-prog-bar {

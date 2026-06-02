@@ -136,10 +136,10 @@
       width: 18px;
       height: 18px;
     }
-  }
 
-  .tab-nav-button--active {
-    color: var(--accent);
+    &.tab-nav-button--active {
+      color: var(--accent);
+    }
   }
 
   .tab-track {
@@ -164,12 +164,12 @@
     height: 3px;
     border-radius: 3px 3px 0 0;
     background: var(--accent);
-    transform: translateX(var(--ind-left, 0));
+    translate: var(--ind-left, 0) 0;
 
     &.tab-ind--animated {
       /* stylelint-disable plugin/no-low-performance-animation-properties */
       transition:
-        transform 420ms cubic-bezier(0.34, 1.56, 0.64, 1),
+        translate 420ms cubic-bezier(0.34, 1.56, 0.64, 1),
         width 300ms cubic-bezier(0.3, 0, 0, 1);
       /* stylelint-enable plugin/no-low-performance-animation-properties */
     }

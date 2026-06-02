@@ -37,10 +37,10 @@
     overflow: hidden;
     border-radius: 20px;
     background: var(--surface);
-  }
 
-  .set-card :global(.set-item + .set-item),
-  .set-card :global(.set-section-fieldset + .set-item) {
-    border-top: 1px solid var(--border);
+    :global(.set-item + .set-item),
+    :global(.set-section-fieldset + .set-item) {
+      border-top: 1px solid var(--border);
+    }
   }
 </style>
