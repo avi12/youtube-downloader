@@ -161,30 +161,34 @@ export function getVideoFallbackCodec(targetExtension: string) {
   return CONTAINER_SPECS[targetExtension]?.fallbackVideoCodec;
 }
 
-// Encoders whose throughput is well below real-time even on modern desktop
-// CPUs. libx264 and mpeg4 are the fast pair (libx264 trivially reaches
-// real-time on 1080p; mpeg4 is a single-pass legacy algorithm and is also
-// fast). VP9, AV1, and HEVC encoding is dramatically slower in software:
+// Encoders that justify a "Slower" warning in the UI: either pathologically
+// slow in software (10x+ slower than libx264) or legacy codecs whose output
+// quality is materially worse than modern alternatives.
 //
-// - libvpx-vp9: "noticeably slow" relative to libx264 — see
-//   https://trac.ffmpeg.org/wiki/Encode/VP9 ("VP9 encoding can be quite
-//   slow, particularly with the default settings").
-// - libaom-av1: "very slow", documented in
-//   https://trac.ffmpeg.org/wiki/Encode/AV1 ("libaom-av1 is currently
-//   the slowest of the popular AV1 encoders"). Bitmovin's libaom-av1
-//   benchmarks report 0.1-1 fps on 1080p single-thread.
-// - libx265: ~5-10x slower than libx264 at equivalent quality; see
+// Pathologically slow (encoder throughput):
+// - libaom-av1: "currently the slowest of the popular AV1 encoders" —
+//   https://trac.ffmpeg.org/wiki/Encode/AV1. Bitmovin's published
+//   benchmarks (https://bitmovin.com/blog/av1-svt-encoding/) clock the
+//   libaom reference encoder at sub-1 fps on 1080p single-thread.
+// - libx265: ~5-10x slower than libx264 at comparable quality —
 //   https://trac.ffmpeg.org/wiki/Encode/H.265 ("HEVC is noticeably slower
 //   than H.264 to encode").
 //
-// FFmpeg-wasm runs ~5-30x slower than native (per the README's perf
-// section at https://github.com/ffmpegwasm/ffmpeg.wasm), which compresses
-// the gap between fast/slow encoders in absolute terms but preserves the
-// relative ordering used for this classification.
+// Legacy quality (not necessarily slow, but produces inferior output):
+// - mpeg4 (used by .avi fallback): the MPEG-4 Part 2 codec predates H.264
+//   and lacks modern coding tools — see
+//   https://trac.ffmpeg.org/wiki/Encode/MPEG-4 for the codec context.
+//
+// libvpx-vp9 is intentionally NOT in this set — it's slower than libx264
+// (https://trac.ffmpeg.org/wiki/Encode/VP9) but produces modern,
+// web-native output, so it's classified as "Re-encodes" rather than
+// "Slower". Underlying perf reference: FFmpeg-wasm runs ~5-30x slower
+// than native per https://github.com/ffmpegwasm/ffmpeg.wasm, which
+// preserves the relative ordering of encoders.
 const SLOW_VIDEO_ENCODERS = new Set([
-  CODEC_VP9_ENCODER,
   "libaom-av1",
-  "libx265"
+  "libx265",
+  CODEC_MPEG4_ENCODER
 ]);
 
 export function isSlowVideoEncoder(encoder: string | undefined) {
