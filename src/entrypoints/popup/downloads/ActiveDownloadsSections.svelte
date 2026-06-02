@@ -5,7 +5,6 @@
   import DownloadItem from "./DownloadItem.svelte";
   import RecentDownloadItem from "./recent/RecentDownloadItem.svelte";
   import type { DownloadProgressEntry, RecentDownloadEntry, VideoDetail, VideoQueueItem } from "@/types";
-  import { browser } from "#imports";
   import { SvelteMap } from "svelte/reactivity";
 
   interface Props {
@@ -144,27 +143,6 @@
   function emitCancel(ids: string[]): void {
     onCancel(ids);
   }
-
-  async function focusCurrentTab(): Promise<void> {
-    if (currentTabId !== undefined && currentTabId >= 0) {
-      try {
-        const tab = await browser.tabs.get(currentTabId);
-        await browser.tabs.update(currentTabId, { active: true });
-
-        if (tab.windowId !== undefined) {
-          await browser.windows.update(tab.windowId, { focused: true });
-        }
-
-        return;
-      } catch {
-      // tab is gone, fall through to opening a new one
-      }
-    }
-
-    if (currentSourceUrl) {
-      void browser.tabs.create({ url: currentSourceUrl });
-    }
-  }
 </script>
 
 {#snippet renderCard(videoId: string, showTabActions: boolean)}
@@ -244,16 +222,6 @@
         This tab
         <span class="section-count">{thisTabCount}</span>
       </h2>
-      {#if currentSourceUrl && thisTabIds.length > 0}
-        <button
-          class="section-action-button"
-          aria-label="Go to Watch page"
-          onclick={focusCurrentTab}
-          type="button"
-        >
-          Watch page
-        </button>
-      {/if}
     </header>
     <div class="section-body">
       {@render renderSectionBody(thisTab, false)}
@@ -325,28 +293,6 @@
         font-size: 0.6875rem;
         letter-spacing: 0;
         text-transform: none;
-      }
-    }
-
-    .section-action-button {
-      padding: 4px 12px;
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      background: transparent;
-      color: var(--fg-muted);
-      font-family: inherit;
-      font-size: 0.75rem;
-      cursor: pointer;
-      transition: background-color 200ms, color 200ms;
-
-      &:hover {
-        background: var(--accent-hover);
-        color: var(--fg);
-      }
-
-      &:focus-visible {
-        outline: 2px solid var(--accent);
-        outline-offset: 2px;
       }
     }
   }

@@ -23,6 +23,14 @@
 
   const anchorName = $derived(`--cf-${entry.id.replace(/[^a-zA-Z0-9-]/g, "")}`);
 
+  const YT_THUMBNAIL_HOST = "https://i.ytimg.com/vi";
+  // Prefer the standard YouTube video thumbnail. entry.thumbnailUrl may be
+  // the square YouTube Music cover art that's meant for ID3 embedding in
+  // the audio file — not for display here.
+  const displayThumbnailUrl = $derived(
+    entry.videoId ? `${YT_THUMBNAIL_HOST}/${entry.videoId}/mqdefault.jpg` : entry.thumbnailUrl
+  );
+
   const isZip = $derived(entry.container === "zip");
   const openInNewTabLabel = $derived(isZip ? "Open playlist in new tab" : "Open video in new tab");
 
@@ -96,12 +104,12 @@
 
 <article class="recent-item" class:recent-item--active={isFormatDialogOpen}>
   <div class="recent-top">
-    {#if entry.thumbnailUrl}
+    {#if displayThumbnailUrl}
       <img
         class="recent-thumb"
         alt=""
         height="67"
-        src={entry.thumbnailUrl}
+        src={displayThumbnailUrl}
         width="120"
       />
     {:else}
@@ -112,7 +120,12 @@
       </div>
     {/if}
 
-    <span class="recent-title">{entry.title}</span>
+    <div class="recent-titleblock">
+      <span class="recent-title">{entry.title}</span>
+      {#if entry.channel}
+        <span class="recent-channel">{entry.channel}</span>
+      {/if}
+    </div>
   </div>
 
   <div class="recent-bottom">
@@ -217,6 +230,14 @@
     letter-spacing: 0.04em;
   }
 
+  .recent-titleblock {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+
   .recent-title {
     display: -webkit-box;
     overflow: hidden;
@@ -226,6 +247,14 @@
     -webkit-line-clamp: 2;
     line-clamp: 2;
     -webkit-box-orient: vertical;
+  }
+
+  .recent-channel {
+    overflow: hidden;
+    color: var(--fg-muted);
+    font-size: 0.71875rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .recent-bottom {
