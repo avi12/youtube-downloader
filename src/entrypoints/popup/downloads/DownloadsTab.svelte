@@ -33,6 +33,47 @@
   const totalActiveDownloads = $derived(videoDownloads.length + musicList.length + videoOnlyList.length);
   const isAnyContentAvailable = $derived(totalActiveDownloads > 0 || recentDownloads.length > 0);
 
+  const allActiveIds = $derived([
+    ...videoDownloads.map(item => item.videoId),
+    ...musicList,
+    ...videoOnlyList
+  ]);
+
+  const hasCurrentTabDownloads = $derived(
+    currentTabId !== undefined && Boolean(currentSourceUrl)
+    && allActiveIds.some(id => {
+      const detail = videoDetails[id];
+      return detail?.tabId === currentTabId && detail?.sourceUrl === currentSourceUrl;
+    })
+  );
+
+  const hasOtherTabDownloads = $derived(
+    allActiveIds.some(id => {
+      const detail = videoDetails[id];
+      if (!detail) {
+        return true;
+      }
+
+      if (!currentTabId || !currentSourceUrl) {
+        return true;
+      }
+
+      return !(detail.tabId === currentTabId && detail.sourceUrl === currentSourceUrl);
+    })
+  );
+
+  const bannerScope = $derived.by(() => {
+    if (hasCurrentTabDownloads && hasOtherTabDownloads) {
+      return "Across this tab and others";
+    }
+
+    if (hasCurrentTabDownloads) {
+      return "On this tab";
+    }
+
+    return "On other tabs";
+  });
+
   async function handleRemove(entry: RecentDownloadEntry): Promise<void> {
     await deleteRecentDownload(entry.id);
     onRecentChanged();
@@ -63,6 +104,22 @@
   </section>
 {:else}
   <div class="download-sections">
+    {#if totalActiveDownloads > 0}
+      <div class="dl-banner" role="status">
+        <span class="dl-banner-spinner" aria-hidden="true"></span>
+        <span class="dl-banner-body">
+          <span class="dl-banner-count">{totalActiveDownloads} downloading</span>
+          <span class="dl-banner-scope">{bannerScope}</span>
+        </span>
+        <button
+          class="dl-banner-cancel"
+          onclick={() => onCancel(allActiveIds)}
+          type="button"
+        >
+          Cancel all
+        </button>
+      </div>
+    {/if}
     <ActiveDownloadsSections
       {currentSourceUrl}
       {currentTabId}
@@ -155,6 +212,73 @@
   .download-sections {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 12px;
+  }
+
+  .dl-banner {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    padding: 10px 14px;
+    border-radius: 16px;
+    background: var(--accent-container);
+    color: var(--fg);
+
+    .dl-banner-spinner {
+      flex-shrink: 0;
+      width: 16px;
+      height: 16px;
+      border: 2px solid color-mix(in oklab, var(--accent) 30%, transparent);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 700ms linear infinite;
+    }
+
+    .dl-banner-body {
+      display: flex;
+      flex: 1;
+      flex-direction: column;
+      gap: 1px;
+      min-width: 0;
+
+      .dl-banner-count {
+        font-weight: 600;
+        font-size: 0.8125rem;
+      }
+
+      .dl-banner-scope {
+        color: var(--fg-muted);
+        font-size: 0.6875rem;
+      }
+    }
+
+    .dl-banner-cancel {
+      flex-shrink: 0;
+      padding: 5px 14px;
+      border: none;
+      border-radius: 20px;
+      background: var(--accent);
+      color: var(--on-primary);
+      font-family: inherit;
+      font-weight: 600;
+      font-size: 0.75rem;
+      cursor: pointer;
+      transition: opacity 200ms;
+
+      &:hover {
+        opacity: 85%;
+      }
+
+      &:focus-visible {
+        outline: 2px solid var(--accent);
+        outline-offset: 2px;
+      }
+    }
+  }
+
+  @keyframes spin {
+    to {
+      rotate: 1turn;
+    }
   }
 </style>
