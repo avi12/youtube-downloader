@@ -4,6 +4,7 @@
   import ActiveDownloadsSections from "./ActiveDownloadsSections.svelte";
   import RecentDownloadsSection from "./recent/RecentDownloadsSection.svelte";
   import { deleteRecentDownload } from "@/lib/storage/recent-downloads-db";
+  import { ProgressType } from "@/types";
   import type { DownloadProgressEntry, RecentDownloadEntry, VideoDetail, VideoQueueItem } from "@/types";
   import { browser } from "#imports";
 
@@ -74,6 +75,24 @@
     return "On other tabs";
   });
 
+  const processingCount = $derived(
+    allActiveIds.filter(id => statusProgress[id]?.progressType === ProgressType.FFmpeg).length
+  );
+  const downloadingCount = $derived(totalActiveDownloads - processingCount);
+
+  const bannerCountText = $derived.by(() => {
+    const parts: string[] = [];
+    if (downloadingCount > 0) {
+      parts.push(`${downloadingCount} downloading`);
+    }
+
+    if (processingCount > 0) {
+      parts.push(`${processingCount} processing`);
+    }
+
+    return parts.join(" · ");
+  });
+
   async function handleRemove(entry: RecentDownloadEntry): Promise<void> {
     await deleteRecentDownload(entry.id);
     onRecentChanged();
@@ -108,7 +127,7 @@
       <div class="dl-banner" role="status">
         <span class="dl-banner-spinner" aria-hidden="true"></span>
         <span class="dl-banner-body">
-          <span class="dl-banner-count">{totalActiveDownloads} downloading</span>
+          <span class="dl-banner-count">{bannerCountText}</span>
           <span class="dl-banner-scope">{bannerScope}</span>
         </span>
         <button
@@ -257,16 +276,16 @@
       padding: 5px 14px;
       border: none;
       border-radius: 20px;
-      background: var(--accent);
-      color: var(--on-primary);
+      background: transparent;
+      color: var(--fg);
       font-family: inherit;
       font-weight: 600;
       font-size: 0.75rem;
       cursor: pointer;
-      transition: opacity 200ms;
+      transition: background-color 200ms;
 
       &:hover {
-        opacity: 85%;
+        background: color-mix(in oklab, var(--accent) 18%, transparent);
       }
 
       &:focus-visible {
