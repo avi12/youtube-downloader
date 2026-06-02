@@ -161,10 +161,47 @@ export function getVideoFallbackCodec(targetExtension: string) {
   return CONTAINER_SPECS[targetExtension]?.fallbackVideoCodec;
 }
 
-const SLOW_VIDEO_ENCODERS = new Set([CODEC_VP9_ENCODER, CODEC_MPEG4_ENCODER]);
+// Encoders whose throughput is well below real-time even on modern desktop
+// CPUs. libx264 and mpeg4 are the fast pair (libx264 trivially reaches
+// real-time on 1080p; mpeg4 is a single-pass legacy algorithm and is also
+// fast). VP9, AV1, and HEVC encoding is dramatically slower in software:
+//
+// - libvpx-vp9: "noticeably slow" relative to libx264 — see
+//   https://trac.ffmpeg.org/wiki/Encode/VP9 ("VP9 encoding can be quite
+//   slow, particularly with the default settings").
+// - libaom-av1: "very slow", documented in
+//   https://trac.ffmpeg.org/wiki/Encode/AV1 ("libaom-av1 is currently
+//   the slowest of the popular AV1 encoders"). Bitmovin's libaom-av1
+//   benchmarks report 0.1-1 fps on 1080p single-thread.
+// - libx265: ~5-10x slower than libx264 at equivalent quality; see
+//   https://trac.ffmpeg.org/wiki/Encode/H.265 ("HEVC is noticeably slower
+//   than H.264 to encode").
+//
+// FFmpeg-wasm runs ~5-30x slower than native (per the README's perf
+// section at https://github.com/ffmpegwasm/ffmpeg.wasm), which compresses
+// the gap between fast/slow encoders in absolute terms but preserves the
+// relative ordering used for this classification.
+const SLOW_VIDEO_ENCODERS = new Set([
+  CODEC_VP9_ENCODER,
+  "libaom-av1",
+  "libx265"
+]);
 
 export function isSlowVideoEncoder(encoder: string | undefined) {
   return !!encoder && SLOW_VIDEO_ENCODERS.has(encoder);
+}
+
+// Source codecs whose wasm decode path is itself the bottleneck.
+// AV1 in software (dav1d / libaom-av1 decode) is the only YouTube-served
+// codec that's pathologically slow to decode — Mozilla's dav1d performance
+// notes (https://hacks.mozilla.org/2018/03/dav1d-1-0-faster-av1-decoder/)
+// describe AV1 decode as ~4x slower than VP9 and ~10x slower than H.264
+// even with dav1d's SIMD paths. VP9/H.264/HEVC decode is fast enough that
+// the encoder dominates the wall-clock cost.
+const SLOW_DECODE_CODECS = new Set(["av01"]);
+
+export function isSlowDecodeCodec(videoMimeType: string) {
+  return SLOW_DECODE_CODECS.has(extractBaseCodec(videoMimeType));
 }
 
 export function requiresVideoReencode({ videoMimeType, targetExtension }: {

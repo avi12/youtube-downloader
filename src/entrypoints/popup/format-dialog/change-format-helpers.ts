@@ -4,6 +4,7 @@ import {
   buildFormatGroups,
   FORMAT_GROUP_VIDEO,
   getVideoFallbackCodec,
+  isSlowDecodeCodec,
   isSlowVideoEncoder,
   requiresVideoReencode,
   splitFilenameAndExtension,
@@ -50,7 +51,9 @@ function classifyVideoTargetSpeed(target: string, videoMimeType: string): Transc
   }
 
   const encoder = getVideoFallbackCodec(target);
-  if (isSlowVideoEncoder(encoder)) {
+  const isSlowDueToEncoder = isSlowVideoEncoder(encoder);
+  const isSlowDueToDecoder = isSlowDecodeCodec(videoMimeType);
+  if (isSlowDueToEncoder || isSlowDueToDecoder) {
     return TranscodeSpeed.Slower;
   }
 
