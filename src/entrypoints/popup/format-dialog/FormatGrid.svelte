@@ -60,10 +60,9 @@
   {#each items as item (item.extension)}
     {@const tag = getTagKind(item)}
     {@const isPending = pendingExtension === item.extension}
-    {@const isHighlighted = item.isCurrent || isPending}
     <button
       class="format-card format-card--{tag}"
-      class:format-card--selected={isHighlighted}
+      class:format-card--pending={isPending}
       aria-label="Transcode to {item.extension.toUpperCase()}"
       disabled={item.isCurrent || item.isExcluded || pendingExtension !== null}
       onclick={() => onSelect(item)}
@@ -121,7 +120,11 @@
     }
   }
 
-  .format-card--selected {
+  .format-card--current {
+    opacity: 80%;
+  }
+
+  .format-card--pending {
     border-color: var(--accent);
     background: var(--accent-container);
   }
@@ -172,13 +175,13 @@
   }
 
   .format-tag--current {
-    background: var(--accent);
-    color: var(--on-primary);
+    background: var(--accent-container);
+    color: var(--accent);
   }
 
   .format-tag--instant {
-    background: color-mix(in oklab, oklch(75% 0.18 145deg) 30%, transparent);
-    color: oklch(38% 0.18 145deg);
+    background: color-mix(in oklab, oklch(75% 0.18 145deg) 50%, transparent);
+    color: oklch(32% 0.18 145deg);
   }
 
   .format-tag--re-encodes {
@@ -187,17 +190,21 @@
   }
 
   .format-tag--slower {
-    background: color-mix(in oklab, oklch(80% 0.16 75deg) 40%, transparent);
-    color: oklch(40% 0.16 60deg);
+    background: color-mix(in oklab, oklch(80% 0.16 75deg) 55%, transparent);
+    color: oklch(36% 0.16 60deg);
   }
 
   @media (prefers-color-scheme: dark) {
+    .format-tag--current {
+      color: var(--md-sys-color-on-primary, var(--fg));
+    }
+
     .format-tag--instant {
-      color: oklch(85% 0.18 145deg);
+      color: oklch(88% 0.2 145deg);
     }
 
     .format-tag--slower {
-      color: oklch(88% 0.16 80deg);
+      color: oklch(90% 0.16 80deg);
     }
   }
 </style>
