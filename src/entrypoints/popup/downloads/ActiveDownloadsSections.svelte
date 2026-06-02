@@ -312,7 +312,7 @@
         height: 18px;
         padding: 0 6px;
         border-radius: 9px;
-        background: var(--accent-container);
+        background: var(--surface-high);
         color: var(--fg);
         font-weight: 700;
         font-size: 0.6875rem;

@@ -239,7 +239,7 @@
     gap: 10px;
     align-items: center;
     padding: 10px 14px;
-    border-radius: 16px;
+    border-radius: 999px;
     background: var(--accent-container);
     color: var(--fg);
 
@@ -297,7 +297,7 @@
 
   @keyframes spin {
     to {
-      rotate: 1turn;
+      rotate: 360deg;
     }
   }
 </style>

@@ -270,7 +270,10 @@
       <WavyProgress indeterminate />
     </div>
     <div class="dl-prog-line">
-      <span class="state-pill state-processing">Processing</span>
+      <span class="state-pill state-processing">
+        <span class="state-spinner" aria-hidden="true"></span>
+        Processing
+      </span>
       <span class="dl-prog-stat">Merging video, audio tracks &amp; captions</span>
     </div>
   {:else if isQueued}
@@ -332,21 +335,22 @@
 
   .dl-thumb-play {
     position: absolute;
-    top: 4px;
-    left: 4px;
+    top: 50%;
+    left: 50%;
     display: inline-flex;
     justify-content: center;
     align-items: center;
-    width: 22px;
-    height: 22px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
-    background: color-mix(in oklab, var(--bg) 60%, transparent);
+    background: color-mix(in oklab, var(--bg) 85%, transparent);
     color: var(--fg);
     pointer-events: none;
+    translate: -50% -50%;
 
     :global(svg) {
-      width: 12px;
-      height: 12px;
+      width: 14px;
+      height: 14px;
     }
   }
 
@@ -435,13 +439,13 @@
   .dl-chip {
     display: inline-flex;
     align-items: center;
-    height: 22px;
-    padding: 0 9px;
-    border-radius: 8px;
+    height: 20px;
+    padding: 0 7px;
+    border-radius: 6px;
     background: var(--surface-high);
     color: var(--fg);
     font-weight: 600;
-    font-size: 0.71875rem;
+    font-size: 0.6875rem;
   }
 
   .dl-chip-accent {
@@ -535,6 +539,21 @@
   .state-processing {
     background: var(--accent-container);
     color: var(--fg);
+  }
+
+  .state-spinner {
+    width: 10px;
+    height: 10px;
+    border: 1.5px solid color-mix(in oklab, var(--accent) 30%, transparent);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: dl-spin 700ms linear infinite;
+  }
+
+  @keyframes dl-spin {
+    to {
+      rotate: 360deg;
+    }
   }
 
   .state-queued {
