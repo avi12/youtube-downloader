@@ -154,11 +154,6 @@
     </div>
   {/if}
 
-  <p class="dialog-description">
-    Pick a format to repackage or re-encode {mode === "video" ? "this video" : "audio"} as.
-    <span class="dialog-description-hint"><strong>Slower</strong> targets use a legacy codec</span>
-  </p>
-
   {#if activeItems.length === 0}
     <p class="dialog-empty">No alternative formats available</p>
   {:else}
@@ -174,12 +169,12 @@
   .dialog {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 10px;
     overflow-x: hidden;
     box-sizing: border-box;
     width: 80vw;
-    max-width: 360px;
-    padding: 16px;
+    max-width: 340px;
+    padding: 14px;
     border: none;
     border-radius: 20px;
     background: var(--surface-high);
@@ -313,26 +308,6 @@
     .mode-btn--active {
       background: var(--accent);
       color: var(--on-primary);
-    }
-  }
-
-  .dialog-description {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    margin: 0;
-    color: var(--fg-muted);
-    font-size: 0.75rem;
-    line-height: 1.4;
-
-    & strong {
-      color: var(--fg);
-      font-weight: 600;
-    }
-
-    .dialog-description-hint {
-      color: var(--fg-subtle);
-      font-size: 0.6875rem;
     }
   }
 

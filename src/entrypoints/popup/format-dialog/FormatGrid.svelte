@@ -18,8 +18,8 @@
     <button
       class="format-card"
       class:format-card--selected={isHighlighted}
-      class:format-card--slower={item.isSlow && !isHighlighted}
-      aria-label="Transcode to {item.extension.toUpperCase()}"
+      aria-label="Transcode to {item.extension.toUpperCase()}{item.isSlow ? ' (slower)' : ''}"
+      data-tooltip={item.isSlow ? "Slower (re-encode required)" : undefined}
       disabled={item.isCurrent || item.isExcluded || pendingExtension !== null}
       onclick={() => onSelect(item)}
       type="button"
@@ -28,6 +28,8 @@
         {item.extension.toUpperCase()}
         {#if isHighlighted}
           <span class="format-check" aria-hidden="true">{@html checkIcon}</span>
+        {:else if item.isSlow}
+          <span class="format-slow-dot" aria-hidden="true"></span>
         {/if}
       </span>
       {#if item.description}
@@ -78,24 +80,12 @@
     background: var(--accent-container);
   }
 
-  .format-card--slower::after {
-    content: "Slower";
-    align-self: flex-start;
-    margin-top: 4px;
-    padding: 1px 6px;
-    border-radius: 999px;
-    background: color-mix(in oklab, oklch(82% 0.15 80deg) 35%, transparent);
-    color: oklch(40% 0.16 60deg);
-    font-weight: 600;
-    font-size: 0.5625rem;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-  }
-
-  @media (prefers-color-scheme: dark) {
-    .format-card--slower::after {
-      color: oklch(88% 0.16 80deg);
-    }
+  .format-slow-dot {
+    flex-shrink: 0;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: color-mix(in oklab, oklch(70% 0.15 60deg) 100%, transparent);
   }
 
   .format-name {
