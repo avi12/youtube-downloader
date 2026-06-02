@@ -5,6 +5,7 @@
   import DownloadItem from "./DownloadItem.svelte";
   import RecentDownloadItem from "./recent/RecentDownloadItem.svelte";
   import type { DownloadProgressEntry, RecentDownloadEntry, VideoDetail, VideoQueueItem } from "@/types";
+  import { browser } from "#imports";
   import { SvelteMap } from "svelte/reactivity";
 
   interface Props {
@@ -142,6 +143,27 @@
   function emitCancel(ids: string[]): void {
     onCancel(ids);
   }
+
+  async function focusCurrentTab(): Promise<void> {
+    if (currentTabId !== undefined && currentTabId >= 0) {
+      try {
+        const tab = await browser.tabs.get(currentTabId);
+        await browser.tabs.update(currentTabId, { active: true });
+
+        if (tab.windowId !== undefined) {
+          await browser.windows.update(tab.windowId, { focused: true });
+        }
+
+        return;
+      } catch {
+      // tab is gone, fall through to opening a new one
+      }
+    }
+
+    if (currentSourceUrl) {
+      void browser.tabs.create({ url: currentSourceUrl });
+    }
+  }
 </script>
 
 {#snippet renderCard(videoId: string, showTabActions: boolean)}
@@ -220,14 +242,14 @@
         This tab
         <span class="section-count">{thisTabCount}</span>
       </h2>
-      {#if thisTabIds.length > 0}
+      {#if currentSourceUrl}
         <button
-          class="cancel-all-button"
-          aria-label="Cancel all downloads from this tab"
-          onclick={() => emitCancel(thisTabIds)}
+          class="section-action-button"
+          aria-label="Go to Watch page"
+          onclick={focusCurrentTab}
           type="button"
         >
-          Cancel all
+          Watch page
         </button>
       {/if}
     </header>
@@ -245,16 +267,6 @@
         Other tabs
         <span class="section-count">{otherTabsCount}</span>
       </h2>
-      {#if otherIds.length > 0}
-        <button
-          class="cancel-all-button"
-          aria-label="Cancel all downloads from other tabs"
-          onclick={() => emitCancel(otherIds)}
-          type="button"
-        >
-          Cancel all
-        </button>
-      {/if}
     </header>
     <div class="section-body">
       {@render renderSectionBody(otherTabs, true)}
@@ -309,23 +321,24 @@
       }
     }
 
-    .cancel-all-button {
+    .section-action-button {
       padding: 4px 12px;
-      border: none;
+      border: 1px solid var(--border);
       border-radius: 16px;
       background: transparent;
-      color: var(--danger);
+      color: var(--fg-muted);
       font-family: inherit;
       font-size: 0.75rem;
       cursor: pointer;
-      transition: background-color 200ms;
+      transition: background-color 200ms, color 200ms;
 
       &:hover {
-        background: var(--danger-hover);
+        background: var(--accent-hover);
+        color: var(--fg);
       }
 
       &:focus-visible {
-        outline: 2px solid var(--danger);
+        outline: 2px solid var(--accent);
         outline-offset: 2px;
       }
     }
