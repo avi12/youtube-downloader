@@ -135,45 +135,47 @@
     </button>
   </header>
 
-  {#if hasVideoMode && hasAudioMode}
-    <div class="mode-toggle" role="tablist">
-      <button
-        class="mode-btn"
-        class:mode-btn--active={mode === "video"}
-        aria-selected={mode === "video"}
-        onclick={() => (mode = "video")}
-        role="tab"
-        type="button"
-      >
-        <span class="mode-icon" aria-hidden="true">{@html videoIcon}</span>
-        Video
-      </button>
-      <button
-        class="mode-btn"
-        class:mode-btn--active={mode === "audio"}
-        aria-selected={mode === "audio"}
-        onclick={() => (mode = "audio")}
-        role="tab"
-        type="button"
-      >
-        <span class="mode-icon" aria-hidden="true">{@html audioIcon}</span>
-        Extract audio
-      </button>
-    </div>
-  {/if}
+  <div class="dialog-body">
+    {#if hasVideoMode && hasAudioMode}
+      <div class="mode-toggle" role="tablist">
+        <button
+          class="mode-btn"
+          class:mode-btn--active={mode === "video"}
+          aria-selected={mode === "video"}
+          onclick={() => (mode = "video")}
+          role="tab"
+          type="button"
+        >
+          <span class="mode-icon" aria-hidden="true">{@html videoIcon}</span>
+          Video
+        </button>
+        <button
+          class="mode-btn"
+          class:mode-btn--active={mode === "audio"}
+          aria-selected={mode === "audio"}
+          onclick={() => (mode = "audio")}
+          role="tab"
+          type="button"
+        >
+          <span class="mode-icon" aria-hidden="true">{@html audioIcon}</span>
+          Extract audio
+        </button>
+      </div>
+    {/if}
 
-  {#if activeItems.length === 0}
-    <p class="dialog-empty">No alternative formats available</p>
-  {:else}
-    <p class="dialog-description">
-      <strong>Instant</strong> just repackages the file. Others re-encode the {mode === "video" ? "video" : "audio"} — <strong>Slower</strong> targets use a legacy codec and take noticeably longer
-    </p>
-    <FormatGrid
-      items={activeItems}
-      onSelect={handleSelect}
-      pendingExtension={isSubmitting ? pendingExtension : null}
-    />
-  {/if}
+    {#if activeItems.length === 0}
+      <p class="dialog-empty">No alternative formats available</p>
+    {:else}
+      <p class="dialog-description">
+        <strong>Instant</strong> just repackages the file. Others re-encode the {mode === "video" ? "video" : "audio"} — <strong>Slower</strong> targets use a legacy codec and take noticeably longer
+      </p>
+      <FormatGrid
+        items={activeItems}
+        onSelect={handleSelect}
+        pendingExtension={isSubmitting ? pendingExtension : null}
+      />
+    {/if}
+  </div>
 </dialog>
 
 <style>
@@ -190,6 +192,7 @@
 
   .dialog {
     position: fixed;
+    inset-block-end: 12px;
     inset-block-start: calc(anchor(bottom) + 8px);
     inset-inline-end: anchor(right);
     inset-inline-start: auto;
@@ -197,39 +200,19 @@
     display: flex;
     flex-direction: column;
     gap: 10px;
-    overflow: hidden auto;
+    overflow: hidden;
     box-sizing: border-box;
-    max-width: calc(anchor(right) - 12px);
-    max-height: calc(100vh - anchor(bottom) - 16px);
+    width: 280px;
+    max-width: calc(100vw - 24px);
     padding: 14px;
     border: 1px solid var(--border);
     border-radius: 20px;
     background: var(--surface-high);
     color: var(--fg);
-    scrollbar-color: var(--border) transparent;
-    scrollbar-width: thin;
-    scrollbar-gutter: stable both-edges;
     box-shadow:
       0 12px 32px rgb(0 0 0 / 24%),
       0 4px 12px rgb(0 0 0 / 16%);
     animation: dialog-in 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
-
-    &::-webkit-scrollbar {
-      width: 8px;
-    }
-
-    &::-webkit-scrollbar-track {
-      background: transparent;
-    }
-
-    &::-webkit-scrollbar-thumb {
-      border-radius: 4px;
-      background: var(--border);
-    }
-
-    &::-webkit-scrollbar-thumb:hover {
-      background: var(--fg-subtle);
-    }
 
     &.closing {
       animation: dialog-out 180ms cubic-bezier(0.36, 0, 0.66, -0.56) forwards;
@@ -238,9 +221,38 @@
 
   .dialog-header {
     display: flex;
+    flex-shrink: 0;
     gap: 8px;
     justify-content: space-between;
     align-items: center;
+  }
+
+  .dialog-body {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    gap: 10px;
+    overflow-y: auto;
+    min-height: 0;
+    scrollbar-color: var(--border) transparent;
+    scrollbar-width: thin;
+
+    &::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    &::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    &::-webkit-scrollbar-thumb {
+      border-radius: 3px;
+      background: var(--border);
+    }
+
+    &::-webkit-scrollbar-thumb:hover {
+      background: var(--fg-subtle);
+    }
   }
 
   .dialog-title {
