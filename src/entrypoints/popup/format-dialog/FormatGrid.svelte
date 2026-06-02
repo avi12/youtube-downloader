@@ -1,4 +1,7 @@
 <script lang="ts">
+  import instantIcon from "../icons/instant.svg?raw";
+  import reEncodeIcon from "../icons/re-encode.svg?raw";
+  import slowerIcon from "../icons/slower.svg?raw";
   import { TranscodeSpeed } from "@/lib/utils/containers";
   import type { FormatItem } from "@/lib/utils/containers";
 
@@ -9,10 +12,6 @@
   }
 
   const { items, pendingExtension, onSelect }: Props = $props();
-
-  const INSTANT_ICON = `<svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" fill="currentColor" viewBox="0 0 24 24"><path d="M13 2 4 14h6l-1 8 9-12h-6z"/></svg>`;
-  const REENCODE_ICON = `<svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24"><path d="M21 12a9 9 0 0 1-15.36 6.36L3 21M3 12a9 9 0 0 1 15.36-6.36L21 3"/><path d="M21 3v6h-6M3 21v-6h6"/></svg>`;
-  const SLOWER_ICON = `<svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>`;
 
   type TagKind = "current" | "instant" | "re-encodes" | "slower";
 
@@ -45,14 +44,14 @@
     }
 
     if (kind === "instant") {
-      return INSTANT_ICON;
+      return instantIcon;
     }
 
     if (kind === "re-encodes") {
-      return REENCODE_ICON;
+      return reEncodeIcon;
     }
 
-    return SLOWER_ICON;
+    return slowerIcon;
   }
 </script>
 
