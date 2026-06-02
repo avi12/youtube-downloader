@@ -44,11 +44,6 @@
   let isSubmitting = $state(false);
   let pendingExtension = $state<string | null>(null);
   let isClosing = $state(false);
-  let elDialog = $state<HTMLDialogElement | null>(null);
-
-  $effect(() => {
-    elDialog?.show();
-  });
 
   function handleLayerPointerDown(): void {
     startClose();
@@ -110,18 +105,19 @@
   role="presentation"
 ></div>
 
-<dialog
-  bind:this={elDialog}
+<div
   style:position-anchor={anchorName}
   class="dialog"
   class:closing={isClosing}
   aria-labelledby="change-format-title"
+  aria-modal="false"
   onanimationend={() => {
     if (isClosing) {
       onClose();
     }
   }}
   onpointerdown={stopPropagation}
+  role="dialog"
 >
   <header class="dialog-header">
     <h2 id="change-format-title" class="dialog-title">Change format</h2>
@@ -176,7 +172,7 @@
       />
     {/if}
   </div>
-</dialog>
+</div>
 
 <style>
   .popover-layer {
