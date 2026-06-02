@@ -3,7 +3,7 @@ import { WORKER_MSG_PREFIX, handleWorkerMessage, type WorkerMessage } from "./wo
 import { initMuxWorker } from "@/lib/download-pipeline/ffmpeg-instance";
 import { browser } from "#imports";
 
-const FFMPEG_WASM_PATH = "/node_modules/@ffmpeg/core/dist/umd/ffmpeg-core.wasm";
+const FFMPEG_WASM_PATH = "/ffmpeg/ffmpeg-core.wasm";
 
 addEventListener("message", e => {
   const isExternalOrigin = e.origin !== location.origin;

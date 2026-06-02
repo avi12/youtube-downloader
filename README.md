@@ -45,6 +45,54 @@ Grab the latest zip for your browser from the [Releases page](https://github.com
 
 > Firefox 128+ required. Temporary add-ons are removed when Firefox restarts; for a permanent install, sign and install the build via [AMO](https://addons.mozilla.org).
 
+## Auto-update (self-hosted)
+
+The extension carries an `update_url` for both browsers and bypasses the Chrome Web Store / Mozilla AMO public listings. Update manifests live at:
+
+- Chrome: <https://avi12.github.io/youtube-downloader/updates.xml>
+- Firefox: <https://avi12.github.io/youtube-downloader/updates.json>
+
+Both files are committed under `docs/` and served by GitHub Pages (Settings -> Pages -> source `main /docs`). On each release, the browser polls these URLs and downloads the new artifact from GitHub Releases automatically.
+
+### One-time setup
+
+```sh
+pnpm keygen:chrome
+```
+
+Generates `keys/chrome.pem` (gitignored) and prints:
+
+- `CHROME_EXTENSION_KEY` — base64 DER public key, pins the Chrome extension ID across packed and unpacked installs. Must be set whenever you `pnpm build`/`pnpm pack` for Chrome.
+- `CHROME_CRX_PRIVATE_KEY_PATH` — path to the PEM, used by `pnpm release` to pack the signed `.crx`.
+
+Store both in your shell profile or a CI secret store. Losing the PEM means existing installs can never be auto-updated again.
+
+For Firefox, submit the first `.zip` to [AMO as "On your own"](https://addons.mozilla.org/developers/addon/submit/distribution) (unlisted self-distribution). Mozilla signs the `.xpi` without listing it publicly; download the signed file and use it as the release artifact.
+
+### Cutting a release
+
+1. Bump `version` in `package.json`.
+2. `$env:CHROME_EXTENSION_KEY = "..."; $env:CHROME_CRX_PRIVATE_KEY_PATH = "..."`.
+3. `pnpm build:pack && pnpm build:pack:firefox` — produces `.output/*-chrome.zip`, `.output/*-firefox.zip`, plus a Firefox `.zip` to upload to AMO for signing.
+4. `pnpm release` — regenerates `docs/updates.xml` + `docs/updates.json` for the new version and packs `.output/chrome-mv3.crx`.
+5. Upload to a GitHub Release tagged `vX.Y.Z`:
+   - `youtube-downloader-X.Y.Z-chrome.crx`
+   - `youtube-downloader-X.Y.Z-firefox.xpi` (the AMO-signed one)
+   - Original `.zip` artifacts for first-time sideloads
+6. Commit and push `docs/updates.xml` + `docs/updates.json`.
+
+Chrome polls `update_url` roughly every 5 hours; users can force a check at `chrome://extensions` -> Developer mode -> Update. Firefox polls every 24 hours and exposes "Check for Updates" in `about:addons`.
+
+### Chrome sideload caveat
+
+Stable Chrome on Windows/macOS blocks installing externally hosted `.crx` files by default. Three working install paths:
+
+- Developer Mode + drag-and-drop the `.crx` (per-machine).
+- Enterprise: deploy `ExtensionInstallForcelist` via group policy with `<extensionId>;<update_url>`. Chrome then installs and auto-updates silently.
+- Chromium forks (Brave, Vivaldi, Opera) with looser sideload policies.
+
+Once the extension is installed by any of these methods, the `update_url` auto-update path is identical and runs unattended.
+
 ## Tech stack
 
 | Package | Purpose |

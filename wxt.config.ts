@@ -1,11 +1,18 @@
 import { resolve } from "node:path";
 import { defineConfig } from "wxt";
 
-const ffmpegAssetPaths = [
-  "node_modules/@ffmpeg/core/dist/umd/ffmpeg-core.wasm"
+const ffmpegAssets = [
+  {
+    src: "node_modules/@ffmpeg/core/dist/umd/ffmpeg-core.wasm",
+    dest: "ffmpeg/ffmpeg-core.wasm"
+  }
 ];
 
 const FIREFOX_GECKO_ID = "youtube-downloader@avi12.com";
+const UPDATE_URL_BASE = "https://avi12.github.io/youtube-downloader";
+const FIREFOX_UPDATE_URL = `${UPDATE_URL_BASE}/updates.json`;
+const CHROME_UPDATE_URL = `${UPDATE_URL_BASE}/updates.xml`;
+const CHROME_EXTENSION_KEY = process.env.CHROME_EXTENSION_KEY ?? "";
 const sharedPermissions: Browser.runtime.ManifestPermission[] = [
   "alarms",
   "downloads",
@@ -53,6 +60,7 @@ export default defineConfig({
           gecko: {
             id: FIREFOX_GECKO_ID,
             strict_min_version: "147.0",
+            update_url: FIREFOX_UPDATE_URL,
             data_collection_permissions: {
               required: ["none"]
             }
@@ -60,7 +68,11 @@ export default defineConfig({
         }
       }
       : {
-        minimum_chrome_version: "125.0"
+        minimum_chrome_version: "125.0",
+        update_url: CHROME_UPDATE_URL,
+        ...CHROME_EXTENSION_KEY && {
+          key: CHROME_EXTENSION_KEY
+        }
       }
   }),
   zip: {
@@ -77,13 +89,13 @@ export default defineConfig({
   },
   hooks: {
     "prepare:publicPaths"(_, paths) {
-      paths.push(...ffmpegAssetPaths);
+      paths.push(...ffmpegAssets.map(asset => asset.dest));
     },
     "build:publicAssets"(_, assets) {
-      for (const path of ffmpegAssetPaths) {
+      for (const { src, dest } of ffmpegAssets) {
         assets.push({
-          absoluteSrc: resolve(path),
-          relativeDest: path
+          absoluteSrc: resolve(src),
+          relativeDest: dest
         });
       }
     }

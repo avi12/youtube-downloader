@@ -5,6 +5,9 @@ settings:
   excludeLinksFromLockfile: false
 
 patchedDependencies:
+  '@ffmpeg/core':
+    hash: 17eaefe31961a48826d933bec45e3bc15a8ab5c388a7d38a48472597cbd58a0f
+    path: patches/@ffmpeg__core.patch
   lie@3.3.0:
     hash: 48a0599fa861ead1630c2f7fd2d4f75bc0a8fb202b8cab55499ef75248e1584e
     path: patches/lie@3.3.0.patch
@@ -15,7 +18,7 @@ importers:
     dependencies:
       '@ffmpeg/core':
         specifier: 0.12.10
-        version: 0.12.10
+        version: 0.12.10(patch_hash=17eaefe31961a48826d933bec45e3bc15a8ab5c388a7d38a48472597cbd58a0f)
       '@ffmpeg/types':
         specifier: ^0.12.4
         version: 0.12.4
@@ -4322,7 +4325,7 @@ snapshots:
 
   '@ffmpeg/core-st@0.11.1': {}
 
-  '@ffmpeg/core@0.12.10': {}
+  '@ffmpeg/core@0.12.10(patch_hash=17eaefe31961a48826d933bec45e3bc15a8ab5c388a7d38a48472597cbd58a0f)': {}
 
   '@ffmpeg/types@0.12.4': {}
 

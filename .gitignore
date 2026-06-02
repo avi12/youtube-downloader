@@ -10,4 +10,7 @@
 *.log
 .claude/
 user-profiles/
-scripts/popup-current.png
+keys/
+.env
+.env.local
+
