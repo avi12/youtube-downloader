@@ -135,18 +135,17 @@
   role="dialog"
 >
   <header class="dialog-header">
-    <h2 id="change-format-title" class="dialog-title">Change format</h2>
-    <button
-      class="dialog-close"
-      aria-label="Close"
-      onclick={startClose}
-      type="button"
-    >
-      {@html closeIcon}
-    </button>
-  </header>
-
-  <div class="dialog-body">
+    <div class="dialog-header-row">
+      <h2 id="change-format-title" class="dialog-title">Change format</h2>
+      <button
+        class="dialog-close"
+        aria-label="Close"
+        onclick={startClose}
+        type="button"
+      >
+        {@html closeIcon}
+      </button>
+    </div>
     {#if hasVideoMode && hasAudioMode}
       <div class="mode-toggle" role="tablist">
         <button
@@ -173,7 +172,9 @@
         </button>
       </div>
     {/if}
+  </header>
 
+  <div class="dialog-body">
     {#if activeItems.length === 0}
       <p class="dialog-empty">No alternative formats available</p>
     {:else}
@@ -241,6 +242,12 @@
   .dialog-header {
     display: flex;
     flex-shrink: 0;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .dialog-header-row {
+    display: flex;
     gap: 8px;
     justify-content: space-between;
     align-items: center;
