@@ -145,38 +145,18 @@
     return `${NF_SPEED_INT.format(bytesPerSec)} B/s`;
   }
 
-  const bytesText = $derived.by(() => {
-    if (!downloadedBytes || downloadedBytes <= 0) {
-      return "";
-    }
-
-    const downloadedStr = formatBytes(downloadedBytes, 0);
-    const hasValidTotal = totalBytes !== undefined && totalBytes >= downloadedBytes;
-    if (hasValidTotal) {
-      return `${downloadedStr} / ${formatBytes(totalBytes, 2)}`;
-    }
-
-    return downloadedStr;
-  });
-
-  const etaLabel = $derived.by(() => {
-    if (!bytesPerSecond || bytesPerSecond <= 0 || !totalBytes || !downloadedBytes) {
-      return null;
-    }
-
-    const remaining = totalBytes - downloadedBytes;
-    if (remaining <= 0) {
-      return null;
-    }
-
-    const seconds = remaining / bytesPerSecond;
-    const minutes = Math.floor(seconds / SECONDS_PER_MINUTE);
-    const secs = Math.floor(seconds % SECONDS_PER_MINUTE);
-    return `${minutes}:${String(secs).padStart(2, "0")} left`;
-  });
-
-  const speedEtaText = $derived.by(() => {
+  const byteReadoutParts = $derived.by(() => {
     const parts: string[] = [];
+    if (downloadedBytes !== undefined && downloadedBytes > 0) {
+      const downloadedStr = formatBytes(downloadedBytes, 0);
+      const hasValidTotal = totalBytes !== undefined && totalBytes >= downloadedBytes;
+      if (hasValidTotal) {
+        parts.push(`${downloadedStr} / ${formatBytes(totalBytes, 2)}`);
+      } else {
+        parts.push(downloadedStr);
+      }
+    }
+
     if (bytesPerSecond !== undefined && bytesPerSecond > 0) {
       const speedStr = formatSpeed(bytesPerSecond);
       if (speedStr) {
@@ -184,11 +164,7 @@
       }
     }
 
-    if (etaLabel) {
-      parts.push(etaLabel);
-    }
-
-    return parts.join(" · ");
+    return parts;
   });
 
   async function focusSourceTab(): Promise<void> {
@@ -305,14 +281,11 @@
   {:else if progress !== null}
     <div class="dl-prog-bar">
       <WavyProgress value={progress * 100} />
-      <span class="dl-prog-pct">{percentLabel}</span>
     </div>
     <div class="dl-prog-line">
-      {#if hasByteReadout}
-        <span class="dl-prog-stat">{bytesText}</span>
-        {#if speedEtaText}
-          <span class="dl-prog-stat dl-prog-stat-right">{speedEtaText}</span>
-        {/if}
+      <span class="dl-prog-pct">{percentLabel}</span>
+      {#if hasByteReadout && byteReadoutParts.length > 0}
+        <span class="dl-prog-stat">{byteReadoutParts.join(" · ")}</span>
       {:else}
         <span class="dl-prog-stat">{progressLabel}</span>
       {/if}
@@ -547,10 +520,6 @@
     font-size: 0.71875rem;
     text-overflow: ellipsis;
     white-space: nowrap;
-  }
-
-  .dl-prog-stat-right {
-    flex-shrink: 0;
   }
 
   .state-pill {
