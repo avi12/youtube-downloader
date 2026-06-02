@@ -33,13 +33,11 @@
 
   const isZip = $derived(entry.container === "zip");
   const openInNewTabLabel = $derived(isZip ? "Open playlist in new tab" : "Open video in new tab");
-
-  function openInNewTab(): void {
-    const url = isZip
+  const openInNewTabUrl = $derived(
+    isZip
       ? `https://www.youtube.com/playlist?list=${entry.videoId}`
-      : `https://www.youtube.com/watch?v=${entry.videoId}`;
-    void browser.tabs.create({ url });
-  }
+      : `https://www.youtube.com/watch?v=${entry.videoId}`
+  );
 
   const RTF = new Intl.RelativeTimeFormat(undefined, { numeric: "auto" });
   const NF_BYTES = new Intl.NumberFormat(undefined, {
@@ -153,7 +151,7 @@
           aria-label={openInNewTabLabel}
           data-tooltip={openInNewTabLabel}
           data-tooltip-align="end"
-          onclick={openInNewTab}
+          onclick={() => void browser.tabs.create({ url: openInNewTabUrl })}
           type="button"
         >
           {@html openInNewIcon}

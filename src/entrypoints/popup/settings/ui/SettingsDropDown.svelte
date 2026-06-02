@@ -57,20 +57,6 @@
     }
   }
 
-  function select(value: string): void {
-    onSelect(value);
-    isOpen = false;
-    focusTrigger();
-  }
-
-  function handleTriggerClick(e: MouseEvent): void {
-    isOpen = !isOpen;
-
-    if (isOpen && e.detail === 0) {
-      requestAnimationFrame(focusFirstItem);
-    }
-  }
-
   function handleListKeydown(e: KeyboardEvent): void {
     const arrowDirections: Partial<Record<string, 1 | -1>> = {
       ArrowDown: 1,
@@ -99,7 +85,13 @@
   bind:this={elTrigger}
   class="set-item set-picker-btn"
   aria-expanded={isOpen}
-  onclick={handleTriggerClick}
+  onclick={e => {
+    isOpen = !isOpen;
+
+    if (isOpen && e.detail === 0) {
+      requestAnimationFrame(focusFirstItem);
+    }
+  }}
 >
   {#if icon}
     <div class="set-lead accent">
@@ -132,7 +124,11 @@
       <button
         class="dropdown-item"
         class:dropdown-item--selected={currentValue === item.value}
-        onclick={() => select(item.value)}
+        onclick={() => {
+          onSelect(item.value);
+          isOpen = false;
+          focusTrigger();
+        }}
       >
         <div class="dropdown-item-text">
           <span class="dropdown-item-label">{item.label}</span>

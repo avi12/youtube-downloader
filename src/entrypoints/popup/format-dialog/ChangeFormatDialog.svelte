@@ -77,14 +77,6 @@
     placement = spaceBelow >= spaceAbove ? DialogPlacement.Below : DialogPlacement.Above;
   });
 
-  function handleLayerPointerDown(): void {
-    startClose();
-  }
-
-  function stopPropagation(e: Event): void {
-    e.stopPropagation();
-  }
-
   function findGroup(groups: FormatGroup[], heading: string): FormatGroup | undefined {
     return groups.find(group => group.heading === heading);
   }
@@ -119,21 +111,19 @@
       pendingExtension = null;
     }
   }
-
-  function handleWindowKeydown(e: KeyboardEvent): void {
-    const isEscape = e.key === "Escape";
-    if (isEscape) {
-      startClose();
-    }
-  }
 </script>
 
-<svelte:window onkeydown={handleWindowKeydown} />
+<svelte:window
+  onkeydown={e => {
+    if (e.key === "Escape") {
+      startClose();
+    }
+  }} />
 
 <div
   class="popover-layer"
   class:popover-layer--closing={isClosing}
-  onpointerdown={handleLayerPointerDown}
+  onpointerdown={() => startClose()}
   role="presentation"
 ></div>
 
@@ -148,7 +138,7 @@
       onClose();
     }
   }}
-  onpointerdown={stopPropagation}
+  onpointerdown={e => e.stopPropagation()}
 >
   <header class="dialog-header">
     <div class="dialog-header-row">

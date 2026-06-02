@@ -139,10 +139,6 @@
       isFFmpegReady
     });
   }
-
-  function emitCancel(ids: string[]): void {
-    onCancel(ids);
-  }
 </script>
 
 {#snippet renderCard(videoId: string, showTabActions: boolean)}
@@ -154,7 +150,7 @@
     downloadedBytes={entry?.downloadedBytes}
     filename={accessors.filename(videoId)}
     lengthSeconds={detail?.lengthSeconds}
-    oncancel={() => emitCancel([videoId])}
+    oncancel={() => onCancel([videoId])}
     progress={accessors.progress(videoId)}
     progressLabel={accessors.label(videoId)}
     quality={accessors.quality(videoId)}
