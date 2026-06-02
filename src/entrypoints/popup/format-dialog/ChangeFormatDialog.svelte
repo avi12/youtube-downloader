@@ -172,15 +172,18 @@
         </button>
       </div>
     {/if}
+
+    {#if activeItems.length > 0}
+      <p class="dialog-description">
+        <strong>Instant</strong> just repackages the file. Others re-encode the {mode === "video" ? "video" : "audio"} — <strong>Slower</strong> targets use a legacy codec and take noticeably longer
+      </p>
+    {/if}
   </header>
 
   <div class="dialog-body">
     {#if activeItems.length === 0}
       <p class="dialog-empty">No alternative formats available</p>
     {:else}
-      <p class="dialog-description">
-        <strong>Instant</strong> just repackages the file. Others re-encode the {mode === "video" ? "video" : "audio"} — <strong>Slower</strong> targets use a legacy codec and take noticeably longer
-      </p>
       <FormatGrid
         items={activeItems}
         onSelect={handleSelect}
