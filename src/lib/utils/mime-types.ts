@@ -90,23 +90,23 @@ export const AUTO_EXTENSION = "auto";
 export const AUTO_EXTENSION_LABEL = "Auto (match source)";
 
 const FORMAT_DESCRIPTIONS: Record<string, string> = {
-  "3gp": "Mobile / legacy",
-  aiff: "Lossless, macOS",
-  avi: "Legacy Windows",
-  flac: "Lossless, compressed",
-  m4a: "AAC audio",
-  m4b: "Audiobook (chaptered)",
-  m4v: "iTunes / Apple",
-  mkv: "Holds many tracks",
-  mov: "Apple / editing",
-  mp3: "Most compatible",
-  mp4: "Plays on everything",
-  ogg: "Vorbis audio",
-  opus: "Modern, efficient",
-  ts: "Broadcast stream",
-  wav: "Lossless, uncompressed",
-  weba: "WebM audio (Opus)",
-  webm: "Open & web-native"
+  "3gp": "Old low-bitrate mobile",
+  aiff: "Apple's WAV, huge files",
+  avi: "Legacy, no modern codecs",
+  flac: "Lossless wrap, lossy src",
+  m4a: "AAC in MP4, broad support",
+  m4b: "MP4 audio with chapters",
+  m4v: "MP4 with iTunes flavor",
+  mkv: "Many tracks, not iOS/web",
+  mov: "Apple editing, codec-picky",
+  mp3: "Universal, re-encoded",
+  mp4: "Universal, simple tracks",
+  ogg: "Vorbis, weak OS support",
+  opus: "Efficient, patchy support",
+  ts: "Broadcast, no chapters",
+  wav: "Uncompressed, huge files",
+  weba: "Opus in WebM, niche",
+  webm: "Web-native, no H.264/AAC"
 };
 
 export function getFormatDescription(extension: string) {
