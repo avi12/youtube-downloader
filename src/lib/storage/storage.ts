@@ -67,6 +67,11 @@ export const interruptedDownloadsItem = storage.defineItem<Record<string, Interr
 
 export const optionsItem = storage.defineItem<Options>("local:options", { fallback: INITIAL_OPTIONS });
 
+export const checkedPlaylistVideosItem = storage.defineItem<string[]>(
+  "local:ytdl-checked-playlist-videos",
+  { fallback: [] }
+);
+
 export async function setOption<Key extends keyof Options>({ key, value }: {
   key: Key;
   value: Options[Key];
