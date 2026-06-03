@@ -223,7 +223,7 @@ export default [
   eslint.configs.recommended,
   ...tsEslint.configs.recommended,
   ...svelteEslint.configs["flat/recommended"],
-  globalIgnores(["build/**", "node_modules/**", ".output/**", ".wxt/**", "User Data/**", "user-profiles/**", "patches/**", "scripts/firefox-*.ts", "scripts/**", "src/entrypoints/mux-worker/opfs.d.ts", ".claude/worktrees/**"]),
+  globalIgnores(["build/**", "node_modules/**", ".output/**", ".wxt/**", ".verify-output/**", "User Data/**", "user-profiles/**", "patches/**", "scripts/firefox-*.ts", "scripts/**", "src/entrypoints/mux-worker/opfs.d.ts", ".claude/worktrees/**"]),
   {
     files: ["**/*.{ts,js,mjs}"],
     languageOptions: {

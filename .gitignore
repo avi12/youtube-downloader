@@ -4,6 +4,7 @@
 /.output/
 /.wxt/
 /.chrome-for-testing/
+/.verify-output/
 
 .DS_Store
 .idea/
