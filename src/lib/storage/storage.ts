@@ -80,5 +80,5 @@ export async function setOption<Key extends keyof Options>({ key, value }: {
 }
 
 export async function clearLocalStorage() {
-  await browser.storage.local.clear();
+  await storage.clear("local");
 }
