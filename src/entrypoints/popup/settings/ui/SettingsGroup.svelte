@@ -38,8 +38,18 @@
     border-radius: 20px;
     background: var(--surface);
 
-    :global(.set-item + .set-item),
-    :global(.set-section-fieldset + .set-item) {
+    & > :global(*:first-child) {
+      border-start-end-radius: 20px;
+      border-start-start-radius: 20px;
+    }
+
+    & > :global(*:last-child) {
+      border-end-start-radius: 20px;
+      border-end-end-radius: 20px;
+    }
+
+    :global(.set-item ~ .set-item),
+    :global(.set-section-fieldset ~ .set-item) {
       border-top: 1px solid var(--border);
     }
   }

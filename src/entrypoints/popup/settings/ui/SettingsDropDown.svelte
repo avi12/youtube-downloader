@@ -1,8 +1,9 @@
 <script lang="ts">
   import checkIcon from "../../icons/check.svg?raw";
   import chevronRightIcon from "../../icons/chevron-right.svg?raw";
+  import { applyInertTrap } from "@/lib/ui/inert-trap";
   import type { Snippet } from "svelte";
-  import { slide } from "svelte/transition";
+  import { scale } from "svelte/transition";
 
   interface DropDownItem {
     value: string;
@@ -23,6 +24,11 @@
 
   const { label, subtitle, displayValue, currentValue, items, slideDuration, onSelect, icon }: Props = $props();
 
+  const uniqueId = crypto.randomUUID().replaceAll("-", "");
+  const anchorName = `--dd-${uniqueId}`;
+  const listboxId = `dd-listbox-${uniqueId}`;
+  const headerId = `dd-header-${uniqueId}`;
+
   let isOpen = $state(false);
   let elTrigger = $state<HTMLElement | null>(null);
   let elList = $state<HTMLElement | null>(null);
@@ -32,11 +38,11 @@
   }
 
   function focusFirstItem(): void {
-    elList?.querySelector<HTMLElement>(".dropdown-item")?.focus();
+    elList?.querySelector<HTMLElement>("[role=\"option\"]")?.focus();
   }
 
   function navigateItems(direction: 1 | -1): void {
-    const dropDownItems = [...(elList?.querySelectorAll<HTMLElement>(".dropdown-item") ?? [])];
+    const dropDownItems = [...(elList?.querySelectorAll<HTMLElement>("[role=\"option\"]") ?? [])];
     const iCurrent = dropDownItems.findIndex(item => item === document.activeElement);
     dropDownItems[(iCurrent + direction + dropDownItems.length) % dropDownItems.length]?.focus();
   }
@@ -79,12 +85,59 @@
       focusTrigger();
     }
   }
+
+  function handleDocumentPointerDown(e: PointerEvent): void {
+    if (!(e.target instanceof Node)) {
+      return;
+    }
+
+    if (elTrigger?.contains(e.target) || elList?.contains(e.target)) {
+      return;
+    }
+
+    isOpen = false;
+  }
+
+  function preventOuterScroll(e: Event): void {
+    if (!(e.target instanceof Node) || elList?.contains(e.target)) {
+      return;
+    }
+
+    e.preventDefault();
+  }
+
+  $effect(() => {
+    if (!isOpen || !elList) {
+      return;
+    }
+
+    const selectedItem = elList.querySelector<HTMLElement>("[aria-selected=\"true\"]");
+    selectedItem?.scrollIntoView({
+      behavior: "instant",
+      block: "center"
+    });
+
+    const releaseInertTrap = applyInertTrap(elList);
+    const scroller = elTrigger?.closest<HTMLElement>(".panel-wrapper");
+    document.addEventListener("pointerdown", handleDocumentPointerDown);
+    scroller?.addEventListener("wheel", preventOuterScroll, { passive: false });
+    scroller?.addEventListener("touchmove", preventOuterScroll, { passive: false });
+    return () => {
+      releaseInertTrap();
+      document.removeEventListener("pointerdown", handleDocumentPointerDown);
+      scroller?.removeEventListener("wheel", preventOuterScroll);
+      scroller?.removeEventListener("touchmove", preventOuterScroll);
+    };
+  });
 </script>
 
 <button
   bind:this={elTrigger}
+  style="anchor-name: {anchorName};"
   class="set-item set-picker-btn"
+  aria-controls={listboxId}
   aria-expanded={isOpen}
+  aria-haspopup="listbox"
   onclick={e => {
     isOpen = !isOpen;
 
@@ -112,36 +165,53 @@
   </div>
 </button>
 {#if isOpen}
-  <div
+  <section
     bind:this={elList}
+    style="position-anchor: {anchorName};"
     class="dropdown-list"
-    onkeydown={handleListKeydown}
-    role="listbox"
-    tabindex="-1"
-    transition:slide={{ duration: slideDuration }}
+    aria-labelledby={headerId}
+    transition:scale={{
+      duration: slideDuration,
+      start: 0.96,
+      opacity: 0
+    }}
   >
-    {#each items as item (item.value)}
-      <button
-        class="dropdown-item"
-        class:dropdown-item--selected={currentValue === item.value}
-        onclick={() => {
-          onSelect(item.value);
-          isOpen = false;
-          focusTrigger();
-        }}
-      >
-        <div class="dropdown-item-text">
-          <span class="dropdown-item-label">{item.label}</span>
-          {#if item.description}
-            <span class="dropdown-item-desc">{item.description}</span>
+    <h2 id={headerId} class="dropdown-header">{label}</h2>
+    <ul id={listboxId} class="dropdown-options" aria-labelledby={headerId} onkeydown={handleListKeydown} role="listbox">
+      {#each items as item (item.value)}
+        <li
+          class="dropdown-item"
+          class:dropdown-item--selected={currentValue === item.value}
+          aria-selected={currentValue === item.value}
+          onclick={() => {
+            onSelect(item.value);
+            isOpen = false;
+            focusTrigger();
+          }}
+          onkeydown={e => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              onSelect(item.value);
+              isOpen = false;
+              focusTrigger();
+            }
+          }}
+          role="option"
+          tabindex="-1"
+        >
+          <div class="dropdown-item-text">
+            <span class="dropdown-item-label">{item.label}</span>
+            {#if item.description}
+              <span class="dropdown-item-desc">{item.description}</span>
+            {/if}
+          </div>
+          {#if currentValue === item.value}
+            {@html checkIcon}
           {/if}
-        </div>
-        {#if currentValue === item.value}
-          {@html checkIcon}
-        {/if}
-      </button>
-    {/each}
-  </div>
+        </li>
+      {/each}
+    </ul>
+  </section>
 {/if}
 
 <style>
@@ -213,6 +283,10 @@
       outline: 2px solid var(--accent);
       outline-offset: -2px;
     }
+
+    &[aria-expanded="true"]:focus-visible {
+      outline: none;
+    }
   }
 
   .set-value {
@@ -238,20 +312,67 @@
     }
   }
 
+  @position-try --dropdown-flip-up {
+    inset-block-end: anchor(start);
+    inset-block-start: 16px;
+  }
+
   .dropdown-list {
-    padding: 4px;
-    border-top: 1px solid var(--border);
+    position: fixed;
+    inset-block-end: 16px;
+    inset-block-start: anchor(end);
+    inset-inline-end: anchor(end);
+    z-index: 50;
+    overflow-x: clip;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    box-sizing: border-box;
+    block-size: max-content;
+    max-block-size: stretch;
+    width: clamp(8rem, 245px, calc(100vw - 16px));
+    margin-block: 6px;
+    padding: 8px;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    background: var(--surface);
+    scrollbar-color: var(--border) transparent;
+    scrollbar-width: thin;
+    box-shadow:
+      0 8px 24px 0 color-mix(in oklab, #000000 35%, transparent),
+      0 2px 6px 0 color-mix(in oklab, #000000 25%, transparent);
+    transform-origin: top right;
+    position-try-fallbacks: --dropdown-flip-up;
+    position-try-order: most-block-size;
+  }
+
+  .dropdown-header {
+    margin: 0;
+    padding-block: 10px 4px;
+    padding-inline: 12px;
+    color: var(--fg-muted);
+    font-weight: 600;
+    font-size: 0.6875rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+  }
+
+  .dropdown-options {
+    margin: 0;
+    padding: 0;
+    list-style: none;
   }
 
   .dropdown-item {
     display: flex;
     gap: 8px;
     align-items: center;
+    box-sizing: border-box;
     width: 100%;
-    padding: 9px 10px;
+    padding: 10px 12px;
     border: none;
     border-radius: 12px;
     background: transparent;
+    color: var(--fg);
     font-family: inherit;
     text-align: left;
     cursor: pointer;
@@ -267,8 +388,8 @@
 
     :global(svg) {
       flex-shrink: 0;
-      width: 18px;
-      height: 18px;
+      width: 20px;
+      height: 20px;
     }
   }
 
@@ -276,18 +397,21 @@
     display: flex;
     flex: 1;
     flex-direction: column;
-    gap: 1px;
+    gap: 2px;
     min-width: 0;
   }
 
   .dropdown-item-label {
-    font-weight: 500;
-    font-size: 0.84375rem;
+    color: inherit;
+    font-weight: 600;
+    font-size: 0.9375rem;
+    line-height: 1.25;
   }
 
   .dropdown-item-desc {
     color: var(--fg-muted);
-    font-size: 0.71875rem;
+    font-size: 0.75rem;
+    line-height: 1.3;
   }
 
   .dropdown-item--selected {
@@ -295,7 +419,7 @@
 
     .dropdown-item-desc {
       color: var(--accent);
-      opacity: 70%;
+      opacity: 75%;
     }
   }
 </style>
