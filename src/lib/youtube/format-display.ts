@@ -5,10 +5,17 @@ const CODEC_OPUS = "opus";
 const CODEC_PREFIX_EC3 = "ec-3";
 const QUALITY_LABEL_PREMIUM = "Premium";
 
+export function isPremiumFormat(format: Pick<AdaptiveFormatItem, "qualityLabel">) {
+  return (format.qualityLabel ?? "").includes(QUALITY_LABEL_PREMIUM);
+}
+
+export function filterVideoFormatsByEnhancedBitrate(formats: AdaptiveFormatItem[], enhancedBitrate: boolean) {
+  return enhancedBitrate ? formats : formats.filter(format => !isPremiumFormat(format));
+}
+
 export function formatVideoQualityLabel(format: Pick<AdaptiveFormatItem, "height" | "fps" | "qualityLabel">) {
   const base = `${format.height}p${format.fps ? ` ${format.fps}fps` : ""}`;
-  const isPremium = (format.qualityLabel ?? "").includes(QUALITY_LABEL_PREMIUM);
-  return isPremium ? `${base} (Enhanced)` : base;
+  return isPremiumFormat(format) ? `${base} (Enhanced)` : base;
 }
 
 export function formatAudioCodecLabel(mimeType: string) {

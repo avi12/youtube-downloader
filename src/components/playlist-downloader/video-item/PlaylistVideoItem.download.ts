@@ -5,6 +5,7 @@ import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { checkedPlaylistVideos } from "@/lib/ui/playlist-selection.svelte";
 import { CONTENT_OPTIONS, downloadProgressStore } from "@/lib/ui/synced-stores.svelte";
 import { resolveVideoFilename } from "@/lib/utils/containers";
+import { filterVideoFormatsByEnhancedBitrate } from "@/lib/youtube/format-display";
 import { DownloadType, type VideoData } from "@/types";
 
 type TriggerDownloadParams = {
@@ -27,11 +28,13 @@ export function triggerDownload({ videoData, videoId, gridTitle, setLocallyDone 
     titleOverride: gridTitle
   });
 
+  const videoCandidates = filterVideoFormatsByEnhancedBitrate(videoData.videoFormats, options.enhancedBitrate);
+
   setLocallyDone(false);
   void crossWorldMessenger.sendMessage(CrossWorldMessage.DownloadRequest, {
     type: downloadType,
     videoId,
-    videoItag: videoData.videoFormats[0]?.itag ?? 0,
+    videoItag: videoCandidates[0]?.itag ?? 0,
     audioItag: videoData.audioFormats[0]?.itag ?? 0,
     filenameOutput,
     downloadExtras: options.downloadExtras,

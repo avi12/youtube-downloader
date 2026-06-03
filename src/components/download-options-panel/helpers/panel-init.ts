@@ -1,5 +1,6 @@
 import { getPreferredMusicAudioFormat } from "./panel-init-audio";
 import { getCompatibleFilename, hasVisibleContent, resolveAutoExtension } from "@/lib/utils/containers";
+import { filterVideoFormatsByEnhancedBitrate } from "@/lib/youtube/format-display";
 import { DownloadType, type Options, type VideoData } from "@/types";
 
 export { IS_WATCH_PAGE } from "./panel-init-audio";
@@ -38,7 +39,8 @@ export function resolveInitialExtension({ options, videoData }: OptionsVideoData
     });
   }
 
-  const defaultFormat = videoData.videoFormats[0];
+  const candidates = filterVideoFormatsByEnhancedBitrate(videoData.videoFormats, options.enhancedBitrate);
+  const defaultFormat = candidates[0];
   return resolveAutoExtension({
     extension: options.ext.video,
     mimeType: defaultFormat?.mimeType ?? ""

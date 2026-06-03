@@ -26,6 +26,7 @@ import {
   statusProgressSignal
 } from "@/lib/ui/synced-stores.svelte";
 import { getCompatibleFilename, isAudioMimeNativeForContainer, resolveAutoExtension } from "@/lib/utils/containers";
+import { filterVideoFormatsByEnhancedBitrate } from "@/lib/youtube/format-display";
 import {
   alignAudioFormatToExtension,
   calculateWeightedProgress,
@@ -81,12 +82,16 @@ export function createPanelState(getVideoData: () => VideoData) {
   let selectedVideoFormat = $state<AdaptiveFormatItem | null>(
     untrack(() => {
       const entry = downloadProgressStore.get(getVideoData().videoId);
+      const candidates = filterVideoFormatsByEnhancedBitrate(
+        getVideoData().videoFormats,
+        CONTENT_OPTIONS.enhancedBitrate
+      );
       if (entry?.videoItag && entry.isDownloading) {
         const matched = getVideoData().videoFormats.find(fmt => fmt.itag === entry.videoItag);
-        return matched ?? getVideoData().videoFormats[0] ?? null;
+        return matched ?? candidates[0] ?? null;
       }
 
-      return getVideoData().videoFormats[0] ?? null;
+      return candidates[0] ?? null;
     })
   );
   const initialAudioFormat = untrack(() => {
