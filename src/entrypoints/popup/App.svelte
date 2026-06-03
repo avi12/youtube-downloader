@@ -234,6 +234,7 @@
         --surface: var(--md-sys-color-surface-container);
         --surface-high: var(--md-sys-color-surface-container-high);
         --on-primary: var(--md-sys-color-on-primary);
+        --premium: oklch(68% 0.155 80deg);
         --motion: 1;
 
         width: 400px;
@@ -264,6 +265,7 @@
           --md-sys-color-inverse-surface: oklch(91.4% 0.0137 314.8deg);
           --md-sys-color-inverse-on-surface: oklch(28.6% 0.0129 298.6deg);
           --on-danger: oklch(25.4% 0.0794 27.6deg);
+          --premium: oklch(86% 0.13 85deg);
         }
       }
     }

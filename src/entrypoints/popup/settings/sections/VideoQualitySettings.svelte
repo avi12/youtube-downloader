@@ -1,5 +1,7 @@
 <script lang="ts">
+  import sparkleIcon from "../../icons/sparkle.svg?raw";
   import type { SlidingSettingsProps } from "../settings-types";
+  import SettingsDropDown from "../ui/SettingsDropDown.svelte";
   import SettingsGroup from "../ui/SettingsGroup.svelte";
   import { setOption } from "@/lib/storage/storage";
   import { VIDEO_QUALITIES } from "@/lib/youtube/video-helpers";
@@ -7,6 +9,15 @@
   import { slide } from "svelte/transition";
 
   const { options, slideDuration }: SlidingSettingsProps = $props();
+
+  const QUALITY_SUBLABELS: Record<number, string> = {
+    4320: "8K",
+    2160: "4K",
+    1440: "2K",
+    1080: "Full HD",
+    720: "HD",
+    480: "SD"
+  };
 
   const qualityModeOptions = [
     {
@@ -22,6 +33,14 @@
       label: "Custom quality"
     }
   ] as const;
+
+  const customQualityItems = $derived(
+    VIDEO_QUALITIES.map(quality => ({
+      value: String(quality),
+      label: `${quality}p`,
+      description: QUALITY_SUBLABELS[quality]
+    }))
+  );
 </script>
 
 <SettingsGroup title="Video quality">
@@ -47,31 +66,58 @@
           <span class="radio-label">{label}</span>
         </div>
       </label>
+      {#if value === VideoQualityMode.Best && options.videoQualityMode === VideoQualityMode.Best}
+        <div class="radio-sub" transition:slide={{ duration: slideDuration }}>
+          <label class="enhanced-bitrate">
+            <div class="enhanced-bitrate-txt">
+              <span class="enhanced-bitrate-title">Enhanced bitrate</span>
+              <span class="premium-badge">
+                {@html sparkleIcon}
+                YouTube Premium
+              </span>
+              <span class="enhanced-bitrate-desc">Grab the higher-bitrate stream whenever YouTube offers it</span>
+            </div>
+            <span class="set-switch">
+              <input
+                class="set-switch-input"
+                checked={options.enhancedBitrate}
+                onchange={e => {
+                  if (!(e.target instanceof HTMLInputElement)) {
+                    return;
+                  }
+
+                  void setOption({
+                    key: "enhancedBitrate",
+                    value: e.target.checked
+                  });
+                }}
+                role="switch"
+                type="checkbox"
+              />
+              <span class="set-switch-track"></span>
+            </span>
+          </label>
+        </div>
+      {/if}
+      {#if value === VideoQualityMode.Custom && options.videoQualityMode === VideoQualityMode.Custom}
+        <div class="radio-sub" transition:slide={{ duration: slideDuration }}>
+          <SettingsDropDown
+            currentValue={String(options.videoQuality)}
+            displayValue={`${options.videoQuality}p`}
+            items={customQualityItems}
+            label="Quality"
+            onSelect={selected => {
+              void setOption({
+                key: "videoQuality",
+                value: Number(selected)
+              });
+            }}
+            {slideDuration}
+          />
+        </div>
+      {/if}
     {/each}
   </fieldset>
-  {#if options.videoQualityMode === VideoQualityMode.Custom}
-    <div class="set-inset" transition:slide={{ duration: slideDuration }}>
-      <label class="set-inset-label" for="custom-quality-select">Quality</label>
-      <select
-        id="custom-quality-select"
-        class="set-select"
-        onchange={e => {
-          if (!(e.target instanceof HTMLSelectElement)) {
-            return;
-          }
-
-          void setOption({
-            key: "videoQuality",
-            value: Number(e.target.value)
-          });
-        }}
-      >
-        {#each VIDEO_QUALITIES as quality (quality)}
-          <option selected={quality === options.videoQuality} value={quality}>{quality}p</option>
-        {/each}
-      </select>
-    </div>
-  {/if}
 </SettingsGroup>
 
 <style>
@@ -163,32 +209,113 @@
     font-size: 0.84375rem;
   }
 
-  .set-inset {
+  .radio-sub {
+    margin-block: -2px 4px;
+    margin-inline: 22px 8px;
+    padding-inline-start: 21px;
+    border-inline-start: 1.5px solid var(--border);
+  }
+
+  .enhanced-bitrate {
     display: flex;
-    gap: 8px;
+    gap: 12px;
     align-items: center;
-    padding: 10px 14px;
-    border-top: 1px solid var(--border);
-    background: var(--surface-high);
-  }
-
-  .set-inset-label {
-    flex: 1;
-    color: var(--fg-muted);
-    font-size: 0.8125rem;
-  }
-
-  .set-select {
-    padding: 6px 10px;
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    background: transparent;
-    color: inherit;
-    font-family: inherit;
-    font-size: 0.8125rem;
+    padding-block: 8px;
     cursor: pointer;
+  }
 
-    &:focus-visible {
+  .enhanced-bitrate-txt {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 0;
+  }
+
+  .enhanced-bitrate-title {
+    color: var(--fg);
+    font-weight: 600;
+    font-size: 0.84375rem;
+  }
+
+  .enhanced-bitrate-desc {
+    color: var(--fg-muted);
+    font-size: 0.71875rem;
+    line-height: 1.35;
+  }
+
+  .premium-badge {
+    display: inline-flex;
+    gap: 4px;
+    align-items: center;
+    align-self: flex-start;
+    padding: 2px 8px;
+    border: 1px solid color-mix(in oklab, var(--premium) 60%, transparent);
+    border-radius: 999px;
+    background: color-mix(in oklab, var(--premium) 12%, transparent);
+    color: var(--premium);
+    font-weight: 600;
+    font-size: 0.6875rem;
+    letter-spacing: 0.01em;
+
+    :global(svg) {
+      width: 12px;
+      height: 12px;
+    }
+  }
+
+  .set-switch {
+    position: relative;
+    display: inline-flex;
+    flex-shrink: 0;
+  }
+
+  .set-switch-track {
+    position: relative;
+    display: block;
+    width: 52px;
+    height: 32px;
+    border-radius: 16px;
+    background-color: var(--surface-high);
+    box-shadow: inset 0 0 0 2px var(--fg-subtle);
+    cursor: pointer;
+    transition: background-color 250ms, box-shadow 250ms;
+
+    &::after {
+      content: "";
+      position: absolute;
+      top: 50%;
+      left: 16px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background-color: var(--fg-subtle);
+      transition:
+        translate 300ms cubic-bezier(0.34, 1.56, 0.64, 1),
+        scale 300ms cubic-bezier(0.34, 1.56, 0.64, 1),
+        background-color 200ms;
+      translate: -50% -50%;
+    }
+  }
+
+  .set-switch-input {
+    position: absolute;
+    width: 0;
+    height: 0;
+    opacity: 0%;
+
+    &:checked + .set-switch-track {
+      background-color: var(--accent);
+      box-shadow: inset 0 0 0 2px var(--accent);
+    }
+
+    &:checked + .set-switch-track::after {
+      background-color: var(--on-primary);
+      scale: 1.5;
+      translate: calc(-50% + 22px) -50%;
+    }
+
+    &:focus-visible + .set-switch-track {
       outline: 2px solid var(--accent);
       outline-offset: 2px;
     }

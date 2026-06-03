@@ -48,6 +48,7 @@ export type Options = {
   defaultDownloadType: DownloadTypePreference;
   videoQualityMode: VideoQualityMode;
   videoQuality: number;
+  enhancedBitrate: boolean;
   isShowNativeDownload: boolean;
   isNotifyOnIdle: boolean;
   isRevealOnComplete: boolean;

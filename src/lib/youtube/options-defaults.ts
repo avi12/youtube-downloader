@@ -23,6 +23,7 @@ export const INITIAL_OPTIONS: Options = {
   defaultDownloadType: DownloadType.Auto,
   videoQualityMode: VideoQualityMode.Best,
   videoQuality: DEFAULT_VIDEO_QUALITY,
+  enhancedBitrate: true,
   isShowNativeDownload: false,
   isNotifyOnIdle: false,
   isRevealOnComplete: false,
