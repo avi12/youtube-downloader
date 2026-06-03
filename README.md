@@ -9,6 +9,8 @@ Built by [Avi](https://avi12.com) with supervised [Claude Code](https://claude.c
   <img src="https://user-images.githubusercontent.com/6422804/135838702-e852bb47-8c0d-4275-baf1-8adc1c50a3c1.png" width="30" alt="Microsoft Edge">
   <img src="https://user-images.githubusercontent.com/6422804/135838972-113f73a3-6a04-48a9-ae04-754f25bc6eb0.png" width="30" alt="Opera">
   <img src="https://upload.wikimedia.org/wikipedia/commons/e/e7/Opera_GX_Icon.svg?utm_source=commons.wikimedia.org&utm_campaign=index&utm_content=original" width="30" alt="Opera GX">
+  <img src="https://upload.wikimedia.org/wikipedia/commons/9/9d/Brave_lion_icon.svg" width="30" alt="Brave">
+  <img src="https://upload.wikimedia.org/wikipedia/commons/e/e4/Vivaldi_web_browser_logo.svg" width="30" alt="Vivaldi">
   <img src="https://upload.wikimedia.org/wikipedia/commons/a/a0/Firefox_logo%2C_2019.svg" width="30" alt="Firefox">
 </p>
 
@@ -16,7 +18,7 @@ Built by [Avi](https://avi12.com) with supervised [Claude Code](https://claude.c
 
 Grab the latest signed package for your browser from the [Releases page](https://github.com/avi12/youtube-downloader/releases). Both formats persist across browser restarts and auto-update from this repo's GitHub Pages on every poll.
 
-**Chromium (Chrome / Edge / Opera / Brave / Vivaldi)** - `youtube-downloader-*-chrome.crx`
+**Chromium (Chrome / Edge / Opera / Opera GX / Brave / Vivaldi)** - `youtube-downloader-*-chrome.crx`
 1. Go to `chrome://extensions` (or `edge://extensions`, `opera://extensions`, etc.)
 2. Enable **Developer mode** (top-right toggle)
 3. Drag and drop the `.crx` onto the page
