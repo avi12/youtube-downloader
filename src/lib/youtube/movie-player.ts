@@ -1,5 +1,9 @@
+import {
+  captionBusContextSchema,
+  captionEventBusSchema,
+  playerCaptionTrackDataSchema
+} from "./schemas";
 import type { MoviePlayerElement, CaptionEventBus, PlayerCaptionTrackData } from "./movie-player-types";
-import type { Prettify } from "@/types";
 
 export {
   type MoviePlayerElement,
@@ -14,51 +18,26 @@ export function getMoviePlayer() {
 }
 
 export function isPlayerCaptionTrackData(value: unknown): value is PlayerCaptionTrackData {
-  const isObject = typeof value === "object";
-  const isNotNull = value !== null;
-  const isNonNullObject = isObject && isNotNull;
-  const hasLanguageCode = isNonNullObject && "languageCode" in value;
-  const hasVssId = isNonNullObject && "vss_id" in value;
-  return isNonNullObject && hasLanguageCode && hasVssId;
+  return playerCaptionTrackDataSchema.safeParse(value).success;
 }
 
-type CaptionBusContext = Prettify<{
-  state?: Record<string, unknown>;
-}>;
+type GetOptionFn = (module: string, option: string) => unknown;
 
-function isGetOptionFunction(value: unknown): value is (module: string, option: string) => unknown {
+function isGetOptionFn(value: unknown): value is GetOptionFn {
   return typeof value === "function";
 }
 
-function isCaptionBusContext(value: unknown): value is CaptionBusContext {
-  const isObject = typeof value === "object";
-  const isNotNull = value !== null;
-  return isObject && isNotNull;
-}
-
-function hasSubscribe(value: unknown): value is { subscribe: unknown } {
-  const isObject = typeof value === "object";
-  const isNotNull = value !== null;
-  const isNonNullObject = isObject && isNotNull;
-  if (!isNonNullObject) {
-    return false;
-  }
-
-  return "subscribe" in value;
-}
-
 function isCaptionEventBus(value: unknown): value is CaptionEventBus {
-  return hasSubscribe(value) && typeof value.subscribe === "function";
+  return captionEventBusSchema.safeParse(value).success;
 }
 
 export function capturePlayerCaptionBuses(player: MoviePlayerElement) {
   let proto: MoviePlayerElement | null = player;
-  let rawGetOption: ((module: string, option: string) => unknown) | null = null;
+  let rawGetOption: GetOptionFn | null = null;
 
   while (proto) {
     const desc = Object.getOwnPropertyDescriptor(proto, "getOption");
-    const isGetOption = isGetOptionFunction(desc?.value);
-    if (isGetOption) {
+    if (isGetOptionFn(desc?.value)) {
       rawGetOption = desc.value;
       break;
     }
@@ -100,12 +79,13 @@ export function capturePlayerCaptionBuses(player: MoviePlayerElement) {
     });
   }
 
-  if (!isCaptionBusContext(internalCtx)) {
+  const ctxResult = captionBusContextSchema.safeParse(internalCtx);
+  if (!ctxResult.success) {
     return [];
   }
 
   const buses: CaptionEventBus[] = [];
-  const state = internalCtx.state ?? {};
+  const state = ctxResult.data.state ?? {};
   for (const key in state) {
     const value = state[key];
     if (isCaptionEventBus(value)) {

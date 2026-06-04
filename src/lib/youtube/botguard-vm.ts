@@ -1,3 +1,4 @@
+import { botGuardVmEntrySchema, trustedResourceUrlSchema } from "./schemas";
 import type { Prettify } from "@/types";
 
 const VM_POLL_INTERVAL_MS = 500;
@@ -8,19 +9,7 @@ interface BotGuardVmEntry {
 }
 
 function isBotGuardVmEntry(value: unknown): value is BotGuardVmEntry {
-  const isObject = typeof value === "object";
-  const isNotNull = value !== null;
-  const isNonNullObject = isObject && isNotNull;
-  if (!isNonNullObject) {
-    return false;
-  }
-
-  const hasAKey = "a" in value;
-  if (!hasAKey) {
-    return false;
-  }
-
-  return typeof value.a === "function";
+  return botGuardVmEntrySchema.safeParse(value).success;
 }
 
 export function getBotGuardVm(name: string) {
@@ -51,10 +40,10 @@ export async function ensureBotGuardVm({ globalName, interpreterUrlRaw }: Ensure
     return;
   }
 
-  const interpreterUrl =
-    typeof interpreterUrlRaw === "string"
-      ? interpreterUrlRaw
-      : interpreterUrlRaw?.privateDoNotAccessOrElseTrustedResourceUrlWrappedValue;
+  const interpreterUrl = typeof interpreterUrlRaw === "string"
+    ? interpreterUrlRaw
+    : trustedResourceUrlSchema.safeParse(interpreterUrlRaw).data
+      ?.privateDoNotAccessOrElseTrustedResourceUrlWrappedValue;
   if (interpreterUrl) {
     await loadInterpreterScript(interpreterUrl);
   }
