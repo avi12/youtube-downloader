@@ -1,16 +1,17 @@
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { ProgressType } from "@/types";
+import type { Prettify } from "@/types";
 
 const PROGRESS_THROTTLE_INTERVAL_MS = 200;
 const lastProgressTimestamps = new Map<string, number>();
 const completedVideoIds = new Set<string>();
 
-type ReportProgressParams = {
+type ReportProgressParams = Prettify<{
   videoId: string;
   progress: number;
   progressType: ProgressType;
   tabId: number;
-};
+}>;
 export async function reportProgress({
   videoId, progress, progressType, tabId
 }: ReportProgressParams) {

@@ -1,6 +1,12 @@
-import type { DownloadProgressEntry, Options, VideoDetail, VideoQueueItem } from "@/types";
+import type {
+  DownloadProgressEntry,
+  Options,
+  Prettify,
+  VideoDetail,
+  VideoQueueItem
+} from "@/types";
 
-export interface InitialAppStateProps {
+export type InitialAppStateProps = Prettify<{
   initialIsFFmpegReady: boolean;
   initialVideoQueue: VideoQueueItem[];
   initialMusicList: string[];
@@ -10,4 +16,4 @@ export interface InitialAppStateProps {
   initialCurrentTabId?: number;
   initialCurrentSourceUrl?: string;
   initialOptions: Options;
-}
+}>;

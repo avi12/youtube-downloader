@@ -2,18 +2,18 @@ import {
   attachPrimaryButton as attachPrimaryButtonElement,
   PrimaryButtonState
 } from "@/lib/ui/panel-button-attachments.svelte";
-import { ProgressType } from "@/types";
+import { ProgressType, type Prettify } from "@/types";
 
 export { PrimaryButtonState };
 
-export interface FooterParams {
+export type FooterParams = Prettify<{
   readonly primaryState: PrimaryButtonState;
   readonly displayProgress: number;
   readonly progressType: string;
   readonly getIsDownloadable: () => boolean;
   readonly getIsFilenameValid: () => boolean;
   readonly estimatedSizeLabel: string;
-}
+}>;
 
 const PERCENT_FORMATTER = new Intl.NumberFormat(document.documentElement.lang || undefined, {
   style: "percent",

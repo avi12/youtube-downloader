@@ -1,33 +1,35 @@
-interface ThumbnailEntry {
+import type { Prettify } from "@/types";
+
+type ThumbnailEntry = Prettify<{
   url: string;
   width: number;
   height: number;
-}
+}>;
 
-interface BrowseEndpoint {
+type BrowseEndpoint = Prettify<{
   browseEndpointContextSupportedConfigs?: {
     browseEndpointContextMusicConfig?: {
       pageType?: string;
     };
   };
-}
+}>;
 
-export interface SearchRun {
+export type SearchRun = Prettify<{
   text: string;
   navigationEndpoint?: {
     browseEndpoint?: BrowseEndpoint;
   };
-}
+}>;
 
-interface FlexColumn {
+type FlexColumn = Prettify<{
   musicResponsiveListItemFlexColumnRenderer?: {
     text?: {
       runs?: SearchRun[];
     };
   };
-}
+}>;
 
-export interface SearchItem {
+export type SearchItem = Prettify<{
   musicResponsiveListItemRenderer?: {
     flexColumns?: FlexColumn[];
     thumbnail?: {
@@ -38,9 +40,9 @@ export interface SearchItem {
       };
     };
   };
-}
+}>;
 
-export interface MusicSearchResponse {
+export type MusicSearchResponse = Prettify<{
   contents?: {
     tabbedSearchResultsRenderer?: {
       tabs?: Array<{
@@ -58,4 +60,4 @@ export interface MusicSearchResponse {
       }>;
     };
   };
-}
+}>;

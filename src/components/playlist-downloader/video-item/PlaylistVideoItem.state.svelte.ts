@@ -8,7 +8,7 @@ import {
   type DownloadProgressState
 } from "@/lib/ui/synced-stores.svelte";
 import { calculateWeightedProgress } from "@/lib/youtube/video-helpers";
-import { type VideoData } from "@/types";
+import { type Prettify, type VideoData } from "@/types";
 
 const defaultProgressState: DownloadProgressState = {
   isDownloading: false,
@@ -17,11 +17,11 @@ const defaultProgressState: DownloadProgressState = {
   progressType: ""
 };
 
-type CreatePlaylistVideoItemStateParams = {
+type CreatePlaylistVideoItemStateParams = Prettify<{
   videoId: string;
   gridTitle: string | undefined;
   activeDownloadClicks: Set<string>;
-};
+}>;
 export function createPlaylistVideoItemState({
   videoId,
   gridTitle,

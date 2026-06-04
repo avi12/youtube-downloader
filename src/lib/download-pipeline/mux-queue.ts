@@ -1,10 +1,12 @@
+import type { Prettify } from "@/types";
+
 export const MUX_JOB_CANCELLED_ERROR = "muxJobCancelled";
 
-interface MuxQueueEntry {
+type MuxQueueEntry = Prettify<{
   videoId: string;
   run: () => Promise<void>;
   reject: (reason: Error) => void;
-}
+}>;
 
 const muxQueue: MuxQueueEntry[] = [];
 const cancelledMuxJobs = new Set<string>();

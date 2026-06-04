@@ -1,9 +1,9 @@
-import type { AdaptiveFormatItem, SabrConfig } from "@/types";
+import type { AdaptiveFormatItem, Prettify, SabrConfig } from "@/types";
 
-type BuildEffectiveSabrConfigParams = {
+type BuildEffectiveSabrConfigParams = Prettify<{
   sabrConfig: SabrConfig;
   sabrUrl: string | undefined;
-};
+}>;
 export function buildEffectiveSabrConfig({ sabrConfig, sabrUrl }: BuildEffectiveSabrConfigParams) {
   const isCustomSabrUrl = sabrUrl && sabrUrl !== sabrConfig.serverAbrStreamingUrl;
   if (isCustomSabrUrl) {
@@ -24,10 +24,10 @@ export function parseContentLength(format: AdaptiveFormatItem | null) {
   return parseInt(format.contentLength, 10);
 }
 
-type EstimateFormatBytesParams = {
+type EstimateFormatBytesParams = Prettify<{
   format: AdaptiveFormatItem;
   referenceFormat: AdaptiveFormatItem;
-};
+}>;
 export function estimateFormatBytes({ format, referenceFormat }: EstimateFormatBytesParams) {
   const referenceBytes = parseContentLength(referenceFormat);
   if (referenceBytes) {

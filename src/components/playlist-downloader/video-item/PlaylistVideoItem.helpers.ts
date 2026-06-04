@@ -1,9 +1,9 @@
 import { CONTENT_OPTIONS, type DownloadProgressState } from "@/lib/ui/synced-stores.svelte";
 import { getOutputExtension, resolveAutoExtension } from "@/lib/utils/containers";
 import { formatVideoQualityLabel } from "@/lib/youtube/video-helpers";
-import { ProgressType, type VideoData } from "@/types";
+import { ProgressType, type Prettify, type VideoData } from "@/types";
 
-interface ButtonTooltipParams {
+type ButtonTooltipParams = Prettify<{
   isLocallyDone: boolean;
   isDone: boolean;
   isDownloadFailed: boolean;
@@ -13,7 +13,7 @@ interface ButtonTooltipParams {
   displayProgress: number;
   buttonLabel: string;
   videoData: VideoData | null;
-}
+}>;
 
 export function buildButtonTooltip({
   isLocallyDone,

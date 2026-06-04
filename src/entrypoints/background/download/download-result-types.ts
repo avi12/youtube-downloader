@@ -1,4 +1,6 @@
-export interface DownloadResult {
+import type { Prettify } from "@/types";
+
+export type DownloadResult = Prettify<{
   videoData: Uint8Array | null;
   audioData: Uint8Array | null;
   additionalAudioTracks: Array<{
@@ -11,4 +13,4 @@ export interface DownloadResult {
   isPartialVideo?: boolean;
   isPartialAudio?: boolean;
   streamedToOffscreen?: boolean;
-}
+}>;

@@ -1,3 +1,5 @@
+import type { Prettify } from "@/types";
+
 const DB_NAME = "ytdl-recent-downloads";
 const DB_VERSION = 3;
 
@@ -85,7 +87,7 @@ export async function addRecentDownload({ entry, blob }: {
   await awaitTransaction(transaction);
 }
 
-export type RecentDownloadEntry = Parameters<typeof addRecentDownload>[0]["entry"];
+export type RecentDownloadEntry = Prettify<Parameters<typeof addRecentDownload>[0]["entry"]>;
 
 export async function touchRecentDownload(id: string) {
   const db = await getDatabase();

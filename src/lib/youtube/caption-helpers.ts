@@ -1,6 +1,6 @@
 import { normalizeLanguageCode } from "./audio-format-helpers";
 import { AudioTrackLanguageMode, CaptionLanguageMode } from "@/types";
-import type { CaptionTrack } from "@/types";
+import type { CaptionTrack, Prettify } from "@/types";
 
 const FALLBACK_LANGUAGE_CODE = "en";
 
@@ -11,21 +11,21 @@ const CAPTION_TO_AUDIO_MODE: Partial<Record<CaptionLanguageMode, AudioTrackLangu
   [CaptionLanguageMode.Custom]: AudioTrackLanguageMode.Custom
 };
 
-type ResolveCaptionLanguageModeParams = {
+type ResolveCaptionLanguageModeParams = Prettify<{
   captionMode: CaptionLanguageMode;
   audioMode: AudioTrackLanguageMode;
-};
+}>;
 export function resolveCaptionLanguageMode({ captionMode, audioMode }: ResolveCaptionLanguageModeParams) {
   return CAPTION_TO_AUDIO_MODE[captionMode] ?? audioMode;
 }
 
-type OrderCaptionsByPreferenceParams = {
+type OrderCaptionsByPreferenceParams = Prettify<{
   captionTracks: CaptionTrack[];
   languageMode: AudioTrackLanguageMode;
   locale: string;
   browserLanguage?: string;
   customLanguage?: string;
-};
+}>;
 export function orderCaptionsByPreference({
   captionTracks,
   languageMode,

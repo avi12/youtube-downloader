@@ -22,7 +22,7 @@ import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen
 import { stripMimeParams } from "@/lib/utils/containers";
 import { resolveAndroidUrls } from "@/lib/youtube/android-player";
 import { AUDIO_EXTRA_STREAM_PREFIX, DownloadType, ProgressType, StreamType } from "@/types";
-import type { DownloadRequest, VideoMetadata } from "@/types";
+import type { DownloadRequest, Prettify, VideoMetadata } from "@/types";
 
 const ANDROID_VR_CHUNK_SIZE = 10 * 1024 * 1024;
 const PROGRESS_THROTTLE_MS = 250;
@@ -40,7 +40,7 @@ function isFirefoxRuntime() {
 
 type ChunkFetchFn = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 
-type FetchAndroidVrChunkedParams = {
+type FetchAndroidVrChunkedParams = Prettify<{
   url: string;
   contentLength: number;
   bgFetch: ChunkFetchFn;
@@ -48,7 +48,7 @@ type FetchAndroidVrChunkedParams = {
   onChunk: (chunk: Uint8Array, iChunk: number) => void;
   label: string;
   signal: AbortSignal;
-};
+}>;
 
 // Closed-range chunked GETs (yt-dlp's --http-chunk-size default of 10 MB)
 // against ANDROID_VR adaptive CDN URLs. The URLs are self-authenticated by
@@ -120,11 +120,11 @@ async function fetchAndroidVrChunked({
   return iChunk;
 }
 
-type RunFirefoxDirectDownloadParams = {
+type RunFirefoxDirectDownloadParams = Prettify<{
   request: DownloadRequest;
   tabId: number;
   enrichedMetadata: VideoMetadata | null;
-};
+}>;
 
 // Firefox-only download path. Chrome uses the offscreen-iframe SABR pipeline
 // in `download-worker/main.ts`; Firefox can't because YouTube's anti-bot gate
@@ -354,10 +354,10 @@ export function cancelBackgroundDownload(videoId: string) {
   activeFirefoxDownloads.get(videoId)?.abort();
 }
 
-type StartBackgroundDownloadParams = {
+type StartBackgroundDownloadParams = Prettify<{
   request: DownloadRequest;
   tabId: number;
-};
+}>;
 export async function startBackgroundDownload({ request, tabId }: StartBackgroundDownloadParams) {
   const { videoId, metadata } = request;
   if (!request.isIframeFallback) {

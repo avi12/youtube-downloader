@@ -2,7 +2,7 @@ import { popPlaylistContext, sendStreamChunks } from "./stream-chunks";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { downloadProgressStore } from "@/lib/ui/synced-stores.svelte";
 import { AUDIO_EXTRA_STREAM_PREFIX, StreamType } from "@/types";
-import type { StreamDataPayload } from "@/types";
+import type { Prettify, StreamDataPayload } from "@/types";
 
 export { setPlaylistContext } from "./stream-chunks";
 
@@ -80,10 +80,10 @@ export async function handleStreamData(payload: StreamDataPayload) {
   });
 }
 
-type HandleStreamErrorParams = {
+type HandleStreamErrorParams = Prettify<{
   videoId: string;
   error: string;
-};
+}>;
 export function handleStreamError({ videoId, error }: HandleStreamErrorParams) {
   console.error("[ytdl] Stream error for", videoId, error);
 

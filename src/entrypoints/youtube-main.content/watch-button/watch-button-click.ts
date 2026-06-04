@@ -1,9 +1,15 @@
 import { cancelActiveDownload, startDownload } from "../video/download";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { downloadProgressStore } from "@/lib/ui/synced-stores.svelte";
-import { DownloadType, type TpYtIronDropdownElement, type VideoData, type YtButtonViewModelElement } from "@/types";
+import {
+  DownloadType,
+  type Prettify,
+  type TpYtIronDropdownElement,
+  type VideoData,
+  type YtButtonViewModelElement
+} from "@/types";
 
-export interface ClickHandlerState {
+export type ClickHandlerState = Prettify<{
   getIsDownloading(): boolean;
   getIsInterrupted(): boolean;
   getIsPanelOpen(): boolean;
@@ -15,13 +21,13 @@ export interface ClickHandlerState {
   getElDownloadButton(): YtButtonViewModelElement | null;
   getElChevronButton(): YtButtonViewModelElement | null;
   setIsPanelOpen(value: boolean): void;
-}
+}>;
 
-type BuildClickHandlerParams = {
+type BuildClickHandlerParams = Prettify<{
   videoData: VideoData;
   elDropdown: TpYtIronDropdownElement;
   state: ClickHandlerState;
-};
+}>;
 export function buildClickHandler({ videoData, elDropdown, state }: BuildClickHandlerParams) {
   return function handleClick(e: Event) {
     const { target } = e;

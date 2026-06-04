@@ -1,10 +1,11 @@
 import { InnertubeClientName, type InnertubeBrowseRequest } from "@/lib/youtube/innertube";
+import type { Prettify } from "@/types";
 
 const YT_MUSIC_BROWSE_URL = "https://music.youtube.com/youtubei/v1/browse?prettyPrint=false";
 const YT_MUSIC_MOODS_AND_GENRES_BROWSE_ID = "FEmusic_moods_and_genres";
 const CONTENT_TYPE_JSON = "application/json";
 
-interface MoodsAndGenresResponse {
+type MoodsAndGenresResponse = Prettify<{
   contents?: {
     singleColumnBrowseResultsRenderer?: {
       tabs?: Array<{
@@ -28,7 +29,7 @@ interface MoodsAndGenresResponse {
       }>;
     };
   };
-}
+}>;
 
 const YT_MUSIC_CLIENT_VERSION = "1.20260408.01.00";
 let cachedYouTubeMusicGenres: Set<string> | null = null;
@@ -76,10 +77,10 @@ export async function fetchYouTubeMusicGenres() {
   }
 }
 
-type ExtractGenresFromKeywordsParams = {
+type ExtractGenresFromKeywordsParams = Prettify<{
   keywords: string[];
   genreSet: Set<string>;
-};
+}>;
 export function extractGenresFromKeywords({ keywords, genreSet }: ExtractGenresFromKeywordsParams) {
   const matched = new Set<string>();
   for (const keyword of keywords) {

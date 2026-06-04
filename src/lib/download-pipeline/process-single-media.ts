@@ -9,7 +9,7 @@ import { addToPlaylistBundle } from "./playlist-bundle";
 import { applyAudioFfmpeg } from "./process-single-media-ffmpeg";
 import { getFileExtension } from "@/lib/utils/containers";
 import { DownloadType, ProgressType } from "@/types";
-import type { ProcessStreamData } from "@/types";
+import type { Prettify, ProcessStreamData } from "@/types";
 
 const WEBM_AUDIO_EXTENSION = "weba";
 const MP4_AUDIO_EXTENSION = "m4a";
@@ -20,10 +20,10 @@ function sourceAudioExtension(audioMimeType: string) {
   return audioMimeType.includes("webm") ? WEBM_AUDIO_EXTENSION : MP4_AUDIO_EXTENSION;
 }
 
-type ProcessSingleMediaParams = {
+type ProcessSingleMediaParams = Prettify<{
   item: ProcessStreamData;
   isCancelled: () => boolean;
-};
+}>;
 export async function processSingleMedia({ item, isCancelled }: ProcessSingleMediaParams) {
   const { videoId, type, filenameOutput, videoData, audioData, tabId } = item;
   const rawData = type === DownloadType.Audio ? audioData : videoData;

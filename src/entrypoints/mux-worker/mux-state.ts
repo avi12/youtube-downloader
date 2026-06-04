@@ -2,18 +2,19 @@ import { WorkerMessageType } from "@/lib/download-pipeline/mux-worker-types";
 import { createWorkerPortReceiver } from "@/lib/download-pipeline/worker-port-receiver";
 import type { WorkerPortReceiver } from "@/lib/download-pipeline/worker-port-receiver";
 import { ProgressType } from "@/types";
+import type { Prettify } from "@/types";
 import type { FFmpegCoreModule } from "@ffmpeg/types";
 
 export type FFmpegFactory = (options: { wasmBinary: ArrayBuffer }) => Promise<FFmpegCoreModule>;
 
-interface MuxState {
+type MuxState = Prettify<{
   ffmpeg: FFmpegCoreModule | null;
   portReceiver: WorkerPortReceiver | null;
   progressOffset: number;
   progressScale: number;
   currentVideoId: string;
   currentTabId: number;
-}
+}>;
 
 export const state: MuxState = {
   ffmpeg: null,

@@ -1,3 +1,5 @@
+import type { Prettify } from "@/types";
+
 export const InnertubeClientName = {
   Web: "WEB",
   WebEmbeddedPlayer: "WEB_EMBEDDED_PLAYER",
@@ -17,7 +19,7 @@ export const InnertubeClientName = {
 
 export type InnertubeClientName = (typeof InnertubeClientName)[keyof typeof InnertubeClientName] | (string & {});
 
-export interface InnertubeClientContext {
+export type InnertubeClientContext = Prettify<{
   clientName: InnertubeClientName;
   clientVersion: string;
   hl?: string;
@@ -53,9 +55,9 @@ export interface InnertubeClientContext {
       | "WEB_DISPLAY_MODE_STANDALONE";
     isWebNativeShareAvailable?: boolean;
   };
-}
+}>;
 
-export interface InnertubeContext {
+export type InnertubeContext = Prettify<{
   client: InnertubeClientContext;
   user?: {
     lockedSafetyMode?: boolean;
@@ -74,9 +76,9 @@ export interface InnertubeContext {
       value: string;
     }>;
   };
-}
+}>;
 
-export interface InnertubeContentPlaybackContext {
+export type InnertubeContentPlaybackContext = Prettify<{
   signatureTimestamp?: number;
   currentUrl?: `https://${string}` | `/${string}`;
   referer?: `https://${string}`;
@@ -90,4 +92,4 @@ export interface InnertubeContentPlaybackContext {
   autoCaptionsDefaultOn?: boolean;
   autonavState?: "STATE_NONE" | "STATE_ON" | "STATE_OFF";
   mdxContext?: unknown;
-}
+}>;

@@ -2,6 +2,7 @@ import { buildMuxFfmpegArgs } from "./mux-ffmpeg-args";
 import type { MuxFfmpegParams } from "./mux-ffmpeg-args";
 import { buildRemuxArgs } from "./mux-ffmpeg-args";
 import { postError, state } from "./mux-state";
+import type { Prettify } from "@/types";
 
 type CheckOutput = (filename: string) => boolean;
 
@@ -14,10 +15,10 @@ export function tryCheckOutput(filename: string): boolean {
   }
 }
 
-type ExecuteMuxPhasesParams = {
+type ExecuteMuxPhasesParams = Prettify<{
   params: MuxFfmpegParams;
   checkOutput: CheckOutput;
-};
+}>;
 export function executeMuxPhases({ params, checkOutput }: ExecuteMuxPhasesParams): boolean {
   const { useIntermediateMkv, muxFilename, outputFilename, targetExtension, audioMimeType } = params;
 

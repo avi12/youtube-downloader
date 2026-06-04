@@ -5,13 +5,14 @@ import {
   ButtonStyle,
   ButtonType,
   IconName,
+  type Prettify,
   type VideoData
 } from "@/types";
 
-type AssignButtonIdParams = {
+type AssignButtonIdParams = Prettify<{
   elButton: Element;
   buttonId: string;
-};
+}>;
 function assignButtonId({ elButton, buttonId }: AssignButtonIdParams) {
   const isIdMismatch = elButton.getAttribute(DATA_BUTTON_ID_ATTR) !== buttonId;
   if (isIdMismatch) {
@@ -19,14 +20,14 @@ function assignButtonId({ elButton, buttonId }: AssignButtonIdParams) {
   }
 }
 
-type SendDownloadButtonDataParams = {
+type SendDownloadButtonDataParams = Prettify<{
   elButton: Element;
   buttonId: string;
   tooltip: string;
   videoData: VideoData | null;
   downloadIconName: IconName;
   isDisabled: boolean;
-};
+}>;
 export function sendDownloadButtonData({
   elButton,
   buttonId,
@@ -56,12 +57,12 @@ export function sendDownloadButtonData({
   });
 }
 
-type SendChevronButtonDataParams = {
+type SendChevronButtonDataParams = Prettify<{
   elButton: Element;
   buttonId: string;
   iconName: IconName;
   isDisabled: boolean;
-};
+}>;
 export function sendChevronButtonData({
   elButton,
   buttonId,

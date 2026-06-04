@@ -1,22 +1,23 @@
 import { CrossWorldMessage, crossWorldMessenger, onButtonClick } from "@/lib/messaging/cross-world-messenger";
 import { PrimaryButtonState } from "@/lib/ui/panel-button-attachments.svelte";
+import type { Prettify } from "@/types";
 
 export const HEADER_CLOSE_BUTTON_ID = "ytdl-panel-header-close";
 export const PRIMARY_BUTTON_ID = "ytdl-panel-primary";
 export const VIEW_BUTTON_ID = "ytdl-panel-view";
 
-export interface PanelActions {
+export type PanelActions = Prettify<{
   readonly primaryState: PrimaryButtonState;
   cancelDownload(): void;
   resumeDownload(): void;
   startDownload(): void;
   revealDownload(): void;
-}
+}>;
 
-type SetupPanelButtonHandlerParams = {
+type SetupPanelButtonHandlerParams = Prettify<{
   panel: PanelActions;
   onClose: () => void;
-};
+}>;
 export function setupPanelButtonHandler({ panel, onClose }: SetupPanelButtonHandlerParams) {
   return onButtonClick(buttonId => {
     const isCloseButton = buttonId === HEADER_CLOSE_BUTTON_ID;

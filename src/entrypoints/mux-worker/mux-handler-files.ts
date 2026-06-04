@@ -1,6 +1,7 @@
 import { state, tryUnlink } from "./mux-state";
 import type { MuxVideoAudioJob } from "@/lib/download-pipeline/mux-worker-types";
 import { getAudioTempExtension } from "@/lib/utils/containers";
+import type { Prettify } from "@/types";
 
 const AUDIO_TEMP_SUFFIX = "audio";
 const SUBTITLE_STREAM_PREFIX = "sub";
@@ -10,12 +11,12 @@ const MKV_EXTENSION = "mkv";
 type AudioTracks = MuxVideoAudioJob["audioTracks"];
 type SubtitleTracks = MuxVideoAudioJob["subtitleTracks"];
 
-export type MuxInputFiles = {
+export type MuxInputFiles = Prettify<{
   audioFilenames: string[];
   subtitleFilenames: string[];
-};
+}>;
 
-type WriteMuxInputFilesParams = {
+type WriteMuxInputFilesParams = Prettify<{
   videoId: string;
   videoFilename: string;
   videoData: ArrayBuffer;
@@ -23,7 +24,7 @@ type WriteMuxInputFilesParams = {
   audioTracks: AudioTracks;
   audioMimeType: string;
   subtitleTracks: SubtitleTracks;
-};
+}>;
 
 export function writeMuxInputFiles(params: WriteMuxInputFilesParams) {
   const { videoId, videoFilename, videoData, skipVideoWrite, audioTracks, audioMimeType, subtitleTracks } = params;
@@ -51,7 +52,7 @@ export function writeMuxInputFiles(params: WriteMuxInputFilesParams) {
   };
 }
 
-export type MuxCleanupParams = {
+export type MuxCleanupParams = Prettify<{
   videoFilename: string;
   audioFilenames: string[];
   subtitleFilenames: string[];
@@ -59,7 +60,7 @@ export type MuxCleanupParams = {
   outputFilename: string;
   useIntermediateMkv: boolean;
   targetExtension: string;
-};
+}>;
 
 export function cleanupMuxFiles(params: MuxCleanupParams) {
   tryUnlink(params.videoFilename);

@@ -1,4 +1,5 @@
 import type { InnertubeContext, InnertubeContentPlaybackContext } from "./innertube-client";
+import type { Prettify } from "@/types";
 
 export {
   InnertubeClientName,
@@ -18,7 +19,7 @@ export type InnertubeEngagementType =
   | (typeof InnertubeEngagementType)[keyof typeof InnertubeEngagementType]
   | (string & {});
 
-export interface InnertubePlayerRequest {
+export type InnertubePlayerRequest = Prettify<{
   videoId: string;
   context: InnertubeContext;
   playbackContext?: {
@@ -36,9 +37,9 @@ export interface InnertubePlayerRequest {
   params?: string;
   playlistId?: string;
   startTimeSecs?: number;
-}
+}>;
 
-export interface InnertubeAttGetRequest {
+export type InnertubeAttGetRequest = Prettify<{
   engagementType: InnertubeEngagementType;
   context: InnertubeContext;
   webPoSignalOutput?: string[];
@@ -46,20 +47,20 @@ export interface InnertubeAttGetRequest {
     interpreterHash?: string;
     botguardResponse?: string;
   };
-}
+}>;
 
-export interface InnertubeSearchRequest {
+export type InnertubeSearchRequest = Prettify<{
   query: string;
   context: InnertubeContext;
   params?: string;
   continuation?: string;
-}
+}>;
 
 export type InnertubeGenerateItRequest = readonly [requestKey: string, snapshotResponse: string];
 
 export type InnertubeGenerateItResponse = readonly [integrityToken: string, ...rest: unknown[]];
 
-export interface InnertubeBrowseRequest {
+export type InnertubeBrowseRequest = Prettify<{
   browseId: `FE${string}` | `UC${string}` | `VL${string}` | `MPLA${string}` | `MPRE${string}` | (string & {});
   context: InnertubeContext;
   params?: string;
@@ -69,4 +70,4 @@ export interface InnertubeBrowseRequest {
     selectedValues?: string[];
   };
   inlineSettingsMenu?: boolean;
-}
+}>;

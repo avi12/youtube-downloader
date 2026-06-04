@@ -1,13 +1,14 @@
 import type { MuxVideoAudioJob } from "@/lib/download-pipeline/mux-worker-types";
 import { CONTAINER_SPECS, extractBaseCodec, isVideoNativeForContainer, videoContainers } from "@/lib/utils/containers";
+import type { Prettify } from "@/types";
 
 const FFMPEG_CODEC_COPY = "copy";
 const FFMPEG_SUBTITLE_CODEC_WEBVTT = "webvtt";
 
-type ResolveAudioCodecParams = {
+type ResolveAudioCodecParams = Prettify<{
   audioMimeType: string;
   targetExtension: string;
-};
+}>;
 export function resolveAudioCodec({ audioMimeType, targetExtension }: ResolveAudioCodecParams) {
   const containerSpec = CONTAINER_SPECS[targetExtension];
   if (!containerSpec) {
@@ -19,10 +20,10 @@ export function resolveAudioCodec({ audioMimeType, targetExtension }: ResolveAud
   return containerSpec.audioCodecs.has(codec) ? FFMPEG_CODEC_COPY : fallbackCodec;
 }
 
-type ResolveVideoCodecParams = {
+type ResolveVideoCodecParams = Prettify<{
   videoMimeType: string | undefined;
   targetExtension: string;
-};
+}>;
 export function resolveVideoCodec({ videoMimeType, targetExtension }: ResolveVideoCodecParams) {
   if (!videoMimeType) {
     return FFMPEG_CODEC_COPY;
@@ -43,13 +44,13 @@ export function resolveSubtitleCodec(targetExtension: string) {
   return CONTAINER_SPECS[targetExtension]?.subtitleCodec ?? null;
 }
 
-type BuildRemuxArgsParams = {
+type BuildRemuxArgsParams = Prettify<{
   inputFilename: string;
   outputFilename: string;
   targetExtension: string;
   audioMimeType: string | undefined;
   videoMimeType?: string;
-};
+}>;
 export function buildRemuxArgs({
   inputFilename,
   outputFilename,
@@ -80,7 +81,7 @@ export function buildRemuxArgs({
 type AudioTracks = MuxVideoAudioJob["audioTracks"];
 type SubtitleTracks = MuxVideoAudioJob["subtitleTracks"];
 
-export type MuxFfmpegParams = {
+export type MuxFfmpegParams = Prettify<{
   videoFilename: string;
   audioFilenames: string[];
   subtitleFilenames: string[];
@@ -92,12 +93,12 @@ export type MuxFfmpegParams = {
   audioTracks: AudioTracks;
   subtitleTracks: SubtitleTracks;
   defaultAudioTrackIndex: number;
-};
+}>;
 
-type AppendTrackMetadataParams = {
+type AppendTrackMetadataParams = Prettify<{
   ffmpegArgs: string[];
   params: MuxFfmpegParams;
-};
+}>;
 function appendTrackMetadata({ ffmpegArgs, params }: AppendTrackMetadataParams) {
   for (const [i, track] of params.audioTracks.entries()) {
     if (track.label) {

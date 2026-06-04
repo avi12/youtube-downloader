@@ -9,9 +9,15 @@ import {
   videoQueueItem
 } from "@/lib/storage/storage";
 import { INITIAL_OPTIONS as defaultOptions } from "@/lib/youtube/video-helpers";
-import type { DownloadProgressEntry, Options, VideoDetail, VideoQueueItem } from "@/types";
+import type {
+  DownloadProgressEntry,
+  Options,
+  Prettify,
+  VideoDetail,
+  VideoQueueItem
+} from "@/types";
 
-export interface AppWatcherTargets {
+export type AppWatcherTargets = Prettify<{
   setIsFFmpegReady: (value: boolean) => void;
   setVideoDownloads: (value: VideoQueueItem[]) => void;
   setMusicList: (value: string[]) => void;
@@ -21,7 +27,7 @@ export interface AppWatcherTargets {
   setOptions: (value: Options) => void;
   setNow: (value: number) => void;
   refreshRecentDownloads: () => Promise<void>;
-}
+}>;
 
 const RELATIVE_AGE_TICK_MS = 30_000;
 

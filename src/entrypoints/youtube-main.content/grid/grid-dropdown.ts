@@ -1,6 +1,6 @@
 import { registerDropdownFocusHandlers } from "./grid-dropdown-focus";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
-import type { TpYtIronDropdownElement } from "@/types";
+import type { Prettify, TpYtIronDropdownElement } from "@/types";
 
 const IRON_DROPDOWN_TAG = "tp-yt-iron-dropdown";
 const POPUP_CONTAINER_SELECTOR = "ytd-popup-container";
@@ -8,10 +8,10 @@ const GRID_PANEL_CONTENT_ID_PREFIX = "ytdl-grid-panel-";
 
 const gridDropdowns = new Map<string, TpYtIronDropdownElement>();
 
-type CreateGridDropdownParams = {
+type CreateGridDropdownParams = Prettify<{
   contentId: string;
   positionTargetSelector: string;
-};
+}>;
 function createGridDropdown({ contentId, positionTargetSelector }: CreateGridDropdownParams) {
   const elPositionTarget = document.querySelector(positionTargetSelector);
   if (!elPositionTarget) {

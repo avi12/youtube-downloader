@@ -3,13 +3,13 @@ import { attemptSabrDownload } from "./sabr-attempt";
 import { MessageType, sendMessageToTab } from "@/lib/messaging/messaging";
 import { getCompatibleFilename } from "@/lib/utils/filename";
 import { DownloadType, ProgressType } from "@/types";
-import type { DownloadRequest } from "@/types";
+import type { DownloadRequest, Prettify } from "@/types";
 
-type TrySabrParams = {
+type TrySabrParams = Prettify<{
   request: DownloadRequest;
   signal: AbortSignal;
   tabId: number;
-};
+}>;
 export async function trySabr({ request, signal, tabId }: TrySabrParams) {
   try {
     return attemptSabrDownload({
@@ -32,14 +32,14 @@ export async function trySabr({ request, signal, tabId }: TrySabrParams) {
   }
 }
 
-type TryCdnParams = {
+type TryCdnParams = Prettify<{
   request: DownloadRequest;
   signal: AbortSignal;
   videoId: string;
   tabId: number;
   partialVideoData?: Uint8Array;
   partialAudioData?: Uint8Array;
-};
+}>;
 export async function tryCdn({ request, signal, videoId, tabId, partialVideoData, partialAudioData }: TryCdnParams) {
   try {
     return await downloadViaCdn({

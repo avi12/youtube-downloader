@@ -5,6 +5,7 @@ import type {
   ButtonStyle,
   ButtonType,
   IconName,
+  Prettify,
   TooltipPlacement,
   TooltipStyle,
   YtIconName
@@ -97,4 +98,4 @@ export function sendButtonData({ elButton, data, a11y }: {
   });
 }
 
-export type ButtonViewModelData = Parameters<typeof sendButtonData>[0]["data"];
+export type ButtonViewModelData = Prettify<Parameters<typeof sendButtonData>[0]["data"]>;

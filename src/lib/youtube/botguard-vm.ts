@@ -1,3 +1,5 @@
+import type { Prettify } from "@/types";
+
 const VM_POLL_INTERVAL_MS = 500;
 const VM_POLL_MAX_ATTEMPTS = 60;
 
@@ -37,12 +39,12 @@ async function loadInterpreterScript(interpreterUrl: string) {
   });
 }
 
-type EnsureBotGuardVmParams = {
+type EnsureBotGuardVmParams = Prettify<{
   globalName: string;
   interpreterUrlRaw: string | {
     privateDoNotAccessOrElseTrustedResourceUrlWrappedValue: string;
   } | undefined;
-};
+}>;
 export async function ensureBotGuardVm({ globalName, interpreterUrlRaw }: EnsureBotGuardVmParams) {
   const isVmAlreadyLoaded = Boolean(getBotGuardVm(globalName));
   if (isVmAlreadyLoaded) {
@@ -69,11 +71,11 @@ export async function ensureBotGuardVm({ globalName, interpreterUrlRaw }: Ensure
 
 export type SignalFunction = (input: Uint8Array) => Promise<(input: Uint8Array) => Promise<Uint8Array>>;
 
-type InitBotGuardVmParams = {
+type InitBotGuardVmParams = Prettify<{
   botGuardEntry: BotGuardVmEntry;
   program: string;
   webPoSignalOutput: SignalFunction[];
-};
+}>;
 export function initBotGuardVm({ botGuardEntry, program, webPoSignalOutput }: InitBotGuardVmParams) {
   const initResult = botGuardEntry.a(program, () => {}, true, undefined, () => {}, [[], []]);
   const snapshotFunction = initResult?.[0];

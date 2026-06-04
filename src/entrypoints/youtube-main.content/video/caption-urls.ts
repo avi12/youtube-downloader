@@ -2,7 +2,7 @@ import { CONTENT_OPTIONS } from "@/lib/ui/synced-stores.svelte";
 import { InnertubeClientName, type InnertubePlayerRequest } from "@/lib/youtube/innertube";
 import { orderCaptionsByPreference, resolveCaptionLanguageMode } from "@/lib/youtube/video-helpers";
 import { getYtcfg, YtcfgKey } from "@/lib/youtube/ytcfg";
-import { type CaptionTrack, type PlayerResponse } from "@/types";
+import { type CaptionTrack, type PlayerResponse, type Prettify } from "@/types";
 
 const PLAYER_API_PATH = "/youtubei/v1/player?prettyPrint=false";
 const HEADER_CONTENT_TYPE = "Content-Type";
@@ -12,11 +12,11 @@ const CONTENT_TYPE_JSON = "application/json";
 const DEFAULT_CAPTION_LANGUAGE = "en";
 const DEFAULT_CAPTION_REGION = "US";
 
-type ResolveOrderedCaptionTracksParams = {
+type ResolveOrderedCaptionTracksParams = Prettify<{
   captionTracks: CaptionTrack[];
   selectedCaptionVssId: string | undefined;
   downloadExtras: boolean;
-};
+}>;
 export function resolveOrderedCaptionTracks({
   captionTracks, selectedCaptionVssId, downloadExtras
 }: ResolveOrderedCaptionTracksParams) {

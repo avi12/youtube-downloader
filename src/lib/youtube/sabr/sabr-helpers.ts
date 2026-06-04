@@ -1,12 +1,12 @@
 import { StreamStallError, readStreamToBuffer } from "@/lib/utils/stream";
-import type { AdaptiveFormatItem, SabrConfig } from "@/types";
+import type { AdaptiveFormatItem, Prettify, SabrConfig } from "@/types";
 import { SabrStream } from "googlevideo/sabr-stream";
 import { buildSabrFormat } from "googlevideo/utils";
 
-export type SabrStreamResult = {
+export type SabrStreamResult = Prettify<{
   data: Uint8Array;
   isComplete: boolean;
-};
+}>;
 
 export function adaptiveFormatToSabrFormat(format: AdaptiveFormatItem) {
   return buildSabrFormat({
@@ -28,12 +28,12 @@ export function adaptiveFormatToSabrFormat(format: AdaptiveFormatItem) {
   });
 }
 
-type CollectReadableStreamParams = {
+type CollectReadableStreamParams = Prettify<{
   stream: ReadableStream<Uint8Array>;
   expectedBytes: number;
   signal?: AbortSignal;
   onChunk?: (chunk: Uint8Array) => void;
-};
+}>;
 export async function collectReadableStream({ stream, expectedBytes, signal, onChunk }: CollectReadableStreamParams) {
   const reader = stream.getReader();
   const isAborted = signal?.aborted;
@@ -68,11 +68,11 @@ export async function collectReadableStream({ stream, expectedBytes, signal, onC
   }
 }
 
-type CreateSabrStreamParams = {
+type CreateSabrStreamParams = Prettify<{
   sabrConfig: SabrConfig;
   fetchFunction: typeof globalThis.fetch;
   poToken: string;
-};
+}>;
 export function createSabrStream({ sabrConfig, fetchFunction, poToken }: CreateSabrStreamParams) {
   return new SabrStream({
     fetch: fetchFunction,

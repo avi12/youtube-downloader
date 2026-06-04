@@ -1,34 +1,34 @@
 import { normalizeLanguageCode, findOriginalAudioFormat } from "./audio-format-helpers";
 import { isAudioMimeNativeForContainer } from "@/lib/utils/containers";
 import { AudioTrackLanguageMode } from "@/types";
-import type { AdaptiveFormatItem } from "@/types";
+import type { AdaptiveFormatItem, Prettify } from "@/types";
 
 const FALLBACK_LANGUAGE_CODE = "en";
 
-type MatchAudioFormatToLanguageParams = {
+type MatchAudioFormatToLanguageParams = Prettify<{
   audioFormats: AdaptiveFormatItem[];
   langCode: string;
-};
+}>;
 function matchAudioFormatToLanguage({ audioFormats, langCode }: MatchAudioFormatToLanguageParams) {
   return audioFormats.find(format => normalizeLanguageCode(format.audioTrack?.id ?? "") === langCode);
 }
 
-type PrependMatchParams = {
+type PrependMatchParams = Prettify<{
   audioFormats: AdaptiveFormatItem[];
   match: AdaptiveFormatItem | undefined | null;
-};
+}>;
 function prependMatch({ audioFormats, match }: PrependMatchParams) {
   return match ? [match, ...audioFormats.filter(format => format !== match)] : [];
 }
 
-type SelectPreferredAudioFormatParams = {
+type SelectPreferredAudioFormatParams = Prettify<{
   audioFormats: AdaptiveFormatItem[];
   videoMimeType: string;
   languageMode: AudioTrackLanguageMode;
   locale: string;
   browserLanguage?: string;
   customLanguage?: string;
-};
+}>;
 export function selectPreferredAudioFormat({
   audioFormats,
   videoMimeType,
@@ -112,11 +112,11 @@ function pickBestByBitrate(formats: AdaptiveFormatItem[]) {
   );
 }
 
-type AlignAudioFormatToExtensionParams = {
+type AlignAudioFormatToExtensionParams = Prettify<{
   audioFormats: AdaptiveFormatItem[];
   currentFormat: AdaptiveFormatItem | null;
   targetExtension: string;
-};
+}>;
 export function alignAudioFormatToExtension({
   audioFormats,
   currentFormat,

@@ -1,17 +1,17 @@
 import { resolveFormatUrl } from "./stream-fetch";
-import { type AdaptiveFormatItem, DownloadType } from "@/types";
+import { type AdaptiveFormatItem, DownloadType, type Prettify } from "@/types";
 
 export { resolveCredentialsWithRetry } from "./download-credentials";
 
 const MAX_ADDITIONAL_AUDIO_TRACKS = 16;
 const AUTO_DUB_TRACK_SUFFIX = ".10";
 
-type GetExtraAudioFormatsParams = {
+type GetExtraAudioFormatsParams = Prettify<{
   audioFormats: AdaptiveFormatItem[];
   selectedTrackId: string | undefined;
   selectedFormat: AdaptiveFormatItem | null;
   includeAutoDubbing: boolean;
-};
+}>;
 export function getExtraAudioFormats({
   audioFormats, selectedTrackId, selectedFormat, includeAutoDubbing
 }: GetExtraAudioFormatsParams) {
@@ -62,7 +62,7 @@ export function getExtraAudioFormats({
   return result;
 }
 
-type SelectFormatsParams = {
+type SelectFormatsParams = Prettify<{
   videoData: {
     videoFormats: AdaptiveFormatItem[];
     audioFormats: AdaptiveFormatItem[];
@@ -71,7 +71,7 @@ type SelectFormatsParams = {
   videoItag: number | undefined;
   audioItag: number | undefined;
   audioTrackId: string | undefined;
-};
+}>;
 export function selectFormats({
   videoData, type, videoItag, audioItag, audioTrackId
 }: SelectFormatsParams) {
@@ -97,12 +97,12 @@ export function selectFormats({
   };
 }
 
-type PreResolveCdnUrlsParams = {
+type PreResolveCdnUrlsParams = Prettify<{
   type: DownloadType;
   videoFormat: AdaptiveFormatItem | null;
   audioFormat: AdaptiveFormatItem | null;
   extraAudioFormats: AdaptiveFormatItem[];
-};
+}>;
 export async function preResolveCdnUrls({
   type, videoFormat, audioFormat, extraAudioFormats
 }: PreResolveCdnUrlsParams) {

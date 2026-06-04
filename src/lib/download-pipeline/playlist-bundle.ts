@@ -1,6 +1,7 @@
 import { triggerDownload } from ".";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { getCompatibleFilename } from "@/lib/utils/containers";
+import type { Prettify } from "@/types";
 import { zip } from "fflate";
 import type { AsyncZippable } from "fflate";
 
@@ -31,7 +32,7 @@ export function notifyPlaylistBundleFailure(playlistId: string) {
   playlistBundles.delete(playlistId);
 }
 
-type AddToPlaylistBundleParams = {
+type AddToPlaylistBundleParams = Prettify<{
   playlistId: string;
   playlistTitle: string;
   totalCount: number;
@@ -39,7 +40,7 @@ type AddToPlaylistBundleParams = {
   filename: string;
   data: Uint8Array;
   sourceUrl?: string;
-};
+}>;
 export async function addToPlaylistBundle({
   playlistId, playlistTitle, totalCount, tabId, filename, data, sourceUrl
 }: AddToPlaylistBundleParams) {

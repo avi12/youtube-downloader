@@ -6,8 +6,9 @@ import {
   videoQueueItem
 } from "@/lib/storage/storage";
 import { DownloadType } from "@/types";
+import type { Prettify } from "@/types";
 
-type EnqueueToPopupListParams = {
+type EnqueueToPopupListParams = Prettify<{
   videoId: string;
   type: DownloadType;
   filenameOutput: string;
@@ -20,7 +21,7 @@ type EnqueueToPopupListParams = {
   channel?: string;
   lengthSeconds?: number;
   thumbnailUrl?: string;
-};
+}>;
 export async function enqueueToPopupList(
   {
     videoId, type, filenameOutput, quality, tabId, playlistId, playlistTitle, sourceUrl,

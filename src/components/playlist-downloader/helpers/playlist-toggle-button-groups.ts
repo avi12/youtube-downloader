@@ -1,18 +1,24 @@
-import { DownloadType, PlaylistDownloadMode, PlaylistOutputMode, type DownloadTypePreference } from "@/types";
+import {
+  DownloadType,
+  PlaylistDownloadMode,
+  PlaylistOutputMode,
+  type DownloadTypePreference,
+  type Prettify
+} from "@/types";
 
-export type ToggleButtonState = {
+export type ToggleButtonState = Prettify<{
   downloadMode: PlaylistDownloadMode;
   outputMode: PlaylistOutputMode;
   effectiveDownloadType: DownloadTypePreference;
-};
+}>;
 
-export type ToggleButtonGroup = {
+export type ToggleButtonGroup = Prettify<{
   id: string;
   label: string;
   tooltip: string;
   isActive(state: ToggleButtonState): boolean;
   onClick(state: ToggleButtonState): void;
-};
+}>;
 
 export const TOGGLE_BUTTON_GROUPS: Record<string, ToggleButtonGroup[]> = {
   speed: [

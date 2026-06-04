@@ -1,5 +1,5 @@
 import type { RecentDownloadContext } from "@/lib/messaging/messaging";
-import type { ProcessStreamData } from "@/types";
+import type { Prettify, ProcessStreamData } from "@/types";
 
 export { initMuxWorker } from "./ffmpeg-instance";
 export { triggerDownload } from "./blob-download";
@@ -8,10 +8,10 @@ export { enqueueStreamData, cancelDownloadsByIds } from "./stream-processor";
 
 export const FFMPEG_PROGRESS_CAP = 0.99;
 
-type BuildRecentContextParams = {
+type BuildRecentContextParams = Prettify<{
   item: Pick<ProcessStreamData, "videoId" | "filenameOutput" | "metadata" | "tabId" | "quality" | "sourceUrl">;
   extras?: Partial<RecentDownloadContext>;
-};
+}>;
 export function buildRecentContext({ item, extras }: BuildRecentContextParams) {
   return {
     videoId: item.videoId,

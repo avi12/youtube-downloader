@@ -2,6 +2,7 @@ import type { createPlaylistGridItemState } from "../PlaylistGridItem.state.svel
 import PlaylistGridPanel from "../PlaylistGridPanel.svelte";
 import { PANEL_CLOSED_EVENT } from "@/components/download-options-panel/DownloadOptionsPanel.handlers.ts";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
+import type { Prettify } from "@/types";
 import { mount } from "svelte";
 
 const IRON_OVERLAY_CLOSED_EVENT = "iron-overlay-closed";
@@ -36,11 +37,11 @@ export function requestPlaylistDropdownCreation(playlistId: string) {
   return panelContentId;
 }
 
-type MountPlaylistPanelParams = {
+type MountPlaylistPanelParams = Prettify<{
   contentId: string;
   playlistId: string;
   state: ReturnType<typeof createPlaylistGridItemState>;
-};
+}>;
 export function mountPlaylistPanelInContent({ contentId, playlistId, state }: MountPlaylistPanelParams) {
   const elContent = document.getElementById(contentId);
   if (!elContent) {
@@ -63,10 +64,10 @@ export function mountPlaylistPanelInContent({ contentId, playlistId, state }: Mo
   };
 }
 
-type RegisterDropdownCloseListenersParams = {
+type RegisterDropdownCloseListenersParams = Prettify<{
   elDropdown: HTMLElement | null;
   onClose: () => void;
-};
+}>;
 export function registerPlaylistDropdownCloseListeners({
   elDropdown,
   onClose

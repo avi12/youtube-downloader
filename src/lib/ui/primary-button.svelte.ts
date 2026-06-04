@@ -7,6 +7,7 @@ import {
   IconName,
   type ButtonViewModelData
 } from "@/types";
+import type { Prettify } from "@/types";
 
 export enum PrimaryButtonState {
   Idle = "idle",
@@ -16,13 +17,13 @@ export enum PrimaryButtonState {
   Failed = "failed"
 }
 
-interface AttachPrimaryButtonParams {
+type AttachPrimaryButtonParams = Prettify<{
   elButton: Element;
   getState: () => PrimaryButtonState;
   getIsDownloadable: () => boolean;
   getIsFilenameValid: () => boolean;
   getEstimatedSizeLabel: () => string;
-}
+}>;
 
 export function attachPrimaryButton(
   { elButton, getState, getIsDownloadable, getIsFilenameValid, getEstimatedSizeLabel }: AttachPrimaryButtonParams

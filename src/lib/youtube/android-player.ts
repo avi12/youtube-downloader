@@ -1,3 +1,5 @@
+import type { Prettify } from "@/types";
+
 const INNERTUBE_PLAYER_URL = "https://www.youtube.com/youtubei/v1/player";
 const ANDROID_VR_CLIENT_NAME = "ANDROID_VR";
 const ANDROID_VR_CLIENT_VERSION = "1.65.10";
@@ -15,7 +17,7 @@ const CONTENT_TYPE_JSON = "application/json";
 // reach the page's ytcfg).
 const VISITOR_DATA_TOKEN = "__YTDL_VISITOR_DATA__";
 
-export type AndroidStreamingFormat = {
+export type AndroidStreamingFormat = Prettify<{
   itag: number;
   url: string;
   mimeType: string;
@@ -25,9 +27,9 @@ export type AndroidStreamingFormat = {
   height?: number;
   audioChannels?: number;
   audioSampleRate?: string;
-};
+}>;
 
-export type AndroidPlayerResponse = {
+export type AndroidPlayerResponse = Prettify<{
   playabilityStatus?: {
     status?: string;
     reason?: string;
@@ -36,14 +38,14 @@ export type AndroidPlayerResponse = {
     formats?: AndroidStreamingFormat[];
     adaptiveFormats?: AndroidStreamingFormat[];
   };
-};
+}>;
 
 type FetchFn = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 
-type FetchAndroidPlayerResponseParams = {
+type FetchAndroidPlayerResponseParams = Prettify<{
   videoId: string;
   customFetch?: FetchFn;
-};
+}>;
 
 // Fetches a YouTube InnerTube `/player` response using the ANDROID_VR client
 // (X-YouTube-Client-Name 28). yt-dlp's `android_vr` extractor relies on the
@@ -94,7 +96,7 @@ async function fetchAndroidPlayerResponse({
   return response.json();
 }
 
-export type ResolvedAndroidUrls = {
+export type ResolvedAndroidUrls = Prettify<{
   videoUrl: string | null;
   videoContentLength: number;
   audioUrl: string | null;
@@ -103,7 +105,7 @@ export type ResolvedAndroidUrls = {
     url: string | null;
     contentLength: number;
   }[];
-};
+}>;
 
 function parseContentLength(value: string | undefined) {
   if (!value) {
@@ -114,13 +116,13 @@ function parseContentLength(value: string | undefined) {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-type ResolveAndroidUrlsParams = {
+type ResolveAndroidUrlsParams = Prettify<{
   videoId: string;
   videoItag?: number;
   audioItag?: number;
   extraAudioItags?: number[];
   customFetch?: FetchFn;
-};
+}>;
 
 export async function resolveAndroidUrls({
   videoId, videoItag, audioItag, extraAudioItags, customFetch

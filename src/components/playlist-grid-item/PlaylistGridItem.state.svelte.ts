@@ -29,6 +29,7 @@ import {
   type CaptionTrack,
   type DownloadRequest,
   type Options,
+  type Prettify,
   type VideoData
 } from "@/types";
 
@@ -162,7 +163,7 @@ function estimateVideoSize({ video, options, playlistDownloadType }: {
   return videoBytes + audioBytes;
 }
 
-type BuildPlaylistGridRequestParams = {
+type BuildPlaylistGridRequestParams = Prettify<{
   data: VideoData;
   options: Options;
   playlistId: string;
@@ -170,7 +171,7 @@ type BuildPlaylistGridRequestParams = {
   playlistTotalCount: number;
   isZipBundle: boolean;
   playlistDownloadType: DownloadType;
-};
+}>;
 function buildPlaylistGridRequest({
   data,
   options,
@@ -212,10 +213,10 @@ function buildPlaylistGridRequest({
   };
 }
 
-type CreatePlaylistGridItemStateParams = {
+type CreatePlaylistGridItemStateParams = Prettify<{
   playlistId: string;
   gridTitle: string;
-};
+}>;
 export function createPlaylistGridItemState({ playlistId, gridTitle }: CreatePlaylistGridItemStateParams) {
   let qualityOverride = $state<string | null>(null);
   let outputModeOverride = $state<PlaylistOutputMode | null>(null);

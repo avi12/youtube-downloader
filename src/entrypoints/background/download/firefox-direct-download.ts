@@ -7,7 +7,7 @@ import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen
 import { stripMimeParams } from "@/lib/utils/containers";
 import { resolveAndroidUrls, type ResolvedAndroidUrls } from "@/lib/youtube/android-player";
 import { DownloadType, ProgressType, StreamType } from "@/types";
-import type { DownloadRequest, VideoMetadata } from "@/types";
+import type { DownloadRequest, Prettify, VideoMetadata } from "@/types";
 
 const HTTP_STATUS_OK = 200;
 const HTTP_STATUS_PARTIAL_CONTENT = 206;
@@ -17,7 +17,7 @@ const FALLBACK_AUDIO_MIME_TYPE = "audio/mp4";
 
 type ChunkFetchFn = (input: RequestInfo | URL, init?: RequestInit) => Promise<Response>;
 
-type ChunkRangeFetchParams = {
+type ChunkRangeFetchParams = Prettify<{
   url: string;
   byteOffset: number;
   rangeEnd: number;
@@ -25,7 +25,7 @@ type ChunkRangeFetchParams = {
   pageProxyFetch: ChunkFetchFn | null;
   isUsingBgDirect: boolean;
   label: string;
-};
+}>;
 
 async function fetchAndroidVrRange({
   url, byteOffset, rangeEnd, bgFetch, pageProxyFetch, isUsingBgDirect, label
@@ -74,14 +74,14 @@ async function fetchAndroidVrRange({
   }
 }
 
-type FetchAndroidVrChunkedParams = {
+type FetchAndroidVrChunkedParams = Prettify<{
   url: string;
   contentLength: number;
   bgFetch: ChunkFetchFn;
   pageProxyFetch: ChunkFetchFn | null;
   onChunk: (chunk: Uint8Array, iChunk: number) => void;
   label: string;
-};
+}>;
 
 // Closed-range chunked GETs (yt-dlp's --http-chunk-size default of 10 MB)
 // against ANDROID_VR adaptive CDN URLs. The URLs are self-authenticated by
@@ -120,14 +120,14 @@ async function fetchAndroidVrChunked(
   return iChunk;
 }
 
-type ResolveAndroidUrlsForRequestParams = {
+type ResolveAndroidUrlsForRequestParams = Prettify<{
   videoId: string;
   videoItag: number;
   audioItag: number;
   wantsVideo: boolean;
   wantsAudio: boolean;
   pageProxyFetch: ChunkFetchFn | null;
-};
+}>;
 
 async function resolveAndroidUrlsForRequest({
   videoId, videoItag, audioItag, wantsVideo, wantsAudio, pageProxyFetch
@@ -152,7 +152,7 @@ async function resolveAndroidUrlsForRequest({
   }
 }
 
-type ProgressReporterParams = {
+type ProgressReporterParams = Prettify<{
   videoId: string;
   tabId: number;
   captionCount: number;
@@ -160,7 +160,7 @@ type ProgressReporterParams = {
   wantsAudio: boolean;
   videoExpectedBytes: number;
   audioExpectedBytes: number;
-};
+}>;
 
 function createProgressReporter({
   videoId, tabId, captionCount, wantsVideo, wantsAudio, videoExpectedBytes, audioExpectedBytes
@@ -207,11 +207,11 @@ function createProgressReporter({
   };
 }
 
-type DispatchStreamEndParams = {
+type DispatchStreamEndParams = Prettify<{
   request: DownloadRequest;
   enrichedMetadata: VideoMetadata | null;
   tabId: number;
-};
+}>;
 
 function dispatchStreamEndToOffscreen({ request, enrichedMetadata, tabId }: DispatchStreamEndParams) {
   const { videoId, type, filenameOutput } = request;
@@ -245,11 +245,11 @@ function dispatchStreamEndToOffscreen({ request, enrichedMetadata, tabId }: Disp
   });
 }
 
-type RunFirefoxDirectDownloadParams = {
+type RunFirefoxDirectDownloadParams = Prettify<{
   request: DownloadRequest;
   tabId: number;
   enrichedMetadata: VideoMetadata | null;
-};
+}>;
 
 // Firefox-only download path. Chrome uses the offscreen-iframe SABR pipeline
 // in `download-worker/main.ts`; Firefox can't because YouTube's anti-bot gate

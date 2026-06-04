@@ -8,6 +8,7 @@ import {
   getCompatibleFilename,
   getFileExtension
 } from "@/lib/utils/containers";
+import type { Prettify } from "@/types";
 
 const FFMPEG_CODEC_COPY = "copy";
 const FFMPEG_CODEC_MJPEG = "mjpeg";
@@ -61,12 +62,12 @@ async function tryWriteCoverArt(coverArtUrl: string) {
   return coverFilename;
 }
 
-type ExtractAudioWithCoverArtParams = {
+type ExtractAudioWithCoverArtParams = Prettify<{
   sourceFilename: string;
   outputFilename: string;
   targetContainer: string;
   coverArtUrl: string;
-};
+}>;
 async function extractAudioWithCoverArt({
   sourceFilename, outputFilename, targetContainer, coverArtUrl
 }: ExtractAudioWithCoverArtParams) {

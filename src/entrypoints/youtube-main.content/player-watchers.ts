@@ -7,6 +7,7 @@ import {
   isPlayerCaptionTrackData
 } from "@/lib/youtube/movie-player";
 import type { MoviePlayerElement } from "@/lib/youtube/movie-player";
+import type { Prettify } from "@/types";
 
 const AD_PLAYER_CLASSES = ["ad-showing", "ad-interrupting"];
 const AUDIO_TRACK_ID_PATTERN = /^[a-z]{2,3}(-[A-Za-z0-9]+)?\.\d+$/;
@@ -98,10 +99,10 @@ export function setupAudioTrackWatcher() {
   });
 }
 
-type WriteCaptionAttributeParams = {
+type WriteCaptionAttributeParams = Prettify<{
   languageCode: string;
   vssId: string;
-};
+}>;
 function writeCaptionAttribute({ languageCode, vssId }: WriteCaptionAttributeParams) {
   getMoviePlayer()?.setAttribute(
     ACTIVE_CAPTION_ATTR, JSON.stringify({

@@ -1,10 +1,11 @@
 import { MessageType, onMessage } from "@/lib/messaging/messaging";
+import type { Prettify } from "@/types";
 import { SvelteSet } from "svelte/reactivity";
 
-interface CompletedDownload {
+type CompletedDownload = Prettify<{
   downloadId: number;
   filename: string;
-}
+}>;
 
 type Listener = (videoId: string, completed: CompletedDownload) => void;
 

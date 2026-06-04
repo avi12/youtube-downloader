@@ -5,7 +5,7 @@ import { buildSubtitleTracks } from "../background/download/subtitle-track-build
 import type { ProcessStreamEndData } from "@/lib/messaging/offscreen-messaging";
 import { resolveQualityLabel } from "@/lib/youtube/audio-format-helpers";
 import { DownloadType, StreamType } from "@/types";
-import type { DownloadRequest, VideoMetadata } from "@/types";
+import type { DownloadRequest, Prettify, VideoMetadata } from "@/types";
 
 const WORKER_MSG_CHUNK = "worker-chunk";
 const WORKER_MSG_STREAM_END = "worker-stream-end";
@@ -43,10 +43,10 @@ addEventListener("message", e => {
   }
 }, { once: false });
 
-type TrySabrWithStallTimerParams = {
+type TrySabrWithStallTimerParams = Prettify<{
   request: DownloadRequest;
   tabId: number;
-};
+}>;
 async function trySabrWithStallTimer({ request, tabId }: TrySabrWithStallTimerParams) {
   const stallTimer = createSabrStallTimer(signal);
 
@@ -92,11 +92,11 @@ async function trySabrWithStallTimer({ request, tabId }: TrySabrWithStallTimerPa
   }
 }
 
-type SendChunkToParentParams = {
+type SendChunkToParentParams = Prettify<{
   videoId: string;
   streamType: string;
   tabId: number;
-};
+}>;
 function sendChunkToParent({ videoId, streamType, tabId }: SendChunkToParentParams) {
   return (chunk: Uint8Array, iChunk: number) => {
     const buffer = new ArrayBuffer(chunk.byteLength);
@@ -116,10 +116,10 @@ function sendChunkToParent({ videoId, streamType, tabId }: SendChunkToParentPara
   };
 }
 
-type SendStreamEndToParentParams = {
+type SendStreamEndToParentParams = Prettify<{
   videoId: string;
   streamType: string;
-};
+}>;
 function sendStreamEndToParent({ videoId, streamType }: SendStreamEndToParentParams) {
   return (totalChunks: number) => {
     parent.postMessage(
@@ -134,13 +134,13 @@ function sendStreamEndToParent({ videoId, streamType }: SendStreamEndToParentPar
   };
 }
 
-type BuildStreamEndParams = {
+type BuildStreamEndParams = Prettify<{
   request: DownloadRequest;
   tabId: number;
   enrichedMetadata: VideoMetadata | null;
   additionalAudioTrackLabels: string[];
   additionalAudioLanguageCodes: string[];
-};
+}>;
 function buildStreamEnd({
   request, tabId, enrichedMetadata, additionalAudioTrackLabels, additionalAudioLanguageCodes
 }: BuildStreamEndParams): ProcessStreamEndData {
@@ -181,11 +181,11 @@ function buildStreamEnd({
   };
 }
 
-type RunDownloadParams = {
+type RunDownloadParams = Prettify<{
   request: DownloadRequest;
   tabId: number;
   enrichedMetadata: VideoMetadata | null;
-};
+}>;
 async function runDownload({ request, tabId, enrichedMetadata }: RunDownloadParams) {
   const { videoId, type, resolvedVideoUrl, resolvedAudioUrl } = request;
 

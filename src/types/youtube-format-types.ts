@@ -1,6 +1,7 @@
+import type { Prettify } from "./prettify";
 import type { VideoQuality, QualityLabel, AudioQuality } from "./youtube-format-enums";
 
-export type MediaItem = {
+export type MediaItem = Prettify<{
   itag: number;
   url?: string;
   mimeType: `${"video" | "audio"}/${string}`;
@@ -17,10 +18,10 @@ export type MediaItem = {
   contentLength: `${number}`;
   averageBitrate: number;
   approxDurationMs: `${number}`;
-};
+}>;
 
 /** YouTube InnerTube API -values reverse-engineered from `streamingData.formats[]` in player responses. @see https://github.com/LuanRT/YouTube.js/blob/main/src/parser/classes/misc/Format.ts */
-export type FormatItem = MediaItem & {
+export type FormatItem = Prettify<MediaItem & {
   width: number;
   height: number;
   quality:
@@ -39,10 +40,10 @@ export type FormatItem = MediaItem & {
   projectionType: "RECTANGULAR";
   audioSampleRate: `${number}`;
   audioChannels: number;
-};
+}>;
 
 /** YouTube InnerTube API -values reverse-engineered from `streamingData.adaptiveFormats[]` in player responses. @see https://github.com/LuanRT/YouTube.js/blob/main/src/parser/classes/misc/Format.ts */
-export type AdaptiveFormatItem = MediaItem & {
+export type AdaptiveFormatItem = Prettify<MediaItem & {
   width?: number;
   height?: number;
   quality: VideoQuality;
@@ -83,15 +84,15 @@ export type AdaptiveFormatItem = MediaItem & {
   fairPlayKeyUri?: string;
   distinctParams?: string;
   xtags?: string;
-};
+}>;
 
-export type TranslationLanguage = {
+export type TranslationLanguage = Prettify<{
   languageCode: string;
   languageName: { simpleText: string };
-};
+}>;
 
 /** @see https://github.com/LuanRT/YouTube.js/blob/main/src/parser/classes/PlayerCaptionsTracklist.ts */
-export type CaptionTrack = {
+export type CaptionTrack = Prettify<{
   baseUrl: string;
   name: { simpleText: string };
   vssId: string;
@@ -100,4 +101,4 @@ export type CaptionTrack = {
   isTranslatable: boolean;
   translationLanguageCode?: string;
   sourceTrackVssId?: string;
-};
+}>;

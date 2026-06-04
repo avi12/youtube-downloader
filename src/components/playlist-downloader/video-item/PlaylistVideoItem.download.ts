@@ -6,14 +6,14 @@ import { checkedPlaylistVideos } from "@/lib/ui/playlist-selection.svelte";
 import { CONTENT_OPTIONS, downloadProgressStore } from "@/lib/ui/synced-stores.svelte";
 import { resolveVideoFilename } from "@/lib/utils/containers";
 import { filterVideoFormatsByEnhancedBitrate } from "@/lib/youtube/format-display";
-import { DownloadType, type VideoData } from "@/types";
+import { DownloadType, type Prettify, type VideoData } from "@/types";
 
-type TriggerDownloadParams = {
+type TriggerDownloadParams = Prettify<{
   videoData: VideoData;
   videoId: string;
   gridTitle: string | undefined;
   setLocallyDone: (value: boolean) => void;
-};
+}>;
 export function triggerDownload({ videoData, videoId, gridTitle, setLocallyDone }: TriggerDownloadParams) {
   const options = CONTENT_OPTIONS;
   let downloadType: DownloadType = videoData.isMusic ? DownloadType.Audio : DownloadType.VideoAndAudio;

@@ -1,12 +1,18 @@
 import { resolveVideoFilename } from "@/lib/utils/containers";
 import { filterVideoFormatsByEnhancedBitrate } from "@/lib/youtube/format-display";
-import { DownloadType, VideoQualityMode, type Options, type VideoData } from "@/types";
+import {
+  DownloadType,
+  VideoQualityMode,
+  type Options,
+  type Prettify,
+  type VideoData
+} from "@/types";
 
-type PlaylistMetadata = {
+type PlaylistMetadata = Prettify<{
   playlistId: string;
   playlistTitle: string;
   playlistOwner: string;
-} | null;
+}> | null;
 
 export function optionsToQualityValue(options: Options) {
   return options.videoQualityMode === VideoQualityMode.Custom

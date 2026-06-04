@@ -1,16 +1,16 @@
 import { buildTrackButtons, refreshButton } from "./TrackChoice.button-data";
 import { onButtonClick } from "@/lib/messaging/cross-world-messenger";
-import { PanelTrackMode, TrackKind } from "@/types";
+import { PanelTrackMode, TrackKind, type Prettify } from "@/types";
 import { untrack } from "svelte";
 import { SvelteMap } from "svelte/reactivity";
 
-export interface TrackChoiceParams {
+export type TrackChoiceParams = Prettify<{
   readonly kind: TrackKind;
   readonly mode: PanelTrackMode;
   readonly disabled: boolean;
   readonly disabledModes: readonly PanelTrackMode[];
   readonly onmodechange: (mode: PanelTrackMode) => void;
-}
+}>;
 
 export function createTrackChoiceState(params: TrackChoiceParams) {
   const buttons = $derived(buildTrackButtons(params.kind));

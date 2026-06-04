@@ -3,6 +3,7 @@ import type { EmbedMetadataJob, MuxVideoAudioJob, TranscodeAudioJob, TranscodeFi
 import { WorkerMessageType } from "./mux-worker-types";
 import type { HostWorkerPort } from "./worker-port-host";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
+import type { Prettify } from "@/types";
 
 let workerPort: HostWorkerPort | null = null;
 let pendingJobReject: ((e: Error) => void) | null = null;
@@ -55,10 +56,10 @@ export function runWorkerJob<T>({
   });
 }
 
-type RunMuxVideoAudioParams = {
+type RunMuxVideoAudioParams = Prettify<{
   videoId: string;
   job: MuxVideoAudioJob;
-};
+}>;
 export function runMuxVideoAudio({ videoId, job }: RunMuxVideoAudioParams) {
   const transferables: Transferable[] = [];
   const hasVideoData = Boolean(job.videoData);
@@ -106,10 +107,10 @@ export function runMuxVideoAudio({ videoId, job }: RunMuxVideoAudioParams) {
   });
 }
 
-type RunEmbedMetadataParams = {
+type RunEmbedMetadataParams = Prettify<{
   videoId: string;
   job: EmbedMetadataJob;
-};
+}>;
 export function runEmbedMetadata({ videoId, job }: RunEmbedMetadataParams) {
   return enqueueMuxJob({
     videoId,
@@ -121,10 +122,10 @@ export function runEmbedMetadata({ videoId, job }: RunEmbedMetadataParams) {
   });
 }
 
-type RunTranscodeAudioParams = {
+type RunTranscodeAudioParams = Prettify<{
   videoId: string;
   job: TranscodeAudioJob;
-};
+}>;
 export function runTranscodeAudio({ videoId, job }: RunTranscodeAudioParams) {
   return enqueueMuxJob({
     videoId,
@@ -143,10 +144,10 @@ export function runTranscodeAudio({ videoId, job }: RunTranscodeAudioParams) {
   });
 }
 
-type RunTranscodeFileParams = {
+type RunTranscodeFileParams = Prettify<{
   videoId: string;
   job: TranscodeFileJob;
-};
+}>;
 export function runTranscodeFile({ videoId, job }: RunTranscodeFileParams) {
   return enqueueMuxJob({
     videoId,

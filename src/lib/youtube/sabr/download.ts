@@ -1,16 +1,16 @@
 import { adaptiveFormatToSabrFormat, collectReadableStream, createSabrStream } from "./sabr-helpers";
-import type { AdaptiveFormatItem, SabrConfig } from "@/types";
+import type { AdaptiveFormatItem, Prettify, SabrConfig } from "@/types";
 
 export type { SabrStreamResult } from "./sabr-helpers";
 
-type FetchVideoViaSabrStreamParams = {
+type FetchVideoViaSabrStreamParams = Prettify<{
   sabrConfig: SabrConfig;
   videoFormat: AdaptiveFormatItem;
   fetchFunction: typeof globalThis.fetch;
   poToken: string;
   signal?: AbortSignal;
   onChunk?: (chunk: Uint8Array) => void;
-};
+}>;
 export async function fetchVideoViaSabrStream({
   sabrConfig, videoFormat, fetchFunction, poToken, signal, onChunk
 }: FetchVideoViaSabrStreamParams) {
@@ -31,14 +31,14 @@ export async function fetchVideoViaSabrStream({
   });
 }
 
-type FetchAudioViaSabrStreamParams = {
+type FetchAudioViaSabrStreamParams = Prettify<{
   sabrConfig: SabrConfig;
   audioFormat: AdaptiveFormatItem;
   fetchFunction: typeof globalThis.fetch;
   poToken: string;
   signal?: AbortSignal;
   onChunk?: (chunk: Uint8Array) => void;
-};
+}>;
 export async function fetchAudioViaSabrStream({
   sabrConfig, audioFormat, fetchFunction, poToken, signal, onChunk
 }: FetchAudioViaSabrStreamParams) {

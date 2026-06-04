@@ -5,17 +5,18 @@ import {
 } from "./helpers/playlist-grid-panel-lifecycle";
 import type { createPlaylistGridItemState } from "./PlaylistGridItem.state.svelte";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
+import type { Prettify } from "@/types";
 import { mount, unmount } from "svelte";
 
 const PANEL_ABOVE_OVERLAP_PX = 4;
 const IRON_OVERLAY_OPENED_EVENT = "iron-overlay-opened";
 
-type CreatePanelManagerParams = {
+type CreatePanelManagerParams = Prettify<{
   playlistId: string;
   state: ReturnType<typeof createPlaylistGridItemState>;
   getElChevronButton: () => Element | null;
   onChevronRefresh: () => void;
-};
+}>;
 export function createPanelManager({
   playlistId,
   state,

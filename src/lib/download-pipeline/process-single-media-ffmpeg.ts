@@ -1,13 +1,13 @@
 import { toOwnedArrayBuffer, reportProgress } from ".";
 import { runEmbedMetadata, runTranscodeAudio } from "./ffmpeg-instance";
 import { ProgressType } from "@/types";
-import type { VideoMetadata } from "@/types";
+import type { Prettify, VideoMetadata } from "@/types";
 
 const WEBA_EXTENSION = "weba";
 const WEBM_EXTENSION = "webm";
 const WEBM_AUDIO_OUTPUT_EXTENSIONS = new Set([WEBA_EXTENSION, WEBM_EXTENSION]);
 
-type ApplyAudioFfmpegParams = {
+type ApplyAudioFfmpegParams = Prettify<{
   videoId: string;
   tabId: number;
   data: Uint8Array;
@@ -16,7 +16,7 @@ type ApplyAudioFfmpegParams = {
   filenameOutput: string;
   outputExtension: string;
   metadata?: VideoMetadata | null;
-};
+}>;
 export async function applyAudioFfmpeg({
   videoId,
   tabId,

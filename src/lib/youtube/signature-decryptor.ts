@@ -1,13 +1,14 @@
 import { applyTransforms, findAndExtractOperations } from "./signature-parser";
 import type { TransformOp } from "./signature-parser";
+import type { Prettify } from "@/types";
 
 const DEFAULT_SIG_PARAM = "sig";
 const YOUTUBE_BASE_URL = "https://www.youtube.com";
 
-interface DecryptorState {
+type DecryptorState = Prettify<{
   operations: TransformOp[];
   playerJsUrl: string;
-}
+}>;
 
 let cachedState: DecryptorState | null = null;
 

@@ -1,6 +1,7 @@
 import { MessageType, sendMessage, sendMessageToTab } from "@/lib/messaging/messaging";
 import { mutateStorageItem, statusProgressItem } from "@/lib/storage/storage";
 import { ProgressType } from "@/types";
+import type { Prettify } from "@/types";
 
 // On Chrome MV3, only the background service worker can call
 // `browser.tabs.sendMessage`; the offscreen page and download-worker iframe
@@ -21,14 +22,14 @@ function canSendToTabDirectly() {
 
 export { fetchWithProgress } from "./cdn-fetch";
 
-type WriteProgressToStorageParams = {
+type WriteProgressToStorageParams = Prettify<{
   videoId: string;
   progress: number;
   progressType: ProgressType;
   downloadedBytes?: number;
   totalBytes?: number;
   bytesPerSecond?: number;
-};
+}>;
 async function writeProgressToStorage({
   videoId, progress, progressType, downloadedBytes, totalBytes, bytesPerSecond
 }: WriteProgressToStorageParams) {
@@ -55,19 +56,19 @@ async function writeProgressToStorage({
   });
 }
 
-type SendProgressUpdateParams = {
+type SendProgressUpdateParams = Prettify<{
   videoId: string;
   progress: number;
   progressType: ProgressType;
   tabId: number;
   downloadedBytes?: number;
   totalBytes?: number;
-};
+}>;
 
-type SpeedSample = {
+type SpeedSample = Prettify<{
   bytes: number;
   timestamp: number;
-};
+}>;
 const SPEED_WINDOW_MS = 2_000;
 const speedHistoryByVideoId = new Map<string, SpeedSample[]>();
 
@@ -178,10 +179,10 @@ export function sendProgressUpdate(params: SendProgressUpdateParams) {
   scheduledFlushByVideoId.set(params.videoId, timeoutId);
 }
 
-type CreateProgressFetchParams = {
+type CreateProgressFetchParams = Prettify<{
   signal: AbortSignal;
   onBytesReceived: (bytes: number) => void;
-};
+}>;
 export function createProgressFetch({ signal, onBytesReceived }: CreateProgressFetchParams) {
   return async (input: RequestInfo | URL, init?: RequestInit) => {
     const response = await fetch(input, {

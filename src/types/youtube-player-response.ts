@@ -1,8 +1,9 @@
+import type { Prettify } from "./prettify";
 import type { PlayabilityStatus } from "./youtube-format-enums";
 import type { FormatItem, AdaptiveFormatItem, CaptionTrack, TranslationLanguage } from "./youtube-format-types";
 
 /** @see https://github.com/LuanRT/YouTube.js/blob/main/src/parser/types/ParsedResponse.ts */
-export type PlayerResponse = {
+export type PlayerResponse = Prettify<{
   playabilityStatus: {
     status: `${PlayabilityStatus}`;
     reason?: string;
@@ -63,4 +64,4 @@ export type PlayerResponse = {
       translationLanguages?: TranslationLanguage[];
     };
   };
-};
+}>;

@@ -1,14 +1,15 @@
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
 import { TRANSFER_CHUNK_SIZE, uint8ToBase64 } from "@/lib/utils/binary";
 import { AUDIO_EXTRA_STREAM_PREFIX, StreamType } from "@/types";
+import type { Prettify } from "@/types";
 
-type SendNetworkChunkToOffscreenParams = {
+type SendNetworkChunkToOffscreenParams = Prettify<{
   videoId: string;
   streamType: string;
   iChunk: number;
   chunk: Uint8Array;
   tabId: number;
-};
+}>;
 export function sendNetworkChunkToOffscreen(
   { videoId, streamType, iChunk, chunk, tabId }: SendNetworkChunkToOffscreenParams
 ) {
@@ -25,12 +26,12 @@ export function sendNetworkChunkToOffscreen(
   });
 }
 
-type SendStreamFinishedMarkerParams = {
+type SendStreamFinishedMarkerParams = Prettify<{
   videoId: string;
   streamType: string;
   totalChunks: number;
   tabId: number;
-};
+}>;
 export function sendStreamFinishedMarker({ videoId, streamType, totalChunks, tabId }: SendStreamFinishedMarkerParams) {
   sendToOffscreen({
     type: OffscreenMessageType.ProcessStreamChunk,
@@ -47,12 +48,12 @@ export function sendStreamFinishedMarker({ videoId, streamType, totalChunks, tab
 
 const YIELD_EVERY_N_CHUNKS = 32;
 
-type SendStreamChunksToOffscreenParams = {
+type SendStreamChunksToOffscreenParams = Prettify<{
   videoId: string;
   streamType: string;
   data: Uint8Array;
   tabId: number;
-};
+}>;
 export async function sendStreamChunksToOffscreen(
   { videoId, streamType, data, tabId }: SendStreamChunksToOffscreenParams
 ) {
@@ -80,13 +81,13 @@ export async function sendStreamChunksToOffscreen(
   }
 }
 
-type BuildTransferJobsParams = {
+type BuildTransferJobsParams = Prettify<{
   videoData: Uint8Array | null;
   audioData: Uint8Array | null;
   additionalAudioTracks: { data: Uint8Array | null }[];
   videoId: string;
   tabId: number;
-};
+}>;
 export function buildTransferJobs(
   { videoData, audioData, additionalAudioTracks, videoId, tabId }: BuildTransferJobsParams
 ) {

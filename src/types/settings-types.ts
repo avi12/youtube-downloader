@@ -6,28 +6,29 @@ import type {
   PlaylistOutputMode,
   VideoQualityMode
 } from "./download-enums";
+import type { Prettify } from "./prettify";
 import type { AdaptiveFormatItem } from "./youtube";
 
-export type VideoTabParams = {
+export type VideoTabParams = Prettify<{
   videoId: string;
   tabId: number;
-};
+}>;
 
-export type SabrConfig = {
+export type SabrConfig = Prettify<{
   serverAbrStreamingUrl: string;
   videoPlaybackUstreamerConfig: string;
   clientName: number;
   clientVersion: string;
   formats: AdaptiveFormatItem[];
-};
+}>;
 
-export type SubtitleTrack = {
+export type SubtitleTrack = Prettify<{
   data: Uint8Array | null;
   label: string;
   languageCode: string;
-};
+}>;
 
-export type VideoMetadata = {
+export type VideoMetadata = Prettify<{
   title: string;
   artist: string;
   albumArtist?: string;
@@ -36,11 +37,11 @@ export type VideoMetadata = {
   date?: string;
   thumbnailUrl?: string;
   isMusic: boolean;
-};
+}>;
 
 export type DownloadTypePreference = DownloadType;
 
-export type Options = {
+export type Options = Prettify<{
   ext: {
     audio: string;
     video: string;
@@ -62,4 +63,4 @@ export type Options = {
   downloadExtras: boolean;
   includeAutoDubbing: boolean;
   includeAiCaptions: boolean;
-};
+}>;

@@ -1,3 +1,4 @@
+import type { Prettify } from "@/types";
 import { browser } from "#imports";
 
 const downloadIframes = new Map<string, HTMLIFrameElement>();
@@ -7,10 +8,10 @@ const DOWNLOAD_WORKER_HTML_PATH = "/download-worker.html";
 const IFRAME_ALLOW_AUTOPLAY = "autoplay";
 const DOWNLOAD_IFRAME_STYLE = "position:fixed;inset-block-start:-100px;inset-inline-start:-100px;inline-size:1px;block-size:1px;opacity:0%;pointer-events:none;border:0";
 
-type CreateDownloadIframeParams = {
+type CreateDownloadIframeParams = Prettify<{
   videoId: string;
   watchUrl: string;
-};
+}>;
 export function createDownloadIframe({ videoId, watchUrl }: CreateDownloadIframeParams) {
   const elExisting = downloadIframes.get(videoId);
   if (elExisting) {

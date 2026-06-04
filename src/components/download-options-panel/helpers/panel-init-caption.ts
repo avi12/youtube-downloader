@@ -14,6 +14,7 @@ import {
   type AdaptiveFormatItem,
   type CaptionTrack,
   type Options,
+  type Prettify,
   type VideoData
 } from "@/types";
 
@@ -34,10 +35,10 @@ export function getActivePlayerCaption() {
   }
 }
 
-type ResolveInitialCaptionModeParams = {
+type ResolveInitialCaptionModeParams = Prettify<{
   options: Options;
   videoData: VideoData;
-};
+}>;
 export function resolveInitialCaptionMode({ options, videoData }: ResolveInitialCaptionModeParams) {
   const resolvedMode = resolveCaptionLanguageMode({
     captionMode: options.captionLanguageMode,
@@ -60,20 +61,20 @@ export function resolveInitialCaptionMode({ options, videoData }: ResolveInitial
   return PanelTrackMode.MatchVideo;
 }
 
-type ResolveCustomCaptionParams = {
+type ResolveCustomCaptionParams = Prettify<{
   candidateTracks: CaptionTrack[];
   langCode: string;
-};
+}>;
 function resolveCustomCaption({ candidateTracks, langCode }: ResolveCustomCaptionParams) {
   return candidateTracks.find(track => normalizeLanguageCode(track.languageCode) === langCode)
     ?? candidateTracks[0]
     ?? null;
 }
 
-type ResolveOriginalCaptionParams = {
+type ResolveOriginalCaptionParams = Prettify<{
   candidateTracks: CaptionTrack[];
   audioFormats: AdaptiveFormatItem[];
-};
+}>;
 function resolveOriginalCaption({ candidateTracks, audioFormats }: ResolveOriginalCaptionParams) {
   const originalLangId = findOriginalAudioFormat(audioFormats)?.audioTrack?.id;
   if (originalLangId) {
@@ -91,10 +92,10 @@ function resolveOriginalCaption({ candidateTracks, audioFormats }: ResolveOrigin
   return candidateTracks.find(track => !track.kind) ?? candidateTracks[0] ?? null;
 }
 
-type ResolveMatchVideoCaptionParams = {
+type ResolveMatchVideoCaptionParams = Prettify<{
   allTracks: CaptionTrack[];
   candidateTracks: CaptionTrack[];
-};
+}>;
 function resolveMatchVideoCaption({ allTracks, candidateTracks }: ResolveMatchVideoCaptionParams) {
   const activeCaption = getActivePlayerCaption();
   if (activeCaption) {
@@ -119,11 +120,11 @@ function resolveMatchVideoCaption({ allTracks, candidateTracks }: ResolveMatchVi
   })[0] ?? null;
 }
 
-type ResolveInitialCaptionTrackParams = {
+type ResolveInitialCaptionTrackParams = Prettify<{
   captionMode: PanelTrackMode;
   options: Options;
   videoData: VideoData;
-};
+}>;
 export function resolveInitialCaptionTrack({
   captionMode,
   options,

@@ -8,7 +8,7 @@ import {
 import type { AudioTrack } from "./mux-worker-types";
 import { resolveMultiTrackExtension } from "@/lib/utils/containers";
 import { ProgressType } from "@/types";
-import type { ProcessStreamData } from "@/types";
+import type { Prettify, ProcessStreamData } from "@/types";
 
 const MKV_EXTENSION = "mkv";
 const NO_STREAM_DATA_ERROR = "No stream data accumulated";
@@ -41,21 +41,21 @@ export function buildSubtitleFiles(subtitleTracks: ProcessStreamData["subtitleTr
     }));
 }
 
-type ResolveDownloadFilenameParams = {
+type ResolveDownloadFilenameParams = Prettify<{
   filenameOutput: string;
   hasExtraTracks: boolean;
-};
+}>;
 export function resolveDownloadFilename({ filenameOutput, hasExtraTracks }: ResolveDownloadFilenameParams) {
   const existingExtension = filenameOutput.split(".").pop() ?? MKV_EXTENSION;
   const targetExtension = hasExtraTracks ? resolveMultiTrackExtension(existingExtension) : existingExtension;
   return `${filenameOutput.replace(/\.[^.]+$/, "")}.${targetExtension}`;
 }
 
-type HandleSingleStreamParams = {
+type HandleSingleStreamParams = Prettify<{
   item: ProcessStreamData;
   videoData: Uint8Array | null;
   audioData: Uint8Array | null;
-};
+}>;
 export async function handleSingleStream({ item, videoData, audioData }: HandleSingleStreamParams) {
   const hasData = !!videoData || !!audioData;
   if (!hasData) {

@@ -1,3 +1,5 @@
+import type { Prettify } from "@/types";
+
 const CODEC_VP8 = "vp8";
 const CODEC_VP9 = "vp9";
 const CODEC_VP09 = "vp09";
@@ -25,18 +27,18 @@ const CODEC_MPEG4_ENCODER = "mpeg4";
 const SUBTITLE_CODEC_WEBVTT = "webvtt";
 const SUBTITLE_CODEC_MOV_TEXT = "mov_text";
 
-interface ContainerSpec {
+type ContainerSpec = Prettify<{
   videoCodecs?: Set<string>;
   audioCodecs: Set<string>;
   fallbackAudioCodec?: string;
   fallbackVideoCodec?: string;
   allowNonNativeVideo?: boolean;
   subtitleCodec?: string;
-}
+}>;
 
 export const MULTI_TRACK_UNSUPPORTED_EXTENSIONS = new Set(["avi", "3gp", "m4b"]);
 
-type AudioOnlySpec = Pick<ContainerSpec, "audioCodecs" | "fallbackAudioCodec">;
+type AudioOnlySpec = Prettify<Pick<ContainerSpec, "audioCodecs" | "fallbackAudioCodec">>;
 function audioOnly({ audioCodecs, fallbackAudioCodec }: AudioOnlySpec): ContainerSpec {
   return {
     audioCodecs,

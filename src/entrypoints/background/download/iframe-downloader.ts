@@ -5,7 +5,7 @@ import { trackVideoForTab } from "../queue/tab-tracker";
 import { reportDownloadFailed } from "./background-downloader";
 import { MessageType, onMessage, sendMessageToTab } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
-import type { DownloadRequest } from "@/types";
+import type { DownloadRequest, Prettify } from "@/types";
 
 const IFRAME_READY_TIMEOUT_MS = 60_000;
 const YOUTUBE_WATCH_BASE_URL = "https://www.youtube.com/watch";
@@ -63,10 +63,10 @@ export async function prepareIframe(data: DownloadRequest) {
   });
 }
 
-type DownloadViaWatchPageParams = {
+type DownloadViaWatchPageParams = Prettify<{
   data: DownloadRequest;
   tabId: number;
-};
+}>;
 export async function downloadViaWatchPage({ data, tabId }: DownloadViaWatchPageParams) {
   await enqueueToPopupList({
     videoId: data.videoId,

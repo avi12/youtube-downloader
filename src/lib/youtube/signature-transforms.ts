@@ -1,3 +1,5 @@
+import type { Prettify } from "@/types";
+
 export const TransformOpType = {
   Swap: "swap",
   Reverse: "reverse",
@@ -16,10 +18,10 @@ export type TransformOp = {
     argument: number;
   };
 
-type ApplyTransformsParams = {
+type ApplyTransformsParams = Prettify<{
   signature: string;
   operations: TransformOp[];
-};
+}>;
 export function applyTransforms({ signature, operations }: ApplyTransformsParams) {
   const characters = signature.split("");
 

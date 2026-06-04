@@ -1,7 +1,7 @@
 import { PANEL_CLOSED_EVENT } from "../../download-options-panel/DownloadOptionsPanel.handlers.ts";
 import DownloadOptionsPanel from "../../download-options-panel/DownloadOptionsPanel.svelte";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
-import type { VideoData } from "@/types";
+import type { Prettify, VideoData } from "@/types";
 import { mount } from "svelte";
 
 const IRON_OVERLAY_CLOSED_EVENT = "iron-overlay-closed";
@@ -28,10 +28,10 @@ export function requestDropdownCreation(videoId: string) {
   return panelContentId;
 }
 
-type MountPanelInContentParams = {
+type MountPanelInContentParams = Prettify<{
   contentId: string;
   videoData: VideoData;
-};
+}>;
 export function mountPanelInContent({ contentId, videoData }: MountPanelInContentParams) {
   const elContent = document.getElementById(contentId);
   if (!elContent) {
@@ -53,10 +53,10 @@ export function mountPanelInContent({ contentId, videoData }: MountPanelInConten
   };
 }
 
-type RegisterDropdownCloseListenersParams = {
+type RegisterDropdownCloseListenersParams = Prettify<{
   elDropdown: HTMLElement | null;
   onClose: () => void;
-};
+}>;
 export function registerDropdownCloseListeners({
   elDropdown,
   onClose

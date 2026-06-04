@@ -1,3 +1,5 @@
+import type { Prettify } from "@/types";
+
 const PLAYLIST_URL_PREFIX = "https://www.youtube.com/playlist?list=";
 const BROWSE_URL = "https://www.youtube.com/youtubei/v1/browse?prettyPrint=false";
 const INITIAL_DATA_PATTERN = /var ytInitialData\s*=\s*(.+?);\s*(?:var\s|<\/script>)/s;
@@ -9,15 +11,15 @@ const HEADER_CONTENT_TYPE = "Content-Type";
 const HEADER_GOOG_VISITOR_ID = "X-Goog-Visitor-Id";
 const CONTENT_TYPE_JSON = "application/json";
 
-interface PlaylistVideoRenderer {
+type PlaylistVideoRenderer = Prettify<{
   videoId?: string;
-}
+}>;
 
-interface PlaylistContent {
+type PlaylistContent = Prettify<{
   playlistVideoRenderer?: PlaylistVideoRenderer;
-}
+}>;
 
-interface PlaylistContinuation {
+type PlaylistContinuation = Prettify<{
   continuationItemRenderer?: {
     continuationEndpoint?: {
       continuationCommand?: {
@@ -25,11 +27,11 @@ interface PlaylistContinuation {
       };
     };
   };
-}
+}>;
 
 type PlaylistEntry = PlaylistContent | PlaylistContinuation;
 
-interface YtInitialDataPlaylist {
+type YtInitialDataPlaylist = Prettify<{
   contents?: {
     twoColumnBrowseResultsRenderer?: {
       tabs?: Array<{
@@ -60,27 +62,27 @@ interface YtInitialDataPlaylist {
   metadata?: {
     playlistMetadataRenderer?: { title?: string };
   };
-}
+}>;
 
-interface BrowseContinuationResponse {
+type BrowseContinuationResponse = Prettify<{
   onResponseReceivedActions?: Array<{
     appendContinuationItemsAction?: {
       continuationItems?: PlaylistEntry[];
     };
   }>;
-}
+}>;
 
-interface InnertubeMeta {
+type InnertubeMeta = Prettify<{
   clientName: string;
   clientVersion: string;
   visitorData: string;
-}
+}>;
 
-export type PlaylistContents = {
+export type PlaylistContents = Prettify<{
   videoIds: string[];
   title: string;
   owner: string;
-};
+}>;
 
 function isPlaylistVideoEntry(entry: PlaylistEntry): entry is PlaylistContent {
   return "playlistVideoRenderer" in entry;
@@ -90,10 +92,10 @@ function isContinuationEntry(entry: PlaylistEntry): entry is PlaylistContinuatio
   return "continuationItemRenderer" in entry;
 }
 
-type ParsedEntries = {
+type ParsedEntries = Prettify<{
   videoIds: string[];
   continuationToken: string | null;
-};
+}>;
 
 function parseEntries(entries: PlaylistEntry[]): ParsedEntries {
   const videoIds: string[] = [];

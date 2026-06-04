@@ -4,7 +4,7 @@ import { handleProcessStreamEnd } from "./stream/end-handler";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import type { ProcessStreamEndData } from "@/lib/messaging/offscreen-messaging";
 import { AUDIO_EXTRA_STREAM_PREFIX, StreamType } from "@/types";
-import type { DownloadRequest } from "@/types";
+import type { DownloadRequest, Prettify } from "@/types";
 
 export const WORKER_MSG_PREFIX = "worker-";
 const WORKER_MSG_CHUNK = "worker-chunk";
@@ -14,21 +14,21 @@ const WORKER_MSG_NEEDS_DIRECT_URL = "worker-needs-direct-url";
 const WORKER_MSG_NEEDS_FALLBACK = "worker-needs-fallback";
 const WORKER_MSG_ERROR = "worker-error";
 
-type WorkerChunkMessage = {
+type WorkerChunkMessage = Prettify<{
   type: typeof WORKER_MSG_CHUNK;
   videoId: string;
   streamType: string;
   iChunk: number;
   tabId: number;
   buffer: ArrayBuffer;
-};
-type WorkerStreamEndMessage = {
+}>;
+type WorkerStreamEndMessage = Prettify<{
   type: typeof WORKER_MSG_STREAM_END;
   videoId: string;
   streamType: string;
   totalChunks: number;
-};
-type WorkerCompleteMessage = {
+}>;
+type WorkerCompleteMessage = Prettify<{
   type: typeof WORKER_MSG_COMPLETE;
   videoId: string;
   isStreamed: boolean;
@@ -36,25 +36,25 @@ type WorkerCompleteMessage = {
   videoBuffer?: ArrayBuffer;
   audioBuffer?: ArrayBuffer;
   extraAudioBuffers: ArrayBuffer[];
-};
-type WorkerNeedsDirectUrlMessage = {
+}>;
+type WorkerNeedsDirectUrlMessage = Prettify<{
   type: typeof WORKER_MSG_NEEDS_DIRECT_URL;
   videoId: string;
   tabId: number;
   request: DownloadRequest;
-};
-type WorkerNeedsFallbackMessage = {
+}>;
+type WorkerNeedsFallbackMessage = Prettify<{
   type: typeof WORKER_MSG_NEEDS_FALLBACK;
   videoId: string;
   tabId: number;
   request: DownloadRequest;
-};
-type WorkerErrorMessage = {
+}>;
+type WorkerErrorMessage = Prettify<{
   type: typeof WORKER_MSG_ERROR;
   videoId: string;
   tabId: number;
   error: string;
-};
+}>;
 
 export type WorkerMessage =
   | WorkerChunkMessage

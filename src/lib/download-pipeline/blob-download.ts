@@ -2,18 +2,19 @@ import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import type { RecentDownloadContext } from "@/lib/messaging/messaging";
 import { addRecentDownload, updateRecentDownloadId } from "@/lib/storage/recent-downloads-db";
 import { getCompatibleFilename, getFileExtension, getMimeType } from "@/lib/utils/containers";
+import type { Prettify } from "@/types";
 
 const FALLBACK_MIME_TYPE = "application/octet-stream";
 
 const blobUrlsPendingRevocation = new Map<string, (() => void) | null>();
 
-type PersistAndTriggerParams = {
+type PersistAndTriggerParams = Prettify<{
   blob: Blob;
   blobUrl: string;
   filename: string;
   mimeType: string;
   recentContext?: RecentDownloadContext;
-};
+}>;
 async function persistAndTrigger({ blob, blobUrl, filename, mimeType, recentContext }: PersistAndTriggerParams) {
   let entryId: string | null = null;
   if (recentContext) {
@@ -55,11 +56,11 @@ async function persistAndTrigger({ blob, blobUrl, filename, mimeType, recentCont
   }
 }
 
-type TriggerDownloadParams = {
+type TriggerDownloadParams = Prettify<{
   data: Uint8Array;
   filenameOutput: string;
   recentContext?: RecentDownloadContext;
-};
+}>;
 export async function triggerDownload({ data, filenameOutput, recentContext }: TriggerDownloadParams) {
   const mimeType = getMimeType(filenameOutput) || FALLBACK_MIME_TYPE;
   const filename = getCompatibleFilename(filenameOutput);
@@ -76,12 +77,12 @@ export async function triggerDownload({ data, filenameOutput, recentContext }: T
   });
 }
 
-type TriggerDownloadFromFileParams = {
+type TriggerDownloadFromFileParams = Prettify<{
   file: File;
   filenameOutput: string;
   recentContext?: RecentDownloadContext;
   onRevoke?: () => void;
-};
+}>;
 export async function triggerDownloadFromFile({
   file, filenameOutput, recentContext, onRevoke
 }: TriggerDownloadFromFileParams) {

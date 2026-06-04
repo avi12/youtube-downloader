@@ -1,7 +1,7 @@
 import { fetchFreshCaptionUrls } from "./caption-urls";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { uint8ToBase64 } from "@/lib/utils/binary";
-import { ProgressType, type CaptionTrack } from "@/types";
+import { ProgressType, type CaptionTrack, type Prettify } from "@/types";
 
 export { resolveOrderedCaptionTracks } from "./caption-urls";
 
@@ -79,12 +79,12 @@ async function fetchWebVttViaTrackElement(url: string) {
   });
 }
 
-type FetchCaptionWebVttDataParams = {
+type FetchCaptionWebVttDataParams = Prettify<{
   captionTracks: CaptionTrack[];
   videoId: string;
   captionBytesPerUnit: number;
   totalExpectedBytes: number;
-};
+}>;
 export async function fetchCaptionWebVttData({
   captionTracks, videoId, captionBytesPerUnit, totalExpectedBytes
 }: FetchCaptionWebVttDataParams) {

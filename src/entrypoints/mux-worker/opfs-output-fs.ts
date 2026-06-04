@@ -1,5 +1,6 @@
 import "./emscripten-fs.d";
 import type { EmscriptenFsNode, EmscriptenNodeOps, EmscriptenStreamOps } from "./emscripten-fs.d";
+import type { Prettify } from "@/types";
 import type { FS } from "@ffmpeg/types";
 
 export const OPFS_MUX_OUTPUT_SUFFIX = "-mux-out";
@@ -167,11 +168,11 @@ function makeOpfsFs(fs: FS, syncHandle: FileSystemSyncAccessHandle) {
   return opfsFs;
 }
 
-type CreateOpfsOutputFsParams = {
+type CreateOpfsOutputFsParams = Prettify<{
   fs: FS;
   syncHandle: FileSystemSyncAccessHandle;
   outputFilename: string;
-};
+}>;
 export function createOpfsOutputFs({ fs, syncHandle, outputFilename }: CreateOpfsOutputFsParams) {
   const driver = makeOpfsFs(fs, syncHandle);
 

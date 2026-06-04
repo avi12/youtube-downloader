@@ -1,4 +1,5 @@
 import { ProgressType } from "@/types";
+import type { Prettify } from "@/types";
 
 const DOWNLOAD_PHASE_WEIGHT = 70;
 const MUX_PHASE_WEIGHT = 30;
@@ -6,11 +7,11 @@ const MIN_VISIBLE_PERCENT = 0.5;
 
 export const CAPTION_ESTIMATED_BYTES = 50_000;
 
-type CalculateWeightedProgressParams = {
+type CalculateWeightedProgressParams = Prettify<{
   isDownloading: boolean;
   progress: number;
   progressType: ProgressType | "";
-};
+}>;
 export function calculateWeightedProgress({ isDownloading, progress, progressType }: CalculateWeightedProgressParams) {
   if (!isDownloading) {
     return 0;

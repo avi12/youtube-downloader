@@ -1,9 +1,9 @@
-import type { CaptionTrack } from "@/types";
+import type { CaptionTrack, Prettify } from "@/types";
 
-type BuildSubtitleTracksParams = {
+type BuildSubtitleTracksParams = Prettify<{
   captionTracks: CaptionTrack[] | undefined;
   captionVttData: (string | null)[];
-};
+}>;
 export function buildSubtitleTracks({ captionTracks, captionVttData }: BuildSubtitleTracksParams) {
   const subtitleTracks: {
     dataBase64: string;

@@ -11,7 +11,13 @@ import { crossWorldMessenger, CrossWorldMessage } from "@/lib/messaging/cross-wo
 import { getCompatibleFilename, splitFilenameAndExtension } from "@/lib/utils/filename";
 import { CAPTION_ESTIMATED_BYTES } from "@/lib/youtube/download-progress";
 import { isVideoDataExpired } from "@/lib/youtube/video-helpers";
-import type { AdaptiveFormatItem, CaptionTrack, DownloadRequest, TranslationLanguage } from "@/types";
+import type {
+  AdaptiveFormatItem,
+  CaptionTrack,
+  DownloadRequest,
+  Prettify,
+  TranslationLanguage
+} from "@/types";
 
 const TRANSLATED_CAPTION_VSSID_PREFIX = "t.";
 
@@ -55,11 +61,11 @@ function buildVirtualTranslatedTrack(
 
 const PROGRESSIVE_DOWNLOAD_EXTENSION = "mp4";
 
-type TryProgressiveInPageParams = {
+type TryProgressiveInPageParams = Prettify<{
   url: string;
   filenameOutput: string;
   videoId: string;
-};
+}>;
 async function tryProgressiveInPage({ url, filenameOutput, videoId }: TryProgressiveInPageParams) {
   try {
     const response = await fetch(url, { credentials: "include" });
@@ -83,18 +89,18 @@ async function tryProgressiveInPage({ url, filenameOutput, videoId }: TryProgres
   }
 }
 
-export type DownloadParams = Pick<DownloadRequest,
+export type DownloadParams = Prettify<Pick<DownloadRequest,
   "type" | "videoId" | "videoItag" | "audioItag" | "audioTrackId" |
   "selectedCaptionVssId" | "filenameOutput" | "isIframeFallback" |
   "downloadExtras" | "downloadExtraCaptions" | "includeAutoDubbing" |
   "playlistId" | "playlistTitle" | "playlistTotalCount" |
   "originTabId"
->;
+>>;
 
-type ResolveAndDispatchParams = {
+type ResolveAndDispatchParams = Prettify<{
   params: DownloadParams;
   abortSignal: AbortSignal;
-};
+}>;
 export async function resolveAndDispatch({ params, abortSignal }: ResolveAndDispatchParams) {
   const {
     type, videoId, videoItag, audioItag, audioTrackId, selectedCaptionVssId

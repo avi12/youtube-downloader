@@ -1,8 +1,9 @@
 import { sendProgressUpdate } from "./progress-fetch";
 import { computeWeightedProgress } from "./progress-stages";
 import { ProgressType } from "@/types";
+import type { Prettify } from "@/types";
 
-type CreateCdnProgressTrackerParams = {
+type CreateCdnProgressTrackerParams = Prettify<{
   videoId: string;
   tabId: number;
   captionCount: number;
@@ -13,7 +14,7 @@ type CreateCdnProgressTrackerParams = {
   extraExpectedBytesArray: number[];
   initialVideoBytes: number;
   initialAudioBytes: number;
-};
+}>;
 export function createCdnProgressTracker({
   videoId, tabId, captionCount, hasVideo, hasAudio,
   videoExpectedBytes, audioExpectedBytes, extraExpectedBytesArray, initialVideoBytes, initialAudioBytes

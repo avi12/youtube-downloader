@@ -1,13 +1,15 @@
-export interface YtdlMediaCapture {
+import type { Prettify } from "./prettify";
+
+export type YtdlMediaCapture = Prettify<{
   videoChunks: Uint8Array[];
   audioChunks: Uint8Array[];
   videoMimeType: string;
   audioMimeType: string;
   videoTotalBytes: number;
   audioTotalBytes: number;
-}
+}>;
 
-export interface YtdlCaptureState {
+export type YtdlCaptureState = Prettify<{
   activeVideoId: string;
   pendingChunks: Array<{
     mimeType: string;
@@ -20,7 +22,7 @@ export interface YtdlCaptureState {
     mimeType: string;
     chunk: Uint8Array;
   }) => void;
-}
+}>;
 
 declare global {
   interface Window {

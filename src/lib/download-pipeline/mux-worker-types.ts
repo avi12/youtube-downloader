@@ -1,4 +1,4 @@
-import type { VideoMetadata } from "@/types";
+import type { Prettify, VideoMetadata } from "@/types";
 
 export enum WorkerMessageType {
   Init = "init",
@@ -13,19 +13,19 @@ export enum WorkerMessageType {
   Progress = "progress"
 }
 
-type BaseWorkerJob = {
+type BaseWorkerJob = Prettify<{
   videoId: string;
   tabId: number;
   filenameOutput: string;
-};
+}>;
 
-export type AudioTrack = {
+export type AudioTrack = Prettify<{
   data: ArrayBuffer;
   label: string;
   languageCode: string;
-};
+}>;
 
-export type MuxVideoAudioJob = BaseWorkerJob & {
+export type MuxVideoAudioJob = Prettify<BaseWorkerJob & {
   videoData: ArrayBuffer | null;
   videoFile?: File;
   audioTracks: AudioTrack[];
@@ -37,22 +37,22 @@ export type MuxVideoAudioJob = BaseWorkerJob & {
   videoMimeType: string;
   audioMimeType: string;
   defaultAudioTrackIndex: number;
-};
+}>;
 
-export type EmbedMetadataJob = BaseWorkerJob & {
+export type EmbedMetadataJob = Prettify<BaseWorkerJob & {
   audioData: ArrayBuffer;
   sourceExtension: string;
   audioMimeType?: string;
   metadata: VideoMetadata;
   thumbnailUrl?: string;
-};
+}>;
 
-export type TranscodeAudioJob = BaseWorkerJob & {
+export type TranscodeAudioJob = Prettify<BaseWorkerJob & {
   audioData: ArrayBuffer;
   sourceExtension: string;
-};
+}>;
 
-export type TranscodeFileJob = {
+export type TranscodeFileJob = Prettify<{
   videoId: string;
   tabId: number;
   data: ArrayBuffer;
@@ -61,4 +61,4 @@ export type TranscodeFileJob = {
   audioMimeType?: string;
   videoMimeType?: string;
   coverArtUrl?: string;
-};
+}>;

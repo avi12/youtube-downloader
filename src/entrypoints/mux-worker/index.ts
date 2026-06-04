@@ -10,14 +10,15 @@ import {
 } from "./mux-state";
 import type { FFmpegFactory } from "./mux-state";
 import { WorkerMessageType } from "@/lib/download-pipeline/mux-worker-types";
+import type { Prettify } from "@/types";
 
 const FFMPEG_LOG_TYPE_STDERR = "stderr";
 
-type InitMessage = {
+type InitMessage = Prettify<{
   type: WorkerMessageType.Init;
   wasmBinary: ArrayBuffer;
   port: MessagePort;
-};
+}>;
 
 async function onInitMessage(e: MessageEvent<InitMessage>) {
   if (e.data?.type !== WorkerMessageType.Init) {

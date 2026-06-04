@@ -1,13 +1,13 @@
 import { reportDownloadFailed } from "../download/background-downloader";
 import { awaitBytesTransferred, awaitVideoComplete } from "../queue/sequential-queue";
 import { MessageType, sendMessageToTab } from "@/lib/messaging/messaging";
-import type { DownloadRequest } from "@/types";
+import type { DownloadRequest, Prettify } from "@/types";
 
-type DispatchParams = {
+type DispatchParams = Prettify<{
   items: DownloadRequest[];
   tabId: number;
   signal: AbortSignal;
-};
+}>;
 export async function dispatchSequentially({ items, tabId, signal }: DispatchParams) {
   for (const item of items) {
     if (signal.aborted) {

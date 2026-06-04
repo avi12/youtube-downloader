@@ -2,25 +2,26 @@ import { OPFSVideoWriter } from "./opfs-video-writer";
 import type { ProcessStreamChunkData } from "@/lib/messaging/offscreen-messaging";
 import { base64ToUint8Array } from "@/lib/utils/binary";
 import { StreamType } from "@/types";
+import type { Prettify } from "@/types";
 
-interface RawChunkData {
+type RawChunkData = Prettify<{
   videoId: string;
   streamType: string;
   iChunk: number;
   totalChunks: number;
   chunk: Uint8Array;
-}
+}>;
 
-interface AudioStream {
+type AudioStream = Prettify<{
   chunks: Map<number, Uint8Array>;
   totalChunks: number;
-}
+}>;
 
-export interface StreamAccumulator {
+export type StreamAccumulator = Prettify<{
   videoWriter: OPFSVideoWriter | null;
   totalVideoChunks: number;
   audioStreams: Map<string, AudioStream>;
-}
+}>;
 
 export const STREAM_ACCUMULATORS = new Map<string, StreamAccumulator>();
 

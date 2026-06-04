@@ -1,10 +1,11 @@
 import { ACTION_BUTTON_IDS } from "./playlist-action-button-data";
 import { DATA_BUTTON_ID_ATTR } from "@/lib/ui/polymer-utils";
+import type { Prettify } from "@/types";
 
-type AttachButtonParams = {
+type AttachButtonParams = Prettify<{
   buttonId: string;
   setter: (element: HTMLElement) => void;
-};
+}>;
 export function attachButton({ buttonId, setter }: AttachButtonParams) {
   return (elButton: Element) => {
     const isHtmlElement = elButton instanceof HTMLElement;
@@ -17,7 +18,7 @@ export function attachButton({ buttonId, setter }: AttachButtonParams) {
   };
 }
 
-type HandleActionButtonClickParams = {
+type HandleActionButtonClickParams = Prettify<{
   buttonId: string;
   state: {
     isRevealingAll: boolean;
@@ -26,7 +27,7 @@ type HandleActionButtonClickParams = {
     revealAndDownloadAll(): Promise<void> | void;
     cancelReveal(): void;
   };
-};
+}>;
 export function handleActionButtonClick({ buttonId, state }: HandleActionButtonClickParams) {
   const isDeselectAll = buttonId === ACTION_BUTTON_IDS.DeselectAll;
   if (isDeselectAll) {

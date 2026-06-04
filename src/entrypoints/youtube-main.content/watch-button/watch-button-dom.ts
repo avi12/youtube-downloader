@@ -1,5 +1,5 @@
 import watchButtonStyles from "./watch-button.css?inline";
-import { type TpYtIronDropdownElement } from "@/types";
+import { type Prettify, type TpYtIronDropdownElement } from "@/types";
 
 const WATCH_STYLES_ELEMENT_ID = "ytdl-watch-styles";
 const PANEL_CONTENT_ID_PREFIX = "ytdl-panel-content-";
@@ -12,11 +12,11 @@ const ATTR_ARIA_LABEL = "aria-label";
 const ATTR_ROLE = "role";
 const ATTR_ROLE_PRESENTATION = "presentation";
 
-export interface DropdownElements {
+export type DropdownElements = Prettify<{
   elDropdown: TpYtIronDropdownElement;
   elDropdownContentSlot: HTMLElement;
   panelContentId: string;
-}
+}>;
 
 export function injectWatchButtonStyles() {
   if (document.getElementById(WATCH_STYLES_ELEMENT_ID)) {

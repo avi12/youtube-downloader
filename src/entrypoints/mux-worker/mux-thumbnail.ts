@@ -1,3 +1,5 @@
+import type { Prettify } from "@/types";
+
 const JPEG_MAGIC_BYTES = [0xFF, 0xD8, 0xFF];
 const THUMBNAIL_WEBP_PATH = "/vi_webp/";
 const THUMBNAIL_JPEG_PATH = "/vi/";
@@ -6,11 +8,11 @@ const RIFF_MAGIC_BYTES = [0x52, 0x49, 0x46, 0x46];
 const WEBP_MAGIC_BYTES = [0x57, 0x45, 0x42, 0x50];
 const WEBP_MAGIC_OFFSET = 8;
 
-type MatchesMagicBytesParams = {
+type MatchesMagicBytesParams = Prettify<{
   data: Uint8Array;
   bytes: number[];
   offset?: number;
-};
+}>;
 function matchesMagicBytes({ data, bytes, offset = 0 }: MatchesMagicBytesParams) {
   return bytes.every((byte, i) => data[offset + i] === byte);
 }

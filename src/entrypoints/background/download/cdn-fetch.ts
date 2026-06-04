@@ -1,4 +1,5 @@
 import { readStreamToBuffer, StreamStallError } from "@/lib/utils/stream";
+import type { Prettify } from "@/types";
 
 const MAX_CDN_RETRY_ATTEMPTS = 10;
 const RETRY_BASE_DELAY_MS = 1_000;
@@ -7,10 +8,10 @@ const FETCH_HEADER_TIMEOUT_MS = 30_000;
 const HTTP_STATUS_RANGE_NOT_SATISFIABLE = 416;
 const HTTP_STATUS_OK = 200;
 const HTTP_STATUS_TOO_MANY_REQUESTS = 429;
-type MergeUint8ArraysParams = {
+type MergeUint8ArraysParams = Prettify<{
   first: Uint8Array;
   second: Uint8Array;
-};
+}>;
 function mergeUint8Arrays({ first, second }: MergeUint8ArraysParams) {
   const merged = new Uint8Array(first.byteLength + second.byteLength);
   merged.set(first, 0);
@@ -18,11 +19,11 @@ function mergeUint8Arrays({ first, second }: MergeUint8ArraysParams) {
   return merged;
 }
 
-type AttemptFetchParams = {
+type AttemptFetchParams = Prettify<{
   url: string;
   signal: AbortSignal;
   byteOffset: number;
-};
+}>;
 async function attemptFetch({ url, signal, byteOffset }: AttemptFetchParams) {
   const headerTimeoutController = new AbortController();
   const timeoutId = setTimeout(() => headerTimeoutController.abort(), FETCH_HEADER_TIMEOUT_MS);
@@ -50,13 +51,13 @@ async function attemptFetch({ url, signal, byteOffset }: AttemptFetchParams) {
   }
 }
 
-type FetchWithProgressParams = {
+type FetchWithProgressParams = Prettify<{
   url: string;
   signal: AbortSignal;
   onBytesReceived: (bytes: number) => void;
   initialData?: Uint8Array;
   onChunk?: (chunk: Uint8Array) => void;
-};
+}>;
 export async function fetchWithProgress(
   { url, signal, onBytesReceived, initialData, onChunk }: FetchWithProgressParams
 ) {

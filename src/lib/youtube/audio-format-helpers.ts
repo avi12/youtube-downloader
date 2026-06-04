@@ -1,5 +1,5 @@
 import { DownloadType } from "@/types";
-import type { AdaptiveFormatItem } from "@/types";
+import type { AdaptiveFormatItem, Prettify } from "@/types";
 
 const AUDIO_TRACK_ORIGINAL_SUFFIX = ".4";
 const AUDIO_TRACK_ORIGINAL_LABEL = "(original)";
@@ -43,11 +43,11 @@ export function getAudioQualityLabel(format: AdaptiveFormatItem) {
   return kbps ? `${kbps} kbps` : codec;
 }
 
-type ResolveQualityLabelParams = {
+type ResolveQualityLabelParams = Prettify<{
   type: DownloadType;
   videoFormat?: AdaptiveFormatItem | null;
   audioFormat?: AdaptiveFormatItem | null;
-};
+}>;
 export function resolveQualityLabel({ type, videoFormat, audioFormat }: ResolveQualityLabelParams) {
   const isAudioOnly = type === DownloadType.Audio;
   if (isAudioOnly) {

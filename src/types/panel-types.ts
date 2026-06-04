@@ -1,3 +1,5 @@
+import type { Prettify } from "./prettify";
+
 export type LabeledOption<V = string> = {
   value: V;
   label: string;
@@ -34,7 +36,7 @@ export const ChipStyle = {
   ExploreLauncherChip: "STYLE_EXPLORE_LAUNCHER_CHIP"
 } as const;
 
-export type ChipData = {
+export type ChipData = Prettify<{
   text: {
     simpleText: string;
   };
@@ -55,4 +57,4 @@ export type ChipData = {
       label: string;
     };
   };
-};
+}>;

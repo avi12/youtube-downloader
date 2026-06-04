@@ -1,3 +1,5 @@
+import type { Prettify } from "@/types";
+
 // Equal-weight stages: every component (video, primary audio, each additional
 // audio track, each caption) gets exactly the same share of the 0-70% UI
 // download phase. Total stages = totalStages above. Each stage contributes
@@ -9,7 +11,7 @@
 // fully complete from the moment the accumulator starts; the bar begins at
 // captionCount/totalStages and the remaining range fills as media streams in.
 
-type ComputeWeightedProgressParams = {
+type ComputeWeightedProgressParams = Prettify<{
   hasVideoStage: boolean;
   videoReceivedBytes: number;
   videoExpectedBytes: number;
@@ -19,7 +21,7 @@ type ComputeWeightedProgressParams = {
   extraReceivedBytesArray: number[];
   extraExpectedBytesArray: number[];
   captionCount: number;
-};
+}>;
 export function computeWeightedProgress({
   hasVideoStage, videoReceivedBytes, videoExpectedBytes,
   hasAudioStage, audioReceivedBytes, audioExpectedBytes,

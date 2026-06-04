@@ -12,7 +12,8 @@ import {
   IconName,
   PlaylistDownloadMode,
   PlaylistOutputMode,
-  type DownloadTypePreference
+  type DownloadTypePreference,
+  type Prettify
 } from "@/types";
 import { SvelteMap } from "svelte/reactivity";
 
@@ -21,12 +22,12 @@ const SEGMENTED_IDS = new Set([
   ...TOGGLE_BUTTON_GROUPS.output.map(button => button.id)
 ]);
 
-type CreatePlaylistToggleButtonsParams = {
+type CreatePlaylistToggleButtonsParams = Prettify<{
   downloadMode: PlaylistDownloadMode;
   outputMode: PlaylistOutputMode;
   effectiveDownloadType: DownloadTypePreference;
   isDownloading: boolean;
-};
+}>;
 export function createPlaylistToggleButtons(state: CreatePlaylistToggleButtonsParams) {
   const elements = new SvelteMap<string, HTMLElement>();
 

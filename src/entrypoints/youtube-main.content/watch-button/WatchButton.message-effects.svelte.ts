@@ -1,20 +1,20 @@
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
-import type { TpYtIronDropdownElement } from "@/types";
+import type { Prettify, TpYtIronDropdownElement } from "@/types";
 
-export interface MessageEffectsSetters {
+export type MessageEffectsSetters = Prettify<{
   setDefaultFilename(value: string): void;
   setDefaultQuality(value: string): void;
   setDefaultVideoItag(value: number): void;
   setDefaultAudioItag(value: number): void;
   setDefaultAudioTrackId(value: string | undefined): void;
-}
+}>;
 
-type CreateMessageEffectsParams = {
+type CreateMessageEffectsParams = Prettify<{
   getIsPanelOpen: () => boolean;
   setIsPanelOpen: (value: boolean) => void;
   setters: MessageEffectsSetters;
   getElDropdown: () => TpYtIronDropdownElement;
-};
+}>;
 export function createMessageEffects({
   getIsPanelOpen, setIsPanelOpen, setters, getElDropdown
 }: CreateMessageEffectsParams) {

@@ -1,6 +1,6 @@
 import { MessageType, sendMessageToTab } from "@/lib/messaging/messaging";
 import { mutateStorageItem, statusProgressItem } from "@/lib/storage/storage";
-import type { ProgressUpdate } from "@/types";
+import type { Prettify, ProgressUpdate } from "@/types";
 
 type StatusProgressMap = Awaited<ReturnType<typeof statusProgressItem.getValue>>;
 
@@ -20,11 +20,11 @@ export function clearCancelledVideo(videoId: string) {
   cancelledVideoIds.delete(videoId);
 }
 
-type UpdateStatusProgressParams = {
+type UpdateStatusProgressParams = Prettify<{
   mutate: (current: StatusProgressMap) => void;
   progressUpdate: ProgressUpdate;
   tabId: number;
-};
+}>;
 export async function updateStatusProgress({ mutate, progressUpdate, tabId }: UpdateStatusProgressParams) {
   await Promise.allSettled([
     sendMessageToTab(MessageType.UpdateDownloadProgress, progressUpdate, tabId),

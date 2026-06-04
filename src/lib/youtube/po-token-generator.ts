@@ -9,8 +9,9 @@ import {
 } from "./innertube";
 import { getYtcfg, YtcfgKey } from "./ytcfg";
 import { base64ToUint8Array } from "@/lib/utils/binary";
+import type { Prettify } from "@/types";
 
-interface ChallengeResponse {
+type ChallengeResponse = Prettify<{
   bgChallenge?: {
     program: string;
     globalName: string;
@@ -18,7 +19,7 @@ interface ChallengeResponse {
       privateDoNotAccessOrElseTrustedResourceUrlWrappedValue: string;
     };
   };
-}
+}>;
 
 const WAA_API_KEY = "AIzaSyDyT5W0Jh49F30Pqqtyfdf7pDLFKLJoAnw";
 const ATT_GET_URL = "https://www.youtube.com/youtubei/v1/att/get?prettyPrint=false";

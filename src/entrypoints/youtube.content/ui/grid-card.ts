@@ -1,6 +1,7 @@
 import PlaylistVideoItem from "@/components/playlist-downloader/video-item/PlaylistVideoItem.svelte";
 import PlaylistGridItem from "@/components/playlist-grid-item/PlaylistGridItem.svelte";
 import { getVideoIdFromUrl } from "@/lib/youtube/youtube-url";
+import type { Prettify } from "@/types";
 import { mount } from "svelte";
 
 const LOCKUP_VIEW_MODEL_TAG = "yt-lockup-view-model";
@@ -23,7 +24,7 @@ export const CardKind = {
 } as const;
 export type CardKind = (typeof CardKind)[keyof typeof CardKind];
 
-export type CardContent =
+export type CardContent = Prettify<
   | {
     kind: typeof CardKind.Video;
     videoId: string;
@@ -31,7 +32,8 @@ export type CardContent =
   | {
     kind: typeof CardKind.Playlist;
     playlistId: string;
-  };
+  }
+>;
 
 function isPlaylistId(id: string) {
   return PLAYLIST_ID_PREFIXES.some(prefix => id.startsWith(prefix));
@@ -54,10 +56,10 @@ function getLockupLight(elCard: Element) {
   return isLockupCard ? elCard : elCard.querySelector(LOCKUP_VIEW_MODEL_TAG);
 }
 
-type ShadowFirstParams = {
+type ShadowFirstParams = Prettify<{
   elCard: Element;
   selector: string;
-};
+}>;
 export function shadowFirst({ elCard, selector }: ShadowFirstParams) {
   return getLockupRoot(elCard)?.querySelector(selector) ?? elCard.querySelector(selector);
 }

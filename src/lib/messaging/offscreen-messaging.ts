@@ -2,6 +2,7 @@ import type {
   AdaptiveFormatItem,
   DownloadRequest,
   DownloadType,
+  Prettify,
   SabrConfig,
   VideoMetadata
 } from "@/types";
@@ -106,15 +107,15 @@ export type OffscreenMessage = {
 export type OffscreenHandler<T extends OffscreenMessageType> = (data: OffscreenProtocolMap[T]) => void;
 export type HandlerMap = { [T in OffscreenMessageType]?: OffscreenHandler<T> };
 
-export type ProcessStreamChunkData = OffscreenProtocolMap[typeof OffscreenMessageType.ProcessStreamChunk];
-export type ProcessStreamEndData = OffscreenProtocolMap[typeof OffscreenMessageType.ProcessStreamEnd];
+export type ProcessStreamChunkData = Prettify<OffscreenProtocolMap[typeof OffscreenMessageType.ProcessStreamChunk]>;
+export type ProcessStreamEndData = Prettify<OffscreenProtocolMap[typeof OffscreenMessageType.ProcessStreamEnd]>;
 
 const OFFSCREEN_PORT_NAME = "ytdl-offscreen";
 
-type DispatchOffscreenMessageParams = {
+type DispatchOffscreenMessageParams = Prettify<{
   handlers: Partial<HandlerMap>;
   message: OffscreenMessage;
-};
+}>;
 function dispatchOffscreenMessage({ handlers, message }: DispatchOffscreenMessageParams) {
   switch (message.type) {
     case OffscreenMessageType.ProcessStreamChunk:

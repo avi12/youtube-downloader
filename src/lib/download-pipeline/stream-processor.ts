@@ -4,7 +4,7 @@ import { processSingleMedia } from "./process-single-media";
 import { processVideoAudio } from "./process-video-audio";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { DownloadType } from "@/types";
-import type { ProcessStreamData, VideoTabParams } from "@/types";
+import type { Prettify, ProcessStreamData, VideoTabParams } from "@/types";
 
 type ActiveJob = VideoTabParams;
 
@@ -17,10 +17,10 @@ async function reportRemoval({ videoId, tabId }: VideoTabParams) {
   });
 }
 
-type RemoveFromStorageQueueParams = {
+type RemoveFromStorageQueueParams = Prettify<{
   videoId: string;
   type: DownloadType;
-};
+}>;
 async function removeFromStorageQueue({ videoId, type }: RemoveFromStorageQueueParams) {
   await sendMessage(MessageType.PipelineQueueRemove, {
     videoId,

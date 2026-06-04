@@ -12,7 +12,7 @@ import {
   videoContainers
 } from "@/lib/utils/containers";
 import type { FormatGroup } from "@/lib/utils/containers";
-import type { RecentDownloadEntry } from "@/types";
+import type { Prettify, RecentDownloadEntry } from "@/types";
 
 export function isAudioSourceEntry(entry: RecentDownloadEntry) {
   // Audio-only downloads have no video mime type recorded, regardless of
@@ -24,9 +24,9 @@ export function isAudioSourceEntry(entry: RecentDownloadEntry) {
   return audioContainers.includes(entry.container) && !videoContainers.includes(entry.container);
 }
 
-type BuildAvailableTargetGroupsParams = {
+type BuildAvailableTargetGroupsParams = Prettify<{
   entry: RecentDownloadEntry;
-};
+}>;
 function isVideoTargetWithMime(target: string, entry: RecentDownloadEntry, isAudioSource: boolean): boolean {
   return !isAudioSource && videoContainers.includes(target) && Boolean(entry.videoMimeType);
 }
@@ -105,11 +105,11 @@ export function buildAvailableTargetGroups({ entry }: BuildAvailableTargetGroups
   } : group);
 }
 
-type SubmitTranscodeParams = {
+type SubmitTranscodeParams = Prettify<{
   entry: RecentDownloadEntry;
   selectedTarget: string;
   isSubmitting: boolean;
-};
+}>;
 export async function submitTranscode({
   entry,
   selectedTarget,

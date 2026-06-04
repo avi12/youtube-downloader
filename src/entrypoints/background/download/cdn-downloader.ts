@@ -5,15 +5,15 @@ import { estimateBytesFromBitrate, parseContentLength } from "./sabr-utils";
 import { sendNetworkChunkToOffscreen, sendStreamFinishedMarker } from "./stream-chunk-transfer";
 import { stripMimeParams } from "@/lib/utils/containers";
 import { DownloadType, StreamType } from "@/types";
-import type { DownloadRequest } from "@/types";
+import type { DownloadRequest, Prettify } from "@/types";
 
-type FetchStreamParams = {
+type FetchStreamParams = Prettify<{
   url: string | null | undefined;
   signal: AbortSignal;
   onBytes: (n: number) => void;
   initialData?: Uint8Array;
   onChunk?: (chunk: Uint8Array) => void;
-};
+}>;
 function fetchStream({ url, signal, onBytes, initialData, onChunk }: FetchStreamParams) {
   if (!url) {
     return Promise.resolve(null);
@@ -28,7 +28,7 @@ function fetchStream({ url, signal, onBytes, initialData, onChunk }: FetchStream
   });
 }
 
-type DownloadViaCdnParams = {
+type DownloadViaCdnParams = Prettify<{
   request: DownloadRequest;
   signal: AbortSignal;
   videoId: string;
@@ -39,7 +39,7 @@ type DownloadViaCdnParams = {
   onAudioChunk?: (chunk: Uint8Array, iChunk: number) => void;
   onVideoStreamEnd?: (totalChunks: number) => void;
   onAudioStreamEnd?: (totalChunks: number) => void;
-};
+}>;
 export async function downloadViaCdn({
   request, signal, videoId, tabId, partialVideoData, partialAudioData,
   onVideoChunk, onAudioChunk, onVideoStreamEnd, onAudioStreamEnd

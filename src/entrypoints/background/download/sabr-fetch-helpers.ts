@@ -1,10 +1,10 @@
 import { stripMimeParams } from "@/lib/utils/containers";
 import { fetchAudioViaSabrStream, fetchVideoViaSabrStream } from "@/lib/youtube/sabr/download";
-import type { AdaptiveFormatItem, SabrConfig } from "@/types";
+import type { AdaptiveFormatItem, Prettify, SabrConfig } from "@/types";
 
-type MakeFetchParams = {
+type MakeFetchParams = Prettify<{
   signal: AbortSignal;
-};
+}>;
 function makeFetch({ signal }: MakeFetchParams) {
   return (input: RequestInfo | URL, init?: RequestInit) => fetch(input, {
     ...init,
@@ -13,13 +13,13 @@ function makeFetch({ signal }: MakeFetchParams) {
   });
 }
 
-type DownloadAudioOnlyViaSabrParams = {
+type DownloadAudioOnlyViaSabrParams = Prettify<{
   config: SabrConfig;
   audioFormat: AdaptiveFormatItem;
   poToken: string;
   signal: AbortSignal;
   onChunk?: (chunk: Uint8Array) => void;
-};
+}>;
 export async function downloadAudioOnlyViaSabr(
   { config, audioFormat, poToken, signal, onChunk }: DownloadAudioOnlyViaSabrParams
 ) {
@@ -33,7 +33,7 @@ export async function downloadAudioOnlyViaSabr(
   });
 }
 
-type DownloadVideoAudioViaSabrParams = {
+type DownloadVideoAudioViaSabrParams = Prettify<{
   config: SabrConfig;
   videoFormat: AdaptiveFormatItem;
   audioFormat: AdaptiveFormatItem;
@@ -41,7 +41,7 @@ type DownloadVideoAudioViaSabrParams = {
   signal: AbortSignal;
   onVideoChunk?: (chunk: Uint8Array) => void;
   onAudioChunk?: (chunk: Uint8Array) => void;
-};
+}>;
 export async function downloadVideoAudioViaSabr({
   config, videoFormat, audioFormat, poToken, signal, onVideoChunk, onAudioChunk
 }: DownloadVideoAudioViaSabrParams) {
@@ -65,7 +65,7 @@ export async function downloadVideoAudioViaSabr({
   ]);
 }
 
-type DownloadExtraAudioTracksViaSabrParams = {
+type DownloadExtraAudioTracksViaSabrParams = Prettify<{
   config: SabrConfig;
   formats: AdaptiveFormatItem[];
   poToken: string;
@@ -74,7 +74,7 @@ type DownloadExtraAudioTracksViaSabrParams = {
     trackIndex: number;
     chunk: Uint8Array;
   }) => void;
-};
+}>;
 export async function downloadExtraAudioTracksViaSabr(
   { config, formats, poToken, signal, onTrackChunk }: DownloadExtraAudioTracksViaSabrParams
 ) {

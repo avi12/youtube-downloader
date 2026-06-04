@@ -1,5 +1,5 @@
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
-import type { VideoTabParams } from "@/types";
+import type { Prettify, VideoTabParams } from "@/types";
 
 const videoIdToTabIds: Record<string, number[]> = {};
 export const tabTracker: Record<number, {
@@ -37,12 +37,12 @@ export function getTabIdsForVideo(videoId: string) {
   return videoIdToTabIds[videoId] ?? [];
 }
 
-type ResolveTabIdParams = {
+type ResolveTabIdParams = Prettify<{
   sender: {
     tab?: { id?: number };
   };
   videoId: string;
-};
+}>;
 export function resolveTabId({ sender, videoId }: ResolveTabIdParams) {
   return sender.tab?.id ?? getTabIdsForVideo(videoId)[0];
 }

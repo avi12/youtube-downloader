@@ -1,4 +1,10 @@
-import type { DownloadRequest, DownloadType, ProgressType, VideoMetadata } from "@/types";
+import type {
+  DownloadRequest,
+  DownloadType,
+  Prettify,
+  ProgressType,
+  VideoMetadata
+} from "@/types";
 import { defineExtensionMessaging, type GetDataType, type GetReturnType } from "@webext-core/messaging";
 
 export const MessageType = {
@@ -40,41 +46,41 @@ export const MessageType = {
   PageSabrFetch: "pageSabrFetch"
 } as const;
 
-export type PageSabrFetchRequest = {
+export type PageSabrFetchRequest = Prettify<{
   url: string;
   method: string;
   bodyBase64: string;
   headers?: Record<string, string>;
-};
+}>;
 
-export type PageSabrFetchResponse = {
+export type PageSabrFetchResponse = Prettify<{
   status: number;
   bodyBase64: string;
   responseHeaders: Record<string, string>;
-} | null;
+}> | null;
 
-export type BackgroundProxyFetchRequest = {
+export type BackgroundProxyFetchRequest = Prettify<{
   url: string;
   method: string;
   bodyBase64: string;
   headers: Record<string, string>;
-};
+}>;
 
-export type BackgroundProxyFetchResponse = {
+export type BackgroundProxyFetchResponse = Prettify<{
   status: number;
   bodyBase64: string;
   responseHeaders: Record<string, string>;
-} | null;
+}> | null;
 
-export type StreamChunkMessage = {
+export type StreamChunkMessage = Prettify<{
   videoId: string;
   streamType: string;
   iChunk: number;
   totalChunks: number;
   chunkBase64: string;
-};
+}>;
 
-export type StreamEndMessage = {
+export type StreamEndMessage = Prettify<{
   type: DownloadType;
   videoId: string;
   filenameOutput: string;
@@ -85,36 +91,36 @@ export type StreamEndMessage = {
   playlistTitle?: string;
   playlistTotalCount?: number;
   metadata?: VideoMetadata | null;
-};
+}>;
 
-export type CapturedSabrBody = {
+export type CapturedSabrBody = Prettify<{
   body: string;
   url: string;
   poToken: string;
-} | null;
+}> | null;
 
-export type RequestPlaylistDownloadMessage = {
+export type RequestPlaylistDownloadMessage = Prettify<{
   items: DownloadRequest[];
   playlistTitle?: string;
   isZipBundle: boolean;
   isSequential: boolean;
-};
+}>;
 
-export type PipelineStartMessage = {
+export type PipelineStartMessage = Prettify<{
   videoId: string;
   type: DownloadType;
   filenameOutput: string;
   tabId: number;
   sourceUrl?: string;
-};
+}>;
 
-export type TranscodeRecentDownloadMessage = {
+export type TranscodeRecentDownloadMessage = Prettify<{
   entryId: string;
   targetContainer: string;
   filenameOutput: string;
-};
+}>;
 
-export type RecentDownloadContext = {
+export type RecentDownloadContext = Prettify<{
   videoId: string;
   title: string;
   channel: string;
@@ -124,25 +130,25 @@ export type RecentDownloadContext = {
   tabId?: number;
   quality?: string;
   sourceUrl?: string;
-};
+}>;
 
-export type PipelineDownloadMessage = {
+export type PipelineDownloadMessage = Prettify<{
   blobUrl: string;
   mimeType: string;
   filename: string;
   recentContext?: RecentDownloadContext;
-};
+}>;
 
-export type InterruptedDownload = {
+export type InterruptedDownload = Prettify<{
   videoId: string;
   type: DownloadType;
   filenameOutput: string;
   videoItag: number;
   audioItag: number;
   timestamp: number;
-};
+}>;
 
-export type ProgressUpdate = {
+export type ProgressUpdate = Prettify<{
   videoId: string;
   progress: number;
   progressType: ProgressType;
@@ -154,7 +160,7 @@ export type ProgressUpdate = {
   isInterrupted?: boolean;
   isCancelled?: boolean;
   isSaved?: boolean;
-};
+}>;
 
 export interface ProtocolMap {
   backgroundProxyFetch(data: BackgroundProxyFetchRequest): BackgroundProxyFetchResponse;

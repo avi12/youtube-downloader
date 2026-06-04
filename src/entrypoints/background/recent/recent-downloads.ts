@@ -8,11 +8,12 @@ import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen
 import { pruneRecentDownloads } from "@/lib/storage/recent-downloads-db";
 import { optionsItem } from "@/lib/storage/storage";
 import { DownloadType } from "@/types";
+import type { Prettify } from "@/types";
 
-type DownloadIdDataParams = {
+type DownloadIdDataParams = Prettify<{
   downloadId: number;
   data: PipelineDownloadMessage;
-};
+}>;
 
 async function isTabIdle(tabId: number) {
   try {
@@ -29,10 +30,10 @@ async function isTabIdle(tabId: number) {
   }
 }
 
-type NotifyOnIdleIfNeededParams = {
+type NotifyOnIdleIfNeededParams = Prettify<{
   data: PipelineDownloadMessage;
   tabIds: number[];
-};
+}>;
 async function notifyOnIdleIfNeeded({ data, tabIds }: NotifyOnIdleIfNeededParams) {
   const [tabId] = tabIds;
   const isTabMissing = tabId === undefined;
@@ -109,10 +110,10 @@ export function notifyOnDownloadComplete({ downloadId, data }: DownloadIdDataPar
   });
 }
 
-type ScheduleRevokeBlobUrlParams = {
+type ScheduleRevokeBlobUrlParams = Prettify<{
   downloadId: number;
   blobUrl: string;
-};
+}>;
 function scheduleRevokeBlobUrl({ downloadId, blobUrl }: ScheduleRevokeBlobUrlParams) {
   function handleChanged(delta: Browser.downloads.DownloadDelta) {
     const isUnrelatedOrIncomplete = delta.id !== downloadId || !delta.state?.current;
@@ -140,11 +141,11 @@ function scheduleRevokeBlobUrl({ downloadId, blobUrl }: ScheduleRevokeBlobUrlPar
   browser.downloads.onChanged.addListener(handleChanged);
 }
 
-type NotifyWatchTabsParams = {
+type NotifyWatchTabsParams = Prettify<{
   downloadId: number;
   videoId: string;
   filename: string;
-};
+}>;
 
 export function notifyWatchTabsOnComplete({ downloadId, videoId, filename }: NotifyWatchTabsParams) {
   async function handleChanged(delta: Browser.downloads.DownloadDelta) {

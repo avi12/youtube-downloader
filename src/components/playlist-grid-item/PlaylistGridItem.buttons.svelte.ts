@@ -9,15 +9,15 @@ import {
   attachChevronButton as attachChevronButtonElement,
   attachDownloadButton as attachDownloadButtonElement
 } from "@/components/playlist-downloader/video-item/PlaylistVideoItem.buttons.attach";
-import { IconName } from "@/types";
+import { IconName, type Prettify } from "@/types";
 
 const BUTTON_REFRESH_INTERVAL_MS = 250;
 
-type CreateButtonManagerParams = {
+type CreateButtonManagerParams = Prettify<{
   playlistId: string;
   state: ReturnType<typeof createPlaylistGridItemState>;
   panel: ReturnType<typeof createPanelManager>;
-};
+}>;
 export function createButtonManager({ playlistId, state, panel }: CreateButtonManagerParams) {
   let elDownloadButton: Element | null = null;
   let elChevronButton: Element | null = null;

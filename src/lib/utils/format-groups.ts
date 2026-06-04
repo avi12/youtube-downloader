@@ -1,4 +1,5 @@
 import { audioContainers, getFormatDescription, videoContainers } from "./mime-types";
+import type { Prettify } from "@/types";
 
 export const FORMAT_GROUP_VIDEO = "Video";
 export const FORMAT_GROUP_AUDIO = "Audio";
@@ -13,7 +14,7 @@ export const TranscodeSpeed = {
 
 export type TranscodeSpeed = (typeof TranscodeSpeed)[keyof typeof TranscodeSpeed];
 
-export type FormatItem = {
+export type FormatItem = Prettify<{
   extension: string;
   description: string;
   group: FormatGroupHeading;
@@ -21,22 +22,22 @@ export type FormatItem = {
   isSlow?: boolean;
   isCurrent?: boolean;
   transcodeSpeed?: TranscodeSpeed;
-};
+}>;
 
-export type FormatGroup = {
+export type FormatGroup = Prettify<{
   heading: FormatGroupHeading;
   caption?: string;
   items: FormatItem[];
-};
+}>;
 
 const videoTargetSet = new Set(videoContainers);
 
-type BuildFormatGroupsParams = {
+type BuildFormatGroupsParams = Prettify<{
   /** Restrict to a subset of supported extensions; `undefined` includes all. */
   allowedExtensions?: Iterable<string>;
   /** Extensions to mark as `isExcluded` (rendered but disabled). */
   excludedExtensions?: Iterable<string>;
-};
+}>;
 
 /**
  * Canonical Video/Audio grouping used by every format picker (watch-page

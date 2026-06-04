@@ -1,4 +1,5 @@
 import { CHILD_LIST_SUBTREE } from "@/lib/utils/dom";
+import type { Prettify } from "@/types";
 
 const CONTENT_ID_ATTR = "data-ytdl-content-id";
 const LOCKUP_SELECTOR = "yt-lockup-view-model";
@@ -38,10 +39,10 @@ function extractContentId(elCard: Element) {
   return null;
 }
 
-type TagCardParams = {
+type TagCardParams = Prettify<{
   elCard: Element;
   retriesLeft?: number;
-};
+}>;
 function tagCard({ elCard, retriesLeft = MAX_RETRIES }: TagCardParams) {
   if (elCard.hasAttribute(CONTENT_ID_ATTR)) {
     return;

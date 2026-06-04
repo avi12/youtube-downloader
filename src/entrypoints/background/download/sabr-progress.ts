@@ -2,9 +2,9 @@ import { sendProgressUpdate } from "./progress-fetch";
 import { computeWeightedProgress } from "./progress-stages";
 import { parseContentLength, estimateFormatBytes, estimateBytesFromBitrate } from "./sabr-utils";
 import { ProgressType } from "@/types";
-import type { AdaptiveFormatItem } from "@/types";
+import type { AdaptiveFormatItem, Prettify } from "@/types";
 
-type CreateProgressAccumulatorParams = {
+type CreateProgressAccumulatorParams = Prettify<{
   videoId: string;
   tabId: number;
   captionCount: number;
@@ -13,7 +13,7 @@ type CreateProgressAccumulatorParams = {
   audioFormat: AdaptiveFormatItem;
   additionalFormats: AdaptiveFormatItem[];
   onProgress?: () => void;
-};
+}>;
 export function createProgressAccumulator({
   videoId, tabId, captionCount, isAudioOnly, videoFormat, audioFormat, additionalFormats, onProgress
 }: CreateProgressAccumulatorParams) {

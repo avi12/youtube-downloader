@@ -2,6 +2,7 @@ import type {
   ButtonViewModelData,
   DownloadRequest,
   DownloadType,
+  Prettify,
   VideoData,
   VideoMetadata
 } from "@/types";
@@ -139,7 +140,7 @@ export interface PageMessengerSchema {
   }): void;
 }
 
-export type StreamDataPayload = Parameters<PageMessengerSchema[typeof CrossWorldMessage.StreamData]>[0];
+export type StreamDataPayload = Prettify<Parameters<PageMessengerSchema[typeof CrossWorldMessage.StreamData]>[0]>;
 
 export const crossWorldMessenger = defineCustomEventMessaging<PageMessengerSchema>({ namespace: "ytdl" });
 

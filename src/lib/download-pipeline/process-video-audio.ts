@@ -10,14 +10,14 @@ import { runMuxVideoAudio } from "./ffmpeg-instance";
 import { addToPlaylistBundle } from "./playlist-bundle";
 import { OPFS_MUX_OUTPUT_SUFFIX } from "@/entrypoints/mux-worker/opfs-output-fs";
 import { ProgressType } from "@/types";
-import type { ProcessStreamData } from "@/types";
+import type { Prettify, ProcessStreamData } from "@/types";
 
 const DEFAULT_PLAYLIST_TITLE = "Playlist";
 
-type ProcessVideoAudioParams = {
+type ProcessVideoAudioParams = Prettify<{
   item: ProcessStreamData;
   isCancelled: () => boolean;
-};
+}>;
 export async function processVideoAudio({ item, isCancelled }: ProcessVideoAudioParams) {
   const {
     videoId, filenameOutput, videoMimeType, audioMimeType, tabId,

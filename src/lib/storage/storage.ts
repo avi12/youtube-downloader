@@ -1,5 +1,5 @@
 import { INITIAL_OPTIONS } from "@/lib/youtube/video-helpers";
-import type { DownloadProgressEntry, InterruptedDownload, Options } from "@/types";
+import type { DownloadProgressEntry, InterruptedDownload, Options, Prettify } from "@/types";
 
 interface StorageItem<T> {
   getValue(): Promise<T>;
@@ -35,7 +35,7 @@ export const musicListItem = storage.defineItem<string[]>("local:musicList", { f
 
 export const videoOnlyListItem = storage.defineItem<string[]>("local:videoOnlyList", { fallback: [] });
 
-export type VideoDetail = {
+export type VideoDetail = Prettify<{
   filenameOutput: string;
   quality?: string;
   tabId?: number;
@@ -46,7 +46,7 @@ export type VideoDetail = {
   channel?: string;
   lengthSeconds?: number;
   thumbnailUrl?: string;
-};
+}>;
 
 export const videoDetailsItem = storage.defineItem<Record<string, VideoDetail>>("local:videoDetails", {
   fallback: {}

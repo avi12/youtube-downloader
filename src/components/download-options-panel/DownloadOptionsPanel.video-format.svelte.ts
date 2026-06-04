@@ -1,16 +1,16 @@
 import { CONTENT_OPTIONS } from "@/lib/ui/synced-stores.svelte";
 import { filterVideoFormatsByEnhancedBitrate } from "@/lib/youtube/format-display";
 import { waitForVideoElement } from "@/lib/youtube/video-helpers";
-import { VideoQualityMode, type AdaptiveFormatItem, type VideoData } from "@/types";
+import { VideoQualityMode, type AdaptiveFormatItem, type Prettify, type VideoData } from "@/types";
 
 const MOVIE_PLAYER_ID = "movie_player";
 const YTP_AD_PLAYING_CLASS = "ytp-ad-playing";
 const VIDEO_CAN_PLAY_EVENT = "canplay";
 
-type CreateVideoFormatTrackerParams = {
+type CreateVideoFormatTrackerParams = Prettify<{
   getVideoData: () => VideoData;
   setSelectedVideoFormat: (value: AdaptiveFormatItem | null) => void;
-};
+}>;
 export function createVideoFormatTracker({
   getVideoData,
   setSelectedVideoFormat

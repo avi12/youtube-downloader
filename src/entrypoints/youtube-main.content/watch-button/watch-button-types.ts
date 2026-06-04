@@ -1,6 +1,7 @@
 import { ProgressType } from "@/types";
+import type { Prettify } from "@/types";
 
-export interface ButtonViewState {
+export type ButtonViewState = Prettify<{
   isDownloading: boolean;
   isDone: boolean;
   isInterrupted: boolean;
@@ -13,7 +14,7 @@ export interface ButtonViewState {
   filename: string;
   quality: string;
   isDownloadable: boolean;
-}
+}>;
 
 export const percentFormatter = new Intl.NumberFormat(document.documentElement.lang, {
   style: "percent",

@@ -1,7 +1,7 @@
 import { InnertubeClientName, type InnertubeSearchRequest } from "./innertube";
 import { extractFirstSearchItem, parseSearchResult } from "./music-search-parser";
 import type { MusicSearchResponse } from "./music-search-parser";
-import type { VideoMetadata } from "@/types";
+import type { Prettify, VideoMetadata } from "@/types";
 
 const SONG_FILTER_PARAMS = "EgWKAQIIAWoKEAkQAxAEEAoQBQ%3D%3D";
 const YOUTUBE_MUSIC_SEARCH_URL = "https://music.youtube.com/youtubei/v1/search?prettyPrint=false";
@@ -41,10 +41,10 @@ async function fetchFirstMusicResult(searchQuery: string) {
   return parseSearchResult(firstItem);
 }
 
-type FetchYouTubeMusicMetadataParams = {
+type FetchYouTubeMusicMetadataParams = Prettify<{
   searchQuery: string;
   existingMetadata: VideoMetadata;
-};
+}>;
 export async function fetchYouTubeMusicMetadata({ searchQuery, existingMetadata }: FetchYouTubeMusicMetadataParams) {
   try {
     const parsed = await fetchFirstMusicResult(searchQuery);

@@ -9,14 +9,20 @@ import {
   orderCaptionsByPreference,
   resolveCaptionLanguageMode
 } from "@/lib/youtube/video-helpers";
-import { AudioTrackLanguageMode, PanelTrackMode, type CaptionTrack, type VideoData } from "@/types";
+import {
+  AudioTrackLanguageMode,
+  PanelTrackMode,
+  type CaptionTrack,
+  type Prettify,
+  type VideoData
+} from "@/types";
 import { untrack } from "svelte";
 
-type FindCaptionTrackParams = {
+type FindCaptionTrackParams = Prettify<{
   tracks: CaptionTrack[];
   vssId: string | null;
   languageCode: string | null;
-};
+}>;
 function findCaptionTrack({ tracks, vssId, languageCode }: FindCaptionTrackParams) {
   const byVssId = vssId ? tracks.find(track => track.vssId === vssId) : undefined;
   const byLangCode = languageCode
@@ -25,11 +31,11 @@ function findCaptionTrack({ tracks, vssId, languageCode }: FindCaptionTrackParam
   return byVssId ?? byLangCode ?? null;
 }
 
-type CreateCaptionTrackStateParams = {
+type CreateCaptionTrackStateParams = Prettify<{
   getVideoData: () => VideoData;
   initialMode: PanelTrackMode;
   initialTrack: CaptionTrack | null;
-};
+}>;
 export function createCaptionTrackState({
   getVideoData,
   initialMode,

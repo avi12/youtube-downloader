@@ -1,3 +1,5 @@
+import type { Prettify } from "@/types";
+
 export interface MoviePlayerElement extends HTMLElement {
   playVideo?: () => void;
   pauseVideo?: () => void;
@@ -65,11 +67,11 @@ export interface MoviePlayerElement extends HTMLElement {
   }) => void;
 }
 
-export type PlayerCaptionTrackData = {
+export type PlayerCaptionTrackData = Prettify<{
   languageCode: string;
   displayName: string;
   vss_id: string;
-};
+}>;
 
 export type CaptionEventBus = {
   subscribe: (topic: string, handler: (data: unknown) => void) => void;

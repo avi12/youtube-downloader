@@ -10,6 +10,7 @@ import {
   PanelTrackMode,
   type AdaptiveFormatItem,
   type Options,
+  type Prettify,
   type VideoData
 } from "@/types";
 
@@ -21,10 +22,10 @@ export function getPreferredMusicAudioFormat(audioFormats: AdaptiveFormatItem[])
   return audioFormats.find(format => format.mimeType.includes("mp4")) ?? audioFormats[0] ?? null;
 }
 
-type OptionsVideoDataParams = {
+type OptionsVideoDataParams = Prettify<{
   options: Options;
   videoData: VideoData;
-};
+}>;
 export function resolveInitialAudioFormat({ options, videoData }: OptionsVideoDataParams) {
   if (videoData.isMusic) {
     return getPreferredMusicAudioFormat(videoData.audioFormats);
@@ -58,10 +59,10 @@ export function resolveInitialAudioFormat({ options, videoData }: OptionsVideoDa
   });
 }
 
-type FindMatchedCustomLangCodeParams = {
+type FindMatchedCustomLangCodeParams = Prettify<{
   options: Options;
   audioFormats: AdaptiveFormatItem[];
-};
+}>;
 function findMatchedCustomLangCode({ options, audioFormats }: FindMatchedCustomLangCodeParams) {
   const isCustomMode = options.audioTrackLanguageMode === AudioTrackLanguageMode.Custom;
   if (!isCustomMode || !options.customLanguage) {

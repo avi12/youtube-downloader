@@ -1,3 +1,5 @@
+import type { Prettify } from "@/types";
+
 export const VARINT_DATA_BITS_MASK = 0x7f;
 export const VARINT_CONTINUATION_BIT = 0x80;
 export const VARINT_BITS_PER_BYTE = 7;
@@ -10,10 +12,10 @@ export const WIRE_TYPE_32_BIT = 5;
 export const WIRE_64_BIT_BYTE_SIZE = 8;
 export const WIRE_32_BIT_BYTE_SIZE = 4;
 
-type ReadVarintParams = {
+type ReadVarintParams = Prettify<{
   buffer: Uint8Array;
   offset: number;
-};
+}>;
 export function readVarint({ buffer, offset }: ReadVarintParams) {
   let value = 0;
   let shift = 0;

@@ -1,4 +1,5 @@
 import type { MoviePlayerElement, CaptionEventBus, PlayerCaptionTrackData } from "./movie-player-types";
+import type { Prettify } from "@/types";
 
 export {
   type MoviePlayerElement,
@@ -21,9 +22,9 @@ export function isPlayerCaptionTrackData(value: unknown): value is PlayerCaption
   return isNonNullObject && hasLanguageCode && hasVssId;
 }
 
-type CaptionBusContext = {
+type CaptionBusContext = Prettify<{
   state?: Record<string, unknown>;
-};
+}>;
 
 function isGetOptionFunction(value: unknown): value is (module: string, option: string) => unknown {
   return typeof value === "function";

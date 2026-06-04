@@ -1,11 +1,12 @@
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { TRANSFER_CHUNK_SIZE, uint8ToBase64 } from "@/lib/utils/binary";
+import type { Prettify } from "@/types";
 
-type SendStreamChunksParams = {
+type SendStreamChunksParams = Prettify<{
   videoId: string;
   streamType: string;
   data: Uint8Array;
-};
+}>;
 export async function sendStreamChunks({ videoId, streamType, data }: SendStreamChunksParams) {
   const totalChunks = Math.ceil(data.byteLength / TRANSFER_CHUNK_SIZE);
 
@@ -30,10 +31,10 @@ const playlistContextByVideoId = new Map<string, {
   playlistTotalCount: number;
 }>();
 
-type SetPlaylistContextParams = {
+type SetPlaylistContextParams = Prettify<{
   videoId: string;
   context: Parameters<typeof playlistContextByVideoId.set>[1];
-};
+}>;
 export function setPlaylistContext({ videoId, context }: SetPlaylistContextParams) {
   playlistContextByVideoId.set(videoId, context);
 }

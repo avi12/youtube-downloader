@@ -1,8 +1,9 @@
 import type { DownloadType, ProgressType } from "./download-enums";
+import type { Prettify } from "./prettify";
 import type { SabrConfig, SubtitleTrack, VideoMetadata } from "./settings-types";
 import type { AdaptiveFormatItem, CaptionTrack, PlayerResponse, TranslationLanguage } from "./youtube";
 
-export type DownloadProgressEntry = {
+export type DownloadProgressEntry = Prettify<{
   isDownloading: boolean;
   isDone: boolean;
   progress: number;
@@ -14,9 +15,9 @@ export type DownloadProgressEntry = {
   downloadedBytes?: number;
   totalBytes?: number;
   bytesPerSecond?: number;
-};
+}>;
 
-export type DownloadRequest = {
+export type DownloadRequest = Prettify<{
   type: DownloadType;
   videoId: string;
   videoItag: number;
@@ -48,9 +49,9 @@ export type DownloadRequest = {
   progressiveUrl?: string | null;
   originTabId?: number;
   sourceUrl?: string;
-};
+}>;
 
-export type StreamData = {
+export type StreamData = Prettify<{
   type: DownloadType;
   videoId: string;
   filenameOutput: string;
@@ -68,9 +69,9 @@ export type StreamData = {
     languageCode?: string;
   }[];
   subtitleTracks: SubtitleTrack[];
-};
+}>;
 
-export type ProcessStreamData = StreamData & {
+export type ProcessStreamData = Prettify<StreamData & {
   tabId: number;
   playlistId?: string;
   playlistTitle?: string;
@@ -79,9 +80,9 @@ export type ProcessStreamData = StreamData & {
   metadata?: VideoMetadata | null;
   quality?: string;
   sourceUrl?: string;
-};
+}>;
 
-export type VideoData = {
+export type VideoData = Prettify<{
   playerResponse: PlayerResponse;
   videoId: string;
   title: string;
@@ -95,4 +96,4 @@ export type VideoData = {
   translationLanguages: TranslationLanguage[];
   sabrConfig: SabrConfig | null;
   progressiveUrl: string | null;
-};
+}>;

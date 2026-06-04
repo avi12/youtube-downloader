@@ -3,7 +3,7 @@ import { downloadViaSabr } from "./sabr-downloader";
 import { createSabrStallTimer } from "./sabr-stall-timer";
 import { MessageType, sendMessageToTab } from "@/lib/messaging/messaging";
 import { ProgressType } from "@/types";
-import type { DownloadRequest, VideoTabParams } from "@/types";
+import type { DownloadRequest, Prettify, VideoTabParams } from "@/types";
 
 const MAX_IFRAME_AUTO_RETRIES = 2;
 const iframeAutoRetries = new Map<string, number>();
@@ -12,11 +12,11 @@ export function clearIframeAutoRetry(videoId: string) {
   iframeAutoRetries.delete(videoId);
 }
 
-type AttemptSabrDownloadParams = {
+type AttemptSabrDownloadParams = Prettify<{
   request: DownloadRequest;
   signal: AbortSignal;
   tabId: number;
-};
+}>;
 export async function attemptSabrDownload({ request, signal, tabId }: AttemptSabrDownloadParams) {
   const stallTimer = createSabrStallTimer(signal);
 
@@ -32,12 +32,12 @@ export async function attemptSabrDownload({ request, signal, tabId }: AttemptSab
   }
 }
 
-type HandleIframeFallbackParams = {
+type HandleIframeFallbackParams = Prettify<{
   request: DownloadRequest;
   tabId: number;
   videoId: string;
   reportDownloadFailed: (params: VideoTabParams) => void;
-};
+}>;
 export async function handleIframeFallback({
   request, tabId, videoId, reportDownloadFailed
 }: HandleIframeFallbackParams) {

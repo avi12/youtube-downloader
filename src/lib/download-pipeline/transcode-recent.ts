@@ -6,13 +6,14 @@ import type { RecentDownloadEntry } from "@/lib/storage/recent-downloads-db";
 import { audioContainers, splitFilenameAndExtension, videoContainers } from "@/lib/utils/containers";
 import { fetchMusicThumbnailUrl } from "@/lib/youtube/youtube-music-metadata";
 import { DownloadType } from "@/types";
+import type { Prettify } from "@/types";
 
 export const TRANSCODE_VIDEO_ID_PREFIX = "transcode:";
 
-type TranscodeRecentDownloadParams = {
+type TranscodeRecentDownloadParams = Prettify<{
   entryId: string;
   targetContainer: string;
-};
+}>;
 
 async function resolveCoverArtUrl(entry: RecentDownloadEntry) {
   const searchQuery = `${entry.channel} ${entry.title}`.trim();

@@ -1,6 +1,7 @@
 import { statusProgressItem } from "@/lib/storage/storage";
 import { downloadProgressStore, statusProgressSignal } from "@/lib/ui/synced-stores.svelte";
 import { ProgressType } from "@/types";
+import type { Prettify } from "@/types";
 
 const committedToStorageIds = new Set<string>();
 
@@ -8,10 +9,10 @@ function markCommitted(videoId: string) {
   committedToStorageIds.add(videoId);
 }
 
-type IsOrphanedParams = {
+type IsOrphanedParams = Prettify<{
   videoId: string;
   storedProgress: Awaited<ReturnType<typeof statusProgressItem.getValue>>;
-};
+}>;
 function isOrphaned({ videoId, storedProgress }: IsOrphanedParams) {
   return committedToStorageIds.has(videoId)
     && !storedProgress[videoId]

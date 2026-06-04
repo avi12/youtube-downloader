@@ -2,9 +2,9 @@ import { fetchCaptionWebVttData } from "./caption-fetch";
 import type { DownloadParams } from "./download-execute";
 import { buildVideoMetadata } from "./video-data";
 import { getCurrentVideoAudioLanguage, normalizeLanguageCode } from "@/lib/youtube/audio-format-helpers";
-import type { CaptionTrack, DownloadRequest, AdaptiveFormatItem } from "@/types";
+import type { CaptionTrack, DownloadRequest, AdaptiveFormatItem, Prettify } from "@/types";
 
-export type ResolvedDownloadData = {
+export type ResolvedDownloadData = Prettify<{
   sabrConfig: DownloadRequest["sabrConfig"];
   poToken: string | null;
   sabrUrl: string | null;
@@ -18,7 +18,7 @@ export type ResolvedDownloadData = {
   resolvedAudioUrl: string | null;
   resolvedExtraAudioUrls: (string | null)[];
   progressiveUrl: string | null;
-};
+}>;
 
 // Single-track videos don't carry the `audioTrack.id` on the adaptive format
 // (YouTube only attaches `audioTrack` for multi-language uploads), so the
@@ -30,10 +30,10 @@ export type ResolvedDownloadData = {
 //   2. HTML5 <video>.audioTracks active entry (single-track videos that the
 //      player has already populated)
 //   3. First non-translated caption track (typically the source language)
-type ResolveLanguageParams = {
+type ResolveLanguageParams = Prettify<{
   audioFormat: AdaptiveFormatItem | null;
   sourceCaptionTracks: CaptionTrack[];
-};
+}>;
 function resolvePrimaryAudioLanguageCode({ audioFormat, sourceCaptionTracks }: ResolveLanguageParams) {
   const trackId = audioFormat?.audioTrack?.id;
   if (trackId) {
@@ -72,10 +72,10 @@ function deriveAudioTrackLabelFromLanguageCode(languageCode: string) {
   }
 }
 
-type BuildEnrichedRequestParams = {
+type BuildEnrichedRequestParams = Prettify<{
   params: DownloadParams;
   resolved: ResolvedDownloadData;
-};
+}>;
 export async function buildEnrichedRequest({ params, resolved }: BuildEnrichedRequestParams) {
   const {
     type, videoId, videoItag, audioItag, filenameOutput, isIframeFallback, originTabId,

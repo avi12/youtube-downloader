@@ -2,7 +2,7 @@ import { isVideoCancelled } from "../handlers/pipeline-state";
 import { MessageType, sendMessageToTab } from "@/lib/messaging/messaging";
 import { interruptedDownloadsItem, mutateStorageItem } from "@/lib/storage/storage";
 import { ProgressType } from "@/types";
-import type { DownloadRequest } from "@/types";
+import type { DownloadRequest, Prettify } from "@/types";
 
 const MAX_AUTO_RETRY_ATTEMPTS = 3;
 const RETRY_BACKOFF_MS = [5_000, 20_000, 60_000];
@@ -74,10 +74,10 @@ export function isRecoverableError(error: unknown) {
   return RECOVERABLE_PATTERNS.some(pattern => pattern.test(message));
 }
 
-type QueueNetworkRetryParams = {
+type QueueNetworkRetryParams = Prettify<{
   request: DownloadRequest;
   tabId: number;
-};
+}>;
 export async function queueNetworkRetry({ request, tabId }: QueueNetworkRetryParams) {
   pendingNetworkRetries.set(request.videoId, {
     request,
@@ -98,11 +98,11 @@ type StartBackgroundDownloadFn = (params: {
   tabId: number;
 }) => Promise<void>;
 
-type ScheduleAutoRetryParams = {
+type ScheduleAutoRetryParams = Prettify<{
   request: DownloadRequest;
   tabId: number;
   startBackgroundDownload: StartBackgroundDownloadFn;
-};
+}>;
 export async function scheduleAutoRetry({ request, tabId, startBackgroundDownload }: ScheduleAutoRetryParams) {
   const { videoId } = request;
   const previousAttempts = autoRetryAttempts.get(videoId) ?? 0;

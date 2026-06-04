@@ -1,5 +1,6 @@
 import { TransformOpType } from "./signature-transforms";
 import type { TransformOp } from "./signature-transforms";
+import type { Prettify } from "@/types";
 
 export { applyTransforms } from "./signature-transforms";
 export type { TransformOp } from "./signature-transforms";
@@ -27,10 +28,10 @@ function findSignatureFunctionName(playerSource: string) {
   return null;
 }
 
-type ExtractTransformOperationsParams = {
+type ExtractTransformOperationsParams = Prettify<{
   playerSource: string;
   functionName: string;
-};
+}>;
 function extractTransformOperations({ playerSource, functionName }: ExtractTransformOperationsParams) {
   const escapedName = escapeRegExp(functionName);
   const functionPattern = new RegExp(`(?:var\\s+${escapedName}|${escapedName}\\s*=\\s*function)\\s*=?\\s*function\\s*\\(([a-zA-Z])\\)\\s*\\{([^}]+)\\}`);

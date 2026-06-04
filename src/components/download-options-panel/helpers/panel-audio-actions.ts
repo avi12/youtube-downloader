@@ -1,5 +1,5 @@
 import { normalizeLanguageCode } from "@/lib/youtube/video-helpers";
-import type { AdaptiveFormatItem } from "@/types";
+import type { AdaptiveFormatItem, Prettify } from "@/types";
 
 export function findMatchVideoAudioFormat(audioFormats: AdaptiveFormatItem[]) {
   return audioFormats.find(format => !format.audioTrack)
@@ -8,11 +8,11 @@ export function findMatchVideoAudioFormat(audioFormats: AdaptiveFormatItem[]) {
     ?? null;
 }
 
-type FindAudioFormatForPlayerTrackParams = {
+type FindAudioFormatForPlayerTrackParams = Prettify<{
   audioFormats: AdaptiveFormatItem[];
   trackId: string | null;
   langCode: string | null;
-};
+}>;
 export function findAudioFormatForPlayerTrack({
   audioFormats,
   trackId,

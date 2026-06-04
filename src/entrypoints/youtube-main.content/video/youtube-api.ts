@@ -1,6 +1,6 @@
 import { byQualityDesc, getUniqueVideoFormats, getAudioFormats } from "./format-filters";
 import { isVideoDownloadable, isVideoLive, isVideoMusic } from "@/lib/youtube/video-helpers";
-import type { PlayerResponse } from "@/types";
+import type { PlayerResponse, Prettify } from "@/types";
 
 const PROGRESSIVE_ITAG_PRIORITY = [22, 18] as const;
 const YT_INITIAL_PLAYER_RESPONSE_PATTERN = /var ytInitialPlayerResponse\s*=\s*(.+?);\s*(?:var\s|<\/script>)/s;
@@ -17,11 +17,11 @@ function extractProgressiveUrl(playerResponse: PlayerResponse) {
   return null;
 }
 
-type VideoDataParams = {
+type VideoDataParams = Prettify<{
   playerResponse: PlayerResponse;
   clientVersion: string;
   clientName: number;
-};
+}>;
 function extractSabrConfig({ playerResponse, clientVersion, clientName }: VideoDataParams) {
   const serverAbrStreamingUrl = playerResponse.streamingData?.serverAbrStreamingUrl;
   const videoPlaybackUstreamerConfig = playerResponse.playerConfig
