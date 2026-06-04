@@ -75,26 +75,28 @@
   });
 </script>
 
-<GridItemButtonGroup
-  attachButtonGroup={buttons.attachButtonGroup}
-  attachChevronButton={buttons.attachChevronButton}
-  attachDownloadButton={buttons.attachDownloadButton}
-  downloadState={itemState.downloadStateClass}
-  hasCheckbox={isPlaylistItem}
-  isError={itemState.isDownloadFailed}
-  isIndeterminate={itemState.isIndeterminate}
-  isLoadFailed={itemState.isLoadFailed}
-  isProgressRingVisible={itemState.isProgressRingVisible}
-  isReady={!!(itemState.videoData?.isDownloadable || itemState.isLoadFailed)}
-  progress={itemState.effectiveProgress}
-  ringAriaLabel={itemState.buttonTooltip}
->
-  {#if isPlaylistItem}
-    <PlaylistDownloadCheckbox
-      {isChecked}
-      isDisabled={batch.isCheckboxDisabled}
-      isIndeterminate={batch.isCheckboxIndeterminate}
-      {videoId}
-    />
-  {/if}
-</GridItemButtonGroup>
+{#if !itemState.videoData || itemState.videoData.isDownloadable || itemState.isLoadFailed}
+  <GridItemButtonGroup
+    attachButtonGroup={buttons.attachButtonGroup}
+    attachChevronButton={buttons.attachChevronButton}
+    attachDownloadButton={buttons.attachDownloadButton}
+    downloadState={itemState.downloadStateClass}
+    hasCheckbox={isPlaylistItem}
+    isError={itemState.isDownloadFailed}
+    isIndeterminate={itemState.isIndeterminate}
+    isLoadFailed={itemState.isLoadFailed}
+    isProgressRingVisible={itemState.isProgressRingVisible}
+    isReady={!!(itemState.videoData?.isDownloadable || itemState.isLoadFailed)}
+    progress={itemState.effectiveProgress}
+    ringAriaLabel={itemState.buttonTooltip}
+  >
+    {#if isPlaylistItem}
+      <PlaylistDownloadCheckbox
+        {isChecked}
+        isDisabled={batch.isCheckboxDisabled}
+        isIndeterminate={batch.isCheckboxIndeterminate}
+        {videoId}
+      />
+    {/if}
+  </GridItemButtonGroup>
+{/if}

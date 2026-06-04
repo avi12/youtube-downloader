@@ -3,7 +3,6 @@ import { buildAndDispatchVideoData } from "./capture-dispatch";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { playlistMetadataSignal } from "@/lib/ui/synced-stores.svelte";
 import { type PlayerResponse } from "@/types";
-import { PlayabilityStatus } from "@/types/youtube";
 
 const WATCH_PATHNAME = "/watch";
 const WATCH_FLEXY_TAG = "ytd-watch-flexy";
@@ -64,8 +63,7 @@ export async function handleNavigateSuccess() {
 
   for (let attempt = 0; attempt < PLAYER_DATA_POLL_ATTEMPTS; attempt++) {
     const playerResponse = document.querySelector(WATCH_FLEXY_TAG)?.playerData ?? null;
-    const isReady = playerResponse?.videoDetails?.videoId === expectedVideoId
-      && playerResponse?.playabilityStatus?.status !== PlayabilityStatus.Unplayable;
+    const isReady = playerResponse?.videoDetails?.videoId === expectedVideoId;
     if (isReady) {
       await buildAndDispatchVideoData({ playerResponse });
       return;

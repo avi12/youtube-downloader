@@ -159,10 +159,6 @@ async function tryDispatchOnce(isDownloadIframe: boolean): Promise<PollOutcome> 
     return PollOutcome.RetriedAsync;
   }
 
-  if (isUnplayable) {
-    return PollOutcome.Wait;
-  }
-
   sessionStorage.removeItem(IFRAME_RELOAD_COUNT_KEY);
   await buildAndDispatchVideoData({ playerResponse });
   return PollOutcome.Ready;
