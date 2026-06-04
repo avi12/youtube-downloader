@@ -14,6 +14,11 @@ export function registerPipelineQueueHandlers() {
       mutateStorageItem({
         item: statusProgressItem,
         mutator(current) {
+          const isCompletedEntry = current[videoId]?.isDone;
+          if (isCompletedEntry) {
+            return;
+          }
+
           delete current[videoId];
         }
       }),
