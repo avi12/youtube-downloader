@@ -1,3 +1,4 @@
+import { isVideoCancelled } from "../handlers/pipeline-state";
 import { MessageType, sendMessage, sendMessageToTab } from "@/lib/messaging/messaging";
 import { mutateStorageItem, statusProgressItem } from "@/lib/storage/storage";
 import { ProgressType } from "@/types";
@@ -33,6 +34,10 @@ type WriteProgressToStorageParams = Prettify<{
 async function writeProgressToStorage({
   videoId, progress, progressType, downloadedBytes, totalBytes, bytesPerSecond
 }: WriteProgressToStorageParams) {
+  if (isVideoCancelled(videoId)) {
+    return;
+  }
+
   const isComplete = progress >= 1 && progressType === ProgressType.FFmpeg;
   await mutateStorageItem({
     item: statusProgressItem,

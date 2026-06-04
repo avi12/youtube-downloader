@@ -9,7 +9,13 @@ export async function reportDownloadFailed({ videoId, tabId }: VideoTabParams) {
   await mutateStorageItem({
     item: statusProgressItem,
     mutator(current) {
-      delete current[videoId];
+      current[videoId] = {
+        isDownloading: false,
+        isDone: false,
+        isFailed: true,
+        progress: 0,
+        progressType: ""
+      };
     }
   });
   await sendMessageToTab(MessageType.UpdateDownloadProgress, {

@@ -238,6 +238,10 @@ export function registerDownloadHandlers() {
 
   onMessage(MessageType.ForwardProgressUpdate, async ({ data }) => {
     const { tabId, ...progressData } = data;
+    if (isVideoCancelled(progressData.videoId)) {
+      return;
+    }
+
     const isComplete = progressData.progress >= 1 && progressData.progressType === ProgressType.FFmpeg;
     void mutateStorageItem({
       item: statusProgressItem,
@@ -264,6 +268,10 @@ export function registerDownloadHandlers() {
   });
 
   onMessage(MessageType.ReportPageProgress, async ({ data, sender }) => {
+    if (isVideoCancelled(data.videoId)) {
+      return;
+    }
+
     const tabId = sender.tab?.id ?? getTabIdsForVideo(data.videoId)[0] ?? -1;
     await mutateStorageItem({
       item: statusProgressItem,

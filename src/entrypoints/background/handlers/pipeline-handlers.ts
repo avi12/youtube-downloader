@@ -89,6 +89,10 @@ export function registerPipelineHandlers() {
 
   onMessage(MessageType.PipelineProgress, async ({ data }) => {
     const { videoId, progress, progressType, tabId } = data;
+    if (isVideoCancelled(videoId)) {
+      return;
+    }
+
     const isComplete = progress >= 1 && progressType === ProgressType.FFmpeg;
     await updateStatusProgress({
       mutate(current) {
@@ -113,7 +117,18 @@ export function registerPipelineHandlers() {
     const wasMuxCancelled = muxCancelledVideoIds.delete(videoId);
     await updateStatusProgress({
       mutate(current) {
-        delete current[videoId];
+        if (wasMuxCancelled) {
+          delete current[videoId];
+          return;
+        }
+
+        current[videoId] = {
+          isDownloading: false,
+          isDone: false,
+          isFailed: true,
+          progress: 0,
+          progressType: ""
+        };
       },
       progressUpdate: {
         videoId,
