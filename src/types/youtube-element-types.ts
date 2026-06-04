@@ -21,6 +21,8 @@ export interface TpYtPaperProgressElement extends HTMLElement {
 /** @see https://github.com/PolymerElements/paper-input */
 export interface TpYtPaperInputElement extends HTMLElement {
   updateStyles(styles: Record<string, string>): void;
+  label: string;
+  value: string;
 }
 
 /** @see https://github.com/PolymerElements/iron-icon */

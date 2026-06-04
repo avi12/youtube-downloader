@@ -8,6 +8,7 @@
   import { attachSettingsOptions, DATA_BUTTON_ID_ATTR, sendButtonData } from "@/lib/ui/polymer-utils";
   import { supportedExtensions } from "@/lib/utils/containers";
   import { VIDEO_QUALITIES } from "@/lib/youtube/options-defaults";
+  import { isTpYtPaperInputElement } from "@/lib/youtube/schemas";
   import {
     ButtonSize,
     ButtonState,
@@ -200,9 +201,8 @@
       return;
     }
 
-    const elPaperInput = e.currentTarget;
-    if (elPaperInput && "value" in elPaperInput && typeof elPaperInput.value === "string") {
-      state.effectiveZipName = elPaperInput.value;
+    if (isTpYtPaperInputElement(e.currentTarget)) {
+      state.effectiveZipName = e.currentTarget.value;
     }
   }
 

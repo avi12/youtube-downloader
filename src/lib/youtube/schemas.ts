@@ -1,4 +1,4 @@
-import type { PlayerResponse, YtButtonViewModelElement } from "@/types";
+import type { PlayerResponse, TpYtPaperInputElement, YtButtonViewModelElement } from "@/types";
 import { z } from "zod";
 
 export const playerCaptionTrackDataSchema = z.looseObject({
@@ -144,6 +144,16 @@ const playerResponseSchema = z.looseObject({
 
 export function isPlayerResponse(value: unknown): value is PlayerResponse {
   return playerResponseSchema.safeParse(value).success;
+}
+
+const tpYtPaperInputSchema = z.looseObject({
+  updateStyles: z.custom<(styles: Record<string, string>) => void>(value => typeof value === "function"),
+  label: z.string(),
+  value: z.string()
+});
+
+export function isTpYtPaperInputElement(value: unknown): value is TpYtPaperInputElement {
+  return tpYtPaperInputSchema.safeParse(value).success;
 }
 
 const YT_BUTTON_VIEW_MODEL_TAG = "YT-BUTTON-VIEW-MODEL";
