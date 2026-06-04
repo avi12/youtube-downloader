@@ -29,7 +29,7 @@ export const trackDescriptorSchema = z.looseObject({
 export const playlistVideoEntrySchema = z.looseObject({
   playlistVideoRenderer: z.looseObject({
     videoId: z.string().optional()
-  }).optional()
+  })
 });
 
 export const playlistContinuationEntrySchema = z.looseObject({
@@ -39,7 +39,7 @@ export const playlistContinuationEntrySchema = z.looseObject({
         token: z.string().optional()
       }).optional()
     }).optional()
-  }).optional()
+  })
 });
 
 const lockupRendererSchema = z.looseObject({

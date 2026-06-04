@@ -1,3 +1,12 @@
+import {
+  browseContinuationResponseSchema,
+  playlistContinuationEntrySchema,
+  playlistVideoEntrySchema,
+  ytInitialDataPlaylistSchema,
+  type PlaylistContinuationEntry,
+  type PlaylistVideoEntry,
+  type YtInitialDataPlaylist
+} from "./schemas";
 import type { Prettify } from "@/types";
 
 const PLAYLIST_URL_PREFIX = "https://www.youtube.com/playlist?list=";
@@ -11,67 +20,6 @@ const HEADER_CONTENT_TYPE = "Content-Type";
 const HEADER_GOOG_VISITOR_ID = "X-Goog-Visitor-Id";
 const CONTENT_TYPE_JSON = "application/json";
 
-type PlaylistVideoRenderer = Prettify<{
-  videoId?: string;
-}>;
-
-type PlaylistContent = Prettify<{
-  playlistVideoRenderer?: PlaylistVideoRenderer;
-}>;
-
-type PlaylistContinuation = Prettify<{
-  continuationItemRenderer?: {
-    continuationEndpoint?: {
-      continuationCommand?: {
-        token?: string;
-      };
-    };
-  };
-}>;
-
-type PlaylistEntry = PlaylistContent | PlaylistContinuation;
-
-type YtInitialDataPlaylist = Prettify<{
-  contents?: {
-    twoColumnBrowseResultsRenderer?: {
-      tabs?: Array<{
-        tabRenderer?: {
-          content?: {
-            sectionListRenderer?: {
-              contents?: Array<{
-                itemSectionRenderer?: {
-                  contents?: Array<{
-                    playlistVideoListRenderer?: {
-                      contents?: PlaylistEntry[];
-                    };
-                  }>;
-                };
-              }>;
-            };
-          };
-        };
-      }>;
-    };
-  };
-  header?: {
-    playlistHeaderRenderer?: {
-      title?: { simpleText?: string };
-      ownerText?: { runs?: Array<{ text?: string }> };
-    };
-  };
-  metadata?: {
-    playlistMetadataRenderer?: { title?: string };
-  };
-}>;
-
-type BrowseContinuationResponse = Prettify<{
-  onResponseReceivedActions?: Array<{
-    appendContinuationItemsAction?: {
-      continuationItems?: PlaylistEntry[];
-    };
-  }>;
-}>;
-
 type InnertubeMeta = Prettify<{
   clientName: string;
   clientVersion: string;
@@ -84,12 +32,12 @@ export type PlaylistContents = Prettify<{
   owner: string;
 }>;
 
-function isPlaylistVideoEntry(entry: PlaylistEntry): entry is PlaylistContent {
-  return "playlistVideoRenderer" in entry;
+function isPlaylistVideoEntry(entry: unknown): entry is PlaylistVideoEntry {
+  return playlistVideoEntrySchema.safeParse(entry).success;
 }
 
-function isContinuationEntry(entry: PlaylistEntry): entry is PlaylistContinuation {
-  return "continuationItemRenderer" in entry;
+function isContinuationEntry(entry: unknown): entry is PlaylistContinuationEntry {
+  return playlistContinuationEntrySchema.safeParse(entry).success;
 }
 
 type ParsedEntries = Prettify<{
@@ -97,12 +45,12 @@ type ParsedEntries = Prettify<{
   continuationToken: string | null;
 }>;
 
-function parseEntries(entries: PlaylistEntry[]): ParsedEntries {
+function parseEntries(entries: readonly unknown[]): ParsedEntries {
   const videoIds: string[] = [];
   let continuationToken: string | null = null;
   for (const entry of entries) {
     if (isPlaylistVideoEntry(entry)) {
-      const videoId = entry.playlistVideoRenderer?.videoId;
+      const videoId = entry.playlistVideoRenderer.videoId;
       if (videoId) {
         videoIds.push(videoId);
       }
@@ -111,7 +59,7 @@ function parseEntries(entries: PlaylistEntry[]): ParsedEntries {
     }
 
     if (isContinuationEntry(entry)) {
-      const token = entry.continuationItemRenderer?.continuationEndpoint?.continuationCommand?.token;
+      const token = entry.continuationItemRenderer.continuationEndpoint?.continuationCommand?.token;
       if (token) {
         continuationToken = token;
       }
@@ -181,8 +129,16 @@ async function fetchContinuationPage({ token, meta }: {
     return empty;
   }
 
-  const data: BrowseContinuationResponse = await response.json();
-  const actions = data.onResponseReceivedActions ?? [];
+  const rawJson: unknown = await response.json();
+  const parsed = browseContinuationResponseSchema.safeParse(rawJson);
+  if (!parsed.success) {
+    return {
+      videoIds: [],
+      continuationToken: null
+    };
+  }
+
+  const actions = parsed.data.onResponseReceivedActions ?? [];
   const continuationItems = actions.flatMap(action => action.appendContinuationItemsAction?.continuationItems ?? []);
   return parseEntries(continuationItems);
 }
@@ -201,7 +157,12 @@ export async function fetchPlaylistContents(playlistId: string): Promise<Playlis
 
   let data: YtInitialDataPlaylist;
   try {
-    data = JSON.parse(jsonText);
+    const parsed = ytInitialDataPlaylistSchema.safeParse(JSON.parse(jsonText));
+    if (!parsed.success) {
+      return null;
+    }
+
+    data = parsed.data;
   } catch {
     return null;
   }
