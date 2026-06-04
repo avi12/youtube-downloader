@@ -4,7 +4,6 @@ import { captionBusContextSchema, captionEventBusSchema, playerCaptionTrackDataS
 export {
   type MoviePlayerElement,
   type PlayerCaptionTrackData,
-  type CaptionEventBus,
   ACTIVE_CAPTION_ATTR,
   ACTIVE_AUDIO_ATTR
 } from "./movie-player-types";
@@ -81,7 +80,7 @@ export function capturePlayerCaptionBuses(player: MoviePlayerElement) {
   }
 
   const buses: CaptionEventBus[] = [];
-  const state = ctxResult.data.state ?? {};
+  const { state = {} } = ctxResult.data;
   for (const key in state) {
     const value = state[key];
     if (isCaptionEventBus(value)) {
@@ -90,8 +89,4 @@ export function capturePlayerCaptionBuses(player: MoviePlayerElement) {
   }
 
   return buses;
-}
-
-export function capturePlayerCaptionBus(player: MoviePlayerElement) {
-  return capturePlayerCaptionBuses(player)[0] ?? null;
 }
