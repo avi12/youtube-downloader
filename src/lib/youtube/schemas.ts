@@ -116,9 +116,11 @@ const playlistHeaderRendererSchema = z.looseObject({
     simpleText: z.string().optional()
   }).optional(),
   ownerText: z.looseObject({
-    runs: z.array(z.looseObject({
-      text: z.string().optional()
-    })).optional()
+    runs: z.array(
+      z.looseObject({
+        text: z.string().optional()
+      })
+    ).optional()
   }).optional()
 });
 

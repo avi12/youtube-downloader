@@ -5,8 +5,8 @@ import { mountPanelUi } from "../ui/panel-ui";
 import { registerDownloadProgressHandlers } from "./cross-world-download";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
-import { videoDataSchema } from "@/lib/youtube/schemas";
 import { forwardSabrCredentialsWithRetry } from "@/lib/youtube/sabr/credentials";
+import { videoDataSchema } from "@/lib/youtube/schemas";
 
 type RegisterCrossWorldHandlersParams = {
   isDownloadIframe: boolean;
