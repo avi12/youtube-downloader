@@ -1,4 +1,4 @@
-import type { PlayerResponse } from "@/types";
+import type { PlayerResponse, YtButtonViewModelElement } from "@/types";
 import { z } from "zod";
 
 export const playerCaptionTrackDataSchema = z.looseObject({
@@ -144,6 +144,12 @@ const playerResponseSchema = z.looseObject({
 
 export function isPlayerResponse(value: unknown): value is PlayerResponse {
   return playerResponseSchema.safeParse(value).success;
+}
+
+const YT_BUTTON_VIEW_MODEL_TAG = "YT-BUTTON-VIEW-MODEL";
+
+export function isYtButtonViewModelElement(value: unknown): value is YtButtonViewModelElement {
+  return value instanceof HTMLElement && value.tagName === YT_BUTTON_VIEW_MODEL_TAG;
 }
 
 export type PlayerCaptionTrackData = z.infer<typeof playerCaptionTrackDataSchema>;

@@ -7,6 +7,7 @@ import {
   DATA_SETTINGS_OPTIONS_ID_ATTR,
   isYtdSettingsOptionsRenderer
 } from "@/lib/ui/polymer-utils";
+import { isYtButtonViewModelElement } from "@/lib/youtube/schemas";
 import { ButtonSize, ButtonState, ButtonStyle, ButtonType } from "@/types";
 
 const SNACKBAR_VIEW_BUTTON_ID = "ytdl-snackbar-view";
@@ -20,9 +21,8 @@ export function registerCrossWorldHandlers() {
 
   crossWorldMessenger.onMessage(CrossWorldMessage.OpenSnackbar, () => {
     requestAnimationFrame(() => {
-      const elViewButton = document.querySelector<HTMLElement>(`[${DATA_BUTTON_ID_ATTR}="${SNACKBAR_VIEW_BUTTON_ID}"]`);
-      const isViewButtonUnavailable = !elViewButton || !("data" in elViewButton);
-      if (isViewButtonUnavailable) {
+      const elViewButton = document.querySelector(`[${DATA_BUTTON_ID_ATTR}="${SNACKBAR_VIEW_BUTTON_ID}"]`);
+      if (!isYtButtonViewModelElement(elViewButton)) {
         return;
       }
 
