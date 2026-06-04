@@ -1,4 +1,10 @@
-import type { PlayerResponse, TpYtPaperInputElement, YtButtonViewModelElement } from "@/types";
+import type {
+  DownloadRequest,
+  PlayerResponse,
+  TpYtPaperInputElement,
+  VideoData,
+  YtButtonViewModelElement
+} from "@/types";
 import { z } from "zod";
 
 export const playerCaptionTrackDataSchema = z.looseObject({
@@ -116,9 +122,11 @@ const playlistHeaderRendererSchema = z.looseObject({
     simpleText: z.string().optional()
   }).optional(),
   ownerText: z.looseObject({
-    runs: z.array(z.looseObject({
-      text: z.string().optional()
-    })).optional()
+    runs: z.array(
+      z.looseObject({
+        text: z.string().optional()
+      })
+    ).optional()
   }).optional()
 });
 
@@ -136,15 +144,36 @@ export const ytInitialDataPlaylistSchema = z.looseObject({
   }).optional()
 });
 
-const playerResponseSchema = z.looseObject({
+const playerResponseShapeSchema = z.looseObject({
   playabilityStatus: z.looseObject({
     status: z.string()
   })
 });
 
+export const playerResponseSchema = z.custom<PlayerResponse>(
+  value => playerResponseShapeSchema.safeParse(value).success
+);
+
 export function isPlayerResponse(value: unknown): value is PlayerResponse {
   return playerResponseSchema.safeParse(value).success;
 }
+
+const videoDataShapeSchema = z.looseObject({
+  videoId: z.string()
+});
+
+export const videoDataSchema = z.custom<VideoData>(value => videoDataShapeSchema.safeParse(value).success);
+
+const downloadRequestShapeSchema = z.looseObject({
+  videoId: z.string(),
+  videoItag: z.number(),
+  audioItag: z.number(),
+  filenameOutput: z.string()
+});
+
+export const downloadRequestSchema = z.custom<DownloadRequest>(
+  value => downloadRequestShapeSchema.safeParse(value).success
+);
 
 const tpYtPaperInputSchema = z.looseObject({
   updateStyles: z.custom<(styles: Record<string, string>) => void>(value => typeof value === "function"),

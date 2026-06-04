@@ -6,7 +6,7 @@ import { registerDownloadProgressHandlers } from "./cross-world-download";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { forwardSabrCredentialsWithRetry } from "@/lib/youtube/sabr/credentials";
-import type { VideoData } from "@/types";
+import { videoDataSchema } from "@/lib/youtube/schemas";
 
 type RegisterCrossWorldHandlersParams = {
   isDownloadIframe: boolean;
@@ -30,11 +30,15 @@ export function registerCrossWorldHandlers({ isDownloadIframe, context }: Regist
   });
 
   crossWorldMessenger.onMessage(CrossWorldMessage.PanelContentReady, ({ data }) => {
-    const videoData: VideoData = JSON.parse(data.videoDataJson);
+    const parsed = videoDataSchema.safeParse(JSON.parse(data.videoDataJson));
+    if (!parsed.success) {
+      return;
+    }
+
     mountPanelUi({
       context,
       contentId: data.contentId,
-      videoData
+      videoData: parsed.data
     });
   });
 

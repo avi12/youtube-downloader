@@ -2,8 +2,8 @@ import { buildAndDispatchVideoData } from "../video/capture-dispatch";
 import { readYtcfg } from "../video/video-data";
 import { extractPlayerResponseFromHtml } from "../video/youtube-api";
 import { InnertubeClientName, type InnertubePlayerRequest } from "@/lib/youtube/innertube";
+import { playerResponseSchema } from "@/lib/youtube/schemas";
 import { getYtcfg, YtcfgKey } from "@/lib/youtube/ytcfg";
-import type { PlayerResponse } from "@/types";
 
 const WATCH_PATHNAME = "/watch";
 const PLAYER_API_URL = "https://www.youtube.com/youtubei/v1/player?prettyPrint=false";
@@ -47,10 +47,10 @@ export async function fetchVideoDataViaApi(videoId: string) {
         } satisfies InnertubePlayerRequest)
       }
     );
-    const playerData: PlayerResponse = await response.json();
-    const hasPlayerDataVideoId = !!playerData?.videoDetails?.videoId;
+    const parsed = playerResponseSchema.safeParse(await response.json());
+    const hasPlayerDataVideoId = parsed.success && !!parsed.data.videoDetails?.videoId;
     if (hasPlayerDataVideoId) {
-      await buildAndDispatchVideoData({ playerResponse: playerData });
+      await buildAndDispatchVideoData({ playerResponse: parsed.data });
       return;
     }
   }

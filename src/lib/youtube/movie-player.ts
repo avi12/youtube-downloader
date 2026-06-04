@@ -1,9 +1,5 @@
-import {
-  captionBusContextSchema,
-  captionEventBusSchema,
-  playerCaptionTrackDataSchema
-} from "./schemas";
 import type { MoviePlayerElement, CaptionEventBus, PlayerCaptionTrackData } from "./movie-player-types";
+import { captionBusContextSchema, captionEventBusSchema, playerCaptionTrackDataSchema } from "./schemas";
 
 export {
   type MoviePlayerElement,

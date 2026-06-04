@@ -1,8 +1,9 @@
 import { CONTENT_OPTIONS } from "@/lib/ui/synced-stores.svelte";
 import { InnertubeClientName, type InnertubePlayerRequest } from "@/lib/youtube/innertube";
+import { playerResponseSchema } from "@/lib/youtube/schemas";
 import { orderCaptionsByPreference, resolveCaptionLanguageMode } from "@/lib/youtube/video-helpers";
 import { getYtcfg, YtcfgKey } from "@/lib/youtube/ytcfg";
-import { type CaptionTrack, type PlayerResponse, type Prettify } from "@/types";
+import { type CaptionTrack, type Prettify } from "@/types";
 
 const PLAYER_API_PATH = "/youtubei/v1/player?prettyPrint=false";
 const HEADER_CONTENT_TYPE = "Content-Type";
@@ -86,7 +87,7 @@ export async function fetchFreshCaptionUrls(videoId: string) {
       return new Map<string, string>();
     }
 
-    const data: PlayerResponse = await response.json();
+    const data = playerResponseSchema.parse(await response.json());
     const freshTracks = data.captions?.playerCaptionsTracklistRenderer?.captionTracks ?? [];
     return new Map(freshTracks.map(track => [track.vssId, track.baseUrl]));
   } catch {

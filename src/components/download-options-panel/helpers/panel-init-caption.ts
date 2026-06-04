@@ -1,7 +1,8 @@
 import { CAPTION_KIND_ASR } from "./audio-language-helpers";
 import { IS_WATCH_PAGE } from "./panel-init-audio";
-import { ACTIVE_CAPTION_ATTR, isPlayerCaptionTrackData } from "@/lib/youtube/movie-player";
+import { ACTIVE_CAPTION_ATTR } from "@/lib/youtube/movie-player";
 import type { MoviePlayerElement } from "@/lib/youtube/movie-player";
+import { playerCaptionTrackDataSchema } from "@/lib/youtube/schemas";
 import {
   findOriginalAudioFormat,
   normalizeLanguageCode,
@@ -28,8 +29,7 @@ export function getActivePlayerCaption() {
   }
 
   try {
-    const data: unknown = JSON.parse(stored);
-    return isPlayerCaptionTrackData(data) ? data : null;
+    return playerCaptionTrackDataSchema.parse(JSON.parse(stored));
   } catch {
     return null;
   }
