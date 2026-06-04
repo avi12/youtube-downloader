@@ -9,22 +9,21 @@ const YOUTUBE_MUSIC_CLIENT_VERSION = "1.20260408.01.00";
 const CONTENT_TYPE_JSON = "application/json";
 
 async function fetchFirstMusicResult(searchQuery: string) {
-  const searchRequest: InnertubeSearchRequest = {
-    query: searchQuery,
-    params: SONG_FILTER_PARAMS,
-    context: {
-      client: {
-        clientName: InnertubeClientName.WebRemix,
-        clientVersion: YOUTUBE_MUSIC_CLIENT_VERSION
-      }
-    }
-  };
   const response = await fetch(YOUTUBE_MUSIC_SEARCH_URL, {
     method: "POST",
     headers: {
       "Content-Type": CONTENT_TYPE_JSON
     },
-    body: JSON.stringify(searchRequest)
+    body: JSON.stringify({
+      query: searchQuery,
+      params: SONG_FILTER_PARAMS,
+      context: {
+        client: {
+          clientName: InnertubeClientName.WebRemix,
+          clientVersion: YOUTUBE_MUSIC_CLIENT_VERSION
+        }
+      }
+    } satisfies InnertubeSearchRequest)
   });
   const isResponseOk = response.ok;
   if (!isResponseOk) {
