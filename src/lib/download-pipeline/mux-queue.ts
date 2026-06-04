@@ -20,17 +20,20 @@ async function processMuxQueue() {
   isMuxing = true;
 
   while (muxQueue.length > 0) {
-    const batch = muxQueue.splice(0);
-    for (const entry of batch) {
-      const isJobCancelled = cancelledMuxJobs.has(entry.videoId);
-      if (isJobCancelled) {
-        cancelledMuxJobs.delete(entry.videoId);
-        entry.reject(new Error(MUX_JOB_CANCELLED_ERROR));
-        continue;
-      }
-
-      await entry.run();
+    const entry = muxQueue.shift();
+    const isEntryMissing = !entry;
+    if (isEntryMissing) {
+      break;
     }
+
+    const isJobCancelled = cancelledMuxJobs.has(entry.videoId);
+    if (isJobCancelled) {
+      cancelledMuxJobs.delete(entry.videoId);
+      entry.reject(new Error(MUX_JOB_CANCELLED_ERROR));
+      continue;
+    }
+
+    await entry.run();
   }
 
   isMuxing = false;
