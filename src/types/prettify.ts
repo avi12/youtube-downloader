@@ -17,18 +17,18 @@ type SkipPrettify =
 
 export type Prettify<T> = T extends SkipPrettify
   ? T
-  : T extends Map<infer K, infer V>
-    ? Map<Prettify<K>, Prettify<V>>
-    : T extends ReadonlyMap<infer K, infer V>
-      ? ReadonlyMap<Prettify<K>, Prettify<V>>
-      : T extends WeakMap<infer K extends WeakKey, infer V>
-        ? WeakMap<K, Prettify<V>>
-        : T extends Set<infer U>
-          ? Set<Prettify<U>>
-          : T extends ReadonlySet<infer U>
-            ? ReadonlySet<Prettify<U>>
-            : T extends WeakSet<infer U extends WeakKey>
-              ? WeakSet<U>
+  : T extends Map<infer Key, infer Value>
+    ? Map<Prettify<Key>, Prettify<Value>>
+    : T extends ReadonlyMap<infer Key, infer Value>
+      ? ReadonlyMap<Prettify<Key>, Prettify<Value>>
+      : T extends WeakMap<infer Key extends WeakKey, infer Value>
+        ? WeakMap<Key, Prettify<Value>>
+        : T extends Set<infer Element>
+          ? Set<Prettify<Element>>
+          : T extends ReadonlySet<infer Element>
+            ? ReadonlySet<Prettify<Element>>
+            : T extends WeakSet<infer Element extends WeakKey>
+              ? WeakSet<Element>
               : T extends object
-                ? { [K in keyof T]: Prettify<T[K]> }
+                ? { [Key in keyof T]: Prettify<T[Key]> }
                 : T;
