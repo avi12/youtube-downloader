@@ -1,3 +1,4 @@
+import type { PlayerResponse } from "@/types";
 import { z } from "zod";
 
 export const playerCaptionTrackDataSchema = z.looseObject({
@@ -134,6 +135,16 @@ export const ytInitialDataPlaylistSchema = z.looseObject({
     playlistMetadataRenderer: playlistMetadataRendererSchema.optional()
   }).optional()
 });
+
+const playerResponseSchema = z.looseObject({
+  playabilityStatus: z.looseObject({
+    status: z.string()
+  })
+});
+
+export function isPlayerResponse(value: unknown): value is PlayerResponse {
+  return playerResponseSchema.safeParse(value).success;
+}
 
 export type PlayerCaptionTrackData = z.infer<typeof playerCaptionTrackDataSchema>;
 export type LockupCardData = z.infer<typeof lockupCardDataSchema>;

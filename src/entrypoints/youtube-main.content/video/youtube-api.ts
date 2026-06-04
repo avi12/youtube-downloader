@@ -1,4 +1,5 @@
 import { byQualityDesc, getUniqueVideoFormats, getAudioFormats } from "./format-filters";
+import { isPlayerResponse } from "@/lib/youtube/schemas";
 import { isVideoDownloadable, isVideoLive, isVideoMusic } from "@/lib/youtube/video-helpers";
 import type { PlayerResponse, Prettify } from "@/types";
 
@@ -72,11 +73,11 @@ export function buildVideoData({ playerResponse, clientVersion, clientName }: Vi
   };
 }
 
-export function extractPlayerResponseFromHtml(html: string) {
+export function extractPlayerResponseFromHtml(html: string): PlayerResponse | null {
   try {
     const [, playerJson = ""] = html.match(YT_INITIAL_PLAYER_RESPONSE_PATTERN) ?? [];
-    const parsed: PlayerResponse = JSON.parse(playerJson);
-    return parsed;
+    const parsed: unknown = JSON.parse(playerJson);
+    return isPlayerResponse(parsed) ? parsed : null;
   } catch {
     return null;
   }
