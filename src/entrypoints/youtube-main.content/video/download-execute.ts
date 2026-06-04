@@ -107,20 +107,23 @@ export async function resolveAndDispatch({ params, abortSignal }: ResolveAndDisp
   } = params;
 
   const cachedVideoData = videoDataCache.get(videoId);
-  if (!cachedVideoData) {
-    console.error("[ytdl] No video data cached for", videoId);
+  const isWatchPageForThisVideo =
+    location.pathname === "/watch" &&
+    new URLSearchParams(location.search).get("v") === videoId;
+
+  const shouldUseIframe = self === top && (
+    !cachedVideoData ||
+    !isWatchPageForThisVideo ||
+    isVideoDataExpired(cachedVideoData)
+  );  if (shouldUseIframe) {
+    void crossWorldMessenger.sendMessage(CrossWorldMessage.DownloadViaIframe, {
+      ...params,
+      isIframeFallback: true
+    });
     return;
   }
 
-  const isExpiredOnTopFrame = self === top && isVideoDataExpired(cachedVideoData);
-  if (isExpiredOnTopFrame) {
-    void crossWorldMessenger.sendMessage(
-      CrossWorldMessage.DownloadViaIframe,
-      {
-        ...params,
-        isIframeFallback: true
-      }
-    );
+  if (!cachedVideoData) {
     return;
   }
 
