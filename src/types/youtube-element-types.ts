@@ -1,18 +1,5 @@
 import type { ButtonViewModelData } from "./youtube-button-enums";
 
-export function isPolymerInputElement(element: Element): element is TpYtPaperInputElement {
-  return "updateStyles" in element && "label" in element;
-}
-
-export interface TpYtPaperToastElement extends HTMLElement {
-  open: () => void;
-  text: string;
-}
-
-export function isPaperToastElement(element: Element): element is TpYtPaperToastElement {
-  return "open" in element && "text" in element;
-}
-
 /** YouTube-internal Polymer view model - values reverse-engineered from YouTube's runtime. */
 export interface YtButtonViewModelElement extends HTMLElement {
   data: ButtonViewModelData;
