@@ -57,7 +57,7 @@ export const lockupCardDataSchema = z.looseObject({
 });
 
 export const ytcfgSchema = z.looseObject({
-  get: z.function().optional()
+  get: z.custom<(key: string) => unknown>(value => typeof value === "function").optional()
 });
 
 const continuationItemListSchema = z.looseObject({

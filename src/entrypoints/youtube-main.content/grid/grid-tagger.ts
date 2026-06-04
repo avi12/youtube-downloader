@@ -1,4 +1,5 @@
 import { CHILD_LIST_SUBTREE } from "@/lib/utils/dom";
+import { lockupCardDataSchema } from "@/lib/youtube/schemas";
 import type { Prettify } from "@/types";
 
 const CONTENT_ID_ATTR = "data-ytdl-content-id";
@@ -13,30 +14,19 @@ function extractContentId(elCard: Element) {
     return contentId;
   }
 
-  if (!("data" in elCard) || !elCard.data || typeof elCard.data !== "object") {
+  if (!("data" in elCard)) {
     return null;
   }
 
-  const data = elCard.data;
-  if ("contentId" in data && typeof data.contentId === "string") {
-    return data.contentId;
+  const parsed = lockupCardDataSchema.safeParse(elCard.data);
+  if (!parsed.success) {
+    return null;
   }
 
-  if ("lockupRenderer" in data && data.lockupRenderer && typeof data.lockupRenderer === "object") {
-    const lockupRenderer = data.lockupRenderer;
-    if ("contentId" in lockupRenderer && typeof lockupRenderer.contentId === "string") {
-      return lockupRenderer.contentId;
-    }
-  }
-
-  if ("videoRenderer" in data && data.videoRenderer && typeof data.videoRenderer === "object") {
-    const videoRenderer = data.videoRenderer;
-    if ("videoId" in videoRenderer && typeof videoRenderer.videoId === "string") {
-      return videoRenderer.videoId;
-    }
-  }
-
-  return null;
+  return parsed.data.contentId
+    ?? parsed.data.lockupRenderer?.contentId
+    ?? parsed.data.videoRenderer?.videoId
+    ?? null;
 }
 
 type TagCardParams = Prettify<{

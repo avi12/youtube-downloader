@@ -7,6 +7,7 @@ import {
   isPlayerCaptionTrackData
 } from "@/lib/youtube/movie-player";
 import type { MoviePlayerElement } from "@/lib/youtube/movie-player";
+import { trackDescriptorSchema } from "@/lib/youtube/schemas";
 import type { Prettify } from "@/types";
 
 const AD_PLAYER_CLASSES = ["ad-showing", "ad-interrupting"];
@@ -26,13 +27,6 @@ function isAudioTrackId(value: string) {
   return AUDIO_TRACK_ID_PATTERN.test(value);
 }
 
-function hasTrackDescriptorShape(value: unknown): value is {
-  id: unknown;
-  isAutoDubbed: unknown;
-} {
-  return typeof value === "object" && value !== null && "id" in value && "isAutoDubbed" in value;
-}
-
 function readActiveAudioTrackId(player: MoviePlayerElement | null) {
   const track = player?.getAudioTrack?.();
   if (!track) {
@@ -40,8 +34,9 @@ function readActiveAudioTrackId(player: MoviePlayerElement | null) {
   }
 
   for (const value of Object.values(track)) {
-    if (hasTrackDescriptorShape(value) && typeof value.id === "string") {
-      return value.id;
+    const parsed = trackDescriptorSchema.safeParse(value);
+    if (parsed.success) {
+      return parsed.data.id;
     }
   }
 

@@ -12,20 +12,20 @@
 // read from MAIN-world page context (not available in extension contexts).
 import { sabrFetchBridge } from "@/lib/messaging/sabr-fetch-bridge";
 import { base64ToUint8Array, uint8ToBase64 } from "@/lib/utils/binary";
+import { ytcfgSchema } from "@/lib/youtube/schemas";
 
 const PRISTINE_IFRAME_ATTR = "data-ytdl-pristine-fetch";
 const VISITOR_DATA_TOKEN = "__YTDL_VISITOR_DATA__";
 
-declare const ytcfg: {
-  get?: (key: string) => unknown;
-} | undefined;
+declare const ytcfg: unknown;
 
 function readVisitorData() {
   if (typeof ytcfg === "undefined") {
     return "";
   }
 
-  const value = ytcfg?.get?.("VISITOR_DATA");
+  const parsed = ytcfgSchema.safeParse(ytcfg);
+  const value = parsed.success ? parsed.data.get?.("VISITOR_DATA") : undefined;
   return typeof value === "string" ? value : "";
 }
 
