@@ -125,7 +125,7 @@ export function createPlaylistVideoItemState({
 
     activeDownloadClicks.add(videoId);
     try {
-      await triggerDownload({
+      triggerDownload({
         videoData: videoData!,
         videoId,
         gridTitle,
