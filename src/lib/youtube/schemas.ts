@@ -1,4 +1,4 @@
-import type { PlayerResponse, TpYtPaperInputElement, YtButtonViewModelElement } from "@/types";
+import type { PlayerResponse, TpYtPaperInputElement, VideoData, YtButtonViewModelElement } from "@/types";
 import { z } from "zod";
 
 export const playerCaptionTrackDataSchema = z.looseObject({
@@ -149,6 +149,12 @@ export const playerResponseSchema = z.custom<PlayerResponse>(
 export function isPlayerResponse(value: unknown): value is PlayerResponse {
   return playerResponseSchema.safeParse(value).success;
 }
+
+const videoDataShapeSchema = z.looseObject({
+  videoId: z.string()
+});
+
+export const videoDataSchema = z.custom<VideoData>(value => videoDataShapeSchema.safeParse(value).success);
 
 const tpYtPaperInputSchema = z.looseObject({
   updateStyles: z.custom<(styles: Record<string, string>) => void>(value => typeof value === "function"),
