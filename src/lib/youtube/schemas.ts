@@ -136,11 +136,15 @@ export const ytInitialDataPlaylistSchema = z.looseObject({
   }).optional()
 });
 
-const playerResponseSchema = z.looseObject({
+const playerResponseShapeSchema = z.looseObject({
   playabilityStatus: z.looseObject({
     status: z.string()
   })
 });
+
+export const playerResponseSchema = z.custom<PlayerResponse>(
+  value => playerResponseShapeSchema.safeParse(value).success
+);
 
 export function isPlayerResponse(value: unknown): value is PlayerResponse {
   return playerResponseSchema.safeParse(value).success;
