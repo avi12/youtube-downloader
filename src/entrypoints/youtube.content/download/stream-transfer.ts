@@ -1,6 +1,5 @@
 import { popPlaylistContext, sendStreamChunks } from "./stream-chunks";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
-import { downloadProgressStore } from "@/lib/ui/synced-stores.svelte";
 import { AUDIO_EXTRA_STREAM_PREFIX, StreamType } from "@/types";
 import type { Prettify, StreamDataPayload } from "@/types";
 
@@ -86,8 +85,6 @@ type HandleStreamErrorParams = Prettify<{
 }>;
 export function handleStreamError({ videoId, error }: HandleStreamErrorParams) {
   console.error("[ytdl] Stream error for", videoId, error);
-
-  downloadProgressStore.delete(videoId);
 
   void sendMessage(MessageType.ProcessStreamError, {
     videoId,

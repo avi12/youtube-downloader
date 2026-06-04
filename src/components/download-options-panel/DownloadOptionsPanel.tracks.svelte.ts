@@ -16,13 +16,11 @@ export function createTrackStates({
   getVideoData,
   setSelectedAudioFormat,
   setSelectedVideoFormat,
-  resetDoneState,
   setDownloadId
 }: {
   getVideoData: () => VideoData;
   setSelectedAudioFormat: (value: AdaptiveFormatItem | null) => void;
   setSelectedVideoFormat: (value: AdaptiveFormatItem | null) => void;
-  resetDoneState: () => void;
   setDownloadId: (value: number | null) => void;
 }) {
   const audio = untrack(() => {
@@ -31,7 +29,6 @@ export function createTrackStates({
     return createAudioTrackState({
       getVideoData,
       setSelectedAudioFormat,
-      resetDoneState,
       initialMode: resolveInitialAudioMode({
         options,
         videoData

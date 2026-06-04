@@ -1,9 +1,9 @@
-import { downloadProgressStore } from "@/lib/ui/synced-stores.svelte";
+import { statusProgressSignal } from "@/lib/ui/synced-stores.svelte";
 import type { DownloadType, VideoData } from "@/types";
 
 // fallow-ignore-next-line complexity
 export function createDownloadStoreState(getVideoData: () => VideoData) {
-  const storeEntry = $derived(downloadProgressStore.get(getVideoData().videoId));
+  const storeEntry = $derived(statusProgressSignal.value[getVideoData().videoId]);
   const isDownloading = $derived(storeEntry?.isDownloading ?? false);
   const isDone = $derived(storeEntry?.isDone ?? false);
   const progress = $derived(storeEntry?.progress ?? 0);
@@ -12,19 +12,6 @@ export function createDownloadStoreState(getVideoData: () => VideoData) {
   const activeVideoItag = $derived(storeEntry?.videoItag ?? null);
   const activeAudioItag = $derived(storeEntry?.audioItag ?? null);
   const activeDownloadType: DownloadType | null = $derived(storeEntry?.downloadType ?? null);
-
-  function resetDoneState() {
-    const { videoId } = getVideoData();
-    const entry = storeEntry;
-    if (!entry?.isDone) {
-      return;
-    }
-
-    downloadProgressStore.setLocal(videoId, {
-      ...entry,
-      isDone: false
-    });
-  }
 
   return {
     get storeEntry() {
@@ -53,7 +40,6 @@ export function createDownloadStoreState(getVideoData: () => VideoData) {
     },
     get activeDownloadType() {
       return activeDownloadType;
-    },
-    resetDoneState
+    }
   };
 }

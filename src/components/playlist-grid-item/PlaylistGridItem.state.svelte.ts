@@ -1,7 +1,4 @@
-import {
-  initBatchVideoProgress,
-  sendBatchDownloadMessage
-} from "@/components/playlist-downloader/helpers/playlist-batch-ops";
+import { sendBatchDownloadMessage } from "@/components/playlist-downloader/helpers/playlist-batch-ops";
 import {
   optionsToQualityValue,
   resolveDefaultZipName
@@ -12,7 +9,7 @@ import { completedDownloadsStore } from "@/lib/ui/completed-downloads-store.svel
 import { PrimaryButtonState } from "@/lib/ui/panel-button-attachments.svelte";
 import {
   CONTENT_OPTIONS,
-  downloadProgressStore,
+  statusProgressSignal,
   videoDataFailedStore,
   videoDataStore
 } from "@/lib/ui/synced-stores.svelte";
@@ -327,7 +324,7 @@ export function createPlaylistGridItemState({ playlistId, gridTitle }: CreatePla
     let progressEntryCount = 0;
 
     for (const video of loadedVideos) {
-      const entry = downloadProgressStore.get(video.videoId);
+      const entry = statusProgressSignal.value[video.videoId];
       if (!entry) {
         continue;
       }
@@ -496,8 +493,6 @@ export function createPlaylistGridItemState({ playlistId, gridTitle }: CreatePla
       playlistDownloadType: effectiveDownloadType
     }));
 
-    initBatchVideoProgress(videos);
-
     status = PlaylistGridStatus.Downloading;
     try {
       await sendBatchDownloadMessage({
@@ -542,7 +537,7 @@ export function createPlaylistGridItemState({ playlistId, gridTitle }: CreatePla
   $effect.root(() => {
     $effect(() => {
       const allDone = loadedVideos.length > 0
-        && loadedVideos.every(video => downloadProgressStore.get(video.videoId)?.isDone);
+        && loadedVideos.every(video => statusProgressSignal.value[video.videoId]?.isDone);
       if (!allDone) {
         return;
       }

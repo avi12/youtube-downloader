@@ -5,7 +5,7 @@ import { buildChevronData, buildDownloadData } from "./watch-button-view-model";
 import { createButtonElementEffects } from "./WatchButton.button-effects.svelte";
 import { createMessageEffects } from "./WatchButton.message-effects.svelte";
 import { createPanelEffects } from "./WatchButton.panel-effects.svelte";
-import { downloadProgressStore, interruptedDownloadStore, statusProgressSignal } from "@/lib/ui/synced-stores.svelte";
+import { interruptedDownloadStore, statusProgressSignal } from "@/lib/ui/synced-stores.svelte";
 import { calculateWeightedProgress } from "@/lib/youtube/video-helpers";
 import { type VideoData, type YtButtonViewModelElement } from "@/types";
 import { untrack } from "svelte";
@@ -22,7 +22,7 @@ export function createWatchButtonState(params: {
   const statusEntry = $derived(statusProgressSignal.value[videoId]);
   const isDownloading = $derived(statusEntry?.isDownloading ?? false);
   const isDone = $derived(statusEntry?.isDone ?? false);
-  const isError = $derived(downloadProgressStore.get(videoId)?.isFailed ?? false);
+  const isError = $derived(statusEntry?.isFailed ?? false);
   const isInterrupted = $derived(!!interruptedDownloadStore.get(videoId));
   const downloadProgressType = $derived(statusEntry?.progressType ?? "");
   const downloadProgress = $derived.by(() => {

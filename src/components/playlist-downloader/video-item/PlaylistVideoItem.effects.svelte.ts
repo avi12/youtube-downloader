@@ -1,5 +1,5 @@
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
-import { downloadProgressStore, videoDataFailedStore, videoDataStore } from "@/lib/ui/synced-stores.svelte";
+import { statusProgressSignal, videoDataFailedStore, videoDataStore } from "@/lib/ui/synced-stores.svelte";
 import type { VideoData } from "@/types";
 
 export function createVideoItemEffects({
@@ -14,7 +14,7 @@ export function createVideoItemEffects({
   setIsLocallyDone: (value: boolean) => void;
 }) {
   $effect(() => {
-    const entry = downloadProgressStore.get(videoId);
+    const entry = statusProgressSignal.value[videoId];
     if (entry?.isDone) {
       setIsLocallyDone(true);
       return;

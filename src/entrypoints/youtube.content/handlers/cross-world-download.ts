@@ -2,7 +2,6 @@ import { cancelDownloadsLocally } from "../download/cancel-actions";
 import { uncancelStreamTransfer } from "../download/stream-transfer";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
-import { downloadProgressStore } from "@/lib/ui/synced-stores.svelte";
 import type { DownloadRequest } from "@/types";
 
 export function registerDownloadProgressHandlers() {
@@ -12,19 +11,6 @@ export function registerDownloadProgressHandlers() {
 
   crossWorldMessenger.onMessage(CrossWorldMessage.StartBackgroundDownload, ({ data }) => {
     const request: DownloadRequest = JSON.parse(data.requestJson);
-    const isProgressSlotAvailable = downloadProgressStore.setLocal(request.videoId, {
-      isDownloading: true,
-      isDone: false,
-      progress: 0,
-      progressType: "",
-      videoItag: request.videoItag,
-      audioItag: request.audioItag,
-      downloadType: request.type
-    });
-    if (!isProgressSlotAvailable) {
-      return;
-    }
-
     void sendMessage(MessageType.StartBackgroundDownload, request);
   });
 
@@ -36,27 +22,7 @@ export function registerDownloadProgressHandlers() {
   });
 
   crossWorldMessenger.onMessage(CrossWorldMessage.DownloadRequest, ({ data }) => {
-    downloadProgressStore.unsuppress(data.videoId);
-    downloadProgressStore.setLocal(data.videoId, {
-      isDownloading: true,
-      isDone: false,
-      progress: 0,
-      progressType: "",
-      videoItag: data.videoItag,
-      audioItag: data.audioItag,
-      downloadType: data.type
-    });
     uncancelStreamTransfer(data.videoId);
-  });
-
-  crossWorldMessenger.onMessage(CrossWorldMessage.DownloadProgress, ({ data }) => {
-    downloadProgressStore.unsuppress(data.videoId);
-    downloadProgressStore.setLocal(data.videoId, {
-      isDownloading: true,
-      isDone: false,
-      progress: data.progress,
-      progressType: data.progressType
-    });
   });
 
   crossWorldMessenger.onMessage(CrossWorldMessage.DownloadBlobUrl, ({ data }) => {
@@ -64,13 +30,13 @@ export function registerDownloadProgressHandlers() {
   });
 
   crossWorldMessenger.onMessage(CrossWorldMessage.ReportPageProgress, ({ data }) => {
-    downloadProgressStore.unsuppress(data.videoId);
-    downloadProgressStore.setLocal(data.videoId, {
-      isDownloading: true,
-      isDone: false,
-      progress: data.progress,
-      progressType: data.progressType
-    });
     void sendMessage(MessageType.ReportPageProgress, data);
+  });
+
+  crossWorldMessenger.onMessage(CrossWorldMessage.ReportMainDownloadFailed, ({ data }) => {
+    void sendMessage(MessageType.ReportWorkerDownloadFailed, {
+      videoId: data.videoId,
+      tabId: -1
+    });
   });
 }

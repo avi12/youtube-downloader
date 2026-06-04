@@ -24,8 +24,6 @@ export const sabrCredentials = createSyncedSignal({
 export const videoDataStore = createSyncedMap(createMapMessenger<VideoData>("video-data"));
 export const videoDataFailedStore = createSyncedMap(createMapMessenger<boolean>("video-data-failed"));
 
-export const downloadProgressStore = createSyncedMap(createMapMessenger<DownloadProgressEntry>("download-progress"));
-
 const INITIAL_STATUS_PROGRESS: Record<string, DownloadProgressEntry> = {};
 export const statusProgressSignal = createSyncedSignal({
   messenger: createSignalMessenger<Record<string, DownloadProgressEntry>>("status-progress"),

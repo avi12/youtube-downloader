@@ -3,8 +3,8 @@ import { cancelDownload, triggerDownload } from "./PlaylistVideoItem.download";
 import { createVideoItemEffects } from "./PlaylistVideoItem.effects.svelte";
 import { buildButtonTooltip } from "./PlaylistVideoItem.helpers";
 import {
-  downloadProgressStore,
   interruptedDownloadStore,
+  statusProgressSignal,
   type DownloadProgressState
 } from "@/lib/ui/synced-stores.svelte";
 import { calculateWeightedProgress } from "@/lib/youtube/video-helpers";
@@ -31,7 +31,7 @@ export function createPlaylistVideoItemState({
   let isLoadFailed = $state(false);
   let isLocallyDone = $state(false);
 
-  const downloadState = $derived(downloadProgressStore.get(videoId) ?? defaultProgressState);
+  const downloadState = $derived(statusProgressSignal.value[videoId] ?? defaultProgressState);
   const isDownloading = $derived(downloadState.isDownloading);
   const isDone = $derived(downloadState.isDone);
   const isDownloadFailed = $derived(!!downloadState.isFailed);

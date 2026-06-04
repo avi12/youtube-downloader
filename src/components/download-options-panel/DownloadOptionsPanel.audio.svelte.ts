@@ -13,13 +13,11 @@ import { untrack } from "svelte";
 export function createAudioTrackState({
   getVideoData,
   setSelectedAudioFormat,
-  resetDoneState,
   initialMode,
   initialCustomLanguage
 }: {
   getVideoData: () => VideoData;
   setSelectedAudioFormat: (value: AdaptiveFormatItem | null) => void;
-  resetDoneState: () => void;
   initialMode: PanelTrackMode;
   initialCustomLanguage: string;
 }) {
@@ -33,7 +31,6 @@ export function createAudioTrackState({
     );
     if (matching.length) {
       setSelectedAudioFormat(matching.reduce((best, format) => format.bitrate > best.bitrate ? format : best));
-      resetDoneState();
     }
   }
 
@@ -46,7 +43,6 @@ export function createAudioTrackState({
       const original = findOriginalAudioFormat(audioFormats);
       if (original) {
         setSelectedAudioFormat(original);
-        resetDoneState();
       }
 
       return;
@@ -73,7 +69,6 @@ export function createAudioTrackState({
       });
     if (matchDefault) {
       setSelectedAudioFormat(matchDefault);
-      resetDoneState();
     }
   }
 

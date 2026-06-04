@@ -1,6 +1,4 @@
-import { videoQueueItem } from "@/lib/storage/storage";
 import { completedDownloadsStore } from "@/lib/ui/completed-downloads-store.svelte";
-import { downloadProgressStore } from "@/lib/ui/synced-stores.svelte";
 import type { VideoData } from "@/types";
 
 export function createDownloadProgressTracker({
@@ -23,23 +21,6 @@ export function createDownloadProgressTracker({
       }
 
       setDownloadId(completed.downloadId);
-    });
-  });
-
-  $effect(() => {
-    const { videoId } = getVideoData();
-    return videoQueueItem.watch(queue => {
-      const currentQueue = queue ?? [];
-      if (currentQueue[0]?.videoId !== videoId) {
-        return;
-      }
-
-      downloadProgressStore.setLocal(videoId, {
-        isDownloading: true,
-        isDone: false,
-        progress: 0,
-        progressType: ""
-      });
     });
   });
 }

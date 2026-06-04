@@ -26,7 +26,6 @@ export const CrossWorldMessage = {
   CreateDropdown: "createDropdown",
   DropdownReady: "dropdownReady",
   CloseDropdown: "closeDropdown",
-  DownloadProgress: "downloadProgress",
   DownloadViaIframe: "downloadViaIframe",
   StartBackgroundDownload: "startBackgroundDownload",
   OptionsUpdate: "optionsUpdate",
@@ -35,9 +34,9 @@ export const CrossWorldMessage = {
   OpenSnackbar: "openSnackbar",
   SetSettingsOptionsData: "setSettingsOptionsData",
   ButtonClick: "buttonClick",
-  ProgressUpdate: "progressUpdate",
   DownloadBlobUrl: "downloadBlobUrl",
-  ReportPageProgress: "reportPageProgress"
+  ReportPageProgress: "reportPageProgress",
+  ReportMainDownloadFailed: "reportMainDownloadFailed"
 } as const;
 
 export interface PageMessengerSchema {
@@ -104,11 +103,6 @@ export interface PageMessengerSchema {
   }): void;
   [CrossWorldMessage.DropdownReady](data: { contentId: string }): void;
   [CrossWorldMessage.CloseDropdown](data: { videoId: string }): void;
-  [CrossWorldMessage.DownloadProgress](data: {
-    videoId: string;
-    progress: number;
-    progressType: ProgressType;
-  }): void;
   [CrossWorldMessage.DownloadViaIframe](data: DownloadRequest): void;
   [CrossWorldMessage.StartBackgroundDownload](data: { requestJson: string }): void;
   [CrossWorldMessage.OptionsUpdate](data: { isShowNativeDownload: boolean }): void;
@@ -128,16 +122,12 @@ export interface PageMessengerSchema {
     filename: string;
     videoId: string;
   }): void;
-  [CrossWorldMessage.ProgressUpdate](data: {
-    videoId: string;
-    progress: number;
-    progressType: ProgressType;
-  }): void;
   [CrossWorldMessage.ReportPageProgress](data: {
     videoId: string;
     progress: number;
     progressType: ProgressType;
   }): void;
+  [CrossWorldMessage.ReportMainDownloadFailed](data: { videoId: string }): void;
 }
 
 export type StreamDataPayload = Prettify<Parameters<PageMessengerSchema[typeof CrossWorldMessage.StreamData]>[0]>;

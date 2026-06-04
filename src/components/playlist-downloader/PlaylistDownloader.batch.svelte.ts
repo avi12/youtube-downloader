@@ -1,12 +1,10 @@
 import {
   buildBatchDownloadRequests,
   cancelActiveDownloads,
-  finalizeBatchVideoProgress,
-  initBatchVideoProgress,
   sendBatchDownloadMessage
 } from "./helpers/playlist-batch-ops";
 import { ZIP_PROGRESS_KEY_PREFIX } from "./helpers/playlist-progress-helpers";
-import { downloadProgressStore } from "@/lib/ui/synced-stores.svelte";
+import { statusProgressSignal } from "@/lib/ui/synced-stores.svelte";
 import {
   PlaylistDownloadMode,
   PlaylistOutputMode,
@@ -50,7 +48,7 @@ export function createBatchDownloadState({
         continue;
       }
 
-      const entry = downloadProgressStore.get(request.videoId);
+      const entry = statusProgressSignal.value[request.videoId];
       const isTerminal = !entry || entry.isDone || entry.isFailed;
       if (isTerminal) {
         batchDoneIds.add(request.videoId);
@@ -70,13 +68,12 @@ export function createBatchDownloadState({
 
     const isWaitingForZip = currentZipBundleId;
     if (isWaitingForZip) {
-      const zipEntry = downloadProgressStore.get(`${ZIP_PROGRESS_KEY_PREFIX}${currentZipBundleId}`);
+      const zipEntry = statusProgressSignal.value[`${ZIP_PROGRESS_KEY_PREFIX}${currentZipBundleId}`];
       const isZipDone = zipEntry?.isDone ?? false;
       if (!isZipDone) {
         return;
       }
 
-      downloadProgressStore.deleteLocal(`${ZIP_PROGRESS_KEY_PREFIX}${currentZipBundleId}`);
       currentZipBundleId = null;
     }
 
@@ -84,11 +81,6 @@ export function createBatchDownloadState({
     isDownloading = false;
     batchDownloadStatus.isRunning = false;
     batchDownloadStatus.isZipBatch = false;
-
-    finalizeBatchVideoProgress({
-      activeDownloadRequests,
-      canceledIds: batchCanceledIds
-    });
 
     batchVideoIds.clear();
     batchCanceledIds.clear();
@@ -111,8 +103,6 @@ export function createBatchDownloadState({
     for (const video of videos) {
       batchVideoIds.add(video.videoId);
     }
-
-    initBatchVideoProgress(videos);
 
     const { playlistId, isZipBundle, zipName, downloadRequests } = buildBatchDownloadRequests({
       videos,
@@ -146,11 +136,7 @@ export function createBatchDownloadState({
     batchDownloadStatus.isZipBatch = false;
     batchVideoIds.clear();
     batchCanceledIds.clear();
-
-    if (currentZipBundleId) {
-      downloadProgressStore.deleteLocal(`${ZIP_PROGRESS_KEY_PREFIX}${currentZipBundleId}`);
-      currentZipBundleId = null;
-    }
+    currentZipBundleId = null;
   }
 
   return {

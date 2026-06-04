@@ -1,7 +1,6 @@
 import { resolveAndDispatch } from "./download-execute";
 import { crossWorldMessenger, CrossWorldMessage } from "@/lib/messaging/cross-world-messenger";
-import { downloadProgressStore } from "@/lib/ui/synced-stores.svelte";
-import { type DownloadRequest, ProgressType } from "@/types";
+import type { DownloadRequest } from "@/types";
 
 const activeDownloads = new Map<string, AbortController>();
 
@@ -37,22 +36,6 @@ export async function startDownload(params: Pick<DownloadRequest,
   cancelActiveDownload(params.videoId);
   const abortController = new AbortController();
   activeDownloads.set(params.videoId, abortController);
-  downloadProgressStore.unsuppress(params.videoId);
-  downloadProgressStore.set(params.videoId, {
-    isDownloading: true,
-    isDone: false,
-    progress: 0,
-    progressType: ProgressType.Video,
-    videoItag: params.videoItag,
-    audioItag: params.audioItag,
-    downloadType: params.type
-  });
-
-  void crossWorldMessenger.sendMessage(CrossWorldMessage.DownloadProgress, {
-    videoId: params.videoId,
-    progress: 0,
-    progressType: ProgressType.Video
-  });
 
   try {
     await resolveAndDispatch({
@@ -65,7 +48,11 @@ export async function startDownload(params: Pick<DownloadRequest,
       return;
     }
 
-    throw error;
+    console.warn("[ytdl:main] startDownload failed for", params.videoId, error);
+    void crossWorldMessenger.sendMessage(
+      CrossWorldMessage.ReportMainDownloadFailed,
+      { videoId: params.videoId }
+    );
   } finally {
     const isStillOwnController = activeDownloads.get(params.videoId) === abortController;
     if (isStillOwnController) {

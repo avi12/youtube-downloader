@@ -2,7 +2,7 @@ import { calculateBatchProgress, resolveCurrentPhaseLabel } from "./helpers/play
 import type { createBatchDownloadState } from "./PlaylistDownloader.batch.svelte";
 import { scrollVideoItemIntoView } from "./PlaylistDownloader.scroll";
 import type { createVideoDataState } from "./PlaylistDownloader.video-data.svelte";
-import { downloadProgressStore } from "@/lib/ui/synced-stores.svelte";
+import { statusProgressSignal } from "@/lib/ui/synced-stores.svelte";
 
 type BatchState = ReturnType<typeof createBatchDownloadState>;
 type VideoDataState = ReturnType<typeof createVideoDataState>;
@@ -23,7 +23,7 @@ export function createProgressState({
 
     let count = 0;
     for (const videoId of videoData.videoDataMap.keys()) {
-      if (downloadProgressStore.get(videoId)?.isDownloading) {
+      if (statusProgressSignal.value[videoId]?.isDownloading) {
         count++;
       }
     }
@@ -34,7 +34,7 @@ export function createProgressState({
     calculateBatchProgress({
       isDownloading: batch.isDownloading,
       activeDownloadRequests: batch.activeDownloadRequests,
-      getProgressEntry: videoId => downloadProgressStore.get(videoId),
+      getProgressEntry: videoId => statusProgressSignal.value[videoId],
       totalCount: batch.totalCount,
       currentZipBundleId: batch.currentZipBundleId,
       activeIndividualDownloadCount,
@@ -49,7 +49,7 @@ export function createProgressState({
     }
 
     for (const request of batch.activeDownloadRequests) {
-      if (downloadProgressStore.get(request.videoId)?.isDownloading) {
+      if (statusProgressSignal.value[request.videoId]?.isDownloading) {
         return request.videoId;
       }
     }
@@ -65,7 +65,7 @@ export function createProgressState({
       totalCount: batch.totalCount,
       activeDownloadVideoId,
       activeDownloadRequests: batch.activeDownloadRequests,
-      getProgressEntry: videoId => downloadProgressStore.get(videoId),
+      getProgressEntry: videoId => statusProgressSignal.value[videoId],
       getVideoData: videoId => videoData.videoDataMap.get(videoId)
     })
   );

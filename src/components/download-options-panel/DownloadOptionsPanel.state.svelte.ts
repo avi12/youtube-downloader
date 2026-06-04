@@ -19,12 +19,7 @@ import {
 import { resolveActualExtension, resolvePrimaryState, resolveQualityLabel } from "./helpers/panel-state-derived";
 import { syncAudioFromFormat } from "./helpers/player-active-tracks.svelte";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
-import {
-  CONTENT_OPTIONS,
-  downloadProgressStore,
-  interruptedDownloadStore,
-  statusProgressSignal
-} from "@/lib/ui/synced-stores.svelte";
+import { CONTENT_OPTIONS, interruptedDownloadStore, statusProgressSignal } from "@/lib/ui/synced-stores.svelte";
 import { getCompatibleFilename, isAudioMimeNativeForContainer, resolveAutoExtension } from "@/lib/utils/containers";
 import { filterVideoFormatsByEnhancedBitrate } from "@/lib/youtube/format-display";
 import {
@@ -68,7 +63,7 @@ export function createPanelState(getVideoData: () => VideoData) {
   let downloadId = $state<number | null>(null);
   let downloadType = $state<DownloadType>(
     untrack(() => {
-      const entry = downloadProgressStore.get(getVideoData().videoId);
+      const entry = statusProgressSignal.value[getVideoData().videoId];
       if (entry?.downloadType && entry.isDownloading) {
         return entry.downloadType;
       }
@@ -81,7 +76,7 @@ export function createPanelState(getVideoData: () => VideoData) {
   );
   let selectedVideoFormat = $state<AdaptiveFormatItem | null>(
     untrack(() => {
-      const entry = downloadProgressStore.get(getVideoData().videoId);
+      const entry = statusProgressSignal.value[getVideoData().videoId];
       const candidates = filterVideoFormatsByEnhancedBitrate(
         getVideoData().videoFormats,
         CONTENT_OPTIONS.enhancedBitrate
@@ -95,7 +90,7 @@ export function createPanelState(getVideoData: () => VideoData) {
     })
   );
   const initialAudioFormat = untrack(() => {
-    const entry = downloadProgressStore.get(getVideoData().videoId);
+    const entry = statusProgressSignal.value[getVideoData().videoId];
     if (entry?.audioItag && entry.isDownloading) {
       return getVideoData().audioFormats.find(fmt => fmt.itag === entry.audioItag) ?? resolveInitialAudioFormat({
         options: CONTENT_OPTIONS,
@@ -165,7 +160,6 @@ export function createPanelState(getVideoData: () => VideoData) {
     setSelectedVideoFormat(value) {
       selectedVideoFormat = value;
     },
-    resetDoneState: store.resetDoneState,
     setDownloadId(value) {
       downloadId = value;
     }
@@ -286,8 +280,7 @@ export function createPanelState(getVideoData: () => VideoData) {
     const result = applyDownloadTypeChange({
       newType,
       selectedVideoFormat,
-      selectedAudioFormat,
-      videoId: getVideoData().videoId
+      selectedAudioFormat
     });
     downloadType = result.downloadType;
     extension = result.extension;
@@ -328,21 +321,18 @@ export function createPanelState(getVideoData: () => VideoData) {
     },
     set selectedVideoFormat(value: AdaptiveFormatItem | null) {
       selectedVideoFormat = value;
-      store.resetDoneState();
     },
     get selectedAudioFormat() {
       return selectedAudioFormat;
     },
     set selectedAudioFormat(value: AdaptiveFormatItem | null) {
       selectedAudioFormat = value;
-      store.resetDoneState();
     },
     get filename() {
       return filename;
     },
     set filename(value: string) {
       filename = value;
-      store.resetDoneState();
     },
     get extension() {
       return extension;
@@ -361,8 +351,6 @@ export function createPanelState(getVideoData: () => VideoData) {
           syncAudioFromFormat(aligned);
         }
       }
-
-      store.resetDoneState();
     },
     get actualExtension() {
       return actualExtension;

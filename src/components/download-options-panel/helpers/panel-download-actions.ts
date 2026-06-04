@@ -1,7 +1,7 @@
 import { PANEL_OPTIONS } from "../DownloadOptions.state.svelte";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
-import { interruptedDownloadStore, downloadProgressStore } from "@/lib/ui/synced-stores.svelte";
+import { interruptedDownloadStore } from "@/lib/ui/synced-stores.svelte";
 import { DownloadType, type AdaptiveFormatItem, type CaptionTrack, type VideoData } from "@/types";
 
 export { applyDownloadTypeChange } from "./panel-type-change";
@@ -63,13 +63,11 @@ export function sendStartDownload(params: {
 }
 
 export function sendCancelDownload(videoId: string) {
-  downloadProgressStore.delete(videoId);
   void crossWorldMessenger.sendMessage(CrossWorldMessage.CancelDownload, { videoIds: [videoId] });
 }
 
 export async function sendDiscardInterrupted(videoId: string) {
   interruptedDownloadStore.delete(videoId);
-  downloadProgressStore.delete(videoId);
   await sendMessage(MessageType.ClearInterruptedDownload, { videoId });
 }
 

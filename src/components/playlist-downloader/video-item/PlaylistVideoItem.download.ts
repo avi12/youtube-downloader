@@ -3,7 +3,7 @@ import { cancelStreamTransfer } from "@/entrypoints/youtube.content/download/str
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { checkedPlaylistVideos } from "@/lib/ui/playlist-selection.svelte";
-import { CONTENT_OPTIONS, downloadProgressStore } from "@/lib/ui/synced-stores.svelte";
+import { CONTENT_OPTIONS } from "@/lib/ui/synced-stores.svelte";
 import { resolveVideoFilename } from "@/lib/utils/containers";
 import { filterVideoFormatsByEnhancedBitrate } from "@/lib/youtube/format-display";
 import { DownloadType, type Prettify, type VideoData } from "@/types";
@@ -43,7 +43,6 @@ export function triggerDownload({ videoData, videoId, gridTitle, setLocallyDone 
 }
 
 export function cancelDownload(videoId: string) {
-  downloadProgressStore.delete(videoId);
   cancelStreamTransfer(videoId);
   void sendMessage(MessageType.CancelDownload, { videoIds: [videoId] });
 
