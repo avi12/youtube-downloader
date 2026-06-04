@@ -65,3 +65,5 @@ export type {
   StreamData,
   VideoData
 } from "./domain-types";
+
+export type { Prettify } from "./prettify";
