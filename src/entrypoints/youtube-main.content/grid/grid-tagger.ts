@@ -1,5 +1,5 @@
 import { CHILD_LIST_SUBTREE } from "@/lib/utils/dom";
-import { lockupCardDataSchema } from "@/lib/youtube/schemas";
+import { isYtLockupViewModelElement } from "@/lib/youtube/schemas";
 import type { Prettify } from "@/types";
 
 const CONTENT_ID_ATTR = "data-ytdl-content-id";
@@ -14,18 +14,13 @@ function extractContentId(elCard: Element) {
     return contentId;
   }
 
-  if (!("data" in elCard)) {
+  if (!isYtLockupViewModelElement(elCard)) {
     return null;
   }
 
-  const parsed = lockupCardDataSchema.safeParse(elCard.data);
-  if (!parsed.success) {
-    return null;
-  }
-
-  return parsed.data.contentId
-    ?? parsed.data.lockupRenderer?.contentId
-    ?? parsed.data.videoRenderer?.videoId
+  return elCard.data.contentId
+    ?? elCard.data.lockupRenderer?.contentId
+    ?? elCard.data.videoRenderer?.videoId
     ?? null;
 }
 

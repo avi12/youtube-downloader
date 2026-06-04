@@ -51,7 +51,7 @@ const videoRendererSchema = z.looseObject({
   videoId: z.string().optional()
 });
 
-export const lockupCardDataSchema = z.looseObject({
+const lockupCardDataSchema = z.looseObject({
   contentId: z.string().optional(),
   lockupRenderer: lockupRendererSchema.optional(),
   videoRenderer: videoRendererSchema.optional()
@@ -152,8 +152,20 @@ export function isYtButtonViewModelElement(value: unknown): value is YtButtonVie
   return value instanceof HTMLElement && value.tagName === YT_BUTTON_VIEW_MODEL_TAG;
 }
 
+const ytLockupViewModelElementSchema = z.looseObject({
+  data: lockupCardDataSchema
+});
+
+export interface YtLockupViewModelElement extends HTMLElement {
+  data: LockupCardData;
+}
+
+export function isYtLockupViewModelElement(value: unknown): value is YtLockupViewModelElement {
+  return ytLockupViewModelElementSchema.safeParse(value).success;
+}
+
+type LockupCardData = z.infer<typeof lockupCardDataSchema>;
 export type PlayerCaptionTrackData = z.infer<typeof playerCaptionTrackDataSchema>;
-export type LockupCardData = z.infer<typeof lockupCardDataSchema>;
 export type YtInitialDataPlaylist = z.infer<typeof ytInitialDataPlaylistSchema>;
 export type BrowseContinuationResponse = z.infer<typeof browseContinuationResponseSchema>;
 export type PlaylistVideoEntry = z.infer<typeof playlistVideoEntrySchema>;
