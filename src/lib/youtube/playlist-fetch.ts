@@ -1,11 +1,11 @@
 import {
   browseContinuationResponseSchema,
-  playlistContinuationEntrySchema,
-  playlistVideoEntrySchema,
-  ytInitialDataPlaylistSchema,
   type PlaylistContinuationEntry,
+  playlistContinuationEntrySchema,
   type PlaylistVideoEntry,
-  type YtInitialDataPlaylist
+  playlistVideoEntrySchema,
+  type YtInitialDataPlaylist,
+  ytInitialDataPlaylistSchema
 } from "./schemas";
 import type { Prettify } from "@/types";
 
@@ -157,12 +157,7 @@ export async function fetchPlaylistContents(playlistId: string): Promise<Playlis
 
   let data: YtInitialDataPlaylist;
   try {
-    const parsed = ytInitialDataPlaylistSchema.safeParse(JSON.parse(jsonText));
-    if (!parsed.success) {
-      return null;
-    }
-
-    data = parsed.data;
+    data = ytInitialDataPlaylistSchema.parse(JSON.parse(jsonText));
   } catch {
     return null;
   }
