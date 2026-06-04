@@ -1,3 +1,4 @@
+import type { MusicSearchResponse } from "./music-search-types";
 import type {
   DownloadRequest,
   PlayerResponse,
@@ -173,6 +174,12 @@ const downloadRequestShapeSchema = z.looseObject({
 
 export const downloadRequestSchema = z.custom<DownloadRequest>(
   value => downloadRequestShapeSchema.safeParse(value).success
+);
+
+const innertubeObjectShapeSchema = z.looseObject({});
+
+export const musicSearchResponseSchema = z.custom<MusicSearchResponse>(
+  value => innertubeObjectShapeSchema.safeParse(value).success
 );
 
 const tpYtPaperInputSchema = z.looseObject({

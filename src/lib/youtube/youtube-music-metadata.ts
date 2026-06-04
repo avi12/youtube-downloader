@@ -1,6 +1,6 @@
 import { InnertubeClientName, type InnertubeSearchRequest } from "./innertube";
 import { extractFirstSearchItem, parseSearchResult } from "./music-search-parser";
-import type { MusicSearchResponse } from "./music-search-parser";
+import { musicSearchResponseSchema } from "./schemas";
 import type { Prettify, VideoMetadata } from "@/types";
 
 const SONG_FILTER_PARAMS = "EgWKAQIIAWoKEAkQAxAEEAoQBQ%3D%3D";
@@ -30,7 +30,7 @@ async function fetchFirstMusicResult(searchQuery: string) {
     return null;
   }
 
-  const data: MusicSearchResponse = await response.json();
+  const data = musicSearchResponseSchema.parse(await response.json());
   const firstItem = extractFirstSearchItem(data);
   const isFirstItemMissing = !firstItem;
   if (isFirstItemMissing) {
