@@ -26,9 +26,9 @@ export function buildRecentContext({ item, extras }: BuildRecentContextParams) {
 }
 
 export function toOwnedArrayBuffer(view: ArrayBufferView) {
-  const isSharedBuffer = !(view.buffer instanceof ArrayBuffer);
-  if (isSharedBuffer) {
-    throw new Error("SharedArrayBuffer is not supported");
+  const isSharedArrayBuffer = !(view.buffer instanceof ArrayBuffer);
+  if (isSharedArrayBuffer) {
+    throw new Error("toOwnedArrayBuffer requires an ArrayBuffer-backed view");
   }
 
   return view.buffer.slice(view.byteOffset, view.byteOffset + view.byteLength);
