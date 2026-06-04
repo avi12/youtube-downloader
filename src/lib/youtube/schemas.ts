@@ -1,4 +1,10 @@
-import type { PlayerResponse, TpYtPaperInputElement, VideoData, YtButtonViewModelElement } from "@/types";
+import type {
+  DownloadRequest,
+  PlayerResponse,
+  TpYtPaperInputElement,
+  VideoData,
+  YtButtonViewModelElement
+} from "@/types";
 import { z } from "zod";
 
 export const playerCaptionTrackDataSchema = z.looseObject({
@@ -157,6 +163,17 @@ const videoDataShapeSchema = z.looseObject({
 });
 
 export const videoDataSchema = z.custom<VideoData>(value => videoDataShapeSchema.safeParse(value).success);
+
+const downloadRequestShapeSchema = z.looseObject({
+  videoId: z.string(),
+  videoItag: z.number(),
+  audioItag: z.number(),
+  filenameOutput: z.string()
+});
+
+export const downloadRequestSchema = z.custom<DownloadRequest>(
+  value => downloadRequestShapeSchema.safeParse(value).success
+);
 
 const tpYtPaperInputSchema = z.looseObject({
   updateStyles: z.custom<(styles: Record<string, string>) => void>(value => typeof value === "function"),
