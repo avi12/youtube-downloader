@@ -30,14 +30,15 @@ export function setupPanelButtonHandler({ panel, onClose }: SetupPanelButtonHand
     if (isPrimaryButton) {
       const isDownloading = panel.primaryState === PrimaryButtonState.Downloading;
       const isInterrupted = panel.primaryState === PrimaryButtonState.Interrupted;
-      if (isDownloading) {
-        panel.cancelDownload();
-      } else if (isInterrupted) {
-        panel.resumeDownload();
-      } else {
-        panel.startDownload();
-      }
-
+      queueMicrotask(() => {
+        if (isDownloading) {
+          panel.cancelDownload();
+        } else if (isInterrupted) {
+          panel.resumeDownload();
+        } else {
+          panel.startDownload();
+        }
+      });
       return;
     }
 

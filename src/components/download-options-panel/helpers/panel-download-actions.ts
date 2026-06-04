@@ -36,7 +36,6 @@ export function buildStartDownloadParams(params: {
     audioTrackId: params.selectedAudioFormat!.audioTrack?.id,
     selectedCaptionVssId: params.selectedCaptionTrack?.vssId,
     filenameOutput: params.fullFilename,
-    sabrConfig: params.videoData.sabrConfig,
     downloadExtras: PANEL_OPTIONS.downloadExtras,
     downloadExtraCaptions: PANEL_OPTIONS.downloadExtraCaptions,
     includeAutoDubbing: PANEL_OPTIONS.includeAutoDubbing

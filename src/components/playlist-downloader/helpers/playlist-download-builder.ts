@@ -55,7 +55,6 @@ export function buildDownloadRequest({
       videoData: data,
       options
     }),
-    sabrConfig: data.sabrConfig,
     ...(isZipBundle && {
       playlistId,
       playlistTitle,

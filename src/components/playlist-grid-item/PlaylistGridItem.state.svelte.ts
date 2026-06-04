@@ -197,7 +197,6 @@ function buildPlaylistGridRequest({
       videoData: data,
       options
     }),
-    sabrConfig: data.sabrConfig,
     downloadExtras: false,
     downloadExtraCaptions: true,
     includeAutoDubbing: false,

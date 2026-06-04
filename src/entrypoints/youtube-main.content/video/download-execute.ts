@@ -115,7 +115,8 @@ export async function resolveAndDispatch({ params, abortSignal }: ResolveAndDisp
     !cachedVideoData ||
     !isWatchPageForThisVideo ||
     isVideoDataExpired(cachedVideoData)
-  );  if (shouldUseIframe) {
+  );
+  if (shouldUseIframe) {
     void crossWorldMessenger.sendMessage(CrossWorldMessage.DownloadViaIframe, {
       ...params,
       isIframeFallback: true
