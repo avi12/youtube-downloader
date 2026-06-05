@@ -54,8 +54,24 @@ if ($needCdpProxy -or $needVncProxy) {
 Write-Host "Ensuring socat bridge ${VmSocatPort} -> 127.0.0.1:${VmChromePort} inside VM..."
 & multipass exec $VmName -- bash -c "if ! pgrep -fx 'socat TCP-LISTEN:$VmSocatPort,reuseaddr,fork,bind=0.0.0.0 TCP:127.0.0.1:$VmChromePort' >/dev/null; then pgrep -x socat | xargs -r kill 2>/dev/null; nohup socat TCP-LISTEN:$VmSocatPort,reuseaddr,fork,bind=0.0.0.0 TCP:127.0.0.1:$VmChromePort >/tmp/socat.log 2>&1 </dev/null & disown; fi"
 
-# x11vnc attaches to whatever Xvfb display xvfb-run started. We launch it AFTER
-# the dev-server has spawned Xvfb (handled in the inner bash command below).
+# After the VM dev-server is up, poll for x11vnc on port 5900 then open VNC viewer.
+$vncExe = "C:\Program Files\RealVNC\VNC Viewer\vncviewer.exe"
+$null = Start-Job -ScriptBlock {
+  param($port, $exe)
+  Start-Sleep -Seconds 15
+  for ($i = 0; $i -lt 30; $i++) {
+    $tcp = New-Object System.Net.Sockets.TcpClient
+    try {
+      $tcp.Connect("127.0.0.1", $port)
+      $tcp.Close()
+      Start-Process $exe -ArgumentList "localhost::$port"
+      break
+    } catch {
+      try { $tcp.Close() } catch {}
+      Start-Sleep -Seconds 2
+    }
+  }
+} -ArgumentList $VncPort, $vncExe
 
 $branch = (& git -C (Resolve-Path "$PSScriptRoot\..").Path rev-parse --abbrev-ref HEAD).Trim()
 Write-Host "Syncing branch '$branch' from host -> VM working tree..."
@@ -70,21 +86,17 @@ git reset --hard HEAD 2>/dev/null || true
 git checkout -B '$branch' host/'$branch' 2>/dev/null || git checkout -B '$branch' FETCH_HEAD
 CI=true pnpm install --frozen-lockfile
 
-# After xvfb-run starts Xvfb, attach x11vnc so the Windows VNC viewer can see
-# the same display Chrome paints to. Done in a background watcher because
-# xvfb-run picks the display dynamically.
-( for i in 1 2 3 4 5 6 7 8 9 10; do
+# x11vnc supervisor: restart whenever Xvfb is up but x11vnc isn't running.
+# Runs as a background loop so it recovers from XIO errors on Xvfb restarts.
+( while true; do
     XVFB_DISPLAY=`$(ps -o args= -C Xvfb | grep -oP '^\s*:\d+' | head -1 | tr -d ' ')
     XVFB_AUTH=`$(ps -o args= -C Xvfb | grep -oP 'auth \K\S+' | head -1)
-    if [ -n "`$XVFB_DISPLAY" ] && [ -n "`$XVFB_AUTH" ]; then
-      if ! pgrep -x x11vnc >/dev/null; then
-        nohup x11vnc -display "`$XVFB_DISPLAY" -auth "`$XVFB_AUTH" \
-          -rfbport $VncPort -listen 0.0.0.0 -nopw -forever -shared -bg \
-          -o /tmp/x11vnc.log >/dev/null 2>&1
-      fi
-      break
+    if [ -n "`$XVFB_DISPLAY" ] && [ -n "`$XVFB_AUTH" ] && ! pgrep -x x11vnc >/dev/null; then
+      x11vnc -display "`$XVFB_DISPLAY" -auth "`$XVFB_AUTH" \
+        -rfbport $VncPort -listen 0.0.0.0 -nopw -forever -shared \
+        -o /tmp/x11vnc.log 2>&1 || true
     fi
-    sleep 1
+    sleep 2
   done ) &
 
 pkill -f "[c]hrome-linux64" 2>/dev/null || true
