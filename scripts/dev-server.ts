@@ -157,6 +157,17 @@ function setupFirefoxProfile() {
   return FIREFOX_PROFILE_DIR;
 }
 
+// ── Chrome cleanup (Linux) ──────────────────────────────────────────────────
+
+function killExistingLinuxChromeInstances() {
+  if (platform() !== "linux") {
+    return;
+  }
+  spawnSync("pkill", ["-f", CHROME_PROFILE_DIR], {
+    stdio: "ignore"
+  });
+}
+
 // ── Firefox cleanup ─────────────────────────────────────────────────────────
 
 function killExistingFirefoxInstances() {
@@ -336,6 +347,8 @@ async function main() {
 
   if (IS_FIREFOX) {
     killExistingFirefoxInstances();
+  } else {
+    killExistingLinuxChromeInstances();
   }
 
   const profileDirectory = IS_FIREFOX ? setupFirefoxProfile() : setupChromeProfile();

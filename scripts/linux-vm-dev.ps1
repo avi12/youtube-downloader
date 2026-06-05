@@ -66,6 +66,7 @@ $sync = @"
 set -euo pipefail
 cd $VmWorkDir
 git fetch host
+git reset --hard HEAD 2>/dev/null || true
 git checkout -B '$branch' host/'$branch' 2>/dev/null || git checkout -B '$branch' FETCH_HEAD
 CI=true pnpm install --frozen-lockfile
 
@@ -86,8 +87,11 @@ CI=true pnpm install --frozen-lockfile
     sleep 1
   done ) &
 
+pkill -f "user-profiles/chrome-linux" 2>/dev/null || true
+sleep 1
+
 echo 'Launching dev-server under xvfb-run...'
-exec xvfb-run -a pnpm dev
+exec xvfb-run -a pnpm dev </dev/null
 "@
 
-& multipass exec $VmName -- bash -c $sync
+& multipass exec $VmName -- bash -c ($sync -replace "`r", "")
