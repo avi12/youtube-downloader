@@ -45,6 +45,7 @@ let includeAiCaptionsLocal = $state<boolean | null>(null);
 let includeAutoDubbingLocal = $state<boolean | null>(null);
 let downloadExtrasLocal = $state<boolean | null>(null);
 let downloadExtraCaptionsLocal = $state(CONTENT_OPTIONS.downloadExtras);
+let isDownloadLocked = false;
 
 export const PANEL_OPTIONS = {
   get includeAiCaptions() {
@@ -73,8 +74,19 @@ export const PANEL_OPTIONS = {
   }
 };
 
+export function lockPanelOptions() {
+  includeAiCaptionsLocal ??= CONTENT_OPTIONS.includeAiCaptions;
+  includeAutoDubbingLocal ??= CONTENT_OPTIONS.includeAutoDubbing;
+  downloadExtrasLocal ??= CONTENT_OPTIONS.downloadExtras;
+  isDownloadLocked = true;
+}
+
+export function unlockPanelOptions() {
+  isDownloadLocked = false;
+}
+
 optionsItem.watch(next => {
-  if (!next) {
+  if (!next || isDownloadLocked) {
     return;
   }
 

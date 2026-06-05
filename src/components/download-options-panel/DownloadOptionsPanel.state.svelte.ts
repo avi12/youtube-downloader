@@ -1,4 +1,4 @@
-import { PANEL_OPTIONS } from "./DownloadOptions.state.svelte";
+import { lockPanelOptions, PANEL_OPTIONS, unlockPanelOptions } from "./DownloadOptions.state.svelte";
 import { createDownloadStoreState } from "./DownloadOptionsPanel.download-state.svelte";
 import { createTrackStates } from "./DownloadOptionsPanel.tracks.svelte";
 import { AUTO_DUB_TRACK_SUFFIX } from "./helpers/audio-language-helpers";
@@ -287,6 +287,7 @@ export function createPanelState(getVideoData: () => VideoData) {
   }
 
   function startDownload() {
+    lockPanelOptions();
     sendStartDownload({
       downloadType,
       selectedVideoFormat,
@@ -299,6 +300,15 @@ export function createPanelState(getVideoData: () => VideoData) {
       videoData: getVideoData()
     });
   }
+
+  $effect(() => {
+    const isComplete = statusIsDone || store.isFailed;
+    if (!isComplete) {
+      return;
+    }
+
+    unlockPanelOptions();
+  });
 
   return {
     get isDownloading() {
