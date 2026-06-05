@@ -176,10 +176,8 @@ export const downloadRequestSchema = z.custom<DownloadRequest>(
   value => downloadRequestShapeSchema.safeParse(value).success
 );
 
-const innertubeObjectShapeSchema = z.looseObject({});
-
 export const musicSearchResponseSchema = z.custom<MusicSearchResponse>(
-  value => innertubeObjectShapeSchema.safeParse(value).success
+  value => z.looseObject({}).safeParse(value).success
 );
 
 const tpYtPaperInputSchema = z.looseObject({
@@ -202,15 +200,12 @@ const ytLockupViewModelElementSchema = z.looseObject({
   data: lockupCardDataSchema
 });
 
-export interface YtLockupViewModelElement extends HTMLElement {
-  data: LockupCardData;
-}
+export type YtLockupViewModelElement = HTMLElement & z.infer<typeof ytLockupViewModelElementSchema>;
 
 export function isYtLockupViewModelElement(value: unknown): value is YtLockupViewModelElement {
   return ytLockupViewModelElementSchema.safeParse(value).success;
 }
 
-type LockupCardData = z.infer<typeof lockupCardDataSchema>;
 export type PlayerCaptionTrackData = z.infer<typeof playerCaptionTrackDataSchema>;
 export type YtInitialDataPlaylist = z.infer<typeof ytInitialDataPlaylistSchema>;
 export type BrowseContinuationResponse = z.infer<typeof browseContinuationResponseSchema>;
