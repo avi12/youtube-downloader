@@ -1,8 +1,8 @@
 import type { InitialAppStateProps } from "./app-state-props";
 import { setupAppWatchers } from "./app-watchers.svelte";
 import { buildTabs, PopupPanel } from "./tabs";
-import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { getAllRecentDownloads } from "@/lib/storage/recent-downloads-db";
+import { performCancelDownload } from "@/lib/ui/cancel-download";
 import type { Options, RecentDownloadEntry } from "@/types";
 
 export { PopupPanel } from "./tabs";
@@ -97,7 +97,7 @@ export function createAppState(props: InitialAppStateProps) {
         delete statusProgress[id];
       }
 
-      void sendMessage(MessageType.CancelDownload, { videoIds });
+      void performCancelDownload(videoIds);
     },
     handleChangeFormat(entry: RecentDownloadEntry) {
       pendingFormatChangeEntry = entry;

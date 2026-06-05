@@ -1,5 +1,6 @@
 import { buildDownloadRequest } from "./playlist-download-builder";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
+import { performCancelDownload } from "@/lib/ui/cancel-download";
 import { playlistMetadataSignal, statusProgressSignal } from "@/lib/ui/synced-stores.svelte";
 import { PlaylistDownloadMode, PlaylistOutputMode } from "@/types";
 import type { DownloadRequest, Options, VideoData } from "@/types";
@@ -12,7 +13,7 @@ export async function cancelActiveDownloads(activeDownloadRequests: DownloadRequ
     .map(request => request.videoId);
   const isActiveDownloadsPresent = activeVideoIds.length > 0;
   if (isActiveDownloadsPresent) {
-    await sendMessage(MessageType.CancelDownload, { videoIds: activeVideoIds });
+    await performCancelDownload(activeVideoIds);
   }
 }
 

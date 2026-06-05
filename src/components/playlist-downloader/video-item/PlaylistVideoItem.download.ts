@@ -1,7 +1,7 @@
 import { batchCanceledIds, batchDownloadStatus, batchVideoIds } from "../PlaylistDownloader.batch.svelte";
 import { cancelStreamTransfer } from "@/entrypoints/youtube.content/download/stream-transfer";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
-import { MessageType, sendMessage } from "@/lib/messaging/messaging";
+import { performCancelDownload } from "@/lib/ui/cancel-download";
 import { checkedPlaylistVideos } from "@/lib/ui/playlist-selection.svelte";
 import { CONTENT_OPTIONS } from "@/lib/ui/synced-stores.svelte";
 import { resolveVideoFilename } from "@/lib/utils/containers";
@@ -44,7 +44,7 @@ export function triggerDownload({ videoData, videoId, gridTitle, setLocallyDone 
 
 export function cancelDownload(videoId: string) {
   cancelStreamTransfer(videoId);
-  void sendMessage(MessageType.CancelDownload, { videoIds: [videoId] });
+  void performCancelDownload([videoId]);
 
   const isPartOfActiveBatch = batchDownloadStatus.isRunning && batchVideoIds.has(videoId);
   if (isPartOfActiveBatch) {

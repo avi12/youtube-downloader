@@ -5,6 +5,7 @@ import {
 } from "@/components/playlist-downloader/helpers/playlist-download-builder";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
+import { performCancelDownload } from "@/lib/ui/cancel-download";
 import { completedDownloadsStore } from "@/lib/ui/completed-downloads-store.svelte";
 import { PrimaryButtonState } from "@/lib/ui/panel-button-attachments.svelte";
 import {
@@ -510,7 +511,7 @@ export function createPlaylistGridItemState({ playlistId, gridTitle }: CreatePla
     downloadToken++;
     const videoIds = loadedVideos.map(video => video.videoId);
     if (videoIds.length > 0) {
-      void sendMessage(MessageType.CancelDownload, { videoIds });
+      void performCancelDownload(videoIds);
     }
 
     status = PlaylistGridStatus.Idle;
