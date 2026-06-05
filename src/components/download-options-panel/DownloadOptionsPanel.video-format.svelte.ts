@@ -2,6 +2,7 @@ import { CONTENT_OPTIONS } from "@/lib/ui/synced-stores.svelte";
 import { filterVideoFormatsByEnhancedBitrate } from "@/lib/youtube/format-display";
 import { waitForVideoElement } from "@/lib/youtube/video-helpers";
 import { VideoQualityMode, type AdaptiveFormatItem, type Prettify, type VideoData } from "@/types";
+import { untrack } from "svelte";
 
 const MOVIE_PLAYER_ID = "movie_player";
 const YTP_AD_PLAYING_CLASS = "ytp-ad-playing";
@@ -10,10 +11,12 @@ const VIDEO_CAN_PLAY_EVENT = "canplay";
 type CreateVideoFormatTrackerParams = Prettify<{
   getVideoData: () => VideoData;
   setSelectedVideoFormat: (value: AdaptiveFormatItem | null) => void;
+  isDownloading: () => boolean;
 }>;
 export function createVideoFormatTracker({
   getVideoData,
-  setSelectedVideoFormat
+  setSelectedVideoFormat,
+  isDownloading
 }: CreateVideoFormatTrackerParams) {
   async function matchToCurrentQuality(signal: AbortSignal) {
     const videoData = getVideoData();
@@ -39,6 +42,10 @@ export function createVideoFormatTracker({
   $effect(() => {
     const options = CONTENT_OPTIONS;
     const videoData = getVideoData();
+    if (untrack(isDownloading)) {
+      return;
+    }
+
     const candidates = filterVideoFormatsByEnhancedBitrate(videoData.videoFormats, options.enhancedBitrate);
     const isCurrentQualityMode = options.videoQualityMode === VideoQualityMode.CurrentQuality;
     if (isCurrentQualityMode) {

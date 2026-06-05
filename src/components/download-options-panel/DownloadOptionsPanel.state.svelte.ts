@@ -162,7 +162,8 @@ export function createPanelState(getVideoData: () => VideoData) {
     },
     setDownloadId(value) {
       downloadId = value;
-    }
+    },
+    isDownloading: () => statusIsDownloading
   });
 
   const estimatedSizeLabel = $derived.by(() => {
