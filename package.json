@@ -11,7 +11,7 @@
     "dev:firefox": "tsx scripts/dev-server.ts --firefox",
     "install:hyperv-multipass": "pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/install-hyperv-multipass.ps1",
     "setup:linux-vm": "pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/setup-linux-vm.ps1",
-    "dev:linux": "pwsh -NoProfile -ExecutionPolicy Bypass -File scripts/linux-vm-dev.ps1",
+    "dev:linux": "tsx scripts/linux-vm-dev.ts",
     "build": "wxt build",
     "build:firefox": "wxt build --browser firefox",
     "pack": "wxt zip",
