@@ -87,7 +87,7 @@ CI=true pnpm install --frozen-lockfile
     sleep 1
   done ) &
 
-pkill -f "user-profiles/chrome-linux" 2>/dev/null || true
+pkill -f "[c]hrome-linux64" 2>/dev/null || true
 sleep 1
 
 echo 'Launching dev-server under xvfb-run...'

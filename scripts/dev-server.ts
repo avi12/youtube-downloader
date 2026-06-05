@@ -163,7 +163,7 @@ function killExistingLinuxChromeInstances() {
   if (platform() !== "linux") {
     return;
   }
-  spawnSync("pkill", ["-f", CHROME_PROFILE_DIR], {
+  spawnSync("pkill", ["-f", "[c]hrome-linux64"], {
     stdio: "ignore"
   });
 }
