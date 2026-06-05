@@ -13,8 +13,8 @@ import { revokePendingBlobUrl } from "@/lib/download-pipeline/blob-download";
 import { transcodeRecentDownload } from "@/lib/download-pipeline/transcode-recent";
 import { OffscreenMessageType, listenForOffscreenMessages } from "@/lib/messaging/offscreen-messaging";
 
-const IFRAME_MSG_START = "start";
-const IFRAME_MSG_CANCEL = "cancel";
+const IFRAME_MESSAGE_START = "start";
+const IFRAME_MESSAGE_CANCEL = "cancel";
 
 export function registerOffscreenMessageListeners() {
   listenForOffscreenMessages({
@@ -25,7 +25,7 @@ export function registerOffscreenMessageListeners() {
     [OffscreenMessageType.CancelProcessing](data) {
       void cancelDownloadsByIds(data.videoIds);
       for (const videoId of data.videoIds) {
-        sendToWorkerIframe(videoId, { type: IFRAME_MSG_CANCEL });
+        sendToWorkerIframe(videoId, { type: IFRAME_MESSAGE_CANCEL });
         removeWorkerIframe(videoId);
         removeDownloadIframe(videoId);
       }
@@ -51,7 +51,7 @@ export function registerOffscreenMessageListeners() {
       elIframe.addEventListener("load", () => {
         elIframe.contentWindow?.postMessage(
           {
-            type: IFRAME_MSG_START,
+            type: IFRAME_MESSAGE_START,
             request,
             tabId,
             enrichedMetadata

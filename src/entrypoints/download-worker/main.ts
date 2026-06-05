@@ -7,14 +7,14 @@ import { resolveQualityLabel } from "@/lib/youtube/audio-format-helpers";
 import { DownloadType, StreamType } from "@/types";
 import type { DownloadRequest, Prettify, VideoMetadata } from "@/types";
 
-const WORKER_MSG_CHUNK = "worker-chunk";
-const WORKER_MSG_STREAM_END = "worker-stream-end";
-const WORKER_MSG_COMPLETE = "worker-complete";
-const WORKER_MSG_NEEDS_DIRECT_URL = "worker-needs-direct-url";
-const WORKER_MSG_NEEDS_FALLBACK = "worker-needs-fallback";
-const WORKER_MSG_ERROR = "worker-error";
-const IFRAME_MSG_START = "start";
-const IFRAME_MSG_CANCEL = "cancel";
+const WORKER_MESSAGE_CHUNK = "worker-chunk";
+const WORKER_MESSAGE_STREAM_END = "worker-stream-end";
+const WORKER_MESSAGE_COMPLETE = "worker-complete";
+const WORKER_MESSAGE_NEEDS_DIRECT_URL = "worker-needs-direct-url";
+const WORKER_MESSAGE_NEEDS_FALLBACK = "worker-needs-fallback";
+const WORKER_MESSAGE_ERROR = "worker-error";
+const IFRAME_MESSAGE_START = "start";
+const IFRAME_MESSAGE_CANCEL = "cancel";
 const DEFAULT_VIDEO_MIME_TYPE = "video/mp4";
 const DEFAULT_AUDIO_MIME_TYPE = "audio/mp4";
 
@@ -27,12 +27,12 @@ addEventListener("message", e => {
     return;
   }
 
-  const isCancel = e.data?.type === IFRAME_MSG_CANCEL;
+  const isCancel = e.data?.type === IFRAME_MESSAGE_CANCEL;
   if (isCancel) {
     abortController.abort();
   }
 
-  const isStart = e.data?.type === IFRAME_MSG_START;
+  const isStart = e.data?.type === IFRAME_MESSAGE_START;
   if (isStart) {
     const { request, tabId, enrichedMetadata } = e.data;
     void runDownload({
@@ -103,7 +103,7 @@ function sendChunkToParent({ videoId, streamType, tabId }: SendChunkToParentPara
     new Uint8Array(buffer).set(chunk);
     parent.postMessage(
       {
-        type: WORKER_MSG_CHUNK,
+        type: WORKER_MESSAGE_CHUNK,
         videoId,
         streamType,
         iChunk,
@@ -124,7 +124,7 @@ function sendStreamEndToParent({ videoId, streamType }: SendStreamEndToParentPar
   return (totalChunks: number) => {
     parent.postMessage(
       {
-        type: WORKER_MSG_STREAM_END,
+        type: WORKER_MESSAGE_STREAM_END,
         videoId,
         streamType,
         totalChunks
@@ -259,7 +259,7 @@ async function runDownload({ request, tabId, enrichedMetadata }: RunDownloadPara
       if (isDirectUrlEligible) {
         parent.postMessage(
           {
-            type: WORKER_MSG_NEEDS_DIRECT_URL,
+            type: WORKER_MESSAGE_NEEDS_DIRECT_URL,
             videoId,
             tabId,
             request
@@ -271,7 +271,7 @@ async function runDownload({ request, tabId, enrichedMetadata }: RunDownloadPara
 
       parent.postMessage(
         {
-          type: WORKER_MSG_NEEDS_FALLBACK,
+          type: WORKER_MESSAGE_NEEDS_FALLBACK,
           videoId,
           tabId,
           request
@@ -305,7 +305,7 @@ async function runDownload({ request, tabId, enrichedMetadata }: RunDownloadPara
 
     const transferList: ArrayBuffer[] = [...extraAudioBuffers];
     const completeMsg: Record<string, unknown> = {
-      type: WORKER_MSG_COMPLETE,
+      type: WORKER_MESSAGE_COMPLETE,
       videoId,
       isStreamed,
       streamEnd,
@@ -336,7 +336,7 @@ async function runDownload({ request, tabId, enrichedMetadata }: RunDownloadPara
     console.error("[ytdl:worker] Download failed:", error);
     parent.postMessage(
       {
-        type: WORKER_MSG_ERROR,
+        type: WORKER_MESSAGE_ERROR,
         videoId,
         tabId,
         error: String(error)

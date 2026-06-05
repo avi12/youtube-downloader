@@ -6,16 +6,16 @@ import type { ProcessStreamEndData } from "@/lib/messaging/offscreen-messaging";
 import { AUDIO_EXTRA_STREAM_PREFIX, StreamType } from "@/types";
 import type { DownloadRequest, Prettify } from "@/types";
 
-export const WORKER_MSG_PREFIX = "worker-";
-const WORKER_MSG_CHUNK = "worker-chunk";
-const WORKER_MSG_STREAM_END = "worker-stream-end";
-const WORKER_MSG_COMPLETE = "worker-complete";
-const WORKER_MSG_NEEDS_DIRECT_URL = "worker-needs-direct-url";
-const WORKER_MSG_NEEDS_FALLBACK = "worker-needs-fallback";
-const WORKER_MSG_ERROR = "worker-error";
+export const WORKER_MESSAGE_PREFIX = "worker-";
+const WORKER_MESSAGE_CHUNK = "worker-chunk";
+const WORKER_MESSAGE_STREAM_END = "worker-stream-end";
+const WORKER_MESSAGE_COMPLETE = "worker-complete";
+const WORKER_MESSAGE_NEEDS_DIRECT_URL = "worker-needs-direct-url";
+const WORKER_MESSAGE_NEEDS_FALLBACK = "worker-needs-fallback";
+const WORKER_MESSAGE_ERROR = "worker-error";
 
 type WorkerChunkMessage = Prettify<{
-  type: typeof WORKER_MSG_CHUNK;
+  type: typeof WORKER_MESSAGE_CHUNK;
   videoId: string;
   streamType: string;
   iChunk: number;
@@ -23,13 +23,13 @@ type WorkerChunkMessage = Prettify<{
   buffer: ArrayBuffer;
 }>;
 type WorkerStreamEndMessage = Prettify<{
-  type: typeof WORKER_MSG_STREAM_END;
+  type: typeof WORKER_MESSAGE_STREAM_END;
   videoId: string;
   streamType: string;
   totalChunks: number;
 }>;
 type WorkerCompleteMessage = Prettify<{
-  type: typeof WORKER_MSG_COMPLETE;
+  type: typeof WORKER_MESSAGE_COMPLETE;
   videoId: string;
   isStreamed: boolean;
   streamEnd: ProcessStreamEndData;
@@ -38,19 +38,19 @@ type WorkerCompleteMessage = Prettify<{
   extraAudioBuffers: ArrayBuffer[];
 }>;
 type WorkerNeedsDirectUrlMessage = Prettify<{
-  type: typeof WORKER_MSG_NEEDS_DIRECT_URL;
+  type: typeof WORKER_MESSAGE_NEEDS_DIRECT_URL;
   videoId: string;
   tabId: number;
   request: DownloadRequest;
 }>;
 type WorkerNeedsFallbackMessage = Prettify<{
-  type: typeof WORKER_MSG_NEEDS_FALLBACK;
+  type: typeof WORKER_MESSAGE_NEEDS_FALLBACK;
   videoId: string;
   tabId: number;
   request: DownloadRequest;
 }>;
 type WorkerErrorMessage = Prettify<{
-  type: typeof WORKER_MSG_ERROR;
+  type: typeof WORKER_MESSAGE_ERROR;
   videoId: string;
   tabId: number;
   error: string;
@@ -64,7 +64,11 @@ export type WorkerMessage =
   | WorkerNeedsFallbackMessage
   | WorkerErrorMessage;
 
-function handleChunk(message: WorkerChunkMessage) {
+function handleChunk(message: WorkerMessage) {
+  if (message.type !== WORKER_MESSAGE_CHUNK) {
+    return;
+  }
+
   handleProcessStreamChunkRaw({
     videoId: message.videoId,
     streamType: message.streamType,
@@ -74,7 +78,11 @@ function handleChunk(message: WorkerChunkMessage) {
   });
 }
 
-function handleStreamEnd(message: WorkerStreamEndMessage) {
+function handleStreamEnd(message: WorkerMessage) {
+  if (message.type !== WORKER_MESSAGE_STREAM_END) {
+    return;
+  }
+
   handleProcessStreamChunk({
     videoId: message.videoId,
     streamType: message.streamType,
@@ -99,7 +107,11 @@ function feedSingleChunkBuffer({ videoId, streamType, buffer }: {
   });
 }
 
-function handleComplete(message: WorkerCompleteMessage) {
+function handleComplete(message: WorkerMessage) {
+  if (message.type !== WORKER_MESSAGE_COMPLETE) {
+    return;
+  }
+
   const { videoId, isStreamed, streamEnd, videoBuffer, audioBuffer, extraAudioBuffers } = message;
   if (!isStreamed) {
     if (videoBuffer) {
@@ -132,7 +144,11 @@ function handleComplete(message: WorkerCompleteMessage) {
   void sendMessage(MessageType.WorkerDownloadComplete, { videoId });
 }
 
-function handleNeedsDirectUrl(message: WorkerNeedsDirectUrlMessage) {
+function handleNeedsDirectUrl(message: WorkerMessage) {
+  if (message.type !== WORKER_MESSAGE_NEEDS_DIRECT_URL) {
+    return;
+  }
+
   removeWorkerIframe(message.videoId);
   void sendMessage(MessageType.RequestDirectUrlDownload, {
     videoId: message.videoId,
@@ -141,7 +157,11 @@ function handleNeedsDirectUrl(message: WorkerNeedsDirectUrlMessage) {
   });
 }
 
-function handleNeedsFallback(message: WorkerNeedsFallbackMessage) {
+function handleNeedsFallback(message: WorkerMessage) {
+  if (message.type !== WORKER_MESSAGE_NEEDS_FALLBACK) {
+    return;
+  }
+
   removeWorkerIframe(message.videoId);
   void sendMessage(MessageType.RequestWatchPageFallback, {
     videoId: message.videoId,
@@ -150,7 +170,11 @@ function handleNeedsFallback(message: WorkerNeedsFallbackMessage) {
   });
 }
 
-function handleError(message: WorkerErrorMessage) {
+function handleError(message: WorkerMessage) {
+  if (message.type !== WORKER_MESSAGE_ERROR) {
+    return;
+  }
+
   removeWorkerIframe(message.videoId);
   void sendMessage(MessageType.ReportWorkerDownloadFailed, {
     videoId: message.videoId,
@@ -158,13 +182,15 @@ function handleError(message: WorkerErrorMessage) {
   });
 }
 
+const WORKER_MESSAGE_HANDLERS: Record<WorkerMessage["type"], (message: WorkerMessage) => void> = {
+  [WORKER_MESSAGE_CHUNK]: handleChunk,
+  [WORKER_MESSAGE_STREAM_END]: handleStreamEnd,
+  [WORKER_MESSAGE_COMPLETE]: handleComplete,
+  [WORKER_MESSAGE_NEEDS_DIRECT_URL]: handleNeedsDirectUrl,
+  [WORKER_MESSAGE_NEEDS_FALLBACK]: handleNeedsFallback,
+  [WORKER_MESSAGE_ERROR]: handleError
+};
+
 export function handleWorkerMessage(message: WorkerMessage) {
-  switch (message.type) {
-    case WORKER_MSG_CHUNK: return handleChunk(message);
-    case WORKER_MSG_STREAM_END: return handleStreamEnd(message);
-    case WORKER_MSG_COMPLETE: return handleComplete(message);
-    case WORKER_MSG_NEEDS_DIRECT_URL: return handleNeedsDirectUrl(message);
-    case WORKER_MSG_NEEDS_FALLBACK: return handleNeedsFallback(message);
-    case WORKER_MSG_ERROR: return handleError(message);
-  }
+  WORKER_MESSAGE_HANDLERS[message.type](message);
 }
