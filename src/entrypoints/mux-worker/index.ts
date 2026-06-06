@@ -5,8 +5,8 @@ import {
   initFfmpeg,
   initPortReceiver,
   postError,
-  reportFFmpegProgress,
-  state
+  state,
+  trackFFmpegProgressFromLog
 } from "./mux-state";
 import type { FFmpegFactory } from "./mux-state";
 import { WorkerMessageType } from "@/lib/download-pipeline/mux-worker-types";
@@ -34,27 +34,25 @@ async function onInitMessage(e: MessageEvent<InitMessage>) {
   initFfmpeg(await createFFmpegCore({ wasmBinary: e.data.wasmBinary }));
   state.ffmpeg!.setLogger(({ type, message }) => {
     const isStderr = type === FFMPEG_LOG_TYPE_STDERR;
-    if (isStderr) {
-      console.error("[ytdl:ffmpeg]", message);
-    }
-  });
-  state.ffmpeg!.setProgress(({ progress }) => {
-    const isInvalidProgress = progress < 0;
-    if (isInvalidProgress) {
+    if (!isStderr) {
       return;
     }
 
-    reportFFmpegProgress(state.progressOffset + progress * state.progressScale);
+    // debug, not error: ffmpeg writes ALL output (banner, per-frame progress,
+    // summary) to stderr, which would otherwise flood the chrome://extensions
+    // error panel. Genuine mux failures still surface via postError.
+    console.debug("[ytdl:ffmpeg]", message);
+    trackFFmpegProgressFromLog(message);
   });
 
   state.portReceiver!.onMessage({
     [WorkerMessageType.MuxVideoAudio]({ job }) {
-      void handleMuxVideoAudio(job).catch(error => {
+      handleMuxVideoAudio(job).catch(error => {
         postError(error instanceof Error ? error.message : String(error));
       });
     },
     [WorkerMessageType.EmbedMetadata]({ job }) {
-      void handleEmbedMetadata(job).catch(error => {
+      handleEmbedMetadata(job).catch(error => {
         postError(error instanceof Error ? error.message : String(error));
       });
     },
@@ -66,7 +64,7 @@ async function onInitMessage(e: MessageEvent<InitMessage>) {
       }
     },
     [WorkerMessageType.TranscodeFile]({ job }) {
-      void handleTranscodeFile(job).catch(error => {
+      handleTranscodeFile(job).catch(error => {
         postError(error instanceof Error ? error.message : String(error));
       });
     }

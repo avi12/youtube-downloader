@@ -51,13 +51,67 @@ export function tryRmdir(path: string) {
   } catch { /* no-op */ }
 }
 
-export function reportFFmpegProgress(value: number) {
+function reportFFmpegProgress(value: number) {
   state.portReceiver?.send(WorkerMessageType.Progress, {
     videoId: state.currentVideoId,
     progress: Math.max(0, Math.min(value, 0.99)),
     progressType: ProgressType.FFmpeg,
     tabId: state.currentTabId
   });
+}
+
+// @ffmpeg/core's setProgress callback does not fire in this build, so mux
+// progress is derived from the stderr the logger does emit: `Duration:` gives
+// the pass length and `time=` the position within it.
+const PROGRESS_REPORT_DELTA = 0.01;
+let muxDurationSec = 0;
+let lastReportedProgress = -1;
+
+function parseTimecodeSeconds(timecode: string) {
+  const [hours, minutes, seconds] = timecode.split(":");
+  return Number(hours) * 3600 + Number(minutes) * 60 + Number(seconds);
+}
+
+function updateMuxDuration(message: string) {
+  if (message.includes("Input #0")) {
+    muxDurationSec = 0;
+    lastReportedProgress = -1;
+    return true;
+  }
+
+  const durationTimecode = message.match(/Duration:\s*(\d+:\d+:\d+(?:\.\d+)?)/)?.[1];
+  if (durationTimecode) {
+    muxDurationSec = Math.max(muxDurationSec, parseTimecodeSeconds(durationTimecode));
+    return true;
+  }
+
+  return false;
+}
+
+function reportLogProgress(timeTimecode: string) {
+  if (muxDurationSec <= 0) {
+    return;
+  }
+
+  const passProgress = Math.min(parseTimecodeSeconds(timeTimecode) / muxDurationSec, 1);
+  const value = state.progressOffset + passProgress * state.progressScale;
+  if (value - lastReportedProgress < PROGRESS_REPORT_DELTA) {
+    return;
+  }
+
+  lastReportedProgress = value;
+  reportFFmpegProgress(value);
+}
+
+export function trackFFmpegProgressFromLog(message: string) {
+  if (updateMuxDuration(message)) {
+    return;
+  }
+
+  const timeTimecode = message.match(/\btime=\s*(\d+:\d+:\d+(?:\.\d+)?)/)?.[1];
+  if (timeTimecode) {
+    reportLogProgress(timeTimecode);
+  }
 }
 
 export function postResult(data: Uint8Array | null) {

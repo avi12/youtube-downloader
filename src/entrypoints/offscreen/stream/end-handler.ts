@@ -1,9 +1,9 @@
 import { STREAM_ACCUMULATORS } from "./accumulator";
 import { assembleStreamChunks } from "./codec";
-import { enqueueStreamData } from "@/lib/download-pipeline";
+import { enqueueStreamData, reportProgress } from "@/lib/download-pipeline";
 import type { ProcessStreamEndData } from "@/lib/messaging/offscreen-messaging";
 import { base64ToUint8Array } from "@/lib/utils/binary";
-import { AUDIO_EXTRA_STREAM_PREFIX } from "@/types";
+import { AUDIO_EXTRA_STREAM_PREFIX, ProgressType } from "@/types";
 
 export async function handleProcessStreamEnd(data: ProcessStreamEndData) {
   const {
@@ -11,6 +11,16 @@ export async function handleProcessStreamEnd(data: ProcessStreamEndData) {
     audioTrackLabels, audioTrackLanguages, defaultAudioTrackIndex, subtitleTracks, tabId,
     playlistId, playlistTitle, playlistTotalCount, quality, sourceUrl
   } = data;
+
+  // Download bytes are in; mark the mux phase now so the UI shows "Processing"
+  // through the (potentially slow, multi-GB) assembly before ffmpeg starts.
+  await reportProgress({
+    videoId,
+    progress: 0,
+    progressType: ProgressType.FFmpeg,
+    tabId
+  }).catch(() => {});
+
   const accumulator = STREAM_ACCUMULATORS.get(videoId);
   STREAM_ACCUMULATORS.delete(videoId);
 
