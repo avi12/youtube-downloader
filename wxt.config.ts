@@ -34,8 +34,7 @@ export default defineConfig({
     permissions: browser === "firefox" ? sharedPermissions : [...sharedPermissions, "offscreen"],
     host_permissions: [
       "https://*.youtube.com/*",
-      "https://*.googlevideo.com/*",
-      "https://i.ytimg.com/*"
+      "https://*.googlevideo.com/*"
     ],
     content_security_policy: {
       extension_pages:
