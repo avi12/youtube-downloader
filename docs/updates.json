@@ -3,8 +3,8 @@
     "youtube-downloader@avi12.com": {
       "updates": [
         {
-          "version": "2.3.2",
-          "update_link": "https://github.com/avi12/youtube-downloader/releases/download/v2.3.2/youtube-downloader-2.3.2-firefox.xpi",
+          "version": "2.4.0",
+          "update_link": "https://github.com/avi12/youtube-downloader/releases/download/v2.4.0/youtube-downloader-2.4.0-firefox.xpi",
           "applications": {
             "gecko": {
               "strict_min_version": "147.0"
