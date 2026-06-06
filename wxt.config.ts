@@ -62,7 +62,8 @@ export default defineConfig({
             strict_min_version: "147.0",
             update_url: FIREFOX_UPDATE_URL,
             data_collection_permissions: {
-              required: ["technicalAndInteraction"]
+              required: ["none"],
+              optional: ["technicalAndInteraction"]
             }
           }
         }
