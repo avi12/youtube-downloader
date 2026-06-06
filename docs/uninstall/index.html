@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="robots" content="noindex" />
+    <title>Uninstalled</title>
+  </head>
+  <body>
+    <!--
+      Opened by browser.runtime.setUninstallURL on uninstall (?client_id=...).
+      Fires a GA4 "uninstall" event via sendBeacon (survives the tab closing), then closes.
+      The __GA4_*__ tokens are replaced with GitHub secrets at deploy time by
+      .github/workflows/pages.yml. The injected api_secret is still publicly readable in
+      the served page, so use a DEDICATED Measurement Protocol secret (separate from the
+      extension's) that can be rotated/revoked independently.
+    -->
+    <script>
+      const MEASUREMENT_ID = "__GA4_MEASUREMENT_ID__";
+      const API_SECRET = "__GA4_API_SECRET__";
+      const GA4_ENDPOINT = "https://www.google-analytics.com/mp/collect";
+      const ENGAGEMENT_TIME_MSEC = 100;
+
+      const clientId = new URLSearchParams(location.search).get("client_id");
+      if (clientId) {
+        navigator.sendBeacon(
+          `${GA4_ENDPOINT}?measurement_id=${MEASUREMENT_ID}&api_secret=${API_SECRET}`,
+          JSON.stringify({
+            client_id: clientId,
+            timestamp_micros: Date.now() * 1000,
+            consent: {
+              ad_user_data: "DENIED",
+              ad_personalization: "DENIED"
+            },
+            events: [{
+              name: "uninstall",
+              params: {
+                session_id: Date.now().toString(),
+                engagement_time_msec: ENGAGEMENT_TIME_MSEC
+              }
+            }]
+          })
+        );
+      }
+
+      close();
+    </script>
+  </body>
+</html>

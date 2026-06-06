@@ -1,0 +1,45 @@
+name: Deploy Pages
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - docs/**
+      - .github/workflows/pages.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Inject GA4 secrets into uninstall page
+        env:
+          GA4_MEASUREMENT_ID: ${{ secrets.GA4_MEASUREMENT_ID }}
+          GA4_API_SECRET: ${{ secrets.GA4_API_SECRET }}
+        run: |
+          file=docs/uninstall/index.html
+          sed -i "s|__GA4_MEASUREMENT_ID__|${GA4_MEASUREMENT_ID}|g" "$file"
+          sed -i "s|__GA4_API_SECRET__|${GA4_API_SECRET}|g" "$file"
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs
+
+      - id: deployment
+        uses: actions/deploy-pages@v4

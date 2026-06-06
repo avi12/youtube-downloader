@@ -72,6 +72,26 @@ export const checkedPlaylistVideosItem = storage.defineItem<string[]>(
   { fallback: [] }
 );
 
+const analyticsClientIdItem = storage.defineItem<string | null>("local:ytdlAnalyticsClientId", { fallback: null });
+
+let clientIdPromise: Promise<string> | undefined;
+
+async function resolveClientId() {
+  const existing = await analyticsClientIdItem.getValue();
+  if (existing) {
+    return existing;
+  }
+
+  const clientId = crypto.randomUUID();
+  await analyticsClientIdItem.setValue(clientId);
+  return clientId;
+}
+
+export function getOrCreateClientId() {
+  clientIdPromise ??= resolveClientId();
+  return clientIdPromise;
+}
+
 export async function setOption<Key extends keyof Options>({ key, value }: {
   key: Key;
   value: Options[Key];
@@ -85,5 +105,7 @@ export async function setOption<Key extends keyof Options>({ key, value }: {
 }
 
 export async function clearLocalStorage() {
+  const clientId = await getOrCreateClientId();
   await storage.clear("local");
+  await analyticsClientIdItem.setValue(clientId);
 }
