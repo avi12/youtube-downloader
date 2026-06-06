@@ -1,6 +1,5 @@
-import { isVideoCancelled } from "../handlers/pipeline-state";
+import { isVideoCancelled } from "../handlers/cancelled-videos";
 import { MessageType, sendMessage, sendMessageToTab } from "@/lib/messaging/messaging";
-import { mutateStorageItem, statusProgressItem } from "@/lib/storage/storage";
 import { ProgressType } from "@/types";
 import type { Prettify } from "@/types";
 
@@ -38,6 +37,10 @@ async function writeProgressToStorage({
     return;
   }
 
+  // Lazy-import storage so the static graph of the offscreen download-worker
+  // iframe (which reaches progress-fetch but never hits this storage-capable
+  // path) never pulls in `storage.ts`, whose eager defineItem reads throw there.
+  const { mutateStorageItem, statusProgressItem } = await import("@/lib/storage/storage");
   const isComplete = progress >= 1 && progressType === ProgressType.FFmpeg;
   await mutateStorageItem({
     item: statusProgressItem,
@@ -179,7 +182,7 @@ export function sendProgressUpdate(params: SendProgressUpdateParams) {
   }
 
   const timeoutId = setTimeout(() => {
-    void flushPendingProgress(params.videoId);
+    flushPendingProgress(params.videoId).catch(() => {});
   }, PROGRESS_COALESCE_MS);
   scheduledFlushByVideoId.set(params.videoId, timeoutId);
 }
