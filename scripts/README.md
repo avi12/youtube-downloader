@@ -11,7 +11,7 @@ These are wired into `package.json` and are the ones you'll actually run.
 | `dev-server.ts` | `pnpm dev`, `pnpm dev:firefox` | Watches `src/`, rebuilds via WXT, launches a clean Chrome or Firefox instance with the extension installed, and force-reloads every open YouTube tab on save. |
 | `install-hyperv-multipass.ps1` | `pnpm install:hyperv-multipass` | One-time Windows setup: enables Hyper-V and installs Multipass. Run elevated. Required only if you want to reproduce Linux-Chrome bugs. |
 | `setup-linux-vm.ps1` | `pnpm setup:linux-vm` | One-time: creates the Ubuntu `ytdl-linux` VM, mounts the repo, installs Node/pnpm/Chrome deps, wires the CDP port proxy. |
-| `linux-vm-dev.ps1` | `pnpm dev:linux` | Daily: starts the VM if it's down, syncs the current branch in, runs `pnpm dev` under Xvfb + VNC. |
+| `linux-vm-dev.ts` | `pnpm dev:linux` | Daily: starts the VM if it's down, syncs the current branch in, runs `pnpm dev` under Xvfb + VNC. |
 | `linux-vm-provision.sh` | (invoked by `setup-linux-vm.ps1`) | Runs inside the VM. Don't run it directly on the host. |
 
 Supporting files used by the above:
