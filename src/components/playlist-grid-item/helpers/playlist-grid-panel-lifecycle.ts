@@ -30,10 +30,10 @@ function buildPositionTargetSelector(playlistId: string) {
 
 export function requestPlaylistDropdownCreation(playlistId: string) {
   const panelContentId = buildPlaylistPanelContentId(playlistId);
-  void crossWorldMessenger.sendMessage(CrossWorldMessage.CreateDropdown, {
+  crossWorldMessenger.sendMessage(CrossWorldMessage.CreateDropdown, {
     contentId: panelContentId,
     positionTargetSelector: buildPositionTargetSelector(playlistId)
-  });
+  }).catch(() => {});
   return panelContentId;
 }
 

@@ -17,11 +17,11 @@ export async function dispatchSequentially({ items, tabId, signal }: DispatchPar
     let triggered = false;
     try {
       await sendMessageToTab(MessageType.ExecuteDownloadItem, item, tabId);
-      void sendMessageToTab(MessageType.StartKeepalive, { videoId: item.videoId }, tabId);
+      await sendMessageToTab(MessageType.StartKeepalive, { videoId: item.videoId }, tabId);
       triggered = true;
     } catch (error) {
       console.error("[ytdl:bg] ExecuteDownloadItem failed:", item.videoId, error);
-      void reportDownloadFailed({
+      await reportDownloadFailed({
         videoId: item.videoId,
         tabId
       });
@@ -43,10 +43,10 @@ export async function dispatchParallel({ items, tabId, signal }: DispatchParams)
 
     try {
       await sendMessageToTab(MessageType.ExecuteDownloadItem, item, tabId);
-      void sendMessageToTab(MessageType.StartKeepalive, { videoId: item.videoId }, tabId);
+      await sendMessageToTab(MessageType.StartKeepalive, { videoId: item.videoId }, tabId);
     } catch (error) {
       console.error("[ytdl:bg] ExecuteDownloadItem failed:", item.videoId, error);
-      void reportDownloadFailed({
+      await reportDownloadFailed({
         videoId: item.videoId,
         tabId
       });

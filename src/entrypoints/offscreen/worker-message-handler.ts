@@ -140,8 +140,8 @@ function handleComplete(message: WorkerMessage) {
   }
 
   removeWorkerIframe(videoId);
-  void handleProcessStreamEnd(streamEnd);
-  void sendMessage(MessageType.WorkerDownloadComplete, { videoId });
+  handleProcessStreamEnd(streamEnd).catch(() => {});
+  sendMessage(MessageType.WorkerDownloadComplete, { videoId }).catch(() => {});
 }
 
 function handleNeedsDirectUrl(message: WorkerMessage) {
@@ -150,11 +150,11 @@ function handleNeedsDirectUrl(message: WorkerMessage) {
   }
 
   removeWorkerIframe(message.videoId);
-  void sendMessage(MessageType.RequestDirectUrlDownload, {
+  sendMessage(MessageType.RequestDirectUrlDownload, {
     videoId: message.videoId,
     tabId: message.tabId,
     request: message.request
-  });
+  }).catch(() => {});
 }
 
 function handleNeedsFallback(message: WorkerMessage) {
@@ -163,11 +163,11 @@ function handleNeedsFallback(message: WorkerMessage) {
   }
 
   removeWorkerIframe(message.videoId);
-  void sendMessage(MessageType.RequestWatchPageFallback, {
+  sendMessage(MessageType.RequestWatchPageFallback, {
     videoId: message.videoId,
     tabId: message.tabId,
     request: message.request
-  });
+  }).catch(() => {});
 }
 
 function handleError(message: WorkerMessage) {
@@ -176,10 +176,10 @@ function handleError(message: WorkerMessage) {
   }
 
   removeWorkerIframe(message.videoId);
-  void sendMessage(MessageType.ReportWorkerDownloadFailed, {
+  sendMessage(MessageType.ReportWorkerDownloadFailed, {
     videoId: message.videoId,
     tabId: message.tabId
-  });
+  }).catch(() => {});
 }
 
 const WORKER_MESSAGE_HANDLERS: Record<WorkerMessage["type"], (message: WorkerMessage) => void> = {

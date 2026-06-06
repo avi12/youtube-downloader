@@ -9,7 +9,7 @@ export async function readStreamToBuffer({ reader, expectedBytes, onBytesReceive
   onChunk?: (chunk: Uint8Array) => void;
 }) {
   const stall = createStallChecker(() => {
-    void reader.cancel();
+    reader.cancel().catch(() => {});
   });
 
   const isStreamingMode = !!onChunk;

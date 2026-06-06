@@ -53,7 +53,7 @@ export async function handleOffscreenAudioDownload(data: AudioSabrData) {
       tabId
     });
 
-    void handleProcessStreamEnd({
+    handleProcessStreamEnd({
       type,
       videoId,
       filenameOutput,
@@ -68,7 +68,7 @@ export async function handleOffscreenAudioDownload(data: AudioSabrData) {
       playlistTitle,
       playlistTotalCount,
       metadata: enrichedMetadata
-    });
+    }).catch(() => {});
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
     await sendMessage(MessageType.ProcessStreamError, {

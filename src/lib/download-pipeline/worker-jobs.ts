@@ -43,12 +43,12 @@ export function runWorkerJob<T>({
         reject(new Error(message));
       },
       [WorkerMessageType.Progress]({ videoId, progress, progressType, tabId }) {
-        void sendMessage(MessageType.PipelineProgress, {
+        sendMessage(MessageType.PipelineProgress, {
           videoId,
           progress,
           progressType,
           tabId
-        });
+        }).catch(() => {});
       }
     });
 
@@ -93,12 +93,12 @@ export function runMuxVideoAudio({ videoId, job }: RunMuxVideoAudioParams) {
             reject(new Error(message));
           },
           [WorkerMessageType.Progress]({ videoId: progressVideoId, progress, progressType, tabId }) {
-            void sendMessage(MessageType.PipelineProgress, {
+            sendMessage(MessageType.PipelineProgress, {
               videoId: progressVideoId,
               progress,
               progressType,
               tabId
-            });
+            }).catch(() => {});
           }
         });
 

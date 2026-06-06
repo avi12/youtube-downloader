@@ -78,7 +78,7 @@ export default defineContentScript({
         const videoIds = cancelAllActiveDownloads();
         const hasActiveDownloads = videoIds.length > 0;
         if (hasActiveDownloads) {
-          void crossWorldMessenger.sendMessage(CrossWorldMessage.CancelDownload, { videoIds });
+          crossWorldMessenger.sendMessage(CrossWorldMessage.CancelDownload, { videoIds }).catch(() => {});
         }
       }
 
@@ -95,10 +95,10 @@ export default defineContentScript({
 
     const isDocumentReady = document.readyState === "complete";
     if (isDocumentReady) {
-      void initializeOnLoad();
+      initializeOnLoad().catch(() => {});
     } else {
       addEventListener(EVENT_LOAD, () => {
-        void initializeOnLoad();
+        initializeOnLoad().catch(() => {});
       }, { once: true });
     }
   }

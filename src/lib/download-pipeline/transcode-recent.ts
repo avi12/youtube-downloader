@@ -73,7 +73,7 @@ export async function transcodeRecentDownload({ entryId, targetContainer }: Tran
       }
     });
   } finally {
-    void sendMessage(MessageType.PipelineQueueRemove, {
+    await sendMessage(MessageType.PipelineQueueRemove, {
       videoId: transcodeVideoId,
       type: DownloadType.VideoAndAudio
     });

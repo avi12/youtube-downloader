@@ -53,9 +53,9 @@ export function registerPlaylistDownloadHandler() {
       signal: currentSequenceAbort.signal
     };
     if (data.isSequential) {
-      void dispatchSequentially(dispatchArgs);
+      dispatchSequentially(dispatchArgs).catch(() => {});
     } else {
-      void dispatchParallel(dispatchArgs);
+      dispatchParallel(dispatchArgs).catch(() => {});
     }
   });
 }

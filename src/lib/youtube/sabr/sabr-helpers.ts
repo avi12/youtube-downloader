@@ -38,10 +38,10 @@ export async function collectReadableStream({ stream, expectedBytes, signal, onC
   const reader = stream.getReader();
   const isAborted = signal?.aborted;
   if (isAborted) {
-    void reader.cancel();
+    await reader.cancel();
   } else {
     signal?.addEventListener("abort", () => {
-      void reader.cancel();
+      reader.cancel().catch(() => {});
     }, { once: true });
   }
 

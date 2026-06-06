@@ -46,7 +46,7 @@ export function handleActionButtonClick({ buttonId, state }: HandleActionButtonC
     if (state.isRevealingAll) {
       state.cancelReveal();
     } else {
-      void state.revealAndDownloadAll();
+      state.revealAndDownloadAll()?.catch(() => {});
     }
 
     return true;

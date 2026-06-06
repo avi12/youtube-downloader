@@ -21,10 +21,10 @@ function buildPositionTargetSelector(videoId: string) {
 
 export function requestDropdownCreation(videoId: string) {
   const panelContentId = buildPanelContentId(videoId);
-  void crossWorldMessenger.sendMessage(CrossWorldMessage.CreateDropdown, {
+  crossWorldMessenger.sendMessage(CrossWorldMessage.CreateDropdown, {
     contentId: panelContentId,
     positionTargetSelector: buildPositionTargetSelector(videoId)
-  });
+  }).catch(() => {});
   return panelContentId;
 }
 

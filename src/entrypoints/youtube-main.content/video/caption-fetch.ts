@@ -112,7 +112,7 @@ export async function fetchCaptionWebVttData({
     const isTotalKnown = totalExpectedBytes > 0;
     if (isTotalKnown) {
       const progress = ((iTrack + 1) * captionBytesPerUnit) / totalExpectedBytes;
-      void crossWorldMessenger.sendMessage(CrossWorldMessage.ReportPageProgress, {
+      await crossWorldMessenger.sendMessage(CrossWorldMessage.ReportPageProgress, {
         videoId,
         progress,
         progressType: ProgressType.Video

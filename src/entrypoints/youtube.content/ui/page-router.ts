@@ -29,7 +29,7 @@ export function handlePageChange({ url, context }: HandlePageChangeParams) {
   }
 
   if (pathname === PLAYLIST_PATHNAME) {
-    void injectPlaylistDownloaderUi(context);
+    injectPlaylistDownloaderUi(context).catch(() => {});
     handlePlaylistVideoAdditions(context);
     return;
   }

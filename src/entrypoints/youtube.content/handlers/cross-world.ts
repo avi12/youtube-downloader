@@ -26,7 +26,7 @@ export function registerCrossWorldHandlers({ isDownloadIframe, context }: Regist
       });
     }
 
-    void forwardSabrCredentialsWithRetry();
+    forwardSabrCredentialsWithRetry().catch(() => {});
   });
 
   crossWorldMessenger.onMessage(CrossWorldMessage.PanelContentReady, ({ data }) => {
@@ -43,7 +43,7 @@ export function registerCrossWorldHandlers({ isDownloadIframe, context }: Regist
   });
 
   crossWorldMessenger.onMessage(CrossWorldMessage.StreamData, ({ data }) => {
-    void handleStreamData(data);
+    handleStreamData(data).catch(() => {});
   });
 
   crossWorldMessenger.onMessage(CrossWorldMessage.StreamError, ({ data }) => {
@@ -51,7 +51,7 @@ export function registerCrossWorldHandlers({ isDownloadIframe, context }: Regist
   });
 
   crossWorldMessenger.onMessage(CrossWorldMessage.DownloadViaIframe, ({ data }) => {
-    void sendMessage(MessageType.DownloadViaWatchPage, data);
+    sendMessage(MessageType.DownloadViaWatchPage, data).catch(() => {});
   });
 
   crossWorldMessenger.onMessage(

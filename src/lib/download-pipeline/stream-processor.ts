@@ -86,7 +86,7 @@ export function enqueueStreamData(data: ProcessStreamData) {
     return;
   }
 
-  void processItem(data);
+  processItem(data).catch(() => {});
 }
 
 export async function cancelDownloadsByIds(videoIds: string[]) {

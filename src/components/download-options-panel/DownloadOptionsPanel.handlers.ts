@@ -52,7 +52,7 @@ export function setupPanelButtonHandler({ panel, onClose }: SetupPanelButtonHand
 export const PANEL_CLOSED_EVENT = "ytdl:panel-closed";
 
 export function sendPanelClosed() {
-  void crossWorldMessenger.sendMessage(CrossWorldMessage.PanelClosed);
+  crossWorldMessenger.sendMessage(CrossWorldMessage.PanelClosed).catch(() => {});
   document.dispatchEvent(new CustomEvent(PANEL_CLOSED_EVENT));
 }
 

@@ -28,13 +28,13 @@ export function registerPipelineQueueHandlers() {
   });
 
   onMessage(MessageType.PipelineFFmpegReady, () => {
-    void isFFmpegReadyItem.setValue(true);
+    isFFmpegReadyItem.setValue(true).catch(() => {});
     signalFFmpegReady();
   });
 
   onMessage(MessageType.PipelineZipProgress, ({ data }) => {
     const { playlistId, isDone, tabId } = data;
-    void sendMessage(
+    sendMessage(
       MessageType.UpdateDownloadProgress,
       {
         videoId: `${ZIP_VIDEO_ID_PREFIX}${playlistId}`,
@@ -42,6 +42,6 @@ export function registerPipelineQueueHandlers() {
         progressType: ProgressType.Zip
       },
       tabId
-    );
+    ).catch(() => {});
   });
 }

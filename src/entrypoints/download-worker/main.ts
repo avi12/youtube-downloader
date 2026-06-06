@@ -35,11 +35,11 @@ addEventListener("message", e => {
   const isStart = e.data?.type === IFRAME_MESSAGE_START;
   if (isStart) {
     const { request, tabId, enrichedMetadata } = e.data;
-    void runDownload({
+    runDownload({
       request,
       tabId,
       enrichedMetadata
-    });
+    }).catch(() => {});
   }
 }, { once: false });
 

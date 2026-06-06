@@ -80,7 +80,7 @@ export function cleanupPlaylistUi() {
   headerReinjectObserver = null;
 
   if (currentPlaylistUi) {
-    void unmount(currentPlaylistUi);
+    unmount(currentPlaylistUi).catch(() => {});
     currentPlaylistUi = null;
   }
 
@@ -179,7 +179,7 @@ export async function injectPlaylistDownloaderUi(
 
     headerReinjectObserver?.disconnect();
     headerReinjectObserver = null;
-    void injectPlaylistDownloaderUi(context);
+    injectPlaylistDownloaderUi(context).catch(() => {});
   });
 
   headerReinjectObserver.observe(document.body, CHILD_LIST_SUBTREE);

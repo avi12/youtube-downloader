@@ -59,11 +59,11 @@ export function sendStartDownload(params: {
     return;
   }
 
-  void crossWorldMessenger.sendMessage(CrossWorldMessage.DownloadRequest, payload);
+  crossWorldMessenger.sendMessage(CrossWorldMessage.DownloadRequest, payload).catch(() => {});
 }
 
 export function sendCancelDownload(videoId: string) {
-  void performCancelDownload([videoId]);
+  performCancelDownload([videoId]).catch(() => {});
 }
 
 export async function sendDiscardInterrupted(videoId: string) {
@@ -76,5 +76,5 @@ export function sendRevealDownload(downloadId: number | null) {
     return;
   }
 
-  void sendMessage(MessageType.RevealDownloadFile, { downloadId });
+  sendMessage(MessageType.RevealDownloadFile, { downloadId }).catch(() => {});
 }

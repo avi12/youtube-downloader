@@ -49,7 +49,7 @@ export async function startDownload(params: Pick<DownloadRequest,
     }
 
     console.warn("[ytdl:main] startDownload failed for", params.videoId, error);
-    void crossWorldMessenger.sendMessage(
+    await crossWorldMessenger.sendMessage(
       CrossWorldMessage.ReportMainDownloadFailed,
       { videoId: params.videoId }
     );

@@ -46,20 +46,20 @@ export function buildClickHandler({ videoData, elDropdown, state }: BuildClickHa
       const isActiveDownload = state.getIsDownloading() || state.getIsInterrupted();
       if (isActiveDownload) {
         cancelActiveDownload(videoData.videoId);
-        void crossWorldMessenger.sendMessage(CrossWorldMessage.CancelDownload, {
+        crossWorldMessenger.sendMessage(CrossWorldMessage.CancelDownload, {
           videoIds: [videoData.videoId]
-        });
+        }).catch(() => {});
         return;
       }
 
-      void startDownload({
+      startDownload({
         type: state.getDefaultDownloadType(),
         videoId: videoData.videoId,
         videoItag: state.getDefaultVideoItag(),
         audioItag: state.getDefaultAudioItag(),
         audioTrackId: state.getDefaultAudioTrackId(),
         filenameOutput: state.getDefaultFilename()
-      });
+      }).catch(() => {});
       return;
     }
 

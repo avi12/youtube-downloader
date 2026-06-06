@@ -6,7 +6,7 @@ import { downloadRequestSchema } from "@/lib/youtube/schemas";
 
 export function registerDownloadProgressHandlers() {
   crossWorldMessenger.onMessage(CrossWorldMessage.CancelDownload, ({ data }) => {
-    void cancelDownloadsLocally(data.videoIds);
+    cancelDownloadsLocally(data.videoIds).catch(() => {});
   });
 
   crossWorldMessenger.onMessage(CrossWorldMessage.StartBackgroundDownload, ({ data }) => {
@@ -15,13 +15,13 @@ export function registerDownloadProgressHandlers() {
       return;
     }
 
-    void sendMessage(MessageType.StartBackgroundDownload, parsed.data);
+    sendMessage(MessageType.StartBackgroundDownload, parsed.data).catch(() => {});
   });
 
   crossWorldMessenger.onMessage(CrossWorldMessage.IframePlayerReady, async ({ data }) => {
     const request = await sendMessage(MessageType.DownloadIframeReady, { videoId: data.videoId });
     if (request) {
-      void crossWorldMessenger.sendMessage(CrossWorldMessage.DownloadRequest, request);
+      await crossWorldMessenger.sendMessage(CrossWorldMessage.DownloadRequest, request);
     }
   });
 
@@ -30,17 +30,17 @@ export function registerDownloadProgressHandlers() {
   });
 
   crossWorldMessenger.onMessage(CrossWorldMessage.DownloadBlobUrl, ({ data }) => {
-    void sendMessage(MessageType.DownloadBlobUrl, data);
+    sendMessage(MessageType.DownloadBlobUrl, data).catch(() => {});
   });
 
   crossWorldMessenger.onMessage(CrossWorldMessage.ReportPageProgress, ({ data }) => {
-    void sendMessage(MessageType.ReportPageProgress, data);
+    sendMessage(MessageType.ReportPageProgress, data).catch(() => {});
   });
 
   crossWorldMessenger.onMessage(CrossWorldMessage.ReportMainDownloadFailed, ({ data }) => {
-    void sendMessage(MessageType.ReportWorkerDownloadFailed, {
+    sendMessage(MessageType.ReportWorkerDownloadFailed, {
       videoId: data.videoId,
       tabId: -1
-    });
+    }).catch(() => {});
   });
 }

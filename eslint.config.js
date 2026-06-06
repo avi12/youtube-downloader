@@ -193,7 +193,7 @@ const tsStyleRules = {
     }
   ],
   "@typescript-eslint/no-unused-vars": ["error", { ignoreRestSiblings: true }],
-  "no-void": ["error", { allowAsStatement: true }]
+  "no-void": "error"
 };
 
 const sharedPlugins = {
@@ -246,6 +246,7 @@ export default [
     plugins: sharedPlugins,
     rules: {
       ...tsStyleRules,
+      "no-void": "off",
       "svelte/no-at-html-tags": "off",
       "svelte/indent": ["error", { indent: 2 }],
       "svelte/sort-attributes": "error",
@@ -257,6 +258,18 @@ export default [
         allowHigherOrderFunctions: true
       }],
       "local/expand-svelte-block": "error"
+    }
+  },
+  {
+    files: ["**/*.svelte.ts"],
+    rules: {
+      "no-void": "off"
+    }
+  },
+  {
+    files: ["**/entrypoints/background/index.ts"],
+    rules: {
+      "no-void": "off"
     }
   }
 ];

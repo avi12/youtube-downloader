@@ -59,7 +59,7 @@ export function enqueueMuxJob<T>({ videoId, run }: {
         }
       }
     });
-    void processMuxQueue();
+    processMuxQueue().catch(() => {});
   });
 }
 

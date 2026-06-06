@@ -33,7 +33,7 @@ async function processNextVideoData() {
     videoDataFailedStore.set(videoId, true);
   } finally {
     activeVideoDataFetches--;
-    void processNextVideoData();
+    processNextVideoData().catch(() => {});
   }
 }
 
@@ -47,7 +47,7 @@ function requestVideoData(videoId: string) {
   const isVideoPending = videoDataPending.has(videoId);
   if (!isVideoPending) {
     videoDataPending.add(videoId);
-    void processNextVideoData();
+    processNextVideoData().catch(() => {});
   }
 }
 

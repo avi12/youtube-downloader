@@ -20,10 +20,10 @@ export function registerOffscreenMessageListeners() {
   listenForOffscreenMessages({
     [OffscreenMessageType.ProcessStreamChunk]: handleProcessStreamChunk,
     [OffscreenMessageType.ProcessStreamEnd](data) {
-      void handleProcessStreamEnd(data);
+      handleProcessStreamEnd(data).catch(() => {});
     },
     [OffscreenMessageType.CancelProcessing](data) {
-      void cancelDownloadsByIds(data.videoIds);
+      cancelDownloadsByIds(data.videoIds).catch(() => {});
       for (const videoId of data.videoIds) {
         sendToWorkerIframe(videoId, { type: IFRAME_MESSAGE_CANCEL });
         removeWorkerIframe(videoId);
@@ -31,7 +31,7 @@ export function registerOffscreenMessageListeners() {
       }
     },
     [OffscreenMessageType.TranscodeRecentDownload](data) {
-      void transcodeRecentDownload(data);
+      transcodeRecentDownload(data).catch(() => {});
     },
     [OffscreenMessageType.CreateDownloadIframe](data) {
       createDownloadIframe(data);
@@ -43,7 +43,7 @@ export function registerOffscreenMessageListeners() {
       revokePendingBlobUrl(data.blobUrl);
     },
     [OffscreenMessageType.DownloadAudioViaSabr](data) {
-      void handleOffscreenAudioDownload(data);
+      handleOffscreenAudioDownload(data).catch(() => {});
     },
     [OffscreenMessageType.StartDownloadInIframe](data) {
       const { request, tabId, enrichedMetadata } = data;

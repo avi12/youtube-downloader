@@ -84,7 +84,7 @@ export async function injectSegmentedDownloadButton(videoData: VideoData) {
   elDropdownContentSlot.id = panelContentId;
 
   const { playerResponse, ...videoDataForPanel } = videoData;
-  void crossWorldMessenger.sendMessage(CrossWorldMessage.PanelContentReady, {
+  await crossWorldMessenger.sendMessage(CrossWorldMessage.PanelContentReady, {
     contentId: panelContentId,
     videoDataJson: JSON.stringify(videoDataForPanel)
   });
@@ -92,7 +92,7 @@ export async function injectSegmentedDownloadButton(videoData: VideoData) {
   elCurrentNativeDownload = elNativeDownload;
 
   cleanupCurrentButton = () => {
-    void unmount(component);
+    unmount(component).catch(() => {});
     elDropdown.remove();
     elNativeDownload?.classList.remove(NATIVE_HIDDEN_CLASS);
     elCurrentNativeDownload = null;

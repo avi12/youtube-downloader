@@ -10,7 +10,7 @@ export function registerBackgroundMessageHandlers() {
   });
 
   onMessage(MessageType.ExecuteDownloadItem, ({ data }) => {
-    void crossWorldMessenger.sendMessage(CrossWorldMessage.DownloadRequest, data);
+    crossWorldMessenger.sendMessage(CrossWorldMessage.DownloadRequest, data).catch(() => {});
   });
 
   // Progress, failure, and cancel state all flow through statusProgressItem
@@ -22,7 +22,7 @@ export function registerBackgroundMessageHandlers() {
     }
 
     if (data.isInterrupted) {
-      void checkInterruptedDownload(data.videoId);
+      checkInterruptedDownload(data.videoId).catch(() => {});
     }
   });
 }

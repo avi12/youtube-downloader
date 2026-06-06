@@ -13,10 +13,10 @@ function sendSettingsOptionsData({ elTarget, title }: {
   title: string;
 }) {
   const settingsId = elTarget.getAttribute(DATA_SETTINGS_OPTIONS_ID_ATTR);
-  void crossWorldMessenger.sendMessage(CrossWorldMessage.SetSettingsOptionsData, {
+  crossWorldMessenger.sendMessage(CrossWorldMessage.SetSettingsOptionsData, {
     selector: `[${DATA_SETTINGS_OPTIONS_ID_ATTR}="${settingsId}"]`,
     title
-  });
+  }).catch(() => {});
 }
 
 export function attachSettingsOptions(title: string) {

@@ -31,7 +31,7 @@ export function triggerDownload({ videoData, videoId, gridTitle, setLocallyDone 
   const videoCandidates = filterVideoFormatsByEnhancedBitrate(videoData.videoFormats, options.enhancedBitrate);
 
   setLocallyDone(false);
-  void crossWorldMessenger.sendMessage(CrossWorldMessage.DownloadRequest, {
+  crossWorldMessenger.sendMessage(CrossWorldMessage.DownloadRequest, {
     type: downloadType,
     videoId,
     videoItag: videoCandidates[0]?.itag ?? 0,
@@ -39,12 +39,12 @@ export function triggerDownload({ videoData, videoId, gridTitle, setLocallyDone 
     filenameOutput,
     downloadExtras: options.downloadExtras,
     includeAutoDubbing: options.includeAutoDubbing
-  });
+  }).catch(() => {});
 }
 
 export function cancelDownload(videoId: string) {
   cancelStreamTransfer(videoId);
-  void performCancelDownload([videoId]);
+  performCancelDownload([videoId]).catch(() => {});
 
   const isPartOfActiveBatch = batchDownloadStatus.isRunning && batchVideoIds.has(videoId);
   if (isPartOfActiveBatch) {

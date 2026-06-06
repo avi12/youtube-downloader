@@ -67,7 +67,7 @@ export async function handleStreamData(payload: StreamDataPayload) {
 
   const playlistContext = popPlaylistContext(videoId);
 
-  void sendMessage(MessageType.StreamEnd, {
+  await sendMessage(MessageType.StreamEnd, {
     type: downloadType,
     videoId,
     filenameOutput,
@@ -86,8 +86,8 @@ type HandleStreamErrorParams = Prettify<{
 export function handleStreamError({ videoId, error }: HandleStreamErrorParams) {
   console.error("[ytdl] Stream error for", videoId, error);
 
-  void sendMessage(MessageType.ProcessStreamError, {
+  sendMessage(MessageType.ProcessStreamError, {
     videoId,
     error
-  });
+  }).catch(() => {});
 }

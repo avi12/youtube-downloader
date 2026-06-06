@@ -18,7 +18,7 @@ export function mountWatchSnackbar(context: InstanceType<typeof ContentScriptCon
       return;
     }
 
-    void unmount(snackbarInstance);
+    unmount(snackbarInstance).catch(() => {});
     snackbarInstance = null;
     elTarget.remove();
   });

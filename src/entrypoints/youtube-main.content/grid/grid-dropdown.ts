@@ -52,7 +52,7 @@ function createGridDropdown({ contentId, positionTargetSelector }: CreateGridDro
   resizeObserver.observe(elDropdownContentSlot);
   gridDropdowns.set(contentId, elDropdown);
 
-  void crossWorldMessenger.sendMessage(CrossWorldMessage.DropdownReady, { contentId });
+  crossWorldMessenger.sendMessage(CrossWorldMessage.DropdownReady, { contentId }).catch(() => {});
   requestAnimationFrame(() => elDropdown.open());
 }
 

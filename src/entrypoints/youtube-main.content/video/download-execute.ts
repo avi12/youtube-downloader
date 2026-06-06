@@ -117,7 +117,7 @@ export async function resolveAndDispatch({ params, abortSignal }: ResolveAndDisp
     isVideoDataExpired(cachedVideoData)
   );
   if (shouldUseIframe) {
-    void crossWorldMessenger.sendMessage(CrossWorldMessage.DownloadViaIframe, {
+    await crossWorldMessenger.sendMessage(CrossWorldMessage.DownloadViaIframe, {
       ...params,
       isIframeFallback: true
     });
@@ -224,7 +224,7 @@ export async function resolveAndDispatch({ params, abortSignal }: ResolveAndDisp
     return;
   }
 
-  void crossWorldMessenger.sendMessage(CrossWorldMessage.StartBackgroundDownload, {
+  await crossWorldMessenger.sendMessage(CrossWorldMessage.StartBackgroundDownload, {
     requestJson: JSON.stringify(enrichedRequest)
   });
 }

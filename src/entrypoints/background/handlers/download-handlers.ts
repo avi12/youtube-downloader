@@ -38,13 +38,13 @@ export function registerDownloadHandlers() {
     }
 
     const sourceUrl = data.sourceUrl ?? sender.tab?.url;
-    void downloadViaWatchPage({
+    downloadViaWatchPage({
       data: sourceUrl ? {
         ...data,
         sourceUrl
       } : data,
       tabId: originTabId
-    });
+    }).catch(() => {});
   });
 
   onMessage(MessageType.Keepalive, () => {});
@@ -101,7 +101,7 @@ export function registerDownloadHandlers() {
 
     clearCurrentSequenceTabId();
     await removeFromPopupList(data.videoIds);
-    void cancelDownloads(data.videoIds);
+    await cancelDownloads(data.videoIds);
   });
 
   onMessage(MessageType.DownloadBlobUrl, async ({ data }) => {
@@ -130,7 +130,7 @@ export function registerDownloadHandlers() {
       signalVideoComplete(videoId);
     } catch (error) {
       console.warn("[ytdl:bg] Blob URL download failed:", error);
-      void reportDownloadFailed({
+      await reportDownloadFailed({
         videoId,
         tabId
       });
@@ -170,10 +170,10 @@ export function registerDownloadHandlers() {
       channel: data.metadata?.artist,
       thumbnailUrl: data.metadata?.thumbnailUrl
     });
-    void startBackgroundDownload({
+    startBackgroundDownload({
       request: enrichedRequest,
       tabId: resolvedTabId
-    });
+    }).catch(() => {});
 
     await sendMessageToTab(MessageType.StartKeepalive, { videoId: data.videoId }, resolvedTabId);
   });
@@ -201,7 +201,7 @@ export function registerDownloadHandlers() {
       return;
     }
 
-    void sendMessage(MessageType.RequestWatchPageFallback, {
+    await sendMessage(MessageType.RequestWatchPageFallback, {
       videoId,
       tabId,
       request
@@ -210,12 +210,12 @@ export function registerDownloadHandlers() {
 
   onMessage(MessageType.RequestWatchPageFallback, ({ data }) => {
     const { videoId, tabId, request } = data;
-    void handleIframeFallback({
+    handleIframeFallback({
       request,
       tabId,
       videoId,
       reportDownloadFailed
-    });
+    }).catch(() => {});
   });
 
   onMessage(MessageType.WorkerDownloadComplete, async ({ data }) => {
@@ -243,7 +243,7 @@ export function registerDownloadHandlers() {
     }
 
     const isComplete = progressData.progress >= 1 && progressData.progressType === ProgressType.FFmpeg;
-    void mutateStorageItem({
+    await mutateStorageItem({
       item: statusProgressItem,
       mutator(current) {
         current[progressData.videoId] = {
@@ -264,7 +264,7 @@ export function registerDownloadHandlers() {
       }
     });
 
-    void sendMessageToTab(MessageType.UpdateDownloadProgress, progressData, tabId);
+    await sendMessageToTab(MessageType.UpdateDownloadProgress, progressData, tabId);
   });
 
   onMessage(MessageType.ReportPageProgress, async ({ data, sender }) => {

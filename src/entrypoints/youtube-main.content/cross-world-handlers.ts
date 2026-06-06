@@ -16,7 +16,7 @@ const SETTINGS_OPTIONS_ID_SELECTOR = "#options";
 
 export function registerCrossWorldHandlers() {
   crossWorldMessenger.onMessage(CrossWorldMessage.DownloadRequest, ({ data }) => {
-    void startDownload(data);
+    startDownload(data).catch(() => {});
   });
 
   crossWorldMessenger.onMessage(CrossWorldMessage.OpenSnackbar, () => {

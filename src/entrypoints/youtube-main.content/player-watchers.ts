@@ -67,7 +67,7 @@ export function setupAudioTrackWatcher() {
 
     lastTrackId = trackId;
     player?.setAttribute(ACTIVE_AUDIO_ATTR, trackId);
-    void crossWorldMessenger.sendMessage(CrossWorldMessage.AudioTrackChanged, { trackId });
+    crossWorldMessenger.sendMessage(CrossWorldMessage.AudioTrackChanged, { trackId }).catch(() => {});
   }
 
   for (const bus of buses) {
@@ -125,18 +125,18 @@ export function setupCaptionTrackWatcher() {
       languageCode,
       vssId
     });
-    void crossWorldMessenger.sendMessage(CrossWorldMessage.CaptionTrackChanged, {
+    crossWorldMessenger.sendMessage(CrossWorldMessage.CaptionTrackChanged, {
       languageCode,
       vssId
-    });
+    }).catch(() => {});
   }
 
   function onCaptionCleared() {
     clearCaptionAttribute();
-    void crossWorldMessenger.sendMessage(CrossWorldMessage.CaptionTrackChanged, {
+    crossWorldMessenger.sendMessage(CrossWorldMessage.CaptionTrackChanged, {
       languageCode: "",
       vssId: ""
-    });
+    }).catch(() => {});
   }
 
   function syncCaptionFromPlayer() {

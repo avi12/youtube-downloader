@@ -74,7 +74,7 @@ export async function buildAndDispatchVideoData({ playerResponse }: {
 
   videoDataCache.set(videoData.videoId, videoData);
   videoDataStore.set(videoData.videoId, videoData);
-  void crossWorldMessenger.sendMessage(CrossWorldMessage.VideoData, videoData);
+  await crossWorldMessenger.sendMessage(CrossWorldMessage.VideoData, videoData);
 
   captureState.activeVideoId = videoData.videoId;
 
@@ -95,7 +95,7 @@ export async function buildAndDispatchVideoData({ playerResponse }: {
   const isIframe = self !== top;
   if (isIframe) {
     getMoviePlayer()?.stopVideo?.();
-    void crossWorldMessenger.sendMessage(CrossWorldMessage.IframePlayerReady, { videoId: videoData.videoId });
+    await crossWorldMessenger.sendMessage(CrossWorldMessage.IframePlayerReady, { videoId: videoData.videoId });
     await generatePoTokenIfNeeded(videoData);
     return;
   }

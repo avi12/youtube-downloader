@@ -47,7 +47,7 @@ export function extractPlaylistMetadata() {
 
 function handleNavigation() {
   cleanupSegmentedButton();
-  void crossWorldMessenger.sendMessage(CrossWorldMessage.Navigation, { url: location.href });
+  crossWorldMessenger.sendMessage(CrossWorldMessage.Navigation, { url: location.href }).catch(() => {});
   extractPlaylistMetadata();
 }
 

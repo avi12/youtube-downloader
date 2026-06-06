@@ -240,11 +240,11 @@ async function runFirefoxDirectDownload({ request, tabId, enrichedMetadata }: Ru
 
     lastProgressReport = now;
     const progress = Math.min(totalReceivedBytes / totalExpectedBytes, 1);
-    void sendMessageToTab(MessageType.UpdateDownloadProgress, {
+    sendMessageToTab(MessageType.UpdateDownloadProgress, {
       videoId,
       progress,
       progressType: ProgressType.Video
-    }, tabId);
+    }, tabId).catch(() => {});
   }
 
   if (abortController.signal.aborted) {
@@ -463,7 +463,7 @@ export async function startBackgroundDownload({ request, tabId }: StartBackgroun
       notifyPlaylistBundleFailure(request.playlistId);
     }
 
-    void reportDownloadFailed({
+    await reportDownloadFailed({
       videoId,
       tabId
     });

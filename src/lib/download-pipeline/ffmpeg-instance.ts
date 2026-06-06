@@ -43,5 +43,5 @@ export async function initMuxWorker(wasmBinary: ArrayBuffer) {
     }, [wasmBinary, hostPort.port]);
   });
 
-  void sendMessage(MessageType.PipelineFFmpegReady);
+  await sendMessage(MessageType.PipelineFFmpegReady);
 }

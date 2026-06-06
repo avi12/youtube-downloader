@@ -91,11 +91,11 @@ export function sendButtonData({ elButton, data, a11y }: {
     loggingDirectives?: Record<string, unknown>;
   };
 }) {
-  void crossWorldMessenger.sendMessage(CrossWorldMessage.SetButtonData, {
+  crossWorldMessenger.sendMessage(CrossWorldMessage.SetButtonData, {
     selector: `[${DATA_BUTTON_ID_ATTR}="${elButton.getAttribute(DATA_BUTTON_ID_ATTR)}"]`,
     data,
     a11y
-  });
+  }).catch(() => {});
 }
 
 export type ButtonViewModelData = Prettify<Parameters<typeof sendButtonData>[0]["data"]>;

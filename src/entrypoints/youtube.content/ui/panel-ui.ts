@@ -9,7 +9,7 @@ export function cleanupPanelUi() {
     return;
   }
 
-  void unmount(currentInstance);
+  unmount(currentInstance).catch(() => {});
   currentInstance = null;
 }
 

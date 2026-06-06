@@ -23,7 +23,7 @@ export async function trySabr({ request, signal, tabId }: TrySabrParams) {
     }
 
     console.warn("[ytdl:bg] SABR failed, trying CDN:", error);
-    void sendMessageToTab(MessageType.UpdateDownloadProgress, {
+    await sendMessageToTab(MessageType.UpdateDownloadProgress, {
       videoId: request.videoId,
       progress: 0,
       progressType: ProgressType.Video

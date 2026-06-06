@@ -147,7 +147,7 @@ crossWorldMessenger.onMessage(CrossWorldMessage.ButtonClick, ({ data }) => {
 });
 
 export function dispatchButtonClick(buttonId: string) {
-  void crossWorldMessenger.sendMessage(CrossWorldMessage.ButtonClick, { buttonId });
+  crossWorldMessenger.sendMessage(CrossWorldMessage.ButtonClick, { buttonId }).catch(() => {});
   fanoutButtonClick(buttonId);
 }
 
