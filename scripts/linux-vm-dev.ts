@@ -85,8 +85,8 @@ spawnSync("multipass", ["exec", VM_NAME, "--", "bash", "-c",
 // Poll port 5900 then auto-open RealVNC Viewer (fires asynchronously while dev server streams)
 function startVncPoller() {
   let attempts = 0;
-  const poll = () => {
-    if (attempts++ > 30) return;
+  function poll() {
+    if (attempts++ > 30) {return;}
     const socket = createConnection({ host: "127.0.0.1", port: VNC_PORT });
     socket.once("connect", () => {
       socket.destroy();
@@ -96,7 +96,7 @@ function startVncPoller() {
       socket.destroy();
       setTimeout(poll, 2000);
     });
-  };
+  }
   setTimeout(poll, 15_000);
 }
 startVncPoller();
