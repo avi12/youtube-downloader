@@ -116,7 +116,8 @@ Each top-level directory under `src/` owns one layer of the relay.
 | `src/lib/youtube/` | YouTube-specific knowledge: Innertube schemas, SABR protocol, BotGuard / PO token, format helpers, signature decryptor. |
 | `src/lib/messaging/` | Typed buses: cross-world between MAIN and ISOLATED via `CustomEvent`; runtime between content and BG; offscreen between BG and offscreen via `MessagePort`; window between page and extension via `window.postMessage`. |
 | `src/lib/download-pipeline/` | Browser-agnostic post-fetch pipeline: stream processor, mux job builder, FFmpeg instance, blob download, recent-downloads store. |
-| `src/lib/storage/` | `wxt/storage`-backed items with per-item mutation locks. |
+| `src/lib/storage/` | `wxt/storage`-backed items with per-item mutation locks, plus the recent-downloads IndexedDB store (entries + blob cache, quota eviction). |
+| `src/lib/analytics/` | GA4 Measurement Protocol telemetry (active-user heartbeat + install/uninstall), fired from the BG with no host permissions. |
 | `src/lib/ui/` | Svelte 5 stores and reactive helpers shared across content scripts and popup. |
 | `src/components/` | Svelte 5 components. |
 | `wxt.config.ts` | Manifest emission, including the `declarative_net_request` ruleset reference. The rules themselves live in [`src/public/rules/strip-youtube-frame-headers.json`](src/public/rules/strip-youtube-frame-headers.json) and rewrite `Origin`/`Referer`/`Sec-Fetch` on outgoing `googlevideo.com` requests (the SW can't set them itself). |
@@ -135,6 +136,8 @@ These are the rules the rest of the code relies on. Many are "absence of somethi
 - **403 is terminal; 5xx and 429 are transient.** Auto-retry fires only for the transient set ([`isRecoverableError`](src/entrypoints/background/download/network-retry.ts)). Retrying a 403 just wastes the retry budget.
 - **Manual cancels propagate to every level atomically.** [`performCancelDownload`](src/lib/ui/cancel-download.ts) drives worker iframe abort, offscreen accumulator drop, mux queue cancel marker, and persisted-retry deletion — all keyed off the same `videoId`. A cancelled download is never resurrected by a stale retry.
 - **The Retry button is for unrecoverable errors only.** Auto-retry handles 5xx / 429 / network reset / stall silently (5 s / 20 s / 60 s backoff, 3 attempts) via [`scheduleAutoRetry`](src/entrypoints/background/download/network-retry.ts). If the user sees Retry, the failure is a class that a fresh attempt can't fix on its own — FFmpeg mux failure, codec parse error, attestation wall, OPFS write error.
+- **zod runs jitless because the YouTube page enforces Trusted Types.** MAIN-world code can't use the `eval`/`Function` that zod's schema JIT relies on, so every schema imports `z` from [`src/lib/zod.ts`](src/lib/zod.ts), which calls `z.config({ jitless: true })` once. Importing `zod` directly throws on a YouTube page.
+- **Recent-download caching is best-effort and never blocks the save.** [`addRecentDownload`](src/lib/storage/recent-downloads-db.ts) evicts the oldest cached entries to fit under the (unlimited-but-disk-bound) quota and returns `false` to skip rather than throwing; the actual `browser.downloads` save in [`persistAndTrigger`](src/lib/download-pipeline/blob-download.ts) always runs regardless. Cached entries live for 10 minutes, a window that resets whenever the popup closes.
 
 ## Deep dives
 
@@ -382,6 +385,10 @@ A user cancel ([`cancel-download.ts:5`](src/lib/ui/cancel-download.ts) `performC
 - The persisted retry record is deleted ([`network-retry.ts:43`](src/entrypoints/background/download/network-retry.ts) `dropPendingRetry`).
 
 A download restarted immediately after cancel runs from scratch with no state inherited from the cancelled attempt.
+
+### Telemetry
+
+Anonymous usage telemetry goes through GA4's Measurement Protocol from the background ([`src/lib/analytics/`](src/lib/analytics/ga4.ts)), chosen because it needs no `host_permissions` — the request targets `google-analytics.com`, which is not a YouTube origin, so it sits outside the extension's content-script grants. A stable per-install client id is minted once and survives local-storage clears ([`getOrCreateClientId`](src/lib/storage/storage.ts)). Active-user pings fire from a daily alarm heartbeat (not per-action), install fires once, and uninstall is captured by `setUninstallURL` pointing at a GitHub Pages beacon ([`docs/uninstall/index.html`](docs/uninstall/index.html)) whose GA4 ids are injected at deploy time by the [Pages workflow](.github/workflows/pages.yml). No video ids, titles, or URLs are ever sent.
 
 ## When to update this document
 
