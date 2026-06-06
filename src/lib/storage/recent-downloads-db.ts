@@ -80,6 +80,32 @@ export async function addRecentDownload({ entry, blob }: {
   };
   blob: Blob;
 }) {
+  // Persist entry+blob, evicting the oldest cached downloads to make room when
+  // storage is full, so a new download always caches without overflowing the
+  // disk. Returns false if it cannot fit even after evicting everything else.
+  try {
+    await putRecentDownload(entry, blob);
+    return true;
+  } catch (error) {
+    if (!isQuotaExceeded(error)) {
+      throw error;
+    }
+
+    const didEvict = await evictOldestRecentDownload(entry.id);
+    if (!didEvict) {
+      return false;
+    }
+
+    return addRecentDownload({
+      entry,
+      blob
+    });
+  }
+}
+
+export type RecentDownloadEntry = Prettify<Parameters<typeof addRecentDownload>[0]["entry"]>;
+
+async function putRecentDownload(entry: RecentDownloadEntry, blob: Blob) {
   const db = await getDatabase();
   const transaction = db.transaction([Store.Entries, Store.Blobs], "readwrite");
   transaction.objectStore(Store.Entries).put(entry);
@@ -87,19 +113,67 @@ export async function addRecentDownload({ entry, blob }: {
   await awaitTransaction(transaction);
 }
 
-export type RecentDownloadEntry = Prettify<Parameters<typeof addRecentDownload>[0]["entry"]>;
+function isQuotaExceeded(error: unknown) {
+  return error instanceof DOMException && error.name === "QuotaExceededError";
+}
 
-export async function touchRecentDownload(id: string) {
+function retentionTimestamp(entry: RecentDownloadEntry) {
+  return Math.max(entry.lastActivityAt ?? 0, entry.completedAt);
+}
+
+async function evictOldestRecentDownload(excludeId: string) {
+  const entries = await getAllRecentDownloads();
+  const [oldest] = entries
+    .filter(entry => entry.id !== excludeId)
+    .toSorted((entryA, entryB) => retentionTimestamp(entryA) - retentionTimestamp(entryB));
+  if (!oldest) {
+    return false;
+  }
+
+  await deleteRecentDownload(oldest.id);
+  return true;
+}
+
+async function mutateEntry(id: string, mutate: (entry: RecentDownloadEntry) => void) {
   const db = await getDatabase();
   const transaction = db.transaction(Store.Entries, "readwrite");
   const store = transaction.objectStore(Store.Entries);
   const entry: RecentDownloadEntry | undefined = await awaitRequest(store.get(id));
-  if (!entry) {
-    return;
+  if (entry) {
+    mutate(entry);
+    store.put(entry);
   }
 
-  entry.lastActivityAt = Date.now();
-  store.put(entry);
+  await awaitTransaction(transaction);
+}
+
+export async function touchRecentDownload(id: string) {
+  await mutateEntry(id, entry => {
+    entry.lastActivityAt = Date.now();
+  });
+}
+
+// Resets every entry's retention clock to now, used when the popup closes so the
+// 10-minute keep-alive window restarts from that moment.
+export async function touchAllRecentDownloads() {
+  const db = await getDatabase();
+  const transaction = db.transaction(Store.Entries, "readwrite");
+  const store = transaction.objectStore(Store.Entries);
+  const now = Date.now();
+  const cursorRequest = store.openCursor();
+
+  cursorRequest.onsuccess = () => {
+    const cursor = cursorRequest.result;
+    if (!cursor) {
+      return;
+    }
+
+    const entry: RecentDownloadEntry = cursor.value;
+    entry.lastActivityAt = now;
+    cursor.update(entry);
+    cursor.continue();
+  };
+
   await awaitTransaction(transaction);
 }
 
@@ -107,16 +181,9 @@ export async function updateRecentDownloadId({ id, downloadId }: {
   id: string;
   downloadId: number;
 }) {
-  const db = await getDatabase();
-  const transaction = db.transaction(Store.Entries, "readwrite");
-  const store = transaction.objectStore(Store.Entries);
-  const entry = await awaitRequest(store.get(id));
-  if (entry) {
+  await mutateEntry(id, entry => {
     entry.downloadId = downloadId;
-    store.put(entry);
-  }
-
-  await awaitTransaction(transaction);
+  });
 }
 
 export async function getAllRecentDownloads() {

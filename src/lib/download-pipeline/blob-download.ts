@@ -15,32 +15,50 @@ type PersistAndTriggerParams = Prettify<{
   mimeType: string;
   recentContext?: RecentDownloadContext;
 }>;
+// Caching is best-effort: it must never block the actual download. addRecentDownload
+// evicts the oldest entries to fit; if it still cannot (returns false) or errors, we
+// skip caching this one and the file still downloads. Returns the cache entry id, or
+// null when caching was skipped.
+async function cacheRecentDownload({ blob, filename, mimeType, recentContext }: {
+  blob: Blob;
+  filename: string;
+  mimeType: string;
+  recentContext: RecentDownloadContext;
+}) {
+  const id = crypto.randomUUID();
+  const isCached = await addRecentDownload({
+    entry: {
+      id,
+      downloadId: 0,
+      videoId: recentContext.videoId,
+      title: recentContext.title,
+      channel: recentContext.channel,
+      filename,
+      container: getFileExtension(filename),
+      mimeType,
+      videoMimeType: recentContext.videoMimeType,
+      audioMimeType: recentContext.audioMimeType,
+      size: blob.size,
+      thumbnailUrl: recentContext.thumbnailUrl,
+      tabId: recentContext.tabId,
+      quality: recentContext.quality,
+      sourceUrl: recentContext.sourceUrl,
+      completedAt: Date.now()
+    },
+    blob
+  }).catch(() => false);
+  return isCached ? id : null;
+}
+
 async function persistAndTrigger({ blob, blobUrl, filename, mimeType, recentContext }: PersistAndTriggerParams) {
-  let entryId: string | null = null;
-  if (recentContext) {
-    entryId = crypto.randomUUID();
-    await addRecentDownload({
-      entry: {
-        id: entryId,
-        downloadId: 0,
-        videoId: recentContext.videoId,
-        title: recentContext.title,
-        channel: recentContext.channel,
-        filename,
-        container: getFileExtension(filename),
-        mimeType,
-        videoMimeType: recentContext.videoMimeType,
-        audioMimeType: recentContext.audioMimeType,
-        size: blob.size,
-        thumbnailUrl: recentContext.thumbnailUrl,
-        tabId: recentContext.tabId,
-        quality: recentContext.quality,
-        sourceUrl: recentContext.sourceUrl,
-        completedAt: Date.now()
-      },
-      blob
-    });
-  }
+  const entryId = recentContext
+    ? await cacheRecentDownload({
+      blob,
+      filename,
+      mimeType,
+      recentContext
+    })
+    : null;
 
   const response = await sendMessage(MessageType.PipelineDownload, {
     blobUrl,
@@ -48,12 +66,18 @@ async function persistAndTrigger({ blob, blobUrl, filename, mimeType, recentCont
     filename,
     recentContext
   });
-  if (entryId && response?.downloadId) {
-    await updateRecentDownloadId({
-      id: entryId,
-      downloadId: response.downloadId
-    });
+  await linkCacheEntryToDownload(entryId, response?.downloadId);
+}
+
+async function linkCacheEntryToDownload(entryId: string | null, downloadId: number | undefined) {
+  if (!entryId || !downloadId) {
+    return;
   }
+
+  await updateRecentDownloadId({
+    id: entryId,
+    downloadId
+  });
 }
 
 type TriggerDownloadParams = Prettify<{

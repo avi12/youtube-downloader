@@ -5,7 +5,7 @@ import { TRANSCODE_VIDEO_ID_PREFIX } from "@/lib/download-pipeline/transcode-rec
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
 import type { PipelineDownloadMessage } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
-import { pruneRecentDownloads } from "@/lib/storage/recent-downloads-db";
+import { pruneRecentDownloads, touchAllRecentDownloads } from "@/lib/storage/recent-downloads-db";
 import { optionsItem } from "@/lib/storage/storage";
 import { DownloadType } from "@/types";
 import type { Prettify } from "@/types";
@@ -42,7 +42,7 @@ async function notifyOnIdleIfNeeded({ data, tabIds }: NotifyOnIdleIfNeededParams
     return;
   }
 
-  void browser.notifications.create({
+  await browser.notifications.create({
     type: NOTIFICATION_TYPE,
     iconUrl: browser.runtime.getURL(NOTIFICATION_ICON_PATH),
     title: "Download complete",
@@ -71,7 +71,7 @@ export function notifyOnDownloadComplete({ downloadId, data }: DownloadIdDataPar
           : data.filename;
 
         for (const tabId of tabIds) {
-          void sendMessage(MessageType.WatchDownloadCompleted, {
+          await sendMessage(MessageType.WatchDownloadCompleted, {
             videoId: data.recentContext!.videoId,
             downloadId,
             filename: actualFilename
@@ -174,7 +174,7 @@ export function notifyWatchTabsOnComplete({ downloadId, videoId, filename }: Not
       : filename;
 
     for (const tabId of tabIds) {
-      void sendMessage(MessageType.WatchDownloadCompleted, {
+      await sendMessage(MessageType.WatchDownloadCompleted, {
         videoId,
         downloadId,
         filename: actualFilename
@@ -244,12 +244,14 @@ export function registerRecentDownloadsRetention() {
       openPopupCount = Math.max(0, openPopupCount - 1);
 
       if (openPopupCount === 0) {
-        void prune();
+        // Restart each download's 10-minute retention from when the popup closed;
+        // the periodic alarm prunes them once that fresh window elapses.
+        touchAllRecentDownloads().catch(() => {});
       }
     });
   });
 
-  void browser.alarms.create(RETENTION_ALARM_NAME, { periodInMinutes: RETENTION_ALARM_PERIOD_MINUTES });
+  browser.alarms.create(RETENTION_ALARM_NAME, { periodInMinutes: RETENTION_ALARM_PERIOD_MINUTES }).catch(() => {});
   browser.alarms.onAlarm.addListener(alarm => {
     const isRetentionAlarm = alarm.name === RETENTION_ALARM_NAME;
     const isPopupOpen = openPopupCount > 0;
@@ -258,7 +260,7 @@ export function registerRecentDownloadsRetention() {
       return;
     }
 
-    void prune();
+    prune().catch(() => {});
   });
 
   onMessage(MessageType.TranscodeRecentDownload, async ({ data }) => {
