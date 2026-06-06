@@ -33,6 +33,7 @@ export function createButtonManager(params: {
       isDone: itemState.isDone,
       isDownloadFailed: itemState.isDownloadFailed,
       isDownloading: itemState.isDownloading,
+      isUnavailable: itemState.isUnavailable,
       isInBatch: params.isInBatch,
       downloadState: itemState.downloadState,
       displayProgress: itemState.displayProgress,

@@ -38,6 +38,7 @@ export function createPlaylistVideoItemState({
   const isInterruptedEntry = $derived(!!interruptedDownloadStore.get(videoId));
   const isInActiveState = $derived(isDownloading || isDone || isDownloadFailed);
   const isInterrupted = $derived(isInterruptedEntry && !isInActiveState);
+  const isUnavailable = $derived(isLoadFailed || (!!videoData && !videoData.isDownloadable));
 
   createVideoItemEffects({
     videoId,
@@ -74,6 +75,7 @@ export function createPlaylistVideoItemState({
       isDone,
       isDownloadFailed,
       isDownloading,
+      isUnavailable,
       isInBatch: false,
       downloadState,
       displayProgress,
@@ -86,7 +88,8 @@ export function createPlaylistVideoItemState({
       isLocallyDone,
       isDone,
       isDownloading,
-      isDownloadFailed
+      isDownloadFailed,
+      isUnavailable
     })
   );
   const downloadStateClass = $derived.by(() => {
@@ -94,7 +97,7 @@ export function createPlaylistVideoItemState({
       return "done";
     }
 
-    if (isDownloadFailed) {
+    if (isDownloadFailed || isUnavailable) {
       return "error";
     }
 
@@ -159,6 +162,9 @@ export function createPlaylistVideoItemState({
     },
     get isInterrupted() {
       return isInterrupted;
+    },
+    get isUnavailable() {
+      return isUnavailable;
     },
     get isLocallyDone() {
       return isLocallyDone;

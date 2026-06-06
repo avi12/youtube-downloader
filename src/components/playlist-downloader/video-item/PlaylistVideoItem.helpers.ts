@@ -8,6 +8,7 @@ type ButtonTooltipParams = Prettify<{
   isDone: boolean;
   isDownloadFailed: boolean;
   isDownloading: boolean;
+  isUnavailable?: boolean;
   isInBatch: boolean;
   downloadState: DownloadProgressState;
   displayProgress: number;
@@ -20,12 +21,17 @@ export function buildButtonTooltip({
   isDone,
   isDownloadFailed,
   isDownloading,
+  isUnavailable = false,
   isInBatch,
   downloadState,
   displayProgress,
   buttonLabel,
   videoData
 }: ButtonTooltipParams) {
+  if (isUnavailable) {
+    return "Video unavailable";
+  }
+
   const isComplete = isLocallyDone || isDone;
   if (isComplete) {
     if (isInBatch) {

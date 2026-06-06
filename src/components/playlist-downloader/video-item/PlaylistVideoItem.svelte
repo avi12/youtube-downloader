@@ -69,24 +69,24 @@
   $effect(() => {
     void itemState.downloadState;
     void itemState.isDownloadFailed;
-    void itemState.isLoadFailed;
+    void itemState.isUnavailable;
     void batch.isZipBatchActive;
     buttons.scheduleRefresh();
   });
 </script>
 
-{#if !itemState.videoData || itemState.videoData.isDownloadable || itemState.isLoadFailed}
+{#if !itemState.videoData || itemState.videoData.isDownloadable || itemState.isUnavailable}
   <GridItemButtonGroup
     attachButtonGroup={buttons.attachButtonGroup}
     attachChevronButton={buttons.attachChevronButton}
     attachDownloadButton={buttons.attachDownloadButton}
     downloadState={itemState.downloadStateClass}
     hasCheckbox={isPlaylistItem}
-    isError={itemState.isDownloadFailed}
+    isError={itemState.isDownloadFailed || itemState.isUnavailable}
     isIndeterminate={itemState.isIndeterminate}
-    isLoadFailed={itemState.isLoadFailed}
+    isLoadFailed={itemState.isUnavailable}
     isProgressRingVisible={itemState.isProgressRingVisible}
-    isReady={!!(itemState.videoData?.isDownloadable || itemState.isLoadFailed)}
+    isReady={!!(itemState.videoData?.isDownloadable || itemState.isUnavailable)}
     progress={itemState.effectiveProgress}
     ringAriaLabel={itemState.buttonTooltip}
   >

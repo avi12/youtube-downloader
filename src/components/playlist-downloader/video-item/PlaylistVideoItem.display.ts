@@ -38,12 +38,14 @@ export function resolveDownloadIconName({
   isLocallyDone,
   isDone,
   isDownloading,
-  isDownloadFailed
+  isDownloadFailed,
+  isUnavailable
 }: {
   isLocallyDone: boolean;
   isDone: boolean;
   isDownloading: boolean;
   isDownloadFailed: boolean;
+  isUnavailable: boolean;
 }) {
   const isComplete = isLocallyDone || isDone;
   if (isComplete) {
@@ -54,7 +56,7 @@ export function resolveDownloadIconName({
     return IconName.Close;
   }
 
-  if (isDownloadFailed) {
+  if (isDownloadFailed || isUnavailable) {
     return IconName.Info;
   }
 
