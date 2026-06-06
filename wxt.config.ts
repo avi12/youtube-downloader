@@ -12,7 +12,7 @@ const FIREFOX_GECKO_ID = "youtube-downloader@avi12.com";
 const UPDATE_URL_BASE = "https://avi12.github.io/youtube-downloader";
 const FIREFOX_UPDATE_URL = `${UPDATE_URL_BASE}/updates.json`;
 const CHROME_UPDATE_URL = `${UPDATE_URL_BASE}/updates.xml`;
-const CHROME_EXTENSION_KEY = process.env.CHROME_EXTENSION_KEY ?? "";
+const { CHROME_EXTENSION_KEY = "" } = process.env;
 const sharedPermissions: Browser.runtime.ManifestPermission[] = [
   "alarms",
   "downloads",
