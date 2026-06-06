@@ -1,4 +1,5 @@
 import type { MusicSearchResponse } from "./music-search-types";
+import { z } from "@/lib/zod";
 import type {
   DownloadRequest,
   PlayerResponse,
@@ -6,7 +7,6 @@ import type {
   VideoData,
   YtButtonViewModelElement
 } from "@/types";
-import { z } from "zod";
 
 export const playerCaptionTrackDataSchema = z.looseObject({
   languageCode: z.string(),

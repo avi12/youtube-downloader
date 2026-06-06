@@ -1,6 +1,6 @@
 import { InnertubeClientName, type InnertubeBrowseRequest } from "@/lib/youtube/innertube";
+import { z } from "@/lib/zod";
 import type { Prettify } from "@/types";
-import { z } from "zod";
 
 const YT_MUSIC_BROWSE_URL = "https://music.youtube.com/youtubei/v1/browse?prettyPrint=false";
 const YT_MUSIC_MOODS_AND_GENRES_BROWSE_ID = "FEmusic_moods_and_genres";
