@@ -68,6 +68,7 @@ function computeChromeExtensionId(base64PublicKey: string): string {
 // noinspection HttpUrlsUsage -- Chrome's Omaha namespace is literally http://
 function renderChromeUpdatesXml(appId: string, appVersion: string, crxUrl: string): string {
   return `<?xml version="1.0" encoding="UTF-8"?>
+<!--suppress HttpUrlsUsage -->
 <gupdate xmlns="http://www.google.com/update2/response" protocol="2.0">
   <app appid="${appId}">
     <updatecheck codebase="${crxUrl}" version="${appVersion}" />

@@ -1,4 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
+<!--suppress HttpUrlsUsage -->
 <gupdate xmlns="http://www.google.com/update2/response" protocol="2.0">
   <app appid="angjcbihkkgigknpalofofimkoifbnlk">
     <updatecheck codebase="https://github.com/avi12/youtube-downloader/releases/download/v2.4.0/youtube-downloader-2.4.0-chrome.crx" version="2.4.0" />
