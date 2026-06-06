@@ -42,7 +42,7 @@ flowchart TB
     Branch -->|"Chrome"| Worker["Download-worker iframe<br/>(in offscreen document)"]
     Branch -->|"Firefox"| FF["ANDROID_VR InnerTube call<br/>(BG-direct fast path,<br/>page-proxy fallback for visitorData)"]
 
-    Worker --> SABR["1. SABR<br/>(googlevideo protobuf,<br/>5s/10s stall timer,<br/>DNR rewrites Origin)"]
+    Worker --> SABR["1. SABR<br/>(googlevideo protobuf,<br/>5s/10s stall timer,<br/>static DNR sets Origin/Referer/Sec-Fetch)"]
     SABR -->|"hand off partial bytes +<br/>byte offset"| CDN["2. CDN byte-range GET<br/>resumes at SABR's offset;<br/>transient errors (5xx, 429, net)<br/>retry from current offset"]
     CDN -->|"both layers exhausted"| FB{"audio-only +<br/>resolvedAudioUrl?"}
     FB -->|"yes"| Direct["3. browser.downloads<br/>direct CDN URL<br/>(skips muxer)"]
@@ -94,7 +94,7 @@ flowchart TB
 | Offscreen accumulator + end-handler | [`accumulator.ts`](src/entrypoints/offscreen/stream/accumulator.ts) + [`end-handler.ts:8`](src/entrypoints/offscreen/stream/end-handler.ts) `handleProcessStreamEnd` |
 | FFmpeg WASM mux worker | [`mux-worker/index.ts:22`](src/entrypoints/mux-worker/index.ts) `onInitMessage` + [`mux-handler-mux-video-audio.ts`](src/entrypoints/mux-worker/mux-handler-mux-video-audio.ts) |
 | File saved via browser.downloads.download | [`download-fallback-chain.ts:75`](src/entrypoints/background/download/download-fallback-chain.ts) |
-| DNR `Origin: youtube.com` rewrite | [`network-rules.ts:2`](src/entrypoints/background/network-rules.ts) `registerSabrOriginRule` (rule emitted from [`wxt.config.ts`](wxt.config.ts)) |
+| DNR `Origin`/`Referer`/`Sec-Fetch` rewrite on `googlevideo` | static ruleset [`strip-youtube-frame-headers.json`](src/public/rules/strip-youtube-frame-headers.json) (registered via `declarative_net_request` in [`wxt.config.ts`](wxt.config.ts)) |
 
 Chrome and Firefox diverge only at `isFirefoxRuntime?`. Everything that runs in MAIN context before the dispatch (auth, itags, captions) and everything after the chunks reach the accumulator (muxing, blob creation, `browser.downloads`) is shared code. The two sequence diagrams further down zoom into the Chrome 4-layer fallback chain and the Firefox page-proxy hand-off.
 
@@ -119,7 +119,7 @@ Each top-level directory under `src/` owns one layer of the relay.
 | `src/lib/storage/` | `wxt/storage`-backed items with per-item mutation locks. |
 | `src/lib/ui/` | Svelte 5 stores and reactive helpers shared across content scripts and popup. |
 | `src/components/` | Svelte 5 components. |
-| `wxt.config.ts` | Manifest emission, including the DNR rule that rewrites `Origin: youtube.com` on outgoing `googlevideo.com` requests (the SW can't set it itself). |
+| `wxt.config.ts` | Manifest emission, including the `declarative_net_request` ruleset reference. The rules themselves live in [`src/public/rules/strip-youtube-frame-headers.json`](src/public/rules/strip-youtube-frame-headers.json) and rewrite `Origin`/`Referer`/`Sec-Fetch` on outgoing `googlevideo.com` requests (the SW can't set them itself). |
 
 ## Architectural invariants
 
@@ -130,7 +130,7 @@ These are the rules the rest of the code relies on. Many are "absence of somethi
 - **One [`DownloadProgressEntry`](src/types/domain-types.ts) shape across every surface.** Watch button (MAIN), in-tab UI (ISOLATED), and popup (separate document) all read the same shape — the first two from a cross-world `CustomEvent` store ([`downloadProgressStore`](src/lib/ui/synced-stores.svelte.ts)), the popup from `chrome.storage.local` via [`statusProgressItem`](src/lib/storage/storage.ts).
 - **One browser-discriminator function, used everywhere.** [`isFirefoxRuntime()`](src/entrypoints/background/download/background-downloader.ts) probes `typeof browser.offscreen === "undefined"`. There are no per-feature browser checks.
 - **The offscreen "document" is the same page on both browsers.** Chrome uses `chrome.offscreen.createDocument()`; Firefox appends a hidden iframe with the same URL into the BG event-page's own document. Both paths fan in through [`ensureProcessor`](src/entrypoints/background/handlers/processor.ts); everything downstream is shared code.
-- **`Origin: youtube.com` comes back via the network layer, not via code.** The [DNR rule](src/entrypoints/background/network-rules.ts) (`registerSabrOriginRule`) rewrites the header on every outbound `googlevideo.com` request. No callsite has to remember to set it.
+- **`Origin: youtube.com` comes back via the network layer, not via code.** A static [DNR ruleset](src/public/rules/strip-youtube-frame-headers.json) rewrites `Origin`/`Referer`/`Sec-Fetch` on every outbound `googlevideo.com` request. No callsite has to remember to set them, and there is no runtime rule registration.
 - **The Firefox InnerTube call must originate from the page.** The `visitorData` blob YouTube validates only exists in `ytcfg`; pulling it from extension context fails the anti-bot gate. The [page-proxy bridge](src/entrypoints/youtube.content/handlers/page-sabr-fetch-bridge.ts) (`registerPageSabrFetchBridge`) runs the fetch from a [MAIN-world iframe](src/entrypoints/page-sabr-fetch.content.ts) (`substituteBodyTokens`) so the request appears same-origin.
 - **403 is terminal; 5xx and 429 are transient.** Auto-retry fires only for the transient set ([`isRecoverableError`](src/entrypoints/background/download/network-retry.ts)). Retrying a 403 just wastes the retry budget.
 - **Manual cancels propagate to every level atomically.** [`performCancelDownload`](src/lib/ui/cancel-download.ts) drives worker iframe abort, offscreen accumulator drop, mux queue cancel marker, and persisted-retry deletion — all keyed off the same `videoId`. A cancelled download is never resurrected by a stale retry.
