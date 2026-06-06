@@ -63,26 +63,48 @@ export async function buildVideoMetadata(videoId: string) {
   };
 }
 
+const PO_TOKEN_GENERATION_ATTEMPTS = 3;
+
+async function generateAndStorePoToken(videoData: VideoData) {
+  const poToken = await generatePoToken(videoData.videoId);
+  const { serverAbrStreamingUrl: sabrUrl = "" } = videoData.sabrConfig ?? {};
+  setPoTokenCredentials({
+    poToken,
+    sabrUrl,
+    videoId: videoData.videoId
+  });
+  sabrCredentials.value = {
+    url: sabrCredentials.value?.url || sabrUrl,
+    poToken
+  };
+}
+
+// GenerateIT intermittently returns no integrity token; each attempt fetches a fresh
+// BotGuard challenge, so retrying recovers the transient that would otherwise dispatch
+// SABR unauthenticated and 403.
+async function generatePoTokenWithRetries(videoData: VideoData) {
+  let lastError: unknown = null;
+  for (let attempt = 1; attempt <= PO_TOKEN_GENERATION_ATTEMPTS; attempt++) {
+    try {
+      await generateAndStorePoToken(videoData);
+      return null;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  return lastError;
+}
+
 export async function generatePoTokenIfNeeded(videoData: VideoData) {
   const isCurrentPoTokenPresent = capturedPoToken && capturedPoTokenVideoId === videoData.videoId;
   if (isCurrentPoTokenPresent) {
     return;
   }
 
-  try {
-    const poToken = await generatePoToken(videoData.videoId);
-    const { serverAbrStreamingUrl: sabrUrl = "" } = videoData.sabrConfig ?? {};
-    setPoTokenCredentials({
-      poToken,
-      sabrUrl,
-      videoId: videoData.videoId
-    });
-    sabrCredentials.value = {
-      url: sabrCredentials.value?.url || sabrUrl,
-      poToken
-    };
-  } catch (error) {
-    console.warn("[ytdl] PO token generation failed:", error);
+  const lastError = await generatePoTokenWithRetries(videoData);
+  if (lastError) {
+    console.warn("[ytdl] PO token generation failed:", lastError);
   }
 }
 
