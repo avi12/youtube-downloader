@@ -49,14 +49,16 @@
 [data-ytdl-download-state]:not([data-ytdl-download-state=""]) .ytdl-download-button button,
 [data-ytdl-download-state]:not([data-ytdl-download-state=""]) .ytdl-chevron-button button,
 [data-ytdl-download-state]:not([data-ytdl-download-state=""]) .ytdl-download-btn-wrapper yt-button-view-model button {
-  background-color: color-mix(in oklab, var(--ytdl-state-color) var(--ytdl-state-mix), var(--ytdl-state-bg-base));
-  color: var(--ytdl-state-color);
+  /* !important is needed to override YouTube's lockup button styling, which
+     out-specifies a plain rule (the watch-page actions bar does not). */
+  background-color: color-mix(in oklab, var(--ytdl-state-color) var(--ytdl-state-mix), var(--ytdl-state-bg-base)) !important;
+  color: var(--ytdl-state-color) !important;
 }
 
 [data-ytdl-download-state]:not([data-ytdl-download-state=""]) .ytdl-download-button button:hover,
 [data-ytdl-download-state]:not([data-ytdl-download-state=""]) .ytdl-chevron-button button:hover,
 [data-ytdl-download-state]:not([data-ytdl-download-state=""]) .ytdl-download-btn-wrapper yt-button-view-model button:hover {
-  background-color: color-mix(in oklab, var(--ytdl-state-color) calc(var(--ytdl-state-mix) + 8%), var(--ytdl-state-bg-base));
+  background-color: color-mix(in oklab, var(--ytdl-state-color) calc(var(--ytdl-state-mix) + 8%), var(--ytdl-state-bg-base)) !important;
 }
 
 [data-ytdl-download-state="downloading"] .ytdl-download-ring__indicator,

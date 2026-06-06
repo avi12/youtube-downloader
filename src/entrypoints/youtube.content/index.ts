@@ -4,6 +4,7 @@ import { registerCrossWorldHandlers } from "./handlers/cross-world";
 import { registerPageSabrFetchBridge } from "./handlers/page-sabr-fetch-bridge";
 import { restoreStoredProgress, syncStoredProgressToStore } from "./handlers/progress-sync";
 import "./style.css";
+import { injectDownloadStateStyles } from "./ui/download-state-styles";
 import { setNativeDownloadVisibility } from "./ui/page-router";
 import { handlePageChange } from "./ui/page-router";
 import { mountWatchSnackbar } from "./ui/watch-snackbar";
@@ -35,7 +36,7 @@ export default defineContentScript({
       });
       registerBackgroundMessageHandlers();
       listenForSabrBodyReady();
-      void forwardSabrCredentialsWithRetry();
+      forwardSabrCredentialsWithRetry().catch(() => {});
       const currentOptions = await optionsItem.getValue();
       initContentOptions({
         ...defaultOptions,
@@ -56,10 +57,11 @@ export default defineContentScript({
     });
     registerBackgroundMessageHandlers();
     listenForSabrBodyReady();
-    void forwardSabrCredentialsWithRetry();
+    forwardSabrCredentialsWithRetry().catch(() => {});
 
     listenForKeepalive();
     initCompletedDownloadsStore();
+    injectDownloadStateStyles();
     mountWatchSnackbar(context);
     await restoreStoredProgress();
 
@@ -78,9 +80,9 @@ export default defineContentScript({
         ...newOptions
       });
       setNativeDownloadVisibility(newOptions.isShowNativeDownload);
-      void crossWorldMessenger.sendMessage(CrossWorldMessage.OptionsUpdate, {
+      crossWorldMessenger.sendMessage(CrossWorldMessage.OptionsUpdate, {
         isShowNativeDownload: newOptions.isShowNativeDownload
-      });
+      }).catch(() => {});
     });
     context.onInvalidated(unwatchOptions);
 
