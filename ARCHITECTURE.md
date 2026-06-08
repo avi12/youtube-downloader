@@ -68,7 +68,7 @@ flowchart TB
 
 | Diagram node | Code |
 | --- | --- |
-| User clicks Download | [`watch-button-click.ts:25`](src/entrypoints/youtube-main.content/watch-button/watch-button-click.ts) `buildClickHandler` |
+| User clicks Download | [`watch-button-click.ts:30`](src/entrypoints/youtube-main.content/watch-button/watch-button-click.ts) `buildClickHandler` |
 | Pick video itag + audio tracks | [`download-formats.ts:75`](src/entrypoints/youtube-main.content/video/download-formats.ts) `selectFormats` + [`:15`](src/entrypoints/youtube-main.content/video/download-formats.ts) `getExtraAudioFormats` |
 | Pick primary audio (language + container) | [`select-audio-format.ts:32`](src/lib/youtube/select-audio-format.ts) `selectPreferredAudioFormat` |
 | Resolve CDN URLs (decipher signatures) | [`download-formats.ts:106`](src/entrypoints/youtube-main.content/video/download-formats.ts) `preResolveCdnUrls` -> [`stream-fetch.ts`](src/entrypoints/youtube-main.content/video/stream-fetch.ts) `resolveFormatUrl` |
@@ -84,15 +84,15 @@ flowchart TB
 | `isFirefoxRuntime?` probe | [`background-downloader.ts:37`](src/entrypoints/background/download/background-downloader.ts) `isFirefoxRuntime` |
 | Dispatch to worker iframe vs Firefox path | [`background-downloader.ts:361`](src/entrypoints/background/download/background-downloader.ts) `startBackgroundDownload` |
 | Download-worker iframe entry | [`download-worker/main.ts:24`](src/entrypoints/download-worker/main.ts) (message handler) |
-| ANDROID_VR InnerTube call | [`android-player.ts:125`](src/lib/youtube/android-player.ts) `resolveAndroidUrls` |
+| ANDROID_VR InnerTube call | [`android-player.ts:127`](src/lib/youtube/android-player.ts) `resolveAndroidUrls` |
 | Firefox page-proxy fallback | [`page-sabr-fetch.content.ts:23`](src/entrypoints/page-sabr-fetch.content.ts) `readVisitorData` + [`:38`](src/entrypoints/page-sabr-fetch.content.ts) `substituteBodyTokens` (bridged via [`page-sabr-fetch-bridge.ts:13`](src/entrypoints/youtube.content/handlers/page-sabr-fetch-bridge.ts) `registerPageSabrFetchBridge`) |
 | 1. SABR fetch loop | [`sabr-downloader.ts:24`](src/entrypoints/background/download/sabr-downloader.ts) `downloadViaSabr` (stall timer in [`sabr-stall-timer.ts`](src/entrypoints/background/download/sabr-stall-timer.ts)) |
-| 2. CDN byte-range GET | [`cdn-downloader.ts:43`](src/entrypoints/background/download/cdn-downloader.ts) `downloadViaCdn` (range fetch in [`cdn-fetch.ts:60`](src/entrypoints/background/download/cdn-fetch.ts) `fetchWithProgress`) |
+| 2. CDN byte-range GET | [`cdn-downloader.ts:43`](src/entrypoints/background/download/cdn-downloader.ts) `downloadViaCdn` (range fetch in [`cdn-fetch.ts:61`](src/entrypoints/background/download/cdn-fetch.ts) `fetchWithProgress`) |
 | 3. Direct CDN URL via browser.downloads | [`download-handlers.ts:111`](src/entrypoints/background/handlers/download-handlers.ts) |
 | 4. Scrub-capture iframe | [`iframe-downloader.ts:31`](src/entrypoints/background/download/iframe-downloader.ts) `prepareIframe` + [`:70`](src/entrypoints/background/download/iframe-downloader.ts) `downloadViaWatchPage` (SourceBuffer hook in [`sourcebuffer-capture-patches.ts:34`](src/entrypoints/sourcebuffer-capture/sourcebuffer-capture-patches.ts) `patchSourceBuffer`) |
 | Firefox 10 MB chunked fetch | [`firefox-direct-download.ts:264`](src/entrypoints/background/download/firefox-direct-download.ts) `runFirefoxDirectDownload` |
 | Offscreen accumulator + end-handler | [`accumulator.ts`](src/entrypoints/offscreen/stream/accumulator.ts) + [`end-handler.ts:8`](src/entrypoints/offscreen/stream/end-handler.ts) `handleProcessStreamEnd` |
-| FFmpeg WASM mux worker | [`mux-worker/index.ts:22`](src/entrypoints/mux-worker/index.ts) `onInitMessage` + [`mux-handler-mux-video-audio.ts`](src/entrypoints/mux-worker/mux-handler-mux-video-audio.ts) |
+| FFmpeg WASM mux worker | [`mux-worker/index.ts:23`](src/entrypoints/mux-worker/index.ts) `onInitMessage` + [`mux-handler-mux-video-audio.ts`](src/entrypoints/mux-worker/mux-handler-mux-video-audio.ts) |
 | File saved via browser.downloads.download | [`download-fallback-chain.ts:75`](src/entrypoints/background/download/download-fallback-chain.ts) |
 | DNR `Origin`/`Referer`/`Sec-Fetch` rewrite on `googlevideo` | static ruleset [`strip-youtube-frame-headers.json`](src/public/rules/strip-youtube-frame-headers.json) (registered via `declarative_net_request` in [`wxt.config.ts`](wxt.config.ts)) |
 
@@ -175,7 +175,7 @@ sequenceDiagram
 
 | Sequence step | Code |
 | --- | --- |
-| Click Download (DownloadRequest packed) | [`watch-button-click.ts:25`](src/entrypoints/youtube-main.content/watch-button/watch-button-click.ts) `buildClickHandler` -> [`download-request-builder.ts:79`](src/entrypoints/youtube-main.content/video/download-request-builder.ts) `buildEnrichedRequest` |
+| Click Download (DownloadRequest packed) | [`watch-button-click.ts:30`](src/entrypoints/youtube-main.content/watch-button/watch-button-click.ts) `buildClickHandler` -> [`download-request-builder.ts:79`](src/entrypoints/youtube-main.content/video/download-request-builder.ts) `buildEnrichedRequest` |
 | Worker receives request | [`download-worker/main.ts:24`](src/entrypoints/download-worker/main.ts) (message handler) |
 | 1. SABR (protobuf via googlevideo) | [`sabr-downloader.ts:24`](src/entrypoints/background/download/sabr-downloader.ts) `downloadViaSabr` |
 | Stall timer (5 s / 10 s) | [`sabr-stall-timer.ts`](src/entrypoints/background/download/sabr-stall-timer.ts) `createSabrStallTimer` |
@@ -185,7 +185,7 @@ sequenceDiagram
 | `worker-needs-fallback` message | constant in [`download-worker/main.ts:14`](src/entrypoints/download-worker/main.ts) |
 | 4. Open hidden watch-page iframe (ytdl=1) | [`iframe-downloader.ts:31`](src/entrypoints/background/download/iframe-downloader.ts) `prepareIframe` + [`:70`](src/entrypoints/background/download/iframe-downloader.ts) `downloadViaWatchPage` |
 | SourceBuffer hook siphons segments | [`sourcebuffer-capture-patches.ts:34`](src/entrypoints/sourcebuffer-capture/sourcebuffer-capture-patches.ts) `patchSourceBuffer` |
-| Muxed blob via accumulator + FFmpeg | [`end-handler.ts:8`](src/entrypoints/offscreen/stream/end-handler.ts) `handleProcessStreamEnd` -> [`mux-worker/index.ts:22`](src/entrypoints/mux-worker/index.ts) `onInitMessage` |
+| Muxed blob via accumulator + FFmpeg | [`end-handler.ts:8`](src/entrypoints/offscreen/stream/end-handler.ts) `handleProcessStreamEnd` -> [`mux-worker/index.ts:23`](src/entrypoints/mux-worker/index.ts) `onInitMessage` |
 
 The Chrome path walks four layers, each only invoked when the one above returns no usable bytes.
 
@@ -229,20 +229,20 @@ sequenceDiagram
 
 | Sequence step | Code |
 | --- | --- |
-| Click Download (DownloadRequest packed) | [`watch-button-click.ts:25`](src/entrypoints/youtube-main.content/watch-button/watch-button-click.ts) `buildClickHandler` -> [`download-request-builder.ts:79`](src/entrypoints/youtube-main.content/video/download-request-builder.ts) `buildEnrichedRequest` |
+| Click Download (DownloadRequest packed) | [`watch-button-click.ts:30`](src/entrypoints/youtube-main.content/watch-button/watch-button-click.ts) `buildClickHandler` -> [`download-request-builder.ts:79`](src/entrypoints/youtube-main.content/video/download-request-builder.ts) `buildEnrichedRequest` |
 | BG dispatches Firefox path | [`background-downloader.ts:361`](src/entrypoints/background/download/background-downloader.ts) `startBackgroundDownload` (probe at [`:37`](src/entrypoints/background/download/background-downloader.ts) `isFirefoxRuntime`) |
-| InnerTube POST (ANDROID_VR) fast path | [`android-player.ts:125`](src/lib/youtube/android-player.ts) `resolveAndroidUrls` |
+| InnerTube POST (ANDROID_VR) fast path | [`android-player.ts:127`](src/lib/youtube/android-player.ts) `resolveAndroidUrls` |
 | `pageSabrFetch` bridge (visitorData placeholder) | [`page-sabr-fetch-bridge.ts:13`](src/entrypoints/youtube.content/handlers/page-sabr-fetch-bridge.ts) `registerPageSabrFetchBridge` |
 | Page-context POST (placeholder substituted) | [`page-sabr-fetch.content.ts:38`](src/entrypoints/page-sabr-fetch.content.ts) `substituteBodyTokens` (reads via [`:23`](src/entrypoints/page-sabr-fetch.content.ts) `readVisitorData`) |
 | 10 MB closed-range chunk fetch (parallel) | [`firefox-direct-download.ts:264`](src/entrypoints/background/download/firefox-direct-download.ts) `runFirefoxDirectDownload` |
-| Muxed blob via offscreen + FFmpeg | [`end-handler.ts:8`](src/entrypoints/offscreen/stream/end-handler.ts) `handleProcessStreamEnd` -> [`mux-worker/index.ts:22`](src/entrypoints/mux-worker/index.ts) `onInitMessage` |
+| Muxed blob via offscreen + FFmpeg | [`end-handler.ts:8`](src/entrypoints/offscreen/stream/end-handler.ts) `handleProcessStreamEnd` -> [`mux-worker/index.ts:23`](src/entrypoints/mux-worker/index.ts) `onInitMessage` |
 | File saved | [`download-fallback-chain.ts:75`](src/entrypoints/background/download/download-fallback-chain.ts) |
 
 On Firefox-on-Windows, YouTube's anti-bot infrastructure rejects SABR (HTTP 403 or ~60 s response cap) regardless of cookies, PO token, or DNR rewrites. The TLS fingerprint and request signature differ enough from Chrome's that the `WEB`-client SABR path is unusable, and direct progressive URLs returned by the `WEB` client also 403 from any context.
 
 The bypass mirrors [yt-dlp](https://github.com/yt-dlp/yt-dlp)'s `android_vr` extractor:
 
-1. **InnerTube call.** [`resolveAndroidUrls`](src/lib/youtube/android-player.ts) issues `POST /youtubei/v1/player` with `clientName: ANDROID_VR` (X-YouTube-Client-Name 28, Oculus Quest 3, Android 12L user agent). `ANDROID_VR` is the only first-party client that returns direct CDN URLs for every adaptive format without forcing SABR, without requiring a PO token, and without the 4 MB per-request range cap that the plain `ANDROID` client enforces.
+1. **InnerTube call.** [`resolveAndroidUrls`](src/lib/youtube/android-player.ts) issues `POST /youtubei/v1/player` with `clientName: ANDROID_VR` in the InnerTube request body (client id 28, Oculus Quest 3 device, Android 12L user agent; the identity travels in the JSON `context.client`, not in request headers). `ANDROID_VR` is the only first-party client that returns direct CDN URLs for every adaptive format without forcing SABR, without requiring a PO token, and without the 4 MB per-request range cap that the plain `ANDROID` client enforces.
 2. **Page-proxy auth.** The InnerTube anti-bot gate validates the *value* of the `visitorData` blob, not just its presence — empty string and dummy bytes both return `LOGIN_REQUIRED`. The blob is a 520-byte base64-protobuf with server-generated metadata the extension can't reconstruct, and only exists in MAIN-world page context (`ytcfg.get("VISITOR_DATA")`). So the call has to go through a page-proxy bridge: the background sends a `pageSabrFetch` message (handled by [`registerPageSabrFetchBridge`](src/entrypoints/youtube.content/handlers/page-sabr-fetch-bridge.ts)) to a MAIN-world iframe, which substitutes a `__YTDL_VISITOR_DATA__` placeholder in the request body ([`substituteBodyTokens`](src/entrypoints/page-sabr-fetch.content.ts), reading via [`readVisitorData`](src/entrypoints/page-sabr-fetch.content.ts)) and runs the fetch from page context. A BG-direct fast path is tried first and falls through to the page-proxy on failure.
 3. **Chunked download.** [`runFirefoxDirectDownload`](src/entrypoints/background/download/firefox-direct-download.ts) fetches the resolved adaptive URLs as 10 MB closed-range chunks (matching yt-dlp's `--http-chunk-size` default) in parallel for video and audio. ANDROID_VR URLs are signature-authenticated so chunk fetches succeed BG-direct with `credentials: "include"`; the page-proxy fallback covers the rare case of a transient block.
 
