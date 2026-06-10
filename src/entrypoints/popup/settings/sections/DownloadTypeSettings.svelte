@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { SettingsProps } from "../settings-types";
+  import type { SettingsProps } from "../settings-props";
   import SettingsGroup from "../ui/SettingsGroup.svelte";
   import { setOption } from "@/lib/storage/storage";
   import { DownloadType } from "@/types";

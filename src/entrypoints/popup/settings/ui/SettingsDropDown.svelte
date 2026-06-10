@@ -25,9 +25,11 @@
   const { label, subtitle, displayValue, currentValue, items, slideDuration, onSelect, icon }: Props = $props();
 
   const uniqueId = crypto.randomUUID().replaceAll("-", "");
-  const anchorName = `--dd-${uniqueId}`;
   const listboxId = `dd-listbox-${uniqueId}`;
   const headerId = `dd-header-${uniqueId}`;
+
+  const VIEWPORT_MARGIN = 16;
+  const TRIGGER_GAP = 6;
 
   let isOpen = $state(false);
   let elTrigger = $state<HTMLElement | null>(null);
@@ -106,10 +108,41 @@
     e.preventDefault();
   }
 
+  // Anchor the list to the trigger and bound its height to the available space, in JS.
+  // CSS anchor positioning diverges between Chrome and Firefox (Firefox resolves anchor()
+  // but sizes the fixed list differently), so a single deterministic calculation keeps both
+  // browsers identical: open below the trigger, or flip above when there's more room there,
+  // and cap the height so the list scrolls instead of overflowing the popup.
+  function positionList(): void {
+    if (!elTrigger || !elList) {
+      return;
+    }
+
+    const triggerRect = elTrigger.getBoundingClientRect();
+    const spaceBelow = innerHeight - triggerRect.bottom - VIEWPORT_MARGIN - TRIGGER_GAP;
+    const spaceAbove = triggerRect.top - VIEWPORT_MARGIN - TRIGGER_GAP;
+    const isAbove = spaceBelow < elList.scrollHeight && spaceAbove > spaceBelow;
+
+    elList.style.insetInlineEnd = `${innerWidth - triggerRect.right}px`;
+    elList.style.insetInlineStart = "auto";
+    elList.style.maxBlockSize = `${Math.max(isAbove ? spaceAbove : spaceBelow, 0)}px`;
+    elList.style.transformOrigin = isAbove ? "bottom right" : "top right";
+
+    if (isAbove) {
+      elList.style.insetBlockEnd = `${innerHeight - triggerRect.top + TRIGGER_GAP}px`;
+      elList.style.insetBlockStart = "auto";
+    } else {
+      elList.style.insetBlockStart = `${triggerRect.bottom + TRIGGER_GAP}px`;
+      elList.style.insetBlockEnd = "auto";
+    }
+  }
+
   $effect(() => {
     if (!isOpen || !elList) {
       return;
     }
+
+    positionList();
 
     const selectedItem = elList.querySelector<HTMLElement>("[aria-selected=\"true\"]");
     selectedItem?.scrollIntoView({
@@ -133,7 +166,6 @@
 
 <button
   bind:this={elTrigger}
-  style="anchor-name: {anchorName};"
   class="set-item set-picker-btn"
   aria-controls={listboxId}
   aria-expanded={isOpen}
@@ -167,7 +199,6 @@
 {#if isOpen}
   <section
     bind:this={elList}
-    style="position-anchor: {anchorName};"
     class="dropdown-list"
     aria-labelledby={headerId}
     transition:scale={{
@@ -312,25 +343,18 @@
     }
   }
 
-  @position-try --dropdown-flip-up {
-    inset-block-end: anchor(start);
-    inset-block-start: 16px;
-  }
-
+  /* Position (inset-block/inline), height cap (max-block-size) and transform-origin are set
+     in JS by positionList() - the list is fixed-positioned and anchored to the trigger there,
+     identically on Chrome and Firefox. */
   .dropdown-list {
     position: fixed;
-    inset-block-end: 16px;
-    inset-block-start: anchor(end);
-    inset-inline-end: anchor(end);
     z-index: 50;
     overflow-x: clip;
     overflow-y: auto;
     overscroll-behavior: contain;
     box-sizing: border-box;
     block-size: max-content;
-    max-block-size: stretch;
     width: clamp(8rem, 245px, calc(100vw - 16px));
-    margin-block: 6px;
     padding: 8px;
     border: 1px solid var(--border);
     border-radius: 20px;
@@ -340,9 +364,6 @@
     box-shadow:
       0 8px 24px 0 color-mix(in oklab, #000000 35%, transparent),
       0 2px 6px 0 color-mix(in oklab, #000000 25%, transparent);
-    transform-origin: top right;
-    position-try-fallbacks: --dropdown-flip-up;
-    position-try-order: most-block-size;
   }
 
   .dropdown-header {

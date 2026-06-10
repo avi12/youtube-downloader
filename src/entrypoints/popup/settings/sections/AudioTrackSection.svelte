@@ -1,11 +1,20 @@
 <script lang="ts">
-  import type { SlidingSettingsProps } from "../settings-types";
+  import type { SlidingSettingsProps } from "../settings-props";
+  import SettingsDropDown from "../ui/SettingsDropDown.svelte";
   import { setOption } from "@/lib/storage/storage";
   import { LANGUAGES } from "@/lib/utils/languages";
   import { AudioTrackLanguageMode } from "@/types";
   import { slide } from "svelte/transition";
 
   const { options, slideDuration }: SlidingSettingsProps = $props();
+
+  const languageItems = LANGUAGES.map(([name, code]) => ({
+    value: code,
+    label: name
+  }));
+  const customLanguageName = $derived(
+    LANGUAGES.find(([, code]) => code === options.customLanguage)?.[0] ?? options.customLanguage
+  );
 
   const languageModeOptions = [
     {
@@ -50,32 +59,25 @@
           <span class="radio-desc">{description}</span>
         </div>
       </label>
+      {#if value === AudioTrackLanguageMode.Custom && options.audioTrackLanguageMode === AudioTrackLanguageMode.Custom}
+        <div class="radio-sub" transition:slide={{ duration: slideDuration }}>
+          <SettingsDropDown
+            currentValue={options.customLanguage}
+            displayValue={customLanguageName}
+            items={languageItems}
+            label="Language"
+            onSelect={selected => {
+              void setOption({
+                key: "customLanguage",
+                value: selected
+              });
+            }}
+            {slideDuration}
+          />
+        </div>
+      {/if}
     {/each}
   </div>
-  {#if options.audioTrackLanguageMode === AudioTrackLanguageMode.Custom}
-    <div class="set-inset" transition:slide={{ duration: slideDuration }}>
-      <label class="set-inset-label" for="custom-language-select">Language</label>
-      <select
-        id="custom-language-select"
-        class="set-select"
-        onchange={e => {
-          if (!(e.target instanceof HTMLSelectElement)) {
-            return;
-          }
-
-          void setOption({
-            key: "customLanguage",
-            value: e.target.value
-          });
-        }}
-        value={options.customLanguage}
-      >
-        {#each LANGUAGES as [name, code] (code)}
-          <option selected={options.customLanguage === code} value={code}>{name}</option>
-        {/each}
-      </select>
-    </div>
-  {/if}
 </fieldset>
 
 <style>
@@ -182,34 +184,10 @@
     font-size: 0.71875rem;
   }
 
-  .set-inset {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-    padding: 10px 14px;
-    border-top: 1px solid var(--border);
-    background: var(--surface-high);
-  }
-
-  .set-inset-label {
-    flex: 1;
-    color: var(--fg-muted);
-    font-size: 0.8125rem;
-  }
-
-  .set-select {
-    padding: 6px 10px;
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    background: transparent;
-    color: inherit;
-    font-family: inherit;
-    font-size: 0.8125rem;
-    cursor: pointer;
-
-    &:focus-visible {
-      outline: 2px solid var(--accent);
-      outline-offset: 2px;
-    }
+  .radio-sub {
+    margin-block: -2px 4px;
+    margin-inline: 22px 8px;
+    padding-inline-start: 21px;
+    border-inline-start: 1.5px solid var(--border);
   }
 </style>

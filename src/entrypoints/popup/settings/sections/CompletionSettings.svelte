@@ -2,7 +2,7 @@
   import bellIcon from "../../icons/bell.svg?raw";
   import folderIcon from "../../icons/folder.svg?raw";
   import playArrowIcon from "../../icons/play-arrow.svg?raw";
-  import type { SettingsProps } from "../settings-types";
+  import type { SettingsProps } from "../settings-props";
   import SettingsGroup from "../ui/SettingsGroup.svelte";
   import { setOption } from "@/lib/storage/storage";
 

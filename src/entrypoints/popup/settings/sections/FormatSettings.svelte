@@ -1,7 +1,7 @@
 <script lang="ts">
   import audioIcon from "../../icons/audio.svg?raw";
   import videoIcon from "../../icons/video.svg?raw";
-  import type { SlidingSettingsProps } from "../settings-types";
+  import type { SlidingSettingsProps } from "../settings-props";
   import SettingsDropDown from "../ui/SettingsDropDown.svelte";
   import SettingsGroup from "../ui/SettingsGroup.svelte";
   import { setOption } from "@/lib/storage/storage";

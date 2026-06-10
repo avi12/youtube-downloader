@@ -2,7 +2,7 @@
   import audioVolumeIcon from "../../icons/audio-volume.svg?raw";
   import captionsIcon from "../../icons/captions.svg?raw";
   import sparkleIcon from "../../icons/sparkle.svg?raw";
-  import type { SlidingSettingsProps } from "../settings-types";
+  import type { SlidingSettingsProps } from "../settings-props";
   import SettingsGroup from "../ui/SettingsGroup.svelte";
   import AudioTrackSection from "./AudioTrackSection.svelte";
   import CaptionLanguageSection from "./CaptionLanguageSection.svelte";

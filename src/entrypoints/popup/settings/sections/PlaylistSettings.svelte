@@ -1,6 +1,6 @@
 <script lang="ts">
   import expandVerticalIcon from "../../icons/expand-vertical.svg?raw";
-  import type { SettingsProps } from "../settings-types";
+  import type { SettingsProps } from "../settings-props";
   import PlaylistRadioGroup from "../ui/PlaylistRadioGroup.svelte";
   import SettingsGroup from "../ui/SettingsGroup.svelte";
   import { setOption } from "@/lib/storage/storage";

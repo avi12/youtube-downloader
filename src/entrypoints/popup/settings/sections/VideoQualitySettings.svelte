@@ -1,6 +1,6 @@
 <script lang="ts">
   import sparkleIcon from "../../icons/sparkle.svg?raw";
-  import type { SlidingSettingsProps } from "../settings-types";
+  import type { SlidingSettingsProps } from "../settings-props";
   import SettingsDropDown from "../ui/SettingsDropDown.svelte";
   import SettingsGroup from "../ui/SettingsGroup.svelte";
   import { setOption } from "@/lib/storage/storage";
