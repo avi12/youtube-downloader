@@ -20,6 +20,8 @@ interface GA4EventParams {
   browser: string;
   browser_version: string;
   os: string;
+  app_version: string;
+  language: string;
 }
 
 interface GA4Body {
@@ -130,7 +132,9 @@ async function getDeviceParams() {
   const userAgent = navigator.userAgent;
   return {
     ...await detectBrowser(userAgent),
-    os: parseOs(userAgent)
+    os: parseOs(userAgent),
+    app_version: browser.runtime.getManifest().version,
+    language: browser.i18n.getUILanguage()
   };
 }
 
