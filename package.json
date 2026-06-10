@@ -1,6 +1,6 @@
 {
   "name": "youtube-downloader",
-  "version": "2.4.0",
+  "version": "2.4.1",
   "description": "A browser extension for downloading video and audio from YouTube.",
   "repository": "https://github.com/avi12/youtube-downloader",
   "author": "Avi <avi6106@gmail.com>",
