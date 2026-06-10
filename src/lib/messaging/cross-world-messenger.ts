@@ -127,7 +127,10 @@ export interface PageMessengerSchema {
     progress: number;
     progressType: ProgressType;
   }): void;
-  [CrossWorldMessage.ReportMainDownloadFailed](data: { videoId: string }): void;
+  [CrossWorldMessage.ReportMainDownloadFailed](data: {
+    videoId: string;
+    isUnavailable?: boolean;
+  }): void;
 }
 
 export type StreamDataPayload = Prettify<Parameters<PageMessengerSchema[typeof CrossWorldMessage.StreamData]>[0]>;

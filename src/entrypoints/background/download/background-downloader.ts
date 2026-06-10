@@ -1,12 +1,14 @@
 import { clearCancelledVideo, isVideoCancelled } from "../handlers/pipeline-state";
 import { ensureProcessor } from "../handlers/processor";
-import { reportDownloadFailed } from "./download-failure-reporter";
+import { getTabIdsForVideo } from "../queue/tab-tracker";
+import { reportDownloadFailed, reportVideoUnavailable } from "./download-failure-reporter";
 import { enrichMetadataFromYouTubeMusic } from "./metadata-enrichment";
 import {
   clearAutoRetryCounter,
   clearInterruptedDownload,
   dropPendingRetry,
   isRecoverableError,
+  isVideoUnavailableError,
   queueNetworkRetry,
   registerOnlineRetryListener,
   scheduleAutoRetry
@@ -31,6 +33,20 @@ const HTTP_STATUS_PARTIAL_CONTENT = 206;
 
 const activeFirefoxDownloads = new Map<string, AbortController>();
 const cancelledFirefoxDownloads = new Set<string>();
+
+// The request for each in-flight download, keyed by videoId. On Chrome the
+// worker download runs async in the offscreen iframe, so a failure reported back
+// by message has no request attached; this lets the terminal-failure funnel
+// re-dispatch a full fresh attempt. Cleared on completion, cancel, or after
+// retries are exhausted.
+const inFlightDownloads = new Map<string, {
+  request: DownloadRequest;
+  tabId: number;
+}>();
+
+export function clearInFlightDownload(videoId: string) {
+  inFlightDownloads.delete(videoId);
+}
 
 // Chrome MV3 has `chrome.offscreen`. Firefox MV3 does not, so this acts as a
 // reliable browser discriminator throughout the download pipeline.
@@ -347,6 +363,48 @@ async function runFirefoxDirectDownload({ request, tabId, enrichedMetadata }: Ru
 export type { DownloadResult } from "./download-result-types";
 export { dropPendingRetry, reportDownloadFailed };
 
+// Single funnel for every terminal download failure (worker error, exhausted
+// SABR/CDN/iframe fallback). Auto-retries the whole pipeline with backoff before
+// surfacing the manual Retry state, so a transient cold-session failure recovers
+// on its own instead of silently resetting the button.
+type HandleTerminalFailureParams = Prettify<{
+  videoId: string;
+  tabId: number;
+}>;
+export async function handleTerminalFailure({ videoId, tabId }: HandleTerminalFailureParams) {
+  if (isVideoCancelled(videoId)) {
+    clearCancelledVideo(videoId);
+    clearAutoRetryCounter(videoId);
+    inFlightDownloads.delete(videoId);
+    return;
+  }
+
+  const inFlight = inFlightDownloads.get(videoId);
+  const effectiveTabId = tabId >= 0 ? tabId : (inFlight?.tabId ?? getTabIdsForVideo(videoId)[0] ?? -1);
+  if (inFlight) {
+    const isRescheduled = await scheduleAutoRetry({
+      request: inFlight.request,
+      tabId: effectiveTabId,
+      startBackgroundDownload
+    });
+    if (isRescheduled) {
+      return;
+    }
+  }
+
+  clearAutoRetryCounter(videoId);
+  inFlightDownloads.delete(videoId);
+
+  if (inFlight?.request.playlistId) {
+    notifyPlaylistBundleFailure(inFlight.request.playlistId);
+  }
+
+  await reportDownloadFailed({
+    videoId,
+    tabId: effectiveTabId
+  });
+}
+
 registerOnlineRetryListener(startBackgroundDownload);
 
 export function cancelBackgroundDownload(videoId: string) {
@@ -360,6 +418,11 @@ type StartBackgroundDownloadParams = Prettify<{
 }>;
 export async function startBackgroundDownload({ request, tabId }: StartBackgroundDownloadParams) {
   const { videoId, metadata } = request;
+  inFlightDownloads.set(videoId, {
+    request,
+    tabId
+  });
+
   if (!request.isIframeFallback) {
     clearIframeAutoRetry(videoId);
   }
@@ -413,6 +476,7 @@ export async function startBackgroundDownload({ request, tabId }: StartBackgroun
         enrichedMetadata: (await enrichedMetadataPromise) ?? null
       });
       await clearInterruptedDownload(videoId);
+      inFlightDownloads.delete(videoId);
       return;
     }
 
@@ -431,6 +495,25 @@ export async function startBackgroundDownload({ request, tabId }: StartBackgroun
     if (isVideoCancelled(videoId)) {
       clearCancelledVideo(videoId);
       clearAutoRetryCounter(videoId);
+      inFlightDownloads.delete(videoId);
+      return;
+    }
+
+    // The video is gone (removed/private/region-blocked) - retrying can't recover
+    // it, so skip the retry path and surface the terminal "unavailable" state.
+    if (isVideoUnavailableError(error)) {
+      clearAutoRetryCounter(videoId);
+      inFlightDownloads.delete(videoId);
+      await dropPendingRetry(videoId);
+
+      if (request.playlistId) {
+        notifyPlaylistBundleFailure(request.playlistId);
+      }
+
+      await reportVideoUnavailable({
+        videoId,
+        tabId
+      });
       return;
     }
 
@@ -458,6 +541,7 @@ export async function startBackgroundDownload({ request, tabId }: StartBackgroun
 
     console.warn("[ytdl:bg] Background download failed:", error);
     clearAutoRetryCounter(videoId);
+    inFlightDownloads.delete(videoId);
 
     if (request.playlistId) {
       notifyPlaylistBundleFailure(request.playlistId);

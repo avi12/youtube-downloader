@@ -157,6 +157,7 @@ export type ProgressUpdate = Prettify<{
   bytesPerSecond?: number;
   isRemoved?: boolean;
   isFailed?: boolean;
+  isUnavailable?: boolean;
   isInterrupted?: boolean;
   isCancelled?: boolean;
   isSaved?: boolean;
@@ -268,6 +269,7 @@ export interface ProtocolMap {
   reportWorkerDownloadFailed(data: {
     videoId: string;
     tabId: number;
+    isUnavailable?: boolean;
   }): void;
 
   forwardProgressUpdate(data: ProgressUpdate & {

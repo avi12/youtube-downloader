@@ -2,7 +2,7 @@ import { ensureProcessor } from "../handlers/processor";
 import { enqueueToPopupList } from "../queue/popup-list";
 import { awaitVideoComplete } from "../queue/sequential-queue";
 import { trackVideoForTab } from "../queue/tab-tracker";
-import { reportDownloadFailed } from "./background-downloader";
+import { handleTerminalFailure } from "./background-downloader";
 import { MessageType, onMessage, sendMessageToTab } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
 import type { DownloadRequest, Prettify } from "@/types";
@@ -108,7 +108,7 @@ export async function downloadViaWatchPage({ data, tabId }: DownloadViaWatchPage
         videoId: data.videoId
       }
     });
-    await reportDownloadFailed({
+    await handleTerminalFailure({
       videoId: data.videoId,
       tabId
     });

@@ -36,10 +36,10 @@ type HandleIframeFallbackParams = Prettify<{
   request: DownloadRequest;
   tabId: number;
   videoId: string;
-  reportDownloadFailed: (params: VideoTabParams) => void;
+  onExhausted: (params: VideoTabParams) => void;
 }>;
 export async function handleIframeFallback({
-  request, tabId, videoId, reportDownloadFailed
+  request, tabId, videoId, onExhausted
 }: HandleIframeFallbackParams) {
   if (request.isIframeFallback) {
     const retries = iframeAutoRetries.get(videoId) ?? 0;
@@ -47,7 +47,7 @@ export async function handleIframeFallback({
     if (isRetriesExhausted) {
       iframeAutoRetries.delete(videoId);
       console.warn("[ytdl:bg] All download methods exhausted for", videoId);
-      reportDownloadFailed({
+      onExhausted({
         videoId,
         tabId
       });

@@ -9,6 +9,7 @@ export type DownloadProgressEntry = Prettify<{
   progress: number;
   progressType: ProgressType | "";
   isFailed?: boolean;
+  isUnavailable?: boolean;
   videoItag?: number;
   audioItag?: number;
   downloadType?: DownloadType;

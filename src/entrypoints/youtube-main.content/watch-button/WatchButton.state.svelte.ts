@@ -1,5 +1,5 @@
+import { buildInitialDownloadState } from "./initial-download-state";
 import { buildClickHandler } from "./watch-button-click";
-import { buildInitialDownloadState } from "./watch-button-state";
 import { percentFormatter } from "./watch-button-types";
 import { buildChevronData, buildDownloadData } from "./watch-button-view-model";
 import { createButtonElementEffects } from "./WatchButton.button-effects.svelte";
@@ -23,6 +23,7 @@ export function createWatchButtonState(params: {
   const isDownloading = $derived(statusEntry?.isDownloading ?? false);
   const isDone = $derived(statusEntry?.isDone ?? false);
   const isError = $derived(statusEntry?.isFailed ?? false);
+  const isUnavailable = $derived(statusEntry?.isUnavailable ?? false);
   const isInterrupted = $derived(!!interruptedDownloadStore.get(videoId));
   const downloadProgressType = $derived(statusEntry?.progressType ?? "");
   const downloadProgress = $derived.by(() => {
@@ -66,6 +67,7 @@ export function createWatchButtonState(params: {
     isDone,
     isInterrupted,
     isError,
+    isUnavailable,
     isPanelOpen,
     isPanelBelow,
     downloadProgress: formattedProgress,

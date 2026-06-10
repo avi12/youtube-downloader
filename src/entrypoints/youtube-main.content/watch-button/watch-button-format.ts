@@ -4,12 +4,21 @@ import { ProgressType } from "@/types";
 export type { ButtonViewState } from "./watch-button-types";
 
 export function buildDownloadTitle(state: ButtonViewState) {
-  const { isDone, isDownloading, isError, isInterrupted, isDownloadable, downloadProgress, progressType } = state;
+  const {
+    isDone, isDownloading, isError, isUnavailable, isInterrupted, isDownloadable, downloadProgress, progressType
+  } = state;
   const isProcessing = isDownloading && progressType === ProgressType.FFmpeg;
   if (!isDownloadable) {
     return {
       title: "Not downloadable",
       accessibilityText: "Not downloadable"
+    };
+  }
+
+  if (isUnavailable) {
+    return {
+      title: "Unavailable",
+      accessibilityText: "Video unavailable - may have been removed"
     };
   }
 
@@ -56,11 +65,15 @@ export function buildDownloadTitle(state: ButtonViewState) {
 
 export function buildDownloadTooltip(state: ButtonViewState) {
   const {
-    isDone, isDownloading, isError, isInterrupted, isDownloadable, isProgressNonZero,
+    isDone, isDownloading, isError, isUnavailable, isInterrupted, isDownloadable, isProgressNonZero,
     downloadProgress, progressType, filename, quality
   } = state;
   if (!isDownloadable) {
     return "";
+  }
+
+  if (isUnavailable) {
+    return `${quality ? `${filename} - ${quality}` : filename} - unavailable, may have been removed`;
   }
 
   const isProcessing = isDownloading && progressType === ProgressType.FFmpeg;

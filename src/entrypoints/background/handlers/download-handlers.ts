@@ -1,9 +1,12 @@
 import {
   cancelBackgroundDownload,
+  clearInFlightDownload,
   dropPendingRetry,
+  handleTerminalFailure,
   reportDownloadFailed,
   startBackgroundDownload
 } from "../download/background-downloader";
+import { reportVideoUnavailable } from "../download/download-failure-reporter";
 import { tryDirectUrlDownload } from "../download/download-fallback-chain";
 import { downloadViaWatchPage, initIframeReadyListener } from "../download/iframe-downloader";
 import { clearIframeAutoRetry, handleIframeFallback } from "../download/sabr-attempt";
@@ -80,6 +83,7 @@ export function registerDownloadHandlers() {
     const sequenceTabId = getCurrentSequenceTabId();
     for (const videoId of data.videoIds) {
       cancelBackgroundDownload(videoId);
+      clearInFlightDownload(videoId);
       await dropPendingRetry(videoId);
       signalVideoComplete(videoId);
       const trackedTabIds = getTabIdsForVideo(videoId);
@@ -214,23 +218,34 @@ export function registerDownloadHandlers() {
       request,
       tabId,
       videoId,
-      reportDownloadFailed
+      onExhausted: handleTerminalFailure
     }).catch(() => {});
   });
 
   onMessage(MessageType.WorkerDownloadComplete, async ({ data }) => {
     const { videoId } = data;
     clearIframeAutoRetry(videoId);
+    clearInFlightDownload(videoId);
   });
 
   onMessage(MessageType.ReportWorkerDownloadFailed, async ({ data }) => {
-    const { videoId, tabId } = data;
+    const { videoId, tabId, isUnavailable } = data;
     const isCancelAbort = isVideoCancelled(videoId);
     if (isCancelAbort) {
       return;
     }
 
-    await reportDownloadFailed({
+    if (isUnavailable) {
+      clearInFlightDownload(videoId);
+      await dropPendingRetry(videoId);
+      await reportVideoUnavailable({
+        videoId,
+        tabId
+      });
+      return;
+    }
+
+    await handleTerminalFailure({
       videoId,
       tabId
     });

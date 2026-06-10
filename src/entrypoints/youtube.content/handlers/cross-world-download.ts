@@ -40,7 +40,8 @@ export function registerDownloadProgressHandlers() {
   crossWorldMessenger.onMessage(CrossWorldMessage.ReportMainDownloadFailed, ({ data }) => {
     sendMessage(MessageType.ReportWorkerDownloadFailed, {
       videoId: data.videoId,
-      tabId: -1
+      tabId: -1,
+      isUnavailable: data.isUnavailable
     }).catch(() => {});
   });
 }

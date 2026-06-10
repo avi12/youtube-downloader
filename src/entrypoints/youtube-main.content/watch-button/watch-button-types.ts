@@ -6,6 +6,7 @@ export type ButtonViewState = Prettify<{
   isDone: boolean;
   isInterrupted: boolean;
   isError: boolean;
+  isUnavailable: boolean;
   isPanelOpen: boolean;
   isPanelBelow: boolean;
   downloadProgress: string;

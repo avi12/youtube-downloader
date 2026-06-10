@@ -155,8 +155,21 @@ async function tryDispatchOnce(isDownloadIframe: boolean): Promise<PollOutcome> 
   }
 
   const isUnplayable = playerResponse.playabilityStatus?.status === PlayabilityStatus.Unplayable;
-  if (isUnplayable && isDownloadIframe && reloadUnplayableIframe()) {
-    return PollOutcome.RetriedAsync;
+  if (isUnplayable && isDownloadIframe) {
+    if (reloadUnplayableIframe()) {
+      return PollOutcome.RetriedAsync;
+    }
+
+    // Reloads exhausted: the video is genuinely unplayable (removed/private), so
+    // tell the background to surface the terminal "unavailable" state instead of
+    // dispatching data for a video that can never be fetched.
+    sessionStorage.removeItem(IFRAME_RELOAD_COUNT_KEY);
+    const videoId = playerResponse.videoDetails?.videoId ?? "";
+    await crossWorldMessenger.sendMessage(CrossWorldMessage.ReportMainDownloadFailed, {
+      videoId,
+      isUnavailable: true
+    });
+    return PollOutcome.Ready;
   }
 
   sessionStorage.removeItem(IFRAME_RELOAD_COUNT_KEY);

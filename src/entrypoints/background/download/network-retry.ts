@@ -74,6 +74,18 @@ export function isRecoverableError(error: unknown) {
   return RECOVERABLE_PATTERNS.some(pattern => pattern.test(message));
 }
 
+// The video itself is gone (removed, private, or region-blocked), so retrying
+// can't help. LOGIN_REQUIRED is deliberately excluded: on the ANDROID_VR path it
+// signals the anti-bot gate, which the page-proxy fallback and auto-retry handle.
+const UNAVAILABLE_PATTERNS = [
+  /not playable:\s*UNPLAYABLE/i,
+  /not playable:\s*ERROR/i
+];
+export function isVideoUnavailableError(error: unknown) {
+  const message = error instanceof Error ? `${error.message} ${error.cause ?? ""}` : String(error);
+  return UNAVAILABLE_PATTERNS.some(pattern => pattern.test(message));
+}
+
 type QueueNetworkRetryParams = Prettify<{
   request: DownloadRequest;
   tabId: number;
