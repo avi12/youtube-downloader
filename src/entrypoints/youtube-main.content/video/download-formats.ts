@@ -1,7 +1,7 @@
 import { resolveFormatUrl } from "./stream-fetch";
 import { type AdaptiveFormatItem, DownloadType, type Prettify } from "@/types";
 
-export { resolveCredentialsWithRetry } from "./download-credentials";
+export { resolveCredentialsWithRetry } from "./credentials-resolver";
 
 const MAX_ADDITIONAL_AUDIO_TRACKS = 16;
 const AUTO_DUB_TRACK_SUFFIX = ".10";

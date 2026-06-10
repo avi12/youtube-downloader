@@ -1,34 +1,36 @@
-import { capturedPoToken, capturedSabrUrl, setPoTokenCredentials } from "./credentials";
+import { capturedPoToken, capturedSabrUrl, setPoTokenCredentials } from "./captured-credentials";
 import { sabrCredentials } from "@/lib/ui/synced-stores.svelte";
 
 const CREDENTIAL_POLL_INTERVAL_MS = 200;
 const CREDENTIAL_POLL_MAX_WAIT_MS = 5000;
 const SABR_CREDENTIALS_ELEMENT_ID = "ytdl-sabr-credentials";
 
-function resolveCredentials() {
-  const creds = sabrCredentials.value;
+function readDomCredentials() {
   const elCredentials = document.getElementById(SABR_CREDENTIALS_ELEMENT_ID);
+  return {
+    poToken: elCredentials?.dataset.poToken,
+    url: elCredentials?.dataset.url
+  };
+}
 
-  const currentPoToken =
-    creds?.poToken ||
-    elCredentials?.dataset.poToken ||
-    capturedPoToken;
+function resolveCredentials() {
+  const storeCredentials = sabrCredentials.value;
+  const domCredentials = readDomCredentials();
 
-  const currentSabrUrl =
-    creds?.url ||
-    elCredentials?.dataset.url ||
-    capturedSabrUrl;
-  const haveCredentialsChanged = currentPoToken !== capturedPoToken || currentSabrUrl !== capturedSabrUrl;
+  const poToken = storeCredentials?.poToken || domCredentials.poToken || capturedPoToken;
+  const sabrUrl = storeCredentials?.url || domCredentials.url || capturedSabrUrl;
+
+  const haveCredentialsChanged = poToken !== capturedPoToken || sabrUrl !== capturedSabrUrl;
   if (haveCredentialsChanged) {
     setPoTokenCredentials({
-      poToken: currentPoToken ?? "",
-      sabrUrl: currentSabrUrl ?? ""
+      poToken,
+      sabrUrl
     });
   }
 
   return {
-    poToken: currentPoToken,
-    sabrUrl: currentSabrUrl
+    poToken,
+    sabrUrl
   };
 }
 

@@ -1,4 +1,4 @@
-import { capturedPoToken, capturedPoTokenVideoId, setPoTokenCredentials } from "./credentials";
+import { capturedPoToken, capturedPoTokenVideoId, setPoTokenCredentials } from "./captured-credentials";
 import {
   extractGenresFromKeywords,
   fetchYouTubeMusicGenres,
