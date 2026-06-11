@@ -37,7 +37,6 @@
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "@ffmpeg/core-st": "0.11.1",
     "@puppeteer/browsers": "^3.0.4",
     "@stylistic/eslint-plugin": "^5.10.0",
     "@stylistic/stylelint-plugin": "^5.2.0",
