@@ -1,4 +1,4 @@
-import { resolveAudioCodec } from "./mux-ffmpeg-args";
+import { buildInputArgs, resolveAudioCodec } from "./mux-ffmpeg-args";
 import { postResult, state, tryUnlink } from "./mux-state";
 import { fetchThumbnail, sanitizeForFFmpeg } from "./mux-thumbnail";
 import type { EmbedMetadataJob } from "@/lib/download-pipeline/mux-worker-types";
@@ -27,7 +27,7 @@ export async function handleEmbedMetadata(job: EmbedMetadataJob) {
 
   state.ffmpeg!.FS.writeFile(inputFilename, new Uint8Array(audioData));
 
-  const ffmpegArgs = ["-i", inputFilename];
+  const ffmpegArgs = [...buildInputArgs(inputFilename)];
   const isWebmOutput = WEBM_AUDIO_OUTPUT_EXTENSIONS.has(outputExtension);
   const isEmbeddableThumbnail = thumbnailUrl && !isWebmOutput;
   if (isEmbeddableThumbnail) {
@@ -35,7 +35,7 @@ export async function handleEmbedMetadata(job: EmbedMetadataJob) {
     if (thumbnail) {
       coverFilename = `${COVER_FILENAME_PREFIX}.${thumbnail.extension}`;
       state.ffmpeg!.FS.writeFile(coverFilename, thumbnail.data);
-      ffmpegArgs.push("-i", coverFilename);
+      ffmpegArgs.push(...buildInputArgs(coverFilename));
       isCoverArtPresent = true;
     }
   }

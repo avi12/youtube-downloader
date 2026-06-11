@@ -1,9 +1,50 @@
 import type { MuxVideoAudioJob } from "@/lib/download-pipeline/mux-worker-types";
-import { CONTAINER_SPECS, extractBaseCodec, isVideoNativeForContainer, videoContainers } from "@/lib/utils/containers";
+import {
+  CONTAINER_SPECS,
+  extractBaseCodec,
+  getFileExtension,
+  isVideoNativeForContainer,
+  videoContainers
+} from "@/lib/utils/containers";
 import type { Prettify } from "@/types";
 
 const FFMPEG_CODEC_COPY = "copy";
 const FFMPEG_SUBTITLE_CODEC_WEBVTT = "webvtt";
+
+// Pin the demuxer per input so FFmpeg never auto-probes downloaded bytes
+// into an unexpected (and potentially vulnerable) demuxer
+const INPUT_DEMUXER_BY_EXTENSION: Record<string, string> = {
+  "3gp": "mp4",
+  aiff: "aiff",
+  avi: "avi",
+  flac: "flac",
+  jpg: "image2",
+  m4a: "mp4",
+  m4b: "mp4",
+  m4v: "mp4",
+  mkv: "matroska",
+  mov: "mp4",
+  mp3: "mp3",
+  mp4: "mp4",
+  ogg: "ogg",
+  opus: "ogg",
+  png: "image2",
+  ts: "mpegts",
+  vtt: "webvtt",
+  wav: "wav",
+  weba: "matroska",
+  webm: "matroska",
+  webp: "image2"
+};
+
+export function buildInputArgs(filename: string) {
+  const demuxer = INPUT_DEMUXER_BY_EXTENSION[getFileExtension(filename)];
+  if (!demuxer) {
+    return ["-i", filename];
+  }
+
+  return ["-f", demuxer, "-i", filename];
+}
 
 type ResolveAudioCodecParams = Prettify<{
   audioMimeType: string;
@@ -66,7 +107,7 @@ export function buildRemuxArgs({
     videoMimeType,
     targetExtension
   });
-  const ffmpegArgs = ["-i", inputFilename, "-map", "0", "-c:v", videoCodec, "-c:a", audioCodec];
+  const ffmpegArgs = [...buildInputArgs(inputFilename), "-map", "0", "-c:v", videoCodec, "-c:a", audioCodec];
   const isVideoContainer = videoContainers.includes(targetExtension);
   const subtitleCodecForRemux = isVideoContainer ? resolveSubtitleCodec(targetExtension) : null;
   const hasSubtitleCodec = !!subtitleCodecForRemux;
@@ -134,9 +175,9 @@ export function buildMuxFfmpegArgs(params: MuxFfmpegParams) {
     outputFilename, muxFilename, useIntermediateMkv, audioMimeType, targetExtension
   } = params;
 
-  const ffmpegArgs = ["-i", videoFilename];
+  const ffmpegArgs = [...buildInputArgs(videoFilename)];
   for (const filename of [...audioFilenames, ...subtitleFilenames]) {
-    ffmpegArgs.push("-i", filename);
+    ffmpegArgs.push(...buildInputArgs(filename));
   }
 
   ffmpegArgs.push("-map", "0:v:0");

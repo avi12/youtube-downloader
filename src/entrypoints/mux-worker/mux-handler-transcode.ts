@@ -1,4 +1,4 @@
-import { buildRemuxArgs } from "./mux-ffmpeg-args";
+import { buildInputArgs, buildRemuxArgs } from "./mux-ffmpeg-args";
 import { postError, postResult, state, tryUnlink } from "./mux-state";
 import { fetchThumbnail } from "./mux-thumbnail";
 import type { TranscodeAudioJob, TranscodeFileJob } from "@/lib/download-pipeline/mux-worker-types";
@@ -30,7 +30,7 @@ export function handleTranscodeAudio(job: TranscodeAudioJob) {
 
   try {
     const codec = getAudioFallbackCodec(outputExtension) ?? FFMPEG_CODEC_COPY;
-    const exitCode = state.ffmpeg!.exec("-i", inputFilename, "-map", "0:a", "-c:a", codec, outputFilename);
+    const exitCode = state.ffmpeg!.exec(...buildInputArgs(inputFilename), "-map", "0:a", "-c:a", codec, outputFilename);
     const isExecFailed = exitCode !== 0;
     if (isExecFailed) {
       postError(`FFmpeg transcode exited with code ${exitCode}`);
@@ -73,9 +73,9 @@ async function extractAudioWithCoverArt({
 }: ExtractAudioWithCoverArtParams) {
   const coverFilename = await tryWriteCoverArt(coverArtUrl);
   const audioCodec = getAudioFallbackCodec(targetContainer) ?? FFMPEG_CODEC_COPY;
-  const ffmpegArgs = ["-i", sourceFilename];
+  const ffmpegArgs = [...buildInputArgs(sourceFilename)];
   if (coverFilename) {
-    ffmpegArgs.push("-i", coverFilename, "-map", "0:a", "-map", "1");
+    ffmpegArgs.push(...buildInputArgs(coverFilename), "-map", "0:a", "-map", "1");
     ffmpegArgs.push("-c:v", coverFilename.endsWith(`.${JPEG_EXTENSION}`) ? FFMPEG_CODEC_COPY : FFMPEG_CODEC_MJPEG);
     ffmpegArgs.push("-disposition:v", "attached_pic");
   } else {
