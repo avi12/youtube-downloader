@@ -295,6 +295,30 @@ export function createPanelState(getVideoData: () => VideoData) {
     }
   }
 
+  let previousDefaultDownloadType = untrack(() => CONTENT_OPTIONS.defaultDownloadType);
+  $effect(() => {
+    const { defaultDownloadType } = CONTENT_OPTIONS;
+    const isUnchanged = defaultDownloadType === previousDefaultDownloadType;
+    previousDefaultDownloadType = defaultDownloadType;
+
+    if (isUnchanged) {
+      return;
+    }
+
+    untrack(() => {
+      if (statusIsDownloading) {
+        return;
+      }
+
+      handleDownloadTypeChange(
+        resolveInitialDownloadType({
+          options: CONTENT_OPTIONS,
+          videoData: getVideoData()
+        })
+      );
+    });
+  });
+
   let previousExtensionPreference = untrack(() => ({ ...CONTENT_OPTIONS.ext }));
   $effect(() => {
     const { video, audio } = CONTENT_OPTIONS.ext;
