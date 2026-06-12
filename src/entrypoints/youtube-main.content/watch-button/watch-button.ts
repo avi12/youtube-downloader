@@ -2,6 +2,7 @@ import { findVideoActionsContainer } from "./watch-button-container";
 import { createDropdownElement, findNativeDownloadButton, injectWatchButtonStyles } from "./watch-button-dom";
 import WatchButton from "./WatchButton.svelte";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
+import { CONTENT_OPTIONS, initContentOptions } from "@/lib/ui/synced-stores.svelte";
 import { type VideoData } from "@/types";
 import { mount, unmount } from "svelte";
 
@@ -14,12 +15,11 @@ const NATIVE_HIDDEN_CLASS = "ytdl-native-hidden";
 let cleanupCurrentButton: (() => void) | null = null;
 let injectionGeneration = 0;
 let containerSearchAbort: AbortController | null = null;
-let isShowNativeDownload = false;
 let elCurrentNativeDownload: HTMLElement | null = null;
 
 crossWorldMessenger.onMessage(CrossWorldMessage.OptionsUpdate, ({ data }) => {
-  isShowNativeDownload = data.isShowNativeDownload;
-  elCurrentNativeDownload?.classList.toggle(NATIVE_HIDDEN_CLASS, !isShowNativeDownload);
+  initContentOptions(data);
+  elCurrentNativeDownload?.classList.toggle(NATIVE_HIDDEN_CLASS, !data.isShowNativeDownload);
 });
 
 function evictOrphanedGroups() {
@@ -64,7 +64,7 @@ export async function injectSegmentedDownloadButton(videoData: VideoData) {
   injectWatchButtonStyles();
 
   const elNativeDownload = findNativeDownloadButton(elActionsContainer);
-  const shouldHideNativeDownload = !isShowNativeDownload && elNativeDownload;
+  const shouldHideNativeDownload = !CONTENT_OPTIONS.isShowNativeDownload && elNativeDownload;
   if (shouldHideNativeDownload) {
     elNativeDownload.classList.add(NATIVE_HIDDEN_CLASS);
   }

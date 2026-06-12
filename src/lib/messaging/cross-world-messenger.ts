@@ -2,6 +2,7 @@ import type {
   ButtonViewModelData,
   DownloadRequest,
   DownloadType,
+  Options,
   Prettify,
   VideoData,
   VideoMetadata
@@ -29,6 +30,7 @@ export const CrossWorldMessage = {
   DownloadViaIframe: "downloadViaIframe",
   StartBackgroundDownload: "startBackgroundDownload",
   OptionsUpdate: "optionsUpdate",
+  RequestOptions: "requestOptions",
   AudioTrackChanged: "audioTrackChanged",
   CaptionTrackChanged: "captionTrackChanged",
   OpenSnackbar: "openSnackbar",
@@ -105,7 +107,8 @@ export interface PageMessengerSchema {
   [CrossWorldMessage.CloseDropdown](data: { videoId: string }): void;
   [CrossWorldMessage.DownloadViaIframe](data: DownloadRequest): void;
   [CrossWorldMessage.StartBackgroundDownload](data: { requestJson: string }): void;
-  [CrossWorldMessage.OptionsUpdate](data: { isShowNativeDownload: boolean }): void;
+  [CrossWorldMessage.OptionsUpdate](data: Options): void;
+  [CrossWorldMessage.RequestOptions](): Options;
   [CrossWorldMessage.AudioTrackChanged](data: { trackId: string }): void;
   [CrossWorldMessage.CaptionTrackChanged](data: {
     languageCode: string;

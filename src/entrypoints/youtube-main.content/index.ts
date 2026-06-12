@@ -8,6 +8,7 @@ import { cancelAllActiveDownloads } from "./video/download";
 import { extractPlaylistMetadata, handleNavigateSuccess } from "./video/playlist-metadata";
 import { extractAndDispatchVideoData } from "./video/video-data";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
+import { initContentOptions } from "@/lib/ui/synced-stores.svelte";
 import type { PlayerResponse } from "@/types";
 
 const YTDL_IFRAME_QUERY_PARAM = "ytdl=1";
@@ -87,6 +88,8 @@ export default defineContentScript({
     }
 
     async function initializeOnLoad() {
+      const options = await crossWorldMessenger.sendMessage(CrossWorldMessage.RequestOptions);
+      initContentOptions(options);
       await extractAndDispatchVideoData();
       extractPlaylistMetadata();
       setupAudioTrackWatcher();

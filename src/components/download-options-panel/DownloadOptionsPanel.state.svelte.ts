@@ -277,6 +277,49 @@ export function createPanelState(getVideoData: () => VideoData) {
     });
   });
 
+  function applyExtension(value: string) {
+    extension = value;
+    const isAudioDownload = downloadType === DownloadType.Audio;
+    if (!isAudioDownload) {
+      return;
+    }
+
+    const aligned = alignAudioFormatToExtension({
+      audioFormats: getVideoData().audioFormats,
+      currentFormat: selectedAudioFormat,
+      targetExtension: value
+    });
+    if (aligned && aligned !== selectedAudioFormat) {
+      selectedAudioFormat = aligned;
+      syncAudioFromFormat(aligned);
+    }
+  }
+
+  let previousExtensionPreference = untrack(() => ({ ...CONTENT_OPTIONS.ext }));
+  $effect(() => {
+    const { video, audio } = CONTENT_OPTIONS.ext;
+    const previous = previousExtensionPreference;
+    previousExtensionPreference = {
+      video,
+      audio
+    };
+
+    untrack(() => {
+      const isAudioDownload = downloadType === DownloadType.Audio;
+      const isRelevantChange = isAudioDownload ? audio !== previous.audio : video !== previous.video;
+      if (!isRelevantChange || statusIsDownloading) {
+        return;
+      }
+
+      const result = applyDownloadTypeChange({
+        newType: downloadType,
+        selectedVideoFormat,
+        selectedAudioFormat
+      });
+      applyExtension(result.extension);
+    });
+  });
+
   function handleDownloadTypeChange(newType: DownloadType) {
     const result = applyDownloadTypeChange({
       newType,
@@ -349,19 +392,7 @@ export function createPanelState(getVideoData: () => VideoData) {
       return extension;
     },
     set extension(value: string) {
-      extension = value;
-      const isAudioDownload = downloadType === DownloadType.Audio;
-      if (isAudioDownload) {
-        const aligned = alignAudioFormatToExtension({
-          audioFormats: getVideoData().audioFormats,
-          currentFormat: selectedAudioFormat,
-          targetExtension: value
-        });
-        if (aligned && aligned !== selectedAudioFormat) {
-          selectedAudioFormat = aligned;
-          syncAudioFromFormat(aligned);
-        }
-      }
+      applyExtension(value);
     },
     get actualExtension() {
       return actualExtension;

@@ -75,14 +75,13 @@ export default defineContentScript({
         return;
       }
 
-      initContentOptions({
+      const mergedOptions = {
         ...defaultOptions,
         ...newOptions
-      });
-      setNativeDownloadVisibility(newOptions.isShowNativeDownload);
-      crossWorldMessenger.sendMessage(CrossWorldMessage.OptionsUpdate, {
-        isShowNativeDownload: newOptions.isShowNativeDownload
-      }).catch(() => {});
+      };
+      initContentOptions(mergedOptions);
+      setNativeDownloadVisibility(mergedOptions.isShowNativeDownload);
+      crossWorldMessenger.sendMessage(CrossWorldMessage.OptionsUpdate, mergedOptions).catch(() => {});
     });
     context.onInvalidated(unwatchOptions);
 
