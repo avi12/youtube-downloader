@@ -184,6 +184,10 @@ export async function trackInstall() {
   await sendEvent("install");
 }
 
+export async function trackDownloadComplete() {
+  await sendEvent("download_complete");
+}
+
 export async function setUninstallUrl() {
   if (await isDevelopmentInstall()) {
     return;

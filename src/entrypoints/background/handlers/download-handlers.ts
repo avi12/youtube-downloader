@@ -13,7 +13,7 @@ import { clearIframeAutoRetry, handleIframeFallback } from "../download/sabr-att
 import { enqueueToPopupList, removeFromPopupList } from "../queue/popup-list";
 import { signalVideoComplete } from "../queue/sequential-queue";
 import { cancelDownloads, getTabIdsForVideo, trackVideoForTab } from "../queue/tab-tracker";
-import { notifyWatchTabsOnComplete } from "../recent/recent-downloads";
+import { notifyWatchTabsOnComplete, trackDownloadCompleteOnce } from "../recent/recent-downloads";
 import { addMuxCancelledVideoIds, markVideosCancelled } from "./pipeline-handlers";
 import { clearCancelledVideo, isVideoCancelled } from "./pipeline-state";
 import {
@@ -117,6 +117,7 @@ export function registerDownloadHandlers() {
         filename
       });
       clearIframeAutoRetry(videoId);
+      trackDownloadCompleteOnce(downloadId);
       notifyWatchTabsOnComplete({
         downloadId,
         videoId,
@@ -187,6 +188,7 @@ export function registerDownloadHandlers() {
     const downloadId = await tryDirectUrlDownload({ request });
     if (downloadId !== null) {
       clearIframeAutoRetry(videoId);
+      trackDownloadCompleteOnce(downloadId);
       notifyWatchTabsOnComplete({
         downloadId,
         videoId,

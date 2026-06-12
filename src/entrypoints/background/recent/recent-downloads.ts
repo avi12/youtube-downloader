@@ -1,6 +1,7 @@
 import { ensureProcessor } from "../handlers/processor";
 import { enqueueToPopupList } from "../queue/popup-list";
 import { getTabIdsForVideo } from "../queue/tab-tracker";
+import { trackDownloadComplete } from "@/lib/analytics/ga4";
 import { TRANSCODE_VIDEO_ID_PREFIX } from "@/lib/download-pipeline/transcode-recent";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
 import type { PipelineDownloadMessage } from "@/lib/messaging/messaging";
@@ -141,6 +142,30 @@ function scheduleRevokeBlobUrl({ downloadId, blobUrl }: ScheduleRevokeBlobUrlPar
   browser.downloads.onChanged.addListener(handleChanged);
 }
 
+export function trackDownloadCompleteOnce(downloadId: number) {
+  function handleChanged(delta: Browser.downloads.DownloadDelta) {
+    const isUnrelatedOrIncomplete = delta.id !== downloadId || !delta.state?.current;
+    if (isUnrelatedOrIncomplete) {
+      return;
+    }
+
+    const { current } = delta.state!;
+    const isComplete = current === browser.downloads.State.COMPLETE;
+    const isTerminal = isComplete || current === browser.downloads.State.INTERRUPTED;
+    if (!isTerminal) {
+      return;
+    }
+
+    browser.downloads.onChanged.removeListener(handleChanged);
+
+    if (isComplete) {
+      trackDownloadComplete().catch(() => {});
+    }
+  }
+
+  browser.downloads.onChanged.addListener(handleChanged);
+}
+
 type NotifyWatchTabsParams = Prettify<{
   downloadId: number;
   videoId: string;
@@ -200,6 +225,7 @@ export function registerRecentDownloadHandlers() {
       downloadId,
       blobUrl: data.blobUrl
     });
+    trackDownloadCompleteOnce(downloadId);
 
     if (data.recentContext) {
       await notifyOnDownloadComplete({
