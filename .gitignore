@@ -15,3 +15,6 @@ keys/
 .env
 .env.local
 
+# Ad hoc debug artifacts from scripts/
+/scripts/*.png
+
