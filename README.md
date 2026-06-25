@@ -20,17 +20,21 @@ Open the [Releases page](https://github.com/avi12/youtube-downloader/releases) a
 
 **Chrome / Edge / Opera / Brave / Vivaldi**
 
-1. Download the `youtube-downloader-*-chrome.crx` file
+Chrome blocks `.crx` files that don't come from the Chrome Web Store (it rejects them with `CRX_REQUIRED_PROOF_MISSING`), so install from the zip instead:
+
+1. Download `youtube-downloader-*-chrome.zip` and unzip it
 2. Open `chrome://extensions` (or `edge://extensions`, `opera://extensions`)
 3. Turn on **Developer mode** with the toggle in the top-right corner
-4. Drag the downloaded `.crx` file onto the page and confirm
+4. Click **Load unpacked** and select the unzipped folder
+
+The extension checks for new releases and shows a banner in the popup when an update is ready - grab the new zip and load it the same way.
 
 **Firefox**
 
 1. In Firefox, click the `youtube-downloader-*-firefox.xpi` link on the Releases page
 2. Confirm the install when Firefox asks
 
-That's it - the extension stays up to date on its own.
+Firefox keeps the extension up to date on its own.
 
 ## Tech stack
 
