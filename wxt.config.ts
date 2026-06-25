@@ -11,8 +11,7 @@ const ffmpegAssets = [
 const FIREFOX_GECKO_ID = "youtube-downloader@avi12.com";
 const UPDATE_URL_BASE = "https://avi12.github.io/youtube-downloader";
 const FIREFOX_UPDATE_URL = `${UPDATE_URL_BASE}/updates.json`;
-const CHROME_UPDATE_URL = `${UPDATE_URL_BASE}/updates.xml`;
-const { CHROME_EXTENSION_KEY = "", CSP_REPORT_URI = "" } = process.env;
+const { CSP_REPORT_URI = "" } = process.env;
 const EXTENSION_PAGES_CSP = `script-src 'self' 'wasm-unsafe-eval'; object-src 'self'${CSP_REPORT_URI ? `; report-uri ${CSP_REPORT_URI}` : ""}`;
 const sharedPermissions: Browser.runtime.ManifestPermission[] = [
   "alarms",
@@ -69,11 +68,7 @@ export default defineConfig({
         }
       }
       : {
-        minimum_chrome_version: "125.0",
-        update_url: CHROME_UPDATE_URL,
-        ...CHROME_EXTENSION_KEY && {
-          key: CHROME_EXTENSION_KEY
-        }
+        minimum_chrome_version: "125.0"
       }
   }),
   zip: {

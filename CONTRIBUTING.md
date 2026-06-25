@@ -14,7 +14,7 @@ pnpm dev:firefox    # Firefox
 
 `pnpm dev` runs [`scripts/dev-server.ts`](scripts/dev-server.ts): it production-builds the extension (with source maps), launches a browser with it sideloaded, and on every file change under `src/` rebuilds, reloads the extension, and reloads every open YouTube tab. No manual reloading.
 
-No `.env` is needed for development. [`.env.example`](.env.example) documents the variables used for release signing and analytics; `CHROME_EXTENSION_KEY` is simply omitted from the manifest when unset.
+No `.env` is needed for development. [`.env.example`](.env.example) documents the variables used for release signing (Firefox AMO) and analytics.
 
 Other useful commands:
 
