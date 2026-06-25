@@ -4,9 +4,10 @@
   import ChangeFormatDialog from "./format-dialog/ChangeFormatDialog.svelte";
   import SettingsTab from "./settings/SettingsTab.svelte";
   import TabNav from "./shared/TabNav.svelte";
+  import UpdateBanner from "./shared/UpdateBanner.svelte";
   import type { DownloadProgressEntry, Options, VideoDetail, VideoQueueItem } from "@/types";
   import { browser } from "#imports";
-  import { untrack } from "svelte";
+  import { onMount, untrack } from "svelte";
   import { cubicOut } from "svelte/easing";
   import { fly } from "svelte/transition";
 
@@ -20,6 +21,7 @@
     initialCurrentTabId?: number;
     initialCurrentSourceUrl?: string;
     initialOptions: Options;
+    initialUpdateAvailableVersion: string | null;
   }
 
   const {
@@ -31,8 +33,15 @@
     initialStatusProgress,
     initialCurrentTabId,
     initialCurrentSourceUrl,
-    initialOptions
+    initialOptions,
+    initialUpdateAvailableVersion
   }: Props = $props();
+
+  onMount(() => {
+    if (initialUpdateAvailableVersion) {
+      browser.action.setBadgeText({ text: "" }).catch(() => {});
+    }
+  });
 
   const percentFormatter = new Intl.NumberFormat(browser.i18n.getUILanguage(), {
     style: "percent",
@@ -92,6 +101,10 @@
       tabs={appState.tabs}
     />
   </header>
+
+  {#if initialUpdateAvailableVersion}
+    <UpdateBanner version={initialUpdateAvailableVersion} />
+  {/if}
 
   <div class="popup-content">
     {#if appState.activePanel === PopupPanel.Downloads}

@@ -72,6 +72,8 @@ export const checkedPlaylistVideosItem = storage.defineItem<string[]>(
   { fallback: [] }
 );
 
+export const updateAvailableVersionItem = storage.defineItem<string | null>("local:ytdlUpdateAvailableVersion", { fallback: null });
+
 const analyticsClientIdItem = storage.defineItem<string | null>("local:ytdlAnalyticsClientId", { fallback: null });
 
 let clientIdPromise: Promise<string> | undefined;

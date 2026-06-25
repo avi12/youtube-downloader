@@ -16,6 +16,7 @@ import {
   videoOnlyListItem,
   videoQueueItem
 } from "@/lib/storage/storage";
+import { registerUpdateCheck } from "@/lib/updates/update-check";
 import { onSabrBodyCaptured, startSabrRequestCapture } from "@/lib/youtube/sabr/request-capture";
 
 export default defineBackground(() => {
@@ -35,6 +36,7 @@ export default defineBackground(() => {
   registerTabLifecycleHandlers();
 
   registerDailyHeartbeat();
+  registerUpdateCheck();
 
   browser.runtime.onInstalled.addListener(async ({ reason }) => {
     if (reason !== browser.runtime.OnInstalledReason.INSTALL) {

@@ -4,6 +4,7 @@ import {
   musicListItem,
   optionsItem,
   statusProgressItem,
+  updateAvailableVersionItem,
   videoDetailsItem,
   videoOnlyListItem,
   videoQueueItem
@@ -19,6 +20,7 @@ const [
   videoDetails,
   statusProgress,
   options,
+  updateAvailableVersion,
   activeTabs
 ] = await Promise.all([
   isFFmpegReadyItem.getValue(),
@@ -28,6 +30,7 @@ const [
   videoDetailsItem.getValue(),
   statusProgressItem.getValue(),
   optionsItem.getValue(),
+  updateAvailableVersionItem.getValue(),
   browser.tabs.query({
     active: true,
     currentWindow: true
@@ -55,6 +58,7 @@ mount(App, {
     initialOptions: {
       ...defaultOptions,
       ...options
-    }
+    },
+    initialUpdateAvailableVersion: updateAvailableVersion
   }
 });
