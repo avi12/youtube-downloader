@@ -71,3 +71,13 @@ pnpm dev:firefox    # Firefox
 ```
 
 [CONTRIBUTING.md](CONTRIBUTING.md) covers the full dev workflow: quality gates, code style, common tasks (adding a setting, tracing a download bug), and the Linux VM setup for reproducing Linux-only Chrome bugs. [ARCHITECTURE.md](ARCHITECTURE.md) explains how the pieces fit together.
+
+## License
+
+[Apache-2.0](LICENSE) - Copyright (c) 2021-2026 Avi (avi12).
+
+You may use, modify, fork, redistribute, and sell this code.
+
+**What the license requires:** every copy or derivative work must ship the [`LICENSE`](LICENSE) and [`NOTICE`](NOTICE) files, keep the existing copyright and attribution notices intact, carry prominent notices on any files you changed, and reproduce the `NOTICE` text in the documentation you distribute and in any third-party-notices or about screen your build already shows. Sections 4(a) to 4(d) of the license are the authoritative wording.
+
+**What I ask on top of that:** if you publish a fork to a browser store, please credit Avi (avi12) in the listing and link back to this repository. That one is a request, not a license condition.
