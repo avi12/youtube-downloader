@@ -1,10 +1,18 @@
 import { resolve } from "node:path";
 import { defineConfig } from "wxt";
 
-const ffmpegAssets = [
+const copiedAssets = [
   {
     src: "node_modules/@ffmpeg/core/dist/umd/ffmpeg-core.wasm",
     dest: "ffmpeg/ffmpeg-core.wasm"
+  },
+  {
+    src: "LICENSE",
+    dest: "LICENSE"
+  },
+  {
+    src: "NOTICE",
+    dest: "NOTICE"
   }
 ];
 
@@ -88,10 +96,10 @@ export default defineConfig({
   },
   hooks: {
     "prepare:publicPaths"(_, paths) {
-      paths.push(...ffmpegAssets.map(asset => asset.dest));
+      paths.push(...copiedAssets.map(asset => asset.dest));
     },
     "build:publicAssets"(_, assets) {
-      for (const { src, dest } of ffmpegAssets) {
+      for (const { src, dest } of copiedAssets) {
         assets.push({
           absoluteSrc: resolve(src),
           relativeDest: dest

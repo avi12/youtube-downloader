@@ -120,3 +120,7 @@ pnpm dev:linux
 ```
 
 Starts the VM if needed, refreshes the port proxy, syncs the current branch into the VM, and launches `pnpm dev` under Xvfb so Chrome runs headless. A VNC server also starts so you can visually inspect the browser via any VNC viewer pointed at `localhost:5900`.
+
+## License of contributions
+
+The project is [Apache-2.0](LICENSE) licensed. By opening a PR you agree your contribution ships under the same license, with the [`NOTICE`](NOTICE) attribution kept intact.
