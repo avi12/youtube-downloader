@@ -3,6 +3,9 @@ import { YOUTUBE_ORIGIN } from "./request-capture";
 const CDN_ORIGIN_RULE_ID = 1;
 const GOOGLEVIDEO_URL_FILTER = "*.googlevideo.com/videoplayback*";
 
+// Plain wire strings, not browser.declarativeNetRequest.RuleActionType/HeaderOperation:
+// Firefox does not expose those enum objects, so reading them throws and the rule
+// silently never registers
 export async function registerCdnOriginRule() {
   await browser.declarativeNetRequest.updateSessionRules({
     removeRuleIds: [CDN_ORIGIN_RULE_ID],
@@ -10,26 +13,26 @@ export async function registerCdnOriginRule() {
       {
         id: CDN_ORIGIN_RULE_ID,
         action: {
-          type: browser.declarativeNetRequest.RuleActionType.MODIFY_HEADERS,
+          type: "modifyHeaders",
           requestHeaders: [
             {
               header: "Origin",
-              operation: browser.declarativeNetRequest.HeaderOperation.SET,
+              operation: "set",
               value: YOUTUBE_ORIGIN
             },
             {
               header: "Referer",
-              operation: browser.declarativeNetRequest.HeaderOperation.SET,
+              operation: "set",
               value: `${YOUTUBE_ORIGIN}/`
             },
             {
               header: "Sec-Fetch-Site",
-              operation: browser.declarativeNetRequest.HeaderOperation.SET,
+              operation: "set",
               value: "cross-site"
             },
             {
               header: "Sec-Fetch-Storage-Access",
-              operation: browser.declarativeNetRequest.HeaderOperation.SET,
+              operation: "set",
               value: "active"
             }
           ]
