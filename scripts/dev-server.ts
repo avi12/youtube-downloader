@@ -425,7 +425,7 @@ async function main() {
   const STABILITY_THRESHOLD_MS = 150;
   const POLL_INTERVAL_MS = 50;
   const watcher = chokidar.watch(
-    [join(PROJECT_ROOT, "src"), join(PROJECT_ROOT, "layers"), join(PROJECT_ROOT, "wxt.config.ts")],
+    [join(PROJECT_ROOT, "src"), join(PROJECT_ROOT, "wxt.config.ts")],
     {
       ignoreInitial: true,
       // Atomic-write editors (VSCode/JetBrains) save via temp-file+rename; without this

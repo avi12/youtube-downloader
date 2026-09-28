@@ -1,11 +1,11 @@
 {
   "$schema": "https://raw.githubusercontent.com/getfallow/fallow/main/schema/fallowrc.json",
   "entry": [
-    "layers/*/entrypoints/*.content.ts",
-    "layers/*/entrypoints/*/index.ts",
-    "layers/*/entrypoints/*/index.content.ts",
-    "layers/*/entrypoints/*/main.ts",
-    "layers/*/layer.config.ts"
+    "src/layers/*/entrypoints/*.content.ts",
+    "src/layers/*/entrypoints/*/index.ts",
+    "src/layers/*/entrypoints/*/index.content.ts",
+    "src/layers/*/entrypoints/*/main.ts",
+    "src/layers/*/layer.config.ts"
   ],
   "ignoreUnresolvedImports": [
     "#imports",
