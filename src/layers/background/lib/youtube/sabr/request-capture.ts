@@ -5,7 +5,7 @@ export { extractPoTokenFromBody } from "./po-token-extractor";
 export const OFFSCREEN_PLAYER_TAB_ID = -2;
 
 const GOOGLEVIDEO_URL_PATTERN = "https://*.googlevideo.com/videoplayback*";
-const YOUTUBE_ORIGIN = "https://www.youtube.com";
+export const YOUTUBE_ORIGIN = "https://www.youtube.com";
 
 const capturedByTab = new Map<number, {
   body: number[];

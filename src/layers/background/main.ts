@@ -17,10 +17,12 @@ import {
 } from "@/lib/storage/storage";
 import { trackInstall, registerDailyHeartbeat, setUninstallUrl } from "#background/lib/analytics/ga4";
 import { registerUpdateCheck } from "#background/lib/updates/update-check";
+import { registerCdnOriginRule } from "#background/lib/youtube/sabr/cdn-origin-rule";
 import { onSabrBodyCaptured, startSabrRequestCapture } from "#background/lib/youtube/sabr/request-capture";
 
 export function main() {
   initOffscreenPortListener();
+  registerCdnOriginRule().catch(error => console.error("Failed to register the CDN origin rule", error));
   startSabrRequestCapture();
   onSabrBodyCaptured(tabId => {
     // Best-effort push; the content script also pulls via GetCapturedSabrBody with
