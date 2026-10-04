@@ -69,8 +69,8 @@ async function ensureUpdateCheckAlarm() {
 }
 
 // Firefox auto-applies self-hosted updates via browser_specific_settings.gecko.update_url,
-// so the notifier is Chromium-only - there a self-signed .crx can't be sideloaded and users
-// install a .zip via Load unpacked, which never auto-updates.
+// so the notifier is Chromium-only - there users drag in a .zip or .crx in Developer mode,
+// which never auto-updates.
 export function registerUpdateCheck() {
   if (import.meta.env.FIREFOX) {
     return;
