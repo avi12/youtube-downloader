@@ -20,23 +20,14 @@ Open the [Releases page](https://github.com/avi12/youtube-downloader/releases) a
 
 **Chrome / Edge / Opera / Brave / Vivaldi**
 
-Chrome blocks `.crx` files that don't come from the Chrome Web Store (it rejects them with `CRX_REQUIRED_PROOF_MISSING`), so install from the zip instead:
-
-1. Download `youtube-downloader-*-chrome.zip` and unzip it
-2. Open `chrome://extensions` (or `edge://extensions`, `opera://extensions`)
+1. Download `youtube-downloader-*-chrome.zip` (or `youtube-downloader-*-chrome.crx`)
+2. Open `chrome://extensions` (or `edge://extensions`, `opera://extensions`, `brave://extensions`)
 3. Turn on **Developer mode** with the toggle in the top-right corner
-4. Click **Load unpacked** and select the unzipped folder
+4. Drag the zip or CRX file onto the extensions page and confirm the installation
 
-The extension checks for new releases and shows a banner in the popup when an update is ready - grab the new zip and load it the same way.
+Chrome rejects CRX files that don't come from the Chrome Web Store (`CRX_REQUIRED_PROOF_MISSING`) - if that happens, drag the zip instead.
 
-**Brave and other Chromium browsers that accept sideloaded CRXs**
-
-1. Download `youtube-downloader-*-chrome.crx`
-2. Open `brave://extensions`
-3. Turn on **Developer mode**
-4. Drag the `.crx` file onto the extensions page and confirm the installation
-
-If your Chromium browser rejects the CRX, use the Chrome zip instructions above instead.
+The extension checks for new releases and shows a banner in the popup when an update is ready - grab the new file and drag it in the same way.
 
 **Firefox**
 
