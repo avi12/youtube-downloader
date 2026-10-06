@@ -46,6 +46,7 @@ const inFlightDownloads = new Map<string, {
 
 export function clearInFlightDownload(videoId: string) {
   inFlightDownloads.delete(videoId);
+  clearAutoRetryCounter(videoId);
 }
 
 // Chrome MV3 has `chrome.offscreen`. Firefox MV3 does not, so this acts as a
@@ -490,7 +491,6 @@ export async function startBackgroundDownload({ request, tabId }: StartBackgroun
         enrichedMetadata: (await enrichedMetadataPromise) ?? null
       }
     });
-    clearAutoRetryCounter(videoId);
   } catch (error) {
     if (isVideoCancelled(videoId)) {
       clearCancelledVideo(videoId);
