@@ -1,5 +1,6 @@
 import { adaptiveFormatToSabrFormat, collectReadableStream, createSabrStream } from "./sabr-helpers";
 import type { AdaptiveFormatItem, Prettify, SabrConfig } from "@/types";
+import { EnabledTrackTypes } from "googlevideo/utils";
 
 export type { SabrStreamResult } from "./sabr-helpers";
 
@@ -21,6 +22,7 @@ export async function fetchVideoViaSabrStream({
   });
   const { videoStream } = await sabrStream.start({
     videoFormat: adaptiveFormatToSabrFormat(videoFormat),
+    enabledTrackTypes: EnabledTrackTypes.VIDEO_ONLY,
     maxRetries: 2
   });
   return collectReadableStream({
@@ -49,6 +51,7 @@ export async function fetchAudioViaSabrStream({
   });
   const { audioStream } = await sabrStream.start({
     audioFormat: adaptiveFormatToSabrFormat(audioFormat),
+    enabledTrackTypes: EnabledTrackTypes.AUDIO_ONLY,
     maxRetries: 2
   });
   return collectReadableStream({
