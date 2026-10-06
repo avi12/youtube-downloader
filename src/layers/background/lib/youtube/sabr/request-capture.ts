@@ -1,3 +1,4 @@
+import { clearPlayerSession, recordPlayerSession } from "./player-session";
 import { extractPoTokenFromBody } from "./po-token-extractor";
 
 export { extractPoTokenFromBody } from "./po-token-extractor";
@@ -46,6 +47,14 @@ function handleSabrRequest(details: Browser.webRequest.OnBeforeRequestDetails) {
   }
 
   const bodyBytes = new Uint8Array(details.requestBody!.raw![0].bytes!);
+  if (!isOffscreenPlayer) {
+    recordPlayerSession({
+      tabId: details.tabId,
+      url: details.url,
+      body: bodyBytes
+    }).catch(() => {});
+  }
+
   const previousData = capturedByTab.get(captureTabId);
   const isFirstCapture = !previousData;
 
@@ -87,4 +96,5 @@ function getLatestCapturedSabrData() {
 
 export function clearCapturedSabrData(tabId: number) {
   capturedByTab.delete(tabId);
+  clearPlayerSession(tabId);
 }

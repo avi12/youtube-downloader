@@ -25,6 +25,7 @@ import { stripMimeParams } from "@/lib/utils/containers";
 import { AUDIO_EXTRA_STREAM_PREFIX, DownloadType, ProgressType, StreamType } from "@/types";
 import type { DownloadRequest, Prettify, VideoMetadata } from "@/types";
 import { resolveAndroidUrls } from "#background/lib/youtube/android-player";
+import { withPlayerSession } from "#background/lib/youtube/sabr/player-session";
 
 const ANDROID_VR_CHUNK_SIZE = 10 * 1024 * 1024;
 const PROGRESS_THROTTLE_MS = 250;
@@ -417,13 +418,16 @@ type StartBackgroundDownloadParams = Prettify<{
   request: DownloadRequest;
   tabId: number;
 }>;
-export async function startBackgroundDownload({ request, tabId }: StartBackgroundDownloadParams) {
-  const { videoId, metadata } = request;
+export async function startBackgroundDownload({ request: originalRequest, tabId }: StartBackgroundDownloadParams) {
+  const { videoId, metadata } = originalRequest;
   inFlightDownloads.set(videoId, {
-    request,
+    request: originalRequest,
     tabId
   });
-
+  const request = withPlayerSession({
+    request: originalRequest,
+    tabId
+  });
   if (!request.isIframeFallback) {
     clearIframeAutoRetry(videoId);
   }
