@@ -23,4 +23,9 @@ export class OPFSVideoWriter {
     await this.writable!.close();
     return this.handle!;
   }
+
+  async discard() {
+    await this.writeQueue.catch(() => {});
+    await this.writable?.abort().catch(() => {});
+  }
 }

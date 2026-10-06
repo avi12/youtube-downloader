@@ -1,5 +1,5 @@
 import { removeWorkerIframe } from "./iframe-host";
-import { handleProcessStreamChunk, handleProcessStreamChunkRaw } from "./stream/accumulator";
+import { discardStreamAccumulator, handleProcessStreamChunk, handleProcessStreamChunkRaw } from "./stream/accumulator";
 import { handleProcessStreamEnd } from "./stream/end-handler";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import type { ProcessStreamEndData } from "@/lib/messaging/offscreen-messaging";
@@ -13,6 +13,7 @@ const WORKER_MESSAGE_COMPLETE = "worker-complete";
 const WORKER_MESSAGE_NEEDS_DIRECT_URL = "worker-needs-direct-url";
 const WORKER_MESSAGE_NEEDS_FALLBACK = "worker-needs-fallback";
 const WORKER_MESSAGE_ERROR = "worker-error";
+const WORKER_MESSAGE_DISCARD_STREAMS = "worker-discard-streams";
 
 type WorkerChunkMessage = Prettify<{
   type: typeof WORKER_MESSAGE_CHUNK;
@@ -49,6 +50,10 @@ type WorkerNeedsFallbackMessage = Prettify<{
   tabId: number;
   request: DownloadRequest;
 }>;
+type WorkerDiscardStreamsMessage = Prettify<{
+  type: typeof WORKER_MESSAGE_DISCARD_STREAMS;
+  videoId: string;
+}>;
 type WorkerErrorMessage = Prettify<{
   type: typeof WORKER_MESSAGE_ERROR;
   videoId: string;
@@ -62,6 +67,7 @@ export type WorkerMessage =
   | WorkerCompleteMessage
   | WorkerNeedsDirectUrlMessage
   | WorkerNeedsFallbackMessage
+  | WorkerDiscardStreamsMessage
   | WorkerErrorMessage;
 
 function handleChunk(message: WorkerMessage) {
@@ -170,6 +176,14 @@ function handleNeedsFallback(message: WorkerMessage) {
   }).catch(() => {});
 }
 
+function handleDiscardStreams(message: WorkerMessage) {
+  if (message.type !== WORKER_MESSAGE_DISCARD_STREAMS) {
+    return;
+  }
+
+  discardStreamAccumulator(message.videoId).catch(() => {});
+}
+
 function handleError(message: WorkerMessage) {
   if (message.type !== WORKER_MESSAGE_ERROR) {
     return;
@@ -188,6 +202,7 @@ const WORKER_MESSAGE_HANDLERS: Record<WorkerMessage["type"], (message: WorkerMes
   [WORKER_MESSAGE_COMPLETE]: handleComplete,
   [WORKER_MESSAGE_NEEDS_DIRECT_URL]: handleNeedsDirectUrl,
   [WORKER_MESSAGE_NEEDS_FALLBACK]: handleNeedsFallback,
+  [WORKER_MESSAGE_DISCARD_STREAMS]: handleDiscardStreams,
   [WORKER_MESSAGE_ERROR]: handleError
 };
 

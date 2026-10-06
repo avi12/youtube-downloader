@@ -106,3 +106,9 @@ export function handleProcessStreamChunk(data: ProcessStreamChunkData) {
 export function handleProcessStreamChunkRaw(data: RawChunkData) {
   applyChunkToAccumulator(data);
 }
+
+export async function discardStreamAccumulator(videoId: string) {
+  const accumulator = STREAM_ACCUMULATORS.get(videoId);
+  STREAM_ACCUMULATORS.delete(videoId);
+  await accumulator?.videoWriter?.discard();
+}

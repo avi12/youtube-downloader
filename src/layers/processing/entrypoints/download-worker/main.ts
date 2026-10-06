@@ -13,6 +13,7 @@ const WORKER_MESSAGE_COMPLETE = "worker-complete";
 const WORKER_MESSAGE_NEEDS_DIRECT_URL = "worker-needs-direct-url";
 const WORKER_MESSAGE_NEEDS_FALLBACK = "worker-needs-fallback";
 const WORKER_MESSAGE_ERROR = "worker-error";
+const WORKER_MESSAGE_DISCARD_STREAMS = "worker-discard-streams";
 const IFRAME_MESSAGE_START = "start";
 const IFRAME_MESSAGE_CANCEL = "cancel";
 const DEFAULT_VIDEO_MIME_TYPE = "video/mp4";
@@ -198,6 +199,15 @@ async function runDownload({ request, tabId, enrichedMetadata }: RunDownloadPara
       return;
     }
 
+    const isSabrPartial = !!(sabrResult?.isPartialVideo || sabrResult?.isPartialAudio);
+    const isSabrStreamPartial = !!sabrResult?.streamedToOffscreen && isSabrPartial;
+    if (isSabrStreamPartial) {
+      parent.postMessage({
+        type: WORKER_MESSAGE_DISCARD_STREAMS,
+        videoId
+      }, location.origin);
+    }
+
     const isAudioDataMissing = !(sabrResult?.audioData?.byteLength) && !sabrResult?.streamedToOffscreen;
     const needsCdn = isAudioDataMissing || sabrResult?.isPartialVideo || sabrResult?.isPartialAudio;
     const isCdnUrlsPresent = !!(resolvedVideoUrl || resolvedAudioUrl);
@@ -253,7 +263,8 @@ async function runDownload({ request, tabId, enrichedMetadata }: RunDownloadPara
     const hasNoVideoData = !(result?.videoData?.byteLength);
     const hasNoAudioData = !(result?.audioData?.byteLength);
     const isNotStreamed = !result?.streamedToOffscreen;
-    const isDataMissing = !result || (hasNoVideoData && hasNoAudioData && isNotStreamed);
+    const isPartialUnrecovered = !cdnResult && isSabrStreamPartial;
+    const isDataMissing = !result || isPartialUnrecovered || (hasNoVideoData && hasNoAudioData && isNotStreamed);
     if (isDataMissing) {
       const isDirectUrlEligible = isAudioOnly && !!resolvedAudioUrl;
       if (isDirectUrlEligible) {
