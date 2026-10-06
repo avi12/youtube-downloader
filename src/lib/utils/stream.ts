@@ -57,15 +57,15 @@ export async function readStreamToBuffer({ reader, expectedBytes, onBytesReceive
         break;
       }
 
+      totalBytes += value!.byteLength;
+
       if (isStreamingMode) {
         onChunk!(value!);
-        totalBytes += value!.byteLength;
       } else if (preallocated) {
         preallocated.set(value!, writeOffset);
         writeOffset += value!.byteLength;
       } else {
         chunks.push(value!);
-        totalBytes += value!.byteLength;
       }
 
       stall.touch();
@@ -80,8 +80,7 @@ export async function readStreamToBuffer({ reader, expectedBytes, onBytesReceive
     throw new StreamStallError(buildPartial());
   }
 
-  const isBelowExpected = totalBytes < expectedBytes;
-  const isShortRead = !isStreamingMode && hasExpectedBytes && isBelowExpected;
+  const isShortRead = hasExpectedBytes && totalBytes < expectedBytes;
   if (isShortRead) {
     throw new StreamStallError(buildPartial());
   }
