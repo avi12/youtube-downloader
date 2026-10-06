@@ -303,42 +303,33 @@ async function runDownload({ request, tabId, enrichedMetadata }: RunDownloadPara
 
     const isStreamed = result.streamedToOffscreen === true;
 
-    function toArrayBuffer(data: Uint8Array): ArrayBuffer {
+    function toArrayBuffer(data: Uint8Array | null | undefined) {
+      if (!data?.byteLength) {
+        return null;
+      }
+
       const buffer = new ArrayBuffer(data.byteLength);
       new Uint8Array(buffer).set(data);
       return buffer;
     }
 
-    const extraAudioBuffers: ArrayBuffer[] = additionalAudioTracks
-      .map(track => track.data)
-      .filter((data): data is Uint8Array => data !== null && data.byteLength > 0)
-      .map(data => toArrayBuffer(data));
-
-    const transferList: ArrayBuffer[] = [...extraAudioBuffers];
-    const completeMsg: Record<string, unknown> = {
-      type: WORKER_MESSAGE_COMPLETE,
-      videoId,
-      isStreamed,
-      streamEnd,
-      extraAudioBuffers
-    };
-    if (!isStreamed) {
-      const hasVideoData = !!result.videoData?.byteLength;
-      if (hasVideoData) {
-        const videoBuffer = toArrayBuffer(result.videoData!);
-        transferList.push(videoBuffer);
-        completeMsg.videoBuffer = videoBuffer;
-      }
-
-      const hasAudioData = !!result.audioData?.byteLength;
-      if (hasAudioData) {
-        const audioBuffer = toArrayBuffer(result.audioData!);
-        transferList.push(audioBuffer);
-        completeMsg.audioBuffer = audioBuffer;
-      }
-    }
-
-    parent.postMessage(completeMsg, location.origin, transferList);
+    const videoBuffer = isStreamed ? null : toArrayBuffer(result.videoData);
+    const audioBuffers = [
+      isStreamed ? null : toArrayBuffer(result.audioData),
+      ...additionalAudioTracks.map(track => toArrayBuffer(track.data))
+    ];
+    const transferList = [videoBuffer, ...audioBuffers].filter(buffer => buffer !== null);
+    parent.postMessage(
+      {
+        type: WORKER_MESSAGE_COMPLETE,
+        videoId,
+        streamEnd,
+        videoBuffer,
+        audioBuffers
+      },
+      location.origin,
+      transferList
+    );
   } catch (error) {
     if (signal.aborted) {
       return;

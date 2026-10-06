@@ -32,11 +32,9 @@ type WorkerStreamEndMessage = Prettify<{
 type WorkerCompleteMessage = Prettify<{
   type: typeof WORKER_MESSAGE_COMPLETE;
   videoId: string;
-  isStreamed: boolean;
   streamEnd: ProcessStreamEndData;
-  videoBuffer?: ArrayBuffer;
-  audioBuffer?: ArrayBuffer;
-  extraAudioBuffers: ArrayBuffer[];
+  videoBuffer: ArrayBuffer | null;
+  audioBuffers: (ArrayBuffer | null)[];
 }>;
 type WorkerNeedsDirectUrlMessage = Prettify<{
   type: typeof WORKER_MESSAGE_NEEDS_DIRECT_URL;
@@ -99,49 +97,33 @@ function handleStreamEnd(message: WorkerMessage) {
   });
 }
 
-function feedSingleChunkBuffer({ videoId, streamType, buffer }: {
-  videoId: string;
-  streamType: string;
-  buffer: ArrayBuffer;
-}) {
-  handleProcessStreamChunkRaw({
-    videoId,
-    streamType,
-    iChunk: 0,
-    totalChunks: 1,
-    chunk: new Uint8Array(buffer)
-  });
-}
-
 function handleComplete(message: WorkerMessage) {
   if (message.type !== WORKER_MESSAGE_COMPLETE) {
     return;
   }
 
-  const { videoId, isStreamed, streamEnd, videoBuffer, audioBuffer, extraAudioBuffers } = message;
-  if (!isStreamed) {
-    if (videoBuffer) {
-      feedSingleChunkBuffer({
-        videoId,
-        streamType: StreamType.Video,
-        buffer: videoBuffer
-      });
-    }
-
-    if (audioBuffer) {
-      feedSingleChunkBuffer({
-        videoId,
-        streamType: StreamType.Audio,
-        buffer: audioBuffer
-      });
-    }
-  }
-
-  for (const [i, buffer] of extraAudioBuffers.entries()) {
-    feedSingleChunkBuffer({
-      videoId,
-      streamType: `${AUDIO_EXTRA_STREAM_PREFIX}-${i}`,
+  const { videoId, streamEnd, videoBuffer, audioBuffers } = message;
+  const bufferedStreams = [
+    {
+      streamType: StreamType.Video,
+      buffer: videoBuffer
+    },
+    ...audioBuffers.map((buffer, i) => ({
+      streamType: i === 0 ? StreamType.Audio : `${AUDIO_EXTRA_STREAM_PREFIX}-${i - 1}`,
       buffer
+    }))
+  ];
+  for (const { streamType, buffer } of bufferedStreams) {
+    if (!buffer) {
+      continue;
+    }
+
+    handleProcessStreamChunkRaw({
+      videoId,
+      streamType,
+      iChunk: 0,
+      totalChunks: 1,
+      chunk: new Uint8Array(buffer)
     });
   }
 
