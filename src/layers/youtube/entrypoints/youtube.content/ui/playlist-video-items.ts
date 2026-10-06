@@ -1,6 +1,6 @@
 import { CHILD_LIST_SUBTREE } from "@/lib/utils/dom";
+import { getVideoIdFromUrl } from "@/lib/youtube/youtube-url";
 import PlaylistVideoItem from "#youtube/components/playlist-downloader/video-item/PlaylistVideoItem.svelte";
-import { getVideoIdFromUrl } from "#youtube/lib/youtube/youtube-url";
 import { mount } from "svelte";
 
 const PLAYLIST_VIDEO_TAG = "ytd-playlist-video-renderer";

@@ -1,7 +1,7 @@
+import { getVideoIdFromUrl } from "@/lib/youtube/youtube-url";
 import type { Prettify } from "@/types";
 import PlaylistVideoItem from "#youtube/components/playlist-downloader/video-item/PlaylistVideoItem.svelte";
 import PlaylistGridItem from "#youtube/components/playlist-grid-item/PlaylistGridItem.svelte";
-import { getVideoIdFromUrl } from "#youtube/lib/youtube/youtube-url";
 import { mount } from "svelte";
 
 const LOCKUP_VIEW_MODEL_TAG = "yt-lockup-view-model";
