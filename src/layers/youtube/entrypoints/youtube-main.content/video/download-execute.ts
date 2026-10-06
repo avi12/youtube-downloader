@@ -153,7 +153,7 @@ export async function resolveAndDispatch({ params, abortSignal }: ResolveAndDisp
     audioItag,
     audioTrackId
   });
-  const extraAudioFormats = downloadExtras
+  const extraAudioFormats = downloadExtras && audioFormat
     ? getExtraAudioFormats({
       audioFormats: cachedVideoData.audioFormats,
       selectedTrackId: audioFormat?.audioTrack?.id,
