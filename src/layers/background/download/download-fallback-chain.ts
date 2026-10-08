@@ -2,8 +2,11 @@ import { downloadViaCdn } from "./cdn-downloader";
 import { attemptSabrDownload } from "./sabr-attempt";
 import { MessageType, sendMessageToTab } from "@/lib/messaging/messaging";
 import { getCompatibleFilename } from "@/lib/utils/filename";
+import { createLogger, LogScope } from "@/lib/utils/logger";
 import { DownloadType, ProgressType } from "@/types";
 import type { DownloadRequest, Prettify } from "@/types";
+
+const log = createLogger(LogScope.Background);
 
 type TrySabrParams = Prettify<{
   request: DownloadRequest;
@@ -22,7 +25,7 @@ export async function trySabr({ request, signal, tabId }: TrySabrParams) {
       throw error;
     }
 
-    console.warn("[ytdl:bg] SABR failed, trying CDN:", error);
+    log.warn("SABR failed, trying CDN:", error);
     await sendMessageToTab(MessageType.UpdateDownloadProgress, {
       videoId: request.videoId,
       progress: 0,
@@ -55,7 +58,7 @@ export async function tryCdn({ request, signal, videoId, tabId, partialVideoData
       throw error;
     }
 
-    console.warn("[ytdl:bg] CDN failed, trying iframe fallback:", error);
+    log.warn("CDN failed, trying iframe fallback:", error);
     return null;
   }
 }
@@ -76,10 +79,10 @@ export async function tryDirectUrlDownload({ request }: {
       url: resolvedAudioUrl,
       filename
     });
-    console.warn("[ytdl:bg] Direct URL download started, id:", downloadId);
+    log.warn("Direct URL download started, id:", downloadId);
     return downloadId;
   } catch (error) {
-    console.warn("[ytdl:bg] Direct URL download failed:", error);
+    log.warn("Direct URL download failed:", error);
     return null;
   }
 }

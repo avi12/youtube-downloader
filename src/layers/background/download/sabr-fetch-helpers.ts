@@ -1,6 +1,9 @@
 import { stripMimeParams } from "@/lib/utils/containers";
+import { createLogger, LogScope } from "@/lib/utils/logger";
 import { fetchAudioViaSabrStream, fetchVideoViaSabrStream } from "@/lib/youtube/sabr/download";
 import type { AdaptiveFormatItem, Prettify, SabrConfig } from "@/types";
+
+const log = createLogger(LogScope.Background);
 
 type MakeFetchParams = Prettify<{
   signal: AbortSignal;
@@ -101,7 +104,7 @@ export async function downloadExtraAudioTracksViaSabr(
         isDefault: format.audioTrack?.audioIsDefault ?? false
       });
     } catch (trackError) {
-      console.warn("[ytdl:bg] Extra audio track failed:", format.audioTrack?.displayName, trackError);
+      log.warn("Extra audio track failed:", format.audioTrack?.displayName, trackError);
     }
   }
 

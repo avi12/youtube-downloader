@@ -1,7 +1,10 @@
 import { popPlaylistContext, sendStreamChunks } from "./stream-chunks";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
+import { createLogger, LogScope } from "@/lib/utils/logger";
 import { AUDIO_EXTRA_STREAM_PREFIX, StreamType } from "@/types";
 import type { Prettify, StreamDataPayload } from "@/types";
+
+const log = createLogger(LogScope.Isolated);
 
 export { setPlaylistContext } from "./stream-chunks";
 
@@ -84,7 +87,7 @@ type HandleStreamErrorParams = Prettify<{
   error: string;
 }>;
 export function handleStreamError({ videoId, error }: HandleStreamErrorParams) {
-  console.error("[ytdl] Stream error for", videoId, error);
+  log.error("Stream error for", videoId, error);
 
   sendMessage(MessageType.ProcessStreamError, {
     videoId,

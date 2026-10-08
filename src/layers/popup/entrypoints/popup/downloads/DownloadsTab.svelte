@@ -4,9 +4,12 @@
   import ActiveDownloadsSections from "./ActiveDownloadsSections.svelte";
   import RecentDownloadsSection from "./recent/RecentDownloadsSection.svelte";
   import { deleteRecentDownload } from "@/lib/storage/recent-downloads-db";
+  import { createLogger, LogScope } from "@/lib/utils/logger";
   import { ProgressType } from "@/types";
   import type { DownloadProgressEntry, RecentDownloadEntry, VideoDetail, VideoQueueItem } from "@/types";
   import { browser } from "#imports";
+
+  const log = createLogger(LogScope.Popup);
 
   interface Props {
     isFFmpegReady: boolean;
@@ -104,7 +107,7 @@
     try {
       browser.downloads.show(entry.downloadId);
     } catch (error) {
-      console.warn("[ytdl:popup] Show in folder failed:", error);
+      log.warn("Show in folder failed:", error);
     }
   }
 </script>

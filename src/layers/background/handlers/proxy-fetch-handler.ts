@@ -1,5 +1,8 @@
 import { MessageType, onMessage } from "@/lib/messaging/messaging";
 import { base64ToUint8Array, uint8ToBase64 } from "@/lib/utils/binary";
+import { createLogger, LogScope } from "@/lib/utils/logger";
+
+const log = createLogger(LogScope.Background);
 
 export function registerProxyFetchHandler() {
   onMessage(MessageType.BackgroundProxyFetch, async ({ data }) => {
@@ -27,7 +30,7 @@ export function registerProxyFetchHandler() {
         responseHeaders
       };
     } catch (fetchError) {
-      console.error("[ytdl] BackgroundProxyFetch error:", fetchError);
+      log.error("BackgroundProxyFetch error:", fetchError);
       return null;
     }
   });

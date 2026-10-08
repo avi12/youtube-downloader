@@ -1,8 +1,11 @@
 import { isVideoCancelled } from "../handlers/pipeline-state";
 import { MessageType, sendMessageToTab } from "@/lib/messaging/messaging";
 import { interruptedDownloadsItem, mutateStorageItem } from "@/lib/storage/storage";
+import { createLogger, LogScope } from "@/lib/utils/logger";
 import { ProgressType } from "@/types";
 import type { DownloadRequest, Prettify } from "@/types";
+
+const log = createLogger(LogScope.Background);
 
 const MAX_AUTO_RETRY_ATTEMPTS = 3;
 const RETRY_BACKOFF_MS = [5_000, 20_000, 60_000];
@@ -126,8 +129,8 @@ export async function scheduleAutoRetry({ request, tabId, startBackgroundDownloa
 
   const delayMs = RETRY_BACKOFF_MS[previousAttempts] ?? RETRY_BACKOFF_MS.at(-1)!;
   autoRetryAttempts.set(videoId, previousAttempts + 1);
-  console.warn(
-    `[ytdl:bg] Auto-retry ${previousAttempts + 1}/${MAX_AUTO_RETRY_ATTEMPTS} for ${videoId} in ${delayMs}ms`
+  log.warn(
+    `Auto-retry ${previousAttempts + 1}/${MAX_AUTO_RETRY_ATTEMPTS} for ${videoId} in ${delayMs}ms`
   );
 
   const timeoutId = setTimeout(async () => {

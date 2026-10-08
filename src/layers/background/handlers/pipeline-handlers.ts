@@ -6,7 +6,10 @@ import { registerPipelineQueueHandlers } from "./pipeline-queue-handlers";
 import { clearCancelledVideo, isVideoCancelled, updateStatusProgress } from "./pipeline-state";
 import { MessageType, onMessage, sendMessageToTab } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
+import { createLogger, LogScope } from "@/lib/utils/logger";
 import { ProgressType } from "@/types";
+
+const log = createLogger(LogScope.Background);
 
 export { markVideosCancelled } from "./pipeline-state";
 
@@ -42,7 +45,7 @@ export function registerPipelineHandlers() {
       return;
     }
 
-    console.error("[ytdl] Stream error for", data.videoId, data.error);
+    log.error("Stream error for", data.videoId, data.error);
     await sendMessageToTab(
       MessageType.UpdateDownloadProgress,
       {

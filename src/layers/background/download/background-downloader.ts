@@ -22,10 +22,13 @@ import { notifyPlaylistBundleFailure } from "@/lib/download-pipeline/playlist-bu
 import { MessageType, sendMessageToTab } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
 import { stripMimeParams } from "@/lib/utils/containers";
+import { createLogger, LogScope } from "@/lib/utils/logger";
 import { AUDIO_EXTRA_STREAM_PREFIX, DownloadType, ProgressType, StreamType } from "@/types";
 import type { DownloadRequest, Prettify, VideoMetadata } from "@/types";
 import { resolveAndroidUrls } from "#background/lib/youtube/android-player";
 import { withPlayerSession } from "#background/lib/youtube/sabr/player-session";
+
+const log = createLogger(LogScope.Background);
 
 const ANDROID_VR_CHUNK_SIZE = 10 * 1024 * 1024;
 const PROGRESS_THROTTLE_MS = 250;
@@ -538,12 +541,12 @@ export async function startBackgroundDownload({ request: originalRequest, tabId 
         startBackgroundDownload
       });
       if (isRescheduled) {
-        console.warn("[ytdl:bg] Recoverable error, auto-retrying:", error);
+        log.warn("Recoverable error, auto-retrying:", error);
         return;
       }
     }
 
-    console.warn("[ytdl:bg] Background download failed:", error);
+    log.warn("Background download failed:", error);
     clearAutoRetryCounter(videoId);
     inFlightDownloads.delete(videoId);
 

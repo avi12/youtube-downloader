@@ -4,9 +4,12 @@ import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { getRecentDownloadBlob, getAllRecentDownloads } from "@/lib/storage/recent-downloads-db";
 import type { RecentDownloadEntry } from "@/lib/storage/recent-downloads-db";
 import { audioContainers, splitFilenameAndExtension, videoContainers } from "@/lib/utils/containers";
+import { createLogger, LogScope } from "@/lib/utils/logger";
 import { fetchMusicThumbnailUrl } from "@/lib/youtube/youtube-music-metadata";
 import { DownloadType } from "@/types";
 import type { Prettify } from "@/types";
+
+const log = createLogger(LogScope.Transcode);
 
 export const TRANSCODE_VIDEO_ID_PREFIX = "transcode:";
 
@@ -29,14 +32,14 @@ export async function transcodeRecentDownload({ entryId, targetContainer }: Tran
     const entry = allEntries.find(item => item.id === entryId);
     const isEntryMissing = !entry;
     if (isEntryMissing) {
-      console.warn("[ytdl:transcode] Entry not found:", entryId);
+      log.warn("Entry not found:", entryId);
       return;
     }
 
     const blob = await getRecentDownloadBlob(entryId);
     const isBlobMissing = !blob;
     if (isBlobMissing) {
-      console.warn("[ytdl:transcode] Blob not found:", entryId);
+      log.warn("Blob not found:", entryId);
       return;
     }
 

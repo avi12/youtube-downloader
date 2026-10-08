@@ -5,7 +5,10 @@ import { trackVideoForTab } from "../queue/tab-tracker";
 import { handleTerminalFailure } from "./background-downloader";
 import { MessageType, onMessage, sendMessageToTab } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
+import { createLogger, LogScope } from "@/lib/utils/logger";
 import type { DownloadRequest, Prettify } from "@/types";
+
+const log = createLogger(LogScope.Background);
 
 const IFRAME_READY_TIMEOUT_MS = 60_000;
 const YOUTUBE_WATCH_BASE_URL = "https://www.youtube.com/watch";
@@ -100,7 +103,7 @@ export async function downloadViaWatchPage({ data, tabId }: DownloadViaWatchPage
       }
     });
   } catch (error) {
-    console.error("[ytdl:bg] DownloadViaWatchPage failed:", data.videoId, error);
+    log.error("DownloadViaWatchPage failed:", data.videoId, error);
     pendingIframeReady.delete(data.videoId);
     sendToOffscreen({
       type: OffscreenMessageType.RemoveDownloadIframe,

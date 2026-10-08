@@ -6,7 +6,10 @@
   import FormatGrid from "./FormatGrid.svelte";
   import type { FormatGroup, FormatItem } from "@/lib/utils/containers";
   import { FORMAT_GROUP_AUDIO, FORMAT_GROUP_VIDEO } from "@/lib/utils/containers";
+  import { createLogger, LogScope } from "@/lib/utils/logger";
   import type { RecentDownloadEntry } from "@/types";
+
+  const log = createLogger(LogScope.Popup);
 
   interface Props {
     entry: RecentDownloadEntry;
@@ -106,7 +109,7 @@
       isSubmitting = false;
       pendingExtension = null;
     } catch (error) {
-      console.warn("[ytdl:popup] Transcode request failed:", error);
+      log.warn("Transcode request failed:", error);
       isSubmitting = false;
       pendingExtension = null;
     }

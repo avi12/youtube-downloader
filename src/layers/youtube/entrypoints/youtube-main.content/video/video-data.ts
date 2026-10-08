@@ -6,10 +6,13 @@ import {
   parseMusicTitle
 } from "./music-metadata";
 import { sabrCredentials } from "@/lib/ui/synced-stores.svelte";
+import { createLogger, LogScope } from "@/lib/utils/logger";
 import { fetchMusicThumbnailUrl } from "@/lib/youtube/youtube-music-metadata";
 import { type VideoData } from "@/types";
 import { generatePoToken } from "#youtube/lib/youtube/po-token-generator";
 import { getYtcfg, YtcfgKey } from "#youtube/lib/youtube/ytcfg";
+
+const log = createLogger(LogScope.Main);
 
 export { buildAndDispatchVideoData } from "./capture-dispatch";
 
@@ -104,7 +107,7 @@ export async function generatePoTokenIfNeeded(videoData: VideoData) {
 
   const lastError = await generatePoTokenWithRetries(videoData);
   if (lastError) {
-    console.warn("[ytdl] PO token generation failed:", lastError);
+    log.warn("PO token generation failed:", lastError);
   }
 }
 

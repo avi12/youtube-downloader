@@ -1,5 +1,8 @@
+import { createLogger, LogScope } from "@/lib/utils/logger";
 import { readStreamToBuffer, StreamStallError } from "@/lib/utils/stream";
 import type { Prettify } from "@/types";
+
+const log = createLogger(LogScope.Background);
 
 const MAX_CDN_RETRY_ATTEMPTS = 10;
 const RETRY_BASE_DELAY_MS = 1_000;
@@ -89,7 +92,7 @@ export async function fetchWithProgress(
       }
 
       const delay = Math.min(RETRY_BASE_DELAY_MS * (2 ** consecutiveRetries), RETRY_MAX_DELAY_MS);
-      console.warn(`[ytdl:bg] CDN fetch error at byte ${byteOffset}, retrying (${consecutiveRetries + 1}/${MAX_CDN_RETRY_ATTEMPTS})`, fetchError);
+      log.warn(`CDN fetch error at byte ${byteOffset}, retrying (${consecutiveRetries + 1}/${MAX_CDN_RETRY_ATTEMPTS})`, fetchError);
       await new Promise<void>(resolve => setTimeout(resolve, delay));
       consecutiveRetries++;
       continue;
@@ -119,7 +122,7 @@ export async function fetchWithProgress(
       }
 
       const delay = Math.min(RETRY_BASE_DELAY_MS * (2 ** consecutiveRetries), RETRY_MAX_DELAY_MS);
-      console.warn(`[ytdl:bg] CDN HTTP ${response.status} at byte ${byteOffset}, retrying (${consecutiveRetries + 1}/${MAX_CDN_RETRY_ATTEMPTS})`);
+      log.warn(`CDN HTTP ${response.status} at byte ${byteOffset}, retrying (${consecutiveRetries + 1}/${MAX_CDN_RETRY_ATTEMPTS})`);
       await new Promise<void>(resolve => setTimeout(resolve, delay));
       consecutiveRetries++;
       continue;
@@ -182,7 +185,7 @@ export async function fetchWithProgress(
         })
         : error.partialData;
       const delay = Math.min(RETRY_BASE_DELAY_MS * (2 ** consecutiveRetries), RETRY_MAX_DELAY_MS);
-      console.warn(`[ytdl:bg] CDN stream interrupted at byte ${byteOffset}, retrying (${consecutiveRetries + 1}/${MAX_CDN_RETRY_ATTEMPTS})`);
+      log.warn(`CDN stream interrupted at byte ${byteOffset}, retrying (${consecutiveRetries + 1}/${MAX_CDN_RETRY_ATTEMPTS})`);
       await new Promise<void>(resolve => setTimeout(resolve, delay));
       consecutiveRetries++;
     }

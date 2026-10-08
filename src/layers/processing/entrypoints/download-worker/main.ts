@@ -1,4 +1,5 @@
 import type { ProcessStreamEndData } from "@/lib/messaging/offscreen-messaging";
+import { createLogger, LogScope } from "@/lib/utils/logger";
 import { resolveQualityLabel } from "@/lib/youtube/audio-format-helpers";
 import { DownloadType, StreamType } from "@/types";
 import type { DownloadRequest, Prettify, VideoMetadata } from "@/types";
@@ -6,6 +7,8 @@ import { downloadViaCdn } from "#background/download/cdn-downloader";
 import { downloadViaSabr } from "#background/download/sabr-downloader";
 import { createSabrStallTimer } from "#background/download/sabr-stall-timer";
 import { buildSubtitleTracks } from "#background/download/subtitle-track-builder";
+
+const log = createLogger(LogScope.Worker);
 
 const WORKER_MESSAGE_CHUNK = "worker-chunk";
 const WORKER_MESSAGE_STREAM_END = "worker-stream-end";
@@ -86,7 +89,7 @@ async function trySabrWithStallTimer({ request, tabId }: TrySabrWithStallTimerPa
       throw error;
     }
 
-    console.warn("[ytdl:worker] SABR failed, trying CDN:", error);
+    log.warn("SABR failed, trying CDN:", error);
     return null;
   } finally {
     stallTimer.cleanup();
@@ -250,7 +253,7 @@ async function runDownload({ request, tabId, enrichedMetadata }: RunDownloadPara
           throw error;
         }
 
-        console.warn("[ytdl:worker] CDN failed:", error);
+        log.warn("CDN failed:", error);
         return null;
       });
     }
@@ -335,7 +338,7 @@ async function runDownload({ request, tabId, enrichedMetadata }: RunDownloadPara
       return;
     }
 
-    console.error("[ytdl:worker] Download failed:", error);
+    log.error("Download failed:", error);
     parent.postMessage(
       {
         type: WORKER_MESSAGE_ERROR,

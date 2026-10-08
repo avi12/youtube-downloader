@@ -2,6 +2,9 @@ import { videoDataCache } from "../video/video-data";
 import { fetchVideoDataViaApi } from "./grid-video-fetch";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { videoDataFailedStore, videoDataStore } from "@/lib/ui/synced-stores.svelte";
+import { createLogger, LogScope } from "@/lib/utils/logger";
+
+const log = createLogger(LogScope.Main);
 
 const MAX_CONCURRENT_FETCHES = 3;
 const videoDataPending = new Set<string>();
@@ -29,7 +32,7 @@ async function processNextVideoData() {
       videoDataFailedStore.set(videoId, true);
     }
   } catch (error) {
-    console.warn("[ytdl] Failed to fetch video data for", videoId, error);
+    log.warn("Failed to fetch video data for", videoId, error);
     videoDataFailedStore.set(videoId, true);
   } finally {
     activeVideoDataFetches--;

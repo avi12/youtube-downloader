@@ -12,7 +12,10 @@
 // read from MAIN-world page context (not available in extension contexts).
 import { sabrFetchBridge } from "@/lib/messaging/sabr-fetch-bridge";
 import { base64ToUint8Array, uint8ToBase64 } from "@/lib/utils/binary";
+import { createLogger, LogScope } from "@/lib/utils/logger";
 import { ytcfgSchema } from "@/lib/youtube/schemas";
+
+const log = createLogger(LogScope.PageSabrFetch);
 
 const PRISTINE_IFRAME_ATTR = "data-ytdl-pristine-fetch";
 const VISITOR_DATA_TOKEN = "__YTDL_VISITOR_DATA__";
@@ -99,7 +102,7 @@ export default defineContentScript({
           responseHeaders
         };
       } catch (error) {
-        console.error("[ytdl:page-sabr-fetch] error", url, error);
+        log.error("error", url, error);
         return null;
       }
     });

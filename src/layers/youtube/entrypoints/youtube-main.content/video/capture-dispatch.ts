@@ -3,9 +3,13 @@ import { generatePoTokenIfNeeded, readYtcfg, videoDataCache } from "./video-data
 import { buildVideoData } from "./youtube-api";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { videoDataStore } from "@/lib/ui/synced-stores.svelte";
+import { createLogger, LogScope } from "@/lib/utils/logger";
 import { getMoviePlayer } from "@/lib/youtube/movie-player";
 import { type PlayerResponse, type YtdlCaptureState } from "@/types";
 import { PlayabilityStatus } from "@/types/youtube";
+
+const captureLog = createLogger(LogScope.Capture);
+const iframeLog = createLogger(LogScope.Iframe);
 
 const WATCH_PATHNAME = "/watch";
 const DEFAULT_VIDEO_MIME_TYPE = "video/mp4";
@@ -38,7 +42,7 @@ function flushPendingChunks() {
     });
   }
 
-  console.log(`[ytdl:capture] Flushed ${pendingChunks.length} pending chunks (init segments)`);
+  captureLog.info(`Flushed ${pendingChunks.length} pending chunks (init segments)`);
   pendingChunks.length = 0;
 }
 
@@ -134,7 +138,7 @@ function reloadUnplayableIframe() {
   }
 
   sessionStorage.setItem(IFRAME_RELOAD_COUNT_KEY, String(reloadCount + 1));
-  console.warn(`[ytdl:iframe] Player response UNPLAYABLE; reloading iframe (${reloadCount + 1}/${MAX_IFRAME_UNPLAYABLE_RELOADS})`);
+  iframeLog.warn(`Player response UNPLAYABLE; reloading iframe (${reloadCount + 1}/${MAX_IFRAME_UNPLAYABLE_RELOADS})`);
   location.reload();
   return true;
 }

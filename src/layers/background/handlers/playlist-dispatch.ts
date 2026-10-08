@@ -1,7 +1,10 @@
 import { reportDownloadFailed } from "../download/background-downloader";
 import { awaitBytesTransferred, awaitVideoComplete } from "../queue/sequential-queue";
 import { MessageType, sendMessageToTab } from "@/lib/messaging/messaging";
+import { createLogger, LogScope } from "@/lib/utils/logger";
 import type { DownloadRequest, Prettify } from "@/types";
+
+const log = createLogger(LogScope.Background);
 
 type DispatchParams = Prettify<{
   items: DownloadRequest[];
@@ -20,7 +23,7 @@ export async function dispatchSequentially({ items, tabId, signal }: DispatchPar
       await sendMessageToTab(MessageType.StartKeepalive, { videoId: item.videoId }, tabId);
       triggered = true;
     } catch (error) {
-      console.error("[ytdl:bg] ExecuteDownloadItem failed:", item.videoId, error);
+      log.error("ExecuteDownloadItem failed:", item.videoId, error);
       await reportDownloadFailed({
         videoId: item.videoId,
         tabId
@@ -45,7 +48,7 @@ export async function dispatchParallel({ items, tabId, signal }: DispatchParams)
       await sendMessageToTab(MessageType.ExecuteDownloadItem, item, tabId);
       await sendMessageToTab(MessageType.StartKeepalive, { videoId: item.videoId }, tabId);
     } catch (error) {
-      console.error("[ytdl:bg] ExecuteDownloadItem failed:", item.videoId, error);
+      log.error("ExecuteDownloadItem failed:", item.videoId, error);
       await reportDownloadFailed({
         videoId: item.videoId,
         tabId

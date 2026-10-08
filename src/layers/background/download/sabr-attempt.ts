@@ -2,8 +2,11 @@ import { downloadViaWatchPage } from "./iframe-downloader";
 import { downloadViaSabr } from "./sabr-downloader";
 import { createSabrStallTimer } from "./sabr-stall-timer";
 import { MessageType, sendMessageToTab } from "@/lib/messaging/messaging";
+import { createLogger, LogScope } from "@/lib/utils/logger";
 import { ProgressType } from "@/types";
 import type { DownloadRequest, Prettify, VideoTabParams } from "@/types";
+
+const log = createLogger(LogScope.Background);
 
 const MAX_IFRAME_AUTO_RETRIES = 2;
 const iframeAutoRetries = new Map<string, number>();
@@ -46,7 +49,7 @@ export async function handleIframeFallback({
     const isRetriesExhausted = retries >= MAX_IFRAME_AUTO_RETRIES;
     if (isRetriesExhausted) {
       iframeAutoRetries.delete(videoId);
-      console.warn("[ytdl:bg] All download methods exhausted for", videoId);
+      log.warn("All download methods exhausted for", videoId);
       onExhausted({
         videoId,
         tabId
@@ -55,9 +58,9 @@ export async function handleIframeFallback({
     }
 
     iframeAutoRetries.set(videoId, retries + 1);
-    console.warn("[ytdl:bg] Iframe fallback failed, auto-retrying via fresh iframe (attempt", retries + 1, ") for", videoId);
+    log.warn("Iframe fallback failed, auto-retrying via fresh iframe (attempt", retries + 1, ") for", videoId);
   } else {
-    console.warn("[ytdl:bg] SABR+CDN failed, trying offscreen iframe fallback for", videoId);
+    log.warn("SABR+CDN failed, trying offscreen iframe fallback for", videoId);
   }
 
   await sendMessageToTab(MessageType.UpdateDownloadProgress, {

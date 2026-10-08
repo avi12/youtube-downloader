@@ -10,7 +10,10 @@ import {
 } from "./mux-state";
 import type { FFmpegFactory } from "./mux-state";
 import { WorkerMessageType } from "@/lib/download-pipeline/mux-worker-types";
+import { createLogger, LogScope } from "@/lib/utils/logger";
 import type { Prettify } from "@/types";
+
+const log = createLogger(LogScope.Ffmpeg);
 
 const FFMPEG_LOG_TYPE_STDERR = "stderr";
 
@@ -41,7 +44,7 @@ async function onInitMessage(e: MessageEvent<InitMessage>) {
     // debug, not error: ffmpeg writes ALL output (banner, per-frame progress,
     // summary) to stderr, which would otherwise flood the chrome://extensions
     // error panel. Genuine mux failures still surface via postError.
-    console.debug("[ytdl:ffmpeg]", message);
+    log.debug(message);
     trackFFmpegProgressFromLog(message);
   });
 
