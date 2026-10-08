@@ -11,16 +11,21 @@
   margin-left: 0 !important;
 }
 
+.ytdl-download-button :is(.ytSpecButtonShapeNextIcon, .yt-spec-button-shape-next__icon) {
+  anchor-name: --ytdl-download-icon;
+}
+
 .ytdl-watch-ring-slot {
+  --ytdl-ring-gap: 4px;
+
   position: absolute;
-  inset-block: 0;
-  inset-inline-start: 10px;
-  block-size: 24px;
-  inline-size: 24px;
-  margin-block: auto;
+  inset:
+    calc(anchor(top) - var(--ytdl-ring-gap)) calc(anchor(right) - var(--ytdl-ring-gap))
+    calc(anchor(bottom) - var(--ytdl-ring-gap)) calc(anchor(left) - var(--ytdl-ring-gap));
   opacity: 0%;
   pointer-events: none;
   transition: opacity 120ms ease-out;
+  position-anchor: --ytdl-download-icon;
 
   &.is-visible {
     opacity: 100%;
