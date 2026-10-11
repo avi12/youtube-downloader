@@ -14,6 +14,11 @@ const DEFAULT_AUDIO_SAMPLE_RATE = 48_000;
 const AAC_SAMPLES_PER_PACKET = 1024;
 const OPUS_PACKETS_PER_SECOND = 50;
 const AC3_SAMPLES_PER_PACKET = 1536;
+const AC3_FAMILY_CODECS = new Set(["ac-3", "ec-3"]);
+const SECONDS_PER_MINUTE = 60;
+const EBML_VINT_DATA_BITS_PER_BYTE = 7;
+const MOV_TEXT_SAMPLE_HEADER_BYTES = 2;
+const MOV_TEXT_GAP_SAMPLE_BYTES = 2;
 
 const SIDX_HEADER_BYTES = 32;
 const SIDX_REFERENCE_BYTES = 12;
@@ -82,7 +87,7 @@ type Cue = Prettify<{
 }>;
 
 function parseTimestamp(value: string) {
-  return value.split(":").reduce((seconds, part) => seconds * 60 + Number(part), 0);
+  return value.split(":").reduce((seconds, part) => seconds * SECONDS_PER_MINUTE + Number(part), 0);
 }
 
 function parseVttCues(vtt: string) {
@@ -130,7 +135,7 @@ function measureCaptionTrack(vtt: string, extension: string) {
     }
 
     return {
-      payload: cues.reduce((sum, cue) => sum + 2 + byteLength(cue.text), 0) + gaps * 2,
+      payload: cues.reduce((sum, cue) => sum + MOV_TEXT_SAMPLE_HEADER_BYTES + byteLength(cue.text), 0) + gaps * MOV_TEXT_GAP_SAMPLE_BYTES,
       packets: cues.length + gaps
     };
   }
@@ -160,7 +165,7 @@ function countPackets(format: AdaptiveFormatItem) {
     return Math.round(seconds * OPUS_PACKETS_PER_SECOND);
   }
 
-  const samplesPerPacket = codec === "ac-3" || codec === "ec-3" ? AC3_SAMPLES_PER_PACKET : AAC_SAMPLES_PER_PACKET;
+  const samplesPerPacket = AC3_FAMILY_CODECS.has(codec) ? AC3_SAMPLES_PER_PACKET : AAC_SAMPLES_PER_PACKET;
   return Math.round(seconds * sampleRate(format) / samplesPerPacket);
 }
 
@@ -173,7 +178,7 @@ function rangeLength(range: {
 
 function vintLength(value: number) {
   let length = 1;
-  while (value >= 2 ** (7 * length) - 1) {
+  while (value >= 2 ** (EBML_VINT_DATA_BITS_PER_BYTE * length) - 1) {
     length++;
   }
 
