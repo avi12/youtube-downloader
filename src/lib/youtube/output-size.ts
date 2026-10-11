@@ -135,7 +135,8 @@ function measureCaptionTrack(vtt: string, extension: string) {
     }
 
     return {
-      payload: cues.reduce((sum, cue) => sum + MOV_TEXT_SAMPLE_HEADER_BYTES + byteLength(cue.text), 0) + gaps * MOV_TEXT_GAP_SAMPLE_BYTES,
+      payload: cues.reduce((sum, cue) => sum + MOV_TEXT_SAMPLE_HEADER_BYTES + byteLength(cue.text), 0)
+        + gaps * MOV_TEXT_GAP_SAMPLE_BYTES,
       packets: cues.length + gaps
     };
   }

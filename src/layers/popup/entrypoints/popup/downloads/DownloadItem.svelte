@@ -6,7 +6,6 @@
   import WavyProgress from "../shared/WavyProgress.svelte";
   import { focusOrOpenTab } from "./youtube-tab";
   import { resolveDisplayThumbnailUrl } from "@/lib/youtube/thumbnail-url";
-  import { browser } from "#imports";
 
   interface Props {
     filename: string;

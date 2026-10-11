@@ -8,7 +8,6 @@
   import { focusOrOpenTab, toRecentOrigin } from "../youtube-tab";
   import { resolveDisplayThumbnailUrl } from "@/lib/youtube/thumbnail-url";
   import type { RecentDownloadEntry } from "@/types";
-  import { browser } from "#imports";
 
   interface Props {
     entry: RecentDownloadEntry;
