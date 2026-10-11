@@ -2,6 +2,7 @@
   import closeIcon from "../icons/close.svg?raw";
   import openInNewIcon from "../icons/open-in-new.svg?raw";
   import playArrowIcon from "../icons/play-arrow.svg?raw";
+  import ThumbnailDuration from "../shared/ThumbnailDuration.svelte";
   import WavyProgress from "../shared/WavyProgress.svelte";
   import { resolveDisplayThumbnailUrl } from "@/lib/youtube/thumbnail-url";
   import { browser } from "#imports";
@@ -35,8 +36,6 @@
   const BYTES_PER_KB = 1024;
   const BYTES_PER_MB = 1024 * 1024;
   const BYTES_PER_GB = 1024 * 1024 * 1024;
-  const SECONDS_PER_MINUTE = 60;
-  const SECONDS_PER_HOUR = 3600;
 
   let isThumbnailBroken = $state(false);
 
@@ -49,9 +48,6 @@
 
   const displayTitle = $derived(title ?? stripExtension(filename));
   const container = $derived(deriveContainer(filename));
-  const durationLabel = $derived(
-    lengthSeconds !== undefined && lengthSeconds > 0 ? formatDuration(lengthSeconds) : null
-  );
 
   const isProcessing = $derived(
     (progress !== null && progressLabel.includes("processed"))
@@ -90,19 +86,6 @@
     }
 
     return name.slice(iDot + 1).toUpperCase();
-  }
-
-  function formatDuration(totalSeconds: number): string {
-    const hours = Math.floor(totalSeconds / SECONDS_PER_HOUR);
-    const minutes = Math.floor((totalSeconds % SECONDS_PER_HOUR) / SECONDS_PER_MINUTE);
-    const seconds = Math.floor(totalSeconds % SECONDS_PER_MINUTE);
-    const minutesStr = String(minutes).padStart(hours > 0 ? 2 : 1, "0");
-    const secondsStr = String(seconds).padStart(2, "0");
-    if (hours > 0) {
-      return `${hours}:${minutesStr}:${secondsStr}`;
-    }
-
-    return `${minutesStr}:${secondsStr}`;
   }
 
   function formatBytes(bytes: number, maximumFractionDigits: number): string {
@@ -219,9 +202,7 @@
         <span class="dl-thumb-play" aria-hidden="true">
           {@html playArrowIcon}
         </span>
-        {#if durationLabel}
-          <span class="dl-thumb-duration">{durationLabel}</span>
-        {/if}
+        <ThumbnailDuration {lengthSeconds} />
       </button>
     {:else}
       <div class="dl-thumb-wrap">
@@ -237,9 +218,7 @@
         {:else}
           <div class="dl-thumb dl-thumb-placeholder" aria-hidden="true"></div>
         {/if}
-        {#if durationLabel}
-          <span class="dl-thumb-duration">{durationLabel}</span>
-        {/if}
+        <ThumbnailDuration {lengthSeconds} />
       </div>
     {/if}
 
@@ -408,20 +387,6 @@
       width: 14px;
       height: 14px;
     }
-  }
-
-  .dl-thumb-duration {
-    position: absolute;
-    bottom: 4px;
-    left: 4px;
-    padding: 2px 6px;
-    border-radius: 6px;
-    background: color-mix(in oklab, var(--bg) 75%, transparent);
-    color: var(--fg);
-    font-weight: 600;
-    font-size: 0.6875rem;
-    line-height: 1.2;
-    font-variant-numeric: tabular-nums;
   }
 
   .dl-info {
