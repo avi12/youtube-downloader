@@ -6,7 +6,7 @@ import { getCompatibleFilename, splitFilenameAndExtension } from "@/lib/utils/fi
 import { resolveDownloadPlan } from "@/lib/youtube/download-plan";
 import { CAPTION_ESTIMATED_BYTES } from "@/lib/youtube/download-progress";
 import { isVideoDataExpired } from "@/lib/youtube/video-helpers";
-import type { AdaptiveFormatItem, DownloadRequest, Prettify } from "@/types";
+import type { AdaptiveFormatItem, DownloadRequest, Prettify, VideoData } from "@/types";
 
 function readContentLength(format: AdaptiveFormatItem | null) {
   if (!format?.contentLength) {
@@ -55,6 +55,22 @@ export type DownloadParams = Prettify<Pick<DownloadRequest,
   "originTabId"
 >>;
 
+type AnnounceDownloadParams = Prettify<{
+  params: DownloadParams;
+  videoData: VideoData;
+}>;
+async function announceDownload({ params, videoData }: AnnounceDownloadParams) {
+  const { videoDetails } = videoData.playerResponse;
+  await crossWorldMessenger.sendMessage(CrossWorldMessage.AnnounceDownload, {
+    videoId: params.videoId,
+    type: params.type,
+    filenameOutput: params.filenameOutput,
+    title: videoData.title,
+    channel: videoDetails?.author,
+    thumbnailUrl: videoDetails?.thumbnail?.thumbnails?.at(-1)?.url
+  });
+}
+
 type ResolveAndDispatchParams = Prettify<{
   params: DownloadParams;
   abortSignal: AbortSignal;
@@ -83,6 +99,11 @@ export async function resolveAndDispatch({ params, abortSignal }: ResolveAndDisp
   if (!cachedVideoData) {
     return;
   }
+
+  await announceDownload({
+    params,
+    videoData: cachedVideoData
+  });
 
   const {
     videoFormat,

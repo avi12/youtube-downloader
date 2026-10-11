@@ -44,7 +44,8 @@ export const MessageType = {
   ForwardProgressUpdate: "forwardProgressUpdate",
   ReportPageProgress: "reportPageProgress",
   PageSabrFetch: "pageSabrFetch",
-  StartWatchPageDownload: "startWatchPageDownload"
+  StartWatchPageDownload: "startWatchPageDownload",
+  AnnounceDownload: "announceDownload"
 } as const;
 
 export type PageSabrFetchRequest = Prettify<{
@@ -105,6 +106,15 @@ export type RequestPlaylistDownloadMessage = Prettify<{
   playlistTitle?: string;
   isZipBundle: boolean;
   isSequential: boolean;
+}>;
+
+export type DownloadAnnouncement = Prettify<{
+  videoId: string;
+  type: DownloadType;
+  filenameOutput: string;
+  title?: string;
+  channel?: string;
+  thumbnailUrl?: string;
 }>;
 
 export type PipelineStartMessage = Prettify<{
@@ -228,6 +238,7 @@ export interface ProtocolMap {
   }): void;
   pipelineFFmpegReady(): void;
   pipelineStart(data: PipelineStartMessage): void;
+  announceDownload(data: DownloadAnnouncement): void;
   pipelineDownload(data: PipelineDownloadMessage): { downloadId: number } | null;
   recentDownloadsChanged(): void;
   transcodeRecentDownload(data: TranscodeRecentDownloadMessage): void;

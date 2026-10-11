@@ -18,6 +18,10 @@ export function registerDownloadProgressHandlers() {
     sendMessage(MessageType.StartBackgroundDownload, parsed.data).catch(() => {});
   });
 
+  crossWorldMessenger.onMessage(CrossWorldMessage.AnnounceDownload, ({ data }) => {
+    sendMessage(MessageType.AnnounceDownload, data).catch(() => {});
+  });
+
   crossWorldMessenger.onMessage(CrossWorldMessage.IframePlayerReady, async ({ data }) => {
     const request = await sendMessage(MessageType.DownloadIframeReady, { videoId: data.videoId });
     if (request) {

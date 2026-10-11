@@ -142,6 +142,24 @@ export function registerDownloadHandlers() {
     }
   });
 
+  onMessage(MessageType.AnnounceDownload, async ({ data, sender }) => {
+    const tabId = sender.tab?.id;
+    if (tabId === undefined) {
+      return;
+    }
+
+    clearCancelledVideo(data.videoId);
+    trackVideoForTab({
+      videoId: data.videoId,
+      tabId
+    });
+    await enqueueToPopupList({
+      ...data,
+      tabId,
+      sourceUrl: sender.tab?.url
+    });
+  });
+
   onMessage(MessageType.StartBackgroundDownload, async ({ data, sender }) => {
     let tabId: number | undefined = data.originTabId ?? sender.tab?.id ?? getTabIdsForVideo(data.videoId)[0];
     const isTabIdMissing = !tabId;
