@@ -98,13 +98,18 @@
 <article class="recent-item" class:recent-item--active={isFormatDialogOpen}>
   <div class="recent-top">
     {#if displayThumbnailUrl}
-      <img
-        class="recent-thumb"
-        alt=""
-        height="67"
-        src={displayThumbnailUrl}
-        width="120"
-      />
+      <div class="recent-thumb-frame">
+        <img
+          class="recent-thumb"
+          alt=""
+          height="67"
+          src={displayThumbnailUrl}
+          width="120"
+        />
+        {#if entry.container}
+          <span class="recent-thumb-format">{entry.container.toUpperCase()}</span>
+        {/if}
+      </div>
     {:else}
       <div class="recent-thumb recent-thumb-placeholder" aria-hidden="true">
         {#if entry.container}
@@ -124,10 +129,7 @@
   <div class="recent-bottom">
     <div class="recent-info">
       {#if entry.quality}
-        <span class="recent-chip recent-chip--quality">{entry.quality}</span>
-      {/if}
-      {#if entry.container}
-        <span class="recent-chip">{entry.container.toUpperCase()}</span>
+        <span class="recent-chip">{entry.quality}</span>
       {/if}
       <span class="recent-time">{sizeLabel} · {relativeAgeLabel}</span>
     </div>
@@ -213,6 +215,24 @@
     background: var(--surface-high);
   }
 
+  .recent-thumb-frame {
+    position: relative;
+    flex-shrink: 0;
+  }
+
+  .recent-thumb-format {
+    position: absolute;
+    inset-block-end: 4px;
+    inset-inline-end: 4px;
+    padding: 1px 5px;
+    border-radius: 4px;
+    background: rgb(0 0 0 / 75%);
+    color: oklch(100% 0 0deg);
+    font-weight: 700;
+    font-size: 0.625rem;
+    letter-spacing: 0.04em;
+  }
+
   .recent-thumb-placeholder {
     display: flex;
     justify-content: center;
@@ -275,15 +295,11 @@
     height: 24px;
     padding: 0 9px;
     border-radius: 8px;
-    background: var(--surface-high);
+    background: var(--accent-container);
     color: var(--fg);
     font-weight: 600;
     font-size: 0.71875rem;
     white-space: nowrap;
-
-    &.recent-chip--quality {
-      background: var(--accent-container);
-    }
   }
 
   .recent-time {
