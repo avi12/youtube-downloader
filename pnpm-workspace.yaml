@@ -1,6 +1,6 @@
-onlyBuiltDependencies:
-  - esbuild
-  - spawn-sync
+allowBuilds:
+  esbuild: true
+  spawn-sync: true
 
 patchedDependencies:
   '@ffmpeg/core': patches/@ffmpeg__core.patch
