@@ -124,7 +124,10 @@
   <div class="recent-bottom">
     <div class="recent-info">
       {#if entry.quality}
-        <span class="recent-chip">{entry.quality}</span>
+        <span class="recent-chip recent-chip--quality">{entry.quality}</span>
+      {/if}
+      {#if entry.container}
+        <span class="recent-chip">{entry.container.toUpperCase()}</span>
       {/if}
       <span class="recent-time">{sizeLabel} · {relativeAgeLabel}</span>
     </div>
@@ -272,11 +275,15 @@
     height: 24px;
     padding: 0 9px;
     border-radius: 8px;
-    background: var(--accent-container);
+    background: var(--surface-high);
     color: var(--fg);
     font-weight: 600;
     font-size: 0.71875rem;
     white-space: nowrap;
+
+    &.recent-chip--quality {
+      background: var(--accent-container);
+    }
   }
 
   .recent-time {
