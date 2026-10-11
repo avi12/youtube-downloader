@@ -139,7 +139,8 @@
 
     .format-card-head {
       display: flex;
-      gap: 6px;
+      flex-wrap: wrap;
+      gap: 4px 6px;
       justify-content: space-between;
       align-items: center;
     }
