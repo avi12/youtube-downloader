@@ -26,8 +26,11 @@ import { registerProxyFetchHandler } from "./proxy-fetch-handler";
 import { MessageType, onMessage, sendMessage, sendMessageToTab } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
 import { mutateStorageItem, statusProgressItem } from "@/lib/storage/storage";
+import { createLogger, LogScope } from "@/lib/utils/logger";
 import { resolveQualityLabel } from "@/lib/youtube/audio-format-helpers";
 import { ProgressType } from "@/types";
+
+const log = createLogger(LogScope.Background);
 
 export function registerDownloadHandlers() {
   initIframeReadyListener();
@@ -134,7 +137,7 @@ export function registerDownloadHandlers() {
       await removeFromPopupList(videoId);
       signalVideoComplete(videoId);
     } catch (error) {
-      console.warn("[ytdl:bg] Blob URL download failed:", error);
+      log.warn("Blob URL download failed:", error);
       await reportDownloadFailed({
         videoId,
         tabId

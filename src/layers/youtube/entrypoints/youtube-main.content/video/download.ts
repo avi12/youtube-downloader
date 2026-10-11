@@ -1,6 +1,9 @@
 import { resolveAndDispatch } from "./download-execute";
 import { crossWorldMessenger, CrossWorldMessage } from "@/lib/messaging/cross-world-messenger";
+import { createLogger, LogScope } from "@/lib/utils/logger";
 import type { DownloadRequest } from "@/types";
+
+const log = createLogger(LogScope.Main);
 
 const activeDownloads = new Map<string, AbortController>();
 
@@ -48,7 +51,7 @@ export async function startDownload(params: Pick<DownloadRequest,
       return;
     }
 
-    console.warn("[ytdl:main] startDownload failed for", params.videoId, error);
+    log.warn("startDownload failed for", params.videoId, error);
     await crossWorldMessenger.sendMessage(
       CrossWorldMessage.ReportMainDownloadFailed,
       { videoId: params.videoId }

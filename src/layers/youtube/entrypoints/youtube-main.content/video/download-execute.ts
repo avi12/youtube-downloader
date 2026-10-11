@@ -3,10 +3,13 @@ import { buildEnrichedRequest, fetchCaptionWebVttData } from "./download-request
 import { generatePoTokenIfNeeded, videoDataCache } from "./video-data";
 import { crossWorldMessenger, CrossWorldMessage } from "@/lib/messaging/cross-world-messenger";
 import { getCompatibleFilename, splitFilenameAndExtension } from "@/lib/utils/filename";
+import { createLogger, LogScope } from "@/lib/utils/logger";
 import { resolveDownloadPlan } from "@/lib/youtube/download-plan";
 import { CAPTION_ESTIMATED_BYTES } from "@/lib/youtube/download-progress";
 import { isVideoDataExpired } from "@/lib/youtube/video-helpers";
 import type { AdaptiveFormatItem, DownloadRequest, Prettify, VideoData } from "@/types";
+
+const log = createLogger(LogScope.Main);
 
 function readContentLength(format: AdaptiveFormatItem | null) {
   if (!format?.contentLength) {
@@ -28,7 +31,7 @@ async function tryProgressiveInPage({ url, filenameOutput, videoId }: TryProgres
   try {
     const response = await fetch(url, { credentials: "include" });
     if (!response.ok) {
-      console.warn("[ytdl:main] Progressive fetch status:", response.status);
+      log.warn("Progressive fetch status:", response.status);
       return false;
     }
 
@@ -42,7 +45,7 @@ async function tryProgressiveInPage({ url, filenameOutput, videoId }: TryProgres
     });
     return true;
   } catch (error) {
-    console.warn("[ytdl:main] Progressive fetch failed:", error);
+    log.warn("Progressive fetch failed:", error);
     return false;
   }
 }
