@@ -8,7 +8,7 @@ type BuildYouTubePageUrlParams = {
   videoId: string;
   isPlaylist?: boolean;
 };
-export function buildYouTubePageUrl({ videoId, isPlaylist }: BuildYouTubePageUrlParams) {
+function buildYouTubePageUrl({ videoId, isPlaylist }: BuildYouTubePageUrlParams) {
   return isPlaylist ? `${YOUTUBE_ORIGIN}/playlist?list=${videoId}` : `${YOUTUBE_ORIGIN}/watch?v=${videoId}`;
 }
 
@@ -27,44 +27,66 @@ function isSamePage(candidateUrl: string, targetUrl: URL) {
     .every(param => candidate.searchParams.get(param) === targetUrl.searchParams.get(param));
 }
 
-type FocusTabParams = {
-  id?: number;
-  windowId: number;
-};
-export async function focusTab({ id, windowId }: FocusTabParams) {
-  await browser.tabs.update(id, { active: true });
-  await browser.windows.update(windowId, { focused: true });
-}
-
-export async function focusOrOpenTab(url: string) {
-  const targetUrl = new URL(url);
-  const tabs = await browser.tabs.query({ url: YOUTUBE_TAB_URL_PATTERN });
-  const existingTab = tabs.find(tab => tab.url && isSamePage(tab.url, targetUrl));
-  if (!existingTab) {
-    await browser.tabs.create({ url });
-    return;
-  }
-
-  await focusTab(existingTab);
-}
-
-type CurrentTab = {
-  currentTabId?: number;
-  currentSourceUrl?: string;
-};
 type DownloadOrigin = {
   videoId: string;
   tabId?: number;
   sourceUrl?: string;
   isPlaylist?: boolean;
 };
-// A download belongs to the current tab when it started there, or when the
-// tab now shows the same video or playlist (e.g. after closing and reopening it)
+
+function isShowingOrigin(url: string | undefined, origin: DownloadOrigin) {
+  if (!url) {
+    return false;
+  }
+
+  return url === origin.sourceUrl || isSamePage(url, new URL(buildYouTubePageUrl(origin)));
+}
+
+const openTabUrlById = new Map<number, string>();
+
+export async function loadOpenYouTubeTabs() {
+  const tabs = await browser.tabs.query({ url: YOUTUBE_TAB_URL_PATTERN });
+  for (const tab of tabs) {
+    if (tab.id !== undefined && tab.url) {
+      openTabUrlById.set(tab.id, tab.url);
+    }
+  }
+}
+
+type CurrentTab = {
+  currentTabId?: number;
+  currentSourceUrl?: string;
+};
+// The tab a download started in owns it while it still shows that page. Once it
+// is closed or navigated away, any tab showing the same video or playlist does
 export function isFromCurrentTab(origin: DownloadOrigin, { currentTabId, currentSourceUrl }: CurrentTab) {
   if (currentTabId === undefined || !currentSourceUrl) {
     return false;
   }
 
-  const isStartedHere = origin.tabId === currentTabId && origin.sourceUrl === currentSourceUrl;
-  return isStartedHere || isSamePage(currentSourceUrl, new URL(buildYouTubePageUrl(origin)));
+  if (origin.tabId === currentTabId) {
+    return isShowingOrigin(currentSourceUrl, origin);
+  }
+
+  const originTabUrl = origin.tabId === undefined ? undefined : openTabUrlById.get(origin.tabId);
+  if (isShowingOrigin(originTabUrl, origin)) {
+    return false;
+  }
+
+  return isSamePage(currentSourceUrl, new URL(buildYouTubePageUrl(origin)));
+}
+
+export async function focusOrOpenTab(origin: DownloadOrigin) {
+  const pageUrl = buildYouTubePageUrl(origin);
+  const tabs = await browser.tabs.query({ url: YOUTUBE_TAB_URL_PATTERN });
+  const originTab = tabs.find(tab => tab.id === origin.tabId && isShowingOrigin(tab.url, origin));
+  const samePageTab = tabs.find(tab => tab.url && isSamePage(tab.url, new URL(pageUrl)));
+  const existingTab = originTab ?? samePageTab;
+  if (!existingTab) {
+    await browser.tabs.create({ url: pageUrl });
+    return;
+  }
+
+  await browser.tabs.update(existingTab.id, { active: true });
+  await browser.windows.update(existingTab.windowId, { focused: true });
 }

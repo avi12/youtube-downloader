@@ -5,7 +5,7 @@
   import openInNewIcon from "../../icons/open-in-new.svg?raw";
   import ThumbnailBadge from "../../shared/ThumbnailBadge.svelte";
   import ThumbnailDuration from "../../shared/ThumbnailDuration.svelte";
-  import { buildYouTubePageUrl, focusOrOpenTab, isZipContainer } from "../youtube-tab";
+  import { focusOrOpenTab, isZipContainer } from "../youtube-tab";
   import { resolveDisplayThumbnailUrl } from "@/lib/youtube/thumbnail-url";
   import type { RecentDownloadEntry } from "@/types";
   import { browser } from "#imports";
@@ -31,12 +31,6 @@
 
   const isZip = $derived(isZipContainer(entry.container));
   const openPageLabel = $derived(isZip ? "Open playlist" : "Open video");
-  const openPageUrl = $derived(
-    buildYouTubePageUrl({
-      videoId: entry.videoId,
-      isPlaylist: isZip
-    })
-  );
 
   const RTF = new Intl.RelativeTimeFormat(undefined, { numeric: "auto" });
   const NF_BYTES = new Intl.NumberFormat(undefined, {
@@ -156,7 +150,10 @@
           aria-label={openPageLabel}
           data-tooltip={openPageLabel}
           data-tooltip-align="end"
-          onclick={() => focusOrOpenTab(openPageUrl)}
+          onclick={() => focusOrOpenTab({
+            ...entry,
+            isPlaylist: isZip
+          })}
           type="button"
         >
           {@html openInNewIcon}

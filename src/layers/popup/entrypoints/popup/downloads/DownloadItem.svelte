@@ -4,7 +4,7 @@
   import playArrowIcon from "../icons/play-arrow.svg?raw";
   import ThumbnailDuration from "../shared/ThumbnailDuration.svelte";
   import WavyProgress from "../shared/WavyProgress.svelte";
-  import { focusOrOpenTab, focusTab } from "./youtube-tab";
+  import { focusOrOpenTab } from "./youtube-tab";
   import { resolveDisplayThumbnailUrl } from "@/lib/youtube/thumbnail-url";
   import { browser } from "#imports";
 
@@ -156,18 +156,15 @@
   });
 
   async function focusSourceTab(): Promise<void> {
-    const sourceTab = tabId !== undefined && tabId >= 0
-      ? await browser.tabs.get(tabId).catch(() => null)
-      : null;
-    if (sourceTab) {
-      await focusTab(sourceTab);
+    if (!videoId) {
       return;
     }
 
-    const url = sourceUrl ?? (videoId ? `https://www.youtube.com/watch?v=${videoId}` : null);
-    if (url) {
-      await focusOrOpenTab(url);
-    }
+    await focusOrOpenTab({
+      videoId,
+      tabId,
+      sourceUrl
+    });
   }
 </script>
 

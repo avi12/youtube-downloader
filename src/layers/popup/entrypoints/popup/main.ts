@@ -1,4 +1,5 @@
 import App from "./App.svelte";
+import { loadOpenYouTubeTabs } from "./downloads/youtube-tab";
 import { isFFmpegReadyItem } from "@/lib/storage/storage";
 import {
   musicListItem,
@@ -34,7 +35,8 @@ const [
   browser.tabs.query({
     active: true,
     currentWindow: true
-  })
+  }),
+  loadOpenYouTubeTabs()
 ]);
 const currentTabId = activeTabs[0]?.id;
 const currentSourceUrl = activeTabs[0]?.url;
