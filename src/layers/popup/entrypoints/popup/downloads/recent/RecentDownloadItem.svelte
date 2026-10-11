@@ -5,7 +5,7 @@
   import openInNewIcon from "../../icons/open-in-new.svg?raw";
   import ThumbnailBadge from "../../shared/ThumbnailBadge.svelte";
   import ThumbnailDuration from "../../shared/ThumbnailDuration.svelte";
-  import { focusOrOpenTab } from "../youtube-tab";
+  import { buildYouTubePageUrl, focusOrOpenTab, isZipContainer } from "../youtube-tab";
   import { resolveDisplayThumbnailUrl } from "@/lib/youtube/thumbnail-url";
   import type { RecentDownloadEntry } from "@/types";
   import { browser } from "#imports";
@@ -29,12 +29,13 @@
 
   const displayThumbnailUrl = $derived(resolveDisplayThumbnailUrl(entry));
 
-  const isZip = $derived(entry.container === "zip");
+  const isZip = $derived(isZipContainer(entry.container));
   const openPageLabel = $derived(isZip ? "Open playlist" : "Open video");
   const openPageUrl = $derived(
-    isZip
-      ? `https://www.youtube.com/playlist?list=${entry.videoId}`
-      : `https://www.youtube.com/watch?v=${entry.videoId}`
+    buildYouTubePageUrl({
+      videoId: entry.videoId,
+      isPlaylist: isZip
+    })
   );
 
   const RTF = new Intl.RelativeTimeFormat(undefined, { numeric: "auto" });

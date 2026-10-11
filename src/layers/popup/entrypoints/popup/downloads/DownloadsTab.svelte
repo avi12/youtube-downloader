@@ -3,6 +3,7 @@
   import sparkleIcon from "../icons/sparkle.svg?raw";
   import ActiveDownloadsSections from "./ActiveDownloadsSections.svelte";
   import RecentDownloadsSection from "./recent/RecentDownloadsSection.svelte";
+  import { isFromCurrentTab } from "./youtube-tab";
   import { MessageType, sendMessageToTab } from "@/lib/messaging/messaging";
   import { deleteRecentDownload } from "@/lib/storage/recent-downloads-db";
   import { createLogger, LogScope } from "@/lib/utils/logger";
@@ -47,28 +48,17 @@
     ...videoOnlyList
   ]);
 
-  const hasCurrentTabDownloads = $derived(
-    currentTabId !== undefined && Boolean(currentSourceUrl)
-    && allActiveIds.some(id => {
-      const detail = videoDetails[id];
-      return detail?.tabId === currentTabId && detail?.sourceUrl === currentSourceUrl;
-    })
+  const currentTabActiveIds = $derived(
+    allActiveIds.filter(videoId => isFromCurrentTab({
+      ...videoDetails[videoId],
+      videoId
+    }, {
+      currentTabId,
+      currentSourceUrl
+    }))
   );
-
-  const hasOtherTabDownloads = $derived(
-    allActiveIds.some(id => {
-      const detail = videoDetails[id];
-      if (!detail) {
-        return true;
-      }
-
-      if (!currentTabId || !currentSourceUrl) {
-        return true;
-      }
-
-      return !(detail.tabId === currentTabId && detail.sourceUrl === currentSourceUrl);
-    })
-  );
+  const hasCurrentTabDownloads = $derived(currentTabActiveIds.length > 0);
+  const hasOtherTabDownloads = $derived(currentTabActiveIds.length < allActiveIds.length);
 
   const bannerScope = $derived.by(() => {
     if (hasCurrentTabDownloads && hasOtherTabDownloads) {

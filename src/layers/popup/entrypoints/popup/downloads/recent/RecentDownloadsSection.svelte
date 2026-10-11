@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { isFromCurrentTab, isZipContainer } from "../youtube-tab";
   import RecentDownloadItem from "./RecentDownloadItem.svelte";
   import type { RecentDownloadEntry } from "@/types";
 
@@ -18,19 +19,14 @@
     onChangeFormat, onRemove, onShowInFolder
   }: Props = $props();
 
-  function isInCurrentTab(entry: RecentDownloadEntry): boolean {
-    return Boolean(
-      currentTabId !== undefined
-      && entry.tabId === currentTabId
-      && currentSourceUrl
-      && entry.sourceUrl === currentSourceUrl
-    );
-  }
-
   const otherRecent = $derived(
-    currentTabId === undefined || !currentSourceUrl
-      ? recentDownloads
-      : recentDownloads.filter(entry => !isInCurrentTab(entry))
+    recentDownloads.filter(entry => !isFromCurrentTab({
+      ...entry,
+      isPlaylist: isZipContainer(entry.container)
+    }, {
+      currentTabId,
+      currentSourceUrl
+    }))
   );
 </script>
 

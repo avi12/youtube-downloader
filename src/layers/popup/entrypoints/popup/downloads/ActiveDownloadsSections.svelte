@@ -4,6 +4,7 @@
   import { bindDownloadAccessors, getVideoStatusLabel } from "./active-downloads-helpers";
   import DownloadItem from "./DownloadItem.svelte";
   import RecentDownloadItem from "./recent/RecentDownloadItem.svelte";
+  import { isFromCurrentTab, isZipContainer } from "./youtube-tab";
   import type { DownloadProgressEntry, RecentDownloadEntry, VideoDetail, VideoQueueItem } from "@/types";
   import { SvelteMap } from "svelte/reactivity";
 
@@ -63,21 +64,24 @@
     ...videoOnlyList
   ]);
 
-  function isInCurrentTab(detail: VideoDetail | undefined): boolean {
-    if (currentTabId === undefined || !currentSourceUrl) {
-      return false;
-    }
-
-    return detail?.tabId === currentTabId && detail?.sourceUrl === currentSourceUrl;
+  function isActiveFromCurrentTab(videoId: string): boolean {
+    return isFromCurrentTab({
+      ...videoDetails[videoId],
+      videoId
+    }, {
+      currentTabId,
+      currentSourceUrl
+    });
   }
 
-  function isRecentInCurrentTab(entry: RecentDownloadEntry): boolean {
-    return Boolean(
-      currentTabId !== undefined
-      && entry.tabId === currentTabId
-      && currentSourceUrl
-      && entry.sourceUrl === currentSourceUrl
-    );
+  function isRecentFromCurrentTab(entry: RecentDownloadEntry): boolean {
+    return isFromCurrentTab({
+      ...entry,
+      isPlaylist: isZipContainer(entry.container)
+    }, {
+      currentTabId,
+      currentSourceUrl
+    });
   }
 
   function partitionActive(videoIds: string[], recent: RecentDownloadEntry[]): Partition {
@@ -113,10 +117,10 @@
     };
   }
 
-  const thisTabIds = $derived(allActiveIds.filter(id => isInCurrentTab(videoDetails[id])));
-  const otherIds = $derived(allActiveIds.filter(id => !isInCurrentTab(videoDetails[id])));
+  const thisTabIds = $derived(allActiveIds.filter(isActiveFromCurrentTab));
+  const otherIds = $derived(allActiveIds.filter(id => !isActiveFromCurrentTab(id)));
 
-  const thisTabRecent = $derived(recentDownloads.filter(isRecentInCurrentTab));
+  const thisTabRecent = $derived(recentDownloads.filter(isRecentFromCurrentTab));
 
   const thisTab = $derived(partitionActive(thisTabIds, thisTabRecent));
   const otherTabs = $derived(partitionActive(otherIds, []));
