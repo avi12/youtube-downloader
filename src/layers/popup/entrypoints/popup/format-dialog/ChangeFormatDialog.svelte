@@ -43,6 +43,12 @@
   const hasAudioMode = $derived(audioItems.length > 0);
 
   let mode = $state<DialogMode>(DialogMode.Video);
+  let hasSwitchedMode = $state(false);
+
+  function switchMode(nextMode: DialogMode): void {
+    hasSwitchedMode = true;
+    mode = nextMode;
+  }
 
   $effect(() => {
     if (!hasVideoMode && hasAudioMode) {
@@ -148,7 +154,7 @@
           class="mode-btn"
           class:mode-btn--active={mode === DialogMode.Video}
           aria-selected={mode === DialogMode.Video}
-          onclick={() => (mode = DialogMode.Video)}
+          onclick={() => switchMode(DialogMode.Video)}
           role="tab"
           type="button"
         >
@@ -159,7 +165,7 @@
           class="mode-btn"
           class:mode-btn--active={mode === DialogMode.Audio}
           aria-selected={mode === DialogMode.Audio}
-          onclick={() => (mode = DialogMode.Audio)}
+          onclick={() => switchMode(DialogMode.Audio)}
           role="tab"
           type="button"
         >
@@ -184,7 +190,7 @@
 
   <div class="dialog-body">
     {#key mode}
-      <div class="mode-panel mode-panel--{mode}">
+      <div class="mode-panel mode-panel--{mode}" class:mode-panel--switched={hasSwitchedMode}>
         {#if activeItems.length === 0}
           <p class="dialog-empty">No alternative formats available</p>
         {:else}
@@ -425,7 +431,9 @@
   .mode-panel {
     --mode-panel-offset: -24px;
 
-    animation: mode-panel-in 280ms cubic-bezier(0.2, 0, 0, 1);
+    &.mode-panel--switched {
+      animation: mode-panel-in 280ms cubic-bezier(0.2, 0, 0, 1);
+    }
 
     &.mode-panel--audio {
       --mode-panel-offset: 24px;
