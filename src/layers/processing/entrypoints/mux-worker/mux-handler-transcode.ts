@@ -4,13 +4,14 @@ import { fetchThumbnail } from "./mux-thumbnail";
 import type { TranscodeAudioJob, TranscodeFileJob } from "@/lib/download-pipeline/mux-worker-types";
 import {
   audioContainers,
+  FFMPEG_CODEC_COPY,
   getAudioFallbackCodec,
   getCompatibleFilename,
-  getFileExtension
+  getFileExtension,
+  resolveAudioCodec
 } from "@/lib/utils/containers";
 import type { Prettify } from "@/types";
 
-const FFMPEG_CODEC_COPY = "copy";
 const FFMPEG_CODEC_MJPEG = "mjpeg";
 const JPEG_EXTENSION = "jpg";
 const COVER_FILENAME_PREFIX = "cover";
@@ -67,12 +68,16 @@ type ExtractAudioWithCoverArtParams = Prettify<{
   outputFilename: string;
   targetContainer: string;
   coverArtUrl: string;
+  audioMimeType: string;
 }>;
 async function extractAudioWithCoverArt({
-  sourceFilename, outputFilename, targetContainer, coverArtUrl
+  sourceFilename, outputFilename, targetContainer, coverArtUrl, audioMimeType
 }: ExtractAudioWithCoverArtParams) {
   const coverFilename = await tryWriteCoverArt(coverArtUrl);
-  const audioCodec = getAudioFallbackCodec(targetContainer) ?? FFMPEG_CODEC_COPY;
+  const audioCodec = resolveAudioCodec({
+    audioMimeType,
+    targetExtension: targetContainer
+  });
   const ffmpegArgs = [...buildInputArgs(sourceFilename)];
   if (coverFilename) {
     ffmpegArgs.push(...buildInputArgs(coverFilename), "-map", "0:a", "-map", "1");
@@ -112,7 +117,8 @@ export async function handleTranscodeFile(job: TranscodeFileJob) {
           sourceFilename,
           outputFilename,
           targetContainer,
-          coverArtUrl
+          coverArtUrl,
+          audioMimeType: audioMimeType ?? ""
         });
         coverFilenameForCleanup = result.coverFilename;
         return result.args;
