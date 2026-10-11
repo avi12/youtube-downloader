@@ -183,15 +183,19 @@
   </header>
 
   <div class="dialog-body">
-    {#if activeItems.length === 0}
-      <p class="dialog-empty">No alternative formats available</p>
-    {:else}
-      <FormatGrid
-        items={activeItems}
-        onSelect={handleSelect}
-        pendingExtension={isSubmitting ? pendingExtension : null}
-      />
-    {/if}
+    {#key mode}
+      <div class="mode-panel mode-panel--{mode}">
+        {#if activeItems.length === 0}
+          <p class="dialog-empty">No alternative formats available</p>
+        {:else}
+          <FormatGrid
+            items={activeItems}
+            onSelect={handleSelect}
+            pendingExtension={isSubmitting ? pendingExtension : null}
+          />
+        {/if}
+      </div>
+    {/key}
   </div>
 </dialog>
 
@@ -266,8 +270,10 @@
     flex: 1 1 auto;
     flex-direction: column;
     gap: 10px;
-    overflow-y: auto;
+    overflow: hidden auto;
     min-height: 0;
+    margin-inline: -4px;
+    padding-inline: 4px;
     scrollbar-color: var(--border) transparent;
     scrollbar-width: thin;
 
@@ -352,6 +358,7 @@
   }
 
   .mode-toggle {
+    position: relative;
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 4px;
@@ -359,7 +366,23 @@
     border-radius: 999px;
     background: var(--surface);
 
+    &::before {
+      content: "";
+      position: absolute;
+      inset-block: 4px;
+      inset-inline-start: 4px;
+      width: calc(50% - 6px);
+      border-radius: 999px;
+      background: var(--accent);
+      transition: translate 280ms cubic-bezier(0.2, 0, 0, 1);
+    }
+
+    &:has(.mode-btn--active:last-child)::before {
+      translate: calc(100% + 4px);
+    }
+
     .mode-btn {
+      position: relative;
       display: inline-flex;
       gap: 6px;
       justify-content: center;
@@ -373,7 +396,7 @@
       font-weight: 600;
       font-size: 0.8125rem;
       cursor: pointer;
-      transition: background-color 200ms, color 200ms;
+      transition: color 200ms;
 
       &:hover:not(.mode-btn--active) {
         color: var(--fg);
@@ -395,8 +418,24 @@
     }
 
     .mode-btn--active {
-      background: var(--accent);
       color: var(--on-primary);
+    }
+  }
+
+  .mode-panel {
+    --mode-panel-offset: -24px;
+
+    animation: mode-panel-in 280ms cubic-bezier(0.2, 0, 0, 1);
+
+    &.mode-panel--audio {
+      --mode-panel-offset: 24px;
+    }
+  }
+
+  @keyframes mode-panel-in {
+    from {
+      opacity: 0%;
+      translate: var(--mode-panel-offset) 0;
     }
   }
 
