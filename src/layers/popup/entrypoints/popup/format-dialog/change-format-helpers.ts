@@ -2,11 +2,13 @@ import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import {
   audioContainers,
   buildFormatGroups,
+  FFMPEG_CODEC_COPY,
   FORMAT_GROUP_VIDEO,
   getVideoFallbackCodec,
   isSlowDecodeCodec,
   isSlowVideoEncoder,
   requiresVideoReencode,
+  resolveAudioCodec,
   splitFilenameAndExtension,
   TranscodeSpeed,
   videoContainers
@@ -66,6 +68,21 @@ function classifyVideoTargetSpeed(target: string, videoMimeType: string): Transc
   return TranscodeSpeed.ReEncodes;
 }
 
+function isAudioReencodeNeeded(target: string, entry: RecentDownloadEntry) {
+  return resolveAudioCodec({
+    audioMimeType: entry.audioMimeType ?? "",
+    targetExtension: target
+  }) !== FFMPEG_CODEC_COPY;
+}
+
+function classifyTargetSpeed(target: string, entry: RecentDownloadEntry, isVideoTarget: boolean) {
+  const videoSpeed = isVideoTarget && entry.videoMimeType
+    ? classifyVideoTargetSpeed(target, entry.videoMimeType)
+    : TranscodeSpeed.Instant;
+  const isOnlyAudioReencoded = videoSpeed === TranscodeSpeed.Instant && isAudioReencodeNeeded(target, entry);
+  return isOnlyAudioReencoded ? TranscodeSpeed.ReEncodes : videoSpeed;
+}
+
 export function buildAvailableTargetGroups({ entry }: BuildAvailableTargetGroupsParams): FormatGroup[] {
   const isAudioSource = isAudioSourceEntry(entry);
   const baseAllowed = isAudioSource ? audioContainers : [...videoContainers, ...audioContainers];
@@ -74,9 +91,7 @@ export function buildAvailableTargetGroups({ entry }: BuildAvailableTargetGroups
   const withFlags = groups.map(group => {
     const items = group.items.map(item => {
       const isCurrent = item.extension === entry.container;
-      const transcodeSpeed = group.heading === FORMAT_GROUP_VIDEO && entry.videoMimeType
-        ? classifyVideoTargetSpeed(item.extension, entry.videoMimeType)
-        : TranscodeSpeed.Instant;
+      const transcodeSpeed = classifyTargetSpeed(item.extension, entry, group.heading === FORMAT_GROUP_VIDEO);
       return {
         ...item,
         isCurrent,
