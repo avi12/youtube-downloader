@@ -9,6 +9,7 @@
   import { createLogger, LogScope } from "@/lib/utils/logger";
   import { resolveDisplayThumbnailUrl } from "@/lib/youtube/thumbnail-url";
   import type { RecentDownloadEntry } from "@/types";
+  import { flushSync } from "svelte";
 
   const log = createLogger(LogScope.Popup);
 
@@ -47,7 +48,15 @@
 
   function switchMode(nextMode: DialogMode): void {
     hasSwitchedMode = true;
-    mode = nextMode;
+
+    if (!document.startViewTransition) {
+      mode = nextMode;
+      return;
+    }
+
+    document.startViewTransition(() => flushSync(() => {
+      mode = nextMode;
+    }));
   }
 
   $effect(() => {
@@ -130,7 +139,7 @@
   }}
   onpointerdown={e => e.stopPropagation()}
 >
-  <header class="dialog-header">
+  <header style:view-transition-group="nearest" class="dialog-header">
     <div class="dialog-header-row">
       {#if displayThumbnailUrl}
         <img class="dialog-thumbnail" alt="" src={displayThumbnailUrl} />
@@ -188,7 +197,7 @@
     {/if}
   </header>
 
-  <div class="dialog-body">
+  <div style:view-transition-group="nearest" class="dialog-body">
     {#key mode}
       <div class="mode-panel mode-panel--{mode}" class:mode-panel--switched={hasSwitchedMode}>
         {#if activeItems.length === 0}
@@ -240,6 +249,7 @@
     box-shadow:
       0 12px 32px rgb(0 0 0 / 24%),
       0 4px 12px rgb(0 0 0 / 16%);
+    view-transition-name: change-format-dialog;
     animation: dialog-in 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
     position-try-fallbacks: --change-format-above, --change-format-viewport;
 
@@ -262,6 +272,7 @@
     flex-shrink: 0;
     flex-direction: column;
     gap: 10px;
+    view-transition-name: change-format-header;
 
     .dialog-header-row {
       display: flex;
@@ -282,6 +293,7 @@
     padding-inline: 4px;
     scrollbar-color: var(--border) transparent;
     scrollbar-width: thin;
+    view-transition-name: change-format-body;
 
     &::-webkit-scrollbar {
       width: 6px;
@@ -482,6 +494,37 @@
 
     to {
       opacity: 0%;
+    }
+  }
+
+  :global {
+    ::view-transition-group(change-format-dialog),
+    ::view-transition-group(change-format-header),
+    ::view-transition-group(change-format-body) {
+      animation-duration: 280ms;
+      animation-timing-function: cubic-bezier(0.2, 0, 0, 1);
+    }
+
+    ::view-transition-old(change-format-dialog),
+    ::view-transition-new(change-format-dialog) {
+      height: 100%;
+      animation: none;
+    }
+
+    ::view-transition-old(change-format-header),
+    ::view-transition-old(change-format-body) {
+      display: none;
+    }
+
+    ::view-transition-new(change-format-header),
+    ::view-transition-new(change-format-body) {
+      animation: none;
+    }
+
+    /* stylelint-disable-next-line selector-pseudo-element-no-unknown */
+    ::view-transition-group-children(change-format-dialog) {
+      overflow: clip;
+      border-radius: 20px;
     }
   }
 
