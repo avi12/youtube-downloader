@@ -4,7 +4,7 @@
   import { bindDownloadAccessors, getVideoStatusLabel } from "./active-downloads-helpers";
   import DownloadItem from "./DownloadItem.svelte";
   import RecentDownloadItem from "./recent/RecentDownloadItem.svelte";
-  import { isFromCurrentTab, isZipContainer } from "./youtube-tab";
+  import { isActiveFromCurrentTab, isRecentFromCurrentTab } from "./youtube-tab";
   import type { DownloadProgressEntry, RecentDownloadEntry, VideoDetail, VideoQueueItem } from "@/types";
   import { SvelteMap } from "svelte/reactivity";
 
@@ -64,21 +64,18 @@
     ...videoOnlyList
   ]);
 
-  function isActiveFromCurrentTab(videoId: string): boolean {
-    return isFromCurrentTab({
-      ...videoDetails[videoId],
-      videoId
+  function isActiveInThisTab(videoId: string): boolean {
+    return isActiveFromCurrentTab({
+      videoId,
+      detail: videoDetails[videoId]
     }, {
       currentTabId,
       currentSourceUrl
     });
   }
 
-  function isRecentFromCurrentTab(entry: RecentDownloadEntry): boolean {
-    return isFromCurrentTab({
-      ...entry,
-      isPlaylist: isZipContainer(entry.container)
-    }, {
+  function isRecentInThisTab(entry: RecentDownloadEntry): boolean {
+    return isRecentFromCurrentTab(entry, {
       currentTabId,
       currentSourceUrl
     });
@@ -117,10 +114,10 @@
     };
   }
 
-  const thisTabIds = $derived(allActiveIds.filter(isActiveFromCurrentTab));
-  const otherIds = $derived(allActiveIds.filter(id => !isActiveFromCurrentTab(id)));
+  const thisTabIds = $derived(allActiveIds.filter(isActiveInThisTab));
+  const otherIds = $derived(allActiveIds.filter(id => !isActiveInThisTab(id)));
 
-  const thisTabRecent = $derived(recentDownloads.filter(isRecentFromCurrentTab));
+  const thisTabRecent = $derived(recentDownloads.filter(isRecentInThisTab));
 
   const thisTab = $derived(partitionActive(thisTabIds, thisTabRecent));
   const otherTabs = $derived(partitionActive(otherIds, []));

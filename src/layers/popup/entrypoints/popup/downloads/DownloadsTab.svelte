@@ -3,7 +3,7 @@
   import sparkleIcon from "../icons/sparkle.svg?raw";
   import ActiveDownloadsSections from "./ActiveDownloadsSections.svelte";
   import RecentDownloadsSection from "./recent/RecentDownloadsSection.svelte";
-  import { isFromCurrentTab } from "./youtube-tab";
+  import { isActiveFromCurrentTab } from "./youtube-tab";
   import { MessageType, sendMessageToTab } from "@/lib/messaging/messaging";
   import { deleteRecentDownload } from "@/lib/storage/recent-downloads-db";
   import { createLogger, LogScope } from "@/lib/utils/logger";
@@ -49,9 +49,9 @@
   ]);
 
   const currentTabActiveIds = $derived(
-    allActiveIds.filter(videoId => isFromCurrentTab({
-      ...videoDetails[videoId],
-      videoId
+    allActiveIds.filter(videoId => isActiveFromCurrentTab({
+      videoId,
+      detail: videoDetails[videoId]
     }, {
       currentTabId,
       currentSourceUrl
@@ -200,7 +200,7 @@
       {musicList}
       {now}
       {onCancel}
-      onChangeFormat={entry => onChangeFormat(entry)}
+      {onChangeFormat}
       onRemoveRecent={handleRemove}
       onShowRecentInFolder={handleShowInFolder}
       {pendingFormatChangeId}
@@ -215,7 +215,7 @@
       {currentSourceUrl}
       {currentTabId}
       {now}
-      onChangeFormat={entry => onChangeFormat(entry)}
+      {onChangeFormat}
       onRemove={handleRemove}
       onShowInFolder={handleShowInFolder}
       {pendingFormatChangeId}

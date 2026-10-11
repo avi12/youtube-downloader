@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { isFromCurrentTab, isZipContainer } from "../youtube-tab";
+  import { isRecentFromCurrentTab } from "../youtube-tab";
   import RecentDownloadItem from "./RecentDownloadItem.svelte";
   import type { RecentDownloadEntry } from "@/types";
 
@@ -20,10 +20,7 @@
   }: Props = $props();
 
   const otherRecent = $derived(
-    recentDownloads.filter(entry => !isFromCurrentTab({
-      ...entry,
-      isPlaylist: isZipContainer(entry.container)
-    }, {
+    recentDownloads.filter(entry => !isRecentFromCurrentTab(entry, {
       currentTabId,
       currentSourceUrl
     }))

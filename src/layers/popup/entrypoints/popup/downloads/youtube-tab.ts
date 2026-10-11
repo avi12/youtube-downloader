@@ -1,4 +1,5 @@
 import { buildPlaylistUrl, buildWatchUrl } from "@/lib/youtube/youtube-url";
+import type { RecentDownloadEntry, VideoDetail } from "@/types";
 
 const YOUTUBE_TAB_URL_PATTERN = "*://*.youtube.com/*";
 const PAGE_IDENTITY_PARAMS = ["v", "list"];
@@ -13,7 +14,7 @@ function buildYouTubePageUrl({ videoId, isPlaylist }: BuildYouTubePageUrlParams)
   return isPlaylist ? buildPlaylistUrl(videoId) : buildWatchUrl(videoId);
 }
 
-export function isZipContainer(container: string) {
+function isZipContainer(container: string) {
   return container === ZIP_CONTAINER;
 }
 
@@ -60,7 +61,7 @@ type CurrentTab = {
 };
 // The tab a download started in owns it while it still shows that page. Once it
 // is closed or navigated away, any tab showing the same video or playlist does
-export function isFromCurrentTab(origin: DownloadOrigin, { currentTabId, currentSourceUrl }: CurrentTab) {
+function isFromCurrentTab(origin: DownloadOrigin, { currentTabId, currentSourceUrl }: CurrentTab) {
   if (currentTabId === undefined || !currentSourceUrl) {
     return false;
   }
@@ -90,4 +91,26 @@ export async function focusOrOpenTab(origin: DownloadOrigin) {
 
   await browser.tabs.update(existingTab.id, { active: true });
   await browser.windows.update(existingTab.windowId, { focused: true });
+}
+
+export function toRecentOrigin(entry: RecentDownloadEntry) {
+  return {
+    ...entry,
+    isPlaylist: isZipContainer(entry.container)
+  };
+}
+
+export function isRecentFromCurrentTab(entry: RecentDownloadEntry, currentTab: CurrentTab) {
+  return isFromCurrentTab(toRecentOrigin(entry), currentTab);
+}
+
+type ActiveDownload = {
+  videoId: string;
+  detail?: VideoDetail;
+};
+export function isActiveFromCurrentTab({ videoId, detail }: ActiveDownload, currentTab: CurrentTab) {
+  return isFromCurrentTab({
+    ...detail,
+    videoId
+  }, currentTab);
 }
