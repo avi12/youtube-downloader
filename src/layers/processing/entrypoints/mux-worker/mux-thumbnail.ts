@@ -1,8 +1,7 @@
+import { preferJpegThumbnail } from "@/lib/youtube/thumbnail-url";
 import type { Prettify } from "@/types";
 
 const JPEG_MAGIC_BYTES = [0xFF, 0xD8, 0xFF];
-const THUMBNAIL_WEBP_PATH = "/vi_webp/";
-const THUMBNAIL_JPEG_PATH = "/vi/";
 const PNG_MAGIC_BYTES = [0x89, 0x50, 0x4E, 0x47];
 const RIFF_MAGIC_BYTES = [0x52, 0x49, 0x46, 0x46];
 const WEBP_MAGIC_BYTES = [0x57, 0x45, 0x42, 0x50];
@@ -45,10 +44,6 @@ function detectImageExtension(data: Uint8Array) {
   }
 
   return "jpg";
-}
-
-function preferJpegThumbnail(url: string) {
-  return url.replace(THUMBNAIL_WEBP_PATH, THUMBNAIL_JPEG_PATH).replace(/\.webp(\?|$)/, ".jpg$1");
 }
 
 export async function fetchThumbnail(url: string) {
