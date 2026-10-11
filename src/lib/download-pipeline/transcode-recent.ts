@@ -72,7 +72,8 @@ export async function transcodeRecentDownload({ entryId, targetContainer }: Tran
         videoId: entry.videoId,
         title: entry.title,
         channel: entry.channel,
-        thumbnailUrl: entry.thumbnailUrl
+        thumbnailUrl: entry.thumbnailUrl,
+        lengthSeconds: entry.lengthSeconds
       }
     });
   } finally {

@@ -79,7 +79,8 @@ export async function downloadViaWatchPage({ data, tabId }: DownloadViaWatchPage
     sourceUrl: data.sourceUrl,
     title: data.metadata?.title,
     channel: data.metadata?.artist,
-    thumbnailUrl: data.metadata?.thumbnailUrl
+    thumbnailUrl: data.metadata?.thumbnailUrl,
+    lengthSeconds: data.metadata?.lengthSeconds
   });
   trackVideoForTab({
     videoId: data.videoId,

@@ -67,7 +67,8 @@ async function announceDownload({ params, videoData }: AnnounceDownloadParams) {
     filenameOutput: params.filenameOutput,
     title: videoData.title,
     channel: videoDetails?.author,
-    thumbnailUrl: videoDetails?.thumbnail?.thumbnails?.at(-1)?.url
+    thumbnailUrl: videoDetails?.thumbnail?.thumbnails?.at(-1)?.url,
+    lengthSeconds: Number(videoDetails?.lengthSeconds) || undefined
   });
 }
 

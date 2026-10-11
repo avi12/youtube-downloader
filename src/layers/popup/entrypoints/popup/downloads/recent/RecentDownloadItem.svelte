@@ -3,6 +3,7 @@
   import closeIcon from "../../icons/close.svg?raw";
   import folderIcon from "../../icons/folder.svg?raw";
   import openInNewIcon from "../../icons/open-in-new.svg?raw";
+  import ThumbnailDuration from "../../shared/ThumbnailDuration.svelte";
   import { resolveDisplayThumbnailUrl } from "@/lib/youtube/thumbnail-url";
   import type { RecentDownloadEntry } from "@/types";
   import { browser } from "#imports";
@@ -106,9 +107,7 @@
           src={displayThumbnailUrl}
           width="120"
         />
-        {#if entry.container}
-          <span class="recent-thumb-format">{entry.container.toUpperCase()}</span>
-        {/if}
+        <ThumbnailDuration lengthSeconds={entry.lengthSeconds} />
       </div>
     {:else}
       <div class="recent-thumb recent-thumb-placeholder" aria-hidden="true">
@@ -218,19 +217,6 @@
   .recent-thumb-frame {
     position: relative;
     flex-shrink: 0;
-  }
-
-  .recent-thumb-format {
-    position: absolute;
-    inset-block-end: 4px;
-    inset-inline-end: 4px;
-    padding: 1px 5px;
-    border-radius: 4px;
-    background: rgb(0 0 0 / 75%);
-    color: oklch(100% 0 0deg);
-    font-weight: 700;
-    font-size: 0.625rem;
-    letter-spacing: 0.04em;
   }
 
   .recent-thumb-placeholder {

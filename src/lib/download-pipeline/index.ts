@@ -21,6 +21,7 @@ export function buildRecentContext({ item, extras }: BuildRecentContextParams) {
     tabId: item.tabId,
     quality: item.quality,
     sourceUrl: item.sourceUrl,
+    lengthSeconds: item.metadata?.lengthSeconds,
     ...extras
   };
 }

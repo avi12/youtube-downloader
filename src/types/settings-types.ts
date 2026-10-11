@@ -36,6 +36,7 @@ export type VideoMetadata = Prettify<{
   genres?: string[];
   date?: string;
   thumbnailUrl?: string;
+  lengthSeconds?: number;
   isMusic: boolean;
 }>;
 

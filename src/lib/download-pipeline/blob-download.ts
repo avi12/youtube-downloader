@@ -43,6 +43,7 @@ async function cacheRecentDownload({ blob, filename, mimeType, recentContext }: 
       tabId: recentContext.tabId,
       quality: recentContext.quality,
       sourceUrl: recentContext.sourceUrl,
+      lengthSeconds: recentContext.lengthSeconds,
       completedAt: Date.now()
     },
     blob

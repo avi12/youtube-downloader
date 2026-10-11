@@ -115,6 +115,7 @@ export type DownloadAnnouncement = Prettify<{
   title?: string;
   channel?: string;
   thumbnailUrl?: string;
+  lengthSeconds?: number;
 }>;
 
 export type PipelineStartMessage = Prettify<{
@@ -141,6 +142,7 @@ export type RecentDownloadContext = Prettify<{
   tabId?: number;
   quality?: string;
   sourceUrl?: string;
+  lengthSeconds?: number;
 }>;
 
 export type PipelineDownloadMessage = Prettify<{

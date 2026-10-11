@@ -62,6 +62,7 @@ export async function buildVideoMetadata(videoId: string) {
     genres: isGenresPresent ? genres : undefined,
     date: renderer?.publishDate,
     thumbnailUrl: musicThumbnailUrl ?? youtubeThumbnailUrl,
+    lengthSeconds: Number(videoDetails?.lengthSeconds) || undefined,
     isMusic: cached.isMusic
   };
 }
