@@ -7,6 +7,7 @@
   import type { FormatGroup, FormatItem } from "@/lib/utils/containers";
   import { FORMAT_GROUP_AUDIO, FORMAT_GROUP_VIDEO } from "@/lib/utils/containers";
   import { createLogger, LogScope } from "@/lib/utils/logger";
+  import { resolveDisplayThumbnailUrl } from "@/lib/youtube/thumbnail-url";
   import type { RecentDownloadEntry } from "@/types";
 
   const log = createLogger(LogScope.Popup);
@@ -27,6 +28,7 @@
   const { entry, onClose }: Props = $props();
 
   const isAudioSource = $derived(isAudioSourceEntry(entry));
+  const displayThumbnailUrl = $derived(resolveDisplayThumbnailUrl(entry));
   const anchorName = $derived(
     `${ANCHOR_NAME_PREFIX}${entry.id.replace(ANCHOR_NAME_SANITIZE_PATTERN, "")}`
   );
@@ -124,7 +126,13 @@
 >
   <header class="dialog-header">
     <div class="dialog-header-row">
-      <h2 id="change-format-title" class="dialog-title">Change format</h2>
+      {#if displayThumbnailUrl}
+        <img class="dialog-thumbnail" alt="" src={displayThumbnailUrl} />
+      {/if}
+      <div class="dialog-heading">
+        <h2 id="change-format-title" class="dialog-title">Change format</h2>
+        <span class="dialog-video-title" dir="auto">{entry.title}</span>
+      </div>
       <button
         class="dialog-close"
         aria-label="Close"
@@ -280,6 +288,29 @@
     &::-webkit-scrollbar-thumb:hover {
       background: var(--fg-subtle);
     }
+  }
+
+  .dialog-thumbnail {
+    flex-shrink: 0;
+    object-fit: cover;
+    width: 64px;
+    border-radius: 8px;
+    aspect-ratio: 16 / 9;
+  }
+
+  .dialog-heading {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  .dialog-video-title {
+    overflow: hidden;
+    font-weight: 600;
+    font-size: 0.875rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .dialog-title {
