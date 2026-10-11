@@ -3,6 +3,7 @@ import {
   audioContainers,
   buildFormatGroups,
   FFMPEG_CODEC_COPY,
+  FORMAT_GROUP_AUDIO,
   FORMAT_GROUP_VIDEO,
   getVideoFallbackCodec,
   isSlowDecodeCodec,
@@ -114,7 +115,7 @@ export function buildAvailableTargetGroups({ entry }: BuildAvailableTargetGroups
     return withFlags;
   }
 
-  return withFlags.map(group => group.heading === "Audio" ? {
+  return withFlags.map(group => group.heading === FORMAT_GROUP_AUDIO ? {
     ...group,
     caption: "Extract audio as"
   } : group);
