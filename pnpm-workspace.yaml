@@ -3,6 +3,7 @@ allowBuilds:
   spawn-sync: true
 
 patchedDependencies:
+  '@davestewart/wxt-utils@0.6.0': patches/@davestewart__wxt-utils@0.6.0.patch
   '@ffmpeg/core': patches/@ffmpeg__core.patch
   lie@3.3.0: patches/lie@3.3.0.patch
 

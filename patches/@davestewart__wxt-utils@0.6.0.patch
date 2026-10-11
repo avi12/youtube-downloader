@@ -1,0 +1,21 @@
+diff --git a/dist/index.js b/dist/index.js
+index 9ec291a07fd975be4858ddfd8cbbb9dc56d0ead4..6d406891f7a4d7d6f4433abd6d864291a109cf72 100644
+--- a/dist/index.js
++++ b/dist/index.js
+@@ -303,14 +303,14 @@ function getFormattedArgs(args, method) {
+ }
+ function makeLogger(logger, label, level = "info") {
+   function wrapLoggerMethod(logger2, method) {
+-    const originalFn = logger2[method].bind(logger2);
++    const originalFn = (logger2[method] ?? logger2.info ?? logger2.log).bind(logger2);
+     logger2[method] = (message, ...args) => {
+       const formattedArgs = getFormattedArgs(args, method);
+       const prefix = getPrefix(label, method, level);
+       originalFn(`${prefix}${message}`, ...formattedArgs);
+     };
+   }
+-  const wrapper = logger.create({ level });
++  const wrapper = typeof logger.create === "function" ? logger.create({ level }) : Object.create(logger);
+   Object.keys(LOG_METHODS).forEach((method) => {
+     wrapLoggerMethod(wrapper, method);
+   });
