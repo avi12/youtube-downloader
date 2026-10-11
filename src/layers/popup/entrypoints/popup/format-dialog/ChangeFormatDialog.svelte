@@ -210,16 +210,15 @@
   .dialog {
     position: fixed;
     inset-block: calc(anchor(bottom) + 8px) 12px;
-    inset-inline: 12px anchor(right);
+    inset-inline: 12px;
     z-index: 50;
     display: flex;
     flex-direction: column;
     gap: 10px;
-    place-self: start end;
+    align-self: start;
     overflow: hidden;
     box-sizing: border-box;
     width: auto;
-    max-width: 340px;
     height: auto;
     min-height: min(420px, calc(100vh - 24px));
     margin: 0;
