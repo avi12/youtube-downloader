@@ -100,7 +100,7 @@ export function createPlaylistToggleButtons(state: CreatePlaylistToggleButtonsPa
       const iCurrent = group.findIndex(button => button.isActive(state));
       const delta = e.key === "ArrowRight" ? 1 : -1;
       const iNext = (iCurrent + delta + group.length) % group.length;
-      const nextButton = group[iNext];
+      const nextButton = group[iNext]!;
       nextButton.onClick(state);
       const elNext = elements.get(nextButton.id);
       queueMicrotask(() => elNext?.querySelector<HTMLButtonElement>("button")?.focus());

@@ -75,7 +75,7 @@ export function getMimeType(filename: string) {
 }
 
 export function stripMimeParams(mimeType: string) {
-  return mimeType.split(";")[0];
+  return mimeType.split(";")[0]!;
 }
 
 export function getVideoTempExtension(mimeType: string) {

@@ -100,8 +100,8 @@ function parseVttCues(vtt: string) {
 
     const [start, end] = timing.split("-->").map(part => part.trim().split(" ")[0]);
     cues.push({
-      startSeconds: parseTimestamp(start),
-      endSeconds: parseTimestamp(end),
+      startSeconds: parseTimestamp(start!),
+      endSeconds: parseTimestamp(end!),
       text: textLines.join("\n")
     });
   }

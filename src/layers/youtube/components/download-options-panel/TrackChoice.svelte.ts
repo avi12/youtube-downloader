@@ -81,7 +81,7 @@ export function createTrackChoiceState(params: TrackChoiceParams) {
     let iNext = iCurrent;
     for (let i = 0; i < buttons.length; i++) {
       iNext = (iNext + delta + buttons.length) % buttons.length;
-      const isCandidateEnabled = !params.disabledModes.includes(buttons[iNext].mode);
+      const isCandidateEnabled = !params.disabledModes.includes(buttons[iNext]!.mode);
       if (isCandidateEnabled) {
         break;
       }
@@ -92,7 +92,7 @@ export function createTrackChoiceState(params: TrackChoiceParams) {
       return;
     }
 
-    const nextButton = buttons[iNext];
+    const nextButton = buttons[iNext]!;
     params.onmodechange(nextButton.mode);
     const elNext = elements.get(nextButton.id);
     queueMicrotask(() => elNext?.querySelector("button")?.focus());

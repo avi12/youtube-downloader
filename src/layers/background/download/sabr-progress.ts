@@ -82,7 +82,7 @@ export function createProgressAccumulator({
       trackIndex: number;
       bytes: number;
     }) {
-      extraReceivedBytesArray[trackIndex] += bytes;
+      extraReceivedBytesArray[trackIndex]! += bytes;
       emit();
     }
   };

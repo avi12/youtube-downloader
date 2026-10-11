@@ -53,7 +53,7 @@ export function computeWeightedProgress({
   }
 
   for (const i of validExtraIndices) {
-    completed += Math.min(extraReceivedBytesArray[i] / extraExpectedBytesArray[i], 1);
+    completed += Math.min(extraReceivedBytesArray[i]! / extraExpectedBytesArray[i]!, 1);
   }
 
   return Math.min(completed / totalStages, 1);

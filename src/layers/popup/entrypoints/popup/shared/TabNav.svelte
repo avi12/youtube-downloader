@@ -64,7 +64,7 @@
 
     e.preventDefault();
     const iCurrent = tabs.findIndex(tab => tab.id === activeTab);
-    const nextId = tabs[(iCurrent + direction + tabs.length) % tabs.length].id;
+    const nextId = tabs[(iCurrent + direction + tabs.length) % tabs.length]!.id;
     onChange(nextId);
     tabButtonElements[nextId]?.focus();
   }

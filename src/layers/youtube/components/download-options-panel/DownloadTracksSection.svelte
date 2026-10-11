@@ -94,7 +94,7 @@
   const captionSelectValue = $derived.by(() => {
     if (panelCaptionMode === PanelTrackMode.MatchVideo) {
       if (isSingleCaptionOption) {
-        return captionCustomOptions[0].value;
+        return captionCustomOptions[0]!.value;
       }
 
       return CAPTION_AUTO;
@@ -107,8 +107,7 @@
     const languages = [...uniqueAudioLanguages];
     const originalIndex = languages.findIndex(language => language.value === originalAudioLangCode);
     if (originalIndex > 0) {
-      const [originalLanguage] = languages.splice(originalIndex, 1);
-      languages.unshift(originalLanguage);
+      languages.unshift(...languages.splice(originalIndex, 1));
     }
 
     return languages;
@@ -118,8 +117,7 @@
     const options = [...captionCustomOptions];
     const originalIndex = options.findIndex(option => option.label === captionOriginalLabel);
     if (originalIndex > 0) {
-      const [originalOption] = options.splice(originalIndex, 1);
-      options.unshift(originalOption);
+      options.unshift(...options.splice(originalIndex, 1));
     }
 
     return options;

@@ -87,7 +87,7 @@ export function createCaptionTrackState({
 
     const isCustomModeWithNoTrack = !selectedCaptionTrack && captionTracks.length > 0;
     if (isCustomModeWithNoTrack) {
-      selectedCaptionTrack = captionTracks[0];
+      selectedCaptionTrack = captionTracks[0]!;
     }
   }
 

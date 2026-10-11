@@ -20,7 +20,7 @@ export function readVarint({ buffer, offset }: ReadVarintParams) {
   let value = 0;
   let shift = 0;
   while (offset < buffer.byteLength) {
-    const byte = buffer[offset];
+    const byte = buffer[offset]!;
     offset++;
     value |= (byte & VARINT_DATA_BITS_MASK) << shift;
 

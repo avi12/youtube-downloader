@@ -102,8 +102,7 @@ export function buildAvailableTargetGroups({ entry }: BuildAvailableTargetGroups
     });
     const iCurrent = items.findIndex(item => item.isCurrent);
     if (iCurrent > 0) {
-      const [current] = items.splice(iCurrent, 1);
-      items.unshift(current);
+      items.unshift(...items.splice(iCurrent, 1));
     }
 
     return {

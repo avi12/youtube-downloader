@@ -94,7 +94,7 @@ function computeBytesPerSecond({ videoId, downloadedBytes }: {
   });
   speedHistoryByVideoId.set(videoId, filtered);
 
-  const [oldest] = filtered;
+  const oldest = filtered[0]!;
   const elapsedMs = now - oldest.timestamp;
   if (elapsedMs <= 0) {
     return 0;

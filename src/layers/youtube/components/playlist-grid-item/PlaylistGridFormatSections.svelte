@@ -148,7 +148,7 @@
     const iCurrent = outputButtons.findIndex(button => state.effectiveOutputMode === button.mode);
     const delta = e.key === "ArrowRight" ? 1 : -1;
     const iNext = (iCurrent + delta + outputButtons.length) % outputButtons.length;
-    const nextButton = outputButtons[iNext];
+    const nextButton = outputButtons[iNext]!;
     state.effectiveOutputMode = nextButton.mode;
     const elNext = outputElements.get(nextButton.id);
     queueMicrotask(() => elNext?.querySelector<HTMLButtonElement>("button")?.focus());

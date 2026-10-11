@@ -46,7 +46,7 @@ function handleSabrRequest(details: Browser.webRequest.OnBeforeRequestDetails) {
     return undefined;
   }
 
-  const bodyBytes = new Uint8Array(details.requestBody!.raw![0].bytes!);
+  const bodyBytes = new Uint8Array(details.requestBody!.raw![0]!.bytes!);
   if (!isOffscreenPlayer) {
     recordPlayerSession({
       tabId: details.tabId,

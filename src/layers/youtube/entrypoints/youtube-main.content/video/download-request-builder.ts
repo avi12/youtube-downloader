@@ -37,7 +37,7 @@ type ResolveLanguageParams = Prettify<{
 function resolvePrimaryAudioLanguageCode({ audioFormat, sourceCaptionTracks }: ResolveLanguageParams) {
   const trackId = audioFormat?.audioTrack?.id;
   if (trackId) {
-    return trackId.split(".")[0];
+    return trackId.split(".")[0]!;
   }
 
   const liveLanguage = getCurrentVideoAudioLanguage();

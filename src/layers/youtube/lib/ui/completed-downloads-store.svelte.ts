@@ -20,12 +20,13 @@ export function initCompletedDownloadsStore() {
 
   isInitialized = true;
   onMessage(MessageType.WatchDownloadCompleted, ({ data }) => {
-    completedByVideoId[data.videoId] = {
+    const completedDownload = {
       downloadId: data.downloadId,
       filename: data.filename
     };
+    completedByVideoId[data.videoId] = completedDownload;
     for (const listener of listeners) {
-      listener(data.videoId, completedByVideoId[data.videoId]);
+      listener(data.videoId, completedDownload);
     }
   });
 }

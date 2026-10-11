@@ -158,7 +158,7 @@ function selectFormats({
 }: SelectFormatsParams) {
   const isVideoRequested = type !== DownloadType.Audio;
   const videoFormat = isVideoRequested
-    ? (videoFormats.find(format => format.itag === videoItag) ?? videoFormats[0])
+    ? (videoFormats.find(format => format.itag === videoItag) ?? videoFormats[0]!)
     : null;
 
   const isAudioRequested = type !== DownloadType.Video;

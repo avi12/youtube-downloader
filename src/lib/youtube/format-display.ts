@@ -35,5 +35,5 @@ export function formatAudioCodecLabel(mimeType: string) {
     return "EC-3";
   }
 
-  return codec || (mimeType.split(";")[0].split("/")[1] ?? "");
+  return codec || (mimeType.split(";")[0]!.split("/")[1] ?? "");
 }

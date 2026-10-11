@@ -20,8 +20,8 @@ export function parseSearchResult(item: SearchItem) {
   }
 
   const [firstColumn, secondColumn] = columns;
-  const titleRuns = firstColumn.musicResponsiveListItemFlexColumnRenderer?.text?.runs;
-  const metadataRuns = secondColumn.musicResponsiveListItemFlexColumnRenderer?.text?.runs;
+  const titleRuns = firstColumn!.musicResponsiveListItemFlexColumnRenderer?.text?.runs;
+  const metadataRuns = secondColumn!.musicResponsiveListItemFlexColumnRenderer?.text?.runs;
   const isRunsMissing = !titleRuns || !metadataRuns;
   if (isRunsMissing) {
     return null;

@@ -62,7 +62,7 @@ export function resolveQualityLabel({ type, videoFormat, audioFormat }: ResolveQ
 }
 
 export function normalizeLanguageCode(lang: string) {
-  return lang.split("-")[0].split(".")[0].toLowerCase();
+  return lang.split("-")[0]!.split(".")[0]!.toLowerCase();
 }
 
 export function getCurrentVideoAudioLanguage() {

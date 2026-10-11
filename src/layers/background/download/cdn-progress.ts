@@ -68,7 +68,7 @@ export function createCdnProgressTracker({
       i: number;
       bytes: number;
     }) {
-      extraReceivedBytesArray[i] += bytes;
+      extraReceivedBytesArray[i]! += bytes;
       emit();
     }
   };

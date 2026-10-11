@@ -59,14 +59,14 @@ function extractTransformOperations({ playerSource, functionName }: ExtractTrans
   const methodPattern = /([a-zA-Z0-9$]+)\s*:\s*function\s*\([^)]*\)\s*\{([^}]+)}/g;
 
   for (const [, methodName, methodBody] of helperBody.matchAll(methodPattern)) {
-    const isReverse = methodBody.includes("reverse");
-    const isSplice = methodBody.includes("splice");
+    const isReverse = methodBody!.includes("reverse");
+    const isSplice = methodBody!.includes("splice");
     if (isReverse) {
-      methodTypes.set(methodName, TransformOpType.Reverse);
+      methodTypes.set(methodName!, TransformOpType.Reverse);
     } else if (isSplice) {
-      methodTypes.set(methodName, TransformOpType.Splice);
+      methodTypes.set(methodName!, TransformOpType.Splice);
     } else {
-      methodTypes.set(methodName, TransformOpType.Swap);
+      methodTypes.set(methodName!, TransformOpType.Swap);
     }
   }
 
@@ -77,8 +77,8 @@ function extractTransformOperations({ playerSource, functionName }: ExtractTrans
   const operations: TransformOp[] = [];
 
   for (const [, methodName, rawArgument] of functionBody.matchAll(callPattern)) {
-    const argument = Number.parseInt(rawArgument, 10);
-    const opType = methodTypes.get(methodName);
+    const argument = Number.parseInt(rawArgument!, 10);
+    const opType = methodTypes.get(methodName!);
     const isOpTypeMissing = !opType;
     if (isOpTypeMissing) {
       continue;

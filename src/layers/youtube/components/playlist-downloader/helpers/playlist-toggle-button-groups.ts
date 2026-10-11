@@ -20,7 +20,7 @@ export type ToggleButtonGroup = Prettify<{
   onClick(state: ToggleButtonState): void;
 }>;
 
-export const TOGGLE_BUTTON_GROUPS: Record<string, ToggleButtonGroup[]> = {
+export const TOGGLE_BUTTON_GROUPS = {
   speed: [
     {
       id: "playlist-mode-fast",
@@ -99,7 +99,7 @@ export const TOGGLE_BUTTON_GROUPS: Record<string, ToggleButtonGroup[]> = {
       }
     }
   ]
-};
+} satisfies Record<string, ToggleButtonGroup[]>;
 
 export const ALL_TOGGLE_BUTTONS = [
   ...TOGGLE_BUTTON_GROUPS.speed,
