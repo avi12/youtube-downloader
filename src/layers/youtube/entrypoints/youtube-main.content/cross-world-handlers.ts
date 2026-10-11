@@ -1,6 +1,7 @@
 import { registerButtonDataHandler } from "./button-data-handler";
 import "./cta-button.css";
 import { cancelActiveDownload, startDownload } from "./video/download";
+import { registerSizeInputsHandler } from "./video/size-inputs";
 import { CrossWorldMessage, crossWorldMessenger, dispatchButtonClick } from "@/lib/messaging/cross-world-messenger";
 import {
   DATA_BUTTON_ID_ATTR,
@@ -15,6 +16,8 @@ const SETTINGS_OPTIONS_RENDERER_TAG = "ytd-settings-options-renderer";
 const SETTINGS_OPTIONS_ID_SELECTOR = "#options";
 
 export function registerCrossWorldHandlers() {
+  registerSizeInputsHandler();
+
   crossWorldMessenger.onMessage(CrossWorldMessage.DownloadRequest, ({ data }) => {
     startDownload(data).catch(() => {});
   });

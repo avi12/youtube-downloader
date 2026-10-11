@@ -7,11 +7,26 @@ import { DownloadType, type AdaptiveFormatItem, type CaptionTrack, type VideoDat
 
 export { applyDownloadTypeChange } from "./panel-type-change";
 
-export function buildStartDownloadParams(params: {
+type BuildDownloadPlanParamsParams = {
   downloadType: DownloadType;
   selectedVideoFormat: AdaptiveFormatItem | null;
   selectedAudioFormat: AdaptiveFormatItem | null;
   selectedCaptionTrack: CaptionTrack | null;
+};
+export function buildDownloadPlanParams(params: BuildDownloadPlanParamsParams) {
+  return {
+    type: params.downloadType,
+    videoItag: params.selectedVideoFormat?.itag ?? 0,
+    audioItag: params.selectedAudioFormat?.itag ?? 0,
+    audioTrackId: params.selectedAudioFormat?.audioTrack?.id,
+    selectedCaptionVssId: params.selectedCaptionTrack?.vssId,
+    downloadExtras: PANEL_OPTIONS.downloadExtras,
+    downloadExtraCaptions: PANEL_OPTIONS.downloadExtraCaptions,
+    includeAutoDubbing: PANEL_OPTIONS.includeAutoDubbing
+  };
+}
+
+function buildStartDownloadParams(params: BuildDownloadPlanParamsParams & {
   isDownloading: boolean;
   isDownloadable: boolean;
   isFilenameValid: boolean;
@@ -30,30 +45,13 @@ export function buildStartDownloadParams(params: {
   }
 
   return {
-    type: params.downloadType,
+    ...buildDownloadPlanParams(params),
     videoId: params.videoData.videoId,
-    videoItag: params.selectedVideoFormat?.itag ?? 0,
-    audioItag: params.selectedAudioFormat!.itag,
-    audioTrackId: params.selectedAudioFormat!.audioTrack?.id,
-    selectedCaptionVssId: params.selectedCaptionTrack?.vssId,
-    filenameOutput: params.fullFilename,
-    downloadExtras: PANEL_OPTIONS.downloadExtras,
-    downloadExtraCaptions: PANEL_OPTIONS.downloadExtraCaptions,
-    includeAutoDubbing: PANEL_OPTIONS.includeAutoDubbing
+    filenameOutput: params.fullFilename
   };
 }
 
-export function sendStartDownload(params: {
-  downloadType: DownloadType;
-  selectedVideoFormat: AdaptiveFormatItem | null;
-  selectedAudioFormat: AdaptiveFormatItem | null;
-  selectedCaptionTrack: CaptionTrack | null;
-  isDownloading: boolean;
-  isDownloadable: boolean;
-  isFilenameValid: boolean;
-  fullFilename: string;
-  videoData: VideoData;
-}) {
+export function sendStartDownload(params: Parameters<typeof buildStartDownloadParams>[0]) {
   const payload = buildStartDownloadParams(params);
   if (!payload) {
     return;

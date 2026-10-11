@@ -3,6 +3,7 @@ import { createDownloadStoreState } from "./DownloadOptionsPanel.download-state.
 import { createTrackStates } from "./DownloadOptionsPanel.tracks.svelte";
 import {
   applyDownloadTypeChange,
+  buildDownloadPlanParams,
   sendCancelDownload,
   sendDiscardInterrupted,
   sendRevealDownload,
@@ -20,16 +21,12 @@ import { syncAudioFromFormat } from "./helpers/player-active-tracks.svelte";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { CONTENT_OPTIONS, interruptedDownloadStore, statusProgressSignal } from "@/lib/ui/synced-stores.svelte";
 import { getCompatibleFilename, isAudioMimeNativeForContainer, resolveAutoExtension } from "@/lib/utils/containers";
-import { AUTO_DUB_TRACK_SUFFIX } from "@/lib/youtube/download-plan";
+import { resolveDownloadPlan } from "@/lib/youtube/download-plan";
 import { filterVideoFormatsByEnhancedBitrate } from "@/lib/youtube/format-display";
-import {
-  alignAudioFormatToExtension,
-  calculateWeightedProgress,
-  normalizeLanguageCode
-} from "@/lib/youtube/video-helpers";
+import { predictOutputSize, type SizeInputs } from "@/lib/youtube/output-size";
+import { alignAudioFormatToExtension, calculateWeightedProgress } from "@/lib/youtube/video-helpers";
 import { DownloadType, type AdaptiveFormatItem, type VideoData } from "@/types";
 import { untrack } from "svelte";
-import { SvelteMap } from "svelte/reactivity";
 
 const PAGE_LOCALE = document.documentElement.lang || undefined;
 const SIZE_FORMATTER_KB = new Intl.NumberFormat(PAGE_LOCALE, {
@@ -42,7 +39,7 @@ const SIZE_FORMATTER_MB = new Intl.NumberFormat(PAGE_LOCALE, {
   style: "unit",
   unit: "megabyte",
   unitDisplay: "narrow",
-  maximumFractionDigits: 1
+  maximumFractionDigits: 2
 });
 const SIZE_FORMATTER_GB = new Intl.NumberFormat(PAGE_LOCALE, {
   style: "unit",
@@ -50,12 +47,10 @@ const SIZE_FORMATTER_GB = new Intl.NumberFormat(PAGE_LOCALE, {
   unitDisplay: "narrow",
   maximumFractionDigits: 2
 });
-const CAPTION_BYTES_PER_SECOND = 10;
-const MILLISECONDS_PER_SECOND = 1000;
+const APPROXIMATE_PREFIX = "~";
 const BYTES_PER_KILOBYTE = 1024;
 const BYTES_PER_MEGABYTE = BYTES_PER_KILOBYTE * 1024;
 const BYTES_PER_GIGABYTE = BYTES_PER_MEGABYTE * 1024;
-const MEGABYTES_PER_GIGABYTE = 1000;
 
 export function createPanelState(getVideoData: () => VideoData) {
   const store = createDownloadStoreState(getVideoData);
@@ -166,83 +161,64 @@ export function createPanelState(getVideoData: () => VideoData) {
     isDownloading: () => statusIsDownloading
   });
 
+  const planParams = $derived(
+    buildDownloadPlanParams({
+      downloadType,
+      selectedVideoFormat,
+      selectedAudioFormat,
+      selectedCaptionTrack: caption.selectedCaptionTrack
+    })
+  );
+  let sizeInputs = $state<SizeInputs | null>(null);
+  $effect(() => {
+    const request = {
+      videoId: getVideoData().videoId,
+      params: $state.snapshot(planParams)
+    };
+    let isCurrentRequest = true;
+    sizeInputs = null;
+    crossWorldMessenger.sendMessage(CrossWorldMessage.MeasureSizeInputs, request)
+      .then(inputs => {
+        if (isCurrentRequest) {
+          sizeInputs = inputs;
+        }
+      })
+      .catch(() => {});
+    return () => {
+      isCurrentRequest = false;
+    };
+  });
+
   const estimatedSizeLabel = $derived.by(() => {
-    const isAudioOnly = downloadType === DownloadType.Audio;
-    const isVideoOnly = downloadType === DownloadType.Video;
-    const isVideoAndAudio = downloadType === DownloadType.VideoAndAudio;
-    const videoBytes = !isAudioOnly ? parseInt(selectedVideoFormat?.contentLength ?? "0", 10) : 0;
-
-    let audioBytes: number;
-    const selectedTrackId = selectedAudioFormat?.audioTrack?.id;
-    const isBundleMode = !isVideoOnly && PANEL_OPTIONS.downloadExtras && isVideoAndAudio && !!selectedTrackId;
-    const isSelectedAutoDubbed = isBundleMode && selectedTrackId!.endsWith(AUTO_DUB_TRACK_SUFFIX);
-    const isAutoDubbedWithBundleBlocked = isSelectedAutoDubbed && !PANEL_OPTIONS.includeAutoDubbing;
-    if (isAutoDubbedWithBundleBlocked) {
-      audioBytes = parseInt(selectedAudioFormat!.contentLength ?? "0", 10);
-    } else if (isBundleMode) {
-      const bestByLanguage = new SvelteMap<string, AdaptiveFormatItem>();
-      for (const format of getVideoData().audioFormats) {
-        const isFormatWithoutTrack = !format.audioTrack;
-        if (isFormatWithoutTrack) {
-          continue;
-        }
-
-        const trackId = format.audioTrack!.id;
-        const isSameAsSelected = trackId === selectedTrackId;
-        if (isSameAsSelected) {
-          continue;
-        }
-
-        const isAutoDubbingBlocked = !PANEL_OPTIONS.includeAutoDubbing && trackId.endsWith(AUTO_DUB_TRACK_SUFFIX);
-        if (isAutoDubbingBlocked) {
-          continue;
-        }
-
-        const languageCode = normalizeLanguageCode(trackId);
-        const existing = bestByLanguage.get(languageCode);
-        const isBetterBitrate = !existing || format.bitrate > existing.bitrate;
-        if (isBetterBitrate) {
-          bestByLanguage.set(languageCode, format);
-        }
-      }
-
-      audioBytes = parseInt(selectedAudioFormat!.contentLength ?? "0", 10);
-      for (const format of bestByLanguage.values()) {
-        audioBytes += parseInt(format.contentLength ?? "0", 10);
-      }
-    } else {
-      audioBytes = !isVideoOnly ? parseInt(selectedAudioFormat?.contentLength ?? "0", 10) : 0;
-    }
-
-    const durationSeconds = parseInt(
-      selectedAudioFormat?.approxDurationMs ?? selectedVideoFormat?.approxDurationMs ?? "0",
-      10
-    ) / MILLISECONDS_PER_SECOND;
-    let captionTrackCount = 0;
-    const isVideoAndAudioWithCaption = isVideoAndAudio && caption.selectedCaptionTrack;
-    if (isVideoAndAudioWithCaption) {
-      captionTrackCount = PANEL_OPTIONS.downloadExtraCaptions ? getVideoData().captionTracks.length : 1;
-    }
-
-    const captionBytes = captionTrackCount * durationSeconds * CAPTION_BYTES_PER_SECOND;
-
-    const totalBytes = videoBytes + audioBytes + captionBytes;
-    if (!totalBytes) {
+    const plan = resolveDownloadPlan({
+      videoData: getVideoData(),
+      params: planParams
+    });
+    const size = predictOutputSize({
+      type: downloadType,
+      extension: actualExtension,
+      videoFormat: plan.videoFormat,
+      audioFormat: plan.audioFormat,
+      extraAudioFormats: plan.extraAudioFormats,
+      inputs: sizeInputs
+    });
+    if (!size?.bytes) {
       return "";
     }
 
-    const megabytes = totalBytes / BYTES_PER_MEGABYTE;
+    const prefix = size.isApproximate ? APPROXIMATE_PREFIX : "";
+    const megabytes = size.bytes / BYTES_PER_MEGABYTE;
     const isLessThanMegabyte = megabytes < 1;
     if (isLessThanMegabyte) {
-      return `~${SIZE_FORMATTER_KB.format(totalBytes / BYTES_PER_KILOBYTE)}`;
+      return `${prefix}${SIZE_FORMATTER_KB.format(size.bytes / BYTES_PER_KILOBYTE)}`;
     }
 
-    const isLessThanGigabyte = megabytes < MEGABYTES_PER_GIGABYTE;
+    const isLessThanGigabyte = size.bytes < BYTES_PER_GIGABYTE;
     if (isLessThanGigabyte) {
-      return `~${SIZE_FORMATTER_MB.format(megabytes)}`;
+      return `${prefix}${SIZE_FORMATTER_MB.format(megabytes)}`;
     }
 
-    return `~${SIZE_FORMATTER_GB.format(totalBytes / BYTES_PER_GIGABYTE)}`;
+    return `${prefix}${SIZE_FORMATTER_GB.format(size.bytes / BYTES_PER_GIGABYTE)}`;
   });
 
   $effect(() => {

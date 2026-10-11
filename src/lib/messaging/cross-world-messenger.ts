@@ -1,3 +1,5 @@
+import type { DownloadPlanParams } from "@/lib/youtube/download-plan";
+import type { SizeInputs } from "@/lib/youtube/output-size";
 import type {
   ButtonViewModelData,
   DownloadRequest,
@@ -38,7 +40,8 @@ export const CrossWorldMessage = {
   ButtonClick: "buttonClick",
   DownloadBlobUrl: "downloadBlobUrl",
   ReportPageProgress: "reportPageProgress",
-  ReportMainDownloadFailed: "reportMainDownloadFailed"
+  ReportMainDownloadFailed: "reportMainDownloadFailed",
+  MeasureSizeInputs: "measureSizeInputs"
 } as const;
 
 export interface PageMessengerSchema {
@@ -134,6 +137,10 @@ export interface PageMessengerSchema {
     videoId: string;
     isUnavailable?: boolean;
   }): void;
+  [CrossWorldMessage.MeasureSizeInputs](data: {
+    videoId: string;
+    params: DownloadPlanParams;
+  }): SizeInputs | null;
 }
 
 export type StreamDataPayload = Prettify<Parameters<PageMessengerSchema[typeof CrossWorldMessage.StreamData]>[0]>;

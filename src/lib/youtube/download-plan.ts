@@ -187,7 +187,7 @@ type DownloadPlanVideoData = Prettify<{
   translationLanguages: TranslationLanguage[];
 }>;
 
-type DownloadPlanParams = Prettify<Pick<DownloadRequest,
+export type DownloadPlanParams = Prettify<Pick<DownloadRequest,
   "type" | "videoItag" | "audioItag" | "audioTrackId" | "selectedCaptionVssId" |
   "downloadExtras" | "downloadExtraCaptions" | "includeAutoDubbing"
 >>;
