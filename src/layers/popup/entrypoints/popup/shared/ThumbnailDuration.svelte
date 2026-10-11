@@ -1,4 +1,6 @@
 <script lang="ts">
+  import ThumbnailBadge from "./ThumbnailBadge.svelte";
+
   interface Props {
     lengthSeconds?: number;
   }
@@ -23,21 +25,5 @@
 </script>
 
 {#if durationLabel}
-  <span class="thumbnail-duration">{durationLabel}</span>
+  <ThumbnailBadge label={durationLabel} side="start" />
 {/if}
-
-<style>
-  .thumbnail-duration {
-    position: absolute;
-    bottom: 4px;
-    left: 4px;
-    padding: 2px 6px;
-    border-radius: 6px;
-    background: color-mix(in oklab, var(--bg) 75%, transparent);
-    color: var(--fg);
-    font-weight: 600;
-    font-size: 0.6875rem;
-    line-height: 1.2;
-    font-variant-numeric: tabular-nums;
-  }
-</style>

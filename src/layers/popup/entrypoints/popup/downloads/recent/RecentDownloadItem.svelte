@@ -3,6 +3,7 @@
   import closeIcon from "../../icons/close.svg?raw";
   import folderIcon from "../../icons/folder.svg?raw";
   import openInNewIcon from "../../icons/open-in-new.svg?raw";
+  import ThumbnailBadge from "../../shared/ThumbnailBadge.svelte";
   import ThumbnailDuration from "../../shared/ThumbnailDuration.svelte";
   import { resolveDisplayThumbnailUrl } from "@/lib/youtube/thumbnail-url";
   import type { RecentDownloadEntry } from "@/types";
@@ -108,6 +109,9 @@
           width="120"
         />
         <ThumbnailDuration lengthSeconds={entry.lengthSeconds} />
+        {#if entry.container}
+          <ThumbnailBadge label={entry.container.toUpperCase()} side="end" />
+        {/if}
       </div>
     {:else}
       <div class="recent-thumb recent-thumb-placeholder" aria-hidden="true">
