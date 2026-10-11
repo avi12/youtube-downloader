@@ -105,7 +105,8 @@ export default defineConfig({
       ".wxt/**",
       ".dev-certs/**",
       ".fallow/**",
-      "scripts/**"
+      "scripts/**",
+      "keys/**"
     ]
   },
   hooks: {
