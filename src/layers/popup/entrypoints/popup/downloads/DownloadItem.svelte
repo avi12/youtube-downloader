@@ -4,6 +4,7 @@
   import playArrowIcon from "../icons/play-arrow.svg?raw";
   import ThumbnailDuration from "../shared/ThumbnailDuration.svelte";
   import WavyProgress from "../shared/WavyProgress.svelte";
+  import { focusOrOpenTab, focusTab } from "./youtube-tab";
   import { resolveDisplayThumbnailUrl } from "@/lib/youtube/thumbnail-url";
   import { browser } from "#imports";
 
@@ -155,25 +156,17 @@
   });
 
   async function focusSourceTab(): Promise<void> {
-    if (tabId !== undefined && tabId >= 0) {
-      try {
-        const tab = await browser.tabs.get(tabId);
-        await browser.tabs.update(tabId, { active: true });
-
-        if (tab.windowId !== undefined) {
-          await browser.windows.update(tab.windowId, { focused: true });
-        }
-
-        return;
-      } catch {
-      // tab is gone, fall through to opening a new one
-      }
+    const sourceTab = tabId !== undefined && tabId >= 0
+      ? await browser.tabs.get(tabId).catch(() => null)
+      : null;
+    if (sourceTab) {
+      await focusTab(sourceTab);
+      return;
     }
 
-    if (sourceUrl) {
-      void browser.tabs.create({ url: sourceUrl });
-    } else if (videoId) {
-      void browser.tabs.create({ url: `https://www.youtube.com/watch?v=${videoId}` });
+    const url = sourceUrl ?? (videoId ? `https://www.youtube.com/watch?v=${videoId}` : null);
+    if (url) {
+      await focusOrOpenTab(url);
     }
   }
 </script>

@@ -5,6 +5,7 @@
   import openInNewIcon from "../../icons/open-in-new.svg?raw";
   import ThumbnailBadge from "../../shared/ThumbnailBadge.svelte";
   import ThumbnailDuration from "../../shared/ThumbnailDuration.svelte";
+  import { focusOrOpenTab } from "../youtube-tab";
   import { resolveDisplayThumbnailUrl } from "@/lib/youtube/thumbnail-url";
   import type { RecentDownloadEntry } from "@/types";
   import { browser } from "#imports";
@@ -29,8 +30,8 @@
   const displayThumbnailUrl = $derived(resolveDisplayThumbnailUrl(entry));
 
   const isZip = $derived(entry.container === "zip");
-  const openInNewTabLabel = $derived(isZip ? "Open playlist in new tab" : "Open video in new tab");
-  const openInNewTabUrl = $derived(
+  const openPageLabel = $derived(isZip ? "Open playlist" : "Open video");
+  const openPageUrl = $derived(
     isZip
       ? `https://www.youtube.com/playlist?list=${entry.videoId}`
       : `https://www.youtube.com/watch?v=${entry.videoId}`
@@ -151,12 +152,10 @@
       {#if showOpenInNew}
         <button
           class="recent-action-btn"
-          aria-label={openInNewTabLabel}
-          data-tooltip={openInNewTabLabel}
+          aria-label={openPageLabel}
+          data-tooltip={openPageLabel}
           data-tooltip-align="end"
-          onclick={() => {
-            void browser.tabs.create({ url: openInNewTabUrl });
-          }}
+          onclick={() => focusOrOpenTab(openPageUrl)}
           type="button"
         >
           {@html openInNewIcon}
