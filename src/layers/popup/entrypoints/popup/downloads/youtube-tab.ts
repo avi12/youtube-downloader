@@ -1,7 +1,8 @@
+import { buildPlaylistUrl, buildWatchUrl } from "@/lib/youtube/youtube-url";
+
 const YOUTUBE_TAB_URL_PATTERN = "*://*.youtube.com/*";
 const PAGE_IDENTITY_PARAMS = ["v", "list"];
 
-const YOUTUBE_ORIGIN = "https://www.youtube.com";
 const ZIP_CONTAINER = "zip";
 
 type BuildYouTubePageUrlParams = {
@@ -9,7 +10,7 @@ type BuildYouTubePageUrlParams = {
   isPlaylist?: boolean;
 };
 function buildYouTubePageUrl({ videoId, isPlaylist }: BuildYouTubePageUrlParams) {
-  return isPlaylist ? `${YOUTUBE_ORIGIN}/playlist?list=${videoId}` : `${YOUTUBE_ORIGIN}/watch?v=${videoId}`;
+  return isPlaylist ? buildPlaylistUrl(videoId) : buildWatchUrl(videoId);
 }
 
 export function isZipContainer(container: string) {

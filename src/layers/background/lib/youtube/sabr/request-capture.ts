@@ -1,12 +1,12 @@
 import { clearPlayerSession, recordPlayerSession } from "./player-session";
 import { extractPoTokenFromBody } from "./po-token-extractor";
+import { YOUTUBE_ORIGIN } from "@/lib/youtube/youtube-url";
 
 export { extractPoTokenFromBody } from "./po-token-extractor";
 
 export const OFFSCREEN_PLAYER_TAB_ID = -2;
 
 const GOOGLEVIDEO_URL_PATTERN = "https://*.googlevideo.com/videoplayback*";
-export const YOUTUBE_ORIGIN = "https://www.youtube.com";
 
 const capturedByTab = new Map<number, {
   body: number[];

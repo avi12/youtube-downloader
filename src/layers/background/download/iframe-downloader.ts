@@ -6,12 +6,12 @@ import { handleTerminalFailure } from "./background-downloader";
 import { MessageType, onMessage, sendMessageToTab } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
 import { createLogger, LogScope } from "@/lib/utils/logger";
+import { WATCH_PAGE_URL } from "@/lib/youtube/youtube-url";
 import type { DownloadRequest, Prettify } from "@/types";
 
 const log = createLogger(LogScope.Background);
 
 const IFRAME_READY_TIMEOUT_MS = 60_000;
-const YOUTUBE_WATCH_BASE_URL = "https://www.youtube.com/watch";
 
 const pendingIframeReady = new Map<string, {
   resolve: () => void;
@@ -40,7 +40,7 @@ export async function prepareIframe(data: DownloadRequest) {
     mute: "1",
     autoplay: "1"
   });
-  const watchUrl = `${YOUTUBE_WATCH_BASE_URL}?${watchParams.toString()}`;
+  const watchUrl = `${WATCH_PAGE_URL}?${watchParams.toString()}`;
 
   sendToOffscreen({
     type: OffscreenMessageType.CreateDownloadIframe,

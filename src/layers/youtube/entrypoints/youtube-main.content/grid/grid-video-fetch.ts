@@ -3,11 +3,11 @@ import { readYtcfg } from "../video/video-data";
 import { extractPlayerResponseFromHtml } from "../video/youtube-api";
 import { InnertubeClientName, type InnertubePlayerRequest } from "@/lib/youtube/innertube";
 import { playerResponseSchema } from "@/lib/youtube/schemas";
+import { buildWatchUrl } from "@/lib/youtube/youtube-url";
 import type { PlayerResponse } from "@/types";
 import { getYtcfg, YtcfgKey } from "#youtube/lib/youtube/ytcfg";
 
 const PLAYER_API_URL = "https://www.youtube.com/youtubei/v1/player?prettyPrint=false";
-const YT_WATCH_URL_PREFIX = "https://www.youtube.com/watch?v=";
 const HEADER_CONTENT_TYPE = "Content-Type";
 const HEADER_GOOG_VISITOR_ID = "X-Goog-Visitor-Id";
 const CONTENT_TYPE_JSON = "application/json";
@@ -61,7 +61,7 @@ async function fetchPlayerResponseViaApi(videoId: string) {
 
 async function fetchPlayerResponseViaHtml(videoId: string) {
   const html = await (await fetch(
-    `${YT_WATCH_URL_PREFIX}${videoId}`,
+    buildWatchUrl(videoId),
     { credentials: "include" }
   )).text();
 

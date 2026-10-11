@@ -7,9 +7,9 @@ import {
   type YtInitialDataPlaylist,
   ytInitialDataPlaylistSchema
 } from "@/lib/youtube/schemas";
+import { buildPlaylistUrl } from "@/lib/youtube/youtube-url";
 import type { Prettify } from "@/types";
 
-const PLAYLIST_URL_PREFIX = "https://www.youtube.com/playlist?list=";
 const BROWSE_URL = "https://www.youtube.com/youtubei/v1/browse?prettyPrint=false";
 const INITIAL_DATA_PATTERN = /var ytInitialData\s*=\s*(.+?);\s*(?:var\s|<\/script>)/s;
 const CLIENT_VERSION_PATTERN = /"INNERTUBE_CONTEXT_CLIENT_VERSION":"([^"]+)"/;
@@ -144,7 +144,7 @@ async function fetchContinuationPage({ token, meta }: {
 }
 
 export async function fetchPlaylistContents(playlistId: string): Promise<PlaylistContents | null> {
-  const response = await fetch(`${PLAYLIST_URL_PREFIX}${playlistId}`, { credentials: "include" });
+  const response = await fetch(buildPlaylistUrl(playlistId), { credentials: "include" });
   if (!response.ok) {
     return null;
   }

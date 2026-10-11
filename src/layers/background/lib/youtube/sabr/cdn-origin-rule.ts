@@ -1,4 +1,4 @@
-import { YOUTUBE_ORIGIN } from "./request-capture";
+import { YOUTUBE_ORIGIN } from "@/lib/youtube/youtube-url";
 
 const CDN_ORIGIN_RULE_ID = 1;
 const GOOGLEVIDEO_URL_FILTER = "*.googlevideo.com/videoplayback*";
