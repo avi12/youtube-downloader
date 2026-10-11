@@ -22,12 +22,6 @@
   } as const;
   type DialogMode = (typeof DialogMode)[keyof typeof DialogMode];
 
-  const DialogPlacement = {
-    Below: "below",
-    Above: "above"
-  } as const;
-  type DialogPlacement = (typeof DialogPlacement)[keyof typeof DialogPlacement];
-
   const ANCHOR_NAME_PREFIX = "--cf-";
   const ANCHOR_NAME_SANITIZE_PATTERN = /[^a-zA-Z0-9-]/g;
   const { entry, onClose }: Props = $props();
@@ -59,25 +53,10 @@
   let isSubmitting = $state(false);
   let pendingExtension = $state<string | null>(null);
   let isClosing = $state(false);
-  let placement = $state<DialogPlacement>(DialogPlacement.Below);
   let elDialog = $state<HTMLDialogElement | null>(null);
 
   $effect(() => {
     elDialog?.show();
-  });
-
-  $effect(() => {
-    const trigger = document.querySelector<HTMLElement>(
-      `[data-cf-trigger][style*="${anchorName}"]`
-    );
-    if (!trigger) {
-      return;
-    }
-
-    const rect = trigger.getBoundingClientRect();
-    const spaceBelow = window.innerHeight - rect.bottom;
-    const spaceAbove = rect.top;
-    placement = spaceBelow >= spaceAbove ? DialogPlacement.Below : DialogPlacement.Above;
   });
 
   function findGroup(groups: FormatGroup[], heading: string): FormatGroup | undefined {
@@ -133,7 +112,7 @@
 <dialog
   bind:this={elDialog}
   style:position-anchor={anchorName}
-  class="dialog dialog--{placement}"
+  class="dialog"
   class:closing={isClosing}
   aria-labelledby="change-format-title"
   onanimationend={() => {
@@ -222,17 +201,19 @@
 
   .dialog {
     position: fixed;
-    inset-inline-end: anchor(right);
-    inset-inline-start: auto;
+    inset-block: calc(anchor(bottom) + 8px) 12px;
+    inset-inline: 12px anchor(right);
     z-index: 50;
     display: flex;
     flex-direction: column;
     gap: 10px;
+    place-self: start end;
     overflow: hidden;
     box-sizing: border-box;
-    width: 340px;
-    max-width: calc(100vw - 24px);
+    width: auto;
+    max-width: 340px;
     height: auto;
+    min-height: min(420px, calc(100vh - 24px));
     margin: 0;
     padding: 14px;
     border: 1px solid var(--border);
@@ -243,20 +224,20 @@
       0 12px 32px rgb(0 0 0 / 24%),
       0 4px 12px rgb(0 0 0 / 16%);
     animation: dialog-in 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
+    position-try-fallbacks: --change-format-above, --change-format-viewport;
 
     &.closing {
       animation: dialog-out 180ms cubic-bezier(0.36, 0, 0.66, -0.56) forwards;
     }
+  }
 
-    &.dialog--below {
-      inset-block-end: 12px;
-      inset-block-start: calc(anchor(bottom) + 8px);
-    }
+  @position-try --change-format-above {
+    inset-block: 12px calc(anchor(top) + 8px);
+    align-self: end;
+  }
 
-    &.dialog--above {
-      inset-block-end: calc(anchor(top) + 8px);
-      inset-block-start: 12px;
-    }
+  @position-try --change-format-viewport {
+    inset-block: 12px;
   }
 
   .dialog-header {

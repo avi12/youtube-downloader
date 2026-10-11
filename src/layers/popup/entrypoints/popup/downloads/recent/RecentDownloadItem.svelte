@@ -163,7 +163,6 @@
         style:anchor-name={anchorName}
         class="recent-action-btn"
         aria-label="Change format"
-        data-cf-trigger
         data-tooltip="Change format"
         data-tooltip-align="end"
         onclick={onChangeFormat}
