@@ -1,12 +1,11 @@
-import { buildInputArgs, resolveAudioCodec } from "./mux-ffmpeg-args";
+import { buildInputArgs } from "./mux-ffmpeg-args";
 import { postResult, state, tryUnlink } from "./mux-state";
 import { fetchThumbnail, sanitizeForFFmpeg } from "./mux-thumbnail";
 import type { EmbedMetadataJob } from "@/lib/download-pipeline/mux-worker-types";
-import { getCompatibleFilename, getFileExtension } from "@/lib/utils/containers";
+import { FFMPEG_CODEC_COPY, getCompatibleFilename, getFileExtension, resolveAudioCodec } from "@/lib/utils/containers";
 
 const WEBM_AUDIO_OUTPUT_EXTENSIONS = new Set(["weba", "webm"]);
 const JPEG_EXTENSION = "jpg";
-const FFMPEG_CODEC_COPY = "copy";
 const FFMPEG_CODEC_MJPEG = "mjpeg";
 const COVER_FILENAME_PREFIX = "cover";
 const INPUT_FILENAME_PREFIX = "input";

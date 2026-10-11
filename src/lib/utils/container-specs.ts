@@ -26,6 +26,7 @@ const CODEC_VP9_ENCODER = "libvpx-vp9";
 const CODEC_MPEG4_ENCODER = "mpeg4";
 const SUBTITLE_CODEC_WEBVTT = "webvtt";
 const SUBTITLE_CODEC_MOV_TEXT = "mov_text";
+export const FFMPEG_CODEC_COPY = "copy";
 
 type ContainerSpec = Prettify<{
   videoCodecs?: Set<string>;
@@ -238,6 +239,20 @@ export function isAudioMimeNativeForContainer({ audioMimeType, targetExtension }
   }
 
   return spec.audioCodecs.has(extractBaseCodec(audioMimeType));
+}
+
+export function resolveAudioCodec({ audioMimeType, targetExtension }: {
+  audioMimeType: string;
+  targetExtension: string;
+}) {
+  if (isAudioMimeNativeForContainer({
+    audioMimeType,
+    targetExtension
+  })) {
+    return FFMPEG_CODEC_COPY;
+  }
+
+  return getAudioFallbackCodec(targetExtension) ?? FFMPEG_CODEC_COPY;
 }
 
 export function getOutputExtension({ videoMimeType, audioMimeType, userExtension }: {

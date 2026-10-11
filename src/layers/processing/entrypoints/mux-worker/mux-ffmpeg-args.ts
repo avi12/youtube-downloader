@@ -1,14 +1,14 @@
 import type { MuxVideoAudioJob } from "@/lib/download-pipeline/mux-worker-types";
 import {
   CONTAINER_SPECS,
-  extractBaseCodec,
+  FFMPEG_CODEC_COPY,
   getFileExtension,
   isVideoNativeForContainer,
+  resolveAudioCodec,
   videoContainers
 } from "@/lib/utils/containers";
 import type { Prettify } from "@/types";
 
-const FFMPEG_CODEC_COPY = "copy";
 const FFMPEG_SUBTITLE_CODEC_WEBVTT = "webvtt";
 
 // Pin the demuxer per input so FFmpeg never auto-probes downloaded bytes
@@ -44,21 +44,6 @@ export function buildInputArgs(filename: string) {
   }
 
   return ["-f", demuxer, "-i", filename];
-}
-
-type ResolveAudioCodecParams = Prettify<{
-  audioMimeType: string;
-  targetExtension: string;
-}>;
-export function resolveAudioCodec({ audioMimeType, targetExtension }: ResolveAudioCodecParams) {
-  const containerSpec = CONTAINER_SPECS[targetExtension];
-  if (!containerSpec) {
-    return "copy";
-  }
-
-  const codec = extractBaseCodec(audioMimeType);
-  const fallbackCodec = containerSpec.fallbackAudioCodec ?? FFMPEG_CODEC_COPY;
-  return containerSpec.audioCodecs.has(codec) ? FFMPEG_CODEC_COPY : fallbackCodec;
 }
 
 type ResolveVideoCodecParams = Prettify<{

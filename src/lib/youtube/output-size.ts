@@ -1,8 +1,9 @@
 import {
   CONTAINER_SPECS,
   extractBaseCodec,
+  FFMPEG_CODEC_COPY,
   getAudioFallbackCodec,
-  isAudioMimeNativeForContainer
+  resolveAudioCodec
 } from "@/lib/utils/containers";
 import { type AdaptiveFormatItem, DownloadType, type Prettify } from "@/types";
 
@@ -67,7 +68,6 @@ const MKV_EXTENSIONS = new Set(["mkv", "mka"]);
 const WEBM_EXTENSIONS = new Set(["webm", "weba"]);
 const MP4_EXTENSIONS = new Set(["mp4", "m4a", "mov", "m4v"]);
 const MP3_EXTENSION = "mp3";
-const CODEC_COPY = "copy";
 
 export type SizeInputs = Prettify<{
   captionVtts: (string | null)[];
@@ -238,14 +238,6 @@ function measureSourceStream(format: AdaptiveFormatItem) {
   };
 }
 
-function resolveAudioEncoder(format: AdaptiveFormatItem, extension: string) {
-  const isNative = isAudioMimeNativeForContainer({
-    audioMimeType: format.mimeType,
-    targetExtension: extension
-  });
-  return isNative ? CODEC_COPY : (getAudioFallbackCodec(extension) ?? CODEC_COPY);
-}
-
 function measureEncodedAudio(format: AdaptiveFormatItem, encoder: string) {
   const seconds = durationSeconds(format);
   if (encoder === "libmp3lame") {
@@ -284,8 +276,11 @@ function predictMuxed({ videoFormat, audioFormats, captionVtts, extension }: Pre
   const captionPackets = captions.reduce((sum, caption) => sum + caption.packets, 0);
   let isApproximate = false;
   const audios = audioFormats.map(format => {
-    const encoder = resolveAudioEncoder(format, extension);
-    if (encoder === CODEC_COPY) {
+    const encoder = resolveAudioCodec({
+      audioMimeType: format.mimeType,
+      targetExtension: extension
+    });
+    if (encoder === FFMPEG_CODEC_COPY) {
       return measureSourceStream(format);
     }
 
@@ -338,8 +333,11 @@ function predictAudioOnly({ audioFormat, extension, inputs }: PredictAudioOnlyPa
     };
   }
 
-  const encoder = resolveAudioEncoder(audioFormat, extension);
-  const audio = encoder === CODEC_COPY
+  const encoder = resolveAudioCodec({
+    audioMimeType: audioFormat.mimeType,
+    targetExtension: extension
+  });
+  const audio = encoder === FFMPEG_CODEC_COPY
     ? {
       ...measureSourceStream(audioFormat),
       isApproximate: false
