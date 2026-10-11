@@ -1,7 +1,6 @@
 import { lockPanelOptions, PANEL_OPTIONS, unlockPanelOptions } from "./DownloadOptions.state.svelte";
 import { createDownloadStoreState } from "./DownloadOptionsPanel.download-state.svelte";
 import { createTrackStates } from "./DownloadOptionsPanel.tracks.svelte";
-import { AUTO_DUB_TRACK_SUFFIX } from "./helpers/audio-language-helpers";
 import {
   applyDownloadTypeChange,
   sendCancelDownload,
@@ -21,6 +20,7 @@ import { syncAudioFromFormat } from "./helpers/player-active-tracks.svelte";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { CONTENT_OPTIONS, interruptedDownloadStore, statusProgressSignal } from "@/lib/ui/synced-stores.svelte";
 import { getCompatibleFilename, isAudioMimeNativeForContainer, resolveAutoExtension } from "@/lib/utils/containers";
+import { AUTO_DUB_TRACK_SUFFIX } from "@/lib/youtube/download-plan";
 import { filterVideoFormatsByEnhancedBitrate } from "@/lib/youtube/format-display";
 import {
   alignAudioFormatToExtension,

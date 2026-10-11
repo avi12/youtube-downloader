@@ -3,8 +3,6 @@ import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-wo
 import { uint8ToBase64 } from "@/lib/utils/binary";
 import { ProgressType, type CaptionTrack, type Prettify } from "@/types";
 
-export { resolveOrderedCaptionTracks } from "./caption-urls";
-
 const MILLISECONDS_PER_SECOND = 1000;
 const SECONDS_PER_HOUR = 3600;
 const SECONDS_PER_MINUTE = 60;

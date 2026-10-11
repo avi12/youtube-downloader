@@ -1,8 +1,8 @@
 import { preserveAutoVariant } from "./preserve-auto-variant";
+import { AUTO_DUB_TRACK_SUFFIX } from "@/lib/youtube/download-plan";
 import { findOriginalAudioFormat, normalizeLanguageCode } from "@/lib/youtube/video-helpers";
 import type { AdaptiveFormatItem, CaptionTrack, LabeledOption } from "@/types";
 
-export const AUTO_DUB_TRACK_SUFFIX = ".10";
 export const CAPTION_KIND_ASR = "asr";
 
 export function byLabel(optionA: { label: string }, optionB: { label: string }) {

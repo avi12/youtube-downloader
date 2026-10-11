@@ -1,8 +1,5 @@
-import { CONTENT_OPTIONS } from "@/lib/ui/synced-stores.svelte";
 import { InnertubeClientName, type InnertubePlayerRequest } from "@/lib/youtube/innertube";
 import { playerResponseSchema } from "@/lib/youtube/schemas";
-import { orderCaptionsByPreference, resolveCaptionLanguageMode } from "@/lib/youtube/video-helpers";
-import { type CaptionTrack, type Prettify } from "@/types";
 import { getYtcfg, YtcfgKey } from "#youtube/lib/youtube/ytcfg";
 
 const PLAYER_API_PATH = "/youtubei/v1/player?prettyPrint=false";
@@ -12,38 +9,6 @@ const HEADER_GOOG_VISITOR_ID = "X-Goog-Visitor-Id";
 const CONTENT_TYPE_JSON = "application/json";
 const DEFAULT_CAPTION_LANGUAGE = "en";
 const DEFAULT_CAPTION_REGION = "US";
-
-type ResolveOrderedCaptionTracksParams = Prettify<{
-  captionTracks: CaptionTrack[];
-  selectedCaptionVssId: string | undefined;
-  downloadExtras: boolean;
-}>;
-export function resolveOrderedCaptionTracks({
-  captionTracks, selectedCaptionVssId, downloadExtras
-}: ResolveOrderedCaptionTracksParams) {
-  const options = CONTENT_OPTIONS;
-  const captionMode = resolveCaptionLanguageMode({
-    captionMode: options.captionLanguageMode,
-    audioMode: options.audioTrackLanguageMode
-  });
-  const allCaptionTracks = orderCaptionsByPreference({
-    captionTracks,
-    languageMode: captionMode,
-    locale: document.documentElement.lang,
-    browserLanguage: navigator.language,
-    customLanguage: options.customLanguage
-  });
-  const primaryCaptionTrack = selectedCaptionVssId
-    ? (allCaptionTracks.find(track => track.vssId === selectedCaptionVssId) ?? allCaptionTracks[0])
-    : allCaptionTracks[0];
-  if (!downloadExtras) {
-    return primaryCaptionTrack ? [primaryCaptionTrack] : [];
-  }
-
-  const nativeTracks = allCaptionTracks.filter(track => !track.translationLanguageCode);
-  const isSelectedTranslated = !!primaryCaptionTrack?.translationLanguageCode;
-  return isSelectedTranslated ? [primaryCaptionTrack, ...nativeTracks] : nativeTracks;
-}
 
 export async function fetchFreshCaptionUrls(videoId: string) {
   const apiKey = getYtcfg(YtcfgKey.InnertubeApiKey);

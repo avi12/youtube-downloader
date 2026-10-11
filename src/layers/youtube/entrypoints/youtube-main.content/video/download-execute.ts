@@ -1,25 +1,12 @@
-import { resolveOrderedCaptionTracks } from "./caption-fetch";
-import {
-  getExtraAudioFormats,
-  preResolveCdnUrls,
-  resolveCredentialsWithRetry,
-  selectFormats
-} from "./download-formats";
+import { preResolveCdnUrls, resolveCredentialsWithRetry } from "./download-formats";
 import { buildEnrichedRequest, fetchCaptionWebVttData } from "./download-request-builder";
 import { generatePoTokenIfNeeded, videoDataCache } from "./video-data";
 import { crossWorldMessenger, CrossWorldMessage } from "@/lib/messaging/cross-world-messenger";
 import { getCompatibleFilename, splitFilenameAndExtension } from "@/lib/utils/filename";
+import { resolveDownloadPlan } from "@/lib/youtube/download-plan";
 import { CAPTION_ESTIMATED_BYTES } from "@/lib/youtube/download-progress";
 import { isVideoDataExpired } from "@/lib/youtube/video-helpers";
-import type {
-  AdaptiveFormatItem,
-  CaptionTrack,
-  DownloadRequest,
-  Prettify,
-  TranslationLanguage
-} from "@/types";
-
-const TRANSLATED_CAPTION_VSSID_PREFIX = "t.";
+import type { AdaptiveFormatItem, DownloadRequest, Prettify } from "@/types";
 
 function readContentLength(format: AdaptiveFormatItem | null) {
   if (!format?.contentLength) {
@@ -28,35 +15,6 @@ function readContentLength(format: AdaptiveFormatItem | null) {
 
   const bytes = Number(format.contentLength);
   return Number.isFinite(bytes) && bytes > 0 ? bytes : 0;
-}
-
-function buildVirtualTranslatedTrack(
-  vssId: string,
-  captionTracks: CaptionTrack[],
-  translationLanguages: TranslationLanguage[]
-) {
-  const isTranslatedCaption = vssId.startsWith(TRANSLATED_CAPTION_VSSID_PREFIX);
-  if (!isTranslatedCaption) {
-    return null;
-  }
-
-  const targetLangCode = vssId.slice(TRANSLATED_CAPTION_VSSID_PREFIX.length);
-  const translationLang = translationLanguages.find(lang => lang.languageCode === targetLangCode);
-  const sourceTrack = captionTracks.find(track => track.isTranslatable);
-  const isMissingTranslationData = !translationLang || !sourceTrack;
-  if (isMissingTranslationData) {
-    return null;
-  }
-
-  return {
-    baseUrl: sourceTrack.baseUrl,
-    name: translationLang.languageName,
-    vssId,
-    languageCode: targetLangCode,
-    isTranslatable: false,
-    translationLanguageCode: targetLangCode,
-    sourceTrackVssId: sourceTrack.vssId
-  };
 }
 
 const PROGRESSIVE_DOWNLOAD_EXTENSION = "mp4";
@@ -102,9 +60,7 @@ type ResolveAndDispatchParams = Prettify<{
   abortSignal: AbortSignal;
 }>;
 export async function resolveAndDispatch({ params, abortSignal }: ResolveAndDispatchParams) {
-  const {
-    type, videoId, videoItag, audioItag, audioTrackId, selectedCaptionVssId
-  } = params;
+  const { type, videoId } = params;
 
   const cachedVideoData = videoDataCache.get(videoId);
   const isWatchPageForThisVideo =
@@ -128,39 +84,15 @@ export async function resolveAndDispatch({ params, abortSignal }: ResolveAndDisp
     return;
   }
 
-  const downloadExtras = params.downloadExtras ?? true;
-  const downloadExtraCaptions = params.downloadExtraCaptions ?? true;
-  const includeAutoDubbing = params.includeAutoDubbing ?? true;
-  const virtualTrack = selectedCaptionVssId
-    ? buildVirtualTranslatedTrack(
-      selectedCaptionVssId,
-      cachedVideoData.captionTracks,
-      cachedVideoData.translationLanguages
-    )
-    : null;
-  const captionTracksForResolution = virtualTrack
-    ? [...cachedVideoData.captionTracks, virtualTrack]
-    : cachedVideoData.captionTracks;
-  const orderedCaptionTracks = resolveOrderedCaptionTracks({
-    captionTracks: captionTracksForResolution,
-    selectedCaptionVssId,
-    downloadExtras: downloadExtraCaptions
-  });
-  const { videoFormat, audioFormat } = selectFormats({
+  const {
+    videoFormat,
+    audioFormat,
+    extraAudioFormats,
+    captionTracks: orderedCaptionTracks
+  } = resolveDownloadPlan({
     videoData: cachedVideoData,
-    type,
-    videoItag,
-    audioItag,
-    audioTrackId
+    params
   });
-  const extraAudioFormats = downloadExtras && audioFormat
-    ? getExtraAudioFormats({
-      audioFormats: cachedVideoData.audioFormats,
-      selectedTrackId: audioFormat?.audioTrack?.id,
-      selectedFormat: audioFormat,
-      includeAutoDubbing
-    })
-    : [];
   const captionExpectedBytesTotal = orderedCaptionTracks.length * CAPTION_ESTIMATED_BYTES;
   const totalExpectedBytes = readContentLength(videoFormat)
     + readContentLength(audioFormat)

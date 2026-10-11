@@ -1,6 +1,6 @@
-import { AUTO_DUB_TRACK_SUFFIX } from "./audio-language-helpers";
 import { getActivePlayerCaption } from "./panel-init-caption";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
+import { AUTO_DUB_TRACK_SUFFIX } from "@/lib/youtube/download-plan";
 import { ACTIVE_AUDIO_ATTR } from "@/lib/youtube/movie-player";
 import { getCurrentVideoAudioLanguage, normalizeLanguageCode } from "@/lib/youtube/video-helpers";
 import type { AdaptiveFormatItem } from "@/types";

@@ -4,18 +4,18 @@ import {
   byLabel,
   resolveCaptionOriginalLabel
 } from "./download-options-helpers";
-import { AUTO_DUB_TRACK_SUFFIX, CAPTION_KIND_ASR } from "./helpers/audio-language-helpers";
+import { CAPTION_KIND_ASR } from "./helpers/audio-language-helpers";
 import { PLAYER_ACTIVE_CAPTION } from "./helpers/player-active-tracks.svelte";
 import { preserveAutoVariant } from "./helpers/preserve-auto-variant";
 import { optionsItem } from "@/lib/storage/storage";
 import { CONTENT_OPTIONS } from "@/lib/ui/synced-stores.svelte";
 import { normalizeLanguageCode } from "@/lib/youtube/audio-format-helpers";
+import { AUTO_DUB_TRACK_SUFFIX, buildTranslatedCaptionTrack } from "@/lib/youtube/download-plan";
 import { findOriginalAudioFormat, INITIAL_OPTIONS } from "@/lib/youtube/video-helpers";
 import { DownloadType } from "@/types";
 import type { AdaptiveFormatItem, CaptionTrack, TranslationLanguage } from "@/types";
 import { SvelteSet } from "svelte/reactivity";
 
-const TRANSLATED_CAPTION_VSSID_PREFIX = "t.";
 const TRANSLATED_CAPTION_LABEL_SUFFIX = "(auto-translated)";
 
 const AUTO_GENERATED_SUFFIX = "(auto-generated)";
@@ -157,14 +157,10 @@ export function createDownloadOptionsState(props: () => DownloadOptionsProps) {
     const existingLangCodes = new SvelteSet(captionTracks.map(track => normalizeLanguageCode(track.languageCode)));
     return translationLanguages
       .filter(lang => !existingLangCodes.has(normalizeLanguageCode(lang.languageCode)))
-      .map(lang => ({
-        baseUrl: sourceTrack.baseUrl,
-        name: lang.languageName,
-        vssId: `${TRANSLATED_CAPTION_VSSID_PREFIX}${lang.languageCode}`,
+      .map(lang => buildTranslatedCaptionTrack({
+        sourceTrack,
         languageCode: lang.languageCode,
-        isTranslatable: false,
-        translationLanguageCode: lang.languageCode,
-        sourceTrackVssId: sourceTrack.vssId
+        languageName: lang.languageName
       }));
   });
 

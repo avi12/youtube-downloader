@@ -1,6 +1,6 @@
-import { AUTO_DUB_TRACK_SUFFIX } from "./audio-language-helpers";
 import { CONTENT_OPTIONS } from "@/lib/ui/synced-stores.svelte";
 import { getOutputExtension, resolveMultiTrackExtension } from "@/lib/utils/containers";
+import { AUTO_DUB_TRACK_SUFFIX } from "@/lib/youtube/download-plan";
 import { formatAudioCodecLabel, formatVideoQualityLabel } from "@/lib/youtube/video-helpers";
 import { DownloadType, type AdaptiveFormatItem, type VideoData } from "@/types";
 import { PrimaryButtonState } from "#youtube/lib/ui/panel-button-attachments.svelte";
