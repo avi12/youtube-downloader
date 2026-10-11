@@ -75,18 +75,15 @@
     >
       <div class="format-card-head">
         <span class="format-name">{item.extension.toUpperCase()}</span>
-        {#if tag === TagKind.Current}
-          <span class="format-tag format-tag--current">{TAG_LABEL[TagKind.Current]}</span>
-        {/if}
+        <span class="format-tag format-tag--{tag}">
+          {#if tag !== TagKind.Current}
+            <span class="format-tag-icon" aria-hidden="true">{@html getTagIcon(tag)}</span>
+          {/if}
+          {TAG_LABEL[tag]}
+        </span>
       </div>
       {#if item.description}
         <span class="format-desc">{item.description}</span>
-      {/if}
-      {#if tag !== TagKind.Current}
-        <span class="format-tag format-tag--{tag}">
-          <span class="format-tag-icon" aria-hidden="true">{@html getTagIcon(tag)}</span>
-          {TAG_LABEL[tag]}
-        </span>
       {/if}
     </button>
   {/each}
@@ -165,8 +162,6 @@
     flex-shrink: 0;
     gap: 3px;
     align-items: center;
-    align-self: flex-start;
-    margin-top: auto;
     padding: 2px 7px;
     border-radius: 999px;
     font-weight: 600;
@@ -184,7 +179,6 @@
     }
 
     &.format-tag--current {
-      margin-top: 0;
       background: var(--accent-container);
       color: var(--accent);
     }
