@@ -22,8 +22,8 @@ importers:
         specifier: ^0.12.2
         version: 0.12.2
       '@webext-core/messaging':
-        specifier: ^3.0.3
-        version: 3.0.3
+        specifier: ^4.0.0
+        version: 4.0.0
       fflate:
         specifier: ^0.8.3
         version: 0.8.3
@@ -1241,8 +1241,13 @@ packages:
   '@webext-core/match-patterns@1.1.0':
     resolution: {integrity: sha512-vebVVbcOyva4jyvljIzRJwjFi/OKMLr96LIIxiPeXfA38gE4Z3+H6Y9DwRmn7pWErJGNNHU6XOhOb5ZwicGs7Q==}
 
-  '@webext-core/messaging@3.0.3':
-    resolution: {integrity: sha512-m2hrdUAhIHdxoOBQ/capZGmhklasuJoKyjsV+0EZyo4mMQb3IyO++RtH7nfcMzPQkrsxDcMKa/AZ9XkgvXUSqw==}
+  '@webext-core/messaging@4.0.0':
+    resolution: {integrity: sha512-1GWLsiWeIRJ/LpSlI87jU3e4KCDhyTadQEwyhMlLSwXOt5/ui2xkVcE96/clxjxqp/FcUBA00c5iT5I3crjlTQ==}
+    peerDependencies:
+      '@types/chrome': '*'
+    peerDependenciesMeta:
+      '@types/chrome':
+        optional: true
 
   '@wxt-dev/browser@0.2.9':
     resolution: {integrity: sha512-I//1sxt6sSd2Ouj48Q7NfXvGFEKbQAL0wf4I/7sxduMx6S0i5xhJqDUkPCCUj42QnnbTpzybI0TA6OIz9NfMgA==}
@@ -3928,9 +3933,6 @@ packages:
     resolution: {integrity: sha512-rQicL7OwuqWdQWI33JkSXKcp7cuv1mJG8u3jRQwx/8aDsmhbTHs9ZRmNYOL+LX0wX8edIEQX8jj4bB60GoXtKA==}
     engines: {node: '>=18.0.0', npm: '>=8.0.0'}
 
-  webextension-polyfill@0.12.0:
-    resolution: {integrity: sha512-97TBmpoWJEE+3nFBQ4VocyCdLKfw54rFaJ6EVQYLBCXqCIpLSZkwGgASpv4oPt9gdKCJ80RJlcmNzNn008Ag6Q==}
-
   webpack-virtual-modules@0.6.2:
     resolution: {integrity: sha512-66/V2i5hQanC51vBQKPH4aI8NMAcBW59FVBs+rC7eGHupMyfn34q7rZIE+ETlJ+XTevqfUhVVBgSUNSW2flEUQ==}
 
@@ -4855,10 +4857,9 @@ snapshots:
 
   '@webext-core/match-patterns@1.1.0': {}
 
-  '@webext-core/messaging@3.0.3':
+  '@webext-core/messaging@4.0.0':
     dependencies:
       '@aklinker1/zero-serialize-error': 1.0.2
-      webextension-polyfill: 0.12.0
 
   '@wxt-dev/browser@0.2.9':
     dependencies:
@@ -7868,8 +7869,6 @@ snapshots:
       zip-dir: 2.0.0
     transitivePeerDependencies:
       - supports-color
-
-  webextension-polyfill@0.12.0: {}
 
   webpack-virtual-modules@0.6.2: {}
 
