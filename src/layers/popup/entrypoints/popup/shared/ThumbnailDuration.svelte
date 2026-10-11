@@ -1,5 +1,5 @@
 <script lang="ts">
-  import ThumbnailBadge from "./ThumbnailBadge.svelte";
+  import ThumbnailBadge, { BadgeSide } from "./ThumbnailBadge.svelte";
 
   interface Props {
     lengthSeconds?: number;
@@ -25,5 +25,5 @@
 </script>
 
 {#if durationLabel}
-  <ThumbnailBadge label={durationLabel} side="start" />
+  <ThumbnailBadge label={durationLabel} side={BadgeSide.Start} />
 {/if}

@@ -1,7 +1,15 @@
+<script lang="ts" module>
+  export const BadgeSide = {
+    Start: "start",
+    End: "end"
+  } as const;
+  export type BadgeSide = (typeof BadgeSide)[keyof typeof BadgeSide];
+</script>
+
 <script lang="ts">
   interface Props {
     label: string;
-    side: "start" | "end";
+    side: BadgeSide;
   }
 
   const { label, side }: Props = $props();
