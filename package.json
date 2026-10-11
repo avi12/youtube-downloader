@@ -50,7 +50,7 @@
     "globals": "^17.13.0",
     "oxlint": "^1.87.0",
     "oxlint-tsgolint": "^7.0.2004",
-    "postcss-html": "^1.8.1",
+    "postcss-html": "^2.0.0",
     "stylelint": "^17.16.0",
     "stylelint-config-ccb": "^3.32.0",
     "svelte": "^5.57.2",
