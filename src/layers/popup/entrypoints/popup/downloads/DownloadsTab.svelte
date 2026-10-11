@@ -119,8 +119,30 @@
     </div>
     <h3 class="empty-state-heading">No downloads yet</h3>
     <p class="empty-state-text">
-      Anything you grab shows up here. Open a video, channel, or playlist and tap the toolbar button to start
+      Start downloads right on YouTube - look for this button under any video
     </p>
+    <div class="youtube-actions-preview" aria-hidden="true">
+      <span class="youtube-action-pill">Like</span>
+      <span class="youtube-action-pill">Share</span>
+      <span class="youtube-action-pill youtube-download-pill">
+        <span class="youtube-download-pill-main">
+          {@html downloadIcon}
+          Download
+        </span>
+        <span class="youtube-download-pill-chevron">
+          <svg
+            fill="none"
+            stroke="currentColor"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2"
+            viewBox="0 0 24 24"
+          >
+            <path d="m6 9 6 6 6-6" />
+          </svg>
+        </span>
+      </span>
+    </div>
     <div class="empty-state-hint">
       {@html sparkleIcon}
       Tip: pick formats, quality &amp; languages in Settings
@@ -181,8 +203,8 @@
     flex-direction: column;
     gap: 12px;
     align-items: center;
-    padding-top: 40px;
-    padding-bottom: 32px;
+    padding-top: 16px;
+    padding-bottom: 16px;
     padding-inline: 16px;
     text-align: center;
 
@@ -214,6 +236,55 @@
       color: var(--fg-muted);
       font-size: 0.8125rem;
       line-height: 1.5;
+    }
+
+    .youtube-actions-preview {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      padding: 12px 14px;
+      border-radius: 16px;
+      background: var(--surface);
+      font-weight: 500;
+      font-size: 0.8125rem;
+    }
+
+    .youtube-action-pill {
+      display: inline-flex;
+      align-items: center;
+      height: 32px;
+      padding-inline: 14px;
+      border-radius: 999px;
+      background: color-mix(in oklab, var(--fg) 8%, transparent);
+      color: var(--fg-muted);
+    }
+
+    .youtube-download-pill {
+      padding-inline: 0;
+      background: var(--accent-container);
+      color: var(--fg);
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+
+      :global(svg) {
+        width: 18px;
+        height: 18px;
+      }
+    }
+
+    .youtube-download-pill-main {
+      display: inline-flex;
+      gap: 6px;
+      align-items: center;
+      padding-inline: 12px 10px;
+    }
+
+    .youtube-download-pill-chevron {
+      display: inline-flex;
+      align-items: center;
+      height: 20px;
+      padding-inline: 6px 8px;
+      border-inline-start: 1px solid color-mix(in oklab, var(--fg) 25%, transparent);
     }
 
     .empty-state-hint {
