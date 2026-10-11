@@ -2,9 +2,9 @@ import { cleanupGridUi, injectGridVideoButtons } from "./grid-ui";
 import { cleanupPanelUi } from "./panel-ui";
 import { cleanupPlaylistUi, handlePlaylistVideoAdditions, injectPlaylistDownloaderUi } from "./playlist-ui";
 import { CONTENT_OPTIONS } from "@/lib/ui/synced-stores.svelte";
+import { WATCH_PAGE_PATHNAME } from "@/lib/youtube/youtube-url";
 
 const HIDE_NATIVE_DOWNLOAD_CLASS = "ytdl-hide-native-download";
-const WATCH_PATHNAME = "/watch";
 const PLAYLIST_PATHNAME = "/playlist";
 
 export function setNativeDownloadVisibility(isVisible: boolean) {
@@ -24,7 +24,7 @@ export function handlePageChange({ url, context }: HandlePageChangeParams) {
 
   setNativeDownloadVisibility(CONTENT_OPTIONS.isShowNativeDownload);
 
-  if (pathname === WATCH_PATHNAME) {
+  if (pathname === WATCH_PAGE_PATHNAME) {
     return;
   }
 

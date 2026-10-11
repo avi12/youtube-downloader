@@ -3,8 +3,10 @@
   import sparkleIcon from "../icons/sparkle.svg?raw";
   import ActiveDownloadsSections from "./ActiveDownloadsSections.svelte";
   import RecentDownloadsSection from "./recent/RecentDownloadsSection.svelte";
+  import { MessageType, sendMessageToTab } from "@/lib/messaging/messaging";
   import { deleteRecentDownload } from "@/lib/storage/recent-downloads-db";
   import { createLogger, LogScope } from "@/lib/utils/logger";
+  import { isWatchPageUrl } from "@/lib/youtube/youtube-url";
   import { ProgressType } from "@/types";
   import type { DownloadProgressEntry, RecentDownloadEntry, VideoDetail, VideoQueueItem } from "@/types";
   import { browser } from "#imports";
@@ -98,6 +100,30 @@
     return parts.join(" · ");
   });
 
+  const isWatchPageTab = $derived(
+    currentTabId !== undefined && currentSourceUrl !== undefined && isWatchPageUrl(currentSourceUrl)
+  );
+  const emptyStateText = $derived(
+    isWatchPageTab
+      ? "Grab this video right here, or hit this button under any video on YouTube"
+      : "Start downloads right on YouTube - look for this button under any video"
+  );
+  let isStartingWatchDownload = $state(false);
+
+  async function handleStartWatchDownload(): Promise<void> {
+    if (currentTabId === undefined) {
+      return;
+    }
+
+    isStartingWatchDownload = true;
+    const isStarted = await sendMessageToTab(MessageType.StartWatchPageDownload, undefined, currentTabId)
+      .catch(error => {
+        log.warn("Starting the watch page download failed:", error);
+        return false;
+      });
+    isStartingWatchDownload = Boolean(isStarted);
+  }
+
   async function handleRemove(entry: RecentDownloadEntry): Promise<void> {
     await deleteRecentDownload(entry.id);
     onRecentChanged();
@@ -118,18 +144,29 @@
       {@html downloadIcon}
     </div>
     <h3 class="empty-state-heading">No downloads yet</h3>
-    <p class="empty-state-text">
-      Start downloads right on YouTube - look for this button under any video
-    </p>
-    <div class="youtube-actions-preview" aria-hidden="true">
-      <span class="youtube-action-pill">Like</span>
-      <span class="youtube-action-pill">Share</span>
+    <p class="empty-state-text">{emptyStateText}</p>
+    <div class="youtube-actions-preview" aria-hidden={isWatchPageTab ? undefined : "true"}>
+      <span class="youtube-action-pill" aria-hidden="true">Like</span>
+      <span class="youtube-action-pill" aria-hidden="true">Share</span>
       <span class="youtube-action-pill youtube-download-pill">
-        <span class="youtube-download-pill-main">
-          {@html downloadIcon}
-          Download
-        </span>
-        <span class="youtube-download-pill-chevron">
+        {#if isWatchPageTab}
+          <button
+            class="youtube-download-pill-main youtube-download-pill-button"
+            aria-label="Download this video"
+            disabled={isStartingWatchDownload}
+            onclick={handleStartWatchDownload}
+            type="button"
+          >
+            {@html downloadIcon}
+            Download
+          </button>
+        {:else}
+          <span class="youtube-download-pill-main">
+            {@html downloadIcon}
+            Download
+          </span>
+        {/if}
+        <span class="youtube-download-pill-chevron" aria-hidden="true">
           <svg
             fill="none"
             stroke="currentColor"
@@ -277,6 +314,36 @@
       gap: 6px;
       align-items: center;
       padding-inline: 12px 10px;
+    }
+
+    .youtube-download-pill-button {
+      align-self: stretch;
+      border: none;
+      border-end-start-radius: 999px;
+      border-start-start-radius: 999px;
+      background: transparent;
+      color: inherit;
+      font: inherit;
+      cursor: pointer;
+      transition: background-color 200ms;
+
+      &:hover:enabled {
+        background: color-mix(in oklab, var(--accent) 18%, transparent);
+      }
+
+      &:active:enabled {
+        background: color-mix(in oklab, var(--accent) 28%, transparent);
+      }
+
+      &:focus-visible {
+        outline: 2px solid var(--fg);
+        outline-offset: -2px;
+      }
+
+      &:disabled {
+        opacity: 60%;
+        cursor: progress;
+      }
     }
 
     .youtube-download-pill-chevron {

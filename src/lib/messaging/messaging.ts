@@ -43,7 +43,8 @@ export const MessageType = {
   ReportWorkerDownloadFailed: "reportWorkerDownloadFailed",
   ForwardProgressUpdate: "forwardProgressUpdate",
   ReportPageProgress: "reportPageProgress",
-  PageSabrFetch: "pageSabrFetch"
+  PageSabrFetch: "pageSabrFetch",
+  StartWatchPageDownload: "startWatchPageDownload"
 } as const;
 
 export type PageSabrFetchRequest = Prettify<{
@@ -283,6 +284,8 @@ export interface ProtocolMap {
   }): void;
 
   pageSabrFetch(data: PageSabrFetchRequest): PageSabrFetchResponse;
+
+  startWatchPageDownload(): boolean;
 }
 
 export const { sendMessage, onMessage } =

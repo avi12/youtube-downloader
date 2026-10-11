@@ -2,6 +2,7 @@ import { listenForKeepalive } from "./download/keepalive";
 import { registerBackgroundMessageHandlers } from "./handlers/background";
 import { registerCrossWorldHandlers } from "./handlers/cross-world";
 import { registerPageSabrFetchBridge } from "./handlers/page-sabr-fetch-bridge";
+import { registerPopupDownloadHandler } from "./handlers/popup-download";
 import { restoreStoredProgress, syncStoredProgressToStore } from "./handlers/progress-sync";
 import "./style.css";
 import { injectDownloadStateStyles } from "./ui/download-state-styles";
@@ -56,6 +57,7 @@ export default defineContentScript({
       context
     });
     registerBackgroundMessageHandlers();
+    registerPopupDownloadHandler();
     listenForSabrBodyReady();
     forwardSabrCredentialsWithRetry().catch(() => {});
 
