@@ -3,6 +3,7 @@
   import closeIcon from "../../icons/close.svg?raw";
   import folderIcon from "../../icons/folder.svg?raw";
   import openInNewIcon from "../../icons/open-in-new.svg?raw";
+  import { resolveDisplayThumbnailUrl } from "@/lib/youtube/thumbnail-url";
   import type { RecentDownloadEntry } from "@/types";
   import { browser } from "#imports";
 
@@ -23,13 +24,7 @@
 
   const anchorName = $derived(`--cf-${entry.id.replace(/[^a-zA-Z0-9-]/g, "")}`);
 
-  const YT_THUMBNAIL_HOST = "https://i.ytimg.com/vi";
-  // Prefer the standard YouTube video thumbnail. entry.thumbnailUrl may be
-  // the square YouTube Music cover art that's meant for ID3 embedding in
-  // the audio file — not for display here.
-  const displayThumbnailUrl = $derived(
-    entry.videoId ? `${YT_THUMBNAIL_HOST}/${entry.videoId}/mqdefault.jpg` : entry.thumbnailUrl
-  );
+  const displayThumbnailUrl = $derived(resolveDisplayThumbnailUrl(entry));
 
   const isZip = $derived(entry.container === "zip");
   const openInNewTabLabel = $derived(isZip ? "Open playlist in new tab" : "Open video in new tab");
