@@ -27,6 +27,7 @@
   },
   "dependencies": {
     "@ffmpeg/core": "0.12.10",
+    "@ffmpeg/core-nosimd": "npm:@ffmpeg/core@0.12.0",
     "@ffmpeg/types": "^0.12.4",
     "@ffmpeg/util": "^0.12.2",
     "@webext-core/messaging": "^4.0.0",

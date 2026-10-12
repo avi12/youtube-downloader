@@ -1,0 +1,144 @@
+diff --git a/dist/esm/ffmpeg-core.js b/dist/esm/ffmpeg-core.js
+index 019c38bb7c988719081c2e9ed7ca4bdbc1aabf27..ae3738453978605a65be214e618b1f7bc25d7cca 100644
+--- a/dist/esm/ffmpeg-core.js
++++ b/dist/esm/ffmpeg-core.js
+@@ -833,14 +833,9 @@ function createExportWrapper(name, fixedasm) {
+ // include: runtime_exceptions.js
+ // end include: runtime_exceptions.js
+ var wasmBinaryFile;
+-if (Module['locateFile']) {
+-  wasmBinaryFile = 'ffmpeg-core.wasm';
+-  if (!isDataURI(wasmBinaryFile)) {
+-    wasmBinaryFile = locateFile(wasmBinaryFile);
+-  }
+-} else {
+-  // Use bundler-friendly `new URL(..., import.meta.url)` pattern; works in browsers too.
+-  wasmBinaryFile = new URL('ffmpeg-core.wasm', import.meta.url).href;
++wasmBinaryFile = 'ffmpeg-core.wasm';
++if (Module['locateFile'] && !isDataURI(wasmBinaryFile)) {
++  wasmBinaryFile = locateFile(wasmBinaryFile);
+ }
+ 
+ function getBinary(file) {
+@@ -1701,6 +1696,113 @@ function is_timeout(diff) { if (Module.timeout === -1) return 0; else { return M
+       if (!ptr) return 0;
+       return zeroMemory(ptr, size);
+     }
++  // WORKERFS backported from Emscripten's library_workerfs.js, which 0.12.1+ links in
++  var WORKERFS = {DIR_MODE:16895,FILE_MODE:33279,reader:null,mount:function(mount) {
++        assert(ENVIRONMENT_IS_WORKER);
++        if (!WORKERFS.reader) WORKERFS.reader = new FileReaderSync();
++        var root = WORKERFS.createNode(null, '/', WORKERFS.DIR_MODE, 0);
++        var createdParents = {};
++        function ensureParent(path) {
++          var parts = path.split('/');
++          var parent = root;
++          for (var i = 0; i < parts.length - 1; i++) {
++            var curr = parts.slice(0, i + 1).join('/');
++            if (!createdParents[curr]) {
++              createdParents[curr] = WORKERFS.createNode(parent, parts[i], WORKERFS.DIR_MODE, 0);
++            }
++            parent = createdParents[curr];
++          }
++          return parent;
++        }
++        function base(path) {
++          var parts = path.split('/');
++          return parts[parts.length - 1];
++        }
++        Array.prototype.forEach.call(mount.opts['files'] || [], function(file) {
++          WORKERFS.createNode(ensureParent(file.name), base(file.name), WORKERFS.FILE_MODE, 0, file, file.lastModifiedDate);
++        });
++        (mount.opts['blobs'] || []).forEach(function(obj) {
++          WORKERFS.createNode(ensureParent(obj['name']), base(obj['name']), WORKERFS.FILE_MODE, 0, obj['data']);
++        });
++        return root;
++      },createNode:function(parent, name, mode, dev, contents, mtime) {
++        var node = FS.createNode(parent, name, mode);
++        node.mode = mode;
++        node.node_ops = WORKERFS.node_ops;
++        node.stream_ops = WORKERFS.stream_ops;
++        node.timestamp = (mtime || new Date).getTime();
++        if (mode === WORKERFS.FILE_MODE) {
++          node.size = contents.size;
++          node.contents = contents;
++        } else {
++          node.size = 4096;
++          node.contents = {};
++        }
++        if (parent) {
++          parent.contents[name] = node;
++        }
++        return node;
++      },node_ops:{getattr:function(node) {
++          return {
++            dev: 1,
++            ino: node.id,
++            mode: node.mode,
++            nlink: 1,
++            uid: 0,
++            gid: 0,
++            rdev: undefined,
++            size: node.size,
++            atime: new Date(node.timestamp),
++            mtime: new Date(node.timestamp),
++            ctime: new Date(node.timestamp),
++            blksize: 4096,
++            blocks: Math.ceil(node.size / 4096),
++          };
++        },setattr:function(node, attr) {
++          if (attr.mode !== undefined) node.mode = attr.mode;
++          if (attr.timestamp !== undefined) node.timestamp = attr.timestamp;
++        },lookup:function(parent, name) {
++          throw new FS.ErrnoError(44);
++        },mknod:function(parent, name, mode, dev) {
++          throw new FS.ErrnoError(63);
++        },rename:function(oldNode, newDir, newName) {
++          throw new FS.ErrnoError(63);
++        },unlink:function(parent, name) {
++          throw new FS.ErrnoError(63);
++        },rmdir:function(parent, name) {
++          throw new FS.ErrnoError(63);
++        },readdir:function(node) {
++          var entries = ['.', '..'];
++          for (var key in node.contents) {
++            if (!node.contents.hasOwnProperty(key)) continue;
++            entries.push(key);
++          }
++          return entries;
++        },symlink:function(parent, newName, oldPath) {
++          throw new FS.ErrnoError(63);
++        }},stream_ops:{read:function(stream, buffer, offset, length, position) {
++          if (position >= stream.node.size) return 0;
++          var chunk = stream.node.contents.slice(position, position + length);
++          var ab = WORKERFS.reader.readAsArrayBuffer(chunk);
++          buffer.set(new Uint8Array(ab), offset);
++          return chunk.size;
++        },write:function(stream, buffer, offset, length, position) {
++          throw new FS.ErrnoError(29);
++        },llseek:function(stream, offset, whence) {
++          var position = offset;
++          if (whence === 1) {
++            position += stream.position;
++          } else if (whence === 2) {
++            if (FS.isFile(stream.node.mode)) {
++              position += stream.node.size;
++            }
++          }
++          if (position < 0) {
++            throw new FS.ErrnoError(28);
++          }
++          return position;
++        }}};
++  
+   var MEMFS = {ops_table:null,mount:function(mount) {
+         return MEMFS.createNode(null, '/', 16384 | 511 /* 0777 */, 0);
+       },createNode:function(parent, name, mode, dev) {
+@@ -3235,6 +3337,7 @@ function is_timeout(diff) { if (Module.timeout === -1) return 0; else { return M
+   
+         FS.filesystems = {
+           'MEMFS': MEMFS,
++          'WORKERFS': WORKERFS,
+         };
+       },init:(input, output, error) => {
+         assert(!FS.init.initialized, 'FS.init was previously called. If you want to initialize later with custom parameters, remove any earlier calls (note that one is automatically added to the generated code)');
