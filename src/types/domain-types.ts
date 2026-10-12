@@ -91,6 +91,8 @@ export type VideoData = Prettify<{
   isDownloadable: boolean;
   isLive: boolean;
   videoFormats: AdaptiveFormatItem[];
+  // Every codec variant per height; videoFormats keeps one per height for the quality list
+  videoFormatVariants?: AdaptiveFormatItem[];
   audioFormats: AdaptiveFormatItem[];
   captionTracks: CaptionTrack[];
   sourceCaptionLanguageCode?: string;

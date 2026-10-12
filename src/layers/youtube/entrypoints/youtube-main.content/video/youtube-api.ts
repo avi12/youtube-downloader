@@ -1,4 +1,4 @@
-import { byQualityDesc, getUniqueVideoFormats, getAudioFormats } from "./format-filters";
+import { byQualityDesc, getUniqueVideoFormats, getAudioFormats, getVideoFormatVariants } from "./format-filters";
 import { playerResponseSchema } from "@/lib/youtube/schemas";
 import { isVideoDownloadable, isVideoLive, isVideoMusic } from "@/lib/youtube/video-helpers";
 import type { PlayerResponse, Prettify } from "@/types";
@@ -61,6 +61,7 @@ export function buildVideoData({ playerResponse, clientVersion, clientName }: Vi
     isDownloadable,
     isLive,
     videoFormats: getUniqueVideoFormats(allFormats),
+    videoFormatVariants: getVideoFormatVariants(allFormats),
     audioFormats: getAudioFormats(allFormats),
     captionTracks: allCaptionTracks,
     translationLanguages,
