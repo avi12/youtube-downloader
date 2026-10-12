@@ -34,7 +34,15 @@ async function onInitMessage(e: MessageEvent<InitMessage>) {
   // @ts-expect-error @ffmpeg/core ships no .d.ts
   const { default: createFFmpegCoreUntyped } = await import("@ffmpeg/core");
   const createFFmpegCore: FFmpegFactory = createFFmpegCoreUntyped;
-  initFfmpeg(await createFFmpegCore({ wasmBinary: e.data.wasmBinary }));
+  const ffmpeg = await createFFmpegCore({ wasmBinary: e.data.wasmBinary }).catch((error: unknown) => {
+    postError(error instanceof Error ? error.message : String(error));
+    return null;
+  });
+  if (!ffmpeg) {
+    return;
+  }
+
+  initFfmpeg(ffmpeg);
   state.ffmpeg!.setLogger(({ type, message }) => {
     const isStderr = type === FFMPEG_LOG_TYPE_STDERR;
     if (!isStderr) {

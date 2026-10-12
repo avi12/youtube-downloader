@@ -29,6 +29,7 @@ export const MessageType = {
   PipelineRemoval: "pipelineRemoval",
   PipelineQueueRemove: "pipelineQueueRemove",
   PipelineFFmpegReady: "pipelineFFmpegReady",
+  PipelineFFmpegFailed: "pipelineFFmpegFailed",
   PipelineStart: "pipelineStart",
   PipelineDownload: "pipelineDownload",
   RecentDownloadsChanged: "recentDownloadsChanged",
@@ -239,6 +240,7 @@ export interface ProtocolMap {
     type: DownloadType;
   }): void;
   pipelineFFmpegReady(): void;
+  pipelineFFmpegFailed(data: { message: string }): void;
   pipelineStart(data: PipelineStartMessage): void;
   announceDownload(data: DownloadAnnouncement): void;
   pipelineDownload(data: PipelineDownloadMessage): { downloadId: number } | null;

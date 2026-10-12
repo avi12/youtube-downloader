@@ -1,6 +1,6 @@
 import { removeFromPopupList } from "../queue/popup-list";
 import { signalVideoComplete } from "../queue/sequential-queue";
-import { signalFFmpegReady } from "./processor";
+import { signalFFmpegFailed, signalFFmpegReady } from "./processor";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
 import { isFFmpegReadyItem, mutateStorageItem, statusProgressItem } from "@/lib/storage/storage";
 import { ProgressType } from "@/types";
@@ -30,6 +30,10 @@ export function registerPipelineQueueHandlers() {
   onMessage(MessageType.PipelineFFmpegReady, () => {
     isFFmpegReadyItem.setValue(true).catch(() => {});
     signalFFmpegReady();
+  });
+
+  onMessage(MessageType.PipelineFFmpegFailed, ({ data }) => {
+    signalFFmpegFailed(data.message);
   });
 
   onMessage(MessageType.PipelineZipProgress, ({ data }) => {

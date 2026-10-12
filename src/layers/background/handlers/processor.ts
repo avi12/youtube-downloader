@@ -1,18 +1,25 @@
 import { isOffscreenConnected } from "@/lib/messaging/offscreen-messaging";
 
 let processorReady: Promise<void> | null = null;
-let resolveFFmpegReady: (() => void) | null = null;
+let ffmpegReadyResolvers: PromiseWithResolvers<void> | null = null;
 
 const OFFSCREEN_URL_PATH = "/offscreen.html";
 const OFFSCREEN_IFRAME_ID = "ytdl-offscreen-iframe";
 
 export function signalFFmpegReady() {
-  resolveFFmpegReady?.();
-  resolveFFmpegReady = null;
+  ffmpegReadyResolvers?.resolve();
+  ffmpegReadyResolvers = null;
 }
 
-async function waitForFFmpegReady() {
-  return new Promise<void>(resolve => resolveFFmpegReady = resolve);
+export function signalFFmpegFailed(message: string) {
+  ffmpegReadyResolvers?.reject(new Error(`FFmpeg failed to load: ${message}`));
+  ffmpegReadyResolvers = null;
+  processorReady = null;
+}
+
+function waitForFFmpegReady() {
+  ffmpegReadyResolvers = Promise.withResolvers<void>();
+  return ffmpegReadyResolvers.promise;
 }
 
 function isOffscreenApiAvailable() {

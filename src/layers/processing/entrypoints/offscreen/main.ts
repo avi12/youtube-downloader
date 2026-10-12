@@ -2,6 +2,7 @@ import { registerOffscreenMessageListeners } from "./offscreen-message-listeners
 import { handleWorkerMessage, WORKER_MESSAGE_PREFIX, type WorkerMessage } from "./worker-message-handler";
 import { initMuxWorker } from "@/lib/download-pipeline/ffmpeg-instance";
 import { sweepOrphanedOpfsFiles } from "@/lib/download-pipeline/opfs-constants";
+import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { browser } from "#imports";
 
 addEventListener("message", e => {
@@ -26,4 +27,7 @@ await sweepOrphanedOpfsFiles();
 const wasmBinary = await (await fetch(
   browser.runtime.getURL("/ffmpeg/ffmpeg-core.wasm")
 )).arrayBuffer();
-await initMuxWorker(wasmBinary);
+await initMuxWorker(wasmBinary).catch(async (error: unknown) => {
+  const message = error instanceof Error ? error.message : String(error);
+  await sendMessage(MessageType.PipelineFFmpegFailed, { message });
+});
