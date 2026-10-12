@@ -1,9 +1,12 @@
+import { fetchFFmpegCoreWasm, resolveFFmpegCoreBuild } from "./ffmpeg-wasm-source";
 import { registerOffscreenMessageListeners } from "./offscreen-message-listeners";
 import { handleWorkerMessage, WORKER_MESSAGE_PREFIX, type WorkerMessage } from "./worker-message-handler";
 import { initMuxWorker } from "@/lib/download-pipeline/ffmpeg-instance";
 import { sweepOrphanedOpfsFiles } from "@/lib/download-pipeline/opfs-constants";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
-import { browser } from "#imports";
+import { createLogger, LogScope } from "@/lib/utils/logger";
+
+const log = createLogger(LogScope.Ffmpeg);
 
 addEventListener("message", e => {
   const isExternalOrigin = e.origin !== location.origin;
@@ -24,10 +27,16 @@ registerOffscreenMessageListeners();
 
 await sweepOrphanedOpfsFiles();
 
-const wasmBinary = await (await fetch(
-  browser.runtime.getURL("/ffmpeg/ffmpeg-core.wasm")
-)).arrayBuffer();
-await initMuxWorker(wasmBinary).catch(async (error: unknown) => {
+async function loadFFmpegCore() {
+  const coreBuild = resolveFFmpegCoreBuild();
+  await initMuxWorker({
+    coreBuild,
+    wasmBinary: await fetchFFmpegCoreWasm(coreBuild)
+  });
+}
+
+await loadFFmpegCore().catch(async (error: unknown) => {
   const message = error instanceof Error ? error.message : String(error);
+  log.error("FFmpeg failed to load:", message);
   await sendMessage(MessageType.PipelineFFmpegFailed, { message });
 });

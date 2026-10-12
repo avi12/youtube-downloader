@@ -13,6 +13,11 @@ export enum WorkerMessageType {
   Progress = "progress"
 }
 
+export enum FFmpegCoreBuild {
+  Simd = "simd",
+  NoSimd = "noSimd"
+}
+
 type BaseWorkerJob = Prettify<{
   videoId: string;
   tabId: number;

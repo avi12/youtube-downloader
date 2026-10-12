@@ -9,7 +9,7 @@ import {
   trackFFmpegProgressFromLog
 } from "./mux-state";
 import type { FFmpegFactory } from "./mux-state";
-import { WorkerMessageType } from "@/lib/download-pipeline/mux-worker-types";
+import { FFmpegCoreBuild, WorkerMessageType } from "@/lib/download-pipeline/mux-worker-types";
 import { createLogger, LogScope } from "@/lib/utils/logger";
 import type { Prettify } from "@/types";
 
@@ -19,9 +19,17 @@ const FFMPEG_LOG_TYPE_STDERR = "stderr";
 
 type InitMessage = Prettify<{
   type: WorkerMessageType.Init;
+  coreBuild: FFmpegCoreBuild;
   wasmBinary: ArrayBuffer;
   port: MessagePort;
 }>;
+
+const FFMPEG_CORE_GLUE: Record<FFmpegCoreBuild, () => Promise<{ default: FFmpegFactory }>> = {
+  // @ts-expect-error @ffmpeg/core ships no .d.ts
+  [FFmpegCoreBuild.Simd]: () => import("@ffmpeg/core"),
+  // @ts-expect-error @ffmpeg/core ships no .d.ts
+  [FFmpegCoreBuild.NoSimd]: () => import("@ffmpeg/core-nosimd")
+};
 
 async function onInitMessage(e: MessageEvent<InitMessage>) {
   if (e.data?.type !== WorkerMessageType.Init) {
@@ -31,9 +39,7 @@ async function onInitMessage(e: MessageEvent<InitMessage>) {
   removeEventListener("message", onInitMessage);
   initPortReceiver(e.data.port);
 
-  // @ts-expect-error @ffmpeg/core ships no .d.ts
-  const { default: createFFmpegCoreUntyped } = await import("@ffmpeg/core");
-  const createFFmpegCore: FFmpegFactory = createFFmpegCoreUntyped;
+  const { default: createFFmpegCore } = await FFMPEG_CORE_GLUE[e.data.coreBuild]();
   const ffmpeg = await createFFmpegCore({ wasmBinary: e.data.wasmBinary }).catch((error: unknown) => {
     postError(error instanceof Error ? error.message : String(error));
     return null;
