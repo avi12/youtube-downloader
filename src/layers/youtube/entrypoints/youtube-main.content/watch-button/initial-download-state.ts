@@ -6,6 +6,7 @@ import {
   getOutputExtension,
   resolveAutoExtension
 } from "@/lib/utils/containers";
+import { resolveOutputExtensionForFormats } from "@/lib/youtube/align-formats-to-container";
 import { selectPreferredAudioFormat } from "@/lib/youtube/video-helpers";
 import { DownloadType, type VideoData } from "@/types";
 
@@ -29,16 +30,31 @@ function getPreferredAudioFormat(videoData: VideoData) {
   });
 }
 
-function resolveVideoExtension(videoData: VideoData, videoMime: string, audioMime: string, selectedTrackId?: string) {
+function resolveBaseVideoExtension(videoData: VideoData, preferredAudio: PreferredAudioFormat) {
+  const [firstFormat] = videoData.videoFormats;
   const userExtension = resolveAutoExtension({
     extension: CONTENT_OPTIONS.ext.video,
-    mimeType: videoMime
+    mimeType: firstFormat?.mimeType ?? DEFAULT_VIDEO_MIME_TYPE
   });
-  const extension = getOutputExtension({
-    videoMimeType: videoMime,
-    audioMimeType: audioMime,
+  if (!firstFormat || !preferredAudio) {
+    return getOutputExtension({
+      videoMimeType: firstFormat?.mimeType ?? DEFAULT_VIDEO_MIME_TYPE,
+      audioMimeType: preferredAudio?.mimeType ?? DEFAULT_AUDIO_MIME_TYPE,
+      userExtension
+    });
+  }
+
+  return resolveOutputExtensionForFormats({
+    videoData,
+    videoFormat: firstFormat,
+    audioFormat: preferredAudio,
     userExtension
   });
+}
+
+function resolveVideoExtension(videoData: VideoData, preferredAudio: PreferredAudioFormat) {
+  const extension = resolveBaseVideoExtension(videoData, preferredAudio);
+  const selectedTrackId = preferredAudio?.audioTrack?.id;
   if (!selectedTrackId) {
     return extension;
   }
@@ -55,18 +71,15 @@ function resolveVideoExtension(videoData: VideoData, videoMime: string, audioMim
 }
 
 function resolveOutputExtension(videoData: VideoData, preferredAudio: PreferredAudioFormat) {
-  const [firstFormat] = videoData.videoFormats;
-  const videoMime = firstFormat?.mimeType ?? DEFAULT_VIDEO_MIME_TYPE;
-  const audioMime = preferredAudio?.mimeType ?? DEFAULT_AUDIO_MIME_TYPE;
   if (videoData.isMusic) {
     return resolveAutoExtension({
       extension: CONTENT_OPTIONS.ext.audio,
-      mimeType: audioMime,
+      mimeType: preferredAudio?.mimeType ?? DEFAULT_AUDIO_MIME_TYPE,
       isAudio: true
     });
   }
 
-  return resolveVideoExtension(videoData, videoMime, audioMime, preferredAudio?.audioTrack?.id);
+  return resolveVideoExtension(videoData, preferredAudio);
 }
 
 function resolveInitialItags(videoData: VideoData, preferredAudio: PreferredAudioFormat) {

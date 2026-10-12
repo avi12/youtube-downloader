@@ -192,7 +192,8 @@ export function createPanelState(getVideoData: () => VideoData) {
   const estimatedSizeLabel = $derived.by(() => {
     const plan = resolveDownloadPlan({
       videoData: getVideoData(),
-      params: planParams
+      params: planParams,
+      targetExtension: actualExtension
     });
     const size = predictOutputSize({
       type: downloadType,

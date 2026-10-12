@@ -1,5 +1,7 @@
+import { alignFormatsToContainer, resolveVideoFormatVariants } from "./align-formats-to-container";
 import { orderCaptionsByPreference, resolveCaptionLanguageMode } from "./caption-helpers";
 import { CONTENT_OPTIONS } from "@/lib/ui/synced-stores.svelte";
+import { isAudioCodecPreferredForContainer } from "@/lib/utils/containers";
 import {
   type AdaptiveFormatItem,
   type CaptionTrack,
@@ -147,6 +149,7 @@ function getExtraAudioFormats({
 
 type SelectFormatsParams = Prettify<{
   videoFormats: AdaptiveFormatItem[];
+  videoFormatVariants: AdaptiveFormatItem[];
   audioFormats: AdaptiveFormatItem[];
   type: DownloadType;
   videoItag: number | undefined;
@@ -154,11 +157,11 @@ type SelectFormatsParams = Prettify<{
   audioTrackId: string | undefined;
 }>;
 function selectFormats({
-  videoFormats, audioFormats, type, videoItag, audioItag, audioTrackId
+  videoFormats, videoFormatVariants, audioFormats, type, videoItag, audioItag, audioTrackId
 }: SelectFormatsParams) {
   const isVideoRequested = type !== DownloadType.Audio;
   const videoFormat = isVideoRequested
-    ? (videoFormats.find(format => format.itag === videoItag) ?? videoFormats[0]!)
+    ? (videoFormatVariants.find(format => format.itag === videoItag) ?? videoFormats[0]!)
     : null;
 
   const isAudioRequested = type !== DownloadType.Video;
@@ -182,6 +185,7 @@ function selectFormats({
 
 type DownloadPlanVideoData = Prettify<{
   videoFormats: AdaptiveFormatItem[];
+  videoFormatVariants?: AdaptiveFormatItem[];
   audioFormats: AdaptiveFormatItem[];
   captionTracks: CaptionTrack[];
   translationLanguages: TranslationLanguage[];
@@ -192,11 +196,55 @@ export type DownloadPlanParams = Prettify<Pick<DownloadRequest,
   "downloadExtras" | "downloadExtraCaptions" | "includeAutoDubbing"
 >>;
 
+function sortPreferredAudioFirst({ audioFormats, targetExtension }: {
+  audioFormats: AdaptiveFormatItem[];
+  targetExtension: string;
+}) {
+  const preferredFormats = audioFormats.filter(format => isAudioCodecPreferredForContainer({
+    audioMimeType: format.mimeType,
+    targetExtension
+  }));
+  return [...preferredFormats, ...audioFormats.filter(format => !preferredFormats.includes(format))];
+}
+
+type AlignPlanFormatsParams = Prettify<{
+  videoData: DownloadPlanVideoData;
+  videoFormat: AdaptiveFormatItem | null;
+  audioFormat: AdaptiveFormatItem | null;
+  targetExtension: string | undefined;
+}>;
+function alignPlanFormats({
+  videoData, videoFormat, audioFormat, targetExtension
+}: AlignPlanFormatsParams) {
+  const isAudioOnlyOrUnknownContainer = !videoFormat || !targetExtension;
+  if (isAudioOnlyOrUnknownContainer) {
+    return {
+      videoFormat,
+      audioFormat,
+      audioFormats: videoData.audioFormats
+    };
+  }
+
+  return {
+    ...alignFormatsToContainer({
+      videoData,
+      videoFormat,
+      audioFormat,
+      targetExtension
+    }),
+    audioFormats: sortPreferredAudioFirst({
+      audioFormats: videoData.audioFormats,
+      targetExtension
+    })
+  };
+}
+
 type ResolveDownloadPlanParams = Prettify<{
   videoData: DownloadPlanVideoData;
   params: DownloadPlanParams;
+  targetExtension?: string;
 }>;
-export function resolveDownloadPlan({ videoData, params }: ResolveDownloadPlanParams) {
+export function resolveDownloadPlan({ videoData, params, targetExtension }: ResolveDownloadPlanParams) {
   const downloadExtras = params.downloadExtras ?? true;
   const downloadExtraCaptions = params.downloadExtraCaptions ?? true;
   const includeAutoDubbing = params.includeAutoDubbing ?? true;
@@ -208,17 +256,23 @@ export function resolveDownloadPlan({ videoData, params }: ResolveDownloadPlanPa
     selectedCaptionVssId: params.selectedCaptionVssId,
     downloadExtras: downloadExtraCaptions
   });
-  const { videoFormat, audioFormat } = selectFormats({
+  const selected = selectFormats({
     videoFormats: videoData.videoFormats,
+    videoFormatVariants: resolveVideoFormatVariants(videoData),
     audioFormats: videoData.audioFormats,
     type: params.type,
     videoItag: params.videoItag,
     audioItag: params.audioItag,
     audioTrackId: params.audioTrackId
   });
+  const { videoFormat, audioFormat, audioFormats } = alignPlanFormats({
+    videoData,
+    ...selected,
+    targetExtension
+  });
   const extraAudioFormats = downloadExtras && audioFormat
     ? getExtraAudioFormats({
-      audioFormats: videoData.audioFormats,
+      audioFormats,
       selectedTrackId: audioFormat.audioTrack?.id,
       selectedFormat: audioFormat,
       includeAutoDubbing

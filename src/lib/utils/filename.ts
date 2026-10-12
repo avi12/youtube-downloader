@@ -1,5 +1,5 @@
-import { getOutputExtension } from "./container-specs";
 import { resolveAutoExtension } from "./mime-types";
+import { resolveOutputExtensionForFormats } from "@/lib/youtube/align-formats-to-container";
 import type { Options, VideoData } from "@/types";
 
 export function getCompatibleFilename(filename: string) {
@@ -51,9 +51,10 @@ export function resolveVideoFilename({ videoData, options, titleOverride }: {
     isAudio: videoData.isMusic
   });
   const outputExtension = videoFormat && audioFormat && !videoData.isMusic
-    ? getOutputExtension({
-      videoMimeType: videoFormat.mimeType,
-      audioMimeType: audioFormat.mimeType,
+    ? resolveOutputExtensionForFormats({
+      videoData,
+      videoFormat,
+      audioFormat,
       userExtension: resolvedExtension
     })
     : resolvedExtension;

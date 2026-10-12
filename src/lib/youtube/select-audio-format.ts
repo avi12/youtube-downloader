@@ -1,5 +1,5 @@
 import { normalizeLanguageCode, findOriginalAudioFormat } from "./audio-format-helpers";
-import { isAudioMimeNativeForContainer } from "@/lib/utils/containers";
+import { isAudioCodecPreferredForContainer, isAudioMimeNativeForContainer } from "@/lib/utils/container-specs";
 import { AudioTrackLanguageMode } from "@/types";
 import type { AdaptiveFormatItem, Prettify } from "@/types";
 
@@ -105,7 +105,7 @@ export function selectPreferredAudioFormat({
   return candidates[0] ?? null;
 }
 
-function pickBestByBitrate(formats: AdaptiveFormatItem[]) {
+export function pickBestByBitrate(formats: AdaptiveFormatItem[]) {
   return formats.reduce<AdaptiveFormatItem | null>(
     (best, format) => !best || format.bitrate > best.bitrate ? format : best,
     null
@@ -122,12 +122,12 @@ export function alignAudioFormatToExtension({
   currentFormat,
   targetExtension
 }: AlignAudioFormatToExtensionParams) {
-  const isCurrentCompatible = currentFormat
-    && isAudioMimeNativeForContainer({
+  const isCurrentPreferred = currentFormat
+    && isAudioCodecPreferredForContainer({
       audioMimeType: currentFormat.mimeType,
       targetExtension
     });
-  if (isCurrentCompatible) {
+  if (isCurrentPreferred) {
     return currentFormat;
   }
 
@@ -136,10 +136,17 @@ export function alignAudioFormatToExtension({
     ? audioFormats.filter(format => format.audioTrack?.id === selectedTrackId)
     : audioFormats;
   const candidates = sameTrackCandidates.length ? sameTrackCandidates : audioFormats;
+  const preferredFormats = candidates.filter(format => isAudioCodecPreferredForContainer({
+    audioMimeType: format.mimeType,
+    targetExtension
+  }));
   const nativeFormats = candidates.filter(format => isAudioMimeNativeForContainer({
     audioMimeType: format.mimeType,
     targetExtension
   }));
 
-  return pickBestByBitrate(nativeFormats) ?? pickBestByBitrate(candidates) ?? currentFormat;
+  return pickBestByBitrate(preferredFormats)
+    ?? pickBestByBitrate(nativeFormats)
+    ?? pickBestByBitrate(candidates)
+    ?? currentFormat;
 }

@@ -2,7 +2,7 @@ import { preResolveCdnUrls, resolveCredentialsWithRetry } from "./download-forma
 import { buildEnrichedRequest, fetchCaptionWebVttData } from "./download-request-builder";
 import { generatePoTokenIfNeeded, videoDataCache } from "./video-data";
 import { crossWorldMessenger, CrossWorldMessage } from "@/lib/messaging/cross-world-messenger";
-import { getCompatibleFilename, splitFilenameAndExtension } from "@/lib/utils/filename";
+import { getCompatibleFilename, getFileExtension, splitFilenameAndExtension } from "@/lib/utils/filename";
 import { createLogger, LogScope } from "@/lib/utils/logger";
 import { resolveDownloadPlan } from "@/lib/youtube/download-plan";
 import { CAPTION_ESTIMATED_BYTES } from "@/lib/youtube/download-progress";
@@ -116,7 +116,8 @@ export async function resolveAndDispatch({ params, abortSignal }: ResolveAndDisp
     captionTracks: orderedCaptionTracks
   } = resolveDownloadPlan({
     videoData: cachedVideoData,
-    params
+    params,
+    targetExtension: getFileExtension(params.filenameOutput).toLowerCase()
   });
   const captionExpectedBytesTotal = orderedCaptionTracks.length * CAPTION_ESTIMATED_BYTES;
   const totalExpectedBytes = readContentLength(videoFormat)

@@ -33,9 +33,17 @@ type ContainerSpec = Prettify<{
   audioCodecs: Set<string>;
   fallbackAudioCodec?: string;
   fallbackVideoCodec?: string;
+  // Picked over other codecs for video downloads, even at a lower bitrate (issue #21)
+  preferredVideoCodecs?: Set<string>;
+  preferredAudioCodecs?: Set<string>;
   allowNonNativeVideo?: boolean;
   subtitleCodec?: string;
 }>;
+
+const PREFER_H264 = new Set([CODEC_AVC1]);
+const PREFER_VP9 = new Set([CODEC_VP9, CODEC_VP09]);
+const PREFER_AAC = new Set([CODEC_MP4A]);
+const PREFER_OPUS = new Set([CODEC_OPUS]);
 
 export const MULTI_TRACK_UNSUPPORTED_EXTENSIONS = new Set(["avi", "3gp", "m4b"]);
 
@@ -52,6 +60,8 @@ export const CONTAINER_SPECS: Record<string, ContainerSpec> = {
     videoCodecs: new Set([CODEC_VP8, CODEC_VP9, CODEC_VP09, CODEC_AV01]),
     audioCodecs: new Set([CODEC_OPUS, CODEC_VORBIS]),
     fallbackVideoCodec: CODEC_VP9_ENCODER,
+    preferredVideoCodecs: PREFER_VP9,
+    preferredAudioCodecs: PREFER_OPUS,
     subtitleCodec: SUBTITLE_CODEC_WEBVTT
   },
   mp4: {
@@ -59,6 +69,8 @@ export const CONTAINER_SPECS: Record<string, ContainerSpec> = {
     audioCodecs: new Set([CODEC_MP4A, CODEC_AC3, CODEC_EC3, CODEC_FLAC]),
     fallbackAudioCodec: CODEC_AAC,
     fallbackVideoCodec: CODEC_H264_ENCODER,
+    preferredVideoCodecs: PREFER_H264,
+    preferredAudioCodecs: PREFER_AAC,
     allowNonNativeVideo: true,
     subtitleCodec: SUBTITLE_CODEC_MOV_TEXT
   },
@@ -67,6 +79,8 @@ export const CONTAINER_SPECS: Record<string, ContainerSpec> = {
     audioCodecs: new Set([CODEC_MP4A, CODEC_AC3, CODEC_EC3, CODEC_FLAC]),
     fallbackAudioCodec: CODEC_AAC,
     fallbackVideoCodec: CODEC_H264_ENCODER,
+    preferredVideoCodecs: PREFER_H264,
+    preferredAudioCodecs: PREFER_AAC,
     allowNonNativeVideo: true,
     subtitleCodec: SUBTITLE_CODEC_MOV_TEXT
   },
@@ -74,13 +88,16 @@ export const CONTAINER_SPECS: Record<string, ContainerSpec> = {
     videoCodecs: new Set([CODEC_AVC1, CODEC_MP4V]),
     audioCodecs: new Set([CODEC_AC3]),
     fallbackAudioCodec: CODEC_MP3_ENCODER,
-    fallbackVideoCodec: CODEC_MPEG4_ENCODER
+    fallbackVideoCodec: CODEC_MPEG4_ENCODER,
+    preferredVideoCodecs: PREFER_H264
   },
   m4v: {
     videoCodecs: new Set([CODEC_AVC1, CODEC_HVC1, CODEC_HEV1, CODEC_AV01, CODEC_MP4V]),
     audioCodecs: new Set([CODEC_MP4A, CODEC_AC3, CODEC_EC3, CODEC_FLAC]),
     fallbackAudioCodec: CODEC_AAC,
     fallbackVideoCodec: CODEC_H264_ENCODER,
+    preferredVideoCodecs: PREFER_H264,
+    preferredAudioCodecs: PREFER_AAC,
     allowNonNativeVideo: true,
     subtitleCodec: SUBTITLE_CODEC_MOV_TEXT
   },
@@ -88,13 +105,17 @@ export const CONTAINER_SPECS: Record<string, ContainerSpec> = {
     videoCodecs: new Set([CODEC_AVC1, CODEC_MP4V]),
     audioCodecs: new Set([CODEC_MP4A]),
     fallbackAudioCodec: CODEC_AAC,
-    fallbackVideoCodec: CODEC_H264_ENCODER
+    fallbackVideoCodec: CODEC_H264_ENCODER,
+    preferredVideoCodecs: PREFER_H264,
+    preferredAudioCodecs: PREFER_AAC
   },
   ts: {
     videoCodecs: new Set([CODEC_AVC1, CODEC_HVC1, CODEC_HEV1, CODEC_MP4V]),
     audioCodecs: new Set([CODEC_MP4A, CODEC_AC3, CODEC_EC3, CODEC_MP3]),
     fallbackAudioCodec: CODEC_AAC,
-    fallbackVideoCodec: CODEC_H264_ENCODER
+    fallbackVideoCodec: CODEC_H264_ENCODER,
+    preferredVideoCodecs: PREFER_H264,
+    preferredAudioCodecs: PREFER_AAC
   },
   mkv: {
     videoCodecs: new Set([
@@ -241,6 +262,21 @@ export function isAudioMimeNativeForContainer({ audioMimeType, targetExtension }
   return spec.audioCodecs.has(extractBaseCodec(audioMimeType));
 }
 
+export function isAudioCodecPreferredForContainer({ audioMimeType, targetExtension }: {
+  audioMimeType: string;
+  targetExtension: string;
+}) {
+  const preferredAudioCodecs = CONTAINER_SPECS[targetExtension]?.preferredAudioCodecs;
+  if (!preferredAudioCodecs) {
+    return isAudioMimeNativeForContainer({
+      audioMimeType,
+      targetExtension
+    });
+  }
+
+  return preferredAudioCodecs.has(extractBaseCodec(audioMimeType));
+}
+
 export function resolveAudioCodec({ audioMimeType, targetExtension }: {
   audioMimeType: string;
   targetExtension: string;
@@ -277,6 +313,13 @@ export function getOutputExtension({ videoMimeType, audioMimeType, userExtension
   const isCompatible = videoOk && audioOk;
 
   return isCompatible ? userExtension : "mkv";
+}
+
+export function isVideoCodecPreferredForContainer({ videoMimeType, targetExtension }: {
+  videoMimeType: string;
+  targetExtension: string;
+}) {
+  return CONTAINER_SPECS[targetExtension]?.preferredVideoCodecs?.has(extractBaseCodec(videoMimeType)) ?? false;
 }
 
 export function isVideoNativeForContainer({ videoMimeType, targetExtension }: {

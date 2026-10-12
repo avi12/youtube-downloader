@@ -1,5 +1,6 @@
 import { CONTENT_OPTIONS } from "@/lib/ui/synced-stores.svelte";
-import { getOutputExtension, resolveMultiTrackExtension } from "@/lib/utils/containers";
+import { resolveMultiTrackExtension } from "@/lib/utils/containers";
+import { resolveOutputExtensionForFormats } from "@/lib/youtube/align-formats-to-container";
 import { AUTO_DUB_TRACK_SUFFIX } from "@/lib/youtube/download-plan";
 import { formatAudioCodecLabel, formatVideoQualityLabel } from "@/lib/youtube/video-helpers";
 import { DownloadType, type AdaptiveFormatItem, type VideoData } from "@/types";
@@ -27,9 +28,10 @@ export function resolveActualExtension({
     return extension;
   }
 
-  const baseExtension = getOutputExtension({
-    videoMimeType: selectedVideoFormat.mimeType,
-    audioMimeType: selectedAudioFormat.mimeType,
+  const baseExtension = resolveOutputExtensionForFormats({
+    videoData: getVideoData(),
+    videoFormat: selectedVideoFormat,
+    audioFormat: selectedAudioFormat,
     userExtension: extension
   });
 
