@@ -72,13 +72,26 @@ function deriveAudioTrackLabelFromLanguageCode(languageCode: string) {
   }
 }
 
+// The plan may swap formats to suit the container, so the request carries the
+// itags actually downloaded rather than the ones the panel picked
+function resolveRequestItags({ params, videoFormat, audioFormat }: {
+  params: DownloadParams;
+  videoFormat: AdaptiveFormatItem | null;
+  audioFormat: AdaptiveFormatItem | null;
+}) {
+  return {
+    videoItag: videoFormat?.itag ?? params.videoItag,
+    audioItag: audioFormat?.itag ?? params.audioItag
+  };
+}
+
 type BuildEnrichedRequestParams = Prettify<{
   params: DownloadParams;
   resolved: ResolvedDownloadData;
 }>;
 export async function buildEnrichedRequest({ params, resolved }: BuildEnrichedRequestParams) {
   const {
-    type, videoId, videoItag, audioItag, filenameOutput, isIframeFallback, originTabId,
+    type, videoId, filenameOutput, isIframeFallback, originTabId,
     playlistId, playlistTitle, playlistTotalCount
   } = params;
   const {
@@ -94,8 +107,11 @@ export async function buildEnrichedRequest({ params, resolved }: BuildEnrichedRe
   return {
     type,
     videoId,
-    videoItag,
-    audioItag,
+    ...resolveRequestItags({
+      params,
+      videoFormat,
+      audioFormat
+    }),
     filenameOutput,
     isIframeFallback,
     sabrConfig,
