@@ -379,6 +379,8 @@ export function createPanelState(getVideoData: () => VideoData) {
       const isAudioSettingChanged = audioCodec !== previous.audioCodec;
       if (isAudioSettingChanged) {
         pinnedAudioFormat = null;
+        // Audio-only picks follow the audio container, so re-match the pick to it under the new codec
+        applyExtension(extension);
       }
     });
   });
