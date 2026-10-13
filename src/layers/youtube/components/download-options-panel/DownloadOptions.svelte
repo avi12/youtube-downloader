@@ -67,6 +67,8 @@
 
 <div class="ytdl-options-container">
   <DownloadMediaSection
+    audioCodecOptions={derived.audioCodecOptions}
+    audioCodecValue={derived.audioCodecValue}
     {audioFormats}
     {downloadType}
     isAudio={derived.isAudio}

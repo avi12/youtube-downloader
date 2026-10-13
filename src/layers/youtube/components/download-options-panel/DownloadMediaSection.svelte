@@ -1,6 +1,6 @@
 <script lang="ts">
   import PolymerSelect from "../polymer-select/PolymerSelect.svelte";
-  import { DOWNLOAD_TYPES, handleQualityChange } from "./download-options-helpers";
+  import { DOWNLOAD_TYPES, findAudioFormatByValue, handleQualityChange } from "./download-options-helpers";
   import { DownloadType } from "@/types";
   import type { AdaptiveFormatItem, LabeledOption } from "@/types";
 
@@ -9,6 +9,8 @@
     isDownloading: boolean;
     qualityOptions: LabeledOption[];
     qualityValue: string;
+    audioCodecOptions: LabeledOption[];
+    audioCodecValue: string;
     audioFormats: AdaptiveFormatItem[];
     videoFormats: AdaptiveFormatItem[];
     isAudio: boolean;
@@ -22,6 +24,8 @@
     isDownloading,
     qualityOptions,
     qualityValue,
+    audioCodecOptions,
+    audioCodecValue,
     audioFormats,
     videoFormats,
     isAudio,
@@ -60,6 +64,24 @@
     options={qualityOptions}
     value={qualityValue}
   />
+  {#if audioCodecOptions.length > 0}
+    <PolymerSelect
+      id="audio-codec-select"
+      disabled={isDownloading}
+      label="Audio"
+      onchange={valueString => {
+        const format = findAudioFormatByValue({
+          audioFormats,
+          valueString
+        });
+        if (format) {
+          onaudioformatchange(format);
+        }
+      }}
+      options={audioCodecOptions}
+      value={audioCodecValue}
+    />
+  {/if}
 </div>
 
 <style>

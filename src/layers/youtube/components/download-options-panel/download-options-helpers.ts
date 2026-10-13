@@ -9,7 +9,13 @@ import {
 } from "@/lib/utils/containers";
 import { DownloadType } from "@/types";
 
-export { buildQualityOptions, handleQualityChange } from "./helpers/quality-change-handler";
+export {
+  buildAudioFormatOptions,
+  buildQualityOptions,
+  findAudioFormatByValue,
+  handleQualityChange,
+  toAudioFormatValue
+} from "./helpers/quality-change-handler";
 export { buildUniqueAudioLanguages, byLabel, resolveCaptionOriginalLabel } from "./helpers/audio-language-helpers";
 
 export const DOWNLOAD_TYPES = [

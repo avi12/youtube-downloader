@@ -1,17 +1,20 @@
 import {
+  buildAudioFormatOptions,
   buildQualityOptions,
   buildUniqueAudioLanguages,
   byLabel,
-  resolveCaptionOriginalLabel
+  resolveCaptionOriginalLabel,
+  toAudioFormatValue
 } from "./download-options-helpers";
 import { CAPTION_KIND_ASR } from "./helpers/audio-language-helpers";
 import { PLAYER_ACTIVE_CAPTION } from "./helpers/player-active-tracks.svelte";
 import { preserveAutoVariant } from "./helpers/preserve-auto-variant";
 import { optionsItem } from "@/lib/storage/storage";
 import { CONTENT_OPTIONS } from "@/lib/ui/synced-stores.svelte";
+import { isAudioCodecPreferredForContainer } from "@/lib/utils/containers";
 import { normalizeLanguageCode } from "@/lib/youtube/audio-format-helpers";
 import { AUTO_DUB_TRACK_SUFFIX, buildTranslatedCaptionTrack } from "@/lib/youtube/download-plan";
-import { findOriginalAudioFormat, INITIAL_OPTIONS } from "@/lib/youtube/video-helpers";
+import { alignAudioFormatToExtension, findOriginalAudioFormat, INITIAL_OPTIONS } from "@/lib/youtube/video-helpers";
 import { DownloadType } from "@/types";
 import type { AdaptiveFormatItem, CaptionTrack, TranslationLanguage, VideoData } from "@/types";
 import { SvelteSet } from "svelte/reactivity";
@@ -149,6 +152,32 @@ export function createDownloadOptionsState(props: () => DownloadOptionsProps) {
       : (props().selectedVideoFormat?.itag.toString() ?? "")
   );
 
+  // Only codecs the container keeps as-is - the download plan swaps any other pick for one of these
+  const audioCodecOptions = $derived.by(() => {
+    const isVideoAndAudio = props().downloadType === DownloadType.VideoAndAudio;
+    if (!isVideoAndAudio) {
+      return [];
+    }
+
+    return buildAudioFormatOptions({
+      audioFormats: props().audioFormats.filter(format => isAudioCodecPreferredForContainer({
+        audioMimeType: format.mimeType,
+        targetExtension: props().actualExtension
+      })),
+      selectedAudioTrackId: props().selectedAudioFormat?.audioTrack?.id,
+      uniqueAudioLanguagesCount: uniqueAudioLanguages.length
+    });
+  });
+
+  const audioCodecValue = $derived.by(() => {
+    const downloadedFormat = alignAudioFormatToExtension({
+      audioFormats: props().audioFormats,
+      currentFormat: props().selectedAudioFormat,
+      targetExtension: props().actualExtension
+    });
+    return downloadedFormat ? toAudioFormatValue(downloadedFormat) : "";
+  });
+
   const translatedCaptionTracks = $derived.by(() => {
     const { captionTracks, translationLanguages } = props();
     const sourceTrack = captionTracks.find(track => track.isTranslatable);
@@ -275,6 +304,12 @@ export function createDownloadOptionsState(props: () => DownloadOptionsProps) {
     },
     get qualityValue() {
       return qualityValue;
+    },
+    get audioCodecOptions() {
+      return audioCodecOptions;
+    },
+    get audioCodecValue() {
+      return audioCodecValue;
     },
     get captionCustomOptions() {
       return captionCustomOptions;

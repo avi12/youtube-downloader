@@ -3,6 +3,39 @@ import { alignVideoFormatToExtension, resolveVideoFormatVariants } from "@/lib/y
 import { formatAudioQualityLabel, formatVideoQualityLabel } from "@/lib/youtube/video-helpers";
 import type { AdaptiveFormatItem, VideoData } from "@/types";
 
+export function toAudioFormatValue(format: AdaptiveFormatItem) {
+  return `${format.itag}:${format.audioTrack?.id ?? ""}`;
+}
+
+export function findAudioFormatByValue({ audioFormats, valueString }: {
+  audioFormats: AdaptiveFormatItem[];
+  valueString: string;
+}) {
+  const colonIndex = valueString.indexOf(":");
+  const itag = parseInt(valueString.slice(0, colonIndex), 10);
+  const trackId = valueString.slice(colonIndex + 1) || undefined;
+  return audioFormats.find(format => format.itag === itag && format.audioTrack?.id === trackId);
+}
+
+export function buildAudioFormatOptions({
+  audioFormats,
+  selectedAudioTrackId,
+  uniqueAudioLanguagesCount
+}: {
+  audioFormats: AdaptiveFormatItem[];
+  selectedAudioTrackId: string | null | undefined;
+  uniqueAudioLanguagesCount: number;
+}) {
+  const trackId = selectedAudioTrackId ?? null;
+  const formats = uniqueAudioLanguagesCount > 0
+    ? audioFormats.filter(format => (format.audioTrack?.id ?? null) === trackId)
+    : audioFormats;
+  return formats.map(format => ({
+    value: toAudioFormatValue(format),
+    label: formatAudioQualityLabel(format)
+  }));
+}
+
 export function buildQualityOptions({
   isAudio,
   audioFormats,
@@ -21,14 +54,11 @@ export function buildQualityOptions({
   uniqueAudioLanguagesCount: number;
 }) {
   if (isAudio) {
-    const trackId = selectedAudioTrackId ?? null;
-    const formats = uniqueAudioLanguagesCount > 0
-      ? audioFormats.filter(format => (format.audioTrack?.id ?? null) === trackId)
-      : audioFormats;
-    return formats.map(format => ({
-      value: `${format.itag}:${format.audioTrack?.id ?? ""}`,
-      label: formatAudioQualityLabel(format)
-    }));
+    return buildAudioFormatOptions({
+      audioFormats,
+      selectedAudioTrackId,
+      uniqueAudioLanguagesCount
+    });
   }
 
   const variants = resolveVideoFormatVariants({
@@ -64,10 +94,10 @@ export function handleQualityChange({
   onvideoformatchange: (format: AdaptiveFormatItem) => void;
 }) {
   if (isAudio) {
-    const colonIndex = valueString.indexOf(":");
-    const itag = parseInt(valueString.slice(0, colonIndex), 10);
-    const trackId = valueString.slice(colonIndex + 1) || undefined;
-    const format = audioFormats.find(item => item.itag === itag && item.audioTrack?.id === trackId);
+    const format = findAudioFormatByValue({
+      audioFormats,
+      valueString
+    });
     if (format) {
       onaudioformatchange(format);
     }
