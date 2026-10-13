@@ -13,7 +13,6 @@
     panelCaptionMode: PanelTrackMode;
     filename: string;
     extension: string;
-    actualExtension: string;
     isDownloading: boolean;
     ondownloadtypechange: (type: import("@/types").DownloadType) => void;
     onvideoformatchange: (format: AdaptiveFormatItem) => void;
@@ -28,7 +27,7 @@
   }
 
   const {
-    downloadType, videoFormats, audioFormats, captionTracks, translationLanguages,
+    downloadType, videoFormats, videoFormatVariants, audioFormats, captionTracks, translationLanguages,
     selectedVideoFormat, selectedAudioFormat, selectedCaptionTrack,
     panelAudioMode, panelAudioCustomLanguage, panelCaptionMode,
     filename, extension, actualExtension, isDownloading,
@@ -40,6 +39,8 @@
   const derived = createDownloadOptionsState(() => ({
     downloadType,
     videoFormats,
+    videoFormatVariants,
+    actualExtension,
     audioFormats,
     captionTracks,
     translationLanguages,

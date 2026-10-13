@@ -13,7 +13,7 @@ import { normalizeLanguageCode } from "@/lib/youtube/audio-format-helpers";
 import { AUTO_DUB_TRACK_SUFFIX, buildTranslatedCaptionTrack } from "@/lib/youtube/download-plan";
 import { findOriginalAudioFormat, INITIAL_OPTIONS } from "@/lib/youtube/video-helpers";
 import { DownloadType } from "@/types";
-import type { AdaptiveFormatItem, CaptionTrack, TranslationLanguage } from "@/types";
+import type { AdaptiveFormatItem, CaptionTrack, TranslationLanguage, VideoData } from "@/types";
 import { SvelteSet } from "svelte/reactivity";
 
 const TRANSLATED_CAPTION_LABEL_SUFFIX = "(auto-translated)";
@@ -33,6 +33,8 @@ function formatCaptionLabel(track: CaptionTrack) {
 export interface DownloadOptionsProps {
   downloadType: DownloadType;
   videoFormats: AdaptiveFormatItem[];
+  videoFormatVariants: VideoData["videoFormatVariants"];
+  actualExtension: string;
   audioFormats: AdaptiveFormatItem[];
   captionTracks: CaptionTrack[];
   translationLanguages: TranslationLanguage[];
@@ -134,6 +136,8 @@ export function createDownloadOptionsState(props: () => DownloadOptionsProps) {
       isAudio,
       audioFormats: props().audioFormats,
       videoFormats: props().videoFormats,
+      videoFormatVariants: props().videoFormatVariants,
+      targetExtension: props().actualExtension,
       selectedAudioTrackId: props().selectedAudioFormat?.audioTrack?.id,
       uniqueAudioLanguagesCount: uniqueAudioLanguages.length
     })

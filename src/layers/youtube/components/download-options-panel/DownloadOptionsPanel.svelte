@@ -85,6 +85,7 @@
       selectedCaptionTrack={panel.caption.selectedCaptionTrack}
       selectedVideoFormat={panel.selectedVideoFormat}
       translationLanguages={props.videoData.translationLanguages}
+      videoFormatVariants={props.videoData.videoFormatVariants}
       videoFormats={props.videoData.videoFormats}
     />
   </div>

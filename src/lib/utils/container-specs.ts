@@ -173,6 +173,21 @@ export function extractBaseCodec(mimeType: string) {
   return mimeType.match(/codecs="?([^",.;]+)/i)?.[1]?.toLowerCase() ?? "";
 }
 
+const VIDEO_CODEC_LABELS: Record<string, string> = {
+  [CODEC_AVC1]: "H.264",
+  [CODEC_HVC1]: "HEVC",
+  [CODEC_HEV1]: "HEVC",
+  [CODEC_VP8]: "VP8",
+  [CODEC_VP9]: "VP9",
+  [CODEC_VP09]: "VP9",
+  [CODEC_AV01]: "AV1"
+};
+
+export function formatVideoCodecLabel(mimeType: string) {
+  const codec = extractBaseCodec(mimeType);
+  return VIDEO_CODEC_LABELS[codec] ?? codec.toUpperCase();
+}
+
 function videoCodecsFor(spec: ContainerSpec) {
   return spec.videoCodecs ?? new Set<string>();
 }

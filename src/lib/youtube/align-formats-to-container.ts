@@ -13,7 +13,7 @@ type AlignVideoFormatToExtensionParams = Prettify<{
   currentFormat: AdaptiveFormatItem;
   targetExtension: string;
 }>;
-function alignVideoFormatToExtension({
+export function alignVideoFormatToExtension({
   videoFormatVariants,
   currentFormat,
   targetExtension

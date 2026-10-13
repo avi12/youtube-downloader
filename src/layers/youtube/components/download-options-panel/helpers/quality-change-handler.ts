@@ -1,5 +1,7 @@
+import { formatVideoCodecLabel } from "@/lib/utils/container-specs";
+import { alignVideoFormatToExtension, resolveVideoFormatVariants } from "@/lib/youtube/align-formats-to-container";
 import { formatAudioCodecLabel, formatVideoQualityLabel } from "@/lib/youtube/video-helpers";
-import type { AdaptiveFormatItem } from "@/types";
+import type { AdaptiveFormatItem, VideoData } from "@/types";
 
 const BITS_PER_KILOBIT = 1000;
 
@@ -7,12 +9,16 @@ export function buildQualityOptions({
   isAudio,
   audioFormats,
   videoFormats,
+  videoFormatVariants,
+  targetExtension,
   selectedAudioTrackId,
   uniqueAudioLanguagesCount
 }: {
   isAudio: boolean;
   audioFormats: AdaptiveFormatItem[];
   videoFormats: AdaptiveFormatItem[];
+  videoFormatVariants: VideoData["videoFormatVariants"];
+  targetExtension: string;
   selectedAudioTrackId: string | null | undefined;
   uniqueAudioLanguagesCount: number;
 }) {
@@ -27,10 +33,21 @@ export function buildQualityOptions({
     }));
   }
 
-  return videoFormats.map(format => ({
-    value: format.itag.toString(),
-    label: formatVideoQualityLabel(format)
-  }));
+  const variants = resolveVideoFormatVariants({
+    videoFormats,
+    videoFormatVariants
+  });
+  return videoFormats.map(format => {
+    const downloadedFormat = alignVideoFormatToExtension({
+      videoFormatVariants: variants,
+      currentFormat: format,
+      targetExtension
+    });
+    return {
+      value: format.itag.toString(),
+      label: `${formatVideoQualityLabel(format)} · ${formatVideoCodecLabel(downloadedFormat.mimeType)}`
+    };
+  });
 }
 
 export function handleQualityChange({
