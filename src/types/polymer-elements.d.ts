@@ -63,6 +63,7 @@ declare module "svelte/elements" {
     "tp-yt-paper-listbox": HTMLAttributes<HTMLElement> & {
       slot?: string;
       "attr-for-selected"?: string;
+      selectable?: string;
       "aria-label"?: string;
       role?: string;
       selected?: string | number;

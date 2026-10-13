@@ -4,14 +4,14 @@
 
 <script lang="ts">
   import { attachIcon } from "@/lib/ui/polymer-utils";
-  import type { LabeledOption } from "@/types";
+  import { formatChoiceLabel, type Choice } from "@/lib/utils/choices";
   import { YtIconName } from "@/types";
   import { untrack } from "svelte";
 
   interface Props {
     id?: string;
     label: string;
-    options: ReadonlyArray<LabeledOption>;
+    options: ReadonlyArray<Choice>;
     value: string;
     disabled?: boolean;
     onchange: (value: string) => void;
@@ -39,7 +39,8 @@
   const anchorName = `${ANCHOR_NAME_PREFIX}${suffix}`;
   const popoverId = `${POPOVER_ID_PREFIX}${suffix}`;
 
-  const selectedLabel = $derived(options.find(option => option.value === value)?.label ?? "");
+  const selectedOption = $derived(options.find(option => option.value === value));
+  const selectedLabel = $derived(selectedOption ? formatChoiceLabel(selectedOption) : "");
 
   let isOpen = $state(false);
   let elTrigger: HTMLElement | null = null;
@@ -258,16 +259,31 @@
       aria-label={label}
       attr-for-selected="data-value"
       role="listbox"
+      selectable={POLYMER_PAPER_ITEM}
       selected={value}
     >
-      {#each options as option (option.value)}
+      {#each options as option, i (option.value)}
+        {#if option.group && option.group.label !== options[i - 1]?.group?.label}
+          <div class="ytdl-select-group" role="presentation">
+            <span class="ytdl-select-group-label">{option.group.label}</span>
+            {#if option.group.description}
+              <span class="ytdl-select-option-description">{option.group.description}</span>
+            {/if}
+          </div>
+        {/if}
         <tp-yt-paper-item
           aria-disabled={option.disabled ? "true" : undefined}
+          aria-label={option.group ? formatChoiceLabel(option) : undefined}
           aria-selected={option.value === value}
           data-value={option.value}
           role="option"
           tabindex={option.value === value ? 0 : -1}
-        >{option.label}</tp-yt-paper-item>
+        >
+          {option.label}
+          {#if option.description}
+            <span class="ytdl-select-option-description">{option.description}</span>
+          {/if}
+        </tp-yt-paper-item>
       {/each}
     </tp-yt-paper-listbox>
   </div>
@@ -383,5 +399,36 @@
 
   :global(.ytdl-select-menu tp-yt-paper-item[aria-selected="true"]) {
     font-weight: 500;
+  }
+
+  :global(.ytdl-select-menu tp-yt-paper-item:has(.ytdl-select-option-description)) {
+    flex-direction: column;
+    gap: 2px;
+    align-items: flex-start;
+  }
+
+  :global(.ytdl-select-group) {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding-block: 10px 4px;
+    padding-inline: 10px;
+
+    &:not(:first-child) {
+      margin-top: 4px;
+      border-top: 1px solid var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 10%));
+    }
+  }
+
+  :global(.ytdl-select-group-label) {
+    color: var(--yt-sys-color-baseline--text-primary, #0f0f0f);
+    font-weight: 500;
+    font-size: 1.3rem;
+  }
+
+  :global(.ytdl-select-option-description) {
+    color: var(--yt-sys-color-baseline--text-secondary, #606060);
+    font-weight: 400;
+    font-size: 1.2rem;
   }
 </style>
