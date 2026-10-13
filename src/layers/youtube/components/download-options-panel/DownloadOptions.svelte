@@ -5,7 +5,7 @@
   import DownloadTracksSection from "./DownloadTracksSection.svelte";
   import { MULTI_TRACK_UNSUPPORTED_EXTENSIONS } from "@/lib/utils/containers";
   import { PanelTrackMode } from "@/types";
-  import type { AdaptiveFormatItem, AudioCodecPreference, CaptionTrack, VideoCodecPreference } from "@/types";
+  import type { AdaptiveFormatItem, CaptionTrack } from "@/types";
 
   interface Props extends DownloadOptionsProps {
     panelAudioMode: PanelTrackMode;
@@ -17,8 +17,6 @@
     ondownloadtypechange: (type: import("@/types").DownloadType) => void;
     onvideoformatchange: (format: AdaptiveFormatItem) => void;
     onaudioformatchange: (format: AdaptiveFormatItem) => void;
-    onvideocodecchange: (codec: VideoCodecPreference) => void;
-    onaudiocodecchange: (codec: AudioCodecPreference) => void;
     onaudiomodechange: (mode: PanelTrackMode) => void;
     onaudiocustomchange: (langCode: string) => void;
     oncaptionmodechange: (mode: PanelTrackMode) => void;
@@ -33,7 +31,7 @@
     selectedVideoFormat, selectedAudioFormat, selectedCaptionTrack,
     panelAudioMode, panelAudioCustomLanguage, panelCaptionMode,
     filename, extension, actualExtension, codecPreferences, isDownloading,
-    ondownloadtypechange, onvideoformatchange, onaudioformatchange, onvideocodecchange, onaudiocodecchange,
+    ondownloadtypechange, onvideoformatchange, onaudioformatchange,
     onaudiomodechange, onaudiocustomchange, oncaptionmodechange,
     oncaptionchange, onfilenamechange, onextensionchange, onvalidationchange
   }: Props = $props();
@@ -70,24 +68,18 @@
 
 <div class="ytdl-options-container">
   <DownloadMediaSection
-    audioCodecChoice={derived.audioCodecChoice}
-    audioCodecChoices={derived.audioCodecChoices}
     audioCodecOptions={derived.audioCodecOptions}
     audioCodecValue={derived.audioCodecValue}
     {audioFormats}
     {downloadType}
     isAudio={derived.isAudio}
     {isDownloading}
-    {onaudiocodecchange}
     {onaudioformatchange}
     {ondownloadtypechange}
-    {onvideocodecchange}
     {onvideoformatchange}
     qualityOptions={derived.qualityOptions}
     qualityValue={derived.qualityValue}
-    videoCodecChoice={derived.videoCodecChoice}
-    videoCodecChoices={derived.videoCodecChoices}
-    {videoFormats}
+    videoFormatVariants={derived.videoFormatVariants}
   />
   <DownloadTracksSection
     audioOriginalLabel={derived.audioOriginalLabel}

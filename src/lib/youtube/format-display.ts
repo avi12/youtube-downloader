@@ -17,6 +17,10 @@ export function formatVideoQualityLabel(format: Pick<AdaptiveFormatItem, "height
   return isPremiumFormat(format) ? `${base} (Enhanced)` : base;
 }
 
+export function formatAudioBitrateLabel(format: Pick<AdaptiveFormatItem, "bitrate">) {
+  return `${Math.floor(format.bitrate / BITS_PER_KILOBIT)} kbps`;
+}
+
 export function formatAudioQualityLabel(format: Pick<AdaptiveFormatItem, "bitrate" | "mimeType">) {
-  return `${Math.floor(format.bitrate / BITS_PER_KILOBIT)} kbps (${formatAudioCodecLabel(format.mimeType)})`;
+  return `${formatAudioBitrateLabel(format)} (${formatAudioCodecLabel(format.mimeType)})`;
 }

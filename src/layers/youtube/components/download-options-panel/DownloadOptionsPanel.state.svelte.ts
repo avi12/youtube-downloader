@@ -21,18 +21,12 @@ import { syncAudioFromFormat } from "./helpers/player-active-tracks.svelte";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { CONTENT_OPTIONS, interruptedDownloadStore, statusProgressSignal } from "@/lib/ui/synced-stores.svelte";
 import { getCompatibleFilename, isAudioMimeNativeForContainer, resolveAutoExtension } from "@/lib/utils/containers";
+import { pinAudioCodecPreferences, pinVideoCodecPreferences } from "@/lib/youtube/align-formats-to-container";
 import { resolveDownloadPlan } from "@/lib/youtube/download-plan";
 import { predictOutputSize, type SizeInputs } from "@/lib/youtube/output-size";
 import { selectVideoFormatForQuality } from "@/lib/youtube/select-video-quality";
 import { alignAudioFormatToExtension, calculateWeightedProgress } from "@/lib/youtube/video-helpers";
-import {
-  DownloadType,
-  type AdaptiveFormatItem,
-  type AudioCodecPreference,
-  type CodecPreferences,
-  type VideoCodecPreference,
-  type VideoData
-} from "@/types";
+import { DownloadType, type AdaptiveFormatItem, type CodecPreferences, type VideoData } from "@/types";
 import { untrack } from "svelte";
 
 const PAGE_LOCALE = document.documentElement.lang || undefined;
@@ -114,13 +108,28 @@ export function createPanelState(getVideoData: () => VideoData) {
   untrack(() => syncAudioFromFormat(initialAudioFormat));
   let selectedAudioFormat = $state<AdaptiveFormatItem | null>(initialAudioFormat);
   let filename = $state(untrack(() => resolveInitialFilename(getVideoData())));
-  // Codec picks in the panel apply to this download only; until one is made, the settings rule
-  let videoCodecOverride = $state<VideoCodecPreference | null>(null);
-  let audioCodecOverride = $state<AudioCodecPreference | null>(null);
-  const codecPreferences: CodecPreferences = $derived({
-    videoCodec: videoCodecOverride ?? CONTENT_OPTIONS.videoCodec,
-    audioCodec: audioCodecOverride ?? CONTENT_OPTIONS.audioCodec,
-    dynamicRange: CONTENT_OPTIONS.dynamicRange
+  // A format picked by hand pins its codec for this download only, so the plan keeps it;
+  // until then the settings rule
+  let pinnedVideoFormat = $state<AdaptiveFormatItem | null>(null);
+  let pinnedAudioFormat = $state<AdaptiveFormatItem | null>(null);
+  const codecPreferences: CodecPreferences = $derived.by(() => {
+    const settingsPreferences = {
+      videoCodec: CONTENT_OPTIONS.videoCodec,
+      audioCodec: CONTENT_OPTIONS.audioCodec,
+      dynamicRange: CONTENT_OPTIONS.dynamicRange
+    };
+    const videoPinned = pinnedVideoFormat
+      ? pinVideoCodecPreferences({
+        codecPreferences: settingsPreferences,
+        videoFormat: pinnedVideoFormat
+      })
+      : settingsPreferences;
+    return pinnedAudioFormat
+      ? pinAudioCodecPreferences({
+        codecPreferences: videoPinned,
+        audioFormat: pinnedAudioFormat
+      })
+      : videoPinned;
   });
   let isFilenameValid = $state(true);
 
@@ -175,8 +184,7 @@ export function createPanelState(getVideoData: () => VideoData) {
       downloadId = value;
     },
     isDownloading: () => statusIsDownloading,
-    getExtension: () => extension,
-    getCodecPreferences: () => codecPreferences
+    getExtension: () => extension
   });
 
   const planParams = $derived(
@@ -398,12 +406,14 @@ export function createPanelState(getVideoData: () => VideoData) {
     },
     set selectedVideoFormat(value: AdaptiveFormatItem | null) {
       selectedVideoFormat = value;
+      pinnedVideoFormat = value;
     },
     get selectedAudioFormat() {
       return selectedAudioFormat;
     },
     set selectedAudioFormat(value: AdaptiveFormatItem | null) {
       selectedAudioFormat = value;
+      pinnedAudioFormat = value;
     },
     get filename() {
       return filename;
@@ -422,12 +432,6 @@ export function createPanelState(getVideoData: () => VideoData) {
     },
     get codecPreferences() {
       return codecPreferences;
-    },
-    set videoCodec(value: VideoCodecPreference) {
-      videoCodecOverride = value;
-    },
-    set audioCodec(value: AudioCodecPreference) {
-      audioCodecOverride = value;
     },
     get isDownloadable() {
       return isDownloadable;

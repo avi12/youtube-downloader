@@ -1,7 +1,8 @@
 import {
   buildAudioFormatOptions,
-  buildQualityOptions,
+  buildMuxedAudioOptions,
   buildUniqueAudioLanguages,
+  buildVideoQualityOptions,
   byLabel,
   resolveCaptionOriginalLabel,
   toAudioFormatValue
@@ -11,13 +12,7 @@ import { PLAYER_ACTIVE_CAPTION } from "./helpers/player-active-tracks.svelte";
 import { preserveAutoVariant } from "./helpers/preserve-auto-variant";
 import { optionsItem } from "@/lib/storage/storage";
 import { CONTENT_OPTIONS } from "@/lib/ui/synced-stores.svelte";
-import { findChoice } from "@/lib/utils/choices";
-import {
-  isAudioCodecPreferredForContainer,
-  listUsableAudioCodecChoices,
-  listUsableVideoCodecChoices
-} from "@/lib/utils/containers";
-import { resolveVideoFormatVariants } from "@/lib/youtube/align-formats-to-container";
+import { alignVideoFormatToExtension, resolveVideoFormatVariants } from "@/lib/youtube/align-formats-to-container";
 import { normalizeLanguageCode } from "@/lib/youtube/audio-format-helpers";
 import { AUTO_DUB_TRACK_SUFFIX, buildTranslatedCaptionTrack } from "@/lib/youtube/download-plan";
 import { alignAudioFormatToExtension, findOriginalAudioFormat, INITIAL_OPTIONS } from "@/lib/youtube/video-helpers";
@@ -147,44 +142,52 @@ export function createDownloadOptionsState(props: () => DownloadOptionsProps) {
       .filter(track => !hasManualCounterpart(track))
   );
 
+  const videoFormatVariants = $derived(resolveVideoFormatVariants(props()));
+
   const qualityOptions = $derived(
-    buildQualityOptions({
-      isAudio,
-      audioFormats: props().audioFormats,
-      videoFormats: props().videoFormats,
-      videoFormatVariants: props().videoFormatVariants,
-      targetExtension: props().actualExtension,
-      codecPreferences: props().codecPreferences,
-      selectedAudioTrackId: props().selectedAudioFormat?.audioTrack?.id,
-      uniqueAudioLanguagesCount: uniqueAudioLanguages.length
-    })
-  );
-
-  const qualityValue = $derived(
     isAudio
-      ? `${props().selectedAudioFormat?.itag ?? ""}:${props().selectedAudioFormat?.audioTrack?.id ?? ""}`
-      : (props().selectedVideoFormat?.itag.toString() ?? "")
+      ? buildAudioFormatOptions({
+        audioFormats: props().audioFormats,
+        selectedAudioTrackId: props().selectedAudioFormat?.audioTrack?.id,
+        uniqueAudioLanguagesCount: uniqueAudioLanguages.length
+      })
+      : buildVideoQualityOptions({
+        videoFormatVariants,
+        targetExtension: props().actualExtension,
+        codecPreferences: props().codecPreferences
+      })
   );
 
-  // Only codecs the container keeps as-is - the download plan swaps any other pick for one of these
-  const audioCodecOptions = $derived.by(() => {
-    const isVideoAndAudio = props().downloadType === DownloadType.VideoAndAudio;
-    if (!isVideoAndAudio) {
-      return [];
+  // The list shows what downloads, so the selected entry is the selection after alignment
+  const qualityValue = $derived.by(() => {
+    if (isAudio) {
+      return `${props().selectedAudioFormat?.itag ?? ""}:${props().selectedAudioFormat?.audioTrack?.id ?? ""}`;
     }
 
-    const offeredMimeTypes = props().audioFormats.map(format => format.mimeType);
-    return buildAudioFormatOptions({
-      audioFormats: props().audioFormats.filter(format => isAudioCodecPreferredForContainer({
-        audioMimeType: format.mimeType,
-        targetExtension: props().actualExtension,
-        codecPreferences: props().codecPreferences,
-        offeredMimeTypes
-      })),
-      selectedAudioTrackId: props().selectedAudioFormat?.audioTrack?.id,
-      uniqueAudioLanguagesCount: uniqueAudioLanguages.length
-    });
+    const { selectedVideoFormat } = props();
+    if (!selectedVideoFormat) {
+      return "";
+    }
+
+    return alignVideoFormatToExtension({
+      videoFormatVariants,
+      currentFormat: selectedVideoFormat,
+      targetExtension: props().actualExtension,
+      codecPreferences: props().codecPreferences
+    }).itag.toString();
   });
+
+  const audioCodecOptions = $derived(
+    props().downloadType === DownloadType.VideoAndAudio
+      ? buildMuxedAudioOptions({
+        audioFormats: props().audioFormats,
+        selectedAudioTrackId: props().selectedAudioFormat?.audioTrack?.id,
+        uniqueAudioLanguagesCount: uniqueAudioLanguages.length,
+        targetExtension: props().actualExtension,
+        codecPreferences: props().codecPreferences
+      })
+      : []
+  );
 
   const audioCodecValue = $derived.by(() => {
     const downloadedFormat = alignAudioFormatToExtension({
@@ -195,28 +198,6 @@ export function createDownloadOptionsState(props: () => DownloadOptionsProps) {
     });
     return downloadedFormat ? toAudioFormatValue(downloadedFormat) : "";
   });
-
-  const videoCodecChoices = $derived(
-    isAudio ? [] : listUsableVideoCodecChoices({
-      targetExtension: props().actualExtension,
-      offeredMimeTypes: resolveVideoFormatVariants(props()).map(format => format.mimeType)
-    })
-  );
-  const audioCodecChoices = $derived(
-    props().downloadType === DownloadType.VideoAndAudio
-      ? listUsableAudioCodecChoices({
-        targetExtension: props().actualExtension,
-        offeredMimeTypes: props().audioFormats.map(format => format.mimeType)
-      })
-      : []
-  );
-  // A setting the video or container can't honor shows as Auto (the first choice), which is what applies
-  const videoCodecChoice = $derived(
-    findChoice(videoCodecChoices, props().codecPreferences.videoCodec) ?? videoCodecChoices[0]
-  );
-  const audioCodecChoice = $derived(
-    findChoice(audioCodecChoices, props().codecPreferences.audioCodec) ?? audioCodecChoices[0]
-  );
 
   const translatedCaptionTracks = $derived.by(() => {
     const { captionTracks, translationLanguages } = props();
@@ -345,17 +326,8 @@ export function createDownloadOptionsState(props: () => DownloadOptionsProps) {
     get qualityValue() {
       return qualityValue;
     },
-    get videoCodecChoices() {
-      return videoCodecChoices;
-    },
-    get videoCodecChoice() {
-      return videoCodecChoice;
-    },
-    get audioCodecChoices() {
-      return audioCodecChoices;
-    },
-    get audioCodecChoice() {
-      return audioCodecChoice;
+    get videoFormatVariants() {
+      return videoFormatVariants;
     },
     get audioCodecOptions() {
       return audioCodecOptions;

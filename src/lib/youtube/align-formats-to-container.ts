@@ -3,6 +3,9 @@ import { alignAudioFormatToExtension, pickBestByBitrate } from "./select-audio-f
 import {
   getOutputExtension,
   isDynamicRangePreferred,
+  resolveAudioCodecPreference,
+  resolveDynamicRangePreference,
+  resolveVideoCodecPreference,
   isSameVideoCodec,
   isVideoCodecPreferredForContainer,
   isVideoNativeForContainer
@@ -19,6 +22,28 @@ type ContainerAlignmentVideoData = Prettify<Pick<VideoData, "videoFormats" | "vi
 
 export function resolveVideoFormatVariants(videoData: Pick<VideoData, "videoFormats" | "videoFormatVariants">) {
   return videoData.videoFormatVariants ?? videoData.videoFormats;
+}
+
+// The preferences a hand-picked format satisfies, so alignment keeps exactly that format
+export function pinVideoCodecPreferences({ codecPreferences, videoFormat }: {
+  codecPreferences: CodecPreferences;
+  videoFormat: AdaptiveFormatItem;
+}) {
+  return {
+    ...codecPreferences,
+    videoCodec: resolveVideoCodecPreference(videoFormat.mimeType) ?? codecPreferences.videoCodec,
+    dynamicRange: resolveDynamicRangePreference(videoFormat.mimeType)
+  };
+}
+
+export function pinAudioCodecPreferences({ codecPreferences, audioFormat }: {
+  codecPreferences: CodecPreferences;
+  audioFormat: AdaptiveFormatItem;
+}) {
+  return {
+    ...codecPreferences,
+    audioCodec: resolveAudioCodecPreference(audioFormat.mimeType) ?? codecPreferences.audioCodec
+  };
 }
 
 type CreateVideoFormatPreferenceParams = Prettify<{

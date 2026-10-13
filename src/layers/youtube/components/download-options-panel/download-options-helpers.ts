@@ -11,7 +11,8 @@ import { DownloadType } from "@/types";
 
 export {
   buildAudioFormatOptions,
-  buildQualityOptions,
+  buildMuxedAudioOptions,
+  buildVideoQualityOptions,
   findAudioFormatByValue,
   handleQualityChange,
   toAudioFormatValue

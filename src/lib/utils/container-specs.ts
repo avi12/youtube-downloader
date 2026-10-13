@@ -418,43 +418,49 @@ function pickPreferredCodecs({ containerPreferredCodecs, ...params }: UsableCode
   return isUserCodecUsable(params) ? params.userCodecs : containerPreferredCodecs;
 }
 
-// Auto plus the codecs this video offers that the container holds as-is - any other pick
-// would fall back to Auto anyway
-function listUsableChoices<Value extends string>({ choices, preferences, containerCodecs, offeredMimeTypes }: {
+// The settings a format satisfies, so a format picked by hand survives the plan's alignment
+function findPreferenceForCodec<Value extends string>({ choices, preferences, mimeType }: {
   choices: Choice<Value>[];
   preferences: Record<Value, CodecPreferenceSpec>;
-  containerCodecs: Set<string> | undefined;
-  offeredMimeTypes: string[];
+  mimeType: string;
 }) {
-  return choices.filter(({ value }) => !preferences[value].codecs || isUserCodecUsable({
-    userCodecs: preferences[value].codecs,
-    containerCodecs,
-    offeredMimeTypes
-  }));
+  const codec = extractBaseCodec(mimeType);
+  return choices.find(({ value }) => preferences[value].codecs?.has(codec))?.value ?? null;
 }
 
-export function listUsableVideoCodecChoices({ targetExtension, offeredMimeTypes }: {
-  targetExtension: string;
-  offeredMimeTypes: string[];
-}) {
-  return listUsableChoices({
+export function resolveVideoCodecPreference(videoMimeType: string) {
+  return findPreferenceForCodec({
     choices: VIDEO_CODEC_CHOICES,
     preferences: VIDEO_CODEC_PREFERENCES,
-    containerCodecs: CONTAINER_SPECS[targetExtension]?.videoCodecs,
-    offeredMimeTypes
+    mimeType: videoMimeType
   });
 }
 
-export function listUsableAudioCodecChoices({ targetExtension, offeredMimeTypes }: {
-  targetExtension: string;
-  offeredMimeTypes: string[];
-}) {
-  return listUsableChoices({
+export function resolveAudioCodecPreference(audioMimeType: string) {
+  return findPreferenceForCodec({
     choices: AUDIO_CODEC_CHOICES,
     preferences: AUDIO_CODEC_PREFERENCES,
-    containerCodecs: CONTAINER_SPECS[targetExtension]?.audioCodecs,
-    offeredMimeTypes
+    mimeType: audioMimeType
   });
+}
+
+export function resolveDynamicRangePreference(videoMimeType: string) {
+  return isHdrMimeType(videoMimeType) ? DynamicRangePreference.Hdr : DynamicRangePreference.Sdr;
+}
+
+export function describeVideoCodec(videoMimeType: string) {
+  const isHdr = isHdrMimeType(videoMimeType);
+  if (isHdr) {
+    return DYNAMIC_RANGE_PREFERENCES[DynamicRangePreference.Hdr].description;
+  }
+
+  const preference = resolveVideoCodecPreference(videoMimeType);
+  return preference ? VIDEO_CODEC_PREFERENCES[preference].description : undefined;
+}
+
+export function describeAudioCodec(audioMimeType: string) {
+  const preference = resolveAudioCodecPreference(audioMimeType);
+  return preference ? AUDIO_CODEC_PREFERENCES[preference].description : undefined;
 }
 
 export function isAudioCodecPreferredForContainer({
@@ -496,6 +502,19 @@ export function resolveAudioCodec({ audioMimeType, targetExtension }: {
   return getAudioFallbackCodec(targetExtension) ?? FFMPEG_CODEC_COPY;
 }
 
+// MP4/MKV copy in video they don't list natively; other containers would switch to MKV
+function isVideoAllowedInContainer({ videoMimeType, targetExtension }: {
+  videoMimeType: string;
+  targetExtension: string;
+}) {
+  const containerSpec = CONTAINER_SPECS[targetExtension];
+  if (!containerSpec) {
+    return true;
+  }
+
+  return videoCodecsFor(containerSpec).has(extractBaseCodec(videoMimeType)) || !!containerSpec.allowNonNativeVideo;
+}
+
 export function getOutputExtension({ videoMimeType, audioMimeType, userExtension }: {
   videoMimeType: string;
   audioMimeType: string;
@@ -507,11 +526,11 @@ export function getOutputExtension({ videoMimeType, audioMimeType, userExtension
     return userExtension;
   }
 
-  const videoCodec = extractBaseCodec(videoMimeType);
   const audioCodec = extractBaseCodec(audioMimeType);
-  const isVideoNative = videoCodecsFor(containerSpec).has(videoCodec);
-  const isNonNativeAllowed = !!containerSpec.allowNonNativeVideo;
-  const videoOk = isVideoNative || isNonNativeAllowed;
+  const videoOk = isVideoAllowedInContainer({
+    videoMimeType,
+    targetExtension: userExtension
+  });
   const isAudioNative = containerSpec.audioCodecs.has(audioCodec);
   const isFallbackAudioPresent = containerSpec.fallbackAudioCodec !== undefined;
   const audioOk = isAudioNative || isFallbackAudioPresent;

@@ -1,7 +1,21 @@
-import { formatVideoCodecLabel } from "@/lib/utils/container-specs";
-import { alignVideoFormatToExtension, resolveVideoFormatVariants } from "@/lib/youtube/align-formats-to-container";
-import { formatAudioQualityLabel, formatVideoQualityLabel } from "@/lib/youtube/video-helpers";
-import type { AdaptiveFormatItem, CodecPreferences, VideoData } from "@/types";
+import { formatChoiceLabel, groupChoices, type Choice } from "@/lib/utils/choices";
+import {
+  describeAudioCodec,
+  describeVideoCodec,
+  formatAudioCodecLabel,
+  formatVideoCodecLabel
+} from "@/lib/utils/container-specs";
+import {
+  alignVideoFormatToExtension,
+  pinAudioCodecPreferences,
+  pinVideoCodecPreferences
+} from "@/lib/youtube/align-formats-to-container";
+import {
+  alignAudioFormatToExtension,
+  formatAudioBitrateLabel,
+  formatVideoQualityLabel
+} from "@/lib/youtube/video-helpers";
+import type { AdaptiveFormatItem, CodecPreferences } from "@/types";
 
 export function toAudioFormatValue(format: AdaptiveFormatItem) {
   return `${format.itag}:${format.audioTrack?.id ?? ""}`;
@@ -17,82 +31,104 @@ export function findAudioFormatByValue({ audioFormats, valueString }: {
   return audioFormats.find(format => format.itag === itag && format.audioTrack?.id === trackId);
 }
 
-export function buildAudioFormatOptions({
-  audioFormats,
-  selectedAudioTrackId,
-  uniqueAudioLanguagesCount
-}: {
+function filterSelectedTrack({ audioFormats, selectedAudioTrackId, uniqueAudioLanguagesCount }: {
   audioFormats: AdaptiveFormatItem[];
   selectedAudioTrackId: string | null | undefined;
   uniqueAudioLanguagesCount: number;
 }) {
   const trackId = selectedAudioTrackId ?? null;
-  const formats = uniqueAudioLanguagesCount > 0
+  return uniqueAudioLanguagesCount > 0
     ? audioFormats.filter(format => (format.audioTrack?.id ?? null) === trackId)
     : audioFormats;
-  return formats.map(format => ({
-    value: toAudioFormatValue(format),
-    label: formatAudioQualityLabel(format)
-  }));
 }
 
-export function buildQualityOptions({
-  isAudio,
-  audioFormats,
-  videoFormats,
-  videoFormatVariants,
-  targetExtension,
-  codecPreferences,
-  selectedAudioTrackId,
-  uniqueAudioLanguagesCount
-}: {
-  isAudio: boolean;
-  audioFormats: AdaptiveFormatItem[];
-  videoFormats: AdaptiveFormatItem[];
-  videoFormatVariants: VideoData["videoFormatVariants"];
+// Rows are grouped under their codec, which carries the description once
+function toAudioChoice(format: AdaptiveFormatItem): Choice {
+  return {
+    value: toAudioFormatValue(format),
+    label: formatAudioBitrateLabel(format),
+    group: {
+      label: formatAudioCodecLabel(format.mimeType),
+      description: describeAudioCodec(format.mimeType)
+    }
+  };
+}
+
+export function buildAudioFormatOptions(params: Parameters<typeof filterSelectedTrack>[0]) {
+  return groupChoices(filterSelectedTrack(params).map(toAudioChoice));
+}
+
+// Each codec variant the container keeps as-is gets its own entry; a variant is listed only if
+// the plan's alignment, given that variant's own codec, keeps it - so what's listed is what downloads
+export function buildVideoQualityOptions({ videoFormatVariants, targetExtension, codecPreferences }: {
+  videoFormatVariants: AdaptiveFormatItem[];
   targetExtension: string;
   codecPreferences: CodecPreferences;
-  selectedAudioTrackId: string | null | undefined;
-  uniqueAudioLanguagesCount: number;
 }) {
-  if (isAudio) {
-    return buildAudioFormatOptions({
-      audioFormats,
-      selectedAudioTrackId,
-      uniqueAudioLanguagesCount
-    });
-  }
-
-  const variants = resolveVideoFormatVariants({
-    videoFormats,
-    videoFormatVariants
-  });
-  return videoFormats.map(format => {
-    const downloadedFormat = alignVideoFormatToExtension({
-      videoFormatVariants: variants,
+  // Variants arrive sorted by byQualityDesc, so a repeated label (e.g. two 1080p AV1 itags)
+  // keeps its higher-bitrate entry
+  const seenLabels = new Set<string>();
+  const options = videoFormatVariants
+    .filter(format => alignVideoFormatToExtension({
+      videoFormatVariants,
       currentFormat: format,
       targetExtension,
-      codecPreferences
-    });
-    return {
+      codecPreferences: pinVideoCodecPreferences({
+        codecPreferences,
+        videoFormat: format
+      })
+    }) === format)
+    .map((format): Choice => ({
       value: format.itag.toString(),
-      label: `${formatVideoQualityLabel(format)} · ${formatVideoCodecLabel(downloadedFormat.mimeType)}`
-    };
-  });
+      label: formatVideoQualityLabel(format),
+      group: {
+        label: formatVideoCodecLabel(format.mimeType),
+        description: describeVideoCodec(format.mimeType)
+      }
+    }))
+    .filter(option => {
+      const fullLabel = formatChoiceLabel(option);
+      const isSeen = seenLabels.has(fullLabel);
+      seenLabels.add(fullLabel);
+      return !isSeen;
+    });
+  return groupChoices(options);
+}
+
+// Audio for a video download, filtered the same way as the video list
+export function buildMuxedAudioOptions({ targetExtension, codecPreferences, ...trackParams }: {
+  audioFormats: AdaptiveFormatItem[];
+  selectedAudioTrackId: string | null | undefined;
+  uniqueAudioLanguagesCount: number;
+  targetExtension: string;
+  codecPreferences: CodecPreferences;
+}) {
+  const options = filterSelectedTrack(trackParams)
+    .filter(format => alignAudioFormatToExtension({
+      audioFormats: trackParams.audioFormats,
+      currentFormat: format,
+      targetExtension,
+      codecPreferences: pinAudioCodecPreferences({
+        codecPreferences,
+        audioFormat: format
+      })
+    }) === format)
+    .map(toAudioChoice);
+  return groupChoices(options);
 }
 
 export function handleQualityChange({
   valueString,
   isAudio,
   audioFormats,
-  videoFormats,
+  videoFormatVariants,
   onaudioformatchange,
   onvideoformatchange
 }: {
   valueString: string;
   isAudio: boolean;
   audioFormats: AdaptiveFormatItem[];
-  videoFormats: AdaptiveFormatItem[];
+  videoFormatVariants: AdaptiveFormatItem[];
   onaudioformatchange: (format: AdaptiveFormatItem) => void;
   onvideoformatchange: (format: AdaptiveFormatItem) => void;
 }) {
@@ -109,7 +145,7 @@ export function handleQualityChange({
   }
 
   const itag = parseInt(valueString, 10);
-  const format = videoFormats.find(videoFormat => videoFormat.itag === itag);
+  const format = videoFormatVariants.find(videoFormat => videoFormat.itag === itag);
   if (format) {
     onvideoformatchange(format);
   }
