@@ -350,6 +350,39 @@ export function createPanelState(getVideoData: () => VideoData) {
     });
   });
 
+  // Changing a codec setting in the popup reaches open panels too: it replaces the codec picked
+  // here by hand, as the format setting above replaces the picked format
+  let previousCodecSettings = untrack(() => ({
+    videoCodec: CONTENT_OPTIONS.videoCodec,
+    audioCodec: CONTENT_OPTIONS.audioCodec,
+    dynamicRange: CONTENT_OPTIONS.dynamicRange
+  }));
+  $effect(() => {
+    const { videoCodec, audioCodec, dynamicRange } = CONTENT_OPTIONS;
+    const previous = previousCodecSettings;
+    previousCodecSettings = {
+      videoCodec,
+      audioCodec,
+      dynamicRange
+    };
+
+    untrack(() => {
+      if (statusIsDownloading) {
+        return;
+      }
+
+      const isVideoSettingChanged = videoCodec !== previous.videoCodec || dynamicRange !== previous.dynamicRange;
+      if (isVideoSettingChanged) {
+        pinnedVideoFormat = null;
+      }
+
+      const isAudioSettingChanged = audioCodec !== previous.audioCodec;
+      if (isAudioSettingChanged) {
+        pinnedAudioFormat = null;
+      }
+    });
+  });
+
   function handleDownloadTypeChange(newType: DownloadType) {
     const result = applyDownloadTypeChange({
       newType,
