@@ -19,7 +19,8 @@ export type VideoCodecPreference = (typeof VideoCodecPreference)[keyof typeof Vi
 export const AudioCodecPreference = {
   Auto: "auto",
   Aac: "aac",
-  Opus: "opus"
+  Opus: "opus",
+  Dolby: "dolby"
 } as const;
 
 export type AudioCodecPreference = (typeof AudioCodecPreference)[keyof typeof AudioCodecPreference];

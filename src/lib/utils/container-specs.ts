@@ -46,6 +46,7 @@ const PREFER_VP9 = new Set([CODEC_VP9, CODEC_VP09]);
 const PREFER_AAC = new Set([CODEC_MP4A]);
 const PREFER_OPUS = new Set([CODEC_OPUS]);
 const PREFER_AV1 = new Set([CODEC_AV01]);
+const PREFER_DOLBY = new Set([CODEC_AC3, CODEC_EC3]);
 
 export const MULTI_TRACK_UNSUPPORTED_EXTENSIONS = new Set(["avi", "3gp", "m4b"]);
 
@@ -239,6 +240,11 @@ const AUDIO_CODEC_PREFERENCES: Record<AudioCodecPreference, CodecPreferenceSpec>
     codecs: PREFER_OPUS,
     label: AUDIO_CODEC_LABELS[CODEC_OPUS]!,
     description: "Better sound at the same size"
+  },
+  [AudioCodecPreference.Dolby]: {
+    codecs: PREFER_DOLBY,
+    label: "Dolby",
+    description: "5.1 surround, on videos that have it"
   }
 };
 
