@@ -11,12 +11,24 @@ import { PLAYER_ACTIVE_CAPTION } from "./helpers/player-active-tracks.svelte";
 import { preserveAutoVariant } from "./helpers/preserve-auto-variant";
 import { optionsItem } from "@/lib/storage/storage";
 import { CONTENT_OPTIONS } from "@/lib/ui/synced-stores.svelte";
-import { isAudioCodecPreferredForContainer } from "@/lib/utils/containers";
+import { findChoice } from "@/lib/utils/choices";
+import {
+  isAudioCodecPreferredForContainer,
+  listUsableAudioCodecChoices,
+  listUsableVideoCodecChoices
+} from "@/lib/utils/containers";
+import { resolveVideoFormatVariants } from "@/lib/youtube/align-formats-to-container";
 import { normalizeLanguageCode } from "@/lib/youtube/audio-format-helpers";
 import { AUTO_DUB_TRACK_SUFFIX, buildTranslatedCaptionTrack } from "@/lib/youtube/download-plan";
 import { alignAudioFormatToExtension, findOriginalAudioFormat, INITIAL_OPTIONS } from "@/lib/youtube/video-helpers";
 import { DownloadType } from "@/types";
-import type { AdaptiveFormatItem, CaptionTrack, TranslationLanguage, VideoData } from "@/types";
+import type {
+  AdaptiveFormatItem,
+  CaptionTrack,
+  CodecPreferences,
+  TranslationLanguage,
+  VideoData
+} from "@/types";
 import { SvelteSet } from "svelte/reactivity";
 
 const TRANSLATED_CAPTION_LABEL_SUFFIX = "(auto-translated)";
@@ -38,6 +50,7 @@ export interface DownloadOptionsProps {
   videoFormats: AdaptiveFormatItem[];
   videoFormatVariants: VideoData["videoFormatVariants"];
   actualExtension: string;
+  codecPreferences: CodecPreferences;
   audioFormats: AdaptiveFormatItem[];
   captionTracks: CaptionTrack[];
   translationLanguages: TranslationLanguage[];
@@ -141,7 +154,7 @@ export function createDownloadOptionsState(props: () => DownloadOptionsProps) {
       videoFormats: props().videoFormats,
       videoFormatVariants: props().videoFormatVariants,
       targetExtension: props().actualExtension,
-      codecPreferences: CONTENT_OPTIONS,
+      codecPreferences: props().codecPreferences,
       selectedAudioTrackId: props().selectedAudioFormat?.audioTrack?.id,
       uniqueAudioLanguagesCount: uniqueAudioLanguages.length
     })
@@ -165,7 +178,7 @@ export function createDownloadOptionsState(props: () => DownloadOptionsProps) {
       audioFormats: props().audioFormats.filter(format => isAudioCodecPreferredForContainer({
         audioMimeType: format.mimeType,
         targetExtension: props().actualExtension,
-        codecPreferences: CONTENT_OPTIONS,
+        codecPreferences: props().codecPreferences,
         offeredMimeTypes
       })),
       selectedAudioTrackId: props().selectedAudioFormat?.audioTrack?.id,
@@ -178,10 +191,32 @@ export function createDownloadOptionsState(props: () => DownloadOptionsProps) {
       audioFormats: props().audioFormats,
       currentFormat: props().selectedAudioFormat,
       targetExtension: props().actualExtension,
-      codecPreferences: CONTENT_OPTIONS
+      codecPreferences: props().codecPreferences
     });
     return downloadedFormat ? toAudioFormatValue(downloadedFormat) : "";
   });
+
+  const videoCodecChoices = $derived(
+    isAudio ? [] : listUsableVideoCodecChoices({
+      targetExtension: props().actualExtension,
+      offeredMimeTypes: resolveVideoFormatVariants(props()).map(format => format.mimeType)
+    })
+  );
+  const audioCodecChoices = $derived(
+    props().downloadType === DownloadType.VideoAndAudio
+      ? listUsableAudioCodecChoices({
+        targetExtension: props().actualExtension,
+        offeredMimeTypes: props().audioFormats.map(format => format.mimeType)
+      })
+      : []
+  );
+  // A setting the video or container can't honor shows as Auto (the first choice), which is what applies
+  const videoCodecChoice = $derived(
+    findChoice(videoCodecChoices, props().codecPreferences.videoCodec) ?? videoCodecChoices[0]
+  );
+  const audioCodecChoice = $derived(
+    findChoice(audioCodecChoices, props().codecPreferences.audioCodec) ?? audioCodecChoices[0]
+  );
 
   const translatedCaptionTracks = $derived.by(() => {
     const { captionTracks, translationLanguages } = props();
@@ -309,6 +344,18 @@ export function createDownloadOptionsState(props: () => DownloadOptionsProps) {
     },
     get qualityValue() {
       return qualityValue;
+    },
+    get videoCodecChoices() {
+      return videoCodecChoices;
+    },
+    get videoCodecChoice() {
+      return videoCodecChoice;
+    },
+    get audioCodecChoices() {
+      return audioCodecChoices;
+    },
+    get audioCodecChoice() {
+      return audioCodecChoice;
     },
     get audioCodecOptions() {
       return audioCodecOptions;

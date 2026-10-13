@@ -3,7 +3,13 @@ import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-wo
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { performCancelDownload } from "@/lib/ui/cancel-download";
 import { interruptedDownloadStore } from "@/lib/ui/synced-stores.svelte";
-import { DownloadType, type AdaptiveFormatItem, type CaptionTrack, type VideoData } from "@/types";
+import {
+  DownloadType,
+  type AdaptiveFormatItem,
+  type CaptionTrack,
+  type CodecPreferences,
+  type VideoData
+} from "@/types";
 
 export { applyDownloadTypeChange } from "./panel-type-change";
 
@@ -12,6 +18,7 @@ type BuildDownloadPlanParamsParams = {
   selectedVideoFormat: AdaptiveFormatItem | null;
   selectedAudioFormat: AdaptiveFormatItem | null;
   selectedCaptionTrack: CaptionTrack | null;
+  codecPreferences: CodecPreferences;
 };
 export function buildDownloadPlanParams(params: BuildDownloadPlanParamsParams) {
   return {
@@ -19,6 +26,7 @@ export function buildDownloadPlanParams(params: BuildDownloadPlanParamsParams) {
     videoItag: params.selectedVideoFormat?.itag ?? 0,
     audioItag: params.selectedAudioFormat?.itag ?? 0,
     audioTrackId: params.selectedAudioFormat?.audioTrack?.id,
+    codecPreferences: params.codecPreferences,
     selectedCaptionVssId: params.selectedCaptionTrack?.vssId,
     downloadExtras: PANEL_OPTIONS.downloadExtras,
     downloadExtraCaptions: PANEL_OPTIONS.downloadExtraCaptions,

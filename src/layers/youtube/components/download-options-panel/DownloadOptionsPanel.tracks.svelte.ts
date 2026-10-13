@@ -9,7 +9,7 @@ import {
   resolveInitialCaptionTrack
 } from "./helpers/panel-init";
 import { CONTENT_OPTIONS } from "@/lib/ui/synced-stores.svelte";
-import type { AdaptiveFormatItem, VideoData } from "@/types";
+import type { AdaptiveFormatItem, CodecPreferences, VideoData } from "@/types";
 import { untrack } from "svelte";
 
 export function createTrackStates({
@@ -18,7 +18,8 @@ export function createTrackStates({
   setSelectedVideoFormat,
   setDownloadId,
   isDownloading,
-  getExtension
+  getExtension,
+  getCodecPreferences
 }: {
   getVideoData: () => VideoData;
   setSelectedAudioFormat: (value: AdaptiveFormatItem | null) => void;
@@ -26,6 +27,7 @@ export function createTrackStates({
   setDownloadId: (value: number | null) => void;
   isDownloading: () => boolean;
   getExtension: () => string;
+  getCodecPreferences: () => CodecPreferences;
 }) {
   const audio = untrack(() => {
     const options = CONTENT_OPTIONS;
@@ -66,7 +68,8 @@ export function createTrackStates({
     getVideoData,
     setSelectedVideoFormat,
     isDownloading,
-    getExtension
+    getExtension,
+    getCodecPreferences
   });
   createDownloadProgressTracker({
     getVideoData,

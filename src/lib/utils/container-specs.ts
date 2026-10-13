@@ -1,4 +1,4 @@
-import { listChoices } from "./choices";
+import { listChoices, type Choice } from "./choices";
 import { AudioCodecPreference, DynamicRangePreference, VideoCodecPreference } from "@/types";
 import type { CodecPreferences, Prettify } from "@/types";
 
@@ -402,15 +402,59 @@ export function isAudioMimeNativeForContainer({ audioMimeType, targetExtension }
 
 // A codec setting wins when the video offers that codec and the container holds it as-is;
 // otherwise, and on Auto, the container's own preference applies (issue #21)
-function pickPreferredCodecs({ userCodecs, containerCodecs, containerPreferredCodecs, offeredMimeTypes }: {
+type UsableCodecsParams = Prettify<{
   userCodecs: Set<string> | null;
   containerCodecs: Set<string> | undefined;
+  offeredMimeTypes: string[];
+}>;
+function isUserCodecUsable({ userCodecs, containerCodecs, offeredMimeTypes }: UsableCodecsParams) {
+  return !!userCodecs && !!containerCodecs && !userCodecs.isDisjointFrom(containerCodecs)
+    && offeredMimeTypes.some(mimeType => userCodecs.has(extractBaseCodec(mimeType)));
+}
+
+function pickPreferredCodecs({ containerPreferredCodecs, ...params }: UsableCodecsParams & {
   containerPreferredCodecs: Set<string> | undefined;
+}) {
+  return isUserCodecUsable(params) ? params.userCodecs : containerPreferredCodecs;
+}
+
+// Auto plus the codecs this video offers that the container holds as-is - any other pick
+// would fall back to Auto anyway
+function listUsableChoices<Value extends string>({ choices, preferences, containerCodecs, offeredMimeTypes }: {
+  choices: Choice<Value>[];
+  preferences: Record<Value, CodecPreferenceSpec>;
+  containerCodecs: Set<string> | undefined;
   offeredMimeTypes: string[];
 }) {
-  const isUserCodecKept = !!userCodecs && !!containerCodecs && !userCodecs.isDisjointFrom(containerCodecs)
-    && offeredMimeTypes.some(mimeType => userCodecs.has(extractBaseCodec(mimeType)));
-  return isUserCodecKept ? userCodecs : containerPreferredCodecs;
+  return choices.filter(({ value }) => !preferences[value].codecs || isUserCodecUsable({
+    userCodecs: preferences[value].codecs,
+    containerCodecs,
+    offeredMimeTypes
+  }));
+}
+
+export function listUsableVideoCodecChoices({ targetExtension, offeredMimeTypes }: {
+  targetExtension: string;
+  offeredMimeTypes: string[];
+}) {
+  return listUsableChoices({
+    choices: VIDEO_CODEC_CHOICES,
+    preferences: VIDEO_CODEC_PREFERENCES,
+    containerCodecs: CONTAINER_SPECS[targetExtension]?.videoCodecs,
+    offeredMimeTypes
+  });
+}
+
+export function listUsableAudioCodecChoices({ targetExtension, offeredMimeTypes }: {
+  targetExtension: string;
+  offeredMimeTypes: string[];
+}) {
+  return listUsableChoices({
+    choices: AUDIO_CODEC_CHOICES,
+    preferences: AUDIO_CODEC_PREFERENCES,
+    containerCodecs: CONTAINER_SPECS[targetExtension]?.audioCodecs,
+    offeredMimeTypes
+  });
 }
 
 export function isAudioCodecPreferredForContainer({

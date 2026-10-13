@@ -3,7 +3,7 @@ import { resolveMultiTrackExtension } from "@/lib/utils/containers";
 import { resolveOutputExtensionForFormats } from "@/lib/youtube/align-formats-to-container";
 import { AUTO_DUB_TRACK_SUFFIX } from "@/lib/youtube/download-plan";
 import { formatAudioQualityLabel, formatVideoQualityLabel } from "@/lib/youtube/video-helpers";
-import { DownloadType, type AdaptiveFormatItem, type VideoData } from "@/types";
+import { DownloadType, type AdaptiveFormatItem, type CodecPreferences, type VideoData } from "@/types";
 import { PrimaryButtonState } from "#youtube/lib/ui/panel-button-attachments.svelte";
 
 export function resolveActualExtension({
@@ -12,7 +12,8 @@ export function resolveActualExtension({
   selectedAudioFormat,
   extension,
   getVideoData,
-  downloadExtras
+  downloadExtras,
+  codecPreferences
 }: {
   downloadType: DownloadType;
   selectedVideoFormat: AdaptiveFormatItem | null;
@@ -20,6 +21,7 @@ export function resolveActualExtension({
   extension: string;
   getVideoData: () => VideoData;
   downloadExtras: boolean;
+  codecPreferences: CodecPreferences;
 }) {
   const isAudioOrMissingFormat = downloadType === DownloadType.Audio || !selectedVideoFormat || !selectedAudioFormat;
   if (isAudioOrMissingFormat) {
@@ -31,7 +33,7 @@ export function resolveActualExtension({
     videoFormat: selectedVideoFormat,
     audioFormat: selectedAudioFormat,
     userExtension: extension,
-    codecPreferences: CONTENT_OPTIONS
+    codecPreferences
   });
 
   const selectedTrackId = selectedAudioFormat.audioTrack?.id;

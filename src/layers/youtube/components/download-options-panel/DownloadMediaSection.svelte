@@ -1,14 +1,20 @@
 <script lang="ts">
   import PolymerSelect from "../polymer-select/PolymerSelect.svelte";
+  import ChoiceSelect from "./ChoiceSelect.svelte";
   import { DOWNLOAD_TYPES, findAudioFormatByValue, handleQualityChange } from "./download-options-helpers";
+  import type { Choice } from "@/lib/utils/choices";
   import { DownloadType } from "@/types";
-  import type { AdaptiveFormatItem, LabeledOption } from "@/types";
+  import type { AdaptiveFormatItem, AudioCodecPreference, LabeledOption, VideoCodecPreference } from "@/types";
 
   interface Props {
     downloadType: DownloadType;
     isDownloading: boolean;
     qualityOptions: LabeledOption[];
     qualityValue: string;
+    videoCodecChoices: Choice<VideoCodecPreference>[];
+    videoCodecChoice: Choice<VideoCodecPreference> | undefined;
+    audioCodecChoices: Choice<AudioCodecPreference>[];
+    audioCodecChoice: Choice<AudioCodecPreference> | undefined;
     audioCodecOptions: LabeledOption[];
     audioCodecValue: string;
     audioFormats: AdaptiveFormatItem[];
@@ -17,6 +23,8 @@
     ondownloadtypechange: (type: DownloadType) => void;
     onvideoformatchange: (format: AdaptiveFormatItem) => void;
     onaudioformatchange: (format: AdaptiveFormatItem) => void;
+    onvideocodecchange: (codec: VideoCodecPreference) => void;
+    onaudiocodecchange: (codec: AudioCodecPreference) => void;
   }
 
   const {
@@ -24,6 +32,10 @@
     isDownloading,
     qualityOptions,
     qualityValue,
+    videoCodecChoices,
+    videoCodecChoice,
+    audioCodecChoices,
+    audioCodecChoice,
     audioCodecOptions,
     audioCodecValue,
     audioFormats,
@@ -31,7 +43,9 @@
     isAudio,
     ondownloadtypechange,
     onvideoformatchange,
-    onaudioformatchange
+    onaudioformatchange,
+    onvideocodecchange,
+    onaudiocodecchange
   }: Props = $props();
 </script>
 
@@ -64,11 +78,31 @@
     options={qualityOptions}
     value={qualityValue}
   />
+  {#if videoCodecChoice}
+    <ChoiceSelect
+      id="video-codec-select"
+      choice={videoCodecChoice}
+      choices={videoCodecChoices}
+      disabled={isDownloading}
+      label="Video codec"
+      onchange={onvideocodecchange}
+    />
+  {/if}
+  {#if audioCodecChoice}
+    <ChoiceSelect
+      id="audio-codec-choice-select"
+      choice={audioCodecChoice}
+      choices={audioCodecChoices}
+      disabled={isDownloading}
+      label="Audio codec"
+      onchange={onaudiocodecchange}
+    />
+  {/if}
   {#if audioCodecOptions.length > 0}
     <PolymerSelect
       id="audio-codec-select"
       disabled={isDownloading}
-      label="Audio"
+      label="Audio quality"
       onchange={valueString => {
         const format = findAudioFormatByValue({
           audioFormats,
