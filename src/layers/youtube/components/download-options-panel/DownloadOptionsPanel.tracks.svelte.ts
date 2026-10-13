@@ -17,13 +17,15 @@ export function createTrackStates({
   setSelectedAudioFormat,
   setSelectedVideoFormat,
   setDownloadId,
-  isDownloading
+  isDownloading,
+  getExtension
 }: {
   getVideoData: () => VideoData;
   setSelectedAudioFormat: (value: AdaptiveFormatItem | null) => void;
   setSelectedVideoFormat: (value: AdaptiveFormatItem | null) => void;
   setDownloadId: (value: number | null) => void;
   isDownloading: () => boolean;
+  getExtension: () => string;
 }) {
   const audio = untrack(() => {
     const options = CONTENT_OPTIONS;
@@ -63,7 +65,8 @@ export function createTrackStates({
   createVideoFormatTracker({
     getVideoData,
     setSelectedVideoFormat,
-    isDownloading
+    isDownloading,
+    getExtension
   });
   createDownloadProgressTracker({
     getVideoData,

@@ -22,8 +22,8 @@ import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-wo
 import { CONTENT_OPTIONS, interruptedDownloadStore, statusProgressSignal } from "@/lib/ui/synced-stores.svelte";
 import { getCompatibleFilename, isAudioMimeNativeForContainer, resolveAutoExtension } from "@/lib/utils/containers";
 import { resolveDownloadPlan } from "@/lib/youtube/download-plan";
-import { filterVideoFormatsByEnhancedBitrate } from "@/lib/youtube/format-display";
 import { predictOutputSize, type SizeInputs } from "@/lib/youtube/output-size";
+import { selectVideoFormatForQuality } from "@/lib/youtube/select-video-quality";
 import { alignAudioFormatToExtension, calculateWeightedProgress } from "@/lib/youtube/video-helpers";
 import { DownloadType, type AdaptiveFormatItem, type VideoData } from "@/types";
 import { untrack } from "svelte";
@@ -69,19 +69,25 @@ export function createPanelState(getVideoData: () => VideoData) {
       });
     })
   );
+  let extension = $state(
+    untrack(() => resolveInitialExtension({
+      options: CONTENT_OPTIONS,
+      videoData: getVideoData()
+    }))
+  );
   let selectedVideoFormat = $state<AdaptiveFormatItem | null>(
     untrack(() => {
       const entry = statusProgressSignal.value[getVideoData().videoId];
-      const candidates = filterVideoFormatsByEnhancedBitrate(
-        getVideoData().videoFormats,
-        CONTENT_OPTIONS.enhancedBitrate
-      );
+      const qualityFormat = selectVideoFormatForQuality({
+        videoData: getVideoData(),
+        options: CONTENT_OPTIONS,
+        targetExtension: extension
+      });
       if (entry?.videoItag && entry.isDownloading) {
-        const matched = getVideoData().videoFormats.find(fmt => fmt.itag === entry.videoItag);
-        return matched ?? candidates[0] ?? null;
+        return getVideoData().videoFormats.find(format => format.itag === entry.videoItag) ?? qualityFormat;
       }
 
-      return candidates[0] ?? null;
+      return qualityFormat;
     })
   );
   const initialAudioFormat = untrack(() => {
@@ -101,12 +107,6 @@ export function createPanelState(getVideoData: () => VideoData) {
   untrack(() => syncAudioFromFormat(initialAudioFormat));
   let selectedAudioFormat = $state<AdaptiveFormatItem | null>(initialAudioFormat);
   let filename = $state(untrack(() => resolveInitialFilename(getVideoData())));
-  let extension = $state(
-    untrack(() => resolveInitialExtension({
-      options: CONTENT_OPTIONS,
-      videoData: getVideoData()
-    }))
-  );
   let isFilenameValid = $state(true);
 
   const actualExtension = $derived(
@@ -158,7 +158,8 @@ export function createPanelState(getVideoData: () => VideoData) {
     setDownloadId(value) {
       downloadId = value;
     },
-    isDownloading: () => statusIsDownloading
+    isDownloading: () => statusIsDownloading,
+    getExtension: () => extension
   });
 
   const planParams = $derived(

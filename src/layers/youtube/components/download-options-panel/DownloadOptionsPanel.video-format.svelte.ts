@@ -1,5 +1,6 @@
 import { CONTENT_OPTIONS } from "@/lib/ui/synced-stores.svelte";
 import { filterVideoFormatsByEnhancedBitrate } from "@/lib/youtube/format-display";
+import { selectVideoFormatForQuality } from "@/lib/youtube/select-video-quality";
 import { waitForVideoElement } from "@/lib/youtube/video-helpers";
 import { VideoQualityMode, type AdaptiveFormatItem, type Prettify, type VideoData } from "@/types";
 import { untrack } from "svelte";
@@ -12,11 +13,13 @@ type CreateVideoFormatTrackerParams = Prettify<{
   getVideoData: () => VideoData;
   setSelectedVideoFormat: (value: AdaptiveFormatItem | null) => void;
   isDownloading: () => boolean;
+  getExtension: () => string;
 }>;
 export function createVideoFormatTracker({
   getVideoData,
   setSelectedVideoFormat,
-  isDownloading
+  isDownloading,
+  getExtension
 }: CreateVideoFormatTrackerParams) {
   async function matchToCurrentQuality(signal: AbortSignal) {
     const videoData = getVideoData();
@@ -46,7 +49,6 @@ export function createVideoFormatTracker({
       return;
     }
 
-    const candidates = filterVideoFormatsByEnhancedBitrate(videoData.videoFormats, options.enhancedBitrate);
     const isCurrentQualityMode = options.videoQualityMode === VideoQualityMode.CurrentQuality;
     if (isCurrentQualityMode) {
       const abortController = new AbortController();
@@ -63,12 +65,12 @@ export function createVideoFormatTracker({
     }
 
     const isBestQualityMode = options.videoQualityMode === VideoQualityMode.Best;
-    if (isBestQualityMode) {
-      setSelectedVideoFormat(candidates[0] ?? null);
-      return;
-    }
-
-    const matchingFormat = candidates.find(format => format.height === options.videoQuality);
-    setSelectedVideoFormat(matchingFormat ?? candidates[0] ?? null);
+    setSelectedVideoFormat(
+      selectVideoFormatForQuality({
+        videoData,
+        options,
+        targetExtension: isBestQualityMode ? getExtension() : ""
+      })
+    );
   });
 }

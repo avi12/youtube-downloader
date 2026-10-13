@@ -1,5 +1,5 @@
 import { resolveVideoFilename } from "@/lib/utils/containers";
-import { filterVideoFormatsByEnhancedBitrate } from "@/lib/youtube/format-display";
+import { selectVideoFormatForOptions } from "@/lib/youtube/select-video-quality";
 import {
   DownloadType,
   VideoQualityMode,
@@ -41,10 +41,10 @@ export function buildDownloadRequest({
     downloadType = options.defaultDownloadType;
   }
 
-  const candidates = filterVideoFormatsByEnhancedBitrate(data.videoFormats, options.enhancedBitrate);
-  const videoFormat = options.videoQualityMode === VideoQualityMode.Best
-    ? candidates[0]
-    : (candidates.find(format => format.height === options.videoQuality) ?? candidates[0]);
+  const videoFormat = selectVideoFormatForOptions({
+    videoData: data,
+    options
+  });
 
   return {
     type: downloadType,

@@ -4,7 +4,7 @@ import type { AdaptiveFormatItem, Prettify, VideoData } from "@/types";
 
 type ContainerAlignmentVideoData = Prettify<Pick<VideoData, "videoFormats" | "videoFormatVariants" | "audioFormats">>;
 
-export function resolveVideoFormatVariants(videoData: ContainerAlignmentVideoData) {
+export function resolveVideoFormatVariants(videoData: Pick<VideoData, "videoFormats" | "videoFormatVariants">) {
   return videoData.videoFormatVariants ?? videoData.videoFormats;
 }
 

@@ -9,7 +9,7 @@ import {
 } from "@/lib/ui/synced-stores.svelte";
 import { resolveVideoFilename } from "@/lib/utils/containers";
 import { normalizeLanguageCode } from "@/lib/youtube/audio-format-helpers";
-import { filterVideoFormatsByEnhancedBitrate } from "@/lib/youtube/format-display";
+import { selectVideoFormatForOptions } from "@/lib/youtube/select-video-quality";
 import {
   DownloadType,
   PlaylistOutputMode,
@@ -147,13 +147,10 @@ function estimateVideoSize({ video, options, playlistDownloadType }: {
     return audioBytes;
   }
 
-  const targetHeight = options.videoQualityMode === VideoQualityMode.Best
-    ? Number.POSITIVE_INFINITY
-    : options.videoQuality;
-  const candidates = filterVideoFormatsByEnhancedBitrate(video.videoFormats, options.enhancedBitrate);
-  const videoFormat = options.videoQualityMode === VideoQualityMode.Best
-    ? candidates[0]
-    : (candidates.find(format => format.height === targetHeight) ?? candidates[0]);
+  const videoFormat = selectVideoFormatForOptions({
+    videoData: video,
+    options
+  });
   const videoBytes = Number(videoFormat?.contentLength ?? 0);  if (resolvedType === DownloadType.Video) {
     return videoBytes;
   }
@@ -181,10 +178,10 @@ function buildPlaylistGridRequest({
 }: BuildPlaylistGridRequestParams): DownloadRequest {
   const downloadType = resolvePerVideoDownloadType(data, playlistDownloadType);
 
-  const candidates = filterVideoFormatsByEnhancedBitrate(data.videoFormats, options.enhancedBitrate);
-  const videoFormat = options.videoQualityMode === VideoQualityMode.Best
-    ? candidates[0]
-    : (candidates.find(format => format.height === options.videoQuality) ?? candidates[0]);
+  const videoFormat = selectVideoFormatForOptions({
+    videoData: data,
+    options
+  });
   const audioFormat = selectPlaylistAudioFormat(data.audioFormats);
   const captionTracks = filterCaptionTracks(data.captionTracks);
 
