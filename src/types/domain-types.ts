@@ -1,6 +1,6 @@
 import type { DownloadType, ProgressType } from "./download-enums";
 import type { Prettify } from "./prettify";
-import type { SabrConfig, SubtitleTrack, VideoMetadata } from "./settings-types";
+import type { CodecPreferences, SabrConfig, SubtitleTrack, VideoMetadata } from "./settings-types";
 import type { AdaptiveFormatItem, CaptionTrack, PlayerResponse, TranslationLanguage } from "./youtube";
 
 export type DownloadProgressEntry = Prettify<{
@@ -24,6 +24,7 @@ export type DownloadRequest = Prettify<{
   videoItag: number;
   audioItag: number;
   audioTrackId?: string;
+  codecPreferences?: CodecPreferences;
   selectedCaptionVssId?: string;
   filenameOutput: string;
   sabrConfig?: SabrConfig | null;

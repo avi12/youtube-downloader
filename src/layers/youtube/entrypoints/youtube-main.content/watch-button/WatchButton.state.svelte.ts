@@ -7,7 +7,7 @@ import { createMessageEffects } from "./WatchButton.message-effects.svelte";
 import { createPanelEffects } from "./WatchButton.panel-effects.svelte";
 import { interruptedDownloadStore, statusProgressSignal } from "@/lib/ui/synced-stores.svelte";
 import { calculateWeightedProgress } from "@/lib/youtube/video-helpers";
-import { type VideoData, type YtButtonViewModelElement } from "@/types";
+import { type CodecPreferences, type VideoData, type YtButtonViewModelElement } from "@/types";
 import { untrack } from "svelte";
 
 const PERCENT_COMPLETE = 100;
@@ -43,6 +43,7 @@ export function createWatchButtonState(params: {
   let defaultVideoItag = $state(initial.videoItag);
   let defaultAudioItag = $state(initial.audioItag);
   let defaultAudioTrackId = $state(initial.audioTrackId);
+  let defaultCodecPreferences = $state<CodecPreferences>();
   let defaultFilename = $state(initial.filename);
   let defaultQuality = $state(initial.quality);
   const defaultDownloadType = initial.downloadType;
@@ -145,6 +146,9 @@ export function createWatchButtonState(params: {
       },
       setDefaultAudioTrackId(value) {
         defaultAudioTrackId = value;
+      },
+      setDefaultCodecPreferences(value) {
+        defaultCodecPreferences = value;
       }
     },
     getElDropdown: () => params.elDropdown
@@ -161,6 +165,7 @@ export function createWatchButtonState(params: {
       getDefaultVideoItag: () => defaultVideoItag,
       getDefaultAudioItag: () => defaultAudioItag,
       getDefaultAudioTrackId: () => defaultAudioTrackId,
+      getDefaultCodecPreferences: () => defaultCodecPreferences,
       getDefaultFilename: () => defaultFilename,
       getElDownloadButton: () => elDownloadButton,
       getElChevronButton: () => elChevronButton,

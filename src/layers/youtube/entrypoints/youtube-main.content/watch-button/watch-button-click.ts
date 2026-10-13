@@ -1,6 +1,7 @@
 import { cancelActiveDownload, startDownload } from "../video/download";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import {
+  type CodecPreferences,
   DownloadType,
   type Prettify,
   type TpYtIronDropdownElement,
@@ -16,6 +17,7 @@ export type ClickHandlerState = Prettify<{
   getDefaultVideoItag(): number;
   getDefaultAudioItag(): number;
   getDefaultAudioTrackId(): string | undefined;
+  getDefaultCodecPreferences(): CodecPreferences | undefined;
   getDefaultFilename(): string;
   getElDownloadButton(): YtButtonViewModelElement | null;
   getElChevronButton(): YtButtonViewModelElement | null;
@@ -58,6 +60,7 @@ export function buildClickHandler({ videoData, elDropdown, state }: BuildClickHa
         videoItag: state.getDefaultVideoItag(),
         audioItag: state.getDefaultAudioItag(),
         audioTrackId: state.getDefaultAudioTrackId(),
+        codecPreferences: state.getDefaultCodecPreferences(),
         filenameOutput: state.getDefaultFilename()
       }).catch(() => {});
       return;

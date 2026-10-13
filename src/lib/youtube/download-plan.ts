@@ -193,7 +193,7 @@ type DownloadPlanVideoData = Prettify<{
 }>;
 
 export type DownloadPlanParams = Prettify<Pick<DownloadRequest,
-  "type" | "videoItag" | "audioItag" | "audioTrackId" | "selectedCaptionVssId" |
+  "type" | "videoItag" | "audioItag" | "audioTrackId" | "codecPreferences" | "selectedCaptionVssId" |
   "downloadExtras" | "downloadExtraCaptions" | "includeAutoDubbing"
 >>;
 
@@ -277,7 +277,7 @@ export function resolveDownloadPlan({ videoData, params, targetExtension }: Reso
     videoData,
     ...selected,
     targetExtension,
-    codecPreferences: CONTENT_OPTIONS
+    codecPreferences: params.codecPreferences ?? CONTENT_OPTIONS
   });
   const extraAudioFormats = downloadExtras && audioFormat
     ? getExtraAudioFormats({

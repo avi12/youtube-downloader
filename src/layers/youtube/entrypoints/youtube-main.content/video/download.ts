@@ -25,7 +25,7 @@ export function cancelAllActiveDownloads() {
 }
 
 export async function startDownload(params: Pick<DownloadRequest,
-  "type" | "videoId" | "videoItag" | "audioItag" | "audioTrackId" |
+  "type" | "videoId" | "videoItag" | "audioItag" | "audioTrackId" | "codecPreferences" |
   "selectedCaptionVssId" | "filenameOutput" | "isIframeFallback" |
   "downloadExtras" | "includeAutoDubbing" |
   "playlistId" | "playlistTitle" | "playlistTotalCount" |

@@ -51,7 +51,7 @@ async function tryProgressiveInPage({ url, filenameOutput, videoId }: TryProgres
 }
 
 export type DownloadParams = Prettify<Pick<DownloadRequest,
-  "type" | "videoId" | "videoItag" | "audioItag" | "audioTrackId" |
+  "type" | "videoId" | "videoItag" | "audioItag" | "audioTrackId" | "codecPreferences" |
   "selectedCaptionVssId" | "filenameOutput" | "isIframeFallback" |
   "downloadExtras" | "downloadExtraCaptions" | "includeAutoDubbing" |
   "playlistId" | "playlistTitle" | "playlistTotalCount" |

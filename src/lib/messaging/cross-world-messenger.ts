@@ -3,6 +3,7 @@ import type { DownloadPlanParams } from "@/lib/youtube/download-plan";
 import type { SizeInputs } from "@/lib/youtube/output-size";
 import type {
   ButtonViewModelData,
+  CodecPreferences,
   DownloadRequest,
   DownloadType,
   Options,
@@ -81,6 +82,7 @@ export interface PageMessengerSchema {
     videoItag?: number;
     audioItag?: number;
     audioTrackId?: string;
+    codecPreferences?: CodecPreferences;
   }): void;
   [CrossWorldMessage.RequestVideoData](data: { videoId: string }): void;
   [CrossWorldMessage.ProxyFetch](data: {
