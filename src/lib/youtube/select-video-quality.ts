@@ -1,6 +1,5 @@
-import { resolveVideoFormatVariants } from "./align-formats-to-container";
+import { createVideoFormatPreference, resolveVideoFormatVariants } from "./align-formats-to-container";
 import { filterVideoFormatsByEnhancedBitrate } from "./format-display";
-import { isVideoCodecPreferredForContainer } from "@/lib/utils/container-specs";
 import { resolveAutoExtension } from "@/lib/utils/mime-types";
 import { VideoQualityMode, type Options, type Prettify, type VideoData } from "@/types";
 
@@ -21,13 +20,13 @@ export function selectVideoFormatForQuality({
   }
 
   const variants = resolveVideoFormatVariants(videoData);
-  const offeredMimeTypes = variants.map(format => format.mimeType);
-  const preferredVariants = variants.filter(format => isVideoCodecPreferredForContainer({
-    videoMimeType: format.mimeType,
-    targetExtension,
-    codecPreferences: options,
-    offeredMimeTypes
-  }));
+  const preferredVariants = variants.filter(
+    createVideoFormatPreference({
+      videoFormatVariants: variants,
+      targetExtension,
+      codecPreferences: options
+    }).isPreferred
+  );
   const bestPreferredFormat = candidates.find(candidate => preferredVariants.some(variant =>
     variant.height === candidate.height && variant.fps === candidate.fps));
   return bestPreferredFormat ?? candidates[0] ?? null;

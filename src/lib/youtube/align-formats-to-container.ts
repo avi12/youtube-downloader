@@ -4,9 +4,16 @@ import {
   getOutputExtension,
   isDynamicRangePreferred,
   isSameVideoCodec,
-  isVideoCodecPreferredForContainer
+  isVideoCodecPreferredForContainer,
+  isVideoNativeForContainer
 } from "@/lib/utils/container-specs";
-import type { AdaptiveFormatItem, CodecPreferences, Prettify, VideoData } from "@/types";
+import {
+  DynamicRangePreference,
+  type AdaptiveFormatItem,
+  type CodecPreferences,
+  type Prettify,
+  type VideoData
+} from "@/types";
 
 type ContainerAlignmentVideoData = Prettify<Pick<VideoData, "videoFormats" | "videoFormatVariants" | "audioFormats">>;
 
@@ -14,19 +21,19 @@ export function resolveVideoFormatVariants(videoData: Pick<VideoData, "videoForm
   return videoData.videoFormatVariants ?? videoData.videoFormats;
 }
 
-type AlignVideoFormatToExtensionParams = Prettify<{
+type CreateVideoFormatPreferenceParams = Prettify<{
   videoFormatVariants: AdaptiveFormatItem[];
-  currentFormat: AdaptiveFormatItem;
   targetExtension: string;
   codecPreferences: CodecPreferences;
 }>;
-export function alignVideoFormatToExtension({
-  videoFormatVariants,
-  currentFormat,
-  targetExtension,
-  codecPreferences
-}: AlignVideoFormatToExtensionParams) {
+// The codec setting ranks streams, except that "HDR when available" puts any HDR stream the
+// container holds as-is ahead of a preferred codec in SDR (H.264 never comes in HDR)
+export function createVideoFormatPreference({
+  videoFormatVariants, targetExtension, codecPreferences
+}: CreateVideoFormatPreferenceParams) {
   const offeredMimeTypes = videoFormatVariants.map(format => format.mimeType);
+  const isHdrWanted = codecPreferences.dynamicRange === DynamicRangePreference.Hdr;
+
   function isCodecPreferred(format: AdaptiveFormatItem) {
     return isVideoCodecPreferredForContainer({
       videoMimeType: format.mimeType,
@@ -43,8 +50,41 @@ export function alignVideoFormatToExtension({
     });
   }
 
-  const isCurrentPreferred = isCodecPreferred(currentFormat) && isRangePreferred(currentFormat);
-  if (isCurrentPreferred) {
+  function isCodecAndRangePreferred(format: AdaptiveFormatItem) {
+    return isCodecPreferred(format) && isRangePreferred(format);
+  }
+
+  function isWantedHdr(format: AdaptiveFormatItem) {
+    return isHdrWanted && isRangePreferred(format) && isVideoNativeForContainer({
+      videoMimeType: format.mimeType,
+      targetExtension
+    });
+  }
+
+  return {
+    isCodecPreferred,
+    isRangePreferred,
+    isCodecAndRangePreferred,
+    isWantedHdr,
+    isPreferred: (format: AdaptiveFormatItem) => isCodecAndRangePreferred(format) || isWantedHdr(format)
+  };
+}
+
+type AlignVideoFormatToExtensionParams = Prettify<CreateVideoFormatPreferenceParams & {
+  currentFormat: AdaptiveFormatItem;
+}>;
+export function alignVideoFormatToExtension({
+  videoFormatVariants,
+  currentFormat,
+  targetExtension,
+  codecPreferences
+}: AlignVideoFormatToExtensionParams) {
+  const preference = createVideoFormatPreference({
+    videoFormatVariants,
+    targetExtension,
+    codecPreferences
+  });
+  if (preference.isCodecAndRangePreferred(currentFormat)) {
     return currentFormat;
   }
 
@@ -52,11 +92,11 @@ export function alignVideoFormatToExtension({
     format.height === currentFormat.height
     && format.fps === currentFormat.fps
     && isPremiumFormat(format) === isPremiumFormat(currentFormat));
-  const preferredSiblings = siblings.filter(isCodecPreferred);
   const sameCodecSiblings = siblings.filter(format => isSameVideoCodec(format.mimeType, currentFormat.mimeType));
-  const codecPool = preferredSiblings.length ? preferredSiblings : sameCodecSiblings;
-  return pickBestByBitrate(codecPool.filter(isRangePreferred))
-    ?? pickBestByBitrate(preferredSiblings)
+  return pickBestByBitrate(siblings.filter(preference.isCodecAndRangePreferred))
+    ?? pickBestByBitrate(siblings.filter(preference.isWantedHdr))
+    ?? pickBestByBitrate(sameCodecSiblings.filter(preference.isRangePreferred))
+    ?? pickBestByBitrate(siblings.filter(preference.isCodecPreferred))
     ?? currentFormat;
 }
 
