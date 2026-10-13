@@ -25,6 +25,13 @@ export const AudioCodecPreference = {
 
 export type AudioCodecPreference = (typeof AudioCodecPreference)[keyof typeof AudioCodecPreference];
 
+export const DynamicRangePreference = {
+  Sdr: "sdr",
+  Hdr: "hdr"
+} as const;
+
+export type DynamicRangePreference = (typeof DynamicRangePreference)[keyof typeof DynamicRangePreference];
+
 export const ProgressType = {
   Video: "video",
   Audio: "audio",

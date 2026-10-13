@@ -1,5 +1,11 @@
+import { isPremiumFormat } from "./format-display";
 import { alignAudioFormatToExtension, pickBestByBitrate } from "./select-audio-format";
-import { getOutputExtension, isVideoCodecPreferredForContainer } from "@/lib/utils/container-specs";
+import {
+  getOutputExtension,
+  isDynamicRangePreferred,
+  isSameVideoCodec,
+  isVideoCodecPreferredForContainer
+} from "@/lib/utils/container-specs";
 import type { AdaptiveFormatItem, CodecPreferences, Prettify, VideoData } from "@/types";
 
 type ContainerAlignmentVideoData = Prettify<Pick<VideoData, "videoFormats" | "videoFormatVariants" | "audioFormats">>;
@@ -21,26 +27,37 @@ export function alignVideoFormatToExtension({
   codecPreferences
 }: AlignVideoFormatToExtensionParams) {
   const offeredMimeTypes = videoFormatVariants.map(format => format.mimeType);
-  const isCurrentPreferred = isVideoCodecPreferredForContainer({
-    videoMimeType: currentFormat.mimeType,
-    targetExtension,
-    codecPreferences,
-    offeredMimeTypes
-  });
-  if (isCurrentPreferred) {
-    return currentFormat;
-  }
-
-  const preferredSiblings = videoFormatVariants.filter(format =>
-    format.height === currentFormat.height
-    && format.fps === currentFormat.fps
-    && isVideoCodecPreferredForContainer({
+  function isCodecPreferred(format: AdaptiveFormatItem) {
+    return isVideoCodecPreferredForContainer({
       videoMimeType: format.mimeType,
       targetExtension,
       codecPreferences,
       offeredMimeTypes
-    }));
-  return pickBestByBitrate(preferredSiblings) ?? currentFormat;
+    });
+  }
+
+  function isRangePreferred(format: AdaptiveFormatItem) {
+    return isDynamicRangePreferred({
+      videoMimeType: format.mimeType,
+      codecPreferences
+    });
+  }
+
+  const isCurrentPreferred = isCodecPreferred(currentFormat) && isRangePreferred(currentFormat);
+  if (isCurrentPreferred) {
+    return currentFormat;
+  }
+
+  const siblings = videoFormatVariants.filter(format =>
+    format.height === currentFormat.height
+    && format.fps === currentFormat.fps
+    && isPremiumFormat(format) === isPremiumFormat(currentFormat));
+  const preferredSiblings = siblings.filter(isCodecPreferred);
+  const sameCodecSiblings = siblings.filter(format => isSameVideoCodec(format.mimeType, currentFormat.mimeType));
+  const codecPool = preferredSiblings.length ? preferredSiblings : sameCodecSiblings;
+  return pickBestByBitrate(codecPool.filter(isRangePreferred))
+    ?? pickBestByBitrate(preferredSiblings)
+    ?? currentFormat;
 }
 
 // Swaps video+audio picks for same-quality variants in the container's preferred

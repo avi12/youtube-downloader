@@ -8,7 +8,7 @@ import { VideoQualityMode, type Options, type Prettify, type VideoData } from "@
 // yt-dlp's -f [vcodec^=avc1] for MP4 (H.264 tops out at 1080p); an explicit pick is kept
 type SelectVideoFormatForQualityParams = Prettify<{
   videoData: Pick<VideoData, "videoFormats" | "videoFormatVariants">;
-  options: Pick<Options, "videoQualityMode" | "videoQuality" | "enhancedBitrate" | "videoCodec" | "audioCodec">;
+  options: Pick<Options, "videoQualityMode" | "videoQuality" | "enhancedBitrate" | "videoCodec" | "audioCodec" | "dynamicRange">;
   targetExtension: string;
 }>;
 export function selectVideoFormatForQuality({
@@ -35,7 +35,7 @@ export function selectVideoFormatForQuality({
 
 type SelectVideoFormatForOptionsParams = Prettify<{
   videoData: Pick<VideoData, "videoFormats" | "videoFormatVariants">;
-  options: Pick<Options, "videoQualityMode" | "videoQuality" | "enhancedBitrate" | "ext" | "videoCodec" | "audioCodec">;
+  options: Pick<Options, "videoQualityMode" | "videoQuality" | "enhancedBitrate" | "ext" | "videoCodec" | "audioCodec" | "dynamicRange">;
 }>;
 export function selectVideoFormatForOptions({ videoData, options }: SelectVideoFormatForOptionsParams) {
   return selectVideoFormatForQuality({

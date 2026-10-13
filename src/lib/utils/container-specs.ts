@@ -1,4 +1,4 @@
-import { AudioCodecPreference, VideoCodecPreference } from "@/types";
+import { AudioCodecPreference, DynamicRangePreference, VideoCodecPreference } from "@/types";
 import type { CodecPreferences, Prettify } from "@/types";
 
 const CODEC_VP8 = "vp8";
@@ -186,9 +186,56 @@ const VIDEO_CODEC_LABELS: Record<string, string> = {
   [CODEC_AV01]: "AV1"
 };
 
+// vp9 and vp09 (and hvc1/hev1) name the same codec, so compare by the shared label
+export function isSameVideoCodec(mimeType: string, otherMimeType: string) {
+  const codec = extractBaseCodec(mimeType);
+  const otherCodec = extractBaseCodec(otherMimeType);
+  return (VIDEO_CODEC_LABELS[codec] ?? codec) === (VIDEO_CODEC_LABELS[otherCodec] ?? otherCodec);
+}
+
+const HDR_LABEL_SUFFIX = " HDR";
+const VP9_HDR_PROFILE = "02";
+const HDR_BIT_DEPTHS = new Set(["10", "12"]);
+
+// YouTube only serves 10-bit streams for HDR: VP9 profile 2 (vp09.02.*) and 10-bit AV1
+// (av01.0.xxM.10), the same rule yt-dlp uses
+function isHdrMimeType(mimeType: string) {
+  const [, codecString = ""] = mimeType.match(/codecs="([^"]+)"/i) ?? [];
+  const [codec, profile, , bitDepth] = codecString.toLowerCase().split(".");
+  const isVp9Hdr = codec === CODEC_VP09 && profile === VP9_HDR_PROFILE;
+  const isAv1Hdr = codec === CODEC_AV01 && HDR_BIT_DEPTHS.has(bitDepth ?? "");
+  return isVp9Hdr || isAv1Hdr;
+}
+
 export function formatVideoCodecLabel(mimeType: string) {
   const codec = extractBaseCodec(mimeType);
-  return VIDEO_CODEC_LABELS[codec] ?? codec.toUpperCase();
+  const label = VIDEO_CODEC_LABELS[codec] ?? codec.toUpperCase();
+  return isHdrMimeType(mimeType) ? `${label}${HDR_LABEL_SUFFIX}` : label;
+}
+
+const DYNAMIC_RANGE_PREFERENCES: Record<DynamicRangePreference, Prettify<{
+  label: string;
+  description: string;
+}>> = {
+  [DynamicRangePreference.Sdr]: {
+    label: "SDR",
+    description: "Looks right on every screen"
+  },
+  [DynamicRangePreference.Hdr]: {
+    label: "HDR when available",
+    description: "Brighter highlights, needs an HDR screen"
+  }
+};
+
+export function describeDynamicRangePreference(preference: DynamicRangePreference) {
+  return DYNAMIC_RANGE_PREFERENCES[preference];
+}
+
+export function isDynamicRangePreferred({ videoMimeType, codecPreferences }: {
+  videoMimeType: string;
+  codecPreferences: CodecPreferences;
+}) {
+  return isHdrMimeType(videoMimeType) === (codecPreferences.dynamicRange === DynamicRangePreference.Hdr);
 }
 
 const AUDIO_CODEC_LABELS: Record<string, string> = {

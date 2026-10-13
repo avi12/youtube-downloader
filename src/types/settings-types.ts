@@ -3,6 +3,7 @@ import type {
   AudioTrackLanguageMode,
   CaptionLanguageMode,
   DownloadType,
+  DynamicRangePreference,
   PlaylistDownloadMode,
   PlaylistOutputMode,
   VideoCodecPreference,
@@ -44,7 +45,7 @@ export type VideoMetadata = Prettify<{
 
 export type DownloadTypePreference = DownloadType;
 
-export type CodecPreferences = Prettify<Pick<Options, "videoCodec" | "audioCodec">>;
+export type CodecPreferences = Prettify<Pick<Options, "videoCodec" | "audioCodec" | "dynamicRange">>;
 
 export type Options = Prettify<{
   ext: {
@@ -57,6 +58,7 @@ export type Options = Prettify<{
   enhancedBitrate: boolean;
   videoCodec: VideoCodecPreference;
   audioCodec: AudioCodecPreference;
+  dynamicRange: DynamicRangePreference;
   isShowNativeDownload: boolean;
   isNotifyOnIdle: boolean;
   isRevealOnComplete: boolean;

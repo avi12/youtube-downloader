@@ -32,6 +32,7 @@ export {
   AudioTrackLanguageMode,
   CaptionLanguageMode,
   DownloadType,
+  DynamicRangePreference,
   PlaylistDownloadMode,
   PlaylistOutputMode,
   ProgressType,

@@ -13,10 +13,11 @@
     AUTO_VIDEO_EXTENSION_DESCRIPTION,
     buildFormatGroups,
     describeAudioCodecPreference,
+    describeDynamicRangePreference,
     describeVideoCodecPreference,
     videoContainers
   } from "@/lib/utils/containers";
-  import { AudioCodecPreference, VideoCodecPreference } from "@/types";
+  import { AudioCodecPreference, DynamicRangePreference, VideoCodecPreference } from "@/types";
 
   const { options, slideDuration }: SlidingSettingsProps = $props();
 
@@ -64,6 +65,11 @@
   const audioCodecItems = Object.values(AudioCodecPreference).map(preference => ({
     value: preference,
     ...describeAudioCodecPreference(preference)
+  }));
+
+  const dynamicRangeItems = Object.values(DynamicRangePreference).map(preference => ({
+    value: preference,
+    ...describeDynamicRangePreference(preference)
   }));
 
   function selectVideo(extension: string): void {
@@ -117,6 +123,28 @@
     }}
     {slideDuration}
     subtitle={CODEC_SUBTITLE}
+  >
+    {#snippet icon()}
+      {@html videoIcon}
+    {/snippet}
+  </SettingsDropDown>
+
+  <SettingsDropDown
+    currentValue={options.dynamicRange}
+    displayValue={describeDynamicRangePreference(options.dynamicRange).label}
+    items={dynamicRangeItems}
+    label="Dynamic range"
+    onSelect={selected => {
+      const preference = dynamicRangeItems.find(item => item.value === selected)?.value;
+      if (preference) {
+        void setOption({
+          key: "dynamicRange",
+          value: preference
+        });
+      }
+    }}
+    {slideDuration}
+    subtitle="HDR comes in VP9 and AV1"
   >
     {#snippet icon()}
       {@html videoIcon}
