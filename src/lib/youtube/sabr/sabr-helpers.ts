@@ -1,7 +1,11 @@
 import { StreamStallError, readStreamToBuffer } from "@/lib/utils/stream";
 import type { AdaptiveFormatItem, Prettify, SabrConfig } from "@/types";
 import { SabrStream } from "googlevideo/sabr-stream";
-import { buildSabrFormat } from "googlevideo/utils";
+import { buildSabrFormat, Logger, LogLevel } from "googlevideo/utils";
+
+// SabrStream logs every failed segment as an error, but callers recover (CDN fallback, re-priming)
+// and log the ones they can't - keep its warnings only, so recovered downloads don't look broken
+Logger.getInstance().setLogLevels(LogLevel.WARN);
 
 export type SabrStreamResult = Prettify<{
   data: Uint8Array;
