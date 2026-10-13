@@ -1,7 +1,7 @@
 import { formatVideoCodecLabel } from "@/lib/utils/container-specs";
 import { alignVideoFormatToExtension, resolveVideoFormatVariants } from "@/lib/youtube/align-formats-to-container";
 import { formatAudioQualityLabel, formatVideoQualityLabel } from "@/lib/youtube/video-helpers";
-import type { AdaptiveFormatItem, VideoData } from "@/types";
+import type { AdaptiveFormatItem, CodecPreferences, VideoData } from "@/types";
 
 export function toAudioFormatValue(format: AdaptiveFormatItem) {
   return `${format.itag}:${format.audioTrack?.id ?? ""}`;
@@ -42,6 +42,7 @@ export function buildQualityOptions({
   videoFormats,
   videoFormatVariants,
   targetExtension,
+  codecPreferences,
   selectedAudioTrackId,
   uniqueAudioLanguagesCount
 }: {
@@ -50,6 +51,7 @@ export function buildQualityOptions({
   videoFormats: AdaptiveFormatItem[];
   videoFormatVariants: VideoData["videoFormatVariants"];
   targetExtension: string;
+  codecPreferences: CodecPreferences;
   selectedAudioTrackId: string | null | undefined;
   uniqueAudioLanguagesCount: number;
 }) {
@@ -69,7 +71,8 @@ export function buildQualityOptions({
     const downloadedFormat = alignVideoFormatToExtension({
       videoFormatVariants: variants,
       currentFormat: format,
-      targetExtension
+      targetExtension,
+      codecPreferences
     });
     return {
       value: format.itag.toString(),

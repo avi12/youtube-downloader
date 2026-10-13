@@ -1,6 +1,6 @@
 import { alignAudioFormatToExtension, pickBestByBitrate } from "./select-audio-format";
 import { getOutputExtension, isVideoCodecPreferredForContainer } from "@/lib/utils/container-specs";
-import type { AdaptiveFormatItem, Prettify, VideoData } from "@/types";
+import type { AdaptiveFormatItem, CodecPreferences, Prettify, VideoData } from "@/types";
 
 type ContainerAlignmentVideoData = Prettify<Pick<VideoData, "videoFormats" | "videoFormatVariants" | "audioFormats">>;
 
@@ -12,15 +12,18 @@ type AlignVideoFormatToExtensionParams = Prettify<{
   videoFormatVariants: AdaptiveFormatItem[];
   currentFormat: AdaptiveFormatItem;
   targetExtension: string;
+  codecPreferences: CodecPreferences;
 }>;
 export function alignVideoFormatToExtension({
   videoFormatVariants,
   currentFormat,
-  targetExtension
+  targetExtension,
+  codecPreferences
 }: AlignVideoFormatToExtensionParams) {
   const isCurrentPreferred = isVideoCodecPreferredForContainer({
     videoMimeType: currentFormat.mimeType,
-    targetExtension
+    targetExtension,
+    codecPreferences
   });
   if (isCurrentPreferred) {
     return currentFormat;
@@ -31,7 +34,8 @@ export function alignVideoFormatToExtension({
     && format.fps === currentFormat.fps
     && isVideoCodecPreferredForContainer({
       videoMimeType: format.mimeType,
-      targetExtension
+      targetExtension,
+      codecPreferences
     }));
   return pickBestByBitrate(preferredSiblings) ?? currentFormat;
 }
@@ -43,20 +47,23 @@ type AlignFormatsToContainerParams = Prettify<{
   videoFormat: AdaptiveFormatItem;
   audioFormat: AdaptiveFormatItem | null;
   targetExtension: string;
+  codecPreferences: CodecPreferences;
 }>;
 export function alignFormatsToContainer({
-  videoData, videoFormat, audioFormat, targetExtension
+  videoData, videoFormat, audioFormat, targetExtension, codecPreferences
 }: AlignFormatsToContainerParams) {
   return {
     videoFormat: alignVideoFormatToExtension({
       videoFormatVariants: resolveVideoFormatVariants(videoData),
       currentFormat: videoFormat,
-      targetExtension
+      targetExtension,
+      codecPreferences
     }),
     audioFormat: audioFormat && alignAudioFormatToExtension({
       audioFormats: videoData.audioFormats,
       currentFormat: audioFormat,
-      targetExtension
+      targetExtension,
+      codecPreferences
     })
   };
 }
@@ -66,15 +73,17 @@ type ResolveOutputExtensionForFormatsParams = Prettify<{
   videoFormat: AdaptiveFormatItem;
   audioFormat: AdaptiveFormatItem;
   userExtension: string;
+  codecPreferences: CodecPreferences;
 }>;
 export function resolveOutputExtensionForFormats({
-  videoData, videoFormat, audioFormat, userExtension
+  videoData, videoFormat, audioFormat, userExtension, codecPreferences
 }: ResolveOutputExtensionForFormatsParams) {
   const aligned = alignFormatsToContainer({
     videoData,
     videoFormat,
     audioFormat,
-    targetExtension: userExtension
+    targetExtension: userExtension,
+    codecPreferences
   });
   return getOutputExtension({
     videoMimeType: aligned.videoFormat.mimeType,

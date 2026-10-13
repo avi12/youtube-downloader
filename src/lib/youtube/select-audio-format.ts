@@ -1,7 +1,7 @@
 import { normalizeLanguageCode, findOriginalAudioFormat } from "./audio-format-helpers";
 import { isAudioCodecPreferredForContainer, isAudioMimeNativeForContainer } from "@/lib/utils/container-specs";
 import { AudioTrackLanguageMode } from "@/types";
-import type { AdaptiveFormatItem, Prettify } from "@/types";
+import type { AdaptiveFormatItem, CodecPreferences, Prettify } from "@/types";
 
 const FALLBACK_LANGUAGE_CODE = "en";
 
@@ -116,16 +116,19 @@ type AlignAudioFormatToExtensionParams = Prettify<{
   audioFormats: AdaptiveFormatItem[];
   currentFormat: AdaptiveFormatItem | null;
   targetExtension: string;
+  codecPreferences: CodecPreferences;
 }>;
 export function alignAudioFormatToExtension({
   audioFormats,
   currentFormat,
-  targetExtension
+  targetExtension,
+  codecPreferences
 }: AlignAudioFormatToExtensionParams) {
   const isCurrentPreferred = currentFormat
     && isAudioCodecPreferredForContainer({
       audioMimeType: currentFormat.mimeType,
-      targetExtension
+      targetExtension,
+      codecPreferences
     });
   if (isCurrentPreferred) {
     return currentFormat;
@@ -138,7 +141,8 @@ export function alignAudioFormatToExtension({
   const candidates = sameTrackCandidates.length ? sameTrackCandidates : audioFormats;
   const preferredFormats = candidates.filter(format => isAudioCodecPreferredForContainer({
     audioMimeType: format.mimeType,
-    targetExtension
+    targetExtension,
+    codecPreferences
   }));
   const nativeFormats = candidates.filter(format => isAudioMimeNativeForContainer({
     audioMimeType: format.mimeType,

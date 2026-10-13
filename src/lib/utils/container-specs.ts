@@ -1,4 +1,5 @@
-import type { Prettify } from "@/types";
+import { AudioCodecPreference, VideoCodecPreference } from "@/types";
+import type { CodecPreferences, Prettify } from "@/types";
 
 const CODEC_VP8 = "vp8";
 const CODEC_VP9 = "vp9";
@@ -44,6 +45,20 @@ const PREFER_H264 = new Set([CODEC_AVC1]);
 const PREFER_VP9 = new Set([CODEC_VP9, CODEC_VP09]);
 const PREFER_AAC = new Set([CODEC_MP4A]);
 const PREFER_OPUS = new Set([CODEC_OPUS]);
+const PREFER_AV1 = new Set([CODEC_AV01]);
+
+const VIDEO_CODECS_BY_PREFERENCE: Record<VideoCodecPreference, Set<string> | null> = {
+  [VideoCodecPreference.Auto]: null,
+  [VideoCodecPreference.H264]: PREFER_H264,
+  [VideoCodecPreference.Vp9]: PREFER_VP9,
+  [VideoCodecPreference.Av1]: PREFER_AV1
+};
+
+const AUDIO_CODECS_BY_PREFERENCE: Record<AudioCodecPreference, Set<string> | null> = {
+  [AudioCodecPreference.Auto]: null,
+  [AudioCodecPreference.Aac]: PREFER_AAC,
+  [AudioCodecPreference.Opus]: PREFER_OPUS
+};
 
 export const MULTI_TRACK_UNSUPPORTED_EXTENSIONS = new Set(["avi", "3gp", "m4b"]);
 
@@ -289,11 +304,28 @@ export function isAudioMimeNativeForContainer({ audioMimeType, targetExtension }
   return spec.audioCodecs.has(extractBaseCodec(audioMimeType));
 }
 
-export function isAudioCodecPreferredForContainer({ audioMimeType, targetExtension }: {
+// A codec setting wins wherever the container can hold that codec as-is; elsewhere, and on
+// Auto, the container's own preference applies (issue #21)
+function pickPreferredCodecs({ userCodecs, containerCodecs, containerPreferredCodecs }: {
+  userCodecs: Set<string> | null;
+  containerCodecs: Set<string> | undefined;
+  containerPreferredCodecs: Set<string> | undefined;
+}) {
+  const isUserCodecKept = !!userCodecs && !!containerCodecs && !userCodecs.isDisjointFrom(containerCodecs);
+  return isUserCodecKept ? userCodecs : containerPreferredCodecs;
+}
+
+export function isAudioCodecPreferredForContainer({ audioMimeType, targetExtension, codecPreferences }: {
   audioMimeType: string;
   targetExtension: string;
+  codecPreferences: CodecPreferences;
 }) {
-  const preferredAudioCodecs = CONTAINER_SPECS[targetExtension]?.preferredAudioCodecs;
+  const containerSpec = CONTAINER_SPECS[targetExtension];
+  const preferredAudioCodecs = pickPreferredCodecs({
+    userCodecs: AUDIO_CODECS_BY_PREFERENCE[codecPreferences.audioCodec],
+    containerCodecs: containerSpec?.audioCodecs,
+    containerPreferredCodecs: containerSpec?.preferredAudioCodecs
+  });
   if (!preferredAudioCodecs) {
     return isAudioMimeNativeForContainer({
       audioMimeType,
@@ -342,11 +374,18 @@ export function getOutputExtension({ videoMimeType, audioMimeType, userExtension
   return isCompatible ? userExtension : "mkv";
 }
 
-export function isVideoCodecPreferredForContainer({ videoMimeType, targetExtension }: {
+export function isVideoCodecPreferredForContainer({ videoMimeType, targetExtension, codecPreferences }: {
   videoMimeType: string;
   targetExtension: string;
+  codecPreferences: CodecPreferences;
 }) {
-  return CONTAINER_SPECS[targetExtension]?.preferredVideoCodecs?.has(extractBaseCodec(videoMimeType)) ?? false;
+  const containerSpec = CONTAINER_SPECS[targetExtension];
+  const preferredVideoCodecs = pickPreferredCodecs({
+    userCodecs: VIDEO_CODECS_BY_PREFERENCE[codecPreferences.videoCodec],
+    containerCodecs: containerSpec?.videoCodecs,
+    containerPreferredCodecs: containerSpec?.preferredVideoCodecs
+  });
+  return preferredVideoCodecs?.has(extractBaseCodec(videoMimeType)) ?? false;
 }
 
 export function isVideoNativeForContainer({ videoMimeType, targetExtension }: {

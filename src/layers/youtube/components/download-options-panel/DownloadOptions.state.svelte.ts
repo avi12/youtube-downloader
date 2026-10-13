@@ -141,6 +141,7 @@ export function createDownloadOptionsState(props: () => DownloadOptionsProps) {
       videoFormats: props().videoFormats,
       videoFormatVariants: props().videoFormatVariants,
       targetExtension: props().actualExtension,
+      codecPreferences: CONTENT_OPTIONS,
       selectedAudioTrackId: props().selectedAudioFormat?.audioTrack?.id,
       uniqueAudioLanguagesCount: uniqueAudioLanguages.length
     })
@@ -162,7 +163,8 @@ export function createDownloadOptionsState(props: () => DownloadOptionsProps) {
     return buildAudioFormatOptions({
       audioFormats: props().audioFormats.filter(format => isAudioCodecPreferredForContainer({
         audioMimeType: format.mimeType,
-        targetExtension: props().actualExtension
+        targetExtension: props().actualExtension,
+        codecPreferences: CONTENT_OPTIONS
       })),
       selectedAudioTrackId: props().selectedAudioFormat?.audioTrack?.id,
       uniqueAudioLanguagesCount: uniqueAudioLanguages.length
@@ -173,7 +175,8 @@ export function createDownloadOptionsState(props: () => DownloadOptionsProps) {
     const downloadedFormat = alignAudioFormatToExtension({
       audioFormats: props().audioFormats,
       currentFormat: props().selectedAudioFormat,
-      targetExtension: props().actualExtension
+      targetExtension: props().actualExtension,
+      codecPreferences: CONTENT_OPTIONS
     });
     return downloadedFormat ? toAudioFormatValue(downloadedFormat) : "";
   });

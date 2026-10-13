@@ -28,12 +28,14 @@ export {
 } from "./youtube";
 
 export {
+  AudioCodecPreference,
   AudioTrackLanguageMode,
   CaptionLanguageMode,
   DownloadType,
   PlaylistDownloadMode,
   PlaylistOutputMode,
   ProgressType,
+  VideoCodecPreference,
   VideoQualityMode
 } from "./download-enums";
 
@@ -48,6 +50,7 @@ export {
 export type { ChipData, LabeledOption } from "./panel-types";
 
 export type {
+  CodecPreferences,
   DownloadTypePreference,
   Options,
   SabrConfig,

@@ -1,9 +1,11 @@
 import type {
+  AudioCodecPreference,
   AudioTrackLanguageMode,
   CaptionLanguageMode,
   DownloadType,
   PlaylistDownloadMode,
   PlaylistOutputMode,
+  VideoCodecPreference,
   VideoQualityMode
 } from "./download-enums";
 import type { Prettify } from "./prettify";
@@ -42,6 +44,8 @@ export type VideoMetadata = Prettify<{
 
 export type DownloadTypePreference = DownloadType;
 
+export type CodecPreferences = Prettify<Pick<Options, "videoCodec" | "audioCodec">>;
+
 export type Options = Prettify<{
   ext: {
     audio: string;
@@ -51,6 +55,8 @@ export type Options = Prettify<{
   videoQualityMode: VideoQualityMode;
   videoQuality: number;
   enhancedBitrate: boolean;
+  videoCodec: VideoCodecPreference;
+  audioCodec: AudioCodecPreference;
   isShowNativeDownload: boolean;
   isNotifyOnIdle: boolean;
   isRevealOnComplete: boolean;

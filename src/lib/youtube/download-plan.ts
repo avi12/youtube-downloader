@@ -5,6 +5,7 @@ import { isAudioCodecPreferredForContainer } from "@/lib/utils/containers";
 import {
   type AdaptiveFormatItem,
   type CaptionTrack,
+  type CodecPreferences,
   type DownloadRequest,
   DownloadType,
   type Prettify,
@@ -196,13 +197,15 @@ export type DownloadPlanParams = Prettify<Pick<DownloadRequest,
   "downloadExtras" | "downloadExtraCaptions" | "includeAutoDubbing"
 >>;
 
-function sortPreferredAudioFirst({ audioFormats, targetExtension }: {
+function sortPreferredAudioFirst({ audioFormats, targetExtension, codecPreferences }: {
   audioFormats: AdaptiveFormatItem[];
   targetExtension: string;
+  codecPreferences: CodecPreferences;
 }) {
   const preferredFormats = audioFormats.filter(format => isAudioCodecPreferredForContainer({
     audioMimeType: format.mimeType,
-    targetExtension
+    targetExtension,
+    codecPreferences
   }));
   return [...preferredFormats, ...audioFormats.filter(format => !preferredFormats.includes(format))];
 }
@@ -212,9 +215,10 @@ type AlignPlanFormatsParams = Prettify<{
   videoFormat: AdaptiveFormatItem | null;
   audioFormat: AdaptiveFormatItem | null;
   targetExtension: string | undefined;
+  codecPreferences: CodecPreferences;
 }>;
 function alignPlanFormats({
-  videoData, videoFormat, audioFormat, targetExtension
+  videoData, videoFormat, audioFormat, targetExtension, codecPreferences
 }: AlignPlanFormatsParams) {
   const isAudioOnlyOrUnknownContainer = !videoFormat || !targetExtension;
   if (isAudioOnlyOrUnknownContainer) {
@@ -230,11 +234,13 @@ function alignPlanFormats({
       videoData,
       videoFormat,
       audioFormat,
-      targetExtension
+      targetExtension,
+      codecPreferences
     }),
     audioFormats: sortPreferredAudioFirst({
       audioFormats: videoData.audioFormats,
-      targetExtension
+      targetExtension,
+      codecPreferences
     })
   };
 }
@@ -268,7 +274,8 @@ export function resolveDownloadPlan({ videoData, params, targetExtension }: Reso
   const { videoFormat, audioFormat, audioFormats } = alignPlanFormats({
     videoData,
     ...selected,
-    targetExtension
+    targetExtension,
+    codecPreferences: CONTENT_OPTIONS
   });
   const extraAudioFormats = downloadExtras && audioFormat
     ? getExtraAudioFormats({

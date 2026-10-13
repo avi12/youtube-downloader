@@ -265,7 +265,8 @@ export function createPanelState(getVideoData: () => VideoData) {
     const aligned = alignAudioFormatToExtension({
       audioFormats: getVideoData().audioFormats,
       currentFormat: selectedAudioFormat,
-      targetExtension: value
+      targetExtension: value,
+      codecPreferences: CONTENT_OPTIONS
     });
     if (aligned && aligned !== selectedAudioFormat) {
       selectedAudioFormat = aligned;

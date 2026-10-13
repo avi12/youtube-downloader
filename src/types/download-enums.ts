@@ -7,6 +7,23 @@ export const DownloadType = {
 
 export type DownloadType = (typeof DownloadType)[keyof typeof DownloadType];
 
+export const VideoCodecPreference = {
+  Auto: "auto",
+  H264: "h264",
+  Vp9: "vp9",
+  Av1: "av1"
+} as const;
+
+export type VideoCodecPreference = (typeof VideoCodecPreference)[keyof typeof VideoCodecPreference];
+
+export const AudioCodecPreference = {
+  Auto: "auto",
+  Aac: "aac",
+  Opus: "opus"
+} as const;
+
+export type AudioCodecPreference = (typeof AudioCodecPreference)[keyof typeof AudioCodecPreference];
+
 export const ProgressType = {
   Video: "video",
   Audio: "audio",

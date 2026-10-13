@@ -1,10 +1,12 @@
 import { AUTO_EXTENSION } from "@/lib/utils/containers";
 import {
+  AudioCodecPreference,
   AudioTrackLanguageMode,
   CaptionLanguageMode,
   DownloadType,
   PlaylistDownloadMode,
   PlaylistOutputMode,
+  VideoCodecPreference,
   VideoQualityMode
 } from "@/types";
 import type { Options } from "@/types";
@@ -24,6 +26,8 @@ export const INITIAL_OPTIONS: Options = {
   videoQualityMode: VideoQualityMode.Best,
   videoQuality: DEFAULT_VIDEO_QUALITY,
   enhancedBitrate: true,
+  videoCodec: VideoCodecPreference.Auto,
+  audioCodec: AudioCodecPreference.Auto,
   isShowNativeDownload: false,
   isNotifyOnIdle: false,
   isRevealOnComplete: false,

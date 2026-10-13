@@ -48,7 +48,8 @@ function resolveBaseVideoExtension(videoData: VideoData, preferredAudio: Preferr
     videoData,
     videoFormat: firstFormat,
     audioFormat: preferredAudio,
-    userExtension
+    userExtension,
+    codecPreferences: CONTENT_OPTIONS
   });
 }
 

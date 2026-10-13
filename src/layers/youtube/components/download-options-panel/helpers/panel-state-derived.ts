@@ -30,7 +30,8 @@ export function resolveActualExtension({
     videoData: getVideoData(),
     videoFormat: selectedVideoFormat,
     audioFormat: selectedAudioFormat,
-    userExtension: extension
+    userExtension: extension,
+    codecPreferences: CONTENT_OPTIONS
   });
 
   const selectedTrackId = selectedAudioFormat.audioTrack?.id;

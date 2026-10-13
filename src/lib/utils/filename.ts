@@ -55,7 +55,8 @@ export function resolveVideoFilename({ videoData, options, titleOverride }: {
       videoData,
       videoFormat,
       audioFormat,
-      userExtension: resolvedExtension
+      userExtension: resolvedExtension,
+      codecPreferences: options
     })
     : resolvedExtension;
   const rawTitle = titleOverride || videoData.title;

@@ -74,7 +74,8 @@ export function buildButtonTooltip({
       videoData,
       videoFormat: primaryVideoFormat,
       audioFormat: primaryAudioFormat,
-      userExtension: resolvedContainerExtension
+      userExtension: resolvedContainerExtension,
+      codecPreferences: currentOptions
     })
     : resolvedContainerExtension;
   const qualityLabel = primaryVideoFormat ? formatVideoQualityLabel(primaryVideoFormat) : "";
