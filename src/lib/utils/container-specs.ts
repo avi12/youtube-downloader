@@ -188,6 +188,18 @@ export function formatVideoCodecLabel(mimeType: string) {
   return VIDEO_CODEC_LABELS[codec] ?? codec.toUpperCase();
 }
 
+const AUDIO_CODEC_LABELS: Record<string, string> = {
+  [CODEC_MP4A]: "AAC",
+  [CODEC_OPUS]: "Opus",
+  [CODEC_EC3]: "EC-3",
+  [CODEC_AC3]: "AC-3"
+};
+
+export function formatAudioCodecLabel(mimeType: string) {
+  const codec = extractBaseCodec(mimeType);
+  return AUDIO_CODEC_LABELS[codec] ?? (codec || (mimeType.split(";")[0]!.split("/")[1] ?? ""));
+}
+
 function videoCodecsFor(spec: ContainerSpec) {
   return spec.videoCodecs ?? new Set<string>();
 }
