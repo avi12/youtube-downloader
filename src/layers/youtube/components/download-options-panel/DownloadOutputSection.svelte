@@ -1,6 +1,7 @@
 <script lang="ts">
   import PolymerSelect from "../polymer-select/PolymerSelect.svelte";
   import { buildFormatItems, getFilenameError } from "./download-options-helpers";
+  import OptionHint from "./OptionHint.svelte";
   import { getCompatibleFilename } from "@/lib/utils/containers";
   import { getFormatDescription } from "@/lib/utils/containers";
   import { DownloadType } from "@/types";
@@ -90,10 +91,10 @@
     </div>
   </div>
   {#if currentFormatDesc}
-    <p class="ytdl-format-hint">{currentFormatDesc}</p>
+    <OptionHint text={currentFormatDesc} />
   {/if}
   {#if extension !== actualExtension && !isFilenameValid}
-    <p class="ytdl-extension-note">Will be saved as .{actualExtension} due to format constraints</p>
+    <OptionHint text={`Will be saved as .${actualExtension} due to format constraints`} />
   {/if}
 </div>
 
@@ -141,17 +142,5 @@
         box-shadow: none;
       }
     }
-  }
-
-  .ytdl-format-hint {
-    margin: 0;
-    color: var(--yt-sys-color-baseline--text-secondary, #606060);
-    font-size: 1.2rem;
-  }
-
-  .ytdl-extension-note {
-    margin: 0;
-    color: var(--yt-sys-color-baseline--text-secondary, #606060);
-    font-size: 1.2rem;
   }
 </style>
