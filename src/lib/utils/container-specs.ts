@@ -503,7 +503,7 @@ export function resolveAudioCodec({ audioMimeType, targetExtension }: {
 }
 
 // MP4/MKV copy in video they don't list natively; other containers would switch to MKV
-function isVideoAllowedInContainer({ videoMimeType, targetExtension }: {
+export function isVideoAllowedInContainer({ videoMimeType, targetExtension }: {
   videoMimeType: string;
   targetExtension: string;
 }) {

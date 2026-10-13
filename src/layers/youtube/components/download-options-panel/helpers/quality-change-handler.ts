@@ -3,7 +3,9 @@ import {
   describeAudioCodec,
   describeVideoCodec,
   formatAudioCodecLabel,
-  formatVideoCodecLabel
+  formatVideoCodecLabel,
+  isAudioMimeNativeForContainer,
+  isVideoAllowedInContainer
 } from "@/lib/utils/container-specs";
 import {
   alignVideoFormatToExtension,
@@ -64,24 +66,43 @@ type VideoOptionsParams = Prettify<{
   codecPreferences: CodecPreferences;
 }>;
 
-// Variants the plan keeps as-is once picked by hand, so what's listed is what downloads
-function listKeptVideoFormats({ videoFormatVariants, targetExtension, codecPreferences }: VideoOptionsParams) {
-  return videoFormatVariants.filter(format => alignVideoFormatToExtension({
-    videoFormatVariants,
+type FormatCondition<Params> = (format: AdaptiveFormatItem, params: Params) => boolean;
+
+// The container holds the stream as-is instead of the download switching to MKV
+function isVideoHeldByContainer(format: AdaptiveFormatItem, { targetExtension }: VideoOptionsParams) {
+  return isVideoAllowedInContainer({
+    videoMimeType: format.mimeType,
+    targetExtension
+  });
+}
+
+// The plan downloads exactly this variant once it's picked by hand
+function isVideoKeptByPlan(format: AdaptiveFormatItem, params: VideoOptionsParams) {
+  return alignVideoFormatToExtension({
+    ...params,
     currentFormat: format,
-    targetExtension,
     codecPreferences: pinVideoCodecPreferences({
-      codecPreferences,
+      codecPreferences: params.codecPreferences,
       videoFormat: format
     })
-  }) === format);
+  }) === format;
+}
+
+// A codec variant is offered only when it meets every condition. The variants are what YouTube
+// serves for this video, which already carries per-codec limits (H.264 stops at 1080p except on
+// 360° videos, HDR only on HDR uploads, AV1 only on some); further rules go in this list
+const VIDEO_FORMAT_CONDITIONS: FormatCondition<VideoOptionsParams>[] = [isVideoHeldByContainer, isVideoKeptByPlan];
+
+function listOfferedVideoFormats(params: VideoOptionsParams) {
+  return params.videoFormatVariants.filter(format =>
+    VIDEO_FORMAT_CONDITIONS.every(isConditionMet => isConditionMet(format, params)));
 }
 
 // One row per resolution; each row's value is the variant the current codec choice downloads.
 // Variants arrive sorted by byQualityDesc, so the first one per resolution is its best
 export function buildVideoQualityOptions(params: VideoOptionsParams) {
   return uniqueChoices(
-    listKeptVideoFormats(params).map(format => ({
+    listOfferedVideoFormats(params).map(format => ({
       value: alignVideoFormatToExtension({
         ...params,
         currentFormat: format
@@ -91,13 +112,13 @@ export function buildVideoQualityOptions(params: VideoOptionsParams) {
   );
 }
 
-// The codecs offered at the resolution being downloaded, each with what it's good for
+// The codecs offered for the quality being downloaded, each with what it's good for
 export function buildVideoCodecOptions({ downloadedFormat, ...params }: VideoOptionsParams & {
   downloadedFormat: AdaptiveFormatItem;
 }) {
   const qualityLabel = formatVideoQualityLabel(downloadedFormat);
   return uniqueChoices(
-    listKeptVideoFormats(params)
+    listOfferedVideoFormats(params)
       .filter(format => formatVideoQualityLabel(format) === qualityLabel)
       .map(format => ({
         value: format.itag.toString(),
@@ -107,24 +128,47 @@ export function buildVideoCodecOptions({ downloadedFormat, ...params }: VideoOpt
   );
 }
 
-// Audio for a video download, filtered the same way as the video list
-export function buildMuxedAudioOptions({ targetExtension, codecPreferences, ...trackParams }: {
+type AudioOptionsParams = Prettify<{
   audioFormats: AdaptiveFormatItem[];
-  selectedAudioTrackId: string | null | undefined;
-  uniqueAudioLanguagesCount: number;
   targetExtension: string;
   codecPreferences: CodecPreferences;
+}>;
+
+function isAudioHeldByContainer(format: AdaptiveFormatItem, { targetExtension }: AudioOptionsParams) {
+  return isAudioMimeNativeForContainer({
+    audioMimeType: format.mimeType,
+    targetExtension
+  });
+}
+
+function isAudioKeptByPlan(format: AdaptiveFormatItem, params: AudioOptionsParams) {
+  return alignAudioFormatToExtension({
+    ...params,
+    currentFormat: format,
+    codecPreferences: pinAudioCodecPreferences({
+      codecPreferences: params.codecPreferences,
+      audioFormat: format
+    })
+  }) === format;
+}
+
+// Same idea as the video conditions: Dolby only shows on videos that carry it, and only for
+// containers that hold it (MP4/MKV, not WebM)
+const AUDIO_FORMAT_CONDITIONS: FormatCondition<AudioOptionsParams>[] = [isAudioHeldByContainer, isAudioKeptByPlan];
+
+// Audio for a video download
+export function buildMuxedAudioOptions({
+  selectedAudioTrackId, uniqueAudioLanguagesCount, ...params
+}: AudioOptionsParams & {
+  selectedAudioTrackId: string | null | undefined;
+  uniqueAudioLanguagesCount: number;
 }) {
-  const options = filterSelectedTrack(trackParams)
-    .filter(format => alignAudioFormatToExtension({
-      audioFormats: trackParams.audioFormats,
-      currentFormat: format,
-      targetExtension,
-      codecPreferences: pinAudioCodecPreferences({
-        codecPreferences,
-        audioFormat: format
-      })
-    }) === format)
+  const options = filterSelectedTrack({
+    audioFormats: params.audioFormats,
+    selectedAudioTrackId,
+    uniqueAudioLanguagesCount
+  })
+    .filter(format => AUDIO_FORMAT_CONDITIONS.every(isConditionMet => isConditionMet(format, params)))
     .map(toAudioChoice);
   return groupChoices(options);
 }
