@@ -79,6 +79,8 @@
     {onvideoformatchange}
     qualityOptions={derived.qualityOptions}
     qualityValue={derived.qualityValue}
+    videoCodecOptions={derived.videoCodecOptions}
+    videoCodecValue={derived.videoCodecValue}
     videoFormatVariants={derived.videoFormatVariants}
   />
   <DownloadTracksSection

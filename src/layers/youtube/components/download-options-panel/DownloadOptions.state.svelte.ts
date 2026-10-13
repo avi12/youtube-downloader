@@ -2,6 +2,7 @@ import {
   buildAudioFormatOptions,
   buildMuxedAudioOptions,
   buildUniqueAudioLanguages,
+  buildVideoCodecOptions,
   buildVideoQualityOptions,
   byLabel,
   resolveCaptionOriginalLabel,
@@ -15,7 +16,12 @@ import { CONTENT_OPTIONS } from "@/lib/ui/synced-stores.svelte";
 import { alignVideoFormatToExtension, resolveVideoFormatVariants } from "@/lib/youtube/align-formats-to-container";
 import { normalizeLanguageCode } from "@/lib/youtube/audio-format-helpers";
 import { AUTO_DUB_TRACK_SUFFIX, buildTranslatedCaptionTrack } from "@/lib/youtube/download-plan";
-import { alignAudioFormatToExtension, findOriginalAudioFormat, INITIAL_OPTIONS } from "@/lib/youtube/video-helpers";
+import {
+  alignAudioFormatToExtension,
+  findOriginalAudioFormat,
+  formatVideoQualityLabel,
+  INITIAL_OPTIONS
+} from "@/lib/youtube/video-helpers";
 import { DownloadType } from "@/types";
 import type {
   AdaptiveFormatItem,
@@ -143,6 +149,19 @@ export function createDownloadOptionsState(props: () => DownloadOptionsProps) {
   );
 
   const videoFormatVariants = $derived(resolveVideoFormatVariants(props()));
+  const videoOptionsParams = $derived({
+    videoFormatVariants,
+    targetExtension: props().actualExtension,
+    codecPreferences: props().codecPreferences
+  });
+  // What the plan will download for the current pick, which both video pickers show
+  const downloadedVideoFormat = $derived.by(() => {
+    const { selectedVideoFormat } = props();
+    return selectedVideoFormat && alignVideoFormatToExtension({
+      ...videoOptionsParams,
+      currentFormat: selectedVideoFormat
+    });
+  });
 
   const qualityOptions = $derived(
     isAudio
@@ -151,31 +170,31 @@ export function createDownloadOptionsState(props: () => DownloadOptionsProps) {
         selectedAudioTrackId: props().selectedAudioFormat?.audioTrack?.id,
         uniqueAudioLanguagesCount: uniqueAudioLanguages.length
       })
-      : buildVideoQualityOptions({
-        videoFormatVariants,
-        targetExtension: props().actualExtension,
-        codecPreferences: props().codecPreferences
-      })
+      : buildVideoQualityOptions(videoOptionsParams)
   );
 
-  // The list shows what downloads, so the selected entry is the selection after alignment
   const qualityValue = $derived.by(() => {
     if (isAudio) {
       return `${props().selectedAudioFormat?.itag ?? ""}:${props().selectedAudioFormat?.audioTrack?.id ?? ""}`;
     }
 
-    const { selectedVideoFormat } = props();
-    if (!selectedVideoFormat) {
+    if (!downloadedVideoFormat) {
       return "";
     }
 
-    return alignVideoFormatToExtension({
-      videoFormatVariants,
-      currentFormat: selectedVideoFormat,
-      targetExtension: props().actualExtension,
-      codecPreferences: props().codecPreferences
-    }).itag.toString();
+    const qualityLabel = formatVideoQualityLabel(downloadedVideoFormat);
+    return qualityOptions.find(option => option.label === qualityLabel)?.value ?? "";
   });
+
+  const videoCodecOptions = $derived(
+    isAudio || !downloadedVideoFormat
+      ? []
+      : buildVideoCodecOptions({
+        ...videoOptionsParams,
+        downloadedFormat: downloadedVideoFormat
+      })
+  );
+  const videoCodecValue = $derived(downloadedVideoFormat?.itag.toString() ?? "");
 
   const audioCodecOptions = $derived(
     props().downloadType === DownloadType.VideoAndAudio
@@ -328,6 +347,12 @@ export function createDownloadOptionsState(props: () => DownloadOptionsProps) {
     },
     get videoFormatVariants() {
       return videoFormatVariants;
+    },
+    get videoCodecOptions() {
+      return videoCodecOptions;
+    },
+    get videoCodecValue() {
+      return videoCodecValue;
     },
     get audioCodecOptions() {
       return audioCodecOptions;

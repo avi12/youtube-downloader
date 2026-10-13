@@ -1,4 +1,4 @@
-import { formatChoiceLabel, groupChoices, type Choice } from "@/lib/utils/choices";
+import { groupChoices, uniqueChoices, type Choice } from "@/lib/utils/choices";
 import {
   describeAudioCodec,
   describeVideoCodec,
@@ -15,7 +15,7 @@ import {
   formatAudioBitrateLabel,
   formatVideoQualityLabel
 } from "@/lib/youtube/video-helpers";
-import type { AdaptiveFormatItem, CodecPreferences } from "@/types";
+import type { AdaptiveFormatItem, CodecPreferences, Prettify } from "@/types";
 
 export function toAudioFormatValue(format: AdaptiveFormatItem) {
   return `${format.itag}:${format.audioTrack?.id ?? ""}`;
@@ -58,41 +58,53 @@ export function buildAudioFormatOptions(params: Parameters<typeof filterSelected
   return groupChoices(filterSelectedTrack(params).map(toAudioChoice));
 }
 
-// Each codec variant the container keeps as-is gets its own entry; a variant is listed only if
-// the plan's alignment, given that variant's own codec, keeps it - so what's listed is what downloads
-export function buildVideoQualityOptions({ videoFormatVariants, targetExtension, codecPreferences }: {
+type VideoOptionsParams = Prettify<{
   videoFormatVariants: AdaptiveFormatItem[];
   targetExtension: string;
   codecPreferences: CodecPreferences;
+}>;
+
+// Variants the plan keeps as-is once picked by hand, so what's listed is what downloads
+function listKeptVideoFormats({ videoFormatVariants, targetExtension, codecPreferences }: VideoOptionsParams) {
+  return videoFormatVariants.filter(format => alignVideoFormatToExtension({
+    videoFormatVariants,
+    currentFormat: format,
+    targetExtension,
+    codecPreferences: pinVideoCodecPreferences({
+      codecPreferences,
+      videoFormat: format
+    })
+  }) === format);
+}
+
+// One row per resolution; each row's value is the variant the current codec choice downloads.
+// Variants arrive sorted by byQualityDesc, so the first one per resolution is its best
+export function buildVideoQualityOptions(params: VideoOptionsParams) {
+  return uniqueChoices(
+    listKeptVideoFormats(params).map(format => ({
+      value: alignVideoFormatToExtension({
+        ...params,
+        currentFormat: format
+      }).itag.toString(),
+      label: formatVideoQualityLabel(format)
+    }))
+  );
+}
+
+// The codecs offered at the resolution being downloaded, each with what it's good for
+export function buildVideoCodecOptions({ downloadedFormat, ...params }: VideoOptionsParams & {
+  downloadedFormat: AdaptiveFormatItem;
 }) {
-  // Variants arrive sorted by byQualityDesc, so a repeated label (e.g. two 1080p AV1 itags)
-  // keeps its higher-bitrate entry
-  const seenLabels = new Set<string>();
-  const options = videoFormatVariants
-    .filter(format => alignVideoFormatToExtension({
-      videoFormatVariants,
-      currentFormat: format,
-      targetExtension,
-      codecPreferences: pinVideoCodecPreferences({
-        codecPreferences,
-        videoFormat: format
-      })
-    }) === format)
-    .map((format): Choice => ({
-      value: format.itag.toString(),
-      label: formatVideoQualityLabel(format),
-      group: {
+  const qualityLabel = formatVideoQualityLabel(downloadedFormat);
+  return uniqueChoices(
+    listKeptVideoFormats(params)
+      .filter(format => formatVideoQualityLabel(format) === qualityLabel)
+      .map(format => ({
+        value: format.itag.toString(),
         label: formatVideoCodecLabel(format.mimeType),
         description: describeVideoCodec(format.mimeType)
-      }
-    }))
-    .filter(option => {
-      const fullLabel = formatChoiceLabel(option);
-      const isSeen = seenLabels.has(fullLabel);
-      seenLabels.add(fullLabel);
-      return !isSeen;
-    });
-  return groupChoices(options);
+      }))
+  );
 }
 
 // Audio for a video download, filtered the same way as the video list

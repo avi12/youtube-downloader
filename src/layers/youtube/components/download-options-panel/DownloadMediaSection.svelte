@@ -11,6 +11,8 @@
     isDownloading: boolean;
     qualityOptions: Choice[];
     qualityValue: string;
+    videoCodecOptions: Choice[];
+    videoCodecValue: string;
     audioCodecOptions: Choice[];
     audioCodecValue: string;
     audioFormats: AdaptiveFormatItem[];
@@ -26,6 +28,8 @@
     isDownloading,
     qualityOptions,
     qualityValue,
+    videoCodecOptions,
+    videoCodecValue,
     audioCodecOptions,
     audioCodecValue,
     audioFormats,
@@ -66,6 +70,23 @@
     })}
     value={qualityValue}
   />
+  {#if videoCodecOptions.length > 0}
+    <ChoiceSelect
+      id="video-codec-select"
+      choices={videoCodecOptions}
+      disabled={isDownloading}
+      label="Video codec"
+      onchange={valueString => handleQualityChange({
+        valueString,
+        isAudio: false,
+        audioFormats,
+        videoFormatVariants,
+        onaudioformatchange,
+        onvideoformatchange
+      })}
+      value={videoCodecValue}
+    />
+  {/if}
   {#if audioCodecOptions.length > 0}
     <ChoiceSelect
       id="audio-codec-select"

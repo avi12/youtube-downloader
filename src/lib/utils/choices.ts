@@ -35,6 +35,11 @@ export function describeChoice(choice: Choice | undefined) {
   return choice?.description ?? choice?.group?.description;
 }
 
+// The first choice per full label, e.g. the higher-bitrate of two "1080p · AV1" variants
+export function uniqueChoices<Item extends Choice>(choices: Item[]) {
+  return [...Map.groupBy(choices, formatChoiceLabel).values()].flatMap(group => group.slice(0, 1));
+}
+
 // Keeps each group's rows together, groups in order of their first row
 export function groupChoices<Item extends Choice>(choices: Item[]) {
   return [...Map.groupBy(choices, choice => choice.group?.label).values()].flat();
