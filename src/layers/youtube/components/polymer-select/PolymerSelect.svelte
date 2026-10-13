@@ -356,6 +356,13 @@
   }
 
   .ytdl-select-popup {
+    --ytdl-popup-padding: 4px;
+    --ytdl-popup-background:
+      var(
+        --yt-sys-color-baseline--raised-background,
+        var(--yt-sys-color-baseline--base-background, #ffffff)
+      );
+
     position: fixed;
     top: anchor(bottom);
     left: anchor(left);
@@ -363,10 +370,10 @@
     min-width: anchor-size(width);
     max-height: var(--ytdl-popup-max-height, clamp(120px, 50dvh, calc(100dvh - 16px)));
     margin-block-start: 4px;
-    padding: 4px;
+    padding: var(--ytdl-popup-padding);
     border: 1px solid var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 10%));
     border-radius: 8px;
-    background: var(--yt-sys-color-baseline--raised-background, var(--yt-sys-color-baseline--base-background, #ffffff));
+    background: var(--ytdl-popup-background);
     scrollbar-width: thin;
     box-shadow: 0 8px 32px rgb(0 0 0 / 32%), 0 2px 8px rgb(0 0 0 / 16%);
   }
@@ -407,12 +414,18 @@
     align-items: flex-start;
   }
 
+  /* Stays pinned while its rows scroll by; the next header, later in the DOM, slides over it.
+     Pulled up over the popup's padding so rows don't peek above it */
   :global(.ytdl-select-group) {
+    position: sticky;
+    top: calc(-1 * var(--ytdl-popup-padding));
+    z-index: 1;
     display: flex;
     flex-direction: column;
     gap: 2px;
     padding-block: 10px 4px;
     padding-inline: 10px;
+    background: var(--ytdl-popup-background);
 
     &:not(:first-child) {
       margin-top: 4px;
