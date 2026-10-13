@@ -210,6 +210,38 @@ const AUDIO_CODEC_LABELS: Record<string, string> = {
   [CODEC_AC3]: "AC-3"
 };
 
+const AUTO_CODEC_LABEL = "Auto";
+const AUTO_CODEC_DESCRIPTION = "Each container picks its best fit";
+
+const VIDEO_CODEC_PREFERENCE_DESCRIPTIONS: Record<VideoCodecPreference, string> = {
+  [VideoCodecPreference.Auto]: AUTO_CODEC_DESCRIPTION,
+  [VideoCodecPreference.H264]: "Plays everywhere, up to 1080p",
+  [VideoCodecPreference.Vp9]: "YouTube's main codec, up to 8K",
+  [VideoCodecPreference.Av1]: "Smallest files, newer devices"
+};
+
+const AUDIO_CODEC_PREFERENCE_DESCRIPTIONS: Record<AudioCodecPreference, string> = {
+  [AudioCodecPreference.Auto]: AUTO_CODEC_DESCRIPTION,
+  [AudioCodecPreference.Aac]: "Plays everywhere",
+  [AudioCodecPreference.Opus]: "Better sound at the same size"
+};
+
+export function describeVideoCodecPreference(preference: VideoCodecPreference) {
+  const [codec] = VIDEO_CODECS_BY_PREFERENCE[preference] ?? [];
+  return {
+    label: codec ? VIDEO_CODEC_LABELS[codec]! : AUTO_CODEC_LABEL,
+    description: VIDEO_CODEC_PREFERENCE_DESCRIPTIONS[preference]
+  };
+}
+
+export function describeAudioCodecPreference(preference: AudioCodecPreference) {
+  const [codec] = AUDIO_CODECS_BY_PREFERENCE[preference] ?? [];
+  return {
+    label: codec ? AUDIO_CODEC_LABELS[codec]! : AUTO_CODEC_LABEL,
+    description: AUDIO_CODEC_PREFERENCE_DESCRIPTIONS[preference]
+  };
+}
+
 export function formatAudioCodecLabel(mimeType: string) {
   const codec = extractBaseCodec(mimeType);
   return AUDIO_CODEC_LABELS[codec] ?? (codec || (mimeType.split(";")[0]!.split("/")[1] ?? ""));

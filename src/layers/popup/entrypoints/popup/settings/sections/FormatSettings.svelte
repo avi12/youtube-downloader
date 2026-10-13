@@ -10,8 +10,11 @@
     AUTO_EXTENSION,
     AUTO_EXTENSION_LABEL,
     buildFormatGroups,
+    describeAudioCodecPreference,
+    describeVideoCodecPreference,
     videoContainers
   } from "@/lib/utils/containers";
+  import { AudioCodecPreference, VideoCodecPreference } from "@/types";
 
   const { options, slideDuration }: SlidingSettingsProps = $props();
 
@@ -49,6 +52,18 @@
       }))
   ]);
 
+  const CODEC_SUBTITLE = "Used when the container supports it";
+
+  const videoCodecItems = Object.values(VideoCodecPreference).map(preference => ({
+    value: preference,
+    ...describeVideoCodecPreference(preference)
+  }));
+
+  const audioCodecItems = Object.values(AudioCodecPreference).map(preference => ({
+    value: preference,
+    ...describeAudioCodecPreference(preference)
+  }));
+
   function selectVideo(extension: string): void {
     void setOption({
       key: "ext",
@@ -81,6 +96,50 @@
   >
     {#snippet icon()}
       {@html videoIcon}
+    {/snippet}
+  </SettingsDropDown>
+
+  <SettingsDropDown
+    currentValue={options.videoCodec}
+    displayValue={describeVideoCodecPreference(options.videoCodec).label}
+    items={videoCodecItems}
+    label="Video codec"
+    onSelect={selected => {
+      const preference = videoCodecItems.find(item => item.value === selected)?.value;
+      if (preference) {
+        void setOption({
+          key: "videoCodec",
+          value: preference
+        });
+      }
+    }}
+    {slideDuration}
+    subtitle={CODEC_SUBTITLE}
+  >
+    {#snippet icon()}
+      {@html videoIcon}
+    {/snippet}
+  </SettingsDropDown>
+
+  <SettingsDropDown
+    currentValue={options.audioCodec}
+    displayValue={describeAudioCodecPreference(options.audioCodec).label}
+    items={audioCodecItems}
+    label="Audio codec"
+    onSelect={selected => {
+      const preference = audioCodecItems.find(item => item.value === selected)?.value;
+      if (preference) {
+        void setOption({
+          key: "audioCodec",
+          value: preference
+        });
+      }
+    }}
+    {slideDuration}
+    subtitle={CODEC_SUBTITLE}
+  >
+    {#snippet icon()}
+      {@html audioIcon}
     {/snippet}
   </SettingsDropDown>
 
