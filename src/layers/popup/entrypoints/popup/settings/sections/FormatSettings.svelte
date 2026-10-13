@@ -7,8 +7,10 @@
   import { setOption } from "@/lib/storage/storage";
   import {
     audioContainers,
+    AUTO_AUDIO_EXTENSION_DESCRIPTION,
     AUTO_EXTENSION,
     AUTO_EXTENSION_LABEL,
+    AUTO_VIDEO_EXTENSION_DESCRIPTION,
     buildFormatGroups,
     describeAudioCodecPreference,
     describeVideoCodecPreference,
@@ -26,7 +28,7 @@
     {
       value: AUTO_EXTENSION,
       label: AUTO_EXTENSION_LABEL,
-      description: undefined
+      description: AUTO_VIDEO_EXTENSION_DESCRIPTION
     },
     ...buildFormatGroups({ allowedExtensions: videoContainers })
       .flatMap(group => group.items)
@@ -41,7 +43,7 @@
     {
       value: AUTO_EXTENSION,
       label: AUTO_EXTENSION_LABEL,
-      description: undefined
+      description: AUTO_AUDIO_EXTENSION_DESCRIPTION
     },
     ...buildFormatGroups({ allowedExtensions: audioContainers })
       .flatMap(group => group.items)

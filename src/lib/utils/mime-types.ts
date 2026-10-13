@@ -88,6 +88,8 @@ export function getAudioTempExtension(mimeType: string) {
 
 export const AUTO_EXTENSION = "auto";
 export const AUTO_EXTENSION_LABEL = "Auto (match source)";
+export const AUTO_VIDEO_EXTENSION_DESCRIPTION = "MP4 or WebM, whichever fits the stream";
+export const AUTO_AUDIO_EXTENSION_DESCRIPTION = "M4A, plays almost everywhere";
 
 const FORMAT_DESCRIPTIONS: Record<string, string> = {
   "3gp": "Old low-bitrate mobile",
