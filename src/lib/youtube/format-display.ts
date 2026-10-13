@@ -4,6 +4,7 @@ const CODEC_PREFIX_AAC = "mp4a";
 const CODEC_OPUS = "opus";
 const CODEC_PREFIX_EC3 = "ec-3";
 const QUALITY_LABEL_PREMIUM = "Premium";
+const BITS_PER_KILOBIT = 1000;
 
 export function isPremiumFormat(format: Pick<AdaptiveFormatItem, "qualityLabel">) {
   return (format.qualityLabel ?? "").includes(QUALITY_LABEL_PREMIUM);
@@ -36,4 +37,8 @@ export function formatAudioCodecLabel(mimeType: string) {
   }
 
   return codec || (mimeType.split(";")[0]!.split("/")[1] ?? "");
+}
+
+export function formatAudioQualityLabel(format: Pick<AdaptiveFormatItem, "bitrate" | "mimeType">) {
+  return `${Math.floor(format.bitrate / BITS_PER_KILOBIT)} kbps (${formatAudioCodecLabel(format.mimeType)})`;
 }

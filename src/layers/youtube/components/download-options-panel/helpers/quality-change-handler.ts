@@ -1,9 +1,7 @@
 import { formatVideoCodecLabel } from "@/lib/utils/container-specs";
 import { alignVideoFormatToExtension, resolveVideoFormatVariants } from "@/lib/youtube/align-formats-to-container";
-import { formatAudioCodecLabel, formatVideoQualityLabel } from "@/lib/youtube/video-helpers";
+import { formatAudioQualityLabel, formatVideoQualityLabel } from "@/lib/youtube/video-helpers";
 import type { AdaptiveFormatItem, VideoData } from "@/types";
-
-const BITS_PER_KILOBIT = 1000;
 
 export function buildQualityOptions({
   isAudio,
@@ -29,7 +27,7 @@ export function buildQualityOptions({
       : audioFormats;
     return formats.map(format => ({
       value: `${format.itag}:${format.audioTrack?.id ?? ""}`,
-      label: `${Math.floor(format.bitrate / BITS_PER_KILOBIT)} kbps (${formatAudioCodecLabel(format.mimeType)})`
+      label: formatAudioQualityLabel(format)
     }));
   }
 

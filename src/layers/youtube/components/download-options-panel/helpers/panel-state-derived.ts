@@ -2,11 +2,9 @@ import { CONTENT_OPTIONS } from "@/lib/ui/synced-stores.svelte";
 import { resolveMultiTrackExtension } from "@/lib/utils/containers";
 import { resolveOutputExtensionForFormats } from "@/lib/youtube/align-formats-to-container";
 import { AUTO_DUB_TRACK_SUFFIX } from "@/lib/youtube/download-plan";
-import { formatAudioCodecLabel, formatVideoQualityLabel } from "@/lib/youtube/video-helpers";
+import { formatAudioQualityLabel, formatVideoQualityLabel } from "@/lib/youtube/video-helpers";
 import { DownloadType, type AdaptiveFormatItem, type VideoData } from "@/types";
 import { PrimaryButtonState } from "#youtube/lib/ui/panel-button-attachments.svelte";
-
-const BITS_PER_KILOBIT = 1000;
 
 export function resolveActualExtension({
   downloadType,
@@ -96,9 +94,7 @@ export function resolveQualityLabel({
 }) {
   const isAudioType = downloadType === DownloadType.Audio;
   if (isAudioType) {
-    return selectedAudioFormat
-      ? `${Math.floor(selectedAudioFormat.bitrate / BITS_PER_KILOBIT)} kbps (${formatAudioCodecLabel(selectedAudioFormat.mimeType)})`
-      : "";
+    return selectedAudioFormat ? formatAudioQualityLabel(selectedAudioFormat) : "";
   }
 
   return selectedVideoFormat ? formatVideoQualityLabel(selectedVideoFormat) : "";
