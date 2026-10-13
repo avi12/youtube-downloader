@@ -3,6 +3,7 @@ import type { AdaptiveFormatItem } from "@/types";
 const CODEC_PREFIX_AAC = "mp4a";
 const CODEC_OPUS = "opus";
 const CODEC_PREFIX_EC3 = "ec-3";
+const CODEC_PREFIX_AC3 = "ac-3";
 const QUALITY_LABEL_PREMIUM = "Premium";
 const BITS_PER_KILOBIT = 1000;
 
@@ -34,6 +35,11 @@ export function formatAudioCodecLabel(mimeType: string) {
   const isEc3 = codec.startsWith(CODEC_PREFIX_EC3);
   if (isEc3) {
     return "EC-3";
+  }
+
+  const isAc3 = codec.startsWith(CODEC_PREFIX_AC3);
+  if (isAc3) {
+    return "AC-3";
   }
 
   return codec || (mimeType.split(";")[0]!.split("/")[1] ?? "");
