@@ -160,11 +160,13 @@ export function createDownloadOptionsState(props: () => DownloadOptionsProps) {
       return [];
     }
 
+    const offeredMimeTypes = props().audioFormats.map(format => format.mimeType);
     return buildAudioFormatOptions({
       audioFormats: props().audioFormats.filter(format => isAudioCodecPreferredForContainer({
         audioMimeType: format.mimeType,
         targetExtension: props().actualExtension,
-        codecPreferences: CONTENT_OPTIONS
+        codecPreferences: CONTENT_OPTIONS,
+        offeredMimeTypes
       })),
       selectedAudioTrackId: props().selectedAudioFormat?.audioTrack?.id,
       uniqueAudioLanguagesCount: uniqueAudioLanguages.length

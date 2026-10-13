@@ -20,10 +20,12 @@ export function alignVideoFormatToExtension({
   targetExtension,
   codecPreferences
 }: AlignVideoFormatToExtensionParams) {
+  const offeredMimeTypes = videoFormatVariants.map(format => format.mimeType);
   const isCurrentPreferred = isVideoCodecPreferredForContainer({
     videoMimeType: currentFormat.mimeType,
     targetExtension,
-    codecPreferences
+    codecPreferences,
+    offeredMimeTypes
   });
   if (isCurrentPreferred) {
     return currentFormat;
@@ -35,7 +37,8 @@ export function alignVideoFormatToExtension({
     && isVideoCodecPreferredForContainer({
       videoMimeType: format.mimeType,
       targetExtension,
-      codecPreferences
+      codecPreferences,
+      offeredMimeTypes
     }));
   return pickBestByBitrate(preferredSiblings) ?? currentFormat;
 }

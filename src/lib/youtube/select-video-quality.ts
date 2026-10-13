@@ -20,10 +20,13 @@ export function selectVideoFormatForQuality({
     return candidates.find(format => format.height === options.videoQuality) ?? candidates[0] ?? null;
   }
 
-  const preferredVariants = resolveVideoFormatVariants(videoData).filter(format => isVideoCodecPreferredForContainer({
+  const variants = resolveVideoFormatVariants(videoData);
+  const offeredMimeTypes = variants.map(format => format.mimeType);
+  const preferredVariants = variants.filter(format => isVideoCodecPreferredForContainer({
     videoMimeType: format.mimeType,
     targetExtension,
-    codecPreferences: options
+    codecPreferences: options,
+    offeredMimeTypes
   }));
   const bestPreferredFormat = candidates.find(candidate => preferredVariants.some(variant =>
     variant.height === candidate.height && variant.fps === candidate.fps));

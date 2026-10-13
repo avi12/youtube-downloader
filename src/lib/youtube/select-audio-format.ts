@@ -124,11 +124,13 @@ export function alignAudioFormatToExtension({
   targetExtension,
   codecPreferences
 }: AlignAudioFormatToExtensionParams) {
+  const offeredMimeTypes = audioFormats.map(format => format.mimeType);
   const isCurrentPreferred = currentFormat
     && isAudioCodecPreferredForContainer({
       audioMimeType: currentFormat.mimeType,
       targetExtension,
-      codecPreferences
+      codecPreferences,
+      offeredMimeTypes
     });
   if (isCurrentPreferred) {
     return currentFormat;
@@ -142,7 +144,8 @@ export function alignAudioFormatToExtension({
   const preferredFormats = candidates.filter(format => isAudioCodecPreferredForContainer({
     audioMimeType: format.mimeType,
     targetExtension,
-    codecPreferences
+    codecPreferences,
+    offeredMimeTypes
   }));
   const nativeFormats = candidates.filter(format => isAudioMimeNativeForContainer({
     audioMimeType: format.mimeType,

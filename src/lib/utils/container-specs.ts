@@ -47,19 +47,6 @@ const PREFER_AAC = new Set([CODEC_MP4A]);
 const PREFER_OPUS = new Set([CODEC_OPUS]);
 const PREFER_AV1 = new Set([CODEC_AV01]);
 
-const VIDEO_CODECS_BY_PREFERENCE: Record<VideoCodecPreference, Set<string> | null> = {
-  [VideoCodecPreference.Auto]: null,
-  [VideoCodecPreference.H264]: PREFER_H264,
-  [VideoCodecPreference.Vp9]: PREFER_VP9,
-  [VideoCodecPreference.Av1]: PREFER_AV1
-};
-
-const AUDIO_CODECS_BY_PREFERENCE: Record<AudioCodecPreference, Set<string> | null> = {
-  [AudioCodecPreference.Auto]: null,
-  [AudioCodecPreference.Aac]: PREFER_AAC,
-  [AudioCodecPreference.Opus]: PREFER_OPUS
-};
-
 export const MULTI_TRACK_UNSUPPORTED_EXTENSIONS = new Set(["avi", "3gp", "m4b"]);
 
 type AudioOnlySpec = Prettify<Pick<ContainerSpec, "audioCodecs" | "fallbackAudioCodec">>;
@@ -210,35 +197,64 @@ const AUDIO_CODEC_LABELS: Record<string, string> = {
   [CODEC_AC3]: "AC-3"
 };
 
-const AUTO_CODEC_LABEL = "Auto";
-const AUTO_CODEC_DESCRIPTION = "Each container picks its best fit";
+type CodecPreferenceSpec = Prettify<{
+  codecs: Set<string> | null;
+  label: string;
+  description: string;
+}>;
 
-const VIDEO_CODEC_PREFERENCE_DESCRIPTIONS: Record<VideoCodecPreference, string> = {
-  [VideoCodecPreference.Auto]: AUTO_CODEC_DESCRIPTION,
-  [VideoCodecPreference.H264]: "Plays everywhere, up to 1080p",
-  [VideoCodecPreference.Vp9]: "YouTube's main codec, up to 8K",
-  [VideoCodecPreference.Av1]: "Smallest files, newer devices"
+const AUTO_CODEC_PREFERENCE: CodecPreferenceSpec = {
+  codecs: null,
+  label: "Auto",
+  description: "Each container picks its best fit"
 };
 
-const AUDIO_CODEC_PREFERENCE_DESCRIPTIONS: Record<AudioCodecPreference, string> = {
-  [AudioCodecPreference.Auto]: AUTO_CODEC_DESCRIPTION,
-  [AudioCodecPreference.Aac]: "Plays everywhere",
-  [AudioCodecPreference.Opus]: "Better sound at the same size"
+const VIDEO_CODEC_PREFERENCES: Record<VideoCodecPreference, CodecPreferenceSpec> = {
+  [VideoCodecPreference.Auto]: AUTO_CODEC_PREFERENCE,
+  [VideoCodecPreference.H264]: {
+    codecs: PREFER_H264,
+    label: VIDEO_CODEC_LABELS[CODEC_AVC1]!,
+    description: "Plays everywhere, up to 1080p"
+  },
+  [VideoCodecPreference.Vp9]: {
+    codecs: PREFER_VP9,
+    label: VIDEO_CODEC_LABELS[CODEC_VP9]!,
+    description: "YouTube's main codec, up to 8K"
+  },
+  [VideoCodecPreference.Av1]: {
+    codecs: PREFER_AV1,
+    label: VIDEO_CODEC_LABELS[CODEC_AV01]!,
+    description: "Smallest files, newer devices"
+  }
+};
+
+const AUDIO_CODEC_PREFERENCES: Record<AudioCodecPreference, CodecPreferenceSpec> = {
+  [AudioCodecPreference.Auto]: AUTO_CODEC_PREFERENCE,
+  [AudioCodecPreference.Aac]: {
+    codecs: PREFER_AAC,
+    label: AUDIO_CODEC_LABELS[CODEC_MP4A]!,
+    description: "Plays everywhere"
+  },
+  [AudioCodecPreference.Opus]: {
+    codecs: PREFER_OPUS,
+    label: AUDIO_CODEC_LABELS[CODEC_OPUS]!,
+    description: "Better sound at the same size"
+  }
 };
 
 export function describeVideoCodecPreference(preference: VideoCodecPreference) {
-  const [codec] = VIDEO_CODECS_BY_PREFERENCE[preference] ?? [];
+  const { label, description } = VIDEO_CODEC_PREFERENCES[preference];
   return {
-    label: codec ? VIDEO_CODEC_LABELS[codec]! : AUTO_CODEC_LABEL,
-    description: VIDEO_CODEC_PREFERENCE_DESCRIPTIONS[preference]
+    label,
+    description
   };
 }
 
 export function describeAudioCodecPreference(preference: AudioCodecPreference) {
-  const [codec] = AUDIO_CODECS_BY_PREFERENCE[preference] ?? [];
+  const { label, description } = AUDIO_CODEC_PREFERENCES[preference];
   return {
-    label: codec ? AUDIO_CODEC_LABELS[codec]! : AUTO_CODEC_LABEL,
-    description: AUDIO_CODEC_PREFERENCE_DESCRIPTIONS[preference]
+    label,
+    description
   };
 }
 
@@ -336,27 +352,33 @@ export function isAudioMimeNativeForContainer({ audioMimeType, targetExtension }
   return spec.audioCodecs.has(extractBaseCodec(audioMimeType));
 }
 
-// A codec setting wins wherever the container can hold that codec as-is; elsewhere, and on
-// Auto, the container's own preference applies (issue #21)
-function pickPreferredCodecs({ userCodecs, containerCodecs, containerPreferredCodecs }: {
+// A codec setting wins when the video offers that codec and the container holds it as-is;
+// otherwise, and on Auto, the container's own preference applies (issue #21)
+function pickPreferredCodecs({ userCodecs, containerCodecs, containerPreferredCodecs, offeredMimeTypes }: {
   userCodecs: Set<string> | null;
   containerCodecs: Set<string> | undefined;
   containerPreferredCodecs: Set<string> | undefined;
+  offeredMimeTypes: string[];
 }) {
-  const isUserCodecKept = !!userCodecs && !!containerCodecs && !userCodecs.isDisjointFrom(containerCodecs);
+  const isUserCodecKept = !!userCodecs && !!containerCodecs && !userCodecs.isDisjointFrom(containerCodecs)
+    && offeredMimeTypes.some(mimeType => userCodecs.has(extractBaseCodec(mimeType)));
   return isUserCodecKept ? userCodecs : containerPreferredCodecs;
 }
 
-export function isAudioCodecPreferredForContainer({ audioMimeType, targetExtension, codecPreferences }: {
+export function isAudioCodecPreferredForContainer({
+  audioMimeType, targetExtension, codecPreferences, offeredMimeTypes
+}: {
   audioMimeType: string;
   targetExtension: string;
   codecPreferences: CodecPreferences;
+  offeredMimeTypes: string[];
 }) {
   const containerSpec = CONTAINER_SPECS[targetExtension];
   const preferredAudioCodecs = pickPreferredCodecs({
-    userCodecs: AUDIO_CODECS_BY_PREFERENCE[codecPreferences.audioCodec],
+    userCodecs: AUDIO_CODEC_PREFERENCES[codecPreferences.audioCodec].codecs,
     containerCodecs: containerSpec?.audioCodecs,
-    containerPreferredCodecs: containerSpec?.preferredAudioCodecs
+    containerPreferredCodecs: containerSpec?.preferredAudioCodecs,
+    offeredMimeTypes
   });
   if (!preferredAudioCodecs) {
     return isAudioMimeNativeForContainer({
@@ -406,16 +428,20 @@ export function getOutputExtension({ videoMimeType, audioMimeType, userExtension
   return isCompatible ? userExtension : "mkv";
 }
 
-export function isVideoCodecPreferredForContainer({ videoMimeType, targetExtension, codecPreferences }: {
+export function isVideoCodecPreferredForContainer({
+  videoMimeType, targetExtension, codecPreferences, offeredMimeTypes
+}: {
   videoMimeType: string;
   targetExtension: string;
   codecPreferences: CodecPreferences;
+  offeredMimeTypes: string[];
 }) {
   const containerSpec = CONTAINER_SPECS[targetExtension];
   const preferredVideoCodecs = pickPreferredCodecs({
-    userCodecs: VIDEO_CODECS_BY_PREFERENCE[codecPreferences.videoCodec],
+    userCodecs: VIDEO_CODEC_PREFERENCES[codecPreferences.videoCodec].codecs,
     containerCodecs: containerSpec?.videoCodecs,
-    containerPreferredCodecs: containerSpec?.preferredVideoCodecs
+    containerPreferredCodecs: containerSpec?.preferredVideoCodecs,
+    offeredMimeTypes
   });
   return preferredVideoCodecs?.has(extractBaseCodec(videoMimeType)) ?? false;
 }

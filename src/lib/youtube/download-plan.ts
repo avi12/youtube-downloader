@@ -202,10 +202,12 @@ function sortPreferredAudioFirst({ audioFormats, targetExtension, codecPreferenc
   targetExtension: string;
   codecPreferences: CodecPreferences;
 }) {
+  const offeredMimeTypes = audioFormats.map(format => format.mimeType);
   const preferredFormats = audioFormats.filter(format => isAudioCodecPreferredForContainer({
     audioMimeType: format.mimeType,
     targetExtension,
-    codecPreferences
+    codecPreferences,
+    offeredMimeTypes
   }));
   return [...preferredFormats, ...audioFormats.filter(format => !preferredFormats.includes(format))];
 }
