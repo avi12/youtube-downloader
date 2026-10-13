@@ -269,7 +269,7 @@ const VIDEO_CODEC_PREFERENCES: Record<VideoCodecPreference, CodecPreferenceSpec>
   [VideoCodecPreference.Vp9]: {
     codecs: PREFER_VP9,
     label: VIDEO_CODEC_LABELS[CODEC_VP9]!,
-    description: "YouTube's main codec, up to 8K"
+    description: "YouTube's main codec, up to 4320p"
   },
   [VideoCodecPreference.Av1]: {
     codecs: PREFER_AV1,
