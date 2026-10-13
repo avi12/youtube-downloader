@@ -2,7 +2,8 @@
   import type { createPlaylistGridItemState } from "./PlaylistGridItem.state.svelte";
   import { onButtonClick } from "@/lib/messaging/cross-world-messenger";
   import { attachSettingsOptions, DATA_BUTTON_ID_ATTR, sendButtonData } from "@/lib/ui/polymer-utils";
-  import { supportedExtensions } from "@/lib/utils/containers";
+  import { toInlineLabeledOption } from "@/lib/utils/choices";
+  import { listContainerChoices } from "@/lib/utils/containers";
   import { VIDEO_QUALITIES } from "@/lib/youtube/options-defaults";
   import { isTpYtPaperInputElement } from "@/lib/youtube/schemas";
   import {
@@ -15,9 +16,6 @@
     PlaylistOutputMode,
     VideoQualityMode
   } from "@/types";
-  import {
-    formatExtensionLabel
-  } from "#youtube/components/playlist-downloader/helpers/PlaylistDownloaderFormatSections.helpers";
   import PolymerSelect from "#youtube/components/polymer-select/PolymerSelect.svelte";
   import { untrack } from "svelte";
   import { SvelteMap } from "svelte/reactivity";
@@ -180,19 +178,8 @@
     ];
   });
 
-  const videoExtOptions = $derived(
-    supportedExtensions.video.map(extension => ({
-      value: extension,
-      label: formatExtensionLabel(extension)
-    }))
-  );
-
-  const audioExtOptions = $derived(
-    supportedExtensions.audio.map(extension => ({
-      value: extension,
-      label: formatExtensionLabel(extension)
-    }))
-  );
+  const videoExtOptions = listContainerChoices("video").map(toInlineLabeledOption);
+  const audioExtOptions = listContainerChoices("audio").map(toInlineLabeledOption);
 
   function handleZipNameInput(e: Event): void {
     const isInputElement = e.target instanceof HTMLInputElement;

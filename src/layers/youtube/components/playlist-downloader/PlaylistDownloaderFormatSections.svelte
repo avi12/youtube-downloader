@@ -1,9 +1,9 @@
 <script lang="ts">
   import PolymerSelect from "../polymer-select/PolymerSelect.svelte";
-  import { formatExtensionLabel } from "./helpers/PlaylistDownloaderFormatSections.helpers";
   import type { createPlaylistDownloaderState } from "./PlaylistDownloader.state.svelte";
   import PlaylistOverrideBadge from "./PlaylistOverrideBadge.svelte";
-  import { supportedExtensions } from "@/lib/utils/containers";
+  import { toInlineLabeledOption } from "@/lib/utils/choices";
+  import { listContainerChoices } from "@/lib/utils/containers";
   import { DownloadType, VideoQualityMode } from "@/types";
 
   interface Props {
@@ -12,18 +12,8 @@
 
   const { playlist }: Props = $props();
 
-  const videoExtOptions = $derived(
-    supportedExtensions.video.map(extension => ({
-      value: extension,
-      label: formatExtensionLabel(extension)
-    }))
-  );
-  const audioExtOptions = $derived(
-    supportedExtensions.audio.map(extension => ({
-      value: extension,
-      label: formatExtensionLabel(extension)
-    }))
-  );
+  const videoExtOptions = listContainerChoices("video").map(toInlineLabeledOption);
+  const audioExtOptions = listContainerChoices("audio").map(toInlineLabeledOption);
   const qualityOptions = $derived([
     {
       value: VideoQualityMode.Best,
