@@ -1,3 +1,4 @@
+import { listChoices } from "./choices";
 import { AudioCodecPreference, DynamicRangePreference, VideoCodecPreference } from "@/types";
 import type { CodecPreferences, Prettify } from "@/types";
 
@@ -227,9 +228,10 @@ const DYNAMIC_RANGE_PREFERENCES: Record<DynamicRangePreference, Prettify<{
   }
 };
 
-export function describeDynamicRangePreference(preference: DynamicRangePreference) {
-  return DYNAMIC_RANGE_PREFERENCES[preference];
-}
+export const DYNAMIC_RANGE_CHOICES = listChoices({
+  values: Object.values(DynamicRangePreference),
+  texts: DYNAMIC_RANGE_PREFERENCES
+});
 
 export function isDynamicRangePreferred({ videoMimeType, codecPreferences }: {
   videoMimeType: string;
@@ -295,21 +297,14 @@ const AUDIO_CODEC_PREFERENCES: Record<AudioCodecPreference, CodecPreferenceSpec>
   }
 };
 
-export function describeVideoCodecPreference(preference: VideoCodecPreference) {
-  const { label, description } = VIDEO_CODEC_PREFERENCES[preference];
-  return {
-    label,
-    description
-  };
-}
-
-export function describeAudioCodecPreference(preference: AudioCodecPreference) {
-  const { label, description } = AUDIO_CODEC_PREFERENCES[preference];
-  return {
-    label,
-    description
-  };
-}
+export const VIDEO_CODEC_CHOICES = listChoices({
+  values: Object.values(VideoCodecPreference),
+  texts: VIDEO_CODEC_PREFERENCES
+});
+export const AUDIO_CODEC_CHOICES = listChoices({
+  values: Object.values(AudioCodecPreference),
+  texts: AUDIO_CODEC_PREFERENCES
+});
 
 export function formatAudioCodecLabel(mimeType: string) {
   const codec = extractBaseCodec(mimeType);

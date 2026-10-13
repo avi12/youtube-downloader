@@ -5,185 +5,126 @@
   import SettingsDropDown from "../ui/SettingsDropDown.svelte";
   import SettingsGroup from "../ui/SettingsGroup.svelte";
   import { setOption } from "@/lib/storage/storage";
+  import { findChoice, type Choice } from "@/lib/utils/choices";
   import {
-    audioContainers,
-    AUTO_AUDIO_EXTENSION_DESCRIPTION,
-    AUTO_EXTENSION,
-    AUTO_EXTENSION_LABEL,
-    AUTO_VIDEO_EXTENSION_DESCRIPTION,
-    buildFormatGroups,
-    describeAudioCodecPreference,
-    describeDynamicRangePreference,
-    describeVideoCodecPreference,
-    videoContainers
+    AUDIO_CODEC_CHOICES,
+    DYNAMIC_RANGE_CHOICES,
+    listContainerChoices,
+    VIDEO_CODEC_CHOICES,
+    type MediaKind
   } from "@/lib/utils/containers";
-  import { AudioCodecPreference, DynamicRangePreference, VideoCodecPreference } from "@/types";
+  import type { Options } from "@/types";
 
   const { options, slideDuration }: SlidingSettingsProps = $props();
 
-  function shortLabel(extension: string): string {
-    return extension === AUTO_EXTENSION ? AUTO_EXTENSION_LABEL : extension.toUpperCase();
-  }
-
-  const videoItems = $derived([
-    {
-      value: AUTO_EXTENSION,
-      label: AUTO_EXTENSION_LABEL,
-      description: AUTO_VIDEO_EXTENSION_DESCRIPTION
-    },
-    ...buildFormatGroups({ allowedExtensions: videoContainers })
-      .flatMap(group => group.items)
-      .map(item => ({
-        value: item.extension,
-        label: shortLabel(item.extension),
-        description: item.description || undefined
-      }))
-  ]);
-
-  const audioItems = $derived([
-    {
-      value: AUTO_EXTENSION,
-      label: AUTO_EXTENSION_LABEL,
-      description: AUTO_AUDIO_EXTENSION_DESCRIPTION
-    },
-    ...buildFormatGroups({ allowedExtensions: audioContainers })
-      .flatMap(group => group.items)
-      .map(item => ({
-        value: item.extension,
-        label: shortLabel(item.extension),
-        description: item.description || undefined
-      }))
-  ]);
-
   const CODEC_SUBTITLE = "Used when the container supports it";
 
-  const videoCodecItems = Object.values(VideoCodecPreference).map(preference => ({
-    value: preference,
-    ...describeVideoCodecPreference(preference)
-  }));
+  type FormatSettingRow = {
+    label: string;
+    subtitle?: string;
+    icon: string;
+    choices: Choice[];
+    value: string;
+    select: (value: string) => void;
+  };
 
-  const audioCodecItems = Object.values(AudioCodecPreference).map(preference => ({
-    value: preference,
-    ...describeAudioCodecPreference(preference)
-  }));
+  type ChoiceOptionKey = "videoCodec" | "audioCodec" | "dynamicRange";
 
-  const dynamicRangeItems = Object.values(DynamicRangePreference).map(preference => ({
-    value: preference,
-    ...describeDynamicRangePreference(preference)
-  }));
-
-  function selectVideo(extension: string): void {
-    void setOption({
-      key: "ext",
-      value: {
-        ...options.ext,
-        video: extension
+  function optionRow<Key extends ChoiceOptionKey>({ key, choices, ...row }: {
+    key: Key;
+    label: string;
+    subtitle?: string;
+    icon: string;
+    choices: Choice<Options[Key]>[];
+  }): FormatSettingRow {
+    return {
+      ...row,
+      choices,
+      value: options[key],
+      select(value) {
+        const choice = findChoice(choices, value);
+        if (choice) {
+          void setOption({
+            key,
+            value: choice.value
+          });
+        }
       }
-    });
+    };
   }
 
-  function selectAudio(extension: string): void {
-    void setOption({
-      key: "ext",
-      value: {
-        ...options.ext,
-        audio: extension
+  function containerRow({ kind, ...row }: {
+    kind: MediaKind;
+    label: string;
+    subtitle?: string;
+    icon: string;
+  }): FormatSettingRow {
+    return {
+      ...row,
+      choices: listContainerChoices(kind),
+      value: options.ext[kind],
+      select(value) {
+        void setOption({
+          key: "ext",
+          value: {
+            ...options.ext,
+            [kind]: value
+          }
+        });
       }
-    });
+    };
   }
+
+  const rows = $derived([
+    containerRow({
+      kind: "video",
+      label: "Video container",
+      icon: videoIcon
+    }),
+    optionRow({
+      key: "videoCodec",
+      label: "Video codec",
+      subtitle: CODEC_SUBTITLE,
+      icon: videoIcon,
+      choices: VIDEO_CODEC_CHOICES
+    }),
+    optionRow({
+      key: "dynamicRange",
+      label: "Dynamic range",
+      subtitle: "HDR comes in VP9 and AV1",
+      icon: videoIcon,
+      choices: DYNAMIC_RANGE_CHOICES
+    }),
+    optionRow({
+      key: "audioCodec",
+      label: "Audio codec",
+      subtitle: CODEC_SUBTITLE,
+      icon: audioIcon,
+      choices: AUDIO_CODEC_CHOICES
+    }),
+    containerRow({
+      kind: "audio",
+      label: "Audio container",
+      subtitle: "Used for audio-only downloads",
+      icon: audioIcon
+    })
+  ]);
 </script>
 
 <SettingsGroup title="Format">
-  <SettingsDropDown
-    currentValue={options.ext.video}
-    displayValue={shortLabel(options.ext.video)}
-    items={videoItems}
-    label="Video container"
-    onSelect={selectVideo}
-    {slideDuration}
-  >
-    {#snippet icon()}
-      {@html videoIcon}
-    {/snippet}
-  </SettingsDropDown>
-
-  <SettingsDropDown
-    currentValue={options.videoCodec}
-    displayValue={describeVideoCodecPreference(options.videoCodec).label}
-    items={videoCodecItems}
-    label="Video codec"
-    onSelect={selected => {
-      const preference = videoCodecItems.find(item => item.value === selected)?.value;
-      if (preference) {
-        void setOption({
-          key: "videoCodec",
-          value: preference
-        });
-      }
-    }}
-    {slideDuration}
-    subtitle={CODEC_SUBTITLE}
-  >
-    {#snippet icon()}
-      {@html videoIcon}
-    {/snippet}
-  </SettingsDropDown>
-
-  <SettingsDropDown
-    currentValue={options.dynamicRange}
-    displayValue={describeDynamicRangePreference(options.dynamicRange).label}
-    items={dynamicRangeItems}
-    label="Dynamic range"
-    onSelect={selected => {
-      const preference = dynamicRangeItems.find(item => item.value === selected)?.value;
-      if (preference) {
-        void setOption({
-          key: "dynamicRange",
-          value: preference
-        });
-      }
-    }}
-    {slideDuration}
-    subtitle="HDR comes in VP9 and AV1"
-  >
-    {#snippet icon()}
-      {@html videoIcon}
-    {/snippet}
-  </SettingsDropDown>
-
-  <SettingsDropDown
-    currentValue={options.audioCodec}
-    displayValue={describeAudioCodecPreference(options.audioCodec).label}
-    items={audioCodecItems}
-    label="Audio codec"
-    onSelect={selected => {
-      const preference = audioCodecItems.find(item => item.value === selected)?.value;
-      if (preference) {
-        void setOption({
-          key: "audioCodec",
-          value: preference
-        });
-      }
-    }}
-    {slideDuration}
-    subtitle={CODEC_SUBTITLE}
-  >
-    {#snippet icon()}
-      {@html audioIcon}
-    {/snippet}
-  </SettingsDropDown>
-
-  <SettingsDropDown
-    currentValue={options.ext.audio}
-    displayValue={shortLabel(options.ext.audio)}
-    items={audioItems}
-    label="Audio container"
-    onSelect={selectAudio}
-    {slideDuration}
-    subtitle="Used for audio-only downloads"
-  >
-    {#snippet icon()}
-      {@html audioIcon}
-    {/snippet}
-  </SettingsDropDown>
+  {#each rows as row (row.label)}
+    <SettingsDropDown
+      currentValue={row.value}
+      displayValue={findChoice(row.choices, row.value)?.label ?? row.value}
+      items={row.choices}
+      label={row.label}
+      onSelect={row.select}
+      {slideDuration}
+      subtitle={row.subtitle}
+    >
+      {#snippet icon()}
+        {@html row.icon}
+      {/snippet}
+    </SettingsDropDown>
+  {/each}
 </SettingsGroup>

@@ -1,3 +1,4 @@
+import type { Choice } from "./choices";
 import { getFileExtension } from "./filename";
 
 const MIME_AUDIO_AIFF = "audio/aiff";
@@ -88,8 +89,6 @@ export function getAudioTempExtension(mimeType: string) {
 
 export const AUTO_EXTENSION = "auto";
 export const AUTO_EXTENSION_LABEL = "Auto (match source)";
-export const AUTO_VIDEO_EXTENSION_DESCRIPTION = "MP4 or WebM, whichever fits the stream";
-export const AUTO_AUDIO_EXTENSION_DESCRIPTION = "M4A, plays almost everywhere";
 
 const FORMAT_DESCRIPTIONS: Record<string, string> = {
   "3gp": "Old low-bitrate mobile",
@@ -122,6 +121,27 @@ export const supportedExtensions = {
   video: [AUTO_EXTENSION, ...videoContainers],
   audio: [AUTO_EXTENSION, ...audioContainers]
 };
+
+export type MediaKind = keyof typeof supportedExtensions;
+
+const AUTO_EXTENSION_DESCRIPTIONS: Record<MediaKind, string> = {
+  video: "MP4 or WebM, whichever fits the stream",
+  audio: "M4A, plays almost everywhere"
+};
+
+export function listContainerChoices(kind: MediaKind): Choice[] {
+  return supportedExtensions[kind].map(extension => extension === AUTO_EXTENSION
+    ? {
+      value: extension,
+      label: AUTO_EXTENSION_LABEL,
+      description: AUTO_EXTENSION_DESCRIPTIONS[kind]
+    }
+    : {
+      value: extension,
+      label: extension.toUpperCase(),
+      description: getFormatDescription(extension) || undefined
+    });
+}
 
 const WEBM_AUDIO_EXTENSIONS = new Set([EXT_WEBM, "weba"]);
 
