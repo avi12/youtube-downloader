@@ -1,7 +1,8 @@
 import { getPreferredMusicAudioFormat } from "./panel-init-audio";
 import { getCompatibleFilename, hasVisibleContent, resolveAutoExtension } from "@/lib/utils/containers";
+import { resolveDownloadType } from "@/lib/youtube/download-type";
 import { filterVideoFormatsByEnhancedBitrate } from "@/lib/youtube/format-display";
-import { DownloadType, type Options, type Prettify, type VideoData } from "@/types";
+import type { Options, Prettify, VideoData } from "@/types";
 
 export { IS_WATCH_PAGE } from "./panel-init-audio";
 export {
@@ -21,12 +22,10 @@ type OptionsVideoDataParams = Prettify<{
   videoData: VideoData;
 }>;
 export function resolveInitialDownloadType({ options, videoData }: OptionsVideoDataParams) {
-  const isExplicitType = options.defaultDownloadType !== DownloadType.Auto;
-  if (isExplicitType) {
-    return options.defaultDownloadType;
-  }
-
-  return videoData.isMusic ? DownloadType.Audio : DownloadType.VideoAndAudio;
+  return resolveDownloadType({
+    preference: options.defaultDownloadType,
+    isMusic: videoData.isMusic
+  });
 }
 
 export function resolveInitialExtension({ options, videoData }: OptionsVideoDataParams) {

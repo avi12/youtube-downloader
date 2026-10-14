@@ -3,8 +3,9 @@ import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-wo
 import { performCancelDownload } from "@/lib/ui/cancel-download";
 import { CONTENT_OPTIONS } from "@/lib/ui/synced-stores.svelte";
 import { resolveVideoFilename } from "@/lib/utils/containers";
+import { resolveDownloadType } from "@/lib/youtube/download-type";
 import { filterVideoFormatsByEnhancedBitrate } from "@/lib/youtube/format-display";
-import { DownloadType, type Prettify, type VideoData } from "@/types";
+import type { Prettify, VideoData } from "@/types";
 import { cancelStreamTransfer } from "#youtube/entrypoints/youtube.content/download/stream-transfer";
 import { checkedPlaylistVideos } from "#youtube/lib/ui/playlist-selection.svelte";
 
@@ -16,11 +17,10 @@ type TriggerDownloadParams = Prettify<{
 }>;
 export function triggerDownload({ videoData, videoId, gridTitle, setLocallyDone }: TriggerDownloadParams) {
   const options = CONTENT_OPTIONS;
-  let downloadType: DownloadType = videoData.isMusic ? DownloadType.Audio : DownloadType.VideoAndAudio;
-  const isExplicitType = options.defaultDownloadType && options.defaultDownloadType !== DownloadType.Auto;
-  if (isExplicitType) {
-    downloadType = options.defaultDownloadType;
-  }
+  const downloadType = resolveDownloadType({
+    preference: options.defaultDownloadType,
+    isMusic: videoData.isMusic
+  });
 
   const filenameOutput = resolveVideoFilename({
     videoData,

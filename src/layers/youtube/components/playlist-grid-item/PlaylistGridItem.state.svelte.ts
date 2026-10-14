@@ -9,6 +9,7 @@ import {
 } from "@/lib/ui/synced-stores.svelte";
 import { resolveVideoFilename } from "@/lib/utils/containers";
 import { normalizeLanguageCode } from "@/lib/youtube/audio-format-helpers";
+import { resolveDownloadType } from "@/lib/youtube/download-type";
 import { selectVideoFormatForOptions } from "@/lib/youtube/select-video-quality";
 import {
   DownloadType,
@@ -128,12 +129,11 @@ function formatSize(bytes: number) {
   return `${bytes} B`;
 }
 
-function resolvePerVideoDownloadType(video: VideoData, downloadType: DownloadType): DownloadType {
-  if (downloadType === DownloadType.Auto) {
-    return video.isMusic ? DownloadType.Audio : DownloadType.VideoAndAudio;
-  }
-
-  return downloadType;
+function resolvePerVideoDownloadType(video: VideoData, downloadType: DownloadType) {
+  return resolveDownloadType({
+    preference: downloadType,
+    isMusic: video.isMusic
+  });
 }
 
 function estimateVideoSize({ video, options, playlistDownloadType }: {

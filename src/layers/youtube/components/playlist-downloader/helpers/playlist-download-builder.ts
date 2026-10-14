@@ -1,12 +1,7 @@
 import { resolveVideoFilename } from "@/lib/utils/containers";
+import { resolveDownloadType } from "@/lib/youtube/download-type";
 import { selectVideoFormatForOptions } from "@/lib/youtube/select-video-quality";
-import {
-  DownloadType,
-  VideoQualityMode,
-  type Options,
-  type Prettify,
-  type VideoData
-} from "@/types";
+import { VideoQualityMode, type Options, type Prettify, type VideoData } from "@/types";
 
 type PlaylistMetadata = Prettify<{
   playlistId: string;
@@ -35,11 +30,10 @@ export function buildDownloadRequest({
   playlistTotalCount: number;
   isZipBundle: boolean;
 }) {
-  let downloadType: DownloadType = data.isMusic ? DownloadType.Audio : DownloadType.VideoAndAudio;
-  const isExplicitType = options.defaultDownloadType !== DownloadType.Auto;
-  if (isExplicitType) {
-    downloadType = options.defaultDownloadType;
-  }
+  const downloadType = resolveDownloadType({
+    preference: options.defaultDownloadType,
+    isMusic: data.isMusic
+  });
 
   const videoFormat = selectVideoFormatForOptions({
     videoData: data,
