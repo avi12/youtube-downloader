@@ -2,6 +2,7 @@
   import PolymerSelect from "../polymer-select/PolymerSelect.svelte";
   import type { createPlaylistDownloaderState } from "./PlaylistDownloader.state.svelte";
   import PlaylistOverrideBadge from "./PlaylistOverrideBadge.svelte";
+  import PlaylistResetLink from "./PlaylistResetLink.svelte";
   import { toInlineLabeledOption } from "@/lib/utils/choices";
   import { listContainerChoices } from "@/lib/utils/containers";
   import { DownloadType, VideoQualityMode } from "@/types";
@@ -74,20 +75,11 @@
   {/if}
 </div>
 
-<p
-  class="ytdl-reset-wrapper"
-  class:is-visible={playlist.isAnyOverrideActive}
-  inert={!playlist.isAnyOverrideActive}
->
-  <button
-    class="ytdl-reset-link"
-    disabled={playlist.isDownloading}
-    onclick={playlist.resetOverrides}
-    type="button"
-  >
-    Reset to my defaults
-  </button>
-</p>
+<PlaylistResetLink
+  isDisabled={playlist.isDownloading}
+  isVisible={playlist.isAnyOverrideActive}
+  onclick={playlist.resetOverrides}
+/>
 
 <style>
   .ytdl-section-select {
@@ -103,33 +95,5 @@
     position: absolute;
     top: 14px;
     left: 12px;
-  }
-
-  .ytdl-reset-wrapper {
-    display: grid;
-    grid-template-rows: 0fr;
-    overflow: clip;
-    width: fit-content;
-    margin: 0;
-    transition: grid-template-rows 200ms ease;
-
-    &.is-visible {
-      grid-template-rows: 1fr;
-    }
-  }
-
-  .ytdl-reset-link {
-    min-height: 0;
-    padding: 0;
-    border: 0;
-    background: transparent;
-    color: var(--yt-sys-color-baseline--call-to-action, #3ea6ff);
-    font-family: inherit;
-    font-size: 1.2rem;
-    cursor: pointer;
-
-    &:hover {
-      text-decoration: underline;
-    }
   }
 </style>

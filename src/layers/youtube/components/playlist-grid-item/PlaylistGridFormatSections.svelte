@@ -16,6 +16,7 @@
     PlaylistOutputMode,
     VideoQualityMode
   } from "@/types";
+  import PlaylistResetLink from "#youtube/components/playlist-downloader/PlaylistResetLink.svelte";
   import PolymerSelect from "#youtube/components/polymer-select/PolymerSelect.svelte";
   import { untrack } from "svelte";
   import { SvelteMap } from "svelte/reactivity";
@@ -279,20 +280,12 @@
   </div>
 {/if}
 
-<p
-  class="ytdl-reset-wrapper"
-  class:is-visible={state.isAnyOverrideActive}
-  inert={!state.isAnyOverrideActive}
->
-  <button
-    class="ytdl-reset-link"
-    disabled={state.isWorking}
-    onclick={state.resetOverrides}
-    type="button"
-  >
-    Reset to my defaults
-  </button>
-</p>
+<PlaylistResetLink
+  isDisabled={state.isWorking}
+  isSpaced
+  isVisible={state.isAnyOverrideActive}
+  onclick={state.resetOverrides}
+/>
 
 <style>
   .ytdl-grid {
@@ -339,34 +332,6 @@
       tp-yt-paper-input-container {
         padding-bottom: 0;
       }
-    }
-  }
-
-  .ytdl-reset-wrapper {
-    display: grid;
-    grid-template-rows: 0fr;
-    overflow: clip;
-    width: fit-content;
-    margin-top: 16px;
-    transition: grid-template-rows 200ms ease;
-
-    &.is-visible {
-      grid-template-rows: 1fr;
-    }
-  }
-
-  .ytdl-reset-link {
-    min-height: 0;
-    padding: 0;
-    border: 0;
-    background: transparent;
-    color: var(--yt-sys-color-baseline--call-to-action, #3ea6ff);
-    font-family: inherit;
-    font-size: 1.2rem;
-    cursor: pointer;
-
-    &:hover {
-      text-decoration: underline;
     }
   }
 </style>
