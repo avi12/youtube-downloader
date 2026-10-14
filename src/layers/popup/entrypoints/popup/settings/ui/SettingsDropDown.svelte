@@ -1,6 +1,7 @@
 <script lang="ts">
   import checkIcon from "../../icons/check.svg?raw";
   import chevronRightIcon from "../../icons/chevron-right.svg?raw";
+  import SettingsRowContent from "./SettingsRowContent.svelte";
   import { applyInertTrap } from "@/lib/ui/inert-trap";
   import type { Snippet } from "svelte";
   import { scale } from "svelte/transition";
@@ -178,23 +179,19 @@
     }
   }}
 >
-  {#if icon}
-    <div class="set-lead accent">
-      {@render icon()}
-    </div>
-  {/if}
-  <div class="set-txt">
-    <span class="set-label">{label}</span>
-    {#if subtitle}
-      <span class="set-sub">{subtitle}</span>
-    {/if}
-  </div>
-  <div class="set-trail">
-    <span class="set-value">{displayValue}</span>
-    <span class="set-chevron" class:set-chevron--open={isOpen}>
-      {@html chevronRightIcon}
-    </span>
-  </div>
+  <SettingsRowContent
+    isAccent
+    {label}
+    lead={icon}
+    {subtitle}
+  >
+    {#snippet trail()}
+      <span class="set-value">{displayValue}</span>
+      <span class="set-chevron" class:set-chevron--open={isOpen}>
+        {@html chevronRightIcon}
+      </span>
+    {/snippet}
+  </SettingsRowContent>
 </button>
 {#if isOpen}
   <section
@@ -252,54 +249,6 @@
     align-items: center;
     min-height: 52px;
     padding: 13px 14px;
-  }
-
-  .set-lead {
-    display: grid;
-    flex-shrink: 0;
-    place-items: center;
-    width: 40px;
-    height: 40px;
-    border-radius: 12px;
-    background: var(--surface-high);
-    color: var(--fg-muted);
-
-    &.accent {
-      background: var(--accent-container);
-      color: var(--fg);
-    }
-
-    :global(svg) {
-      width: 20px;
-      height: 20px;
-    }
-  }
-
-  .set-txt {
-    display: flex;
-    flex: 1;
-    flex-direction: column;
-    gap: 2px;
-    min-width: 0;
-  }
-
-  .set-label {
-    color: var(--fg);
-    font-weight: 500;
-    font-size: 0.84375rem;
-  }
-
-  .set-sub {
-    color: var(--fg-muted);
-    font-size: 0.71875rem;
-  }
-
-  .set-trail {
-    display: flex;
-    flex-shrink: 0;
-    gap: 8px;
-    align-items: center;
-    color: var(--fg-muted);
   }
 
   .set-picker-btn {
