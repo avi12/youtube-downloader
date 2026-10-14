@@ -12,7 +12,7 @@ pnpm dev            # Chrome
 pnpm dev:firefox    # Firefox
 ```
 
-`pnpm dev` runs [`scripts/dev-server.ts`](scripts/dev-server.ts): it production-builds the extension (with source maps), launches a browser with it sideloaded, and on every file change under `src/` rebuilds, reloads the extension, and reloads every open YouTube tab. No manual reloading.
+`pnpm dev` runs [`scripts/dev-server.ts`](scripts/dev-server.ts): it production-builds the extension, launches one browser with it sideloaded, and on every file change under `src/` rebuilds and applies the smallest update - an open popup reloads, a background or content-script change reloads the extension and swaps the content script into the open YouTube tabs in place, and only a change to a script that runs in the page itself (`youtube-main`) reloads the tabs. The browser stays open; each update is logged with what it did. No manual reloading.
 
 No `.env` is needed for development. [`.env.example`](.env.example) documents the variables used for release signing (Firefox AMO) and analytics.
 

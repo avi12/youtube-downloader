@@ -56,4 +56,8 @@
 After each modification, lint with oxlint, ESLint, Stylelint, svelte-check, and `npx fallow audit`.
 
 # Dev server
-`scripts/dev-server.ts` auto-rebuilds and reloads the extension and every YouTube page on any file change under `src/`.
+`scripts/dev-server.ts` rebuilds on any change under `src/` and applies the smallest update, keeping the open YouTube tabs:
+- Popup/offscreen/worker change: reloads the open popup, closes the offscreen document (recreated on next use)
+- Background or ISOLATED content-script change: reloads the extension and re-injects `youtube.content` into open tabs in place
+- MAIN-world content-script change: reloads the extension and the tabs it runs in
+- The log line names the outcome; flags `--cdp-port`, `--profile-dir`, `--out-dir` run a second instance side by side

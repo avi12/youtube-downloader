@@ -8,7 +8,7 @@ These are wired into `package.json` and are the ones you'll actually run.
 
 | Script | Invoked by | Purpose |
 | --- | --- | --- |
-| `dev-server.ts` | `pnpm dev`, `pnpm dev:firefox` | Watches `src/`, rebuilds via WXT, launches a clean Chrome or Firefox instance with the extension installed, and force-reloads every open YouTube tab on save. |
+| `dev-server.ts` | `pnpm dev`, `pnpm dev:firefox` | Watches `src/`, rebuilds via WXT, launches one Chrome or Firefox instance with the extension installed, and on save applies the smallest update: refreshes open extension pages, or reloads the extension and re-injects the content scripts into open YouTube tabs in place; only a MAIN-world script change reloads the tabs. `--cdp-port`, `--marionette-port`, `--profile-dir`, `--out-dir`, `--start-url` (or `YTDL_DEV_*` env vars) run a second instance side by side. |
 | `install-hyperv-multipass.ps1` | `pnpm install:hyperv-multipass` | One-time Windows setup: enables Hyper-V and installs Multipass. Run elevated. Required only if you want to reproduce Linux-Chrome bugs. |
 | `setup-linux-vm.ps1` | `pnpm setup:linux-vm` | One-time: creates the Ubuntu `ytdl-linux` VM, mounts the repo, installs Node/pnpm/Chrome deps, wires the CDP port proxy. |
 | `linux-vm-dev.ts` | `pnpm dev:linux` | Daily: starts the VM if it's down, syncs the current branch in, runs `pnpm dev` under Xvfb + VNC. |
@@ -16,6 +16,10 @@ These are wired into `package.json` and are the ones you'll actually run.
 
 Supporting files used by the above:
 - `cdp-utils.ts` - shared CDP helpers used by `dev-server.ts` and the debugging scripts.
+- `dev-output-changes.ts` - diffs two builds by content hash and plans the update.
+- `dev-reload-actions.ts` - the browser-target contract, the code run inside the extension's background, and the log wording.
+- `dev-chrome.ts` / `dev-firefox.ts` - the Chrome (CDP) and Firefox (RDP) sides of the hot reload.
+- `dev-build-patches.ts` - dev-build-only additions: run-once guard for content scripts, download-panel handshake recorder/replay.
 - `web-ext-run.d.ts` - type stubs for `web-ext-run` (Firefox launcher).
 - `tsconfig.json` - TS config scoped to scripts (the project tsconfig excludes this folder).
 
