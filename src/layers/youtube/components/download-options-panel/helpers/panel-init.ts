@@ -6,13 +6,11 @@ import { DownloadType, type Options, type Prettify, type VideoData } from "@/typ
 
 export { IS_WATCH_PAGE } from "./panel-init-audio";
 export {
-  getPreferredMusicAudioFormat,
   resolveInitialAudioCustomLanguage,
   resolveInitialAudioFormat,
   resolveInitialAudioMode
 } from "./panel-init-audio";
 export {
-  getActivePlayerCaption,
   resolveInitialCaptionMode,
   resolveInitialCaptionTrack
 } from "./panel-init-caption";
