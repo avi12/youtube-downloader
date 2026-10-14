@@ -393,7 +393,7 @@ export function createPanelState(getVideoData: () => VideoData) {
       selectedAudioFormat
     });
     downloadType = result.downloadType;
-    extension = result.extension;
+    applyExtension(result.extension);
   }
 
   function startDownload() {
