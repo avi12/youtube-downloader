@@ -3,6 +3,7 @@
   import type { SlidingSettingsProps } from "../settings-props";
   import SettingsDropDown from "../ui/SettingsDropDown.svelte";
   import SettingsGroup from "../ui/SettingsGroup.svelte";
+  import SettingsRadioGroup from "../ui/SettingsRadioGroup.svelte";
   import SettingsSwitch from "../ui/SettingsSwitch.svelte";
   import { setOption } from "@/lib/storage/storage";
   import { findChoice } from "@/lib/utils/choices";
@@ -29,11 +30,13 @@
     },
     {
       value: VideoQualityMode.Best,
-      label: "Best available quality"
+      label: "Best available quality",
+      sub: enhancedBitrate
     },
     {
       value: VideoQualityMode.Custom,
-      label: "Custom quality"
+      label: "Custom quality",
+      sub: customQuality
     }
   ] as const;
 
@@ -46,71 +49,59 @@
   );
 </script>
 
+{#snippet enhancedBitrate()}
+  <label class="enhanced-bitrate">
+    <div class="enhanced-bitrate-txt">
+      <span class="enhanced-bitrate-title">Enhanced bitrate</span>
+      <span class="premium-badge">
+        {@html sparkleIcon}
+        YouTube Premium
+      </span>
+      <span class="enhanced-bitrate-desc">Grab the higher-bitrate stream whenever YouTube offers it</span>
+    </div>
+    <SettingsSwitch
+      isChecked={options.enhancedBitrate}
+      onchange={isChecked => {
+        void setOption({
+          key: "enhancedBitrate",
+          value: isChecked
+        });
+      }}
+    />
+  </label>
+{/snippet}
+
+{#snippet customQuality()}
+  <SettingsDropDown
+    currentValue={String(options.videoQuality)}
+    displayValue={`${options.videoQuality}p`}
+    items={customQualityItems}
+    label="Quality"
+    onSelect={selected => {
+      void setOption({
+        key: "videoQuality",
+        value: Number(selected)
+      });
+    }}
+    {slideDuration}
+  />
+{/snippet}
+
 <SettingsGroup title="Video quality">
-  <fieldset class="radio-group">
-    <legend class="visually-hidden">Video quality</legend>
-    {#each qualityModeOptions as { value, label } (value)}
-      <label class="radio-item">
-        <input
-          name="quality-mode"
-          class="radio-input-hidden"
-          checked={options.videoQualityMode === value}
-          onchange={() => {
-            void setOption({
-              key: "videoQualityMode",
-              value
-            });
-          }}
-          type="radio"
-          {value}
-        />
-        <div class="radio-dot"></div>
-        <div class="radio-txt">
-          <span class="radio-label">{label}</span>
-        </div>
-      </label>
-      {#if value === VideoQualityMode.Best && options.videoQualityMode === VideoQualityMode.Best}
-        <div class="radio-sub" transition:slide={{ duration: slideDuration }}>
-          <label class="enhanced-bitrate">
-            <div class="enhanced-bitrate-txt">
-              <span class="enhanced-bitrate-title">Enhanced bitrate</span>
-              <span class="premium-badge">
-                {@html sparkleIcon}
-                YouTube Premium
-              </span>
-              <span class="enhanced-bitrate-desc">Grab the higher-bitrate stream whenever YouTube offers it</span>
-            </div>
-            <SettingsSwitch
-              isChecked={options.enhancedBitrate}
-              onchange={isChecked => {
-                void setOption({
-                  key: "enhancedBitrate",
-                  value: isChecked
-                });
-              }}
-            />
-          </label>
-        </div>
-      {/if}
-      {#if value === VideoQualityMode.Custom && options.videoQualityMode === VideoQualityMode.Custom}
-        <div class="radio-sub" transition:slide={{ duration: slideDuration }}>
-          <SettingsDropDown
-            currentValue={String(options.videoQuality)}
-            displayValue={`${options.videoQuality}p`}
-            items={customQualityItems}
-            label="Quality"
-            onSelect={selected => {
-              void setOption({
-                key: "videoQuality",
-                value: Number(selected)
-              });
-            }}
-            {slideDuration}
-          />
-        </div>
-      {/if}
-    {/each}
-  </fieldset>
+  <SettingsRadioGroup
+    name="quality-mode"
+    isLegendHidden
+    legend="Video quality"
+    onchange={value => {
+      void setOption({
+        key: "videoQualityMode",
+        value
+      });
+    }}
+    options={qualityModeOptions}
+    selected={options.videoQualityMode}
+    {slideDuration}
+  />
   {#if options.videoQualityMode !== VideoQualityMode.CurrentQuality}
     <div transition:slide={{ duration: slideDuration }}>
       <SettingsDropDown
@@ -135,101 +126,6 @@
 </SettingsGroup>
 
 <style>
-  .radio-group {
-    display: flex;
-    flex-direction: column;
-    min-inline-size: auto;
-    margin: 0;
-    padding: 4px;
-    border: none;
-  }
-
-  .visually-hidden {
-    position: absolute;
-    overflow: hidden;
-    width: 1px;
-    height: 1px;
-    clip-path: inset(50%);
-    white-space: nowrap;
-  }
-
-  .radio-item {
-    display: flex;
-    gap: 13px;
-    align-items: flex-start;
-    padding: 9px 10px;
-    border-radius: 12px;
-    cursor: pointer;
-
-    &:hover {
-      background: var(--surface-high);
-    }
-  }
-
-  .radio-input-hidden {
-    position: absolute;
-    width: 0;
-    height: 0;
-    opacity: 0%;
-  }
-
-  .radio-dot {
-    position: relative;
-    flex-shrink: 0;
-    width: 20px;
-    height: 20px;
-    margin-top: 1px;
-    border-radius: 50%;
-    box-shadow: inset 0 0 0 2px var(--fg-subtle);
-    transition: box-shadow 150ms;
-
-    &::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      width: 10px;
-      height: 10px;
-      margin: auto;
-      border-radius: 50%;
-      background: var(--accent);
-      transition: scale 180ms cubic-bezier(0.34, 1.56, 0.64, 1);
-      scale: 0;
-    }
-
-    .radio-input-hidden:checked ~ & {
-      box-shadow: inset 0 0 0 2px var(--accent);
-
-      &::after {
-        scale: 1;
-      }
-    }
-
-    .radio-item:has(.radio-input-hidden:focus-visible) & {
-      outline: 2px solid var(--accent);
-      outline-offset: 2px;
-    }
-  }
-
-  .radio-txt {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    min-width: 0;
-  }
-
-  .radio-label {
-    color: var(--fg);
-    font-weight: 500;
-    font-size: 0.84375rem;
-  }
-
-  .radio-sub {
-    margin-block: -2px 4px;
-    margin-inline: 22px 8px;
-    padding-inline-start: 21px;
-    border-inline-start: 1.5px solid var(--border);
-  }
-
   .enhanced-bitrate {
     display: flex;
     gap: 12px;

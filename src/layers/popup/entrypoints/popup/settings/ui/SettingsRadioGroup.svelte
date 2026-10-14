@@ -1,21 +1,31 @@
-<script lang="ts">
-  import type { LabeledOption } from "@/types";
+<script generics="Value extends string" lang="ts">
+  import type { Snippet } from "svelte";
+  import { slide } from "svelte/transition";
+
+  interface RadioOption {
+    value: Value;
+    label: string;
+    description?: string;
+    sub?: () => ReturnType<Snippet>;
+  }
 
   interface Props {
     legend: string;
+    isLegendHidden?: boolean;
     name: string;
-    options: ReadonlyArray<LabeledOption>;
-    selected: string;
-    onchange: (value: string) => void;
+    options: ReadonlyArray<RadioOption>;
+    selected: Value;
+    slideDuration?: number;
+    onchange: (value: Value) => void;
   }
 
-  const { legend, name, options, selected, onchange }: Props = $props();
+  const { legend, isLegendHidden, name, options, selected, slideDuration, onchange }: Props = $props();
 </script>
 
 <fieldset class="set-section-fieldset">
-  <legend class="radio-group-legend">{legend}</legend>
-  <div class="radio-group">
-    {#each options as { value, label } (value)}
+  <legend class={isLegendHidden ? "visually-hidden" : "radio-group-legend"}>{legend}</legend>
+  <div class="radio-group" role="radiogroup">
+    {#each options as { value, label, description, sub } (value)}
       <label class="radio-item">
         <input
           {name}
@@ -28,8 +38,16 @@
         <div class="radio-dot"></div>
         <div class="radio-txt">
           <span class="radio-label">{label}</span>
+          {#if description}
+            <span class="radio-desc">{description}</span>
+          {/if}
         </div>
       </label>
+      {#if sub && selected === value}
+        <div class="radio-sub" transition:slide={{ duration: slideDuration }}>
+          {@render sub()}
+        </div>
+      {/if}
     {/each}
   </div>
 </fieldset>
@@ -46,6 +64,15 @@
     }
   }
 
+  .visually-hidden {
+    position: absolute;
+    overflow: hidden;
+    width: 1px;
+    height: 1px;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
   .radio-group-legend {
     padding-block: 10px 2px;
     padding-inline: 14px;
@@ -57,10 +84,7 @@
   .radio-group {
     display: flex;
     flex-direction: column;
-    min-inline-size: auto;
-    margin: 0;
     padding: 4px;
-    border: none;
   }
 
   .radio-item {
@@ -102,22 +126,22 @@
       margin: auto;
       border-radius: 50%;
       background: var(--accent);
-      transition: transform 180ms cubic-bezier(0.34, 1.56, 0.64, 1);
-      transform: scale(0);
+      transition: scale 180ms cubic-bezier(0.34, 1.56, 0.64, 1);
+      scale: 0;
     }
-  }
 
-  .radio-input-hidden:checked ~ .radio-dot {
-    box-shadow: inset 0 0 0 2px var(--accent);
-  }
+    .radio-input-hidden:checked ~ & {
+      box-shadow: inset 0 0 0 2px var(--accent);
 
-  .radio-input-hidden:checked ~ .radio-dot::after {
-    transform: scale(1);
-  }
+      &::after {
+        scale: 1;
+      }
+    }
 
-  .radio-item:has(.radio-input-hidden:focus-visible) .radio-dot {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
+    .radio-item:has(.radio-input-hidden:focus-visible) & {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
   }
 
   .radio-txt {
@@ -131,5 +155,17 @@
     color: var(--fg);
     font-weight: 500;
     font-size: 0.84375rem;
+  }
+
+  .radio-desc {
+    color: var(--fg-muted);
+    font-size: 0.71875rem;
+  }
+
+  .radio-sub {
+    margin-block: -2px 4px;
+    margin-inline: 22px 8px;
+    padding-inline-start: 21px;
+    border-inline-start: 1.5px solid var(--border);
   }
 </style>

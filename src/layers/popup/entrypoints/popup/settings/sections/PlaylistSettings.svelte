@@ -1,8 +1,8 @@
 <script lang="ts">
   import expandVerticalIcon from "../../icons/expand-vertical.svg?raw";
   import type { SettingsProps } from "../settings-props";
-  import PlaylistRadioGroup from "../ui/PlaylistRadioGroup.svelte";
   import SettingsGroup from "../ui/SettingsGroup.svelte";
+  import SettingsRadioGroup from "../ui/SettingsRadioGroup.svelte";
   import SettingsSwitchRow from "../ui/SettingsSwitchRow.svelte";
   import { setOption } from "@/lib/storage/storage";
   import { PlaylistDownloadMode, PlaylistOutputMode } from "@/types";
@@ -30,48 +30,40 @@
       label: "Single ZIP"
     }
   ] as const;
-
-  function resolveDownloadMode(value: string): PlaylistDownloadMode {
-    return downloadModeOptions.find(option => option.value === value)?.value ?? PlaylistDownloadMode.Fast;
-  }
-
-  function resolveOutputMode(value: string): PlaylistOutputMode {
-    return outputModeOptions.find(option => option.value === value)?.value ?? PlaylistOutputMode.Individual;
-  }
 </script>
 
 <SettingsGroup title="Playlist">
-  <PlaylistRadioGroup
+  <SettingsRadioGroup
     name="playlist-download-mode"
     legend="Download speed"
     onchange={value => {
       void setOption({
         key: "playlistDownloadMode",
-        value: resolveDownloadMode(value)
+        value
       });
     }}
     options={downloadModeOptions}
     selected={options.playlistDownloadMode}
   />
-  <PlaylistRadioGroup
+  <SettingsRadioGroup
     name="playlist-output-mode"
     legend="Output - video playlists"
     onchange={value => {
       void setOption({
         key: "playlistOutputMode",
-        value: resolveOutputMode(value)
+        value
       });
     }}
     options={outputModeOptions}
     selected={options.playlistOutputMode}
   />
-  <PlaylistRadioGroup
+  <SettingsRadioGroup
     name="playlist-audio-output-mode"
     legend="Output - audio playlists"
     onchange={value => {
       void setOption({
         key: "playlistAudioOutputMode",
-        value: resolveOutputMode(value)
+        value
       });
     }}
     options={outputModeOptions}

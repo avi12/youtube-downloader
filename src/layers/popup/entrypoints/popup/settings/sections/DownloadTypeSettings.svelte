@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { SettingsProps } from "../settings-props";
   import SettingsGroup from "../ui/SettingsGroup.svelte";
+  import SettingsRadioGroup from "../ui/SettingsRadioGroup.svelte";
   import { setOption } from "@/lib/storage/storage";
   import { DownloadType } from "@/types";
 
@@ -27,118 +28,17 @@
 </script>
 
 <SettingsGroup title="Download type">
-  <fieldset class="radio-group">
-    <legend class="visually-hidden">Download type</legend>
-    {#each downloadTypeOptions as { value, label } (value)}
-      <label class="radio-item">
-        <input
-          name="download-type"
-          class="radio-input-hidden"
-          checked={options.defaultDownloadType === value}
-          onchange={() => {
-            void setOption({
-              key: "defaultDownloadType",
-              value
-            });
-          }}
-          type="radio"
-          {value}
-        />
-        <div class="radio-dot"></div>
-        <div class="radio-txt">
-          <span class="radio-label">{label}</span>
-        </div>
-      </label>
-    {/each}
-  </fieldset>
+  <SettingsRadioGroup
+    name="download-type"
+    isLegendHidden
+    legend="Download type"
+    onchange={value => {
+      void setOption({
+        key: "defaultDownloadType",
+        value
+      });
+    }}
+    options={downloadTypeOptions}
+    selected={options.defaultDownloadType}
+  />
 </SettingsGroup>
-
-<style>
-  .radio-group {
-    display: flex;
-    flex-direction: column;
-    min-inline-size: auto;
-    margin: 0;
-    padding: 4px;
-    border: none;
-  }
-
-  .visually-hidden {
-    position: absolute;
-    overflow: hidden;
-    width: 1px;
-    height: 1px;
-    clip-path: inset(50%);
-    white-space: nowrap;
-  }
-
-  .radio-item {
-    display: flex;
-    gap: 13px;
-    align-items: flex-start;
-    padding: 9px 10px;
-    border-radius: 12px;
-    cursor: pointer;
-
-    &:hover {
-      background: var(--surface-high);
-    }
-  }
-
-  .radio-input-hidden {
-    position: absolute;
-    width: 0;
-    height: 0;
-    opacity: 0%;
-  }
-
-  .radio-dot {
-    position: relative;
-    flex-shrink: 0;
-    width: 20px;
-    height: 20px;
-    margin-top: 1px;
-    border-radius: 50%;
-    box-shadow: inset 0 0 0 2px var(--fg-subtle);
-    transition: box-shadow 150ms;
-
-    &::after {
-      content: "";
-      position: absolute;
-      inset: 0;
-      width: 10px;
-      height: 10px;
-      margin: auto;
-      border-radius: 50%;
-      background: var(--accent);
-      transition: scale 180ms cubic-bezier(0.34, 1.56, 0.64, 1);
-      scale: 0;
-    }
-
-    .radio-input-hidden:checked ~ & {
-      box-shadow: inset 0 0 0 2px var(--accent);
-
-      &::after {
-        scale: 1;
-      }
-    }
-
-    .radio-item:has(.radio-input-hidden:focus-visible) & {
-      outline: 2px solid var(--accent);
-      outline-offset: 2px;
-    }
-  }
-
-  .radio-txt {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    min-width: 0;
-  }
-
-  .radio-label {
-    color: var(--fg);
-    font-weight: 500;
-    font-size: 0.84375rem;
-  }
-</style>
