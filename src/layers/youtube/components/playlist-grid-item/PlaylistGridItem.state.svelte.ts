@@ -28,6 +28,10 @@ import {
   optionsToQualityValue,
   resolveDefaultZipName
 } from "#youtube/components/playlist-downloader/helpers/playlist-download-builder";
+import {
+  findGuaranteedHeight,
+  listAvailableHeights
+} from "#youtube/components/playlist-downloader/helpers/playlist-quality-helpers";
 import { completedDownloadsStore } from "#youtube/lib/ui/completed-downloads-store.svelte";
 import { PrimaryButtonState } from "#youtube/lib/ui/panel-button-attachments.svelte";
 import { fetchPlaylistContents } from "#youtube/lib/youtube/playlist-fetch";
@@ -360,41 +364,8 @@ export function createPlaylistGridItemState({ playlistId, gridTitle }: CreatePla
   const completedDownloadId = $derived(completedDownloadsStore.get(playlistId)?.downloadId ?? null);
   const isZipDownload = $derived(effectiveOutputMode === PlaylistOutputMode.Zip);
 
-  const availableQualities = $derived.by(() => {
-    const allHeights: number[] = [];
-    for (const video of loadedVideos) {
-      for (const format of video.videoFormats) {
-        const isHeightPresent = !!format.height;
-        if (isHeightPresent) {
-          allHeights.push(format.height!);
-        }
-      }
-    }
-    allHeights.sort((heightA, heightB) => heightB - heightA);
-    return allHeights.filter((height, iHeight) => iHeight === 0 || height !== allHeights[iHeight - 1]);
-  });
-
-  const guaranteedQuality = $derived.by(() => {
-    if (loadedVideos.length === 0) {
-      return 0;
-    }
-
-    let minimum = Infinity;
-    for (const video of loadedVideos) {
-      let videoMax = 0;
-      for (const format of video.videoFormats) {
-        const height = format.height ?? 0;
-        if (height > videoMax) {
-          videoMax = height;
-        }
-      }
-
-      if (videoMax < minimum) {
-        minimum = videoMax;
-      }
-    }
-    return minimum === Infinity ? 0 : minimum;
-  });
+  const availableQualities = $derived(listAvailableHeights(loadedVideos));
+  const guaranteedQuality = $derived(findGuaranteedHeight(loadedVideos));
 
   function kickOffVideoDataRequests(videoIds: readonly string[]) {
     for (const videoId of videoIds) {

@@ -1,3 +1,4 @@
+import { findGuaranteedHeight, listAvailableHeights } from "./helpers/playlist-quality-helpers";
 import { videoDataStore } from "@/lib/ui/synced-stores.svelte";
 import type { VideoData } from "@/types";
 import { checkedPlaylistVideos } from "#youtube/lib/ui/playlist-selection.svelte";
@@ -24,42 +25,8 @@ export function createVideoDataState() {
     downloadableVideos.length > 0 && downloadableVideos.every(video => video.isMusic)
   );
 
-  const availableQualities = $derived.by(() => {
-    const allHeights: number[] = [];
-    for (const data of videoDataMap.values()) {
-      for (const format of data.videoFormats) {
-        const isHeightPresent = !!format.height;
-        if (isHeightPresent) {
-          allHeights.push(format.height!);
-        }
-      }
-    }
-    allHeights.sort((heightA, heightB) => heightB - heightA);
-    return allHeights.filter((height, iHeight) => iHeight === 0 || height !== allHeights[iHeight - 1]);
-  });
-
-  const guaranteedQuality = $derived.by(() => {
-    if (videoDataMap.size === 0) {
-      return 0;
-    }
-
-    let minimum = Infinity;
-    for (const data of videoDataMap.values()) {
-      let videoMax = 0;
-      for (const format of data.videoFormats) {
-        const height = format.height ?? 0;
-        const isNewMax = height > videoMax;
-        if (isNewMax) {
-          videoMax = height;
-        }
-      }
-      const isNewMinimum = videoMax < minimum;
-      if (isNewMinimum) {
-        minimum = videoMax;
-      }
-    }
-    return minimum === Infinity ? 0 : minimum;
-  });
+  const availableQualities = $derived(listAvailableHeights(videoDataMap.values()));
+  const guaranteedQuality = $derived(findGuaranteedHeight(videoDataMap.values()));
 
   const selectedDownloadableVideos = $derived(
     downloadableVideos.filter(data => checkedPlaylistVideos.has(data.videoId))
