@@ -1,4 +1,5 @@
 import type { Choice } from "./choices";
+import { extractBaseCodec, isAudioMimeNativeForContainer } from "./container-specs";
 import { getFileExtension } from "./filename";
 
 const MIME_AUDIO_AIFF = "audio/aiff";
@@ -42,6 +43,8 @@ const EXTENSION_TO_MIME_ALL: Record<string, string> = {
 const EXT_WEBM = "webm";
 const EXT_MP4 = "mp4";
 const EXT_M4A = "m4a";
+const EXT_OPUS = "opus";
+const EXT_MKV = "mkv";
 
 // Order both lists by quality + everyday relevance, highest first. Video
 // containers don't carry quality on their own, so relevance/compatibility
@@ -125,8 +128,8 @@ export const supportedExtensions = {
 export type MediaKind = keyof typeof supportedExtensions;
 
 const AUTO_EXTENSION_DESCRIPTIONS: Record<MediaKind, string> = {
-  video: "MP4 or WebM, whichever fits the stream",
-  audio: "M4A, plays almost everywhere"
+  video: "Follows the video codec: MP4 for H.264 and AV1, WebM for VP9",
+  audio: "Follows the audio codec: .opus for Opus, M4A otherwise"
 };
 
 export function listContainerChoices(kind: MediaKind): Choice[] {
@@ -145,13 +148,21 @@ export function listContainerChoices(kind: MediaKind): Choice[] {
 
 const WEBM_AUDIO_EXTENSIONS = new Set([EXT_WEBM, "weba"]);
 
-export function resolveAutoExtension({ extension, mimeType, isAudio = false }: {
+// Low-level "Auto" pick from the source streams; resolveAutoContainer feeds it the streams the
+// codec settings choose
+export function resolveAutoExtension({ extension, mimeType, audioMimeType, isAudio = false }: {
   extension: string;
   mimeType: string;
+  audioMimeType?: string;
   isAudio?: boolean;
 }) {
   const isAuto = extension === AUTO_EXTENSION;
   if (isAudio) {
+    const isOpusSource = isAuto && extractBaseCodec(mimeType) === EXT_OPUS;
+    if (isOpusSource) {
+      return EXT_OPUS;
+    }
+
     const isWebmAudioTarget = isAuto || WEBM_AUDIO_EXTENSIONS.has(extension);
     return isWebmAudioTarget ? EXT_M4A : extension;
   }
@@ -160,5 +171,10 @@ export function resolveAutoExtension({ extension, mimeType, isAudio = false }: {
     return extension;
   }
 
-  return mimeType.includes(EXT_WEBM) ? EXT_WEBM : EXT_MP4;
+  const sourceContainer = mimeType.includes(EXT_WEBM) ? EXT_WEBM : EXT_MP4;
+  const isAudioHeld = !audioMimeType || isAudioMimeNativeForContainer({
+    audioMimeType,
+    targetExtension: sourceContainer
+  });
+  return isAudioHeld ? sourceContainer : EXT_MKV;
 }

@@ -3,10 +3,10 @@ import {
   CONTAINER_SPECS,
   MULTI_TRACK_UNSUPPORTED_EXTENSIONS,
   getCompatibleFilename,
-  getOutputExtension,
-  resolveAutoExtension
+  getOutputExtension
 } from "@/lib/utils/containers";
 import { resolveOutputExtensionForFormats } from "@/lib/youtube/align-formats-to-container";
+import { resolveAutoContainer } from "@/lib/youtube/auto-container";
 import { resolveDownloadType } from "@/lib/youtube/download-type";
 import { selectPreferredAudioFormat } from "@/lib/youtube/video-helpers";
 import { DownloadType, type VideoData } from "@/types";
@@ -33,9 +33,11 @@ function getPreferredAudioFormat(videoData: VideoData) {
 
 function resolveBaseVideoExtension(videoData: VideoData, preferredAudio: PreferredAudioFormat) {
   const [firstFormat] = videoData.videoFormats;
-  const userExtension = resolveAutoExtension({
+  const userExtension = resolveAutoContainer({
     extension: CONTENT_OPTIONS.ext.video,
-    mimeType: firstFormat?.mimeType ?? DEFAULT_VIDEO_MIME_TYPE
+    videoData,
+    sourceMimeType: firstFormat?.mimeType ?? DEFAULT_VIDEO_MIME_TYPE,
+    codecPreferences: CONTENT_OPTIONS
   });
   if (!firstFormat || !preferredAudio) {
     return getOutputExtension({
@@ -79,9 +81,11 @@ function resolveOutputExtension({ videoData, preferredAudio, downloadType }: {
 }) {
   const isAudioDownload = downloadType === DownloadType.Audio;
   if (isAudioDownload) {
-    return resolveAutoExtension({
+    return resolveAutoContainer({
       extension: CONTENT_OPTIONS.ext.audio,
-      mimeType: preferredAudio?.mimeType ?? DEFAULT_AUDIO_MIME_TYPE,
+      videoData,
+      sourceMimeType: preferredAudio?.mimeType ?? DEFAULT_AUDIO_MIME_TYPE,
+      codecPreferences: CONTENT_OPTIONS,
       isAudio: true
     });
   }

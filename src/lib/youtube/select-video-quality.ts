@@ -1,7 +1,7 @@
 import { createVideoFormatPreference, resolveVideoFormatVariants } from "./align-formats-to-container";
+import { resolveAutoContainer } from "./auto-container";
 import { filterVideoFormatsByEnhancedBitrate } from "./format-display";
 import { listChoices } from "@/lib/utils/choices";
-import { resolveAutoExtension } from "@/lib/utils/mime-types";
 import {
   MaxFrameRate,
   VideoQualityMode,
@@ -95,16 +95,18 @@ export function selectVideoFormatForQuality({
 }
 
 type SelectVideoFormatForOptionsParams = Prettify<{
-  videoData: QualityVideoData;
+  videoData: QualityVideoData & Pick<VideoData, "audioFormats">;
   options: QualityOptions & Pick<Options, "ext">;
 }>;
 export function selectVideoFormatForOptions({ videoData, options }: SelectVideoFormatForOptionsParams) {
   return selectVideoFormatForQuality({
     videoData,
     options,
-    targetExtension: resolveAutoExtension({
+    targetExtension: resolveAutoContainer({
       extension: options.ext.video,
-      mimeType: videoData.videoFormats[0]?.mimeType ?? ""
+      videoData,
+      sourceMimeType: videoData.videoFormats[0]?.mimeType ?? "",
+      codecPreferences: options
     })
   });
 }

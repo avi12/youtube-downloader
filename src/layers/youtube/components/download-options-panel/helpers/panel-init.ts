@@ -1,5 +1,6 @@
 import { getPreferredMusicAudioFormat } from "./panel-init-audio";
-import { getCompatibleFilename, hasVisibleContent, resolveAutoExtension } from "@/lib/utils/containers";
+import { getCompatibleFilename, hasVisibleContent } from "@/lib/utils/containers";
+import { resolveAutoContainer } from "@/lib/youtube/auto-container";
 import { resolveDownloadType } from "@/lib/youtube/download-type";
 import { filterVideoFormatsByEnhancedBitrate } from "@/lib/youtube/format-display";
 import { DownloadType, type Options, type Prettify, type VideoData } from "@/types";
@@ -33,19 +34,21 @@ export function resolveInitialExtension({ options, videoData, downloadType }: Op
 }) {
   const isAudioDownload = downloadType === DownloadType.Audio;
   if (isAudioDownload) {
-    const defaultFormat = getPreferredMusicAudioFormat(videoData.audioFormats);
-    return resolveAutoExtension({
+    return resolveAutoContainer({
       extension: options.ext.audio,
-      mimeType: defaultFormat?.mimeType ?? "",
+      videoData,
+      sourceMimeType: getPreferredMusicAudioFormat(videoData.audioFormats)?.mimeType ?? "",
+      codecPreferences: options,
       isAudio: true
     });
   }
 
   const candidates = filterVideoFormatsByEnhancedBitrate(videoData.videoFormats, options.enhancedBitrate);
-  const defaultFormat = candidates[0];
-  return resolveAutoExtension({
+  return resolveAutoContainer({
     extension: options.ext.video,
-    mimeType: defaultFormat?.mimeType ?? ""
+    videoData,
+    sourceMimeType: candidates[0]?.mimeType ?? "",
+    codecPreferences: options
   });
 }
 

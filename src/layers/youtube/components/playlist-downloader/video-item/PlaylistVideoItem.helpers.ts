@@ -1,6 +1,6 @@
 import { CONTENT_OPTIONS, type DownloadProgressState } from "@/lib/ui/synced-stores.svelte";
-import { resolveAutoExtension } from "@/lib/utils/containers";
 import { resolveOutputExtensionForFormats } from "@/lib/youtube/align-formats-to-container";
+import { resolveAutoContainer } from "@/lib/youtube/auto-container";
 import { formatVideoQualityLabel } from "@/lib/youtube/video-helpers";
 import { ProgressType, type Prettify, type VideoData } from "@/types";
 
@@ -64,9 +64,11 @@ export function buildButtonTooltip({
   const currentOptions = CONTENT_OPTIONS;
   const [primaryVideoFormat] = videoData.videoFormats;
   const [primaryAudioFormat] = videoData.audioFormats;
-  const resolvedContainerExtension = resolveAutoExtension({
+  const resolvedContainerExtension = resolveAutoContainer({
     extension: currentOptions.ext.video,
-    mimeType: primaryVideoFormat?.mimeType ?? ""
+    videoData,
+    sourceMimeType: primaryVideoFormat?.mimeType ?? "",
+    codecPreferences: currentOptions
   });
   const isBothFormatsPresent = !!primaryVideoFormat && !!primaryAudioFormat;
   const containerExtension = isBothFormatsPresent

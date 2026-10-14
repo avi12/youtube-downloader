@@ -346,7 +346,9 @@ export function createPanelState(getVideoData: () => VideoData) {
       const result = applyDownloadTypeChange({
         newType: downloadType,
         selectedVideoFormat,
-        selectedAudioFormat
+        selectedAudioFormat,
+        videoData: getVideoData(),
+        codecPreferences
       });
       applyExtension(result.extension);
     });
@@ -391,7 +393,9 @@ export function createPanelState(getVideoData: () => VideoData) {
     const result = applyDownloadTypeChange({
       newType,
       selectedVideoFormat,
-      selectedAudioFormat
+      selectedAudioFormat,
+      videoData: getVideoData(),
+      codecPreferences
     });
     downloadType = result.downloadType;
     applyExtension(result.extension);
