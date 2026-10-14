@@ -4,6 +4,8 @@
   import SettingsDropDown from "../ui/SettingsDropDown.svelte";
   import SettingsGroup from "../ui/SettingsGroup.svelte";
   import { setOption } from "@/lib/storage/storage";
+  import { findChoice } from "@/lib/utils/choices";
+  import { MAX_FRAME_RATE_CHOICES } from "@/lib/youtube/select-video-quality";
   import { VIDEO_QUALITIES } from "@/lib/youtube/video-helpers";
   import { VideoQualityMode } from "@/types";
   import { slide } from "svelte/transition";
@@ -118,6 +120,27 @@
       {/if}
     {/each}
   </fieldset>
+  {#if options.videoQualityMode !== VideoQualityMode.CurrentQuality}
+    <div transition:slide={{ duration: slideDuration }}>
+      <SettingsDropDown
+        currentValue={options.maxFrameRate}
+        displayValue={findChoice(MAX_FRAME_RATE_CHOICES, options.maxFrameRate)?.label ?? options.maxFrameRate}
+        items={MAX_FRAME_RATE_CHOICES}
+        label="Max frame rate"
+        onSelect={selected => {
+          const choice = findChoice(MAX_FRAME_RATE_CHOICES, selected);
+          if (choice) {
+            void setOption({
+              key: "maxFrameRate",
+              value: choice.value
+            });
+          }
+        }}
+        {slideDuration}
+        subtitle="Falls back when a video has nothing under it"
+      />
+    </div>
+  {/if}
 </SettingsGroup>
 
 <style>
