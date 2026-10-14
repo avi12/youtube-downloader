@@ -83,6 +83,7 @@ export interface PageMessengerSchema {
     audioItag?: number;
     audioTrackId?: string;
     codecPreferences?: CodecPreferences;
+    downloadType?: DownloadType;
   }): void;
   [CrossWorldMessage.RequestVideoData](data: { videoId: string }): void;
   [CrossWorldMessage.ProxyFetch](data: {

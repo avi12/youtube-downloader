@@ -7,6 +7,7 @@ import {
   resolveAutoExtension
 } from "@/lib/utils/containers";
 import { resolveOutputExtensionForFormats } from "@/lib/youtube/align-formats-to-container";
+import { resolveDownloadType } from "@/lib/youtube/download-type";
 import { selectPreferredAudioFormat } from "@/lib/youtube/video-helpers";
 import { DownloadType, type VideoData } from "@/types";
 
@@ -71,8 +72,13 @@ function resolveVideoExtension(videoData: VideoData, preferredAudio: PreferredAu
   return isMultiTrackSupported ? extension : MKV_EXTENSION;
 }
 
-function resolveOutputExtension(videoData: VideoData, preferredAudio: PreferredAudioFormat) {
-  if (videoData.isMusic) {
+function resolveOutputExtension({ videoData, preferredAudio, downloadType }: {
+  videoData: VideoData;
+  preferredAudio: PreferredAudioFormat;
+  downloadType: DownloadType;
+}) {
+  const isAudioDownload = downloadType === DownloadType.Audio;
+  if (isAudioDownload) {
     return resolveAutoExtension({
       extension: CONTENT_OPTIONS.ext.audio,
       mimeType: preferredAudio?.mimeType ?? DEFAULT_AUDIO_MIME_TYPE,
@@ -94,9 +100,16 @@ function resolveInitialItags(videoData: VideoData, preferredAudio: PreferredAudi
 
 export function buildInitialDownloadState(videoData: VideoData) {
   const preferredAudio = getPreferredAudioFormat(videoData);
-  const extension = resolveOutputExtension(videoData, preferredAudio);
+  const downloadType = resolveDownloadType({
+    preference: CONTENT_OPTIONS.defaultDownloadType,
+    isMusic: videoData.isMusic
+  });
+  const extension = resolveOutputExtension({
+    videoData,
+    preferredAudio,
+    downloadType
+  });
   const filename = getCompatibleFilename(`${videoData.title || videoData.videoId}.${extension}`);
-  const downloadType = videoData.isMusic ? DownloadType.Audio : DownloadType.VideoAndAudio;
 
   return {
     ...resolveInitialItags(videoData, preferredAudio),

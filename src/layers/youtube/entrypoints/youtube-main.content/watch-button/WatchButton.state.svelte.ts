@@ -7,7 +7,7 @@ import { createMessageEffects } from "./WatchButton.message-effects.svelte";
 import { createPanelEffects } from "./WatchButton.panel-effects.svelte";
 import { interruptedDownloadStore, statusProgressSignal } from "@/lib/ui/synced-stores.svelte";
 import { calculateWeightedProgress } from "@/lib/youtube/video-helpers";
-import { type CodecPreferences, type VideoData, type YtButtonViewModelElement } from "@/types";
+import { type CodecPreferences, type DownloadType, type VideoData, type YtButtonViewModelElement } from "@/types";
 import { untrack } from "svelte";
 
 const PERCENT_COMPLETE = 100;
@@ -46,7 +46,7 @@ export function createWatchButtonState(params: {
   let defaultCodecPreferences = $state<CodecPreferences>();
   let defaultFilename = $state(initial.filename);
   let defaultQuality = $state(initial.quality);
-  const defaultDownloadType = initial.downloadType;
+  let defaultDownloadType = $state<DownloadType>(initial.downloadType);
 
   let elGroup = $state<HTMLDivElement | null>(null);
   let elDownloadButton = $state<YtButtonViewModelElement | null>(null);
@@ -149,6 +149,9 @@ export function createWatchButtonState(params: {
       },
       setDefaultCodecPreferences(value) {
         defaultCodecPreferences = value;
+      },
+      setDefaultDownloadType(value) {
+        defaultDownloadType = value;
       }
     },
     getElDropdown: () => params.elDropdown

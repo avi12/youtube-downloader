@@ -1,5 +1,5 @@
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
-import type { CodecPreferences, Prettify, TpYtIronDropdownElement } from "@/types";
+import type { CodecPreferences, DownloadType, Prettify, TpYtIronDropdownElement } from "@/types";
 
 export type MessageEffectsSetters = Prettify<{
   setDefaultFilename(value: string): void;
@@ -8,6 +8,7 @@ export type MessageEffectsSetters = Prettify<{
   setDefaultAudioItag(value: number): void;
   setDefaultAudioTrackId(value: string | undefined): void;
   setDefaultCodecPreferences(value: CodecPreferences | undefined): void;
+  setDefaultDownloadType(value: DownloadType): void;
 }>;
 
 type CreateMessageEffectsParams = Prettify<{
@@ -49,5 +50,10 @@ export function createMessageEffects({
     }
 
     setters.setDefaultCodecPreferences(data.codecPreferences);
+
+    const isDownloadTypePresent = data.downloadType !== undefined;
+    if (isDownloadTypePresent) {
+      setters.setDefaultDownloadType(data.downloadType!);
+    }
   }));
 }

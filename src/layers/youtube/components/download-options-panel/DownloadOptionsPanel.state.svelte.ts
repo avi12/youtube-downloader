@@ -257,7 +257,8 @@ export function createPanelState(getVideoData: () => VideoData) {
       videoItag: selectedVideoFormat?.itag,
       audioItag: selectedAudioFormat?.itag,
       audioTrackId: selectedAudioFormat?.audioTrack?.id,
-      codecPreferences: $state.snapshot(codecPreferences)
+      codecPreferences: $state.snapshot(codecPreferences),
+      downloadType
     });
   });
 
