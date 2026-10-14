@@ -6,13 +6,17 @@ declare module "web-ext-run" {
     keepProfileChanges?: boolean;
     firefoxProfile?: string;
     chromiumProfile?: string;
+    chromiumBinary?: string;
     args?: string[];
+    // Firefox prefs merged into the profile at launch
+    pref?: Record<string, boolean | number | string>;
     noReload?: boolean;
     noInput?: boolean;
   }
 
   interface RunResult {
     reloadAllExtensions(): Promise<void>;
+    registerCleanup(callback: () => void): void;
     exit(): Promise<void>;
   }
 
