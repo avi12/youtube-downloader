@@ -33,7 +33,7 @@
     "@webext-core/messaging": "^4.0.0",
     "fflate": "^0.8.3",
     "googlevideo": "^4.1.1",
-    "zod": "^4.6.5"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
