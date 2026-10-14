@@ -33,6 +33,7 @@ export {
   CaptionLanguageMode,
   DownloadType,
   DynamicRangePreference,
+  MaxFrameRate,
   PlaylistDownloadMode,
   PlaylistOutputMode,
   ProgressType,

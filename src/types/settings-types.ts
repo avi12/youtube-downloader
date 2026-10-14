@@ -4,6 +4,7 @@ import type {
   CaptionLanguageMode,
   DownloadType,
   DynamicRangePreference,
+  MaxFrameRate,
   PlaylistDownloadMode,
   PlaylistOutputMode,
   VideoCodecPreference,
@@ -55,6 +56,7 @@ export type Options = Prettify<{
   defaultDownloadType: DownloadTypePreference;
   videoQualityMode: VideoQualityMode;
   videoQuality: number;
+  maxFrameRate: MaxFrameRate;
   enhancedBitrate: boolean;
   videoCodec: VideoCodecPreference;
   audioCodec: AudioCodecPreference;

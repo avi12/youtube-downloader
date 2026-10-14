@@ -32,6 +32,14 @@ export const DynamicRangePreference = {
 
 export type DynamicRangePreference = (typeof DynamicRangePreference)[keyof typeof DynamicRangePreference];
 
+export const MaxFrameRate = {
+  Any: "any",
+  Fps60: "60",
+  Fps30: "30"
+} as const;
+
+export type MaxFrameRate = (typeof MaxFrameRate)[keyof typeof MaxFrameRate];
+
 export const ProgressType = {
   Video: "video",
   Audio: "audio",
