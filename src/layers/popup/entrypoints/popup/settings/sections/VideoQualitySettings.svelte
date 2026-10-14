@@ -3,6 +3,7 @@
   import type { SlidingSettingsProps } from "../settings-props";
   import SettingsDropDown from "../ui/SettingsDropDown.svelte";
   import SettingsGroup from "../ui/SettingsGroup.svelte";
+  import SettingsSwitch from "../ui/SettingsSwitch.svelte";
   import { setOption } from "@/lib/storage/storage";
   import { findChoice } from "@/lib/utils/choices";
   import { MAX_FRAME_RATE_CHOICES } from "@/lib/youtube/select-video-quality";
@@ -79,25 +80,15 @@
               </span>
               <span class="enhanced-bitrate-desc">Grab the higher-bitrate stream whenever YouTube offers it</span>
             </div>
-            <span class="set-switch">
-              <input
-                class="set-switch-input"
-                checked={options.enhancedBitrate}
-                onchange={e => {
-                  if (!(e.target instanceof HTMLInputElement)) {
-                    return;
-                  }
-
-                  void setOption({
-                    key: "enhancedBitrate",
-                    value: e.target.checked
-                  });
-                }}
-                role="switch"
-                type="checkbox"
-              />
-              <span class="set-switch-track"></span>
-            </span>
+            <SettingsSwitch
+              isChecked={options.enhancedBitrate}
+              onchange={isChecked => {
+                void setOption({
+                  key: "enhancedBitrate",
+                  value: isChecked
+                });
+              }}
+            />
           </label>
         </div>
       {/if}
@@ -284,63 +275,6 @@
     :global(svg) {
       width: 12px;
       height: 12px;
-    }
-  }
-
-  .set-switch {
-    position: relative;
-    display: inline-flex;
-    flex-shrink: 0;
-  }
-
-  .set-switch-track {
-    position: relative;
-    display: block;
-    width: 52px;
-    height: 32px;
-    border-radius: 16px;
-    background-color: var(--surface-high);
-    box-shadow: inset 0 0 0 2px var(--fg-subtle);
-    cursor: pointer;
-    transition: background-color 250ms, box-shadow 250ms;
-
-    &::after {
-      content: "";
-      position: absolute;
-      top: 50%;
-      left: 16px;
-      width: 16px;
-      height: 16px;
-      border-radius: 50%;
-      background-color: var(--fg-subtle);
-      transition:
-        translate 300ms cubic-bezier(0.34, 1.56, 0.64, 1),
-        scale 300ms cubic-bezier(0.34, 1.56, 0.64, 1),
-        background-color 200ms;
-      translate: -50% -50%;
-    }
-  }
-
-  .set-switch-input {
-    position: absolute;
-    width: 0;
-    height: 0;
-    opacity: 0%;
-
-    &:checked + .set-switch-track {
-      background-color: var(--accent);
-      box-shadow: inset 0 0 0 2px var(--accent);
-    }
-
-    &:checked + .set-switch-track::after {
-      background-color: var(--on-primary);
-      scale: 1.5;
-      translate: calc(-50% + 22px) -50%;
-    }
-
-    &:focus-visible + .set-switch-track {
-      outline: 2px solid var(--accent);
-      outline-offset: 2px;
     }
   }
 </style>
