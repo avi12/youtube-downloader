@@ -47,7 +47,8 @@ export function buildDownloadRequest({
     audioItag: data.audioFormats[0]?.itag ?? 0,
     filenameOutput: resolveVideoFilename({
       videoData: data,
-      options
+      options,
+      downloadType
     }),
     ...(isZipBundle && {
       playlistId,

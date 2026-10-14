@@ -1,6 +1,6 @@
 import { resolveAutoExtension } from "./mime-types";
 import { resolveOutputExtensionForFormats } from "@/lib/youtube/align-formats-to-container";
-import type { Options, VideoData } from "@/types";
+import { DownloadType, type Options, type VideoData } from "@/types";
 
 export function getCompatibleFilename(filename: string) {
   return filename.replaceAll(/[<>:"\\/|?*`]/g, "");
@@ -36,21 +36,23 @@ export function splitFilenameAndExtension(filename: string) {
   };
 }
 
-export function resolveVideoFilename({ videoData, options, titleOverride }: {
+export function resolveVideoFilename({ videoData, options, downloadType, titleOverride }: {
   videoData: VideoData;
   options: Options;
+  downloadType: DownloadType;
   titleOverride?: string;
 }) {
   const [videoFormat = null] = videoData.videoFormats;
   const [audioFormat = null] = videoData.audioFormats;
-  const extensionPreference = videoData.isMusic ? options.ext.audio : options.ext.video;
-  const defaultFormat = videoData.isMusic ? audioFormat : videoFormat;
+  const isAudioDownload = downloadType === DownloadType.Audio;
+  const extensionPreference = isAudioDownload ? options.ext.audio : options.ext.video;
+  const defaultFormat = isAudioDownload ? audioFormat : videoFormat;
   const resolvedExtension = resolveAutoExtension({
     extension: extensionPreference,
     mimeType: defaultFormat?.mimeType ?? "",
-    isAudio: videoData.isMusic
+    isAudio: isAudioDownload
   });
-  const outputExtension = videoFormat && audioFormat && !videoData.isMusic
+  const outputExtension = videoFormat && audioFormat && !isAudioDownload
     ? resolveOutputExtensionForFormats({
       videoData,
       videoFormat,

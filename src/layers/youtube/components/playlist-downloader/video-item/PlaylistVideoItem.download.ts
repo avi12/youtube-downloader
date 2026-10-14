@@ -25,6 +25,7 @@ export function triggerDownload({ videoData, videoId, gridTitle, setLocallyDone 
   const filenameOutput = resolveVideoFilename({
     videoData,
     options,
+    downloadType,
     titleOverride: gridTitle
   });
 

@@ -2,7 +2,7 @@ import { getPreferredMusicAudioFormat } from "./panel-init-audio";
 import { getCompatibleFilename, hasVisibleContent, resolveAutoExtension } from "@/lib/utils/containers";
 import { resolveDownloadType } from "@/lib/youtube/download-type";
 import { filterVideoFormatsByEnhancedBitrate } from "@/lib/youtube/format-display";
-import type { Options, Prettify, VideoData } from "@/types";
+import { DownloadType, type Options, type Prettify, type VideoData } from "@/types";
 
 export { IS_WATCH_PAGE } from "./panel-init-audio";
 export {
@@ -28,8 +28,13 @@ export function resolveInitialDownloadType({ options, videoData }: OptionsVideoD
   });
 }
 
-export function resolveInitialExtension({ options, videoData }: OptionsVideoDataParams) {
-  if (videoData.isMusic) {
+// Follows the download type, not whether the video is music: a music video set to
+// "Always video + audio" still needs a video container (issue #21)
+export function resolveInitialExtension({ options, videoData, downloadType }: OptionsVideoDataParams & {
+  downloadType: DownloadType;
+}) {
+  const isAudioDownload = downloadType === DownloadType.Audio;
+  if (isAudioDownload) {
     const defaultFormat = getPreferredMusicAudioFormat(videoData.audioFormats);
     return resolveAutoExtension({
       extension: options.ext.audio,

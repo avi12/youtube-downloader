@@ -73,7 +73,8 @@ export function createPanelState(getVideoData: () => VideoData) {
   let extension = $state(
     untrack(() => resolveInitialExtension({
       options: CONTENT_OPTIONS,
-      videoData: getVideoData()
+      videoData: getVideoData(),
+      downloadType
     }))
   );
   let selectedVideoFormat = $state<AdaptiveFormatItem | null>(

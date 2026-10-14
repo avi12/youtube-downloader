@@ -193,7 +193,8 @@ function buildPlaylistGridRequest({
     audioTrackId: audioFormat?.audioTrack?.id,
     filenameOutput: resolveVideoFilename({
       videoData: data,
-      options
+      options,
+      downloadType
     }),
     downloadExtras: false,
     downloadExtraCaptions: true,
