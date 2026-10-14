@@ -3,9 +3,10 @@ import type { AdaptiveFormatItem, Prettify, SabrConfig } from "@/types";
 import { SabrStream } from "googlevideo/sabr-stream";
 import { buildSabrFormat, Logger, LogLevel } from "googlevideo/utils";
 
-// SabrStream logs every failed segment as an error, but callers recover (CDN fallback, re-priming)
-// and log the ones they can't - keep its warnings only, so recovered downloads don't look broken
-Logger.getInstance().setLogLevels(LogLevel.WARN);
+// SabrStream logs every retried segment, but it retries on its own and callers recover the rest
+// (CDN fallback, re-priming) and log what they can't, so its own logs only make working
+// downloads look broken (issue #21)
+Logger.getInstance().setLogLevels(LogLevel.NONE);
 
 export type SabrStreamResult = Prettify<{
   data: Uint8Array;
