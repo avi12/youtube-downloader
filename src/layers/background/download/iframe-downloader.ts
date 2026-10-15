@@ -37,11 +37,13 @@ export function initIframeReadyListener() {
 export async function prepareIframe(data: DownloadRequest) {
   await ensureProcessor();
 
+  // Mobile user agents get redirected to m.youtube.com, where no content script runs
   const watchParams = new URLSearchParams({
     v: data.videoId,
     ytdl: "1",
     mute: "1",
-    autoplay: "1"
+    autoplay: "1",
+    app: "desktop"
   });
   const watchUrl = `${WATCH_PAGE_URL}?${watchParams.toString()}`;
 
