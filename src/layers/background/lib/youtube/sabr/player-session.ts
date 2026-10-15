@@ -51,9 +51,14 @@ type GetPlayerSessionParams = Prettify<{
   tabId: number;
   videoId: string;
 }>;
+// Any tab playing the video can lend its session - the mobile site has no content script of its own
 function getPlayerSession({ tabId, videoId }: GetPlayerSessionParams) {
-  const session = sessionsByTab.get(tabId);
-  return session?.videoId === videoId ? session : null;
+  const ownSession = sessionsByTab.get(tabId);
+  if (ownSession?.videoId === videoId) {
+    return ownSession;
+  }
+
+  return sessionsByTab.values().find(session => session.videoId === videoId) ?? null;
 }
 
 export function clearPlayerSession(tabId: number) {
