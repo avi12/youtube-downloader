@@ -5,7 +5,7 @@
   import {
     createDownloadOptionsState,
     type DownloadOptionsProps
-  } from "@/lib/download-options/DownloadOptions.state.svelte";
+  } from "@/lib/download-options/DownloadOptions.state.svelte.ts";
   import { MULTI_TRACK_UNSUPPORTED_EXTENSIONS } from "@/lib/utils/containers";
   import { PanelTrackMode } from "@/types";
   import type { AdaptiveFormatItem, CaptionTrack } from "@/types";

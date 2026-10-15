@@ -1,7 +1,7 @@
 <script lang="ts">
   import { crossWorldMessenger, CrossWorldMessage, onButtonClick } from "@/lib/messaging/cross-world-messenger";
   import { MessageType, sendMessage } from "@/lib/messaging/messaging";
-  import { completedDownloadsStore } from "@/lib/ui/completed-downloads-store.svelte";
+  import { completedDownloadsStore } from "@/lib/ui/completed-downloads-store.svelte.ts";
   import { attachIcon } from "@/lib/ui/polymer-utils";
   import { YtIconName } from "@/types";
 
