@@ -18,7 +18,7 @@ import {
 } from "./helpers/panel-init";
 import { resolveActualExtension, resolvePrimaryState, resolveQualityLabel } from "./helpers/panel-state-derived";
 import { syncAudioFromFormat } from "./helpers/player-active-tracks.svelte";
-import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
+import type { PanelHost } from "./panel-host";
 import { CONTENT_OPTIONS, interruptedDownloadStore, statusProgressSignal } from "@/lib/ui/synced-stores.svelte";
 import { getCompatibleFilename, isAudioMimeNativeForContainer, resolveAutoExtension } from "@/lib/utils/containers";
 import { pinAudioCodecPreferences, pinVideoCodecPreferences } from "@/lib/youtube/align-formats-to-container";
@@ -53,7 +53,7 @@ const BYTES_PER_KILOBYTE = 1024;
 const BYTES_PER_MEGABYTE = BYTES_PER_KILOBYTE * 1024;
 const BYTES_PER_GIGABYTE = BYTES_PER_MEGABYTE * 1024;
 
-export function createPanelState(getVideoData: () => VideoData) {
+export function createPanelState(getVideoData: () => VideoData, host: PanelHost) {
   const store = createDownloadStoreState(getVideoData);
 
   let downloadId = $state<number | null>(null);
@@ -205,7 +205,12 @@ export function createPanelState(getVideoData: () => VideoData) {
     };
     let isCurrentRequest = true;
     sizeInputs = null;
-    crossWorldMessenger.sendMessage(CrossWorldMessage.MeasureSizeInputs, request)
+
+    if (!host.measureSizeInputs) {
+      return;
+    }
+
+    host.measureSizeInputs(request)
       .then(inputs => {
         if (isCurrentRequest) {
           sizeInputs = inputs;
@@ -251,7 +256,7 @@ export function createPanelState(getVideoData: () => VideoData) {
   });
 
   $effect(() => {
-    void crossWorldMessenger.sendMessage(CrossWorldMessage.FilenameChanged, {
+    host.announceSelection?.({
       filename: fullFilename,
       quality: qualityLabel,
       videoItag: selectedVideoFormat?.itag,
@@ -413,7 +418,8 @@ export function createPanelState(getVideoData: () => VideoData) {
       isDownloadable,
       isFilenameValid,
       fullFilename,
-      videoData: getVideoData()
+      videoData: getVideoData(),
+      host
     });
   }
 

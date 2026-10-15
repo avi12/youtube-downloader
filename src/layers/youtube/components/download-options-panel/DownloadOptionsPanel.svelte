@@ -10,6 +10,7 @@
     VIEW_BUTTON_ID
   } from "./DownloadOptionsPanel.handlers.ts";
   import DownloadOptionsPanelFooter from "./DownloadOptionsPanelFooter.svelte";
+  import { PAGE_PANEL_HOST } from "./page-panel-host";
   import { createPanelState } from "@/lib/download-options/DownloadOptionsPanel.state.svelte.ts";
   import type { VideoData } from "@/types";
   import { attachCloseButton } from "#youtube/lib/ui/panel-button-attachments.svelte";
@@ -22,7 +23,7 @@
 
   const props: Props = $props();
 
-  const panel = createPanelState(() => props.videoData);
+  const panel = createPanelState(() => props.videoData, PAGE_PANEL_HOST);
   const focusManager = createFocusManager();
 
   function closePanel(): void {

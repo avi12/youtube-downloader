@@ -1,5 +1,5 @@
 import { PANEL_OPTIONS } from "../DownloadOptions.state.svelte";
-import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
+import type { PanelHost } from "../panel-host";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { performCancelDownload } from "@/lib/ui/cancel-download";
 import { interruptedDownloadStore } from "@/lib/ui/synced-stores.svelte";
@@ -59,13 +59,15 @@ function buildStartDownloadParams(params: BuildDownloadPlanParamsParams & {
   };
 }
 
-export function sendStartDownload(params: Parameters<typeof buildStartDownloadParams>[0]) {
+export function sendStartDownload({ host, ...params }: Parameters<typeof buildStartDownloadParams>[0] & {
+  host: PanelHost;
+}) {
   const payload = buildStartDownloadParams(params);
   if (!payload) {
     return;
   }
 
-  crossWorldMessenger.sendMessage(CrossWorldMessage.DownloadRequest, payload).catch(() => {});
+  host.requestDownload(payload);
 }
 
 export function sendCancelDownload(videoId: string) {
