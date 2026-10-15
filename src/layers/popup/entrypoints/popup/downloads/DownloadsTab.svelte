@@ -125,6 +125,14 @@
   let isStartingWatchDownload = $state(false);
   let isOptionsOpen = $state(false);
 
+  // Listing the video hides its buttons, so they come back enabled for another pick once it's done
+  $effect(() => {
+    const isMobileVideoListed = mobileVideoId !== null && allActiveIds.includes(mobileVideoId);
+    if (isMobileVideoListed) {
+      isStartingWatchDownload = false;
+    }
+  });
+
   function handleOptionsRequested(): void {
     isOptionsOpen = false;
     isStartingWatchDownload = true;
