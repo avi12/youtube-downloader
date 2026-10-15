@@ -32,6 +32,7 @@ export type DownloadRequest = Prettify<{
   downloadExtraCaptions?: boolean;
   includeAutoDubbing?: boolean;
   isIframeFallback?: boolean;
+  isDefaultFormat?: boolean;
   playlistId?: string;
   playlistTitle?: string;
   playlistTotalCount?: number;
