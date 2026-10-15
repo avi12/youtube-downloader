@@ -1,6 +1,11 @@
 import type { Prettify } from "./prettify";
 import type { PlayabilityStatus } from "./youtube-format-enums";
-import type { FormatItem, AdaptiveFormatItem, CaptionTrack, TranslationLanguage } from "./youtube-format-types";
+import type {
+  AdaptiveFormatItem,
+  FormatItem,
+  PlayerCaptionTrack,
+  PlayerTranslationLanguage
+} from "./youtube-format-types";
 
 /** @see https://github.com/LuanRT/YouTube.js/blob/main/src/parser/types/ParsedResponse.ts */
 export type PlayerResponse = Prettify<{
@@ -60,8 +65,8 @@ export type PlayerResponse = Prettify<{
   };
   captions?: {
     playerCaptionsTracklistRenderer: {
-      captionTracks: CaptionTrack[];
-      translationLanguages?: TranslationLanguage[];
+      captionTracks: PlayerCaptionTrack[];
+      translationLanguages?: PlayerTranslationLanguage[];
     };
   };
 }>;

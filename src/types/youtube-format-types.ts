@@ -102,3 +102,17 @@ export type CaptionTrack = Prettify<{
   translationLanguageCode?: string;
   sourceTrackVssId?: string;
 }>;
+
+// The desktop site sends plain text, the mobile site sends the same text as runs
+export type PlayerText = Prettify<{
+  simpleText?: string;
+  runs?: { text: string }[];
+}>;
+
+export type PlayerCaptionTrack = Prettify<Omit<CaptionTrack, "name"> & {
+  name: PlayerText;
+}>;
+
+export type PlayerTranslationLanguage = Prettify<Omit<TranslationLanguage, "languageName"> & {
+  languageName: PlayerText;
+}>;

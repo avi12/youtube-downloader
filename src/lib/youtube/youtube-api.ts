@@ -2,9 +2,14 @@ import { byQualityDesc, getUniqueVideoFormats, getAudioFormats, getVideoFormatVa
 import { playerResponseSchema } from "@/lib/youtube/schemas";
 import { isVideoDownloadable, isVideoLive, isVideoMusic } from "@/lib/youtube/video-helpers";
 import type { PlayerResponse, Prettify } from "@/types";
+import type { PlayerText } from "@/types/youtube";
 
 const PROGRESSIVE_ITAG_PRIORITY = [22, 18] as const;
 const YT_INITIAL_PLAYER_RESPONSE_PATTERN = /var ytInitialPlayerResponse\s*=\s*(.+?);\s*(?:var\s|<\/script>)/s;
+
+function readPlayerText({ simpleText, runs }: PlayerText) {
+  return simpleText ?? runs?.map(run => run.text).join("") ?? "";
+}
 
 function extractProgressiveUrl(playerResponse: PlayerResponse) {
   const formats = playerResponse.streamingData?.formats ?? [];
@@ -51,8 +56,18 @@ export function buildVideoData({ playerResponse, clientVersion, clientName }: Vi
 
   const { videoDetails } = playerResponse;
   const captionsRenderer = playerResponse.captions?.playerCaptionsTracklistRenderer;
-  const allCaptionTracks = captionsRenderer?.captionTracks ?? [];
-  const translationLanguages = captionsRenderer?.translationLanguages ?? [];
+  const allCaptionTracks = (captionsRenderer?.captionTracks ?? []).map(track => ({
+    ...track,
+    name: {
+      simpleText: readPlayerText(track.name)
+    }
+  }));
+  const translationLanguages = (captionsRenderer?.translationLanguages ?? []).map(language => ({
+    ...language,
+    languageName: {
+      simpleText: readPlayerText(language.languageName)
+    }
+  }));
   return {
     playerResponse,
     videoId: videoDetails?.videoId ?? "",
