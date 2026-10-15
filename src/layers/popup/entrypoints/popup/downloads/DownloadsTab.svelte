@@ -1,4 +1,5 @@
 <script lang="ts">
+  import DownloadOptionsCard from "../download-options/DownloadOptionsCard.svelte";
   import downloadIcon from "../icons/download.svg?raw";
   import sparkleIcon from "../icons/sparkle.svg?raw";
   import ActiveDownloadsSections from "./ActiveDownloadsSections.svelte";
@@ -11,7 +12,13 @@
   import { createLogger, LogScope } from "@/lib/utils/logger";
   import { getVideoIdFromUrl, isMobileWatchPageUrl, isWatchPageUrl } from "@/lib/youtube/youtube-url";
   import { ProgressType } from "@/types";
-  import type { DownloadProgressEntry, RecentDownloadEntry, VideoDetail, VideoQueueItem } from "@/types";
+  import type {
+    DownloadProgressEntry,
+    Options,
+    RecentDownloadEntry,
+    VideoDetail,
+    VideoQueueItem
+  } from "@/types";
   import { browser } from "#imports";
 
   const log = createLogger(LogScope.Popup);
@@ -29,6 +36,7 @@
     currentTabId?: number;
     currentSourceUrl?: string;
     pendingFormatChangeId: string | null;
+    options: Options;
     onCancel: (videoIds: string[]) => void;
     onChangeFormat: (entry: RecentDownloadEntry) => void;
     onRecentChanged: () => void;
@@ -37,7 +45,7 @@
   const {
     isFFmpegReady, videoDownloads, musicList, videoOnlyList, videoDetails,
     statusProgress, percentFormatter, recentDownloads, now,
-    currentTabId, currentSourceUrl, pendingFormatChangeId,
+    currentTabId, currentSourceUrl, pendingFormatChangeId, options,
     onCancel, onChangeFormat, onRecentChanged
   }: Props = $props();
 
@@ -115,6 +123,12 @@
   // The mobile site has no in-page button, so the popup is the only way to start its download
   const isMobileDownloadOffered = $derived(mobileVideoId !== null && !allActiveIds.includes(mobileVideoId));
   let isStartingWatchDownload = $state(false);
+  let isOptionsOpen = $state(false);
+
+  function handleOptionsRequested(): void {
+    isOptionsOpen = false;
+    isStartingWatchDownload = true;
+  }
 
   async function handleStartWatchDownload(): Promise<void> {
     if (currentTabId === undefined) {
@@ -153,6 +167,45 @@
   }
 </script>
 
+{#snippet chevronIcon()}
+  <svg
+    fill="none"
+    stroke="currentColor"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    stroke-width="2"
+    viewBox="0 0 24 24"
+  >
+    <path d="m6 9 6 6 6-6" />
+  </svg>
+{/snippet}
+
+{#snippet optionsToggle(className: string)}
+  <button
+    class={className}
+    aria-controls="download-options-card"
+    aria-expanded={isOptionsOpen}
+    aria-label="Download options"
+    disabled={isStartingWatchDownload}
+    onclick={() => (isOptionsOpen = !isOptionsOpen)}
+    type="button"
+  >
+    {@render chevronIcon()}
+  </button>
+{/snippet}
+
+{#snippet optionsCard()}
+  {#if isOptionsOpen && mobileVideoId !== null && currentTabId !== undefined && currentSourceUrl !== undefined}
+    <DownloadOptionsCard
+      onRequested={handleOptionsRequested}
+      {options}
+      sourceUrl={currentSourceUrl}
+      tabId={currentTabId}
+      videoId={mobileVideoId}
+    />
+  {/if}
+{/snippet}
+
 {#if !isAnyContentAvailable}
   <section class="empty-state">
     <div class="empty-state-icon-box">
@@ -181,20 +234,16 @@
             Download
           </span>
         {/if}
-        <span class="youtube-download-pill-chevron" aria-hidden="true">
-          <svg
-            fill="none"
-            stroke="currentColor"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-            stroke-width="2"
-            viewBox="0 0 24 24"
-          >
-            <path d="m6 9 6 6 6-6" />
-          </svg>
-        </span>
+        {#if isMobileDownloadOffered}
+          {@render optionsToggle("youtube-download-pill-chevron youtube-download-pill-toggle")}
+        {:else}
+          <span class="youtube-download-pill-chevron" aria-hidden="true">
+            {@render chevronIcon()}
+          </span>
+        {/if}
       </span>
     </div>
+    {@render optionsCard()}
     <div class="empty-state-hint">
       {@html sparkleIcon}
       Tip: pick formats, quality &amp; languages in Settings
@@ -203,15 +252,19 @@
 {:else}
   <div class="download-sections">
     {#if isMobileDownloadOffered}
-      <button
-        class="mobile-download-button"
-        disabled={isStartingWatchDownload}
-        onclick={handleStartWatchDownload}
-        type="button"
-      >
-        {@html downloadIcon}
-        Download this video
-      </button>
+      <div class="mobile-download">
+        <button
+          class="mobile-download-button"
+          disabled={isStartingWatchDownload}
+          onclick={handleStartWatchDownload}
+          type="button"
+        >
+          {@html downloadIcon}
+          Download this video
+        </button>
+        {@render optionsToggle("mobile-download-toggle")}
+      </div>
+      {@render optionsCard()}
     {/if}
     {#if totalActiveDownloads > 0}
       <div class="dl-banner" role="status">
@@ -342,11 +395,10 @@
       padding-inline: 12px 10px;
     }
 
-    .youtube-download-pill-button {
+    .youtube-download-pill-button,
+    .youtube-download-pill-toggle {
       align-self: stretch;
       border: none;
-      border-end-start-radius: 999px;
-      border-start-start-radius: 999px;
       background: transparent;
       color: inherit;
       font: inherit;
@@ -372,12 +424,28 @@
       }
     }
 
+    .youtube-download-pill-button {
+      border-end-start-radius: 999px;
+      border-start-start-radius: 999px;
+    }
+
     .youtube-download-pill-chevron {
       display: inline-flex;
       align-items: center;
       height: 20px;
       padding-inline: 6px 8px;
       border-inline-start: 1px solid color-mix(in oklab, var(--fg) 25%, transparent);
+    }
+
+    .youtube-download-pill-toggle {
+      height: auto;
+      border-end-end-radius: 999px;
+      border-start-end-radius: 999px;
+    }
+
+    :global(#download-options-card) {
+      align-self: stretch;
+      text-align: start;
     }
 
     .empty-state-hint {
@@ -405,14 +473,16 @@
     gap: 12px;
   }
 
-  .mobile-download-button {
+  .mobile-download {
     display: flex;
-    gap: 8px;
+  }
+
+  .mobile-download-button,
+  .mobile-download-toggle {
+    display: flex;
     justify-content: center;
     align-items: center;
-    padding: 10px 14px;
     border: none;
-    border-radius: 999px;
     background: var(--accent-container);
     color: var(--fg);
     font: inherit;
@@ -438,6 +508,32 @@
 
     &:hover:enabled {
       background: color-mix(in oklab, var(--accent) 28%, var(--accent-container));
+    }
+  }
+
+  .mobile-download-button {
+    flex: 1;
+    gap: 8px;
+    padding: 10px 14px;
+    border-end-start-radius: 999px;
+    border-start-start-radius: 999px;
+  }
+
+  .mobile-download-toggle {
+    padding-inline: 10px 14px;
+    border-inline-start: 1px solid color-mix(in oklab, var(--fg) 25%, transparent);
+    border-end-end-radius: 999px;
+    border-start-end-radius: 999px;
+  }
+
+  .youtube-download-pill-toggle,
+  .mobile-download-toggle {
+    :global(svg) {
+      transition: rotate 200ms cubic-bezier(0.2, 0, 0, 1);
+    }
+
+    &[aria-expanded="true"] :global(svg) {
+      rotate: 180deg;
     }
   }
 

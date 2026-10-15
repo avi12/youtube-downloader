@@ -26,6 +26,7 @@ const sharedPermissions: Browser.runtime.ManifestPermission[] = [
   "downloads",
   "unlimitedStorage",
   "notifications",
+  "scripting",
   "declarativeNetRequestWithHostAccess",
   "storage",
   "tabs",

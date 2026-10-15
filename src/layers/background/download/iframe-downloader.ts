@@ -124,22 +124,33 @@ export async function downloadViaWatchPage({ data, tabId }: DownloadViaWatchPage
   }
 }
 
-// The tab has no content script, so progress goes only to the popup and the iframe resolves the formats
+type PopupDownloadData = Prettify<Pick<DownloadRequest, "videoId" | "sourceUrl">>;
+async function buildDefaultPopupRequest(data: PopupDownloadData) {
+  const { defaultDownloadType } = await optionsItem.getValue();
+  return {
+    ...data,
+    type: resolveDownloadType({
+      preference: defaultDownloadType,
+      isMusic: false
+    }),
+    videoItag: 0,
+    audioItag: 0,
+    filenameOutput: data.videoId,
+    isDefaultFormat: true
+  };
+}
+
+// The tab has no content script, so progress goes only to the popup. The popup's options panel picks
+// the formats; its plain Download button leaves them to the iframe
 export function registerPopupDownloadHandler() {
-  onMessage(MessageType.StartPopupDownload, async ({ data }) => {
-    const { defaultDownloadType } = await optionsItem.getValue();
+  onMessage(MessageType.StartPopupDownload, async ({ data: { request, ...data } }) => {
     downloadViaWatchPage({
-      data: {
-        ...data,
-        type: resolveDownloadType({
-          preference: defaultDownloadType,
-          isMusic: false
-        }),
-        videoItag: 0,
-        audioItag: 0,
-        filenameOutput: data.videoId,
-        isDefaultFormat: true
-      },
+      data: request
+        ? {
+          ...request,
+          sourceUrl: data.sourceUrl
+        }
+        : await buildDefaultPopupRequest(data),
       tabId: NO_CONTENT_SCRIPT_TAB_ID
     }).catch(() => {});
   });

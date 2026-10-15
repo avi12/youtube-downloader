@@ -306,6 +306,7 @@ export interface ProtocolMap {
   startPopupDownload(data: {
     videoId: string;
     sourceUrl: string;
+    request?: DownloadRequest;
   }): void;
 }
 

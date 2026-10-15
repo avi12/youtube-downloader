@@ -1,4 +1,4 @@
-import type { Prettify } from "@/types";
+import type { PlayerResponse, Prettify } from "@/types";
 
 export interface MoviePlayerElement extends HTMLElement {
   playVideo?: () => void;
@@ -21,6 +21,7 @@ export interface MoviePlayerElement extends HTMLElement {
     isLive?: boolean;
   };
   getVideoUrl?: () => string;
+  getPlayerResponse?: () => PlayerResponse | undefined;
   getVideoEmbedCode?: () => string;
 
   mute?: () => void;

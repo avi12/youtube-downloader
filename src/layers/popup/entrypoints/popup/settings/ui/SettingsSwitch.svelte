@@ -1,16 +1,18 @@
 <script lang="ts">
   interface Props {
     isChecked: boolean;
+    isDisabled?: boolean;
     onchange: (isChecked: boolean) => void;
   }
 
-  const { isChecked, onchange }: Props = $props();
+  const { isChecked, isDisabled = false, onchange }: Props = $props();
 </script>
 
 <span class="set-switch">
   <input
     class="set-switch-input"
     checked={isChecked}
+    disabled={isDisabled}
     onchange={e => onchange(e.currentTarget.checked)}
     role="switch"
     type="checkbox"
@@ -73,6 +75,11 @@
     &:focus-visible + .set-switch-track {
       outline: 2px solid var(--accent);
       outline-offset: 2px;
+    }
+
+    &:disabled + .set-switch-track {
+      opacity: 38%;
+      cursor: not-allowed;
     }
   }
 </style>
