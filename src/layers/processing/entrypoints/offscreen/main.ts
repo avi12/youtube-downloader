@@ -1,6 +1,7 @@
-import { fetchFFmpegCoreWasm, resolveFFmpegCoreBuild } from "./ffmpeg-wasm-source";
+import { fetchFFmpegCoreWasm } from "./ffmpeg-wasm-source";
 import { registerOffscreenMessageListeners } from "./offscreen-message-listeners";
 import { handleWorkerMessage, WORKER_MESSAGE_PREFIX, type WorkerMessage } from "./worker-message-handler";
+import { resolveFFmpegCoreBuild } from "@/lib/download-pipeline/ffmpeg-core-build";
 import { initMuxWorker } from "@/lib/download-pipeline/ffmpeg-instance";
 import { sweepOrphanedOpfsFiles } from "@/lib/download-pipeline/opfs-constants";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";

@@ -11,15 +11,6 @@ const NO_SIMD_WASM_URL = "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.0/dist/
 const NO_SIMD_WASM_SHA256 = "0a24129334f7f7afd411f2b41aca49009434fe5c31b934908b82888ba0956c03";
 const NO_SIMD_OPFS_FILENAME = "ffmpeg-core-nosimd.wasm";
 
-// Smallest module using SIMD opcodes (i8x16.splat + i8x16.popcnt), from wasm-feature-detect
-const SIMD_PROBE_MODULE = new Uint8Array([
-  0, 97, 115, 109, 1, 0, 0, 0, 1, 5, 1, 96, 0, 1, 123, 3, 2, 1, 0, 10, 10, 1, 8, 0, 65, 0, 253, 15, 253, 98, 11
-]);
-
-export function resolveFFmpegCoreBuild() {
-  return WebAssembly.validate(SIMD_PROBE_MODULE) ? FFmpegCoreBuild.Simd : FFmpegCoreBuild.NoSimd;
-}
-
 async function fetchBundledWasm() {
   const response = await fetch(browser.runtime.getURL(BUNDLED_WASM_PATH));
   return response.arrayBuffer();
