@@ -126,6 +126,7 @@ The code is organised as WXT layers under `src/layers/` — `src/layers/backgrou
 | `src/layers/background/lib/analytics/` | GA4 Measurement Protocol telemetry (active-user heartbeat + install/uninstall), fired from the BG with no host permissions. |
 | `src/lib/ui/` | Svelte 5 stores and reactive helpers shared across content scripts and popup. |
 | `src/layers/youtube/components/` | Svelte 5 components. |
+| `scripts/` | Dev server (hot-swaps content scripts into open tabs), release pipeline, and CDP/RDP debugging helpers. |
 | `wxt.config.ts` | Manifest emission, including the `declarative_net_request` ruleset reference. The rules themselves live in [`src/public/rules/strip-youtube-frame-headers.json`](src/public/rules/strip-youtube-frame-headers.json) and rewrite `Origin`/`Referer`/`Sec-Fetch` on outgoing `googlevideo.com` requests (the SW can't set them itself). |
 
 ## Architectural invariants
@@ -434,6 +435,18 @@ A download restarted immediately after cancel runs from scratch with no state in
 ### Telemetry
 
 Anonymous usage telemetry goes through GA4's Measurement Protocol from the background ([`src/layers/background/lib/analytics/`](src/layers/background/lib/analytics/ga4.ts)), chosen because it needs no `host_permissions` — the request targets `google-analytics.com`, which is not a YouTube origin, so it sits outside the extension's content-script grants. A stable per-install client id is minted once and survives local-storage clears ([`getOrCreateClientId`](src/lib/storage/storage.ts)). Active-user pings fire from a daily alarm heartbeat (not per-action), install fires once, and uninstall is captured by `setUninstallURL` pointing at a GitHub Pages beacon ([`docs/uninstall/index.html`](docs/uninstall/index.html)) whose GA4 ids are injected at deploy time by the [Pages workflow](.github/workflows/pages.yml). No video ids, titles, or URLs are ever sent.
+
+### Development loop
+
+`pnpm dev` runs [`scripts/dev-server.ts`](scripts/dev-server.ts). It rebuilds on every change under `src/`, compares the new build with the previous one file by file by content hash ([`dev-output-changes.ts`](scripts/dev-output-changes.ts)), and applies the smallest update that keeps open YouTube tabs alive:
+
+| What changed | What the dev server does |
+| --- | --- |
+| Popup, offscreen document, or a worker | Reloads the open popup and closes the offscreen document (recreated on next use) |
+| Background, ISOLATED content script, or manifest | Reloads the extension, re-injects `youtube.content` into open tabs in place, and replays the download panel's handshake, so page state survives |
+| MAIN-world content script | Reloads the extension and only the tabs that script runs in |
+
+Two browser quirks shape it. Chrome keeps the old isolated world running after an extension reload, so the dev server neutralizes it over the DevTools protocol before the new copy goes in. Firefox re-runs every declared content script on an add-on reload, so dev builds wrap each one in a run-once guard ([`dev-build-patches.ts`](scripts/dev-build-patches.ts)). MAIN-world scripts aren't hot-swapped: they patch YouTube's globals and register listeners with no teardown, so a fresh page is the only clean state. None of this ships; the `scripting` permission the re-injection needs is added to dev builds only.
 
 ## When to update this document
 
