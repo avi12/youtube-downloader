@@ -1,9 +1,9 @@
 <script lang="ts">
   import { crossWorldMessenger, CrossWorldMessage, onButtonClick } from "@/lib/messaging/cross-world-messenger";
   import { MessageType, sendMessage } from "@/lib/messaging/messaging";
+  import { completedDownloadsStore } from "@/lib/ui/completed-downloads-store.svelte";
   import { attachIcon } from "@/lib/ui/polymer-utils";
   import { YtIconName } from "@/types";
-  import { completedDownloadsStore } from "#youtube/lib/ui/completed-downloads-store.svelte";
 
   const SNACKBAR_DURATION_MS = 10_000;
   const CLOSE_ANIMATION_MS = 500;

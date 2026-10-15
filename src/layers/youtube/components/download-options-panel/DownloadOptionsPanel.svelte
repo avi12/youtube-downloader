@@ -9,8 +9,8 @@
     setupPanelButtonHandler,
     VIEW_BUTTON_ID
   } from "./DownloadOptionsPanel.handlers.ts";
-  import { createPanelState } from "./DownloadOptionsPanel.state.svelte.ts";
   import DownloadOptionsPanelFooter from "./DownloadOptionsPanelFooter.svelte";
+  import { createPanelState } from "@/lib/download-options/DownloadOptionsPanel.state.svelte";
   import type { VideoData } from "@/types";
   import { attachCloseButton } from "#youtube/lib/ui/panel-button-attachments.svelte";
 

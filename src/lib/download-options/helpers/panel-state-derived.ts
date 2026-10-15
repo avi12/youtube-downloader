@@ -1,10 +1,10 @@
+import { PrimaryButtonState } from "@/lib/ui/primary-button.svelte";
 import { CONTENT_OPTIONS } from "@/lib/ui/synced-stores.svelte";
 import { resolveMultiTrackExtension } from "@/lib/utils/containers";
 import { resolveOutputExtensionForFormats } from "@/lib/youtube/align-formats-to-container";
 import { AUTO_DUB_TRACK_SUFFIX } from "@/lib/youtube/download-plan";
 import { formatAudioQualityLabel, formatVideoQualityLabel } from "@/lib/youtube/video-helpers";
 import { DownloadType, type AdaptiveFormatItem, type CodecPreferences, type VideoData } from "@/types";
-import { PrimaryButtonState } from "#youtube/lib/ui/panel-button-attachments.svelte";
 
 export function resolveActualExtension({
   downloadType,

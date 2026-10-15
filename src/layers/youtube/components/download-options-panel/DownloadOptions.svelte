@@ -1,8 +1,11 @@
 <script lang="ts">
   import DownloadMediaSection from "./DownloadMediaSection.svelte";
-  import { createDownloadOptionsState, type DownloadOptionsProps } from "./DownloadOptions.state.svelte";
   import DownloadOutputSection from "./DownloadOutputSection.svelte";
   import DownloadTracksSection from "./DownloadTracksSection.svelte";
+  import {
+    createDownloadOptionsState,
+    type DownloadOptionsProps
+  } from "@/lib/download-options/DownloadOptions.state.svelte";
   import { MULTI_TRACK_UNSUPPORTED_EXTENSIONS } from "@/lib/utils/containers";
   import { PanelTrackMode } from "@/types";
   import type { AdaptiveFormatItem, CaptionTrack } from "@/types";

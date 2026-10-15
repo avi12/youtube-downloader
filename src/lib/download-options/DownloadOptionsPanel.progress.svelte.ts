@@ -1,5 +1,5 @@
+import { completedDownloadsStore } from "@/lib/ui/completed-downloads-store.svelte";
 import type { VideoData } from "@/types";
-import { completedDownloadsStore } from "#youtube/lib/ui/completed-downloads-store.svelte";
 
 export function createDownloadProgressTracker({
   getVideoData,

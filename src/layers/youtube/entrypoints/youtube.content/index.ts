@@ -11,9 +11,9 @@ import { handlePageChange } from "./ui/page-router";
 import { mountWatchSnackbar } from "./ui/watch-snackbar";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { optionsItem, statusProgressItem } from "@/lib/storage/storage";
+import { initCompletedDownloadsStore } from "@/lib/ui/completed-downloads-store.svelte";
 import { initContentOptions } from "@/lib/ui/synced-stores.svelte";
 import { INITIAL_OPTIONS as defaultOptions } from "@/lib/youtube/video-helpers";
-import { initCompletedDownloadsStore } from "#youtube/lib/ui/completed-downloads-store.svelte";
 import { forwardSabrCredentialsWithRetry, listenForSabrBodyReady } from "#youtube/lib/youtube/sabr/credentials";
 
 const YTDL_IFRAME_QUERY_PARAM = "ytdl=1";

@@ -1,8 +1,8 @@
 import { checkInterruptedDownload } from "../download/interrupted-downloads";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { MessageType, onMessage } from "@/lib/messaging/messaging";
+import { completedDownloadsStore } from "@/lib/ui/completed-downloads-store.svelte";
 import { interruptedDownloadStore } from "@/lib/ui/synced-stores.svelte";
-import { completedDownloadsStore } from "#youtube/lib/ui/completed-downloads-store.svelte";
 
 export function registerBackgroundMessageHandlers() {
   completedDownloadsStore.subscribe(videoId => {

@@ -1,6 +1,7 @@
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { performCancelDownload } from "@/lib/ui/cancel-download";
+import { completedDownloadsStore } from "@/lib/ui/completed-downloads-store.svelte";
 import {
   CONTENT_OPTIONS,
   statusProgressSignal,
@@ -32,7 +33,6 @@ import {
   findGuaranteedHeight,
   listAvailableHeights
 } from "#youtube/components/playlist-downloader/helpers/playlist-quality-helpers";
-import { completedDownloadsStore } from "#youtube/lib/ui/completed-downloads-store.svelte";
 import { PrimaryButtonState } from "#youtube/lib/ui/panel-button-attachments.svelte";
 import { fetchPlaylistContents } from "#youtube/lib/youtube/playlist-fetch";
 

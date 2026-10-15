@@ -1,7 +1,11 @@
 <script lang="ts">
   import PolymerSelect from "../polymer-select/PolymerSelect.svelte";
   import ChoiceSelect from "./ChoiceSelect.svelte";
-  import { DOWNLOAD_TYPES, findAudioFormatByValue, handleQualityChange } from "./download-options-helpers";
+  import {
+    DOWNLOAD_TYPES,
+    findAudioFormatByValue,
+    handleQualityChange
+  } from "@/lib/download-options/download-options-helpers";
   import type { Choice } from "@/lib/utils/choices";
   import { DownloadType } from "@/types";
   import type { AdaptiveFormatItem } from "@/types";
