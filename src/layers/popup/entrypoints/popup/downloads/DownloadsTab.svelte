@@ -4,10 +4,12 @@
   import ActiveDownloadsSections from "./ActiveDownloadsSections.svelte";
   import RecentDownloadsSection from "./recent/RecentDownloadsSection.svelte";
   import { isActiveFromCurrentTab } from "./youtube-tab";
-  import { MessageType, sendMessageToTab } from "@/lib/messaging/messaging";
+  import { resolveFFmpegCoreBuild } from "@/lib/download-pipeline/ffmpeg-core-build";
+  import { FFmpegCoreBuild } from "@/lib/download-pipeline/mux-worker-types";
+  import { MessageType, sendMessage, sendMessageToTab } from "@/lib/messaging/messaging";
   import { deleteRecentDownload } from "@/lib/storage/recent-downloads-db";
   import { createLogger, LogScope } from "@/lib/utils/logger";
-  import { isWatchPageUrl } from "@/lib/youtube/youtube-url";
+  import { getVideoIdFromUrl, isMobileWatchPageUrl, isWatchPageUrl } from "@/lib/youtube/youtube-url";
   import { ProgressType } from "@/types";
   import type { DownloadProgressEntry, RecentDownloadEntry, VideoDetail, VideoQueueItem } from "@/types";
   import { browser } from "#imports";
@@ -90,14 +92,28 @@
     return parts.join(" · ");
   });
 
+  // Machines too slow for the SIMD FFmpeg build are the ones browsing the lighter mobile site
+  const isMobileSiteSupported = resolveFFmpegCoreBuild() === FFmpegCoreBuild.NoSimd;
+  const mobileVideoId = $derived(
+    isMobileSiteSupported && currentSourceUrl !== undefined && isMobileWatchPageUrl(currentSourceUrl)
+      ? getVideoIdFromUrl(currentSourceUrl)
+      : null
+  );
   const isWatchPageTab = $derived(
-    currentTabId !== undefined && currentSourceUrl !== undefined && isWatchPageUrl(currentSourceUrl)
+    currentTabId !== undefined && currentSourceUrl !== undefined
+    && (isWatchPageUrl(currentSourceUrl) || mobileVideoId !== null)
   );
-  const emptyStateText = $derived(
-    isWatchPageTab
+  const emptyStateText = $derived.by(() => {
+    if (mobileVideoId !== null) {
+      return "Grab this video right here";
+    }
+
+    return isWatchPageTab
       ? "Grab this video right here, or hit this button under any video on YouTube"
-      : "Start downloads right on YouTube - look for this button under any video"
-  );
+      : "Start downloads right on YouTube - look for this button under any video";
+  });
+  // The mobile site has no in-page button, so the popup is the only way to start its download
+  const isMobileDownloadOffered = $derived(mobileVideoId !== null && !allActiveIds.includes(mobileVideoId));
   let isStartingWatchDownload = $state(false);
 
   async function handleStartWatchDownload(): Promise<void> {
@@ -106,6 +122,15 @@
     }
 
     isStartingWatchDownload = true;
+
+    if (mobileVideoId !== null && currentSourceUrl !== undefined) {
+      await sendMessage(MessageType.StartPopupDownload, {
+        videoId: mobileVideoId,
+        sourceUrl: currentSourceUrl
+      }).catch(error => log.warn("Starting the mobile page download failed:", error));
+      return;
+    }
+
     const isStarted = await sendMessageToTab(MessageType.StartWatchPageDownload, undefined, currentTabId)
       .catch(error => {
         log.warn("Starting the watch page download failed:", error);
@@ -177,6 +202,17 @@
   </section>
 {:else}
   <div class="download-sections">
+    {#if isMobileDownloadOffered}
+      <button
+        class="mobile-download-button"
+        disabled={isStartingWatchDownload}
+        onclick={handleStartWatchDownload}
+        type="button"
+      >
+        {@html downloadIcon}
+        Download this video
+      </button>
+    {/if}
     {#if totalActiveDownloads > 0}
       <div class="dl-banner" role="status">
         <span class="dl-banner-spinner" aria-hidden="true"></span>
@@ -367,6 +403,42 @@
     display: flex;
     flex-direction: column;
     gap: 12px;
+  }
+
+  .mobile-download-button {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    align-items: center;
+    padding: 10px 14px;
+    border: none;
+    border-radius: 999px;
+    background: var(--accent-container);
+    color: var(--fg);
+    font: inherit;
+    font-weight: 600;
+    font-size: 0.8125rem;
+    cursor: pointer;
+    transition: background-color 200ms;
+
+    :global(svg) {
+      width: 18px;
+      height: 18px;
+    }
+
+    &:focus-visible {
+      outline: 2px solid var(--accent);
+      outline-offset: 2px;
+    }
+
+    &:disabled {
+      opacity: 60%;
+      cursor: progress;
+    }
+
+    &:hover:enabled {
+      background: color-mix(in oklab, var(--accent) 28%, var(--accent-container));
+    }
   }
 
   .dl-banner {

@@ -5,13 +5,16 @@ import { trackVideoForTab } from "../queue/tab-tracker";
 import { handleTerminalFailure } from "./background-downloader";
 import { MessageType, onMessage, sendMessageToTab } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
+import { optionsItem } from "@/lib/storage/storage";
 import { createLogger, LogScope } from "@/lib/utils/logger";
+import { resolveDownloadType } from "@/lib/youtube/download-type";
 import { WATCH_PAGE_URL } from "@/lib/youtube/youtube-url";
 import type { DownloadRequest, Prettify } from "@/types";
 
 const log = createLogger(LogScope.Background);
 
 const IFRAME_READY_TIMEOUT_MS = 60_000;
+const NO_CONTENT_SCRIPT_TAB_ID = -1;
 
 const pendingIframeReady = new Map<string, {
   resolve: () => void;
@@ -117,4 +120,25 @@ export async function downloadViaWatchPage({ data, tabId }: DownloadViaWatchPage
       tabId
     });
   }
+}
+
+// The tab has no content script, so progress goes only to the popup and the iframe resolves the formats
+export function registerPopupDownloadHandler() {
+  onMessage(MessageType.StartPopupDownload, async ({ data }) => {
+    const { defaultDownloadType } = await optionsItem.getValue();
+    downloadViaWatchPage({
+      data: {
+        ...data,
+        type: resolveDownloadType({
+          preference: defaultDownloadType,
+          isMusic: false
+        }),
+        videoItag: 0,
+        audioItag: 0,
+        filenameOutput: data.videoId,
+        isDefaultFormat: true
+      },
+      tabId: NO_CONTENT_SCRIPT_TAB_ID
+    }).catch(() => {});
+  });
 }

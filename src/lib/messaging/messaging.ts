@@ -46,6 +46,7 @@ export const MessageType = {
   ReportPageProgress: "reportPageProgress",
   PageSabrFetch: "pageSabrFetch",
   StartWatchPageDownload: "startWatchPageDownload",
+  StartPopupDownload: "startPopupDownload",
   AnnounceDownload: "announceDownload"
 } as const;
 
@@ -301,6 +302,11 @@ export interface ProtocolMap {
   pageSabrFetch(data: PageSabrFetchRequest): PageSabrFetchResponse;
 
   startWatchPageDownload(): boolean;
+
+  startPopupDownload(data: {
+    videoId: string;
+    sourceUrl: string;
+  }): void;
 }
 
 export const { sendMessage, onMessage } =

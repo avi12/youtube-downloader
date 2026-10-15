@@ -8,7 +8,11 @@ import {
 } from "../download/background-downloader";
 import { reportVideoUnavailable } from "../download/download-failure-reporter";
 import { tryDirectUrlDownload } from "../download/download-fallback-chain";
-import { downloadViaWatchPage, initIframeReadyListener } from "../download/iframe-downloader";
+import {
+  downloadViaWatchPage,
+  initIframeReadyListener,
+  registerPopupDownloadHandler
+} from "../download/iframe-downloader";
 import { clearIframeAutoRetry, handleIframeFallback } from "../download/sabr-attempt";
 import { enqueueToPopupList, removeFromPopupList } from "../queue/popup-list";
 import { signalVideoComplete } from "../queue/sequential-queue";
@@ -34,6 +38,7 @@ const log = createLogger(LogScope.Background);
 
 export function registerDownloadHandlers() {
   initIframeReadyListener();
+  registerPopupDownloadHandler();
   registerProxyFetchHandler();
   registerPlaylistDownloadHandler();
 
