@@ -413,6 +413,14 @@ flowchart TB
 - No global `-metadata title=` / `-metadata artist=` is set on video files — those tags don't have a standard meaning across video container formats and would clobber the per-track metadata in some containers.
 - No cover-art embedding — the source has a thumbnail URL but the video mux path ignores it. Cover art on video containers is inconsistent across players, and the visible video stream already serves as the visual identity.
 
+### Mobile site — popup-only downloads
+
+`m.youtube.com` gets no content scripts and no injected UI. On machines that load the non-SIMD FFmpeg core ([`resolveFFmpegCoreBuild`](src/lib/download-pipeline/ffmpeg-core-build.ts), the slow-CPU case the lighter mobile site serves), the popup offers "Download this video" on a mobile watch page ([`DownloadsTab.svelte`](src/layers/popup/entrypoints/popup/downloads/DownloadsTab.svelte)).
+
+1. The popup sends `StartPopupDownload` with the video ID and page URL. The background ([`registerPopupDownloadHandler`](src/layers/background/download/iframe-downloader.ts)) runs it through the hidden watch-page iframe (`downloadViaWatchPage`) with tab ID `-1`, so progress goes only to the popup and its storage.
+2. The request carries `isDefaultFormat`. Inside the iframe, [`applyDefaultFormat`](src/layers/youtube/entrypoints/youtube-main.content/video/default-format.ts) fills type, streams, and filename from the user's settings, the same way the watch button's defaults are built ([`buildInitialDownloadState`](src/layers/youtube/entrypoints/youtube-main.content/watch-button/initial-download-state.ts)).
+3. A minted PO token alone hits SABR's attestation wall, so [`withPlayerSession`](src/layers/background/lib/youtube/sabr/player-session.ts) borrows the session of any tab playing the same video - here the mobile tab's own player, recorded from its SABR requests.
+
 ## Cross-cutting concerns
 
 ### Resilience
