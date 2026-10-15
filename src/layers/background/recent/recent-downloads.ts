@@ -2,7 +2,7 @@ import { ensureProcessor } from "../handlers/processor";
 import { enqueueToPopupList } from "../queue/popup-list";
 import { getTabIdsForVideo } from "../queue/tab-tracker";
 import { TRANSCODE_VIDEO_ID_PREFIX } from "@/lib/download-pipeline/transcode-recent";
-import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
+import { MessageType, onMessage, sendMessage, sendMessageToTab } from "@/lib/messaging/messaging";
 import type { PipelineDownloadMessage } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";
 import { pruneRecentDownloads, touchAllRecentDownloads } from "@/lib/storage/recent-downloads-db";
@@ -72,11 +72,11 @@ export function notifyOnDownloadComplete({ downloadId, data }: DownloadIdDataPar
           : data.filename;
 
         for (const tabId of tabIds) {
-          await sendMessage(MessageType.WatchDownloadCompleted, {
+          await sendMessageToTab(MessageType.WatchDownloadCompleted, {
             videoId: data.recentContext!.videoId,
             downloadId,
             filename: actualFilename
-          }, tabId);
+          }, tabId).catch(() => {});
         }
 
         const options = await optionsItem.getValue();
