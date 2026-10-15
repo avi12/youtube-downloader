@@ -51,7 +51,7 @@ async function notifyOnIdleIfNeeded({ data, tabIds }: NotifyOnIdleIfNeededParams
   });
 }
 
-export function notifyOnDownloadComplete({ downloadId, data }: DownloadIdDataParams) {
+function notifyOnDownloadComplete({ downloadId, data }: DownloadIdDataParams) {
   return new Promise<void>(resolve => {
     async function handleChanged(delta: Browser.downloads.DownloadDelta) {
       const isUnrelatedOrIncomplete = delta.id !== downloadId || !delta.state?.current;

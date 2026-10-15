@@ -34,7 +34,7 @@ export function initIframeReadyListener() {
   });
 }
 
-export async function prepareIframe(data: DownloadRequest) {
+async function prepareIframe(data: DownloadRequest) {
   await ensureProcessor();
 
   // Mobile user agents get redirected to m.youtube.com, where no content script runs

@@ -111,7 +111,7 @@ export const PlaylistGridStatus = {
   Done: "done",
   Failed: "failed"
 } as const;
-export type PlaylistGridStatus = (typeof PlaylistGridStatus)[keyof typeof PlaylistGridStatus];
+type PlaylistGridStatus = (typeof PlaylistGridStatus)[keyof typeof PlaylistGridStatus];
 
 function formatSize(bytes: number) {
   if (bytes <= 0) {
