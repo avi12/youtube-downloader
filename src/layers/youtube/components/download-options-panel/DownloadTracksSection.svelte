@@ -1,182 +1,26 @@
 <script lang="ts">
   import PolymerSelect from "../polymer-select/PolymerSelect.svelte";
+  import { createTrackSelectState, type TrackSelectProps } from "@/lib/download-options/track-select.svelte.ts";
   import { onButtonClick } from "@/lib/messaging/cross-world-messenger";
-  import { MULTI_TRACK_UNSUPPORTED_EXTENSIONS } from "@/lib/utils/containers";
-  import { DownloadType, PanelTrackMode } from "@/types";
-  import type { CaptionTrack, LabeledOption } from "@/types";
   import {
     attachTracksHeaderButton as attachTracksHeaderButtonUtil
   } from "#youtube/lib/ui/panel-button-attachments.svelte";
 
-  interface Props {
-    downloadType: DownloadType;
-    extension: string;
-    uniqueAudioLanguages: LabeledOption[];
-    captionTracks: CaptionTrack[];
+  interface Props extends TrackSelectProps {
     isDownloading: boolean;
     downloadExtras: boolean;
     downloadExtraCaptions: boolean;
     isExtrasAutoDisabled: boolean;
-    panelAudioMode: PanelTrackMode;
-    panelAudioCustomLanguage: string;
-    audioOriginalLabel: string | null;
-    panelCaptionMode: PanelTrackMode;
-    captionCustomOptions: LabeledOption[];
-    captionOriginalLabel: string | null;
-    selectedCaptionVssId: string;
-    audioPlayerLabel: string | null;
-    captionPlayerLabel: string | null;
-    onaudiomodechange: (mode: PanelTrackMode) => void;
-    onaudiocustomchange: (langCode: string) => void;
-    oncaptionmodechange: (mode: PanelTrackMode) => void;
-    oncaptionchange: (vssId: string) => void;
     ondownloadextraschange: (value: boolean) => void;
     ondownloadextracaptionschange: (value: boolean) => void;
   }
 
-  const {
-    downloadType,
-    extension,
-    uniqueAudioLanguages,
-    captionTracks,
-    isDownloading,
-    downloadExtras,
-    downloadExtraCaptions,
-    isExtrasAutoDisabled,
-    panelAudioMode,
-    panelAudioCustomLanguage,
-    audioOriginalLabel,
-    panelCaptionMode,
-    captionCustomOptions,
-    captionOriginalLabel,
-    selectedCaptionVssId,
-    audioPlayerLabel,
-    captionPlayerLabel,
-    onaudiomodechange,
-    onaudiocustomchange,
-    oncaptionmodechange,
-    oncaptionchange,
-    ondownloadextraschange,
-    ondownloadextracaptionschange
-  }: Props = $props();
+  const props: Props = $props();
 
-  const AUDIO_AUTO = "auto";
-  const CAPTION_AUTO = "auto";
-  const CAPTION_OFF = "off";
   const TRACKS_HEADER_BUTTON_ID = "ytdl-tracks-header-btn";
   const scopingClass = document.querySelector("[data-ytdl-download-group] yt-button-view-model, yt-button-view-model")?.getAttribute("class") ?? "";
 
-  const isAudioOnly = $derived(downloadType === DownloadType.Audio);
-  const isVideoOnly = $derived(downloadType === DownloadType.Video);
-  const isExtensionMultiTrackIncompatible = $derived(MULTI_TRACK_UNSUPPORTED_EXTENSIONS.has(extension));
-  const isAudioTrackSelectorPresent = $derived(uniqueAudioLanguages.length > 1);
-  const isMultipleAudioTracks = $derived(uniqueAudioLanguages.length > 1);
-  const isCaptionsPresent = $derived(captionTracks.length > 0);
-  const isSingleCaptionOption = $derived(captionCustomOptions.length === 1);
-  const isVisible = $derived(isAudioTrackSelectorPresent || (isCaptionsPresent && !isVideoOnly && !isAudioOnly));
-
-  const originalAudioLangCode = $derived(
-    uniqueAudioLanguages.find(language => language.label === audioOriginalLabel)?.value ?? null
-  );
-
-  const audioSelectValue = $derived.by(() => {
-    if (panelAudioMode === PanelTrackMode.MatchVideo) {
-      return AUDIO_AUTO;
-    }
-
-    if (panelAudioMode === PanelTrackMode.Original) {
-      return originalAudioLangCode ?? AUDIO_AUTO;
-    }
-
-    return panelAudioCustomLanguage || AUDIO_AUTO;
-  });
-
-  const captionSelectValue = $derived.by(() => {
-    if (panelCaptionMode === PanelTrackMode.MatchVideo) {
-      if (isSingleCaptionOption) {
-        return captionCustomOptions[0]!.value;
-      }
-
-      return CAPTION_AUTO;
-    }
-
-    return selectedCaptionVssId || CAPTION_OFF;
-  });
-
-  const sortedAudioLanguages = $derived.by(() => {
-    const languages = [...uniqueAudioLanguages];
-    const originalIndex = languages.findIndex(language => language.value === originalAudioLangCode);
-    if (originalIndex > 0) {
-      languages.unshift(...languages.splice(originalIndex, 1));
-    }
-
-    return languages;
-  });
-
-  const sortedCaptionCustomOptions = $derived.by(() => {
-    const options = [...captionCustomOptions];
-    const originalIndex = options.findIndex(option => option.label === captionOriginalLabel);
-    if (originalIndex > 0) {
-      options.unshift(...options.splice(originalIndex, 1));
-    }
-
-    return options;
-  });
-
-  const audioOptions = $derived([
-    {
-      value: AUDIO_AUTO,
-      label: audioPlayerLabel ? `Auto · ${audioPlayerLabel}` : "Auto"
-    },
-    ...sortedAudioLanguages.map(language => ({
-      value: language.value,
-      label: language.value === originalAudioLangCode ? `${language.label} · Original` : language.label
-    }))
-  ]);
-
-  const captionOptions = $derived([
-    ...(isSingleCaptionOption ? [] : [{
-      value: CAPTION_AUTO,
-      label: captionPlayerLabel ? `Auto · ${captionPlayerLabel}` : "Auto"
-    }]),
-    {
-      value: CAPTION_OFF,
-      label: "No captions"
-    },
-    ...sortedCaptionCustomOptions
-  ]);
-
-  const audioSummaryText = $derived.by(() => {
-    if (!isAudioTrackSelectorPresent) {
-      return null;
-    }
-
-    if (audioSelectValue === AUDIO_AUTO) {
-      return "Audio: matches player";
-    }
-
-    const label = uniqueAudioLanguages.find(language => language.value === audioSelectValue)?.label;
-    return label ? `Audio: ${label}` : null;
-  });
-
-  const captionSummaryText = $derived.by(() => {
-    if (isAudioOnly || isVideoOnly || !isCaptionsPresent) {
-      return null;
-    }
-
-    if (captionSelectValue === CAPTION_AUTO) {
-      return "Captions: matches player";
-    }
-
-    if (captionSelectValue === CAPTION_OFF) {
-      return "No captions";
-    }
-
-    const label = captionCustomOptions.find(option => option.value === captionSelectValue)?.label;
-    return label ? `Captions: ${label}` : null;
-  });
-
-  const summaryMeta = $derived([audioSummaryText, captionSummaryText].filter(Boolean).join("  ·  "));
+  const tracks = createTrackSelectState(() => props);
 
   let isOpen = $state(false);
 
@@ -190,40 +34,14 @@
     attachTracksHeaderButtonUtil({
       elButton,
       getIsOpen: () => isOpen,
-      getIsDownloading: () => isDownloading,
-      getIsAudioOnly: () => isAudioOnly,
-      getSummaryMeta: () => summaryMeta
+      getIsDownloading: () => props.isDownloading,
+      getIsAudioOnly: () => tracks.isAudioOnly,
+      getSummaryMeta: () => tracks.summaryMeta
     });
-  }
-
-  function handleAudioChange(value: string): void {
-    if (value === AUDIO_AUTO) {
-      onaudiomodechange(PanelTrackMode.MatchVideo);
-      return;
-    }
-
-    onaudiomodechange(PanelTrackMode.Custom);
-    onaudiocustomchange(value);
-  }
-
-  function handleCaptionChange(value: string): void {
-    if (value === CAPTION_AUTO) {
-      oncaptionmodechange(PanelTrackMode.MatchVideo);
-      return;
-    }
-
-    if (value === CAPTION_OFF) {
-      oncaptionmodechange(PanelTrackMode.Custom);
-      oncaptionchange("");
-      return;
-    }
-
-    oncaptionmodechange(PanelTrackMode.Custom);
-    oncaptionchange(value);
   }
 </script>
 
-<div class="ytdl-tracks-section-host" class:is-open={isVisible}>
+<div class="ytdl-tracks-section-host" class:is-open={tracks.isVisible}>
   <div class="ytdl-tracks-wrapper">
     <yt-button-view-model
       class={scopingClass}
@@ -231,59 +49,59 @@
       aria-expanded={isOpen}
       data-ytdl-button-id={TRACKS_HEADER_BUTTON_ID}
       role="button"
-      tabindex={isDownloading ? undefined : 0}
+      tabindex={props.isDownloading ? undefined : 0}
     ></yt-button-view-model>
 
     <div class="ytdl-tracks-body" class:is-open={isOpen}>
       <div class="ytdl-tracks-body-inner">
-        {#if isAudioTrackSelectorPresent}
+        {#if tracks.isAudioTrackSelectorPresent}
           <div class="ytdl-track-field">
             <PolymerSelect
               id="tracks-audio-select"
-              disabled={isDownloading}
+              disabled={props.isDownloading}
               label="Audio language"
-              onchange={handleAudioChange}
-              options={audioOptions}
-              value={audioSelectValue}
+              onchange={tracks.handleAudioChange}
+              options={tracks.audioOptions}
+              value={tracks.audioSelectValue}
             />
-            {#if !isAudioOnly && !isVideoOnly && isMultipleAudioTracks}
+            {#if tracks.isExtrasToggleShown}
               <tp-yt-paper-toggle-button
                 aria-label="Include all audio tracks"
-                checked={downloadExtras ? "" : undefined}
-                disabled={isDownloading || isExtensionMultiTrackIncompatible ? "" : undefined}
+                checked={props.downloadExtras ? "" : undefined}
+                disabled={props.isDownloading || tracks.isExtensionMultiTrackIncompatible ? "" : undefined}
                 onchange={e => {
                   const isHtmlElement = e.target instanceof HTMLElement;
                   if (isHtmlElement) {
-                    ondownloadextraschange(e.target.hasAttribute("checked"));
+                    props.ondownloadextraschange(e.target.hasAttribute("checked"));
                   }
                 }}
               >Include all audio tracks</tp-yt-paper-toggle-button>
-              <div class="ytdl-extras-error-host" class:is-open={isExtrasAutoDisabled}>
+              <div class="ytdl-extras-error-host" class:is-open={props.isExtrasAutoDisabled}>
                 <p class="ytdl-extras-error">AVI doesn't support multiple audio tracks</p>
               </div>
             {/if}
           </div>
         {/if}
 
-        {#if isCaptionsPresent && !isAudioOnly && !isVideoOnly}
+        {#if tracks.isCaptionSelectorPresent}
           <div class="ytdl-track-field">
             <PolymerSelect
               id="tracks-caption-select"
-              disabled={isDownloading}
+              disabled={props.isDownloading}
               label="Captions"
-              onchange={handleCaptionChange}
-              options={captionOptions}
-              value={captionSelectValue}
+              onchange={tracks.handleCaptionChange}
+              options={tracks.captionOptions}
+              value={tracks.captionSelectValue}
             />
-            {#if captionSelectValue !== CAPTION_OFF && captionCustomOptions.length > 1}
+            {#if tracks.isExtraCaptionsToggleShown}
               <tp-yt-paper-toggle-button
                 aria-label="Include all captions"
-                checked={downloadExtraCaptions ? "" : undefined}
-                disabled={isDownloading ? "" : undefined}
+                checked={props.downloadExtraCaptions ? "" : undefined}
+                disabled={props.isDownloading ? "" : undefined}
                 onchange={e => {
                   const isHtmlElement = e.target instanceof HTMLElement;
                   if (isHtmlElement) {
-                    ondownloadextracaptionschange(e.target.hasAttribute("checked"));
+                    props.ondownloadextracaptionschange(e.target.hasAttribute("checked"));
                   }
                 }}
               >Include all captions</tp-yt-paper-toggle-button>

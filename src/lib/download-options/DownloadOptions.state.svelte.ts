@@ -13,6 +13,7 @@ import { PLAYER_ACTIVE_CAPTION } from "./helpers/player-active-tracks.svelte";
 import { preserveAutoVariant } from "./helpers/preserve-auto-variant";
 import { optionsItem } from "@/lib/storage/storage";
 import { CONTENT_OPTIONS } from "@/lib/ui/synced-stores.svelte";
+import { MULTI_TRACK_UNSUPPORTED_EXTENSIONS } from "@/lib/utils/containers";
 import { alignVideoFormatToExtension, resolveVideoFormatVariants } from "@/lib/youtube/align-formats-to-container";
 import { normalizeLanguageCode } from "@/lib/youtube/audio-format-helpers";
 import { AUTO_DUB_TRACK_SUFFIX, buildTranslatedCaptionTrack } from "@/lib/youtube/download-plan";
@@ -318,6 +319,25 @@ export function createDownloadOptionsState(props: () => DownloadOptionsProps) {
     PANEL_OPTIONS.downloadExtraCaptions = value;
   }
 
+  function findCaptionTrack(vssId: string) {
+    return filteredCaptionTracks.find(track => track.vssId === vssId)
+      ?? translatedCaptionTracks.find(track => track.vssId === vssId)
+      ?? null;
+  }
+
+  let isExtrasAutoDisabled = $state(false);
+
+  // A container without multi-track support switches the bundled extra audio tracks off
+  function guardExtrasForExtension(newExtension: string) {
+    isExtrasAutoDisabled = MULTI_TRACK_UNSUPPORTED_EXTENSIONS.has(newExtension)
+      && PANEL_OPTIONS.downloadExtras
+      && uniqueAudioLanguages.length > 1;
+
+    if (isExtrasAutoDisabled) {
+      setDownloadExtras(false);
+    }
+  }
+
   return {
     get includeAiCaptions() {
       return PANEL_OPTIONS.includeAiCaptions;
@@ -326,6 +346,11 @@ export function createDownloadOptionsState(props: () => DownloadOptionsProps) {
       return PANEL_OPTIONS.downloadExtras;
     },
     setDownloadExtras,
+    get isExtrasAutoDisabled() {
+      return isExtrasAutoDisabled;
+    },
+    guardExtrasForExtension,
+    findCaptionTrack,
     get downloadExtraCaptions() {
       return PANEL_OPTIONS.downloadExtraCaptions;
     },

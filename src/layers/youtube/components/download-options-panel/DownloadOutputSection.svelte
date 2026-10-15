@@ -1,51 +1,22 @@
 <script lang="ts">
   import PolymerSelect from "../polymer-select/PolymerSelect.svelte";
   import OptionHint from "./OptionHint.svelte";
-  import { buildFormatItems, getFilenameError } from "@/lib/download-options/download-options-helpers";
+  import { createOutputSelectState, type OutputSelectProps } from "@/lib/download-options/output-select.svelte.ts";
   import { getCompatibleFilename } from "@/lib/utils/containers";
-  import { getFormatDescription } from "@/lib/utils/containers";
-  import { DownloadType } from "@/types";
 
-  interface Props {
-    filename: string;
-    extension: string;
-    actualExtension: string;
+  interface Props extends OutputSelectProps {
     isDownloading: boolean;
-    downloadType: DownloadType;
-    isMultiTrack: boolean;
     onfilenamechange: (filename: string) => void;
     onextensionchange: (extension: string) => void;
     onvalidationchange: (isValid: boolean) => void;
   }
 
-  const {
-    filename, extension, actualExtension, isDownloading, downloadType, isMultiTrack,
-    onfilenamechange, onextensionchange, onvalidationchange
-  }: Props = $props();
+  const props: Props = $props();
 
-  const isAudio = $derived(downloadType === DownloadType.Audio);
-  const extensionType = $derived(isAudio ? DownloadType.Audio : DownloadType.Video);
-
-  const filenameValidationError = $derived(
-    getFilenameError({
-      value: `${filename}.${extension}`,
-      type: extensionType,
-      isMultiTrack
-    })
-  );
-  const isFilenameValid = $derived(!filenameValidationError);
-  const formatOptions = $derived(
-    buildFormatItems(extensionType, isMultiTrack).map(item => ({
-      value: item.ext,
-      label: `.${item.ext}`,
-      disabled: item.isExcluded
-    }))
-  );
-
-  const currentFormatDesc = $derived(getFormatDescription(extension));
+  const output = createOutputSelectState(() => props);
 
   $effect(() => {
-    onvalidationchange(isFilenameValid);
+    props.onvalidationchange(output.isFilenameValid);
   });
 
   function applyPolymerTheme(elTarget: Element): void {
@@ -61,7 +32,7 @@
       return;
     }
 
-    onfilenamechange(getCompatibleFilename(e.target.value.trim()));
+    props.onfilenamechange(getCompatibleFilename(e.target.value.trim()));
   }
 </script>
 
@@ -70,31 +41,31 @@
     <tp-yt-paper-input
       id="filename-input"
       {@attach applyPolymerTheme}
-      aria-invalid={!isFilenameValid}
+      aria-invalid={!output.isFilenameValid}
       autocomplete="off"
-      disabled={isDownloading || undefined}
-      invalid={!isFilenameValid || undefined}
+      disabled={props.isDownloading || undefined}
+      invalid={!output.isFilenameValid || undefined}
       label="Filename"
       oninput={handleInput}
       spellcheck={false}
-      value={filename}
+      value={props.filename}
     ></tp-yt-paper-input>
     <div class="ytdl-format-select">
       <PolymerSelect
         id="format-select"
-        disabled={isDownloading}
+        disabled={props.isDownloading}
         label="Format"
-        onchange={onextensionchange}
-        options={formatOptions}
-        value={extension}
+        onchange={props.onextensionchange}
+        options={output.formatOptions}
+        value={props.extension}
       />
     </div>
   </div>
-  {#if currentFormatDesc}
-    <OptionHint text={currentFormatDesc} />
+  {#if output.formatDescription}
+    <OptionHint text={output.formatDescription} />
   {/if}
-  {#if extension !== actualExtension && !isFilenameValid}
-    <OptionHint text={`Will be saved as .${actualExtension} due to format constraints`} />
+  {#if output.isConstraintHintShown}
+    <OptionHint text={`Will be saved as .${props.actualExtension} due to format constraints`} />
   {/if}
 </div>
 

@@ -6,7 +6,6 @@
     createDownloadOptionsState,
     type DownloadOptionsProps
   } from "@/lib/download-options/DownloadOptions.state.svelte.ts";
-  import { MULTI_TRACK_UNSUPPORTED_EXTENSIONS } from "@/lib/utils/containers";
   import { PanelTrackMode } from "@/types";
   import type { AdaptiveFormatItem, CaptionTrack } from "@/types";
 
@@ -53,18 +52,8 @@
     selectedCaptionTrack
   }));
 
-  let isExtrasAutoDisabled = $state(false);
-
   function handleExtensionChange(newExtension: string): void {
-    const isIncompatible = MULTI_TRACK_UNSUPPORTED_EXTENSIONS.has(newExtension);
-    const isExtrasIncompatible = isIncompatible && derived.downloadExtras && derived.uniqueAudioLanguages.length > 1;
-    if (isExtrasIncompatible) {
-      derived.setDownloadExtras(false);
-      isExtrasAutoDisabled = true;
-    } else {
-      isExtrasAutoDisabled = false;
-    }
-
+    derived.guardExtrasForExtension(newExtension);
     onextensionchange(newExtension);
   }
 </script>
@@ -98,17 +87,10 @@
     {downloadType}
     {extension}
     {isDownloading}
-    {isExtrasAutoDisabled}
+    isExtrasAutoDisabled={derived.isExtrasAutoDisabled}
     {onaudiocustomchange}
     {onaudiomodechange}
-    oncaptionchange={vssId => {
-      const native = derived.filteredCaptionTracks.find(track => track.vssId === vssId);
-      if (native) {
-        oncaptionchange(native); return;
-      }
-
-      oncaptionchange(derived.translatedCaptionTracks.find(track => track.vssId === vssId) ?? null);
-    }}
+    oncaptionchange={vssId => oncaptionchange(derived.findCaptionTrack(vssId))}
     {oncaptionmodechange}
     ondownloadextracaptionschange={derived.setDownloadExtraCaptions}
     ondownloadextraschange={derived.setDownloadExtras}
