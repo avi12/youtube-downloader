@@ -4,8 +4,8 @@ import { InnertubeClientName, type InnertubePlayerRequest } from "@/lib/youtube/
 import { playerResponseSchema } from "@/lib/youtube/schemas";
 import { extractPlayerResponseFromHtml } from "@/lib/youtube/youtube-api";
 import { buildWatchUrl } from "@/lib/youtube/youtube-url";
+import { getYtcfg, YtcfgKey } from "@/lib/youtube/ytcfg";
 import type { PlayerResponse } from "@/types";
-import { getYtcfg, YtcfgKey } from "#youtube/lib/youtube/ytcfg";
 
 const PLAYER_API_URL = "https://www.youtube.com/youtubei/v1/player?prettyPrint=false";
 const HEADER_CONTENT_TYPE = "Content-Type";

@@ -1,6 +1,6 @@
 import { InnertubeClientName, type InnertubePlayerRequest } from "@/lib/youtube/innertube";
 import { playerResponseSchema } from "@/lib/youtube/schemas";
-import { getYtcfg, YtcfgKey } from "#youtube/lib/youtube/ytcfg";
+import { getYtcfg, YtcfgKey } from "@/lib/youtube/ytcfg";
 
 const PLAYER_API_PATH = "/youtubei/v1/player?prettyPrint=false";
 const HEADER_CONTENT_TYPE = "Content-Type";

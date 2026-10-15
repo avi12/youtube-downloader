@@ -8,9 +8,9 @@ import {
 import { sabrCredentials } from "@/lib/ui/synced-stores.svelte";
 import { createLogger, LogScope } from "@/lib/utils/logger";
 import { fetchMusicThumbnailUrl } from "@/lib/youtube/youtube-music-metadata";
+import { getYtcfg, YtcfgKey } from "@/lib/youtube/ytcfg";
 import { type VideoData } from "@/types";
 import { generatePoToken } from "#youtube/lib/youtube/po-token-generator";
-import { getYtcfg, YtcfgKey } from "#youtube/lib/youtube/ytcfg";
 
 const log = createLogger(LogScope.Main);
 

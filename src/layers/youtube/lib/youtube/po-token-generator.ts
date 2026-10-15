@@ -1,6 +1,5 @@
 import { ensureBotGuardVm, getBotGuardVm, initBotGuardVm } from "./botguard-vm";
 import type { SignalFunction } from "./botguard-vm";
-import { getYtcfg, YtcfgKey } from "./ytcfg";
 import { base64ToUint8Array } from "@/lib/utils/binary";
 import {
   InnertubeClientName,
@@ -9,6 +8,7 @@ import {
   type InnertubeGenerateItRequest,
   type InnertubeGenerateItResponse
 } from "@/lib/youtube/innertube";
+import { getYtcfg, YtcfgKey } from "@/lib/youtube/ytcfg";
 import type { Prettify } from "@/types";
 
 type ChallengeResponse = Prettify<{
