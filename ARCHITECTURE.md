@@ -16,12 +16,15 @@ flowchart TB
       Sig["Decipher signatureCipher<br/>(pattern-match player.js,<br/>replay swap/reverse/splice)"]
       subgraph Tracks["Tracks (from streamingData)"]
         direction TB
-        Itags["Pick video itag"]
-        Aprimary["Pick primary audio<br/>(language priority +<br/>container match)"]
+        Itags["Pick video itag<br/>(quality, max frame rate)"]
+        Aprimary["Pick primary audio<br/>(language priority)"]
+        Align["Align to container<br/>(codec settings, HDR)"]
         Aextras["Collect extra audio tracks<br/>(dub languages, dedupe,<br/>cap 16, skip auto-dub)"]
         Aresolve["Resolve CDN URLs in parallel<br/>(decipher signatures)"]
-        Itags --> Aresolve
-        Aprimary --> Aresolve
+        Itags --> Align
+        Aprimary --> Align
+        Align --> Aextras
+        Align --> Aresolve
         Aextras --> Aresolve
       end
       subgraph CaptionsBox["Captions (3-step pipeline)"]
@@ -70,7 +73,8 @@ flowchart TB
 | --- | --- |
 | User clicks Download | [`watch-button-click.ts:32`](src/layers/youtube/entrypoints/youtube-main.content/watch-button/watch-button-click.ts) `buildClickHandler` |
 | Pick video itag + audio tracks | [`download-plan.ts:160`](src/lib/youtube/download-plan.ts) `selectFormats` + [`:101`](src/lib/youtube/download-plan.ts) `getExtraAudioFormats` (both run by [`:255`](src/lib/youtube/download-plan.ts) `resolveDownloadPlan`) |
-| Pick primary audio (language + container) | [`select-audio-format.ts:32`](src/lib/youtube/select-audio-format.ts) `selectPreferredAudioFormat` |
+| Pick primary audio (language) | [`select-audio-format.ts:32`](src/lib/youtube/select-audio-format.ts) `selectPreferredAudioFormat` |
+| Align to container (codec settings, HDR) | [`align-formats-to-container.ts:137`](src/lib/youtube/align-formats-to-container.ts) `alignFormatsToContainer` (see [Format, codec, and container selection](#format-codec-and-container-selection)) |
 | Resolve CDN URLs (decipher signatures) | [`download-formats.ts:12`](src/layers/youtube/entrypoints/youtube-main.content/video/download-formats.ts) `preResolveCdnUrls` -> [`stream-fetch.ts`](src/layers/youtube/entrypoints/youtube-main.content/video/stream-fetch.ts) `resolveFormatUrl` |
 | PO token (BotGuard + GenerateIT) | [`po-token-generator.ts:33`](src/layers/youtube/lib/youtube/po-token-generator.ts) `generatePoToken` (driving [`botguard-vm.ts`](src/layers/youtube/lib/youtube/botguard-vm.ts)) |
 | Decipher signatureCipher | [`signature-decryptor.ts:62`](src/layers/youtube/lib/youtube/signature-decryptor.ts) `decryptSignatureCipher` + [`signature-transforms.ts`](src/layers/youtube/lib/youtube/signature-transforms.ts) |
@@ -113,7 +117,8 @@ The code is organised as WXT layers under `src/layers/` — `src/layers/backgrou
 | `src/layers/processing/entrypoints/download-worker/` | Sandboxed iframe inside the offscreen document. Runs Chrome's SABR + CDN fetch loop in isolation from the BG SW. |
 | `src/layers/processing/entrypoints/mux-worker/` | Web Worker that drives `@ffmpeg/core` to mux video + audio + subtitles + cover art. |
 | `src/layers/popup/entrypoints/popup/` | Browser-action popup. Download history (IndexedDB + blob store), live progress, format-change dialog, settings. |
-| `src/lib/youtube/` | Shared YouTube-specific knowledge: Innertube schemas, SABR protocol, format helpers. |
+| `src/lib/youtube/` | Shared YouTube-specific knowledge: Innertube schemas, SABR protocol, format helpers, and the download plan that picks the formats, codecs and container. |
+| `src/lib/utils/` | Shared tables and helpers: what each container holds and prefers ([`container-specs.ts`](src/lib/utils/container-specs.ts)), the choice tables every picker reads ([`choices.ts`](src/lib/utils/choices.ts)), MIME types, filenames, logging. |
 | `src/layers/youtube/lib/youtube/` | Page-context YouTube knowledge: BotGuard / PO token, signature decryptor, `ytcfg`, playlist fetch. |
 | `src/lib/messaging/` | Typed buses: cross-world between MAIN and ISOLATED via `CustomEvent`; runtime between content and BG; offscreen between BG and offscreen via `MessagePort`; window between page and extension via `window.postMessage`. |
 | `src/lib/download-pipeline/` | Browser-agnostic post-fetch pipeline: stream processor, mux job builder, FFmpeg instance, blob download, recent-downloads store. |
@@ -137,12 +142,15 @@ These are the rules the rest of the code relies on. Many are "absence of somethi
 - **403 is terminal; 5xx and 429 are transient.** Auto-retry fires only for the transient set ([`isRecoverableError`](src/layers/background/download/network-retry.ts)). Retrying a 403 just wastes the retry budget.
 - **Manual cancels propagate to every level atomically.** [`performCancelDownload`](src/lib/ui/cancel-download.ts) drives worker iframe abort, offscreen accumulator drop, mux queue cancel marker, and persisted-retry deletion — all keyed off the same `videoId`. A cancelled download is never resurrected by a stale retry.
 - **The Retry button is for unrecoverable errors only.** Auto-retry handles 5xx / 429 / network reset / stall silently (5 s / 20 s / 60 s backoff, 3 attempts) via [`scheduleAutoRetry`](src/layers/background/download/network-retry.ts). If the user sees Retry, the failure is a class that a fresh attempt can't fix on its own — FFmpeg mux failure, codec parse error, attestation wall, OPFS write error.
+- **Streams are copied, not re-encoded, whenever the container allows.** Every download goes through one plan ([`resolveDownloadPlan`](src/lib/youtube/download-plan.ts)) that swaps the picked streams for same-quality variants the container holds as-is, steered by the codec settings. When nothing fits, the output becomes MKV rather than re-encoding the video. See [Format, codec, and container selection](#format-codec-and-container-selection).
+- **Every picker reads one choices table.** Settings dropdowns, radio groups and the download panel's pickers take their options from `{ value: { label, description } }` tables through [`listChoices`](src/lib/utils/choices.ts), so each value's label and description are written once and adding a codec or container is one entry. YouTube's Polymer selects, which have no room for a second line, get the same text inlined by `toInlineLabeledOption`.
+- **One rule decides the download type.** "Auto" means audio only for music and video + audio for everything else, and only [`resolveDownloadType`](src/lib/youtube/download-type.ts) applies it. The watch button, the panel, and playlist and grid downloads all ask it instead of re-deriving it.
 - **zod runs jitless because the YouTube page enforces Trusted Types.** MAIN-world code can't use the `eval`/`Function` that zod's schema JIT relies on, so every schema imports `z` from [`src/lib/zod.ts`](src/lib/zod.ts), which calls `z.config({ jitless: true })` once. Importing `zod` directly throws on a YouTube page.
 - **Recent-download caching is best-effort and never blocks the save.** [`addRecentDownload`](src/lib/storage/recent-downloads-db.ts) evicts the oldest cached entries to fit under the (unlimited-but-disk-bound) quota and returns `false` to skip rather than throwing; the actual `browser.downloads` save in [`persistAndTrigger`](src/lib/download-pipeline/blob-download.ts) always runs regardless. Cached entries live for 10 minutes, a window that resets whenever the popup closes.
 
 ## Deep dives
 
-These three sections are the parts of the system that are most non-obvious and most worth understanding before changing code.
+These sections cover the parts of the system that are most non-obvious and most worth understanding before changing code.
 
 ### Chrome stream fetch — four-layer fallback chain
 
@@ -261,6 +269,41 @@ The ISOLATED content script watches `statusProgressItem` and copies every change
 
 Per-stage weighting: the 0–70 % slice divides evenly across every component being fetched (video, primary audio, each additional audio track, each caption); 70–100 % covers FFmpeg muxing. The weighting formula lives in [`computeWeightedProgress`](src/layers/background/download/progress-stages.ts) and is shared across SABR, CDN, and the Firefox direct path so the ring layout is identical regardless of route. Captions ship pre-fetched inside the `DownloadRequest` so they count as instantly complete; the bar opens at `captionCount/totalStages`.
 
+### Format, codec, and container selection
+
+FFmpeg runs as WebAssembly, so re-encoding a 1080p video takes minutes where copying its streams takes seconds. Every download therefore picks streams the chosen container can hold as they are, steered by three settings: Video codec (H.264, VP9, AV1), Audio codec (AAC, Opus, Dolby) and Dynamic range (SDR, or HDR when available). The whole decision runs in one function, [`resolveDownloadPlan`](src/lib/youtube/download-plan.ts), which the download itself, the panel's preview and the size estimate all call.
+
+```mermaid
+flowchart LR
+  Settings["Settings<br/>(container, quality,<br/>max frame rate, codecs,<br/>dynamic range)"]
+  Settings --> Auto["1. Resolve the container<br/>(Auto follows<br/>the codec settings)"]
+  Auto --> Quality["2. Pick the quality<br/>(frame-rate cap; Best stops at<br/>the codec's top quality)"]
+  Quality --> Align["3. Align streams<br/>to the container<br/>(same quality, preferred codec)"]
+  Align --> Ext["4. Name the output<br/>(MKV when the streams<br/>still don't fit)"]
+  Ext --> Req["Into DownloadRequest<br/>(with codecPreferences)"]
+```
+
+1. **Resolve the container.** A container the user picked (MP4, WebM, MKV, ...) is used as-is. "Auto (match source)" goes through [`resolveAutoContainer`](src/lib/youtube/auto-container.ts), which finds the streams the codec settings would pick and follows them: H.264 and AV1 to MP4, VP9 to WebM, Opus audio to `.opus`, and MKV when the video's container can't hold the chosen audio as-is.
+2. **Pick the quality.** [`selectVideoFormatForQuality`](src/lib/youtube/select-video-quality.ts) applies the Max frame rate cap; a video with nothing under the cap keeps its own frame rates. "Best" stops at the top quality of the codec the container prefers, like yt-dlp's `-f "bv[vcodec^=avc1]"` for MP4: H.264 tops out at 1080p, so Best in MP4 is 1080p H.264, not 4K VP9 that would need re-encoding.
+3. **Align to the container.** [`alignFormatsToContainer`](src/lib/youtube/align-formats-to-container.ts) swaps each picked stream for a variant of the same height, frame rate and Premium tier in the preferred codec, trying in order: codec setting and dynamic range both met, any HDR stream the container holds as-is (for "HDR when available"), the same codec in the wanted range, the codec setting alone, and finally the original pick. A codec setting counts only when the video offers that codec and the container holds it; otherwise the container's own preference applies (H.264 and AAC for MP4, VP9 and Opus for WebM).
+4. **Name the output.** [`getOutputExtension`](src/lib/utils/container-specs.ts) switches to MKV when the aligned streams still can't go into the chosen container, even with an audio re-encode, so a mismatch costs a container change instead of a video re-encode.
+
+The rules live in two tables in [`container-specs.ts`](src/lib/utils/container-specs.ts): `CONTAINER_SPECS` (per extension: the codecs it holds, the ones it prefers, and the encoder to fall back to) and `VIDEO_CODEC_PREFERENCES` / `AUDIO_CODEC_PREFERENCES` (per setting: its codecs, label and description). Adding a codec or a container is a table entry, not new branching.
+
+**The panel only offers what the plan would keep.** The download panel's Video codec and Audio quality pickers run every stream through a list of conditions ([`VIDEO_FORMAT_CONDITIONS` and `AUDIO_FORMAT_CONDITIONS`](src/layers/youtube/components/download-options-panel/helpers/quality-change-handler.ts)): the container must hold the stream as-is, and the plan, with that stream's codec pinned, must keep it. So H.264 is listed only up to 1080p, HDR only on HDR videos, and WebM never lists H.264. A new constraint is one more function in the list. Picking a stream by hand pins its codec for that download only ([`pinVideoCodecPreferences`](src/lib/youtube/align-formats-to-container.ts)). Changing a codec setting in the popup replaces that pin in every open panel: the ISOLATED script forwards each settings change to the page (`OptionsUpdate`), and the panel re-derives its picks from it.
+
+**Where each step lives**
+
+| Step | Code |
+| --- | --- |
+| Resolve "Auto" from the codec settings | [`auto-container.ts:17`](src/lib/youtube/auto-container.ts) `resolveAutoContainer` |
+| Frame-rate cap + Best's codec ceiling | [`select-video-quality.ts:72`](src/lib/youtube/select-video-quality.ts) `selectVideoFormatForQuality` |
+| One plan for every caller | [`download-plan.ts:255`](src/lib/youtube/download-plan.ts) `resolveDownloadPlan` |
+| Align streams to the container | [`align-formats-to-container.ts:137`](src/lib/youtube/align-formats-to-container.ts) `alignFormatsToContainer` -> [`:101`](src/lib/youtube/align-formats-to-container.ts) `alignVideoFormatToExtension` + [`select-audio-format.ts:121`](src/lib/youtube/select-audio-format.ts) `alignAudioFormatToExtension` |
+| Codec setting vs the container's preference | [`container-specs.ts:415`](src/lib/utils/container-specs.ts) `pickPreferredCodecs` |
+| Switch to MKV | [`container-specs.ts:518`](src/lib/utils/container-specs.ts) `getOutputExtension` |
+| Panel picker conditions | [`quality-change-handler.ts:94`](src/layers/youtube/components/download-options-panel/helpers/quality-change-handler.ts) `VIDEO_FORMAT_CONDITIONS` + [`:157`](src/layers/youtube/components/download-options-panel/helpers/quality-change-handler.ts) `AUDIO_FORMAT_CONDITIONS` |
+
 ### Audio track resolution
 
 YouTube videos can ship multi-language audio (an "original" track plus dubs in other languages, plus opt-in machine-translated "auto-dubs"). The extension exposes all of them in the panel and embeds whichever ones the user picks into a single output file as separate audio tracks.
@@ -268,14 +311,14 @@ YouTube videos can ship multi-language audio (an "original" track plus dubs in o
 ```mermaid
 flowchart LR
   AF["streamingData.adaptiveFormats<br/>(every audio variant)"]
-  AF --> Primary["1. Pick primary track<br/>(language priority +<br/>container match)"]
+  AF --> Primary["1. Pick primary track<br/>(language priority, then<br/>container + codec setting)"]
   Primary --> Extras["2. Collect extra tracks<br/>(rest of adaptiveFormats,<br/>dedupe by audioTrack.id,<br/>skip auto-dub, cap 16)"]
   Extras --> Resolve["3. Resolve CDN URLs in parallel<br/>(primary + extras,<br/>decipher signatures)"]
   Resolve --> Lang["4. Tag source language<br/>(audioTrack.id ->&nbsp;<br/>live audioTracks ->&nbsp;<br/>caption fallback)"]
   Lang --> Pack["Into DownloadRequest"]
 ```
 
-1. **Pick primary.** [`selectPreferredAudioFormat`](src/lib/youtube/select-audio-format.ts) walks a language priority chain depending on the user's `audioTrackLanguageMode` setting: `OriginalLanguage` mode prefers the track tagged `(original)` (resolved by [`findOriginalAudioFormat`](src/lib/youtube/audio-format-helpers.ts) via the `.4` track-id suffix or `audioIsDefault` flag), `Custom` mode prefers the user-chosen language code, and the default mode walks `locale -> navigator.language -> "en"`. When the chosen video format is WebM, the picker prefers a matching WebM audio variant so the muxer doesn't have to transcode.
+1. **Pick primary.** [`selectPreferredAudioFormat`](src/lib/youtube/select-audio-format.ts) walks a language priority chain depending on the user's `audioTrackLanguageMode` setting: `OriginalLanguage` mode prefers the track tagged `(original)` (resolved by [`findOriginalAudioFormat`](src/lib/youtube/audio-format-helpers.ts) via the `.4` track-id suffix or `audioIsDefault` flag), `Custom` mode prefers the user-chosen language code, and the default mode walks `locale -> navigator.language -> "en"`. The plan then swaps the pick for the same language in the codec the container and the Audio codec setting call for ([`alignAudioFormatToExtension`](src/lib/youtube/select-audio-format.ts)), so the muxer copies it instead of transcoding.
 2. **Collect extras.** [`getExtraAudioFormats`](src/lib/youtube/download-plan.ts) gathers the other audio tracks the user wants embedded as additional MKV streams. It dedupes by `audioTrack.id` (YouTube ships one variant per codec per language), skips `.10` auto-dub tracks unless the user opted into auto-dubbing, allows one untagged stream through (for videos that have a single anonymous track alongside tagged ones), and caps at 16.
 3. **Resolve CDN URLs.** [`preResolveCdnUrls`](src/layers/youtube/entrypoints/youtube-main.content/video/download-formats.ts) fans out [`resolveFormatUrl`](src/layers/youtube/entrypoints/youtube-main.content/video/stream-fetch.ts) calls in parallel for video + primary audio + every extra track. Each resolve runs the `signatureCipher` decoder ([`decryptSignatureCipher`](src/layers/youtube/lib/youtube/signature-decryptor.ts)) if the URL is signature-gated.
 4. **Tag source language.** [`resolvePrimaryAudioLanguageCode`](src/layers/youtube/entrypoints/youtube-main.content/video/download-request-builder.ts) labels the source language so FFmpeg can write a `language=` tag and VLC stops falling back to "[English]". It walks `audioTrack.id` -> the active stream from [`getCurrentVideoAudioLanguage`](src/lib/youtube/audio-format-helpers.ts) (the live `<video>.audioTracks` entry) -> the first non-translated caption track. The fallback chain matters for single-track uploads, which carry no `audioTrack.id` at all.
