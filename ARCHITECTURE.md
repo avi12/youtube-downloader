@@ -58,7 +58,7 @@ flowchart TB
     Scrub -->|"chunks"| Acc
     FFchunk -->|"chunks"| Acc
 
-    Acc --> Mux["FFmpeg WASM mux worker<br/>(video + audio tracks +<br/>VTT subtitles + cover art +<br/>ID3 metadata)"]
+    Acc --> Mux["FFmpeg WASM mux worker<br/>(SIMD or non-SIMD core;<br/>video + audio tracks +<br/>VTT subtitles + cover art +<br/>ID3 metadata)"]
     Mux --> Blob["Output blob"]
     Blob --> DL(["**END**<br/>File saved via<br/>browser.downloads.download"])
     Direct --> DL
@@ -96,7 +96,7 @@ flowchart TB
 | 4. Scrub-capture iframe | [`iframe-downloader.ts:34`](src/layers/background/download/iframe-downloader.ts) `prepareIframe` + [`:73`](src/layers/background/download/iframe-downloader.ts) `downloadViaWatchPage` (SourceBuffer hook in [`sourcebuffer-capture-patches.ts:34`](src/layers/youtube/entrypoints/sourcebuffer-capture/sourcebuffer-capture-patches.ts) `patchSourceBuffer`) |
 | Firefox 10 MB chunked fetch | [`firefox-direct-download.ts:264`](src/layers/background/download/firefox-direct-download.ts) `runFirefoxDirectDownload` |
 | Offscreen accumulator + end-handler | [`accumulator.ts`](src/layers/processing/entrypoints/offscreen/stream/accumulator.ts) + [`end-handler.ts:8`](src/layers/processing/entrypoints/offscreen/stream/end-handler.ts) `handleProcessStreamEnd` |
-| FFmpeg WASM mux worker | [`mux-worker/index.ts:34`](src/layers/processing/entrypoints/mux-worker/index.ts) `onInitMessage` + [`mux-handler-mux-video-audio.ts`](src/layers/processing/entrypoints/mux-worker/mux-handler-mux-video-audio.ts) |
+| FFmpeg WASM mux worker | [`mux-worker/index.ts:34`](src/layers/processing/entrypoints/mux-worker/index.ts) `onInitMessage` + [`mux-handler-mux-video-audio.ts`](src/layers/processing/entrypoints/mux-worker/mux-handler-mux-video-audio.ts) (core build picked by [`ffmpeg-wasm-source.ts:19`](src/layers/processing/entrypoints/offscreen/ffmpeg-wasm-source.ts) `resolveFFmpegCoreBuild`) |
 | File saved via browser.downloads.download | [`download-fallback-chain.ts:78`](src/layers/background/download/download-fallback-chain.ts) |
 | DNR `Origin`/`Referer`/`Sec-Fetch` rewrite on `googlevideo` | static ruleset [`strip-youtube-frame-headers.json`](src/public/rules/strip-youtube-frame-headers.json) (registered via `declarative_net_request` in [`wxt.config.ts`](wxt.config.ts)) |
 
@@ -113,7 +113,7 @@ The code is organised as WXT layers under `src/layers/` — `src/layers/backgrou
 | `src/layers/youtube/entrypoints/page-sabr-fetch.content.ts` | MAIN-world bridge that runs page-context pristine `fetch` for the Firefox InnerTube path. |
 | `src/layers/youtube/entrypoints/sourcebuffer-capture/` | MAIN-world script that patches `SourceBuffer.appendBuffer` on the scrub-capture iframe to siphon decoded segments. |
 | `src/layers/background/` | Dispatcher, download orchestration, fallback chain, retry / queue / tab-tracking, progress routing. |
-| `src/layers/processing/entrypoints/offscreen/` | Offscreen document. Hosts FFmpeg WASM (which the SW can't run), the download-worker iframe, and the scrub-capture iframe. On Firefox the offscreen "document" is a hidden iframe in the BG event-page's own document, but the URL is the same. |
+| `src/layers/processing/entrypoints/offscreen/` | Offscreen document. Hosts FFmpeg WASM (which the SW can't run), in the SIMD or non-SIMD build the CPU supports, the download-worker iframe, and the scrub-capture iframe. On Firefox the offscreen "document" is a hidden iframe in the BG event-page's own document, but the URL is the same. |
 | `src/layers/processing/entrypoints/download-worker/` | Sandboxed iframe inside the offscreen document. Runs Chrome's SABR + CDN fetch loop in isolation from the BG SW. |
 | `src/layers/processing/entrypoints/mux-worker/` | Web Worker that drives `@ffmpeg/core` to mux video + audio + subtitles + cover art. |
 | `src/layers/popup/entrypoints/popup/` | Browser-action popup. Download history (IndexedDB + blob store), live progress, format-change dialog, settings. |
@@ -145,6 +145,7 @@ These are the rules the rest of the code relies on. Many are "absence of somethi
 - **Streams are copied, not re-encoded, whenever the container allows.** Every download goes through one plan ([`resolveDownloadPlan`](src/lib/youtube/download-plan.ts)) that swaps the picked streams for same-quality variants the container holds as-is, steered by the codec settings. When nothing fits, the output becomes MKV rather than re-encoding the video. See [Format, codec, and container selection](#format-codec-and-container-selection).
 - **Every picker reads one choices table.** Settings dropdowns, radio groups and the download panel's pickers take their options from `{ value: { label, description } }` tables through [`listChoices`](src/lib/utils/choices.ts), so each value's label and description are written once and adding a codec or container is one entry. YouTube's Polymer selects, which have no room for a second line, get the same text inlined by `toInlineLabeledOption`.
 - **One rule decides the download type.** "Auto" means audio only for music and video + audio for everything else, and only [`resolveDownloadType`](src/lib/youtube/download-type.ts) applies it. The watch button, the panel, and playlist and grid downloads all ask it instead of re-deriving it.
+- **FFmpeg loads in a build the CPU can run, or fails fast.** `@ffmpeg/core` 0.12.1 and later use WebAssembly SIMD, which browsers only run on CPUs with SSE4.1. The offscreen document checks with a tiny SIMD module ([`resolveFFmpegCoreBuild`](src/layers/processing/entrypoints/offscreen/ffmpeg-wasm-source.ts)) and, without SIMD, loads 0.12.0, the last build without it. Its JS glue is bundled as the `@ffmpeg/core-nosimd` alias, while its wasm is fetched from jsDelivr instead of doubling the bundle, checked against a pinned SHA-256 and cached in OPFS. If FFmpeg still can't load, the offscreen document reports `PipelineFFmpegFailed` and waiting downloads fail at once instead of hanging on a muxer that never starts (issue #21).
 - **zod runs jitless because the YouTube page enforces Trusted Types.** MAIN-world code can't use the `eval`/`Function` that zod's schema JIT relies on, so every schema imports `z` from [`src/lib/zod.ts`](src/lib/zod.ts), which calls `z.config({ jitless: true })` once. Importing `zod` directly throws on a YouTube page.
 - **Recent-download caching is best-effort and never blocks the save.** [`addRecentDownload`](src/lib/storage/recent-downloads-db.ts) evicts the oldest cached entries to fit under the (unlimited-but-disk-bound) quota and returns `false` to skip rather than throwing; the actual `browser.downloads` save in [`persistAndTrigger`](src/lib/download-pipeline/blob-download.ts) always runs regardless. Cached entries live for 10 minutes, a window that resets whenever the popup closes.
 
