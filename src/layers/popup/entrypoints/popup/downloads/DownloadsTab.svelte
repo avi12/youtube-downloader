@@ -4,10 +4,10 @@
   import sparkleIcon from "../icons/sparkle.svg?raw";
   import ActiveDownloadsSections from "./ActiveDownloadsSections.svelte";
   import RecentDownloadsSection from "./recent/RecentDownloadsSection.svelte";
+  import { startTabDownload } from "./watch-download";
   import { isActiveFromCurrentTab } from "./youtube-tab";
   import { resolveFFmpegCoreBuild } from "@/lib/download-pipeline/ffmpeg-core-build";
   import { FFmpegCoreBuild } from "@/lib/download-pipeline/mux-worker-types";
-  import { MessageType, sendMessage, sendMessageToTab } from "@/lib/messaging/messaging";
   import { deleteRecentDownload } from "@/lib/storage/recent-downloads-db";
   import { createLogger, LogScope } from "@/lib/utils/logger";
   import { getVideoIdFromUrl, isMobileWatchPageUrl, isWatchPageUrl } from "@/lib/youtube/youtube-url";
@@ -102,17 +102,18 @@
 
   // Machines too slow for the SIMD FFmpeg build are the ones browsing the lighter mobile site
   const isMobileSiteSupported = resolveFFmpegCoreBuild() === FFmpegCoreBuild.NoSimd;
-  const mobileVideoId = $derived(
+  const isMobileWatchTab = $derived(
     isMobileSiteSupported && currentSourceUrl !== undefined && isMobileWatchPageUrl(currentSourceUrl)
+  );
+  const watchVideoId = $derived(
+    currentTabId !== undefined && currentSourceUrl !== undefined
+      && (isMobileWatchTab || isWatchPageUrl(currentSourceUrl))
       ? getVideoIdFromUrl(currentSourceUrl)
       : null
   );
-  const isWatchPageTab = $derived(
-    currentTabId !== undefined && currentSourceUrl !== undefined
-    && (isWatchPageUrl(currentSourceUrl) || mobileVideoId !== null)
-  );
+  const isWatchPageTab = $derived(watchVideoId !== null);
   const emptyStateText = $derived.by(() => {
-    if (mobileVideoId !== null) {
+    if (isMobileWatchTab) {
       return "Grab this video right here";
     }
 
@@ -120,15 +121,14 @@
       ? "Grab this video right here, or hit this button under any video on YouTube"
       : "Start downloads right on YouTube - look for this button under any video";
   });
-  // The mobile site has no in-page button, so the popup is the only way to start its download
-  const isMobileDownloadOffered = $derived(mobileVideoId !== null && !allActiveIds.includes(mobileVideoId));
+  const isWatchDownloadOffered = $derived(watchVideoId !== null && !allActiveIds.includes(watchVideoId));
   let isStartingWatchDownload = $state(false);
   let isOptionsOpen = $state(false);
 
   // Listing the video hides its buttons, so they come back enabled for another pick once it's done
   $effect(() => {
-    const isMobileVideoListed = mobileVideoId !== null && allActiveIds.includes(mobileVideoId);
-    if (isMobileVideoListed) {
+    const isWatchVideoListed = watchVideoId !== null && allActiveIds.includes(watchVideoId);
+    if (isWatchVideoListed) {
       isStartingWatchDownload = false;
     }
   });
@@ -139,26 +139,22 @@
   }
 
   async function handleStartWatchDownload(): Promise<void> {
-    if (currentTabId === undefined) {
+    if (currentTabId === undefined || currentSourceUrl === undefined || watchVideoId === null) {
       return;
     }
 
     isStartingWatchDownload = true;
-
-    if (mobileVideoId !== null && currentSourceUrl !== undefined) {
-      await sendMessage(MessageType.StartPopupDownload, {
-        videoId: mobileVideoId,
-        sourceUrl: currentSourceUrl
-      }).catch(error => log.warn("Starting the mobile page download failed:", error));
-      return;
+    const isStarted = await startTabDownload({
+      tabId: currentTabId,
+      sourceUrl: currentSourceUrl,
+      videoId: watchVideoId
+    }).catch(error => {
+      log.warn("Starting the download failed:", error);
+      return false;
+    });
+    if (!isStarted) {
+      isStartingWatchDownload = false;
     }
-
-    const isStarted = await sendMessageToTab(MessageType.StartWatchPageDownload, undefined, currentTabId)
-      .catch(error => {
-        log.warn("Starting the watch page download failed:", error);
-        return false;
-      });
-    isStartingWatchDownload = Boolean(isStarted);
   }
 
   async function handleRemove(entry: RecentDownloadEntry): Promise<void> {
@@ -203,13 +199,13 @@
 {/snippet}
 
 {#snippet optionsCard()}
-  {#if isOptionsOpen && mobileVideoId !== null && currentTabId !== undefined && currentSourceUrl !== undefined}
+  {#if isOptionsOpen && watchVideoId !== null && currentTabId !== undefined && currentSourceUrl !== undefined}
     <DownloadOptionsCard
       onRequested={handleOptionsRequested}
       {options}
       sourceUrl={currentSourceUrl}
       tabId={currentTabId}
-      videoId={mobileVideoId}
+      videoId={watchVideoId}
     />
   {/if}
 {/snippet}
@@ -242,7 +238,7 @@
             Download
           </span>
         {/if}
-        {#if isMobileDownloadOffered}
+        {#if isWatchDownloadOffered}
           {@render optionsToggle("youtube-download-pill-chevron youtube-download-pill-toggle")}
         {:else}
           <span class="youtube-download-pill-chevron" aria-hidden="true">
@@ -259,7 +255,7 @@
   </section>
 {:else}
   <div class="download-sections">
-    {#if isMobileDownloadOffered}
+    {#if isMobileWatchTab && isWatchDownloadOffered}
       <div class="mobile-download">
         <button
           class="mobile-download-button"

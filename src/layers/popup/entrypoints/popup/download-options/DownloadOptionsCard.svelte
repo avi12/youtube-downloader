@@ -34,6 +34,7 @@
     return null;
   });
   const host = createPopupPanelHost({
+    tabId,
     sourceUrl,
     onRequested: () => props.onRequested()
   });
