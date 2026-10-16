@@ -14,11 +14,43 @@
   inline-size: 100%;
 }
 
-.ytLockupMetadataViewModelHost:has([data-ytdl-grid-item]) {
+[data-ytdl-grid-item] {
+  @starting-style {
+    opacity: 0%;
+    scale: 0.8;
+  }
+
+  /* stylelint-disable plugin/no-low-performance-animation-properties */
+  transition:
+    opacity 200ms cubic-bezier(0.2, 0, 0, 1),
+    scale 200ms cubic-bezier(0.2, 0, 0, 1),
+    inline-size 250ms cubic-bezier(0.2, 0, 0, 1),
+    margin 250ms cubic-bezier(0.2, 0, 0, 1),
+    visibility 250ms allow-discrete;
+  /* stylelint-enable plugin/no-low-performance-animation-properties */
+  interpolate-size: allow-keywords;
+}
+
+.ytdl-hide-grid-buttons [data-ytdl-grid-item] {
+  overflow: hidden;
+  inline-size: 0;
+  margin-inline: 0;
+  opacity: 0%;
+  visibility: hidden;
+  pointer-events: none;
+  scale: 0.8;
+}
+
+.ytLockupMetadataViewModelHost {
+  /* stylelint-disable-next-line plugin/no-low-performance-animation-properties */
+  transition: padding-inline-end 250ms cubic-bezier(0.2, 0, 0, 1);
+}
+
+:root:not(.ytdl-hide-grid-buttons) .ytLockupMetadataViewModelHost:has([data-ytdl-grid-item]) {
   padding-inline-end: 30px;
 }
 
-.ytLockupMetadataViewModelHost:has([data-ytdl-grid-item]) .ytLockupMetadataViewModelTextContainer {
+:root:not(.ytdl-hide-grid-buttons) .ytLockupMetadataViewModelHost:has([data-ytdl-grid-item]) .ytLockupMetadataViewModelTextContainer {
   flex: 1 1 0;
 }
 
@@ -37,4 +69,11 @@ ytd-menu-renderer.ytd-playlist-video-renderer:has([data-ytdl-item]) {
   display: flex;
   flex-direction: row;
   align-items: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-ytdl-grid-item],
+  .ytLockupMetadataViewModelHost {
+    transition: none;
+  }
 }

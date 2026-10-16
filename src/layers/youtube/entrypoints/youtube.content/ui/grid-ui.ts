@@ -7,12 +7,15 @@ const MOUNT_RETRY_MAX = 8;
 let gridObserver: MutationObserver | null = null;
 let visibilityObserver: IntersectionObserver | null = null;
 
-export function cleanupGridUi() {
+export function stopGridButtonInjection() {
   gridObserver?.disconnect();
   gridObserver = null;
   visibilityObserver?.disconnect();
   visibilityObserver = null;
+}
 
+export function cleanupGridUi() {
+  stopGridButtonInjection();
   removeGridButtons();
 }
 
@@ -74,10 +77,14 @@ function observePendingCards() {
 }
 
 export function injectGridVideoButtons(context: InstanceType<typeof ContentScriptContext>) {
+  const isAlreadyInjected = !!gridObserver;
+  if (isAlreadyInjected) {
+    return;
+  }
+
   visibilityObserver = createVisibilityObserver(context);
   observePendingCards();
 
-  gridObserver?.disconnect();
   gridObserver = new MutationObserver(observePendingCards);
 
   const elPageContent = document.querySelector(Selector.PageManager) ?? document.body;

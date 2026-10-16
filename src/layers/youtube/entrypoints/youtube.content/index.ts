@@ -6,7 +6,7 @@ import { registerPopupDownloadHandler } from "./handlers/popup-download";
 import { restoreStoredProgress, syncStoredProgressToStore } from "./handlers/progress-sync";
 import "./style.css";
 import { injectDownloadStateStyles } from "./ui/download-state-styles";
-import { setNativeDownloadVisibility } from "./ui/page-router";
+import { setNativeDownloadVisibility, syncGridDownloadButtons } from "./ui/page-router";
 import { handlePageChange } from "./ui/page-router";
 import { mountWatchSnackbar } from "./ui/watch-snackbar";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
@@ -83,6 +83,10 @@ export default defineContentScript({
       };
       initContentOptions(mergedOptions);
       setNativeDownloadVisibility(mergedOptions.isShowNativeDownload);
+      syncGridDownloadButtons({
+        pathname: location.pathname,
+        context
+      });
       crossWorldMessenger.sendMessage(CrossWorldMessage.OptionsUpdate, mergedOptions).catch(() => {});
     });
     context.onInvalidated(unwatchOptions);
