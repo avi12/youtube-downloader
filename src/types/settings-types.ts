@@ -62,6 +62,7 @@ export type Options = Prettify<{
   audioCodec: AudioCodecPreference;
   dynamicRange: DynamicRangePreference;
   isShowNativeDownload: boolean;
+  isShowGridDownloadButtons: boolean;
   isNotifyOnIdle: boolean;
   isRevealOnComplete: boolean;
   playlistDownloadMode: PlaylistDownloadMode;

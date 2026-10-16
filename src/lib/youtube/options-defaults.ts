@@ -33,6 +33,7 @@ export const INITIAL_OPTIONS: Options = {
   audioCodec: AudioCodecPreference.Auto,
   dynamicRange: DynamicRangePreference.Sdr,
   isShowNativeDownload: false,
+  isShowGridDownloadButtons: true,
   isNotifyOnIdle: false,
   isRevealOnComplete: false,
   playlistDownloadMode: PlaylistDownloadMode.Fast,

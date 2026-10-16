@@ -1,5 +1,6 @@
 <script lang="ts">
   import bellIcon from "../../icons/bell.svg?raw";
+  import downloadIcon from "../../icons/download.svg?raw";
   import folderIcon from "../../icons/folder.svg?raw";
   import playArrowIcon from "../../icons/play-arrow.svg?raw";
   import type { SettingsProps } from "../settings-props";
@@ -45,6 +46,17 @@
     onchange={isChecked => {
       void setOption({
         key: "isShowNativeDownload",
+        value: isChecked
+      });
+    }}
+  />
+  <SettingsSwitchRow
+    icon={downloadIcon}
+    isChecked={options.isShowGridDownloadButtons}
+    label="Show download buttons on home, subscriptions, channel and search pages"
+    onchange={isChecked => {
+      void setOption({
+        key: "isShowGridDownloadButtons",
         value: isChecked
       });
     }}
