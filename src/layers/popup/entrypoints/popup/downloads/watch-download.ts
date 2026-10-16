@@ -1,5 +1,5 @@
 import { MessageType, sendMessage, sendMessageToTab } from "@/lib/messaging/messaging";
-import { isMobileWatchPageUrl } from "@/lib/youtube/youtube-url";
+import { isPopupOnlyWatchPageUrl } from "@/lib/youtube/youtube-url";
 import type { DownloadRequest, Prettify } from "@/types";
 
 type StartTabDownloadParams = Prettify<{
@@ -8,10 +8,10 @@ type StartTabDownloadParams = Prettify<{
   videoId: string;
   request?: DownloadRequest;
 }>;
-// The mobile site has no content script, so its download runs in the background's hidden watch page.
+// The mobile and music sites have no content script, so their downloads run in the background's hidden watch page.
 // A desktop tab runs it itself, the same way its own button or options panel would
 export async function startTabDownload({ tabId, sourceUrl, videoId, request }: StartTabDownloadParams) {
-  if (isMobileWatchPageUrl(sourceUrl)) {
+  if (isPopupOnlyWatchPageUrl(sourceUrl)) {
     await sendMessage(MessageType.StartPopupDownload, {
       videoId,
       sourceUrl,

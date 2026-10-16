@@ -1,5 +1,6 @@
 const WATCH_PAGE_HOSTNAME = "www.youtube.com";
 const MOBILE_WATCH_PAGE_HOSTNAME = "m.youtube.com";
+const MUSIC_WATCH_PAGE_HOSTNAME = "music.youtube.com";
 export const YOUTUBE_ORIGIN = `https://${WATCH_PAGE_HOSTNAME}`;
 export const WATCH_PAGE_PATHNAME = "/watch";
 const PLAYLIST_PAGE_PATHNAME = "/playlist";
@@ -30,7 +31,15 @@ export function isWatchPageUrl(url: string) {
   return isWatchPageOnHost(url, WATCH_PAGE_HOSTNAME);
 }
 
-// The mobile site gets no injected UI - the popup downloads its video through the hidden watch-page iframe
 export function isMobileWatchPageUrl(url: string) {
   return isWatchPageOnHost(url, MOBILE_WATCH_PAGE_HOSTNAME);
+}
+
+export function isMusicWatchPageUrl(url: string) {
+  return isWatchPageOnHost(url, MUSIC_WATCH_PAGE_HOSTNAME);
+}
+
+// These sites get no injected UI - the popup downloads their videos through the hidden watch-page iframe
+export function isPopupOnlyWatchPageUrl(url: string) {
+  return isMobileWatchPageUrl(url) || isMusicWatchPageUrl(url);
 }

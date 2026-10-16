@@ -11,7 +11,12 @@
   import { FFmpegCoreBuild } from "@/lib/download-pipeline/mux-worker-types";
   import { deleteRecentDownload } from "@/lib/storage/recent-downloads-db";
   import { createLogger, LogScope } from "@/lib/utils/logger";
-  import { getVideoIdFromUrl, isMobileWatchPageUrl, isWatchPageUrl } from "@/lib/youtube/youtube-url";
+  import {
+    getVideoIdFromUrl,
+    isMobileWatchPageUrl,
+    isMusicWatchPageUrl,
+    isWatchPageUrl
+  } from "@/lib/youtube/youtube-url";
   import { ProgressType } from "@/types";
   import type {
     DownloadProgressEntry,
@@ -104,18 +109,19 @@
 
   // Machines too slow for the SIMD FFmpeg build are the ones browsing the lighter mobile site
   const isMobileSiteSupported = resolveFFmpegCoreBuild() === FFmpegCoreBuild.NoSimd;
-  const isMobileWatchTab = $derived(
-    isMobileSiteSupported && currentSourceUrl !== undefined && isMobileWatchPageUrl(currentSourceUrl)
+  const isPopupOnlyWatchTab = $derived(
+    currentSourceUrl !== undefined
+    && (isMusicWatchPageUrl(currentSourceUrl) || (isMobileSiteSupported && isMobileWatchPageUrl(currentSourceUrl)))
   );
   const watchVideoId = $derived(
     currentTabId !== undefined && currentSourceUrl !== undefined
-      && (isMobileWatchTab || isWatchPageUrl(currentSourceUrl))
+      && (isPopupOnlyWatchTab || isWatchPageUrl(currentSourceUrl))
       ? getVideoIdFromUrl(currentSourceUrl)
       : null
   );
   const isWatchPageTab = $derived(watchVideoId !== null);
   const emptyStateText = $derived.by(() => {
-    if (isMobileWatchTab) {
+    if (isPopupOnlyWatchTab) {
       return "Grab this video right here";
     }
 
