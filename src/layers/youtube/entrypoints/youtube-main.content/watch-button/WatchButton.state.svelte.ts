@@ -169,7 +169,7 @@ export function createWatchButtonState(params: {
       getDefaultVideoItag: () => defaultVideoItag,
       getDefaultAudioItag: () => defaultAudioItag,
       getDefaultAudioTrackId: () => defaultAudioTrackId,
-      getDefaultCodecPreferences: () => defaultCodecPreferences,
+      getDefaultCodecPreferences: () => $state.snapshot(defaultCodecPreferences),
       getDefaultFilename: () => defaultFilename,
       getElDownloadButton: () => elDownloadButton,
       getElChevronButton: () => elChevronButton,
