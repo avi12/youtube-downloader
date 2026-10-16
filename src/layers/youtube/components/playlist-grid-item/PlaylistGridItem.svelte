@@ -48,7 +48,7 @@
 <GridItemButtonGroup
   attachChevronButton={buttons.attachChevronButton}
   attachDownloadButton={buttons.attachDownloadButton}
-  downloadState={state.status}
+  downloadState={state.primaryState}
   isError={state.status === PlaylistGridStatus.Failed}
   {isIndeterminate}
   {isProgressRingVisible}

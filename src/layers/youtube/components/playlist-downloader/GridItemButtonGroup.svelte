@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { PrimaryButtonState } from "@/lib/ui/primary-button.svelte.ts";
   import DownloadProgressRing from "#youtube/components/download-button/DownloadProgressRing.svelte";
   import type { Snippet } from "svelte";
 
@@ -10,7 +11,7 @@
     isIndeterminate: boolean;
     progress: number;
     isError: boolean;
-    downloadState: string;
+    downloadState: PrimaryButtonState;
     ringAriaLabel?: string;
     isReady?: boolean;
     isLoadFailed?: boolean;

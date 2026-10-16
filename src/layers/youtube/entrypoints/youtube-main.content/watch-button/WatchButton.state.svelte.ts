@@ -5,6 +5,7 @@ import { buildChevronData, buildDownloadData } from "./watch-button-view-model";
 import { createButtonElementEffects } from "./WatchButton.button-effects.svelte";
 import { createMessageEffects } from "./WatchButton.message-effects.svelte";
 import { createPanelEffects } from "./WatchButton.panel-effects.svelte";
+import { PrimaryButtonState } from "@/lib/ui/primary-button.svelte";
 import { interruptedDownloadStore, statusProgressSignal } from "@/lib/ui/synced-stores.svelte";
 import { calculateWeightedProgress } from "@/lib/youtube/video-helpers";
 import { type CodecPreferences, type DownloadType, type VideoData, type YtButtonViewModelElement } from "@/types";
@@ -84,22 +85,22 @@ export function createWatchButtonState(params: {
 
   const downloadState = $derived.by(() => {
     if (isDone) {
-      return "done";
+      return PrimaryButtonState.Done;
     }
 
     if (isError) {
-      return "error";
+      return PrimaryButtonState.Failed;
     }
 
     if (isInterrupted) {
-      return "interrupted";
+      return PrimaryButtonState.Interrupted;
     }
 
     if (isDownloading) {
-      return "downloading";
+      return PrimaryButtonState.Downloading;
     }
 
-    return "";
+    return PrimaryButtonState.Idle;
   });
 
   const isIndeterminate = $derived(isDownloading && downloadProgress === 0);

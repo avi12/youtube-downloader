@@ -9,7 +9,7 @@
   --ytdl-state-mix: 18%;
 }
 
-[data-ytdl-download-state="error"] {
+[data-ytdl-download-state="failed"] {
   --ytdl-state-color: #d93025;
   --ytdl-state-mix: 18%;
 }
@@ -28,7 +28,7 @@
   --ytdl-state-color: #6cd16c;
 }
 
-[dark] [data-ytdl-download-state="error"] {
+[dark] [data-ytdl-download-state="failed"] {
   --ytdl-state-color: #ff6b6b;
 }
 
@@ -36,28 +36,28 @@
   --ytdl-state-color: #f5b94a;
 }
 
-[data-ytdl-download-state]:not([data-ytdl-download-state=""]) {
+[data-ytdl-download-state]:not([data-ytdl-download-state="idle"]) {
   --ytdl-state-bg-base: rgb(245 245 245);
 
   color: var(--ytdl-state-color);
 }
 
-[dark] [data-ytdl-download-state]:not([data-ytdl-download-state=""]) {
+[dark] [data-ytdl-download-state]:not([data-ytdl-download-state="idle"]) {
   --ytdl-state-bg-base: rgb(35 35 35);
 }
 
-[data-ytdl-download-state]:not([data-ytdl-download-state=""]) .ytdl-download-button button,
-[data-ytdl-download-state]:not([data-ytdl-download-state=""]) .ytdl-chevron-button button,
-[data-ytdl-download-state]:not([data-ytdl-download-state=""]) .ytdl-download-btn-wrapper yt-button-view-model button {
+[data-ytdl-download-state]:not([data-ytdl-download-state="idle"]) .ytdl-download-button button,
+[data-ytdl-download-state]:not([data-ytdl-download-state="idle"]) .ytdl-chevron-button button,
+[data-ytdl-download-state]:not([data-ytdl-download-state="idle"]) .ytdl-download-btn-wrapper yt-button-view-model button {
   /* !important is needed to override YouTube's lockup button styling, which
      out-specifies a plain rule (the watch-page actions bar does not). */
   background-color: color-mix(in oklab, var(--ytdl-state-color) var(--ytdl-state-mix), var(--ytdl-state-bg-base)) !important;
   color: var(--ytdl-state-color) !important;
 }
 
-[data-ytdl-download-state]:not([data-ytdl-download-state=""]) .ytdl-download-button button:hover,
-[data-ytdl-download-state]:not([data-ytdl-download-state=""]) .ytdl-chevron-button button:hover,
-[data-ytdl-download-state]:not([data-ytdl-download-state=""]) .ytdl-download-btn-wrapper yt-button-view-model button:hover {
+[data-ytdl-download-state]:not([data-ytdl-download-state="idle"]) .ytdl-download-button button:hover,
+[data-ytdl-download-state]:not([data-ytdl-download-state="idle"]) .ytdl-chevron-button button:hover,
+[data-ytdl-download-state]:not([data-ytdl-download-state="idle"]) .ytdl-download-btn-wrapper yt-button-view-model button:hover {
   background-color: color-mix(in oklab, var(--ytdl-state-color) calc(var(--ytdl-state-mix) + 8%), var(--ytdl-state-bg-base)) !important;
 }
 
@@ -70,7 +70,7 @@
   stroke: var(--yt-sys-color-baseline--text-complete, var(--yt-sys-color-baseline--themed-green, #1e8e3e));
 }
 
-[data-ytdl-download-state="error"] .ytdl-download-ring__indicator {
+[data-ytdl-download-state="failed"] .ytdl-download-ring__indicator {
   stroke: var(--yt-sys-color-baseline--text-error, var(--yt-sys-color-baseline--error-indicator, #d93025));
 }
 

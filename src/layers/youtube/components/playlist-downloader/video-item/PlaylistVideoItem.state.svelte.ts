@@ -2,6 +2,7 @@ import { resolveButtonLabel, resolveDownloadIconName } from "./PlaylistVideoItem
 import { cancelDownload, triggerDownload } from "./PlaylistVideoItem.download";
 import { createVideoItemEffects } from "./PlaylistVideoItem.effects.svelte";
 import { buildButtonTooltip } from "./PlaylistVideoItem.helpers";
+import { PrimaryButtonState } from "@/lib/ui/primary-button.svelte";
 import {
   interruptedDownloadStore,
   statusProgressSignal,
@@ -94,22 +95,22 @@ export function createPlaylistVideoItemState({
   );
   const downloadStateClass = $derived.by(() => {
     if (isDone || isLocallyDone) {
-      return "done";
+      return PrimaryButtonState.Done;
     }
 
     if (isDownloadFailed || isUnavailable) {
-      return "error";
+      return PrimaryButtonState.Failed;
     }
 
     if (isInterrupted) {
-      return "interrupted";
+      return PrimaryButtonState.Interrupted;
     }
 
     if (isDownloading) {
-      return "downloading";
+      return PrimaryButtonState.Downloading;
     }
 
-    return "";
+    return PrimaryButtonState.Idle;
   });
   const isIndeterminate = $derived(isDownloading && displayProgress === 0);
   const isProgressRingVisible = $derived(isDownloading);
