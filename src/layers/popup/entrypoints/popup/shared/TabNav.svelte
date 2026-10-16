@@ -50,6 +50,10 @@
     }
   });
 
+  export function focusTab(tabId: T): void {
+    tabButtonElements[tabId]?.focus();
+  }
+
   function handleTabKeydown(e: KeyboardEvent): void {
     const keyDirections: Partial<Record<string, 1 | -1>> = {
       ArrowRight: 1,
@@ -66,7 +70,7 @@
     const iCurrent = tabs.findIndex(tab => tab.id === activeTab);
     const nextId = tabs[(iCurrent + direction + tabs.length) % tabs.length]!.id;
     onChange(nextId);
-    tabButtonElements[nextId]?.focus();
+    focusTab(nextId);
   }
 </script>
 

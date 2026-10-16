@@ -8,17 +8,22 @@ export const PopupPanel = {
 
 export type PopupPanel = (typeof PopupPanel)[keyof typeof PopupPanel];
 
+export const PANEL_LABELS = {
+  [PopupPanel.Downloads]: "Downloads",
+  [PopupPanel.Settings]: "Settings"
+} as const satisfies Record<PopupPanel, string>;
+
 export function buildTabs(totalActiveDownloads: number) {
   return [
     {
       id: PopupPanel.Downloads,
-      label: "Downloads",
+      label: PANEL_LABELS[PopupPanel.Downloads],
       badge: totalActiveDownloads,
       icon: downloadIcon
     },
     {
       id: PopupPanel.Settings,
-      label: "Settings",
+      label: PANEL_LABELS[PopupPanel.Settings],
       icon: settingsIcon
     }
   ];

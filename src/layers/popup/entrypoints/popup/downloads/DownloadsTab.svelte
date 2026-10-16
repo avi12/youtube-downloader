@@ -2,6 +2,7 @@
   import DownloadOptionsCard from "../download-options/DownloadOptionsCard.svelte";
   import downloadIcon from "../icons/download.svg?raw";
   import sparkleIcon from "../icons/sparkle.svg?raw";
+  import { PANEL_LABELS, PopupPanel } from "../tabs";
   import ActiveDownloadsSections from "./ActiveDownloadsSections.svelte";
   import RecentDownloadsSection from "./recent/RecentDownloadsSection.svelte";
   import { startTabDownload } from "./watch-download";
@@ -40,13 +41,14 @@
     onCancel: (videoIds: string[]) => void;
     onChangeFormat: (entry: RecentDownloadEntry) => void;
     onRecentChanged: () => void;
+    onOpenSettings: () => void;
   }
 
   const {
     isFFmpegReady, videoDownloads, musicList, videoOnlyList, videoDetails,
     statusProgress, percentFormatter, recentDownloads, now,
     currentTabId, currentSourceUrl, pendingFormatChangeId, options,
-    onCancel, onChangeFormat, onRecentChanged
+    onCancel, onChangeFormat, onRecentChanged, onOpenSettings
   }: Props = $props();
 
   const totalActiveDownloads = $derived(videoDownloads.length + musicList.length + videoOnlyList.length);
@@ -250,7 +252,16 @@
     {@render optionsCard()}
     <div class="empty-state-hint">
       {@html sparkleIcon}
-      Tip: pick formats, quality &amp; languages in Settings
+      <span>
+        Tip: pick formats, quality &amp; languages in
+        <button
+          class="text-link"
+          onclick={onOpenSettings}
+          type="button"
+        >
+          {PANEL_LABELS[PopupPanel.Settings]}
+        </button>
+      </span>
     </div>
   </section>
 {:else}

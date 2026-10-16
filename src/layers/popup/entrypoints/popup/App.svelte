@@ -78,6 +78,8 @@
     easing: cubicOut
   });
 
+  let tabNav = $state<{ focusTab: (tabId: PopupPanel) => void }>();
+
   function handleTabChange(id: PopupPanel): void {
     const iPrevious = PANEL_ORDER.indexOf(appState.activePanel);
     const iNext = PANEL_ORDER.indexOf(id);
@@ -91,10 +93,11 @@
     <div class="popup-header-top">
       <h1 class="popup-title">YouTube Downloader</h1>
       <span class="popup-credit">
-        by <a href="https://avi12.com" target="_blank">Avi</a>
+        by <a class="text-link" href="https://avi12.com" target="_blank">Avi</a>
       </span>
     </div>
     <TabNav
+      bind:this={tabNav}
       activeTab={appState.activePanel}
       initialActiveTab={PopupPanel.Downloads}
       onChange={handleTabChange}
@@ -123,6 +126,10 @@
           now={appState.now}
           onCancel={appState.cancelDownloads}
           onChangeFormat={appState.handleChangeFormat}
+          onOpenSettings={() => {
+            handleTabChange(PopupPanel.Settings);
+            tabNav?.focusTab(PopupPanel.Settings);
+          }}
           onRecentChanged={appState.refreshRecentDownloads}
           options={appState.options}
           pendingFormatChangeId={appState.pendingFormatChangeEntry?.id ?? null}
@@ -168,6 +175,28 @@
 
         [data-tooltip]::after {
           transition: none;
+        }
+      }
+
+      .text-link {
+        padding: 0;
+        border: none;
+        background: none;
+        color: var(--accent);
+        font: inherit;
+        font-weight: 600;
+        text-decoration: underline;
+        text-underline-offset: 2px;
+        cursor: pointer;
+
+        &:hover {
+          opacity: 80%;
+        }
+
+        &:focus-visible {
+          border-radius: 4px;
+          outline: 2px solid var(--accent);
+          outline-offset: 2px;
         }
       }
 
@@ -310,17 +339,6 @@
           .popup-credit {
             color: var(--fg-muted);
             font-size: 0.75rem;
-
-            & a {
-              color: var(--accent);
-              font-weight: 600;
-              text-decoration: underline;
-              text-underline-offset: 2px;
-
-              &:hover {
-                opacity: 80%;
-              }
-            }
           }
         }
       }
