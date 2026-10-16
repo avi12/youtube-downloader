@@ -255,10 +255,10 @@
   </section>
 {:else}
   <div class="download-sections">
-    {#if isMobileWatchTab && isWatchDownloadOffered}
-      <div class="mobile-download">
+    {#if isWatchDownloadOffered}
+      <div class="watch-download">
         <button
-          class="mobile-download-button"
+          class="watch-download-button"
           disabled={isStartingWatchDownload}
           onclick={handleStartWatchDownload}
           type="button"
@@ -266,7 +266,7 @@
           {@html downloadIcon}
           Download this video
         </button>
-        {@render optionsToggle("mobile-download-toggle")}
+        {@render optionsToggle("watch-download-toggle")}
       </div>
       {@render optionsCard()}
     {/if}
@@ -477,12 +477,12 @@
     gap: 12px;
   }
 
-  .mobile-download {
+  .watch-download {
     display: flex;
   }
 
-  .mobile-download-button,
-  .mobile-download-toggle {
+  .watch-download-button,
+  .watch-download-toggle {
     display: flex;
     justify-content: center;
     align-items: center;
@@ -515,7 +515,7 @@
     }
   }
 
-  .mobile-download-button {
+  .watch-download-button {
     flex: 1;
     gap: 8px;
     padding: 10px 14px;
@@ -523,7 +523,7 @@
     border-start-start-radius: 999px;
   }
 
-  .mobile-download-toggle {
+  .watch-download-toggle {
     padding-inline: 10px 14px;
     border-inline-start: 1px solid color-mix(in oklab, var(--fg) 25%, transparent);
     border-end-end-radius: 999px;
@@ -531,7 +531,7 @@
   }
 
   .youtube-download-pill-toggle,
-  .mobile-download-toggle {
+  .watch-download-toggle {
     :global(svg) {
       transition: rotate 200ms cubic-bezier(0.2, 0, 0, 1);
     }
