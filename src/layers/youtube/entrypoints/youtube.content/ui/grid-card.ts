@@ -2,11 +2,11 @@ import { getVideoIdFromUrl } from "@/lib/youtube/youtube-url";
 import type { Prettify } from "@/types";
 import PlaylistVideoItem from "#youtube/components/playlist-downloader/video-item/PlaylistVideoItem.svelte";
 import PlaylistGridItem from "#youtube/components/playlist-grid-item/PlaylistGridItem.svelte";
-import { mount } from "svelte";
+import { mount, unmount } from "svelte";
 
 const LOCKUP_VIEW_MODEL_TAG = "yt-lockup-view-model";
 const ATTR_CONTENT_ID = "data-ytdl-content-id";
-export const ATTR_GRID_ITEM = "data-ytdl-grid-item";
+const ATTR_GRID_ITEM = "data-ytdl-grid-item";
 const SELECTOR_VIDEO_TITLE_LINK = "a#video-title-link, a#video-title, a[href*='/watch?v=']";
 const SELECTOR_LOCKUP_METADATA_TITLE = ".ytLockupMetadataViewModelTitle, #video-title-link, #video-title";
 const SELECTOR_LOCKUP_METADATA_HOST = ".ytLockupMetadataViewModelHost";
@@ -126,6 +126,16 @@ export function extractVideoId(elCard: Element) {
   return content?.kind === CardKind.Video ? content.videoId : null;
 }
 
+const mountedGridUis = new Set<{ remove: () => void }>();
+
+export function removeGridButtons() {
+  for (const ui of mountedGridUis) {
+    ui.remove();
+  }
+
+  mountedGridUis.clear();
+}
+
 export const Selector = {
   VideoCard: `${LOCKUP_VIEW_MODEL_TAG}, ytd-rich-item-renderer, ytd-grid-video-renderer, ytd-video-renderer`,
   PageManager: "ytd-page-manager"
@@ -240,25 +250,32 @@ export function mountGridButton({ context, elCard }: MountGridButtonParams) {
     anchor: elItemContainer,
     onMount(elUiContainer) {
       if (content.kind === CardKind.Playlist) {
-        mount(PlaylistGridItem, {
+        return mount(PlaylistGridItem, {
           target: elUiContainer,
           props: {
             playlistId: content.playlistId,
             gridTitle
           }
         });
-        return;
       }
 
-      mount(PlaylistVideoItem, {
+      return mount(PlaylistVideoItem, {
         target: elUiContainer,
         props: {
           videoId: content.videoId,
           gridTitle
         }
       });
+    },
+    onRemove(component) {
+      if (component) {
+        unmount(component).catch(() => {});
+      }
+
+      elItemContainer.remove();
     }
   });
   ui.mount();
+  mountedGridUis.add(ui);
   return true;
 }
