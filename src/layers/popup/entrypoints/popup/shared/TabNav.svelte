@@ -87,7 +87,7 @@
       {#if tab.icon}
         {@html tab.icon}
       {/if}
-      {tab.label}
+      <span class="tab-nav-label">{tab.label}</span>
       {#if tab.badge !== undefined && tab.badge > 0}
         <span class="badge">{tab.badge}</span>
       {/if}
@@ -126,6 +126,15 @@
     white-space: nowrap;
     cursor: pointer;
     transition: color 200ms cubic-bezier(0.2, 0, 0, 1);
+
+    @supports (text-box: trim-both cap alphabetic) {
+      .tab-nav-label {
+        align-content: end;
+        /* stylelint-disable-next-line unit-disallowed-list */
+        block-size: round(1cap, 2px);
+        text-box: trim-both cap alphabetic;
+      }
+    }
 
     &:focus-visible {
       outline: 2px solid var(--accent);
