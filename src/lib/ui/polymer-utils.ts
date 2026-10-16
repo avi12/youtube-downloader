@@ -1,5 +1,6 @@
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import type {
+  ButtonIconPosition,
   ButtonSize,
   ButtonState,
   ButtonStyle,
@@ -60,6 +61,7 @@ export function sendButtonData({ elButton, data, a11y }: {
   data: {
     accessibilityText: string;
     buttonSize: ButtonSize;
+    iconPosition?: ButtonIconPosition;
     style: ButtonStyle;
     type: ButtonType;
     iconName?: IconName | (string & {});

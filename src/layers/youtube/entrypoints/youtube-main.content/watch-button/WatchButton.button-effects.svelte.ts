@@ -9,15 +9,21 @@ export function createButtonElementEffects({
   getElChevronButton,
   getDownloadData,
   getChevronData,
-  getElDropdown
+  getElDropdown,
+  isSegmented
 }: {
   getElDownloadButton: () => YtButtonViewModelElement | null;
   getElChevronButton: () => YtButtonViewModelElement | null;
   getDownloadData: () => ReturnType<typeof import("./watch-button-view-model").buildDownloadData>;
   getChevronData: () => ReturnType<typeof import("./watch-button-view-model").buildChevronData>;
   getElDropdown: () => import("@/types").TpYtIronDropdownElement;
+  isSegmented: boolean;
 }) {
   function applySegmentedClasses() {
+    if (!isSegmented) {
+      return;
+    }
+
     getElDownloadButton()
       ?.querySelector<HTMLButtonElement>("button")
       ?.classList.add(SEGMENTED_START_CLASS);

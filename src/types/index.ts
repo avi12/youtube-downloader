@@ -17,6 +17,7 @@ export type { InterruptedDownload, ProgressUpdate } from "@/lib/messaging/messag
 export type { StreamDataPayload } from "@/lib/messaging/cross-world-messenger";
 
 export {
+  ButtonIconPosition,
   ButtonSize,
   ButtonState,
   ButtonStyle,

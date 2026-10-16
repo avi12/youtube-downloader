@@ -1,5 +1,6 @@
 import { preResolveCdnUrls, resolveCredentialsWithRetry } from "./download-formats";
 import { buildEnrichedRequest, fetchCaptionWebVttData } from "./download-request-builder";
+import { getPageRoute, getRouteVideoId, PageRoute } from "./page-route";
 import { generatePoTokenIfNeeded, videoDataCache } from "./video-data";
 import { crossWorldMessenger, CrossWorldMessage } from "@/lib/messaging/cross-world-messenger";
 import { getCompatibleFilename, getFileExtension, splitFilenameAndExtension } from "@/lib/utils/filename";
@@ -83,13 +84,14 @@ export async function resolveAndDispatch({ params, abortSignal }: ResolveAndDisp
   const { type, videoId } = params;
 
   const cachedVideoData = videoDataCache.get(videoId);
-  const isWatchPageForThisVideo =
-    location.pathname === "/watch" &&
-    new URLSearchParams(location.search).get("v") === videoId;
+  const route = getPageRoute();
+  const isVideoPageForThisVideo =
+    (route === PageRoute.Watch || route === PageRoute.Shorts) &&
+    getRouteVideoId() === videoId;
 
   const shouldUseIframe = self === top && (
     !cachedVideoData ||
-    !isWatchPageForThisVideo ||
+    !isVideoPageForThisVideo ||
     isVideoDataExpired(cachedVideoData)
   );
   if (shouldUseIframe) {

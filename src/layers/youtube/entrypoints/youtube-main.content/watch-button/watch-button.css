@@ -11,6 +11,11 @@
   margin-left: 0 !important;
 }
 
+[data-ytdl-download-group][data-ytdl-layout="shorts"] {
+  flex-direction: column;
+  margin-left: 0;
+}
+
 .ytdl-download-button :is(.ytSpecButtonShapeNextIcon, .yt-spec-button-shape-next__icon) {
   anchor-name: --ytdl-download-icon;
 }

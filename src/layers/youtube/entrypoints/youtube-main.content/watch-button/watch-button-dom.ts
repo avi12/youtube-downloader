@@ -1,4 +1,7 @@
+import { findShortsActionsContainer } from "./watch-button-container";
 import watchButtonStyles from "./watch-button.css?inline";
+import { CHILD_LIST_SUBTREE } from "@/lib/utils/dom";
+import { readElementIconName } from "@/lib/youtube/schemas";
 import { type Prettify, type TpYtIronDropdownElement } from "@/types";
 
 const WATCH_STYLES_ELEMENT_ID = "ytdl-watch-styles";
@@ -29,7 +32,7 @@ export function injectWatchButtonStyles() {
   document.head.append(elStyle);
 }
 
-export function findNativeDownloadButton(elActionsContainer: HTMLElement) {
+function findNativeDownloadButton(elActionsContainer: HTMLElement) {
   const elButtons = elActionsContainer.querySelectorAll<import("@/types").YtButtonViewModelElement>(YT_BUTTON_VIEW_MODEL_TAG);
   for (const elButton of elButtons) {
     const isDownloadIconPresent = elButton.data?.iconName?.includes(NATIVE_DOWNLOAD_ICON_KEYWORD);
@@ -48,6 +51,71 @@ export function findNativeDownloadButton(elActionsContainer: HTMLElement) {
   }
 
   return null;
+}
+
+const SHORTS_SHARE_ICON_NAME = "SHORTS_SHARE";
+const SHORTS_RAIL_BUTTON_TAG = "button-view-model";
+const SHORTS_ROOT_TAG = "ytd-shorts";
+const BUTTON_VIEW_MODEL_HOST_CLASS = "ytSpecButtonViewModelHost";
+
+function findShortsShareItem(elActionsContainer: HTMLElement) {
+  for (const elItem of elActionsContainer.children) {
+    if (readElementIconName(elItem) === SHORTS_SHARE_ICON_NAME) {
+      return elItem;
+    }
+  }
+
+  return null;
+}
+
+export function findShortsPlacement(elActionsContainer: HTMLElement) {
+  const elRailButton = elActionsContainer.querySelector(`:scope > ${SHORTS_RAIL_BUTTON_TAG}`);
+  const railClasses = [...elRailButton?.classList ?? []];
+  return {
+    elAnchor: null,
+    elNativeDownload: null,
+    scopingClasses: railClasses.filter(className => className !== BUTTON_VIEW_MODEL_HOST_CLASS)
+  };
+}
+
+// Each swipe swaps the rail for a fresh one and Share hydrates after the rail appears,
+// so the group is re-placed after the current rail's Share on every change
+export function pinShortsGroup(elGroup: Element) {
+  function placeAfterShare() {
+    const elActionsContainer = findShortsActionsContainer();
+    if (!elActionsContainer) {
+      return;
+    }
+
+    const elShare = findShortsShareItem(elActionsContainer);
+    const isPlaced = elShare ? elShare.nextElementSibling === elGroup : elGroup.parentElement === elActionsContainer;
+    if (isPlaced) {
+      return;
+    }
+
+    if (elShare) {
+      elShare.after(elGroup);
+      return;
+    }
+
+    elActionsContainer.append(elGroup);
+  }
+
+  const observer = new MutationObserver(placeAfterShare);
+  observer.observe(document.querySelector(SHORTS_ROOT_TAG) ?? document.body, CHILD_LIST_SUBTREE);
+  placeAfterShare();
+  return () => observer.disconnect();
+}
+
+export function findWatchPlacement(elActionsContainer: HTMLElement) {
+  const elNativeButtons = elActionsContainer.querySelectorAll(YT_BUTTON_VIEW_MODEL_TAG);
+  const scopingClass = elNativeButtons[elNativeButtons.length - 1]?.getAttribute("class") ?? "";
+  const elNativeDownload = findNativeDownloadButton(elActionsContainer);
+  return {
+    elAnchor: elNativeDownload,
+    elNativeDownload,
+    scopingClasses: scopingClass.match(/\S+/g) ?? []
+  };
 }
 
 export function createDropdownElement({ videoId }: { videoId: string }) {

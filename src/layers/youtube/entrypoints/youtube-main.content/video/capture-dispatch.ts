@@ -1,4 +1,6 @@
 import { injectSegmentedDownloadButton } from "../watch-button/watch-button";
+import { WatchButtonLayout } from "../watch-button/watch-button-types";
+import { getPageRoute, PageRoute, WATCH_PATHNAME } from "./page-route";
 import { generatePoTokenIfNeeded, readYtcfg, videoDataCache } from "./video-data";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { videoDataStore } from "@/lib/ui/synced-stores.svelte";
@@ -11,7 +13,6 @@ import { PlayabilityStatus } from "@/types/youtube";
 const captureLog = createLogger(LogScope.Capture);
 const iframeLog = createLogger(LogScope.Iframe);
 
-const WATCH_PATHNAME = "/watch";
 const DEFAULT_VIDEO_MIME_TYPE = "video/mp4";
 const DEFAULT_AUDIO_MIME_TYPE = "audio/mp4";
 
@@ -58,8 +59,58 @@ function readInitialDataTitle(videoId: string) {
     ?.videoPrimaryInfoRenderer?.title?.runs?.[0]?.text ?? "";
 }
 
-export async function buildAndDispatchVideoData({ playerResponse }: {
+export type ShortsPageData = {
+  overlay?: {
+    reelPlayerOverlayRenderer?: {
+      playerOverlay?: {
+        reelPlayerOverlayViewModel?: {
+          metapanel?: {
+            reelMetapanelViewModel?: {
+              metadataItems?: Array<{
+                shortsVideoTitleViewModel?: {
+                  text?: { content?: string };
+                };
+              }>;
+            };
+          };
+        };
+      };
+    };
+  };
+};
+
+function readShortsDisplayTitle(pageData: ShortsPageData | undefined) {
+  const metadataItems = pageData?.overlay?.reelPlayerOverlayRenderer?.playerOverlay
+    ?.reelPlayerOverlayViewModel?.metapanel?.reelMetapanelViewModel?.metadataItems ?? [];
+  for (const { shortsVideoTitleViewModel } of metadataItems) {
+    const title = shortsVideoTitleViewModel?.text?.content;
+    if (title) {
+      return title;
+    }
+  }
+
+  return "";
+}
+
+function readDisplayTitle({ route, videoId, shortsPageData }: {
+  route: PageRoute;
+  videoId: string;
+  shortsPageData?: ShortsPageData;
+}) {
+  if (route === PageRoute.Watch) {
+    return readInitialDataTitle(videoId);
+  }
+
+  if (route === PageRoute.Shorts) {
+    return readShortsDisplayTitle(shortsPageData);
+  }
+
+  return "";
+}
+
+export async function buildAndDispatchVideoData({ playerResponse, shortsPageData }: {
   playerResponse: PlayerResponse;
+  shortsPageData?: ShortsPageData;
 }) {
   const { clientVersion, clientName } = readYtcfg();
   const videoData = buildVideoData({
@@ -68,11 +119,16 @@ export async function buildAndDispatchVideoData({ playerResponse }: {
     clientName
   });
 
-  const isTopFrameOnWatchPage = self === top && location.pathname === WATCH_PATHNAME;
-  if (isTopFrameOnWatchPage) {
-    const initialDataTitle = readInitialDataTitle(videoData.videoId);
-    if (initialDataTitle) {
-      videoData.title = initialDataTitle;
+  const route = getPageRoute();
+  const isTopFrame = self === top;
+  if (isTopFrame) {
+    const displayTitle = readDisplayTitle({
+      route,
+      videoId: videoData.videoId,
+      shortsPageData
+    });
+    if (displayTitle) {
+      videoData.title = displayTitle;
     }
   }
 
@@ -104,9 +160,19 @@ export async function buildAndDispatchVideoData({ playerResponse }: {
     return;
   }
 
-  const isWatchPage = location.pathname === WATCH_PATHNAME;
-  if (isWatchPage) {
-    await injectSegmentedDownloadButton(videoData);
+  if (route === PageRoute.Watch) {
+    await injectSegmentedDownloadButton({
+      videoData,
+      layout: WatchButtonLayout.Watch
+    });
+    return;
+  }
+
+  if (route === PageRoute.Shorts) {
+    await injectSegmentedDownloadButton({
+      videoData,
+      layout: WatchButtonLayout.Shorts
+    });
   }
 }
 
@@ -177,13 +243,16 @@ async function tryDispatchOnce(isDownloadIframe: boolean): Promise<PollOutcome> 
   }
 
   sessionStorage.removeItem(IFRAME_RELOAD_COUNT_KEY);
-  await buildAndDispatchVideoData({ playerResponse });
+  await buildAndDispatchVideoData({
+    playerResponse,
+    shortsPageData: window.ytInitialData
+  });
   return PollOutcome.Ready;
 }
 
 export async function extractAndDispatchVideoData() {
-  const isOnWatchPage = location.pathname.startsWith(WATCH_PATHNAME);
-  if (!isOnWatchPage) {
+  const isOnVideoPage = location.pathname.startsWith(WATCH_PATHNAME) || getPageRoute() === PageRoute.Shorts;
+  if (!isOnVideoPage) {
     return;
   }
 

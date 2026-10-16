@@ -196,6 +196,14 @@ export function isYtButtonViewModelElement(value: unknown): value is YtButtonVie
   return value instanceof HTMLElement && value.tagName === YT_BUTTON_VIEW_MODEL_TAG;
 }
 
+const iconNamedElementSchema = z.looseObject({
+  data: z.looseObject({ iconName: z.string() })
+});
+
+export function readElementIconName(value: unknown) {
+  return iconNamedElementSchema.safeParse(value).data?.data.iconName;
+}
+
 const ytLockupViewModelElementSchema = z.looseObject({
   data: lockupCardDataSchema
 });

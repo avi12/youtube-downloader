@@ -13,6 +13,13 @@ export const ButtonSize = {
 export type ButtonSize = (typeof ButtonSize)[keyof typeof ButtonSize];
 
 /** YouTube-internal Polymer view model - values reverse-engineered from YouTube's runtime. */
+export const ButtonIconPosition = {
+  Above: "BUTTON_VIEW_MODEL_ICON_POSITION_ABOVE"
+} as const;
+
+export type ButtonIconPosition = (typeof ButtonIconPosition)[keyof typeof ButtonIconPosition];
+
+/** YouTube-internal Polymer view model - values reverse-engineered from YouTube's runtime. */
 export const ButtonStyle = {
   CallToAction: "BUTTON_VIEW_MODEL_STYLE_CALL_TO_ACTION",
   Custom: "BUTTON_VIEW_MODEL_STYLE_CUSTOM",

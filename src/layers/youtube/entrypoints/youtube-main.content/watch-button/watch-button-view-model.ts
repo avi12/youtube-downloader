@@ -1,5 +1,7 @@
 import { buildDownloadTitle, buildDownloadTooltip, type ButtonViewState } from "./watch-button-format";
+import { WatchButtonLayout } from "./watch-button-types";
 import {
+  ButtonIconPosition,
   ButtonSize,
   ButtonState,
   ButtonStyle,
@@ -10,7 +12,16 @@ import {
 
 export type { ButtonViewState } from "./watch-button-format";
 
-export function buildDownloadData(state: ButtonViewState) {
+const SHORTS_DOWNLOAD_SHAPE = {
+  buttonSize: ButtonSize.Large,
+  iconPosition: ButtonIconPosition.Above
+} as const;
+
+const SHORTS_CHEVRON_SHAPE = {
+  buttonSize: ButtonSize.Small
+} as const;
+
+export function buildDownloadData(state: ButtonViewState, layout: WatchButtonLayout) {
   const { isDone, isDownloading, isError, isDownloadable } = state;
 
   let iconName: IconName = IconName.Download;
@@ -36,12 +47,13 @@ export function buildDownloadData(state: ButtonViewState) {
     state: isDisabled ? ButtonState.Disabled : ButtonState.Active,
     isFullWidth: false,
     isDisabled,
-    tooltip
+    tooltip,
+    ...layout === WatchButtonLayout.Shorts && SHORTS_DOWNLOAD_SHAPE
   };
   return data;
 }
 
-export function buildChevronData(state: ButtonViewState) {
+export function buildChevronData(state: ButtonViewState, layout: WatchButtonLayout) {
   const { isDownloadable, isPanelBelow, isPanelOpen } = state;
   const isDisabled = !isDownloadable;
   const isPanelOpenAbove = isPanelOpen && !isPanelBelow;
@@ -56,6 +68,7 @@ export function buildChevronData(state: ButtonViewState) {
     state: isDisabled ? ButtonState.Disabled : ButtonState.Active,
     isFullWidth: false,
     isDisabled,
-    tooltip: isPanelOpen ? "Close download options" : "Download options"
+    tooltip: isPanelOpen ? "Close download options" : "Download options",
+    ...layout === WatchButtonLayout.Shorts && SHORTS_CHEVRON_SHAPE
   } satisfies ButtonViewModelData;
 }

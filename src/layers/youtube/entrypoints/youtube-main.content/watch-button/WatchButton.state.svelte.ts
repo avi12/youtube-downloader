@@ -1,6 +1,6 @@
 import { buildInitialDownloadState } from "./initial-download-state";
 import { buildClickHandler } from "./watch-button-click";
-import { percentFormatter } from "./watch-button-types";
+import { percentFormatter, WatchButtonLayout } from "./watch-button-types";
 import { buildChevronData, buildDownloadData } from "./watch-button-view-model";
 import { createButtonElementEffects } from "./WatchButton.button-effects.svelte";
 import { createMessageEffects } from "./WatchButton.message-effects.svelte";
@@ -16,6 +16,7 @@ const PERCENT_COMPLETE = 100;
 export function createWatchButtonState(params: {
   readonly videoData: VideoData;
   readonly elDropdown: import("@/types").TpYtIronDropdownElement;
+  readonly layout: WatchButtonLayout;
 }) {
   const initial = untrack(() => buildInitialDownloadState(params.videoData));
   const { videoId } = params.videoData;
@@ -80,8 +81,8 @@ export function createWatchButtonState(params: {
     isDownloadable: params.videoData.isDownloadable
   });
 
-  const downloadData = $derived(buildDownloadData(viewState));
-  const chevronData = $derived(buildChevronData(viewState));
+  const downloadData = $derived(buildDownloadData(viewState, params.layout));
+  const chevronData = $derived(buildChevronData(viewState, params.layout));
 
   const downloadState = $derived.by(() => {
     if (isDone) {
@@ -111,7 +112,8 @@ export function createWatchButtonState(params: {
     getElChevronButton: () => elChevronButton,
     getDownloadData: () => downloadData,
     getChevronData: () => chevronData,
-    getElDropdown: () => params.elDropdown
+    getElDropdown: () => params.elDropdown,
+    isSegmented: params.layout === WatchButtonLayout.Watch
   });
 
   createPanelEffects({

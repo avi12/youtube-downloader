@@ -4,6 +4,7 @@ import { registerGridTagger } from "./grid/grid-tagger";
 import { registerGridVideoDataHandler } from "./grid/grid-video-data";
 import { setupIframeSilencer } from "./iframe-silencer";
 import { setupAudioTrackWatcher, setupCaptionTrackWatcher } from "./player-watchers";
+import type { ShortsPageData } from "./video/capture-dispatch";
 import { cancelAllActiveDownloads } from "./video/download";
 import { extractPlaylistMetadata, handleNavigateSuccess } from "./video/playlist-metadata";
 import { extractAndDispatchVideoData } from "./video/video-data";
@@ -20,7 +21,7 @@ const EVENT_LOAD = "load";
 declare global {
   interface Window {
     ytInitialPlayerResponse?: PlayerResponse;
-    ytInitialData?: {
+    ytInitialData?: ShortsPageData & {
       currentVideoEndpoint?: {
         watchEndpoint?: { videoId?: string };
       };

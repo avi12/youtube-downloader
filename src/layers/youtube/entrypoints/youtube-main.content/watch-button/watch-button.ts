@@ -1,5 +1,12 @@
 import { findVideoActionsContainer } from "./watch-button-container";
-import { createDropdownElement, findNativeDownloadButton, injectWatchButtonStyles } from "./watch-button-dom";
+import {
+  createDropdownElement,
+  findShortsPlacement,
+  findWatchPlacement,
+  injectWatchButtonStyles,
+  pinShortsGroup
+} from "./watch-button-dom";
+import { WatchButtonLayout } from "./watch-button-types";
 import WatchButton from "./WatchButton.svelte";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { CONTENT_OPTIONS, initContentOptions } from "@/lib/ui/synced-stores.svelte";
@@ -9,7 +16,6 @@ import { mount, unmount } from "svelte";
 const DOWNLOAD_GROUP_SELECTOR = "[data-ytdl-download-group]";
 const PANEL_CONTENT_ID_SELECTOR = "[id^='ytdl-panel-content']";
 const IRON_DROPDOWN_TAG = "tp-yt-iron-dropdown";
-const YT_BUTTON_VIEW_MODEL_TAG = "yt-button-view-model";
 const NATIVE_HIDDEN_CLASS = "ytdl-native-hidden";
 
 let cleanupCurrentButton: (() => void) | null = null;
@@ -39,7 +45,10 @@ export function cleanupSegmentedButton() {
   containerSearchAbort = null;
 }
 
-export async function injectSegmentedDownloadButton(videoData: VideoData) {
+export async function injectSegmentedDownloadButton({ videoData, layout }: {
+  videoData: VideoData;
+  layout: WatchButtonLayout;
+}) {
   cleanupSegmentedButton();
   evictOrphanedGroups();
 
@@ -49,7 +58,10 @@ export async function injectSegmentedDownloadButton(videoData: VideoData) {
 
   const generation = ++injectionGeneration;
   containerSearchAbort = new AbortController();
-  const elActionsContainer = await findVideoActionsContainer(containerSearchAbort.signal);
+  const elActionsContainer = await findVideoActionsContainer({
+    layout,
+    signal: containerSearchAbort.signal
+  });
   const isStaleOrAborted = !elActionsContainer || generation !== injectionGeneration;
   if (isStaleOrAborted) {
     return;
@@ -57,13 +69,13 @@ export async function injectSegmentedDownloadButton(videoData: VideoData) {
 
   const { videoId } = videoData;
 
-  const elNativeButtons = elActionsContainer.querySelectorAll(YT_BUTTON_VIEW_MODEL_TAG);
-  const scopingClass = elNativeButtons[elNativeButtons.length - 1]?.getAttribute("class") ?? "";
-  const scopingClasses = scopingClass.match(/\S+/g) ?? [];
+  const isShorts = layout === WatchButtonLayout.Shorts;
+  const { elAnchor, elNativeDownload, scopingClasses } = isShorts
+    ? findShortsPlacement(elActionsContainer)
+    : findWatchPlacement(elActionsContainer);
 
   injectWatchButtonStyles();
 
-  const elNativeDownload = findNativeDownloadButton(elActionsContainer);
   const shouldHideNativeDownload = !CONTENT_OPTIONS.isShowNativeDownload && elNativeDownload;
   if (shouldHideNativeDownload) {
     elNativeDownload.classList.add(NATIVE_HIDDEN_CLASS);
@@ -73,28 +85,33 @@ export async function injectSegmentedDownloadButton(videoData: VideoData) {
 
   const component = mount(WatchButton, {
     target: elActionsContainer,
-    anchor: elNativeDownload ?? undefined,
+    anchor: elAnchor ?? undefined,
     props: {
       videoData,
       elDropdown,
-      scopingClasses
+      scopingClasses,
+      layout
     }
   });
 
   elDropdownContentSlot.id = panelContentId;
+
+  const elGroup = elActionsContainer.querySelector(DOWNLOAD_GROUP_SELECTOR);
+  const unpinGroup = isShorts && elGroup ? pinShortsGroup(elGroup) : null;
+
+  elCurrentNativeDownload = elNativeDownload;
+
+  cleanupCurrentButton = () => {
+    unpinGroup?.();
+    unmount(component).catch(() => {});
+    elDropdown.remove();
+    elNativeDownload?.classList.remove(NATIVE_HIDDEN_CLASS);
+    elCurrentNativeDownload = null;
+  };
 
   const { playerResponse, ...videoDataForPanel } = videoData;
   await crossWorldMessenger.sendMessage(CrossWorldMessage.PanelContentReady, {
     contentId: panelContentId,
     videoDataJson: JSON.stringify(videoDataForPanel)
   });
-
-  elCurrentNativeDownload = elNativeDownload;
-
-  cleanupCurrentButton = () => {
-    unmount(component).catch(() => {});
-    elDropdown.remove();
-    elNativeDownload?.classList.remove(NATIVE_HIDDEN_CLASS);
-    elCurrentNativeDownload = null;
-  };
 }

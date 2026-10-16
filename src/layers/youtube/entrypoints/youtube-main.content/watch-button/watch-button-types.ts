@@ -21,3 +21,10 @@ export const percentFormatter = new Intl.NumberFormat(document.documentElement.l
   style: "percent",
   maximumFractionDigits: 0
 });
+
+export const WatchButtonLayout = {
+  Watch: "watch",
+  Shorts: "shorts"
+} as const;
+
+export type WatchButtonLayout = (typeof WatchButtonLayout)[keyof typeof WatchButtonLayout];
