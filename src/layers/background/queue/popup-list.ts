@@ -75,27 +75,76 @@ export async function enqueueToPopupList(
     await statusProgressItem.setValue(currentStatusProgress);
   }
 
-  if (type === DownloadType.VideoAndAudio) {
-    const queue = await videoQueueItem.getValue();
-    const isVideoQueued = queue.some(item => item.videoId === videoId);
-    if (!isVideoQueued) {
-      queue.push({
-        videoId,
-        filenameOutput
-      });
-      await videoQueueItem.setValue(queue);
-    }
+  await placeInTypeList({
+    videoId,
+    type,
+    filenameOutput
+  });
+}
 
-    return;
+type PlaceInTypeListParams = Prettify<{
+  videoId: string;
+  type: DownloadType;
+  filenameOutput: string;
+}>;
+// A video sits in one list only, so a type resolved later (e.g. inside the download iframe) moves it
+async function placeInTypeList({ videoId, type, filenameOutput }: PlaceInTypeListParams) {
+  const [queue, musicList, videoOnlyList] = await Promise.all([
+    videoQueueItem.getValue(),
+    musicListItem.getValue(),
+    videoOnlyListItem.getValue()
+  ]);
+  const isQueueTarget = type === DownloadType.VideoAndAudio;
+  const isMusicTarget = type === DownloadType.Audio;
+
+  const writes: Promise<void>[] = [];
+  const isQueued = queue.some(item => item.videoId === videoId);
+  if (isQueued !== isQueueTarget) {
+    writes.push(
+      videoQueueItem.setValue(
+        isQueueTarget
+          ? [...queue, {
+            videoId,
+            filenameOutput
+          }]
+          : queue.filter(item => item.videoId !== videoId)
+      )
+    );
   }
 
-  const listItem = type === DownloadType.Audio ? musicListItem : videoOnlyListItem;
-  const list = await listItem.getValue();
-  const isVideoListed = list.includes(videoId);
-  if (!isVideoListed) {
-    list.push(videoId);
-    await listItem.setValue(list);
+  const nextMusicList = toggleListed({
+    list: musicList,
+    videoId,
+    isListed: isMusicTarget
+  });
+  if (nextMusicList) {
+    writes.push(musicListItem.setValue(nextMusicList));
   }
+
+  const nextVideoOnlyList = toggleListed({
+    list: videoOnlyList,
+    videoId,
+    isListed: !isQueueTarget && !isMusicTarget
+  });
+  if (nextVideoOnlyList) {
+    writes.push(videoOnlyListItem.setValue(nextVideoOnlyList));
+  }
+
+  await Promise.all(writes);
+}
+
+type ToggleListedParams = Prettify<{
+  list: string[];
+  videoId: string;
+  isListed: boolean;
+}>;
+function toggleListed({ list, videoId, isListed }: ToggleListedParams) {
+  const isPresent = list.includes(videoId);
+  if (isPresent === isListed) {
+    return null;
+  }
+
+  return isListed ? [...list, videoId] : list.filter(id => id !== videoId);
 }
 
 export async function removeFromPopupList(videoIds: string | string[]) {
