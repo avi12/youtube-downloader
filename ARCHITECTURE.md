@@ -430,6 +430,14 @@ On a watch page the popup offers "Download this video" and a chevron that opens 
 3. A request picked in the options rides in `StartPopupDownload`, and the iframe downloads exactly those streams.
 4. A minted PO token alone hits SABR's attestation wall, so [`withPlayerSession`](src/layers/background/lib/youtube/sabr/player-session.ts) borrows the session of any tab playing the same video - here the mobile tab's own player, recorded from its SABR requests.
 
+### Shorts
+
+`/shorts/<id>` gets the same watch button, laid out for the Shorts action rail ([`WatchButtonLayout.Shorts`](src/layers/youtube/entrypoints/youtube-main.content/watch-button/watch-button-types.ts)): a native rail button (icon above its label) right after Share, with the options chevron under it. [`getPageRoute`](src/layers/youtube/entrypoints/youtube-main.content/video/page-route.ts) is the one place that tells watch, Shorts, and other pages apart.
+
+- **Data.** On a direct load the player response is `ytInitialPlayerResponse`. Every swipe is an SPA navigation, and its `yt-navigate-finish` event carries the next short's `playerResponse` plus the page response, whose reel overlay holds the title YouTube displays (auto-translated titles differ from `videoDetails.title`), which names the file ([`handleNavigateSuccess`](src/layers/youtube/entrypoints/youtube-main.content/video/playlist-metadata.ts)).
+- **Placement.** The rail is swapped for a fresh one on every swipe and drops foreign children, and Share hydrates after the rail appears, so [`pinShortsGroup`](src/layers/youtube/entrypoints/youtube-main.content/watch-button/watch-button-dom.ts) re-places the group after the current rail's Share on every DOM change under `ytd-shorts`.
+- **Download.** The short playing in the tab downloads in-page, like a watch page ([`resolveAndDispatch`](src/layers/youtube/entrypoints/youtube-main.content/video/download-execute.ts)). The hidden watch-page iframe is not a substitute: it fails for shorts the page itself downloads in seconds.
+
 ## Cross-cutting concerns
 
 ### Resilience
