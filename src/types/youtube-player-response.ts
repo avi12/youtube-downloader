@@ -36,7 +36,10 @@ export type PlayerResponse = Prettify<{
     allowRatings: boolean;
   };
   microformat?: {
-    playerMicroformatRenderer: {
+    microformatDataRenderer?: {
+      category?: string;
+    };
+    playerMicroformatRenderer?: {
       liveBroadcastDetails?: {
         isLiveNow: true;
         startTimestamp: string;

@@ -33,6 +33,8 @@ export function isVideoDownloadable(playerResponse: PlayerResponse) {
   return hasDirectFormats || hasSabrUrl;
 }
 
-export function isVideoMusic(playerResponse: PlayerResponse) {
-  return playerResponse.microformat?.playerMicroformatRenderer.category === MUSIC_CATEGORY;
+// YouTube Music sends microformatDataRenderer in place of playerMicroformatRenderer
+export function isVideoMusic({ microformat }: PlayerResponse) {
+  const renderer = microformat?.playerMicroformatRenderer ?? microformat?.microformatDataRenderer;
+  return renderer?.category === MUSIC_CATEGORY;
 }
