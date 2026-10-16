@@ -42,7 +42,7 @@
     icon={playArrowIcon}
     isAccent
     isChecked={options.isShowNativeDownload}
-    label="Show native download button on watch page"
+    label="Show YouTube's own download button on watch page"
     onchange={isChecked => {
       void setOption({
         key: "isShowNativeDownload",
