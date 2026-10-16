@@ -120,7 +120,7 @@ The code is organised as WXT layers under `src/layers/` — `src/layers/backgrou
 | `src/lib/youtube/` | Shared YouTube-specific knowledge: Innertube schemas, SABR protocol, format helpers, and the download plan that picks the formats, codecs and container. |
 | `src/lib/utils/` | Shared tables and helpers: what each container holds and prefers ([`container-specs.ts`](src/lib/utils/container-specs.ts)), the choice tables every picker reads ([`choices.ts`](src/lib/utils/choices.ts)), MIME types, filenames, logging. |
 | `src/layers/youtube/lib/youtube/` | Page-context YouTube knowledge: BotGuard / PO token, signature decryptor, playlist fetch. |
-| `src/lib/download-options/` | The download options panel's state and picker logic, shared by the watch-page panel and the popup's mobile-site options. Each surface draws its own controls and plugs in a [`PanelHost`](src/lib/download-options/panel-host.ts) that starts the download. |
+| `src/lib/download-options/` | The download options panel's state and picker logic, shared by the watch-page panel and the popup's options. Each surface draws its own controls and plugs in a [`PanelHost`](src/lib/download-options/panel-host.ts) that starts the download. |
 | `src/lib/messaging/` | Typed buses: cross-world between MAIN and ISOLATED via `CustomEvent`; runtime between content and BG; offscreen between BG and offscreen via `MessagePort`; window between page and extension via `window.postMessage`. |
 | `src/lib/download-pipeline/` | Browser-agnostic post-fetch pipeline: stream processor, mux job builder, FFmpeg instance, blob download, recent-downloads store. |
 | `src/lib/storage/` | `wxt/storage`-backed items with per-item mutation locks, plus the recent-downloads IndexedDB store (entries + blob cache, quota eviction). |
@@ -414,13 +414,20 @@ flowchart TB
 - No global `-metadata title=` / `-metadata artist=` is set on video files — those tags don't have a standard meaning across video container formats and would clobber the per-track metadata in some containers.
 - No cover-art embedding — the source has a thumbnail URL but the video mux path ignores it. Cover art on video containers is inconsistent across players, and the visible video stream already serves as the visual identity.
 
-### Mobile site — popup-only downloads
+### Popup downloads
 
-`m.youtube.com` gets no content scripts and no injected UI. On machines that load the non-SIMD FFmpeg core ([`resolveFFmpegCoreBuild`](src/lib/download-pipeline/ffmpeg-core-build.ts), the slow-CPU case the lighter mobile site serves), the popup offers "Download this video" on a mobile watch page ([`DownloadsTab.svelte`](src/layers/popup/entrypoints/popup/downloads/DownloadsTab.svelte)).
+On a watch page the popup offers "Download this video" and a chevron that opens the watch-page panel's options ([`DownloadsTab.svelte`](src/layers/popup/entrypoints/popup/downloads/DownloadsTab.svelte), [`DownloadOptionsForm.svelte`](src/layers/popup/entrypoints/popup/download-options/DownloadOptionsForm.svelte)). The popup reads the tab's player response with `scripting.executeScript` in the main world ([`readTabVideoData`](src/layers/popup/entrypoints/popup/download-options/tab-video-data.ts)), builds the `VideoData` the page would, and runs the shared panel state from `src/lib/download-options/`. Both buttons go through [`startTabDownload`](src/layers/popup/entrypoints/popup/downloads/watch-download.ts), which picks the route by host:
+
+- `www.youtube.com` runs the download in the tab itself. The plain button presses the page's own download button (`StartWatchPageDownload`). A picked request goes to the tab as `ExecuteDownloadItem`, the message a playlist dispatch uses, and the main world starts it the way the page panel would.
+- `m.youtube.com` has no content script, so the background runs it, as below.
+
+#### Mobile site
+
+`m.youtube.com` gets no content scripts and no injected UI. The popup offers its download only on machines that load the non-SIMD FFmpeg core ([`resolveFFmpegCoreBuild`](src/lib/download-pipeline/ffmpeg-core-build.ts), the slow-CPU case the lighter mobile site serves).
 
 1. The popup sends `StartPopupDownload` with the video ID and page URL. The background ([`registerPopupDownloadHandler`](src/layers/background/download/iframe-downloader.ts)) runs it through the hidden watch-page iframe (`downloadViaWatchPage`) with tab ID `-1`, so progress goes only to the popup and its storage. The iframe URL carries `app=desktop`, because YouTube redirects a mobile user agent from `www` to `m.youtube.com`, where no content script runs.
 2. The plain button sends `isDefaultFormat`. Inside the iframe, [`applyDefaultFormat`](src/layers/youtube/entrypoints/youtube-main.content/video/default-format.ts) fills type, streams, and filename from the user's settings, the same way the watch button's defaults are built ([`buildInitialDownloadState`](src/layers/youtube/entrypoints/youtube-main.content/watch-button/initial-download-state.ts)).
-3. The chevron opens the same options the watch-page panel shows ([`DownloadOptionsForm.svelte`](src/layers/popup/entrypoints/popup/download-options/DownloadOptionsForm.svelte)). The popup reads the tab's player response with `scripting.executeScript` in the main world ([`readTabVideoData`](src/layers/popup/entrypoints/popup/download-options/tab-video-data.ts)), builds the `VideoData` the page would, and runs the shared panel state from `src/lib/download-options/`. Its `PanelHost` sends the picked request in `StartPopupDownload`, and the iframe downloads exactly those streams.
+3. A request picked in the options rides in `StartPopupDownload`, and the iframe downloads exactly those streams.
 4. A minted PO token alone hits SABR's attestation wall, so [`withPlayerSession`](src/layers/background/lib/youtube/sabr/player-session.ts) borrows the session of any tab playing the same video - here the mobile tab's own player, recorded from its SABR requests.
 
 ## Cross-cutting concerns
