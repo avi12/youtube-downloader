@@ -1,6 +1,6 @@
 {
   "name": "youtube-ffmpeg-lite",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Run FFmpeg against a YouTube URL straight from the popup",
   "repository": "https://github.com/avi12/youtube-downloader",
   "author": "Avi <avi6106@gmail.com>",
@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@ffmpeg/core": "0.12.10",
+    "@ffmpeg/core-nosimd": "npm:@ffmpeg/core@0.12.0",
     "@ffmpeg/types": "^0.12.4"
   },
   "devDependencies": {

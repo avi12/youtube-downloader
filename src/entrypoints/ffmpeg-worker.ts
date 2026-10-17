@@ -1,4 +1,5 @@
 import type { FFmpegCoreModule } from "@ffmpeg/types";
+import { loadFFmpegCore } from "@/lib/ffmpeg-core";
 
 const CHUNK_SIZE = 10 * 1024 * 1024;
 const FFMPEG_STDERR = "stderr";
@@ -10,8 +11,6 @@ export type WorkerMessage =
   | { type: "progress"; name: string; ratio: number }
   | { type: "done"; code: number; files: { name: string; data: ArrayBuffer }[] }
   | { type: "error"; message: string };
-
-type CoreFactory = (options: { wasmBinary: ArrayBuffer }) => Promise<FFmpegCoreModule>;
 
 const post = (message: WorkerMessage, transfer: Transferable[] = []) => postMessage(message, { transfer });
 
@@ -59,10 +58,7 @@ function collectOutputs(core: FFmpegCoreModule, ignoredNames: Set<string>) {
 }
 
 async function run({ wasmUrl, inputs, args }: WorkerRequest) {
-  const wasmBinary = await (await fetch(wasmUrl)).arrayBuffer();
-  // @ts-expect-error @ffmpeg/core ships no .d.ts
-  const { default: createCore }: { default: CoreFactory } = await import("@ffmpeg/core");
-  const core = await createCore({ wasmBinary });
+  const core = await loadFFmpegCore(wasmUrl);
   core.setLogger(({ type, message }) => type === FFMPEG_STDERR && post({ type: "log", text: message }));
 
   const ignoredNames = new Set([...core.FS.readdir("/"), ...inputs.map(input => input.name)]);

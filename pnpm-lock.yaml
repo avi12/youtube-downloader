@@ -5,6 +5,7 @@ settings:
   excludeLinksFromLockfile: false
 
 patchedDependencies:
+  '@ffmpeg/core@0.12.0': 90c99ecf9fd362a2b316a0004ae20efd8578e7cce1f9225351822ec66b899e88
   '@ffmpeg/core@0.12.10': 17eaefe31961a48826d933bec45e3bc15a8ab5c388a7d38a48472597cbd58a0f
 
 importers:
@@ -14,6 +15,9 @@ importers:
       '@ffmpeg/core':
         specifier: 0.12.10
         version: 0.12.10(patch_hash=17eaefe31961a48826d933bec45e3bc15a8ab5c388a7d38a48472597cbd58a0f)
+      '@ffmpeg/core-nosimd':
+        specifier: npm:@ffmpeg/core@0.12.0
+        version: '@ffmpeg/core@0.12.0(patch_hash=90c99ecf9fd362a2b316a0004ae20efd8578e7cce1f9225351822ec66b899e88)'
       '@ffmpeg/types':
         specifier: ^0.12.4
         version: 0.12.4
@@ -401,6 +405,10 @@ packages:
   '@eslint/plugin-kit@0.7.3':
     resolution: {integrity: sha512-IkO+/KEUvwbVpiURZg+P7zF74z5Jxe0UgJxVni+RtoHQ6IZieXaO02kmadomap/q+l6bc/jdPGGqTjhuZnuz1Q==}
     engines: {node: ^20.19.0 || ^22.13.0 || >=24}
+
+  '@ffmpeg/core@0.12.0':
+    resolution: {integrity: sha512-7bwkwL+1z1sfm9MrNcXRxkVsgacGXIhjj82ccBQpV94coeoyrqcnJBOU29FVmrSCythCX14FyPH/zlTwqONNQQ==}
+    engines: {node: '>=16.6.0'}
 
   '@ffmpeg/core@0.12.10':
     resolution: {integrity: sha512-dzNplnn2Nxle2c2i2rrDhqcB19q9cglCkWnoMTDN9Q9l3PvdjZWd1HfSPjCNWc/p8Q3CT+Es9fWOR0UhAeYQZA==}
@@ -3375,6 +3383,8 @@ snapshots:
     dependencies:
       '@eslint/core': 1.2.1
       levn: 0.4.1
+
+  '@ffmpeg/core@0.12.0(patch_hash=90c99ecf9fd362a2b316a0004ae20efd8578e7cce1f9225351822ec66b899e88)': {}
 
   '@ffmpeg/core@0.12.10(patch_hash=17eaefe31961a48826d933bec45e3bc15a8ab5c388a7d38a48472597cbd58a0f)': {}
 

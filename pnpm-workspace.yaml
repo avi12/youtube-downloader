@@ -3,6 +3,7 @@ allowBuilds:
   spawn-sync: true
 
 patchedDependencies:
+  '@ffmpeg/core@0.12.0': patches/@ffmpeg__core@0.12.0.patch
   '@ffmpeg/core@0.12.10': patches/@ffmpeg__core.patch
 
 verifyDepsBeforeRun: false
