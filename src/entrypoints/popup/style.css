@@ -1,0 +1,73 @@
+:root {
+  color-scheme: light dark;
+  font: 14px/1.4 system-ui, sans-serif;
+}
+
+body {
+  inline-size: 440px;
+  margin: 0;
+  padding: 12px;
+}
+
+main {
+  display: grid;
+  gap: 10px;
+}
+
+label {
+  display: grid;
+  gap: 4px;
+  font-weight: 600;
+}
+
+input,
+textarea,
+select,
+button {
+  font: inherit;
+  padding: 6px 8px;
+}
+
+textarea {
+  font-family: ui-monospace, monospace;
+  resize: vertical;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: progress;
+}
+
+.hint {
+  margin: 0;
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+progress {
+  inline-size: 100%;
+}
+
+pre {
+  max-block-size: 160px;
+  margin: 0;
+  padding: 8px;
+  overflow: auto;
+  font-size: 11px;
+  white-space: pre-wrap;
+  background: color-mix(in srgb, currentcolor 8%, transparent);
+}
+
+.error {
+  color: light-dark(#b00020, #ff6b81);
+}
+
+.outputs {
+  display: grid;
+  gap: 4px;
+  padding: 0;
+  list-style: none;
+}
