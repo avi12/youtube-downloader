@@ -1,126 +1,34 @@
 import { resolve } from "node:path";
 import { defineConfig } from "wxt";
 
-const copiedAssets = [
-  {
-    src: "node_modules/@ffmpeg/core/dist/umd/ffmpeg-core.wasm",
-    dest: "ffmpeg/ffmpeg-core.wasm"
-  },
-  {
-    src: "LICENSE",
-    dest: "LICENSE"
-  },
-  {
-    src: "NOTICE",
-    dest: "NOTICE"
-  }
-];
-
-const FIREFOX_GECKO_ID = "youtube-downloader@avi12.com";
-const UPDATE_URL_BASE = "https://avi12.github.io/youtube-downloader";
-const FIREFOX_UPDATE_URL = `${UPDATE_URL_BASE}/updates.json`;
-const { CSP_REPORT_URI = "" } = process.env;
-const EXTENSION_PAGES_CSP = `script-src 'self' 'wasm-unsafe-eval'; object-src 'self'${CSP_REPORT_URI ? `; report-uri ${CSP_REPORT_URI}` : ""}`;
-const sharedPermissions: Browser.runtime.ManifestPermission[] = [
-  "alarms",
-  "downloads",
-  "unlimitedStorage",
-  "notifications",
-  "scripting",
-  "declarativeNetRequestWithHostAccess",
-  "storage",
-  "tabs",
-  "webRequest"
-];
+const FFMPEG_WASM_DEST = "ffmpeg/ffmpeg-core.wasm";
+const FFMPEG_WASM_SRC = "node_modules/@ffmpeg/core/dist/umd/ffmpeg-core.wasm";
 
 export default defineConfig({
   srcDir: "src",
   publicDir: "src/public",
-  modules: ["@wxt-dev/module-svelte", "wxt-module-layers"],
-  vite: () => ({
-    plugins: [
-      {
-        name: "ignore-dev-browser-profiles",
-        config: () => ({
-          server: {
-            watch: {
-              ignored: ["**/user-profiles/**"]
-            }
-          }
-        })
-      }
-    ]
-  }),
-  layers: {
-    sources: ["src/layers/background", "src/layers/popup", "src/layers/processing", "src/layers/youtube"]
-  },
+  modules: ["@wxt-dev/module-svelte"],
   manifestVersion: 3,
-  manifest: ({ browser }) => ({
-    name: "YouTube Downloader",
-    description: "Download YouTube videos and audio directly from the page",
-    permissions: browser === "firefox" ? sharedPermissions : [...sharedPermissions, "offscreen"],
-    host_permissions: [
-      "https://*.youtube.com/*",
-      "https://*.googlevideo.com/*"
-    ],
+  manifest: {
+    name: "FFmpeg for YouTube",
+    description: "Run FFmpeg against a YouTube URL straight from the popup",
+    permissions: ["activeTab", "declarativeNetRequestWithHostAccess"],
+    host_permissions: ["https://*.youtube.com/*", "https://*.googlevideo.com/*"],
     content_security_policy: {
-      extension_pages: EXTENSION_PAGES_CSP
+      extension_pages: "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
     },
-    declarative_net_request: {
-      rule_resources: [{
-        id: "strip-youtube-frame-headers",
-        enabled: true,
-        path: "rules/strip-youtube-frame-headers.json"
-      }]
-    },
-    web_accessible_resources: [
-      {
-        resources: ["offscreen.html"],
-        matches: ["<all_urls>"]
-      }
-    ],
-    ...browser === "firefox"
-      ? {
-        browser_specific_settings: {
-          gecko: {
-            id: FIREFOX_GECKO_ID,
-            strict_min_version: "147.0",
-            update_url: FIREFOX_UPDATE_URL,
-            data_collection_permissions: {
-              required: ["none"],
-              optional: ["technicalAndInteraction"]
-            }
-          }
-        }
-      }
-      : {
-        minimum_chrome_version: "125.0"
-      }
-  }),
+    minimum_chrome_version: "125.0"
+  },
   zip: {
-    artifactTemplate: "youtube-downloader-{{version}}-{{browser}}.zip",
-    excludeSources: [
-      "user-profiles/**",
-      ".output/**",
-      ".chrome-for-testing/**",
-      ".wxt/**",
-      ".dev-certs/**",
-      ".fallow/**",
-      "scripts/**",
-      "keys/**"
-    ]
+    artifactTemplate: "youtube-ffmpeg-lite-{{version}}-{{browser}}.zip",
+    excludeSources: ["user-profiles/**", ".output/**", ".chrome-for-testing/**", ".wxt/**", ".dev-certs/**", ".fallow/**", "keys/**"]
   },
   hooks: {
     "prepare:publicPaths"(_, paths) {
-      paths.push(...copiedAssets.map(asset => asset.dest));
+      paths.push(FFMPEG_WASM_DEST);
     },
     "build:publicAssets"(_, assets) {
-      for (const { src, dest } of copiedAssets) {
-        assets.push({
-          absoluteSrc: resolve(src),
-          relativeDest: dest
-        });
-      }
+      assets.push({ absoluteSrc: resolve(FFMPEG_WASM_SRC), relativeDest: FFMPEG_WASM_DEST });
     }
   }
 });
