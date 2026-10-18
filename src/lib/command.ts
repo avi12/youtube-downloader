@@ -1,16 +1,5 @@
-export enum Placeholder {
-  Video = "{video}",
-  Audio = "{audio}",
-  Captions = "{captions}"
-}
-
-export const PLACEHOLDER_FILENAMES: Record<Placeholder, string> = {
-  [Placeholder.Video]: "video.mp4",
-  [Placeholder.Audio]: "audio.m4a",
-  [Placeholder.Captions]: "captions.vtt"
-};
-
 const ARGUMENT_PATTERN = /"([^"]*)"|'([^']*)'|(\S+)/g;
+export const URL_TOKEN = "URL";
 
 export function tokenize(command: string) {
   return Array.from(
@@ -19,21 +8,11 @@ export function tokenize(command: string) {
   );
 }
 
-export function usedPlaceholders(command: string) {
-  return Object.values(Placeholder).filter(placeholder => command.includes(placeholder));
-}
-
-export function substitutePlaceholders(args: string[]) {
-  return args.map(arg => Object.values(Placeholder).reduce(
-    (result, placeholder) => result.replaceAll(placeholder, PLACEHOLDER_FILENAMES[placeholder]),
-    arg
-  ));
-}
-
 export const PRESETS = [
-  { label: "Merge video + audio", command: "-i {video} -i {audio} -c copy output.mp4" },
-  { label: "Audio only (MP3)", command: "-i {audio} -vn -c:a libmp3lame -q:a 2 output.mp3" },
-  { label: "Captions only (SRT)", command: "-i {captions} output.srt" },
-  { label: "Screenshot at 10s", command: "-ss 10 -i {video} -frames:v 1 screenshot.png" },
-  { label: "Clip 10s-20s", command: "-ss 10 -to 20 -i {video} -i {audio} -c copy clip.mp4" }
+  { label: "Best video + audio", command: `yt-dlp ${URL_TOKEN}` },
+  { label: "720p at most", command: `yt-dlp -f "bv*[height<=720]+ba/b[height<=720]" ${URL_TOKEN}` },
+  { label: "Audio only (MP3)", command: `yt-dlp -x --audio-format mp3 ${URL_TOKEN}` },
+  { label: "Captions only (SRT)", command: `yt-dlp --skip-download --write-subs --write-auto-subs --sub-langs en --convert-subs srt ${URL_TOKEN}` },
+  { label: "Clip 10s-20s", command: `yt-dlp --download-sections "*10-20" ${URL_TOKEN}` },
+  { label: "List formats", command: `yt-dlp -F ${URL_TOKEN}` }
 ];

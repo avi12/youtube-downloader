@@ -1,13 +1,19 @@
 # FFmpeg for YouTube (lite)
 
-A stripped-down Chrome extension: paste a YouTube URL (or open the popup on a watch page), write FFmpeg arguments, hit Run.
+A stripped-down Chrome extension: open the popup on a YouTube watch page, type a yt-dlp command, hit Run. FFmpeg does the work in WebAssembly and every file lands straight in your Downloads folder.
 
-- `{video}` - best video stream
-- `{audio}` - best audio stream
-- `{captions}` - first caption track as WebVTT
-- Every file FFmpeg writes comes back as a download link
+Supported yt-dlp options:
+- `-f` / `--format`: selectors with `+`, `/`, `b`, `bv*`, `ba`, itags and filters like `[height<=720]`, `[language=de]`, `[ext=mp4]`
+- `-S` / `--format-sort`: `res`, `fps`, `br`, `abr`, `size`, `vcodec`, `acodec`, with `+` and `:limit`
+- `-x`, `--audio-format`, `--audio-quality`
+- `--merge-output-format`, `--remux-video`, `--recode-video`
+- `--write-subs`, `--write-auto-subs`, `--all-subs`, `--sub-langs`, `--sub-format`, `--convert-subs`
+- `--skip-download`, `--download-sections "*10-20"`, `-o` with `%(title)s`, `%(id)s`, `%(ext)s`, `%(height)s`, `%(uploader)s`
+- `-F` lists the formats
 
-Examples: merge to MP4, audio to MP3, captions to SRT, screenshot at 10s, clip 10s-20s.
+Anything else is rejected with a clear message instead of being ignored
+
+Example: `yt-dlp -f "bv*[height<=720]+ba[language=de]/b" --write-subs --sub-langs en "https://www.youtube.com/watch?v=..."`
 
 Notes:
 - FFmpeg runs in WebAssembly inside the popup, so keep the popup open until it finishes

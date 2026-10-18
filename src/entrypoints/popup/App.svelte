@@ -1,89 +1,42 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import type { WorkerMessage, WorkerRequest } from "../ffmpeg-worker";
-  import {
-    PLACEHOLDER_FILENAMES,
-    PRESETS,
-    Placeholder,
-    substitutePlaceholders,
-    tokenize,
-    usedPlaceholders
-  } from "@/lib/command";
+  import { PRESETS, URL_TOKEN } from "@/lib/command";
   import { parseVideoId, registerRequestHeaderRules, resolveVideo } from "@/lib/youtube";
-  import type { ResolvedVideo } from "@/lib/youtube";
+  import { parseYtDlpCommand } from "@/lib/ytdlp/options";
+  import { planJobs } from "@/lib/ytdlp/plan";
+  import type { Job } from "@/lib/ytdlp/plan";
 
-  const ALL_CAPTIONS_NONE = "";
-
-  type Output = { name: string; url: string };
-
-  let url = $state("");
-  let command = $state(PRESETS[0]!.command);
+  let command = $state(`yt-dlp ${URL_TOKEN}`);
+  let currentUrl = $state("");
   let isRunning = $state(false);
   let status = $state("");
   let errorMessage = $state("");
   let logText = $state("");
   let downloadRatio = $state(0);
-  let outputs = $state<Output[]>([]);
-  let resolved = $state<ResolvedVideo>();
-  let videoItag = $state(0);
-  let audioItag = $state(0);
-  let captionLanguage = $state(ALL_CAPTIONS_NONE);
-  let lookupId = 0;
-
-  $effect(() => {
-    const videoId = parseVideoId(url);
-    const thisLookup = ++lookupId;
-    resolved = undefined;
-    if (!videoId) {
-      return;
-    }
-
-    lookUp(videoId, thisLookup).catch(error => {
-      if (thisLookup === lookupId) {
-        errorMessage = error instanceof Error ? error.message : String(error);
-      }
-    });
-  });
-
-  async function lookUp(videoId: string, thisLookup: number) {
-    await registerRequestHeaderRules();
-    const result = await resolveVideo(videoId);
-    if (thisLookup !== lookupId) {
-      return;
-    }
-
-    errorMessage = "";
-    resolved = result;
-    videoItag = result.videos[0]?.itag ?? 0;
-    audioItag = result.audios[0]?.itag ?? 0;
-    captionLanguage = result.captions[0]?.languageCode ?? ALL_CAPTIONS_NONE;
-  }
+  let savedNames = $state<string[]>([]);
 
   onMount(async () => {
     const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
     if (tab?.url && parseVideoId(tab.url)) {
-      url = tab.url;
+      currentUrl = tab.url;
+      command = command.replace(URL_TOKEN, `"${tab.url}"`);
     }
   });
 
-  function buildInputs(video: ResolvedVideo, placeholders: Placeholder[]): WorkerRequest["inputs"] {
-    const sources: Record<Placeholder, { url?: string; contentLength?: string } | undefined> = {
-      [Placeholder.Video]: video.videos.find(format => format.itag === videoItag),
-      [Placeholder.Audio]: video.audios.find(format => format.itag === audioItag),
-      [Placeholder.Captions]: video.captions.find(track => track.languageCode === captionLanguage)
-    };
-    return placeholders.map(placeholder => {
-      const source = sources[placeholder];
-      if (!source?.url) {
-        throw new Error(`This video has no stream for ${placeholder}`);
-      }
+  function applyPreset(presetCommand: string) {
+    command = presetCommand.replace(URL_TOKEN, currentUrl ? `"${currentUrl}"` : URL_TOKEN);
+  }
 
-      return {
-        name: PLACEHOLDER_FILENAMES[placeholder],
-        url: source.url,
-        contentLength: Number(source.contentLength) || undefined
-      };
-    });
+  function saveOutputs(files: { name: string; data: ArrayBuffer }[]) {
+    for (const { name, data } of files) {
+      browser.downloads.download({
+        url: URL.createObjectURL(new Blob([data])),
+        filename: name,
+        conflictAction: "uniquify"
+      });
+      savedNames.push(name);
+    }
   }
 
   function handleWorkerMessage(message: WorkerMessage) {
@@ -103,10 +56,7 @@
       return;
     }
 
-    outputs = message.files.map(({ name, data }) => ({ name, url: URL.createObjectURL(new Blob([data])) }));
-    for (const output of outputs) {
-      browser.downloads.download({ url: output.url, filename: output.name, conflictAction: "uniquify" });
-    }
+    saveOutputs(message.files);
     status = message.code === 0 ? "Done" : `FFmpeg exited with code ${message.code}`;
   }
 
@@ -131,25 +81,35 @@
     });
   }
 
-  async function run() {
-    if (!resolved) {
-      errorMessage = "Paste a YouTube URL and wait for the video to load first";
-      return;
-    }
+  async function runJob(job: Job) {
+    status = `Running ${job.label}`;
+    downloadRatio = 0;
+    await runInWorker({
+      wasmUrl: browser.runtime.getURL("/ffmpeg/ffmpeg-core.wasm"),
+      inputs: job.inputs,
+      args: job.args
+    });
+  }
 
+  async function run() {
     isRunning = true;
     errorMessage = "";
     logText = "";
-    outputs = [];
-    downloadRatio = 0;
-    status = "Starting";
+    savedNames = [];
+    status = "Looking up the video";
     try {
-      const inputs = buildInputs(resolved, usedPlaceholders(command));
-      await runInWorker({
-        wasmUrl: browser.runtime.getURL("/ffmpeg/ffmpeg-core.wasm"),
-        inputs,
-        args: substitutePlaceholders(tokenize(command))
-      });
+      const options = parseYtDlpCommand(command);
+      const videoId = parseVideoId(options.url ?? "");
+      if (!videoId) {
+        throw new Error("Put a YouTube URL in the command");
+      }
+
+      await registerRequestHeaderRules();
+      const { jobs, notes } = planJobs(options, await resolveVideo(videoId));
+      logText = notes.join("\n");
+      for (const job of jobs) {
+        await runJob(job);
+      }
     } catch (error) {
       errorMessage = error instanceof Error ? error.message : String(error);
     }
@@ -160,44 +120,8 @@
 
 <main>
   <label>
-    YouTube URL
-    <input type="url" bind:value={url} placeholder="https://www.youtube.com/watch?v=...">
-  </label>
-
-  {#if resolved}
-    <div class="choices">
-      <label>
-        Video quality
-        <select bind:value={videoItag}>
-          {#each resolved.videos as format (format.itag)}
-            <option value={format.itag}>{format.height}p</option>
-          {/each}
-        </select>
-      </label>
-      <label>
-        Audio language
-        <select bind:value={audioItag}>
-          {#each resolved.audios as format (format.itag)}
-            <option value={format.itag}>{format.audioTrack?.displayName ?? "Default"}</option>
-          {/each}
-        </select>
-      </label>
-      <label>
-        Captions language
-        <select bind:value={captionLanguage}>
-          {#each resolved.captions as track (track.languageCode)}
-            <option value={track.languageCode}>{track.label}</option>
-          {:else}
-            <option value={ALL_CAPTIONS_NONE}>No captions</option>
-          {/each}
-        </select>
-      </label>
-    </div>
-  {/if}
-
-  <label>
     Preset
-    <select onchange={e => (command = e.currentTarget.value)}>
+    <select onchange={e => applyPreset(e.currentTarget.value)}>
       <option value="" selected disabled>Pick one to fill the command</option>
       {#each PRESETS as preset (preset.label)}
         <option value={preset.command}>{preset.label}</option>
@@ -206,14 +130,14 @@
   </label>
 
   <label>
-    FFmpeg arguments
-    <textarea rows="3" bind:value={command} spellcheck="false"></textarea>
+    yt-dlp command
+    <textarea rows="4" bind:value={command} spellcheck="false"></textarea>
   </label>
   <p class="hint">
-    Use {Placeholder.Video}, {Placeholder.Audio} and {Placeholder.Captions} for the streams picked above. Every file FFmpeg writes is saved straight to your Downloads folder
+    Same flags as yt-dlp: -f, -S, -x, --audio-format, --merge-output-format, --write-subs, --sub-langs, --convert-subs, --skip-download, --download-sections, -o, -F. Files go straight to your Downloads folder
   </p>
 
-  <button onclick={run} disabled={isRunning || !resolved}>{isRunning ? "Running" : "Run FFmpeg"}</button>
+  <button onclick={run} disabled={isRunning}>{isRunning ? "Running" : "Run"}</button>
 
   {#if status}
     <p class="hint">{status}</p>
@@ -224,10 +148,10 @@
   {#if errorMessage}
     <p class="error">{errorMessage}</p>
   {/if}
-  {#if outputs.length}
+  {#if savedNames.length}
     <ul class="outputs">
-      {#each outputs as output (output.name)}
-        <li>Saved {output.name}</li>
+      {#each savedNames as name (name)}
+        <li>Saved {name}</li>
       {/each}
     </ul>
   {/if}

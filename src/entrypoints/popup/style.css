@@ -72,8 +72,3 @@ pre {
   list-style: none;
 }
 
-.choices {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px;
-}
