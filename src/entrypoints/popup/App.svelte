@@ -2,13 +2,15 @@
   import { onMount } from "svelte";
   import type { WorkerMessage, WorkerRequest } from "../ffmpeg-worker";
   import { PRESETS, URL_TOKEN } from "@/lib/command";
-  import { parseVideoId, registerRequestHeaderRules, resolveVideo } from "@/lib/youtube";
-  import { parseYtDlpCommand } from "@/lib/ytdlp/options";
-  import { planJobs } from "@/lib/ytdlp/plan";
-  import type { Job } from "@/lib/ytdlp/plan";
+  import { parsePlaylistId } from "@/lib/youtube";
+  import type { DirectFile, Job } from "@/lib/ytdlp/plan";
+  import { runYtDlpCommand } from "@/lib/ytdlp/session";
+  import type { TabContext } from "@/lib/ytdlp/session";
+
+  type DoneMessage = Extract<WorkerMessage, { type: "done" }>;
 
   let command = $state(`yt-dlp ${URL_TOKEN}`);
-  let currentUrl = $state("");
+  let tab = $state<TabContext>({});
   let isRunning = $state(false);
   let status = $state("");
   let errorMessage = $state("");
@@ -17,61 +19,67 @@
   let savedNames = $state<string[]>([]);
 
   onMount(async () => {
-    const [tab] = await browser.tabs.query({ active: true, currentWindow: true });
-    if (tab?.url && parseVideoId(tab.url)) {
-      currentUrl = tab.url;
-      command = command.replace(URL_TOKEN, `"${tab.url}"`);
+    const [activeTab] = await browser.tabs.query({ active: true, currentWindow: true });
+    tab = { tabId: activeTab?.id, url: activeTab?.url };
+    const isYouTubeTab = Boolean(activeTab?.url && URL.parse(activeTab.url)?.hostname.endsWith("youtube.com"));
+    if (isYouTubeTab) {
+      applyPreset(command);
     }
   });
 
   function applyPreset(presetCommand: string) {
-    command = presetCommand.replace(URL_TOKEN, currentUrl ? `"${currentUrl}"` : URL_TOKEN);
+    const hasPlaylist = Boolean(tab.url && parsePlaylistId(tab.url));
+    const isWatchPage = Boolean(tab.url && URL.parse(tab.url)?.searchParams.has("v"));
+    const playlistFlag = hasPlaylist && isWatchPage ? "--no-playlist " : "";
+    command = presetCommand.replace(URL_TOKEN, `${playlistFlag}"${tab.url ?? URL_TOKEN}"`);
   }
 
-  function saveOutputs(files: { name: string; data: ArrayBuffer }[]) {
-    for (const { name, data } of files) {
-      browser.downloads.download({
-        url: URL.createObjectURL(new Blob([data])),
-        filename: name,
-        conflictAction: "uniquify"
-      });
-      savedNames.push(name);
-    }
+  async function saveBlob(name: string, blob: Blob) {
+    await browser.downloads.download({
+      url: URL.createObjectURL(blob),
+      filename: name,
+      conflictAction: "uniquify"
+    });
+    savedNames.push(name);
   }
 
-  function handleWorkerMessage(message: WorkerMessage) {
-    if (message.type === "log") {
-      logText += `${message.text}\n`;
+  async function saveDirectFile({ saveAs, text, url }: DirectFile) {
+    if (text !== undefined) {
+      await saveBlob(saveAs, new Blob([text]));
       return;
     }
 
-    if (message.type === "progress") {
-      downloadRatio = message.ratio;
-      status = `Downloading ${message.name}`;
-      return;
+    const response = await fetch(url!);
+    if (!response.ok) {
+      throw new Error(`Couldn't fetch ${saveAs}: HTTP ${response.status}`);
     }
 
-    if (message.type === "error") {
-      errorMessage = message.message;
-      return;
-    }
-
-    saveOutputs(message.files);
-    status = message.code === 0 ? "Done" : `FFmpeg exited with code ${message.code}`;
+    await saveBlob(saveAs, await response.blob());
   }
 
   function runInWorker(request: WorkerRequest) {
-    return new Promise<void>((resolve, reject) => {
+    return new Promise<DoneMessage>((resolve, reject) => {
       const worker = new Worker(browser.runtime.getURL("/ffmpeg-worker.js"), { type: "module" });
       worker.onmessage = (e: MessageEvent<WorkerMessage>) => {
-        handleWorkerMessage(e.data);
-        const isFinished = e.data.type === "done" || e.data.type === "error";
-        if (!isFinished) {
+        const message = e.data;
+        if (message.type === "log") {
+          logText += `${message.text}\n`;
+          return;
+        }
+
+        if (message.type === "progress") {
+          downloadRatio = message.ratio;
+          status = `Downloading ${message.name}`;
           return;
         }
 
         worker.terminate();
-        resolve();
+        if (message.type === "error") {
+          reject(new Error(message.message));
+          return;
+        }
+
+        resolve(message);
       };
       worker.onerror = e => {
         worker.terminate();
@@ -82,13 +90,19 @@
   }
 
   async function runJob(job: Job) {
-    status = `Running ${job.label}`;
+    status = `Running ${job.saveAs}`;
     downloadRatio = 0;
-    await runInWorker({
+    const done = await runInWorker({
       wasmUrl: browser.runtime.getURL("/ffmpeg/ffmpeg-core.wasm"),
       inputs: job.inputs,
       args: job.args
     });
+    const output = done.files.find(file => file.name === job.outputFile);
+    if (done.code !== 0 || !output) {
+      throw new Error(`FFmpeg failed on ${job.saveAs} (exit code ${done.code})`);
+    }
+
+    await saveBlob(job.saveAs, new Blob([output.data]));
   }
 
   async function run() {
@@ -96,20 +110,14 @@
     errorMessage = "";
     logText = "";
     savedNames = [];
-    status = "Looking up the video";
     try {
-      const options = parseYtDlpCommand(command);
-      const videoId = parseVideoId(options.url ?? "");
-      if (!videoId) {
-        throw new Error("Put a YouTube URL in the command");
-      }
-
-      await registerRequestHeaderRules();
-      const { jobs, notes } = planJobs(options, await resolveVideo(videoId));
-      logText = notes.join("\n");
-      for (const job of jobs) {
-        await runJob(job);
-      }
+      await runYtDlpCommand(command, tab, {
+        log: text => (logText += `${text}\n`),
+        status: text => (status = text),
+        runJob,
+        saveDirectFile
+      });
+      status = "Done";
     } catch (error) {
       errorMessage = error instanceof Error ? error.message : String(error);
     }
@@ -134,7 +142,7 @@
     <textarea rows="4" bind:value={command} spellcheck="false"></textarea>
   </label>
   <p class="hint">
-    Same flags as yt-dlp: -f, -S, -x, --audio-format, --merge-output-format, --write-subs, --sub-langs, --convert-subs, --skip-download, --download-sections, -o, -F. Files go straight to your Downloads folder
+    Leave the URL out to use this tab. Playlist URLs download every video. Files go straight to your Downloads folder
   </p>
 
   <button onclick={run} disabled={isRunning}>{isRunning ? "Running" : "Run"}</button>
@@ -150,7 +158,7 @@
   {/if}
   {#if savedNames.length}
     <ul class="outputs">
-      {#each savedNames as name (name)}
+      {#each savedNames as name, index (index)}
         <li>Saved {name}</li>
       {/each}
     </ul>
