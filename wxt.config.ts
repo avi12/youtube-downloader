@@ -12,7 +12,7 @@ export default defineConfig({
   manifest: {
     name: "FFmpeg for YouTube",
     description: "Run FFmpeg against a YouTube URL straight from the popup",
-    permissions: ["activeTab", "declarativeNetRequestWithHostAccess"],
+    permissions: ["activeTab", "downloads", "declarativeNetRequestWithHostAccess"],
     host_permissions: ["https://*.youtube.com/*", "https://*.googlevideo.com/*", "https://cdn.jsdelivr.net/*"],
     content_security_policy: {
       extension_pages: "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"

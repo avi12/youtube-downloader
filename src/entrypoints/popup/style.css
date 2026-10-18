@@ -24,8 +24,8 @@ input,
 textarea,
 select,
 button {
-  font: inherit;
   padding: 6px 8px;
+  font: inherit;
 }
 
 textarea {
@@ -44,7 +44,7 @@ button:disabled {
 .hint {
   margin: 0;
   font-size: 12px;
-  opacity: 0.7;
+  opacity: 70%;
 }
 
 progress {
@@ -52,13 +52,13 @@ progress {
 }
 
 pre {
+  overflow: auto;
   max-block-size: 160px;
   margin: 0;
   padding: 8px;
-  overflow: auto;
+  background: color-mix(in sRGB, currentColor 8%, transparent);
   font-size: 11px;
   white-space: pre-wrap;
-  background: color-mix(in srgb, currentcolor 8%, transparent);
 }
 
 .error {
@@ -70,4 +70,10 @@ pre {
   gap: 4px;
   padding: 0;
   list-style: none;
+}
+
+.choices {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
 }
