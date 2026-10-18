@@ -17,6 +17,6 @@ export const PRESETS: { label: string; command: string; ffmpegCommand?: string }
   { label: "Clip 10s-20s", command: `yt-dlp --download-sections "*10-20" ${URL_TOKEN}` },
   { label: "Whole playlist as MP3", command: `yt-dlp -x --audio-format mp3 -o "%(playlist)s/%(playlist_index)02d - %(title)s.%(ext)s" ${URL_TOKEN}` },
   { label: "Thumbnail only", command: `yt-dlp --skip-download --write-thumbnail ${URL_TOKEN}` },
-  { label: "Snapshot at 5s (PNG)", command: `yt-dlp -f "bv*[height<=720]" ${URL_TOKEN}`, ffmpegCommand: "-ss 00:00:05 -i {input1} -frames:v 1 snapshot.png" },
+  { label: "Snapshot at 5s (PNG)", command: `yt-dlp -f "bv*[height<=720][vcodec^=avc1]" ${URL_TOKEN}`, ffmpegCommand: "-ss 00:00:05 -i {input1} -frames:v 1 snapshot.png" },
   { label: "List formats", command: `yt-dlp -F ${URL_TOKEN}` }
 ];
