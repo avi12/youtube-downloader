@@ -2,6 +2,7 @@
   import { onMount } from "svelte";
   import type { WorkerMessage, WorkerRequest } from "../ffmpeg-worker";
   import { URL_TOKEN } from "@/lib/command";
+  import { mimeTypeForFile } from "@/lib/mime";
   import { applyFfmpegCommand } from "@/lib/ffmpeg-command";
   import { BUILT_IN_PRESETS, loadSavedPresets, storeSavedPresets, upsertPreset } from "@/lib/presets";
   import type { Preset } from "@/lib/presets";
@@ -73,9 +74,9 @@
     abortController?.abort();
   }
 
-  async function saveBlob(name: string, blob: Blob) {
+  async function saveBlob(name: string, parts: BlobPart[]) {
     await browser.downloads.download({
-      url: URL.createObjectURL(blob),
+      url: URL.createObjectURL(new Blob(parts, { type: mimeTypeForFile(name) })),
       filename: name,
       conflictAction: "uniquify"
     });
@@ -84,7 +85,7 @@
 
   async function saveDirectFile({ saveAs, text, url }: DirectFile, signal: AbortSignal) {
     if (text !== undefined) {
-      await saveBlob(saveAs, new Blob([text]));
+      await saveBlob(saveAs, [text]);
       return;
     }
 
@@ -93,7 +94,7 @@
       throw new Error(`Couldn't fetch ${saveAs}: HTTP ${response.status}`);
     }
 
-    await saveBlob(saveAs, await response.blob());
+    await saveBlob(saveAs, [await response.arrayBuffer()]);
   }
 
   function runInWorker(request: WorkerRequest, signal: AbortSignal) {
@@ -146,7 +147,7 @@
       throw new Error(`FFmpeg failed on ${job.saveAs} (exit code ${done.code})`);
     }
 
-    await saveBlob(job.saveAs, new Blob([output.data]));
+    await saveBlob(job.saveAs, [output.data]);
   }
 
   function describeError(error: unknown) {
