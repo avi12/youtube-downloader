@@ -1,4 +1,4 @@
-import type { StreamFormat } from "@/lib/youtube";
+import type { StreamFormat } from "@/lib/schemas";
 
 const KILOBIT = 1000;
 const NUMBER_WITH_SUFFIX_PATTERN = /^(\d+(?:\.\d+)?)([kmgt])?(i?b)?$/i;

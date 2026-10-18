@@ -1,9 +1,12 @@
-export type PlaylistEntry = { videoId: string; title: string };
-export type PlaylistListing = { title: string; entries: PlaylistEntry[] };
-export type RawChapter = { title: string; start: number };
+import { z } from "zod";
+import { pageResultSchema } from "@/lib/schemas";
+import type { PageResult } from "@/lib/schemas";
+
+export type PlaylistListing = NonNullable<PageResult["playlist"]>;
+export type PlaylistEntry = PlaylistListing["entries"][number];
+export type RawChapter = NonNullable<PageResult["chapters"]>[number];
 
 type PageTask = { kind: "playlist" | "chapters"; id: string };
-type PageResult = { playlist?: PlaylistListing; chapters?: RawChapter[]; error?: string };
 
 async function runInsideYouTubePage(task: PageTask): Promise<PageResult> {
   const MAX_PAGES = 200;
@@ -160,12 +163,16 @@ async function runTask(tabId: number | undefined, task: PageTask) {
   }
 
   const [injection] = await browser.scripting.executeScript({ target: { tabId }, world: "MAIN", func: runInsideYouTubePage, args: [task] });
-  const result = injection?.result;
-  if (!result || result.error) {
-    throw new Error(result?.error ?? "Couldn't read the YouTube page");
+  const parsed = pageResultSchema.safeParse(injection?.result);
+  if (!parsed.success) {
+    throw new Error(`Couldn't read the YouTube page: ${z.prettifyError(parsed.error)}`);
   }
 
-  return result;
+  if (parsed.data.error) {
+    throw new Error(parsed.data.error);
+  }
+
+  return parsed.data;
 }
 
 export async function fetchPlaylist(tabId: number | undefined, playlistId: string) {

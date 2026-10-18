@@ -1,3 +1,7 @@
+import { z } from "zod";
+import { playerResponseSchema } from "@/lib/schemas";
+import type { StreamFormat, Thumbnail } from "@/lib/schemas";
+
 const DATE_LENGTH = 10;
 const WATCH_HOSTS = new Set(["www.youtube.com", "youtube.com", "m.youtube.com", "music.youtube.com"]);
 const VIDEO_ID_PATTERN = /^[\w-]{11}$/;
@@ -23,49 +27,6 @@ const ANDROID_VR_CLIENT = {
   osVersion: "12L",
   hl: "en",
   gl: "US"
-};
-
-export type StreamFormat = {
-  itag: number;
-  url: string;
-  mimeType: string;
-  bitrate: number;
-  contentLength?: string;
-  height?: number;
-  width?: number;
-  fps?: number;
-  audioTrack?: { id: string; displayName: string; audioIsDefault?: boolean };
-};
-
-export type Thumbnail = {
-  url: string;
-  width: number;
-  height: number;
-};
-
-type CaptionTrack = {
-  baseUrl: string;
-  languageCode: string;
-  name?: { simpleText?: string };
-  kind?: string;
-};
-
-type PlayerResponse = {
-  playabilityStatus?: { status?: string; reason?: string };
-  videoDetails?: {
-    title?: string;
-    author?: string;
-    shortDescription?: string;
-    lengthSeconds?: string;
-    viewCount?: string;
-    channelId?: string;
-    keywords?: string[];
-    isLive?: boolean;
-    thumbnail?: { thumbnails?: Thumbnail[] };
-  };
-  microformat?: { playerMicroformatRenderer?: { uploadDate?: string; category?: string } };
-  streamingData?: { formats?: StreamFormat[]; adaptiveFormats?: StreamFormat[] };
-  captions?: { playerCaptionsTracklistRenderer?: { captionTracks?: CaptionTrack[] } };
 };
 
 export type CaptionOption = {
@@ -191,7 +152,12 @@ async function fetchPlayerResponse(videoId: string) {
     throw new Error(`Player request failed: HTTP ${response.status} ${(await response.text()).slice(0, 300)}`);
   }
 
-  const playerResponse: PlayerResponse = await response.json();
+  const parsed = playerResponseSchema.safeParse(await response.json());
+  if (!parsed.success) {
+    throw new Error(`YouTube sent a player response in an unexpected shape: ${z.prettifyError(parsed.error)}`);
+  }
+
+  const playerResponse = parsed.data;
   const { status, reason } = playerResponse.playabilityStatus ?? {};
   if (status !== "OK") {
     throw new Error(`Video isn't playable: ${status} ${reason ?? ""}`);

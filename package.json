@@ -20,7 +20,8 @@
   "dependencies": {
     "@ffmpeg/core": "0.12.10",
     "@ffmpeg/core-nosimd": "npm:@ffmpeg/core@0.12.0",
-    "@ffmpeg/types": "^0.12.4"
+    "@ffmpeg/types": "^0.12.4",
+    "zod": "^4.6.7"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
