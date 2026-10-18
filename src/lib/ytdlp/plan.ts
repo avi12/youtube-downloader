@@ -56,6 +56,7 @@ export type Job = {
   args: string[];
   outputFile: string;
   saveAs: string;
+  isMedia?: boolean;
 };
 
 export type DirectFile = { saveAs: string; text?: string; url?: string };
@@ -300,7 +301,8 @@ function buildMediaJob({ options, context, fields, picks, tracks, notes }: Media
     inputs: inputs.map(({ worker }) => worker),
     args: [...inputTokens, ...codecArgs, ...extraArgs, ...metadataArgs, ...selectProcessorArgs(options, processorNames), outputFile],
     outputFile,
-    saveAs
+    saveAs,
+    isMedia: true
   };
 }
 

@@ -11,6 +11,7 @@ import { buildVideoFields } from "./fields";
 import { renderTemplate } from "./template";
 
 export type SessionHooks = {
+  signal: AbortSignal;
   log: (text: string) => void;
   status: (text: string) => void;
   runJob: (job: Job) => Promise<void>;
@@ -77,10 +78,12 @@ async function processTarget(options: YtDlpOptions, tab: TabContext, target: Tar
   }
 
   for (const job of plan.jobs) {
+    hooks.signal.throwIfAborted();
     await hooks.runJob(job);
   }
 
   for (const file of plan.directFiles) {
+    hooks.signal.throwIfAborted();
     await hooks.saveDirectFile(file);
   }
 
@@ -117,13 +120,14 @@ export async function runYtDlpCommand(command: string, tab: TabContext, hooks: S
   const isAbortOnError = options.isAbortOnError || targets.length === 1;
   let downloadCount = 0;
   for (const [index, target] of targets.entries()) {
+    hooks.signal.throwIfAborted();
     if (options.maxDownloads !== undefined && downloadCount >= options.maxDownloads) {
       hooks.log(`Stopped after --max-downloads ${options.maxDownloads}`);
       return;
     }
 
     const outcome = await processTarget(options, tab, target, index + 1, hooks).catch((error: unknown) => {
-      if (isAbortOnError) {
+      if (isAbortOnError || hooks.signal.aborted) {
         throw error;
       }
 

@@ -72,3 +72,18 @@ pre {
   list-style: none;
 }
 
+.row {
+  display: flex;
+  gap: 6px;
+}
+
+.row input {
+  flex: 1;
+  min-inline-size: 0;
+}
+
+.check {
+  display: flex;
+  align-items: center;
+  font-weight: 400;
+}
