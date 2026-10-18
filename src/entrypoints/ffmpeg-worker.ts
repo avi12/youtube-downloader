@@ -23,13 +23,15 @@ async function fetchRange(url: string, start: number, end: number) {
   return new Uint8Array(await response.arrayBuffer());
 }
 
-async function writeWholeInput(core: FFmpegCoreModule, name: string, url: string) {
-  const response = await fetch(url);
-  if (!response.ok) {
-    throw new Error(`Download of ${name} failed: HTTP ${response.status}`);
+async function probeContentLength(name: string, url: string) {
+  const response = await fetch(url, { headers: { Range: "bytes=0-0" } });
+  await response.body?.cancel();
+  const total = Number(response.headers.get("Content-Range")?.split("/")[1]);
+  if (!response.ok || !total) {
+    throw new Error(`Couldn't read the size of ${name}: HTTP ${response.status}`);
   }
 
-  core.FS.writeFile(name, new Uint8Array(await response.arrayBuffer()));
+  return total;
 }
 
 async function writeChunkedInput(core: FFmpegCoreModule, name: string, url: string, contentLength: number) {
@@ -53,12 +55,7 @@ async function writeInput(core: FFmpegCoreModule, { name, url, text, contentLeng
     throw new Error(`Input ${name} has no source`);
   }
 
-  if (!contentLength) {
-    await writeWholeInput(core, name, url);
-    return;
-  }
-
-  await writeChunkedInput(core, name, url, contentLength);
+  await writeChunkedInput(core, name, url, contentLength ?? await probeContentLength(name, url));
 }
 
 function collectOutputs(core: FFmpegCoreModule, ignoredNames: Set<string>) {

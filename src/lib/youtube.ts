@@ -174,7 +174,7 @@ function toVttUrl(baseUrl: string) {
 
 export async function resolveVideo(videoId: string): Promise<ResolvedVideo> {
   const playerResponse = await fetchPlayerResponse(videoId);
-  const { formats = [], adaptiveFormats = [] } = playerResponse.streamingData ?? {};
+  const { adaptiveFormats = [] } = playerResponse.streamingData ?? {};
   const details = playerResponse.videoDetails ?? {};
   const captionTracks = playerResponse.captions?.playerCaptionsTracklistRenderer?.captionTracks ?? [];
   return {
@@ -190,7 +190,7 @@ export async function resolveVideo(videoId: string): Promise<ResolvedVideo> {
     isLive: details.isLive ?? false,
     uploadDate: (playerResponse.microformat?.playerMicroformatRenderer?.uploadDate ?? "").slice(0, DATE_LENGTH).replaceAll("-", ""),
     thumbnails: (details.thumbnail?.thumbnails ?? []).toSorted((first, second) => first.width - second.width),
-    formats: [...formats, ...adaptiveFormats].filter(format => format.url),
+    formats: adaptiveFormats.filter(format => format.url),
     captions: captionTracks.map(track => ({
       languageCode: track.languageCode,
       label: track.name?.simpleText ?? track.languageCode,
