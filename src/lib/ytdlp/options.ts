@@ -1,3 +1,4 @@
+import { z } from "zod";
 import { tokenize } from "@/lib/command";
 
 const YTDLP_PROGRAM_PATTERN = /^yt-dlp(?:\.exe)?$/i;
@@ -17,6 +18,31 @@ const OUTPUT_TYPE_PATTERN = /^(subtitle|thumbnail|description|annotation|infojso
 const PATH_TYPE_PATTERN = /^(home|temp|subtitle|thumbnail|description|infojson|link|chapter):([\s\S]*)$/;
 const POSTPROCESSOR_PATTERN = /^([\w+]+):([\s\S]*)$/;
 const EQUALS_SIGN = "=";
+const AUDIO_QUALITY_PATTERN = /^(?:\d+(?:\.\d+)?|\d+k)$/i;
+
+export const AUDIO_FORMATS = ["best", "aac", "alac", "flac", "m4a", "mp3", "opus", "vorbis", "wav"] as const;
+export type AudioFormat = (typeof AUDIO_FORMATS)[number];
+
+const CONTAINER_FORMATS = ["avi", "flv", "gif", "mkv", "mov", "mp4", "webm", "aac", "aiff", "alac", "flac", "m4a", "mka", "mp3", "ogg", "opus", "vorbis", "wav"] as const;
+const SUBTITLE_FORMATS = ["ass", "lrc", "srt", "vtt"] as const;
+const THUMBNAIL_FORMATS = ["jpg", "png", "webp"] as const;
+
+const audioFormatSchema = z.enum(AUDIO_FORMATS);
+const containerSchema = z.enum(CONTAINER_FORMATS);
+const subtitleFormatSchema = z.enum(SUBTITLE_FORMATS);
+const thumbnailFormatSchema = z.enum(THUMBNAIL_FORMATS);
+const audioQualitySchema = z.string().regex(AUDIO_QUALITY_PATTERN, "use 0-10 or a bitrate like 128K");
+const countSchema = z.coerce.number().int().nonnegative();
+const positiveCountSchema = z.coerce.number().int().positive();
+
+function parseOptionValue<Schema extends z.ZodType>(flag: string, schema: Schema, value: string): z.output<Schema> {
+  const result = schema.safeParse(value);
+  if (!result.success) {
+    throw new Error(`${flag} ${value}: ${result.error.issues[0]?.message ?? "invalid value"}`);
+  }
+
+  return result.data;
+}
 const DEFAULT_PROCESSOR = "ffmpeg";
 
 export type Section = { start?: number; end?: number; chapterPattern?: string };
@@ -29,7 +55,7 @@ export type YtDlpOptions = {
   formatSort: string[];
   isPreferFree: boolean;
   isExtractAudio: boolean;
-  audioFormat: string;
+  audioFormat: AudioFormat;
   audioQuality?: string;
   mergeOutputFormat?: string;
   recodeVideo?: string;
@@ -86,7 +112,7 @@ export type YtDlpOptions = {
   ignoredFlags: string[];
 };
 
-type Applier = (options: YtDlpOptions, values: string[]) => void;
+type Applier = (options: YtDlpOptions, values: string[], flag: string) => void;
 type OptionDefinition = { flags: string[]; arity: number; apply: Applier; isNegatable: boolean };
 
 const definitions = new Map<string, OptionDefinition>();
@@ -98,8 +124,8 @@ function register(flags: string[], arity: number, isNegatable: boolean, apply: A
   }
 }
 
-function valueOption(flags: string[], apply: (options: YtDlpOptions, value: string) => void) {
-  register(flags, 1, false, (options, [value]) => apply(options, value!));
+function valueOption(flags: string[], apply: (options: YtDlpOptions, value: string, flag: string) => void) {
+  register(flags, 1, false, (options, [value], flag) => apply(options, value!, flag));
 }
 
 function switchOption(flags: string[], apply: (options: YtDlpOptions, isOn: boolean) => void) {
@@ -194,25 +220,25 @@ switchOption(["--prefer-free-formats"], (options, isOn) => {
 switchOption(["-x", "--extract-audio"], (options, isOn) => {
   options.isExtractAudio = isOn;
 });
-valueOption(["--audio-format"], (options, value) => {
-  options.audioFormat = value;
+valueOption(["--audio-format"], (options, value, flag) => {
+  options.audioFormat = parseOptionValue(flag, audioFormatSchema, value);
 });
-valueOption(["--audio-quality"], (options, value) => {
-  options.audioQuality = value;
+valueOption(["--audio-quality"], (options, value, flag) => {
+  options.audioQuality = parseOptionValue(flag, audioQualitySchema, value);
 });
-valueOption(["--merge-output-format", "--remux-video"], (options, value) => {
-  options.mergeOutputFormat = parseConversionTarget(value);
+valueOption(["--merge-output-format", "--remux-video"], (options, value, flag) => {
+  options.mergeOutputFormat = parseOptionValue(flag, containerSchema, parseConversionTarget(value));
 });
-valueOption(["--recode-video"], (options, value) => {
-  options.recodeVideo = parseConversionTarget(value);
+valueOption(["--recode-video"], (options, value, flag) => {
+  options.recodeVideo = parseOptionValue(flag, containerSchema, parseConversionTarget(value));
 });
 valueOption(["-o", "--output"], parseOutput);
 valueOption(["-P", "--paths"], parsePath);
 switchOption(["--restrict-filenames"], (options, isOn) => {
   options.isRestrictFilenames = isOn;
 });
-valueOption(["--trim-filenames"], (options, value) => {
-  options.trimFilenames = Number(value);
+valueOption(["--trim-filenames"], (options, value, flag) => {
+  options.trimFilenames = parseOptionValue(flag, positiveCountSchema, value);
 });
 switchOption(["--write-subs", "--write-sub"], (options, isOn) => {
   options.isWriteSubs = isOn;
@@ -230,8 +256,8 @@ valueOption(["--sub-langs", "--sub-lang"], (options, value) => {
 valueOption(["--sub-format"], (options, value) => {
   options.subFormat = firstOfAlternatives(value);
 });
-valueOption(["--convert-subs", "--convert-sub"], (options, value) => {
-  options.subFormat = value;
+valueOption(["--convert-subs", "--convert-sub"], (options, value, flag) => {
+  options.subFormat = parseOptionValue(flag, subtitleFormatSchema, value);
 });
 switchOption(["--list-subs"], (options, isOn) => {
   options.isListSubs = isOn;
@@ -254,8 +280,8 @@ switchOption(["--write-thumbnail"], (options, isOn) => {
 switchOption(["--write-all-thumbnails"], (options, isOn) => {
   options.isWriteAllThumbnails = isOn;
 });
-valueOption(["--convert-thumbnails"], (options, value) => {
-  options.convertThumbnails = parseConversionTarget(value);
+valueOption(["--convert-thumbnails"], (options, value, flag) => {
+  options.convertThumbnails = parseOptionValue(flag, thumbnailFormatSchema, parseConversionTarget(value));
 });
 switchOption(["--list-thumbnails"], (options, isOn) => {
   options.isListThumbnails = isOn;
@@ -318,11 +344,11 @@ valueOption(["--datebefore"], (options, value) => {
 valueOption(["--dateafter"], (options, value) => {
   options.dateAfter = value;
 });
-valueOption(["--min-views"], (options, value) => {
-  options.minViews = Number(value);
+valueOption(["--min-views"], (options, value, flag) => {
+  options.minViews = parseOptionValue(flag, countSchema, value);
 });
-valueOption(["--max-views"], (options, value) => {
-  options.maxViews = Number(value);
+valueOption(["--max-views"], (options, value, flag) => {
+  options.maxViews = parseOptionValue(flag, countSchema, value);
 });
 valueOption(["--min-filesize"], (options, value) => {
   options.minFilesize = value;
@@ -342,11 +368,11 @@ switchOption(["--yes-playlist"], (options, isOn) => {
 valueOption(["-I", "--playlist-items"], (options, value) => {
   options.playlistItems = value;
 });
-valueOption(["--playlist-start"], (options, value) => {
-  options.playlistStart = Number(value);
+valueOption(["--playlist-start"], (options, value, flag) => {
+  options.playlistStart = parseOptionValue(flag, positiveCountSchema, value);
 });
-valueOption(["--playlist-end"], (options, value) => {
-  options.playlistEnd = Number(value);
+valueOption(["--playlist-end"], (options, value, flag) => {
+  options.playlistEnd = parseOptionValue(flag, positiveCountSchema, value);
 });
 switchOption(["--playlist-reverse"], (options, isOn) => {
   options.isPlaylistReverse = isOn;
@@ -354,8 +380,8 @@ switchOption(["--playlist-reverse"], (options, isOn) => {
 switchOption(["--playlist-random"], (options, isOn) => {
   options.isPlaylistRandom = isOn;
 });
-valueOption(["--max-downloads"], (options, value) => {
-  options.maxDownloads = Number(value);
+valueOption(["--max-downloads"], (options, value, flag) => {
+  options.maxDownloads = parseOptionValue(flag, countSchema, value);
 });
 register(["--flat-playlist"], 0, false, options => {
   options.isFlatPlaylist = true;
@@ -516,7 +542,7 @@ function applyFlag(options: YtDlpOptions, rawFlag: string, tokens: string[], inl
       throw new Error(`${rawFlag} needs a value`);
     }
 
-    definition.apply(options, values);
+    definition.apply(options, values, rawFlag);
     return;
   }
 

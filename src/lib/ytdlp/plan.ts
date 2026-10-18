@@ -1,5 +1,6 @@
 import type { WorkerInput } from "@/entrypoints/ffmpeg-worker";
-import type { CaptionOption, ResolvedVideo, Thumbnail } from "@/lib/youtube";
+import type { Thumbnail } from "@/lib/schemas";
+import type { CaptionOption, ResolvedVideo } from "@/lib/youtube";
 import {
   applyMetadataRules,
   buildFormatFields,
@@ -10,7 +11,7 @@ import {
 } from "./fields";
 import type { Chapter, PlaylistPosition, SectionContext } from "./fields";
 import { matchesAnyFilter, parseByteSize, parseDateSpec } from "./filters";
-import type { Section, YtDlpOptions } from "./options";
+import type { AudioFormat, Section, YtDlpOptions } from "./options";
 import { DEFAULT_SORT_KEYS, describeFormat, selectFormatSets } from "./selector";
 import type { FormatFields } from "./selector";
 import { renderTemplate } from "./template";
@@ -38,7 +39,7 @@ const MATROSKA_FORMATS = new Set(["mkv", "webm"]);
 const BASE_PROCESSORS = ["ffmpeg", "ffmpeg_o"];
 const MEDIA_PROCESSORS = ["merger", "videoconvertor", "videoremuxer", "extractaudio", "metadata", "embedsubtitle", "embedthumbnail", "fixupm4a", "fixupstretched"];
 
-const AUDIO_ENCODERS: Record<string, string[]> = {
+const AUDIO_ENCODERS: Record<Exclude<AudioFormat, "best">, string[]> = {
   mp3: ["libmp3lame"],
   m4a: ["aac"],
   aac: ["aac"],
@@ -78,12 +79,12 @@ export type VideoPlan = {
 type MediaInput = { worker: WorkerInput; before: string[] };
 
 function selectAudioCodecArgs(options: YtDlpOptions, source: FormatFields) {
-  const encoders = AUDIO_ENCODERS[options.audioFormat];
   const isSameCodec = source.ext === options.audioFormat || source.acodec.startsWith(options.audioFormat);
-  if (options.audioFormat === BEST_AUDIO_FORMAT || !encoders || isSameCodec) {
+  if (options.audioFormat === BEST_AUDIO_FORMAT || isSameCodec) {
     return ["-c:a", "copy"];
   }
 
+  const encoders = AUDIO_ENCODERS[options.audioFormat];
   const quality = options.audioQuality ?? DEFAULT_MP3_QUALITY;
   if (BITRATE_QUALITY_PATTERN.test(quality)) {
     return ["-c:a", ...encoders, "-b:a", quality];
