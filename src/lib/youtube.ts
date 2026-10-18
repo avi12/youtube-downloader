@@ -32,11 +32,13 @@ export type StreamFormat = {
   bitrate: number;
   contentLength?: string;
   height?: number;
+  audioTrack?: { id: string; displayName: string };
 };
 
 type CaptionTrack = {
   baseUrl: string;
   languageCode: string;
+  name?: { simpleText?: string };
 };
 
 type PlayerResponse = {
@@ -46,11 +48,17 @@ type PlayerResponse = {
   captions?: { playerCaptionsTracklistRenderer?: { captionTracks?: CaptionTrack[] } };
 };
 
+export type CaptionOption = {
+  languageCode: string;
+  label: string;
+  url: string;
+};
+
 export type ResolvedVideo = {
   title: string;
-  video?: StreamFormat;
-  audio?: StreamFormat;
-  captionsUrl?: string;
+  videos: StreamFormat[];
+  audios: StreamFormat[];
+  captions: CaptionOption[];
 };
 
 export function parseVideoId(input: string) {
@@ -145,12 +153,30 @@ async function fetchPlayerResponse(videoId: string) {
   return playerResponse;
 }
 
-function pickBest(formats: StreamFormat[], mimePrefix: string, score: (format: StreamFormat) => number) {
-  return formats.filter(format => format.mimeType.startsWith(mimePrefix)).toSorted((a, b) => score(b) - score(a))[0];
+const DEFAULT_AUDIO_TRACK_ID = "default";
+
+function isMp4(format: StreamFormat) {
+  return format.mimeType.includes("mp4");
 }
 
-const scoreVideo = (format: StreamFormat) => (format.height ?? 0) * VIDEO_HEIGHT_WEIGHT + format.bitrate;
-const scoreAudio = (format: StreamFormat) => format.bitrate;
+function bestPerKey(formats: StreamFormat[], getKey: (format: StreamFormat) => string, score: (format: StreamFormat) => number) {
+  const sorted = formats.toSorted((first, second) => score(second) - score(first));
+  const best = new Map<string, StreamFormat>();
+  for (const format of sorted) {
+    const key = getKey(format);
+    if (!best.has(key)) {
+      best.set(key, format);
+    }
+  }
+  return [...best.values()];
+}
+
+function scoreVideo(format: StreamFormat) {
+  return (format.height ?? 0) * VIDEO_HEIGHT_WEIGHT + Number(isMp4(format)) * (VIDEO_HEIGHT_WEIGHT / 2) + format.bitrate;
+}
+function scoreAudio(format: StreamFormat) {
+  return Number(isMp4(format)) * VIDEO_HEIGHT_WEIGHT + format.bitrate;
+}
 
 function toVttUrl(baseUrl: string) {
   const url = new URL(baseUrl);
@@ -161,12 +187,17 @@ function toVttUrl(baseUrl: string) {
 export async function resolveVideo(videoId: string): Promise<ResolvedVideo> {
   const playerResponse = await fetchPlayerResponse(videoId);
   const formats = playerResponse.streamingData?.adaptiveFormats ?? [];
-  const mp4Formats = formats.filter(format => format.mimeType.includes("mp4"));
-  const captionTrack = playerResponse.captions?.playerCaptionsTracklistRenderer?.captionTracks?.[0];
+  const videoFormats = formats.filter(format => format.mimeType.startsWith("video/"));
+  const audioFormats = formats.filter(format => format.mimeType.startsWith("audio/"));
+  const captionTracks = playerResponse.captions?.playerCaptionsTracklistRenderer?.captionTracks ?? [];
   return {
     title: playerResponse.videoDetails?.title ?? videoId,
-    video: pickBest(mp4Formats, "video/", scoreVideo) ?? pickBest(formats, "video/", scoreVideo),
-    audio: pickBest(mp4Formats, "audio/", scoreAudio) ?? pickBest(formats, "audio/", scoreAudio),
-    captionsUrl: captionTrack && toVttUrl(captionTrack.baseUrl)
+    videos: bestPerKey(videoFormats, format => String(format.height), scoreVideo),
+    audios: bestPerKey(audioFormats, format => format.audioTrack?.id ?? DEFAULT_AUDIO_TRACK_ID, scoreAudio),
+    captions: captionTracks.map(track => ({
+      languageCode: track.languageCode,
+      label: track.name?.simpleText ?? track.languageCode,
+      url: toVttUrl(track.baseUrl)
+    }))
   };
 }
