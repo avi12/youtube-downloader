@@ -1,3 +1,4 @@
+const DATE_LENGTH = 10;
 const WATCH_HOSTS = new Set(["www.youtube.com", "youtube.com", "m.youtube.com", "music.youtube.com"]);
 const VIDEO_ID_PATTERN = /^[\w-]{11}$/;
 const SHORT_URL_PATH_PATTERN = /^\/(?:shorts|embed|live|v)\/([\w-]{11})/;
@@ -36,6 +37,12 @@ export type StreamFormat = {
   audioTrack?: { id: string; displayName: string; audioIsDefault?: boolean };
 };
 
+export type Thumbnail = {
+  url: string;
+  width: number;
+  height: number;
+};
+
 type CaptionTrack = {
   baseUrl: string;
   languageCode: string;
@@ -45,7 +52,18 @@ type CaptionTrack = {
 
 type PlayerResponse = {
   playabilityStatus?: { status?: string; reason?: string };
-  videoDetails?: { title?: string; author?: string };
+  videoDetails?: {
+    title?: string;
+    author?: string;
+    shortDescription?: string;
+    lengthSeconds?: string;
+    viewCount?: string;
+    channelId?: string;
+    keywords?: string[];
+    isLive?: boolean;
+    thumbnail?: { thumbnails?: Thumbnail[] };
+  };
+  microformat?: { playerMicroformatRenderer?: { uploadDate?: string; category?: string } };
   streamingData?: { formats?: StreamFormat[]; adaptiveFormats?: StreamFormat[] };
   captions?: { playerCaptionsTracklistRenderer?: { captionTracks?: CaptionTrack[] } };
 };
@@ -61,6 +79,15 @@ export type ResolvedVideo = {
   id: string;
   title: string;
   uploader: string;
+  channelId: string;
+  description: string;
+  durationSeconds: number;
+  viewCount: number;
+  tags: string[];
+  category: string;
+  isLive: boolean;
+  uploadDate: string;
+  thumbnails: Thumbnail[];
   formats: StreamFormat[];
   captions: CaptionOption[];
 };
@@ -85,6 +112,22 @@ export function parseVideoId(input: string) {
   }
 
   return url.searchParams.get("v") ?? url.pathname.match(SHORT_URL_PATH_PATTERN)?.[1] ?? null;
+}
+
+const BARE_PLAYLIST_ID_PATTERN = /^(?:PL|UU|LL|WL|OLAK5uy_|FL)[\w-]*$/;
+
+export function parsePlaylistId(input: string) {
+  const trimmed = input.trim();
+  if (BARE_PLAYLIST_ID_PATTERN.test(trimmed)) {
+    return trimmed;
+  }
+
+  const url = URL.parse(trimmed);
+  if (!url || !WATCH_HOSTS.has(url.hostname)) {
+    return null;
+  }
+
+  return url.searchParams.get("list");
 }
 
 const YOUTUBE_ORIGIN_HEADERS = [
@@ -166,11 +209,21 @@ function toVttUrl(baseUrl: string) {
 export async function resolveVideo(videoId: string): Promise<ResolvedVideo> {
   const playerResponse = await fetchPlayerResponse(videoId);
   const { formats = [], adaptiveFormats = [] } = playerResponse.streamingData ?? {};
+  const details = playerResponse.videoDetails ?? {};
   const captionTracks = playerResponse.captions?.playerCaptionsTracklistRenderer?.captionTracks ?? [];
   return {
     id: videoId,
-    title: playerResponse.videoDetails?.title ?? videoId,
-    uploader: playerResponse.videoDetails?.author ?? "",
+    title: details.title ?? videoId,
+    uploader: details.author ?? "",
+    channelId: details.channelId ?? "",
+    description: details.shortDescription ?? "",
+    durationSeconds: Number(details.lengthSeconds) || 0,
+    viewCount: Number(details.viewCount) || 0,
+    tags: details.keywords ?? [],
+    category: playerResponse.microformat?.playerMicroformatRenderer?.category ?? "",
+    isLive: details.isLive ?? false,
+    uploadDate: (playerResponse.microformat?.playerMicroformatRenderer?.uploadDate ?? "").slice(0, DATE_LENGTH).replaceAll("-", ""),
+    thumbnails: (details.thumbnail?.thumbnails ?? []).toSorted((first, second) => first.width - second.width),
     formats: [...formats, ...adaptiveFormats].filter(format => format.url),
     captions: captionTracks.map(track => ({
       languageCode: track.languageCode,
