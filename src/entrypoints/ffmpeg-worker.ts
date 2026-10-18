@@ -3,6 +3,7 @@ import { loadFFmpegCore } from "@/lib/ffmpeg-core";
 
 const CHUNK_SIZE = 10 * 1024 * 1024;
 const FFMPEG_STDERR = "stderr";
+const HTTP_PARTIAL_CONTENT = 206;
 
 export type WorkerInput = { name: string; url?: string; text?: string; contentLength?: number };
 export type WorkerRequest = { wasmUrl: string; inputs: WorkerInput[]; args: string[] };
@@ -23,15 +24,20 @@ async function fetchRange(url: string, start: number, end: number) {
   return new Uint8Array(await response.arrayBuffer());
 }
 
-async function probeContentLength(name: string, url: string) {
+async function probeContentLength(url: string) {
   const response = await fetch(url, { headers: { Range: "bytes=0-0" } });
   await response.body?.cancel();
   const total = Number(response.headers.get("Content-Range")?.split("/")[1]);
-  if (!response.ok || !total) {
-    throw new Error(`Couldn't read the size of ${name}: HTTP ${response.status}`);
+  return response.status === HTTP_PARTIAL_CONTENT && total ? total : undefined;
+}
+
+async function writeWholeInput(core: FFmpegCoreModule, name: string, url: string) {
+  const response = await fetch(url);
+  if (!response.ok) {
+    throw new Error(`Download of ${name} failed: HTTP ${response.status}`);
   }
 
-  return total;
+  core.FS.writeFile(name, new Uint8Array(await response.arrayBuffer()));
 }
 
 async function writeChunkedInput(core: FFmpegCoreModule, name: string, url: string, contentLength: number) {
@@ -55,7 +61,13 @@ async function writeInput(core: FFmpegCoreModule, { name, url, text, contentLeng
     throw new Error(`Input ${name} has no source`);
   }
 
-  await writeChunkedInput(core, name, url, contentLength ?? await probeContentLength(name, url));
+  const knownLength = contentLength ?? await probeContentLength(url);
+  if (!knownLength) {
+    await writeWholeInput(core, name, url);
+    return;
+  }
+
+  await writeChunkedInput(core, name, url, knownLength);
 }
 
 function collectOutputs(core: FFmpegCoreModule, ignoredNames: Set<string>) {
