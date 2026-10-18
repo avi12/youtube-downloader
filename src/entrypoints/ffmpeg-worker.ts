@@ -4,7 +4,7 @@ import { loadFFmpegCore } from "@/lib/ffmpeg-core";
 const CHUNK_SIZE = 10 * 1024 * 1024;
 const FFMPEG_STDERR = "stderr";
 
-export type WorkerInput = { name: string; url: string; contentLength?: number };
+export type WorkerInput = { name: string; url?: string; text?: string; contentLength?: number };
 export type WorkerRequest = { wasmUrl: string; inputs: WorkerInput[]; args: string[] };
 export type WorkerMessage =
   | { type: "log"; text: string }
@@ -23,7 +23,7 @@ async function fetchRange(url: string, start: number, end: number) {
   return new Uint8Array(await response.arrayBuffer());
 }
 
-async function writeWholeInput(core: FFmpegCoreModule, { name, url }: WorkerInput) {
+async function writeWholeInput(core: FFmpegCoreModule, name: string, url: string) {
   const response = await fetch(url);
   if (!response.ok) {
     throw new Error(`Download of ${name} failed: HTTP ${response.status}`);
@@ -32,7 +32,7 @@ async function writeWholeInput(core: FFmpegCoreModule, { name, url }: WorkerInpu
   core.FS.writeFile(name, new Uint8Array(await response.arrayBuffer()));
 }
 
-async function writeChunkedInput(core: FFmpegCoreModule, { name, url }: WorkerInput, contentLength: number) {
+async function writeChunkedInput(core: FFmpegCoreModule, name: string, url: string, contentLength: number) {
   const stream = core.FS.open(name, "w");
   for (let start = 0; start < contentLength; start += CHUNK_SIZE) {
     const chunk = await fetchRange(url, start, Math.min(start + CHUNK_SIZE, contentLength) - 1);
@@ -43,13 +43,22 @@ async function writeChunkedInput(core: FFmpegCoreModule, { name, url }: WorkerIn
   core.FS.close(stream);
 }
 
-async function writeInput(core: FFmpegCoreModule, input: WorkerInput) {
-  if (!input.contentLength) {
-    await writeWholeInput(core, input);
+async function writeInput(core: FFmpegCoreModule, { name, url, text, contentLength }: WorkerInput) {
+  if (text !== undefined) {
+    core.FS.writeFile(name, new TextEncoder().encode(text));
     return;
   }
 
-  await writeChunkedInput(core, input, input.contentLength);
+  if (!url) {
+    throw new Error(`Input ${name} has no source`);
+  }
+
+  if (!contentLength) {
+    await writeWholeInput(core, name, url);
+    return;
+  }
+
+  await writeChunkedInput(core, name, url, contentLength);
 }
 
 function collectOutputs(core: FFmpegCoreModule, ignoredNames: Set<string>) {
