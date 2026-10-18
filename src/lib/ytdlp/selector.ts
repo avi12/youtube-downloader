@@ -10,7 +10,7 @@ const NO_CODEC = "none";
 const SUFFIX_EXPONENTS: Record<string, number> = { k: 1, m: 2, g: 3, t: 4 };
 const BINARY_BASE = 1024;
 const DECIMAL_BASE = 1000;
-const DEFAULT_SORT_KEYS = ["res", "fps", "vcodec", "acodec", "br"];
+export const DEFAULT_SORT_KEYS = ["res", "fps", "vcodec", "acodec", "br"];
 const VIDEO_CODEC_RANK = ["av01", "vp09", "vp9", "hev1", "hvc1", "avc1", "vp8"];
 const AUDIO_CODEC_RANK = ["flac", "alac", "opus", "vorbis", "mp4a", "ac-3", "ec-3"];
 
@@ -30,6 +30,7 @@ export type FormatFields = {
   language?: string;
   hasVideo: boolean;
   hasAudio: boolean;
+  resolution: string;
 };
 
 type Comparator = (first: FormatFields, second: FormatFields) => number;
@@ -58,7 +59,8 @@ export function describeFormat(format: StreamFormat): FormatFields {
     filesize: Number(format.contentLength) || undefined,
     language: format.audioTrack?.id.split(".")[0],
     hasVideo,
-    hasAudio
+    hasAudio,
+    resolution: hasVideo ? `${format.width ?? "?"}x${format.height ?? "?"}` : "audio only"
   };
 }
 
@@ -75,12 +77,13 @@ function readField(fields: FormatFields, name: string) {
     vbr: fields.vbr,
     tbr: fields.tbr,
     filesize: fields.filesize,
-    language: fields.language
+    language: fields.language,
+    resolution: fields.resolution
   };
   return readers[name];
 }
 
-function parseNumber(text: string) {
+export function parseNumber(text: string) {
   const match = text.match(NUMBER_WITH_SUFFIX_PATTERN);
   if (!match) {
     return undefined;
@@ -113,14 +116,16 @@ function compareStrings(operator: string, actual: string, expected: string) {
   return comparisons[operator]?.() ?? false;
 }
 
-function matchesFilter(fields: FormatFields, filterText: string) {
+export type FieldReader = (name: string) => string | number | undefined;
+
+export function matchesComparison(read: FieldReader, filterText: string) {
   const match = filterText.match(FILTER_PATTERN);
   if (!match) {
     throw new Error(`Can't read the format filter ${filterText}`);
   }
 
   const [, name, negation, operator, noneOk, expectedText] = match;
-  const actual = readField(fields, name!);
+  const actual = read(name!);
   if (actual === undefined) {
     return Boolean(noneOk);
   }
@@ -182,7 +187,8 @@ const SORT_FIELD_READERS: Record<string, (fields: FormatFields) => number> = {
   size: fields => fields.filesize ?? 0,
   filesize: fields => fields.filesize ?? 0,
   vcodec: fields => rankOf(fields.vcodec, VIDEO_CODEC_RANK),
-  acodec: fields => rankOf(fields.acodec, AUDIO_CODEC_RANK)
+  acodec: fields => rankOf(fields.acodec, AUDIO_CODEC_RANK),
+  free: fields => Number(fields.ext === "webm")
 };
 
 function buildSortScorer(sortKey: string) {
@@ -244,20 +250,20 @@ const NAME_RULES = new Map<string, NameRule>([
   ...defineRule(["wa*", "worstaudio*"], true, fields => fields.hasAudio)
 ]);
 
+const EXTENSION_NAMES = new Set(["mp4", "m4a", "webm"]);
+
 function resolveItem(item: string, candidates: FormatFields[], compare: Comparator) {
   const trimmed = item.trim();
   const filterStart = trimmed.indexOf("[");
   const name = filterStart === -1 ? trimmed : trimmed.slice(0, filterStart);
   const filterTexts = filterStart === -1 ? [] : splitFilters(trimmed.slice(filterStart));
-  const rule = NAME_RULES.get(name);
+  const rule = NAME_RULES.get(name) ?? (EXTENSION_NAMES.has(name) ? { isWorst: false, matches: (fields: FormatFields) => fields.ext === name } : undefined);
   const named = rule ? candidates.filter(rule.matches) : candidates.filter(fields => fields.format_id === name);
-  const ordered = named.filter(fields => filterTexts.every(filterText => matchesFilter(fields, filterText))).toSorted(compare);
+  const ordered = named.filter(fields => filterTexts.every(filterText => matchesComparison(name => readField(fields, name), filterText))).toSorted(compare);
   return rule?.isWorst ? ordered.at(-1) : ordered[0];
 }
 
-export function selectFormats(selector: string, formats: StreamFormat[], sortKeys: string[]) {
-  const candidates = formats.map(describeFormat);
-  const compare = buildComparator(sortKeys);
+function selectOneSet(selector: string, candidates: FormatFields[], compare: Comparator) {
   for (const alternative of splitOutsideBrackets(selector, "/")) {
     const picks = splitOutsideBrackets(alternative, "+").map(item => resolveItem(item, candidates, compare));
     const resolved = picks.filter(pick => pick !== undefined);
@@ -267,4 +273,10 @@ export function selectFormats(selector: string, formats: StreamFormat[], sortKey
   }
 
   throw new Error(`No format matches "${selector}"`);
+}
+
+export function selectFormatSets(selector: string, formats: StreamFormat[], sortKeys: string[]) {
+  const candidates = formats.map(describeFormat);
+  const compare = buildComparator(sortKeys);
+  return splitOutsideBrackets(selector, ",").map(part => selectOneSet(part, candidates, compare));
 }
