@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { TIME_PATTERN, VARIABLE_TYPES, defaultValues } from "@/lib/presets";
+  import { TIME_PATTERN, VARIABLE_TYPES } from "@/lib/presets";
   import type { Preset, Variable, VariableType } from "@/lib/presets";
 
   type Props = {
@@ -8,8 +8,12 @@
     isDefault: boolean;
     isBusy: boolean;
     isThisRunning: boolean;
+    isChecked: boolean;
+    values: Record<string, string>;
+    onvalue: (name: string, value: string) => void;
+    onchecked: (isChecked: boolean) => void;
     isOpenForEditing: boolean;
-    onrun: (values: Record<string, string>) => void;
+    onrun: () => void;
     oncancel: () => void;
     onsave: (draft: Preset) => void;
     onhide: () => void;
@@ -17,10 +21,8 @@
     ondelete: () => void;
   };
 
-  const { preset, isBuiltIn, isDefault, isBusy, isThisRunning, isOpenForEditing, onrun, oncancel, onsave, onhide, onsetdefault, ondelete }: Props = $props();
+  const { preset, isBuiltIn, isDefault, isBusy, isThisRunning, isChecked, values, onvalue, onchecked, isOpenForEditing, onrun, oncancel, onsave, onhide, onsetdefault, ondelete }: Props = $props();
 
-  // svelte-ignore state_referenced_locally
-  let values = $state(defaultValues(preset.variables));
   // svelte-ignore state_referenced_locally
   let draft = $state<Preset>($state.snapshot(preset));
   // svelte-ignore state_referenced_locally
@@ -106,11 +108,14 @@
 
 <section class="card" class:default={isDefault}>
   <header>
-    <h2>{preset.label}{isDefault ? " (default)" : ""}</h2>
+    <label class="title">
+      <input type="checkbox" checked={isChecked} onchange={e => onchecked(e.currentTarget.checked)} aria-label="Include in Run checked" />
+      <h2>{preset.label}{isDefault ? " (default)" : ""}</h2>
+    </label>
     {#if isThisRunning}
       <button onclick={oncancel}>Cancel</button>
     {:else}
-      <button onclick={() => onrun($state.snapshot(values))} disabled={isBusy}>Run</button>
+      <button onclick={onrun} disabled={isBusy}>Run</button>
     {/if}
   </header>
 
@@ -120,17 +125,17 @@
         <label class="field">
           {variable.label}
           {#if variable.type === "number"}
-            <input class="small" type="number" min={variable.min} max={variable.max} step={variable.step} value={values[variable.name]} oninput={e => (values[variable.name] = e.currentTarget.value)} />
+            <input class="small" type="number" min={variable.min} max={variable.max} step={variable.step} value={values[variable.name]} oninput={e => onvalue(variable.name, e.currentTarget.value)} />
           {:else if variable.type === "time"}
-            <input class="small" type="text" inputmode="numeric" placeholder="00:00:00" pattern={TIME_PATTERN.source} bind:value={values[variable.name]} />
+            <input class="small" type="text" inputmode="numeric" placeholder="00:00:00" pattern={TIME_PATTERN.source} value={values[variable.name]} oninput={e => onvalue(variable.name, e.currentTarget.value)} />
           {:else if variable.type === "list"}
-            <select bind:value={values[variable.name]}>
+            <select value={values[variable.name]} onchange={e => onvalue(variable.name, e.currentTarget.value)}>
               {#each variable.options as option (option.value)}
                 <option value={option.value}>{option.label}</option>
               {/each}
             </select>
           {:else}
-            <input type="text" bind:value={values[variable.name]} />
+            <input type="text" value={values[variable.name]} oninput={e => onvalue(variable.name, e.currentTarget.value)} />
           {/if}
         </label>
       {/each}
@@ -219,9 +224,9 @@
 
   header {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
     gap: 8px;
+    justify-content: space-between;
+    align-items: center;
   }
 
   h2,
@@ -238,9 +243,15 @@
 
   .field {
     display: flex;
-    align-items: center;
     gap: 6px;
+    align-items: center;
     font-weight: 400;
+  }
+
+  .title {
+    display: flex;
+    gap: 6px;
+    align-items: center;
   }
 
   .small {
@@ -248,9 +259,9 @@
   }
 
   summary {
-    cursor: pointer;
     font-size: 12px;
     opacity: 70%;
+    cursor: pointer;
   }
 
   .editor {

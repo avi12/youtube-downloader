@@ -9,6 +9,7 @@
     BUILT_IN_PRESETS,
     DEFAULT_SHOWN_IDS,
     createBlankPreset,
+    defaultValues,
     fillVariables,
     isBuiltInPreset,
     listHiddenPresets,
@@ -20,6 +21,7 @@
     storeLibraryState
   } from "@/lib/presets";
   import type { LibraryState, Preset } from "@/lib/presets";
+  import { parseUrl } from "@/lib/url";
   import { parsePlaylistId } from "@/lib/youtube";
   import type { DirectFile, Job } from "@/lib/ytdlp/plan";
   import { runYtDlpCommand } from "@/lib/ytdlp/session";
@@ -41,13 +43,19 @@
   let savedNames = $state<string[]>([]);
   let newPresetId = $state<string>();
   let elImportInput = $state<HTMLInputElement>();
+  let pastedUrl = $state("");
+  let isUrlFieldOpen = $state(false);
+  let valuesById = $state<Record<string, Record<string, string>>>({});
 
   const shownPresets = $derived(listShownPresets(library));
   const hiddenPresets = $derived(listHiddenPresets(library));
+  const checkedPresets = $derived(shownPresets.filter(preset => library.checkedIds?.includes(preset.id)));
+  const isYouTubeTab = $derived(parseUrl(tab.url ?? "")?.hostname.endsWith("youtube.com") ?? false);
 
   onMount(async () => {
     const [activeTab] = await browser.tabs.query({ active: true, currentWindow: true });
     tab = { tabId: activeTab?.id, url: activeTab?.url };
+    isUrlFieldOpen = !isYouTubeTab;
   });
 
   function updateLibrary(next: LibraryState) {
@@ -60,11 +68,28 @@
   }
 
   function withTabUrl(presetCommand: string) {
+    const typedUrl = pastedUrl.trim();
+    if (typedUrl) {
+      return presetCommand.replace(URL_TOKEN_PATTERN, `"${typedUrl}"`);
+    }
+
     const hasPlaylist = Boolean(tab.url && parsePlaylistId(tab.url));
-    const isWatchPage = Boolean(tab.url && URL.parse(tab.url)?.searchParams.has("v"));
+    const isWatchPage = Boolean(tab.url && parseUrl(tab.url)?.searchParams.has("v"));
     const playlistFlag = hasPlaylist && isWatchPage ? "--no-playlist " : "";
-    const isYouTubeTab = Boolean(tab.url && URL.parse(tab.url)?.hostname.endsWith("youtube.com"));
     return isYouTubeTab ? presetCommand.replace(URL_TOKEN_PATTERN, `${playlistFlag}"${tab.url}"`) : presetCommand;
+  }
+
+  function valuesFor(preset: Preset) {
+    return valuesById[preset.id] ?? defaultValues(preset.variables);
+  }
+
+  function setChecked(id: string, isChecked: boolean) {
+    const others = (library.checkedIds ?? []).filter(checkedId => checkedId !== id);
+    updateLibrary({ ...library, checkedIds: isChecked ? [...others, id] : others });
+  }
+
+  async function pasteUrl() {
+    pastedUrl = (await navigator.clipboard.readText()).trim();
   }
 
   function savePreset(previousId: string, draft: Preset) {
@@ -207,11 +232,24 @@
     return error instanceof Error ? error.message : String(error);
   }
 
-  async function run(preset: Preset, values: Record<string, string>) {
+  async function runChecked() {
+    savedNames = [];
+    for (const preset of checkedPresets) {
+      const isDone = await run(preset, valuesFor(preset), false);
+      if (!isDone) {
+        return;
+      }
+    }
+  }
+
+  async function run(preset: Preset, values: Record<string, string>, isFresh = true) {
     errorMessage = "";
     logText = "";
-    savedNames = [];
     status = "";
+    if (isFresh) {
+      savedNames = [];
+    }
+
     const controller = new AbortController();
     try {
       const command = withTabUrl(fillVariables(preset.command, preset.variables, values));
@@ -231,8 +269,10 @@
       errorMessage = controller.signal.aborted ? "" : describeError(error);
     }
 
+    const isDone = !controller.signal.aborted && !errorMessage;
     abortController = undefined;
     runningPresetId = undefined;
+    return isDone;
   }
 </script>
 
@@ -245,8 +285,12 @@
       isDefault={library.defaultId === preset.id}
       isBusy={runningPresetId !== undefined}
       isThisRunning={runningPresetId === preset.id}
+      isChecked={library.checkedIds?.includes(preset.id) ?? false}
+      values={valuesFor(preset)}
+      onvalue={(name, value) => (valuesById[preset.id] = { ...valuesFor(preset), [name]: value })}
+      onchecked={isChecked => setChecked(preset.id, isChecked)}
       isOpenForEditing={newPresetId === preset.id}
-      onrun={values => run(preset, values)}
+      onrun={() => run(preset, valuesFor(preset))}
       oncancel={cancel}
       onsave={draft => savePreset(preset.id, draft)}
       onhide={() => hidePreset(preset.id)}
@@ -255,6 +299,21 @@
     />
     {/key}
   {/each}
+
+  <div class="row">
+    <button onclick={runChecked} disabled={!checkedPresets.length || runningPresetId !== undefined}>Run checked ({checkedPresets.length})</button>
+    {#if abortController}
+      <button onclick={cancel}>Cancel</button>
+    {/if}
+  </div>
+
+  <details bind:open={isUrlFieldOpen}>
+    <summary>URL</summary>
+    <div class="row">
+      <input type="url" placeholder="Paste a YouTube link, or leave empty to use this tab" bind:value={pastedUrl} />
+      <button onclick={pasteUrl}>Paste</button>
+    </div>
+  </details>
 
   <p class="hint">
     Leave the URL out to use this tab. Playlist URLs download every video. Files go straight to your Downloads folder

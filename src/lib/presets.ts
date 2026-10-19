@@ -29,7 +29,8 @@ export const presetSchema = z.object({
 const libraryStateSchema = z.object({
   custom: z.array(presetSchema),
   shownIds: z.array(z.string()).optional(),
-  defaultId: z.string().optional()
+  defaultId: z.string().optional(),
+  checkedIds: z.array(z.string()).optional()
 });
 
 const exportFileSchema = libraryStateSchema.extend({ version: z.literal(EXPORT_VERSION) });
@@ -130,8 +131,8 @@ export function parseLibraryFile(text: string): LibraryState {
     throw new Error(`That file isn't a preset export: ${z.prettifyError(parsed.error)}`);
   }
 
-  const { custom, shownIds, defaultId } = parsed.data;
-  return { custom, shownIds, defaultId };
+  const { custom, shownIds, defaultId, checkedIds } = parsed.data;
+  return { custom, shownIds, defaultId, checkedIds };
 }
 
 export function mergeLibraryState(current: LibraryState, imported: LibraryState): LibraryState {
@@ -139,7 +140,8 @@ export function mergeLibraryState(current: LibraryState, imported: LibraryState)
   return {
     custom: [...current.custom.filter(preset => !importedIds.has(preset.id)), ...imported.custom],
     shownIds: imported.shownIds ?? current.shownIds,
-    defaultId: imported.defaultId ?? current.defaultId
+    defaultId: imported.defaultId ?? current.defaultId,
+    checkedIds: imported.checkedIds ?? current.checkedIds
   };
 }
 
