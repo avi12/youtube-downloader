@@ -159,6 +159,10 @@ async function fetchPlayerResponse(videoId: string) {
 
   const playerResponse = parsed.data;
   const { status, reason } = playerResponse.playabilityStatus ?? {};
+  if (status === "LOGIN_REQUIRED") {
+    throw new Error(`YouTube is asking this connection to confirm it isn't a bot (${reason ?? "sign-in required"}). Signing in doesn't help here, try again later or from another network`);
+  }
+
   if (status !== "OK") {
     throw new Error(`Video isn't playable: ${status} ${reason ?? ""}`);
   }
