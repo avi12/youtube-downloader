@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { playerResponseSchema } from "@/lib/schemas";
+import { parseUrl } from "@/lib/url";
 import type { StreamFormat, Thumbnail } from "@/lib/schemas";
 
 const DATE_LENGTH = 10;
@@ -59,7 +60,7 @@ export function parseVideoId(input: string) {
     return trimmed;
   }
 
-  const url = URL.parse(trimmed);
+  const url = parseUrl(trimmed);
   if (!url) {
     return null;
   }
@@ -83,7 +84,7 @@ export function parsePlaylistId(input: string) {
     return trimmed;
   }
 
-  const url = URL.parse(trimmed);
+  const url = parseUrl(trimmed);
   if (!url || !WATCH_HOSTS.has(url.hostname)) {
     return null;
   }
@@ -193,7 +194,7 @@ export async function resolveVideo(videoId: string): Promise<ResolvedVideo> {
     category: playerResponse.microformat?.playerMicroformatRenderer?.category ?? "",
     isLive: details.isLive ?? false,
     uploadDate: (playerResponse.microformat?.playerMicroformatRenderer?.uploadDate ?? "").slice(0, DATE_LENGTH).replaceAll("-", ""),
-    thumbnails: (details.thumbnail?.thumbnails ?? []).toSorted((first, second) => first.width - second.width),
+    thumbnails: [...(details.thumbnail?.thumbnails ?? [])].sort((first, second) => first.width - second.width),
     formats: adaptiveFormats.filter(format => format.url),
     captions: captionTracks.map(track => ({
       languageCode: track.languageCode,

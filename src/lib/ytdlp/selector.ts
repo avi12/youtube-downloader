@@ -259,7 +259,7 @@ function resolveItem(item: string, candidates: FormatFields[], compare: Comparat
   const filterTexts = filterStart === -1 ? [] : splitFilters(trimmed.slice(filterStart));
   const rule = NAME_RULES.get(name) ?? (EXTENSION_NAMES.has(name) ? { isWorst: false, matches: (fields: FormatFields) => fields.ext === name } : undefined);
   const named = rule ? candidates.filter(rule.matches) : candidates.filter(fields => fields.format_id === name);
-  const ordered = named.filter(fields => filterTexts.every(filterText => matchesComparison(name => readField(fields, name), filterText))).toSorted(compare);
+  const ordered = named.filter(fields => filterTexts.every(filterText => matchesComparison(name => readField(fields, name), filterText))).sort(compare);
   return rule?.isWorst ? ordered.at(-1) : ordered[0];
 }
 

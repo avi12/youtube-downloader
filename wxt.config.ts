@@ -17,7 +17,7 @@ export default defineConfig({
     content_security_policy: {
       extension_pages: "script-src 'self' 'wasm-unsafe-eval'; object-src 'self'"
     },
-    minimum_chrome_version: "125.0"
+    minimum_chrome_version: "109.0"
   },
   zip: {
     artifactTemplate: "youtube-ffmpeg-lite-{{version}}-{{browser}}.zip",

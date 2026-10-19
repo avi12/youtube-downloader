@@ -143,7 +143,7 @@ async function runInsideYouTubePage(task: PageTask): Promise<PageResult> {
       }
     }
 
-    return [...chapters].toSorted(([first], [second]) => first - second).map(([start, title]) => ({ title, start }));
+    return [...chapters].sort(([first], [second]) => first - second).map(([start, title]) => ({ title, start }));
   }
 
   try {
