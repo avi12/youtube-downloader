@@ -1,8 +1,10 @@
 # FFmpeg for YouTube (lite)
 
-A stripped-down Chrome extension: open the popup on a YouTube watch page, type a yt-dlp command, hit Run. FFmpeg does the work in WebAssembly and every file lands straight in your Downloads folder.
+A stripped-down Chrome extension: open the popup on a YouTube watch page, pick a preset (or write your own yt-dlp command), hit Run. FFmpeg does the work in WebAssembly and every file lands straight in your Downloads folder.
 
 Leave the URL out and the command runs on the tab you opened the popup on. Playlist URLs (or a playlist page) download every video, using your signed-in session, so private playlists, Liked videos and Watch later work
+
+Presets: the popup stacks the presets you chose, each with its own fields. Open Edit on a preset to change its yt-dlp command, add an optional FFmpeg command (`{input1}` is the first downloaded stream, end with an output file name), and define fields. Write `%name%` in either command to insert a field's value. Field types: number (min, max, step), time (`00:01:30`), list (`Label=value` per line) and text. "Make default" puts a preset on top, "Add a preset" brings back hidden ones, and Import / Export move your presets as a JSON file
 
 Supported yt-dlp options:
 - Formats: `-f` (selectors with `+`, `/`, `,`, `b`, `bv*`, `ba`, itags, `mp4`/`webm`/`m4a`, filters like `[height<=720]`, `[language=de]`), `-S`, `--prefer-free-formats`

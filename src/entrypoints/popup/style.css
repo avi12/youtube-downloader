@@ -4,7 +4,8 @@
 }
 
 body {
-  inline-size: 440px;
+  box-sizing: border-box;
+  inline-size: 460px;
   margin: 0;
   padding: 12px;
 }

@@ -1,0 +1,284 @@
+<script lang="ts">
+  import { TIME_PATTERN, VARIABLE_TYPES, defaultValues } from "@/lib/presets";
+  import type { Preset, Variable, VariableType } from "@/lib/presets";
+
+  type Props = {
+    preset: Preset;
+    isBuiltIn: boolean;
+    isDefault: boolean;
+    isBusy: boolean;
+    isThisRunning: boolean;
+    isOpenForEditing: boolean;
+    onrun: (values: Record<string, string>) => void;
+    oncancel: () => void;
+    onsave: (draft: Preset) => void;
+    onhide: () => void;
+    onsetdefault: () => void;
+    ondelete: () => void;
+  };
+
+  const { preset, isBuiltIn, isDefault, isBusy, isThisRunning, isOpenForEditing, onrun, oncancel, onsave, onhide, onsetdefault, ondelete }: Props = $props();
+
+  // svelte-ignore state_referenced_locally
+  let values = $state(defaultValues(preset.variables));
+  // svelte-ignore state_referenced_locally
+  let draft = $state<Preset>($state.snapshot(preset));
+  // svelte-ignore state_referenced_locally
+  let isFfmpegEnabled = $state(Boolean(preset.ffmpegCommand));
+  // svelte-ignore state_referenced_locally
+  let isEditing = $state(isOpenForEditing);
+
+  function parseOptions(text: string) {
+    return text
+      .split("\n")
+      .map(line => line.trim())
+      .filter(Boolean)
+      .map(line => {
+        const [label = "", ...valueParts] = line.split("=");
+        const value = valueParts.join("=").trim();
+        return { label: label.trim(), value: value || label.trim() };
+      });
+  }
+
+  function formatOptions(variable: Variable) {
+    return variable.type === "list" ? variable.options.map(option => `${option.label}=${option.value}`).join("\n") : "";
+  }
+
+  function applyOptions(variable: Variable, text: string) {
+    if (variable.type !== "list") {
+      return;
+    }
+
+    variable.options = parseOptions(text);
+    const isDefaultStillValid = variable.options.some(option => option.value === variable.defaultValue);
+    variable.defaultValue = isDefaultStillValid ? variable.defaultValue : (variable.options[0]?.value ?? "");
+  }
+
+  function applyDefault(variable: Variable, raw: string) {
+    variable.defaultValue = variable.type === "number" ? Number(raw) : raw;
+  }
+
+  function buildVariable(type: VariableType, name: string, label: string): Variable {
+    if (type === "number") {
+      return { type, name, label, defaultValue: 1, step: 1 };
+    }
+
+    if (type === "list") {
+      return { type, name, label, defaultValue: "a", options: [{ label: "A", value: "a" }, { label: "B", value: "b" }] };
+    }
+
+    return { type, name, label, defaultValue: type === "time" ? "00:00:00" : "" };
+  }
+
+  function retype(index: number, type: VariableType) {
+    const current = draft.variables[index];
+    if (current) {
+      draft.variables[index] = buildVariable(type, current.name, current.label);
+    }
+  }
+
+  function retypeFromValue(index: number, raw: string) {
+    const type = VARIABLE_TYPES.find(candidate => candidate === raw);
+    if (type) {
+      retype(index, type);
+    }
+  }
+
+  function applyLimit(variable: Variable, key: "min" | "max" | "step", raw: string) {
+    if (variable.type === "number") {
+      variable[key] = raw === "" ? undefined : Number(raw);
+    }
+  }
+
+  function addVariable() {
+    const number = draft.variables.length + 1;
+    draft.variables.push(buildVariable("text", `value${number}`, `Value ${number}`));
+  }
+
+  function removeVariable(index: number) {
+    draft.variables.splice(index, 1);
+  }
+
+  function save() {
+    onsave({ ...$state.snapshot(draft), ffmpegCommand: isFfmpegEnabled ? draft.ffmpegCommand : undefined });
+  }
+</script>
+
+<section class="card" class:default={isDefault}>
+  <header>
+    <h2>{preset.label}{isDefault ? " (default)" : ""}</h2>
+    {#if isThisRunning}
+      <button onclick={oncancel}>Cancel</button>
+    {:else}
+      <button onclick={() => onrun($state.snapshot(values))} disabled={isBusy}>Run</button>
+    {/if}
+  </header>
+
+  {#if preset.variables.length}
+    <div class="fields">
+      {#each preset.variables as variable (variable.name)}
+        <label class="field">
+          {variable.label}
+          {#if variable.type === "number"}
+            <input class="small" type="number" min={variable.min} max={variable.max} step={variable.step} value={values[variable.name]} oninput={e => (values[variable.name] = e.currentTarget.value)} />
+          {:else if variable.type === "time"}
+            <input class="small" type="text" inputmode="numeric" placeholder="00:00:00" pattern={TIME_PATTERN.source} bind:value={values[variable.name]} />
+          {:else if variable.type === "list"}
+            <select bind:value={values[variable.name]}>
+              {#each variable.options as option (option.value)}
+                <option value={option.value}>{option.label}</option>
+              {/each}
+            </select>
+          {:else}
+            <input type="text" bind:value={values[variable.name]} />
+          {/if}
+        </label>
+      {/each}
+    </div>
+  {/if}
+
+  <details bind:open={isEditing}>
+    <summary>Edit</summary>
+    <div class="editor">
+      <label>
+        Name
+        <input bind:value={draft.label} />
+      </label>
+      <label>
+        yt-dlp command
+        <textarea rows="3" bind:value={draft.command} spellcheck="false"></textarea>
+      </label>
+      <label class="check">
+        <input type="checkbox" bind:checked={isFfmpegEnabled} />
+        Run my own FFmpeg command on the downloaded streams
+      </label>
+      {#if isFfmpegEnabled}
+        <textarea rows="2" bind:value={draft.ffmpegCommand} spellcheck="false" aria-label="FFmpeg command"></textarea>
+        <p class="hint">
+          {"{input1}"} is the first downloaded stream, {"{input2}"} the second. End with the output file name, like snapshot.png
+        </p>
+      {/if}
+
+      <h3>Variables</h3>
+      <p class="hint">Write %name% in a command to insert the field's value</p>
+      {#each draft.variables as variable, index (index)}
+        <div class="variable">
+          <input class="small" bind:value={variable.name} aria-label="Variable name" placeholder="name" />
+          <input bind:value={variable.label} aria-label="Field label" placeholder="Label" />
+          <select value={variable.type} onchange={e => retypeFromValue(index, e.currentTarget.value)} aria-label="Field type">
+            {#each VARIABLE_TYPES as type (type)}
+              <option value={type}>{type}</option>
+            {/each}
+          </select>
+          <button onclick={() => removeVariable(index)} aria-label="Remove variable">x</button>
+          {#if variable.type === "list"}
+            <textarea rows="3" value={formatOptions(variable)} onchange={e => applyOptions(variable, e.currentTarget.value)} aria-label="Options, one label=value per line"></textarea>
+            <select value={variable.defaultValue} onchange={e => applyDefault(variable, e.currentTarget.value)} aria-label="Default option">
+              {#each variable.options as option (option.value)}
+                <option value={option.value}>{option.label}</option>
+              {/each}
+            </select>
+          {:else if variable.type === "number"}
+            <div class="numbers">
+              <input class="small" type="number" value={variable.defaultValue} oninput={e => applyDefault(variable, e.currentTarget.value)} aria-label="Default" />
+              <input class="small" type="number" value={variable.min} oninput={e => applyLimit(variable, "min", e.currentTarget.value)} aria-label="Minimum" placeholder="min" />
+              <input class="small" type="number" value={variable.max} oninput={e => applyLimit(variable, "max", e.currentTarget.value)} aria-label="Maximum" placeholder="max" />
+              <input class="small" type="number" value={variable.step} oninput={e => applyLimit(variable, "step", e.currentTarget.value)} aria-label="Step" placeholder="step" />
+            </div>
+          {:else}
+            <input value={variable.defaultValue} oninput={e => applyDefault(variable, e.currentTarget.value)} aria-label="Default" placeholder="Default" />
+          {/if}
+        </div>
+      {/each}
+      <button onclick={addVariable}>Add variable</button>
+
+      <div class="row">
+        <button onclick={save}>{isBuiltIn ? "Save as my own" : "Save"}</button>
+        <button onclick={onsetdefault} disabled={isDefault}>Make default</button>
+        <button onclick={onhide}>Hide</button>
+        {#if !isBuiltIn}
+          <button onclick={ondelete}>Delete</button>
+        {/if}
+      </div>
+    </div>
+  </details>
+</section>
+
+<style>
+  .card {
+    display: grid;
+    gap: 8px;
+    padding: 8px;
+    border: 1px solid color-mix(in sRGB, currentColor 25%, transparent);
+    border-radius: 6px;
+  }
+
+  .card.default {
+    border-color: light-dark(#1a73e8, #8ab4f8);
+  }
+
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  h2,
+  h3 {
+    margin: 0;
+    font-size: 14px;
+  }
+
+  .fields {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+  }
+
+  .field {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 400;
+  }
+
+  .small {
+    inline-size: 9ch;
+  }
+
+  summary {
+    cursor: pointer;
+    font-size: 12px;
+    opacity: 70%;
+  }
+
+  .editor {
+    display: grid;
+    gap: 8px;
+    padding-block-start: 8px;
+  }
+
+  .variable {
+    display: grid;
+    grid-template-columns: 9ch 1fr auto auto;
+    gap: 4px;
+    padding: 6px;
+    background: color-mix(in sRGB, currentColor 6%, transparent);
+  }
+
+  .variable > :nth-child(n + 5) {
+    grid-column: 1 / -1;
+  }
+
+  .numbers {
+    display: flex;
+    gap: 4px;
+  }
+
+  .row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+</style>
