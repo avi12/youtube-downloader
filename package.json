@@ -1,6 +1,6 @@
 {
   "name": "youtube-ffmpeg-lite",
-  "version": "1.3.1",
+  "version": "1.4.0",
   "description": "Run FFmpeg against a YouTube URL straight from the popup",
   "repository": "https://github.com/avi12/youtube-downloader",
   "author": "Avi <avi6106@gmail.com>",
@@ -9,7 +9,11 @@
   "scripts": {
     "build": "wxt build",
     "pack": "wxt zip",
+    "build:mv2": "wxt build --mv2",
+    "pack:mv2": "wxt zip --mv2",
+    "pack:crx": "node scripts/pack-crx.mjs",
     "build:pack": "pnpm build && pnpm run pack",
+    "release": "pnpm build && pnpm build:mv2 && pnpm run pack && pnpm run pack:mv2 && pnpm pack:crx",
     "postinstall": "wxt prepare",
     "lint": "oxlint --type-aware --fix && eslint --fix",
     "compile": "tsc --noEmit",
@@ -28,6 +32,8 @@
     "@stylistic/eslint-plugin": "^5.10.0",
     "@stylistic/stylelint-plugin": "^5.3.1",
     "@wxt-dev/module-svelte": "^2.0.5",
+    "@wxt-dev/webextension-polyfill": "^1.0.0",
+    "crx3": "^2.0.0",
     "eslint": "^10.12.0",
     "eslint-plugin-import": "^2.32.0",
     "eslint-plugin-import-newlines": "^2.0.0",
@@ -44,6 +50,7 @@
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.71.2",
     "vite": "^8.3.4",
+    "webextension-polyfill": "^0.12.0",
     "wxt": "^0.21.4"
   }
 }
