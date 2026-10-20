@@ -16,6 +16,7 @@
     listShownPresets,
     loadLibraryState,
     mergeLibraryState,
+    moveBefore,
     parseLibraryFile,
     serializeLibraryState,
     storeLibraryState
@@ -42,6 +43,7 @@
   let downloadRatio = $state(0);
   let savedNames = $state<string[]>([]);
   let newPresetId = $state<string>();
+  let draggedId = $state<string>();
   let elImportInput = $state<HTMLInputElement>();
   let pastedUrl = $state("");
   let isUrlFieldOpen = $state(false);
@@ -104,6 +106,18 @@
     }
 
     updateLibrary({ ...library, custom: library.custom.map(preset => (preset.id === previousId ? draft : preset)) });
+  }
+
+  function movePreset(targetId: string) {
+    if (draggedId) {
+      updateLibrary({ ...library, shownIds: moveBefore(currentShownIds(), draggedId, targetId) });
+    }
+
+    draggedId = undefined;
+  }
+
+  function makeDefault(id: string) {
+    updateLibrary({ ...library, defaultId: id, shownIds: moveBefore(currentShownIds(), id, currentShownIds()[0] ?? id) });
   }
 
   function hidePreset(id: string) {
@@ -294,7 +308,10 @@
       oncancel={cancel}
       onsave={draft => savePreset(preset.id, draft)}
       onhide={() => hidePreset(preset.id)}
-      onsetdefault={() => updateLibrary({ ...library, defaultId: preset.id })}
+      onsetdefault={() => makeDefault(preset.id)}
+      ondragstart={() => (draggedId = preset.id)}
+      ondragend={() => (draggedId = undefined)}
+      ondropped={() => movePreset(preset.id)}
       ondelete={() => deletePreset(preset.id)}
     />
     {/key}

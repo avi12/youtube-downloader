@@ -18,10 +18,13 @@
     onsave: (draft: Preset) => void;
     onhide: () => void;
     onsetdefault: () => void;
+    ondragstart: () => void;
+    ondragend: () => void;
+    ondropped: () => void;
     ondelete: () => void;
   };
 
-  const { preset, isBuiltIn, isDefault, isBusy, isThisRunning, isChecked, values, onvalue, onchecked, isOpenForEditing, onrun, oncancel, onsave, onhide, onsetdefault, ondelete }: Props = $props();
+  const { preset, isBuiltIn, isDefault, isBusy, isThisRunning, isChecked, values, onvalue, onchecked, isOpenForEditing, onrun, oncancel, onsave, onhide, onsetdefault, ondragstart, ondragend, ondropped, ondelete }: Props = $props();
 
   // svelte-ignore state_referenced_locally
   let draft = $state<Preset>($state.snapshot(preset));
@@ -106,12 +109,13 @@
   }
 </script>
 
-<section class="card" class:default={isDefault}>
+<section class="card" role="group" class:default={isDefault} ondragover={e => e.preventDefault()} ondrop={e => { e.preventDefault(); ondropped(); }}>
   <header>
+    <div class="heading"><span class="handle" draggable="true" role="button" tabindex="-1" aria-label="Drag to reorder" ondragstart={e => { e.dataTransfer?.setData("text/plain", preset.id); ondragstart(); }} {ondragend}>⠿</span>
     <label class="title">
       <input type="checkbox" checked={isChecked} onchange={e => onchecked(e.currentTarget.checked)} aria-label="Include in Run checked" />
       <h2>{preset.label}{isDefault ? " (default)" : ""}</h2>
-    </label>
+    </label></div>
     {#if isThisRunning}
       <button onclick={oncancel}>Cancel</button>
     {:else}
@@ -246,6 +250,17 @@
     gap: 6px;
     align-items: center;
     font-weight: 400;
+  }
+
+  .heading {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .handle {
+    cursor: grab;
+    user-select: none;
   }
 
   .title {

@@ -101,9 +101,17 @@ export function findPreset(state: LibraryState, id: string) {
 }
 
 export function listShownPresets(state: LibraryState) {
-  const shownIds = state.shownIds ?? DEFAULT_SHOWN_IDS;
-  const ordered = state.defaultId ? [state.defaultId, ...shownIds.filter(id => id !== state.defaultId)] : shownIds;
-  return ordered.flatMap(id => findPreset(state, id) ?? []);
+  return (state.shownIds ?? DEFAULT_SHOWN_IDS).flatMap(id => findPreset(state, id) ?? []);
+}
+
+export function moveBefore(ids: string[], movedId: string, targetId: string) {
+  if (movedId === targetId) {
+    return ids;
+  }
+
+  const without = ids.filter(id => id !== movedId);
+  const targetIndex = without.indexOf(targetId);
+  return [...without.slice(0, targetIndex), movedId, ...without.slice(targetIndex)];
 }
 
 export function listHiddenPresets(state: LibraryState) {
