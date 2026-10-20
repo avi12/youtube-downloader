@@ -1,7 +1,4 @@
 <script lang="ts">
-  import { onMount } from "svelte";
-  import { cubicOut } from "svelte/easing";
-  import { fly } from "svelte/transition";
   import type { WorkerInput, WorkerMessage, WorkerRequest } from "../ffmpeg-worker";
   import PresetCard from "./PresetCard.svelte";
   import OptionField from "./shared/OptionField.svelte";
@@ -11,7 +8,6 @@
   import { applyFfmpegCommand, findJobOutputs } from "@/lib/ffmpeg-command";
   import { mimeTypeForFile } from "@/lib/mime";
   import {
-    BUILT_IN_PRESETS,
     DEFAULT_SHOWN_IDS,
     createBlankPreset,
     defaultValues,
@@ -27,12 +23,15 @@
     storeLibraryState
   } from "@/lib/presets";
   import type { LibraryState, Preset } from "@/lib/presets";
+  import { downloadSabrTrack } from "@/lib/sabr";
   import { parseUrl } from "@/lib/url";
   import { parsePlaylistId } from "@/lib/youtube";
-  import { downloadSabrTrack } from "@/lib/sabr";
   import type { DirectFile, Job, JobInput } from "@/lib/ytdlp/plan";
   import { runYtDlpCommand } from "@/lib/ytdlp/session";
   import type { TabContext } from "@/lib/ytdlp/session";
+  import { onMount } from "svelte";
+  import { cubicOut } from "svelte/easing";
+  import { fly } from "svelte/transition";
 
   type DoneMessage = Extract<WorkerMessage, { type: "done" }>;
 
@@ -42,17 +41,35 @@
   const SLIDE_DISTANCE_PX = 50;
   const PERCENT = 100;
   const PANELS = [
-    { id: "presets", label: "Presets" },
-    { id: "library", label: "Library" }
+    {
+      id: "presets",
+      label: "Presets"
+    },
+    {
+      id: "library",
+      label: "Library"
+    }
   ];
 
   let activePanel = $state("presets");
   let slideDirection = $state(1);
-  const flyIn = $derived({ x: slideDirection * SLIDE_DISTANCE_PX, duration: SLIDE_DURATION_MS, opacity: 0, easing: cubicOut });
-  const flyOut = $derived({ x: -slideDirection * SLIDE_DISTANCE_PX, duration: SLIDE_DURATION_MS, opacity: 0, easing: cubicOut });
+  const flyIn = $derived({
+    x: slideDirection * SLIDE_DISTANCE_PX,
+    duration: SLIDE_DURATION_MS,
+    opacity: 0,
+    easing: cubicOut
+  });
+  const flyOut = $derived({
+    x: -slideDirection * SLIDE_DISTANCE_PX,
+    duration: SLIDE_DURATION_MS,
+    opacity: 0,
+    easing: cubicOut
+  });
 
-  function changePanel(id: string) {
-    slideDirection = PANELS.findIndex(panel => panel.id === id) > PANELS.findIndex(panel => panel.id === activePanel) ? 1 : -1;
+  function changePanel(id: string): void {
+    const iNext = PANELS.findIndex(panel => panel.id === id);
+    const iCurrent = PANELS.findIndex(panel => panel.id === activePanel);
+    slideDirection = iNext > iCurrent ? 1 : -1;
     activePanel = id;
   }
 
@@ -78,21 +95,27 @@
   const isYouTubeTab = $derived(parseUrl(tab.url ?? "")?.hostname.endsWith("youtube.com") ?? false);
 
   onMount(async () => {
-    const [activeTab] = await browser.tabs.query({ active: true, currentWindow: true });
-    tab = { tabId: activeTab?.id, url: activeTab?.url };
+    const [activeTab] = await browser.tabs.query({
+      active: true,
+      currentWindow: true
+    });
+    tab = {
+      tabId: activeTab?.id,
+      url: activeTab?.url
+    };
     isUrlFieldOpen = !isYouTubeTab;
   });
 
-  function updateLibrary(next: LibraryState) {
+  function updateLibrary(next: LibraryState): void {
     library = next;
     storeLibraryState(next);
   }
 
-  function currentShownIds() {
+  function currentShownIds(): string[] {
     return library.shownIds ?? DEFAULT_SHOWN_IDS;
   }
 
-  function withTabUrl(presetCommand: string) {
+  function withTabUrl(presetCommand: string): string {
     const typedUrl = pastedUrl.trim();
     if (typedUrl) {
       return presetCommand.replace(URL_TOKEN_PATTERN, `"${typedUrl}"`);
@@ -104,32 +127,54 @@
     return isYouTubeTab ? presetCommand.replace(URL_TOKEN_PATTERN, `${playlistFlag}"${tab.url}"`) : presetCommand;
   }
 
-  function valuesFor(preset: Preset) {
+  function valuesFor(preset: Preset): Record<string, string> {
     return valuesById[preset.id] ?? defaultValues(preset.variables);
   }
 
-  type CheckedChange = { id: string; isChecked: boolean };
-  type PresetSave = { previousId: string; draft: Preset };
-  type BlobSave = { name: string; parts: BlobPart[] };
+  type CheckedChange = {
+    id: string;
+    isChecked: boolean;
+  };
+  type PresetSave = {
+    previousId: string;
+    draft: Preset;
+  };
+  type BlobSave = {
+    name: string;
+    parts: ConstructorParameters<typeof Blob>[0];
+  };
   type Cancellable = { signal: AbortSignal };
   type DirectFileSave = Cancellable & { file: DirectFile };
   type InputMaterialization = Cancellable & { input: JobInput };
   type WorkerRun = Cancellable & { request: WorkerRequest };
-  type JobRun = Cancellable & { plannedJob: Job; ffmpegCommand: string | undefined };
-  type PresetRun = { preset: Preset; values: Record<string, string>; isFresh?: boolean };
+  type JobRun = Cancellable & {
+    plannedJob: Job;
+    ffmpegCommand: string | undefined;
+  };
+  type PresetRun = {
+    preset: Preset;
+    values: Record<string, string>;
+    isFresh?: boolean;
+  };
 
-  function setChecked({ id, isChecked }: CheckedChange) {
+  function setChecked({ id, isChecked }: CheckedChange): void {
     const others = (library.checkedIds ?? []).filter(checkedId => checkedId !== id);
-    updateLibrary({ ...library, checkedIds: isChecked ? [...others, id] : others });
+    updateLibrary({
+      ...library,
+      checkedIds: isChecked ? [...others, id] : others
+    });
   }
 
-  async function pasteUrl() {
+  async function pasteUrl(): Promise<void> {
     pastedUrl = (await navigator.clipboard.readText()).trim();
   }
 
-  function savePreset({ previousId, draft }: PresetSave) {
+  function savePreset({ previousId, draft }: PresetSave): void {
     if (isBuiltInPreset(previousId)) {
-      const copy = { ...draft, id: crypto.randomUUID() };
+      const copy = {
+        ...draft,
+        id: crypto.randomUUID()
+      };
       updateLibrary({
         custom: [...library.custom, copy],
         shownIds: currentShownIds().map(id => (id === previousId ? copy.id : id)),
@@ -138,36 +183,65 @@
       return;
     }
 
-    updateLibrary({ ...library, custom: library.custom.map(preset => (preset.id === previousId ? draft : preset)) });
+    updateLibrary({
+      ...library,
+      custom: library.custom.map(preset => (preset.id === previousId ? draft : preset))
+    });
   }
 
-  function movePreset(targetId: string) {
+  function movePreset(targetId: string): void {
     if (draggedId) {
-      updateLibrary({ ...library, shownIds: moveBefore({ ids: currentShownIds(), movedId: draggedId, targetId }) });
+      updateLibrary({
+        ...library,
+        shownIds: moveBefore({
+          ids: currentShownIds(),
+          movedId: draggedId,
+          targetId
+        })
+      });
     }
 
     draggedId = undefined;
   }
 
-  function makeDefault(id: string) {
-    updateLibrary({ ...library, defaultId: id, shownIds: moveBefore({ ids: currentShownIds(), movedId: id, targetId: currentShownIds()[0] ?? id }) });
+  function makeDefault(id: string): void {
+    updateLibrary({
+      ...library,
+      defaultId: id,
+      shownIds: moveBefore({
+        ids: currentShownIds(),
+        movedId: id,
+        targetId: currentShownIds()[0] ?? id
+      })
+    });
   }
 
-  function hidePreset(id: string) {
-    updateLibrary({ ...library, shownIds: currentShownIds().filter(shownId => shownId !== id), defaultId: library.defaultId === id ? undefined : library.defaultId });
+  function hidePreset(id: string): void {
+    updateLibrary({
+      ...library,
+      shownIds: currentShownIds().filter(shownId => shownId !== id),
+      defaultId: library.defaultId === id ? undefined : library.defaultId
+    });
   }
 
-  function showPreset(id: string) {
-    updateLibrary({ ...library, shownIds: [...currentShownIds(), id] });
+  function showPreset(id: string): void {
+    updateLibrary({
+      ...library,
+      shownIds: [...currentShownIds(), id]
+    });
   }
 
-  function createPreset() {
+  function createPreset(): void {
     const preset = createBlankPreset();
     newPresetId = preset.id;
-    updateLibrary({ ...library, custom: [...library.custom, preset], shownIds: [...currentShownIds(), preset.id] });
+    updateLibrary({
+      ...library,
+      custom: [...library.custom, preset],
+      shownIds: [...currentShownIds(), preset.id]
+    });
   }
 
-  function deletePreset(id: string) {
+  function deletePreset(id: string): void {
     updateLibrary({
       custom: library.custom.filter(preset => preset.id !== id),
       shownIds: currentShownIds().filter(shownId => shownId !== id),
@@ -175,31 +249,40 @@
     });
   }
 
-  async function importPresets(e: Event & { currentTarget: HTMLInputElement }) {
+  async function importPresets(e: Event & { currentTarget: HTMLInputElement }): Promise<void> {
     const [file] = e.currentTarget.files ?? [];
     e.currentTarget.value = "";
+
     if (!file) {
       return;
     }
 
     errorMessage = "";
     try {
-      updateLibrary(mergeLibraryState({ current: library, imported: parseLibraryFile(await file.text()) }));
+      updateLibrary(
+        mergeLibraryState({
+          current: library,
+          imported: parseLibraryFile(await file.text())
+        })
+      );
       status = `Imported ${file.name}`;
     } catch (error) {
       errorMessage = describeError(error);
     }
   }
 
-  async function exportPresets() {
-    await saveBlob({ name: EXPORT_FILE_NAME, parts: [serializeLibraryState(library)] });
+  async function exportPresets(): Promise<void> {
+    await saveBlob({
+      name: EXPORT_FILE_NAME,
+      parts: [serializeLibraryState(library)]
+    });
   }
 
-  function cancel() {
+  function cancel(): void {
     abortController?.abort();
   }
 
-  async function saveBlob({ name, parts }: BlobSave) {
+  async function saveBlob({ name, parts }: BlobSave): Promise<void> {
     await browser.downloads.download({
       url: URL.createObjectURL(new Blob(parts, { type: mimeTypeForFile(name) })),
       filename: name,
@@ -208,9 +291,12 @@
     savedNames.push(name);
   }
 
-  async function saveDirectFile({ file: { saveAs, text, url }, signal }: DirectFileSave) {
+  async function saveDirectFile({ file: { saveAs, text, url }, signal }: DirectFileSave): Promise<void> {
     if (text !== undefined) {
-      await saveBlob({ name: saveAs, parts: [text] });
+      await saveBlob({
+        name: saveAs,
+        parts: [text]
+      });
       return;
     }
 
@@ -219,7 +305,10 @@
       throw new Error(`Couldn't fetch ${saveAs}: HTTP ${response.status}`);
     }
 
-    await saveBlob({ name: saveAs, parts: [await response.arrayBuffer()] });
+    await saveBlob({
+      name: saveAs,
+      parts: [await response.arrayBuffer()]
+    });
   }
 
   async function materializeInput({ input: { sabr, ...input }, signal }: InputMaterialization): Promise<WorkerInput> {
@@ -229,11 +318,19 @@
 
     status = `Downloading ${input.name}`;
     downloadRatio = 0;
-    const bytes = await downloadSabrTrack({ session: sabr.session, format: sabr.format, signal, onProgress: ratio => (downloadRatio = ratio) });
-    return { ...input, data: bytes.buffer };
+    const bytes = await downloadSabrTrack({
+      session: sabr.session,
+      format: sabr.format,
+      signal,
+      onProgress: ratio => (downloadRatio = ratio)
+    });
+    return {
+      ...input,
+      data: bytes.buffer
+    };
   }
 
-  function runInWorker({ request, signal }: WorkerRun) {
+  function runInWorker({ request, signal }: WorkerRun): Promise<DoneMessage> {
     return new Promise<DoneMessage>((resolve, reject) => {
       const worker = new Worker(browser.runtime.getURL("/ffmpeg-worker.js"), { type: "module" });
       signal.addEventListener("abort", () => {
@@ -254,6 +351,7 @@
         }
 
         worker.terminate();
+
         if (message.type === "error") {
           reject(new Error(message.message));
           return;
@@ -269,44 +367,65 @@
     });
   }
 
-  async function runJob({ plannedJob, ffmpegCommand, signal }: JobRun) {
-    const job = ffmpegCommand && plannedJob.isMedia ? applyFfmpegCommand({ job: plannedJob, command: ffmpegCommand }) : plannedJob;
+  async function runJob({ plannedJob, ffmpegCommand, signal }: JobRun): Promise<void> {
+    const job = ffmpegCommand && plannedJob.isMedia ? applyFfmpegCommand({
+      job: plannedJob,
+      command: ffmpegCommand
+    }) : plannedJob;
     status = `Running ${job.saveAs}`;
     downloadRatio = 0;
     const done = await runInWorker({
       request: {
         wasmUrl: browser.runtime.getURL("/ffmpeg/ffmpeg-core.wasm"),
-        inputs: await Promise.all(job.inputs.map(input => materializeInput({ input, signal }))),
+        inputs: await Promise.all(
+          job.inputs.map(input => materializeInput({
+            input,
+            signal
+          }))
+        ),
         args: job.args
       },
       signal
     });
-    const outputs = findJobOutputs({ files: done.files, job });
+    const outputs = findJobOutputs({
+      files: done.files,
+      job
+    });
     if (done.code !== 0 || !outputs.length) {
       throw new Error(`FFmpeg failed on ${job.saveAs} (exit code ${done.code})`);
     }
 
-    await Promise.all(outputs.map(output => saveBlob({ name: output.saveAs, parts: [output.data] })));
+    await Promise.all(
+      outputs.map(output => saveBlob({
+        name: output.saveAs,
+        parts: [output.data]
+      }))
+    );
   }
 
-  function describeError(error: unknown) {
+  function describeError(error: unknown): string {
     return error instanceof Error ? error.message : String(error);
   }
 
-  async function runChecked() {
+  async function runChecked(): Promise<void> {
     savedNames = [];
     for (const preset of checkedPresets) {
-      const isDone = await run({ preset, values: valuesFor(preset), isFresh: false });
+      const isDone = await run({
+        preset,
+        values: valuesFor(preset),
+        isFresh: false
+      });
       if (!isDone) {
         return;
       }
     }
   }
 
-  async function run({ preset, values, isFresh = true }: PresetRun) {
+  async function run({ preset, values, isFresh = true }: PresetRun): Promise<boolean> {
     errorMessage = "";
     logText = "";
     status = "";
+
     if (isFresh) {
       savedNames = [];
     }
@@ -314,8 +433,18 @@
     const controller = new AbortController();
     try {
       const { variables } = preset;
-      const command = withTabUrl(fillVariables({ text: preset.command, variables, values }));
-      const ffmpegCommand = preset.ffmpegCommand ? fillVariables({ text: preset.ffmpegCommand, variables, values }) : undefined;
+      const command = withTabUrl(
+        fillVariables({
+          text: preset.command,
+          variables,
+          values
+        })
+      );
+      const ffmpegCommand = preset.ffmpegCommand ? fillVariables({
+        text: preset.ffmpegCommand,
+        variables,
+        values
+      }) : undefined;
       runningPresetId = preset.id;
       abortController = controller;
       await runYtDlpCommand({
@@ -325,8 +454,15 @@
           signal: controller.signal,
           log: text => (logText += `${text}\n`),
           status: text => (status = text),
-          runJob: plannedJob => runJob({ plannedJob, ffmpegCommand, signal: controller.signal }),
-          saveDirectFile: file => saveDirectFile({ file, signal: controller.signal })
+          runJob: plannedJob => runJob({
+            plannedJob,
+            ffmpegCommand,
+            signal: controller.signal
+          }),
+          saveDirectFile: file => saveDirectFile({
+            file,
+            signal: controller.signal
+          })
         }
       });
       status = "Done";
@@ -352,94 +488,124 @@
   </header>
 
   <div class="popup-content">
-  {#if activePanel === "presets"}
-  <div id="panel-presets" class="panel-wrapper" role="tabpanel" in:fly={flyIn} out:fly={flyOut}>
-  {#each shownPresets as preset (preset.id)}
-    {#key preset}
-    <PresetCard
-      {preset}
-      isBuiltIn={isBuiltInPreset(preset.id)}
-      isDefault={library.defaultId === preset.id}
-      isBusy={runningPresetId !== undefined}
-      isThisRunning={runningPresetId === preset.id}
-      isChecked={library.checkedIds?.includes(preset.id) ?? false}
-      values={valuesFor(preset)}
-      onvalue={(name, value) => (valuesById[preset.id] = { ...valuesFor(preset), [name]: value })}
-      onchecked={isChecked => setChecked({ id: preset.id, isChecked })}
-      isOpenForEditing={newPresetId === preset.id}
-      onrun={() => run({ preset, values: valuesFor(preset) })}
-      oncancel={cancel}
-      onsave={draft => savePreset({ previousId: preset.id, draft })}
-      onhide={() => hidePreset(preset.id)}
-      onsetdefault={() => makeDefault(preset.id)}
-      ondragstart={() => (draggedId = preset.id)}
-      ondragend={() => (draggedId = undefined)}
-      ondropped={() => movePreset(preset.id)}
-      ondelete={() => deletePreset(preset.id)}
-    />
-    {/key}
-  {/each}
+    {#if activePanel === "presets"}
+      <div id="panel-presets" class="panel-wrapper" role="tabpanel" in:fly={flyIn} out:fly={flyOut}>
+        {#each shownPresets as preset (preset.id)}
+          {#key preset}
+            <PresetCard
+              isBuiltIn={isBuiltInPreset(preset.id)}
+              isBusy={runningPresetId !== undefined}
+              isChecked={library.checkedIds?.includes(preset.id) ?? false}
+              isDefault={library.defaultId === preset.id}
+              isOpenForEditing={newPresetId === preset.id}
+              isThisRunning={runningPresetId === preset.id}
+              oncancel={cancel}
+              onchecked={isChecked => setChecked({
+                id: preset.id,
+                isChecked
+              })}
+              ondelete={() => deletePreset(preset.id)}
+              ondragend={() => (draggedId = undefined)}
+              ondragstart={() => (draggedId = preset.id)}
+              ondropped={() => movePreset(preset.id)}
+              onhide={() => hidePreset(preset.id)}
+              onrun={() => run({
+                preset,
+                values: valuesFor(preset)
+              })}
+              onsave={draft => savePreset({
+                previousId: preset.id,
+                draft
+              })}
+              onsetdefault={() => makeDefault(preset.id)}
+              onvalue={(name, value) => (valuesById[preset.id] = {
+                ...valuesFor(preset),
+                [name]: value
+              })}
+              {preset}
+              values={valuesFor(preset)}
+            />
+          {/key}
+        {/each}
 
-  <div class="row">
-    <button class="filled" onclick={runChecked} disabled={!checkedPresets.length || runningPresetId !== undefined}>Run checked ({checkedPresets.length})</button>
-    {#if abortController}
-      <button class="danger" onclick={cancel}>Cancel</button>
-    {/if}
-  </div>
+        <div class="row">
+          <button
+            class="filled"
+            disabled={!checkedPresets.length || runningPresetId !== undefined}
+            onclick={runChecked}
+          >
+            Run checked ({checkedPresets.length})
+          </button>
+          {#if abortController}
+            <button class="danger" onclick={cancel}>Cancel</button>
+          {/if}
+        </div>
 
-  <details bind:open={isUrlFieldOpen}>
-    <summary>URL</summary>
-    <div class="url-field">
-      <OptionField hint="Leave it empty to use this tab. Playlist URLs download every video" label="YouTube link">
-        <input type="url" placeholder="Paste a YouTube link" bind:value={pastedUrl} />
-      </OptionField>
-      <button onclick={pasteUrl}>Paste</button>
-    </div>
-  </details>
+        <details bind:open={isUrlFieldOpen}>
+          <summary>URL</summary>
+          <div class="url-field">
+            <OptionField hint="Leave it empty to use this tab. Playlist URLs download every video" label="YouTube link">
+              <input placeholder="Paste a YouTube link" type="url" bind:value={pastedUrl} />
+            </OptionField>
+            <button onclick={pasteUrl}>Paste</button>
+          </div>
+        </details>
 
-  {#if status}
-    <p class="hint">{status}</p>
-  {/if}
-  {#if runningPresetId}
-    <WavyProgress indeterminate={downloadRatio <= 0 || downloadRatio >= 1} value={downloadRatio * PERCENT} />
-  {/if}
-  {#if errorMessage}
-    <p class="error">{errorMessage}</p>
-  {/if}
-  {#if savedNames.length}
-    <ul class="outputs">
-      {#each savedNames as name, index (index)}
-        <li>Saved {name}</li>
-      {/each}
-    </ul>
-  {/if}
-  {#if logText}
-    <pre>{logText}</pre>
-  {/if}
-  </div>
-  {:else}
-  <div id="panel-library" class="panel-wrapper" role="tabpanel" in:fly={flyIn} out:fly={flyOut}>
-    <p class="hint">Files go straight to your Downloads folder. Hidden presets can be added back here, and presets can be moved between browsers with Export and Import</p>
-    <div class="row">
-      {#if hiddenPresets.length}
-        <OptionField label="Add a preset">
-          <select onchange={e => { showPreset(e.currentTarget.value); e.currentTarget.value = ""; }} aria-label="Add a preset">
-            <option value="" selected disabled>Choose one</option>
-            {#each hiddenPresets as preset (preset.id)}
-              <option value={preset.id}>{preset.label}</option>
+        {#if status}
+          <p class="hint">{status}</p>
+        {/if}
+        {#if runningPresetId}
+          <WavyProgress indeterminate={downloadRatio <= 0 || downloadRatio >= 1} value={downloadRatio * PERCENT} />
+        {/if}
+        {#if errorMessage}
+          <p class="error">{errorMessage}</p>
+        {/if}
+        {#if savedNames.length}
+          <ul class="outputs">
+            {#each savedNames as name, index (index)}
+              <li>Saved {name}</li>
             {/each}
-          </select>
-        </OptionField>
-      {/if}
-    </div>
-    <div class="row">
-      <button class="filled" onclick={createPreset}>New preset</button>
-      <button onclick={() => elImportInput?.click()}>Import</button>
-      <button onclick={exportPresets}>Export</button>
-      <input bind:this={elImportInput} type="file" accept="application/json,.json" onchange={importPresets} hidden />
-    </div>
-  </div>
-  {/if}
+          </ul>
+        {/if}
+        {#if logText}
+          <pre>{logText}</pre>
+        {/if}
+      </div>
+    {:else}
+      <div id="panel-library" class="panel-wrapper" role="tabpanel" in:fly={flyIn} out:fly={flyOut}>
+        <p class="hint">
+          Files go straight to your Downloads folder. Hidden presets can be added back here, and presets can be moved
+          between browsers with Export and Import
+        </p>
+        <div class="row">
+          {#if hiddenPresets.length}
+            <OptionField label="Add a preset">
+              <select
+                aria-label="Add a preset" onchange={e => {
+                  showPreset(e.currentTarget.value); e.currentTarget.value = "";
+                }}>
+                <option disabled selected value="">Choose one</option>
+                {#each hiddenPresets as preset (preset.id)}
+                  <option value={preset.id}>{preset.label}</option>
+                {/each}
+              </select>
+            </OptionField>
+          {/if}
+        </div>
+        <div class="row">
+          <button class="filled" onclick={createPreset}>New preset</button>
+          <button onclick={() => elImportInput?.click()}>Import</button>
+          <button onclick={exportPresets}>Export</button>
+          <input
+            bind:this={elImportInput}
+            accept="application/json,.json"
+            hidden
+            onchange={importPresets}
+            type="file"
+          />
+        </div>
+      </div>
+    {/if}
   </div>
 </main>
 

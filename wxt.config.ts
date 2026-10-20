@@ -35,7 +35,10 @@ export default defineConfig({
       paths.push(FFMPEG_WASM_DEST);
     },
     "build:publicAssets"(_, assets) {
-      assets.push({ absoluteSrc: resolve(FFMPEG_WASM_SRC), relativeDest: FFMPEG_WASM_DEST });
+      assets.push({
+        absoluteSrc: resolve(FFMPEG_WASM_SRC),
+        relativeDest: FFMPEG_WASM_DEST
+      });
     }
   }
 });

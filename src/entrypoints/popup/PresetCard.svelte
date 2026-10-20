@@ -25,7 +25,27 @@
     ondelete: () => void;
   };
 
-  const { preset, isBuiltIn, isDefault, isBusy, isThisRunning, isChecked, values, onvalue, onchecked, isOpenForEditing, onrun, oncancel, onsave, onhide, onsetdefault, ondragstart, ondragend, ondropped, ondelete }: Props = $props();
+  const {
+    preset,
+    isBuiltIn,
+    isDefault,
+    isBusy,
+    isThisRunning,
+    isChecked,
+    values,
+    onvalue,
+    onchecked,
+    isOpenForEditing,
+    onrun,
+    oncancel,
+    onsave,
+    onhide,
+    onsetdefault,
+    ondragstart,
+    ondragend,
+    ondropped,
+    ondelete
+  }: Props = $props();
 
   // svelte-ignore state_referenced_locally
   let draft = $state<Preset>($state.snapshot(preset));
@@ -34,7 +54,12 @@
   // svelte-ignore state_referenced_locally
   let isEditing = $state(isOpenForEditing);
 
-  function parseOptions(text: string) {
+  type ListOption = {
+    label: string;
+    value: string;
+  };
+
+  function parseOptions(text: string): ListOption[] {
     return text
       .split("\n")
       .map(line => line.trim())
@@ -42,21 +67,41 @@
       .map(line => {
         const [label = "", ...valueParts] = line.split("=");
         const value = valueParts.join("=").trim();
-        return { label: label.trim(), value: value || label.trim() };
+        return {
+          label: label.trim(),
+          value: value || label.trim()
+        };
       });
   }
 
-  function formatOptions(variable: Variable) {
-    return variable.type === "list" ? variable.options.map(option => `${option.label}=${option.value}`).join("\n") : "";
+  function formatOptions(variable: Variable): string {
+    if (variable.type !== "list") {
+      return "";
+    }
+
+    return variable.options.map(option => `${option.label}=${option.value}`).join("\n");
   }
 
-  type VariableInput = { variable: Variable; raw: string };
+  type VariableInput = {
+    variable: Variable;
+    raw: string;
+  };
   type LimitChange = VariableInput & { key: "min" | "max" | "step" };
-  type VariableBlueprint = { type: VariableType; name: string; label: string };
-  type VariableRetype = { index: number; type: VariableType };
-  type IndexedInput = { index: number; raw: string };
+  type VariableBlueprint = {
+    type: VariableType;
+    name: string;
+    label: string;
+  };
+  type VariableRetype = {
+    index: number;
+    type: VariableType;
+  };
+  type IndexedInput = {
+    index: number;
+    raw: string;
+  };
 
-  function applyOptions({ variable, raw }: VariableInput) {
+  function applyOptions({ variable, raw }: VariableInput): void {
     if (variable.type !== "list") {
       return;
     }
@@ -66,67 +111,117 @@
     variable.defaultValue = isDefaultStillValid ? variable.defaultValue : (variable.options[0]?.value ?? "");
   }
 
-  function applyDefault({ variable, raw }: VariableInput) {
+  function applyDefault({ variable, raw }: VariableInput): void {
     variable.defaultValue = variable.type === "number" ? Number(raw) : raw;
   }
 
   function buildVariable({ type, name, label }: VariableBlueprint): Variable {
     if (type === "number") {
-      return { type, name, label, defaultValue: 1, step: 1 };
+      return {
+        type,
+        name,
+        label,
+        defaultValue: 1,
+        step: 1
+      };
     }
 
     if (type === "list") {
-      return { type, name, label, defaultValue: "a", options: [{ label: "A", value: "a" }, { label: "B", value: "b" }] };
+      return {
+        type,
+        name,
+        label,
+        defaultValue: "a",
+        options: [{
+          label: "A",
+          value: "a"
+        }, {
+          label: "B",
+          value: "b"
+        }]
+      };
     }
 
-    return { type, name, label, defaultValue: type === "time" ? "00:00:00" : "" };
+    return {
+      type,
+      name,
+      label,
+      defaultValue: type === "time" ? "00:00:00" : ""
+    };
   }
 
-  function retype({ index, type }: VariableRetype) {
+  function retype({ index, type }: VariableRetype): void {
     const current = draft.variables[index];
     if (current) {
-      draft.variables[index] = buildVariable({ type, name: current.name, label: current.label });
+      draft.variables[index] = buildVariable({
+        type,
+        name: current.name,
+        label: current.label
+      });
     }
   }
 
-  function retypeFromValue({ index, raw }: IndexedInput) {
+  function retypeFromValue({ index, raw }: IndexedInput): void {
     const type = VARIABLE_TYPES.find(candidate => candidate === raw);
     if (type) {
-      retype({ index, type });
+      retype({
+        index,
+        type
+      });
     }
   }
 
-  function applyLimit({ variable, key, raw }: LimitChange) {
+  function applyLimit({ variable, key, raw }: LimitChange): void {
     if (variable.type === "number") {
       variable[key] = raw === "" ? undefined : Number(raw);
     }
   }
 
-  function addVariable() {
+  function addVariable(): void {
     const number = draft.variables.length + 1;
-    draft.variables.push(buildVariable({ type: "text", name: `value${number}`, label: `Value ${number}` }));
+    draft.variables.push(
+      buildVariable({
+        type: "text",
+        name: `value${number}`,
+        label: `Value ${number}`
+      })
+    );
   }
 
-  function removeVariable(index: number) {
+  function removeVariable(index: number): void {
     draft.variables.splice(index, 1);
   }
 
-  function save() {
-    onsave({ ...$state.snapshot(draft), ffmpegCommand: isFfmpegEnabled ? draft.ffmpegCommand : undefined });
+  function save(): void {
+    onsave({
+      ...$state.snapshot(draft),
+      ffmpegCommand: isFfmpegEnabled ? draft.ffmpegCommand : undefined
+    });
   }
 </script>
 
-<section class="card" role="group" class:default={isDefault} ondragover={e => e.preventDefault()} ondrop={e => { e.preventDefault(); ondropped(); }}>
+<section
+  class="card" class:default={isDefault} ondragover={e => e.preventDefault()} ondrop={e => {
+    e.preventDefault(); ondropped();
+  }} role="group">
   <header>
-    <div class="heading"><span class="handle" draggable="true" role="button" tabindex="-1" aria-label="Drag to reorder" ondragstart={e => { e.dataTransfer?.setData("text/plain", preset.id); ondragstart(); }} {ondragend}>⠿</span>
-    <label class="title">
-      <input type="checkbox" checked={isChecked} onchange={e => onchecked(e.currentTarget.checked)} aria-label="Include in Run checked" />
-      <h2>{preset.label}{isDefault ? " (default)" : ""}</h2>
-    </label></div>
+    <div class="heading"><span
+      class="handle" aria-label="Drag to reorder" draggable="true" {ondragend} ondragstart={e => {
+        e.dataTransfer?.setData("text/plain", preset.id); ondragstart();
+      }} role="button" tabindex="-1">⠿</span>
+      <label class="title">
+        <input
+          aria-label="Include in Run checked"
+          checked={isChecked}
+          onchange={e => onchecked(e.currentTarget.checked)}
+          type="checkbox"
+        />
+        <h2>{preset.label}{isDefault ? " (default)" : ""}</h2>
+      </label></div>
     {#if isThisRunning}
       <button class="danger" onclick={oncancel}>Cancel</button>
     {:else}
-      <button class="filled" onclick={onrun} disabled={isBusy}>Run</button>
+      <button class="filled" disabled={isBusy} onclick={onrun}>Run</button>
     {/if}
   </header>
 
@@ -135,17 +230,35 @@
       {#each preset.variables as variable (variable.name)}
         <OptionField label={variable.label}>
           {#if variable.type === "number"}
-            <input type="number" min={variable.min} max={variable.max} step={variable.step} value={values[variable.name]} oninput={e => onvalue(variable.name, e.currentTarget.value)} />
+            <input
+              max={variable.max}
+              min={variable.min}
+              oninput={e => onvalue(variable.name, e.currentTarget.value)}
+              step={variable.step}
+              type="number"
+              value={values[variable.name]}
+            />
           {:else if variable.type === "time"}
-            <input type="text" inputmode="numeric" placeholder="00:00:00" pattern={TIME_PATTERN.source} value={values[variable.name]} oninput={e => onvalue(variable.name, e.currentTarget.value)} />
+            <input
+              inputmode="numeric"
+              oninput={e => onvalue(variable.name, e.currentTarget.value)}
+              pattern={TIME_PATTERN.source}
+              placeholder="00:00:00"
+              type="text"
+              value={values[variable.name]}
+            />
           {:else if variable.type === "list"}
-            <select value={values[variable.name]} onchange={e => onvalue(variable.name, e.currentTarget.value)}>
+            <select onchange={e => onvalue(variable.name, e.currentTarget.value)} value={values[variable.name]}>
               {#each variable.options as option (option.value)}
                 <option value={option.value}>{option.label}</option>
               {/each}
             </select>
           {:else}
-            <input type="text" value={values[variable.name]} oninput={e => onvalue(variable.name, e.currentTarget.value)} />
+            <input
+              oninput={e => onvalue(variable.name, e.currentTarget.value)}
+              type="text"
+              value={values[variable.name]}
+            />
           {/if}
         </OptionField>
       {/each}
@@ -159,16 +272,17 @@
         <input bind:value={draft.label} />
       </OptionField>
       <OptionField label="yt-dlp command">
-        <textarea rows="3" bind:value={draft.command} spellcheck="false"></textarea>
+        <textarea rows="3" spellcheck="false" bind:value={draft.command}></textarea>
       </OptionField>
       <label class="check">
         <input type="checkbox" bind:checked={isFfmpegEnabled} />
         Run my own FFmpeg command on the downloaded streams
       </label>
       {#if isFfmpegEnabled}
-        <textarea rows="2" bind:value={draft.ffmpegCommand} spellcheck="false" aria-label="FFmpeg command"></textarea>
+        <textarea aria-label="FFmpeg command" rows="2" spellcheck="false" bind:value={draft.ffmpegCommand}></textarea>
         <p class="hint">
-          {"{input1}"} is the first downloaded stream, {"{input2}"} the second. End with the output file name, like snapshot.png. Put %03d in it, like frame%03d.png, to save an image sequence
+          {"{input1}"} is the first downloaded stream, {"{input2}"} the second. End with the output file name, like
+          snapshot.png. Put %03d in it, like frame%03d.png, to save an image sequence
         </p>
       {/if}
 
@@ -176,30 +290,65 @@
       <p class="hint">Write %name% in a command to insert the field's value</p>
       {#each draft.variables as variable, index (index)}
         <div class="variable">
-          <input class="small" bind:value={variable.name} aria-label="Variable name" placeholder="name" />
-          <input bind:value={variable.label} aria-label="Field label" placeholder="Label" />
-          <select value={variable.type} onchange={e => retypeFromValue({ index, raw: e.currentTarget.value })} aria-label="Field type">
+          <input class="small" aria-label="Variable name" placeholder="name" bind:value={variable.name} />
+          <input aria-label="Field label" placeholder="Label" bind:value={variable.label} />
+          <select
+            aria-label="Field type" onchange={e => retypeFromValue({
+              index,
+              raw: e.currentTarget.value
+            })} value={variable.type}>
             {#each VARIABLE_TYPES as type (type)}
               <option value={type}>{type}</option>
             {/each}
           </select>
-          <button onclick={() => removeVariable(index)} aria-label="Remove variable">x</button>
+          <button aria-label="Remove variable" onclick={() => removeVariable(index)}>x</button>
           {#if variable.type === "list"}
-            <textarea rows="3" value={formatOptions(variable)} onchange={e => applyOptions({ variable, raw: e.currentTarget.value })} aria-label="Options, one label=value per line"></textarea>
-            <select value={variable.defaultValue} onchange={e => applyDefault({ variable, raw: e.currentTarget.value })} aria-label="Default option">
+            <textarea
+              aria-label="Options, one label=value per line" onchange={e => applyOptions({
+                variable,
+                raw: e.currentTarget.value
+              })} rows="3" value={formatOptions(variable)}></textarea>
+            <select
+              aria-label="Default option" onchange={e => applyDefault({
+                variable,
+                raw: e.currentTarget.value
+              })} value={variable.defaultValue}>
               {#each variable.options as option (option.value)}
                 <option value={option.value}>{option.label}</option>
               {/each}
             </select>
           {:else if variable.type === "number"}
             <div class="numbers">
-              <input class="small" type="number" value={variable.defaultValue} oninput={e => applyDefault({ variable, raw: e.currentTarget.value })} aria-label="Default" />
-              <input class="small" type="number" value={variable.min} oninput={e => applyLimit({ variable, key: "min", raw: e.currentTarget.value })} aria-label="Minimum" placeholder="min" />
-              <input class="small" type="number" value={variable.max} oninput={e => applyLimit({ variable, key: "max", raw: e.currentTarget.value })} aria-label="Maximum" placeholder="max" />
-              <input class="small" type="number" value={variable.step} oninput={e => applyLimit({ variable, key: "step", raw: e.currentTarget.value })} aria-label="Step" placeholder="step" />
+              <input
+                class="small" aria-label="Default" oninput={e => applyDefault({
+                  variable,
+                  raw: e.currentTarget.value
+                })} type="number" value={variable.defaultValue} />
+              <input
+                class="small" aria-label="Minimum" oninput={e => applyLimit({
+                  variable,
+                  key: "min",
+                  raw: e.currentTarget.value
+                })} placeholder="min" type="number" value={variable.min} />
+              <input
+                class="small" aria-label="Maximum" oninput={e => applyLimit({
+                  variable,
+                  key: "max",
+                  raw: e.currentTarget.value
+                })} placeholder="max" type="number" value={variable.max} />
+              <input
+                class="small" aria-label="Step" oninput={e => applyLimit({
+                  variable,
+                  key: "step",
+                  raw: e.currentTarget.value
+                })} placeholder="step" type="number" value={variable.step} />
             </div>
           {:else}
-            <input value={variable.defaultValue} oninput={e => applyDefault({ variable, raw: e.currentTarget.value })} aria-label="Default" placeholder="Default" />
+            <input
+              aria-label="Default" oninput={e => applyDefault({
+                variable,
+                raw: e.currentTarget.value
+              })} placeholder="Default" value={variable.defaultValue} />
           {/if}
         </div>
       {/each}
@@ -207,7 +356,7 @@
 
       <div class="row">
         <button onclick={save}>{isBuiltIn ? "Save as my own" : "Save"}</button>
-        <button onclick={onsetdefault} disabled={isDefault}>Make default</button>
+        <button disabled={isDefault} onclick={onsetdefault}>Make default</button>
         <button onclick={onhide}>Hide</button>
         {#if !isBuiltIn}
           <button onclick={ondelete}>Delete</button>
