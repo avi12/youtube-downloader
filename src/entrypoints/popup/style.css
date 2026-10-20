@@ -1,6 +1,18 @@
 :root {
+  --page-background: #ffffff;
+  --page-text: #202124;
+  --field-background: #f1f3f4;
+
   color-scheme: light dark;
   font: 14px/1.4 system-ui, sans-serif;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --page-background: #202124;
+    --page-text: #e8eaed;
+    --field-background: #35363a;
+  }
 }
 
 body {
@@ -8,6 +20,8 @@ body {
   inline-size: 460px;
   margin: 0;
   padding: 12px;
+  background: var(--page-background);
+  color: var(--page-text);
 }
 
 main {
@@ -26,7 +40,15 @@ textarea,
 select,
 button {
   padding: 6px 8px;
+  border: 1px solid #80868b;
+  border: 1px solid color-mix(in sRGB, currentColor 30%, transparent);
+  background: var(--field-background);
+  color: var(--page-text);
   font: inherit;
+}
+
+[type="checkbox"] {
+  padding: 0;
 }
 
 textarea {
