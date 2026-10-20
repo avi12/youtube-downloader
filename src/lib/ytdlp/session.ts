@@ -1,14 +1,21 @@
-import { fetchChapters, fetchPlaylist } from "@/lib/page";
-import type { PlaylistEntry } from "@/lib/page";
-import { BotCheckError, parsePlaylistId, parseVideoId, registerRequestHeaderRules, resolveVideo, resolveVideoFromPage } from "@/lib/youtube";
 import type { Chapter } from "./fields";
+import { buildVideoFields } from "./fields";
 import { parseYtDlpCommand } from "./options";
 import type { YtDlpOptions } from "./options";
 import { planVideo } from "./plan";
 import type { DirectFile, Job } from "./plan";
 import { selectPlaylistIndices, shuffle } from "./playlist-items";
-import { buildVideoFields } from "./fields";
 import { renderTemplate } from "./template";
+import { fetchChapters, fetchPlaylist } from "@/lib/page";
+import type { PlaylistEntry } from "@/lib/page";
+import {
+  BotCheckError,
+  parsePlaylistId,
+  parseVideoId,
+  registerRequestHeaderRules,
+  resolveVideo,
+  resolveVideoFromPage
+} from "@/lib/youtube";
 
 export type SessionHooks = {
   signal: AbortSignal;
@@ -18,15 +25,43 @@ export type SessionHooks = {
   saveDirectFile: (file: DirectFile) => Promise<void>;
 };
 
-export type TabContext = { tabId?: number; url?: string };
+export type TabContext = {
+  tabId?: number;
+  url?: string;
+};
 
-type Target = { videoId: string; title: string; index: number; count: number; playlistId?: string; playlistTitle?: string };
-type SessionScope = { options: YtDlpOptions; tab: TabContext };
+type Target = {
+  videoId: string;
+  title: string;
+  index: number;
+  count: number;
+  playlistId?: string;
+  playlistTitle?: string;
+};
+type SessionScope = {
+  options: YtDlpOptions;
+  tab: TabContext;
+};
 type UrlExpansion = SessionScope & { url: string };
-type ChapterLookup = SessionScope & { videoId: string; durationSeconds: number };
-type TargetRun = SessionScope & { target: Target; autonumber: number; hooks: SessionHooks };
-type FlatPrint = { options: YtDlpOptions; targets: Target[]; hooks: SessionHooks };
-export type YtDlpRun = { command: string; tab: TabContext; hooks: SessionHooks };
+type ChapterLookup = SessionScope & {
+  videoId: string;
+  durationSeconds: number;
+};
+type TargetRun = SessionScope & {
+  target: Target;
+  autonumber: number;
+  hooks: SessionHooks;
+};
+type FlatPrint = {
+  options: YtDlpOptions;
+  targets: Target[];
+  hooks: SessionHooks;
+};
+export type YtDlpRun = {
+  command: string;
+  tab: TabContext;
+  hooks: SessionHooks;
+};
 
 const FLAT_PLAYLIST_DEFAULT_PRINT = "%(id)s\t%(title)s";
 const CHAPTER_FIELD_PATTERN = /chapter|section/;
@@ -50,16 +85,36 @@ async function expandUrl({ url, options, tab }: UrlExpansion): Promise<Target[]>
       throw new Error(`Not a YouTube video or playlist URL: ${url}`);
     }
 
-    return [{ videoId, title: videoId, index: 1, count: 1 }];
+    return [{
+      videoId,
+      title: videoId,
+      index: 1,
+      count: 1
+    }];
   }
 
-  const playlist = await fetchPlaylist({ tabId: tab.tabId, playlistId: playlistId! });
-  const indices = selectPlaylistIndices(playlist.entries.length, options.playlistItems, options.playlistStart, options.playlistEnd);
-  const ordered = options.isPlaylistReverse ? indices.toReversed() : indices;
+  const playlist = await fetchPlaylist({
+    tabId: tab.tabId,
+    playlistId: playlistId!
+  });
+  const indices = selectPlaylistIndices({
+    count: playlist.entries.length,
+    spec: options.playlistItems,
+    start: options.playlistStart,
+    end: options.playlistEnd
+  });
+  const ordered = options.isPlaylistReverse ? [...indices].reverse() : indices;
   const finalOrder = options.isPlaylistRandom ? shuffle(ordered) : ordered;
   return finalOrder.map(index => {
     const entry: PlaylistEntry = playlist.entries[index - 1]!;
-    return { videoId: entry.videoId, title: entry.title, index, count: playlist.entries.length, playlistId: playlistId!, playlistTitle: playlist.title };
+    return {
+      videoId: entry.videoId,
+      title: entry.title,
+      index,
+      count: playlist.entries.length,
+      playlistId: playlistId!,
+      playlistTitle: playlist.title
+    };
   });
 }
 
@@ -68,8 +123,15 @@ async function resolveChapters({ options, tab, videoId, durationSeconds }: Chapt
     return [];
   }
 
-  const raw = await fetchChapters({ tabId: tab.tabId, videoId });
-  return raw.map((chapter, index) => ({ title: chapter.title, start: chapter.start, end: raw[index + 1]?.start ?? durationSeconds }));
+  const raw = await fetchChapters({
+    tabId: tab.tabId,
+    videoId
+  });
+  return raw.map((chapter, index) => ({
+    title: chapter.title,
+    start: chapter.start,
+    end: raw[index + 1]?.start ?? durationSeconds
+  }));
 }
 
 async function processTarget({ options, tab, target, autonumber, hooks }: TargetRun) {
@@ -81,18 +143,43 @@ async function processTarget({ options, tab, target, autonumber, hooks }: Target
     }
 
     hooks.log("YouTube's bot check blocked the direct lookup, reading the open tab's player instead");
-    return resolveVideoFromPage({ tabId: tab.tabId, videoId: target.videoId, withCaptions: needsCaptions(options) });
+    return resolveVideoFromPage({
+      tabId: tab.tabId,
+      videoId: target.videoId,
+      withCaptions: needsCaptions(options)
+    });
   });
-  const chapters = await resolveChapters({ options, tab, videoId: target.videoId, durationSeconds: video.durationSeconds });
-  const playlist = target.playlistId ? { id: target.playlistId, title: target.playlistTitle ?? "", index: target.index, count: target.count } : undefined;
-  const plan = planVideo(options, { video, chapters, playlist, autonumber });
+  const chapters = await resolveChapters({
+    options,
+    tab,
+    videoId: target.videoId,
+    durationSeconds: video.durationSeconds
+  });
+  const playlist = target.playlistId ? {
+    id: target.playlistId,
+    title: target.playlistTitle ?? "",
+    index: target.index,
+    count: target.count
+  } : undefined;
+  const plan = planVideo({
+    options,
+    context: {
+      video,
+      chapters,
+      playlist,
+      autonumber
+    }
+  });
   for (const line of plan.printed) {
     hooks.log(line);
   }
 
   if (plan.skipReason) {
     hooks.log(`Skipped: ${plan.skipReason}`);
-    return { isDownloaded: false, isBreak: Boolean(plan.isBreak) };
+    return {
+      isDownloaded: false,
+      isBreak: Boolean(plan.isBreak)
+    };
   }
 
   for (const job of plan.jobs) {
@@ -105,18 +192,43 @@ async function processTarget({ options, tab, target, autonumber, hooks }: Target
     await hooks.saveDirectFile(file);
   }
 
-  return { isDownloaded: plan.jobs.length + plan.directFiles.length > 0, isBreak: false };
+  return {
+    isDownloaded: plan.jobs.length + plan.directFiles.length > 0,
+    isBreak: false
+  };
 }
 
 function printFlatEntries({ options, targets, hooks }: FlatPrint) {
   const templates = options.prints.length ? options.prints : [FLAT_PLAYLIST_DEFAULT_PRINT];
   for (const target of targets) {
     const fields = {
-      ...buildVideoFields({ id: target.videoId, title: target.title, uploader: "", channelId: "", description: "", durationSeconds: 0, viewCount: 0, tags: [], category: "", isLive: false, uploadDate: "", thumbnails: [], formats: [], captions: [] }),
+      ...buildVideoFields({
+        video: {
+          id: target.videoId,
+          title: target.title,
+          uploader: "",
+          channelId: "",
+          description: "",
+          durationSeconds: 0,
+          viewCount: 0,
+          tags: [],
+          category: "",
+          isLive: false,
+          uploadDate: "",
+          thumbnails: [],
+          formats: [],
+          captions: []
+        }
+      }),
       url: `https://www.youtube.com/watch?v=${target.videoId}`
     };
     for (const template of templates) {
-      hooks.log(renderTemplate(template, fields));
+      hooks.log(
+        renderTemplate({
+          template,
+          fields
+        })
+      );
     }
   }
 }
@@ -129,9 +241,19 @@ export async function runYtDlpCommand({ command, tab, hooks }: YtDlpRun) {
 
   const urls = options.urls.length ? options.urls : [tab.url ?? ""];
   await registerRequestHeaderRules();
-  const targets = (await Promise.all(urls.map(url => expandUrl({ url, options, tab })))).flat();
+  const targets = (await Promise.all(
+    urls.map(url => expandUrl({
+      url,
+      options,
+      tab
+    }))
+  )).flat();
   if (options.isFlatPlaylist) {
-    printFlatEntries({ options, targets, hooks });
+    printFlatEntries({
+      options,
+      targets,
+      hooks
+    });
     return;
   }
 
@@ -139,20 +261,31 @@ export async function runYtDlpCommand({ command, tab, hooks }: YtDlpRun) {
   let downloadCount = 0;
   for (const [index, target] of targets.entries()) {
     hooks.signal.throwIfAborted();
+
     if (options.maxDownloads !== undefined && downloadCount >= options.maxDownloads) {
       hooks.log(`Stopped after --max-downloads ${options.maxDownloads}`);
       return;
     }
 
-    const outcome = await processTarget({ options, tab, target, autonumber: index + 1, hooks }).catch((error: unknown) => {
+    const outcome = await processTarget({
+      options,
+      tab,
+      target,
+      autonumber: index + 1,
+      hooks
+    }).catch((error: unknown) => {
       if (isAbortOnError || hooks.signal.aborted) {
         throw error;
       }
 
       hooks.log(`ERROR: ${error instanceof Error ? error.message : String(error)}`);
-      return { isDownloaded: false, isBreak: false };
+      return {
+        isDownloaded: false,
+        isBreak: false
+      };
     });
     downloadCount += Number(outcome.isDownloaded);
+
     if (outcome.isBreak) {
       return;
     }

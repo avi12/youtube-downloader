@@ -1,7 +1,3 @@
-import type { WorkerInput } from "@/entrypoints/ffmpeg-worker";
-import type { SabrSession } from "@/lib/sabr";
-import type { StreamFormat, Thumbnail } from "@/lib/schemas";
-import type { CaptionOption, ResolvedVideo } from "@/lib/youtube";
 import {
   applyMetadataRules,
   buildFormatFields,
@@ -17,6 +13,10 @@ import { DEFAULT_SORT_KEYS, describeFormat, selectFormatSets } from "./selector"
 import type { FormatFields } from "./selector";
 import { renderTemplate } from "./template";
 import type { TemplateFields } from "./template";
+import type { WorkerInput } from "@/entrypoints/ffmpeg-worker";
+import type { SabrSession } from "@/lib/sabr";
+import type { StreamFormat, Thumbnail } from "@/lib/schemas";
+import type { CaptionOption, ResolvedVideo } from "@/lib/youtube";
 
 const DEFAULT_FORMAT = "bv*+ba/b";
 const DEFAULT_AUDIO_ONLY_FORMAT = "ba/b";
@@ -51,7 +51,12 @@ const AUDIO_ENCODERS: Record<Exclude<AudioFormat, "best">, string[]> = {
   alac: ["alac"]
 };
 
-export type JobInput = WorkerInput & { sabr?: { session: SabrSession; format: StreamFormat } };
+export type JobInput = WorkerInput & {
+  sabr?: {
+    session: SabrSession;
+    format: StreamFormat;
+  };
+};
 
 export type Job = {
   label: string;
@@ -62,7 +67,11 @@ export type Job = {
   isMedia?: boolean;
 };
 
-export type DirectFile = { saveAs: string; text?: string; url?: string };
+export type DirectFile = {
+  saveAs: string;
+  text?: string;
+  url?: string;
+};
 
 export type VideoContext = {
   video: ResolvedVideo;
@@ -80,9 +89,69 @@ export type VideoPlan = {
   isBreak?: boolean;
 };
 
-type MediaInput = { worker: JobInput; before: string[] };
+type MediaInput = {
+  worker: JobInput;
+  before: string[];
+};
+type OptionsPicks = {
+  options: YtDlpOptions;
+  picks: FormatFields[];
+};
+type OptionsVideo = {
+  options: YtDlpOptions;
+  video: ResolvedVideo;
+};
+type OptionsFieldsVideo = OptionsVideo & { fields: TemplateFields };
+type FieldsVideo = {
+  fields: TemplateFields;
+  video: ResolvedVideo;
+};
+type PlanRequest = {
+  options: YtDlpOptions;
+  context: VideoContext;
+};
+type AudioCodecRequest = {
+  options: YtDlpOptions;
+  source: FormatFields;
+};
+type WorkerInputRequest = {
+  fields: FormatFields;
+  video: ResolvedVideo;
+};
+type ProcessorRequest = {
+  options: YtDlpOptions;
+  names: string[];
+};
+type LanguageRequest = {
+  languageCode: string;
+  patterns: string[];
+};
+type ChaptersTextRequest = {
+  chapters: Chapter[];
+  title: string;
+};
+type SectionsRequest = {
+  options: YtDlpOptions;
+  chapters: Chapter[];
+};
+type TemplateKeyRequest = {
+  options: YtDlpOptions;
+  section: SectionContext | undefined;
+  isChapterSplit: boolean;
+};
+type CompanionRequest = {
+  options: YtDlpOptions;
+  context: VideoContext;
+  fields: TemplateFields;
+  tracks: CaptionOption[];
+};
+type RejectionRequest = {
+  options: YtDlpOptions;
+  fields: TemplateFields;
+  now: Date;
+};
 
-function selectAudioCodecArgs(options: YtDlpOptions, source: FormatFields) {
+function selectAudioCodecArgs({ options, source }: AudioCodecRequest) {
   const isSameCodec = source.ext === options.audioFormat || source.acodec.startsWith(options.audioFormat);
   if (options.audioFormat === BEST_AUDIO_FORMAT || isSameCodec) {
     return ["-c:a", "copy"];
@@ -101,16 +170,19 @@ function captionSource(track: CaptionOption) {
   return track.text === undefined ? { url: track.url } : { text: track.text };
 }
 
-function toWorkerInput(fields: FormatFields, video: ResolvedVideo): JobInput {
+function toWorkerInput({ fields, video }: WorkerInputRequest): JobInput {
   return {
     name: `format-${fields.format_id}.${fields.ext}`,
     url: fields.format.url,
     contentLength: Number(fields.format.contentLength) || undefined,
-    sabr: !fields.format.url && video.sabr ? { session: video.sabr, format: fields.format } : undefined
+    sabr: !fields.format.url && video.sabr ? {
+      session: video.sabr,
+      format: fields.format
+    } : undefined
   };
 }
 
-function pickContainer(options: YtDlpOptions, picks: FormatFields[]) {
+function pickContainer({ options, picks }: OptionsPicks) {
   if (options.mergeOutputFormat) {
     return options.mergeOutputFormat;
   }
@@ -135,7 +207,7 @@ function pickSubtitleCodec(container: string) {
   return MATROSKA_FORMATS.has(container) ? "srt" : "mov_text";
 }
 
-function selectProcessorArgs(options: YtDlpOptions, names: string[]) {
+function selectProcessorArgs({ options, names }: ProcessorRequest) {
   return names.flatMap(name => options.postprocessorArgs[name] ?? []);
 }
 
@@ -148,28 +220,40 @@ function pickBestJpeg(thumbnails: Thumbnail[]) {
   return thumbnails.findLast(thumbnail => JPEG_PATTERN.test(thumbnail.url)) ?? thumbnails.at(-1);
 }
 
-function matchesLanguageList(languageCode: string, patterns: string[]) {
-  const isIncluded = patterns.some(pattern => !pattern.startsWith("-") && (pattern === "all" || new RegExp(`^(?:${pattern})$`).test(languageCode)));
-  const isExcluded = patterns.some(pattern => pattern.startsWith("-") && new RegExp(`^(?:${pattern.slice(1)})$`).test(languageCode));
+function matchesLanguageList({ languageCode, patterns }: LanguageRequest) {
+  const isIncluded = patterns.some(pattern =>
+    !pattern.startsWith("-") && (pattern === "all" || new RegExp(`^(?:${pattern})$`).test(languageCode)));
+  const isExcluded = patterns.some(pattern =>
+    pattern.startsWith("-") && new RegExp(`^(?:${pattern.slice(1)})$`).test(languageCode));
   return isIncluded && !isExcluded;
 }
 
-function selectCaptionTracks(options: YtDlpOptions, video: ResolvedVideo) {
+function selectCaptionTracks({ options, video }: OptionsVideo) {
   const wantsManual = options.isWriteSubs || options.isEmbedSubs;
   const wantsAuto = options.isWriteAutoSubs;
-  const manualLanguages = new Set(video.captions.filter(track => !track.isAutoGenerated).map(track => track.languageCode));
+  const manualLanguages = new Set(
+    video.captions.filter(track => !track.isAutoGenerated).map(track => track.languageCode)
+  );
   return video.captions.filter(track => {
     const isReplacedByManual = track.isAutoGenerated && wantsManual && manualLanguages.has(track.languageCode);
-    return !isReplacedByManual && (track.isAutoGenerated ? wantsAuto : wantsManual) && matchesLanguageList(track.languageCode, options.subLangs);
+    const isWanted = track.isAutoGenerated ? wantsAuto : wantsManual;
+    return !isReplacedByManual && isWanted && matchesLanguageList({
+      languageCode: track.languageCode,
+      patterns: options.subLangs
+    });
   });
 }
 
-function buildChaptersText(chapters: Chapter[], title: string) {
-  const blocks = chapters.map(chapter => `[CHAPTER]\nTIMEBASE=1/${MILLISECONDS_PER_SECOND}\nSTART=${Math.round(chapter.start * MILLISECONDS_PER_SECOND)}\nEND=${Math.round(chapter.end * MILLISECONDS_PER_SECOND)}\ntitle=${chapter.title}`);
+function buildChaptersText({ chapters, title }: ChaptersTextRequest) {
+  const blocks = chapters.map(chapter => {
+    const start = Math.round(chapter.start * MILLISECONDS_PER_SECOND);
+    const end = Math.round(chapter.end * MILLISECONDS_PER_SECOND);
+    return `[CHAPTER]\nTIMEBASE=1/${MILLISECONDS_PER_SECOND}\nSTART=${start}\nEND=${end}\ntitle=${chapter.title}`;
+  });
   return [";FFMETADATA1", `title=${title}`, ...blocks].join("\n");
 }
 
-function resolveSections(options: YtDlpOptions, chapters: Chapter[]): (Section & { title?: string })[] {
+function resolveSections({ options, chapters }: SectionsRequest): (Section & { title?: string })[] {
   return options.sections.flatMap(section => {
     if (!section.chapterPattern) {
       return [section];
@@ -180,7 +264,11 @@ function resolveSections(options: YtDlpOptions, chapters: Chapter[]): (Section &
     }
 
     const pattern = new RegExp(section.chapterPattern);
-    return chapters.filter(chapter => pattern.test(chapter.title)).map(chapter => ({ start: chapter.start, end: chapter.end, title: chapter.title }));
+    return chapters.filter(chapter => pattern.test(chapter.title)).map(chapter => ({
+      start: chapter.start,
+      end: chapter.end,
+      title: chapter.title
+    }));
   });
 }
 
@@ -195,16 +283,25 @@ function buildMetadataArgs(fields: TemplateFields) {
   return entries.flatMap(([key, value]) => (value ? ["-metadata", `${key}=${value}`] : []));
 }
 
-function resolveTemplateKey(options: YtDlpOptions, section: SectionContext | undefined, isChapterSplit: boolean) {
+function resolveTemplateKey({ options, section, isChapterSplit }: TemplateKeyRequest) {
   if (isChapterSplit) {
-    return { key: "chapter", fallback: CHAPTER_DEFAULT_TEMPLATE };
+    return {
+      key: "chapter",
+      fallback: CHAPTER_DEFAULT_TEMPLATE
+    };
   }
 
   if (section?.start !== undefined || section?.end !== undefined) {
-    return { key: DEFAULT_OUTPUT_KEY, fallback: SECTION_DEFAULT_TEMPLATE };
+    return {
+      key: DEFAULT_OUTPUT_KEY,
+      fallback: SECTION_DEFAULT_TEMPLATE
+    };
   }
 
-  return { key: DEFAULT_OUTPUT_KEY, fallback: options.outputs.default! };
+  return {
+    key: DEFAULT_OUTPUT_KEY,
+    fallback: options.outputs.default!
+  };
 }
 
 type MediaContext = {
@@ -215,8 +312,17 @@ type MediaContext = {
   tracks: CaptionOption[];
   notes: string[];
 };
+type MediaJobRequest = {
+  media: MediaContext;
+  section: SectionContext | undefined;
+  isChapterSplit: boolean;
+};
 
-function buildMediaJob({ options, context, fields, picks, tracks, notes }: MediaContext, section: SectionContext | undefined, isChapterSplit: boolean): Job {
+function buildMediaJob({
+  media: { options, context, fields, picks, tracks, notes },
+  section,
+  isChapterSplit
+}: MediaJobRequest): Job {
   const { video, chapters } = context;
   const sectionArgs = buildSectionArgs(section);
   const primary = picks.find(pick => pick.hasVideo) ?? picks[0]!;
@@ -224,19 +330,41 @@ function buildMediaJob({ options, context, fields, picks, tracks, notes }: Media
   const extraArgs: string[] = [];
   let container: string;
   let codecArgs: string[];
-
   if (options.isExtractAudio) {
     const source = picks.find(pick => pick.hasAudio);
     if (!source) {
       throw new Error("The selected format has no audio to extract");
     }
 
-    container = pickAudioContainer(options, picks);
-    inputs.push({ worker: toWorkerInput(source, video), before: sectionArgs });
-    codecArgs = selectAudioCodecArgs(options, source);
+    container = pickAudioContainer({
+      options,
+      picks
+    });
+    inputs.push({
+      worker: toWorkerInput({
+        fields: source,
+        video
+      }),
+      before: sectionArgs
+    });
+    codecArgs = selectAudioCodecArgs({
+      options,
+      source
+    });
   } else {
-    container = pickContainer(options, picks);
-    inputs.push(...picks.map(pick => ({ worker: toWorkerInput(pick, video), before: sectionArgs })));
+    container = pickContainer({
+      options,
+      picks
+    });
+    inputs.push(
+      ...picks.map(pick => ({
+        worker: toWorkerInput({
+          fields: pick,
+          video
+        }),
+        before: sectionArgs
+      }))
+    );
     const isRecoding = Boolean(options.recodeVideo) || (options.isForceKeyframes && sectionArgs.length > 0);
     codecArgs = isRecoding ? [] : ["-c", "copy"];
   }
@@ -251,7 +379,13 @@ function buildMediaJob({ options, context, fields, picks, tracks, notes }: Media
   const embeddedTracks = canEmbedSubs ? tracks : [];
   const subtitleCodec = pickSubtitleCodec(container);
   for (const track of embeddedTracks) {
-    inputs.push({ worker: { name: `embed-${track.languageCode}.vtt`, ...captionSource(track) }, before: sectionArgs });
+    inputs.push({
+      worker: {
+        name: `embed-${track.languageCode}.vtt`,
+        ...captionSource(track)
+      },
+      before: sectionArgs
+    });
   }
 
   const thumbnail = options.isEmbedThumbnail ? pickBestJpeg(video.thumbnails) : undefined;
@@ -262,13 +396,28 @@ function buildMediaJob({ options, context, fields, picks, tracks, notes }: Media
 
   const thumbnailIndex = inputs.length;
   if (canEmbedThumbnail && !isMatroska) {
-    inputs.push({ worker: { name: THUMBNAIL_INPUT, url: thumbnail!.url }, before: [] });
+    inputs.push({
+      worker: {
+        name: THUMBNAIL_INPUT,
+        url: thumbnail!.url
+      },
+      before: []
+    });
   }
 
   const chapterIndex = inputs.length;
   const shouldEmbedChapters = options.isEmbedChapters && chapters.length > 0 && !section;
   if (shouldEmbedChapters) {
-    inputs.push({ worker: { name: CHAPTERS_INPUT, text: buildChaptersText(chapters, video.title) }, before: ["-f", "ffmetadata"] });
+    inputs.push({
+      worker: {
+        name: CHAPTERS_INPUT,
+        text: buildChaptersText({
+          chapters,
+          title: video.title
+        })
+      },
+      before: ["-f", "ffmetadata"]
+    });
   }
 
   const hasExtraStreams = inputs.length > mediaInputCount;
@@ -290,7 +439,13 @@ function buildMediaJob({ options, context, fields, picks, tracks, notes }: Media
 
   if (canEmbedThumbnail && isMatroska) {
     extraArgs.push("-attach", THUMBNAIL_INPUT, "-metadata:s:t", "mimetype=image/jpeg");
-    inputs.push({ worker: { name: THUMBNAIL_INPUT, url: thumbnail!.url }, before: [] });
+    inputs.push({
+      worker: {
+        name: THUMBNAIL_INPUT,
+        url: thumbnail!.url
+      },
+      before: []
+    });
   }
 
   if (shouldEmbedChapters) {
@@ -298,45 +453,93 @@ function buildMediaJob({ options, context, fields, picks, tracks, notes }: Media
   }
 
   const processorNames = [...BASE_PROCESSORS, ...MEDIA_PROCESSORS];
-  const inputArgs = selectProcessorArgs(options, ["ffmpeg_i"]);
+  const inputArgs = selectProcessorArgs({
+    options,
+    names: ["ffmpeg_i"]
+  });
   const inputTokens = inputs.flatMap(({ worker, before }) => {
     const isStreamInput = worker.name !== THUMBNAIL_INPUT || !isMatroska;
     return isStreamInput ? [...inputArgs, ...before, "-i", worker.name] : [];
   });
   const outputFile = `${OUTPUT_BASENAME}.${container}`;
   const metadataArgs = options.isEmbedMetadata ? buildMetadataArgs(fields) : [];
-  const { key, fallback } = resolveTemplateKey(options, section, isChapterSplit);
-  const templateOptions = { ...options, outputs: { ...options.outputs, [key]: options.outputs[key] ?? fallback } };
-  const saveAs = buildSavePath(templateOptions, key, { ...fields, ...buildSectionFields(section), height: primary.height }, container);
+  const { key, fallback } = resolveTemplateKey({
+    options,
+    section,
+    isChapterSplit
+  });
+  const templateOptions = {
+    ...options,
+    outputs: {
+      ...options.outputs,
+      [key]: options.outputs[key] ?? fallback
+    }
+  };
+  const saveAs = buildSavePath({
+    options: templateOptions,
+    type: key,
+    fields: {
+      ...fields,
+      ...buildSectionFields(section),
+      height: primary.height
+    },
+    extension: container
+  });
+  const processorArgs = selectProcessorArgs({
+    options,
+    names: processorNames
+  });
   return {
     label: saveAs,
     inputs: inputs.map(({ worker }) => worker),
-    args: [...inputTokens, ...codecArgs, ...extraArgs, ...metadataArgs, ...selectProcessorArgs(options, processorNames), outputFile],
+    args: [...inputTokens, ...codecArgs, ...extraArgs, ...metadataArgs, ...processorArgs, outputFile],
     outputFile,
     saveAs,
     isMedia: true
   };
 }
 
-function buildCompanionFiles(options: YtDlpOptions, context: VideoContext, fields: TemplateFields, tracks: CaptionOption[]) {
+function buildCompanionFiles({ options, context, fields, tracks }: CompanionRequest) {
   const { video } = context;
   const jobs: Job[] = [];
   const directFiles: DirectFile[] = [];
-  const subtitlePostArgs = selectProcessorArgs(options, ["ffmpeg", "ffmpeg_o", "subtitlesconvertor"]);
+  const subtitlePostArgs = selectProcessorArgs({
+    options,
+    names: ["ffmpeg", "ffmpeg_o", "subtitlesconvertor"]
+  });
   const shouldWriteSubs = options.isWriteSubs || options.isWriteAutoSubs;
   for (const track of shouldWriteSubs ? tracks : []) {
-    const saveAs = buildSavePath(options, "subtitle", fields, `${track.languageCode}.${options.subFormat}`);
+    const saveAs = buildSavePath({
+      options,
+      type: "subtitle",
+      fields,
+      extension: `${track.languageCode}.${options.subFormat}`
+    });
     if (options.subFormat === "vtt") {
-      directFiles.push({ saveAs, ...captionSource(track) });
+      directFiles.push({
+        saveAs,
+        ...captionSource(track)
+      });
       continue;
     }
 
-    const input = { name: `captions-${track.languageCode}.vtt`, ...captionSource(track) };
+    const input = {
+      name: `captions-${track.languageCode}.vtt`,
+      ...captionSource(track)
+    };
     const outputFile = `${OUTPUT_BASENAME}.${options.subFormat}`;
-    jobs.push({ label: saveAs, inputs: [input], args: ["-i", input.name, ...subtitlePostArgs, outputFile], outputFile, saveAs });
+    jobs.push({
+      label: saveAs,
+      inputs: [input],
+      args: ["-i", input.name, ...subtitlePostArgs, outputFile],
+      outputFile,
+      saveAs
+    });
   }
 
-  const thumbnails = options.isWriteAllThumbnails ? video.thumbnails.filter(thumbnail => JPEG_PATTERN.test(thumbnail.url)) : [pickBestJpeg(video.thumbnails)];
+  const thumbnails = options.isWriteAllThumbnails
+    ? video.thumbnails.filter(thumbnail => JPEG_PATTERN.test(thumbnail.url))
+    : [pickBestJpeg(video.thumbnails)];
   const shouldWriteThumbnails = options.isWriteThumbnail || options.isWriteAllThumbnails;
   const thumbnailTargetExtension = options.convertThumbnails ?? "jpg";
   for (const [index, thumbnail] of (shouldWriteThumbnails ? thumbnails : []).entries()) {
@@ -345,48 +548,132 @@ function buildCompanionFiles(options: YtDlpOptions, context: VideoContext, field
     }
 
     const suffix = options.isWriteAllThumbnails ? `${index}.` : "";
-    const saveAs = buildSavePath(options, "thumbnail", fields, `${suffix}${thumbnailTargetExtension}`);
+    const saveAs = buildSavePath({
+      options,
+      type: "thumbnail",
+      fields,
+      extension: `${suffix}${thumbnailTargetExtension}`
+    });
     if (thumbnailTargetExtension === "jpg" || thumbnailTargetExtension === "jpeg") {
-      directFiles.push({ saveAs, url: thumbnail.url });
+      directFiles.push({
+        saveAs,
+        url: thumbnail.url
+      });
       continue;
     }
 
-    const input = { name: THUMBNAIL_INPUT, url: thumbnail.url };
+    const input = {
+      name: THUMBNAIL_INPUT,
+      url: thumbnail.url
+    };
     const outputFile = `${OUTPUT_BASENAME}.${thumbnailTargetExtension}`;
-    const thumbnailArgs = selectProcessorArgs(options, ["ffmpeg", "ffmpeg_o", "thumbnailsconvertor"]);
-    jobs.push({ label: saveAs, inputs: [input], args: ["-i", input.name, ...thumbnailArgs, outputFile], outputFile, saveAs });
+    const thumbnailArgs = selectProcessorArgs({
+      options,
+      names: ["ffmpeg", "ffmpeg_o", "thumbnailsconvertor"]
+    });
+    jobs.push({
+      label: saveAs,
+      inputs: [input],
+      args: ["-i", input.name, ...thumbnailArgs, outputFile],
+      outputFile,
+      saveAs
+    });
   }
 
   if (options.isWriteDescription) {
-    directFiles.push({ saveAs: buildSavePath(options, "description", fields, "description"), text: video.description });
+    directFiles.push({
+      saveAs: buildSavePath({
+        options,
+        type: "description",
+        fields,
+        extension: "description"
+      }),
+      text: video.description
+    });
   }
 
   if (options.isWriteInfoJson) {
-    directFiles.push({ saveAs: buildSavePath(options, "infojson", fields, "info.json"), text: JSON.stringify(buildInfoObject(fields, video), null, 2) });
+    directFiles.push({
+      saveAs: buildSavePath({
+        options,
+        type: "infojson",
+        fields,
+        extension: "info.json"
+      }),
+      text: JSON.stringify(
+        buildInfoObject({
+          fields,
+          video
+        }), null, 2
+      )
+    });
   }
 
   const url = String(fields.webpage_url);
+  const weblocLines = [
+    "<?xml version=\"1.0\" encoding=\"UTF-8\"?>",
+    "<plist version=\"1.0\">",
+    "<dict>",
+    "<key>URL</key>",
+    `<string>${url}</string>`,
+    "</dict>",
+    "</plist>"
+  ];
   const linkTemplates: Record<string, string> = {
     url: `[InternetShortcut]\nURL=${url}\n`,
-    webloc: `<?xml version="1.0" encoding="UTF-8"?>\n<plist version="1.0">\n<dict>\n<key>URL</key>\n<string>${url}</string>\n</dict>\n</plist>\n`,
+    webloc: `${weblocLines.join("\n")}\n`,
     desktop: `[Desktop Entry]\nEncoding=UTF-8\nName=${video.title}\nType=Link\nURL=${url}\nIcon=text-html\n`
   };
   for (const kind of options.linkKinds) {
-    directFiles.push({ saveAs: buildSavePath(options, "link", fields, kind), text: linkTemplates[kind] });
+    directFiles.push({
+      saveAs: buildSavePath({
+        options,
+        type: "link",
+        fields,
+        extension: kind
+      }),
+      text: linkTemplates[kind]
+    });
   }
 
-  return { jobs, directFiles };
+  return {
+    jobs,
+    directFiles
+  };
 }
 
-function buildInfoObject(fields: TemplateFields, video: ResolvedVideo) {
+function buildInfoObject({ fields, video }: FieldsVideo) {
   return {
     ...fields,
     formats: video.formats.map(format => {
       const described = describeFormat(format);
-      return { format_id: described.format_id, ext: described.ext, resolution: described.resolution, fps: described.fps, vcodec: described.vcodec, acodec: described.acodec, tbr: described.tbr, filesize: described.filesize, language: described.language, url: format.url };
+      return {
+        format_id: described.format_id,
+        ext: described.ext,
+        resolution: described.resolution,
+        fps: described.fps,
+        vcodec: described.vcodec,
+        acodec: described.acodec,
+        tbr: described.tbr,
+        filesize: described.filesize,
+        language: described.language,
+        url: format.url
+      };
     }),
-    subtitles: Object.fromEntries(video.captions.filter(track => !track.isAutoGenerated).map(track => [track.languageCode, [{ ext: "vtt", url: track.url, name: track.label }]])),
-    automatic_captions: Object.fromEntries(video.captions.filter(track => track.isAutoGenerated).map(track => [track.languageCode, [{ ext: "vtt", url: track.url, name: track.label }]])),
+    subtitles: Object.fromEntries(
+      video.captions.filter(track => !track.isAutoGenerated).map(track => [track.languageCode, [{
+        ext: "vtt",
+        url: track.url,
+        name: track.label
+      }]])
+    ),
+    automatic_captions: Object.fromEntries(
+      video.captions.filter(track => track.isAutoGenerated).map(track => [track.languageCode, [{
+        ext: "vtt",
+        url: track.url,
+        name: track.label
+      }]])
+    ),
     thumbnails: video.thumbnails
   };
 }
@@ -399,34 +686,48 @@ function listFormats(video: ResolvedVideo) {
   const rows = video.formats.map(format => {
     const fields = describeFormat(format);
     const size = fields.filesize ? formatByteSize(fields.filesize) : "~";
-    return [fields.format_id, fields.ext, fields.resolution, fields.fps, size, `${Math.round(fields.tbr)}k`, fields.vcodec, fields.acodec, fields.language];
+    const resolution = [fields.format_id, fields.ext, fields.resolution, fields.fps, size];
+    return [...resolution, `${Math.round(fields.tbr)}k`, fields.vcodec, fields.acodec, fields.language];
   });
-  return formatTable([["ID", "EXT", "RESOLUTION", "FPS", "SIZE", "TBR", "VCODEC", "ACODEC", "LANG"], ...rows]);
+  const header = ["ID", "EXT", "RESOLUTION", "FPS", "SIZE", "TBR", "VCODEC", "ACODEC", "LANG"];
+  return formatTable([header, ...rows]);
 }
 
 function listSubs(video: ResolvedVideo) {
-  return formatTable([["LANGUAGE", "NAME", "KIND"], ...video.captions.map(track => [track.languageCode, track.label, track.isAutoGenerated ? "automatic" : "manual"])]);
+  const rows = video.captions.map(track => [track.languageCode, track.label, track.isAutoGenerated ? "automatic" : "manual"]);
+  return formatTable([["LANGUAGE", "NAME", "KIND"], ...rows]);
 }
 
 function listThumbnails(video: ResolvedVideo) {
-  return formatTable([["ID", "WIDTH", "HEIGHT", "URL"], ...video.thumbnails.map((thumbnail, index) => [index, thumbnail.width, thumbnail.height, thumbnail.url])]);
+  const rows = video.thumbnails.map((thumbnail, index) => [index, thumbnail.width, thumbnail.height, thumbnail.url]);
+  return formatTable([["ID", "WIDTH", "HEIGHT", "URL"], ...rows]);
 }
 
-function rejectionReason(options: YtDlpOptions, fields: TemplateFields, now: Date) {
+function rejectionReason({ options, fields, now }: RejectionRequest) {
   const uploadDate = typeof fields.upload_date === "string" ? fields.upload_date : undefined;
   const views = typeof fields.view_count === "number" ? fields.view_count : undefined;
+  function dateOf(text: string) {
+    return parseDateSpec({
+      text,
+      now
+    });
+  }
+
   const checks: [boolean, string][] = [
-    [!matchesAnyFilter(fields, options.matchFilters), "doesn't match --match-filters"],
-    [Boolean(options.dateExact && uploadDate !== parseDateSpec(options.dateExact, now)), "isn't from the --date day"],
-    [Boolean(options.dateBefore && uploadDate && uploadDate > parseDateSpec(options.dateBefore, now)), "is newer than --datebefore"],
-    [Boolean(options.dateAfter && uploadDate && uploadDate < parseDateSpec(options.dateAfter, now)), "is older than --dateafter"],
+    [!matchesAnyFilter({
+      fields,
+      expressions: options.matchFilters
+    }), "doesn't match --match-filters"],
+    [Boolean(options.dateExact && uploadDate !== dateOf(options.dateExact)), "isn't from the --date day"],
+    [Boolean(options.dateBefore && uploadDate && uploadDate > dateOf(options.dateBefore)), "is newer than --datebefore"],
+    [Boolean(options.dateAfter && uploadDate && uploadDate < dateOf(options.dateAfter)), "is older than --dateafter"],
     [options.minViews !== undefined && views !== undefined && views < options.minViews, "has fewer views than --min-views"],
     [options.maxViews !== undefined && views !== undefined && views > options.maxViews, "has more views than --max-views"]
   ];
   return checks.find(([isRejected]) => isRejected)?.[1];
 }
 
-function sizeRejection(options: YtDlpOptions, picks: FormatFields[]) {
+function sizeRejection({ options, picks }: OptionsPicks) {
   const total = picks.reduce((sum, pick) => sum + (pick.filesize ?? 0), 0);
   if (!total) {
     return undefined;
@@ -440,24 +741,50 @@ function sizeRejection(options: YtDlpOptions, picks: FormatFields[]) {
 }
 
 function isSimulation(options: YtDlpOptions) {
-  const impliesSimulation = options.prints.length > 0 || options.isDumpJson || options.isListFormats || options.isListSubs || options.isListThumbnails;
+  const isListing = options.isListFormats || options.isListSubs || options.isListThumbnails;
+  const impliesSimulation = options.prints.length > 0 || options.isDumpJson || isListing;
   return options.isSimulate || (impliesSimulation && !options.isNoSimulate);
 }
 
-function buildPrintLines(options: YtDlpOptions, fields: TemplateFields, video: ResolvedVideo) {
-  const dumped = options.isDumpJson ? [JSON.stringify(buildInfoObject(fields, video))] : [];
-  return [...dumped, ...options.prints.map(template => renderTemplate(template, fields))];
+function buildPrintLines({ options, fields, video }: OptionsFieldsVideo) {
+  const dumped = options.isDumpJson ? [JSON.stringify(
+    buildInfoObject({
+      fields,
+      video
+    })
+  )] : [];
+  return [...dumped, ...options.prints.map(template => renderTemplate({
+    template,
+    fields
+  }))];
 }
 
-export function planVideo(options: YtDlpOptions, context: VideoContext): VideoPlan {
+export function planVideo({ options, context }: PlanRequest): VideoPlan {
   const { video } = context;
   const now = context.now ?? new Date();
-  const fields = buildVideoFields(video, context.playlist, context.autonumber);
-  applyMetadataRules(fields, options);
+  const fields = buildVideoFields({
+    video,
+    playlist: context.playlist,
+    autonumber: context.autonumber
+  });
+  applyMetadataRules({
+    fields,
+    options
+  });
   const printed: string[] = [];
-  const rejection = rejectionReason(options, fields, now);
+  const rejection = rejectionReason({
+    options,
+    fields,
+    now
+  });
   if (rejection) {
-    return { jobs: [], directFiles: [], printed, skipReason: `"${video.title}" ${rejection}`, isBreak: options.isBreakOnReject };
+    return {
+      jobs: [],
+      directFiles: [],
+      printed,
+      skipReason: `"${video.title}" ${rejection}`,
+      isBreak: options.isBreakOnReject
+    };
   }
 
   if (options.isListFormats) {
@@ -472,41 +799,122 @@ export function planVideo(options: YtDlpOptions, context: VideoContext): VideoPl
     printed.push(...listThumbnails(video));
   }
 
-  const sortKeys = options.isPreferFree ? ["free", ...(options.formatSort.length ? options.formatSort : DEFAULT_SORT_KEYS)] : options.formatSort;
+  const baseSortKeys = options.formatSort.length ? options.formatSort : DEFAULT_SORT_KEYS;
+  const sortKeys = options.isPreferFree ? ["free", ...baseSortKeys] : options.formatSort;
   const defaultFormat = options.isExtractAudio ? DEFAULT_AUDIO_ONLY_FORMAT : DEFAULT_FORMAT;
   const isFormatNeeded = !options.isSkipDownload || options.prints.length > 0 || options.isDumpJson;
   const isListingOnly = options.isListFormats || options.isListSubs || options.isListThumbnails;
-  const formatSets = isFormatNeeded && !isListingOnly ? selectFormatSets(options.format ?? defaultFormat, video.formats, sortKeys) : [];
+  const formatSets = isFormatNeeded && !isListingOnly
+    ? selectFormatSets({
+      selector: options.format ?? defaultFormat,
+      formats: video.formats,
+      sortKeys
+    })
+    : [];
   const firstSet = formatSets[0] ?? [];
-  const printFields: TemplateFields = { ...fields, ...buildFormatFields(firstSet) };
-  printFields._filename = firstSet.length ? buildSavePath(options, DEFAULT_OUTPUT_KEY, printFields, pickContainerForPrint(options, firstSet)) : undefined;
-  printed.push(...buildPrintLines(options, printFields, video));
+  const printFields: TemplateFields = {
+    ...fields,
+    ...buildFormatFields(firstSet)
+  };
+  printFields._filename = firstSet.length
+    ? buildSavePath({
+      options,
+      type: DEFAULT_OUTPUT_KEY,
+      fields: printFields,
+      extension: pickContainerForPrint({
+        options,
+        picks: firstSet
+      })
+    })
+    : undefined;
+  printed.push(
+    ...buildPrintLines({
+      options,
+      fields: printFields,
+      video
+    })
+  );
 
   if (isSimulation(options)) {
-    return { jobs: [], directFiles: [], printed };
+    return {
+      jobs: [],
+      directFiles: [],
+      printed
+    };
   }
 
   const notes: string[] = [];
-  const tracks = selectCaptionTracks(options, video);
+  const tracks = selectCaptionTracks({
+    options,
+    video
+  });
   const wantsSubs = options.isWriteSubs || options.isWriteAutoSubs || options.isEmbedSubs;
   if (wantsSubs && !tracks.length) {
     notes.push("No captions match --sub-langs");
   }
 
-  const companions = buildCompanionFiles(options, context, printFields, tracks);
+  const companions = buildCompanionFiles({
+    options,
+    context,
+    fields: printFields,
+    tracks
+  });
   const jobs: Job[] = [...companions.jobs];
   if (!options.isSkipDownload) {
     for (const picks of formatSets) {
-      const sizeReason = sizeRejection(options, picks);
+      const sizeReason = sizeRejection({
+        options,
+        picks
+      });
       if (sizeReason) {
-        return { jobs: [], directFiles: [], printed, skipReason: `"${video.title}" ${sizeReason}` };
+        return {
+          jobs: [],
+          directFiles: [],
+          printed,
+          skipReason: `"${video.title}" ${sizeReason}`
+        };
       }
 
-      const mediaFields: TemplateFields = { ...fields, ...buildFormatFields(picks) };
-      const mediaContext: MediaContext = { options, context, fields: mediaFields, picks, tracks, notes };
-      const sections = resolveSections(options, context.chapters).map((section, index): SectionContext => ({ ...section, number: index + 1 }));
-      const wholeJobs = sections.length ? sections.map(section => buildMediaJob(mediaContext, section, false)) : [buildMediaJob(mediaContext, undefined, false)];
-      const chapterJobs = options.isSplitChapters ? context.chapters.map((chapter, index) => buildMediaJob(mediaContext, { ...chapter, number: index + 1 }, true)) : [];
+      const mediaFields: TemplateFields = {
+        ...fields,
+        ...buildFormatFields(picks)
+      };
+      const mediaContext: MediaContext = {
+        options,
+        context,
+        fields: mediaFields,
+        picks,
+        tracks,
+        notes
+      };
+      const sections = resolveSections({
+        options,
+        chapters: context.chapters
+      }).map((section, index): SectionContext => ({
+        ...section,
+        number: index + 1
+      }));
+      const wholeJobs = sections.length
+        ? sections.map(section => buildMediaJob({
+          media: mediaContext,
+          section,
+          isChapterSplit: false
+        }))
+        : [buildMediaJob({
+          media: mediaContext,
+          section: undefined,
+          isChapterSplit: false
+        })];
+      const chapterJobs = options.isSplitChapters
+        ? context.chapters.map((chapter, index) => buildMediaJob({
+          media: mediaContext,
+          section: {
+            ...chapter,
+            number: index + 1
+          },
+          isChapterSplit: true
+        }))
+        : [];
       jobs.unshift(...wholeJobs, ...chapterJobs);
     }
   }
@@ -515,10 +923,14 @@ export function planVideo(options: YtDlpOptions, context: VideoContext): VideoPl
     throw new Error(notes[0] ?? "Nothing to do: add --write-subs or drop --skip-download");
   }
 
-  return { jobs, directFiles: companions.directFiles, printed: [...printed, ...notes] };
+  return {
+    jobs,
+    directFiles: companions.directFiles,
+    printed: [...printed, ...notes]
+  };
 }
 
-function pickAudioContainer(options: YtDlpOptions, picks: FormatFields[]) {
+function pickAudioContainer({ options, picks }: OptionsPicks) {
   if (options.audioFormat !== BEST_AUDIO_FORMAT) {
     return options.audioFormat;
   }
@@ -526,6 +938,12 @@ function pickAudioContainer(options: YtDlpOptions, picks: FormatFields[]) {
   return picks.find(pick => pick.hasAudio)?.ext ?? "m4a";
 }
 
-function pickContainerForPrint(options: YtDlpOptions, picks: FormatFields[]) {
-  return options.isExtractAudio ? pickAudioContainer(options, picks) : pickContainer(options, picks);
+function pickContainerForPrint({ options, picks }: OptionsPicks) {
+  return options.isExtractAudio ? pickAudioContainer({
+    options,
+    picks
+  }) : pickContainer({
+    options,
+    picks
+  });
 }

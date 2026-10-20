@@ -1,5 +1,5 @@
-import { z } from "zod";
 import { tokenize } from "@/lib/command";
+import { z } from "zod";
 
 const YTDLP_PROGRAM_PATTERN = /^yt-dlp(?:\.exe)?$/i;
 const SECTION_TIME_PATTERN = /^\*(.*)-(.*)$/;
@@ -35,7 +35,13 @@ const audioQualitySchema = z.string().regex(AUDIO_QUALITY_PATTERN, "use 0-10 or 
 const countSchema = z.coerce.number().int().nonnegative();
 const positiveCountSchema = z.coerce.number().int().positive();
 
-function parseOptionValue<Schema extends z.ZodType>(flag: string, schema: Schema, value: string): z.output<Schema> {
+type ParseRequest<Schema extends z.ZodType> = {
+  flag: string;
+  schema: Schema;
+  value: string;
+};
+
+function parseOptionValue<Schema extends z.ZodType>({ flag, schema, value }: ParseRequest<Schema>): z.output<Schema> {
   const result = schema.safeParse(value);
   if (!result.success) {
     throw new Error(`${flag} ${value}: ${result.error.issues[0]?.message ?? "invalid value"}`);
@@ -45,9 +51,17 @@ function parseOptionValue<Schema extends z.ZodType>(flag: string, schema: Schema
 }
 const DEFAULT_PROCESSOR = "ffmpeg";
 
-export type Section = { start?: number; end?: number; chapterPattern?: string };
+export type Section = {
+  start?: number;
+  end?: number;
+  chapterPattern?: string;
+};
 
-export type MetadataReplacement = { fields: string[]; pattern: string; replacement: string };
+export type MetadataReplacement = {
+  fields: string[];
+  pattern: string;
+  replacement: string;
+};
 
 export type YtDlpOptions = {
   urls: string[];
@@ -112,24 +126,67 @@ export type YtDlpOptions = {
   ignoredFlags: string[];
 };
 
-type Applier = (options: YtDlpOptions, values: string[], flag: string) => void;
-type OptionDefinition = { flags: string[]; arity: number; apply: Applier; isNegatable: boolean };
+type ApplierRequest = {
+  options: YtDlpOptions;
+  values: string[];
+  flag: string;
+};
+type Applier = (request: ApplierRequest) => void;
+type OptionDefinition = {
+  flags: string[];
+  arity: number;
+  apply: Applier;
+  isNegatable: boolean;
+};
+type OptionsValue = {
+  options: YtDlpOptions;
+  value: string;
+};
+type ValueRequest = OptionsValue & { flag: string };
+type SwitchRequest = {
+  options: YtDlpOptions;
+  isOn: boolean;
+};
+type ValueDefinition = {
+  flags: string[];
+  apply: (request: ValueRequest) => void;
+};
+type SwitchDefinition = {
+  flags: string[];
+  apply: (request: SwitchRequest) => void;
+};
 
 const definitions = new Map<string, OptionDefinition>();
 
-function register(flags: string[], arity: number, isNegatable: boolean, apply: Applier) {
-  const definition = { flags, arity, apply, isNegatable };
-  for (const flag of flags) {
+function register(definition: OptionDefinition) {
+  for (const flag of definition.flags) {
     definitions.set(flag, definition);
   }
 }
 
-function valueOption(flags: string[], apply: (options: YtDlpOptions, value: string, flag: string) => void) {
-  register(flags, 1, false, (options, [value], flag) => apply(options, value!, flag));
+function valueOption({ flags, apply }: ValueDefinition) {
+  register({
+    flags,
+    arity: 1,
+    isNegatable: false,
+    apply: ({ options, values: [value], flag }) => apply({
+      options,
+      value: value!,
+      flag
+    })
+  });
 }
 
-function switchOption(flags: string[], apply: (options: YtDlpOptions, isOn: boolean) => void) {
-  register(flags, 0, true, (options, [marker]) => apply(options, marker !== "off"));
+function switchOption({ flags, apply }: SwitchDefinition) {
+  register({
+    flags,
+    arity: 0,
+    isNegatable: true,
+    apply: ({ options, values: [marker] }) => apply({
+      options,
+      isOn: marker !== "off"
+    })
+  });
 }
 
 function splitList(value: string) {
@@ -151,7 +208,9 @@ function parseTimestamp(text: string) {
     return undefined;
   }
 
-  const seconds = trimmed.split(TIMESTAMP_SEPARATOR).reduce((total, part) => total * SECONDS_PER_STEP + Number(part), 0);
+  const seconds = trimmed
+    .split(TIMESTAMP_SEPARATOR)
+    .reduce((total, part) => total * SECONDS_PER_STEP + Number(part), 0);
   if (Number.isNaN(seconds)) {
     throw new Error(`Bad time in --download-sections: ${text}`);
   }
@@ -165,19 +224,22 @@ function parseSection(value: string): Section {
     return { chapterPattern: value };
   }
 
-  return { start: parseTimestamp(match[1]!), end: parseTimestamp(match[2]!) };
+  return {
+    start: parseTimestamp(match[1]!),
+    end: parseTimestamp(match[2]!)
+  };
 }
 
-function parsePrint(options: YtDlpOptions, value: string) {
+function parsePrint({ options, value }: OptionsValue) {
   const template = value.replace(/^\w+:/, "");
   options.prints.push(template.includes("%(") ? template : `%(${template})s`);
 }
 
 function addPrintField(field: string) {
-  return (options: YtDlpOptions) => options.prints.push(`%(${field})s`);
+  return ({ options }: ApplierRequest) => options.prints.push(`%(${field})s`);
 }
 
-function parseOutput(options: YtDlpOptions, value: string) {
+function parseOutput({ options, value }: OptionsValue) {
   const typed = value.match(OUTPUT_TYPE_PATTERN);
   if (typed) {
     options.outputs[typed[1]!] = typed[2]!;
@@ -187,7 +249,7 @@ function parseOutput(options: YtDlpOptions, value: string) {
   options.outputs[DEFAULT_OUTPUT_KEY] = value;
 }
 
-function parsePath(options: YtDlpOptions, value: string) {
+function parsePath({ options, value }: OptionsValue) {
   const typed = value.match(PATH_TYPE_PATTERN);
   if (typed) {
     options.paths[typed[1]!] = typed[2]!;
@@ -197,7 +259,7 @@ function parsePath(options: YtDlpOptions, value: string) {
   options.paths.home = value;
 }
 
-function parsePostprocessorArgs(options: YtDlpOptions, value: string) {
+function parsePostprocessorArgs({ options, value }: OptionsValue) {
   const match = value.match(POSTPROCESSOR_PATTERN);
   const name = (match?.[1] ?? DEFAULT_PROCESSOR).toLowerCase();
   const args = tokenize(match?.[2] ?? value);
@@ -208,199 +270,469 @@ function toRegexSource(pattern: string) {
   return pattern.replace(PYTHON_NAMED_GROUP, "(?<");
 }
 
-valueOption(["-f", "--format"], (options, value) => {
-  options.format = value;
+valueOption({
+  flags: ["-f", "--format"],
+  apply({ options, value }) {
+    options.format = value;
+  }
 });
-valueOption(["-S", "--format-sort"], (options, value) => {
-  options.formatSort = splitList(value);
+valueOption({
+  flags: ["-S", "--format-sort"],
+  apply({ options, value }) {
+    options.formatSort = splitList(value);
+  }
 });
-switchOption(["--prefer-free-formats"], (options, isOn) => {
-  options.isPreferFree = isOn;
+switchOption({
+  flags: ["--prefer-free-formats"],
+  apply({ options, isOn }) {
+    options.isPreferFree = isOn;
+  }
 });
-switchOption(["-x", "--extract-audio"], (options, isOn) => {
-  options.isExtractAudio = isOn;
+switchOption({
+  flags: ["-x", "--extract-audio"],
+  apply({ options, isOn }) {
+    options.isExtractAudio = isOn;
+  }
 });
-valueOption(["--audio-format"], (options, value, flag) => {
-  options.audioFormat = parseOptionValue(flag, audioFormatSchema, value);
+valueOption({
+  flags: ["--audio-format"],
+  apply({ options, value, flag }) {
+    options.audioFormat = parseOptionValue({
+      flag,
+      schema: audioFormatSchema,
+      value
+    });
+  }
 });
-valueOption(["--audio-quality"], (options, value, flag) => {
-  options.audioQuality = parseOptionValue(flag, audioQualitySchema, value);
+valueOption({
+  flags: ["--audio-quality"],
+  apply({ options, value, flag }) {
+    options.audioQuality = parseOptionValue({
+      flag,
+      schema: audioQualitySchema,
+      value
+    });
+  }
 });
-valueOption(["--merge-output-format", "--remux-video"], (options, value, flag) => {
-  options.mergeOutputFormat = parseOptionValue(flag, containerSchema, parseConversionTarget(value));
+valueOption({
+  flags: ["--merge-output-format", "--remux-video"],
+  apply({ options, value, flag }) {
+    options.mergeOutputFormat = parseOptionValue({
+      flag,
+      schema: containerSchema,
+      value: parseConversionTarget(value)
+    });
+  }
 });
-valueOption(["--recode-video"], (options, value, flag) => {
-  options.recodeVideo = parseOptionValue(flag, containerSchema, parseConversionTarget(value));
+valueOption({
+  flags: ["--recode-video"],
+  apply({ options, value, flag }) {
+    options.recodeVideo = parseOptionValue({
+      flag,
+      schema: containerSchema,
+      value: parseConversionTarget(value)
+    });
+  }
 });
-valueOption(["-o", "--output"], parseOutput);
-valueOption(["-P", "--paths"], parsePath);
-switchOption(["--restrict-filenames"], (options, isOn) => {
-  options.isRestrictFilenames = isOn;
+valueOption({
+  flags: ["-o", "--output"],
+  apply: parseOutput
 });
-valueOption(["--trim-filenames"], (options, value, flag) => {
-  options.trimFilenames = parseOptionValue(flag, positiveCountSchema, value);
+valueOption({
+  flags: ["-P", "--paths"],
+  apply: parsePath
 });
-switchOption(["--write-subs", "--write-sub"], (options, isOn) => {
-  options.isWriteSubs = isOn;
+switchOption({
+  flags: ["--restrict-filenames"],
+  apply({ options, isOn }) {
+    options.isRestrictFilenames = isOn;
+  }
 });
-switchOption(["--write-auto-subs", "--write-automatic-subs"], (options, isOn) => {
-  options.isWriteAutoSubs = isOn;
+valueOption({
+  flags: ["--trim-filenames"],
+  apply({ options, value, flag }) {
+    options.trimFilenames = parseOptionValue({
+      flag,
+      schema: positiveCountSchema,
+      value
+    });
+  }
 });
-switchOption(["--all-subs"], (options, isOn) => {
-  options.isWriteSubs = isOn;
-  options.subLangs = [ALL];
+switchOption({
+  flags: ["--write-subs", "--write-sub"],
+  apply({ options, isOn }) {
+    options.isWriteSubs = isOn;
+  }
 });
-valueOption(["--sub-langs", "--sub-lang"], (options, value) => {
-  options.subLangs = splitList(value);
+switchOption({
+  flags: ["--write-auto-subs", "--write-automatic-subs"],
+  apply({ options, isOn }) {
+    options.isWriteAutoSubs = isOn;
+  }
 });
-valueOption(["--sub-format"], (options, value) => {
-  options.subFormat = firstOfAlternatives(value);
+switchOption({
+  flags: ["--all-subs"],
+  apply({ options, isOn }) {
+    options.isWriteSubs = isOn;
+    options.subLangs = [ALL];
+  }
 });
-valueOption(["--convert-subs", "--convert-sub"], (options, value, flag) => {
-  options.subFormat = parseOptionValue(flag, subtitleFormatSchema, value);
+valueOption({
+  flags: ["--sub-langs", "--sub-lang"],
+  apply({ options, value }) {
+    options.subLangs = splitList(value);
+  }
 });
-switchOption(["--list-subs"], (options, isOn) => {
-  options.isListSubs = isOn;
+valueOption({
+  flags: ["--sub-format"],
+  apply({ options, value }) {
+    options.subFormat = firstOfAlternatives(value);
+  }
 });
-switchOption(["--embed-subs"], (options, isOn) => {
-  options.isEmbedSubs = isOn;
+valueOption({
+  flags: ["--convert-subs", "--convert-sub"],
+  apply({ options, value, flag }) {
+    options.subFormat = parseOptionValue({
+      flag,
+      schema: subtitleFormatSchema,
+      value
+    });
+  }
 });
-switchOption(["--embed-thumbnail"], (options, isOn) => {
-  options.isEmbedThumbnail = isOn;
+switchOption({
+  flags: ["--list-subs"],
+  apply({ options, isOn }) {
+    options.isListSubs = isOn;
+  }
 });
-switchOption(["--embed-metadata", "--add-metadata"], (options, isOn) => {
-  options.isEmbedMetadata = isOn;
+switchOption({
+  flags: ["--embed-subs"],
+  apply({ options, isOn }) {
+    options.isEmbedSubs = isOn;
+  }
 });
-switchOption(["--embed-chapters", "--add-chapters"], (options, isOn) => {
-  options.isEmbedChapters = isOn;
+switchOption({
+  flags: ["--embed-thumbnail"],
+  apply({ options, isOn }) {
+    options.isEmbedThumbnail = isOn;
+  }
 });
-switchOption(["--write-thumbnail"], (options, isOn) => {
-  options.isWriteThumbnail = isOn;
+switchOption({
+  flags: ["--embed-metadata", "--add-metadata"],
+  apply({ options, isOn }) {
+    options.isEmbedMetadata = isOn;
+  }
 });
-switchOption(["--write-all-thumbnails"], (options, isOn) => {
-  options.isWriteAllThumbnails = isOn;
+switchOption({
+  flags: ["--embed-chapters", "--add-chapters"],
+  apply({ options, isOn }) {
+    options.isEmbedChapters = isOn;
+  }
 });
-valueOption(["--convert-thumbnails"], (options, value, flag) => {
-  options.convertThumbnails = parseOptionValue(flag, thumbnailFormatSchema, parseConversionTarget(value));
+switchOption({
+  flags: ["--write-thumbnail"],
+  apply({ options, isOn }) {
+    options.isWriteThumbnail = isOn;
+  }
 });
-switchOption(["--list-thumbnails"], (options, isOn) => {
-  options.isListThumbnails = isOn;
+switchOption({
+  flags: ["--write-all-thumbnails"],
+  apply({ options, isOn }) {
+    options.isWriteAllThumbnails = isOn;
+  }
 });
-switchOption(["--write-description"], (options, isOn) => {
-  options.isWriteDescription = isOn;
+valueOption({
+  flags: ["--convert-thumbnails"],
+  apply({ options, value, flag }) {
+    options.convertThumbnails = parseOptionValue({
+      flag,
+      schema: thumbnailFormatSchema,
+      value: parseConversionTarget(value)
+    });
+  }
 });
-switchOption(["--write-info-json"], (options, isOn) => {
-  options.isWriteInfoJson = isOn;
+switchOption({
+  flags: ["--list-thumbnails"],
+  apply({ options, isOn }) {
+    options.isListThumbnails = isOn;
+  }
 });
-for (const [flag, kind] of [["--write-link", "url"], ["--write-url-link", "url"], ["--write-webloc-link", "webloc"], ["--write-desktop-link", "desktop"]] as const) {
-  switchOption([flag], (options, isOn) => {
-    options.linkKinds = isOn ? [...options.linkKinds, kind] : options.linkKinds.filter(existing => existing !== kind);
+switchOption({
+  flags: ["--write-description"],
+  apply({ options, isOn }) {
+    options.isWriteDescription = isOn;
+  }
+});
+switchOption({
+  flags: ["--write-info-json"],
+  apply({ options, isOn }) {
+    options.isWriteInfoJson = isOn;
+  }
+});
+const LINK_FLAGS = [
+  ["--write-link", "url"],
+  ["--write-url-link", "url"],
+  ["--write-webloc-link", "webloc"],
+  ["--write-desktop-link", "desktop"]
+] as const;
+for (const [flag, kind] of LINK_FLAGS) {
+  switchOption({
+    flags: [flag],
+    apply({ options, isOn }) {
+      options.linkKinds = isOn
+        ? [...options.linkKinds, kind]
+        : options.linkKinds.filter(existing => existing !== kind);
+    }
   });
 }
-switchOption(["--skip-download"], (options, isOn) => {
-  options.isSkipDownload = isOn;
+switchOption({
+  flags: ["--skip-download"],
+  apply({ options, isOn }) {
+    options.isSkipDownload = isOn;
+  }
 });
-switchOption(["-s", "--simulate"], (options, isOn) => {
-  options.isSimulate = isOn;
-  options.isNoSimulate = !isOn;
+switchOption({
+  flags: ["-s", "--simulate"],
+  apply({ options, isOn }) {
+    options.isSimulate = isOn;
+    options.isNoSimulate = !isOn;
+  }
 });
-valueOption(["--download-sections"], (options, value) => {
-  options.sections.push(parseSection(value));
+valueOption({
+  flags: ["--download-sections"],
+  apply({ options, value }) {
+    options.sections.push(parseSection(value));
+  }
 });
-switchOption(["--force-keyframes-at-cuts"], (options, isOn) => {
-  options.isForceKeyframes = isOn;
+switchOption({
+  flags: ["--force-keyframes-at-cuts"],
+  apply({ options, isOn }) {
+    options.isForceKeyframes = isOn;
+  }
 });
-switchOption(["--split-chapters"], (options, isOn) => {
-  options.isSplitChapters = isOn;
+switchOption({
+  flags: ["--split-chapters"],
+  apply({ options, isOn }) {
+    options.isSplitChapters = isOn;
+  }
 });
-switchOption(["-F", "--list-formats"], (options, isOn) => {
-  options.isListFormats = isOn;
+switchOption({
+  flags: ["-F", "--list-formats"],
+  apply({ options, isOn }) {
+    options.isListFormats = isOn;
+  }
 });
-valueOption(["--print"], parsePrint);
-switchOption(["-j", "--dump-json", "-J", "--dump-single-json"], (options, isOn) => {
-  options.isDumpJson = isOn;
+valueOption({
+  flags: ["--print"],
+  apply: parsePrint
 });
-register(["-e", "--get-title"], 0, false, addPrintField("title"));
-register(["--get-id"], 0, false, addPrintField("id"));
-register(["-g", "--get-url"], 0, false, addPrintField("url"));
-register(["--get-thumbnail"], 0, false, addPrintField("thumbnail"));
-register(["--get-description"], 0, false, addPrintField("description"));
-register(["--get-duration"], 0, false, addPrintField("duration_string"));
-register(["--get-filename"], 0, false, addPrintField("_filename"));
-register(["--get-format"], 0, false, addPrintField("format"));
-valueOption(["--match-filters", "--match-filter"], (options, value) => {
-  options.matchFilters.push(value);
+switchOption({
+  flags: ["-j", "--dump-json", "-J", "--dump-single-json"],
+  apply({ options, isOn }) {
+    options.isDumpJson = isOn;
+  }
 });
-valueOption(["--break-match-filters"], (options, value) => {
-  options.matchFilters.push(value);
-  options.isBreakOnReject = true;
+
+const PRINT_SHORTCUTS = [
+  [["-e", "--get-title"], "title"],
+  [["--get-id"], "id"],
+  [["-g", "--get-url"], "url"],
+  [["--get-thumbnail"], "thumbnail"],
+  [["--get-description"], "description"],
+  [["--get-duration"], "duration_string"],
+  [["--get-filename"], "_filename"],
+  [["--get-format"], "format"]
+] as const;
+for (const [flags, field] of PRINT_SHORTCUTS) {
+  register({
+    flags: [...flags],
+    arity: 0,
+    isNegatable: false,
+    apply: addPrintField(field)
+  });
+}
+valueOption({
+  flags: ["--match-filters", "--match-filter"],
+  apply({ options, value }) {
+    options.matchFilters.push(value);
+  }
 });
-valueOption(["--date"], (options, value) => {
-  options.dateExact = value;
+valueOption({
+  flags: ["--break-match-filters"],
+  apply({ options, value }) {
+    options.matchFilters.push(value);
+    options.isBreakOnReject = true;
+  }
 });
-valueOption(["--datebefore"], (options, value) => {
-  options.dateBefore = value;
+valueOption({
+  flags: ["--date"],
+  apply({ options, value }) {
+    options.dateExact = value;
+  }
 });
-valueOption(["--dateafter"], (options, value) => {
-  options.dateAfter = value;
+valueOption({
+  flags: ["--datebefore"],
+  apply({ options, value }) {
+    options.dateBefore = value;
+  }
 });
-valueOption(["--min-views"], (options, value, flag) => {
-  options.minViews = parseOptionValue(flag, countSchema, value);
+valueOption({
+  flags: ["--dateafter"],
+  apply({ options, value }) {
+    options.dateAfter = value;
+  }
 });
-valueOption(["--max-views"], (options, value, flag) => {
-  options.maxViews = parseOptionValue(flag, countSchema, value);
+valueOption({
+  flags: ["--min-views"],
+  apply({ options, value, flag }) {
+    options.minViews = parseOptionValue({
+      flag,
+      schema: countSchema,
+      value
+    });
+  }
 });
-valueOption(["--min-filesize"], (options, value) => {
-  options.minFilesize = value;
+valueOption({
+  flags: ["--max-views"],
+  apply({ options, value, flag }) {
+    options.maxViews = parseOptionValue({
+      flag,
+      schema: countSchema,
+      value
+    });
+  }
 });
-valueOption(["--max-filesize"], (options, value) => {
-  options.maxFilesize = value;
+valueOption({
+  flags: ["--min-filesize"],
+  apply({ options, value }) {
+    options.minFilesize = value;
+  }
 });
-switchOption(["--break-on-reject"], (options, isOn) => {
-  options.isBreakOnReject = isOn;
+valueOption({
+  flags: ["--max-filesize"],
+  apply({ options, value }) {
+    options.maxFilesize = value;
+  }
 });
-switchOption(["--no-playlist"], (options, isOn) => {
-  options.isNoPlaylist = isOn;
+switchOption({
+  flags: ["--break-on-reject"],
+  apply({ options, isOn }) {
+    options.isBreakOnReject = isOn;
+  }
 });
-switchOption(["--yes-playlist"], (options, isOn) => {
-  options.isNoPlaylist = !isOn;
+switchOption({
+  flags: ["--no-playlist"],
+  apply({ options, isOn }) {
+    options.isNoPlaylist = isOn;
+  }
 });
-valueOption(["-I", "--playlist-items"], (options, value) => {
-  options.playlistItems = value;
+switchOption({
+  flags: ["--yes-playlist"],
+  apply({ options, isOn }) {
+    options.isNoPlaylist = !isOn;
+  }
 });
-valueOption(["--playlist-start"], (options, value, flag) => {
-  options.playlistStart = parseOptionValue(flag, positiveCountSchema, value);
+valueOption({
+  flags: ["-I", "--playlist-items"],
+  apply({ options, value }) {
+    options.playlistItems = value;
+  }
 });
-valueOption(["--playlist-end"], (options, value, flag) => {
-  options.playlistEnd = parseOptionValue(flag, positiveCountSchema, value);
+valueOption({
+  flags: ["--playlist-start"],
+  apply({ options, value, flag }) {
+    options.playlistStart = parseOptionValue({
+      flag,
+      schema: positiveCountSchema,
+      value
+    });
+  }
 });
-switchOption(["--playlist-reverse"], (options, isOn) => {
-  options.isPlaylistReverse = isOn;
+valueOption({
+  flags: ["--playlist-end"],
+  apply({ options, value, flag }) {
+    options.playlistEnd = parseOptionValue({
+      flag,
+      schema: positiveCountSchema,
+      value
+    });
+  }
 });
-switchOption(["--playlist-random"], (options, isOn) => {
-  options.isPlaylistRandom = isOn;
+switchOption({
+  flags: ["--playlist-reverse"],
+  apply({ options, isOn }) {
+    options.isPlaylistReverse = isOn;
+  }
 });
-valueOption(["--max-downloads"], (options, value, flag) => {
-  options.maxDownloads = parseOptionValue(flag, countSchema, value);
+switchOption({
+  flags: ["--playlist-random"],
+  apply({ options, isOn }) {
+    options.isPlaylistRandom = isOn;
+  }
 });
-register(["--flat-playlist"], 0, false, options => {
-  options.isFlatPlaylist = true;
+valueOption({
+  flags: ["--max-downloads"],
+  apply({ options, value, flag }) {
+    options.maxDownloads = parseOptionValue({
+      flag,
+      schema: countSchema,
+      value
+    });
+  }
 });
-register(["--no-flat-playlist"], 0, false, options => {
-  options.isFlatPlaylist = false;
+register({
+  flags: ["--flat-playlist"],
+  arity: 0,
+  isNegatable: false,
+  apply({ options }) {
+    options.isFlatPlaylist = true;
+  }
 });
-register(["--abort-on-error", "--no-ignore-errors"], 0, false, options => {
-  options.isAbortOnError = true;
+register({
+  flags: ["--no-flat-playlist"],
+  arity: 0,
+  isNegatable: false,
+  apply({ options }) {
+    options.isFlatPlaylist = false;
+  }
 });
-register(["-i", "--ignore-errors", "--no-abort-on-error"], 0, false, options => {
-  options.isAbortOnError = false;
+register({
+  flags: ["--abort-on-error", "--no-ignore-errors"],
+  arity: 0,
+  isNegatable: false,
+  apply({ options }) {
+    options.isAbortOnError = true;
+  }
 });
-valueOption(["--postprocessor-args", "--ppa"], parsePostprocessorArgs);
-valueOption(["--parse-metadata"], (options, value) => {
-  options.parseMetadata.push(value);
+register({
+  flags: ["-i", "--ignore-errors", "--no-abort-on-error"],
+  arity: 0,
+  isNegatable: false,
+  apply({ options }) {
+    options.isAbortOnError = false;
+  }
 });
-register(["--replace-in-metadata"], 3, false, (options, [fields, pattern, replacement]) => {
-  options.replaceInMetadata.push({ fields: fields!.split(/[\s,]+/), pattern: toRegexSource(pattern!), replacement: replacement! });
+valueOption({
+  flags: ["--postprocessor-args", "--ppa"],
+  apply: parsePostprocessorArgs
+});
+valueOption({
+  flags: ["--parse-metadata"],
+  apply({ options, value }) {
+    options.parseMetadata.push(value);
+  }
+});
+register({
+  flags: ["--replace-in-metadata"],
+  arity: 3,
+  isNegatable: false,
+  apply({ options, values: [fields, pattern, replacement] }) {
+    options.replaceInMetadata.push({
+      fields: fields!.split(/[\s,]+/),
+      pattern: toRegexSource(pattern!),
+      replacement: replacement!
+    });
+  }
 });
 
 const IGNORED_SWITCHES = [
@@ -449,7 +781,9 @@ function createDefaultOptions(): YtDlpOptions {
     isPreferFree: false,
     isExtractAudio: false,
     audioFormat: BEST,
-    outputs: { [DEFAULT_OUTPUT_KEY]: DEFAULT_OUTPUT_TEMPLATE },
+    outputs: {
+      [DEFAULT_OUTPUT_KEY]: DEFAULT_OUTPUT_TEMPLATE
+    },
     paths: {},
     isRestrictFilenames: false,
     isWriteSubs: false,
@@ -496,7 +830,10 @@ function splitInlineValue(token: string) {
     return { flag: token };
   }
 
-  return { flag: token.slice(0, separatorIndex), inlineValue: token.slice(separatorIndex + 1) };
+  return {
+    flag: token.slice(0, separatorIndex),
+    inlineValue: token.slice(separatorIndex + 1)
+  };
 }
 
 function expandShortFlags(token: string) {
@@ -522,7 +859,10 @@ function splitAttachedValue(token: string) {
 function resolveDefinition(flag: string) {
   const direct = definitions.get(flag);
   if (direct) {
-    return { definition: direct, isNegated: false };
+    return {
+      definition: direct,
+      isNegated: false
+    };
   }
 
   if (!flag.startsWith(NEGATION_PREFIX)) {
@@ -530,10 +870,20 @@ function resolveDefinition(flag: string) {
   }
 
   const positive = definitions.get(`${LONG_FLAG_PREFIX}${flag.slice(NEGATION_PREFIX.length)}`);
-  return positive?.isNegatable ? { definition: positive, isNegated: true } : undefined;
+  return positive?.isNegatable ? {
+    definition: positive,
+    isNegated: true
+  } : undefined;
 }
 
-function applyFlag(options: YtDlpOptions, rawFlag: string, tokens: string[], inlineValue?: string) {
+type FlagRequest = {
+  options: YtDlpOptions;
+  rawFlag: string;
+  tokens: string[];
+  inlineValue?: string;
+};
+
+function applyFlag({ options, rawFlag, tokens, inlineValue }: FlagRequest) {
   const resolved = resolveDefinition(rawFlag);
   if (resolved) {
     const { definition, isNegated } = resolved;
@@ -542,7 +892,11 @@ function applyFlag(options: YtDlpOptions, rawFlag: string, tokens: string[], inl
       throw new Error(`${rawFlag} needs a value`);
     }
 
-    definition.apply(options, values, rawFlag);
+    definition.apply({
+      options,
+      values,
+      flag: rawFlag
+    });
     return;
   }
 
@@ -553,6 +907,7 @@ function applyFlag(options: YtDlpOptions, rawFlag: string, tokens: string[], inl
 
   if (IGNORED_VALUE_SET.has(rawFlag)) {
     options.ignoredFlags.push(rawFlag);
+
     if (inlineValue === undefined) {
       tokens.shift();
     }
@@ -581,7 +936,12 @@ export function parseYtDlpCommand(command: string) {
     for (const piece of expandShortFlags(token)) {
       const [first, attachedValue] = splitAttachedValue(piece);
       const { flag, inlineValue } = splitInlineValue(first!);
-      applyFlag(options, flag, tokens, attachedValue ?? inlineValue);
+      applyFlag({
+        options,
+        rawFlag: flag,
+        tokens,
+        inlineValue: attachedValue ?? inlineValue
+      });
     }
   }
 

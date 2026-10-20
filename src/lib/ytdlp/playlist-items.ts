@@ -1,7 +1,23 @@
 const RANGE_SEPARATOR = ":";
 const DEFAULT_STEP = 1;
 
-function resolveIndex(text: string, count: number, fallback: number) {
+type IndexRequest = {
+  text: string;
+  count: number;
+  fallback: number;
+};
+type PartRequest = {
+  part: string;
+  count: number;
+};
+export type PlaylistSelection = {
+  count: number;
+  spec: string | undefined;
+  start: number | undefined;
+  end: number | undefined;
+};
+
+function resolveIndex({ text, count, fallback }: IndexRequest) {
   if (text === "") {
     return fallback;
   }
@@ -14,15 +30,27 @@ function resolveIndex(text: string, count: number, fallback: number) {
   return value < 0 ? count + value + 1 : value;
 }
 
-function expandPart(part: string, count: number) {
+function expandPart({ part, count }: PartRequest) {
   if (!part.includes(RANGE_SEPARATOR)) {
-    return [resolveIndex(part, count, 1)];
+    return [resolveIndex({
+      text: part,
+      count,
+      fallback: 1
+    })];
   }
 
   const [startText = "", endText = "", stepText = ""] = part.split(RANGE_SEPARATOR);
   const step = Number(stepText || DEFAULT_STEP);
-  const start = resolveIndex(startText, count, 1);
-  const end = resolveIndex(endText, count, count);
+  const start = resolveIndex({
+    text: startText,
+    count,
+    fallback: 1
+  });
+  const end = resolveIndex({
+    text: endText,
+    count,
+    fallback: count
+  });
   const indices: number[] = [];
   for (let index = start; step > 0 ? index <= end : index >= end; index += step) {
     indices.push(index);
@@ -31,9 +59,12 @@ function expandPart(part: string, count: number) {
   return indices;
 }
 
-export function selectPlaylistIndices(count: number, spec: string | undefined, start: number | undefined, end: number | undefined) {
+export function selectPlaylistIndices({ count, spec, start, end }: PlaylistSelection) {
   if (spec) {
-    const indices = spec.split(",").flatMap(part => expandPart(part.trim(), count));
+    const indices = spec.split(",").flatMap(part => expandPart({
+      part: part.trim(),
+      count
+    }));
     return [...new Set(indices)].filter(index => index >= 1 && index <= count);
   }
 

@@ -1,15 +1,16 @@
-import type { ResolvedVideo } from "@/lib/youtube";
 import type { YtDlpOptions } from "./options";
 import type { FormatFields } from "./selector";
 import { renderTemplate } from "./template";
 import type { TemplateFields } from "./template";
+import type { ResolvedVideo } from "@/lib/youtube";
 
 const SECONDS_PER_MINUTE = 60;
 const SECONDS_PER_HOUR = 3600;
 const PYTHON_NAMED_GROUP = /\(\?P</g;
 const PYTHON_INLINE_FLAGS = /^\(\?([a-z]+)\)/;
 const BACKREFERENCE_PATTERN = /\\(\d)/g;
-const ILLEGAL_FILENAME_PATTERN = /[\\:*?"<>|\u0000-\u001f]/g;
+const ILLEGAL_FILENAME_PATTERN = /[\\:*?"<>|]/g;
+const FIRST_PRINTABLE_CODE = 32;
 const RESTRICTED_FILENAME_PATTERN = /[^\w.-]+/g;
 const TRAILING_DOTS_PATTERN = /[. ]+$/;
 const LEADING_DOTS_PATTERN = /^\.+/;
@@ -22,9 +23,50 @@ const MAX_SEGMENT_LENGTH = 200;
 const TWO_DIGITS = 2;
 const BYTE_UNIT = 1024;
 
-export type PlaylistPosition = { id: string; title: string; index: number; count: number };
-export type Chapter = { title: string; start: number; end: number };
-export type SectionContext = { title?: string; number: number; start?: number; end?: number };
+export type PlaylistPosition = {
+  id: string;
+  title: string;
+  index: number;
+  count: number;
+};
+export type Chapter = {
+  title: string;
+  start: number;
+  end: number;
+};
+export type SectionContext = {
+  title?: string;
+  number: number;
+  start?: number;
+  end?: number;
+};
+export type VideoFieldsRequest = {
+  video: ResolvedVideo;
+  playlist?: PlaylistPosition;
+  autonumber?: number;
+};
+export type MetadataRulesRequest = {
+  fields: TemplateFields;
+  options: YtDlpOptions;
+};
+export type SavePathRequest = {
+  options: YtDlpOptions;
+  type: string;
+  fields: TemplateFields;
+  extension: string;
+};
+type ParseRuleRequest = {
+  fields: TemplateFields;
+  rule: string;
+};
+type SanitizeRequest = {
+  text: string;
+  options: YtDlpOptions;
+};
+type ExtensionRequest = {
+  name: string;
+  extension: string;
+};
 
 export function formatDurationString(totalSeconds: number) {
   const hours = Math.floor(totalSeconds / SECONDS_PER_HOUR);
@@ -34,7 +76,7 @@ export function formatDurationString(totalSeconds: number) {
   return hours ? `${hours}:${tail}` : tail;
 }
 
-export function buildVideoFields(video: ResolvedVideo, playlist?: PlaylistPosition, autonumber = 1): TemplateFields {
+export function buildVideoFields({ video, playlist, autonumber = 1 }: VideoFieldsRequest): TemplateFields {
   const thumbnail = video.thumbnails.at(-1)?.url;
   return {
     id: video.id,
@@ -105,7 +147,7 @@ function unescapeColon(text: string) {
   return text.replaceAll("\\:", ":");
 }
 
-function applyParseRule(fields: TemplateFields, rule: string) {
+function applyParseRule({ fields, rule }: ParseRuleRequest) {
   const parts = rule.split(UNESCAPED_COLON_PATTERN);
   if (parts.length < TWO_DIGITS) {
     throw new Error(`--parse-metadata needs FROM:TO, got ${rule}`);
@@ -113,7 +155,10 @@ function applyParseRule(fields: TemplateFields, rule: string) {
 
   const from = unescapeColon(parts[0]!);
   const to = unescapeColon(parts.slice(1).join(":"));
-  const source = from.includes("%(") ? renderTemplate(from, fields) : String(fields[from] ?? "");
+  const source = from.includes("%(") ? renderTemplate({
+    template: from,
+    fields
+  }) : String(fields[from] ?? "");
   if (NAMED_GROUP_MARKER.test(to)) {
     const groups = source.match(toJavaScriptRegex(to))?.groups ?? {};
     Object.assign(fields, groups);
@@ -124,15 +169,18 @@ function applyParseRule(fields: TemplateFields, rule: string) {
   fields[target] = source;
 }
 
-export function applyMetadataRules(fields: TemplateFields, options: YtDlpOptions) {
+export function applyMetadataRules({ fields, options }: MetadataRulesRequest) {
   for (const rule of options.parseMetadata) {
-    applyParseRule(fields, rule);
+    applyParseRule({
+      fields,
+      rule
+    });
   }
 
   for (const { fields: fieldPatterns, pattern, replacement } of options.replaceInMetadata) {
     const regex = new RegExp(pattern, "g");
     const replacementText = replacement.replace(BACKREFERENCE_PATTERN, "$$$1");
-    for (const name of Object.keys(fields)) {
+    for (const name in fields) {
       const isTargeted = fieldPatterns.some(fieldPattern => new RegExp(`^(?:${fieldPattern})$`).test(name));
       const value = fields[name];
       if (isTargeted && typeof value === "string") {
@@ -142,32 +190,60 @@ export function applyMetadataRules(fields: TemplateFields, options: YtDlpOptions
   }
 }
 
-function sanitizeSegment(segment: string, options: YtDlpOptions) {
-  const cleaned = segment.replace(ILLEGAL_FILENAME_PATTERN, "_").replace(TRAILING_DOTS_PATTERN, "").replace(LEADING_DOTS_PATTERN, "").trim();
+function replaceControlCharacters(text: string) {
+  return Array.from(text, character => (character.charCodeAt(0) < FIRST_PRINTABLE_CODE ? "_" : character)).join("");
+}
+
+function sanitizeSegment({ text: segment, options }: SanitizeRequest) {
+  const cleaned = replaceControlCharacters(segment.replace(ILLEGAL_FILENAME_PATTERN, "_"))
+    .replace(TRAILING_DOTS_PATTERN, "")
+    .replace(LEADING_DOTS_PATTERN, "")
+    .trim();
   const restricted = options.isRestrictFilenames ? cleaned.replace(RESTRICTED_FILENAME_PATTERN, "_") : cleaned;
   return restricted.slice(0, options.trimFilenames ?? MAX_SEGMENT_LENGTH);
 }
 
-function sanitizePath(path: string, options: YtDlpOptions) {
+function sanitizePath({ text: path, options }: SanitizeRequest) {
   if (ABSOLUTE_PATH_PATTERN.test(path)) {
     throw new Error("Paths must be relative, files go inside your Downloads folder");
   }
 
-  return path.split("/").map(segment => sanitizeSegment(segment, options)).filter(segment => segment && segment !== "..").join("/");
+  return path
+    .split("/")
+    .map(segment => sanitizeSegment({
+      text: segment,
+      options
+    }))
+    .filter(segment => segment && segment !== "..")
+    .join("/");
 }
 
-function replaceExtension(name: string, extension: string) {
+function replaceExtension({ name, extension }: ExtensionRequest) {
   return EXTENSION_PATTERN.test(name) ? name.replace(EXTENSION_PATTERN, `.${extension}`) : `${name}.${extension}`;
 }
 
-export function buildSavePath(options: YtDlpOptions, type: string, fields: TemplateFields, extension: string) {
+export function buildSavePath({ options, type, fields, extension }: SavePathRequest) {
   const template = options.outputs[type] ?? options.outputs.default!;
   const isExtensionAware = template.includes("%(ext)s");
-  const rendered = renderTemplate(template, { ...fields, ext: extension }, true);
-  const named = isExtensionAware || rendered.endsWith(`.${extension}`) ? rendered : replaceExtension(rendered, extension);
+  const rendered = renderTemplate({
+    template,
+    fields: {
+      ...fields,
+      ext: extension
+    },
+    isPath: true
+  });
+  const hasExtension = isExtensionAware || rendered.endsWith(`.${extension}`);
+  const named = hasExtension ? rendered : replaceExtension({
+    name: rendered,
+    extension
+  });
   const directory = options.paths[type] ?? options.paths.home;
   const full = directory ? `${directory}/${named}` : named;
-  return sanitizePath(full, options);
+  return sanitizePath({
+    text: full,
+    options
+  });
 }
 
 export function formatByteSize(bytes: number) {

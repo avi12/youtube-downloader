@@ -6,7 +6,12 @@ const RELATIVE_DATE_PATTERN = /^(now|today|yesterday)(?:([+-])(\d+)(day|week|mon
 const ABSOLUTE_DATE_PATTERN = /^(\d{4})-?(\d{2})-?(\d{2})$/;
 const BARE_KEY_PATTERN = /^(!?)\s*(\w+)$/;
 const MILLISECONDS_PER_DAY = 86_400_000;
-const DAYS_PER_UNIT: Record<string, number> = { day: 1, week: 7, month: 30, year: 365 };
+const DAYS_PER_UNIT: Record<string, number> = {
+  day: 1,
+  week: 7,
+  month: 30,
+  year: 365
+};
 
 export function toReader(fields: TemplateFields): FieldReader {
   return name => {
@@ -23,7 +28,20 @@ function isTruthy(value: string | number | undefined) {
   return value !== undefined && value !== "" && value !== 0 && value !== "false";
 }
 
-function matchesExpression(read: FieldReader, expression: string) {
+type ExpressionRequest = {
+  read: FieldReader;
+  expression: string;
+};
+export type FilterRequest = {
+  fields: TemplateFields;
+  expressions: string[];
+};
+export type DateSpecRequest = {
+  text: string;
+  now?: Date;
+};
+
+function matchesExpression({ read, expression }: ExpressionRequest) {
   const parts = expression.split("&").map(part => part.trim()).filter(Boolean);
   return parts.every(part => {
     const bare = part.match(BARE_KEY_PATTERN);
@@ -31,24 +49,30 @@ function matchesExpression(read: FieldReader, expression: string) {
       return isTruthy(read(bare[2]!)) !== Boolean(bare[1]);
     }
 
-    return matchesComparison(read, `[${part}]`);
+    return matchesComparison({
+      read,
+      filterText: `[${part}]`
+    });
   });
 }
 
-export function matchesAnyFilter(fields: TemplateFields, expressions: string[]) {
+export function matchesAnyFilter({ fields, expressions }: FilterRequest) {
   if (!expressions.length) {
     return true;
   }
 
   const read = toReader(fields);
-  return expressions.some(expression => matchesExpression(read, expression));
+  return expressions.some(expression => matchesExpression({
+    read,
+    expression
+  }));
 }
 
 function formatDay(date: Date) {
   return date.toISOString().slice(0, 10).replaceAll("-", "");
 }
 
-export function parseDateSpec(text: string, now = new Date()) {
+export function parseDateSpec({ text, now = new Date() }: DateSpecRequest) {
   const absolute = text.match(ABSOLUTE_DATE_PATTERN);
   if (absolute) {
     return `${absolute[1]}${absolute[2]}${absolute[3]}`;
