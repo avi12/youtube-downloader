@@ -60,6 +60,16 @@ export async function fetchPlayer({ tabId, videoId, withCaptions }: TabPlayer) {
   return player!;
 }
 
+export async function fetchCurrentTime(tabId: number | undefined) {
+  const { currentTime } = await runTask({
+    tabId,
+    task: {
+      kind: "time"
+    }
+  });
+  return currentTime ?? 0;
+}
+
 export async function fetchChapters({ tabId, videoId }: TabVideo) {
   const { chapters } = await runTask({
     tabId,

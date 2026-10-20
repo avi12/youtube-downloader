@@ -201,6 +201,12 @@ export async function runInsideYouTubePage(task: PageTask): Promise<PageResult> 
     };
   }
 
+  if (task.kind === "time") {
+    const player = document.querySelector<HTMLElement & { getCurrentTime?: () => number }>("#movie_player");
+    const currentTime = player?.getCurrentTime?.();
+    return typeof currentTime === "number" ? { currentTime } : { error: "There's no YouTube video playing in this tab" };
+  }
+
   if (task.kind === "player") {
     return capturePlayer({
       videoId: task.id,

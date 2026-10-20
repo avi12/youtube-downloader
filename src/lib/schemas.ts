@@ -84,6 +84,7 @@ export const playerResponseSchema = z.object({
 
 export const pageResultSchema = z.object({
   error: z.string().optional(),
+  currentTime: z.number().optional(),
   playlist: z.object({
     title: z.string(),
     entries: z.array(

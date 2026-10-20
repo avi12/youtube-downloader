@@ -7,7 +7,9 @@
   import { URL_TOKEN } from "@/lib/command";
   import { applyFfmpegCommand, findJobOutputs } from "@/lib/ffmpeg-command";
   import { mimeTypeForFile } from "@/lib/mime";
+  import { fetchCurrentTime } from "@/lib/page";
   import {
+    CURRENT_TIME_VARIABLE,
     DEFAULT_SHOWN_IDS,
     createBlankPreset,
     defaultValues,
@@ -19,6 +21,7 @@
     mergeLibraryState,
     moveBefore,
     parseLibraryFile,
+    referencesVariable,
     serializeLibraryState,
     storeLibraryState
   } from "@/lib/presets";
@@ -38,6 +41,10 @@
   const URL_TOKEN_PATTERN = new RegExp(`\\b${URL_TOKEN}\\b`);
   const EXPORT_FILE_NAME = "youtube-ffmpeg-lite-presets.json";
   const SLIDE_DURATION_MS = 200;
+  const SECONDS_FORMAT = new Intl.NumberFormat("en", {
+    maximumFractionDigits: 3,
+    useGrouping: false
+  });
   const SLIDE_DISTANCE_PX = 50;
   const PERCENT = 100;
   const PANELS = [
@@ -433,17 +440,26 @@
     const controller = new AbortController();
     try {
       const { variables } = preset;
+      const isCurrentTimeUsed = referencesVariable({
+        texts: [preset.command, preset.ffmpegCommand],
+        name: CURRENT_TIME_VARIABLE
+      });
+      const builtInValues: Record<string, string> = isCurrentTimeUsed
+        ? { [CURRENT_TIME_VARIABLE]: SECONDS_FORMAT.format(await fetchCurrentTime(tab.tabId)) }
+        : {};
       const command = withTabUrl(
         fillVariables({
           text: preset.command,
           variables,
-          values
+          values,
+          builtInValues
         })
       );
       const ffmpegCommand = preset.ffmpegCommand ? fillVariables({
         text: preset.ffmpegCommand,
         variables,
-        values
+        values,
+        builtInValues
       }) : undefined;
       runningPresetId = preset.id;
       abortController = controller;

@@ -4,6 +4,7 @@ import { z } from "zod";
 const STORAGE_KEY = "presetLibrary";
 const EXPORT_VERSION = 1;
 const VARIABLE_PLACEHOLDER_PATTERN = /%([A-Za-z_]\w*)%/g;
+export const CURRENT_TIME_VARIABLE = "current_time";
 export const TIME_PATTERN = /^(?:\d+:)?[0-5]?\d:[0-5]\d(?:\.\d+)?$|^\d+(?:\.\d+)?$/;
 
 const variableBase = {
@@ -245,6 +246,11 @@ type FillRequest = {
   text: string;
   variables: Variable[];
   values: Record<string, string>;
+  builtInValues?: Record<string, string>;
+};
+type VariableReference = {
+  texts: (string | undefined)[];
+  name: string;
 };
 
 export function moveBefore({ ids, movedId, targetId }: MoveRequest) {
@@ -335,10 +341,19 @@ function buildValueSchema(variable: Variable) {
   return z.string();
 }
 
-export function fillVariables({ text, variables, values }: FillRequest) {
+export function referencesVariable({ texts, name }: VariableReference) {
+  return texts.some(text => text?.includes(`%${name}%`));
+}
+
+export function fillVariables({ text, variables, values, builtInValues = {} }: FillRequest) {
   const variableByName = new Map(variables.map(variable => [variable.name, variable]));
   return text.replace(VARIABLE_PLACEHOLDER_PATTERN, (_match, name: string) => {
     const variable = variableByName.get(name);
+    const builtInValue = builtInValues[name];
+    if (!variable && builtInValue !== undefined) {
+      return builtInValue;
+    }
+
     if (!variable) {
       throw new Error(`%${name}% isn't defined as a variable in this preset`);
     }

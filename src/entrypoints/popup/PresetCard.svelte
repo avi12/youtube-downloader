@@ -1,6 +1,6 @@
 <script lang="ts">
   import OptionField from "./shared/OptionField.svelte";
-  import { TIME_PATTERN, VARIABLE_TYPES } from "@/lib/presets";
+  import { CURRENT_TIME_VARIABLE, TIME_PATTERN, VARIABLE_TYPES } from "@/lib/presets";
   import type { Preset, Variable, VariableType } from "@/lib/presets";
 
   const GEAR_PATH = "M19.14 12.94a7.4 7.4 0 0 0 0-1.88l2.03-1.58a.48.48 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96a7 7 0 0 0-1.62-.94l-.36-2.54a.48.48 0 0 0-.48-.41h-3.84a.48.48 0 0 0-.47.41l-.36 2.54a7.4 7.4 0 0 0-1.62.94l-2.39-.96a.48.48 0 0 0-.59.22L2.74 8.87a.47.47 0 0 0 .12.61l2.03 1.58a7.4 7.4 0 0 0 0 1.88l-2.03 1.58a.48.48 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.04.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54a7.4 7.4 0 0 0 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.47.47 0 0 0-.12-.61zM12 15.6a3.6 3.6 0 1 1 0-7.2 3.6 3.6 0 0 1 0 7.2";
@@ -300,7 +300,10 @@
       {/if}
 
       <h3>Variables</h3>
-      <p class="hint">Write %name% in a command to insert the field's value</p>
+      <p class="hint">
+        Write %name% in a command to insert the field's value. %{CURRENT_TIME_VARIABLE}% is where the video in this
+        tab is playing, in seconds
+      </p>
       {#each draft.variables as variable, index (index)}
         <div class="variable">
           <input class="small" aria-label="Variable name" placeholder="name" bind:value={variable.name} />
