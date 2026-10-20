@@ -4,6 +4,8 @@ import type { Job } from "@/lib/ytdlp/plan";
 const FFMPEG_PROGRAM = "ffmpeg";
 const INPUT_PLACEHOLDER_PATTERN = /\{input(\d+)\}/g;
 const EXTENSION_PATTERN = /\.[^./\\]+$/;
+const SEQUENCE_PATTERN = /%0?\d*d/;
+const REGEX_SPECIALS_PATTERN = /[.*+?^${}()|[\]\\]/g;
 
 function resolvePlaceholders(arg: string, job: Job) {
   return arg.replace(INPUT_PLACEHOLDER_PATTERN, (_match, position: string) => {
@@ -27,4 +29,26 @@ export function applyFfmpegCommand(job: Job, command: string): Job {
   }
 
   return { ...job, args, outputFile, saveAs: job.saveAs.replace(EXTENSION_PATTERN, "") + outputExtension };
+}
+
+function escapeRegex(text: string) {
+  return text.replace(REGEX_SPECIALS_PATTERN, String.raw`\$&`);
+}
+
+function buildSequencePattern(outputFile: string) {
+  const [before = "", after = ""] = outputFile.split(SEQUENCE_PATTERN);
+  return new RegExp(`^${escapeRegex(before)}\\d+${escapeRegex(after)}$`);
+}
+
+export function findJobOutputs<File extends { name: string }>(files: File[], job: Job) {
+  if (!SEQUENCE_PATTERN.test(job.outputFile)) {
+    return files.filter(file => file.name === job.outputFile).map(file => ({ ...file, saveAs: job.saveAs }));
+  }
+
+  const pattern = buildSequencePattern(job.outputFile);
+  const stem = job.saveAs.replace(EXTENSION_PATTERN, "");
+  return files
+    .filter(file => pattern.test(file.name))
+    .sort((first, second) => first.name.localeCompare(second.name, undefined, { numeric: true }))
+    .map(file => ({ ...file, saveAs: `${stem} ${file.name}` }));
 }

@@ -87,6 +87,17 @@ export const BUILT_IN_PRESETS: Preset[] = [
       { type: "number", name: "frames", label: "Frames", defaultValue: 1, min: 1, max: 100, step: 1 }
     ]
   },
+  {
+    id: "frames",
+    label: "Image sequence (PNG)",
+    command: `yt-dlp -f "bv*[height<=720][vcodec^=avc1]" ${URL_TOKEN}`,
+    ffmpegCommand: "-ss %at% -t %seconds% -i {input1} -vf fps=%fps% frame%03d.png",
+    variables: [
+      { type: "time", name: "at", label: "From", defaultValue: "00:00:05" },
+      { type: "number", name: "seconds", label: "Seconds", defaultValue: 3, min: 1, max: 60, step: 1 },
+      { type: "number", name: "fps", label: "Per second", defaultValue: 1, min: 1, max: 30, step: 1 }
+    ]
+  },
   { id: "formats", label: "List formats", command: `yt-dlp -F ${URL_TOKEN}`, variables: [] }
 ];
 

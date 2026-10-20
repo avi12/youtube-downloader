@@ -164,7 +164,7 @@
       {#if isFfmpegEnabled}
         <textarea rows="2" bind:value={draft.ffmpegCommand} spellcheck="false" aria-label="FFmpeg command"></textarea>
         <p class="hint">
-          {"{input1}"} is the first downloaded stream, {"{input2}"} the second. End with the output file name, like snapshot.png
+          {"{input1}"} is the first downloaded stream, {"{input2}"} the second. End with the output file name, like snapshot.png. Put %03d in it, like frame%03d.png, to save an image sequence
         </p>
       {/if}
 

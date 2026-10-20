@@ -3,7 +3,7 @@
   import type { WorkerMessage, WorkerRequest } from "../ffmpeg-worker";
   import PresetCard from "./PresetCard.svelte";
   import { URL_TOKEN } from "@/lib/command";
-  import { applyFfmpegCommand } from "@/lib/ffmpeg-command";
+  import { applyFfmpegCommand, findJobOutputs } from "@/lib/ffmpeg-command";
   import { mimeTypeForFile } from "@/lib/mime";
   import {
     BUILT_IN_PRESETS,
@@ -234,12 +234,12 @@
       inputs: job.inputs,
       args: job.args
     }, signal);
-    const output = done.files.find(file => file.name === job.outputFile);
-    if (done.code !== 0 || !output) {
+    const outputs = findJobOutputs(done.files, job);
+    if (done.code !== 0 || !outputs.length) {
       throw new Error(`FFmpeg failed on ${job.saveAs} (exit code ${done.code})`);
     }
 
-    await saveBlob(job.saveAs, [output.data]);
+    await Promise.all(outputs.map(output => saveBlob(output.saveAs, [output.data])));
   }
 
   function describeError(error: unknown) {
