@@ -1,6 +1,6 @@
 import { fetchChapters, fetchPlaylist } from "@/lib/page";
 import type { PlaylistEntry } from "@/lib/page";
-import { parsePlaylistId, parseVideoId, registerRequestHeaderRules, resolveVideo } from "@/lib/youtube";
+import { BotCheckError, parsePlaylistId, parseVideoId, registerRequestHeaderRules, resolveVideo, resolveVideoFromPage } from "@/lib/youtube";
 import type { Chapter } from "./fields";
 import { parseYtDlpCommand } from "./options";
 import type { YtDlpOptions } from "./options";
@@ -29,6 +29,10 @@ function needsChapters(options: YtDlpOptions) {
   const usesChapterPattern = options.sections.some(section => section.chapterPattern);
   const printsChapters = options.prints.some(template => CHAPTER_FIELD_PATTERN.test(template));
   return options.isEmbedChapters || options.isSplitChapters || usesChapterPattern || printsChapters;
+}
+
+function needsCaptions(options: YtDlpOptions) {
+  return options.isWriteSubs || options.isWriteAutoSubs || options.isEmbedSubs || options.isListSubs;
 }
 
 async function expandUrl(url: string, options: YtDlpOptions, tab: TabContext): Promise<Target[]> {
@@ -64,7 +68,15 @@ async function resolveChapters(options: YtDlpOptions, tab: TabContext, videoId: 
 
 async function processTarget(options: YtDlpOptions, tab: TabContext, target: Target, autonumber: number, hooks: SessionHooks) {
   hooks.status(`Looking up ${target.title}`);
-  const video = await resolveVideo(target.videoId);
+  const video = await resolveVideo(target.videoId).catch((error: unknown) => {
+    const isOnThisVideo = Boolean(tab.url) && parseVideoId(tab.url!) === target.videoId;
+    if (!(error instanceof BotCheckError) || !isOnThisVideo) {
+      throw error;
+    }
+
+    hooks.log("YouTube's bot check blocked the direct lookup, reading the open tab's player instead");
+    return resolveVideoFromPage(tab.tabId, target.videoId, needsCaptions(options));
+  });
   const chapters = await resolveChapters(options, tab, target.videoId, video.durationSeconds);
   const playlist = target.playlistId ? { id: target.playlistId, title: target.playlistTitle ?? "", index: target.index, count: target.count } : undefined;
   const plan = planVideo(options, { video, chapters, playlist, autonumber });

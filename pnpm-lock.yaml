@@ -21,6 +21,9 @@ importers:
       '@ffmpeg/types':
         specifier: ^0.12.4
         version: 0.12.4
+      googlevideo:
+        specifier: ^4.1.1
+        version: 4.1.1
       zod:
         specifier: ^4.6.7
         version: 4.6.7
@@ -136,6 +139,9 @@ packages:
   '@babel/types@7.29.7':
     resolution: {integrity: sha512-4zBIxpPzowiZpusoFkyGVwakdRJUyuH5PxQ/PrqghfdFWWasvnCdPfQXHrenDai+gyLARulZjZowCOj6fjT4pA==}
     engines: {node: '>=6.9.0'}
+
+  '@bufbuild/protobuf@2.16.0':
+    resolution: {integrity: sha512-FWa0sPlqYGJgpTs6OxBRcL/AW4JT0OIO+W1ajerluoTVh8CV0B7XM1qsNCRgnkSCkRCgOICKHRQlY17jrsm0+Q==}
 
   '@cacheable/memory@2.2.0':
     resolution: {integrity: sha512-CTLKqLItRCEixEAewD3/j9DB3/o96gpTPD4eJ1v+DGOlxZRZncRQkGYqqnAGCscYd6RNeXfGeiuCphsPtqyIfQ==}
@@ -1822,6 +1828,9 @@ packages:
   globjoin@0.1.4:
     resolution: {integrity: sha512-xYfnw62CKG8nLkZBfWbhWwDw02CHty86jfPcc2cr3ZfeuK9ysoVPPEUxf21bAD/rWAgk52SuBrLJlefNy8mvFg==}
 
+  googlevideo@4.1.1:
+    resolution: {integrity: sha512-14o64O+CXXlQ1stYZK/+ypCEwZb25lzEuzhbFYYEzf26R+HhBDOR+Dkdk7MKkZ3qXeIjvZfeC0AJlVKjwQCFjw==}
+
   gopd@1.2.0:
     resolution: {integrity: sha512-ZUKRh6/kUFoAiTAtTYPZJ3hw9wNxx+BIBOijnlG9PnrJsCcSjs1wyyD6vJpaYtgnzDrKYRSqf3OO6Rfa93xsRg==}
     engines: {node: '>= 0.4'}
@@ -3251,6 +3260,8 @@ snapshots:
     dependencies:
       '@babel/helper-string-parser': 7.29.7
       '@babel/helper-validator-identifier': 7.29.7
+
+  '@bufbuild/protobuf@2.16.0': {}
 
   '@cacheable/memory@2.2.0':
     dependencies:
@@ -4836,6 +4847,10 @@ snapshots:
       unicorn-magic: 0.4.1
 
   globjoin@0.1.4: {}
+
+  googlevideo@4.1.1:
+    dependencies:
+      '@bufbuild/protobuf': 2.16.0
 
   gopd@1.2.0: {}
 

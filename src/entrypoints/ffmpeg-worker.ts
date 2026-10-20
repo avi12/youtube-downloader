@@ -5,7 +5,7 @@ const CHUNK_SIZE = 10 * 1024 * 1024;
 const FFMPEG_STDERR = "stderr";
 const HTTP_PARTIAL_CONTENT = 206;
 
-export type WorkerInput = { name: string; url?: string; text?: string; contentLength?: number };
+export type WorkerInput = { name: string; url?: string; text?: string; data?: ArrayBuffer; contentLength?: number };
 export type WorkerRequest = { wasmUrl: string; inputs: WorkerInput[]; args: string[] };
 export type WorkerMessage =
   | { type: "log"; text: string }
@@ -51,9 +51,14 @@ async function writeChunkedInput(core: FFmpegCoreModule, name: string, url: stri
   core.FS.close(stream);
 }
 
-async function writeInput(core: FFmpegCoreModule, { name, url, text, contentLength }: WorkerInput) {
+async function writeInput(core: FFmpegCoreModule, { name, url, text, data, contentLength }: WorkerInput) {
   if (text !== undefined) {
     core.FS.writeFile(name, new TextEncoder().encode(text));
+    return;
+  }
+
+  if (data) {
+    core.FS.writeFile(name, new Uint8Array(data));
     return;
   }
 

@@ -1,5 +1,6 @@
 import type { WorkerInput } from "@/entrypoints/ffmpeg-worker";
-import type { Thumbnail } from "@/lib/schemas";
+import type { SabrSession } from "@/lib/sabr";
+import type { StreamFormat, Thumbnail } from "@/lib/schemas";
 import type { CaptionOption, ResolvedVideo } from "@/lib/youtube";
 import {
   applyMetadataRules,
@@ -50,9 +51,11 @@ const AUDIO_ENCODERS: Record<Exclude<AudioFormat, "best">, string[]> = {
   alac: ["alac"]
 };
 
+export type JobInput = WorkerInput & { sabr?: { session: SabrSession; format: StreamFormat } };
+
 export type Job = {
   label: string;
-  inputs: WorkerInput[];
+  inputs: JobInput[];
   args: string[];
   outputFile: string;
   saveAs: string;
@@ -77,7 +80,7 @@ export type VideoPlan = {
   isBreak?: boolean;
 };
 
-type MediaInput = { worker: WorkerInput; before: string[] };
+type MediaInput = { worker: JobInput; before: string[] };
 
 function selectAudioCodecArgs(options: YtDlpOptions, source: FormatFields) {
   const isSameCodec = source.ext === options.audioFormat || source.acodec.startsWith(options.audioFormat);
@@ -94,11 +97,16 @@ function selectAudioCodecArgs(options: YtDlpOptions, source: FormatFields) {
   return ["-c:a", ...encoders, ...(options.audioFormat === "mp3" ? ["-q:a", quality] : [])];
 }
 
-function toWorkerInput(fields: FormatFields): WorkerInput {
+function captionSource(track: CaptionOption) {
+  return track.text === undefined ? { url: track.url } : { text: track.text };
+}
+
+function toWorkerInput(fields: FormatFields, video: ResolvedVideo): JobInput {
   return {
     name: `format-${fields.format_id}.${fields.ext}`,
     url: fields.format.url,
-    contentLength: Number(fields.format.contentLength) || undefined
+    contentLength: Number(fields.format.contentLength) || undefined,
+    sabr: !fields.format.url && video.sabr ? { session: video.sabr, format: fields.format } : undefined
   };
 }
 
@@ -224,11 +232,11 @@ function buildMediaJob({ options, context, fields, picks, tracks, notes }: Media
     }
 
     container = pickAudioContainer(options, picks);
-    inputs.push({ worker: toWorkerInput(source), before: sectionArgs });
+    inputs.push({ worker: toWorkerInput(source, video), before: sectionArgs });
     codecArgs = selectAudioCodecArgs(options, source);
   } else {
     container = pickContainer(options, picks);
-    inputs.push(...picks.map(pick => ({ worker: toWorkerInput(pick), before: sectionArgs })));
+    inputs.push(...picks.map(pick => ({ worker: toWorkerInput(pick, video), before: sectionArgs })));
     const isRecoding = Boolean(options.recodeVideo) || (options.isForceKeyframes && sectionArgs.length > 0);
     codecArgs = isRecoding ? [] : ["-c", "copy"];
   }
@@ -243,7 +251,7 @@ function buildMediaJob({ options, context, fields, picks, tracks, notes }: Media
   const embeddedTracks = canEmbedSubs ? tracks : [];
   const subtitleCodec = pickSubtitleCodec(container);
   for (const track of embeddedTracks) {
-    inputs.push({ worker: { name: `embed-${track.languageCode}.vtt`, url: track.url }, before: sectionArgs });
+    inputs.push({ worker: { name: `embed-${track.languageCode}.vtt`, ...captionSource(track) }, before: sectionArgs });
   }
 
   const thumbnail = options.isEmbedThumbnail ? pickBestJpeg(video.thumbnails) : undefined;
@@ -319,11 +327,11 @@ function buildCompanionFiles(options: YtDlpOptions, context: VideoContext, field
   for (const track of shouldWriteSubs ? tracks : []) {
     const saveAs = buildSavePath(options, "subtitle", fields, `${track.languageCode}.${options.subFormat}`);
     if (options.subFormat === "vtt") {
-      directFiles.push({ saveAs, url: track.url });
+      directFiles.push({ saveAs, ...captionSource(track) });
       continue;
     }
 
-    const input = { name: `captions-${track.languageCode}.vtt`, url: track.url };
+    const input = { name: `captions-${track.languageCode}.vtt`, ...captionSource(track) };
     const outputFile = `${OUTPUT_BASENAME}.${options.subFormat}`;
     jobs.push({ label: saveAs, inputs: [input], args: ["-i", input.name, ...subtitlePostArgs, outputFile], outputFile, saveAs });
   }

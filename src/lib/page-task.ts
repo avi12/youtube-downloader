@@ -12,6 +12,136 @@ export async function runInsideYouTubePage(task: PageTask): Promise<PageResult> 
   const BYTE_WIDTH = 2;
   const ytcfg: { get: (key: string) => unknown } | undefined = Reflect.get(window, "ytcfg");
   const context = ytcfg?.get("INNERTUBE_CONTEXT");
+
+  async function capturePlayer(videoId: string, isCaptionsWanted: boolean): Promise<PageResult> {
+    const CAPTURE_KEY = "__ffmpegLiteRequests";
+    const TIMEDTEXT_KEY = "__ffmpegLiteTimedText";
+    const TIMEDTEXT_PATH = "/api/timedtext";
+    const CAPTION_WAIT_MS = 5000;
+    const MAX_CAPTURED = 8;
+    const SEEK_WAIT_MS = 3000;
+    const QUALITY_WAIT_MS = 8000;
+    const POLL_MS = 200;
+    const SEEK_FRACTION = 4;
+    const SEGMENT_PATH = "googlevideo.com/videoplayback";
+    const playerElement = document.querySelector("#movie_player");
+
+    function callPlayer(method: string, ...args: unknown[]): unknown {
+      const member = playerElement ? Reflect.get(playerElement, method) : undefined;
+      return typeof member === "function" ? Reflect.apply(member, playerElement, args) : undefined;
+    }
+
+    const playerResponse = callPlayer("getPlayerResponse");
+    const currentVideoId = playerResponse && typeof playerResponse === "object" ? Reflect.get(Reflect.get(playerResponse, "videoDetails") ?? {}, "videoId") : undefined;
+    if (currentVideoId !== videoId) {
+      return { error: "Open this video's watch page first" };
+    }
+
+    function toBase64(buffer: ArrayBuffer) {
+      return btoa(String.fromCharCode(...new Uint8Array(buffer)));
+    }
+
+    const existing: { url: string; body: string }[] | undefined = Reflect.get(window, CAPTURE_KEY);
+    const captured = existing ?? [];
+    const timedTextUrls: string[] = Reflect.get(window, TIMEDTEXT_KEY) ?? [];
+    if (!existing) {
+      Reflect.set(window, CAPTURE_KEY, captured);
+      Reflect.set(window, TIMEDTEXT_KEY, timedTextUrls);
+      const originalOpen = XMLHttpRequest.prototype.open;
+      Reflect.set(XMLHttpRequest.prototype, "open", function (this: XMLHttpRequest, ...args: unknown[]) {
+        const url = String(args[1]);
+        if (url.includes(TIMEDTEXT_PATH)) {
+          timedTextUrls.push(url);
+        }
+
+        return Reflect.apply(originalOpen, this, args);
+      });
+      const originalFetch = window.fetch;
+      window.fetch = function (...args: Parameters<typeof fetch>) {
+        const [input, init] = args;
+        const url = input instanceof Request ? input.url : String(input);
+        if (url.includes(TIMEDTEXT_PATH)) {
+          timedTextUrls.push(url);
+        }
+
+        function record(buffer: ArrayBuffer) {
+          captured.push({ url, body: toBase64(buffer) });
+        }
+
+        if (url.includes(SEGMENT_PATH) && init?.body instanceof ArrayBuffer) {
+          record(init.body);
+        } else if (url.includes(SEGMENT_PATH) && init?.body && ArrayBuffer.isView(init.body)) {
+          record(init.body.buffer.slice(init.body.byteOffset, init.body.byteOffset + init.body.byteLength));
+        } else if (url.includes(SEGMENT_PATH) && input instanceof Request) {
+          input.clone().arrayBuffer().then(record).catch(() => undefined);
+        }
+
+        return originalFetch.apply(window, args);
+      };
+    }
+
+    const time = Number(callPlayer("getCurrentTime")) || 0;
+    const duration = Number(callPlayer("getDuration")) || 0;
+    const capturedBefore = captured.length;
+
+    async function waitForNewRequest(timeoutMs: number) {
+      for (let waited = 0; waited < timeoutMs && captured.length === capturedBefore; waited += POLL_MS) {
+        await new Promise(resolve => setTimeout(resolve, POLL_MS));
+      }
+    }
+
+    const seekTarget = time < duration / 2 ? time + duration / SEEK_FRACTION : Math.max(0, time - duration / SEEK_FRACTION);
+    callPlayer("seekTo", seekTarget, true);
+    await waitForNewRequest(SEEK_WAIT_MS);
+    if (captured.length === capturedBefore) {
+      const levels = callPlayer("getAvailableQualityLevels");
+      const currentQuality = callPlayer("getPlaybackQuality");
+      const otherQuality = Array.isArray(levels) ? levels.find(level => level !== currentQuality && level !== "auto") : undefined;
+      callPlayer("setPlaybackQualityRange", otherQuality, otherQuality);
+      await waitForNewRequest(QUALITY_WAIT_MS);
+      callPlayer("setPlaybackQualityRange", currentQuality, currentQuality);
+    }
+
+    callPlayer("seekTo", time, true);
+
+    const trackListValue = Reflect.get(Reflect.get(Reflect.get(playerResponse ?? {}, "captions") ?? {}, "playerCaptionsTracklistRenderer") ?? {}, "captionTracks");
+    const trackList: unknown[] = isCaptionsWanted && Array.isArray(trackListValue) ? trackListValue : [];
+    const captionTexts: Record<string, string> = {};
+    if (trackList.length) {
+      const timedTextBefore = timedTextUrls.length;
+      callPlayer("loadModule", "captions");
+      callPlayer("toggleSubtitlesOn");
+      for (let waited = 0; waited < CAPTION_WAIT_MS && timedTextUrls.length === timedTextBefore; waited += POLL_MS) {
+        await new Promise(resolve => setTimeout(resolve, POLL_MS));
+      }
+
+      const sampleUrl = timedTextUrls.length > timedTextBefore ? timedTextUrls.at(-1) : undefined;
+      const tokens = sampleUrl ? new URL(sampleUrl, location.href).searchParams : new URLSearchParams();
+      for (const track of trackList) {
+        const baseUrl = typeof track === "object" && track ? Reflect.get(track, "baseUrl") : undefined;
+        if (typeof baseUrl === "string") {
+          const captionUrl = new URL(baseUrl);
+          for (const [param, value] of tokens) {
+            if (!captionUrl.searchParams.has(param)) {
+              captionUrl.searchParams.set(param, value);
+            }
+          }
+
+          captionUrl.searchParams.set("fmt", "vtt");
+          captionTexts[baseUrl] = await fetch(captionUrl.href, { credentials: "include" }).then(response => response.text()).catch(() => "");
+        }
+      }
+
+      callPlayer("toggleSubtitles");
+    }
+
+    return { player: { playerResponse, requests: captured.slice(-MAX_CAPTURED), captionTexts } };
+  }
+
+  if (task.kind === "player") {
+    return capturePlayer(task.id, Boolean(task.withCaptions));
+  }
+
   if (!context) {
     return { error: "Open a YouTube page first" };
   }

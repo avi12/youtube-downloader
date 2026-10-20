@@ -27,6 +27,11 @@ export async function fetchPlaylist(tabId: number | undefined, playlistId: strin
   return playlist!;
 }
 
+export async function fetchPlayer(tabId: number | undefined, videoId: string, withCaptions: boolean) {
+  const { player } = await runTask(tabId, { kind: "player", id: videoId, withCaptions });
+  return player!;
+}
+
 export async function fetchChapters(tabId: number | undefined, videoId: string) {
   const { chapters } = await runTask(tabId, { kind: "chapters", id: videoId });
   return chapters ?? [];
