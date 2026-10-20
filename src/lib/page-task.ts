@@ -13,7 +13,9 @@ export async function runInsideYouTubePage(task: PageTask): Promise<PageResult> 
   const ytcfg: { get: (key: string) => unknown } | undefined = Reflect.get(window, "ytcfg");
   const context = ytcfg?.get("INNERTUBE_CONTEXT");
 
-  async function capturePlayer(videoId: string, isCaptionsWanted: boolean): Promise<PageResult> {
+  type PlayerCapture = { videoId: string; isCaptionsWanted: boolean };
+
+  async function capturePlayer({ videoId, isCaptionsWanted }: PlayerCapture): Promise<PageResult> {
     const CAPTURE_KEY = "__ffmpegLiteRequests";
     const TIMEDTEXT_KEY = "__ffmpegLiteTimedText";
     const TIMEDTEXT_PATH = "/api/timedtext";
@@ -26,12 +28,14 @@ export async function runInsideYouTubePage(task: PageTask): Promise<PageResult> 
     const SEGMENT_PATH = "googlevideo.com/videoplayback";
     const playerElement = document.querySelector("#movie_player");
 
-    function callPlayer(method: string, ...args: unknown[]): unknown {
+    type PlayerCall = { method: string; args?: unknown[] };
+
+    function callPlayer({ method, args = [] }: PlayerCall): unknown {
       const member = playerElement ? Reflect.get(playerElement, method) : undefined;
       return typeof member === "function" ? Reflect.apply(member, playerElement, args) : undefined;
     }
 
-    const playerResponse = callPlayer("getPlayerResponse");
+    const playerResponse = callPlayer({ method: "getPlayerResponse" });
     const currentVideoId = playerResponse && typeof playerResponse === "object" ? Reflect.get(Reflect.get(playerResponse, "videoDetails") ?? {}, "videoId") : undefined;
     if (currentVideoId !== videoId) {
       return { error: "Open this video's watch page first" };
@@ -80,8 +84,8 @@ export async function runInsideYouTubePage(task: PageTask): Promise<PageResult> 
       };
     }
 
-    const time = Number(callPlayer("getCurrentTime")) || 0;
-    const duration = Number(callPlayer("getDuration")) || 0;
+    const time = Number(callPlayer({ method: "getCurrentTime" })) || 0;
+    const duration = Number(callPlayer({ method: "getDuration" })) || 0;
     const capturedBefore = captured.length;
 
     async function waitForNewRequest(timeoutMs: number) {
@@ -91,26 +95,26 @@ export async function runInsideYouTubePage(task: PageTask): Promise<PageResult> 
     }
 
     const seekTarget = time < duration / 2 ? time + duration / SEEK_FRACTION : Math.max(0, time - duration / SEEK_FRACTION);
-    callPlayer("seekTo", seekTarget, true);
+    callPlayer({ method: "seekTo", args: [seekTarget, true] });
     await waitForNewRequest(SEEK_WAIT_MS);
     if (captured.length === capturedBefore) {
-      const levels = callPlayer("getAvailableQualityLevels");
-      const currentQuality = callPlayer("getPlaybackQuality");
+      const levels = callPlayer({ method: "getAvailableQualityLevels" });
+      const currentQuality = callPlayer({ method: "getPlaybackQuality" });
       const otherQuality = Array.isArray(levels) ? levels.find(level => level !== currentQuality && level !== "auto") : undefined;
-      callPlayer("setPlaybackQualityRange", otherQuality, otherQuality);
+      callPlayer({ method: "setPlaybackQualityRange", args: [otherQuality, otherQuality] });
       await waitForNewRequest(QUALITY_WAIT_MS);
-      callPlayer("setPlaybackQualityRange", currentQuality, currentQuality);
+      callPlayer({ method: "setPlaybackQualityRange", args: [currentQuality, currentQuality] });
     }
 
-    callPlayer("seekTo", time, true);
+    callPlayer({ method: "seekTo", args: [time, true] });
 
     const trackListValue = Reflect.get(Reflect.get(Reflect.get(playerResponse ?? {}, "captions") ?? {}, "playerCaptionsTracklistRenderer") ?? {}, "captionTracks");
     const trackList: unknown[] = isCaptionsWanted && Array.isArray(trackListValue) ? trackListValue : [];
     const captionTexts: Record<string, string> = {};
     if (trackList.length) {
       const timedTextBefore = timedTextUrls.length;
-      callPlayer("loadModule", "captions");
-      callPlayer("toggleSubtitlesOn");
+      callPlayer({ method: "loadModule", args: ["captions"] });
+      callPlayer({ method: "toggleSubtitlesOn" });
       for (let waited = 0; waited < CAPTION_WAIT_MS && timedTextUrls.length === timedTextBefore; waited += POLL_MS) {
         await new Promise(resolve => setTimeout(resolve, POLL_MS));
       }
@@ -132,14 +136,14 @@ export async function runInsideYouTubePage(task: PageTask): Promise<PageResult> 
         }
       }
 
-      callPlayer("toggleSubtitles");
+      callPlayer({ method: "toggleSubtitles" });
     }
 
     return { player: { playerResponse, requests: captured.slice(-MAX_CAPTURED), captionTexts } };
   }
 
   if (task.kind === "player") {
-    return capturePlayer(task.id, Boolean(task.withCaptions));
+    return capturePlayer({ videoId: task.id, isCaptionsWanted: Boolean(task.withCaptions) });
   }
 
   if (!context) {
@@ -163,7 +167,9 @@ export async function runInsideYouTubePage(task: PageTask): Promise<PageResult> 
     return { ...headers, Authorization: `SAPISIDHASH ${timestamp}_${hash}`, "X-Origin": location.origin, "X-Goog-AuthUser": "0" };
   }
 
-  async function post(endpoint: string, body: object) {
+  type PostRequest = { endpoint: string; body: object };
+
+  async function post({ endpoint, body }: PostRequest) {
     const response = await fetch(`/youtubei/v1/${endpoint}?prettyPrint=false`, {
       method: "POST",
       credentials: "include",
@@ -197,8 +203,10 @@ export async function runInsideYouTubePage(task: PageTask): Promise<PageResult> 
     }
   }
 
-  function child(node: unknown, key: string) {
-    return isRecord(node) ? node[key] : undefined;
+  type NodePath = { node: unknown; path: string[] };
+
+  function child({ node, path }: NodePath): unknown {
+    return path.reduce((current, key) => (isRecord(current) ? current[key] : undefined), node);
   }
 
   function readText(value: unknown): string {
@@ -206,9 +214,9 @@ export async function runInsideYouTubePage(task: PageTask): Promise<PageResult> 
       return value;
     }
 
-    const simpleText = child(value, "simpleText");
-    const content = child(value, "content");
-    const runs = child(value, "runs");
+    const simpleText = child({ node: value, path: ["simpleText"] });
+    const content = child({ node: value, path: ["content"] });
+    const runs = child({ node: value, path: ["runs"] });
     if (typeof simpleText === "string") {
       return simpleText;
     }
@@ -217,28 +225,28 @@ export async function runInsideYouTubePage(task: PageTask): Promise<PageResult> 
       return content;
     }
 
-    return Array.isArray(runs) ? runs.map(run => String(child(run, "text") ?? "")).join("") : "";
+    return Array.isArray(runs) ? runs.map(run => String(child({ node: run, path: ["text"] }) ?? "")).join("") : "";
   }
 
   async function listPlaylist(listId: string): Promise<PlaylistListing> {
     const entries: PlaylistEntry[] = [];
     const seen = new Set<string>();
     let playlistTitle = "";
-    let response = await post("browse", { browseId: `VL${listId}` });
+    let response = await post({ endpoint: "browse", body: { browseId: `VL${listId}` } });
     for (let page = 0; page < MAX_PAGES; page++) {
-      playlistTitle ||= readText(child(child(child(response, "metadata"), "playlistMetadataRenderer"), "title"));
+      playlistTitle ||= readText(child({ node: response, path: ["metadata", "playlistMetadataRenderer", "title"] }));
       let token = "";
       for (const node of walk(response)) {
-        const renderer = child(node, "playlistVideoRenderer");
+        const renderer = child({ node, path: ["playlistVideoRenderer"] });
         const isLockupVideo = node.contentType === "LOCKUP_CONTENT_TYPE_VIDEO";
-        const videoId = child(renderer, "videoId") ?? (isLockupVideo ? node.contentId : undefined);
+        const videoId = child({ node: renderer, path: ["videoId"] }) ?? (isLockupVideo ? node.contentId : undefined);
         if (typeof videoId === "string" && !seen.has(videoId)) {
           seen.add(videoId);
-          const lockupTitle = child(child(node, "metadata"), "lockupMetadataViewModel");
-          entries.push({ videoId, title: readText(child(renderer, "title") ?? child(lockupTitle, "title")) });
+          const lockupTitle = child({ node, path: ["metadata", "lockupMetadataViewModel"] });
+          entries.push({ videoId, title: readText(child({ node: renderer, path: ["title"] }) ?? child({ node: lockupTitle, path: ["title"] })) });
         }
 
-        const continuationToken = child(child(node, "continuationCommand"), "token");
+        const continuationToken = child({ node, path: ["continuationCommand", "token"] });
         token ||= typeof continuationToken === "string" ? continuationToken : "";
       }
 
@@ -246,26 +254,26 @@ export async function runInsideYouTubePage(task: PageTask): Promise<PageResult> 
         break;
       }
 
-      response = await post("browse", { continuation: token });
+      response = await post({ endpoint: "browse", body: { continuation: token } });
     }
 
     return { title: playlistTitle, entries };
   }
 
   async function listChapters(videoId: string): Promise<RawChapter[]> {
-    const response = await post("next", { videoId });
+    const response = await post({ endpoint: "next", body: { videoId } });
     const chapters = new Map<number, string>();
     for (const node of walk(response)) {
-      const renderer = child(node, "chapterRenderer");
-      const startMillis = child(renderer, "timeRangeStartMillis");
+      const renderer = child({ node, path: ["chapterRenderer"] });
+      const startMillis = child({ node: renderer, path: ["timeRangeStartMillis"] });
       if (typeof startMillis === "number") {
-        chapters.set(startMillis / MILLISECONDS_PER_SECOND, readText(child(renderer, "title")));
+        chapters.set(startMillis / MILLISECONDS_PER_SECOND, readText(child({ node: renderer, path: ["title"] })));
       }
 
-      const marker = child(node, "macroMarkersListItemRenderer");
-      const startSeconds = child(child(child(marker, "onTap"), "watchEndpoint"), "startTimeSeconds");
+      const marker = child({ node, path: ["macroMarkersListItemRenderer"] });
+      const startSeconds = child({ node: marker, path: ["onTap", "watchEndpoint", "startTimeSeconds"] });
       if (typeof startSeconds === "number") {
-        chapters.set(startSeconds, readText(child(marker, "title")));
+        chapters.set(startSeconds, readText(child({ node: marker, path: ["title"] })));
       }
     }
 

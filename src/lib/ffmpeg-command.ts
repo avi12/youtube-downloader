@@ -7,7 +7,11 @@ const EXTENSION_PATTERN = /\.[^./\\]+$/;
 const SEQUENCE_PATTERN = /%0?\d*d/;
 const REGEX_SPECIALS_PATTERN = /[.*+?^${}()|[\]\\]/g;
 
-function resolvePlaceholders(arg: string, job: Job) {
+type PlaceholderRequest = { arg: string; job: Job };
+type FfmpegRequest = { job: Job; command: string };
+type OutputLookup<File> = { files: File[]; job: Job };
+
+function resolvePlaceholders({ arg, job }: PlaceholderRequest) {
   return arg.replace(INPUT_PLACEHOLDER_PATTERN, (_match, position: string) => {
     const input = job.inputs[Number(position) - 1];
     if (!input) {
@@ -18,9 +22,9 @@ function resolvePlaceholders(arg: string, job: Job) {
   });
 }
 
-export function applyFfmpegCommand(job: Job, command: string): Job {
+export function applyFfmpegCommand({ job, command }: FfmpegRequest): Job {
   const tokens = tokenize(command);
-  const args = (tokens[0] === FFMPEG_PROGRAM ? tokens.slice(1) : tokens).map(arg => resolvePlaceholders(arg, job));
+  const args = (tokens[0] === FFMPEG_PROGRAM ? tokens.slice(1) : tokens).map(arg => resolvePlaceholders({ arg, job }));
   const outputFile = args.at(-1);
   const outputExtension = outputFile?.match(EXTENSION_PATTERN)?.[0];
   const isInputName = job.inputs.some(input => input.name === outputFile);
@@ -40,7 +44,7 @@ function buildSequencePattern(outputFile: string) {
   return new RegExp(`^${escapeRegex(before)}\\d+${escapeRegex(after)}$`);
 }
 
-export function findJobOutputs<File extends { name: string }>(files: File[], job: Job) {
+export function findJobOutputs<File extends { name: string }>({ files, job }: OutputLookup<File>) {
   if (!SEQUENCE_PATTERN.test(job.outputFile)) {
     return files.filter(file => file.name === job.outputFile).map(file => ({ ...file, saveAs: job.saveAs }));
   }

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { RESULT_EVENT_PREFIX, TASK_EVENT } from "@/lib/page-events";
-import type { PageTask } from "@/lib/page-events";
+import type { TabTask, TaskRequest } from "@/lib/page-events";
 import { runInsideYouTubePage } from "@/lib/page-task";
 
 const MANIFEST_V2 = 2;
@@ -11,7 +11,7 @@ const PAGE_TASK_TIMEOUT_MS = 120_000;
 
 const bridgeMessageSchema = z.object({ channel: z.literal(BRIDGE_CHANNEL), id: z.string(), result: z.unknown() });
 
-export async function runPageTaskInMainWorld(tabId: number, task: PageTask) {
+export async function runPageTaskInMainWorld({ tabId, task }: TabTask & { tabId: number }) {
   if (browser.runtime.getManifest().manifest_version !== MANIFEST_V2) {
     const [injection] = await browser.scripting.executeScript({ target: { tabId }, world: "MAIN", func: runInsideYouTubePage, args: [task] });
     return injection?.result;
@@ -19,7 +19,7 @@ export async function runPageTaskInMainWorld(tabId: number, task: PageTask) {
 
   const id = crypto.randomUUID();
   const answer = waitForBridgeAnswer(id);
-  await browser.tabs.executeScript(tabId, { code: buildIsolatedSnippet(id, task) });
+  await browser.tabs.executeScript(tabId, { code: buildIsolatedSnippet({ id, task }) });
   return answer;
 }
 
@@ -44,7 +44,7 @@ function waitForBridgeAnswer(id: string) {
   });
 }
 
-function buildIsolatedSnippet(id: string, task: PageTask) {
+function buildIsolatedSnippet({ id, task }: TaskRequest) {
   const scriptUrl = browser.runtime.getURL(PAGE_TASK_SCRIPT);
   return `(() => {
     const send = () => {

@@ -1,16 +1,20 @@
 import { z } from "zod";
 import { runPageTaskInMainWorld } from "@/lib/page-bridge";
 import { pageResultSchema } from "@/lib/schemas";
-import type { PageTask } from "@/lib/page-events";
+import type { TabTask } from "@/lib/page-events";
 
 export type { PlaylistEntry, PlaylistListing, RawChapter } from "@/lib/page-task";
 
-async function runTask(tabId: number | undefined, task: PageTask) {
+type TabVideo = { tabId: number | undefined; videoId: string };
+type TabPlaylist = { tabId: number | undefined; playlistId: string };
+export type TabPlayer = TabVideo & { withCaptions: boolean };
+
+async function runTask({ tabId, task }: TabTask) {
   if (tabId === undefined) {
     throw new Error("Open the popup on a YouTube tab for playlists and chapters");
   }
 
-  const parsed = pageResultSchema.safeParse(await runPageTaskInMainWorld(tabId, task));
+  const parsed = pageResultSchema.safeParse(await runPageTaskInMainWorld({ tabId, task }));
   if (!parsed.success) {
     throw new Error(`Couldn't read the YouTube page: ${z.prettifyError(parsed.error)}`);
   }
@@ -22,17 +26,17 @@ async function runTask(tabId: number | undefined, task: PageTask) {
   return parsed.data;
 }
 
-export async function fetchPlaylist(tabId: number | undefined, playlistId: string) {
-  const { playlist } = await runTask(tabId, { kind: "playlist", id: playlistId });
+export async function fetchPlaylist({ tabId, playlistId }: TabPlaylist) {
+  const { playlist } = await runTask({ tabId, task: { kind: "playlist", id: playlistId } });
   return playlist!;
 }
 
-export async function fetchPlayer(tabId: number | undefined, videoId: string, withCaptions: boolean) {
-  const { player } = await runTask(tabId, { kind: "player", id: videoId, withCaptions });
+export async function fetchPlayer({ tabId, videoId, withCaptions }: TabPlayer) {
+  const { player } = await runTask({ tabId, task: { kind: "player", id: videoId, withCaptions } });
   return player!;
 }
 
-export async function fetchChapters(tabId: number | undefined, videoId: string) {
-  const { chapters } = await runTask(tabId, { kind: "chapters", id: videoId });
+export async function fetchChapters({ tabId, videoId }: TabVideo) {
+  const { chapters } = await runTask({ tabId, task: { kind: "chapters", id: videoId } });
   return chapters ?? [];
 }

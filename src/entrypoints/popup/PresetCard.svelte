@@ -50,21 +50,27 @@
     return variable.type === "list" ? variable.options.map(option => `${option.label}=${option.value}`).join("\n") : "";
   }
 
-  function applyOptions(variable: Variable, text: string) {
+  type VariableInput = { variable: Variable; raw: string };
+  type LimitChange = VariableInput & { key: "min" | "max" | "step" };
+  type VariableBlueprint = { type: VariableType; name: string; label: string };
+  type VariableRetype = { index: number; type: VariableType };
+  type IndexedInput = { index: number; raw: string };
+
+  function applyOptions({ variable, raw }: VariableInput) {
     if (variable.type !== "list") {
       return;
     }
 
-    variable.options = parseOptions(text);
+    variable.options = parseOptions(raw);
     const isDefaultStillValid = variable.options.some(option => option.value === variable.defaultValue);
     variable.defaultValue = isDefaultStillValid ? variable.defaultValue : (variable.options[0]?.value ?? "");
   }
 
-  function applyDefault(variable: Variable, raw: string) {
+  function applyDefault({ variable, raw }: VariableInput) {
     variable.defaultValue = variable.type === "number" ? Number(raw) : raw;
   }
 
-  function buildVariable(type: VariableType, name: string, label: string): Variable {
+  function buildVariable({ type, name, label }: VariableBlueprint): Variable {
     if (type === "number") {
       return { type, name, label, defaultValue: 1, step: 1 };
     }
@@ -76,21 +82,21 @@
     return { type, name, label, defaultValue: type === "time" ? "00:00:00" : "" };
   }
 
-  function retype(index: number, type: VariableType) {
+  function retype({ index, type }: VariableRetype) {
     const current = draft.variables[index];
     if (current) {
-      draft.variables[index] = buildVariable(type, current.name, current.label);
+      draft.variables[index] = buildVariable({ type, name: current.name, label: current.label });
     }
   }
 
-  function retypeFromValue(index: number, raw: string) {
+  function retypeFromValue({ index, raw }: IndexedInput) {
     const type = VARIABLE_TYPES.find(candidate => candidate === raw);
     if (type) {
-      retype(index, type);
+      retype({ index, type });
     }
   }
 
-  function applyLimit(variable: Variable, key: "min" | "max" | "step", raw: string) {
+  function applyLimit({ variable, key, raw }: LimitChange) {
     if (variable.type === "number") {
       variable[key] = raw === "" ? undefined : Number(raw);
     }
@@ -98,7 +104,7 @@
 
   function addVariable() {
     const number = draft.variables.length + 1;
-    draft.variables.push(buildVariable("text", `value${number}`, `Value ${number}`));
+    draft.variables.push(buildVariable({ type: "text", name: `value${number}`, label: `Value ${number}` }));
   }
 
   function removeVariable(index: number) {
@@ -172,28 +178,28 @@
         <div class="variable">
           <input class="small" bind:value={variable.name} aria-label="Variable name" placeholder="name" />
           <input bind:value={variable.label} aria-label="Field label" placeholder="Label" />
-          <select value={variable.type} onchange={e => retypeFromValue(index, e.currentTarget.value)} aria-label="Field type">
+          <select value={variable.type} onchange={e => retypeFromValue({ index, raw: e.currentTarget.value })} aria-label="Field type">
             {#each VARIABLE_TYPES as type (type)}
               <option value={type}>{type}</option>
             {/each}
           </select>
           <button onclick={() => removeVariable(index)} aria-label="Remove variable">x</button>
           {#if variable.type === "list"}
-            <textarea rows="3" value={formatOptions(variable)} onchange={e => applyOptions(variable, e.currentTarget.value)} aria-label="Options, one label=value per line"></textarea>
-            <select value={variable.defaultValue} onchange={e => applyDefault(variable, e.currentTarget.value)} aria-label="Default option">
+            <textarea rows="3" value={formatOptions(variable)} onchange={e => applyOptions({ variable, raw: e.currentTarget.value })} aria-label="Options, one label=value per line"></textarea>
+            <select value={variable.defaultValue} onchange={e => applyDefault({ variable, raw: e.currentTarget.value })} aria-label="Default option">
               {#each variable.options as option (option.value)}
                 <option value={option.value}>{option.label}</option>
               {/each}
             </select>
           {:else if variable.type === "number"}
             <div class="numbers">
-              <input class="small" type="number" value={variable.defaultValue} oninput={e => applyDefault(variable, e.currentTarget.value)} aria-label="Default" />
-              <input class="small" type="number" value={variable.min} oninput={e => applyLimit(variable, "min", e.currentTarget.value)} aria-label="Minimum" placeholder="min" />
-              <input class="small" type="number" value={variable.max} oninput={e => applyLimit(variable, "max", e.currentTarget.value)} aria-label="Maximum" placeholder="max" />
-              <input class="small" type="number" value={variable.step} oninput={e => applyLimit(variable, "step", e.currentTarget.value)} aria-label="Step" placeholder="step" />
+              <input class="small" type="number" value={variable.defaultValue} oninput={e => applyDefault({ variable, raw: e.currentTarget.value })} aria-label="Default" />
+              <input class="small" type="number" value={variable.min} oninput={e => applyLimit({ variable, key: "min", raw: e.currentTarget.value })} aria-label="Minimum" placeholder="min" />
+              <input class="small" type="number" value={variable.max} oninput={e => applyLimit({ variable, key: "max", raw: e.currentTarget.value })} aria-label="Maximum" placeholder="max" />
+              <input class="small" type="number" value={variable.step} oninput={e => applyLimit({ variable, key: "step", raw: e.currentTarget.value })} aria-label="Step" placeholder="step" />
             </div>
           {:else}
-            <input value={variable.defaultValue} oninput={e => applyDefault(variable, e.currentTarget.value)} aria-label="Default" placeholder="Default" />
+            <input value={variable.defaultValue} oninput={e => applyDefault({ variable, raw: e.currentTarget.value })} aria-label="Default" placeholder="Default" />
           {/if}
         </div>
       {/each}

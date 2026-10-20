@@ -19,6 +19,7 @@ export type SabrSession = {
 };
 
 type CapturedRequest = { url: string; body: string };
+type SessionSource = { requests: CapturedRequest[]; formats: StreamFormat[] };
 
 function fromBase64(text: string) {
   return Uint8Array.from(atob(text), character => character.charCodeAt(0));
@@ -28,7 +29,7 @@ function toBase64(bytes: Uint8Array) {
   return btoa(String.fromCharCode(...bytes));
 }
 
-export function buildSabrSession(requests: CapturedRequest[], formats: StreamFormat[]): SabrSession {
+export function buildSabrSession({ requests, formats }: SessionSource): SabrSession {
   const attested = requests
     .map(({ url, body }) => ({ url, request: VideoPlaybackAbrRequest.decode(fromBase64(body)) }))
     .filter(({ request }) => (request.streamerContext?.poToken?.byteLength ?? 0) >= MIN_ATTESTED_PO_TOKEN_BYTES && request.videoPlaybackUstreamerConfig?.byteLength)

@@ -115,7 +115,11 @@ export function listShownPresets(state: LibraryState) {
   return (state.shownIds ?? DEFAULT_SHOWN_IDS).flatMap(id => findPreset(state, id) ?? []);
 }
 
-export function moveBefore(ids: string[], movedId: string, targetId: string) {
+type MoveRequest = { ids: string[]; movedId: string; targetId: string };
+type MergeRequest = { current: LibraryState; imported: LibraryState };
+type FillRequest = { text: string; variables: Variable[]; values: Record<string, string> };
+
+export function moveBefore({ ids, movedId, targetId }: MoveRequest) {
   if (movedId === targetId) {
     return ids;
   }
@@ -154,7 +158,7 @@ export function parseLibraryFile(text: string): LibraryState {
   return { custom, shownIds, defaultId, checkedIds };
 }
 
-export function mergeLibraryState(current: LibraryState, imported: LibraryState): LibraryState {
+export function mergeLibraryState({ current, imported }: MergeRequest): LibraryState {
   const importedIds = new Set(imported.custom.map(preset => preset.id));
   return {
     custom: [...current.custom.filter(preset => !importedIds.has(preset.id)), ...imported.custom],
@@ -190,7 +194,7 @@ function buildValueSchema(variable: Variable) {
   return z.string();
 }
 
-export function fillVariables(text: string, variables: Variable[], values: Record<string, string>) {
+export function fillVariables({ text, variables, values }: FillRequest) {
   const variableByName = new Map(variables.map(variable => [variable.name, variable]));
   return text.replace(VARIABLE_PLACEHOLDER_PATTERN, (_match, name: string) => {
     const variable = variableByName.get(name);

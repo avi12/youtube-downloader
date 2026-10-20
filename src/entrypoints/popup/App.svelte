@@ -108,7 +108,17 @@
     return valuesById[preset.id] ?? defaultValues(preset.variables);
   }
 
-  function setChecked(id: string, isChecked: boolean) {
+  type CheckedChange = { id: string; isChecked: boolean };
+  type PresetSave = { previousId: string; draft: Preset };
+  type BlobSave = { name: string; parts: BlobPart[] };
+  type Cancellable = { signal: AbortSignal };
+  type DirectFileSave = Cancellable & { file: DirectFile };
+  type InputMaterialization = Cancellable & { input: JobInput };
+  type WorkerRun = Cancellable & { request: WorkerRequest };
+  type JobRun = Cancellable & { plannedJob: Job; ffmpegCommand: string | undefined };
+  type PresetRun = { preset: Preset; values: Record<string, string>; isFresh?: boolean };
+
+  function setChecked({ id, isChecked }: CheckedChange) {
     const others = (library.checkedIds ?? []).filter(checkedId => checkedId !== id);
     updateLibrary({ ...library, checkedIds: isChecked ? [...others, id] : others });
   }
@@ -117,7 +127,7 @@
     pastedUrl = (await navigator.clipboard.readText()).trim();
   }
 
-  function savePreset(previousId: string, draft: Preset) {
+  function savePreset({ previousId, draft }: PresetSave) {
     if (isBuiltInPreset(previousId)) {
       const copy = { ...draft, id: crypto.randomUUID() };
       updateLibrary({
@@ -133,14 +143,14 @@
 
   function movePreset(targetId: string) {
     if (draggedId) {
-      updateLibrary({ ...library, shownIds: moveBefore(currentShownIds(), draggedId, targetId) });
+      updateLibrary({ ...library, shownIds: moveBefore({ ids: currentShownIds(), movedId: draggedId, targetId }) });
     }
 
     draggedId = undefined;
   }
 
   function makeDefault(id: string) {
-    updateLibrary({ ...library, defaultId: id, shownIds: moveBefore(currentShownIds(), id, currentShownIds()[0] ?? id) });
+    updateLibrary({ ...library, defaultId: id, shownIds: moveBefore({ ids: currentShownIds(), movedId: id, targetId: currentShownIds()[0] ?? id }) });
   }
 
   function hidePreset(id: string) {
@@ -174,7 +184,7 @@
 
     errorMessage = "";
     try {
-      updateLibrary(mergeLibraryState(library, parseLibraryFile(await file.text())));
+      updateLibrary(mergeLibraryState({ current: library, imported: parseLibraryFile(await file.text()) }));
       status = `Imported ${file.name}`;
     } catch (error) {
       errorMessage = describeError(error);
@@ -182,14 +192,14 @@
   }
 
   async function exportPresets() {
-    await saveBlob(EXPORT_FILE_NAME, [serializeLibraryState(library)]);
+    await saveBlob({ name: EXPORT_FILE_NAME, parts: [serializeLibraryState(library)] });
   }
 
   function cancel() {
     abortController?.abort();
   }
 
-  async function saveBlob(name: string, parts: BlobPart[]) {
+  async function saveBlob({ name, parts }: BlobSave) {
     await browser.downloads.download({
       url: URL.createObjectURL(new Blob(parts, { type: mimeTypeForFile(name) })),
       filename: name,
@@ -198,9 +208,9 @@
     savedNames.push(name);
   }
 
-  async function saveDirectFile({ saveAs, text, url }: DirectFile, signal: AbortSignal) {
+  async function saveDirectFile({ file: { saveAs, text, url }, signal }: DirectFileSave) {
     if (text !== undefined) {
-      await saveBlob(saveAs, [text]);
+      await saveBlob({ name: saveAs, parts: [text] });
       return;
     }
 
@@ -209,10 +219,10 @@
       throw new Error(`Couldn't fetch ${saveAs}: HTTP ${response.status}`);
     }
 
-    await saveBlob(saveAs, [await response.arrayBuffer()]);
+    await saveBlob({ name: saveAs, parts: [await response.arrayBuffer()] });
   }
 
-  async function materializeInput({ sabr, ...input }: JobInput, signal: AbortSignal): Promise<WorkerInput> {
+  async function materializeInput({ input: { sabr, ...input }, signal }: InputMaterialization): Promise<WorkerInput> {
     if (!sabr) {
       return input;
     }
@@ -223,7 +233,7 @@
     return { ...input, data: bytes.buffer };
   }
 
-  function runInWorker(request: WorkerRequest, signal: AbortSignal) {
+  function runInWorker({ request, signal }: WorkerRun) {
     return new Promise<DoneMessage>((resolve, reject) => {
       const worker = new Worker(browser.runtime.getURL("/ffmpeg-worker.js"), { type: "module" });
       signal.addEventListener("abort", () => {
@@ -259,21 +269,24 @@
     });
   }
 
-  async function runJob(plannedJob: Job, ffmpegCommand: string | undefined, signal: AbortSignal) {
-    const job = ffmpegCommand && plannedJob.isMedia ? applyFfmpegCommand(plannedJob, ffmpegCommand) : plannedJob;
+  async function runJob({ plannedJob, ffmpegCommand, signal }: JobRun) {
+    const job = ffmpegCommand && plannedJob.isMedia ? applyFfmpegCommand({ job: plannedJob, command: ffmpegCommand }) : plannedJob;
     status = `Running ${job.saveAs}`;
     downloadRatio = 0;
     const done = await runInWorker({
-      wasmUrl: browser.runtime.getURL("/ffmpeg/ffmpeg-core.wasm"),
-      inputs: await Promise.all(job.inputs.map(input => materializeInput(input, signal))),
-      args: job.args
-    }, signal);
-    const outputs = findJobOutputs(done.files, job);
+      request: {
+        wasmUrl: browser.runtime.getURL("/ffmpeg/ffmpeg-core.wasm"),
+        inputs: await Promise.all(job.inputs.map(input => materializeInput({ input, signal }))),
+        args: job.args
+      },
+      signal
+    });
+    const outputs = findJobOutputs({ files: done.files, job });
     if (done.code !== 0 || !outputs.length) {
       throw new Error(`FFmpeg failed on ${job.saveAs} (exit code ${done.code})`);
     }
 
-    await Promise.all(outputs.map(output => saveBlob(output.saveAs, [output.data])));
+    await Promise.all(outputs.map(output => saveBlob({ name: output.saveAs, parts: [output.data] })));
   }
 
   function describeError(error: unknown) {
@@ -283,14 +296,14 @@
   async function runChecked() {
     savedNames = [];
     for (const preset of checkedPresets) {
-      const isDone = await run(preset, valuesFor(preset), false);
+      const isDone = await run({ preset, values: valuesFor(preset), isFresh: false });
       if (!isDone) {
         return;
       }
     }
   }
 
-  async function run(preset: Preset, values: Record<string, string>, isFresh = true) {
+  async function run({ preset, values, isFresh = true }: PresetRun) {
     errorMessage = "";
     logText = "";
     status = "";
@@ -300,16 +313,21 @@
 
     const controller = new AbortController();
     try {
-      const command = withTabUrl(fillVariables(preset.command, preset.variables, values));
-      const ffmpegCommand = preset.ffmpegCommand ? fillVariables(preset.ffmpegCommand, preset.variables, values) : undefined;
+      const { variables } = preset;
+      const command = withTabUrl(fillVariables({ text: preset.command, variables, values }));
+      const ffmpegCommand = preset.ffmpegCommand ? fillVariables({ text: preset.ffmpegCommand, variables, values }) : undefined;
       runningPresetId = preset.id;
       abortController = controller;
-      await runYtDlpCommand(command, tab, {
-        signal: controller.signal,
-        log: text => (logText += `${text}\n`),
-        status: text => (status = text),
-        runJob: job => runJob(job, ffmpegCommand, controller.signal),
-        saveDirectFile: file => saveDirectFile(file, controller.signal)
+      await runYtDlpCommand({
+        command,
+        tab,
+        hooks: {
+          signal: controller.signal,
+          log: text => (logText += `${text}\n`),
+          status: text => (status = text),
+          runJob: plannedJob => runJob({ plannedJob, ffmpegCommand, signal: controller.signal }),
+          saveDirectFile: file => saveDirectFile({ file, signal: controller.signal })
+        }
       });
       status = "Done";
     } catch (error) {
@@ -347,11 +365,11 @@
       isChecked={library.checkedIds?.includes(preset.id) ?? false}
       values={valuesFor(preset)}
       onvalue={(name, value) => (valuesById[preset.id] = { ...valuesFor(preset), [name]: value })}
-      onchecked={isChecked => setChecked(preset.id, isChecked)}
+      onchecked={isChecked => setChecked({ id: preset.id, isChecked })}
       isOpenForEditing={newPresetId === preset.id}
-      onrun={() => run(preset, valuesFor(preset))}
+      onrun={() => run({ preset, values: valuesFor(preset) })}
       oncancel={cancel}
-      onsave={draft => savePreset(preset.id, draft)}
+      onsave={draft => savePreset({ previousId: preset.id, draft })}
       onhide={() => hidePreset(preset.id)}
       onsetdefault={() => makeDefault(preset.id)}
       ondragstart={() => (draggedId = preset.id)}
