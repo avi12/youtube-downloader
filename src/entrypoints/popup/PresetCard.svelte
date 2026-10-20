@@ -3,6 +3,8 @@
   import { TIME_PATTERN, VARIABLE_TYPES } from "@/lib/presets";
   import type { Preset, Variable, VariableType } from "@/lib/presets";
 
+  const GEAR_PATH = "M19.14 12.94a7.4 7.4 0 0 0 0-1.88l2.03-1.58a.48.48 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96a7 7 0 0 0-1.62-.94l-.36-2.54a.48.48 0 0 0-.48-.41h-3.84a.48.48 0 0 0-.47.41l-.36 2.54a7.4 7.4 0 0 0-1.62.94l-2.39-.96a.48.48 0 0 0-.59.22L2.74 8.87a.47.47 0 0 0 .12.61l2.03 1.58a7.4 7.4 0 0 0 0 1.88l-2.03 1.58a.48.48 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.04.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54a7.4 7.4 0 0 0 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.47.47 0 0 0-.12-.61zM12 15.6a3.6 3.6 0 1 1 0-7.2 3.6 3.6 0 0 1 0 7.2";
+
   type Props = {
     preset: Preset;
     isBuiltIn: boolean;
@@ -218,11 +220,23 @@
         />
         <h2>{preset.label}{isDefault ? " (default)" : ""}</h2>
       </label></div>
-    {#if isThisRunning}
-      <button class="danger" onclick={oncancel}>Cancel</button>
-    {:else}
-      <button class="filled" disabled={isBusy} onclick={onrun}>Run</button>
-    {/if}
+    <div class="actions">
+      <button
+        class="gear"
+        aria-expanded={isEditing}
+        aria-label="Edit settings"
+        data-tooltip="Edit settings"
+        onclick={() => (isEditing = !isEditing)}>
+        <svg aria-hidden="true" viewBox="0 0 24 24">
+          <path d={GEAR_PATH} />
+        </svg>
+      </button>
+      {#if isThisRunning}
+        <button class="danger" onclick={oncancel}>Cancel</button>
+      {:else}
+        <button class="filled" disabled={isBusy} onclick={onrun}>Run</button>
+      {/if}
+    </div>
   </header>
 
   {#if preset.variables.length}
@@ -265,8 +279,7 @@
     </div>
   {/if}
 
-  <details bind:open={isEditing}>
-    <summary>Edit</summary>
+  {#if isEditing}
     <div class="editor">
       <OptionField label="Name">
         <input bind:value={draft.label} />
@@ -363,7 +376,7 @@
         {/if}
       </div>
     </div>
-  </details>
+  {/if}
 </section>
 
 <style>
@@ -406,6 +419,52 @@
     gap: 8px;
     align-items: center;
     min-width: 0;
+  }
+
+  .actions {
+    display: flex;
+    flex-shrink: 0;
+    gap: 6px;
+    align-items: center;
+  }
+
+  .gear {
+    position: relative;
+    display: grid;
+    place-items: center;
+    padding: 6px;
+    border-radius: 50%;
+  }
+
+  .gear svg {
+    block-size: 18px;
+    inline-size: 18px;
+    fill: currentColor;
+  }
+
+  .gear[aria-expanded="true"] {
+    color: var(--accent);
+  }
+
+  .gear::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    inset-block-start: calc(100% + 4px);
+    inset-inline-end: 0;
+    z-index: 1;
+    padding: 4px 8px;
+    border-radius: 4px;
+    background: var(--md-sys-color-inverse-surface);
+    color: var(--md-sys-color-inverse-on-surface);
+    font-size: 0.75rem;
+    white-space: nowrap;
+    opacity: 0%;
+    pointer-events: none;
+    transition: opacity calc(150ms * var(--motion));
+  }
+
+  .gear:is(:hover, :focus-visible)::after {
+    opacity: 100%;
   }
 
   .handle {
