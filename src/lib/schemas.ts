@@ -46,7 +46,10 @@ const captionTrackSchema = z.object({
 });
 
 export const playerResponseSchema = z.object({
-  playabilityStatus: z.object({ status: z.string().optional(), reason: z.string().optional() }).optional(),
+  playabilityStatus: z.object({
+    status: z.string().optional(),
+    reason: z.string().optional()
+  }).optional(),
   videoDetails: z.object({
     title: z.string().optional(),
     author: z.string().optional(),
@@ -59,7 +62,10 @@ export const playerResponseSchema = z.object({
     thumbnail: z.object({ thumbnails: lenientArray(thumbnailSchema).optional() }).optional()
   }).optional(),
   microformat: z.object({
-    playerMicroformatRenderer: z.object({ uploadDate: z.string().optional(), category: z.string().optional() }).optional()
+    playerMicroformatRenderer: z.object({
+      uploadDate: z.string().optional(),
+      category: z.string().optional()
+    }).optional()
   }).optional(),
   streamingData: z.object({
     formats: lenientArray(streamFormatSchema).optional(),
@@ -80,12 +86,27 @@ export const pageResultSchema = z.object({
   error: z.string().optional(),
   playlist: z.object({
     title: z.string(),
-    entries: z.array(z.object({ videoId: z.string(), title: z.string() }))
+    entries: z.array(
+      z.object({
+        videoId: z.string(),
+        title: z.string()
+      })
+    )
   }).optional(),
-  chapters: z.array(z.object({ title: z.string(), start: z.number() })).optional(),
+  chapters: z.array(
+    z.object({
+      title: z.string(),
+      start: z.number()
+    })
+  ).optional(),
   player: z.object({
     playerResponse: z.unknown(),
-    requests: z.array(z.object({ url: z.string(), body: z.string() })),
+    requests: z.array(
+      z.object({
+        url: z.string(),
+        body: z.string()
+      })
+    ),
     captionTexts: z.record(z.string(), z.string())
   }).optional()
 });

@@ -1,5 +1,5 @@
-import { z } from "zod";
 import { URL_TOKEN } from "@/lib/command";
+import { z } from "zod";
 
 const STORAGE_KEY = "presetLibrary";
 const EXPORT_VERSION = 1;
@@ -12,10 +12,35 @@ const variableBase = {
 };
 
 export const variableSchema = z.discriminatedUnion("type", [
-  z.object({ ...variableBase, type: z.literal("number"), defaultValue: z.number(), min: z.number().optional(), max: z.number().optional(), step: z.number().optional() }),
-  z.object({ ...variableBase, type: z.literal("time"), defaultValue: z.string() }),
-  z.object({ ...variableBase, type: z.literal("text"), defaultValue: z.string() }),
-  z.object({ ...variableBase, type: z.literal("list"), defaultValue: z.string(), options: z.array(z.object({ label: z.string(), value: z.string() })).min(1) })
+  z.object({
+    ...variableBase,
+    type: z.literal("number"),
+    defaultValue: z.number(),
+    min: z.number().optional(),
+    max: z.number().optional(),
+    step: z.number().optional()
+  }),
+  z.object({
+    ...variableBase,
+    type: z.literal("time"),
+    defaultValue: z.string()
+  }),
+  z.object({
+    ...variableBase,
+    type: z.literal("text"),
+    defaultValue: z.string()
+  }),
+  z.object({
+    ...variableBase,
+    type: z.literal("list"),
+    defaultValue: z.string(),
+    options: z.array(
+      z.object({
+        label: z.string(),
+        value: z.string()
+      })
+    ).min(1)
+  })
 ]);
 
 export const presetSchema = z.object({
@@ -42,49 +67,115 @@ export type LibraryState = z.infer<typeof libraryStateSchema>;
 
 export const VARIABLE_TYPES = variableSchema.options.map(option => option.shape.type.value);
 
-const qualityOptions = ["360", "480", "720", "1080", "1440", "2160"].map(value => ({ label: `${value}p`, value }));
-const audioFormatOptions = ["mp3", "m4a", "opus", "flac", "wav"].map(value => ({ label: value.toUpperCase(), value }));
+const qualityOptions = ["360", "480", "720", "1080", "1440", "2160"].map(value => ({
+  label: `${value}p`,
+  value
+}));
+const audioFormatOptions = ["mp3", "m4a", "opus", "flac", "wav"].map(value => ({
+  label: value.toUpperCase(),
+  value
+}));
 
 export const BUILT_IN_PRESETS: Preset[] = [
-  { id: "best", label: "Best video + audio", command: `yt-dlp ${URL_TOKEN}`, variables: [] },
+  {
+    id: "best",
+    label: "Best video + audio",
+    command: `yt-dlp ${URL_TOKEN}`,
+    variables: []
+  },
   {
     id: "max-quality",
     label: "Limit the quality",
     command: `yt-dlp -f "bv*[height<=%quality%]+ba/b[height<=%quality%]" ${URL_TOKEN}`,
-    variables: [{ type: "list", name: "quality", label: "Up to", defaultValue: "720", options: qualityOptions }]
+    variables: [{
+      type: "list",
+      name: "quality",
+      label: "Up to",
+      defaultValue: "720",
+      options: qualityOptions
+    }]
   },
   {
     id: "audio",
     label: "Audio only with cover",
     command: `yt-dlp -x --audio-format %format% --embed-thumbnail --embed-metadata ${URL_TOKEN}`,
-    variables: [{ type: "list", name: "format", label: "Format", defaultValue: "mp3", options: audioFormatOptions }]
+    variables: [{
+      type: "list",
+      name: "format",
+      label: "Format",
+      defaultValue: "mp3",
+      options: audioFormatOptions
+    }]
   },
   {
     id: "captions",
     label: "Captions only (SRT)",
     command: `yt-dlp --skip-download --write-subs --write-auto-subs --sub-langs %languages% --convert-subs srt ${URL_TOKEN}`,
-    variables: [{ type: "text", name: "languages", label: "Languages", defaultValue: "en" }]
+    variables: [{
+      type: "text",
+      name: "languages",
+      label: "Languages",
+      defaultValue: "en"
+    }]
   },
-  { id: "subtitled", label: "Video with subtitles and chapters", command: `yt-dlp --embed-subs --sub-langs en --embed-chapters --embed-metadata ${URL_TOKEN}`, variables: [] },
+  {
+    id: "subtitled",
+    label: "Video with subtitles and chapters",
+    command: `yt-dlp --embed-subs --sub-langs en --embed-chapters --embed-metadata ${URL_TOKEN}`,
+    variables: []
+  },
   {
     id: "clip",
     label: "Clip",
     command: `yt-dlp --download-sections "*%start%-%end%" ${URL_TOKEN}`,
     variables: [
-      { type: "time", name: "start", label: "From", defaultValue: "00:00:10" },
-      { type: "time", name: "end", label: "To", defaultValue: "00:00:20" }
+      {
+        type: "time",
+        name: "start",
+        label: "From",
+        defaultValue: "00:00:10"
+      },
+      {
+        type: "time",
+        name: "end",
+        label: "To",
+        defaultValue: "00:00:20"
+      }
     ]
   },
-  { id: "playlist-mp3", label: "Whole playlist as MP3", command: `yt-dlp -x --audio-format mp3 -o "%(playlist)s/%(playlist_index)02d - %(title)s.%(ext)s" ${URL_TOKEN}`, variables: [] },
-  { id: "thumbnail", label: "Thumbnail only", command: `yt-dlp --skip-download --write-thumbnail ${URL_TOKEN}`, variables: [] },
+  {
+    id: "playlist-mp3",
+    label: "Whole playlist as MP3",
+    command: `yt-dlp -x --audio-format mp3 -o "%(playlist)s/%(playlist_index)02d - %(title)s.%(ext)s" ${URL_TOKEN}`,
+    variables: []
+  },
+  {
+    id: "thumbnail",
+    label: "Thumbnail only",
+    command: `yt-dlp --skip-download --write-thumbnail ${URL_TOKEN}`,
+    variables: []
+  },
   {
     id: "snapshot",
     label: "Snapshot (PNG)",
     command: `yt-dlp -f "bv*[height<=720][vcodec^=avc1]" ${URL_TOKEN}`,
     ffmpegCommand: "-ss %at% -i {input1} -frames:v %frames% snapshot.png",
     variables: [
-      { type: "time", name: "at", label: "At", defaultValue: "00:00:05" },
-      { type: "number", name: "frames", label: "Frames", defaultValue: 1, min: 1, max: 100, step: 1 }
+      {
+        type: "time",
+        name: "at",
+        label: "At",
+        defaultValue: "00:00:05"
+      },
+      {
+        type: "number",
+        name: "frames",
+        label: "Frames",
+        defaultValue: 1,
+        min: 1,
+        max: 100,
+        step: 1
+      }
     ]
   },
   {
@@ -93,12 +184,38 @@ export const BUILT_IN_PRESETS: Preset[] = [
     command: `yt-dlp -f "bv*[height<=720][vcodec^=avc1]" ${URL_TOKEN}`,
     ffmpegCommand: "-ss %at% -t %seconds% -i {input1} -vf fps=%fps% frame%03d.png",
     variables: [
-      { type: "time", name: "at", label: "From", defaultValue: "00:00:05" },
-      { type: "number", name: "seconds", label: "Seconds", defaultValue: 3, min: 1, max: 60, step: 1 },
-      { type: "number", name: "fps", label: "Per second", defaultValue: 1, min: 1, max: 30, step: 1 }
+      {
+        type: "time",
+        name: "at",
+        label: "From",
+        defaultValue: "00:00:05"
+      },
+      {
+        type: "number",
+        name: "seconds",
+        label: "Seconds",
+        defaultValue: 3,
+        min: 1,
+        max: 60,
+        step: 1
+      },
+      {
+        type: "number",
+        name: "fps",
+        label: "Per second",
+        defaultValue: 1,
+        min: 1,
+        max: 30,
+        step: 1
+      }
     ]
   },
-  { id: "formats", label: "List formats", command: `yt-dlp -F ${URL_TOKEN}`, variables: [] }
+  {
+    id: "formats",
+    label: "List formats",
+    command: `yt-dlp -F ${URL_TOKEN}`,
+    variables: []
+  }
 ];
 
 export const DEFAULT_SHOWN_IDS = ["best", "max-quality", "audio"];
@@ -115,9 +232,20 @@ export function listShownPresets(state: LibraryState) {
   return (state.shownIds ?? DEFAULT_SHOWN_IDS).flatMap(id => findPreset(state, id) ?? []);
 }
 
-type MoveRequest = { ids: string[]; movedId: string; targetId: string };
-type MergeRequest = { current: LibraryState; imported: LibraryState };
-type FillRequest = { text: string; variables: Variable[]; values: Record<string, string> };
+type MoveRequest = {
+  ids: string[];
+  movedId: string;
+  targetId: string;
+};
+type MergeRequest = {
+  current: LibraryState;
+  imported: LibraryState;
+};
+type FillRequest = {
+  text: string;
+  variables: Variable[];
+  values: Record<string, string>;
+};
 
 export function moveBefore({ ids, movedId, targetId }: MoveRequest) {
   if (movedId === targetId) {
@@ -145,7 +273,10 @@ export function storeLibraryState(state: LibraryState) {
 }
 
 export function serializeLibraryState(state: LibraryState) {
-  return JSON.stringify({ version: EXPORT_VERSION, ...state }, null, 2);
+  return JSON.stringify({
+    version: EXPORT_VERSION,
+    ...state
+  }, null, 2);
 }
 
 export function parseLibraryFile(text: string): LibraryState {
@@ -155,7 +286,12 @@ export function parseLibraryFile(text: string): LibraryState {
   }
 
   const { custom, shownIds, defaultId, checkedIds } = parsed.data;
-  return { custom, shownIds, defaultId, checkedIds };
+  return {
+    custom,
+    shownIds,
+    defaultId,
+    checkedIds
+  };
 }
 
 export function mergeLibraryState({ current, imported }: MergeRequest): LibraryState {
@@ -169,7 +305,12 @@ export function mergeLibraryState({ current, imported }: MergeRequest): LibraryS
 }
 
 export function createBlankPreset(): Preset {
-  return { id: crypto.randomUUID(), label: "New preset", command: `yt-dlp ${URL_TOKEN}`, variables: [] };
+  return {
+    id: crypto.randomUUID(),
+    label: "New preset",
+    command: `yt-dlp ${URL_TOKEN}`,
+    variables: []
+  };
 }
 
 export function defaultValues(variables: Variable[]) {

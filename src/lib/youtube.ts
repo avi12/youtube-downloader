@@ -1,11 +1,11 @@
-import { z } from "zod";
-import { playerResponseSchema } from "@/lib/schemas";
 import { fetchPlayer } from "@/lib/page";
 import type { TabPlayer } from "@/lib/page";
 import { buildSabrSession } from "@/lib/sabr";
 import type { SabrSession } from "@/lib/sabr";
-import { parseUrl } from "@/lib/url";
+import { playerResponseSchema } from "@/lib/schemas";
 import type { StreamFormat, Thumbnail } from "@/lib/schemas";
+import { parseUrl } from "@/lib/url";
+import { z } from "zod";
 
 type PlayerResponse = z.infer<typeof playerResponseSchema>;
 
@@ -47,14 +47,33 @@ const VISIONOS_CLIENT = {
   gl: "US"
 };
 
-type PlayerClient = { nameId: string; client: { clientName: string; clientVersion: string; userAgent: string } };
+type PlayerClient = {
+  nameId: string;
+  client: {
+    clientName: string;
+    clientVersion: string;
+    userAgent: string;
+  };
+};
 
-type ClientLookup = { videoId: string; playerClient: PlayerClient };
-type ClientsLookup = { videoId: string; clients: PlayerClient[] };
+type ClientLookup = {
+  videoId: string;
+  playerClient: PlayerClient;
+};
+type ClientsLookup = {
+  videoId: string;
+  clients: PlayerClient[];
+};
 
 const PLAYER_CLIENTS: PlayerClient[] = [
-  { nameId: "28", client: ANDROID_VR_CLIENT },
-  { nameId: "101", client: VISIONOS_CLIENT }
+  {
+    nameId: "28",
+    client: ANDROID_VR_CLIENT
+  },
+  {
+    nameId: "101",
+    client: VISIONOS_CLIENT
+  }
 ];
 
 export type CaptionOption = {
@@ -124,30 +143,71 @@ export function parsePlaylistId(input: string) {
 }
 
 const YOUTUBE_ORIGIN_HEADERS = [
-  { header: "Origin", operation: "set", value: YOUTUBE_ORIGIN },
-  { header: "Referer", operation: "set", value: `${YOUTUBE_ORIGIN}/` },
-  { header: "Sec-Fetch-Site", operation: "set", value: "cross-site" }
+  {
+    header: "Origin",
+    operation: "set",
+    value: YOUTUBE_ORIGIN
+  },
+  {
+    header: "Referer",
+    operation: "set",
+    value: `${YOUTUBE_ORIGIN}/`
+  },
+  {
+    header: "Sec-Fetch-Site",
+    operation: "set",
+    value: "cross-site"
+  }
 ] satisfies Browser.declarativeNetRequest.ModifyHeaderInfo[];
 
 const BROWSER_FINGERPRINT_HEADERS = ["sec-ch-ua", "sec-ch-ua-mobile", "sec-ch-ua-platform", "sec-fetch-dest", "sec-fetch-mode", "sec-fetch-site"];
 
 function buildPlayerHeaders({ nameId, client }: PlayerClient) {
   return [
-    { header: "Origin", operation: "set", value: YOUTUBE_ORIGIN },
-    ...BROWSER_FINGERPRINT_HEADERS.map(header => ({ header, operation: "remove" }) as const),
-    { header: "User-Agent", operation: "set", value: client.userAgent },
-    { header: "X-YouTube-Client-Name", operation: "set", value: nameId },
-    { header: "X-YouTube-Client-Version", operation: "set", value: client.clientVersion }
+    {
+      header: "Origin",
+      operation: "set",
+      value: YOUTUBE_ORIGIN
+    },
+    ...BROWSER_FINGERPRINT_HEADERS.map(header => ({
+      header,
+      operation: "remove"
+    }) as const),
+    {
+      header: "User-Agent",
+      operation: "set",
+      value: client.userAgent
+    },
+    {
+      header: "X-YouTube-Client-Name",
+      operation: "set",
+      value: nameId
+    },
+    {
+      header: "X-YouTube-Client-Version",
+      operation: "set",
+      value: client.clientVersion
+    }
   ] satisfies Browser.declarativeNetRequest.ModifyHeaderInfo[];
 }
 
-type HeaderRuleParams = { id: number; urlFilter: string; requestHeaders: Browser.declarativeNetRequest.ModifyHeaderInfo[] };
+type HeaderRuleParams = {
+  id: number;
+  urlFilter: string;
+  requestHeaders: Browser.declarativeNetRequest.ModifyHeaderInfo[];
+};
 
 function buildHeaderRule({ id, urlFilter, requestHeaders }: HeaderRuleParams) {
   return {
     id,
-    action: { type: "modifyHeaders", requestHeaders },
-    condition: { urlFilter, initiatorDomains: [browser.runtime.id] }
+    action: {
+      type: "modifyHeaders",
+      requestHeaders
+    },
+    condition: {
+      urlFilter,
+      initiatorDomains: [browser.runtime.id]
+    }
   } satisfies Browser.declarativeNetRequest.Rule;
 }
 
@@ -155,8 +215,16 @@ export async function registerRequestHeaderRules(playerClient = PLAYER_CLIENTS[0
   await browser.declarativeNetRequest.updateSessionRules({
     removeRuleIds: [CDN_ORIGIN_RULE_ID, PLAYER_HEADERS_RULE_ID],
     addRules: [
-      buildHeaderRule({ id: CDN_ORIGIN_RULE_ID, urlFilter: GOOGLEVIDEO_URL_FILTER, requestHeaders: YOUTUBE_ORIGIN_HEADERS }),
-      buildHeaderRule({ id: PLAYER_HEADERS_RULE_ID, urlFilter: PLAYER_URL_FILTER, requestHeaders: buildPlayerHeaders(playerClient) })
+      buildHeaderRule({
+        id: CDN_ORIGIN_RULE_ID,
+        urlFilter: GOOGLEVIDEO_URL_FILTER,
+        requestHeaders: YOUTUBE_ORIGIN_HEADERS
+      }),
+      buildHeaderRule({
+        id: PLAYER_HEADERS_RULE_ID,
+        urlFilter: PLAYER_URL_FILTER,
+        requestHeaders: buildPlayerHeaders(playerClient)
+      })
     ]
   });
 }
@@ -176,9 +244,16 @@ async function fetchPlayerResponse({ videoId, playerClient: { client } }: Client
   const response = await fetch(INNERTUBE_PLAYER_URL, {
     method: "POST",
     credentials: "omit",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json"
+    },
     body: JSON.stringify({
-      context: { client: { ...client, visitorData } },
+      context: {
+        client: {
+          ...client,
+          visitorData
+        }
+      },
       videoId,
       contentCheckOk: true,
       racyCheckOk: true
@@ -212,7 +287,12 @@ function toVttUrl(baseUrl: string) {
   return url.href;
 }
 
-type ResolvedVideoSource = { videoId: string; playerResponse: PlayerResponse; formats: StreamFormat[]; captionTexts?: Record<string, string> };
+type ResolvedVideoSource = {
+  videoId: string;
+  playerResponse: PlayerResponse;
+  formats: StreamFormat[];
+  captionTexts?: Record<string, string>;
+};
 
 function toResolvedVideo({ videoId, playerResponse, formats, captionTexts = {} }: ResolvedVideoSource): ResolvedVideo {
   const details = playerResponse.videoDetails ?? {};
@@ -244,23 +324,40 @@ function toResolvedVideo({ videoId, playerResponse, formats, captionTexts = {} }
 async function fetchPlayerResponseFromAnyClient({ videoId, clients }: ClientsLookup): Promise<PlayerResponse> {
   const [playerClient, ...fallbackClients] = clients;
   await registerRequestHeaderRules(playerClient);
-  return fetchPlayerResponse({ videoId, playerClient: playerClient! }).catch((error: unknown) => {
+  return fetchPlayerResponse({
+    videoId,
+    playerClient: playerClient!
+  }).catch((error: unknown) => {
     if (!(error instanceof BotCheckError) || !fallbackClients.length) {
       throw error;
     }
 
-    return fetchPlayerResponseFromAnyClient({ videoId, clients: fallbackClients });
+    return fetchPlayerResponseFromAnyClient({
+      videoId,
+      clients: fallbackClients
+    });
   });
 }
 
 export async function resolveVideo(videoId: string) {
-  const playerResponse = await fetchPlayerResponseFromAnyClient({ videoId, clients: PLAYER_CLIENTS });
+  const playerResponse = await fetchPlayerResponseFromAnyClient({
+    videoId,
+    clients: PLAYER_CLIENTS
+  });
   const { adaptiveFormats = [] } = playerResponse.streamingData ?? {};
-  return toResolvedVideo({ videoId, playerResponse, formats: adaptiveFormats.filter(format => format.url) });
+  return toResolvedVideo({
+    videoId,
+    playerResponse,
+    formats: adaptiveFormats.filter(format => format.url)
+  });
 }
 
 export async function resolveVideoFromPage({ tabId, videoId, withCaptions }: TabPlayer) {
-  const { playerResponse, requests, captionTexts } = await fetchPlayer({ tabId, videoId, withCaptions });
+  const { playerResponse, requests, captionTexts } = await fetchPlayer({
+    tabId,
+    videoId,
+    withCaptions
+  });
   const parsed = playerResponseSchema.safeParse(playerResponse);
   if (!parsed.success) {
     throw new Error(`The video page sent a player response in an unexpected shape: ${z.prettifyError(parsed.error)}`);
@@ -272,5 +369,16 @@ export async function resolveVideoFromPage({ tabId, videoId, withCaptions }: Tab
   }
 
   const { adaptiveFormats = [] } = parsed.data.streamingData ?? {};
-  return { ...toResolvedVideo({ videoId, playerResponse: parsed.data, formats: adaptiveFormats, captionTexts }), sabr: buildSabrSession({ requests, formats: adaptiveFormats }) };
+  return {
+    ...toResolvedVideo({
+      videoId,
+      playerResponse: parsed.data,
+      formats: adaptiveFormats,
+      captionTexts
+    }),
+    sabr: buildSabrSession({
+      requests,
+      formats: adaptiveFormats
+    })
+  };
 }

@@ -1,7 +1,7 @@
+import type { StreamFormat } from "@/lib/schemas";
 import { VideoPlaybackAbrRequest } from "googlevideo/protos";
 import { SabrStream } from "googlevideo/sabr-stream";
 import { EnabledTrackTypes, buildSabrFormat } from "googlevideo/utils";
-import type { StreamFormat } from "@/lib/schemas";
 
 const MIN_ATTESTED_PO_TOKEN_BYTES = 32;
 const REQUEST_NUMBER_PARAM = "rn";
@@ -18,8 +18,14 @@ export type SabrSession = {
   formats: StreamFormat[];
 };
 
-type CapturedRequest = { url: string; body: string };
-type SessionSource = { requests: CapturedRequest[]; formats: StreamFormat[] };
+type CapturedRequest = {
+  url: string;
+  body: string;
+};
+type SessionSource = {
+  requests: CapturedRequest[];
+  formats: StreamFormat[];
+};
 
 function fromBase64(text: string) {
   return Uint8Array.from(atob(text), character => character.charCodeAt(0));
@@ -31,8 +37,14 @@ function toBase64(bytes: Uint8Array) {
 
 export function buildSabrSession({ requests, formats }: SessionSource): SabrSession {
   const attested = requests
-    .map(({ url, body }) => ({ url, request: VideoPlaybackAbrRequest.decode(fromBase64(body)) }))
-    .filter(({ request }) => (request.streamerContext?.poToken?.byteLength ?? 0) >= MIN_ATTESTED_PO_TOKEN_BYTES && request.videoPlaybackUstreamerConfig?.byteLength)
+    .map(({ url, body }) => ({
+      url,
+      request: VideoPlaybackAbrRequest.decode(fromBase64(body))
+    }))
+    .filter(({ request }) => {
+      const tokenBytes = request.streamerContext?.poToken?.byteLength ?? 0;
+      return tokenBytes >= MIN_ATTESTED_PO_TOKEN_BYTES && request.videoPlaybackUstreamerConfig?.byteLength;
+    })
     .at(-1);
   const { poToken, clientInfo } = attested?.request.streamerContext ?? {};
   const ustreamerConfig = attested?.request.videoPlaybackUstreamerConfig;
@@ -73,23 +85,44 @@ function toSabrFormat(format: StreamFormat) {
   });
 }
 
-type DownloadParams = { session: SabrSession; format: StreamFormat; signal: AbortSignal; onProgress: (ratio: number) => void };
+type DownloadParams = {
+  session: SabrSession;
+  format: StreamFormat;
+  signal: AbortSignal;
+  onProgress: (ratio: number) => void;
+};
 
 export async function downloadSabrTrack({ session, format, signal, onProgress }: DownloadParams) {
   const stream = new SabrStream({
-    fetch: (input, init) => fetch(input, { ...init, signal }),
+    fetch: (input, init) => fetch(input, {
+      ...init,
+      signal
+    }),
     serverAbrStreamingUrl: session.url,
     videoPlaybackUstreamerConfig: session.ustreamerConfig,
     poToken: session.poToken,
-    clientInfo: { clientName: session.clientName, clientVersion: session.clientVersion },
+    clientInfo: {
+      clientName: session.clientName,
+      clientVersion: session.clientVersion
+    },
     formats: session.formats.map(toSabrFormat),
     durationMs: session.durationMs
   });
   const isAudio = format.mimeType.startsWith(AUDIO_MIME_PREFIX);
   const sabrFormat = toSabrFormat(format);
-  const started = await stream.start(isAudio
-    ? { audioFormat: sabrFormat, enabledTrackTypes: EnabledTrackTypes.AUDIO_ONLY, maxRetries: MAX_SABR_RETRIES }
-    : { videoFormat: sabrFormat, enabledTrackTypes: EnabledTrackTypes.VIDEO_ONLY, maxRetries: MAX_SABR_RETRIES });
+  const started = await stream.start(
+    isAudio
+      ? {
+        audioFormat: sabrFormat,
+        enabledTrackTypes: EnabledTrackTypes.AUDIO_ONLY,
+        maxRetries: MAX_SABR_RETRIES
+      }
+      : {
+        videoFormat: sabrFormat,
+        enabledTrackTypes: EnabledTrackTypes.VIDEO_ONLY,
+        maxRetries: MAX_SABR_RETRIES
+      }
+  );
   const reader = (isAudio ? started.audioStream : started.videoStream).getReader();
   const expectedBytes = Number(format.contentLength) || 0;
   const chunks: Uint8Array[] = [];
@@ -102,6 +135,7 @@ export async function downloadSabrTrack({ session, format, signal, onProgress }:
   }
 
   signal.throwIfAborted();
+
   if (expectedBytes && receivedBytes < expectedBytes) {
     throw new Error(`YouTube cut the stream short (${receivedBytes} of ${expectedBytes} bytes), try again`);
   }

@@ -1,7 +1,7 @@
-import { z } from "zod";
 import { RESULT_EVENT_PREFIX, TASK_EVENT } from "@/lib/page-events";
 import type { TabTask, TaskRequest } from "@/lib/page-events";
 import { runInsideYouTubePage } from "@/lib/page-task";
+import { z } from "zod";
 
 const MANIFEST_V2 = 2;
 const BRIDGE_CHANNEL = "ffmpeg-lite-page-task";
@@ -9,17 +9,33 @@ const READY_ATTRIBUTE = "data-ffmpeg-lite-ready";
 const PAGE_TASK_SCRIPT = "/page-task.js";
 const PAGE_TASK_TIMEOUT_MS = 120_000;
 
-const bridgeMessageSchema = z.object({ channel: z.literal(BRIDGE_CHANNEL), id: z.string(), result: z.unknown() });
+const bridgeMessageSchema = z.object({
+  channel: z.literal(BRIDGE_CHANNEL),
+  id: z.string(),
+  result: z.unknown()
+});
 
 export async function runPageTaskInMainWorld({ tabId, task }: TabTask & { tabId: number }) {
   if (browser.runtime.getManifest().manifest_version !== MANIFEST_V2) {
-    const [injection] = await browser.scripting.executeScript({ target: { tabId }, world: "MAIN", func: runInsideYouTubePage, args: [task] });
+    const [injection] = await browser.scripting.executeScript({
+      target: {
+        tabId
+      },
+      world: "MAIN",
+      func: runInsideYouTubePage,
+      args: [task]
+    });
     return injection?.result;
   }
 
   const id = crypto.randomUUID();
   const answer = waitForBridgeAnswer(id);
-  await browser.tabs.executeScript(tabId, { code: buildIsolatedSnippet({ id, task }) });
+  await browser.tabs.executeScript(tabId, {
+    code: buildIsolatedSnippet({
+      id,
+      task
+    })
+  });
   return answer;
 }
 
@@ -49,7 +65,12 @@ function buildIsolatedSnippet({ id, task }: TaskRequest) {
   return `(() => {
     const send = () => {
       document.addEventListener(${JSON.stringify(RESULT_EVENT_PREFIX + id)}, e => chrome.runtime.sendMessage({ channel: ${JSON.stringify(BRIDGE_CHANNEL)}, id: ${JSON.stringify(id)}, result: JSON.parse(e.detail) }), { once: true });
-      document.dispatchEvent(new CustomEvent(${JSON.stringify(TASK_EVENT)}, { detail: ${JSON.stringify(JSON.stringify({ id, task }))} }));
+      document.dispatchEvent(new CustomEvent(${JSON.stringify(TASK_EVENT)}, { detail: ${JSON.stringify(
+        JSON.stringify({
+          id,
+          task
+        })
+      )} }));
     };
     if (document.documentElement.hasAttribute(${JSON.stringify(READY_ATTRIBUTE)})) {
       send();
