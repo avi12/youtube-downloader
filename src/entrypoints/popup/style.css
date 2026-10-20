@@ -62,6 +62,12 @@ pre {
   white-space: pre-wrap;
 }
 
+@supports not (color: light-dark(red, blue)) {
+  .error {
+    color: #e0526a;
+  }
+}
+
 .error {
   color: light-dark(#b00020, #ff6b81);
 }

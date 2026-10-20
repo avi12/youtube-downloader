@@ -222,6 +222,12 @@
     border-radius: 6px;
   }
 
+  @supports not (color: light-dark(red, blue)) {
+    .card.default {
+      border-color: #4285f4;
+    }
+  }
+
   .card.default {
     border-color: light-dark(#1a73e8, #8ab4f8);
   }
@@ -254,8 +260,8 @@
 
   .heading {
     display: flex;
-    align-items: center;
     gap: 6px;
+    align-items: center;
   }
 
   .handle {
