@@ -1,4 +1,5 @@
 <script lang="ts">
+  import OptionField from "./shared/OptionField.svelte";
   import { TIME_PATTERN, VARIABLE_TYPES } from "@/lib/presets";
   import type { Preset, Variable, VariableType } from "@/lib/presets";
 
@@ -117,21 +118,20 @@
       <h2>{preset.label}{isDefault ? " (default)" : ""}</h2>
     </label></div>
     {#if isThisRunning}
-      <button onclick={oncancel}>Cancel</button>
+      <button class="danger" onclick={oncancel}>Cancel</button>
     {:else}
-      <button onclick={onrun} disabled={isBusy}>Run</button>
+      <button class="filled" onclick={onrun} disabled={isBusy}>Run</button>
     {/if}
   </header>
 
   {#if preset.variables.length}
     <div class="fields">
       {#each preset.variables as variable (variable.name)}
-        <label class="field">
-          {variable.label}
+        <OptionField label={variable.label}>
           {#if variable.type === "number"}
-            <input class="small" type="number" min={variable.min} max={variable.max} step={variable.step} value={values[variable.name]} oninput={e => onvalue(variable.name, e.currentTarget.value)} />
+            <input type="number" min={variable.min} max={variable.max} step={variable.step} value={values[variable.name]} oninput={e => onvalue(variable.name, e.currentTarget.value)} />
           {:else if variable.type === "time"}
-            <input class="small" type="text" inputmode="numeric" placeholder="00:00:00" pattern={TIME_PATTERN.source} value={values[variable.name]} oninput={e => onvalue(variable.name, e.currentTarget.value)} />
+            <input type="text" inputmode="numeric" placeholder="00:00:00" pattern={TIME_PATTERN.source} value={values[variable.name]} oninput={e => onvalue(variable.name, e.currentTarget.value)} />
           {:else if variable.type === "list"}
             <select value={values[variable.name]} onchange={e => onvalue(variable.name, e.currentTarget.value)}>
               {#each variable.options as option (option.value)}
@@ -141,7 +141,7 @@
           {:else}
             <input type="text" value={values[variable.name]} oninput={e => onvalue(variable.name, e.currentTarget.value)} />
           {/if}
-        </label>
+        </OptionField>
       {/each}
     </div>
   {/if}
@@ -149,14 +149,12 @@
   <details bind:open={isEditing}>
     <summary>Edit</summary>
     <div class="editor">
-      <label>
-        Name
+      <OptionField label="Name">
         <input bind:value={draft.label} />
-      </label>
-      <label>
-        yt-dlp command
+      </OptionField>
+      <OptionField label="yt-dlp command">
         <textarea rows="3" bind:value={draft.command} spellcheck="false"></textarea>
-      </label>
+      </OptionField>
       <label class="check">
         <input type="checkbox" bind:checked={isFfmpegEnabled} />
         Run my own FFmpeg command on the downloaded streams
@@ -215,21 +213,18 @@
 
 <style>
   .card {
-    display: grid;
-    gap: 8px;
-    padding: 8px;
-    border: 1px solid color-mix(in sRGB, currentColor 25%, transparent);
-    border-radius: 6px;
-  }
-
-  @supports not (color: light-dark(red, blue)) {
-    .card.default {
-      border-color: #4285f4;
-    }
+    display: flex;
+    flex-shrink: 0;
+    flex-direction: column;
+    gap: 10px;
+    padding: 12px;
+    border-radius: 20px;
+    background: var(--surface);
   }
 
   .card.default {
-    border-color: light-dark(#1a73e8, #8ab4f8);
+    outline: 2px solid var(--accent);
+    outline-offset: -2px;
   }
 
   header {
@@ -241,62 +236,50 @@
 
   h2,
   h3 {
-    margin: 0;
-    font-size: 14px;
+    font-weight: 600;
+    font-size: 0.8125rem;
   }
 
   .fields {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px 12px;
-  }
-
-  .field {
-    display: flex;
-    gap: 6px;
-    align-items: center;
-    font-weight: 400;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
   }
 
   .heading {
     display: flex;
-    gap: 6px;
+    gap: 8px;
     align-items: center;
+    min-width: 0;
   }
 
   .handle {
+    color: var(--fg-subtle);
     cursor: grab;
     user-select: none;
   }
 
   .title {
     display: flex;
-    gap: 6px;
+    gap: 8px;
     align-items: center;
-  }
-
-  .small {
-    inline-size: 9ch;
-  }
-
-  summary {
-    font-size: 12px;
-    opacity: 70%;
-    cursor: pointer;
+    min-width: 0;
   }
 
   .editor {
-    display: grid;
-    gap: 8px;
-    padding-block-start: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding-block-start: 10px;
   }
 
   .variable {
     display: grid;
-    grid-template-columns: 9ch 1fr auto auto;
-    gap: 4px;
-    padding: 6px;
-    background: color-mix(in sRGB, currentColor 6%, transparent);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto auto;
+    gap: 6px;
+    padding: 8px;
+    border-radius: 12px;
+    background: var(--surface-high);
   }
 
   .variable > :nth-child(n + 5) {
@@ -304,13 +287,14 @@
   }
 
   .numbers {
-    display: flex;
-    gap: 4px;
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 6px;
   }
 
   .row {
     display: flex;
     flex-wrap: wrap;
-    gap: 6px;
+    gap: 8px;
   }
 </style>

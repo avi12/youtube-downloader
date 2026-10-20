@@ -1,7 +1,12 @@
 <script lang="ts">
   import { onMount } from "svelte";
-  import type { WorkerMessage, WorkerRequest } from "../ffmpeg-worker";
+  import { cubicOut } from "svelte/easing";
+  import { fly } from "svelte/transition";
+  import type { WorkerInput, WorkerMessage, WorkerRequest } from "../ffmpeg-worker";
   import PresetCard from "./PresetCard.svelte";
+  import OptionField from "./shared/OptionField.svelte";
+  import TabNav from "./shared/TabNav.svelte";
+  import WavyProgress from "./shared/WavyProgress.svelte";
   import { URL_TOKEN } from "@/lib/command";
   import { applyFfmpegCommand, findJobOutputs } from "@/lib/ffmpeg-command";
   import { mimeTypeForFile } from "@/lib/mime";
@@ -24,7 +29,8 @@
   import type { LibraryState, Preset } from "@/lib/presets";
   import { parseUrl } from "@/lib/url";
   import { parsePlaylistId } from "@/lib/youtube";
-  import type { DirectFile, Job } from "@/lib/ytdlp/plan";
+  import { downloadSabrTrack } from "@/lib/sabr";
+  import type { DirectFile, Job, JobInput } from "@/lib/ytdlp/plan";
   import { runYtDlpCommand } from "@/lib/ytdlp/session";
   import type { TabContext } from "@/lib/ytdlp/session";
 
@@ -32,6 +38,23 @@
 
   const URL_TOKEN_PATTERN = new RegExp(`\\b${URL_TOKEN}\\b`);
   const EXPORT_FILE_NAME = "youtube-ffmpeg-lite-presets.json";
+  const SLIDE_DURATION_MS = 200;
+  const SLIDE_DISTANCE_PX = 50;
+  const PERCENT = 100;
+  const PANELS = [
+    { id: "presets", label: "Presets" },
+    { id: "library", label: "Library" }
+  ];
+
+  let activePanel = $state("presets");
+  let slideDirection = $state(1);
+  const flyIn = $derived({ x: slideDirection * SLIDE_DISTANCE_PX, duration: SLIDE_DURATION_MS, opacity: 0, easing: cubicOut });
+  const flyOut = $derived({ x: -slideDirection * SLIDE_DISTANCE_PX, duration: SLIDE_DURATION_MS, opacity: 0, easing: cubicOut });
+
+  function changePanel(id: string) {
+    slideDirection = PANELS.findIndex(panel => panel.id === id) > PANELS.findIndex(panel => panel.id === activePanel) ? 1 : -1;
+    activePanel = id;
+  }
 
   let library = $state<LibraryState>(loadLibraryState());
   let tab = $state<TabContext>({});
@@ -189,6 +212,17 @@
     await saveBlob(saveAs, [await response.arrayBuffer()]);
   }
 
+  async function materializeInput({ sabr, ...input }: JobInput, signal: AbortSignal): Promise<WorkerInput> {
+    if (!sabr) {
+      return input;
+    }
+
+    status = `Downloading ${input.name}`;
+    downloadRatio = 0;
+    const bytes = await downloadSabrTrack({ session: sabr.session, format: sabr.format, signal, onProgress: ratio => (downloadRatio = ratio) });
+    return { ...input, data: bytes.buffer };
+  }
+
   function runInWorker(request: WorkerRequest, signal: AbortSignal) {
     return new Promise<DoneMessage>((resolve, reject) => {
       const worker = new Worker(browser.runtime.getURL("/ffmpeg-worker.js"), { type: "module" });
@@ -221,7 +255,7 @@
         worker.terminate();
         reject(new Error(e.message));
       };
-      worker.postMessage(request);
+      worker.postMessage(request, request.inputs.flatMap(input => (input.data ? [input.data] : [])));
     });
   }
 
@@ -231,7 +265,7 @@
     downloadRatio = 0;
     const done = await runInWorker({
       wasmUrl: browser.runtime.getURL("/ffmpeg/ffmpeg-core.wasm"),
-      inputs: job.inputs,
+      inputs: await Promise.all(job.inputs.map(input => materializeInput(input, signal))),
       args: job.args
     }, signal);
     const outputs = findJobOutputs(done.files, job);
@@ -290,7 +324,18 @@
   }
 </script>
 
-<main>
+<main class="popup-container">
+  <header class="popup-header">
+    <div class="popup-header-top">
+      <h1 class="popup-title">FFmpeg for YouTube</h1>
+      <span class="popup-credit">by <a class="text-link" href="https://avi12.com" target="_blank">Avi</a></span>
+    </div>
+    <TabNav activeTab={activePanel} initialActiveTab="presets" onChange={changePanel} tabs={PANELS} />
+  </header>
+
+  <div class="popup-content">
+  {#if activePanel === "presets"}
+  <div id="panel-presets" class="panel-wrapper" role="tabpanel" in:fly={flyIn} out:fly={flyOut}>
   {#each shownPresets as preset (preset.id)}
     {#key preset}
     <PresetCard
@@ -318,44 +363,27 @@
   {/each}
 
   <div class="row">
-    <button onclick={runChecked} disabled={!checkedPresets.length || runningPresetId !== undefined}>Run checked ({checkedPresets.length})</button>
+    <button class="filled" onclick={runChecked} disabled={!checkedPresets.length || runningPresetId !== undefined}>Run checked ({checkedPresets.length})</button>
     {#if abortController}
-      <button onclick={cancel}>Cancel</button>
+      <button class="danger" onclick={cancel}>Cancel</button>
     {/if}
   </div>
 
   <details bind:open={isUrlFieldOpen}>
     <summary>URL</summary>
-    <div class="row">
-      <input type="url" placeholder="Paste a YouTube link, or leave empty to use this tab" bind:value={pastedUrl} />
+    <div class="url-field">
+      <OptionField hint="Leave it empty to use this tab. Playlist URLs download every video" label="YouTube link">
+        <input type="url" placeholder="Paste a YouTube link" bind:value={pastedUrl} />
+      </OptionField>
       <button onclick={pasteUrl}>Paste</button>
     </div>
   </details>
 
-  <p class="hint">
-    Leave the URL out to use this tab. Playlist URLs download every video. Files go straight to your Downloads folder
-  </p>
-
-  <div class="row">
-    {#if hiddenPresets.length}
-      <select onchange={e => { showPreset(e.currentTarget.value); e.currentTarget.value = ""; }} aria-label="Add a preset">
-        <option value="" selected disabled>Add a preset</option>
-        {#each hiddenPresets as preset (preset.id)}
-          <option value={preset.id}>{preset.label}</option>
-        {/each}
-      </select>
-    {/if}
-    <button onclick={createPreset}>New preset</button>
-    <button onclick={() => elImportInput?.click()}>Import</button>
-    <button onclick={exportPresets}>Export</button>
-    <input bind:this={elImportInput} type="file" accept="application/json,.json" onchange={importPresets} hidden />
-  </div>
-
   {#if status}
     <p class="hint">{status}</p>
   {/if}
-  {#if runningPresetId && downloadRatio > 0 && downloadRatio < 1}
-    <progress value={downloadRatio}></progress>
+  {#if runningPresetId}
+    <WavyProgress indeterminate={downloadRatio <= 0 || downloadRatio >= 1} value={downloadRatio * PERCENT} />
   {/if}
   {#if errorMessage}
     <p class="error">{errorMessage}</p>
@@ -370,4 +398,106 @@
   {#if logText}
     <pre>{logText}</pre>
   {/if}
+  </div>
+  {:else}
+  <div id="panel-library" class="panel-wrapper" role="tabpanel" in:fly={flyIn} out:fly={flyOut}>
+    <p class="hint">Files go straight to your Downloads folder. Hidden presets can be added back here, and presets can be moved between browsers with Export and Import</p>
+    <div class="row">
+      {#if hiddenPresets.length}
+        <OptionField label="Add a preset">
+          <select onchange={e => { showPreset(e.currentTarget.value); e.currentTarget.value = ""; }} aria-label="Add a preset">
+            <option value="" selected disabled>Choose one</option>
+            {#each hiddenPresets as preset (preset.id)}
+              <option value={preset.id}>{preset.label}</option>
+            {/each}
+          </select>
+        </OptionField>
+      {/if}
+    </div>
+    <div class="row">
+      <button class="filled" onclick={createPreset}>New preset</button>
+      <button onclick={() => elImportInput?.click()}>Import</button>
+      <button onclick={exportPresets}>Export</button>
+      <input bind:this={elImportInput} type="file" accept="application/json,.json" onchange={importPresets} hidden />
+    </div>
+  </div>
+  {/if}
+  </div>
 </main>
+
+<style>
+  :global(.text-link) {
+    padding: 0;
+    border: none;
+    background: none;
+    color: var(--accent);
+    font: inherit;
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .popup-container {
+    display: flex;
+    flex-direction: column;
+    height: 600px;
+  }
+
+  .popup-header {
+    padding: 16px;
+    padding-bottom: 0;
+    background: var(--bg);
+  }
+
+  .popup-header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 12px;
+  }
+
+  .popup-title {
+    color: var(--fg);
+    font-weight: 600;
+    font-size: 1.125rem;
+  }
+
+  .popup-credit {
+    color: var(--fg-muted);
+    font-size: 0.75rem;
+  }
+
+  .popup-content {
+    position: relative;
+    flex: 1;
+    overflow: hidden;
+    min-height: 120px;
+  }
+
+  .panel-wrapper {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    overflow-y: auto;
+    padding: 16px;
+    scrollbar-color: var(--border) transparent;
+    scrollbar-width: thin;
+  }
+
+  .url-field {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    padding-block-start: 8px;
+
+    :global(.option-field) {
+      flex: 1;
+    }
+
+    button {
+      margin-block-start: 20px;
+    }
+  }
+</style>
