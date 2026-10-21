@@ -5,10 +5,10 @@
 
   const { version }: Props = $props();
 
-  const LATEST_RELEASE_URL = "https://github.com/avi12/youtube-downloader/releases/latest";
+  const RELEASE_TAG_URL = "https://github.com/avi12/youtube-downloader/releases/tag";
 </script>
 
-<a class="update-banner" href={LATEST_RELEASE_URL} target="_blank">
+<a class="update-banner" href={`${RELEASE_TAG_URL}/v${version}`} target="_blank">
   <svg class="update-banner-icon" aria-hidden="true" fill="currentColor" height="18" viewBox="0 0 24 24" width="18">
     <path d="M12 2 4 10h4v8h8v-8h4zm-2 14v-6H8.83L12 6.83 15.17 10H14v6z" />
   </svg>
