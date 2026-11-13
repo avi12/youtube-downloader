@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { WorkerInput, WorkerMessage, WorkerRequest } from "../ffmpeg-worker";
+  import type { WorkerMessage, WorkerRequest } from "../ffmpeg-worker";
   import PresetCard from "./PresetCard.svelte";
   import OptionField from "./shared/OptionField.svelte";
   import TabNav from "./shared/TabNav.svelte";
@@ -73,7 +73,7 @@
     easing: cubicOut
   });
 
-  function changePanel(id: string): void {
+  function changePanel(id: string) {
     const iNext = PANELS.findIndex(panel => panel.id === id);
     const iCurrent = PANELS.findIndex(panel => panel.id === activePanel);
     slideDirection = iNext > iCurrent ? 1 : -1;
@@ -113,16 +113,16 @@
     isUrlFieldOpen = !isYouTubeTab;
   });
 
-  function updateLibrary(next: LibraryState): void {
+  function updateLibrary(next: LibraryState) {
     library = next;
     storeLibraryState(next);
   }
 
-  function currentShownIds(): string[] {
+  function currentShownIds() {
     return library.shownIds ?? DEFAULT_SHOWN_IDS;
   }
 
-  function withTabUrl(presetCommand: string): string {
+  function withTabUrl(presetCommand: string) {
     const typedUrl = pastedUrl.trim();
     if (typedUrl) {
       return presetCommand.replace(URL_TOKEN_PATTERN, `"${typedUrl}"`);
@@ -134,7 +134,7 @@
     return isYouTubeTab ? presetCommand.replace(URL_TOKEN_PATTERN, `${playlistFlag}"${tab.url}"`) : presetCommand;
   }
 
-  function valuesFor(preset: Preset): Record<string, string> {
+  function valuesFor(preset: Preset) {
     return valuesById[preset.id] ?? defaultValues(preset.variables);
   }
 
@@ -164,7 +164,7 @@
     isFresh?: boolean;
   }
 
-  function setChecked({ id, isChecked }: CheckedChange): void {
+  function setChecked({ id, isChecked }: CheckedChange) {
     const others = (library.checkedIds ?? []).filter(checkedId => checkedId !== id);
     updateLibrary({
       ...library,
@@ -172,11 +172,11 @@
     });
   }
 
-  async function pasteUrl(): Promise<void> {
+  async function pasteUrl() {
     pastedUrl = (await navigator.clipboard.readText()).trim();
   }
 
-  function savePreset({ previousId, draft }: PresetSave): void {
+  function savePreset({ previousId, draft }: PresetSave) {
     if (isBuiltInPreset(previousId)) {
       const copy = {
         ...draft,
@@ -196,7 +196,7 @@
     });
   }
 
-  function movePreset(targetId: string): void {
+  function movePreset(targetId: string) {
     if (draggedId) {
       updateLibrary({
         ...library,
@@ -211,7 +211,7 @@
     draggedId = undefined;
   }
 
-  function makeDefault(id: string): void {
+  function makeDefault(id: string) {
     updateLibrary({
       ...library,
       defaultId: id,
@@ -223,7 +223,7 @@
     });
   }
 
-  function hidePreset(id: string): void {
+  function hidePreset(id: string) {
     updateLibrary({
       ...library,
       shownIds: currentShownIds().filter(shownId => shownId !== id),
@@ -231,14 +231,14 @@
     });
   }
 
-  function showPreset(id: string): void {
+  function showPreset(id: string) {
     updateLibrary({
       ...library,
       shownIds: [...currentShownIds(), id]
     });
   }
 
-  function createPreset(): void {
+  function createPreset() {
     const preset = createBlankPreset();
     newPresetId = preset.id;
     updateLibrary({
@@ -248,7 +248,7 @@
     });
   }
 
-  function deletePreset(id: string): void {
+  function deletePreset(id: string) {
     updateLibrary({
       custom: library.custom.filter(preset => preset.id !== id),
       shownIds: currentShownIds().filter(shownId => shownId !== id),
@@ -256,7 +256,7 @@
     });
   }
 
-  async function importPresets(e: Event & { currentTarget: HTMLInputElement }): Promise<void> {
+  async function importPresets(e: Event & { currentTarget: HTMLInputElement }) {
     const [file] = e.currentTarget.files ?? [];
     e.currentTarget.value = "";
 
@@ -278,18 +278,18 @@
     }
   }
 
-  async function exportPresets(): Promise<void> {
+  async function exportPresets() {
     await saveBlob({
       name: EXPORT_FILE_NAME,
       parts: [serializeLibraryState(library)]
     });
   }
 
-  function cancel(): void {
+  function cancel() {
     abortController?.abort();
   }
 
-  async function saveBlob({ name, parts }: BlobSave): Promise<void> {
+  async function saveBlob({ name, parts }: BlobSave) {
     await browser.downloads.download({
       url: URL.createObjectURL(new Blob(parts, { type: mimeTypeForFile(name) })),
       filename: name,
@@ -298,7 +298,7 @@
     savedNames.push(name);
   }
 
-  async function saveDirectFile({ file: { saveAs, text, url }, signal }: DirectFileSave): Promise<void> {
+  async function saveDirectFile({ file: { saveAs, text, url }, signal }: DirectFileSave) {
     if (text !== undefined) {
       await saveBlob({
         name: saveAs,
@@ -318,7 +318,7 @@
     });
   }
 
-  async function materializeInput({ input: { sabr, ...input }, signal }: InputMaterialization): Promise<WorkerInput> {
+  async function materializeInput({ input: { sabr, ...input }, signal }: InputMaterialization) {
     if (!sabr) {
       return input;
     }
@@ -337,7 +337,7 @@
     };
   }
 
-  function runInWorker({ request, signal }: WorkerRun): Promise<DoneMessage> {
+  function runInWorker({ request, signal }: WorkerRun) {
     return new Promise<DoneMessage>((resolve, reject) => {
       const worker = new Worker(browser.runtime.getURL("/ffmpeg-worker.js"), { type: "module" });
       signal.addEventListener("abort", () => {
@@ -374,7 +374,7 @@
     });
   }
 
-  async function runJob({ plannedJob, ffmpegCommand, signal }: JobRun): Promise<void> {
+  async function runJob({ plannedJob, ffmpegCommand, signal }: JobRun) {
     const job = ffmpegCommand && plannedJob.isMedia ? applyFfmpegCommand({
       job: plannedJob,
       command: ffmpegCommand
@@ -398,7 +398,8 @@
       files: done.files,
       job
     });
-    if (done.code !== 0 || !outputs.length) {
+    const isFailedRun = done.code !== 0 || !outputs.length;
+    if (isFailedRun) {
       throw new Error(`FFmpeg failed on ${job.saveAs} (exit code ${done.code})`);
     }
 
@@ -410,11 +411,11 @@
     );
   }
 
-  function describeError(error: unknown): string {
+  function describeError(error: unknown) {
     return error instanceof Error ? error.message : String(error);
   }
 
-  async function runChecked(): Promise<void> {
+  async function runChecked() {
     savedNames = [];
     for (const preset of checkedPresets) {
       const isDone = await run({
@@ -428,7 +429,7 @@
     }
   }
 
-  async function run({ preset, values, isFresh = true }: PresetRun): Promise<boolean> {
+  async function run({ preset, values, isFresh = true }: PresetRun) {
     errorMessage = "";
     logText = "";
     status = "";

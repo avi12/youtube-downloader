@@ -31,7 +31,7 @@ function resolvePlaceholders({ arg, job }: PlaceholderRequest) {
   });
 }
 
-export function applyFfmpegCommand({ job, command }: FfmpegRequest): Job {
+export function applyFfmpegCommand({ job, command }: FfmpegRequest) {
   const tokens = tokenize(command);
   const args = (tokens[0] === FFMPEG_PROGRAM ? tokens.slice(1) : tokens).map(arg => resolvePlaceholders({
     arg,
@@ -40,7 +40,15 @@ export function applyFfmpegCommand({ job, command }: FfmpegRequest): Job {
   const outputFile = args.at(-1);
   const outputExtension = outputFile?.match(EXTENSION_PATTERN)?.[0];
   const isInputName = job.inputs.some(input => input.name === outputFile);
-  if (!outputFile || !outputExtension || isInputName) {
+  if (!outputFile) {
+    throw new Error("End the FFmpeg command with an output file name, like snapshot.png");
+  }
+
+  if (!outputExtension) {
+    throw new Error("End the FFmpeg command with an output file name, like snapshot.png");
+  }
+
+  if (isInputName) {
     throw new Error("End the FFmpeg command with an output file name, like snapshot.png");
   }
 

@@ -35,7 +35,7 @@ function toBase64(bytes: Uint8Array) {
   return btoa(String.fromCharCode(...bytes));
 }
 
-export function buildSabrSession({ requests, formats }: SessionSource): SabrSession {
+export function buildSabrSession({ requests, formats }: SessionSource) {
   const attested = requests
     .map(({ url, body }) => ({
       url,
@@ -48,7 +48,15 @@ export function buildSabrSession({ requests, formats }: SessionSource): SabrSess
     .at(-1);
   const { poToken, clientInfo } = attested?.request.streamerContext ?? {};
   const ustreamerConfig = attested?.request.videoPlaybackUstreamerConfig;
-  if (!attested || !poToken || !ustreamerConfig) {
+  if (!attested) {
+    throw new Error("The video player hasn't started streaming yet, play the video for a moment and try again");
+  }
+
+  if (!poToken) {
+    throw new Error("The video player hasn't started streaming yet, play the video for a moment and try again");
+  }
+
+  if (!ustreamerConfig) {
     throw new Error("The video player hasn't started streaming yet, play the video for a moment and try again");
   }
 
@@ -136,7 +144,8 @@ export async function downloadSabrTrack({ session, format, signal, onProgress }:
 
   signal.throwIfAborted();
 
-  if (expectedBytes && receivedBytes < expectedBytes) {
+  const isShortRead = expectedBytes && receivedBytes < expectedBytes;
+  if (isShortRead) {
     throw new Error(`YouTube cut the stream short (${receivedBytes} of ${expectedBytes} bytes), try again`);
   }
 

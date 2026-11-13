@@ -73,7 +73,7 @@ export interface FormatSelection {
   sortKeys: string[];
 }
 
-export function describeFormat(format: StreamFormat): FormatFields {
+export function describeFormat(format: StreamFormat) {
   const codecs = format.mimeType.match(CODEC_LIST_PATTERN)?.[1]?.split(",").map(codec => codec.trim()) ?? [];
   const audioCodec = codecs.find(codec => AUDIO_CODEC_PATTERN.test(codec));
   const videoCodec = codecs.find(codec => !AUDIO_CODEC_PATTERN.test(codec));
@@ -195,7 +195,8 @@ function splitOutsideBrackets({ text, separator }: SplitRequest) {
   for (const character of text) {
     depth += Number(character === "[") - Number(character === "]");
 
-    if (character === separator && depth === 0) {
+    const isTopLevelSeparator = character === separator && depth === 0;
+    if (isTopLevelSeparator) {
       parts.push(current);
       current = "";
       continue;
@@ -253,7 +254,11 @@ const SORT_FIELD_READERS: Record<string, (fields: FormatFields) => number> = {
 function buildSortScorer(sortKey: string) {
   const match = sortKey.match(SORT_KEY_PATTERN);
   const read = SORT_FIELD_READERS[match?.[2] ?? ""];
-  if (!match || !read) {
+  if (!match) {
+    throw new Error(`Unsupported sort field: ${sortKey}`);
+  }
+
+  if (!read) {
     throw new Error(`Unsupported sort field: ${sortKey}`);
   }
 
@@ -271,9 +276,9 @@ function isDefaultTrack(fields: FormatFields) {
   return Number(fields.format.audioTrack?.audioIsDefault ?? false);
 }
 
-function buildComparator(sortKeys: string[]): Comparator {
+function buildComparator(sortKeys: string[]) {
   const scorers = (sortKeys.length ? sortKeys : DEFAULT_SORT_KEYS).map(buildSortScorer);
-  return (first, second) => {
+  return (first: FormatFields, second: FormatFields) => {
     const defaultTrackDifference = isDefaultTrack(second) - isDefaultTrack(first);
     if (defaultTrackDifference) {
       return defaultTrackDifference;
@@ -298,10 +303,15 @@ interface NameRule {
 type RuleDefinition = NameRule & { names: string[] };
 
 function defineRule({ names, isWorst, matches }: RuleDefinition) {
-  return names.map((name): [string, NameRule] => [name, {
-    isWorst,
-    matches
-  }]);
+  const rules: [string, NameRule][] = [];
+  for (const name of names) {
+    rules.push([name, {
+       isWorst,
+       matches 
+    }]);
+  }
+
+  return rules;
 }
 
 const NAME_RULES = new Map<string, NameRule>([

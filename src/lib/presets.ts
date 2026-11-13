@@ -254,7 +254,8 @@ interface VariableReference {
 }
 
 export function moveBefore({ ids, movedId, targetId }: MoveRequest) {
-  if (movedId === targetId) {
+  const isSameItem = movedId === targetId;
+  if (isSameItem) {
     return ids;
   }
 
@@ -268,7 +269,7 @@ export function listHiddenPresets(state: LibraryState) {
   return [...BUILT_IN_PRESETS, ...state.custom].filter(preset => !shownIds.has(preset.id));
 }
 
-export function loadLibraryState(): LibraryState {
+export function loadLibraryState() {
   const stored = localStorage.getItem(STORAGE_KEY);
   const parsed = z.string().transform(text => JSON.parse(text)).pipe(libraryStateSchema).safeParse(stored);
   return parsed.success ? parsed.data : { custom: [] };
@@ -285,7 +286,7 @@ export function serializeLibraryState(state: LibraryState) {
   }, null, 2);
 }
 
-export function parseLibraryFile(text: string): LibraryState {
+export function parseLibraryFile(text: string) {
   const parsed = z.string().transform(content => JSON.parse(content)).pipe(exportFileSchema).safeParse(text);
   if (!parsed.success) {
     throw new Error(`That file isn't a preset export: ${z.prettifyError(parsed.error)}`);
@@ -300,7 +301,7 @@ export function parseLibraryFile(text: string): LibraryState {
   };
 }
 
-export function mergeLibraryState({ current, imported }: MergeRequest): LibraryState {
+export function mergeLibraryState({ current, imported }: MergeRequest) {
   const importedIds = new Set(imported.custom.map(preset => preset.id));
   return {
     custom: [...current.custom.filter(preset => !importedIds.has(preset.id)), ...imported.custom],
@@ -310,7 +311,7 @@ export function mergeLibraryState({ current, imported }: MergeRequest): LibraryS
   };
 }
 
-export function createBlankPreset(): Preset {
+export function createBlankPreset() {
   return {
     id: crypto.randomUUID(),
     label: "New preset",
@@ -350,7 +351,8 @@ export function fillVariables({ text, variables, values, builtInValues = {} }: F
   return text.replace(VARIABLE_PLACEHOLDER_PATTERN, (_match, name: string) => {
     const variable = variableByName.get(name);
     const builtInValue = builtInValues[name];
-    if (!variable && builtInValue !== undefined) {
+    const hasOnlyBuiltInValue = !variable && builtInValue !== undefined;
+    if (hasOnlyBuiltInValue) {
       return builtInValue;
     }
 

@@ -76,7 +76,7 @@ export function formatDurationString(totalSeconds: number) {
   return hours ? `${hours}:${tail}` : tail;
 }
 
-export function buildVideoFields({ video, playlist, autonumber = 1 }: VideoFieldsRequest): TemplateFields {
+export function buildVideoFields({ video, playlist, autonumber = 1 }: VideoFieldsRequest) {
   const thumbnail = video.thumbnails.at(-1)?.url;
   return {
     id: video.id,
@@ -107,7 +107,7 @@ export function buildVideoFields({ video, playlist, autonumber = 1 }: VideoField
   };
 }
 
-export function buildFormatFields(picks: FormatFields[]): TemplateFields {
+export function buildFormatFields(picks: FormatFields[]) {
   const primary = picks.find(fields => fields.hasVideo) ?? picks[0];
   const audio = picks.find(fields => fields.hasAudio);
   return {
@@ -127,7 +127,7 @@ export function buildFormatFields(picks: FormatFields[]): TemplateFields {
   };
 }
 
-export function buildSectionFields(section?: SectionContext): TemplateFields {
+export function buildSectionFields(section?: SectionContext) {
   return {
     section_title: section?.title,
     section_number: section?.number,
@@ -183,7 +183,8 @@ export function applyMetadataRules({ fields, options }: MetadataRulesRequest) {
     for (const name in fields) {
       const isTargeted = fieldPatterns.some(fieldPattern => new RegExp(`^(?:${fieldPattern})$`).test(name));
       const value = fields[name];
-      if (isTargeted && typeof value === "string") {
+      const isTargetedString = isTargeted && typeof value === "string";
+      if (isTargetedString) {
         fields[name] = value.replace(regex, replacementText);
       }
     }

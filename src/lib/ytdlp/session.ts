@@ -1,4 +1,3 @@
-import type { Chapter } from "./fields";
 import { buildVideoFields } from "./fields";
 import { parseYtDlpCommand } from "./options";
 import type { YtDlpOptions } from "./options";
@@ -76,7 +75,7 @@ function needsCaptions(options: YtDlpOptions) {
   return options.isWriteSubs || options.isWriteAutoSubs || options.isEmbedSubs || options.isListSubs;
 }
 
-async function expandUrl({ url, options, tab }: UrlExpansion): Promise<Target[]> {
+async function expandUrl({ url, options, tab }: UrlExpansion) {
   const videoId = parseVideoId(url);
   const playlistId = parsePlaylistId(url);
   const isPlaylistWanted = Boolean(playlistId) && !(videoId && options.isNoPlaylist);
@@ -118,7 +117,7 @@ async function expandUrl({ url, options, tab }: UrlExpansion): Promise<Target[]>
   });
 }
 
-async function resolveChapters({ options, tab, videoId, durationSeconds }: ChapterLookup): Promise<Chapter[]> {
+async function resolveChapters({ options, tab, videoId, durationSeconds }: ChapterLookup) {
   if (!needsChapters(options)) {
     return [];
   }
@@ -138,7 +137,11 @@ async function processTarget({ options, tab, target, autonumber, hooks }: Target
   hooks.status(`Looking up ${target.title}`);
   const video = await resolveVideo(target.videoId).catch((error: unknown) => {
     const isOnThisVideo = Boolean(tab.url) && parseVideoId(tab.url!) === target.videoId;
-    if (!(error instanceof BotCheckError) || !isOnThisVideo) {
+    if (!(error instanceof BotCheckError)) {
+      throw error;
+    }
+
+    if (!isOnThisVideo) {
       throw error;
     }
 
@@ -262,7 +265,8 @@ export async function runYtDlpCommand({ command, tab, hooks }: YtDlpRun) {
   for (const [index, target] of targets.entries()) {
     hooks.signal.throwIfAborted();
 
-    if (options.maxDownloads !== undefined && downloadCount >= options.maxDownloads) {
+    const hasReachedMaxDownloads = options.maxDownloads !== undefined && downloadCount >= options.maxDownloads;
+    if (hasReachedMaxDownloads) {
       hooks.log(`Stopped after --max-downloads ${options.maxDownloads}`);
       return;
     }
@@ -274,7 +278,8 @@ export async function runYtDlpCommand({ command, tab, hooks }: YtDlpRun) {
       autonumber: index + 1,
       hooks
     }).catch((error: unknown) => {
-      if (isAbortOnError || hooks.signal.aborted) {
+      const shouldStopOnError = isAbortOnError || hooks.signal.aborted;
+      if (shouldStopOnError) {
         throw error;
       }
 

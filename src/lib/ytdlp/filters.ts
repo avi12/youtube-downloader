@@ -13,8 +13,8 @@ const DAYS_PER_UNIT: Record<string, number> = {
   year: 365
 };
 
-export function toReader(fields: TemplateFields): FieldReader {
-  return name => {
+export function toReader(fields: TemplateFields) {
+  return (name: string) => {
     const value = fields[name];
     if (Array.isArray(value)) {
       return value.join(",");

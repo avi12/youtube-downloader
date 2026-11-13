@@ -4,7 +4,7 @@ import type { PageResult } from "@/lib/schemas";
 export type PlaylistListing = NonNullable<PageResult["playlist"]>;
 export type PlaylistEntry = PlaylistListing["entries"][number];
 export type RawChapter = NonNullable<PageResult["chapters"]>[number];
-export async function runInsideYouTubePage(task: PageTask): Promise<PageResult> {
+export async function runInsideYouTubePage(task: PageTask) {
   const MAX_PAGES = 200;
   const MILLISECONDS_PER_SECOND = 1000;
   const SAPISID_PATTERN = /(?:^|; )(?:__Secure-3PAPISID|SAPISID)=([^;]+)/;
@@ -28,7 +28,7 @@ export async function runInsideYouTubePage(task: PageTask): Promise<PageResult> 
     isCaptionsWanted: boolean;
   }
 
-  async function capturePlayer({ videoId, isCaptionsWanted }: PlayerCapture): Promise<PageResult> {
+  async function capturePlayer({ videoId, isCaptionsWanted }: PlayerCapture) {
     const TIMEDTEXT_PATH = "/api/timedtext";
     const CAPTION_WAIT_MS = 5000;
     const MAX_CAPTURED = 8;
@@ -44,7 +44,7 @@ export async function runInsideYouTubePage(task: PageTask): Promise<PageResult> 
       args?: unknown[];
     }
 
-    function callPlayer({ method, args = [] }: PlayerCall): unknown {
+    function callPlayer({ method, args = [] }: PlayerCall) {
       const member = playerElement?.[method];
       return typeof member === "function" ? member.apply(playerElement, args) : undefined;
     }
@@ -54,7 +54,8 @@ export async function runInsideYouTubePage(task: PageTask): Promise<PageResult> 
       node: playerResponse,
       path: ["videoDetails", "videoId"]
     });
-    if (currentVideoId !== videoId) {
+    const isDifferentVideo = currentVideoId !== videoId;
+    if (isDifferentVideo) {
       return { error: "Open this video's watch page first" };
     }
 
@@ -94,12 +95,15 @@ export async function runInsideYouTubePage(task: PageTask): Promise<PageResult> 
           });
         }
 
-        if (url.includes(SEGMENT_PATH) && init?.body instanceof ArrayBuffer) {
-          record(init.body);
-        } else if (url.includes(SEGMENT_PATH) && init?.body && ArrayBuffer.isView(init.body)) {
-          record(init.body.buffer.slice(init.body.byteOffset, init.body.byteOffset + init.body.byteLength));
-        } else if (url.includes(SEGMENT_PATH) && input instanceof Request) {
-          input.clone().arrayBuffer().then(record).catch(() => undefined);
+        const isSegmentUrl = url.includes(SEGMENT_PATH);
+        if (isSegmentUrl) {
+          if (init?.body instanceof ArrayBuffer) {
+            record(init.body);
+          } else if (init?.body && ArrayBuffer.isView(init.body)) {
+            record(init.body.buffer.slice(init.body.byteOffset, init.body.byteOffset + init.body.byteLength));
+          } else if (input instanceof Request) {
+            input.clone().arrayBuffer().then(record).catch(() => undefined);
+          }
         }
 
         return originalFetch.apply(window, args);
@@ -268,17 +272,19 @@ export async function runInsideYouTubePage(task: PageTask): Promise<PageResult> 
     return typeof value === "object" && value !== null && !Array.isArray(value);
   }
 
-  function* walk(node: unknown): Generator<JsonRecord> {
-    if (typeof node !== "object" || node === null) {
-      return;
-    }
+  function* walk(root: unknown) {
+    const pending = [root];
+    while (pending.length) {
+      const node = pending.pop();
+      if (typeof node !== "object" || node === null) {
+        continue;
+      }
 
-    if (isRecord(node)) {
-      yield node;
-    }
+      if (isRecord(node)) {
+        yield node;
+      }
 
-    for (const child of Object.values(node)) {
-      yield* walk(child);
+      pending.push(...Object.values(node).reverse());
     }
   }
 
@@ -287,11 +293,11 @@ export async function runInsideYouTubePage(task: PageTask): Promise<PageResult> 
     path: string[];
   }
 
-  function child({ node, path }: NodePath): unknown {
+  function child({ node, path }: NodePath) {
     return path.reduce((current, key) => (isRecord(current) ? current[key] : undefined), node);
   }
 
-  function readText(value: unknown): string {
+  function readText(value: unknown) {
     if (typeof value === "string") {
       return value;
     }
@@ -324,7 +330,7 @@ export async function runInsideYouTubePage(task: PageTask): Promise<PageResult> 
     )).join("") : "";
   }
 
-  async function listPlaylist(listId: string): Promise<PlaylistListing> {
+  async function listPlaylist(listId: string) {
     const entries: PlaylistEntry[] = [];
     const seen = new Set<string>();
     let playlistTitle = "";
@@ -352,7 +358,8 @@ export async function runInsideYouTubePage(task: PageTask): Promise<PageResult> 
           node: renderer,
           path: ["videoId"]
         }) ?? (isLockupVideo ? node.contentId : undefined);
-        if (typeof videoId === "string" && !seen.has(videoId)) {
+        const isNewVideoId = typeof videoId === "string" && !seen.has(videoId);
+        if (isNewVideoId) {
           seen.add(videoId);
           const lockupTitle = child({
             node,
@@ -397,7 +404,7 @@ export async function runInsideYouTubePage(task: PageTask): Promise<PageResult> 
     };
   }
 
-  async function listChapters(videoId: string): Promise<RawChapter[]> {
+  async function listChapters(videoId: string) {
     const response = await post({
       endpoint: "next",
       body: {

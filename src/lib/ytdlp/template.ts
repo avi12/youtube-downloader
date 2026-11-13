@@ -81,14 +81,16 @@ function stringify({ name, value, conversion }: StringifyRequest) {
     return undefined;
   }
 
-  if (conversion && DURATION_FIELDS.has(name) && typeof value === "number") {
+  const isDurationValue = conversion && DURATION_FIELDS.has(name) && typeof value === "number";
+  if (isDurationValue) {
     return formatDuration({
       totalSeconds: value,
       format: conversion
     });
   }
 
-  if (conversion && DATE_FIELDS.has(name)) {
+  const isDateValue = conversion && DATE_FIELDS.has(name);
+  if (isDateValue) {
     return formatDate({
       value,
       format: conversion
@@ -114,7 +116,8 @@ export function renderTemplate({ template, fields, isPath = false }: TemplateReq
     const text = isPath ? rawText.replaceAll("/", SLASH_SUBSTITUTE) : rawText;
     const isNumber = type === "d" || type === "i";
     const isNumeric = !Number.isNaN(Number(text));
-    if (isNumber && isNumeric) {
+    const isNumericValue = isNumber && isNumeric;
+    if (isNumericValue) {
       const sign = flags.includes("+") && Number(text) >= 0 ? "+" : "";
       const padded = `${sign}${Math.trunc(Number(text))}`.padStart(Number(width) || 0, flags.includes("0") ? "0" : " ");
       return padded;

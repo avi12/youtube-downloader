@@ -135,7 +135,12 @@ export function parsePlaylistId(input: string) {
   }
 
   const url = parseUrl(trimmed);
-  if (!url || !WATCH_HOSTS.has(url.hostname)) {
+  if (!url) {
+    return null;
+  }
+
+  const isUnwatchableHost = !WATCH_HOSTS.has(url.hostname);
+  if (isUnwatchableHost) {
     return null;
   }
 
@@ -294,7 +299,7 @@ interface ResolvedVideoSource {
   captionTexts?: Record<string, string>;
 }
 
-function toResolvedVideo({ videoId, playerResponse, formats, captionTexts = {} }: ResolvedVideoSource): ResolvedVideo {
+function toResolvedVideo({ videoId, playerResponse, formats, captionTexts = {} }: ResolvedVideoSource) {
   const details = playerResponse.videoDetails ?? {};
   const captionTracks = playerResponse.captions?.playerCaptionsTracklistRenderer?.captionTracks ?? [];
   return {
@@ -321,22 +326,24 @@ function toResolvedVideo({ videoId, playerResponse, formats, captionTexts = {} }
   };
 }
 
-async function fetchPlayerResponseFromAnyClient({ videoId, clients }: ClientsLookup): Promise<PlayerResponse> {
-  const [playerClient, ...fallbackClients] = clients;
-  await registerRequestHeaderRules(playerClient);
-  return fetchPlayerResponse({
-    videoId,
-    playerClient: playerClient!
-  }).catch((error: unknown) => {
-    if (!(error instanceof BotCheckError) || !fallbackClients.length) {
-      throw error;
+async function fetchPlayerResponseFromAnyClient({ videoId, clients }: ClientsLookup) {
+  for (const [iClient, playerClient] of clients.entries()) {
+    await registerRequestHeaderRules(playerClient);
+    try {
+      return await fetchPlayerResponse({
+        videoId,
+        playerClient
+      });
+    } catch (error) {
+      const isLastClient = iClient === clients.length - 1;
+      const shouldTryNextClient = error instanceof BotCheckError && !isLastClient;
+      if (!shouldTryNextClient) {
+        throw error;
+      }
     }
+  }
 
-    return fetchPlayerResponseFromAnyClient({
-      videoId,
-      clients: fallbackClients
-    });
-  });
+  throw new Error("No player client is available");
 }
 
 export async function resolveVideo(videoId: string) {

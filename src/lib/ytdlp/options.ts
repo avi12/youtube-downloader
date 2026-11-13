@@ -41,7 +41,7 @@ interface ParseRequest<Schema extends z.ZodType> {
   value: string;
 }
 
-function parseOptionValue<Schema extends z.ZodType>({ flag, schema, value }: ParseRequest<Schema>): z.output<Schema> {
+function parseOptionValue<Schema extends z.ZodType>({ flag, schema, value }: ParseRequest<Schema>) {
   const result = schema.safeParse(value);
   if (!result.success) {
     throw new Error(`${flag} ${value}: ${result.error.issues[0]?.message ?? "invalid value"}`);
@@ -204,7 +204,8 @@ function parseConversionTarget(value: string) {
 
 function parseTimestamp(text: string) {
   const trimmed = text.trim();
-  if (!trimmed || trimmed === "inf") {
+  const isUnlimited = !trimmed || trimmed === "inf";
+  if (isUnlimited) {
     return undefined;
   }
 
@@ -218,7 +219,7 @@ function parseTimestamp(text: string) {
   return seconds;
 }
 
-function parseSection(value: string): Section {
+function parseSection(value: string) {
   const match = value.match(SECTION_TIME_PATTERN);
   if (!match) {
     return { chapterPattern: value };
@@ -774,8 +775,8 @@ const UNSUPPORTED_REASONS: Record<string, string> = {
 const IGNORED_SET = new Set(IGNORED_SWITCHES);
 const IGNORED_VALUE_SET = new Set(IGNORED_VALUE_OPTIONS.filter(flag => !(flag in UNSUPPORTED_REASONS)));
 
-function createDefaultOptions(): YtDlpOptions {
-  return {
+function createDefaultOptions() {
+  const defaults: YtDlpOptions = {
     urls: [],
     formatSort: [],
     isPreferFree: false,
@@ -822,11 +823,14 @@ function createDefaultOptions(): YtDlpOptions {
     replaceInMetadata: [],
     ignoredFlags: []
   };
+
+  return defaults;
 }
 
 function splitInlineValue(token: string) {
   const separatorIndex = token.indexOf(EQUALS_SIGN);
-  if (!token.startsWith(LONG_FLAG_PREFIX) || separatorIndex === -1) {
+  const isNotLongFlag = !token.startsWith(LONG_FLAG_PREFIX) || separatorIndex === -1;
+  if (isNotLongFlag) {
     return { flag: token };
   }
 
@@ -849,7 +853,8 @@ function expandShortFlags(token: string) {
 function splitAttachedValue(token: string) {
   const isAttached = /^-[a-zA-Z].+$/.test(token) && !token.startsWith(LONG_FLAG_PREFIX) && !definitions.has(token);
   const flag = token.slice(0, 2);
-  if (isAttached && (definitions.get(flag)?.arity ?? 0) > 0) {
+  const isAttachedValueExpected = isAttached && (definitions.get(flag)?.arity ?? 0) > 0;
+  if (isAttachedValueExpected) {
     return [flag, token.slice(2)];
   }
 
@@ -888,7 +893,8 @@ function applyFlag({ options, rawFlag, tokens, inlineValue }: FlagRequest) {
   if (resolved) {
     const { definition, isNegated } = resolved;
     const values = definition.arity === 0 ? [isNegated ? "off" : "on"] : [...(inlineValue === undefined ? [] : [inlineValue]), ...tokens.splice(0, definition.arity - Number(inlineValue !== undefined))];
-    if (definition.arity > 0 && values.length < definition.arity) {
+    const hasMissingValues = definition.arity > 0 && values.length < definition.arity;
+    if (hasMissingValues) {
       throw new Error(`${rawFlag} needs a value`);
     }
 
@@ -928,7 +934,8 @@ export function parseYtDlpCommand(command: string) {
   const options = createDefaultOptions();
   while (tokens.length) {
     const token = tokens.shift()!;
-    if (!token.startsWith("-") || token === "-") {
+    const isPositionalArgument = !token.startsWith("-") || token === "-";
+    if (isPositionalArgument) {
       options.urls.push(token);
       continue;
     }

@@ -61,7 +61,7 @@
     value: string;
   }
 
-  function parseOptions(text: string): ListOption[] {
+  function parseOptions(text: string) {
     return text
       .split("\n")
       .map(line => line.trim())
@@ -76,7 +76,7 @@
       });
   }
 
-  function formatOptions(variable: Variable): string {
+  function formatOptions(variable: Variable) {
     if (variable.type !== "list") {
       return "";
     }
@@ -103,7 +103,7 @@
     raw: string;
   }
 
-  function applyOptions({ variable, raw }: VariableInput): void {
+  function applyOptions({ variable, raw }: VariableInput) {
     if (variable.type !== "list") {
       return;
     }
@@ -113,11 +113,11 @@
     variable.defaultValue = isDefaultStillValid ? variable.defaultValue : (variable.options[0]?.value ?? "");
   }
 
-  function applyDefault({ variable, raw }: VariableInput): void {
+  function applyDefault({ variable, raw }: VariableInput) {
     variable.defaultValue = variable.type === "number" ? Number(raw) : raw;
   }
 
-  function buildVariable({ type, name, label }: VariableBlueprint): Variable {
+  function buildVariable({ type, name, label }: VariableBlueprint) {
     if (type === "number") {
       return {
         type,
@@ -152,7 +152,7 @@
     };
   }
 
-  function retype({ index, type }: VariableRetype): void {
+  function retype({ index, type }: VariableRetype) {
     const current = draft.variables[index];
     if (current) {
       draft.variables[index] = buildVariable({
@@ -163,7 +163,7 @@
     }
   }
 
-  function retypeFromValue({ index, raw }: IndexedInput): void {
+  function retypeFromValue({ index, raw }: IndexedInput) {
     const type = VARIABLE_TYPES.find(candidate => candidate === raw);
     if (type) {
       retype({
@@ -173,13 +173,13 @@
     }
   }
 
-  function applyLimit({ variable, key, raw }: LimitChange): void {
+  function applyLimit({ variable, key, raw }: LimitChange) {
     if (variable.type === "number") {
       variable[key] = raw === "" ? undefined : Number(raw);
     }
   }
 
-  function addVariable(): void {
+  function addVariable() {
     const number = draft.variables.length + 1;
     draft.variables.push(
       buildVariable({
@@ -190,11 +190,11 @@
     );
   }
 
-  function removeVariable(index: number): void {
+  function removeVariable(index: number) {
     draft.variables.splice(index, 1);
   }
 
-  function save(): void {
+  function save() {
     onsave({
       ...$state.snapshot(draft),
       ffmpegCommand: isFfmpegEnabled ? draft.ffmpegCommand : undefined

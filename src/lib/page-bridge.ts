@@ -44,7 +44,12 @@ function waitForBridgeAnswer(id: string) {
     const timeout = AbortSignal.timeout(PAGE_TASK_TIMEOUT_MS);
     function listener(message: unknown) {
       const parsed = bridgeMessageSchema.safeParse(message);
-      if (!parsed.success || parsed.data.id !== id) {
+      if (!parsed.success) {
+        return;
+      }
+
+      const isOtherRequest = parsed.data.id !== id;
+      if (isOtherRequest) {
         return;
       }
 

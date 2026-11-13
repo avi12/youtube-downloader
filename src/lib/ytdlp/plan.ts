@@ -8,7 +8,7 @@ import {
 } from "./fields";
 import type { Chapter, PlaylistPosition, SectionContext } from "./fields";
 import { matchesAnyFilter, parseByteSize, parseDateSpec } from "./filters";
-import type { AudioFormat, Section, YtDlpOptions } from "./options";
+import type { AudioFormat, YtDlpOptions } from "./options";
 import { DEFAULT_SORT_KEYS, describeFormat, selectFormatSets } from "./selector";
 import type { FormatFields } from "./selector";
 import { renderTemplate } from "./template";
@@ -151,9 +151,17 @@ interface RejectionRequest {
   now: Date;
 }
 
+function isBestAudioFormat(format: string): format is typeof BEST_AUDIO_FORMAT {
+  return format === BEST_AUDIO_FORMAT;
+}
+
 function selectAudioCodecArgs({ options, source }: AudioCodecRequest) {
   const isSameCodec = source.ext === options.audioFormat || source.acodec.startsWith(options.audioFormat);
-  if (options.audioFormat === BEST_AUDIO_FORMAT || isSameCodec) {
+  if (isBestAudioFormat(options.audioFormat)) {
+    return ["-c:a", "copy"];
+  }
+
+  if (isSameCodec) {
     return ["-c:a", "copy"];
   }
 
@@ -170,7 +178,7 @@ function captionSource(track: CaptionOption) {
   return track.text === undefined ? { url: track.url } : { text: track.text };
 }
 
-function toWorkerInput({ fields, video }: WorkerInputRequest): JobInput {
+function toWorkerInput({ fields, video }: WorkerInputRequest) {
   return {
     name: `format-${fields.format_id}.${fields.ext}`,
     url: fields.format.url,
@@ -200,7 +208,8 @@ function pickContainer({ options, picks }: OptionsPicks) {
 }
 
 function pickSubtitleCodec(container: string) {
-  if (container === WEBM) {
+  const isWebm = container === WEBM;
+  if (isWebm) {
     return "webvtt";
   }
 
@@ -253,7 +262,7 @@ function buildChaptersText({ chapters, title }: ChaptersTextRequest) {
   return [";FFMETADATA1", `title=${title}`, ...blocks].join("\n");
 }
 
-function resolveSections({ options, chapters }: SectionsRequest): (Section & { title?: string })[] {
+function resolveSections({ options, chapters }: SectionsRequest) {
   return options.sections.flatMap(section => {
     if (!section.chapterPattern) {
       return [section];
@@ -322,7 +331,7 @@ function buildMediaJob({
   media: { options, context, fields, picks, tracks, notes },
   section,
   isChapterSplit
-}: MediaJobRequest): Job {
+}: MediaJobRequest) {
   const { video, chapters } = context;
   const sectionArgs = buildSectionArgs(section);
   const primary = picks.find(pick => pick.hasVideo) ?? picks[0]!;
@@ -372,7 +381,8 @@ function buildMediaJob({
   const mediaInputCount = inputs.length;
   const isMatroska = MATROSKA_FORMATS.has(container);
   const canEmbedSubs = options.isEmbedSubs && !options.isExtractAudio && (isMatroska || MP4_FAMILY.has(container));
-  if (options.isEmbedSubs && !canEmbedSubs) {
+  const isSubtitleEmbeddingBlocked = options.isEmbedSubs && !canEmbedSubs;
+  if (isSubtitleEmbeddingBlocked) {
     notes.push(`Can't embed subtitles in .${container}, skipped`);
   }
 
@@ -390,12 +400,14 @@ function buildMediaJob({
 
   const thumbnail = options.isEmbedThumbnail ? pickBestJpeg(video.thumbnails) : undefined;
   const canEmbedThumbnail = Boolean(thumbnail) && THUMBNAIL_EMBED_FORMATS.has(container);
-  if (options.isEmbedThumbnail && !canEmbedThumbnail) {
+  const isThumbnailEmbeddingBlocked = options.isEmbedThumbnail && !canEmbedThumbnail;
+  if (isThumbnailEmbeddingBlocked) {
     notes.push(`Can't embed a thumbnail in .${container}, skipped`);
   }
 
   const thumbnailIndex = inputs.length;
-  if (canEmbedThumbnail && !isMatroska) {
+  const shouldConvertCover = canEmbedThumbnail && !isMatroska;
+  if (shouldConvertCover) {
     inputs.push({
       worker: {
         name: THUMBNAIL_INPUT,
@@ -424,20 +436,23 @@ function buildMediaJob({
   const isAttachingAudioCover = options.isExtractAudio && canEmbedThumbnail && !isMatroska;
   const streamInputs = inputs.slice(0, mediaInputCount + embeddedTracks.length);
   const mapArgs = isAttachingAudioCover ? ["-map", "0:a"] : streamInputs.flatMap((_, index) => (hasExtraStreams ? ["-map", String(index)] : []));
-  if (options.isExtractAudio && !isAttachingAudioCover) {
+  const isExtractingWithoutCover = options.isExtractAudio && !isAttachingAudioCover;
+  if (isExtractingWithoutCover) {
     codecArgs.unshift("-vn");
   }
 
   const subtitleArgs = embeddedTracks.flatMap((track, index) => ["-metadata:s:s:" + index, `language=${track.languageCode}`]);
   extraArgs.push(...mapArgs, ...(embeddedTracks.length ? ["-c:s", subtitleCodec, ...subtitleArgs] : []));
 
-  if (canEmbedThumbnail && !isMatroska) {
+  const shouldConvertCoverForContainer = canEmbedThumbnail && !isMatroska;
+  if (shouldConvertCoverForContainer) {
     const videoStreamCount = options.isExtractAudio ? 0 : picks.filter(pick => pick.hasVideo).length;
     const coverArgs = isAttachingAudioCover ? ["-c:v", "copy", ...(container === "mp3" ? ["-id3v2_version", "3"] : [])] : [];
     extraArgs.push("-map", String(thumbnailIndex), ...coverArgs, `-disposition:v:${videoStreamCount}`, "attached_pic");
   }
 
-  if (canEmbedThumbnail && isMatroska) {
+  const shouldEmbedCoverInMatroska = canEmbedThumbnail && isMatroska;
+  if (shouldEmbedCoverInMatroska) {
     extraArgs.push("-attach", THUMBNAIL_INPUT, "-metadata:s:t", "mimetype=image/jpeg");
     inputs.push({
       worker: {
@@ -733,7 +748,8 @@ function sizeRejection({ options, picks }: OptionsPicks) {
     return undefined;
   }
 
-  if (options.minFilesize && total < parseByteSize(options.minFilesize)) {
+  const isBelowMinFilesize = options.minFilesize && total < parseByteSize(options.minFilesize);
+  if (isBelowMinFilesize) {
     return "is smaller than --min-filesize";
   }
 
@@ -759,7 +775,7 @@ function buildPrintLines({ options, fields, video }: OptionsFieldsVideo) {
   }))];
 }
 
-export function planVideo({ options, context }: PlanRequest): VideoPlan {
+export function planVideo({ options, context }: PlanRequest) {
   const { video } = context;
   const now = context.now ?? new Date();
   const fields = buildVideoFields({
@@ -849,7 +865,8 @@ export function planVideo({ options, context }: PlanRequest): VideoPlan {
     video
   });
   const wantsSubs = options.isWriteSubs || options.isWriteAutoSubs || options.isEmbedSubs;
-  if (wantsSubs && !tracks.length) {
+  const isMissingSubtitles = wantsSubs && !tracks.length;
+  if (isMissingSubtitles) {
     notes.push("No captions match --sub-langs");
   }
 
@@ -890,7 +907,7 @@ export function planVideo({ options, context }: PlanRequest): VideoPlan {
       const sections = resolveSections({
         options,
         chapters: context.chapters
-      }).map((section, index): SectionContext => ({
+      }).map((section, index) => ({
         ...section,
         number: index + 1
       }));
@@ -919,7 +936,8 @@ export function planVideo({ options, context }: PlanRequest): VideoPlan {
     }
   }
 
-  if (!jobs.length && !companions.directFiles.length) {
+  const hasNothingToDownload = !jobs.length && !companions.directFiles.length;
+  if (hasNothingToDownload) {
     throw new Error(notes[0] ?? "Nothing to do: add --write-subs or drop --skip-download");
   }
 

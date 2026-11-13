@@ -39,7 +39,8 @@
 
   // fallow-ignore-next-line complexity
   const wavePath = $derived.by(() => {
-    if (containerWidth <= 0 || clampedValue <= 0.5) {
+    const isTooSmallToDraw = containerWidth <= 0 || clampedValue <= 0.5;
+    if (isTooSmallToDraw) {
       return "";
     }
 

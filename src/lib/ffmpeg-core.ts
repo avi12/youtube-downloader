@@ -49,7 +49,8 @@ async function downloadNoSimdWasm() {
 
 async function fetchNoSimdWasm() {
   const cachedWasmBinary = await readCachedNoSimdWasm().catch(() => null);
-  if (cachedWasmBinary && await isNoSimdWasmIntact(cachedWasmBinary)) {
+  const isCacheIntact = cachedWasmBinary && await isNoSimdWasmIntact(cachedWasmBinary);
+  if (isCacheIntact) {
     return cachedWasmBinary;
   }
 
