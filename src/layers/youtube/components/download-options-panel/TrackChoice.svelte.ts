@@ -70,15 +70,15 @@ export function createTrackChoiceState(params: TrackChoiceParams) {
     });
   }));
 
-  function handleSegmentedKeydown(e: KeyboardEvent) {
-    const isArrowKey = e.key === "ArrowLeft" || e.key === "ArrowRight";
+  function handleSegmentedKeydown(event: KeyboardEvent) {
+    const isArrowKey = event.key === "ArrowLeft" || event.key === "ArrowRight";
     if (!isArrowKey) {
       return;
     }
 
-    e.preventDefault();
+    event.preventDefault();
     const iCurrent = buttons.findIndex(button => button.mode === params.mode);
-    const delta = e.key === "ArrowRight" ? 1 : -1;
+    const delta = event.key === "ArrowRight" ? 1 : -1;
 
     let iNext = iCurrent;
     for (let i = 0; i < buttons.length; i++) {

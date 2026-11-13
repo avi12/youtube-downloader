@@ -1,12 +1,12 @@
 const PAPER_DROPDOWN_MENU_TAG = "tp-yt-paper-dropdown-menu";
 const KEYBOARD_FOCUSED_ATTR = "keyboard-focused";
 
-function handleDropdownFocusIn(e: FocusEvent) {
-  if (!(e.target instanceof Element)) {
+function handleDropdownFocusIn(event: FocusEvent) {
+  if (!(event.target instanceof Element)) {
     return;
   }
 
-  const elDropdown = e.target.closest(PAPER_DROPDOWN_MENU_TAG);
+  const elDropdown = event.target.closest(PAPER_DROPDOWN_MENU_TAG);
   if (!elDropdown) {
     return;
   }
@@ -16,12 +16,12 @@ function handleDropdownFocusIn(e: FocusEvent) {
   }
 }
 
-function handleDropdownFocusOut(e: FocusEvent) {
-  if (!(e.target instanceof Element)) {
+function handleDropdownFocusOut(event: FocusEvent) {
+  if (!(event.target instanceof Element)) {
     return;
   }
 
-  const elDropdown = e.target.closest(PAPER_DROPDOWN_MENU_TAG);
+  const elDropdown = event.target.closest(PAPER_DROPDOWN_MENU_TAG);
   if (!elDropdown) {
     return;
   }

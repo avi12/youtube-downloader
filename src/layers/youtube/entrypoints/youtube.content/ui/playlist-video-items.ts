@@ -45,7 +45,7 @@ function injectPlaylistVideoItemUi({ context, elVideoItem }: InjectPlaylistVideo
   elItemContainer.dataset.ytdlItem = videoId;
   elTopLevelActions.append(elItemContainer);
 
-  const ui = createIntegratedUi(context, {
+  const integratedUi = createIntegratedUi(context, {
     position: "inline",
     anchor: elItemContainer,
     onMount(elUiContainer) {
@@ -59,7 +59,7 @@ function injectPlaylistVideoItemUi({ context, elVideoItem }: InjectPlaylistVideo
     }
   });
 
-  ui.mount();
+  integratedUi.mount();
 }
 
 interface InjectIntoSubtreeParams {

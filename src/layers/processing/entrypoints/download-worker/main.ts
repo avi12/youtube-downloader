@@ -24,20 +24,20 @@ const DEFAULT_AUDIO_MIME_TYPE = "audio/mp4";
 const abortController = new AbortController();
 const { signal } = abortController;
 
-addEventListener("message", e => {
-  const isExternalOrigin = e.origin !== location.origin;
+addEventListener("message", event => {
+  const isExternalOrigin = event.origin !== location.origin;
   if (isExternalOrigin) {
     return;
   }
 
-  const isCancel = e.data?.type === IFRAME_MESSAGE_CANCEL;
+  const isCancel = event.data?.type === IFRAME_MESSAGE_CANCEL;
   if (isCancel) {
     abortController.abort();
   }
 
-  const isStart = e.data?.type === IFRAME_MESSAGE_START;
+  const isStart = event.data?.type === IFRAME_MESSAGE_START;
   if (isStart) {
-    const { request, tabId, enrichedMetadata } = e.data;
+    const { request, tabId, enrichedMetadata } = event.data;
     runDownload({
       request,
       tabId,

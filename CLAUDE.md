@@ -64,3 +64,5 @@ After each modification, lint with oxlint, ESLint, Stylelint, svelte-check, and 
 # Lint exceptions
 - Lint runs through `avi12-lint` (shared presets from `avi12/lint-config`); an exemption goes in `.oxlintrc.json` or `eslint.config.js` with its reason, never at the line
 - `house/positional-parameters` is off for `format-filters.ts` (`byQualityDesc`) and `audio-language-helpers.ts` (`byLabel`), which are `Array.sort` comparators, and for `movie-player.ts` (`captureApply`), a `Proxy` `apply` trap; the signatures are fixed by the platform
+- `emscripten-fs.d.ts` keeps `interface FS`: it merges into the `FS` interface of `@ffmpeg/types`, so the name is fixed by that package; the `id-length` override in `.oxlintrc.json` adds it to the exceptions
+- `__ytdlAudioWatched`, `__ytdlCaptionWatched` and `__ytdlCapture` are marker flags set on YouTube's player object; the double underscore keeps them out of YouTube's own names, and `naming/convention` lists them in `allowedNames`

@@ -16,8 +16,8 @@ declare module "svelte/elements" {
     "yt-button-view-model": HTMLAttributes<HTMLElement> & {
       class?: string;
       "aria-label"?: string;
-      onclick?: (e: MouseEvent) => void;
-      onkeydown?: (e: KeyboardEvent) => void;
+      onclick?: (event: MouseEvent) => void;
+      onkeydown?: (event: KeyboardEvent) => void;
       role?: string;
       tabindex?: string | number;
     };
@@ -42,7 +42,7 @@ declare module "svelte/elements" {
       "aria-describedby"?: string | undefined;
       "aria-invalid"?: boolean | undefined;
       autocomplete?: string;
-      oninput?: (e: Event) => void;
+      oninput?: (event: Event) => void;
     };
     "tp-yt-paper-dropdown-menu": HTMLAttributes<HTMLElement> & {
       id?: string;
@@ -79,20 +79,20 @@ declare module "svelte/elements" {
       indeterminate?: "" | undefined;
       disabled?: "" | undefined;
       "aria-label"?: string;
-      onchange?: (e: Event) => void;
+      onchange?: (event: Event) => void;
     };
     "tp-yt-paper-toggle-button": HTMLAttributes<HTMLElement> & {
       checked?: "" | undefined;
       disabled?: "" | undefined;
       "aria-label"?: string;
-      onchange?: (e: Event) => void;
+      onchange?: (event: Event) => void;
     };
     "yt-chip-cloud-chip-renderer": HTMLAttributes<HTMLElement> & {
       "chip-style"?: string;
       selected?: "" | undefined;
       role?: string;
       "aria-checked"?: boolean | string;
-      onclick?: (e: MouseEvent) => void;
+      onclick?: (event: MouseEvent) => void;
     };
     "ytd-popup-container": HTMLAttributes<HTMLElement>;
     "yt-dynamic-text-view-model": HTMLAttributes<HTMLElement>;

@@ -21,8 +21,8 @@ export function createWorkerPortReceiver(port: MessagePort) {
 
   let commandHandlers: CommandHandlerMap = {};
 
-  port.onmessage = function onPortMessage(e: MessageEvent<WorkerCommand>) {
-    const message = e.data;
+  port.onmessage = function onPortMessage(event: MessageEvent<WorkerCommand>) {
+    const message = event.data;
     switch (message.type) {
       case WorkerMessageType.MuxVideoAudio:
         commandHandlers[WorkerMessageType.MuxVideoAudio]?.({ job: message.job });

@@ -55,23 +55,23 @@ interface NavigateResponse {
   response?: ShortsPageData;
 }
 
-function readNavigateResponse(e: Event) {
-  const isCustomEvent = e instanceof CustomEvent;
+function readNavigateResponse(event: Event) {
+  const isCustomEvent = event instanceof CustomEvent;
   if (!isCustomEvent) {
     return null;
   }
 
-  const detail: { response?: NavigateResponse } | null = e.detail;
+  const detail: { response?: NavigateResponse } | null = event.detail;
   return detail?.response ?? null;
 }
 
-export async function handleNavigateSuccess(e: Event) {
+export async function handleNavigateSuccess(event: Event) {
   handleNavigation();
 
   const route = getPageRoute();
   const expectedVideoId = getRouteVideoId();
   if (route === PageRoute.Shorts) {
-    const navigateResponse = readNavigateResponse(e);
+    const navigateResponse = readNavigateResponse(event);
     const playerResponse = navigateResponse?.playerResponse;
     const isMatchingShort = playerResponse?.videoDetails?.videoId === expectedVideoId;
     if (isMatchingShort) {

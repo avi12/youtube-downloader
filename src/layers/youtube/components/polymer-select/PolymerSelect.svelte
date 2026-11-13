@@ -59,18 +59,18 @@
 
     elTrigger = elTarget;
 
-    function handleClick(e: Event) {
-      e.stopPropagation();
+    function handleClick(event: Event) {
+      event.stopPropagation();
     }
 
-    function handleKeydown(e: Event) {
-      const isKeyboardEvent = e instanceof KeyboardEvent;
-      const isArrowDown = isKeyboardEvent && e.key === "ArrowDown";
+    function handleKeydown(event: Event) {
+      const isKeyboardEvent = event instanceof KeyboardEvent;
+      const isArrowDown = isKeyboardEvent && event.key === "ArrowDown";
       if (!isArrowDown) {
         return;
       }
 
-      e.preventDefault();
+      event.preventDefault();
       elPopover?.showPopover();
     }
 
@@ -115,12 +115,12 @@
       focusTrigger();
     }
 
-    function handleToggle(e: Event) {
-      if (!(e instanceof ToggleEvent)) {
+    function handleToggle(event: Event) {
+      if (!(event instanceof ToggleEvent)) {
         return;
       }
 
-      const isOpening = e.newState === POPOVER_OPEN_STATE;
+      const isOpening = event.newState === POPOVER_OPEN_STATE;
       isOpen = isOpening;
 
       if (isOpening) {
@@ -147,8 +147,8 @@
     });
     itemsObserver.observe(elTarget, { childList: true });
 
-    function handleMousedown(e: Event) {
-      e.preventDefault();
+    function handleMousedown(event: Event) {
+      event.preventDefault();
     }
 
     function selectItem(elItem: Element) {
@@ -168,12 +168,12 @@
       elPopover?.hidePopover();
     }
 
-    function handleClick(e: Event) {
-      if (!(e.target instanceof Element)) {
+    function handleClick(event: Event) {
+      if (!(event.target instanceof Element)) {
         return;
       }
 
-      const elItem = e.target.closest(POLYMER_PAPER_ITEM);
+      const elItem = event.target.closest(POLYMER_PAPER_ITEM);
       if (!elItem) {
         return;
       }
@@ -181,37 +181,37 @@
       selectItem(elItem);
     }
 
-    function handleConfirmKey(e: KeyboardEvent) {
+    function handleConfirmKey(event: KeyboardEvent) {
       const elActive = document.activeElement;
       if (!(elActive instanceof HTMLElement) || !elActive.matches(POLYMER_PAPER_ITEM)) {
         return;
       }
 
-      e.preventDefault();
+      event.preventDefault();
       selectItem(elActive);
     }
 
-    function handleEscapeKey(e: KeyboardEvent) {
-      e.stopPropagation();
+    function handleEscapeKey(event: KeyboardEvent) {
+      event.stopPropagation();
     }
 
-    function handleTabKey(e: KeyboardEvent) {
-      e.preventDefault();
+    function handleTabKey(event: KeyboardEvent) {
+      event.preventDefault();
       elPopover?.hidePopover();
     }
 
-    function handleKeydown(e: Event) {
-      if (!(e instanceof KeyboardEvent)) {
+    function handleKeydown(event: Event) {
+      if (!(event instanceof KeyboardEvent)) {
         return;
       }
 
-      const keyHandlers: Partial<Record<string, (e: KeyboardEvent) => void>> = {
+      const keyHandlers: Partial<Record<string, (event: KeyboardEvent) => void>> = {
         Escape: handleEscapeKey,
         Tab: handleTabKey,
         Enter: handleConfirmKey,
         " ": handleConfirmKey
       };
-      keyHandlers[e.key]?.(e);
+      keyHandlers[event.key]?.(event);
     }
 
     elTarget.addEventListener("mousedown", handleMousedown);

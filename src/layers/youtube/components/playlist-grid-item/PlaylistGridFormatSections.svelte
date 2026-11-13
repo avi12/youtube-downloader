@@ -138,15 +138,15 @@
     state.effectiveOutputMode = match.mode;
   }
 
-  function handleOutputKeydown(e: KeyboardEvent) {
-    const isArrowKey = e.key === "ArrowLeft" || e.key === "ArrowRight";
+  function handleOutputKeydown(event: KeyboardEvent) {
+    const isArrowKey = event.key === "ArrowLeft" || event.key === "ArrowRight";
     if (!isArrowKey) {
       return;
     }
 
-    e.preventDefault();
+    event.preventDefault();
     const iCurrent = outputButtons.findIndex(button => state.effectiveOutputMode === button.mode);
-    const delta = e.key === "ArrowRight" ? 1 : -1;
+    const delta = event.key === "ArrowRight" ? 1 : -1;
     const iNext = (iCurrent + delta + outputButtons.length) % outputButtons.length;
     const nextButton = required(outputButtons[iNext]);
     state.effectiveOutputMode = nextButton.mode;
@@ -183,15 +183,15 @@
   const videoExtOptions = listContainerChoices("video").map(toInlineLabeledOption);
   const audioExtOptions = listContainerChoices("audio").map(toInlineLabeledOption);
 
-  function handleZipNameInput(e: Event) {
-    const isInputElement = e.target instanceof HTMLInputElement;
+  function handleZipNameInput(event: Event) {
+    const isInputElement = event.target instanceof HTMLInputElement;
     if (isInputElement) {
-      state.effectiveZipName = e.target.value;
+      state.effectiveZipName = event.target.value;
       return;
     }
 
-    if (isTpYtPaperInputElement(e.currentTarget)) {
-      state.effectiveZipName = e.currentTarget.value;
+    if (isTpYtPaperInputElement(event.currentTarget)) {
+      state.effectiveZipName = event.currentTarget.value;
     }
   }
 

@@ -59,6 +59,33 @@
       "rules": {
         "house/positional-parameters": "off"
       }
+    },
+    {
+      "files": [
+        "src/layers/processing/entrypoints/mux-worker/emscripten-fs.d.ts"
+      ],
+      "rules": {
+        "id-length": [
+          "error",
+          {
+            "min": 3,
+            "exceptions": [
+              "_",
+              "i",
+              "j",
+              "x",
+              "y",
+              "id",
+              "to",
+              "on",
+              "ok",
+              "T",
+              "FS"
+            ],
+            "properties": "never"
+          }
+        ]
+      }
     }
   ]
 }

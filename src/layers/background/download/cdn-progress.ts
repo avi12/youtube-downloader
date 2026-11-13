@@ -38,8 +38,8 @@ export function createCdnProgressTracker({
       extraExpectedBytesArray,
       captionCount
     });
-    const extraReceived = extraReceivedBytesArray.reduce((acc, n) => acc + n, 0);
-    const extraExpected = extraExpectedBytesArray.reduce((acc, n) => acc + n, 0);
+    const extraReceived = extraReceivedBytesArray.reduce((acc, bytes) => acc + bytes, 0);
+    const extraExpected = extraExpectedBytesArray.reduce((acc, bytes) => acc + bytes, 0);
     const downloadedBytes = videoReceivedBytes + audioReceivedBytes + extraReceived;
     const expectedBytes = videoTotalBytes + audioTotalBytes + extraExpected;
     sendProgressUpdate({

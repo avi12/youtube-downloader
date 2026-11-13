@@ -7,7 +7,7 @@ import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import type { Prettify } from "@/types";
 
 let workerPort: HostWorkerPort | null = null;
-let pendingJobReject: ((e: Error) => void) | null = null;
+let pendingJobReject: ((event: Error) => void) | null = null;
 
 export function setWorkerPort(port: HostWorkerPort) {
   workerPort = port;

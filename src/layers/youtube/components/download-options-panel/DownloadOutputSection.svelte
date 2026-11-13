@@ -26,13 +26,13 @@
     }
   }
 
-  function handleInput(e: Event) {
-    const isInputElement = e.target instanceof HTMLInputElement;
+  function handleInput(event: Event) {
+    const isInputElement = event.target instanceof HTMLInputElement;
     if (!isInputElement) {
       return;
     }
 
-    props.onfilenamechange(getCompatibleFilename(e.target.value.trim()));
+    props.onfilenamechange(getCompatibleFilename(event.target.value.trim()));
   }
 </script>
 

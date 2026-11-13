@@ -51,7 +51,7 @@
     dropDownItems[(iCurrent + direction + dropDownItems.length) % dropDownItems.length]?.focus();
   }
 
-  function handleTab(e: KeyboardEvent) {
+  function handleTab(event: KeyboardEvent) {
     isOpen = false;
     const focusable = [
       ...document.querySelectorAll<HTMLElement>(
@@ -59,55 +59,55 @@
       )
     ].filter(element => !elList?.contains(element));
     const iTrigger = focusable.indexOf(required(elTrigger));
-    const step = e.shiftKey ? -1 : 1;
+    const step = event.shiftKey ? -1 : 1;
     const next = focusable[iTrigger + step];
     if (next) {
-      e.preventDefault();
+      event.preventDefault();
       next.focus();
     }
   }
 
-  function handleListKeydown(e: KeyboardEvent) {
+  function handleListKeydown(event: KeyboardEvent) {
     const arrowDirections: Partial<Record<string, 1 | -1>> = {
       ArrowDown: 1,
       ArrowUp: -1
     };
-    const direction = arrowDirections[e.key];
+    const direction = arrowDirections[event.key];
     if (direction !== undefined) {
-      e.preventDefault();
+      event.preventDefault();
       navigateItems(direction);
       return;
     }
 
-    if (e.key === "Tab") {
-      handleTab(e);
+    if (event.key === "Tab") {
+      handleTab(event);
       return;
     }
 
-    if (e.key === "Escape") {
+    if (event.key === "Escape") {
       isOpen = false;
       focusTrigger();
     }
   }
 
-  function handleDocumentPointerDown(e: PointerEvent) {
-    if (!(e.target instanceof Node)) {
+  function handleDocumentPointerDown(event: PointerEvent) {
+    if (!(event.target instanceof Node)) {
       return;
     }
 
-    if (elTrigger?.contains(e.target) || elList?.contains(e.target)) {
+    if (elTrigger?.contains(event.target) || elList?.contains(event.target)) {
       return;
     }
 
     isOpen = false;
   }
 
-  function preventOuterScroll(e: Event) {
-    if (!(e.target instanceof Node) || elList?.contains(e.target)) {
+  function preventOuterScroll(event: Event) {
+    if (!(event.target instanceof Node) || elList?.contains(event.target)) {
       return;
     }
 
-    e.preventDefault();
+    event.preventDefault();
   }
 
   // Anchor the list to the trigger and bound its height to the available space, in JS.

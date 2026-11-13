@@ -39,8 +39,8 @@ export function createFocusManager() {
 
     const elDropdownRoot = elPanel.closest<HTMLElement>(POLYMER_IRON_DROPDOWN) ?? elPanel;
 
-    elDropdownRoot.addEventListener(IRON_OVERLAY_OPENED_EVENT, e => {
-      const isInnerOverlay = e.target !== elDropdownRoot;
+    elDropdownRoot.addEventListener(IRON_OVERLAY_OPENED_EVENT, event => {
+      const isInnerOverlay = event.target !== elDropdownRoot;
       if (isInnerOverlay) {
         return;
       }
@@ -53,8 +53,8 @@ export function createFocusManager() {
       elDropdownRoot.addEventListener(IRON_OVERLAY_CLOSED_EVENT, handleOverlayClosed);
     });
 
-    function handleOverlayClosed(e: Event) {
-      const isInnerOverlay = e.target !== elDropdownRoot;
+    function handleOverlayClosed(event: Event) {
+      const isInnerOverlay = event.target !== elDropdownRoot;
       if (isInnerOverlay) {
         return;
       }

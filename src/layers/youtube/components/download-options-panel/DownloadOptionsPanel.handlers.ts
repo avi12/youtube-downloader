@@ -59,16 +59,16 @@ export function sendPanelClosed() {
 const YT_PLAYER_KEYS = new Set([" ", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"]);
 
 export function handlePanelKeydown(onClose: () => void) {
-  return (e: KeyboardEvent) => {
-    const isEscape = e.key === "Escape";
+  return (event: KeyboardEvent) => {
+    const isEscape = event.key === "Escape";
     const isEscapeWithNoPopover = isEscape && !document.querySelector(":popover-open");
     if (isEscapeWithNoPopover) {
       onClose();
     }
 
-    const isYtPlayerKey = YT_PLAYER_KEYS.has(e.key);
+    const isYtPlayerKey = YT_PLAYER_KEYS.has(event.key);
     if (isYtPlayerKey) {
-      e.stopPropagation();
+      event.stopPropagation();
     }
   };
 }

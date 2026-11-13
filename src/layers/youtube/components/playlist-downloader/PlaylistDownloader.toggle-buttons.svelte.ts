@@ -91,15 +91,15 @@ export function createPlaylistToggleButtons(state: CreatePlaylistToggleButtonsPa
   }
 
   function makeSegKeydown(group: ToggleButtonGroup[]) {
-    return (e: KeyboardEvent) => {
-      const isArrowKey = e.key === "ArrowLeft" || e.key === "ArrowRight";
+    return (event: KeyboardEvent) => {
+      const isArrowKey = event.key === "ArrowLeft" || event.key === "ArrowRight";
       if (!isArrowKey) {
         return;
       }
 
-      e.preventDefault();
+      event.preventDefault();
       const iCurrent = group.findIndex(button => button.isActive(state));
-      const delta = e.key === "ArrowRight" ? 1 : -1;
+      const delta = event.key === "ArrowRight" ? 1 : -1;
       const iNext = (iCurrent + delta + group.length) % group.length;
       const nextButton = required(group[iNext]);
       nextButton.onClick(state);

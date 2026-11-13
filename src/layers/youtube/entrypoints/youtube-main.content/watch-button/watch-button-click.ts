@@ -31,8 +31,8 @@ type BuildClickHandlerParams = Prettify<{
   state: ClickHandlerState;
 }>;
 export function buildClickHandler({ videoData, elDropdown, state }: BuildClickHandlerParams) {
-  return function handleClick(e: Event) {
-    const { target } = e;
+  return function handleClick(event: Event) {
+    const { target } = event;
     const isNode = target instanceof Node;
     if (!isNode) {
       return;
@@ -79,7 +79,7 @@ export function buildClickHandler({ videoData, elDropdown, state }: BuildClickHa
       state.setIsPanelOpen(isNowOpen);
 
       if (isNowOpen) {
-        e.stopPropagation();
+        event.stopPropagation();
         elDropdown.open();
         required(elChevronButton).querySelector<HTMLButtonElement>("button")?.blur();
       } else {

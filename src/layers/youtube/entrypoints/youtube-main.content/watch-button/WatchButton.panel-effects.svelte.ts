@@ -61,8 +61,8 @@ export function createPanelEffects({
   $effect(() => {
     const elDropdown = getElDropdown();
 
-    function handleDropdownOpened(e: Event) {
-      const isOtherTarget = e.target !== elDropdown;
+    function handleDropdownOpened(event: Event) {
+      const isOtherTarget = event.target !== elDropdown;
       if (isOtherTarget) {
         return;
       }

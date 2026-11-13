@@ -9,13 +9,13 @@ import { createLogger, LogScope } from "@/lib/utils/logger";
 
 const log = createLogger(LogScope.Ffmpeg);
 
-addEventListener("message", e => {
-  const isExternalOrigin = e.origin !== location.origin;
+addEventListener("message", event => {
+  const isExternalOrigin = event.origin !== location.origin;
   if (isExternalOrigin) {
     return;
   }
 
-  const message: WorkerMessage = e.data;
+  const message: WorkerMessage = event.data;
   const isWorkerMessage = message?.type?.startsWith(WORKER_MESSAGE_PREFIX);
   if (!isWorkerMessage) {
     return;

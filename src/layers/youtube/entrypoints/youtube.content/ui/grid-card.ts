@@ -129,8 +129,8 @@ export function extractVideoId(elCard: Element) {
 const mountedGridUis = new Set<{ remove: () => void }>();
 
 export function removeGridButtons() {
-  for (const ui of mountedGridUis) {
-    ui.remove();
+  for (const integratedUi of mountedGridUis) {
+    integratedUi.remove();
   }
 
   mountedGridUis.clear();
@@ -245,7 +245,7 @@ export function mountGridButton({ context, elCard }: MountGridButtonParams) {
     mountPoint.elTarget.append(elItemContainer);
   }
 
-  const ui = createIntegratedUi(context, {
+  const integratedUi = createIntegratedUi(context, {
     position: "inline",
     anchor: elItemContainer,
     onMount(elUiContainer) {
@@ -275,7 +275,7 @@ export function mountGridButton({ context, elCard }: MountGridButtonParams) {
       elItemContainer.remove();
     }
   });
-  ui.mount();
-  mountedGridUis.add(ui);
+  integratedUi.mount();
+  mountedGridUis.add(integratedUi);
   return true;
 }

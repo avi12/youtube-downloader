@@ -1,7 +1,7 @@
 import type { Prettify } from "./prettify";
 
-export interface LabeledOption<V = string> {
-  value: V;
+export interface LabeledOption<Value = string> {
+  value: Value;
   label: string;
   disabled?: boolean;
 }

@@ -46,10 +46,10 @@ export function registerButtonDataHandler() {
 
       if (!elInner.hasAttribute(ATTR_CLICK_BOUND)) {
         elInner.setAttribute(ATTR_CLICK_BOUND, "true");
-        elInner.addEventListener("click", e => {
+        elInner.addEventListener("click", event => {
           const currentButtonId = buttonIdByElement.get(elButton);
           if (currentButtonId) {
-            e.stopPropagation();
+            event.stopPropagation();
             dispatchButtonClick(currentButtonId);
           }
         });
@@ -61,10 +61,10 @@ export function registerButtonDataHandler() {
     }
 
     elButton.setAttribute(ATTR_CLICK_BOUND, "true");
-    elButton.addEventListener("click", e => {
+    elButton.addEventListener("click", event => {
       const currentButtonId = buttonIdByElement.get(elButton);
       if (currentButtonId) {
-        e.stopPropagation();
+        event.stopPropagation();
         dispatchButtonClick(currentButtonId);
       }
     });

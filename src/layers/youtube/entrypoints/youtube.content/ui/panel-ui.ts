@@ -27,7 +27,7 @@ export function mountPanelUi({
     return;
   }
 
-  const ui = createIntegratedUi(context, {
+  const integratedUi = createIntegratedUi(context, {
     position: "inline",
     anchor: elContent,
     onMount(elUiContainer) {
@@ -40,5 +40,5 @@ export function mountPanelUi({
     }
   });
 
-  ui.mount();
+  integratedUi.mount();
 }

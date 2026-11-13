@@ -10,7 +10,7 @@ import type { DownloadRequest, Prettify } from "@/types";
 type FetchStreamParams = Prettify<{
   url: string | null | undefined;
   signal: AbortSignal;
-  onBytes: (n: number) => void;
+  onBytes: (bytes: number) => void;
   initialData?: Uint8Array;
   onChunk?: (chunk: Uint8Array) => void;
 }>;

@@ -17,8 +17,8 @@ export function createHostWorkerPort() {
 
   let responseHandlers: ResponseHandlerMap = {};
 
-  port1.onmessage = function onPortMessage(e: MessageEvent<WorkerResponse>) {
-    const message = e.data;
+  port1.onmessage = function onPortMessage(event: MessageEvent<WorkerResponse>) {
+    const message = event.data;
     switch (message.type) {
       case WorkerMessageType.Ready:
         responseHandlers[WorkerMessageType.Ready]?.();

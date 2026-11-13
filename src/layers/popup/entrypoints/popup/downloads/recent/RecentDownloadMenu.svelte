@@ -36,17 +36,17 @@
     return !elMenu?.contains(target) && !elTrigger?.contains(target);
   }
 
-  function handleDocumentClick(e: MouseEvent) {
-    const isOutsideClickWhileOpen = isMenuOpen && e.target instanceof Node && isOutsideMenu(e.target);
+  function handleDocumentClick(event: MouseEvent) {
+    const isOutsideClickWhileOpen = isMenuOpen && event.target instanceof Node && isOutsideMenu(event.target);
     if (isOutsideClickWhileOpen) {
       closeMenu();
     }
   }
 
-  function handleKeydown(e: KeyboardEvent) {
-    const isEscapeWhileOpen = isMenuOpen && e.key === "Escape";
+  function handleKeydown(event: KeyboardEvent) {
+    const isEscapeWhileOpen = isMenuOpen && event.key === "Escape";
     if (isEscapeWhileOpen) {
-      e.preventDefault();
+      event.preventDefault();
       closeMenu();
     }
   }

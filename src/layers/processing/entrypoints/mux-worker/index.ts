@@ -32,16 +32,16 @@ const FFMPEG_CORE_GLUE: Record<FFmpegCoreBuild, () => Promise<{ default: FFmpegF
   [FFmpegCoreBuild.NoSimd]: () => import("@ffmpeg/core-nosimd")
 };
 
-async function onInitMessage(e: MessageEvent<InitMessage>) {
-  if (e.data?.type !== WorkerMessageType.Init) {
+async function onInitMessage(event: MessageEvent<InitMessage>) {
+  if (event.data?.type !== WorkerMessageType.Init) {
     return;
   }
 
   removeEventListener("message", onInitMessage);
-  initPortReceiver(e.data.port);
+  initPortReceiver(event.data.port);
 
-  const { default: createFFmpegCore } = await FFMPEG_CORE_GLUE[e.data.coreBuild]();
-  const ffmpeg = await createFFmpegCore({ wasmBinary: e.data.wasmBinary }).catch((error: unknown) => {
+  const { default: createFFmpegCore } = await FFMPEG_CORE_GLUE[event.data.coreBuild]();
+  const ffmpeg = await createFFmpegCore({ wasmBinary: event.data.wasmBinary }).catch((error: unknown) => {
     postError(error instanceof Error ? error.message : String(error));
     return null;
   });

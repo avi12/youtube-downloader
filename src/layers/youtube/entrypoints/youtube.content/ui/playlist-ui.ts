@@ -101,13 +101,13 @@ function hideYtdlTooltip() {
 function makeTooltipHandlers() {
   let elHoveredYtdlButton: HTMLElement | null = null;
 
-  function trackHoveredButton(e: MouseEvent) {
-    const isTargetElement = e.target instanceof Element;
+  function trackHoveredButton(event: MouseEvent) {
+    const isTargetElement = event.target instanceof Element;
     if (!isTargetElement) {
       return;
     }
 
-    const elButton = e.target.closest<HTMLElement>("yt-button-view-model");
+    const elButton = event.target.closest<HTMLElement>("yt-button-view-model");
     const isLeavingYtdlButton = !elButton && elHoveredYtdlButton;
     if (isLeavingYtdlButton) {
       hideYtdlTooltip();
@@ -149,7 +149,7 @@ export async function injectPlaylistDownloaderUi(
   elMountContainer.dataset.ytdlPlaylistDownloader = "true";
   elHeader.append(elMountContainer);
 
-  const ui = createIntegratedUi(context, {
+  const integratedUi = createIntegratedUi(context, {
     position: "inline",
     anchor: elMountContainer,
     onMount(elUiContainer) {
@@ -157,7 +157,7 @@ export async function injectPlaylistDownloaderUi(
     }
   });
 
-  ui.mount();
+  integratedUi.mount();
 
   const { trackHoveredButton, dismissTooltipOnScroll } = makeTooltipHandlers();
 

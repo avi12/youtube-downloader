@@ -14,16 +14,16 @@ function openDatabase() {
   return new Promise<IDBDatabase>((resolve, reject) => {
     const openRequest = indexedDB.open(DB_NAME, DB_VERSION);
     openRequest.onupgradeneeded = () => {
-      const db = openRequest.result;
-      const hasEntriesStore = db.objectStoreNames.contains(Store.Entries);
+      const database = openRequest.result;
+      const hasEntriesStore = database.objectStoreNames.contains(Store.Entries);
       if (!hasEntriesStore) {
-        const store = db.createObjectStore(Store.Entries, { keyPath: "id" });
+        const store = database.createObjectStore(Store.Entries, { keyPath: "id" });
         store.createIndex("completedAt", "completedAt");
       }
 
-      const hasBlobsStore = db.objectStoreNames.contains(Store.Blobs);
+      const hasBlobsStore = database.objectStoreNames.contains(Store.Blobs);
       if (!hasBlobsStore) {
-        db.createObjectStore(Store.Blobs);
+        database.createObjectStore(Store.Blobs);
       }
     };
     openRequest.onsuccess = () => resolve(openRequest.result);
@@ -110,8 +110,8 @@ export async function addRecentDownload({ entry, blob }: {
 export type RecentDownloadEntry = Prettify<Parameters<typeof addRecentDownload>[0]["entry"]>;
 
 async function putRecentDownload({ entry, blob }: { entry: RecentDownloadEntry; blob: Blob }) {
-  const db = await getDatabase();
-  const transaction = db.transaction([Store.Entries, Store.Blobs], "readwrite");
+  const database = await getDatabase();
+  const transaction = database.transaction([Store.Entries, Store.Blobs], "readwrite");
   transaction.objectStore(Store.Entries).put(entry);
   transaction.objectStore(Store.Blobs).put(blob, entry.id);
   await awaitTransaction(transaction);
@@ -139,8 +139,8 @@ async function evictOldestRecentDownload(excludeId: string) {
 }
 
 async function mutateEntry({ id, mutate }: { id: string; mutate: (entry: RecentDownloadEntry) => void }) {
-  const db = await getDatabase();
-  const transaction = db.transaction(Store.Entries, "readwrite");
+  const database = await getDatabase();
+  const transaction = database.transaction(Store.Entries, "readwrite");
   const store = transaction.objectStore(Store.Entries);
   const entry: RecentDownloadEntry | undefined = await awaitRequest(store.get(id));
   if (entry) {
@@ -163,8 +163,8 @@ export async function touchRecentDownload(id: string) {
 // Resets every entry's retention clock to now, used when the popup closes so the
 // 10-minute keep-alive window restarts from that moment.
 export async function touchAllRecentDownloads() {
-  const db = await getDatabase();
-  const transaction = db.transaction(Store.Entries, "readwrite");
+  const database = await getDatabase();
+  const transaction = database.transaction(Store.Entries, "readwrite");
   const store = transaction.objectStore(Store.Entries);
   const now = Date.now();
   const cursorRequest = store.openCursor();
@@ -197,8 +197,8 @@ export async function updateRecentDownloadId({ id, downloadId }: {
 }
 
 export async function getAllRecentDownloads() {
-  const db = await getDatabase();
-  const transaction = db.transaction(Store.Entries, "readonly");
+  const database = await getDatabase();
+  const transaction = database.transaction(Store.Entries, "readonly");
   const entries: RecentDownloadEntry[] = await awaitRequest(
     transaction.objectStore(Store.Entries).getAll()
   );
@@ -206,15 +206,15 @@ export async function getAllRecentDownloads() {
 }
 
 export async function getRecentDownloadBlob(id: string) {
-  const db = await getDatabase();
-  const transaction = db.transaction(Store.Blobs, "readonly");
+  const database = await getDatabase();
+  const transaction = database.transaction(Store.Blobs, "readonly");
   const blob = await awaitRequest(transaction.objectStore(Store.Blobs).get(id));
   return blob instanceof Blob ? blob : null;
 }
 
 export async function deleteRecentDownload(id: string) {
-  const db = await getDatabase();
-  const transaction = db.transaction([Store.Entries, Store.Blobs], "readwrite");
+  const database = await getDatabase();
+  const transaction = database.transaction([Store.Entries, Store.Blobs], "readwrite");
   transaction.objectStore(Store.Entries).delete(id);
   transaction.objectStore(Store.Blobs).delete(id);
   await awaitTransaction(transaction);
@@ -224,8 +224,8 @@ export async function pruneRecentDownloads({ olderThanTimestamp, protectedIds }:
   olderThanTimestamp: number;
   protectedIds: ReadonlySet<string>;
 }) {
-  const db = await getDatabase();
-  const transaction = db.transaction([Store.Entries, Store.Blobs], "readwrite");
+  const database = await getDatabase();
+  const transaction = database.transaction([Store.Entries, Store.Blobs], "readwrite");
   const entriesStore = transaction.objectStore(Store.Entries);
   const blobsStore = transaction.objectStore(Store.Blobs);
   const cursorRequest = entriesStore.openCursor();

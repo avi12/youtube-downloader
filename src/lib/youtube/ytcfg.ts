@@ -23,9 +23,9 @@ interface YtcfgValueByKey {
 }
 
 declare const ytcfg: {
-  get: <K extends YtcfgKey>(key: K) => YtcfgValueByKey[K] | undefined;
+  get: <KeyName extends YtcfgKey>(key: KeyName) => YtcfgValueByKey[KeyName] | undefined;
 } | undefined;
 
-export function getYtcfg<K extends YtcfgKey>(key: K) {
+export function getYtcfg<KeyName extends YtcfgKey>(key: KeyName) {
   return ytcfg?.get(key);
 }
