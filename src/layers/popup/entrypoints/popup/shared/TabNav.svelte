@@ -1,4 +1,5 @@
 <script generics="T extends string" lang="ts">
+  import { required } from "@/lib/required";
   interface Props {
     tabs: {
       id: T;
@@ -68,7 +69,7 @@
 
     e.preventDefault();
     const iCurrent = tabs.findIndex(tab => tab.id === activeTab);
-    const nextId = tabs[(iCurrent + direction + tabs.length) % tabs.length]!.id;
+    const nextId = required(tabs[(iCurrent + direction + tabs.length) % tabs.length]).id;
     onChange(nextId);
     focusTab(nextId);
   }

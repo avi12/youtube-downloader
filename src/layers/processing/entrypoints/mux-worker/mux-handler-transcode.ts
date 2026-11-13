@@ -1,3 +1,4 @@
+import { required } from "@/lib/required";
 import { buildInputArgs, buildRemuxArgs } from "./mux-ffmpeg-args";
 import { postError, postResult, state, tryUnlink } from "./mux-state";
 import { fetchThumbnail } from "./mux-thumbnail";
@@ -27,18 +28,18 @@ export function handleTranscodeAudio(job: TranscodeAudioJob) {
   state.progressOffset = 0;
   state.progressScale = 1;
 
-  state.ffmpeg!.FS.writeFile(inputFilename, new Uint8Array(audioData));
+  required(state.ffmpeg).FS.writeFile(inputFilename, new Uint8Array(audioData));
 
   try {
     const codec = getAudioFallbackCodec(outputExtension) ?? FFMPEG_CODEC_COPY;
-    const exitCode = state.ffmpeg!.exec(...buildInputArgs(inputFilename), "-map", "0:a", "-c:a", codec, outputFilename);
+    const exitCode = required(state.ffmpeg).exec(...buildInputArgs(inputFilename), "-map", "0:a", "-c:a", codec, outputFilename);
     const isExecFailed = exitCode !== 0;
     if (isExecFailed) {
       postError(`FFmpeg transcode exited with code ${exitCode}`);
       return;
     }
 
-    const output = state.ffmpeg!.FS.readFile(outputFilename, { encoding: "binary" });
+    const output = required(state.ffmpeg).FS.readFile(outputFilename, { encoding: "binary" });
     const isEmptyOutput = typeof output === "string" || output.byteLength === 0;
     if (isEmptyOutput) {
       postError("FFmpeg transcode produced empty output");
@@ -59,7 +60,7 @@ async function tryWriteCoverArt(coverArtUrl: string) {
   }
 
   const coverFilename = `${COVER_FILENAME_PREFIX}.${thumbnail.extension}`;
-  state.ffmpeg!.FS.writeFile(coverFilename, thumbnail.data);
+  required(state.ffmpeg).FS.writeFile(coverFilename, thumbnail.data);
   return coverFilename;
 }
 
@@ -107,7 +108,7 @@ export async function handleTranscodeFile(job: TranscodeFileJob) {
   state.progressOffset = 0;
   state.progressScale = 1;
 
-  state.ffmpeg!.FS.writeFile(sourceFilename, new Uint8Array(data));
+  required(state.ffmpeg).FS.writeFile(sourceFilename, new Uint8Array(data));
 
   let coverFilenameForCleanup: string | null = null;
   try {
@@ -131,14 +132,14 @@ export async function handleTranscodeFile(job: TranscodeFileJob) {
         videoMimeType
       });
 
-    const exitCode = state.ffmpeg!.exec(...ffmpegArgs);
+    const exitCode = required(state.ffmpeg).exec(...ffmpegArgs);
     const isExecFailed = exitCode !== 0;
     if (isExecFailed) {
       postError(`FFmpeg exited with code ${exitCode}`);
       return;
     }
 
-    const output = state.ffmpeg!.FS.readFile(outputFilename, { encoding: "binary" });
+    const output = required(state.ffmpeg).FS.readFile(outputFilename, { encoding: "binary" });
     const isStringOutput = typeof output === "string";
     if (isStringOutput) {
       postError("FFmpeg readFile returned unexpected string output");

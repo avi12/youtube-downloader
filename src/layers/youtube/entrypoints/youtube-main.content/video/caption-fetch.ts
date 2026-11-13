@@ -1,3 +1,4 @@
+import { required } from "@/lib/required";
 import { fetchFreshCaptionUrls } from "./caption-urls";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { uint8ToBase64 } from "@/lib/utils/binary";
@@ -96,13 +97,13 @@ export async function fetchCaptionWebVttData({
   const results: (string | null)[] = [];
   for (const [iTrack, track] of captionTracks.entries()) {
     const isTranslated = !!track.translationLanguageCode;
-    const sourceVssId = isTranslated ? track.sourceTrackVssId! : track.vssId;
+    const sourceVssId = isTranslated ? required(track.sourceTrackVssId) : track.vssId;
     const baseUrl = freshUrls.get(sourceVssId) ?? track.baseUrl;
     const url = new URL(baseUrl);
     url.searchParams.set(CAPTION_FORMAT_PARAM, CAPTION_FORMAT_VTT);
 
     if (isTranslated) {
-      url.searchParams.set(CAPTION_TLANG_PARAM, track.translationLanguageCode!);
+      url.searchParams.set(CAPTION_TLANG_PARAM, required(track.translationLanguageCode));
     }
 
     results.push(await fetchWebVttViaTrackElement(url.toString()));

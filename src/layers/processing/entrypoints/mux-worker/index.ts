@@ -1,3 +1,4 @@
+import { required } from "@/lib/required";
 import { handleEmbedMetadata } from "./mux-handler-embed-metadata";
 import { handleMuxVideoAudio } from "./mux-handler-mux-video-audio";
 import { handleTranscodeAudio, handleTranscodeFile } from "./mux-handler-transcode";
@@ -49,7 +50,7 @@ async function onInitMessage(e: MessageEvent<InitMessage>) {
   }
 
   initFfmpeg(ffmpeg);
-  state.ffmpeg!.setLogger(({ type, message }) => {
+  required(state.ffmpeg).setLogger(({ type, message }) => {
     const isStderr = type === FFMPEG_LOG_TYPE_STDERR;
     if (!isStderr) {
       return;
@@ -62,7 +63,7 @@ async function onInitMessage(e: MessageEvent<InitMessage>) {
     trackFFmpegProgressFromLog(message);
   });
 
-  state.portReceiver!.onMessage({
+  required(state.portReceiver).onMessage({
     [WorkerMessageType.MuxVideoAudio]({ job }) {
       handleMuxVideoAudio(job).catch(error => {
         postError(error instanceof Error ? error.message : String(error));
@@ -87,7 +88,7 @@ async function onInitMessage(e: MessageEvent<InitMessage>) {
     }
   });
 
-  state.portReceiver!.sendReady();
+  required(state.portReceiver).sendReady();
 }
 
 export default defineUnlistedScript(() => {

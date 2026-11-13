@@ -1,3 +1,4 @@
+import { required } from "@/lib/required";
 import {
   buildRecentContext,
   reportProgress,
@@ -35,7 +36,7 @@ export function buildSubtitleFiles(subtitleTracks: ProcessStreamData["subtitleTr
   return subtitleTracks
     .filter(track => track.data !== null)
     .map(track => ({
-      data: track.data!,
+      data: required(track.data),
       label: track.label,
       languageCode: track.languageCode
     }));
@@ -64,7 +65,7 @@ export async function handleSingleStream({ item, videoData, audioData }: HandleS
 
   const { videoId, tabId, filenameOutput } = item;
   const recentContext = buildRecentContext({ item });
-  const data = (videoData ?? audioData)!;
+  const data = required((videoData ?? audioData));
   await triggerDownload({
     data,
     filenameOutput,

@@ -1,3 +1,4 @@
+import { required } from "@/lib/required";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import type { CodecPreferences, DownloadType, Prettify, TpYtIronDropdownElement } from "@/types";
 
@@ -36,12 +37,12 @@ export function createMessageEffects({
 
     const isVideoItagPresent = data.videoItag !== undefined;
     if (isVideoItagPresent) {
-      setters.setDefaultVideoItag(data.videoItag!);
+      setters.setDefaultVideoItag(required(data.videoItag));
     }
 
     const isAudioItagPresent = data.audioItag !== undefined;
     if (isAudioItagPresent) {
-      setters.setDefaultAudioItag(data.audioItag!);
+      setters.setDefaultAudioItag(required(data.audioItag));
     }
 
     const isAudioTrackIdPresent = data.audioTrackId !== undefined;
@@ -53,7 +54,7 @@ export function createMessageEffects({
 
     const isDownloadTypePresent = data.downloadType !== undefined;
     if (isDownloadTypePresent) {
-      setters.setDefaultDownloadType(data.downloadType!);
+      setters.setDefaultDownloadType(required(data.downloadType));
     }
   }));
 }

@@ -1,3 +1,4 @@
+import { required } from "@/lib/required";
 import { createPageProxyFetch } from "./page-proxy-fetch";
 import { sendProgressUpdate } from "./progress-fetch";
 import { computeWeightedProgress } from "./progress-stages";
@@ -38,7 +39,7 @@ async function fetchAndroidVrRange({
   };
 
   try {
-    const performFetch = isUsingBgDirect ? bgFetch : pageProxyFetch!;
+    const performFetch = isUsingBgDirect ? bgFetch : required(pageProxyFetch);
     const response = await performFetch(url, init);
     const isSuccessStatus = response.status === HTTP_STATUS_PARTIAL_CONTENT || response.status === HTTP_STATUS_OK;
     if (!isSuccessStatus) {
@@ -55,7 +56,7 @@ async function fetchAndroidVrRange({
       throw new Error(`${label} chunk fetch failed at offset ${byteOffset}: ${String(error)}`, { cause: error });
     }
 
-    const response = await pageProxyFetch!(url, init);
+    const response = await required(pageProxyFetch)(url, init);
     const isProxySuccessStatus = response.status === HTTP_STATUS_PARTIAL_CONTENT
       || response.status === HTTP_STATUS_OK;
     if (!isProxySuccessStatus) {
@@ -307,7 +308,7 @@ export async function runFirefoxDirectDownload(
   const shouldFetchAudio = wantsAudio && resolved.audioUrl;
   await Promise.all([
     shouldFetchVideo ? fetchAndroidVrChunked({
-      url: resolved.videoUrl!,
+      url: required(resolved.videoUrl),
       contentLength: resolved.videoContentLength,
       bgFetch,
       pageProxyFetch,
@@ -325,7 +326,7 @@ export async function runFirefoxDirectDownload(
       }
     }) : Promise.resolve(),
     shouldFetchAudio ? fetchAndroidVrChunked({
-      url: resolved.audioUrl!,
+      url: required(resolved.audioUrl),
       contentLength: resolved.audioContentLength,
       bgFetch,
       pageProxyFetch,

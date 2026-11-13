@@ -1,3 +1,4 @@
+import { required } from "@/lib/required";
 import { clearCancelledVideo, isVideoCancelled } from "@/layers/background/handlers/pipeline-state";
 import { ensureProcessor } from "@/layers/background/handlers/processor";
 import { getTabIdsForVideo } from "@/layers/background/queue/tab-tracker";
@@ -97,7 +98,7 @@ async function fetchAndroidVrChunked({
 
     let response: Response;
     try {
-      const performFetch = useBgDirect ? bgFetch : pageProxyFetch!;
+      const performFetch = useBgDirect ? bgFetch : required(pageProxyFetch);
       response = await performFetch(url, init);
 
       const isAcceptableStatus = response.status === HTTP_STATUS_PARTIAL_CONTENT || response.status === HTTP_STATUS_OK;
@@ -117,7 +118,7 @@ async function fetchAndroidVrChunked({
       }
 
       useBgDirect = false;
-      response = await pageProxyFetch!(url, init);
+      response = await required(pageProxyFetch)(url, init);
 
       const isAcceptableStatus = response.status === HTTP_STATUS_PARTIAL_CONTENT || response.status === HTTP_STATUS_OK;
       if (!isAcceptableStatus) {
@@ -443,7 +444,7 @@ export async function startBackgroundDownload({ request: originalRequest, tabId 
     if (isAudioOnlyWithSabr) {
       await ensureProcessor();
       const effectiveSabrConfig = buildEffectiveSabrConfig({
-        sabrConfig: request.sabrConfig!,
+        sabrConfig: required(request.sabrConfig),
         sabrUrl: request.sabrUrl
       });
       const subtitleTracks = buildSubtitleTracks({
@@ -456,11 +457,11 @@ export async function startBackgroundDownload({ request: originalRequest, tabId 
           videoId,
           tabId,
           sabrConfig: effectiveSabrConfig,
-          audioFormat: request.audioFormat!,
+          audioFormat: required(request.audioFormat),
           poToken: request.poToken ?? "",
           type: request.type,
           filenameOutput: request.filenameOutput,
-          audioMimeType: stripMimeParams(request.audioFormat!.mimeType),
+          audioMimeType: stripMimeParams(required(request.audioFormat).mimeType),
           audioTrackLabels: [request.primaryAudioLabel ?? ""],
           audioTrackLanguages: [request.primaryAudioLanguageCode ?? ""],
           subtitleTracks,

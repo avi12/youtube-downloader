@@ -1,3 +1,4 @@
+import { required } from "@/lib/required";
 import "./emscripten-fs.d";
 import type { EmscriptenFsNode, EmscriptenNodeOps, EmscriptenStreamOps } from "./emscripten-fs.d";
 import { OPFS_MUX_OUTPUT_SUFFIX } from "@/lib/download-pipeline/opfs-constants";
@@ -85,7 +86,7 @@ function makeStreamOps() {
   return {
     write(stream, buffer, offset, length, position) {
       const { node } = stream;
-      const syncHandle = node.syncHandle!;
+      const syncHandle = required(node.syncHandle);
       const chunk = buffer.subarray(offset, offset + length);
       syncHandle.write(chunk, { at: position });
       const newEnd = position + length;
@@ -97,7 +98,7 @@ function makeStreamOps() {
     },
     read(stream, buffer, offset, length, position) {
       const { node } = stream;
-      const syncHandle = node.syncHandle!;
+      const syncHandle = required(node.syncHandle);
       const fileSize = node.fileSize ?? 0;
       if (position >= fileSize) {
         return 0;

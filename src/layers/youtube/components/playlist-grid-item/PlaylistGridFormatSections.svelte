@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { required } from "@/lib/required";
   import type { createPlaylistGridItemState } from "./PlaylistGridItem.state.svelte";
   import { onButtonClick } from "@/lib/messaging/cross-world-messenger";
   import { attachSettingsOptions, DATA_BUTTON_ID_ATTR, sendButtonData } from "@/lib/ui/polymer-utils";
@@ -147,7 +148,7 @@
     const iCurrent = outputButtons.findIndex(button => state.effectiveOutputMode === button.mode);
     const delta = e.key === "ArrowRight" ? 1 : -1;
     const iNext = (iCurrent + delta + outputButtons.length) % outputButtons.length;
-    const nextButton = outputButtons[iNext]!;
+    const nextButton = required(outputButtons[iNext]);
     state.effectiveOutputMode = nextButton.mode;
     const elNext = outputElements.get(nextButton.id);
     queueMicrotask(() => elNext?.querySelector<HTMLButtonElement>("button")?.focus());

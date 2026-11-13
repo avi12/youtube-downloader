@@ -1,3 +1,4 @@
+import { required } from "@/lib/required";
 import { OPFS_VIDEO_STREAM_SUFFIX } from "@/lib/download-pipeline/opfs-constants";
 
 export class OPFSVideoWriter {
@@ -15,13 +16,13 @@ export class OPFSVideoWriter {
 
   enqueueChunk(chunk: Uint8Array) {
     const owned = chunk.slice();
-    this.writeQueue = this.writeQueue.then(() => this.writable!.write(owned));
+    this.writeQueue = this.writeQueue.then(() => required(this.writable).write(owned));
   }
 
   async close() {
     await this.writeQueue;
-    await this.writable!.close();
-    return this.handle!;
+    await required(this.writable).close();
+    return required(this.handle);
   }
 
   async discard() {

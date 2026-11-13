@@ -1,3 +1,4 @@
+import { required } from "@/lib/required";
 import { cancelActiveDownload, startDownload } from "@/layers/youtube/entrypoints/youtube-main.content/video/download";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import type {DownloadType} from "@/types";
@@ -80,7 +81,7 @@ export function buildClickHandler({ videoData, elDropdown, state }: BuildClickHa
       if (isNowOpen) {
         e.stopPropagation();
         elDropdown.open();
-        elChevronButton!.querySelector<HTMLButtonElement>("button")?.blur();
+        required(elChevronButton).querySelector<HTMLButtonElement>("button")?.blur();
       } else {
         elDropdown.close();
       }

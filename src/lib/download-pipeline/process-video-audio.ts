@@ -1,3 +1,4 @@
+import { required } from "@/lib/required";
 import { buildRecentContext, reportProgress, toOwnedArrayBuffer, toUint8Array } from ".";
 import { triggerDownloadFromFile } from "./blob-download";
 import {
@@ -47,7 +48,7 @@ export async function processVideoAudio({ item, isCancelled }: ProcessVideoAudio
   const additionalAudioTracks = buildAdditionalAudioTracks(additionalAudioStreams);
   const audioTracks = [
     {
-      data: toOwnedArrayBuffer(audioData!),
+      data: toOwnedArrayBuffer(required(audioData)),
       label: item.primaryAudioLabel ?? "",
       languageCode: primaryAudioLanguageCode ?? ""
     },
@@ -66,7 +67,7 @@ export async function processVideoAudio({ item, isCancelled }: ProcessVideoAudio
     outputFile = await runMuxVideoAudio({
       videoId,
       job: {
-        videoData: item.videoFile ? null : toOwnedArrayBuffer(videoData!),
+        videoData: item.videoFile ? null : toOwnedArrayBuffer(required(videoData)),
         videoFile: item.videoFile,
         audioTracks,
         subtitleTracks: buildSubtitleFiles(subtitleTracks),
@@ -98,7 +99,7 @@ export async function processVideoAudio({ item, isCancelled }: ProcessVideoAudio
     const root = await navigator.storage.getDirectory();
     await root.removeEntry(videoId + OPFS_MUX_OUTPUT_SUFFIX).catch(() => {});
     await addToPlaylistBundle({
-      playlistId: item.playlistId!,
+      playlistId: required(item.playlistId),
       playlistTitle: item.playlistTitle ?? DEFAULT_PLAYLIST_TITLE,
       totalCount: item.playlistTotalCount ?? 1,
       tabId,

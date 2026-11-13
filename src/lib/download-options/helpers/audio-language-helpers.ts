@@ -1,3 +1,4 @@
+import { required } from "@/lib/required";
 import { preserveAutoVariant } from "./preserve-auto-variant";
 import { AUTO_DUB_TRACK_SUFFIX } from "@/lib/youtube/download-plan";
 import { findOriginalAudioFormat, normalizeLanguageCode } from "@/lib/youtube/video-helpers";
@@ -26,7 +27,7 @@ export function buildUniqueAudioLanguages({
     const isKept = preserveAutoVariant({
       item: format,
       isAuto: candidate => !!candidate.audioTrack?.id.endsWith(AUTO_DUB_TRACK_SUFFIX),
-      matchesPlayer: candidate => normalizeLanguageCode(candidate.audioTrack!.id) === preservedAutoDubbedLangCode,
+      matchesPlayer: candidate => normalizeLanguageCode(required(candidate.audioTrack).id) === preservedAutoDubbedLangCode,
       globalIncludes: includeAutoDubbing
     });
     if (!isKept) {

@@ -1,3 +1,4 @@
+import { required } from "@/lib/required";
 import { DownloadType } from "@/types";
 import type { AdaptiveFormatItem, Prettify } from "@/types";
 
@@ -62,7 +63,7 @@ export function resolveQualityLabel({ type, videoFormat, audioFormat }: ResolveQ
 }
 
 export function normalizeLanguageCode(lang: string) {
-  return lang.split("-")[0]!.split(".")[0]!.toLowerCase();
+  return required(required(lang.split("-")[0]).split(".")[0]).toLowerCase();
 }
 
 export function getCurrentVideoAudioLanguage() {
@@ -99,5 +100,5 @@ export function sortAudioFormatsByDisplayName(audioFormats: AdaptiveFormatItem[]
   return audioFormats
     .filter(format => format.audioTrack)
     .toSorted((formatA, formatB) =>
-      formatA.audioTrack!.displayName.localeCompare(formatB.audioTrack!.displayName));
+      required(formatA.audioTrack).displayName.localeCompare(required(formatB.audioTrack).displayName));
 }

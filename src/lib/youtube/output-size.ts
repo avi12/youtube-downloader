@@ -1,3 +1,4 @@
+import { required } from "@/lib/required";
 import {
   CONTAINER_SPECS,
   extractBaseCodec,
@@ -100,8 +101,8 @@ function parseVttCues(vtt: string) {
 
     const [start, end] = timing.split("-->").map(part => part.trim().split(" ")[0]);
     cues.push({
-      startSeconds: parseTimestamp(start!),
-      endSeconds: parseTimestamp(end!),
+      startSeconds: parseTimestamp(required(start)),
+      endSeconds: parseTimestamp(required(end)),
       text: textLines.join("\n")
     });
   }

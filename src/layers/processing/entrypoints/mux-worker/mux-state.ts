@@ -1,3 +1,4 @@
+import { required } from "@/lib/required";
 import { WorkerMessageType } from "@/lib/download-pipeline/mux-worker-types";
 import { createWorkerPortReceiver } from "@/lib/download-pipeline/worker-port-receiver";
 import type { WorkerPortReceiver } from "@/lib/download-pipeline/worker-port-receiver";
@@ -35,19 +36,19 @@ export function initPortReceiver(port: MessagePort) {
 
 export function tryUnlink(filename: string) {
   try {
-    state.ffmpeg!.FS.unlink(filename);
+    required(state.ffmpeg).FS.unlink(filename);
   } catch { /* no-op */ }
 }
 
 export function tryUnmount(path: string) {
   try {
-    state.ffmpeg!.FS.unmount(path);
+    required(state.ffmpeg).FS.unmount(path);
   } catch { /* no-op */ }
 }
 
 export function tryRmdir(path: string) {
   try {
-    state.ffmpeg!.FS.rmdir(path);
+    required(state.ffmpeg).FS.rmdir(path);
   } catch { /* no-op */ }
 }
 
@@ -116,12 +117,12 @@ export function trackFFmpegProgressFromLog(message: string) {
 
 export function postResult(data: Uint8Array | null) {
   if (!data) {
-    state.portReceiver!.send(WorkerMessageType.Result, { data: null });
+    required(state.portReceiver).send(WorkerMessageType.Result, { data: null });
     return;
   }
 
   if (!(data.buffer instanceof ArrayBuffer)) {
-    state.portReceiver!.send(WorkerMessageType.Error, { message: "Unexpected SharedArrayBuffer in result" });
+    required(state.portReceiver).send(WorkerMessageType.Error, { message: "Unexpected SharedArrayBuffer in result" });
     return;
   }
 
@@ -130,13 +131,13 @@ export function postResult(data: Uint8Array | null) {
   const isExactSize = data.byteLength === buffer.byteLength;
   const isExact = isZeroOffset && isExactSize;
   const exact: ArrayBuffer = isExact ? buffer : buffer.slice(data.byteOffset, data.byteOffset + data.byteLength);
-  state.portReceiver!.send(WorkerMessageType.Result, { data: exact }, [exact]);
+  required(state.portReceiver).send(WorkerMessageType.Result, { data: exact }, [exact]);
 }
 
 export function postFileResult(file: File) {
-  state.portReceiver!.send(WorkerMessageType.ResultFile, { data: file });
+  required(state.portReceiver).send(WorkerMessageType.ResultFile, { data: file });
 }
 
 export function postError(message: string) {
-  state.portReceiver!.send(WorkerMessageType.Error, { message });
+  required(state.portReceiver).send(WorkerMessageType.Error, { message });
 }

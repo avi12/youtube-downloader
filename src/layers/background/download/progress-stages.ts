@@ -1,3 +1,4 @@
+import { required } from "@/lib/required";
 import type { Prettify } from "@/types";
 
 // Equal-weight stages: every component (video, primary audio, each additional
@@ -53,7 +54,7 @@ export function computeWeightedProgress({
   }
 
   for (const i of validExtraIndices) {
-    completed += Math.min(extraReceivedBytesArray[i]! / extraExpectedBytesArray[i]!, 1);
+    completed += Math.min(required(extraReceivedBytesArray[i]) / required(extraExpectedBytesArray[i]), 1);
   }
 
   return Math.min(completed / totalStages, 1);

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { required } from "@/lib/required";
   import { CrossWorldMessage, crossWorldMessenger, onButtonClick } from "@/lib/messaging/cross-world-messenger";
   import { MessageType, sendMessage } from "@/lib/messaging/messaging";
   import { completedDownloadsStore } from "@/lib/ui/completed-downloads-store.svelte.ts";
@@ -15,7 +16,7 @@
   let isOpened = $state(false);
   let isClosing = $state(false);
   let elFilename = $state<HTMLSpanElement | null>(null);
-  const canvasCtx = document.createElement("canvas").getContext("2d")!;
+  const canvasCtx = required(document.createElement("canvas").getContext("2d"));
   const isFilenameTruncated = $derived.by(() => {
     if (!elFilename?.parentElement) {
       return false;
@@ -68,7 +69,7 @@
     const isViewButtonWithDownload = isViewButton && downloadId !== null;
     if (isViewButtonWithDownload) {
       dismiss();
-      await sendMessage(MessageType.RevealDownloadFile, { downloadId: downloadId! });
+      await sendMessage(MessageType.RevealDownloadFile, { downloadId: required(downloadId) });
     }
   }));
 

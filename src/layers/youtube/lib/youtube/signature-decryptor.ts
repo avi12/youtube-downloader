@@ -1,3 +1,4 @@
+import { required } from "@/lib/required";
 import { applyTransforms, findAndExtractOperations } from "./signature-parser";
 import type { TransformOp } from "./signature-parser";
 import type { Prettify } from "@/types";
@@ -40,7 +41,7 @@ async function initDecryptor() {
 
   const isCacheValid = cachedState?.playerJsUrl === playerJsUrl;
   if (isCacheValid) {
-    return cachedState!;
+    return required(cachedState);
   }
 
   const response = await fetch(playerJsUrl);

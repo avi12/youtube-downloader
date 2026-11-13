@@ -1,3 +1,4 @@
+import { required } from "@/lib/required";
 import { CAPTION_KIND_ASR } from "./helpers/audio-language-helpers";
 import { IS_WATCH_PAGE } from "./helpers/panel-init-audio";
 import { getActivePlayerCaption } from "./helpers/panel-init-caption";
@@ -87,7 +88,7 @@ export function createCaptionTrackState({
 
     const isCustomModeWithNoTrack = !selectedCaptionTrack && captionTracks.length > 0;
     if (isCustomModeWithNoTrack) {
-      selectedCaptionTrack = captionTracks[0]!;
+      selectedCaptionTrack = required(captionTracks[0]);
     }
   }
 

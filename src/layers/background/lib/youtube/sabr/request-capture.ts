@@ -1,3 +1,4 @@
+import { required } from "@/lib/required";
 import { clearPlayerSession, recordPlayerSession } from "./player-session";
 import { extractPoTokenFromBody } from "./po-token-extractor";
 import { YOUTUBE_ORIGIN } from "@/lib/youtube/youtube-url";
@@ -46,7 +47,7 @@ function handleSabrRequest(details: Browser.webRequest.OnBeforeRequestDetails) {
     return undefined;
   }
 
-  const bodyBytes = new Uint8Array(details.requestBody!.raw![0]!.bytes!);
+  const bodyBytes = new Uint8Array(required(required(required(required(details.requestBody).raw)[0]).bytes));
   if (!isOffscreenPlayer) {
     recordPlayerSession({
       tabId: details.tabId,

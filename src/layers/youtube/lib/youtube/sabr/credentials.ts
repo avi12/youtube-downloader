@@ -1,3 +1,4 @@
+import { required } from "@/lib/required";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
 import { sabrCredentials } from "@/lib/ui/synced-stores.svelte";
 
@@ -16,11 +17,11 @@ async function forwardSabrCredentials() {
     return;
   }
 
-  const poToken = captured!.poToken || sabrCredentials.value?.poToken || "";
+  const poToken = required(captured).poToken || sabrCredentials.value?.poToken || "";
 
   isCredentialsForwarded = true;
   sabrCredentials.value = {
-    url: captured!.url,
+    url: required(captured).url,
     poToken
   };
 
@@ -33,8 +34,8 @@ async function forwardSabrCredentials() {
     document.documentElement.append(elCredentials);
   }
 
-  elCredentials!.dataset.url = captured!.url;
-  elCredentials!.dataset.poToken = poToken;
+  required(elCredentials).dataset.url = required(captured).url;
+  required(elCredentials).dataset.poToken = poToken;
 }
 
 const FORWARD_RETRY_INTERVAL_MS = 500;

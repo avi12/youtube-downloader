@@ -1,3 +1,4 @@
+import { required } from "@/lib/required";
 import { isVideoCancelled } from "@/layers/background/handlers/pipeline-state";
 import { MessageType, sendMessageToTab } from "@/lib/messaging/messaging";
 import { interruptedDownloadsItem, mutateStorageItem } from "@/lib/storage/storage";
@@ -127,7 +128,7 @@ export async function scheduleAutoRetry({ request, tabId, startBackgroundDownloa
     return false;
   }
 
-  const delayMs = RETRY_BACKOFF_MS[previousAttempts] ?? RETRY_BACKOFF_MS.at(-1)!;
+  const delayMs = RETRY_BACKOFF_MS[previousAttempts] ?? required(RETRY_BACKOFF_MS.at(-1));
   autoRetryAttempts.set(videoId, previousAttempts + 1);
   log.warn(
     `Auto-retry ${previousAttempts + 1}/${MAX_AUTO_RETRY_ATTEMPTS} for ${videoId} in ${delayMs}ms`

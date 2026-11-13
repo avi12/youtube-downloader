@@ -1,3 +1,4 @@
+import { required } from "@/lib/required";
 import { alignFormatsToContainer, resolveVideoFormatVariants } from "./align-formats-to-container";
 import { orderCaptionsByPreference, resolveCaptionLanguageMode } from "./caption-helpers";
 import { CONTENT_OPTIONS } from "@/lib/ui/synced-stores.svelte";
@@ -162,7 +163,7 @@ function selectFormats({
 }: SelectFormatsParams) {
   const isVideoRequested = type !== DownloadType.Audio;
   const videoFormat = isVideoRequested
-    ? (videoFormatVariants.find(format => format.itag === videoItag) ?? videoFormats[0]!)
+    ? (videoFormatVariants.find(format => format.itag === videoItag) ?? required(videoFormats[0]))
     : null;
 
   const isAudioRequested = type !== DownloadType.Video;

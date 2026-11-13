@@ -1,3 +1,4 @@
+import { required } from "@/lib/required";
 import { getActivePlayerCaption } from "./panel-init-caption";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { AUTO_DUB_TRACK_SUFFIX } from "@/lib/youtube/download-plan";
@@ -50,7 +51,7 @@ export function syncAudioFromFormat(format: AdaptiveFormatItem | null) {
     return;
   }
 
-  PLAYER_ACTIVE_AUDIO.trackId = format!.audioTrack!.id;
-  PLAYER_ACTIVE_AUDIO.langCode = normalizeLanguageCode(format!.audioTrack!.id);
-  PLAYER_ACTIVE_AUDIO.isAutoDubbed = format!.audioTrack!.id.endsWith(AUTO_DUB_TRACK_SUFFIX);
+  PLAYER_ACTIVE_AUDIO.trackId = required(required(format).audioTrack).id;
+  PLAYER_ACTIVE_AUDIO.langCode = normalizeLanguageCode(required(required(format).audioTrack).id);
+  PLAYER_ACTIVE_AUDIO.isAutoDubbed = required(required(format).audioTrack).id.endsWith(AUTO_DUB_TRACK_SUFFIX);
 }

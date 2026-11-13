@@ -1,3 +1,4 @@
+import { required } from "@/lib/required";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import {
   audioContainers,
@@ -46,7 +47,7 @@ function isTargetAllowed(target: string, entry: RecentDownloadEntry, isAudioSour
     return true;
   }
 
-  return canReencodeTarget(target, entry.videoMimeType!);
+  return canReencodeTarget(target, required(entry.videoMimeType));
 }
 
 function classifyVideoTargetSpeed(target: string, videoMimeType: string) {

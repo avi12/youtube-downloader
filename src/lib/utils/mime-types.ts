@@ -1,3 +1,4 @@
+import { required } from "@/lib/required";
 import { extractBaseCodec, isAudioMimeNativeForContainer } from "./container-specs";
 import { getFileExtension } from "./filename";
 
@@ -78,7 +79,7 @@ export function getMimeType(filename: string) {
 }
 
 export function stripMimeParams(mimeType: string) {
-  return mimeType.split(";")[0]!;
+  return required(mimeType.split(";")[0]);
 }
 
 export function getVideoTempExtension(mimeType: string) {

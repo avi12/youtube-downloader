@@ -1,3 +1,4 @@
+import { required } from "@/lib/required";
 import { buildTrackButtons, refreshButton } from "./TrackChoice.button-data";
 import { onButtonClick } from "@/lib/messaging/cross-world-messenger";
 import type { PanelTrackMode} from "@/types";
@@ -82,7 +83,7 @@ export function createTrackChoiceState(params: TrackChoiceParams) {
     let iNext = iCurrent;
     for (let i = 0; i < buttons.length; i++) {
       iNext = (iNext + delta + buttons.length) % buttons.length;
-      const isCandidateEnabled = !params.disabledModes.includes(buttons[iNext]!.mode);
+      const isCandidateEnabled = !params.disabledModes.includes(required(buttons[iNext]).mode);
       if (isCandidateEnabled) {
         break;
       }
@@ -93,7 +94,7 @@ export function createTrackChoiceState(params: TrackChoiceParams) {
       return;
     }
 
-    const nextButton = buttons[iNext]!;
+    const nextButton = required(buttons[iNext]);
     params.onmodechange(nextButton.mode);
     const elNext = elements.get(nextButton.id);
     queueMicrotask(() => elNext?.querySelector("button")?.focus());

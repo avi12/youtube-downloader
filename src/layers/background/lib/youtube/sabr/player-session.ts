@@ -1,3 +1,4 @@
+import { required } from "@/lib/required";
 import { uint8ToBase64 } from "@/lib/utils/binary";
 import { getVideoIdFromUrl } from "@/lib/youtube/youtube-url";
 import type { DownloadRequest, Prettify } from "@/types";
@@ -43,7 +44,7 @@ export async function recordPlayerSession({ tabId, url, body }: RecordPlayerSess
     videoId,
     serverAbrStreamingUrl: streamingUrl.href,
     videoPlaybackUstreamerConfig: uint8ToBase64(ustreamerConfig),
-    poToken: uint8ToBase64(poToken!)
+    poToken: uint8ToBase64(required(poToken))
   });
 }
 

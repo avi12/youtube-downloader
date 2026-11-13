@@ -1,3 +1,4 @@
+import { required } from "@/lib/required";
 import { preResolveCdnUrls, resolveCredentialsWithRetry } from "./download-formats";
 import { buildEnrichedRequest, fetchCaptionWebVttData } from "./download-request-builder";
 import { getPageRoute, getRouteVideoId, PageRoute } from "./page-route";
@@ -153,7 +154,7 @@ export async function resolveAndDispatch({ params, abortSignal }: ResolveAndDisp
     && !!cachedVideoData.progressiveUrl;
   if (canTryProgressiveInPage) {
     const didStart = await tryProgressiveInPage({
-      url: cachedVideoData.progressiveUrl!,
+      url: required(cachedVideoData.progressiveUrl),
       filenameOutput: params.filenameOutput,
       videoId
     });

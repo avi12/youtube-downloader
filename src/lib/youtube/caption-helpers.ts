@@ -1,3 +1,4 @@
+import { required } from "@/lib/required";
 import { normalizeLanguageCode } from "./audio-format-helpers";
 import { AudioTrackLanguageMode, CaptionLanguageMode } from "@/types";
 import type { CaptionTrack, Prettify } from "@/types";
@@ -42,7 +43,7 @@ export function orderCaptionsByPreference({
 
   const isCustomWithLanguage = languageMode === AudioTrackLanguageMode.Custom && customLanguage;
   const firstLang = isCustomWithLanguage
-    ? normalizeLanguageCode(customLanguage!)
+    ? normalizeLanguageCode(required(customLanguage))
     : null;
   const langPriority = [firstLang, locale, browserLanguage, FALLBACK_LANGUAGE_CODE]
     .filter((lang): lang is string => !!lang);

@@ -1,3 +1,4 @@
+import { required } from "@/lib/required";
 import { sendProgressUpdate } from "./progress-fetch";
 import { computeWeightedProgress } from "./progress-stages";
 import { estimateBytesFromBitrate, estimateFormatBytes, parseContentLength } from "./sabr-utils";
@@ -82,7 +83,7 @@ export function createProgressAccumulator({
       trackIndex: number;
       bytes: number;
     }) {
-      extraReceivedBytesArray[trackIndex]! += bytes;
+      extraReceivedBytesArray[trackIndex] = required(extraReceivedBytesArray[trackIndex]) + bytes;
       emit();
     }
   };

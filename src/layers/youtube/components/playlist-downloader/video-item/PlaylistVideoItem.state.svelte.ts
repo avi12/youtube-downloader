@@ -1,3 +1,4 @@
+import { required } from "@/lib/required";
 import { resolveButtonLabel, resolveDownloadIconName } from "./PlaylistVideoItem.display";
 import { cancelDownload, triggerDownload } from "./PlaylistVideoItem.download";
 import { createVideoItemEffects } from "./PlaylistVideoItem.effects.svelte";
@@ -130,7 +131,7 @@ export function createPlaylistVideoItemState({
     activeDownloadClicks.add(videoId);
     try {
       triggerDownload({
-        videoData: videoData!,
+        videoData: required(videoData),
         videoId,
         gridTitle,
         setLocallyDone(value) {

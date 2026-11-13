@@ -1,3 +1,4 @@
+import { required } from "@/lib/required";
 import { enqueueMuxJob } from "./mux-queue";
 import type { EmbedMetadataJob, MuxVideoAudioJob, TranscodeAudioJob, TranscodeFileJob } from "./mux-worker-types";
 import { WorkerMessageType } from "./mux-worker-types";
@@ -33,7 +34,7 @@ export function runWorkerJob<T>({
 
     pendingJobReject = reject;
 
-    workerPort!.onMessage({
+    required(workerPort).onMessage({
       [WorkerMessageType.Result]({ data }) {
         pendingJobReject = null;
         resolve(transform(data));
@@ -52,7 +53,7 @@ export function runWorkerJob<T>({
       }
     });
 
-    send(workerPort!);
+    send(required(workerPort));
   });
 }
 
@@ -64,7 +65,7 @@ export function runMuxVideoAudio({ videoId, job }: RunMuxVideoAudioParams) {
   const transferables: Transferable[] = [];
   const hasVideoData = Boolean(job.videoData);
   if (hasVideoData) {
-    transferables.push(job.videoData!);
+    transferables.push(required(job.videoData));
   }
 
   for (const track of job.audioTracks) {
@@ -83,7 +84,7 @@ export function runMuxVideoAudio({ videoId, job }: RunMuxVideoAudioParams) {
 
         pendingJobReject = reject;
 
-        workerPort!.onMessage({
+        required(workerPort).onMessage({
           [WorkerMessageType.ResultFile]({ data }) {
             pendingJobReject = null;
             resolve(data);
@@ -102,7 +103,7 @@ export function runMuxVideoAudio({ videoId, job }: RunMuxVideoAudioParams) {
           }
         });
 
-        workerPort!.send(WorkerMessageType.MuxVideoAudio, { job }, transferables);
+        required(workerPort).send(WorkerMessageType.MuxVideoAudio, { job }, transferables);
       })
   });
 }

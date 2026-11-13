@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { required } from "@/lib/required";
   import changeFormatIcon from "@/layers/popup/entrypoints/popup/icons/change-format.svg?raw";
   import closeIcon from "@/layers/popup/entrypoints/popup/icons/close.svg?raw";
   import folderIcon from "@/layers/popup/entrypoints/popup/icons/folder.svg?raw";
@@ -71,7 +72,7 @@
 
   function formatRelativeAge(deltaMs: number) {
     const totalSeconds = Math.floor(deltaMs / 1000);
-    const [, unit, divisor] = AGE_THRESHOLDS.find(([threshold]) => totalSeconds < threshold)!;
+    const [, unit, divisor] = required(AGE_THRESHOLDS.find(([threshold]) => totalSeconds < threshold));
     return RTF.format(-Math.floor(totalSeconds / divisor), unit);
   }
 

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { required } from "@/lib/required";
   import checkIcon from "@/layers/popup/entrypoints/popup/icons/check.svg?raw";
   import chevronRightIcon from "@/layers/popup/entrypoints/popup/icons/chevron-right.svg?raw";
   import SettingsRowContent from "./SettingsRowContent.svelte";
@@ -57,7 +58,7 @@
         "a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex=\"-1\"])"
       )
     ].filter(element => !elList?.contains(element));
-    const iTrigger = focusable.indexOf(elTrigger!);
+    const iTrigger = focusable.indexOf(required(elTrigger));
     const step = e.shiftKey ? -1 : 1;
     const next = focusable[iTrigger + step];
     if (next) {

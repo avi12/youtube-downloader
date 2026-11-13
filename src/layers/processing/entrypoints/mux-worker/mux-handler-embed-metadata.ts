@@ -1,3 +1,4 @@
+import { required } from "@/lib/required";
 import { buildInputArgs } from "./mux-ffmpeg-args";
 import { postResult, state, tryUnlink } from "./mux-state";
 import { fetchThumbnail, sanitizeForFFmpeg } from "./mux-thumbnail";
@@ -24,7 +25,7 @@ export async function handleEmbedMetadata(job: EmbedMetadataJob) {
   let coverFilename = "";
   let isCoverArtPresent = false;
 
-  state.ffmpeg!.FS.writeFile(inputFilename, new Uint8Array(audioData));
+  required(state.ffmpeg).FS.writeFile(inputFilename, new Uint8Array(audioData));
 
   const ffmpegArgs = [...buildInputArgs(inputFilename)];
   const isWebmOutput = WEBM_AUDIO_OUTPUT_EXTENSIONS.has(outputExtension);
@@ -33,7 +34,7 @@ export async function handleEmbedMetadata(job: EmbedMetadataJob) {
     const thumbnail = await fetchThumbnail(thumbnailUrl);
     if (thumbnail) {
       coverFilename = `${COVER_FILENAME_PREFIX}.${thumbnail.extension}`;
-      state.ffmpeg!.FS.writeFile(coverFilename, thumbnail.data);
+      required(state.ffmpeg).FS.writeFile(coverFilename, thumbnail.data);
       ffmpegArgs.push(...buildInputArgs(coverFilename));
       isCoverArtPresent = true;
     }
@@ -74,14 +75,14 @@ export async function handleEmbedMetadata(job: EmbedMetadataJob) {
   ffmpegArgs.push(outputFilename);
 
   try {
-    const exitCode = state.ffmpeg!.exec(...ffmpegArgs);
+    const exitCode = required(state.ffmpeg).exec(...ffmpegArgs);
     const isExecFailed = exitCode !== 0;
     if (isExecFailed) {
       postResult(new Uint8Array(audioData));
       return;
     }
 
-    const output = state.ffmpeg!.FS.readFile(outputFilename, { encoding: "binary" });
+    const output = required(state.ffmpeg).FS.readFile(outputFilename, { encoding: "binary" });
     const isEmptyOutput = typeof output === "string" || output.byteLength === 0;
     if (isEmptyOutput) {
       postResult(new Uint8Array(audioData));

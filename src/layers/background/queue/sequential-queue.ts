@@ -1,3 +1,5 @@
+import { required } from "@/lib/required";
+
 const MAX_VIDEO_DOWNLOAD_MS = 10 * 60 * 1_000;
 
 const completionCallbacks = new Map<string, Set<() => void>>();
@@ -26,7 +28,7 @@ export async function awaitVideoComplete(videoId: string) {
       completionCallbacks.set(videoId, new Set());
     }
 
-    completionCallbacks.get(videoId)!.add(onComplete);
+    required(completionCallbacks.get(videoId)).add(onComplete);
   });
 }
 

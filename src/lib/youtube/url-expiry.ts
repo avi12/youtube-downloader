@@ -1,3 +1,4 @@
+import { required } from "@/lib/required";
 import type { AdaptiveFormatItem, SabrConfig } from "@/types";
 
 function isUrlExpired(url: string) {
@@ -16,7 +17,7 @@ export function isVideoDataExpired(videoData: {
 }) {
   const sabrUrl = videoData.sabrConfig?.serverAbrStreamingUrl;
   const hasSabrUrl = Boolean(sabrUrl);
-  const isSabrUrlExpired = hasSabrUrl && isUrlExpired(sabrUrl!);
+  const isSabrUrlExpired = hasSabrUrl && isUrlExpired(required(sabrUrl));
   if (isSabrUrlExpired) {
     return true;
   }

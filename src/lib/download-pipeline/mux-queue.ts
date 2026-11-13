@@ -1,3 +1,4 @@
+import { required } from "@/lib/required";
 import type { Prettify } from "@/types";
 
 export const MUX_JOB_CANCELLED_ERROR = "muxJobCancelled";
@@ -70,7 +71,7 @@ export function cancelMuxJobs(videoIds: string[]) {
   }
 
   for (let iEntry = muxQueue.length - 1; iEntry >= 0; iEntry--) {
-    const entry = muxQueue[iEntry]!;
+    const entry = required(muxQueue[iEntry]);
     const isEntryInSet = videoIdSet.has(entry.videoId);
     if (isEntryInSet) {
       muxQueue.splice(iEntry, 1);

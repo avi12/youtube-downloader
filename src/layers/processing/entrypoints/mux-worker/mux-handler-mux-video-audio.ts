@@ -1,3 +1,4 @@
+import { required } from "@/lib/required";
 import { executeMuxPhases, tryCheckOutput } from "./mux-handler-exec";
 import { cleanupMuxFiles, writeMuxInputFiles } from "./mux-handler-files";
 import { postFileResult, state, tryRmdir, tryUnmount } from "./mux-state";
@@ -44,8 +45,8 @@ export async function handleMuxVideoAudio(job: MuxVideoAudioJob) {
 
   let videoFilename: string;
   if (isWorkerfsVideo) {
-    state.ffmpeg!.FS.mkdir(workerfsDir);
-    state.ffmpeg!.FS.mount(state.ffmpeg!.FS.filesystems.WORKERFS, { files: [videoFile] }, workerfsDir);
+    required(state.ffmpeg).FS.mkdir(workerfsDir);
+    required(state.ffmpeg).FS.mount(required(state.ffmpeg).FS.filesystems.WORKERFS, { files: [videoFile] }, workerfsDir);
     videoFilename = `${workerfsDir}/${videoFile.name}`;
   } else {
     videoFilename = `${videoId}-${VIDEO_TEMP_SUFFIX}.${getVideoTempExtension(videoMimeType)}`;
@@ -68,12 +69,12 @@ export async function handleMuxVideoAudio(job: MuxVideoAudioJob) {
   const syncHandle = await outputHandle.createSyncAccessHandle();
   const opfsOutDir = `/${videoId}${OPFS_OUT_SUFFIX}`;
   const outputDriver = createOpfsOutputFs({
-    fs: state.ffmpeg!.FS,
+    fs: required(state.ffmpeg).FS,
     syncHandle,
     outputFilename
   });
-  state.ffmpeg!.FS.mkdir(opfsOutDir);
-  state.ffmpeg!.FS.mount(outputDriver, {}, opfsOutDir);
+  required(state.ffmpeg).FS.mkdir(opfsOutDir);
+  required(state.ffmpeg).FS.mount(outputDriver, {}, opfsOutDir);
   const opfsOutputFilename = `${opfsOutDir}/${outputFilename}`;
 
   let success: boolean | undefined;

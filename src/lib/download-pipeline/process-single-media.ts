@@ -1,3 +1,4 @@
+import { required } from "@/lib/required";
 import {
   buildRecentContext,
   FFMPEG_PROGRESS_CAP,
@@ -63,7 +64,7 @@ export async function processSingleMedia({ item, isCancelled }: ProcessSingleMed
   const isPlaylistItem = Boolean(item.playlistId);
   if (isPlaylistItem) {
     await addToPlaylistBundle({
-      playlistId: item.playlistId!,
+      playlistId: required(item.playlistId),
       playlistTitle: item.playlistTitle ?? DEFAULT_PLAYLIST_TITLE,
       totalCount: item.playlistTotalCount ?? 1,
       tabId,

@@ -1,3 +1,4 @@
+import { required } from "@/lib/required";
 import { sendProgressUpdate } from "./progress-fetch";
 import { computeWeightedProgress } from "./progress-stages";
 import { ProgressType } from "@/types";
@@ -68,7 +69,7 @@ export function createCdnProgressTracker({
       i: number;
       bytes: number;
     }) {
-      extraReceivedBytesArray[i]! += bytes;
+      extraReceivedBytesArray[i] = required(extraReceivedBytesArray[i]) + bytes;
       emit();
     }
   };

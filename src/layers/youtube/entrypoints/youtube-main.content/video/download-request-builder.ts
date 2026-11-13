@@ -1,3 +1,4 @@
+import { required } from "@/lib/required";
 import { fetchCaptionWebVttData } from "./caption-fetch";
 import type { DownloadParams } from "./download-execute";
 import { buildVideoMetadata } from "./video-data";
@@ -37,7 +38,7 @@ type ResolveLanguageParams = Prettify<{
 function resolvePrimaryAudioLanguageCode({ audioFormat, sourceCaptionTracks }: ResolveLanguageParams) {
   const trackId = audioFormat?.audioTrack?.id;
   if (trackId) {
-    return trackId.split(".")[0]!;
+    return required(trackId.split(".")[0]);
   }
 
   const liveLanguage = getCurrentVideoAudioLanguage();

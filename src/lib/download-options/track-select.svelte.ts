@@ -1,3 +1,4 @@
+import { required } from "@/lib/required";
 import { MULTI_TRACK_UNSUPPORTED_EXTENSIONS } from "@/lib/utils/containers";
 import { DownloadType, PanelTrackMode } from "@/types";
 import type { CaptionTrack, LabeledOption } from "@/types";
@@ -66,7 +67,7 @@ export function createTrackSelectState(props: () => TrackSelectProps) {
     const { panelCaptionMode, captionCustomOptions, selectedCaptionVssId } = props();
     if (panelCaptionMode === PanelTrackMode.MatchVideo) {
       if (isSingleCaptionOption) {
-        return captionCustomOptions[0]!.value;
+        return required(captionCustomOptions[0]).value;
       }
 
       return CAPTION_AUTO;

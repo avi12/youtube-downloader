@@ -1,3 +1,4 @@
+import { required } from "@/lib/required";
 import { TransformOpType } from "./signature-transforms";
 import type { TransformOp } from "./signature-transforms";
 import type { Prettify } from "@/types";
@@ -59,14 +60,14 @@ function extractTransformOperations({ playerSource, functionName }: ExtractTrans
   const methodPattern = /([a-zA-Z0-9$]+)\s*:\s*function\s*\([^)]*\)\s*\{([^}]+)}/g;
 
   for (const [, methodName, methodBody] of helperBody.matchAll(methodPattern)) {
-    const isReverse = methodBody!.includes("reverse");
-    const isSplice = methodBody!.includes("splice");
+    const isReverse = required(methodBody).includes("reverse");
+    const isSplice = required(methodBody).includes("splice");
     if (isReverse) {
-      methodTypes.set(methodName!, TransformOpType.Reverse);
+      methodTypes.set(required(methodName), TransformOpType.Reverse);
     } else if (isSplice) {
-      methodTypes.set(methodName!, TransformOpType.Splice);
+      methodTypes.set(required(methodName), TransformOpType.Splice);
     } else {
-      methodTypes.set(methodName!, TransformOpType.Swap);
+      methodTypes.set(required(methodName), TransformOpType.Swap);
     }
   }
 
@@ -77,8 +78,8 @@ function extractTransformOperations({ playerSource, functionName }: ExtractTrans
   const operations: TransformOp[] = [];
 
   for (const [, methodName, rawArgument] of functionBody.matchAll(callPattern)) {
-    const argument = Number.parseInt(rawArgument!, 10);
-    const opType = methodTypes.get(methodName!);
+    const argument = Number.parseInt(required(rawArgument), 10);
+    const opType = methodTypes.get(required(methodName));
     const isOpTypeMissing = !opType;
     if (isOpTypeMissing) {
       continue;

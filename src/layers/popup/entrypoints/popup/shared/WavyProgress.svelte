@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { required } from "@/lib/required";
   interface Props {
     value?: number;
     indeterminate?: boolean;
@@ -23,7 +24,7 @@
 
     containerWidth = container.clientWidth;
     const resizeObserver = new ResizeObserver(() => {
-      containerWidth = container!.clientWidth;
+      containerWidth = required(container).clientWidth;
     });
     resizeObserver.observe(container);
     return () => resizeObserver.disconnect();

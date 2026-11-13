@@ -1,3 +1,4 @@
+import { required } from "@/lib/required";
 import { buildMuxFfmpegArgs } from "./mux-ffmpeg-args";
 import type { MuxFfmpegParams } from "./mux-ffmpeg-args";
 import { buildRemuxArgs } from "./mux-ffmpeg-args";
@@ -8,7 +9,7 @@ type CheckOutput = (filename: string) => boolean;
 
 export function tryCheckOutput(filename: string) {
   try {
-    const stat = state.ffmpeg!.FS.stat(filename);
+    const stat = required(state.ffmpeg).FS.stat(filename);
     return stat.size > 0;
   } catch {
     return false;
@@ -22,7 +23,7 @@ type ExecuteMuxPhasesParams = Prettify<{
 export function executeMuxPhases({ params, checkOutput }: ExecuteMuxPhasesParams) {
   const { useIntermediateMkv, muxFilename, outputFilename, targetExtension, audioMimeType } = params;
 
-  const phase1Code = state.ffmpeg!.exec(...buildMuxFfmpegArgs(params));
+  const phase1Code = required(state.ffmpeg).exec(...buildMuxFfmpegArgs(params));
   const isPhase1Failed = phase1Code !== 0;
   if (isPhase1Failed) {
     const phase1File = useIntermediateMkv ? muxFilename : outputFilename;
@@ -36,7 +37,7 @@ export function executeMuxPhases({ params, checkOutput }: ExecuteMuxPhasesParams
   if (useIntermediateMkv) {
     state.progressOffset = 0.5;
     state.progressScale = 0.5;
-    const phase2Code = state.ffmpeg!.exec(
+    const phase2Code = required(state.ffmpeg).exec(
       ...buildRemuxArgs({
         inputFilename: muxFilename,
         outputFilename,

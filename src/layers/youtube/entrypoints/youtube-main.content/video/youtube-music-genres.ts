@@ -18,7 +18,7 @@ type MoodsAndGenresResponse = Prettify<{
                   items?: {
                     musicNavigationButtonRenderer?: {
                       buttonText?: {
-                        runs?: Array<{ text: string }>;
+                        runs?: { text: string }[];
                       };
                     };
                   }[];

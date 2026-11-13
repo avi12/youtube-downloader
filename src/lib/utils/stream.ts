@@ -1,3 +1,4 @@
+import { required } from "@/lib/required";
 import { createStallChecker, mergeChunks, readChunk, StreamStallError } from "./stream-stall";
 
 export { StreamStallError } from "./stream-stall";
@@ -57,19 +58,19 @@ export async function readStreamToBuffer({ reader, expectedBytes, onBytesReceive
         break;
       }
 
-      totalBytes += value!.byteLength;
+      totalBytes += required(value).byteLength;
 
       if (isStreamingMode) {
-        onChunk!(value!);
+        required(onChunk)(required(value));
       } else if (preallocated) {
-        preallocated.set(value!, writeOffset);
-        writeOffset += value!.byteLength;
+        preallocated.set(required(value), writeOffset);
+        writeOffset += required(value).byteLength;
       } else {
-        chunks.push(value!);
+        chunks.push(required(value));
       }
 
       stall.touch();
-      onBytesReceived?.(value!.byteLength);
+      onBytesReceived?.(required(value).byteLength);
     }
   } finally {
     stall.clear();

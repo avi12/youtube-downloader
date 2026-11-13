@@ -1,3 +1,4 @@
+import { required } from "@/lib/required";
 import { type Choice, listChoices } from "./choices";
 import { AudioCodecPreference, DynamicRangePreference, VideoCodecPreference } from "@/types";
 import type { CodecPreferences, Prettify } from "@/types";
@@ -263,17 +264,17 @@ const VIDEO_CODEC_PREFERENCES: Record<VideoCodecPreference, CodecPreferenceSpec>
   [VideoCodecPreference.Auto]: AUTO_CODEC_PREFERENCE,
   [VideoCodecPreference.H264]: {
     codecs: PREFER_H264,
-    label: VIDEO_CODEC_LABELS[CODEC_AVC1]!,
+    label: required(VIDEO_CODEC_LABELS[CODEC_AVC1]),
     description: "Plays everywhere, up to 1080p"
   },
   [VideoCodecPreference.Vp9]: {
     codecs: PREFER_VP9,
-    label: VIDEO_CODEC_LABELS[CODEC_VP9]!,
+    label: required(VIDEO_CODEC_LABELS[CODEC_VP9]),
     description: "YouTube's main codec, up to 4320p"
   },
   [VideoCodecPreference.Av1]: {
     codecs: PREFER_AV1,
-    label: VIDEO_CODEC_LABELS[CODEC_AV01]!,
+    label: required(VIDEO_CODEC_LABELS[CODEC_AV01]),
     description: "Smallest files, newer devices"
   }
 };
@@ -282,12 +283,12 @@ const AUDIO_CODEC_PREFERENCES: Record<AudioCodecPreference, CodecPreferenceSpec>
   [AudioCodecPreference.Auto]: AUTO_CODEC_PREFERENCE,
   [AudioCodecPreference.Aac]: {
     codecs: PREFER_AAC,
-    label: AUDIO_CODEC_LABELS[CODEC_MP4A]!,
+    label: required(AUDIO_CODEC_LABELS[CODEC_MP4A]),
     description: "Plays everywhere"
   },
   [AudioCodecPreference.Opus]: {
     codecs: PREFER_OPUS,
-    label: AUDIO_CODEC_LABELS[CODEC_OPUS]!,
+    label: required(AUDIO_CODEC_LABELS[CODEC_OPUS]),
     description: "Better sound at the same size"
   },
   [AudioCodecPreference.Dolby]: {
@@ -308,7 +309,7 @@ export const AUDIO_CODEC_CHOICES = listChoices({
 
 export function formatAudioCodecLabel(mimeType: string) {
   const codec = extractBaseCodec(mimeType);
-  return AUDIO_CODEC_LABELS[codec] ?? (codec || (mimeType.split(";")[0]!.split("/")[1] ?? ""));
+  return AUDIO_CODEC_LABELS[codec] ?? (codec || (required(mimeType.split(";")[0]).split("/")[1] ?? ""));
 }
 
 function videoCodecsFor(spec: ContainerSpec) {

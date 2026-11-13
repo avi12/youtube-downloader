@@ -1,3 +1,4 @@
+import { required } from "@/lib/required";
 // Firefox-only: MAIN-world content script that proxies fetches from the background
 // event-page through the YouTube tab's page context, so requests carry the same
 // cookies and TLS fingerprint as the player's own requests (avoids YouTube's
@@ -60,7 +61,7 @@ function getPristineFetch() {
   elIframe.src = "about:blank";
   elIframe.style.display = "none";
   (document.documentElement ?? document.body).append(elIframe);
-  return elIframe.contentWindow!.fetch.bind(elIframe.contentWindow);
+  return required(elIframe.contentWindow).fetch.bind(elIframe.contentWindow);
 }
 
 export default defineContentScript({

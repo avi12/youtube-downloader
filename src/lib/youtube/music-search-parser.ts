@@ -1,3 +1,4 @@
+import { required } from "@/lib/required";
 import type { MusicSearchResponse, SearchItem, SearchRun } from "./music-search-types";
 
 export type { MusicSearchResponse } from "./music-search-types";
@@ -20,8 +21,8 @@ export function parseSearchResult(item: SearchItem) {
   }
 
   const [firstColumn, secondColumn] = columns;
-  const titleRuns = firstColumn!.musicResponsiveListItemFlexColumnRenderer?.text?.runs;
-  const metadataRuns = secondColumn!.musicResponsiveListItemFlexColumnRenderer?.text?.runs;
+  const titleRuns = required(firstColumn).musicResponsiveListItemFlexColumnRenderer?.text?.runs;
+  const metadataRuns = required(secondColumn).musicResponsiveListItemFlexColumnRenderer?.text?.runs;
   const isRunsMissing = !titleRuns || !metadataRuns;
   if (isRunsMissing) {
     return null;

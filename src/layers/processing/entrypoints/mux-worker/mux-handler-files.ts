@@ -1,3 +1,4 @@
+import { required } from "@/lib/required";
 import { state, tryUnlink } from "./mux-state";
 import type { MuxVideoAudioJob } from "@/lib/download-pipeline/mux-worker-types";
 import { getAudioTempExtension } from "@/lib/utils/containers";
@@ -29,20 +30,20 @@ type WriteMuxInputFilesParams = Prettify<{
 export function writeMuxInputFiles(params: WriteMuxInputFilesParams) {
   const { videoId, videoFilename, videoData, skipVideoWrite, audioTracks, audioMimeType, subtitleTracks } = params;
   if (!skipVideoWrite) {
-    state.ffmpeg!.FS.writeFile(videoFilename, new Uint8Array(videoData));
+    required(state.ffmpeg).FS.writeFile(videoFilename, new Uint8Array(videoData));
   }
 
   const audioFilenames: string[] = [];
   for (const [i, track] of audioTracks.entries()) {
     const audioFilename = `${videoId}-${AUDIO_TEMP_SUFFIX}-${i}.${getAudioTempExtension(audioMimeType)}`;
-    state.ffmpeg!.FS.writeFile(audioFilename, new Uint8Array(track.data));
+    required(state.ffmpeg).FS.writeFile(audioFilename, new Uint8Array(track.data));
     audioFilenames.push(audioFilename);
   }
 
   const subtitleFilenames: string[] = [];
   for (const [i, track] of subtitleTracks.entries()) {
     const subFilename = `${videoId}-${SUBTITLE_STREAM_PREFIX}-${i}.${VTT_EXTENSION}`;
-    state.ffmpeg!.FS.writeFile(subFilename, track.data);
+    required(state.ffmpeg).FS.writeFile(subFilename, track.data);
     subtitleFilenames.push(subFilename);
   }
 

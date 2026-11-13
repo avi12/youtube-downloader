@@ -1,3 +1,4 @@
+import { required } from "@/lib/required";
 import type { Prettify } from "@/types";
 
 export const VARINT_DATA_BITS_MASK = 0x7f;
@@ -20,7 +21,7 @@ export function readVarint({ buffer, offset }: ReadVarintParams) {
   let value = 0;
   let shift = 0;
   while (offset < buffer.byteLength) {
-    const byte = buffer[offset]!;
+    const byte = required(buffer[offset]);
     offset++;
     value |= (byte & VARINT_DATA_BITS_MASK) << shift;
 

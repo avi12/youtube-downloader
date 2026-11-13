@@ -1,3 +1,4 @@
+import { required } from "@/lib/required";
 import type { CaptionEventBus, MoviePlayerElement, PlayerCaptionTrackData } from "./movie-player-types";
 import { captionBusContextSchema, captionEventBusSchema, playerCaptionTrackDataSchema } from "./schemas";
 
@@ -66,7 +67,7 @@ export function capturePlayerCaptionBuses(player: MoviePlayerElement) {
       value: captureApply,
       configurable: true
     });
-    rawGetOption!.call(player, "captions", "track");
+    required(rawGetOption).call(player, "captions", "track");
   } finally {
     Object.defineProperty(Function.prototype, "apply", {
       value: origApply,

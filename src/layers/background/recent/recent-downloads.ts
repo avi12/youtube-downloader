@@ -1,3 +1,4 @@
+import { required } from "@/lib/required";
 import { ensureProcessor } from "@/layers/background/handlers/processor";
 import { enqueueToPopupList } from "@/layers/background/queue/popup-list";
 import { getTabIdsForVideo } from "@/layers/background/queue/tab-tracker";
@@ -59,7 +60,7 @@ function notifyOnDownloadComplete({ downloadId, data }: DownloadIdDataParams) {
         return;
       }
 
-      const currentState = delta.state!.current;
+      const currentState = required(delta.state).current;
       if (currentState === browser.downloads.State.COMPLETE) {
         browser.downloads.onChanged.removeListener(handleChanged);
 
@@ -68,12 +69,12 @@ function notifyOnDownloadComplete({ downloadId, data }: DownloadIdDataParams) {
           : [];
         const [downloadItem] = await browser.downloads.search({ id: downloadId });
         const actualFilename = downloadItem?.filename
-          ? downloadItem.filename.split(/[/\\]/).pop()!
+          ? required(downloadItem.filename.split(/[/\\]/).pop())
           : data.filename;
 
         for (const tabId of tabIds) {
           await sendMessageToTab(MessageType.WatchDownloadCompleted, {
-            videoId: data.recentContext!.videoId,
+            videoId: required(data.recentContext).videoId,
             downloadId,
             filename: actualFilename
           }, tabId).catch(() => {});
@@ -122,7 +123,7 @@ function scheduleRevokeBlobUrl({ downloadId, blobUrl }: ScheduleRevokeBlobUrlPar
       return;
     }
 
-    const { current } = delta.state!;
+    const { current } = required(delta.state);
     const isComplete = current === browser.downloads.State.COMPLETE;
     const isInterrupted = current === browser.downloads.State.INTERRUPTED;
     const isTerminal = isComplete || isInterrupted;
@@ -149,7 +150,7 @@ export function trackDownloadCompleteOnce(downloadId: number) {
       return;
     }
 
-    const { current } = delta.state!;
+    const { current } = required(delta.state);
     const isComplete = current === browser.downloads.State.COMPLETE;
     const isTerminal = isComplete || current === browser.downloads.State.INTERRUPTED;
     if (!isTerminal) {
@@ -179,7 +180,7 @@ export function notifyWatchTabsOnComplete({ downloadId, videoId, filename }: Not
       return;
     }
 
-    const { current } = delta.state!;
+    const { current } = required(delta.state);
     const isComplete = current === browser.downloads.State.COMPLETE;
     const isTerminal = isComplete || current === browser.downloads.State.INTERRUPTED;
     if (!isTerminal) {
@@ -195,7 +196,7 @@ export function notifyWatchTabsOnComplete({ downloadId, videoId, filename }: Not
     const tabIds = getTabIdsForVideo(videoId);
     const [downloadItem] = await browser.downloads.search({ id: downloadId });
     const actualFilename = downloadItem?.filename
-      ? downloadItem.filename.split(/[/\\]/).pop()!
+      ? required(downloadItem.filename.split(/[/\\]/).pop())
       : filename;
 
     for (const tabId of tabIds) {

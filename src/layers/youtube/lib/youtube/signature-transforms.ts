@@ -1,3 +1,4 @@
+import { required } from "@/lib/required";
 import type { Prettify } from "@/types";
 
 export const TransformOpType = {
@@ -35,8 +36,8 @@ export function applyTransforms({ signature, operations }: ApplyTransformsParams
         break;
       case TransformOpType.Swap: {
         const position = operation.argument % characters.length;
-        let firstCode = characters[0]!.charCodeAt(0);
-        let positionCode = characters[position]!.charCodeAt(0);
+        let firstCode = required(characters[0]).charCodeAt(0);
+        let positionCode = required(characters[position]).charCodeAt(0);
         firstCode ^= positionCode;
         positionCode ^= firstCode;
         firstCode ^= positionCode;

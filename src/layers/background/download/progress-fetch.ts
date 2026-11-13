@@ -1,3 +1,4 @@
+import { required } from "@/lib/required";
 import { isVideoCancelled } from "@/layers/background/handlers/cancelled-videos";
 import { MessageType, sendMessage, sendMessageToTab } from "@/lib/messaging/messaging";
 import { ProgressType } from "@/types";
@@ -94,7 +95,7 @@ function computeBytesPerSecond({ videoId, downloadedBytes }: {
   });
   speedHistoryByVideoId.set(videoId, filtered);
 
-  const oldest = filtered[0]!;
+  const oldest = required(filtered[0]);
   const elapsedMs = now - oldest.timestamp;
   if (elapsedMs <= 0) {
     return 0;
