@@ -22,12 +22,6 @@
     "@ffmpeg/util",
     "@wxt-dev/module-svelte",
     "postcss-html",
-    "ws",
-    "avi12-lint",
-    "eslint-config-avi12",
-    "fallow-config-avi12",
-    "oxlint-config-avi12",
-    "oxlint-plugin-naming",
-    "stylelint-config-avi12"
+    "ws"
   ]
 }
