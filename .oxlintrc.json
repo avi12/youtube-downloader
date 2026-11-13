@@ -12,6 +12,15 @@
           "webextension-manifest",
           "webextension-messages",
           "hook-names"
+        ],
+        "allowedNames": [
+          {
+            "reason": "Window globals the injected page task shares with the request capture hook; the double underscore keeps them out of YouTube's own names",
+            "names": [
+              "__ffmpegLiteRequests",
+              "__ffmpegLiteTimedText"
+            ]
+          }
         ]
       }
     ]
@@ -38,5 +47,34 @@
     ".claude/**",
     "user-profiles/**",
     ".verify-output/**"
+  ],
+  "overrides": [
+    {
+      "files": [
+        "src/types.d.ts"
+      ],
+      "rules": {
+        "id-length": [
+          "error",
+          {
+            "min": 3,
+            "exceptions": [
+              "_",
+              "i",
+              "j",
+              "x",
+              "y",
+              "id",
+              "to",
+              "on",
+              "ok",
+              "T",
+              "FS"
+            ],
+            "properties": "never"
+          }
+        ]
+      }
+    }
   ]
 }

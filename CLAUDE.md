@@ -30,7 +30,6 @@
 # Naming conventions
 - Variables and functions: `camelCase`, full words (no abbreviations)
 - Module-level constants: `SCREAMING_SNAKE_CASE`
-- Exception: event handler first parameter is always `e`
 
 ## Variable prefixes
 - Element: `el` prefix (e.g. `elButton`)
@@ -61,3 +60,7 @@ After each modification, lint with oxlint, ESLint, Stylelint, svelte-check, and 
 - Background or ISOLATED content-script change: reloads the extension and re-injects `youtube.content` into open tabs in place
 - MAIN-world content-script change: reloads the extension and the tabs it runs in
 - The log line names the outcome; flags `--cdp-port`, `--profile-dir`, `--out-dir` run a second instance side by side
+
+# Lint exceptions
+- `src/types.d.ts` keeps `interface FS`: it merges into the `FS` interface of `@ffmpeg/types`, so the name is fixed by that package; the `id-length` override in `.oxlintrc.json` adds it to the exceptions
+- `__ffmpegLiteRequests` and `__ffmpegLiteTimedText` are window globals shared between the injected page task and its capture hook; `naming/convention` lists them in `allowedNames`
