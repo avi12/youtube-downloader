@@ -30,7 +30,6 @@
 # Naming conventions
 - Variables and functions: `camelCase`, full words (no abbreviations)
 - Module-level constants: `SCREAMING_SNAKE_CASE`
-- Exception: event handler first parameter is always `e`
 
 ## Variable prefixes
 - Element: `el` prefix (e.g. `elButton`)
@@ -61,3 +60,6 @@ After each modification, lint with oxlint, ESLint, Stylelint, svelte-check, and 
 - Background or ISOLATED content-script change: reloads the extension and re-injects `youtube.content` into open tabs in place
 - MAIN-world content-script change: reloads the extension and the tabs it runs in
 - The log line names the outcome; flags `--cdp-port`, `--profile-dir`, `--out-dir` run a second instance side by side
+
+# Lint exceptions
+- Lint runs through `avi12-lint` (shared presets from `avi12/lint-config`); an exemption goes in `.oxlintrc.json` or `eslint.config.js` with its reason, never at the line

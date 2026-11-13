@@ -1,5 +1,8 @@
 {
-  "$schema": "https://raw.githubusercontent.com/getfallow/fallow/main/schema/fallowrc.json",
+  "$schema": "./node_modules/fallow/schema.json",
+  "extends": [
+    "./node_modules/fallow-config-avi12/fallow.json"
+  ],
   "entry": [
     "src/layers/*/entrypoints/*.content.ts",
     "src/layers/*/entrypoints/*/index.ts",
@@ -17,7 +20,6 @@
   "ignoreDependencies": [
     "@ffmpeg/core",
     "@ffmpeg/util",
-    "@stylistic/stylelint-plugin",
     "@wxt-dev/module-svelte",
     "postcss-html",
     "ws"
