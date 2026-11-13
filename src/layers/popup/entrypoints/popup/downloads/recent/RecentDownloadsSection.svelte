@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { isRecentFromCurrentTab } from "../youtube-tab";
+  import { isRecentFromCurrentTab } from "@/layers/popup/entrypoints/popup/downloads/youtube-tab";
   import RecentDownloadItem from "./RecentDownloadItem.svelte";
   import type { RecentDownloadEntry } from "@/types";
 

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import PolymerSelect from "../polymer-select/PolymerSelect.svelte";
+  import PolymerSelect from "@/layers/youtube/components/polymer-select/PolymerSelect.svelte";
   import ChoiceSelect from "./ChoiceSelect.svelte";
   import {
     DOWNLOAD_TYPES,

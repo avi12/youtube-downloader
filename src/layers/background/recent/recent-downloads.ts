@@ -1,6 +1,6 @@
-import { ensureProcessor } from "../handlers/processor";
-import { enqueueToPopupList } from "../queue/popup-list";
-import { getTabIdsForVideo } from "../queue/tab-tracker";
+import { ensureProcessor } from "@/layers/background/handlers/processor";
+import { enqueueToPopupList } from "@/layers/background/queue/popup-list";
+import { getTabIdsForVideo } from "@/layers/background/queue/tab-tracker";
 import { TRANSCODE_VIDEO_ID_PREFIX } from "@/lib/download-pipeline/transcode-recent";
 import { MessageType, onMessage, sendMessage, sendMessageToTab } from "@/lib/messaging/messaging";
 import type { PipelineDownloadMessage } from "@/lib/messaging/messaging";

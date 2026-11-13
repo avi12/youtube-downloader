@@ -1,4 +1,4 @@
-import { checkInterruptedDownload } from "../download/interrupted-downloads";
+import { checkInterruptedDownload } from "@/layers/youtube/entrypoints/youtube.content/download/interrupted-downloads";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { MessageType, onMessage } from "@/lib/messaging/messaging";
 import { completedDownloadsStore } from "@/lib/ui/completed-downloads-store.svelte";

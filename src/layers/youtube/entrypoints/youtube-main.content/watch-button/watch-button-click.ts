@@ -1,4 +1,4 @@
-import { cancelActiveDownload, startDownload } from "../video/download";
+import { cancelActiveDownload, startDownload } from "@/layers/youtube/entrypoints/youtube-main.content/video/download";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import type {
   DownloadType} from "@/types";

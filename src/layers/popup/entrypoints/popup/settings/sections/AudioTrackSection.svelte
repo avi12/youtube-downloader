@@ -1,7 +1,7 @@
 <script lang="ts">
-  import type { SlidingSettingsProps } from "../settings-props";
-  import SettingsDropDown from "../ui/SettingsDropDown.svelte";
-  import SettingsRadioGroup from "../ui/SettingsRadioGroup.svelte";
+  import type { SlidingSettingsProps } from "@/layers/popup/entrypoints/popup/settings/settings-props";
+  import SettingsDropDown from "@/layers/popup/entrypoints/popup/settings/ui/SettingsDropDown.svelte";
+  import SettingsRadioGroup from "@/layers/popup/entrypoints/popup/settings/ui/SettingsRadioGroup.svelte";
   import { setOption } from "@/lib/storage/storage";
   import { AudioTrackLanguageMode } from "@/types";
   import { LANGUAGES } from "#popup/lib/languages";

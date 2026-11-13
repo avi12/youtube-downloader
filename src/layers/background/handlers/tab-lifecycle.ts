@@ -1,4 +1,4 @@
-import { tabTracker, untrackVideoForTab } from "../queue/tab-tracker";
+import { tabTracker, untrackVideoForTab } from "@/layers/background/queue/tab-tracker";
 import { clearCapturedSabrData } from "#background/lib/youtube/sabr/request-capture";
 
 const YOUTUBE_HOSTNAME = "youtube.com";

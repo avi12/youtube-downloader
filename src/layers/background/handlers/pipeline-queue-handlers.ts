@@ -1,5 +1,5 @@
-import { removeFromPopupList } from "../queue/popup-list";
-import { signalVideoComplete } from "../queue/sequential-queue";
+import { removeFromPopupList } from "@/layers/background/queue/popup-list";
+import { signalVideoComplete } from "@/layers/background/queue/sequential-queue";
 import { signalFFmpegFailed, signalFFmpegReady } from "./processor";
 import { MessageType, onMessage, sendMessage } from "@/lib/messaging/messaging";
 import { isFFmpegReadyItem, mutateStorageItem, statusProgressItem } from "@/lib/storage/storage";

@@ -1,9 +1,9 @@
 <script lang="ts">
-  import audioIcon from "../../icons/audio.svg?raw";
-  import videoIcon from "../../icons/video.svg?raw";
-  import type { SlidingSettingsProps } from "../settings-props";
-  import SettingsDropDown from "../ui/SettingsDropDown.svelte";
-  import SettingsGroup from "../ui/SettingsGroup.svelte";
+  import audioIcon from "@/layers/popup/entrypoints/popup/icons/audio.svg?raw";
+  import videoIcon from "@/layers/popup/entrypoints/popup/icons/video.svg?raw";
+  import type { SlidingSettingsProps } from "@/layers/popup/entrypoints/popup/settings/settings-props";
+  import SettingsDropDown from "@/layers/popup/entrypoints/popup/settings/ui/SettingsDropDown.svelte";
+  import SettingsGroup from "@/layers/popup/entrypoints/popup/settings/ui/SettingsGroup.svelte";
   import { setOption } from "@/lib/storage/storage";
   import { type Choice, findChoice } from "@/lib/utils/choices";
   import {

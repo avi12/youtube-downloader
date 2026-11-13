@@ -1,4 +1,4 @@
-import { buildInitialDownloadState } from "../watch-button/initial-download-state";
+import { buildInitialDownloadState } from "@/layers/youtube/entrypoints/youtube-main.content/watch-button/initial-download-state";
 import { videoDataCache } from "./video-data";
 import type { DownloadRequest } from "@/types";
 

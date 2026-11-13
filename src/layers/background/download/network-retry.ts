@@ -1,4 +1,4 @@
-import { isVideoCancelled } from "../handlers/pipeline-state";
+import { isVideoCancelled } from "@/layers/background/handlers/pipeline-state";
 import { MessageType, sendMessageToTab } from "@/lib/messaging/messaging";
 import { interruptedDownloadsItem, mutateStorageItem } from "@/lib/storage/storage";
 import { createLogger, LogScope } from "@/lib/utils/logger";

@@ -1,9 +1,9 @@
 <script lang="ts">
-  import expandVerticalIcon from "../../icons/expand-vertical.svg?raw";
-  import type { SettingsProps } from "../settings-props";
-  import SettingsGroup from "../ui/SettingsGroup.svelte";
-  import SettingsRadioGroup from "../ui/SettingsRadioGroup.svelte";
-  import SettingsSwitchRow from "../ui/SettingsSwitchRow.svelte";
+  import expandVerticalIcon from "@/layers/popup/entrypoints/popup/icons/expand-vertical.svg?raw";
+  import type { SettingsProps } from "@/layers/popup/entrypoints/popup/settings/settings-props";
+  import SettingsGroup from "@/layers/popup/entrypoints/popup/settings/ui/SettingsGroup.svelte";
+  import SettingsRadioGroup from "@/layers/popup/entrypoints/popup/settings/ui/SettingsRadioGroup.svelte";
+  import SettingsSwitchRow from "@/layers/popup/entrypoints/popup/settings/ui/SettingsSwitchRow.svelte";
   import { setOption } from "@/lib/storage/storage";
   import { PlaylistDownloadMode, PlaylistOutputMode } from "@/types";
 

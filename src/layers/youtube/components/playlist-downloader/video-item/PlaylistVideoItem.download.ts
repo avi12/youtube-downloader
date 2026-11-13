@@ -1,4 +1,4 @@
-import { batchCanceledIds, batchDownloadStatus, batchVideoIds } from "../PlaylistDownloader.batch.svelte";
+import { batchCanceledIds, batchDownloadStatus, batchVideoIds } from "@/layers/youtube/components/playlist-downloader/PlaylistDownloader.batch.svelte";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { performCancelDownload } from "@/lib/ui/cancel-download";
 import { CONTENT_OPTIONS } from "@/lib/ui/synced-stores.svelte";

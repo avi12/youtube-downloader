@@ -1,5 +1,5 @@
-import { enqueueToPopupList } from "../queue/popup-list";
-import { trackVideoForTab } from "../queue/tab-tracker";
+import { enqueueToPopupList } from "@/layers/background/queue/popup-list";
+import { trackVideoForTab } from "@/layers/background/queue/tab-tracker";
 import { dispatchParallel, dispatchSequentially } from "./playlist-dispatch";
 import { MessageType, onMessage } from "@/lib/messaging/messaging";
 import { resolveQualityLabel } from "@/lib/youtube/audio-format-helpers";

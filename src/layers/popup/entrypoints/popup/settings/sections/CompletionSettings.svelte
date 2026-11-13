@@ -1,11 +1,11 @@
 <script lang="ts">
-  import bellIcon from "../../icons/bell.svg?raw";
-  import downloadIcon from "../../icons/download.svg?raw";
-  import folderIcon from "../../icons/folder.svg?raw";
-  import playArrowIcon from "../../icons/play-arrow.svg?raw";
-  import type { SettingsProps } from "../settings-props";
-  import SettingsGroup from "../ui/SettingsGroup.svelte";
-  import SettingsSwitchRow from "../ui/SettingsSwitchRow.svelte";
+  import bellIcon from "@/layers/popup/entrypoints/popup/icons/bell.svg?raw";
+  import downloadIcon from "@/layers/popup/entrypoints/popup/icons/download.svg?raw";
+  import folderIcon from "@/layers/popup/entrypoints/popup/icons/folder.svg?raw";
+  import playArrowIcon from "@/layers/popup/entrypoints/popup/icons/play-arrow.svg?raw";
+  import type { SettingsProps } from "@/layers/popup/entrypoints/popup/settings/settings-props";
+  import SettingsGroup from "@/layers/popup/entrypoints/popup/settings/ui/SettingsGroup.svelte";
+  import SettingsSwitchRow from "@/layers/popup/entrypoints/popup/settings/ui/SettingsSwitchRow.svelte";
   import { setOption } from "@/lib/storage/storage";
 
   const { options }: SettingsProps = $props();

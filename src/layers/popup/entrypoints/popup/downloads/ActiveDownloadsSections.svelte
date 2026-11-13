@@ -1,6 +1,6 @@
 <script lang="ts">
-  import downloadIcon from "../icons/download.svg?raw";
-  import openInNewIcon from "../icons/open-in-new.svg?raw";
+  import downloadIcon from "@/layers/popup/entrypoints/popup/icons/download.svg?raw";
+  import openInNewIcon from "@/layers/popup/entrypoints/popup/icons/open-in-new.svg?raw";
   import { bindDownloadAccessors, getVideoStatusLabel } from "./active-downloads-helpers";
   import DownloadItem from "./DownloadItem.svelte";
   import RecentDownloadItem from "./recent/RecentDownloadItem.svelte";

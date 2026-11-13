@@ -1,8 +1,8 @@
 <script lang="ts">
-  import DownloadOptionsCard from "../download-options/DownloadOptionsCard.svelte";
-  import downloadIcon from "../icons/download.svg?raw";
-  import sparkleIcon from "../icons/sparkle.svg?raw";
-  import { PANEL_LABELS, PopupPanel } from "../tabs";
+  import DownloadOptionsCard from "@/layers/popup/entrypoints/popup/download-options/DownloadOptionsCard.svelte";
+  import downloadIcon from "@/layers/popup/entrypoints/popup/icons/download.svg?raw";
+  import sparkleIcon from "@/layers/popup/entrypoints/popup/icons/sparkle.svg?raw";
+  import { PANEL_LABELS, PopupPanel } from "@/layers/popup/entrypoints/popup/tabs";
   import ActiveDownloadsSections from "./ActiveDownloadsSections.svelte";
   import RecentDownloadsSection from "./recent/RecentDownloadsSection.svelte";
   import { startTabDownload } from "./watch-download";

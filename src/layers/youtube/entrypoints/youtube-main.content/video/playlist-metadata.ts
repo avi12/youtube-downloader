@@ -1,4 +1,4 @@
-import { cleanupSegmentedButton } from "../watch-button/watch-button";
+import { cleanupSegmentedButton } from "@/layers/youtube/entrypoints/youtube-main.content/watch-button/watch-button";
 import { buildAndDispatchVideoData, type ShortsPageData } from "./capture-dispatch";
 import { getPageRoute, getRouteVideoId, PageRoute } from "./page-route";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";

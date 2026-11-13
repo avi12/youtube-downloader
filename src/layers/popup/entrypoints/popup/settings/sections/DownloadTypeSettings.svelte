@@ -1,7 +1,7 @@
 <script lang="ts">
-  import type { SettingsProps } from "../settings-props";
-  import SettingsGroup from "../ui/SettingsGroup.svelte";
-  import SettingsRadioGroup from "../ui/SettingsRadioGroup.svelte";
+  import type { SettingsProps } from "@/layers/popup/entrypoints/popup/settings/settings-props";
+  import SettingsGroup from "@/layers/popup/entrypoints/popup/settings/ui/SettingsGroup.svelte";
+  import SettingsRadioGroup from "@/layers/popup/entrypoints/popup/settings/ui/SettingsRadioGroup.svelte";
   import { setOption } from "@/lib/storage/storage";
   import { DownloadType } from "@/types";
 

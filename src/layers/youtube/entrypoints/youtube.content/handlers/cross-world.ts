@@ -1,7 +1,7 @@
-import { checkInterruptedDownload } from "../download/interrupted-downloads";
-import { handleStreamData, handleStreamError } from "../download/stream-transfer";
-import { handlePageChange } from "../ui/page-router";
-import { mountPanelUi } from "../ui/panel-ui";
+import { checkInterruptedDownload } from "@/layers/youtube/entrypoints/youtube.content/download/interrupted-downloads";
+import { handleStreamData, handleStreamError } from "@/layers/youtube/entrypoints/youtube.content/download/stream-transfer";
+import { handlePageChange } from "@/layers/youtube/entrypoints/youtube.content/ui/page-router";
+import { mountPanelUi } from "@/layers/youtube/entrypoints/youtube.content/ui/panel-ui";
 import { registerDownloadProgressHandlers } from "./cross-world-download";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";

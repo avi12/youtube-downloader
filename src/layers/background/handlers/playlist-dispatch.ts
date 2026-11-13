@@ -1,5 +1,5 @@
-import { reportDownloadFailed } from "../download/background-downloader";
-import { awaitBytesTransferred, awaitVideoComplete } from "../queue/sequential-queue";
+import { reportDownloadFailed } from "@/layers/background/download/background-downloader";
+import { awaitBytesTransferred, awaitVideoComplete } from "@/layers/background/queue/sequential-queue";
 import { MessageType, sendMessageToTab } from "@/lib/messaging/messaging";
 import { createLogger, LogScope } from "@/lib/utils/logger";
 import type { DownloadRequest, Prettify } from "@/types";

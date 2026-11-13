@@ -1,7 +1,7 @@
 <script lang="ts">
-  import audioIcon from "../icons/audio.svg?raw";
-  import closeIcon from "../icons/close.svg?raw";
-  import videoIcon from "../icons/video.svg?raw";
+  import audioIcon from "@/layers/popup/entrypoints/popup/icons/audio.svg?raw";
+  import closeIcon from "@/layers/popup/entrypoints/popup/icons/close.svg?raw";
+  import videoIcon from "@/layers/popup/entrypoints/popup/icons/video.svg?raw";
   import { buildAvailableTargetGroups, isAudioSourceEntry, submitTranscode } from "./change-format-helpers";
   import FormatGrid from "./FormatGrid.svelte";
   import type { FormatGroup, FormatItem } from "@/lib/utils/containers";

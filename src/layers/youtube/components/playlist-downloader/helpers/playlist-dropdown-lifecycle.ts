@@ -1,5 +1,5 @@
-import { PANEL_CLOSED_EVENT } from "../../download-options-panel/DownloadOptionsPanel.handlers.ts";
-import DownloadOptionsPanel from "../../download-options-panel/DownloadOptionsPanel.svelte";
+import { PANEL_CLOSED_EVENT } from "@/layers/youtube/components/download-options-panel/DownloadOptionsPanel.handlers.ts";
+import DownloadOptionsPanel from "@/layers/youtube/components/download-options-panel/DownloadOptionsPanel.svelte";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import type { Prettify, VideoData } from "@/types";
 import { mount } from "svelte";

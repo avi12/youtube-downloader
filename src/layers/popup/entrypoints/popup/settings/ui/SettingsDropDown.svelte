@@ -1,6 +1,6 @@
 <script lang="ts">
-  import checkIcon from "../../icons/check.svg?raw";
-  import chevronRightIcon from "../../icons/chevron-right.svg?raw";
+  import checkIcon from "@/layers/popup/entrypoints/popup/icons/check.svg?raw";
+  import chevronRightIcon from "@/layers/popup/entrypoints/popup/icons/chevron-right.svg?raw";
   import SettingsRowContent from "./SettingsRowContent.svelte";
   import { applyInertTrap } from "@/lib/ui/inert-trap";
   import type { Snippet } from "svelte";

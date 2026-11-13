@@ -1,5 +1,5 @@
-import type { createPlaylistGridItemState } from "../PlaylistGridItem.state.svelte";
-import PlaylistGridPanel from "../PlaylistGridPanel.svelte";
+import type { createPlaylistGridItemState } from "@/layers/youtube/components/playlist-grid-item/PlaylistGridItem.state.svelte";
+import PlaylistGridPanel from "@/layers/youtube/components/playlist-grid-item/PlaylistGridPanel.svelte";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import type { Prettify } from "@/types";
 import { PANEL_CLOSED_EVENT } from "#youtube/components/download-options-panel/DownloadOptionsPanel.handlers.ts";

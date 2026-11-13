@@ -1,5 +1,5 @@
 <script lang="ts">
-  import PolymerSelect from "../polymer-select/PolymerSelect.svelte";
+  import PolymerSelect from "@/layers/youtube/components/polymer-select/PolymerSelect.svelte";
   import { createTrackChoiceState } from "./TrackChoice.svelte.ts";
   import { attachIcon } from "@/lib/ui/polymer-utils";
   import { PanelTrackMode, YtIconName } from "@/types";

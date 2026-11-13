@@ -1,5 +1,5 @@
-import { injectSegmentedDownloadButton } from "../watch-button/watch-button";
-import { WatchButtonLayout } from "../watch-button/watch-button-types";
+import { injectSegmentedDownloadButton } from "@/layers/youtube/entrypoints/youtube-main.content/watch-button/watch-button";
+import { WatchButtonLayout } from "@/layers/youtube/entrypoints/youtube-main.content/watch-button/watch-button-types";
 import { getPageRoute, PageRoute, WATCH_PATHNAME } from "./page-route";
 import { generatePoTokenIfNeeded, readYtcfg, videoDataCache } from "./video-data";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";

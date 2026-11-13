@@ -1,5 +1,5 @@
-import { removeFromPopupList } from "../queue/popup-list";
-import { signalVideoComplete } from "../queue/sequential-queue";
+import { removeFromPopupList } from "@/layers/background/queue/popup-list";
+import { signalVideoComplete } from "@/layers/background/queue/sequential-queue";
 import { MessageType, sendMessageToTab } from "@/lib/messaging/messaging";
 import { mutateStorageItem, statusProgressItem } from "@/lib/storage/storage";
 import { ProgressType } from "@/types";

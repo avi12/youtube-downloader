@@ -5,19 +5,19 @@ import {
   handleTerminalFailure,
   reportDownloadFailed,
   startBackgroundDownload
-} from "../download/background-downloader";
-import { reportVideoUnavailable } from "../download/download-failure-reporter";
-import { tryDirectUrlDownload } from "../download/download-fallback-chain";
+} from "@/layers/background/download/background-downloader";
+import { reportVideoUnavailable } from "@/layers/background/download/download-failure-reporter";
+import { tryDirectUrlDownload } from "@/layers/background/download/download-fallback-chain";
 import {
   downloadViaWatchPage,
   initIframeReadyListener,
   registerPopupDownloadHandler
-} from "../download/iframe-downloader";
-import { clearIframeAutoRetry, handleIframeFallback } from "../download/sabr-attempt";
-import { enqueueToPopupList, removeFromPopupList } from "../queue/popup-list";
-import { signalVideoComplete } from "../queue/sequential-queue";
-import { cancelDownloads, getTabIdsForVideo, trackVideoForTab } from "../queue/tab-tracker";
-import { notifyWatchTabsOnComplete, trackDownloadCompleteOnce } from "../recent/recent-downloads";
+} from "@/layers/background/download/iframe-downloader";
+import { clearIframeAutoRetry, handleIframeFallback } from "@/layers/background/download/sabr-attempt";
+import { enqueueToPopupList, removeFromPopupList } from "@/layers/background/queue/popup-list";
+import { signalVideoComplete } from "@/layers/background/queue/sequential-queue";
+import { cancelDownloads, getTabIdsForVideo, trackVideoForTab } from "@/layers/background/queue/tab-tracker";
+import { notifyWatchTabsOnComplete, trackDownloadCompleteOnce } from "@/layers/background/recent/recent-downloads";
 import { addMuxCancelledVideoIds, markVideosCancelled } from "./pipeline-handlers";
 import { clearCancelledVideo, isVideoCancelled } from "./pipeline-state";
 import {

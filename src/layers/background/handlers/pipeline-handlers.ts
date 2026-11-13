@@ -1,7 +1,7 @@
-import { enqueueToPopupList, removeFromPopupList } from "../queue/popup-list";
-import { signalBytesTransferred } from "../queue/sequential-queue";
-import { resolveTabId } from "../queue/tab-tracker";
-import { registerRecentDownloadHandlers } from "../recent/recent-downloads";
+import { enqueueToPopupList, removeFromPopupList } from "@/layers/background/queue/popup-list";
+import { signalBytesTransferred } from "@/layers/background/queue/sequential-queue";
+import { resolveTabId } from "@/layers/background/queue/tab-tracker";
+import { registerRecentDownloadHandlers } from "@/layers/background/recent/recent-downloads";
 import { registerPipelineQueueHandlers } from "./pipeline-queue-handlers";
 import { clearCancelledVideo, isVideoCancelled, updateStatusProgress } from "./pipeline-state";
 import { MessageType, onMessage, sendMessageToTab } from "@/lib/messaging/messaging";

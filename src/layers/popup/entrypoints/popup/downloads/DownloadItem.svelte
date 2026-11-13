@@ -1,9 +1,9 @@
 <script lang="ts">
-  import closeIcon from "../icons/close.svg?raw";
-  import openInNewIcon from "../icons/open-in-new.svg?raw";
-  import playArrowIcon from "../icons/play-arrow.svg?raw";
-  import ThumbnailDuration from "../shared/ThumbnailDuration.svelte";
-  import WavyProgress from "../shared/WavyProgress.svelte";
+  import closeIcon from "@/layers/popup/entrypoints/popup/icons/close.svg?raw";
+  import openInNewIcon from "@/layers/popup/entrypoints/popup/icons/open-in-new.svg?raw";
+  import playArrowIcon from "@/layers/popup/entrypoints/popup/icons/play-arrow.svg?raw";
+  import ThumbnailDuration from "@/layers/popup/entrypoints/popup/shared/ThumbnailDuration.svelte";
+  import WavyProgress from "@/layers/popup/entrypoints/popup/shared/WavyProgress.svelte";
   import { focusOrOpenTab } from "./youtube-tab";
   import { resolveDisplayThumbnailUrl } from "@/lib/youtube/thumbnail-url";
 

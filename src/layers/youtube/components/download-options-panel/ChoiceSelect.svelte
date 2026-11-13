@@ -1,5 +1,5 @@
 <script generics="Value extends string" lang="ts">
-  import PolymerSelect from "../polymer-select/PolymerSelect.svelte";
+  import PolymerSelect from "@/layers/youtube/components/polymer-select/PolymerSelect.svelte";
   import OptionHint from "./OptionHint.svelte";
   import { type Choice, describeChoice, findChoice } from "@/lib/utils/choices";
 

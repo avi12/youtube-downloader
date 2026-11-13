@@ -1,10 +1,10 @@
 <script lang="ts">
-  import sparkleIcon from "../../icons/sparkle.svg?raw";
-  import type { SlidingSettingsProps } from "../settings-props";
-  import SettingsDropDown from "../ui/SettingsDropDown.svelte";
-  import SettingsGroup from "../ui/SettingsGroup.svelte";
-  import SettingsRadioGroup from "../ui/SettingsRadioGroup.svelte";
-  import SettingsSwitch from "../ui/SettingsSwitch.svelte";
+  import sparkleIcon from "@/layers/popup/entrypoints/popup/icons/sparkle.svg?raw";
+  import type { SlidingSettingsProps } from "@/layers/popup/entrypoints/popup/settings/settings-props";
+  import SettingsDropDown from "@/layers/popup/entrypoints/popup/settings/ui/SettingsDropDown.svelte";
+  import SettingsGroup from "@/layers/popup/entrypoints/popup/settings/ui/SettingsGroup.svelte";
+  import SettingsRadioGroup from "@/layers/popup/entrypoints/popup/settings/ui/SettingsRadioGroup.svelte";
+  import SettingsSwitch from "@/layers/popup/entrypoints/popup/settings/ui/SettingsSwitch.svelte";
   import { setOption } from "@/lib/storage/storage";
   import { findChoice } from "@/lib/utils/choices";
   import { MAX_FRAME_RATE_CHOICES } from "@/lib/youtube/select-video-quality";

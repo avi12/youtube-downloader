@@ -1,5 +1,5 @@
 <script lang="ts">
-  import PolymerSelect from "../polymer-select/PolymerSelect.svelte";
+  import PolymerSelect from "@/layers/youtube/components/polymer-select/PolymerSelect.svelte";
   import type { createPlaylistDownloaderState } from "./PlaylistDownloader.state.svelte";
   import PlaylistOverrideBadge from "./PlaylistOverrideBadge.svelte";
   import PlaylistResetLink from "./PlaylistResetLink.svelte";

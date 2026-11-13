@@ -1,6 +1,6 @@
 <script lang="ts">
-  import downloadIcon from "../icons/download.svg?raw";
-  import SettingsSwitch from "../settings/ui/SettingsSwitch.svelte";
+  import downloadIcon from "@/layers/popup/entrypoints/popup/icons/download.svg?raw";
+  import SettingsSwitch from "@/layers/popup/entrypoints/popup/settings/ui/SettingsSwitch.svelte";
   import OptionField from "./OptionField.svelte";
   import OptionSelect from "./OptionSelect.svelte";
   import {

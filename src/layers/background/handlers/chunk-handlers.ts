@@ -1,4 +1,4 @@
-import { resolveTabId, trackVideoForTab } from "../queue/tab-tracker";
+import { resolveTabId, trackVideoForTab } from "@/layers/background/queue/tab-tracker";
 import { ensureProcessor } from "./processor";
 import { MessageType, onMessage } from "@/lib/messaging/messaging";
 import { OffscreenMessageType, sendToOffscreen } from "@/lib/messaging/offscreen-messaging";

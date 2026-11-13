@@ -1,10 +1,10 @@
 <script lang="ts">
-  import audioVolumeIcon from "../../icons/audio-volume.svg?raw";
-  import captionsIcon from "../../icons/captions.svg?raw";
-  import sparkleIcon from "../../icons/sparkle.svg?raw";
-  import type { SlidingSettingsProps } from "../settings-props";
-  import SettingsGroup from "../ui/SettingsGroup.svelte";
-  import SettingsSwitchRow from "../ui/SettingsSwitchRow.svelte";
+  import audioVolumeIcon from "@/layers/popup/entrypoints/popup/icons/audio-volume.svg?raw";
+  import captionsIcon from "@/layers/popup/entrypoints/popup/icons/captions.svg?raw";
+  import sparkleIcon from "@/layers/popup/entrypoints/popup/icons/sparkle.svg?raw";
+  import type { SlidingSettingsProps } from "@/layers/popup/entrypoints/popup/settings/settings-props";
+  import SettingsGroup from "@/layers/popup/entrypoints/popup/settings/ui/SettingsGroup.svelte";
+  import SettingsSwitchRow from "@/layers/popup/entrypoints/popup/settings/ui/SettingsSwitchRow.svelte";
   import AudioTrackSection from "./AudioTrackSection.svelte";
   import CaptionLanguageSection from "./CaptionLanguageSection.svelte";
   import { setOption } from "@/lib/storage/storage";

@@ -2,7 +2,7 @@ import {
   mountPanelInContent,
   registerDropdownCloseListeners,
   requestDropdownCreation
-} from "../helpers/playlist-dropdown-lifecycle";
+} from "@/layers/youtube/components/playlist-downloader/helpers/playlist-dropdown-lifecycle";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import type { VideoData } from "@/types";
 import type { mount} from "svelte";

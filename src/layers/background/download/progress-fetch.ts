@@ -1,4 +1,4 @@
-import { isVideoCancelled } from "../handlers/cancelled-videos";
+import { isVideoCancelled } from "@/layers/background/handlers/cancelled-videos";
 import { MessageType, sendMessage, sendMessageToTab } from "@/lib/messaging/messaging";
 import { ProgressType } from "@/types";
 import type { Prettify } from "@/types";

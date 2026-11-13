@@ -1,11 +1,11 @@
 <script lang="ts">
-  import changeFormatIcon from "../../icons/change-format.svg?raw";
-  import closeIcon from "../../icons/close.svg?raw";
-  import folderIcon from "../../icons/folder.svg?raw";
-  import openInNewIcon from "../../icons/open-in-new.svg?raw";
-  import ThumbnailBadge, { BadgeSide } from "../../shared/ThumbnailBadge.svelte";
-  import ThumbnailDuration from "../../shared/ThumbnailDuration.svelte";
-  import { focusOrOpenTab, toRecentOrigin } from "../youtube-tab";
+  import changeFormatIcon from "@/layers/popup/entrypoints/popup/icons/change-format.svg?raw";
+  import closeIcon from "@/layers/popup/entrypoints/popup/icons/close.svg?raw";
+  import folderIcon from "@/layers/popup/entrypoints/popup/icons/folder.svg?raw";
+  import openInNewIcon from "@/layers/popup/entrypoints/popup/icons/open-in-new.svg?raw";
+  import ThumbnailBadge, { BadgeSide } from "@/layers/popup/entrypoints/popup/shared/ThumbnailBadge.svelte";
+  import ThumbnailDuration from "@/layers/popup/entrypoints/popup/shared/ThumbnailDuration.svelte";
+  import { focusOrOpenTab, toRecentOrigin } from "@/layers/popup/entrypoints/popup/downloads/youtube-tab";
   import { resolveDisplayThumbnailUrl } from "@/lib/youtube/thumbnail-url";
   import type { RecentDownloadEntry } from "@/types";
 

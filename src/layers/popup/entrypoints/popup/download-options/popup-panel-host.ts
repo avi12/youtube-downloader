@@ -1,4 +1,4 @@
-import { startTabDownload } from "../downloads/watch-download";
+import { startTabDownload } from "@/layers/popup/entrypoints/popup/downloads/watch-download";
 import type { PanelHost } from "@/lib/download-options/panel-host";
 import { createLogger, LogScope } from "@/lib/utils/logger";
 import type { Prettify } from "@/types";

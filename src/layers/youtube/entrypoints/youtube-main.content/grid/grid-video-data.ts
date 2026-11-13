@@ -1,4 +1,4 @@
-import { videoDataCache } from "../video/video-data";
+import { videoDataCache } from "@/layers/youtube/entrypoints/youtube-main.content/video/video-data";
 import { fetchVideoDataViaApi } from "./grid-video-fetch";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { videoDataFailedStore, videoDataStore } from "@/lib/ui/synced-stores.svelte";

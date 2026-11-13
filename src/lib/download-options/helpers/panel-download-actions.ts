@@ -1,5 +1,5 @@
-import { PANEL_OPTIONS } from "../DownloadOptions.state.svelte";
-import type { PanelHost } from "../panel-host";
+import { PANEL_OPTIONS } from "@/lib/download-options/DownloadOptions.state.svelte";
+import type { PanelHost } from "@/lib/download-options/panel-host";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { performCancelDownload } from "@/lib/ui/cancel-download";
 import { interruptedDownloadStore } from "@/lib/ui/synced-stores.svelte";

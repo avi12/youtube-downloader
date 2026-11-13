@@ -1,7 +1,7 @@
 <script lang="ts">
-  import instantIcon from "../icons/instant.svg?raw";
-  import reEncodeIcon from "../icons/re-encode.svg?raw";
-  import slowerIcon from "../icons/slower.svg?raw";
+  import instantIcon from "@/layers/popup/entrypoints/popup/icons/instant.svg?raw";
+  import reEncodeIcon from "@/layers/popup/entrypoints/popup/icons/re-encode.svg?raw";
+  import slowerIcon from "@/layers/popup/entrypoints/popup/icons/slower.svg?raw";
   import { TranscodeSpeed } from "@/lib/utils/containers";
   import type { FormatItem } from "@/lib/utils/containers";
 

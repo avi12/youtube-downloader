@@ -1,6 +1,6 @@
-import { clearCancelledVideo, isVideoCancelled } from "../handlers/pipeline-state";
-import { ensureProcessor } from "../handlers/processor";
-import { getTabIdsForVideo } from "../queue/tab-tracker";
+import { clearCancelledVideo, isVideoCancelled } from "@/layers/background/handlers/pipeline-state";
+import { ensureProcessor } from "@/layers/background/handlers/processor";
+import { getTabIdsForVideo } from "@/layers/background/queue/tab-tracker";
 import { reportDownloadFailed, reportVideoUnavailable } from "./download-failure-reporter";
 import { enrichMetadataFromYouTubeMusic } from "./metadata-enrichment";
 import {

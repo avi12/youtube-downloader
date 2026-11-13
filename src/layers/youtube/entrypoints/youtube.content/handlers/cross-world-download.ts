@@ -1,5 +1,5 @@
-import { cancelDownloadsLocally } from "../download/cancel-actions";
-import { uncancelStreamTransfer } from "../download/stream-transfer";
+import { cancelDownloadsLocally } from "@/layers/youtube/entrypoints/youtube.content/download/cancel-actions";
+import { uncancelStreamTransfer } from "@/layers/youtube/entrypoints/youtube.content/download/stream-transfer";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { downloadRequestSchema } from "@/lib/youtube/schemas";
