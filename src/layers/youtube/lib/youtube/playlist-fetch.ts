@@ -73,16 +73,13 @@ function parseEntries(entries: readonly unknown[]) {
 
 function extractInitialPlaylistEntries(data: YtInitialDataPlaylist) {
   const tabs = data.contents?.twoColumnBrowseResultsRenderer?.tabs ?? [];
-  for (const tab of tabs) {
-    const sections = tab.tabRenderer?.content?.sectionListRenderer?.contents ?? [];
-    for (const section of sections) {
-      const items = section.itemSectionRenderer?.contents ?? [];
-      for (const item of items) {
-        const entries = item.playlistVideoListRenderer?.contents;
-        if (entries?.length) {
-          return entries;
-        }
-      }
+  const items = tabs
+    .flatMap(tab => tab.tabRenderer?.content?.sectionListRenderer?.contents ?? [])
+    .flatMap(section => section.itemSectionRenderer?.contents ?? []);
+  for (const item of items) {
+    const entries = item.playlistVideoListRenderer?.contents;
+    if (entries?.length) {
+      return entries;
     }
   }
   return [];

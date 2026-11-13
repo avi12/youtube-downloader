@@ -82,8 +82,7 @@ export function capturePlayerCaptionBuses(player: MoviePlayerElement) {
 
   const buses: CaptionEventBus[] = [];
   const { state = {} } = ctxResult.data;
-  for (const key in state) {
-    const value = state[key];
+  for (const value of Object.values(state)) {
     if (isCaptionEventBus(value)) {
       buses.push(value);
     }

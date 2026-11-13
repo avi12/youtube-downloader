@@ -95,7 +95,8 @@
       return;
     }
 
-    if (elTrigger?.contains(event.target) || elList?.contains(event.target)) {
+    const isInsideDropdown = elTrigger?.contains(event.target) || elList?.contains(event.target);
+    if (isInsideDropdown) {
       return;
     }
 
@@ -103,7 +104,8 @@
   }
 
   function preventOuterScroll(event: Event) {
-    if (!(event.target instanceof Node) || elList?.contains(event.target)) {
+    const isScrollInsideList = !(event.target instanceof Node) || elList?.contains(event.target);
+    if (isScrollInsideList) {
       return;
     }
 

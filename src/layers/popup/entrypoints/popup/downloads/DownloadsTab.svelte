@@ -114,12 +114,12 @@
     currentSourceUrl !== undefined
     && (isMusicWatchPageUrl(currentSourceUrl) || (IS_MOBILE_SITE_SUPPORTED && isMobileWatchPageUrl(currentSourceUrl)))
   );
-  const watchVideoId = $derived(
+  const isWatchableTab = $derived(
     currentTabId !== undefined && currentSourceUrl !== undefined
-      && (isPopupOnlyWatchTab || isWatchPageUrl(currentSourceUrl))
-      ? getVideoIdFromUrl(currentSourceUrl)
-      : null
+    && (isPopupOnlyWatchTab || isWatchPageUrl(currentSourceUrl))
   );
+  const watchableUrl = $derived(isWatchableTab ? currentSourceUrl : undefined);
+  const watchVideoId = $derived(watchableUrl ? getVideoIdFromUrl(watchableUrl) : null);
   const isWatchPageTab = $derived(watchVideoId !== null);
   const emptyStateText = $derived.by(() => {
     if (isPopupOnlyWatchTab) {

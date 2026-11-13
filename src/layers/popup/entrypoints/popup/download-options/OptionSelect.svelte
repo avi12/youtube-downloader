@@ -19,8 +19,8 @@
   // Consecutive choices sharing a group render under one <optgroup>, the way the page's picker lists them
   const sections = $derived.by(() => {
     const sectionList: {
-       group?: Choice["group"];
-       choices: OptionChoice[] 
+      group?: Choice["group"];
+      choices: OptionChoice[] 
     }[] = [];
     for (const choice of choices) {
       const lastSection = sectionList.at(-1);

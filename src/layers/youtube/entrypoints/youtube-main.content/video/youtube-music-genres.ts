@@ -67,12 +67,11 @@ export async function fetchYouTubeMusicGenres() {
       ?.tabRenderer?.content?.sectionListRenderer?.contents ?? [];
 
     const genres = new Set<string>();
-    for (const section of sections) {
-      for (const item of section.gridRenderer?.items ?? []) {
-        const title = item.musicNavigationButtonRenderer?.buttonText?.runs?.[0]?.text;
-        if (title) {
-          genres.add(title.toLowerCase());
-        }
+    const items = sections.flatMap(section => section.gridRenderer?.items ?? []);
+    for (const item of items) {
+      const title = item.musicNavigationButtonRenderer?.buttonText?.runs?.[0]?.text;
+      if (title) {
+        genres.add(title.toLowerCase());
       }
     }
 

@@ -183,7 +183,8 @@
 
     function handleConfirmKey(event: KeyboardEvent) {
       const elActive = document.activeElement;
-      if (!(elActive instanceof HTMLElement) || !elActive.matches(POLYMER_PAPER_ITEM)) {
+      const isNotPaperItem = !(elActive instanceof HTMLElement) || !elActive.matches(POLYMER_PAPER_ITEM);
+      if (isNotPaperItem) {
         return;
       }
 

@@ -256,7 +256,8 @@ async function runFirefoxDirectDownload({ request, tabId, enrichedMetadata }: Ru
     }
 
     const now = Date.now();
-    if (!shouldForce && now - lastProgressReport < PROGRESS_THROTTLE_MS) {
+    const isThrottled = !shouldForce && now - lastProgressReport < PROGRESS_THROTTLE_MS;
+    if (isThrottled) {
       return;
     }
 
@@ -316,7 +317,8 @@ async function runFirefoxDirectDownload({ request, tabId, enrichedMetadata }: Ru
     activeFirefoxDownloads.delete(videoId);
   }
 
-  if (abortController.signal.aborted || cancelledFirefoxDownloads.delete(videoId)) {
+  const isDownloadStopped = abortController.signal.aborted || cancelledFirefoxDownloads.delete(videoId);
+  if (isDownloadStopped) {
     return;
   }
 

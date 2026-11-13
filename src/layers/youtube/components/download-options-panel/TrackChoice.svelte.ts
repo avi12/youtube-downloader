@@ -61,9 +61,13 @@ export function createTrackChoiceState(params: TrackChoiceParams) {
     }
   });
 
+  function findButton(buttonId: string) {
+    return buttons.find(button => button.id === buttonId);
+  }
+
   $effect(() => onButtonClick(buttonId => {
     untrack(() => {
-      const match = buttons.find(button => button.id === buttonId);
+      const match = findButton(buttonId);
       if (match) {
         params.onmodechange(match.mode);
       }
@@ -80,14 +84,8 @@ export function createTrackChoiceState(params: TrackChoiceParams) {
     const iCurrent = buttons.findIndex(button => button.mode === params.mode);
     const delta = event.key === "ArrowRight" ? 1 : -1;
 
-    let iNext = iCurrent;
-    for (let i = 0; i < buttons.length; i++) {
-      iNext = (iNext + delta + buttons.length) % buttons.length;
-      const isCandidateEnabled = !params.disabledModes.includes(required(buttons[iNext]).mode);
-      if (isCandidateEnabled) {
-        break;
-      }
-    }
+    const iCandidates = buttons.map((_, iStep) => (((iCurrent + (iStep + 1) * delta) % buttons.length) + buttons.length) % buttons.length);
+    const iNext = iCandidates.find(iCandidate => !params.disabledModes.includes(required(buttons[iCandidate]).mode)) ?? iCurrent;
 
     const isEnabledTargetAbsent = iNext === iCurrent;
     if (isEnabledTargetAbsent) {

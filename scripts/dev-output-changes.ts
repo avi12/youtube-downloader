@@ -174,7 +174,8 @@ function isLoadTimeFile({ file, manifestStrings }: {
   file: string;
   manifestStrings: Set<string>;
 }) {
-  if (file === MANIFEST_FILE || file.startsWith(LOCALES_DIR_PREFIX)) {
+  const isStaticFile = file === MANIFEST_FILE || file.startsWith(LOCALES_DIR_PREFIX);
+  if (isStaticFile) {
     return true;
   }
 

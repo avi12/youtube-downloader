@@ -44,12 +44,12 @@ export async function readStreamToBuffer({ reader, expectedBytes, onBytesReceive
     while (true) {
       const chunk = await readChunk(reader);
       const isChunkMissing = !chunk;
-      if (isChunkMissing) {
-        const isUnexpectedEnd = !stall.isStalled;
-        if (isUnexpectedEnd) {
-          throw new StreamStallError(buildPartial());
-        }
+      const isUnexpectedEnd = isChunkMissing && !stall.isStalled;
+      if (isUnexpectedEnd) {
+        throw new StreamStallError(buildPartial());
+      }
 
+      if (isChunkMissing) {
         break;
       }
 

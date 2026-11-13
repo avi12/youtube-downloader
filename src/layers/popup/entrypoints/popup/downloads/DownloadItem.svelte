@@ -81,7 +81,8 @@
 
   function deriveContainer(name: string) {
     const iDot = name.lastIndexOf(".");
-    if (iDot <= 0 || iDot === name.length - 1) {
+    const hasNoExtension = iDot <= 0 || iDot === name.length - 1;
+    if (hasNoExtension) {
       return "";
     }
 

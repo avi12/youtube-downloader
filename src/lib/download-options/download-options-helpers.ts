@@ -71,7 +71,8 @@ export function getFilenameError({
     return "No extension - pick one below";
   }
 
-  if (isMultiTrack && MULTI_TRACK_UNSUPPORTED_EXTENSIONS.has(fileExtension)) {
+  const isUnsupportedMultiTrack = isMultiTrack && MULTI_TRACK_UNSUPPORTED_EXTENSIONS.has(fileExtension);
+  if (isUnsupportedMultiTrack) {
     return `${fileExtension.toUpperCase()} doesn't support multiple audio tracks`;
   }
 

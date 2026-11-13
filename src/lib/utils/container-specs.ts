@@ -171,7 +171,8 @@ const MKV_EXTENSION = "mkv";
 
 export function resolveMultiTrackExtension(baseExtension: string) {
   const isKnownContainer = baseExtension in CONTAINER_SPECS;
-  return isKnownContainer && !MULTI_TRACK_UNSUPPORTED_EXTENSIONS.has(baseExtension) ? baseExtension : MKV_EXTENSION;
+  const isSupportedContainer = isKnownContainer && !MULTI_TRACK_UNSUPPORTED_EXTENSIONS.has(baseExtension);
+  return isSupportedContainer ? baseExtension : MKV_EXTENSION;
 }
 
 export function extractBaseCodec(mimeType: string) {

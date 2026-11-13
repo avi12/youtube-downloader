@@ -97,7 +97,8 @@ function matchBrowserFromUserAgent(userAgent: string) {
 
 async function detectBrowser(userAgent: string) {
   const matched = matchBrowserFromUserAgent(userAgent);
-  if (matched.browser === "Chrome" && await isBrave()) {
+  const isBraveBrowser = matched.browser === "Chrome" && await isBrave();
+  if (isBraveBrowser) {
     return {
       ...matched,
       browser: "Brave"
@@ -150,7 +151,8 @@ async function isDevelopmentInstall() {
 }
 
 async function sendEvent(name: string) {
-  if (!GA4_MEASUREMENT_ID || !GA4_API_SECRET || await isDevelopmentInstall()) {
+  const isReportingDisabled = !GA4_MEASUREMENT_ID || !GA4_API_SECRET || await isDevelopmentInstall();
+  if (isReportingDisabled) {
     return;
   }
 

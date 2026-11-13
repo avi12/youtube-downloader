@@ -115,7 +115,8 @@ function parsePort({ rawPort, envName }: {
   envName: string;
 }) {
   const port = Number(rawPort);
-  if (!Number.isInteger(port) || port <= 0) {
+  const isInvalidPort = !Number.isInteger(port) || port <= 0;
+  if (isInvalidPort) {
     throw new Error(`${envName} / flag value "${rawPort}" is not a port`);
   }
 

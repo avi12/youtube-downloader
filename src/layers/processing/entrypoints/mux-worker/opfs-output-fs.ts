@@ -64,9 +64,7 @@ function makeNodeOps(opfsFs: ReturnType<typeof makeOpfsFs>) {
     readdir(node) {
       const names = [".", ".."];
       const dir = asDir(node);
-      for (const name in dir) {
-        names.push(name);
-      }
+      names.push(...Object.keys(dir));
       return names;
     },
     lookup(parent, name) {

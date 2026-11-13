@@ -239,7 +239,8 @@ export async function pruneRecentDownloads({ olderThanTimestamp, protectedIds }:
     const entry: RecentDownloadEntry = cursor.value;
     const youngestTimestamp = Math.max(entry.lastActivityAt ?? 0, entry.completedAt);
     const isEntryProtected = protectedIds.has(entry.id);
-    if (youngestTimestamp <= olderThanTimestamp && !isEntryProtected) {
+    const isExpired = youngestTimestamp <= olderThanTimestamp && !isEntryProtected;
+    if (isExpired) {
       entriesStore.delete(entry.id);
       blobsStore.delete(entry.id);
     }
