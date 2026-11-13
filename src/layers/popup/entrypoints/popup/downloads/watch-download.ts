@@ -21,9 +21,19 @@ export async function startTabDownload({ tabId, sourceUrl, videoId, request }: S
   }
 
   if (request) {
-    await sendMessageToTab(MessageType.ExecuteDownloadItem, request, tabId);
+    await sendMessageToTab({
+       type: MessageType.ExecuteDownloadItem,
+       data: request,
+       tabId 
+    });
     return true;
   }
 
-  return Boolean(await sendMessageToTab(MessageType.StartWatchPageDownload, undefined, tabId));
+  return Boolean(
+           await sendMessageToTab({
+     type: MessageType.StartWatchPageDownload,
+     data: undefined,
+     tabId 
+  })
+         );
 }

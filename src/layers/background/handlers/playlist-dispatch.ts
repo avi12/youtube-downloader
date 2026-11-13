@@ -19,8 +19,18 @@ export async function dispatchSequentially({ items, tabId, signal }: DispatchPar
 
     let triggered = false;
     try {
-      await sendMessageToTab(MessageType.ExecuteDownloadItem, item, tabId);
-      await sendMessageToTab(MessageType.StartKeepalive, { videoId: item.videoId }, tabId);
+      await sendMessageToTab({
+         type: MessageType.ExecuteDownloadItem,
+         data: item,
+         tabId 
+      });
+      await sendMessageToTab({
+         type: MessageType.StartKeepalive,
+         data: {
+         videoId: item.videoId 
+      },
+         tabId 
+      });
       triggered = true;
     } catch (error) {
       log.error("ExecuteDownloadItem failed:", item.videoId, error);
@@ -45,8 +55,18 @@ export async function dispatchParallel({ items, tabId, signal }: DispatchParams)
     }
 
     try {
-      await sendMessageToTab(MessageType.ExecuteDownloadItem, item, tabId);
-      await sendMessageToTab(MessageType.StartKeepalive, { videoId: item.videoId }, tabId);
+      await sendMessageToTab({
+         type: MessageType.ExecuteDownloadItem,
+         data: item,
+         tabId 
+      });
+      await sendMessageToTab({
+         type: MessageType.StartKeepalive,
+         data: {
+         videoId: item.videoId 
+      },
+         tabId 
+      });
     } catch (error) {
       log.error("ExecuteDownloadItem failed:", item.videoId, error);
       await reportDownloadFailed({

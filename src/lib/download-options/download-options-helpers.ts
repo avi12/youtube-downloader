@@ -37,7 +37,7 @@ export const DOWNLOAD_TYPES = [
 
 type FormatItemsType = typeof DownloadType.Video | typeof DownloadType.Audio;
 
-export function buildFormatItems(type: FormatItemsType, isMultiTrack = false) {
+export function buildFormatItems({ type, isMultiTrack = false }: { type: FormatItemsType; isMultiTrack?: boolean }) {
   const allowedExtensions = type === DownloadType.Video ? videoContainers : audioContainers;
   const excludedExtensions = isMultiTrack ? MULTI_TRACK_UNSUPPORTED_EXTENSIONS : undefined;
   const groups = buildFormatGroups({

@@ -27,7 +27,7 @@ export interface TrackSelectProps {
   oncaptionchange: (vssId: string) => void;
 }
 
-function moveToFront<Option>(options: Option[], isFront: (option: Option) => boolean) {
+function moveToFront<Option>({ options, isFront }: { options: Option[]; isFront: (option: Option) => boolean }) {
   const sorted = [...options];
   const frontIndex = sorted.findIndex(isFront);
   if (frontIndex > 0) {
@@ -81,7 +81,10 @@ export function createTrackSelectState(props: () => TrackSelectProps) {
       value: AUDIO_AUTO,
       label: props().audioPlayerLabel ? `Auto · ${props().audioPlayerLabel}` : "Auto"
     },
-    ...moveToFront(props().uniqueAudioLanguages, language => language.value === originalAudioLangCode)
+    ...moveToFront({
+       options: props().uniqueAudioLanguages,
+       isFront: language => language.value === originalAudioLangCode 
+    })
       .map(language => ({
         value: language.value,
         label: language.value === originalAudioLangCode ? `${language.label} · Original` : language.label
@@ -97,7 +100,10 @@ export function createTrackSelectState(props: () => TrackSelectProps) {
       value: CAPTION_OFF,
       label: "No captions"
     },
-    ...moveToFront(props().captionCustomOptions, option => option.label === props().captionOriginalLabel)
+    ...moveToFront({
+       options: props().captionCustomOptions,
+       isFront: option => option.label === props().captionOriginalLabel 
+    })
   ]);
 
   const audioSummaryText = $derived.by(() => {

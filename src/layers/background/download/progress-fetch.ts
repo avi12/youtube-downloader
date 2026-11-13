@@ -147,7 +147,9 @@ async function dispatchProgressUpdate({
     bytesPerSecond
   });
 
-  await sendMessageToTab(MessageType.UpdateDownloadProgress, {
+  await sendMessageToTab({
+ type: MessageType.UpdateDownloadProgress,
+     data: {
     videoId,
     progress,
     progressType,
@@ -157,7 +159,9 @@ async function dispatchProgressUpdate({
     ...(totalBytes !== undefined && {
       totalBytes
     })
-  }, tabId);
+  },
+     tabId 
+});
 }
 
 const PROGRESS_COALESCE_MS = 100;

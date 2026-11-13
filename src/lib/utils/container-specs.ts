@@ -189,7 +189,7 @@ const VIDEO_CODEC_LABELS: Record<string, string> = {
 };
 
 // vp9 and vp09 (and hvc1/hev1) name the same codec, so compare by the shared label
-export function isSameVideoCodec(mimeType: string, otherMimeType: string) {
+export function isSameVideoCodec({ mimeType, otherMimeType }: { mimeType: string; otherMimeType: string }) {
   const codec = extractBaseCodec(mimeType);
   const otherCodec = extractBaseCodec(otherMimeType);
   return (VIDEO_CODEC_LABELS[codec] ?? codec) === (VIDEO_CODEC_LABELS[otherCodec] ?? otherCodec);

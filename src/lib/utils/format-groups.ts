@@ -50,7 +50,7 @@ export function buildFormatGroups(
 ) {
   const allowed = allowedExtensions ? new Set(allowedExtensions) : null;
   const excluded = excludedExtensions ? new Set(excludedExtensions) : null;
-  function toItem(extension: string, group: FormatGroupHeading) {
+  function toItem({ extension, group }: { extension: string; group: FormatGroupHeading }) {
     return {
       extension,
       description: getFormatDescription(extension),
@@ -61,11 +61,17 @@ export function buildFormatGroups(
 
   const videoItems = videoContainers
     .filter(extension => !allowed || allowed.has(extension))
-    .map(extension => toItem(extension, FORMAT_GROUP_VIDEO));
+    .map(extension => toItem({
+       extension,
+       group: FORMAT_GROUP_VIDEO 
+    }));
   const audioItems = audioContainers
     .filter(extension => !videoTargetSet.has(extension))
     .filter(extension => !allowed || allowed.has(extension))
-    .map(extension => toItem(extension, FORMAT_GROUP_AUDIO));
+    .map(extension => toItem({
+       extension,
+       group: FORMAT_GROUP_AUDIO 
+    }));
 
   const groups: FormatGroup[] = [];
   if (videoItems.length > 0) {

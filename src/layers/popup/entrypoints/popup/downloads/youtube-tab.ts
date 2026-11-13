@@ -18,7 +18,7 @@ function isZipContainer(container: string) {
   return container === ZIP_CONTAINER;
 }
 
-function isSamePage(candidateUrl: string, targetUrl: URL) {
+function isSamePage({ candidateUrl, targetUrl }: { candidateUrl: string; targetUrl: URL }) {
   const candidate = URL.parse(candidateUrl);
   if (!candidate || candidate.pathname !== targetUrl.pathname) {
     return false;
@@ -36,12 +36,15 @@ interface DownloadOrigin {
   isPlaylist?: boolean;
 }
 
-function isShowingOrigin(url: string | undefined, origin: DownloadOrigin) {
+function isShowingOrigin({ url, origin }: { url: string | undefined; origin: DownloadOrigin }) {
   if (!url) {
     return false;
   }
 
-  return url === origin.sourceUrl || isSamePage(url, new URL(buildYouTubePageUrl(origin)));
+  return url === origin.sourceUrl || isSamePage({
+     candidateUrl: url,
+     targetUrl: new URL(buildYouTubePageUrl(origin)) 
+  });
 }
 
 const openTabUrlById = new Map<number, string>();
@@ -61,28 +64,43 @@ interface CurrentTab {
 }
 // The tab a download started in owns it while it still shows that page. Once it
 // is closed or navigated away, any tab showing the same video or playlist does
-function isFromCurrentTab(origin: DownloadOrigin, { currentTabId, currentSourceUrl }: CurrentTab) {
+function isFromCurrentTab({ origin, currentTabId, currentSourceUrl }: { origin: DownloadOrigin } & CurrentTab) {
   if (currentTabId === undefined || !currentSourceUrl) {
     return false;
   }
 
   if (origin.tabId === currentTabId) {
-    return isShowingOrigin(currentSourceUrl, origin);
+    return isShowingOrigin({
+       url: currentSourceUrl,
+       origin 
+    });
   }
 
   const originTabUrl = origin.tabId === undefined ? undefined : openTabUrlById.get(origin.tabId);
-  if (isShowingOrigin(originTabUrl, origin)) {
+  if (isShowingOrigin({
+     url: originTabUrl,
+     origin 
+  })) {
     return false;
   }
 
-  return isSamePage(currentSourceUrl, new URL(buildYouTubePageUrl(origin)));
+  return isSamePage({
+     candidateUrl: currentSourceUrl,
+     targetUrl: new URL(buildYouTubePageUrl(origin)) 
+  });
 }
 
 export async function focusOrOpenTab(origin: DownloadOrigin) {
   const pageUrl = buildYouTubePageUrl(origin);
   const tabs = await browser.tabs.query({ url: YOUTUBE_TAB_URL_PATTERN });
-  const originTab = tabs.find(tab => tab.id === origin.tabId && isShowingOrigin(tab.url, origin));
-  const samePageTab = tabs.find(tab => tab.url && isSamePage(tab.url, new URL(pageUrl)));
+  const originTab = tabs.find(tab => tab.id === origin.tabId && isShowingOrigin({
+     url: tab.url,
+     origin 
+  }));
+  const samePageTab = tabs.find(tab => tab.url && isSamePage({
+     candidateUrl: tab.url,
+     targetUrl: new URL(pageUrl) 
+  }));
   const existingTab = originTab ?? samePageTab;
   if (!existingTab) {
     await browser.tabs.create({ url: pageUrl });
@@ -100,17 +118,23 @@ export function toRecentOrigin(entry: RecentDownloadEntry) {
   };
 }
 
-export function isRecentFromCurrentTab(entry: RecentDownloadEntry, currentTab: CurrentTab) {
-  return isFromCurrentTab(toRecentOrigin(entry), currentTab);
+export function isRecentFromCurrentTab({ entry, currentTab }: { entry: RecentDownloadEntry; currentTab: CurrentTab }) {
+  return isFromCurrentTab({
+     origin: toRecentOrigin(entry),
+     ...currentTab 
+  });
 }
 
 interface ActiveDownload {
   videoId: string;
   detail?: VideoDetail;
 }
-export function isActiveFromCurrentTab({ videoId, detail }: ActiveDownload, currentTab: CurrentTab) {
+export function isActiveFromCurrentTab({ currentTab, videoId, detail }: { currentTab: CurrentTab } & ActiveDownload) {
   return isFromCurrentTab({
+ origin: {
     ...detail,
     videoId
-  }, currentTab);
+  },
+     ...currentTab 
+});
 }

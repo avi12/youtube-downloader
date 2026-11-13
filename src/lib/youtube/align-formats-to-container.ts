@@ -117,7 +117,10 @@ export function alignVideoFormatToExtension({
     format.height === currentFormat.height
     && format.fps === currentFormat.fps
     && isPremiumFormat(format) === isPremiumFormat(currentFormat));
-  const sameCodecSiblings = siblings.filter(format => isSameVideoCodec(format.mimeType, currentFormat.mimeType));
+  const sameCodecSiblings = siblings.filter(format => isSameVideoCodec({
+     mimeType: format.mimeType,
+     otherMimeType: currentFormat.mimeType 
+  }));
   return pickBestByBitrate(siblings.filter(preference.isCodecAndRangePreferred))
     ?? pickBestByBitrate(siblings.filter(preference.isWantedHdr))
     ?? pickBestByBitrate(sameCodecSiblings.filter(preference.isRangePreferred))

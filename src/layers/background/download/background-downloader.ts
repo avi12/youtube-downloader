@@ -262,11 +262,15 @@ async function runFirefoxDirectDownload({ request, tabId, enrichedMetadata }: Ru
 
     lastProgressReport = now;
     const progress = Math.min(totalReceivedBytes / totalExpectedBytes, 1);
-    sendMessageToTab(MessageType.UpdateDownloadProgress, {
+    sendMessageToTab({
+ type: MessageType.UpdateDownloadProgress,
+       data: {
       videoId,
       progress,
       progressType: ProgressType.Video
-    }, tabId).catch(() => {});
+    },
+       tabId 
+}).catch(() => {});
   }
 
   if (abortController.signal.aborted) {

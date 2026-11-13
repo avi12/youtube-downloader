@@ -18,13 +18,17 @@ export async function reportDownloadFailed({ videoId, tabId }: VideoTabParams) {
       };
     }
   });
-  await sendMessageToTab(MessageType.UpdateDownloadProgress, {
+  await sendMessageToTab({
+ type: MessageType.UpdateDownloadProgress,
+     data: {
     videoId,
     progress: 0,
     progressType: ProgressType.Video,
     isRemoved: true,
     isFailed: true
-  }, tabId);
+  },
+     tabId 
+});
 
   await removeFromPopupList(videoId);
   signalVideoComplete(videoId);
@@ -47,14 +51,18 @@ export async function reportVideoUnavailable({ videoId, tabId }: VideoTabParams)
       };
     }
   });
-  await sendMessageToTab(MessageType.UpdateDownloadProgress, {
+  await sendMessageToTab({
+ type: MessageType.UpdateDownloadProgress,
+     data: {
     videoId,
     progress: 0,
     progressType: ProgressType.Video,
     isRemoved: true,
     isFailed: true,
     isUnavailable: true
-  }, tabId);
+  },
+     tabId 
+});
 
   await removeFromPopupList(videoId);
   signalVideoComplete(videoId);

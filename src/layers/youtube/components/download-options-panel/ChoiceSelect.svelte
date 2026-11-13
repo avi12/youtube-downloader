@@ -14,7 +14,14 @@
 
   const { id, label, disabled, choices, value, onchange }: Props = $props();
 
-  const description = $derived(describeChoice(findChoice(choices, value)));
+  const description = $derived(
+                        describeChoice(
+                                 findChoice({
+    choices,
+    value 
+  })
+                               )
+                      );
 </script>
 
 <div class="ytdl-choice-select">
@@ -23,7 +30,7 @@
     {disabled}
     {label}
     onchange={selected => {
-      const choice = findChoice(choices, selected);
+      const choice = findChoice({ choices, value: selected });
       if (choice) {
         onchange(choice.value);
       }

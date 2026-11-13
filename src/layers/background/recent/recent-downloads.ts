@@ -73,11 +73,15 @@ function notifyOnDownloadComplete({ downloadId, data }: DownloadIdDataParams) {
           : data.filename;
 
         for (const tabId of tabIds) {
-          await sendMessageToTab(MessageType.WatchDownloadCompleted, {
+          await sendMessageToTab({
+ type: MessageType.WatchDownloadCompleted,
+             data: {
             videoId: required(data.recentContext).videoId,
             downloadId,
             filename: actualFilename
-          }, tabId).catch(() => {});
+          },
+             tabId 
+}).catch(() => {});
         }
 
         const options = await optionsItem.getValue();

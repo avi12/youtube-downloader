@@ -30,11 +30,11 @@ export function isAudioSourceEntry(entry: RecentDownloadEntry) {
 type BuildAvailableTargetGroupsParams = Prettify<{
   entry: RecentDownloadEntry;
 }>;
-function isVideoTargetWithMime(target: string, entry: RecentDownloadEntry, isAudioSource: boolean) {
+function isVideoTargetWithMime({ target, entry, isAudioSource }: { target: string; entry: RecentDownloadEntry; isAudioSource: boolean }) {
   return !isAudioSource && videoContainers.includes(target) && Boolean(entry.videoMimeType);
 }
 
-function canReencodeTarget(target: string, videoMimeType: string) {
+function canReencodeTarget({ target, videoMimeType }: { target: string; videoMimeType: string }) {
   return !requiresVideoReencode({
     videoMimeType,
     targetExtension: target
@@ -42,15 +42,22 @@ function canReencodeTarget(target: string, videoMimeType: string) {
     || Boolean(getVideoFallbackCodec(target));
 }
 
-function isTargetAllowed(target: string, entry: RecentDownloadEntry, isAudioSource: boolean) {
-  if (!isVideoTargetWithMime(target, entry, isAudioSource)) {
+function isTargetAllowed({ target, entry, isAudioSource }: { target: string; entry: RecentDownloadEntry; isAudioSource: boolean }) {
+  if (!isVideoTargetWithMime({
+     target,
+     entry,
+     isAudioSource 
+  })) {
     return true;
   }
 
-  return canReencodeTarget(target, required(entry.videoMimeType));
+  return canReencodeTarget({
+     target,
+     videoMimeType: required(entry.videoMimeType) 
+  });
 }
 
-function classifyVideoTargetSpeed(target: string, videoMimeType: string) {
+function classifyVideoTargetSpeed({ target, videoMimeType }: { target: string; videoMimeType: string }) {
   const needsReencode = requiresVideoReencode({
     videoMimeType,
     targetExtension: target
@@ -69,30 +76,44 @@ function classifyVideoTargetSpeed(target: string, videoMimeType: string) {
   return TranscodeSpeed.ReEncodes;
 }
 
-function isAudioReencodeNeeded(target: string, entry: RecentDownloadEntry) {
+function isAudioReencodeNeeded({ target, entry }: { target: string; entry: RecentDownloadEntry }) {
   return resolveAudioCodec({
     audioMimeType: entry.audioMimeType ?? "",
     targetExtension: target
   }) !== FFMPEG_CODEC_COPY;
 }
 
-function classifyTargetSpeed(target: string, entry: RecentDownloadEntry, isVideoTarget: boolean) {
+function classifyTargetSpeed({ target, entry, isVideoTarget }: { target: string; entry: RecentDownloadEntry; isVideoTarget: boolean }) {
   const videoSpeed = isVideoTarget && entry.videoMimeType
-    ? classifyVideoTargetSpeed(target, entry.videoMimeType)
+    ? classifyVideoTargetSpeed({
+       target,
+       videoMimeType: entry.videoMimeType 
+    })
     : TranscodeSpeed.Instant;
-  const isOnlyAudioReencoded = videoSpeed === TranscodeSpeed.Instant && isAudioReencodeNeeded(target, entry);
+  const isOnlyAudioReencoded = videoSpeed === TranscodeSpeed.Instant && isAudioReencodeNeeded({
+     target,
+     entry 
+  });
   return isOnlyAudioReencoded ? TranscodeSpeed.ReEncodes : videoSpeed;
 }
 
 export function buildAvailableTargetGroups({ entry }: BuildAvailableTargetGroupsParams) {
   const isAudioSource = isAudioSourceEntry(entry);
   const baseAllowed = isAudioSource ? audioContainers : [...videoContainers, ...audioContainers];
-  const allowedExtensions = baseAllowed.filter(target => isTargetAllowed(target, entry, isAudioSource));
+  const allowedExtensions = baseAllowed.filter(target => isTargetAllowed({
+     target,
+     entry,
+     isAudioSource 
+  }));
   const groups = buildFormatGroups({ allowedExtensions });
   const withFlags = groups.map(group => {
     const items = group.items.map(item => {
       const isCurrent = item.extension === entry.container;
-      const transcodeSpeed = classifyTargetSpeed(item.extension, entry, group.heading === FORMAT_GROUP_VIDEO);
+      const transcodeSpeed = classifyTargetSpeed({
+         target: item.extension,
+         entry,
+         isVideoTarget: group.heading === FORMAT_GROUP_VIDEO 
+      });
       return {
         ...item,
         isCurrent,

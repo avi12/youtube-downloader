@@ -47,15 +47,17 @@ export function registerPipelineHandlers() {
 
     log.error("Stream error for", data.videoId, data.error);
     await sendMessageToTab(
-      MessageType.UpdateDownloadProgress,
       {
+ type: MessageType.UpdateDownloadProgress,
+         data: {
         videoId: data.videoId,
         progress: 0,
         progressType: ProgressType.Video,
         isRemoved: true,
         isFailed: true
       },
-      tabId
+         tabId 
+}
     );
     sendToOffscreen({
       type: OffscreenMessageType.RemoveDownloadIframe,

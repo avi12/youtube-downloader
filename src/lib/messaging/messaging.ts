@@ -314,9 +314,7 @@ export const { sendMessage, onMessage } =
   defineExtensionMessaging<ProtocolMap>();
 
 export async function sendMessageToTab<TType extends keyof ProtocolMap>(
-  type: TType,
-  data: GetDataType<ProtocolMap[TType]>,
-  tabId: number
+  { type, data, tabId }: { type: TType; data: GetDataType<ProtocolMap[TType]>; tabId: number }
 ) {
   if (tabId < 0) {
     return undefined;

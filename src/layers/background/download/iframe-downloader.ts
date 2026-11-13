@@ -99,7 +99,13 @@ export async function downloadViaWatchPage({ data, tabId }: DownloadViaWatchPage
       originTabId: tabId
     });
 
-    await sendMessageToTab(MessageType.StartKeepalive, { videoId: data.videoId }, tabId);
+    await sendMessageToTab({
+       type: MessageType.StartKeepalive,
+       data: {
+       videoId: data.videoId 
+    },
+       tabId 
+    });
 
     await awaitVideoComplete(data.videoId);
     sendToOffscreen({

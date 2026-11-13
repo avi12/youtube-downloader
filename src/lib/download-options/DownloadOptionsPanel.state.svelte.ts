@@ -53,7 +53,7 @@ const BYTES_PER_KILOBYTE = 1024;
 const BYTES_PER_MEGABYTE = BYTES_PER_KILOBYTE * 1024;
 const BYTES_PER_GIGABYTE = BYTES_PER_MEGABYTE * 1024;
 
-export function createPanelState(getVideoData: () => VideoData, host: PanelHost) {
+export function createPanelState({ getVideoData, host }: { getVideoData: () => VideoData; host: PanelHost }) {
   const store = createDownloadStoreState(getVideoData);
 
   let downloadId = $state<number | null>(null);

@@ -23,7 +23,7 @@ export function listChoices<Value extends string>({ values, texts }: {
   }));
 }
 
-export function findChoice<Value extends string>(choices: Choice<Value>[], value: string) {
+export function findChoice<Value extends string>({ choices, value }: { choices: Choice<Value>[]; value: string }) {
   return choices.find(choice => choice.value === value);
 }
 

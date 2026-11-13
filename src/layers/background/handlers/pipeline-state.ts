@@ -13,7 +13,11 @@ type UpdateStatusProgressParams = Prettify<{
 }>;
 export async function updateStatusProgress({ mutate, progressUpdate, tabId }: UpdateStatusProgressParams) {
   await Promise.allSettled([
-    sendMessageToTab(MessageType.UpdateDownloadProgress, progressUpdate, tabId),
+    sendMessageToTab({
+       type: MessageType.UpdateDownloadProgress,
+       data: progressUpdate,
+       tabId 
+    }),
     mutateStorageItem({
       item: statusProgressItem,
       mutator: mutate

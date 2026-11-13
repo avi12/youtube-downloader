@@ -96,18 +96,26 @@ export function registerDownloadHandlers() {
       signalVideoComplete(videoId);
       const trackedTabIds = getTabIdsForVideo(videoId);
       for (const tabId of trackedTabIds) {
-        await sendMessageToTab(MessageType.UpdateDownloadProgress, {
+        await sendMessageToTab({
+           type: MessageType.UpdateDownloadProgress,
+           data: {
           videoId,
           ...progressRemoval
-        }, tabId);
+        },
+           tabId 
+});
       }
 
       const isSequenceTabUntouched = sequenceTabId && !trackedTabIds.includes(sequenceTabId);
       if (isSequenceTabUntouched) {
-        await sendMessageToTab(MessageType.UpdateDownloadProgress, {
+        await sendMessageToTab({
+ type: MessageType.UpdateDownloadProgress,
+           data: {
           videoId,
           ...progressRemoval
-        }, sequenceTabId);
+        },
+           tabId: sequenceTabId 
+});
       }
     }
 
@@ -132,12 +140,16 @@ export function registerDownloadHandlers() {
         filename
       });
 
-      await sendMessageToTab(MessageType.UpdateDownloadProgress, {
+      await sendMessageToTab({
+ type: MessageType.UpdateDownloadProgress,
+         data: {
         videoId,
         progress: 0,
         progressType: ProgressType.Video,
         isRemoved: true
-      }, tabId);
+      },
+         tabId 
+});
 
       await removeFromPopupList(videoId);
       signalVideoComplete(videoId);
@@ -207,7 +219,13 @@ export function registerDownloadHandlers() {
       tabId: resolvedTabId
     }).catch(() => {});
 
-    await sendMessageToTab(MessageType.StartKeepalive, { videoId: data.videoId }, resolvedTabId);
+    await sendMessageToTab({
+       type: MessageType.StartKeepalive,
+       data: {
+       videoId: data.videoId 
+    },
+       tabId: resolvedTabId 
+    });
   });
 
   onMessage(MessageType.RequestDirectUrlDownload, async ({ data }) => {
@@ -222,12 +240,16 @@ export function registerDownloadHandlers() {
         filename: request.filenameOutput
       });
 
-      await sendMessageToTab(MessageType.UpdateDownloadProgress, {
+      await sendMessageToTab({
+ type: MessageType.UpdateDownloadProgress,
+         data: {
         videoId,
         progress: 0,
         progressType: ProgressType.Video,
         isRemoved: true
-      }, tabId);
+      },
+         tabId 
+});
 
       await removeFromPopupList(videoId);
       signalVideoComplete(videoId);
@@ -308,7 +330,11 @@ export function registerDownloadHandlers() {
       }
     });
 
-    await sendMessageToTab(MessageType.UpdateDownloadProgress, progressData, tabId);
+    await sendMessageToTab({
+       type: MessageType.UpdateDownloadProgress,
+       data: progressData,
+       tabId 
+    });
   });
 
   onMessage(MessageType.ReportPageProgress, async ({ data, sender }) => {
@@ -329,10 +355,14 @@ export function registerDownloadHandlers() {
       }
     });
 
-    await sendMessageToTab(MessageType.UpdateDownloadProgress, {
+    await sendMessageToTab({
+ type: MessageType.UpdateDownloadProgress,
+       data: {
       videoId: data.videoId,
       progress: data.progress,
       progressType: data.progressType
-    }, tabId);
+    },
+       tabId 
+});
   });
 }

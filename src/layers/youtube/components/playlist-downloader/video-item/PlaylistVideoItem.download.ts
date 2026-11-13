@@ -29,7 +29,10 @@ export function triggerDownload({ videoData, videoId, gridTitle, setLocallyDone 
     titleOverride: gridTitle
   });
 
-  const videoCandidates = filterVideoFormatsByEnhancedBitrate(videoData.videoFormats, options.enhancedBitrate);
+  const videoCandidates = filterVideoFormatsByEnhancedBitrate({
+     formats: videoData.videoFormats,
+     enhancedBitrate: options.enhancedBitrate 
+  });
 
   setLocallyDone(false);
   crossWorldMessenger.sendMessage(CrossWorldMessage.DownloadRequest, {

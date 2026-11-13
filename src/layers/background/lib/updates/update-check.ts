@@ -16,7 +16,7 @@ const releasesSchema = z.array(
   })
 );
 
-function isNewerVersion(candidate: string, current: string) {
+function isNewerVersion({ candidate, current }: { candidate: string; current: string }) {
   return candidate.localeCompare(current, undefined, { numeric: true }) > 0;
 }
 
@@ -40,7 +40,10 @@ async function fetchLatestVersion() {
     .filter(release => !release.draft && !release.prerelease)
     .flatMap(release => EXTENSION_TAG_PATTERN.exec(release.tag_name)?.[1] ?? []);
   return versions.reduce<string | null>(
-    (latest, version) => (!latest || isNewerVersion(version, latest) ? version : latest),
+    (latest, version) => (!latest || isNewerVersion({
+       candidate: version,
+       current: latest 
+    }) ? version : latest),
     null
   );
 }
@@ -63,7 +66,12 @@ async function checkForUpdate() {
   }
 
   const currentVersion = browser.runtime.getManifest().version;
-  await applyAvailableUpdate(isNewerVersion(latestVersion, currentVersion) ? latestVersion : null);
+  await applyAvailableUpdate(
+          isNewerVersion({
+     candidate: latestVersion,
+     current: currentVersion 
+  }) ? latestVersion : null
+        );
 }
 
 async function handleUpdateCheckAlarm({ name }: Browser.alarms.Alarm) {

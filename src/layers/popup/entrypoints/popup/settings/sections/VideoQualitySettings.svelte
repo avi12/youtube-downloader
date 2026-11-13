@@ -106,11 +106,11 @@
     <div transition:slide={{ duration: slideDuration }}>
       <SettingsDropDown
         currentValue={options.maxFrameRate}
-        displayValue={findChoice(MAX_FRAME_RATE_CHOICES, options.maxFrameRate)?.label ?? options.maxFrameRate}
+        displayValue={findChoice({ choices: MAX_FRAME_RATE_CHOICES, value: options.maxFrameRate })?.label ?? options.maxFrameRate}
         items={MAX_FRAME_RATE_CHOICES}
         label="Max frame rate"
         onSelect={selected => {
-          const choice = findChoice(MAX_FRAME_RATE_CHOICES, selected);
+          const choice = findChoice({ choices: MAX_FRAME_RATE_CHOICES, value: selected });
           if (choice) {
             void setOption({
               key: "maxFrameRate",

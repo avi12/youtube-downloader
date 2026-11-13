@@ -85,7 +85,10 @@ export async function addRecentDownload({ entry, blob }: {
   // storage is full, so a new download always caches without overflowing the
   // disk. Returns false if it cannot fit even after evicting everything else.
   try {
-    await putRecentDownload(entry, blob);
+    await putRecentDownload({
+       entry,
+       blob 
+    });
     return true;
   } catch (error) {
     if (!isQuotaExceeded(error)) {
@@ -106,7 +109,7 @@ export async function addRecentDownload({ entry, blob }: {
 
 export type RecentDownloadEntry = Prettify<Parameters<typeof addRecentDownload>[0]["entry"]>;
 
-async function putRecentDownload(entry: RecentDownloadEntry, blob: Blob) {
+async function putRecentDownload({ entry, blob }: { entry: RecentDownloadEntry; blob: Blob }) {
   const db = await getDatabase();
   const transaction = db.transaction([Store.Entries, Store.Blobs], "readwrite");
   transaction.objectStore(Store.Entries).put(entry);
@@ -135,7 +138,7 @@ async function evictOldestRecentDownload(excludeId: string) {
   return true;
 }
 
-async function mutateEntry(id: string, mutate: (entry: RecentDownloadEntry) => void) {
+async function mutateEntry({ id, mutate }: { id: string; mutate: (entry: RecentDownloadEntry) => void }) {
   const db = await getDatabase();
   const transaction = db.transaction(Store.Entries, "readwrite");
   const store = transaction.objectStore(Store.Entries);
@@ -149,9 +152,12 @@ async function mutateEntry(id: string, mutate: (entry: RecentDownloadEntry) => v
 }
 
 export async function touchRecentDownload(id: string) {
-  await mutateEntry(id, entry => {
+  await mutateEntry({
+ id,
+     mutate(entry) {
     entry.lastActivityAt = Date.now();
-  });
+  } 
+});
 }
 
 // Resets every entry's retention clock to now, used when the popup closes so the
@@ -182,9 +188,12 @@ export async function updateRecentDownloadId({ id, downloadId }: {
   id: string;
   downloadId: number;
 }) {
-  await mutateEntry(id, entry => {
+  await mutateEntry({
+ id,
+     mutate(entry) {
     entry.downloadId = downloadId;
-  });
+  } 
+});
 }
 
 export async function getAllRecentDownloads() {

@@ -50,14 +50,20 @@ function listQualityCandidates({ videoData, options }: {
   videoData: QualityVideoData;
   options: QualityOptions;
 }) {
-  const candidates = filterVideoFormatsByEnhancedBitrate(videoData.videoFormats, options.enhancedBitrate);
+  const candidates = filterVideoFormatsByEnhancedBitrate({
+     formats: videoData.videoFormats,
+     enhancedBitrate: options.enhancedBitrate 
+  });
   const { cap } = FRAME_RATE_LIMITS[options.maxFrameRate];
   const isOverCap = candidates.some(format => (format.fps ?? 0) > cap);
   if (!isOverCap) {
     return candidates;
   }
 
-  const variants = filterVideoFormatsByEnhancedBitrate(resolveVideoFormatVariants(videoData), options.enhancedBitrate);
+  const variants = filterVideoFormatsByEnhancedBitrate({
+     formats: resolveVideoFormatVariants(videoData),
+     enhancedBitrate: options.enhancedBitrate 
+  });
   const cappedFormats = variants.filter(format => (format.fps ?? 0) <= cap);
   return cappedFormats.length ? cappedFormats : candidates;
 }

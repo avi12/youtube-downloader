@@ -67,17 +67,21 @@
   function isActiveInThisTab(videoId: string) {
     return isActiveFromCurrentTab({
       videoId,
-      detail: videoDetails[videoId]
-    }, {
-      currentTabId,
-      currentSourceUrl
+      detail: videoDetails[videoId],
+      currentTab: {
+        currentTabId,
+        currentSourceUrl
+      }
     });
   }
 
   function isRecentInThisTab(entry: RecentDownloadEntry) {
-    return isRecentFromCurrentTab(entry, {
-      currentTabId,
-      currentSourceUrl
+    return isRecentFromCurrentTab({
+      entry,
+      currentTab: {
+        currentTabId,
+        currentSourceUrl
+      }
     });
   }
 

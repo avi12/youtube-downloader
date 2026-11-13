@@ -24,7 +24,10 @@
 
   const props: Props = $props();
 
-  const panel = createPanelState(() => props.videoData, untrack(() => props.host));
+  const panel = createPanelState({
+    getVideoData: () => props.videoData,
+    host: untrack(() => props.host) 
+  });
   const options = createDownloadOptionsState(() => ({
     downloadType: panel.downloadType,
     videoFormats: props.videoData.videoFormats,

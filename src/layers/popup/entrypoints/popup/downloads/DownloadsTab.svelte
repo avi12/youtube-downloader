@@ -68,10 +68,11 @@
   const currentTabActiveIds = $derived(
     allActiveIds.filter(videoId => isActiveFromCurrentTab({
       videoId,
-      detail: videoDetails[videoId]
-    }, {
-      currentTabId,
-      currentSourceUrl
+      detail: videoDetails[videoId],
+      currentTab: {
+        currentTabId,
+        currentSourceUrl
+      }
     }))
   );
   const hasCurrentTabDownloads = $derived(currentTabActiveIds.length > 0);

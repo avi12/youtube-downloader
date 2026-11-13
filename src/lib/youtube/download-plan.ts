@@ -37,9 +37,7 @@ export function buildTranslatedCaptionTrack({
 }
 
 function buildSelectedTranslatedTrack(
-  vssId: string,
-  captionTracks: CaptionTrack[],
-  translationLanguages: TranslationLanguage[]
+  { vssId, captionTracks, translationLanguages }: { vssId: string; captionTracks: CaptionTrack[]; translationLanguages: TranslationLanguage[] }
 ) {
   const isTranslatedCaption = vssId.startsWith(TRANSLATED_CAPTION_VSSID_PREFIX);
   if (!isTranslatedCaption) {
@@ -258,7 +256,11 @@ export function resolveDownloadPlan({ videoData, params, targetExtension }: Reso
   const downloadExtraCaptions = params.downloadExtraCaptions ?? true;
   const includeAutoDubbing = params.includeAutoDubbing ?? true;
   const translatedTrack = params.selectedCaptionVssId
-    ? buildSelectedTranslatedTrack(params.selectedCaptionVssId, videoData.captionTracks, videoData.translationLanguages)
+    ? buildSelectedTranslatedTrack({
+       vssId: params.selectedCaptionVssId,
+       captionTracks: videoData.captionTracks,
+       translationLanguages: videoData.translationLanguages 
+    })
     : null;
   const captionTracks = resolveOrderedCaptionTracks({
     captionTracks: translatedTrack ? [...videoData.captionTracks, translatedTrack] : videoData.captionTracks,

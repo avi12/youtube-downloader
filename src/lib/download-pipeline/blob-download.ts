@@ -67,10 +67,13 @@ async function persistAndTrigger({ blob, blobUrl, filename, mimeType, recentCont
     filename,
     recentContext
   });
-  await linkCacheEntryToDownload(entryId, response?.downloadId);
+  await linkCacheEntryToDownload({
+     entryId,
+     downloadId: response?.downloadId 
+  });
 }
 
-async function linkCacheEntryToDownload(entryId: string | null, downloadId: number | undefined) {
+async function linkCacheEntryToDownload({ entryId, downloadId }: { entryId: string | null; downloadId: number | undefined }) {
   if (!entryId || !downloadId) {
     return;
   }

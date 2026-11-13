@@ -23,7 +23,10 @@ export function createVideoFormatTracker({
 }: CreateVideoFormatTrackerParams) {
   async function matchToCurrentQuality(signal: AbortSignal) {
     const videoData = getVideoData();
-    const candidates = filterVideoFormatsByEnhancedBitrate(videoData.videoFormats, CONTENT_OPTIONS.enhancedBitrate);
+    const candidates = filterVideoFormatsByEnhancedBitrate({
+       formats: videoData.videoFormats,
+       enhancedBitrate: CONTENT_OPTIONS.enhancedBitrate 
+    });
     try {
       const elVideo = await waitForVideoElement(signal);
       const isAdPlaying = document.getElementById(MOVIE_PLAYER_ID)?.classList.contains(YTP_AD_PLAYING_CLASS);

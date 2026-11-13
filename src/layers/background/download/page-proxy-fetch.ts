@@ -11,7 +11,7 @@ function inputToUrl(input: RequestInfo | URL) {
   return String(input);
 }
 
-async function initToBodyBase64(init: RequestInit | undefined, input: RequestInfo | URL) {
+async function initToBodyBase64({ init, input }: { init: RequestInit | undefined; input: RequestInfo | URL }) {
   const body = init?.body;
   if (body) {
     if (body instanceof ArrayBuffer) {
@@ -72,17 +72,24 @@ export function createPageProxyFetch(tabId: number) {
   return async (input: RequestInfo | URL, init?: RequestInit) => {
     const url = inputToUrl(input);
     const method = (init?.method ?? (input instanceof Request ? input.method : "GET")).toUpperCase();
-    const bodyBase64 = await initToBodyBase64(init, input);
+    const bodyBase64 = await initToBodyBase64({
+       init,
+       input 
+    });
     const headers = initHeadersToRecord(init);
 
-    const result = await sendMessageToTab(MessageType.PageSabrFetch, {
+    const result = await sendMessageToTab({
+ type: MessageType.PageSabrFetch,
+       data: {
       url,
       method,
       bodyBase64,
       ...headers && {
         headers
       }
-    }, tabId);
+    },
+       tabId 
+});
     if (!result) {
       throw new Error("Page SABR fetch returned no response");
     }

@@ -132,7 +132,7 @@ function formatSize(bytes: number) {
   return `${bytes} B`;
 }
 
-function resolvePerVideoDownloadType(video: VideoData, downloadType: DownloadType) {
+function resolvePerVideoDownloadType({ video, downloadType }: { video: VideoData; downloadType: DownloadType }) {
   return resolveDownloadType({
     preference: downloadType,
     isMusic: video.isMusic
@@ -146,7 +146,10 @@ function estimateVideoSize({ video, options, playlistDownloadType }: {
 }) {
   const selectedAudio = selectPlaylistAudioFormat(video.audioFormats);
   const audioBytes = Number(selectedAudio?.contentLength ?? 0);
-  const resolvedType = resolvePerVideoDownloadType(video, playlistDownloadType);  if (resolvedType === DownloadType.Audio) {
+  const resolvedType = resolvePerVideoDownloadType({
+     video,
+     downloadType: playlistDownloadType 
+  });  if (resolvedType === DownloadType.Audio) {
     return audioBytes;
   }
 
@@ -179,7 +182,10 @@ function buildPlaylistGridRequest({
   isZipBundle,
   playlistDownloadType
 }: BuildPlaylistGridRequestParams) {
-  const downloadType = resolvePerVideoDownloadType(data, playlistDownloadType);
+  const downloadType = resolvePerVideoDownloadType({
+     video: data,
+     downloadType: playlistDownloadType 
+  });
 
   const videoFormat = selectVideoFormatForOptions({
     videoData: data,

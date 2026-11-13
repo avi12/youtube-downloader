@@ -63,11 +63,15 @@ export async function handleIframeFallback({
     log.warn("SABR+CDN failed, trying offscreen iframe fallback for", videoId);
   }
 
-  await sendMessageToTab(MessageType.UpdateDownloadProgress, {
+  await sendMessageToTab({
+ type: MessageType.UpdateDownloadProgress,
+     data: {
     videoId,
     progress: 0,
     progressType: ProgressType.Video
-  }, tabId);
+  },
+     tabId 
+});
 
   await downloadViaWatchPage({
     data: {

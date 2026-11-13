@@ -20,9 +20,12 @@
   }: Props = $props();
 
   const otherRecent = $derived(
-    recentDownloads.filter(entry => !isRecentFromCurrentTab(entry, {
-      currentTabId,
-      currentSourceUrl
+    recentDownloads.filter(entry => !isRecentFromCurrentTab({
+      entry,
+      currentTab: {
+        currentTabId,
+        currentSourceUrl
+      }
     }))
   );
 </script>

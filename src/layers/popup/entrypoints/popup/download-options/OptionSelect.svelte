@@ -36,7 +36,14 @@
       return sectionList;
     }, [])
   );
-  const description = $derived(describeChoice(findChoice([...choices], value)));
+  const description = $derived(
+                        describeChoice(
+                                 findChoice({
+    choices: [...choices],
+    value 
+  })
+                               )
+                      );
 </script>
 
 {#snippet optionList(sectionChoices: OptionChoice[])}
@@ -50,7 +57,7 @@
     class="option-select"
     disabled={isDisabled}
     onchange={e => {
-      const choice = findChoice([...choices], e.currentTarget.value);
+      const choice = findChoice({ choices: [...choices], value: e.currentTarget.value });
       if (choice) {
         onchange(choice.value);
       }

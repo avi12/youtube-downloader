@@ -42,7 +42,10 @@
       choices,
       value: options[key],
       select(value: string) {
-        const choice = findChoice(choices, value);
+        const choice = findChoice({
+          choices,
+          value 
+        });
         if (choice) {
           void setOption({
             key,
@@ -115,7 +118,7 @@
   {#each rows as row (row.label)}
     <SettingsDropDown
       currentValue={row.value}
-      displayValue={findChoice(row.choices, row.value)?.label ?? row.value}
+      displayValue={findChoice({ choices: row.choices, value: row.value })?.label ?? row.value}
       items={row.choices}
       label={row.label}
       onSelect={row.select}

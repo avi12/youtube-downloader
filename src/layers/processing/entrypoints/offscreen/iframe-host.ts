@@ -48,7 +48,7 @@ export function createWorkerIframe(videoId: string) {
   return elIframe;
 }
 
-export function sendToWorkerIframe(videoId: string, message: unknown) {
+export function sendToWorkerIframe({ videoId, message }: { videoId: string; message: unknown }) {
   const elIframe = workerIframes.get(videoId);
   elIframe?.contentWindow?.postMessage(message, location.origin);
 }

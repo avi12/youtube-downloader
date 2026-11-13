@@ -31,7 +31,7 @@ function getPreferredAudioFormat(videoData: VideoData) {
   });
 }
 
-function resolveBaseVideoExtension(videoData: VideoData, preferredAudio: PreferredAudioFormat) {
+function resolveBaseVideoExtension({ videoData, preferredAudio }: { videoData: VideoData; preferredAudio: PreferredAudioFormat }) {
   const [firstFormat] = videoData.videoFormats;
   const userExtension = resolveAutoContainer({
     extension: CONTENT_OPTIONS.ext.video,
@@ -56,8 +56,11 @@ function resolveBaseVideoExtension(videoData: VideoData, preferredAudio: Preferr
   });
 }
 
-function resolveVideoExtension(videoData: VideoData, preferredAudio: PreferredAudioFormat) {
-  const extension = resolveBaseVideoExtension(videoData, preferredAudio);
+function resolveVideoExtension({ videoData, preferredAudio }: { videoData: VideoData; preferredAudio: PreferredAudioFormat }) {
+  const extension = resolveBaseVideoExtension({
+     videoData,
+     preferredAudio 
+  });
   const selectedTrackId = preferredAudio?.audioTrack?.id;
   if (!selectedTrackId) {
     return extension;
@@ -90,10 +93,13 @@ function resolveOutputExtension({ videoData, preferredAudio, downloadType }: {
     });
   }
 
-  return resolveVideoExtension(videoData, preferredAudio);
+  return resolveVideoExtension({
+     videoData,
+     preferredAudio 
+  });
 }
 
-function resolveInitialItags(videoData: VideoData, preferredAudio: PreferredAudioFormat) {
+function resolveInitialItags({ videoData, preferredAudio }: { videoData: VideoData; preferredAudio: PreferredAudioFormat }) {
   const [firstFormat] = videoData.videoFormats;
   const interrupted = interruptedDownloadStore.get(videoData.videoId);
   return {
@@ -116,7 +122,10 @@ export function buildInitialDownloadState(videoData: VideoData) {
   const filename = getCompatibleFilename(`${videoData.title || videoData.videoId}.${extension}`);
 
   return {
-    ...resolveInitialItags(videoData, preferredAudio),
+    ...resolveInitialItags({
+       videoData,
+       preferredAudio 
+    }),
     audioTrackId: preferredAudio?.audioTrack?.id,
     filename,
     quality: "",

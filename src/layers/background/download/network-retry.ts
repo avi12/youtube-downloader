@@ -100,13 +100,17 @@ export async function queueNetworkRetry({ request, tabId }: QueueNetworkRetryPar
     tabId
   });
   await persistInterruptedDownload(request);
-  await sendMessageToTab(MessageType.UpdateDownloadProgress, {
+  await sendMessageToTab({
+ type: MessageType.UpdateDownloadProgress,
+     data: {
     videoId: request.videoId,
     progress: 0,
     progressType: ProgressType.Video,
     isRemoved: true,
     isInterrupted: true
-  }, tabId);
+  },
+     tabId 
+});
 }
 
 type StartBackgroundDownloadFn = (params: {
@@ -142,11 +146,15 @@ export async function scheduleAutoRetry({ request, tabId, startBackgroundDownloa
       return;
     }
 
-    await sendMessageToTab(MessageType.UpdateDownloadProgress, {
+    await sendMessageToTab({
+ type: MessageType.UpdateDownloadProgress,
+       data: {
       videoId,
       progress: 0,
       progressType: ProgressType.Video
-    }, tabId);
+    },
+       tabId 
+});
     await startBackgroundDownload({
       request,
       tabId
@@ -154,13 +162,17 @@ export async function scheduleAutoRetry({ request, tabId, startBackgroundDownloa
   }, delayMs);
   pendingBackoffTimeouts.set(videoId, timeoutId);
 
-  await sendMessageToTab(MessageType.UpdateDownloadProgress, {
+  await sendMessageToTab({
+ type: MessageType.UpdateDownloadProgress,
+     data: {
     videoId,
     progress: 0,
     progressType: ProgressType.Video,
     isRemoved: true,
     isInterrupted: true
-  }, tabId);
+  },
+     tabId 
+});
   return true;
 }
 
@@ -173,11 +185,15 @@ export function registerOnlineRetryListener(startBackgroundDownload: StartBackgr
     const retries = [...pendingNetworkRetries.values()];
     pendingNetworkRetries.clear();
     for (const { request, tabId } of retries) {
-      await sendMessageToTab(MessageType.UpdateDownloadProgress, {
+      await sendMessageToTab({
+ type: MessageType.UpdateDownloadProgress,
+         data: {
         videoId: request.videoId,
         progress: 0,
         progressType: ProgressType.Video
-      }, tabId);
+      },
+         tabId 
+});
       await startBackgroundDownload({
         request,
         tabId

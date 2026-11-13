@@ -22,21 +22,30 @@ export function getVideoIdFromUrl(url: string) {
   }
 }
 
-function isWatchPageOnHost(url: string, expectedHostname: string) {
+function isWatchPageOnHost({ url, expectedHostname }: { url: string; expectedHostname: string }) {
   const parsed = URL.parse(url);
   return parsed?.hostname === expectedHostname && parsed.pathname === WATCH_PAGE_PATHNAME;
 }
 
 export function isWatchPageUrl(url: string) {
-  return isWatchPageOnHost(url, WATCH_PAGE_HOSTNAME);
+  return isWatchPageOnHost({
+     url,
+     expectedHostname: WATCH_PAGE_HOSTNAME 
+  });
 }
 
 export function isMobileWatchPageUrl(url: string) {
-  return isWatchPageOnHost(url, MOBILE_WATCH_PAGE_HOSTNAME);
+  return isWatchPageOnHost({
+     url,
+     expectedHostname: MOBILE_WATCH_PAGE_HOSTNAME 
+  });
 }
 
 export function isMusicWatchPageUrl(url: string) {
-  return isWatchPageOnHost(url, MUSIC_WATCH_PAGE_HOSTNAME);
+  return isWatchPageOnHost({
+     url,
+     expectedHostname: MUSIC_WATCH_PAGE_HOSTNAME 
+  });
 }
 
 // These sites get no injected UI - the popup downloads their videos through the hidden watch-page iframe

@@ -115,7 +115,7 @@ function byteLength(text: string) {
   return ENCODER.encode(text).byteLength;
 }
 
-function measureCaptionTrack(vtt: string, extension: string) {
+function measureCaptionTrack({ vtt, extension }: { vtt: string; extension: string }) {
   const cues = parseVttCues(vtt);
   if (MKV_EXTENSIONS.has(extension)) {
     return {
@@ -187,7 +187,7 @@ function vintLength(value: number) {
   return length;
 }
 
-function estimateMatroskaBlockBytes(packets: number, payload: number, isVideo: boolean) {
+function estimateMatroskaBlockBytes({ packets, payload, isVideo }: { packets: number; payload: number; isVideo: boolean }) {
   const averagePacket = payload / Math.max(packets, 1);
   const blockBytes = packets * (MATROSKA_BLOCK_FIXED_BYTES + vintLength(averagePacket + MATROSKA_BLOCK_SIZE_OFFSET));
   const isTwoByteAverage = vintLength(averagePacket + MATROSKA_BLOCK_SIZE_OFFSET) === 2;
@@ -225,7 +225,11 @@ function measureSourceStream(format: AdaptiveFormatItem) {
   const totalBytes = contentLength(format);
   if (isWebmSource(format)) {
     const payloadAndBlocks = totalBytes - headerBytes - webmClusterBytes(format);
-    const blockBytes = estimateMatroskaBlockBytes(packets, payloadAndBlocks, false);
+    const blockBytes = estimateMatroskaBlockBytes({
+       packets,
+       payload: payloadAndBlocks,
+       isVideo: false 
+    });
     return {
       packets,
       payload: payloadAndBlocks - blockBytes,
@@ -241,11 +245,15 @@ function measureSourceStream(format: AdaptiveFormatItem) {
   return {
     packets,
     payload,
-    matroskaBlockBytes: estimateMatroskaBlockBytes(packets, payload, isVideo)
+    matroskaBlockBytes: estimateMatroskaBlockBytes({
+       packets,
+       payload,
+       isVideo 
+    })
   };
 }
 
-function measureEncodedAudio(format: AdaptiveFormatItem, encoder: string) {
+function measureEncodedAudio({ format, encoder }: { format: AdaptiveFormatItem; encoder: string }) {
   const seconds = durationSeconds(format);
   if (encoder === "libmp3lame") {
     const rate = sampleRate(format);
@@ -278,7 +286,10 @@ type PredictMuxedParams = Prettify<{
 function predictMuxed({ videoFormat, audioFormats, captionVtts, extension }: PredictMuxedParams) {
   const video = measureSourceStream(videoFormat);
   const seconds = durationSeconds(videoFormat);
-  const captions = captionVtts.map(vtt => measureCaptionTrack(vtt, extension));
+  const captions = captionVtts.map(vtt => measureCaptionTrack({
+     vtt,
+     extension 
+  }));
   const captionPayload = captions.reduce((sum, caption) => sum + caption.payload, 0);
   const captionPackets = captions.reduce((sum, caption) => sum + caption.packets, 0);
   let isApproximate = false;
@@ -292,10 +303,17 @@ function predictMuxed({ videoFormat, audioFormats, captionVtts, extension }: Pre
     }
 
     isApproximate = true;
-    const encoded = measureEncodedAudio(format, encoder);
+    const encoded = measureEncodedAudio({
+       format,
+       encoder 
+    });
     return {
       ...encoded,
-      matroskaBlockBytes: estimateMatroskaBlockBytes(encoded.packets, encoded.payload, false)
+      matroskaBlockBytes: estimateMatroskaBlockBytes({
+         packets: encoded.packets,
+         payload: encoded.payload,
+         isVideo: false 
+      })
     };
   });
   const streamPayload = video.payload + audios.reduce((sum, audio) => sum + audio.payload, 0) + captionPayload;
@@ -349,7 +367,10 @@ function predictAudioOnly({ audioFormat, extension, inputs }: PredictAudioOnlyPa
       ...measureSourceStream(audioFormat),
       isApproximate: false
     }
-    : measureEncodedAudio(audioFormat, isEmbedPath ? encoder : (getAudioFallbackCodec(extension) ?? encoder));
+    : measureEncodedAudio({
+       format: audioFormat,
+       encoder: isEmbedPath ? encoder : (getAudioFallbackCodec(extension) ?? encoder) 
+    });
   const extraBytes = isEmbedPath ? inputs.coverBytes + measureTags(inputs.tags) : 0;
   const isApproximate = audio.isApproximate || !inputs;
   if (extension === MP3_EXTENSION) {
@@ -368,7 +389,11 @@ function predictAudioOnly({ audioFormat, extension, inputs }: PredictAudioOnlyPa
     };
   }
 
-  const blockBytes = estimateMatroskaBlockBytes(audio.packets, audio.payload, false);
+  const blockBytes = estimateMatroskaBlockBytes({
+     packets: audio.packets,
+     payload: audio.payload,
+     isVideo: false 
+  });
   return {
     bytes: Math.round(audio.payload + extraBytes + blockBytes + MATROSKA_AUDIO_ONLY_BASE_BYTES),
     isApproximate: isApproximate || !MKV_EXTENSIONS.has(extension)

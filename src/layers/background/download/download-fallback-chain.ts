@@ -26,11 +26,15 @@ export async function trySabr({ request, signal, tabId }: TrySabrParams) {
     }
 
     log.warn("SABR failed, trying CDN:", error);
-    await sendMessageToTab(MessageType.UpdateDownloadProgress, {
+    await sendMessageToTab({
+ type: MessageType.UpdateDownloadProgress,
+       data: {
       videoId: request.videoId,
       progress: 0,
       progressType: ProgressType.Video
-    }, tabId);
+    },
+       tabId 
+});
     return null;
   }
 }

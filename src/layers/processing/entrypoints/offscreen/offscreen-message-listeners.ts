@@ -25,7 +25,12 @@ export function registerOffscreenMessageListeners() {
     [OffscreenMessageType.CancelProcessing](data) {
       cancelDownloadsByIds(data.videoIds).catch(() => {});
       for (const videoId of data.videoIds) {
-        sendToWorkerIframe(videoId, { type: IFRAME_MESSAGE_CANCEL });
+        sendToWorkerIframe({
+           videoId,
+           message: {
+           type: IFRAME_MESSAGE_CANCEL 
+        } 
+        });
         removeWorkerIframe(videoId);
         removeDownloadIframe(videoId);
       }

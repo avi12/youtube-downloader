@@ -8,7 +8,7 @@ export function isPremiumFormat(format: Pick<AdaptiveFormatItem, "qualityLabel">
   return (format.qualityLabel ?? "").includes(QUALITY_LABEL_PREMIUM);
 }
 
-export function filterVideoFormatsByEnhancedBitrate(formats: AdaptiveFormatItem[], enhancedBitrate: boolean) {
+export function filterVideoFormatsByEnhancedBitrate({ formats, enhancedBitrate }: { formats: AdaptiveFormatItem[]; enhancedBitrate: boolean }) {
   return enhancedBitrate ? formats : formats.filter(format => !isPremiumFormat(format));
 }
 

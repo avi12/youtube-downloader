@@ -30,7 +30,7 @@ function collectTags(metadata: VideoMetadata) {
   ].filter((tag): tag is string => !!tag);
 }
 
-async function measureSizeInputs(videoId: string, params: DownloadPlanParams) {
+async function measureSizeInputs({ videoId, params }: { videoId: string; params: DownloadPlanParams }) {
   const videoData = videoDataCache.get(videoId);
   if (!videoData) {
     return null;
@@ -69,7 +69,10 @@ export function registerSizeInputsHandler() {
       return cached;
     }
 
-    const pending = measureSizeInputs(data.videoId, data.params);
+    const pending = measureSizeInputs({
+       videoId: data.videoId,
+       params: data.params 
+    });
     sizeInputsCache.set(key, pending);
     return pending;
   });

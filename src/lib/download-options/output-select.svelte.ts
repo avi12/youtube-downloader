@@ -20,7 +20,10 @@ export function createOutputSelectState(props: () => OutputSelectProps) {
     })
   );
   const formatOptions = $derived(
-    buildFormatItems(extensionType, props().isMultiTrack).map(item => ({
+    buildFormatItems({
+       type: extensionType,
+       isMultiTrack: props().isMultiTrack 
+    }).map(item => ({
       value: item.ext,
       label: `.${item.ext}`,
       disabled: item.isExcluded

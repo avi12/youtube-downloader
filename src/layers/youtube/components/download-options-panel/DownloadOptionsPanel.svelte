@@ -23,7 +23,10 @@
 
   const props: Props = $props();
 
-  const panel = createPanelState(() => props.videoData, PAGE_PANEL_HOST);
+  const panel = createPanelState({
+    getVideoData: () => props.videoData,
+    host: PAGE_PANEL_HOST 
+  });
   const focusManager = createFocusManager();
 
   function closePanel() {

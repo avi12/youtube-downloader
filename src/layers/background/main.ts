@@ -30,7 +30,11 @@ export function main() {
   onSabrBodyCaptured(tabId => {
     // Best-effort push; the content script also pulls via GetCapturedSabrBody with
     // retry, so a missing receiver mid-reload is expected and must not crash the SW
-    sendMessageToTab(MessageType.SabrBodyReady, undefined, tabId).catch(() => {});
+    sendMessageToTab({
+       type: MessageType.SabrBodyReady,
+       data: undefined,
+       tabId 
+    }).catch(() => {});
   });
 
   registerChunkHandlers();
