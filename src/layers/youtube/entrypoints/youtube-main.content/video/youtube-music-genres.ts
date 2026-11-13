@@ -1,4 +1,4 @@
-import { InnertubeClientName, type InnertubeBrowseRequest } from "@/lib/youtube/innertube";
+import { type InnertubeBrowseRequest, InnertubeClientName } from "@/lib/youtube/innertube";
 import { z } from "@/lib/zod";
 import type { Prettify } from "@/types";
 
@@ -9,7 +9,7 @@ const CONTENT_TYPE_JSON = "application/json";
 type MoodsAndGenresResponse = Prettify<{
   contents?: {
     singleColumnBrowseResultsRenderer?: {
-      tabs?: Array<{
+      tabs?: {
         tabRenderer?: {
           content?: {
             sectionListRenderer?: {
@@ -27,7 +27,7 @@ type MoodsAndGenresResponse = Prettify<{
             };
           };
         };
-      }>;
+      }[];
     };
   };
 }>;

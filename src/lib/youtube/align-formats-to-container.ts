@@ -3,17 +3,17 @@ import { alignAudioFormatToExtension, pickBestByBitrate } from "./select-audio-f
 import {
   getOutputExtension,
   isDynamicRangePreferred,
-  resolveAudioCodecPreference,
-  resolveDynamicRangePreference,
-  resolveVideoCodecPreference,
   isSameVideoCodec,
   isVideoCodecPreferredForContainer,
-  isVideoNativeForContainer
+  isVideoNativeForContainer,
+  resolveAudioCodecPreference,
+  resolveDynamicRangePreference,
+  resolveVideoCodecPreference
 } from "@/lib/utils/container-specs";
 import {
-  DynamicRangePreference,
   type AdaptiveFormatItem,
   type CodecPreferences,
+  DynamicRangePreference,
   type Prettify,
   type VideoData
 } from "@/types";

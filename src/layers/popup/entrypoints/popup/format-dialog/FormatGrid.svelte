@@ -125,7 +125,7 @@
     }
 
     &.format-card--current {
-      opacity: 80%;
+      opacity: 0.8;
     }
 
     &.format-card--pending {
@@ -134,7 +134,7 @@
     }
 
     &.format-card--slower {
-      border-color: color-mix(in oklab, oklch(75% 0.16 60deg) 60%, transparent);
+      border-color: color-mix(in oklab, oklch(0.75 0.16 60deg) 60%, transparent);
     }
 
     .format-card-head {
@@ -185,12 +185,12 @@
     }
 
     &.format-tag--instant {
-      background: color-mix(in oklab, oklch(75% 0.18 145deg) 50%, transparent);
-      color: oklch(32% 0.18 145deg);
+      background: color-mix(in oklab, oklch(0.75 0.18 145deg) 50%, transparent);
+      color: oklch(0.32 0.18 145deg);
 
       @media (prefers-color-scheme: dark) {
-        background: oklch(34% 0.09 145deg);
-        color: oklch(90% 0.14 145deg);
+        background: oklch(0.34 0.09 145deg);
+        color: oklch(0.9 0.14 145deg);
       }
     }
 
@@ -200,12 +200,12 @@
     }
 
     &.format-tag--slower {
-      background: color-mix(in oklab, oklch(80% 0.16 75deg) 55%, transparent);
-      color: oklch(36% 0.16 60deg);
+      background: color-mix(in oklab, oklch(0.8 0.16 75deg) 55%, transparent);
+      color: oklch(0.36 0.16 60deg);
 
       @media (prefers-color-scheme: dark) {
-        background: oklch(36% 0.08 70deg);
-        color: oklch(92% 0.12 80deg);
+        background: oklch(0.36 0.08 70deg);
+        color: oklch(0.92 0.12 80deg);
       }
     }
   }

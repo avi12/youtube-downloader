@@ -13,10 +13,10 @@ export function setNativeDownloadVisibility(isVisible: boolean) {
   document.documentElement.classList.toggle(HIDE_NATIVE_DOWNLOAD_CLASS, !isVisible);
 }
 
-type SyncGridDownloadButtonsParams = {
+interface SyncGridDownloadButtonsParams {
   pathname: string;
   context: InstanceType<typeof ContentScriptContext>;
-};
+}
 // Switching off fades the mounted buttons out and stops mounting new ones, switching on brings both back
 export function syncGridDownloadButtons({ pathname, context }: SyncGridDownloadButtonsParams) {
   const isEnabled = CONTENT_OPTIONS.isShowGridDownloadButtons;
@@ -34,10 +34,10 @@ export function syncGridDownloadButtons({ pathname, context }: SyncGridDownloadB
   injectGridVideoButtons(context);
 }
 
-type HandlePageChangeParams = {
+interface HandlePageChangeParams {
   url: string;
   context: InstanceType<typeof ContentScriptContext>;
-};
+}
 export function handlePageChange({ url, context }: HandlePageChangeParams) {
   const { pathname } = new URL(url);
 

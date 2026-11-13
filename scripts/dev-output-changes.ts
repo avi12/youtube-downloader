@@ -20,15 +20,15 @@ export const ContentScriptWorld = {
 } as const;
 type ContentScriptWorld = (typeof ContentScriptWorld)[keyof typeof ContentScriptWorld];
 
-type ManifestContentScript = {
+interface ManifestContentScript {
   matches?: string[];
   js?: string[];
   css?: string[];
   world?: ContentScriptWorld;
   all_frames?: boolean;
-};
+}
 
-export type ExtensionManifest = {
+export interface ExtensionManifest {
   name?: string;
   background?: {
     service_worker?: string;
@@ -38,9 +38,9 @@ export type ExtensionManifest = {
   browser_specific_settings?: {
     gecko?: { id?: string };
   };
-};
+}
 
-export type ContentScriptEntry = {
+export interface ContentScriptEntry {
   // WXT entrypoint names, one per js file - the name WXT's ContentScriptContext keys its events on
   names: string[];
   world: ContentScriptWorld;
@@ -48,7 +48,7 @@ export type ContentScriptEntry = {
   js: string[];
   css: string[];
   isAllFrames: boolean;
-};
+}
 
 const MANIFEST_FILE = "manifest.json";
 const LOCALES_DIR_PREFIX = "_locales/";

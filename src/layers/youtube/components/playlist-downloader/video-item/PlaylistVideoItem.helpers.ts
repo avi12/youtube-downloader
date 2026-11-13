@@ -2,7 +2,7 @@ import { CONTENT_OPTIONS, type DownloadProgressState } from "@/lib/ui/synced-sto
 import { resolveOutputExtensionForFormats } from "@/lib/youtube/align-formats-to-container";
 import { resolveAutoContainer } from "@/lib/youtube/auto-container";
 import { formatVideoQualityLabel } from "@/lib/youtube/video-helpers";
-import { ProgressType, type Prettify, type VideoData } from "@/types";
+import { type Prettify, ProgressType, type VideoData } from "@/types";
 
 type ButtonTooltipParams = Prettify<{
   isLocallyDone: boolean;

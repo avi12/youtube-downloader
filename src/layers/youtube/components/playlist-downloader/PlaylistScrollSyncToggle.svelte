@@ -28,7 +28,7 @@
     gap: 10px;
     align-items: flex-start;
     padding: 10px 12px;
-    border: 1px dashed var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 28%));
+    border: 1px dashed var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 0.28));
     border-radius: 10px;
     background: color-mix(in oklab, var(--yt-sys-color-baseline--text-primary, #0f0f0f) 4%, transparent);
     cursor: pointer;

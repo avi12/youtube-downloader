@@ -1,4 +1,4 @@
-import { toUint8Array, reportProgress, toOwnedArrayBuffer, buildRecentContext } from ".";
+import { buildRecentContext, reportProgress, toOwnedArrayBuffer, toUint8Array } from ".";
 import { triggerDownloadFromFile } from "./blob-download";
 import {
   buildAdditionalAudioTracks,

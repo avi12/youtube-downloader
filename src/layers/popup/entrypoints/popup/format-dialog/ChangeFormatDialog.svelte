@@ -247,8 +247,8 @@
     background: var(--surface-high);
     color: var(--fg);
     box-shadow:
-      0 12px 32px rgb(0 0 0 / 24%),
-      0 4px 12px rgb(0 0 0 / 16%);
+      0 12px 32px rgb(0 0 0 / 0.24),
+      0 4px 12px rgb(0 0 0 / 0.16);
     view-transition-name: change-format-dialog;
     animation: dialog-in 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
     position-try-fallbacks: --change-format-above, --change-format-viewport;
@@ -454,7 +454,7 @@
 
   @keyframes mode-panel-in {
     from {
-      opacity: 0%;
+      opacity: 0;
       translate: var(--mode-panel-offset) 0;
     }
   }
@@ -479,21 +479,21 @@
 
   @keyframes layer-in {
     from {
-      opacity: 0%;
+      opacity: 0;
     }
 
     to {
-      opacity: 100%;
+      opacity: 1;
     }
   }
 
   @keyframes layer-out {
     from {
-      opacity: 100%;
+      opacity: 1;
     }
 
     to {
-      opacity: 0%;
+      opacity: 0;
     }
   }
 
@@ -530,13 +530,13 @@
 
   @keyframes dialog-in {
     from {
-      opacity: 0%;
+      opacity: 0;
       scale: 0.92;
       translate: 0 8px;
     }
 
     to {
-      opacity: 100%;
+      opacity: 1;
       scale: 1;
       translate: 0 0;
     }
@@ -544,13 +544,13 @@
 
   @keyframes dialog-out {
     from {
-      opacity: 100%;
+      opacity: 1;
       scale: 1;
       translate: 0 0;
     }
 
     to {
-      opacity: 0%;
+      opacity: 0;
       scale: 0.92;
       translate: 0 8px;
     }

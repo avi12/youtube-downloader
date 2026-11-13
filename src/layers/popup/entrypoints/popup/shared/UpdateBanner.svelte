@@ -48,7 +48,7 @@
       }
 
       .update-banner-version {
-        opacity: 75%;
+        opacity: 0.75;
       }
 
       .update-banner-action {

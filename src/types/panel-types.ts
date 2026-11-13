@@ -1,10 +1,10 @@
 import type { Prettify } from "./prettify";
 
-export type LabeledOption<V = string> = {
+export interface LabeledOption<V = string> {
   value: V;
   label: string;
   disabled?: boolean;
-};
+}
 
 export const TrackKind = {
   Audio: "audio",

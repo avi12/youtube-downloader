@@ -41,7 +41,7 @@ const RDP_LENGTH_SEPARATOR = ":";
 // iframe) surface on the same watcher
 const GENERATED_BACKGROUND_PAGE = "_generated_background_page.html";
 
-type RdpPacket = {
+interface RdpPacket {
   from?: string;
   type?: string;
   target?: {
@@ -59,13 +59,13 @@ type RdpPacket = {
   actor?: string;
   result?: unknown;
   exceptionMessage?: string;
-};
+}
 
-type RdpWaiter = {
+interface RdpWaiter {
   predicate: (packet: RdpPacket) => boolean;
   fulfill: (packet: RdpPacket) => void;
   reject: (error: Error) => void;
-};
+}
 
 type RdpClient = ReturnType<typeof createRdpClient>;
 
@@ -240,16 +240,20 @@ async function findParentProcessConsole(client: RdpClient) {
   const { processDescriptor } = await client.request({
     to: "root",
     type: "getProcess",
-    extra: { id: 0 }
+    extra: {
+       id: 0 
+    }
   });
   if (!processDescriptor?.actor) {
     return undefined;
   }
 
-  return consoleActorOf(await client.request({
+  return consoleActorOf(
+           await client.request({
     to: processDescriptor.actor,
     type: "getTarget"
-  }));
+  })
+         );
 }
 
 // Wake a suspended background event page without touching any tab: privileged main-process code
@@ -267,7 +271,9 @@ async function wakeExtensionBackground({ client, extensionId }: {
   await client.request({
     to: consoleActor,
     type: "evaluateJSAsync",
-    extra: { text: `WebExtensionPolicy.getByID(${JSON.stringify(extensionId)})?.extension.wakeupBackground()` },
+    extra: {
+       text: `WebExtensionPolicy.getByID(${JSON.stringify(extensionId)})?.extension.wakeupBackground()` 
+    },
     predicate: packet => packet.type === "evaluationResult"
   }).catch(() => undefined);
 }
@@ -301,7 +307,9 @@ async function findAddonWatcher({ client, extensionId }: {
   const watcher = await client.request({
     to: addon.actor,
     type: "getWatcher",
-    extra: { isServerTargetSwitchingEnabled: true }
+    extra: {
+       isServerTargetSwitchingEnabled: true 
+    }
   });
   return {
     watcherActor: watcher.actor,
@@ -362,7 +370,9 @@ async function evaluateJsonInConsole({ client, consoleActor, source }: {
     type: "evaluateJSAsync",
     extra: {
       text: `(async () => JSON.stringify(await ${source}))()`,
-      mapped: { await: true }
+      mapped: {
+         await: true 
+      }
     },
     predicate: packet => packet.type === "evaluationResult"
   });
@@ -395,11 +405,13 @@ async function evaluateInBackground<TValue>({ profileDir, extensionId, source }:
       throw new Error("the extension's background page is not reachable");
     }
 
-    const value: TValue = JSON.parse(await evaluateJsonInConsole({
+    const value: TValue = JSON.parse(
+                            await evaluateJsonInConsole({
       client,
       consoleActor,
       source
-    }));
+    })
+                          );
     return value;
   } finally {
     client.close();

@@ -6,7 +6,7 @@ import type {
   WorkerDataResponseType
 } from "./worker-port-types";
 
-export type WorkerPortReceiver = {
+export interface WorkerPortReceiver {
   sendReady(): void;
   send<T extends WorkerDataResponseType>(
     type: T,
@@ -14,7 +14,7 @@ export type WorkerPortReceiver = {
     transfer?: Transferable[]
   ): void;
   onMessage(handlers: CommandHandlerMap): void;
-};
+}
 
 export function createWorkerPortReceiver(port: MessagePort) {
   port.start();

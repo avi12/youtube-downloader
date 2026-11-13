@@ -1,9 +1,9 @@
 import type { LabeledOption } from "@/types";
 
-export type ChoiceText = {
+export interface ChoiceText {
   label: string;
   description?: string;
-};
+}
 
 // A grouped choice reads as "row · group" once picked; its group carries the shared description
 export type Choice<Value extends string = string> = LabeledOption<Value> & Pick<ChoiceText, "description"> & {

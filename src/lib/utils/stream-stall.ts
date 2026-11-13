@@ -2,7 +2,7 @@ const STREAM_STALL_TIMEOUT_MS = 30_000;
 const STALL_CHECK_INTERVAL_MS = 1_000;
 
 export class StreamStallError extends Error {
-  constructor(public readonly partialData: Uint8Array) {
+  constructor(readonly partialData: Uint8Array) {
     super("Stream stalled");
     this.name = "StreamStallError";
   }

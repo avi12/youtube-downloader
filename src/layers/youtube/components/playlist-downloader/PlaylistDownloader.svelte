@@ -6,6 +6,7 @@
   import PlaylistDownloaderActions from "./PlaylistDownloaderActions.svelte";
   import PlaylistDownloaderFormatSections from "./PlaylistDownloaderFormatSections.svelte";
   import PlaylistDownloaderSettings from "./PlaylistDownloaderSettings.svelte";
+
   const playlist = createPlaylistDownloaderState();
   const toggleButtons = createPlaylistToggleButtons(playlist);
   const actionButtons = createPlaylistActionButtons(playlist);
@@ -61,7 +62,7 @@
       transition: opacity 150ms ease;
 
       & + & {
-        border-top: 1px solid var(--yt-sys-color-baseline--tonal-rim, rgb(255 255 255 / 10%));
+        border-top: 1px solid var(--yt-sys-color-baseline--tonal-rim, rgb(255 255 255 / 0.1));
       }
     }
 

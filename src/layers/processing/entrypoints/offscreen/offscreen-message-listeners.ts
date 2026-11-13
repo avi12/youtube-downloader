@@ -11,7 +11,7 @@ import { handleProcessStreamEnd } from "./stream/end-handler";
 import { cancelDownloadsByIds } from "@/lib/download-pipeline";
 import { revokePendingBlobUrl } from "@/lib/download-pipeline/blob-download";
 import { transcodeRecentDownload } from "@/lib/download-pipeline/transcode-recent";
-import { OffscreenMessageType, listenForOffscreenMessages } from "@/lib/messaging/offscreen-messaging";
+import { listenForOffscreenMessages, OffscreenMessageType } from "@/lib/messaging/offscreen-messaging";
 
 const IFRAME_MESSAGE_START = "start";
 const IFRAME_MESSAGE_CANCEL = "cancel";

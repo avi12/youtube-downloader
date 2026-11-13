@@ -190,7 +190,7 @@
         cursor: pointer;
 
         &:hover {
-          opacity: 80%;
+          opacity: 0.8;
         }
 
         &:focus-visible {
@@ -221,7 +221,7 @@
           letter-spacing: 0.025em;
           white-space: normal;
           overflow-wrap: anywhere;
-          opacity: 0%;
+          opacity: 0;
           box-shadow:
             0 2px 6px 2px color-mix(in oklab, var(--fg) 15%, transparent),
             0 1px 2px 0 color-mix(in oklab, var(--fg) 30%, transparent);
@@ -236,7 +236,7 @@
 
         &:hover::after,
         &:focus-visible::after {
-          opacity: 100%;
+          opacity: 1;
           transition-delay: 500ms;
         }
       }
@@ -246,23 +246,23 @@
       }
 
       body {
-        --md-sys-color-surface: oklch(98.4% 0.0128 321.9deg);
-        --md-sys-color-surface-container: oklch(95.4% 0.0147 312.2deg);
-        --md-sys-color-surface-container-high: oklch(93.3% 0.0148 312.2deg);
-        --md-sys-color-surface-container-highest: oklch(91.4% 0.0137 314.8deg);
-        --md-sys-color-on-surface: oklch(22.7% 0.01 303.7deg);
-        --md-sys-color-on-surface-variant: oklch(39.8% 0.0174 303.7deg);
-        --md-sys-color-outline: oklch(51.6% 0.0186 309.9deg);
-        --md-sys-color-outline-variant: oklch(82.9% 0.0178 308.2deg);
-        --md-sys-color-primary: oklch(49.6% 0.1305 293.7deg);
-        --md-sys-color-on-primary: oklch(100% 0 0deg);
-        --md-sys-color-primary-container: oklch(91.8% 0.0477 302.8deg);
-        --md-sys-color-secondary-container: oklch(91.6% 0.0365 303.1deg);
-        --md-sys-color-error: oklch(50.1% 0.1783 28.7deg);
-        --md-sys-color-error-container: oklch(92.2% 0.0301 22.8deg);
-        --md-sys-color-on-error-container: oklch(25.4% 0.0794 27.6deg);
-        --md-sys-color-inverse-surface: oklch(30.4% 0.0132 305.1deg);
-        --md-sys-color-inverse-on-surface: oklch(94.9% 0.0118 314.1deg);
+        --md-sys-color-surface: oklch(0.984 0.0128 321.9deg);
+        --md-sys-color-surface-container: oklch(0.954 0.0147 312.2deg);
+        --md-sys-color-surface-container-high: oklch(0.933 0.0148 312.2deg);
+        --md-sys-color-surface-container-highest: oklch(0.914 0.0137 314.8deg);
+        --md-sys-color-on-surface: oklch(0.227 0.01 303.7deg);
+        --md-sys-color-on-surface-variant: oklch(0.398 0.0174 303.7deg);
+        --md-sys-color-outline: oklch(0.516 0.0186 309.9deg);
+        --md-sys-color-outline-variant: oklch(0.829 0.0178 308.2deg);
+        --md-sys-color-primary: oklch(0.496 0.1305 293.7deg);
+        --md-sys-color-on-primary: oklch(1 0 0deg);
+        --md-sys-color-primary-container: oklch(0.918 0.0477 302.8deg);
+        --md-sys-color-secondary-container: oklch(0.916 0.0365 303.1deg);
+        --md-sys-color-error: oklch(0.501 0.1783 28.7deg);
+        --md-sys-color-error-container: oklch(0.922 0.0301 22.8deg);
+        --md-sys-color-on-error-container: oklch(0.254 0.0794 27.6deg);
+        --md-sys-color-inverse-surface: oklch(0.304 0.0132 305.1deg);
+        --md-sys-color-inverse-on-surface: oklch(0.949 0.0118 314.1deg);
         --bg: var(--md-sys-color-surface);
         --fg: var(--md-sys-color-on-surface);
         --fg-muted: var(--md-sys-color-on-surface-variant);
@@ -273,11 +273,11 @@
         --accent-hover: var(--md-sys-color-secondary-container);
         --danger: var(--md-sys-color-error);
         --danger-hover: var(--md-sys-color-error-container);
-        --on-danger: oklch(100% 0 0deg);
+        --on-danger: oklch(1 0 0deg);
         --surface: var(--md-sys-color-surface-container);
         --surface-high: var(--md-sys-color-surface-container-high);
         --on-primary: var(--md-sys-color-on-primary);
-        --premium: oklch(68% 0.155 80deg);
+        --premium: oklch(0.68 0.155 80deg);
         --motion: 1;
 
         width: 400px;
@@ -290,25 +290,25 @@
         line-height: 1.5;
 
         @media (prefers-color-scheme: dark) {
-          --md-sys-color-surface: oklch(18.7% 0.0124 300.4deg);
-          --md-sys-color-surface-container: oklch(24.5% 0.0134 298.5deg);
-          --md-sys-color-surface-container-high: oklch(28.6% 0.0129 298.6deg);
-          --md-sys-color-surface-container-highest: oklch(33% 0.0125 298.8deg);
-          --md-sys-color-on-surface: oklch(91.4% 0.0137 314.8deg);
-          --md-sys-color-on-surface-variant: oklch(82.9% 0.0178 308.2deg);
-          --md-sys-color-outline: oklch(65.7% 0.0153 304deg);
-          --md-sys-color-outline-variant: oklch(39.8% 0.0174 303.7deg);
-          --md-sys-color-primary: oklch(83.5% 0.0946 298deg);
-          --md-sys-color-on-primary: oklch(32.5% 0.1353 291.2deg);
-          --md-sys-color-primary-container: oklch(41% 0.1337 292.7deg);
-          --md-sys-color-secondary-container: oklch(40.1% 0.034 298.6deg);
-          --md-sys-color-error: oklch(83.4% 0.0677 22deg);
-          --md-sys-color-error-container: oklch(42% 0.1473 28.1deg);
-          --md-sys-color-on-error-container: oklch(92.2% 0.0301 22.8deg);
-          --md-sys-color-inverse-surface: oklch(91.4% 0.0137 314.8deg);
-          --md-sys-color-inverse-on-surface: oklch(28.6% 0.0129 298.6deg);
-          --on-danger: oklch(25.4% 0.0794 27.6deg);
-          --premium: oklch(86% 0.13 85deg);
+          --md-sys-color-surface: oklch(0.187 0.0124 300.4deg);
+          --md-sys-color-surface-container: oklch(0.245 0.0134 298.5deg);
+          --md-sys-color-surface-container-high: oklch(0.286 0.0129 298.6deg);
+          --md-sys-color-surface-container-highest: oklch(0.33 0.0125 298.8deg);
+          --md-sys-color-on-surface: oklch(0.914 0.0137 314.8deg);
+          --md-sys-color-on-surface-variant: oklch(0.829 0.0178 308.2deg);
+          --md-sys-color-outline: oklch(0.657 0.0153 304deg);
+          --md-sys-color-outline-variant: oklch(0.398 0.0174 303.7deg);
+          --md-sys-color-primary: oklch(0.835 0.0946 298deg);
+          --md-sys-color-on-primary: oklch(0.325 0.1353 291.2deg);
+          --md-sys-color-primary-container: oklch(0.41 0.1337 292.7deg);
+          --md-sys-color-secondary-container: oklch(0.401 0.034 298.6deg);
+          --md-sys-color-error: oklch(0.834 0.0677 22deg);
+          --md-sys-color-error-container: oklch(0.42 0.1473 28.1deg);
+          --md-sys-color-on-error-container: oklch(0.922 0.0301 22.8deg);
+          --md-sys-color-inverse-surface: oklch(0.914 0.0137 314.8deg);
+          --md-sys-color-inverse-on-surface: oklch(0.286 0.0129 298.6deg);
+          --on-danger: oklch(0.254 0.0794 27.6deg);
+          --premium: oklch(0.86 0.13 85deg);
         }
       }
     }

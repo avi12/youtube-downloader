@@ -13,16 +13,16 @@ import { normalizeLanguageCode } from "@/lib/youtube/audio-format-helpers";
 import { resolveDownloadType } from "@/lib/youtube/download-type";
 import { selectVideoFormatForOptions } from "@/lib/youtube/select-video-quality";
 import {
-  DownloadType,
-  PlaylistOutputMode,
-  ProgressType,
-  VideoQualityMode,
   type AdaptiveFormatItem,
   type CaptionTrack,
   type DownloadRequest,
+  DownloadType,
   type Options,
+  PlaylistOutputMode,
   type Prettify,
-  type VideoData
+  ProgressType,
+  type VideoData,
+  VideoQualityMode
 } from "@/types";
 import { sendBatchDownloadMessage } from "#youtube/components/playlist-downloader/helpers/playlist-batch-ops";
 import {

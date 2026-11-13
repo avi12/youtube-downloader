@@ -1,9 +1,9 @@
 import {
-  toUint8Array,
-  triggerDownload,
-  reportProgress,
+  buildRecentContext,
   FFMPEG_PROGRESS_CAP,
-  buildRecentContext
+  reportProgress,
+  toUint8Array,
+  triggerDownload
 } from ".";
 import { addToPlaylistBundle } from "./playlist-bundle";
 import { applyAudioFfmpeg } from "./process-single-media-ffmpeg";

@@ -45,7 +45,7 @@ export type SearchItem = Prettify<{
 export type MusicSearchResponse = Prettify<{
   contents?: {
     tabbedSearchResultsRenderer?: {
-      tabs?: Array<{
+      tabs?: {
         tabRenderer?: {
           content?: {
             sectionListRenderer?: {
@@ -57,7 +57,7 @@ export type MusicSearchResponse = Prettify<{
             };
           };
         };
-      }>;
+      }[];
     };
   };
 }>;

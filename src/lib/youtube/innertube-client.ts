@@ -71,10 +71,10 @@ export type InnertubeContext = Prettify<{
     clickTrackingParams?: string;
   };
   adSignalsInfo?: {
-    params?: Array<{
+    params?: {
       key: string;
       value: string;
-    }>;
+    }[];
   };
 }>;
 

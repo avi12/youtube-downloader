@@ -2,7 +2,7 @@ import { fetchCaptionWebVttData } from "./caption-fetch";
 import type { DownloadParams } from "./download-execute";
 import { buildVideoMetadata } from "./video-data";
 import { getCurrentVideoAudioLanguage, normalizeLanguageCode } from "@/lib/youtube/audio-format-helpers";
-import type { CaptionTrack, DownloadRequest, AdaptiveFormatItem, Prettify } from "@/types";
+import type { AdaptiveFormatItem, CaptionTrack, DownloadRequest, Prettify } from "@/types";
 
 export type ResolvedDownloadData = Prettify<{
   sabrConfig: DownloadRequest["sabrConfig"];

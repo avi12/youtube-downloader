@@ -1,6 +1,6 @@
 import type { DownloadProgressState } from "@/lib/ui/synced-stores.svelte";
 import { calculateWeightedProgress } from "@/lib/youtube/video-helpers";
-import { ProgressType, type DownloadRequest, type VideoData } from "@/types";
+import { type DownloadRequest, ProgressType, type VideoData } from "@/types";
 
 export const ZIP_PROGRESS_KEY_PREFIX = "zip:";
 

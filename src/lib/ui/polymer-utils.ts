@@ -12,7 +12,7 @@ import type {
   YtIconName
 } from "@/types";
 
-export { DATA_SETTINGS_OPTIONS_ID_ATTR, attachSettingsOptions, isYtdSettingsOptionsRenderer } from "./polymer-settings-options";
+export { attachSettingsOptions, DATA_SETTINGS_OPTIONS_ID_ATTR, isYtdSettingsOptionsRenderer } from "./polymer-settings-options";
 
 export function attachIcon(icon: YtIconName) {
   return (elTarget: Element) => {

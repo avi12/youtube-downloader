@@ -84,7 +84,7 @@
     }
 
     &:has(input:disabled) {
-      opacity: 38%;
+      opacity: 0.38;
       cursor: not-allowed;
     }
   }

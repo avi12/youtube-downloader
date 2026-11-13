@@ -42,17 +42,17 @@
     })
   );
 
-  type ZipGroup = {
+  interface ZipGroup {
     playlistId: string;
     playlistTitle: string;
     videoIds: string[];
-  };
+  }
 
-  type Partition = {
+  interface Partition {
     zipGroups: ZipGroup[];
     individualIds: string[];
     recent: RecentDownloadEntry[];
-  };
+  }
 
   const videoDownloadIndex = $derived(
     new Map(videoDownloads.map((item, i) => [item.videoId, i] as const))

@@ -16,7 +16,7 @@ import {
   videoQueueItem
 } from "@/lib/storage/storage";
 import { createLogger, LogScope } from "@/lib/utils/logger";
-import { trackInstall, registerDailyHeartbeat, setUninstallUrl } from "#background/lib/analytics/ga4";
+import { registerDailyHeartbeat, setUninstallUrl, trackInstall } from "#background/lib/analytics/ga4";
 import { registerUpdateCheck } from "#background/lib/updates/update-check";
 import { registerCdnOriginRule } from "#background/lib/youtube/sabr/cdn-origin-rule";
 import { onSabrBodyCaptured, startSabrRequestCapture } from "#background/lib/youtube/sabr/request-capture";

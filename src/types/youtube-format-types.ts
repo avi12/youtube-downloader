@@ -1,5 +1,5 @@
 import type { Prettify } from "./prettify";
-import type { VideoQuality, QualityLabel, AudioQuality } from "./youtube-format-enums";
+import type { AudioQuality, QualityLabel, VideoQuality } from "./youtube-format-enums";
 
 export type MediaItem = Prettify<{
   itag: number;

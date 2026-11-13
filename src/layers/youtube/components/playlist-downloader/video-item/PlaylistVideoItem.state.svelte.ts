@@ -4,9 +4,9 @@ import { createVideoItemEffects } from "./PlaylistVideoItem.effects.svelte";
 import { buildButtonTooltip } from "./PlaylistVideoItem.helpers";
 import { PrimaryButtonState } from "@/lib/ui/primary-button.svelte";
 import {
+  type DownloadProgressState,
   interruptedDownloadStore,
-  statusProgressSignal,
-  type DownloadProgressState
+  statusProgressSignal
 } from "@/lib/ui/synced-stores.svelte";
 import { calculateWeightedProgress } from "@/lib/youtube/video-helpers";
 import { type Prettify, type VideoData } from "@/types";

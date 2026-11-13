@@ -6,7 +6,7 @@ const AUDIO_AUTO = "auto";
 const CAPTION_AUTO = "auto";
 const CAPTION_OFF = "off";
 
-export type TrackSelectProps = {
+export interface TrackSelectProps {
   downloadType: DownloadType;
   extension: string;
   uniqueAudioLanguages: LabeledOption[];
@@ -24,7 +24,7 @@ export type TrackSelectProps = {
   onaudiocustomchange: (langCode: string) => void;
   oncaptionmodechange: (mode: PanelTrackMode) => void;
   oncaptionchange: (vssId: string) => void;
-};
+}
 
 function moveToFront<Option>(options: Option[], isFront: (option: Option) => boolean) {
   const sorted = [...options];

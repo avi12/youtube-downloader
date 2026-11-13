@@ -1,7 +1,7 @@
 import { WorkerMessageType } from "./mux-worker-types";
 import type { ResponseHandlerMap, WorkerCommandMap, WorkerCommandType, WorkerResponse } from "./worker-port-types";
 
-export type HostWorkerPort = {
+export interface HostWorkerPort {
   send<T extends WorkerCommandType>(
     type: T,
     data: WorkerCommandMap[T],
@@ -9,7 +9,7 @@ export type HostWorkerPort = {
   ): void;
   onMessage(handlers: ResponseHandlerMap): void;
   port: MessagePort;
-};
+}
 
 export function createHostWorkerPort() {
   const { port1, port2 } = new MessageChannel();

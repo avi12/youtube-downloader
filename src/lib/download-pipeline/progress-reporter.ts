@@ -1,5 +1,5 @@
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
-import { ProgressType } from "@/types";
+import type { ProgressType } from "@/types";
 import type { Prettify } from "@/types";
 
 const PROGRESS_THROTTLE_INTERVAL_MS = 200;

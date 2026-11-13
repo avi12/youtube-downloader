@@ -6,10 +6,10 @@ import {
   sortAudioFormatsByDisplayName
 } from "@/lib/youtube/video-helpers";
 import {
-  AudioTrackLanguageMode,
-  PanelTrackMode,
   type AdaptiveFormatItem,
+  AudioTrackLanguageMode,
   type Options,
+  PanelTrackMode,
   type Prettify,
   type VideoData
 } from "@/types";

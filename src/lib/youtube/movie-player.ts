@@ -1,11 +1,11 @@
-import type { MoviePlayerElement, CaptionEventBus, PlayerCaptionTrackData } from "./movie-player-types";
+import type { CaptionEventBus, MoviePlayerElement, PlayerCaptionTrackData } from "./movie-player-types";
 import { captionBusContextSchema, captionEventBusSchema, playerCaptionTrackDataSchema } from "./schemas";
 
 export {
-  type MoviePlayerElement,
-  type PlayerCaptionTrackData,
+  ACTIVE_AUDIO_ATTR,
   ACTIVE_CAPTION_ATTR,
-  ACTIVE_AUDIO_ATTR
+  type MoviePlayerElement,
+  type PlayerCaptionTrackData
 } from "./movie-player-types";
 
 export function getMoviePlayer() {

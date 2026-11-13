@@ -4,7 +4,7 @@ import { resolveMultiTrackExtension } from "@/lib/utils/containers";
 import { resolveOutputExtensionForFormats } from "@/lib/youtube/align-formats-to-container";
 import { AUTO_DUB_TRACK_SUFFIX } from "@/lib/youtube/download-plan";
 import { formatAudioQualityLabel, formatVideoQualityLabel } from "@/lib/youtube/video-helpers";
-import { DownloadType, type AdaptiveFormatItem, type CodecPreferences, type VideoData } from "@/types";
+import { type AdaptiveFormatItem, type CodecPreferences, DownloadType, type VideoData } from "@/types";
 
 export function resolveActualExtension({
   downloadType,

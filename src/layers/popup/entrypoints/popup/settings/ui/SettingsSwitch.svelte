@@ -59,7 +59,7 @@
     position: absolute;
     width: 0;
     height: 0;
-    opacity: 0%;
+    opacity: 0;
 
     &:checked + .set-switch-track {
       background-color: var(--accent);
@@ -78,7 +78,7 @@
     }
 
     &:disabled + .set-switch-track {
-      opacity: 38%;
+      opacity: 0.38;
       cursor: not-allowed;
     }
   }

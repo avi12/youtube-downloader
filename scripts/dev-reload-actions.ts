@@ -8,12 +8,13 @@
  */
 
 import { REPLAY_FUNCTION_SOURCE } from "./dev-build-patches.ts";
-import { describeContentScripts, ReloadKind, type ReloadPlan } from "./dev-output-changes.ts";
+import type { ReloadKind} from "./dev-output-changes.ts";
+import { describeContentScripts, type ReloadPlan } from "./dev-output-changes.ts";
 
 export type ExtensionReloadPlan = Extract<ReloadPlan, { kind: typeof ReloadKind.ReloadExtension }>;
 export type PageRefreshPlan = Extract<ReloadPlan, { kind: typeof ReloadKind.RefreshPages }>;
 
-export type TabUpdateResult = {
+export interface TabUpdateResult {
   reloadedTabCount: number;
   reinjectedTabCount: number;
   // One-shot MAIN-to-ISOLATED messages re-sent to the fresh scripts (dev-build-patches.ts)
@@ -22,7 +23,7 @@ export type TabUpdateResult = {
     url: string;
     message: string;
   }[];
-};
+}
 
 export const PageAction = {
   Reloaded: "reloaded",
@@ -31,18 +32,18 @@ export const PageAction = {
 } as const;
 type PageAction = (typeof PageAction)[keyof typeof PageAction];
 
-export type RefreshedPage = {
+export interface RefreshedPage {
   name: string;
   action: PageAction;
-};
+}
 
-export type ReloadTarget = {
+export interface ReloadTarget {
   // Reload the extension, re-run the ISOLATED content scripts in the open tabs in place and reload
   // only the tabs a changed MAIN-world script runs in
   reloadExtension: (plan: ExtensionReloadPlan) => Promise<TabUpdateResult>;
   // Refresh the open extension pages an HTML-only change touched, leaving the extension and tabs alone
   refreshPages: (plan: PageRefreshPlan) => Promise<RefreshedPage[]>;
-};
+}
 
 const EXTENSION_API_SOURCE = "(globalThis.browser ?? globalThis.chrome)";
 

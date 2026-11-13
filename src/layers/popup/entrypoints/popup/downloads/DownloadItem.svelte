@@ -337,7 +337,7 @@
 
     &:hover,
     &:focus-visible {
-      opacity: 90%;
+      opacity: 0.9;
     }
 
     &:focus-visible {

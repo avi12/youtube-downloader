@@ -5,7 +5,8 @@ import {
 } from "../helpers/playlist-dropdown-lifecycle";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import type { VideoData } from "@/types";
-import { mount, unmount } from "svelte";
+import type { mount} from "svelte";
+import { unmount } from "svelte";
 
 const PANEL_ABOVE_OVERLAP_PX = 4;
 const IRON_OVERLAY_OPENED_EVENT = "iron-overlay-opened";

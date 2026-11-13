@@ -9,10 +9,10 @@ import { CONTENT_OPTIONS } from "@/lib/ui/synced-stores.svelte";
 import { videoDataSchema } from "@/lib/youtube/schemas";
 import { forwardSabrCredentialsWithRetry } from "#youtube/lib/youtube/sabr/credentials";
 
-type RegisterCrossWorldHandlersParams = {
+interface RegisterCrossWorldHandlersParams {
   isDownloadIframe: boolean;
   context: InstanceType<typeof ContentScriptContext>;
-};
+}
 export function registerCrossWorldHandlers({ isDownloadIframe, context }: RegisterCrossWorldHandlersParams) {
   crossWorldMessenger.onMessage(CrossWorldMessage.VideoData, async ({ data }) => {
     await checkInterruptedDownload(data.videoId);

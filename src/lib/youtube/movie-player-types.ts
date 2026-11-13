@@ -54,12 +54,12 @@ export interface MoviePlayerElement extends HTMLElement {
   loadModule?: (module: string) => void;
 
   getAudioTrack?: () => Record<string, unknown> | null;
-  getAvailableAudioTracks?: () => Array<{
+  getAvailableAudioTracks?: () => {
     gw?: {
       id?: string;
       name?: string;
     };
-  }>;
+  }[];
   setAudioTrack?: (track: {
     gw?: {
       id?: string;
@@ -74,9 +74,9 @@ export type PlayerCaptionTrackData = Prettify<{
   vss_id: string;
 }>;
 
-export type CaptionEventBus = {
+export interface CaptionEventBus {
   subscribe: (topic: string, handler: (data: unknown) => void) => void;
-};
+}
 
 export const ACTIVE_CAPTION_ATTR = "data-ytdl-caption";
 export const ACTIVE_AUDIO_ATTR = "data-ytdl-audio";

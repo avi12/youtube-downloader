@@ -1,5 +1,5 @@
 import { resolveAndDispatch } from "./download-execute";
-import { crossWorldMessenger, CrossWorldMessage } from "@/lib/messaging/cross-world-messenger";
+import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { createLogger, LogScope } from "@/lib/utils/logger";
 import type { DownloadRequest } from "@/types";
 

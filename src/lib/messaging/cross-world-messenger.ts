@@ -11,7 +11,7 @@ import type {
   VideoData,
   VideoMetadata
 } from "@/types";
-import { ProgressType } from "@/types";
+import type { ProgressType } from "@/types";
 import { defineCustomEventMessaging } from "@webext-core/messaging/page";
 
 export const CrossWorldMessage = {

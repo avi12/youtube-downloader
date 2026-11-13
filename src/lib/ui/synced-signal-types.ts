@@ -2,18 +2,18 @@ import { defineCustomEventMessaging } from "@webext-core/messaging/page";
 
 const SYNC_NAMESPACE = "ytdl-sync";
 
-export type SignalSchema<T> = {
+export interface SignalSchema<T> {
   value: (data: T) => void;
-};
+}
 export type SignalMessenger<T> = ReturnType<typeof defineCustomEventMessaging<SignalSchema<T>>>;
 
-export type MapEntryPayload<T> = {
+export interface MapEntryPayload<T> {
   mapKey: string;
   mapValue: T | undefined;
-};
-export type MapSchema<T> = {
+}
+export interface MapSchema<T> {
   entry: (data: MapEntryPayload<T>) => void;
-};
+}
 export type MapMessenger<T> = ReturnType<typeof defineCustomEventMessaging<MapSchema<T>>>;
 
 export function createSignalMessenger<T>(key: string) {

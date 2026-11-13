@@ -4,22 +4,22 @@ import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import { performCancelDownload } from "@/lib/ui/cancel-download";
 import { interruptedDownloadStore } from "@/lib/ui/synced-stores.svelte";
 import {
-  DownloadType,
   type AdaptiveFormatItem,
   type CaptionTrack,
   type CodecPreferences,
+  DownloadType,
   type VideoData
 } from "@/types";
 
 export { applyDownloadTypeChange } from "./panel-type-change";
 
-type BuildDownloadPlanParamsParams = {
+interface BuildDownloadPlanParamsParams {
   downloadType: DownloadType;
   selectedVideoFormat: AdaptiveFormatItem | null;
   selectedAudioFormat: AdaptiveFormatItem | null;
   selectedCaptionTrack: CaptionTrack | null;
   codecPreferences: CodecPreferences;
-};
+}
 export function buildDownloadPlanParams(params: BuildDownloadPlanParamsParams) {
   return {
     type: params.downloadType,

@@ -210,12 +210,12 @@ async function runFirefoxDirectDownload({ request, tabId, enrichedMetadata }: Ru
     throw new Error(`ANDROID_VR did not return URL for audio itag ${audioItag}`);
   }
 
-  type StreamDescriptor = {
+  interface StreamDescriptor {
     url: string;
     contentLength: number;
     streamType: string;
     label: string;
-  };
+  }
   const streams: StreamDescriptor[] = [];
   if (wantsVideo && resolved.videoUrl) {
     streams.push({

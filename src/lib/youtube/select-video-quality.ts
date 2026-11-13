@@ -4,10 +4,10 @@ import { filterVideoFormatsByEnhancedBitrate } from "./format-display";
 import { listChoices } from "@/lib/utils/choices";
 import {
   MaxFrameRate,
-  VideoQualityMode,
   type Options,
   type Prettify,
-  type VideoData
+  type VideoData,
+  VideoQualityMode
 } from "@/types";
 
 const FRAME_RATE_LIMITS: Record<MaxFrameRate, Prettify<{

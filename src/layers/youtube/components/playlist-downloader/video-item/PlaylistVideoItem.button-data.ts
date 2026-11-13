@@ -1,10 +1,11 @@
 import { DATA_BUTTON_ID_ATTR, sendButtonData } from "@/lib/ui/polymer-utils";
+import type {
+  IconName} from "@/types";
 import {
   ButtonSize,
   ButtonState,
   ButtonStyle,
   ButtonType,
-  IconName,
   type Prettify,
   type VideoData
 } from "@/types";

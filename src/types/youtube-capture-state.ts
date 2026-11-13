@@ -11,10 +11,10 @@ export type YtdlMediaCapture = Prettify<{
 
 export type YtdlCaptureState = Prettify<{
   activeVideoId: string;
-  pendingChunks: Array<{
+  pendingChunks: {
     mimeType: string;
     data: Uint8Array;
-  }>;
+  }[];
   capturedMedia: Map<string, YtdlMediaCapture>;
   sourceBufferMimeTypes: WeakMap<SourceBuffer, string>;
   addChunkToCapture: (chunkInfo: {

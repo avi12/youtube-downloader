@@ -5,13 +5,13 @@
   import SettingsDropDown from "../ui/SettingsDropDown.svelte";
   import SettingsGroup from "../ui/SettingsGroup.svelte";
   import { setOption } from "@/lib/storage/storage";
-  import { findChoice, type Choice } from "@/lib/utils/choices";
+  import { type Choice, findChoice } from "@/lib/utils/choices";
   import {
     AUDIO_CODEC_CHOICES,
     DYNAMIC_RANGE_CHOICES,
     listContainerChoices,
-    VIDEO_CODEC_CHOICES,
-    type MediaKind
+    type MediaKind,
+    VIDEO_CODEC_CHOICES
   } from "@/lib/utils/containers";
   import type { Options } from "@/types";
 
@@ -19,14 +19,14 @@
 
   const CODEC_SUBTITLE = "Used when the container supports it";
 
-  type FormatSettingRow = {
+  interface FormatSettingRow {
     label: string;
     subtitle?: string;
     icon: string;
     choices: Choice[];
     value: string;
     select: (value: string) => void;
-  };
+  }
 
   type ChoiceOptionKey = "videoCodec" | "audioCodec" | "dynamicRange";
 

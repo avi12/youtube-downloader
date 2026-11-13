@@ -61,11 +61,21 @@ const { values: cliOptions } = parseArgs({
       type: "boolean",
       default: false
     },
-    "cdp-port": { type: "string" },
-    "marionette-port": { type: "string" },
-    "profile-dir": { type: "string" },
-    "out-dir": { type: "string" },
-    "start-url": { type: "string" }
+    "cdp-port": {
+       type: "string" 
+    },
+    "marionette-port": {
+       type: "string" 
+    },
+    "profile-dir": {
+       type: "string" 
+    },
+    "out-dir": {
+       type: "string" 
+    },
+    "start-url": {
+       type: "string" 
+    }
   },
   allowPositionals: true
 });
@@ -368,6 +378,7 @@ async function buildExtension() {
       }
     }
   });
+
   if (!outputDir) {
     throw new Error("WXT finished without reporting its output directory");
   }
@@ -444,10 +455,10 @@ function quietWebExtLogs() {
   };
 }
 
-type BrowserLaunch = {
+interface BrowserLaunch {
   outputDir: string;
   profileDirectory: string;
-};
+}
 
 function launchFirefox({ outputDir, profileDirectory }: BrowserLaunch) {
   // Lets the dev server wake the suspended background event page over RDP (WebExtensionPolicy is
@@ -460,7 +471,9 @@ function launchFirefox({ outputDir, profileDirectory }: BrowserLaunch) {
     keepProfileChanges: true,
     firefoxProfile: profileDirectory,
     args: ["--marionette", `--remote-debugging-port=${CDP_PORT}`],
-    pref: { "marionette.port": MARIONETTE_PORT },
+    pref: {
+       "marionette.port": MARIONETTE_PORT 
+    },
     noReload: true,
     noInput: true
   }, { shouldExitProgram: false });
@@ -709,10 +722,12 @@ async function main() {
     ...browserLaunch,
     runner
   });
-  const watcher = watchSources(createRebuildLoop({
+  const watcher = watchSources(
+                    createRebuildLoop({
     outputDir,
     reloadTarget
-  }));
+  })
+                  );
   console.log("Watching for file changes...\n");
   registerShutdown({
     watcher,

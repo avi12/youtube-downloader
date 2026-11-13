@@ -1,9 +1,9 @@
 import {
-  toUint8Array,
-  toOwnedArrayBuffer,
-  triggerDownload,
+  buildRecentContext,
   reportProgress,
-  buildRecentContext
+  toOwnedArrayBuffer,
+  toUint8Array,
+  triggerDownload
 } from ".";
 import type { AudioTrack } from "./mux-worker-types";
 import { resolveMultiTrackExtension } from "@/lib/utils/containers";

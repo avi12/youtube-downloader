@@ -1,7 +1,7 @@
 import { triggerDownload } from ".";
 import { runTranscodeFile } from "./ffmpeg-instance";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
-import { getRecentDownloadBlob, getAllRecentDownloads } from "@/lib/storage/recent-downloads-db";
+import { getAllRecentDownloads, getRecentDownloadBlob } from "@/lib/storage/recent-downloads-db";
 import type { RecentDownloadEntry } from "@/lib/storage/recent-downloads-db";
 import { audioContainers, splitFilenameAndExtension, videoContainers } from "@/lib/utils/containers";
 import { createLogger, LogScope } from "@/lib/utils/logger";

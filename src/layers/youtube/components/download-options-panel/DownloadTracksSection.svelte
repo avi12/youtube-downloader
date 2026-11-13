@@ -139,7 +139,7 @@
 
     &.is-open {
       grid-template-rows: minmax(0, 1fr);
-      border: 1px solid var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 10%));
+      border: 1px solid var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 0.1));
       border-top: none;
       border-bottom-right-radius: 10px;
       border-bottom-left-radius: 10px;

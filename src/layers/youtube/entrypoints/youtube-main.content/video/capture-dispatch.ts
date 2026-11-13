@@ -59,7 +59,7 @@ function readInitialDataTitle(videoId: string) {
     ?.videoPrimaryInfoRenderer?.title?.runs?.[0]?.text ?? "";
 }
 
-export type ShortsPageData = {
+export interface ShortsPageData {
   overlay?: {
     reelPlayerOverlayRenderer?: {
       playerOverlay?: {
@@ -77,7 +77,7 @@ export type ShortsPageData = {
       };
     };
   };
-};
+}
 
 function readShortsDisplayTitle(pageData: ShortsPageData | undefined) {
   const metadataItems = pageData?.overlay?.reelPlayerOverlayRenderer?.playerOverlay

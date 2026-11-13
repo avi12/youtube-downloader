@@ -26,7 +26,7 @@ import { resolveDownloadPlan } from "@/lib/youtube/download-plan";
 import { predictOutputSize, type SizeInputs } from "@/lib/youtube/output-size";
 import { selectVideoFormatForQuality } from "@/lib/youtube/select-video-quality";
 import { alignAudioFormatToExtension, calculateWeightedProgress } from "@/lib/youtube/video-helpers";
-import { DownloadType, type AdaptiveFormatItem, type CodecPreferences, type VideoData } from "@/types";
+import { type AdaptiveFormatItem, type CodecPreferences, DownloadType, type VideoData } from "@/types";
 import { untrack } from "svelte";
 
 const PAGE_LOCALE = document.documentElement.lang || undefined;

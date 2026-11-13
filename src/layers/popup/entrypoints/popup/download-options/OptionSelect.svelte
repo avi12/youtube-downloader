@@ -1,6 +1,6 @@
 <script generics="Value extends string" lang="ts">
   import OptionField from "./OptionField.svelte";
-  import { describeChoice, findChoice, type Choice } from "@/lib/utils/choices";
+  import { type Choice, describeChoice, findChoice } from "@/lib/utils/choices";
 
   type OptionChoice = Choice<Value> & {
     disabled?: boolean;

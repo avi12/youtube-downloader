@@ -2,7 +2,7 @@ import { CONTENT_OPTIONS } from "@/lib/ui/synced-stores.svelte";
 import { filterVideoFormatsByEnhancedBitrate } from "@/lib/youtube/format-display";
 import { selectVideoFormatForQuality } from "@/lib/youtube/select-video-quality";
 import { waitForVideoElement } from "@/lib/youtube/video-helpers";
-import { VideoQualityMode, type AdaptiveFormatItem, type Prettify, type VideoData } from "@/types";
+import { type AdaptiveFormatItem, type Prettify, type VideoData, VideoQualityMode } from "@/types";
 import { untrack } from "svelte";
 
 const MOVIE_PLAYER_ID = "movie_player";

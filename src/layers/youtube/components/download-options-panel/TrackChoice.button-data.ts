@@ -1,12 +1,14 @@
 import { sendButtonData } from "@/lib/ui/polymer-utils";
+import type {
+  TrackKind
+} from "@/types";
 import {
   ButtonSize,
   ButtonState,
   ButtonStyle,
   ButtonType,
   IconName,
-  PanelTrackMode,
-  TrackKind
+  PanelTrackMode
 } from "@/types";
 
 export function buildTrackButtons(kind: TrackKind) {

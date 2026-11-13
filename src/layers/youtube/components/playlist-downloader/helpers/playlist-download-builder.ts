@@ -1,7 +1,7 @@
 import { resolveVideoFilename } from "@/lib/utils/containers";
 import { resolveDownloadType } from "@/lib/youtube/download-type";
 import { selectVideoFormatForOptions } from "@/lib/youtube/select-video-quality";
-import { VideoQualityMode, type Options, type Prettify, type VideoData } from "@/types";
+import { type Options, type Prettify, type VideoData, VideoQualityMode } from "@/types";
 
 type PlaylistMetadata = Prettify<{
   playlistId: string;

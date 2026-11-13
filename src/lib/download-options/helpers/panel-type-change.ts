@@ -1,6 +1,6 @@
 import { CONTENT_OPTIONS } from "@/lib/ui/synced-stores.svelte";
 import { resolveAutoContainer } from "@/lib/youtube/auto-container";
-import { DownloadType, type AdaptiveFormatItem, type CodecPreferences, type VideoData } from "@/types";
+import { type AdaptiveFormatItem, type CodecPreferences, DownloadType, type VideoData } from "@/types";
 
 export function applyDownloadTypeChange({
   newType,

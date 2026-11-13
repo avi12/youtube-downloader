@@ -83,10 +83,12 @@ export function patchBuiltOutput(outputDir: string) {
 
   for (const file of listContentScripts(readBuiltManifest(outputDir)).flatMap(entry => entry.js)) {
     const filePath = join(outputDir, file);
-    writeFileSync(filePath, guardRunOnce({
+    writeFileSync(
+      filePath, guardRunOnce({
       name: file,
       source: readFileSync(filePath, "utf-8")
-    }));
+    })
+    );
   }
 }
 

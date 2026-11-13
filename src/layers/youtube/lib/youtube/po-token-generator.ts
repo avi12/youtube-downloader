@@ -2,9 +2,9 @@ import { ensureBotGuardVm, getBotGuardVm, initBotGuardVm } from "./botguard-vm";
 import type { SignalFunction } from "./botguard-vm";
 import { base64ToUint8Array } from "@/lib/utils/binary";
 import {
+  type InnertubeAttGetRequest,
   InnertubeClientName,
   InnertubeEngagementType,
-  type InnertubeAttGetRequest,
   type InnertubeGenerateItRequest,
   type InnertubeGenerateItResponse
 } from "@/lib/youtube/innertube";

@@ -141,20 +141,20 @@
     padding: 4px;
     border-radius: 12px;
     background: var(--surface-high);
-    box-shadow: 0 4px 16px rgb(0 0 0 / 15%);
+    box-shadow: 0 4px 16px rgb(0 0 0 / 0.15);
     animation: menu-in 200ms cubic-bezier(0.34, 1.56, 0.64, 1);
     position-try-fallbacks: flip-block;
   }
 
   @keyframes menu-in {
     from {
-      opacity: 0%;
+      opacity: 0;
       scale: 0.92;
       translate: 0 -4px;
     }
 
     to {
-      opacity: 100%;
+      opacity: 1;
       scale: 1;
       translate: 0 0;
     }

@@ -29,11 +29,11 @@ declare global {
         twoColumnWatchNextResults?: {
           results?: {
             results?: {
-              contents?: Array<{
+              contents?: {
                 videoPrimaryInfoRenderer?: {
                   title?: { runs?: Array<{ text?: string }> };
                 };
-              }>;
+              }[];
             };
           };
         };
@@ -42,7 +42,7 @@ declare global {
         playlistHeaderRenderer?: {
           title?: { simpleText?: string };
           playlistId?: string;
-          ownerText?: { runs?: Array<{ text?: string }> };
+          ownerText?: { runs?: { text?: string }[] };
         };
       };
       metadata?: {

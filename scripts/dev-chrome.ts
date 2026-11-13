@@ -55,27 +55,27 @@ const INVOKE_SCRIPT_STARTED_LISTENER_FUNCTION = `function (handler, type, conten
   handler.call(this, new CustomEvent(type, { detail: { contentScriptName, messageId } }));
 }`;
 
-type ExecutionContext = {
+interface ExecutionContext {
   id: number;
   name?: string;
   auxData?: { type?: string };
-};
+}
 
-type RemoteObject = { objectId?: string };
+interface RemoteObject { objectId?: string }
 
-type EventListenerInfo = {
+interface EventListenerInfo {
   type: string;
   useCapture: boolean;
   handler?: RemoteObject;
   originalHandler?: RemoteObject;
-};
+}
 
-type ChromeReloadTargetOptions = {
+interface ChromeReloadTargetOptions {
   cdpPort: number;
   // The manifest name - Chrome names a content script's isolated world after it
   extensionName: string;
   reloadExtensionOverPipe: () => Promise<unknown>;
-};
+}
 
 function isExtensionServiceWorker(target: CdpTarget) {
   return target.type === CdpTargetType.ServiceWorker &&
@@ -189,7 +189,9 @@ async function neutralizeOrphanedWorldsInPage({ page, worldName }: {
   try {
     const contexts: ExecutionContext[] = [];
     session.on("Runtime.executionContextCreated", rawMessage => {
-      const { params }: { params: { context: ExecutionContext } } = JSON.parse(rawMessage);
+      const { params }: {
+         params: { context: ExecutionContext } 
+      } = JSON.parse(rawMessage);
       contexts.push(params.context);
     });
     await session.send("Runtime.enable");
@@ -197,7 +199,9 @@ async function neutralizeOrphanedWorldsInPage({ page, worldName }: {
     const extensionWorlds = contexts.filter(context =>
       context.auxData?.type === ISOLATED_WORLD_TYPE && context.name === worldName);
     for (const context of extensionWorlds) {
-      const { result: probe } = await session.send<{ result: { value?: boolean } }>("Runtime.evaluate", {
+      const { result: probe } = await session.send<{
+         result: { value?: boolean } 
+      }>("Runtime.evaluate", {
         expression: ORPHANED_WORLD_PROBE,
         contextId: context.id,
         returnByValue: true
@@ -260,12 +264,14 @@ export function createChromeReloadTarget({ cdpPort, extensionName, reloadExtensi
       target.type === CdpTargetType.Page &&
       target.webSocketDebuggerUrl &&
       patterns.some(pattern => matchesUrlPattern(target.url ?? "", pattern)));
-    await Promise.all(pages.map(page => neutralizeOrphanedWorldsInPage({
+    await Promise.all(
+            pages.map(page => neutralizeOrphanedWorldsInPage({
       page,
       worldName: extensionName
     }).catch((error: unknown) => {
       console.warn(`Could not neutralize the orphaned content scripts in ${page.url}: ${String(error)}`);
-    })));
+    }))
+          );
   }
 
   async function reloadExtension(plan: ExtensionReloadPlan) {

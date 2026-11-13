@@ -1,15 +1,15 @@
 import type { EmbedMetadataJob, MuxVideoAudioJob, TranscodeAudioJob, TranscodeFileJob } from "./mux-worker-types";
-import { WorkerMessageType } from "./mux-worker-types";
+import type { WorkerMessageType } from "./mux-worker-types";
 import type { ProgressType } from "@/types";
 
-export type WorkerCommandMap = {
+export interface WorkerCommandMap {
   [WorkerMessageType.MuxVideoAudio]: { job: MuxVideoAudioJob };
   [WorkerMessageType.EmbedMetadata]: { job: EmbedMetadataJob };
   [WorkerMessageType.TranscodeAudio]: { job: TranscodeAudioJob };
   [WorkerMessageType.TranscodeFile]: { job: TranscodeFileJob };
-};
+}
 
-export type WorkerDataResponseMap = {
+export interface WorkerDataResponseMap {
   [WorkerMessageType.Result]: { data: ArrayBuffer | null };
   [WorkerMessageType.ResultFile]: { data: File };
   [WorkerMessageType.Error]: { message: string };
@@ -19,7 +19,7 @@ export type WorkerDataResponseMap = {
     progressType: ProgressType;
     tabId: number;
   };
-};
+}
 
 export type WorkerCommandType = keyof WorkerCommandMap;
 export type WorkerDataResponseType = keyof WorkerDataResponseMap;

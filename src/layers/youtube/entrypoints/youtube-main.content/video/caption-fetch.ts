@@ -1,7 +1,7 @@
 import { fetchFreshCaptionUrls } from "./caption-urls";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { uint8ToBase64 } from "@/lib/utils/binary";
-import { ProgressType, type CaptionTrack, type Prettify } from "@/types";
+import { type CaptionTrack, type Prettify, ProgressType } from "@/types";
 
 const MILLISECONDS_PER_SECOND = 1000;
 const SECONDS_PER_HOUR = 3600;

@@ -1,4 +1,4 @@
-import { listChoices, type Choice } from "./choices";
+import { type Choice, listChoices } from "./choices";
 import { AudioCodecPreference, DynamicRangePreference, VideoCodecPreference } from "@/types";
 import type { CodecPreferences, Prettify } from "@/types";
 

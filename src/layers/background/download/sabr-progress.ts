@@ -1,6 +1,6 @@
 import { sendProgressUpdate } from "./progress-fetch";
 import { computeWeightedProgress } from "./progress-stages";
-import { parseContentLength, estimateFormatBytes, estimateBytesFromBitrate } from "./sabr-utils";
+import { estimateBytesFromBitrate, estimateFormatBytes, parseContentLength } from "./sabr-utils";
 import { ProgressType } from "@/types";
 import type { AdaptiveFormatItem, Prettify } from "@/types";
 

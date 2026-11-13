@@ -13,7 +13,7 @@
     legend: string;
     isLegendHidden?: boolean;
     name: string;
-    options: ReadonlyArray<RadioOption>;
+    options: readonly RadioOption[];
     selected: Value;
     slideDuration?: number;
     onchange: (value: Value) => void;
@@ -104,7 +104,7 @@
     position: absolute;
     width: 0;
     height: 0;
-    opacity: 0%;
+    opacity: 0;
   }
 
   .radio-dot {

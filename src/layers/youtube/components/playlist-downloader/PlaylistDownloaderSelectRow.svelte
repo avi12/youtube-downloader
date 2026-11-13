@@ -112,7 +112,7 @@
       content: "";
       flex: 1;
       height: 1px;
-      background: var(--yt-sys-color-baseline--tonal-rim, rgb(255 255 255 / 10%));
+      background: var(--yt-sys-color-baseline--tonal-rim, rgb(255 255 255 / 0.1));
     }
   }
 </style>

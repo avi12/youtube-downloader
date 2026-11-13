@@ -4,8 +4,8 @@ import {
   ButtonState,
   ButtonStyle,
   ButtonType,
-  IconName,
-  type ButtonViewModelData
+  type ButtonViewModelData,
+  IconName
 } from "@/types";
 import type { Prettify } from "@/types";
 

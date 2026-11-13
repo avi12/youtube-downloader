@@ -2,7 +2,7 @@ import { handleProcessStreamChunk } from "./stream/accumulator";
 import { handleProcessStreamEnd } from "./stream/end-handler";
 import { MessageType, sendMessage } from "@/lib/messaging/messaging";
 import type { OffscreenProtocolMap } from "@/lib/messaging/offscreen-messaging";
-import { OffscreenMessageType } from "@/lib/messaging/offscreen-messaging";
+import type { OffscreenMessageType } from "@/lib/messaging/offscreen-messaging";
 import { uint8ToBase64 } from "@/lib/utils/binary";
 import { fetchAudioViaSabrStream } from "@/lib/youtube/sabr/download";
 import { DownloadType, StreamType } from "@/types";

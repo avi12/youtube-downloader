@@ -87,7 +87,7 @@
   }
 
   .ytdl-section.is-disabled {
-    opacity: 50%;
+    opacity: 0.5;
     pointer-events: none;
   }
 

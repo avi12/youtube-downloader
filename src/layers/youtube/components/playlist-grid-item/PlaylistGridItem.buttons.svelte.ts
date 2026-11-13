@@ -1,6 +1,6 @@
 import { buildPlaylistChevronButtonId, buildPlaylistDownloadButtonId } from "./helpers/playlist-grid-panel-lifecycle";
 import type { createPanelManager } from "./PlaylistGridItem.panel.svelte";
-import { PlaylistGridStatus, type createPlaylistGridItemState } from "./PlaylistGridItem.state.svelte";
+import { type createPlaylistGridItemState, PlaylistGridStatus } from "./PlaylistGridItem.state.svelte";
 import { IconName, type Prettify } from "@/types";
 import {
   sendChevronButtonData,

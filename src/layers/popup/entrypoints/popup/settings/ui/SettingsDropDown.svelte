@@ -389,7 +389,7 @@
 
     .dropdown-item-desc {
       color: var(--accent);
-      opacity: 75%;
+      opacity: 0.75;
     }
   }
 </style>

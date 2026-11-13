@@ -50,10 +50,10 @@ function handleNavigation() {
   extractPlaylistMetadata();
 }
 
-type NavigateResponse = {
+interface NavigateResponse {
   playerResponse?: PlayerResponse;
   response?: ShortsPageData;
-};
+}
 
 function readNavigateResponse(e: Event) {
   const isCustomEvent = e instanceof CustomEvent;

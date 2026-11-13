@@ -168,10 +168,10 @@ export function initOffscreenPortListener() {
   });
 }
 
-type SendToOffscreenParams<T extends OffscreenMessageType> = {
+interface SendToOffscreenParams<T extends OffscreenMessageType> {
   type: T;
   data: OffscreenProtocolMap[T];
-};
+}
 export function sendToOffscreen<T extends OffscreenMessageType>({ type, data }: SendToOffscreenParams<T>) {
   swSidePort?.postMessage({
     type,

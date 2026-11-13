@@ -2,7 +2,7 @@ import { preResolveCdnUrls, resolveCredentialsWithRetry } from "./download-forma
 import { buildEnrichedRequest, fetchCaptionWebVttData } from "./download-request-builder";
 import { getPageRoute, getRouteVideoId, PageRoute } from "./page-route";
 import { generatePoTokenIfNeeded, videoDataCache } from "./video-data";
-import { crossWorldMessenger, CrossWorldMessage } from "@/lib/messaging/cross-world-messenger";
+import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
 import { getCompatibleFilename, getFileExtension, splitFilenameAndExtension } from "@/lib/utils/filename";
 import { createLogger, LogScope } from "@/lib/utils/logger";
 import { resolveDownloadPlan } from "@/lib/youtube/download-plan";

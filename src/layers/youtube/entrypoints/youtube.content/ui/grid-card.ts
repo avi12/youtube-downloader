@@ -208,10 +208,10 @@ function resolveMountPoint(elCard: Element) {
   } as const;
 }
 
-type MountGridButtonParams = {
+interface MountGridButtonParams {
   context: InstanceType<typeof ContentScriptContext>;
   elCard: Element;
-};
+}
 export function mountGridButton({ context, elCard }: MountGridButtonParams) {
   const content = extractCardContent(elCard);
   if (!content) {

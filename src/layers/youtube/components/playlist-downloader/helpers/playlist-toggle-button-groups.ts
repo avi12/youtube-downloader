@@ -1,8 +1,8 @@
 import {
   DownloadType,
+  type DownloadTypePreference,
   PlaylistDownloadMode,
   PlaylistOutputMode,
-  type DownloadTypePreference,
   type Prettify
 } from "@/types";
 

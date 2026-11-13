@@ -4,14 +4,14 @@
 
 <script lang="ts">
   import { attachIcon } from "@/lib/ui/polymer-utils";
-  import { formatChoiceLabel, type Choice } from "@/lib/utils/choices";
+  import { type Choice, formatChoiceLabel } from "@/lib/utils/choices";
   import { YtIconName } from "@/types";
   import { untrack } from "svelte";
 
   interface Props {
     id?: string;
     label: string;
-    options: ReadonlyArray<Choice>;
+    options: readonly Choice[];
     value: string;
     disabled?: boolean;
     onchange: (value: string) => void;
@@ -292,7 +292,7 @@
 <style>
   .ytdl-select-field {
     &:has(.ytdl-select-trigger:disabled) {
-      opacity: var(--paper-dropdown-menu-disabled-opacity, 33%);
+      opacity: var(--paper-dropdown-menu-disabled-opacity, 0.33);
     }
   }
 
@@ -313,7 +313,7 @@
     margin: 0;
     padding-block: 0;
     padding-inline: 14px 12px;
-    border: 1px solid var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 16%));
+    border: 1px solid var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 0.16));
     border-radius: 8px;
     background: transparent;
     color: var(--yt-sys-color-baseline--text-primary, #0f0f0f);
@@ -371,11 +371,11 @@
     max-height: var(--ytdl-popup-max-height, clamp(120px, 50dvh, calc(100dvh - 16px)));
     margin-block-start: 4px;
     padding: var(--ytdl-popup-padding);
-    border: 1px solid var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 10%));
+    border: 1px solid var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 0.1));
     border-radius: 8px;
     background: var(--ytdl-popup-background);
     scrollbar-width: thin;
-    box-shadow: 0 8px 32px rgb(0 0 0 / 32%), 0 2px 8px rgb(0 0 0 / 16%);
+    box-shadow: 0 8px 32px rgb(0 0 0 / 0.32), 0 2px 8px rgb(0 0 0 / 0.16);
   }
 
   :global(.ytdl-select-menu) {
@@ -396,11 +396,11 @@
   }
 
   :global(.ytdl-select-menu tp-yt-paper-item:hover:not([aria-disabled="true"])) {
-    background-color: var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 6%));
+    background-color: var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 0.06));
   }
 
   :global(.ytdl-select-menu tp-yt-paper-item[aria-disabled="true"]) {
-    opacity: 38%;
+    opacity: 0.38;
     cursor: default;
   }
 
@@ -429,7 +429,7 @@
 
     &:not(:first-child) {
       margin-top: 4px;
-      border-top: 1px solid var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 10%));
+      border-top: 1px solid var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 0.1));
     }
   }
 

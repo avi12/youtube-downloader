@@ -1,4 +1,4 @@
-import { StreamStallError, readStreamToBuffer } from "@/lib/utils/stream";
+import { readStreamToBuffer, StreamStallError } from "@/lib/utils/stream";
 import type { AdaptiveFormatItem, Prettify, SabrConfig } from "@/types";
 import { SabrStream } from "googlevideo/sabr-stream";
 import { buildSabrFormat, Logger, LogLevel } from "googlevideo/utils";

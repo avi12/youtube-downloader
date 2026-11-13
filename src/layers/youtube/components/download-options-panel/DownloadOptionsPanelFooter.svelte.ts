@@ -1,4 +1,4 @@
-import { ProgressType, type Prettify } from "@/types";
+import { type Prettify, ProgressType } from "@/types";
 import {
   attachPrimaryButton as attachPrimaryButtonElement,
   PrimaryButtonState

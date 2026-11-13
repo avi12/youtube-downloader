@@ -54,12 +54,12 @@
   const { playlistId, state }: Props = $props();
   const initialPlaylistId = untrack(() => playlistId);
 
-  type OutputButton = {
+  interface OutputButton {
     id: string;
     label: string;
     tooltip: string;
     mode: PlaylistOutputMode;
-  };
+  }
 
   const outputButtons: OutputButton[] = [
     {

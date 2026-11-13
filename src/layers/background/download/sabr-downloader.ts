@@ -1,7 +1,7 @@
 import {
   downloadAudioOnlyViaSabr,
-  downloadVideoAudioViaSabr,
-  downloadExtraAudioTracksViaSabr
+  downloadExtraAudioTracksViaSabr,
+  downloadVideoAudioViaSabr
 } from "./sabr-fetch-helpers";
 import { createProgressAccumulator } from "./sabr-progress";
 import { buildEffectiveSabrConfig } from "./sabr-utils";
@@ -9,7 +9,7 @@ import { sendNetworkChunkToOffscreen, sendStreamFinishedMarker } from "./stream-
 import { DownloadType, StreamType } from "@/types";
 import type { DownloadRequest, Prettify } from "@/types";
 
-export { parseContentLength, buildEffectiveSabrConfig } from "./sabr-utils";
+export { buildEffectiveSabrConfig, parseContentLength } from "./sabr-utils";
 
 type DownloadViaSabrParams = Prettify<{
   request: DownloadRequest;

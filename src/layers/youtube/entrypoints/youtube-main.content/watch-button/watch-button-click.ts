@@ -1,8 +1,9 @@
 import { cancelActiveDownload, startDownload } from "../video/download";
 import { CrossWorldMessage, crossWorldMessenger } from "@/lib/messaging/cross-world-messenger";
+import type {
+  DownloadType} from "@/types";
 import {
   type CodecPreferences,
-  DownloadType,
   type Prettify,
   type TpYtIronDropdownElement,
   type VideoData,

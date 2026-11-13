@@ -1,7 +1,7 @@
 <script generics="Value extends string" lang="ts">
   import PolymerSelect from "../polymer-select/PolymerSelect.svelte";
   import OptionHint from "./OptionHint.svelte";
-  import { describeChoice, findChoice, type Choice } from "@/lib/utils/choices";
+  import { type Choice, describeChoice, findChoice } from "@/lib/utils/choices";
 
   interface Props {
     id: string;

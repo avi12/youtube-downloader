@@ -4,7 +4,7 @@ import type { Prettify, ProcessStreamData } from "@/types";
 export { initMuxWorker } from "./ffmpeg-instance";
 export { triggerDownload } from "./blob-download";
 export { reportProgress } from "./progress-reporter";
-export { enqueueStreamData, cancelDownloadsByIds } from "./stream-processor";
+export { cancelDownloadsByIds, enqueueStreamData } from "./stream-processor";
 
 export const FFMPEG_PROGRESS_CAP = 0.99;
 

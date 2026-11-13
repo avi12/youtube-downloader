@@ -5,8 +5,8 @@ import {
   ButtonState,
   ButtonStyle,
   ButtonType,
-  IconName,
-  type ButtonViewModelData
+  type ButtonViewModelData,
+  IconName
 } from "@/types";
 
 export function attachCloseButton(elTarget: Element) {

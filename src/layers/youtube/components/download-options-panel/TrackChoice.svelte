@@ -103,7 +103,7 @@
     flex-direction: column;
     gap: 8px;
     padding: 10px;
-    border: 1px solid var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 10%));
+    border: 1px solid var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 0.1));
     border-radius: 10px;
     background:
       color-mix(
@@ -113,7 +113,7 @@
       );
 
     &.is-disabled {
-      opacity: 50%;
+      opacity: 0.5;
       pointer-events: none;
     }
 
@@ -143,9 +143,9 @@
     gap: 2px;
     align-items: center;
     padding: 2px;
-    border: 1px solid var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 10%));
+    border: 1px solid var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 0.1));
     border-radius: 999px;
-    background: var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 8%));
+    background: var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 0.08));
 
     &.is-inert {
       cursor: default;
@@ -188,24 +188,24 @@
       inset: 0;
       border: 1.5px solid var(--yt-sys-color-baseline--call-to-action, #065fd4);
       border-radius: 999px;
-      opacity: 60%;
+      opacity: 0.6;
       animation: ytdl-track-pulse 2000ms ease-out infinite;
     }
   }
 
   @keyframes ytdl-track-pulse {
     0% {
-      opacity: 55%;
+      opacity: 0.55;
       scale: 0.85;
     }
 
     70% {
-      opacity: 0%;
+      opacity: 0;
       scale: 1.35;
     }
 
     100% {
-      opacity: 0%;
+      opacity: 0;
       scale: 1.35;
     }
   }
@@ -234,10 +234,10 @@
   }
 
   .track-original {
-    --ytdl-tficon-bg: var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 8%));
+    --ytdl-tficon-bg: var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 0.08));
     --ytdl-tficon-color: var(--yt-sys-color-baseline--text-primary, #0f0f0f);
 
-    border-color: var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 10%));
+    border-color: var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 0.1));
     background: color-mix(in oklch, var(--yt-sys-color-baseline--text-secondary, #606060) 8%, transparent);
   }
 
@@ -248,9 +248,9 @@
     align-items: center;
     height: 22px;
     padding: 0 7px;
-    border: 1px solid var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 12%));
+    border: 1px solid var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 0.12));
     border-radius: 5px;
-    background: var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 8%));
+    background: var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 0.08));
     color: var(--yt-sys-color-baseline--text-primary, #0f0f0f);
     font-weight: 800;
     font-size: 0.95rem;

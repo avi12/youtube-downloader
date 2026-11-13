@@ -1,9 +1,9 @@
 import { CONTENT_OPTIONS, interruptedDownloadStore } from "@/lib/ui/synced-stores.svelte";
 import {
   CONTAINER_SPECS,
-  MULTI_TRACK_UNSUPPORTED_EXTENSIONS,
   getCompatibleFilename,
-  getOutputExtension
+  getOutputExtension,
+  MULTI_TRACK_UNSUPPORTED_EXTENSIONS
 } from "@/lib/utils/containers";
 import { resolveOutputExtensionForFormats } from "@/lib/youtube/align-formats-to-container";
 import { resolveAutoContainer } from "@/lib/youtube/auto-container";

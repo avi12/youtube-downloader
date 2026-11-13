@@ -70,7 +70,7 @@
 
   @keyframes options-card-in {
     from {
-      opacity: 0%;
+      opacity: 0;
       translate: 0 -6px;
     }
   }

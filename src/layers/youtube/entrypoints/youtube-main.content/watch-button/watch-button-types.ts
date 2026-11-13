@@ -1,4 +1,4 @@
-import { ProgressType } from "@/types";
+import type { ProgressType } from "@/types";
 import type { Prettify } from "@/types";
 
 export type ButtonViewState = Prettify<{

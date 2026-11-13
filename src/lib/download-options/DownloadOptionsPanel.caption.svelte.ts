@@ -11,8 +11,8 @@ import {
 } from "@/lib/youtube/video-helpers";
 import {
   AudioTrackLanguageMode,
-  PanelTrackMode,
   type CaptionTrack,
+  PanelTrackMode,
   type Prettify,
   type VideoData
 } from "@/types";

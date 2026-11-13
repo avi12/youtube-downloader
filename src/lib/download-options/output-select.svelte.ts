@@ -2,13 +2,13 @@ import { buildFormatItems, getFilenameError } from "./download-options-helpers";
 import { getFormatDescription } from "@/lib/utils/containers";
 import { DownloadType } from "@/types";
 
-export type OutputSelectProps = {
+export interface OutputSelectProps {
   filename: string;
   extension: string;
   actualExtension: string;
   downloadType: DownloadType;
   isMultiTrack: boolean;
-};
+}
 
 export function createOutputSelectState(props: () => OutputSelectProps) {
   const extensionType = $derived(props().downloadType === DownloadType.Audio ? DownloadType.Audio : DownloadType.Video);

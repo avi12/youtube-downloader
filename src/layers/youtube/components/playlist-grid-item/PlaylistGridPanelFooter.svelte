@@ -105,7 +105,7 @@
 
   .ytdl-progress-block {
     --paper-progress-active-color: var(--yt-sys-color-baseline--call-to-action, #065fd4);
-    --paper-progress-container-color: var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 10%));
+    --paper-progress-container-color: var(--yt-sys-color-baseline--tonal-rim, rgb(0 0 0 / 0.1));
     --paper-progress-height: 4px;
 
     display: flex;

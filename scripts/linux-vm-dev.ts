@@ -6,11 +6,11 @@
  * Usage: pnpm dev:linux
  */
 
-import { spawnSync, spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { createConnection } from "node:net";
-import { writeFileSync, rmSync } from "node:fs";
+import { rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { resolve, join } from "node:path";
+import { join, resolve } from "node:path";
 
 const VM_NAME = "ytdl-linux";
 const HOST_CDP_PORT = 9234;
@@ -64,12 +64,14 @@ const needVncProxy = !new RegExp(`${vmIp}\\s+${VNC_PORT}`).test(currentProxy);
 if (needCdpProxy || needVncProxy) {
   console.log(`Refreshing portproxy (CDP 127.0.0.1:${HOST_CDP_PORT} -> ${vmIp}:${VM_SOCAT_PORT}, VNC 127.0.0.1:${VNC_PORT} -> ${vmIp}:${VNC_PORT})...`);
   const ps1 = join(tmpdir(), "portproxy-setup.ps1");
-  writeFileSync(ps1, [
+  writeFileSync(
+    ps1, [
     `netsh interface portproxy delete v4tov4 listenport=${HOST_CDP_PORT} listenaddress=127.0.0.1`,
     `netsh interface portproxy delete v4tov4 listenport=${VNC_PORT} listenaddress=127.0.0.1`,
     `netsh interface portproxy add v4tov4 listenport=${HOST_CDP_PORT} listenaddress=127.0.0.1 connectport=${VM_SOCAT_PORT} connectaddress=${vmIp}`,
     `netsh interface portproxy add v4tov4 listenport=${VNC_PORT} listenaddress=127.0.0.1 connectport=${VNC_PORT} connectaddress=${vmIp}`,
-  ].join("\r\n"));
+  ].join("\r\n")
+  );
   spawnSync("powershell", [
     "-c",
     `Start-Process powershell -Verb RunAs -Wait -ArgumentList ('-ExecutionPolicy', 'Bypass', '-NonInteractive', '-File', '${ps1.replace(/\\/g, "\\\\")}')`,
@@ -87,10 +89,17 @@ function startVncPoller() {
   let attempts = 0;
   function poll() {
     if (attempts++ > 30) {return;}
-    const socket = createConnection({ host: "127.0.0.1", port: VNC_PORT });
+
+    const socket = createConnection({
+       host: "127.0.0.1",
+       port: VNC_PORT 
+    });
     socket.once("connect", () => {
       socket.destroy();
-      spawn(VNC_EXE, [`localhost::${VNC_PORT}`], { detached: true, stdio: "ignore" }).unref();
+      spawn(VNC_EXE, [`localhost::${VNC_PORT}`], {
+         detached: true,
+         stdio: "ignore" 
+      }).unref();
     });
     socket.once("error", () => {
       socket.destroy();

@@ -5,9 +5,10 @@ import {
 } from "./helpers/playlist-batch-ops";
 import { ZIP_PROGRESS_KEY_PREFIX } from "./helpers/playlist-progress-helpers";
 import { statusProgressSignal } from "@/lib/ui/synced-stores.svelte";
-import {
+import type {
   PlaylistDownloadMode,
-  PlaylistOutputMode,
+  PlaylistOutputMode} from "@/types";
+import {
   type DownloadRequest,
   type Options,
   type VideoData

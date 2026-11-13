@@ -23,7 +23,7 @@ export interface EmscriptenFsStream {
   [key: string]: unknown;
 }
 
-export type EmscriptenNodeOps = {
+export interface EmscriptenNodeOps {
   getattr?: (node: EmscriptenFsNode) => {
     dev: number;
     ino: number;
@@ -50,16 +50,16 @@ export type EmscriptenNodeOps = {
   rename?: (oldNode: EmscriptenFsNode, newDir: EmscriptenFsNode, newName: string) => void;
   unlink?: (parent: EmscriptenFsNode, name: string) => void;
   rmdir?: (parent: EmscriptenFsNode, name: string) => void;
-};
+}
 
-export type EmscriptenStreamOps = {
+export interface EmscriptenStreamOps {
   open?: (stream: EmscriptenFsStream) => void;
   close?: (stream: EmscriptenFsStream) => void;
   read?: (stream: EmscriptenFsStream, buffer: Uint8Array, offset: number, length: number, position: number) => number;
   write?: (stream: EmscriptenFsStream, buffer: Uint8Array, offset: number, length: number, position: number) => number;
   llseek?: (stream: EmscriptenFsStream, offset: number, whence: number) => number;
   allocate?: (stream: EmscriptenFsStream, offset: number, length: number) => void;
-};
+}
 
 declare module "@ffmpeg/types" {
   interface FS {

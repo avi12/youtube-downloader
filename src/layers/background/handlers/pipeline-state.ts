@@ -2,7 +2,7 @@ import { MessageType, sendMessageToTab } from "@/lib/messaging/messaging";
 import { mutateStorageItem, statusProgressItem } from "@/lib/storage/storage";
 import type { Prettify, ProgressUpdate } from "@/types";
 
-export { markVideosCancelled, isVideoCancelled, clearCancelledVideo } from "./cancelled-videos";
+export { clearCancelledVideo, isVideoCancelled, markVideosCancelled } from "./cancelled-videos";
 
 type StatusProgressMap = Awaited<ReturnType<typeof statusProgressItem.getValue>>;
 

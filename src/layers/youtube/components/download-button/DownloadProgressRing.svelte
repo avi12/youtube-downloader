@@ -48,7 +48,7 @@
   .ytdl-download-ring__track {
     fill: none;
     stroke: currentColor;
-    stroke-opacity: 25%;
+    stroke-opacity: 0.25;
     stroke-width: 2.4;
   }
 

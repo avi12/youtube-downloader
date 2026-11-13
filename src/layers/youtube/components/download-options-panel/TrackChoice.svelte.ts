@@ -1,6 +1,7 @@
 import { buildTrackButtons, refreshButton } from "./TrackChoice.button-data";
 import { onButtonClick } from "@/lib/messaging/cross-world-messenger";
-import { PanelTrackMode, TrackKind, type Prettify } from "@/types";
+import type { PanelTrackMode} from "@/types";
+import { type Prettify, TrackKind } from "@/types";
 import { untrack } from "svelte";
 import { SvelteMap } from "svelte/reactivity";
 

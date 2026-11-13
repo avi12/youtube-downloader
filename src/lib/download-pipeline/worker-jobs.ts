@@ -16,10 +16,10 @@ export function getPendingJobReject() {
   return pendingJobReject;
 }
 
-type RunWorkerJobParams<T> = {
+interface RunWorkerJobParams<T> {
   send: (port: HostWorkerPort) => void;
   transform: (data: ArrayBuffer | null) => T;
-};
+}
 export function runWorkerJob<T>({
   send,
   transform

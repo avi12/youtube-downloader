@@ -7,7 +7,7 @@ import {
   normalizeLanguageCode,
   selectPreferredAudioFormat
 } from "@/lib/youtube/video-helpers";
-import { AudioTrackLanguageMode, PanelTrackMode, type AdaptiveFormatItem, type VideoData } from "@/types";
+import { type AdaptiveFormatItem, AudioTrackLanguageMode, PanelTrackMode, type VideoData } from "@/types";
 import { untrack } from "svelte";
 
 export function createAudioTrackState({
