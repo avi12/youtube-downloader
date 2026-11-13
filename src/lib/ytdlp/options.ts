@@ -1,6 +1,8 @@
+import { required } from "@/lib/required";
 import { tokenize } from "@/lib/command";
 import { z } from "zod";
 
+const REPLACE_IN_METADATA_ARITY = 3;
 const YTDLP_PROGRAM_PATTERN = /^yt-dlp(?:\.exe)?$/i;
 const SECTION_TIME_PATTERN = /^\*(.*)-(.*)$/;
 const TIMESTAMP_SEPARATOR = ":";
@@ -171,7 +173,7 @@ function valueOption({ flags, apply }: ValueDefinition) {
     isNegatable: false,
     apply: ({ options, values: [value], flag }) => apply({
       options,
-      value: value!,
+      value: required(value),
       flag
     })
   });
@@ -198,8 +200,8 @@ function firstOfAlternatives(value: string) {
 }
 
 function parseConversionTarget(value: string) {
-  const entry = value.split(FORMAT_LIST_SEPARATOR).find(item => !item.includes(">")) ?? value.split(FORMAT_LIST_SEPARATOR)[0]!;
-  return entry.split(">").at(-1)!;
+  const entry = value.split(FORMAT_LIST_SEPARATOR).find(item => !item.includes(">")) ?? required(value.split(FORMAT_LIST_SEPARATOR)[0]);
+  return entry.split(">").at(-1) ?? "";
 }
 
 function parseTimestamp(text: string) {
@@ -226,8 +228,8 @@ function parseSection(value: string) {
   }
 
   return {
-    start: parseTimestamp(match[1]!),
-    end: parseTimestamp(match[2]!)
+    start: parseTimestamp(required(match[1])),
+    end: parseTimestamp(required(match[2]))
   };
 }
 
@@ -243,7 +245,7 @@ function addPrintField(field: string) {
 function parseOutput({ options, value }: OptionsValue) {
   const typed = value.match(OUTPUT_TYPE_PATTERN);
   if (typed) {
-    options.outputs[typed[1]!] = typed[2]!;
+    options.outputs[required(typed[1])] = required(typed[2]);
     return;
   }
 
@@ -253,7 +255,7 @@ function parseOutput({ options, value }: OptionsValue) {
 function parsePath({ options, value }: OptionsValue) {
   const typed = value.match(PATH_TYPE_PATTERN);
   if (typed) {
-    options.paths[typed[1]!] = typed[2]!;
+    options.paths[required(typed[1])] = required(typed[2]);
     return;
   }
 
@@ -725,13 +727,13 @@ valueOption({
 });
 register({
   flags: ["--replace-in-metadata"],
-  arity: 3,
+  arity: REPLACE_IN_METADATA_ARITY,
   isNegatable: false,
   apply({ options, values: [fields, pattern, replacement] }) {
     options.replaceInMetadata.push({
-      fields: fields!.split(/[\s,]+/),
-      pattern: toRegexSource(pattern!),
-      replacement: replacement!
+      fields: required(fields).split(/[\s,]+/),
+      pattern: toRegexSource(required(pattern)),
+      replacement: required(replacement)
     });
   }
 });
@@ -933,7 +935,7 @@ export function parseYtDlpCommand(command: string) {
 
   const options = createDefaultOptions();
   while (tokens.length) {
-    const token = tokens.shift()!;
+    const token = required(tokens.shift());
     const isPositionalArgument = !token.startsWith("-") || token === "-";
     if (isPositionalArgument) {
       options.urls.push(token);
@@ -942,7 +944,7 @@ export function parseYtDlpCommand(command: string) {
 
     for (const piece of expandShortFlags(token)) {
       const [first, attachedValue] = splitAttachedValue(piece);
-      const { flag, inlineValue } = splitInlineValue(first!);
+      const { flag, inlineValue } = splitInlineValue(required(first));
       applyFlag({
         options,
         rawFlag: flag,

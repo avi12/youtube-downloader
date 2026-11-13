@@ -1,7 +1,12 @@
+import { MILLISECONDS_PER_SECOND } from "@/lib/time";
+import { required } from "@/lib/required";
+
 const TEMPLATE_PATTERN = /%\((\w+)(?:>([^)|]*))?(?:\|([^)]*))?\)([-+0 #]*)(\d*)(?:\.(\d+))?([sdiS])|%%/g;
 const MISSING_FIELD = "NA";
 const SLASH_SUBSTITUTE = "⧸";
 const DATE_LENGTH = 8;
+const YEAR_END = 4;
+const MONTH_END = 6;
 const SECONDS_PER_MINUTE = 60;
 const SECONDS_PER_HOUR = 3600;
 const MONTH_NAMES = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
@@ -45,7 +50,7 @@ function formatDuration({ totalSeconds, format }: DurationRequest) {
 
 function parseDate(value: TemplateValue) {
   if (typeof value === "number") {
-    return new Date(value * 1000);
+    return new Date(value * MILLISECONDS_PER_SECOND);
   }
 
   const text = String(value);
@@ -53,7 +58,7 @@ function parseDate(value: TemplateValue) {
     return undefined;
   }
 
-  return new Date(Date.UTC(Number(text.slice(0, 4)), Number(text.slice(4, 6)) - 1, Number(text.slice(6, 8))));
+  return new Date(Date.UTC(Number(text.slice(0, YEAR_END)), Number(text.slice(YEAR_END, MONTH_END)) - 1, Number(text.slice(MONTH_END, DATE_LENGTH))));
 }
 
 function formatDate({ value, format }: DateRequest) {
@@ -67,13 +72,13 @@ function formatDate({ value, format }: DateRequest) {
     "%y": String(date.getUTCFullYear()).slice(-YEAR_SHORT_LENGTH),
     "%m": pad(date.getUTCMonth() + 1),
     "%d": pad(date.getUTCDate()),
-    "%B": MONTH_NAMES[date.getUTCMonth()]!,
-    "%b": MONTH_NAMES[date.getUTCMonth()]!.slice(0, SHORT_MONTH_LENGTH),
+    "%B": required(MONTH_NAMES[date.getUTCMonth()]),
+    "%b": required(MONTH_NAMES[date.getUTCMonth()]).slice(0, SHORT_MONTH_LENGTH),
     "%H": pad(date.getUTCHours()),
     "%M": pad(date.getUTCMinutes()),
     "%S": pad(date.getUTCSeconds())
   };
-  return format.replace(/%[YymdBbHMS]/g, token => replacements[token]!);
+  return format.replace(/%[YymdBbHMS]/g, token => required(replacements[token]));
 }
 
 function stringify({ name, value, conversion }: StringifyRequest) {
@@ -118,7 +123,8 @@ export function renderTemplate({ template, fields, isPath = false }: TemplateReq
     const isNumeric = !Number.isNaN(Number(text));
     const isNumericValue = isNumber && isNumeric;
     if (isNumericValue) {
-      const sign = flags.includes("+") && Number(text) >= 0 ? "+" : "";
+      const isSigned = flags.includes("+") && Number(text) >= 0;
+      const sign = isSigned ? "+" : "";
       const padded = `${sign}${Math.trunc(Number(text))}`.padStart(Number(width) || 0, flags.includes("0") ? "0" : " ");
       return padded;
     }

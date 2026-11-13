@@ -218,7 +218,9 @@
           onchange={e => onchecked(e.currentTarget.checked)}
           type="checkbox"
         />
-        <h2>{preset.label}{isDefault ? " (default)" : ""}</h2>
+        <h2>{preset.label}{#if isDefault}
+          (default)
+        {/if}</h2>
       </label></div>
     <div class="actions">
       <button
@@ -371,7 +373,8 @@
       <button onclick={addVariable}>Add variable</button>
 
       <div class="row">
-        <button onclick={save}>{isBuiltIn ? "Save as my own" : "Save"}</button>
+        <button onclick={save}>{#if isBuiltIn}
+          Save as my own{:else}Save{/if}</button>
         <button disabled={isDefault} onclick={onsetdefault}>Make default</button>
         <button onclick={onhide}>Hide</button>
         {#if !isBuiltIn}

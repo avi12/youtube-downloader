@@ -5,11 +5,13 @@ const MANIFEST_V2 = 2;
 const FFMPEG_WASM_DEST = "ffmpeg/ffmpeg-core.wasm";
 const FFMPEG_WASM_SRC = "node_modules/@ffmpeg/core/dist/umd/ffmpeg-core.wasm";
 
+const MANIFEST_VERSION = 3;
+
 export default defineConfig({
   srcDir: "src",
   publicDir: "src/public",
   modules: ["@wxt-dev/module-svelte", "@wxt-dev/webextension-polyfill"],
-  manifestVersion: 3,
+  manifestVersion: MANIFEST_VERSION,
   manifest: ({ manifestVersion }) => ({
     name: "FFmpeg for YouTube",
     description: "Run FFmpeg against a YouTube URL straight from the popup",

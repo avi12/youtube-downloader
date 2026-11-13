@@ -9,13 +9,14 @@ const SIMD_PROBE_MODULE = new Uint8Array([
 
 // @ffmpeg/core 0.12.1+ needs SIMD, which only runs on CPUs with SSE4.1. Those get 0.12.0, the last
 // build without it, fetched from the CDN (integrity-checked, cached in OPFS) to keep the zip small
+const HEX_RADIX = 16;
 const NO_SIMD_WASM_URL = "https://cdn.jsdelivr.net/npm/@ffmpeg/core@0.12.0/dist/esm/ffmpeg-core.wasm";
 const NO_SIMD_WASM_SHA256 = "0a24129334f7f7afd411f2b41aca49009434fe5c31b934908b82888ba0956c03";
 const NO_SIMD_OPFS_FILENAME = "ffmpeg-core-nosimd.wasm";
 
 async function isNoSimdWasmIntact(wasmBinary: ArrayBuffer) {
   const digest = new Uint8Array(await crypto.subtle.digest("SHA-256", wasmBinary));
-  return Array.from(digest, byte => byte.toString(16).padStart(2, "0")).join("") === NO_SIMD_WASM_SHA256;
+  return Array.from(digest, byte => byte.toString(HEX_RADIX).padStart(2, "0")).join("") === NO_SIMD_WASM_SHA256;
 }
 
 async function readCachedNoSimdWasm() {

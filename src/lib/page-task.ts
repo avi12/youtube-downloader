@@ -5,11 +5,11 @@ export type PlaylistListing = NonNullable<PageResult["playlist"]>;
 export type PlaylistEntry = PlaylistListing["entries"][number];
 export type RawChapter = NonNullable<PageResult["chapters"]>[number];
 export async function runInsideYouTubePage(task: PageTask) {
-  const MAX_PAGES = 200;
-  const MILLISECONDS_PER_SECOND = 1000;
-  const SAPISID_PATTERN = /(?:^|; )(?:__Secure-3PAPISID|SAPISID)=([^;]+)/;
-  const BYTE_RADIX = 16;
-  const BYTE_WIDTH = 2;
+  const maxPages = 200;
+  const millisecondsPerSecond = 1000;
+  const sapisidPattern = /(?:^|; )(?:__Secure-3PAPISID|SAPISID)=([^;]+)/;
+  const byteRadix = 16;
+  const byteWidth = 2;
   interface CapturedRequest {
     url: string;
     body: string;
@@ -28,15 +28,28 @@ export async function runInsideYouTubePage(task: PageTask) {
     isCaptionsWanted: boolean;
   }
 
+  interface ParamCopy {
+    target: URLSearchParams;
+    source: URLSearchParams;
+  }
+
+  function copyMissingParams({ target, source }: ParamCopy) {
+    for (const [param, value] of source) {
+      if (!target.has(param)) {
+        target.set(param, value);
+      }
+    }
+  }
+
   async function capturePlayer({ videoId, isCaptionsWanted }: PlayerCapture) {
-    const TIMEDTEXT_PATH = "/api/timedtext";
-    const CAPTION_WAIT_MS = 5000;
-    const MAX_CAPTURED = 8;
-    const SEEK_WAIT_MS = 3000;
-    const QUALITY_WAIT_MS = 8000;
-    const POLL_MS = 200;
-    const SEEK_FRACTION = 4;
-    const SEGMENT_PATH = "googlevideo.com/videoplayback";
+    const timedtextPath = "/api/timedtext";
+    const captionWaitMs = 5000;
+    const maxCaptured = 8;
+    const seekWaitMs = 3000;
+    const qualityWaitMs = 8000;
+    const pollMs = 200;
+    const seekFraction = 4;
+    const segmentPath = "googlevideo.com/videoplayback";
     const playerElement = document.querySelector<HTMLElement & Record<string, unknown>>("#movie_player");
 
     interface PlayerCall {
@@ -73,7 +86,7 @@ export async function runInsideYouTubePage(task: PageTask) {
       Object.defineProperty(XMLHttpRequest.prototype, "open", {
         value(this: XMLHttpRequest, ...args: Parameters<typeof originalOpen>) {
           const url = String(args[1]);
-          if (url.includes(TIMEDTEXT_PATH)) {
+          if (url.includes(timedtextPath)) {
             timedTextUrls.push(url);
           }
 
@@ -84,7 +97,7 @@ export async function runInsideYouTubePage(task: PageTask) {
       window.fetch = function (...args: Parameters<typeof fetch>) {
         const [input, init] = args;
         const url = input instanceof Request ? input.url : String(input);
-        if (url.includes(TIMEDTEXT_PATH)) {
+        if (url.includes(timedtextPath)) {
           timedTextUrls.push(url);
         }
 
@@ -95,7 +108,7 @@ export async function runInsideYouTubePage(task: PageTask) {
           });
         }
 
-        const isSegmentUrl = url.includes(SEGMENT_PATH);
+        const isSegmentUrl = url.includes(segmentPath);
         if (isSegmentUrl) {
           if (init?.body instanceof ArrayBuffer) {
             record(init.body);
@@ -123,18 +136,18 @@ export async function runInsideYouTubePage(task: PageTask) {
     const capturedBefore = captured.length;
 
     async function waitForNewRequest(timeoutMs: number) {
-      for (let waited = 0; waited < timeoutMs && captured.length === capturedBefore; waited += POLL_MS) {
-        await new Promise(resolve => setTimeout(resolve, POLL_MS));
+      for (let waited = 0; waited < timeoutMs && captured.length === capturedBefore; waited += pollMs) {
+        await new Promise(resolve => setTimeout(resolve, pollMs));
       }
     }
 
     const isInFirstHalf = time < duration / 2;
-    const seekTarget = isInFirstHalf ? time + duration / SEEK_FRACTION : Math.max(0, time - duration / SEEK_FRACTION);
+    const seekTarget = isInFirstHalf ? time + duration / seekFraction : Math.max(0, time - duration / seekFraction);
     callPlayer({
       method: "seekTo",
       args: [seekTarget, true]
     });
-    await waitForNewRequest(SEEK_WAIT_MS);
+    await waitForNewRequest(seekWaitMs);
 
     if (captured.length === capturedBefore) {
       const levels = callPlayer({ method: "getAvailableQualityLevels" });
@@ -144,7 +157,7 @@ export async function runInsideYouTubePage(task: PageTask) {
         method: "setPlaybackQualityRange",
         args: [otherQuality, otherQuality]
       });
-      await waitForNewRequest(QUALITY_WAIT_MS);
+      await waitForNewRequest(qualityWaitMs);
       callPlayer({
         method: "setPlaybackQualityRange",
         args: [currentQuality, currentQuality]
@@ -160,7 +173,8 @@ export async function runInsideYouTubePage(task: PageTask) {
       node: playerResponse,
       path: ["captions", "playerCaptionsTracklistRenderer", "captionTracks"]
     });
-    const trackList: unknown[] = isCaptionsWanted && Array.isArray(trackListValue) ? trackListValue : [];
+    const hasTrackList = isCaptionsWanted && Array.isArray(trackListValue);
+    const trackList: unknown[] = hasTrackList ? trackListValue : [];
     const captionTexts: Record<string, string> = {};
     if (trackList.length) {
       const timedTextBefore = timedTextUrls.length;
@@ -169,8 +183,8 @@ export async function runInsideYouTubePage(task: PageTask) {
         args: ["captions"]
       });
       callPlayer({ method: "toggleSubtitlesOn" });
-      for (let waited = 0; waited < CAPTION_WAIT_MS && timedTextUrls.length === timedTextBefore; waited += POLL_MS) {
-        await new Promise(resolve => setTimeout(resolve, POLL_MS));
+      for (let waited = 0; waited < captionWaitMs && timedTextUrls.length === timedTextBefore; waited += pollMs) {
+        await new Promise(resolve => setTimeout(resolve, pollMs));
       }
 
       const sampleUrl = timedTextUrls.length > timedTextBefore ? timedTextUrls.at(-1) : undefined;
@@ -182,11 +196,10 @@ export async function runInsideYouTubePage(task: PageTask) {
         });
         if (typeof baseUrl === "string") {
           const captionUrl = new URL(baseUrl);
-          for (const [param, value] of tokens) {
-            if (!captionUrl.searchParams.has(param)) {
-              captionUrl.searchParams.set(param, value);
-            }
-          }
+          copyMissingParams({
+             target: captionUrl.searchParams,
+             source: tokens 
+          });
 
           captionUrl.searchParams.set("fmt", "vtt");
           captionTexts[baseUrl] = await fetch(captionUrl.href, { credentials: "include" }).then(response => response.text()).catch(() => "");
@@ -199,7 +212,7 @@ export async function runInsideYouTubePage(task: PageTask) {
     return {
       player: {
         playerResponse,
-        requests: captured.slice(-MAX_CAPTURED),
+        requests: captured.slice(-maxCaptured),
         captionTexts
       }
     };
@@ -228,14 +241,14 @@ export async function runInsideYouTubePage(task: PageTask) {
       "X-Youtube-Client-Name": String(ytcfg?.get("INNERTUBE_CONTEXT_CLIENT_NAME")),
       "X-Youtube-Client-Version": String(ytcfg?.get("INNERTUBE_CONTEXT_CLIENT_VERSION"))
     };
-    const sapisid = document.cookie.match(SAPISID_PATTERN)?.[1];
+    const sapisid = document.cookie.match(sapisidPattern)?.[1];
     if (!sapisid) {
       return headers;
     }
 
-    const timestamp = Math.floor(Date.now() / MILLISECONDS_PER_SECOND);
+    const timestamp = Math.floor(Date.now() / millisecondsPerSecond);
     const digest = await crypto.subtle.digest("SHA-1", new TextEncoder().encode(`${timestamp} ${sapisid} ${location.origin}`));
-    const hash = Array.from(new Uint8Array(digest), byte => byte.toString(BYTE_RADIX).padStart(BYTE_WIDTH, "0")).join("");
+    const hash = Array.from(new Uint8Array(digest), byte => byte.toString(byteRadix).padStart(byteWidth, "0")).join("");
     return {
       ...headers,
       Authorization: `SAPISIDHASH ${timestamp}_${hash}`,
@@ -294,7 +307,12 @@ export async function runInsideYouTubePage(task: PageTask) {
   }
 
   function child({ node, path }: NodePath) {
-    return path.reduce((current, key) => (isRecord(current) ? current[key] : undefined), node);
+    let current = node;
+    for (const key of path) {
+      current = isRecord(current) ? current[key] : undefined;
+    }
+
+    return current;
   }
 
   function readText(value: unknown) {
@@ -340,7 +358,7 @@ export async function runInsideYouTubePage(task: PageTask) {
         browseId: `VL${listId}`
       }
     });
-    for (let page = 0; page < MAX_PAGES; page++) {
+    for (let page = 0; page < maxPages; page++) {
       playlistTitle ||= readText(
         child({
           node: response,
@@ -423,7 +441,7 @@ export async function runInsideYouTubePage(task: PageTask) {
       });
       if (typeof startMillis === "number") {
         chapters.set(
-          startMillis / MILLISECONDS_PER_SECOND, readText(
+          startMillis / millisecondsPerSecond, readText(
             child({
               node: renderer,
               path: ["title"]

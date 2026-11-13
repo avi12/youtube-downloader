@@ -1,3 +1,5 @@
+import { required } from "@/lib/required";
+
 const RANGE_SEPARATOR = ":";
 const DEFAULT_STEP = 1;
 
@@ -77,7 +79,7 @@ export function shuffle<Item>(items: Item[]) {
   const copy = [...items];
   for (let index = copy.length - 1; index > 0; index--) {
     const swapIndex = Math.floor(Math.random() * (index + 1));
-    [copy[index], copy[swapIndex]] = [copy[swapIndex]!, copy[index]!];
+    [copy[index], copy[swapIndex]] = [required(copy[swapIndex]), required(copy[index])];
   }
 
   return copy;

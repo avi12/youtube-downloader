@@ -21,9 +21,10 @@
       return;
     }
 
-    containerWidth = container.clientWidth;
+    const element = container;
+    containerWidth = element.clientWidth;
     const resizeObserver = new ResizeObserver(() => {
-      containerWidth = container!.clientWidth;
+      containerWidth = element.clientWidth;
     });
     resizeObserver.observe(container);
     return () => resizeObserver.disconnect();
@@ -35,7 +36,7 @@
   const activeEnd = $derived((clampedValue / 100) * usable);
   const trackStart = $derived(PAD + activeEnd + GAP);
   const trackEnd = $derived(containerWidth - PAD);
-  const clipId = `wavy-${Math.random().toString(36).slice(2, 8)}`;
+  const CLIP_ID = `wavy-${Math.random().toString(36).slice(2, 8)}`;
 
   // fallow-ignore-next-line complexity
   const wavePath = $derived.by(() => {
@@ -62,7 +63,7 @@
       viewBox="0 0 {containerWidth} {HEIGHT}"
     >
       <defs>
-        <clipPath id={clipId}>
+        <clipPath id={CLIP_ID}>
           <rect height={HEIGHT} width={Math.max(0, PAD + activeEnd)} x="0" y="0" />
         </clipPath>
       </defs>
@@ -70,7 +71,7 @@
         <line class="prog-track" x1={trackStart} x2={trackEnd} y1={centerY} y2={centerY} />
       {/if}
       {#if wavePath}
-        <g clip-path="url(#{clipId})">
+        <g clip-path="url(#{CLIP_ID})">
           <path
             class="prog-active"
             d={wavePath}

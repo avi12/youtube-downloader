@@ -1,5 +1,6 @@
 <script lang="ts">
-  import type { WorkerMessage, WorkerRequest } from "../ffmpeg-worker";
+  import { required } from "@/lib/required";
+  import type { WorkerMessage, WorkerRequest } from "@/entrypoints/ffmpeg-worker";
   import PresetCard from "./PresetCard.svelte";
   import OptionField from "./shared/OptionField.svelte";
   import TabNav from "./shared/TabNav.svelte";
@@ -256,9 +257,9 @@
     });
   }
 
-  async function importPresets(e: Event & { currentTarget: HTMLInputElement }) {
-    const [file] = e.currentTarget.files ?? [];
-    e.currentTarget.value = "";
+  async function importPresets(event: Event & { currentTarget: HTMLInputElement }) {
+    const [file] = event.currentTarget.files ?? [];
+    event.currentTarget.value = "";
 
     if (!file) {
       return;
@@ -307,7 +308,7 @@
       return;
     }
 
-    const response = await fetch(url!, { signal });
+    const response = await fetch(required(url), { signal });
     if (!response.ok) {
       throw new Error(`Couldn't fetch ${saveAs}: HTTP ${response.status}`);
     }
@@ -344,8 +345,8 @@
         worker.terminate();
         reject(signal.reason);
       }, { once: true });
-      worker.onmessage = (e: MessageEvent<WorkerMessage>) => {
-        const message = e.data;
+      worker.onmessage = (event: MessageEvent<WorkerMessage>) => {
+        const message = event.data;
         if (message.type === "log") {
           logText += `${message.text}\n`;
           return;
@@ -366,9 +367,9 @@
 
         resolve(message);
       };
-      worker.onerror = e => {
+      worker.onerror = event => {
         worker.terminate();
-        reject(new Error(e.message));
+        reject(new Error(event.message));
       };
       worker.postMessage(request, request.inputs.flatMap(input => (input.data ? [input.data] : [])));
     });

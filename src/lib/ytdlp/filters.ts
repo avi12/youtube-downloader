@@ -1,3 +1,5 @@
+import { ISO_DATE_LENGTH } from "@/lib/time";
+import { required } from "@/lib/required";
 import { matchesComparison, parseNumber } from "./selector";
 import type { FieldReader } from "./selector";
 import type { TemplateFields } from "./template";
@@ -46,7 +48,7 @@ function matchesExpression({ read, expression }: ExpressionRequest) {
   return parts.every(part => {
     const bare = part.match(BARE_KEY_PATTERN);
     if (bare) {
-      return isTruthy(read(bare[2]!)) !== Boolean(bare[1]);
+      return isTruthy(read(required(bare[2]))) !== Boolean(bare[1]);
     }
 
     return matchesComparison({
@@ -69,13 +71,13 @@ export function matchesAnyFilter({ fields, expressions }: FilterRequest) {
 }
 
 function formatDay(date: Date) {
-  return date.toISOString().slice(0, 10).replaceAll("-", "");
+  return date.toISOString().slice(0, ISO_DATE_LENGTH).replaceAll("-", "");
 }
 
 export function parseDateSpec({ text, now = new Date() }: DateSpecRequest) {
   const absolute = text.match(ABSOLUTE_DATE_PATTERN);
   if (absolute) {
-    return `${absolute[1]}${absolute[2]}${absolute[3]}`;
+    return absolute.slice(1).join("");
   }
 
   const relative = text.match(RELATIVE_DATE_PATTERN);

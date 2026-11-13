@@ -1,3 +1,5 @@
+import { MILLISECONDS_PER_SECOND } from "@/lib/time";
+import { required } from "@/lib/required";
 import {
   applyMetadataRules,
   buildFormatFields,
@@ -33,7 +35,6 @@ const CHAPTER_DEFAULT_TEMPLATE = "%(title)s - %(section_number)03d %(section_tit
 const THUMBNAIL_INPUT = "thumbnail.jpg";
 const CHAPTERS_INPUT = "chapters.txt";
 const OUTPUT_BASENAME = "output";
-const MILLISECONDS_PER_SECOND = 1000;
 const JPEG_PATTERN = /\.jpe?g(?:\?|$)/;
 const THUMBNAIL_EMBED_FORMATS = new Set(["mp4", "m4a", "mp3", "mov", "mkv", "webm"]);
 const MATROSKA_FORMATS = new Set(["mkv", "webm"]);
@@ -309,7 +310,7 @@ function resolveTemplateKey({ options, section, isChapterSplit }: TemplateKeyReq
 
   return {
     key: DEFAULT_OUTPUT_KEY,
-    fallback: options.outputs.default!
+    fallback: required(options.outputs.default)
   };
 }
 
@@ -334,7 +335,7 @@ function buildMediaJob({
 }: MediaJobRequest) {
   const { video, chapters } = context;
   const sectionArgs = buildSectionArgs(section);
-  const primary = picks.find(pick => pick.hasVideo) ?? picks[0]!;
+  const primary = picks.find(pick => pick.hasVideo) ?? required(picks[0]);
   const inputs: MediaInput[] = [];
   const extraArgs: string[] = [];
   let container: string;
@@ -411,7 +412,7 @@ function buildMediaJob({
     inputs.push({
       worker: {
         name: THUMBNAIL_INPUT,
-        url: thumbnail!.url
+        url: required(thumbnail).url
       },
       before: []
     });
@@ -457,7 +458,7 @@ function buildMediaJob({
     inputs.push({
       worker: {
         name: THUMBNAIL_INPUT,
-        url: thumbnail!.url
+        url: required(thumbnail).url
       },
       before: []
     });
@@ -753,7 +754,8 @@ function sizeRejection({ options, picks }: OptionsPicks) {
     return "is smaller than --min-filesize";
   }
 
-  return options.maxFilesize && total > parseByteSize(options.maxFilesize) ? "is larger than --max-filesize" : undefined;
+  const isAboveMaxFilesize = options.maxFilesize && total > parseByteSize(options.maxFilesize);
+  return isAboveMaxFilesize ? "is larger than --max-filesize" : undefined;
 }
 
 function isSimulation(options: YtDlpOptions) {

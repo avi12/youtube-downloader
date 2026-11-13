@@ -1,3 +1,4 @@
+import { required } from "@/lib/required";
 import { buildVideoFields } from "./fields";
 import { parseYtDlpCommand } from "./options";
 import type { YtDlpOptions } from "./options";
@@ -66,9 +67,9 @@ const FLAT_PLAYLIST_DEFAULT_PRINT = "%(id)s\t%(title)s";
 const CHAPTER_FIELD_PATTERN = /chapter|section/;
 
 function needsChapters(options: YtDlpOptions) {
-  const usesChapterPattern = options.sections.some(section => section.chapterPattern);
-  const printsChapters = options.prints.some(template => CHAPTER_FIELD_PATTERN.test(template));
-  return options.isEmbedChapters || options.isSplitChapters || usesChapterPattern || printsChapters;
+  const hasChapterPattern = options.sections.some(section => section.chapterPattern);
+  const hasChapterPrints = options.prints.some(template => CHAPTER_FIELD_PATTERN.test(template));
+  return options.isEmbedChapters || options.isSplitChapters || hasChapterPattern || hasChapterPrints;
 }
 
 function needsCaptions(options: YtDlpOptions) {
@@ -94,7 +95,7 @@ async function expandUrl({ url, options, tab }: UrlExpansion) {
 
   const playlist = await fetchPlaylist({
     tabId: tab.tabId,
-    playlistId: playlistId!
+    playlistId: required(playlistId)
   });
   const indices = selectPlaylistIndices({
     count: playlist.entries.length,
@@ -105,13 +106,13 @@ async function expandUrl({ url, options, tab }: UrlExpansion) {
   const ordered = options.isPlaylistReverse ? [...indices].reverse() : indices;
   const finalOrder = options.isPlaylistRandom ? shuffle(ordered) : ordered;
   return finalOrder.map(index => {
-    const entry: PlaylistEntry = playlist.entries[index - 1]!;
+    const entry: PlaylistEntry = required(playlist.entries[index - 1]);
     return {
       videoId: entry.videoId,
       title: entry.title,
       index,
       count: playlist.entries.length,
-      playlistId: playlistId!,
+      playlistId: required(playlistId),
       playlistTitle: playlist.title
     };
   });
@@ -136,7 +137,7 @@ async function resolveChapters({ options, tab, videoId, durationSeconds }: Chapt
 async function processTarget({ options, tab, target, autonumber, hooks }: TargetRun) {
   hooks.status(`Looking up ${target.title}`);
   const video = await resolveVideo(target.videoId).catch((error: unknown) => {
-    const isOnThisVideo = Boolean(tab.url) && parseVideoId(tab.url!) === target.videoId;
+    const isOnThisVideo = Boolean(tab.url) && parseVideoId(required(tab.url)) === target.videoId;
     if (!(error instanceof BotCheckError)) {
       throw error;
     }

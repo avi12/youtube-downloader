@@ -225,12 +225,20 @@ export function isBuiltInPreset(id: string) {
   return BUILT_IN_PRESETS.some(preset => preset.id === id);
 }
 
-export function findPreset(state: LibraryState, id: string) {
+interface PresetLookup {
+  state: LibraryState;
+  id: string;
+}
+
+export function findPreset({ state, id }: PresetLookup) {
   return [...BUILT_IN_PRESETS, ...state.custom].find(preset => preset.id === id);
 }
 
 export function listShownPresets(state: LibraryState) {
-  return (state.shownIds ?? DEFAULT_SHOWN_IDS).flatMap(id => findPreset(state, id) ?? []);
+  return (state.shownIds ?? DEFAULT_SHOWN_IDS).flatMap(id => findPreset({
+     state,
+     id 
+  }) ?? []);
 }
 
 interface MoveRequest {

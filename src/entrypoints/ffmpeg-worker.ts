@@ -89,7 +89,8 @@ async function probeContentLength(url: string) {
   });
   await response.body?.cancel();
   const total = Number(response.headers.get("Content-Range")?.split("/")[1]);
-  return response.status === HTTP_PARTIAL_CONTENT && total ? total : undefined;
+  const isPartialWithTotal = response.status === HTTP_PARTIAL_CONTENT && total;
+  return isPartialWithTotal ? total : undefined;
 }
 
 async function writeWholeInput({ core, name, url }: CoreSource) {
@@ -202,8 +203,8 @@ async function run({ wasmUrl, inputs, args }: WorkerRequest) {
 }
 
 export default defineUnlistedScript(() => {
-  addEventListener("message", (e: MessageEvent<WorkerRequest>) => {
-    run(e.data).catch((error: unknown) => {
+  addEventListener("message", (event: MessageEvent<WorkerRequest>) => {
+    run(event.data).catch((error: unknown) => {
       post({
         message: {
           type: "error",

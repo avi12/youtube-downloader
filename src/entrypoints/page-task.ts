@@ -2,12 +2,12 @@ import { RESULT_EVENT_PREFIX, TASK_EVENT, taskRequestSchema } from "@/lib/page-e
 import { runInsideYouTubePage } from "@/lib/page-task";
 
 export default defineUnlistedScript(() => {
-  document.addEventListener(TASK_EVENT, async e => {
-    if (!(e instanceof CustomEvent)) {
+  document.addEventListener(TASK_EVENT, async event => {
+    if (!(event instanceof CustomEvent)) {
       return;
     }
 
-    const { id, task } = taskRequestSchema.parse(JSON.parse(e.detail));
+    const { id, task } = taskRequestSchema.parse(JSON.parse(event.detail));
     const result = await runInsideYouTubePage(task);
     document.dispatchEvent(new CustomEvent(RESULT_EVENT_PREFIX + id, { detail: JSON.stringify(result) }));
   });

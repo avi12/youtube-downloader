@@ -1,3 +1,4 @@
+import { required } from "@/lib/required";
 import type { StreamFormat } from "@/lib/schemas";
 
 const KILOBIT = 1000;
@@ -129,7 +130,7 @@ export function parseNumber(text: string) {
 
   const [, digits, suffix, binaryMarker] = match;
   const base = binaryMarker?.toLowerCase().startsWith("i") ? BINARY_BASE : DECIMAL_BASE;
-  return Number(digits) * base ** (suffix ? SUFFIX_EXPONENTS[suffix.toLowerCase()]! : 0);
+  return Number(digits) * base ** (suffix ? required(SUFFIX_EXPONENTS[suffix.toLowerCase()]) : 0);
 }
 
 function compareNumbers({ operator, actual, expected }: NumberComparison) {
@@ -144,14 +145,20 @@ function compareNumbers({ operator, actual, expected }: NumberComparison) {
 }
 
 function compareStrings({ operator, actual, expected }: StringComparison) {
-  const comparisons: Record<string, () => boolean> = {
-    "=": () => actual === expected,
-    "^=": () => actual.startsWith(expected),
-    "$=": () => actual.endsWith(expected),
-    "*=": () => actual.includes(expected),
-    "~=": () => new RegExp(expected).test(actual)
-  };
-  return comparisons[operator]?.() ?? false;
+  switch (operator) {
+    case "=":
+      return actual === expected;
+    case "^=":
+      return actual.startsWith(expected);
+    case "$=":
+      return actual.endsWith(expected);
+    case "*=":
+      return actual.includes(expected);
+    case "~=":
+      return new RegExp(expected).test(actual);
+    default:
+      return false;
+  }
 }
 
 export type FieldReader = (name: string) => string | number | undefined;
@@ -167,23 +174,23 @@ export function matchesComparison({ read, filterText }: ComparisonRequest) {
   }
 
   const [, name, negation, operator, noneOk, expectedText] = match;
-  const actual = read(name!);
+  const actual = read(required(name));
   if (actual === undefined) {
     return Boolean(noneOk);
   }
 
-  const expectedNumber = parseNumber(expectedText!);
+  const expectedNumber = parseNumber(required(expectedText));
   const isNumeric = typeof actual === "number" && expectedNumber !== undefined;
   const isMatch = isNumeric
     ? compareNumbers({
-      operator: operator!,
+      operator: required(operator),
       actual,
       expected: expectedNumber
     })
     : compareStrings({
-      operator: operator!,
+      operator: required(operator),
       actual: String(actual),
-      expected: expectedText!
+      expected: required(expectedText)
     });
   return negation ? !isMatch : isMatch;
 }
@@ -267,7 +274,8 @@ function buildSortScorer(sortKey: string) {
   const direction = reverseMarker ? -1 : 1;
   return (fields: FormatFields) => {
     const value = read(fields);
-    const limited = limit !== undefined && value > limit ? -value : value;
+    const isOverLimit = limit !== undefined && value > limit;
+    const limited = isOverLimit ? -value : value;
     return direction * limited;
   };
 }

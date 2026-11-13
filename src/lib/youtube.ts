@@ -1,3 +1,5 @@
+import { ISO_DATE_LENGTH } from "@/lib/time";
+import { required } from "@/lib/required";
 import { fetchPlayer } from "@/lib/page";
 import type { TabPlayer } from "@/lib/page";
 import { buildSabrSession } from "@/lib/sabr";
@@ -9,7 +11,6 @@ import { z } from "zod";
 
 type PlayerResponse = z.infer<typeof playerResponseSchema>;
 
-const DATE_LENGTH = 10;
 const WATCH_HOSTS = new Set(["www.youtube.com", "youtube.com", "m.youtube.com", "music.youtube.com"]);
 const VIDEO_ID_PATTERN = /^[\w-]{11}$/;
 const SHORT_URL_PATH_PATTERN = /^\/(?:shorts|embed|live|v)\/([\w-]{11})/;
@@ -17,6 +18,8 @@ const VISITOR_DATA_PATTERN = /"VISITOR_DATA":"([^"]+)"/;
 const INNERTUBE_PLAYER_URL = "https://www.youtube.com/youtubei/v1/player";
 const YOUTUBE_HOME_URL = "https://www.youtube.com/";
 const YOUTUBE_ORIGIN = "https://www.youtube.com";
+const VIDEO_ID_END = 12;
+const ERROR_BODY_LENGTH = 300;
 const CDN_ORIGIN_RULE_ID = 1;
 const PLAYER_HEADERS_RULE_ID = 2;
 const PLAYER_URL_FILTER = "||www.youtube.com/youtubei/v1/player";
@@ -116,7 +119,7 @@ export function parseVideoId(input: string) {
   }
 
   if (url.hostname === "youtu.be") {
-    return url.pathname.slice(1, 12) || null;
+    return url.pathname.slice(1, VIDEO_ID_END) || null;
   }
 
   if (!WATCH_HOSTS.has(url.hostname)) {
@@ -216,7 +219,7 @@ function buildHeaderRule({ id, urlFilter, requestHeaders }: HeaderRuleParams) {
   } satisfies Browser.declarativeNetRequest.Rule;
 }
 
-export async function registerRequestHeaderRules(playerClient = PLAYER_CLIENTS[0]!) {
+export async function registerRequestHeaderRules(playerClient = required(PLAYER_CLIENTS[0])) {
   await browser.declarativeNetRequest.updateSessionRules({
     removeRuleIds: [CDN_ORIGIN_RULE_ID, PLAYER_HEADERS_RULE_ID],
     addRules: [
@@ -265,7 +268,7 @@ async function fetchPlayerResponse({ videoId, playerClient: { client } }: Client
     })
   });
   if (!response.ok) {
-    throw new Error(`Player request failed: HTTP ${response.status} ${(await response.text()).slice(0, 300)}`);
+    throw new Error(`Player request failed: HTTP ${response.status} ${(await response.text()).slice(0, ERROR_BODY_LENGTH)}`);
   }
 
   const parsed = playerResponseSchema.safeParse(await response.json());
@@ -313,7 +316,7 @@ function toResolvedVideo({ videoId, playerResponse, formats, captionTexts = {} }
     tags: details.keywords ?? [],
     category: playerResponse.microformat?.playerMicroformatRenderer?.category ?? "",
     isLive: details.isLive ?? false,
-    uploadDate: (playerResponse.microformat?.playerMicroformatRenderer?.uploadDate ?? "").slice(0, DATE_LENGTH).replaceAll("-", ""),
+    uploadDate: (playerResponse.microformat?.playerMicroformatRenderer?.uploadDate ?? "").slice(0, ISO_DATE_LENGTH).replaceAll("-", ""),
     thumbnails: [...(details.thumbnail?.thumbnails ?? [])].sort((first, second) => first.width - second.width),
     formats,
     captions: captionTracks.map(track => ({

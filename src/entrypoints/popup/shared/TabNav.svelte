@@ -1,4 +1,5 @@
 <script generics="T extends string" lang="ts">
+  import { required } from "@/lib/required";
   interface Props {
     tabs: {
       id: T;
@@ -59,21 +60,21 @@
     tabButtonElements[tabId]?.focus();
   }
 
-  function handleTabKeydown(e: KeyboardEvent) {
+  function handleTabKeydown(event: KeyboardEvent) {
     const keyDirections: Partial<Record<string, 1 | -1>> = {
       ArrowRight: 1,
       ArrowDown: 1,
       ArrowLeft: -1,
       ArrowUp: -1
     };
-    const direction = keyDirections[e.key];
+    const direction = keyDirections[event.key];
     if (direction === undefined) {
       return;
     }
 
-    e.preventDefault();
+    event.preventDefault();
     const iCurrent = tabs.findIndex(tab => tab.id === activeTab);
-    const nextId = tabs[(iCurrent + direction + tabs.length) % tabs.length]!.id;
+    const nextId = required(tabs[(iCurrent + direction + tabs.length) % tabs.length]).id;
     onChange(nextId);
     focusTab(nextId);
   }

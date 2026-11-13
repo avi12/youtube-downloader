@@ -1,3 +1,5 @@
+import { MILLISECONDS_PER_SECOND } from "@/lib/time";
+import { required } from "@/lib/required";
 import type { YtDlpOptions } from "./options";
 import type { FormatFields } from "./selector";
 import { renderTemplate } from "./template";
@@ -96,7 +98,7 @@ export function buildVideoFields({ video, playlist, autonumber = 1 }: VideoField
     categories: video.category ? [video.category] : [],
     tags: video.tags,
     is_live: video.isLive,
-    epoch: Math.floor(Date.now() / 1000),
+    epoch: Math.floor(Date.now() / MILLISECONDS_PER_SECOND),
     autonumber,
     playlist_id: playlist?.id,
     playlist: playlist?.title,
@@ -138,7 +140,7 @@ export function buildSectionFields(section?: SectionContext) {
 
 function toJavaScriptRegex(pattern: string) {
   const inline = pattern.match(PYTHON_INLINE_FLAGS);
-  const flags = inline ? inline[1]!.split("").filter(flag => "ims".includes(flag)).join("") : "";
+  const flags = inline ? required(inline[1]).split("").filter(flag => "ims".includes(flag)).join("") : "";
   const source = pattern.replace(PYTHON_INLINE_FLAGS, "").replace(PYTHON_NAMED_GROUP, "(?<");
   return new RegExp(source, flags);
 }
@@ -153,7 +155,7 @@ function applyParseRule({ fields, rule }: ParseRuleRequest) {
     throw new Error(`--parse-metadata needs FROM:TO, got ${rule}`);
   }
 
-  const from = unescapeColon(parts[0]!);
+  const from = unescapeColon(required(parts[0]));
   const to = unescapeColon(parts.slice(1).join(":"));
   const source = from.includes("%(") ? renderTemplate({
     template: from,
@@ -180,7 +182,7 @@ export function applyMetadataRules({ fields, options }: MetadataRulesRequest) {
   for (const { fields: fieldPatterns, pattern, replacement } of options.replaceInMetadata) {
     const regex = new RegExp(pattern, "g");
     const replacementText = replacement.replace(BACKREFERENCE_PATTERN, "$$$1");
-    for (const name in fields) {
+    for (const name of Object.keys(fields)) {
       const isTargeted = fieldPatterns.some(fieldPattern => new RegExp(`^(?:${fieldPattern})$`).test(name));
       const value = fields[name];
       const isTargetedString = isTargeted && typeof value === "string";
@@ -224,7 +226,7 @@ function replaceExtension({ name, extension }: ExtensionRequest) {
 }
 
 export function buildSavePath({ options, type, fields, extension }: SavePathRequest) {
-  const template = options.outputs[type] ?? options.outputs.default!;
+  const template = options.outputs[type] ?? required(options.outputs.default);
   const isExtensionAware = template.includes("%(ext)s");
   const rendered = renderTemplate({
     template,

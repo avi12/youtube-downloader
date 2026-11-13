@@ -1,3 +1,4 @@
+import { required } from "@/lib/required";
 import { runPageTaskInMainWorld } from "@/lib/page-bridge";
 import type { TabTask } from "@/lib/page-events";
 import { pageResultSchema } from "@/lib/schemas";
@@ -45,7 +46,7 @@ export async function fetchPlaylist({ tabId, playlistId }: TabPlaylist) {
       id: playlistId
     }
   });
-  return playlist!;
+  return required(playlist);
 }
 
 export async function fetchPlayer({ tabId, videoId, withCaptions }: TabPlayer) {
@@ -57,7 +58,7 @@ export async function fetchPlayer({ tabId, videoId, withCaptions }: TabPlayer) {
       withCaptions
     }
   });
-  return player!;
+  return required(player);
 }
 
 export async function fetchCurrentTime(tabId: number | undefined) {
